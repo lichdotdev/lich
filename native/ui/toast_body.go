@@ -1,0 +1,393 @@
+package ui
+
+import (
+	"image"
+	"image/color"
+	"math"
+	"time"
+
+	"gioui.org/f32"
+	"gioui.org/font"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/unit"
+
+	"github.com/omartelo/lich/native/ui/icons"
+)
+
+// sonner 2.0.7's toast classes (dist/styles.css), and the wrap index.css
+// gives a toast with a description.
+const (
+	toastItemGap       unit.Dp = 6  // gap: 6px
+	toastWrapRowGap    unit.Dp = 12 // index.css row-gap: 12px
+	toastContentGap    unit.Dp = 2  // [data-content] gap: 2px
+	toastTitleSize     unit.Sp = 13 // font-size: 13px
+	toastTitleLeading  unit.Sp = 13 * 1.5
+	toastDescLeading   unit.Sp = 13 * 1.4
+	toastButtonHeight  unit.Dp = 24
+	toastButtonPadX    unit.Dp = 8
+	toastButtonRadius  unit.Dp = 4
+	toastIconBox       unit.Dp = 16
+	toastIconMarginEnd unit.Dp = 4
+	// The icon box sits 3px into the padding, and its 20px svg 1px further.
+	toastIconMarginStart unit.Dp = 3
+	toastIconSVG         unit.Dp = 20
+	toastIconSVGStart    unit.Dp = 1
+	// box-shadow: 0 4px 12px rgba(0,0,0,.1).
+	toastShadowY      unit.Dp = 4
+	toastShadowBlur   unit.Dp = 12
+	toastShadowAlpha          = 0.1
+	toastShadowLayers         = 6
+	// cancel's background: rgba(0,0,0,.08), or rgba(255,255,255,.3) dark.
+	toastCancelLight = 0.08
+	toastCancelDark  = 0.3
+)
+
+// toastShadowLayerAlpha is one of the stacked rings that stand in for the
+// shadow's blur, so that all of them together are black at 10%, compensated
+// for the linear-light blend as dialogScrimOpacity is.
+var toastShadowLayerAlpha = float32(1 - math.Pow(math.Pow(1-toastShadowAlpha, 2.4), 1.0/toastShadowLayers))
+
+// The description's color is sonner's own, not a token: #3f3f3f, and
+// hsl(0, 0%, 91%) dark.
+var (
+	toastDescLight = color.NRGBA{R: 0x3f, G: 0x3f, B: 0x3f, A: 0xff}
+	toastDescDark  = color.NRGBA{R: 0xe8, G: 0xe8, B: 0xe8, A: 0xff}
+	white          = color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+)
+
+var toastIcons = map[ToastVariant]*icons.Icon{
+	ToastSuccess: icons.Sonner("success"),
+	ToastInfo:    icons.Sonner("info"),
+	ToastWarning: icons.Sonner("warning"),
+	ToastError:   icons.Sonner("error"),
+}
+
+// toastSlot is where a toast stands in the stack this frame, in pixels.
+type toastSlot struct {
+	index      int
+	own, front float32 // its natural height and the front toast's
+	gap        float32
+	expanded   bool
+}
+
+// toastTarget is the state a toast's CSS transitions head for.
+type toastTarget struct {
+	y, scale, alpha, height, inside float32
+	move, fade                      time.Duration
+}
+
+// targetOf is sonner's data-* rules for a toast in slot: collapsed, the
+// ones behind the front peek out gap lower and a step smaller at the front
+// one's height, their content hidden; expanded, each sits at its offset.
+func targetOf(e *toastEntry, s toastSlot) toastTarget {
+	behind := s.index > 0
+	t := toastTarget{scale: 1, alpha: 1, height: s.own, inside: 1, move: toastTransition, fade: toastTransition}
+	switch {
+	case s.expanded:
+		t.y = e.view.offset
+	case behind:
+		t.y = s.gap * float32(s.index)
+		t.scale = 1 - toastScaleStep*float32(s.index)
+		t.height, t.inside = s.front, 0
+	}
+	if !visible(s.index) {
+		t.alpha = 0
+	}
+	if !e.removed() || e.view.swipedOut {
+		return t
+	}
+	t.alpha = 0
+	switch {
+	case !behind:
+		t.y = -t.height
+	case s.expanded:
+		t.y = e.view.offset - t.height
+	default:
+		t.y, t.scale = toastBehindExitLift*t.height, 1
+		t.move, t.fade = toastBehindExit, toastBehindFade
+	}
+	return t
+}
+
+// place measures every toast and moves it toward its target.
+func (s ToasterStyle) place(gtx C) {
+	t := s.State
+	inset := gtx.Dp(toastBorder) + gtx.Dp(toastPadding)
+	width := gtx.Dp(toastWidth)
+	front := -1
+	for _, e := range t.stack.entries {
+		s.measure(gtx, e, width-2*inset)
+		if front < 0 && !e.removed() {
+			front = e.view.bodySize.Y + 2*inset
+		}
+	}
+	slot := toastSlot{front: float32(max(front, 0)), gap: float32(gtx.Dp(toastGap)), expanded: t.hovered || s.Expand}
+	var before float32
+	live := 0
+	for i, e := range t.stack.entries {
+		slot.index, slot.own = i, float32(e.view.bodySize.Y+2*inset)
+		if !e.removed() {
+			e.view.offset = float32(live)*slot.gap + before
+			before += slot.own
+			live++
+		}
+		e.view.animate(gtx, targetOf(e, slot), width, inset, e.Description != "")
+		e.view.canHit = visible(i) && !e.removed()
+	}
+}
+
+// animate runs the toast's transitions toward tg and works out its box.
+// A toast drawn for the first time enters from translateY(-100%).
+func (v *toastView) animate(gtx C, tg toastTarget, width, inset int, wrapped bool) {
+	if !v.seeded {
+		v.seeded = true
+		v.y.seed(-tg.height)
+		v.opacity.seed(0)
+		v.scale.seed(tg.scale)
+		v.height.seed(tg.height)
+		v.content.seed(tg.inside)
+	}
+	y := v.y.at(gtx, tg.y, tg.move, ease)
+	scale := v.scale.at(gtx, tg.scale, tg.move, ease)
+	h := v.height.at(gtx, tg.height, toastTransition, ease)
+	v.alpha = v.opacity.at(gtx, tg.alpha, tg.fade, ease)
+	v.inside = v.content.at(gtx, tg.inside, toastTransition, ease)
+	if v.drag.active {
+		v.swipeX.seed(v.drag.amount.X)
+		v.swipeY.seed(v.drag.amount.Y)
+	}
+	v.swipe = f32.Pt(v.swipeX.at(gtx, 0, toastTransition, ease), v.swipeY.at(gtx, 0, toastTransition, ease))
+	if v.drag.active {
+		v.swipe = v.drag.amount
+	}
+	v.boxSize = image.Pt(width, int(h+0.5))
+	v.bodyAt = image.Pt(inset, inset)
+	if !wrapped {
+		v.bodyAt.Y = (v.boxSize.Y - v.bodySize.Y) / 2
+	}
+	center := f32.Pt(float32(width)/2, h/2)
+	v.place = f32.Affine2D{}.Scale(center, f32.Pt(scale, scale)).Offset(f32.Pt(0, y))
+}
+
+// measure records the toast's content at the inner width.
+func (s ToasterStyle) measure(gtx C, e *toastEntry, inner int) {
+	gtx.Constraints = layout.Constraints{Max: image.Pt(inner, gtx.Constraints.Max.Y)}
+	macro := op.Record(gtx.Ops)
+	d := s.body(gtx, e)
+	e.view.body, e.view.bodySize = macro.Stop(), d.Size
+}
+
+// drawBox paints the toast's box at the origin: shadow, popover fill,
+// border and the content.
+func (s ToasterStyle) drawBox(gtx C, v *toastView) {
+	th := s.theme
+	r := gtx.Dp(RadiusLG)
+	toastShadow(gtx, v.boxSize, r)
+	rect := clip.UniformRRect(image.Rectangle{Max: v.boxSize}, r)
+	paint.FillShape(gtx.Ops, th.Popover, rect.Op(gtx.Ops))
+	border := th.On(th.Popover).Over(th.Border)
+	paint.FillShape(gtx.Ops, border, clip.Stroke{Path: rect.Path(gtx.Ops), Width: float32(gtx.Dp(toastBorder))}.Op())
+	if v.inside <= 0 {
+		return
+	}
+	defer paint.PushOpacity(gtx.Ops, v.inside).Pop()
+	defer op.Offset(v.bodyAt).Push(gtx.Ops).Pop()
+	v.body.Add(gtx.Ops)
+}
+
+// toastShadow stands in for the blur with rings growing from half the blur
+// inside the box to half outside it. The shadow lands on whatever the window
+// holds, not a known surface, so it stays translucent.
+func toastShadow(gtx C, size image.Point, radius int) {
+	blur := float32(gtx.Dp(toastShadowBlur))
+	down := gtx.Dp(toastShadowY)
+	shade := Alpha(black, toastShadowLayerAlpha)
+	for i := range toastShadowLayers {
+		grow := int(blur*(float32(i)+0.5)/toastShadowLayers - blur/2)
+		box := image.Rect(-grow, down-grow, size.X+grow, size.Y+down+grow)
+		paint.FillShape(gtx.Ops, shade, clip.UniformRRect(box, max(radius+grow, 0)).Op(gtx.Ops))
+	}
+}
+
+// recorded is a widget drawn once to be measured and placed after.
+type recorded struct {
+	call op.CallOp
+	size image.Point
+}
+
+func record(gtx C, w layout.Widget) recorded {
+	macro := op.Record(gtx.Ops)
+	d := w(gtx)
+	return recorded{call: macro.Stop(), size: d.Size}
+}
+
+func (r recorded) at(gtx C, p image.Point) {
+	defer op.Offset(p).Push(gtx.Ops).Pop()
+	r.call.Add(gtx.Ops)
+}
+
+// body lays the toast's content out as sonner's flex row: icon, title and
+// description, then cancel and action, each button pushed right by its
+// margin-left: auto. With a description, index.css wraps the buttons onto a
+// row of their own under the text, grouped at the right edge.
+func (s ToasterStyle) body(gtx C, e *toastEntry) D {
+	th := s.theme.On(s.theme.Popover)
+	gtx.Constraints.Min = image.Point{}
+	buttons, rects := s.buttons(gtx, th, e)
+	ic := toastIcons[e.Variant]
+	lead := 0
+	if ic != nil {
+		lead = gtx.Dp(toastIconBox) + gtx.Dp(toastIconMarginEnd) - gtx.Dp(toastIconMarginStart) + gtx.Dp(toastItemGap)
+	}
+	var d D
+	if e.Description != "" {
+		d = s.wrappedBody(gtx, th, e, ic, lead, buttons)
+	} else {
+		d = s.rowBody(gtx, th, e, ic, lead, buttons)
+	}
+	e.view.cancelAt, e.view.actionAt = rects(e.Cancel), rects(e.Action)
+	return d
+}
+
+// placedButton is a recorded button and where the body put it.
+type placedButton struct {
+	recorded
+	of *ToastButton
+	at image.Point
+}
+
+// buttons records cancel and action, in that order, and returns a lookup
+// of where each landed once the body placed them.
+func (s ToasterStyle) buttons(gtx C, th *Theme, e *toastEntry) ([]*placedButton, func(*ToastButton) image.Rectangle) {
+	var out []*placedButton
+	cancelBg := th.Over(Alpha(black, toastCancelLight))
+	if !s.Light {
+		cancelBg = th.Over(Alpha(white, toastCancelDark))
+	}
+	if e.Cancel != nil {
+		r := record(gtx, func(gtx C) D { return toastButton(gtx, th, e.Cancel.Label, cancelBg, th.PopoverForeground) })
+		out = append(out, &placedButton{recorded: r, of: e.Cancel})
+	}
+	if e.Action != nil {
+		r := record(gtx, func(gtx C) D { return toastButton(gtx, th, e.Action.Label, th.PopoverForeground, th.Popover) })
+		out = append(out, &placedButton{recorded: r, of: e.Action})
+	}
+	return out, func(b *ToastButton) image.Rectangle {
+		for _, p := range out {
+			if b != nil && p.of == b {
+				return image.Rectangle{Min: p.at, Max: p.at.Add(p.size)}
+			}
+		}
+		return image.Rectangle{}
+	}
+}
+
+func (s ToasterStyle) rowBody(gtx C, th *Theme, e *toastEntry, ic *icons.Icon, lead int, buttons []*placedButton) D {
+	gap := gtx.Dp(toastItemGap)
+	inner := gtx.Constraints.Max.X
+	used := lead
+	height := 0
+	for _, b := range buttons {
+		used += gap + b.size.X
+		height = max(height, b.size.Y)
+	}
+	cgtx := gtx
+	cgtx.Constraints.Max.X = max(inner-used, 0)
+	content := record(cgtx, func(gtx C) D { return s.content(gtx, th, e) })
+	height = max(height, content.size.Y)
+	if ic != nil {
+		height = max(height, gtx.Dp(toastIconBox))
+		toastIcon(gtx, th, ic, (height-gtx.Dp(toastIconBox))/2)
+	}
+	content.at(gtx, image.Pt(lead, (height-content.size.Y)/2))
+	x := lead + content.size.X
+	if len(buttons) > 0 {
+		share := max(inner-used-content.size.X, 0) / len(buttons)
+		for _, b := range buttons {
+			x += gap + share
+			b.at = image.Pt(x, (height-b.size.Y)/2)
+			b.recorded.at(gtx, b.at)
+			x += b.size.X
+		}
+	}
+	return D{Size: image.Pt(inner, height)}
+}
+
+func (s ToasterStyle) wrappedBody(gtx C, th *Theme, e *toastEntry, ic *icons.Icon, lead int, buttons []*placedButton) D {
+	inner := gtx.Constraints.Max.X
+	cgtx := gtx
+	cgtx.Constraints.Max.X = max(inner-lead, 0)
+	content := record(cgtx, func(gtx C) D { return s.content(gtx, th, e) })
+	height := content.size.Y
+	if ic != nil {
+		height = max(height, gtx.Dp(toastIconBox))
+		toastIcon(gtx, th, ic, 0)
+	}
+	content.at(gtx, image.Pt(lead, 0))
+	if len(buttons) == 0 {
+		return D{Size: image.Pt(inner, height)}
+	}
+	gap := gtx.Dp(toastItemGap)
+	row := height + gtx.Dp(toastWrapRowGap)
+	x := inner + gap
+	for _, b := range buttons {
+		x -= gap + b.size.X
+	}
+	for _, b := range buttons {
+		b.at = image.Pt(x, row)
+		b.recorded.at(gtx, b.at)
+		x += b.size.X + gap
+		height = max(height, row+b.size.Y)
+	}
+	return D{Size: image.Pt(inner, height)}
+}
+
+// content is [data-content]: the title, and the description under it.
+func (s ToasterStyle) content(gtx C, th *Theme, e *toastEntry) D {
+	title := th.Text(toastTitleSize, e.Title).Weight(font.Medium).Leading(toastTitleLeading).In(th.PopoverForeground)
+	title.MaxLines = 0
+	if e.Description == "" {
+		return title.Layout(gtx)
+	}
+	descColor := toastDescDark
+	if s.Light {
+		descColor = toastDescLight
+	}
+	desc := th.Text(toastTitleSize, e.Description).Leading(toastDescLeading).In(descColor)
+	desc.MaxLines = 0
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(title.Layout),
+		layout.Rigid(layout.Spacer{Height: toastContentGap}.Layout),
+		layout.Rigid(desc.Layout),
+	)
+}
+
+// toastIcon draws the variant's 20px glyph overflowing its 16px box, top
+// pixels down, as [data-icon] and its svg's negative margins place it.
+func toastIcon(gtx C, th *Theme, ic *icons.Icon, top int) {
+	x := -gtx.Dp(toastIconMarginStart) - gtx.Dp(toastIconSVGStart)
+	y := top + (gtx.Dp(toastIconBox)-gtx.Dp(toastIconSVG))/2
+	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
+	ic.Layout(gtx, toastIconSVG, th.PopoverForeground)
+}
+
+// toastButton is [data-button]: h-24px px-8px rounded-4px, 12px medium.
+func toastButton(gtx C, th *Theme, label string, bg, fg color.NRGBA) D {
+	text := record(gtx, th.Text(TextXS, label).Weight(font.Medium).In(fg).Layout)
+	size := image.Pt(text.size.X+2*gtx.Dp(toastButtonPadX), gtx.Dp(toastButtonHeight))
+	paint.FillShape(gtx.Ops, bg, clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(toastButtonRadius)).Op(gtx.Ops))
+	text.at(gtx, image.Pt(gtx.Dp(toastButtonPadX), (size.Y-text.size.Y)/2))
+	return D{Size: size}
+}
+
+func abs32(v float32) float32 { return float32(math.Abs(float64(v))) }
+
+func sign(v float32) float32 {
+	if v < 0 {
+		return -1
+	}
+	return 1
+}

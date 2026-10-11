@@ -61,6 +61,10 @@ func run(w *app.Window) error {
 		Mono:    "Go Mono",
 		Surface: ui.Dark.Background,
 	})
+	g.toaster.Invalidate = w.Invalidate
+	if *flagToasts {
+		g.raiseDemoToasts()
+	}
 	started := time.Now()
 	var ops op.Ops
 	for {
@@ -138,6 +142,8 @@ type gallery struct {
 	footerRight []string
 
 	side *sidebar
+
+	toastState
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -174,6 +180,9 @@ func (g *gallery) layout(gtx C) D {
 	paint.Fill(gtx.Ops, ui.Dark.Background)
 	return g.root.Layout(gtx, func(gtx C) D {
 		g.layoutDialog(gtx)
+		toaster := g.th.Toaster(&g.toaster, false)
+		toaster.Expand = *flagToastsExpanded
+		toaster.Layout(gtx)
 		return g.th.ScrollArea(&g.page).Layout(gtx, 1, func(gtx C, _ int) D {
 			return layout.UniformInset(pagePad).Layout(gtx, g.content)
 		})
@@ -200,6 +209,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("Tabs", g.tabsSection),
 					g.section("Label, Text, Skeleton, Separator, icons", g.typographySection),
 					g.section("Wrap, Sortable", g.layoutSection),
+					g.section("Toast", g.toastsSection),
 				)),
 			)
 		}),

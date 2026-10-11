@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"runtime"
+	"strings"
 
 	"gioui.org/app"
 	"gioui.org/font"
@@ -78,12 +78,10 @@ func (u *window) onDrag(e app.DropEvent, invalidate func()) {
 }
 
 // dropFiles resolves a drop and writes it at the session's prompt.
-// TODO: the skipped entries go to the log; the web toasts them
-// ("Not attached: …"), and they move there once this window has toasts.
 func (u *window) dropFiles(target dropTarget, paths []string) {
 	r := resolveDrop(u.ctx, u.client, target, paths)
 	if len(r.skipped) > 0 {
-		log.Printf("Not attached: %v", r.skipped)
+		u.toaster.Show(failure(toastNotAttached, strings.Join(r.skipped, ", ")))
 	}
 	paste := composeDroppedPaths(r.paths, runtime.GOOS == "windows", r.notices)
 	if paste == "" {

@@ -52,6 +52,7 @@ type footer struct {
 	// reviewing is Review changes pressed: the stage shows the checkout's
 	// diff instead of the terminal, where the web opens its dock's Review tab.
 	reviewing bool
+	toaster   *ui.Toaster
 }
 
 func newFooter(ctx context.Context, client *lichclient.Client, root *ui.Root, usage *footerUsage, invalidate func()) *footer {
@@ -200,11 +201,11 @@ func (f *footer) act(gtx C, in footerInput) {
 }
 
 // attach picks a file for the session and pastes its path at the prompt.
-// ponytail: a failure is logged; the web toasts it, and this window has no
-// toasts yet.
+// A failure is toasted in the backend's own words, which name the ceiling a
+// file was refused for.
 func (f *footer) attach(in footerInput) {
 	if err := attachFile(f.ctx, f.client, in.sessionID, in.checkout, in.sandboxed, runtime.GOOS == "windows"); err != nil {
-		log.Printf("Could not attach the file: %v", err)
+		f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: lichclient.ErrorText(err)})
 	}
 }
 

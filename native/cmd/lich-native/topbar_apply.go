@@ -176,41 +176,46 @@ func (u *window) pickProject() {
 		u.logErr("open project", err)
 		return
 	}
-	u.adopt(*p)
+	u.logErr("open project", u.adopt(*p))
 }
 
 // reopenProject is projects.tsx openRecent: a project whose directory is
 // gone asks the picker where it went, keeping its id.
-// ponytail: a failed relocate is logged; the web toasts it, and this window
-// has no toasts yet.
 func (u *window) reopenProject(r lichclient.RecentProject) {
 	there, err := u.client.PathExists(u.ctx, r.Path)
 	if err != nil {
 		u.logErr("reopen project", err)
 		return
 	}
-	if !there {
-		moved, err := u.client.RelocateProject(u.ctx, r.ID)
-		if err != nil || moved == nil {
-			u.logErr("relocate project", err)
-			return
-		}
-		r = *moved
+	if there {
+		u.logErr("reopen project", u.adopt(r))
+		return
 	}
-	u.adopt(r)
+	moved, err := u.client.RelocateProject(u.ctx, r.ID)
+	if err != nil {
+		u.toaster.Show(failure(toastRelocateFailed, err))
+		return
+	}
+	if moved == nil {
+		return
+	}
+	if err := u.adopt(*moved); err != nil {
+		u.toaster.Show(failure(toastRelocateFailed, err))
+		return
+	}
+	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(toastRelocated, moved.Name, displayPath(moved.Path))})
 }
 
 // adopt is projects.tsx adopt: add (or reopen) the project, reload, and put
 // it on screen.
-func (u *window) adopt(p lichclient.RecentProject) {
+func (u *window) adopt(p lichclient.RecentProject) error {
 	if err := u.client.AddProject(u.ctx, p.ID, p.Name, p.Path); err != nil {
-		u.logErr("add project", err)
-		return
+		return fmt.Errorf("add project: %w", err)
 	}
 	if err := u.model.reload(u.ctx); err != nil {
-		u.logErr("reload", err)
-		return
+		return fmt.Errorf("reload: %w", err)
 	}
 	u.logErr("load folds", u.model.loadFolds(u.ctx))
 	u.showProject(p.ID)
+	return nil
 }

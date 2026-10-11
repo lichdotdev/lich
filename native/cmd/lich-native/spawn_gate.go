@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/omartelo/lich/native/lichclient"
+	"github.com/omartelo/lich/native/ui"
 )
 
 // spawnVerdict is what a session's first view does (spawn-gate.ts
@@ -109,6 +110,8 @@ type spawnGate struct {
 	// park is keepSession: the row is closed, not deleted, since the checkout
 	// may come back and the row still carries the conversation.
 	park func(id string)
+	// notify raises a toast: what the gate decided on the user's behalf.
+	notify func(ui.Toast)
 
 	mu       sync.Mutex
 	deciding string
@@ -145,10 +148,9 @@ func (g *spawnGate) decide(ctx context.Context, s sessionView) {
 	g.deciding = ""
 	switch verdict {
 	case spawnPark:
-		// TODO: the web toasts session.spawnGate.checkoutGone here; needs a
-		// toast surface in the native window.
 		g.mu.Unlock()
 		g.park(s.ID)
+		g.notify(ui.Toast{Title: toastCheckoutGone})
 		g.invalidate()
 		return
 	case spawnAsk:
@@ -157,11 +159,12 @@ func (g *spawnGate) decide(ctx context.Context, s sessionView) {
 	case spawnResume:
 		g.releaseLocked(s.ID, s.ProviderSessionID)
 	default:
-		// TODO: spawnFresh toasts session.spawnGate.conversationGone on the
-		// web; same toast surface.
 		g.releaseLocked(s.ID, "")
 	}
 	g.mu.Unlock()
+	if verdict == spawnFresh {
+		g.notify(ui.Toast{Title: toastConversationGone})
+	}
 	g.invalidate()
 }
 
@@ -196,8 +199,11 @@ func (g *spawnGate) answer(ctx context.Context, choice string, remember bool) {
 	g.releaseLocked(s.ID, resume)
 	g.mu.Unlock()
 	g.invalidate()
-	if remember {
-		logGateErr("remember choice", g.probe.SetSetting(ctx, restoreKey(s.Kind), "", choice))
+	if !remember {
+		return
+	}
+	if err := g.probe.SetSetting(ctx, restoreKey(s.Kind), "", choice); err != nil {
+		g.notify(failure(toastRememberFailed, err))
 	}
 }
 

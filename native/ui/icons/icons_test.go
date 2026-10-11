@@ -174,3 +174,21 @@ func TestLayoutFilledFillsTheOutline(t *testing.T) {
 		t.Error("square: centre not inked by LayoutFilled; want the outline filled")
 	}
 }
+
+func TestSonnerIconsKeepTheirEvenOddHoles(t *testing.T) {
+	cases := []struct {
+		name         string
+		hole, filled image.Point // in the 24px render
+	}{
+		{"success", image.Pt(13, 12), image.Pt(5, 12)}, // the check's long stroke
+		{"error", image.Pt(12, 9), image.Pt(6, 12)},    // the bar of the "!"
+		{"info", image.Pt(11, 14), image.Pt(6, 12)},    // the stem of the "i"
+		{"warning", image.Pt(12, 11), image.Pt(6, 17)}, // the bar of the "!"
+	}
+	for _, c := range cases {
+		inked := render(t, Sonner(c.name))
+		if inked(c.hole.X, c.hole.Y) || !inked(c.filled.X, c.filled.Y) {
+			t.Errorf("%s: hole inked %v, body inked %v; want the glyph cut out of the fill", c.name, inked(c.hole.X, c.hole.Y), inked(c.filled.X, c.filled.Y))
+		}
+	}
+}

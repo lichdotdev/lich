@@ -80,6 +80,7 @@ type window struct {
 	th      *material.Theme
 	theme   *ui.Theme
 	root    ui.Root
+	toaster ui.Toaster
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
 	// emptyNew is the empty stage's New session button.
@@ -118,14 +119,23 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
 	}
+	u.toaster.Invalidate = w.Invalidate
+	u.terms.toaster = &u.toaster
 	u.sidebar = newSidebar(&u.root)
 	u.topbar = newTopbar(&u.root)
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
-	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession}
+	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	if u.diff, err = newDiffView(client, w.Invalidate, *flagFont, unit.Sp(*flagSize), th); err != nil {
 		return err
 	}
+	u.diff.toaster = &u.toaster
+	u.footer.toaster = &u.toaster
 	u.footer.reviewing = *flagTab == "diff"
+	if *flagToasts != "" {
+		if err := u.raiseDemoToasts(*flagToasts); err != nil {
+			return err
+		}
+	}
 	if err := u.connect(); err != nil {
 		return err
 	}
@@ -137,6 +147,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 			return e.Err
 		case app.ConfigEvent:
 			u.model.setFocused(u.ctx, e.Config.Focused)
+			u.toaster.SetHidden(!e.Config.Focused)
 		case app.DropEvent:
 			u.onDrag(e, w.Invalidate)
 		case app.FrameEvent:
@@ -227,6 +238,9 @@ func (u *window) layout(gtx C) error {
 		u.sidebar.flight(gtx, u.theme, u.model)
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
 		top.close = closed
+		toasts := u.theme.Toaster(&u.toaster, u.light)
+		toasts.Expand = *flagToastsExpanded
+		toasts.Layout(gtx)
 		return D{Size: gtx.Constraints.Max}
 	})
 	u.apply(act)
@@ -453,7 +467,7 @@ func (u *window) applyOpenIn(act sidebarAction) {
 		go func() {
 			command, err := u.client.OpenFolderInEditor(u.ctx, dir)
 			if err != nil {
-				u.logErr("open in editor", err)
+				u.toaster.Show(failure(toastOpenCheckoutFailed, err))
 				return
 			}
 			// A terminal editor runs in a shell at the directory, as the
@@ -464,7 +478,11 @@ func (u *window) applyOpenIn(act sidebarAction) {
 		}()
 	}
 	if dir := act.folderAt; dir != "" {
-		go func() { u.logErr("open folder", u.client.OpenFolder(u.ctx, dir)) }()
+		go func() {
+			if err := u.client.OpenFolder(u.ctx, dir); err != nil {
+				u.toaster.Show(failure(toastOpenFolderFailed, err))
+			}
+		}()
 	}
 }
 

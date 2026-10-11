@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/lichdotdev/godemirror"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/lichdiff"
+	"github.com/omartelo/lich/native/ui"
 )
 
 // diffRefresh is how often an open diff re-reads the checkout.
@@ -51,6 +53,8 @@ type diffView struct {
 	rows    map[string]*widget.Clickable
 	toSplit widget.Clickable
 	toWrap  widget.Clickable
+
+	toaster *ui.Toaster
 }
 
 // pulled is the backend's answer to an Expand, waiting for the UI goroutine.
@@ -133,7 +137,7 @@ func (d *diffView) expand(g godemirror.Gap) {
 	go func() {
 		lines, err := d.client.FileLines(context.Background(), path, rel, "", g.From, g.To)
 		if err != nil {
-			log.Printf("expand %s %d..%d: %v", rel, g.From, g.To, err)
+			d.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(toastReadFailed, rel), Description: lichclient.ErrorText(err)})
 			return
 		}
 		d.mu.Lock()
@@ -148,7 +152,8 @@ func (d *diffView) revert(lines []lichclient.RevertLine) {
 	path, rel := d.currentPath(), d.shown
 	go func() {
 		if _, err := d.client.RevertLines(context.Background(), path, rel, lines); err != nil {
-			log.Printf("revert %s: %v", rel, err)
+			name := filepath.Base(filepath.FromSlash(rel))
+			d.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(toastRevertFailed, name), Description: lichclient.ErrorText(err)})
 		}
 		select {
 		case d.refresh <- struct{}{}:

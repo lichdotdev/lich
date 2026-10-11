@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/omartelo/lich/native/lichclient"
+	"github.com/omartelo/lich/native/ui"
 )
 
 var errProbe = errors.New("rpc down")
@@ -15,6 +17,7 @@ type fakeProbe struct {
 	live                         bool
 	missing, available           bool
 	missingErr, availErr, getErr error
+	setErr                       error
 	choice                       string
 	set                          map[string]string
 }
@@ -30,6 +33,9 @@ func (f *fakeProbe) GetSetting(_ context.Context, key, _ string) (string, error)
 	return f.choice, f.getErr
 }
 func (f *fakeProbe) SetSetting(_ context.Context, key, _, value string) error {
+	if f.setErr != nil {
+		return f.setErr
+	}
 	if f.set == nil {
 		f.set = map[string]string{}
 	}
@@ -70,7 +76,7 @@ func TestSpawnDecision(t *testing.T) {
 // askingGate is a gate whose decision for restored raised the prompt.
 func askingGate(t *testing.T, probe *fakeProbe) *spawnGate {
 	t.Helper()
-	g := &spawnGate{probe: probe, invalidate: func() {}, park: func(string) { t.Error("parked") }}
+	g := &spawnGate{probe: probe, invalidate: func() {}, park: func(string) { t.Error("parked") }, notify: func(ui.Toast) {}}
 	g.decide(context.Background(), sessionView{Session: restored, path: "/repo"})
 	if p := g.prompt(); p == nil || p.ID != restored.ID {
 		t.Fatalf("prompt = %v, want %s", p, restored.ID)
@@ -135,17 +141,45 @@ func TestLiveSessionSkipsPrompt(t *testing.T) {
 	}
 }
 
+// The contract grew a toast: the park now says why the card left.
 func TestParkClosesInsteadOfSpawning(t *testing.T) {
 	var parked string
-	g := &spawnGate{probe: &fakeProbe{missing: true}, invalidate: func() {}, park: func(id string) { parked = id }}
+	var told []ui.Toast
+	g := &spawnGate{probe: &fakeProbe{missing: true}, invalidate: func() {}, park: func(id string) { parked = id },
+		notify: func(t ui.Toast) { told = append(told, t) }}
 	g.decide(context.Background(), sessionView{Session: restored})
 	if parked != restored.ID {
 		t.Errorf("parked %q", parked)
+	}
+	if len(told) != 1 || told[0].Title != toastCheckoutGone {
+		t.Errorf("toasts %+v, want the checkout-gone notice", told)
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if _, ok := g.released[restored.ID]; ok {
 		t.Error("parked session released to spawn")
+	}
+}
+
+func TestGoneConversationSpawnsFreshAndSaysSo(t *testing.T) {
+	var told []ui.Toast
+	g := &spawnGate{probe: &fakeProbe{}, invalidate: func() {}, notify: func(t ui.Toast) { told = append(told, t) }}
+	g.decide(context.Background(), sessionView{Session: restored, path: "/repo"})
+	if got := released(t, g); got != "" {
+		t.Errorf("resume = %q, want fresh", got)
+	}
+	if len(told) != 1 || told[0].Title != toastConversationGone {
+		t.Errorf("toasts %+v, want the conversation-gone notice", told)
+	}
+}
+
+func TestRememberFailureIsToasted(t *testing.T) {
+	var told []ui.Toast
+	g := askingGate(t, &fakeProbe{available: true, setErr: errors.New("store locked")})
+	g.notify = func(t ui.Toast) { told = append(told, t) }
+	g.answer(context.Background(), restoreResume, true)
+	if len(told) != 1 || told[0].Variant != ui.ToastError || !strings.Contains(told[0].Title, "store locked") {
+		t.Errorf("toasts %+v, want the remember failure as an error", told)
 	}
 }
 

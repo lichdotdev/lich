@@ -16,6 +16,7 @@ import (
 
 	"github.com/omartelo/lich/native/gioterm"
 	"github.com/omartelo/lich/native/lichclient"
+	"github.com/omartelo/lich/native/ui"
 )
 
 // termView is one session's terminal: its emulator, a renderer of its own
@@ -50,6 +51,7 @@ type terminals struct {
 	// typeahead is input for a session whose terminal has not started yet,
 	// sent right after Start; the PTY holds it until the shell reads it.
 	typeahead map[string]string
+	toaster   *ui.Toaster
 }
 
 // queue sends text to session id's terminal once it starts.
@@ -135,8 +137,10 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Lock()
 	ts.byID[s.ID] = t
 	ts.mu.Unlock()
+	// A failed start leaves the terminal in place, empty, as the web's does.
 	if err := ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, resume, cols, rows); err != nil {
-		return nil, err
+		ts.toaster.Show(failure(toastStartFailed, err))
+		return t, nil
 	}
 	ts.mu.Lock()
 	pending := ts.typeahead[s.ID]

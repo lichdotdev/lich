@@ -1,4 +1,4 @@
-// Package icons draws the two icon sets the web app uses, from their SVG
+// Package icons draws the icon sets the web app uses, from their SVG
 // geometry:
 //
 //   - Lucide (lucide.dev, ISC; some icons MIT from Feather): the whole set of
@@ -9,9 +9,12 @@
 //     so a port uses the name they alias ("house", "ellipsis").
 //   - Lobe (github.com/lobehub/lobe-icons, MIT): the AI provider marks lich
 //     uses, the same paths frontend/src/components/ProviderIcon.tsx vendors.
+//   - Sonner (sonner.emilkowal.ski, MIT): the four type icons its toasts
+//     draw, Heroicons solid paths sonner 2.0.7 ships in its bundle.
 //
-// Each set's license sits beside it (lucide/LICENSE, lobe/LICENSE) and must
-// travel with any copy, the binary's third-party notices included.
+// Each set's license sits beside it (lucide/LICENSE, lobe/LICENSE,
+// sonner/LICENSE) and must travel with any copy, the binary's third-party
+// notices included.
 package icons
 
 import (
