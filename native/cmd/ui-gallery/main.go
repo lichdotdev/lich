@@ -132,6 +132,10 @@ type gallery struct {
 	dialogOpener widget.Clickable
 	dialogCancel widget.Clickable
 	dialogDelete widget.Clickable
+
+	sortable    ui.Sortable
+	footerLeft  []string
+	footerRight []string
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -148,6 +152,8 @@ func newGallery(th *ui.Theme) *gallery {
 	g.toggles[1].Value = true
 	g.groupBold.Value = "left"
 	g.groupGrid.Value = "list"
+	g.footerLeft = []string{"Attach", "Files", "3 · +10 -2", "PR #123"}
+	g.footerRight = []string{"feature/toolbar", "Opus 4.1 · high", "Context 42%", "12:30"}
 	return g
 }
 
@@ -189,6 +195,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("Checkbox, Switch, Toggle, ToggleGroup", g.selectionSection),
 					g.section("Tabs", g.tabsSection),
 					g.section("Label, Text, Skeleton, Separator, icons", g.typographySection),
+					g.section("Wrap, Sortable", g.layoutSection),
 				)),
 			)
 		}),

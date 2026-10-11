@@ -3,9 +3,12 @@ package main
 import (
 	"image"
 	"image/color"
+	"slices"
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/omartelo/lich/native/ui"
@@ -448,4 +451,194 @@ func (g *gallery) swatches() []ui.MenuEntry {
 		entries = append(entries, ui.MenuEntry{Kind: ui.MenuSwatch, Label: c.name, Swatch: c.color, Checked: g.cardColor == c.name, OnClick: pick(c.name, c.name+" color")})
 	}
 	return entries
+}
+
+// footerZoneLabels are FooterLayoutEditor's zone headings.
+var footerZoneLabels = map[string]string{"left": "Left", "right": "Right", "available": "Available"}
+
+// footerReadings are what each footer item shows, FOOTER_ITEMS' examples.
+var footerReadings = []string{"Attach", "Files", "3 · +10 -2", "PR #123", "feature/toolbar", "~/project", "Opus 4.1 · high", "Context 42%", "$0.12", "12:30"}
+
+func (g *gallery) layoutSection(gtx C, th *ui.Theme) D {
+	if d, ok := g.sortable.Update(gtx); ok {
+		g.footerLeft, g.footerRight = moveFooterItem(g.footerLeft, g.footerRight, d)
+	}
+	return stack(4,
+		caption(th, "Wrap: FooterBar, full width and at 280dp"),
+		g.footerBar(th, 0),
+		g.footerBar(th, 280),
+		caption(th, "Sortable: FooterLayoutEditor (drag; or focus a chip, Space, arrows, Space)"),
+		split(3, g.footerZone(th, "left", g.footerLeft), g.footerZone(th, "right", g.footerRight)),
+		g.footerZone(th, "available", g.footerAvailable()),
+	)(gtx)
+}
+
+// moveFooterItem is lib/footer-layout.ts's: over a side appends, over an item
+// takes its place, over available takes the item out of the footer.
+func moveFooterItem(left, right []string, d ui.SortDrop) ([]string, []string) {
+	if d.ID == d.Over {
+		return left, right
+	}
+	other := func(id string) bool { return id == d.ID }
+	left, right = slices.DeleteFunc(slices.Clone(left), other), slices.DeleteFunc(slices.Clone(right), other)
+	insert := func(side []string) []string {
+		at := slices.Index(side, d.Over)
+		if at < 0 {
+			at = len(side)
+		}
+		return slices.Insert(side, at, d.ID)
+	}
+	switch {
+	case d.Over == "left" || slices.Contains(left, d.Over):
+		left = insert(left)
+	case d.Over == "right" || slices.Contains(right, d.Over):
+		right = insert(right)
+	}
+	return left, right
+}
+
+func (g *gallery) footerAvailable() []string {
+	return slices.DeleteFunc(slices.Clone(footerReadings), func(id string) bool {
+		return slices.Contains(g.footerLeft, id) || slices.Contains(g.footerRight, id)
+	})
+}
+
+// footerBar is FooterBar's `flex flex-wrap items-center justify-between
+// gap-x-4 gap-y-1` around two `flex flex-wrap items-center gap-1` sections,
+// the right one `ml-auto justify-end`.
+func (g *gallery) footerBar(th *ui.Theme, width unit.Dp) layout.Widget {
+	bar := th.On(th.Sidebar)
+	return func(gtx C) D {
+		if width > 0 {
+			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(width))
+		}
+		gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, gtx.Dp(ui.Space(11)))
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
+			func(gtx C) D {
+				return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+					return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1), Justify: ui.JustifyBetween}.Layout(gtx,
+						ui.WrapItem(footerSection(bar, g.footerLeft, ui.JustifyStart)),
+						ui.WrapMLAuto(footerSection(bar, g.footerRight, ui.JustifyEnd)),
+					)
+				})
+			},
+		)
+	}
+}
+
+func footerSection(th *ui.Theme, items []string, justify ui.Justify) layout.Widget {
+	return func(gtx C) D {
+		kids := make([]ui.WrapChild, len(items))
+		for i, id := range items {
+			label := th.Text(ui.TextXS, id).Muted().Layout
+			kids[i] = ui.WrapItem(func(gtx C) D { return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, label) })
+		}
+		return ui.Wrap{GapX: ui.Space(1), GapY: ui.Space(1), Justify: justify}.Layout(gtx, kids...)
+	}
+}
+
+// footerZone is FooterZoneView: a heading over the drop area.
+func (g *gallery) footerZone(th *ui.Theme, zone string, items []string) layout.Widget {
+	return stack(1.5,
+		th.Text(ui.TextXS, footerZoneLabels[zone]).Muted().Layout,
+		func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return g.sortable.Zone(gtx, zone, func(gtx C) D { return g.zoneBox(gtx, th, zone, items) })
+		},
+	)
+}
+
+// zoneBox is the drop area: `flex flex-wrap content-start items-center
+// gap-1.5 rounded-lg p-2`, bg-sidebar and min-h-18 on a side, min-h-11 for
+// available, and ring-2 ring-ring only while the drop would land on it.
+func (g *gallery) zoneBox(gtx C, th *ui.Theme, zone string, items []string) D {
+	bg, minHeight := th.Surface, ui.Space(11)
+	if zone != "available" {
+		bg, minHeight = th.Sidebar, ui.Space(18)
+	}
+	on := th.On(bg)
+	justify := ui.JustifyStart
+	if zone == "right" {
+		justify = ui.JustifyEnd
+	}
+	kids := make([]ui.WrapChild, len(items))
+	for i, id := range items {
+		kids[i] = ui.WrapItem(g.footerChip(on, id, zone != "available"))
+	}
+	if len(items) == 0 {
+		empty := "Drag here"
+		if zone == "available" {
+			empty = "All placed"
+		}
+		label := on.Text(ui.TextXS, empty).Muted().Layout
+		kids = append(kids, ui.WrapItem(func(gtx C) D { return layout.Inset{Left: ui.Space(1), Right: ui.Space(1)}.Layout(gtx, label) }))
+	}
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D {
+			if g.sortable.Over() == zone {
+				ringOutside(gtx, th.Ring, 2, ui.RadiusLG)
+			}
+			return ui.Fill(gtx, bg, ui.RadiusLG)
+		},
+		func(gtx C) D {
+			gtx.Constraints.Min.Y = gtx.Dp(minHeight)
+			return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
+				return ui.Wrap{GapX: ui.Space(1.5), GapY: ui.Space(1.5), Justify: justify, ContentStart: true}.Layout(gtx, kids...)
+			})
+		},
+	)
+}
+
+// ringOutside is a box-shadow ring width wide around the minimum constraint.
+func ringOutside(gtx C, c color.NRGBA, width, radius unit.Dp) {
+	w := gtx.Dp(width)
+	box := image.Rectangle{Min: image.Pt(-w, -w), Max: gtx.Constraints.Min.Add(image.Pt(w, w))}
+	paint.FillShape(gtx.Ops, c, clip.UniformRRect(box, gtx.Dp(radius)+w).Op(gtx.Ops))
+}
+
+// footerChip is FooterEditorItem: the reading on a ghost xs button with an
+// inset ring-border, bg-background once in the footer, transparent and muted
+// before; opacity-30 while it is the placeholder of the chip in the air.
+// The ring turns ring-ring on focus and as the keyboard's drop target.
+func (g *gallery) footerChip(th *ui.Theme, id string, inFooter bool) layout.Widget {
+	lifted := func(gtx C) D {
+		return chipBox(gtx, th.On(th.Popover), ui.Over(th.Popover, th.Border), th.Popover, th.Foreground, id)
+	}
+	return func(gtx C) D {
+		bg, fg, ring := th.Surface, th.MutedForeground, th.Over(th.Border)
+		if inFooter {
+			bg, fg = th.Background, th.Foreground
+		}
+		if g.sortable.Focused(id) || g.sortable.Over() == id {
+			ring = th.Ring
+		}
+		if g.sortable.Dragging() == id {
+			fade := func(c color.NRGBA) color.NRGBA { return th.Over(ui.Alpha(c, placeholderOpacity)) }
+			bg, fg, ring = fade(bg), fade(fg), fade(ring)
+		}
+		return g.sortable.Item(gtx, id, func(gtx C) D { return chipBox(gtx, th.On(bg), ring, bg, fg, id) }, lifted)
+	}
+}
+
+// placeholderOpacity is the chip left behind's opacity-30.
+const placeholderOpacity = 0.3
+
+// chipBox is buttonVariants ghost xs (h-6 px-2 text-xs rounded-md) with a
+// 1px inset ring.
+func chipBox(gtx C, th *ui.Theme, ring, bg, fg color.NRGBA, label string) D {
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, ring, ui.RadiusMD) },
+		func(gtx C) D {
+			return layout.UniformInset(1).Layout(gtx, func(gtx C) D {
+				return layout.Background{}.Layout(gtx,
+					func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD-1) },
+					func(gtx C) D {
+						return layout.Inset{Top: 3, Bottom: 3, Left: ui.Space(2) - 1, Right: ui.Space(2) - 1}.Layout(gtx,
+							th.Text(ui.TextXS, label).In(fg).Layout)
+					},
+				)
+			})
+		},
+	)
 }
