@@ -98,7 +98,7 @@ func (c *Client) Call(ctx context.Context, method string, out any, args ...any) 
 		if json.Unmarshal(data, &failure) != nil || failure.Error == "" {
 			failure.Error = string(data)
 		}
-		return fmt.Errorf("%s: %s (HTTP %d)", method, failure.Error, resp.StatusCode)
+		return &RemoteError{Method: method, Message: failure.Error, Status: resp.StatusCode}
 	}
 	if out == nil {
 		return nil
@@ -107,6 +107,27 @@ func (c *Client) Call(ctx context.Context, method string, out any, args ...any) 
 		return fmt.Errorf("%s: decode result: %w", method, err)
 	}
 	return nil
+}
+
+// RemoteError is a call the backend refused. Message is the backend's own
+// sentence, the one a person reads; Error adds the method and status for logs.
+type RemoteError struct {
+	Method, Message string
+	Status          int
+}
+
+func (e *RemoteError) Error() string {
+	return fmt.Sprintf("%s: %s (HTTP %d)", e.Method, e.Message, e.Status)
+}
+
+// ErrorText is what a person reads for err, as the web's errorText: the
+// backend's sentence when the backend refused, err as it is otherwise.
+func ErrorText(err error) string {
+	var remote *RemoteError
+	if errors.As(err, &remote) {
+		return remote.Message
+	}
+	return err.Error()
 }
 
 // Event is one message of the /events stream.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -69,6 +70,19 @@ func TestCallReturnsBackendError(t *testing.T) {
 	err := c.Call(context.Background(), "store.RenameSession", nil, "id")
 	if err == nil || !strings.Contains(err.Error(), "want 2 arguments, got 1") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestErrorTextIsTheBackendSentence(t *testing.T) {
+	c := fakeBackend(t, func(string, []json.RawMessage) (any, int) {
+		return map[string]string{"error": "no file manager found"}, http.StatusInternalServerError
+	})
+	err := c.Call(context.Background(), "system.OpenFolder", nil, "/tmp")
+	if got := ErrorText(err); got != "no file manager found" {
+		t.Fatalf("ErrorText = %q, want the backend's sentence alone", got)
+	}
+	if plain := errors.New("dial tcp: refused"); ErrorText(plain) != plain.Error() {
+		t.Fatalf("ErrorText of a local error = %q, want it unchanged", ErrorText(plain))
 	}
 }
 
