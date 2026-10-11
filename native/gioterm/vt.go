@@ -20,6 +20,12 @@ static GhosttyResult install_write_pty(GhosttyTerminal t, uintptr_t handle) {
 	return ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_WRITE_PTY, (const void*)on_write_pty);
 }
 
+static GhosttyResult set_default_colors(GhosttyTerminal t, GhosttyColorRgb fg, GhosttyColorRgb bg) {
+	GhosttyResult r = ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_COLOR_FOREGROUND, &fg);
+	if (r != GHOSTTY_SUCCESS) return r;
+	return ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_COLOR_BACKGROUND, &bg);
+}
+
 enum {
 	CELL_HAS_FG = 1,
 	CELL_HAS_BG = 2,
@@ -142,6 +148,7 @@ import "C"
 
 import (
 	"fmt"
+	"image/color"
 	"runtime/cgo"
 	"sync"
 	"unsafe"
@@ -282,6 +289,18 @@ type Snapshot struct {
 func (v *Terminal) Update() (Snapshot, error) {
 	s, dirty, err := v.update()
 	return Snapshot{s: s, cells: v.grid, dirty: dirty}, err
+}
+
+// SetColors sets the default foreground and background: what a cell that
+// sets no color of its own is drawn in. A program's OSC 10/11 override still
+// wins over them.
+func (v *Terminal) SetColors(fg, bg color.NRGBA) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	rgb := func(c color.NRGBA) C.GhosttyColorRgb {
+		return C.GhosttyColorRgb{r: C.uint8_t(c.R), g: C.uint8_t(c.G), b: C.uint8_t(c.B)}
+	}
+	return check("set colors", C.set_default_colors(v.t, rgb(fg), rgb(bg)))
 }
 
 // Close frees the terminal. It must not be used afterwards.

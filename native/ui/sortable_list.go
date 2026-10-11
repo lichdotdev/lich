@@ -29,9 +29,11 @@ const (
 )
 
 // SortList is a SortableContext with verticalListSortingStrategy: List lays
-// its items out top to bottom, Gap apart.
+// its items out top to bottom, Gap apart; Horizontal makes it
+// horizontalListSortingStrategy, left to right.
 type SortList struct {
-	Gap unit.Dp
+	Gap        unit.Dp
+	Horizontal bool
 	// Within holds the item in the air inside the list, use-sortable-list's
 	// withinList. Without it the item goes wherever the pointer takes it
 	// along the axis, out to a SortCarry target.
@@ -39,13 +41,15 @@ type SortList struct {
 }
 
 // sortList is the geometry List laid out last frame, which Over reads before
-// this frame's layout, and the motion of every item.
+// this frame's layout, and the motion of every item. tops, heights and height
+// are measured along the list's axis, whichever it is.
 type sortList struct {
 	ids           []string
 	tops, heights []int
 	height        int
 	gap, hang     int
 	within        bool
+	horizontal    bool
 	press         f32.Point
 	slots         map[string]*sortSlot
 }
@@ -58,18 +62,19 @@ type sortSlot struct {
 	shift tween
 }
 
-// List lays ids out as a vertical sortable list: item(gtx, i) draws ids[i]
-// and lays out, through s.Item with a nil lifted, the part a press picks it
-// up by (all of it, or a block's header alone). While one is in the air it
-// follows the pointer on the vertical axis only, drawn over everything, and
-// the items between its slot and the one it is over step aside by its
-// height, as dnd-kit's verticalListSortingStrategy; Over is that item,
+// List lays ids out as a sortable list: item(gtx, i) draws ids[i] and lays
+// out, through s.Item with a nil lifted, the part a press picks it up by (all
+// of it, or a block's header alone). While one is in the air it follows the
+// pointer on the list's axis only, drawn over everything, and the items
+// between its slot and the one it is over step aside by its length, as
+// dnd-kit's vertical and horizontal list strategies; Over is that item,
 // closestCenter. One List per Sortable.
 func (s *Sortable) List(gtx C, l SortList, ids []string, item func(gtx C, i int) D) D {
 	s.listPress(gtx)
-	calls, width := s.measure(gtx, l, ids, item)
+	calls, cross := s.measure(gtx, l, ids, item)
 	a := slices.Index(ids, s.active)
-	defer clip.Rect{Max: image.Pt(width, s.list.height)}.Push(gtx.Ops).Pop()
+	size := s.list.size(cross)
+	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 	if !s.Disabled {
 		event.Op(gtx.Ops, &s.list)
 	}
@@ -82,7 +87,7 @@ func (s *Sortable) List(gtx C, l SortList, ids []string, item func(gtx C, i int)
 		s.lifted(gtx, a, s.offset(gtx, a, a), calls[a])
 	}
 	s.prune(ids)
-	return D{Size: image.Pt(width, s.list.height)}
+	return D{Size: size}
 }
 
 // listPress keeps where the last press landed in the list, which the hang
@@ -99,15 +104,21 @@ func (s *Sortable) listPress(gtx C) {
 	}
 }
 
-// measure records every item at its slot and keeps the geometry.
+// measure records every item at its slot and keeps the geometry. It answers
+// the list's breadth across its axis.
 func (s *Sortable) measure(gtx C, l SortList, ids []string, item func(gtx C, i int) D) ([]op.CallOp, int) {
 	g := &s.list
 	g.ids, g.tops, g.heights = slices.Clone(ids), g.tops[:0], g.heights[:0]
-	g.gap, g.hang, g.within = gtx.Dp(l.Gap), gtx.Dp(sortHang), l.Within
+	g.gap, g.hang, g.within, g.horizontal = gtx.Dp(l.Gap), gtx.Dp(sortHang), l.Within, l.Horizontal
 	calls := make([]op.CallOp, len(ids))
 	igtx := gtx
-	igtx.Constraints.Min.Y = 0
-	y, width := 0, gtx.Constraints.Min.X
+	cross := gtx.Constraints.Min.X
+	if g.horizontal {
+		igtx.Constraints.Min.X, cross = 0, gtx.Constraints.Min.Y
+	} else {
+		igtx.Constraints.Min.Y = 0
+	}
+	y := 0
 	for i := range ids {
 		if i > 0 {
 			y += g.gap
@@ -115,12 +126,45 @@ func (s *Sortable) measure(gtx C, l SortList, ids []string, item func(gtx C, i i
 		m := op.Record(gtx.Ops)
 		d := item(igtx, i)
 		calls[i] = m.Stop()
-		g.tops, g.heights = append(g.tops, y), append(g.heights, d.Size.Y)
-		y += d.Size.Y
-		width = max(width, d.Size.X)
+		length := g.along(d.Size)
+		g.tops, g.heights = append(g.tops, y), append(g.heights, length)
+		y += length
+		cross = max(cross, d.Size.X+d.Size.Y-length) // the other component
 	}
 	g.height = y
-	return calls, width
+	return calls, cross
+}
+
+// along is p's component on the list's axis.
+func (g *sortList) along(p image.Point) int {
+	if g.horizontal {
+		return p.X
+	}
+	return p.Y
+}
+
+// alongF is along for a pointer position.
+func (g *sortList) alongF(p f32.Point) float32 {
+	if g.horizontal {
+		return p.X
+	}
+	return p.Y
+}
+
+// onAxis is the offset v along the list's axis.
+func (g *sortList) onAxis(v float32) f32.Point {
+	if g.horizontal {
+		return f32.Pt(v, 0)
+	}
+	return f32.Pt(0, v)
+}
+
+// size is the list's box: its length along the axis by cross across it.
+func (g *sortList) size(cross int) image.Point {
+	if g.horizontal {
+		return image.Pt(g.height, cross)
+	}
+	return image.Pt(cross, g.height)
 }
 
 // offset is item j's distance from its slot this frame, with a the index
@@ -153,7 +197,7 @@ func (s *Sortable) offset(gtx C, j, a int) float32 {
 }
 
 func (s *Sortable) place(gtx C, j int, off float32, call op.CallOp) {
-	defer op.Affine(f32.Affine2D{}.Offset(f32.Pt(0, float32(s.list.tops[j])+off))).Push(gtx.Ops).Pop()
+	defer op.Affine(f32.Affine2D{}.Offset(s.list.onAxis(float32(s.list.tops[j]) + off))).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 }
 
@@ -197,19 +241,20 @@ func (g *sortList) atRest(id string, p f32.Point) f32.Point {
 	if !ok || slot.index >= len(g.tops) {
 		return p
 	}
-	return p.Add(f32.Pt(0, slot.y-float32(g.tops[slot.index])))
+	return p.Add(g.onAxis(slot.y - float32(g.tops[slot.index])))
 }
 
-// dy is where the pointer has taken item a: its drag on the vertical axis
-// (restrictToVerticalAxis), held inside the list when within, and hung just
-// under the pointer while a SortCarry target is under it (hangBelowTarget).
+// dy is where the pointer has taken item a: its drag on the list's axis
+// (restrictToVerticalAxis, horizontalAxis), held inside the list when within,
+// and hung just under the pointer while a SortCarry target is under it
+// (hangBelowTarget).
 func (g *sortList) dy(s *Sortable, a int) int {
-	dy := int(s.delta.Y + 0.5)
+	dy := int(g.alongF(s.delta) + 0.5)
 	if g.within {
 		dy = min(max(dy, -g.tops[a]), g.height-g.tops[a]-g.heights[a])
 	}
 	if s.Carry != nil && s.Carry.Over() != "" {
-		dy = int(g.press.Y+s.delta.Y+0.5) + g.hang - g.tops[a]
+		dy = int(g.alongF(g.press)+g.alongF(s.delta)+0.5) + g.hang - g.tops[a]
 	}
 	return dy
 }

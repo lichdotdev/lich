@@ -11,6 +11,7 @@ import (
 // Palette is the color tokens of frontend/src/index.css, by the same names.
 type Palette struct {
 	Background, Foreground                 color.NRGBA
+	Canvas                                 color.NRGBA
 	Card, CardForeground                   color.NRGBA
 	Popover, PopoverForeground             color.NRGBA
 	Primary, PrimaryForeground             color.NRGBA
@@ -25,11 +26,12 @@ type Palette struct {
 	SidebarBorder                          color.NRGBA
 }
 
-// ponytail: dark only; the light block of index.css lands with the first
-// screen that switches themes.
+// Dark is index.css's .dark block (themes/dark.json).
 var Dark = Palette{
-	Background:              OKLCH(0.141, 0.005, 285.823, 1),
-	Foreground:              OKLCH(0.985, 0, 0, 1),
+	Background: OKLCH(0.141, 0.005, 285.823, 1),
+	Foreground: OKLCH(0.985, 0, 0, 1),
+	// index.css .dark: color-mix(in oklab, var(--background) 65%, black).
+	Canvas:                  MixOKLab(OKLCH(0.141, 0.005, 285.823, 1), color.NRGBA{A: 255}, 0.35),
 	Card:                    OKLCH(0.21, 0.006, 285.885, 1),
 	CardForeground:          OKLCH(0.985, 0, 0, 1),
 	Popover:                 OKLCH(0.21, 0.006, 285.885, 1),
@@ -53,6 +55,37 @@ var Dark = Palette{
 	SidebarAccent:           OKLCH(0.274, 0.006, 286.033, 1),
 	SidebarAccentForeground: OKLCH(0.985, 0, 0, 1),
 	SidebarBorder:           OKLCH(1, 0, 0, 0.10),
+}
+
+// Light is index.css's :root block, the light theme (themes/light.json).
+var Light = Palette{
+	Background: OKLCH(0.94, 0.003, 286.32, 1),
+	Foreground: OKLCH(0.21, 0.006, 285.885, 1),
+	// index.css :root: color-mix(in oklab, var(--background) 92%, black).
+	Canvas:                  MixOKLab(OKLCH(0.94, 0.003, 286.32, 1), color.NRGBA{A: 255}, 0.08),
+	Card:                    OKLCH(0.98, 0.002, 286.32, 1),
+	CardForeground:          OKLCH(0.21, 0.006, 285.885, 1),
+	Popover:                 OKLCH(0.98, 0.002, 286.32, 1),
+	PopoverForeground:       OKLCH(0.21, 0.006, 285.885, 1),
+	Primary:                 OKLCH(0.21, 0.006, 285.885, 1),
+	PrimaryForeground:       OKLCH(0.985, 0, 0, 1),
+	Secondary:               OKLCH(0.92, 0.003, 286.32, 1),
+	SecondaryForeground:     OKLCH(0.21, 0.006, 285.885, 1),
+	Muted:                   OKLCH(0.935, 0.003, 286.32, 1),
+	MutedForeground:         OKLCH(0.505, 0.016, 285.938, 1),
+	Accent:                  OKLCH(0.9, 0.004, 286.32, 1),
+	AccentForeground:        OKLCH(0.21, 0.006, 285.885, 1),
+	Destructive:             OKLCH(0.577, 0.245, 27.325, 1),
+	TonePass:                OKLCH(0.508, 0.118, 165.612, 1),
+	ToneWait:                OKLCH(0.555, 0.163, 48.998, 1),
+	Border:                  OKLCH(0.888, 0.004, 286.32, 1),
+	Input:                   OKLCH(0.888, 0.004, 286.32, 1),
+	Ring:                    OKLCH(0.6, 0.015, 286.067, 1),
+	Sidebar:                 OKLCH(0.98, 0.002, 286.32, 1),
+	SidebarForeground:       OKLCH(0.21, 0.006, 285.885, 1),
+	SidebarAccent:           OKLCH(0.9, 0.004, 286.32, 1),
+	SidebarAccentForeground: OKLCH(0.21, 0.006, 285.885, 1),
+	SidebarBorder:           OKLCH(0.888, 0.004, 286.32, 1),
 }
 
 // Theme is what every primitive draws with: the palette, the shaper, the
