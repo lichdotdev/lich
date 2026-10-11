@@ -74,11 +74,15 @@ type window struct {
 	sidebar *sidebar
 	footer  *footer
 	topbar  *topbar
+	gate    *spawnGate
+	resume  resumeDialog
 	th      *material.Theme
 	theme   *ui.Theme
 	root    ui.Root
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
+	// emptyNew is the empty stage's New session button.
+	emptyNew widget.Clickable
 	light    bool // the light palette is on screen
 }
 
@@ -113,6 +117,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.sidebar = newSidebar(&u.root)
 	u.topbar = newTopbar(&u.root)
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
+	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession}
 	if u.diff, err = newDiffView(client, w.Invalidate, *flagFont, unit.Sp(*flagSize), th); err != nil {
 		return err
 	}
@@ -210,6 +215,7 @@ func (u *window) layout(gtx C) error {
 		}()
 		closed := u.topbar.layoutConfirm(gtx, u.theme)
 		u.footer.editorLayout(gtx, u.theme, v.in)
+		u.resume.layout(u.ctx, gtx, u.theme, u.gate, u.model)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)
@@ -289,14 +295,15 @@ func (u *window) island(gtx C, v stageView) error {
 	if u.homeOpen.Clicked(gtx) {
 		go u.pickProject()
 	}
+	if u.emptyNew.Clicked(gtx) {
+		go u.newSession(launchRequest{kind: u.model.newSessionKind()}, "")
+	}
 	switch {
 	case v.home:
 		homeView(gtx, u.theme.On(fill), &u.homeOpen)
 		return nil
 	case !v.hasActive:
-		layout.Center.Layout(gtx, func(gtx C) D {
-			return label(gtx, u.th, "Open a session from the sidebar.", 14, colMuted, font.Normal)
-		})
+		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell")
 		return nil
 	}
 	return u.content(gtx, v.active, v.reviewing)
@@ -367,7 +374,14 @@ func (u *window) content(gtx C, active sessionView, reviewing bool) error {
 		return u.diff.layout(gtx, u.th)
 	}
 	u.diff.close()
-	t, err := u.terms.show(u.ctx, gtx, active)
+	resume, ok := "", u.terms.has(active.ID)
+	if !ok {
+		resume, ok = u.gate.release(u.ctx, active)
+	}
+	if !ok {
+		return nil
+	}
+	t, err := u.terms.show(u.ctx, gtx, active, resume)
 	if err != nil {
 		return err
 	}
@@ -445,11 +459,22 @@ func (u *window) closeSession(id string) {
 		return
 	}
 	u.terms.drop(id)
+	u.gate.forget(id)
 	u.model.invalidate()
 	go func() {
 		u.logErr("close session", u.client.CloseSession(u.ctx, projectID, id, active))
 		u.logErr("close terminal", u.client.CloseTerminal(u.ctx, id))
 	}()
+}
+
+// parkSession is keepSession: the row leaves the open list and stays for a
+// later reopen. There is no PTY to close; the gate held its spawn.
+func (u *window) parkSession(id string) {
+	projectID, active, ok := u.model.closeSession(id)
+	if !ok {
+		return
+	}
+	u.logErr("park session", u.client.CloseSession(u.ctx, projectID, id, active))
 }
 
 func (u *window) logErr(what string, err error) {

@@ -29,6 +29,9 @@ type Session struct {
 	Pinned bool   `json:"pinned"`
 	Unread bool   `json:"unread"`
 	Color  string `json:"color"`
+	// ProviderSessionID is the provider conversation the session last ran,
+	// "" for none: what a restored card offers to resume.
+	ProviderSessionID string `json:"providerSessionId"`
 	// MCPServers are the servers the session's spawn found registered with
 	// its provider, which divide an MCP tool's name into server and tool.
 	MCPServers []string `json:"mcpServers"`
@@ -79,9 +82,9 @@ func (c *Client) Replay(ctx context.Context, id string) ([]byte, error) {
 }
 
 // Start spawns the session's process at cols x rows; a no-op when it already
-// runs.
-func (c *Client) Start(ctx context.Context, id, projectID, cwd, kind string, cols, rows int) error {
-	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, "", "", false, false, cols, rows)
+// runs. resume is a provider conversation id to reopen, "" to start fresh.
+func (c *Client) Start(ctx context.Context, id, projectID, cwd, kind, resume string, cols, rows int) error {
+	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, resume, "", false, false, cols, rows)
 }
 
 // Resize sets the session's PTY size.

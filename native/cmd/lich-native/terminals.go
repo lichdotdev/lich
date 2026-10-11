@@ -84,11 +84,18 @@ func (ts *terminals) send(id string, b []byte) {
 	}
 }
 
+// has reports whether session id's terminal was opened in this window.
+func (ts *terminals) has(id string) bool {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.byID[id] != nil
+}
+
 // show returns s's terminal, attaching it on first use the way the web page
-// does: the replayed tail first, then Start (a no-op for a running session),
-// then the size. ponytail: output that lands between Replay and registering
+// does: the replayed tail first, then Start (a no-op for a running session)
+// resuming the conversation resume names, "" for none, then the size. ponytail: output that lands between Replay and registering
 // the view is dropped; the page subscribes before replaying instead.
-func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView) (*termView, error) {
+func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView, resume string) (*termView, error) {
 	ts.mu.Lock()
 	t, previous := ts.byID[s.ID], ts.shown
 	ts.shown = s.ID
@@ -128,7 +135,7 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Lock()
 	ts.byID[s.ID] = t
 	ts.mu.Unlock()
-	if err := ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, cols, rows); err != nil {
+	if err := ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, resume, cols, rows); err != nil {
 		return nil, err
 	}
 	ts.mu.Lock()

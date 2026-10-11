@@ -34,3 +34,23 @@ func (c *Client) RenameSession(ctx context.Context, sessionID, label string) err
 func (c *Client) SetSessionColor(ctx context.Context, sessionID, color string) error {
 	return c.Call(ctx, "store.SetSessionColor", nil, sessionID, color)
 }
+
+// Live reports whether a session has a process running right now.
+func (c *Client) Live(ctx context.Context, id string) (bool, error) {
+	var live bool
+	return live, c.Call(ctx, "terminal.Live", &live, id)
+}
+
+// WorkdirMissing reports whether a session cannot start in cwd because the
+// directory is provably gone; false for every uncertainty.
+func (c *Client) WorkdirMissing(ctx context.Context, cwd string) (bool, error) {
+	var missing bool
+	return missing, c.Call(ctx, "terminal.WorkdirMissing", &missing, cwd)
+}
+
+// ResumeAvailable reports whether the provider conversation providerSessionID
+// can still be reopened from cwd.
+func (c *Client) ResumeAvailable(ctx context.Context, kind, providerSessionID, cwd string) (bool, error) {
+	var available bool
+	return available, c.Call(ctx, "terminal.ResumeAvailable", &available, kind, providerSessionID, cwd)
+}

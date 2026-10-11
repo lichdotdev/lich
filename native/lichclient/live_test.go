@@ -45,7 +45,7 @@ func TestLiveShellSession(t *testing.T) {
 	if err := c.AddSession(ctx, "live-test", "live-shell", "Live shell", "shell", projectPath, 1); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.Start(ctx, "live-shell", "live-test", projectPath, "shell", 80, 24); err != nil {
+	if err := c.Start(ctx, "live-shell", "live-test", projectPath, "shell", "", 80, 24); err != nil {
 		t.Fatal(err)
 	}
 	if err := stream.Send(ctx, "live-shell", []byte("echo native-$((40+2))\r")); err != nil {
