@@ -76,6 +76,7 @@ type window struct {
 	terms   *terminals
 	diff    *diffView
 	sidebar *sidebar
+	footer  *footer
 	th      *material.Theme
 	theme   *ui.Theme
 	root    ui.Root
@@ -113,6 +114,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
 	}
 	u.sidebar = newSidebar(&u.root)
+	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
 	if u.diff, err = newDiffView(client, w.Invalidate, *flagFont, unit.Sp(*flagSize), th); err != nil {
 		return err
 	}
@@ -176,6 +178,9 @@ func (u *window) connect() error {
 			return err
 		}
 	}
+	if err := u.footer.start(); err != nil {
+		return err
+	}
 	go u.model.follow(u.ctx, events)
 	go u.model.pollGit(u.ctx)
 	return nil
@@ -190,7 +195,9 @@ func (u *window) layout(gtx C) error {
 	var act sidebarAction
 	var contentErr error
 	active, hasActive := u.model.activeSession()
+	in := u.footer.input(u.model, gtx.Now)
 	u.root.Layout(gtx, func(gtx C) D {
+		u.footer.editorLayout(gtx, u.theme, in)
 		return layout.Flex{}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.UniformInset(unit.Dp(6)).Layout(gtx, func(gtx C) D {
@@ -200,7 +207,7 @@ func (u *window) layout(gtx C) error {
 				})
 			}),
 			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: 6, Bottom: 6, Right: 6}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Top: 6, Right: 6}.Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 						layout.Rigid(func(gtx C) D { return u.tabBar(gtx, active, hasActive) }),
 						layout.Flexed(1, func(gtx C) D {
@@ -213,6 +220,7 @@ func (u *window) layout(gtx C) error {
 							contentErr = u.content(gtx, active)
 							return D{Size: gtx.Constraints.Max}
 						}),
+						layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, in) }),
 					)
 				})
 			}),
@@ -245,7 +253,7 @@ func (u *window) content(gtx C, active sessionView) error {
 	if err != nil {
 		return err
 	}
-	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys())
+	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys() && !u.footer.holdsKeys())
 }
 
 func (u *window) tabBar(gtx C, active sessionView, hasActive bool) D {

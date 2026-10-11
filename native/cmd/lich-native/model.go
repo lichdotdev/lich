@@ -35,6 +35,7 @@ type model struct {
 	mu            sync.Mutex
 	projects      []lichclient.Project // open projects, in the user's order
 	status        *statusStore
+	usage         *footerUsage
 	cwd           map[string]sessionCwd             // session id -> last session-cwd report
 	agent         map[string]string                 // session id -> provider CLI live in its PTY
 	sandbox       map[string]sandboxEvent           // session id -> how its spawn was confined
@@ -58,7 +59,7 @@ type sessionCwd struct {
 }
 
 func newModel(client *lichclient.Client, invalidate func()) *model {
-	return &model{client: client, invalidate: invalidate, status: newStatusStore(), cwd: map[string]sessionCwd{},
+	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
 		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}}
 }
@@ -144,7 +145,14 @@ func (m *model) setActiveProject(id string) bool {
 // socket back from the window that just took it.
 func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 	for ev := range events {
+		// The usage store also clears on session-agent and session-status,
+		// which the cases below still take.
+		if _, err := m.usage.apply(ev); err != nil {
+			log.Printf("%s: %v", ev.Name, err)
+		}
 		switch ev.Name {
+		case "session-usage":
+			// Taken by the usage store above; only the redraw is left.
 		case statusEventName:
 			if err := m.applyStatus(ctx, ev); err != nil {
 				log.Printf("%s: %v", ev.Name, err)
@@ -331,6 +339,15 @@ func (m *model) groups() []group {
 		out = append(out, *byPath[path])
 	}
 	return out
+}
+
+// gitStatus is path's last branch and changes, false while git has not
+// answered for it or it is not a checkout.
+func (m *model) gitStatus(path string) (lichclient.DiffStats, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	g, ok := m.git[path]
+	return g, ok
 }
 
 func (m *model) activeSession() (sessionView, bool) {
