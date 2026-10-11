@@ -59,9 +59,15 @@ func (c *client) native(args []string) error {
 // nativeWindow is the native window to launch: the pinned one, else the one
 // beside this lich binary. A missing one is reported before anything starts.
 func (c *client) nativeWindow() (string, error) {
-	if pinned := c.env(nativeEnv); pinned != "" {
+	return c.companion(nativeEnv, nativeBinary, "build it from native/ (native/slice.sh)")
+}
+
+// companion is the executable pinned by envName, else binary beside this lich
+// binary; howToBuild finishes the sentence a missing one is reported with.
+func (c *client) companion(envName, binary, howToBuild string) (string, error) {
+	if pinned := c.env(envName); pinned != "" {
 		if _, err := os.Stat(pinned); err != nil {
-			return "", fmt.Errorf("%s=%s: %w", nativeEnv, pinned, err)
+			return "", fmt.Errorf("%s=%s: %w", envName, pinned, err)
 		}
 		return pinned, nil
 	}
@@ -69,10 +75,9 @@ func (c *client) nativeWindow() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("find the lich binary: %w", err)
 	}
-	beside := filepath.Join(filepath.Dir(exe), nativeBinary)
+	beside := filepath.Join(filepath.Dir(exe), binary)
 	if _, err := os.Stat(beside); err != nil {
-		return "", fmt.Errorf("no %s beside %s: build it from native/ (native/slice.sh), "+
-			"or point %s at one", nativeBinary, exe, nativeEnv)
+		return "", fmt.Errorf("no %s beside %s: %s, or point %s at one", binary, exe, howToBuild, envName)
 	}
 	return beside, nil
 }

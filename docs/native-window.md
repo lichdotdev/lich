@@ -46,6 +46,8 @@ from `main` either drowns in merges or freezes the web app for months.
   `lich-native` next to the `lich` binary with the backend's port and token in its environment. Closing the
   native window ends nothing: the backend and its sessions go on, and the web window can be opened on them
   again.
+- **`lich gallery`** opens `lich-gallery` (built from `native/cmd/ui-gallery`), the UI kit's gallery, which needs no
+  backend; it is looked up beside `lich` the same way, or at `LICH_GALLERY`.
 - **`frontend/` and `shell/` stay untouched** until the cutover. The native window does not reuse the
   frontend's code; it is a reference for what to port, nothing more.
 

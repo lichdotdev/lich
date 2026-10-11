@@ -109,6 +109,11 @@ kill "$(cat "$T/native.pid")"                   # close the window: your PID onl
   window stays open after it, hence the `timeout`. It takes the backend's sockets for those seconds, so not
   while the user has a native window on the same backend. Look at the PNG; the user's review in a real window
   is the one to trust.
+- The UI kit gallery (`native/cmd/ui-gallery`, every `native/ui` primitive, no backend and no libghostty-vt)
+  is the place to review a primitive. Build it in the jail, `cap go build -o "$T/lich-gallery" ./cmd/ui-gallery`
+  from `native/`, then open it with `LICH_GALLERY="$T/lich-gallery" "$T/lich" gallery` (a lich built from this
+  checkout; the installed one may predate the command) or run it directly under `setsid`, writing its PID down.
+  `-shot out.png` (with `-shot-after`, `-shot-height` for the whole scrolled page) writes a frame and exits.
 
 ## 5. Traps
 

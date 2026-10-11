@@ -194,6 +194,14 @@ var commands = []command{
 			"binary, or wherever LICH_NATIVE points.",
 	},
 	{
+		name: "gallery",
+		args: "",
+		about: "Open the native UI kit gallery (experimental): every primitive of the\n" +
+			"native window in each variant and state, with no lich running. The\n" +
+			"gallery is looked up beside the lich binary as lich-gallery, or\n" +
+			"wherever LICH_GALLERY points.",
+	},
+	{
 		name: "quit",
 		args: "",
 		about: "End the running lich: its window closes and every session in it ends.\n" +

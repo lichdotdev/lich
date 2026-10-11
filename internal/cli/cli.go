@@ -177,6 +177,8 @@ func dispatch(args []string, c *client) int {
 		return c.run(c.serveMCP, args[1:])
 	case "native":
 		return c.run(c.native, args[1:])
+	case "gallery":
+		return c.run(c.gallery, args[1:])
 	case "quit":
 		return c.run(c.quit, args[1:])
 	case "rage":

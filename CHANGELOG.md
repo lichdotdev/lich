@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   none runs) after closing the web window, so your sessions stay where they
   are. It is not in the release packages yet: build `lich-native` from
   `native/` and put it beside `lich`, or point `LICH_NATIVE` at it.
+- **`lich gallery` opens the native UI kit gallery.** It shows every primitive
+  of the experimental native window in each variant and state, fully
+  interactive, and needs no running lich. It is not in the release packages
+  yet: build `lich-gallery` from `native/` and put it beside `lich`, or point
+  `LICH_GALLERY` at it.
 - **`lich --no-window` starts lich without opening its window.** The sessions,
   the tray and the CLI are all there; the tray's Show lich, or launching lich
   again, opens the window when you want it.

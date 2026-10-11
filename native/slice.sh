@@ -8,6 +8,10 @@
 #
 # The backend outlives the window, so sessions keep running between runs.
 #
+# The UI kit gallery needs no backend and is not run from here: `lich gallery`
+# opens a lich-gallery built beside lich (go build -o <lich's dir>/lich-gallery
+# ./cmd/ui-gallery, no libghostty-vt), or the one LICH_GALLERY points at.
+#
 # Env: SLICE_HOME     where the isolated backend keeps its state
 #                     (default ~/.cache/lich-native-slice)
 #      LICH_BIN       the lich binary the backend runs (default: lich on PATH);
