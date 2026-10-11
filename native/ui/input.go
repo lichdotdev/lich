@@ -31,6 +31,11 @@ var (
 	inputLeadingIconSz = Space(4)
 	inputBorderWidth   = unit.Dp(1)
 	inputRingWidth     = unit.Dp(3) // ring-3
+	// The clear button sits like an InputGroup inline-end addon holding an
+	// icon-xs button: pr-2 -mr-1 from the edge, the control's pr-1.5 beside it.
+	inputClearInset    = inputGroupAddonPad - inputGroupButtonPull
+	inputClearPadRight = inputClearInset + buttonSizes[SizeIconXS].height + inputGroupControlNear
+	inputClearIcon     = icons.Lucide("x")
 )
 
 // The dark-mode alphas of input.tsx: dark:bg-input/30, focus-visible:ring-ring/50,
@@ -99,9 +104,13 @@ type InputStyle struct {
 	// Borderless is border-0 focus-visible:ring-0, for a field that sits in a
 	// panel that is already a box.
 	Borderless bool
-	Disabled   bool
-	Invalid    bool
-	theme      *Theme
+	// Clear, when set, is a ghost X at the right edge while the field has
+	// text: pressing it empties the field, as an undo step, and leaves the
+	// focus in it.
+	Clear    *widget.Clickable
+	Disabled bool
+	Invalid  bool
+	theme    *Theme
 }
 
 // Input is a default input over editor.
@@ -125,13 +134,45 @@ func (s InputStyle) Layout(gtx C) D {
 	if s.Leading != nil {
 		left = inputLeadingPadX
 	}
+	if s.Clear != nil && s.Clear.Clicked(gtx) {
+		clearEditor(gtx, s.Editor)
+	}
+	showClear := s.Clear != nil && s.Editor.Len() > 0
 	field := s.field(left)
+	if showClear {
+		field.padRight = inputClearPadRight
+	}
 	st := inputState{invalid: s.Invalid, disabled: s.Disabled}
 	return inputFrame(gtx, s.theme, s.Editor, st, s.Borderless, func(gtx C) D {
 		d := field.layout(gtx, h)
 		s.layoutLeading(gtx, h)
+		if showClear {
+			s.layoutClear(gtx, h)
+		}
 		return d
 	})
+}
+
+// clearEditor empties editor the way select-all and Backspace would. The
+// field's owner reads the text before the field is drawn, so the next frame
+// is the one that sees it empty.
+func clearEditor(gtx C, editor *widget.Editor) {
+	editor.SetCaret(editor.Len(), 0)
+	editor.Delete(1)
+	gtx.Execute(key.FocusCmd{Tag: editor})
+	gtx.Execute(op.InvalidateCmd{})
+}
+
+func (s InputStyle) layoutClear(gtx C, h int) {
+	inner := s.theme.On(inputPaintFor(s.theme, inputState{disabled: s.Disabled}, s.Borderless).fill)
+	b := inner.Button(s.Clear, "")
+	b.Icon, b.Variant, b.Size, b.Disabled = inputClearIcon, VariantGhost, SizeIconXS, s.Disabled
+	gtx.Constraints.Min = image.Point{}
+	macro := op.Record(gtx.Ops)
+	d := b.Layout(gtx)
+	call := macro.Stop()
+	defer op.Offset(image.Pt(gtx.Constraints.Max.X-gtx.Dp(inputClearInset)-d.Size.X, (h-d.Size.Y)/2)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
 }
 
 func (s InputStyle) field(left unit.Dp) inputText {

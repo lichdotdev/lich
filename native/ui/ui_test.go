@@ -266,3 +266,20 @@ func TestThemeOverCompositesOntoItsSurface(t *testing.T) {
 	}()
 	(&Theme{Palette: Dark}).Over(Dark.Border)
 }
+
+// A Gap inside a baseline row that inherits a cross-axis minimum, as the
+// tabs trigger hands its trailing diff stat, must not pull the text down.
+func TestGapDoesNotMoveTheBaseline(t *testing.T) {
+	th := testTheme()
+	text := th.Text(TextXS, "+9").Layout
+	tall := func(w layout.Widget) layout.Widget {
+		return func(gtx C) D { gtx.Constraints.Min.Y = 16; return w(gtx) }
+	}
+	want := layoutAt(tall(text), 0, 600).Baseline
+	row := func(gtx C) D {
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, layout.Rigid(text), Gap(1.5), layout.Rigid(text))
+	}
+	if got := layoutAt(tall(row), 0, 600); got.Baseline != want || got.Size.Y != 16 {
+		t.Errorf("got %v, want a 16px row with the text's own baseline %d", got, want)
+	}
+}

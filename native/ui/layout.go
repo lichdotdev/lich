@@ -28,7 +28,17 @@ func Fill(gtx C, c color.NRGBA, radius unit.Dp) D {
 }
 
 // Gap is the flex gap-* between two children of a row; VGap of a column.
-func Gap(n float32) layout.FlexChild  { return layout.Rigid(layout.Spacer{Width: Space(n)}.Layout) }
+// A Gap holds no text: it reports its baseline at its top, or a row aligned
+// on baselines that hands it a cross minimum would sink every label to the
+// spacer's bottom edge.
+func Gap(n float32) layout.FlexChild {
+	return layout.Rigid(func(gtx C) D {
+		d := layout.Spacer{Width: Space(n)}.Layout(gtx)
+		d.Baseline = d.Size.Y
+		return d
+	})
+}
+
 func VGap(n float32) layout.FlexChild { return layout.Rigid(layout.Spacer{Height: Space(n)}.Layout) }
 
 // Separator is shadcn's horizontal Separator: a 1px border-colored line the

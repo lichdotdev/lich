@@ -6,7 +6,7 @@ require (
 	gioui.org v0.10.3
 	github.com/coder/websocket v1.8.14
 	github.com/creack/pty v1.1.24
-	github.com/lichdotdev/godemirror v0.0.0-20261011001214-4d7a19f92085
+	github.com/lichdotdev/godemirror v0.1.1-0.20261011214948-531e77c2c6ed
 	golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607
 	golang.org/x/image v0.47.0
 )
@@ -23,6 +23,5 @@ require (
 )
 
 // app.DropEvent (external file drop) lives in lichdotdev/gio, branch
-// drop-event, until the patch lands upstream in gioui.org; drop this replace
-// then.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261011200543-f9c592045ca1
+// drop-event; gioui.org has no drop from other programs.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261011223626-514ef35c67cb

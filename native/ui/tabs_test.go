@@ -232,3 +232,17 @@ func TestTabsFocusRingAppearsAroundFocusedTrigger(t *testing.T) {
 		t.Errorf("pixel left of the first trigger stayed %v, want the focus ring", after)
 	}
 }
+
+func TestTabsGhostTriggersTakeTheirOwnWidth(t *testing.T) {
+	th := testTheme()
+	width := func(names ...string) int {
+		s := th.Tabs(new(TabsState), tabsNames(names...)...)
+		s.Variant = TabsVariantGhost
+		return layoutAt(func(gtx C) D { return s.Layout(gtx) }, 0, 2000).Size.X
+	}
+	short, long := width("a"), width("a much longer trigger")
+	// Each width includes the list's p-0.5 (2px) on both sides; the pair adds gap-1.
+	if got, want := width("a", "a much longer trigger"), short+long-4+4; got != want {
+		t.Errorf("ghost triggers: got list width %d, want each trigger at its own width (%d)", got, want)
+	}
+}

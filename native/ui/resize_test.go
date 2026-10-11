@@ -19,14 +19,22 @@ type resizeRig struct {
 	handle   ResizeHandle
 	width    unit.Dp
 	released bool
+	// placedFirst places the panel from the width it had before Update,
+	// as a row that sizes its other children first does.
+	placedFirst bool
+	widths      []unit.Dp
 }
 
 func (r *resizeRig) frame() {
 	r.motionRig.frame(func(gtx C) D {
 		gtx.Constraints = layout.Constraints{Max: image.Pt(400, 300)}
+		w := gtx.Dp(r.width)
 		next, released := r.handle.Update(gtx, r.width, 100, 300)
 		r.width, r.released = next, r.released || released
-		w := gtx.Dp(r.width)
+		r.widths = append(r.widths, r.width)
+		if !r.placedFirst {
+			w = gtx.Dp(r.width)
+		}
 		x := 0
 		if r.handle.Edge == PanelEdgeLeft {
 			x = 400 - w
@@ -89,6 +97,22 @@ func TestResizeHandleOnTheLeftEdgeGrowsLeftward(t *testing.T) {
 	r.drag(image.Pt(202, 100), 182, 152)
 	if r.width != 250 {
 		t.Errorf("dragged 50px left: width %v, want 250", r.width)
+	}
+}
+
+// A left-edge panel placed before its width is read lays out one frame
+// behind the drag; the width still tracks the pointer, step by step.
+func TestResizeHandleOnTheLeftEdgeFollowsAPanelPlacedFirst(t *testing.T) {
+	r := &resizeRig{width: 200, placedFirst: true}
+	r.handle.Edge = PanelEdgeLeft
+	r.frame()
+	xs := []int{198, 194, 190, 186, 182, 178, 174, 170}
+	r.drag(image.Pt(202, 100), xs...)
+	got := r.widths[len(r.widths)-len(xs):]
+	for i, x := range xs {
+		if want := unit.Dp(200 + 202 - x); got[i] != want {
+			t.Fatalf("widths %v while dragging left through %v: step %d is %v, want %v", got, xs, i, got[i], want)
+		}
 	}
 }
 

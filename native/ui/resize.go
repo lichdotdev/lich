@@ -37,7 +37,11 @@ type ResizeHandle struct {
 	hovered, dragging bool
 	pressX            float32
 	startWidth        unit.Dp
-	fill              tween
+	// laidOut is the px width of the box the last Layout drew, the frame
+	// Gio transformed this frame's pointer positions in; pressLaidOut is it
+	// at the press.
+	laidOut, pressLaidOut int
+	fill                  tween
 }
 
 // Update reads the frame's drag and returns the width it asks for, clamped
@@ -59,12 +63,12 @@ func (r *ResizeHandle) Update(gtx C, width, minWidth, maxWidth unit.Dp) (next un
 		case pointer.Enter, pointer.Leave:
 			r.hovered = e.Kind == pointer.Enter
 		case pointer.Press:
-			r.dragging, r.pressX, r.startWidth = true, e.Position.X, width
+			r.dragging, r.pressX, r.startWidth, r.pressLaidOut = true, e.Position.X, width, r.laidOut
 		case pointer.Drag, pointer.Release:
 			if !r.dragging {
 				continue
 			}
-			next = r.drag(gtx, e.Position.X, width, minWidth, maxWidth)
+			next = r.drag(gtx, e.Position.X, minWidth, maxWidth)
 			released = e.Kind == pointer.Release
 			r.dragging = !released
 		case pointer.Cancel:
@@ -75,13 +79,16 @@ func (r *ResizeHandle) Update(gtx C, width, minWidth, maxWidth unit.Dp) (next un
 
 // drag is dragWidth of panel-width.ts. Positions are in the panel's own
 // box, whose left edge stays put on a right-edge panel and travels with the
-// width on a left-edge one, so that travel is taken back out.
-func (r *ResizeHandle) drag(gtx C, x float32, width, minWidth, maxWidth unit.Dp) unit.Dp {
-	travel := unit.Dp((x - r.pressX) / gtx.Metric.PxPerDp)
-	next := r.startWidth + travel
+// width on a left-edge one, so that travel is taken back out. It is the
+// box's drawn width that says how far, not the width the caller holds: a
+// caller may place the panel before Update, and px rounding moves the edge
+// by whole pixels.
+func (r *ResizeHandle) drag(gtx C, x float32, minWidth, maxWidth unit.Dp) unit.Dp {
+	travel := x - r.pressX
 	if r.Edge == PanelEdgeLeft {
-		next = r.startWidth - (travel - (width - r.startWidth))
+		travel = -(travel - float32(r.laidOut-r.pressLaidOut))
 	}
+	next := r.startWidth + unit.Dp(travel/gtx.Metric.PxPerDp)
 	return min(max(next, minWidth), maxWidth)
 }
 
@@ -93,6 +100,7 @@ func (r *ResizeHandle) Dragging() bool { return r.dragging }
 // after the panel's content to win the tie on z-10.
 func (r *ResizeHandle) Layout(gtx C, th *Theme) D {
 	box := gtx.Constraints.Max
+	r.laidOut = box.X
 	w, inset := gtx.Dp(resizeWidth), gtx.Dp(resizeInset)
 	x := 0
 	if r.Edge == PanelEdgeRight {
