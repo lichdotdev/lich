@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/omartelo/lich/native/ui"
@@ -17,14 +18,24 @@ var (
 	icInEditor   = icons.Lucide("folder-code")
 	icMenuPR     = icons.Lucide("git-pull-request-arrow")
 	icMenuClose  = icons.Lucide("x")
+	icTakeOut    = icons.Lucide("folder-minus")
+	icNewFolder  = icons.Lucide("plus")
+)
+
+// ponytail: English until the native window has i18n.
+const (
+	moveToFolderLabel = "Move to folder"
+	takeOutOfLabel    = "Take out of %s"
+	newFolderLabel    = "New folder…"
 )
 
 // cardMenu is the session card's right-click menu, cut to what this window
-// keeps; a pick lands in act, but Rename only turns the label into a field. A pinned card offers no close: closing is what
-// the pin withholds.
+// keeps; a pick lands in act, but Rename only turns the label into a field and
+// New folder… asks for a name first. A pinned card offers no close: closing is
+// what the pin withholds.
 //
 // ponytail: English labels until the native window has i18n.
-func cardMenu(sv *sessionView, act *sidebarAction, startRename func()) []ui.MenuEntry {
+func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename, newFolder func()) []ui.MenuEntry {
 	pin := ui.MenuEntry{Label: "Pin", Icon: icMenuPin, OnClick: func() { act.pin, act.pinTo = sv.ID, true }}
 	if sv.Pinned {
 		pin = ui.MenuEntry{Label: "Unpin", Icon: icMenuUnpin, OnClick: func() { act.pin, act.pinTo = sv.ID, false }}
@@ -32,7 +43,10 @@ func cardMenu(sv *sessionView, act *sidebarAction, startRename func()) []ui.Menu
 	entries := []ui.MenuEntry{
 		{Label: "Rename", Icon: icMenuRename, OnClick: startRename},
 		pin,
-		{Kind: ui.MenuSubTrigger, Label: "Color", Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv, act)},
+		{Kind: ui.MenuSubTrigger, Label: "Color", Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
+			act.color, act.colorTo = sv.ID, name
+		})},
+		{Kind: ui.MenuSubTrigger, Label: moveToFolderLabel, Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
 		{Kind: ui.MenuSubTrigger, Label: "Open in", Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
 	}
@@ -45,19 +59,35 @@ func cardMenu(sv *sessionView, act *sidebarAction, startRename func()) []ui.Menu
 	return entries
 }
 
-// colorSwatches is CardColorMenu's grid: the theme first, then the palette.
-func colorSwatches(sv *sessionView, act *sidebarAction) []ui.MenuEntry {
-	pick := func(name string) func() {
-		return func() { act.color, act.colorTo = sv.ID, name }
-	}
-	swatches := []ui.MenuEntry{{Kind: ui.MenuSwatch, Label: "Theme", Checked: sv.Color == "", OnClick: pick("")}}
+// colorSwatches is CardColorMenu's grid: the theme first, then the palette,
+// current checked.
+func colorSwatches(current string, pick func(name string)) []ui.MenuEntry {
+	picker := func(name string) func() { return func() { pick(name) } }
+	swatches := []ui.MenuEntry{{Kind: ui.MenuSwatch, Label: "Theme", Checked: current == "", OnClick: picker("")}}
 	for _, name := range cardColorNames {
 		swatches = append(swatches, ui.MenuEntry{
 			Kind: ui.MenuSwatch, Label: strings.ToUpper(name[:1]) + name[1:], Swatch: cardColors[name],
-			Checked: sv.Color == name, OnClick: pick(name),
+			Checked: current == name, OnClick: picker(name),
 		})
 	}
 	return swatches
+}
+
+// cardFolderMenu is the card's Move to folder: every other folder, the way
+// out of its own, then a new one.
+func cardFolderMenu(sv *sessionView, folders []string, act *sidebarAction, newFolder func()) []ui.MenuEntry {
+	var sub []ui.MenuEntry
+	for _, name := range folders {
+		sub = append(sub, ui.MenuEntry{Label: name, Icon: icFolder, OnClick: func() { act.file = fileRequest{ids: []string{sv.ID}, folder: name} }})
+	}
+	if sv.Folder != "" {
+		sub = append(sub, ui.MenuEntry{Label: fmt.Sprintf(takeOutOfLabel, sv.Folder), Icon: icTakeOut,
+			OnClick: func() { act.file = fileRequest{ids: []string{sv.ID}} }})
+	}
+	if len(sub) > 0 {
+		sub = append(sub, ui.MenuEntry{Kind: ui.MenuSeparator})
+	}
+	return append(sub, ui.MenuEntry{Label: newFolderLabel, Icon: icNewFolder, OnClick: newFolder})
 }
 
 // openInMenu opens the directory the card shows. A shell session has no use

@@ -55,11 +55,11 @@ func newTestModel(client *lichclient.Client) *model {
 
 func cardOf(t *testing.T, m *model) sessionView {
 	t.Helper()
-	gs := m.groups()
-	if len(gs) != 1 || len(gs[0].sessions) != 1 {
-		t.Fatalf("got groups %+v, want one session", gs)
+	bs := m.sidebarBlocks(sidebarFilter{}).blocks
+	if len(bs) != 1 || len(bs[0].sessions) != 1 {
+		t.Fatalf("got blocks %+v, want one session", bs)
 	}
-	return gs[0].sessions[0]
+	return bs[0].sessions[0]
 }
 
 func send(m *model, name string, data any) {
@@ -178,8 +178,8 @@ func TestGroupNamesAWorktreeWithASlashByItsWholeName(t *testing.T) {
 		{ID: "a"}, {ID: "b", Path: root + "/feat/x"}, {ID: "c", Path: root + "/fix/x"},
 	}}}
 	var names []string
-	for _, g := range m.groups() {
-		names = append(names, g.name)
+	for _, b := range m.sidebarBlocks(sidebarFilter{}).blocks {
+		names = append(names, b.title)
 	}
 	if want := []string{"repo", "feat/x", "fix/x"}; !slices.Equal(names, want) {
 		t.Errorf("got groups %q, want %q", names, want)
@@ -289,8 +289,8 @@ func TestSetActiveProjectSwitchesSidebarAndRestoresItsSession(t *testing.T) {
 	if p, s := onScreen(m); p != "b" || s != "b1" {
 		t.Errorf("on %s/%s, want b/b1", p, s)
 	}
-	if gs := m.groups(); len(gs) != 1 || gs[0].path != elsewhere {
-		t.Errorf("sidebar shows %+v, want b's checkout", gs)
+	if bs := m.sidebarBlocks(sidebarFilter{}).blocks; len(bs) != 1 || bs[0].sessions[0].path != elsewhere {
+		t.Errorf("sidebar shows %+v, want b's checkout", bs)
 	}
 	if paths := m.shownPaths(); !slices.Equal(paths, []string{elsewhere}) {
 		t.Errorf("polls git at %q, want only b's %q", paths, elsewhere)
@@ -310,5 +310,22 @@ func TestCloseSessionFindsItInAnyProject(t *testing.T) {
 	m.activeProject, m.active = "a", "a2"
 	if p, active, ok := m.closeSession("b1"); !ok || p != "b" || active != "a2" {
 		t.Errorf("closing a background project's session: got %q %q %v, want b a2 true", p, active, ok)
+	}
+}
+
+// Older native builds stored the project's own directory as a session's
+// path; such a session belongs to the root block, beside the ones stored
+// with no path.
+func TestSessionStoredAtTheProjectDirSharesTheRootBlock(t *testing.T) {
+	ps := []lichclient.Project{{ID: "p", Path: checkout, Sessions: []lichclient.Session{
+		{ID: "old", Path: checkout}, {ID: "new"},
+	}}}
+	m := newModel(fakeState(t, &ps, ""), func() {})
+	if err := m.reload(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	bs := m.sidebarBlocks(sidebarFilter{}).blocks
+	if len(bs) != 1 || len(bs[0].sessions) != 2 {
+		t.Fatalf("got %d blocks %+v, want one root block holding both sessions", len(bs), bs)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"log"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -48,6 +47,9 @@ type model struct {
 	lost          bool                              // /events ended under an open window
 	focused       bool                              // the window has the user's focus
 	restored      bool                              // unread marks taken from the first LoadState
+	folds         map[string]bool                   // foldKey -> block folded, once read or written
+	providers     []launchProvider                  // detected providers with their enabled flags
+	globalDefault string                            // the global provider.default setting
 }
 
 // sessionCwd is a session-cwd payload: where the session's shell is, or the
@@ -61,7 +63,7 @@ type sessionCwd struct {
 func newModel(client *lichclient.Client, invalidate func()) *model {
 	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
-		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}}
+		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{}}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -78,6 +80,7 @@ func (m *model) reload(ctx context.Context) error {
 			return err
 		}
 	}
+	normalizeCheckouts(ps)
 	m.mu.Lock()
 	m.projects = ps
 	if !m.restored {
@@ -175,6 +178,8 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 		case "session-opened", "session-closed", "project-opened", "sessions-filed", "sessions-colored":
 			if err := m.reload(ctx); err != nil {
 				log.Printf("reload after %s: %v", ev.Name, err)
+			} else if err := m.loadFolds(ctx); err != nil {
+				log.Printf("load folds after %s: %v", ev.Name, err)
 			}
 		default:
 			live, err := m.applyLive(ev)
@@ -271,13 +276,6 @@ func sessionPath(p lichclient.Project, s lichclient.Session) string {
 	return p.Path
 }
 
-// group is one sidebar block: the sessions of one checkout.
-type group struct {
-	name     string
-	path     string
-	sessions []sessionView
-}
-
 // sessionView is a session with what the card shows about it. path is the
 // checkout it was spawned in, which groups it; shown is where its shell is now,
 // and git describes shown.
@@ -301,44 +299,18 @@ type sessionView struct {
 	pr        *lichclient.PullRequest // open PR of the shown path's branch, nil for none
 }
 
-// groups returns the sidebar blocks of the active project: the project's own
-// checkout first, then each worktree by name.
-func (m *model) groups() []group {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	shown := m.shownProject()
-	if shown == nil {
-		return nil
+// viewOf is what s's card shows at now. Callers hold m.mu.
+func (m *model) viewOf(p lichclient.Project, s lichclient.Session, now time.Time) sessionView {
+	shown := m.shownPath(p, s)
+	age, aged := m.status.age(s.ID, now)
+	tool, _ := m.status.tool(s.ID)
+	return sessionView{
+		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host,
+		status: m.status.status(s.ID), unread: m.status.unread(s.ID), age: age, aged: aged,
+		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
+		base: m.base[shown], pr: m.prs[shown].pr,
+		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID),
 	}
-	p := *shown
-	now := time.Now()
-	byPath := map[string]*group{}
-	var order []string
-	for _, s := range p.Sessions {
-		path := sessionPath(p, s)
-		g, ok := byPath[path]
-		if !ok {
-			g = &group{name: checkoutLabel(s.Path, p.Path, p.ID), path: path}
-			byPath[path] = g
-			order = append(order, path)
-		}
-		shown := m.shownPath(p, s)
-		age, aged := m.status.age(s.ID, now)
-		tool, _ := m.status.tool(s.ID)
-		g.sessions = append(g.sessions, sessionView{
-			Session: s, projectID: p.ID, path: path, shown: shown, host: m.cwd[s.ID].Host,
-			status: m.status.status(s.ID), unread: m.status.unread(s.ID), age: age, aged: aged,
-			agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
-			base: m.base[shown], pr: m.prs[shown].pr,
-			relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID),
-		})
-	}
-	sort.SliceStable(order, func(i, j int) bool { return order[i] == p.Path && order[j] != p.Path })
-	out := make([]group, 0, len(order))
-	for _, path := range order {
-		out = append(out, *byPath[path])
-	}
-	return out
 }
 
 // gitStatus is path's last branch and changes, false while git has not
@@ -352,16 +324,16 @@ func (m *model) gitStatus(path string) (lichclient.DiffStats, bool) {
 
 func (m *model) activeSession() (sessionView, bool) {
 	m.mu.Lock()
-	id := m.active
-	m.mu.Unlock()
-	for _, g := range m.groups() {
-		for _, s := range g.sessions {
-			if s.ID == id {
-				return s, true
-			}
-		}
+	defer m.mu.Unlock()
+	p := m.shownProject()
+	if p == nil {
+		return sessionView{}, false
 	}
-	return sessionView{}, false
+	i := slices.IndexFunc(p.Sessions, func(s lichclient.Session) bool { return s.ID == m.active })
+	if i < 0 {
+		return sessionView{}, false
+	}
+	return m.viewOf(*p, p.Sessions[i], time.Now()), true
 }
 
 // setActive puts a session of the active project on screen, and records it
@@ -486,4 +458,16 @@ func checkoutPath(dir, projectPath string) string {
 		return ""
 	}
 	return dir
+}
+
+// normalizeCheckouts stores a session in the project's own directory with no
+// path, as checkoutPath does at creation. Native builds before that fix
+// wrote the project's path instead, which split the root block in two.
+func normalizeCheckouts(ps []lichclient.Project) {
+	for pi := range ps {
+		for si := range ps[pi].Sessions {
+			s := &ps[pi].Sessions[si]
+			s.Path = checkoutPath(s.Path, ps[pi].Path)
+		}
+	}
 }

@@ -14,6 +14,7 @@ type Project struct {
 	Path            string    `json:"path"`
 	NextSeq         int       `json:"nextSeq"`
 	ActiveSessionID string    `json:"activeSessionId"`
+	DefaultProvider string    `json:"defaultProvider"`
 	Sessions        []Session `json:"sessions"`
 }
 

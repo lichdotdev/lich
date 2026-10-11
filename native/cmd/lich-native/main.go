@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	"image"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/text"
 	"gioui.org/unit"
@@ -137,6 +139,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 			if err := u.layout(gtx); err != nil {
 				return err
 			}
+			u.sidebar.morph.capture(gtx.Ops)
 			if *flagShot != "" {
 				gtx.Execute(op.InvalidateCmd{At: started.Add(*flagAfter)})
 				if time.Since(started) > *flagAfter {
@@ -178,6 +181,9 @@ func (u *window) connect() error {
 			return err
 		}
 	}
+	if err := u.loadSidebar(); err != nil {
+		return err
+	}
 	if err := u.footer.start(); err != nil {
 		return err
 	}
@@ -192,42 +198,78 @@ func (u *window) layout(gtx C) error {
 		u.lostNotice(gtx)
 		return nil
 	}
+	u.sidebar.morph.advance(gtx)
 	var act sidebarAction
 	var contentErr error
 	active, hasActive := u.model.activeSession()
 	in := u.footer.input(u.model, gtx.Now)
 	u.root.Layout(gtx, func(gtx C) D {
+		filed := u.sidebar.layoutFolderDialog(gtx, u.theme, u.model.projectFolders())
+		defer func() {
+			if filed.ids != nil {
+				act.file = filed
+			}
+		}()
 		u.footer.editorLayout(gtx, u.theme, in)
-		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(func(gtx C) D {
-				return layout.UniformInset(unit.Dp(6)).Layout(gtx, func(gtx C) D {
-					d, a := u.sidebar.layout(gtx, u.theme, u.model.groups(), active.ID)
-					act = a
-					return d
-				})
-			}),
-			layout.Flexed(1, func(gtx C) D {
-				return layout.Inset{Top: 6, Right: 6}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D { return u.tabBar(gtx, active, hasActive) }),
-						layout.Flexed(1, func(gtx C) D {
-							gtx.Constraints.Min = gtx.Constraints.Max
-							if !hasActive {
-								return layout.Center.Layout(gtx, func(gtx C) D {
-									return label(gtx, u.th, "Open a session from the sidebar.", 14, colMuted, font.Normal)
-								})
-							}
-							contentErr = u.content(gtx, active)
-							return D{Size: gtx.Constraints.Max}
-						}),
-						layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, in) }),
-					)
-				})
-			}),
-		)
+		column := gtx
+		column.Constraints.Min = image.Point{}
+		edge := layout.UniformInset(gutter).Layout(column, func(gtx C) D {
+			d, a := u.sidebar.layout(gtx, u.theme, u.model, active.ID)
+			act = a
+			return d
+		}).Size.X
+		u.stage(gtx, edge, func(gtx C) D {
+			return layout.Inset{Top: 6, Right: 6}.Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return u.tabBar(gtx, active, hasActive) }),
+					layout.Flexed(1, func(gtx C) D {
+						gtx.Constraints.Min = gtx.Constraints.Max
+						if !hasActive {
+							return layout.Center.Layout(gtx, func(gtx C) D {
+								return label(gtx, u.th, "Open a session from the sidebar.", 14, colMuted, font.Normal)
+							})
+						}
+						contentErr = u.content(gtx, active)
+						return D{Size: gtx.Constraints.Max}
+					}),
+					layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, in) }),
+				)
+			})
+		})
+		u.sidebar.flight(gtx, u.theme, u.model)
+		return D{Size: gtx.Constraints.Max}
 	})
 	u.apply(act)
 	return contentErr
+}
+
+// gutter is the canvas around the sidebar: App.tsx's pl-1.5 and gap-1.5.
+const gutter = unit.Dp(6)
+
+// stage lays the main column out from x, the sidebar's edge, at the width the
+// sidebar leaves it (sidebar.stageReserve), clipped to the window.
+func (u *window) stage(gtx C, x int, w layout.Widget) {
+	width := gtx.Constraints.Max.X - u.sidebar.stageReserve(gtx) - 2*gtx.Dp(gutter)
+	defer clip.Rect{Min: image.Pt(x, 0), Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
+	defer op.Offset(image.Pt(x, 0)).Push(gtx.Ops).Pop()
+	gtx.Constraints = layout.Exact(image.Pt(max(width, 0), gtx.Constraints.Max.Y))
+	w(gtx)
+}
+
+// loadSidebar reads the sidebar's stored width, open state and folds before
+// the first frame, so nothing is drawn one way and then jumps; the launch
+// menus' providers come in after, being slower to detect.
+func (u *window) loadSidebar() error {
+	l, err := loadSidebarLayout(u.ctx, u.client)
+	if err != nil {
+		return err
+	}
+	u.sidebar.widthRem, u.sidebar.open = l.widthRem, l.open
+	if err := u.model.loadFolds(u.ctx); err != nil {
+		return err
+	}
+	go func() { u.logErr("load providers", u.model.loadProviders(u.ctx)) }()
+	return nil
 }
 
 // lostNotice replaces the whole window once the backend dropped it: what it
@@ -310,8 +352,8 @@ func (u *window) apply(act sidebarAction) {
 		}
 		u.model.invalidate()
 	}
-	if act.newKind != "" {
-		go u.newSession(act.newKind, "", "")
+	if l := act.launch; l.kind != "" {
+		go u.newSession(l, "")
 	}
 	if act.close != "" {
 		u.closeSession(act.close)
@@ -326,6 +368,7 @@ func (u *window) apply(act sidebarAction) {
 		go func() { u.logErr("pin session", u.client.SetSessionPinned(u.ctx, id, pinned)) }()
 	}
 	u.applyOpenIn(act)
+	u.applySidebarWrites(act.sidebarWrites)
 	if act.color != "" && u.model.setColor(act.color, act.colorTo) {
 		u.model.invalidate()
 		id, tint := act.color, act.colorTo
@@ -342,7 +385,7 @@ func (u *window) apply(act sidebarAction) {
 // card's directory, the directory in the editor, or in the file manager.
 func (u *window) applyOpenIn(act sidebarAction) {
 	if act.terminalAt != "" {
-		go u.newSession("shell", act.terminalAt, "")
+		go u.newSession(launchRequest{kind: "shell", dir: act.terminalAt}, "")
 	}
 	if dir := act.editorAt; dir != "" {
 		go func() {
@@ -354,7 +397,7 @@ func (u *window) applyOpenIn(act sidebarAction) {
 			// A terminal editor runs in a shell at the directory, as the
 			// web card does.
 			if command != "" {
-				u.newSession("shell", dir, command+"\n")
+				u.newSession(launchRequest{kind: "shell", dir: dir}, command+"\n")
 			}
 		}()
 	}
@@ -384,9 +427,21 @@ func (u *window) logErr(what string, err error) {
 	}
 }
 
-// newSession adds a session of kind at dir ("" for the project's own
-// checkout) and puts it on screen; typeahead is typed into it once it starts.
-func (u *window) newSession(kind, dir, typeahead string) {
+// applySidebarWrites runs the frame's block-level writes off the frame.
+func (u *window) applySidebarWrites(w sidebarWrites) {
+	if w.fold == "" && w.file.ids == nil && w.paint.ids == nil && w.folder.from == "" &&
+		w.blockOrder == nil && w.cardOrder.key == "" && !w.saveWidth && !w.saveOpen {
+		return
+	}
+	l := sidebarLayout{widthRem: u.sidebar.widthRem, open: u.sidebar.open}
+	go func() { u.logErr("sidebar", writeSidebar(u.ctx, u.model, w, l)) }()
+}
+
+// newSession adds a session of the launch's kind at its dir ("" for the
+// project's own checkout), filed under its folder, and puts it on screen;
+// typeahead is typed into it once it starts.
+func (u *window) newSession(l launchRequest, typeahead string) {
+	kind := l.kind
 	p, ok := u.model.project()
 	if !ok {
 		log.Print("new session: the backend has no project open")
@@ -394,7 +449,7 @@ func (u *window) newSession(kind, dir, typeahead string) {
 	}
 	id := strings.ToLower(rand.Text())
 	label := fmt.Sprintf("%s %d", strings.ToUpper(kind[:1])+kind[1:], p.NextSeq+1)
-	if err := u.client.AddSession(u.ctx, p.ID, id, label, kind, checkoutPath(dir, p.Path), p.NextSeq+1); err != nil {
+	if err := u.client.AddSessionInFolder(u.ctx, p.ID, id, label, kind, checkoutPath(l.dir, p.Path), p.NextSeq+1, l.folder); err != nil {
 		u.logErr("new session", err)
 		return
 	}
@@ -402,6 +457,7 @@ func (u *window) newSession(kind, dir, typeahead string) {
 		u.logErr("reload", err)
 		return
 	}
+	u.logErr("load folds", u.model.loadFolds(u.ctx))
 	if typeahead != "" {
 		u.terms.queue(id, typeahead)
 	}
