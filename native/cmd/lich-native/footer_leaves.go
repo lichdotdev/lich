@@ -53,7 +53,7 @@ func footerButton(gtx C, th *ui.Theme, root *ui.Root, w *footerWidgets, label st
 		if disabled {
 			return buttonFace(gtx, th, wide, false, true, content)
 		}
-		return w.click.Layout(gtx, func(gtx C) D { return buttonFace(gtx, th, wide, w.click.Hovered(), false, content) })
+		return w.click.Layout(gtx, func(gtx C) D { return buttonFace(gtx, th, wide, w.click.Hovered() || w.pressed, false, content) })
 	})
 }
 
@@ -223,6 +223,9 @@ func dot(gtx C, at f32.Point, r float32, c color.NRGBA) {
 type footerWidgets struct {
 	click widget.Clickable
 	tip   ui.Tooltip
+	// pressed is aria-pressed: the button's panel is open, so it keeps the
+	// fill it shows hovered.
+	pressed bool
 }
 
 // iconOnly is a square button's size-4 glyph.

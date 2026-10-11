@@ -16,8 +16,8 @@ type (
 	D = layout.Dimensions
 )
 
-// The tokens and helpers diff.go and the tab bar still draw with; they go
-// once those move to package ui.
+// The tokens and helpers diff.go still draws with; they go once it moves to
+// package ui. useColors points them at the palette on screen.
 var (
 	colBackground = ui.Dark.Background
 	colAccent     = ui.Dark.Accent
@@ -28,6 +28,11 @@ var (
 	colWait       = ui.Dark.ToneWait
 	colDel        = ui.Dark.Destructive
 )
+
+func useColors(p ui.Palette) {
+	colBackground, colAccent, colForeground, colMuted = p.Background, p.Accent, p.Foreground, p.MutedForeground
+	colBorder, colPass, colWait, colDel = p.Border, p.TonePass, p.ToneWait, p.Destructive
+}
 
 func label(gtx C, th *material.Theme, s string, size unit.Sp, c color.NRGBA, weight font.Weight) D {
 	l := material.Label(th, size, s)

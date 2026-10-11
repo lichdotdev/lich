@@ -241,14 +241,15 @@ func onScreen(m *model) (project, session string) {
 }
 
 func TestLaunchOpensTheProjectTheLastScreenWasOn(t *testing.T) {
-	cases := map[string]string{"/projects/b/settings": "b", "/projects/gone": "a", "/": "a"}
+	// "" is Home: the web opens there for anything but an open project's screen.
+	cases := map[string]string{"/projects/b/settings": "b", "/projects/gone": "", "/": "", "": ""}
 	for saved, want := range cases {
 		ps := twoProjects()
 		m := newModel(fakeState(t, &ps, saved), func() {})
 		if err := m.reload(context.Background()); err != nil {
 			t.Fatal(err)
 		}
-		wantSession := map[string]string{"a": "a2", "b": "b1"}[want]
+		wantSession := map[string]string{"a": "a2", "b": "b1", "": ""}[want]
 		if p, s := onScreen(m); p != want || s != wantSession {
 			t.Errorf("last screen %q: on %s/%s, want %s/%s", saved, p, s, want, wantSession)
 		}
@@ -268,6 +269,10 @@ func TestReloadKeepsTheActiveProjectAndAdoptsAnOpenedOne(t *testing.T) {
 	if err := m.reload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	if !m.onHome() {
+		t.Fatal("a project opened after launch took the screen from Home")
+	}
+	m.setActiveProject("b")
 	ps = twoProjects()
 	if err := m.reload(context.Background()); err != nil {
 		t.Fatal(err)
@@ -320,7 +325,7 @@ func TestSessionStoredAtTheProjectDirSharesTheRootBlock(t *testing.T) {
 	ps := []lichclient.Project{{ID: "p", Path: checkout, Sessions: []lichclient.Session{
 		{ID: "old", Path: checkout}, {ID: "new"},
 	}}}
-	m := newModel(fakeState(t, &ps, ""), func() {})
+	m := newModel(fakeState(t, &ps, "/projects/p"), func() {})
 	if err := m.reload(context.Background()); err != nil {
 		t.Fatal(err)
 	}

@@ -32,6 +32,36 @@ func TestStoreCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.DetectProviders(ctx)
 			return err
 		}},
+		{"CloseProject", "store.CloseProject", `"p"`, nil, func(c *Client) error {
+			return c.CloseProject(ctx, "p")
+		}},
+		{"ReorderProjects", "store.ReorderProjects", `["b","a"]`, nil, func(c *Client) error {
+			return c.ReorderProjects(ctx, []string{"b", "a"})
+		}},
+		{"RecentProjects", "store.RecentProjects", `""`, []RecentProject{}, func(c *Client) error {
+			_, err := c.RecentProjects(ctx)
+			return err
+		}},
+		{"ClosedProjectCount", "store.ClosedProjectCount", `""`, 3, func(c *Client) error {
+			_, err := c.ClosedProjectCount(ctx)
+			return err
+		}},
+		{"PickProject", "project.Open", ``, nil, func(c *Client) error {
+			_, err := c.PickProject(ctx)
+			return err
+		}},
+		{"RelocateProject", "project.Relocate", `"p"`, nil, func(c *Client) error {
+			_, err := c.RelocateProject(ctx, "p")
+			return err
+		}},
+		{"PathExists", "project.Exists", `"/a"`, true, func(c *Client) error {
+			_, err := c.PathExists(ctx, "/a")
+			return err
+		}},
+		{"MissingPaths", "project.Missing", `["/a","/b"]`, []string{"/b"}, func(c *Client) error {
+			_, err := c.MissingPaths(ctx, []string{"/a", "/b"})
+			return err
+		}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

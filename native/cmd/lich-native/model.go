@@ -43,10 +43,12 @@ type model struct {
 	base          map[string]*lichclient.BaseStatus // shown path -> where it stands against its base
 	prs           map[string]prLookup               // shown path -> its open pull request
 	activeProject string                            // project id on screen
+	home          bool                              // Home is on screen instead
 	active        string                            // session id on screen
 	lost          bool                              // /events ended under an open window
 	focused       bool                              // the window has the user's focus
 	restored      bool                              // unread marks taken from the first LoadState
+	launched      bool                              // the first screen was chosen from the last one
 	folds         map[string]bool                   // foldKey -> block folded, once read or written
 	providers     []launchProvider                  // detected providers with their enabled flags
 	globalDefault string                            // the global provider.default setting
@@ -72,7 +74,7 @@ func (m *model) reload(ctx context.Context) error {
 		return err
 	}
 	m.mu.Lock()
-	choose := m.activeProject == "" && len(ps) > 0
+	choose := !m.launched && len(ps) > 0
 	m.mu.Unlock()
 	launch := ""
 	if choose {
@@ -87,8 +89,9 @@ func (m *model) reload(ctx context.Context) error {
 		m.status.restoreUnread(unreadSessions(ps))
 		m.restored = true
 	}
-	if launch != "" {
-		m.activeProject = launch
+	if choose {
+		m.launched = true
+		m.activeProject, m.home = launch, launch == ""
 	}
 	if p := m.shownProject(); p != nil && m.active == "" {
 		m.active = p.ActiveSessionID
@@ -99,8 +102,9 @@ func (m *model) reload(ctx context.Context) error {
 }
 
 // launchProject is the project the window opens on: the one the last screen
-// was on while it is still open (projects.tsx resumableScreen). Where the web
-// then lands on its Home screen, this window has none and takes the first.
+// was on while it is still open (last-screen.ts resumableScreen), else "" for
+// Home, as the web lands there for anything else, Home and a closed project
+// included.
 func (m *model) launchProject(ctx context.Context, ps []lichclient.Project) (string, error) {
 	saved, err := m.client.GetSetting(ctx, lastScreenKey, "")
 	if err != nil {
@@ -111,12 +115,15 @@ func (m *model) launchProject(ctx context.Context, ps []lichclient.Project) (str
 			return match[1], nil
 		}
 	}
-	return ps[0].ID, nil
+	return "", nil
 }
 
 // shownProject is the active project, else the first when the active one is
-// not open. Callers hold m.mu.
+// not open; nil on Home. Callers hold m.mu.
 func (m *model) shownProject() *lichclient.Project {
+	if m.home {
+		return nil
+	}
 	if i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == m.activeProject }); i >= 0 {
 		return &m.projects[i]
 	}
@@ -135,7 +142,7 @@ func (m *model) setActiveProject(id string) bool {
 	if i < 0 {
 		return false
 	}
-	m.activeProject = id
+	m.activeProject, m.home = id, false
 	m.active = m.projects[i].ActiveSessionID
 	return true
 }

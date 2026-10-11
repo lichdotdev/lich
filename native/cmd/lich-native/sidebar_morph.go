@@ -164,6 +164,13 @@ func (s *sidebar) boxWidth(gtx C, open bool) int {
 	return gtx.Dp(ui.Space(8))
 }
 
+// column is the sidebar's width this frame and how open it is, 0 for the
+// rail to 1 for the panel, mid-morph in between: what the topbar's brand
+// column follows.
+func (s *sidebar) column(gtx C) (int, float32) {
+	return brandColumn(s.boxWidth(gtx, false), s.boxWidth(gtx, true), s.open, s.morph.active(), s.morph.p)
+}
+
 // stageReserve is the sidebar width the stage makes room for. Mid-morph it is
 // the narrower shape's for the whole flight: the stage keeps one size and
 // slides with the sidebar's edge, clipped by the window, the way the web's

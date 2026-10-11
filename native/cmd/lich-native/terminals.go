@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"image"
+	"image/color"
 	"log"
 	"sync"
 
@@ -41,6 +42,11 @@ type terminals struct {
 	mu    sync.Mutex
 	byID  map[string]*termView
 	shown string
+	// colors are the theme's terminal defaults, given to every terminal.
+	colors termColors
+	// background is the shown terminal's default background as last drawn,
+	// the color of the island it fills and of the tab merged into it.
+	background color.NRGBA
 	// typeahead is input for a session whose terminal has not started yet,
 	// sent right after Start; the PTY holds it until the shell reads it.
 	typeahead map[string]string
@@ -105,6 +111,12 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	if err != nil {
 		return nil, err
 	}
+	ts.mu.Lock()
+	colors := ts.colors
+	ts.mu.Unlock()
+	if err := vt.SetColors(colors.fg, colors.bg); err != nil {
+		return nil, err
+	}
 	replay, err := ts.client.Replay(ctx, s.ID)
 	if err != nil {
 		return nil, err
@@ -125,6 +137,19 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Unlock()
 	ts.send(s.ID, []byte(pending))
 	return t, ts.client.Resize(ctx, s.ID, cols, rows)
+}
+
+// setColors gives every terminal, and every one opened after, a theme's
+// default colors.
+func (ts *terminals) setColors(c termColors) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	ts.colors = c
+	for id, t := range ts.byID {
+		if err := t.vt.SetColors(c.fg, c.bg); err != nil {
+			log.Printf("terminal colors %s: %v", id, err)
+		}
+	}
 }
 
 // drop frees a closed session's terminal. Output still in flight for it finds
@@ -181,6 +206,7 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	if err != nil {
 		return err
 	}
+	ts.background = snap.Background()
 	if _, err := t.r.Draw(gtx, snap); err != nil {
 		return err
 	}

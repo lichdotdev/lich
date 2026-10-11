@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"image/color"
 	"log"
 	"os"
 	"path/filepath"
@@ -42,7 +43,7 @@ var (
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
-	flagTab      = flag.String("tab", "terminal", "tab shown at start: terminal or diff")
+	flagTab      = flag.String("tab", "terminal", "what the stage shows at start: terminal or diff (Review changes pressed)")
 )
 
 func main() {
@@ -64,13 +65,6 @@ func main() {
 	app.Main()
 }
 
-type tab int
-
-const (
-	tabTerminal tab = iota
-	tabDiff
-)
-
 type window struct {
 	ctx     context.Context
 	client  *lichclient.Client
@@ -79,12 +73,13 @@ type window struct {
 	diff    *diffView
 	sidebar *sidebar
 	footer  *footer
+	topbar  *topbar
 	th      *material.Theme
 	theme   *ui.Theme
 	root    ui.Root
-	tab     tab
-	tabTerm widget.Clickable
-	tabDiff widget.Clickable
+	// homeOpen is Home's Open project button.
+	homeOpen widget.Clickable
+	light    bool // the light palette is on screen
 }
 
 // backendRuntime is the backend to talk to: the -runtime file when given,
@@ -110,19 +105,18 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 
 	u := &window{
 		ctx: ctx, client: client, th: th,
-		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Background},
+		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
 		model: newModel(client, w.Invalidate),
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
 	}
 	u.sidebar = newSidebar(&u.root)
+	u.topbar = newTopbar(&u.root)
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
 	if u.diff, err = newDiffView(client, w.Invalidate, *flagFont, unit.Sp(*flagSize), th); err != nil {
 		return err
 	}
-	if *flagTab == "diff" {
-		u.tab = tabDiff
-	}
+	u.footer.reviewing = *flagTab == "diff"
 	if err := u.connect(); err != nil {
 		return err
 	}
@@ -180,6 +174,10 @@ func (u *window) connect() error {
 		if err := u.model.reload(u.ctx); err != nil {
 			return err
 		}
+		u.model.setActiveProject("native")
+	}
+	if err := u.loadTheme(); err != nil {
+		return err
 	}
 	if err := u.loadSidebar(); err != nil {
 		return err
@@ -193,16 +191,16 @@ func (u *window) connect() error {
 }
 
 func (u *window) layout(gtx C) error {
-	paint.Fill(gtx.Ops, colBackground)
+	paint.Fill(gtx.Ops, u.theme.Canvas)
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
 		return nil
 	}
 	u.sidebar.morph.advance(gtx)
 	var act sidebarAction
+	var top topbarAction
 	var contentErr error
-	active, hasActive := u.model.activeSession()
-	in := u.footer.input(u.model, gtx.Now)
+	v := u.stageView(gtx.Now)
 	u.root.Layout(gtx, func(gtx C) D {
 		filed := u.sidebar.layoutFolderDialog(gtx, u.theme, u.model.projectFolders())
 		defer func() {
@@ -210,37 +208,115 @@ func (u *window) layout(gtx C) error {
 				act.file = filed
 			}
 		}()
-		u.footer.editorLayout(gtx, u.theme, in)
-		column := gtx
-		column.Constraints.Min = image.Point{}
-		edge := layout.UniformInset(gutter).Layout(column, func(gtx C) D {
-			d, a := u.sidebar.layout(gtx, u.theme, u.model, active.ID)
-			act = a
-			return d
-		}).Size.X
-		u.stage(gtx, edge, func(gtx C) D {
-			return layout.Inset{Top: 6, Right: 6}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return u.tabBar(gtx, active, hasActive) }),
-					layout.Flexed(1, func(gtx C) D {
-						gtx.Constraints.Min = gtx.Constraints.Max
-						if !hasActive {
-							return layout.Center.Layout(gtx, func(gtx C) D {
-								return label(gtx, u.th, "Open a session from the sidebar.", 14, colMuted, font.Normal)
-							})
-						}
-						contentErr = u.content(gtx, active)
-						return D{Size: gtx.Constraints.Max}
-					}),
-					layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, in) }),
-				)
-			})
-		})
+		closed := u.topbar.layoutConfirm(gtx, u.theme)
+		u.footer.editorLayout(gtx, u.theme, v.in)
+		var edge int
+		edge, act, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)
+		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
+		top.close = closed
 		return D{Size: gtx.Constraints.Max}
 	})
 	u.apply(act)
+	u.applyTopbar(top)
 	return contentErr
+}
+
+// stageView is what the frame shows under the strip, read once before
+// layout so the strip and the stage agree.
+type stageView struct {
+	active    sessionView
+	hasActive bool
+	home      bool
+	reviewing bool // the checkout's diff in place of the terminal
+	in        footerInput
+	tabs      []projectTab
+	project   string // the active tab's project
+}
+
+func (u *window) stageView(now time.Time) stageView {
+	v := stageView{in: u.footer.input(u.model, now), home: u.model.onHome()}
+	v.active, v.hasActive = u.model.activeSession()
+	v.reviewing = u.footer.reviewing && v.in.isGit
+	v.tabs, v.project = u.model.projectTabs()
+	u.topbar.open.refresh(u.ctx, u.client, v.tabs, u.model.invalidate)
+	return v
+}
+
+// body lays the sidebar and the stage out under the strip, and answers the
+// stage's left edge.
+func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
+	bar := gtx.Dp(topbarHeight)
+	defer op.Offset(image.Pt(0, bar)).Push(gtx.Ops).Pop()
+	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, max(gtx.Constraints.Max.Y-bar, 0)))
+	var act sidebarAction
+	column := gtx
+	column.Constraints.Min = image.Point{}
+	edge := layout.Inset{Left: gutter, Right: gutter, Bottom: gutter}.Layout(column, func(gtx C) D {
+		d, a := u.sidebar.layout(gtx, u.theme, u.model, v.active.ID)
+		act = a
+		return d
+	}).Size.X
+	var err error
+	u.stage(gtx, edge, func(gtx C) D {
+		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Flexed(1, func(gtx C) D {
+					err = u.island(gtx, v)
+					return D{Size: gtx.Constraints.Max}
+				}),
+				layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, v.in) }),
+			)
+		})
+	})
+	return edge, act, err
+}
+
+// island is the stage's rounded-lg box: Home, the empty notice, the diff or
+// the terminal, in the color the active tab merges with. Its top-left corner
+// is square while that tab sits on it.
+func (u *window) island(gtx C, v stageView) error {
+	size := gtx.Constraints.Max
+	gtx.Constraints.Min = size
+	r := gtx.Dp(ui.RadiusLG)
+	nw := r
+	if u.topbar.islandSquare(topbarFrame{tabs: v.tabs, active: v.project}) {
+		nw = 0
+	}
+	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
+	fill := u.islandColor(v)
+	paint.Fill(gtx.Ops, fill)
+	if u.homeOpen.Clicked(gtx) {
+		go u.pickProject()
+	}
+	switch {
+	case v.home:
+		homeView(gtx, u.theme.On(fill), &u.homeOpen)
+		return nil
+	case !v.hasActive:
+		layout.Center.Layout(gtx, func(gtx C) D {
+			return label(gtx, u.th, "Open a session from the sidebar.", 14, colMuted, font.Normal)
+		})
+		return nil
+	}
+	return u.content(gtx, v.active, v.reviewing)
+}
+
+// islandColor is the terminal's own background while it is on the island,
+// else the theme's.
+func (u *window) islandColor(v stageView) color.NRGBA {
+	if v.home || !v.hasActive || v.reviewing || u.terms.background.A == 0 {
+		return u.theme.Background
+	}
+	return u.terms.background
+}
+
+func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
+	width, name := u.sidebar.column(gtx)
+	return topbarFrame{
+		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
+		tabs: v.tabs, active: v.project, pending: u.model.notifications(), light: u.light,
+	}
 }
 
 // gutter is the canvas around the sidebar: App.tsx's pl-1.5 and gap-1.5.
@@ -285,8 +361,8 @@ func (u *window) lostNotice(gtx C) D {
 	})
 }
 
-func (u *window) content(gtx C, active sessionView) error {
-	if u.tab == tabDiff {
+func (u *window) content(gtx C, active sessionView, reviewing bool) error {
+	if reviewing {
 		u.diff.watch(active.path)
 		return u.diff.layout(gtx, u.th)
 	}
@@ -296,51 +372,6 @@ func (u *window) content(gtx C, active sessionView) error {
 		return err
 	}
 	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys() && !u.footer.holdsKeys())
-}
-
-func (u *window) tabBar(gtx C, active sessionView, hasActive bool) D {
-	if u.tabTerm.Clicked(gtx) {
-		u.tab = tabTerminal
-	}
-	if u.tabDiff.Clicked(gtx) {
-		u.tab = tabDiff
-	}
-	tabButton := func(c *widget.Clickable, text string, on bool) layout.FlexChild {
-		return layout.Rigid(func(gtx C) D {
-			return c.Layout(gtx, func(gtx C) D {
-				return layout.Background{}.Layout(gtx,
-					func(gtx C) D {
-						if on {
-							return fillRRect(gtx, colAccent, 6)
-						}
-						return D{Size: gtx.Constraints.Min}
-					},
-					func(gtx C) D {
-						col := colMuted
-						if on {
-							col = colForeground
-						}
-						return layout.Inset{Top: 6, Bottom: 6, Left: 12, Right: 12}.Layout(gtx, func(gtx C) D {
-							return label(gtx, u.th, text, 13, col, font.Medium)
-						})
-					},
-				)
-			})
-		})
-	}
-	title := ""
-	if hasActive {
-		title = active.Label
-	}
-	return layout.Inset{Bottom: 6}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			tabButton(&u.tabTerm, "Terminal", u.tab == tabTerminal),
-			layout.Rigid(layout.Spacer{Width: unit.Dp(4)}.Layout),
-			tabButton(&u.tabDiff, "Diff", u.tab == tabDiff),
-			layout.Rigid(layout.Spacer{Width: unit.Dp(16)}.Layout),
-			layout.Flexed(1, func(gtx C) D { return label(gtx, u.th, title, 13, colMuted, font.Normal) }),
-		)
-	})
 }
 
 func (u *window) apply(act sidebarAction) {
@@ -463,6 +494,5 @@ func (u *window) newSession(l launchRequest, typeahead string) {
 	}
 	u.model.setActive(u.ctx, id)
 	u.logErr("set active session", u.client.SetActiveSession(u.ctx, p.ID, id))
-	u.tab = tabTerminal
 	u.model.invalidate()
 }
