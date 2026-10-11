@@ -21,3 +21,8 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 )
+
+// app.DropEvent (external file drop) lives in lichdotdev/gio, branch
+// drop-event, until the patch lands upstream in gioui.org; drop this replace
+// then.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261011200543-f9c592045ca1

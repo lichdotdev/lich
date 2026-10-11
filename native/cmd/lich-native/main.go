@@ -44,6 +44,7 @@ var (
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
 	flagTab      = flag.String("tab", "terminal", "what the stage shows at start: terminal or diff (Review changes pressed)")
+	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
 
 func main() {
@@ -84,6 +85,9 @@ type window struct {
 	// emptyNew is the empty stage's New session button.
 	emptyNew widget.Clickable
 	light    bool // the light palette is on screen
+	drop     terminalDrop
+	// islandAt is the island's top-left in window pixels, where body put it.
+	islandAt image.Point
 }
 
 // backendRuntime is the backend to talk to: the -runtime file when given,
@@ -133,6 +137,8 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 			return e.Err
 		case app.ConfigEvent:
 			u.model.setFocused(u.ctx, e.Config.Focused)
+		case app.DropEvent:
+			u.onDrag(e, w.Invalidate)
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
 			if err := u.layout(gtx); err != nil {
@@ -264,6 +270,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		return d
 	}).Size.X
 	var err error
+	u.islandAt = image.Pt(edge, bar)
 	u.stage(gtx, edge, func(gtx C) D {
 		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -290,6 +297,7 @@ func (u *window) island(gtx C, v stageView) error {
 		nw = 0
 	}
 	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
+	u.drop.setRect(image.Rectangle{})
 	fill := u.islandColor(v)
 	paint.Fill(gtx.Ops, fill)
 	if u.homeOpen.Clicked(gtx) {
@@ -306,7 +314,16 @@ func (u *window) island(gtx C, v stageView) error {
 		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell")
 		return nil
 	}
-	return u.content(gtx, v.active, v.reviewing)
+	if err := u.content(gtx, v.active, v.reviewing); err != nil {
+		return err
+	}
+	if !v.reviewing && u.terms.has(v.active.ID) {
+		u.drop.setRect(image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
+		if u.drop.hinting() || *flagDropHint {
+			dropHint(gtx, u.theme.On(fill), v.active.Label, v.active.sandbox.Confined)
+		}
+	}
+	return nil
 }
 
 // islandColor is the terminal's own background while it is on the island,
