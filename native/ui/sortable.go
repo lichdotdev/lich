@@ -36,9 +36,16 @@ const sortActivation unit.Dp = 5
 // through the targets in layout order: Space or Enter on a focused item picks
 // it up, the arrows move Over to the previous or next item or empty zone,
 // Space or Enter drops, Escape cancels.
+//
+// List lays items out as a vertical list whose items step aside for the one
+// in the air; see SortList and SortCarry.
 type Sortable struct {
 	// Disabled lays the items and zones out inert, dnd-kit's disabled.
 	Disabled bool
+	// Carry, shared by several Sortables, lets their items be dropped on its
+	// targets. Their items then also hear each other pass, which nothing
+	// reads: a Sortable's Over is only ever one of its own targets.
+	Carry *SortCarry
 
 	targets       map[string]*sortTarget
 	order, laying []string
@@ -52,10 +59,15 @@ type Sortable struct {
 	focused  string
 	drop     SortDrop
 	dropped  bool
+	list     sortList
 }
 
-// SortDrop is dnd-kit's DragEndEvent: ID was dropped over Over.
-type SortDrop struct{ ID, Over string }
+// SortDrop is dnd-kit's DragEndEvent: ID was dropped over Over. Carried means
+// Over is a target of the Sortable's Carry rather than one of its own.
+type SortDrop struct {
+	ID, Over string
+	Carried  bool
+}
 
 // sortTarget is an item's or a zone's event tag.
 type sortTarget struct {
@@ -70,6 +82,9 @@ type sortTarget struct {
 // what the button did, so a move and a release queued together drop where the
 // move went.
 func (s *Sortable) Update(gtx C) (SortDrop, bool) {
+	if s.Carry != nil {
+		s.Carry.hover(gtx)
+	}
 	s.order, s.laying = s.laying, s.order[:0]
 	for id := range s.targets {
 		if !slices.Contains(s.order, id) {
@@ -97,16 +112,35 @@ func (s *Sortable) Dragging() string { return s.active }
 // Focused reports whether item id has the keyboard focus, for its ring.
 func (s *Sortable) Focused(id string) bool { return s.focused == id }
 
-// Over is the target the item in the air would land on now, "" for none:
-// the item under the pointer other than the one lifted, else the zone under
-// it. A zone that only rings while it is Over is dnd-kit's isOver.
+// Over is the target the item in the air would land on now, "" for none: a
+// Carry target under the pointer; in a List, the item it is over, itself
+// included; else the item under the pointer other than the one lifted, else
+// the zone under it. A zone that only rings while it is Over is dnd-kit's
+// isOver.
 func (s *Sortable) Over() string {
-	if s.active == "" {
-		return ""
+	over, _ := s.overTarget()
+	return over
+}
+
+// overTarget is Over, and whether it is a Carry target.
+func (s *Sortable) overTarget() (string, bool) {
+	switch {
+	case s.active == "":
+		return "", false
+	case s.keyboard:
+		return s.kbOver, false
+	case s.Carry != nil && s.Carry.Over() != "":
+		return s.Carry.Over(), true
 	}
-	if s.keyboard {
-		return s.kbOver
+	if a := slices.Index(s.list.ids, s.active); a >= 0 {
+		return s.list.ids[s.list.over(s, a)], false
 	}
+	return s.hovered(), false
+}
+
+// hovered is the item under the pointer other than the one lifted, else the
+// zone under it.
+func (s *Sortable) hovered() string {
 	zone := ""
 	for _, id := range s.order {
 		t := s.targets[id]
@@ -125,6 +159,7 @@ func (s *Sortable) Over() string {
 // dragged by the pointer, lifted is drawn over everything, sized to the item
 // and following the pointer: dnd-kit's DragOverlay. The item itself stays
 // where it was for the caller to draw as the placeholder (Dragging() == id).
+// In a List, lifted is nil: the list carries the item itself.
 func (s *Sortable) Item(gtx C, id string, w, lifted layout.Widget) D {
 	if s.Disabled {
 		return w(gtx)
@@ -145,8 +180,11 @@ func (s *Sortable) Item(gtx C, id string, w, lifted layout.Widget) D {
 	cursor.Add(gtx.Ops)
 	call.Add(gtx.Ops)
 	area.Pop()
-	if s.active == id && !s.keyboard && lifted != nil {
-		s.lift(gtx, d, lifted)
+	if s.active == id && !s.keyboard {
+		if lifted != nil {
+			s.lift(gtx, d, lifted)
+		}
+		grabbing(gtx)
 	}
 	return d
 }
@@ -186,8 +224,14 @@ func (s *Sortable) target(id string, zone bool) *sortTarget {
 	return t
 }
 
-// mime keeps two Sortables on one screen from dropping into each other.
-func (s *Sortable) mime() string { return fmt.Sprintf("application/x-lich-sortable-%p", s) }
+// mime keeps two Sortables on one screen from dropping into each other,
+// unless they share a Carry, whose targets must hear their items pass.
+func (s *Sortable) mime() string {
+	if s.Carry != nil {
+		return s.Carry.mime()
+	}
+	return fmt.Sprintf("application/x-lich-sortable-%p", s)
+}
 
 func (s *Sortable) lift(gtx C, d D, lifted layout.Widget) {
 	m := op.Record(gtx.Ops)
@@ -271,20 +315,23 @@ func (s *Sortable) pointer(gtx C, t *sortTarget, e pointer.Event) {
 		if !e.Buttons.Contain(pointer.ButtonPrimary) || s.active != "" {
 			return
 		}
-		s.pressed, s.press, s.delta = t.id, e.Position, f32.Point{}
+		s.pressed, s.press, s.delta = t.id, s.list.atRest(t.id, e.Position), f32.Point{}
 		gtx.Execute(key.FocusCmd{Tag: t})
 	case pointer.Drag:
 		if s.pressed != t.id {
 			return
 		}
-		s.delta = e.Position.Sub(s.press)
+		s.delta = s.list.atRest(t.id, e.Position).Sub(s.press)
 		travel := float32(gtx.Dp(sortActivation))
 		if s.active == "" && s.delta.X*s.delta.X+s.delta.Y*s.delta.Y >= travel*travel {
 			s.active, s.keyboard = t.id, false
+			if s.Carry != nil {
+				s.Carry.carrying = t.id
+			}
 		}
 	case pointer.Release:
 		if s.pressed == t.id && s.active == t.id {
-			s.finish(s.Over())
+			s.finish(s.overTarget())
 		}
 		s.pressed = ""
 	case pointer.Cancel:
@@ -303,7 +350,7 @@ func (s *Sortable) key(t *sortTarget, e key.Event) {
 		if s.active == "" {
 			s.active, s.keyboard, s.kbOver = t.id, true, t.id
 		} else if s.keyboard {
-			s.finish(s.kbOver)
+			s.finish(s.kbOver, false)
 		}
 	case key.NameEscape:
 		s.end()
@@ -331,13 +378,16 @@ func (s *Sortable) step(dir int) {
 	}
 }
 
-func (s *Sortable) finish(over string) {
+func (s *Sortable) finish(over string, carried bool) {
 	if over != "" {
-		s.drop, s.dropped = SortDrop{ID: s.active, Over: over}, true
+		s.drop, s.dropped = SortDrop{ID: s.active, Over: over, Carried: carried}, true
 	}
 	s.end()
 }
 
 func (s *Sortable) end() {
+	if s.Carry != nil && s.active != "" && s.Carry.carrying == s.active {
+		s.Carry.carrying = ""
+	}
 	s.active, s.keyboard, s.kbOver, s.pressed = "", false, "", ""
 }

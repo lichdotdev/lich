@@ -41,6 +41,10 @@ func (e *InlineEdit) Start(text string) {
 // lays it out in place of the label.
 func (e *InlineEdit) Active() bool { return e.active }
 
+// Text is what the field holds while it is being edited, untrimmed: what a
+// caller reads to say what committing it would do.
+func (e *InlineEdit) Text() string { return e.editor.Text() }
+
 type InlineEditOutcome uint8
 
 const (

@@ -136,6 +136,8 @@ type gallery struct {
 	sortable    ui.Sortable
 	footerLeft  []string
 	footerRight []string
+
+	side *sidebar
 }
 
 func newGallery(th *ui.Theme) *gallery {
@@ -154,6 +156,7 @@ func newGallery(th *ui.Theme) *gallery {
 	g.groupGrid.Value = "list"
 	g.footerLeft = []string{"Attach", "Files", "3 · +10 -2", "PR #123"}
 	g.footerRight = []string{"feature/toolbar", "Opus 4.1 · high", "Context 42%", "12:30"}
+	g.side = newSidebar(g.icon)
 	return g
 }
 
@@ -189,6 +192,7 @@ func (g *gallery) content(gtx C) D {
 					g.section("Button", g.buttonsSection),
 					g.section("Input, Textarea, InputGroup", g.inputsSection),
 					g.section("Tooltip, menus and Dialog", g.overlaysSection),
+					g.section("Chip, ResizeHandle, Collapse, Presence, Sortable list", g.sidebarSection),
 				)),
 				ui.Gap(6),
 				layout.Flexed(1, stack(6,
