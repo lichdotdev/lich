@@ -6,11 +6,13 @@ import (
 	"image/color"
 	"log"
 	"sync"
+	"time"
 
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/unit"
 
@@ -27,6 +29,24 @@ type termView struct {
 	vt  *gioterm.Terminal
 	r   gioterm.Renderer
 	tag *int
+	// The area size waiting to be fitted, and since when it has held.
+	fitFor   image.Point
+	fitSince time.Time
+}
+
+// refitSettle is TerminalView.tsx REFIT_DEBOUNCE_MS: a resize reaches the
+// PTY, and every one makes the agent redraw its screen, so a dragged edge
+// refits once it stops rather than on every frame of the drag.
+const refitSettle = 100 * time.Millisecond
+
+// refitDue reports whether the grid should follow size now, and otherwise
+// when to look again: once size has held still for refitSettle.
+func (t *termView) refitDue(size image.Point, now time.Time) (bool, time.Time) {
+	if size != t.fitFor {
+		t.fitFor, t.fitSince = size, now
+	}
+	at := t.fitSince.Add(refitSettle)
+	return !now.Before(at), at
 }
 
 // terminals keeps a termView per session opened in this window. The /ws
@@ -202,15 +222,9 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	}
 	cols, rows := gioterm.Fit(size, t.r)
 	if c, r := t.vt.Size(); c != cols || r != rows {
-		cellW, cellH := t.r.Cell()
-		if err := t.vt.Resize(cols, rows, cellW, cellH); err != nil {
+		if err := ts.refit(gtx, t, size, cols, rows); err != nil {
 			return err
 		}
-		go func() {
-			if err := ts.client.Resize(context.Background(), t.id, cols, rows); err != nil {
-				log.Printf("resize %s: %v", t.id, err)
-			}
-		}()
 	}
 	ts.input(gtx, t, focus)
 	snap, err := t.vt.Update()
@@ -222,6 +236,25 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 		return err
 	}
 	event.Op(gtx.Ops, t.tag)
+	return nil
+}
+
+// refit follows the area with the grid and the PTY once size has settled,
+// and until then asks for the frame that will.
+func (ts *terminals) refit(gtx layout.Context, t *termView, size image.Point, cols, rows int) error {
+	if due, at := t.refitDue(size, gtx.Now); !due {
+		gtx.Execute(op.InvalidateCmd{At: at})
+		return nil
+	}
+	cellW, cellH := t.r.Cell()
+	if err := t.vt.Resize(cols, rows, cellW, cellH); err != nil {
+		return err
+	}
+	go func() {
+		if err := ts.client.Resize(context.Background(), t.id, cols, rows); err != nil {
+			log.Printf("resize %s: %v", t.id, err)
+		}
+	}()
 	return nil
 }
 

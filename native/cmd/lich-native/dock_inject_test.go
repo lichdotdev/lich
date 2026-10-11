@@ -1,0 +1,60 @@
+package main
+
+import "testing"
+
+func TestInjectReferencesMatchInjectMenu(t *testing.T) {
+	if got := fileReference("src/app.go"); got != "@src/app.go " {
+		t.Errorf("file = %q", got)
+	}
+	if got := linesReference("src/app.go", formatLineRef(12, 30)); got != "src/app.go:12-30 " {
+		t.Errorf("lines = %q", got)
+	}
+	if got := formatLineRef(19, 19); got != "19" {
+		t.Errorf("one line = %q", got)
+	}
+}
+
+func TestSafeToWriteDropsEveryControlCharacter(t *testing.T) {
+	if got := safeToWrite("@a\nb\x1b[201~c\td\x7f "); got != "@ab[201~cd " {
+		t.Errorf("safe = %q", got)
+	}
+}
+
+func TestSafeToWriteRewrapsAPasteRatherThanEatingIt(t *testing.T) {
+	got := safeToWrite(bracketedPaste("one\ntwo") + "")
+	if got != "\x1b[200~one\ntwo\x1b[201~" {
+		t.Errorf("paste = %q", got)
+	}
+	evil := "\x1b[200~x\x1b[201~y\x1b[201~"
+	if got := safeToWrite(evil); got != "\x1b[200~x[201~y\x1b[201~" {
+		t.Errorf("an inner close survived: %q", got)
+	}
+}
+
+func TestInjectEntriesNeedASelectionForLinesAndComment(t *testing.T) {
+	var wrote string
+	inject := func(s string) bool { wrote = s; return true }
+	commented := false
+	none := injectEntries("a.go", "", inject, func() { commented = true })
+	if none[0].Disabled || !none[1].Disabled || !none[2].Disabled {
+		t.Errorf("without a selection: %+v", none)
+	}
+	some := injectEntries("a.go", "3-4", inject, func() { commented = true })
+	if some[1].Label != "Inject lines 3-4" || some[2].Label != "Comment for the session 3-4…" {
+		t.Errorf("labels = %q, %q", some[1].Label, some[2].Label)
+	}
+	some[1].OnClick()
+	if wrote != "a.go:3-4 " {
+		t.Errorf("wrote %q", wrote)
+	}
+	some[2].OnClick()
+	if !commented {
+		t.Error("the comment item opened no composer")
+	}
+}
+
+func TestDockInjectorRefusesWithoutASession(t *testing.T) {
+	if dockInjector(nil, "")("x") {
+		t.Error("a session-less inject reported taken")
+	}
+}

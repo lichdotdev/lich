@@ -54,8 +54,7 @@ func storedTheme(light bool) string {
 }
 
 // setLight repaints the whole window from the light or the dark palette:
-// the kit theme every widget draws with, the tokens the diff list still
-// reads, and the terminals' default colors.
+// the kit theme every widget draws with, and the terminals' default colors.
 func (u *window) setLight(light bool) {
 	u.light = light
 	p, term := ui.Dark, darkTerminal
@@ -63,8 +62,7 @@ func (u *window) setLight(light bool) {
 		p, term = ui.Light, lightTerminal
 	}
 	u.theme.Palette, u.theme.Surface = p, p.Canvas
-	useColors(p)
-	u.th.Fg, u.th.Bg = colForeground, colBackground
+	u.th.Fg, u.th.Bg = p.Foreground, p.Background
 	u.terms.setColors(term)
 }
 

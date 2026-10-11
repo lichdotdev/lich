@@ -49,10 +49,9 @@ type footer struct {
 	widgets  map[string]*footerWidgets
 	menu     ui.MenuState
 	editor   footerEditor
-	// reviewing is Review changes pressed: the stage shows the checkout's
-	// diff instead of the terminal, where the web opens its dock's Review tab.
-	reviewing bool
-	toaster   *ui.Toaster
+	// dock is what Browse code and Review changes open, on their tab.
+	dock    *dock
+	toaster *ui.Toaster
 }
 
 func newFooter(ctx context.Context, client *lichclient.Client, root *ui.Root, usage *footerUsage, invalidate func()) *footer {
@@ -180,14 +179,14 @@ func (f *footer) act(gtx C, in footerInput) {
 	if f.w("attach").click.Clicked(gtx) && in.sessionID != "" {
 		go f.attach(in)
 	}
-	// ponytail: Browse code toggles the web's right dock, which this window
-	// does not have yet; the dock is what gives it a target and its pressed
-	// fill.
-	f.w("files").click.Clicked(gtx)
-	if f.w("changes").click.Clicked(gtx) {
-		f.reviewing = !f.reviewing
+	if f.w("files").click.Clicked(gtx) {
+		f.dock.tab = f.dock.tab.toggled(dockCode)
 	}
-	f.w("changes").pressed = f.reviewing
+	if f.w("changes").click.Clicked(gtx) {
+		f.dock.tab = f.dock.tab.toggled(dockReview)
+	}
+	f.w("files").pressed = f.dock.tab == dockCode
+	f.w("changes").pressed = f.dock.tab == dockReview
 	if f.w("pr").click.Clicked(gtx) && in.pr != nil {
 		// The web opens its Pulls screen; this window has none, so the PR
 		// opens in the browser as the card's PR chip does.

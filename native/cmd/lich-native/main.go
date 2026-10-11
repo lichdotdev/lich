@@ -43,7 +43,7 @@ var (
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
-	flagTab      = flag.String("tab", "terminal", "what the stage shows at start: terminal or diff (Review changes pressed)")
+	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), or the dock on code or review")
 	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
 
@@ -71,7 +71,8 @@ type window struct {
 	client  *lichclient.Client
 	model   *model
 	terms   *terminals
-	diff    *diffView
+	review  *reviewPanel
+	dock    *dock
 	sidebar *sidebar
 	footer  *footer
 	topbar  *topbar
@@ -110,7 +111,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	}
 	th := material.NewTheme()
 	th.Shaper = text.NewShaper(text.WithCollection(append(gofont.Collection(), faces...)))
-	th.Fg, th.Bg = colForeground, colBackground
+	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	u := &window{
 		ctx: ctx, client: client, th: th,
@@ -125,12 +126,18 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.topbar = newTopbar(&u.root)
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
 	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
-	if u.diff, err = newDiffView(client, w.Invalidate, *flagFont, unit.Sp(*flagSize), th); err != nil {
+	u.footer.toaster = &u.toaster
+	comments, notify := new(commentStore), func(t ui.Toast) { u.toaster.Show(t) }
+	if u.review, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), w.Invalidate, notify); err != nil {
 		return err
 	}
-	u.diff.toaster = &u.toaster
-	u.footer.toaster = &u.toaster
-	u.footer.reviewing = *flagTab == "diff"
+	code, err := newCodeTab(client, w.Invalidate, *flagFont, comments, notify)
+	if err != nil {
+		return err
+	}
+	u.dock = newDock(code, u.review)
+	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
+	u.footer.dock = u.dock
 	if *flagToasts != "" {
 		if err := u.raiseDemoToasts(*flagToasts); err != nil {
 			return err
@@ -204,6 +211,12 @@ func (u *window) connect() error {
 	if err := u.loadSidebar(); err != nil {
 		return err
 	}
+	if u.dock.widthRem, err = loadDockWidth(u.ctx, u.client); err != nil {
+		return err
+	}
+	if u.review.hiding, err = loadHideWhitespace(u.ctx, u.client); err != nil {
+		return err
+	}
 	if err := u.footer.start(); err != nil {
 		return err
 	}
@@ -233,6 +246,7 @@ func (u *window) layout(gtx C) error {
 		closed := u.topbar.layoutConfirm(gtx, u.theme)
 		u.footer.editorLayout(gtx, u.theme, v.in)
 		u.resume.layout(u.ctx, gtx, u.theme, u.gate, u.model)
+		u.review.layoutDialogs(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)
@@ -254,7 +268,6 @@ type stageView struct {
 	active    sessionView
 	hasActive bool
 	home      bool
-	reviewing bool // the checkout's diff in place of the terminal
 	in        footerInput
 	tabs      []projectTab
 	project   string // the active tab's project
@@ -263,7 +276,6 @@ type stageView struct {
 func (u *window) stageView(now time.Time) stageView {
 	v := stageView{in: u.footer.input(u.model, now), home: u.model.onHome()}
 	v.active, v.hasActive = u.model.activeSession()
-	v.reviewing = u.footer.reviewing && v.in.isGit
 	v.tabs, v.project = u.model.projectTabs()
 	u.topbar.open.refresh(u.ctx, u.client, v.tabs, u.model.invalidate)
 	return v
@@ -289,7 +301,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
-					err = u.island(gtx, v)
+					err = u.stageRow(gtx, v)
 					return D{Size: gtx.Constraints.Max}
 				}),
 				layout.Rigid(func(gtx C) D { return u.footer.layoutBar(gtx, u.theme, v.in) }),
@@ -328,10 +340,10 @@ func (u *window) island(gtx C, v stageView) error {
 		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell")
 		return nil
 	}
-	if err := u.content(gtx, v.active, v.reviewing); err != nil {
+	if err := u.content(gtx, v.active); err != nil {
 		return err
 	}
-	if !v.reviewing && u.terms.has(v.active.ID) {
+	if u.terms.has(v.active.ID) {
 		u.drop.setRect(image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
 		if u.drop.hinting() || *flagDropHint {
 			dropHint(gtx, u.theme.On(fill), v.active.Label, v.active.sandbox.Confined)
@@ -343,7 +355,7 @@ func (u *window) island(gtx C, v stageView) error {
 // islandColor is the terminal's own background while it is on the island,
 // else the theme's.
 func (u *window) islandColor(v stageView) color.NRGBA {
-	if v.home || !v.hasActive || v.reviewing || u.terms.background.A == 0 {
+	if v.home || !v.hasActive || u.terms.background.A == 0 {
 		return u.theme.Background
 	}
 	return u.terms.background
@@ -355,6 +367,37 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
 		tabs: v.tabs, active: v.project, pending: u.model.notifications(), light: u.light,
 	}
+}
+
+// stageRow is App.tsx's row above the footer: the island and, gap-1.5 to its
+// right, the dock, which covers the whole row in full screen. Home has no
+// dock, as the web's project-less screens have no checkout to show.
+func (u *window) stageRow(gtx C, v stageView) error {
+	if u.dock.tab == dockClosed || v.home {
+		return u.island(gtx, v)
+	}
+	size := gtx.Constraints.Max
+	w := u.dock.width(gtx)
+	island := gtx
+	if w > 0 {
+		island.Constraints = layout.Exact(image.Pt(max(size.X-w-gtx.Dp(gutter), 0), size.Y))
+	}
+	if err := u.island(island, v); err != nil {
+		return err
+	}
+	at := 0
+	if w > 0 {
+		at = size.X - w
+	}
+	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
+	gtx.Constraints = layout.Exact(image.Pt(size.X-at, size.Y))
+	in := dockInput{sessionID: v.in.sessionID, checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light}
+	save, err := u.dock.layout(gtx, u.theme, &u.root, in)
+	if save {
+		rem := u.dock.widthRem
+		go func() { u.logErr("dock width", saveDockWidth(u.ctx, u.client, rem)) }()
+	}
+	return err
 }
 
 // gutter is the canvas around the sidebar: App.tsx's pl-1.5 and gap-1.5.
@@ -399,12 +442,7 @@ func (u *window) lostNotice(gtx C) D {
 	})
 }
 
-func (u *window) content(gtx C, active sessionView, reviewing bool) error {
-	if reviewing {
-		u.diff.watch(active.path)
-		return u.diff.layout(gtx, u.th)
-	}
-	u.diff.close()
+func (u *window) content(gtx C, active sessionView) error {
 	resume, ok := "", u.terms.has(active.ID)
 	if !ok {
 		resume, ok = u.gate.release(u.ctx, active)
@@ -416,7 +454,7 @@ func (u *window) content(gtx C, active sessionView, reviewing bool) error {
 	if err != nil {
 		return err
 	}
-	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys() && !u.footer.holdsKeys())
+	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys() && !u.footer.holdsKeys() && !u.dock.holdsKeys(gtx))
 }
 
 func (u *window) apply(act sidebarAction) {

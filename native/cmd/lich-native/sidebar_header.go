@@ -34,12 +34,13 @@ var (
 // sidebarHeader is SessionSidebar's top row and the filter it reveals. The
 // filter is never persisted (sidebarFilter says why).
 type sidebarHeader struct {
-	newMenu  ui.MenuState
-	newHover widget.Clickable // the trigger's hover; the menu takes the press
-	search   widget.Clickable
-	collapse widget.Clickable
-	open     bool
-	query    widget.Editor
+	newMenu    ui.MenuState
+	newHover   widget.Clickable // the trigger's hover; the menu takes the press
+	search     widget.Clickable
+	collapse   widget.Clickable
+	open       bool
+	query      widget.Editor
+	clearQuery widget.Clickable
 	// focusQuery asks for the field's focus on the frame after it opens: the
 	// press that opened it is the request for it (autoFocus).
 	focusQuery    bool
@@ -128,7 +129,7 @@ func (s *sidebar) filterRow(gtx C, th *ui.Theme, view sidebarView) D {
 	}
 	h.searchFocused = gtx.Focused(&h.query)
 	field := th.Input(&h.query, filterSessionsHint)
-	field.Leading, field.Height, field.TextSize = icSearch, ui.Space(7), ui.TextXS
+	field.Leading, field.Height, field.TextSize, field.Clear = icSearch, ui.Space(7), ui.TextXS, &h.clearQuery
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(field.Layout),
 		ui.VGap(1.5),
