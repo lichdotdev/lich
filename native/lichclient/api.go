@@ -35,6 +35,9 @@ type Session struct {
 	// MCPServers are the servers the session's spawn found registered with
 	// its provider, which divide an MCP tool's name into server and tool.
 	MCPServers []string `json:"mcpServers"`
+	// Profile is the Claude Code profile the session runs in (a slug), "" for
+	// Personal and for every other provider.
+	Profile string `json:"profile"`
 }
 
 // DiffStats mirrors project.DiffStats.

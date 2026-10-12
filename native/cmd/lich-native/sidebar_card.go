@@ -64,7 +64,11 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		rename = new(ui.InlineEdit)
 		s.renames[sv.ID] = rename
 	}
-	entries := cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) })
+	var extra []ui.MenuEntry
+	if len(sv.continueIn) > 0 {
+		extra = append(extra, continueInItem(th, sv, &act))
+	}
+	entries := cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
 	d := th.ContextMenu(s.root, menu, entries).Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, pinClick, closeClick, prChip, fill) })
 	})
@@ -108,7 +112,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 		rows = append(rows, ui.VGap(2), layout.Rigid(rung))
 	}
 	rows = append(rows, ui.VGap(2), layout.Rigid(th.Text(ui.TextXS, path).Muted().Mono().LayoutTail))
-	if sv.git.Branch != "" {
+	if sv.git.Branch != "" || sv.profileName != "" {
 		rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.branchRow(gtx, th, sv, prChip) }))
 	}
 	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
@@ -177,10 +181,16 @@ func (s *sidebar) cardControls(gtx C, th *ui.Theme, sv *sessionView, pin, close 
 // pull request, and the checkout's changes.
 func (s *sidebar) branchRow(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.Clickable) D {
 	git := sv.git
-	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return s.icBranch.Layout(gtx, 12, th.MutedForeground) }),
-		ui.Gap(1),
-		layout.Flexed(1, th.Text(ui.TextXS, git.Branch).Muted().Layout),
+	children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} })}
+	if git.Branch != "" {
+		children = []layout.FlexChild{
+			layout.Rigid(func(gtx C) D { return s.icBranch.Layout(gtx, 12, th.MutedForeground) }),
+			ui.Gap(1),
+			layout.Flexed(1, th.Text(ui.TextXS, git.Branch).Muted().Layout),
+		}
+	}
+	if sv.profileName != "" {
+		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return profileChip(gtx, th, sv.profileName) }))
 	}
 	if standing := standingOf(sv.base); standing.count > 0 {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return s.baseReadout(gtx, th, standing) }))

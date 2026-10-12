@@ -124,6 +124,7 @@ type sidebarAction struct {
 	terminalAt, editorAt, folderAt string
 	rename                         sessionRename
 	color, colorTo                 string // session id, and its new tint ("" for the theme)
+	continueIn                     continueRequest
 	sidebarWrites
 }
 

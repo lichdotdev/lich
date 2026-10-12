@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,6 +45,7 @@ var (
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
 	flagTab      = flag.String("tab", "terminal", "what opens at start beside the terminal: terminal (nothing), or the dock on code or review")
+	flagWindow   = flag.String("window", "1400x900", "the window's size in dp, WxH, for -shot")
 	flagDropHint = flag.Bool("drop-hint", false, "draw the file-drop hint over the terminal as if a drag were over it, for -shot")
 )
 
@@ -54,8 +56,9 @@ func main() {
 		log.Fatal(err)
 	}
 	go func() {
+		width, height := windowSize(*flagWindow)
 		w := new(app.Window)
-		w.Option(app.Title("lich (native slice)"), app.Size(unit.Dp(1400), unit.Dp(900)))
+		w.Option(app.Title("lich (native slice)"), app.Size(width, height))
 		code := 0
 		if err := run(w, rt); err != nil {
 			log.Print(err)
@@ -134,6 +137,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.appearance = &appearance{ctx: ctx, client: client, invalidate: w.Invalidate}
 	u.toaster.Invalidate = w.Invalidate
 	u.terms.toaster = &u.toaster
+	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
 	u.topbar = newTopbar(&u.root)
 	u.notifier = newNotifier(ctx, client, w.Invalidate)
@@ -161,6 +165,9 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.dock = newDock(code, u.review)
 	u.settings.applyEditor = u.takeEditorPref
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
+	u.settings.providers.claude.book = u.model.profiles
+	u.settings.providers.claude.openTerminal = u.openLoginTerminal
+	u.model.loginProgress = u.settings.loginProgress
 	u.settings.providers.onProjectDefault = u.model.setProjectDefault
 	u.settings.providers.onLaunchChanged = func() {
 		go func() { u.logErr("load providers", u.model.loadProviders(u.ctx)) }()
@@ -270,6 +277,16 @@ func (u *window) connect() error {
 		u.settings.providers.adding, u.settings.providers.addingSet = *flagSettingsAdd, *flagSettingsAdd
 		u.settings.updates.patch.open = *flagPatchNotes
 		u.settings.nav.query.SetText(*flagSettingsQuery)
+		if *flagProfileDialog != "" {
+			if err := u.settings.showProfileDialog(*flagProfileDialog); err != nil {
+				return err
+			}
+		}
+	}
+	if *flagProfileUsage != "" {
+		if err := u.model.profiles.seedProfilePlans(*flagProfileUsage); err != nil {
+			return err
+		}
 	}
 	if *flagCustomizeFooter {
 		u.customizeFooter()
@@ -283,6 +300,7 @@ func (u *window) connect() error {
 		return err
 	}
 	go u.model.follow(u.ctx, events)
+	go u.model.profiles.keepFresh(u.ctx)
 	go u.model.pollGit(u.ctx)
 	return nil
 }
@@ -295,6 +313,9 @@ func (u *window) layout(gtx C) error {
 		return nil
 	}
 	u.sidebar.morph.advance(gtx)
+	if *flagCardMenu != "" {
+		u.openShotMenu()
+	}
 	fired := u.pollHotkeys(gtx)
 	var act sidebarAction
 	var top topbarAction
@@ -313,6 +334,7 @@ func (u *window) layout(gtx C) error {
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
 		u.settings.layoutProviderDialog(gtx, u.theme)
+		u.settings.layoutClaudeDialog(gtx, u.theme)
 		u.settings.layoutPatchNotesDialog(gtx, u.theme)
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)
@@ -576,6 +598,7 @@ func (u *window) apply(act sidebarAction) {
 		go func() { u.logErr("pin session", u.client.SetSessionPinned(u.ctx, id, pinned)) }()
 	}
 	u.applyOpenIn(act)
+	u.applyContinueIn(act)
 	u.applySidebarWrites(act.sidebarWrites)
 	if act.color != "" && u.model.setColor(act.color, act.colorTo) {
 		u.model.invalidate()
@@ -692,4 +715,15 @@ func (u *window) newSession(l launchRequest, typeahead string) {
 	u.model.setActive(u.ctx, id)
 	u.logErr("set active session", u.client.SetActiveSession(u.ctx, p.ID, id))
 	u.model.invalidate()
+}
+
+// windowSize reads -window; one that is not WxH is the default size.
+func windowSize(spec string) (width, height unit.Dp) {
+	w, h, ok := strings.Cut(spec, "x")
+	wi, errW := strconv.Atoi(w)
+	hi, errH := strconv.Atoi(h)
+	if !ok || errW != nil || errH != nil || wi <= 0 || hi <= 0 {
+		return 1400, 900
+	}
+	return unit.Dp(wi), unit.Dp(hi)
 }

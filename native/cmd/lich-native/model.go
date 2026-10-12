@@ -52,8 +52,12 @@ type model struct {
 	folds         map[string]bool                   // foldKey -> block folded, once read or written
 	providers     []launchProvider                  // detected providers with their enabled flags
 	globalDefault string                            // the global provider.default setting
+	// profiles is who is logged in to each Claude Code profile.
+	profiles *profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
+	// loginProgress takes each step of a Claude Code profile login.
+	loginProgress func(lichclient.ClaudeProfileLogin)
 }
 
 // sessionCwd is a session-cwd payload: where the session's shell is, or the
@@ -67,7 +71,8 @@ type sessionCwd struct {
 func newModel(client *lichclient.Client, invalidate func()) *model {
 	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
-		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{}}
+		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
+		profiles: newProfileBook(client, invalidate)}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -183,6 +188,16 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			}
 			if json.Unmarshal(ev.Data, &s) == nil {
 				m.rename(s.ID, s.Label)
+			}
+		case lichclient.ClaudeProfileEvent:
+			var moved lichclient.ClaudeProfileMoved
+			if json.Unmarshal(ev.Data, &moved) == nil {
+				m.setProfile(moved.ID, moved.Profile)
+			}
+		case lichclient.ClaudeProfileLoginEvent:
+			var step lichclient.ClaudeProfileLogin
+			if json.Unmarshal(ev.Data, &step) == nil && m.loginProgress != nil {
+				m.loginProgress(step)
 			}
 		case "session-opened", "session-closed", "project-opened", "sessions-filed", "sessions-colored":
 			if err := m.reload(ctx); err != nil {
@@ -306,6 +321,10 @@ type sessionView struct {
 	git       lichclient.DiffStats
 	base      *lichclient.BaseStatus  // nil without a base to stand against
 	pr        *lichclient.PullRequest // open PR of the shown path's branch, nil for none
+	// profileName is the Claude Code profile the session runs in, "" for
+	// Personal; continueIn are the other logins its conversation could move to.
+	profileName string
+	continueIn  []continueTarget
 }
 
 // viewOf is what s's card shows at now. Callers hold m.mu.
@@ -319,6 +338,7 @@ func (m *model) viewOf(p lichclient.Project, s lichclient.Session, now time.Time
 		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
 		base: m.base[shown], pr: m.prs[shown].pr,
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID),
+		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
 	}
 }
 

@@ -31,11 +31,15 @@ var (
 
 // planBlock is PlanUsageSetting: what is left of the provider's subscription,
 // the state of the provider above everything that configures it. It is a
-// reading, not a setting, so it has no scope of its own.
-func (s *settingsScreen) planBlock(gtx C, th *ui.Theme, values scopedValues, plan lichclient.QuotaPlan, first bool) D {
+// reading, not a setting, so it has no scope of its own. heading is the title
+// it is drawn under, planTitle when "".
+func (s *settingsScreen) planBlock(gtx C, th *ui.Theme, values scopedValues, plan lichclient.QuotaPlan, first bool, heading string) D {
 	r := s.providerRow(gtx, settingEntry{title: planTitle}, values)
 	r.kind, r.overriddenIn = rowPlain, nil
 	r.description = planDesc
+	if heading != "" {
+		r.title = heading
+	}
 	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D { return planBody(gtx, th, plan) })
 }
 

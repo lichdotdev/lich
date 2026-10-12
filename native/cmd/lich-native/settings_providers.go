@@ -207,6 +207,8 @@ func kindsWhere(has func(kind string) bool) []string {
 func providerEntries() []settingEntry {
 	return []settingEntry{
 		{title: providerDefaultTitle, also: providerDefaultAlso, key: providerDefaultKey, scope: scopeOverridable},
+		{title: profileTitle, also: profileAlso, key: claudeProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{claudeKind}},
+		{title: profilesTitle, also: profilesAlso, perProvider: true, onlyFor: []string{claudeKind}},
 		{title: planTitle, also: planAlso, perProvider: true},
 		{title: binTitle, also: binAlso, perProvider: true},
 		{title: skipTitle, also: skipAlso, perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
@@ -258,6 +260,9 @@ func providerPasteKey(kind string) string { return "provider." + kind + ".pasteU
 // read; only the ones the provider has a control for.
 func providerGlobalKeys(kind string) []string {
 	keys := []string{providerEnabledKey(kind), providerBinKey(kind), providerBinOffKey(kind), restoreKey(kind)}
+	if kind == claudeKind {
+		keys = append(keys, claudeProfileKey)
+	}
 	if hasSkipFlag(kind) {
 		keys = append(keys, providerSkipKey(kind, false), providerSkipKey(kind, true))
 	}
@@ -542,6 +547,9 @@ type providerSettings struct {
 
 	bin binInput
 
+	// claude is the Claude Code screen's profiles.
+	claude claudeSettings
+
 	skip, restore  widget.Enum
 	ultra, agents  ui.SwitchState
 	unfold, header ui.SwitchState
@@ -584,6 +592,7 @@ func (p *providerSettings) revalidate() {
 	p.checks, p.asked, p.askedOff, p.projectOff = nil, nil, nil, nil
 	p.mu.Unlock()
 	p.addingSet = false
+	p.claude.asked = false
 }
 
 // loadProviders rereads the machine: detection, each provider's enabled flag

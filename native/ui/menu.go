@@ -41,6 +41,12 @@ type MenuEntry struct {
 	Label    string
 	Icon     *icons.Icon
 	Shortcut string
+	// ShortcutDestructive draws the shortcut in the destructive color, for a
+	// trailing note that is a warning.
+	ShortcutDestructive bool
+	// Lead is a mark of the caller's own, an avatar, drawn in the Icon's
+	// place at the icon's size.
+	Lead     func(gtx C, size unit.Dp) D
 	Variant  Variant
 	Inset    bool
 	Disabled bool
@@ -92,6 +98,19 @@ type menuLevel struct {
 
 // Opened reports whether the menu is showing.
 func (s *MenuState) Opened() bool { return s.open }
+
+// OpenAt opens the menu as if the pointer had come to origin and walked path,
+// a row per level with each submenu on it open: a still frame of a menu for
+// -shot, which has no pointer to walk it.
+func (s *MenuState) OpenAt(origin image.Point, path ...int) {
+	s.menuOpen(image.Rectangle{Min: origin, Max: origin}, origin)
+	for i, row := range path {
+		s.levels[i].highlight = row
+		if i < len(path)-1 {
+			s.levels = append(s.levels, &menuLevel{highlight: -1})
+		}
+	}
+}
 
 func (s *MenuState) menuOpen(anchor image.Rectangle, origin image.Point) {
 	s.open, s.focus, s.anchor, s.origin = true, true, anchor, origin
@@ -567,6 +586,9 @@ func (m menuCore) rowColors(e MenuEntry, highlighted bool) menuColors {
 	if highlighted {
 		c = menuColors{bg: p.Accent, fg: p.AccentForeground, icon: p.AccentForeground, shortcut: p.AccentForeground}
 	}
+	if e.ShortcutDestructive {
+		c.shortcut = p.Destructive
+	}
 	if e.Variant == VariantDestructive {
 		c.fg, c.icon = p.Destructive, p.Destructive
 		if highlighted {
@@ -632,7 +654,12 @@ func (m menuCore) leading(gtx C, e MenuEntry, col menuColors) D {
 		return layout.W.Layout(gtx, m.panel.Text(TextXS, e.Label).In(col.fg).Weight(font.Medium).Layout)
 	}
 	var children []layout.FlexChild
-	if e.Icon != nil {
+	switch {
+	case e.Lead != nil:
+		children = append(children,
+			layout.Rigid(func(gtx C) D { return e.Lead(gtx, menuIconSize) }),
+			layout.Rigid(layout.Spacer{Width: menuGap}.Layout))
+	case e.Icon != nil:
 		children = append(children,
 			layout.Rigid(func(gtx C) D { return e.Icon.Layout(gtx, menuIconSize, col.icon) }),
 			layout.Rigid(layout.Spacer{Width: menuGap}.Layout))

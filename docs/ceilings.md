@@ -1236,3 +1236,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   start gate reads the profile's own plugin state, but the nested-subagent-cards check and the MCP servers a
   card lists read Personal's, so a profile on an older lich plugin than Personal's can be offered cards its
   plugin cannot open.
+- **Profiles are managed in the native window only, and the window asks every profile at start**: the web
+  window has no profile screen, no card tag and no Continue in (it is in maintenance, `docs/native-window.md`),
+  though what it opens or resumes runs in its profile, the backend deciding. The native window reads
+  `claudeprofile.Profiles` when it opens and when Settings does, which runs one `claude auth status` per
+  profile, and keeps each logged-in profile's plan reading fresh only while there are two to move between. A
+  login the dialog starts is `claude auth login --claudeai`, which opens the browser itself and takes the
+  callback on a localhost port of its own (measured on 2.1.296); the address it prints, which redirects to a
+  page that shows a code, and the field that takes the code are for a browser that cannot reach this machine.

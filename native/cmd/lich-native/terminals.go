@@ -75,6 +75,10 @@ type terminals struct {
 	// sent right after Start; the PTY holds it until the shell reads it.
 	typeahead map[string]string
 	toaster   *ui.Toaster
+	// profileGone takes a session whose Claude Code profile was deleted: its
+	// spawn is refused, so a toast in place of the generic failure offers a
+	// way on.
+	profileGone func(s sessionView)
 }
 
 // queue sends text to session id's terminal once it starts.
@@ -166,6 +170,10 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Unlock()
 	// A failed start leaves the terminal in place, empty, as the web's does.
 	if err := ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, resume, cols, rows); err != nil {
+		if lichclient.ProfileGone(err) && ts.profileGone != nil {
+			ts.profileGone(s)
+			return t, nil
+		}
 		ts.toaster.Show(failure(toastStartFailed, err))
 		return t, nil
 	}

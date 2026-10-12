@@ -200,7 +200,7 @@ func (s *settingsScreen) providerListRow(gtx C, th *ui.Theme, values scopedValue
 	if s.scope != "" {
 		projectDefault, _ = values.set(providerDefaultKey, s.scope)
 	}
-	tags := providerTags(p.id, projectDefault, m.skipLevel(p.id))
+	tags := append(providerTags(p.id, projectDefault, m.skipLevel(p.id)), s.profileTags(p.id, values, m)...)
 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Stack{}.Layout(gtx,
@@ -428,10 +428,21 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 		first = false
 		rows = append(rows, func(gtx C) D { return draw(gtx, isFirst) })
 	}
-	if plan, ok := s.planOf(p.id); ok {
-		add(planTitle, func(gtx C, first bool) D { return s.planBlock(gtx, th, values, plan, first) })
+	claude := p.id == claudeKind && s.providers.claude.book != nil
+	if claude {
+		s.ensureProfiles()
+		add(profileTitle, func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, values, m, first) })
+		add(profilesTitle, func(gtx C, first bool) D { return s.profilesBlock(gtx, th, values, first) })
+		slug := s.scopeProfile(values, m)
+		if plan, ok := s.claudePlan(slug); ok {
+			add(planTitle, func(gtx C, first bool) D { return s.claudePlanBlock(gtx, th, values, slug, plan, first) })
+		}
+	} else {
+		if plan, ok := s.planOf(p.id); ok {
+			add(planTitle, func(gtx C, first bool) D { return s.planBlock(gtx, th, values, plan, first, "") })
+		}
+		add(binTitle, func(gtx C, first bool) D { return s.binBlock(gtx, th, values, m, p, first) })
 	}
-	add(binTitle, func(gtx C, first bool) D { return s.binBlock(gtx, th, values, m, p, first) })
 	if hasSkipFlag(p.id) {
 		add(skipTitle, func(gtx C, first bool) D { return s.skipBlock(gtx, th, values, m, p, first) })
 	}
@@ -446,6 +457,9 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 	}
 	if canResume(p.id) {
 		add(restoreTitle, func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, m, p, first) })
+	}
+	if claude {
+		add(binTitle, func(gtx C, first bool) D { return s.advancedBinaryFold(gtx, th, values, m, p, first) })
 	}
 	return rows
 }

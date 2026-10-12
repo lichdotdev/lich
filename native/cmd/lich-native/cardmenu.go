@@ -35,7 +35,9 @@ const (
 // what the pin withholds.
 //
 // ponytail: English labels until the native window has i18n.
-func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename, newFolder func()) []ui.MenuEntry {
+//
+// extra are entries the window adds after Pull request, such as Continue in.
+func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename, newFolder func(), extra ...ui.MenuEntry) []ui.MenuEntry {
 	pin := ui.MenuEntry{Label: "Pin", Icon: icMenuPin, OnClick: func() { act.pin, act.pinTo = sv.ID, true }}
 	if sv.Pinned {
 		pin = ui.MenuEntry{Label: "Unpin", Icon: icMenuUnpin, OnClick: func() { act.pin, act.pinTo = sv.ID, false }}
@@ -50,6 +52,7 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 		{Kind: ui.MenuSubTrigger, Label: "Open in", Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
 	}
+	entries = append(entries, extra...)
 	if !sv.Pinned {
 		entries = append(entries,
 			ui.MenuEntry{Kind: ui.MenuSeparator},

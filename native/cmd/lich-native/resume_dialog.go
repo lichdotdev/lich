@@ -21,6 +21,8 @@ const (
 	resumeThisProvider     = "this provider"
 	resumeStartNew         = "Start new"
 	resumeResume           = "Resume"
+	resumeInProfile        = "It resumes in %s · %s, the profile it started in."
+	resumeInProfileNoMail  = "It resumes in %s, the profile it started in."
 )
 
 // resumeDialog is ResumeSessionDialog: whether a restored card continues
@@ -58,7 +60,11 @@ func (r *resumeDialog) layout(ctx context.Context, gtx C, th *ui.Theme, g *spawn
 		go g.answer(ctx, restoreResume, r.remember.Value)
 	}
 	pop := th.On(th.Popover)
-	d := th.Dialog(&r.dialog, open, resumeTitle, fmt.Sprintf(resumeDescription, r.shown.Label, r.shown.ProviderSessionID))
+	description := fmt.Sprintf(resumeDescription, r.shown.Label, r.shown.ProviderSessionID)
+	if line := m.resumeProfileLine(r.shown); line != "" {
+		description += " " + line
+	}
+	d := th.Dialog(&r.dialog, open, resumeTitle, description)
 	d.MaxWidth = ui.DialogWidthXL
 	d.Body = func(gtx C) D { return r.rememberRow(gtx, pop, r.provider) }
 	startNew := pop.Button(&r.startNew, resumeStartNew)

@@ -9,17 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Claude Code profiles: more than one account, each with its full login.**
-  Make a profile per account in Settings and log it in with Claude Code's own
-  `claude auth login` (or from a terminal card), and plan usage, plugins and
-  every Claude Code feature work for it as they do for your own; the setup
-  tokens a wrapper binary used to hand over carried none of that. Your
+- **Claude Code profiles: more than one account, each with its full login, in
+  the native window.** Open Settings › Providers › Claude Code in `lich native`
+  (experimental) and make a profile per account: **New profile** takes a name
+  and the plugins to bring from Personal, then logs it in with Claude Code's own
+  `claude auth login` in a dialog (or from a terminal card), and plan usage,
+  plugins and every Claude Code feature work for it as they do for your own; the
+  setup tokens a wrapper binary used to hand over carried none of that. Your
   settings, `CLAUDE.md`, agents, commands, skills and hooks stay shared across
   profiles, the plugins you pick are installed into the new one under its
   account's policy, and the lich plugin is installed there for you. A project
-  picks the profile its new sessions start in, a session keeps the one it was
-  born in, and **Continue in** moves a session's conversation to another
-  account and carries on in the same card. Claude Code only for now.
+  picks the profile its new sessions start in (**Profile**, in the Global and
+  project scopes), a session keeps the one it was born in and its card names it,
+  and **Continue in** on the card's menu moves a session's conversation to
+  another logged-in account, with its five-hour usage beside it, and carries on
+  in the same card. The web window does not show profiles. Claude Code only for
+  now.
 - **`lich native` opens an experimental native window.** It is built in Go on
   Gio, beside the web window, and opens on the running lich (starting one when
   none runs) after closing the web window, so your sessions stay where they
