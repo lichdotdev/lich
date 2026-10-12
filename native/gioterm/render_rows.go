@@ -99,7 +99,7 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 	for x, c := range row {
 		st := styleOf(c, sn)
 		if x == cursorX {
-			st.fg, st.bg = st.bg, st.fg
+			st = cursorStyleOf(c, sn)
 		}
 		styles[x] = st
 		if st.bg != sn.bg {

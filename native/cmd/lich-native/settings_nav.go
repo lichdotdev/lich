@@ -21,7 +21,6 @@ import (
 // ponytail: English until the native window has i18n.
 const (
 	scopeLabelGlobal  = "Scope"
-	scopeLabelProject = "Project"
 	scopeGlobal       = "Global"
 	scopeOpenProjects = "Open projects"
 	scopeChangeOne    = "1 change"
@@ -35,7 +34,7 @@ const navDimOpacity = 0.45
 var (
 	navRowHeight   = ui.Space(8)
 	navRowPadX     = ui.Space(2.5)
-	navScopeHeight = ui.Space(11)
+	navScopeHeight = ui.Space(10)
 	navScopeMenuW  = unit.Dp(212)
 	navBadgeSize   = unit.Dp(18)
 	navBadgeFill   = float32(0.2)
@@ -61,6 +60,7 @@ type settingsNav struct {
 	hits       []widget.Clickable
 	list       widget.List
 	closeTip   ui.Tooltip
+	scopeTip   ui.Tooltip
 }
 
 func (n *settingsNav) init() {
@@ -77,15 +77,15 @@ func (s *settingsScreen) navLayout(gtx C, th *ui.Theme, values scopedValues) D {
 		n.searched, n.cursor = q, 0
 	}
 	s.searchKeys(gtx, hits)
-	return layout.Inset{Top: ui.Space(3), Left: ui.Space(2), Right: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Top: ui.Space(2), Left: ui.Space(2), Right: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: ui.Space(1), Right: ui.Space(1), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 					return s.scopeSelector(gtx, th, values)
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: ui.Space(1), Right: ui.Space(1), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 					field := th.Input(&n.query, settingsSearchHint)
 					field.Leading, field.LeadingSize, field.Height, field.TextSize, field.Clear = icNavSearch, unit.Dp(15), ui.Space(8), 13, &n.clear
 					return field.Layout(gtx)

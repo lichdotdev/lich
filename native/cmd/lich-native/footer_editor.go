@@ -1,14 +1,9 @@
 package main
 
 import (
-	"image"
 	"image/color"
-	"log"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/omartelo/lich/native/ui"
@@ -30,46 +25,60 @@ var footerZoneLabels = map[string]string{footerLeft: "Left", footerRight: "Right
 // placeholderOpacity is the chip left behind's opacity-30 while it is dragged.
 const placeholderOpacity = 0.3
 
-// footerEditor is the Customize footer dialog: FooterSettings' row and the
-// FooterLayoutEditor under it.
-//
-// ponytail: no FooterLayoutPreview and no spend ceiling. The real footer
-// stays in sight under the dialog's light scrim and takes every change live,
-// and the ceiling lives in the web's localStorage, out of this window's reach.
+// ponytail: English until the native window has i18n (settings.footerSettings,
+// settings.footerLayoutEditor).
+const (
+	footerTitle          = "Footer"
+	footerAlso           = "status bar layout arrange"
+	footerDescription    = "Drag an item between the sides, or out to hide it. Applies to every project."
+	footerLoading        = "Loading saved choices…"
+	footerSaving         = "Saving…"
+	footerRestoreDefault = "Restore default"
+	footerSaveFailed     = "Could not save the footer: %v"
+	footerPreviewHint    = "Preview · example values"
+	footerPreviewEmpty   = "No footer items selected"
+)
+
+// footerEditor is the state of Settings › Appearance › Footer, FooterSettings'
+// row and the FooterLayoutEditor and FooterLayoutPreview under it.
 type footerEditor struct {
-	open     bool
-	dialog   ui.DialogState
 	sortable ui.Sortable
 	restore  widget.Clickable
 }
 
-// editorLayout draws the dialog when open. Call it before the window's
-// content, so it takes Escape ahead of the terminal.
-func (f *footer) editorLayout(gtx C, th *ui.Theme, in footerInput) {
-	e := &f.editor
-	l, saving := f.snapshot()
-	ready := f.cost.isReady()
-	disabled := !ready || saving
-	if e.restore.Clicked(gtx) && !disabled {
+// editorState is the row's description, and whether the editor takes no
+// change: before the cost flag loads and while a change is being saved.
+func (f *footer) editorState() (description string, disabled bool) {
+	_, saving := f.snapshot()
+	switch {
+	case !f.cost.isReady():
+		return footerLoading, true
+	case saving:
+		return footerSaving, true
+	}
+	return footerDescription, false
+}
+
+// restoreButton is the row's Restore default.
+func (f *footer) restoreButton(gtx C, th *ui.Theme) D {
+	_, disabled := f.editorState()
+	if f.editor.restore.Clicked(gtx) && !disabled {
 		f.change(defaultFooterLayout())
 	}
-	description := "Drag an item between the sides, or out to hide it. Applies to every project."
-	switch {
-	case !ready:
-		description = "Loading saved choices…"
-	case saving:
-		description = "Saving…"
-	}
-	pop := th.On(th.Popover)
-	d := th.Dialog(&e.dialog, e.open, "Footer", description)
-	d.MaxWidth = ui.DialogWidthXL
-	d.Body = func(gtx C) D { return f.editorBody(gtx, pop, l, disabled, in) }
-	restore := pop.Button(&e.restore, "Restore default")
-	restore.Variant, restore.Size, restore.Disabled = ui.VariantGhost, ui.SizeXS, disabled
-	d.Actions = []layout.Widget{restore.Layout}
-	if d.Layout(gtx) {
-		e.open = false
-	}
+	b := th.Button(&f.editor.restore, footerRestoreDefault)
+	b.Variant, b.Size, b.Disabled = ui.VariantGhost, ui.SizeXS, disabled
+	return b.Layout(gtx)
+}
+
+// editorPanel is the editor and, mt-5 under it, the preview.
+func (f *footer) editorPanel(gtx C, th *ui.Theme) D {
+	l, _ := f.snapshot()
+	_, disabled := f.editorState()
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return f.editorBody(gtx, th, l, disabled, f.shown) }),
+		ui.VGap(5),
+		layout.Rigid(func(gtx C) D { return f.previewLayout(gtx, th, l, f.shown) }),
+	)
 }
 
 // editorBody is the two sides, one column per end of the real footer, over
@@ -111,8 +120,7 @@ func (f *footer) change(next footerLayout) {
 	f.mu.Unlock()
 	go func() {
 		if err := f.commit(next); err != nil {
-			// ponytail: logged; the web toasts it, and this window has no toasts yet.
-			log.Printf("Could not save the footer: %v", err)
+			f.toaster.Show(failure(footerSaveFailed, err))
 		}
 	}()
 }
@@ -186,10 +194,14 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 	}
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D {
+			d := fillIf(gtx, bg, ui.RadiusLG)
 			if f.editor.sortable.Over() == zone {
-				ringOutside(gtx, th.Ring, 2, ui.RadiusLG)
+				// Inside the box rather than the web's ring-2 outside it: the
+				// zone is clipped to its own bounds, which hid all but the
+				// corners of an outer ring.
+				insetRing(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Ring)
 			}
-			return fillIf(gtx, bg, ui.RadiusLG)
+			return d
 		},
 		func(gtx C) D {
 			gtx.Constraints.Min.Y = gtx.Dp(minHeight)
@@ -198,14 +210,6 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 			})
 		},
 	)
-}
-
-// ringOutside is a ring-* box-shadow width wide around the minimum
-// constraint, drawn before the box it rings.
-func ringOutside(gtx C, c color.NRGBA, width, radius unit.Dp) {
-	w := gtx.Dp(width)
-	box := image.Rectangle{Min: image.Pt(-w, -w), Max: gtx.Constraints.Min.Add(image.Pt(w, w))}
-	paint.FillShape(gtx.Ops, c, clip.UniformRRect(box, gtx.Dp(radius)+w).Op(gtx.Ops))
 }
 
 // chip is FooterEditorItem: the item's reading on a ghost xs button with an
@@ -277,4 +281,45 @@ func footerExample(id string) string {
 		}
 	}
 	return id
+}
+
+// previewLayout is FooterLayoutPreview: the hint over a rounded-lg
+// bg-sidebar strip, rounded like the zones above it where the web's is square,
+// that reads each side's items with example values. The items wrap as the
+// footer's own do, so the strip never scrolls.
+func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInput) D {
+	on := th.On(th.Sidebar)
+	strip := func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return fillIf(gtx, th.Sidebar, ui.RadiusLG) },
+			func(gtx C) D {
+				gtx.Constraints.Min.Y = gtx.Dp(ui.Space(12))
+				return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+					return previewSides(gtx, on, l, in)
+				})
+			})
+	}
+	return stack(gtx, 2, []layout.Widget{th.Text(ui.TextXS, footerPreviewHint).Muted().Layout, strip})
+}
+
+// previewSides is the footer's wrap: the left side, the right side at the
+// far end, or the empty line when neither holds an item.
+func previewSides(gtx C, th *ui.Theme, l footerLayout, in footerInput) D {
+	if len(l.Left)+len(l.Right) == 0 {
+		return layout.W.Layout(gtx, th.Text(ui.TextXS, footerPreviewEmpty).Muted().Layout)
+	}
+	side := func(items []string, justify ui.Justify) layout.Widget {
+		return func(gtx C) D {
+			kids := make([]ui.WrapChild, len(items))
+			for i, id := range items {
+				kids[i] = ui.WrapItem(func(gtx C) D { return itemReading(gtx, th, id, th.MutedForeground, in) })
+			}
+			return ui.Wrap{GapX: ui.Space(3), GapY: ui.Space(1), Justify: justify}.Layout(gtx, kids...)
+		}
+	}
+	return ui.Wrap{GapX: ui.Space(8), GapY: ui.Space(1), Justify: ui.JustifyBetween}.Layout(gtx,
+		ui.WrapItem(side(l.Left, ui.JustifyStart)),
+		ui.WrapMLAuto(side(l.Right, ui.JustifyEnd)),
+	)
 }

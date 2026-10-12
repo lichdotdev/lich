@@ -16,11 +16,13 @@ import (
 )
 
 // sidebarBackend is a backend holding settings by key@scope and answering
-// providers.Detect; every other call is recorded as "method(args)".
+// providers.Detect and themes.List; every other call is recorded as
+// "method(args)".
 type sidebarBackend struct {
 	mu       sync.Mutex
 	settings map[string]string
 	detected []lichclient.DetectedProvider
+	themes   []lichclient.Theme
 	calls    []string
 }
 
@@ -55,6 +57,8 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 		return nil
 	case "providers.Detect":
 		return f.detected
+	case "themes.List":
+		return f.themes
 	}
 	raw := make([]string, len(args))
 	for i, a := range args {

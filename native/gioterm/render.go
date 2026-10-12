@@ -94,6 +94,19 @@ func styleOf(c cell, sn snap) cellStyle {
 	return st
 }
 
+// cursorStyleOf is c drawn under the block cursor: on the cursor's color
+// with the terminal's background for ink, as xterm's default cursorAccent,
+// or inverted when the theme sets no cursor color.
+func cursorStyleOf(c cell, sn snap) cellStyle {
+	st := styleOf(c, sn)
+	if sn.hasCursor {
+		st.fg, st.bg = sn.bg, sn.cursor
+		return st
+	}
+	st.fg, st.bg = st.bg, st.fg
+	return st
+}
+
 // paintBackgrounds fills each run of cells whose background differs from the
 // terminal's, one rectangle per run.
 func paintBackgrounds(ops *op.Ops, row []cell, sn snap, cellW, cellH int) {

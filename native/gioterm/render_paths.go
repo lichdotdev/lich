@@ -116,12 +116,12 @@ func (g *grid) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8) (i
 	return repainted, nil
 }
 
-// drawCursor paints a block cursor that inverts the cell under it, so the
-// character stays readable.
+// drawCursor paints a block cursor over the cell under it, the character
+// kept readable in cursorStyleOf's ink.
 func (g *grid) drawCursor(ops *op.Ops, c cell, sn snap) {
-	st := styleOf(c, sn)
+	st := cursorStyleOf(c, sn)
 	r := image.Rect(sn.cursorX*g.cellW, sn.cursorY*g.cellH, (sn.cursorX+1)*g.cellW, (sn.cursorY+1)*g.cellH)
-	paint.FillShape(ops, rgba(st.fg), clip.Rect(r).Op())
+	paint.FillShape(ops, rgba(st.bg), clip.Rect(r).Op())
 	if c.cp <= ' ' {
 		return
 	}
@@ -131,7 +131,7 @@ func (g *grid) drawCursor(ops *op.Ops, c cell, sn snap) {
 	gl := g.glyph(glyphs.Key{R: rune(c.cp), Bold: st.bold, Italic: st.ital})
 	t := op.Offset(image.Pt(r.Min.X, r.Min.Y+g.ascent)).Push(ops)
 	shape := clip.Outline{Path: gl.path}.Op().Push(ops)
-	paint.ColorOp{Color: rgba(st.bg)}.Add(ops)
+	paint.ColorOp{Color: rgba(st.fg)}.Add(ops)
 	paint.PaintOp{}.Add(ops)
 	shape.Pop()
 	t.Pop()

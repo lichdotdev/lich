@@ -26,7 +26,8 @@ type footerInput struct {
 	handsOn   int64
 	// handsOnErr is why the hands-on figure could not be read.
 	handsOnErr error
-	cost       bool // the cost readout is turned on
+	cost       bool    // the cost readout is turned on
+	budget     float64 // the spend ceiling, 0 for none
 	now        time.Time
 }
 
@@ -101,9 +102,7 @@ func sessionSlot(s footerSlot, in footerInput) (footerSlot, bool) {
 		if !in.cost || !in.hasUsage {
 			return s, false
 		}
-		// ponytail: no spend ceiling; the web keeps it in localStorage, which
-		// this window cannot read. A Settings screen here brings it back.
-		s.Readout, ok = costReadout(in.usage, 0)
+		s.Readout, ok = costReadout(in.usage, in.budget)
 	case "handsOn":
 		if in.sessionID == "" {
 			return s, false

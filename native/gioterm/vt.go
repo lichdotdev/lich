@@ -26,6 +26,27 @@ static GhosttyResult set_default_colors(GhosttyTerminal t, GhosttyColorRgb fg, G
 	return ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_COLOR_BACKGROUND, &bg);
 }
 
+// A NULL cursor clears the default, which leaves the cursor inverting the
+// cell under it.
+static GhosttyResult set_cursor_color(GhosttyTerminal t, const GhosttyColorRgb* c) {
+	return ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_COLOR_CURSOR, c);
+}
+
+// set_ansi starts from the built-in 256-color palette and replaces the
+// first 16 entries where has[i], so a theme that names only some of them
+// keeps the built-in rest.
+static GhosttyResult set_ansi(GhosttyTerminal t, const GhosttyColorRgb* ansi, const uint8_t* has) {
+	GhosttyColorRgb pal[256];
+	GhosttyResult r = ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, NULL);
+	if (r != GHOSTTY_SUCCESS) return r;
+	r = ghostty_terminal_get(t, GHOSTTY_TERMINAL_DATA_COLOR_PALETTE_DEFAULT, pal);
+	if (r != GHOSTTY_SUCCESS) return r;
+	for (int i = 0; i < 16; i++) {
+		if (has[i]) pal[i] = ansi[i];
+	}
+	return ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, pal);
+}
+
 enum {
 	CELL_HAS_FG = 1,
 	CELL_HAS_BG = 2,
@@ -48,6 +69,8 @@ typedef struct {
 	bool cursor_visible;
 	uint16_t cursor_x, cursor_y;
 	uint32_t bg, fg;
+	bool has_cursor_color;
+	uint32_t cursor_color;
 } snap_t;
 
 static uint32_t pack(GhosttyColorRgb c) { return (uint32_t)c.r << 16 | (uint32_t)c.g << 8 | c.b; }
@@ -105,6 +128,8 @@ static snap_t snapshot(GhosttyRenderState rs, GhosttyTerminal t, GhosttyRenderSt
 	ghostty_render_state_get(rs, GHOSTTY_RENDER_STATE_DATA_COLORS, &colors);
 	s.bg = pack(colors.background);
 	s.fg = pack(colors.foreground);
+	s.has_cursor_color = colors.cursor_has_value;
+	if (colors.cursor_has_value) s.cursor_color = pack(colors.cursor);
 	s.dirty = dirty;
 	if (dirty == GHOSTTY_RENDER_STATE_DIRTY_FALSE) return s;
 	if (s.cols != cols || s.rows != rows) {
@@ -174,6 +199,10 @@ type snap struct {
 	cursorX       int
 	cursorY       int
 	bg, fg        uint32
+	// cursor is the cursor's color when hasCursor, else the cursor inverts
+	// the cell under it.
+	hasCursor bool
+	cursor    uint32
 }
 
 //export goWritePty
@@ -291,16 +320,45 @@ func (v *Terminal) Update() (Snapshot, error) {
 	return Snapshot{s: s, cells: v.grid, dirty: dirty}, err
 }
 
-// SetColors sets the default foreground and background: what a cell that
-// sets no color of its own is drawn in. A program's OSC 10/11 override still
-// wins over them.
-func (v *Terminal) SetColors(fg, bg color.NRGBA) error {
+// Colors are a terminal's defaults: what a cell that sets no color of its
+// own is drawn in. A zero (transparent) Cursor or ANSI entry keeps
+// libghostty's own.
+type Colors struct {
+	Foreground, Background color.NRGBA
+	Cursor                 color.NRGBA
+	// ANSI are palette entries 0-15: black, red, green, yellow, blue,
+	// magenta, cyan, white, then their bright variants.
+	ANSI [16]color.NRGBA
+}
+
+// SetColors sets the terminal's default colors. A program's OSC 4/10/11/12
+// override still wins over them.
+func (v *Terminal) SetColors(c Colors) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
-	rgb := func(c color.NRGBA) C.GhosttyColorRgb {
-		return C.GhosttyColorRgb{r: C.uint8_t(c.R), g: C.uint8_t(c.G), b: C.uint8_t(c.B)}
+	if err := check("set colors", C.set_default_colors(v.t, cRGB(c.Foreground), cRGB(c.Background))); err != nil {
+		return err
 	}
-	return check("set colors", C.set_default_colors(v.t, rgb(fg), rgb(bg)))
+	var cursor *C.GhosttyColorRgb
+	if c.Cursor.A != 0 {
+		rgb := cRGB(c.Cursor)
+		cursor = &rgb
+	}
+	if err := check("set cursor color", C.set_cursor_color(v.t, cursor)); err != nil {
+		return err
+	}
+	var ansi [16]C.GhosttyColorRgb
+	var has [16]C.uint8_t
+	for i, col := range c.ANSI {
+		if col.A != 0 {
+			ansi[i], has[i] = cRGB(col), 1
+		}
+	}
+	return check("set palette", C.set_ansi(v.t, &ansi[0], &has[0]))
+}
+
+func cRGB(c color.NRGBA) C.GhosttyColorRgb {
+	return C.GhosttyColorRgb{r: C.uint8_t(c.R), g: C.uint8_t(c.G), b: C.uint8_t(c.B)}
 }
 
 // Close frees the terminal. It must not be used afterwards.
@@ -346,6 +404,8 @@ func (v *Terminal) update() (snap, []uint8, error) {
 		cursorY:       int(s.cursor_y),
 		bg:            uint32(s.bg),
 		fg:            uint32(s.fg),
+		hasCursor:     bool(s.has_cursor_color),
+		cursor:        uint32(s.cursor_color),
 	}, v.dirty, nil
 }
 

@@ -92,9 +92,6 @@ func (u *window) applyTopbar(act topbarAction) {
 		u.model.dismiss(u.ctx, act.dismiss)
 		u.model.invalidate()
 	}
-	if act.theme {
-		u.toggleTheme()
-	}
 	if act.pick {
 		go u.pickProject()
 	}
@@ -125,6 +122,14 @@ func (u *window) applySettingsAction(act topbarAction) {
 	default:
 		return
 	}
+	u.model.invalidate()
+}
+
+// customizeFooter is the footer menu's Customize footer…: Settings opens on
+// the Footer row, lit.
+func (u *window) customizeFooter() {
+	tabs, _ := u.model.projectTabs()
+	u.settings.reveal(sectionAppearance, footerTitle, settingsProjectsOf(tabs))
 	u.model.invalidate()
 }
 
@@ -185,14 +190,17 @@ func (u *window) closeProject(id string) {
 }
 
 // openNotification routes a queue row to its project and session.
-func (u *window) openNotification(n notification) {
-	if !u.model.setActiveProject(n.projectID) {
+func (u *window) openNotification(n notification) { u.openSession(n.projectID, n.ID) }
+
+// openSession puts a session of any open project on screen.
+func (u *window) openSession(projectID, id string) {
+	if !u.model.setActiveProject(projectID) {
 		return
 	}
-	u.model.setActive(u.ctx, n.ID)
+	u.model.setActive(u.ctx, id)
 	u.model.invalidate()
-	u.saveScreen(n.projectID)
-	go func() { u.logErr("set active session", u.client.SetActiveSession(u.ctx, n.projectID, n.ID)) }()
+	u.saveScreen(projectID)
+	go func() { u.logErr("set active session", u.client.SetActiveSession(u.ctx, projectID, id)) }()
 }
 
 // pickProject opens the directory picker and adopts what it answers.

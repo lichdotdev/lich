@@ -132,8 +132,7 @@ func (a *atlasRenderer) prepare(sn snap, cells []cell, dirty []uint8) (*cursorCe
 		return nil, nil
 	}
 	c := cells[sn.cursorY*sn.cols+sn.cursorX]
-	st := styleOf(c, sn)
-	st.fg, st.bg = st.bg, st.fg
+	st := cursorStyleOf(c, sn)
 	e, err := a.entry(c, st)
 	if err != nil {
 		return nil, err

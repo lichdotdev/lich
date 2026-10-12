@@ -41,13 +41,19 @@ type footer struct {
 
 	mu     sync.Mutex
 	layout footerLayout
-	saving bool // a layout change is being written
+	budget float64 // the spend ceiling the cost readout colours against
+	saving bool    // a layout change is being written
 
 	watching string // the session whose plan is polled
 	unwatch  func()
 	widgets  map[string]*footerWidgets
 	menu     ui.MenuState
 	editor   footerEditor
+	// shown is what the strip read last frame, which the editor's chips and
+	// preview read the model from.
+	shown footerInput
+	// customize opens Settings on the Footer row.
+	customize func()
 	// dock is what Browse code and Review changes open, on their tab.
 	dock    *dock
 	toaster *ui.Toaster
@@ -88,13 +94,22 @@ func (f *footer) snapshot() (footerLayout, bool) {
 	return f.layout, f.saving
 }
 
-// holdsKeys reports whether the menu or the editor wants the keyboard.
-func (f *footer) holdsKeys() bool { return f.menu.Opened() || f.editor.open }
+func (f *footer) setBudget(budget float64) {
+	f.mu.Lock()
+	f.budget = budget
+	f.mu.Unlock()
+}
+
+// holdsKeys reports whether the menu wants the keyboard.
+func (f *footer) holdsKeys() bool { return f.menu.Opened() }
 
 // input reads what the strip shows: the active session, else the project's
 // own checkout. It points the polls at what the layout draws.
 func (f *footer) input(m *model, now time.Time) footerInput {
-	in := footerInput{now: now, cost: f.cost.on()}
+	f.mu.Lock()
+	budget := f.budget
+	f.mu.Unlock()
+	in := footerInput{now: now, cost: f.cost.on(), budget: budget}
 	if sv, ok := m.activeSession(); ok {
 		in.sessionID, in.provider, in.path, in.host, in.pr = sv.ID, sv.agent, sv.shown, sv.host, sv.pr
 		in.checkout, in.sandboxed = sv.path, sv.sandbox.Confined
@@ -140,17 +155,16 @@ func (f *footer) follow(in footerInput) {
 
 // layoutBar draws the strip: flex-wrap justify-between gap-x-4 gap-y-1,
 // min-h-11 py-1.5, the right side ml-auto justify-end. A right press on it
-// opens the menu holding the layout editor.
+// opens the menu that leads to Settings › Appearance › Footer.
 func (f *footer) layoutBar(gtx C, th *ui.Theme, in footerInput) D {
 	f.act(gtx, in)
+	f.shown = in
 	l, _ := f.snapshot()
 	// The clock and every countdown read on the minute.
 	gtx.Execute(op.InvalidateCmd{At: in.now.Add(untilNextMinute(in.now))})
 	entries := []ui.MenuEntry{{
-		Label: "Customize footer…",
-		// The web edits the layout in Settings › Footer; this dialog stands
-		// in for it until the native window has a Settings screen.
-		OnClick: func() { f.editor.open = true },
+		Label:   "Customize footer…",
+		OnClick: func() { f.customize() },
 	}}
 	return th.ContextMenu(f.root, &f.menu, entries).Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X

@@ -59,12 +59,15 @@ type terminals struct {
 	renderer   string
 	family     string
 	size       unit.Sp
+	// unzoomed is the window's own scale, which terminals draw at whatever
+	// the interface zoom: a zoom step never changes a grid's cols×rows.
+	unzoomed unit.Metric
 
 	mu    sync.Mutex
 	byID  map[string]*termView
 	shown string
 	// colors are the theme's terminal defaults, given to every terminal.
-	colors termColors
+	colors gioterm.Colors
 	// background is the shown terminal's default background as last drawn,
 	// the color of the island it fills and of the tab merged into it.
 	background color.NRGBA
@@ -128,10 +131,14 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	if t != nil {
 		return t, nil
 	}
-	r, err := gioterm.NewRenderer(ts.renderer, ts.family, ts.size)
+	ts.mu.Lock()
+	family, size := ts.family, ts.size
+	ts.mu.Unlock()
+	r, err := gioterm.NewRenderer(ts.renderer, family, size)
 	if err != nil {
 		return nil, err
 	}
+	gtx.Metric = ts.unzoomed
 	if err := r.Measure(gtx); err != nil {
 		return nil, err
 	}
@@ -143,7 +150,7 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Lock()
 	colors := ts.colors
 	ts.mu.Unlock()
-	if err := vt.SetColors(colors.fg, colors.bg); err != nil {
+	if err := vt.SetColors(colors); err != nil {
 		return nil, err
 	}
 	replay, err := ts.client.Replay(ctx, s.ID)
@@ -172,15 +179,36 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 
 // setColors gives every terminal, and every one opened after, a theme's
 // default colors.
-func (ts *terminals) setColors(c termColors) {
+func (ts *terminals) setColors(c gioterm.Colors) {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 	ts.colors = c
 	for id, t := range ts.byID {
-		if err := t.vt.SetColors(c.fg, c.bg); err != nil {
+		if err := t.vt.SetColors(c); err != nil {
 			log.Printf("terminal colors %s: %v", id, err)
 		}
 	}
+}
+
+// setFont draws every terminal, and every one opened after, in family at
+// size. Each gets a renderer of the new face; its next frame measures the
+// cells and refits the grid and the PTY to them.
+func (ts *terminals) setFont(family string, size unit.Sp) error {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	if family == ts.family && size == ts.size {
+		return nil
+	}
+	for _, t := range ts.byID {
+		r, err := gioterm.NewRenderer(ts.renderer, family, size)
+		if err != nil {
+			return err
+		}
+		t.r = r
+	}
+	ts.family, ts.size = family, size
+	ts.invalidate()
+	return nil
 }
 
 // drop frees a closed session's terminal. Output still in flight for it finds
@@ -215,6 +243,7 @@ func (ts *terminals) setVisible(hidden, shown string) {
 // layout draws t and types into it. focus says nothing else in the window
 // wants the keyboard (a rename, an open menu), so the terminal takes it.
 func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
+	gtx.Metric = ts.unzoomed
 	size := gtx.Constraints.Max
 	defer clip.Rect(image.Rectangle{Max: size}).Push(gtx.Ops).Pop()
 	if err := t.r.Measure(gtx); err != nil {

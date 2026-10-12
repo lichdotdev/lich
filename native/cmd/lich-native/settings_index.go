@@ -16,6 +16,10 @@ const (
 	settingsResultOne  = "%d setting"
 	settingsResultMany = "%d settings"
 
+	themeTitle = "Theme"
+	themeDesc  = "Colors the interface and the terminal."
+	themeAlso  = "colors dark light terminal palette"
+
 	hideWhitespaceTitle = "Hide whitespace in diffs"
 	hideWhitespaceDesc  = "Leave out changes that only touch spacing in the Review tab."
 	hideWhitespaceAlso  = "space indentation review ignore"
@@ -24,11 +28,11 @@ const (
 	diffLayoutAlso      = "side by side split unified review"
 )
 
-// The section ids, Settings.tsx's plus Editor, which only the native window
-// has.
+// The section ids, Settings.tsx's plus General and Editor, which only the
+// native window has: General holds what the web keeps under Notifications.
 const (
+	sectionGeneral        = "general"
 	sectionAppearance     = "appearance"
-	sectionNotifications  = "notifications"
 	sectionHotkeys        = "hotkeys"
 	sectionProviders      = "providers"
 	sectionSandbox        = "sandbox"
@@ -50,9 +54,11 @@ const (
 )
 
 // settingEntry is one row of a section: settings-index.ts's SettingEntry plus
-// the backend key and scope the row's states are read from.
+// the backend key and scope the row's states are read from. group is the
+// heading the row sits under, "" in a section without groups.
 type settingEntry struct {
 	title, also string
+	group       string
 	key         string
 	scope       settingScope
 }
@@ -72,8 +78,19 @@ type settingsSection struct {
 // fixed ones; Sandbox's per-provider rung (provider.<id>.sandbox) joins the
 // count when Sandbox is ported against the provider list.
 var settingsSections = []settingsSection{
-	{id: sectionAppearance, label: "Appearance", icon: icons.Lucide("palette")},
-	{id: sectionNotifications, label: "Notifications", icon: icons.Lucide("bell")},
+	{id: sectionGeneral, label: "General", icon: icons.Lucide("settings-2"), rows: []settingEntry{
+		{title: closeSettingTitle, also: closeAlso, key: closeActionKey, group: groupWindow},
+		{title: needsInputTitle, also: notifyAlso, key: desktopNotifyKey, group: groupNotifications},
+		{title: finishedTitle, also: notifyAlso, key: finishedNotifyKey, group: groupNotifications},
+	}},
+	{id: sectionAppearance, label: "Appearance", icon: icons.Lucide("palette"), rows: []settingEntry{
+		{title: themeTitle, also: themeAlso, key: themeSettingKey},
+		{title: zoomTitle, key: zoomKey},
+		{title: textSizeTitle, key: terminalFontSizeKey},
+		{title: fontTitle, also: fontAlso, key: terminalFontKey},
+		{title: footerTitle, also: footerAlso, key: footerLayoutKey},
+		{title: ceilingTitle, also: ceilingAlso, key: costBudgetKey},
+	}},
 	{id: sectionHotkeys, label: "Hotkeys", icon: icons.Lucide("keyboard")},
 	{id: sectionProviders, label: "Providers", icon: icons.Lucide("blocks"),
 		unported: []settingEntry{{key: "provider.default", scope: scopeOverridable}}},
@@ -126,13 +143,18 @@ func (s settingsSection) projectScoped() bool {
 // is its label.
 type settingHit struct {
 	section string
+	group   string
 	title   string
 }
 
-// path is the line a result shows above its title, "" when it would repeat it.
+// path is settings-index.ts hitPath, the line a result shows above its
+// title: the section, then the group; "" when it would repeat the title.
 func (h settingHit) path() string {
 	label := sectionByID(h.section).label
-	if label == h.title {
+	switch {
+	case h.group != "":
+		return label + " › " + h.group
+	case label == h.title:
 		return ""
 	}
 	return label
@@ -140,7 +162,8 @@ func (h settingHit) path() string {
 
 // searchSettings is settings-index.ts searchSettings over the ported rows and
 // the sections: a title that starts with the query beats one that contains
-// it, and both beat a match on the also words; ties keep the nav's order.
+// it, and both beat a match on the also words, a row's group among them;
+// ties keep the nav's order.
 func searchSettings(query string) []settingHit {
 	needle := strings.ToLower(strings.TrimSpace(query))
 	if needle == "" {
@@ -151,24 +174,24 @@ func searchSettings(query string) []settingHit {
 		rank int
 	}
 	var found []scored
-	consider := func(section, title, also string) {
-		t := strings.ToLower(title)
+	consider := func(hit settingHit, also string) {
+		t := strings.ToLower(hit.title)
 		switch {
 		case strings.HasPrefix(t, needle):
-			found = append(found, scored{settingHit{section, title}, 0})
+			found = append(found, scored{hit, 0})
 		case strings.Contains(t, needle):
-			found = append(found, scored{settingHit{section, title}, 1})
+			found = append(found, scored{hit, 1})
 		case strings.Contains(strings.ToLower(also), needle):
-			found = append(found, scored{settingHit{section, title}, 2})
+			found = append(found, scored{hit, 2})
 		}
 	}
 	for _, s := range settingsSections {
 		for _, e := range s.rows {
-			consider(s.id, e.title, e.also)
+			consider(settingHit{s.id, e.group, e.title}, e.also+" "+e.group)
 		}
 	}
 	for _, s := range settingsSections {
-		consider(s.id, s.label, "")
+		consider(settingHit{section: s.id, title: s.label}, "")
 	}
 	sort.SliceStable(found, func(i, j int) bool { return found[i].rank < found[j].rank })
 	hits := make([]settingHit, len(found))

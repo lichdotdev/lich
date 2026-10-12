@@ -59,18 +59,41 @@ type settingRow struct {
 	globalValue        string            // rowChanged's "Global: <value>"
 	reset              *widget.Clickable // rowChanged's Use Global
 	lit                float32           // the search's flash, 0 to 1
+	// sample is drawn in the description's place when set, for a
+	// description that is not text in the interface's font.
+	sample layout.Widget
 }
 
 // layout draws the row across gtx; first drops the divider above it. The
 // control is drawn with the theme it is given, faded for the dimmed states.
 func (r settingRow) layout(gtx C, th *ui.Theme, first bool, control func(gtx C, th *ui.Theme) D) D {
+	return r.frame(gtx, th, first, func(gtx C, th *ui.Theme) D { return r.content(gtx, th, control) })
+}
+
+// layoutBlock is SettingBlock: the title and description over the control
+// rather than beside it, for a control too wide to share the line.
+func (r settingRow) layoutBlock(gtx C, th *ui.Theme, first bool, under func(gtx C, th *ui.Theme) D) D {
+	return r.frame(gtx, th, first, func(gtx C, th *ui.Theme) D {
+		return layout.Inset{Left: rowPadX, Right: rowPadX, Top: rowPadY, Bottom: rowPadY}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return r.text(gtx, th) }),
+				ui.VGap(3),
+				layout.Rigid(func(gtx C) D { return under(gtx, th) }),
+			)
+		})
+	})
+}
+
+// frame is what every row draws around its content: the divider, the
+// search's flash and the changed rule.
+func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	bg := th.Surface
 	if r.lit > 0 {
 		bg = th.Over(ui.Alpha(th.ToneWait, rowLitFill*r.lit))
 	}
 	macro := op.Record(gtx.Ops)
-	d := r.content(gtx, th.On(bg), control)
+	d := content(gtx, th.On(bg))
 	call := macro.Stop()
 	if !first {
 		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: image.Pt(d.Size.X, gtx.Dp(1))}.Op())
@@ -117,10 +140,13 @@ func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Them
 func (r settingRow) text(gtx C, th *ui.Theme) D {
 	desc := th.Text(rowDescSize, r.description).Muted().Leading(20)
 	desc.MaxLines = 0
-	children := []layout.FlexChild{
-		layout.Rigid(th.Text(ui.TextSM, r.title).Weight(font.Medium).Layout),
-		ui.VGap(0.5),
-		layout.Rigid(desc.Layout),
+	descLayout := desc.Layout
+	if r.sample != nil {
+		descLayout = r.sample
+	}
+	children := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, r.title).Weight(font.Medium).Layout)}
+	if r.description != "" || r.sample != nil {
+		children = append(children, ui.VGap(0.5), layout.Rigid(descLayout))
 	}
 	if note := r.note(th); note != nil {
 		children = append(children, ui.VGap(1), layout.Rigid(note))
@@ -197,9 +223,15 @@ func fadedControl(control func(gtx C, th *ui.Theme) D, opacity float32) func(gtx
 }
 
 // insetBorder strokes a 1px line just inside size, a box-shadow inset 0 0 0
-// 1px: a stroke twice as wide on the edge, clipped to the inside half.
+// 1px.
 func insetBorder(gtx C, size image.Point, r int, c color.NRGBA) {
+	insetRing(gtx, size, r, gtx.Dp(1), c)
+}
+
+// insetRing strokes a line width pixels wide just inside size, ring-inset:
+// a stroke twice as wide on the edge, clipped to the inside half.
+func insetRing(gtx C, size image.Point, r, width int, c color.NRGBA) {
 	rr := clip.UniformRRect(image.Rectangle{Max: size}, r)
 	defer rr.Push(gtx.Ops).Pop()
-	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(2 * gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(2 * width)}.Op())
 }

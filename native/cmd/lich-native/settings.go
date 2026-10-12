@@ -71,6 +71,14 @@ type settingsScreen struct {
 	scrollTo int // the pane's row to scroll in next frame, -1 for none
 
 	editor editorSettings
+	theme  *themePicker
+	footer *footer
+	look   appearanceControls
+	// revealing is the row reveal asked for, lit on the next frame.
+	revealing *settingHit
+
+	general generalSwitches
+	notify  *notifier
 }
 
 func newSettingsScreen(ctx context.Context, c *lichclient.Client, root *ui.Root, invalidate func()) *settingsScreen {
@@ -161,6 +169,10 @@ func (s *settingsScreen) layout(gtx C, th *ui.Theme, projects []settingsProject)
 	if s.close.Clicked(gtx) {
 		s.open = false
 	}
+	if s.revealing != nil {
+		s.choose(gtx, *s.revealing)
+		s.revealing = nil
+	}
 	values := s.snapshot()
 	gtx.Constraints.Min = gtx.Constraints.Max
 	layout.Flex{}.Layout(gtx,
@@ -185,12 +197,7 @@ func (s *settingsScreen) island(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx 
 // paneLayout is the open section: the project pill in a project's scope, the
 // title, the description, and the rows, the × in the top-right corner.
 func (s *settingsScreen) paneLayout(gtx C, th *ui.Theme, values scopedValues) D {
-	sec := sectionByID(s.section)
-	rows := s.paneRows(sec, th, values)
-	if s.scrollTo >= 0 {
-		s.pane.ScrollTo(s.scrollTo + len(rows) - len(sec.rows))
-		s.scrollTo = -1
-	}
+	rows := s.paneRows(sectionByID(s.section), th, values)
 	d := layout.Inset{Left: settingsPanePadX, Right: settingsPanePadX, Top: settingsPanePadY, Bottom: settingsPanePadY}.Layout(gtx, func(gtx C) D {
 		return th.ScrollArea(&s.pane).Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
 	})
@@ -226,16 +233,24 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	if len(sec.rows) == 0 {
 		return append(rows, th.Text(settingsDescSize, settingsNotYet).Muted().Layout)
 	}
-	shown := 0
-	for _, e := range sec.rows {
+	shown, group := 0, ""
+	for i, e := range sec.rows {
 		r := s.rowFor(e, values)
-		if r.kind == rowHidden {
+		if r.kind == rowHidden || !s.rowApplies(e) {
 			continue
+		}
+		if e.group != group {
+			rows = append(rows, groupHeading(th, e.group, shown == 0))
+			group, shown = e.group, 0
+		}
+		if i == s.scrollTo {
+			s.pane.ScrollTo(len(rows))
 		}
 		first := shown == 0
 		shown++
 		rows = append(rows, func(gtx C) D { return s.drawRow(gtx, th, e, r, first) })
 	}
+	s.scrollTo = -1
 	return rows
 }
 
@@ -268,6 +283,20 @@ func (s *settingsScreen) drawRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 	if s.lit == e.title && gtx.Now.Before(s.litUntil) {
 		r.lit = min(1, float32(s.litUntil.Sub(gtx.Now))/float32(settingsLitFadingFor))
 		gtx.Execute(op.InvalidateCmd{})
+	}
+	switch e.key {
+	case themeSettingKey:
+		r.description = themeDesc
+		return s.theme.layoutRow(gtx, th, r, first)
+	case footerLayoutKey:
+		return s.footerRow(gtx, th, r, first)
+	}
+	if d, ok := s.appearanceRow(gtx, th, e, r, first); ok {
+		return d
+	}
+	if desc, control, ok := s.notifyRow(gtx, e.key); ok {
+		r.description = desc
+		return r.layout(gtx, th, first, control)
 	}
 	desc, control := s.editor.row(gtx, e.key, s)
 	r.description = desc

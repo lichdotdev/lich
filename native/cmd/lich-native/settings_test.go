@@ -103,6 +103,12 @@ func TestSearchRanksPrefixThenContainsThenAlso(t *testing.T) {
 	if got := searchSettings("whitespace"); len(got) != 1 || got[0].path() != "Editor" {
 		t.Errorf("whitespace: %+v", got)
 	}
+	if got := searchSettings("finishes"); len(got) != 1 || got[0].path() != "General › Notifications" {
+		t.Errorf("finishes: %+v; a grouped row's path names its group", got)
+	}
+	if got := searchSettings("notifications"); len(got) != 2 || got[0].title != needsInputTitle || got[1].title != finishedTitle {
+		t.Errorf("notifications: %+v; a group's name finds its rows", got)
+	}
 	if searchSettings("  ") != nil {
 		t.Error("a blank query has results")
 	}

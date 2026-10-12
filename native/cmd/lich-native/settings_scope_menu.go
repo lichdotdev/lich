@@ -10,9 +10,6 @@ import (
 	"github.com/omartelo/lich/native/ui"
 )
 
-// scopeHoverFaint is the mockup's --hover-faint, the scope button's rest fill.
-const scopeHoverFaint = 0.04
-
 // scopeSelector is the button at the top of the nav, Global or the project
 // being edited, and the menu it opens: Global, then each open project with
 // its color and how many settings it changed.
@@ -38,40 +35,49 @@ func projectIDs(projects []settingsProject) []string {
 	return ids
 }
 
-// scopeButton is the h-11 rounded-lg trigger: the globe or the project's
-// swatch, the "Scope"/"Project" caption over the value, and the chevrons.
+// scopeButton is the one-line trigger, as tall as the search field under
+// it and laid out like the section rows below it: the globe or the project's
+// swatch, the scope's name and the chevrons.
+// "Scope" is its tooltip; the menu it opens says the rest.
 func (s *settingsScreen) scopeButton(gtx C, th *ui.Theme) D {
 	n := &s.nav
-	return n.scopeHover.Layout(gtx, func(gtx C) D {
-		size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(navScopeHeight))
-		gtx.Constraints = layout.Exact(size)
-		bg := th.Over(ui.Alpha(th.Foreground, scopeHoverFaint))
-		if n.scopeHover.Hovered() || n.scopeMenu.Opened() {
-			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
-		}
-		ui.Fill(gtx, bg, ui.RadiusLG)
-		insetBorder(gtx, size, gtx.Dp(ui.RadiusLG), th.Over(th.Border))
-		on := th.On(bg)
-		caption, value := scopeLabelGlobal, scopeGlobal
-		lead := func(gtx C) D { return icScopeGlobal.Layout(gtx, ui.Space(4), on.MutedForeground) }
-		if p, ok := s.scopeProject(); ok {
-			caption, value = scopeLabelProject, p.name
-			lead = func(gtx C) D { return swatch(gtx, projectSwatch(p.id)) }
-		}
-		return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(lead),
-				ui.Gap(2.5),
-				layout.Flexed(1, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(on.Text(navSmall, caption).Muted().Leading(13).Layout),
-						layout.Rigid(on.Text(ui.TextSM, value).Weight(font.Medium).Leading(17).Layout),
-					)
-				}),
-				layout.Rigid(func(gtx C) D { return icScopeChevron.Layout(gtx, ui.Space(4), on.MutedForeground) }),
-			)
+	tip := th.Tooltip(s.root, &n.scopeTip, scopeLabelGlobal)
+	tip.Side = ui.SideBottom
+	return tip.Layout(gtx, func(gtx C) D {
+		return n.scopeHover.Layout(gtx, func(gtx C) D {
+			size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(navScopeHeight))
+			gtx.Constraints = layout.Exact(size)
+			bg := th.Surface
+			if n.scopeHover.Hovered() || n.scopeMenu.Opened() {
+				bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
+				ui.Fill(gtx, bg, ui.RadiusMD)
+			}
+			insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
+			on := th.On(bg)
+			value := scopeGlobal
+			lead := func(gtx C) D { return icScopeGlobal.Layout(gtx, ui.Space(4), on.MutedForeground) }
+			if p, ok := s.scopeProject(); ok {
+				value = p.name
+				lead = func(gtx C) D { return swatch(gtx, projectSwatch(p.id)) }
+			}
+			return layout.Inset{Left: navRowPadX, Right: navRowPadX}.Layout(gtx, func(gtx C) D {
+				return layout.W.Layout(gtx, func(gtx C) D {
+					gtx.Constraints.Min.X = gtx.Constraints.Max.X
+					return s.scopeRowLine(gtx, on, lead, value)
+				})
+			})
 		})
 	})
+}
+
+// scopeRowLine is the trigger's one line: the lead, the name and the chevrons.
+func (s *settingsScreen) scopeRowLine(gtx C, on *ui.Theme, lead layout.Widget, value string) D {
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(lead),
+		ui.Gap(2.5),
+		layout.Flexed(1, on.Text(ui.TextSM, value).Weight(font.Medium).Layout),
+		layout.Rigid(func(gtx C) D { return icScopeChevron.Layout(gtx, ui.Space(4), on.MutedForeground) }),
+	)
 }
 
 func (s *settingsScreen) scopeProject() (settingsProject, bool) {

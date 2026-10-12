@@ -53,7 +53,9 @@ func (m *model) applyStatus(ctx context.Context, ev lichclient.Event) error {
 		return err
 	}
 	m.mu.Lock()
+	previous := m.status.status(s.ID)
 	_, err := m.status.apply(ev, time.Now())
+	report, routed := m.statusReport(s.ID, previous)
 	if s.State == "idle" {
 		// The CLI left: it can no longer answer a request either
 		// (session-relay-store.ts).
@@ -65,7 +67,26 @@ func (m *model) applyStatus(ctx context.Context, ev lichclient.Event) error {
 	if read {
 		m.markRead(ctx, s.ID)
 	}
+	if routed && m.notify != nil {
+		m.notify(report)
+	}
 	return err
+}
+
+// statusReport is the reading of the report just applied to id the desktop
+// channel and the attention toast take, false for a session no open project holds, which has nowhere to
+// route (project-events.tsx). The caller holds m.mu.
+func (m *model) statusReport(id, previous string) (statusReport, bool) {
+	p, i := m.sessionAt(id)
+	if p == nil {
+		return statusReport{}, false
+	}
+	label := p.Sessions[i].Label
+	if label == "" {
+		label = notifyUnlabeled
+	}
+	return statusReport{id: id, projectID: p.ID, status: m.status.status(id), previous: previous, focused: m.focused,
+		onScreen: m.shownProject() == p && m.active == id, label: label, project: p.Name, reason: m.status.reason(id)}, true
 }
 
 // applyLive takes the live PTY reports the backend never replays: the

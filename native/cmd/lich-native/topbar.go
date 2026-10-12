@@ -60,7 +60,6 @@ type topbar struct {
 	open     openMenu
 	bell     bellMenu
 	hints    map[string]*ui.Tooltip
-	themes   widget.Clickable
 	settings widget.Clickable
 	confirm  closeConfirm
 }
@@ -80,7 +79,6 @@ type topbarAction struct {
 	notify  *notification
 	dismiss string // session id
 	pick    bool   // the directory picker
-	theme   bool   // flip between the light and the dark palette
 	reopen  *lichclient.RecentProject
 	// settings is the Settings button; projectSettings a tab's "Project
 	// settings…", by project id.
@@ -97,7 +95,6 @@ type topbarFrame struct {
 	tabs       []projectTab
 	active     string
 	pending    []notification
-	light      bool // the light palette is on screen
 	settings   bool // the Settings screen is open
 }
 
@@ -133,8 +130,6 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 	row := gtx
 	row.Constraints.Min = image.Point{}
 	d := layout.Flex{Alignment: layout.Middle}.Layout(row,
-		layout.Rigid(func(gtx C) D { return t.themeButton(gtx, th, f.light, act) }),
-		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.bellButton(gtx, th, f.pending, act) }),
 		ui.Gap(1),
 		// ponytail: the native window has no Pull requests screen yet; the
@@ -216,23 +211,6 @@ func barIconButton(gtx C, th *ui.Theme, click *widget.Clickable, ic *icons.Icon,
 		return face(gtx)
 	}
 	return click.Layout(gtx, face)
-}
-
-// themeButton flips between the light and the dark palette, showing the one
-// a click goes to. ponytail: a stand-in for Settings › Appearance until the
-// native window has a Settings screen; it offers neither "system" nor a
-// custom theme.
-func (t *topbar) themeButton(gtx C, th *ui.Theme, light bool, act *topbarAction) D {
-	if t.themes.Clicked(gtx) {
-		act.theme = true
-	}
-	ic, hint := icSun, lightThemeHint
-	if light {
-		ic, hint = icMoon, darkThemeHint
-	}
-	tip := th.Tooltip(t.root, t.hint("theme"), hint)
-	tip.Side = ui.SideBottom
-	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.themes, ic, false) })
 }
 
 // settingsButton opens Settings, and closes it while it is open.

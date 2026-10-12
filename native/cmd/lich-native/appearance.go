@@ -1,10 +1,11 @@
 package main
 
 import (
-	"image/color"
+	"context"
+	"log"
+	"sync"
 
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/omartelo/lich/native/lichclient"
 )
 
 // themeSettingKey is providers/settings.tsx THEME_SETTING_KEY, a global
@@ -17,69 +18,116 @@ const (
 	themeDark  = "dark"
 )
 
-// ponytail: English until the native window has i18n.
-const (
-	lightThemeHint = "Light theme"
-	darkThemeHint  = "Dark theme"
-)
+// appearance is the window's theme state: the themes the backend has, the
+// stored selection and the OS's scheme. Goroutines change it; the frame
+// takes the theme it resolves to whenever it changed and repaints.
+type appearance struct {
+	ctx        context.Context
+	client     *lichclient.Client
+	invalidate func()
 
-var (
-	icSun  = icons.Lucide("sun")
-	icMoon = icons.Lucide("moon")
-)
-
-// termColors are a theme's terminal defaults, themes/<id>.json "terminal".
-type termColors struct{ fg, bg color.NRGBA }
-
-var (
-	lightTerminal = termColors{fg: rgb(0x1f2328), bg: rgb(0xe8e8ea)}
-	darkTerminal  = termColors{fg: rgb(0xe5e7eb), bg: rgb(0x06070f)}
-)
-
-func rgb(v uint32) color.NRGBA {
-	return color.NRGBA{R: uint8(v >> 16), G: uint8(v >> 8), B: uint8(v), A: 255}
+	mu         sync.Mutex
+	themes     []themeEntry
+	broken     []lichclient.BrokenTheme
+	selected   string
+	systemDark bool
+	changed    bool
 }
 
-// storedLight maps the web's selection onto the two palettes this window
-// has. ponytail: only "light" draws light; "system" would follow the OS,
-// which this window does not read yet, and a custom theme's palette is not
-// ported, so both draw dark.
-func storedLight(stored string) bool { return stored == themeLight }
+// appearanceView is what the picker draws from.
+type appearanceView struct {
+	themes   []themeEntry
+	broken   []lichclient.BrokenTheme
+	selected string
+	resolved themeEntry
+}
 
-func storedTheme(light bool) string {
-	if light {
-		return themeLight
+func (a *appearance) view() appearanceView {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return appearanceView{themes: a.themes, broken: a.broken, selected: a.selected,
+		resolved: resolveTheme(a.selected, a.themes, a.systemDark)}
+}
+
+// take returns the theme to draw with when anything it resolves from
+// changed since the last take.
+func (a *appearance) take() (themeEntry, bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if !a.changed || len(a.themes) == 0 {
+		return themeEntry{}, false
 	}
-	return themeDark
+	a.changed = false
+	return resolveTheme(a.selected, a.themes, a.systemDark), true
 }
 
-// setLight repaints the whole window from the light or the dark palette:
-// the kit theme every widget draws with, and the terminals' default colors.
-func (u *window) setLight(light bool) {
-	u.light = light
-	p, term := ui.Dark, darkTerminal
-	if light {
-		p, term = ui.Light, lightTerminal
-	}
-	u.theme.Palette, u.theme.Surface = p, p.Canvas
-	u.th.Fg, u.th.Bg = p.Foreground, p.Background
-	u.terms.setColors(term)
+func (a *appearance) update(change func()) {
+	a.mu.Lock()
+	change()
+	a.changed = true
+	a.mu.Unlock()
+	a.invalidate()
 }
 
-// toggleTheme is the topbar's stand-in for Settings › Appearance: it flips
-// the palette and stores the choice where the web reads it.
-func (u *window) toggleTheme() {
-	u.setLight(!u.light)
-	value := storedTheme(u.light)
-	go func() { u.logErr("save theme", u.client.SetSetting(u.ctx, themeSettingKey, "", value)) }()
+// choose selects id and stores it where the web reads it.
+func (a *appearance) choose(id string) {
+	a.update(func() { a.selected = id })
+	go func() {
+		if err := a.client.SetSetting(a.ctx, themeSettingKey, "", id); err != nil {
+			log.Printf("appearance: save theme: %v", err)
+		}
+	}()
 }
 
-// loadTheme reads the stored selection before the first frame.
-func (u *window) loadTheme() error {
-	stored, err := u.client.GetSetting(u.ctx, themeSettingKey, "")
+func (a *appearance) setSystemDark(dark bool) { a.update(func() { a.systemDark = dark }) }
+
+// reload rereads the themes, after an install, an update or a removal.
+func (a *appearance) reload() error {
+	defs, err := a.client.Themes(a.ctx)
 	if err != nil {
 		return err
 	}
-	u.setLight(storedLight(stored))
+	broken, err := a.client.BrokenThemes(a.ctx)
+	if err != nil {
+		return err
+	}
+	themes, broken := readThemes(defs, broken)
+	for _, b := range broken {
+		log.Printf("appearance: theme %s can't load: %s", b.ID, b.Reason)
+	}
+	a.update(func() { a.themes, a.broken = themes, broken })
 	return nil
+}
+
+// load reads the stored selection, the themes and the OS's scheme before the
+// first frame, and follows the OS's scheme from then on. A setting never
+// written reads "", which is the web's default, System.
+func (a *appearance) load() error {
+	stored, err := a.client.GetSetting(a.ctx, themeSettingKey, "")
+	if err != nil {
+		return err
+	}
+	if stored == "" {
+		stored = themeSystem
+	}
+	a.selected = stored
+	a.systemDark = watchSystemDark(a.ctx, a.setSystemDark)
+	return a.reload()
+}
+
+// paintTheme repaints the whole window from e: the kit theme every widget
+// draws with, and the terminals' default colors.
+func (u *window) paintTheme(e themeEntry) {
+	u.light = e.light()
+	p := e.palette
+	u.theme.Palette, u.theme.Surface = p, p.Canvas
+	u.th.Fg, u.th.Bg = p.Foreground, p.Background
+	u.terms.setColors(e.terminal)
+}
+
+// takeTheme repaints the window when the theme it resolves to changed.
+func (u *window) takeTheme() {
+	if e, ok := u.appearance.take(); ok {
+		u.paintTheme(e)
+	}
 }

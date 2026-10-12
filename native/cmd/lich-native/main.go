@@ -88,7 +88,16 @@ type window struct {
 	homeOpen widget.Clickable
 	// emptyNew is the empty stage's New session button.
 	emptyNew widget.Clickable
-	light    bool // the light palette is on screen
+	light    bool // the theme on screen is a light one
+	// appearance is the theme state the frame repaints from.
+	appearance *appearance
+	// zoom scales everything but the terminals, which keep their own size.
+	zoom   float64
+	win    *app.Window
+	closer closePrompt
+	// notifier is the desktop channel; optIn its one-time question.
+	notifier *notifier
+	optIn    notifyOptIn
 	drop     terminalDrop
 	// islandAt is the island's top-left in window pixels, where body put it.
 	islandAt image.Point
@@ -116,17 +125,28 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	u := &window{
-		ctx: ctx, client: client, th: th,
+		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom,
 		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
 		model: newModel(client, w.Invalidate),
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
 	}
+	u.appearance = &appearance{ctx: ctx, client: client, invalidate: w.Invalidate}
 	u.toaster.Invalidate = w.Invalidate
 	u.terms.toaster = &u.toaster
 	u.sidebar = newSidebar(&u.root)
 	u.topbar = newTopbar(&u.root)
+	u.notifier = newNotifier(ctx, client, w.Invalidate)
+	attention := attentionToast{show: func(t ui.Toast) { u.toaster.Show(t) }, open: func(projectID, id string) {
+		u.settings.hide()
+		u.openSession(projectID, id)
+	}}
+	u.model.notify = func(r statusReport) {
+		u.notifier.report(r)
+		attention.report(r)
+	}
 	u.settings = newSettingsScreen(ctx, client, &u.root, w.Invalidate)
+	u.settings.notify = u.notifier
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
 	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
@@ -140,8 +160,11 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	}
 	u.dock = newDock(code, u.review)
 	u.settings.applyEditor = u.takeEditorPref
+	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
+	u.settings.footer = u.footer
+	u.footer.customize = u.customizeFooter
 	if *flagToasts != "" {
 		if err := u.raiseDemoToasts(*flagToasts); err != nil {
 			return err
@@ -159,10 +182,15 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		case app.ConfigEvent:
 			u.model.setFocused(u.ctx, e.Config.Focused)
 			u.toaster.SetHidden(!e.Config.Focused)
+		case *app.ClosingEvent:
+			u.onClosing(e)
 		case app.DropEvent:
 			u.onDrag(e, w.Invalidate)
 		case app.FrameEvent:
 			gtx := app.NewContext(&ops, e)
+			u.terms.unzoomed = gtx.Metric
+			gtx.Metric.PxPerDp *= float32(u.zoom)
+			gtx.Metric.PxPerSp *= float32(u.zoom)
 			if err := u.layout(gtx); err != nil {
 				return err
 			}
@@ -209,9 +237,10 @@ func (u *window) connect() error {
 		}
 		u.model.setActiveProject("native")
 	}
-	if err := u.loadTheme(); err != nil {
+	if err := u.appearance.load(); err != nil {
 		return err
 	}
+	u.takeTheme()
 	if err := u.loadSidebar(); err != nil {
 		return err
 	}
@@ -220,6 +249,26 @@ func (u *window) connect() error {
 	}
 	if err := u.loadSettings(); err != nil {
 		return err
+	}
+	if err := u.loadAppearance(); err != nil {
+		return err
+	}
+	if u.notifier.prefs, err = loadNotifyPrefs(u.ctx, u.client); err != nil {
+		return err
+	}
+	u.notifier.asking = *flagNotifyOptIn
+	if *flagSettings != "" {
+		u.settings.openSection(parseSettingsSection(*flagSettings))
+		u.settings.show("", nil)
+		u.settings.nav.query.SetText(*flagSettingsQuery)
+	}
+	if *flagCustomizeFooter {
+		u.customizeFooter()
+	}
+	if *flagThemePicker != "" {
+		if err := u.showThemePicker(*flagThemePicker); err != nil {
+			return err
+		}
 	}
 	if err := u.footer.start(); err != nil {
 		return err
@@ -230,6 +279,7 @@ func (u *window) connect() error {
 }
 
 func (u *window) layout(gtx C) error {
+	u.takeTheme()
 	paint.Fill(gtx.Ops, u.theme.Canvas)
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
@@ -248,9 +298,11 @@ func (u *window) layout(gtx C) error {
 			}
 		}()
 		closed := u.topbar.layoutConfirm(gtx, u.theme)
-		u.footer.editorLayout(gtx, u.theme, v.in)
 		u.resume.layout(u.ctx, gtx, u.theme, u.gate, u.model)
 		u.review.layoutDialogs(gtx, u.theme)
+		u.settings.theme.layoutDialogs(gtx, u.theme)
+		u.layoutClosePrompt(gtx, u.theme)
+		u.layoutNotifyOptIn(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)
@@ -373,7 +425,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	width, name := u.sidebar.column(gtx)
 	f := topbarFrame{
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
-		tabs: v.tabs, active: v.project, pending: u.model.notifications(), light: u.light,
+		tabs: v.tabs, active: v.project, pending: u.model.notifications(),
 	}
 	// Settings is no project's screen, so no tab merges into it.
 	if u.settings.open {
@@ -553,8 +605,9 @@ func (u *window) applyOpenIn(act sidebarAction) {
 }
 
 // closeSession parks the session in the backend and stops its process, the
-// two halves of the web card's ×.
+// two halves of the web card's ×, and offers the park's undo.
 func (u *window) closeSession(id string) {
+	closed, index, _ := u.model.slotOf(id)
 	projectID, active, ok := u.model.closeSession(id)
 	if !ok {
 		return
@@ -562,10 +615,14 @@ func (u *window) closeSession(id string) {
 	u.terms.drop(id)
 	u.gate.forget(id)
 	u.model.invalidate()
+	parked := make(chan error, 1)
 	go func() {
-		u.logErr("close session", u.client.CloseSession(u.ctx, projectID, id, active))
+		err := u.client.CloseSession(u.ctx, projectID, id, active)
+		parked <- err
+		u.logErr("close session", err)
 		u.logErr("close terminal", u.client.CloseTerminal(u.ctx, id))
 	}()
+	u.toaster.Show(u.closedToast(projectID, closed, index, parked))
 }
 
 // parkSession is keepSession: the row leaves the open list and stays for a

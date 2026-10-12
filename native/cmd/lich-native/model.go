@@ -52,6 +52,8 @@ type model struct {
 	folds         map[string]bool                   // foldKey -> block folded, once read or written
 	providers     []launchProvider                  // detected providers with their enabled flags
 	globalDefault string                            // the global provider.default setting
+	// notify hands each session-status report to the desktop channel.
+	notify func(statusReport)
 }
 
 // sessionCwd is a session-cwd payload: where the session's shell is, or the

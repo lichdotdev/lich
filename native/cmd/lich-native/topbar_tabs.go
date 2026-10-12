@@ -105,7 +105,11 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 				})
 			}),
 			ui.Gap(1),
-			layout.Rigid(func(gtx C) D { return t.openButton(gtx, th, act) }),
+			// The same top inset as the tabs, so the "+" centres on their
+			// label line rather than on the band.
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: tabTop}.Layout(gtx, func(gtx C) D { return t.openButton(gtx, th, act) })
+			}),
 		)
 	})
 	t.fillets(gtx, f, w)
