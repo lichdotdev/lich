@@ -9,8 +9,8 @@ import (
 )
 
 // claudeProfileKey holds the Claude Code profile new sessions are born in: a
-// slug from internal/claudeprofile. Scoped like the sandbox rung — a project
-// value wins over the global one — because which account a repository is
+// slug from internal/claudeprofile. Scoped like the sandbox rung (a project
+// value wins over the global one) because which account a repository is
 // worked under is a decision about that repository. Globally "" and
 // "personal" both mean Personal; in a project "" inherits the global value and
 // "personal" is how a project names Personal over a global profile.

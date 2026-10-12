@@ -18,6 +18,7 @@ const storedSession = (overrides: Partial<StoredSession> = {}): StoredSession =>
   pinned: false,
   folder: "",
   color: "",
+  profile: "",
   originSessionId: "",
   originLabel: "",
   hasLastTurn: false,

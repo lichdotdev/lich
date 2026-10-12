@@ -100,7 +100,7 @@ func linkShared(personal, dir string) ([]string, error) {
 }
 
 // EnsureShared links into a profile the shared entries Personal gained since
-// the profile was made — a CLAUDE.md written after it, say — and records any it
+// the profile was made (a CLAUDE.md written after it, say) and records any it
 // had to copy. It runs before every spawn into the profile, so an entry appears
 // on the next session. Personal needs nothing.
 func EnsureShared(slug string) error {
@@ -181,8 +181,8 @@ func filterGlobalConfig(data []byte) ([]byte, error) {
 	return json.MarshalIndent(doc, "", "  ")
 }
 
-// filterProjects keeps what a person decided about each project — the trust
-// answer, the tools they allowed, the MCP servers — and drops what a session
+// filterProjects keeps what a person decided about each project (the trust
+// answer, the tools they allowed, the MCP servers) and drops what a session
 // left behind there (last cost, last session id, example files).
 func filterProjects(raw json.RawMessage) (json.RawMessage, error) {
 	var projects map[string]map[string]json.RawMessage

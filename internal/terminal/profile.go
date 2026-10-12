@@ -26,7 +26,7 @@ type profileEvent struct {
 // The session's row says which profile it was born in. A resume asks the disk
 // instead: a conversation lives in exactly one profile, and resuming it
 // anywhere else would open a conversation that is not there. When the two
-// disagree — a conversation adopted from the history, one that moved — the row
+// disagree (a conversation adopted from the history, one that moved) the row
 // follows the disk. A profile deleted since answers ErrProfileGone, which is
 // how the window learns to offer a new session in the project's profile.
 func (s *Service) claudeProfileDir(id, kind, resume string) (string, error) {
@@ -80,7 +80,7 @@ func (s *Service) followConversation(id, slug, conversationID string) (string, e
 }
 
 // profileSlug is the profile a config directory belongs to, "" for Personal's
-// (an empty dir) — what a live spawn records to be counted by ProfileSessions.
+// (an empty dir): what a live spawn records to be counted by ProfileSessions.
 func profileSlug(dir string) string {
 	if dir == "" {
 		return ""
@@ -108,7 +108,7 @@ func (s *Service) ProfileSessions(slug string) int {
 // resuming it. Moving back is the same call. Nothing else moves: not the other
 // sessions in the profile, and not the project's own profile.
 //
-// It refuses a turn in progress — a provider-reported turn still open, which a
+// It refuses a turn in progress: a provider-reported turn still open, which a
 // permission prompt is part of. A turn a usage limit stopped has ended, so a
 // session waiting out its limit moves like an idle one.
 func (s *Service) ContinueIn(id, profile string) error {

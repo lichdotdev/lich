@@ -28,7 +28,7 @@ func TestClaudeProfileResolvesLikeTheSandboxRung(t *testing.T) {
 
 // TestASessionKeepsTheProfileItWasBornIn: the profile is written with the row,
 // for Claude Code only, and the project's setting moving later leaves a session
-// that already exists where it is — through a park and resume too.
+// that already exists where it is, through a park and resume too.
 func TestASessionKeepsTheProfileItWasBornIn(t *testing.T) {
 	svc := newTestStore(t)
 	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
