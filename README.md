@@ -124,6 +124,7 @@ reads what each CLI writes down and no two of them write down the same things.
 | Fork a conversation into a new worktree | yes | yes | no | yes | no | no | no | no |
 | Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes |
 | Open a session with ultracode on | yes | no | no | no | no | no | no | no |
+| Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card | yes | no | no | no | no | no | no | no |
 | Drive a running session from `lich control` or an agent: prompt, stop, model, effort, slash command | yes | no | no | no | no | no | no | no |
 | A message from another session arrives without being typed into the terminal | yes | no | no | no | no | no | no | no |
 | A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | no | no | no | no | no | no | no |

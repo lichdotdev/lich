@@ -1190,3 +1190,49 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   last turn's usage) until the next event, since nothing replays it. `system.CloseWindow` never quits lich, even
   with no session running, where a window the user closes does (`quitIfIdle`). The native window's text is
   English only: the interface catalogs are TypeScript, and native/ has none yet (`docs/native-window.md`).
+- **Profiles are Claude Code's alone** (`internal/claudeprofile`): one account per profile, each its own
+  `CLAUDE_CONFIG_DIR` with a real `claude auth login`, and no other provider has one. Codex (`CODEX_HOME`),
+  opencode and oh-my-pi (`OMP_PROFILE`) each read their state from a directory an environment variable moves,
+  so the same design fits them later; Cursor CLI and Kiro CLI move only part of theirs (Cursor's `~/.cursor`
+  and Kiro's `~/.kiro` stay under the home whatever the variable says); Crush is unmeasured; Antigravity
+  cannot, its `~/.gemini` being fixed by the CLI. A project's profile setting, the per-session profile and
+  Continue in therefore exist for Claude Code sessions only.
+- **A profile shares Personal's own content through links, and a link shares writes too**
+  (`internal/claudeprofile/layout.go`): `settings.json`, `CLAUDE.md`, `agents/`, `commands/`, `skills/`,
+  `hooks/` and the plugin downloads (`plugins/cache`, `plugins/marketplaces`) point at Personal's, and
+  Claude Code writes through a link to its target (measured on 2.1.296). So `claude plugin install` run in a
+  profile writes `enabledPlugins` into the one shared `settings.json`, and a plugin a work account installed
+  reads as enabled in Personal, where it is not installed; `/config` changes in any profile change them all;
+  every profile's Claude Code drops its `.in_use` markers in the one plugin cache. The plugin set itself
+  (`installed_plugins.json`, `known_marketplaces.json`) is per profile, because an organization account may
+  forbid plugins Personal runs. An entry Personal gains after a profile was made is linked at that profile's
+  next spawn; an entry the profile already holds, link or file, is never replaced: Claude Code may have
+  written a `settings.json` of its own there first, and that one is the profile's from then on. On Windows the
+  directories are junctions, but a file link needs Developer Mode: without it `settings.json` and `CLAUDE.md`
+  are copies, named on the profile (`copied`), and they drift from Personal's on the first edit to either. A
+  hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
+  `.claude.json` is a copy everywhere, minus the account and its caches, since Claude Code replaces it through
+  a rename that would turn a link into a file anyway.
+- **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
+  login in the Keychain under a service named after a hash of the config directory string
+  (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
+  name, and a moved one would lose its login. The directory is built from `os.UserConfigDir()` on every call,
+  so an `XDG_CONFIG_HOME` (or `APPDATA`) that changes between launches points lich at another, empty set of
+  profiles. A `task dev` rig has its own set (`profiles-dev`), so its profiles need their own login.
+- **Continue in moves what Claude Code keys by the conversation id, and nothing else**
+  (`claudeprofile.MoveConversation`, `terminal.ContinueIn`): the transcript, its subagent directory, any file a
+  hook filed beside it under the same name, and `file-history/`, `session-env/` and `tasks/` under that id,
+  the set a throwaway conversation left on 2.1.296, which resumed with its history and checkpoints both ways.
+  The prompt history (`history.jsonl`) and the project's `lastSessionId` stay in the profile it left, so
+  `claude --continue` there points at a conversation it no longer holds and the arrow-up history does not
+  follow. It refuses while a turn is open, which is read off the session-state hooks: a Claude Code
+  without the lich plugin reports no turn and is moved mid-turn. A move across filesystems copies, except on
+  Windows, where a rename across volumes fails rather than copying. A session born in a profile deleted since
+  is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
+  deleted with the profile.
+- **The binary setting and lich's own plugin checks still answer for Personal**: a profile's session runs the
+  configured Claude Code binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins
+  over the profile, and the same binary answers the profile's `auth status` and installs its plugins. The
+  start gate reads the profile's own plugin state, but the nested-subagent-cards check and the MCP servers a
+  card lists read Personal's, so a profile on an older lich plugin than Personal's can be offered cards its
+  plugin cannot open.
