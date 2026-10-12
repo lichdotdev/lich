@@ -35,6 +35,10 @@ const (
 	toastIconMarginStart unit.Dp = 3
 	toastIconSVG         unit.Dp = 20
 	toastIconSVGStart    unit.Dp = 1
+	// A line under the title: mt-0.5, and its glyph size-3 with gap-1.
+	toastLineGap     unit.Dp = 2
+	toastLineIcon    unit.Dp = 12
+	toastLineIconGap unit.Dp = 4
 	// box-shadow: 0 4px 12px rgba(0,0,0,.1).
 	toastShadowY      unit.Dp = 4
 	toastShadowBlur   unit.Dp = 12
@@ -237,7 +241,7 @@ func (s ToasterStyle) body(gtx C, e *toastEntry) D {
 	th := s.theme.On(s.theme.Popover)
 	gtx.Constraints.Min = image.Point{}
 	buttons, rects := s.buttons(gtx, th, e)
-	ic := toastIcons[e.Variant]
+	ic := toastGlyphOf(th, e)
 	lead := 0
 	if ic != nil {
 		lead = gtx.Dp(toastIconBox) + gtx.Dp(toastIconMarginEnd) - gtx.Dp(toastIconMarginStart) + gtx.Dp(toastItemGap)
@@ -285,7 +289,7 @@ func (s ToasterStyle) buttons(gtx C, th *Theme, e *toastEntry) ([]*placedButton,
 	}
 }
 
-func (s ToasterStyle) rowBody(gtx C, th *Theme, e *toastEntry, ic *icons.Icon, lead int, buttons []*placedButton) D {
+func (s ToasterStyle) rowBody(gtx C, th *Theme, e *toastEntry, ic *toastGlyph, lead int, buttons []*placedButton) D {
 	gap := gtx.Dp(toastItemGap)
 	inner := gtx.Constraints.Max.X
 	used := lead
@@ -300,7 +304,7 @@ func (s ToasterStyle) rowBody(gtx C, th *Theme, e *toastEntry, ic *icons.Icon, l
 	height = max(height, content.size.Y)
 	if ic != nil {
 		height = max(height, gtx.Dp(toastIconBox))
-		toastIcon(gtx, th, ic, (height-gtx.Dp(toastIconBox))/2)
+		ic.layout(gtx, (height-gtx.Dp(toastIconBox))/2)
 	}
 	content.at(gtx, image.Pt(lead, (height-content.size.Y)/2))
 	x := lead + content.size.X
@@ -316,7 +320,7 @@ func (s ToasterStyle) rowBody(gtx C, th *Theme, e *toastEntry, ic *icons.Icon, l
 	return D{Size: image.Pt(inner, height)}
 }
 
-func (s ToasterStyle) wrappedBody(gtx C, th *Theme, e *toastEntry, ic *icons.Icon, lead int, buttons []*placedButton) D {
+func (s ToasterStyle) wrappedBody(gtx C, th *Theme, e *toastEntry, ic *toastGlyph, lead int, buttons []*placedButton) D {
 	inner := gtx.Constraints.Max.X
 	cgtx := gtx
 	cgtx.Constraints.Max.X = max(inner-lead, 0)
@@ -324,7 +328,7 @@ func (s ToasterStyle) wrappedBody(gtx C, th *Theme, e *toastEntry, ic *icons.Ico
 	height := content.size.Y
 	if ic != nil {
 		height = max(height, gtx.Dp(toastIconBox))
-		toastIcon(gtx, th, ic, 0)
+		ic.layout(gtx, 0)
 	}
 	content.at(gtx, image.Pt(lead, 0))
 	if len(buttons) == 0 {
@@ -345,12 +349,17 @@ func (s ToasterStyle) wrappedBody(gtx C, th *Theme, e *toastEntry, ic *icons.Ico
 	return D{Size: image.Pt(inner, height)}
 }
 
-// content is [data-content]: the title, and the description under it.
+// content is [data-content]: the title with its lines, and the description
+// under it.
 func (s ToasterStyle) content(gtx C, th *Theme, e *toastEntry) D {
 	title := th.Text(toastTitleSize, e.Title).Weight(font.Medium).Leading(toastTitleLeading).In(th.PopoverForeground)
 	title.MaxLines = 0
+	head := title.Layout
+	if len(e.Lines) > 0 {
+		head = func(gtx C) D { return toastLines(gtx, th, title.Layout, e.Lines) }
+	}
 	if e.Description == "" {
-		return title.Layout(gtx)
+		return head(gtx)
 	}
 	descColor := toastDescDark
 	if s.Light {
@@ -359,19 +368,61 @@ func (s ToasterStyle) content(gtx C, th *Theme, e *toastEntry) D {
 	desc := th.Text(toastTitleSize, e.Description).Leading(toastDescLeading).In(descColor)
 	desc.MaxLines = 0
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(title.Layout),
+		layout.Rigid(head),
 		layout.Rigid(layout.Spacer{Height: toastContentGap}.Layout),
 		layout.Rigid(desc.Layout),
 	)
 }
 
-// toastIcon draws the variant's 20px glyph overflowing its 16px box, top
-// pixels down, as [data-icon] and its svg's negative margins place it.
-func toastIcon(gtx C, th *Theme, ic *icons.Icon, top int) {
+// toastLines stacks the title over its muted lines, each truncated to one.
+func toastLines(gtx C, th *Theme, title layout.Widget, lines []ToastLine) D {
+	children := []layout.FlexChild{layout.Rigid(title)}
+	for _, l := range lines {
+		children = append(children, layout.Rigid(layout.Spacer{Height: toastLineGap}.Layout), layout.Rigid(func(gtx C) D {
+			text := th.Text(TextXS, l.Text).In(th.MutedForeground)
+			if l.Icon == nil {
+				return text.Layout(gtx)
+			}
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return l.Icon.Layout(gtx, toastLineIcon, th.MutedForeground) }),
+				layout.Rigid(layout.Spacer{Width: toastLineIconGap}.Layout),
+				layout.Rigid(text.Layout),
+			)
+		}))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
+// toastGlyph is the toast's leading glyph: the variant's 20px svg, or the
+// icon option's, drawn at the box's own 16px.
+type toastGlyph struct {
+	icon  *icons.Icon
+	size  unit.Dp
+	color color.NRGBA
+}
+
+// toastGlyphOf is the icon option over the variant's, nil for neither.
+func toastGlyphOf(th *Theme, e *toastEntry) *toastGlyph {
+	if e.Icon != nil {
+		g := &toastGlyph{icon: e.Icon, size: toastIconBox, color: th.PopoverForeground}
+		if e.IconColor != nil {
+			g.color = e.IconColor(th)
+		}
+		return g
+	}
+	if ic := toastIcons[e.Variant]; ic != nil {
+		return &toastGlyph{icon: ic, size: toastIconSVG, color: th.PopoverForeground}
+	}
+	return nil
+}
+
+// layout draws the glyph in its 16px box, top pixels down, as [data-icon]
+// and its svg's negative margins place it: a 20px one overflows the box.
+func (g *toastGlyph) layout(gtx C, top int) {
 	x := -gtx.Dp(toastIconMarginStart) - gtx.Dp(toastIconSVGStart)
-	y := top + (gtx.Dp(toastIconBox)-gtx.Dp(toastIconSVG))/2
+	y := top + (gtx.Dp(toastIconBox)-gtx.Dp(g.size))/2
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
-	ic.Layout(gtx, toastIconSVG, th.PopoverForeground)
+	g.icon.Layout(gtx, g.size, g.color)
 }
 
 // toastButton is [data-button]: h-24px px-8px rounded-4px, 12px medium.

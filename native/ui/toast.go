@@ -1,10 +1,13 @@
 package ui
 
 import (
+	"image/color"
 	"math"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/omartelo/lich/native/ui/icons"
 )
 
 // ToastVariant is which sonner call raised the toast: toast(),
@@ -26,6 +29,13 @@ type ToastButton struct {
 	OnClick func()
 }
 
+// ToastLine is one muted line under a toast's title, with an optional glyph
+// before it.
+type ToastLine struct {
+	Icon *icons.Icon
+	Text string
+}
+
 // ToastForever is a Duration that never runs out, sonner's Infinity.
 const ToastForever time.Duration = math.MaxInt64
 
@@ -40,6 +50,14 @@ type Toast struct {
 	Description string
 	Action      *ToastButton
 	Cancel      *ToastButton
+	// Icon replaces the variant's glyph, drawn in the color IconColor picks
+	// from the theme the toast is drawn with, the foreground when nil:
+	// sonner's icon option.
+	Icon      *icons.Icon
+	IconColor func(*Theme) color.NRGBA
+	// Lines sit under the title in the muted foreground, one truncated line
+	// each, as a toast whose title is a block of its own draws them.
+	Lines []ToastLine
 	// Duration is how long the toast stays while the pointer is away; 0 is
 	// sonner's default.
 	Duration time.Duration

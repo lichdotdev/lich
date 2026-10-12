@@ -54,3 +54,12 @@ func (c *Client) ResumeAvailable(ctx context.Context, kind, providerSessionID, c
 	var available bool
 	return available, c.Call(ctx, "terminal.ResumeAvailable", &available, kind, providerSessionID, cwd)
 }
+
+// ReopenSession brings a parked session back to its project's open list
+// under newSessionID, so the window treats it as never spawned and its resume
+// prompt follows. It returns nil when no parked session has sessionID: another
+// window reopened it, or its worktree was removed.
+func (c *Client) ReopenSession(ctx context.Context, sessionID, newSessionID string) (*Session, error) {
+	var s *Session
+	return s, c.Call(ctx, "store.ReopenSession", &s, sessionID, newSessionID)
+}

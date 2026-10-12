@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	flagToasts         = flag.String("toasts", "", "comma-separated toasts to raise at start, the last in front, for -shot: default, success, info, warning, error, action")
+	flagToasts         = flag.String("toasts", "", "comma-separated toasts to raise at start, the last in front, for -shot: default, success, info, warning, error, action, attention, undo")
 	flagToastsExpanded = flag.Bool("toasts-expanded", false, "draw the toast stack expanded, as a hover would, for -shot")
 )
 
@@ -39,8 +39,9 @@ func failure(format string, args ...any) ui.Toast {
 	return ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(format, args...)}
 }
 
-// demoToasts are what -toasts raises, by name: one of each variant, and
-// action, the shape of the web's unclean-exit warning.
+// demoToasts are what -toasts raises, by name: one of each variant; action,
+// the shape of the web's unclean-exit warning; attention and undo, the
+// needs-your-input and closed-session toasts.
 var demoToasts = map[string]ui.Toast{
 	"default": {Title: "Closed Claude 3"},
 	"success": {Variant: ui.ToastSuccess, Title: "lich now opens ~/try/skipo"},
@@ -50,6 +51,9 @@ var demoToasts = map[string]ui.Toast{
 	"action": {Variant: ui.ToastWarning, Title: "lich's previous run ended unexpectedly",
 		Description: "Your sessions were restored, but whatever they were running stopped with it.",
 		Action:      &ui.ToastButton{Label: "Open log folder"}, Cancel: &ui.ToastButton{Label: "Dismiss"}},
+	"attention": needsInputToast(statusReport{label: "Claude 3", project: "skipo",
+		reason: "Claude needs your permission to use Bash"}, func(string, string) {}),
+	"undo": {Title: fmt.Sprintf(toastClosed, "Claude 3"), Action: &ui.ToastButton{Label: toastUndo}},
 }
 
 // raiseDemoToasts is -toasts. They stay up, so the shot finds them.

@@ -2,6 +2,8 @@ package ui
 
 import (
 	"image"
+	"image/color"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +13,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
+
+	"github.com/omartelo/lich/native/ui/icons"
 )
 
 var toastT0 = time.Unix(1000, 0)
@@ -298,5 +302,42 @@ func TestToasterActionRunsItsHandlerAndDismisses(t *testing.T) {
 	r.frame()
 	if !ran || r.live("x") {
 		t.Fatalf("ran %v, live %v: want the handler run and the toast dismissed", ran, r.live("x"))
+	}
+}
+
+// bodyHeight is the height the front toast's content measured at.
+func (r *toasterRig) bodyHeight(id string) int {
+	r.state.mu.Lock()
+	defer r.state.mu.Unlock()
+	return r.state.stack.live(id).view.bodySize.Y
+}
+
+func TestToastLinesStackUnderTheTitleOneLineEach(t *testing.T) {
+	r := newToasterRig(t)
+	r.state.Show(Toast{ID: "plain", Title: "Claude 3 needs your input", Duration: ToastForever})
+	r.state.Show(Toast{ID: "short", Title: "Claude 3 needs your input", Duration: ToastForever,
+		Lines: []ToastLine{{Text: "Approve Bash"}, {Text: "lich"}}})
+	r.state.Show(Toast{ID: "long", Title: "Claude 3 needs your input", Duration: ToastForever,
+		Lines: []ToastLine{{Text: strings.Repeat("Approve a very long command ", 20)}, {Text: "lich"}}})
+	r.settle()
+
+	plain, short, long := r.bodyHeight("plain"), r.bodyHeight("short"), r.bodyHeight("long")
+	if short <= plain {
+		t.Fatalf("with two lines %d, title alone %d: the lines add height", short, plain)
+	}
+	if long != short {
+		t.Fatalf("a long line measured %d, a short one %d: each line truncates to one", long, short)
+	}
+}
+
+func TestToastIconOptionReservesTheLeadingBoxOnADefaultToast(t *testing.T) {
+	r := newToasterRig(t)
+	title := strings.Repeat("word ", 40)
+	r.state.Show(Toast{ID: "bare", Title: title, Duration: ToastForever})
+	r.state.Show(Toast{ID: "icon", Title: title, Duration: ToastForever, Icon: icons.Lucide("bell"),
+		IconColor: func(th *Theme) color.NRGBA { return th.ToneWait }})
+	r.settle()
+	if r.bodyHeight("icon") <= r.bodyHeight("bare") {
+		t.Fatal("the icon option took no room before the title")
 	}
 }
