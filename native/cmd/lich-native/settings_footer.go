@@ -38,4 +38,6 @@ var (
 	flagCustomizeFooter = flag.Bool("customize-footer", false, "start as the footer menu's Customize footer… lands, for -shot")
 	flagSettings        = flag.String("settings", "", "open Settings on this section at start, for -shot")
 	flagSettingsQuery   = flag.String("settings-query", "", "type this into the Settings search at start, for -shot with -settings")
+	flagPatchNotes      = flag.Bool("patch-notes", false, "open the patch notes dialog with Settings at start, for -shot with -settings updates")
+	flagSettingsScope   = flag.String("settings-scope", "", "open Settings in this open project's scope (its id), for -shot with -settings")
 )

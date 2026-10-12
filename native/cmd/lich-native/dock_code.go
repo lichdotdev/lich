@@ -73,6 +73,8 @@ type codeTab struct {
 	mode       widget.Enum
 	toggled    map[string]bool
 	selected   string // the file last opened, which reads as current on Back
+	// focusQuery asks the next browse box to take the keyboard.
+	focusQuery bool
 
 	tree    remote[*treeData]
 	treeKey string
@@ -204,6 +206,11 @@ func (c *codeTab) browse(gtx C, th *ui.Theme) D {
 // switch saying how it reads.
 func (c *codeTab) browseBox(gtx C, th *ui.Theme) D {
 	c.fieldKeys(gtx)
+	if c.focusQuery {
+		c.focusQuery = false
+		gtx.Execute(key.FocusCmd{Tag: &c.query})
+		c.query.SetCaret(0, c.query.Len())
+	}
 	text := c.mode.Value == browseByText
 	placeholder := codeFilterPlaceholder
 	if text {
@@ -247,4 +254,12 @@ func (c *codeTab) fieldKeys(gtx C) {
 func (c *codeTab) open(rel string, line int) {
 	c.selected = rel
 	c.preview.openAt(rel, line)
+}
+
+// requestSearch is FilesPanel's file-search request: the text search, over a
+// closed preview, with its field focused and selected.
+func (c *codeTab) requestSearch() {
+	c.mode.Value = browseByText
+	c.preview.close()
+	c.focusQuery = true
 }

@@ -48,3 +48,21 @@ func (c *Client) OpenFolderInEditor(ctx context.Context, dir string) (string, er
 func (c *Client) OpenFolder(ctx context.Context, dir string) error {
 	return c.Call(ctx, "system.OpenFolder", nil, dir)
 }
+
+// Diagnostics mirrors system.Diagnostics: what a bug report needs.
+type Diagnostics struct {
+	Version  string `json:"version"`
+	Platform string `json:"platform"`
+	LogPath  string `json:"logPath"` // "" when lich logs to stderr only
+}
+
+func (c *Client) Diagnostics(ctx context.Context) (Diagnostics, error) {
+	var d Diagnostics
+	return d, c.Call(ctx, "system.Diagnostics", &d)
+}
+
+// RevealLog opens the log's directory in the file manager; it fails when
+// there is no log file.
+func (c *Client) RevealLog(ctx context.Context) error {
+	return c.Call(ctx, "system.RevealLog", nil)
+}

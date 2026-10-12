@@ -160,6 +160,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	}
 	u.dock = newDock(code, u.review)
 	u.settings.applyEditor = u.takeEditorPref
+	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
@@ -260,6 +261,8 @@ func (u *window) connect() error {
 	if *flagSettings != "" {
 		u.settings.openSection(parseSettingsSection(*flagSettings))
 		u.settings.show("", nil)
+		u.settings.scope = *flagSettingsScope
+		u.settings.updates.patch.open = *flagPatchNotes
 		u.settings.nav.query.SetText(*flagSettingsQuery)
 	}
 	if *flagCustomizeFooter {
@@ -286,6 +289,7 @@ func (u *window) layout(gtx C) error {
 		return nil
 	}
 	u.sidebar.morph.advance(gtx)
+	fired := u.pollHotkeys(gtx)
 	var act sidebarAction
 	var top topbarAction
 	var contentErr error
@@ -301,6 +305,8 @@ func (u *window) layout(gtx C) error {
 		u.resume.layout(u.ctx, gtx, u.theme, u.gate, u.model)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
+		u.settings.layoutSandboxDialog(gtx, u.theme)
+		u.settings.layoutPatchNotesDialog(gtx, u.theme)
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)
 		var edge int
@@ -315,6 +321,7 @@ func (u *window) layout(gtx C) error {
 	})
 	u.apply(act)
 	u.applyTopbar(top)
+	u.runHotkeys(gtx, fired)
 	return contentErr
 }
 

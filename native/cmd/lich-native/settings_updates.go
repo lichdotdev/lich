@@ -1,0 +1,217 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"math"
+	"sync"
+
+	"gioui.org/f32"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/widget"
+
+	"github.com/omartelo/lich/native/lichclient"
+	"github.com/omartelo/lich/native/ui"
+)
+
+// ponytail: English until the native window has i18n (settings.updatesSettings,
+// shell.appUpdateGate).
+const (
+	updatesAppTitle     = "Application"
+	updatesAppAlso      = "version upgrade"
+	updatesAppDesc      = "lich %s — checks for updates on startup and hourly."
+	updatesCheck        = "Check for updates"
+	updatesAvailable    = "lich %s is available — follow the prompt."
+	updatesUpToDate     = "You're on the latest version."
+	updatesCheckFailed  = "Check failed — are you online?"
+	updatesToastTitle   = "lich %s is available"
+	updatesViewRelease  = "View release"
+	updatesNotesTitle   = "What's new"
+	updatesNotesAlso    = "changelog release notes"
+	updatesNotesFor     = "Patch notes for v%s."
+	updatesNoNotes      = "No patch notes for this build."
+	updatesViewNotes    = "View patch notes"
+	updatesAppKey       = "updates.app" // no backend key: the rows only act
+	updatesNotesKey     = "updates.notes"
+	updatesPluginKey    = "updates.plugin"
+	updatesReleaseTagAt = "/releases/tag/v"
+)
+
+// updatesSettings is Settings › Updates: what the backend answered about the
+// release notes and the plugin, nil until it does, kept across visits and
+// read again under the drawn answer when Settings opens again.
+type updatesSettings struct {
+	mu     sync.Mutex
+	loaded bool
+
+	notes         *lichclient.PatchNotes
+	plugins       []lichclient.PluginStatus
+	pluginsFailed bool
+	busy          bool // a plugin action or check is in flight
+	checked       bool // the user asked for a plugin check since Settings opened
+	checkingApp   bool
+	appResult     string
+
+	checkApp, viewNotes widget.Clickable
+	plugin              pluginControls
+	patch               patchNotesView
+}
+
+// revalidate has the next draw read everything again and drops what belonged
+// to the last visit, as unmounting the pane does.
+func (u *updatesSettings) revalidate() {
+	u.mu.Lock()
+	u.loaded, u.checked, u.appResult = false, false, ""
+	u.mu.Unlock()
+	u.patch.open = false
+}
+
+// ensure starts the section's reads the first time it is drawn after a
+// revalidate.
+func (u *updatesSettings) ensure(s *settingsScreen) {
+	u.mu.Lock()
+	start := !u.loaded
+	u.loaded = true
+	u.mu.Unlock()
+	if !start {
+		return
+	}
+	go u.readNotes(s)
+	go u.readPlugins(s)
+}
+
+func (u *updatesSettings) readNotes(s *settingsScreen) {
+	n, err := s.client.PatchNotes(s.ctx)
+	if err != nil {
+		log.Printf("settings: patch notes: %v", err)
+		return
+	}
+	u.mu.Lock()
+	u.notes = &n
+	u.mu.Unlock()
+	s.invalidate()
+}
+
+// version is the running build as the Application row names it, "" until the
+// notes arrived.
+func (u *updatesSettings) version() string {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if u.notes == nil {
+		return ""
+	}
+	return "v" + u.notes.Version
+}
+
+func (u *updatesSettings) patchNotes() *lichclient.PatchNotes {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.notes
+}
+
+// hasPatchNotes is `notes?.groups`: a section the changelog does not have is null,
+// and an empty one still opens.
+func hasPatchNotes(n *lichclient.PatchNotes) bool { return n != nil && n.Groups != nil }
+
+// updatesRow draws the Updates rows, false for any other key.
+func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r settingRow, first bool) (D, bool) {
+	u := &s.updates
+	switch e.key {
+	case updatesAppKey:
+		u.ensure(s)
+		if u.checkApp.Clicked(gtx) {
+			go u.runAppCheck(s)
+		}
+		r.description = fmt.Sprintf(updatesAppDesc, u.version())
+		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return u.appControl(gtx, th) }), true
+	case updatesNotesKey:
+		u.ensure(s)
+		notes := u.patchNotes()
+		if u.viewNotes.Clicked(gtx) && hasPatchNotes(notes) {
+			u.patch.show()
+		}
+		r.description = updatesNoNotes
+		if hasPatchNotes(notes) {
+			r.description = fmt.Sprintf(updatesNotesFor, notes.Version)
+		}
+		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
+			b := th.Button(&u.viewNotes, updatesViewNotes)
+			b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantOutline, !hasPatchNotes(notes)
+			return b.Layout(gtx)
+		}), true
+	case updatesPluginKey:
+		u.ensure(s)
+		return u.pluginBlock(gtx, th, s, r, first), true
+	}
+	return D{}, false
+}
+
+func (u *updatesSettings) appControl(gtx C, th *ui.Theme) D {
+	u.mu.Lock()
+	checking, result := u.checkingApp, u.appResult
+	u.mu.Unlock()
+	b := th.Button(&u.checkApp, updatesCheck)
+	b.Size, b.Disabled = ui.SizeSM, checking
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return busyButton(gtx, th, b, checking) })}
+	if result != "" {
+		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, result).Muted().Layout))
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+}
+
+// runAppCheck is the manual check of AppUpdateGate: the verdict beside the
+// button and, for a newer release, the prompt. The prompt is a toast that
+// opens the release page; the installer and the command to paste are the
+// web gate's and have no native counterpart yet.
+func (u *updatesSettings) runAppCheck(s *settingsScreen) {
+	u.mu.Lock()
+	u.checkingApp, u.appResult = true, ""
+	u.mu.Unlock()
+	s.invalidate()
+	st, err := s.client.AppUpdateStatus(s.ctx)
+	result := updatesUpToDate
+	switch {
+	case err != nil:
+		log.Printf("settings: update check: %v", err)
+		result = updatesCheckFailed
+	case st.UpdateAvailable:
+		result = fmt.Sprintf(updatesAvailable, st.LatestVersion)
+		s.promptUpdate(st)
+	}
+	u.mu.Lock()
+	u.checkingApp, u.appResult = false, result
+	u.mu.Unlock()
+	s.invalidate()
+}
+
+func (s *settingsScreen) promptUpdate(st lichclient.AppUpdateStatus) {
+	t := ui.Toast{Title: fmt.Sprintf(updatesToastTitle, st.LatestVersion)}
+	if st.ReleaseURL != "" {
+		t.Action = &ui.ToastButton{Label: updatesViewRelease, OnClick: func() { s.openExternal(st.ReleaseURL) }}
+	}
+	s.theme.toaster.Show(t)
+}
+
+// busyButton is a Button that draws LoaderCircle under animate-spin before
+// its label while busy.
+func busyButton(gtx C, th *ui.Theme, b ui.ButtonStyle, busy bool) D {
+	if !busy {
+		return b.Layout(gtx)
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return spinGlyph(gtx, th) }),
+		ui.Gap(2),
+		layout.Rigid(b.Layout),
+	)
+}
+
+// spinGlyph is LoaderCircle at size-4, one turn a second.
+func spinGlyph(gtx C, th *ui.Theme) D {
+	size := ui.Space(4)
+	turn := float64(gtx.Now.UnixNano()%int64(tabSpinPeriod)) / float64(tabSpinPeriod)
+	half := float32(gtx.Dp(size)) / 2
+	defer op.Affine(f32.Affine2D{}.Rotate(f32.Pt(half, half), float32(turn*2*math.Pi))).Push(gtx.Ops).Pop()
+	gtx.Execute(op.InvalidateCmd{})
+	return icTabLoader.Layout(gtx, size, th.MutedForeground)
+}

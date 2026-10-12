@@ -194,11 +194,15 @@ func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first boo
 }
 
 // rowApplies drops a row that has nothing to set: the spend ceiling while
-// the footer shows no cost, as FooterSettings mounts it.
+// the footer shows no cost, as FooterSettings mounts it, and the sandbox
+// grants on a machine that cannot confine.
 func (s *settingsScreen) rowApplies(e settingEntry) bool {
-	if e.key != costBudgetKey {
-		return true
+	switch e.key {
+	case costBudgetKey:
+		l, _ := s.footer.snapshot()
+		return l.has("cost")
+	case sshAgentKey, ghTokenKey:
+		return s.sandbox.canConfine()
 	}
-	l, _ := s.footer.snapshot()
-	return l.has("cost")
+	return true
 }

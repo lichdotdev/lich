@@ -79,6 +79,11 @@ type settingsScreen struct {
 
 	general generalSwitches
 	notify  *notifier
+	sandbox sandboxSettings
+	vcs     vcsSettings
+	help    helpSettings
+	hotkeys hotkeyEditor
+	updates updatesSettings
 }
 
 func newSettingsScreen(ctx context.Context, c *lichclient.Client, root *ui.Root, invalidate func()) *settingsScreen {
@@ -101,6 +106,8 @@ func (s *settingsScreen) load() error {
 func (s *settingsScreen) show(scope string, projects []settingsProject) {
 	s.open, s.projects = true, projects
 	s.scope = resolveScope(scope, projects)
+	s.vcs.revalidate()
+	s.updates.revalidate()
 	s.refresh()
 }
 
@@ -111,6 +118,7 @@ func (s *settingsScreen) showRemembered(projects []settingsProject) { s.show(s.s
 
 func (s *settingsScreen) refresh() {
 	projects := s.projects
+	s.loadSandbox()
 	go func() {
 		values, err := loadScopedValues(s.ctx, s.client, projects)
 		if err != nil {
@@ -230,6 +238,9 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 			})
 		})
 	}
+	if sec.id == sectionHotkeys {
+		return append(rows, s.hotkeyPaneRows(th)...)
+	}
 	if len(sec.rows) == 0 {
 		return append(rows, th.Text(settingsDescSize, settingsNotYet).Muted().Layout)
 	}
@@ -290,8 +301,21 @@ func (s *settingsScreen) drawRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 		return s.theme.layoutRow(gtx, th, r, first)
 	case footerLayoutKey:
 		return s.footerRow(gtx, th, r, first)
+	case sandboxLadderKey:
+		return s.sandboxLadder(gtx, th)
+	case sshAgentKey, ghTokenKey:
+		return s.grantRow(gtx, th, e, r, first)
 	}
 	if d, ok := s.appearanceRow(gtx, th, e, r, first); ok {
+		return d
+	}
+	if d, ok := s.vcsRow(gtx, th, e, r, first); ok {
+		return d
+	}
+	if d, ok := s.helpRow(gtx, th, e, r, first); ok {
+		return d
+	}
+	if d, ok := s.updatesRow(gtx, th, e, r, first); ok {
 		return d
 	}
 	if desc, control, ok := s.notifyRow(gtx, e.key); ok {
@@ -355,6 +379,9 @@ func (u *window) loadSettings() error {
 	}
 	u.settings.editor.prefs = prefs
 	u.review.hiding, u.review.split = prefs.hideWhitespace, prefs.split()
+	if err := u.settings.loadHotkeys(); err != nil {
+		return err
+	}
 	return u.settings.load()
 }
 

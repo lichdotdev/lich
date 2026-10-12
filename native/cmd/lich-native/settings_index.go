@@ -74,9 +74,7 @@ type settingsSection struct {
 	unported  []settingEntry
 }
 
-// settingsSections is the nav in order. ponytail: the unported keys are the
-// fixed ones; Sandbox's per-provider rung (provider.<id>.sandbox) joins the
-// count when Sandbox is ported against the provider list.
+// settingsSections is the nav in order.
 var settingsSections = []settingsSection{
 	{id: sectionGeneral, label: "General", icon: icons.Lucide("settings-2"), rows: []settingEntry{
 		{title: closeSettingTitle, also: closeAlso, key: closeActionKey, group: groupWindow},
@@ -91,21 +89,32 @@ var settingsSections = []settingsSection{
 		{title: footerTitle, also: footerAlso, key: footerLayoutKey},
 		{title: ceilingTitle, also: ceilingAlso, key: costBudgetKey},
 	}},
-	{id: sectionHotkeys, label: "Hotkeys", icon: icons.Lucide("keyboard")},
+	{id: sectionHotkeys, label: "Hotkeys", icon: icons.Lucide("keyboard"), rows: hotkeyEntries()},
 	{id: sectionProviders, label: "Providers", icon: icons.Lucide("blocks"),
 		unported: []settingEntry{{key: "provider.default", scope: scopeOverridable}}},
-	{id: sectionSandbox, label: "Sandbox", icon: icons.Lucide("shield-check"), unported: []settingEntry{
-		{key: "sandbox.ssh-agent", scope: scopeOverridable},
-		{key: "sandbox.gh-token", scope: scopeOverridable},
+	{id: sectionSandbox, label: "Sandbox", icon: icons.Lucide("shield-check"), rows: []settingEntry{
+		{title: confinedTitle, also: confinedAlso, key: sandboxLadderKey},
+		{title: sshTitle, also: sshAlso, key: sshAgentKey, scope: scopeOverridable, group: carryTitle},
+		{title: ghTitle, also: ghAlso, key: ghTokenKey, scope: scopeOverridable, group: carryTitle},
+	}, unported: sandboxRungEntries()},
+	{id: sectionVersionControl, label: "Version Control", icon: icons.Lucide("git-branch"), rows: []settingEntry{
+		{title: vcsToolsTitle, also: vcsToolsAlso, key: vcsToolsKey},
+		{title: vcsAccountTitle, also: vcsAccountAlso, key: vcsAccountKey, scope: scopeProjectOnly},
 	}},
-	{id: sectionVersionControl, label: "Version Control", icon: icons.Lucide("git-branch"),
-		unported: []settingEntry{{key: "vcs.account", scope: scopeProjectOnly}}},
 	{id: sectionEditor, label: "Editor", icon: icons.Lucide("code"), rows: []settingEntry{
 		{title: hideWhitespaceTitle, also: hideWhitespaceAlso, key: hideWhitespaceKey},
 		{title: diffLayoutTitle, also: diffLayoutAlso, key: diffLayoutKey},
 	}},
-	{id: sectionUpdates, label: "Updates", icon: icons.Lucide("download"), footer: true},
-	{id: sectionHelp, label: "Help", icon: icons.Lucide("circle-question-mark"), footer: true},
+	{id: sectionUpdates, label: "Updates", icon: icons.Lucide("download"), footer: true, rows: []settingEntry{
+		{title: updatesAppTitle, also: updatesAppAlso, key: updatesAppKey},
+		{title: updatesNotesTitle, also: updatesNotesAlso, key: updatesNotesKey},
+		{title: pluginTitle, also: pluginAlso, key: updatesPluginKey},
+	}},
+	{id: sectionHelp, label: "Help", icon: icons.Lucide("circle-question-mark"), footer: true, rows: []settingEntry{
+		{title: helpBugTitle, also: helpBugAlso, key: helpBugKey},
+		{title: helpLogTitle, also: helpLogAlso, key: helpLogKey},
+		{title: helpAboutTitle, also: helpAboutAlso, key: helpAboutKey},
+	}},
 }
 
 // defaultSection is the pane a first open lands on: the web's is Providers,

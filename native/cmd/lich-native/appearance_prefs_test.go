@@ -85,7 +85,11 @@ func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
 			t.Errorf("%q: %+v, want %q", q, got, title)
 		}
 	}
-	if got := searchSettings("quit"); len(got) == 0 || got[0].title != closeSettingTitle || got[0].path() != "General › Window" {
+	// The Hotkeys rows are searchable as the web's are, so "Quit lich" is a
+	// prefix match and outranks the close setting, found by its also words.
+	if got := searchSettings("quit"); !slices.ContainsFunc(got, func(h settingHit) bool {
+		return h.title == closeSettingTitle && h.path() == "General › Window"
+	}) {
 		t.Errorf("quit: %+v, want the close setting under General › Window", got)
 	}
 }

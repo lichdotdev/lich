@@ -156,10 +156,17 @@ func TestRemovingTheThemeInUseFallsBackToSystem(t *testing.T) {
 }
 
 func TestThemeIsFoundBySearch(t *testing.T) {
-	for _, q := range []string{"theme", "palette", "DARK"} {
+	for _, q := range []string{"theme", "DARK"} {
 		if got := searchSettings(q); len(got) == 0 || got[0].title != themeTitle || got[0].section != sectionAppearance {
 			t.Errorf("%q: %+v", q, got)
 		}
+	}
+	// "palette" is also the title of a Hotkeys row, a prefix match that
+	// outranks the theme's also words, so the theme is found but not first.
+	if got := searchSettings("palette"); !slices.ContainsFunc(got, func(h settingHit) bool {
+		return h.title == themeTitle && h.section == sectionAppearance
+	}) {
+		t.Errorf("palette: %+v", got)
 	}
 }
 
