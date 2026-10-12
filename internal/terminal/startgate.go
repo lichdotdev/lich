@@ -1,6 +1,9 @@
 package terminal
 
-import "github.com/omartelo/lich/internal/providers"
+import (
+	"github.com/omartelo/lich/internal/agentplugin"
+	"github.com/omartelo/lich/internal/providers"
+)
 
 // startsAtPrompt is the providers whose session-start hook fires from the
 // agent's own prompt, before its first turn and past any question the CLI asks
@@ -30,11 +33,19 @@ func (s *Service) SetStartReports(installed func(provider string) bool) {
 // awaitsStart is whether Ready holds a session of kind until its session-start
 // report arrives. Not under s.mu: the plugin check reads files and, for some
 // providers, runs their CLI.
-func (s *Service) awaitsStart(kind string) bool {
+func (s *Service) awaitsStart(kind, profileDir string) bool {
 	s.mu.Lock()
 	installed := s.startReports
 	s.mu.Unlock()
-	return startsAtPrompt[kind] && installed != nil && installed(kind)
+	if !startsAtPrompt[kind] || installed == nil {
+		return false
+	}
+	// A profile has its own plugin set, so the plugin installed in Personal says
+	// nothing about whether a session in it will ever report.
+	if profileDir != "" {
+		return agentplugin.ClaudeInstalledIn(profileDir)
+	}
+	return installed(kind)
 }
 
 // holdForStart records on a just-spawned session whether it waits for its

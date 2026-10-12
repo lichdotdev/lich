@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/providers"
 )
 
@@ -37,14 +38,13 @@ func harnessDir(homeVar, sub string) (string, bool) {
 	return filepath.Join(home, sub), true
 }
 
-// claudeTranscriptPath locates a Claude conversation by its UUID under
-// $CLAUDE_CONFIG_DIR, else ~/.claude.
+// claudeTranscriptPath locates a Claude conversation by its UUID in whichever
+// Claude Code profile holds it (internal/claudeprofile): Personal's directory,
+// $CLAUDE_CONFIG_DIR else ~/.claude, then every profile lich made. A
+// conversation lives in exactly one, and Continue in moves it between them.
 func claudeTranscriptPath(providerSessionID string) (string, bool) {
-	base, ok := harnessDir("CLAUDE_CONFIG_DIR", ".claude")
-	if !ok {
-		return "", false
-	}
-	return globTranscript(base, "projects", "*", providerSessionID+".jsonl")
+	_, path, ok := claudeprofile.Owner(providerSessionID)
+	return path, ok
 }
 
 // claudeSubagentPaths locates the transcripts of the sub-agents a Claude
@@ -54,12 +54,12 @@ func claudeTranscriptPath(providerSessionID string) (string, bool) {
 // billed to the same account. Empty for a conversation that spawned none, which
 // is most of them.
 func claudeSubagentPaths(providerSessionID string) []string {
-	base, ok := harnessDir("CLAUDE_CONFIG_DIR", ".claude")
+	transcript, ok := claudeTranscriptPath(providerSessionID)
 	if !ok {
 		return nil
 	}
 	matches, err := filepath.Glob(
-		filepath.Join(base, "projects", "*", providerSessionID, "subagents", "*.jsonl"),
+		filepath.Join(filepath.Dir(transcript), providerSessionID, "subagents", "*.jsonl"),
 	)
 	if err != nil {
 		return nil

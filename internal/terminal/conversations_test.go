@@ -99,9 +99,9 @@ func TestClaudeConversations(t *testing.T) {
 		`{"type":"user","cwd":"/work/alpha","message":{"content":"sub"}}`+"\n")
 
 	assertConversations(t, claudeConversations(),
-		store.Conversation{Kind: "claude", ID: "titled", Title: "fix login", Cwd: "/work/alpha"},
-		store.Conversation{Kind: "claude", ID: "untitled", Title: "why is the build red", Cwd: "/work/alpha"},
-		store.Conversation{Kind: "claude", ID: "ai", Title: "Greeting", Cwd: "/work/alpha"},
+		store.Conversation{Kind: "claude", ID: "titled", Title: "fix login", Cwd: "/work/alpha", Profile: "personal"},
+		store.Conversation{Kind: "claude", ID: "untitled", Title: "why is the build red", Cwd: "/work/alpha", Profile: "personal"},
+		store.Conversation{Kind: "claude", ID: "ai", Title: "Greeting", Cwd: "/work/alpha", Profile: "personal"},
 	)
 }
 

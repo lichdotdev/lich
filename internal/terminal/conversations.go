@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/relay"
 	"github.com/omartelo/lich/internal/store"
@@ -50,18 +51,19 @@ func Conversations() []store.Conversation {
 	return all
 }
 
-// claudeConversations reads ~/.claude/projects/<slug>/<id>.jsonl. Sub-agents
-// live a directory deeper and are not matched.
+// claudeConversations reads <profile>/projects/<slug>/<id>.jsonl in every Claude
+// Code profile, each conversation marked with the profile holding it: a resume
+// runs there, whatever profile the project uses now. Sub-agents live a
+// directory deeper and are not matched.
 func claudeConversations() []store.Conversation {
-	base, ok := harnessDir("CLAUDE_CONFIG_DIR", ".claude")
-	if !ok {
-		return nil
-	}
-	paths, _ := filepath.Glob(filepath.Join(base, "projects", "*", "*.jsonl"))
 	var out []store.Conversation
-	for _, path := range paths {
-		if c, ok := claudeConversation(path); ok {
-			out = append(out, c)
+	for _, profile := range claudeprofile.ConfigDirs() {
+		paths, _ := filepath.Glob(filepath.Join(profile.Dir, "projects", "*", "*.jsonl"))
+		for _, path := range paths {
+			if c, ok := claudeConversation(path); ok {
+				c.Profile = profile.Slug
+				out = append(out, c)
+			}
 		}
 	}
 	return out

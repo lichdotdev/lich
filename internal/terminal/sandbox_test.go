@@ -72,7 +72,7 @@ func TestWrapSandboxLeavesAnUnconfinedSpawnAlone(t *testing.T) {
 		{"not confined", "/home/u", false},
 		{"no home to empty", "", true},
 	} {
-		got, _ := wrapSandbox(baseSpec(), providers.Claude, tt.home, "", tt.confined, sandboxCreds{})
+		got, _ := wrapSandbox(baseSpec(), providers.Claude, tt.home, "", "", tt.confined, sandboxCreds{})
 		if got.bin != original.bin || !slices.Equal(got.args, original.args) {
 			t.Errorf("%s: spawn rewritten to %q %v", tt.name, got.bin, got.args)
 		}
@@ -84,7 +84,7 @@ func TestWrapSandboxKeepsTheCommandAndItsArguments(t *testing.T) {
 		t.Skip("no sandbox backend on this machine")
 	}
 	original := baseSpec()
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", true, sandboxCreds{})
 	if got.bin == original.bin {
 		t.Fatalf("the spawn was not confined: still %q", got.bin)
 	}
@@ -191,6 +191,20 @@ func TestSessionDropDirWithoutABase(t *testing.T) {
 	}
 }
 
+// TestWrapSandboxBindsTheClaudeProfile: a profile lives under lich's config
+// dir, which the sandbox mounts read-only, and a session that cannot write its
+// own config dir cannot keep a conversation.
+func TestWrapSandboxBindsTheClaudeProfile(t *testing.T) {
+	if !sandbox.Available() {
+		t.Skip("no sandbox backend on this machine")
+	}
+	profile := t.TempDir()
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", profile, true, sandboxCreds{})
+	if !slices.ContainsFunc(got.args, func(arg string) bool { return strings.Contains(arg, profile) }) {
+		t.Fatalf("the profile dir %q is not in the confined spawn: %v", profile, got.args)
+	}
+}
+
 // TestWrapSandboxMountsTheSessionsCopies is the drop's half of the sandbox: a
 // file dragged onto a confined terminal is copied by lich outside it, so the
 // path pasted at the prompt only names something the agent can open if the
@@ -201,7 +215,7 @@ func TestWrapSandboxMountsTheSessionsCopies(t *testing.T) {
 	}
 	copies := sessionDropDir(t.TempDir(), "s1", true)
 
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), copies, true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), copies, "", true, sandboxCreds{})
 
 	// Substring, not an argv element: the two backends spell a mounted path in
 	// their own vocabulary — bubblewrap takes it as its own argument
@@ -221,7 +235,7 @@ func TestWrapSandboxKeepsTheTokenOutOfTheArguments(t *testing.T) {
 		t.Skip("bubblewrap is not installed")
 	}
 	const token = "gho_secret_probe_value"
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", true, sandboxCreds{ghToken: token})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", true, sandboxCreds{ghToken: token})
 
 	if !slices.Contains(got.env, "GH_TOKEN="+token) {
 		t.Errorf("GH_TOKEN missing from the child environment: %v", got.env)
@@ -237,7 +251,7 @@ func TestWrapSandboxAddsNoTokenWithoutOne(t *testing.T) {
 	if _, err := exec.LookPath("bwrap"); err != nil {
 		t.Skip("bubblewrap is not installed")
 	}
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", true, sandboxCreds{})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", true, sandboxCreds{})
 	if slices.ContainsFunc(got.env, func(kv string) bool { return strings.HasPrefix(kv, "GH_TOKEN=") }) {
 		t.Errorf("GH_TOKEN set without the flag: %v", got.env)
 	}
@@ -263,7 +277,7 @@ func TestWrapSandboxNamesTheLinksItSkipped(t *testing.T) {
 		t.Fatalf("symlink .gitconfig: %v", err)
 	}
 
-	_, links := wrapSandbox(baseSpec(), providers.Claude, home, "", true, sandboxCreds{})
+	_, links := wrapSandbox(baseSpec(), providers.Claude, home, "", "", true, sandboxCreds{})
 
 	if !slices.Contains(links, ".gitconfig") {
 		t.Errorf("skipped links = %v, want them to name .gitconfig", links)
@@ -274,7 +288,7 @@ func TestWrapSandboxNamesTheLinksItSkipped(t *testing.T) {
 // the sandbox's own answer, and reporting one for a session running on the
 // machine would put a warning on a card that has no sandbox to warn about.
 func TestWrapSandboxSkipsNoLinksWhenUnconfined(t *testing.T) {
-	if _, links := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", false, sandboxCreds{}); links != nil {
+	if _, links := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", false, sandboxCreds{}); links != nil {
 		t.Errorf("an unconfined spawn reported skipped links %v", links)
 	}
 }

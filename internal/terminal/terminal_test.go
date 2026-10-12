@@ -91,6 +91,12 @@ type stubBins struct {
 	// total that cannot be summed, and a fork's offset that cannot be recorded.
 	// A single error field would let a test claim the path it never reached.
 	ledgerErr, saveLedgerErr, sessionCostErr, forkOffsetErr error
+	// The Claude Code profile every session row reads back, and the failure of
+	// that read; movedProfiles records SetSessionProfile per session once a test
+	// makes it, and then answers for that session.
+	profile       string
+	profileErr    error
+	movedProfiles map[string]string
 }
 
 // projectWithSetup is a project checkout shipping .lich/setup-worktree.sh —
@@ -197,6 +203,20 @@ func (s stubBins) SetWorktreePort(path string, port int) error {
 
 func (s stubBins) ProviderSession(_ string) (string, error) {
 	return s.providerSession, s.providerErr
+}
+
+func (s stubBins) SessionProfile(id string) (string, error) {
+	if moved, ok := s.movedProfiles[id]; ok {
+		return moved, nil
+	}
+	return s.profile, s.profileErr
+}
+
+func (s stubBins) SetSessionProfile(id, profile string) error {
+	if s.movedProfiles != nil {
+		s.movedProfiles[id] = profile
+	}
+	return nil
 }
 func (s stubBins) SetSessionTitle(_, _ string) (bool, error) { return false, nil }
 func (s stubBins) SetSessionUnread(_ string, _ bool) error   { return nil }

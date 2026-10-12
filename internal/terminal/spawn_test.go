@@ -130,7 +130,7 @@ func TestASpawnWithNoDirectoryStartsAtHome(t *testing.T) {
 	svc := New(stubBins{bin: stayAliveBin(t)}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	_, cwd, err := svc.spawnSession("s1", "p1", "", "claude", "", "", false, false, 80, 24)
+	_, cwd, err := svc.spawnSession("s1", "p1", "", "claude", "", "", "", false, false, 80, 24)
 	if err != nil {
 		t.Fatalf("spawnSession = %v, want nil", err)
 	}

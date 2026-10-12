@@ -232,6 +232,8 @@ type Store interface {
 	ProviderSession(sessionID string) (string, error)
 	SessionModel(sessionID string) string
 	SessionEffort(sessionID string) string
+	SessionProfile(sessionID string) (string, error)
+	SetSessionProfile(sessionID, profile string) error
 	SessionUltracode(sessionID string) bool
 	SessionSubagentDepth(sessionID string) int
 	InheritUltracode(sessionID, forkedFrom string) error

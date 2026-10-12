@@ -18,6 +18,7 @@ import (
 	"github.com/omartelo/lich/internal/agentplugin"
 	"github.com/omartelo/lich/internal/appupdate"
 	"github.com/omartelo/lich/internal/chromium"
+	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/cli"
 	"github.com/omartelo/lich/internal/drop"
 	"github.com/omartelo/lich/internal/events"
@@ -273,6 +274,14 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	plugins := agentplugin.New(db)
 	dispatcher.Register("agentplugin", plugins)
 	go plugins.RepairRegistrations()
+	// Every Claude Code profile gets the lich plugin once it is logged in, run as
+	// that profile so its account's plugin policy applies; a profile with a
+	// session running in it is never deleted, and deleting one clears the
+	// settings that named it.
+	profiles := claudeprofile.New(db, hub.Emit)
+	profiles.SetLichPlugin(plugins.InstallInClaudeProfile, agentplugin.PluginKey)
+	profiles.SetSessions(term.ProfileSessions, db.ForgetClaudeProfile)
+	dispatcher.Register("claudeprofile", profiles)
 	dispatcher.Register("appupdate", appupdate.New(version, coord.Install, hub.Emit))
 	dispatcher.Register("patchnotes", patchnotes.New(version, changelog))
 	dispatcher.Register("store", db)
@@ -439,6 +448,11 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     SetProjects also disarms the guard that keeps two projects off the same
 //     directory, and SetDropDir points the sandbox's read-only bind wherever
 //     the caller likes.
+//   - store.SetSessionProfile moves a session to another Claude Code profile
+//     without moving its conversation, which only terminal.ContinueIn may do;
+//     store.ForgetClaudeProfile is the delete's own cleanup.
+//   - claudeprofile.SetLichPlugin and claudeprofile.SetSessions are startup
+//     wiring like the setters above.
 //   - quota.ReportClaude is a session's own reading of its plan, which arrives
 //     over /mod/usage: called here it would put any numbers on the gauge.
 //   - terminal.EnqueueModCommand and terminal.RunModCommand queue a command for
@@ -494,6 +508,10 @@ func denyInternal(d *rpc.Handler) {
 		"terminal.EnqueueModCommand",
 		"terminal.RunModCommand",
 		"terminal.SubmitPrompt",
+		"store.SetSessionProfile",
+		"store.ForgetClaudeProfile",
+		"claudeprofile.SetLichPlugin",
+		"claudeprofile.SetSessions",
 	} {
 		d.Deny(method)
 	}

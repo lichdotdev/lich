@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/omartelo/lich/internal/agentplugin"
+	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/project"
 	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/relay"
@@ -74,8 +75,14 @@ func (s *Service) Start(
 		name = recorded
 	}
 	name = relay.RosterNameOf(name, cwd, id)
-	awaits := s.awaitsStart(kind)
-	sess, cwd, err := s.spawnSession(id, projectID, cwd, kind, resume, name, fork, setup, cols, rows)
+	// Before the lock: it may read the disk for the conversation's profile and
+	// tell the window the session moved, and Emit must never run under s.mu.
+	profileDir, err := s.claudeProfileDir(id, kind, resume)
+	if err != nil {
+		return err
+	}
+	awaits := s.awaitsStart(kind, profileDir)
+	sess, cwd, err := s.spawnSession(id, projectID, cwd, kind, resume, profileDir, name, fork, setup, cols, rows)
 	if err != nil || sess == nil {
 		return err
 	}
@@ -104,7 +111,7 @@ func (s *Service) Start(
 // The returned cwd is the effective start directory (the input, or the
 // resolved home when it was empty).
 func (s *Service) spawnSession(
-	id, projectID, cwd, kind, resume, name string, fork, setup bool, cols, rows int,
+	id, projectID, cwd, kind, resume, profileDir, name string, fork, setup bool, cols, rows int,
 ) (*session, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -145,6 +152,11 @@ func (s *Service) spawnSession(
 	if err != nil {
 		return nil, "", err
 	}
+	// The configured binary still runs, so a wrapper exporting a
+	// CLAUDE_CONFIG_DIR of its own wins over the profile, as it always has.
+	if profileDir != "" {
+		env = claudeprofile.Env(env, profileDir)
+	}
 	spec := ptySpec{
 		bin: resolveCommand(kind, s.store.ProviderBin(kind, projectID), userShell()),
 		args: providerArgs(
@@ -172,7 +184,7 @@ func (s *Service) spawnSession(
 	inSandbox := confined(s.store, id, kind, projectID, cwd)
 	creds := s.sandboxCredentials(projectID, cwd, inSandbox)
 	spec, skippedLinks := wrapSandbox(
-		spec, kind, userHome(), sessionDropDir(s.dropDir, id, inSandbox), inSandbox, creds,
+		spec, kind, userHome(), sessionDropDir(s.dropDir, id, inSandbox), profileDir, inSandbox, creds,
 	)
 	p, err := startPTY(spec)
 	if err != nil {
@@ -203,7 +215,7 @@ func (s *Service) spawnSession(
 	s.sessions[id] = sess
 	// Outside mu's protection by design (see Service.spawns), and stored with the
 	// registration so no report can arrive for a session whose kind is unknown.
-	s.spawns.Store(id, spawn{kind: kind, cwd: cwd})
+	s.spawns.Store(id, spawn{kind: kind, cwd: cwd, projectID: projectID, profile: profileSlug(profileDir)})
 	sess.announce(skipped)
 	go s.stream(id, sess)
 	return sess, cwd, nil
@@ -237,13 +249,16 @@ func (s *Service) providerKind(id, reported string) string {
 	return reported
 }
 
-// spawn is how one live session's PTY was started: the kind it runs and the
-// directory it was rooted at. The cwd is the spawn directory and not the
-// foreground one the watcher follows (cwd.go) — Crush keeps its database in the
-// checkout it was started in, which a `cd` inside the session does not move.
+// spawn is how one live session's PTY was started: the kind it runs, the
+// project and directory it was rooted at, and the Claude Code profile it runs
+// in ("" for Personal). The cwd is the spawn directory and not the foreground
+// one the watcher follows (cwd.go) — Crush keeps its database in the checkout it
+// was started in, which a `cd` inside the session does not move.
 type spawn struct {
-	kind string
-	cwd  string
+	kind      string
+	cwd       string
+	projectID string
+	profile   string
 }
 
 // spawnOf is how a live session's PTY was started, or the zero spawn once it is

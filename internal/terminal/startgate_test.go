@@ -66,20 +66,20 @@ func TestReadyDoesNotHoldASessionThatReportsNoStart(t *testing.T) {
 
 func TestAwaitsStartOnlyForProvidersThatReportFromTheirPrompt(t *testing.T) {
 	svc := New(stubBins{}, nil, events.New())
-	if svc.awaitsStart(providers.Claude) {
+	if svc.awaitsStart(providers.Claude, "") {
 		t.Error("a session was held with nothing wired to say whether hooks run")
 	}
 
 	svc.SetStartReports(func(string) bool { return true })
 	for _, kind := range []string{providers.Claude, providers.Cursor, providers.OMP, providers.Kiro} {
-		if !svc.awaitsStart(kind) {
+		if !svc.awaitsStart(kind, "") {
 			t.Errorf("awaitsStart(%q) = false, want true", kind)
 		}
 	}
 	for _, kind := range []string{
 		providers.Codex, providers.Antigravity, providers.Crush, providers.OpenCode, KindShell,
 	} {
-		if svc.awaitsStart(kind) {
+		if svc.awaitsStart(kind, "") {
 			t.Errorf("awaitsStart(%q) = true, want false: it reports nothing before its first turn", kind)
 		}
 	}
@@ -91,10 +91,10 @@ func TestAwaitsStartIsOffWhereTheHooksAreNotInstalled(t *testing.T) {
 	svc := New(stubBins{}, nil, events.New())
 	svc.SetStartReports(func(provider string) bool { return provider != providers.Kiro })
 
-	if svc.awaitsStart(providers.Kiro) {
+	if svc.awaitsStart(providers.Kiro, "") {
 		t.Error("a Kiro CLI session without lich's hooks was set to wait for a report")
 	}
-	if !svc.awaitsStart(providers.Claude) {
+	if !svc.awaitsStart(providers.Claude, "") {
 		t.Error("a Claude Code session with lich's hooks was not set to wait")
 	}
 }

@@ -23,9 +23,22 @@ import (
 // TestMain drops LICH_LISTEN_PORT so every transport in this package binds a
 // random port: a test run spawned from inside a lich terminal inherits the
 // pinned port of the running instance and would collide with it.
+//
+// It also points the user's config dir at a scratch one (XDG on Linux, APPDATA
+// on Windows): every Claude transcript lookup scans lich's Claude profiles
+// under it (internal/claudeprofile), and a developer's real profiles must never
+// answer for a test.
 func TestMain(m *testing.M) {
 	os.Unsetenv("LICH_LISTEN_PORT")
-	os.Exit(m.Run())
+	scratch, err := os.MkdirTemp("", "lich-terminal-config")
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("XDG_CONFIG_HOME", scratch)
+	os.Setenv("APPDATA", scratch)
+	code := m.Run()
+	os.RemoveAll(scratch)
+	os.Exit(code)
 }
 
 func TestFrameRoundTrip(t *testing.T) {
