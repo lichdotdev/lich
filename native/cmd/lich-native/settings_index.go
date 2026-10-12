@@ -61,6 +61,11 @@ type settingEntry struct {
 	group       string
 	key         string
 	scope       settingScope
+	// perProvider is a block of a provider's own screen: it is searched once
+	// per enabled provider, only the ones in onlyFor when that is set, and a
+	// result opens that provider's screen (settings-index.ts perProvider).
+	perProvider bool
+	onlyFor     []string
 }
 
 // settingsSection is one nav row. rows are the ported rows, drawn and
@@ -91,7 +96,7 @@ var settingsSections = []settingsSection{
 	}},
 	{id: sectionHotkeys, label: "Hotkeys", icon: icons.Lucide("keyboard"), rows: hotkeyEntries()},
 	{id: sectionProviders, label: "Providers", icon: icons.Lucide("blocks"),
-		unported: []settingEntry{{key: "provider.default", scope: scopeOverridable}}},
+		rows: providerEntries(), unported: providerBinEntries()},
 	{id: sectionSandbox, label: "Sandbox", icon: icons.Lucide("shield-check"), rows: []settingEntry{
 		{title: confinedTitle, also: confinedAlso, key: sandboxLadderKey},
 		{title: sshTitle, also: sshAlso, key: sshAgentKey, scope: scopeOverridable, group: carryTitle},
@@ -117,9 +122,8 @@ var settingsSections = []settingsSection{
 	}},
 }
 
-// defaultSection is the pane a first open lands on: the web's is Providers,
-// which the native window has not ported yet.
-const defaultSection = sectionEditor
+// defaultSection is the pane a first open lands on.
+const defaultSection = sectionProviders
 
 func sectionByID(id string) settingsSection {
 	for _, s := range settingsSections {
@@ -154,6 +158,9 @@ type settingHit struct {
 	section string
 	group   string
 	title   string
+	// providerID is the provider whose screen holds the row, "" for a row
+	// that is not on one.
+	providerID string
 }
 
 // path is settings-index.ts hitPath, the line a result shows above its
@@ -172,8 +179,10 @@ func (h settingHit) path() string {
 // searchSettings is settings-index.ts searchSettings over the ported rows and
 // the sections: a title that starts with the query beats one that contains
 // it, and both beat a match on the also words, a row's group among them;
-// ties keep the nav's order.
-func searchSettings(query string) []settingHit {
+// ties keep the nav's order. providers are the enabled ones: a block of a
+// provider's screen is a result once per provider, named after it, and none
+// at all without any.
+func searchSettings(query string, providers ...launchProvider) []settingHit {
 	needle := strings.ToLower(strings.TrimSpace(query))
 	if needle == "" {
 		return nil
@@ -196,7 +205,15 @@ func searchSettings(query string) []settingHit {
 	}
 	for _, s := range settingsSections {
 		for _, e := range s.rows {
-			consider(settingHit{s.id, e.group, e.title}, e.also+" "+e.group)
+			if !e.perProvider {
+				consider(settingHit{section: s.id, group: e.group, title: e.title}, e.also+" "+e.group)
+				continue
+			}
+			for _, p := range providers {
+				if len(e.onlyFor) == 0 || slices.Contains(e.onlyFor, p.id) {
+					consider(settingHit{section: s.id, group: p.name, title: e.title, providerID: p.id}, e.also+" "+p.name)
+				}
+			}
 		}
 	}
 	for _, s := range settingsSections {

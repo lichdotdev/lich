@@ -95,3 +95,17 @@ func TestRenameFolderAndDetectDecode(t *testing.T) {
 		t.Fatalf("DetectProviders = %+v, %v", found, err)
 	}
 }
+
+// The wire names are providers.Detected's own json tags; a Settings row reads
+// the executable, where it was found and the page that documents installing it.
+func TestDetectedProviderReadsBinarySourceAndDocs(t *testing.T) {
+	const wire = `{"id":"codex","name":"Codex","binary":"codex","installed":true,"path":"/opt/codex","source":"setting","docs":"https://example.com/codex"}`
+	var d DetectedProvider
+	if err := json.Unmarshal([]byte(wire), &d); err != nil {
+		t.Fatal(err)
+	}
+	want := DetectedProvider{ID: "codex", Name: "Codex", Binary: "codex", Installed: true, Source: "setting", Docs: "https://example.com/codex"}
+	if d != want {
+		t.Errorf("decoded %+v, want %+v", d, want)
+	}
+}

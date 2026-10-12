@@ -3,11 +3,16 @@ package lichclient
 import "context"
 
 // DetectedProvider mirrors providers.Detected (internal/providers), trimmed to
-// what the launch menu reads.
+// what the launch menu and Settings › Providers read. Binary is the executable
+// a spawn asks $PATH for, Source where it was found ("path", "setting", or ""
+// for none) and Docs the page that documents installing it.
 type DetectedProvider struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
+	Binary    string `json:"binary"`
 	Installed bool   `json:"installed"`
+	Source    string `json:"source"`
+	Docs      string `json:"docs"`
 }
 
 // ReorderSessions stores a project's full card order. The backend writes a

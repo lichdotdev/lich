@@ -29,7 +29,11 @@ const (
 )
 
 // The nav's geometry and its dimmed rows' opacity, from the mockup.
-const navDimOpacity = 0.45
+const (
+	navDimOpacity = 0.45
+	// navWhereOpacity is the provider's name on the Providers row, opacity-70.
+	navWhereOpacity = 0.7
+)
 
 var (
 	navRowHeight   = ui.Space(8)
@@ -72,7 +76,7 @@ func (n *settingsNav) init() {
 // field, the sections (or the results while searching), and the footer group.
 func (s *settingsScreen) navLayout(gtx C, th *ui.Theme, values scopedValues) D {
 	n := &s.nav
-	hits := searchSettings(n.query.Text())
+	hits := searchSettings(n.query.Text(), s.providers.snapshot().launchEnabled()...)
 	if q := n.query.Text(); q != n.searched {
 		n.searched, n.cursor = q, 0
 	}
@@ -180,6 +184,13 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, va
 	click := clickableOf(s.nav.rows, sec.id)
 	if click.Clicked(gtx) {
 		s.openSection(sec.id)
+		if sec.id == sectionProviders {
+			s.providers.open = ""
+		}
+	}
+	where := ""
+	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders && sec.id == s.section {
+		where = p.name
 	}
 	badge := sectionBadge(sec, s.scope, s.projects, values)
 	dim := s.scope != "" && !sec.projectScoped()
@@ -189,12 +200,16 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, va
 			fg = th.Over(ui.Alpha(th.MutedForeground, navDimOpacity))
 			icon = fg
 		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		children := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D { return sec.icon.Layout(gtx, ui.Space(4), icon) }),
 			ui.Gap(2.5),
 			layout.Flexed(1, th.Text(ui.TextSM, sec.label).In(fg).Layout),
-			layout.Rigid(func(gtx C) D { return countBadge(gtx, th, badge) }),
-		)
+		}
+		if where != "" {
+			children = append(children, layout.Rigid(th.Text(ui.TextXS, where).In(th.Over(ui.Alpha(fg, navWhereOpacity))).Layout), ui.Gap(1.5))
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			append(children, layout.Rigid(func(gtx C) D { return countBadge(gtx, th, badge) }))...)
 	})
 }
 

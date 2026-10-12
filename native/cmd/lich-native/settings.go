@@ -77,13 +77,14 @@ type settingsScreen struct {
 	// revealing is the row reveal asked for, lit on the next frame.
 	revealing *settingHit
 
-	general generalSwitches
-	notify  *notifier
-	sandbox sandboxSettings
-	vcs     vcsSettings
-	help    helpSettings
-	hotkeys hotkeyEditor
-	updates updatesSettings
+	general   generalSwitches
+	notify    *notifier
+	sandbox   sandboxSettings
+	vcs       vcsSettings
+	help      helpSettings
+	hotkeys   hotkeyEditor
+	updates   updatesSettings
+	providers providerSettings
 }
 
 func newSettingsScreen(ctx context.Context, c *lichclient.Client, root *ui.Root, invalidate func()) *settingsScreen {
@@ -108,10 +109,14 @@ func (s *settingsScreen) show(scope string, projects []settingsProject) {
 	s.scope = resolveScope(scope, projects)
 	s.vcs.revalidate()
 	s.updates.revalidate()
+	s.providers.revalidate()
 	s.refresh()
 }
 
-func (s *settingsScreen) hide() { s.open = false }
+func (s *settingsScreen) hide() {
+	s.open = false
+	s.watchPlans(false)
+}
 
 // showRemembered opens the screen on the scope it was left in.
 func (s *settingsScreen) showRemembered(projects []settingsProject) { s.show(s.scope, projects) }
@@ -119,6 +124,7 @@ func (s *settingsScreen) showRemembered(projects []settingsProject) { s.show(s.s
 func (s *settingsScreen) refresh() {
 	projects := s.projects
 	s.loadSandbox()
+	s.loadProviders()
 	go func() {
 		values, err := loadScopedValues(s.ctx, s.client, projects)
 		if err != nil {
@@ -150,6 +156,7 @@ func (s *settingsScreen) openSection(id string) {
 // choose opens a search result's section and lights its row.
 func (s *settingsScreen) choose(gtx C, h settingHit) {
 	s.openSection(h.section)
+	s.providers.open = h.providerID
 	s.lit, s.litUntil, s.scrollTo = h.title, gtx.Now.Add(settingsLitFor), -1
 	for i, e := range sectionByID(h.section).rows {
 		if e.title == h.title {
@@ -177,6 +184,7 @@ func (s *settingsScreen) layout(gtx C, th *ui.Theme, projects []settingsProject)
 	if s.close.Clicked(gtx) {
 		s.open = false
 	}
+	s.watchPlans(s.open && s.section == sectionProviders)
 	if s.revealing != nil {
 		s.choose(gtx, *s.revealing)
 		s.revealing = nil
@@ -225,9 +233,13 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 			return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D { return s.scopePill(gtx, th) })
 		})
 	}
-	rows = append(rows, func(gtx C) D {
-		return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, th.Text(settingsTitle, sec.label).Weight(font.SemiBold).Leading(32).Layout)
-	})
+	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders {
+		rows = append(rows, s.providerHeader(th, p)...)
+	} else {
+		rows = append(rows, func(gtx C) D {
+			return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, th.Text(settingsTitle, sec.label).Weight(font.SemiBold).Leading(32).Layout)
+		})
+	}
 	if desc := s.paneDescription(sec); desc != "" {
 		rows = append(rows, func(gtx C) D {
 			return layout.Inset{Top: -ui.Space(2), Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
@@ -240,6 +252,9 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	}
 	if sec.id == sectionHotkeys {
 		return append(rows, s.hotkeyPaneRows(th)...)
+	}
+	if sec.id == sectionProviders {
+		return append(rows, s.providerPaneRows(th, values, len(rows))...)
 	}
 	if len(sec.rows) == 0 {
 		return append(rows, th.Text(settingsDescSize, settingsNotYet).Muted().Layout)

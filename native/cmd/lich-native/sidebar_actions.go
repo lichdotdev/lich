@@ -135,7 +135,8 @@ func (m *model) storedSessions() ([]lichclient.Session, bool) {
 }
 
 // loadProviders reads what the launch menu offers. The UI calls it off the
-// frame at startup; Settings has no native pane to change it under.
+// frame at startup, and again once Settings › Providers changed what it
+// reads.
 func (m *model) loadProviders(ctx context.Context) error {
 	list, globalDefault, err := loadLaunchProviders(ctx, m.client)
 	if err != nil {
@@ -153,6 +154,20 @@ func (m *model) launchProviders() []launchProvider {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return enabledProviders(m.providers)
+}
+
+// setProjectDefault takes a project's default provider as Settings just
+// wrote it, which the workspace the launch menus resolve it from is not told
+// otherwise.
+func (m *model) setProjectDefault(projectID, id string) {
+	m.mu.Lock()
+	for i := range m.projects {
+		if m.projects[i].ID == projectID {
+			m.projects[i].DefaultProvider = id
+		}
+	}
+	m.mu.Unlock()
+	m.invalidate()
 }
 
 // newSessionKind is what an implicit new session spawns in the shown

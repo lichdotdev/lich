@@ -91,6 +91,7 @@ func (s *settingsScreen) chooseRung(p launchProvider, current, next string) {
 	if loosens(current, next) {
 		s.sandbox.change = rungChange{providerID: p.id, providerName: p.name, level: next}
 		s.sandbox.asking = true
+		s.invalidate() // the dialog is laid out before the pane, a frame behind the click
 		return
 	}
 	s.writeSandbox(sandboxKey(p.id), next)

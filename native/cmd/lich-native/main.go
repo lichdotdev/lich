@@ -161,6 +161,10 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.dock = newDock(code, u.review)
 	u.settings.applyEditor = u.takeEditorPref
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
+	u.settings.providers.onProjectDefault = u.model.setProjectDefault
+	u.settings.providers.onLaunchChanged = func() {
+		go func() { u.logErr("load providers", u.model.loadProviders(u.ctx)) }()
+	}
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
@@ -260,8 +264,10 @@ func (u *window) connect() error {
 	u.notifier.asking = *flagNotifyOptIn
 	if *flagSettings != "" {
 		u.settings.openSection(parseSettingsSection(*flagSettings))
-		u.settings.show("", nil)
-		u.settings.scope = *flagSettingsScope
+		tabs, _ := u.model.projectTabs()
+		u.settings.show(*flagSettingsScope, settingsProjectsOf(tabs))
+		u.settings.providers.open = *flagSettingsProvider
+		u.settings.providers.adding, u.settings.providers.addingSet = *flagSettingsAdd, *flagSettingsAdd
 		u.settings.updates.patch.open = *flagPatchNotes
 		u.settings.nav.query.SetText(*flagSettingsQuery)
 	}
@@ -306,6 +312,7 @@ func (u *window) layout(gtx C) error {
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
+		u.settings.layoutProviderDialog(gtx, u.theme)
 		u.settings.layoutPatchNotesDialog(gtx, u.theme)
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)
