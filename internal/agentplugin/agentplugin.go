@@ -340,7 +340,12 @@ func providerName(id string) string {
 // run executes a mutation on a provider's CLI, returning its combined output on
 // failure so the reason reaches the user instead of a bare exit code.
 func (s *Service) run(provider string, args ...string) error {
-	out, err := s.exec(provider, cmdTimeout, args...)
+	return s.runIn(nil, provider, args...)
+}
+
+// runIn is run with env as the CLI's environment, nil for lich's own.
+func (s *Service) runIn(env []string, provider string, args ...string) error {
+	out, err := s.execIn(env, provider, cmdTimeout, args...)
 	if err != nil {
 		return fmt.Errorf("%s %s: %w: %s",
 			s.bin(provider), strings.Join(args, " "), err, strings.TrimSpace(out))
@@ -357,9 +362,15 @@ func (s *Service) read(provider string, args ...string) (string, error) {
 
 // exec spawns a provider's CLI and returns its combined output.
 func (s *Service) exec(provider string, timeout time.Duration, args ...string) (string, error) {
+	return s.execIn(nil, provider, timeout, args...)
+}
+
+// execIn is exec with env as the CLI's environment, nil for lich's own.
+func (s *Service) execIn(env []string, provider string, timeout time.Duration, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, s.bin(provider), args...)
+	cmd.Env = env
 	winexec.Hide(cmd)
 	cmd.WaitDelay = waitDelay
 	out, err := cmd.CombinedOutput()

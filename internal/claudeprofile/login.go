@@ -10,7 +10,7 @@ import (
 )
 
 // LoginEventName is the event a login reports its progress on.
-const LoginEventName = "claudeProfileLogin"
+const LoginEventName = "claude-profile-login"
 
 // loginTimeout bounds a login lich started: a browser tab the user walked away
 // from must not leave a CLI waiting for good.

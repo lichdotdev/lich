@@ -378,6 +378,10 @@ const (
 	// environment so a test decides what the machine's Crush says.
 	fakeCLIDirs    = "LICH_TEST_FAKE_CLI_DIRS"
 	fakeCLIVersion = "LICH_TEST_FAKE_CLI_VERSION"
+	// fakeCLIEnvLog, when set, gets one line per call naming the Claude Code
+	// config dir and token the call ran with, so a test can tell which profile
+	// a call ran as.
+	fakeCLIEnvLog = "LICH_TEST_FAKE_CLI_ENV_LOG"
 )
 
 func TestMain(m *testing.M) {
@@ -388,6 +392,15 @@ func TestMain(m *testing.M) {
 	// call it was.
 	if log := os.Getenv(fakeCLILog); log != "" {
 		line := strings.Join(os.Args[1:], " ") + "\n"
+		f, err := os.OpenFile(log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+		if err != nil {
+			os.Exit(2)
+		}
+		_, _ = f.WriteString(line)
+		_ = f.Close()
+	}
+	if log := os.Getenv(fakeCLIEnvLog); log != "" {
+		line := os.Getenv("CLAUDE_CONFIG_DIR") + "|" + os.Getenv("CLAUDE_CODE_OAUTH_TOKEN") + "\n"
 		f, err := os.OpenFile(log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 		if err != nil {
 			os.Exit(2)
