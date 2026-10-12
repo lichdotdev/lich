@@ -21,6 +21,9 @@ type Conversation struct {
 	Cwd   string
 	// Unix seconds of the last activity the provider recorded.
 	UpdatedAt int64
+	// Profile is the Claude Code profile whose directory holds the
+	// conversation, "personal" for the default one; "" for other providers.
+	Profile string
 }
 
 // ExternalSession is a conversation started outside lich that one of its
@@ -36,6 +39,9 @@ type ExternalSession struct {
 	ProjectName       string `json:"projectName"`
 	ProjectPath       string `json:"projectPath"`
 	UpdatedAt         int64  `json:"updatedAt"`
+	// Profile is the Claude Code profile the conversation lives in, the one a
+	// resume of it runs in whatever the project's own profile is.
+	Profile string `json:"profile,omitempty"`
 }
 
 // SetConversationsOf registers how to list the conversations on disk
@@ -94,7 +100,7 @@ func (s *Service) ExternalSessions() ([]ExternalSession, error) {
 		external = append(external, ExternalSession{
 			Kind: c.Kind, ProviderSessionID: c.ID, Title: c.Title, Path: owner.path,
 			ProjectID: owner.id, ProjectName: owner.name, ProjectPath: owner.projectPath,
-			UpdatedAt: c.UpdatedAt,
+			UpdatedAt: c.UpdatedAt, Profile: c.Profile,
 		})
 	}
 	slices.SortStableFunc(external, func(a, b ExternalSession) int {

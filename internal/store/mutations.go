@@ -158,11 +158,17 @@ func (s *Service) addSession(
 	if sandbox != SessionConfined && sandbox != SessionUnconfined {
 		sandbox = ""
 	}
+	// The profile is a birth value like the model: the project's setting moving
+	// later does not move a session that already has a conversation.
+	profile := ""
+	if kind == providers.Claude {
+		profile = s.ClaudeProfile(projectID)
+	}
 	return s.tx(func(tx *sql.Tx) error {
 		if _, err := tx.Exec(
-			`INSERT INTO sessions (id, project_id, label, kind, path, origin_session_id, origin_label, sandbox, folder, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
-			sessionID, projectID, label, kind, path, originID, originLabel, sandbox, folder, projectID,
+			`INSERT INTO sessions (id, project_id, label, kind, path, origin_session_id, origin_label, sandbox, folder, profile, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			sessionID, projectID, label, kind, path, originID, originLabel, sandbox, folder, profile, projectID,
 		); err != nil {
 			return fmt.Errorf("insert session %q: %w", sessionID, err)
 		}
@@ -314,7 +320,7 @@ func (s *Service) ReopenSession(sessionID, newSessionID string) (*Session, error
 // reopen is the resume behind both doors: it finds one parked session with the
 // given WHERE clause and re-adds it to the workspace under a fresh id
 // (newSessionID), carrying over the old label, kind, path, provider session id,
-// label_auto flag, model, effort, ultracode, subagent depth, entrypoint, sandbox, pin, origin and scheduled prompt.
+// label_auto flag, model, effort, ultracode, subagent depth, entrypoint, sandbox, profile, pin, origin and scheduled prompt.
 // The fresh id is deliberate: it makes the frontend treat the card as
 // never-spawned, so its resume prompt fires and the provider conversation
 // continues instead of starting cold.
@@ -350,14 +356,14 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		// project_id is read rather than passed: reopening by id knows only the
 		// session, and the row is what says where it belongs.
 		var labelAuto int
-		var projectID, model, effort, entrypoint, sandbox, folder, color string
+		var projectID, model, effort, entrypoint, sandbox, folder, color, profile string
 		var run, ultracode bool
 		var subagent int
 		var forkOffset float64
 		row := tx.QueryRow(
 			`SELECT id, project_id, label, kind, path, provider_session_id, label_auto,
 			        model, effort, ultracode, subagent, entrypoint, run, sandbox, pinned, folder, color, origin_session_id, origin_label,
-			        scheduled_at, scheduled_prompt, fork_cost_offset
+			        scheduled_at, scheduled_prompt, fork_cost_offset, profile
 			   FROM sessions `+where,
 			args...,
 		)
@@ -365,7 +371,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			&old.ID, &projectID, &old.Label, &old.Kind, &old.Path, &old.ProviderSessionID,
 			&labelAuto, &model, &effort, &ultracode, &subagent, &entrypoint, &run, &sandbox, &old.Pinned, &folder, &color,
 			&old.OriginSessionID, &old.OriginLabel,
-			&old.ScheduledAt, &old.ScheduledPrompt, &forkOffset,
+			&old.ScheduledAt, &old.ScheduledPrompt, &forkOffset, &profile,
 		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil // nothing parked; caller creates a new session
@@ -403,11 +409,11 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			`INSERT INTO sessions
 			   (id, project_id, label, kind, path, provider_session_id, label_auto,
 			    model, effort, ultracode, subagent, entrypoint, run, sandbox, pinned, folder, color, origin_session_id, origin_label,
-			    scheduled_at, scheduled_prompt, fork_cost_offset, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			    scheduled_at, scheduled_prompt, fork_cost_offset, profile, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
 			newSessionID, projectID, old.Label, old.Kind, old.Path, old.ProviderSessionID, labelAuto,
 			model, effort, ultracode, subagent, entrypoint, run, sandbox, old.Pinned, folder, color, old.OriginSessionID, old.OriginLabel,
-			old.ScheduledAt, old.ScheduledPrompt, forkOffset, projectID,
+			old.ScheduledAt, old.ScheduledPrompt, forkOffset, profile, projectID,
 		); err != nil {
 			return fmt.Errorf("reinsert session %q: %w", newSessionID, err)
 		}
@@ -432,6 +438,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			Pinned:            old.Pinned,
 			Folder:            folder,
 			Color:             color,
+			Profile:           profile,
 			OriginSessionID:   old.OriginSessionID,
 			OriginLabel:       old.OriginLabel,
 			ScheduledAt:       old.ScheduledAt,

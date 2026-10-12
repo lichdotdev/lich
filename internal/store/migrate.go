@@ -21,6 +21,7 @@ var migrations = []func(*sql.Tx) error{
 	addCostReported,
 	addSessionColor,
 	addProviderSessionTombstones,
+	addSessionProfile,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -111,6 +112,14 @@ END;
 CREATE TRIGGER sessions_tombstone_au AFTER UPDATE OF provider_session_id ON sessions BEGIN
     DELETE FROM provider_session_tombstones WHERE provider_session_id = new.provider_session_id;
 END;`)
+	return err
+}
+
+// addSessionProfile is version 9: the Claude Code profile a session runs in
+// (SetSessionProfile), "" for Personal, which is what every row before profiles
+// ran in.
+func addSessionProfile(tx *sql.Tx) error {
+	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN profile TEXT NOT NULL DEFAULT ''`)
 	return err
 }
 

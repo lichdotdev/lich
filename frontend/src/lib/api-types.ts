@@ -390,6 +390,9 @@ export interface StoredSession {
   folder: string
   /** The palette colour the card is painted with, "" for one that follows the theme. */
   color: string
+  /** The Claude Code profile the session runs in (internal/claudeprofile): a
+   * slug, "" for Personal and for every other provider. */
+  profile: string
   /** The session that asked for this one, "" for a session nobody delegated. */
   originSessionId: string
   /** What that session was called at the time; all that survives its close. */
@@ -482,6 +485,9 @@ export interface ExternalSession {
   projectPath: string
   /** Unix seconds of the provider's last recorded activity. */
   updatedAt: number
+  /** The Claude Code profile the conversation lives in ("personal" for the
+   * default one), which a resume of it runs in; absent for other providers. */
+  profile?: string
 }
 
 /** internal/terminal.TranscriptMatch — a session whose conversation mentions a
