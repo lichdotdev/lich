@@ -113,11 +113,18 @@ const (
 	// height from them.
 	tabsLineHeightSM = unit.Dp(20)
 	tabsLineHeightXS = unit.Dp(16)
+	// tabsGhostPadY makes a ghost trigger 28dp (h-7) with no list padding:
+	// in the dock's header it then keeps the 8dp inset every island's first
+	// control keeps, on the left and the top alike. The web's 27px tab sits
+	// 10 from the left and 6 from the top, which reads as squeezed.
+	tabsGhostPadY = unit.Dp(5)
 )
 
 // tabsGeometries transcribes tabs.tsx and, for the ghost variant, RightDock's
 // TAB_CLASS: h-9 p-[0.1875rem] and px-2 py-1 gap-1.5 text-sm, against
-// h-auto p-0.5 gap-1 and px-2 py-0.5 gap-1 text-xs.
+// p-0.5 gap-1 and px-2 py-0.5 gap-1 text-xs. The ghost list is h-8: its
+// h-auto loses to the list's own group-data-horizontal:h-9, and the h-8
+// Tabs root, a flex column, shrinks it to 32, so its triggers are 27 tall.
 var tabsGeometries = map[TabsVariant]tabsGeometry{
 	TabsVariantDefault: {
 		listHeight: Space(9), listPad: tabsListPad, listRadius: RadiusLG,
@@ -128,8 +135,8 @@ var tabsGeometries = map[TabsVariant]tabsGeometry{
 		padX: Space(2), padY: Space(1), gap: Space(1.5), icon: Space(4), text: TextSM, lineHeight: tabsLineHeightSM,
 	},
 	TabsVariantGhost: {
-		listPad: Space(0.5), listGap: Space(1), listRadius: RadiusLG,
-		padX: Space(2), padY: Space(0.5), gap: Space(1), icon: Space(3.5), text: TextXS, lineHeight: tabsLineHeightXS,
+		listGap: Space(1), listRadius: RadiusLG,
+		padX: Space(2), padY: tabsGhostPadY, gap: Space(1), icon: Space(3.5), text: TextXS, lineHeight: tabsLineHeightXS,
 	},
 }
 
@@ -167,7 +174,8 @@ func (t TabsStyle) tabsList(gtx C) D {
 	lead := image.Pt(pad, pad)
 	if !vertical && geo.listHeight > 0 {
 		size.Y = gtx.Dp(geo.listHeight)
-		lead.Y = pad + (size.Y-2*pad-trigs[0].Y)/2
+		// Rounded half up, as Chromium snaps the trigger's half-pixel offset.
+		lead.Y = pad + (size.Y-2*pad-trigs[0].Y+1)/2
 	}
 	if t.Variant == TabsVariantDefault {
 		gtx.Constraints.Min = size

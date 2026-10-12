@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"image"
 	"log"
 	"runtime"
 	"strconv"
@@ -154,8 +153,11 @@ func (f *footer) layoutBar(gtx C, th *ui.Theme, in footerInput) D {
 		OnClick: func() { f.editor.open = true },
 	}}
 	return th.ContextMenu(f.root, &f.menu, entries).Layout(gtx, func(gtx C) D {
-		gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, gtx.Dp(ui.Space(11)))
-		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		pad := ui.Space(1.5)
+		return layout.Inset{Top: pad, Bottom: pad}.Layout(gtx, func(gtx C) D {
+			// min-h-11 counts the padding, and Inset leaves Min as it finds it.
+			gtx.Constraints.Min.Y = gtx.Dp(ui.Space(11)) - 2*gtx.Dp(pad)
 			return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1), Justify: ui.JustifyBetween}.Layout(gtx,
 				ui.WrapItem(f.side(th, footerSlots(l.Left, in), in, ui.JustifyStart)),
 				ui.WrapMLAuto(f.side(th, footerSlots(l.Right, in), in, ui.JustifyEnd)),

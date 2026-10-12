@@ -101,12 +101,29 @@ func TestTabsVerticalStacksTriggers(t *testing.T) {
 	}
 }
 
-func TestTabsGhostHugsItsContent(t *testing.T) {
+// The ghost list matches the web dock's: RightDock's h-8 Tabs root shrinks
+// the list to 32px, and its triggers fill it less p-0.5 and 1px: 27px.
+func TestTabsGhostIsTwentyEightTall(t *testing.T) {
 	s := testTheme().Tabs(new(TabsState), tabsNames("Code", "Review")...)
 	s.Variant = TabsVariantGhost
 	d := layoutAt(func(gtx C) D { return s.Layout(gtx) }, 0, 600)
-	if d.Size.Y >= 36 || d.Size.Y < 26 {
-		t.Errorf("h-auto list: got height %d, want text-xs line + py-0.5 + border + p-0.5 (26..35)", d.Size.Y)
+	if d.Size.Y != 28 {
+		t.Errorf("got list height %d, want the 28dp trigger alone", d.Size.Y)
+	}
+	s.State.Selected = 0
+	img := tabsRender(t, tabsFrame(new(input.Router), time.Unix(0, 0), func(gtx C) D { return s.Layout(gtx) }))
+	// Left of the label, clear of the rounded corners: the accent fill's rows.
+	top, bottom := -1, -1
+	for y := range 40 {
+		if toggleIs(img, image.Pt(9, y), Dark.Accent) {
+			bottom = y
+			if top < 0 {
+				top = y
+			}
+		}
+	}
+	if top != 0 || bottom-top+1 != 28 {
+		t.Errorf("active fill rows %d..%d, want 28 rows from 0 (no list padding)", top, bottom)
 	}
 }
 
@@ -241,8 +258,8 @@ func TestTabsGhostTriggersTakeTheirOwnWidth(t *testing.T) {
 		return layoutAt(func(gtx C) D { return s.Layout(gtx) }, 0, 2000).Size.X
 	}
 	short, long := width("a"), width("a much longer trigger")
-	// Each width includes the list's p-0.5 (2px) on both sides; the pair adds gap-1.
-	if got, want := width("a", "a much longer trigger"), short+long-4+4; got != want {
+	// The ghost list has no padding; the pair adds gap-1.
+	if got, want := width("a", "a much longer trigger"), short+long+4; got != want {
 		t.Errorf("ghost triggers: got list width %d, want each trigger at its own width (%d)", got, want)
 	}
 }
