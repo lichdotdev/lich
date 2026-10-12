@@ -22,6 +22,7 @@ const (
 	brandName        = "lich"
 	pullRequestsHint = "Pull requests"
 	settingsHint     = "Settings"
+	projectSettings  = "Project settings…"
 )
 
 // barDisabledOpacity is button.tsx's disabled:opacity-50.
@@ -50,17 +51,18 @@ var (
 // the native window has no Home tab, and the active tab merges into the
 // island under it.
 type topbar struct {
-	root    *ui.Root
-	started time.Time
-	brand   widget.Clickable
-	sort    ui.Sortable
-	list    layout.List
-	tabs    map[string]*tabState
-	open    openMenu
-	bell    bellMenu
-	hints   map[string]*ui.Tooltip
-	themes  widget.Clickable
-	confirm closeConfirm
+	root     *ui.Root
+	started  time.Time
+	brand    widget.Clickable
+	sort     ui.Sortable
+	list     layout.List
+	tabs     map[string]*tabState
+	open     openMenu
+	bell     bellMenu
+	hints    map[string]*ui.Tooltip
+	themes   widget.Clickable
+	settings widget.Clickable
+	confirm  closeConfirm
 }
 
 func newTopbar(root *ui.Root) *topbar {
@@ -80,6 +82,10 @@ type topbarAction struct {
 	pick    bool   // the directory picker
 	theme   bool   // flip between the light and the dark palette
 	reopen  *lichclient.RecentProject
+	// settings is the Settings button; projectSettings a tab's "Project
+	// settings…", by project id.
+	settings        bool
+	projectSettings string
 }
 
 // topbarFrame is what the window measured for the strip this frame.
@@ -92,6 +98,7 @@ type topbarFrame struct {
 	active     string
 	pending    []notification
 	light      bool // the light palette is on screen
+	settings   bool // the Settings screen is open
 }
 
 // layout draws the strip in a topbarHeight band at the top of gtx; th is on
@@ -130,11 +137,11 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.bellButton(gtx, th, f.pending, act) }),
 		ui.Gap(1),
-		// ponytail: the native window has no Pull requests or Settings
-		// screen yet; the buttons hold their place, disabled, until it does.
+		// ponytail: the native window has no Pull requests screen yet; the
+		// button holds its place, disabled, until it does.
 		layout.Rigid(func(gtx C) D { return t.disabledButton(gtx, th, "pulls", pullRequestsHint, icPullRequests) }),
 		ui.Gap(1),
-		layout.Rigid(func(gtx C) D { return t.disabledButton(gtx, th, "settings", settingsHint, icSettings) }),
+		layout.Rigid(func(gtx C) D { return t.settingsButton(gtx, th, f.settings, act) }),
 	)
 	call := macro.Stop()
 	x := gtx.Constraints.Max.X - gtx.Dp(gutter) - d.Size.X
@@ -226,6 +233,16 @@ func (t *topbar) themeButton(gtx C, th *ui.Theme, light bool, act *topbarAction)
 	tip := th.Tooltip(t.root, t.hint("theme"), hint)
 	tip.Side = ui.SideBottom
 	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.themes, ic, false) })
+}
+
+// settingsButton opens Settings, and closes it while it is open.
+func (t *topbar) settingsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) D {
+	if t.settings.Clicked(gtx) {
+		act.settings = true
+	}
+	tip := th.Tooltip(t.root, t.hint("settings"), settingsHint)
+	tip.Side = ui.SideBottom
+	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.settings, icSettings, open) })
 }
 
 func (t *topbar) disabledButton(gtx C, th *ui.Theme, key, hint string, ic *icons.Icon) D {

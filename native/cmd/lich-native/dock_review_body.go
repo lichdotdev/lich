@@ -12,7 +12,7 @@ import (
 )
 
 // ponytail: English until the native window has i18n (diff.diffBulk, and
-// the stand-in for Settings › Version Control's diff layout).
+// the header's per-panel take on Settings › Editor's diff layout).
 const (
 	actionCollapseAll = "Collapse all files"
 	actionExpandAll   = "Expand all files"
@@ -26,13 +26,21 @@ var (
 	icSplit       = icons.Lucide("columns-2")
 )
 
-// hideWhitespaceKey is the global setting a future Settings › Editor will
-// toggle; until then it is set by hand and read once, at start.
-const hideWhitespaceKey = "editor.hideWhitespace"
-
 func loadHideWhitespace(ctx context.Context, c *lichclient.Client) (bool, error) {
 	raw, err := c.GetSetting(ctx, hideWhitespaceKey, "")
 	return raw == "true", err
+}
+
+// setHiding is Settings › Editor's whitespace switch, live: every card
+// redraws from the diff it holds.
+func (p *reviewPanel) setHiding(hiding bool) {
+	if hiding == p.hiding {
+		return
+	}
+	p.hiding = hiding
+	for _, c := range p.cards {
+		c.sync(c.git, hiding)
+	}
 }
 
 // reviewActions are the header's IconActions while the Review tab is on.
@@ -41,8 +49,8 @@ type reviewActions struct {
 }
 
 // layoutActions is the Review tab's part of the dock header: the
-// unified/split choice the web keeps in Settings, which the native window
-// has not got yet, and collapse/expand all, as RightDock.tsx draws it.
+// unified/split toggle, which starts from Settings › Editor's diff layout and
+// then holds per panel, and collapse/expand all, as RightDock.tsx draws it.
 func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 	a := &p.actions
 	for a.bulk.click.Clicked(gtx) {

@@ -63,11 +63,13 @@ var (
 // and RightDock's bounds in rem: wide enough for a diff line at the review's
 // 12px font, short of eating the terminal whole.
 const (
-	dockWidthKey     = "lich.dock.width"
-	dockMinRem       = 20
-	dockMaxRem       = 60
-	dockDefaultRem   = 28
-	dockHeaderHeight = unit.Dp(40) // h-10
+	dockWidthKey   = "lich.dock.width"
+	dockMinRem     = 20
+	dockMaxRem     = 60
+	dockDefaultRem = 28
+	// dockHeaderHeight holds the 28dp tabs 8dp from the top and from the
+	// Separator under it, the inset the sidebar's header keeps.
+	dockHeaderHeight = unit.Dp(44)
 )
 
 type dockTab uint8
@@ -106,7 +108,11 @@ type reviewTab interface {
 }
 
 type dock struct {
-	tab        dockTab
+	tab dockTab
+	// shown is the tab the dock last opened on, which it keeps drawing while
+	// it slides out.
+	shown      dockTab
+	slide      dockSlide
 	widthRem   float64
 	fullscreen bool
 	resize     ui.ResizeHandle
@@ -134,11 +140,8 @@ func (d *dock) holdsKeys(gtx C) bool {
 	return false
 }
 
-// width is the dock's width beside the terminal, 0 while closed or covering it.
+// width is the dock's width beside the terminal, open or not.
 func (d *dock) width(gtx C) int {
-	if d.tab == dockClosed || d.fullscreen {
-		return 0
-	}
 	return gtx.Dp(unit.Dp(d.widthRem * remDp))
 }
 

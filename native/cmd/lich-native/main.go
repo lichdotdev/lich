@@ -76,12 +76,14 @@ type window struct {
 	sidebar *sidebar
 	footer  *footer
 	topbar  *topbar
-	gate    *spawnGate
-	resume  resumeDialog
-	th      *material.Theme
-	theme   *ui.Theme
-	root    ui.Root
-	toaster ui.Toaster
+	// settings is the Settings screen, drawn over the stage while open.
+	settings *settingsScreen
+	gate     *spawnGate
+	resume   resumeDialog
+	th       *material.Theme
+	theme    *ui.Theme
+	root     ui.Root
+	toaster  ui.Toaster
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
 	// emptyNew is the empty stage's New session button.
@@ -124,6 +126,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.terms.toaster = &u.toaster
 	u.sidebar = newSidebar(&u.root)
 	u.topbar = newTopbar(&u.root)
+	u.settings = newSettingsScreen(ctx, client, &u.root, w.Invalidate)
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
 	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
@@ -136,6 +139,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		return err
 	}
 	u.dock = newDock(code, u.review)
+	u.settings.applyEditor = u.takeEditorPref
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
 	if *flagToasts != "" {
@@ -214,7 +218,7 @@ func (u *window) connect() error {
 	if u.dock.widthRem, err = loadDockWidth(u.ctx, u.client); err != nil {
 		return err
 	}
-	if u.review.hiding, err = loadHideWhitespace(u.ctx, u.client); err != nil {
+	if err := u.loadSettings(); err != nil {
 		return err
 	}
 	if err := u.footer.start(); err != nil {
@@ -301,6 +305,10 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 		return layout.Inset{Right: gutter}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
+					if u.settings.open {
+						u.settings.layout(gtx, u.theme, settingsProjectsOf(v.tabs))
+						return D{Size: gtx.Constraints.Max}
+					}
 					err = u.stageRow(gtx, v)
 					return D{Size: gtx.Constraints.Max}
 				}),
@@ -363,36 +371,55 @@ func (u *window) islandColor(v stageView) color.NRGBA {
 
 func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	width, name := u.sidebar.column(gtx)
-	return topbarFrame{
+	f := topbarFrame{
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
 		tabs: v.tabs, active: v.project, pending: u.model.notifications(), light: u.light,
 	}
+	// Settings is no project's screen, so no tab merges into it.
+	if u.settings.open {
+		f.active, f.settings = "", true
+	}
+	return f
 }
 
 // stageRow is App.tsx's row above the footer: the island and, gap-1.5 to its
 // right, the dock, which covers the whole row in full screen. Home has no
 // dock, as the web's project-less screens have no checkout to show.
 func (u *window) stageRow(gtx C, v stageView) error {
-	if u.dock.tab == dockClosed || v.home {
+	d := u.dock
+	open := d.tab != dockClosed && !v.home
+	if open {
+		d.shown = d.tab
+	}
+	if d.fullscreen {
+		d.slide.snap(open)
+	}
+	share := d.slide.at(gtx, open)
+	if share == 0 {
 		return u.island(gtx, v)
 	}
 	size := gtx.Constraints.Max
-	w := u.dock.width(gtx)
-	island := gtx
-	if w > 0 {
-		island.Constraints = layout.Exact(image.Pt(max(size.X-w-gtx.Dp(gutter), 0), size.Y))
+	at, w, slot := 0, size.X, 0
+	if !d.fullscreen {
+		w = d.width(gtx)
+		slot = int(share * float32(w+gtx.Dp(gutter)))
+		at = size.X - slot + gtx.Dp(gutter)
 	}
+	island := gtx
+	island.Constraints = layout.Exact(image.Pt(max(size.X-slot, 0), size.Y))
 	if err := u.island(island, v); err != nil {
 		return err
 	}
-	at := 0
-	if w > 0 {
-		at = size.X - w
+	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+	if !open {
+		// Sliding out: draw the tab it closed from, then hand the state back.
+		defer func(tab dockTab) { d.tab = tab }(d.tab)
+		d.tab = d.shown
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
-	gtx.Constraints = layout.Exact(image.Pt(size.X-at, size.Y))
+	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
 	in := dockInput{sessionID: v.in.sessionID, checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light}
-	save, err := u.dock.layout(gtx, u.theme, &u.root, in)
+	save, err := d.layout(gtx, u.theme, &u.root, in)
 	if save {
 		rem := u.dock.widthRem
 		go func() { u.logErr("dock width", saveDockWidth(u.ctx, u.client, rem)) }()
@@ -459,6 +486,7 @@ func (u *window) content(gtx C, active sessionView) error {
 
 func (u *window) apply(act sidebarAction) {
 	if act.activate != "" {
+		u.settings.hide()
 		u.model.setActive(u.ctx, act.activate)
 		if p, ok := u.model.project(); ok {
 			id := act.activate

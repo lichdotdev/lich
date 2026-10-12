@@ -64,6 +64,7 @@ func closeBody(name string, running int) string {
 
 // applyTopbar carries out what the strip's clicks asked for.
 func (u *window) applyTopbar(act topbarAction) {
+	u.applySettingsAction(act)
 	if act.home {
 		u.model.showHome()
 		u.model.invalidate()
@@ -100,6 +101,31 @@ func (u *window) applyTopbar(act topbarAction) {
 	if r := act.reopen; r != nil {
 		go u.reopenProject(*r)
 	}
+}
+
+// applySettingsAction opens or closes Settings from the strip: its button,
+// a tab's "Project settings…", and a tab or Home leaving it for the stage.
+func (u *window) applySettingsAction(act topbarAction) {
+	open := func(scope string, remembered bool) {
+		tabs, _ := u.model.projectTabs()
+		if remembered {
+			u.settings.showRemembered(settingsProjectsOf(tabs))
+			return
+		}
+		u.settings.show(scope, settingsProjectsOf(tabs))
+	}
+	leaving := act.home || act.show != ""
+	switch {
+	case act.projectSettings != "":
+		open(act.projectSettings, false)
+	case act.settings && u.settings.open, leaving && u.settings.open:
+		u.settings.hide()
+	case act.settings:
+		open("", true)
+	default:
+		return
+	}
+	u.model.invalidate()
 }
 
 // showProject puts a tab's project on screen and records it as the screen
