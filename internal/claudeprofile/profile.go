@@ -168,11 +168,11 @@ func List() ([]Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := []Profile{{Slug: Personal, Name: "Personal", Dir: personal, Personal: true}}
 	root, err := Root()
 	if err != nil {
 		return nil, err
 	}
+	out := []Profile{{Slug: Personal, Name: personalName(root), Dir: personal, Personal: true}}
 	metas, _ := filepath.Glob(filepath.Join(root, "*.json"))
 	type created struct {
 		p  Profile
@@ -283,12 +283,12 @@ func Rename(slug, name string) error {
 	if name == "" {
 		return errors.New("a profile needs a name")
 	}
+	if IsPersonal(slug) {
+		return renamePersonal(name)
+	}
 	dir, err := ConfigDir(slug)
 	if err != nil {
 		return err
-	}
-	if IsPersonal(slug) {
-		return errors.New("the Personal profile cannot be renamed")
 	}
 	m, err := readMeta(dir)
 	if err != nil {
@@ -296,6 +296,29 @@ func Rename(slug, name string) error {
 	}
 	m.Name = name
 	return writeMeta(dir, m)
+}
+
+// personalMeta is where Personal's display name is kept: a sidecar among the
+// other profiles' rather than beside its own directory, whose ".json"
+// neighbour (~/.claude.json) is Claude Code's global config.
+func personalMeta(root string) string { return filepath.Join(root, Personal) }
+
+func personalName(root string) string {
+	if m, err := readMeta(personalMeta(root)); err == nil && m.Name != "" {
+		return m.Name
+	}
+	return "Personal"
+}
+
+func renamePersonal(name string) error {
+	root, err := Root()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return err
+	}
+	return writeMeta(personalMeta(root), metaFile{Name: name})
 }
 
 // Delete removes a profile's directory and its login with it. Personal cannot

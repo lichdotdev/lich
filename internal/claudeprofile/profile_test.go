@@ -187,10 +187,27 @@ func TestRenameKeepsTheDirectory(t *testing.T) {
 	if profiles[1].Name != "Client" || profiles[1].Dir != p.Dir {
 		t.Errorf("after rename %+v, want name Client at %s", profiles[1], p.Dir)
 	}
-	if err := Rename(Personal, "Mine"); err == nil {
-		t.Error("Personal was renamed")
-	}
 	if err := Rename(p.Slug, " "); err == nil {
+		t.Error("a blank name was accepted")
+	}
+}
+
+func TestRenamingPersonalNeverTouchesItsConfig(t *testing.T) {
+	personal := machine(t)
+	if err := Rename(Personal, "Mine"); err != nil {
+		t.Fatal(err)
+	}
+	profiles, err := List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if profiles[0].Name != "Mine" || !profiles[0].Personal || profiles[0].Dir != personal {
+		t.Errorf("after rename %+v, want Personal named Mine at %s", profiles[0], personal)
+	}
+	if _, err := os.Stat(personal + ".json"); !os.IsNotExist(err) {
+		t.Errorf("the rename wrote beside Personal's config: %v", err)
+	}
+	if err := Rename(Personal, " "); err == nil {
 		t.Error("a blank name was accepted")
 	}
 }

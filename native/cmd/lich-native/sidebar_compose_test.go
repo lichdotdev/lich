@@ -187,6 +187,15 @@ func TestTakeCardKeepsTheFramesWrites(t *testing.T) {
 	}
 }
 
+func TestTakeCardKeepsAContinueIn(t *testing.T) {
+	var act sidebarAction
+	act.takeCard(sidebarAction{continueIn: continueRequest{id: "s1", slug: "work"}})
+	act.takeCard(sidebarAction{})
+	if act.continueIn != (continueRequest{id: "s1", slug: "work"}) {
+		t.Errorf("continueIn = %+v, want the card's request", act.continueIn)
+	}
+}
+
 func TestWriteSidebarStoresFoldsFilesAndLayout(t *testing.T) {
 	stored := filed(ss("r1", "f1", "w1@/x/worktrees/p/feat"), "Apps", "f1")
 	m, f := sidebarModel(t, stored)

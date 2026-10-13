@@ -244,13 +244,13 @@ func profileStatusLine(gtx C, th *ui.Theme, p lichclient.ClaudeProfile) D {
 	return th.Text(ui.TextXS, profileNotLoggedIn).In(th.ToneWait).Layout(gtx)
 }
 
-// profileMenu is a row's ⋯: logging in again, bringing plugins over, renaming,
-// and deleting for every profile but Personal.
+// profileMenu is a row's ⋯: logging in again, bringing plugins over and
+// renaming for every profile, deleting for every one but Personal.
 func (s *settingsScreen) profileMenu(gtx C, th *ui.Theme, p lichclient.ClaudeProfile, st *profileRowState) D {
 	entries := []ui.MenuEntry{
 		{Label: profileLogInAgain, Icon: icProfileLogIn, OnClick: func() { s.startLogin(p, nil) }},
 		{Label: profileCopyFrom, Icon: icProfileCopy, Disabled: !p.LoggedIn, OnClick: func() { s.startCopy(p) }},
-		{Label: profileRename, Icon: icProfileRename, Disabled: p.Personal, OnClick: func() { s.startRename(p) }},
+		{Label: profileRename, Icon: icProfileRename, OnClick: func() { s.startRename(p) }},
 	}
 	if !p.Personal {
 		entries = append(entries, ui.MenuEntry{Kind: ui.MenuSeparator},

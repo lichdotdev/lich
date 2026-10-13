@@ -28,8 +28,8 @@ const (
 	dlgNewDesc         = "A Claude login of its own, with its own plugins and history."
 	dlgName            = "Name"
 	dlgNamePlaceholder = "Work"
-	dlgBring           = "Plugins to bring from Personal"
-	dlgNoPlugins       = "Personal has no plugins to bring."
+	dlgBring           = "Plugins to bring from %s"
+	dlgNoPlugins       = "%s has no plugins to bring."
 	dlgLichLocked      = "lich installs it in every profile"
 	dlgPluginsHint     = "More can be copied later from the profile's menu. Your organization may refuse some of them."
 	dlgCreateAndLogin  = "Create and log in"
@@ -322,7 +322,8 @@ func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p lic
 // checklist is the plugins a profile can take from the one it is copied from,
 // each ticked until unticked, and for a new profile the lich plugin locked on.
 func (s *settingsScreen) checklist(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
-	heading := dlgBring
+	source := s.providers.claude.book.nameOf(d.source)
+	heading := fmt.Sprintf(dlgBring, source)
 	if d.kind == flowCopy {
 		heading = ""
 	}
@@ -334,7 +335,7 @@ func (s *settingsScreen) checklist(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 		children = append(children, layout.Rigid(func(gtx C) D { return lockedPlugin(gtx, th) }))
 	}
 	if len(d.plugins) == 0 {
-		children = append(children, layout.Rigid(th.Text(ui.TextXS, dlgNoPlugins).Muted().Layout))
+		children = append(children, layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf(dlgNoPlugins, source)).Muted().Layout))
 	} else {
 		children = append(children, layout.Rigid(func(gtx C) D { return s.pluginList(gtx, th, f, d.plugins) }))
 	}

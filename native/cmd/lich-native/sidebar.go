@@ -196,6 +196,9 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	if c.file.ids != nil {
 		a.file = c.file
 	}
+	if c.continueIn.id != "" {
+		a.continueIn = c.continueIn
+	}
 }
 
 // layout is App.tsx's sidebar mount: the open sidebar, or its rail, or the
