@@ -58,8 +58,7 @@ type fileCard struct {
 	view         *godemirror.DiffView
 	viewFail     bool
 	afford       *affordances
-	blockAt      int // the line the composer is anchored under, 0 for none
-	composerH    int
+	blocks       cardBlocks
 	headerHeight int
 
 	toggle          widget.Clickable
@@ -258,14 +257,18 @@ func (c *fileCard) diff(gtx C, p *reviewPanel, view *godemirror.DiffView) D {
 	view.SetTheme(p.diffTheme())
 	view.Split, view.Nested = p.splitShown(gtx), true
 	view.SetPatch(c.patch)
-	c.placeComposer(view)
+	c.blocks.place(view, c.cardBlocks(p))
 	rows := diffRows(c.shown, view.Split, c.filled)
-	height := rows*p.cellHeight(gtx) + c.composerH
+	height := rows*p.cellHeight(gtx) + c.blocks.height()
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, height))
+	c.blocks.startFrame()
 	dims, err := view.Layout(gtx)
 	if err != nil && !c.viewFail {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)
+	}
+	if c.blocks.endFrame() {
+		p.invalidate()
 	}
 	return dims
 }
@@ -292,42 +295,30 @@ func (c *fileCard) ensureView(p *reviewPanel) *godemirror.DiffView {
 	return view
 }
 
-// placeComposer anchors the composer under its line, telling the view only
-// when that changed: every SetBlocks highlights the content again.
-func (c *fileCard) placeComposer(view *godemirror.DiffView) {
-	at := 0
-	if c.composer.isOpen() {
-		at = c.composer.at()
-	} else {
-		c.composerH = 0
-	}
-	if at == c.blockAt {
-		return
-	}
-	c.blockAt = at
-	if at == 0 {
-		view.SetBlocks(nil)
-		return
-	}
-	view.SetBlocks([]godemirror.DiffBlock{{At: godemirror.LineRef{Side: godemirror.NewSide, Line: at}, Widget: c.composerBlock}})
-}
-
 // composerSlot is the padding of the gap the composer opens in.
 var composerSlot = layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}
 
-// composerBlock is the composer as the view lays it out, measured for the
-// card's height.
+// composerBlock is the composer as the view lays it out.
 func (c *fileCard) composerBlock(gtx C) D {
 	p := c.panel
 	if p.pr != nil {
 		c.composer.toReview = p.pr.toReview
 	}
-	dims := composerSlot.Layout(gtx, func(gtx C) D { return c.composer.layout(gtx, p.th, p.comments, p.target) })
-	if dims.Size.Y != c.composerH {
-		c.composerH = dims.Size.Y
-		p.invalidate()
+	return composerSlot.Layout(gtx, func(gtx C) D { return c.composer.layout(gtx, p.th, p.comments, p.target) })
+}
+
+// cardBlocks are what hangs under the card's lines: the composer while it is
+// open, and on the Pulls screen the review threads and pending comments.
+func (c *fileCard) cardBlocks(p *reviewPanel) []cardBlock {
+	var out []cardBlock
+	if c.composer.isOpen() {
+		at := godemirror.LineRef{Side: godemirror.NewSide, Line: c.composer.at()}
+		out = append(out, cardBlock{key: "composer", at: at, widget: c.composerBlock})
 	}
-	return dims
+	if p.pr != nil && p.pr.blocks != nil {
+		out = append(out, p.pr.blocks(c.git.path)...)
+	}
+	return out
 }
 
 // menuEntries is InjectMenu over the selection as it stands.

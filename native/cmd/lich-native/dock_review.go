@@ -112,6 +112,9 @@ type prFiles struct {
 	ticks  map[string]*widget.Bool
 	// toReview files a line comment into the PR's pending review.
 	toReview func(path, lines, body string)
+	// blocks are the review threads and pending comments under a file's
+	// lines.
+	blocks func(path string) []cardBlock
 }
 
 func (f *prFiles) isViewed(c *fileCard) bool { return f.viewed[c.git.path] == c.gitText }
@@ -217,6 +220,21 @@ func (p *reviewPanel) cellHeight(gtx C) int {
 		log.Printf("review: %v", err)
 	}
 	return p.cells.CellH()
+}
+
+// scrollToFile brings path's card to the top of the list, past the squeezed
+// note when it is drawn.
+func (p *reviewPanel) scrollToFile(path string) {
+	for i, f := range p.order {
+		if f != path {
+			continue
+		}
+		if p.split && !p.splitOK {
+			i++
+		}
+		p.list.Position.First, p.list.Position.Offset = i, 0
+		return
+	}
 }
 
 // splitShown is shownLayout: side by side only once the cards are wide

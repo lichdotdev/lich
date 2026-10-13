@@ -100,9 +100,9 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d lichc
 	for _, it := range items {
 		switch {
 		case it.review != nil:
-			rows = append(rows, talkEntry(th, it.review.Author, verdictLine(*it.review), it.review.Body, it.review.Date, now))
+			rows = append(rows, v.talkEntry(th, "review:"+it.review.ID, it.review.Author, verdictLine(*it.review), it.review.Body, it.review.Date, now, act))
 		case it.comment != nil:
-			rows = append(rows, talkEntry(th, it.comment.Author, "", it.comment.Body, it.comment.Date, now))
+			rows = append(rows, v.talkEntry(th, "comment:"+it.comment.Date+it.comment.Author, it.comment.Author, "", it.comment.Body, it.comment.Date, now, act))
 		default:
 			t := *it.thread
 			rows = append(rows, func(gtx C) D { return v.threadCard(gtx, th, p, d, t, act, now) })
@@ -128,7 +128,7 @@ func verdictLine(r lichclient.PRReview) string {
 
 // talkEntry is a review or a comment: who, what they decided, when, and what
 // they wrote.
-func talkEntry(th *ui.Theme, author, verdict, body, date string, now time.Time) layout.Widget {
+func (v *pullView) talkEntry(th *ui.Theme, key, author, verdict, body, date string, now time.Time, act *pullsAction) layout.Widget {
 	body = strings.TrimSpace(body)
 	return func(gtx C) D {
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
@@ -138,7 +138,7 @@ func talkEntry(th *ui.Theme, author, verdict, body, date string, now time.Time) 
 					if body == "" {
 						return D{}
 					}
-					return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, body)) })
+					return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D { return v.md.layout(gtx, th, key, body, act.open) })
 				}),
 			)
 		})
@@ -163,6 +163,14 @@ func byline(gtx C, th *ui.Theme, author, verdict, date string, now time.Time) D 
 // threadCard is ReviewThread: the anchor and its badges over GitHub's hunk,
 // the comments, then Reply and Resolve; a resolved thread starts folded.
 func (v *pullView) threadCard(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, t lichclient.PRReviewThread, act *pullsAction, now time.Time) D {
+	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+		return v.threadBox(gtx, th, p, d, t, act, now)
+	})
+}
+
+// threadBox is the thread's card itself, folded to its header or open; the
+// Conversation tab and the diff share its fold.
+func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, t lichclient.PRReviewThread, act *pullsAction, now time.Time) D {
 	s := &v.talk
 	fold := boolOf(s.folds, t.ID)
 	if _, seen := s.foldClicks[t.ID]; !seen {
@@ -172,26 +180,24 @@ func (v *pullView) threadCard(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.
 	if foldClick.Clicked(gtx) {
 		fold.Value = !fold.Value
 	}
-	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
-			func(gtx C) D {
-				on := th.On(th.Sidebar)
-				return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return foldClick.Layout(gtx, func(gtx C) D { return threadHeader(gtx, on, t, fold.Value) })
-						}),
-						layout.Rigid(func(gtx C) D {
-							if !fold.Value {
-								return D{}
-							}
-							return v.threadBody(gtx, on, p, d, t, act, now)
-						}),
-					)
-				})
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
+		func(gtx C) D {
+			on := th.On(th.Sidebar)
+			return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return foldClick.Layout(gtx, func(gtx C) D { return threadHeader(gtx, on, t, fold.Value) })
+					}),
+					layout.Rigid(func(gtx C) D {
+						if !fold.Value {
+							return D{}
+						}
+						return v.threadBody(gtx, on, p, d, t, act, now)
+					}),
+				)
 			})
-	})
+		})
 }
 
 func threadHeader(gtx C, th *ui.Theme, t lichclient.PRReviewThread, open bool) D {

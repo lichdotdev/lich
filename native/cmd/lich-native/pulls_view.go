@@ -53,6 +53,9 @@ type pullsAction struct {
 	resolve  *threadResolve
 }
 
+// open sends url to the browser: a link clicked in a Markdown body.
+func (a *pullsAction) open(url string) { a.external = url }
+
 // pullView is PullRequestView: the toolbar, the title, the status line, the
 // conflicting files, the tabs and the open tab's panel.
 type pullView struct {
@@ -81,6 +84,10 @@ type pullView struct {
 	after  []func()
 
 	talk    talkState
+	tree    filesTree
+	inline  inlineFrame
+	root    *ui.Root
+	md      markdownCache
 	pending map[string]*pendingReview // by PR URL
 	submit  submitState
 }
@@ -124,6 +131,9 @@ func (v *pullView) init() {
 	v.viewed = map[string]map[string]string{}
 	v.pending = map[string]*pendingReview{}
 	v.talk.init()
+	v.md = markdownCache{}
+	v.tree.closed = map[string]bool{}
+	v.tree.rows.list.Axis = layout.Vertical
 }
 
 func (v *pullView) tip(key string) *ui.Tooltip {

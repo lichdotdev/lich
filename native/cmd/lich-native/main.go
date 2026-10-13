@@ -297,6 +297,9 @@ func (u *window) connect() error {
 	if u.dock.widthRem, err = loadDockWidth(u.ctx, u.client); err != nil {
 		return err
 	}
+	if u.pulls.view.tree.widthRem, err = loadTreeWidth(u.ctx, u.client); err != nil {
+		return err
+	}
 	if err := u.loadSettings(); err != nil {
 		return err
 	}

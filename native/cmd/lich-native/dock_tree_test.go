@@ -2,9 +2,18 @@ package main
 
 import (
 	"context"
+	"image"
 	"reflect"
 	"strings"
 	"testing"
+
+	"gioui.org/font/gofont"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/text"
+	"gioui.org/unit"
+
+	"github.com/omartelo/lich/native/ui"
 )
 
 // shape spells a tree as "name/ (children)" for dirs and "name" for files.
@@ -113,5 +122,23 @@ func TestRemoteKeepsTheLastAnswerUntilTheNextLandsButDropsItAcrossAReset(t *test
 	<-answered
 	if data, _, _ := r.get(); data != "three" {
 		t.Errorf("answer = %q, want the latest key's", data)
+	}
+}
+
+func TestTreeScrollsSidewaysByItsWidestRow(t *testing.T) {
+	var rows treeRows
+	rows.list.Axis = layout.Vertical
+	rows.tree = buildTree([]string{"src/" + strings.Repeat("a", 120) + ".go", "b.go"})
+	rows.stats = map[string]lineDelta{"b.go": {added: 3}}
+	visible := visibleRows(rows.tree, func(string) bool { return true })
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Background}
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(200, 300))}
+	for range 2 {
+		ops.Reset()
+		rows.layout(gtx, th, visible, "")
+	}
+	if rows.widest <= 200 || rows.widest > 2000 {
+		t.Fatalf("widest row = %dpx, want the long name's own width, past the 200px column", rows.widest)
 	}
 }

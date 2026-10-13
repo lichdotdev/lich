@@ -217,7 +217,7 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d lichclient
 	var rows []layout.Widget
 	switch v.openTab(d) {
 	case tabFiles:
-		return v.filesTab(gtx, th, p, d)
+		return v.filesTab(gtx, th, p, d, act)
 	case tabConversation:
 		rows = v.conversationRows(gtx, th, p, d, act)
 	case tabCommits:
@@ -225,7 +225,7 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d lichclient
 	case tabChecks:
 		rows = v.checkRows(gtx, th, d, act)
 	default:
-		rows = overviewRows(th, d)
+		rows = v.overviewRows(th, d, act)
 	}
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return th.ScrollArea(&v.panel).Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
@@ -234,7 +234,7 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d lichclient
 
 // overviewRows is PullsOverview: who opened it, who reviews it, and its
 // description.
-func overviewRows(th *ui.Theme, d lichclient.PRDetail) []layout.Widget {
+func (v *pullView) overviewRows(th *ui.Theme, d lichclient.PRDetail, act *pullsAction) []layout.Widget {
 	pad := func(top float32, w layout.Widget) layout.Widget {
 		return func(gtx C) D {
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(top)}.Layout(gtx, w)
@@ -250,11 +250,7 @@ func overviewRows(th *ui.Theme, d lichclient.PRDetail) []layout.Widget {
 			if body == "" {
 				return th.Text(ui.TextSM, pullsNoDescription).Muted().Layout(gtx)
 			}
-			// ponytail: the description is shown as plain text; the web renders
-			// it as Markdown, which the native window has no renderer for yet.
-			l := th.Text(ui.TextSM, body)
-			l.MaxLines = 0
-			return l.Layout(gtx)
+			return v.md.layout(gtx, th, "body:"+d.URL, body, act.open)
 		}),
 	}
 }

@@ -98,6 +98,7 @@ func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {
 	p.rows.Axis = layout.Vertical
 	p.slide.snap(true)
 	p.view.init()
+	p.view.root = root
 	return p
 }
 

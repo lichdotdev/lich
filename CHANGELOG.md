@@ -70,10 +70,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bar, `Ctrl+Shift+P`, or a card's or the footer's `#123` opens the repository's
   pull requests beside the one in view, filtered by text and by All, Ready,
   Drafts or Failing, open, closed or merged. A pull request shows its checks,
-  mergeability and review, the files that conflict, its commits, its checks
-  and its files as the Review tab draws them, each file tickable as viewed, and
-  its conversation, where a thread is answered or resolved and the pull request
-  commented on. A line comment goes to the session's batch or into a pending
+  mergeability and review, the files that conflict, its description and
+  conversation in Markdown, its commits, its checks, and its files as the Review
+  tab draws them beside a file tree, each file tickable as viewed and each
+  review thread under its line. A thread is answered or resolved there or in
+  the conversation, where the pull request is commented on too. A line comment goes to the session's batch or into a pending
   review, sent as a comment, an approval or a change request. **Open in
   Session** reuses or creates the branch's worktree, **Resolve conflicts** and
   **Fix CI errors** hand the problem to that session's prompt, and **Merge**
