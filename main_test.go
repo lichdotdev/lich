@@ -24,6 +24,7 @@ import (
 var denied = map[string]reflect.Type{
 	"store.Close":                     reflect.TypeFor[*store.Service](),
 	"store.SetSessionGone":            reflect.TypeFor[*store.Service](),
+	"store.SetProjectChanged":         reflect.TypeFor[*store.Service](),
 	"store.SetConversationsOf":        reflect.TypeFor[*store.Service](),
 	"store.SetCheckoutsOf":            reflect.TypeFor[*store.Service](),
 	"drop.Upload":                     reflect.TypeFor[*drop.Service](),
@@ -57,6 +58,7 @@ type stubService struct{}
 func (stubService) Close() error               { return nil }
 func (stubService) CloseBy() error             { return nil }
 func (stubService) SetSessionGone() error      { return nil }
+func (stubService) SetProjectChanged() error   { return nil }
 func (stubService) Upload() error              { return nil }
 func (stubService) Save() error                { return nil }
 func (stubService) Purge() error               { return nil }

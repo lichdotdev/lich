@@ -259,6 +259,9 @@ type Service struct {
 	conversationsOf func() []Conversation
 	// checkoutsOf, when set, lists a repository's checkouts. See SetCheckoutsOf.
 	checkoutsOf func(projectPath string) ([]string, error)
+	// projectChanged, when set, is told of every committed change to the
+	// project list. See SetProjectChanged.
+	projectChanged func(name string, data any)
 	// backfilling guards the lazy index backfill, so every search that arrives
 	// while one is running starts nothing. See backfill.
 	backfilling atomic.Bool

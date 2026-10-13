@@ -50,6 +50,7 @@ func (s *Service) AddProject(id, name, path string) error {
 	if err != nil {
 		return fmt.Errorf("add project %q: %w", id, err)
 	}
+	s.projectHasChanged(ProjectAddedEventName, ProjectAdded{ID: id, Name: name, Path: path})
 	return nil
 }
 
@@ -58,7 +59,7 @@ func (s *Service) AddProject(id, name, path string) error {
 // orders the reopen menu; a counter rather than a timestamp, so two closes in
 // the same second still order.
 func (s *Service) CloseProject(id string) error {
-	_, err := s.db.Exec(
+	res, err := s.db.Exec(
 		`UPDATE projects
 		    SET is_open = 0,
 		        closed_seq = (SELECT COALESCE(MAX(closed_seq), 0) + 1 FROM projects)
@@ -67,6 +68,9 @@ func (s *Service) CloseProject(id string) error {
 	)
 	if err != nil {
 		return fmt.Errorf("close project %q: %w", id, err)
+	}
+	if n, err := res.RowsAffected(); err == nil && n > 0 {
+		s.projectHasChanged(ProjectClosedEventName, ProjectClosed{ID: id})
 	}
 	return nil
 }
@@ -970,7 +974,7 @@ func (s *Service) ProviderSession(sessionID string) (string, error) {
 // position from the full list the frontend rendered, so the stored order is
 // rewritten as a whole rather than patched around the moved tab.
 func (s *Service) ReorderProjects(ids []string) error {
-	return s.tx(func(tx *sql.Tx) error {
+	err := s.tx(func(tx *sql.Tx) error {
 		for position, id := range ids {
 			if _, err := tx.Exec(
 				`UPDATE projects SET position = ? WHERE id = ?`, position, id,
@@ -980,6 +984,11 @@ func (s *Service) ReorderProjects(ids []string) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	s.projectHasChanged(ProjectsReorderedEventName, ProjectsReordered{IDs: ids})
+	return nil
 }
 
 // ReorderSessions records a project's card order after a drag, writing every
