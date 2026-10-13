@@ -40,7 +40,7 @@ func (s *settingsScreen) sandboxLadder(gtx C, th *ui.Theme) D {
 	values := s.snapshot()
 	children = append(children, ui.VGap(2), layout.Rigid(proseLine(th, sandboxSummary)),
 		layout.Rigid(groupHeading(th, confinedTitle, false)))
-	for i, p := range m.providers {
+	for i, p := range s.providers.book.launchProviders() {
 		children = append(children, layout.Rigid(func(gtx C) D { return s.rungRow(gtx, th, m, p, values, i == 0) }))
 	}
 	children = append(children, ui.VGap(2), layout.Rigid(proseLine(th, confinedHint)))

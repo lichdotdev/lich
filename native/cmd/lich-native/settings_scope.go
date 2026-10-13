@@ -134,12 +134,16 @@ func scopedKeys() []string {
 	return keys
 }
 
-// loadScopedValues reads every scoped key of every open project. There is no
+// loadScopedValues reads every scoped key of every open project, but the
+// provider default, which the provider book reads. There is no
 // RPC that lists a project's settings, so it is one GetSetting per pair; the
 // keys are a handful and the projects are the open tabs.
 func loadScopedValues(ctx context.Context, c *lichclient.Client, projects []settingsProject) (scopedValues, error) {
 	values := scopedValues{}
 	for _, key := range scopedKeys() {
+		if key == providerDefaultKey {
+			continue
+		}
 		for _, p := range projects {
 			v, err := c.GetSetting(ctx, key, p.id)
 			if err != nil {

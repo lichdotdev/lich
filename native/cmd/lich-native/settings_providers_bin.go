@@ -132,7 +132,7 @@ func (p *providerSettings) check(s *settingsScreen, bin string) (lichclient.Bina
 // picked is meant to be used, so a layer parked by the web window is put back
 // with it: this window has no switch to do that with.
 func (s *settingsScreen) writeBin(m providersMachine, kind, scope, value string) {
-	s.writeProviderKey(providerBinKey(kind), scope, value, nil)
+	s.writeProviderKey(providerBinKey(kind), scope, value, s.providersChanged)
 	if value == "" {
 		return
 	}
@@ -140,9 +140,9 @@ func (s *settingsScreen) writeBin(m providersMachine, kind, scope, value string)
 	p := &s.providers
 	switch {
 	case scope == "" && m.globals[offKey] == "true":
-		s.writeProviderKey(offKey, "", "", nil)
+		s.writeProviderKey(offKey, "", "", s.providersChanged)
 	case scope != "" && p.projectOffOf(s, scope, kind):
-		s.writeProviderKey(offKey, scope, "", nil)
+		s.writeProviderKey(offKey, scope, "", s.providersChanged)
 		p.mu.Lock()
 		p.projectOff[scope+"\x00"+kind] = ""
 		p.mu.Unlock()

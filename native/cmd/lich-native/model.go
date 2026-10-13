@@ -51,8 +51,7 @@ type model struct {
 	restored      bool                              // unread marks taken from the first LoadState
 	launched      bool                              // the first screen was chosen from the last one
 	folds         map[string]bool                   // foldKey -> block folded, once read or written
-	providers     []launchProvider                  // detected providers with their enabled flags
-	globalDefault string                            // the global provider.default setting
+	providers     *providerBook                     // detected providers, their flags and defaults
 	// profiles is who is logged in to each Claude Code profile.
 	profiles *profileBook
 	// notify hands each session-status report to the desktop channel.
@@ -79,7 +78,7 @@ func newModel(client *lichclient.Client, invalidate func()) *model {
 	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), quota: quota, cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
 		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
-		profiles: newProfileBook(client, invalidate, quota)}
+		profiles: newProfileBook(client, invalidate, quota), providers: newProviderBook(client, invalidate)}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -99,6 +98,7 @@ func (m *model) reload(ctx context.Context) error {
 	normalizeCheckouts(ps)
 	m.mu.Lock()
 	m.projects = ps
+	m.providers.noteProjects(ps)
 	if !m.restored {
 		m.status.restoreUnread(unreadSessions(ps))
 		m.restored = true

@@ -79,9 +79,11 @@ func TestModelLaunchMenuReadsDetectionFlagsAndDefaults(t *testing.T) {
 	f.settings["provider.codex.enabled@"] = "1"
 	f.settings["provider.claude.enabled@"] = "0"
 	f.settings["provider.default@"] = "crush"
+	f.settings["provider.default@p"] = "codex"
 	m := newModel(c, func() {})
-	m.projects = []lichclient.Project{{ID: "p", DefaultProvider: "codex"}}
-	if err := m.loadProviders(context.Background()); err != nil {
+	m.projects = []lichclient.Project{{ID: "p"}}
+	m.providers.noteProjects(m.projects)
+	if err := m.providers.reload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	offered := m.launchProviders()

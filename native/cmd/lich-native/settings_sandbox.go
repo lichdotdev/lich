@@ -172,12 +172,12 @@ func sandboxRungEntries() []settingEntry {
 }
 
 // sandboxMachine is what the backend answered about the machine and the
-// global values the pane draws against.
+// global values the pane draws against. Which providers it draws rungs for is
+// the provider book's.
 type sandboxMachine struct {
 	loaded    bool
 	backend   string // "bwrap", "sandbox-exec", "" when it cannot confine
 	agentKeys []string
-	providers []launchProvider // enabled only
 	globals   map[string]string
 }
 
@@ -214,8 +214,8 @@ func (s *sandboxSettings) canConfine() bool {
 }
 
 // loadSandbox rereads the machine: the backend, the agent's keys (re-read on
-// every open, since ssh-add runs outside this window), the enabled providers
-// and the global values of their rungs and of the grants.
+// every open, since ssh-add runs outside this window) and the global values
+// of every provider's rung and of the grants.
 func (s *settingsScreen) loadSandbox() {
 	go func() {
 		m, err := readSandboxMachine(s.ctx, s.client)
@@ -238,16 +238,12 @@ func readSandboxMachine(ctx context.Context, c *lichclient.Client) (sandboxMachi
 	if err := c.Call(ctx, "system.SSHAgentKeys", &m.agentKeys); err != nil {
 		return m, err
 	}
-	list, _, err := loadLaunchProviders(ctx, c)
-	if err != nil {
-		return m, err
-	}
-	m.providers = enabledProviders(list)
 	keys := []string{sshAgentKey, ghTokenKey}
-	for _, p := range m.providers {
-		keys = append(keys, sandboxKey(p.id))
+	for _, e := range sandboxRungEntries() {
+		keys = append(keys, e.key)
 	}
 	for _, key := range keys {
+		var err error
 		if m.globals[key], err = c.GetSetting(ctx, key, ""); err != nil {
 			return m, err
 		}

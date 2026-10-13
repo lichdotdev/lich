@@ -1,11 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"slices"
-
-	"github.com/omartelo/lich/native/lichclient"
 )
 
 // providerDefaultKey is providers-store.ts defaultKey (store.providerDefaultKey
@@ -41,25 +38,6 @@ func readEnabled(id, value string) bool {
 		return false
 	}
 	return id == "claude"
-}
-
-// loadLaunchProviders is the providers store's load: detection, each
-// provider's enabled flag, and the global default id.
-func loadLaunchProviders(ctx context.Context, c *lichclient.Client) ([]launchProvider, string, error) {
-	detected, err := c.DetectProviders(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	list := make([]launchProvider, 0, len(detected))
-	for _, d := range detected {
-		flag, err := c.GetSetting(ctx, providerEnabledKey(d.ID), "")
-		if err != nil {
-			return nil, "", err
-		}
-		list = append(list, launchProvider{id: d.ID, name: d.Name, installed: d.Installed, enabled: readEnabled(d.ID, flag)})
-	}
-	globalDefault, err := c.GetSetting(ctx, providerDefaultKey, "")
-	return list, globalDefault, err
 }
 
 // enabledProviders are the ones a launch menu offers, installed or not: a

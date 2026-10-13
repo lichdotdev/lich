@@ -327,7 +327,7 @@ func TestSettingsFollowsThePlanReadingsItDraws(t *testing.T) {
 	s := flowScreen(t, &profileBackend{})
 	s.footer = &footer{quota: r.q}
 	s.open, s.section = true, sectionProviders
-	s.providers.machine = providersMachine{loaded: true, globals: map[string]string{claudeProfileKey: "work"}}
+	s.providers.book.machine = providersMachine{loaded: true, globals: map[string]string{claudeProfileKey: "work"}}
 
 	if got := s.planKeys(scopedValues{}); len(got) != 1 || got[0] != "" {
 		t.Errorf("provider list follows %q, want the machine's reading alone", got)
@@ -337,7 +337,7 @@ func TestSettingsFollowsThePlanReadingsItDraws(t *testing.T) {
 	if got := s.planKeys(scopedValues{}); !slices.Equal(got, want) {
 		t.Errorf("Claude Code's screen follows %q, want %q", got, want)
 	}
-	s.providers.machine.globals[claudeProfileKey] = personalProfile
+	s.providers.book.machine.globals[claudeProfileKey] = personalProfile
 	if got := s.planKeys(scopedValues{}); len(got) != 1 {
 		t.Errorf("Personal follows %q, want the machine's reading alone", got)
 	}

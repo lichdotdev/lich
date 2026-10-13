@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"maps"
 	"sync"
 	"time"
 
@@ -90,6 +91,7 @@ type settingsScreen struct {
 func newSettingsScreen(ctx context.Context, c *lichclient.Client, root *ui.Root, invalidate func()) *settingsScreen {
 	s := &settingsScreen{ctx: ctx, client: c, root: root, invalidate: invalidate, section: defaultSection,
 		resets: map[string]*widget.Clickable{}, scrollTo: -1}
+	s.providers.book = newProviderBook(c, invalidate)
 	s.pane.Axis = layout.Vertical
 	s.nav.init()
 	return s
@@ -124,7 +126,6 @@ func (s *settingsScreen) showRemembered(projects []settingsProject) { s.show(s.s
 func (s *settingsScreen) refresh() {
 	projects := s.projects
 	s.loadSandbox()
-	s.loadProviders()
 	go func() {
 		values, err := loadScopedValues(s.ctx, s.client, projects)
 		if err != nil {
@@ -138,10 +139,17 @@ func (s *settingsScreen) refresh() {
 	}()
 }
 
+// snapshot is what the open projects set, the providers' own defaults taken
+// from the book rather than read a second time.
 func (s *settingsScreen) snapshot() scopedValues {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.values
+	values := maps.Clone(s.values)
+	s.mu.Unlock()
+	if values == nil {
+		values = scopedValues{}
+	}
+	values[providerDefaultKey] = s.providers.book.snapshot().projectDefaults
+	return values
 }
 
 func (s *settingsScreen) openSection(id string) {
@@ -167,12 +175,20 @@ func (s *settingsScreen) choose(gtx C, h settingHit) {
 
 // useGlobal deletes a project's value: the backend reads "" as unset.
 func (s *settingsScreen) useGlobal(key, projectID string) {
-	s.mu.Lock()
-	delete(s.values[key], projectID)
-	s.mu.Unlock()
+	if key == providerDefaultKey {
+		s.providers.book.setProjectDefault(projectID, "")
+	} else {
+		s.mu.Lock()
+		delete(s.values[key], projectID)
+		s.mu.Unlock()
+	}
 	go func() {
 		if err := s.client.SetSetting(s.ctx, key, projectID, ""); err != nil {
 			log.Printf("settings: use global: %v", err)
+			return
+		}
+		if key == providerDefaultKey {
+			s.providersChanged()
 		}
 	}()
 }

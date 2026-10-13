@@ -185,10 +185,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.settings.providers.claude.book = u.model.profiles
 	u.settings.providers.claude.openTerminal = u.openLoginTerminal
 	u.model.loginProgress = u.settings.loginProgress
-	u.settings.providers.onProjectDefault = u.model.setProjectDefault
-	u.settings.providers.onLaunchChanged = func() {
-		go func() { u.logErr("load providers", u.model.loadProviders(u.ctx)) }()
-	}
+	u.settings.providers.book = u.model.providers
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
@@ -564,7 +561,7 @@ func (u *window) loadSidebar() error {
 	if err := u.model.loadFolds(u.ctx); err != nil {
 		return err
 	}
-	go func() { u.logErr("load providers", u.model.loadProviders(u.ctx)) }()
+	go func() { u.logErr("load providers", u.model.providers.reload(u.ctx)) }()
 	return nil
 }
 

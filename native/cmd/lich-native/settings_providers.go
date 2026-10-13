@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"slices"
@@ -456,53 +455,6 @@ func providerTags(kind, projectDefault, skip string) []string {
 	return tags
 }
 
-// providerInfo is providers-store.ts ProviderState.
-type providerInfo struct {
-	launchProvider
-	binary string // the executable a session spawns, which an id is not
-	source string // "path", "setting" or "" when nothing was found
-	docs   string
-}
-
-// providersMachine is what the backend answered: the detected providers with
-// their enabled flags, and the global values of every key their screens read.
-type providersMachine struct {
-	loaded  bool
-	list    []providerInfo
-	globals map[string]string
-}
-
-func (m providersMachine) enabled() []providerInfo {
-	return slices.DeleteFunc(slices.Clone(m.list), func(p providerInfo) bool { return !p.enabled })
-}
-
-func (m providersMachine) find(id string) (providerInfo, bool) {
-	i := slices.IndexFunc(m.list, func(p providerInfo) bool { return p.id == id })
-	if i < 0 {
-		return providerInfo{}, false
-	}
-	return m.list[i], true
-}
-
-func (m providersMachine) launchList() []launchProvider {
-	list := make([]launchProvider, len(m.list))
-	for i, p := range m.list {
-		list[i] = p.launchProvider
-	}
-	return list
-}
-
-func (m providersMachine) nameOf(id string) string {
-	if p, ok := m.find(id); ok {
-		return p.name
-	}
-	return id
-}
-
-func (m providersMachine) skipLevel(kind string) string {
-	return skipLevelOf(m.globals[providerSkipKey(kind, false)] == "true", m.globals[providerSkipKey(kind, true)] == "true")
-}
-
 // providerState is one provider row's widgets.
 type providerState struct {
 	open   widget.Clickable
@@ -510,18 +462,13 @@ type providerState struct {
 	docs   widget.Clickable
 }
 
-// providerSettings is the Providers pane's state: the reads, kept across
-// visits and reread when Settings opens; the screen being looked at; and the
-// pane's controls.
+// providerSettings is the Providers pane's state: the verdicts it has asked
+// for, the screen being looked at, and the pane's controls. The providers
+// themselves are the window's book.
 type providerSettings struct {
-	// onLaunchChanged has the launch menus read the providers again, and
-	// onProjectDefault hands a project's new default to the workspace the
-	// menus resolve it from.
-	onLaunchChanged  func()
-	onProjectDefault func(projectID, id string)
+	book *providerBook
 
-	mu      sync.Mutex
-	machine providersMachine
+	mu sync.Mutex
 	// projectOff are the bin-off flags of the project being looked at,
 	// "<project>\x00<provider>" to the stored value, read once per visit.
 	projectOff map[string]string
@@ -570,11 +517,7 @@ type skipChange struct {
 	level    string
 }
 
-func (p *providerSettings) snapshot() providersMachine {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.machine
-}
+func (p *providerSettings) snapshot() providersMachine { return p.book.snapshot() }
 
 func (p *providerSettings) state(id string) *providerState {
 	if p.rows == nil {
@@ -596,86 +539,23 @@ func (p *providerSettings) revalidate() {
 	p.claude.asked = false
 }
 
-// loadProviders rereads the machine: detection, each provider's enabled flag
-// and the global values of the keys its screen reads.
-func (s *settingsScreen) loadProviders() {
-	go func() {
-		m, err := readProvidersMachine(s.ctx, s.client)
-		if err != nil {
-			log.Printf("settings: providers: %v", err)
-			return
-		}
-		s.providers.mu.Lock()
-		s.providers.machine = m
-		s.providers.mu.Unlock()
-		s.invalidate()
-	}()
-}
-
-func readProvidersMachine(ctx context.Context, c *lichclient.Client) (providersMachine, error) {
-	detected, err := c.DetectProviders(ctx)
-	if err != nil {
-		return providersMachine{}, err
-	}
-	m := providersMachine{loaded: true, globals: map[string]string{}}
-	read := func(key string) error {
-		v, err := c.GetSetting(ctx, key, "")
-		m.globals[key] = v
-		return err
-	}
-	if err := read(providerDefaultKey); err != nil {
-		return m, err
-	}
-	for _, d := range detected {
-		for _, key := range providerGlobalKeys(d.ID) {
-			if err := read(key); err != nil {
-				return m, err
-			}
-		}
-		m.list = append(m.list, providerFrom(d, readEnabled(d.ID, m.globals[providerEnabledKey(d.ID)])))
-	}
-	return m, nil
-}
-
-func providerFrom(d lichclient.DetectedProvider, enabled bool) providerInfo {
-	return providerInfo{
-		launchProvider: launchProvider{id: d.ID, name: d.Name, installed: d.Installed, enabled: enabled},
-		binary:         d.Binary, source: d.Source, docs: d.Docs,
-	}
-}
-
-// recheckPath is CheckAgainButton: re-read the login shell's $PATH, then detect
-// again. The enabled flags stay as they are in memory, so a toggle just made
-// cannot be undone by a read racing its write.
+// recheckPath is CheckAgainButton: re-read the login shell's $PATH, then read
+// the providers again.
 func (p *providerSettings) recheckPath(s *settingsScreen) {
 	p.mu.Lock()
 	p.rechecking, p.recheckErr = true, ""
 	p.mu.Unlock()
 	go func() {
 		err := s.client.RefreshPath(s.ctx)
-		var detected []lichclient.DetectedProvider
 		if err == nil {
-			detected, err = s.client.DetectProviders(s.ctx)
+			err = p.book.reload(s.ctx)
 		}
 		p.mu.Lock()
 		p.rechecking = false
-		switch {
-		case err != nil:
+		if err != nil {
 			log.Printf("settings: re-check providers: %v", err)
 			p.recheckErr = providersPathReread
-		default:
-			enabled := map[string]bool{}
-			for _, known := range p.machine.list {
-				enabled[known.id] = known.enabled
-			}
-			p.machine.list = p.machine.list[:0:0]
-			for _, d := range detected {
-				on, known := enabled[d.ID]
-				if !known {
-					on = readEnabled(d.ID, p.machine.globals[providerEnabledKey(d.ID)])
-				}
-				p.machine.list = append(p.machine.list, providerFrom(d, on))
-			}
+		} else {
 			p.checks, p.asked = nil, nil
 		}
 		p.mu.Unlock()
@@ -707,14 +587,15 @@ func (p *providerSettings) enqueue(id string, do func()) {
 }
 
 // writeProviderKey stores value at key in scope ("" for Global), and in the
-// values the pane draws from so the change shows on the next frame. after
-// runs once the backend has it.
+// book or the values the pane draws from so the change shows on the next
+// frame. after runs once the backend has it.
 func (s *settingsScreen) writeProviderKey(key, scope, value string, after func()) {
-	if scope == "" {
-		s.providers.mu.Lock()
-		s.providers.machine.globals[key] = value
-		s.providers.mu.Unlock()
-	} else {
+	switch {
+	case scope == "":
+		s.providers.book.setGlobal(key, value)
+	case key == providerDefaultKey:
+		s.providers.book.setProjectDefault(scope, value)
+	default:
 		s.mu.Lock()
 		if value == "" {
 			delete(s.values[key], scope)
@@ -741,44 +622,22 @@ func (s *settingsScreen) writeProviderKey(key, scope, value string, after func()
 }
 
 // setProviderEnabled switches a provider on or off. Its sessions are left
-// alone; the launch menus and the Sandbox pane read the list again.
+// alone; the book tells every reader.
 func (s *settingsScreen) setProviderEnabled(id string, on bool) {
 	flag := "0"
 	if on {
 		flag = "1"
 	}
-	p := &s.providers
-	p.mu.Lock()
-	for i := range p.machine.list {
-		if p.machine.list[i].id == id {
-			p.machine.list[i].enabled = on
-		}
-	}
-	p.mu.Unlock()
-	s.writeProviderKey(providerEnabledKey(id), "", flag, s.launchChanged)
+	s.providers.book.setEnabled(id, on)
+	s.writeProviderKey(providerEnabledKey(id), "", flag, s.providersChanged)
 }
 
-// launchChanged has what reads the enabled flags and the global default read
-// them again.
-func (s *settingsScreen) launchChanged() {
-	if s.providers.onLaunchChanged != nil {
-		s.providers.onLaunchChanged()
-	}
-	s.loadSandbox()
-}
+// providersChanged tells the book that something it reads was written.
+func (s *settingsScreen) providersChanged() { s.providers.book.changed(s.ctx) }
 
-// setProviderDefault stores the default of the open scope. A project's goes
-// to the workspace the launch menus resolve it from at once; the global one
-// is read back after the write.
+// setProviderDefault stores the default of the open scope.
 func (s *settingsScreen) setProviderDefault(id string) {
-	if s.scope == "" {
-		s.writeProviderKey(providerDefaultKey, "", id, s.launchChanged)
-		return
-	}
-	s.writeProviderKey(providerDefaultKey, s.scope, id, nil)
-	if s.providers.onProjectDefault != nil {
-		s.providers.onProjectDefault(s.scope, id)
-	}
+	s.writeProviderKey(providerDefaultKey, s.scope, id, s.providersChanged)
 }
 
 // watchPlans follows exactly the plan readings keys name, none to stop. They
@@ -827,14 +686,4 @@ func (s *settingsScreen) planOf(kind string) (lichclient.QuotaPlan, bool) {
 		return lichclient.QuotaPlan{}, false
 	}
 	return planFor(s.footer.quota.plans(""), kind)
-}
-
-// launchEnabled are the enabled providers as the search and the launch menus
-// read them.
-func (m providersMachine) launchEnabled() []launchProvider {
-	var list []launchProvider
-	for _, p := range m.enabled() {
-		list = append(list, p.launchProvider)
-	}
-	return list
 }

@@ -134,50 +134,17 @@ func (m *model) storedSessions() ([]lichclient.Session, bool) {
 	return slices.Clone(p.Sessions), ok
 }
 
-// loadProviders reads what the launch menu offers. The UI calls it off the
-// frame at startup, and again once Settings › Providers changed what it
-// reads.
-func (m *model) loadProviders(ctx context.Context) error {
-	list, globalDefault, err := loadLaunchProviders(ctx, m.client)
-	if err != nil {
-		return err
-	}
-	m.mu.Lock()
-	m.providers, m.globalDefault = list, globalDefault
-	m.mu.Unlock()
-	m.invalidate()
-	return nil
-}
-
 // launchProviders are the providers a launch menu lists, in detection order.
-func (m *model) launchProviders() []launchProvider {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return enabledProviders(m.providers)
-}
-
-// setProjectDefault takes a project's default provider as Settings just
-// wrote it, which the workspace the launch menus resolve it from is not told
-// otherwise.
-func (m *model) setProjectDefault(projectID, id string) {
-	m.mu.Lock()
-	for i := range m.projects {
-		if m.projects[i].ID == projectID {
-			m.projects[i].DefaultProvider = id
-		}
-	}
-	m.mu.Unlock()
-	m.invalidate()
-}
+func (m *model) launchProviders() []launchProvider { return m.providers.launchProviders() }
 
 // newSessionKind is what an implicit new session spawns in the shown
 // project (providers-store.ts projectNewSessionKind).
 func (m *model) newSessionKind() string {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	projectDefault := ""
+	projectID := ""
 	if p := m.shownProject(); p != nil {
-		projectDefault = p.DefaultProvider
+		projectID = p.ID
 	}
-	return implicitSessionKind(m.providers, m.globalDefault, projectDefault)
+	m.mu.Unlock()
+	return m.providers.implicitKind(projectID)
 }

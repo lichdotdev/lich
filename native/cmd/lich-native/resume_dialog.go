@@ -97,12 +97,8 @@ func (r *resumeDialog) rememberRow(gtx C, th *ui.Theme, provider string) D {
 
 // providerName is how the prompt names provider kind.
 func (m *model) providerName(kind string) string {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	for _, p := range m.providers {
-		if p.id == kind {
-			return p.name
-		}
+	if p, ok := m.providers.find(kind); ok {
+		return p.name
 	}
 	return resumeThisProvider
 }
