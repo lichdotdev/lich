@@ -79,22 +79,33 @@ func (m *model) sessionFocus(data json.RawMessage) {
 	}
 }
 
-// loginStep is one step of a profile login. The profiles are read again
-// before the screen hears the login ended, so what it draws next is the
-// account that just signed in, whichever window or terminal ran the login.
-func (m *model) loginStep(ctx context.Context, step lichclient.ClaudeProfileLogin) {
+// loginStep is one step of a profile login of the provider kind names. The
+// profiles are read again before the screen hears the login ended, so what it
+// draws next is the account that just signed in, whichever window or terminal
+// ran the login.
+func (m *model) loginStep(ctx context.Context, kind string, step lichclient.ProfileLogin) {
 	if !step.Done {
-		m.forwardLogin(step)
+		m.forwardLogin(kind, step)
 		return
 	}
 	go func() {
-		m.profiles.loginFinished(ctx)
-		m.forwardLogin(step)
+		if book := m.profileBook(kind); book != nil {
+			book.loginFinished(ctx)
+		}
+		m.forwardLogin(kind, step)
 	}()
 }
 
-func (m *model) forwardLogin(step lichclient.ClaudeProfileLogin) {
+// loginEventKind is the provider a login event name belongs to.
+func loginEventKind(event string) string {
+	if event == lichclient.CodexProfileLoginEvent {
+		return codexKind
+	}
+	return claudeKind
+}
+
+func (m *model) forwardLogin(kind string, step lichclient.ProfileLogin) {
 	if m.loginProgress != nil {
-		m.loginProgress(step)
+		m.loginProgress(kind, step)
 	}
 }

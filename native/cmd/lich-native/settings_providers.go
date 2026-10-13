@@ -206,8 +206,10 @@ func kindsWhere(has func(kind string) bool) []string {
 func providerEntries() []settingEntry {
 	return []settingEntry{
 		{title: providerDefaultTitle, also: providerDefaultAlso, key: providerDefaultKey, scope: scopeOverridable},
-		{title: profileTitle, also: profileAlso, key: claudeProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{claudeKind}},
-		{title: profilesTitle, also: profilesAlso, perProvider: true, onlyFor: []string{claudeKind}},
+		{title: profileTitle, also: claudeProfileProvider.words.searchAlso, key: claudeProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{claudeKind}},
+		{title: profilesTitle, also: claudeProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{claudeKind}},
+		{title: profileTitle, also: codexProfileProvider.words.searchAlso, key: codexProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{codexKind}},
+		{title: profilesTitle, also: codexProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{codexKind}},
 		{title: planTitle, also: planAlso, perProvider: true},
 		{title: binTitle, also: binAlso, perProvider: true},
 		{title: skipTitle, also: skipAlso, perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
@@ -259,8 +261,8 @@ func providerPasteKey(kind string) string { return "provider." + kind + ".pasteU
 // read; only the ones the provider has a control for.
 func providerGlobalKeys(kind string) []string {
 	keys := []string{providerEnabledKey(kind), providerBinKey(kind), providerBinOffKey(kind), restoreKey(kind)}
-	if kind == claudeKind {
-		keys = append(keys, claudeProfileKey)
+	if prov, ok := profileProviderOf(kind); ok {
+		keys = append(keys, prov.key)
 	}
 	if hasSkipFlag(kind) {
 		keys = append(keys, providerSkipKey(kind, false), providerSkipKey(kind, true))
@@ -495,8 +497,8 @@ type providerSettings struct {
 
 	bin binInput
 
-	// claude is the Claude Code screen's profiles.
-	claude claudeSettings
+	// claude and codex are the profiles of the two screens that have them.
+	claude, codex profileSettings
 
 	skip, restore  widget.Enum
 	ultra, agents  ui.SwitchState
@@ -664,15 +666,16 @@ func (s *settingsScreen) watchPlans(keys ...string) {
 }
 
 // planKeys are the readings the open pane draws: the machine's own on the
-// Providers pane, and the profile of the scope on Claude Code's screen.
+// Providers pane, and the profile of the scope on the screen of a provider
+// with profiles.
 func (s *settingsScreen) planKeys(values scopedValues) []string {
 	if !s.open || s.section != sectionProviders {
 		return nil
 	}
 	keys := []string{""}
 	m := s.providers.snapshot()
-	if s.providers.open == claudeKind && s.providers.claude.book != nil && m.loaded {
-		if key := profileQuotaKey(s.scopeProfile(values, m)); key != "" {
+	if c := s.providers.profiles(s.providers.open); c != nil && m.loaded {
+		if key := profileQuotaKey(c.provider, s.scopeProfile(c, values, m)); key != "" {
 			keys = append(keys, key)
 		}
 	}
@@ -686,4 +689,20 @@ func (s *settingsScreen) planOf(kind string) (lichclient.QuotaPlan, bool) {
 		return lichclient.QuotaPlan{}, false
 	}
 	return planFor(s.footer.quota.plans(""), kind)
+}
+
+// profiles is the profiles of the screen kind names, nil for a provider with
+// none and until the window has bound its book.
+func (p *providerSettings) profiles(kind string) *profileSettings {
+	var c *profileSettings
+	switch kind {
+	case claudeKind:
+		c = &p.claude
+	case codexKind:
+		c = &p.codex
+	}
+	if c == nil || c.book == nil {
+		return nil
+	}
+	return c
 }

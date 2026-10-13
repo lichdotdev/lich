@@ -125,8 +125,8 @@ func TestCodexConversations(t *testing.T) {
 		`{"id":"c2","thread_name":"Named by the user"}`+"\n")
 
 	assertConversations(t, codexConversations(),
-		store.Conversation{Kind: "codex", ID: "c1", Title: "port the theme loader", Cwd: "/work/alpha"},
-		store.Conversation{Kind: "codex", ID: "c2", Title: "Named by the user", Cwd: "/work/alpha"},
+		store.Conversation{Kind: "codex", ID: "c1", Title: "port the theme loader", Cwd: "/work/alpha", Profile: "personal"},
+		store.Conversation{Kind: "codex", ID: "c2", Title: "Named by the user", Cwd: "/work/alpha", Profile: "personal"},
 	)
 }
 

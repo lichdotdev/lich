@@ -20,6 +20,7 @@ import (
 	"github.com/omartelo/lich/internal/chromium"
 	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/cli"
+	"github.com/omartelo/lich/internal/codexprofile"
 	"github.com/omartelo/lich/internal/drop"
 	"github.com/omartelo/lich/internal/events"
 	"github.com/omartelo/lich/internal/fonts"
@@ -282,6 +283,11 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	profiles.SetLichPlugin(plugins.InstallInClaudeProfile, agentplugin.PluginKey)
 	profiles.SetSessions(term.ProfileSessions, db.ForgetClaudeProfile)
 	dispatcher.Register("claudeprofile", profiles)
+	// Codex profiles share the plugin set with Personal, so there is no plugin
+	// to install per profile; the delete's guards are the same.
+	codexProfiles := codexprofile.New(db, hub.Emit)
+	codexProfiles.SetSessions(term.CodexProfileSessions, db.ForgetCodexProfile)
+	dispatcher.Register("codexprofile", codexProfiles)
 	dispatcher.Register("appupdate", appupdate.New(version, coord.Install, hub.Emit))
 	dispatcher.Register("patchnotes", patchnotes.New(version, changelog))
 	dispatcher.Register("store", db)
@@ -344,6 +350,13 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	})
 	term.SetRateLimitReports(plans.ReportClaude)
 	dispatcher.Register("quota", plans)
+	codexProfiles.SetAccount(func(slug string) (string, string) {
+		plan, err := plans.CodexProfilePlan(slug)
+		if err != nil || plan.Status != quota.StatusOK {
+			return "", ""
+		}
+		return plan.Account, plan.Plan
+	})
 	// The relay is the only service whose caller is not the window: the `lich`
 	// CLI running inside a session reaches it over the same listener. It watches
 	// the hooks' state reports too, to notice a target that ends a turn without
@@ -455,9 +468,11 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     the caller likes.
 //   - store.SetSessionProfile moves a session to another Claude Code profile
 //     without moving its conversation, which only terminal.ContinueIn may do;
-//     store.ForgetClaudeProfile is the delete's own cleanup.
-//   - claudeprofile.SetLichPlugin and claudeprofile.SetSessions are startup
-//     wiring like the setters above.
+//     store.ForgetClaudeProfile and store.ForgetCodexProfile are the delete's
+//     own cleanup.
+//   - claudeprofile.SetLichPlugin, claudeprofile.SetSessions,
+//     codexprofile.SetSessions and codexprofile.SetAccount are startup wiring
+//     like the setters above.
 //   - quota.ReportClaude is a session's own reading of its plan, which arrives
 //     over /mod/usage: called here it would put any numbers on the gauge.
 //   - terminal.EnqueueModCommand and terminal.RunModCommand queue a command for
@@ -517,8 +532,11 @@ func denyInternal(d *rpc.Handler) {
 		"terminal.SubmitPrompt",
 		"store.SetSessionProfile",
 		"store.ForgetClaudeProfile",
+		"store.ForgetCodexProfile",
 		"claudeprofile.SetLichPlugin",
 		"claudeprofile.SetSessions",
+		"codexprofile.SetSessions",
+		"codexprofile.SetAccount",
 	} {
 		d.Deny(method)
 	}

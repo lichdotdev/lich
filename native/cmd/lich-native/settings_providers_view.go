@@ -428,14 +428,14 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 		first = false
 		rows = append(rows, func(gtx C) D { return draw(gtx, isFirst) })
 	}
-	claude := p.id == claudeKind && s.providers.claude.book != nil
-	if claude {
-		s.ensureProfiles()
-		add(profileTitle, func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, values, m, first) })
-		add(profilesTitle, func(gtx C, first bool) D { return s.profilesBlock(gtx, th, values, first) })
-		slug := s.scopeProfile(values, m)
-		if plan, ok := s.claudePlan(slug); ok {
-			add(planTitle, func(gtx C, first bool) D { return s.claudePlanBlock(gtx, th, values, slug, plan, first) })
+	profiles := s.providers.profiles(p.id)
+	if profiles != nil {
+		s.ensureProfiles(profiles)
+		add(profileTitle, func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, profiles, values, m, first) })
+		add(profilesTitle, func(gtx C, first bool) D { return s.profilesBlock(gtx, th, profiles, values, first) })
+		slug := s.scopeProfile(profiles, values, m)
+		if plan, ok := s.profilePlan(profiles, slug); ok {
+			add(planTitle, func(gtx C, first bool) D { return s.profilePlanBlock(gtx, th, profiles, values, slug, plan, first) })
 		}
 	} else {
 		if plan, ok := s.planOf(p.id); ok {
@@ -458,8 +458,8 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 	if canResume(p.id) {
 		add(restoreTitle, func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, m, p, first) })
 	}
-	if claude {
-		add(binTitle, func(gtx C, first bool) D { return s.advancedBinaryFold(gtx, th, values, m, p, first) })
+	if profiles != nil {
+		add(binTitle, func(gtx C, first bool) D { return s.advancedBinaryFold(gtx, th, profiles, values, m, p, first) })
 	}
 	return rows
 }

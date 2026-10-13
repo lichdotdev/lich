@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/omartelo/lich/internal/claudeprofile"
+	"github.com/omartelo/lich/internal/codexprofile"
 	"github.com/omartelo/lich/internal/providers"
 )
 
@@ -67,15 +68,13 @@ func claudeSubagentPaths(providerSessionID string) []string {
 	return matches
 }
 
-// codexTranscriptPath locates a Codex rollout by its UUID under $CODEX_HOME,
-// else ~/.codex. Codex files a rollout by the date it started —
-// sessions/<yyyy>/<mm>/<dd>/rollout-<timestamp>-<uuid>.jsonl.
+// codexTranscriptPath locates a Codex rollout by its UUID in whichever Codex
+// profile holds it (internal/codexprofile): Personal's directory, $CODEX_HOME
+// else ~/.codex, then every profile lich made. Codex files a rollout by the
+// date it started — sessions/<yyyy>/<mm>/<dd>/rollout-<timestamp>-<uuid>.jsonl.
 func codexTranscriptPath(providerSessionID string) (string, bool) {
-	base, ok := harnessDir("CODEX_HOME", ".codex")
-	if !ok {
-		return "", false
-	}
-	return globTranscript(base, "sessions", "*", "*", "*", "rollout-*-"+providerSessionID+".jsonl")
+	_, path, ok := codexprofile.Owner(providerSessionID)
+	return path, ok
 }
 
 // antigravityConversationPath is the database Antigravity keeps one

@@ -348,7 +348,7 @@ func TestASessionMovingProfileMakesItsQuotaReadAgain(t *testing.T) {
 	work.Account = "me@work.example"
 	r.set([]lichclient.QuotaPlan{work}, nil)
 	events := make(chan lichclient.Event, 1)
-	events <- lichclient.Event{Name: lichclient.ClaudeProfileEvent, Data: []byte(`{"id":"s1","profile":"work"}`)}
+	events <- lichclient.Event{Name: lichclient.SessionProfileEvent, Data: []byte(`{"id":"s1","profile":"work"}`)}
 	close(events)
 	m.follow(context.Background(), events)
 	waitChanged(t, r.changed)

@@ -292,13 +292,13 @@ func TestPlanQuotaInvalidateDropsTheReadingAndReadsAgain(t *testing.T) {
 	personal := quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})
 	personal.Account = "me@example.com"
 	r.set([]lichclient.QuotaPlan{personal}, nil)
-	defer r.q.watch(profileQuotaKey("work"))()
+	defer r.q.watch(profileQuotaKey(claudeProfileProvider, "work"))()
 	waitChanged(t, r.changed)
 
 	// The profile is gone: the read that follows fails, and the dropped
 	// numbers must not come back as the last good reading.
 	r.set(nil, errors.New("profile is gone"))
-	r.q.invalidate(profileQuotaKey("work"))
+	r.q.invalidate(profileQuotaKey(claudeProfileProvider, "work"))
 	waitChanged(t, r.changed)
 	deadline := time.After(5 * time.Second)
 	for r.readCount() < 2 {
@@ -308,14 +308,14 @@ func TestPlanQuotaInvalidateDropsTheReadingAndReadsAgain(t *testing.T) {
 		case <-time.After(time.Millisecond):
 		}
 	}
-	if got := r.q.plans(profileQuotaKey("work")); got != nil {
+	if got := r.q.plans(profileQuotaKey(claudeProfileProvider, "work")); got != nil {
 		t.Errorf("plans = %+v, want the dropped reading to stay dropped", got)
 	}
 }
 
 func TestProfileQuotaKeyNamesPersonalAsTheMachine(t *testing.T) {
 	for slug, want := range map[string]string{"": "", personalProfile: "", "work": "profile:work"} {
-		if got := profileQuotaKey(slug); got != want {
+		if got := profileQuotaKey(claudeProfileProvider, slug); got != want {
 			t.Errorf("profileQuotaKey(%q) = %q, want %q", slug, got, want)
 		}
 	}
@@ -337,7 +337,7 @@ func TestQuotaReaderRoutesAProfileKeyToItsOwnPlan(t *testing.T) {
 	port, _ := strconv.Atoi(u.Port())
 	read := quotaReader(lichclient.New(lichclient.Runtime{Port: port, Token: "tok"}))
 
-	plans, err := read(profileQuotaKey("work"))
+	plans, err := read(profileQuotaKey(claudeProfileProvider, "work"))
 	if err != nil || len(plans) != 1 || plans[0].Windows[0].Percent != 7 {
 		t.Fatalf("profile reading = %+v, %v", plans, err)
 	}
@@ -351,9 +351,9 @@ func TestQuotaReaderRoutesAProfileKeyToItsOwnPlan(t *testing.T) {
 
 func TestProfileBookWatchesTheQuotedPlansOnlyWhileThereIsAChoice(t *testing.T) {
 	r := newQuotaRig()
-	b := newProfileBook(nil, func() {}, r.q)
-	one := []lichclient.ClaudeProfile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work"}}
-	two := []lichclient.ClaudeProfile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
+	b := newProfileBook(claudeProfileProvider, nil, func() {}, r.q)
+	one := []lichclient.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work"}}
+	two := []lichclient.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
 	watched := func() int {
 		r.q.mu.Lock()
 		defer r.q.mu.Unlock()

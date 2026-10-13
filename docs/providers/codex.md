@@ -37,6 +37,15 @@ claim in the OIDC id token beside its access token. It is read unverified, and d
 passed, because the CLI can rotate the access token without rewriting the id one and a gauge under a login the
 user has left is worse than one under no name.
 
+## Profiles
+
+A profile is a `CODEX_HOME` of its own with its own `codex login` (`internal/codexprofile`). It links Personal's
+`config.toml`, `hooks.json`, `AGENTS.md`, `skills/`, `rules/`, `plugins/cache` and `.tmp/marketplaces` and
+keeps its own `auth.json`, rollouts, history and thread database, so the plugins, marketplaces and trusted hooks
+are the same under every profile. Every reader of rollouts (resume, usage, search, the History tab) scans all of
+them and resumes under the profile that holds the rollout. What it shares, what it moves and where it
+disagrees with Claude Code's profiles is in [`../ceilings.md`](../ceilings.md).
+
 ## Sandbox
 
 Nothing provider-specific.

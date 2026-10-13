@@ -21,7 +21,7 @@ type Conversation struct {
 	Cwd   string
 	// Unix seconds of the last activity the provider recorded.
 	UpdatedAt int64
-	// Profile is the Claude Code profile whose directory holds the
+	// Profile is the profile (Claude Code or Codex) whose directory holds the
 	// conversation, "personal" for the default one; "" for other providers.
 	Profile string
 }
@@ -39,8 +39,8 @@ type ExternalSession struct {
 	ProjectName       string `json:"projectName"`
 	ProjectPath       string `json:"projectPath"`
 	UpdatedAt         int64  `json:"updatedAt"`
-	// Profile is the Claude Code profile the conversation lives in, the one a
-	// resume of it runs in whatever the project's own profile is.
+	// Profile is the Claude Code or Codex profile the conversation lives in,
+	// the one a resume of it runs in whatever the project's own profile is.
 	Profile string `json:"profile,omitempty"`
 }
 

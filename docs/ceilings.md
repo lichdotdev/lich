@@ -1191,13 +1191,31 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   connect, the web window does not. `system.CloseWindow` never quits lich, even
   with no session running, where a window the user closes does (`quitIfIdle`). The native window's text is
   English only: the interface catalogs are TypeScript, and native/ has none yet (`docs/native-window.md`).
-- **Profiles are Claude Code's alone** (`internal/claudeprofile`): one account per profile, each its own
-  `CLAUDE_CONFIG_DIR` with a real `claude auth login`, and no other provider has one. Codex (`CODEX_HOME`),
-  opencode and oh-my-pi (`OMP_PROFILE`) each read their state from a directory an environment variable moves,
-  so the same design fits them later; Cursor CLI and Kiro CLI move only part of theirs (Cursor's `~/.cursor`
-  and Kiro's `~/.kiro` stay under the home whatever the variable says); Crush is unmeasured; Antigravity
-  cannot, its `~/.gemini` being fixed by the CLI. A project's profile setting, the per-session profile and
-  Continue in therefore exist for Claude Code sessions only.
+- **Profiles are Claude Code's and Codex's** (`internal/claudeprofile`, `internal/codexprofile`): one account per
+  profile, each its own `CLAUDE_CONFIG_DIR` or `CODEX_HOME` with a real `claude auth login` or `codex login`, and
+  no other provider has one. The rest were measured on the installed CLIs (2026-10-12) and none is
+  implemented:
+  - **opencode** reads its data (`auth.json`, `opencode.db`) from `$XDG_DATA_HOME/opencode` and nothing else
+    moves it: `OPENCODE_CONFIG_DIR` and `OPENCODE_TEST_HOME` leave it where it was (1.18.35). A profile would
+    be a moved `XDG_DATA_HOME`, which every other tool in the session reads too (`mise`, lich's own
+    worktrees directory, any cache under it), so it either breaks them or needs a data home made of links
+    to everything but `opencode/`. Its login is an interactive provider picker with no address to relay,
+    and its conversations are rows in one SQLite file, so Continue in would be `opencode export` and
+    `import` rather than a move.
+  - **oh-my-pi** fits the same design: `OMP_PROFILE` moves its whole state directory
+    (`~/.omp/profiles/<name>/{agent,logs,run}`, auth in `agent.db`) and nothing else in the session reads
+    it, and conversations are JSONL files a profile can own and Continue in can move. Its `omp login` is an
+    interactive picker, so a login is only ever offered in a terminal card. It is not built because a third
+    profile package would be a third copy of the store that `claudeprofile` and `codexprofile` already
+    duplicate (slug, sidecar, list, create, rename, delete, links, move); the shared package has to be
+    decided before a third caller, not after.
+  - **Cursor CLI** and **Kiro CLI** move only part of their state: Cursor's `~/.cursor` and Kiro's `~/.kiro`
+    stay under the home whatever the variable says. **Crush** is unmeasured. **Antigravity** cannot: its
+    `~/.gemini` is fixed by the CLI.
+
+  A project's profile setting, the per-session profile and Continue in therefore exist for Claude Code and
+  Codex sessions only. The profile slug of a session row belongs to that row's provider: a Codex profile
+  named "work" and a Claude Code one named "work" are two profiles.
 - **A profile shares Personal's own content through links, and a link shares writes too**
   (`internal/claudeprofile/layout.go`): `settings.json`, `CLAUDE.md`, `agents/`, `commands/`, `skills/`,
   `hooks/` and the plugin downloads (`plugins/cache`, `plugins/marketplaces`) point at Personal's, and
@@ -1245,3 +1263,37 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   login the dialog starts is `claude auth login --claudeai`, which opens the browser itself and takes the
   callback on a localhost port of its own (measured on 2.1.296); the address it prints, which redirects to a
   page that shows a code, and the field that takes the code are for a browser that cannot reach this machine.
+- **A Codex profile shares Personal's config and its plugin set, and keeps only its login and its
+  conversations** (`internal/codexprofile/layout.go`): `config.toml`, `hooks.json`, `AGENTS.md`, `skills/`,
+  `rules/`, `plugins/cache` and `.tmp/marketplaces` point at Personal's, and Codex writes through a link and
+  leaves it in place (measured on 0.162.1: `features enable`, `plugin marketplace add` and `plugin add` run
+  in a profile landed in Personal's config and cache). `config.toml` holds the installed plugins, the
+  marketplaces, the trusted hook hashes and each project's trust, so all of them are shared, which is the
+  opposite of Claude Code's per-profile plugin set: nothing is installed per profile after a login, a plugin
+  an organization account may not run still reads as enabled in Personal, and the lich plugin's pinned
+  install (`plugin marketplace remove` then `add`) is never run from a profile, because the remove would
+  uninstall it under a running Personal session. Whatever Personal's Settings says about the lich plugin is
+  the profile's too. Per profile: `auth.json`, `sessions/`, `history.jsonl`, `session_index.jsonl`, the
+  SQLite state and `installation_id`. `CODEX_SQLITE_HOME`, `CODEX_API_KEY`, `CODEX_ACCESS_TOKEN` and
+  `OPENAI_API_KEY` are dropped from a profile's spawn: the first would put every profile's thread database in
+  one place and the rest would override the login. A `cli_auth_credentials_store` of `keyring` in the shared
+  `config.toml` sends the login to the OS keyring, whose entry per `CODEX_HOME` was not measured. On Windows
+  the file links are copies without Developer Mode, as for Claude Code.
+- **A Codex login is a browser callback on a fixed port, and the dialog has no code to paste**: `codex login`
+  prints an address and waits for the page's redirect on `localhost:1455` (measured on 0.162.1), so two
+  logins cannot run at once, in lich or beside it, and a browser that cannot reach this machine needs
+  `codex login --device-auth` from a terminal, which is not the command the dialog's "log in from a
+  terminal" runs. The dialog decides whether the login took from `codex login status`'s exit status, and
+  reads "not logged in" in Codex's own words to tell a logged-out profile from a broken `config.toml`. Its
+  account and plan are the plan gauge's reading of that directory (`quota.CodexProfilePlan`, the ChatGPT usage
+  route, five minutes cached, the email claim of an id token that has not expired), so a profile whose usage
+  call fails is "Logged in" with no name.
+- **Continue in moves a Codex rollout and its generated images, and relies on Codex indexing it again**
+  (`codexprofile.MoveConversation`): the rollout under `sessions/<yyyy>/<mm>/<dd>/` and
+  `generated_images/<id>/`. Codex's thread database keeps an absolute `rollout_path` per thread, and a
+  rollout alone in an empty home was found by id and written into that home's database with its path
+  rewritten (measured on 0.162.1, `thread/resume` and `exec resume`); the interactive TUI resume of a moved
+  conversation behind a real login was not exercised. The source's database row and `history.jsonl` stay, so
+  its own picker may list a thread whose rollout is gone. `codex exec resume` and `thread/read` answered
+  "paginated_threads is not supported yet" for a thread of this version in the origin home as well, which is
+  a daemon older than the CLI on the measuring machine and not the move's.

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/omartelo/lich/internal/agentplugin"
-	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/project"
 	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/relay"
@@ -80,7 +79,7 @@ func (s *Service) Start(
 	if err != nil {
 		return err
 	}
-	profileDir, err := s.claudeProfileDir(id, kind, resume)
+	profileDir, err := s.profileDir(id, kind, resume)
 	if err != nil {
 		return err
 	}
@@ -157,9 +156,9 @@ func (s *Service) spawnSession(
 		return nil, "", err
 	}
 	// The configured binary still runs, so a wrapper exporting a
-	// CLAUDE_CONFIG_DIR of its own wins over the profile, as it always has.
+	// CLAUDE_CONFIG_DIR (or CODEX_HOME) of its own wins over the profile.
 	if profileDir != "" {
-		env = claudeprofile.Env(env, profileDir)
+		env = profileEnv(kind, env, profileDir)
 	}
 	spec := ptySpec{
 		bin: resolveCommand(kind, s.store.ProviderBin(kind, projectID), userShell()),
@@ -254,8 +253,8 @@ func (s *Service) providerKind(id, reported string) string {
 }
 
 // spawn is how one live session's PTY was started: the kind it runs, the
-// project and directory it was rooted at, and the Claude Code profile it runs
-// in ("" for Personal). The cwd is the spawn directory and not the foreground
+// project and directory it was rooted at, and the profile it runs in ("" for
+// Personal). The cwd is the spawn directory and not the foreground
 // one the watcher follows (cwd.go) — Crush keeps its database in the checkout it
 // was started in, which a `cd` inside the session does not move.
 type spawn struct {

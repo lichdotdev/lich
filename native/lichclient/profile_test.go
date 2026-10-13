@@ -8,50 +8,61 @@ import (
 	"testing"
 )
 
-func TestClaudeProfileCallsSendPositionalArgs(t *testing.T) {
+func TestProfileCallsSendPositionalArgs(t *testing.T) {
 	ctx := context.Background()
 	cases := []struct {
 		name, method, args string
 		result             any
 		call               func(c *Client) error
 	}{
-		{"Profiles", "claudeprofile.Profiles", ``, []ClaudeProfile{}, func(c *Client) error {
-			_, err := c.ClaudeProfiles(ctx)
+		{"Profiles", "claudeprofile.Profiles", ``, []Profile{}, func(c *Client) error {
+			_, err := c.ClaudeProfiles().List(ctx)
 			return err
 		}},
-		{"Create", "claudeprofile.CreateProfile", `"Work"`, ClaudeProfile{Slug: "work"}, func(c *Client) error {
-			_, err := c.CreateClaudeProfile(ctx, "Work")
+		{"Create", "claudeprofile.CreateProfile", `"Work"`, Profile{Slug: "work"}, func(c *Client) error {
+			_, err := c.ClaudeProfiles().Create(ctx, "Work")
 			return err
 		}},
 		{"Rename", "claudeprofile.RenameProfile", `"work","Day job"`, nil, func(c *Client) error {
-			return c.RenameClaudeProfile(ctx, "work", "Day job")
+			return c.ClaudeProfiles().Rename(ctx, "work", "Day job")
 		}},
 		{"Delete", "claudeprofile.DeleteProfile", `"work"`, nil, func(c *Client) error {
-			return c.DeleteClaudeProfile(ctx, "work")
+			return c.ClaudeProfiles().Delete(ctx, "work")
 		}},
-		{"Plugins", "claudeprofile.Plugins", `"personal"`, []ClaudeProfilePlugin{}, func(c *Client) error {
-			_, err := c.ClaudeProfilePlugins(ctx, "personal")
+		{"Plugins", "claudeprofile.Plugins", `"personal"`, []ProfilePlugin{}, func(c *Client) error {
+			_, err := c.ClaudeProfiles().Plugins(ctx, "personal")
 			return err
 		}},
-		{"InstallPlugins", "claudeprofile.InstallPlugins", `"work",["a@m","b@m"]`, []ClaudeProfilePluginResult{}, func(c *Client) error {
-			_, err := c.InstallClaudeProfilePlugins(ctx, "work", []string{"a@m", "b@m"})
+		{"InstallPlugins", "claudeprofile.InstallPlugins", `"work",["a@m","b@m"]`, []ProfilePluginResult{}, func(c *Client) error {
+			_, err := c.ClaudeProfiles().InstallPlugins(ctx, "work", []string{"a@m", "b@m"})
 			return err
 		}},
 		{"Login", "claudeprofile.Login", `"work"`, nil, func(c *Client) error {
-			return c.LoginClaudeProfile(ctx, "work")
+			return c.ClaudeProfiles().Login(ctx, "work")
 		}},
 		{"LoginCode", "claudeprofile.LoginCode", `"work","abc"`, nil, func(c *Client) error {
-			return c.ClaudeLoginCode(ctx, "work", "abc")
+			return c.ClaudeProfiles().LoginCode(ctx, "work", "abc")
 		}},
 		{"CancelLogin", "claudeprofile.CancelLogin", `"work"`, nil, func(c *Client) error {
-			return c.CancelClaudeLogin(ctx, "work")
+			return c.ClaudeProfiles().CancelLogin(ctx, "work")
 		}},
 		{"LoginCommand", "claudeprofile.LoginCommand", `"work"`, "claude auth login", func(c *Client) error {
-			_, err := c.ClaudeLoginCommand(ctx, "work")
+			_, err := c.ClaudeProfiles().LoginCommand(ctx, "work")
 			return err
 		}},
 		{"ProfilePlan", "quota.ProfilePlan", `"work"`, QuotaPlan{}, func(c *Client) error {
-			_, err := c.ClaudeProfilePlan(ctx, "work")
+			_, err := c.ClaudeProfiles().Plan(ctx, "work")
+			return err
+		}},
+		{"CodexProfiles", "codexprofile.Profiles", ``, []Profile{}, func(c *Client) error {
+			_, err := c.CodexProfiles().List(ctx)
+			return err
+		}},
+		{"CodexLogin", "codexprofile.Login", `"work"`, nil, func(c *Client) error {
+			return c.CodexProfiles().Login(ctx, "work")
+		}},
+		{"CodexProfilePlan", "quota.CodexProfilePlan", `"work"`, QuotaPlan{}, func(c *Client) error {
+			_, err := c.CodexProfiles().Plan(ctx, "work")
 			return err
 		}},
 		{"ContinueIn", "terminal.ContinueIn", `"s1","work"`, nil, func(c *Client) error {
@@ -75,9 +86,9 @@ func TestClaudeProfileCallsSendPositionalArgs(t *testing.T) {
 
 // The wire names are claudeprofile.Info's: Profile is embedded, so its tags
 // sit beside the account's.
-func TestClaudeProfileReadsInfo(t *testing.T) {
+func TestProfileReadsInfo(t *testing.T) {
 	const wire = `{"slug":"work","name":"Work","dir":"/c/work","personal":false,"copied":["settings.json"],"loggedIn":true,"email":"a@b.c","plan":"max","plugins":3}`
-	var p ClaudeProfile
+	var p Profile
 	if err := json.Unmarshal([]byte(wire), &p); err != nil {
 		t.Fatal(err)
 	}
@@ -90,6 +101,10 @@ func TestProfileGoneMatchesTheBackendSentence(t *testing.T) {
 	remote := &RemoteError{Method: "terminal.Start", Message: "start session: claude profile no longer exists", Status: http.StatusBadRequest}
 	if !ProfileGone(remote) {
 		t.Error("the backend's sentence was not matched")
+	}
+	codex := &RemoteError{Method: "terminal.Start", Message: "start session: codex profile no longer exists", Status: http.StatusBadRequest}
+	if !ProfileGone(codex) {
+		t.Error("the Codex sentence was not matched")
 	}
 	if ProfileGone(errors.New("pty: no such file")) || ProfileGone(nil) {
 		t.Error("an unrelated failure was matched")

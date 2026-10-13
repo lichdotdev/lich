@@ -27,8 +27,8 @@ var (
 	icContinueIn    = icons.Lucide("arrow-right-left")
 )
 
-// continueTarget is a profile a Claude Code card's conversation can move to,
-// with the reading of its five-hour window.
+// continueTarget is a profile a card's conversation can move to, with the
+// reading of its five-hour window.
 type continueTarget struct {
 	slug, name string
 	usage      string
@@ -38,13 +38,26 @@ type continueTarget struct {
 // continueRequest is the card menu's Continue in pick.
 type continueRequest struct{ id, slug string }
 
-// continueTargets are the other logged-in profiles of a Claude Code session,
-// none while there is no other to move to.
+// profileBook is the book of the provider kind names, nil for a provider with
+// no profiles.
+func (m *model) profileBook(kind string) *profileBook {
+	switch kind {
+	case claudeKind:
+		return m.profiles
+	case codexKind:
+		return m.codexProfiles
+	}
+	return nil
+}
+
+// continueTargets are the other logged-in profiles of a session of a provider
+// with profiles, none while there is no other to move to.
 func (m *model) continueTargets(kind, profile string) []continueTarget {
-	if kind != claudeKind {
+	book := m.profileBook(kind)
+	if book == nil {
 		return nil
 	}
-	logged := m.profiles.loggedIn()
+	logged := book.loggedIn()
 	if len(logged) < 2 {
 		return nil
 	}
@@ -54,7 +67,7 @@ func (m *model) continueTargets(kind, profile string) []continueTarget {
 		if p.Slug == current {
 			continue
 		}
-		plan, ok := planFor(m.quota.plans(profileQuotaKey(p.Slug)), claudeKind)
+		plan, ok := planFor(m.quota.plans(profileQuotaKey(book.provider, p.Slug)), kind)
 		usage, limited := profileUsage(plan, ok)
 		out = append(out, continueTarget{slug: p.Slug, name: p.Name, usage: usage, limited: limited})
 	}
@@ -64,10 +77,11 @@ func (m *model) continueTargets(kind, profile string) []continueTarget {
 // profileNameOf is the profile a card names beside its branch: Personal is the
 // default and says nothing.
 func (m *model) profileNameOf(kind, profile string) string {
-	if kind != claudeKind || effectiveProfile(profile) == personalProfile {
+	book := m.profileBook(kind)
+	if book == nil || effectiveProfile(profile) == personalProfile {
 		return ""
 	}
-	return m.profiles.nameOf(profile)
+	return book.nameOf(profile)
 }
 
 // continueInItem is the card menu's Continue in: each other login with its
@@ -132,6 +146,7 @@ func (ts *terminals) resync(ctx context.Context, id string) {
 // loadProfiles reads the profiles once the window is up.
 func (u *window) loadProfiles() {
 	u.logErr("claude profiles", u.model.profiles.reload(u.ctx))
+	u.logErr("codex profiles", u.model.codexProfiles.reload(u.ctx))
 }
 
 // openLoginTerminal runs a profile's login command in a shell card of the
@@ -146,15 +161,16 @@ func (u *window) openLoginTerminal(command string) bool {
 	return true
 }
 
-// resumeProfileLine tells a restored Claude Code card which profile its
-// conversation lives in, "" for Personal, the one nothing needs saying about.
+// resumeProfileLine tells a restored card which profile its conversation lives
+// in, "" for Personal, the one nothing needs saying about.
 func (m *model) resumeProfileLine(s lichclient.Session) string {
-	if s.Kind != claudeKind || effectiveProfile(s.Profile) == personalProfile {
+	book := m.profileBook(s.Kind)
+	if book == nil || effectiveProfile(s.Profile) == personalProfile {
 		return ""
 	}
-	p, ok := m.profiles.find(s.Profile)
+	p, ok := book.find(s.Profile)
 	if !ok || p.Email == "" {
-		return fmt.Sprintf(resumeInProfileNoMail, m.profiles.nameOf(s.Profile))
+		return fmt.Sprintf(resumeInProfileNoMail, book.nameOf(s.Profile))
 	}
 	return fmt.Sprintf(resumeInProfile, p.Name, p.Email)
 }

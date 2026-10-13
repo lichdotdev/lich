@@ -233,6 +233,7 @@ type Store interface {
 	SessionModel(sessionID string) string
 	SessionEffort(sessionID string) string
 	SessionProfile(sessionID string) (string, error)
+	SessionKind(sessionID string) string
 	SetSessionProfile(sessionID, profile string) error
 	SessionUltracode(sessionID string) bool
 	SessionSubagentDepth(sessionID string) int
