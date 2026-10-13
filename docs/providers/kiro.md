@@ -1,8 +1,8 @@
 # Kiro CLI
 
 `kiro-cli` (`internal/providers.Registry`), spawned as `kiro-cli chat`, since `--model`, `--effort` and `--trust-all-tools`
-are the `chat` subcommand's while `--agent` and `--resume-id` are the root's. `~/.kiro` hangs off the home alone,
-with no environment variable to honour (2.21.0 resolves `$HOME/.kiro`), and holds the agents, the settings and
+are the `chat` subcommand's while `--agent` and `--resume-id` are the root's. `~/.kiro` is `$KIRO_HOME`
+else `$HOME/.kiro` (2.21.0, measured against a throwaway home), and holds the agents, the settings and
 the conversations; the login token is a row in the SQLite store under `$XDG_DATA_HOME/kiro-cli/data.sqlite3`. A
 conversation's metadata is `~/.kiro/sessions/cli/<id>.json` with its turns in the `.jsonl` beside it. The limits
 these sit under are in [`../ceilings.md`](../ceilings.md).

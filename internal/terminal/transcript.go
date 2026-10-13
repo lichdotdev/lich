@@ -195,9 +195,8 @@ func ompAgentDir() (string, bool) {
 }
 
 // kiroSessionPath is the file Kiro CLI keeps one conversation's metadata in,
-// under ~/.kiro — the CLI reads that root off the home directory alone, with no
-// environment variable to honour (2.21.0 resolves `$HOME/.kiro`, measured
-// against a throwaway home).
+// under ~/.kiro — the CLI's root is $KIRO_HOME else `$HOME/.kiro` (2.21.0,
+// measured against a throwaway home); this reads the home one alone.
 //
 // It is not a transcript: Kiro writes the turns into the `.jsonl` beside it and
 // the metadata — model, context window, per-request context usage — into this

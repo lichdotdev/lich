@@ -1203,9 +1203,39 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     to everything but `opencode/`. Its login is an interactive provider picker with no address to relay,
     and its conversations are rows in one SQLite file, so Continue in would be `opencode export` and
     `import` rather than a move.
-  - **Cursor CLI** and **Kiro CLI** move only part of their state: Cursor's `~/.cursor` and Kiro's `~/.kiro`
-    stay under the home whatever the variable says. **Crush** is unmeasured. **Antigravity** cannot: its
-    `~/.gemini` is fixed by the CLI.
+  - **Cursor CLI** (2026.10.01, throwaway home, the bundle read for what a run could not reach) keeps its
+    state in three places that three different variables move. The config dir (`cli-config.json`,
+    `statsig-cache.json`, `chats/<md5 of the cwd>/<id>/store.db`) is `$CURSOR_CONFIG_DIR`, else
+    `$XDG_CONFIG_HOME/cursor`, else `~/.cursor`. The login, `auth.json`, is not in it: on Linux it is
+    `$XDG_CONFIG_HOME/cursor/auth.json` else `~/.config/cursor/auth.json`, so `CURSOR_CONFIG_DIR` splits the
+    chats from the account without splitting the account. `projects/` (transcripts) answers to
+    `CURSOR_DATA_DIR` else `~/.cursor`. And `mcp.json`, `hooks.json`, `skills/`, `skills-cursor/`,
+    `agent-cli-state.json`, `policy.json` and `sandbox-policies/` hang off `$HOME/.cursor` with no variable
+    (`CURSOR_SANDBOX_POLICY_DIR` and `CURSOR_WORKTREES_ROOT` move two of them). Linux keeps the login in that
+    file only (no keyring was touched; `CURSOR_API_KEY` or `CURSOR_AUTH_TOKEN` stand in for it), and a
+    logged-out `status --format json` is `{"status":"unauthenticated","isAuthenticated":false,…}` with exit 0.
+    A resume finds a chat only under the active config dir. A profile is therefore feasible only by moving
+    `XDG_CONFIG_HOME`, which gives it its own login, chats and `cli-config.json` and leaves what is shared
+    (`mcp.json`, hooks, skills) where it already is, in the real `~/.cursor`; but `gh`, `git` and every other
+    tool in the session read that variable too, so it needs a config home made of links to everything but
+    `cursor/`, the opencode trap. What does not move whatever is set: the install directory
+    (`~/.local/share/cursor-agent/versions/<v>/`, where a run puts `.running/<pid>`) and the logs under
+    `$TMPDIR/cursor-agent-logs-<uid>/`.
+  - **Kiro CLI** (2.21.0, throwaway home) answers to two variables and honours both completely. `KIRO_HOME`
+    moves `~/.kiro` (`settings/cli.json` measured; `agents/`, `steering/`, `skills/` and `sessions/cli/`
+    from the TUI's own path helper), and `XDG_DATA_HOME` moves `kiro-cli/data.sqlite3`, the one file that
+    holds the login (`auth_kv`) beside its history and state tables. With both set, nothing was written under
+    the home; with `HOME` alone, both moved. A logged-out `whoami` is `Not logged in` with exit 1
+    (`--format json`: `{"account":null}`). Conversations are `<KIRO_HOME>/sessions/cli/<uuid>.json` (with the
+    `cwd`) and the `.jsonl` beside it, found by `--resume`/`--resume-id` in the active directory only. Not
+    measured: the logged-in TUI, an enterprise (IdC) login that may read `~/.aws/sso/cache`, and whether the
+    TUI finds its own bundle (`~/.local/share/kiro-cli/{bun,node,tui.js,kas}`) under a moved
+    `XDG_DATA_HOME`. A profile is feasible the same way as for Cursor and opencode: `KIRO_HOME` is private to
+    Kiro and can be a profile's own directory with links to Personal's `settings/`, `agents/`, `steering/` and
+    `skills/`, but the login is under `XDG_DATA_HOME`, which every other tool reads, so it needs a data home
+    of links to everything but `kiro-cli/data.sqlite3`. That file must never be linked to Personal's: it
+    holds the login and the history together.
+  - **Crush** is unmeasured. **Antigravity** cannot: its `~/.gemini` is fixed by the CLI.
 
   A project's profile setting, the per-session profile and Continue in therefore exist for Claude Code, Codex
   and oh-my-pi sessions only. The profile slug of a session row belongs to that row's provider: a Codex
