@@ -166,7 +166,7 @@ func (s *Service) LoginCommand(slug string) (string, error) {
 		return "", err
 	}
 	if IsPersonal(slug) {
-		return loginCommandLine(s.bin(), ""), nil
+		dir = ""
 	}
-	return loginCommandLine(s.bin(), dir), nil
+	return store.LoginLine(s.bin(), "auth login --claudeai", dir), nil
 }

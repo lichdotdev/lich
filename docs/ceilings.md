@@ -1217,7 +1217,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Codex sessions only. The profile slug of a session row belongs to that row's provider: a Codex profile
   named "work" and a Claude Code one named "work" are two profiles.
 - **A profile shares Personal's own content through links, and a link shares writes too**
-  (`internal/claudeprofile/layout.go`): `settings.json`, `CLAUDE.md`, `agents/`, `commands/`, `skills/`,
+  (`internal/claudeprofile/profile.go`, `internal/profilestore/layout.go`): `settings.json`, `CLAUDE.md`, `agents/`, `commands/`, `skills/`,
   `hooks/` and the plugin downloads (`plugins/cache`, `plugins/marketplaces`) point at Personal's, and
   Claude Code writes through a link to its target (measured on 2.1.296). So `claude plugin install` run in a
   profile writes `enabledPlugins` into the one shared `settings.json`, and a plugin a work account installed
@@ -1264,7 +1264,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   callback on a localhost port of its own (measured on 2.1.296); the address it prints, which redirects to a
   page that shows a code, and the field that takes the code are for a browser that cannot reach this machine.
 - **A Codex profile shares Personal's config and its plugin set, and keeps only its login and its
-  conversations** (`internal/codexprofile/layout.go`): `config.toml`, `hooks.json`, `AGENTS.md`, `skills/`,
+  conversations** (`internal/codexprofile/profile.go`, `internal/profilestore/layout.go`): `config.toml`, `hooks.json`, `AGENTS.md`, `skills/`,
   `rules/`, `plugins/cache` and `.tmp/marketplaces` point at Personal's, and Codex writes through a link and
   leaves it in place (measured on 0.162.1: `features enable`, `plugin marketplace add` and `plugin add` run
   in a profile landed in Personal's config and cache). `config.toml` holds the installed plugins, the

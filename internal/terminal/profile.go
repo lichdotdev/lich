@@ -8,6 +8,7 @@ import (
 
 	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/codexprofile"
+	"github.com/omartelo/lich/internal/profilestore"
 	"github.com/omartelo/lich/internal/providers"
 )
 
@@ -21,57 +22,48 @@ type profileEvent struct {
 	Profile string `json:"profile"`
 }
 
-// hasProfiles is whether a provider's sessions can run in a profile of their
-// own (internal/claudeprofile, internal/codexprofile). The small helpers down
-// to profileDir are the only places that tell the two packages apart.
-func hasProfiles(kind string) bool { return kind == providers.Claude || kind == providers.Codex }
-
-// profileConfigDir is the state directory of a profile of kind's provider.
-func profileConfigDir(kind, slug string) (string, error) {
-	if kind == providers.Codex {
-		return codexprofile.ConfigDir(slug)
-	}
-	return claudeprofile.ConfigDir(slug)
+// profileOps is what the service asks of one provider's profiles: the packages
+// that keep them (internal/claudeprofile, internal/codexprofile), which answer
+// the same calls on their own directories.
+type profileOps struct {
+	configDir    func(slug string) (string, error)
+	ensureShared func(slug string) error
+	owner        func(conversationID string) (profilestore.Profile, string, bool)
+	env          func(env []string, dir string) []string
+	moveTo       func(conversationID, toSlug string) error
 }
 
-func ensureProfileShared(kind, slug string) error {
-	if kind == providers.Codex {
-		return codexprofile.EnsureShared(slug)
-	}
-	return claudeprofile.EnsureShared(slug)
+// profilestores is the set of providers whose sessions can run in a profile of
+// their own, by provider id.
+var profilestores = map[string]profileOps{
+	providers.Claude: {
+		configDir: claudeprofile.ConfigDir, ensureShared: claudeprofile.EnsureShared,
+		owner: claudeprofile.Owner, env: claudeprofile.Env, moveTo: claudeprofile.MoveConversation,
+	},
+	providers.Codex: {
+		configDir: codexprofile.ConfigDir, ensureShared: codexprofile.EnsureShared,
+		owner: codexprofile.Owner, env: codexprofile.Env, moveTo: codexprofile.MoveConversation,
+	},
+}
+
+func hasProfiles(kind string) bool {
+	_, ok := profilestores[kind]
+	return ok
 }
 
 // conversationOwner is the profile holding a conversation, "" for Personal.
 func conversationOwner(kind, conversationID string) (slug string, ok bool) {
-	if kind == providers.Codex {
-		owner, _, found := codexprofile.Owner(conversationID)
-		return slugOf(owner.Slug, owner.Personal), found
+	owner, _, found := profilestores[kind].owner(conversationID)
+	if owner.Personal {
+		return "", found
 	}
-	owner, _, found := claudeprofile.Owner(conversationID)
-	return slugOf(owner.Slug, owner.Personal), found
-}
-
-func slugOf(slug string, personal bool) string {
-	if personal {
-		return ""
-	}
-	return slug
+	return owner.Slug, found
 }
 
 // profileEnv is env with a profile's directory in place of the provider's own
 // state directory and the variables that would override its login removed.
 func profileEnv(kind string, env []string, dir string) []string {
-	if kind == providers.Codex {
-		return codexprofile.Env(env, dir)
-	}
-	return claudeprofile.Env(env, dir)
-}
-
-func moveProfileConversation(kind, conversationID, toSlug string) error {
-	if kind == providers.Codex {
-		return codexprofile.MoveConversation(conversationID, toSlug)
-	}
-	return claudeprofile.MoveConversation(conversationID, toSlug)
+	return profilestores[kind].env(env, dir)
 }
 
 // profileDir resolves the state directory a spawn of this session runs in, ""
@@ -97,14 +89,14 @@ func (s *Service) profileDir(id, kind, resume string) (string, error) {
 			return "", err
 		}
 	}
-	if claudeprofile.IsPersonal(slug) {
+	if profilestore.IsPersonal(slug) {
 		return "", nil
 	}
-	dir, err := profileConfigDir(kind, slug)
+	dir, err := profilestores[kind].configDir(slug)
 	if err != nil {
 		return "", err
 	}
-	if err := ensureProfileShared(kind, slug); err != nil {
+	if err := profilestores[kind].ensureShared(slug); err != nil {
 		slog.Warn("link shared entries into profile", "kind", kind, "profile", slug, "err", err)
 	}
 	return dir, nil
@@ -118,7 +110,7 @@ func (s *Service) followConversation(id, kind, slug, conversationID string) (str
 	if !ok {
 		return slug, nil
 	}
-	if claudeprofile.IsPersonal(slug) {
+	if profilestore.IsPersonal(slug) {
 		slug = ""
 	}
 	if found == slug {
@@ -197,7 +189,7 @@ func (s *Service) ContinueIn(id, profile string) error {
 	if s.turns.busy(id) {
 		return errors.New("the session is mid-turn; continue it in another profile once the turn ends")
 	}
-	if _, err := profileConfigDir(kind, profile); err != nil {
+	if _, err := profilestores[kind].configDir(profile); err != nil {
 		return err
 	}
 	live := s.Live(id)
@@ -206,10 +198,10 @@ func (s *Service) ContinueIn(id, profile string) error {
 			return fmt.Errorf("end the session before moving it: %w", err)
 		}
 	}
-	if err := moveProfileConversation(kind, conversation, profile); err != nil {
+	if err := profilestores[kind].moveTo(conversation, profile); err != nil {
 		return s.respawnAfter(err, live, id, started, kind, conversation)
 	}
-	if claudeprofile.IsPersonal(profile) {
+	if profilestore.IsPersonal(profile) {
 		profile = ""
 	}
 	if err := s.store.SetSessionProfile(id, profile); err != nil {

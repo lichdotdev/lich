@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/omartelo/lich/internal/profilestore"
 )
 
 // machine points every directory this package resolves at a scratch home: the
@@ -57,7 +59,7 @@ func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 		t.Fatalf("created %+v", p)
 	}
 	for _, name := range []string{"skills", filepath.Join("plugins", "cache"), filepath.Join(".tmp", "marketplaces")} {
-		if !isLink(filepath.Join(p.Dir, name)) {
+		if !profilestore.IsLink(filepath.Join(p.Dir, name)) {
 			t.Errorf("%s is not linked to Personal", name)
 		}
 	}
@@ -91,7 +93,7 @@ func TestSlugsAreFreeAndNeverPersonal(t *testing.T) {
 		{"work", "work-2"},
 		{"Personal", "personal-2"},
 		{"!!!", "profile"},
-		{strings.Repeat("a", 50), strings.Repeat("a", maxSlugBase)},
+		{strings.Repeat("a", 50), strings.Repeat("a", 32)},
 	}
 	for _, c := range cases {
 		p, err := Create(c.name)
@@ -195,7 +197,7 @@ func TestEnsureSharedLinksWhatPersonalGainedLater(t *testing.T) {
 	if err := EnsureShared(p.Slug); err != nil {
 		t.Fatal(err)
 	}
-	if !isLink(filepath.Join(p.Dir, "AGENTS.md")) {
+	if !profilestore.IsLink(filepath.Join(p.Dir, "AGENTS.md")) {
 		t.Error("AGENTS.md created after the profile was not linked")
 	}
 	if data, _ := os.ReadFile(filepath.Join(p.Dir, "config.toml")); string(data) != "own = true\n" {
@@ -249,7 +251,7 @@ func TestDevRigKeepsItsOwnProfiles(t *testing.T) {
 // being what keeps an edit made under one account visible under the others.
 func assertWritesThrough(t *testing.T, link, target string) {
 	t.Helper()
-	if !isLink(link) {
+	if !profilestore.IsLink(link) {
 		t.Errorf("%s is not a link", link)
 		return
 	}

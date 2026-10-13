@@ -1,6 +1,6 @@
 //go:build !windows
 
-package claudeprofile
+package profilestore
 
 import "os"
 
@@ -13,8 +13,8 @@ func linkFile(target, path string) (copied bool, err error) {
 	return false, os.Symlink(target, path)
 }
 
-// isLink reports whether path is a link this package made.
-func isLink(path string) bool {
+// IsLink reports whether path is a link this package made.
+func IsLink(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode()&os.ModeSymlink != 0
 }
