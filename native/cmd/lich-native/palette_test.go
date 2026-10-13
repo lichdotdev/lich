@@ -155,7 +155,7 @@ func workspaceForView() paletteWorld {
 func TestPaletteViewJoinsTheWorkspaceToTheAnswers(t *testing.T) {
 	p := newCommandPalette(func() {})
 	p.show(map[string]bool{"s3": true})
-	p.closed.data = closedAnswer{rows: paletteClosed, total: 63, missing: map[string]bool{"/home/u/snk/gh-turnkey": true}}
+	p.closed = closedHolding(closedAnswer{rows: paletteClosed, total: 63, missing: map[string]bool{"/home/u/snk/gh-turnkey": true}})
 	p.history.data = historyAnswer{rows: historyRows(paletteParked, paletteBranches, nil), total: 143, indexing: 12}
 	p.said.data = []lichclient.TranscriptMatch{{ID: "s1", Snippet: "flaky again", Count: 2}}
 

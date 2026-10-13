@@ -1,14 +1,9 @@
 package main
 
 import (
-	"context"
 	"image"
 	"image/color"
-	"log"
-	"slices"
 	"strconv"
-	"strings"
-	"sync"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -53,61 +48,19 @@ type openMenu struct {
 	folder  widget.Clickable
 	rows    []widget.Clickable
 
-	mu      sync.Mutex
-	key     string // the open projects the list was fetched for
-	recents []lichclient.RecentProject
-	missing []string
+	// closed is the window's store of closed projects, shared with the
+	// command palette.
+	closed *closedProjects
 }
 
-// refresh refetches the list when the open projects changed since the last
-// fetch: closing a tab adds one, opening removes it. The paths are checked
-// after, so a failed check never costs the menu its entries.
-func (o *openMenu) refresh(ctx context.Context, c *lichclient.Client, tabs []projectTab, invalidate func()) {
-	ids := make([]string, len(tabs))
-	for i, t := range tabs {
-		ids[i] = t.ID
+// snapshot is the menu's page of the closed projects and which of their
+// directories are gone.
+func (o *openMenu) snapshot() ([]lichclient.RecentProject, map[string]bool) {
+	if o.closed == nil {
+		return nil, nil
 	}
-	key := strings.Join(ids, "\x00")
-	o.mu.Lock()
-	stale := o.key != key || o.recents == nil
-	o.key = key
-	o.mu.Unlock()
-	if !stale {
-		return
-	}
-	go func() {
-		rows, err := c.RecentProjects(ctx)
-		if err != nil {
-			log.Printf("recent projects: %v", err)
-			return
-		}
-		rows = rows[:min(len(rows), recentLimit)]
-		o.set(rows, nil)
-		invalidate()
-		paths := make([]string, len(rows))
-		for i, r := range rows {
-			paths[i] = r.Path
-		}
-		gone, err := c.MissingPaths(ctx, paths)
-		if err != nil {
-			log.Printf("check recent projects: %v", err)
-			return
-		}
-		o.set(rows, gone)
-		invalidate()
-	}()
-}
-
-func (o *openMenu) set(rows []lichclient.RecentProject, gone []string) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	o.recents, o.missing = rows, gone
-}
-
-func (o *openMenu) snapshot() ([]lichclient.RecentProject, []string) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-	return o.recents, o.missing
+	answer := o.closed.read("")
+	return answer.rows[:min(len(answer.rows), recentLimit)], answer.missing
 }
 
 // openButton is the "+" right after the last tab.
@@ -142,14 +95,13 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 	})
 }
 
-func (o *openMenu) content(gtx C, th *ui.Theme, recents []lichclient.RecentProject, missing []string) D {
+func (o *openMenu) content(gtx C, th *ui.Theme, recents []lichclient.RecentProject, missing map[string]bool) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, recentProjectsLabel, "") }),
 		layout.Rigid(menuSeparator(th)),
 	}
 	for i, r := range recents {
-		gone := slices.Contains(missing, r.Path)
-		children = append(children, layout.Rigid(func(gtx C) D { return recentRow(gtx, th, &o.rows[i], r, gone) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return recentRow(gtx, th, &o.rows[i], r, missing[r.Path]) }))
 	}
 	children = append(children,
 		layout.Rigid(menuSeparator(th)),

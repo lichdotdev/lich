@@ -87,7 +87,13 @@ type commandPalette struct {
 	// drawing.
 	last paletteView
 
-	closed   remote[closedAnswer]
+	// closed is the window's store of closed projects, shared with the
+	// open-project menu. closedTerm is the settled search it answers for and
+	// closedOff is set while the palette is on actions, which search nothing.
+	closed     *closedProjects
+	closedTerm string
+	closedOff  bool
+
 	history  remote[historyAnswer]
 	external remote[[]lichclient.ExternalSession]
 	said     remote[[]lichclient.TranscriptMatch]
@@ -95,7 +101,7 @@ type commandPalette struct {
 
 func newCommandPalette(invalidate func()) *commandPalette {
 	p := &commandPalette{tab: tabAll, tabs: map[paletteTab]*widget.Clickable{}, dropped: map[string]bool{}}
-	p.closed.invalidate, p.history.invalidate = invalidate, invalidate
+	p.history.invalidate = invalidate
 	p.external.invalidate, p.said.invalidate = invalidate, invalidate
 	p.list.Axis = layout.Vertical
 	return p
@@ -105,6 +111,11 @@ func newCommandPalette(invalidate func()) *commandPalette {
 func (p *commandPalette) show(running map[string]bool) {
 	p.open, p.focus = true, true
 	p.opened++
+	if p.closed != nil {
+		// A directory deleted since the last opening is not an event the
+		// backend sends, so each opening asks again.
+		p.closed.stale()
+	}
 	p.running = running
 	p.dropped = map[string]bool{}
 	p.reset()
@@ -187,7 +198,7 @@ func (p *commandPalette) ask(gtx C, c *lichclient.Client, typed string, searchin
 	reset := strconv.Itoa(p.opened)
 	if !searching {
 		p.pollAt = time.Time{}
-		p.closed.want("", reset, nil)
+		p.closedOff = true
 		p.history.want("", reset, nil)
 		p.external.want("", reset, nil)
 		p.said.want("", reset, nil)
@@ -198,7 +209,7 @@ func (p *commandPalette) ask(gtx C, c *lichclient.Client, typed string, searchin
 		gtx.Execute(op.InvalidateCmd{At: next})
 	}
 	search := "q:" + term
-	p.closed.want(search, reset, func(ctx context.Context) (closedAnswer, error) { return fetchClosed(ctx, c, term) })
+	p.closedTerm, p.closedOff = term, false
 	p.history.want(search+"#"+strconv.Itoa(p.pollHistory(gtx.Now, term)), reset, func(ctx context.Context) (historyAnswer, error) {
 		return fetchHistory(ctx, c, term)
 	})
@@ -252,33 +263,6 @@ func (p *commandPalette) wake(gtx C) {
 	if !p.pollAt.IsZero() {
 		gtx.Execute(op.InvalidateCmd{At: p.pollAt})
 	}
-}
-
-func fetchClosed(ctx context.Context, c *lichclient.Client, term string) (closedAnswer, error) {
-	rows, err := c.RecentProjectsMatching(ctx, term)
-	if err != nil {
-		return closedAnswer{}, err
-	}
-	a := closedAnswer{rows: rows, total: len(rows), missing: map[string]bool{}}
-	// What the count and the filesystem say is what a row says about itself,
-	// and a failed check must not cost the palette its entries.
-	if n, err := c.ClosedProjectCountMatching(ctx, term); err != nil {
-		log.Printf("count closed projects: %v", err)
-	} else {
-		a.total = n
-	}
-	paths := make([]string, len(rows))
-	for i, r := range rows {
-		paths[i] = r.Path
-	}
-	gone, err := c.MissingPaths(ctx, paths)
-	if err != nil {
-		log.Printf("check closed project paths: %v", err)
-	}
-	for _, path := range gone {
-		a.missing[path] = true
-	}
-	return a, nil
 }
 
 func fetchHistory(ctx context.Context, c *lichclient.Client, term string) (historyAnswer, error) {
@@ -375,7 +359,10 @@ func (p *commandPalette) view(w paletteWorld, bound hotkeyBindings, isMac bool, 
 
 // answers are the searches' latest answers, empty while an opening has none.
 func (p *commandPalette) answers() (closedAnswer, historyAnswer, []lichclient.ExternalSession, []lichclient.TranscriptMatch) {
-	closed, _, _ := p.closed.get()
+	var closed closedAnswer
+	if p.closed != nil && !p.closedOff {
+		closed = p.closed.read(p.closedTerm)
+	}
 	history, _, _ := p.history.get()
 	external, _, _ := p.external.get()
 	said, _, _ := p.said.get()

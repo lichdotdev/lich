@@ -82,7 +82,12 @@ func (u *window) applyTopbar(act topbarAction) {
 	if d := act.drop; d.ID != "" {
 		if ids := u.model.moveProject(d.ID, d.Over); ids != nil {
 			u.model.invalidate()
-			go func() { u.logErr("reorder projects", u.client.ReorderProjects(u.ctx, ids)) }()
+			go func() {
+				if err := u.model.storeOrder(u.ctx, ids); err != nil {
+					u.toaster.Show(failure(toastReorderFailed, err))
+					u.model.invalidate()
+				}
+			}()
 		}
 	}
 	if n := act.notify; n != nil {
@@ -164,13 +169,25 @@ func (u *window) requestClose(id string) {
 	}
 }
 
-// closeProject closes a project in the backend and stops its sessions'
-// terminals, moving the screen to its neighbor when it was on it.
+// closeProject has the backend close a project. The tab leaves, and the
+// screen moves, when project-closed comes back (projectClosed); a refusal is a
+// toast and the strip stays as it was.
 func (u *window) closeProject(id string) {
-	out, ok := u.model.closeProject(id)
-	if !ok {
-		return
-	}
+	go func() {
+		sessions, err := u.model.askClose(u.ctx, id)
+		if err != nil {
+			u.toaster.Show(failure(toastCloseProjectFailed, err))
+			return
+		}
+		for _, s := range sessions {
+			u.logErr("close terminal", u.client.CloseTerminal(u.ctx, s))
+		}
+	}()
+}
+
+// projectClosed carries out what a project leaving the strip leaves to do:
+// stop its sessions' terminals and move the screen off it.
+func (u *window) projectClosed(out closedProject) {
 	for _, s := range out.sessions {
 		u.terms.drop(s)
 	}
@@ -180,13 +197,6 @@ func (u *window) closeProject(id string) {
 		}
 		u.saveScreen(out.next)
 	}
-	u.model.invalidate()
-	go func() {
-		u.logErr("close project", u.client.CloseProject(u.ctx, id))
-		for _, s := range out.sessions {
-			u.logErr("close terminal", u.client.CloseTerminal(u.ctx, s))
-		}
-	}()
 }
 
 // openNotification routes a queue row to its project and session.

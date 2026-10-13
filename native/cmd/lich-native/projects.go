@@ -41,7 +41,7 @@ func (m *model) projectTabs() (tabs []projectTab, active string) {
 	if p := m.shownProject(); p != nil {
 		active = p.ID
 	}
-	for _, p := range m.projects {
+	for _, p := range m.shownOrder() {
 		t := projectTab{ID: p.ID, Name: p.Name, Path: p.Path}
 		if p.ID != active {
 			t.status = m.status.projectStatus(sessionIDs(p))
@@ -119,23 +119,87 @@ func (m *model) closeProject(id string) (closedProject, bool) {
 	return out, true
 }
 
-// moveProject applies a tab dropped over another and returns the full order
-// to store, nil when nothing moved.
+// shownOrder is the open projects as the strip draws them: the drag the
+// backend has not confirmed yet, else the stored order. Callers hold m.mu.
+func (m *model) shownOrder() []lichclient.Project {
+	if m.pendingOrder == nil {
+		return m.projects
+	}
+	return orderedBy(m.projects, m.pendingOrder)
+}
+
+// orderedBy is ps in the order of ids, a project ids does not name last.
+func orderedBy(ps []lichclient.Project, ids []string) []lichclient.Project {
+	out := slices.Clone(ps)
+	rank := func(p lichclient.Project) int {
+		if i := slices.Index(ids, p.ID); i >= 0 {
+			return i
+		}
+		return len(ids)
+	}
+	slices.SortStableFunc(out, func(a, b lichclient.Project) int { return rank(a) - rank(b) })
+	return out
+}
+
+// moveProject shows a tab dropped over another at once and returns the full
+// order to store, nil when nothing moved. What it shows is a drag in flight,
+// not the store's order: that changes when projects-reordered arrives.
 func (m *model) moveProject(id, over string) []string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	ids := make([]string, len(m.projects))
-	for i, p := range m.projects {
+	shown := m.shownOrder()
+	ids := make([]string, len(shown))
+	for i, p := range shown {
 		ids[i] = p.ID
 	}
 	next := arrayMove(ids, id, over)
 	if slices.Equal(next, ids) {
 		return nil
 	}
-	slices.SortStableFunc(m.projects, func(a, b lichclient.Project) int {
-		return slices.Index(next, a.ID) - slices.Index(next, b.ID)
-	})
+	m.pendingOrder = next
 	return next
+}
+
+// storeOrder asks the backend to keep the order a drag showed. A refusal takes
+// the drag back, so the strip returns to what is stored.
+func (m *model) storeOrder(ctx context.Context, ids []string) error {
+	err := m.client.ReorderProjects(ctx, ids)
+	if err != nil {
+		m.mu.Lock()
+		if slices.Equal(m.pendingOrder, ids) {
+			m.pendingOrder = nil
+		}
+		m.mu.Unlock()
+	}
+	return err
+}
+
+// applyOrder is projects-reordered: the order the backend stored, from this
+// window's drag or from another client. It settles the drag it confirms.
+func (m *model) applyOrder(ids []string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.projects = orderedBy(m.projects, ids)
+	if slices.Equal(m.pendingOrder, ids) {
+		m.pendingOrder = nil
+	}
+}
+
+// askClose has the backend close a project and answers the sessions it held,
+// whose terminals the caller stops once the close went through. No tab moves
+// here: it leaves the strip when project-closed comes back.
+func (m *model) askClose(ctx context.Context, id string) ([]string, error) {
+	m.mu.Lock()
+	i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id })
+	var sessions []string
+	if i >= 0 {
+		sessions = sessionIDs(m.projects[i])
+	}
+	m.mu.Unlock()
+	if err := m.client.CloseProject(ctx, id); err != nil {
+		return nil, err
+	}
+	return sessions, nil
 }
 
 // notification is a row of the bell's queue (notifications.ts Notification).

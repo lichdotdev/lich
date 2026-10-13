@@ -153,7 +153,9 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
 	u.palette = newCommandPalette(w.Invalidate)
+	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
+	u.topbar.open.closed = u.model.closed
 	u.notifier = newNotifier(ctx, client, w.Invalidate)
 	attention := attentionToast{show: func(t ui.Toast) { u.toaster.Show(t) }, open: func(projectID, id string) {
 		u.settings.hide()
@@ -186,6 +188,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.settings.providers.claude.openTerminal = u.openLoginTerminal
 	u.model.loginProgress = u.settings.loginProgress
 	u.settings.providers.book = u.model.providers
+	u.model.projectClosed = u.projectClosed
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
@@ -393,7 +396,6 @@ func (u *window) stageView(now time.Time) stageView {
 	v := stageView{in: u.footer.input(u.model, now), home: u.model.onHome()}
 	v.active, v.hasActive = u.model.activeSession()
 	v.tabs, v.project = u.model.projectTabs()
-	u.topbar.open.refresh(u.ctx, u.client, v.tabs, u.model.invalidate)
 	return v
 }
 

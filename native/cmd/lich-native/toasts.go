@@ -18,6 +18,8 @@ const (
 	toastNotAttached        = "Not attached: %s"
 	toastOpenCheckoutFailed = "Could not open the checkout: %v"
 	toastOpenFolderFailed   = "Could not open the folder: %v"
+	toastCloseProjectFailed = "Could not close the project: %v"
+	toastReorderFailed      = "Could not reorder the projects: %v"
 	toastRelocated          = "%s now opens %s"
 	toastRelocateFailed     = "Relocate failed: %v"
 	toastRenameFailed       = "Couldn't rename the session: %v"

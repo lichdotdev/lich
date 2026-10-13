@@ -31,8 +31,12 @@ type model struct {
 	client     *lichclient.Client
 	invalidate func()
 
-	mu            sync.Mutex
-	projects      []lichclient.Project // open projects, in the user's order
+	mu       sync.Mutex
+	projects []lichclient.Project // open projects, in the user's order
+	// pendingOrder is a tab drag the backend has not confirmed: the strip
+	// shows it, the store's order does not hold it. projects-reordered
+	// settles it, a refused reorder drops it.
+	pendingOrder  []string
 	status        *statusStore
 	usage         *footerUsage
 	quota         *planQuota
@@ -63,6 +67,12 @@ type model struct {
 	diffTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
+	// projectClosed hears a project that left the strip, whoever closed it,
+	// once its tab is already gone: the window stops the terminals and moves
+	// the screen.
+	projectClosed func(closedProject)
+	// closed is the closed projects, which the menu and the palette read.
+	closed *closedProjects
 }
 
 // sessionCwd is a session-cwd payload: where the session's shell is, or the
@@ -78,7 +88,8 @@ func newModel(client *lichclient.Client, invalidate func()) *model {
 	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), quota: quota, cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
 		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
-		profiles: newProfileBook(client, invalidate, quota), providers: newProviderBook(client, invalidate)}
+		profiles: newProfileBook(client, invalidate, quota), providers: newProviderBook(client, invalidate),
+		closed: newClosedProjects(client, invalidate)}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -244,7 +255,31 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			m.sessionTouched(ctx, ev.Data)
 		case focusEventName:
 			m.sessionFocus(ev.Data)
-		case "session-opened", "session-closed", "project-opened", "sessions-filed", "sessions-colored":
+		case "project-closed":
+			var gone struct {
+				ID string `json:"id"`
+			}
+			if json.Unmarshal(ev.Data, &gone) == nil {
+				m.closed.stale()
+				if out, ok := m.closeProject(gone.ID); ok && m.projectClosed != nil {
+					m.projectClosed(out)
+				}
+			}
+		case "projects-reordered":
+			var order struct {
+				IDs []string `json:"ids"`
+			}
+			if json.Unmarshal(ev.Data, &order) == nil {
+				m.applyOrder(order.IDs)
+			}
+		case "project-added", "project-opened":
+			m.closed.stale()
+			if err := m.reload(ctx); err != nil {
+				log.Printf("reload after %s: %v", ev.Name, err)
+			} else if err := m.loadFolds(ctx); err != nil {
+				log.Printf("load folds after %s: %v", ev.Name, err)
+			}
+		case "session-opened", "session-closed", "sessions-filed", "sessions-colored":
 			if err := m.reload(ctx); err != nil {
 				log.Printf("reload after %s: %v", ev.Name, err)
 			} else if err := m.loadFolds(ctx); err != nil {
