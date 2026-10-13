@@ -161,14 +161,47 @@ func (m *model) setActiveProject(id string) bool {
 	return true
 }
 
-// follow applies /events until ctx ends. The backend replays nothing, so a
-// session's status is unknown until its next session-status event, and its
-// cwd until the next cd. When the stream ends first, the backend dropped this
+// hydrateTurnStates seeds the status and usage stores from the backend's
+// snapshot of what each live session last reported. /events replays nothing,
+// so without it a card is blank until its next hook. It runs after /events
+// attached and before follow starts: whatever the stream delivered meanwhile
+// is queued behind it and lands on top, and a store that already heard a
+// session ignores the snapshot for it.
+func (m *model) hydrateTurnStates(ctx context.Context) error {
+	states, err := m.client.TurnStates(ctx)
+	if err != nil {
+		return err
+	}
+	m.mu.Lock()
+	m.status.hydrate(states)
+	m.mu.Unlock()
+	for _, ts := range states {
+		if len(ts.Usage) == 0 {
+			continue
+		}
+		if err := m.usage.seed(ts.Usage); err != nil {
+			log.Printf("terminal.TurnStates: usage of %s: %v", ts.ID, err)
+		}
+	}
+	m.invalidate()
+	return nil
+}
+
+// follow applies /events until ctx ends. The backend replays nothing beyond
+// what hydrateTurnStates read, so a session's cwd is unknown until the next
+// cd. When the stream ends first, the backend dropped this
 // window: /events serves one client and a newer one replaces it, or lich quit.
 // follow marks the model lost rather than reconnecting, which would take the
 // socket back from the window that just took it.
 func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 	for ev := range events {
+		if id, exited := strings.CutPrefix(ev.Name, exitEventPrefix); exited {
+			m.mu.Lock()
+			m.status.exited(id)
+			m.mu.Unlock()
+			m.invalidate()
+			continue
+		}
 		// The usage store also clears on session-agent and session-status,
 		// which the cases below still take.
 		if _, err := m.usage.apply(ev); err != nil {

@@ -47,10 +47,13 @@ type usageEvent struct {
 type footerUsage struct {
 	mu    sync.Mutex
 	usage map[string]sessionUsage
+	// heard is the sessions /events spoke for, a report or a clear: a snapshot
+	// older than that must not put back what the stream took away.
+	heard map[string]bool
 }
 
 func newFooterUsage() *footerUsage {
-	return &footerUsage{usage: map[string]sessionUsage{}}
+	return &footerUsage{usage: map[string]sessionUsage{}, heard: map[string]bool{}}
 }
 
 // get is session id's last report; false until the backend sends one.
@@ -87,20 +90,50 @@ func (f *footerUsage) apply(ev lichclient.Event) (bool, error) {
 	if agentChanged || providerLeft {
 		f.mu.Lock()
 		delete(f.usage, e.ID)
+		f.heard[e.ID] = true
 		f.mu.Unlock()
 	}
 	return true, nil
 }
 
 func (f *footerUsage) applyUsage(data json.RawMessage) error {
-	var e usageEvent
-	if err := json.Unmarshal(data, &e); err != nil {
+	id, u, ok, err := decodeUsage(data)
+	if err != nil || !ok {
 		return err
 	}
-	if e.Percent == nil || e.Tokens == nil || e.Window == nil || e.Model == nil || e.Effort == nil {
-		return nil
+	f.mu.Lock()
+	f.usage[id] = u
+	f.heard[id] = true
+	f.mu.Unlock()
+	return nil
+}
+
+// seed takes the readout a snapshot of the backend carries for a session the
+// stream has not spoken for; one it has is newer than the snapshot.
+func (f *footerUsage) seed(data json.RawMessage) error {
+	id, u, ok, err := decodeUsage(data)
+	if err != nil || !ok {
+		return err
 	}
-	u := sessionUsage{
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if !f.heard[id] {
+		f.usage[id] = u
+	}
+	return nil
+}
+
+// decodeUsage reads a session-usage payload. ok is false for one missing a
+// context field, which is not a report.
+func decodeUsage(data json.RawMessage) (id string, u sessionUsage, ok bool, err error) {
+	var e usageEvent
+	if err := json.Unmarshal(data, &e); err != nil {
+		return "", sessionUsage{}, false, err
+	}
+	if e.Percent == nil || e.Tokens == nil || e.Window == nil || e.Model == nil || e.Effort == nil {
+		return "", sessionUsage{}, false, nil
+	}
+	u = sessionUsage{
 		Percent: *e.Percent, Tokens: *e.Tokens, Window: *e.Window,
 		Model: *e.Model, Effort: *e.Effort,
 	}
@@ -112,8 +145,5 @@ func (f *footerUsage) applyUsage(data json.RawMessage) error {
 	if json.Unmarshal(e.CostMiss, &miss) == nil && slices.Contains(costMisses, miss) {
 		u.CostMiss = miss
 	}
-	f.mu.Lock()
-	f.usage[e.ID] = u
-	f.mu.Unlock()
-	return nil
+	return e.ID, u, true, nil
 }

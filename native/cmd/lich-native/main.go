@@ -250,6 +250,9 @@ func (u *window) connect() error {
 	if err := u.model.reload(u.ctx); err != nil {
 		return err
 	}
+	if err := u.model.hydrateTurnStates(u.ctx); err != nil {
+		return err
+	}
 	if _, ok := u.model.project(); !ok && *flagProject != "" {
 		path, err := filepath.Abs(*flagProject)
 		if err != nil {

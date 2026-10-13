@@ -1186,8 +1186,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   backend. `lich native` closes the web window first, but everything else that opens one still does: the tray's
   Show lich, `lich focus`, a second launch of lich, and the restart after an update (its successor is launched
   without `--no-window`) all take the endpoints back and leave the native window telling you so. A window that
-  connects late, either of them, shows no per-session live state (a terminal's moved working directory, the
-  last turn's usage) until the next event, since nothing replays it. `system.CloseWindow` never quits lich, even
+  connects late, either of them, shows a terminal's moved working directory only from the next `cd`, since
+  nothing replays it; the native window reads each session's status and usage from `terminal.TurnStates` on
+  connect, the web window does not. `system.CloseWindow` never quits lich, even
   with no session running, where a window the user closes does (`quitIfIdle`). The native window's text is
   English only: the interface catalogs are TypeScript, and native/ has none yet (`docs/native-window.md`).
 - **Profiles are Claude Code's alone** (`internal/claudeprofile`): one account per profile, each its own

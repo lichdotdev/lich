@@ -68,10 +68,10 @@ built from a pinned Ghostty commit.
   homologate the native window.
 - **The tray and `lich focus` open the web window.** "Show lich" and `lich focus` know only the web window, so
   with the native one open they open a second, competing client.
-- **No replay of per-session live state.** The working directory a terminal moved to and the last turn's
-  usage (model, context) arrive only as events; a window that connects later shows the checkout's path and no
-  usage until the next `cd` or turn. The web window has the same gap after a reload; a snapshot RPC closes it
-  for both.
+- **No replay of a session's working directory.** The directory a terminal moved to arrives only as an event;
+  a window that connects later shows the checkout's path until the next `cd`. A session's status and usage are
+  not part of the gap: the native window reads `terminal.TurnStates` right after attaching to `/events`. The web
+  window has the cwd gap too, and still the status and usage one after a reload; the same RPC would close them.
 - **Translations are TypeScript.** The interface catalogs live in `frontend/src/lib/i18n`; the native window
   needs the same strings. Before the native window shows user text beyond the spike's, the catalogs move to a
   form both windows read.

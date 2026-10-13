@@ -22,6 +22,10 @@ const (
 
 const statusEventName = "session-status"
 
+// exitEventPrefix is internal/terminal's terminal:exit:<id>, published once
+// when a session's process is gone.
+const exitEventPrefix = "terminal:exit:"
+
 // badgePriority picks a project's one badge: "waiting" blocks the user, "busy"
 // and "compacting" are still running, "done" is the leftover.
 var badgePriority = []string{statusWaiting, statusBusy, statusCompacting, statusDone}
@@ -63,7 +67,10 @@ type statusEntry struct {
 	// reported never goes back to false: idle and interrupted map to no status
 	// yet still prove the provider reports at all.
 	reported bool
-	tool     *sessionTool
+	// heard is that /events delivered a report for the session: from then on the
+	// stream is the truth, and a snapshot taken before it is older.
+	heard bool
+	tool  *sessionTool
 }
 
 // statusStore keeps the last reported status of every session, ported from
@@ -104,6 +111,7 @@ func (s *statusStore) apply(ev lichclient.Event, now time.Time) (changed bool, e
 		return false, errors.New(statusEventName + ": payload has no session id")
 	}
 	e := s.entryOf(p.ID)
+	e.heard = true
 	toolChanged := e.applyTool(p)
 	return e.applyState(p, now) || toolChanged, nil
 }
@@ -245,6 +253,54 @@ func (s *statusStore) restoreUnread(ids []string) {
 		e.seen = false
 		e.dismissed = false
 	}
+}
+
+// hydrate seeds the sessions a snapshot of the backend's last reports says are
+// mid-turn, for the reports /events dropped while no window was attached. A
+// session the stream already spoke for is left alone: that report is newer. A
+// finished turn is not seeded: whether it was read is the database's
+// (restoreUnread), which the snapshot does not know.
+func (s *statusStore) hydrate(states []lichclient.TurnState) {
+	for _, ts := range states {
+		if ts.State == "" {
+			continue
+		}
+		e := s.entryOf(ts.ID)
+		if e.heard {
+			continue
+		}
+		e.reported = true
+		next := renderedStatus(ts.State)
+		if !isRunning(next) {
+			continue
+		}
+		e.status = next
+		e.reason = ""
+		if next == statusWaiting {
+			e.reason = ts.Reason
+		}
+		e.since = time.UnixMilli(ts.Since)
+		e.seen = false
+		e.dismissed = false
+		e.tool = nil
+		if next == statusBusy && ts.Tool != "" {
+			e.tool = &sessionTool{Name: ts.Tool, Detail: ts.Detail}
+		}
+	}
+}
+
+// exited ends the turn a process died in: it reports no end of its own, and
+// the backend publishes only the exit. A finished turn stays, for it is still
+// unread output of a process that is gone.
+func (s *statusStore) exited(id string) bool {
+	e, ok := s.entries[id]
+	if !ok || !isRunning(e.status) {
+		return false
+	}
+	e.status = statusNone
+	e.reason = ""
+	e.tool = nil
+	return true
 }
 
 // pending is the notification queue: sessions blocked waiting, or holding an
