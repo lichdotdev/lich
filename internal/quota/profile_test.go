@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -48,5 +49,26 @@ func TestProfilePlanReadsTheProfilesOwnLogin(t *testing.T) {
 	}
 	if _, err := svc.ProfilePlan("gone"); err == nil {
 		t.Error("a plan for a profile that does not exist")
+	}
+}
+
+// TestPersonalProfilePlanSharesTheMachineReading: Personal is the machine's own
+// login, so reading it through the profile route and through Plans("") is one
+// upstream request, not two under different cache keys.
+func TestPersonalProfilePlanSharesTheMachineReading(t *testing.T) {
+	writeCreds(t, claudeCredsJSON, "")
+	url, calls := serve(t, http.StatusOK, claudeLimitsBody)
+	svc := newService(url, "", time.Now())
+
+	machine := svc.Plans("")[0]
+	got, err := svc.ProfilePlan(claudeprofile.Personal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, machine) {
+		t.Errorf("personal plan = %+v, want the machine's %+v", got, machine)
+	}
+	if *calls != 1 {
+		t.Errorf("calls = %d, want 1: both routes share one reading", *calls)
 	}
 }

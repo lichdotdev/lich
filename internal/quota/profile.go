@@ -1,6 +1,7 @@
 package quota
 
 import (
+	"errors"
 	"os"
 	"strings"
 
@@ -15,14 +16,21 @@ import (
 // one per profile. It is cached like a session's reading, under the account it
 // reads, for the reason Plans gives.
 func (s *Service) ProfilePlan(profile string) (Plan, error) {
-	account := Account{Read: true}
-	if !claudeprofile.IsPersonal(profile) {
-		dir, err := claudeprofile.ConfigDir(profile)
-		if err != nil {
-			return Plan{}, err
+	if claudeprofile.IsPersonal(profile) {
+		// The machine-wide reading, so it shares Plans("")'s cache entry
+		// instead of asking upstream a second time under a key of its own.
+		for _, p := range s.Plans("") {
+			if p.Provider == providers.Claude {
+				return p, nil
+			}
 		}
-		account.Env = envMap(claudeprofile.Env(os.Environ(), dir))
+		return Plan{}, errors.New("quota: the machine reading has no Claude Code plan")
 	}
+	dir, err := claudeprofile.ConfigDir(profile)
+	if err != nil {
+		return Plan{}, err
+	}
+	account := Account{Read: true, Env: envMap(claudeprofile.Env(os.Environ(), dir))}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	key := providers.Claude + "\x00" + cacheKey(account)
