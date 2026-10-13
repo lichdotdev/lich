@@ -128,9 +128,13 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 		act.show = tab.ID
 	}
 	gtx.Constraints = layout.Exact(image.Pt(w, gtx.Dp(tabHeight)))
-	// ponytail: the mockup's Rename, Pin and Close project join the menu
-	// when the native window has them; today it holds Settings' way in.
-	entries := []ui.MenuEntry{{Label: projectSettings, Icon: icSettings, OnClick: func() { act.projectSettings = tab.ID }}}
+	// ponytail: the mockup's Rename and Pin join the menu when the native
+	// window has them.
+	entries := []ui.MenuEntry{
+		{Label: projectSettings, Icon: icSettings, OnClick: func() { act.projectSettings = tab.ID }},
+		{Kind: ui.MenuSeparator},
+		{Label: closeProjectItem, Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.ask = tab.ID }},
+	}
 	return t.sort.Item(gtx, tab.ID, func(gtx C) D {
 		return th.ContextMenu(t.root, &st.menu, entries).Layout(gtx, func(gtx C) D {
 			tip := th.TooltipCard(t.root, &st.tip, tabTooltip(th.On(th.Popover), tab))

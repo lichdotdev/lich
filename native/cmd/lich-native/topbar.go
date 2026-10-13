@@ -23,6 +23,7 @@ const (
 	pullRequestsHint = "Pull requests"
 	settingsHint     = "Settings"
 	projectSettings  = "Project settings…"
+	closeProjectItem = "Close project"
 )
 
 // barDisabledOpacity is button.tsx's disabled:opacity-50.
