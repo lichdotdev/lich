@@ -114,9 +114,8 @@ func TestTurnStatesForgetASessionThatLeft(t *testing.T) {
 // draws the context the turn left rather than a blank footer.
 func TestTurnStatesCarryTheUsageReadout(t *testing.T) {
 	writeTranscript(t, "uuid-snap", costLineJSON("m1", modelOpus, 100, 0, 0, 0)+"\n")
-	svc := serviceWithSessions(t, newCostStore("uuid-snap"), "s1", "s2")
+	svc := serviceWithSessions(t, newCostStore("uuid-snap"), "s1")
 	svc.prices = testRate
-	svc.onHookState(hookRequest{SessionID: "s2", State: statusBusy})
 
 	s1 := turnStateOf(t, svc, "s1")
 	if s1.State != "" {
