@@ -210,6 +210,8 @@ func providerEntries() []settingEntry {
 		{title: profilesTitle, also: claudeProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{claudeKind}},
 		{title: profileTitle, also: codexProfileProvider.words.searchAlso, key: codexProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{codexKind}},
 		{title: profilesTitle, also: codexProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{codexKind}},
+		{title: profileTitle, also: ompProfileProvider.words.searchAlso, key: ompProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{ompKind}},
+		{title: profilesTitle, also: ompProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{ompKind}},
 		{title: planTitle, also: planAlso, perProvider: true},
 		{title: binTitle, also: binAlso, perProvider: true},
 		{title: skipTitle, also: skipAlso, perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
@@ -497,8 +499,8 @@ type providerSettings struct {
 
 	bin binInput
 
-	// claude and codex are the profiles of the two screens that have them.
-	claude, codex profileSettings
+	// claude, codex and omp are the profiles of the screens that have them.
+	claude, codex, omp profileSettings
 
 	skip, restore  widget.Enum
 	ultra, agents  ui.SwitchState
@@ -700,6 +702,8 @@ func (p *providerSettings) profiles(kind string) *profileSettings {
 		c = &p.claude
 	case codexKind:
 		c = &p.codex
+	case ompKind:
+		c = &p.omp
 	}
 	if c == nil || c.book == nil {
 		return nil

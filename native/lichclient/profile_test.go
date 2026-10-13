@@ -65,6 +65,14 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.CodexProfiles().Plan(ctx, "work")
 			return err
 		}},
+		{"OMPProfiles", "ompprofile.Profiles", ``, []Profile{}, func(c *Client) error {
+			_, err := c.OMPProfiles().List(ctx)
+			return err
+		}},
+		{"OMPLoginCommand", "ompprofile.LoginCommand", `"work"`, "env OMP_PROFILE='work' omp login", func(c *Client) error {
+			_, err := c.OMPProfiles().LoginCommand(ctx, "work")
+			return err
+		}},
 		{"ContinueIn", "terminal.ContinueIn", `"s1","work"`, nil, func(c *Client) error {
 			return c.ContinueIn(ctx, "s1", "work")
 		}},
@@ -95,6 +103,10 @@ func TestProfileReadsInfo(t *testing.T) {
 	if p.Slug != "work" || p.Name != "Work" || !p.LoggedIn || p.Email != "a@b.c" || p.Plan != "max" || p.Plugins != 3 || len(p.Copied) != 1 {
 		t.Errorf("decoded %+v", p)
 	}
+	const omp = `{"slug":"w","name":"W","personal":false,"loggedIn":true,"email":"a@b.c","providers":["anthropic"]}`
+	if err := json.Unmarshal([]byte(omp), &p); err != nil || len(p.Providers) != 1 || p.Providers[0] != "anthropic" {
+		t.Errorf("decoded %+v, %v", p.Providers, err)
+	}
 }
 
 func TestProfileGoneMatchesTheBackendSentence(t *testing.T) {
@@ -105,6 +117,10 @@ func TestProfileGoneMatchesTheBackendSentence(t *testing.T) {
 	codex := &RemoteError{Method: "terminal.Start", Message: "start session: codex profile no longer exists", Status: http.StatusBadRequest}
 	if !ProfileGone(codex) {
 		t.Error("the Codex sentence was not matched")
+	}
+	omp := &RemoteError{Method: "terminal.Start", Message: "start session: omp profile no longer exists", Status: http.StatusBadRequest}
+	if !ProfileGone(omp) {
+		t.Error("the oh-my-pi sentence was not matched")
 	}
 	if ProfileGone(errors.New("pty: no such file")) || ProfileGone(nil) {
 		t.Error("an unrelated failure was matched")

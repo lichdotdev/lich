@@ -25,6 +25,7 @@ import (
 	"github.com/omartelo/lich/internal/events"
 	"github.com/omartelo/lich/internal/fonts"
 	"github.com/omartelo/lich/internal/logging"
+	"github.com/omartelo/lich/internal/ompprofile"
 	"github.com/omartelo/lich/internal/patchnotes"
 	"github.com/omartelo/lich/internal/project"
 	"github.com/omartelo/lich/internal/providers"
@@ -288,6 +289,11 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	codexProfiles := codexprofile.New(db, hub.Emit)
 	codexProfiles.SetSessions(term.CodexProfileSessions, db.ForgetCodexProfile)
 	dispatcher.Register("codexprofile", codexProfiles)
+	// oh-my-pi's login is a terminal card's, so its service runs no login of its
+	// own and has nothing to report on /events; it lists, creates and deletes.
+	ompProfiles := ompprofile.New(db)
+	ompProfiles.SetSessions(term.OMPProfileSessions, db.ForgetOMPProfile)
+	dispatcher.Register("ompprofile", ompProfiles)
 	dispatcher.Register("appupdate", appupdate.New(version, coord.Install, hub.Emit))
 	dispatcher.Register("patchnotes", patchnotes.New(version, changelog))
 	dispatcher.Register("store", db)
@@ -468,11 +474,11 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     the caller likes.
 //   - store.SetSessionProfile moves a session to another Claude Code profile
 //     without moving its conversation, which only terminal.ContinueIn may do;
-//     store.ForgetClaudeProfile and store.ForgetCodexProfile are the delete's
-//     own cleanup.
+//     store.ForgetClaudeProfile, store.ForgetCodexProfile and
+//     store.ForgetOMPProfile are the delete's own cleanup.
 //   - claudeprofile.SetLichPlugin, claudeprofile.SetSessions,
-//     codexprofile.SetSessions and codexprofile.SetAccount are startup wiring
-//     like the setters above.
+//     codexprofile.SetSessions, codexprofile.SetAccount and
+//     ompprofile.SetSessions are startup wiring like the setters above.
 //   - quota.ReportClaude is a session's own reading of its plan, which arrives
 //     over /mod/usage: called here it would put any numbers on the gauge.
 //   - terminal.EnqueueModCommand and terminal.RunModCommand queue a command for
@@ -533,10 +539,12 @@ func denyInternal(d *rpc.Handler) {
 		"store.SetSessionProfile",
 		"store.ForgetClaudeProfile",
 		"store.ForgetCodexProfile",
+		"store.ForgetOMPProfile",
 		"claudeprofile.SetLichPlugin",
 		"claudeprofile.SetSessions",
 		"codexprofile.SetSessions",
 		"codexprofile.SetAccount",
+		"ompprofile.SetSessions",
 	} {
 		d.Deny(method)
 	}

@@ -57,8 +57,9 @@ type model struct {
 	folds         map[string]bool                   // foldKey -> block folded, once read or written
 	providers     *providerBook                     // detected providers, their flags and defaults
 	// profiles is who is logged in to each Claude Code profile, and
-	// codexProfiles who is logged in to each Codex one.
-	profiles, codexProfiles *profileBook
+	// codexProfiles who is logged in to each Codex one and ompProfiles each
+	// oh-my-pi one.
+	profiles, codexProfiles, ompProfiles *profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
 	// loginProgress takes each step of a profile login, of the provider kind
@@ -92,6 +93,7 @@ func newModel(client *lichclient.Client, invalidate func()) *model {
 		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
 		profiles:      newProfileBook(claudeProfileProvider, client, invalidate, quota),
 		codexProfiles: newProfileBook(codexProfileProvider, client, invalidate, quota),
+		ompProfiles:   newProfileBook(ompProfileProvider, client, invalidate, quota),
 		providers:     newProviderBook(client, invalidate),
 		closed:        newClosedProjects(client, invalidate)}
 }

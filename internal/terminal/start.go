@@ -218,7 +218,7 @@ func (s *Service) spawnSession(
 	s.sessions[id] = sess
 	// Outside mu's protection by design (see Service.spawns), and stored with the
 	// registration so no report can arrive for a session whose kind is unknown.
-	s.spawns.Store(id, spawn{kind: kind, cwd: cwd, projectID: projectID, profile: profileSlug(profileDir)})
+	s.spawns.Store(id, spawn{kind: kind, cwd: cwd, projectID: projectID, profile: profileSlug(kind, profileDir)})
 	sess.announce(skipped)
 	go s.stream(id, sess)
 	return sess, cwd, nil

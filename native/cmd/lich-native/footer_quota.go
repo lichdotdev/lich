@@ -52,9 +52,10 @@ type quotaEntry struct {
 
 // profileQuotaKey is the key of a profile's reading: Personal is the machine's,
 // and any other is "<prefix><slug>" under the provider's own prefix, which a
-// session id never starts with.
+// session id never starts with. A provider with no plan to read has no prefix
+// and its profiles no key.
 func profileQuotaKey(prov profileProvider, slug string) string {
-	if effectiveProfile(slug) == personalProfile {
+	if effectiveProfile(slug) == personalProfile || prov.quotaPrefix == "" {
 		return ""
 	}
 	return prov.quotaPrefix + slug

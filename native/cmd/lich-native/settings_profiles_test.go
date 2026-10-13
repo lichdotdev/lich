@@ -45,11 +45,13 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 		method := strings.TrimPrefix(r.URL.Path, "/rpc/")
 		var out any
 		switch method {
-		case "claudeprofile.CreateProfile", "codexprofile.CreateProfile":
+		case "claudeprofile.CreateProfile", "codexprofile.CreateProfile", "ompprofile.CreateProfile":
 			out = lichclient.Profile{Slug: "work", Name: "Work"}
 		case "claudeprofile.Plugins":
 			out = []lichclient.ProfilePlugin{{Key: "a@m", Name: "a", Marketplace: "m"}, {Key: "b@m", Name: "b", Marketplace: "m"}}
-		case "claudeprofile.Profiles", "codexprofile.Profiles":
+		case "ompprofile.LoginCommand":
+			out = "env OMP_PROFILE='work' omp login"
+		case "claudeprofile.Profiles", "codexprofile.Profiles", "ompprofile.Profiles":
 			b.mu.Lock()
 			in := b.loggedIn
 			b.mu.Unlock()
@@ -64,7 +66,8 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 				return
 			}
 		}
-		if (strings.HasPrefix(method, "claudeprofile.") || strings.HasPrefix(method, "codexprofile.")) &&
+		if (strings.HasPrefix(method, "claudeprofile.") || strings.HasPrefix(method, "codexprofile.") ||
+			strings.HasPrefix(method, "ompprofile.")) &&
 			!strings.HasSuffix(method, ".Plugins") && !strings.HasSuffix(method, ".Profiles") {
 			b.record(method + string(body))
 		}
@@ -472,5 +475,76 @@ func TestEachProvidersProfileReadingHasItsOwnKey(t *testing.T) {
 	}
 	if loginEventKind(lichclient.CodexProfileLoginEvent) != codexKind || loginEventKind(lichclient.ClaudeProfileLoginEvent) != claudeKind {
 		t.Error("a login event was routed to the wrong provider")
+	}
+}
+
+// ompFlowScreen is a settings screen whose oh-my-pi profiles talk to b and open
+// their login commands through openTerminal.
+func ompFlowScreen(t *testing.T, b *profileBackend, openTerminal func(string) bool) *settingsScreen {
+	t.Helper()
+	c := b.client(t)
+	s := newSettingsScreen(t.Context(), c, new(ui.Root), func() {})
+	s.providers.omp.bind(newProfileBook(ompProfileProvider, c, func() {}, newPlanQuota(quotaReader(c), func() {})), openTerminal)
+	return s
+}
+
+// TestAnOMPProfileLogsInFromATerminalAndNeverRunsALogin: omp's login is an
+// interactive picker, so the dialog goes from the name straight to a shell card
+// running the command, and never starts a login of its own to wait on.
+func TestAnOMPProfileLogsInFromATerminalAndNeverRunsALogin(t *testing.T) {
+	b := &profileBackend{}
+	var ran []string
+	s := ompFlowScreen(t, b, func(command string) bool { ran = append(ran, command); return true })
+	c := &s.providers.omp
+	f := &c.flow
+	s.startNewProfile(c)
+	f.name.SetText("Work")
+	s.confirmFlow(c, f.view())
+	eventually(t, "the terminal card was opened and the dialog closed", func() bool {
+		return !f.view().open && len(ran) == 1
+	})
+
+	if want := "env OMP_PROFILE='work' omp login"; ran[0] != want {
+		t.Errorf("command = %q, want %q", ran[0], want)
+	}
+	want := []string{`ompprofile.CreateProfile["Work"]`, `ompprofile.LoginCommand["work"]`}
+	if got := b.log(); !slices.Equal(got, want) {
+		t.Errorf("calls = %v, want %v", got, want)
+	}
+}
+
+func TestAnOMPLoginWithNoCardToOpenEndsOnTheFailure(t *testing.T) {
+	b := &profileBackend{}
+	s := ompFlowScreen(t, b, func(string) bool { return false })
+	c := &s.providers.omp
+	f := &c.flow
+	s.startLogin(c, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	eventually(t, "the failure", func() bool { return f.view().step == stepResult })
+	if d := f.view(); !d.open || d.failure != profileNoTerminal {
+		t.Errorf("dialog = %+v, want it open on %q", d, profileNoTerminal)
+	}
+}
+
+func TestOMPProfilesHaveNoPlanAndNameTheirAccounts(t *testing.T) {
+	if ompProfileProvider.plugins || ompProfileProvider.loginCode || !ompProfileProvider.terminalLogin {
+		t.Error("omp profiles carry no plugin port or code, and log in from a terminal")
+	}
+	if got := profileQuotaKey(ompProfileProvider, "work"); got != "" {
+		t.Errorf("an omp profile has a plan reading %q", got)
+	}
+	line := profileAccountLine(ompProfileProvider, lichclient.Profile{
+		LoggedIn: true, Email: "a@b.c, d@e.f", Providers: []string{"anthropic", "openai-codex"},
+	})
+	if line != "a@b.c, d@e.f · anthropic, openai-codex" {
+		t.Errorf("account line = %q", line)
+	}
+	book := newProfileBook(ompProfileProvider, nil, func() {}, newPlanQuota(func(string) ([]lichclient.QuotaPlan, error) {
+		t.Error("a plan was read for oh-my-pi")
+		return nil, nil
+	}, func() {}))
+	book.list = []lichclient.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
+	book.followQuoted()
+	if len(book.quoted) != 0 {
+		t.Errorf("readings followed for a provider with no plan: %v", book.quoted)
 	}
 }

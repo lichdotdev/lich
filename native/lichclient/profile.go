@@ -22,22 +22,26 @@ const (
 // deleted since answers.
 const profileGoneText = "profile no longer exists"
 
-// Profile mirrors claudeprofile.Info and codexprofile.Info: a login lich keeps
-// a state directory for. Slug is "personal" for the default profile. Email,
-// OrgName, Plan and Plugins are what `claude auth status` found there; a Codex
-// profile carries none of them (its account is its plan reading's).
+// Profile mirrors claudeprofile.Info, codexprofile.Info and ompprofile.Info: a
+// login lich keeps a state directory for. Slug is "personal" for the default
+// profile. Email, OrgName, Plan and Plugins are what `claude auth status` found
+// there; a Codex profile carries none of them (its account is its plan
+// reading's), and an oh-my-pi one carries Email (every account's address) and
+// Providers.
 type Profile struct {
 	Slug     string `json:"slug"`
 	Name     string `json:"name"`
 	Personal bool   `json:"personal"`
 	// Copied names the shared entries the profile holds as copies rather than
 	// links (Windows without Developer Mode).
-	Copied      []string `json:"copied,omitempty"`
-	LoggedIn    bool     `json:"loggedIn"`
-	Email       string   `json:"email,omitempty"`
-	OrgName     string   `json:"orgName,omitempty"`
-	Plan        string   `json:"plan,omitempty"`
-	Plugins     int      `json:"plugins"`
+	Copied   []string `json:"copied,omitempty"`
+	LoggedIn bool     `json:"loggedIn"`
+	Email    string   `json:"email,omitempty"`
+	OrgName  string   `json:"orgName,omitempty"`
+	Plan     string   `json:"plan,omitempty"`
+	Plugins  int      `json:"plugins"`
+	// Providers are the providers an oh-my-pi profile holds a login for.
+	Providers   []string `json:"providers,omitempty"`
 	StatusError string   `json:"statusError,omitempty"`
 }
 
@@ -77,10 +81,11 @@ type ProfileMoved struct {
 	Profile string `json:"profile"`
 }
 
-// ProfileAPI is one provider's profile service: the claudeprofile one or the
-// codexprofile one, which answer the same calls. A Codex profile has no plugin
+// ProfileAPI is one provider's profile service: the claudeprofile, codexprofile
+// or ompprofile one, which answer the same calls. A Codex profile has no plugin
 // set of its own and no sign-in code to hand over, so Plugins, InstallPlugins
-// and LoginCode are Claude Code's alone.
+// and LoginCode are Claude Code's alone. oh-my-pi's login is a terminal card's
+// (LoginCommand), so it has no Login, LoginCode or CancelLogin, and no plan.
 type ProfileAPI struct {
 	c       *Client
 	service string
@@ -95,6 +100,11 @@ func (c *Client) ClaudeProfiles() ProfileAPI {
 // CodexProfiles is the Codex profile service.
 func (c *Client) CodexProfiles() ProfileAPI {
 	return ProfileAPI{c: c, service: "codexprofile", plan: "quota.CodexProfilePlan"}
+}
+
+// OMPProfiles is the oh-my-pi profile service.
+func (c *Client) OMPProfiles() ProfileAPI {
+	return ProfileAPI{c: c, service: "ompprofile"}
 }
 
 // List lists every profile with its login state; the backend runs one CLI per

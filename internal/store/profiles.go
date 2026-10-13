@@ -21,6 +21,9 @@ const claudeProfileKey = "provider.claude.profile"
 // set (internal/codexprofile) with the same reserved "personal" slug.
 const codexProfileKey = "provider.codex.profile"
 
+// ompProfileKey is claudeProfileKey for oh-my-pi (internal/ompprofile).
+const ompProfileKey = "provider.omp.profile"
+
 // ClaudeProfile is the profile a Claude Code session born in this project now
 // runs in, "" for Personal.
 func (s *Service) ClaudeProfile(projectID string) string {
@@ -31,6 +34,12 @@ func (s *Service) ClaudeProfile(projectID string) string {
 // "" for Personal.
 func (s *Service) CodexProfile(projectID string) string {
 	return s.profileSetting(codexProfileKey, projectID)
+}
+
+// OMPProfile is the profile an oh-my-pi session born in this project now runs
+// in, "" for Personal.
+func (s *Service) OMPProfile(projectID string) string {
+	return s.profileSetting(ompProfileKey, projectID)
 }
 
 func (s *Service) profileSetting(key, projectID string) string {
@@ -49,6 +58,8 @@ func (s *Service) bornProfile(kind, projectID string) string {
 		return s.ClaudeProfile(projectID)
 	case providers.Codex:
 		return s.CodexProfile(projectID)
+	case providers.OMP:
+		return s.OMPProfile(projectID)
 	}
 	return ""
 }
@@ -64,6 +75,11 @@ func (s *Service) ForgetClaudeProfile(slug string) error {
 // ForgetCodexProfile is ForgetClaudeProfile for a Codex profile.
 func (s *Service) ForgetCodexProfile(slug string) error {
 	return s.forgetProfile(codexProfileKey, slug)
+}
+
+// ForgetOMPProfile is ForgetClaudeProfile for an oh-my-pi profile.
+func (s *Service) ForgetOMPProfile(slug string) error {
+	return s.forgetProfile(ompProfileKey, slug)
 }
 
 func (s *Service) forgetProfile(key, slug string) error {

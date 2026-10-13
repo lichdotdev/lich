@@ -144,8 +144,8 @@ func TestOMPConversations(t *testing.T) {
 		`{"type":"session","id":"sub","cwd":"/work/alpha"}`+"\n")
 
 	assertConversations(t, ompConversations(),
-		store.Conversation{Kind: "omp", ID: "o1", Title: "Find relay deadline test", Cwd: "/work/alpha"},
-		store.Conversation{Kind: "omp", ID: "o2", Cwd: "/work/alpha"},
+		store.Conversation{Kind: "omp", ID: "o1", Title: "Find relay deadline test", Cwd: "/work/alpha", Profile: "personal"},
+		store.Conversation{Kind: "omp", ID: "o2", Cwd: "/work/alpha", Profile: "personal"},
 	)
 }
 

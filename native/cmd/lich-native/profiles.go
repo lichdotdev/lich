@@ -15,21 +15,24 @@ import (
 // claudeProfileKey is store.claudeProfileKey: the profile new Claude Code
 // sessions are born in. Globally "" and "personal" both mean Personal; in a
 // project "" inherits and "personal" names Personal over a global profile.
-// codexProfileKey is the same setting for Codex (store.codexProfileKey).
+// codexProfileKey and ompProfileKey are the same setting for Codex and
+// oh-my-pi (store.codexProfileKey, store.ompProfileKey).
 const (
 	claudeProfileKey = "provider.claude.profile"
 	codexProfileKey  = "provider.codex.profile"
+	ompProfileKey    = "provider.omp.profile"
 )
 
-// claudeKind and codexKind are the provider ids of the two providers that have
-// profiles.
+// claudeKind, codexKind and ompKind are the provider ids of the providers that
+// have profiles.
 const (
 	claudeKind = "claude"
 	codexKind  = "codex"
+	ompKind    = "omp"
 )
 
 // personalProfile is claudeprofile.Personal, the slug of the default profile,
-// and codexprofile.Personal, which reserves the same one.
+// which codexprofile and ompprofile reserve too.
 const personalProfile = "personal"
 
 // profileListMaxAge is how old the list may be before a window focus reads it
@@ -61,12 +64,17 @@ type profileProvider struct {
 	key   string
 	label string
 	api   func(c *lichclient.Client) lichclient.ProfileAPI
-	// quotaPrefix starts the planQuota key of one profile's reading.
+	// quotaPrefix starts the planQuota key of one profile's reading; "" for a
+	// provider with no plan to read.
 	quotaPrefix string
 	// plugins is whether a profile has a plugin set of its own that plugins
 	// can be brought into (Claude Code), and loginCode whether its login takes
 	// the code the sign-in page shows (Claude Code).
 	plugins, loginCode bool
+	// terminalLogin is whether the login is only ever run in a terminal card
+	// (oh-my-pi's is an interactive picker of providers), so the dialog has no
+	// login of its own to run and to wait on.
+	terminalLogin bool
 	// words are the provider-specific sentences of the Profile and Profiles
 	// rows and of the profile dialog.
 	words profileWords
@@ -112,6 +120,22 @@ var codexProfileProvider = profileProvider{
 	},
 }
 
+var ompProfileProvider = profileProvider{
+	kind: ompKind, key: ompProfileKey, label: "oh-my-pi",
+	api:           func(c *lichclient.Client) lichclient.ProfileAPI { return c.OMPProfiles() },
+	terminalLogin: true,
+	words: profileWords{
+		profileDesc:  "Which oh-my-pi login new sessions use. A session keeps the profile it was born in, resumes included.",
+		profilesDesc: "Each profile is its own set of oh-my-pi logins with its own history. config.yml, models.yml, mcp.json, AGENTS.md, skills, rules, commands, prompts and extensions are the same in all of them.",
+		copiedNote:   "config.yml, models.yml, mcp.json and the markdown files are copies in this profile: editing them in another profile no longer reaches it.",
+		searchAlso:   "omp oh-my-pi account login personal work",
+		profilesAlso: "omp oh-my-pi accounts logins personal work log in",
+		newDesc:      "An oh-my-pi login of its own, with its own history. You log in from a terminal once it is made.",
+		renameDesc:   "Only its name changes: its logins and history stay as they are.",
+		deleteDesc:   "Its logins and conversation history are removed, and sessions started in it can no longer be resumed.",
+	},
+}
+
 // profileProviderOf is the profile provider for a session kind, false for a
 // provider with no profiles.
 func profileProviderOf(kind string) (profileProvider, bool) {
@@ -120,6 +144,8 @@ func profileProviderOf(kind string) (profileProvider, bool) {
 		return claudeProfileProvider, true
 	case codexKind:
 		return codexProfileProvider, true
+	case ompKind:
+		return ompProfileProvider, true
 	}
 	return profileProvider{}, false
 }
@@ -208,7 +234,8 @@ func (b *profileBook) refreshIfStale(ctx context.Context) {
 // is quoted outside Settings. The caller holds b.mu.
 func (b *profileBook) followQuoted() {
 	want := map[string]bool{}
-	if logged := slices.DeleteFunc(slices.Clone(b.list), func(p lichclient.Profile) bool { return !p.LoggedIn }); len(logged) > 1 {
+	logged := slices.DeleteFunc(slices.Clone(b.list), func(p lichclient.Profile) bool { return !p.LoggedIn })
+	if b.provider.quotaPrefix != "" && len(logged) > 1 {
 		for _, p := range logged {
 			want[profileQuotaKey(b.provider, p.Slug)] = true
 		}
@@ -229,6 +256,9 @@ func (b *profileBook) followQuoted() {
 // planChanged is a login or a deletion that changes whose plan a profile has:
 // its reading is dropped and read again.
 func (b *profileBook) planChanged(slug string) {
+	if b.provider.quotaPrefix == "" {
+		return
+	}
 	b.quota.invalidate(profileQuotaKey(b.provider, slug))
 }
 
@@ -287,9 +317,10 @@ func profileChoiceValue(slug, scope string) string {
 	return slug
 }
 
-// profileAccountLine is a profile row's second line: the account, its plan and,
-// for a provider whose profiles have a plugin set, how many plugins it carries.
-// "" for a profile nobody is logged in to.
+// profileAccountLine is a profile row's second line: the account, its plan or
+// the providers it holds logins for and, for a provider whose profiles have a
+// plugin set, how many plugins it carries. "" for a profile nobody is logged in
+// to.
 func profileAccountLine(prov profileProvider, p lichclient.Profile) string {
 	if !p.LoggedIn {
 		return ""
@@ -300,6 +331,9 @@ func profileAccountLine(prov profileProvider, p lichclient.Profile) string {
 	}
 	if p.Plan != "" {
 		parts = append(parts, strings.ToUpper(p.Plan[:1])+p.Plan[1:])
+	}
+	if len(p.Providers) > 0 {
+		parts = append(parts, strings.Join(p.Providers, ", "))
 	}
 	if prov.plugins {
 		switch p.Plugins {

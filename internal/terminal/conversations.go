@@ -11,6 +11,7 @@ import (
 
 	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/codexprofile"
+	"github.com/omartelo/lich/internal/ompprofile"
 	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/relay"
 	"github.com/omartelo/lich/internal/store"
@@ -197,19 +198,20 @@ func codexThreadNames(path string) map[string]string {
 	return names
 }
 
-// ompConversations reads omp's sessions/<encoded-cwd>/<timestamp>_<id>.jsonl:
-// a title record, then the session header with the id and cwd. Sub-agents live
-// a directory deeper and are not matched.
+// ompConversations reads omp's sessions/<encoded-cwd>/<timestamp>_<id>.jsonl in
+// every oh-my-pi profile, each conversation marked with the profile holding it:
+// a resume runs there, whatever profile the project uses now. A title record,
+// then the session header with the id and cwd. Sub-agents live a directory
+// deeper and are not matched.
 func ompConversations() []store.Conversation {
-	base, ok := ompAgentDir()
-	if !ok {
-		return nil
-	}
-	paths, _ := filepath.Glob(filepath.Join(base, "sessions", "*", "*_*.jsonl"))
 	var out []store.Conversation
-	for _, path := range paths {
-		if c, ok := ompConversation(path); ok {
-			out = append(out, c)
+	for _, profile := range ompprofile.ConfigDirs() {
+		paths, _ := filepath.Glob(filepath.Join(profile.Dir, "sessions", "*", "*_*.jsonl"))
+		for _, path := range paths {
+			if c, ok := ompConversation(path); ok {
+				c.Profile = profile.Slug
+				out = append(out, c)
+			}
 		}
 	}
 	return out

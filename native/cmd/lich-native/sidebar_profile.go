@@ -46,6 +46,8 @@ func (m *model) profileBook(kind string) *profileBook {
 		return m.profiles
 	case codexKind:
 		return m.codexProfiles
+	case ompKind:
+		return m.ompProfiles
 	}
 	return nil
 }
@@ -147,6 +149,7 @@ func (ts *terminals) resync(ctx context.Context, id string) {
 func (u *window) loadProfiles() {
 	u.logErr("claude profiles", u.model.profiles.reload(u.ctx))
 	u.logErr("codex profiles", u.model.codexProfiles.reload(u.ctx))
+	u.logErr("omp profiles", u.model.ompProfiles.reload(u.ctx))
 }
 
 // openLoginTerminal runs a profile's login command in a shell card of the

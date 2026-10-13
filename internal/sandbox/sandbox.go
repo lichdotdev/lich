@@ -137,8 +137,8 @@ func stateDirs(providerID, home string) []string {
 
 // ompAgentDir resolves oh-my-pi's agent directory. A named profile wins outright
 // over the explicit override — the order `omp config path` was measured to
-// apply, and the same rule lives in internal/agentplugin/omp.go and
-// internal/terminal/transcript.go.
+// apply, and the same rule lives in internal/ompprofile, which
+// internal/agentplugin and internal/terminal answer through.
 func ompAgentDir(home string) string {
 	if profile := os.Getenv("OMP_PROFILE"); profile != "" {
 		return filepath.Join(home, ".omp", "profiles", profile, "agent")

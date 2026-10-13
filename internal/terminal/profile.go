@@ -8,6 +8,7 @@ import (
 
 	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/codexprofile"
+	"github.com/omartelo/lich/internal/ompprofile"
 	"github.com/omartelo/lich/internal/profilestore"
 	"github.com/omartelo/lich/internal/providers"
 )
@@ -23,14 +24,17 @@ type profileEvent struct {
 }
 
 // profileOps is what the service asks of one provider's profiles: the packages
-// that keep them (internal/claudeprofile, internal/codexprofile), which answer
-// the same calls on their own directories.
+// that keep them (internal/claudeprofile, internal/codexprofile,
+// internal/ompprofile), which answer the same calls on their own directories.
 type profileOps struct {
 	configDir    func(slug string) (string, error)
 	ensureShared func(slug string) error
 	owner        func(conversationID string) (profilestore.Profile, string, bool)
 	env          func(env []string, dir string) []string
 	moveTo       func(conversationID, toSlug string) error
+	// slugOf is the profile a state directory belongs to, for a provider
+	// whose directory is not named after it.
+	slugOf func(dir string) string
 }
 
 // profilestores is the set of providers whose sessions can run in a profile of
@@ -43,6 +47,12 @@ var profilestores = map[string]profileOps{
 	providers.Codex: {
 		configDir: codexprofile.ConfigDir, ensureShared: codexprofile.EnsureShared,
 		owner: codexprofile.Owner, env: codexprofile.Env, moveTo: codexprofile.MoveConversation,
+	},
+	providers.OMP: {
+		configDir: ompprofile.ConfigDir, ensureShared: ompprofile.EnsureShared,
+		owner: ompprofile.Owner, env: ompprofile.Env, moveTo: ompprofile.MoveConversation,
+		// The profile's directory is its agent/ under ~/.omp/profiles/<slug>.
+		slugOf: func(dir string) string { return filepath.Base(filepath.Dir(dir)) },
 	},
 }
 
@@ -133,11 +143,15 @@ func (s *Service) reportProfileMove(id, bornIn string) {
 	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: now})
 }
 
-// profileSlug is the profile a config directory belongs to, "" for Personal's
-// (an empty dir): what a live spawn records to be counted by ProfileSessions.
-func profileSlug(dir string) string {
+// profileSlug is the profile a state directory of kind's provider belongs to,
+// "" for Personal's (an empty dir): what a live spawn records to be counted by
+// ProfileSessions.
+func profileSlug(kind, dir string) string {
 	if dir == "" {
 		return ""
+	}
+	if slugOf := profilestores[kind].slugOf; slugOf != nil {
+		return slugOf(dir)
 	}
 	return filepath.Base(dir)
 }
@@ -151,6 +165,11 @@ func (s *Service) CodexProfileSessions(slug string) int {
 	return s.profileSessions(providers.Codex, slug)
 }
 
+// OMPProfileSessions is ProfileSessions for an oh-my-pi profile.
+func (s *Service) OMPProfileSessions(slug string) int {
+	return s.profileSessions(providers.OMP, slug)
+}
+
 func (s *Service) profileSessions(kind, slug string) int {
 	n := 0
 	s.spawns.Range(func(_, v any) bool {
@@ -162,10 +181,10 @@ func (s *Service) profileSessions(kind, slug string) int {
 	return n
 }
 
-// ContinueIn moves a Claude Code or Codex session's conversation to another
-// profile of the same provider and carries on there, in the same card: the
-// process ends, the conversation and everything its provider keyed by its id
-// move (claudeprofile.MoveConversation, codexprofile.MoveConversation),
+// ContinueIn moves a Claude Code, Codex or oh-my-pi session's conversation to
+// another profile of the same provider and carries on there, in the same card:
+// the process ends, the conversation and everything its provider keyed by its id
+// move (claudeprofile.MoveConversation and its siblings),
 // the row takes the new profile, and a running session is spawned again
 // resuming it. Moving back is the same call. Nothing else moves: not the other
 // sessions in the profile, and not the project's own profile.
@@ -184,7 +203,7 @@ func (s *Service) ContinueIn(id, profile string) error {
 	started := s.spawnOf(id)
 	kind := sessionKind(started.kind, s.store.SessionKind(id))
 	if !hasProfiles(kind) {
-		return fmt.Errorf("only a Claude Code or Codex session can continue in another profile, not %s", kind)
+		return fmt.Errorf("only a Claude Code, Codex or oh-my-pi session can continue in another profile, not %s", kind)
 	}
 	if s.turns.busy(id) {
 		return errors.New("the session is mid-turn; continue it in another profile once the turn ends")

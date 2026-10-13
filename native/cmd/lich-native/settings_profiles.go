@@ -340,6 +340,10 @@ func (s *settingsScreen) copyPlugins(c *profileSettings, target lichclient.Profi
 // it is through. It is called from any goroutine.
 func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, keys []string) {
 	f := &c.flow
+	if c.provider.terminalLogin {
+		s.startTerminalLogin(c, p)
+		return
+	}
 	f.set(func(d *flowData) {
 		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: profileStartingLogin, target: p, keys: keys}
 	})
@@ -354,6 +358,29 @@ func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, ke
 				d.step = stepWaiting
 			}
 		})
+		s.invalidate()
+	}()
+}
+
+// startTerminalLogin hands the login of p to a shell card, the only place a
+// provider with terminalLogin runs one, and closes the dialog. Where there is no
+// card to open it in, the dialog ends on the failure.
+func (s *settingsScreen) startTerminalLogin(c *profileSettings, p lichclient.Profile) {
+	f := &c.flow
+	f.set(func(d *flowData) {
+		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: profileStartingLogin, target: p}
+	})
+	s.invalidate()
+	go func() {
+		command, err := c.provider.api(s.client).LoginCommand(s.ctx, p.Slug)
+		switch {
+		case err != nil:
+			f.set(func(d *flowData) { d.step, d.failure = stepResult, lichclient.ErrorText(err) })
+		case c.openTerminal == nil || !c.openTerminal(command):
+			f.set(func(d *flowData) { d.step, d.failure = stepResult, profileNoTerminal })
+		default:
+			f.set(func(d *flowData) { d.open = false })
+		}
 		s.invalidate()
 	}()
 }

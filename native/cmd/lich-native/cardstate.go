@@ -142,6 +142,8 @@ func (m *model) setFocused(ctx context.Context, focused bool) {
 	if focused {
 		m.stalePullRequests()
 		m.profiles.refreshIfStale(ctx)
+		m.codexProfiles.refreshIfStale(ctx)
+		m.ompProfiles.refreshIfStale(ctx)
 	}
 	id := m.active
 	read := focused && m.status.markSeen(id)
