@@ -75,8 +75,11 @@ func (s *Service) Start(
 		name = recorded
 	}
 	name = relay.RosterNameOf(name, cwd, id)
-	// Before the lock: it may read the disk for the conversation's profile and
-	// tell the window the session moved, and Emit must never run under s.mu.
+	// Before the lock: it may read the disk for the conversation's profile.
+	bornIn, err := s.store.SessionProfile(id)
+	if err != nil {
+		return err
+	}
 	profileDir, err := s.claudeProfileDir(id, kind, resume)
 	if err != nil {
 		return err
@@ -96,6 +99,7 @@ func (s *Service) Start(
 	// overwrites whatever the previous PTY left in the frontend's stores.
 	s.hub.Emit(cwdEventName, cwdEvent{ID: id, Cwd: cwd})
 	s.hub.Emit(agentEventName, agentEvent{ID: id, Agent: ""})
+	s.reportProfileMove(id, bornIn)
 	s.reportSandbox(id, sess.confined, sess.sandboxLinks)
 	s.reportMCPServers(id, kind, cwd)
 	// Bound to the effective cwd rather than the requested one, and outside

@@ -56,7 +56,8 @@ func (s *Service) claudeProfileDir(id, kind, resume string) (string, error) {
 }
 
 // followConversation is the row's profile, moved to the one holding the
-// conversation being resumed when that is another.
+// conversation being resumed when that is another. Start tells the window,
+// once the process runs under it.
 func (s *Service) followConversation(id, slug, conversationID string) (string, error) {
 	owner, _, ok := claudeprofile.Owner(conversationID)
 	if !ok {
@@ -75,8 +76,18 @@ func (s *Service) followConversation(id, slug, conversationID string) (string, e
 	if err := s.store.SetSessionProfile(id, found); err != nil {
 		return "", err
 	}
-	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: found})
 	return found, nil
+}
+
+// reportProfileMove tells the window a resume followed its conversation into
+// another profile. Called after the spawn, so whoever re-reads on the event
+// (the quota of the session's account) finds the process under the profile.
+func (s *Service) reportProfileMove(id, bornIn string) {
+	now, err := s.store.SessionProfile(id)
+	if err != nil || now == bornIn {
+		return
+	}
+	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: now})
 }
 
 // profileSlug is the profile a config directory belongs to, "" for Personal's
@@ -144,8 +155,11 @@ func (s *Service) ContinueIn(id, profile string) error {
 	if err := s.store.SetSessionProfile(id, profile); err != nil {
 		return err
 	}
+	err = s.respawnAfter(nil, live, id, started, conversation)
+	// After the respawn: a reader that re-reads on this event (the quota of
+	// the session's account) must find the process already under the profile.
 	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: profile})
-	return s.respawnAfter(nil, live, id, started, conversation)
+	return err
 }
 
 // respawnAfter brings a session that was running back up on its conversation,

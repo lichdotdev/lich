@@ -334,3 +334,16 @@ func TestSessionStoredAtTheProjectDirSharesTheRootBlock(t *testing.T) {
 		t.Fatalf("got %d blocks %+v, want one root block holding both sessions", len(bs), bs)
 	}
 }
+
+func TestASessionMovingProfileReachesItsListener(t *testing.T) {
+	m := newModel(nil, func() {})
+	var moved []string
+	m.profileMoved = func(id string) { moved = append(moved, id) }
+	events := make(chan lichclient.Event, 1)
+	events <- lichclient.Event{Name: lichclient.ClaudeProfileEvent, Data: []byte(`{"id":"s1","profile":"work"}`)}
+	close(events)
+	m.follow(context.Background(), events)
+	if !slices.Equal(moved, []string{"s1"}) {
+		t.Errorf("listener heard %v, want s1", moved)
+	}
+}

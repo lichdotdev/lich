@@ -191,6 +191,24 @@ func TestPlanQuotaPublishesOnlyAChangedReading(t *testing.T) {
 	}
 }
 
+func TestPlanQuotaRereadsAtOnceWhenTheAccountChanges(t *testing.T) {
+	r := newQuotaRig()
+	personal := quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})
+	personal.Account = "me@example.com"
+	r.set([]lichclient.QuotaPlan{personal}, nil)
+	defer r.q.watch("s1")()
+	waitChanged(t, r.changed)
+
+	work := personal
+	work.Account = "me@work.example"
+	r.set([]lichclient.QuotaPlan{work}, nil)
+	r.q.reread("s1")
+	waitChanged(t, r.changed)
+	if got := r.q.plans("s1"); got[0].Account != "me@work.example" {
+		t.Errorf("plans = %+v, want the other account's reading with the same numbers", got)
+	}
+}
+
 func TestPlanQuotaKeepsTheLastReadingWhenAReadFails(t *testing.T) {
 	r := newQuotaRig()
 	r.set([]lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})}, nil)

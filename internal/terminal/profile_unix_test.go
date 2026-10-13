@@ -187,3 +187,27 @@ func TestContinueInRefusesWhatItCannotCarry(t *testing.T) {
 		t.Errorf("a turn a limit ended, or any finished one, must move: %v", err)
 	}
 }
+
+// TestAResumeThatFollowsItsConversationSaysSoOnceUp: the window re-reads the
+// session's account on session-profile, so the event comes with the process
+// already running under the profile that holds the conversation.
+func TestAResumeThatFollowsItsConversationSaysSoOnceUp(t *testing.T) {
+	_, work := profileMachine(t)
+	conversationAt(t, work, "c1")
+	hub, rec := newProbeHub(t)
+	log := filepath.Join(t.TempDir(), "spawns")
+	svc := New(stubBins{bin: spawnLogBin(t, log), movedProfiles: map[string]string{}}, nil, hub)
+	t.Cleanup(func() { _ = svc.Close("s1") })
+
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "c1", "", false, false, 80, 24); err != nil {
+		t.Fatal(err)
+	}
+	if !svc.Live("s1") {
+		t.Fatal("the session is not running after Start")
+	}
+	waitFor(t, func() bool { _, ok := rec.payloadOf(profileEventName); return ok }, "the session-profile event")
+	payload, _ := rec.payloadOf(profileEventName)
+	if fields, _ := payload.(map[string]any); fields["id"] != "s1" || fields["profile"] != "work" {
+		t.Errorf("session-profile = %v, want s1 moved to work", payload)
+	}
+}

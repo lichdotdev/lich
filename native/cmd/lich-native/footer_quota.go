@@ -86,6 +86,18 @@ func (q *planQuota) watch(key string) (unwatch func()) {
 	}
 }
 
+// reread reads key again now when something watches it: the session moved to
+// another login, and its next tick could be a minute away.
+func (q *planQuota) reread(key string) {
+	q.mu.Lock()
+	e := q.entries[key]
+	watched := e != nil && e.watchers > 0
+	q.mu.Unlock()
+	if watched {
+		go q.refresh(key, e)
+	}
+}
+
 func (q *planQuota) poll(key string, e *quotaEntry, stop chan struct{}) {
 	for {
 		q.refresh(key, e)
@@ -127,10 +139,11 @@ func (q *planQuota) refresh(key string, e *quotaEntry) {
 }
 
 // sameQuota keeps a reading nobody is spending from redrawing every minute.
-// It compares what the web's unchanged() compares, and nothing more.
+// It compares what the web's unchanged() compares, plus the account: a session
+// moved to another login can read the same numbers under another name.
 func sameQuota(a, b []lichclient.QuotaPlan) bool {
 	return slices.EqualFunc(a, b, func(p, o lichclient.QuotaPlan) bool {
-		return p.Provider == o.Provider && p.Status == o.Status && p.Plan == o.Plan &&
+		return p.Provider == o.Provider && p.Status == o.Status && p.Plan == o.Plan && p.Account == o.Account &&
 			slices.EqualFunc(p.Windows, o.Windows, func(w, v lichclient.QuotaWindow) bool {
 				return w.Label == v.Label && w.Percent == v.Percent && w.Seconds == v.Seconds && w.ResetsAt == v.ResetsAt
 			})

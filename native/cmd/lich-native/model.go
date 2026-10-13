@@ -58,6 +58,9 @@ type model struct {
 	notify func(statusReport)
 	// loginProgress takes each step of a Claude Code profile login.
 	loginProgress func(lichclient.ClaudeProfileLogin)
+	// profileMoved hears a session that now runs in another profile, already
+	// up under it: the backend emits after the respawn.
+	profileMoved func(id string)
 }
 
 // sessionCwd is a session-cwd payload: where the session's shell is, or the
@@ -193,6 +196,9 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			var moved lichclient.ClaudeProfileMoved
 			if json.Unmarshal(ev.Data, &moved) == nil {
 				m.setProfile(moved.ID, moved.Profile)
+				if m.profileMoved != nil {
+					m.profileMoved(moved.ID)
+				}
 			}
 		case lichclient.ClaudeProfileLoginEvent:
 			var step lichclient.ClaudeProfileLogin

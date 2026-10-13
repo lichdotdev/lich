@@ -178,6 +178,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.settings.providers.claude.book = u.model.profiles
 	u.settings.providers.claude.openTerminal = u.openLoginTerminal
 	u.model.loginProgress = u.settings.loginProgress
+	u.model.profileMoved = u.footer.quota.reread
 	u.settings.providers.onProjectDefault = u.model.setProjectDefault
 	u.settings.providers.onLaunchChanged = func() {
 		go func() { u.logErr("load providers", u.model.loadProviders(u.ctx)) }()

@@ -45,6 +45,11 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   English by design.
 - Service shapes are hand-owned in `frontend/src/lib/api-types.ts`: touch a Go struct's JSON tags and that mirror
   moves in the same change. There is no codegen.
+- A fact more than one place shows (git status, a pull request, plan quota, a session's profile or status) has
+  one store per window, fed by one reader, and every screen reads that store. A change to the fact reaches the
+  store as an event on `/events`, emitted by the backend once the change is true (after the respawn, not before),
+  never as a call from the code that made the change into the screens that show it. Writer emits, store listens,
+  screens read: a new screen subscribes and nothing upstream learns it exists.
 
 ## Local Gate (before every commit / PR)
 
