@@ -125,7 +125,7 @@ func (s *Service) spawnSession(
 	}
 	// Whatever the previous provider left open under this id died with its PTY,
 	// and the first report of the new one has to be read against its own turn.
-	s.turns.forget(id)
+	s.forgetTurn(id)
 	cols, rows = s.sizeFor(cols, rows)
 
 	if cwd == "" {

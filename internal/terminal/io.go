@@ -63,7 +63,7 @@ func (s *Service) stream(id string, sess *session) {
 		// running behind it would otherwise delete the new session's own turn.
 		// The awake release this may run waits milliseconds for a child to
 		// exit, well under what the spawn itself holds mu for.
-		s.turns.forget(id)
+		s.forgetTurn(id)
 		// The mod died with the process: refuse commands now rather than
 		// after the attach window runs out, and release its parked poll.
 		if s.ws != nil {
