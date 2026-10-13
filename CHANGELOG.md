@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   setup tokens a wrapper binary used to hand over carried none of that. Your
   settings, `CLAUDE.md`, agents, commands, skills and hooks stay shared across
   profiles, the plugins you pick are installed into the new one under its
-  account's policy, and the lich plugin is installed there for you. A project
+  account's policy, and the lich plugin is installed there for you and follows
+  Personal's: installing or updating it there updates every profile, and the
+  ones logged in before they got it get it at lich's next start. A project
   picks the profile its new sessions start in (**Profile**, in the Global and
   project scopes), a session keeps the one it was born in and its card names it,
   and **Continue in** on the card's menu moves a session's conversation to
@@ -32,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so one login at a time. A profile keeps its own login, its own conversations
   and its own plugins: the dialog asks which of Personal's plugins to bring,
   **Copy plugins from…** on a profile's menu brings more later, and the lich
-  plugin is installed there for you. Personal's `config.toml` settings (model,
+  plugin is installed there for you and follows Personal's updates. Personal's `config.toml` settings (model,
   features, MCP servers), `AGENTS.md`, hooks, skills and rules are the same in
   all of them; a setting changed inside a profile goes back to Personal's at its
   next session, so change it in Personal. A project picks the profile

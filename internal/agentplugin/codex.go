@@ -14,8 +14,6 @@ import (
 // --json` for what is installed. Codex has no `plugin update`, so an update is
 // the same pinned install.
 
-func (s *Service) codexInstall() error { return s.codexInstallIn(nil) }
-
 // codexInstallIn installs the plugin with env as the CLI's environment: nil for
 // lich's own, which is Personal, or a profile's (InstallInCodexProfile).
 func (s *Service) codexInstallIn(env []string) error {
@@ -30,14 +28,17 @@ func (s *Service) codexInstallIn(env []string) error {
 // reinstall there never touches Personal's. It is the install and the update
 // both, as Install is for Personal.
 func (s *Service) InstallInCodexProfile(slug string) error {
-	if codexprofile.IsPersonal(slug) {
-		return s.codexInstallIn(nil)
+	var env []string
+	if !codexprofile.IsPersonal(slug) {
+		dir, err := codexprofile.ConfigDir(slug)
+		if err != nil {
+			return err
+		}
+		env = codexprofile.Env(os.Environ(), dir)
 	}
-	dir, err := codexprofile.ConfigDir(slug)
-	if err != nil {
-		return err
-	}
-	return s.codexInstallIn(codexprofile.Env(os.Environ(), dir))
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
+	return s.codexInstallIn(env)
 }
 
 // codexPinMarketplace declares the marketplace at the tag of the newest release

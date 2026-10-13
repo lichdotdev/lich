@@ -29,6 +29,7 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/omartelo/lich/internal/ghrelease"
@@ -113,6 +114,12 @@ type Service struct {
 	// say "this binary cannot be resolved", which is the branch that decides
 	// whether a session is promised tools it does not have.
 	lichBin func() string
+	// emit reports a pass over a provider's profiles (profiles.go); nil keeps
+	// an install to Personal alone. installMu keeps one plugin CLI install
+	// running at a time: a profile's marketplace clone is linked to Personal's
+	// for Claude Code, and a login's install can land in the middle of a pass.
+	emit      func(name string, data any)
+	installMu sync.Mutex
 }
 
 // New returns a service that shells out through bins.
@@ -259,10 +266,8 @@ func computeStatus(id string, available, installed bool, installedVer, latestVer
 // is one, by writing the released files where there is not.
 func (s *Service) Install(provider string) error {
 	switch provider {
-	case providers.Claude:
-		return s.claudeInstall()
-	case providers.Codex:
-		return s.codexInstall()
+	case providers.Claude, providers.Codex:
+		return s.installAndFollow(provider)
 	case providers.Antigravity:
 		return s.antigravityInstall()
 	case providers.OpenCode:
@@ -277,6 +282,22 @@ func (s *Service) Install(provider string) error {
 		return s.kiroInstall()
 	}
 	return fmt.Errorf("no lich plugin for provider %q", provider)
+}
+
+// installAndFollow installs into Personal, then into every other profile of
+// the provider in the background (followPersonal), so a profile never stays on
+// a release Personal left.
+func (s *Service) installAndFollow(provider string) error {
+	s.installMu.Lock()
+	err := profileProviders[provider].install(s, nil)
+	s.installMu.Unlock()
+	if err != nil {
+		return err
+	}
+	if s.emit != nil {
+		go s.followPersonal(provider)
+	}
+	return nil
 }
 
 // Update pulls the newest compatible release into a provider, which is the

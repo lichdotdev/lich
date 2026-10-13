@@ -421,6 +421,8 @@ func TestMain(m *testing.M) {
 		if v := os.Getenv(fakeCLIVersion); v != "" {
 			fmt.Println("crush version v" + v)
 		}
+	case "plugin list --json":
+		printCodexPluginList()
 	}
 	os.Exit(0)
 }

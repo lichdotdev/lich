@@ -74,6 +74,9 @@ type model struct {
 	// once its tab is already gone: the window stops the terminals and moves
 	// the screen.
 	projectClosed func(closedProject)
+	// pluginProfiles hears a pass that put Personal's lich plugin into the
+	// other profiles of a provider.
+	pluginProfiles func(lichclient.PluginProfiles)
 	// closed is the closed projects, which the menu and the palette read.
 	closed *closedProjects
 }
@@ -256,6 +259,11 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			var step lichclient.ProfileLogin
 			if json.Unmarshal(ev.Data, &step) == nil {
 				m.loginStep(ctx, loginEventKind(ev.Name), step)
+			}
+		case lichclient.PluginProfilesEvent:
+			var pass lichclient.PluginProfiles
+			if json.Unmarshal(ev.Data, &pass) == nil && m.pluginProfiles != nil {
+				m.pluginProfiles(pass)
 			}
 		case touchedEventName:
 			m.sessionTouched(ctx, ev.Data)

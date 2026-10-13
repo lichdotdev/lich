@@ -276,6 +276,11 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	plugins := agentplugin.New(db)
 	dispatcher.Register("agentplugin", plugins)
 	go plugins.RepairRegistrations()
+	// A profile follows Personal's lich plugin: an install or update there
+	// reaches every Claude Code and Codex profile, and a start brings in the
+	// ones left behind or logged in before they got it.
+	plugins.SetEmit(hub.Emit)
+	go plugins.SyncProfiles()
 	// Every Claude Code profile gets the lich plugin once it is logged in, run as
 	// that profile so its account's plugin policy applies; a profile with a
 	// session running in it is never deleted, and deleting one clears the
@@ -477,6 +482,9 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     without moving its conversation, which only terminal.ContinueIn may do;
 //     store.ForgetClaudeProfile, store.ForgetCodexProfile and
 //     store.ForgetOMPProfile are the delete's own cleanup.
+//   - agentplugin.SetEmit is startup wiring like the setters above, and
+//     agentplugin.SyncProfiles is the start's pass over the profiles: called
+//     over /rpc/ it would run a second one racing the first.
 //   - claudeprofile.SetLichPlugin, claudeprofile.SetSessions,
 //     codexprofile.SetLichPlugin, codexprofile.SetSessions,
 //     codexprofile.SetAccount and
@@ -517,6 +525,8 @@ func denyInternal(d *rpc.Handler) {
 		"relay.RunSchedules",
 		"relay.ParkResume",
 		"agentplugin.RepairRegistrations",
+		"agentplugin.SetEmit",
+		"agentplugin.SyncProfiles",
 		"relay.SetPlugins",
 		"relay.SetWorkerFinished",
 		"relay.SetPromptLanguage",

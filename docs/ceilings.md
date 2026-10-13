@@ -1326,7 +1326,24 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   over the profile, and the same binary answers the profile's `auth status` and installs its plugins. The
   start gate reads the profile's own plugin state, but the nested-subagent-cards check and the MCP servers a
   card lists read Personal's, so a profile on an older lich plugin than Personal's can be offered cards its
-  plugin cannot open.
+  plugin cannot open: one whose follow-up install failed, or one still waiting for it.
+- **A profile's lich plugin follows Personal's, after it and in the background**
+  (`internal/agentplugin/profiles.go`): an install or update of the lich plugin for Claude Code or Codex,
+  from Settings or anywhere else, runs in Personal and returns; then the same pinned install runs as each
+  other profile of that provider whose version differs, one at a time, logged in or not (`claude plugin
+  install` and `codex plugin add` both install into a logged-out home, measured on 2.1.296 and 0.162.1). A
+  backend start makes the same pass, which is what reaches a profile logged in before profiles got the
+  plugin at login; it is the start and not the next spawn because a pass clones the marketplace, and a
+  spawn would wait on it. A start asks for the release list only when a provider has a profile besides
+  Personal, and a Codex profile's version costs one `codex plugin list` each. While Personal itself is
+  behind the newest release this lich speaks, a profile that has the plugin keeps its version and one that
+  has none gets the newest, so the two can differ until Personal is updated. A profile whose install failed
+  is named in an error toast of the native window, in the CLI's own words, and is tried again at the next
+  start or update; the web window, which has no profiles, shows nothing. A Claude Code profile's
+  `plugin marketplace remove` deletes the marketplace clone it links to Personal's (the plugin cache stays,
+  measured on 2.1.296), so a Personal session starting during a pass can find the clone missing for the
+  seconds the pass takes to clone it back.
+  oh-my-pi needs no pass: lich's extension is in the `extensions/` every profile links to Personal's.
 - **Profiles are managed in the native window only, and the window asks every profile at start**: the web
   window has no profile screen, no card tag and no Continue in (it is in maintenance, `docs/native-window.md`),
   though what it opens or resumes runs in its profile, the backend deciding. The native window reads
@@ -1351,8 +1368,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `.tmp/marketplaces`) are the profile's own too, which costs a clone per profile and is what lets `plugin
   remove` and the lich plugin's pinned reinstall (`plugin marketplace remove` then `add`) run there without
   deleting Personal's copy; a profile made when they were links has them removed at its next spawn. The lich
-  plugin is installed in a profile after its login and only then: Settings' update reaches Personal's alone,
-  and a profile logged in before this has none until it is logged in again. Plugins are ported with `codex plugin add` run as the profile, after Personal's declaration
+  plugin follows Personal's (the bullet on it below). Plugins are ported with `codex plugin add` run as the profile, after Personal's declaration
   of the marketplace, ref included, is copied into the profile's file and fetched with `plugin marketplace
   upgrade`; a marketplace Personal does not declare is left to Codex. Per profile besides: `auth.json`,
   `sessions/`, `history.jsonl`, `session_index.jsonl`, the SQLite state and `installation_id`.

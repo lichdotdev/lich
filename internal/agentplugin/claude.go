@@ -14,8 +14,6 @@ import (
 // The Claude Code side: `claude plugin ...` for every mutation, and the CLI's
 // own installed_plugins.json for what is installed.
 
-func (s *Service) claudeInstall() error { return s.claudeInstallIn(nil) }
-
 // claudeInstallIn installs the plugin with env as the CLI's environment: nil
 // for lich's own, which is Personal, or a profile's (InstallInClaudeProfile).
 func (s *Service) claudeInstallIn(env []string) error {
@@ -37,6 +35,8 @@ func (s *Service) InstallInClaudeProfile(slug string) error {
 	if err != nil {
 		return err
 	}
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
 	return s.claudeInstallIn(env)
 }
 

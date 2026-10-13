@@ -193,6 +193,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.model.loginProgress = u.settings.loginProgress
 	u.settings.providers.book = u.model.providers
 	u.model.projectClosed = u.projectClosed
+	u.model.pluginProfiles = u.pluginProfilesFailed
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
