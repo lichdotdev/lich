@@ -106,13 +106,13 @@ func openInMenu(sv *sessionView, act *sidebarAction) []ui.MenuEntry {
 	)
 }
 
-// pullRequestItem opens the branch's PR in the browser, this window having no
-// Pulls screen to open it in; disabled while the branch has none.
+// pullRequestItem opens the branch's PR on the Pulls screen, the session
+// brought up with it; disabled while the branch has none.
 func pullRequestItem(sv *sessionView, act *sidebarAction) ui.MenuEntry {
 	item := ui.MenuEntry{Label: "Pull request", Icon: icMenuPR, Disabled: sv.pr == nil}
 	if sv.pr != nil {
-		url := sv.pr.URL
-		item.OnClick = func() { act.openURL = url }
+		id, number := sv.ID, sv.pr.Number
+		item.OnClick = func() { act.activate, act.openPR = id, number }
 	}
 	return item
 }

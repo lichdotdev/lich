@@ -77,6 +77,8 @@ type model struct {
 	// pluginProfiles hears a pass that put Personal's lich plugin into the
 	// other profiles of a provider.
 	pluginProfiles func(lichclient.PluginProfiles)
+	// prChanged hears a pull request write land (PRChangedEvent).
+	prChanged func()
 	// closed is the closed projects, which the menu and the palette read.
 	closed *closedProjects
 }
@@ -264,6 +266,10 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			var pass lichclient.PluginProfiles
 			if json.Unmarshal(ev.Data, &pass) == nil && m.pluginProfiles != nil {
 				m.pluginProfiles(pass)
+			}
+		case lichclient.PRChangedEvent:
+			if m.prChanged != nil {
+				m.prChanged()
 			}
 		case touchedEventName:
 			m.sessionTouched(ctx, ev.Data)

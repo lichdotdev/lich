@@ -171,10 +171,14 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 	children = append(children,
 		ui.Gap(2), layout.Rigid(func(gtx C) D {
 			return iconAction(gtx, th, p.root, &c.attach, icAttach, fileAddAsContext, false)
-		}),
-		ui.Gap(1), layout.Rigid(func(gtx C) D {
+		}))
+	if p.pr != nil {
+		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p.pr) }))
+	} else {
+		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			return iconAction(gtx, th, p.root, &c.discard, icDiscard, fileDiscard, false)
 		}))
+	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
@@ -252,7 +256,7 @@ func bodyLine(gtx C, th *ui.Theme, text string) D {
 func (c *fileCard) diff(gtx C, p *reviewPanel, view *godemirror.DiffView) D {
 	c.afford.theme = p.th
 	view.SetTheme(p.diffTheme())
-	view.Split = p.splitShown(gtx)
+	view.Split, view.Nested = p.splitShown(gtx), true
 	view.SetPatch(c.patch)
 	c.placeComposer(view)
 	rows := diffRows(c.shown, view.Split, c.filled)
@@ -275,7 +279,7 @@ func (c *fileCard) ensureView(p *reviewPanel) *godemirror.DiffView {
 	}
 	opts := godemirror.DiffOptions{HighlightChanges: true, ExpandWidget: c.afford.expandButton, RevertWidget: c.afford.revertButton}
 	opts.Expand = func(g godemirror.Gap) { p.expand(c, c.gen, g) }
-	if c.git.status != statusRenamed {
+	if c.git.status != statusRenamed && p.pr == nil {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}
 	view, err := godemirror.NewDiffView(p.family, p.size, opts)
@@ -315,6 +319,9 @@ var composerSlot = layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.S
 // card's height.
 func (c *fileCard) composerBlock(gtx C) D {
 	p := c.panel
+	if p.pr != nil {
+		c.composer.toReview = p.pr.toReview
+	}
 	dims := composerSlot.Layout(gtx, func(gtx C) D { return c.composer.layout(gtx, p.th, p.comments, p.target) })
 	if dims.Size.Y != c.composerH {
 		c.composerH = dims.Size.Y
@@ -333,7 +340,7 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 		changes = c.view.SelectedChanges()
 	}
 	entries := injectEntries(path, lines, p.inject, func() { c.composer.open(path, lines) })
-	if c.git.status == statusRenamed {
+	if c.git.status == statusRenamed || p.pr != nil {
 		return entries
 	}
 	revert := menuRevertSelected

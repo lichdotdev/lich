@@ -117,7 +117,7 @@ type sidebarAction struct {
 	close    string // session id
 	pin      string // session id
 	pinTo    bool   // the pin the click asked for
-	openURL  string // a pull request to show in the browser
+	openPR   int    // a pull request to show on the Pulls screen
 	launch   launchRequest
 	// Open in, from the card menu: a directory for a shell session, the
 	// editor or the file manager.
@@ -181,7 +181,9 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	}
 	pick(&a.activate, c.activate)
 	pick(&a.close, c.close)
-	pick(&a.openURL, c.openURL)
+	if c.openPR != 0 {
+		a.openPR = c.openPR
+	}
 	pick(&a.terminalAt, c.terminalAt)
 	pick(&a.editorAt, c.editorAt)
 	pick(&a.folderAt, c.folderAt)

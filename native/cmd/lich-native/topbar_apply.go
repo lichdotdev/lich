@@ -65,6 +65,12 @@ func closeBody(name string, running int) string {
 // applyTopbar carries out what the strip's clicks asked for.
 func (u *window) applyTopbar(act topbarAction) {
 	u.applySettingsAction(act)
+	if act.home || act.show != "" {
+		u.pulls.hide()
+	}
+	if act.pulls {
+		u.togglePulls()
+	}
 	if act.home {
 		u.model.showHome()
 		u.model.invalidate()

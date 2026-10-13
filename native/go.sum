@@ -25,8 +25,8 @@ github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUq
 github.com/hexops/gotextdiff v1.0.3/go.mod h1:pSWU5MAI3yDq+fZBTazCSJysOMbxWL1BSow5/V2vxeg=
 github.com/lichdotdev/gio v0.0.0-20261013163258-a341d0042d29 h1:a5rWg40tmr3tj72jtq34eahM8xmnxDGIn+3N9JI26o0=
 github.com/lichdotdev/gio v0.0.0-20261013163258-a341d0042d29/go.mod h1:x8MAOooc/v4UUaB5o6BS/FpYdxnzh3LBvZlTBmYpnlQ=
-github.com/lichdotdev/godemirror v0.1.1-0.20261011214948-531e77c2c6ed h1:W3zz4f68Kvg7+ZhKIGDyC9xPYxwxatatd30EngBkugA=
-github.com/lichdotdev/godemirror v0.1.1-0.20261011214948-531e77c2c6ed/go.mod h1:xCdFPbos7+4/bCymJIx7FnL4EpsuMpebRCbGM5Un4fg=
+github.com/lichdotdev/godemirror v0.1.1-0.20261013173940-789794855f2c h1:QE0YYXaq7dhCeb/SczCBYzRZjZ1Hv+3E3P8XErZT+FY=
+github.com/lichdotdev/godemirror v0.1.1-0.20261013173940-789794855f2c/go.mod h1:xCdFPbos7+4/bCymJIx7FnL4EpsuMpebRCbGM5Un4fg=
 golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 h1:R84qjqJb5nVJMxqWYb3np9L5ZsaDtB+a39EqjV0JSUM=
 golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0/go.mod h1:S9Xr4PYopiDyqSyp5NjCrhFrqg6A5zA2E/iPHPhqnS8=
 golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607 h1:+d6HV3AHvcT254vs2elXnEOB602gvxOWsQtucpdtnAI=

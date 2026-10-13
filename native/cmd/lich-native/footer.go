@@ -34,10 +34,12 @@ type footer struct {
 	client     *lichclient.Client
 	root       *ui.Root
 	invalidate func()
-	usage      *footerUsage
-	quota      *planQuota
-	handsOn    *handsOn
-	cost       *costGate
+	// openPullRequest opens the Pulls screen on a pull request.
+	openPullRequest func(number int)
+	usage           *footerUsage
+	quota           *planQuota
+	handsOn         *handsOn
+	cost            *costGate
 
 	mu     sync.Mutex
 	layout footerLayout
@@ -203,15 +205,8 @@ func (f *footer) act(gtx C, in footerInput) {
 	}
 	f.w("files").pressed = f.dock.tab == dockCode
 	f.w("changes").pressed = f.dock.tab == dockReview
-	if f.w("pr").click.Clicked(gtx) && in.pr != nil {
-		// The web opens its Pulls screen; this window has none, so the PR
-		// opens in the browser as the card's PR chip does.
-		url := in.pr.URL
-		go func() {
-			if err := f.client.OpenExternal(f.ctx, url); err != nil {
-				log.Printf("open pull request: %v", err)
-			}
-		}()
+	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
+		f.openPullRequest(in.pr.Number)
 	}
 }
 

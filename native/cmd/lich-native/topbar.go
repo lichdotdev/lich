@@ -61,6 +61,7 @@ type topbar struct {
 	bell     bellMenu
 	hints    map[string]*ui.Tooltip
 	settings widget.Clickable
+	pulls    widget.Clickable
 	confirm  closeConfirm
 }
 
@@ -84,6 +85,7 @@ type topbarAction struct {
 	// settings…", by project id.
 	settings        bool
 	projectSettings string
+	pulls           bool // the Pull requests button
 }
 
 // topbarFrame is what the window measured for the strip this frame.
@@ -96,6 +98,7 @@ type topbarFrame struct {
 	active     string
 	pending    []notification
 	settings   bool // the Settings screen is open
+	pulls      bool // the Pulls screen is open
 }
 
 // layout draws the strip in a topbarHeight band at the top of gtx; th is on
@@ -132,9 +135,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 	d := layout.Flex{Alignment: layout.Middle}.Layout(row,
 		layout.Rigid(func(gtx C) D { return t.bellButton(gtx, th, f.pending, act) }),
 		ui.Gap(1),
-		// ponytail: the native window has no Pull requests screen yet; the
-		// button holds its place, disabled, until it does.
-		layout.Rigid(func(gtx C) D { return t.disabledButton(gtx, th, "pulls", pullRequestsHint, icPullRequests) }),
+		layout.Rigid(func(gtx C) D { return t.pullsButton(gtx, th, f.pulls, act) }),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.settingsButton(gtx, th, f.settings, act) }),
 	)
@@ -223,10 +224,14 @@ func (t *topbar) settingsButton(gtx C, th *ui.Theme, open bool, act *topbarActio
 	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.settings, icSettings, open) })
 }
 
-func (t *topbar) disabledButton(gtx C, th *ui.Theme, key, hint string, ic *icons.Icon) D {
-	tip := th.Tooltip(t.root, t.hint(key), hint)
+// pullsButton opens the Pulls screen, and closes it while it is open.
+func (t *topbar) pullsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) D {
+	if t.pulls.Clicked(gtx) {
+		act.pulls = true
+	}
+	tip := th.Tooltip(t.root, t.hint("pulls"), pullRequestsHint)
 	tip.Side = ui.SideBottom
-	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, nil, ic, false) })
+	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.pulls, icPullRequests, open) })
 }
 
 func (t *topbar) hint(key string) *ui.Tooltip {

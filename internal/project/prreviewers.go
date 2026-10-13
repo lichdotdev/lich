@@ -128,6 +128,5 @@ func (s *Service) RequestReview(path string, number int, login string, requested
 	if requested {
 		flag = "--add-reviewer"
 	}
-	_, err := s.gh(prEditTimeout, path, prArgs("edit", number, flag, login)...)
-	return err
+	return s.writePR(prEditTimeout, path, number, prArgs("edit", number, flag, login)...)
 }

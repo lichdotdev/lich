@@ -52,6 +52,8 @@ type Service struct {
 	// (basestatus.go). Zero value ready; it holds a mutex, so a Service is
 	// passed by pointer and never copied.
 	bases baseCache
+	// emit reports a pull request write (prchanged.go); nil reports nothing.
+	emit func(name string, data any)
 }
 
 // New returns a project service using the given picker.

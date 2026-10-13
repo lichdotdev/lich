@@ -24,7 +24,7 @@ type hotkeyHandler struct {
 
 // hotkeyHandlers are the actions with a native screen or command. Absent,
 // and so inert: delegate (no delegate flow),
-// splitBeside and otherPane (no split panes) and pulls (no such screen).
+// splitBeside and otherPane (no split panes).
 var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyNewSession:         {(*window).canNewSession, (*window).hotkeyNewSession},
 	hotkeyNewWorktree:        {(*window).hasProject, func(u *window, _ C) { u.showWorktreeDialog() }},
@@ -42,6 +42,7 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyToggleDock:         {nil, (*window).hotkeyDock},
 	hotkeySearchInFiles:      {(*window).hasProject, (*window).hotkeySearch},
 	hotkeySettings:           {(*window).hasProject, (*window).hotkeyOpenSettings},
+	hotkeyPulls:              {(*window).hasProject, func(u *window, _ C) { u.togglePulls() }},
 	hotkeyShortcuts:          {nil, (*window).hotkeyShortcuts},
 	hotkeyCommandPalette:     {nil, (*window).hotkeyPalette},
 	hotkeyQuit:               {nil, func(u *window, _ C) { go u.askOrQuit(closeAsk) }},

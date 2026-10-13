@@ -66,6 +66,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   worktree from the upstream instead, saying so under the branch; a branch with
   commits not pushed, an unreachable remote or uncommitted changes brought along
   keep the local branch. Your local branch itself is left as it is.
+- **Pull requests in the native window.** The pull request button in the top
+  bar, `Ctrl+Shift+P`, or a card's or the footer's `#123` opens the repository's
+  pull requests beside the one in view, filtered by text and by All, Ready,
+  Drafts or Failing, open, closed or merged. A pull request shows its checks,
+  mergeability and review, the files that conflict, its commits, its checks
+  and its files as the Review tab draws them, each file tickable as viewed, and
+  its conversation, where a thread is answered or resolved and the pull request
+  commented on. A line comment goes to the session's batch or into a pending
+  review, sent as a comment, an approval or a change request. **Open in
+  Session** reuses or creates the branch's worktree, **Resolve conflicts** and
+  **Fix CI errors** hand the problem to that session's prompt, and **Merge**
+  follows the base branch's rules, then offers to remove the merged worktree.
 - **`lich native` opens an experimental native window.** It is built in Go on
   Gio, beside the web window, and opens on the running lich (starting one when
   none runs) after closing the web window, so your sessions stay where they

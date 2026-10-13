@@ -51,6 +51,7 @@ const (
 	batchSend          = "Send"
 	composerForSession = "for the session · %s"
 	composerAdd        = "Add to batch"
+	composerAddReview  = "Add to review"
 	composerPrompt     = "What should change here? It goes to the session with the rest."
 	composerCancel     = "Cancel"
 	reviewPromptHeader = "Review comments:"
@@ -132,6 +133,10 @@ type commentComposer struct {
 	editor      widget.Editor
 	add, cancel widget.Clickable
 	focus       bool
+	// toReview files the comment into a pull request's pending review; nil
+	// outside the Pulls screen, where the batch is the only place it goes.
+	toReview  func(path, lines, body string)
+	addReview widget.Clickable
 }
 
 // open starts a comment on lines ("19", "12-30") of path, dropping one being
@@ -163,21 +168,30 @@ func (c *commentComposer) at() int {
 // filed reads this frame's input: whether the comment was added or the box
 // dismissed, filing an added one into store.
 func (c *commentComposer) filed(gtx C, store *commentStore, target string) {
-	submit := c.add.Clicked(gtx)
+	toBatch, toReview := c.add.Clicked(gtx), c.addReview.Clicked(gtx)
 	for {
 		ev, ok := c.editor.Update(gtx)
 		if !ok {
 			break
 		}
 		if _, is := ev.(widget.SubmitEvent); is {
-			submit = true
+			// Enter files where the first button does: the review on the
+			// Pulls screen, the batch everywhere else.
+			toReview, toBatch = toReview || c.toReview != nil, toBatch || c.toReview == nil
 		}
 	}
 	if _, ok := gtx.Event(key.Filter{Focus: &c.editor, Name: key.NameEscape}); ok || c.cancel.Clicked(gtx) {
 		c.close()
 		return
 	}
-	if submit && strings.TrimSpace(c.editor.Text()) != "" {
+	if strings.TrimSpace(c.editor.Text()) == "" {
+		return
+	}
+	switch {
+	case toReview && c.toReview != nil:
+		c.toReview(c.path, c.lines, c.editor.Text())
+		c.close()
+	case toBatch:
 		store.add(target, c.path, c.lines, c.editor.Text())
 		c.close()
 	}
@@ -222,16 +236,20 @@ func (c *commentComposer) box(th *ui.Theme) layout.Widget {
 		add.Size, add.Disabled = ui.SizeSM, empty
 		cancel := th.Button(&c.cancel, composerCancel)
 		cancel.Size, cancel.Variant = ui.SizeSM, ui.VariantGhost
+		buttons := []layout.FlexChild{layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout)}
+		if c.toReview != nil {
+			review := th.Button(&c.addReview, composerAddReview)
+			review.Size, review.Disabled = ui.SizeSM, empty
+			add.Variant = ui.VariantOutline
+			buttons = []layout.FlexChild{layout.Rigid(review.Layout), ui.Gap(2), layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout)}
+		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(ui.Space(64)))
 				return th.Textarea(&c.editor, composerPrompt).Layout(gtx)
 			}),
 			ui.VGap(2),
-			layout.Rigid(func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout))
-			}),
+			layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, buttons...) }),
 		)
 	}
 }

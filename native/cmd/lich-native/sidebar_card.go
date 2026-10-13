@@ -43,7 +43,7 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 	}
 	prChip := clickable(s.prChips, sv.ID)
 	if prChip.Clicked(gtx) && sv.pr != nil {
-		act.openURL = sv.pr.URL
+		act.activate, act.openPR = sv.ID, sv.pr.Number
 	}
 	fill := cardFill(th, sv.Color, active, click.Hovered())
 	th = th.On(fill)

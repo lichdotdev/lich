@@ -312,10 +312,7 @@ func (s *Service) MergePullRequest(path string, number int, method, subject, bod
 	if err != nil {
 		return err
 	}
-	if _, err := s.gh(prMergeTimeout, path, args...); err != nil {
-		return err
-	}
-	return nil
+	return s.writePR(prMergeTimeout, path, number, args...)
 }
 
 // mergeArgs builds the gh argument list for a merge, rejecting an unknown method
@@ -359,8 +356,7 @@ func (s *Service) CreatePullRequest(path string) error {
 // agent's first draft usually needs. An empty body is a real edit (it clears the
 // description), so nothing is rejected here.
 func (s *Service) EditPullRequestBody(path string, number int, body string) error {
-	_, err := s.gh(prEditTimeout, path, prArgs("edit", number, "--body", body)...)
-	return err
+	return s.writePR(prEditTimeout, path, number, prArgs("edit", number, "--body", body)...)
 }
 
 // PullRequestDiff returns the unified diff of the path's branch pull request —

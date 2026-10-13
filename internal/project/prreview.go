@@ -88,9 +88,8 @@ func (s *Service) SubmitReview(path string, number int, event, body, head string
 		return err
 	}
 	defer os.Remove(file)
-	_, err = s.gh(prReviewTimeout, path, "api", "--method", "POST",
+	return s.writePR(prReviewTimeout, path, number, "api", "--method", "POST",
 		"repos/{owner}/{repo}/pulls/"+strconv.Itoa(number)+"/reviews", "--input", file)
-	return err
 }
 
 // reviewPayload validates the review and renders GitHub's body for it. The
@@ -172,8 +171,7 @@ func (s *Service) ReplyToReviewThread(path string, number int, commentID int64, 
 		return fmt.Errorf("a reply needs something written in it")
 	}
 	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/comments/%d/replies", number, commentID)
-	_, err := s.gh(prReviewTimeout, path, "api", "--method", "POST", endpoint, "-f", "body="+body)
-	return err
+	return s.writePR(prReviewTimeout, path, number, "api", "--method", "POST", endpoint, "-f", "body="+body)
 }
 
 // ResolveReviewThread marks a thread resolved, or reopens it. threadID is the
@@ -187,8 +185,7 @@ func (s *Service) ResolveReviewThread(path, threadID string, resolved bool) erro
 	if resolved {
 		mutation = resolveThreadMutation
 	}
-	_, err := s.gh(prReviewTimeout, path, "api", "graphql", "-f", "query="+mutation, "-f", "id="+threadID)
-	return err
+	return s.writePR(prReviewTimeout, path, 0, "api", "graphql", "-f", "query="+mutation, "-f", "id="+threadID)
 }
 
 // DismissReview withdraws a submitted review, so its verdict stops counting
@@ -206,9 +203,8 @@ func (s *Service) DismissReview(path, reviewID, message string) error {
 	if message == "" {
 		return fmt.Errorf("dismissing a review needs a reason")
 	}
-	_, err := s.gh(prReviewTimeout, path, "api", "graphql", "-f", "query="+dismissReviewMutation,
+	return s.writePR(prReviewTimeout, path, 0, "api", "graphql", "-f", "query="+dismissReviewMutation,
 		"-f", "id="+reviewID, "-f", "message="+message)
-	return err
 }
 
 // CommentOnPullRequest leaves a comment on the pull request itself — the
@@ -217,6 +213,5 @@ func (s *Service) CommentOnPullRequest(path string, number int, body string) err
 	if body == "" {
 		return fmt.Errorf("a comment needs something written in it")
 	}
-	_, err := s.gh(prReviewTimeout, path, prArgs("comment", number, "--body", body)...)
-	return err
+	return s.writePR(prReviewTimeout, path, number, prArgs("comment", number, "--body", body)...)
 }

@@ -222,6 +222,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// Relocating a project is the one flow that can point two rows at the same
 	// directory, so it validates the picked one against the workspace.
 	proj.SetProjects(db.ProjectAt)
+	proj.SetEmit(hub.Emit)
 	// Parking a session records the branch its checkout was on, so the history
 	// search can match a branch the row is showing (store.SetBranchOf), and a
 	// copy of what was said in it, capped, so the same search reaches the

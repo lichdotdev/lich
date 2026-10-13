@@ -95,6 +95,8 @@ type window struct {
 	palette *commandPalette
 	// worktree is the new-worktree-session dialog.
 	worktree *worktreeDialog
+	// pulls is the Pulls screen, drawn over the stage while open.
+	pulls *pullsScreen
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
 	// hideSettings is a request, from another goroutine, to take Settings down
@@ -156,6 +158,12 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.sidebar = newSidebar(&u.root)
 	u.palette = newCommandPalette(w.Invalidate)
 	u.worktree = newWorktreeDialog(client, &u.root, w.Invalidate)
+	u.pulls = newPullsScreen(newPullsStore(ctx, client, w.Invalidate), &u.root)
+	u.pulls.sessionAt = func(projectID, path string) bool {
+		ids, _, _ := u.model.sessionsAt(projectID, path)
+		return len(ids) > 0
+	}
+	u.model.prChanged = u.prChanged
 	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
 	u.topbar.open.closed = u.model.closed
@@ -177,6 +185,10 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	if u.review, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), w.Invalidate, notify); err != nil {
 		return err
 	}
+	if u.pulls.view.files, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), w.Invalidate, notify); err != nil {
+		return err
+	}
+	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
 	code, err := newCodeTab(client, w.Invalidate, *flagFont, comments, notify)
 	if err != nil {
 		return err
@@ -197,6 +209,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
+	u.footer.openPullRequest = u.showPulls
 	u.settings.footer = u.footer
 	u.footer.customize = u.customizeFooter
 	if *flagToasts != "" {
@@ -316,6 +329,7 @@ func (u *window) connect() error {
 	u.shortcuts.open = *flagShortcuts
 	u.paletteShot()
 	u.worktreeShot()
+	u.pullsShot()
 	if *flagCustomizeFooter {
 		u.customizeFooter()
 	}
@@ -364,6 +378,8 @@ func (u *window) layout(gtx C) error {
 		u.shortcuts.layout(gtx, u.theme, u.settings.hotkeys.current())
 		u.layoutPalette(gtx, u.theme)
 		u.layoutWorktreeDialog(gtx, u.theme)
+		u.layoutRemoveConfirm(gtx, u.theme)
+		u.layoutSubmitDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
@@ -427,7 +443,13 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Flexed(1, func(gtx C) D {
 					if u.settings.open {
+						u.pulls.hide()
 						u.settings.layout(gtx, u.theme, settingsProjectsOf(v.tabs))
+						return D{Size: gtx.Constraints.Max}
+					}
+					if u.pulls.open && !v.home {
+						u.pulls.files = filesInput{sessionID: v.in.sessionID, checkout: v.in.path, light: u.light}
+						u.applyPulls(u.pulls.layout(gtx, u.theme))
 						return D{Size: gtx.Constraints.Max}
 					}
 					err = u.stageRow(gtx, v)
@@ -500,6 +522,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	if u.settings.open {
 		f.active, f.settings = "", true
 	}
+	f.pulls = u.pulls.open && !v.home
 	return f
 }
 
@@ -615,6 +638,7 @@ func (u *window) terminalTakesKeys(gtx C) bool {
 func (u *window) apply(act sidebarAction) {
 	if act.activate != "" {
 		u.settings.hide()
+		u.pulls.hide()
 		u.model.setActive(u.ctx, act.activate)
 		if p, ok := u.model.project(); ok {
 			id := act.activate
@@ -631,9 +655,8 @@ func (u *window) apply(act sidebarAction) {
 	if act.close != "" {
 		u.closeSession(act.close)
 	}
-	if act.openURL != "" {
-		url := act.openURL
-		go func() { u.logErr("open pull request", u.client.OpenExternal(u.ctx, url)) }()
+	if act.openPR != 0 {
+		u.showPulls(act.openPR)
 	}
 	if act.pin != "" && u.model.setPinned(act.pin, act.pinTo) {
 		u.model.invalidate()

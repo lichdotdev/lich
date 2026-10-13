@@ -409,21 +409,28 @@ func (u *window) loadSettings() error {
 		return err
 	}
 	u.settings.editor.prefs = prefs
-	u.review.hiding, u.review.split = prefs.hideWhitespace, prefs.split()
+	for _, panel := range u.diffPanels() {
+		panel.hiding, panel.split = prefs.hideWhitespace, prefs.split()
+	}
 	if err := u.settings.loadHotkeys(); err != nil {
 		return err
 	}
 	return u.settings.load()
 }
 
-// takeEditorPref is Settings › Editor's change reaching the review panel:
-// whitespace at once, the layout as the panel's split, which its header
+// takeEditorPref is Settings › Editor's change reaching the diff panels:
+// whitespace at once, the layout as each panel's split, which its header
 // toggle goes on flipping from there.
 func (u *window) takeEditorPref(key string, prefs editorPrefs) {
-	switch key {
-	case hideWhitespaceKey:
-		u.review.setHiding(prefs.hideWhitespace)
-	case diffLayoutKey:
-		u.review.split = prefs.split()
+	for _, panel := range u.diffPanels() {
+		switch key {
+		case hideWhitespaceKey:
+			panel.setHiding(prefs.hideWhitespace)
+		case diffLayoutKey:
+			panel.split = prefs.split()
+		}
 	}
 }
+
+// diffPanels are the dock's Review tab and the Pulls screen's Files tab.
+func (u *window) diffPanels() []*reviewPanel { return []*reviewPanel{u.review, u.pulls.view.files} }

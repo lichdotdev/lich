@@ -94,7 +94,27 @@ type reviewPanel struct {
 
 	mu      sync.Mutex
 	answers []gapAnswer
+
+	// pr makes this the Pulls screen's Files tab rather than the dock's
+	// Review tab; nil for the dock.
+	pr *prFiles
 }
+
+// prFiles is a reviewPanel showing a pull request's diff instead of a
+// checkout's working tree: nothing to revert or discard, its gaps read at the
+// PR's head, and each file tickable as viewed.
+type prFiles struct {
+	head string
+	// viewed is each ticked file's diff text when it was ticked: a commit
+	// that changes the file unticks it, one that does not leaves it
+	// (pull-request-viewed.ts).
+	viewed map[string]string
+	ticks  map[string]*widget.Bool
+	// toReview files a line comment into the PR's pending review.
+	toReview func(path, lines, body string)
+}
+
+func (f *prFiles) isViewed(c *fileCard) bool { return f.viewed[c.git.path] == c.gitText }
 
 type gapAnswer struct {
 	path  string
@@ -140,8 +160,13 @@ func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 	p.th, p.light, p.target = th, in.light, in.checkout
 	p.inject = dockInjector(p.client, in.sessionID)
 	p.feed.follow(in.checkout)
-	p.takeRead(in.checkout)
+	p.takeRead(in.checkout, p.feed.latest())
 	p.takeAnswers()
+	return p.bodyWithBatch(gtx, th)
+}
+
+// bodyWithBatch is the files over the comment batch at their foot.
+func (p *reviewPanel) bodyWithBatch(gtx C, th *ui.Theme) error {
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
@@ -156,8 +181,7 @@ func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 // takeRead lays the newest read into the cards. Only a changed text touches
 // them, so a poll that read the same diff leaves every editor, its selection
 // and its scroll as they were.
-func (p *reviewPanel) takeRead(checkout string) {
-	read := p.feed.latest()
+func (p *reviewPanel) takeRead(checkout string, read *diffRead) {
 	if checkout != p.cardsFor {
 		p.cardsFor, p.cards, p.order = checkout, map[string]*fileCard{}, nil
 	}
@@ -210,11 +234,15 @@ func (p *reviewPanel) diffTheme() godemirror.Theme {
 	return t
 }
 
-// expand fetches a gap's lines from the working tree off the UI goroutine.
+// expand fetches a gap's lines off the UI goroutine: from the working tree,
+// or from a pull request's head.
 func (p *reviewPanel) expand(c *fileCard, gen int, g godemirror.Gap) {
-	path, rel := p.target, c.git.path
+	path, rel, ref := p.target, c.git.path, ""
+	if p.pr != nil {
+		ref = p.pr.head
+	}
 	go func() {
-		lines, err := p.client.FileLines(context.Background(), path, rel, "", g.From, g.To)
+		lines, err := p.client.FileLines(context.Background(), path, rel, ref, g.From, g.To)
 		if err != nil {
 			p.notify(failure(toastReadFailed, rel))
 			return
