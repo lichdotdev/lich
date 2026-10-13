@@ -13,7 +13,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
 	"gioui.org/widget"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -79,22 +78,33 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 }
 
 // cardFace is the card itself, under its tooltip.
+// cardFace leaves the corner controls out while the card is being renamed:
+// the field takes the whole title line, and a pin or × over it only reads as
+// noise next to the text being typed.
 func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, pinClick, closeClick, prChip *widget.Clickable, fill color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 			func(gtx C) D {
-				return layout.Stack{Alignment: layout.NE}.Layout(gtx,
+				children := []layout.StackChild{
 					layout.Stacked(func(gtx C) D { return s.cardBody(gtx, th, sv, prChip) }),
-					layout.Stacked(func(gtx C) D {
+				}
+				if !s.renaming(sv.ID) {
+					children = append(children, layout.Stacked(func(gtx C) D {
 						return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
 							return s.cardControls(gtx, th, sv, pinClick, closeClick, click.Hovered())
 						})
-					}),
-				)
+					}))
+				}
+				return layout.Stack{Alignment: layout.NE}.Layout(gtx, children...)
 			},
 		)
 	})
+}
+
+func (s *sidebar) renaming(id string) bool {
+	rename := s.renames[id]
+	return rename != nil && rename.Active()
 }
 
 func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.Clickable) D {
@@ -131,23 +141,21 @@ func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	if sv.sandbox.Confined {
 		row = append(row, layout.Rigid(func(gtx C) D { return s.icShield.Layout(gtx, 12, th.MutedForeground) }), ui.Gap(1.5))
 	}
+	if s.renaming(sv.ID) {
+		return append(row, layout.Flexed(1, func(gtx C) D { return s.renameField(gtx, th, sv.ID, s.renames[sv.ID]) }))
+	}
 	controls := ui.Space(11)
 	if sv.Pinned {
 		controls = ui.Space(6)
-	}
-	if rename := s.renames[sv.ID]; rename != nil && rename.Active() {
-		return append(row, layout.Flexed(1, func(gtx C) D { return s.renameField(gtx, th, sv.ID, rename, controls) }))
 	}
 	return append(row, layout.Flexed(1, func(gtx C) D {
 		return layout.Inset{Right: controls}.Layout(gtx, th.Text(ui.TextSM, sv.Label).Weight(font.Medium).Layout)
 	}))
 }
 
-// renameField is the label as a field while the card is being renamed; the
-// padding sits inside its ring, as the web input's does.
-func (s *sidebar) renameField(gtx C, th *ui.Theme, id string, rename *ui.InlineEdit, controls unit.Dp) D {
+// renameField is the label as a field while the card is being renamed.
+func (s *sidebar) renameField(gtx C, th *ui.Theme, id string, rename *ui.InlineEdit) D {
 	field := th.InlineEdit(rename, ui.TextSM).Weight(font.Medium)
-	field.PadRight = controls
 	d, res := field.Layout(gtx)
 	if res.Outcome == ui.InlineEditCommitted {
 		s.renamed = sessionRename{id: id, label: res.Value}
