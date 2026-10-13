@@ -251,13 +251,19 @@ func hotkeyIconButton(gtx C, th *ui.Theme, root *ui.Root, click *widget.Clickabl
 }
 
 // shortcutLine is ShortcutLine: what it does on the left, the chord as a key
-// cap on the right.
+// cap on the right. An unassigned action has no chord to cap, and a cap
+// would read as a key to press.
 func shortcutLine(gtx C, th *ui.Theme, r shortcutRow) D {
 	return layout.Inset{Left: hotkeyLinePadX, Right: hotkeyLinePadX, Top: hotkeyRowPadY, Bottom: hotkeyRowPadY}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, th.Text(ui.TextSM, r.label).Layout),
 			layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
-			layout.Rigid(func(gtx C) D { return keyCap(gtx, th, r.keys) }),
+			layout.Rigid(func(gtx C) D {
+				if r.keys == hotkeyUnassigned {
+					return th.Text(ui.TextXS, r.keys).Muted().Layout(gtx)
+				}
+				return keyCap(gtx, th, r.keys)
+			}),
 		)
 	})
 }

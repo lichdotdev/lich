@@ -69,3 +69,39 @@ func TestLabelDisabledIsHalfOpacity(t *testing.T) {
 		t.Errorf("disabled ink %v, want the foreground at half over the page %v", got, wantOff)
 	}
 }
+
+// text-center puts each line of a label in the middle of the width it is
+// given; the default is its start.
+func TestCenteredLabelSitsInTheMiddleOfItsWidth(t *testing.T) {
+	th := testTheme()
+	inkSpan := func(l LabelStyle) (left, right int) {
+		ops := tabsFrame(new(input.Router), time.Unix(0, 0), func(gtx C) D {
+			paint.Fill(gtx.Ops, Dark.Background)
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return l.Layout(gtx)
+		})
+		img := tabsRender(t, ops)
+		left, right = -1, -1
+		for y := 0; y < 24; y++ {
+			for x := 0; x < tabsTestSize.X; x++ {
+				if img.RGBAAt(x, y).R > Dark.Background.R+40 {
+					if left < 0 || x < left {
+						left = x
+					}
+					right = max(right, x)
+				}
+			}
+		}
+		return left, right
+	}
+	start := th.Text(TextSM, "Nothing closed yet")
+	l0, r0 := inkSpan(start)
+	l1, r1 := inkSpan(start.Centered())
+	if l0 > 2 {
+		t.Fatalf("start-aligned ink begins at %d, want the left edge", l0)
+	}
+	mid := tabsTestSize.X / 2
+	if got := (l1 + r1) / 2; got < mid-2 || got > mid+2 {
+		t.Errorf("centered ink spans %d..%d, middle %d, want the width's middle %d (start-aligned spanned %d..%d)", l1, r1, got, mid, l0, r0)
+	}
+}

@@ -29,13 +29,13 @@ const (
 	dialogScrim       = 0.1                    // bg-black/10
 )
 
-// dialogScrimOpacity is bg-black/10 as Gio draws it. The scrim covers
-// whatever the window holds, not a known surface, so it cannot be composited
-// with Theme.Over and stays translucent. A browser blends in sRGB, scaling
-// every channel of what is under the scrim by 0.9; Gio blends in linear light,
-// where the same scaling takes black at 1-0.9^2.4 (sRGB's gamma), exact
-// everywhere but the near-black linear toe of the curve.
-var dialogScrimOpacity = float32(1 - math.Pow(1-dialogScrim, 2.4))
+// scrimAlpha is bg-black/<opacity> as Gio draws it. The scrim covers whatever
+// the window holds, not a known surface, so it cannot be composited with
+// Theme.Over and stays translucent. A browser blends in sRGB, scaling every
+// channel of what is under the scrim by 1-opacity; Gio blends in linear light,
+// where the same scaling takes black at 1-(1-opacity)^2.4 (sRGB's gamma),
+// exact everywhere but the near-black linear toe of the curve.
+func scrimAlpha(opacity float64) float32 { return float32(1 - math.Pow(1-opacity, 2.4)) }
 
 var black = color.NRGBA{A: 0xff}
 
@@ -70,7 +70,14 @@ type DialogStyle struct {
 	MaxWidth    unit.Dp
 	// HideClose drops the corner ×, showCloseButton={false}.
 	HideClose bool
-	theme     *Theme
+	// Raw, when set, is the whole panel: no padding, header or footer, no ×.
+	// Top then places the panel that share of the window's height from the
+	// top instead of centering it, and Scrim is its backdrop's opacity (0 is
+	// the dialog's own bg-black/10). It is common/PickerDialog's popup.
+	Raw   layout.Widget
+	Top   float32
+	Scrim float64
+	theme *Theme
 }
 
 // Dialog is a DialogStyle at the DialogContent default width.
@@ -121,7 +128,7 @@ func (d DialogStyle) overlay(gtx C, amount float32) {
 		defer paint.PushOpacity(gtx.Ops, amount).Pop()
 	}
 	window := gtx.Constraints.Max
-	paint.FillShape(gtx.Ops, Alpha(black, dialogScrimOpacity), clip.Rect{Max: window}.Op())
+	paint.FillShape(gtx.Ops, Alpha(black, scrimAlpha(d.scrim())), clip.Rect{Max: window}.Op())
 	d.State.scrim.layout(gtx, window)
 
 	panelGtx := gtx
@@ -132,7 +139,10 @@ func (d DialogStyle) overlay(gtx C, amount float32) {
 	panel := macro.Stop()
 
 	origin := window.Sub(size).Div(2)
-	center := f32.Pt(float32(window.X)/2, float32(window.Y)/2)
+	if d.Raw != nil {
+		origin.Y = int(d.Top * float32(window.Y))
+	}
+	center := f32.Pt(float32(origin.X+size.X/2), float32(origin.Y+size.Y/2))
 	zoom := zoomFrom + (1-zoomFrom)*amount
 	defer op.Affine(f32.Affine2D{}.Scale(center, f32.Pt(zoom, zoom))).Push(gtx.Ops).Pop()
 	defer op.Offset(origin).Push(gtx.Ops).Pop()
@@ -143,7 +153,7 @@ func (d DialogStyle) overlay(gtx C, amount float32) {
 // sits over the scrim, composited as if the window under it were the
 // surface the dialog was laid out on.
 func (d DialogStyle) panel(gtx C) D {
-	ring := Over(d.theme.Over(Alpha(black, dialogScrim)), Alpha(d.theme.Foreground, dialogRingOpacity))
+	ring := Over(d.theme.Over(Alpha(black, float32(d.scrim()))), Alpha(d.theme.Foreground, dialogRingOpacity))
 	d.theme = d.theme.On(d.theme.Popover)
 	macro := op.Record(gtx.Ops)
 	content := d.content(gtx)
@@ -158,15 +168,26 @@ func (d DialogStyle) panel(gtx C) D {
 	paint.PaintOp{}.Add(gtx.Ops)
 	event.Op(gtx.Ops, &d.State.panel)
 	call.Add(gtx.Ops)
-	if !d.HideClose {
+	if !d.HideClose && d.Raw == nil {
 		d.closeButton(gtx, size.X)
 	}
 	surface.Pop()
 	return content
 }
 
+// scrim is the backdrop's opacity: Scrim, else the dialog's bg-black/10.
+func (d DialogStyle) scrim() float64 {
+	if d.Scrim > 0 {
+		return d.Scrim
+	}
+	return dialogScrim
+}
+
 // content is the grid of DialogContent: p-6 gap-6 over header, body, footer.
 func (d DialogStyle) content(gtx C) D {
+	if d.Raw != nil {
+		return d.Raw(gtx)
+	}
 	children := []layout.FlexChild{layout.Rigid(d.header)}
 	if d.Body != nil {
 		children = append(children, VGap(6), layout.Rigid(d.Body))

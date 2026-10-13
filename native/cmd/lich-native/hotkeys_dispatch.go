@@ -24,8 +24,7 @@ type hotkeyHandler struct {
 
 // hotkeyHandlers are the actions with a native screen or command. Absent,
 // and so inert: newWorktree, delegate (no worktree dialog nor delegate flow),
-// splitBeside and otherPane (no split panes), pulls, commandPalette and
-// shortcuts (no such screen).
+// splitBeside and otherPane (no split panes) and pulls (no such screen).
 var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyNewSession:         {(*window).canNewSession, (*window).hotkeyNewSession},
 	hotkeyRenameSession:      {(*window).hasActiveSession, (*window).hotkeyRename},
@@ -42,15 +41,19 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyToggleDock:         {nil, (*window).hotkeyDock},
 	hotkeySearchInFiles:      {(*window).hasProject, (*window).hotkeySearch},
 	hotkeySettings:           {(*window).hasProject, (*window).hotkeyOpenSettings},
+	hotkeyShortcuts:          {nil, (*window).hotkeyShortcuts},
+	hotkeyCommandPalette:     {nil, (*window).hotkeyPalette},
 	hotkeyQuit:               {nil, func(u *window, _ C) { go u.askOrQuit(closeAsk) }},
 }
 
-// pollHotkeys is pollChords over the actions this window can carry out now.
+// pollHotkeys is pollChords over the actions this window can carry out now,
+// then the ones the command palette picked.
 func (u *window) pollHotkeys(gtx C) []hotkeyID {
-	return pollChords(gtx, &u.settings.hotkeys, func(id hotkeyID) bool {
+	fired := pollChords(gtx, &u.settings.hotkeys, func(id hotkeyID) bool {
 		handler, ok := hotkeyHandlers[id]
 		return ok && (handler.ready == nil || handler.ready(u))
 	})
+	return append(fired, u.pickedHotkeys()...)
 }
 
 // pollChords answers the actions whose bound chord was pressed this frame, in

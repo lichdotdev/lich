@@ -50,7 +50,7 @@ const (
 )
 
 // inputState is what the aria and :focus-visible classes of an input select on.
-type inputState struct{ focused, invalid, disabled bool }
+type inputState struct{ focused, invalid, disabled, bare bool }
 
 // inputPaint is the box's three layers, opaque, or transparent where a layer
 // is not drawn.
@@ -65,6 +65,9 @@ func inputFill(th *Theme) color.NRGBA { return th.Over(Alpha(th.Palette.Input, i
 // the class list, which is how shadcn means it to win. The ring is a
 // box-shadow, so it lands on the surface, not on the fill.
 func inputPaintFor(th *Theme, st inputState, borderless bool) inputPaint {
+	if st.bare {
+		return inputPaint{}
+	}
 	p := th.Palette
 	fill := inputFill(th)
 	box := th.On(fill)
@@ -104,6 +107,9 @@ type InputStyle struct {
 	// Borderless is border-0 focus-visible:ring-0, for a field that sits in a
 	// panel that is already a box.
 	Borderless bool
+	// Bare draws no box at all, neither fill, border nor ring: the text
+	// field of common/PickerDialog, which is a row of its panel.
+	Bare bool
 	// Clear, when set, is a ghost X at the right edge while the field has
 	// text: pressing it empties the field, as an undo step, and leaves the
 	// focus in it.
@@ -142,7 +148,7 @@ func (s InputStyle) Layout(gtx C) D {
 	if showClear {
 		field.padRight = inputClearPadRight
 	}
-	st := inputState{invalid: s.Invalid, disabled: s.Disabled}
+	st := inputState{invalid: s.Invalid, disabled: s.Disabled, bare: s.Bare}
 	return inputFrame(gtx, s.theme, s.Editor, st, s.Borderless, func(gtx C) D {
 		d := field.layout(gtx, h)
 		s.layoutLeading(gtx, h)

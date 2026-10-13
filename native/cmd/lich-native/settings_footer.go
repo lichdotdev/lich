@@ -36,6 +36,10 @@ func (s *settingsScreen) reveal(section, title string, projects []settingsProjec
 
 var (
 	flagCustomizeFooter  = flag.Bool("customize-footer", false, "start as the footer menu's Customize footer… lands, for -shot")
+	flagShortcuts        = flag.Bool("shortcuts", false, "open the keyboard shortcuts overlay at start, for -shot")
+	flagPalette          = flag.Bool("palette", false, "open the command palette at start, for -shot")
+	flagPaletteQuery     = flag.String("palette-query", "", "type this into the command palette at start, for -shot with -palette (\">\" lists actions)")
+	flagPaletteTab       = flag.String("palette-tab", "", "open the command palette on this tab (Sessions, Projects, Messages, History), for -shot with -palette")
 	flagSettings         = flag.String("settings", "", "open Settings on this section at start, for -shot")
 	flagSettingsQuery    = flag.String("settings-query", "", "type this into the Settings search at start, for -shot with -settings")
 	flagPatchNotes       = flag.Bool("patch-notes", false, "open the patch notes dialog with Settings at start, for -shot with -settings updates")

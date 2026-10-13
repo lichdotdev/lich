@@ -9,6 +9,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
 )
@@ -25,7 +26,11 @@ type LabelStyle struct {
 	// LineHeight is CSS line-height: each line box is this tall and the text
 	// sits centered in it (half-leading). 0 keeps the font's own height.
 	LineHeight unit.Sp
-	theme      *Theme
+	// Align is text-align within the width the label is given: start by
+	// default, Middle for text-center. It aligns each wrapped line, so it
+	// shows only on a label laid out at its full width.
+	Align text.Alignment
+	theme *Theme
 }
 
 // tailwindLeading is the line-height Tailwind pairs with each text size
@@ -48,6 +53,9 @@ func (l LabelStyle) Mono() LabelStyle { l.Font.Typeface = l.theme.Mono; return l
 
 // Italic sets italic.
 func (l LabelStyle) Italic() LabelStyle { l.Font.Style = font.Italic; return l }
+
+// Centered sets text-center.
+func (l LabelStyle) Centered() LabelStyle { l.Align = text.Middle; return l }
 
 // In sets the color.
 func (l LabelStyle) In(c color.NRGBA) LabelStyle { l.Color = c; return l }
@@ -87,7 +95,7 @@ func (l LabelStyle) Layout(gtx layout.Context) layout.Dimensions {
 func (l LabelStyle) draw(gtx layout.Context) layout.Dimensions {
 	colorMacro := op.Record(gtx.Ops)
 	paint.ColorOp{Color: l.Color}.Add(gtx.Ops)
-	w := widget.Label{MaxLines: l.MaxLines, Truncator: "…", LineHeight: l.LineHeight}
+	w := widget.Label{MaxLines: l.MaxLines, Truncator: "…", LineHeight: l.LineHeight, Alignment: l.Align}
 	if l.LineHeight != 0 {
 		// Gio scales an explicit LineHeight by 1.2 unless told otherwise.
 		w.LineHeightScale = 1

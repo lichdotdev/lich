@@ -184,6 +184,24 @@ func TestInputBoxPaintsTheBrowsersColors(t *testing.T) {
 	}
 }
 
+// A bare input is no box: the page shows through where the fill, the border
+// and the focus ring would be, focused or not.
+func TestBareInputDrawsNoBox(t *testing.T) {
+	th, ed := testTheme(), new(widget.Editor)
+	in := th.Input(ed, "Name")
+	in.Bare = true
+	rig := newInputRig(t, 160, 36, in.Layout)
+	rig.router.Source().Execute(key.FocusCmd{Tag: ed})
+	rig.frame()
+	img := rig.frame()
+	for _, at := range []image.Point{{X: 4, Y: 18}, {X: 80, Y: 0}, {X: -2, Y: 18}} {
+		p := image.Pt(rig.margin+at.X, rig.margin+at.Y)
+		if c := img.RGBAAt(p.X, p.Y); c.A != 0 {
+			t.Errorf("pixel %v is %v, want nothing drawn", at, c)
+		}
+	}
+}
+
 // disabled:opacity-50 fades the finished box: the fill (#14141 6) at half over
 // the page.
 func TestInputDisabledFadesOntoThePage(t *testing.T) {

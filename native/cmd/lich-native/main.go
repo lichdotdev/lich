@@ -88,6 +88,10 @@ type window struct {
 	theme    *ui.Theme
 	root     ui.Root
 	toaster  ui.Toaster
+	// shortcuts is the keyboard shortcuts overlay.
+	shortcuts shortcutsOverlay
+	// palette is the command palette.
+	palette *commandPalette
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
 	// emptyNew is the empty stage's New session button.
@@ -144,6 +148,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.terms.toaster = &u.toaster
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
+	u.palette = newCommandPalette(w.Invalidate)
 	u.topbar = newTopbar(&u.root)
 	u.notifier = newNotifier(ctx, client, w.Invalidate)
 	attention := attentionToast{show: func(t ui.Toast) { u.toaster.Show(t) }, open: func(projectID, id string) {
@@ -293,6 +298,8 @@ func (u *window) connect() error {
 			return err
 		}
 	}
+	u.shortcuts.open = *flagShortcuts
+	u.paletteShot()
 	if *flagCustomizeFooter {
 		u.customizeFooter()
 	}
@@ -335,6 +342,8 @@ func (u *window) layout(gtx C) error {
 		}()
 		closed := u.topbar.layoutConfirm(gtx, u.theme)
 		u.resume.layout(u.ctx, gtx, u.theme, u.gate, u.model)
+		u.shortcuts.layout(gtx, u.theme, u.settings.hotkeys.current())
+		u.layoutPalette(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
@@ -574,7 +583,7 @@ func (u *window) content(gtx C, active sessionView) error {
 	if err != nil {
 		return err
 	}
-	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys() && !u.footer.holdsKeys() && !u.dock.holdsKeys(gtx))
+	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys() && !u.footer.holdsKeys() && !u.dock.holdsKeys(gtx) && !u.palette.open)
 }
 
 func (u *window) apply(act sidebarAction) {
