@@ -87,7 +87,8 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 	if h.collapse.Clicked(gtx) {
 		s.setOpen(gtx, false, act)
 	}
-	entries := launchEntries(s.launchProviders, terminalLabel, func(kind string) { act.launch = launchRequest{kind: kind} })
+	entries := append(launchEntries(s.launchProviders, terminalLabel, func(kind string) { act.launch = launchRequest{kind: kind} }),
+		ui.MenuEntry{Label: worktreeLabel, Icon: icWtBranch, OnClick: func() { act.worktree = true }})
 	trigger := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		tip := th.Tooltip(s.root, s.hint("new"), newSessionHint)

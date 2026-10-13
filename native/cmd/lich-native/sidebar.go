@@ -125,6 +125,7 @@ type sidebarAction struct {
 	rename                         sessionRename
 	color, colorTo                 string // session id, and its new tint ("" for the theme)
 	continueIn                     continueRequest
+	worktree                       bool // the + menu asked for a worktree session
 	sidebarWrites
 }
 

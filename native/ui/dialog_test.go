@@ -111,6 +111,18 @@ func TestDialogEscapeDismisses(t *testing.T) {
 	}
 }
 
+// TestDialogEscapeReleaseKeepsItOpen proves only the press dismisses: the
+// release of an Escape that closed a popup in the dialog comes a frame after
+// the popup is gone, and must not take the dialog with it.
+func TestDialogEscapeReleaseKeepsItOpen(t *testing.T) {
+	r := newDialogRig()
+	r.settle()
+	r.router.Queue(key.Event{Name: key.NameEscape, State: key.Release})
+	if dismissed, _ := r.frame(); dismissed {
+		t.Error("an Escape release dismissed the dialog")
+	}
+}
+
 // Opening focuses the panel, so Tab walks the dialog's own controls in order:
 // the footer action, then the ×, which Space presses.
 func TestDialogTakesFocusAndCloseButtonDismisses(t *testing.T) {

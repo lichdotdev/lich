@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   another logged-in account, with its five-hour usage beside it, and carries on
   in the same card. The web window does not show profiles. Claude Code only for
   now.
+- **A new worktree in the native window starts from the newest of its base.**
+  The **Worktree** item of the + menu (or its shortcut) opens a dialog that
+  takes a name, words or a `#123` issue, the branch to start from and whether to
+  bring the checkout's uncommitted changes. When that branch is behind its
+  upstream, as `main` is after a few merges, lich fetches it first and starts the
+  worktree from the upstream instead, saying so under the branch; a branch with
+  commits not pushed, an unreachable remote or uncommitted changes brought along
+  keep the local branch. Your local branch itself is left as it is.
 - **`lich native` opens an experimental native window.** It is built in Go on
   Gio, beside the web window, and opens on the running lich (starting one when
   none runs) after closing the web window, so your sessions stay where they

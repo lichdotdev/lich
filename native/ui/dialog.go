@@ -77,6 +77,10 @@ type DialogStyle struct {
 	Raw   layout.Widget
 	Top   float32
 	Scrim float64
+	// Root is the window's, for a dropdown or tooltip in the dialog: drawn
+	// deferred, the dialog is no descendant of the Root's pointer area, so it
+	// reports its presses to the Root itself.
+	Root  *Root
 	theme *Theme
 }
 
@@ -103,14 +107,25 @@ func (d DialogStyle) Layout(gtx C) (dismissed bool) {
 	}
 	macro := op.Record(gtx.Ops)
 	d.overlay(gtx, amount)
+	if d.Root != nil {
+		d.Root.watchOverlay(gtx)
+	}
 	op.Defer(gtx.Ops, macro.Stop())
 	return dismissed
 }
 
 func (s *DialogState) dismissed(gtx C) bool {
 	dismissed := s.close.Clicked(gtx)
-	if _, ok := gtx.Event(key.Filter{Name: key.NameEscape}); ok {
-		dismissed = true
+	// The press only: the release of an Escape that closed a popup inside
+	// the dialog arrives a frame later, with the popup already gone.
+	for {
+		ev, ok := gtx.Event(key.Filter{Name: key.NameEscape})
+		if !ok {
+			break
+		}
+		if ke, ok := ev.(key.Event); ok && ke.State == key.Press {
+			dismissed = true
+		}
 	}
 	if s.scrim.pressed(gtx) {
 		dismissed = true

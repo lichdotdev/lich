@@ -21,12 +21,16 @@ import (
 type Root struct {
 	window  image.Point
 	pointer f32.Point
+	// overlay is the area a deferred overlay (a dialog) lays over the window
+	// to report the pointer from where the Root's own area cannot see it.
+	overlay struct{ _ byte }
 }
 
 func (r *Root) Layout(gtx C, w layout.Widget) D {
 	r.window = gtx.Constraints.Max
+	const kinds = pointer.Move | pointer.Drag | pointer.Press | pointer.Release | pointer.Enter | pointer.Leave
 	for {
-		ev, ok := gtx.Event(pointer.Filter{Target: r, Kinds: pointer.Move | pointer.Drag | pointer.Press | pointer.Release | pointer.Enter | pointer.Leave})
+		ev, ok := gtx.Event(pointer.Filter{Target: r, Kinds: kinds}, pointer.Filter{Target: &r.overlay, Kinds: kinds})
 		if !ok {
 			break
 		}
@@ -37,6 +41,15 @@ func (r *Root) Layout(gtx C, w layout.Widget) D {
 	defer clip.Rect{Max: r.window}.Push(gtx.Ops).Pop()
 	event.Op(gtx.Ops, r)
 	return w(gtx)
+}
+
+// watchOverlay lays the overlay area over the window, letting every event
+// through to what is under it. Call it in window coordinates, from inside the
+// deferred overlay, after drawing it.
+func (r *Root) watchOverlay(gtx C) {
+	defer pointer.PassOp{}.Push(gtx.Ops).Pop()
+	defer clip.Rect{Max: r.window}.Push(gtx.Ops).Pop()
+	event.Op(gtx.Ops, &r.overlay)
 }
 
 // origin is the window position of the top-left of a widget that saw this

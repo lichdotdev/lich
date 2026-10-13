@@ -23,10 +23,11 @@ type hotkeyHandler struct {
 }
 
 // hotkeyHandlers are the actions with a native screen or command. Absent,
-// and so inert: newWorktree, delegate (no worktree dialog nor delegate flow),
+// and so inert: delegate (no delegate flow),
 // splitBeside and otherPane (no split panes) and pulls (no such screen).
 var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyNewSession:         {(*window).canNewSession, (*window).hotkeyNewSession},
+	hotkeyNewWorktree:        {(*window).hasProject, func(u *window, _ C) { u.showWorktreeDialog() }},
 	hotkeyRenameSession:      {(*window).hasActiveSession, (*window).hotkeyRename},
 	hotkeyCloseSession:       {(*window).canCloseActive, (*window).hotkeyClose},
 	hotkeyTogglePin:          {(*window).hasActiveSession, (*window).hotkeyPin},

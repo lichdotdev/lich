@@ -119,7 +119,7 @@ func (s *settingsScreen) layoutClaudeDialog(gtx C, th *ui.Theme) {
 	on := th.On(th.Popover)
 	title, desc := flowHeading(d)
 	dlg := th.Dialog(&f.dialog, d.open && s.open, title, desc)
-	dlg.MaxWidth = ui.DialogWidthXL
+	dlg.MaxWidth, dlg.Root = ui.DialogWidthXL, s.root
 	dlg.Body = func(gtx C) D { return s.flowBody(gtx, on, f, d) }
 	dlg.Actions = s.flowActions(on, f, d)
 	if dlg.Layout(gtx) {

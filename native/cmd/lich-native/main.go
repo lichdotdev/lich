@@ -93,6 +93,8 @@ type window struct {
 	shortcuts shortcutsOverlay
 	// palette is the command palette.
 	palette *commandPalette
+	// worktree is the new-worktree-session dialog.
+	worktree *worktreeDialog
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
 	// hideSettings is a request, from another goroutine, to take Settings down
@@ -153,6 +155,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
 	u.palette = newCommandPalette(w.Invalidate)
+	u.worktree = newWorktreeDialog(client, &u.root, w.Invalidate)
 	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
 	u.topbar.open.closed = u.model.closed
@@ -310,6 +313,7 @@ func (u *window) connect() error {
 	}
 	u.shortcuts.open = *flagShortcuts
 	u.paletteShot()
+	u.worktreeShot()
 	if *flagCustomizeFooter {
 		u.customizeFooter()
 	}
@@ -357,6 +361,7 @@ func (u *window) layout(gtx C) error {
 		u.resume.layout(u.ctx, gtx, u.theme, u.gate, u.model)
 		u.shortcuts.layout(gtx, u.theme, u.settings.hotkeys.current())
 		u.layoutPalette(gtx, u.theme)
+		u.layoutWorktreeDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
@@ -595,7 +600,14 @@ func (u *window) content(gtx C, active sessionView) error {
 	if err != nil {
 		return err
 	}
-	return u.terms.layout(gtx, t, !u.sidebar.holdsKeys() && !u.footer.holdsKeys() && !u.dock.holdsKeys(gtx) && !u.palette.open)
+	return u.terms.layout(gtx, t, u.terminalTakesKeys(gtx))
+}
+
+// terminalTakesKeys is whether the terminal on screen takes the keyboard back
+// this frame: not while a field or a dialog over it is typing.
+func (u *window) terminalTakesKeys(gtx C) bool {
+	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx)
+	return !typing && !u.palette.open && !u.worktree.open
 }
 
 func (u *window) apply(act sidebarAction) {
@@ -610,6 +622,9 @@ func (u *window) apply(act sidebarAction) {
 	}
 	if l := act.launch; l.kind != "" {
 		go u.newSession(l, "")
+	}
+	if act.worktree {
+		u.showWorktreeDialog()
 	}
 	if act.close != "" {
 		u.closeSession(act.close)

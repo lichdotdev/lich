@@ -15,6 +15,7 @@ const (
 	folderLaunchOnTitle = "New session in %s, on %s"
 	newTerminalLabel    = "New Terminal"
 	terminalLabel       = "Terminal"
+	worktreeLabel       = "Worktree"
 )
 
 // launchProvider is providers-store.ts ProviderState, trimmed to what the
