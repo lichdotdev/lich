@@ -1,15 +1,19 @@
 package codexprofile
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/omartelo/lich/internal/profilestore"
 	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/winexec"
 )
@@ -22,7 +26,16 @@ const (
 	// notLoggedIn is what `codex login status` prints, in Codex's own words,
 	// when nobody is logged in there (measured on 0.162.1, exit status 1).
 	notLoggedIn = "not logged in"
+	// installTimeout bounds one `codex plugin` call of a port, the cap the lich
+	// plugin's own install uses (internal/agentplugin): a marketplace upgrade
+	// clones.
+	installTimeout = 130 * time.Second
 )
+
+// pluginKeyPattern is a plugin@marketplace key. It is checked before the key
+// reaches a command line, so nothing that arrives over RPC can be read as a
+// flag.
+var pluginKeyPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za-z0-9._-]*$`)
 
 // BinResolver supplies the Codex binary: the configured one, or "" for the
 // default name on PATH. The store implements it.
@@ -31,17 +44,23 @@ type BinResolver interface {
 }
 
 // Service is the window's door to the Codex profiles: listing them with their
-// login state, creating, renaming and deleting them, and logging one in.
+// login state, creating, renaming and deleting them, logging one in, and
+// porting plugins between them.
 type Service struct {
 	bins BinResolver
 	emit func(name string, data any)
 
-	// inUse counts the live sessions running in a profile, forget clears the
-	// settings that name a deleted one and account names the login of a
-	// profile. Startup wiring.
-	inUse   func(slug string) int
-	forget  func(slug string) error
-	account func(slug string) (email, plan string)
+	// installLich puts the lich plugin into a profile once it is logged in
+	// (internal/agentplugin), inUse counts the live sessions running in one,
+	// forget clears the settings that name a deleted one and account names the
+	// login of a profile. Startup wiring.
+	installLich func(slug string) error
+	inUse       func(slug string) int
+	forget      func(slug string) error
+	account     func(slug string) (email, plan string)
+	// lichPlugin is the lich plugin's key, left out of a port: every profile
+	// gets it from installLich, pinned to the release this lich speaks.
+	lichPlugin string
 
 	mu     sync.Mutex
 	logins map[string]*login
@@ -51,6 +70,12 @@ type Service struct {
 // login's progress through emit.
 func New(bins BinResolver, emit func(name string, data any)) *Service {
 	return &Service{bins: bins, emit: emit, logins: map[string]*login{}}
+}
+
+// SetLichPlugin wires the lich plugin: install puts it into a profile and key is
+// the plugin@marketplace it installs. Startup wiring.
+func (s *Service) SetLichPlugin(install func(slug string) error, key string) {
+	s.installLich, s.lichPlugin = install, key
 }
 
 // SetSessions wires the two questions a delete asks: how many live sessions run
@@ -68,12 +93,14 @@ func (s *Service) SetAccount(account func(slug string) (email, plan string)) {
 }
 
 // Info is a profile as the Settings screen shows it: whether anybody is logged
-// in there, and the account and plan when they could be read.
+// in there, the account and plan when they could be read, and how many plugins
+// it has.
 type Info struct {
 	Profile
 	LoggedIn bool   `json:"loggedIn"`
 	Email    string `json:"email,omitempty"`
 	Plan     string `json:"plan,omitempty"`
+	Plugins  int    `json:"plugins"`
 	// StatusError is why `codex login status` gave no answer, in its own words;
 	// LoggedIn is then false for want of one.
 	StatusError string `json:"statusError,omitempty"`
@@ -96,11 +123,16 @@ func (s *Service) Profiles() ([]Info, error) {
 }
 
 func (s *Service) info(p Profile) Info {
+	info := Info{Profile: p}
+	if config, err := readOptional(filepath.Join(p.Dir, configFile)); err == nil {
+		info.Plugins = len(installedPlugins(config))
+	}
 	loggedIn, err := s.loggedIn(p)
 	if err != nil {
-		return Info{Profile: p, StatusError: err.Error()}
+		info.StatusError = err.Error()
+		return info
 	}
-	info := Info{Profile: p, LoggedIn: loggedIn}
+	info.LoggedIn = loggedIn
 	if loggedIn && s.account != nil {
 		info.Email, info.Plan = s.account(p.Slug)
 	}
@@ -147,6 +179,125 @@ func (s *Service) DeleteProfile(slug string) error {
 		return s.forget(slug)
 	}
 	return nil
+}
+
+// Plugin is one plugin a profile has installed.
+type Plugin struct {
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Marketplace string `json:"marketplace"`
+}
+
+// Plugins lists the plugins a profile has installed, the ones a port can carry
+// to another profile, in its config.toml's order. The lich plugin is not among
+// them.
+func (s *Service) Plugins(slug string) ([]Plugin, error) {
+	dir, err := ConfigDir(slug)
+	if err != nil {
+		return nil, err
+	}
+	config, err := readOptional(filepath.Join(dir, configFile))
+	if err != nil {
+		return nil, err
+	}
+	out := []Plugin{}
+	for _, key := range installedPlugins(config) {
+		if key == s.lichPlugin {
+			continue
+		}
+		name, market, _ := strings.Cut(key, "@")
+		out = append(out, Plugin{Key: key, Name: name, Marketplace: market})
+	}
+	return out, nil
+}
+
+// PluginResult is one plugin's install, with Codex's own words when it failed:
+// a marketplace the profile cannot reach, a plugin it no longer lists.
+type PluginResult struct {
+	Key     string `json:"key"`
+	OK      bool   `json:"ok"`
+	Message string `json:"message,omitempty"`
+}
+
+// InstallPlugins installs each plugin@marketplace into a profile through
+// Codex's own `plugin add`, run as that profile so Codex writes its own paths.
+// A marketplace the profile has not declared is declared as Personal declares
+// it, its ref included, and fetched first. One result per key, in order; one
+// failure does not stop the rest.
+func (s *Service) InstallPlugins(slug string, keys []string) ([]PluginResult, error) {
+	dir, err := ConfigDir(slug)
+	if err != nil {
+		return nil, err
+	}
+	personal, err := PersonalDir()
+	if err != nil {
+		return nil, err
+	}
+	p := Profile{Slug: slug, Dir: dir, Personal: IsPersonal(slug)}
+	results := make([]PluginResult, 0, len(keys))
+	for _, key := range keys {
+		if !pluginKeyPattern.MatchString(key) {
+			results = append(results, PluginResult{Key: key, Message: "not a plugin@marketplace name"})
+			continue
+		}
+		results = append(results, s.installPlugin(p, personal, key))
+	}
+	return results, nil
+}
+
+func (s *Service) installPlugin(p Profile, personal, key string) PluginResult {
+	_, market, _ := strings.Cut(key, "@")
+	declared, err := declareMarketplace(personal, p.Dir, market)
+	if err != nil {
+		return PluginResult{Key: key, Message: err.Error()}
+	}
+	var failures []string
+	if declared {
+		// A declared marketplace has no snapshot until it is fetched, and
+		// `plugin add` refuses one without (measured on 0.162.1). A local
+		// marketplace has nothing to fetch and refuses the upgrade, which only
+		// matters if the add fails too.
+		if out, err := s.run(p, installTimeout, "plugin", "marketplace", "upgrade", market); err != nil {
+			failures = append(failures, failureText(out, err))
+		}
+	}
+	out, err := s.run(p, installTimeout, "plugin", "add", key)
+	if err == nil {
+		return PluginResult{Key: key, OK: true}
+	}
+	return PluginResult{Key: key, Message: strings.Join(append(failures, failureText(out, err)), "\n")}
+}
+
+// declareMarketplace copies Personal's declaration of the marketplace name into
+// a profile's config.toml that has none, and reports whether it did. A
+// marketplace Personal does not declare is left to Codex, which knows its own.
+func declareMarketplace(personal, dir, name string) (bool, error) {
+	path := filepath.Join(dir, configFile)
+	own, err := readOptional(path)
+	if err != nil || marketplaceTables(own, name) != "" {
+		return false, err
+	}
+	shared, err := readOptional(filepath.Join(personal, configFile))
+	if err != nil {
+		return false, err
+	}
+	declaration := marketplaceTables(shared, name)
+	if declaration == "" {
+		return false, nil
+	}
+	var out bytes.Buffer
+	out.Write(own)
+	writeTable(&out, declaration)
+	return true, profilestore.WriteFileAtomic(path, out.Bytes(), 0o600)
+}
+
+// failureText is a CLI's own words for a failure, or the error when it said
+// nothing.
+func failureText(out string, err error) string {
+	if text := strings.TrimSpace(out); text != "" {
+		return text
+	}
+	return err.Error()
 }
 
 // run executes the Codex CLI as a profile and returns its combined output.

@@ -81,6 +81,10 @@ type Spec struct {
 	// Seed runs once a profile is linked, for what is not a link: Claude Code's
 	// global config and plugin state are files of their own.
 	Seed func(personal, dir string) error
+	// Sync runs after Seed and again before every spawn into the profile
+	// (EnsureShared), for a file the profile holds as its own but rebuilds from
+	// Personal's: Codex's config.toml, whose plugin set is the profile's.
+	Sync func(personal, dir string) error
 }
 
 // metaFile is the sidecar lich keeps beside each profile, outside its

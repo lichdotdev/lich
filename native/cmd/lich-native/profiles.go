@@ -68,8 +68,8 @@ type profileProvider struct {
 	// provider with no plan to read.
 	quotaPrefix string
 	// plugins is whether a profile has a plugin set of its own that plugins
-	// can be brought into (Claude Code), and loginCode whether its login takes
-	// the code the sign-in page shows (Claude Code).
+	// can be brought into (Claude Code, Codex), and loginCode whether its login
+	// takes the code the sign-in page shows (Claude Code).
 	plugins, loginCode bool
 	// terminalLogin is whether the login is only ever run in a terminal card
 	// (oh-my-pi's is an interactive picker of providers), so the dialog has no
@@ -105,16 +105,17 @@ var claudeProfileProvider = profileProvider{
 
 var codexProfileProvider = profileProvider{
 	kind: codexKind, key: codexProfileKey, label: "Codex", quotaPrefix: "codex-profile:",
-	api: func(c *lichclient.Client) lichclient.ProfileAPI { return c.CodexProfiles() },
+	api:     func(c *lichclient.Client) lichclient.ProfileAPI { return c.CodexProfiles() },
+	plugins: true,
 	words: profileWords{
 		profileDesc:  "Which Codex login new sessions use. A session keeps the profile it was born in, resumes included.",
-		profilesDesc: "Each profile is its own Codex login with its own history. config.toml, AGENTS.md, hooks, skills, rules and the plugins are the same in all of them.",
-		copiedNote:   "config.toml, AGENTS.md and hooks.json are copies in this profile: editing them in another profile no longer reaches it.",
+		profilesDesc: "Each profile is its own Codex login with its own plugins and history. Personal's config.toml settings, AGENTS.md, hooks, skills and rules are the same in all of them.",
+		copiedNote:   "AGENTS.md and hooks.json are copies in this profile: editing them in another profile no longer reaches it.",
 		searchAlso:   "codex account login personal work chatgpt",
-		profilesAlso: "codex accounts logins personal work log in chatgpt",
-		newDesc:      "A Codex login of its own, with its own history.",
-		renameDesc:   "Only its name changes: its login and history stay as they are.",
-		deleteDesc:   "Its login and conversation history are removed, and sessions started in it can no longer be resumed.",
+		profilesAlso: "codex accounts logins personal work log in chatgpt plugins",
+		newDesc:      "A Codex login of its own, with its own plugins and history.",
+		renameDesc:   "Only its name changes: its login, plugins and history stay as they are.",
+		deleteDesc:   "Its login, plugins and conversation history are removed, and sessions started in it can no longer be resumed.",
 		loginDesc:    "Sign in in the browser tab Codex opened. This carries on by itself when you are done.",
 		addressDesc:  "If the browser did not open, sign in at this address.",
 	},

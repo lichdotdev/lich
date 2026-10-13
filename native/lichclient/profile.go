@@ -24,10 +24,10 @@ const profileGoneText = "profile no longer exists"
 
 // Profile mirrors claudeprofile.Info, codexprofile.Info and ompprofile.Info: a
 // login lich keeps a state directory for. Slug is "personal" for the default
-// profile. Email, OrgName, Plan and Plugins are what `claude auth status` found
-// there; a Codex profile carries none of them (its account is its plan
-// reading's), and an oh-my-pi one carries Email (every account's address) and
-// Providers.
+// profile. Email, OrgName and Plan are what `claude auth status` found there;
+// a Codex profile carries Email and Plan from its plan reading, and an oh-my-pi
+// one Email (every account's address) and Providers. Plugins counts a Claude
+// Code or Codex profile's plugins.
 type Profile struct {
 	Slug     string `json:"slug"`
 	Name     string `json:"name"`
@@ -45,15 +45,15 @@ type Profile struct {
 	StatusError string   `json:"statusError,omitempty"`
 }
 
-// ProfilePlugin mirrors claudeprofile.Plugin.
+// ProfilePlugin mirrors claudeprofile.Plugin and codexprofile.Plugin.
 type ProfilePlugin struct {
 	Key         string `json:"key"`
 	Name        string `json:"name"`
 	Marketplace string `json:"marketplace"`
 }
 
-// ProfilePluginResult mirrors claudeprofile.PluginResult: Message is Claude
-// Code's own words when it refused one.
+// ProfilePluginResult mirrors claudeprofile.PluginResult and
+// codexprofile.PluginResult: Message is the CLI's own words when it refused one.
 type ProfilePluginResult struct {
 	Key     string `json:"key"`
 	OK      bool   `json:"ok"`
@@ -82,10 +82,11 @@ type ProfileMoved struct {
 }
 
 // ProfileAPI is one provider's profile service: the claudeprofile, codexprofile
-// or ompprofile one, which answer the same calls. A Codex profile has no plugin
-// set of its own and no sign-in code to hand over, so Plugins, InstallPlugins
-// and LoginCode are Claude Code's alone. oh-my-pi's login is a terminal card's
-// (LoginCommand), so it has no Login, LoginCode or CancelLogin, and no plan.
+// or ompprofile one, which answer the same calls. A Codex login has no sign-in
+// code to hand over, so LoginCode is Claude Code's alone, and Plugins and
+// InstallPlugins are Claude Code's and Codex's. oh-my-pi's login is a terminal
+// card's (LoginCommand), so it has no Login, LoginCode or CancelLogin, and no
+// plan.
 type ProfileAPI struct {
 	c       *Client
 	service string
@@ -132,14 +133,14 @@ func (a ProfileAPI) Delete(ctx context.Context, slug string) error {
 }
 
 // Plugins lists the plugins a profile has at user scope, the ones a port can
-// carry to another profile. Claude Code only.
+// carry to another profile. Claude Code and Codex only.
 func (a ProfileAPI) Plugins(ctx context.Context, slug string) ([]ProfilePlugin, error) {
 	var list []ProfilePlugin
 	return list, a.c.Call(ctx, a.service+".Plugins", &list, slug)
 }
 
 // InstallPlugins installs keys (plugin@marketplace) into a logged-in profile,
-// one result per key. Claude Code only.
+// one result per key. Claude Code and Codex only.
 func (a ProfileAPI) InstallPlugins(ctx context.Context, slug string, keys []string) ([]ProfilePluginResult, error) {
 	var results []ProfilePluginResult
 	return results, a.c.Call(ctx, a.service+".InstallPlugins", &results, slug, keys)

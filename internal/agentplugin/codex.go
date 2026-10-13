@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"log/slog"
+	"os"
 
+	"github.com/omartelo/lich/internal/codexprofile"
 	"github.com/omartelo/lich/internal/providers"
 )
 
@@ -12,11 +14,30 @@ import (
 // --json` for what is installed. Codex has no `plugin update`, so an update is
 // the same pinned install.
 
-func (s *Service) codexInstall() error {
-	if err := s.codexPinMarketplace(); err != nil {
+func (s *Service) codexInstall() error { return s.codexInstallIn(nil) }
+
+// codexInstallIn installs the plugin with env as the CLI's environment: nil for
+// lich's own, which is Personal, or a profile's (InstallInCodexProfile).
+func (s *Service) codexInstallIn(env []string) error {
+	if err := s.codexPinMarketplace(env); err != nil {
 		return err
 	}
-	return s.run(providers.Codex, "plugin", "add", pluginKey)
+	return s.runIn(env, providers.Codex, "plugin", "add", pluginKey)
+}
+
+// InstallInCodexProfile installs the plugin into one Codex profile, run as that
+// profile: a profile has a plugin set and downloads of its own, so the pinned
+// reinstall there never touches Personal's. It is the install and the update
+// both, as Install is for Personal.
+func (s *Service) InstallInCodexProfile(slug string) error {
+	if codexprofile.IsPersonal(slug) {
+		return s.codexInstallIn(nil)
+	}
+	dir, err := codexprofile.ConfigDir(slug)
+	if err != nil {
+		return err
+	}
+	return s.codexInstallIn(codexprofile.Env(os.Environ(), dir))
 }
 
 // codexPinMarketplace declares the marketplace at the tag of the newest release
@@ -25,15 +46,15 @@ func (s *Service) codexInstall() error {
 // source"), so the old declaration goes first; a remove with nothing declared
 // fails, which is the first install. `plugin add` then installs from the fresh
 // clone at that tag. Measured on codex-cli 0.153.4.
-func (s *Service) codexPinMarketplace() error {
+func (s *Service) codexPinMarketplace(env []string) error {
 	version, err := s.releaseVersion()
 	if err != nil {
 		return err
 	}
-	if err := s.run(providers.Codex, "plugin", "marketplace", "remove", marketplaceName); err != nil {
+	if err := s.runIn(env, providers.Codex, "plugin", "marketplace", "remove", marketplaceName); err != nil {
 		slog.Debug("agentplugin: codex marketplace remove", "err", err)
 	}
-	return s.run(providers.Codex, "plugin", "marketplace", "add", marketplaceRepo, "--ref", "v"+version)
+	return s.runIn(env, providers.Codex, "plugin", "marketplace", "add", marketplaceRepo, "--ref", "v"+version)
 }
 
 // codexInstalledVersion reads the plugin's installed version from Codex's own

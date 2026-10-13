@@ -47,7 +47,7 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 		switch method {
 		case "claudeprofile.CreateProfile", "codexprofile.CreateProfile", "ompprofile.CreateProfile":
 			out = lichclient.Profile{Slug: "work", Name: "Work"}
-		case "claudeprofile.Plugins":
+		case "claudeprofile.Plugins", "codexprofile.Plugins":
 			out = []lichclient.ProfilePlugin{{Key: "a@m", Name: "a", Marketplace: "m"}, {Key: "b@m", Name: "b", Marketplace: "m"}}
 		case "ompprofile.LoginCommand":
 			out = "env OMP_PROFILE='work' omp login"
@@ -57,7 +57,7 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 			b.mu.Unlock()
 			out = []lichclient.Profile{{Slug: personalProfile, Name: "Personal", Personal: true, LoggedIn: true},
 				{Slug: "work", Name: "Work", LoggedIn: in, Email: "w@x.y", Plan: "max"}}
-		case "claudeprofile.InstallPlugins":
+		case "claudeprofile.InstallPlugins", "codexprofile.InstallPlugins":
 			out = []lichclient.ProfilePluginResult{{Key: "a@m", OK: true}, {Key: "b@m", Message: "blocked by your organization"}}
 		case "claudeprofile.DeleteProfile":
 			if b.deleteErr != "" {
@@ -390,18 +390,17 @@ func codexFlowScreen(t *testing.T, b *profileBackend) *settingsScreen {
 	return s
 }
 
-// TestACodexProfileHasNoPluginsToBringAndNoCodeToPaste: the dialog goes
-// straight from the name to the login, through the Codex service, and its
-// events are told apart from a Claude login of the same slug.
-func TestACodexProfileHasNoPluginsToBringAndNoCodeToPaste(t *testing.T) {
+// TestACodexProfileBringsPluginsAndHasNoCodeToPaste: the dialog offers
+// Personal's Codex plugins, logs in through the Codex service, brings the
+// plugins once that is through, and its events are told apart from a Claude
+// login of the same slug.
+func TestACodexProfileBringsPluginsAndHasNoCodeToPaste(t *testing.T) {
 	b := &profileBackend{}
 	s := codexFlowScreen(t, b)
 	c := &s.providers.codex
 	f := &c.flow
 	s.startNewProfile(c)
-	if got := f.view().plugins; got != nil {
-		t.Errorf("a Codex profile loaded a plugin checklist: %+v", got)
-	}
+	eventually(t, "the checklist has Personal's plugins", func() bool { return len(f.view().plugins) == 2 })
 	f.name.SetText("Work")
 	s.confirmFlow(c, f.view())
 	eventually(t, "the login is waiting", func() bool { return f.view().step == stepWaiting })
@@ -417,7 +416,7 @@ func TestACodexProfileHasNoPluginsToBringAndNoCodeToPaste(t *testing.T) {
 	s.loginProgress(codexKind, lichclient.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
 	eventually(t, "the result", func() bool { return f.view().step == stepResult })
 
-	want := []string{`codexprofile.CreateProfile["Work"]`, `codexprofile.Login["work"]`}
+	want := []string{`codexprofile.CreateProfile["Work"]`, `codexprofile.Login["work"]`, `codexprofile.InstallPlugins["work",["a@m","b@m"]]`}
 	if got := b.log(); !slices.Equal(got, want) {
 		t.Errorf("calls = %v, want %v", got, want)
 	}
@@ -430,14 +429,14 @@ func TestACodexProfileHasNoPluginsToBringAndNoCodeToPaste(t *testing.T) {
 	}
 }
 
-func TestCodexProfilesCarryNoPluginSetAndNameTheirAccount(t *testing.T) {
-	if codexProfileProvider.plugins || codexProfileProvider.loginCode {
-		t.Error("Codex profiles are not supposed to have a plugin set of their own or a code to paste")
+func TestCodexProfilesCarryAPluginSetAndNameTheirAccount(t *testing.T) {
+	if !codexProfileProvider.plugins || codexProfileProvider.loginCode {
+		t.Error("Codex profiles are supposed to have a plugin set of their own and no code to paste")
 	}
-	if got := profileAccountLine(codexProfileProvider, lichclient.Profile{LoggedIn: true}); got != "Logged in" {
+	if got := profileAccountLine(codexProfileProvider, lichclient.Profile{LoggedIn: true}); got != "no plugins" {
 		t.Errorf("a login whose account could not be read: %q", got)
 	}
-	if got := profileAccountLine(codexProfileProvider, lichclient.Profile{LoggedIn: true, Email: "a@b.c", Plan: "plus"}); got != "a@b.c · Plus" {
+	if got := profileAccountLine(codexProfileProvider, lichclient.Profile{LoggedIn: true, Email: "a@b.c", Plan: "plus", Plugins: 2}); got != "a@b.c · Plus · 2 plugins" {
 		t.Errorf("account line = %q", got)
 	}
 }

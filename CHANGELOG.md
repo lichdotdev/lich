@@ -29,10 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Providers › Codex in `lich native` (experimental) and make a profile per
   account: **New profile** takes a name and logs it in with Codex's own
   `codex login`, which opens the browser and waits for its page on a local port,
-  so one login at a time. A profile keeps its own login and its own
-  conversations; Codex's `config.toml`, `AGENTS.md`, hooks, skills, rules and
-  the plugins you installed are the same in all of them, so a plugin installed
-  under one account is installed under every other. A project picks the profile
+  so one login at a time. A profile keeps its own login, its own conversations
+  and its own plugins: the dialog asks which of Personal's plugins to bring,
+  **Copy plugins from…** on a profile's menu brings more later, and the lich
+  plugin is installed there for you. Personal's `config.toml` settings (model,
+  features, MCP servers), `AGENTS.md`, hooks, skills and rules are the same in
+  all of them; a setting changed inside a profile goes back to Personal's at its
+  next session, so change it in Personal. A project picks the profile
   its new Codex sessions start in, a session keeps the one it was born in and
   its card names it, and **Continue in** on the card's menu moves a Codex
   conversation to another logged-in account, with its five-hour usage beside it,

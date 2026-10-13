@@ -45,8 +45,9 @@ func mustWrite(t *testing.T, path, data string) {
 
 func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 	personal := machine(t)
-	mustWrite(t, filepath.Join(personal, "config.toml"), "model = \"x\"\n")
+	mustWrite(t, filepath.Join(personal, "config.toml"), "model = \"x\"\n\n[plugins.\"a@m\"]\nenabled = true\n")
 	mustWrite(t, filepath.Join(personal, "auth.json"), `{"secret":true}`)
+	mustWrite(t, filepath.Join(personal, "plugins", "cache", "m", "a", "file"), "x")
 	mustWrite(t, filepath.Join(personal, "history.jsonl"), "{}\n")
 	mustMkdir(t, filepath.Join(personal, "skills"))
 	mustMkdir(t, filepath.Join(personal, "sessions", "2026"))
@@ -58,20 +59,17 @@ func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 	if p.Slug != "work-account" || p.Name != "Work Account" {
 		t.Fatalf("created %+v", p)
 	}
-	for _, name := range []string{"skills", filepath.Join("plugins", "cache"), filepath.Join(".tmp", "marketplaces")} {
-		if !profilestore.IsLink(filepath.Join(p.Dir, name)) {
-			t.Errorf("%s is not linked to Personal", name)
-		}
+	if !profilestore.IsLink(filepath.Join(p.Dir, "skills")) {
+		t.Error("skills is not linked to Personal")
 	}
-	if slices.Contains(p.Copied, "config.toml") {
-		// A Windows without Developer Mode: the documented fallback is a copy.
-		if _, err := os.Stat(filepath.Join(p.Dir, "config.toml")); err != nil {
-			t.Errorf("config.toml neither linked nor copied: %v", err)
-		}
-	} else {
-		assertWritesThrough(t, filepath.Join(p.Dir, "config.toml"), filepath.Join(personal, "config.toml"))
+	config := filepath.Join(p.Dir, "config.toml")
+	if profilestore.IsLink(config) {
+		t.Error("config.toml is linked to Personal, which shares the plugin set")
 	}
-	for _, own := range []string{"auth.json", "history.jsonl", "sessions"} {
+	if data, _ := os.ReadFile(config); string(data) != "model = \"x\"\n\n" {
+		t.Errorf("config.toml = %q, want Personal's settings without its plugins", data)
+	}
+	for _, own := range []string{"auth.json", "history.jsonl", "sessions", "plugins"} {
 		if _, err := os.Lstat(filepath.Join(p.Dir, own)); !os.IsNotExist(err) {
 			t.Errorf("%s reached the new profile: %v", own, err)
 		}
@@ -192,16 +190,17 @@ func TestEnsureSharedLinksWhatPersonalGainedLater(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustWrite(t, filepath.Join(personal, "AGENTS.md"), "rules")
-	mustWrite(t, filepath.Join(p.Dir, "config.toml"), "own = true\n")
-	mustWrite(t, filepath.Join(personal, "config.toml"), "")
+	mustWrite(t, filepath.Join(p.Dir, "config.toml"), "model = \"mine\"\n\n[plugins.\"own@m\"]\nenabled = true\n")
+	mustWrite(t, filepath.Join(personal, "config.toml"), "model = \"shared\"\n")
 	if err := EnsureShared(p.Slug); err != nil {
 		t.Fatal(err)
 	}
 	if !profilestore.IsLink(filepath.Join(p.Dir, "AGENTS.md")) {
 		t.Error("AGENTS.md created after the profile was not linked")
 	}
-	if data, _ := os.ReadFile(filepath.Join(p.Dir, "config.toml")); string(data) != "own = true\n" {
-		t.Errorf("the profile's own config.toml was replaced: %s", data)
+	want := "model = \"shared\"\n\n[plugins.\"own@m\"]\nenabled = true\n"
+	if data, _ := os.ReadFile(filepath.Join(p.Dir, "config.toml")); string(data) != want {
+		t.Errorf("config.toml after a spawn = %q, want Personal's settings and the profile's plugins %q", data, want)
 	}
 	if err := EnsureShared(Personal); err != nil {
 		t.Errorf("Personal: %v", err)
@@ -244,21 +243,5 @@ func TestDevRigKeepsItsOwnProfiles(t *testing.T) {
 	}
 	if real == dev {
 		t.Errorf("a dev rig shares %s with the installed lich", dev)
-	}
-}
-
-// assertWritesThrough checks that a write to link lands in target, the link
-// being what keeps an edit made under one account visible under the others.
-func assertWritesThrough(t *testing.T, link, target string) {
-	t.Helper()
-	if !profilestore.IsLink(link) {
-		t.Errorf("%s is not a link", link)
-		return
-	}
-	if err := os.WriteFile(link, []byte("model = \"y\"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if data, _ := os.ReadFile(target); string(data) != "model = \"y\"\n" {
-		t.Errorf("a write through %s left %s at %s", link, target, data)
 	}
 }

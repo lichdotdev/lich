@@ -284,9 +284,10 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	profiles.SetLichPlugin(plugins.InstallInClaudeProfile, agentplugin.PluginKey)
 	profiles.SetSessions(term.ProfileSessions, db.ForgetClaudeProfile)
 	dispatcher.Register("claudeprofile", profiles)
-	// Codex profiles share the plugin set with Personal, so there is no plugin
-	// to install per profile; the delete's guards are the same.
+	// Codex profiles have plugin sets of their own too, and get the lich plugin
+	// the same way.
 	codexProfiles := codexprofile.New(db, hub.Emit)
+	codexProfiles.SetLichPlugin(plugins.InstallInCodexProfile, agentplugin.PluginKey)
 	codexProfiles.SetSessions(term.CodexProfileSessions, db.ForgetCodexProfile)
 	dispatcher.Register("codexprofile", codexProfiles)
 	// oh-my-pi's login is a terminal card's, so its service runs no login of its
@@ -477,7 +478,8 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     store.ForgetClaudeProfile, store.ForgetCodexProfile and
 //     store.ForgetOMPProfile are the delete's own cleanup.
 //   - claudeprofile.SetLichPlugin, claudeprofile.SetSessions,
-//     codexprofile.SetSessions, codexprofile.SetAccount and
+//     codexprofile.SetLichPlugin, codexprofile.SetSessions,
+//     codexprofile.SetAccount and
 //     ompprofile.SetSessions are startup wiring like the setters above.
 //   - quota.ReportClaude is a session's own reading of its plan, which arrives
 //     over /mod/usage: called here it would put any numbers on the gauge.
@@ -542,6 +544,7 @@ func denyInternal(d *rpc.Handler) {
 		"store.ForgetOMPProfile",
 		"claudeprofile.SetLichPlugin",
 		"claudeprofile.SetSessions",
+		"codexprofile.SetLichPlugin",
 		"codexprofile.SetSessions",
 		"codexprofile.SetAccount",
 		"ompprofile.SetSessions",

@@ -382,6 +382,9 @@ const (
 	// config dir and token the call ran with, so a test can tell which profile
 	// a call ran as.
 	fakeCLIEnvLog = "LICH_TEST_FAKE_CLI_ENV_LOG"
+	// fakeCLICodexEnvLog is fakeCLIEnvLog for Codex: the CODEX_HOME and the API
+	// key each call ran with.
+	fakeCLICodexEnvLog = "LICH_TEST_FAKE_CLI_CODEX_ENV_LOG"
 )
 
 func TestMain(m *testing.M) {
@@ -400,13 +403,10 @@ func TestMain(m *testing.M) {
 		_ = f.Close()
 	}
 	if log := os.Getenv(fakeCLIEnvLog); log != "" {
-		line := os.Getenv("CLAUDE_CONFIG_DIR") + "|" + os.Getenv("CLAUDE_CODE_OAUTH_TOKEN") + "\n"
-		f, err := os.OpenFile(log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
-		if err != nil {
-			os.Exit(2)
-		}
-		_, _ = f.WriteString(line)
-		_ = f.Close()
+		appendEnvLine(log, os.Getenv("CLAUDE_CONFIG_DIR")+"|"+os.Getenv("CLAUDE_CODE_OAUTH_TOKEN"))
+	}
+	if log := os.Getenv(fakeCLICodexEnvLog); log != "" {
+		appendEnvLine(log, os.Getenv("CODEX_HOME")+"|"+os.Getenv("CODEX_API_KEY"))
 	}
 	if failOn := os.Getenv(fakeCLIFail); failOn != "" && strings.Contains(strings.Join(os.Args[1:], " "), failOn) {
 		fmt.Fprintln(os.Stderr, "fake cli: refusing "+failOn)
@@ -427,6 +427,15 @@ func TestMain(m *testing.M) {
 
 // stubBin is a BinResolver naming a fixed binary for every provider, standing in
 // for the store.
+func appendEnvLine(log, line string) {
+	f, err := os.OpenFile(log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		os.Exit(2)
+	}
+	_, _ = f.WriteString(line + "\n")
+	_ = f.Close()
+}
+
 type stubBin string
 
 func (b stubBin) ProviderBin(string, string) string { return string(b) }

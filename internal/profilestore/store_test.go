@@ -298,3 +298,36 @@ func TestADevRigKeepsItsOwnSidecars(t *testing.T) {
 		t.Errorf("real %s, dev %s", real, dev)
 	}
 }
+
+func TestSyncRunsAtCreationAndBeforeEverySpawn(t *testing.T) {
+	personal := machine(t)
+	s := toy(personal)
+	runs := 0
+	s.Sync = func(from, dir string) error {
+		runs++
+		if from != personal {
+			t.Errorf("Sync given %s, want Personal's %s", from, personal)
+		}
+		return WriteFileAtomic(filepath.Join(dir, "synced"), []byte("x"), 0o600)
+	}
+	p, err := s.Create("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.EnsureShared(p.Slug); err != nil {
+		t.Fatal(err)
+	}
+	if runs != 2 {
+		t.Errorf("Sync ran %d times over a creation and a spawn, want 2", runs)
+	}
+	if _, err := os.Stat(filepath.Join(p.Dir, "synced")); err != nil {
+		t.Errorf("Sync did not write into the profile: %v", err)
+	}
+	if err := s.EnsureShared(Personal); err != nil || runs != 2 {
+		t.Errorf("Personal: err %v, Sync ran %d times, want it left alone", err, runs)
+	}
+	s.Sync = func(_, _ string) error { return errors.New("broken") }
+	if err := s.EnsureShared(p.Slug); err == nil {
+		t.Error("a failed Sync did not fail the spawn")
+	}
+}

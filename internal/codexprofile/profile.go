@@ -41,20 +41,16 @@ var store = profilestore.Spec{
 	Label:       "Codex",
 	HomeVar:     HomeVar,
 	PersonalDir: PersonalDir,
-	// Codex writes through a link to its target and leaves the link in place
-	// (measured on 0.162.1 with `features enable`). config.toml also holds the
-	// installed plugin set, the marketplaces and the trusted hooks, so sharing
-	// it shares those too, which is what Downloads lets resolve.
-	SharedFiles: []string{"config.toml", "hooks.json", "AGENTS.md"},
+	// config.toml is not linked: it holds the plugin set too, which is per
+	// profile, so a profile keeps a file of its own that Sync rebuilds from
+	// Personal's before every spawn (config.go). The plugin and marketplace
+	// downloads are the profile's own for the same reason.
+	SharedFiles: []string{"hooks.json", "AGENTS.md"},
 	Shared:      []string{"skills", "rules"},
-	// The plugin and marketplace downloads the plugin entries of the shared
-	// config.toml point at, so a plugin installed in one profile is installed in
-	// all of them. `plugin marketplace add` and `plugin add` run in a profile
-	// land in Personal's through these links (measured on 0.162.1).
-	Downloads: []string{filepath.Join("plugins", "cache"), filepath.Join(".tmp", "marketplaces")},
 	// CODEX_SQLITE_HOME moves Codex's thread database out of the home, which
 	// would put every profile's threads in one place.
 	Override: []string{"CODEX_API_KEY", "CODEX_ACCESS_TOKEN", "OPENAI_API_KEY", "CODEX_SQLITE_HOME"},
+	Sync:     syncConfig,
 }
 
 // Root is where lich keeps its Codex profiles, beside the Claude Code ones.
@@ -106,7 +102,8 @@ func Rename(slug, name string) error { return store.Rename(slug, name) }
 func Delete(slug string) error { return store.Delete(slug) }
 
 // EnsureShared links into a profile the shared entries Personal gained since
-// the profile was made, which runs before every spawn into it.
+// the profile was made and rebuilds its config.toml from Personal's, which runs
+// before every spawn into it.
 func EnsureShared(slug string) error { return store.EnsureShared(slug) }
 
 // Env is base with a profile's directory as CODEX_HOME and the variables that

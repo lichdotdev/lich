@@ -1254,7 +1254,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   profile with an `extensions/` of its own does not get lich's extension through it and its sessions report
   nothing. Not linked: `agent.db` (the logins), `sessions/`, `blobs/`, omp's databases (`models.db` is about
   7 MB and is built again by each profile) and the plugins `omp plugin install` puts beside `agent/`, so an
-  omp plugin is per profile where Codex's are shared. `~/.omp/install-id`, the global daemons and the collab
+  omp plugin is per profile, as Codex's are. `~/.omp/install-id`, the global daemons and the collab
   registry are shared by every profile whatever the variable says (read in the source). Personal is read as
   `omp` reads it with lich's environment: the profile `OMP_PROFILE` names there, else `PI_CODING_AGENT_DIR`,
   else `~/.omp/agent`; a profile ignores `PI_CODING_AGENT_DIR`. `PI_CONFIG_DIR` and the `XDG_*_HOME/omp` layout
@@ -1335,22 +1335,32 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   login the dialog starts is `claude auth login --claudeai`, which opens the browser itself and takes the
   callback on a localhost port of its own (measured on 2.1.296); the address it prints, which redirects to a
   page that shows a code, and the field that takes the code are for a browser that cannot reach this machine.
-- **A Codex profile shares Personal's config and its plugin set, and keeps only its login and its
-  conversations** (`internal/codexprofile/profile.go`, `internal/profilestore/layout.go`): `config.toml`,
-  `hooks.json`, `AGENTS.md`, `skills/`, `rules/`, `plugins/cache` and `.tmp/marketplaces` point at Personal's,
-  and Codex writes through a link and leaves it in place (measured on 0.162.1: `features enable`, `plugin marketplace add` and `plugin add` run
-  in a profile landed in Personal's config and cache). `config.toml` holds the installed plugins, the
-  marketplaces, the trusted hook hashes and each project's trust, so all of them are shared, which is the
-  opposite of Claude Code's per-profile plugin set: nothing is installed per profile after a login, a plugin
-  an organization account may not run still reads as enabled in Personal, and the lich plugin's pinned
-  install (`plugin marketplace remove` then `add`) is never run from a profile, because the remove would
-  uninstall it under a running Personal session. Whatever Personal's Settings says about the lich plugin is
-  the profile's too. Per profile: `auth.json`, `sessions/`, `history.jsonl`, `session_index.jsonl`, the
-  SQLite state and `installation_id`. `CODEX_SQLITE_HOME`, `CODEX_API_KEY`, `CODEX_ACCESS_TOKEN` and
-  `OPENAI_API_KEY` are dropped from a profile's spawn: the first would put every profile's thread database in
-  one place and the rest would override the login. A `cli_auth_credentials_store` of `keyring` in the shared
-  `config.toml` sends the login to the OS keyring, whose entry per `CODEX_HOME` was not measured. On Windows
-  the file links are copies without Developer Mode, as for Claude Code.
+- **A Codex profile has its own plugins and a config.toml rebuilt from Personal's at every spawn, so a
+  setting changed inside a profile does not last** (`internal/codexprofile/config.go`): Codex keeps the plugin
+  set (`[plugins."<key>"]`, `[marketplaces.<name>]`) in the same `config.toml` as every other setting, and reads
+  no second user file it could be split into: a `managed_config.toml` in `CODEX_HOME` is ignored, the other
+  layers are `/etc/codex` and a project's `.codex/config.toml`, and `-c` would hide the plugin set from Codex's
+  own writes (measured on 0.162.1). So a profile's `config.toml` is a file of its own, and before every spawn
+  lich writes it again as Personal's tables minus Personal's plugin set, then the profile's plugin set, then
+  the project trust (`[projects.*]`), hook trust (`[hooks.state.*]`) and dismissed notices (`[notice]`) the
+  profile was given and Personal was not. Everything else is Personal's: a `/model`, `features enable` or MCP
+  server added inside a profile is gone at its next session, and a setting Personal removes leaves every profile
+  then, while a trust answer only Personal withdrew stays in the profiles that gave it. The cut is by table
+  header and copies tables as they are written; plugin or marketplace keys Personal writes as dotted keys above
+  its first table (Codex never does) are every profile's. The plugin and marketplace downloads (`plugins/cache`,
+  `.tmp/marketplaces`) are the profile's own too, which costs a clone per profile and is what lets `plugin
+  remove` and the lich plugin's pinned reinstall (`plugin marketplace remove` then `add`) run there without
+  deleting Personal's copy; a profile made when they were links has them removed at its next spawn. The lich
+  plugin is installed in a profile after its login and only then: Settings' update reaches Personal's alone,
+  and a profile logged in before this has none until it is logged in again. Plugins are ported with `codex plugin add` run as the profile, after Personal's declaration
+  of the marketplace, ref included, is copied into the profile's file and fetched with `plugin marketplace
+  upgrade`; a marketplace Personal does not declare is left to Codex. Per profile besides: `auth.json`,
+  `sessions/`, `history.jsonl`, `session_index.jsonl`, the SQLite state and `installation_id`.
+  `CODEX_SQLITE_HOME`, `CODEX_API_KEY`, `CODEX_ACCESS_TOKEN` and `OPENAI_API_KEY` are dropped from a profile's
+  spawn: the first would put every profile's thread database in one place and the rest would override the
+  login. A `cli_auth_credentials_store` of `keyring` in Personal's `config.toml` sends the login to the OS
+  keyring, whose entry per `CODEX_HOME` was not measured. On Windows
+  `hooks.json` and `AGENTS.md` are copies without Developer Mode, as for Claude Code.
 - **A Codex login is a browser callback on a fixed port, and the dialog has no code to paste**: `codex login`
   prints an address and waits for the page's redirect on `localhost:1455` (measured on 0.162.1), so two
   logins cannot run at once, in lich or beside it, and a browser that cannot reach this machine needs
