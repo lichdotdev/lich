@@ -40,9 +40,13 @@ user has left is worse than one under no name.
 ## Profiles
 
 A profile is a `CODEX_HOME` of its own with its own `codex login` (`internal/codexprofile`). It links Personal's
-`config.toml`, `hooks.json`, `AGENTS.md`, `skills/`, `rules/`, `plugins/cache` and `.tmp/marketplaces` and
-keeps its own `auth.json`, rollouts, history and thread database, so the plugins, marketplaces and trusted hooks
-are the same under every profile. Every reader of rollouts (resume, usage, search, the History tab) scans all of
+`hooks.json`, `AGENTS.md`, `skills/` and `rules/` and keeps its own `auth.json`, rollouts, history, thread
+database, plugin downloads and `config.toml`. That file is rebuilt from Personal's before every spawn
+(`config.go`): Personal's tables, minus its `[plugins.*]` and `[marketplaces.*]`, then the profile's own plugin
+set and the project and hook trust it was given that Personal was not. Plugins are ported with `codex plugin add`
+run as the profile, after copying Personal's `[marketplaces.<name>]` declaration (ref included) into the profile
+and `codex plugin marketplace upgrade` fetching it, and the lich plugin is installed in each profile after its
+login, pinned as in Personal. Every reader of rollouts (resume, usage, search, the History tab) scans all of
 them and resumes under the profile that holds the rollout. What it shares, what it moves and where it
 disagrees with Claude Code's profiles is in [`../ceilings.md`](../ceilings.md).
 

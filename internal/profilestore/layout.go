@@ -42,6 +42,11 @@ func (s Spec) build(dir string) ([]string, error) {
 			return nil, err
 		}
 	}
+	if s.Sync != nil {
+		if err := s.Sync(personal, dir); err != nil {
+			return nil, err
+		}
+	}
 	return copied, nil
 }
 
@@ -78,9 +83,9 @@ func (s Spec) linkShared(personal, dir string) ([]string, error) {
 }
 
 // EnsureShared links into a profile the shared entries Personal gained since
-// the profile was made (a CLAUDE.md written after it, say) and records any it
-// had to copy. It runs before every spawn into the profile, so an entry appears
-// on the next session. Personal needs nothing.
+// the profile was made (a CLAUDE.md written after it, say), records any it had
+// to copy and runs Sync. It runs before every spawn into the profile, so an
+// entry appears on the next session. Personal needs nothing.
 func (s Spec) EnsureShared(slug string) error {
 	if IsPersonal(slug) {
 		return nil
@@ -94,8 +99,16 @@ func (s Spec) EnsureShared(slug string) error {
 		return err
 	}
 	copied, err := s.linkShared(personal, dir)
-	if err != nil || len(copied) == 0 {
+	if err != nil {
 		return err
+	}
+	if s.Sync != nil {
+		if err := s.Sync(personal, dir); err != nil {
+			return err
+		}
+	}
+	if len(copied) == 0 {
+		return nil
 	}
 	m, err := s.readMeta(slug)
 	if err != nil {

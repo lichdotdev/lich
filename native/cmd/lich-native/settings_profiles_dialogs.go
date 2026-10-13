@@ -39,7 +39,7 @@ const (
 	dlgDeleteTitle     = "Delete %s?"
 	dlgDelete          = "Delete"
 	dlgCopyTitle       = "Copy plugins to %s"
-	dlgCopyDesc        = "They are installed through Claude Code as this profile, so its account's rules apply."
+	dlgCopyDesc        = "They are installed through %s as this profile, so its account's rules apply."
 	dlgCopyFrom        = "Copy from"
 	dlgCopy            = "Copy plugins"
 	dlgLoginTitle      = "Log in to %s"
@@ -58,8 +58,9 @@ const (
 	dlgDone            = "Done"
 )
 
-// The lich plugin is in every Claude Code profile whether or not the checklist
-// is ticked: lich installs it after a login (claudeprofile.SetLichPlugin).
+// The lich plugin is in every Claude Code and Codex profile whether or not the
+// checklist is ticked: lich installs it after a login (SetLichPlugin of
+// claudeprofile and codexprofile).
 const lichPluginName = "lich"
 
 var (
@@ -82,10 +83,11 @@ func flowHeading(prov profileProvider, d flowData) (title, desc string) {
 	case flowDelete:
 		return fmt.Sprintf(dlgDeleteTitle, name), prov.words.deleteDesc
 	case flowCopy:
+		desc := fmt.Sprintf(dlgCopyDesc, prov.label)
 		if d.step == stepResult {
-			return fmt.Sprintf(dlgCopiedTitle, name), dlgCopyDesc
+			return fmt.Sprintf(dlgCopiedTitle, name), desc
 		}
-		return fmt.Sprintf(dlgCopyTitle, name), dlgCopyDesc
+		return fmt.Sprintf(dlgCopyTitle, name), desc
 	}
 	switch {
 	case d.step != stepResult:

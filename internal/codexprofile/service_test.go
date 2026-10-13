@@ -1,9 +1,11 @@
 package codexprofile
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -49,7 +51,34 @@ func fakeCodex(args []string) int {
 		_ = os.WriteFile(filepath.Join(dir, "auth.json"), []byte("{}"), 0o600)
 		return 0
 	}
+	if len(args) == 3 && args[0] == "plugin" && args[1] == "add" {
+		return fakePluginAdd(dir, args[2])
+	}
+	if len(args) == 4 && strings.Join(args[:3], " ") == "plugin marketplace upgrade" {
+		_ = os.WriteFile(filepath.Join(dir, "upgraded-"+args[3]), nil, 0o600)
+		return 0
+	}
 	return 2
+}
+
+// fakePluginAdd installs key the way Codex records it, refusing a marketplace
+// the profile has not declared (except "builtin", one Codex knows itself) and
+// any plugin named "refused".
+func fakePluginAdd(dir, key string) int {
+	name, market, _ := strings.Cut(key, "@")
+	config := filepath.Join(dir, "config.toml")
+	data, _ := os.ReadFile(config)
+	if market != "builtin" && !strings.Contains(string(data), "[marketplaces."+market+"]") {
+		fmt.Printf("Error: marketplace `%s` is not configured\n", market)
+		return 1
+	}
+	if name == "refused" {
+		fmt.Println("Error: plugin `refused` is not available to this account")
+		return 1
+	}
+	data = append(data, fmt.Sprintf("\n[plugins.%q]\nenabled = true\n", key)...)
+	_ = os.WriteFile(config, data, 0o600)
+	return 0
 }
 
 type fakeBins struct{}
@@ -242,5 +271,113 @@ func TestABrokenConfigIsNotALoggedOutProfile(t *testing.T) {
 	}
 	if infos[0].LoggedIn || !strings.Contains(infos[0].StatusError, "invalid config.toml") {
 		t.Errorf("a status that failed for another reason read as %+v", infos[0])
+	}
+}
+
+func TestLoginInstallsTheLichPlugin(t *testing.T) {
+	machine(t)
+	s, rec := fakeService(t)
+	var installedIn []string
+	s.SetLichPlugin(func(slug string) error {
+		installedIn = append(installedIn, slug)
+		return errors.New("no network")
+	}, "lich@lich-plugin")
+	p, err := s.CreateProfile("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Login(p.Slug); err != nil {
+		t.Fatal(err)
+	}
+	done := rec.wait(t)
+	if !done.LoggedIn || done.PluginError != "no network" {
+		t.Errorf("finished with %+v, want logged in with the plugin's failure", done)
+	}
+	if len(installedIn) != 1 || installedIn[0] != p.Slug {
+		t.Errorf("lich plugin installed into %v", installedIn)
+	}
+}
+
+func TestPluginsListsAPortableSet(t *testing.T) {
+	personal := machine(t)
+	s, _ := fakeService(t)
+	s.SetLichPlugin(nil, "lich@lich-plugin")
+	mustWrite(t, filepath.Join(personal, "config.toml"), `[plugins."b@m"]
+enabled = true
+
+[plugins."lich@lich-plugin"]
+enabled = true
+
+[plugins."a@m"]
+enabled = false
+`)
+	got, err := s.Plugins(Personal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Plugin{{Key: "b@m", Name: "b", Marketplace: "m"}, {Key: "a@m", Name: "a", Marketplace: "m"}}
+	if !slices.Equal(got, want) {
+		t.Errorf("plugins %+v, want %+v", got, want)
+	}
+	if _, err := s.Plugins("gone"); err == nil {
+		t.Error("listed the plugins of a profile that does not exist")
+	}
+}
+
+func TestInstallPluginsBringsTheMarketplaceAsPersonalDeclaresIt(t *testing.T) {
+	personal := machine(t)
+	s, _ := fakeService(t)
+	shared := `[marketplaces.m]
+source_type = "git"
+source = "https://example.com/m.git"
+ref = "v1"
+
+[plugins."a@m"]
+enabled = true
+`
+	mustWrite(t, filepath.Join(personal, "config.toml"), shared)
+	p, err := s.CreateProfile("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := s.InstallPlugins(p.Slug, []string{"a@m", "--evil@m", "refused@m", "tool@builtin", "x@unknown"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ok := []bool{true, false, false, true, false}
+	for i, r := range got {
+		if r.OK != ok[i] {
+			t.Errorf("%s: ok %v (%q), want %v", r.Key, r.OK, r.Message, ok[i])
+		}
+	}
+	if len(got) != len(ok) {
+		t.Fatalf("results %+v", got)
+	}
+	if !strings.Contains(got[2].Message, "not available to this account") {
+		t.Errorf("refusal carried %q, want Codex's own sentence", got[2].Message)
+	}
+	config, _ := os.ReadFile(filepath.Join(p.Dir, "config.toml"))
+	if !strings.Contains(string(config), "ref = \"v1\"") {
+		t.Errorf("the marketplace was not declared with Personal's ref:\n%s", config)
+	}
+	if strings.Count(string(config), "[marketplaces.m]") != 1 {
+		t.Errorf("the marketplace was declared more than once:\n%s", config)
+	}
+	if _, err := os.Stat(filepath.Join(p.Dir, "upgraded-m")); err != nil {
+		t.Errorf("the declared marketplace was never fetched: %v", err)
+	}
+	if data, _ := os.ReadFile(filepath.Join(personal, "config.toml")); string(data) != shared {
+		t.Errorf("Personal's config.toml changed to %q", data)
+	}
+	infos, err := s.Profiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if infos[0].Plugins != 1 || infos[1].Plugins != 2 {
+		t.Errorf("plugin counts %d and %d, want Personal's 1 and the profile's 2", infos[0].Plugins, infos[1].Plugins)
+	}
+	if _, err := s.InstallPlugins("gone", []string{"a@m"}); err == nil {
+		t.Error("installed into a profile that does not exist")
 	}
 }

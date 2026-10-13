@@ -24,6 +24,7 @@ const (
 	pluginInstallFailed = "Install failed: %v"
 	pluginUpdated       = "Plugin updated. Restart your sessions to apply."
 	pluginUpdateFailed  = "Update failed: %v"
+	pluginProfileFailed = "The lich plugin is not updated in the %s profile %s: %s"
 	pluginChecked       = "Checked."
 	pluginCliMissing    = "CLI not installed"
 	pluginNotInstalled  = "Plugin not installed"
@@ -265,4 +266,13 @@ func (c *pluginControls) footer(gtx C, th *ui.Theme, offerAll, busy bool, outcom
 		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, outcome).Muted().Layout))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+}
+
+// pluginProfilesFailed raises a toast per profile a pass could not bring to
+// Personal's lich plugin; a pass with none says nothing, as Personal's own
+// update already did.
+func (u *window) pluginProfilesFailed(pass lichclient.PluginProfiles) {
+	for _, f := range pass.Failures {
+		u.toaster.Show(failure(pluginProfileFailed, pass.Name, f.Name, f.Error))
+	}
 }
