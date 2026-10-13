@@ -132,22 +132,31 @@ func (c *codeTab) treeList(gtx C, th *ui.Theme, rows []treeRow) D {
 }
 
 // layout is the tree's rows, py-1, scrolling down and, once a row is wider
-// than the column, sideways, with its own bar along the bottom.
+// than the column, sideways, with its own bar along the bottom. While the
+// rows overflow downward they stop short of the vertical bar, as the
+// sidebar's Occupy keeps its cards off it.
 func (t *treeRows) layout(gtx C, th *ui.Theme, rows []treeRow, selected string) D {
 	view := gtx.Constraints.Max
-	width := max(view.X, t.widest)
+	style := th.ScrollArea(&t.list).ScrollbarStyle
+	overflowsY := t.list.Position.Length > view.Y && len(rows) > 0
+	content := view
+	if overflowsY {
+		content.X -= gtx.Dp(style.Width())
+	}
+	width := max(content.X, t.widest)
 	t.offsetX += t.hscroll.Update(gtx.Metric, gtx.Source, gtx.Now, gesture.Horizontal,
-		pointer.ScrollRange{Min: -t.offsetX, Max: width - view.X - t.offsetX}, pointer.ScrollRange{})
+		pointer.ScrollRange{Min: -t.offsetX, Max: width - content.X - t.offsetX}, pointer.ScrollRange{})
 	if d := t.hbar.ScrollDistance(); d != 0 {
 		t.offsetX += int(d * float32(width))
 	}
 	if d := t.vbar.ScrollDistance(); d != 0 {
 		t.list.List.ScrollBy(d * float32(len(rows)))
 	}
-	t.offsetX = min(max(t.offsetX, 0), width-view.X)
+	t.offsetX = min(max(t.offsetX, 0), width-content.X)
 	defer clip.Rect{Max: view}.Push(gtx.Ops).Pop()
 	t.hscroll.Add(gtx.Ops)
 	t.measure = 0
+	rowsClip := clip.Rect{Max: content}.Push(gtx.Ops)
 	stack := op.Offset(image.Pt(-t.offsetX, 0)).Push(gtx.Ops)
 	inner := gtx
 	inner.Constraints = layout.Exact(image.Pt(width, view.Y))
@@ -157,20 +166,27 @@ func (t *treeRows) layout(gtx C, th *ui.Theme, rows []treeRow, selected string) 
 		})
 	})
 	stack.Pop()
+	rowsClip.Pop()
 	t.widest = t.measure
-	bar := func(state *widget.Scrollbar, axis layout.Axis, start, end float32) D {
-		style := th.ScrollArea(&t.list).ScrollbarStyle
+	bar := func(gtx C, state *widget.Scrollbar, axis layout.Axis, start, end float32) D {
 		style.Scrollbar = state
 		return style.Layout(gtx, axis, start, end)
 	}
-	if width > view.X {
+	if width > content.X {
 		start := float32(t.offsetX) / float32(width)
-		layout.S.Layout(gtx, func(gtx C) D { return bar(&t.hbar, layout.Horizontal, start, start+float32(view.X)/float32(width)) })
+		under := gtx
+		under.Constraints.Max.X = content.X
+		layout.S.Layout(under, func(gtx C) D {
+			return bar(gtx, &t.hbar, layout.Horizontal, start, start+float32(content.X)/float32(width))
+		})
 	}
-	if pos := t.list.Position; pos.Length > view.Y && len(rows) > 0 {
+	if overflowsY {
+		pos := t.list.Position
 		row := pos.Length / len(rows)
 		start := float32(pos.First*row+pos.Offset) / float32(pos.Length)
-		layout.E.Layout(gtx, func(gtx C) D { return bar(&t.vbar, layout.Vertical, start, start+float32(view.Y)/float32(pos.Length)) })
+		layout.E.Layout(gtx, func(gtx C) D {
+			return bar(gtx, &t.vbar, layout.Vertical, start, start+float32(view.Y)/float32(pos.Length))
+		})
 	}
 	return D{Size: view}
 }

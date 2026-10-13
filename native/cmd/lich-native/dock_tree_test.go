@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"image"
 	"reflect"
 	"strings"
@@ -140,5 +141,28 @@ func TestTreeScrollsSidewaysByItsWidestRow(t *testing.T) {
 	}
 	if rows.widest <= 200 || rows.widest > 2000 {
 		t.Fatalf("widest row = %dpx, want the long name's own width, past the 200px column", rows.widest)
+	}
+}
+
+func TestTreeRowsStopShortOfTheVerticalBar(t *testing.T) {
+	paths := []string{"src/" + strings.Repeat("a", 120) + ".go"}
+	for i := range 60 {
+		paths = append(paths, fmt.Sprintf("f%02d.go", i))
+	}
+	var rows treeRows
+	rows.list.Axis = layout.Vertical
+	rows.tree = buildTree(paths)
+	visible := visibleRows(rows.tree, func(string) bool { return true })
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Background}
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(200, 300))}
+	for range 3 {
+		ops.Reset()
+		rows.offsetX = 1 << 20
+		rows.layout(gtx, th, visible, "")
+	}
+	bar := gtx.Dp(th.ScrollArea(&rows.list).ScrollbarStyle.Width())
+	if want := rows.widest - (200 - bar); rows.offsetX != want {
+		t.Errorf("scrolled to the end at %dpx, want %dpx: the last %dpx of the widest row hide under the vertical bar", rows.offsetX, want, bar)
 	}
 }
