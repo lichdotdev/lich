@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/omartelo/lich/internal/claudeprofile"
+	"github.com/omartelo/lich/internal/providers"
 )
 
 // claudeProfileKey holds the Claude Code profile new sessions are born in: a
@@ -16,14 +17,51 @@ import (
 // "personal" is how a project names Personal over a global profile.
 const claudeProfileKey = "provider.claude.profile"
 
+// codexProfileKey is claudeProfileKey for Codex, whose profiles are their own
+// set (internal/codexprofile) with the same reserved "personal" slug.
+const codexProfileKey = "provider.codex.profile"
+
+// ompProfileKey is claudeProfileKey for oh-my-pi (internal/ompprofile).
+const ompProfileKey = "provider.omp.profile"
+
 // ClaudeProfile is the profile a Claude Code session born in this project now
 // runs in, "" for Personal.
 func (s *Service) ClaudeProfile(projectID string) string {
-	slug := s.projectSetting(claudeProfileKey, projectID)
+	return s.profileSetting(claudeProfileKey, projectID)
+}
+
+// CodexProfile is the profile a Codex session born in this project now runs in,
+// "" for Personal.
+func (s *Service) CodexProfile(projectID string) string {
+	return s.profileSetting(codexProfileKey, projectID)
+}
+
+// OMPProfile is the profile an oh-my-pi session born in this project now runs
+// in, "" for Personal.
+func (s *Service) OMPProfile(projectID string) string {
+	return s.profileSetting(ompProfileKey, projectID)
+}
+
+func (s *Service) profileSetting(key, projectID string) string {
+	slug := s.projectSetting(key, projectID)
 	if claudeprofile.IsPersonal(slug) {
 		return ""
 	}
 	return slug
+}
+
+// bornProfile is the profile a session of this provider is born in: the
+// project's setting for a provider that has profiles, "" for the rest.
+func (s *Service) bornProfile(kind, projectID string) string {
+	switch kind {
+	case providers.Claude:
+		return s.ClaudeProfile(projectID)
+	case providers.Codex:
+		return s.CodexProfile(projectID)
+	case providers.OMP:
+		return s.OMPProfile(projectID)
+	}
+	return ""
 }
 
 // ForgetClaudeProfile clears every setting that names a deleted profile, so a
@@ -31,18 +69,43 @@ func (s *Service) ClaudeProfile(projectID string) string {
 // Personal. The sessions born in it keep their mark: what they ran in is a fact
 // about them, and resuming one reports the profile gone (ErrProfileGone).
 func (s *Service) ForgetClaudeProfile(slug string) error {
+	return s.forgetProfile(claudeProfileKey, slug)
+}
+
+// ForgetCodexProfile is ForgetClaudeProfile for a Codex profile.
+func (s *Service) ForgetCodexProfile(slug string) error {
+	return s.forgetProfile(codexProfileKey, slug)
+}
+
+// ForgetOMPProfile is ForgetClaudeProfile for an oh-my-pi profile.
+func (s *Service) ForgetOMPProfile(slug string) error {
+	return s.forgetProfile(ompProfileKey, slug)
+}
+
+func (s *Service) forgetProfile(key, slug string) error {
 	if _, err := s.db.Exec(
-		`DELETE FROM settings WHERE key = ? AND value = ?`, claudeProfileKey, slug,
+		`DELETE FROM settings WHERE key = ? AND value = ?`, key, slug,
 	); err != nil {
-		return fmt.Errorf("forget claude profile %q: %w", slug, err)
+		return fmt.Errorf("forget profile %q (%s): %w", slug, key, err)
 	}
 	return nil
 }
 
-// SetSessionProfile records the Claude Code profile a session runs in, "" for
-// Personal. A session is born in its project's profile (addSession); this moves
-// it, which is what Continue in does once its conversation has moved, and what a
-// resume does when the conversation turns out to live in another profile.
+// SessionKind is the provider a session runs, "" for a session with no row or
+// when the read fails: a caller that needs the answer to be right asks the
+// session's spawn first.
+func (s *Service) SessionKind(sessionID string) string {
+	var kind string
+	if err := s.db.QueryRow(`SELECT kind FROM sessions WHERE id = ?`, sessionID).Scan(&kind); err != nil {
+		return ""
+	}
+	return kind
+}
+
+// SetSessionProfile records the profile a session runs in, "" for Personal. A
+// session is born in its project's profile (addSession); this moves it, which
+// is what Continue in does once its conversation has moved, and what a resume
+// does when the conversation turns out to live in another profile.
 func (s *Service) SetSessionProfile(sessionID, profile string) error {
 	if claudeprofile.IsPersonal(profile) {
 		profile = ""
@@ -55,7 +118,7 @@ func (s *Service) SetSessionProfile(sessionID, profile string) error {
 	return nil
 }
 
-// SessionProfile is the Claude Code profile a session runs in, "" for Personal
+// SessionProfile is the profile a session runs in, "" for Personal
 // and for a session with no row. A failed read is an error rather than
 // Personal: spawning into the wrong account is not a default to fall back to.
 func (s *Service) SessionProfile(sessionID string) (string, error) {

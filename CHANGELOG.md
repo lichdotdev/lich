@@ -23,8 +23,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   project scopes), a session keeps the one it was born in and its card names it,
   and **Continue in** on the card's menu moves a session's conversation to
   another logged-in account, with its five-hour usage beside it, and carries on
-  in the same card. The web window does not show profiles. Claude Code only for
-  now.
+  in the same card. The web window does not show profiles. Codex has its own,
+  below.
+- **Codex profiles: more than one login, in the native window.** Open Settings ›
+  Providers › Codex in `lich native` (experimental) and make a profile per
+  account: **New profile** takes a name and logs it in with Codex's own
+  `codex login`, which opens the browser and waits for its page on a local port,
+  so one login at a time. A profile keeps its own login and its own
+  conversations; Codex's `config.toml`, `AGENTS.md`, hooks, skills, rules and
+  the plugins you installed are the same in all of them, so a plugin installed
+  under one account is installed under every other. A project picks the profile
+  its new Codex sessions start in, a session keeps the one it was born in and
+  its card names it, and **Continue in** on the card's menu moves a Codex
+  conversation to another logged-in account, with its five-hour usage beside it,
+  and carries on in the same card. Searching a conversation, resuming it from
+  the History tab and the context and cost readouts look in every profile.
+- **oh-my-pi profiles: more than one login, in the native window.** Open
+  Settings › Providers › oh-my-pi in `lich native` (experimental) and make a
+  profile per set of accounts: **New profile** takes a name and opens oh-my-pi's
+  own `omp login` in a terminal card, where you pick the provider to log in to,
+  since that login is an interactive picker. A profile keeps its own logins and
+  its own conversations; `config.yml`, `models.yml`, MCP servers, `AGENTS.md`,
+  skills, rules, commands, prompts and extensions are the same in all of them,
+  and the plugins you install with `omp plugin install` are not. The row names
+  the accounts logged in there. A project picks the profile its new oh-my-pi
+  sessions start in, a session keeps the one it was born in and its card names
+  it, and **Continue in** on the card's menu moves an oh-my-pi conversation,
+  images included, to another profile and carries on in the same card.
+  Searching a conversation, resuming it from the History tab and the context
+  and cost readouts look in every profile. The other providers have no
+  profiles yet; `docs/ceilings.md` has what was measured for each.
 - **A new worktree in the native window starts from the newest of its base.**
   The **Worktree** item of the + menu (or its shortcut) opens a dialog that
   takes a name, words or a `#123` issue, the branch to start from and whether to

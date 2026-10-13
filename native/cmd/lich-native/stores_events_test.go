@@ -275,27 +275,27 @@ func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {
 		if method != "claudeprofile.Profiles" {
 			return failing("unexpected " + method)
 		}
-		return []lichclient.ClaudeProfile{{Slug: personalProfile, Name: "Personal", LoggedIn: true},
+		return []lichclient.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true},
 			{Slug: "work", Name: "Work", LoggedIn: loggedIn}}, http.StatusOK
 	}}
 	m := newModel(stub.client(t), func() {})
 	if err := m.profiles.reload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	m.quota.seed(profileQuotaKey("work"), []lichclient.QuotaPlan{{Provider: claudeKind}})
+	m.quota.seed(profileQuotaKey(claudeProfileProvider, "work"), []lichclient.QuotaPlan{{Provider: claudeKind}})
 
 	mu.Lock()
 	loggedIn = true
 	mu.Unlock()
 	heard := make(chan []string, 1)
-	m.loginProgress = func(lichclient.ClaudeProfileLogin) {
+	m.loginProgress = func(string, lichclient.ProfileLogin) {
 		var slugs []string
 		for _, p := range m.profiles.loggedIn() {
 			slugs = append(slugs, p.Slug)
 		}
 		heard <- slugs
 	}
-	send(m, lichclient.ClaudeProfileLoginEvent, lichclient.ClaudeProfileLogin{Profile: "work", Done: true, LoggedIn: true})
+	send(m, lichclient.ClaudeProfileLoginEvent, lichclient.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
 
 	select {
 	case slugs := <-heard:
@@ -305,14 +305,14 @@ func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("the screen never heard the login end")
 	}
-	if m.quota.plans(profileQuotaKey("work")) != nil {
+	if m.quota.plans(profileQuotaKey(claudeProfileProvider, "work")) != nil {
 		t.Error("a plan reading survived a login that changed whose plan it is")
 	}
 }
 
 func TestAWindowFocusReadsTheProfilesAgainOnlyOnceTheyAreOld(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
-		return []lichclient.ClaudeProfile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}}, http.StatusOK
+		return []lichclient.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}}, http.StatusOK
 	}}
 	m := newModel(stub.client(t), func() {})
 	ctx := context.Background()

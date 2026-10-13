@@ -40,9 +40,10 @@ func (s *Service) awaitsStart(kind, profileDir string) bool {
 	if !startsAtPrompt[kind] || installed == nil {
 		return false
 	}
-	// A profile has its own plugin set, so the plugin installed in Personal says
-	// nothing about whether a session in it will ever report.
-	if profileDir != "" {
+	// A Claude Code profile has its own plugin set, so the plugin installed in
+	// Personal says nothing about whether a session in it will ever report. The
+	// other providers' profiles link Personal's extensions and plugins.
+	if profileDir != "" && kind == providers.Claude {
 		return agentplugin.ClaudeInstalledIn(profileDir)
 	}
 	return installed(kind)

@@ -97,6 +97,9 @@ type stubBins struct {
 	profile       string
 	profileErr    error
 	movedProfiles map[string]string
+	// kinds are the providers SessionKind answers per session; a session not
+	// listed has no recorded kind.
+	kinds map[string]string
 }
 
 // projectWithSetup is a project checkout shipping .lich/setup-worktree.sh —
@@ -211,6 +214,8 @@ func (s stubBins) SessionProfile(id string) (string, error) {
 	}
 	return s.profile, s.profileErr
 }
+
+func (s stubBins) SessionKind(id string) string { return s.kinds[id] }
 
 func (s stubBins) SetSessionProfile(id, profile string) error {
 	if s.movedProfiles != nil {

@@ -56,12 +56,15 @@ type model struct {
 	launched      bool                              // the first screen was chosen from the last one
 	folds         map[string]bool                   // foldKey -> block folded, once read or written
 	providers     *providerBook                     // detected providers, their flags and defaults
-	// profiles is who is logged in to each Claude Code profile.
-	profiles *profileBook
+	// profiles is who is logged in to each Claude Code profile, and
+	// codexProfiles who is logged in to each Codex one and ompProfiles each
+	// oh-my-pi one.
+	profiles, codexProfiles, ompProfiles *profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
-	// loginProgress takes each step of a Claude Code profile login.
-	loginProgress func(lichclient.ClaudeProfileLogin)
+	// loginProgress takes each step of a profile login, of the provider kind
+	// names.
+	loginProgress func(kind string, step lichclient.ProfileLogin)
 	// diffTouched hears the checkout of a session that likely changed files,
 	// for the Review tab's diff, which is read apart from the git store.
 	diffTouched func(checkout string)
@@ -88,8 +91,11 @@ func newModel(client *lichclient.Client, invalidate func()) *model {
 	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), quota: quota, cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
 		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
-		profiles: newProfileBook(client, invalidate, quota), providers: newProviderBook(client, invalidate),
-		closed: newClosedProjects(client, invalidate)}
+		profiles:      newProfileBook(claudeProfileProvider, client, invalidate, quota),
+		codexProfiles: newProfileBook(codexProfileProvider, client, invalidate, quota),
+		ompProfiles:   newProfileBook(ompProfileProvider, client, invalidate, quota),
+		providers:     newProviderBook(client, invalidate),
+		closed:        newClosedProjects(client, invalidate)}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -241,15 +247,15 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			if json.Unmarshal(ev.Data, &s) == nil {
 				m.rename(s.ID, s.Label)
 			}
-		case lichclient.ClaudeProfileEvent:
-			var moved lichclient.ClaudeProfileMoved
+		case lichclient.SessionProfileEvent:
+			var moved lichclient.ProfileMoved
 			if json.Unmarshal(ev.Data, &moved) == nil {
 				m.setProfile(moved.ID, moved.Profile)
 			}
-		case lichclient.ClaudeProfileLoginEvent:
-			var step lichclient.ClaudeProfileLogin
+		case lichclient.ClaudeProfileLoginEvent, lichclient.CodexProfileLoginEvent:
+			var step lichclient.ProfileLogin
 			if json.Unmarshal(ev.Data, &step) == nil {
-				m.loginStep(ctx, step)
+				m.loginStep(ctx, loginEventKind(ev.Name), step)
 			}
 		case touchedEventName:
 			m.sessionTouched(ctx, ev.Data)
@@ -408,8 +414,8 @@ type sessionView struct {
 	git       lichclient.DiffStats
 	base      *lichclient.BaseStatus  // nil without a base to stand against
 	pr        *lichclient.PullRequest // open PR of the shown path's branch, nil for none
-	// profileName is the Claude Code profile the session runs in, "" for
-	// Personal; continueIn are the other logins its conversation could move to.
+	// profileName is the profile the session runs in, "" for Personal;
+	// continueIn are the other logins its conversation could move to.
 	profileName string
 	continueIn  []continueTarget
 }

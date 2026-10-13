@@ -21,18 +21,15 @@ import (
 // reaches the screen, never how often a provider is asked.
 const planQuotaRefresh = time.Minute
 
-// profileQuotaPrefix starts the key of a Claude Code profile's reading. A
-// session id never does.
-const profileQuotaPrefix = "profile:"
-
 // sessionLimitEvent is terminal limitEventName: a turn a usage limit ended.
 const sessionLimitEvent = "session-limit"
 
 // planQuota shares one poll loop per key across its watchers, ported from
 // plan-quota-store.ts, and is the window's only reader of plan quota. The key
 // is the session the reading is for, "" the machine's own login (which is
-// Personal's), "profile:<slug>" another Claude Code profile's own login:
-// a session can spend another account entirely.
+// Personal's), "profile:<slug>" another Claude Code profile's own login and
+// "codex-profile:<slug>" another Codex one: a session can spend another
+// account entirely.
 // A reading outlives its watchers: coming back to a card draws the numbers it
 // had while the fresh read is in flight.
 type planQuota struct {
@@ -53,12 +50,15 @@ type quotaEntry struct {
 	seq int
 }
 
-// profileQuotaKey is the key of a profile's reading: Personal is the machine's.
-func profileQuotaKey(slug string) string {
-	if effectiveProfile(slug) == personalProfile {
+// profileQuotaKey is the key of a profile's reading: Personal is the machine's,
+// and any other is "<prefix><slug>" under the provider's own prefix, which a
+// session id never starts with. A provider with no plan to read has no prefix
+// and its profiles no key.
+func profileQuotaKey(prov profileProvider, slug string) string {
+	if effectiveProfile(slug) == personalProfile || prov.quotaPrefix == "" {
 		return ""
 	}
-	return profileQuotaPrefix + slug
+	return prov.quotaPrefix + slug
 }
 
 // quotaReader reads the plan a planQuota key stands for. A profile's reading
@@ -66,15 +66,18 @@ func profileQuotaKey(slug string) string {
 func quotaReader(c *lichclient.Client) func(key string) ([]lichclient.QuotaPlan, error) {
 	return func(key string) ([]lichclient.QuotaPlan, error) {
 		ctx := context.Background()
-		slug, isProfile := strings.CutPrefix(key, profileQuotaPrefix)
-		if !isProfile {
-			return c.QuotaPlans(ctx, key)
+		for _, prov := range []profileProvider{claudeProfileProvider, codexProfileProvider} {
+			slug, isProfile := strings.CutPrefix(key, prov.quotaPrefix)
+			if !isProfile {
+				continue
+			}
+			plan, err := prov.api(c).Plan(ctx, slug)
+			if err != nil {
+				return nil, err
+			}
+			return []lichclient.QuotaPlan{plan}, nil
 		}
-		plan, err := c.ClaudeProfilePlan(ctx, slug)
-		if err != nil {
-			return nil, err
-		}
-		return []lichclient.QuotaPlan{plan}, nil
+		return c.QuotaPlans(ctx, key)
 	}
 }
 
@@ -139,7 +142,7 @@ func (q *planQuota) reread(key string) {
 // store listening to /events, so the code that made the change names no one.
 func (q *planQuota) apply(ev lichclient.Event) {
 	switch ev.Name {
-	case sessionLimitEvent, lichclient.ClaudeProfileEvent, statusEventName:
+	case sessionLimitEvent, lichclient.SessionProfileEvent, statusEventName:
 	default:
 		return
 	}

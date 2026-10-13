@@ -1,0 +1,124 @@
+package profilestore
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"syscall"
+)
+
+// Owner is the profile holding a conversation, and the path of its transcript
+// there. locate finds the transcript under one state directory. A conversation
+// id is unique to its provider and lives in exactly one profile, so the first
+// match is the only one.
+func (s Spec) Owner(conversationID string, locate func(dir, conversationID string) (string, bool)) (Profile, string, bool) {
+	for _, p := range s.All() {
+		if path, ok := locate(p.Dir, conversationID); ok {
+			return p, path, true
+		}
+	}
+	return Profile{}, "", false
+}
+
+// Pair is one entry of a conversation moving between profiles: where it is and
+// where it goes.
+type Pair struct{ From, To string }
+
+// MoveConversation moves a conversation from the profile that holds it to
+// toSlug, and back by calling it again. locate finds its transcript under one
+// state directory; entries lists everything the provider keyed by the
+// conversation's id, given that transcript and the two directories. The move
+// refuses a target that already holds any entry.
+//
+// A failure part way moves back whatever had already moved, so the conversation
+// is never split across two profiles.
+func (s Spec) MoveConversation(
+	conversationID, toSlug string,
+	locate func(dir, conversationID string) (string, bool),
+	entries func(conversationID, transcript, fromDir, toDir string) ([]Pair, error),
+) error {
+	from, transcript, ok := s.Owner(conversationID, locate)
+	if !ok {
+		return fmt.Errorf("no %s conversation %q in any profile", s.Label, conversationID)
+	}
+	toDir, err := s.ConfigDir(toSlug)
+	if err != nil {
+		return err
+	}
+	if filepath.Clean(from.Dir) == filepath.Clean(toDir) {
+		return fmt.Errorf("conversation %q is already in profile %q", conversationID, toSlug)
+	}
+	pairs, err := entries(conversationID, transcript, from.Dir, toDir)
+	if err != nil {
+		return err
+	}
+	for _, p := range pairs {
+		if _, err := os.Lstat(p.To); err == nil {
+			return fmt.Errorf("profile %q already holds %s", toSlug, p.To)
+		}
+	}
+	for i, p := range pairs {
+		if err := move(p.From, p.To); err != nil {
+			for _, done := range pairs[:i] {
+				_ = move(done.To, done.From)
+			}
+			return fmt.Errorf("move %s: %w", p.From, err)
+		}
+	}
+	return nil
+}
+
+// move renames from to to, creating to's parent, and copies across devices,
+// where a rename cannot go: Personal's directory and lich's own may sit on
+// different filesystems.
+func move(from, to string) error {
+	if err := os.MkdirAll(filepath.Dir(to), 0o700); err != nil {
+		return err
+	}
+	err := os.Rename(from, to)
+	var linkErr *os.LinkError
+	if err == nil || !errors.As(err, &linkErr) || !errors.Is(linkErr.Err, syscall.EXDEV) {
+		return err
+	}
+	if err := copyTree(from, to); err != nil {
+		_ = os.RemoveAll(to)
+		return err
+	}
+	return os.RemoveAll(from)
+}
+
+func copyTree(from, to string) error {
+	return filepath.WalkDir(from, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(from, path)
+		if err != nil {
+			return err
+		}
+		dst := filepath.Join(to, rel)
+		if d.IsDir() {
+			return os.MkdirAll(dst, 0o700)
+		}
+		return copyFile(path, dst)
+	})
+}
+
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
+}

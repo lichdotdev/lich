@@ -6,125 +6,27 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/omartelo/lich/internal/profilestore"
 )
-
-// sharedEntries are the user's own Claude Code content, linked from every
-// profile to Personal so an edit made under one account is there under all of
-// them. Claude Code writes through a link to its target (measured on 2.1.296).
-// Only entries Personal has are linked; EnsureShared links one created later.
-var sharedEntries = []string{"settings.json", "CLAUDE.md", "agents", "commands", "skills", "hooks"}
-
-// sharedPluginEntries are Personal's plugin downloads, linked so a profile does
-// not clone every marketplace and plugin again. The two state files beside them
-// stay per profile: an organization account may forbid plugins a personal one
-// runs, so the installed set differs per account.
-var sharedPluginEntries = []string{
-	filepath.Join("plugins", "cache"),
-	filepath.Join("plugins", "marketplaces"),
-}
-
-// sharedFiles are the entries that are files rather than directories, the ones
-// Windows can only link with Developer Mode and otherwise copies.
-var sharedFiles = map[string]bool{"settings.json": true, "CLAUDE.md": true}
 
 // emptyInstalledPlugins is installed_plugins.json with nothing in it, in the
 // version Claude Code 2.1.296 writes. Plugins arrive through `claude plugin
 // install` run in the profile, so the organization's policy decides what lands.
 const emptyInstalledPlugins = `{"version":2,"plugins":{}}` + "\n"
 
-// build lays a new profile out at dir against Personal. It reports the shared
-// entries it had to copy instead of link.
-func build(dir string) ([]string, error) {
-	personal, err := PersonalDir()
-	if err != nil {
-		return nil, err
-	}
-	if err := os.Mkdir(dir, 0o700); err != nil {
-		return nil, fmt.Errorf("create %s: %w", dir, err)
-	}
-	if err := os.MkdirAll(filepath.Join(dir, "plugins"), 0o700); err != nil {
-		return nil, err
-	}
-	for _, name := range sharedPluginEntries {
-		if err := os.MkdirAll(filepath.Join(personal, name), 0o755); err != nil {
-			return nil, fmt.Errorf("create %s: %w", filepath.Join(personal, name), err)
-		}
-	}
-	copied, err := linkShared(personal, dir)
-	if err != nil {
-		return nil, err
-	}
+// seed writes what a profile holds as files of its own beside the links: the
+// global config minus the account, the known marketplaces moved under the
+// profile's plugins directory and an empty installed set.
+func seed(personal, dir string) error {
 	if err := copyGlobalConfig(dir); err != nil {
-		return nil, err
+		return err
 	}
 	if err := copyMarketplaces(personal, dir); err != nil {
-		return nil, err
+		return err
 	}
 	installed := filepath.Join(dir, "plugins", "installed_plugins.json")
-	if err := writeFileAtomic(installed, []byte(emptyInstalledPlugins), 0o600); err != nil {
-		return nil, err
-	}
-	return copied, nil
-}
-
-// linkShared links every shared entry Personal has and the profile lacks. An
-// entry the profile already holds is left alone, link or not: Claude Code may
-// have written a settings.json of its own there before Personal had one, and
-// that file is the profile's now.
-func linkShared(personal, dir string) ([]string, error) {
-	var copied []string
-	for _, name := range append(sharedEntries, sharedPluginEntries...) {
-		target := filepath.Join(personal, name)
-		path := filepath.Join(dir, name)
-		if _, err := os.Stat(target); err != nil {
-			continue
-		}
-		if _, err := os.Lstat(path); err == nil {
-			continue
-		}
-		if !sharedFiles[name] {
-			if err := linkDir(target, path); err != nil {
-				return copied, fmt.Errorf("link %s: %w", path, err)
-			}
-			continue
-		}
-		wasCopied, err := linkFile(target, path)
-		if err != nil {
-			return copied, fmt.Errorf("link %s: %w", path, err)
-		}
-		if wasCopied {
-			copied = append(copied, name)
-		}
-	}
-	return copied, nil
-}
-
-// EnsureShared links into a profile the shared entries Personal gained since
-// the profile was made (a CLAUDE.md written after it, say) and records any it
-// had to copy. It runs before every spawn into the profile, so an entry appears
-// on the next session. Personal needs nothing.
-func EnsureShared(slug string) error {
-	if IsPersonal(slug) {
-		return nil
-	}
-	dir, err := ConfigDir(slug)
-	if err != nil {
-		return err
-	}
-	personal, err := PersonalDir()
-	if err != nil {
-		return err
-	}
-	copied, err := linkShared(personal, dir)
-	if err != nil || len(copied) == 0 {
-		return err
-	}
-	m, err := readMeta(dir)
-	if err != nil {
-		return err
-	}
-	m.Copied = append(m.Copied, copied...)
-	return writeMeta(dir, m)
+	return profilestore.WriteFileAtomic(installed, []byte(emptyInstalledPlugins), 0o600)
 }
 
 // globalDroppedKeys are the top-level keys of Claude Code's global config that
@@ -158,7 +60,7 @@ func copyGlobalConfig(dir string) error {
 	if err != nil {
 		return fmt.Errorf("read %s: %w", src, err)
 	}
-	return writeFileAtomic(filepath.Join(dir, ".claude.json"), out, 0o600)
+	return profilestore.WriteFileAtomic(filepath.Join(dir, ".claude.json"), out, 0o600)
 }
 
 func filterGlobalConfig(data []byte) ([]byte, error) {
@@ -243,7 +145,7 @@ func copyMarketplaces(personal, dir string) error {
 	if err != nil {
 		return err
 	}
-	return writeFileAtomic(filepath.Join(dir, "plugins", "known_marketplaces.json"), out, 0o600)
+	return profilestore.WriteFileAtomic(filepath.Join(dir, "plugins", "known_marketplaces.json"), out, 0o600)
 }
 
 // isClone reports whether a marketplace location is a clone Claude Code made

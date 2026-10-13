@@ -7,11 +7,14 @@ import (
 	"path/filepath"
 
 	"github.com/omartelo/lich/internal/claudeprofile"
+	"github.com/omartelo/lich/internal/codexprofile"
+	"github.com/omartelo/lich/internal/ompprofile"
+	"github.com/omartelo/lich/internal/profilestore"
 	"github.com/omartelo/lich/internal/providers"
 )
 
-// profileEventName carries the Claude Code profile a session moved to: Continue
-// in, or a resume that found its conversation in another profile.
+// profileEventName carries the profile a session moved to: Continue in, or a
+// resume that found its conversation in another profile.
 const profileEventName = "session-profile"
 
 type profileEvent struct {
@@ -20,8 +23,62 @@ type profileEvent struct {
 	Profile string `json:"profile"`
 }
 
-// claudeProfileDir resolves the config directory a Claude Code spawn of this
-// session runs in, "" for Personal, which keeps lich's own environment.
+// profileOps is what the service asks of one provider's profiles: the packages
+// that keep them (internal/claudeprofile, internal/codexprofile,
+// internal/ompprofile), which answer the same calls on their own directories.
+type profileOps struct {
+	configDir    func(slug string) (string, error)
+	ensureShared func(slug string) error
+	owner        func(conversationID string) (profilestore.Profile, string, bool)
+	env          func(env []string, dir string) []string
+	moveTo       func(conversationID, toSlug string) error
+	// slugOf is the profile a state directory belongs to, for a provider
+	// whose directory is not named after it.
+	slugOf func(dir string) string
+}
+
+// profilestores is the set of providers whose sessions can run in a profile of
+// their own, by provider id.
+var profilestores = map[string]profileOps{
+	providers.Claude: {
+		configDir: claudeprofile.ConfigDir, ensureShared: claudeprofile.EnsureShared,
+		owner: claudeprofile.Owner, env: claudeprofile.Env, moveTo: claudeprofile.MoveConversation,
+	},
+	providers.Codex: {
+		configDir: codexprofile.ConfigDir, ensureShared: codexprofile.EnsureShared,
+		owner: codexprofile.Owner, env: codexprofile.Env, moveTo: codexprofile.MoveConversation,
+	},
+	providers.OMP: {
+		configDir: ompprofile.ConfigDir, ensureShared: ompprofile.EnsureShared,
+		owner: ompprofile.Owner, env: ompprofile.Env, moveTo: ompprofile.MoveConversation,
+		// The profile's directory is its agent/ under ~/.omp/profiles/<slug>.
+		slugOf: func(dir string) string { return filepath.Base(filepath.Dir(dir)) },
+	},
+}
+
+func hasProfiles(kind string) bool {
+	_, ok := profilestores[kind]
+	return ok
+}
+
+// conversationOwner is the profile holding a conversation, "" for Personal.
+func conversationOwner(kind, conversationID string) (slug string, ok bool) {
+	owner, _, found := profilestores[kind].owner(conversationID)
+	if owner.Personal {
+		return "", found
+	}
+	return owner.Slug, found
+}
+
+// profileEnv is env with a profile's directory in place of the provider's own
+// state directory and the variables that would override its login removed.
+func profileEnv(kind string, env []string, dir string) []string {
+	return profilestores[kind].env(env, dir)
+}
+
+// profileDir resolves the state directory a spawn of this session runs in, ""
+// for Personal, which keeps lich's own environment and for a provider with no
+// profiles.
 //
 // The session's row says which profile it was born in. A resume asks the disk
 // instead: a conversation lives in exactly one profile, and resuming it
@@ -29,8 +86,8 @@ type profileEvent struct {
 // disagree (a conversation adopted from the history, one that moved) the row
 // follows the disk. A profile deleted since answers ErrProfileGone, which is
 // how the window learns to offer a new session in the project's profile.
-func (s *Service) claudeProfileDir(id, kind, resume string) (string, error) {
-	if kind != providers.Claude {
+func (s *Service) profileDir(id, kind, resume string) (string, error) {
+	if !hasProfiles(kind) {
 		return "", nil
 	}
 	slug, err := s.store.SessionProfile(id)
@@ -38,19 +95,19 @@ func (s *Service) claudeProfileDir(id, kind, resume string) (string, error) {
 		return "", err
 	}
 	if resume != "" {
-		if slug, err = s.followConversation(id, slug, resume); err != nil {
+		if slug, err = s.followConversation(id, kind, slug, resume); err != nil {
 			return "", err
 		}
 	}
-	if claudeprofile.IsPersonal(slug) {
+	if profilestore.IsPersonal(slug) {
 		return "", nil
 	}
-	dir, err := claudeprofile.ConfigDir(slug)
+	dir, err := profilestores[kind].configDir(slug)
 	if err != nil {
 		return "", err
 	}
-	if err := claudeprofile.EnsureShared(slug); err != nil {
-		slog.Warn("link shared claude entries into profile", "profile", slug, "err", err)
+	if err := profilestores[kind].ensureShared(slug); err != nil {
+		slog.Warn("link shared entries into profile", "kind", kind, "profile", slug, "err", err)
 	}
 	return dir, nil
 }
@@ -58,16 +115,12 @@ func (s *Service) claudeProfileDir(id, kind, resume string) (string, error) {
 // followConversation is the row's profile, moved to the one holding the
 // conversation being resumed when that is another. Start tells the window,
 // once the process runs under it.
-func (s *Service) followConversation(id, slug, conversationID string) (string, error) {
-	owner, _, ok := claudeprofile.Owner(conversationID)
+func (s *Service) followConversation(id, kind, slug, conversationID string) (string, error) {
+	found, ok := conversationOwner(kind, conversationID)
 	if !ok {
 		return slug, nil
 	}
-	found := owner.Slug
-	if owner.Personal {
-		found = ""
-	}
-	if claudeprofile.IsPersonal(slug) {
+	if profilestore.IsPersonal(slug) {
 		slug = ""
 	}
 	if found == slug {
@@ -90,21 +143,37 @@ func (s *Service) reportProfileMove(id, bornIn string) {
 	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: now})
 }
 
-// profileSlug is the profile a config directory belongs to, "" for Personal's
-// (an empty dir): what a live spawn records to be counted by ProfileSessions.
-func profileSlug(dir string) string {
+// profileSlug is the profile a state directory of kind's provider belongs to,
+// "" for Personal's (an empty dir): what a live spawn records to be counted by
+// ProfileSessions.
+func profileSlug(kind, dir string) string {
 	if dir == "" {
 		return ""
+	}
+	if slugOf := profilestores[kind].slugOf; slugOf != nil {
+		return slugOf(dir)
 	}
 	return filepath.Base(dir)
 }
 
 // ProfileSessions counts the live sessions running in a Claude Code profile, so
 // a profile is never deleted out from under one.
-func (s *Service) ProfileSessions(slug string) int {
+func (s *Service) ProfileSessions(slug string) int { return s.profileSessions(providers.Claude, slug) }
+
+// CodexProfileSessions is ProfileSessions for a Codex profile.
+func (s *Service) CodexProfileSessions(slug string) int {
+	return s.profileSessions(providers.Codex, slug)
+}
+
+// OMPProfileSessions is ProfileSessions for an oh-my-pi profile.
+func (s *Service) OMPProfileSessions(slug string) int {
+	return s.profileSessions(providers.OMP, slug)
+}
+
+func (s *Service) profileSessions(kind, slug string) int {
 	n := 0
 	s.spawns.Range(func(_, v any) bool {
-		if started, ok := v.(spawn); ok && started.kind == providers.Claude && started.profile == slug {
+		if started, ok := v.(spawn); ok && started.kind == kind && started.profile == slug {
 			n++
 		}
 		return true
@@ -112,9 +181,10 @@ func (s *Service) ProfileSessions(slug string) int {
 	return n
 }
 
-// ContinueIn moves a Claude Code session's conversation to another profile and
-// carries on there, in the same card: the process ends, the conversation and
-// everything Claude Code keyed by its id move (claudeprofile.MoveConversation),
+// ContinueIn moves a Claude Code, Codex or oh-my-pi session's conversation to
+// another profile of the same provider and carries on there, in the same card:
+// the process ends, the conversation and everything its provider keyed by its id
+// move (claudeprofile.MoveConversation and its siblings),
 // the row takes the new profile, and a running session is spawned again
 // resuming it. Moving back is the same call. Nothing else moves: not the other
 // sessions in the profile, and not the project's own profile.
@@ -128,16 +198,17 @@ func (s *Service) ContinueIn(id, profile string) error {
 		return err
 	}
 	if conversation == "" {
-		return errors.New("this session has no Claude Code conversation to continue yet")
+		return errors.New("this session has no conversation to continue yet")
 	}
 	started := s.spawnOf(id)
-	if started.kind != "" && started.kind != providers.Claude {
-		return fmt.Errorf("only a Claude Code session can continue in another profile, not %s", started.kind)
+	kind := sessionKind(started.kind, s.store.SessionKind(id))
+	if !hasProfiles(kind) {
+		return fmt.Errorf("only a Claude Code, Codex or oh-my-pi session can continue in another profile, not %s", kind)
 	}
 	if s.turns.busy(id) {
 		return errors.New("the session is mid-turn; continue it in another profile once the turn ends")
 	}
-	if _, err := claudeprofile.ConfigDir(profile); err != nil {
+	if _, err := profilestores[kind].configDir(profile); err != nil {
 		return err
 	}
 	live := s.Live(id)
@@ -146,29 +217,42 @@ func (s *Service) ContinueIn(id, profile string) error {
 			return fmt.Errorf("end the session before moving it: %w", err)
 		}
 	}
-	if err := claudeprofile.MoveConversation(conversation, profile); err != nil {
-		return s.respawnAfter(err, live, id, started, conversation)
+	if err := profilestores[kind].moveTo(conversation, profile); err != nil {
+		return s.respawnAfter(err, live, id, started, kind, conversation)
 	}
-	if claudeprofile.IsPersonal(profile) {
+	if profilestore.IsPersonal(profile) {
 		profile = ""
 	}
 	if err := s.store.SetSessionProfile(id, profile); err != nil {
 		return err
 	}
-	err = s.respawnAfter(nil, live, id, started, conversation)
+	err = s.respawnAfter(nil, live, id, started, kind, conversation)
 	// After the respawn: a reader that re-reads on this event (the quota of
 	// the session's account) must find the process already under the profile.
 	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: profile})
 	return err
 }
 
+// sessionKind is the provider of a session being moved: its running spawn's,
+// else its row's, and Claude Code for a row that does not say, which is every
+// session born before lich recorded a kind.
+func sessionKind(spawned, recorded string) string {
+	switch {
+	case spawned != "":
+		return spawned
+	case recorded != "":
+		return recorded
+	}
+	return providers.Claude
+}
+
 // respawnAfter brings a session that was running back up on its conversation,
 // wherever that now lives, and reports cause: a failed move still leaves the
 // card running where it was.
-func (s *Service) respawnAfter(cause error, live bool, id string, started spawn, conversation string) error {
+func (s *Service) respawnAfter(cause error, live bool, id string, started spawn, kind, conversation string) error {
 	if !live {
 		return cause
 	}
-	err := s.Start(id, started.projectID, started.cwd, providers.Claude, conversation, "", false, false, 0, 0)
+	err := s.Start(id, started.projectID, started.cwd, kind, conversation, "", false, false, 0, 0)
 	return errors.Join(cause, err)
 }

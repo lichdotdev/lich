@@ -25,7 +25,6 @@ import (
 // ponytail: English until the native window has i18n (claudeProfileDialogs.*).
 const (
 	dlgNewTitle        = "New profile"
-	dlgNewDesc         = "A Claude login of its own, with its own plugins and history."
 	dlgName            = "Name"
 	dlgNamePlaceholder = "Work"
 	dlgBring           = "Plugins to bring from %s"
@@ -35,20 +34,16 @@ const (
 	dlgCreateAndLogin  = "Create and log in"
 	dlgRenameTitle     = "Rename profile"
 	dlgRename          = "Rename"
-	dlgRenameDesc      = "Only its name changes: its login, plugins and history stay as they are."
 	dlgReadyDesc       = "Pick it as the Profile of a project, or of every new session."
 	dlgFailedDesc      = "Try again from the profile's menu, or log in from a terminal."
 	dlgDeleteTitle     = "Delete %s?"
-	dlgDeleteDesc      = "Its login, plugins and conversation history are removed, and sessions started in it can no longer be resumed."
 	dlgDelete          = "Delete"
 	dlgCopyTitle       = "Copy plugins to %s"
 	dlgCopyDesc        = "They are installed through Claude Code as this profile, so its account's rules apply."
 	dlgCopyFrom        = "Copy from"
 	dlgCopy            = "Copy plugins"
 	dlgLoginTitle      = "Log in to %s"
-	dlgLoginDesc       = "Sign in in the browser tab Claude Code opened. This carries on by itself when you are done."
 	dlgWaiting         = "Waiting for the login…"
-	dlgAddress         = "If the browser did not open, sign in at this address and paste the code it shows."
 	dlgOpenBrowser     = "Open in browser"
 	dlgCopyAddress     = "Copy"
 	dlgPasteCode       = "Paste the code"
@@ -58,12 +53,13 @@ const (
 	dlgFailedTitle     = "Could not log in to %s"
 	dlgCopiedTitle     = "Plugins for %s"
 	dlgLoggedInAs      = "Logged in as %s"
+	dlgLoggedIn        = "Logged in"
 	dlgLichPluginNote  = "The lich plugin could not be installed: %s"
 	dlgDone            = "Done"
 )
 
-// The lich plugin is in every profile whether or not the checklist is ticked:
-// lich installs it after a login (claudeprofile.SetLichPlugin).
+// The lich plugin is in every Claude Code profile whether or not the checklist
+// is ticked: lich installs it after a login (claudeprofile.SetLichPlugin).
 const lichPluginName = "lich"
 
 var (
@@ -76,15 +72,15 @@ var (
 )
 
 // flowHeading is the dialog's title and description for where it stands.
-func flowHeading(d flowData) (title, desc string) {
+func flowHeading(prov profileProvider, d flowData) (title, desc string) {
 	name := d.target.Name
 	switch d.kind {
 	case flowNew:
-		return dlgNewTitle, dlgNewDesc
+		return dlgNewTitle, prov.words.newDesc
 	case flowRename:
-		return dlgRenameTitle, dlgRenameDesc
+		return dlgRenameTitle, prov.words.renameDesc
 	case flowDelete:
-		return fmt.Sprintf(dlgDeleteTitle, name), dlgDeleteDesc
+		return fmt.Sprintf(dlgDeleteTitle, name), prov.words.deleteDesc
 	case flowCopy:
 		if d.step == stepResult {
 			return fmt.Sprintf(dlgCopiedTitle, name), dlgCopyDesc
@@ -93,7 +89,7 @@ func flowHeading(d flowData) (title, desc string) {
 	}
 	switch {
 	case d.step != stepResult:
-		return fmt.Sprintf(dlgLoginTitle, name), dlgLoginDesc
+		return fmt.Sprintf(dlgLoginTitle, name), prov.words.loginDesc
 	case d.failure != "":
 		return fmt.Sprintf(dlgFailedTitle, name), dlgFailedDesc
 	}
@@ -101,7 +97,10 @@ func flowHeading(d flowData) (title, desc string) {
 }
 
 // loggedInAs is the line a finished login opens its result with.
-func loggedInAs(p lichclient.ClaudeProfile) string {
+func loggedInAs(p lichclient.Profile) string {
+	if p.Email == "" {
+		return dlgLoggedIn
+	}
 	line := fmt.Sprintf(dlgLoggedInAs, p.Email)
 	if p.Plan != "" {
 		line += profileAccountSplit + strings.ToUpper(p.Plan[:1]) + p.Plan[1:]
@@ -109,21 +108,31 @@ func loggedInAs(p lichclient.ClaudeProfile) string {
 	return line
 }
 
-// layoutClaudeDialog is the profile dialog. The window lays it out with its
-// own constraints, ahead of the pane, so a click that opens it calls
+// layoutProfileDialogs lays out the profile dialog of each provider that has
+// profiles; at most one is open.
+func (s *settingsScreen) layoutProfileDialogs(gtx C, th *ui.Theme) {
+	for _, kind := range []string{claudeKind, codexKind, ompKind} {
+		if c := s.providers.profiles(kind); c != nil {
+			s.layoutProfileDialog(gtx, th, c)
+		}
+	}
+}
+
+// layoutProfileDialog is a provider's profile dialog. The window lays it out
+// with its own constraints, ahead of the pane, so a click that opens it calls
 // s.invalidate.
-func (s *settingsScreen) layoutClaudeDialog(gtx C, th *ui.Theme) {
-	f := &s.providers.claude.flow
+func (s *settingsScreen) layoutProfileDialog(gtx C, th *ui.Theme, c *profileSettings) {
+	f := &c.flow
 	s.flowInput(gtx, f, f.view())
 	d := f.view()
 	on := th.On(th.Popover)
-	title, desc := flowHeading(d)
+	title, desc := flowHeading(c.provider, d)
 	dlg := th.Dialog(&f.dialog, d.open && s.open, title, desc)
 	dlg.MaxWidth, dlg.Root = ui.DialogWidthXL, s.root
 	dlg.Body = func(gtx C) D { return s.flowBody(gtx, on, f, d) }
 	dlg.Actions = s.flowActions(on, f, d)
 	if dlg.Layout(gtx) {
-		s.dismissFlow(d)
+		s.dismissFlow(c, d)
 	}
 }
 
@@ -146,22 +155,22 @@ func (s *settingsScreen) flowInput(gtx C, f *profileFlow, d flowData) {
 	}
 	switch {
 	case f.cancel.Clicked(gtx):
-		s.dismissFlow(d)
+		s.dismissFlow(f.ps, d)
 	case f.done.Clicked(gtx):
-		s.dismissFlow(d)
+		s.dismissFlow(f.ps, d)
 	case f.confirm.Clicked(gtx) || named:
 		if d.step == stepForm && s.canConfirm(d, f) {
-			s.confirmFlow(d)
+			s.confirmFlow(f.ps, d)
 		}
 	case f.submitCode.Clicked(gtx) || coded:
-		s.submitLoginCode(d.target.Slug, f.code.Text())
+		s.submitLoginCode(f.ps, d.target.Slug, f.code.Text())
 		f.code.SetText("")
 	case f.openURL.Clicked(gtx):
 		s.openExternal(d.url)
 	case f.copyURL.Clicked(gtx):
 		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(d.url))})
 	case f.term.Clicked(gtx):
-		s.loginInTerminal(d)
+		s.loginInTerminal(f.ps, d)
 	}
 }
 
@@ -190,14 +199,14 @@ func (s *settingsScreen) canConfirm(d flowData, f *profileFlow) bool {
 }
 
 // submitLoginCode hands the code the sign-in page showed to the login.
-func (s *settingsScreen) submitLoginCode(slug, code string) {
+func (s *settingsScreen) submitLoginCode(c *profileSettings, slug, code string) {
 	code = strings.TrimSpace(code)
-	if code == "" {
+	if code == "" || !c.provider.loginCode {
 		return
 	}
 	go func() {
-		if err := s.client.ClaudeLoginCode(s.ctx, slug, code); err != nil {
-			s.providers.claude.flow.set(func(d *flowData) { d.failure = lichclient.ErrorText(err) })
+		if err := c.provider.api(s.client).LoginCode(s.ctx, slug, code); err != nil {
+			c.flow.set(func(d *flowData) { d.failure = lichclient.ErrorText(err) })
 			s.invalidate()
 		}
 	}()
@@ -243,7 +252,7 @@ func (s *settingsScreen) formBody(gtx C, th *ui.Theme, f *profileFlow, d flowDat
 	case flowCopy:
 		children = append(children, layout.Rigid(func(gtx C) D { return s.copySource(gtx, th, f, d) }), ui.VGap(3))
 	}
-	if d.kind == flowNew || d.kind == flowCopy {
+	if f.ps.provider.plugins && (d.kind == flowNew || d.kind == flowCopy) {
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.checklist(gtx, th, f, d) }))
 	}
 	if d.failure != "" {
@@ -263,7 +272,7 @@ func nameField(gtx C, th *ui.Theme, name *widget.Editor) D {
 // copySource is the select of the profile a copy reads from, any but the
 // target.
 func (s *settingsScreen) copySource(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
-	book := s.providers.claude.book
+	book := f.ps.book
 	list, _ := book.snapshot()
 	pop := th.DropdownPanel(s.root, &f.source, profilePickerW, func(gtx C, th *ui.Theme) D {
 		var rows []layout.FlexChild
@@ -286,13 +295,13 @@ func (s *settingsScreen) copySource(gtx C, th *ui.Theme, f *profileFlow, d flowD
 	)
 }
 
-func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p lichclient.ClaudeProfile, chosen bool) D {
+func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p lichclient.Profile, chosen bool) D {
 	if f.options == nil {
 		f.options = map[string]*widget.Clickable{}
 	}
 	click := clickableOf(f.options, p.Slug)
 	if click.Clicked(gtx) {
-		s.pickCopySource(p.Slug)
+		s.pickCopySource(f.ps, p.Slug)
 		f.source.Close()
 	}
 	return click.Layout(gtx, func(gtx C) D {
@@ -322,7 +331,7 @@ func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p lic
 // checklist is the plugins a profile can take from the one it is copied from,
 // each ticked until unticked, and for a new profile the lich plugin locked on.
 func (s *settingsScreen) checklist(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
-	source := s.providers.claude.book.nameOf(d.source)
+	source := f.ps.book.nameOf(d.source)
 	heading := fmt.Sprintf(dlgBring, source)
 	if d.kind == flowCopy {
 		heading = ""
@@ -361,7 +370,7 @@ func lockedPlugin(gtx C, th *ui.Theme) D {
 	})
 }
 
-func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins []lichclient.ClaudeProfilePlugin) D {
+func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins []lichclient.ProfilePlugin) D {
 	if f.checks == nil {
 		f.checks = map[string]*widget.Bool{}
 	}
@@ -378,7 +387,7 @@ func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins
 	})
 }
 
-func pluginRow(gtx C, th *ui.Theme, p lichclient.ClaudeProfilePlugin, box *widget.Bool) D {
+func pluginRow(gtx C, th *ui.Theme, p lichclient.ProfilePlugin, box *widget.Bool) D {
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(th.Checkbox(box).Layout),
@@ -398,7 +407,9 @@ func (s *settingsScreen) loginBody(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 	if d.url != "" {
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.addressBlock(gtx, th, f, d.url) }))
 	}
-	children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.codeBlock(gtx, th, f) }))
+	if f.ps.provider.loginCode {
+		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.codeBlock(gtx, th, f) }))
+	}
 	if d.failure != "" {
 		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, d.failure).In(th.Destructive)) }))
 	}
@@ -412,7 +423,7 @@ func (s *settingsScreen) addressBlock(gtx C, th *ui.Theme, f *profileFlow, url s
 	copyURL := th.Button(&f.copyURL, dlgCopyAddress)
 	copyURL.Variant, copyURL.Size, copyURL.Icon = ui.VariantGhost, ui.SizeSM, icDlgCopy
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, dlgAddress).Muted()) }),
+		layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, f.ps.provider.words.addressDesc).Muted()) }),
 		ui.VGap(1.5),
 		layout.Rigid(th.Text(ui.TextXS, url).Mono().Layout),
 		ui.VGap(2),
@@ -449,7 +460,7 @@ func terminalLink(gtx C, th *ui.Theme, click *widget.Clickable) D {
 }
 
 // resultBody is how a login or a copy ended: the account, then each plugin
-// with Claude Code's own words when it was refused.
+// with the provider's own words when it was refused.
 func (s *settingsScreen) resultBody(gtx C, th *ui.Theme, d flowData) D {
 	var children []layout.FlexChild
 	switch {
@@ -468,7 +479,7 @@ func (s *settingsScreen) resultBody(gtx C, th *ui.Theme, d flowData) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-func pluginResult(gtx C, th *ui.Theme, r lichclient.ClaudeProfilePluginResult) D {
+func pluginResult(gtx C, th *ui.Theme, r lichclient.ProfilePluginResult) D {
 	mark, ink := icDlgOK, th.TonePass
 	if !r.OK {
 		mark, ink = icDlgBan, th.Destructive

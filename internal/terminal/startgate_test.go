@@ -99,6 +99,20 @@ func TestAwaitsStartIsOffWhereTheHooksAreNotInstalled(t *testing.T) {
 	}
 }
 
+// Only a Claude Code profile has a plugin set of its own to ask about; an
+// oh-my-pi profile links Personal's extension, so Personal's answer is its.
+func TestAwaitsStartInAProfileAsksTheProvidersOwnPluginSet(t *testing.T) {
+	svc := New(stubBins{}, nil, events.New())
+	svc.SetStartReports(func(provider string) bool { return provider == providers.OMP })
+
+	if !svc.awaitsStart(providers.OMP, "/home/u/.omp/profiles/work/agent") {
+		t.Error("an oh-my-pi session in a profile was not set to wait for its start report")
+	}
+	if svc.awaitsStart(providers.Claude, t.TempDir()) {
+		t.Error("a Claude Code profile without the plugin was set to wait")
+	}
+}
+
 func TestMarkStartedIgnoresASessionThatIsNotRunning(t *testing.T) {
 	svc := New(stubBins{}, nil, events.New())
 	svc.markStarted("ghost")

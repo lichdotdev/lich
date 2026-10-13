@@ -125,8 +125,8 @@ func TestCodexConversations(t *testing.T) {
 		`{"id":"c2","thread_name":"Named by the user"}`+"\n")
 
 	assertConversations(t, codexConversations(),
-		store.Conversation{Kind: "codex", ID: "c1", Title: "port the theme loader", Cwd: "/work/alpha"},
-		store.Conversation{Kind: "codex", ID: "c2", Title: "Named by the user", Cwd: "/work/alpha"},
+		store.Conversation{Kind: "codex", ID: "c1", Title: "port the theme loader", Cwd: "/work/alpha", Profile: "personal"},
+		store.Conversation{Kind: "codex", ID: "c2", Title: "Named by the user", Cwd: "/work/alpha", Profile: "personal"},
 	)
 }
 
@@ -144,8 +144,8 @@ func TestOMPConversations(t *testing.T) {
 		`{"type":"session","id":"sub","cwd":"/work/alpha"}`+"\n")
 
 	assertConversations(t, ompConversations(),
-		store.Conversation{Kind: "omp", ID: "o1", Title: "Find relay deadline test", Cwd: "/work/alpha"},
-		store.Conversation{Kind: "omp", ID: "o2", Cwd: "/work/alpha"},
+		store.Conversation{Kind: "omp", ID: "o1", Title: "Find relay deadline test", Cwd: "/work/alpha", Profile: "personal"},
+		store.Conversation{Kind: "omp", ID: "o2", Cwd: "/work/alpha", Profile: "personal"},
 	)
 }
 

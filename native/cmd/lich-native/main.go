@@ -187,8 +187,9 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
 	u.settings.applyEditor = u.takeEditorPref
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
-	u.settings.providers.claude.book = u.model.profiles
-	u.settings.providers.claude.openTerminal = u.openLoginTerminal
+	u.settings.providers.claude.bind(u.model.profiles, u.openLoginTerminal)
+	u.settings.providers.codex.bind(u.model.codexProfiles, u.openLoginTerminal)
+	u.settings.providers.omp.bind(u.model.ompProfiles, u.openLoginTerminal)
 	u.model.loginProgress = u.settings.loginProgress
 	u.settings.providers.book = u.model.providers
 	u.model.projectClosed = u.projectClosed
@@ -366,7 +367,7 @@ func (u *window) layout(gtx C) error {
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
 		u.settings.layoutProviderDialog(gtx, u.theme)
-		u.settings.layoutClaudeDialog(gtx, u.theme)
+		u.settings.layoutProfileDialogs(gtx, u.theme)
 		u.settings.layoutPatchNotesDialog(gtx, u.theme)
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)

@@ -1,6 +1,6 @@
 //go:build windows
 
-package claudeprofile
+package profilestore
 
 import (
 	"fmt"
@@ -24,8 +24,8 @@ func linkDir(target, path string) error {
 
 // linkFile makes path a symlink to the file target, which Windows allows only
 // with Developer Mode on, and copies the file when it refuses. A hard link is
-// not the fallback: Claude Code replaces the file on its first write and the two
-// diverge anyway (measured).
+// not the fallback: a CLI that replaces the file on write leaves the two
+// diverged anyway (measured on Claude Code).
 func linkFile(target, path string) (copied bool, err error) {
 	if os.Symlink(target, path) == nil {
 		return false, nil
@@ -33,9 +33,9 @@ func linkFile(target, path string) (copied bool, err error) {
 	return true, copyFile(target, path)
 }
 
-// isLink reports whether path is a link this package made: a symlink, or a
+// IsLink reports whether path is a link this package made: a symlink, or a
 // junction, which Go reports as an irregular file rather than a symlink.
-func isLink(path string) bool {
+func IsLink(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode()&(os.ModeSymlink|os.ModeIrregular) != 0
 }

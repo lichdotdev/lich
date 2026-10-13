@@ -110,3 +110,72 @@ func TestForgetClaudeProfileClearsOnlyItsSettings(t *testing.T) {
 		t.Errorf("p2 lost its own profile: %q", got)
 	}
 }
+
+// TestCodexProfilesAreTheirOwnSet: Codex's setting, born profile and forget
+// follow the same rules as Claude Code's under a key of their own, so a slug
+// set for one provider never reaches the other.
+func TestCodexProfilesAreTheirOwnSet(t *testing.T) {
+	svc := newTestStore(t)
+	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_ = svc.SetSetting(claudeProfileKey, "p1", "claude-work")
+	_ = svc.SetSetting(codexProfileKey, "p1", "codex-work")
+	if got := svc.CodexProfile("p1"); got != "codex-work" {
+		t.Errorf("CodexProfile = %q, want codex-work", got)
+	}
+	if got := svc.ClaudeProfile("p1"); got != "claude-work" {
+		t.Errorf("ClaudeProfile = %q, want claude-work", got)
+	}
+
+	_ = svc.AddSession("p1", "cc", "Claude", "claude", "", 2, "")
+	_ = svc.AddSession("p1", "cx", "Codex", "codex", "", 3, "")
+	_ = svc.AddSession("p1", "cr", "Crush", "crush", "", 4, "")
+	for id, want := range map[string]string{"cc": "claude-work", "cx": "codex-work", "cr": ""} {
+		if got, err := svc.SessionProfile(id); err != nil || got != want {
+			t.Errorf("SessionProfile(%s) = %q, %v, want %q", id, got, err, want)
+		}
+	}
+	for id, want := range map[string]string{"cc": "claude", "cx": "codex", "ghost": ""} {
+		if got := svc.SessionKind(id); got != want {
+			t.Errorf("SessionKind(%s) = %q, want %q", id, got, want)
+		}
+	}
+
+	if err := svc.ForgetCodexProfile("codex-work"); err != nil {
+		t.Fatal(err)
+	}
+	if got := svc.CodexProfile("p1"); got != "" {
+		t.Errorf("after forgetting: %q, want Personal", got)
+	}
+	if got := svc.ClaudeProfile("p1"); got != "claude-work" {
+		t.Errorf("forgetting a Codex profile took the Claude one: %q", got)
+	}
+}
+
+// TestOMPProfilesAreTheirOwnSet: oh-my-pi's setting, born profile and forget
+// follow the same rules under a key of its own.
+func TestOMPProfilesAreTheirOwnSet(t *testing.T) {
+	svc := newTestStore(t)
+	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_ = svc.SetSetting(codexProfileKey, "p1", "codex-work")
+	_ = svc.SetSetting(ompProfileKey, "p1", "omp-work")
+	if got := svc.OMPProfile("p1"); got != "omp-work" {
+		t.Errorf("OMPProfile = %q, want omp-work", got)
+	}
+	_ = svc.AddSession("p1", "cx", "Codex", "codex", "", 2, "")
+	_ = svc.AddSession("p1", "om", "omp", "omp", "", 3, "")
+	for id, want := range map[string]string{"cx": "codex-work", "om": "omp-work"} {
+		if got, err := svc.SessionProfile(id); err != nil || got != want {
+			t.Errorf("SessionProfile(%s) = %q, %v, want %q", id, got, err, want)
+		}
+	}
+
+	if err := svc.ForgetOMPProfile("omp-work"); err != nil {
+		t.Fatal(err)
+	}
+	if got := svc.OMPProfile("p1"); got != "" {
+		t.Errorf("after forgetting: %q, want Personal", got)
+	}
+	if got := svc.CodexProfile("p1"); got != "codex-work" {
+		t.Errorf("forgetting an omp profile took the Codex one: %q", got)
+	}
+}

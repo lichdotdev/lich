@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/omartelo/lich/internal/ompprofile"
 )
 
 // The oh-my-pi side. omp has no plugin CLI either, and its extensions are
@@ -80,24 +82,6 @@ func (s *Service) ompInstalledVersion() (string, bool) {
 	return versionOf(data, jsComment)
 }
 
-// ompAgentDir resolves the directory omp keeps its state in — extensions, MCP
-// servers and sessions all live under it. Three answers, in the precedence
-// `omp config path` was measured to apply: a named profile moves the whole
-// directory and wins outright, then the explicit override, then the default.
-func ompAgentDir() (string, error) {
-	if profile := os.Getenv("OMP_PROFILE"); profile != "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("resolve home directory: %w", err)
-		}
-		return filepath.Join(home, ".omp", "profiles", profile, "agent"), nil
-	}
-	if dir := os.Getenv("PI_CODING_AGENT_DIR"); dir != "" {
-		return dir, nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve home directory: %w", err)
-	}
-	return filepath.Join(home, ".omp", "agent"), nil
-}
+// ompAgentDir is the directory omp keeps its state in — extensions, MCP servers
+// and sessions all live under it: Personal's, which internal/ompprofile resolves.
+func ompAgentDir() (string, error) { return ompprofile.PersonalDir() }

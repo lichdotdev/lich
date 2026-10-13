@@ -164,10 +164,7 @@ func (s *Service) addSession(
 	}
 	// The profile is a birth value like the model: the project's setting moving
 	// later does not move a session that already has a conversation.
-	profile := ""
-	if kind == providers.Claude {
-		profile = s.ClaudeProfile(projectID)
-	}
+	profile := s.bornProfile(kind, projectID)
 	return s.tx(func(tx *sql.Tx) error {
 		if _, err := tx.Exec(
 			`INSERT INTO sessions (id, project_id, label, kind, path, origin_session_id, origin_label, sandbox, folder, profile, position)

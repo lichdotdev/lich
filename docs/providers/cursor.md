@@ -2,7 +2,9 @@
 
 `cursor-agent` (`internal/providers.Registry`). Cursor keeps its state in two directories. Its config dir is
 `$CURSOR_CONFIG_DIR` ‖ `$XDG_CONFIG_HOME/cursor` ‖ `~/.cursor`, not xdg-basedir, the fallback being the home
-directly, and it holds the credentials and the chats. But `~/.cursor` is resolved off the home with no variable
+directly, and it holds the chats and `cli-config.json`. The credentials are not in it on Linux: `auth.json` is
+`$XDG_CONFIG_HOME/cursor/auth.json` else `~/.config/cursor/auth.json` (2026.10.01, read in the bundle and
+measured against a throwaway home), which is the config dir only when `XDG_CONFIG_HOME` is set. But `~/.cursor` is resolved off the home with no variable
 in the way at all, and that is where `mcp.json`, the per-project transcripts and the CLI state live. The chat
 itself is SQLite at `chats/<md5 of the resolved cwd>/<chatId>/store.db`. The limits these sit under are in
 [`../ceilings.md`](../ceilings.md).

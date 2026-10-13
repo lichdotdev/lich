@@ -15,20 +15,15 @@ import (
 // claudeProfileDialogs.*).
 const (
 	profileTitle  = "Profile"
-	profileAlso   = "claude account login personal work"
-	profileDesc   = "Which Claude login new sessions use. A session keeps the profile it was born in, resumes included."
 	profilesTitle = "Profiles"
-	profilesAlso  = "claude accounts logins personal work log in plugins"
-	profilesDesc  = "Each profile is its own Claude login with its own plugins and history. Settings, CLAUDE.md, agents, commands, skills and hooks are the same in all of them."
-	profilesCopy  = "Settings, CLAUDE.md, agents, commands, skills and hooks are copies in this profile: editing them in another profile no longer reaches it."
 
-	claudeCreating      = "Creating the profile…"
-	claudeStartingLogin = "Starting the login…"
-	claudeRenaming      = "Renaming…"
-	claudeDeleting      = "Deleting…"
-	claudeInstalling    = "Installing plugins…"
-	claudeLoginFailed   = "The login did not complete."
-	claudeNoTerminal    = "Open a project to log in from a terminal."
+	profileCreating      = "Creating the profile…"
+	profileStartingLogin = "Starting the login…"
+	profileRenaming      = "Renaming…"
+	profileDeleting      = "Deleting…"
+	profileInstalling    = "Installing plugins…"
+	profileLoginFailed   = "The login did not complete."
+	profileNoTerminal    = "Open a project to log in from a terminal."
 )
 
 // flowKind is what the profile dialog is doing.
@@ -59,7 +54,7 @@ type flowData struct {
 	kind   flowKind
 	open   bool
 	step   flowStep
-	target lichclient.ClaudeProfile
+	target lichclient.Profile
 	// fresh asks the frame to empty the inputs, which only it may touch;
 	// refresh asks it to read Settings again, which a delete made stale.
 	fresh   bool
@@ -70,17 +65,19 @@ type flowData struct {
 	url     string
 	failure string
 	account string
-	results []lichclient.ClaudeProfilePluginResult
+	results []lichclient.ProfilePluginResult
 	// pluginNote is why the lich plugin did not install, in the backend's
 	// words.
 	pluginNote string
-	plugins    []lichclient.ClaudeProfilePlugin
+	plugins    []lichclient.ProfilePlugin
 	source     string
 }
 
 // profileFlow is the dialog every profile action runs in: New profile, Rename,
 // Delete, Copy plugins, and the login that follows a creation.
 type profileFlow struct {
+	// ps is the provider's profiles the dialog belongs to.
+	ps   *profileSettings
 	mu   sync.Mutex
 	data flowData
 
@@ -111,7 +108,7 @@ func (f *profileFlow) set(change func(d *flowData)) {
 
 // checkedKeys are the plugins the checklist has ticked, in the list's order.
 // A plugin is ticked until the user unticks it.
-func (f *profileFlow) checkedKeys(plugins []lichclient.ClaudeProfilePlugin) []string {
+func (f *profileFlow) checkedKeys(plugins []lichclient.ProfilePlugin) []string {
 	var keys []string
 	for _, p := range plugins {
 		if c := f.checks[p.Key]; c == nil || c.Value {
@@ -121,10 +118,11 @@ func (f *profileFlow) checkedKeys(plugins []lichclient.ClaudeProfilePlugin) []st
 	return keys
 }
 
-// claudeSettings is the Claude Code screen's own state beyond the generic
-// provider blocks: the profile list's rows, the picker and the dialog.
-type claudeSettings struct {
-	book *profileBook
+// profileSettings is the profiles' own state of a provider's screen beyond the
+// generic provider blocks: the profile list's rows, the picker and the dialog.
+type profileSettings struct {
+	provider profileProvider
+	book     *profileBook
 	// openTerminal runs a command in a new shell card and takes Settings out
 	// of the way; the window wires it.
 	openTerminal func(command string) bool
@@ -146,7 +144,13 @@ type profileRowState struct {
 	menu  ui.MenuState
 }
 
-func (c *claudeSettings) row(slug string) *profileRowState {
+// bind connects the screen's profiles to the window's book of them.
+func (c *profileSettings) bind(book *profileBook, openTerminal func(command string) bool) {
+	c.provider, c.book, c.openTerminal = book.provider, book, openTerminal
+	c.flow.ps = c
+}
+
+func (c *profileSettings) row(slug string) *profileRowState {
 	if c.rows == nil {
 		c.rows = map[string]*profileRowState{}
 	}
@@ -159,67 +163,67 @@ func (c *claudeSettings) row(slug string) *profileRowState {
 // ensureProfiles has the book read again once per visit: a login finished in a
 // terminal, or a plugin installed outside lich, shows the next time Settings
 // opens.
-func (s *settingsScreen) ensureProfiles() {
-	c := &s.providers.claude
+func (s *settingsScreen) ensureProfiles(c *profileSettings) {
 	if c.asked || c.book == nil {
 		return
 	}
 	c.asked = true
-	go s.reloadProfiles()
+	go s.reloadProfiles(c)
 }
 
-func (s *settingsScreen) reloadProfiles() {
-	if err := s.providers.claude.book.reload(s.ctx); err != nil {
-		log.Printf("settings: claude profiles: %v", err)
+func (s *settingsScreen) reloadProfiles(c *profileSettings) {
+	if err := c.book.reload(s.ctx); err != nil {
+		log.Printf("settings: %s profiles: %v", c.provider.kind, err)
 	}
 	s.invalidate()
 }
 
-// setClaudeProfile stores the profile the open scope's new sessions are born
-// in.
-func (s *settingsScreen) setClaudeProfile(slug string) {
-	s.writeProviderKey(claudeProfileKey, s.scope, profileChoiceValue(slug, s.scope), nil)
+// setProfile stores the profile the open scope's new sessions are born in.
+func (s *settingsScreen) setProfile(c *profileSettings, slug string) {
+	s.writeProviderKey(c.provider.key, s.scope, profileChoiceValue(slug, s.scope), nil)
 }
 
 // startNewProfile opens the New profile dialog on the plugins Personal has.
-func (s *settingsScreen) startNewProfile() {
-	f := &s.providers.claude.flow
+func (s *settingsScreen) startNewProfile(c *profileSettings) {
+	f := &c.flow
 	f.set(func(d *flowData) {
 		*d = flowData{kind: flowNew, open: true, fresh: true, source: personalProfile}
 	})
 	f.name.SetText("")
 	f.focus = true
-	go s.loadPluginChoices(personalProfile)
+	if c.provider.plugins {
+		go s.loadPluginChoices(c, personalProfile)
+	}
 	s.invalidate()
 }
 
 // startRename, startDelete and startCopy open the dialog of their name on p.
-func (s *settingsScreen) startRename(p lichclient.ClaudeProfile) {
-	f := &s.providers.claude.flow
+func (s *settingsScreen) startRename(c *profileSettings, p lichclient.Profile) {
+	f := &c.flow
 	f.set(func(d *flowData) { *d = flowData{kind: flowRename, open: true, fresh: true, target: p} })
 	f.name.SetText(p.Name)
 	f.focus = true
 	s.invalidate()
 }
 
-func (s *settingsScreen) startDelete(p lichclient.ClaudeProfile) {
-	f := &s.providers.claude.flow
+func (s *settingsScreen) startDelete(c *profileSettings, p lichclient.Profile) {
+	f := &c.flow
 	f.set(func(d *flowData) { *d = flowData{kind: flowDelete, open: true, target: p} })
 	s.invalidate()
 }
 
-func (s *settingsScreen) startCopy(p lichclient.ClaudeProfile) {
-	f := &s.providers.claude.flow
-	list, _ := s.providers.claude.book.snapshot()
+func (s *settingsScreen) startCopy(c *profileSettings, p lichclient.Profile) {
+	f := &c.flow
+	list, _ := c.book.snapshot()
 	source := defaultCopySource(list, p.Slug)
 	f.set(func(d *flowData) { *d = flowData{kind: flowCopy, open: true, fresh: true, target: p, source: source} })
-	go s.loadPluginChoices(source)
+	go s.loadPluginChoices(c, source)
 	s.invalidate()
 }
 
 // defaultCopySource is where a copy reads from unless asked otherwise:
 // Personal, or the first other profile when Personal is the target.
-func defaultCopySource(list []lichclient.ClaudeProfile, target string) string {
+func defaultCopySource(list []lichclient.Profile, target string) string {
 	if target != personalProfile {
 		return personalProfile
 	}
@@ -232,9 +236,9 @@ func defaultCopySource(list []lichclient.ClaudeProfile, target string) string {
 }
 
 // loadPluginChoices reads the plugins slug has, for the checklist.
-func (s *settingsScreen) loadPluginChoices(slug string) {
-	f := &s.providers.claude.flow
-	plugins, err := s.client.ClaudeProfilePlugins(s.ctx, slug)
+func (s *settingsScreen) loadPluginChoices(c *profileSettings, slug string) {
+	f := &c.flow
+	plugins, err := c.provider.api(s.client).Plugins(s.ctx, slug)
 	if err != nil {
 		log.Printf("settings: plugins of %s: %v", slug, err)
 	}
@@ -247,101 +251,105 @@ func (s *settingsScreen) loadPluginChoices(slug string) {
 }
 
 // pickCopySource changes the profile a copy reads its checklist from.
-func (s *settingsScreen) pickCopySource(slug string) {
-	f := &s.providers.claude.flow
+func (s *settingsScreen) pickCopySource(c *profileSettings, slug string) {
+	f := &c.flow
 	f.set(func(d *flowData) { d.source, d.plugins = slug, nil })
-	go s.loadPluginChoices(slug)
+	go s.loadPluginChoices(c, slug)
 }
 
 // confirmFlow is the dialog's primary button.
-func (s *settingsScreen) confirmFlow(d flowData) {
-	f := &s.providers.claude.flow
+func (s *settingsScreen) confirmFlow(c *profileSettings, d flowData) {
+	f := &c.flow
 	switch d.kind {
 	case flowNew:
-		s.createProfile(strings.TrimSpace(f.name.Text()), f.checkedKeys(d.plugins))
+		s.createProfile(c, strings.TrimSpace(f.name.Text()), f.checkedKeys(d.plugins))
 	case flowRename:
-		s.renameProfile(d.target.Slug, strings.TrimSpace(f.name.Text()))
+		s.renameProfile(c, d.target.Slug, strings.TrimSpace(f.name.Text()))
 	case flowDelete:
-		s.deleteProfile(d.target.Slug)
+		s.deleteProfile(c, d.target.Slug)
 	case flowCopy:
-		s.copyPlugins(d.target, f.checkedKeys(d.plugins))
+		s.copyPlugins(c, d.target, f.checkedKeys(d.plugins))
 	}
 }
 
 // failFlow puts the dialog back on its form with the backend's sentence.
-func (s *settingsScreen) failFlow(err error) {
+func (s *settingsScreen) failFlow(c *profileSettings, err error) {
 	text := lichclient.ErrorText(err)
-	s.providers.claude.flow.set(func(d *flowData) { d.step, d.failure = stepForm, text })
+	c.flow.set(func(d *flowData) { d.step, d.failure = stepForm, text })
 	s.invalidate()
 }
 
-func (s *settingsScreen) createProfile(name string, keys []string) {
-	f := &s.providers.claude.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, claudeCreating, "" })
+func (s *settingsScreen) createProfile(c *profileSettings, name string, keys []string) {
+	f := &c.flow
+	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileCreating, "" })
 	go func() {
-		p, err := s.client.CreateClaudeProfile(s.ctx, name)
+		p, err := c.provider.api(s.client).Create(s.ctx, name)
 		if err != nil {
-			s.failFlow(err)
+			s.failFlow(c, err)
 			return
 		}
-		go s.reloadProfiles()
+		go s.reloadProfiles(c)
 		if view := f.view(); !view.open || view.kind != flowNew {
 			return
 		}
-		s.startLogin(lichclient.ClaudeProfile{Slug: p.Slug, Name: p.Name}, keys)
+		s.startLogin(c, lichclient.Profile{Slug: p.Slug, Name: p.Name}, keys)
 	}()
 }
 
-func (s *settingsScreen) renameProfile(slug, name string) {
-	f := &s.providers.claude.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, claudeRenaming, "" })
+func (s *settingsScreen) renameProfile(c *profileSettings, slug, name string) {
+	f := &c.flow
+	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileRenaming, "" })
 	go func() {
-		if err := s.client.RenameClaudeProfile(s.ctx, slug, name); err != nil {
-			s.failFlow(err)
+		if err := c.provider.api(s.client).Rename(s.ctx, slug, name); err != nil {
+			s.failFlow(c, err)
 			return
 		}
 		f.set(func(d *flowData) { d.open = false })
-		s.reloadProfiles()
+		s.reloadProfiles(c)
 	}()
 }
 
-func (s *settingsScreen) deleteProfile(slug string) {
-	f := &s.providers.claude.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, claudeDeleting, "" })
+func (s *settingsScreen) deleteProfile(c *profileSettings, slug string) {
+	f := &c.flow
+	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileDeleting, "" })
 	go func() {
-		if err := s.client.DeleteClaudeProfile(s.ctx, slug); err != nil {
-			s.failFlow(err)
+		if err := c.provider.api(s.client).Delete(s.ctx, slug); err != nil {
+			s.failFlow(c, err)
 			return
 		}
 		f.set(func(d *flowData) { d.open, d.refresh = false, true })
-		s.reloadProfiles()
+		s.reloadProfiles(c)
 	}()
 }
 
-func (s *settingsScreen) copyPlugins(target lichclient.ClaudeProfile, keys []string) {
-	f := &s.providers.claude.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, claudeInstalling, "" })
+func (s *settingsScreen) copyPlugins(c *profileSettings, target lichclient.Profile, keys []string) {
+	f := &c.flow
+	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileInstalling, "" })
 	go func() {
-		results, err := s.client.InstallClaudeProfilePlugins(s.ctx, target.Slug, keys)
+		results, err := c.provider.api(s.client).InstallPlugins(s.ctx, target.Slug, keys)
 		if err != nil {
-			s.failFlow(err)
+			s.failFlow(c, err)
 			return
 		}
 		f.set(func(d *flowData) { d.step, d.results = stepResult, results })
-		s.reloadProfiles()
+		s.reloadProfiles(c)
 	}()
 }
 
 // startLogin runs the login of p in the dialog and installs keys into it once
 // it is through. It is called from any goroutine.
-func (s *settingsScreen) startLogin(p lichclient.ClaudeProfile, keys []string) {
-	f := &s.providers.claude.flow
+func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, keys []string) {
+	f := &c.flow
+	if c.provider.terminalLogin {
+		s.startTerminalLogin(c, p)
+		return
+	}
 	f.set(func(d *flowData) {
-		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: claudeStartingLogin, target: p, keys: keys}
+		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: profileStartingLogin, target: p, keys: keys}
 	})
 	s.invalidate()
 	go func() {
-		err := s.client.LoginClaudeProfile(s.ctx, p.Slug)
+		err := c.provider.api(s.client).Login(s.ctx, p.Slug)
 		f.set(func(d *flowData) {
 			switch {
 			case err != nil:
@@ -354,10 +362,38 @@ func (s *settingsScreen) startLogin(p lichclient.ClaudeProfile, keys []string) {
 	}()
 }
 
-// loginProgress takes one step of a login the backend reports: the sign-in
-// address while the CLI waits, then how it ended.
-func (s *settingsScreen) loginProgress(ev lichclient.ClaudeProfileLogin) {
-	f := &s.providers.claude.flow
+// startTerminalLogin hands the login of p to a shell card, the only place a
+// provider with terminalLogin runs one, and closes the dialog. Where there is no
+// card to open it in, the dialog ends on the failure.
+func (s *settingsScreen) startTerminalLogin(c *profileSettings, p lichclient.Profile) {
+	f := &c.flow
+	f.set(func(d *flowData) {
+		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: profileStartingLogin, target: p}
+	})
+	s.invalidate()
+	go func() {
+		command, err := c.provider.api(s.client).LoginCommand(s.ctx, p.Slug)
+		switch {
+		case err != nil:
+			f.set(func(d *flowData) { d.step, d.failure = stepResult, lichclient.ErrorText(err) })
+		case c.openTerminal == nil || !c.openTerminal(command):
+			f.set(func(d *flowData) { d.step, d.failure = stepResult, profileNoTerminal })
+		default:
+			f.set(func(d *flowData) { d.open = false })
+		}
+		s.invalidate()
+	}()
+}
+
+// loginProgress takes one step of a login of the provider kind names, as the
+// backend reports it: the sign-in address while the CLI waits, then how it
+// ended.
+func (s *settingsScreen) loginProgress(kind string, ev lichclient.ProfileLogin) {
+	c := s.providers.profiles(kind)
+	if c == nil {
+		return
+	}
+	f := &c.flow
 	d := f.view()
 	mine := d.open && d.kind == flowLogin && d.target.Slug == ev.Profile
 	switch {
@@ -371,31 +407,30 @@ func (s *settingsScreen) loginProgress(ev lichclient.ClaudeProfileLogin) {
 	case !ev.LoggedIn:
 		failure := ev.Error
 		if failure == "" {
-			failure = claudeLoginFailed
+			failure = profileLoginFailed
 		}
 		f.set(func(d *flowData) { d.step, d.failure = stepResult, failure })
 	default:
-		go s.finishLogin(d, ev)
+		go s.finishLogin(c, d, ev)
 	}
 	s.invalidate()
 }
 
 // finishLogin reads who is logged in now, then brings the plugins that were
 // asked for: they need the login, so they come last.
-func (s *settingsScreen) finishLogin(d flowData, ev lichclient.ClaudeProfileLogin) {
-	c := &s.providers.claude
+func (s *settingsScreen) finishLogin(c *profileSettings, d flowData, ev lichclient.ProfileLogin) {
 	c.book.planChanged(d.target.Slug)
-	s.reloadProfiles()
+	s.reloadProfiles(c)
 	account := ""
 	if p, ok := c.book.find(d.target.Slug); ok {
 		account = loggedInAs(p)
 	}
-	var results []lichclient.ClaudeProfilePluginResult
+	var results []lichclient.ProfilePluginResult
 	if len(d.keys) > 0 {
-		c.flow.set(func(d *flowData) { d.step, d.working = stepWorking, claudeInstalling })
+		c.flow.set(func(d *flowData) { d.step, d.working = stepWorking, profileInstalling })
 		s.invalidate()
 		var err error
-		if results, err = s.client.InstallClaudeProfilePlugins(s.ctx, d.target.Slug, d.keys); err != nil {
+		if results, err = c.provider.api(s.client).InstallPlugins(s.ctx, d.target.Slug, d.keys); err != nil {
 			ev.PluginError = lichclient.ErrorText(err)
 		}
 	}
@@ -406,11 +441,11 @@ func (s *settingsScreen) finishLogin(d flowData, ev lichclient.ClaudeProfileLogi
 }
 
 // dismissFlow closes the dialog; a login still running is ended with it.
-func (s *settingsScreen) dismissFlow(d flowData) {
-	s.providers.claude.flow.set(func(data *flowData) { data.open = false })
+func (s *settingsScreen) dismissFlow(c *profileSettings, d flowData) {
+	c.flow.set(func(data *flowData) { data.open = false })
 	if d.kind == flowLogin && d.step != stepResult {
 		go func() {
-			if err := s.client.CancelClaudeLogin(s.ctx, d.target.Slug); err != nil {
+			if err := c.provider.api(s.client).CancelLogin(s.ctx, d.target.Slug); err != nil {
 				log.Printf("settings: cancel login %s: %v", d.target.Slug, err)
 			}
 		}()
@@ -419,19 +454,18 @@ func (s *settingsScreen) dismissFlow(d flowData) {
 
 // loginInTerminal ends the login lich runs and hands the same command to a
 // shell card, for a browser lich's own flow cannot work with.
-func (s *settingsScreen) loginInTerminal(d flowData) {
-	c := &s.providers.claude
+func (s *settingsScreen) loginInTerminal(c *profileSettings, d flowData) {
 	go func() {
-		command, err := s.client.ClaudeLoginCommand(s.ctx, d.target.Slug)
+		command, err := c.provider.api(s.client).LoginCommand(s.ctx, d.target.Slug)
 		if err != nil {
-			s.failFlow(err)
+			s.failFlow(c, err)
 			return
 		}
 		if c.openTerminal == nil || !c.openTerminal(command) {
-			c.flow.set(func(d *flowData) { d.failure = claudeNoTerminal })
+			c.flow.set(func(d *flowData) { d.failure = profileNoTerminal })
 			s.invalidate()
 			return
 		}
-		s.dismissFlow(d)
+		s.dismissFlow(c, d)
 	}()
 }

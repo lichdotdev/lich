@@ -90,15 +90,3 @@ func TestMoveConversationRefusesWhatItCannotDo(t *testing.T) {
 		t.Errorf("a refused move still took the transcript: %v", err)
 	}
 }
-
-func TestMoveCopiesAcrossDirectoriesItCannotRename(t *testing.T) {
-	src := filepath.Join(t.TempDir(), "a")
-	mustWrite(t, filepath.Join(src, "sub", "f"), "data")
-	dst := filepath.Join(t.TempDir(), "b")
-	if err := copyTree(src, dst); err != nil {
-		t.Fatal(err)
-	}
-	if data, err := os.ReadFile(filepath.Join(dst, "sub", "f")); err != nil || string(data) != "data" {
-		t.Errorf("copied %q, %v", data, err)
-	}
-}

@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/omartelo/lich/internal/claudeprofile"
+	"github.com/omartelo/lich/internal/codexprofile"
+	"github.com/omartelo/lich/internal/ompprofile"
 	"github.com/omartelo/lich/internal/providers"
 )
 
@@ -67,15 +69,13 @@ func claudeSubagentPaths(providerSessionID string) []string {
 	return matches
 }
 
-// codexTranscriptPath locates a Codex rollout by its UUID under $CODEX_HOME,
-// else ~/.codex. Codex files a rollout by the date it started —
-// sessions/<yyyy>/<mm>/<dd>/rollout-<timestamp>-<uuid>.jsonl.
+// codexTranscriptPath locates a Codex rollout by its UUID in whichever Codex
+// profile holds it (internal/codexprofile): Personal's directory, $CODEX_HOME
+// else ~/.codex, then every profile lich made. Codex files a rollout by the
+// date it started — sessions/<yyyy>/<mm>/<dd>/rollout-<timestamp>-<uuid>.jsonl.
 func codexTranscriptPath(providerSessionID string) (string, bool) {
-	base, ok := harnessDir("CODEX_HOME", ".codex")
-	if !ok {
-		return "", false
-	}
-	return globTranscript(base, "sessions", "*", "*", "*", "rollout-*-"+providerSessionID+".jsonl")
+	_, path, ok := codexprofile.Owner(providerSessionID)
+	return path, ok
 }
 
 // antigravityConversationPath is the database Antigravity keeps one
@@ -178,38 +178,25 @@ func cursorConfigDir() (string, bool) {
 	return providers.CursorConfigDir(home), true
 }
 
-// ompTranscriptPath locates an oh-my-pi conversation by its id under omp's agent
-// directory. omp files one JSONL per session, in a directory named after the cwd
-// it ran in — sessions/<encoded-cwd>/<timestamp>_<id>.jsonl.
+// ompTranscriptPath locates an oh-my-pi conversation by its id in whichever omp
+// profile holds it (internal/ompprofile): Personal's agent directory, then every
+// profile lich made. omp files one JSONL per session, in a directory named
+// after the cwd it ran in — sessions/<encoded-cwd>/<timestamp>_<id>.jsonl.
 func ompTranscriptPath(providerSessionID string) (string, bool) {
-	base, ok := ompAgentDir()
-	if !ok {
-		return "", false
-	}
-	return globTranscript(base, "sessions", "*", "*_"+providerSessionID+".jsonl")
+	_, path, ok := ompprofile.Owner(providerSessionID)
+	return path, ok
 }
 
-// ompAgentDir resolves oh-my-pi's agent directory, or false when there is no
-// home to hang it off. It does not go through harnessDir because omp answers to
-// two variables and a named profile wins outright over the explicit override —
-// the order `omp config path` was measured to apply. The same rule lives in
-// internal/agentplugin/omp.go, which installs into it: each package resolves its
-// own harness paths, as the Claude Code pair does.
+// ompAgentDir is Personal's oh-my-pi agent directory, or false when there is no
+// home to hang it off.
 func ompAgentDir() (string, bool) {
-	if profile := os.Getenv("OMP_PROFILE"); profile != "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", false
-		}
-		return filepath.Join(home, ".omp", "profiles", profile, "agent"), true
-	}
-	return harnessDir("PI_CODING_AGENT_DIR", filepath.Join(".omp", "agent"))
+	dir, err := ompprofile.PersonalDir()
+	return dir, err == nil
 }
 
 // kiroSessionPath is the file Kiro CLI keeps one conversation's metadata in,
-// under ~/.kiro — the CLI reads that root off the home directory alone, with no
-// environment variable to honour (2.21.0 resolves `$HOME/.kiro`, measured
-// against a throwaway home).
+// under ~/.kiro — the CLI's root is $KIRO_HOME else `$HOME/.kiro` (2.21.0,
+// measured against a throwaway home); this reads the home one alone.
 //
 // It is not a transcript: Kiro writes the turns into the `.jsonl` beside it and
 // the metadata — model, context window, per-request context usage — into this

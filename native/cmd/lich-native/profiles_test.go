@@ -22,16 +22,16 @@ func TestProfileChoiceValueNamesPersonalOnlyInAProject(t *testing.T) {
 
 func TestProfileAccountLine(t *testing.T) {
 	cases := []struct {
-		p    lichclient.ClaudeProfile
+		p    lichclient.Profile
 		want string
 	}{
-		{lichclient.ClaudeProfile{LoggedIn: true, Email: "a@b.c", Plan: "max", Plugins: 3}, "a@b.c · Max · 3 plugins"},
-		{lichclient.ClaudeProfile{LoggedIn: true, Email: "a@b.c", Plugins: 1}, "a@b.c · 1 plugin"},
-		{lichclient.ClaudeProfile{LoggedIn: true, Email: "a@b.c"}, "a@b.c · no plugins"},
-		{lichclient.ClaudeProfile{Email: "left@over"}, ""},
+		{lichclient.Profile{LoggedIn: true, Email: "a@b.c", Plan: "max", Plugins: 3}, "a@b.c · Max · 3 plugins"},
+		{lichclient.Profile{LoggedIn: true, Email: "a@b.c", Plugins: 1}, "a@b.c · 1 plugin"},
+		{lichclient.Profile{LoggedIn: true, Email: "a@b.c"}, "a@b.c · no plugins"},
+		{lichclient.Profile{Email: "left@over"}, ""},
 	}
 	for _, c := range cases {
-		if got := profileAccountLine(c.p); got != c.want {
+		if got := profileAccountLine(claudeProfileProvider, c.p); got != c.want {
 			t.Errorf("profileAccountLine(%+v) = %q, want %q", c.p, got, c.want)
 		}
 	}
@@ -58,8 +58,8 @@ func TestProfileUsageQuotesTheFiveHourWindow(t *testing.T) {
 }
 
 func TestProfileBookNamesWhatItDoesNotKnow(t *testing.T) {
-	b := newProfileBook(nil, func() {}, newPlanQuota(quotaReader(nil), func() {}))
-	b.list = []lichclient.ClaudeProfile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work"}}
+	b := newProfileBook(claudeProfileProvider, nil, func() {}, newPlanQuota(quotaReader(nil), func() {}))
+	b.list = []lichclient.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work"}}
 	for stored, want := range map[string]string{"": "Personal", personalProfile: "Personal", "work": "Work", "gone": "gone"} {
 		if got := b.nameOf(stored); got != want {
 			t.Errorf("nameOf(%q) = %q, want %q", stored, got, want)
