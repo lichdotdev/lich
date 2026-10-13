@@ -282,7 +282,7 @@ func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {
 	if err := m.profiles.reload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	m.profiles.plans["work"] = profileReading{at: time.Now()}
+	m.quota.seed(profileQuotaKey("work"), []lichclient.QuotaPlan{{Provider: claudeKind}})
 
 	mu.Lock()
 	loggedIn = true
@@ -305,7 +305,7 @@ func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("the screen never heard the login end")
 	}
-	if _, ok := m.profiles.cachedPlan("work"); ok {
+	if m.quota.plans(profileQuotaKey("work")) != nil {
 		t.Error("a plan reading survived a login that changed whose plan it is")
 	}
 }

@@ -165,7 +165,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	}
 	u.settings = newSettingsScreen(ctx, client, &u.root, w.Invalidate)
 	u.settings.notify = u.notifier
-	u.footer = newFooter(ctx, client, &u.root, u.model.usage, w.Invalidate)
+	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, w.Invalidate)
 	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
 	comments, notify := new(commentStore), func(t ui.Toast) { u.toaster.Show(t) }
@@ -185,7 +185,6 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.settings.providers.claude.book = u.model.profiles
 	u.settings.providers.claude.openTerminal = u.openLoginTerminal
 	u.model.loginProgress = u.settings.loginProgress
-	u.model.profileMoved = u.footer.quota.reread
 	u.settings.providers.onProjectDefault = u.model.setProjectDefault
 	u.settings.providers.onLaunchChanged = func() {
 		go func() { u.logErr("load providers", u.model.loadProviders(u.ctx)) }()
@@ -320,7 +319,7 @@ func (u *window) connect() error {
 		return err
 	}
 	go u.model.follow(u.ctx, events)
-	go u.model.profiles.keepFresh(u.ctx)
+	go u.loadProfiles()
 	go u.model.pollGit(u.ctx)
 	return nil
 }

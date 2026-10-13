@@ -115,7 +115,7 @@ func (s *settingsScreen) show(scope string, projects []settingsProject) {
 
 func (s *settingsScreen) hide() {
 	s.open = false
-	s.watchPlans(false)
+	s.watchPlans()
 }
 
 // showRemembered opens the screen on the scope it was left in.
@@ -184,12 +184,12 @@ func (s *settingsScreen) layout(gtx C, th *ui.Theme, projects []settingsProject)
 	if s.close.Clicked(gtx) {
 		s.open = false
 	}
-	s.watchPlans(s.open && s.section == sectionProviders)
 	if s.revealing != nil {
 		s.choose(gtx, *s.revealing)
 		s.revealing = nil
 	}
 	values := s.snapshot()
+	s.watchPlans(s.planKeys(values)...)
 	gtx.Constraints.Min = gtx.Constraints.Max
 	layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {

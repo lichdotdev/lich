@@ -4,6 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -241,6 +247,146 @@ func TestPlanQuotaStopsPollingWithNoWatcherAndKeepsTheReading(t *testing.T) {
 	}
 	if r.q.plans("s1") == nil {
 		t.Error("the reading went with its watchers")
+	}
+}
+
+func TestPlanQuotaRereadsASessionWhoseSpendMoved(t *testing.T) {
+	r := newQuotaRig()
+	reading := func(percent int) []lichclient.QuotaPlan {
+		return []lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: percent})}
+	}
+	r.set(reading(10), nil)
+	defer r.q.watch("s1")()
+	waitChanged(t, r.changed)
+
+	// A busy turn and another session's events concern nothing s1 shows; the
+	// reading that follows is the only one s1 may take.
+	r.set(reading(20), nil)
+	r.q.apply(footerEvent("session-status", `{"id":"s1","state":"busy"}`))
+	r.q.apply(footerEvent("session-limit", `{"id":"other"}`))
+	r.q.apply(footerEvent("session-title", `{"id":"s1","label":"x"}`))
+	r.q.apply(footerEvent("session-status", `{"state":"done"}`))
+	r.q.apply(footerEvent("session-status", `{bad`))
+	if r.readCount() != 1 {
+		t.Fatalf("read %d times for events that spend nothing", r.readCount())
+	}
+	for _, ev := range []lichclient.Event{
+		footerEvent("session-status", `{"id":"s1","state":"done"}`),
+		footerEvent("session-limit", `{"id":"s1","window":"session","resetsAt":0}`),
+	} {
+		next := r.readCount()
+		r.q.apply(ev)
+		deadline := time.After(5 * time.Second)
+		for r.readCount() == next {
+			select {
+			case <-deadline:
+				t.Fatalf("%s did not read again", ev.Name)
+			case <-time.After(time.Millisecond):
+			}
+		}
+	}
+}
+
+func TestPlanQuotaInvalidateDropsTheReadingAndReadsAgain(t *testing.T) {
+	r := newQuotaRig()
+	personal := quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})
+	personal.Account = "me@example.com"
+	r.set([]lichclient.QuotaPlan{personal}, nil)
+	defer r.q.watch(profileQuotaKey("work"))()
+	waitChanged(t, r.changed)
+
+	// The profile is gone: the read that follows fails, and the dropped
+	// numbers must not come back as the last good reading.
+	r.set(nil, errors.New("profile is gone"))
+	r.q.invalidate(profileQuotaKey("work"))
+	waitChanged(t, r.changed)
+	deadline := time.After(5 * time.Second)
+	for r.readCount() < 2 {
+		select {
+		case <-deadline:
+			t.Fatal("a watched key was not read again")
+		case <-time.After(time.Millisecond):
+		}
+	}
+	if got := r.q.plans(profileQuotaKey("work")); got != nil {
+		t.Errorf("plans = %+v, want the dropped reading to stay dropped", got)
+	}
+}
+
+func TestProfileQuotaKeyNamesPersonalAsTheMachine(t *testing.T) {
+	for slug, want := range map[string]string{"": "", personalProfile: "", "work": "profile:work"} {
+		if got := profileQuotaKey(slug); got != want {
+			t.Errorf("profileQuotaKey(%q) = %q, want %q", slug, got, want)
+		}
+	}
+}
+
+func TestQuotaReaderRoutesAProfileKeyToItsOwnPlan(t *testing.T) {
+	var calls []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		calls = append(calls, strings.TrimPrefix(r.URL.Path, "/rpc/")+string(body))
+		if strings.HasSuffix(r.URL.Path, "quota.ProfilePlan") {
+			_ = json.NewEncoder(w).Encode(quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 7}))
+			return
+		}
+		_ = json.NewEncoder(w).Encode([]lichclient.QuotaPlan{quotaPlan()})
+	}))
+	t.Cleanup(srv.Close)
+	u, _ := url.Parse(srv.URL)
+	port, _ := strconv.Atoi(u.Port())
+	read := quotaReader(lichclient.New(lichclient.Runtime{Port: port, Token: "tok"}))
+
+	plans, err := read(profileQuotaKey("work"))
+	if err != nil || len(plans) != 1 || plans[0].Windows[0].Percent != 7 {
+		t.Fatalf("profile reading = %+v, %v", plans, err)
+	}
+	if _, err := read("s1"); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 2 || !strings.HasPrefix(calls[0], "quota.ProfilePlan") || !strings.HasPrefix(calls[1], "quota.Plans") {
+		t.Errorf("calls = %v, want the profile read through ProfilePlan and a session through Plans", calls)
+	}
+}
+
+func TestProfileBookWatchesTheQuotedPlansOnlyWhileThereIsAChoice(t *testing.T) {
+	r := newQuotaRig()
+	b := newProfileBook(nil, func() {}, r.q)
+	one := []lichclient.ClaudeProfile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work"}}
+	two := []lichclient.ClaudeProfile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
+	watched := func() int {
+		r.q.mu.Lock()
+		defer r.q.mu.Unlock()
+		n := 0
+		for _, e := range r.q.entries {
+			if e.watchers > 0 {
+				n++
+			}
+		}
+		return n
+	}
+
+	b.mu.Lock()
+	b.list = one
+	b.followQuoted()
+	b.mu.Unlock()
+	if watched() != 0 {
+		t.Errorf("%d readings watched with one login", watched())
+	}
+	b.mu.Lock()
+	b.list = two
+	b.followQuoted()
+	b.followQuoted() // a second reload of the same list watches nothing twice
+	b.mu.Unlock()
+	if watched() != 2 || r.q.entries[""].watchers != 1 || r.q.entries["profile:work"].watchers != 1 {
+		t.Errorf("watched %d, want Personal's and work's once each", watched())
+	}
+	b.mu.Lock()
+	b.list = one
+	b.followQuoted()
+	b.mu.Unlock()
+	if watched() != 0 {
+		t.Errorf("%d readings still watched after a login went", watched())
 	}
 }
 

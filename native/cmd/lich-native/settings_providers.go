@@ -538,7 +538,8 @@ type providerSettings struct {
 	open string
 	// adding is the Add provider list's fold, settled on its first draw.
 	adding, addingSet bool
-	unwatch           func()
+	// unwatch stops each plan reading the open pane follows, by quota key.
+	unwatch map[string]func()
 
 	addToggle, recheck, back, docs widget.Clickable
 	rows                           map[string]*providerState
@@ -780,17 +781,43 @@ func (s *settingsScreen) setProviderDefault(id string) {
 	}
 }
 
-// watchPlans follows the machine's own plan readings while the Providers pane
-// is on screen, which is the footer's poll under the key "".
-func (s *settingsScreen) watchPlans(on bool) {
-	p := &s.providers
-	switch {
-	case on && p.unwatch == nil && s.footer != nil:
-		p.unwatch = s.footer.quota.watch("")
-	case !on && p.unwatch != nil:
-		p.unwatch()
-		p.unwatch = nil
+// watchPlans follows exactly the plan readings keys name, none to stop. They
+// are the one store's, shared with the footer and the card menu.
+func (s *settingsScreen) watchPlans(keys ...string) {
+	if s.footer == nil {
+		return
 	}
+	p := &s.providers
+	for key, unwatch := range p.unwatch {
+		if !slices.Contains(keys, key) {
+			unwatch()
+			delete(p.unwatch, key)
+		}
+	}
+	for _, key := range keys {
+		if p.unwatch == nil {
+			p.unwatch = map[string]func(){}
+		}
+		if p.unwatch[key] == nil {
+			p.unwatch[key] = s.footer.quota.watch(key)
+		}
+	}
+}
+
+// planKeys are the readings the open pane draws: the machine's own on the
+// Providers pane, and the profile of the scope on Claude Code's screen.
+func (s *settingsScreen) planKeys(values scopedValues) []string {
+	if !s.open || s.section != sectionProviders {
+		return nil
+	}
+	keys := []string{""}
+	m := s.providers.snapshot()
+	if s.providers.open == claudeKind && s.providers.claude.book != nil && m.loaded {
+		if key := profileQuotaKey(s.scopeProfile(values, m)); key != "" {
+			keys = append(keys, key)
+		}
+	}
+	return keys
 }
 
 // planOf is the machine's reading for kind, false for a provider lich reads no

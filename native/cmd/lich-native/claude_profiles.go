@@ -23,10 +23,6 @@ const claudeKind = "claude"
 // personalProfile is claudeprofile.Personal, the slug of the default profile.
 const personalProfile = "personal"
 
-// profilePlanRefresh is how long a profile's plan reading is kept before the
-// next one is asked for: the backend serves it from a five-minute cache.
-const profilePlanRefresh = 5 * time.Minute
-
 // profileListMaxAge is how old the list may be before a window focus reads it
 // again. A read runs one CLI per profile, so focus cannot afford one every
 // time, and a login in a terminal or an editor outside lich is the case it
@@ -48,29 +44,26 @@ const (
 )
 
 // profileBook is the Claude Code profiles as the window knows them: who is
-// logged in where, and each profile's plan reading. The window loads it at
-// start and again after anything that changes a login; Settings and the card
-// menu read it. Every method is safe from any goroutine.
+// logged in where. The window loads it at start and again after anything that
+// changes a login; Settings and the card menu read it. Each profile's plan
+// reading lives in quota, the window's one store of them. Every method is safe
+// from any goroutine.
 type profileBook struct {
 	client     *lichclient.Client
 	invalidate func()
+	quota      *planQuota
 
 	mu       sync.Mutex
 	list     []lichclient.ClaudeProfile
 	loaded   bool
 	loadedAt time.Time
 	reading  bool
-	plans    map[string]profileReading
-	fetching map[string]bool
+	// quoted are the readings the Continue in rows quote, watched.
+	quoted map[string]func()
 }
 
-type profileReading struct {
-	plan lichclient.QuotaPlan
-	at   time.Time
-}
-
-func newProfileBook(c *lichclient.Client, invalidate func()) *profileBook {
-	return &profileBook{client: c, invalidate: invalidate, plans: map[string]profileReading{}, fetching: map[string]bool{}}
+func newProfileBook(c *lichclient.Client, invalidate func(), quota *planQuota) *profileBook {
+	return &profileBook{client: c, invalidate: invalidate, quota: quota, quoted: map[string]func(){}}
 }
 
 // reload asks the backend for the profiles. It runs one CLI per profile, so
@@ -81,13 +74,15 @@ func (b *profileBook) reload(ctx context.Context) error {
 		return err
 	}
 	b.mu.Lock()
+	gone := slices.DeleteFunc(slices.Clone(b.list), func(old lichclient.ClaudeProfile) bool {
+		return slices.ContainsFunc(list, func(p lichclient.ClaudeProfile) bool { return p.Slug == old.Slug })
+	})
 	b.list, b.loaded, b.loadedAt = list, true, time.Now()
-	for slug := range b.plans {
-		if !slices.ContainsFunc(list, func(p lichclient.ClaudeProfile) bool { return p.Slug == slug }) {
-			delete(b.plans, slug)
-		}
-	}
+	b.followQuoted()
 	b.mu.Unlock()
+	for _, p := range gone {
+		b.planChanged(p.Slug)
+	}
 	b.invalidate()
 	return nil
 }
@@ -95,9 +90,12 @@ func (b *profileBook) reload(ctx context.Context) error {
 // loginFinished takes the end of a login: who is logged in changed, and with
 // it whose plan each profile has.
 func (b *profileBook) loginFinished(ctx context.Context) {
-	b.forgetPlans()
 	if err := b.reload(ctx); err != nil {
 		log.Printf("claude profiles after a login: %v", err)
+	}
+	list, _ := b.snapshot()
+	for _, p := range list {
+		b.planChanged(p.Slug)
 	}
 }
 
@@ -121,6 +119,35 @@ func (b *profileBook) refreshIfStale(ctx context.Context) {
 			log.Printf("claude profiles on focus: %v", err)
 		}
 	}()
+}
+
+// followQuoted keeps the plan readings the Continue in rows quote current: one
+// per logged-in profile while there is more than one, the only case a reading
+// is quoted outside Settings. The caller holds b.mu.
+func (b *profileBook) followQuoted() {
+	want := map[string]bool{}
+	if logged := slices.DeleteFunc(slices.Clone(b.list), func(p lichclient.ClaudeProfile) bool { return !p.LoggedIn }); len(logged) > 1 {
+		for _, p := range logged {
+			want[profileQuotaKey(p.Slug)] = true
+		}
+	}
+	for key, unwatch := range b.quoted {
+		if !want[key] {
+			unwatch()
+			delete(b.quoted, key)
+		}
+	}
+	for key := range want {
+		if b.quoted[key] == nil {
+			b.quoted[key] = b.quota.watch(key)
+		}
+	}
+}
+
+// planChanged is a login or a deletion that changes whose plan a profile has:
+// its reading is dropped and read again.
+func (b *profileBook) planChanged(slug string) {
+	b.quota.invalidate(profileQuotaKey(slug))
 }
 
 func (b *profileBook) snapshot() ([]lichclient.ClaudeProfile, bool) {
@@ -158,42 +185,6 @@ func (b *profileBook) nameOf(stored string) string {
 func (b *profileBook) loggedIn() []lichclient.ClaudeProfile {
 	list, _ := b.snapshot()
 	return slices.DeleteFunc(list, func(p lichclient.ClaudeProfile) bool { return !p.LoggedIn })
-}
-
-// plan is the last reading of a profile's plan, false until the first lands.
-// An older one is asked for again behind the answer.
-func (b *profileBook) plan(ctx context.Context, slug string) (lichclient.QuotaPlan, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	r, ok := b.plans[slug]
-	if (!ok || time.Since(r.at) > profilePlanRefresh) && !b.fetching[slug] {
-		b.fetching[slug] = true
-		go b.fetchPlan(ctx, slug)
-	}
-	return r.plan, ok
-}
-
-func (b *profileBook) fetchPlan(ctx context.Context, slug string) {
-	plan, err := b.client.ClaudeProfilePlan(ctx, slug)
-	b.mu.Lock()
-	b.fetching[slug] = false
-	if err == nil {
-		b.plans[slug] = profileReading{plan: plan, at: time.Now()}
-	}
-	b.mu.Unlock()
-	if err != nil {
-		log.Printf("claude profile plan %s: %v", slug, err)
-		return
-	}
-	b.invalidate()
-}
-
-// forgetPlans drops every reading, so the next ask reads again: a login that
-// just finished changes whose plan a profile has.
-func (b *profileBook) forgetPlans() {
-	b.mu.Lock()
-	b.plans = map[string]profileReading{}
-	b.mu.Unlock()
 }
 
 // effectiveProfile is the slug a stored value stands for: an unset value is

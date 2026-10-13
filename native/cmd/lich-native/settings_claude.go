@@ -384,7 +384,7 @@ func (s *settingsScreen) loginProgress(ev lichclient.ClaudeProfileLogin) {
 // asked for: they need the login, so they come last.
 func (s *settingsScreen) finishLogin(d flowData, ev lichclient.ClaudeProfileLogin) {
 	c := &s.providers.claude
-	c.book.forgetPlans()
+	c.book.planChanged(d.target.Slug)
 	s.reloadProfiles()
 	account := ""
 	if p, ok := c.book.find(d.target.Slug); ok {

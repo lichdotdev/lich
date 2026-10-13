@@ -64,7 +64,7 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 				return
 			}
 		}
-		if method != "claudeprofile.Plugins" && method != "claudeprofile.Profiles" {
+		if strings.HasPrefix(method, "claudeprofile.") && method != "claudeprofile.Plugins" && method != "claudeprofile.Profiles" {
 			b.record(method + string(body))
 		}
 		_ = json.NewEncoder(w).Encode(out)
@@ -79,7 +79,7 @@ func flowScreen(t *testing.T, b *profileBackend) *settingsScreen {
 	t.Helper()
 	c := b.client(t)
 	s := newSettingsScreen(t.Context(), c, new(ui.Root), func() {})
-	s.providers.claude.book = newProfileBook(c, func() {})
+	s.providers.claude.book = newProfileBook(c, func() {}, newPlanQuota(quotaReader(c), func() {}))
 	return s
 }
 
@@ -260,7 +260,7 @@ func TestContinueInOffersOnlyOtherLoggedInProfiles(t *testing.T) {
 		{Slug: "work", Name: "Work", LoggedIn: true},
 		{Slug: "side", Name: "Side"},
 	}
-	m.profiles.plans["work"] = profileReading{plan: lichclient.QuotaPlan{Status: "ok", Windows: []lichclient.QuotaWindow{{Seconds: 5 * hour, Percent: 100}}}}
+	m.quota.seed(profileQuotaKey("work"), []lichclient.QuotaPlan{{Provider: claudeKind, Status: "ok", Windows: []lichclient.QuotaWindow{{Seconds: 5 * hour, Percent: 100}}}})
 	got := m.continueTargets(claudeKind, "")
 	if len(got) != 1 || got[0].slug != "work" || got[0].usage != profileUsageLimit || !got[0].limited {
 		t.Errorf("from Personal = %+v", got)
@@ -318,5 +318,46 @@ func TestANewProfileDialogOpensOnAnEmptyName(t *testing.T) {
 	}
 	if s.canConfirm(f.view(), f) {
 		t.Error("an empty name can be created")
+	}
+}
+
+func TestSettingsFollowsThePlanReadingsItDraws(t *testing.T) {
+	r := newQuotaRig()
+	r.set([]lichclient.QuotaPlan{quotaPlan()}, nil)
+	s := flowScreen(t, &profileBackend{})
+	s.footer = &footer{quota: r.q}
+	s.open, s.section = true, sectionProviders
+	s.providers.machine = providersMachine{loaded: true, globals: map[string]string{claudeProfileKey: "work"}}
+
+	if got := s.planKeys(scopedValues{}); len(got) != 1 || got[0] != "" {
+		t.Errorf("provider list follows %q, want the machine's reading alone", got)
+	}
+	s.providers.open = claudeKind
+	want := []string{"", "profile:work"}
+	if got := s.planKeys(scopedValues{}); !slices.Equal(got, want) {
+		t.Errorf("Claude Code's screen follows %q, want %q", got, want)
+	}
+	s.providers.machine.globals[claudeProfileKey] = personalProfile
+	if got := s.planKeys(scopedValues{}); len(got) != 1 {
+		t.Errorf("Personal follows %q, want the machine's reading alone", got)
+	}
+
+	s.watchPlans(want...)
+	waitChanged(t, r.changed)
+	waitChanged(t, r.changed)
+	if _, ok := s.claudePlan("work"); !ok {
+		t.Error("the watched profile's reading was not found in the store")
+	}
+	s.watchPlans("")
+	if len(s.providers.unwatch) != 1 {
+		t.Errorf("%d readings followed after the profile screen left, want the machine's alone", len(s.providers.unwatch))
+	}
+	s.watchPlans()
+	if len(s.providers.unwatch) != 0 {
+		t.Errorf("%d readings still followed after the pane left", len(s.providers.unwatch))
+	}
+	s.open = false
+	if got := s.planKeys(scopedValues{}); got != nil {
+		t.Errorf("a closed screen follows %q", got)
 	}
 }

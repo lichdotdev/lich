@@ -123,7 +123,7 @@ func newFooterRig(t *testing.T, values map[string]string) *footerRig {
 		default:
 		}
 	}
-	r.f = newFooter(ctx, r.settings.client(t), &ui.Root{}, newFooterUsage(), invalidate)
+	r.f = newFooter(ctx, r.settings.client(t), &ui.Root{}, newFooterUsage(), newPlanQuota(quotaReader(r.settings.client(t)), invalidate), invalidate)
 	r.f.toaster = &ui.Toaster{Invalidate: invalidate}
 	if err := r.f.start(); err != nil {
 		t.Fatal(err)

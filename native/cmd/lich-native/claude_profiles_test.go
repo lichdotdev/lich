@@ -58,7 +58,7 @@ func TestProfileUsageQuotesTheFiveHourWindow(t *testing.T) {
 }
 
 func TestProfileBookNamesWhatItDoesNotKnow(t *testing.T) {
-	b := newProfileBook(nil, func() {})
+	b := newProfileBook(nil, func() {}, newPlanQuota(quotaReader(nil), func() {}))
 	b.list = []lichclient.ClaudeProfile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work"}}
 	for stored, want := range map[string]string{"": "Personal", personalProfile: "Personal", "work": "Work", "gone": "gone"} {
 		if got := b.nameOf(stored); got != want {

@@ -273,12 +273,12 @@ func (s *settingsScreen) claudePlanBlock(gtx C, th *ui.Theme, values scopedValue
 	return s.planBlock(gtx, th, values, plan, first, title)
 }
 
-// claudePlan is the reading of the profile slug.
+// claudePlan is the reading of the profile slug, the one the pane watches.
 func (s *settingsScreen) claudePlan(slug string) (lichclient.QuotaPlan, bool) {
-	if slug == personalProfile {
-		return s.planOf(claudeKind)
+	if s.footer == nil {
+		return lichclient.QuotaPlan{}, false
 	}
-	return s.providers.claude.book.plan(s.ctx, slug)
+	return planFor(s.footer.quota.plans(profileQuotaKey(slug)), claudeKind)
 }
 
 // advancedBinaryFold is the Binary block under a fold: a Claude Code binary is

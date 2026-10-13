@@ -35,6 +35,7 @@ type model struct {
 	projects      []lichclient.Project // open projects, in the user's order
 	status        *statusStore
 	usage         *footerUsage
+	quota         *planQuota
 	cwd           map[string]sessionCwd             // session id -> last session-cwd report
 	agent         map[string]string                 // session id -> provider CLI live in its PTY
 	sandbox       map[string]sandboxEvent           // session id -> how its spawn was confined
@@ -58,9 +59,6 @@ type model struct {
 	notify func(statusReport)
 	// loginProgress takes each step of a Claude Code profile login.
 	loginProgress func(lichclient.ClaudeProfileLogin)
-	// profileMoved hears a session that now runs in another profile, already
-	// up under it: the backend emits after the respawn.
-	profileMoved func(id string)
 	// diffTouched hears the checkout of a session that likely changed files,
 	// for the Review tab's diff, which is read apart from the git store.
 	diffTouched func(checkout string)
@@ -77,10 +75,11 @@ type sessionCwd struct {
 }
 
 func newModel(client *lichclient.Client, invalidate func()) *model {
-	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), cwd: map[string]sessionCwd{},
+	quota := newPlanQuota(quotaReader(client), invalidate)
+	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), quota: quota, cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
 		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
-		profiles: newProfileBook(client, invalidate)}
+		profiles: newProfileBook(client, invalidate, quota)}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -175,6 +174,7 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 		if _, err := m.usage.apply(ev); err != nil {
 			log.Printf("%s: %v", ev.Name, err)
 		}
+		m.quota.apply(ev)
 		switch ev.Name {
 		case "session-usage":
 			// Taken by the usage store above; only the redraw is left.
@@ -201,9 +201,6 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			var moved lichclient.ClaudeProfileMoved
 			if json.Unmarshal(ev.Data, &moved) == nil {
 				m.setProfile(moved.ID, moved.Profile)
-				if m.profileMoved != nil {
-					m.profileMoved(moved.ID)
-				}
 			}
 		case lichclient.ClaudeProfileLoginEvent:
 			var step lichclient.ClaudeProfileLogin

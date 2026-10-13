@@ -59,10 +59,10 @@ type footer struct {
 	toaster *ui.Toaster
 }
 
-func newFooter(ctx context.Context, client *lichclient.Client, root *ui.Root, usage *footerUsage, invalidate func()) *footer {
+func newFooter(ctx context.Context, client *lichclient.Client, root *ui.Root, usage *footerUsage, quota *planQuota, invalidate func()) *footer {
 	return &footer{
 		ctx: ctx, client: client, root: root, invalidate: invalidate, usage: usage,
-		quota:   newPlanQuota(func(id string) ([]lichclient.QuotaPlan, error) { return client.QuotaPlans(ctx, id) }, invalidate),
+		quota:   quota,
 		handsOn: newHandsOn(func(id string) (int64, error) { return client.HandsOn(ctx, id) }, invalidate),
 		cost:    &costGate{get: client.GetSetting, set: client.SetSetting, onChange: invalidate},
 		layout:  defaultFooterLayout(),

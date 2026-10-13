@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"time"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -27,10 +26,6 @@ var (
 	profileChipMaxW = ui.Space(24)
 	icContinueIn    = icons.Lucide("arrow-right-left")
 )
-
-// profileKeepFresh is how often the plan readings the Continue in rows quote
-// are looked at; each is asked for again once the backend's cache is older.
-const profileKeepFresh = time.Minute
 
 // continueTarget is a profile a Claude Code card's conversation can move to,
 // with the reading of its five-hour window.
@@ -59,7 +54,7 @@ func (m *model) continueTargets(kind, profile string) []continueTarget {
 		if p.Slug == current {
 			continue
 		}
-		plan, ok := m.profiles.cachedPlan(p.Slug)
+		plan, ok := planFor(m.quota.plans(profileQuotaKey(p.Slug)), claudeKind)
 		usage, limited := profileUsage(plan, ok)
 		out = append(out, continueTarget{slug: p.Slug, name: p.Name, usage: usage, limited: limited})
 	}
@@ -134,35 +129,9 @@ func (ts *terminals) resync(ctx context.Context, id string) {
 	}
 }
 
-// cachedPlan is the last reading of a profile's plan without asking for one.
-func (b *profileBook) cachedPlan(slug string) (plan lichclient.QuotaPlan, ok bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	r, ok := b.plans[slug]
-	return r.plan, ok
-}
-
-// keepFresh reads the profiles and then keeps the readings of the logged-in
-// ones current while there is more than one, the only case a reading is
-// quoted anywhere but Settings.
-func (b *profileBook) keepFresh(ctx context.Context) {
-	if err := b.reload(ctx); err != nil {
-		log.Printf("claude profiles: %v", err)
-	}
-	tick := time.NewTicker(profileKeepFresh)
-	defer tick.Stop()
-	for {
-		if logged := b.loggedIn(); len(logged) > 1 {
-			for _, p := range logged {
-				b.plan(ctx, p.Slug)
-			}
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-tick.C:
-		}
-	}
+// loadProfiles reads the profiles once the window is up.
+func (u *window) loadProfiles() {
+	u.logErr("claude profiles", u.model.profiles.reload(u.ctx))
 }
 
 // openLoginTerminal runs a profile's login command in a shell card of the

@@ -335,15 +335,24 @@ func TestSessionStoredAtTheProjectDirSharesTheRootBlock(t *testing.T) {
 	}
 }
 
-func TestASessionMovingProfileReachesItsListener(t *testing.T) {
+func TestASessionMovingProfileMakesItsQuotaReadAgain(t *testing.T) {
+	r := newQuotaRig()
 	m := newModel(nil, func() {})
-	var moved []string
-	m.profileMoved = func(id string) { moved = append(moved, id) }
+	m.quota = r.q
+	personal := quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})
+	r.set([]lichclient.QuotaPlan{personal}, nil)
+	defer r.q.watch("s1")()
+	waitChanged(t, r.changed)
+
+	work := personal
+	work.Account = "me@work.example"
+	r.set([]lichclient.QuotaPlan{work}, nil)
 	events := make(chan lichclient.Event, 1)
 	events <- lichclient.Event{Name: lichclient.ClaudeProfileEvent, Data: []byte(`{"id":"s1","profile":"work"}`)}
 	close(events)
 	m.follow(context.Background(), events)
-	if !slices.Equal(moved, []string{"s1"}) {
-		t.Errorf("listener heard %v, want s1", moved)
+	waitChanged(t, r.changed)
+	if got := r.q.plans("s1"); got[0].Account != "me@work.example" {
+		t.Errorf("plans = %+v, want the profile's reading", got)
 	}
 }

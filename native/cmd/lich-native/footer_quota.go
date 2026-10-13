@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -19,9 +21,18 @@ import (
 // reaches the screen, never how often a provider is asked.
 const planQuotaRefresh = time.Minute
 
+// profileQuotaPrefix starts the key of a Claude Code profile's reading. A
+// session id never does.
+const profileQuotaPrefix = "profile:"
+
+// sessionLimitEvent is terminal limitEventName: a turn a usage limit ended.
+const sessionLimitEvent = "session-limit"
+
 // planQuota shares one poll loop per key across its watchers, ported from
-// plan-quota-store.ts. The key is the session the reading is for, "" the
-// machine's own login, because a session can spend another account entirely.
+// plan-quota-store.ts, and is the window's only reader of plan quota. The key
+// is the session the reading is for, "" the machine's own login (which is
+// Personal's), "profile:<slug>" another Claude Code profile's own login:
+// a session can spend another account entirely.
 // A reading outlives its watchers: coming back to a card draws the numbers it
 // had while the fresh read is in flight.
 type planQuota struct {
@@ -40,6 +51,31 @@ type quotaEntry struct {
 	// seq numbers the reads, so one started before the last watcher left
 	// cannot publish over a later one.
 	seq int
+}
+
+// profileQuotaKey is the key of a profile's reading: Personal is the machine's.
+func profileQuotaKey(slug string) string {
+	if effectiveProfile(slug) == personalProfile {
+		return ""
+	}
+	return profileQuotaPrefix + slug
+}
+
+// quotaReader reads the plan a planQuota key stands for. A profile's reading
+// is the one plan its own login has, so it comes back as a list of one.
+func quotaReader(c *lichclient.Client) func(key string) ([]lichclient.QuotaPlan, error) {
+	return func(key string) ([]lichclient.QuotaPlan, error) {
+		ctx := context.Background()
+		slug, isProfile := strings.CutPrefix(key, profileQuotaPrefix)
+		if !isProfile {
+			return c.QuotaPlans(ctx, key)
+		}
+		plan, err := c.ClaudeProfilePlan(ctx, slug)
+		if err != nil {
+			return nil, err
+		}
+		return []lichclient.QuotaPlan{plan}, nil
+	}
 }
 
 // newPlanQuota polls with fetch every planQuotaRefresh; onChange runs, from
@@ -87,7 +123,7 @@ func (q *planQuota) watch(key string) (unwatch func()) {
 }
 
 // reread reads key again now when something watches it: the session moved to
-// another login, and its next tick could be a minute away.
+// another login or took a turn, and its next tick could be a minute away.
 func (q *planQuota) reread(key string) {
 	q.mu.Lock()
 	e := q.entries[key]
@@ -96,6 +132,48 @@ func (q *planQuota) reread(key string) {
 	if watched {
 		go q.refresh(key, e)
 	}
+}
+
+// apply reads a session's quota again when its events say the spend moved: a
+// turn that ended, a usage limit it hit, or a switch of login. It is the
+// store listening to /events, so the code that made the change names no one.
+func (q *planQuota) apply(ev lichclient.Event) {
+	switch ev.Name {
+	case sessionLimitEvent, lichclient.ClaudeProfileEvent, statusEventName:
+	default:
+		return
+	}
+	var e struct {
+		ID    string `json:"id"`
+		State string `json:"state"`
+	}
+	if json.Unmarshal(ev.Data, &e) != nil || e.ID == "" {
+		return
+	}
+	if ev.Name == statusEventName && e.State != statusDone {
+		return
+	}
+	q.reread(e.ID)
+}
+
+// invalidate drops key's reading and reads it again when something watches it:
+// a login that just finished, or a profile that is gone, changes whose plan the
+// key has, and the old numbers must not be drawn while the new ones load.
+func (q *planQuota) invalidate(key string) {
+	q.mu.Lock()
+	e := q.entries[key]
+	if e == nil {
+		q.mu.Unlock()
+		return
+	}
+	e.seq++
+	e.plans = nil
+	watched := e.watchers > 0
+	q.mu.Unlock()
+	if watched {
+		go q.refresh(key, e)
+	}
+	q.onChange()
 }
 
 func (q *planQuota) poll(key string, e *quotaEntry, stop chan struct{}) {

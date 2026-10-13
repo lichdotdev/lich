@@ -17,7 +17,7 @@ import (
 // The web's FooterBar is min-h-11 with py-1.5 around h-8 buttons: 44px.
 func TestFooterBarIsTheWebsFortyFourPixels(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Canvas}
-	f := newFooter(context.Background(), nil, new(ui.Root), newFooterUsage(), func() {})
+	f := newFooter(context.Background(), nil, new(ui.Root), newFooterUsage(), newPlanQuota(quotaReader(nil), func() {}), func() {})
 	f.dock = new(dock)
 	for _, in := range []footerInput{{now: busySession().now}, busySession()} {
 		gtx := layout.Context{

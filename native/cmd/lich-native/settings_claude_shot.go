@@ -6,7 +6,6 @@ import (
 	"image"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
@@ -54,7 +53,7 @@ func (s *settingsScreen) showProfileDialog(name string) error {
 	return nil
 }
 
-// seedProfilePlans gives the book the five-hour readings -profile-usage names,
+// seedProfilePlans gives the store the five-hour readings -profile-usage names,
 // as if the backend had answered them just now.
 func (b *profileBook) seedProfilePlans(spec string) error {
 	for pair := range strings.SplitSeq(spec, ",") {
@@ -65,9 +64,7 @@ func (b *profileBook) seedProfilePlans(spec string) error {
 		}
 		plan := lichclient.QuotaPlan{Provider: claudeKind, Status: "ok",
 			Windows: []lichclient.QuotaWindow{{Label: "5h", Seconds: sessionWindowSeconds, Percent: percent}}}
-		b.mu.Lock()
-		b.plans[slug] = profileReading{plan: plan, at: time.Now()}
-		b.mu.Unlock()
+		b.quota.seed(profileQuotaKey(slug), []lichclient.QuotaPlan{plan})
 	}
 	return nil
 }
@@ -100,4 +97,17 @@ func (u *window) openShotMenu() {
 	}
 	menu.OpenAt(image.Pt(x, y), rows...)
 	*flagCardMenu = ""
+}
+
+// seed puts a reading under key as if a read had landed, for the rigs that
+// draw a window without a backend answering.
+func (q *planQuota) seed(key string, plans []lichclient.QuotaPlan) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	e := q.entries[key]
+	if e == nil {
+		e = &quotaEntry{}
+		q.entries[key] = e
+	}
+	e.plans = plans
 }
