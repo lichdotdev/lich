@@ -83,13 +83,16 @@ type pullView struct {
 	busy   string
 	after  []func()
 
-	talk    talkState
-	tree    filesTree
-	inline  inlineFrame
-	root    *ui.Root
-	md      markdownCache
-	pending map[string]*pendingReview // by PR URL
-	submit  submitState
+	talk      talkState
+	tree      filesTree
+	inline    inlineFrame
+	root      *ui.Root
+	md        markdownCache
+	pending   map[string]*pendingReview // by PR URL
+	submit    submitState
+	mergeEdit mergeDialog
+	// shotMergeEdit is -pulls-merge-edit, opened once the detail is read.
+	shotMergeEdit string
 }
 
 // onFrame queues f to run at the start of the next frame: what a write off
@@ -163,6 +166,10 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return v.empty(gtx, th, p, act) })
 	}
 	d := *read.val
+	if v.shotMergeEdit != "" {
+		v.mergeEdit.show(v.shotMergeEdit, false, d)
+		v.shotMergeEdit = ""
+	}
 	return v.withToolbar(gtx, th, p, &d, act, func(gtx C) D { return v.body(gtx, th, p, d, act) })
 }
 

@@ -45,8 +45,9 @@ const (
 const cleanupToastFor = 10 * time.Second
 
 var (
-	flagPulls    = flag.Int("pulls", -1, "open the Pulls screen at start on this pull request (0 for the checkout's), for -shot")
-	flagPullsTab = flag.Int("pulls-tab", 0, "the tab -pulls opens on (0 Overview, 1 Conversation, 2 Commits, 3 Files, 4 Checks)")
+	flagPulls     = flag.Int("pulls", -1, "open the Pulls screen at start on this pull request (0 for the checkout's), for -shot")
+	flagPullsTab  = flag.Int("pulls-tab", 0, "the tab -pulls opens on (0 Overview, 1 Conversation, 2 Commits, 3 Files, 4 Checks)")
+	flagMergeEdit = flag.String("pulls-merge-edit", "", "open the merge message dialog for this method (squash, merge) once -pulls loads, for -shot")
 )
 
 // pullsShot opens the screen at start as -pulls asks.
@@ -54,6 +55,7 @@ func (u *window) pullsShot() {
 	if *flagPulls >= 0 {
 		u.showPulls(*flagPulls)
 		u.pulls.view.tabs.Selected = *flagPullsTab
+		u.pulls.view.shotMergeEdit = *flagMergeEdit
 	}
 }
 
@@ -125,7 +127,7 @@ func (u *window) applyPulls(act pullsAction) {
 	}
 	if act.merge != "" && p.selected != 0 {
 		if d := p.store.detail(path, p.selected).val; d != nil {
-			go u.mergePR(p.project, *d, act.merge, act.admin)
+			go u.mergePR(p.project, *d, act.merge, act.admin, "", "")
 		}
 	}
 }
@@ -222,18 +224,20 @@ func (u *window) newSessionAt(project lichclient.Project, path string) (string, 
 	return id, u.showNewSession(project.ID, id)
 }
 
-// mergePR merges, tells the agents in the merged branch's checkout, and offers
-// to remove that checkout when it is a worktree.
-func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, method string, admin bool) {
+// mergePR merges with subject and body as the commit message (gh's own for an
+// empty subject), tells the agents in the merged branch's checkout, and
+// offers to remove that checkout when it is a worktree. It reports whether
+// the merge went through.
+func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, method string, admin bool, subject, body string) bool {
 	u.pulls.view.setBusy("merge")
 	defer u.pulls.view.setBusy("")
-	if err := u.client.MergePullRequest(u.ctx, project.Path, d.Number, method, "", "", admin); err != nil {
+	if err := u.client.MergePullRequest(u.ctx, project.Path, d.Number, method, subject, body, admin); err != nil {
 		text := lichclient.ErrorText(err)
 		if note := mergeRuleNote(d, u.pulls.store.branchRules(project.Path, d.BaseRefName)); note != "" {
 			text += " " + note
 		}
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(pullsMergeFailed, text)})
-		return
+		return false
 	}
 	merged := ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(pullsMergedToast, d.Number, d.BaseRefName)}
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
@@ -241,7 +245,7 @@ func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, meth
 	i := slices.IndexFunc(checkouts, func(c lichclient.Worktree) bool { return c.Name == d.HeadRefName })
 	if i < 0 {
 		u.toaster.Show(merged)
-		return
+		return true
 	}
 	wt := checkouts[i]
 	if err := u.client.AnnounceMerge(u.ctx, wt.Path, d.Number, d.Title, d.HeadRefName, d.BaseRefName); err != nil {
@@ -252,6 +256,7 @@ func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, meth
 		merged.Action = &ui.ToastButton{Label: pullsRemoveWorktree, OnClick: func() { go u.removePRWorktree(project, wt.Path) }}
 	}
 	u.toaster.Show(merged)
+	return true
 }
 
 // removePRWorktree is Pulls.tsx removeWorktree: the refusals first, the

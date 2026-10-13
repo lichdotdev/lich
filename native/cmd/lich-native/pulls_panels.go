@@ -140,6 +140,7 @@ func (v *pullView) mergeButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient
 		}
 		entries = append(entries, ui.MenuEntry{Label: label, OnClick: func() { act.merge, act.admin = m, bypass }})
 	}
+	entries = append(entries, v.editEntries(allowedMergeMethods(rules), bypass, d)...)
 	label := pullsMerge
 	if busy == "merge" {
 		label = pullsMerging

@@ -383,6 +383,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutWorktreeDialog(gtx, u.theme)
 		u.layoutRemoveConfirm(gtx, u.theme)
 		u.layoutSubmitDialog(gtx, u.theme)
+		u.layoutMergeDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)

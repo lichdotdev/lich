@@ -78,7 +78,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   review, sent as a comment, an approval or a change request. **Open in
   Session** reuses or creates the branch's worktree, **Resolve conflicts** and
   **Fix CI errors** hand the problem to that session's prompt, and **Merge**
-  follows the base branch's rules, then offers to remove the merged worktree.
+  follows the base branch's rules, squashes or merges with the commit message
+  as you edit it when you ask to, then offers to remove the merged worktree.
 - **`lich native` opens an experimental native window.** It is built in Go on
   Gio, beside the web window, and opens on the running lich (starting one when
   none runs) after closing the web window, so your sessions stay where they

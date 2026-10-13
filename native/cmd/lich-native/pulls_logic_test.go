@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/omartelo/lich/native/lichclient"
+	"github.com/omartelo/lich/native/ui"
 )
 
 func summary(n int, title string, draft bool, failed int, updated string) lichclient.PRSummary {
@@ -183,5 +184,27 @@ func TestCheckDuration(t *testing.T) {
 		if got := checkDuration(in[0], in[1], now); got != want {
 			t.Errorf("checkDuration(%q, %q) = %q, want %q", in[0], in[1], got, want)
 		}
+	}
+}
+
+func TestMergeEditStartsFromGitHubsOwnMessage(t *testing.T) {
+	d := lichclient.PRDetail{Number: 7, Title: "feat: x", Body: "why", HeadRefName: "feat/x"}
+	if got := mergeEditFor("squash", d); got.subject != "feat: x (#7)" || got.body != "why" || got.title != mergeEditSquashTitle {
+		t.Errorf("squash edit = %+v", got)
+	}
+	if got := mergeEditFor("merge", d); got.subject != "Merge pull request #7 from feat/x" || got.body != "" {
+		t.Errorf("merge edit = %+v", got)
+	}
+	var v pullView
+	entries := v.editEntries(everyMergeMethod, false, d)
+	if len(entries) != 3 || entries[0].Kind != ui.MenuSeparator || !strings.HasPrefix(entries[1].Label, "Squash and merge, edit") {
+		t.Fatalf("entries = %+v, want a separator then squash and merge commit, no rebase", entries)
+	}
+	if got := v.editEntries([]string{"rebase"}, false, d); got != nil {
+		t.Errorf("rebase alone offers %+v, want nothing", got)
+	}
+	entries[2].OnClick()
+	if !v.mergeEdit.open || v.mergeEdit.edit.method != "merge" || v.mergeEdit.subject.Text() != "Merge pull request #7 from feat/x" {
+		t.Errorf("choosing the edit left the dialog %+v", v.mergeEdit.edit)
 	}
 }
