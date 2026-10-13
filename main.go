@@ -309,6 +309,9 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 			slog.Warn("notify forfeited schedule", "session", lost.Label, "err", err)
 		}
 	})
+	db.SetSessionRenamed(func(id, label string) {
+		hub.Emit(spawn.RenamedEventName, spawn.RenamedEvent{ID: id, Label: label})
+	})
 	providerSvc := providers.New()
 	// One resolution, three readers: the process PATH exec.LookPath resolves a
 	// binary through, what a new session inherits, and the editor lookup. They
@@ -439,6 +442,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //   - relay.SetPlugins, relay.SetWorkerFinished, relay.SetPromptLanguage, drop.SetPromptLanguage, project.SetAccounts, project.SetProjects,
 //     system.SetShowWindow, system.SetQuit, system.SetCloseWindow,
 //     quota.SetSessions, store.SetSessionGone, store.SetScheduleForfeited,
+//     store.SetSessionRenamed,
 //     store.SetBranchOf, store.SetTranscriptOf, store.SetConversationsOf,
 //     store.SetCheckoutsOf, terminal.SetDropDir,
 //     terminal.SetRateLimitReports, terminal.SetUsageLimit, terminal.SetWorkerAnswer,
@@ -470,6 +474,7 @@ func denyInternal(d *rpc.Handler) {
 		"system.SetCloseWindow",
 		"store.SetSessionGone",
 		"store.SetScheduleForfeited",
+		"store.SetSessionRenamed",
 		"store.SetBranchOf",
 		"store.SetTranscriptOf",
 		"store.SetConversationsOf",

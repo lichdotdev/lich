@@ -513,6 +513,9 @@ func (s *Service) RenameSession(sessionID, label string) error {
 	); err != nil {
 		return fmt.Errorf("rename session %q: %w", sessionID, err)
 	}
+	if s.sessionRenamed != nil {
+		s.sessionRenamed(sessionID, label)
+	}
 	return nil
 }
 

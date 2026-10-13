@@ -8,8 +8,9 @@ import (
 	"github.com/omartelo/lich/internal/store"
 )
 
-// RenamedEventName carries a session renamed outside the window, so the card
-// takes the new name without a reload.
+// RenamedEventName carries a session's new name, so every card takes it without
+// a reload. The store emits it once store.RenameSession has written the row,
+// whoever asked: the window, `lich rename` or the MCP tool.
 //
 // It is the event the auto-applied ai-title already emits
 // (terminal.titleEventName) rather than one of its own: the payload is the same
@@ -17,9 +18,9 @@ import (
 // name for one instruction would have bought a second handler saying it again.
 const RenamedEventName = "session-title"
 
-// renamedEvent is RenamedEventName's payload, the shape terminal's title event
+// RenamedEvent is RenamedEventName's payload, the shape terminal's title event
 // writes.
-type renamedEvent struct {
+type RenamedEvent struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
 }
@@ -79,9 +80,6 @@ func (s *Service) Rename(opts RenameOptions) (Renamed, error) {
 
 	if err := s.sessions.RenameSession(found.session.ID, label); err != nil {
 		return Renamed{}, err
-	}
-	if s.events != nil {
-		s.events.Emit(RenamedEventName, renamedEvent{ID: found.session.ID, Label: label})
 	}
 	return Renamed{
 		ID:       found.session.ID,

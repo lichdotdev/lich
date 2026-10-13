@@ -246,6 +246,9 @@ type Service struct {
 	// scheduleForfeited, when set, is told about every scheduled prompt lost
 	// with the session it was parked on. See SetScheduleForfeited.
 	scheduleForfeited func(ForfeitedSchedule)
+	// sessionRenamed, when set, is told every label the user or an agent chose,
+	// once the row holds it. See SetSessionRenamed.
+	sessionRenamed func(sessionID, label string)
 	// branchOf, when set, names the git branch of a checkout. See SetBranchOf.
 	branchOf func(path string) string
 	// transcriptOf, when set, reads a conversation as searchable prose and says
@@ -332,6 +335,17 @@ func (f ForfeitedSchedule) Notice() (summary, detail string) {
 // costs nothing but the notice: the log line is written either way.
 func (s *Service) SetScheduleForfeited(fn func(ForfeitedSchedule)) {
 	s.scheduleForfeited = fn
+}
+
+// SetSessionRenamed registers what to run once RenameSession has written a
+// label, which is how every window learns of a rename it did not make itself.
+// The auto-applied ai-title is not routed through it: the terminal reports
+// that one on its own.
+//
+// It is startup wiring, called before anything serves. Without it a rename is
+// stored and no window is told.
+func (s *Service) SetSessionRenamed(fn func(sessionID, label string)) {
+	s.sessionRenamed = fn
 }
 
 // SetBranchOf registers how to read a checkout's git branch (project.Branch).

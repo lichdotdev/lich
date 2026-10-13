@@ -149,6 +149,9 @@ being debugged.
   emits the global app event `session-title` (`{id, label}`);
   `frontend/src/providers/project-events.tsx` mirrors it into session state so the card
   updates without a reload.
+- **A chosen name** — `Service.RenameSession` emits the same `session-title`
+  event once the row is written (`store.SetSessionRenamed`, wired in
+  `main.go`), whoever renamed: the window, `lich rename` or the MCP tool.
 
 ## Known ceilings
 

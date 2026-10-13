@@ -8,7 +8,7 @@ import (
 	"github.com/omartelo/lich/internal/store"
 )
 
-func TestRenameGivesTheCardTheNameAndAnnouncesIt(t *testing.T) {
+func TestRenameGivesTheCardTheName(t *testing.T) {
 	svc, sessions, _, _, events := closer(t)
 
 	renamed, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Label: "the login bug"})
@@ -21,8 +21,10 @@ func TestRenameGivesTheCardTheNameAndAnnouncesIt(t *testing.T) {
 	if sessions.renamed["s4"] != "the login bug" {
 		t.Errorf("renamed = %v, want the target session written under the new name", sessions.renamed)
 	}
-	if len(events.events) != 1 || events.events[0].name != RenamedEventName {
-		t.Errorf("events = %+v, want the card told to relabel", events.events)
+	// The store announces the rename once the row is written, for every door
+	// into it; announcing here as well would tell each window twice.
+	if len(events.events) != 0 {
+		t.Errorf("events = %+v, want the announcement left to the store", events.events)
 	}
 }
 
