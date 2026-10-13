@@ -30,6 +30,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/gioterm"
 	"github.com/omartelo/lich/native/internal/shot"
 	"github.com/omartelo/lich/native/lichclient"
@@ -123,13 +124,17 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	if err != nil {
 		return err
 	}
+	sans, err := fonts.Faces()
+	if err != nil {
+		return err
+	}
 	th := material.NewTheme()
-	th.Shaper = text.NewShaper(text.WithCollection(append(gofont.Collection(), faces...)))
+	th.Shaper = text.NewShaper(text.WithCollection(append(append(gofont.Collection(), sans...), faces...)))
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	u := &window{
 		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom,
-		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
+		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
 		model: newModel(client, w.Invalidate),
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
