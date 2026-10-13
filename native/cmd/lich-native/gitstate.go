@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"slices"
+	"time"
 
 	"github.com/omartelo/lich/native/lichclient"
 )
@@ -34,20 +35,28 @@ func standingOf(b *lichclient.BaseStatus) baseStanding {
 	return baseStanding{count: b.Behind}
 }
 
+// prRecheck is how long an open pull request is believed before gh is asked
+// again: a merge or close on GitHub moves neither branch nor head, so nothing
+// else would ever make the badge go.
+const prRecheck = time.Minute
+
 // prLookup is a path's pull request as asked for at a branch and head. The
 // pr survives a new commit on the same branch, so the badge does not blink,
 // and is dropped with a new branch (use-pull-request.ts resetOn).
 type prLookup struct {
 	branch, head string
 	pr           *lichclient.PullRequest
+	asked        time.Time
 }
 
 // refreshPath re-reads a shown path's changes and base standing, and asks gh
 // for its pull request again when the branch or head moved: a PR the session
-// just opened, or a merge that closed one, shows without waiting.
+// just opened, or a merge that closed one, shows without waiting. An open one
+// is asked about again every prRecheck.
 func (m *model) refreshPath(ctx context.Context, path string) {
 	d, err := m.client.Diff(ctx, path)
 	if err != nil {
+		m.forgetIfGone(ctx, path)
 		return
 	}
 	b, err := m.client.BaseStatus(ctx, path)
@@ -58,9 +67,11 @@ func (m *model) refreshPath(ctx context.Context, path string) {
 	changed := m.git[path] != d || !sameBase(m.base[path], b)
 	m.git[path], m.base[path] = d, b
 	prev, looked := m.prs[path]
-	ask := !looked || prev.branch != d.Branch || prev.head != d.Head
+	now := time.Now()
+	ask := !looked || prev.branch != d.Branch || prev.head != d.Head ||
+		(prev.pr != nil && now.Sub(prev.asked) >= prRecheck)
 	if ask {
-		next := prLookup{branch: d.Branch, head: d.Head}
+		next := prLookup{branch: d.Branch, head: d.Head, asked: now}
 		if prev.branch == d.Branch {
 			next.pr = prev.pr
 		}
@@ -105,4 +116,52 @@ func (m *model) stalePullRequests() {
 		l.head = ""
 		m.prs[path] = l
 	}
+}
+
+// forgetIfGone drops what is known of a path that no longer exists. Any other
+// failure (git busy, a lock, the backend restarting) keeps the last reading,
+// which the next tick replaces.
+func (m *model) forgetIfGone(ctx context.Context, path string) {
+	m.mu.Lock()
+	_, known := m.git[path]
+	m.mu.Unlock()
+	if !known {
+		return
+	}
+	there, err := m.client.PathExists(ctx, path)
+	if err != nil || there {
+		return
+	}
+	m.mu.Lock()
+	m.dropPath(path)
+	m.mu.Unlock()
+	m.invalidate()
+}
+
+// forgetUntracked drops the readings of paths no open project can show any
+// more: a session that closed, or a shell that left a directory for good. A
+// path of another open project stays, so coming back to it draws the last
+// reading while the next tick replaces it.
+func (m *model) forgetUntracked() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	keep := map[string]bool{}
+	for _, p := range m.projects {
+		keep[p.Path] = true
+		for _, s := range p.Sessions {
+			keep[m.shownPath(p, s)] = true
+		}
+	}
+	for path := range m.git {
+		if !keep[path] {
+			m.dropPath(path)
+		}
+	}
+}
+
+// dropPath forgets everything the store holds for path. Callers hold m.mu.
+func (m *model) dropPath(path string) {
+	delete(m.git, path)
+	delete(m.base, path)
+	delete(m.prs, path)
 }

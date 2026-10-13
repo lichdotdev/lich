@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/app"
@@ -94,6 +95,9 @@ type window struct {
 	palette *commandPalette
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
+	// hideSettings is a request, from another goroutine, to take Settings down
+	// at the next frame.
+	hideSettings atomic.Bool
 	// emptyNew is the empty stage's New session button.
 	emptyNew widget.Clickable
 	light    bool // the theme on screen is a light one
@@ -173,6 +177,9 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		return err
 	}
 	u.dock = newDock(code, u.review)
+	u.model.diffTouched = u.review.feed.touched
+	u.model.focusSession = u.focusSession
+	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
 	u.settings.applyEditor = u.takeEditorPref
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
 	u.settings.providers.claude.book = u.model.profiles
@@ -320,6 +327,9 @@ func (u *window) connect() error {
 
 func (u *window) layout(gtx C) error {
 	u.takeTheme()
+	if u.hideSettings.CompareAndSwap(true, false) {
+		u.settings.hide()
+	}
 	paint.Fill(gtx.Ops, u.theme.Canvas)
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
@@ -621,9 +631,16 @@ func (u *window) apply(act sidebarAction) {
 		go func() { u.logErr("color session", u.client.SetSessionColor(u.ctx, id, tint)) }()
 	}
 	if r := act.rename; r.id != "" {
-		u.model.rename(r.id, r.label)
-		u.model.invalidate()
-		go func() { u.logErr("rename session", u.client.RenameSession(u.ctx, r.id, r.label)) }()
+		go renameSession(u.ctx, u.client, u.toaster.Show, r.id, r.label)
+	}
+}
+
+// renameSession asks the backend for a new label. The card takes it from the
+// session-title event the backend emits once the row is written, so a rename
+// that fails changes nothing on screen and says why.
+func renameSession(ctx context.Context, c *lichclient.Client, show func(ui.Toast) string, id, label string) {
+	if err := c.RenameSession(ctx, id, label); err != nil {
+		show(failure(toastRenameFailed, err))
 	}
 }
 

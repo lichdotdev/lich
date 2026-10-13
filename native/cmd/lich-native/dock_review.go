@@ -61,6 +61,10 @@ type reviewPanel struct {
 	size       unit.Sp
 	cells      *glyphs.Rasterizer
 
+	// wrote hears the checkout an edit of the panel's own changed, for the git
+	// store the card, footer and badge read.
+	wrote func(checkout string)
+
 	// The frame's: theme, palette, checkout and its latest read.
 	th      *ui.Theme
 	light   bool
@@ -234,13 +238,21 @@ func (p *reviewPanel) takeAnswers() {
 	}
 }
 
+// written reads the checkout again after an edit the panel made itself.
+func (p *reviewPanel) written(checkout string) {
+	p.feed.refresh()
+	if p.wrote != nil {
+		p.wrote(checkout)
+	}
+}
+
 // revert puts changed lines of rel back to HEAD, with no confirmation: the
 // toast carries the undo for as long as it stays up.
 func (p *reviewPanel) revert(rel string, lines []lichclient.RevertLine) {
 	path := p.target
 	_, name := splitPath(rel)
 	go func() {
-		defer p.feed.refresh()
+		defer p.written(path)
 		undo, err := p.client.RevertLines(context.Background(), path, rel, lines)
 		if err != nil {
 			p.notify(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(toastRevertFailed, name), Description: lichclient.ErrorText(err)})
@@ -253,7 +265,7 @@ func (p *reviewPanel) revert(rel string, lines []lichclient.RevertLine) {
 }
 
 func (p *reviewPanel) restore(path, rel, name string, undo lichclient.RevertResult) {
-	defer p.feed.refresh()
+	defer p.written(path)
 	if err := p.client.Call(context.Background(), "project.RestoreLines", nil, path, rel, undo); err != nil {
 		p.notify(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(reviewUndoFailed, name), Description: lichclient.ErrorText(err)})
 	}
@@ -304,7 +316,7 @@ func (p *reviewPanel) discard(f patchFile) {
 	p.pendingDiscard = nil
 	path := p.target
 	go func() {
-		defer p.feed.refresh()
+		defer p.written(path)
 		for _, rel := range discardTargets(f) {
 			if err := p.client.Call(context.Background(), "project.DiscardFile", nil, path, rel); err != nil {
 				p.notify(failure(reviewDiscardFailed, err))

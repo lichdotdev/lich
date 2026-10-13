@@ -61,6 +61,11 @@ type model struct {
 	// profileMoved hears a session that now runs in another profile, already
 	// up under it: the backend emits after the respawn.
 	profileMoved func(id string)
+	// diffTouched hears the checkout of a session that likely changed files,
+	// for the Review tab's diff, which is read apart from the git store.
+	diffTouched func(checkout string)
+	// focusSession brings a session's card up, as `lich focus` asks.
+	focusSession func(projectID, id string)
 }
 
 // sessionCwd is a session-cwd payload: where the session's shell is, or the
@@ -103,7 +108,7 @@ func (m *model) reload(ctx context.Context) error {
 		m.launched = true
 		m.activeProject, m.home = launch, launch == ""
 	}
-	if p := m.shownProject(); p != nil && m.active == "" {
+	if p := m.shownProject(); p != nil && !slices.ContainsFunc(p.Sessions, func(s lichclient.Session) bool { return s.ID == m.active }) {
 		m.active = p.ActiveSessionID
 	}
 	m.mu.Unlock()
@@ -202,9 +207,13 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			}
 		case lichclient.ClaudeProfileLoginEvent:
 			var step lichclient.ClaudeProfileLogin
-			if json.Unmarshal(ev.Data, &step) == nil && m.loginProgress != nil {
-				m.loginProgress(step)
+			if json.Unmarshal(ev.Data, &step) == nil {
+				m.loginStep(ctx, step)
 			}
+		case touchedEventName:
+			m.sessionTouched(ctx, ev.Data)
+		case focusEventName:
+			m.sessionFocus(ev.Data)
 		case "session-opened", "session-closed", "project-opened", "sessions-filed", "sessions-colored":
 			if err := m.reload(ctx); err != nil {
 				log.Printf("reload after %s: %v", ev.Name, err)
@@ -269,6 +278,7 @@ func (m *model) refreshGit(ctx context.Context) {
 	for _, path := range m.shownPaths() {
 		m.refreshPath(ctx, path)
 	}
+	m.forgetUntracked()
 }
 
 func (m *model) shownPaths() []string {
@@ -280,12 +290,18 @@ func (m *model) shownPaths() []string {
 	}
 	seen := map[string]bool{}
 	var paths []string
-	for _, s := range p.Sessions {
-		path := m.shownPath(*p, s)
+	add := func(path string) {
 		if !seen[path] {
 			seen[path] = true
 			paths = append(paths, path)
 		}
+	}
+	for _, s := range p.Sessions {
+		add(m.shownPath(*p, s))
+	}
+	// The footer reads the project's own checkout while no card is active.
+	if !slices.ContainsFunc(p.Sessions, func(s lichclient.Session) bool { return s.ID == m.active }) {
+		add(p.Path)
 	}
 	return paths
 }

@@ -75,6 +75,17 @@ func (f *diffFeed) refresh() {
 	}
 }
 
+// touched reads again now when path is the checkout being followed: a
+// session reported editing files in it.
+func (f *diffFeed) touched(path string) {
+	f.mu.Lock()
+	follows := f.path == path
+	f.mu.Unlock()
+	if follows {
+		f.refresh()
+	}
+}
+
 // latest is the newest read, nil before the first lands.
 func (f *diffFeed) latest() *diffRead {
 	f.mu.Lock()

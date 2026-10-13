@@ -27,6 +27,12 @@ const personalProfile = "personal"
 // next one is asked for: the backend serves it from a five-minute cache.
 const profilePlanRefresh = 5 * time.Minute
 
+// profileListMaxAge is how old the list may be before a window focus reads it
+// again. A read runs one CLI per profile, so focus cannot afford one every
+// time, and a login in a terminal or an editor outside lich is the case it
+// exists for.
+const profileListMaxAge = time.Minute
+
 // sessionWindowSeconds is the five-hour window of a Claude Code plan, the one
 // a "Continue in" row quotes.
 const sessionWindowSeconds = 5 * hour
@@ -52,6 +58,8 @@ type profileBook struct {
 	mu       sync.Mutex
 	list     []lichclient.ClaudeProfile
 	loaded   bool
+	loadedAt time.Time
+	reading  bool
 	plans    map[string]profileReading
 	fetching map[string]bool
 }
@@ -73,7 +81,7 @@ func (b *profileBook) reload(ctx context.Context) error {
 		return err
 	}
 	b.mu.Lock()
-	b.list, b.loaded = list, true
+	b.list, b.loaded, b.loadedAt = list, true, time.Now()
 	for slug := range b.plans {
 		if !slices.ContainsFunc(list, func(p lichclient.ClaudeProfile) bool { return p.Slug == slug }) {
 			delete(b.plans, slug)
@@ -82,6 +90,37 @@ func (b *profileBook) reload(ctx context.Context) error {
 	b.mu.Unlock()
 	b.invalidate()
 	return nil
+}
+
+// loginFinished takes the end of a login: who is logged in changed, and with
+// it whose plan each profile has.
+func (b *profileBook) loginFinished(ctx context.Context) {
+	b.forgetPlans()
+	if err := b.reload(ctx); err != nil {
+		log.Printf("claude profiles after a login: %v", err)
+	}
+}
+
+// refreshIfStale reads the list again when it is older than
+// profileListMaxAge and no read is already running. A book nobody has read yet
+// is left to its first read.
+func (b *profileBook) refreshIfStale(ctx context.Context) {
+	b.mu.Lock()
+	due := b.loaded && !b.reading && time.Since(b.loadedAt) > profileListMaxAge
+	b.reading = b.reading || due
+	b.mu.Unlock()
+	if !due {
+		return
+	}
+	go func() {
+		err := b.reload(ctx)
+		b.mu.Lock()
+		b.reading = false
+		b.mu.Unlock()
+		if err != nil {
+			log.Printf("claude profiles on focus: %v", err)
+		}
+	}()
 }
 
 func (b *profileBook) snapshot() ([]lichclient.ClaudeProfile, bool) {

@@ -366,7 +366,6 @@ func (s *settingsScreen) loginProgress(ev lichclient.ClaudeProfileLogin) {
 			f.set(func(d *flowData) { d.url = ev.URL })
 		}
 	case !mine:
-		go s.reloadProfiles()
 	case ev.Cancelled:
 		f.set(func(d *flowData) { d.open = false })
 	case !ev.LoggedIn:

@@ -141,6 +141,7 @@ func (m *model) setFocused(ctx context.Context, focused bool) {
 	m.focused = focused
 	if focused {
 		m.stalePullRequests()
+		m.profiles.refreshIfStale(ctx)
 	}
 	id := m.active
 	read := focused && m.status.markSeen(id)

@@ -203,6 +203,13 @@ func (u *window) openSession(projectID, id string) {
 	go func() { u.logErr("set active session", u.client.SetActiveSession(u.ctx, projectID, id)) }()
 }
 
+// focusSession is `lich focus`: the card comes up, over Settings too, which
+// the next frame takes down because only the frame may touch it.
+func (u *window) focusSession(projectID, id string) {
+	u.hideSettings.Store(true)
+	u.openSession(projectID, id)
+}
+
 // pickProject opens the directory picker and adopts what it answers.
 func (u *window) pickProject() {
 	p, err := u.client.PickProject(u.ctx)

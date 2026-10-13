@@ -20,6 +20,7 @@ const (
 	toastOpenFolderFailed   = "Could not open the folder: %v"
 	toastRelocated          = "%s now opens %s"
 	toastRelocateFailed     = "Relocate failed: %v"
+	toastRenameFailed       = "Couldn't rename the session: %v"
 	toastReadFailed         = "Couldn't read %s"
 	toastRevertFailed       = "Couldn't revert lines in %s"
 )
