@@ -14,6 +14,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
@@ -37,9 +38,13 @@ var (
 	settingsNavWidth = unit.Dp(236)
 	settingsPanePadX = ui.Space(10)
 	settingsPanePadY = ui.Space(8)
-	settingsTitle    = unit.Sp(24)
-	settingsDescSize = unit.Sp(13)
-	icSettingsClose  = icons.Lucide("x")
+	// settingsCloseInset and settingsCloseSize place the × in the pane's
+	// top-right corner.
+	settingsCloseInset = ui.Space(3.5)
+	settingsCloseSize  = ui.Space(7)
+	settingsTitle      = unit.Sp(24)
+	settingsDescSize   = unit.Sp(13)
+	icSettingsClose    = icons.Lucide("x")
 )
 
 // settingsScreen is the Settings screen: the nav island and the pane island
@@ -230,15 +235,30 @@ func (s *settingsScreen) island(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx 
 // title, the description, and the rows, the × in the top-right corner.
 func (s *settingsScreen) paneLayout(gtx C, th *ui.Theme, values scopedValues) D {
 	rows := s.paneRows(sectionByID(s.section), th, values)
-	d := layout.Inset{Left: settingsPanePadX, Right: settingsPanePadX, Top: settingsPanePadY, Bottom: settingsPanePadY}.Layout(gtx, func(gtx C) D {
-		return th.ScrollArea(&s.pane).Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
+	d := layout.Inset{Left: settingsPanePadX, Top: settingsPanePadY, Bottom: settingsPanePadY}.Layout(gtx, func(gtx C) D {
+		return paneScroll(th, &s.pane).Layout(gtx, len(rows), func(gtx C, i int) D {
+			return layout.Inset{Right: settingsPanePadX}.Layout(gtx, rows[i])
+		})
 	})
-	inset := gtx.Dp(ui.Space(3.5))
-	size := gtx.Dp(ui.Space(7))
+	inset := gtx.Dp(settingsCloseInset)
+	size := gtx.Dp(settingsCloseSize)
 	defer op.Offset(image.Pt(gtx.Constraints.Max.X-inset-size, inset)).Push(gtx.Ops).Pop()
 	tip := th.Tooltip(s.root, &s.nav.closeTip, settingsCloseHint)
 	tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &s.close, icSettingsClose, false) })
 	return d
+}
+
+// paneScroll is the pane's list with its scrollbar on the island's right
+// edge, over the padding, its track starting below the × so the two never
+// sit side by side.
+func paneScroll(th *ui.Theme, state *widget.List) material.ListStyle {
+	list := th.ScrollArea(state)
+	list.Indicator.MinorWidth = ui.Space(2)
+	list.Indicator.CornerRadius = ui.Space(1)
+	list.Track.MinorPadding = ui.Space(0.5)
+	list.Track.MajorPadding = settingsCloseInset + settingsCloseSize + ui.Space(2) - settingsPanePadY
+	list.AnchorStrategy = material.Overlay
+	return list
 }
 
 // paneRows are the pane's list children: the header lines, then each row.
