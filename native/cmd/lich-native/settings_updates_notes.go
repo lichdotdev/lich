@@ -210,7 +210,10 @@ type notesItemKey struct{ group, item int }
 // patchNotesView is the What's new dialog's state: its widgets and which
 // items are open.
 type patchNotesView struct {
-	open             bool
+	open bool
+	// startup is the popup PatchNotesGate opened at start: it shows with
+	// Settings closed, and closing it records the version as seen.
+	startup          bool
 	dialog           ui.DialogState
 	list             widget.List
 	gotIt, changelog widget.Clickable
@@ -234,12 +237,13 @@ func (v *patchNotesView) row(k notesItemKey) *widget.Clickable {
 // window's constraints as every dialog.
 func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 	v := &s.updates.patch
+	s.takeStartupNotes()
 	notes := s.updates.patchNotes()
 	if notes == nil {
 		return
 	}
 	if v.gotIt.Clicked(gtx) {
-		v.open = false
+		s.closePatchNotes(notes.Version)
 	}
 	if v.changelog.Clicked(gtx) {
 		s.openExternal(helpRepoURL + updatesReleaseTagAt + notes.Version)
@@ -247,7 +251,7 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 	on := th.On(th.Popover)
 	got := on.Button(&v.gotIt, notesGotIt)
 	got.Size = ui.SizeSM
-	dlg := th.Dialog(&v.dialog, v.open && s.open, fmt.Sprintf(notesDialogTitle, notes.Version), notesCounts(notes.Groups))
+	dlg := th.Dialog(&v.dialog, v.open && (s.open || v.startup), fmt.Sprintf(notesDialogTitle, notes.Version), notesCounts(notes.Groups))
 	dlg.MaxWidth, dlg.HideClose = ui.DialogWidthXL, true
 	dlg.Body = func(gtx C) D { return v.body(gtx, on, notes) }
 	dlg.Actions = []layout.Widget{func(gtx C) D {
@@ -258,8 +262,28 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 		)
 	}}
 	if dlg.Layout(gtx) {
-		v.open = false
+		s.closePatchNotes(notes.Version)
 	}
+}
+
+func (s *settingsScreen) takeStartupNotes() {
+	u := &s.updates
+	u.mu.Lock()
+	take := u.startupNotes
+	u.startupNotes = false
+	u.mu.Unlock()
+	if take {
+		u.patch.show()
+		u.patch.startup = true
+	}
+}
+
+func (s *settingsScreen) closePatchNotes(version string) {
+	v := &s.updates.patch
+	if v.startup {
+		s.recordPatchNotes(version)
+	}
+	v.open, v.startup = false, false
 }
 
 // changelogLink is the muted "View full changelog ↗" that goes foreground on

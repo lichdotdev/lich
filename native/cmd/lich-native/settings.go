@@ -58,6 +58,8 @@ type settingsScreen struct {
 	// applyEditor hands the review panel the Editor preference at key that
 	// just changed.
 	applyEditor func(key string, prefs editorPrefs)
+	// promptUpdate is the update gate's prompt, for the manual check.
+	promptUpdate func(lichclient.AppUpdateStatus)
 
 	open     bool
 	section  string

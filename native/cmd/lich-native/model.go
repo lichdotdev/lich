@@ -79,6 +79,11 @@ type model struct {
 	pluginProfiles func(lichclient.PluginProfiles)
 	// prChanged hears a pull request write land (PRChangedEvent).
 	prChanged func()
+	// pluginIncompatible hears a session report from a lich plugin outside
+	// the range this lich speaks (PluginIncompatibleEvent).
+	pluginIncompatible func()
+	// appUpdateProgress hears a step of an update being applied.
+	appUpdateProgress func(lichclient.AppUpdateProgress)
 	// closed is the closed projects, which the menu and the palette read.
 	closed *closedProjects
 }
@@ -270,6 +275,15 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 		case lichclient.PRChangedEvent:
 			if m.prChanged != nil {
 				m.prChanged()
+			}
+		case lichclient.AppUpdateProgressEvent:
+			var p lichclient.AppUpdateProgress
+			if json.Unmarshal(ev.Data, &p) == nil && m.appUpdateProgress != nil {
+				m.appUpdateProgress(p)
+			}
+		case lichclient.PluginIncompatibleEvent:
+			if m.pluginIncompatible != nil {
+				m.pluginIncompatible()
 			}
 		case touchedEventName:
 			m.sessionTouched(ctx, ev.Data)

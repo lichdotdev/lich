@@ -112,9 +112,13 @@ type window struct {
 	win    *app.Window
 	closer closePrompt
 	// notifier is the desktop channel; optIn its one-time question.
-	notifier *notifier
-	optIn    notifyOptIn
-	drop     terminalDrop
+	notifier   *notifier
+	optIn      notifyOptIn
+	gitMissing gitMissing
+	setup      providerSetup
+	plugin     pluginGate
+	appUpdate  appUpdateGate
+	drop       terminalDrop
 	// islandAt is the island's top-left in window pixels, where body put it.
 	islandAt image.Point
 }
@@ -164,6 +168,8 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		return len(ids) > 0
 	}
 	u.model.prChanged = u.prChanged
+	u.model.pluginIncompatible = func() { go u.checkPlugin() }
+	u.model.appUpdateProgress = u.updateProgressed
 	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
 	u.topbar.open.closed = u.model.closed
@@ -178,6 +184,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	}
 	u.settings = newSettingsScreen(ctx, client, &u.root, w.Invalidate)
 	u.settings.notify = u.notifier
+	u.settings.promptUpdate = u.promptAppUpdate
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, w.Invalidate)
 	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
@@ -347,6 +354,13 @@ func (u *window) connect() error {
 	go u.model.follow(u.ctx, events)
 	go u.loadProfiles()
 	go u.model.pollGit(u.ctx)
+	go u.warnUncleanExit()
+	u.gitMissing.missing.Store(*flagGitMissing)
+	if !*flagGitMissing {
+		go u.checkGit(false)
+	}
+	go u.settings.startupPatchNotes()
+	go u.pollAppUpdate()
 	return nil
 }
 
@@ -386,12 +400,15 @@ func (u *window) layout(gtx C) error {
 		u.layoutMergeDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
+		u.layoutProviderSetup(gtx, u.theme)
+		u.layoutPluginGate(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
 		u.settings.layoutProviderDialog(gtx, u.theme)
 		u.settings.layoutProfileDialogs(gtx, u.theme)
 		u.settings.layoutPatchNotesDialog(gtx, u.theme)
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)
+		u.layoutGitMissing(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)

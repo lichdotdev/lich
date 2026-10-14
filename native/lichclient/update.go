@@ -25,6 +25,10 @@ type PluginStatus struct {
 	Compatible       bool   `json:"compatible"`
 }
 
+// PluginIncompatibleEvent is raised when a session's hooks report from a
+// lich plugin release outside the range this lich speaks.
+const PluginIncompatibleEvent = "plugin-incompatible"
+
 // PluginProfilesEvent is the event a pass over a provider's profiles reports
 // on once Personal's lich plugin moved (agentplugin.ProfilesEventName).
 const PluginProfilesEvent = "lich-plugin-profiles"

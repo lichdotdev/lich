@@ -46,6 +46,7 @@ type updatesSettings struct {
 	loaded bool
 
 	notes         *lichclient.PatchNotes
+	startupNotes  bool // startupPatchNotes found a release to show
 	plugins       []lichclient.PluginStatus
 	pluginsFailed bool
 	busy          bool // a plugin action or check is in flight
@@ -161,9 +162,8 @@ func (u *updatesSettings) appControl(gtx C, th *ui.Theme) D {
 }
 
 // runAppCheck is the manual check of AppUpdateGate: the verdict beside the
-// button and, for a newer release, the prompt. The prompt is a toast that
-// opens the release page; the installer and the command to paste are the
-// web gate's and have no native counterpart yet.
+// button and, for a newer release, the prompt, even for a version Later was
+// clicked for.
 func (u *updatesSettings) runAppCheck(s *settingsScreen) {
 	u.mu.Lock()
 	u.checkingApp, u.appResult = true, ""
@@ -177,20 +177,14 @@ func (u *updatesSettings) runAppCheck(s *settingsScreen) {
 		result = updatesCheckFailed
 	case st.UpdateAvailable:
 		result = fmt.Sprintf(updatesAvailable, st.LatestVersion)
-		s.promptUpdate(st)
+		if s.promptUpdate != nil {
+			s.promptUpdate(st)
+		}
 	}
 	u.mu.Lock()
 	u.checkingApp, u.appResult = false, result
 	u.mu.Unlock()
 	s.invalidate()
-}
-
-func (s *settingsScreen) promptUpdate(st lichclient.AppUpdateStatus) {
-	t := ui.Toast{Title: fmt.Sprintf(updatesToastTitle, st.LatestVersion)}
-	if st.ReleaseURL != "" {
-		t.Action = &ui.ToastButton{Label: updatesViewRelease, OnClick: func() { s.openExternal(st.ReleaseURL) }}
-	}
-	s.theme.toaster.Show(t)
 }
 
 // busyButton is a Button that draws LoaderCircle under animate-spin before

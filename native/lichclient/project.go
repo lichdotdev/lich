@@ -66,3 +66,11 @@ func (c *Client) Diagnostics(ctx context.Context) (Diagnostics, error) {
 func (c *Client) RevealLog(ctx context.Context) error {
 	return c.Call(ctx, "system.RevealLog", nil)
 }
+
+// TakeUncleanExit reports whether lich's run before this one ended without
+// quitting cleanly. The backend clears the flag on the first ask, so only
+// the first window to ask is told.
+func (c *Client) TakeUncleanExit(ctx context.Context) (bool, error) {
+	var unclean bool
+	return unclean, c.Call(ctx, "system.TakeUncleanExit", &unclean)
+}

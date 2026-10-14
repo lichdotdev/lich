@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	flagToasts         = flag.String("toasts", "", "comma-separated toasts to raise at start, the last in front, for -shot: default, success, info, warning, error, action, attention, undo")
+	flagToasts         = flag.String("toasts", "", "comma-separated toasts to raise at start, the last in front, for -shot: default, success, info, warning, error, action, attention, undo, update, progress")
 	flagToastsExpanded = flag.Bool("toasts-expanded", false, "draw the toast stack expanded, as a hover would, for -shot")
 )
 
@@ -44,19 +44,21 @@ func failure(format string, args ...any) ui.Toast {
 
 // demoToasts are what -toasts raises, by name: one of each variant; action,
 // the shape of the web's unclean-exit warning; attention and undo, the
-// needs-your-input and closed-session toasts.
+// needs-your-input and closed-session toasts; update and progress, the app
+// update's prompt and its download.
 var demoToasts = map[string]ui.Toast{
 	"default": {Title: "Closed Claude 3"},
 	"success": {Variant: ui.ToastSuccess, Title: "lich now opens ~/try/skipo"},
 	"info":    {Variant: ui.ToastInfo, Title: "No room to show it beside"},
-	"warning": {Variant: ui.ToastWarning, Title: "lich's previous run ended unexpectedly"},
+	"warning": {Variant: ui.ToastWarning, Title: uncleanExitTitle},
 	"error":   failure(toastOpenFolderFailed, "no file manager found"),
-	"action": {Variant: ui.ToastWarning, Title: "lich's previous run ended unexpectedly",
-		Description: "Your sessions were restored, but whatever they were running stopped with it.",
-		Action:      &ui.ToastButton{Label: "Open log folder"}, Cancel: &ui.ToastButton{Label: "Dismiss"}},
+	"action":  uncleanExitToast(func() {}),
 	"attention": needsInputToast(statusReport{label: "Claude 3", project: "skipo",
 		reason: "Claude needs your permission to use Bash"}, func(string, string) {}),
 	"undo": {Title: fmt.Sprintf(toastClosed, "Claude 3"), Action: &ui.ToastButton{Label: toastUndo}},
+	"update": {Title: fmt.Sprintf(updatesToastTitle, "1.4.0"), Cancel: &ui.ToastButton{Label: appUpdateLater},
+		Secondary: &ui.ToastButton{Label: updatesViewRelease}, Action: &ui.ToastButton{Label: appUpdateInstall}},
+	"progress": updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: lichclient.UpdatePhaseDownload, Received: 12_300_000, Total: 41_000_000}),
 }
 
 // raiseDemoToasts is -toasts. They stay up, so the shot finds them.
