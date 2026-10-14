@@ -11,8 +11,10 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"golang.org/x/image/math/fixed"
 
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
@@ -41,6 +43,7 @@ var (
 	navScopeHeight = ui.Space(10)
 	navScopeMenuW  = unit.Dp(212)
 	navBadgeSize   = unit.Dp(18)
+	navBadgePadX   = unit.Dp(5)
 	navBadgeFill   = float32(0.2)
 	navSmall       = unit.Sp(11)
 	navHitPath     = unit.Sp(10.5)
@@ -241,18 +244,29 @@ func countBadge(gtx C, th *ui.Theme, n int) D {
 	if n == 0 {
 		return D{}
 	}
-	label := th.Text(navSmall, strconv.Itoa(n)).In(th.ToneWait).Weight(font.SemiBold).Leading(18)
-	macro := op.Record(gtx.Ops)
+	label := th.Text(navSmall, strconv.Itoa(n)).In(th.ToneWait).Weight(font.SemiBold)
 	gtx.Constraints.Min = image.Point{}
-	d := layout.Inset{Left: unit.Dp(5), Right: unit.Dp(5)}.Layout(gtx, label.Layout)
-	call := macro.Stop()
-	size := image.Pt(max(d.Size.X, gtx.Dp(navBadgeSize)), gtx.Dp(navBadgeSize))
+	ink := inkBounds(gtx, th, label)
+	size := image.Pt(max(ink.Dx()+gtx.Dp(navBadgePadX)*2, gtx.Dp(navBadgeSize)), gtx.Dp(navBadgeSize))
 	box := gtx
 	box.Constraints = layout.Exact(size)
 	ui.Fill(box, th.Over(ui.Alpha(th.ToneWait, navBadgeFill)), navBadgeSize/2)
-	defer op.Offset(image.Pt((size.X-d.Size.X)/2, (size.Y-d.Size.Y)/2)).Push(gtx.Ops).Pop()
-	call.Add(gtx.Ops)
+	center := ink.Min.Add(ink.Max).Div(2)
+	defer op.Offset(size.Div(2).Sub(center)).Push(gtx.Ops).Pop()
+	label.Layout(gtx)
 	return D{Size: size}
+}
+
+// inkBounds is the box label's glyphs paint, where its Layout puts them: a
+// digit's advance carries side bearings that sit it off center in a pill.
+func inkBounds(gtx C, th *ui.Theme, label ui.LabelStyle) image.Rectangle {
+	th.Shaper.LayoutString(text.Parameters{Font: label.Font, PxPerEm: fixed.I(gtx.Sp(label.Size)), MaxLines: 1, MaxWidth: gtx.Constraints.Max.X, Locale: gtx.Locale}, label.Text)
+	var ink image.Rectangle
+	for g, ok := th.Shaper.NextGlyph(); ok; g, ok = th.Shaper.NextGlyph() {
+		x, y := g.X, fixed.I(int(g.Y))
+		ink = ink.Union(image.Rect((x + g.Bounds.Min.X).Floor(), (y + g.Bounds.Min.Y).Floor(), (x + g.Bounds.Max.X).Ceil(), (y + g.Bounds.Max.Y).Ceil()))
+	}
+	return ink
 }
 
 // results are the nav while the field has text: the count, then each hit as
