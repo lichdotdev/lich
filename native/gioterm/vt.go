@@ -187,6 +187,7 @@ import (
 	"image/color"
 	"runtime/cgo"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 )
 
@@ -225,13 +226,17 @@ func goWritePty(h C.uintptr_t, data *C.uint8_t, n C.size_t) {
 // Terminal is one emulated terminal: libghostty-vt's state machine plus the
 // cell grid a Renderer draws. Its methods are safe from several goroutines.
 type Terminal struct {
-	mu    sync.Mutex
-	t     C.GhosttyTerminal
-	rs    C.GhosttyRenderState
-	it    C.GhosttyRenderStateRowIterator
-	cells C.GhosttyRenderStateRowCells
-	enc   C.GhosttyKeyEncoder
-	ev    C.GhosttyKeyEvent
+	mu sync.Mutex
+	// dark is the color scheme DSR 996 answers, read by the callback that
+	// runs inside Write with mu held; schemeSet is SetColors having set it.
+	dark      atomic.Bool
+	schemeSet bool
+	t         C.GhosttyTerminal
+	rs        C.GhosttyRenderState
+	it        C.GhosttyRenderStateRowIterator
+	cells     C.GhosttyRenderStateRowCells
+	enc       C.GhosttyKeyEncoder
+	ev        C.GhosttyKeyEvent
 
 	// Made on first use: most terminals never see a mouse report or a
 	// selection.
@@ -270,6 +275,7 @@ func New(cols, rows, cellW, cellH int, replies func([]byte)) (*Terminal, error) 
 	}{
 		{"terminal_new", func() C.GhosttyResult { return C.ghostty_terminal_new(nil, &v.t, C.uint16_t(cols), C.uint16_t(rows)) }},
 		{"install_write_pty", func() C.GhosttyResult { return C.install_write_pty(v.t, C.uintptr_t(v.handle)) }},
+		{"install_color_scheme", v.installColorScheme},
 		{"render_state_new", func() C.GhosttyResult { return C.ghostty_render_state_new(nil, &v.rs) }},
 		{"row_iterator_new", func() C.GhosttyResult { return C.ghostty_render_state_row_iterator_new(nil, &v.it) }},
 		{"row_cells_new", func() C.GhosttyResult { return C.ghostty_render_state_row_cells_new(nil, &v.cells) }},
@@ -373,6 +379,7 @@ func (v *Terminal) SetColors(c Colors) error {
 	if err := check("set colors", C.set_default_colors(v.t, cRGB(c.Foreground), cRGB(c.Background))); err != nil {
 		return err
 	}
+	v.setScheme(c.Background)
 	var cursor *C.GhosttyColorRgb
 	if c.Cursor.A != 0 {
 		rgb := cRGB(c.Cursor)
