@@ -138,6 +138,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Apps started from a lich terminal reach D-Bus and GTK again.** On
+  coreutils 9.x, lich read your shell's environment with the quotes `env` adds
+  when it prints to a terminal, so every session got values like
+  `DBUS_SESSION_BUS_ADDRESS='unix:path=…'`, and a notification daemon or any
+  GTK app launched from it failed to start. Sessions now get the values as
+  your shell has them.
 - **A provider you never turned on no longer opens its login.** lich read every
   provider's plan usage, switched on or not, and asking a signed-out Antigravity
   CLI opens its browser sign-in, so it popped up every few minutes. Plan usage

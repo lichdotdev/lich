@@ -120,9 +120,11 @@ func ReresolveShellEnv(base []string) ([]string, error) {
 
 	// -l -i so both login profiles (bash/zsh) and interactive rc (fish's
 	// config.fish is interactive-only) run; `env` is external, so the command is
-	// identical across shells.
+	// identical across shells. It prints into a pipe, not the pty: coreutils'
+	// env (9.x) quotes a value it prints to a terminal, and the quotes would
+	// land in every session's environment.
 	out, parked, err := runShellDump(ctx, shell,
-		"echo "+shellEnvSentinel+"; env; echo "+shellEnvEnd, shellEnvEnd, base)
+		"echo "+shellEnvSentinel+"; env | cat; echo "+shellEnvEnd, shellEnvEnd, base)
 	if parked != nil {
 		noteParkedReader(parked)
 	}

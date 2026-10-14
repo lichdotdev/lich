@@ -168,3 +168,26 @@ func spawnCount(t *testing.T, path string) int {
 	}
 	return strings.Count(string(body), "x")
 }
+
+// TestResolveShellEnvKeepsValuesUnquoted pins the dump against coreutils'
+// env, which since 9.x quotes a value it prints to a terminal
+// (GDK_BACKEND='wayland,x11,*'), and the dump runs on a pty: read as is, the
+// quotes went into every session's environment and broke D-Bus and GTK there.
+// Measured with coreutils 9.12, where this failed before the fix.
+func TestResolveShellEnvKeepsValuesUnquoted(t *testing.T) {
+	sh, err := exec.LookPath("sh")
+	if err != nil {
+		t.Skip("no sh on PATH")
+	}
+	t.Setenv("SHELL", sh)
+	const want = "LICH_TEST_SPECIAL=wayland,x11,*"
+	got, err := ReresolveShellEnv([]string{"PATH=" + os.Getenv("PATH"), "HOME=" + t.TempDir(), want})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(got, want) {
+		t.Fatalf("resolved env lost %q: %q", want, slices.DeleteFunc(got, func(kv string) bool {
+			return !strings.HasPrefix(kv, "LICH_TEST_SPECIAL=")
+		}))
+	}
+}
