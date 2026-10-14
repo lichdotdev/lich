@@ -7,6 +7,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -59,7 +60,14 @@ type pullsScreen struct {
 	store *pullsStore
 	root  *ui.Root
 
-	open     bool
+	open bool
+	// squareX is the left edge of the island the active project tab sits on
+	// the top-left corner of, -1 for none: that island drops the rounding for
+	// the tab to grow out of, as the stage's island does.
+	squareX int
+	// spans are the islands as the last layout placed them, for the tab
+	// strip to merge the active tab into the one it sits over.
+	spans    []islandSpan
 	project  lichclient.Project
 	selected int // the PR in view, 0 for none yet
 	// branchPR is the PR of the checkout's branch, which the screen opens on
@@ -129,26 +137,37 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	size := gtx.Constraints.Max
 	w := gtx.Dp(pullsListWidth)
 	slot := int(share * float32(w+gtx.Dp(gutter)))
+	p.spans = p.spans[:0]
+	if slot > 0 {
+		p.spans = append(p.spans, islandSpan{x0: slot - w - gtx.Dp(gutter), x1: slot - gtx.Dp(gutter), color: th.Sidebar})
+	}
+	p.spans = append(p.spans, islandSpan{x0: slot, x1: size.X, color: th.Background})
 	if slot > 0 {
 		clipped := clip.Rect{Max: image.Pt(slot, size.Y)}.Push(gtx.Ops)
 		offset := op.Offset(image.Pt(slot-w-gtx.Dp(gutter), 0)).Push(gtx.Ops)
 		list := gtx
 		list.Constraints = layout.Exact(image.Pt(w, size.Y))
-		pullsIsland(list, th, th.Sidebar, func(gtx C, th *ui.Theme) D { return p.listLayout(gtx, th, rows) })
+		pullsIsland(list, th, th.Sidebar, p.squareX == slot-w-gtx.Dp(gutter), func(gtx C, th *ui.Theme) D { return p.listLayout(gtx, th, rows) })
 		offset.Pop()
 		clipped.Pop()
 	}
 	defer op.Offset(image.Pt(slot, 0)).Push(gtx.Ops).Pop()
 	view := gtx
 	view.Constraints = layout.Exact(image.Pt(max(size.X-slot, 0), size.Y))
-	pullsIsland(view, th, th.Background, func(gtx C, th *ui.Theme) D { return p.view.layout(gtx, th, p, &act) })
+	pullsIsland(view, th, th.Background, p.squareX == slot, func(gtx C, th *ui.Theme) D { return p.view.layout(gtx, th, p, &act) })
 	return act
 }
 
-// pullsIsland is a rounded-lg box of bg the size of gtx.
-func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, w func(gtx C, th *ui.Theme) D) D {
+// pullsIsland is a rounded-lg box of bg the size of gtx, its top-left corner
+// square when the active tab grows out of it.
+func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, squareNW bool, w func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
-	ui.Fill(gtx, bg, ui.RadiusLG)
+	r := gtx.Dp(ui.RadiusLG)
+	nw := r
+	if squareNW {
+		nw = 0
+	}
+	paint.FillShape(gtx.Ops, bg, clip.RRect{Rect: image.Rectangle{Max: gtx.Constraints.Max}, NW: nw, NE: r, SE: r, SW: r}.Op(gtx.Ops))
 	return w(gtx, th.On(bg))
 }
 

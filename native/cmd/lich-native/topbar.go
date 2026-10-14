@@ -52,11 +52,13 @@ var (
 // the native window has no Home tab, and the active tab merges into the
 // island under it.
 type topbar struct {
-	root     *ui.Root
-	started  time.Time
-	brand    widget.Clickable
-	sort     ui.Sortable
-	list     layout.List
+	root    *ui.Root
+	started time.Time
+	brand   widget.Clickable
+	sort    ui.Sortable
+	list    layout.List
+	// tabW is the tabs' width as the strip last laid them out.
+	tabW     int
 	tabs     map[string]*tabState
 	open     openMenu
 	bell     bellMenu
@@ -95,11 +97,22 @@ type topbarFrame struct {
 	brandName  float32 // the name's opacity, the panel's own mid-morph
 	stripX     int     // the terminal island's left edge
 	island     color.NRGBA
-	tabs       []projectTab
-	active     string
-	pending    []notification
-	settings   bool // the Settings screen is open
-	pulls      bool // the Pulls screen is open
+	// islands are the islands under the strip, in strip pixels, when the
+	// screen has more than one (Pulls); none is one island of island's color
+	// under the whole strip.
+	islands  []islandSpan
+	tabs     []projectTab
+	active   string
+	pending  []notification
+	settings bool // the Settings screen is open
+	pulls    bool // the Pulls screen is open
+}
+
+// islandSpan is one island under the tab strip: its left and right edges in
+// strip pixels and its color.
+type islandSpan struct {
+	x0, x1 int
+	color  color.NRGBA
 }
 
 // layout draws the strip in a topbarHeight band at the top of gtx; th is on

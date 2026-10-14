@@ -38,6 +38,9 @@ const (
 	tabTextLeading = 20
 	// tabHoverFill is the mockup's --hover-faint, the foreground at 4%.
 	tabHoverFill = 0.04
+	// tabDetachedFill is the active tab that sits over the gap between two
+	// islands and so grows out of neither: a raised fill instead of a merge.
+	tabDetachedFill = 0.08
 	// tabSpinPeriod is animate-spin's one turn a second.
 	tabSpinPeriod = time.Second
 	// kappa places a cubic's controls so it draws a quarter circle.
@@ -89,6 +92,7 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	dragEnded := before != "" && t.sort.Dragging() == ""
 	plus := gtx.Dp(barButton) + gtx.Dp(barGap)
 	w := tabWidth(gtx.Constraints.Max.X-plus, len(f.tabs), gtx.Dp(tabWidthMax), gtx.Dp(tabWidthMin))
+	t.tabW = w
 	ids := make([]string, len(f.tabs))
 	for i, tab := range f.tabs {
 		ids[i] = tab.ID
@@ -105,11 +109,10 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 				})
 			}),
 			ui.Gap(1),
-			// The same top inset as the tabs, so the "+" centres on their
-			// label line rather than on the band.
-			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: tabTop}.Layout(gtx, func(gtx C) D { return t.openButton(gtx, th, act) })
-			}),
+			// Centred on the band, which puts the "+" on the tabs' label line:
+			// it sits a gutter above the middle of a tab, as the tab sits
+			// tabTop below the band's top.
+			layout.Rigid(func(gtx C) D { return t.openButton(gtx, th, act) }),
 		)
 	})
 	t.fillets(gtx, f, w)
@@ -154,17 +157,24 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	active := tab.ID == f.active
 	hovered := st.click.Hovered() || st.close.Hovered()
 	bg := th.Surface
+	size := gtx.Constraints.Min
+	r := gtx.Dp(tabRadius)
+	shape := clip.RRect{Rect: image.Rectangle{Max: size}, NW: r, NE: r}
 	switch {
 	case t.sort.Dragging() == tab.ID:
 		bg = th.Accent
 	case active:
-		bg = f.island
+		if s, ok := t.mergeSpan(gtx, f); ok {
+			bg = s.color
+		} else {
+			// A gutter between it and the islands, as between two islands.
+			bg, shape.SW, shape.SE = th.Over(ui.Alpha(th.Foreground, tabDetachedFill)), r, r
+			shape.Rect.Max.Y -= gtx.Dp(gutter)
+		}
 	case hovered:
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
 	}
-	size := gtx.Constraints.Min
-	r := gtx.Dp(tabRadius)
-	paint.FillShape(gtx.Ops, bg, clip.RRect{Rect: image.Rectangle{Max: size}, NW: r, NE: r}.Op(gtx.Ops))
+	paint.FillShape(gtx.Ops, bg, shape.Op(gtx.Ops))
 	if i > 0 && !active && f.tabs[i-1].ID != f.active {
 		inset := gtx.Dp(tabSeparatorIn)
 		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: image.Pt(0, inset), Max: image.Pt(gtx.Dp(1), size.Y-inset)}.Op())
@@ -174,6 +184,9 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	if active {
 		fg, weight = on.Foreground, font.Medium
 	}
+	// Every label sits on the line a detached tab centres it on, so changing
+	// tabs never moves one.
+	gtx.Constraints = layout.Exact(image.Pt(size.X, size.Y-gtx.Dp(gutter)))
 	layout.Inset{Left: tabPadLeft, Right: tabPadRight}.Layout(gtx, func(gtx C) D {
 		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, active || hovered) })
 	})
@@ -240,17 +253,43 @@ func tabTooltip(th *ui.Theme, tab projectTab) layout.Widget {
 // is square there instead (islandSquare). They stay at the tab's slot, so
 // they leave while the tab itself is in the air.
 func (t *topbar) fillets(gtx C, f topbarFrame, w int) {
-	at := t.activeIndex(f)
-	if at < 0 || t.sort.Dragging() == f.active {
+	s, ok := t.mergeSpan(gtx, f)
+	if !ok || t.sort.Dragging() == f.active {
 		return
 	}
 	r := gtx.Dp(tabRadius)
-	left := at*w - t.list.Position.Offset
+	left := t.activeIndex(f)*w - t.list.Position.Offset
 	bottom := gtx.Constraints.Max.Y
-	if !t.islandSquare(f) {
-		fillet(gtx, image.Pt(left-r, bottom-r), r, false, f.island)
+	if left != s.x0 {
+		fillet(gtx, image.Pt(left-r, bottom-r), r, false, s.color)
 	}
-	fillet(gtx, image.Pt(left+w, bottom-r), r, true, f.island)
+	fillet(gtx, image.Pt(left+w, bottom-r), r, true, s.color)
+}
+
+// mergeSpan is the island the active tab grows out of: the one its whole
+// width and both fillets sit over. A tab over the gap between two islands
+// grows out of neither. With a single island the tab always merges.
+func (t *topbar) mergeSpan(gtx C, f topbarFrame) (islandSpan, bool) {
+	at := t.activeIndex(f)
+	if at < 0 {
+		return islandSpan{}, false
+	}
+	if len(f.islands) == 0 {
+		return islandSpan{x1: math.MaxInt, color: f.island}, true
+	}
+	r := gtx.Dp(tabRadius)
+	left := at*t.tabW - t.list.Position.Offset
+	right := left + t.tabW
+	for _, s := range f.islands {
+		from := left - r
+		if left == s.x0 {
+			from = left
+		}
+		if from >= s.x0 && right+r <= s.x1 {
+			return s, true
+		}
+	}
+	return islandSpan{}, false
 }
 
 func (t *topbar) activeIndex(f topbarFrame) int {
@@ -262,10 +301,15 @@ func (t *topbar) activeIndex(f topbarFrame) int {
 	return -1
 }
 
-// islandSquare reports whether the active tab sits on the island's top-left
-// corner, which then drops its rounding for the tab to grow out of.
-func (t *topbar) islandSquare(f topbarFrame) bool {
-	return t.activeIndex(f) == 0 && t.list.Position.First == 0 && t.list.Position.Offset == 0
+// islandSquare reports the left edge of the island whose top-left corner the
+// active tab sits on, which then drops its rounding for the tab to grow out
+// of.
+func (t *topbar) islandSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
+	s, merged := t.mergeSpan(gtx, f)
+	if !merged || t.activeIndex(f)*t.tabW-t.list.Position.Offset != s.x0 {
+		return 0, false
+	}
+	return s.x0, true
 }
 
 // fillet fills the r×r box at p minus the quarter disc around its top corner

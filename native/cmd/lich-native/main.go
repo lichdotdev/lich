@@ -471,6 +471,10 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					}
 					if u.pulls.open && !v.home {
 						u.pulls.files = filesInput{sessionID: v.in.sessionID, checkout: v.in.path, light: u.light}
+						u.pulls.squareX = -1
+						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.tabs, active: v.project, islands: u.pulls.spans}); ok {
+							u.pulls.squareX = x
+						}
 						u.applyPulls(u.pulls.layout(gtx, u.theme))
 						return D{Size: gtx.Constraints.Max}
 					}
@@ -492,7 +496,7 @@ func (u *window) island(gtx C, v stageView) error {
 	gtx.Constraints.Min = size
 	r := gtx.Dp(ui.RadiusLG)
 	nw := r
-	if u.topbar.islandSquare(topbarFrame{tabs: v.tabs, active: v.project}) {
+	if _, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.tabs, active: v.project}); ok {
 		nw = 0
 	}
 	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
@@ -545,6 +549,9 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 		f.active, f.settings = "", true
 	}
 	f.pulls = u.pulls.open && !v.home
+	if f.pulls && !f.settings {
+		f.islands = u.pulls.spans
+	}
 	return f
 }
 
