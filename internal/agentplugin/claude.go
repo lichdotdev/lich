@@ -149,8 +149,9 @@ func claudeInstalledVersionIn(dir string) (string, bool) {
 	return parseInstalledVersion(data, pluginKey)
 }
 
-// parseInstalledVersion pulls the plugin's version out of installed_plugins.json,
-// preferring the user-scope install (how lich installs it) over any other.
+// parseInstalledVersion pulls the plugin's version out of installed_plugins.json.
+// Only a user-scope install counts: it is how lich installs the plugin, and a
+// project or local entry loads only inside its projectPath.
 func parseInstalledVersion(data []byte, key string) (string, bool) {
 	var doc struct {
 		Plugins map[string][]struct {
@@ -161,14 +162,8 @@ func parseInstalledVersion(data []byte, key string) (string, bool) {
 	if err := json.Unmarshal(data, &doc); err != nil {
 		return "", false
 	}
-	entries := doc.Plugins[key]
-	for _, e := range entries {
+	for _, e := range doc.Plugins[key] {
 		if e.Scope == "user" && e.Version != "" {
-			return e.Version, true
-		}
-	}
-	for _, e := range entries {
-		if e.Version != "" {
 			return e.Version, true
 		}
 	}

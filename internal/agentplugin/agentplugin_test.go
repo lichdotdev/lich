@@ -35,10 +35,16 @@ func TestParseInstalledVersion(t *testing.T) {
 			wantOK: true,
 		},
 		{
-			name:   "falls back to any scope",
-			json:   `{"plugins":{"lich@lich-plugin":[{"scope":"project","version":"1.2.3"}]}}`,
-			want:   "1.2.3",
-			wantOK: true,
+			name:   "project scope only is not installed",
+			json:   `{"plugins":{"lich@lich-plugin":[{"scope":"project","projectPath":"/work/app","version":"1.2.3"}]}}`,
+			want:   "",
+			wantOK: false,
+		},
+		{
+			name:   "local scope only is not installed",
+			json:   `{"plugins":{"lich@lich-plugin":[{"scope":"local","projectPath":"/work/app","version":"1.2.3"}]}}`,
+			want:   "",
+			wantOK: false,
 		},
 		{
 			name:   "missing key",

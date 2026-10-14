@@ -142,6 +142,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provider's plan usage, switched on or not, and asking a signed-out Antigravity
   CLI opens its browser sign-in, so it popped up every few minutes. Plan usage
   is now read only for the providers enabled in Settings › Providers.
+- **A lich plugin installed only for one Claude Code project no longer shows
+  as installed.** Settings and the install and update checks counted a copy
+  that loads only inside a single project as the plugin being there for every
+  session, so lich never offered to install it. Only the user-wide install
+  counts now.
 
 ## [0.67.0] - 2026-10-10
 
