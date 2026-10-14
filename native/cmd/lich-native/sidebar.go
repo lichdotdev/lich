@@ -228,7 +228,7 @@ func (s *sidebar) setOpen(gtx C, open bool, act *sidebarAction) {
 
 // panel is SessionSidebar's aside: `relative flex flex-col rounded-lg
 // bg-sidebar p-2`, the header row, the filter when open, the blocks, and the
-// resize strip on its right edge.
+// resize strip (resizeHandle).
 func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sidebarAction) {
 	var act sidebarAction
 	width, released := s.resize.Update(gtx, unit.Dp(s.widthRem*remDp), sidebarMinRem*remDp, sidebarMaxRem*remDp)
@@ -255,9 +255,16 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 		}))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	})
-	gtx.Constraints = layout.Exact(size)
-	s.resize.Layout(gtx, on)
+	s.resizeHandle(gtx, on, size)
 	return D{Size: size}, act
+}
+
+// resizeHandle lays the resize strip out in the gutter past the panel's
+// right edge: on the edge itself its lit strip would cover the block list's
+// scrollbar, which runs in the panel's padding.
+func (s *sidebar) resizeHandle(gtx C, th *ui.Theme, panel image.Point) {
+	gtx.Constraints = layout.Exact(image.Pt(panel.X+gtx.Dp(ui.ResizeWidth), panel.Y))
+	s.resize.Layout(gtx, th)
 }
 
 // hint is the Tooltip state of one Hint, keyed by what it labels.
