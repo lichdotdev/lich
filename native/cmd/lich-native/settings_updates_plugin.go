@@ -36,15 +36,18 @@ const (
 	pluginProviderIcon  = 15 // ProviderIcon size={15}
 )
 
-// pluginHints are the notes under the rows, each shown while that provider's
-// plugin is installed, in the order the pane draws them.
-var pluginHints = []struct{ provider, text string }{
-	{"codex", "Codex: run /hooks in a Codex session to trust the plugin's hooks."},
-	{"crush", "Crush: reports its session id and refreshes git status. It has no end-of-turn event, so its cards show no status and keep their own name."},
-	{"omp", "oh-my-pi: reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell."},
-	{"antigravity", "Antigravity: reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell."},
-	{"cursor", "Cursor CLI: runs the plugin installed in Claude Code, so it reports what that version reports and updates with it. lich adds only its own tools here. Like the two above, it raises no approval event, so a session waiting on your permission shows a spinner rather than a bell."},
+// pluginHints are the notes under a provider's row, shown while its plugin
+// is installed.
+var pluginHints = map[string]string{
+	"codex":       "Run /hooks in a Codex session to trust the plugin's hooks.",
+	"crush":       "Reports its session id and refreshes git status. It has no end-of-turn event, so its cards show no status and keep their own name.",
+	"omp":         "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
+	"antigravity": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
+	"cursor":      "Runs the plugin installed in Claude Code, so it reports what that version reports and updates with it. lich adds only its own tools here. It raises no approval event either, so a session waiting on your permission shows a spinner rather than a bell.",
 }
+
+// pluginCodexTrust is the toast after installing into Codex.
+const pluginCodexTrust = "Codex: run /hooks in a Codex session to trust the plugin's hooks."
 
 // pluginControls are the plugin block's buttons: one action per provider row.
 type pluginControls struct {
@@ -82,12 +85,6 @@ func pluginAction(st lichclient.PluginStatus) (label string, variant ui.Variant,
 func outdatedPlugins(statuses []lichclient.PluginStatus) []lichclient.PluginStatus {
 	return slices.DeleteFunc(slices.Clone(statuses), func(st lichclient.PluginStatus) bool {
 		return !st.Installed || !st.UpdateAvailable
-	})
-}
-
-func pluginInstalledFor(statuses []lichclient.PluginStatus, provider string) bool {
-	return slices.ContainsFunc(statuses, func(st lichclient.PluginStatus) bool {
-		return st.Provider == provider && st.Installed
 	})
 }
 
@@ -173,8 +170,8 @@ func (u *updatesSettings) run(s *settingsScreen, call func() error, done, failed
 	u.readPlugins(s)
 }
 
-// pluginBlock is PluginSetting: a row per provider CLI, the notes for the
-// ones with plugins installed, and the check.
+// pluginBlock is PluginSetting: a row per provider CLI, each with its note
+// while its plugin is installed, and the check.
 func (u *updatesSettings) pluginBlock(gtx C, th *ui.Theme, s *settingsScreen, r settingRow, first bool) D {
 	r.description = pluginDesc
 	c := &u.plugin
@@ -199,13 +196,6 @@ func (u *updatesSettings) pluginBlock(gtx C, th *ui.Theme, s *settingsScreen, r 
 		var children []layout.FlexChild
 		for _, st := range statuses {
 			children = append(children, layout.Rigid(func(gtx C) D { return c.row(gtx, th, st, busy) }))
-		}
-		for _, h := range pluginHints {
-			if pluginInstalledFor(statuses, h.provider) {
-				children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-					return wrapped(gtx, th.Text(ui.TextXS, h.text).Muted())
-				}))
-			}
 		}
 		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
@@ -245,9 +235,25 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st lichclient.PluginStatus, bu
 		b.Size, b.Variant, b.Disabled = ui.SizeSM, variant, busy
 		children = append(children, ui.Gap(2.5), layout.Rigid(func(gtx C) D { return busyButton(gtx, th, b, busy) }))
 	}
-	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	line := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	}
+	hint, ok := pluginHints[st.Provider]
+	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		if !ok || !st.Installed {
+			return line(gtx)
+		}
+		// Under the name, past the mark.
+		indent := unit.Dp(pluginProviderIcon) + ui.Space(2.5)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(line),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Left: indent, Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+					return wrapped(gtx, th.Text(ui.TextXS, hint).Muted())
+				})
+			}),
+		)
 	})
 }
 

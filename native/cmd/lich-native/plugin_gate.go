@@ -198,8 +198,8 @@ func (u *window) installPlugins(providers []string) {
 	g.offer = nil
 	g.mu.Unlock()
 	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: pluginInstalled})
-	if i := slices.IndexFunc(pluginHints, func(h struct{ provider, text string }) bool { return h.provider == codexKind }); i >= 0 && slices.Contains(providers, codexKind) {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastInfo, Title: pluginHints[i].text, Duration: ui.ToastForever})
+	if slices.Contains(providers, codexKind) {
+		u.toaster.Show(ui.Toast{Variant: ui.ToastInfo, Title: pluginCodexTrust, Duration: ui.ToastForever})
 	}
 }
 
