@@ -162,15 +162,11 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	shape := clip.RRect{Rect: image.Rectangle{Max: size}, NW: r, NE: r}
 	switch {
 	case t.sort.Dragging() == tab.ID:
-		bg = th.Accent
+		// In the air it grows out of no island.
+		bg, shape = th.Accent, detachedTab(gtx, size, r)
 	case active:
-		if s, ok := t.mergeSpan(gtx, f); ok {
-			bg = s.color
-		} else {
-			// A gutter between it and the islands, as between two islands.
-			bg, shape.SW, shape.SE = th.Over(ui.Alpha(th.Foreground, tabDetachedFill)), r, r
-			shape.Rect.Max.Y -= gtx.Dp(gutter)
-		}
+		s, k := t.mergeShare(gtx, f)
+		bg, shape = ui.Over(th.Over(ui.Alpha(th.Foreground, tabDetachedFill)), ui.Alpha(s.color, k)), mergingTab(gtx, size, r, k)
 	case hovered:
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
 	}
@@ -191,6 +187,22 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, active || hovered) })
 	})
 	return D{Size: size}
+}
+
+// mergingTab is a tab k of the way from detached (0) to grown into its
+// island (1): its foot comes down the gutter and its bottom corners square.
+func mergingTab(gtx C, size image.Point, r int, k float32) clip.RRect {
+	shape := detachedTab(gtx, size, r)
+	shape.Rect.Max.Y += int(k * float32(gtx.Dp(gutter)))
+	shape.SW = int((1 - k) * float32(r))
+	shape.SE = shape.SW
+	return shape
+}
+
+// detachedTab is a tab that grows out of no island: rounded all round, a
+// gutter clear of the islands as they are of each other.
+func detachedTab(gtx C, size image.Point, r int) clip.RRect {
+	return clip.RRect{Rect: image.Rectangle{Max: image.Pt(size.X, size.Y-gtx.Dp(gutter))}, NW: r, NE: r, SE: r, SW: r}
 }
 
 // tabContent is the badge, the name and the × in a row.
@@ -250,14 +262,14 @@ func tabTooltip(th *ui.Theme, tab projectTab) layout.Widget {
 // fillets draw the concave curves that turn the active tab's bottom corners
 // into the island's top edge (the mockup's radial-gradient corners). A tab
 // flush with the island's left edge has no left fillet: the island's corner
-// is square there instead (islandSquare). They stay at the tab's slot, so
-// they leave while the tab itself is in the air.
+// is square there instead (islandSquare). None is drawn while a tab is in
+// the air (mergeSpan).
 func (t *topbar) fillets(gtx C, f topbarFrame, w int) {
-	s, ok := t.mergeSpan(gtx, f)
-	if !ok || t.sort.Dragging() == f.active {
+	s, k := t.mergeShare(gtx, f)
+	r := int(k * float32(gtx.Dp(tabRadius)))
+	if r == 0 {
 		return
 	}
-	r := gtx.Dp(tabRadius)
 	left := t.activeIndex(f)*w - t.list.Position.Offset
 	bottom := gtx.Constraints.Max.Y
 	if left != s.x0 {
@@ -266,12 +278,32 @@ func (t *topbar) fillets(gtx C, f topbarFrame, w int) {
 	fillet(gtx, image.Pt(left+w, bottom-r), r, true, s.color)
 }
 
+// mergeShare is how far the active tab has grown into the island it merges
+// with, 0 detached to 1 merged, easing between the two on the sidebar's
+// curve, and that island (the last one it merged with while it leaves).
+// Another tab becoming active snaps rather than animates: only a tab leaving
+// or landing in its island eases.
+func (t *topbar) mergeShare(gtx C, f topbarFrame) (islandSpan, float32) {
+	s, ok := t.mergeSpan(gtx, f)
+	if ok {
+		t.merged = s
+	}
+	if f.active != t.mergedFor {
+		t.mergedFor = f.active
+		t.merge.snap(ok)
+	}
+	return t.merged, t.merge.at(gtx, ok)
+}
+
 // mergeSpan is the island the active tab grows out of: the one its whole
 // width and both fillets sit over. A tab over the gap between two islands
 // grows out of neither. With a single island the tab always merges.
 func (t *topbar) mergeSpan(gtx C, f topbarFrame) (islandSpan, bool) {
 	at := t.activeIndex(f)
-	if at < 0 {
+	// While a tab is in the air the others slide out of its way, so none
+	// grows out of an island: the fillets and square corner would stay
+	// behind at the active tab's slot.
+	if at < 0 || t.sort.Dragging() != "" {
 		return islandSpan{}, false
 	}
 	if len(f.islands) == 0 {
@@ -306,7 +338,11 @@ func (t *topbar) activeIndex(f topbarFrame) int {
 // of.
 func (t *topbar) islandSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
 	s, merged := t.mergeSpan(gtx, f)
-	if !merged || t.activeIndex(f)*t.tabW-t.list.Position.Offset != s.x0 {
+	// Square only once the tab has fully grown in: the island's corner
+	// rounds again as soon as the tab starts to leave. A tab not eased yet
+	// is merged outright, as mergeShare snaps it.
+	growing := t.mergedFor == f.active && t.merge.shown < 1
+	if !merged || growing || t.activeIndex(f)*t.tabW-t.list.Position.Offset != s.x0 {
 		return 0, false
 	}
 	return s.x0, true

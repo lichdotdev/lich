@@ -58,14 +58,19 @@ type topbar struct {
 	sort    ui.Sortable
 	list    layout.List
 	// tabW is the tabs' width as the strip last laid them out.
-	tabW     int
-	tabs     map[string]*tabState
-	open     openMenu
-	bell     bellMenu
-	hints    map[string]*ui.Tooltip
-	settings widget.Clickable
-	pulls    widget.Clickable
-	confirm  closeConfirm
+	tabW int
+	// merge eases the active tab between detached and merged into merged,
+	// the island it last grew out of; mergedFor is the tab it eases.
+	merge     dockSlide
+	merged    islandSpan
+	mergedFor string
+	tabs      map[string]*tabState
+	open      openMenu
+	bell      bellMenu
+	hints     map[string]*ui.Tooltip
+	settings  widget.Clickable
+	pulls     widget.Clickable
+	confirm   closeConfirm
 }
 
 func newTopbar(root *ui.Root) *topbar {
