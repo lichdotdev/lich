@@ -245,3 +245,25 @@ func TestSkipPermissionsIsScopedByCheckout(t *testing.T) {
 		t.Error("value \"1\" skips permissions, want only \"true\" to")
 	}
 }
+
+func TestProviderEnabledReadsTheSwitchLikeTheWindows(t *testing.T) {
+	svc := newTestStore(t)
+	cases := []struct {
+		provider, stored string
+		want             bool
+	}{
+		{"claude", "", true},
+		{"claude", "0", false},
+		{"antigravity", "", false},
+		{"antigravity", "1", true},
+		{"codex", "0", false},
+	}
+	for _, c := range cases {
+		if err := svc.SetSetting("provider."+c.provider+".enabled", globalScope, c.stored); err != nil {
+			t.Fatal(err)
+		}
+		if got, err := svc.ProviderEnabled(c.provider); err != nil || got != c.want {
+			t.Errorf("%s stored %q: got %v, %v; want %v", c.provider, c.stored, got, err, c.want)
+		}
+	}
+}

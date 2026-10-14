@@ -94,6 +94,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the tray and the CLI are all there; the tray's Show lich, or launching lich
   again, opens the window when you want it.
 
+### Fixed
+
+- **A provider you never turned on no longer opens its login.** lich read every
+  provider's plan usage, switched on or not, and asking a signed-out Antigravity
+  CLI opens its browser sign-in, so it popped up every few minutes. Plan usage
+  is now read only for the providers enabled in Settings › Providers.
+
 ## [0.67.0] - 2026-10-10
 
 ### Added

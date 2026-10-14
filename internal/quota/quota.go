@@ -229,6 +229,9 @@ type Service struct {
 	// guarded by mu: asking again would spend quota on every reading.
 	agyTurns bool
 
+	// enabled reports whether the user turned a provider on; nil is all on.
+	enabled func(provider string) bool
+
 	// claudeLogin reads the credentials a session's Claude login is stored in,
 	// a field so tests of quota responses supply a file login without reaching
 	// for the machine's Keychain. New wires it to readClaudeCredentials.
@@ -278,6 +281,12 @@ func New() *Service {
 	}
 }
 
+// SetEnabled wires the answer to "did the user turn this provider on". A
+// provider that is off is never read: some readers run the provider's CLI,
+// and a signed-out agy answers by opening an interactive login. Startup
+// wiring, called once before the service serves; unset reads every provider.
+func (s *Service) SetEnabled(fn func(provider string) bool) { s.enabled = fn }
+
 // SetSessions wires the answer to "which account does this session spend".
 // Startup wiring, called once before the service serves.
 func (s *Service) SetSessions(fn Sessions) { s.sessions = fn }
@@ -312,13 +321,20 @@ func (s *Service) Plans(sessionID string) []Plan {
 // agy alone takes seconds to start, so a serial reading would hold every other
 // caller for the sum of them.
 func (s *Service) read(account Account) []Plan {
-	readers := []func(Account) Plan{
-		s.claudePlan, s.codexPlan, s.antigravityPlan, s.opencodePlan, s.cursorPlan,
+	readers := []struct {
+		provider string
+		read     func(Account) Plan
+	}{
+		{"claude", s.claudePlan}, {"codex", s.codexPlan}, {"antigravity", s.antigravityPlan},
+		{"opencode", s.opencodePlan}, {"cursor", s.cursorPlan},
 	}
 	plans := make([]Plan, len(readers))
 	var wg sync.WaitGroup
-	for i, read := range readers {
-		wg.Go(func() { plans[i] = read(account) })
+	for i, r := range readers {
+		if s.enabled != nil && !s.enabled(r.provider) {
+			continue
+		}
+		wg.Go(func() { plans[i] = r.read(account) })
 	}
 	wg.Wait()
 	return slices.DeleteFunc(plans, func(p Plan) bool { return p.Provider == "" })

@@ -361,6 +361,13 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		env, read := term.SessionAccount(sessionID)
 		return quota.Account{Env: env, Read: read}
 	})
+	plans.SetEnabled(func(provider string) bool {
+		on, err := db.ProviderEnabled(provider)
+		if err != nil {
+			slog.Error("quota: read provider switch", "provider", provider, "err", err)
+		}
+		return on
+	})
 	term.SetRateLimitReports(plans.ReportClaude)
 	dispatcher.Register("quota", plans)
 	codexProfiles.SetAccount(func(slug string) (string, string) {

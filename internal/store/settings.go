@@ -55,6 +55,24 @@ func (s *Service) SetSetting(key, projectID, value string) error {
 	return nil
 }
 
+// ProviderEnabled reports whether the user turned providerID on, read the way
+// the windows read provider.<id>.enabled: Claude is on unless switched off,
+// since it was always offered before providers could be chosen, and every
+// other provider is opt-in.
+func (s *Service) ProviderEnabled(providerID string) (bool, error) {
+	value, err := s.GetSetting("provider."+providerID+".enabled", "")
+	if err != nil {
+		return false, err
+	}
+	switch value {
+	case "1":
+		return true, nil
+	case "0":
+		return false, nil
+	}
+	return providerID == providers.Claude, nil
+}
+
 // binKey is the settings key holding a provider's custom binary path. Claude
 // uses the legacy "claude.bin"; every other provider is namespaced by id.
 func binKey(providerID string) string {

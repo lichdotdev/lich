@@ -185,3 +185,31 @@ func TestRunAgyReportsAMissingBinary(t *testing.T) {
 		t.Errorf("err = %v, want exec.ErrNotFound", err)
 	}
 }
+
+// A provider the user switched off is never read: asking a signed-out agy
+// starts its interactive OAuth, which opened a browser login every few minutes
+// for a provider nobody had turned on.
+func TestPlansNeverReadsADisabledProvider(t *testing.T) {
+	for _, name := range []string{"HOME", "CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME"} {
+		t.Setenv(name, t.TempDir())
+	}
+	run, runs := fakeAgy("1.2.5", agyUsageReply, nil)
+	s := agyService(run)
+	s.SetEnabled(func(string) bool { return false })
+	if got := s.Plans(""); len(got) != 0 {
+		t.Errorf("plans = %+v, want none with every provider off", got)
+	}
+	if len(*runs) != 0 {
+		t.Errorf("agy ran %q with Antigravity off", *runs)
+	}
+
+	run, runs = fakeAgy("1.2.5", agyUsageReply, nil)
+	s = agyService(run)
+	s.SetEnabled(func(id string) bool { return id == "antigravity" })
+	if got := s.Plans(""); len(got) != 1 || got[0].Provider != "antigravity" {
+		t.Errorf("plans = %+v, want Antigravity's alone", got)
+	}
+	if len(*runs) == 0 {
+		t.Error("agy never ran with Antigravity on")
+	}
+}
