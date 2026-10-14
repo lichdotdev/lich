@@ -335,6 +335,9 @@ func (t *topbar) activeIndex(f topbarFrame) int {
 // active tab sits on, which then drops its rounding for the tab to grow out
 // of.
 func (t *topbar) islandSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
+	if x0, ok := t.hoverSquare(f); ok {
+		return x0, true
+	}
 	s, merged := t.mergeSpan(gtx, f)
 	// Square only once the tab has fully grown in: the island's corner
 	// rounds again as soon as the tab starts to leave. A tab not eased yet
@@ -344,6 +347,23 @@ func (t *topbar) islandSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
 		return 0, false
 	}
 	return s.x0, true
+}
+
+// hoverSquare is the first island's left edge while the first tab, flush
+// with it and not active, is hovered: the hover reaches down to the island,
+// and the island's rounded corner under its square foot showed as a curve.
+func (t *topbar) hoverSquare(f topbarFrame) (x0 int, ok bool) {
+	if len(f.tabs) == 0 || f.tabs[0].ID == f.active || t.sort.Dragging() != "" {
+		return 0, false
+	}
+	st := t.tabs[f.tabs[0].ID]
+	if st == nil || !(st.click.Hovered() || st.close.Hovered()) {
+		return 0, false
+	}
+	if len(f.islands) > 0 {
+		x0 = f.islands[0].x0
+	}
+	return x0, -t.list.Position.Offset == x0
 }
 
 // fillet fills the r×r box at p minus the quarter disc around its top corner
