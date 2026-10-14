@@ -1345,7 +1345,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   start or update; the web window, which has no profiles, shows nothing. A Claude Code profile's
   `plugin marketplace remove` deletes the marketplace clone it links to Personal's (the plugin cache stays,
   measured on 2.1.296), so a Personal session starting during a pass can find the clone missing for the
-  seconds the pass takes to clone it back.
+  seconds the pass takes to clone it back. The pass lays each profile out as a spawn would before asking its
+  version (`EnsureShared`): a Codex profile made when `config.toml` was shared still links Personal's, read
+  as holding Personal's plugin, and its next spawn rebuilt it with no plugin and no marketplace. The shared
+  plugin cache has a trap lich does not close: Claude Code's orphan sweep, run at a session's start, marks
+  every cached plugin version its own `installed_plugins.json` does not name (`.orphaned_at`, measured on
+  2.1.299) and deletes it 14 days later unless a session of a profile that names it clears the mark first
+  (read in the source). A plugin only one profile has, Personal included, is therefore deleted from the
+  cache if that profile starts no session for 14 days while another does, and its record then names files
+  that are gone. The lich plugin is out of reach while every profile follows Personal's version.
   oh-my-pi needs no pass: lich's extension is in the `extensions/` every profile links to Personal's.
 - **Profiles are managed in the native window only, and the window asks every profile at start**: the web
   window has no profile screen, no card tag and no Continue in (it is in maintenance, `docs/native-window.md`),

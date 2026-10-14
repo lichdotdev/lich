@@ -43,25 +43,32 @@ type ProfileFailure struct {
 }
 
 // profileProvider is what a provider with profiles brings to the pass.
+// ensureShared brings a profile to the layout a spawn would before its plugins
+// are read: a Codex profile made when config.toml was shared still links
+// Personal's, so it would read as holding Personal's plugin, and its next spawn
+// rebuilds it without one.
 type profileProvider struct {
-	list    func() ([]profilestore.Profile, error)
-	env     func(base []string, dir string) []string
-	version func(s *Service, env []string, dir string) (string, bool)
-	install func(s *Service, env []string) error
+	list         func() ([]profilestore.Profile, error)
+	ensureShared func(slug string) error
+	env          func(base []string, dir string) []string
+	version      func(s *Service, env []string, dir string) (string, bool)
+	install      func(s *Service, env []string) error
 }
 
 var profileProviders = map[string]profileProvider{
 	providers.Claude: {
-		list: claudeprofile.List,
-		env:  claudeprofile.Env,
+		list:         claudeprofile.List,
+		ensureShared: claudeprofile.EnsureShared,
+		env:          claudeprofile.Env,
 		version: func(_ *Service, _ []string, dir string) (string, bool) {
 			return claudeInstalledVersionIn(dir)
 		},
 		install: (*Service).claudeInstallIn,
 	},
 	providers.Codex: {
-		list: codexprofile.List,
-		env:  codexprofile.Env,
+		list:         codexprofile.List,
+		ensureShared: codexprofile.EnsureShared,
+		env:          codexprofile.Env,
 		version: func(s *Service, env []string, _ string) (string, bool) {
 			out, err := s.execIn(env, providers.Codex, readTimeout, "plugin", "list", "--json")
 			if err != nil {
@@ -127,10 +134,14 @@ func (s *Service) followPersonal(provider string) {
 }
 
 // follow installs the release into one profile when it should have it, and
-// reports whether it tried.
+// reports whether it tried. A profile it could not lay out counts as tried, so
+// the failure is reported.
 func (s *Service) follow(kind profileProvider, p profilestore.Profile, personalCurrent bool, target string) (bool, error) {
 	s.installMu.Lock()
 	defer s.installMu.Unlock()
+	if err := kind.ensureShared(p.Slug); err != nil {
+		return true, err
+	}
 	env := kind.env(os.Environ(), p.Dir)
 	version, installed := kind.version(s, env, p.Dir)
 	if version == target || (installed && !personalCurrent) {

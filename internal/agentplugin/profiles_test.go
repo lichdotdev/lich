@@ -18,13 +18,18 @@ import (
 const oldVersion = "0.12.0"
 
 // codexPluginListFile is what the fake Codex CLI prints for `plugin list
-// --json`, read from the CODEX_HOME it runs with (Personal's when unset).
+// --json`, read from the CODEX_HOME it runs with (Personal's when unset). Codex
+// reads its plugin set from config.toml, so a home whose config.toml links to
+// another's lists the other's.
 const codexPluginListFile = "fake-plugin-list.json"
 
 func printCodexPluginList() {
 	dir := os.Getenv("CODEX_HOME")
 	if dir == "" {
 		dir, _ = codexprofile.PersonalDir()
+	}
+	if config, err := filepath.EvalSymlinks(filepath.Join(dir, "config.toml")); err == nil {
+		dir = filepath.Dir(config)
 	}
 	if data, err := os.ReadFile(filepath.Join(dir, codexPluginListFile)); err == nil {
 		fmt.Print(string(data))
@@ -236,5 +241,57 @@ func TestPersonalUpdateReachesEveryCodexProfile(t *testing.T) {
 	}
 	if got := ranAs(lines, current.Dir); got != 1 {
 		t.Errorf("%d calls ran as the current profile, want only its version read", got)
+	}
+}
+
+// TestSyncProfilesMigratesALinkedCodexProfileFirst: a Codex profile made when
+// config.toml was shared still links Personal's, so its plugin list read
+// Personal's and the pass left it alone; the profile's next spawn then rebuilt
+// its own config.toml without the lich plugin or its marketplace. The pass now
+// brings the profile to its own config.toml before asking what it has.
+func TestSyncProfilesMigratesALinkedCodexProfileFirst(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("APPDATA", filepath.Join(home, "AppData"))
+	t.Setenv("CODEX_HOME", "")
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("LICH_DEV", "")
+	personal := filepath.Join(home, ".codex")
+	if err := os.MkdirAll(personal, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	config := "model = \"gpt-5\"\n\n[plugins.\"lich@lich-plugin\"]\nenabled = true\n"
+	if err := os.WriteFile(filepath.Join(personal, "config.toml"), []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeCodexPlugin(t, personal, testVersion)
+	old, err := codexprofile.Create("Old")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ownConfig := filepath.Join(old.Dir, "config.toml")
+	if err := os.Remove(ownConfig); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(personal, "config.toml"), ownConfig); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	svc, _ := fakeCLI(t, "")
+	envLog := filepath.Join(t.TempDir(), "env.log")
+	t.Setenv(fakeCLICodexEnvLog, envLog)
+	events := recordEvents(svc)
+
+	svc.SyncProfiles()
+
+	if ev := nextEvent(t, events); ev.Provider != providers.Codex || len(ev.Failures) != 0 {
+		t.Errorf("event %+v, want codex with no failures", ev)
+	}
+	if info, err := os.Lstat(ownConfig); err != nil || info.Mode()&os.ModeSymlink != 0 {
+		t.Errorf("profile config.toml still a link (%v), want its own file", err)
+	}
+	if got := ranAs(envLines(t, envLog), old.Dir); got != len(pinnedCalls[providers.Codex])+1 {
+		t.Errorf("%d calls ran as the profile, want its version read and its install", got)
 	}
 }
