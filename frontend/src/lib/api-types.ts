@@ -47,6 +47,16 @@ export interface PullRequest {
   state: string
 }
 
+/**
+ * internal/project.PRChanged — on the "pull-request-changed" event, once a
+ * pull request write through lich landed on GitHub. number is 0 where the
+ * write addressed a thread or a review rather than a pull request.
+ */
+export interface PRChanged {
+  path: string
+  number: number
+}
+
 /** internal/project.ChecksRollup — gh statusCheckRollup collapsed to counts. */
 export interface ChecksRollup {
   passed: number
