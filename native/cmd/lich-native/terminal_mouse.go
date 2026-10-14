@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"image/color"
 	"io"
 	"strings"
 	"time"
@@ -12,6 +14,9 @@ import (
 	"gioui.org/io/pointer"
 	"gioui.org/io/transfer"
 	"gioui.org/layout"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
+	"gioui.org/unit"
 
 	"github.com/omartelo/lich/native/gioterm"
 	"github.com/omartelo/lich/native/ui"
@@ -64,9 +69,9 @@ func (t *termView) linkClick(e pointer.Event) (url string, took bool) {
 		if !e.Buttons.Contain(pointer.ButtonPrimary) || !e.Modifiers.Contain(key.ModShortcut) {
 			return "", false
 		}
-		url = t.vt.LinkAt(e.Position.X, e.Position.Y)
-		t.linkHeld = url != ""
-		return url, t.linkHeld
+		l, ok := t.vt.LinkAt(e.Position.X, e.Position.Y)
+		t.linkHeld = ok
+		return l.URL, ok
 	case pointer.Release:
 		if t.linkHeld {
 			t.linkHeld = false
@@ -146,3 +151,49 @@ func readTransfer(e transfer.DataEvent) (string, error) {
 	b, err := io.ReadAll(r)
 	return string(b), err
 }
+
+// track follows the pointer over the grid for the hovered link.
+func (t *termView) track(e pointer.Event) {
+	switch e.Kind {
+	case pointer.Leave:
+		t.pointerIn = false
+	case pointer.Move, pointer.Drag, pointer.Press, pointer.Release:
+		t.pointerAt, t.pointerIn = e.Position, true
+	}
+}
+
+// hoveredLink is the link under the pointer, read again each frame so
+// output that scrolls under a still pointer moves the underline with it.
+func (t *termView) hoveredLink() (gioterm.Link, bool) {
+	if !t.pointerIn {
+		return gioterm.Link{}, false
+	}
+	return t.vt.LinkAt(t.pointerAt.X, t.pointerAt.Y)
+}
+
+// drawHoveredLink underlines the hovered link in fg and gives the grid a
+// hand cursor, as xterm.js marks a link under the pointer in the web window.
+func (t *termView) drawHoveredLink(gtx layout.Context, fg color.NRGBA) {
+	l, ok := t.hoveredLink()
+	if !ok {
+		return
+	}
+	cellW, cellH := t.vt.CellSize()
+	cols, _ := t.vt.Size()
+	thick := max(gtx.Dp(linkUnderline), 1)
+	for row := l.From.Y; row <= l.To.Y; row++ {
+		from, to := 0, cols-1
+		if row == l.From.Y {
+			from = l.From.X
+		}
+		if row == l.To.Y {
+			to = l.To.X
+		}
+		y := (row+1)*cellH - thick
+		paint.FillShape(gtx.Ops, fg, clip.Rect(image.Rect(from*cellW, y, (to+1)*cellW, y+thick)).Op())
+	}
+	pointer.CursorPointer.Add(gtx.Ops)
+}
+
+// linkUnderline is the hovered link's underline.
+const linkUnderline = unit.Dp(1)

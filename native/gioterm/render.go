@@ -139,3 +139,6 @@ func Faces(family string) ([]font.FontFace, error) { return loadFamily(family) }
 // Background is the terminal's default background, the color of every cell
 // that sets none of its own.
 func (s Snapshot) Background() color.NRGBA { return rgba(s.s.bg) }
+
+// Foreground is the terminal's default text color.
+func (s Snapshot) Foreground() color.NRGBA { return rgba(s.s.fg) }

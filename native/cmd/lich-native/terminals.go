@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -41,6 +42,10 @@ type termView struct {
 	held gioterm.MouseButton
 	// linkHeld is a press that opened a link, whose release is kept too.
 	linkHeld bool
+	// pointerAt is where the pointer is over the grid, pointerIn false once
+	// it left: the link under it is underlined and takes a hand cursor.
+	pointerAt f32.Point
+	pointerIn bool
 }
 
 // terminalPadding is term-view.ts TERMINAL_PADDING, in the terminal's own
@@ -313,6 +318,7 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	if _, err := t.r.Draw(gtx, snap); err != nil {
 		return err
 	}
+	t.drawHoveredLink(gtx, snap.Foreground())
 	event.Op(gtx.Ops, t.tag)
 	return nil
 }
@@ -344,7 +350,7 @@ func (ts *terminals) refit(gtx layout.Context, t *termView, size image.Point, co
 func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 	_, cellH := t.r.Cell()
 	filters := append(gioterm.KeyFilters(t.tag),
-		pointer.Filter{Target: t.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move,
+		pointer.Filter{Target: t.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move | pointer.Leave,
 			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
 		key.Filter{Focus: t.tag, Name: "V", Required: key.ModCommand},
 		transfer.TargetFilter{Target: t.tag, Type: "application/text"})
@@ -376,6 +382,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			}
 			ts.send(t.id, pastedClipboard(t.vt, text, runtime.GOOS))
 		case pointer.Event:
+			t.track(e)
 			if url, took := t.linkClick(e); took {
 				if url != "" {
 					ts.openLink(url)

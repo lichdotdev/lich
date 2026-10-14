@@ -139,3 +139,20 @@ func TestShortcutClickOnAURLOpensItAndReachesNothingElse(t *testing.T) {
 		t.Fatal("Ctrl/Cmd+click off any link was taken")
 	}
 }
+
+func TestTheLinkUnderThePointerIsHoveredUntilItLeaves(t *testing.T) {
+	v := newMouseTestView(t, "docs at https://lich.dev/docs ok")
+	v.track(ptr(pointer.Move, at(20, 0), 0, 0))
+	if l, ok := v.hoveredLink(); !ok || l.URL != "https://lich.dev/docs" {
+		t.Fatalf("hovered over the URL = %+v, %v", l, ok)
+	}
+	v.track(ptr(pointer.Move, at(2, 0), 0, 0))
+	if _, ok := v.hoveredLink(); ok {
+		t.Fatal("hovered a link off any link")
+	}
+	v.track(ptr(pointer.Move, at(20, 0), 0, 0))
+	v.track(ptr(pointer.Leave, at(20, 0), 0, 0))
+	if _, ok := v.hoveredLink(); ok {
+		t.Fatal("a link stayed hovered after the pointer left the grid")
+	}
+}

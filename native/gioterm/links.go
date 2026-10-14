@@ -38,8 +38,10 @@ static bool row_wraps(GhosttyTerminal t, uint32_t y) {
 import "C"
 
 import (
+	"image"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 	"unsafe"
 )
 
@@ -51,15 +53,29 @@ const linkURIMax = 2048
 // and a few combining marks.
 const linkGraphemeMax = 8
 
+// Link is a link on the grid: where it goes and the viewport cells it covers,
+// From to To inclusive, which may run over soft-wrapped rows.
+type Link struct {
+	URL      string
+	From, To image.Point
+}
+
 // LinkAt is the link under pixel (x, y): the cell's OSC 8 hyperlink, else a
-// URL printed in the line there, soft-wrapped rows joined; "" when there is
-// none.
-func (v *Terminal) LinkAt(x, y float32) string {
+// URL printed in the line there, soft-wrapped rows joined; ok false when
+// there is none.
+func (v *Terminal) LinkAt(x, y float32) (l Link, ok bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	col, row := v.cellAt(x, y)
 	if uri := v.hyperlink(col, row); uri != "" {
-		return uri
+		from, to := col, col
+		for from > 0 && v.hyperlink(from-1, row) == uri {
+			from--
+		}
+		for to < v.cols-1 && v.hyperlink(to+1, row) == uri {
+			to++
+		}
+		return Link{URL: uri, From: image.Pt(from, row), To: image.Pt(to, row)}, true
 	}
 	first, last := row, row
 	for first > 0 && bool(C.row_wraps(v.t, C.uint32_t(first-1))) {
@@ -69,16 +85,18 @@ func (v *Terminal) LinkAt(x, y float32) string {
 		last++
 	}
 	var line []rune
-	at := 0
 	for r := first; r <= last; r++ {
 		for c := 0; c < v.cols; c++ {
-			if r == row && c == col {
-				at = len(line)
-			}
 			line = append(line, v.cellRune(c, r))
 		}
 	}
-	return urlAround(line, at)
+	at := (row-first)*v.cols + col
+	start, end, ok := urlAround(line, at)
+	if !ok {
+		return Link{}, false
+	}
+	cell := func(i int) image.Point { return image.Pt(i%v.cols, first+i/v.cols) }
+	return Link{URL: string(line[start:end]), From: cell(start), To: cell(end - 1)}, true
 }
 
 func (v *Terminal) hyperlink(col, row int) string {
@@ -115,17 +133,19 @@ var linkPattern = regexp.MustCompile(`(?i)\bhttps?://[^\s<>"'` + "`" + `]+`)
 // the URL itself.
 const linkTrailing = `.,;:!?'"`
 
-// urlAround is the URL in line covering index at, "" when none does.
-func urlAround(line []rune, at int) string {
+// urlAround is the rune span [start, end) of the URL in line covering index
+// at; ok false when none does.
+func urlAround(line []rune, at int) (start, end int, ok bool) {
 	text := string(line)
 	offset := len(string(line[:at]))
 	for _, m := range linkPattern.FindAllStringIndex(text, -1) {
 		url := trimURL(text[m[0]:m[1]])
 		if offset >= m[0] && offset < m[0]+len(url) {
-			return url
+			start = utf8.RuneCountInString(text[:m[0]])
+			return start, start + utf8.RuneCountInString(url), true
 		}
 	}
-	return ""
+	return 0, 0, false
 }
 
 // trimURL drops trailing punctuation and closing brackets the URL never
