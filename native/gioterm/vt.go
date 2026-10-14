@@ -2,6 +2,9 @@ package gioterm
 
 /*
 #cgo pkg-config: libghostty-vt-static
+// The library is linked statically everywhere; on Windows the header's
+// default is to import it from a DLL, which the static .lib does not provide.
+#cgo CFLAGS: -DGHOSTTY_STATIC
 #include <stdlib.h>
 #include <string.h>
 #include <ghostty/vt.h>
@@ -106,6 +109,13 @@ static void read_cell(GhosttyRenderStateRowCells cells, cell_t* c) {
 	if (st.faint) c->flags |= CELL_FAINT;
 }
 
+// Selected cells draw inverted, Ghostty's own default for a selection.
+static void mark_selected(GhosttyRenderStateRowCells cells, cell_t* c) {
+	bool selected = false;
+	ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_SELECTED, &selected);
+	if (selected) c->flags ^= CELL_INVERSE;
+}
+
 // Copies every dirty viewport row into out (cols*rows cells, row-major) and
 // flags it in dirty_rows. One cgo crossing per frame instead of several per cell.
 static snap_t snapshot(GhosttyRenderState rs, GhosttyTerminal t, GhosttyRenderStateRowIterator it,
@@ -151,6 +161,7 @@ static snap_t snapshot(GhosttyRenderState rs, GhosttyTerminal t, GhosttyRenderSt
 		uint16_t x = 0;
 		while (x < cols && ghostty_render_state_row_cells_next(cells)) {
 			read_cell(cells, &out[(size_t)y * cols + x]);
+			mark_selected(cells, &out[(size_t)y * cols + x]);
 			x++;
 		}
 		for (; x < cols; x++) memset(&out[(size_t)y * cols + x], 0, sizeof(cell_t));
@@ -222,13 +233,20 @@ type Terminal struct {
 	enc   C.GhosttyKeyEncoder
 	ev    C.GhosttyKeyEvent
 
+	// Made on first use: most terminals never see a mouse report or a
+	// selection.
+	mouseEnc C.GhosttyMouseEncoder
+	mouseEv  C.GhosttyMouseEvent
+	gest     C.GhosttySelectionGesture
+
 	handle  cgo.Handle
 	replies func([]byte)
 
-	cols, rows int
-	raw        []C.cell_t
-	dirty      []uint8
-	grid       []cell
+	cols, rows   int
+	cellW, cellH int
+	raw          []C.cell_t
+	dirty        []uint8
+	grid         []cell
 }
 
 func check(what string, r C.GhosttyResult) error {
@@ -275,6 +293,9 @@ func (v *Terminal) allocGrid(cols, rows int) {
 
 // Write feeds program output to the terminal.
 func (v *Terminal) Write(b []byte) {
+	if len(b) == 0 {
+		return
+	}
 	v.mu.Lock()
 	C.ghostty_terminal_vt_write(v.t, (*C.uint8_t)(unsafe.Pointer(&b[0])), C.size_t(len(b)))
 	v.mu.Unlock()
@@ -289,6 +310,7 @@ func (v *Terminal) Resize(cols, rows, cellW, cellH int) error {
 		return err
 	}
 	v.allocGrid(cols, rows)
+	v.cellW, v.cellH = cellW, cellH
 	return nil
 }
 
@@ -365,6 +387,9 @@ func cRGB(c color.NRGBA) C.GhosttyColorRgb {
 func (v *Terminal) Close() {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	C.ghostty_selection_gesture_free(v.gest, v.t)
+	C.ghostty_mouse_event_free(v.mouseEv)
+	C.ghostty_mouse_encoder_free(v.mouseEnc)
 	C.ghostty_key_event_free(v.ev)
 	C.ghostty_key_encoder_free(v.enc)
 	C.ghostty_render_state_row_cells_free(v.cells)

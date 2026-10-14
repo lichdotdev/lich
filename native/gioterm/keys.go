@@ -70,16 +70,7 @@ func characterKey(name key.Name) (k int, unshifted rune, ok bool) {
 // HandleKey turns a key event into the bytes the program in the terminal
 // expects, or nil when the key's text arrives as a key.EditEvent instead.
 func (t *Terminal) HandleKey(e key.Event) []byte {
-	mods := 0
-	if e.Modifiers.Contain(key.ModShift) {
-		mods |= modShift
-	}
-	if e.Modifiers.Contain(key.ModCtrl) {
-		mods |= modCtrl
-	}
-	if e.Modifiers.Contain(key.ModAlt) {
-		mods |= modAlt
-	}
+	mods := ghosttyMods(e.Modifiers)
 	if k, ok := functionKeys[e.Name]; ok {
 		return t.encodeKey(k, mods, 0, "")
 	}
@@ -113,4 +104,19 @@ func KeyFilters(tag event.Tag) []event.Filter {
 		filters = append(filters, key.Filter{Focus: tag, Name: name, Optional: anyMod})
 	}
 	return filters
+}
+
+// ghosttyMods is libghostty's modifier set for Gio's.
+func ghosttyMods(m key.Modifiers) int {
+	mods := 0
+	if m.Contain(key.ModShift) {
+		mods |= modShift
+	}
+	if m.Contain(key.ModCtrl) {
+		mods |= modCtrl
+	}
+	if m.Contain(key.ModAlt) {
+		mods |= modAlt
+	}
+	return mods
 }

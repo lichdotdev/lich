@@ -5,12 +5,15 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"runtime"
 	"sync"
 	"time"
 
+	"gioui.org/io/clipboard"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/io/transfer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -32,6 +35,10 @@ type termView struct {
 	// The area size waiting to be fitted, and since when it has held.
 	fitFor   image.Point
 	fitSince time.Time
+	// selecting is a drag that selects, held until its button is let go.
+	selecting bool
+	// held is the button a tracking program saw pressed.
+	held gioterm.MouseButton
 }
 
 // refitSettle is TerminalView.tsx REFIT_DEBOUNCE_MS: a resize reaches the
@@ -298,7 +305,10 @@ func (ts *terminals) refit(gtx layout.Context, t *termView, size image.Point, co
 func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 	_, cellH := t.r.Cell()
 	filters := append(gioterm.KeyFilters(t.tag),
-		pointer.Filter{Target: t.tag, Kinds: pointer.Scroll | pointer.Press, ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}})
+		pointer.Filter{Target: t.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move,
+			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
+		key.Filter{Focus: t.tag, Name: "V", Required: key.ModCommand},
+		transfer.TargetFilter{Target: t.tag, Type: "application/text"})
 	if focus {
 		gtx.Execute(key.FocusCmd{Tag: t.tag})
 	}
@@ -311,12 +321,26 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 		case key.EditEvent:
 			ts.send(t.id, []byte(e.Text))
 		case key.Event:
-			if e.State == key.Press {
-				ts.send(t.id, t.vt.HandleKey(e))
+			if e.State != key.Press {
+				break
 			}
+			if isPasteChord(e, runtime.GOOS) {
+				gtx.Execute(clipboard.ReadCmd{Tag: t.tag})
+				break
+			}
+			ts.send(t.id, terminalKeyBytes(t.vt, e, runtime.GOOS))
+		case transfer.DataEvent:
+			text, err := readTransfer(e)
+			if err != nil {
+				log.Printf("paste into %s: %v", t.id, err)
+				break
+			}
+			ts.send(t.id, pastedClipboard(t.vt, text, runtime.GOOS))
 		case pointer.Event:
-			if e.Kind == pointer.Scroll {
-				t.vt.Scroll(int(e.Scroll.Y) / max(cellH, 1))
+			send, copied := t.pointer(e, cellH)
+			ts.send(t.id, send)
+			if copied != "" {
+				ts.copySelection(gtx, copied)
 			}
 		}
 	}

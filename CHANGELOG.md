@@ -85,6 +85,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   none runs) after closing the web window, so your sessions stay where they
   are. It is not in the release packages yet: build `lich-native` from
   `native/` and put it beside `lich`, or point `LICH_NATIVE` at it.
+- **The native window's terminal takes the mouse and the agent's keys.**
+  Dragging selects text and copies it on release, a double click takes the
+  word and a triple click the line; a program that asks for the mouse, as
+  Claude Code and vim do, gets clicks, drags and the wheel instead, and
+  `Shift` selects over it; in a full-screen program that does not, such as
+  `less`, the wheel moves through it. `Ctrl+Shift+V` (`Cmd+V` on macOS)
+  pastes the clipboard's text, or hands the agent an image or file it holds;
+  `Ctrl+V` attaches a clipboard image (`Alt+V` on Windows), `Shift+Enter`
+  breaks the line and `Ctrl+Backspace` erases a word, as in the web window.
+  `lich native` finds `lich-native.exe` beside `lich.exe` on Windows, and
+  `native/build-windows.sh` cross-builds it from Linux.
 - **`lich gallery` opens the native UI kit gallery.** It shows every primitive
   of the experimental native window in each variant and state, fully
   interactive, and needs no running lich. It is not in the release packages

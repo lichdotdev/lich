@@ -75,7 +75,7 @@ func (c *client) companion(envName, binary, howToBuild string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("find the lich binary: %w", err)
 	}
-	beside := filepath.Join(filepath.Dir(exe), binary)
+	beside := filepath.Join(filepath.Dir(exe), executableName(binary))
 	if _, err := os.Stat(beside); err != nil {
 		return "", fmt.Errorf("no %s beside %s: %s, or point %s at one", binary, exe, howToBuild, envName)
 	}
@@ -124,3 +124,6 @@ func (c *client) start(exe string, env, args []string) error {
 	}
 	return restart.StartDetached(exe, env, args)
 }
+
+// executableName is binary's file name on this OS.
+func executableName(binary string) string { return binary + exeExt }
