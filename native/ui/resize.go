@@ -23,7 +23,7 @@ const (
 // ResizeHandle geometry: `absolute inset-y-2 w-1.5 rounded-full`, on the
 // panel's own edge.
 var (
-	resizeWidth = Space(1.5)
+	ResizeWidth = Space(1.5)
 	resizeInset = Space(2)
 )
 
@@ -101,7 +101,7 @@ func (r *ResizeHandle) Dragging() bool { return r.dragging }
 func (r *ResizeHandle) Layout(gtx C, th *Theme) D {
 	box := gtx.Constraints.Max
 	r.laidOut = box.X
-	w, inset := gtx.Dp(resizeWidth), gtx.Dp(resizeInset)
+	w, inset := gtx.Dp(ResizeWidth), gtx.Dp(resizeInset)
 	x := 0
 	if r.Edge == PanelEdgeRight {
 		x = box.X - w

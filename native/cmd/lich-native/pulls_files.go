@@ -64,6 +64,7 @@ type filesTree struct {
 	// widthRem is the tree's width, dragged by resize.
 	widthRem float64
 	resize   ui.ResizeHandle
+	laidOut  int // px, the width the tree was last laid out at
 	// builtFor is the file order the tree was built from.
 	builtFor string
 	active   string
@@ -142,7 +143,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PR
 // filesBody is the tree, when shown, beside the cards.
 func (v *pullView) filesBody(gtx C, th *ui.Theme) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
-	return layout.Flex{}.Layout(gtx,
+	dims := layout.Flex{}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			if v.tree.hidden {
 				return D{}
@@ -163,10 +164,23 @@ func (v *pullView) filesBody(gtx C, th *ui.Theme) D {
 			return D{Size: gtx.Constraints.Max}
 		}),
 	)
+	if !v.tree.hidden {
+		v.treeHandle(gtx, th)
+	}
+	return dims
 }
 
-// resizableTree is the tree at its width, the handle on its right edge; a
-// drag that ends stores the width.
+// treeHandle lays the tree's resize handle out past the rule, over the
+// cards' margin: on the tree's own edge its lit strip would cover the
+// tree's scrollbar. Its box starts at the tree's left edge, which a drag
+// leaves in place, so the handle reads the drag as a right-edge panel's.
+func (v *pullView) treeHandle(gtx C, th *ui.Theme) {
+	gtx.Constraints = layout.Exact(image.Pt(v.tree.laidOut+gtx.Dp(1)+gtx.Dp(ui.ResizeWidth), gtx.Constraints.Max.Y))
+	v.tree.resize.Layout(gtx, th)
+}
+
+// resizableTree is the tree at its width; a drag of the handle (treeHandle)
+// that ends stores the width.
 func (v *pullView) resizableTree(gtx C, th *ui.Theme) D {
 	t := &v.tree
 	if t.widthRem == 0 {
@@ -182,10 +196,9 @@ func (v *pullView) resizableTree(gtx C, th *ui.Theme) D {
 			}
 		}()
 	}
-	gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(w), gtx.Constraints.Max.Y))
-	dims := v.treeLayout(gtx, th)
-	t.resize.Layout(gtx, th)
-	return dims
+	t.laidOut = gtx.Dp(w)
+	gtx.Constraints = layout.Exact(image.Pt(t.laidOut, gtx.Constraints.Max.Y))
+	return v.treeLayout(gtx, th)
 }
 
 // treeLayout is the tree over the PR's files; a click on a file scrolls the
