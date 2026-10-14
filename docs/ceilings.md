@@ -731,8 +731,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `OPENCODE_AUTH_CONTENT` is not read (the first is shared with Zen keys, which have no plan). The 200 shape of
   that route was ported from the opencode console as the Orca project parses it, never measured here: only its
   401 and 403 were. A 403 there means the key has no Go subscription, and reads as signed out. Cursor reads only
-  the CLI's own login (`auth.json` under its config dir, and on macOS the Keychain item cursor-agent 2026.06+
-  writes), never the Cursor editor's session, which lives in another app's SQLite database. Cursor accounts still
+  the CLI's own login (`auth.json` where the CLI writes it, `providers.CursorAuthDir`, and on macOS the Keychain
+  item cursor-agent 2026.06+ writes), never the Cursor editor's session, which lives in another app's SQLite database. Cursor accounts still
   on request-quota billing (the dashboard's older `/api/usage` route) show their plan with no windows.
   Antigravity keeps its Google login in the OS keyring and mints its own token, so lich runs `agy -p /usage
   --output-format json` (measured on agy 1.2.5: no turn, no tokens, no conversation) with the session's own

@@ -6,7 +6,8 @@ import (
 )
 
 // CursorConfigDir resolves Cursor CLI's config directory under home — where it
-// keeps the credentials (`auth.json`, `cli-config.json`) and the chats.
+// keeps `cli-config.json`, which names the account, and the chats. Its login,
+// `auth.json`, is not here (CursorAuthDir).
 //
 // It lives here because two packages need the same answer and got two: the
 // sandbox binds this directory into a confined session, and the terminal reads
@@ -43,4 +44,13 @@ func CursorConfigDirIn(getenv func(string) string, home string) string {
 		return filepath.Join(base, "cursor")
 	}
 	return filepath.Join(home, ".cursor")
+}
+
+// CursorAuthDir resolves the directory Cursor CLI keeps its login, `auth.json`,
+// in. It is not the config dir: CURSOR_CONFIG_DIR does not move it, and the rule
+// differs per OS, so with no XDG_CONFIG_HOME on Linux the two part ways
+// (~/.cursor against ~/.config/cursor). Read in the 2026.10.01 bundle, the
+// cli-credentials package's getAuthFilePath (issue #765).
+func CursorAuthDir(home string) string {
+	return CursorAuthDirIn(os.Getenv, home)
 }

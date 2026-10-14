@@ -107,16 +107,19 @@ func stateDirs(providerID, home string) []string {
 			filepath.Join(dataHome(home), "crush"),
 		}
 	case providers.Cursor:
-		// Two, because Cursor splits its state and reaches the second half
-		// through the home directly rather than through its config dir: the
-		// credentials (`auth.json`, `cli-config.json`) and the chats are under
-		// the config dir (providers.CursorConfigDir, which is not xdg-basedir
-		// and says why), while `~/.cursor` holds the `mcp.json` it reads, its
-		// per-project transcripts and its CLI state. With no XDG_CONFIG_HOME
-		// the two are the same directory, which is the usual case.
+		// Up to three, because Cursor splits its state and reaches two of them
+		// without its config dir: `cli-config.json` and the chats are under the
+		// config dir (providers.CursorConfigDir, which is not xdg-basedir and
+		// says why), the login `auth.json` under its own directory
+		// (providers.CursorAuthDir, which is xdg-basedir on Linux), and
+		// `~/.cursor` holds the `mcp.json` it reads, its per-project transcripts
+		// and its CLI state. With no variable set the first and last are the
+		// same directory and the login is in ~/.config/cursor.
 		dirs := []string{providers.CursorConfigDir(home)}
-		if underHome := filepath.Join(home, ".cursor"); underHome != dirs[0] {
-			dirs = append(dirs, underHome)
+		for _, dir := range []string{filepath.Join(home, ".cursor"), providers.CursorAuthDir(home)} {
+			if !slices.Contains(dirs, dir) {
+				dirs = append(dirs, dir)
+			}
 		}
 		return dirs
 	case providers.Kiro:

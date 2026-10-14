@@ -10,6 +10,8 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/omartelo/lich/internal/providers"
 )
 
 // cursorNow is the clock every Cursor test reads tokens against.
@@ -33,22 +35,30 @@ const cursorSummary = `{
 		"onDemand":{"enabled":false,"used":0,"limit":null,"remaining":null}},
 	"teamUsage":{}}`
 
-// writeCursorLogin writes auth.json and cli-config.json the way cursor-agent
-// does into a fresh config dir, and points the account at it.
+// writeCursorLogin writes auth.json and cli-config.json where cursor-agent does,
+// under a fresh home and config dir, and points the account at them. It
+// returns the directory auth.json is in.
 func writeCursorLogin(t *testing.T, token string) string {
 	t.Helper()
-	dir := t.TempDir()
+	home, config := t.TempDir(), t.TempDir()
+	t.Setenv(accountHomeVar, home)
+	t.Setenv(configHomeVar, "")
+	t.Setenv(appDataVar, "")
+	t.Setenv(cursorConfigDirVar, config)
+	authDir := providers.CursorAuthDir(home)
 	files := map[string]string{
-		"auth.json":       fmt.Sprintf(`{"accessToken":%q,"refreshToken":"never-read"}`, token),
-		"cli-config.json": `{"version":1,"authInfo":{"email":"dev@example.com","displayName":"Dev"}}`,
+		filepath.Join(authDir, "auth.json"):      fmt.Sprintf(`{"accessToken":%q,"refreshToken":"never-read"}`, token),
+		filepath.Join(config, "cli-config.json"): `{"version":1,"authInfo":{"email":"dev@example.com","displayName":"Dev"}}`,
 	}
-	for name, body := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+	for path, body := range files {
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
-	t.Setenv(cursorConfigDirVar, dir)
-	return dir
+	return authDir
 }
 
 func cursorService(url string) *Service {
@@ -94,14 +104,14 @@ func TestCursorReadsTheBillingCycle(t *testing.T) {
 }
 
 func TestCursorPrefersTheKeychainToken(t *testing.T) {
-	writeCursorLogin(t, cursorToken("auth0|file", cursorNow.Add(time.Hour)))
+	authDir := writeCursorLogin(t, cursorToken("auth0|file", cursorNow.Add(time.Hour)))
 	keychain := cursorToken("auth0|keychain", cursorNow.Add(time.Hour))
-	if _, sub, _ := cursorLogin(keychain, os.Getenv(cursorConfigDirVar), cursorNow); sub != "auth0|keychain" {
+	if _, sub, _ := cursorLogin(keychain, authDir, cursorNow); sub != "auth0|keychain" {
 		t.Errorf("subject = %q, want the Keychain's", sub)
 	}
 	// An expired Keychain token gives way to a live file one.
 	expired := cursorToken("auth0|keychain", cursorNow.Add(-time.Hour))
-	if _, sub, _ := cursorLogin(expired, os.Getenv(cursorConfigDirVar), cursorNow); sub != "auth0|file" {
+	if _, sub, _ := cursorLogin(expired, authDir, cursorNow); sub != "auth0|file" {
 		t.Errorf("subject = %q, want the file's", sub)
 	}
 }

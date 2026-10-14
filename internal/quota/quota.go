@@ -106,6 +106,7 @@ var accountVars = append([]string{
 	accountUserVar,
 	codexHomeVar,
 	cursorConfigDirVar,
+	appDataVar,
 	configHomeVar,
 	dataHomeVar,
 }, redirectVars...)

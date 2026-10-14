@@ -17,6 +17,8 @@ const (
 	// cursorConfigDirVar is the variable Cursor CLI's config dir answers to
 	// first (providers.CursorConfigDir).
 	cursorConfigDirVar = "CURSOR_CONFIG_DIR"
+	// appDataVar moves Cursor CLI's login on Windows (providers.CursorAuthDir).
+	appDataVar = "APPDATA"
 )
 
 // cursorCredentials is the part of auth.json `cursor-agent login` writes that
@@ -73,7 +75,7 @@ func (s *Service) cursorPlan(a Account) Plan {
 	if s.cursorKeychain != nil {
 		keychain = s.cursorKeychain()
 	}
-	token, subject, ok := cursorLogin(keychain, dir, s.now())
+	token, subject, ok := cursorLogin(keychain, providers.CursorAuthDirIn(a.lookup, home), s.now())
 	if !ok {
 		return signedOut(p)
 	}
@@ -103,9 +105,9 @@ func (s *Service) cursorPlan(a Account) Plan {
 // cursor-agent keeps it since 2026.06, then auth.json. An expired one is passed
 // over rather than sent to answer 401: the CLI refreshes it on its next use.
 // subject is the token's `sub`, the first half of the dashboard's cookie.
-func cursorLogin(keychain, dir string, now time.Time) (token, subject string, ok bool) {
+func cursorLogin(keychain, authDir string, now time.Time) (token, subject string, ok bool) {
 	var creds cursorCredentials
-	readCredentials(filepath.Join(dir, "auth.json"), &creds)
+	readCredentials(filepath.Join(authDir, "auth.json"), &creds)
 	for _, candidate := range []string{keychain, creds.AccessToken} {
 		var claims struct {
 			Sub string `json:"sub"`

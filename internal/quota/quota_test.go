@@ -43,8 +43,12 @@ func writeCreds(t *testing.T, claude, codex string) {
 	t.Setenv("CLAUDE_CONFIG_DIR", claudeDir)
 	t.Setenv("CODEX_HOME", codexDir)
 	// Cursor and opencode resolve their logins from these; empty directories
-	// keep the developer's own logins out of every reading below.
+	// keep the developer's own logins out of every reading below. Cursor's
+	// login hangs off the home and the config home, not its config dir.
 	t.Setenv(cursorConfigDirVar, t.TempDir())
+	t.Setenv(accountHomeVar, t.TempDir())
+	t.Setenv(configHomeVar, "")
+	t.Setenv(appDataVar, "")
 	t.Setenv(dataHomeVar, t.TempDir())
 	unsetTestEnv(t, claudeSecureDirVar)
 	t.Setenv(claudeTokenVar, "")

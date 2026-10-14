@@ -147,6 +147,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that loads only inside a single project as the plugin being there for every
   session, so lich never offered to install it. Only the user-wide install
   counts now.
+- **Cursor CLI's plan usage and sandboxed sessions find your login.** Without
+  `XDG_CONFIG_HOME` set, lich looked for Cursor CLI's login in `~/.cursor`, but
+  the CLI keeps it in `~/.config/cursor` on Linux (`%APPDATA%\Cursor` on
+  Windows), so the plan gauge showed Cursor as signed out and a sandboxed Cursor
+  session opened at the login prompt.
 
 ## [0.67.0] - 2026-10-10
 
