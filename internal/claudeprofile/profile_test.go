@@ -94,10 +94,13 @@ func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 	if p.Slug != "work-account" || p.Name != "Work Account" {
 		t.Fatalf("created %+v", p)
 	}
-	for _, name := range []string{"agents", filepath.Join("plugins", "cache"), filepath.Join("plugins", "marketplaces")} {
+	for _, name := range []string{"agents", filepath.Join("plugins", "marketplaces")} {
 		if !profilestore.IsLink(filepath.Join(p.Dir, name)) {
 			t.Errorf("%s is not linked to Personal", name)
 		}
+	}
+	if cache := filepath.Join(p.Dir, "plugins", "cache"); profilestore.IsLink(cache) || !isDir(cache) {
+		t.Error("the plugin cache is not a directory of the profile's own")
 	}
 	if slices.Contains(p.Copied, "settings.json") {
 		// A Windows without Developer Mode: the documented fallback is a copy.

@@ -2,10 +2,10 @@
 // A profile is a state directory of its own holding its own login, so every
 // account runs with its full login rather than an inference-only token. The
 // providers that have profiles (internal/claudeprofile, internal/codexprofile,
-// internal/ompprofile) describe themselves with a Spec; this package is the
-// rest: the slug and the sidecar a profile is listed from, the layout of its
-// directory against the default profile (Personal), and the move of a
-// conversation between two of them.
+// internal/ompprofile, internal/xdgprofile) describe themselves with a Spec;
+// this package is the rest: the slug and the sidecar a profile is listed from,
+// the layout of its directory against the default profile (Personal), and the
+// move of a conversation between two of them.
 //
 // A profile directory is never moved once it exists, and renaming a profile
 // changes its display name only: the slug names the directory, and a provider
@@ -69,6 +69,11 @@ type Spec struct {
 	// otherwise copies, and directories. Only entries Personal has are linked;
 	// EnsureShared links one created later.
 	SharedFiles, Shared []string
+	// Own, when set, makes the profile directory a link home (linkhome.go):
+	// a mirror of Personal's directory in which every entry is a link except
+	// these paths, relative to it, which are the profile's own. SharedFiles and
+	// Shared are then unused: everything else is shared.
+	Own []string
 	// Downloads are directories Personal keeps its plugin downloads in, created
 	// there when absent and linked, so a profile does not fetch them again.
 	Downloads []string

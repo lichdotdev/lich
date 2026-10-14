@@ -124,7 +124,7 @@ reads what each CLI writes down and no two of them write down the same things.
 | Fork a conversation into a new worktree | yes | yes | no | yes | no | no | no | no |
 | Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes |
 | Open a session with ultracode on | yes | no | no | no | no | no | no | no |
-| Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card (in the native window, experimental: Settings › Providers) | yes | yes, with its own plugins in each profile and Personal's settings shared by all of them | no | no, its data sits under `XDG_DATA_HOME`, which every tool in the session reads | yes, logged in from a terminal card, with its settings shared by every profile | not measured | no, its login sits under `XDG_CONFIG_HOME`, which every tool in the session reads | no, its login sits under `XDG_DATA_HOME`, which every tool in the session reads |
+| Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card (in the native window, experimental: Settings › Providers) | yes | yes, with its own plugins in each profile and Personal's settings shared by all of them | no | Linux only, logged in from a terminal card; a session cannot move to another profile, since its conversations sit in the database that holds the login | yes, logged in from a terminal card, with its settings shared by every profile | not measured | Linux only, logged in from a terminal card, with `mcp.json`, hooks and skills shared by every profile | Linux only, logged in from a terminal card, with its conversations shared by every profile |
 | Drive a running session from `lich control` or an agent: prompt, stop, model, effort, slash command | yes | no | no | no | no | no | no | no |
 | A message from another session arrives without being typed into the terminal | yes | no | no | no | no | no | no | no |
 | A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | no | no | no | no | no | no | no |
@@ -210,7 +210,12 @@ needs `brew uninstall lich` first — [INSTALL.md](INSTALL.md) says why.
 - **Providers** — set each provider's binary path and the default for all
   projects in Settings › Providers. The open project's row there can override
   that choice; **Clear** removes the override, so later changes to the default
-  flow through automatically. A provider's section opens
+  flow through automatically. With no path set, a session runs the first of
+  the provider's binaries on your login shell's `PATH`; in the native window the
+  Binary block names that file and its version, and lists any other version
+  `PATH` holds, which `lich doctor` also warns about. To pick one, set its path
+  in Binary (the setting `provider.<id>.bin`, e.g. `provider.codex.bin`).
+  A provider's section opens
   with how much of your plan is left, when lich can read it. What the footer
   shows is set in Settings › Appearance by dragging its items; the cost
   readout starts hidden, since the figure only means something when you are

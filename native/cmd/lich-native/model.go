@@ -60,6 +60,8 @@ type model struct {
 	// codexProfiles who is logged in to each Codex one and ompProfiles each
 	// oh-my-pi one.
 	profiles, codexProfiles, ompProfiles *profileBook
+	// xdgProfiles is each link-home provider's, by kind (xdgProfileProviders).
+	xdgProfiles map[string]*profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
 	// loginProgress takes each step of a profile login, of the provider kind
@@ -104,6 +106,7 @@ func newModel(client *lichclient.Client, invalidate func()) *model {
 		profiles:      newProfileBook(claudeProfileProvider, client, invalidate, quota),
 		codexProfiles: newProfileBook(codexProfileProvider, client, invalidate, quota),
 		ompProfiles:   newProfileBook(ompProfileProvider, client, invalidate, quota),
+		xdgProfiles:   xdgProfileBooks(client, invalidate, quota),
 		providers:     newProviderBook(client, invalidate),
 		closed:        newClosedProjects(client, invalidate)}
 }

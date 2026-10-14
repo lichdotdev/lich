@@ -40,6 +40,7 @@ import (
 	"github.com/omartelo/lich/internal/terminal"
 	"github.com/omartelo/lich/internal/themes"
 	"github.com/omartelo/lich/internal/tray"
+	"github.com/omartelo/lich/internal/xdgprofile"
 )
 
 // The frontend is embedded into the binary and served over the loopback
@@ -307,6 +308,16 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	ompProfiles := ompprofile.New(db)
 	ompProfiles.SetSessions(term.OMPProfileSessions, db.ForgetOMPProfile)
 	dispatcher.Register("ompprofile", ompProfiles)
+	// opencode, Cursor CLI and Kiro CLI log in from a terminal card too, and have
+	// profiles only where their logins are under an XDG directory (Linux).
+	for _, provider := range xdgprofile.Providers() {
+		profiles := xdgprofile.New(provider, db)
+		profiles.SetSessions(
+			func(slug string) int { return term.XDGProfileSessions(provider.ID, slug) },
+			func(slug string) error { return db.ForgetXDGProfile(provider.ID, slug) },
+		)
+		dispatcher.Register(provider.ID+"profile", profiles)
+	}
 	dispatcher.Register("appupdate", appupdate.New(version, coord.Install, hub.Emit))
 	dispatcher.Register("patchnotes", patchnotes.New(version, changelog))
 	dispatcher.Register("store", db)
@@ -494,15 +505,17 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     the caller likes.
 //   - store.SetSessionProfile moves a session to another Claude Code profile
 //     without moving its conversation, which only terminal.ContinueIn may do;
-//     store.ForgetClaudeProfile, store.ForgetCodexProfile and
-//     store.ForgetOMPProfile are the delete's own cleanup.
+//     store.ForgetClaudeProfile, store.ForgetCodexProfile,
+//     store.ForgetOMPProfile and store.ForgetXDGProfile are the delete's own
+//     cleanup.
 //   - agentplugin.SetEmit is startup wiring like the setters above, and
 //     agentplugin.SyncProfiles is the start's pass over the profiles: called
 //     over /rpc/ it would run a second one racing the first.
 //   - claudeprofile.SetLichPlugin, claudeprofile.SetSessions,
 //     codexprofile.SetLichPlugin, codexprofile.SetSessions,
 //     codexprofile.SetAccount and
-//     ompprofile.SetSessions are startup wiring like the setters above.
+//     ompprofile.SetSessions and the SetSessions of opencodeprofile,
+//     cursorprofile and kiroprofile are startup wiring like the setters above.
 //   - quota.ReportClaude is a session's own reading of its plan, which arrives
 //     over /mod/usage: called here it would put any numbers on the gauge.
 //   - terminal.EnqueueModCommand and terminal.RunModCommand queue a command for
@@ -566,12 +579,16 @@ func denyInternal(d *rpc.Handler) {
 		"store.ForgetClaudeProfile",
 		"store.ForgetCodexProfile",
 		"store.ForgetOMPProfile",
+		"store.ForgetXDGProfile",
 		"claudeprofile.SetLichPlugin",
 		"claudeprofile.SetSessions",
 		"codexprofile.SetLichPlugin",
 		"codexprofile.SetSessions",
 		"codexprofile.SetAccount",
 		"ompprofile.SetSessions",
+		"opencodeprofile.SetSessions",
+		"cursorprofile.SetSessions",
+		"kiroprofile.SetSessions",
 	} {
 		d.Deny(method)
 	}

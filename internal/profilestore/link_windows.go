@@ -11,9 +11,9 @@ import (
 	"github.com/omartelo/lich/internal/winexec"
 )
 
-// linkDir makes path a junction to target. A junction needs no privilege, where
+// LinkDir makes path a junction to target. A junction needs no privilege, where
 // a directory symlink needs Developer Mode or an elevated process.
-func linkDir(target, path string) error {
+func LinkDir(target, path string) error {
 	cmd := exec.Command("cmd", "/c", "mklink", "/J", path, target)
 	winexec.Hide(cmd)
 	if out, err := cmd.CombinedOutput(); err != nil {

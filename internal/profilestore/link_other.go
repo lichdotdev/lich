@@ -4,8 +4,8 @@ package profilestore
 
 import "os"
 
-// linkDir links path to the directory target.
-func linkDir(target, path string) error { return os.Symlink(target, path) }
+// LinkDir links path to the directory target.
+func LinkDir(target, path string) error { return os.Symlink(target, path) }
 
 // linkFile links path to the file target. Off Windows a link never falls back
 // to a copy, so copied is always false.

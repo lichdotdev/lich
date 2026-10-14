@@ -113,7 +113,7 @@ func loggedInAs(p lichclient.Profile) string {
 // layoutProfileDialogs lays out the profile dialog of each provider that has
 // profiles; at most one is open.
 func (s *settingsScreen) layoutProfileDialogs(gtx C, th *ui.Theme) {
-	for _, kind := range []string{claudeKind, codexKind, ompKind} {
+	for _, kind := range append([]string{claudeKind, codexKind, ompKind}, xdgProfileKinds()...) {
 		if c := s.providers.profiles(kind); c != nil {
 			s.layoutProfileDialog(gtx, th, c)
 		}

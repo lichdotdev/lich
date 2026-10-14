@@ -43,17 +43,19 @@ var store = profilestore.Spec{
 	// Claude Code writes through a link to its target (measured on 2.1.296).
 	SharedFiles: []string{"settings.json", "CLAUDE.md"},
 	Shared:      []string{"agents", "commands", "skills", "hooks"},
-	// Personal's plugin downloads, so a profile does not clone every marketplace
-	// and plugin again. The two state files beside them stay per profile: an
+	// Personal's marketplace clones, so a profile does not clone every
+	// marketplace again. The two state files beside them stay per profile: an
 	// organization account may forbid plugins a personal one runs, so the
-	// installed set differs per account.
-	Downloads: []string{filepath.Join("plugins", "cache"), filepath.Join("plugins", "marketplaces")},
+	// installed set differs per account. The plugin cache is the profile's own
+	// (plugincache.go).
+	Downloads: []string{filepath.Join("plugins", "marketplaces")},
 	// The secure-storage override goes too, since on macOS it would point every
 	// profile at one Keychain item.
 	Override: []string{
 		"CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_SECURESTORAGE_CONFIG_DIR",
 	},
 	Seed: seed,
+	Sync: layoutPluginCache,
 }
 
 // Root is where lich keeps its Claude profiles.
@@ -115,7 +117,19 @@ func Rename(slug, name string) error { return store.Rename(slug, name) }
 
 // Delete removes a profile's directory and its login with it. Personal cannot
 // be deleted.
-func Delete(slug string) error { return store.Delete(slug) }
+func Delete(slug string) error {
+	if IsPersonal(slug) {
+		return store.Delete(slug)
+	}
+	dir, err := ConfigDir(slug)
+	if err != nil {
+		return err
+	}
+	if err := unlinkPluginVersions(dir); err != nil {
+		return err
+	}
+	return store.Delete(slug)
+}
 
 // EnsureShared links into a profile the shared entries Personal gained since
 // the profile was made, which runs before every spawn into it.

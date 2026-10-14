@@ -209,6 +209,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.settings.providers.claude.bind(u.model.profiles, u.openLoginTerminal)
 	u.settings.providers.codex.bind(u.model.codexProfiles, u.openLoginTerminal)
 	u.settings.providers.omp.bind(u.model.ompProfiles, u.openLoginTerminal)
+	u.settings.providers.bindXDG(u.model.xdgProfiles, u.openLoginTerminal)
 	u.model.loginProgress = u.settings.loginProgress
 	u.settings.providers.book = u.model.providers
 	u.model.projectClosed = u.projectClosed

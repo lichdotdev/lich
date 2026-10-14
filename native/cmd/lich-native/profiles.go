@@ -75,6 +75,9 @@ type profileProvider struct {
 	// (oh-my-pi's is an interactive picker of providers), so the dialog has no
 	// login of its own to run and to wait on.
 	terminalLogin bool
+	// noContinue is whether a conversation cannot move to another profile
+	// (opencode's), so the card menu offers no Continue in.
+	noContinue bool
 	// words are the provider-specific sentences of the Profile and Profiles
 	// rows and of the profile dialog.
 	words profileWords
@@ -148,7 +151,7 @@ func profileProviderOf(kind string) (profileProvider, bool) {
 	case ompKind:
 		return ompProfileProvider, true
 	}
-	return profileProvider{}, false
+	return xdgProfileProviderOf(kind)
 }
 
 // profileBook is one provider's profiles as the window knows them: who is

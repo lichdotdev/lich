@@ -179,3 +179,33 @@ func TestOMPProfilesAreTheirOwnSet(t *testing.T) {
 		t.Errorf("forgetting an omp profile took the Codex one: %q", got)
 	}
 }
+
+// TestXDGProfilesAreEachProvidersOwnSetting: an opencode, Cursor CLI or Kiro CLI
+// session is born in its own provider's profile, and forgetting one clears that
+// provider's setting alone.
+func TestXDGProfilesAreEachProvidersOwnSetting(t *testing.T) {
+	svc := newTestStore(t)
+	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_ = svc.SetSetting("provider.opencode.profile", "p1", "work")
+	_ = svc.SetSetting("provider.kiro.profile", "", "work")
+	_ = svc.AddSession("p1", "oc", "opencode", "opencode", "", 2, "")
+	_ = svc.AddSession("p1", "ki", "Kiro", "kiro", "", 3, "")
+	_ = svc.AddSession("p1", "cu", "Cursor", "cursor", "", 4, "")
+	for id, want := range map[string]string{"oc": "work", "ki": "work", "cu": ""} {
+		if got, err := svc.SessionProfile(id); err != nil || got != want {
+			t.Errorf("SessionProfile(%s) = %q, %v, want %q", id, got, err, want)
+		}
+	}
+	if err := svc.ForgetXDGProfile("kiro", "work"); err != nil {
+		t.Fatal(err)
+	}
+	if got := svc.bornProfile("kiro", "p1"); got != "" {
+		t.Errorf("a forgotten Kiro profile is still born into: %q", got)
+	}
+	if got := svc.bornProfile("opencode", "p1"); got != "work" {
+		t.Errorf("forgetting Kiro's work took opencode's: %q", got)
+	}
+	if err := svc.ForgetXDGProfile("crush", "work"); err == nil {
+		t.Error("forgot a profile of a provider with none")
+	}
+}

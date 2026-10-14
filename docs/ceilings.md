@@ -1191,55 +1191,87 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   connect, the web window does not. `system.CloseWindow` never quits lich, even
   with no session running, where a window the user closes does (`quitIfIdle`). The native window's text is
   English only: the interface catalogs are TypeScript, and native/ has none yet (`docs/native-window.md`).
-- **Profiles are Claude Code's, Codex's and oh-my-pi's** (`internal/claudeprofile`, `internal/codexprofile`,
-  `internal/ompprofile`, on one store, `internal/profilestore`): one account per profile, each its own
-  `CLAUDE_CONFIG_DIR`, `CODEX_HOME` or `OMP_PROFILE` with a real `claude auth login`, `codex login` or
-  `omp login`, and no other provider has one. The rest were measured on the installed CLIs (2026-10-12) and none
-  is implemented:
-  - **opencode** reads its data (`auth.json`, `opencode.db`) from `$XDG_DATA_HOME/opencode` and nothing else
-    moves it: `OPENCODE_CONFIG_DIR` and `OPENCODE_TEST_HOME` leave it where it was (1.18.35). A profile would
-    be a moved `XDG_DATA_HOME`, which every other tool in the session reads too (`mise`, lich's own
-    worktrees directory, any cache under it), so it either breaks them or needs a data home made of links
-    to everything but `opencode/`. Its login is an interactive provider picker with no address to relay,
-    and its conversations are rows in one SQLite file, so Continue in would be `opencode export` and
-    `import` rather than a move.
-  - **Cursor CLI** (2026.10.01, throwaway home, the bundle read for what a run could not reach) keeps its
-    state in three places that three different variables move. The config dir (`cli-config.json`,
-    `statsig-cache.json`, `chats/<md5 of the cwd>/<id>/store.db`) is `$CURSOR_CONFIG_DIR`, else
-    `$XDG_CONFIG_HOME/cursor`, else `~/.cursor`. The login, `auth.json`, is not in it: on Linux it is
-    `$XDG_CONFIG_HOME/cursor/auth.json` else `~/.config/cursor/auth.json`, so `CURSOR_CONFIG_DIR` splits the
-    chats from the account without splitting the account. `projects/` (transcripts) answers to
-    `CURSOR_DATA_DIR` else `~/.cursor`. And `mcp.json`, `hooks.json`, `skills/`, `skills-cursor/`,
-    `agent-cli-state.json`, `policy.json` and `sandbox-policies/` hang off `$HOME/.cursor` with no variable
-    (`CURSOR_SANDBOX_POLICY_DIR` and `CURSOR_WORKTREES_ROOT` move two of them). Linux keeps the login in that
-    file only (no keyring was touched; `CURSOR_API_KEY` or `CURSOR_AUTH_TOKEN` stand in for it), and a
-    logged-out `status --format json` is `{"status":"unauthenticated","isAuthenticated":false,…}` with exit 0.
-    A resume finds a chat only under the active config dir. A profile is therefore feasible only by moving
-    `XDG_CONFIG_HOME`, which gives it its own login, chats and `cli-config.json` and leaves what is shared
-    (`mcp.json`, hooks, skills) where it already is, in the real `~/.cursor`; but `gh`, `git` and every other
-    tool in the session read that variable too, so it needs a config home made of links to everything but
-    `cursor/`, the opencode trap. What does not move whatever is set: the install directory
-    (`~/.local/share/cursor-agent/versions/<v>/`, where a run puts `.running/<pid>`) and the logs under
-    `$TMPDIR/cursor-agent-logs-<uid>/`.
-  - **Kiro CLI** (2.21.0, throwaway home) answers to two variables and honours both completely. `KIRO_HOME`
-    moves `~/.kiro` (`settings/cli.json` measured; `agents/`, `steering/`, `skills/` and `sessions/cli/`
-    from the TUI's own path helper), and `XDG_DATA_HOME` moves `kiro-cli/data.sqlite3`, the one file that
-    holds the login (`auth_kv`) beside its history and state tables. With both set, nothing was written under
-    the home; with `HOME` alone, both moved. A logged-out `whoami` is `Not logged in` with exit 1
-    (`--format json`: `{"account":null}`). Conversations are `<KIRO_HOME>/sessions/cli/<uuid>.json` (with the
-    `cwd`) and the `.jsonl` beside it, found by `--resume`/`--resume-id` in the active directory only. Not
-    measured: the logged-in TUI, an enterprise (IdC) login that may read `~/.aws/sso/cache`, and whether the
-    TUI finds its own bundle (`~/.local/share/kiro-cli/{bun,node,tui.js,kas}`) under a moved
-    `XDG_DATA_HOME`. A profile is feasible the same way as for Cursor and opencode: `KIRO_HOME` is private to
-    Kiro and can be a profile's own directory with links to Personal's `settings/`, `agents/`, `steering/` and
-    `skills/`, but the login is under `XDG_DATA_HOME`, which every other tool reads, so it needs a data home
-    of links to everything but `kiro-cli/data.sqlite3`. That file must never be linked to Personal's: it
-    holds the login and the history together.
+- **Profiles are Claude Code's, Codex's and oh-my-pi's everywhere, and opencode's, Cursor CLI's and Kiro CLI's
+  on Linux only** (`internal/claudeprofile`, `internal/codexprofile`, `internal/ompprofile`,
+  `internal/xdgprofile`, on one store, `internal/profilestore`): one account per profile. The first three are
+  each its own `CLAUDE_CONFIG_DIR`, `CODEX_HOME` or `OMP_PROFILE` with a real `claude auth login`, `codex login`
+  or `omp login`. The other three have no variable of their own that moves their login, which is what makes them
+  link homes (the next bullet). What they were built on, measured on the installed CLIs (2026-10-12, throwaway
+  homes, the bundle read for what a run could not reach):
+  - **opencode** (1.18.35) reads its data from `$XDG_DATA_HOME/opencode` and nothing else moves it:
+    `OPENCODE_CONFIG_DIR` and `OPENCODE_TEST_HOME` leave it where it was. `opencode.db` holds the logins (its
+    `credential` and `account` tables, beside `auth.json`) together with every conversation, so the folder cannot
+    be split and a conversation cannot move between profiles without moving rows between two databases, which
+    lich does not do. Its config, `~/.config/opencode` (plugins, agents, MCP servers, lich's plugin), is not
+    under the data home and is every profile's.
+  - **Cursor CLI** (2026.10.01) keeps its state in three places that three different variables move. The config
+    dir (`cli-config.json`, which names the account, `statsig-cache.json`, `chats/<md5 of the cwd>/<id>/store.db`)
+    is `$CURSOR_CONFIG_DIR`, else `$XDG_CONFIG_HOME/cursor`, else `~/.cursor`. The login, `auth.json`, is not in
+    it: on Linux it is `$XDG_CONFIG_HOME/cursor/auth.json` else `~/.config/cursor/auth.json` (macOS
+    `~/.cursor/auth.json`, Windows `%APPDATA%\Cursor\auth.json`), so `CURSOR_CONFIG_DIR` splits the chats from
+    the account without splitting the account (issue #765). `projects/` (transcripts) answers to
+    `CURSOR_DATA_DIR` else `~/.cursor`, and `mcp.json`, `hooks.json`, `skills/`, `skills-cursor/`,
+    `agent-cli-state.json`, `policy.json` and `sandbox-policies/` hang off `$HOME/.cursor` with no variable, so
+    they are every profile's. A logged-out `status --format json` is
+    `{"status":"unauthenticated","isAuthenticated":false,…}` with exit 0; the logged-in shape (`userInfo.email`)
+    was read in the bundle, not run. A resume finds a chat only under the active config dir. The install
+    directory (`~/.local/share/cursor-agent/versions/<v>/`) and the logs under `$TMPDIR` never move.
+  - **Kiro CLI** (2.21.0) keeps its login in `$XDG_DATA_HOME/kiro-cli/data.sqlite3` (`auth_kv`, beside its
+    history and state tables; issue #766), and the TUI it runs (`bun`, `node`, `tui.js`, a few hundred MB) in the
+    same folder. `KIRO_HOME` moves `~/.kiro` (settings, agents, steering, skills and the conversations,
+    `sessions/cli/<uuid>.json` with the `.jsonl` beside it), which no profile moves, so a conversation is every
+    profile's. A logged-out `whoami --format json` is `{"account":null}` with exit 1; the logged-in shape was not
+    measured, so a profile reads as logged in whenever `account` is not null and its address is `account.email`
+    when there is one. Not measured: the logged-in TUI, an enterprise (IdC) login that may read
+    `~/.aws/sso/cache`, which no profile moves, and a TUI run from a linked bundle.
   - **Crush** is unmeasured. **Antigravity** cannot: its `~/.gemini` is fixed by the CLI.
 
-  A project's profile setting, the per-session profile and Continue in therefore exist for Claude Code, Codex
-  and oh-my-pi sessions only. The profile slug of a session row belongs to that row's provider: a Codex
-  profile named "work" and a Claude Code one named "work" are two profiles.
+  On macOS and Windows Cursor CLI and Kiro CLI keep their logins outside the XDG directories (above, and the Rust
+  `dirs` locations for Kiro), so `internal/xdgprofile` lists no provider there (`supported_other.go`) and the
+  native window shows no profile rows for them (`profiles_xdg_other.go`). opencode is xdg-basedir on every
+  platform, but its profiles were measured on Linux alone and are off elsewhere with the other two. A project's
+  profile setting, the per-session profile and Continue in therefore exist for Claude Code, Codex and oh-my-pi
+  sessions everywhere and opencode, Cursor CLI and Kiro CLI sessions on Linux. The profile slug of a session row
+  belongs to that row's provider: a Codex profile named "work" and a Claude Code one named "work" are two
+  profiles.
+- **An opencode, Cursor CLI or Kiro CLI profile is an XDG base directory of links, and only Linux has one**
+  (`internal/xdgprofile`, `internal/profilestore/linkhome.go`): the profile is
+  `<lich config dir>/profiles/<provider>/<slug>/`, and its sessions run with `XDG_DATA_HOME` (opencode, Kiro CLI)
+  or `XDG_CONFIG_HOME` (Cursor CLI) pointing at it, because moving that variable to an empty directory breaks
+  `gh`, `git`, `mise` and lich's own worktrees in the same session. It mirrors your own base directory entry by
+  entry, each a link, except what is the profile's: `opencode/` whole, `cursor/` whole, and in `kiro-cli/` only
+  `data.sqlite3` (with its `-wal`, `-shm` and `-journal`) and `.refresh.lock`, the rest of that folder linked so
+  the TUI bundle is not downloaded again. A tool writes through a link into your own directory, as it would
+  without a profile; lich itself never writes there. Before every spawn into a profile the mirror is brought
+  up to date: an entry you gained is linked, and a link to an entry you lost is removed so a tool can make it
+  again. An entry a tool creates inside the profile is the profile's own from then on, whether you have one or
+  not: a tool that first writes its config during a profile's session keeps it in that profile, your own
+  directory never sees it, and an entry you make later with the same name is not linked there. So a Kiro update
+  that replaces `tui.js` by a rename inside a profile leaves that profile its own copy, which no later update
+  in yours reaches. `XDG_STATE_HOME` and `XDG_CACHE_HOME` are not moved and are every profile's (opencode's
+  locks, Cursor's compile cache). The entry of your base directory that holds the profiles themselves is never
+  linked: for Cursor CLI the mirror is of `~/.config`, so `~/.config/lich` (lich's config dir, profiles
+  included) is absent from its profiles, and a tool in a Cursor profile session that reads
+  `$XDG_CONFIG_HOME/lich` finds nothing. Dropped from a profile's spawn, because each would point
+  the CLI at another account or another profile's state: `OPENCODE_DB`, `OPENCODE_AUTH_CONTENT`,
+  `OPENCODE_CONSOLE_TOKEN` and `OPENCODE_API_KEY`; `CURSOR_CONFIG_DIR`, `CURSOR_API_KEY` and
+  `CURSOR_AUTH_TOKEN`; `KIRO_API_KEY`. The provider API-key variables (`ANTHROPIC_API_KEY` and the rest) are not
+  dropped, as for oh-my-pi. A sandboxed session gets the profile bound writable, and its links reach only what
+  the sandbox already exposes at their targets.
+- **opencode, Cursor CLI and Kiro CLI log in from a terminal card, and Continue in differs for each**
+  (`xdgprofile.Service`, `xdgprofile.MoveConversation`): every login is a picker or a browser flow, so the
+  dialog hands `opencode auth login`, `cursor-agent login` or `kiro-cli login` to a shell card and ends, and
+  nothing in lich sees it finish; the list is read again when Settings opens and when the window regains focus
+  after a minute. "Logged in" is a non-zero count at the end of `opencode auth list` (which names no account),
+  `isAuthenticated` from `cursor-agent status --format json`, and a non-null account from `kiro-cli whoami
+  --format json`. There is no plan per profile in Settings and no usage on the Continue in rows; the footer of
+  a session reads the plan of the login its own process sees (Cursor CLI, opencode Go). Continue in moves a
+  Cursor CLI chat's `chats/<md5 of the cwd>/<id>/` directory between config dirs, both ways (Personal's is
+  `~/.cursor` when `XDG_CONFIG_HOME` is unset, a profile's is its own `cursor/`); for Kiro CLI nothing moves and
+  only the session's profile changes, so a Kiro conversation resumes in whichever profile its session is set
+  to; for opencode it is refused before the session is stopped, and the card menu does not offer it. A
+  conversation adopted from History runs in the profile whose directory holds it (opencode, Cursor CLI) or in
+  the project's (Kiro CLI).
 - **An oh-my-pi profile is omp's own, linked against Personal's agent directory, and logged in from a terminal
   card** (`internal/ompprofile`): `OMP_PROFILE=<slug>` puts everything omp keeps for that profile under
   `~/.omp/profiles/<slug>/` (`agent/` with `agent.db`, `sessions/`, `blobs/` and its settings; beside it
@@ -1289,12 +1321,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   mid-turn.
 - **A profile shares Personal's own content through links, and a link shares writes too**
   (`internal/claudeprofile/profile.go`, `internal/profilestore/layout.go`): `settings.json`, `CLAUDE.md`,
-  `agents/`, `commands/`, `skills/`, `hooks/` and the plugin downloads (`plugins/cache`,
-  `plugins/marketplaces`) point at Personal's, and
+  `agents/`, `commands/`, `skills/`, `hooks/` and the marketplace clones (`plugins/marketplaces`) point at
+  Personal's, and
   Claude Code writes through a link to its target (measured on 2.1.296). So `claude plugin install` run in a
   profile writes `enabledPlugins` into the one shared `settings.json`, and a plugin a work account installed
-  reads as enabled in Personal, where it is not installed; `/config` changes in any profile change them all;
-  every profile's Claude Code drops its `.in_use` markers in the one plugin cache. The plugin set itself
+  reads as enabled in Personal, where it is not installed; `/config` changes in any profile change them all.
+  The plugin cache is the next bullet. The plugin set itself
   (`installed_plugins.json`, `known_marketplaces.json`) is per profile, because an organization account may
   forbid plugins Personal runs. An entry Personal gains after a profile was made is linked at that profile's
   next spawn; an entry the profile already holds, link or file, is never replaced: Claude Code may have
@@ -1304,6 +1336,27 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
   `.claude.json` is a copy everywhere, minus the account and its caches, since Claude Code replaces it through
   a rename that would turn a link into a file anyway.
+- **A Claude Code profile's plugin cache is its own, and each version in it links into one store lich never
+  empties** (`internal/claudeprofile/plugincache.go`): before every spawn, and in the startup pass of the lich
+  plugin, each version a profile's `installed_plugins.json` names under its `plugins/cache` is moved into
+  `plugin_cache/` beside the profiles (or gives way to the copy already there) and replaced by a link to it.
+  The link is what keeps a version alive: Claude Code's orphan sweep, run at every session start, marks each
+  cached version its own record does not name (`.orphaned_at`) and deletes it once the mark is 14 days old,
+  but it passes over a version that is a link, marking and deleting nothing through it, and `plugin update`,
+  `uninstall` and a reinstall over a link leave the store's copy alone (all measured on 2.1.299, a plugin
+  running from a linked version included). When the cache was one link to Personal's, a plugin only one
+  profile had, Personal included, was deleted after 14 days without a session of that profile. A version
+  Claude Code downloads stays a plain directory of the profile, which its own record protects, until the next
+  spawn links it. Versions no profile names any more stay in the store, since a session started before an
+  update may still run one; deleting `plugin_cache/` with every Claude Code closed only costs the downloads.
+  Personal's cache is Personal's alone and is left as it is, so a version both use is on disk twice. A
+  profile made when the whole cache was a link to Personal's is moved at its next spawn or lich start: each
+  version it names is copied from Personal's into the store, and one Personal's sweep already deleted stays
+  missing. `.in_use` markers of every profile running a version land in the store's copy. On Windows each
+  version is a junction, which Claude Code's sweep reads as a link too (read in the source, not run on
+  Windows), and a version Windows will not move while a file in it is open stays the profile's own until a
+  later spawn. A `CLAUDE_CODE_PLUGIN_CACHE_DIR` in lich's environment moves the whole `plugins/` directory,
+  installed set included, and every profile with it.
 - **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
   login in the Keychain under a service named after a hash of the config directory string
   (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
@@ -1324,6 +1377,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   started afresh in the target profile. A session born in a profile deleted since
   is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
   deleted with the profile.
+- **The version Settings shows is the one lich's own environment gets** (`internal/providers/version.go`):
+  `--version` runs in lich's working directory with lich's environment, not in a session's checkout. A
+  version-manager shim that picks its tool per directory (mise, asdf) can answer one version there and start
+  another in a project that pins its own, and the "Also on PATH" list compares those same per-lich answers.
+  All eight providers print a version (measured on Claude Code 2.1.299, Codex 0.162.1, Antigravity 1.3.5,
+  opencode 1.18.35, oh-my-pi 18.8.9, Crush 0.98.1, Cursor CLI 2026.10.01, Kiro CLI 2.21.0); a CLI whose
+  `--version` hangs past 10 s or prints no version shows its path alone.
 - **The binary setting and lich's own plugin checks still answer for Personal**: a profile's session runs the
   configured Claude Code binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins
   over the profile, and the same binary answers the profile's `auth status` and installs its plugins. The
@@ -1347,13 +1407,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   measured on 2.1.296), so a Personal session starting during a pass can find the clone missing for the
   seconds the pass takes to clone it back. The pass lays each profile out as a spawn would before asking its
   version (`EnsureShared`): a Codex profile made when `config.toml` was shared still links Personal's, read
-  as holding Personal's plugin, and its next spawn rebuilt it with no plugin and no marketplace. The shared
-  plugin cache has a trap lich does not close: Claude Code's orphan sweep, run at a session's start, marks
-  every cached plugin version its own `installed_plugins.json` does not name (`.orphaned_at`, measured on
-  2.1.299) and deletes it 14 days later unless a session of a profile that names it clears the mark first
-  (read in the source). A plugin only one profile has, Personal included, is therefore deleted from the
-  cache if that profile starts no session for 14 days while another does, and its record then names files
-  that are gone. The lich plugin is out of reach while every profile follows Personal's version.
+  as holding Personal's plugin, and its next spawn rebuilt it with no plugin and no marketplace. The same
+  layout moves a Claude Code profile's plugin cache off Personal's (the bullet on it above) at a start too.
   oh-my-pi needs no pass: lich's extension is in the `extensions/` every profile links to Personal's.
 - **Profiles are managed in the native window only, and the window asks every profile at start**: the web
   window has no profile screen, no card tag and no Continue in (it is in maintenance, `docs/native-window.md`),

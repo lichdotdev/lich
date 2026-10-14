@@ -54,6 +54,15 @@ The plan gauge names the account a session spends (`internal/quota`, `Plan.Accou
 token is a JWT whose `sub` is an opaque `github|user_…` and whose claims contain no email, so lich reads
 `authInfo.email` from `cli-config.json` beside it.
 
+## Profiles
+
+Linux only. A profile is a config home of its own (`XDG_CONFIG_HOME` pointed at
+`<lich config dir>/profiles/cursor/<slug>/`) made of links to every entry of yours but `cursor/`, which is the
+profile's: the login, `cli-config.json` and the chats (`internal/xdgprofile`). `mcp.json`, hooks and skills stay
+under `~/.cursor`, every profile's. `cursor-agent login` runs in a terminal card. Resume and the History tab
+look in every profile's chats, and Continue in moves a chat directory between them. The rest is in
+[`../ceilings.md`](../ceilings.md).
+
 ## Sandbox
 
 The two directories above are two mounts (`internal/sandbox/sandbox.go`). On a machine with `XDG_CONFIG_HOME` set

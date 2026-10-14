@@ -35,11 +35,15 @@ type profileOps struct {
 	// slugOf is the profile a state directory belongs to, for a provider
 	// whose directory is not named after it.
 	slugOf func(dir string) string
+	// noMove is a provider whose conversations cannot change profile
+	// (opencode's live in the database that holds the login).
+	noMove bool
 }
 
 // profilestores is the set of providers whose sessions can run in a profile of
-// their own, by provider id.
-var profilestores = map[string]profileOps{
+// their own, by provider id: opencode, Cursor CLI and Kiro CLI only where they
+// have profiles (internal/xdgprofile, profile_xdg.go).
+var profilestores = withXDGProfiles(map[string]profileOps{
 	providers.Claude: {
 		configDir: claudeprofile.ConfigDir, ensureShared: claudeprofile.EnsureShared,
 		owner: claudeprofile.Owner, env: claudeprofile.Env, moveTo: claudeprofile.MoveConversation,
@@ -54,7 +58,7 @@ var profilestores = map[string]profileOps{
 		// The profile's directory is its agent/ under ~/.omp/profiles/<slug>.
 		slugOf: func(dir string) string { return filepath.Base(filepath.Dir(dir)) },
 	},
-}
+})
 
 func hasProfiles(kind string) bool {
 	_, ok := profilestores[kind]
@@ -170,6 +174,12 @@ func (s *Service) OMPProfileSessions(slug string) int {
 	return s.profileSessions(providers.OMP, slug)
 }
 
+// XDGProfileSessions is ProfileSessions for an opencode, Cursor CLI or Kiro CLI
+// profile.
+func (s *Service) XDGProfileSessions(kind, slug string) int {
+	return s.profileSessions(kind, slug)
+}
+
 func (s *Service) profileSessions(kind, slug string) int {
 	n := 0
 	s.spawns.Range(func(_, v any) bool {
@@ -181,10 +191,11 @@ func (s *Service) profileSessions(kind, slug string) int {
 	return n
 }
 
-// ContinueIn moves a Claude Code, Codex or oh-my-pi session's conversation to
-// another profile of the same provider and carries on there, in the same card:
-// the process ends, the conversation and everything its provider keyed by its id
-// move (claudeprofile.MoveConversation and its siblings),
+// ContinueIn moves a session's conversation to another profile of the same
+// provider and carries on there, in the same card: the process ends, the
+// conversation and everything its provider keyed by its id move
+// (claudeprofile.MoveConversation and its siblings; a Kiro CLI conversation is
+// every profile's and stays, an opencode one cannot move),
 // the row takes the new profile, and a running session is spawned again
 // resuming it. Moving back is the same call. Nothing else moves: not the other
 // sessions in the profile, and not the project's own profile. A session that
@@ -205,7 +216,10 @@ func (s *Service) ContinueIn(id, profile string) error {
 	started := s.spawnOf(id)
 	kind := sessionKind(started.kind, s.store.SessionKind(id))
 	if !hasProfiles(kind) {
-		return fmt.Errorf("only a Claude Code, Codex or oh-my-pi session can continue in another profile, not %s", kind)
+		return fmt.Errorf("a %s session has no profiles to continue in", kind)
+	}
+	if profilestores[kind].noMove {
+		return fmt.Errorf("a %s conversation cannot move to another profile; start a new session there", kind)
 	}
 	if s.turns.busy(id) {
 		return errors.New("the session is mid-turn; continue it in another profile once the turn ends")

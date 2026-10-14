@@ -24,6 +24,14 @@ const codexProfileKey = "provider.codex.profile"
 // ompProfileKey is claudeProfileKey for oh-my-pi (internal/ompprofile).
 const ompProfileKey = "provider.omp.profile"
 
+// xdgProfileKeys are claudeProfileKey for the providers whose profiles are
+// link homes (internal/xdgprofile), each its own set.
+var xdgProfileKeys = map[string]string{
+	providers.OpenCode: "provider.opencode.profile",
+	providers.Cursor:   "provider.cursor.profile",
+	providers.Kiro:     "provider.kiro.profile",
+}
+
 // ClaudeProfile is the profile a Claude Code session born in this project now
 // runs in, "" for Personal.
 func (s *Service) ClaudeProfile(projectID string) string {
@@ -61,6 +69,9 @@ func (s *Service) bornProfile(kind, projectID string) string {
 	case providers.OMP:
 		return s.OMPProfile(projectID)
 	}
+	if key, ok := xdgProfileKeys[kind]; ok {
+		return s.profileSetting(key, projectID)
+	}
 	return ""
 }
 
@@ -80,6 +91,16 @@ func (s *Service) ForgetCodexProfile(slug string) error {
 // ForgetOMPProfile is ForgetClaudeProfile for an oh-my-pi profile.
 func (s *Service) ForgetOMPProfile(slug string) error {
 	return s.forgetProfile(ompProfileKey, slug)
+}
+
+// ForgetXDGProfile is ForgetClaudeProfile for an opencode, Cursor CLI or Kiro
+// CLI profile.
+func (s *Service) ForgetXDGProfile(kind, slug string) error {
+	key, ok := xdgProfileKeys[kind]
+	if !ok {
+		return fmt.Errorf("%s has no profiles", kind)
+	}
+	return s.forgetProfile(key, slug)
 }
 
 func (s *Service) forgetProfile(key, slug string) error {

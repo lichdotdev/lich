@@ -7,6 +7,7 @@
 package providers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -188,6 +189,8 @@ type Service struct {
 	// guarded by mu, and also nil outside the app: a Service built to read the
 	// machine has no workspace database behind it, so it scans PATH alone.
 	configuredBin func(id string) string
+	// runVersion runs a binary with --version; nil runs it for real.
+	runVersion func(ctx context.Context, path string) (stdout, stderr []byte, err error)
 }
 
 // New returns a Service that scans the real PATH.

@@ -69,6 +69,15 @@ login is a row in `~/.local/share/kiro-cli/data.sqlite3` holding an opaque `aoaâ
 label and an AWS profile ARN, nothing a person recognises as their account. Naming it would take a network call
 against an unmeasured route, for a provider that has no gauge to hang the name under.
 
+## Profiles
+
+Linux only. A profile is a data home of its own (`XDG_DATA_HOME` pointed at
+`<lich config dir>/profiles/kiro/<slug>/`) made of links to every entry of yours, `kiro-cli/` included entry by
+entry, except `kiro-cli/data.sqlite3`, which holds the login and is the profile's (`internal/xdgprofile`).
+`~/.kiro` is not moved, so agents, settings and conversations are every profile's, and Continue in only changes
+the profile a session runs in. `kiro-cli login` runs in a terminal card. The rest is in
+[`../ceilings.md`](../ceilings.md).
+
 ## Sandbox
 
 Nothing provider-specific.

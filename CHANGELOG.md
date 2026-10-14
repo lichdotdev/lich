@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **See which binary of each agent lich runs, and its version.** When several
+  copies of a CLI sit on your `PATH` (say a global npm install, a mise shim and
+  a distro package of Codex), the first one silently drives every session,
+  login and plugin install. In the native window (`lich native`, experimental),
+  Settings › Providers now shows the version beside a provider whose row has no
+  plan reading, and a
+  provider's Binary block names the file a session runs, its version, and every
+  other version `PATH` holds, with a hint to pin one; the row in the list says
+  "other versions on PATH". `lich doctor` warns about the same thing and names
+  the setting that pins one (`provider.<id>.bin`).
 - **Claude Code profiles: more than one account, each with its full login, in
   the native window.** Open Settings › Providers › Claude Code in `lich native`
   (experimental) and make a profile per account: **New profile** takes a name
@@ -56,8 +66,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it, and **Continue in** on the card's menu moves an oh-my-pi conversation,
   images included, to another profile and carries on in the same card.
   Searching a conversation, resuming it from the History tab and the context
-  and cost readouts look in every profile. The other providers have no
-  profiles yet; `docs/ceilings.md` has what was measured for each.
+  and cost readouts look in every profile.
+- **opencode, Cursor CLI and Kiro CLI profiles on Linux, in the native
+  window.** Open Settings › Providers › opencode, Cursor CLI or Kiro CLI in
+  `lich native` (experimental) and make a profile per account: **New profile**
+  takes a name and opens the CLI's own login (`opencode auth login`,
+  `cursor-agent login`, `kiro-cli login`) in a terminal card. None of the three
+  has a setting of its own that moves its login, so a profile's sessions run
+  with their own `XDG_DATA_HOME` (opencode, Kiro CLI) or `XDG_CONFIG_HOME`
+  (Cursor CLI), a directory of links to yours in which only the provider's own
+  folder is the profile's: `gh`, `git`, `mise` and every other tool in the
+  session keep finding their state where it always was, and what a tool creates
+  there for the first time during a session stays in that profile.
+  An opencode profile keeps its own login and conversation history, and its
+  sessions cannot continue in another profile, since opencode keeps both in one
+  database. A Cursor CLI profile keeps its own login, chats and CLI settings,
+  and **Continue in** moves a chat to another logged-in profile. A Kiro CLI
+  profile keeps its own login; conversations are every profile's, so
+  **Continue in** carries on in the other account at once. On macOS and Windows
+  these three keep their logins outside the XDG directories, so they have no
+  profiles there; `docs/ceilings.md` has what was measured for each provider.
 - **A new worktree in the native window starts from the newest of its base.**
   The **Worktree** item of the + menu (or its shortcut) opens a dialog that
   takes a name, words or a `#123` issue, the branch to start from and whether to

@@ -1,6 +1,8 @@
 package doctor
 
 import (
+	"context"
+
 	"github.com/omartelo/lich/internal/chromium"
 	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/singleton"
@@ -28,6 +30,17 @@ func Providers() []providers.Detected {
 	found, err := providers.New().Detect()
 	if err != nil {
 		return nil
+	}
+	return found
+}
+
+// OnPath lists every distinct binary of a provider on $PATH with its version.
+// The id comes from Detect, so the one error OnPath has (an unknown id) cannot
+// happen here.
+func OnPath(id string) []providers.Binary {
+	found, err := providers.New().OnPath(context.Background(), id)
+	if err != nil {
+		panic(err)
 	}
 	return found
 }

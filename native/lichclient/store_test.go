@@ -32,6 +32,14 @@ func TestStoreCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.DetectProviders(ctx)
 			return err
 		}},
+		{"ProviderVersion", "providers.Version", `"codex"`, "0.162.1", func(c *Client) error {
+			_, err := c.ProviderVersion(ctx, "codex")
+			return err
+		}},
+		{"ProviderBinaries", "providers.OnPath", `"codex"`, []ProviderBinary{{Path: "/usr/bin/codex", Version: "0.147.0"}}, func(c *Client) error {
+			_, err := c.ProviderBinaries(ctx, "codex")
+			return err
+		}},
 		{"CloseProject", "store.CloseProject", `"p"`, nil, func(c *Client) error {
 			return c.CloseProject(ctx, "p")
 		}},

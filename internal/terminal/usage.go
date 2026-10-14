@@ -178,8 +178,7 @@ func usageSourceFor(providerSessionID, cwd string) (usageSource, bool) {
 	if path, ok := antigravityTranscriptPath(providerSessionID); ok {
 		return usageSource{kind: providers.Antigravity, path: path, id: providerSessionID}, true
 	}
-	if path, ok := opencodeSessionDB(); ok &&
-		sessionRowExists(path, opencodeSessionTable, providerSessionID) {
+	if _, path, ok := opencodeOwner(providerSessionID); ok {
 		return usageSource{kind: providers.OpenCode, path: path, id: providerSessionID}, true
 	}
 	if path, ok := crushSessionDB(cwd); ok &&

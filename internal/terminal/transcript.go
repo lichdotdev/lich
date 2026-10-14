@@ -134,8 +134,8 @@ func kiroTranscriptPath(sessionPath string) string {
 	return strings.TrimSuffix(sessionPath, ".json") + ".jsonl"
 }
 
-// cursorChatStore is the database Cursor CLI keeps one chat in, under its own
-// config directory. It is not a transcript: the CLI files a chat as SQLite at
+// cursorChatStore is the database Cursor CLI keeps one chat in, under the
+// config directory of whichever profile holds it. It is not a transcript: the CLI files a chat as SQLite at
 // chats/<workspace>/<chatId>/store.db, which is the one file whose existence
 // answers "can this id still be reopened".
 //
@@ -144,15 +144,16 @@ func kiroTranscriptPath(sessionPath string) string {
 // chats per checkout, so the same id proves nothing about another one. False
 // without a cwd — a directory lich cannot name has no chat directory to ask.
 func cursorChatStore(providerSessionID, cwd string) (string, bool) {
-	base, ok := cursorConfigDir()
-	if !ok || cwd == "" {
+	if cwd == "" {
 		return "", false
 	}
-	path := filepath.Join(base, "chats", cursorWorkspaceKey(cwd), providerSessionID, "store.db")
-	if _, err := os.Stat(path); err != nil {
-		return "", false
+	for _, s := range xdgStates(providers.Cursor, cursorConfigDir) {
+		path := filepath.Join(s.Dir, "chats", cursorWorkspaceKey(cwd), providerSessionID, "store.db")
+		if _, err := os.Stat(path); err == nil {
+			return path, true
+		}
 	}
-	return path, true
+	return "", false
 }
 
 // cursorWorkspaceKey is how Cursor names a checkout's chat directory: the hex

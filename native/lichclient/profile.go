@@ -108,6 +108,12 @@ func (c *Client) OMPProfiles() ProfileAPI {
 	return ProfileAPI{c: c, service: "ompprofile"}
 }
 
+// XDGProfiles is the profile service of opencode, Cursor CLI or Kiro CLI, by
+// provider id (xdgprofile.Service, "<id>profile").
+func (c *Client) XDGProfiles(kind string) ProfileAPI {
+	return ProfileAPI{c: c, service: kind + "profile"}
+}
+
 // List lists every profile with its login state; the backend runs one CLI per
 // profile to answer.
 func (a ProfileAPI) List(ctx context.Context) ([]Profile, error) {
@@ -176,9 +182,9 @@ func (a ProfileAPI) Plan(ctx context.Context, slug string) (QuotaPlan, error) {
 	return plan, a.c.Call(ctx, a.plan, &plan, slug)
 }
 
-// ContinueIn moves a Claude Code or Codex session's conversation to another
-// profile of its provider and carries on there. The backend refuses a turn in
-// progress.
+// ContinueIn moves a session's conversation to another profile of its provider
+// and carries on there. The backend refuses a turn in progress, and a provider
+// whose conversations cannot move (opencode).
 func (c *Client) ContinueIn(ctx context.Context, id, slug string) error {
 	return c.Call(ctx, "terminal.ContinueIn", nil, id, slug)
 }

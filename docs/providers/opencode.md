@@ -47,6 +47,16 @@ discovery that lags, which is the whole reason the tools exist.
 opencode runs on the user's own API keys unless an OpenCode Go key is stored; that subscription gets a gauge
 (`internal/quota`, `opencodePlan`) but names no account (`Plan.Account`), since its usage route returns none.
 
+## Profiles
+
+Linux only. A profile is a data home of its own (`XDG_DATA_HOME` pointed at
+`<lich config dir>/profiles/opencode/<slug>/`) made of links to every entry of yours but `opencode/`, which is
+the profile's: `opencode.db` holds the logins and every conversation together (`internal/xdgprofile`). The config
+under `~/.config/opencode`, lich's plugin included, is every profile's. `opencode auth login` is an interactive
+picker, so a login is only offered in a terminal card. Every reader of conversations (resume, usage, search, the
+History tab) scans each profile's database and resumes under the one holding it; a conversation cannot move to
+another profile, so there is no Continue in. The rest is in [`../ceilings.md`](../ceilings.md).
+
 ## Sandbox
 
 Nothing provider-specific.
