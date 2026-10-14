@@ -207,8 +207,11 @@ func TestCheckoutLabel(t *testing.T) {
 	}
 }
 
+// fakeHome is the home directory's project fakeState answers project.Home with.
+var fakeHome = lichclient.Project{ID: "home", Name: "me", Path: "/home/me"}
+
 // fakeState serves store.LoadState with *projects and store.GetSetting with
-// lastScreen.
+// lastScreen, and opens fakeHome into *projects when the window asks for it.
 func fakeState(t *testing.T, projects *[]lichclient.Project, lastScreen string) *lichclient.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -217,6 +220,17 @@ func fakeState(t *testing.T, projects *[]lichclient.Project, lastScreen string) 
 			_ = json.NewEncoder(w).Encode(*projects)
 		case "/rpc/store.GetSetting":
 			_ = json.NewEncoder(w).Encode(lastScreen)
+		case "/rpc/project.Home":
+			_ = json.NewEncoder(w).Encode(fakeHome)
+		case "/rpc/store.AddProject":
+			*projects = append(*projects, fakeHome)
+			_ = json.NewEncoder(w).Encode(nil)
+		case "/rpc/store.AddSession":
+			var args []any
+			_ = json.NewDecoder(r.Body).Decode(&args)
+			last := &(*projects)[len(*projects)-1]
+			last.Sessions = append(last.Sessions, lichclient.Session{ID: args[1].(string), Kind: "shell"})
+			_ = json.NewEncoder(w).Encode(nil)
 		default:
 			t.Errorf("unexpected call %s", r.URL.Path)
 		}
@@ -241,15 +255,16 @@ func onScreen(m *model) (project, session string) {
 }
 
 func TestLaunchOpensTheProjectTheLastScreenWasOn(t *testing.T) {
-	// "" is Home: the web opens there for anything but an open project's screen.
-	cases := map[string]string{"/projects/b/settings": "b", "/projects/gone": "", "/": "", "": ""}
+	// Home is the home directory's project: the web opens there for anything
+	// but an open project's screen.
+	cases := map[string]string{"/projects/b/settings": "b", "/projects/gone": "home", "/": "home", "": "home"}
 	for saved, want := range cases {
 		ps := twoProjects()
 		m := newModel(fakeState(t, &ps, saved), func() {})
 		if err := m.reload(context.Background()); err != nil {
 			t.Fatal(err)
 		}
-		wantSession := map[string]string{"a": "a2", "b": "b1", "": ""}[want]
+		wantSession := map[string]string{"a": "a2", "b": "b1", "home": ""}[want]
 		if p, s := onScreen(m); p != want || s != wantSession {
 			t.Errorf("last screen %q: on %s/%s, want %s/%s", saved, p, s, want, wantSession)
 		}

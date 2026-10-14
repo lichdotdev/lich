@@ -49,13 +49,16 @@ type model struct {
 	prs           map[string]prLookup               // shown path -> its open pull request
 	activeProject string                            // project id on screen
 	home          bool                              // Home is on screen instead
-	active        string                            // session id on screen
-	lost          bool                              // /events ended under an open window
-	focused       bool                              // the window has the user's focus
-	restored      bool                              // unread marks taken from the first LoadState
-	launched      bool                              // the first screen was chosen from the last one
-	folds         map[string]bool                   // foldKey -> block folded, once read or written
-	providers     *providerBook                     // detected providers, their flags and defaults
+	// homeID is the project rooted at the home directory, which Home shows:
+	// pinned out of the strip and never closed (projects.tsx homeId).
+	homeID    string
+	active    string          // session id on screen
+	lost      bool            // /events ended under an open window
+	focused   bool            // the window has the user's focus
+	restored  bool            // unread marks taken from the first LoadState
+	launched  bool            // the first screen was chosen from the last one
+	folds     map[string]bool // foldKey -> block folded, once read or written
+	providers *providerBook   // detected providers, their flags and defaults
 	// profiles is who is logged in to each Claude Code profile, and
 	// codexProfiles who is logged in to each Codex one and ompProfiles each
 	// oh-my-pi one.
@@ -125,6 +128,9 @@ func (m *model) reload(ctx context.Context) error {
 	m.mu.Unlock()
 	launch := ""
 	if choose {
+		if ps, err = m.ensureHome(ctx, ps); err != nil {
+			return err
+		}
 		if launch, err = m.launchProject(ctx, ps); err != nil {
 			return err
 		}
@@ -139,7 +145,7 @@ func (m *model) reload(ctx context.Context) error {
 	}
 	if choose {
 		m.launched = true
-		m.activeProject, m.home = launch, launch == ""
+		m.activeProject, m.home = launch, launch == "" || launch == m.homeID
 	}
 	if p := m.shownProject(); p != nil && !slices.ContainsFunc(p.Sessions, func(s lichclient.Session) bool { return s.ID == m.active }) {
 		m.active = p.ActiveSessionID
@@ -170,7 +176,7 @@ func (m *model) launchProject(ctx context.Context, ps []lichclient.Project) (str
 // not open; nil on Home. Callers hold m.mu.
 func (m *model) shownProject() *lichclient.Project {
 	if m.home {
-		return nil
+		return m.projectByID(m.homeID)
 	}
 	if i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == m.activeProject }); i >= 0 {
 		return &m.projects[i]
@@ -190,7 +196,7 @@ func (m *model) setActiveProject(id string) bool {
 	if i < 0 {
 		return false
 	}
-	m.activeProject, m.home = id, false
+	m.activeProject, m.home = id, id == m.homeID
 	m.active = m.projects[i].ActiveSessionID
 	return true
 }

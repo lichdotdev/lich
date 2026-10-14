@@ -70,6 +70,10 @@ func fakeUnread(t *testing.T, calls chan<- []any) *lichclient.Client {
 			_ = json.NewEncoder(w).Encode(projects)
 		case "/rpc/store.GetSetting":
 			_ = json.NewEncoder(w).Encode("")
+		case "/rpc/project.Home":
+			_ = json.NewEncoder(w).Encode(lichclient.Project{ID: "home", Path: "/home/me"})
+		case "/rpc/store.AddProject", "/rpc/store.AddSession":
+			_ = json.NewEncoder(w).Encode(nil)
 		case "/rpc/store.SetSessionUnread":
 			var args []any
 			body, _ := io.ReadAll(r.Body)

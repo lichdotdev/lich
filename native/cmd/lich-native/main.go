@@ -439,14 +439,16 @@ func (u *window) layout(gtx C) error {
 type stageView struct {
 	active    sessionView
 	hasActive bool
-	home      bool
-	in        footerInput
-	tabs      []projectTab
-	project   string // the active tab's project
+	// home is no project on screen at all: the stage offers to open one.
+	home    bool
+	in      footerInput
+	tabs    []projectTab
+	project string // the active tab's project
 }
 
 func (u *window) stageView(now time.Time) stageView {
-	v := stageView{in: u.footer.input(u.model, now), home: u.model.onHome()}
+	_, shown := u.model.project()
+	v := stageView{in: u.footer.input(u.model, now), home: !shown}
 	v.active, v.hasActive = u.model.activeSession()
 	v.tabs, v.project = u.model.projectTabs()
 	return v

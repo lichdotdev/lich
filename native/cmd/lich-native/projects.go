@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"errors"
 	"slices"
+	"strings"
 
 	"github.com/omartelo/lich/native/lichclient"
 )
@@ -38,10 +41,13 @@ type projectTab struct {
 func (m *model) projectTabs() (tabs []projectTab, active string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if p := m.shownProject(); p != nil {
+	if p := m.shownProject(); p != nil && !m.home {
 		active = p.ID
 	}
 	for _, p := range m.shownOrder() {
+		if p.ID == m.homeID {
+			continue
+		}
 		t := projectTab{ID: p.ID, Name: p.Name, Path: p.Path}
 		if p.ID != active {
 			t.status = m.status.projectStatus(sessionIDs(p))
@@ -65,13 +71,54 @@ func (m *model) showHome() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.home = true
+	if p := m.projectByID(m.homeID); p != nil {
+		m.active = p.ActiveSessionID
+	}
 }
 
 // onHome reports whether Home is on screen: chosen, or no project is open.
 func (m *model) onHome() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.shownProject() == nil
+	return m.home || m.shownProject() == nil
+}
+
+// projectByID is the open project with id, nil when none is. Callers hold m.mu.
+func (m *model) projectByID(id string) *lichclient.Project {
+	if i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id }); i >= 0 {
+		return &m.projects[i]
+	}
+	return nil
+}
+
+// homeSessionLabel and homeNextSeq seed the home project's first shell the
+// way newSession numbers one.
+const (
+	homeSessionLabel = "Shell 1"
+	homeNextSeq      = 1
+)
+
+// ensureHome opens the home directory's project with a shell in it when the
+// workspace does not hold it, as the web window does on every launch, and
+// returns the workspace as it stands after.
+func (m *model) ensureHome(ctx context.Context, ps []lichclient.Project) ([]lichclient.Project, error) {
+	home, err := m.client.HomeProject(ctx)
+	if err != nil {
+		return nil, err
+	}
+	m.mu.Lock()
+	m.homeID = home.ID
+	m.mu.Unlock()
+	if slices.ContainsFunc(ps, func(p lichclient.Project) bool { return p.ID == home.ID }) {
+		return ps, nil
+	}
+	if err := m.client.AddProject(ctx, home.ID, home.Name, home.Path); err != nil {
+		return nil, err
+	}
+	if err := m.client.AddSession(ctx, home.ID, strings.ToLower(rand.Text()), homeSessionLabel, "shell", "", homeNextSeq); err != nil {
+		return nil, err
+	}
+	return m.client.LoadState(ctx)
 }
 
 // runningIn counts a project's sessions holding a turn, which closing it
@@ -185,11 +232,18 @@ func (m *model) applyOrder(ids []string) {
 	}
 }
 
+// errHomeIsPermanent refuses closing the home project: Home always has one.
+var errHomeIsPermanent = errors.New("the home project cannot be closed")
+
 // askClose has the backend close a project and answers the sessions it held,
 // whose terminals the caller stops once the close went through. No tab moves
 // here: it leaves the strip when project-closed comes back.
 func (m *model) askClose(ctx context.Context, id string) ([]string, error) {
 	m.mu.Lock()
+	if id == m.homeID {
+		m.mu.Unlock()
+		return nil, errHomeIsPermanent
+	}
 	i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id })
 	var sessions []string
 	if i >= 0 {

@@ -151,3 +151,10 @@ func (c *Client) GetSetting(ctx context.Context, key, scope string) (string, err
 	var v string
 	return v, c.Call(ctx, "store.GetSetting", &v, key, scope)
 }
+
+// HomeProject is the project rooted at the user's home directory, the one the
+// windows pin as Home. It is not opened by asking.
+func (c *Client) HomeProject(ctx context.Context) (Project, error) {
+	var p Project
+	return p, c.Call(ctx, "project.Home", &p)
+}
