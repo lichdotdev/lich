@@ -14,6 +14,9 @@ const (
 	touchedEventName = "session-touched"
 	// focusEventName is relay.FocusEventName: `lich focus` asked for a card.
 	focusEventName = "session-focus"
+	// raiseEventName is main.windowRaiseEvent: the tray or a second launch
+	// asked for lich's window.
+	raiseEventName = "window-raise"
 )
 
 // sessionTouched reads a session's git state now rather than at the next

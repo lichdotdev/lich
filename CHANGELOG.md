@@ -147,6 +147,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The native window shows lich in the tray.** With `lich native`
+  (experimental), the tray icon never came up, so a lich whose window you
+  closed to keep its sessions running had nothing on screen. The icon now
+  appears with the native window, and Show lich, or launching lich again,
+  brings the native window back, starting it again if you closed it.
 - **Apps started from a lich terminal reach D-Bus and GTK again.** On
   coreutils 9.x, lich read your shell's environment with the quotes `env` adds
   when it prints to a terminal, so every session got values like

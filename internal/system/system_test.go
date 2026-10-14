@@ -476,3 +476,45 @@ func TestShowWindowAndQuitReachWhatMainWired(t *testing.T) {
 		t.Fatalf("CloseWindow = %v, want the wired close's error", err)
 	}
 }
+
+func TestShowWindowBringsBackTheNativeWindowOnceItAttached(t *testing.T) {
+	s := New(nil, "", "0.23.0", false)
+	shown := 0
+	s.SetShowWindow(func() { shown++ })
+	connected := true
+	raised, launched := 0, ""
+	s.SetNativeWindow(
+		func() bool {
+			if connected {
+				raised++
+			}
+			return connected
+		},
+		func(executable string) error {
+			launched = executable
+			return nil
+		},
+	)
+
+	if err := s.ShowWindow(ShowWindowOptions{}); err != nil || shown != 1 || raised != 0 {
+		t.Fatalf("before attaching: err %v, Chromium shown %d, native raised %d; want the Chromium window", err, shown, raised)
+	}
+
+	s.AttachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
+	if err := s.ShowWindow(ShowWindowOptions{}); err != nil || raised != 1 || launched != "" || shown != 1 {
+		t.Fatalf("native connected: err %v, raised %d, launched %q, Chromium shown %d; want one raise only",
+			err, raised, launched, shown)
+	}
+
+	connected = false
+	if err := s.ShowWindow(ShowWindowOptions{}); err != nil || launched != "/opt/lich/lich-native" || shown != 1 {
+		t.Fatalf("native closed: err %v, launched %q, Chromium shown %d; want the native binary started again",
+			err, launched, shown)
+	}
+
+	failed := errors.New("exec format error")
+	s.SetNativeWindow(func() bool { return false }, func(string) error { return failed })
+	if err := s.ShowWindow(ShowWindowOptions{}); !errors.Is(err, failed) || shown != 1 {
+		t.Fatalf("launch failing: err %v, Chromium shown %d; want the launch's error and no Chromium window", err, shown)
+	}
+}

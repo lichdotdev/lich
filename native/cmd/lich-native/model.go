@@ -74,6 +74,8 @@ type model struct {
 	diffTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
+	// raise brings the window forward, as the tray asks.
+	raise func()
 	// projectClosed hears a project that left the strip, whoever closed it,
 	// once its tab is already gone: the window stops the terminals and moves
 	// the screen.
@@ -294,6 +296,10 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			m.sessionTouched(ctx, ev.Data)
 		case focusEventName:
 			m.sessionFocus(ev.Data)
+		case raiseEventName:
+			if m.raise != nil {
+				m.raise()
+			}
 		case "project-closed":
 			var gone struct {
 				ID string `json:"id"`

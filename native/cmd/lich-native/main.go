@@ -209,6 +209,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.dock = newDock(code, u.review)
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
+	u.model.raise = func() { w.Activate("") }
 	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
 	u.settings.applyEditor = u.takeEditorPref
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
@@ -362,6 +363,7 @@ func (u *window) connect() error {
 	go u.loadProfiles()
 	go u.model.pollGit(u.ctx)
 	go u.warnUncleanExit()
+	go u.attachTray()
 	u.gitMissing.missing.Store(*flagGitMissing)
 	if !*flagGitMissing {
 		go u.checkGit(false)

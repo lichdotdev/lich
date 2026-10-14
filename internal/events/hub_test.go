@@ -150,3 +150,30 @@ func waitForAttach(t *testing.T, hub *Hub) {
 	}
 	t.Fatal("client never attached")
 }
+func TestAttachedFollowsTheClient(t *testing.T) {
+	hub := New()
+	if hub.Attached() {
+		t.Fatal("Attached with no client ever connected")
+	}
+	server := httptest.NewServer(hub)
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	waitForAttach(t, hub)
+	if !hub.Attached() {
+		t.Fatal("not Attached with a client connected")
+	}
+	_ = conn.CloseNow()
+	deadline := time.Now().Add(5 * time.Second)
+	for hub.Attached() {
+		if time.Now().After(deadline) {
+			t.Fatal("still Attached after the client closed")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}

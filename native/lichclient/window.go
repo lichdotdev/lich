@@ -14,6 +14,26 @@ func (c *Client) Quit(ctx context.Context) error {
 	return c.Call(ctx, "system.Quit", nil, struct{}{})
 }
 
+// AttachNative makes this window lich's window: the tray and a second launch
+// bring it forward, or start executable again once it closed.
+func (c *Client) AttachNative(ctx context.Context, executable string) error {
+	return c.Call(ctx, "system.AttachNative", nil, struct {
+		Executable string `json:"executable"`
+	}{executable})
+}
+
+// TrayLabels are the tray menu's words; Running carries a {count} placeholder.
+type TrayLabels struct {
+	Show    string `json:"show"`
+	Running string `json:"running"`
+	Quit    string `json:"quit"`
+}
+
+// SetTrayLabels gives the tray its words; the first call puts it up.
+func (c *Client) SetTrayLabels(ctx context.Context, labels TrayLabels) error {
+	return c.Call(ctx, "tray.SetLabels", nil, labels)
+}
+
 // Notify raises a desktop notification: summary is the headline, detail the
 // second line ("" omits it).
 func (c *Client) Notify(ctx context.Context, summary, detail string) error {

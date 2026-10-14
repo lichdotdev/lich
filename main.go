@@ -340,6 +340,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	sys.SetShowWindow(window.Show)
 	sys.SetQuit(coord.Quit)
 	sys.SetCloseWindow(window.Dismiss)
+	sys.SetNativeWindow(raiseNative(hub), launchNative(term))
 	dispatcher.Register("system", sys)
 	// Deleting a session for good takes any prompt parked on it, and the row is
 	// the only copy of what the user wrote. Both channels are used, and neither
@@ -452,7 +453,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the page hands it its words (tray.SetLabels).
 	dispatcher.Register("tray", tray.New(tray.Icons{PNG: trayPNG, ICO: trayICO},
-		window.Show, coord.Quit, term.LiveCount))
+		func() { showFromTray(sys) }, coord.Quit, term.LiveCount))
 	denyInternal(dispatcher)
 	term.Mount("/rpc/", dispatcher)
 	term.Mount("/drop", http.HandlerFunc(drops.Upload))
@@ -848,6 +849,38 @@ func handleBindFailure(configDir string, cause error, openRunning func(string, *
 		port, cause, logging.Path(filepath.Join(configDir, "lich"))),
 		zenity.Title("lich"))
 	os.Exit(1)
+}
+
+// windowRaiseEvent asks the native window on /events to come forward.
+const windowRaiseEvent = "window-raise"
+
+// raiseNative brings the native window forward through /events, which only it
+// holds once it attached.
+func raiseNative(hub *events.Hub) func() bool {
+	return func() bool {
+		if !hub.Attached() {
+			return false
+		}
+		hub.Emit(windowRaiseEvent, nil)
+		return true
+	}
+}
+
+// launchNative starts the native window again on this backend, pointed at it
+// the way `lich native` points the first one.
+func launchNative(term *terminal.Service) func(string) error {
+	return func(executable string) error {
+		info := term.Transport()
+		env := append(os.Environ(), "LICH_PORT="+strconv.Itoa(info.Port), "LICH_TOKEN="+info.Token)
+		return restart.StartDetached(executable, env, nil)
+	}
+}
+
+// showFromTray is the tray's Show: a click has no one to answer but the log.
+func showFromTray(sys *system.Service) {
+	if err := sys.ShowWindow(system.ShowWindowOptions{}); err != nil {
+		slog.Warn("show the window from the tray", "err", err)
+	}
 }
 
 // showRunning asks the running lich for its window: it opens one when the user

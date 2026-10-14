@@ -56,6 +56,13 @@ func (h *Hub) Emit(name string, data any) {
 	}
 }
 
+// Attached reports whether a client is connected to hear what is emitted.
+func (h *Hub) Attached() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.conn != nil
+}
+
 func (h *Hub) attach(conn *websocket.Conn) {
 	h.mu.Lock()
 	previous := h.conn

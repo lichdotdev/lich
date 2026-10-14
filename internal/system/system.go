@@ -48,6 +48,7 @@ type Service struct {
 	showWindow  func()
 	closeWindow func() error
 	quit        func() error
+	native      nativeWindow
 }
 
 func New(env []string, logPath, version string, uncleanExit bool) *Service {
