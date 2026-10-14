@@ -121,3 +121,21 @@ func TestWheelMovesTheCursorOnTheAlternateScreen(t *testing.T) {
 		})
 	}
 }
+
+func TestShortcutClickOnAURLOpensItAndReachesNothingElse(t *testing.T) {
+	// ?1000h: the program tracks the mouse, as Claude Code does.
+	v := newMouseTestView(t, "\x1b[?1000hdocs at https://lich.dev/docs ok")
+	url, took := v.linkClick(ptr(pointer.Press, at(20, 0), pointer.ButtonPrimary, key.ModShortcut))
+	if url != "https://lich.dev/docs" || !took {
+		t.Fatalf("Ctrl/Cmd+click on the URL = %q, %v", url, took)
+	}
+	if url, took := v.linkClick(ptr(pointer.Release, at(20, 0), 0, key.ModShortcut)); url != "" || !took {
+		t.Fatalf("the click's release = %q, %v; want it kept from the program and nothing reopened", url, took)
+	}
+	if _, took := v.linkClick(ptr(pointer.Press, at(20, 0), pointer.ButtonPrimary, 0)); took {
+		t.Fatal("a plain click was taken; only Ctrl/Cmd+click opens, as in the web window")
+	}
+	if _, took := v.linkClick(ptr(pointer.Press, at(2, 0), pointer.ButtonPrimary, key.ModShortcut)); took {
+		t.Fatal("Ctrl/Cmd+click off any link was taken")
+	}
+}

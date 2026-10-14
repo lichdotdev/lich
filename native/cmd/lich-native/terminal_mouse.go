@@ -54,6 +54,28 @@ func (t *termView) pointer(e pointer.Event, cellH int) (send []byte, copied stri
 	return nil, ""
 }
 
+// linkClick is the link a Ctrl+click (Cmd+click on macOS) opens, as
+// linkClickIsOurs rules in the web window, whether the program tracks the
+// mouse or not. took is e kept from the program and the selection: the press
+// that found a link and its release.
+func (t *termView) linkClick(e pointer.Event) (url string, took bool) {
+	switch e.Kind {
+	case pointer.Press:
+		if !e.Buttons.Contain(pointer.ButtonPrimary) || !e.Modifiers.Contain(key.ModShortcut) {
+			return "", false
+		}
+		url = t.vt.LinkAt(e.Position.X, e.Position.Y)
+		t.linkHeld = url != ""
+		return url, t.linkHeld
+	case pointer.Release:
+		if t.linkHeld {
+			t.linkHeld = false
+			return "", true
+		}
+	}
+	return "", false
+}
+
 // report is e as the tracking program reads it. A release carries no
 // button in Gio, so the one pressed is remembered.
 func (t *termView) report(e pointer.Event) []byte {

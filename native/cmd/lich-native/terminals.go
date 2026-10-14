@@ -39,6 +39,8 @@ type termView struct {
 	selecting bool
 	// held is the button a tracking program saw pressed.
 	held gioterm.MouseButton
+	// linkHeld is a press that opened a link, whose release is kept too.
+	linkHeld bool
 }
 
 // terminalPadding is term-view.ts TERMINAL_PADDING, in the terminal's own
@@ -121,6 +123,15 @@ func (ts *terminals) onOutput(id string, data []byte) {
 	if id == shown {
 		ts.invalidate()
 	}
+}
+
+// openLink opens url in the user's browser, off the frame.
+func (ts *terminals) openLink(url string) {
+	go func() {
+		if err := ts.client.OpenExternal(context.Background(), url); err != nil {
+			log.Printf("open link %s: %v", url, err)
+		}
+	}()
 }
 
 func (ts *terminals) send(id string, b []byte) {
@@ -365,6 +376,12 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			}
 			ts.send(t.id, pastedClipboard(t.vt, text, runtime.GOOS))
 		case pointer.Event:
+			if url, took := t.linkClick(e); took {
+				if url != "" {
+					ts.openLink(url)
+				}
+				break
+			}
 			send, copied := t.pointer(e, cellH)
 			ts.send(t.id, send)
 			if copied != "" {
