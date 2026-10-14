@@ -135,6 +135,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`lich --no-window` starts lich without opening its window.** The sessions,
   the tray and the CLI are all there; the tray's Show lich, or launching lich
   again, opens the window when you want it.
+- **Desktop notifications you can click, in the native window on Linux.** In
+  `lich native` (experimental), a session that needs your input or finished its
+  turn raises a notification with the provider's icon and a status badge, what
+  the session asks (or the last thing it said), and its project and branch.
+  **Open** brings the window up on that session, even from another workspace;
+  each session keeps one notification, replaced in place, and it goes away by
+  itself once you answer or open the session. Any notification server works
+  (GNOME, KDE, mako, dunst, swaync); one that draws buttons, like swaync, shows
+  Open and Dismiss. Windows and macOS keep the plain notification for now.
 
 ### Fixed
 

@@ -173,7 +173,13 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
 	u.topbar.open.closed = u.model.closed
-	u.notifier = newNotifier(ctx, client, w.Invalidate)
+	notes := newDesktopNotes(ctx, backendNotes{ctx: ctx, client: client}, func(projectID, id, token string) {
+		u.focusSession(projectID, id)
+		w.Activate(token)
+	}, func(id string) { u.notifier.closed(id) })
+	sink := recapping{next: notes, said: func(id string) (string, error) { return client.LastTurnSaid(ctx, id) }}
+	u.notifier = newNotifier(ctx, client, sink, w.Invalidate)
+	u.model.seen = u.notifier.seen
 	attention := attentionToast{show: func(t ui.Toast) { u.toaster.Show(t) }, open: func(projectID, id string) {
 		u.settings.hide()
 		u.openSession(projectID, id)

@@ -90,6 +90,8 @@ type statusReport struct {
 	label, project string
 	// reason is what a waiting session is blocked on, "" when unsaid.
 	reason string
+	// kind is the session's provider, branch the checkout's, "" unknown.
+	kind, branch string
 }
 
 // notifier owns the desktop channel's preferences and the opt-in's open
@@ -99,27 +101,62 @@ type notifier struct {
 	mu     sync.Mutex
 	prefs  notifyPrefs
 	asking bool
-	// send raises one desktop notification.
-	send func(summary, detail string)
+	sink   noteSink
+	// shown is the status each session's notification on screen says.
+	shown map[string]string
 	// store keeps one preference in the backend.
 	store      func(key, value string)
 	invalidate func()
 }
 
 // report raises what r calls for: the notification, or the opt-in's question.
+// A notification that no longer says what the session is doing, or whose
+// session is the one on screen in a focused window, comes down first.
 func (n *notifier) report(r statusReport) {
 	n.mu.Lock()
 	notice := decideStatusNotice(r.status, r.previous, r.focused, n.prefs)
 	if notice == noticeAsk {
 		n.asking = true
 	}
+	shown, up := n.shown[r.id]
+	stale := up && (shown != r.status || (r.focused && r.onScreen))
+	if stale {
+		delete(n.shown, r.id)
+	}
+	if notice == noticeNotify {
+		if n.shown == nil {
+			n.shown = map[string]string{}
+		}
+		n.shown[r.id] = r.status
+	}
 	n.mu.Unlock()
+	if stale && notice != noticeNotify {
+		n.sink.withdraw(r.id)
+	}
 	switch notice {
 	case noticeAsk:
 		n.invalidate()
 	case noticeNotify:
-		n.send(fmt.Sprintf(notifySummary(r.status), r.label), r.project)
+		n.sink.show(noteFor(r, fmt.Sprintf(notifySummary(r.status), r.label)))
 	}
+}
+
+// seen takes down id's notification: the window just showed the session.
+func (n *notifier) seen(id string) {
+	n.mu.Lock()
+	_, up := n.shown[id]
+	delete(n.shown, id)
+	n.mu.Unlock()
+	if up {
+		n.sink.withdraw(id)
+	}
+}
+
+// closed forgets id's notification, which the desktop took down itself.
+func (n *notifier) closed(id string) {
+	n.mu.Lock()
+	delete(n.shown, id)
+	n.mu.Unlock()
 }
 
 func notifySummary(status string) string {
@@ -183,18 +220,11 @@ func loadNotifyPrefs(ctx context.Context, c *lichclient.Client) (notifyPrefs, er
 	return parseNotifyPrefs(attention, finished), err
 }
 
-// newNotifier is the window's desktop channel over the backend's
-// system.Notify, the RPC the web raises its notifications with.
-func newNotifier(ctx context.Context, c *lichclient.Client, invalidate func()) *notifier {
+// newNotifier is the window's desktop channel; sink raises what it decides.
+func newNotifier(ctx context.Context, c *lichclient.Client, sink noteSink, invalidate func()) *notifier {
 	return &notifier{
 		invalidate: invalidate,
-		send: func(summary, detail string) {
-			go func() {
-				if err := c.Notify(ctx, summary, detail); err != nil {
-					log.Printf("notify: %v", err)
-				}
-			}()
-		},
+		sink:       sink,
 		store: func(key, value string) {
 			go func() {
 				if err := c.SetSetting(ctx, key, "", value); err != nil {

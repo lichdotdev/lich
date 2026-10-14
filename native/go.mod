@@ -25,6 +25,6 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 )
 
-// app.DropEvent (external file drop) lives in lichdotdev/gio, branch
-// drop-event; gioui.org has no drop from other programs.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261014190856-43e2df5404c5
+// app.DropEvent (external file drop) and Window.Activate (raising the window on
+// Wayland) live in lichdotdev/gio, branch drop-event; gioui.org has neither.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261014213308-b7a46be42a82

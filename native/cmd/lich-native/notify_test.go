@@ -10,25 +10,40 @@ import (
 
 type sentNotice struct{ summary, detail string }
 
+// fakeNotes is the desktop: what was raised, as headline and the line under
+// it, and which sessions' notes were taken down.
+type fakeNotes struct {
+	sent      *[]sentNotice
+	withdrawn *[]string
+}
+
+func (f fakeNotes) show(n desktopNote) {
+	*f.sent = append(*f.sent, sentNotice{n.title, n.meta})
+}
+
+func (f fakeNotes) withdraw(id string) { *f.withdrawn = append(*f.withdrawn, id) }
+
 // notifyRig is a model over one open project whose status reports reach a
 // notifier with a fake desktop and a fake store.
 type notifyRig struct {
-	m      *model
-	n      *notifier
-	sent   []sentNotice
-	stored map[string]string
+	m         *model
+	n         *notifier
+	sent      []sentNotice
+	withdrawn []string
+	stored    map[string]string
 }
 
 func newNotifyRig(prefs notifyPrefs) *notifyRig {
 	r := &notifyRig{stored: map[string]string{}}
 	r.n = &notifier{prefs: prefs, invalidate: func() {},
-		send:  func(summary, detail string) { r.sent = append(r.sent, sentNotice{summary, detail}) },
+		sink:  fakeNotes{sent: &r.sent, withdrawn: &r.withdrawn},
 		store: func(key, value string) { r.stored[key] = value }}
 	r.m = newModel(nil, func() {})
 	r.m.projects = []lichclient.Project{{ID: "p", Name: "lich", Sessions: []lichclient.Session{
 		{ID: "a", Label: "fix the build"}, {ID: "b"},
 	}}}
 	r.m.notify = r.n.report
+	r.m.seen = r.n.seen
 	return r
 }
 
@@ -155,5 +170,53 @@ func TestNotifyPrefsLoadFromTheBackend(t *testing.T) {
 	p, err := loadNotifyPrefs(context.Background(), client)
 	if err != nil || p != (notifyPrefs{attention: optInYes, finishedTurn: true}) {
 		t.Fatalf("%+v, %v", p, err)
+	}
+}
+
+func TestANoteComesDownOnceItsSessionMovesOn(t *testing.T) {
+	r := newNotifyRig(notifyPrefs{attention: optInYes, finishedTurn: true})
+	r.report(t, "a", statusWaiting)
+	r.report(t, "a", statusWaiting)
+	if len(r.withdrawn) != 0 {
+		t.Fatalf("a second prompt took the note down: %v", r.withdrawn)
+	}
+	r.report(t, "a", statusBusy)
+	if !slices.Equal(r.withdrawn, []string{"a"}) {
+		t.Fatalf("withdrawn %v after the session went back to work, want [a]", r.withdrawn)
+	}
+	r.report(t, "a", statusBusy)
+	if len(r.withdrawn) != 1 {
+		t.Fatalf("withdrawn %v, want no second take-down with nothing up", r.withdrawn)
+	}
+}
+
+func TestAFinishedNoteGivesWayToTheNextPromptWithoutATakeDown(t *testing.T) {
+	r := newNotifyRig(notifyPrefs{attention: optInYes, finishedTurn: true})
+	r.report(t, "a", statusBusy)
+	r.report(t, "a", statusDone)
+	r.report(t, "a", statusWaiting)
+	if len(r.withdrawn) != 0 || len(r.sent) != 2 {
+		t.Fatalf("sent %v withdrawn %v, want the prompt to replace the finished note in place", r.sent, r.withdrawn)
+	}
+}
+
+func TestSeeingTheSessionTakesItsNoteDown(t *testing.T) {
+	r := newNotifyRig(notifyPrefs{attention: optInYes})
+	r.report(t, "a", statusWaiting)
+	r.n.seen("b")
+	r.n.seen("a")
+	r.n.seen("a")
+	if !slices.Equal(r.withdrawn, []string{"a"}) {
+		t.Fatalf("withdrawn %v, want [a] once", r.withdrawn)
+	}
+}
+
+func TestANoteTheDesktopClosedIsNotTakenDownAgain(t *testing.T) {
+	r := newNotifyRig(notifyPrefs{attention: optInYes})
+	r.report(t, "a", statusWaiting)
+	r.n.closed("a")
+	r.report(t, "a", statusBusy)
+	if len(r.withdrawn) != 0 {
+		t.Fatalf("withdrawn %v, want nothing: the desktop already took it down", r.withdrawn)
 	}
 }

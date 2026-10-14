@@ -64,6 +64,8 @@ type model struct {
 	xdgProfiles map[string]*profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
+	// seen hears a session the window just showed the user.
+	seen func(id string)
 	// loginProgress takes each step of a profile login, of the provider kind
 	// names.
 	loginProgress func(kind string, step lichclient.ProfileLogin)

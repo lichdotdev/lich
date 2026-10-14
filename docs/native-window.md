@@ -72,6 +72,11 @@ built from a pinned Ghostty commit.
   a window that connects later shows the checkout's path until the next `cd`. A session's status and usage are
   not part of the gap: the native window reads `terminal.TurnStates` right after attaching to `/events`. The web
   window has the cwd gap too, and still the status and usage one after a reload; the same RPC would close them.
+- **Clickable notifications are Linux only.** The native window talks to the freedesktop notification server
+  itself (`desktop_notes_linux.go`); on Windows and macOS it still raises the backend's plain `system.Notify`,
+  with no click, no replacing and nothing taken down. On Wayland, Open brings the window up through
+  xdg-activation (`Window.Activate` in the lichdotdev/gio fork) with the token the server hands over; a
+  compositor may only mark the window urgent instead (Hyprland does unless `misc:focus_on_activate` is on).
 - **Translations are TypeScript.** The interface catalogs live in `frontend/src/lib/i18n`; the native window
   needs the same strings. Before the native window shows user text beyond the spike's, the catalogs move to a
   form both windows read.

@@ -81,12 +81,14 @@ func (m *model) statusReport(id, previous string) (statusReport, bool) {
 	if p == nil {
 		return statusReport{}, false
 	}
-	label := p.Sessions[i].Label
+	s := p.Sessions[i]
+	label := s.Label
 	if label == "" {
 		label = notifyUnlabeled
 	}
 	return statusReport{id: id, projectID: p.ID, status: m.status.status(id), previous: previous, focused: m.focused,
-		onScreen: m.shownProject() == p && m.active == id, label: label, project: p.Name, reason: m.status.reason(id)}, true
+		onScreen: m.shownProject() == p && m.active == id, label: label, project: p.Name, reason: m.status.reason(id),
+		kind: s.Kind, branch: m.git[m.shownPath(*p, s)].Branch}, true
 }
 
 // applyLive takes the live PTY reports the backend never replays: the
@@ -159,6 +161,9 @@ func (m *model) setFocused(ctx context.Context, focused bool) {
 // markRead takes down the backend's unread mark of a turn this window just
 // read, so a restart does not bring the ring back.
 func (m *model) markRead(ctx context.Context, id string) {
+	if m.seen != nil {
+		m.seen(id)
+	}
 	go func() {
 		if err := m.client.SetSessionUnread(ctx, id, false); err != nil {
 			log.Printf("mark %s read: %v", id, err)
