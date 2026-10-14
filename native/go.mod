@@ -27,4 +27,4 @@ require (
 
 // app.DropEvent (external file drop) lives in lichdotdev/gio, branch
 // drop-event; gioui.org has no drop from other programs.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261013163258-a341d0042d29
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261014175321-d76db7346558
