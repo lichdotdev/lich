@@ -27,13 +27,12 @@ const (
 	rowProjectOnlyT = "Project only"
 )
 
-// The row's opacities, from the mockup: a row following Global dims its
-// control, a global-only row seen from a project dims whole, and the search's
-// flash is the wait tone at 14%.
+// The row's opacities: a global-only row seen from a project dims whole, and
+// the search's flash is the wait tone at 14%. A row following Global keeps its
+// control at full strength: it can be changed, and "Follows Global" says why.
 const (
-	rowFollowsOpacity = 0.6
-	rowOffOpacity     = 0.5
-	rowLitFill        = 0.14
+	rowOffOpacity = 0.5
+	rowLitFill    = 0.14
 )
 
 var (
@@ -112,11 +111,8 @@ func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, t
 
 func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Theme) D) D {
 	text := th
-	switch r.kind {
-	case rowGlobalOnly:
+	if r.kind == rowGlobalOnly {
 		text = fadedTheme(th, rowOffOpacity)
-	case rowFollows:
-		control = fadedControl(control, rowFollowsOpacity)
 	}
 	padL := rowPadX
 	if r.kind == rowChanged {
@@ -216,10 +212,6 @@ func fadedTheme(th *ui.Theme, opacity float32) *ui.Theme {
 	f.Primary, f.Palette.Input, f.Border = fade(th.Primary), fade(th.Palette.Input), fade(th.Border)
 	f.Accent, f.Background = fade(th.Accent), fade(th.Background)
 	return &f
-}
-
-func fadedControl(control func(gtx C, th *ui.Theme) D, opacity float32) func(gtx C, th *ui.Theme) D {
-	return func(gtx C, th *ui.Theme) D { return control(gtx, fadedTheme(th, opacity)) }
 }
 
 // insetBorder strokes a 1px line just inside size, a box-shadow inset 0 0 0
