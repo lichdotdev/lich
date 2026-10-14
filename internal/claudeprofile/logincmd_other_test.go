@@ -16,7 +16,7 @@ func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "env -u CLAUDE_CODE_OAUTH_TOKEN -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN" +
-		" -u CLAUDE_SECURESTORAGE_CONFIG_DIR -u CLAUDE_CONFIG_DIR CLAUDE_CONFIG_DIR='" + p.Dir +
+		" -u CLAUDE_SECURESTORAGE_CONFIG_DIR -u CLAUDE_CODE_PLUGIN_CACHE_DIR -u CLAUDE_CONFIG_DIR CLAUDE_CONFIG_DIR='" + p.Dir +
 		"' '/opt/my claude' auth login --claudeai"
 	if got != want {
 		t.Errorf("LoginCommand =\n%s\nwant\n%s", got, want)

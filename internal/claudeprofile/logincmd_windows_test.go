@@ -19,7 +19,7 @@ func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "Remove-Item Env:CLAUDE_CODE_OAUTH_TOKEN,Env:ANTHROPIC_API_KEY,Env:ANTHROPIC_AUTH_TOKEN," +
-		"Env:CLAUDE_SECURESTORAGE_CONFIG_DIR,Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue; " +
+		"Env:CLAUDE_SECURESTORAGE_CONFIG_DIR,Env:CLAUDE_CODE_PLUGIN_CACHE_DIR,Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue; " +
 		"$env:CLAUDE_CONFIG_DIR = '" + p.Dir + "'; & 'C:\\Tools\\claude.exe' auth login --claudeai"
 	if got != want {
 		t.Errorf("LoginCommand =\n%s\nwant\n%s", got, want)

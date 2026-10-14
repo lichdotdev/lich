@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/omartelo/lich/internal/profilestore"
 )
@@ -50,9 +51,11 @@ var store = profilestore.Spec{
 	// (plugincache.go).
 	Downloads: []string{filepath.Join("plugins", "marketplaces")},
 	// The secure-storage override goes too, since on macOS it would point every
-	// profile at one Keychain item.
+	// profile at one Keychain item, and so does the plugins override, which would
+	// point every profile at one installed set (PluginsDir).
 	Override: []string{
 		"CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_SECURESTORAGE_CONFIG_DIR",
+		pluginsDirVar,
 	},
 	Seed: seed,
 	Sync: layoutPluginCache,
@@ -76,6 +79,36 @@ func PersonalDir() (string, error) {
 		return "", fmt.Errorf("resolve home directory: %w", err)
 	}
 	return filepath.Join(home, ".claude"), nil
+}
+
+// pluginsDirVar moves Claude Code's whole plugins directory, not only the cache
+// its name says: installed_plugins.json, the marketplaces and the cache are
+// read under it (measured on 2.1.300). A leading ~ is the home directory.
+const pluginsDirVar = "CLAUDE_CODE_PLUGIN_CACHE_DIR"
+
+// PluginsDir is the plugins directory of the profile slug whose config
+// directory is dir. Personal's follows pluginsDirVar from lich's environment; a
+// profile's is always inside its own, since its spawn drops the variable.
+func PluginsDir(slug, dir string) string {
+	if IsPersonal(slug) {
+		return personalPluginsDir(dir)
+	}
+	return filepath.Join(dir, "plugins")
+}
+
+func personalPluginsDir(personal string) string {
+	dir := os.Getenv(pluginsDirVar)
+	if dir == "" {
+		return filepath.Join(personal, "plugins")
+	}
+	if dir != "~" && !strings.HasPrefix(dir, "~/") {
+		return dir
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return dir
+	}
+	return filepath.Join(home, dir[1:])
 }
 
 // personalGlobalFile is the default profile's global config: inside the config

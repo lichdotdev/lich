@@ -143,7 +143,7 @@ func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 	if got, want := markets["mine"].InstallLocation, filepath.ToSlash(filepath.Join(home, "src", "mine")); got != want {
 		t.Errorf("local marketplace moved to %q, want %q", got, want)
 	}
-	if len(installedPlugins(p.Dir)) != 0 {
+	if len(installedPlugins(filepath.Join(p.Dir, "plugins"))) != 0 {
 		t.Error("a new profile has plugins installed")
 	}
 
@@ -286,6 +286,37 @@ func TestEnvHandsTheProfileItsOwnLogin(t *testing.T) {
 	}, "/new")
 	if want := []string{"PATH=/bin", "CLAUDE_CONFIG_DIR=/new"}; !slices.Equal(got, want) {
 		t.Errorf("Env = %v, want %v", got, want)
+	}
+}
+
+// CLAUDE_CODE_PLUGIN_CACHE_DIR moves Claude Code's whole plugins directory
+// (installed set, marketplaces, cache), so one inherited by a profile's spawn
+// would hand every profile Personal's plugins.
+func TestEnvKeepsTheProfilesOwnPlugins(t *testing.T) {
+	got := Env([]string{"PATH=/bin", "CLAUDE_CODE_PLUGIN_CACHE_DIR=/shared"}, "/new")
+	if want := []string{"PATH=/bin", "CLAUDE_CONFIG_DIR=/new"}; !slices.Equal(got, want) {
+		t.Errorf("Env = %v, want %v", got, want)
+	}
+}
+
+func TestPersonalPluginsFollowLichsEnvironment(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	for _, c := range []struct{ name, value, want string }{
+		{"unset", "", filepath.Join("/cfg", "plugins")},
+		{"absolute", "/elsewhere", "/elsewhere"},
+		{"home", "~/p", filepath.Join(home, "p")},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", c.value)
+			if got := PluginsDir(Personal, "/cfg"); got != c.want {
+				t.Errorf("PluginsDir = %q, want %q", got, c.want)
+			}
+			if got, want := PluginsDir("work", "/work"), filepath.Join("/work", "plugins"); got != want {
+				t.Errorf("a profile's PluginsDir = %q, want %q", got, want)
+			}
+		})
 	}
 }
 

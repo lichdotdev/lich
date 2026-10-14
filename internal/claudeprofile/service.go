@@ -124,7 +124,7 @@ func (s *Service) Profiles() ([]Info, error) {
 }
 
 func (s *Service) info(p Profile) Info {
-	info := Info{Profile: p, Plugins: len(installedPlugins(p.Dir))}
+	info := Info{Profile: p, Plugins: len(installedPlugins(PluginsDir(p.Slug, p.Dir)))}
 	st, err := s.authStatus(p)
 	if err != nil {
 		info.StatusError = err.Error()
@@ -190,7 +190,7 @@ func (s *Service) Plugins(slug string) ([]Plugin, error) {
 		return nil, err
 	}
 	out := []Plugin{}
-	for _, p := range installedPlugins(dir) {
+	for _, p := range installedPlugins(PluginsDir(slug, dir)) {
 		if p.Key != s.lichPlugin {
 			out = append(out, p)
 		}
@@ -198,10 +198,11 @@ func (s *Service) Plugins(slug string) ([]Plugin, error) {
 	return out, nil
 }
 
-// installedPlugins reads a profile's installed_plugins.json for its user-scope
-// plugins, sorted by key. A file that is missing or does not parse lists none.
-func installedPlugins(dir string) []Plugin {
-	data, err := os.ReadFile(filepath.Join(dir, "plugins", "installed_plugins.json"))
+// installedPlugins reads the installed_plugins.json in a profile's plugins
+// directory for its user-scope plugins, sorted by key. A file that is missing or
+// does not parse lists none.
+func installedPlugins(plugins string) []Plugin {
+	data, err := os.ReadFile(filepath.Join(plugins, "installed_plugins.json"))
 	if err != nil {
 		return nil
 	}

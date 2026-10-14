@@ -1366,8 +1366,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   missing. `.in_use` markers of every profile running a version land in the store's copy. On Windows each
   version is a junction, which Claude Code's sweep reads as a link too (read in the source, not run on
   Windows), and a version Windows will not move while a file in it is open stays the profile's own until a
-  later spawn. A `CLAUDE_CODE_PLUGIN_CACHE_DIR` in lich's environment moves the whole `plugins/` directory,
-  installed set included, and every profile with it.
+  later spawn. `CLAUDE_CODE_PLUGIN_CACHE_DIR` moves Claude Code's whole `plugins/` directory, installed set,
+  marketplaces and cache, not only the cache (measured on 2.1.300), so a profile's spawn, login and plugin
+  install drop it and a profile's plugins stay inside its own directory; Personal keeps it, and lich reads
+  Personal's installed set where it points (`claudeprofile.PluginsDir`). A profile still seeds from and links
+  to Personal's `plugins/` under its config directory, so with the variable set a new profile copies none of
+  Personal's marketplaces and clones each one again into a directory Personal no longer reads.
 - **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
   login in the Keychain under a service named after a hash of the config directory string
   (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its

@@ -212,6 +212,24 @@ func TestPluginsListsAPortableSet(t *testing.T) {
 	}
 }
 
+func TestPersonalPluginsAreReadWhereClaudeKeepsThem(t *testing.T) {
+	personal := machine(t)
+	moved := t.TempDir()
+	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", moved)
+	s, _ := fakeService(t)
+	mustWrite(t, filepath.Join(personal, "plugins", "installed_plugins.json"),
+		`{"version":2,"plugins":{"stale@m":[{"scope":"user"}]}}`)
+	mustWrite(t, filepath.Join(moved, "installed_plugins.json"),
+		`{"version":2,"plugins":{"live@m":[{"scope":"user"}]}}`)
+	got, err := s.Plugins(Personal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Key != "live@m" {
+		t.Errorf("plugins %+v, want live@m", got)
+	}
+}
+
 func TestDeleteProfileWaitsForItsSessions(t *testing.T) {
 	machine(t)
 	s, _ := fakeService(t)

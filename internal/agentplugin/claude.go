@@ -50,7 +50,7 @@ func (s *Service) ClaudeProfileStatus(slug string) (Status, error) {
 	available := s.available(providers.Claude)
 	version, installed := "", false
 	if available {
-		version, installed = claudeInstalledVersionIn(dir)
+		version, installed = claudeInstalledVersionAt(claudeprofile.PluginsDir(slug, dir))
 	}
 	return computeStatus(providers.Claude, available, installed, version, s.latestVersion()), nil
 }
@@ -131,7 +131,7 @@ func claudeInstalledVersion() (string, bool) {
 	if dir == "" {
 		return "", false
 	}
-	return claudeInstalledVersionIn(dir)
+	return claudeInstalledVersionAt(claudeprofile.PluginsDir(claudeprofile.Personal, dir))
 }
 
 // ClaudeInstalledIn reports whether the plugin is installed in the Claude Code
@@ -142,7 +142,11 @@ func ClaudeInstalledIn(dir string) bool {
 }
 
 func claudeInstalledVersionIn(dir string) (string, bool) {
-	data, err := os.ReadFile(filepath.Join(dir, "plugins", "installed_plugins.json"))
+	return claudeInstalledVersionAt(filepath.Join(dir, "plugins"))
+}
+
+func claudeInstalledVersionAt(plugins string) (string, bool) {
+	data, err := os.ReadFile(filepath.Join(plugins, "installed_plugins.json"))
 	if err != nil {
 		return "", false
 	}

@@ -175,6 +175,17 @@ func TestClaudeInstalledVersionReadsConfigDir(t *testing.T) {
 	}
 }
 
+func TestClaudeInstalledVersionReadsPluginCacheDir(t *testing.T) {
+	t.Setenv("CLAUDE_CONFIG_DIR", writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.3.1"}]}}`))
+	moved := writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.4.0"}]}}`)
+	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", filepath.Join(moved, "plugins"))
+
+	ver, ok := claudeInstalledVersion()
+	if !ok || ver != "0.4.0" {
+		t.Fatalf("got (%q,%v), want (0.4.0,true)", ver, ok)
+	}
+}
+
 func TestClaudeInstalledVersionMissingFile(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	if ver, ok := claudeInstalledVersion(); ok || ver != "" {
