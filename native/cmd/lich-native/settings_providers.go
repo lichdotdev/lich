@@ -38,6 +38,7 @@ const (
 	providerDocsLabel    = "Documentation"
 	providerTagDefault   = "default here"
 	providerTagNoPrompts = "no prompts"
+	providerTagOthers    = "other versions on PATH"
 
 	providerDefaultTitle = "Default provider"
 	providerDefaultAlso  = "agent new session"
@@ -58,6 +59,7 @@ const (
 	binSourceGlobal = "set for all projects"
 	binSourcePath   = "from $PATH"
 	binGlobalPath   = "$PATH"
+	binAlsoOnPath   = "Also on PATH: %s. Pin one above to choose."
 
 	skipTitle        = "Skip permission prompts"
 	skipAlso         = "yolo dangerous approvals"
@@ -479,8 +481,12 @@ type providerSettings struct {
 	checks     map[string]lichclient.BinaryCheck // a binary's verdict, by what was asked
 	asked      map[string]bool
 	askedOff   map[string]bool
-	rechecking bool
-	recheckErr string
+	// versions is what a binary reports and what else $PATH holds for its
+	// provider, by "<provider>\x00<what was asked>"; read once per visit.
+	versions     map[string]binVersions
+	askedVersion map[string]bool
+	rechecking   bool
+	recheckErr   string
 	// seq numbers the writes to a key, so only the last of a burst is sent.
 	seq  map[string]int
 	send sync.Mutex
@@ -538,6 +544,7 @@ func (p *providerSettings) state(id string) *providerState {
 func (p *providerSettings) revalidate() {
 	p.mu.Lock()
 	p.checks, p.asked, p.askedOff, p.projectOff = nil, nil, nil, nil
+	p.versions, p.askedVersion = nil, nil
 	p.mu.Unlock()
 	p.addingSet = false
 	p.claude.asked = false
@@ -561,6 +568,7 @@ func (p *providerSettings) recheckPath(s *settingsScreen) {
 			p.recheckErr = providersPathReread
 		} else {
 			p.checks, p.asked = nil, nil
+			p.versions, p.askedVersion = nil, nil
 		}
 		p.mu.Unlock()
 		s.invalidate()

@@ -11,6 +11,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -191,16 +192,27 @@ func (s *settingsScreen) providerListRow(gtx C, th *ui.Theme, values scopedValue
 		s.setProviderEnabled(p.id, st.toggle.Value)
 	}
 	st.toggle.Value = p.enabled
+	var versions binVersions
+	var spawned lichclient.BinaryCheck
+	if p.installed {
+		project, global := s.binLayers(values, m, p.id)
+		_, _, asked := spawnedBin(project, global, p.binary)
+		versions, _ = s.providers.versionsOf(s, p.id, asked)
+		spawned, _ = s.providers.check(s, asked)
+	}
 	plan, hasPlan := s.planOf(p.id)
 	summary, mono := planSummary(plan, hasPlan), false
 	if summary == "" {
-		summary, mono = p.binary, true
+		summary, mono = strings.TrimSpace(p.binary+" "+versions.version), true
 	}
 	projectDefault := ""
 	if s.scope != "" {
 		projectDefault, _ = values.set(providerDefaultKey, s.scope)
 	}
 	tags := append(providerTags(p.id, projectDefault, m.skipLevel(p.id)), s.profileTags(p.id, values, m)...)
+	if len(versions.others(spawned.Path)) > 0 {
+		tags = append(tags, providerTagOthers)
+	}
 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Stack{}.Layout(gtx,

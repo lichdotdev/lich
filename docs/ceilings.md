@@ -1324,6 +1324,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   started afresh in the target profile. A session born in a profile deleted since
   is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
   deleted with the profile.
+- **The version Settings shows is the one lich's own environment gets** (`internal/providers/version.go`):
+  `--version` runs in lich's working directory with lich's environment, not in a session's checkout. A
+  version-manager shim that picks its tool per directory (mise, asdf) can answer one version there and start
+  another in a project that pins its own, and the "Also on PATH" list compares those same per-lich answers.
+  All eight providers print a version (measured on Claude Code 2.1.299, Codex 0.162.1, Antigravity 1.3.5,
+  opencode 1.18.35, oh-my-pi 18.8.9, Crush 0.98.1, Cursor CLI 2026.10.01, Kiro CLI 2.21.0); a CLI whose
+  `--version` hangs past 10 s or prints no version shows its path alone.
 - **The binary setting and lich's own plugin checks still answer for Personal**: a profile's session runs the
   configured Claude Code binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins
   over the profile, and the same binary answers the profile's `auth status` and installs its plugins. The

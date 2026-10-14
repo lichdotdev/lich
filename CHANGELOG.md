@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **See which binary of each agent lich runs, and its version.** When several
+  copies of a CLI sit on your `PATH` (say a global npm install, a mise shim and
+  a distro package of Codex), the first one silently drives every session,
+  login and plugin install. In the native window (`lich native`, experimental),
+  Settings › Providers now shows the version beside a provider whose row has no
+  plan reading, and a
+  provider's Binary block names the file a session runs, its version, and every
+  other version `PATH` holds, with a hint to pin one; the row in the list says
+  "other versions on PATH". `lich doctor` warns about the same thing and names
+  the setting that pins one (`provider.<id>.bin`).
 - **Claude Code profiles: more than one account, each with its full login, in
   the native window.** Open Settings › Providers › Claude Code in `lich native`
   (experimental) and make a profile per account: **New profile** takes a name

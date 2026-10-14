@@ -70,6 +70,7 @@ type Doctor struct {
 	instance func() (*singleton.Info, bool)
 	browser  func() (string, error)
 	detect   func() []providers.Detected
+	onPath   func(id string) []providers.Binary
 	store    func() (io.Closer, error)
 	sandbox  func() (string, error)
 	lookPath func(string) (string, error)
@@ -86,6 +87,7 @@ func New(configDir string, getenv func(string) string) *Doctor {
 		instance:  func() (*singleton.Info, bool) { return Instance(configDir) },
 		browser:   Browser,
 		detect:    Providers,
+		onPath:    OnPath,
 		store:     func() (io.Closer, error) { return store.New() },
 		sandbox:   sandbox.Probe,
 		lookPath:  exec.LookPath,
@@ -209,19 +211,53 @@ func (d *Doctor) checkBrowser() (Status, string) {
 // Providers — which the app itself resolves and counts as installed — are not
 // read here. The warning says so, or an app that spawns agents fine would be
 // read as contradicting its own doctor.
+//
+// A provider with several versions on $PATH warns too: only the first one runs,
+// and nothing else on screen says which that is.
 func (d *Doctor) checkProviders() (Status, string) {
 	found := d.detect()
-	var installed []string
+	var installed, shadowed []string
 	for _, p := range found {
-		if p.Installed {
-			installed = append(installed, p.ID)
+		if !p.Installed {
+			continue
+		}
+		installed = append(installed, p.ID)
+		if line := versionClash(p.ID, d.onPath(p.ID)); line != "" {
+			shadowed = append(shadowed, line)
 		}
 	}
 	if len(installed) == 0 {
 		return Warn, "none on PATH; Settings overrides not read"
 	}
-	return OK, fmt.Sprintf("%d of %d on PATH: %s",
-		len(installed), len(found), strings.Join(installed, ", "))
+	detail := fmt.Sprintf("%d of %d on PATH: %s", len(installed), len(found), strings.Join(installed, ", "))
+	if len(shadowed) > 0 {
+		return Warn, detail + "; " + strings.Join(shadowed, "; ")
+	}
+	return OK, detail
+}
+
+// versionClash names a provider's binaries when $PATH holds more than one and
+// they disagree on the version, in $PATH order; the first is what a session
+// runs unless Settings pins another, which this scan cannot read; "" when
+// they agree or there is only one. An unreadable version disagrees with nothing.
+func versionClash(id string, found []providers.Binary) string {
+	versions := map[string]bool{}
+	var listed []string
+	for i, b := range found {
+		if b.Version != "" {
+			versions[b.Version] = true
+		}
+		entry := b.Path + " " + b.Version
+		if i == 0 {
+			entry += " (first)"
+		}
+		listed = append(listed, strings.TrimSpace(entry))
+	}
+	if len(versions) < 2 {
+		return ""
+	}
+	return fmt.Sprintf("%s has %d versions on PATH: %s; pin one with provider.%s.bin",
+		id, len(versions), strings.Join(listed, ", "), id)
 }
 
 // checkSandbox proves the sandbox instead of trusting the launcher being on

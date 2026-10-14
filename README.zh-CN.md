@@ -184,7 +184,10 @@ Homebrew 安装可以绕开 Gatekeeper 的提示；从 Releases 页面下载的�
 
 - **智能体** —— 在设置 › Providers 里为每个 provider 设定二进制文件路径，并选定所有
   项目的默认。那里当前项目的那一行可以覆盖这个选择；**Clear** 会移除这层覆盖，之后默认
-  的变化便会自动流过来。
+  的变化便会自动流过来。没有设定路径时，会话运行登录 shell 的 `PATH` 上第一个找到的
+  该 provider 二进制文件；原生窗口的 Binary 一栏会写出是哪个文件、它的版本，并列出
+  `PATH` 上其他版本的同名文件，`lich doctor` 也会就此发出警告。要选定其中一个，在
+  Binary 里填它的路径（即设置项 `provider.<id>.bin`，例如 `provider.codex.bin`）。
   lich 能读到套餐的 provider，其一节的开头是你的套餐还剩多少。底栏显示什么，在设置 ›
   Appearance 里拖动它的各项来设定；费用读数一开始是隐藏的，因为只有当你按 token 计费时
   这个数字才有意义。

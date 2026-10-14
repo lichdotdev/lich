@@ -210,7 +210,12 @@ needs `brew uninstall lich` first — [INSTALL.md](INSTALL.md) says why.
 - **Providers** — set each provider's binary path and the default for all
   projects in Settings › Providers. The open project's row there can override
   that choice; **Clear** removes the override, so later changes to the default
-  flow through automatically. A provider's section opens
+  flow through automatically. With no path set, a session runs the first of
+  the provider's binaries on your login shell's `PATH`; in the native window the
+  Binary block names that file and its version, and lists any other version
+  `PATH` holds, which `lich doctor` also warns about. To pick one, set its path
+  in Binary (the setting `provider.<id>.bin`, e.g. `provider.codex.bin`).
+  A provider's section opens
   with how much of your plan is left, when lich can read it. What the footer
   shows is set in Settings › Appearance by dragging its items; the cost
   readout starts hidden, since the figure only means something when you are

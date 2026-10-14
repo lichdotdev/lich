@@ -179,12 +179,10 @@ func (s *settingsScreen) binBlock(gtx C, th *ui.Theme, values scopedValues, m pr
 		r.globalValue = binGlobalPath
 	}
 
-	global := binLayer{bin: m.globals[providerBinKey(p.id)], off: m.globals[providerBinOffKey(p.id)] == "true"}
-	var project binLayer
+	project, global := s.binLayers(values, m, p.id)
 	stored := global.bin
 	if s.scope != "" {
-		stored, _ = values.set(providerBinKey(p.id), s.scope)
-		project = binLayer{bin: stored, off: pr.projectOffOf(s, s.scope, p.id)}
+		stored = project.bin
 	}
 	if typed, edited := pr.bin.sync(p.id, s.scope, stored); edited {
 		s.writeBin(m, p.id, s.scope, typed)
@@ -198,23 +196,55 @@ func (s *settingsScreen) binBlock(gtx C, th *ui.Theme, values scopedValues, m pr
 		go s.pickBin(m, p, s.scope)
 	}
 
-	scope := winningBinScope(project, global)
-	configured := configuredBin(scope, project, global)
-	asked := configured
-	if asked == "" {
-		asked = p.binary
-	}
+	scope, configured, asked := spawnedBin(project, global, p.binary)
 	check, known := pr.check(s, asked)
+	versions, _ := pr.versionsOf(s, p.id, asked)
 	source := parkedLabel(scope, project, global, name)
 	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return s.binField(gtx, th, p) }),
 			ui.VGap(2),
 			layout.Rigid(func(gtx C) D {
-				return binVerdict(gtx, th, check, known, asked, configured, binSource(scope, name)+source)
+				return binVerdict(gtx, th, check, known, asked, configured, versions.version, binSource(scope, name)+source)
 			}),
 			layout.Rigid(func(gtx C) D { return binProblem(gtx, th, check, known, asked) }),
+			layout.Rigid(func(gtx C) D { return binAlsoOnPathLine(gtx, th, versions.others(check.Path)) }),
 		)
+	})
+}
+
+// binLayers are provider kind's configurable layers as the open scope sees
+// them: the project's (zero on Global) and Global's.
+func (s *settingsScreen) binLayers(values scopedValues, m providersMachine, kind string) (project, global binLayer) {
+	global = binLayer{bin: m.globals[providerBinKey(kind)], off: m.globals[providerBinOffKey(kind)] == "true"}
+	if s.scope != "" {
+		stored, _ := values.set(providerBinKey(kind), s.scope)
+		project = binLayer{bin: stored, off: s.providers.projectOffOf(s, s.scope, kind)}
+	}
+	return project, global
+}
+
+// spawnedBin is the layer that wins, the path it holds ("" when $PATH wins)
+// and what a spawn resolves: that path, else the provider's own binary name.
+func spawnedBin(project, global binLayer, binary string) (scope, configured, asked string) {
+	scope = winningBinScope(project, global)
+	configured = configuredBin(scope, project, global)
+	asked = configured
+	if asked == "" {
+		asked = binary
+	}
+	return scope, configured, asked
+}
+
+// binAlsoOnPathLine is the muted sentence naming the other versions $PATH
+// holds, nothing when it holds none.
+func binAlsoOnPathLine(gtx C, th *ui.Theme, others []lichclient.ProviderBinary) D {
+	line := alsoOnPathLine(others)
+	if line == "" {
+		return D{}
+	}
+	return layout.Inset{Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		return wrapped(gtx, th.Text(ui.TextXS, line).Muted())
 	})
 }
 
@@ -247,9 +277,9 @@ func binSource(scope, projectName string) string {
 }
 
 // binVerdict is the glyph of what the path resolves to, the executable it
-// resolved to and where it came from. Nothing is drawn for the glyph while a
+// resolved to, the version it reports and where it came from. Nothing is drawn for the glyph while a
 // check is in flight, so a field being typed into does not blink.
-func binVerdict(gtx C, th *ui.Theme, check lichclient.BinaryCheck, known bool, asked, configured, source string) D {
+func binVerdict(gtx C, th *ui.Theme, check lichclient.BinaryCheck, known bool, asked, configured, version, source string) D {
 	path := check.Path
 	if path == "" {
 		path = configured
@@ -266,6 +296,11 @@ func binVerdict(gtx C, th *ui.Theme, check lichclient.BinaryCheck, known bool, a
 	}
 	children = append(children,
 		layout.Rigid(th.Text(ui.TextXS, path).Mono().Layout),
+	)
+	if version != "" && known && check.Status == lichclient.CheckOK {
+		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, version).Mono().Muted().Layout))
+	}
+	children = append(children,
 		ui.Gap(2),
 		layout.Flexed(1, th.Text(ui.TextXS, "· "+source).Muted().Layout),
 	)

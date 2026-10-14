@@ -30,6 +30,9 @@ func healthy(t *testing.T) *Doctor {
 			{ID: "codex"},
 		}
 	}
+	d.onPath = func(string) []providers.Binary {
+		return []providers.Binary{{Path: "/usr/bin/claude", Version: "2.1.299"}}
+	}
 	d.store = func() (io.Closer, error) { return io.NopCloser(nil), nil }
 	d.sandbox = func() (string, error) { return "bubblewrap", nil }
 	d.lookPath = func(name string) (string, error) { return "/usr/bin/" + name, nil }
@@ -236,6 +239,42 @@ func TestAMissingBrowserStopsALaunchAndMissingProvidersDoNot(t *testing.T) {
 	// would read as a verdict on a machine that spawns agents fine.
 	if !strings.Contains(checks["providers"].Detail, "Settings overrides not read") {
 		t.Errorf("providers detail = %q", checks["providers"].Detail)
+	}
+}
+
+func TestSeveralVersionsOfOneProviderOnPathWarn(t *testing.T) {
+	d := healthy(t)
+	d.onPath = func(string) []providers.Binary {
+		return []providers.Binary{
+			{Path: "/home/u/.local/bin/claude", Version: "2.1.299"},
+			{Path: "/usr/bin/claude", Version: "2.1.250"},
+		}
+	}
+
+	got := statuses(d.Run())["providers"]
+
+	if got.Status != Warn {
+		t.Errorf("providers = %s, want warn: only the first of the two runs", got.Status)
+	}
+	for _, want := range []string{"/home/u/.local/bin/claude 2.1.299 (first)", "/usr/bin/claude 2.1.250", "provider.claude.bin"} {
+		if !strings.Contains(got.Detail, want) {
+			t.Errorf("providers detail = %q, want it to name %q", got.Detail, want)
+		}
+	}
+}
+
+func TestOneVersionTwiceOnPathOrAnUnreadableOneDoesNotWarn(t *testing.T) {
+	d := healthy(t)
+	d.onPath = func(string) []providers.Binary {
+		return []providers.Binary{
+			{Path: "/home/u/.local/bin/claude", Version: "2.1.299"},
+			{Path: "/usr/bin/claude", Version: "2.1.299"},
+			{Path: "/opt/claude", Version: ""},
+		}
+	}
+
+	if got := statuses(d.Run())["providers"]; got.Status != OK {
+		t.Errorf("providers = %s (%s), want ok, nothing disagrees", got.Status, got.Detail)
 	}
 }
 

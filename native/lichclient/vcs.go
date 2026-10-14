@@ -33,6 +33,27 @@ func (c *Client) Verify(ctx context.Context, bin string) (BinaryCheck, error) {
 	return b, c.Call(ctx, "providers.Verify", &b, bin)
 }
 
+// ProviderBinary mirrors providers.Binary: an executable a provider could be
+// started from and the version it reports, "" when it printed none.
+type ProviderBinary struct {
+	Path    string `json:"path"`
+	Version string `json:"version"`
+}
+
+// ProviderVersion runs bin, resolved as Verify resolves it, with --version.
+// It boots the whole CLI, so it is asked off the frame.
+func (c *Client) ProviderVersion(ctx context.Context, bin string) (string, error) {
+	var v string
+	return v, c.Call(ctx, "providers.Version", &v, bin)
+}
+
+// ProviderBinaries lists every distinct binary of provider id on the pinned
+// $PATH, in $PATH order, each with its version.
+func (c *Client) ProviderBinaries(ctx context.Context, id string) ([]ProviderBinary, error) {
+	var found []ProviderBinary
+	return found, c.Call(ctx, "providers.OnPath", &found, id)
+}
+
 // RefreshPath re-reads the login shell's $PATH and re-pins it, so the next
 // Verify answers from what is installed now.
 func (c *Client) RefreshPath(ctx context.Context) error {

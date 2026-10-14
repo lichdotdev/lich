@@ -352,3 +352,41 @@ func TestOnlyTheLastOfABurstOfWritesIsSent(t *testing.T) {
 		t.Errorf("sent %v, want only the last", sent)
 	}
 }
+
+// The machine this was built for: three codex installs on $PATH, the first of
+// them the one a session spawns.
+func TestOthersNamesTheVersionsASessionDoesNotRun(t *testing.T) {
+	v := binVersions{version: "0.162.1", onPath: []lichclient.ProviderBinary{
+		{Path: "/home/u/.local/bin/codex", Version: "0.162.1"},
+		{Path: "/home/u/.local/share/mise/shims/codex", Version: "0.144.5"},
+		{Path: "/opt/codex-copy", Version: "0.162.1"},
+		{Path: "/usr/local/bin/codex", Version: ""},
+		{Path: "/usr/bin/codex", Version: "0.147.0"},
+	}}
+
+	got := alsoOnPathLine(v.others("/home/u/.local/bin/codex"))
+
+	want := "Also on PATH: /home/u/.local/share/mise/shims/codex 0.144.5, /usr/bin/codex 0.147.0. Pin one above to choose."
+	if got != want {
+		t.Errorf("line = %q, want %q", got, want)
+	}
+}
+
+func TestOneBinaryOnPathSaysNothing(t *testing.T) {
+	v := binVersions{version: "2.1.299", onPath: []lichclient.ProviderBinary{{Path: "/usr/bin/claude", Version: "2.1.299"}}}
+	if got := alsoOnPathLine(v.others("/usr/bin/claude")); got != "" {
+		t.Errorf("line = %q, want none", got)
+	}
+}
+
+// A configured binary off $PATH still differs from every version on it.
+func TestAConfiguredBinaryIsComparedWithEveryoneOnPath(t *testing.T) {
+	scope, configured, asked := spawnedBin(binLayer{}, binLayer{bin: " /opt/codex "}, "codex")
+	if scope != binScopeGlobal || configured != "/opt/codex" || asked != "/opt/codex" {
+		t.Fatalf("spawnedBin = %q %q %q", scope, configured, asked)
+	}
+	v := binVersions{version: "0.150.0", onPath: []lichclient.ProviderBinary{{Path: "/usr/bin/codex", Version: "0.147.0"}}}
+	if got := v.others("/opt/codex"); len(got) != 1 {
+		t.Errorf("others = %+v, want /usr/bin/codex", got)
+	}
+}
