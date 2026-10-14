@@ -274,6 +274,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`ESC c`) does not clear it. Of the providers, Claude Code and opencode ask (driven in a PTY), oh-my-pi and
   Cursor CLI ask in their shipped code (not driven); Codex, Antigravity and Kiro CLI read the background once at
   boot and never hear of a switch, and Crush reads it not at all.
+- **Only zsh, bash and fish get their prompt cleared on a resize** (`internal/shellintegration`,
+  `native/gioterm/prompt.go`): a shell session's shell is started with scripts that mark its prompt with
+  OSC 133 and ask the terminal to clear it on a resize (`redraw=1`, `redraw=last` for bash, which redraws only
+  the last line). sh, PowerShell and a shell started by hand inside a session are unmarked, and a prompt line
+  as wide as the terminal (a right prompt) leaves its wrapped head on screen after a narrowing, the way any
+  terminal without shell integration does. Agent sessions are untouched: they run no shell rc and draw their
+  own screen. Only the native window clears; the web window's xterm.js ignores the marks. The clearing works
+  around a libghostty-vt resize that clears a wrapped prompt only from its last wrapped row: it erases the rows
+  above once the terminal has cleared that one, which is also how it tells a shell that asked from one that
+  did not. The scripts are rewritten under lich's config dir at every start, so two lich builds running at once
+  share the newer one's.
 - **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
   `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn
   when the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session

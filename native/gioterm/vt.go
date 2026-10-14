@@ -310,6 +310,7 @@ func (v *Terminal) Resize(cols, rows, cellW, cellH int) error {
 		return err
 	}
 	v.allocGrid(cols, rows)
+	v.clearWrappedPromptHeads()
 	v.cellW, v.cellH = cellW, cellH
 	return nil
 }

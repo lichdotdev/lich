@@ -123,7 +123,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Ctrl+V` attaches a clipboard image (`Alt+V` on Windows), `Shift+Enter`
   breaks the line and `Ctrl+Backspace` erases a word, as in the web window.
   `lich native` finds `lich-native.exe` beside `lich.exe` on Windows, and
-  `native/build-windows.sh` cross-builds it from Linux.
+  `native/build-windows.sh` cross-builds it from Linux. Resizing a shell
+  session in the native window no longer leaves copies of a zsh, bash or fish
+  prompt stacked above the live one: lich starts those shells with prompt
+  marks (OSC 133) and the terminal clears the prompt for the shell to redraw.
 - **`lich gallery` opens the native UI kit gallery.** It shows every primitive
   of the experimental native window in each variant and state, fully
   interactive, and needs no running lich. It is not in the release packages

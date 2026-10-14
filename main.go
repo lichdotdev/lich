@@ -33,6 +33,7 @@ import (
 	"github.com/omartelo/lich/internal/relay"
 	"github.com/omartelo/lich/internal/restart"
 	"github.com/omartelo/lich/internal/rpc"
+	"github.com/omartelo/lich/internal/shellintegration"
 	"github.com/omartelo/lich/internal/singleton"
 	"github.com/omartelo/lich/internal/spawn"
 	"github.com/omartelo/lich/internal/store"
@@ -266,6 +267,14 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// through a bind mount when it is confined, and deleting the session's row
 	// takes the copies with it.
 	term.SetDropDir(drop.Dir(configDir))
+	// A shell whose prompt is not marked still works; it only keeps the lines
+	// a resize wraps on screen.
+	shellScripts := shellintegration.Dir(configDir)
+	if err := shellintegration.Install(shellScripts); err != nil {
+		slog.Warn("shell integration unavailable", "err", err)
+	} else {
+		term.SetShellIntegrationDir(shellScripts)
+	}
 	db.SetSessionGone(drops.Purge)
 	// The footer's attach button opens the picker through the drop service, so
 	// the file it copies for a confined session is one a human chose in a dialog

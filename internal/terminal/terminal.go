@@ -365,6 +365,9 @@ type Service struct {
 	// statuses is the last session-status payload of each live session, which
 	// TurnStates hands a window that attached after it was published.
 	statuses statusBook
+	// shellIntegrationDir holds the shell scripts that mark a shell session's
+	// prompt (SetShellIntegrationDir); "" spawns shells without them.
+	shellIntegrationDir string
 }
 
 // SetDropDir names the directory holding the copies of dropped files

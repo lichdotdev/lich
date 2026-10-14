@@ -172,6 +172,7 @@ func (s *Service) spawnSession(
 		cols: cols,
 		rows: rows,
 	}
+	spec = withShellIntegration(spec, kind, s.shellIntegrationDir)
 	// Before wrapSetup, so a fresh worktree terminal carrying both runs the
 	// project's setup script first, then the entrypoint, then the shell.
 	spec = wrapEntrypoint(spec, kind, s.store.SessionEntrypoint(id), runtime.GOOS)
