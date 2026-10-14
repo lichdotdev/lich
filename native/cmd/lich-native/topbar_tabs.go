@@ -83,8 +83,6 @@ func tabWidth(room, count, widest, narrowest int) int {
 // strip is the scrolling row of tabs with the open-project button right after
 // the last one, and the fillets that merge the active tab into the island.
 func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D {
-	// Over a tab's × the pointer keeps the plain arrow, not the drag grip's.
-	t.sort.Grab = func(id string) bool { return !t.tabState(id).close.Hovered() }
 	before := t.sort.Dragging()
 	if d, ok := t.sort.Update(gtx); ok && d.ID != d.Over {
 		act.drop = d

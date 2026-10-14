@@ -166,7 +166,6 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 func (s *sidebar) dropCards(gtx C, st *blockState, b blockView, f blockFrame) bool {
 	st.cards.Disabled = f.filtering
 	st.cards.Carry = &s.carry
-	st.cards.Grab = s.cardGrab
 	if b.kind == blockPinned {
 		st.cards.Carry = nil
 	}
@@ -227,15 +226,4 @@ func (s *sidebar) blockCard(gtx C, th *ui.Theme, st *blockState, sv sessionView,
 			return st.cards.Item(gtx, sv.ID, face, nil)
 		})
 	})
-}
-
-// cardGrab keeps the plain arrow over a card's own buttons (pin, ×, its PR
-// badge) instead of the drag grip's hand.
-func (s *sidebar) cardGrab(id string) bool {
-	for _, m := range []map[string]*widget.Clickable{s.pins, s.closes, s.prChips} {
-		if c, ok := m[id]; ok && c.Hovered() {
-			return false
-		}
-	}
-	return true
 }

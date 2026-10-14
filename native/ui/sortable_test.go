@@ -218,17 +218,22 @@ func TestSortableDisabledLiftsNothing(t *testing.T) {
 	r.want(t)
 }
 
-// The cursor is grab over an item, grabbing for the whole drag wherever the
-// pointer goes (over the item, another one, a zone's gap, no target at all),
-// and back to the default once the item is dropped.
+// The cursor stays the default over an item at rest and under a press that
+// has not travelled far enough to lift it; it is grabbing for the whole drag
+// wherever the pointer goes (over the item, another one, a zone's gap, no
+// target at all), and back to the default once the item is dropped.
 func TestSortableCursorIsGrabbingForTheWholeDrag(t *testing.T) {
 	r := newSortRig()
 	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: pt(onA)})
 	r.frame()
-	if c := r.router.Cursor(); c != pointer.CursorGrab {
-		t.Errorf("hovering a: cursor %v, want grab", c)
+	if c := r.router.Cursor(); c != pointer.CursorDefault {
+		t.Errorf("hovering a: cursor %v, want default", c)
 	}
 	r.press(onA)
+	r.move(onA.Add(image.Pt(1, 0)))
+	if c := r.router.Cursor(); c != pointer.CursorDefault {
+		t.Errorf("pressed, not yet lifted: cursor %v, want default", c)
+	}
 	for _, p := range []image.Point{onA.Add(image.Pt(10, 0)), onB, leftSpace, onRight, nowhere} {
 		r.move(p, p.Add(image.Pt(1, 0)))
 		if c := r.router.Cursor(); c != pointer.CursorGrabbing {
@@ -239,19 +244,5 @@ func TestSortableCursorIsGrabbingForTheWholeDrag(t *testing.T) {
 	r.move(nowhere.Add(image.Pt(2, 0)))
 	if c := r.router.Cursor(); c != pointer.CursorDefault {
 		t.Errorf("after the drop: cursor %v, want default", c)
-	}
-}
-
-func TestSortableGrabCanBeWithheldPerItem(t *testing.T) {
-	r := newSortRig()
-	r.s.Grab = func(id string) bool { return id != "a" }
-	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: pt(onA)})
-	r.frame()
-	if c := r.router.Cursor(); c != pointer.CursorDefault {
-		t.Errorf("hovering a with its grab withheld: cursor %v, want default", c)
-	}
-	r.move(onB)
-	if c := r.router.Cursor(); c != pointer.CursorGrab {
-		t.Errorf("hovering b: cursor %v, want grab", c)
 	}
 }

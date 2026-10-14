@@ -46,11 +46,6 @@ type Sortable struct {
 	// targets. Their items then also hear each other pass, which nothing
 	// reads: a Sortable's Over is only ever one of its own targets.
 	Carry *SortCarry
-	// Grab, when set, says whether an item at rest shows the grab cursor;
-	// false lets a control on it, such as a close button, keep the plain
-	// one. Gio's CursorDefault means "no cursor", so the control cannot
-	// claim the arrow back over an item's grab by itself.
-	Grab func(id string) bool
 
 	targets       map[string]*sortTarget
 	order, laying []string
@@ -178,11 +173,8 @@ func (s *Sortable) Item(gtx C, id string, w, lifted layout.Widget) D {
 	call := m.Stop()
 	area := clip.Rect{Max: d.Size}.Push(gtx.Ops)
 	event.Op(gtx.Ops, t)
-	switch {
-	case s.active == id && !s.keyboard:
+	if s.active == id && !s.keyboard {
 		pointer.CursorGrabbing.Add(gtx.Ops)
-	case s.Grab == nil || s.Grab(id):
-		pointer.CursorGrab.Add(gtx.Ops)
 	}
 	call.Add(gtx.Ops)
 	area.Pop()
