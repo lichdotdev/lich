@@ -42,7 +42,7 @@ func TestNarrowingClearsAWrappedRedrawablePrompt(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			v, err := New(20, 6, func([]byte) {})
+			v, err := New(20, 6, testCellW, testCellH, func([]byte) {})
 			if err != nil {
 				t.Fatal(err)
 			}
