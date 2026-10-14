@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - "v*"
+      # A pre-release (v0.68.0-pre.1) is built and uploaded by hand: running this
+      # would publish it to the AUR, Homebrew and every install's updater.
+      - "!v*-*"
   workflow_dispatch:
 
 permissions:
