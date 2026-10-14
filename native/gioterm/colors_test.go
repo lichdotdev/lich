@@ -8,7 +8,7 @@ import (
 // The defaults reach the snapshot a renderer paints from, and a program's
 // OSC 11 still overrides them.
 func TestSetColorsReachTheSnapshot(t *testing.T) {
-	v, err := New(10, 2, func([]byte) {})
+	v, err := New(10, 2, testCellW, testCellH, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestSetColorsReachTheSnapshot(t *testing.T) {
 }
 
 func TestSetColorsRedrawsEveryRow(t *testing.T) {
-	v, err := New(10, 2, func([]byte) {})
+	v, err := New(10, 2, testCellW, testCellH, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestSetColorsRedrawsEveryRow(t *testing.T) {
 // A theme's ANSI entry colors what a program writes in that color, an entry
 // it leaves out keeps the built-in one, and a program's OSC 4 still wins.
 func TestSetColorsANSIReachesCells(t *testing.T) {
-	v, err := New(10, 2, func([]byte) {})
+	v, err := New(10, 2, testCellW, testCellH, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestSetColorsANSIReachesCells(t *testing.T) {
 // A theme's cursor color paints the block, its ink the background; without
 // one the cursor inverts the cell.
 func TestCursorColor(t *testing.T) {
-	v, err := New(10, 2, func([]byte) {})
+	v, err := New(10, 2, testCellW, testCellH, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}

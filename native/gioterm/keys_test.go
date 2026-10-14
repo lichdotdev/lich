@@ -7,7 +7,7 @@ import (
 )
 
 func TestEncodeKeyEvents(t *testing.T) {
-	v, err := New(80, 24, func([]byte) {})
+	v, err := New(80, 24, testCellW, testCellH, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}
