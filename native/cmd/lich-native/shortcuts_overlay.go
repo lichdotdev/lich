@@ -22,6 +22,8 @@ const (
 
 const (
 	shortcutsWidth unit.Dp = 544 // max-w-[34rem]
+	// shortcutsScrim is ShortcutsOverlay.tsx's bg-black/50, the palette's and not a dialog's.
+	shortcutsScrim = 0.5
 	// shortcutsBodyHeight is the share of the room the panel has left that the
 	// list may take: the web's max-h-[82vh], less the chrome around the list.
 	shortcutsBodyHeight = 80
@@ -63,7 +65,7 @@ type shortcutsOverlay struct {
 func (o *shortcutsOverlay) layout(gtx C, th *ui.Theme, bound hotkeyBindings) {
 	on := th.On(th.Popover)
 	dlg := th.Dialog(&o.dialog, o.open, shortcutsTitle, shortcutsRebind)
-	dlg.MaxWidth, dlg.HideClose = shortcutsWidth, true
+	dlg.MaxWidth, dlg.HideClose, dlg.Scrim = shortcutsWidth, true, shortcutsScrim
 	dlg.Body = func(gtx C) D { return o.body(gtx, on, shortcutGroupsOf(bound, runtime.GOOS)) }
 	dlg.Actions = []layout.Widget{func(gtx C) D { return closeHint(gtx, on) }}
 	if dlg.Layout(gtx) {
