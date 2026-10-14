@@ -45,12 +45,14 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 		method := strings.TrimPrefix(r.URL.Path, "/rpc/")
 		var out any
 		switch method {
-		case "claudeprofile.CreateProfile", "codexprofile.CreateProfile", "ompprofile.CreateProfile":
+		case "claudeprofile.CreateProfile", "codexprofile.CreateProfile", "ompprofile.CreateProfile", "kiroprofile.CreateProfile":
 			out = lichclient.Profile{Slug: "work", Name: "Work"}
 		case "claudeprofile.Plugins", "codexprofile.Plugins":
 			out = []lichclient.ProfilePlugin{{Key: "a@m", Name: "a", Marketplace: "m"}, {Key: "b@m", Name: "b", Marketplace: "m"}}
 		case "ompprofile.LoginCommand":
 			out = "env OMP_PROFILE='work' omp login"
+		case "kiroprofile.LoginCommand":
+			out = "env XDG_DATA_HOME='/p/work' kiro-cli login"
 		case "claudeprofile.Profiles", "codexprofile.Profiles", "ompprofile.Profiles":
 			b.mu.Lock()
 			in := b.loggedIn
@@ -67,7 +69,7 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 			}
 		}
 		if (strings.HasPrefix(method, "claudeprofile.") || strings.HasPrefix(method, "codexprofile.") ||
-			strings.HasPrefix(method, "ompprofile.")) &&
+			strings.HasPrefix(method, "ompprofile.") || strings.HasPrefix(method, "kiroprofile.")) &&
 			!strings.HasSuffix(method, ".Plugins") && !strings.HasSuffix(method, ".Profiles") {
 			b.record(method + string(body))
 		}

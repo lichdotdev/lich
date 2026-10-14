@@ -27,6 +27,9 @@ const (
 	opencodeSessionTable = "session"
 	crushSessionTable    = "sessions"
 
+	// opencodeDBFile is the database in an opencode data directory.
+	opencodeDBFile = "opencode.db"
+
 	// sessionDBBusyMS caps the wait for a database the provider is writing to
 	// right now. A read that gives up reads as "no conversation", which costs a
 	// resume that was there, so it is worth waiting out a lock; it is short
@@ -45,7 +48,7 @@ func opencodeSessionDB() (string, bool) {
 	if !ok {
 		return "", false
 	}
-	return filepath.Join(base, "opencode", "opencode.db"), true
+	return filepath.Join(base, "opencode", opencodeDBFile), true
 }
 
 // crushSessionDB is the database Crush keeps in the checkout it was started in.

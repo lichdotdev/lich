@@ -206,7 +206,7 @@ func kindsWhere(has func(kind string) bool) []string {
 // screen: settings-index.ts lists it once per enabled provider. Its keys are
 // providerBinEntries and the rows Settings keeps global.
 func providerEntries() []settingEntry {
-	return []settingEntry{
+	entries := []settingEntry{
 		{title: providerDefaultTitle, also: providerDefaultAlso, key: providerDefaultKey, scope: scopeOverridable},
 		{title: profileTitle, also: claudeProfileProvider.words.searchAlso, key: claudeProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{claudeKind}},
 		{title: profilesTitle, also: claudeProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{claudeKind}},
@@ -214,6 +214,13 @@ func providerEntries() []settingEntry {
 		{title: profilesTitle, also: codexProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{codexKind}},
 		{title: profileTitle, also: ompProfileProvider.words.searchAlso, key: ompProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{ompKind}},
 		{title: profilesTitle, also: ompProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{ompKind}},
+	}
+	for _, p := range xdgProfileProviders {
+		entries = append(entries,
+			settingEntry{title: profileTitle, also: p.words.searchAlso, key: p.key, scope: scopeOverridable, perProvider: true, onlyFor: []string{p.kind}},
+			settingEntry{title: profilesTitle, also: p.words.profilesAlso, perProvider: true, onlyFor: []string{p.kind}})
+	}
+	return append(entries, []settingEntry{
 		{title: planTitle, also: planAlso, perProvider: true},
 		{title: binTitle, also: binAlso, perProvider: true},
 		{title: skipTitle, also: skipAlso, perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
@@ -221,7 +228,7 @@ func providerEntries() []settingEntry {
 		{title: subagentTitle, also: subagentAlso, perProvider: true, onlyFor: kindsWhere(supportsSubagentCards)},
 		{title: pasteTitle, also: pasteAlso, perProvider: true, onlyFor: kindsWhere(hasPasteUnfold)},
 		{title: restoreTitle, also: restoreAlso, perProvider: true, onlyFor: kindsWhere(canResume)},
-	}
+	}...)
 }
 
 // providerBinEntries are every provider's binary override, scoped on its own
@@ -505,8 +512,10 @@ type providerSettings struct {
 
 	bin binInput
 
-	// claude, codex and omp are the profiles of the screens that have them.
+	// claude, codex and omp are the profiles of the screens that have them,
+	// and xdg those of the link-home providers, by kind.
 	claude, codex, omp profileSettings
+	xdg                map[string]*profileSettings
 
 	skip, restore  widget.Enum
 	ultra, agents  ui.SwitchState
@@ -701,6 +710,15 @@ func (s *settingsScreen) planOf(kind string) (lichclient.QuotaPlan, bool) {
 	return planFor(s.footer.quota.plans(""), kind)
 }
 
+// bindXDG connects each link-home provider's screen to its book.
+func (p *providerSettings) bindXDG(books map[string]*profileBook, openTerminal func(command string) bool) {
+	p.xdg = map[string]*profileSettings{}
+	for kind, book := range books {
+		p.xdg[kind] = new(profileSettings)
+		p.xdg[kind].bind(book, openTerminal)
+	}
+}
+
 // profiles is the profiles of the screen kind names, nil for a provider with
 // none and until the window has bound its book.
 func (p *providerSettings) profiles(kind string) *profileSettings {
@@ -712,6 +730,8 @@ func (p *providerSettings) profiles(kind string) *profileSettings {
 		c = &p.codex
 	case ompKind:
 		c = &p.omp
+	default:
+		c = p.xdg[kind]
 	}
 	if c == nil || c.book == nil {
 		return nil

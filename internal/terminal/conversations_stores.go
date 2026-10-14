@@ -11,6 +11,7 @@ import (
 
 	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/store"
+	"github.com/omartelo/lich/internal/xdgprofile"
 )
 
 // The conversation lists of the five providers that describe a conversation in
@@ -45,15 +46,20 @@ func kiroConversations() []store.Conversation {
 	return out
 }
 
-// cursorConversations reads chats/<md5(cwd)>/<id>/meta.json under Cursor's
-// config directory, which names the cwd the md5 hides. A chat `create-chat`
-// made and nobody talked in has no conversation to resume.
+// cursorConversations reads chats/<md5(cwd)>/<id>/meta.json under the config
+// directory of every Cursor CLI profile, which names the cwd the md5 hides, each
+// conversation marked with the profile holding it. A chat `create-chat` made and
+// nobody talked in has no conversation to resume.
 func cursorConversations() []store.Conversation {
-	base, ok := cursorConfigDir()
-	if !ok {
-		return nil
+	var out []store.Conversation
+	for _, s := range xdgStates(providers.Cursor, cursorConfigDir) {
+		out = append(out, cursorChats(s)...)
 	}
-	paths, _ := filepath.Glob(filepath.Join(base, "chats", "*", "*", "meta.json"))
+	return out
+}
+
+func cursorChats(s xdgprofile.State) []store.Conversation {
+	paths, _ := filepath.Glob(filepath.Join(s.Dir, "chats", "*", "*", "meta.json"))
 	var out []store.Conversation
 	for _, path := range paths {
 		var meta struct {
@@ -66,7 +72,7 @@ func cursorConversations() []store.Conversation {
 		}
 		dir := filepath.Dir(path)
 		out = append(out, store.Conversation{
-			Kind: providers.Cursor, ID: filepath.Base(dir), Cwd: meta.Cwd,
+			Kind: providers.Cursor, ID: filepath.Base(dir), Cwd: meta.Cwd, Profile: s.Slug,
 			Title:     cursorTitle(filepath.Join(dir, "prompt_history.json")),
 			UpdatedAt: meta.UpdatedAtMs / int64(time.Second/time.Millisecond),
 		})
@@ -139,18 +145,23 @@ func firstWorkspace(uris string) string {
 	return filepath.FromSlash(path)
 }
 
-// opencodeConversations reads the session table of opencode's one database. A
+// opencodeConversations reads the session table of the database of every
+// opencode profile, each conversation marked with the profile holding it. A
 // sub-agent is a session with a parent; an archived one the user put away.
 func opencodeConversations() []store.Conversation {
-	path, ok := opencodeSessionDB()
-	if !ok {
-		return nil
+	var out []store.Conversation
+	for _, s := range xdgStates(providers.OpenCode, opencodeDataDir) {
+		out = append(out, opencodeSessions(s)...)
 	}
-	return queryConversations(path,
+	return out
+}
+
+func opencodeSessions(s xdgprofile.State) []store.Conversation {
+	return queryConversations(filepath.Join(s.Dir, opencodeDBFile),
 		`SELECT id, directory, title, time_updated FROM session
 		  WHERE parent_id IS NULL AND time_archived IS NULL`,
 		func(rows *sql.Rows) (store.Conversation, bool) {
-			c := store.Conversation{Kind: providers.OpenCode}
+			c := store.Conversation{Kind: providers.OpenCode, Profile: s.Slug}
 			var updatedMs int64
 			if rows.Scan(&c.ID, &c.Cwd, &c.Title, &updatedMs) != nil {
 				return store.Conversation{}, false

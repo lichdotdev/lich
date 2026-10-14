@@ -56,6 +56,12 @@ func (s Spec) build(dir string) ([]string, error) {
 // have written a settings file of its own there before Personal had one, and
 // that file is the profile's now.
 func (s Spec) linkShared(personal, dir string) ([]string, error) {
+	if len(s.Own) > 0 {
+		if err := s.tidyHome(dir, ""); err != nil {
+			return nil, err
+		}
+		return nil, s.linkHome(personal, dir, "")
+	}
 	var copied []string
 	for _, name := range s.linked() {
 		target := filepath.Join(personal, name)

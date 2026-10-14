@@ -49,14 +49,14 @@ func (m *model) profileBook(kind string) *profileBook {
 	case ompKind:
 		return m.ompProfiles
 	}
-	return nil
+	return m.xdgProfiles[kind]
 }
 
 // continueTargets are the other logged-in profiles of a session of a provider
 // with profiles, none while there is no other to move to.
 func (m *model) continueTargets(kind, profile string) []continueTarget {
 	book := m.profileBook(kind)
-	if book == nil {
+	if book == nil || book.provider.noContinue {
 		return nil
 	}
 	logged := book.loggedIn()
@@ -150,6 +150,9 @@ func (u *window) loadProfiles() {
 	u.logErr("claude profiles", u.model.profiles.reload(u.ctx))
 	u.logErr("codex profiles", u.model.codexProfiles.reload(u.ctx))
 	u.logErr("omp profiles", u.model.ompProfiles.reload(u.ctx))
+	for kind, book := range u.model.xdgProfiles {
+		u.logErr(kind+" profiles", book.reload(u.ctx))
+	}
 }
 
 // openLoginTerminal runs a profile's login command in a shell card of the

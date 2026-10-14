@@ -73,6 +73,14 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.OMPProfiles().LoginCommand(ctx, "work")
 			return err
 		}},
+		{"XDGProfiles", "kiroprofile.Profiles", ``, []Profile{}, func(c *Client) error {
+			_, err := c.XDGProfiles("kiro").List(ctx)
+			return err
+		}},
+		{"XDGLoginCommand", "cursorprofile.LoginCommand", `"work"`, "cursor-agent login", func(c *Client) error {
+			_, err := c.XDGProfiles("cursor").LoginCommand(ctx, "work")
+			return err
+		}},
 		{"ContinueIn", "terminal.ContinueIn", `"s1","work"`, nil, func(c *Client) error {
 			return c.ContinueIn(ctx, "s1", "work")
 		}},

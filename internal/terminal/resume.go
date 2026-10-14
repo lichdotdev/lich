@@ -38,8 +38,8 @@ func (*Service) ResumeAvailable(kind, providerSessionID, cwd string) bool {
 		_, ok := ompTranscriptPath(providerSessionID)
 		return ok
 	case providers.OpenCode:
-		path, ok := opencodeSessionDB()
-		return ok && sessionRowExists(path, opencodeSessionTable, providerSessionID)
+		_, _, ok := opencodeOwner(providerSessionID)
+		return ok
 	case providers.Crush:
 		path, ok := crushSessionDB(cwd)
 		return ok && sessionRowExists(path, crushSessionTable, providerSessionID)

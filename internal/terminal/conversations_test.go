@@ -186,8 +186,8 @@ func TestCursorConversations(t *testing.T) {
 
 	got := cursorConversations()
 	assertConversations(t, got,
-		store.Conversation{Kind: "cursor", ID: "u1", Title: "which providers do you route?", Cwd: "/work/alpha"},
-		store.Conversation{Kind: "cursor", ID: "u2", Cwd: "/work/alpha"},
+		store.Conversation{Kind: "cursor", ID: "u1", Title: "which providers do you route?", Cwd: "/work/alpha", Profile: "personal"},
+		store.Conversation{Kind: "cursor", ID: "u2", Cwd: "/work/alpha", Profile: "personal"},
 	)
 	if i := slices.IndexFunc(got, func(c store.Conversation) bool { return c.ID == "u1" }); got[i].UpdatedAt != 1787675503 {
 		t.Errorf("u1 UpdatedAt = %d, want updatedAtMs in seconds", got[i].UpdatedAt)
@@ -228,7 +228,7 @@ func TestOpencodeConversations(t *testing.T) {
 
 	got := opencodeConversations()
 	assertConversations(t, got,
-		store.Conversation{Kind: "opencode", ID: "ses_1", Title: "New session", Cwd: "/work/alpha"})
+		store.Conversation{Kind: "opencode", ID: "ses_1", Title: "New session", Cwd: "/work/alpha", Profile: "personal"})
 	if got[0].UpdatedAt != 1786468293 {
 		t.Errorf("UpdatedAt = %d, want time_updated in seconds", got[0].UpdatedAt)
 	}
