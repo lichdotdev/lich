@@ -92,8 +92,15 @@ func move(from, to string) error {
 	return os.RemoveAll(from)
 }
 
+// copyTree copies a tree keeping each entry's permission bits, and recreates a
+// link as a link to the same target rather than copying what it points at.
 func copyTree(from, to string) error {
-	return filepath.WalkDir(from, func(path string, d os.DirEntry, err error) error {
+	type dirMode struct {
+		path string
+		perm os.FileMode
+	}
+	var dirs []dirMode
+	err := filepath.WalkDir(from, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -102,11 +109,44 @@ func copyTree(from, to string) error {
 			return err
 		}
 		dst := filepath.Join(to, rel)
+		if IsLink(path) {
+			return copyLink(path, dst)
+		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
 		if d.IsDir() {
+			dirs = append(dirs, dirMode{dst, info.Mode().Perm()})
 			return os.MkdirAll(dst, 0o700)
 		}
-		return copyFile(path, dst)
+		if err := copyFile(path, dst); err != nil {
+			return err
+		}
+		return os.Chmod(dst, info.Mode().Perm())
 	})
+	if err != nil {
+		return err
+	}
+	// After the walk: a read-only directory would refuse its own children.
+	for i := len(dirs) - 1; i >= 0; i-- {
+		if err := os.Chmod(dirs[i].path, dirs[i].perm); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyLink(src, dst string) error {
+	target, err := os.Readlink(src)
+	if err != nil {
+		return err
+	}
+	if info, err := os.Stat(src); err == nil && info.IsDir() {
+		return LinkDir(target, dst)
+	}
+	_, err = linkFile(target, dst)
+	return err
 }
 
 func copyFile(src, dst string) error {
