@@ -61,12 +61,12 @@ type toastView struct {
 	swipeX, swipeY                     tween
 	// offset is the expanded stack's distance from the top, frozen once
 	// the toast is removed (sonner's offsetBeforeRemove).
-	offset             float32
-	action, cancel     widget.Clickable
-	actionAt, cancelAt image.Rectangle // body-local
-	drag               toastDrag
-	swipedOut          bool
-	outDir, outFrom    f32.Point
+	offset                          float32
+	action, cancel, secondary       widget.Clickable
+	actionAt, cancelAt, secondaryAt image.Rectangle // body-local
+	drag                            toastDrag
+	swipedOut                       bool
+	outDir, outFrom                 f32.Point
 	// What place worked out for this frame.
 	body          op.CallOp
 	bodySize      image.Point
@@ -182,7 +182,7 @@ func (s ToasterStyle) readEntries(gtx C) []func() {
 		for _, b := range []struct {
 			click  *widget.Clickable
 			button *ToastButton
-		}{{&e.view.action, e.Action}, {&e.view.cancel, e.Cancel}} {
+		}{{&e.view.action, e.Action}, {&e.view.cancel, e.Cancel}, {&e.view.secondary, e.Secondary}} {
 			if b.click.Clicked(gtx) && b.button != nil && !e.removed() {
 				stack.dismiss(e.ID, gtx.Now)
 				if b.button.OnClick != nil {
@@ -231,7 +231,12 @@ func (s ToasterStyle) readDrag(gtx C, e *toastEntry) {
 // a press there clicks rather than swipes.
 func (v *toastView) onButton(p f32.Point) bool {
 	at := image.Pt(int(p.X), int(p.Y)).Sub(v.bodyAt)
-	return (!v.actionAt.Empty() && at.In(v.actionAt)) || (!v.cancelAt.Empty() && at.In(v.cancelAt))
+	for _, r := range []image.Rectangle{v.actionAt, v.cancelAt, v.secondaryAt} {
+		if !r.Empty() && at.In(r) {
+			return true
+		}
+	}
+	return false
 }
 
 // follow is sonner's onPointerMove: the first move past a pixel locks the
@@ -320,6 +325,7 @@ func (s ToasterStyle) areas(gtx C) {
 		event.Op(gtx.Ops, e)
 		buttonArea(gtx, &v.action, v.actionAt.Add(v.bodyAt))
 		buttonArea(gtx, &v.cancel, v.cancelAt.Add(v.bodyAt))
+		buttonArea(gtx, &v.secondary, v.secondaryAt.Add(v.bodyAt))
 		area.Pop()
 		tr.Pop()
 	}

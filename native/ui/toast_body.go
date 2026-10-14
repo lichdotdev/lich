@@ -236,7 +236,8 @@ func (r recorded) at(gtx C, p image.Point) {
 // body lays the toast's content out as sonner's flex row: icon, title and
 // description, then cancel and action, each button pushed right by its
 // margin-left: auto. With a description, index.css wraps the buttons onto a
-// row of their own under the text, grouped at the right edge.
+// row of their own under the text, grouped at the right edge; three buttons
+// take that row too, as the web's custom update toast stacks them.
 func (s ToasterStyle) body(gtx C, e *toastEntry) D {
 	th := s.theme.On(s.theme.Popover)
 	gtx.Constraints.Min = image.Point{}
@@ -247,12 +248,12 @@ func (s ToasterStyle) body(gtx C, e *toastEntry) D {
 		lead = gtx.Dp(toastIconBox) + gtx.Dp(toastIconMarginEnd) - gtx.Dp(toastIconMarginStart) + gtx.Dp(toastItemGap)
 	}
 	var d D
-	if e.Description != "" {
+	if e.Description != "" || e.Secondary != nil {
 		d = s.wrappedBody(gtx, th, e, ic, lead, buttons)
 	} else {
 		d = s.rowBody(gtx, th, e, ic, lead, buttons)
 	}
-	e.view.cancelAt, e.view.actionAt = rects(e.Cancel), rects(e.Action)
+	e.view.cancelAt, e.view.secondaryAt, e.view.actionAt = rects(e.Cancel), rects(e.Secondary), rects(e.Action)
 	return d
 }
 
@@ -263,7 +264,7 @@ type placedButton struct {
 	at image.Point
 }
 
-// buttons records cancel and action, in that order, and returns a lookup
+// buttons records cancel, secondary and action, in that order, and returns a lookup
 // of where each landed once the body placed them.
 func (s ToasterStyle) buttons(gtx C, th *Theme, e *toastEntry) ([]*placedButton, func(*ToastButton) image.Rectangle) {
 	var out []*placedButton
@@ -271,9 +272,11 @@ func (s ToasterStyle) buttons(gtx C, th *Theme, e *toastEntry) ([]*placedButton,
 	if !s.Light {
 		cancelBg = th.Over(Alpha(white, toastCancelDark))
 	}
-	if e.Cancel != nil {
-		r := record(gtx, func(gtx C) D { return toastButton(gtx, th, e.Cancel.Label, cancelBg, th.PopoverForeground) })
-		out = append(out, &placedButton{recorded: r, of: e.Cancel})
+	for _, b := range []*ToastButton{e.Cancel, e.Secondary} {
+		if b != nil {
+			r := record(gtx, func(gtx C) D { return toastButton(gtx, th, b.Label, cancelBg, th.PopoverForeground) })
+			out = append(out, &placedButton{recorded: r, of: b})
+		}
 	}
 	if e.Action != nil {
 		r := record(gtx, func(gtx C) D { return toastButton(gtx, th, e.Action.Label, th.PopoverForeground, th.Popover) })

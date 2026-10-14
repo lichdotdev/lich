@@ -50,6 +50,9 @@ type Toast struct {
 	Description string
 	Action      *ToastButton
 	Cancel      *ToastButton
+	// Secondary sits between Cancel and Action, drawn as Cancel is: the
+	// web's custom update toast, whose third choice sonner has no slot for.
+	Secondary *ToastButton
 	// Icon replaces the variant's glyph, drawn in the color IconColor picks
 	// from the theme the toast is drawn with, the foreground when nil:
 	// sonner's icon option.

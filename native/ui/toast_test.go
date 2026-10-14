@@ -305,6 +305,34 @@ func TestToasterActionRunsItsHandlerAndDismisses(t *testing.T) {
 	}
 }
 
+func TestToasterSecondaryRunsItsOwnHandlerBetweenCancelAndAction(t *testing.T) {
+	r := newToasterRig(t)
+	var ran []string
+	button := func(name string) *ToastButton {
+		return &ToastButton{Label: name, OnClick: func() { ran = append(ran, name) }}
+	}
+	r.state.Show(Toast{ID: "x", Title: "lich 1.4.0 is available", Duration: ToastForever,
+		Cancel: button("Later"), Secondary: button("View release"), Action: button("Install")})
+	r.settle()
+	r.state.mu.Lock()
+	e := r.state.stack.live("x")
+	cancel, secondary, action := e.view.cancelAt, e.view.secondaryAt, e.view.actionAt
+	at := e.view.secondaryAt.Add(e.view.bodyAt)
+	origin := e.view.place.Transform(f32.Point{})
+	r.state.mu.Unlock()
+	if !(cancel.Max.X <= secondary.Min.X && secondary.Max.X <= action.Min.X) {
+		t.Fatalf("cancel %v, secondary %v, action %v: want them left to right", cancel, secondary, action)
+	}
+	base := f32.Pt(float32(r.size.X-int(toastOffsetRight)-int(toastWidth)), float32(toastOffsetTop)).Add(origin)
+	center := base.Add(f32.Pt(float32(at.Min.X+at.Dx()/2), float32(at.Min.Y+at.Dy()/2)))
+	r.pointer(pointer.Press, center)
+	r.pointer(pointer.Release, center)
+	r.frame()
+	if len(ran) != 1 || ran[0] != "View release" || r.live("x") {
+		t.Fatalf("ran %v, live %v: want only View release run and the toast dismissed", ran, r.live("x"))
+	}
+}
+
 // bodyHeight is the height the front toast's content measured at.
 func (r *toasterRig) bodyHeight(id string) int {
 	r.state.mu.Lock()
