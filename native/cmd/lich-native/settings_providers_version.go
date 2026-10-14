@@ -20,36 +20,17 @@ type binVersions struct {
 // false until the backend answered. Each probe boots the whole CLI, so it is
 // asked once per visit and off the frame.
 func (p *providerSettings) versionsOf(s *settingsScreen, kind, asked string) (binVersions, bool) {
-	key := kind + "\x00" + asked
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if v, ok := p.versions[key]; ok {
-		return v, true
-	}
-	if !p.askedVersion[key] {
-		if p.askedVersion == nil {
-			p.askedVersion = map[string]bool{}
+	return p.versions.get(&p.mu, kind+"\x00"+asked, s.invalidate, func() (binVersions, bool) {
+		var v binVersions
+		var err error
+		if v.version, err = s.client.ProviderVersion(s.ctx, asked); err != nil {
+			log.Printf("settings: %s version: %v", asked, err)
 		}
-		p.askedVersion[key] = true
-		go func() {
-			var v binVersions
-			var err error
-			if v.version, err = s.client.ProviderVersion(s.ctx, asked); err != nil {
-				log.Printf("settings: %s version: %v", asked, err)
-			}
-			if v.onPath, err = s.client.ProviderBinaries(s.ctx, kind); err != nil {
-				log.Printf("settings: %s binaries on PATH: %v", kind, err)
-			}
-			p.mu.Lock()
-			if p.versions == nil {
-				p.versions = map[string]binVersions{}
-			}
-			p.versions[key] = v
-			p.mu.Unlock()
-			s.invalidate()
-		}()
-	}
-	return binVersions{}, false
+		if v.onPath, err = s.client.ProviderBinaries(s.ctx, kind); err != nil {
+			log.Printf("settings: %s binaries on PATH: %v", kind, err)
+		}
+		return v, true
+	})
 }
 
 // others are the binaries on $PATH that are not the one a session spawns and

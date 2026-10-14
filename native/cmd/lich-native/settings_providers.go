@@ -483,17 +483,14 @@ type providerSettings struct {
 
 	mu sync.Mutex
 	// projectOff are the bin-off flags of the project being looked at,
-	// "<project>\x00<provider>" to the stored value, read once per visit.
-	projectOff map[string]string
-	checks     map[string]lichclient.BinaryCheck // a binary's verdict, by what was asked
-	asked      map[string]bool
-	askedOff   map[string]bool
+	// "<project>\x00<provider>" to the stored value.
+	projectOff askOnce[string]
+	checks     askOnce[lichclient.BinaryCheck] // a binary's verdict, by what was asked
 	// versions is what a binary reports and what else $PATH holds for its
-	// provider, by "<provider>\x00<what was asked>"; read once per visit.
-	versions     map[string]binVersions
-	askedVersion map[string]bool
-	rechecking   bool
-	recheckErr   string
+	// provider, by "<provider>\x00<what was asked>".
+	versions   askOnce[binVersions]
+	rechecking bool
+	recheckErr string
 	// seq numbers the writes to a key, so only the last of a burst is sent.
 	seq  map[string]int
 	send sync.Mutex
@@ -552,8 +549,9 @@ func (p *providerSettings) state(id string) *providerState {
 // $PATH, restates every one on screen.
 func (p *providerSettings) revalidate() {
 	p.mu.Lock()
-	p.checks, p.asked, p.askedOff, p.projectOff = nil, nil, nil, nil
-	p.versions, p.askedVersion = nil, nil
+	p.checks.reset()
+	p.projectOff.reset()
+	p.versions.reset()
 	p.mu.Unlock()
 	p.addingSet = false
 	p.claude.asked = false
@@ -576,8 +574,8 @@ func (p *providerSettings) recheckPath(s *settingsScreen) {
 			log.Printf("settings: re-check providers: %v", err)
 			p.recheckErr = providersPathReread
 		} else {
-			p.checks, p.asked = nil, nil
-			p.versions, p.askedVersion = nil, nil
+			p.checks.reset()
+			p.versions.reset()
 		}
 		p.mu.Unlock()
 		s.invalidate()

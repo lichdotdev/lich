@@ -68,8 +68,7 @@ type vcsSettings struct {
 	checks      map[string]lichclient.BinaryCheck
 	accounts    []string // nil until gh answers; empty is signed in to none
 	accountsErr string
-	identities  map[string]lichclient.CommitIdentity
-	asked       map[string]bool // identity reads in flight or done, by path
+	identities  askOnce[lichclient.CommitIdentity] // by path
 	loaded      bool
 	checking    bool
 	recheckErr  string
@@ -83,7 +82,8 @@ type vcsSettings struct {
 // revalidate has the next draw read everything again.
 func (v *vcsSettings) revalidate() {
 	v.mu.Lock()
-	v.loaded, v.asked = false, nil
+	v.loaded = false
+	v.identities.reset()
 	v.mu.Unlock()
 }
 

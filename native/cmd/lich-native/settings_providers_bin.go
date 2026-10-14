@@ -67,65 +67,29 @@ func (p *providerSettings) projectOffOf(s *settingsScreen, scope, kind string) b
 	if scope == "" {
 		return false
 	}
-	key := scope + "\x00" + kind
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if v, ok := p.projectOff[key]; ok {
-		return v == "true"
-	}
-	if !p.askedOff[key] {
-		if p.askedOff == nil {
-			p.askedOff = map[string]bool{}
+	v, ok := p.projectOff.get(&p.mu, scope+"\x00"+kind, s.invalidate, func() (string, bool) {
+		v, err := s.client.GetSetting(s.ctx, providerBinOffKey(kind), scope)
+		if err != nil {
+			log.Printf("settings: read %s: %v", providerBinOffKey(kind), err)
+			return "", false
 		}
-		p.askedOff[key] = true
-		go func() {
-			v, err := s.client.GetSetting(s.ctx, providerBinOffKey(kind), scope)
-			if err != nil {
-				log.Printf("settings: read %s: %v", providerBinOffKey(kind), err)
-				return
-			}
-			p.mu.Lock()
-			if p.projectOff == nil {
-				p.projectOff = map[string]string{}
-			}
-			p.projectOff[key] = v
-			p.mu.Unlock()
-			s.invalidate()
-		}()
-	}
-	return false
+		return v, true
+	})
+	return ok && v == "true"
 }
 
 // check is what bin resolves to as a spawn would, ok false until the backend
 // answered. One question per distinct string, so a path typed one letter at a
 // time is asked once per letter and never twice.
 func (p *providerSettings) check(s *settingsScreen, bin string) (lichclient.BinaryCheck, bool) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if c, ok := p.checks[bin]; ok {
-		return c, true
-	}
-	if !p.asked[bin] {
-		if p.asked == nil {
-			p.asked = map[string]bool{}
+	return p.checks.get(&p.mu, bin, s.invalidate, func() (lichclient.BinaryCheck, bool) {
+		c, err := s.client.Verify(s.ctx, bin)
+		if err != nil {
+			log.Printf("settings: verify %s: %v", bin, err)
+			return c, false
 		}
-		p.asked[bin] = true
-		go func() {
-			c, err := s.client.Verify(s.ctx, bin)
-			if err != nil {
-				log.Printf("settings: verify %s: %v", bin, err)
-				return
-			}
-			p.mu.Lock()
-			if p.checks == nil {
-				p.checks = map[string]lichclient.BinaryCheck{}
-			}
-			p.checks[bin] = c
-			p.mu.Unlock()
-			s.invalidate()
-		}()
-	}
-	return lichclient.BinaryCheck{}, false
+		return c, true
+	})
 }
 
 // writeBin stores the path of provider's layer in scope. A path typed or
@@ -144,7 +108,7 @@ func (s *settingsScreen) writeBin(m providersMachine, kind, scope, value string)
 	case scope != "" && p.projectOffOf(s, scope, kind):
 		s.writeProviderKey(offKey, scope, "", s.providersChanged)
 		p.mu.Lock()
-		p.projectOff[scope+"\x00"+kind] = ""
+		p.projectOff.put(scope+"\x00"+kind, "")
 		p.mu.Unlock()
 	}
 }

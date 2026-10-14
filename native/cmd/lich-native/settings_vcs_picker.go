@@ -84,32 +84,14 @@ func (s *settingsScreen) scopeName() string {
 // identity is path's commit identity, read once per visit; ok false until
 // git answered.
 func (v *vcsSettings) identity(s *settingsScreen, path string) (lichclient.CommitIdentity, bool) {
-	v.mu.Lock()
-	defer v.mu.Unlock()
-	if !v.asked[path] {
-		if v.asked == nil {
-			v.asked = map[string]bool{}
+	return v.identities.get(&v.mu, path, s.invalidate, func() (lichclient.CommitIdentity, bool) {
+		id, err := s.client.CommitIdentity(s.ctx, path)
+		if err != nil {
+			log.Printf("settings: commit identity of %s: %v", path, err)
+			return id, false
 		}
-		v.asked[path] = true
-		go v.readIdentity(s, path)
-	}
-	id, ok := v.identities[path]
-	return id, ok
-}
-
-func (v *vcsSettings) readIdentity(s *settingsScreen, path string) {
-	id, err := s.client.CommitIdentity(s.ctx, path)
-	if err != nil {
-		log.Printf("settings: commit identity of %s: %v", path, err)
-		return
-	}
-	v.mu.Lock()
-	if v.identities == nil {
-		v.identities = map[string]lichclient.CommitIdentity{}
-	}
-	v.identities[path] = id
-	v.mu.Unlock()
-	s.invalidate()
+		return id, true
+	})
 }
 
 // setAccount stores project's account, "" for gh's active one, and only
