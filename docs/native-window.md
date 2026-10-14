@@ -77,6 +77,14 @@ built from a pinned Ghostty commit.
   with no click, no replacing and nothing taken down. On Wayland, Open brings the window up through
   xdg-activation (`Window.Activate` in the lichdotdev/gio fork) with the token the server hands over; a
   compositor may only mark the window urgent instead (Hyprland does unless `misc:focus_on_activate` is on).
+  What each notification server makes of it:
+  - **swaync** draws Open and Dismiss as buttons and hands over the activation token, so Open raises the
+    window. It crops the icon to a circle, which is why lich's icon is a disc with its badge inside.
+  - **mako** draws no buttons: a left click is Open, a right click dismisses, and `makoctl menu` lists both.
+  - **GNOME Shell and KDE Plasma** draw the buttons.
+  - **dunst** closes a note on a left click without running its action unless its config says
+    `mouse_left_click = do_action, close_current`.
+  Measured with swaync and mako on Hyprland; dunst, GNOME, KDE and niri are read from their documentation.
 - **Translations are TypeScript.** The interface catalogs live in `frontend/src/lib/i18n`; the native window
   needs the same strings. Before the native window shows user text beyond the spike's, the catalogs move to a
   form both windows read.
