@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -212,14 +213,15 @@ func (s Spec) List() ([]Profile, error) {
 		return nil, err
 	}
 	out := []Profile{{Slug: Personal, Name: s.personalName(), Dir: personal, Personal: true}}
-	metas, _ := filepath.Glob(filepath.Join(root, "*.json"))
+	// Globbed inside root, which may hold metacharacters of its own.
+	metas, _ := fs.Glob(os.DirFS(root), "*.json")
 	type created struct {
 		p  Profile
 		at int64
 	}
 	var found []created
-	for _, path := range metas {
-		slug := strings.TrimSuffix(filepath.Base(path), ".json")
+	for _, name := range metas {
+		slug := strings.TrimSuffix(name, ".json")
 		dir, err := s.Dir(slug)
 		if err != nil {
 			continue
@@ -427,10 +429,18 @@ func (s Spec) Env(base []string, value string) []string {
 }
 
 // WriteFileAtomic writes data to path through a temporary file and a rename, so
-// a reader never sees it half written.
+// a reader never sees it half written. Each call has a temporary file of its
+// own: two spawns into one profile write the same files at once.
 func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, perm); err != nil {
+	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return fmt.Errorf("write %s: %w", path, err)
+	}
+	tmp := f.Name()
+	_, err = f.Write(data)
+	err = errors.Join(err, f.Chmod(perm), f.Close())
+	if err != nil {
+		_ = os.Remove(tmp)
 		return fmt.Errorf("write %s: %w", tmp, err)
 	}
 	if err := os.Rename(tmp, path); err != nil {

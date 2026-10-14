@@ -3,7 +3,9 @@ package ompprofile
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -22,11 +24,12 @@ func Owner(conversationID string) (Profile, string, bool) {
 // per session, in a directory named after the cwd it ran in,
 // sessions/<encoded cwd>/<timestamp>_<id>.jsonl.
 func SessionIn(dir, conversationID string) (string, bool) {
-	matches, err := filepath.Glob(filepath.Join(dir, "sessions", "*", "*_"+conversationID+".jsonl"))
+	// Globbed inside dir, which may hold metacharacters of its own.
+	matches, err := fs.Glob(os.DirFS(dir), path.Join("sessions", "*", "*_"+conversationID+".jsonl"))
 	if err != nil || len(matches) == 0 {
 		return "", false
 	}
-	return matches[0], true
+	return filepath.Join(dir, filepath.FromSlash(matches[0])), true
 }
 
 // MoveConversation moves an oh-my-pi conversation from the profile that holds

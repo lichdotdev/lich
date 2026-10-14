@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -329,5 +330,25 @@ func TestSyncRunsAtCreationAndBeforeEverySpawn(t *testing.T) {
 	s.Sync = func(_, _ string) error { return errors.New("broken") }
 	if err := s.EnsureShared(p.Slug); err == nil {
 		t.Error("a failed Sync did not fail the spawn")
+	}
+}
+
+// Two spawns into one profile write its files at the same time: each write
+// must land whole, without the other's rename taking its temporary file.
+func TestWriteFileAtomicSurvivesConcurrentWriters(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "meta.json")
+	const writers = 16
+	errs := make(chan error, writers)
+	for i := range writers {
+		go func() { errs <- WriteFileAtomic(path, []byte(strconv.Itoa(i)), 0o600) }()
+	}
+	for range writers {
+		if err := <-errs; err != nil {
+			t.Errorf("concurrent write: %v", err)
+		}
+	}
+	leftovers, err := filepath.Glob(path + "*.tmp")
+	if err != nil || len(leftovers) != 0 {
+		t.Errorf("temporary files left behind: %v, %v", leftovers, err)
 	}
 }

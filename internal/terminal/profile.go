@@ -187,7 +187,9 @@ func (s *Service) profileSessions(kind, slug string) int {
 // move (claudeprofile.MoveConversation and its siblings),
 // the row takes the new profile, and a running session is spawned again
 // resuming it. Moving back is the same call. Nothing else moves: not the other
-// sessions in the profile, and not the project's own profile.
+// sessions in the profile, and not the project's own profile. A session that
+// has its id but no transcript yet, before its first prompt, has nothing to
+// move: it starts afresh in the target profile.
 //
 // It refuses a turn in progress: a provider-reported turn still open, which a
 // permission prompt is part of. A turn a usage limit stopped has ended, so a
@@ -217,7 +219,15 @@ func (s *Service) ContinueIn(id, profile string) error {
 			return fmt.Errorf("end the session before moving it: %w", err)
 		}
 	}
-	if err := profilestores[kind].moveTo(conversation, profile); err != nil {
+	err = profilestores[kind].moveTo(conversation, profile)
+	if errors.Is(err, profilestore.ErrNoConversation) {
+		// Nothing written yet to carry over: the card starts afresh there.
+		if err := s.store.SetProviderSession(id, ""); err != nil {
+			return err
+		}
+		conversation, err = "", nil
+	}
+	if err != nil {
 		return s.respawnAfter(err, live, id, started, kind, conversation)
 	}
 	if profilestore.IsPersonal(profile) {

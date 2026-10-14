@@ -77,6 +77,33 @@ func TestContinueInRespawnsTheCardInTheTargetProfile(t *testing.T) {
 	}
 }
 
+// A card that has not had a prompt yet has an id but no transcript on disk:
+// there is nothing to move, so it starts afresh in the target profile.
+func TestContinueInStartsAfreshACardWithNoTranscriptYet(t *testing.T) {
+	_, work := profileMachine(t)
+	log := filepath.Join(t.TempDir(), "spawns")
+	moved := map[string]string{}
+	svc := New(stubBins{bin: spawnLogBin(t, log), providerSession: "c1", movedProfiles: moved}, nil, events.New())
+	t.Cleanup(func() { _ = svc.Close("s1") })
+
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, false, 80, 24); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the first spawn")
+
+	if err := svc.ContinueIn("s1", "work"); err != nil {
+		t.Fatalf("ContinueIn of a card with no transcript yet: %v", err)
+	}
+	waitFor(t, func() bool { return len(spawnLines(t, log)) == 2 }, "the respawn")
+	got := spawnLines(t, log)[1]
+	if !strings.HasPrefix(got, work+"|") || strings.Contains(got, "--resume") {
+		t.Errorf("respawn %q, want a fresh session in the work profile", got)
+	}
+	if moved["s1"] != "work" {
+		t.Errorf("row profile %q, want work", moved["s1"])
+	}
+}
+
 func TestClaudeProfileDirFollowsTheRowAndTheDisk(t *testing.T) {
 	_, work := profileMachine(t)
 	moved := map[string]string{}

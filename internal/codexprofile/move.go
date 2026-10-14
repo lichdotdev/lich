@@ -1,7 +1,9 @@
 package codexprofile
 
 import (
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/omartelo/lich/internal/profilestore"
@@ -19,11 +21,12 @@ func Owner(conversationID string) (Profile, string, bool) {
 // sessions/<yyyy>/<mm>/<dd>/rollout-<timestamp>-<id>.jsonl, so the date parts
 // are globbed rather than reconstructed.
 func RolloutIn(dir, conversationID string) (string, bool) {
-	matches, err := filepath.Glob(filepath.Join(dir, "sessions", "*", "*", "*", "rollout-*-"+conversationID+".jsonl"))
+	// Globbed inside dir, which may hold metacharacters of its own.
+	matches, err := fs.Glob(os.DirFS(dir), path.Join("sessions", "*", "*", "*", "rollout-*-"+conversationID+".jsonl"))
 	if err != nil || len(matches) == 0 {
 		return "", false
 	}
-	return matches[0], true
+	return filepath.Join(dir, filepath.FromSlash(matches[0])), true
 }
 
 // MoveConversation moves a Codex conversation from the profile that holds it to

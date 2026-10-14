@@ -58,3 +58,16 @@ func TestClaudeMissingKeychainItemReadsOnlyItsSelectedFile(t *testing.T) {
 		t.Fatal("missing Keychain item did not read its file fallback")
 	}
 }
+
+func TestForgetClaudeKeychainDeletesTheProfilesItem(t *testing.T) {
+	t.Setenv("USER", "session-user")
+	var got []string
+	err := forgetClaudeKeychain("/work", func(args ...string) error {
+		got = args
+		return nil
+	})
+	want := []string{"delete-generic-password", "-a", "session-user", "-s", "Claude Code-credentials-0c9a453f"}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("security arguments = %q, %v; want %q", got, err, want)
+	}
+}

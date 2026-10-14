@@ -288,7 +288,13 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// settings that named it.
 	profiles := claudeprofile.New(db, hub.Emit)
 	profiles.SetLichPlugin(plugins.InstallInClaudeProfile, agentplugin.PluginKey)
-	profiles.SetSessions(term.ProfileSessions, db.ForgetClaudeProfile)
+	profiles.SetSessions(term.ProfileSessions, func(slug string) error {
+		dir, err := claudeprofile.ConfigDir(slug)
+		if err != nil {
+			return err
+		}
+		return errors.Join(quota.ForgetClaudeLogin(dir), db.ForgetClaudeProfile(slug))
+	})
 	dispatcher.Register("claudeprofile", profiles)
 	// Codex profiles have plugin sets of their own too, and get the lich plugin
 	// the same way.

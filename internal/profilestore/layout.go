@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 )
 
 // linked is every entry a profile holds as a link to Personal's, files first.
@@ -94,6 +95,8 @@ func (s Spec) EnsureShared(slug string) error {
 	if err != nil {
 		return err
 	}
+	unlock := lockProfile(dir)
+	defer unlock()
 	personal, err := s.PersonalDir()
 	if err != nil {
 		return err
@@ -116,4 +119,16 @@ func (s Spec) EnsureShared(slug string) error {
 	}
 	m.Copied = append(m.Copied, copied...)
 	return s.writeMeta(slug, m)
+}
+
+// profileLocks holds a mutex per profile directory: two spawns into one
+// profile run EnsureShared at once, and its read-modify-write of the meta file
+// would lose one of them's copies.
+var profileLocks sync.Map
+
+func lockProfile(dir string) (unlock func()) {
+	m, _ := profileLocks.LoadOrStore(filepath.Clean(dir), new(sync.Mutex))
+	mu := m.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
 }

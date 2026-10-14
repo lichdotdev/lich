@@ -1,7 +1,9 @@
 package claudeprofile
 
 import (
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/omartelo/lich/internal/profilestore"
@@ -15,11 +17,12 @@ func Owner(conversationID string) (Profile, string, bool) {
 }
 
 func transcriptIn(dir, conversationID string) (string, bool) {
-	matches, _ := filepath.Glob(filepath.Join(dir, "projects", "*", conversationID+".jsonl"))
+	// Globbed inside dir, which may hold metacharacters of its own.
+	matches, _ := fs.Glob(os.DirFS(dir), path.Join("projects", "*", conversationID+".jsonl"))
 	if len(matches) == 0 {
 		return "", false
 	}
-	return matches[0], true
+	return filepath.Join(dir, filepath.FromSlash(matches[0])), true
 }
 
 // sessionStateDirs are the directories Claude Code keeps per-conversation state

@@ -1307,9 +1307,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
   login in the Keychain under a service named after a hash of the config directory string
   (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
-  name, and a moved one would lose its login. The directory is built from `os.UserConfigDir()` on every call,
-  so an `XDG_CONFIG_HOME` (or `APPDATA`) that changes between launches points lich at another, empty set of
-  profiles. A `task dev` rig has its own set (`profiles-dev`), so its profiles need their own login.
+  name, and a moved one would lose its login. Deleting a profile deletes that Keychain item with
+  `security delete-generic-password` (`quota.ForgetClaudeLogin`), which has not run on a Mac yet. The
+  directory is built from `os.UserConfigDir()` on every call, so an `XDG_CONFIG_HOME` (or `APPDATA`) that
+  changes between launches points lich at another, empty set of profiles. A `task dev` rig has its own set
+  (`profiles-dev`), so its profiles need their own login.
 - **Continue in moves what Claude Code keys by the conversation id, and nothing else**
   (`claudeprofile.MoveConversation`, `terminal.ContinueIn`): the transcript, its subagent directory, any file a
   hook filed beside it under the same name, and `file-history/`, `session-env/` and `tasks/` under that id,
@@ -1317,8 +1319,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   The prompt history (`history.jsonl`) and the project's `lastSessionId` stay in the profile it left, so
   `claude --continue` there points at a conversation it no longer holds and the arrow-up history does not
   follow. It refuses while a turn is open, which is read off the session-state hooks: a Claude Code
-  without the lich plugin reports no turn and is moved mid-turn. A move across filesystems copies, except on
-  Windows, where a rename across volumes fails rather than copying. A session born in a profile deleted since
+  without the lich plugin reports no turn and is moved mid-turn. A move across filesystems copies, Windows
+  volumes included. A card that has not had its first prompt has no transcript yet, so it is not moved but
+  started afresh in the target profile. A session born in a profile deleted since
   is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
   deleted with the profile.
 - **The binary setting and lich's own plugin checks still answer for Personal**: a profile's session runs the

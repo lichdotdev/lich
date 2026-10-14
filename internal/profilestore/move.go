@@ -6,8 +6,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 )
+
+// ErrNoConversation is MoveConversation finding the conversation in no
+// profile: a session that has its id but has not written a transcript yet.
+var ErrNoConversation = errors.New("conversation not found in any profile")
 
 // Owner is the profile holding a conversation, and the path of its transcript
 // there. locate finds the transcript under one state directory. A conversation
@@ -41,7 +44,7 @@ func (s Spec) MoveConversation(
 ) error {
 	from, transcript, ok := s.Owner(conversationID, locate)
 	if !ok {
-		return fmt.Errorf("no %s conversation %q in any profile", s.Label, conversationID)
+		return fmt.Errorf("no %s conversation %q: %w", s.Label, conversationID, ErrNoConversation)
 	}
 	toDir, err := s.ConfigDir(toSlug)
 	if err != nil {
@@ -72,14 +75,14 @@ func (s Spec) MoveConversation(
 
 // move renames from to to, creating to's parent, and copies across devices,
 // where a rename cannot go: Personal's directory and lich's own may sit on
-// different filesystems.
+// different filesystems, or volumes on Windows.
 func move(from, to string) error {
 	if err := os.MkdirAll(filepath.Dir(to), 0o700); err != nil {
 		return err
 	}
 	err := os.Rename(from, to)
 	var linkErr *os.LinkError
-	if err == nil || !errors.As(err, &linkErr) || !errors.Is(linkErr.Err, syscall.EXDEV) {
+	if err == nil || !errors.As(err, &linkErr) || !crossDevice(linkErr.Err) {
 		return err
 	}
 	if err := copyTree(from, to); err != nil {
