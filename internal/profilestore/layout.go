@@ -67,7 +67,7 @@ func (s Spec) linkShared(personal, dir string) ([]string, error) {
 			continue
 		}
 		if !slices.Contains(s.SharedFiles, name) {
-			if err := linkDir(target, path); err != nil {
+			if err := LinkDir(target, path); err != nil {
 				return copied, fmt.Errorf("link %s: %w", path, err)
 			}
 			continue

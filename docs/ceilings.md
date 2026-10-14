@@ -1289,12 +1289,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   mid-turn.
 - **A profile shares Personal's own content through links, and a link shares writes too**
   (`internal/claudeprofile/profile.go`, `internal/profilestore/layout.go`): `settings.json`, `CLAUDE.md`,
-  `agents/`, `commands/`, `skills/`, `hooks/` and the plugin downloads (`plugins/cache`,
-  `plugins/marketplaces`) point at Personal's, and
+  `agents/`, `commands/`, `skills/`, `hooks/` and the marketplace clones (`plugins/marketplaces`) point at
+  Personal's, and
   Claude Code writes through a link to its target (measured on 2.1.296). So `claude plugin install` run in a
   profile writes `enabledPlugins` into the one shared `settings.json`, and a plugin a work account installed
-  reads as enabled in Personal, where it is not installed; `/config` changes in any profile change them all;
-  every profile's Claude Code drops its `.in_use` markers in the one plugin cache. The plugin set itself
+  reads as enabled in Personal, where it is not installed; `/config` changes in any profile change them all.
+  The plugin cache is the next bullet. The plugin set itself
   (`installed_plugins.json`, `known_marketplaces.json`) is per profile, because an organization account may
   forbid plugins Personal runs. An entry Personal gains after a profile was made is linked at that profile's
   next spawn; an entry the profile already holds, link or file, is never replaced: Claude Code may have
@@ -1304,6 +1304,27 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
   `.claude.json` is a copy everywhere, minus the account and its caches, since Claude Code replaces it through
   a rename that would turn a link into a file anyway.
+- **A Claude Code profile's plugin cache is its own, and each version in it links into one store lich never
+  empties** (`internal/claudeprofile/plugincache.go`): before every spawn, and in the startup pass of the lich
+  plugin, each version a profile's `installed_plugins.json` names under its `plugins/cache` is moved into
+  `plugin_cache/` beside the profiles (or gives way to the copy already there) and replaced by a link to it.
+  The link is what keeps a version alive: Claude Code's orphan sweep, run at every session start, marks each
+  cached version its own record does not name (`.orphaned_at`) and deletes it once the mark is 14 days old,
+  but it passes over a version that is a link, marking and deleting nothing through it, and `plugin update`,
+  `uninstall` and a reinstall over a link leave the store's copy alone (all measured on 2.1.299, a plugin
+  running from a linked version included). When the cache was one link to Personal's, a plugin only one
+  profile had, Personal included, was deleted after 14 days without a session of that profile. A version
+  Claude Code downloads stays a plain directory of the profile, which its own record protects, until the next
+  spawn links it. Versions no profile names any more stay in the store, since a session started before an
+  update may still run one; deleting `plugin_cache/` with every Claude Code closed only costs the downloads.
+  Personal's cache is Personal's alone and is left as it is, so a version both use is on disk twice. A
+  profile made when the whole cache was a link to Personal's is moved at its next spawn or lich start: each
+  version it names is copied from Personal's into the store, and one Personal's sweep already deleted stays
+  missing. `.in_use` markers of every profile running a version land in the store's copy. On Windows each
+  version is a junction, which Claude Code's sweep reads as a link too (read in the source, not run on
+  Windows), and a version Windows will not move while a file in it is open stays the profile's own until a
+  later spawn. A `CLAUDE_CODE_PLUGIN_CACHE_DIR` in lich's environment moves the whole `plugins/` directory,
+  installed set included, and every profile with it.
 - **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
   login in the Keychain under a service named after a hash of the config directory string
   (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
@@ -1354,13 +1375,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   measured on 2.1.296), so a Personal session starting during a pass can find the clone missing for the
   seconds the pass takes to clone it back. The pass lays each profile out as a spawn would before asking its
   version (`EnsureShared`): a Codex profile made when `config.toml` was shared still links Personal's, read
-  as holding Personal's plugin, and its next spawn rebuilt it with no plugin and no marketplace. The shared
-  plugin cache has a trap lich does not close: Claude Code's orphan sweep, run at a session's start, marks
-  every cached plugin version its own `installed_plugins.json` does not name (`.orphaned_at`, measured on
-  2.1.299) and deletes it 14 days later unless a session of a profile that names it clears the mark first
-  (read in the source). A plugin only one profile has, Personal included, is therefore deleted from the
-  cache if that profile starts no session for 14 days while another does, and its record then names files
-  that are gone. The lich plugin is out of reach while every profile follows Personal's version.
+  as holding Personal's plugin, and its next spawn rebuilt it with no plugin and no marketplace. The same
+  layout moves a Claude Code profile's plugin cache off Personal's (the bullet on it above) at a start too.
   oh-my-pi needs no pass: lich's extension is in the `extensions/` every profile links to Personal's.
 - **Profiles are managed in the native window only, and the window asks every profile at start**: the web
   window has no profile screen, no card tag and no Continue in (it is in maintenance, `docs/native-window.md`),
