@@ -112,7 +112,7 @@ func run(w *app.Window, argv []string) error {
 			}
 			if s == nil {
 				var err error
-				if s, err = startSession(w, argv, cols, rows); err != nil {
+				if s, err = startSession(w, argv, cols, rows, cellW, cellH); err != nil {
 					return err
 				}
 			} else if c, r := s.vt.Size(); cols != c || rows != r {
@@ -168,14 +168,14 @@ func userEnv() []string {
 	return env
 }
 
-func startSession(w *app.Window, argv []string, cols, rows int) (*session, error) {
+func startSession(w *app.Window, argv []string, cols, rows, cellW, cellH int) (*session, error) {
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Env = append(userEnv(), "TERM=xterm-256color", "COLORTERM=truecolor")
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Cols: uint16(cols), Rows: uint16(rows)})
 	if err != nil {
 		return nil, fmt.Errorf("start %q: %w", argv, err)
 	}
-	vt, err := gioterm.New(cols, rows, func(b []byte) { _, _ = ptmx.Write(b) })
+	vt, err := gioterm.New(cols, rows, cellW, cellH, func(b []byte) { _, _ = ptmx.Write(b) })
 	if err != nil {
 		return nil, err
 	}

@@ -256,11 +256,12 @@ func check(what string, r C.GhosttyResult) error {
 	return nil
 }
 
-// New creates a cols x rows terminal. replies receives what the terminal
+// New creates a cols x rows terminal of cellW x cellH pixel cells, the size
+// pointer positions are read in and size reports tell the program. replies receives what the terminal
 // answers the program on its own (device attributes, mode and size reports),
 // which belongs on the program's input. It runs inside Write with the
 // terminal locked, so it must not call back into the Terminal.
-func New(cols, rows int, replies func([]byte)) (*Terminal, error) {
+func New(cols, rows, cellW, cellH int, replies func([]byte)) (*Terminal, error) {
 	v := &Terminal{replies: replies}
 	v.handle = cgo.NewHandle(v)
 	steps := []struct {
@@ -280,7 +281,9 @@ func New(cols, rows int, replies func([]byte)) (*Terminal, error) {
 			return nil, err
 		}
 	}
-	v.allocGrid(cols, rows)
+	if err := v.Resize(cols, rows, cellW, cellH); err != nil {
+		return nil, err
+	}
 	return v, nil
 }
 
@@ -327,6 +330,14 @@ func (v *Terminal) Size() (cols, rows int) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	return v.cols, v.rows
+}
+
+// CellSize is the pixel size of a cell the terminal reads pointer positions
+// in, as New or the last Resize set it.
+func (v *Terminal) CellSize() (w, h int) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	return v.cellW, v.cellH
 }
 
 // Snapshot is the terminal state a Renderer draws for one frame.

@@ -9,11 +9,8 @@ const testCellW, testCellH = 10, 20
 
 func newSizedTerminal(t *testing.T) *Terminal {
 	t.Helper()
-	v, err := New(80, 24, func([]byte) {})
+	v, err := New(80, 24, testCellW, testCellH, func([]byte) {})
 	if err != nil {
-		t.Fatal(err)
-	}
-	if err := v.Resize(80, 24, testCellW, testCellH); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(v.Close)

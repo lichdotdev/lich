@@ -15,7 +15,7 @@ const mouseTestCellW, mouseTestCellH = 10, 20
 
 func newMouseTestView(t *testing.T, output string) *termView {
 	t.Helper()
-	vt, err := gioterm.New(80, 24, func([]byte) {})
+	vt, err := gioterm.New(80, 24, 10, 20, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -41,6 +41,18 @@ type termView struct {
 	held gioterm.MouseButton
 }
 
+// terminalPadding is term-view.ts TERMINAL_PADDING, in the terminal's own
+// background: the grid sits inside it.
+var terminalPadding = layout.Inset{Top: 6, Right: 6, Bottom: 6, Left: 10}
+
+// gridArea is the part of gtx's area the grid fits in, inside the padding.
+func gridArea(gtx layout.Context) image.Point {
+	p := terminalPadding
+	return image.Pt(
+		max(gtx.Constraints.Max.X-gtx.Dp(p.Left)-gtx.Dp(p.Right), 0),
+		max(gtx.Constraints.Max.Y-gtx.Dp(p.Top)-gtx.Dp(p.Bottom), 0))
+}
+
 // refitSettle is TerminalView.tsx REFIT_DEBOUNCE_MS: a resize reaches the
 // PTY, and every one makes the agent redraw its screen, so a dragged edge
 // refits once it stops rather than on every frame of the drag.
@@ -153,8 +165,9 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	if err := r.Measure(gtx); err != nil {
 		return nil, err
 	}
-	cols, rows := gioterm.Fit(gtx.Constraints.Max, r)
-	vt, err := gioterm.New(cols, rows, func(b []byte) { ts.send(s.ID, b) })
+	cols, rows := gioterm.Fit(gridArea(gtx), r)
+	cellW, cellH := r.Cell()
+	vt, err := gioterm.New(cols, rows, cellW, cellH, func(b []byte) { ts.send(s.ID, b) })
 	if err != nil {
 		return nil, err
 	}
@@ -259,12 +272,22 @@ func (ts *terminals) setVisible(hidden, shown string) {
 // wants the keyboard (a rename, an open menu), so the terminal takes it.
 func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	gtx.Metric = ts.unzoomed
-	size := gtx.Constraints.Max
-	defer clip.Rect(image.Rectangle{Max: size}).Push(gtx.Ops).Pop()
+	defer clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops).Pop()
+	defer op.Offset(image.Pt(gtx.Dp(terminalPadding.Left), gtx.Dp(terminalPadding.Top))).Push(gtx.Ops).Pop()
+	size := gridArea(gtx)
+	gtx.Constraints = layout.Exact(size)
 	if err := t.r.Measure(gtx); err != nil {
 		return err
 	}
 	cols, rows := gioterm.Fit(size, t.r)
+	// A font change can resize the cells and keep the grid: pointer
+	// positions are read in the new cells straight away.
+	if cellW, cellH := t.r.Cell(); !sameCell(t.vt, cellW, cellH) {
+		c, r := t.vt.Size()
+		if err := t.vt.Resize(c, r, cellW, cellH); err != nil {
+			return err
+		}
+	}
 	if c, r := t.vt.Size(); c != cols || r != rows {
 		if err := ts.refit(gtx, t, size, cols, rows); err != nil {
 			return err
@@ -281,6 +304,11 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	}
 	event.Op(gtx.Ops, t.tag)
 	return nil
+}
+
+func sameCell(vt *gioterm.Terminal, w, h int) bool {
+	cw, ch := vt.CellSize()
+	return cw == w && ch == h
 }
 
 // refit follows the area with the grid and the PTY once size has settled,

@@ -26,7 +26,7 @@ func TestTerminalKeyBytesRewritesThePassedThroughChords(t *testing.T) {
 	for _, mode := range []struct{ name, setup string }{{"legacy", ""}, {"kitty", "\x1b[>1u"}} {
 		for _, c := range cases {
 			t.Run(mode.name+"/"+c.name, func(t *testing.T) {
-				vt, err := gioterm.New(80, 24, func([]byte) {})
+				vt, err := gioterm.New(80, 24, 10, 20, func([]byte) {})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -62,7 +62,7 @@ func TestPasteChords(t *testing.T) {
 }
 
 func TestPastedClipboard(t *testing.T) {
-	vt, err := gioterm.New(80, 24, func([]byte) {})
+	vt, err := gioterm.New(80, 24, 10, 20, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}
