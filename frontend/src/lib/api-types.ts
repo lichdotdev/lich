@@ -40,6 +40,18 @@ export interface BaseStatus {
   conflicts: string[] | null
 }
 
+/** internal/project.BaseFreshness — where a local branch stands against its
+ * upstream, read right after fetching it. */
+export interface BaseFreshness {
+  /** "origin/main" form; "" for a branch that tracks nothing, every count then 0. */
+  upstream: string
+  ahead: number
+  behind: number
+  /** Why the fetch failed; absent when it did not. The counts are then against
+   * whatever an earlier fetch left. */
+  fetchError?: string
+}
+
 /** internal/project.PullRequest — the branch's open GitHub PR (gh CLI). */
 export interface PullRequest {
   number: number
