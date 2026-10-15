@@ -195,13 +195,22 @@ is: the client reports it when the compaction starts, and when it settles
 (finished or failed) reports the state the session is back in. That closing
 report is what clears it, like any later state would.
 
-Only Claude Code sends it, from the plugin's mod, on `session.compact`. Measured
-on Claude Code 2.1.295 at a real PTY against a stub listener:
+Only Claude Code sends it, from the plugin's mod, on `session.compact`. The
+closing report is the turn's state, not the trigger's: `busy` while a turn is
+open, `done` when none is. The first two rows were measured on Claude Code
+2.1.295 at a real PTY against a stub listener; the third was seen on 2.1.300:
 
 | `e.trigger` | When it runs                                   | Took | Report that closes it |
 |-------------|------------------------------------------------|------|-----------------------|
 | `manual`    | `/compact`, at an idle prompt                  | ~6s  | `done`                |
 | `auto`      | mid-turn, after `UserPromptSubmit`, before the model call | ~14s | `busy`       |
+| `auto`      | at an idle prompt, before the prompt cache expires ("Compacted while idle") | — | `done` |
+
+The idle compaction is why the trigger cannot decide the closing report: its
+summary is prepared under a `precompute` trigger and applied through the same
+path as a mid-turn one, so it reaches the mod as `auto` with no turn open and no
+`Stop` to follow. Closing it with `busy` left the card on the spinner until the
+next prompt.
 
 Without it the card says the wrong thing in both cases: a `/compact` raises no
 prompt event, so the card sits on the finished turn's check the whole time, and
