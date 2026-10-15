@@ -131,7 +131,8 @@ type RevertLine struct {
 	Text string `json:"text"`
 }
 
-// RevertResult mirrors project.RevertResult, what undoing a revert needs.
+// RevertResult mirrors project.RevertResult, what undoing a revert needs. Both
+// patches are base64, opaque here: handed back to RestoreLines as they came.
 type RevertResult struct {
 	Patch      string `json:"patch"`
 	IndexPatch string `json:"indexPatch"`

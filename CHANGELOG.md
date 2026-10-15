@@ -206,7 +206,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   XML projects, came up with `�` in place of every accented letter; lich now
   reads it as Latin-1 for display and leaves the file as it is on disk.
   Reverting one of its lines in the Review tab works too, where it used to
-  answer that the file had changed.
+  answer that the file had changed, and so does undoing that revert.
 - **Selecting in a terminal of the native window takes what is under the
   pointer.** A drag dropped the cell it started on and the one under the
   pointer until the pointer crossed 60% of it; it now runs from the clicked

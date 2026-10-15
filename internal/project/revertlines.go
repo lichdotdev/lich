@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -37,8 +38,29 @@ type RevertLine struct {
 // working tree, and the one reversed onto the index ("" when the index did not
 // hold the change and was left alone).
 type RevertResult struct {
-	Patch      string `json:"patch"`
-	IndexPatch string `json:"indexPatch"`
+	Patch      string
+	IndexPatch string
+}
+
+// revertWire is RevertResult as it crosses the RPC: the patches are git's raw
+// bytes, which need not be UTF-8 (a Latin-1 file), so they travel as base64
+// rather than as JSON text that would turn each such byte into U+FFFD.
+type revertWire struct {
+	Patch      []byte `json:"patch"`
+	IndexPatch []byte `json:"indexPatch"`
+}
+
+func (r RevertResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(revertWire{Patch: []byte(r.Patch), IndexPatch: []byte(r.IndexPatch)})
+}
+
+func (r *RevertResult) UnmarshalJSON(data []byte) error {
+	var wire revertWire
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	r.Patch, r.IndexPatch = string(wire.Patch), string(wire.IndexPatch)
+	return nil
 }
 
 // RevertLines puts the chosen changed lines of rel back to HEAD, leaving every

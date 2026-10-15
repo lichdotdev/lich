@@ -370,7 +370,8 @@ export interface RevertLine {
   text: string
 }
 
-/** internal/project.RevertResult: what undoing a line revert hands back. */
+/** internal/project.RevertResult: what undoing a line revert hands back. Both
+ * patches are base64, opaque here: handed back to RestoreLines as they came. */
 export interface RevertResult {
   patch: string
   /** "" when the index did not hold the change and was left alone. */

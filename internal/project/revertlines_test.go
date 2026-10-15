@@ -1,6 +1,7 @@
 package project
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -68,6 +69,37 @@ func TestRevertLinesLatin1(t *testing.T) {
 		if got := readFile(t, repo, "code.txt"); got != revertBase {
 			t.Errorf("staged %v: content = %q, want HEAD", staged, got)
 		}
+	}
+}
+
+// TestRestoreLinesLatin1AfterTheWire undoes a Latin-1 revert with the result
+// as it comes back from a client: through JSON, which would turn each raw byte
+// into U+FFFD if the patch traveled as text.
+func TestRestoreLinesLatin1AfterTheWire(t *testing.T) {
+	changed := strings.Replace(revertBase, "bravo\n", "bravo\nservi\xe7os\n", 1)
+	repo, git := revertRepo(t, changed)
+	git("add", "code.txt")
+	s := New(nil)
+	result, err := s.RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 3, Text: "servi\u00e7os"}})
+	if err != nil {
+		t.Fatalf("RevertLines: %v", err)
+	}
+	wire, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var undo RevertResult
+	if err := json.Unmarshal(wire, &undo); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RestoreLines(repo, "code.txt", undo); err != nil {
+		t.Fatalf("RestoreLines: %v", err)
+	}
+	if got := readFile(t, repo, "code.txt"); got != changed {
+		t.Errorf("content = %q, want %q", got, changed)
+	}
+	if got := git("show", ":code.txt"); got != strings.TrimSuffix(changed, "\n") {
+		t.Errorf("index = %q, want %q", got, changed)
 	}
 }
 
