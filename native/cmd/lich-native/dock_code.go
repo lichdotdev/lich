@@ -117,7 +117,7 @@ func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if c.preview.isOpen() {
 				var d D
-				d, err = c.preview.layout(gtx, th, root, previewEnv{checkout: in.checkout, light: in.light, inject: inject, comments: c.comments})
+				d, err = c.preview.layout(gtx, th, root, previewEnv{checkout: in.checkout, code: in.code, inject: inject, comments: c.comments})
 				return d
 			}
 			return c.browse(gtx, th)

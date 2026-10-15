@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"image/color"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/godemirror/tags"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -194,4 +197,70 @@ func TestAppearanceChoosesAndStores(t *testing.T) {
 		t.Errorf("chose rose-pine, took %q", e.def.ID)
 	}
 	waitForSetting(t, f, themeSettingKey+"@", "rose-pine")
+}
+
+// resolved is a HighlightStyle as the style each tag gets, the specs that
+// name one tag folded into one entry.
+func resolved(h *godemirror.HighlightStyle) map[*tags.Tag]godemirror.TagStyle {
+	out := map[*tags.Tag]godemirror.TagStyle{}
+	for _, s := range h.Specs() {
+		for _, tag := range s.Tags {
+			s := s
+			s.Tags = nil
+			out[tag] = s
+		}
+	}
+	return out
+}
+
+// The bundled themes write godemirror's own palettes out tag by tag, so the
+// code views look as they did before themes carried syntax.
+func TestBundledThemesHighlightAsGodemirrorsDefaults(t *testing.T) {
+	for id, want := range map[string]godemirror.Theme{themeLight: godemirror.LightTheme, themeDark: godemirror.DarkTheme} {
+		e, err := readTheme(bundledTheme(t, id))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, exp := resolved(e.code.Highlight), resolved(want.Highlight)
+		if len(got) != len(exp) {
+			t.Fatalf("%s: %d tags styled, godemirror styles %d", id, len(got), len(exp))
+		}
+		for tag, style := range exp {
+			if !reflect.DeepEqual(got[tag], style) {
+				t.Errorf("%s: %s = %+v, want %+v", id, tag, got[tag], style)
+			}
+		}
+	}
+}
+
+func TestThemeSyntaxReachesTheCodeViews(t *testing.T) {
+	th := customTheme("pine", "Pine")
+	th.Syntax = map[string]lichclient.SyntaxStyle{
+		"keyword":                {Color: "#c4a7e7"},
+		"function(variableName)": {Color: "#ebbcba", Bold: true},
+	}
+	e, err := readTheme(th)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := resolved(e.code.Highlight)
+	if c := got[tags.Keyword].Color; c != (color.NRGBA{R: 0xc4, G: 0xa7, B: 0xe7, A: 0xff}) {
+		t.Errorf("keyword color = %v", c)
+	}
+	if s := got[tags.Function(tags.VariableName)]; !s.Bold {
+		t.Errorf("function(variableName) = %+v, want bold", s)
+	}
+	if e.code.Foreground != e.palette.Foreground {
+		t.Errorf("code foreground = %v, want the theme's %v", e.code.Foreground, e.palette.Foreground)
+	}
+}
+
+// A syntax entry this window cannot read sets the theme aside as broken,
+// rather than drawing code in colors the author did not write.
+func TestABadSyntaxEntryBreaksTheTheme(t *testing.T) {
+	th := customTheme("pine", "Pine")
+	th.Syntax = map[string]lichclient.SyntaxStyle{"keywords": {Color: "#fff"}}
+	if _, err := readTheme(th); err == nil || !strings.Contains(err.Error(), `"keywords" is not a highlighting tag`) {
+		t.Fatalf("readTheme error = %v", err)
+	}
 }

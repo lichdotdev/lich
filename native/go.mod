@@ -8,7 +8,7 @@ require (
 	github.com/coder/websocket v1.8.14
 	github.com/creack/pty v1.1.24
 	github.com/godbus/dbus/v5 v5.2.2
-	github.com/lichdotdev/godemirror v0.1.1-0.20261013173940-789794855f2c
+	github.com/lichdotdev/godemirror v0.3.0
 	golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607
 	golang.org/x/image v0.47.0
 )

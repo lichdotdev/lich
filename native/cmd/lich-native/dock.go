@@ -36,6 +36,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/godemirror"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
@@ -98,6 +99,7 @@ type dockInput struct {
 	git       lichclient.DiffStats
 	isGit     bool
 	light     bool
+	code      godemirror.Theme
 }
 
 type reviewTab interface {

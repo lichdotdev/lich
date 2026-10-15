@@ -55,7 +55,7 @@ type preview struct {
 // previewEnv is what the preview reads of the dock each frame.
 type previewEnv struct {
 	checkout string
-	light    bool
+	code     godemirror.Theme
 	inject   func(string) bool
 	comments *commentStore
 }
@@ -156,7 +156,7 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 	}
 	p.show(key, text)
 	p.syncComposer()
-	p.view.Theme = previewTheme(th, p.env.light)
+	p.view.Theme = previewTheme(th, p.env.code)
 	var viewErr error
 	lines := ""
 	if from, to, ok := p.view.SelectedLines(); ok {
@@ -221,13 +221,9 @@ func (p *preview) composerBlock(gtx C) D {
 	})
 }
 
-// previewTheme is godemirror's palette on the dock's bg-sidebar, which the
-// web's transparent editor shows through.
-func previewTheme(th *ui.Theme, light bool) godemirror.Theme {
-	t := godemirror.DarkTheme
-	if light {
-		t = godemirror.LightTheme
-	}
-	t.Background, t.GutterBackground = th.Surface, th.Surface
-	return t
+// previewTheme is the window theme's code palette on the dock's bg-sidebar,
+// which the web's transparent editor shows through.
+func previewTheme(th *ui.Theme, code godemirror.Theme) godemirror.Theme {
+	code.Background, code.GutterBackground = th.Surface, th.Surface
+	return code
 }

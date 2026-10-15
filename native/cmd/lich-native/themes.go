@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/godemirror/tags"
 	"github.com/omartelo/lich/native/gioterm"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
@@ -46,6 +49,7 @@ type themeEntry struct {
 	def      lichclient.Theme
 	palette  ui.Palette
 	terminal gioterm.Colors
+	code     godemirror.Theme
 }
 
 func (e themeEntry) light() bool { return e.def.Scheme == themeSchemeLight }
@@ -93,7 +97,56 @@ func readTheme(def lichclient.Theme) (themeEntry, error) {
 	if err != nil {
 		return themeEntry{}, err
 	}
-	return themeEntry{def: def, palette: p, terminal: term}, nil
+	code, err := codeThemeOf(def, p)
+	if err != nil {
+		return themeEntry{}, err
+	}
+	return themeEntry{def: def, palette: p, terminal: term, code: code}, nil
+}
+
+// codeThemeOf is the code views' palette: godemirror's for the scheme, with
+// the text and the gutter in the theme's foreground and muted foreground, as
+// the web's editor draws them, and the theme's syntax highlighting when it
+// has one. Each view lays its own ground over Background.
+func codeThemeOf(def lichclient.Theme, p ui.Palette) (godemirror.Theme, error) {
+	t := godemirror.DarkTheme
+	if def.Scheme == themeSchemeLight {
+		t = godemirror.LightTheme
+	}
+	t.Foreground, t.GutterForeground = p.Foreground, p.MutedForeground
+	if len(def.Syntax) == 0 {
+		return t, nil
+	}
+	h, err := highlightOf(def.Syntax)
+	if err != nil {
+		return t, err
+	}
+	t.Highlight = h
+	return t, nil
+}
+
+// highlightOf builds the HighlightStyle of a theme's syntax section. Two keys
+// can name one tag ("function(definition(x))" and "definition(function(x))");
+// specs go in key order, so which one wins does not change between runs.
+func highlightOf(syntax map[string]lichclient.SyntaxStyle) (*godemirror.HighlightStyle, error) {
+	specs := make([]godemirror.TagStyle, 0, len(syntax))
+	for _, key := range slices.Sorted(maps.Keys(syntax)) {
+		tag, err := tags.Parse(key)
+		if err != nil {
+			return nil, fmt.Errorf("syntax: %w", err)
+		}
+		s := syntax[key]
+		spec := godemirror.TagStyle{Tags: []*tags.Tag{tag}, Bold: s.Bold, Italic: s.Italic, Underline: s.Underline, Strikethrough: s.Strikethrough}
+		if s.Color != "" {
+			c, err := ui.ParseColor(s.Color)
+			if err != nil {
+				return nil, fmt.Errorf("syntax.%s: %w", key, err)
+			}
+			spec.Color = c
+		}
+		specs = append(specs, spec)
+	}
+	return godemirror.NewHighlightStyle(specs...), nil
 }
 
 // paletteOf reads the app tokens the native window draws with.

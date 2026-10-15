@@ -76,6 +76,7 @@ type filesTree struct {
 type filesInput struct {
 	sessionID, checkout string
 	light               bool
+	code                godemirror.Theme
 }
 
 // viewedTick is the card's Viewed checkbox; ticking folds the file away.
@@ -122,7 +123,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PR
 		files.pr.head = d.Commits[len(d.Commits)-1].OID
 	}
 	in := p.files
-	files.th, files.light, files.target = th, in.light, in.checkout
+	files.th, files.light, files.code, files.target = th, in.light, in.code, in.checkout
 	files.inject = dockInjector(files.client, in.sessionID)
 	read := p.store.diff(p.project.Path, d.Number)
 	switch {

@@ -1,6 +1,9 @@
 package lichclient
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Theme mirrors themes.Theme: a color theme for the app tokens (CSS colors,
 // keyed by the index.css names without "--") and the terminal (hex colors,
@@ -13,6 +16,28 @@ type Theme struct {
 	Source   *ThemeSource      `json:"source,omitempty"`
 	App      map[string]string `json:"app"`
 	Terminal map[string]string `json:"terminal"`
+	// Syntax styles the code views by highlighting tag; nil keeps the
+	// default palette of the theme's scheme.
+	Syntax map[string]SyntaxStyle `json:"syntax,omitempty"`
+}
+
+// SyntaxStyle mirrors themes.SyntaxStyle: one tag's color and font style.
+type SyntaxStyle struct {
+	Color         string `json:"color,omitempty"`
+	Bold          bool   `json:"bold,omitempty"`
+	Italic        bool   `json:"italic,omitempty"`
+	Underline     bool   `json:"underline,omitempty"`
+	Strikethrough bool   `json:"strikethrough,omitempty"`
+}
+
+// UnmarshalJSON also reads the bare color a theme file may write: the
+// backend sends the object, the bundled theme files keep the short form.
+func (s *SyntaxStyle) UnmarshalJSON(data []byte) error {
+	if json.Unmarshal(data, &s.Color) == nil {
+		return nil
+	}
+	type plain SyntaxStyle
+	return json.Unmarshal(data, (*plain)(s))
 }
 
 // ThemeSource mirrors themes.Source: the repository a theme was installed

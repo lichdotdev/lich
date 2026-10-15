@@ -68,6 +68,7 @@ type reviewPanel struct {
 	// The frame's: theme, palette, checkout and its latest read.
 	th      *ui.Theme
 	light   bool
+	code    godemirror.Theme
 	target  string
 	inject  func(string) bool
 	shown   *diffRead
@@ -160,7 +161,7 @@ func (p *reviewPanel) holdsKeys(gtx C) bool {
 // layoutBody is the panel under the dock's header: the checkout's
 // working-tree diff, and the comment batch at its foot.
 func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
-	p.th, p.light, p.target = th, in.light, in.checkout
+	p.th, p.light, p.code, p.target = th, in.light, in.code, in.checkout
 	p.inject = dockInjector(p.client, in.sessionID)
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())
@@ -241,13 +242,9 @@ func (p *reviewPanel) scrollToFile(path string) {
 // enough.
 func (p *reviewPanel) splitShown(gtx C) bool { return p.split && p.splitOK }
 
-// diffTheme is godemirror's palette for the light or dark window, on the
-// panel's own ground.
+// diffTheme is the window theme's code palette on the panel's own ground.
 func (p *reviewPanel) diffTheme() godemirror.Theme {
-	t := godemirror.DarkTheme
-	if p.light {
-		t = godemirror.LightTheme
-	}
+	t := p.code
 	t.Background, t.GutterBackground = p.th.Surface, p.th.Surface
 	return t
 }

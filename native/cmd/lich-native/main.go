@@ -31,6 +31,7 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/lichdotdev/godemirror"
 	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/gioterm"
 	"github.com/omartelo/lich/native/internal/shot"
@@ -107,6 +108,7 @@ type window struct {
 	// exitBand is the active terminal's band once its process is gone.
 	exitBand exitBand
 	light    bool // the theme on screen is a light one
+	code     godemirror.Theme
 	// appearance is the theme state the frame repaints from.
 	appearance *appearance
 	// zoom scales everything but the terminals, which keep their own size.
@@ -483,7 +485,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.pulls.open && !v.home {
-						u.pulls.files = filesInput{sessionID: v.in.sessionID, checkout: v.in.path, light: u.light}
+						u.pulls.files = filesInput{sessionID: v.in.sessionID, checkout: v.in.path, light: u.light, code: u.code}
 						u.pulls.squareX = -1
 						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.tabs, active: v.project, islands: u.pulls.spans}); ok {
 							u.pulls.squareX = x
@@ -613,7 +615,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	in := dockInput{sessionID: v.in.sessionID, checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light}
+	in := dockInput{sessionID: v.in.sessionID, checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code}
 	save, err := d.layout(gtx, u.theme, &u.root, in)
 	if save {
 		rem := u.dock.widthRem
