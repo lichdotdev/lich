@@ -26,6 +26,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/providers"
 )
 
@@ -79,10 +80,15 @@ func stateDirs(providerID, home string) []string {
 	case providers.Claude:
 		// The JSON file beside the directory holds the account, so a session
 		// without it starts at the login prompt.
-		return []string{
-			envDir("CLAUDE_CONFIG_DIR", filepath.Join(home, ".claude")),
-			filepath.Join(home, ".claude.json"),
+		config := envDir("CLAUDE_CONFIG_DIR", filepath.Join(home, ".claude"))
+		dirs := []string{config, filepath.Join(home, ".claude.json")}
+		// CLAUDE_CODE_PLUGIN_CACHE_DIR can move the plugins directory out of the
+		// config dir; claudeprofile resolves it the way the session will.
+		plugins := claudeprofile.PluginsDir(claudeprofile.Personal, config)
+		if filepath.IsAbs(plugins) && !strings.HasPrefix(plugins, config+string(filepath.Separator)) {
+			dirs = append(dirs, plugins)
 		}
+		return dirs
 	case providers.Codex:
 		return []string{envDir("CODEX_HOME", filepath.Join(home, ".codex"))}
 	case providers.Antigravity:
