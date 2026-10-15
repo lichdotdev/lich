@@ -117,7 +117,8 @@ func containsAny(s string, subs []string) bool {
 // which links to the same clones. A marketplace read from a local directory
 // keeps its path.
 func copyMarketplaces(personal, dir string) error {
-	src := filepath.Join(personal, "plugins", "known_marketplaces.json")
+	personalPlugins := personalPluginsDir(personal)
+	src := filepath.Join(personalPlugins, "known_marketplaces.json")
 	data, err := os.ReadFile(src)
 	if os.IsNotExist(err) {
 		return nil
@@ -132,7 +133,7 @@ func copyMarketplaces(personal, dir string) error {
 	clones := filepath.Join(dir, "plugins", "marketplaces")
 	for name, entry := range doc {
 		var location string
-		if json.Unmarshal(entry["installLocation"], &location) != nil || !isClone(location) {
+		if json.Unmarshal(entry["installLocation"], &location) != nil || !isClone(location, personalPlugins) {
 			continue
 		}
 		moved, err := json.Marshal(filepath.Join(clones, name))
@@ -149,8 +150,12 @@ func copyMarketplaces(personal, dir string) error {
 }
 
 // isClone reports whether a marketplace location is a clone Claude Code made
-// under some plugins/marketplaces directory, rather than a path the user gave.
-func isClone(location string) bool {
+// under some plugins/marketplaces directory, or under Personal's plugins
+// directory wherever pluginsDirVar moved it, rather than a path the user gave.
+func isClone(location, personalPlugins string) bool {
 	parent := filepath.Dir(location)
+	if parent == filepath.Join(personalPlugins, "marketplaces") {
+		return true
+	}
 	return filepath.Base(parent) == "marketplaces" && filepath.Base(filepath.Dir(parent)) == "plugins"
 }

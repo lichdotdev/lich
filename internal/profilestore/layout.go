@@ -13,6 +13,13 @@ func (s Spec) linked() []string {
 	return slices.Concat(s.SharedFiles, s.Shared, s.Downloads)
 }
 
+func (s Spec) personalPath(personal, name string) string {
+	if s.PersonalPath == nil {
+		return filepath.Join(personal, name)
+	}
+	return s.PersonalPath(personal, name)
+}
+
 // build lays a new profile out at dir against Personal. It reports the shared
 // entries it had to copy instead of link.
 func (s Spec) build(dir string) ([]string, error) {
@@ -27,8 +34,8 @@ func (s Spec) build(dir string) ([]string, error) {
 		return nil, fmt.Errorf("create %s: %w", dir, err)
 	}
 	for _, name := range s.Downloads {
-		if err := os.MkdirAll(filepath.Join(personal, name), 0o755); err != nil {
-			return nil, fmt.Errorf("create %s: %w", filepath.Join(personal, name), err)
+		if err := os.MkdirAll(s.personalPath(personal, name), 0o755); err != nil {
+			return nil, fmt.Errorf("create %s: %w", s.personalPath(personal, name), err)
 		}
 		if err := os.MkdirAll(filepath.Join(dir, filepath.Dir(name)), 0o700); err != nil {
 			return nil, err
@@ -64,7 +71,7 @@ func (s Spec) linkShared(personal, dir string) ([]string, error) {
 	}
 	var copied []string
 	for _, name := range s.linked() {
-		target := filepath.Join(personal, name)
+		target := s.personalPath(personal, name)
 		path := filepath.Join(dir, name)
 		if _, err := os.Stat(target); err != nil {
 			continue

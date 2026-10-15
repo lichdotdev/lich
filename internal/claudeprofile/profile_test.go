@@ -157,6 +157,42 @@ func TestCreateLaysTheProfileOutAgainstPersonal(t *testing.T) {
 	}
 }
 
+// With CLAUDE_CODE_PLUGIN_CACHE_DIR set, Personal's marketplaces are under it,
+// so a new profile seeds from and links to those rather than to a plugins
+// directory under Personal's config dir that Personal no longer reads.
+func TestCreateSeedsFromPersonalsMovedPlugins(t *testing.T) {
+	personal := machine(t)
+	moved := t.TempDir()
+	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", moved)
+	mustMkdir(t, filepath.Join(moved, "marketplaces", "official"))
+	mustWrite(t, filepath.Join(moved, "known_marketplaces.json"), `{
+	  "official": {"source": {"source": "github"}, "installLocation": "`+filepath.ToSlash(filepath.Join(moved, "marketplaces", "official"))+`"}
+	}`)
+
+	p, err := Create("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(p.Dir, "plugins", "marketplaces")
+	got, err := filepath.EvalSymlinks(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want, _ := filepath.EvalSymlinks(filepath.Join(moved, "marketplaces")); got != want {
+		t.Errorf("marketplaces link to %q, want %q", got, want)
+	}
+	var markets map[string]struct {
+		InstallLocation string `json:"installLocation"`
+	}
+	readJSON(t, filepath.Join(p.Dir, "plugins", "known_marketplaces.json"), &markets)
+	if got, want := markets["official"].InstallLocation, filepath.Join(link, "official"); got != want {
+		t.Errorf("clone location %q, want %q", got, want)
+	}
+	if _, err := os.Stat(filepath.Join(personal, "plugins")); !os.IsNotExist(err) {
+		t.Errorf("a plugins directory Personal does not read was created under its config dir: %v", err)
+	}
+}
+
 func TestSlugsAreFreeAndNeverPersonal(t *testing.T) {
 	machine(t)
 	cases := []struct{ name, want string }{

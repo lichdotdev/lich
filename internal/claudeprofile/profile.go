@@ -57,8 +57,9 @@ var store = profilestore.Spec{
 		"CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_SECURESTORAGE_CONFIG_DIR",
 		pluginsDirVar,
 	},
-	Seed: seed,
-	Sync: layoutPluginCache,
+	PersonalPath: personalPath,
+	Seed:         seed,
+	Sync:         layoutPluginCache,
 }
 
 // Root is where lich keeps its Claude profiles.
@@ -109,6 +110,15 @@ func personalPluginsDir(personal string) string {
 		return dir
 	}
 	return filepath.Join(home, dir[1:])
+}
+
+// personalPath is where Personal keeps name, an entry of a profile's directory:
+// one under plugins/ follows pluginsDirVar, as Personal's sessions do.
+func personalPath(personal, name string) string {
+	if rest, ok := strings.CutPrefix(name, "plugins"+string(filepath.Separator)); ok {
+		return filepath.Join(personalPluginsDir(personal), rest)
+	}
+	return filepath.Join(personal, name)
 }
 
 // personalGlobalFile is the default profile's global config: inside the config

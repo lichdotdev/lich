@@ -77,6 +77,11 @@ type Spec struct {
 	// Downloads are directories Personal keeps its plugin downloads in, created
 	// there when absent and linked, so a profile does not fetch them again.
 	Downloads []string
+	// PersonalPath is where Personal keeps a linked entry, given its state
+	// directory and the entry's path relative to a profile's. Nil is the same
+	// relative path under Personal's: it differs only where the provider reads a
+	// variable that moves part of its state elsewhere.
+	PersonalPath func(personal, name string) string
 	// Override are the variables, besides HomeVar, that would override a
 	// profile's own login: a spawn into a profile drops them, or the account in
 	// its directory is never the one spent.
