@@ -260,18 +260,6 @@ export function pullsCheckoutHomes(groups: SidebarGroup[]): Map<string, string[]
   return homes
 }
 
-// runCardIn names the Run card of the checkout stored as `path` ("" for the
-// project's own directory), or undefined when it has none, which is what puts
-// the launch menu's item on "Run" rather than "Go to Run card".
-//
-// It reads the project's whole list rather than the block that checkout draws: a
-// Run card that has been pinned, or dragged onto a wall, is drawn in one of the
-// gathered blocks and still holds its checkout's slot, exactly as the backend
-// sees it (internal/spawn.runCardIn matches the row, not the block).
-export function runCardIn(sessions: Session[], path: string): Session | undefined {
-  return sessions.find((session) => session.run && (session.path ?? "") === path)
-}
-
 // reorderSubset returns the full id order that hands `ids` to the sessions the
 // predicate picks and leaves every other session exactly where it is. A drag
 // inside one block must not move the blocks around it, and the pinned block is

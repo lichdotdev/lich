@@ -145,6 +145,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (GNOME, KDE, mako, dunst, swaync); one that draws buttons, like swaync, shows
   Open and Dismiss. Windows and macOS keep the plain notification for now.
 
+### Removed
+
+- **Project run scripts and the Run card.** The **Run** item in a checkout's
+  **+** menu, the run command row in the New worktree dialog and
+  `.lich/run-worktree.sh` support are gone. A Run card you already have keeps
+  running its command as an ordinary terminal with an entrypoint, and the file
+  in your repository is left alone; give a terminal the same entrypoint to keep
+  a dev server one click away. `.lich/setup-worktree.sh` is unchanged.
+
 ### Fixed
 
 - **The native window shows lich in the tray.** With `lich native`

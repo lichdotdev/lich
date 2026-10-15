@@ -21,7 +21,7 @@ import { CardColorDropdownSub } from "./CardColorMenu"
 import { useT } from "@/lib/i18n/i18n"
 import { cn } from "@/lib/utils"
 import { FolderLaunchMenuItems, type LaunchCheckout } from "./FolderLaunchMenuItems"
-import { type RunMenuAction, SessionLaunchMenuItems } from "./SessionLaunchMenuItems"
+import { SessionLaunchMenuItems } from "./SessionLaunchMenuItems"
 import { Hint } from "@/components/common/Hint"
 import { Trans } from "@/components/common/Trans"
 
@@ -76,9 +76,6 @@ interface SessionGroupHeaderProps {
   onToggle: () => void
   // path is the checkout a folder's + chose; a checkout's + opens in itself.
   onNewSession: (kind: ProviderKind | "shell", sandbox: SandboxAnswer, path?: string) => void
-  // The checkout's Run entry: open its Run card, or go to the one it has.
-  // Absent when the project ships no run script.
-  run?: RunMenuAction
 }
 
 interface SessionGroupTitleButtonProps {
@@ -200,7 +197,6 @@ export function SessionGroupHeader({
   activatorProps,
   onToggle,
   onNewSession,
-  run,
 }: SessionGroupHeaderProps) {
   const t = useT()
   const [editing, setEditing] = useState(false)
@@ -296,7 +292,6 @@ export function SessionGroupHeader({
                 terminalLabel="New Terminal"
                 projectId={projectId}
                 onNewSession={onNewSession}
-                run={run}
               />
             )}
           </DropdownMenuContent>

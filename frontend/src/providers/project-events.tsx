@@ -255,7 +255,6 @@ export function useSessionEvents({
         label,
         kind,
         ...(path ? { path } : {}),
-        ...(opened.run ? { run: true } : {}),
         ...(originSessionId ? { originSessionId, originLabel } : {}),
         ...(opened.folder ? { folder: opened.folder } : {}),
       }

@@ -68,7 +68,6 @@ const cardFromStored = (restored: StoredSession): Session => ({
   path: restored.path,
   ...(restored.providerSessionId ? { providerSessionId: restored.providerSessionId } : {}),
   ...(restored.entrypoint ? { entrypoint: restored.entrypoint } : {}),
-  ...(restored.run ? { run: true } : {}),
   ...(restored.sandbox === "on" ? { sandboxed: true } : {}),
   ...(restored.folder ? { folder: restored.folder } : {}),
   ...(restored.originSessionId

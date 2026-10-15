@@ -49,11 +49,6 @@ type fakeSessions struct {
 	// subagents records how deep each session row marked as a subagent runs.
 	subagents   map[string]int
 	subagentErr error
-	// entrypoints records the run command written on each session row, keyed by
-	// session id. Only a Run card gets one from this service, so a row in here is
-	// also a row marked as one.
-	entrypoints   map[string]string
-	entrypointErr error
 	// deleted/parked/purged record what a close asked the store to do, and
 	// against which active session it left the project.
 	deleted []closedRow
@@ -271,17 +266,6 @@ func (f *fakeSessions) SetSessionSubagentDepth(sessionID string, depth int) erro
 
 func (f *fakeSessions) SessionSubagentDepth(sessionID string) int {
 	return f.subagents[sessionID]
-}
-
-func (f *fakeSessions) SetRunEntrypoint(sessionID, entrypoint string) error {
-	if f.entrypointErr != nil {
-		return f.entrypointErr
-	}
-	if f.entrypoints == nil {
-		f.entrypoints = map[string]string{}
-	}
-	f.entrypoints[sessionID] = entrypoint
-	return nil
 }
 
 // createdWorktree is one CreateWorktree call, so a test can assert the base the

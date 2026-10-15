@@ -95,7 +95,7 @@ function backendFor({ projects = [], settings = {} }: Workspace): Record<string,
     // A clean checkout on its main branch, with no pull request behind it.
     "project.Diff": () => ({ files: 0, added: 0, deleted: 0, head: "4b825dc", branch: "main" }),
     "project.BaseStatus": () => null,
-    "project.WorktreeSetup": () => ({ script: "", run: "" }),
+    "project.WorktreeSetup": () => ({ script: "" }),
     "project.ListCheckouts": ([path]) => [{ name: "main", path }],
     "project.BranchesOf": ([paths]) =>
       Object.fromEntries((paths as string[]).map((path) => [path, "main"])),

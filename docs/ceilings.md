@@ -68,9 +68,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   once used there the switch changes nothing. Codex, Antigravity, Crush and Cursor CLI fold with a constant, no
   setting and no key that unfolds, so they have no switch; oh-my-pi was not measured.
 - **`LICH_WORKTREE_PORT` is reserved, never held** (`internal/terminal/worktreeport.go`): the number is a name the
-  checkout owns, nothing binds it, and anything on the machine can take the port before the dev server starts. A
-  Run card shortens that window rather than closing it — the process it starts is what binds the port, and
-  whether the script even mentions the variable is the project's own business.
+  checkout owns, nothing binds it, and anything on the machine can take the port before the dev server starts.
 - **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,
   `frontend/src/lib/session/sidebar-groups.ts`): the folder a card is filed under is a column on the session
   row, and the name is the whole identity — there is no folder record to point at. What follows is deliberate:
@@ -128,12 +126,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   filter is skipped rather than its block unfolded, so a waiting session folded away is reached only through
   its block's mark. The active card never counts: when it is the only one waiting, the chord does nothing and
   goes on to the terminal.
-- **The Run card is never started for you** (`frontend/src/components/sidebar/SessionSidebar.tsx`): a fresh
-  worktree's setup script is still installing dependencies in the agent's card when the checkout appears, and
-  the setup-finished marker (`setupDone`, `internal/terminal/setup.go`) never reaches the window, so there is
-  nothing there to hang an automatic start on — `terminal.Ready` answers a different
-  question, going false again for every turn the agent takes. So the card is one gesture, which is also what
-  keeps eight worktrees from meaning eight dev servers.
 - **A session is ready for work only once its agent reports from its own prompt, where it can**
   (`internal/terminal/startgate.go`): in a fresh worktree Claude Code, Codex, Cursor CLI and Antigravity ask
   whether the folder is trusted and Crush asks whether to initialize the project, and a quiet screen is all

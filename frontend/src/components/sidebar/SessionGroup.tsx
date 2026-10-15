@@ -24,7 +24,6 @@ import { SessionCard } from "./SessionCard"
 import { PullRequestCard } from "./PullRequestCard"
 import { SessionGroupHeader } from "./SessionGroupHeader"
 import { WallGuestCard } from "./WallGuestCard"
-import type { RunMenuAction } from "./SessionLaunchMenuItems"
 
 interface SessionGroupProps {
   projectId: string
@@ -90,10 +89,6 @@ interface SessionGroupProps {
   // Closing stays the sidebar's: the last session of a worktree raises the
   // keep-or-remove dialog it owns (useWorktreeClose).
   onClose: (session: Session) => void
-  // The checkout's Run entry: open its Run card, or go to the one it has.
-  // Absent when the project ships no run script, and on the gathered blocks,
-  // which are not checkouts.
-  run?: RunMenuAction
   // The checkouts whose parked Pull request card this block draws
   // (pullsCheckoutHomes), and the one the Pulls screen is showing, "" off it.
   // A card passes its own session to onPulls: a folder or a wall mixes
@@ -147,7 +142,6 @@ export function SessionGroup({
   sortable,
   onReorder,
   onClose,
-  run,
   pullsCheckouts,
   pullsShowing,
   onPulls,
@@ -298,7 +292,6 @@ export function SessionGroup({
           onNewSession={(kind, sandbox, at = path) =>
             newSession(projectId, kind, at, sandbox, folder)
           }
-          run={run}
         />
       )}
       <div

@@ -91,7 +91,6 @@ type Sessions interface {
 	SetSessionUltracode(sessionID string) error
 	SetSessionSubagentDepth(sessionID string, depth int) error
 	SessionSubagentDepth(sessionID string) int
-	SetRunEntrypoint(sessionID, entrypoint string) error
 	RenameSession(sessionID, label string) error
 	SetSessionFolder(sessionID, folder string) error
 	RenameFolder(projectID, from, to string) ([]string, error)
@@ -165,10 +164,6 @@ type Session struct {
 	OriginLabel     string `json:"originLabel"`
 	Confined        bool   `json:"confined"`
 	Folder          string `json:"folder"`
-	// Run marks a checkout's Run card, so the window can find it again and send
-	// the menu item to it rather than opening a second one (Run). Only Run sets
-	// it; every session opened any other way is a card of its own.
-	Run bool `json:"run"`
 }
 
 // Service opens sessions on behalf of a caller outside the window.
@@ -770,4 +765,14 @@ func newSessionID() (string, error) {
 		return "", fmt.Errorf("generate session id: %w", err)
 	}
 	return hex.EncodeToString(raw), nil
+}
+
+// storedPath is what the row records for a session rooted at cwd: empty for the
+// project's own directory, the checkout itself for a worktree. The store's own
+// spelling, and what the window's grouping reads.
+func storedPath(projectPath, cwd string) string {
+	if cwd == projectPath {
+		return ""
+	}
+	return cwd
 }

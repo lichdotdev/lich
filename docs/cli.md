@@ -596,7 +596,7 @@ absent without `--prompt`, so a reader that branches on it is never handed an
 empty one to interpret:
 
 ```json
-{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix","name":"auth-fix-9f8e","kind":"claude","path":"/wt/auth-fix","nextSeq":5,"originSessionId":"3c4d","originLabel":"planner","confined":false,"folder":"","run":false,"delivery":{"ticket":"a1b2c3d4","target":"auth-fix","status":"pending","answer":""}}
+{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix","name":"auth-fix-9f8e","kind":"claude","path":"/wt/auth-fix","nextSeq":5,"originSessionId":"3c4d","originLabel":"planner","confined":false,"folder":"","delivery":{"ticket":"a1b2c3d4","target":"auth-fix","status":"pending","answer":""}}
 ```
 
 `originSessionId` and `originLabel` name the session this one was opened from —

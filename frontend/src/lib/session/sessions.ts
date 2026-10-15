@@ -50,11 +50,6 @@ export interface Session {
   // every provider session — the store refuses to record one against a card
   // whose PTY runs an agent.
   entrypoint?: string
-  // Whether this card is its checkout's Run card (internal/spawn.Run). Absent
-  // for every other session, including a terminal the user aimed at a command by
-  // hand: the mark is the backend's, and it is what holds the one Run card a
-  // checkout gets (runCardIn).
-  run?: boolean
   // Whether this session's PTY runs inside the sandbox (internal/sandbox).
   // Absent means it does not — the spawn decides it, from the provider's rung,
   // the checkout and any per-session override, and reports the verdict back;

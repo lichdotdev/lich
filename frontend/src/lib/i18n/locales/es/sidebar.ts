@@ -173,9 +173,6 @@ export const sidebar = {
   sessionLaunchMenuItems: {
     terminal: "Terminal",
     newTerminal: "Nueva terminal",
-    run: "Ejecutar",
-    goToRunCard: "Ir a la tarjeta de ejecución",
-    runNotOnWindows: "Los scripts de ejecución son sh; no se ejecutan en Windows.",
     runConfined: "Ejecutar confinado",
     openSession: "Abrir sesión",
     back: "Atrás",
@@ -249,14 +246,10 @@ export const sidebar = {
   },
   worktreeScriptRows: {
     setupEditorLabel: "Script de preparación, guardado en {file}",
-    runEditorLabel: "Comando de ejecución, guardado en {file}",
     discard: "Descartar",
     detected: "Se detectó {detected}. ¿Ejecutar {command} en las nuevas worktrees?",
     use: "Usar",
     edit: "Editar",
-    noRunCommand:
-      "Sin comando de ejecución, así que el puerto reservado del checkout queda sin usar.",
-    set: "Definir",
   },
   worktreeSandboxRow: {
     runConfined: "Ejecutar confinado",

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronLeft, GitBranch, Play, Terminal } from "lucide-react"
+import { ChevronLeft, GitBranch, Terminal } from "lucide-react"
 import { ProviderIcon } from "@/components/ProviderIcon"
 import {
   DropdownMenuCheckboxItem,
@@ -9,7 +9,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useT } from "@/lib/i18n/i18n"
-import { isWindows } from "@/lib/platform"
 import type { ProviderState } from "@/lib/providers-store"
 import { sandboxDefaultFor } from "@/lib/providers-store"
 import { confinedMeans } from "@/lib/sandbox-copy"
@@ -22,14 +21,6 @@ interface WorktreeMenuAction {
   onSelect: () => void
 }
 
-/** The checkout's Run entry. open is whether it already has a Run card (one per
- * checkout, see internal/spawn.Run), which is what turns the item from opening
- * one into going to the one that is there. */
-export interface RunMenuAction {
-  open: boolean
-  onSelect: () => void
-}
-
 interface SessionLaunchMenuItemsProps {
   providers: ProviderState[]
   terminalLabel: "Terminal" | "New Terminal"
@@ -39,36 +30,6 @@ interface SessionLaunchMenuItemsProps {
    * the rung asked for one, "" when it answered by itself. */
   onNewSession: (kind: ProviderKind | "shell", sandbox: SandboxAnswer) => void
   worktree?: WorktreeMenuAction
-  /** The checkout's Run entry. Absent when the project ships no
-   * .lich/run-worktree.sh — there would be no command to run. */
-  run?: RunMenuAction
-}
-
-// The checkout's Run row: live where the script can run, dead under the
-// sentence naming why on Windows — SessionForkItem's idiom. The row stays
-// either way, because a user who runs a card on Linux and finds nothing on
-// Windows has no way to learn that the offer was withheld rather than missing.
-function RunMenuItem({ run }: { run: RunMenuAction }) {
-  const t = useT()
-  if (isWindows) {
-    return (
-      <DropdownMenuItem disabled>
-        <Play />
-        <span className="flex flex-col items-start">
-          {t("sidebar.sessionLaunchMenuItems.run")}
-          <span className="text-xs">{t("sidebar.sessionLaunchMenuItems.runNotOnWindows")}</span>
-        </span>
-      </DropdownMenuItem>
-    )
-  }
-  return (
-    <DropdownMenuItem onClick={run.onSelect}>
-      <Play />
-      {run.open
-        ? t("sidebar.sessionLaunchMenuItems.goToRunCard")
-        : t("sidebar.sessionLaunchMenuItems.run")}
-    </DropdownMenuItem>
-  )
 }
 
 interface SandboxStepProps {
@@ -131,7 +92,6 @@ export function SessionLaunchMenuItems({
   projectId,
   onNewSession,
   worktree,
-  run,
 }: SessionLaunchMenuItemsProps) {
   const t = useT()
   const asking = useSandboxAsk(
@@ -183,7 +143,6 @@ export function SessionLaunchMenuItems({
             ? t("sidebar.sessionLaunchMenuItems.newTerminal")
             : t("sidebar.sessionLaunchMenuItems.terminal")}
         </DropdownMenuItem>
-        {run && <RunMenuItem run={run} />}
         {worktree && (
           <DropdownMenuItem disabled={worktree.disabled} onClick={worktree.onSelect}>
             <GitBranch />

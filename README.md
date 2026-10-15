@@ -43,9 +43,7 @@ lich lets you:
   entrypoint — `lazygit`, `k9s`, `pnpm dev` — and it opens straight into that
   tool every time, on Linux, macOS and Windows alike: no shell rc or PowerShell
   profile is loaded first, so an entrypoint that works for you works for whoever
-  you share it with; write your dev server into `.lich/run-worktree.sh` and every
-  checkout gets a **Run** card for it, on the port lich reserved for that
-  worktree. The footer follows `cd` and names the branch — and, for a
+  you share it with. The footer follows `cd` and names the branch — and, for a
   Claude Code, Codex or Kiro CLI session, the model and the context window in
   use; for Claude Code, Codex, Antigravity, Cursor CLI and an OpenCode Go
   subscription, how much of your plan's rolling window is left; if you ask, what

@@ -6,7 +6,7 @@ import { DndContext, closestCenter } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { GitPullRequestArrow, PanelLeftClose, Plus, Search } from "lucide-react"
 import { toast } from "sonner"
-import { ProjectService, Spawn, Terminal as TerminalService } from "@/lib/rpc"
+import { ProjectService, Terminal as TerminalService } from "@/lib/rpc"
 import { errorText } from "@/lib/utils"
 import { useT } from "@/lib/i18n/i18n"
 import { closeSettings, isSettingsOpen, subscribeSettingsCard } from "@/lib/settings-card-store"
@@ -55,7 +55,6 @@ import {
   folderKey,
   pullsCheckoutHomes,
   reorderSubset,
-  runCardIn,
   sidebarCards,
   sidebarGroups,
   type SidebarGroup,
@@ -73,7 +72,7 @@ import { carryInto } from "@/lib/git/carry"
 import { useGitStatus } from "@/lib/git/use-git-status"
 import { usePanelWidth } from "@/lib/use-panel-width"
 import { useWorktreeDialogIntent } from "@/lib/use-sidebar-intent"
-import { type RunMenuAction, SessionLaunchMenuItems } from "./SessionLaunchMenuItems"
+import { SessionLaunchMenuItems } from "./SessionLaunchMenuItems"
 import { Hint } from "@/components/common/Hint"
 
 // Named here like every other `lich.*` pref rather than spelled at the call
@@ -142,32 +141,6 @@ export function SessionSidebar({ onCollapse }: SessionSidebarProps) {
   // place a folder name is typed from a menu: a field opened inside the menu
   // would unmount with it on the first click.
   const [naming, setNaming] = useState<string[] | null>(null)
-  // Whether the project ships a run command, which is what puts Run in a
-  // checkout's + menu. Re-read when the worktree dialog closes, the one place
-  // inside lich that writes the file; edited on disk it goes stale until the
-  // project is reopened, exactly as the dialog's own reading of it does.
-  //
-  // Asked on Windows too, where the item is rendered dead under its reason
-  // (SessionLaunchMenuItems): whether the row can be clicked is that menu's
-  // call, and this one only knows whether there is a command at all.
-  const [runnable, setRunnable] = useState(false)
-  useEffect(() => {
-    if (!path || worktreeOpen) {
-      return
-    }
-    let stale = false
-    ProjectService.WorktreeSetup(path)
-      .then((info) => {
-        if (!stale) {
-          setRunnable(info.run !== "")
-        }
-      })
-      .catch(() => {})
-    return () => {
-      stale = true
-    }
-  }, [path, worktreeOpen])
-
   // The session the open worktree dialog is forking, or null when it was opened
   // to make an ordinary checkout. It is state rather than a flag because the
   // dialog names the session, and the create below has to hand it over.
@@ -416,33 +389,6 @@ export function SessionSidebar({ onCollapse }: SessionSidebarProps) {
     setWorktreeOpen(false)
   }
 
-  // The checkout's Run entry. One checkout gets one Run card, so once it has one
-  // the item goes to that card rather than asking for a second, which the
-  // backend would answer with the same card anyway (internal/spawn.Run). A card
-  // whose command has exited still counts: the shell the wrapper left in it is
-  // the retry, and only closing the card frees the slot.
-  //
-  // Asked of the unfiltered list: a Run card the query hid is still the one this
-  // checkout has.
-  const runAction = (group: SidebarGroup): RunMenuAction => {
-    const card = runCardIn(list, group.path)
-    if (card) {
-      return {
-        open: true,
-        onSelect: () => {
-          activateSession(projectId, card.id)
-          navigate(`/projects/${projectId}`)
-        },
-      }
-    }
-    return {
-      open: false,
-      onSelect: () => {
-        Spawn.Run(projectId, group.path || path).catch((error) => toast.error(errorText(error)))
-      },
-    }
-  }
-
   // One block, rendered the same whichever drag list it belongs to.
   const renderGroup = (group: SidebarGroup) => {
     return (
@@ -498,9 +444,6 @@ export function SessionSidebar({ onCollapse }: SessionSidebarProps) {
         sortable={!filtering}
         onReorder={(ids) => commitGroupOrder(group, ids)}
         onClose={worktreeClose.requestClose}
-        // Offered on a checkout's block alone: a wall and the pinned block
-        // gather cards from everywhere and have no directory to run one in.
-        run={runnable && !group.pinned && !group.stage ? runAction(group) : undefined}
         pullsCheckouts={(pullsHomes.get(group.key) ?? []).map((checkout) => checkout || path)}
         pullsShowing={onPullsRoute ? activeCheckout : ""}
         onPulls={(checkout, sessionId) => {
