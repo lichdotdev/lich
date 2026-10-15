@@ -59,6 +59,13 @@ func TestSidebarBlocksTitleEachKindAndHideHeadersForOneBlock(t *testing.T) {
 	}
 }
 
+func TestSidebarBlocksKeepTheHeaderOfALoneWorktree(t *testing.T) {
+	m, _ := sidebarModel(t, ss("w1@/x/worktrees/p/feat/a"))
+	if v := m.sidebarBlocks(sidebarFilter{}); !v.showHeader || len(v.blocks) != 1 || v.blocks[0].title != "feat/a" {
+		t.Fatalf("lone worktree: %+v", v)
+	}
+}
+
 func TestSidebarBlocksFilterKeepsTheActiveCardAndSaysWhy(t *testing.T) {
 	m, _ := sidebarModel(t, ss("Relay a", "Docs", "Shell"))
 	reportStatus(m, "Docs", "busy")

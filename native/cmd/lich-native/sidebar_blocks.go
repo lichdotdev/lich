@@ -42,7 +42,9 @@ type blockView struct {
 type sidebarView struct {
 	blocks []blockView
 	// showHeader is whether blocks draw their headers: once more than one
-	// block splits the list, or while a filter makes the checkout the answer.
+	// block splits the list, while a filter makes the checkout the answer, or
+	// when the lone block is a worktree, whose + is the only way to open
+	// another session there.
 	showHeader bool
 	matched    bool
 	notice     string // the empty filter's sentence, "" while something matched
@@ -67,7 +69,7 @@ func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 	visible, matched := filterSessions(p.Sessions, f.query, p.Path, m.active, f.phases, m.phaseOfSession)
 	blocks := sessionBlocks(visible)
 	v := sidebarView{
-		showHeader: len(blocks) > 1 || f.narrows(),
+		showHeader: len(blocks) > 1 || f.narrows() || isLoneWorktree(blocks),
 		matched:    matched,
 		counts:     phaseCounts(p.Sessions, f.query, p.Path, m.phaseOfSession),
 		folders:    foldersOf(p.Sessions),
@@ -81,6 +83,10 @@ func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 		v.blocks = append(v.blocks, m.dressBlock(p, b, v.showHeader, pending, now))
 	}
 	return v
+}
+
+func isLoneWorktree(blocks []sessionBlock) bool {
+	return len(blocks) == 1 && blocks[0].kind == blockCheckout && blocks[0].path != ""
 }
 
 // dressBlock is SessionGroup.tsx's per-block reading. Callers hold m.mu.
