@@ -7,7 +7,7 @@ require (
 	github.com/UserExistsError/conpty v0.1.4
 	github.com/coder/websocket v1.8.14
 	github.com/creack/pty v1.1.24
-	github.com/lichdotdev/godemirror v0.4.0
+	github.com/lichdotdev/godemirror v0.5.0
 	github.com/ncruces/zenity v0.10.14
 	golang.org/x/sys v0.49.0
 	golang.org/x/text v0.43.0

@@ -182,7 +182,7 @@ func (p *preview) show(key, text string) {
 		return
 	}
 	p.shown, p.blockAt = key, -1
-	p.content = godemirror.Content{Filename: p.rel, Text: text}
+	p.content = godemirror.Content{Filename: p.rel, Text: text, StyleTags: codeStyleTags}
 	p.view.SetContent(p.content)
 	if p.line > 0 {
 		p.view.SelectLines(p.line-1, p.line-1)
@@ -220,6 +220,11 @@ func (p *preview) composerBlock(gtx C) D {
 		return p.composer.layout(gtx, p.blockTh, p.env.comments, p.env.checkout)
 	})
 }
+
+// codeStyleTags tags more of the code than CodeMirror's grammars do, so a
+// theme can color it as an IDE does: Java's enum constants, annotations,
+// fields and import paths.
+var codeStyleTags = []godemirror.StyleTags{godemirror.RicherJavaTags()}
 
 // previewTheme is the window theme's code palette on the dock's bg-sidebar,
 // which the web's transparent editor shows through.

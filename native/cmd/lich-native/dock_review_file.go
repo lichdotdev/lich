@@ -280,7 +280,7 @@ func (c *fileCard) ensureView(p *reviewPanel) *godemirror.DiffView {
 	if c.view != nil || c.viewFail {
 		return c.view
 	}
-	opts := godemirror.DiffOptions{HighlightChanges: true, ExpandWidget: c.afford.expandButton, RevertWidget: c.afford.revertButton}
+	opts := godemirror.DiffOptions{HighlightChanges: true, StyleTags: codeStyleTags, ExpandWidget: c.afford.expandButton, RevertWidget: c.afford.revertButton}
 	opts.Expand = func(g godemirror.Gap) { p.expand(c, c.gen, g) }
 	if c.git.status != statusRenamed && p.pr == nil {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
