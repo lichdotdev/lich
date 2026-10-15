@@ -104,6 +104,8 @@ type window struct {
 	hideSettings atomic.Bool
 	// emptyNew is the empty stage's New session button.
 	emptyNew widget.Clickable
+	// exitBand is the active terminal's band once its process is gone.
+	exitBand exitBand
 	light    bool // the theme on screen is a light one
 	// appearance is the theme state the frame repaints from.
 	appearance *appearance
@@ -168,6 +170,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		return len(ids) > 0
 	}
 	u.model.prChanged = u.prChanged
+	u.model.exited = u.terms.exited
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
 	u.palette.closed = u.model.closed
@@ -529,6 +532,15 @@ func (u *window) island(gtx C, v stageView) error {
 	}
 	if err := u.content(gtx, v.active); err != nil {
 		return err
+	}
+	if e, ok := u.terms.exitOf(v.active.ID); ok {
+		restart, closing := u.exitBand.layout(gtx, u.theme, e)
+		if restart {
+			go u.terms.restart(u.ctx, v.active)
+		}
+		if closing {
+			u.closeSession(v.active.ID)
+		}
 	}
 	if u.terms.has(v.active.ID) {
 		u.drop.setRect(image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})

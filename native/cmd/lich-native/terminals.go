@@ -46,6 +46,8 @@ type termView struct {
 	// it left: the link under it is underlined and takes a hand cursor.
 	pointerAt f32.Point
 	pointerIn bool
+	// exit is set once the process in the PTY is gone, until a restart.
+	exit *sessionExit
 }
 
 // terminalPadding is term-view.ts TERMINAL_PADDING, in the terminal's own

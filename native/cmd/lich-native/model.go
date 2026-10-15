@@ -88,6 +88,8 @@ type model struct {
 	pluginProfiles func(lichclient.PluginProfiles)
 	// prChanged hears a pull request write land (PRChangedEvent).
 	prChanged func()
+	// exited hears a session's process end.
+	exited func(id string, e sessionExit)
 	// pluginIncompatible hears a session report from a lich plugin outside
 	// the range this lich speaks (PluginIncompatibleEvent).
 	pluginIncompatible func()
@@ -242,6 +244,9 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			m.mu.Lock()
 			m.status.exited(id)
 			m.mu.Unlock()
+			if m.exited != nil {
+				m.exited(id, readSessionExit(ev.Data))
+			}
 			m.invalidate()
 			continue
 		}
