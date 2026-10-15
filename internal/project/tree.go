@@ -9,6 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"unicode/utf8"
+
+	"golang.org/x/text/encoding/charmap"
 
 	"github.com/omartelo/lich/internal/relpath"
 )
@@ -32,6 +35,20 @@ const binarySniffBytes = 8000
 
 func isBinary(data []byte) bool {
 	return bytes.IndexByte(data[:min(len(data), binarySniffBytes)], 0) >= 0
+}
+
+// displayText returns a text file's content as UTF-8 for the viewer, the file
+// itself untouched. Bytes that are not UTF-8 are read as Windows-1252, the
+// superset of ISO-8859-1 that browsers also substitute for it: handed over raw,
+// every accented byte of a Latin-1 file reaches the screen as U+FFFD.
+func displayText(data []byte) string {
+	if utf8.Valid(data) {
+		return string(data)
+	}
+	// Windows-1252 maps every byte to a rune, so its decoder has no error to
+	// return.
+	decoded, _ := charmap.Windows1252.NewDecoder().Bytes(data)
+	return string(decoded)
 }
 
 // FileListing is one listing of a directory's files: the paths, plus the two
@@ -207,5 +224,5 @@ func (s *Service) ReadFile(path, rel string) (string, error) {
 	if isBinary(data) {
 		return "", fmt.Errorf("%s is a binary file", rel)
 	}
-	return string(data), nil
+	return displayText(data), nil
 }

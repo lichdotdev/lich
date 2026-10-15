@@ -217,6 +217,20 @@ func TestReadFile(t *testing.T) {
 	}
 }
 
+// TestReadFileDecodesLatin1 covers a file saved in ISO-8859-1: its accented
+// bytes are not UTF-8, and handed over raw they reach the viewer as U+FFFD.
+func TestReadFileDecodesLatin1(t *testing.T) {
+	repo, _ := initRepo(t)
+	write(t, repo, "menu.xml", "Log\xedstica Servi\xe7os Requisi\xe7\xe3o\n")
+	got, err := New(nil).ReadFile(repo, "menu.xml")
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if want := "Logística Serviços Requisição\n"; got != want {
+		t.Errorf("ReadFile = %q, want %q", got, want)
+	}
+}
+
 // TestReadFileRejectsEscape proves traversal and absolute paths never reach the
 // filesystem, mirroring DiscardFile's guard.
 func TestReadFileRejectsEscape(t *testing.T) {

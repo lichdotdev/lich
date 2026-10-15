@@ -84,7 +84,7 @@ func checkedText(rel, text string) (string, error) {
 	if isBinary([]byte(text)) {
 		return "", fmt.Errorf("%s is a binary file", rel)
 	}
-	return text, nil
+	return displayText([]byte(text)), nil
 }
 
 // contentsPath addresses one file of the checkout's repository at a commit.
