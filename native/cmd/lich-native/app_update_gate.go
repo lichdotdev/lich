@@ -95,13 +95,18 @@ func (u *window) checkAppUpdate() {
 	}
 }
 
-// promptAppUpdate offers the installer where lich may write its own
-// install, and otherwise the command to paste and the release page.
+// promptAppUpdate raises st's prompt, once per release this run.
 func (u *window) promptAppUpdate(st lichclient.AppUpdateStatus) {
 	g := &u.appUpdate
 	g.mu.Lock()
 	g.prompted = st.LatestVersion
 	g.mu.Unlock()
+	u.toaster.Show(u.appUpdateToast(st))
+}
+
+// appUpdateToast offers the installer where lich may write its own install,
+// and otherwise the command to paste and the release page.
+func (u *window) appUpdateToast(st lichclient.AppUpdateStatus) ui.Toast {
 	version := st.LatestVersion
 	later := &ui.ToastButton{Label: appUpdateLater, OnClick: func() { u.writePref(appUpdateDismissedKey, version) }}
 	t := ui.Toast{ID: appUpdateToastID, Title: fmt.Sprintf(updatesToastTitle, version), Duration: ui.ToastForever, Cancel: later}
@@ -115,7 +120,7 @@ func (u *window) promptAppUpdate(st lichclient.AppUpdateStatus) {
 	default:
 		t.Action = release
 	}
-	u.toaster.Show(t)
+	return t
 }
 
 // openInstall opens a shell in the project in view and types the install

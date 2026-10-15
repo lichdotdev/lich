@@ -162,10 +162,15 @@ func (u *window) checkPlugin() {
 		g.mu.Unlock()
 		u.win.Invalidate()
 	case pluginActionUpdate:
-		u.toaster.Show(ui.Toast{Title: fmt.Sprintf(pluginGateAvailable, a.version), Duration: ui.ToastForever,
-			Action: &ui.ToastButton{Label: pluginGateUpdate, OnClick: func() { go u.updatePlugins(a.providers) }},
-			Cancel: &ui.ToastButton{Label: pluginGateLater, OnClick: func() { u.writePref(pluginUpdateDismissedKey, a.version) }}})
+		u.toaster.Show(u.pluginUpdateToast(a))
 	}
+}
+
+// pluginUpdateToast offers a's release, Later remembering it was declined.
+func (u *window) pluginUpdateToast(a pluginGateAction) ui.Toast {
+	return ui.Toast{Title: fmt.Sprintf(pluginGateAvailable, a.version), Duration: ui.ToastForever,
+		Action: &ui.ToastButton{Label: pluginGateUpdate, OnClick: func() { go u.updatePlugins(a.providers) }},
+		Cancel: &ui.ToastButton{Label: pluginGateLater, OnClick: func() { u.writePref(pluginUpdateDismissedKey, a.version) }}}
 }
 
 // updatePlugins runs one update per provider in order, stopping at the first
