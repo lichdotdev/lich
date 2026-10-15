@@ -65,20 +65,23 @@ var (
 )
 
 // trayIcons are the tray's icons; a dev instance's flame is amber, so it reads
-// apart from an installed lich's beside it. ponytail: Windows keeps the plain
-// .ico; a dev instance there has its own icon when one is wanted.
+// apart from an installed lich's beside it.
 func trayIcons() tray.Icons {
 	icons := tray.Icons{PNG: trayPNG, ICO: trayICO}
 	if os.Getenv("LICH_DEV") == "" {
 		return icons
 	}
-	dev, err := tray.DevPNG(trayPNG)
+	devPNG, err := tray.DevPNG(trayPNG)
 	if err != nil {
 		slog.Warn("tray: dev icon", "err", err)
 		return icons
 	}
-	icons.PNG = dev
-	return icons
+	devICO, err := tray.DevICO(trayICO)
+	if err != nil {
+		slog.Warn("tray: dev icon", "err", err)
+		return icons
+	}
+	return tray.Icons{PNG: devPNG, ICO: devICO}
 }
 
 // version is the running build's version, injected at build time via
