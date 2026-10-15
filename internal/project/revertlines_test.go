@@ -53,6 +53,24 @@ func TestRevertLinesAddition(t *testing.T) {
 	}
 }
 
+// TestRevertLinesLatin1 picks a line by the text the review shows, decoded
+// from Latin-1, while git's diff holds the raw bytes.
+func TestRevertLinesLatin1(t *testing.T) {
+	for _, staged := range []bool{false, true} {
+		repo, git := revertRepo(t, strings.Replace(revertBase, "bravo\n", "bravo\nservi\xe7os\n", 1))
+		if staged {
+			git("add", "code.txt")
+		}
+		_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 3, Text: "servi\u00e7os"}})
+		if err != nil {
+			t.Fatalf("staged %v: RevertLines: %v", staged, err)
+		}
+		if got := readFile(t, repo, "code.txt"); got != revertBase {
+			t.Errorf("staged %v: content = %q, want HEAD", staged, got)
+		}
+	}
+}
+
 func TestRevertLinesDeletion(t *testing.T) {
 	repo, _ := revertRepo(t, strings.Replace(revertBase, "delta\n", "", 1))
 

@@ -630,6 +630,17 @@ func TestPullRequestDiffFlow(t *testing.T) {
 		}
 	})
 
+	t.Run("a Latin-1 file's lines arrive as UTF-8", func(t *testing.T) {
+		gh := &fakeGH{out: []byte("+++ b/a.java\n+// servi\xe7os\n+// a\u00e7\u00e3o\n")}
+		text, err := withGH(gh).PullRequestDiff("/repo", 0)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if want := "+++ b/a.java\n+// servi\u00e7os\n+// a\u00e7\u00e3o\n"; text != want {
+			t.Errorf("diff = %q, want %q", text, want)
+		}
+	})
+
 	t.Run("no pull request yields an empty diff, not an error", func(t *testing.T) {
 		text, err := withGH(&fakeGH{err: errNoPullRequest}).PullRequestDiff("/repo", 0)
 		if err != nil {

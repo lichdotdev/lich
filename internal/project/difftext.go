@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 )
 
 // DiffText returns the full unified diff of uncommitted changes (staged +
@@ -24,7 +25,20 @@ func (s *Service) DiffText(path string) (string, error) {
 	for _, rel := range status.untracked {
 		out.WriteString(untrackedDiff(path, rel))
 	}
-	return out.String(), nil
+	return displayDiff(out.String()), nil
+}
+
+// displayDiff is displayText line by line: one diff carries every changed
+// file, so a Latin-1 file's lines are decoded without touching a UTF-8 one's.
+func displayDiff(diff string) string {
+	if utf8.ValidString(diff) {
+		return diff
+	}
+	lines := strings.SplitAfter(diff, "\n")
+	for i, line := range lines {
+		lines[i] = displayText([]byte(line))
+	}
+	return strings.Join(lines, "")
 }
 
 // untrackedDiff renders an untracked file as a new-file unified diff via

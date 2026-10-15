@@ -132,3 +132,25 @@ func TestDiffTextBinaryUntracked(t *testing.T) {
 		t.Errorf("binary untracked missing from diff:\n%s", out)
 	}
 }
+
+// TestDiffTextDecodesLatin1 covers a file saved in ISO-8859-1 next to a UTF-8
+// one: each line reaches the review as UTF-8 instead of U+FFFD.
+func TestDiffTextDecodesLatin1(t *testing.T) {
+	repo, _ := initRepo(t)
+	if err := os.WriteFile(filepath.Join(repo, "latin.java"), []byte("// servi\xe7os padr\xe3o\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "utf8.txt"), []byte("ação\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := New(nil).DiffText(repo)
+	if err != nil {
+		t.Fatalf("DiffText: %v", err)
+	}
+	for _, want := range []string{"+// serviços padrão", "+ação"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("diff missing %q:\n%s", want, out)
+		}
+	}
+}

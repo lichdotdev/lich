@@ -156,7 +156,7 @@ func cutHunk(hunk patchHunk, wanted map[pickKey]string) ([]patchLine, int, error
 			continue
 		}
 		if text, ok := wanted[key]; ok {
-			if text != line.text {
+			if !drawnAs(line.text, text) {
 				return nil, 0, ErrLinesMoved
 			}
 			lines = append(lines, line)
@@ -264,10 +264,14 @@ func oldLineOf(hunks []patchHunk, line int) (int, bool) {
 func hasChange(hunks []patchHunk, key pickKey, text string) bool {
 	for _, hunk := range hunks {
 		for _, line := range hunk.lines {
-			if k, changed := changeKey(line); changed && k == key && line.text == text {
+			if k, changed := changeKey(line); changed && k == key && drawnAs(line.text, text) {
 				return true
 			}
 		}
 	}
 	return false
 }
+
+// drawnAs reports whether text is how the review drew raw, a line as git
+// printed it: decoded from Latin-1 when it is not UTF-8 (displayDiff).
+func drawnAs(raw, text string) bool { return displayText([]byte(raw)) == text }

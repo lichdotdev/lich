@@ -201,10 +201,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the new lich and reattaches its sessions, where it used to stop at "Another
   lich window took over". The restarted lich no longer opens a web window in
   its place when none was open before.
-- **Files saved in ISO-8859-1 show their accents in the code view.** A Latin-1
-  file, common in older Java and XML projects, came up with `�` in place of
-  every accented letter; lich now reads it as Latin-1 for display and leaves
-  the file as it is on disk.
+- **Files saved in ISO-8859-1 show their accents in the code view, the Review
+  tab and a pull request's files.** A Latin-1 file, common in older Java and
+  XML projects, came up with `�` in place of every accented letter; lich now
+  reads it as Latin-1 for display and leaves the file as it is on disk.
+  Reverting one of its lines in the Review tab works too, where it used to
+  answer that the file had changed.
 - **Selecting in a terminal of the native window takes what is under the
   pointer.** A drag dropped the cell it started on and the one under the
   pointer until the pointer crossed 60% of it; it now runs from the clicked

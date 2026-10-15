@@ -377,7 +377,7 @@ func (s *Service) PullRequestDiff(path string, number int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(out), nil
+	return displayDiff(string(out)), nil
 }
 
 // prListFields is the gh `pr list --json` selection backing the Pulls list
