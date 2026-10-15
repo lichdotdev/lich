@@ -405,6 +405,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **The worktree setup script answers to the main checkout, never the new branch**
   (`internal/project/setup.go`): improve `.lich/setup-worktree.sh` on a feature branch and fresh worktrees keep
   running the old one until the change reaches the checkout the project points at.
+- **A worktree off a local branch waits on a fetch first** (`internal/spawn/spawn.go` `newerOf`,
+  `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
+  base's upstream to start from the newer of the two, so against a remote that does not answer the session
+  appears only once the fetch gives up (`baseFetchBudget`, 60s). A failed fetch starts from the local branch,
+  which may be behind without anything saying so.
 - **A working-tree row carries what git can name, and nothing else**
   (`internal/project/carry.go`): the copy is `git diff HEAD --binary` applied to the new checkout plus the
   untracked files `--exclude-standard` lists. What `.gitignore` covers is not carried from the forked

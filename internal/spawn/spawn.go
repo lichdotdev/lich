@@ -106,6 +106,7 @@ type Worktrees interface {
 	ListBranches(path string) (project.Branches, error)
 	ListCheckouts(path string) ([]project.Worktree, error)
 	CreateWorktree(projectPath, projectID, name, base string, baseIsRemote bool) (*project.Worktree, error)
+	BaseFreshness(path, branch string) (project.BaseFreshness, error)
 	RemoveWorktree(projectPath, wtPath string, force, adoptedAck bool) error
 	WorktreeDirty(wtPath string) (bool, error)
 	WorktreeAdopted(wtPath string) bool
@@ -599,7 +600,7 @@ func (s *Service) resolveBase(target store.Project, base string) (string, bool, 
 				target.Name,
 			)
 		}
-		return current, false, nil
+		return s.newerOf(target, current)
 	}
 
 	branches, err := s.worktrees.ListBranches(target.Path)
@@ -608,7 +609,7 @@ func (s *Service) resolveBase(target store.Project, base string) (string, bool, 
 	}
 	for _, name := range branches.Local {
 		if strings.EqualFold(name, base) {
-			return name, false, nil
+			return s.newerOf(target, name)
 		}
 	}
 	// A branch already checked out in another worktree is reported there rather
@@ -624,6 +625,21 @@ func (s *Service) resolveBase(target store.Project, base string) (string, bool, 
 		}
 	}
 	return "", false, fmt.Errorf("no branch named %q in %s", base, target.Name)
+}
+
+// newerOf is where a worktree off the local branch starts: its upstream when
+// that has commits the branch lacks and the branch has none of its own, the
+// branch otherwise. A fetch that failed keeps the branch, the base the caller
+// asked for; the native dialog decides the same way and passes the result in.
+func (s *Service) newerOf(target store.Project, branch string) (string, bool, error) {
+	f, err := s.worktrees.BaseFreshness(target.Path, branch)
+	if err != nil {
+		return "", false, err
+	}
+	if f.FetchError == "" && f.Upstream != "" && f.Behind > 0 && f.Ahead == 0 {
+		return f.Upstream, true, nil
+	}
+	return branch, false, nil
 }
 
 // resolveProject picks the project the session lands in: the one named, or the

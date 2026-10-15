@@ -284,6 +284,9 @@ type fakeWorktrees struct {
 	listErr   error
 	created   []createdWorktree
 	createErr error
+	// freshness is what BaseFreshness answers for every branch.
+	freshness    project.BaseFreshness
+	freshnessErr error
 	// checkouts is what ListCheckouts answers, dirty which of them hold
 	// uncommitted work, and removed what RemoveWorktree was asked to delete.
 	checkouts []project.Worktree
@@ -315,6 +318,10 @@ func (f *fakeWorktrees) RemoveWorktree(_, path string, force, _ bool) error {
 }
 
 func (f *fakeWorktrees) Branch(string) string { return f.branch }
+
+func (f *fakeWorktrees) BaseFreshness(string, string) (project.BaseFreshness, error) {
+	return f.freshness, f.freshnessErr
+}
 
 func (f *fakeWorktrees) ListBranches(string) (project.Branches, error) {
 	return f.branches, f.listErr
@@ -828,6 +835,49 @@ func TestOpenOnAWorktreeBranchesOffTheCurrentBranch(t *testing.T) {
 	}
 	if !term.spawns[0].setup {
 		t.Error("skipped the worktree setup script on a fresh checkout")
+	}
+}
+
+func TestOpenStartsAWorktreeFromTheNewerOfBranchAndUpstream(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		base       string
+		freshness  project.BaseFreshness
+		wantBase   string
+		wantRemote bool
+	}{
+		{"behind takes the upstream", "main", project.BaseFreshness{Upstream: "origin/main", Behind: 3}, "origin/main", true},
+		{"current branch behind takes the upstream", "", project.BaseFreshness{Upstream: "origin/main", Behind: 1}, "origin/main", true},
+		{"unpushed commits keep the branch", "main", project.BaseFreshness{Upstream: "origin/main", Ahead: 1, Behind: 3}, "main", false},
+		{"up to date keeps the branch", "main", project.BaseFreshness{Upstream: "origin/main"}, "main", false},
+		{"no upstream keeps the branch", "main", project.BaseFreshness{}, "main", false},
+		{"failed fetch keeps the branch", "main", project.BaseFreshness{Upstream: "origin/main", Behind: 3, FetchError: "offline"}, "main", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, _, worktrees, _, _ := newService(t)
+			worktrees.branches = project.Branches{Local: []string{"main"}}
+			worktrees.freshness = tc.freshness
+
+			if _, err := svc.Open(OpenOptions{From: "s1", Worktree: "fix", Base: tc.base}); err != nil {
+				t.Fatalf("Open: %v", err)
+			}
+			if got := worktrees.created[0]; got.base != tc.wantBase || got.remote != tc.wantRemote {
+				t.Errorf("created off %q (remote %v), want %q (remote %v)", got.base, got.remote, tc.wantBase, tc.wantRemote)
+			}
+		})
+	}
+}
+
+func TestOpenRefusesWhenTheBaseCannotBeRead(t *testing.T) {
+	svc, sessions, worktrees, _, _ := newService(t)
+	worktrees.branches = project.Branches{Local: []string{"main"}}
+	worktrees.freshnessErr = errors.New("git rev-list failed")
+
+	if _, err := svc.Open(OpenOptions{From: "s1", Worktree: "fix", Base: "main"}); err == nil {
+		t.Fatal("created a worktree off a base whose freshness could not be read")
+	}
+	if len(worktrees.created) != 0 || len(sessions.rows) != 0 {
+		t.Error("wrote something for a base that was refused")
 	}
 }
 

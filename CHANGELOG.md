@@ -93,7 +93,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   upstream, as `main` is after a few merges, lich fetches it first and starts the
   worktree from the upstream instead, saying so under the branch; a branch with
   commits not pushed, an unreachable remote or uncommitted changes brought along
-  keep the local branch. Your local branch itself is left as it is.
+  keep the local branch. Your local branch itself is left as it is. A worktree
+  opened from the command line or by an agent (`open_session`) on a local base
+  starts from the newer of the two the same way.
 - **Pull requests in the native window.** The pull request button in the top
   bar, `Ctrl+Shift+P`, or a card's or the footer's `#123` opens the repository's
   pull requests beside the one in view, filtered by text and by All, Ready,

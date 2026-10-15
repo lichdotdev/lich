@@ -383,6 +383,10 @@ type spawnGit struct {
 
 func (*spawnGit) Branch(string) string { return "main" }
 
+func (*spawnGit) BaseFreshness(string, string) (project.BaseFreshness, error) {
+	return project.BaseFreshness{}, nil
+}
+
 func (*spawnGit) ListBranches(string) (project.Branches, error) { return project.Branches{}, nil }
 
 func (*spawnGit) CreateWorktree(_, _, _, _ string, _ bool) (*project.Worktree, error) {
