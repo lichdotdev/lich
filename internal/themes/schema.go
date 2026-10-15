@@ -66,10 +66,12 @@ func Schema() ([]byte, error) {
 			},
 			"app":      colorObject(appTokens, "#/$defs/appColor", sortedKeys(appTokens)),
 			"terminal": colorObject(terminalTokens, "#/$defs/terminalColor", []string{"background", "foreground"}),
+			"syntax":   syntaxObject(),
 		},
 		"$defs": map[string]any{
 			"appColor":      colorValue(appColorPattern),
 			"terminalColor": colorValue(terminalColorPattern),
+			"syntaxStyle":   syntaxStyle(),
 		},
 	}
 	data, err := json.MarshalIndent(schema, "", "  ")
@@ -89,6 +91,38 @@ func colorObject(tokens map[string]struct{}, ref string, required []string) map[
 		"additionalProperties": false,
 		"required":             required,
 		"properties":           properties,
+	}
+}
+
+// syntaxObject keys styles by tag. The pattern only checks a tag's spelling,
+// a name under any modifiers; which names exist is godemirror's tags.Parse,
+// checked on import.
+func syntaxObject() map[string]any {
+	return map[string]any{
+		"description":          "Syntax highlighting by CodeMirror highlighting tag, as in \"keyword\" or \"function(variableName)\". The native window reads it; the web window ignores it.",
+		"type":                 "object",
+		"propertyNames":        map[string]any{"pattern": `^([a-z]+\()*[a-zA-Z]+\)*$`},
+		"additionalProperties": map[string]any{"$ref": "#/$defs/syntaxStyle"},
+	}
+}
+
+func syntaxStyle() map[string]any {
+	return map[string]any{
+		"oneOf": []any{
+			map[string]any{"$ref": "#/$defs/appColor"},
+			map[string]any{
+				"type":                 "object",
+				"additionalProperties": false,
+				"minProperties":        1,
+				"properties": map[string]any{
+					"color":         map[string]any{"$ref": "#/$defs/appColor"},
+					"bold":          map[string]any{"type": "boolean"},
+					"italic":        map[string]any{"type": "boolean"},
+					"underline":     map[string]any{"type": "boolean"},
+					"strikethrough": map[string]any{"type": "boolean"},
+				},
+			},
+		},
 	}
 }
 

@@ -183,6 +183,38 @@ Shipping a change: edit the themes, bump `version` in the manifest, commit and
 push. An install still on the old version takes it with **Update**; forget the
 bump and lich reports the pack as already up to date.
 
+## Syntax Highlighting
+
+`syntax` is optional and colors the code in the native window's review, diff
+and file views (`lich native`); the web window ignores it. A theme without it
+is highlighted in the native window's default palette for its `scheme`, which
+is what the bundled themes write out.
+
+Each key is a [CodeMirror highlighting tag](https://lezer.codemirror.net/docs/ref/#highlight.tags),
+as `@lezer/highlight` prints it: a tag name, or a modifier applied to one, as
+in `function(variableName)` or `definition(propertyName)`. Each value is a
+color, or an object with a `color` and any of `bold`, `italic`, `underline`
+and `strikethrough`:
+
+```json
+"syntax": {
+  "keyword": "#c4a7e7",
+  "string": "#f6c177",
+  "comment": { "color": "#6e6a86", "italic": true },
+  "function(variableName)": "#ebbcba",
+  "heading": { "bold": true }
+}
+```
+
+It resolves the way CodeMirror's `HighlightStyle` does: code takes the style of
+the most specific tag that has one, so `lineComment` falls back to `comment`
+and `function(variableName)` to `variableName`, and code no style reaches is
+drawn in `app.foreground`. The modifiers are `definition`, `constant`,
+`function`, `standard`, `local` and `special`.
+
+A lich that predates `syntax` ignores the key, so a pack can add it without a
+`minLichVersion`.
+
 ## Validation Rules
 
 - `formatVersion`, when present, is a positive integer no greater than the
@@ -203,6 +235,8 @@ bump and lich reports the pack as already up to date.
   `cyan`, `white`, `brightBlack`, `brightRed`, `brightGreen`, `brightYellow`,
   `brightBlue`, `brightMagenta`, `brightCyan`, `brightWhite`.
 - Unknown app or terminal tokens are rejected.
+- A `syntax` key must name a highlighting tag, and a style object must set a
+  color or a font style. Syntax colors take the same values as `app` colors.
 - No color value can be blank or exceed 128 characters.
 
 Each color block takes what its consumer actually parses:

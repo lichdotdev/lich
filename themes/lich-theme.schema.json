@@ -5,6 +5,35 @@
       "pattern": "^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20}|(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\\([0-9a-zA-Z.,%/ +-]*\\))$",
       "type": "string"
     },
+    "syntaxStyle": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/appColor"
+        },
+        {
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "bold": {
+              "type": "boolean"
+            },
+            "color": {
+              "$ref": "#/$defs/appColor"
+            },
+            "italic": {
+              "type": "boolean"
+            },
+            "strikethrough": {
+              "type": "boolean"
+            },
+            "underline": {
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
     "terminalColor": {
       "maxLength": 128,
       "pattern": "^#[0-9a-fA-F]{3,8}$",
@@ -235,6 +264,16 @@
         "url",
         "version"
       ],
+      "type": "object"
+    },
+    "syntax": {
+      "additionalProperties": {
+        "$ref": "#/$defs/syntaxStyle"
+      },
+      "description": "Syntax highlighting by CodeMirror highlighting tag, as in \"keyword\" or \"function(variableName)\". The native window reads it; the web window ignores it.",
+      "propertyNames": {
+        "pattern": "^([a-z]+\\()*[a-zA-Z]+\\)*$"
+      },
       "type": "object"
     },
     "terminal": {

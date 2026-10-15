@@ -602,6 +602,19 @@ export interface ThemeDefinition {
   source?: ThemeSource
   app: Record<string, string>
   terminal: Record<string, string>
+  /** Syntax highlighting by highlighting tag; the native window reads it, this
+   * window ignores it. */
+  syntax?: Record<string, SyntaxStyle>
+}
+
+/** internal/themes.SyntaxStyle — one tag's highlighting. A theme file may
+ * write it as a bare color; the backend always sends the object. */
+export interface SyntaxStyle {
+  color?: string
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  strikethrough?: boolean
 }
 
 /** internal/themes.BrokenTheme — a stored theme lich cannot load, kept visible so it can be removed. */

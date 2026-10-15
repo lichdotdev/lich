@@ -71,6 +71,9 @@ type Theme struct {
 	Source        *Source           `json:"source,omitempty"`
 	App           map[string]string `json:"app"`
 	Terminal      map[string]string `json:"terminal"`
+	// Syntax is optional: a theme without it is highlighted in the native
+	// window's default palette for its scheme. The web window ignores it.
+	Syntax Syntax `json:"syntax,omitempty"`
 }
 
 // BrokenTheme is a stored custom theme this lich cannot load. It is listed
@@ -446,7 +449,7 @@ func validateTheme(theme Theme) error {
 			return fmt.Errorf("terminal.%s is required", key)
 		}
 	}
-	return nil
+	return validateSyntax(theme.Syntax)
 }
 
 func validateFormatVersion(version int) error {
@@ -517,6 +520,7 @@ func cloneTheme(theme Theme) Theme {
 		Origin:        theme.Origin,
 		App:           maps.Clone(theme.App),
 		Terminal:      maps.Clone(theme.Terminal),
+		Syntax:        maps.Clone(theme.Syntax),
 	}
 	if theme.Source != nil {
 		source := *theme.Source

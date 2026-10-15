@@ -50,13 +50,16 @@ func TestSchemaCoversEveryToken(t *testing.T) {
 		t.Fatalf("Schema() error: %v", err)
 	}
 	var schema struct {
-		Properties map[string]colorGroupSchema `json:"properties"`
+		Properties struct {
+			App      colorGroupSchema `json:"app"`
+			Terminal colorGroupSchema `json:"terminal"`
+		} `json:"properties"`
 	}
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("decode generated schema: %v", err)
 	}
-	assertTokens(t, "app", schema.Properties["app"], appTokens, sortedKeys(appTokens))
-	assertTokens(t, "terminal", schema.Properties["terminal"], terminalTokens, []string{"background", "foreground"})
+	assertTokens(t, "app", schema.Properties.App, appTokens, sortedKeys(appTokens))
+	assertTokens(t, "terminal", schema.Properties.Terminal, terminalTokens, []string{"background", "foreground"})
 }
 
 type colorGroupSchema struct {

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Themes can color the code, in the native window.** A theme's new optional
+  `syntax` section styles the review, diff and file views of `lich native`
+  (experimental) by CodeMirror highlighting tag, a color or a color with bold,
+  italic, underline or strikethrough per tag, so a theme's code reads the way
+  its editor does. The bundled themes keep their colors, and a theme without
+  the section keeps the default palette; the web window ignores it. See
+  `docs/themes.md`.
 - **See which binary of each agent lich runs, and its version.** When several
   copies of a CLI sit on your `PATH` (say a global npm install, a mise shim and
   a distro package of Codex), the first one silently drives every session,

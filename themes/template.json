@@ -61,5 +61,50 @@
     "brightMagenta": "#d5b7ff",
     "brightCyan": "#a0fff1",
     "brightWhite": "#ffffff"
+  },
+  "syntax": {
+    "keyword": "#c396f5",
+    "string": "#82cb92",
+    "regexp": "#82cb92",
+    "escape": "#82cb92",
+    "special(string)": "#82cb92",
+    "comment": {
+      "color": "#9f9fa9",
+      "italic": true
+    },
+    "processingInstruction": {
+      "color": "#9f9fa9",
+      "italic": true
+    },
+    "literal": "#eca760",
+    "number": "#eca760",
+    "bool": "#eca760",
+    "null": "#eca760",
+    "atom": "#eca760",
+    "typeName": "#71d0d5",
+    "className": "#71d0d5",
+    "namespace": "#71d0d5",
+    "propertyName": "#82b1ed",
+    "tagName": "#82b1ed",
+    "function(variableName)": "#82b1ed",
+    "punctuation": "#9f9fa9",
+    "operator": "#9f9fa9",
+    "operatorKeyword": "#9f9fa9",
+    "invalid": "#ff6467",
+    "strong": {
+      "bold": true
+    },
+    "heading": {
+      "bold": true
+    },
+    "emphasis": {
+      "italic": true
+    },
+    "link": {
+      "underline": true
+    },
+    "strikethrough": {
+      "strikethrough": true
+    }
   }
 }
