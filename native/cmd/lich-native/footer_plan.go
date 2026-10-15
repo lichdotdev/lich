@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gioui.org/layout"
+	"gioui.org/unit"
 
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
@@ -19,6 +20,9 @@ var (
 	icAhead     = icons.Lucide("trending-up")
 	planMinWide = ui.Space(52)  // PlanDetails' min-w-52
 	accountSize = ui.TextXS - 1 // text-[0.6875rem]
+	// accountLeading is what the account line inherits on the web: text-xs's
+	// unitless 4/3 line height, at 11px.
+	accountLeading unit.Sp = 14.67
 )
 
 // planDetails is PlanQuota's tooltip body: a stacked gauge per window, its
@@ -100,7 +104,7 @@ func accountRow(th *ui.Theme, account string) layout.Widget {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(th.Separator),
 			ui.VGap(2),
-			layout.Rigid(para(th.Text(accountSize, account).Muted().Mono()).Layout),
+			layout.Rigid(para(th.Text(accountSize, account).Leading(accountLeading).Muted().Mono()).Layout),
 		)
 	}
 }

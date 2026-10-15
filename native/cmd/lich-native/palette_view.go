@@ -48,10 +48,13 @@ const (
 	// paletteHintBarFill is the hint bar's bg-black/10.
 	paletteHintBarFill = 0.1
 	// paletteEmptyWidth is the hint's max-w-[44ch], in dp.
-	paletteEmptyWidth     unit.Dp = 330
-	paletteInputSize      unit.Sp = 15   // text-[0.9375rem]
-	paletteTabSize        unit.Sp = 13   // text-[0.8125rem]
-	paletteTinySize       unit.Sp = 10   // text-[0.625rem]
+	paletteEmptyWidth unit.Dp = 330
+	paletteInputSize  unit.Sp = 15 // text-[0.9375rem]
+	paletteTabSize    unit.Sp = 13 // text-[0.8125rem]
+	paletteTinySize   unit.Sp = 10 // text-[0.625rem]
+	// paletteTinyLeading is what the tiny text inherits from its text-sm row
+	// on the web: the 20/14 line height, at 10px.
+	paletteTinyLeading    unit.Sp = 14.3
 	paletteInputRow               = 11.5 // py-3 around a 22.5px line
 	paletteGlyphSize              = 16   // size-4
 	paletteEnterSize              = 14   // size-3.5
@@ -186,7 +189,7 @@ func (p *commandPalette) pill(gtx C, th *ui.Theme, v *paletteView, tab paletteTa
 				return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 					children := []layout.FlexChild{layout.Rigid(on.Text(paletteTabSize, string(tab)).In(fg).Leading(20).Layout)}
 					if counted {
-						num := on.Text(paletteTinySize, fmt.Sprint(count)).Mono().In(on.Over(ui.Alpha(fg, paletteCountOpacity)))
+						num := on.Text(paletteTinySize, fmt.Sprint(count)).Leading(paletteTinyLeading).Mono().In(on.Over(ui.Alpha(fg, paletteCountOpacity)))
 						children = append(children, ui.Gap(1.5), layout.Rigid(num.Layout))
 					}
 					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, children...)
@@ -505,7 +508,7 @@ func paletteHistoryFace(on *ui.Theme, h paletteHistory, fg color.NRGBA, ring pal
 		lines = append(lines, on.Text(ui.TextXS, h.Snippet).In(on.Over(ui.Alpha(on.MutedForeground, paletteSnippetOpacity))).Layout)
 	}
 	if note := historyIndexNote(h); note != "" {
-		lines = append(lines, on.Text(paletteTinySize, note).Mono().In(on.Over(ui.Alpha(on.MutedForeground, paletteNoteOpacity))).Layout)
+		lines = append(lines, on.Text(paletteTinySize, note).Leading(paletteTinyLeading).Mono().In(on.Over(ui.Alpha(on.MutedForeground, paletteNoteOpacity))).Layout)
 	}
 	return paletteFace{
 		lead: paletteRingOf(on, ring, h.Kind, "", false, ""),
@@ -558,7 +561,7 @@ func paletteTail(on *ui.Theme, s string) layout.Widget {
 
 // paletteSmall is the trailing note: font-mono text-[0.625rem] muted.
 func paletteSmall(on *ui.Theme, s string) layout.Widget {
-	return on.Text(paletteTinySize, s).Mono().Muted().Layout
+	return on.Text(paletteTinySize, s).Leading(paletteTinyLeading).Mono().Muted().Layout
 }
 
 func paletteGlyph(on *ui.Theme, icon *icons.Icon) layout.Widget {

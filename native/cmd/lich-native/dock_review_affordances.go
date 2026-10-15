@@ -30,6 +30,8 @@ var icRevertBlock = icons.Lucide("undo-2")
 // (index.css): text-[0.6875rem], px 0.375rem, rounded 0.25rem, a 0.75rem icon.
 const (
 	affordanceText   = unit.Sp(11)
+	expandLeading    = unit.Sp(13.2) // line-height: 1.2
+	revertLeading    = unit.Sp(14.3) // line-height: 1.3
 	affordancePadX   = unit.Dp(6)
 	affordanceRadius = unit.Dp(4)
 	affordanceGap    = unit.Dp(4)
@@ -76,7 +78,7 @@ func (a *affordances) expandButton(g godemirror.Gap, onClick func()) layout.Widg
 		if c.Hovered() {
 			fg, bg = th.AccentForeground, th.Accent
 		}
-		return a.button(gtx, c, bg, color.NRGBA{}, th.Text(affordanceText, text).In(fg).Layout)
+		return a.button(gtx, c, bg, color.NRGBA{}, th.Text(affordanceText, text).Leading(expandLeading).In(fg).Layout)
 	}
 }
 
@@ -96,7 +98,7 @@ func (a *affordances) revertButton(chunk godemirror.Chunk, onClick func()) layou
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icRevertBlock.Layout(gtx, affordanceIcon, th.Foreground) }),
 				layout.Rigid(layout.Spacer{Width: affordanceGap}.Layout),
-				layout.Rigid(th.Text(affordanceText, revertLabel).Layout),
+				layout.Rigid(th.Text(affordanceText, revertLabel).Leading(revertLeading).Layout),
 			)
 		})
 	}

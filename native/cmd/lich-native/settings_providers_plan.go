@@ -56,7 +56,7 @@ func planBody(gtx C, th *ui.Theme, plan lichclient.QuotaPlan) D {
 		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return planGauge(gtx, th, g) }))
 	}
 	if account := accountLine(plan); account != "" {
-		children = append(children, ui.VGap(2), layout.Rigid(th.Text(accountSize, account).Muted().Mono().Layout))
+		children = append(children, ui.VGap(2), layout.Rigid(th.Text(accountSize, account).Leading(accountLeading).Muted().Mono().Layout))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
