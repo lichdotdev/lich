@@ -36,6 +36,12 @@ type ToastLine struct {
 	Text string
 }
 
+// ToastProgress is a toast's bar: Percent from 0 to 100, negative while the
+// total is unknown.
+type ToastProgress struct {
+	Percent int
+}
+
 // ToastForever is a Duration that never runs out, sonner's Infinity.
 const ToastForever time.Duration = math.MaxInt64
 
@@ -61,6 +67,9 @@ type Toast struct {
 	// Lines sit under the title in the muted foreground, one truncated line
 	// each, as a toast whose title is a block of its own draws them.
 	Lines []ToastLine
+	// Progress draws a bar between the title and the description; nil for
+	// none.
+	Progress *ToastProgress
 	// Duration is how long the toast stays while the pointer is away; 0 is
 	// sonner's default.
 	Duration time.Duration

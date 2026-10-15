@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/omartelo/lich/native/lichclient"
+	"github.com/omartelo/lich/native/ui"
 )
 
 func TestShouldPromptUpdate(t *testing.T) {
@@ -24,16 +25,20 @@ func TestUpdateProgressToast(t *testing.T) {
 		name        string
 		p           *lichclient.AppUpdateProgress
 		title, desc string
+		bar         *ui.ToastProgress
 	}{
-		{"before the first step", nil, "Downloading lich 1.4.0", ""},
-		{"known total", &lichclient.AppUpdateProgress{Phase: "download", Received: 12_300_000, Total: 41_000_000}, "Downloading lich 1.4.0", "30% · 12.3 MB of 41.0 MB"},
-		{"no Content-Length", &lichclient.AppUpdateProgress{Phase: "download", Received: 5_000_000, Total: -1}, "Downloading lich 1.4.0", "5.0 MB"},
-		{"installer", &lichclient.AppUpdateProgress{Phase: "installer"}, "Installing lich 1.4.0…", appUpdateReopens},
+		{"before the first step", nil, "Downloading lich 1.4.0", "", &ui.ToastProgress{Percent: -1}},
+		{"known total", &lichclient.AppUpdateProgress{Phase: "download", Received: 12_300_000, Total: 41_000_000}, "Downloading lich 1.4.0", "30% · 12.3 MB of 41.0 MB", &ui.ToastProgress{Percent: 30}},
+		{"no Content-Length", &lichclient.AppUpdateProgress{Phase: "download", Received: 5_000_000, Total: -1}, "Downloading lich 1.4.0", "5.0 MB", &ui.ToastProgress{Percent: -1}},
+		{"installer", &lichclient.AppUpdateProgress{Phase: "installer"}, "Installing lich 1.4.0…", appUpdateReopens, nil},
 	}
 	for _, c := range cases {
 		got := updateProgressToast("1.4.0", c.p)
 		if got.Title != c.title || got.Description != c.desc {
 			t.Errorf("%s: got (%q, %q), want (%q, %q)", c.name, got.Title, got.Description, c.title, c.desc)
+		}
+		if (got.Progress == nil) != (c.bar == nil) || got.Progress != nil && *got.Progress != *c.bar {
+			t.Errorf("%s: bar %+v, want %+v", c.name, got.Progress, c.bar)
 		}
 	}
 }

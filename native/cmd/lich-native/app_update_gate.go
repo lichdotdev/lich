@@ -180,17 +180,18 @@ func (u *window) updateProgressed(p lichclient.AppUpdateProgress) {
 	}
 }
 
-// updateProgressToast is UpdateProgressToast as a toast's title and
-// description: the percent and bytes stand in for the web's bar.
+// updateProgressToast is UpdateProgressToast: the download's bar, with its
+// percent and bytes under it, then the installer's step.
 func updateProgressToast(version string, p *lichclient.AppUpdateProgress) ui.Toast {
-	t := ui.Toast{ID: appUpdateToastID, Duration: ui.ToastForever, Title: fmt.Sprintf(appUpdateDownloading, version)}
+	t := ui.Toast{ID: appUpdateToastID, Duration: ui.ToastForever, Title: fmt.Sprintf(appUpdateDownloading, version),
+		Progress: &ui.ToastProgress{Percent: -1}}
 	switch {
 	case p == nil:
 	case p.Phase == lichclient.UpdatePhaseInstaller:
-		t.Title, t.Description = fmt.Sprintf(appUpdateInstalling, version), appUpdateReopens
+		t.Title, t.Description, t.Progress = fmt.Sprintf(appUpdateInstalling, version), appUpdateReopens, nil
 	default:
 		percent, bytes := downloadReading(*p)
-		t.Description = bytes
+		t.Description, t.Progress.Percent = bytes, percent
 		if percent >= 0 {
 			t.Description = fmt.Sprintf(appUpdatePercentBytes, percent, bytes)
 		}

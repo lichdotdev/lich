@@ -32,6 +32,8 @@ var toastDemos = []struct {
 		Cancel: &ui.ToastButton{Label: "Dismiss"}, Action: &ui.ToastButton{Label: "Report"}}},
 	{"Error", ui.Toast{Variant: ui.ToastError, Title: "Could not open the folder: no file manager found"}},
 	{"With action", ui.Toast{Title: "Session closed: Claude 3", Action: &ui.ToastButton{Label: "Undo"}}},
+	{"Progress", ui.Toast{Title: "Downloading lich 1.4.0", Description: "30% · 12.3 MB of 41.0 MB",
+		Progress: &ui.ToastProgress{Percent: 30}, Duration: ui.ToastForever}},
 	{"Same id", ui.Toast{ID: "gallery-progress", Variant: ui.ToastInfo, Title: "Replaced in place"}},
 }
 

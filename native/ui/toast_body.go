@@ -23,6 +23,7 @@ const (
 	toastItemGap       unit.Dp = 6  // gap: 6px
 	toastWrapRowGap    unit.Dp = 12 // index.css row-gap: 12px
 	toastContentGap    unit.Dp = 2  // [data-content] gap: 2px
+	toastProgressGap   unit.Dp = 10 // UpdateProgressToast's gap-2.5
 	toastTitleSize     unit.Sp = 13 // font-size: 13px
 	toastTitleLeading  unit.Sp = 13 * 1.5
 	toastDescLeading   unit.Sp = 13 * 1.4
@@ -138,7 +139,7 @@ func (s ToasterStyle) place(gtx C) {
 			before += slot.own
 			live++
 		}
-		e.view.animate(gtx, targetOf(e, slot), width, inset, e.Description != "")
+		e.view.animate(gtx, targetOf(e, slot), width, inset, e.Description != "" || e.Progress != nil)
 		e.view.canHit = visible(i) && !e.removed()
 	}
 }
@@ -248,7 +249,7 @@ func (s ToasterStyle) body(gtx C, e *toastEntry) D {
 		lead = gtx.Dp(toastIconBox) + gtx.Dp(toastIconMarginEnd) - gtx.Dp(toastIconMarginStart) + gtx.Dp(toastItemGap)
 	}
 	var d D
-	if e.Description != "" || e.Secondary != nil {
+	if e.Description != "" || e.Secondary != nil || e.Progress != nil {
 		d = s.wrappedBody(gtx, th, e, ic, lead, buttons)
 	} else {
 		d = s.rowBody(gtx, th, e, ic, lead, buttons)
@@ -361,20 +362,24 @@ func (s ToasterStyle) content(gtx C, th *Theme, e *toastEntry) D {
 	if len(e.Lines) > 0 {
 		head = func(gtx C) D { return toastLines(gtx, th, title.Layout, e.Lines) }
 	}
-	if e.Description == "" {
+	if e.Description == "" && e.Progress == nil {
 		return head(gtx)
 	}
-	descColor := toastDescDark
-	if s.Light {
-		descColor = toastDescLight
+	rows := []layout.FlexChild{layout.Rigid(head)}
+	if e.Progress != nil {
+		rows = append(rows, layout.Rigid(layout.Spacer{Height: toastProgressGap}.Layout),
+			layout.Rigid(th.Progress(e.Progress.Percent).Layout))
 	}
-	desc := th.Text(toastTitleSize, e.Description).Leading(toastDescLeading).In(descColor)
-	desc.MaxLines = 0
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(head),
-		layout.Rigid(layout.Spacer{Height: toastContentGap}.Layout),
-		layout.Rigid(desc.Layout),
-	)
+	if e.Description != "" {
+		descColor := toastDescDark
+		if s.Light {
+			descColor = toastDescLight
+		}
+		desc := th.Text(toastTitleSize, e.Description).Leading(toastDescLeading).In(descColor)
+		desc.MaxLines = 0
+		rows = append(rows, layout.Rigid(layout.Spacer{Height: toastContentGap}.Layout), layout.Rigid(desc.Layout))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 }
 
 // toastLines stacks the title over its muted lines, each truncated to one.
