@@ -72,6 +72,19 @@ func TestTextareaGrowsWithItsText(t *testing.T) {
 	}
 }
 
+func TestTextareaSpacesLinesAtTextSMLeading(t *testing.T) {
+	th, ed := testTheme(), new(widget.Editor)
+	ta := th.Textarea(ed, "")
+	ed.SetText(strings.Repeat("line\n", 9))
+	ten := inputSize(ta.Layout, 300, 1000).Y
+	ed.SetText(strings.Repeat("line\n", 10))
+	eleven := inputSize(ta.Layout, 300, 1000).Y
+	// text-sm is 14px/20px: each added line adds one 20px line box.
+	if got := eleven - ten; got != 20 {
+		t.Errorf("one more line grew the textarea by %dpx, want 20", got)
+	}
+}
+
 func TestInputGroupKeepsRowHeightAndFillsWidth(t *testing.T) {
 	th, ed := testTheme(), new(widget.Editor)
 	g := th.InputGroup(ed, "Filter")

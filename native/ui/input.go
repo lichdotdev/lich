@@ -276,8 +276,14 @@ func (f inputText) layoutEditor(gtx C) D {
 	if f.single {
 		maxLines = 1
 	}
+	hintLabel := widget.Label{MaxLines: maxLines, Truncator: "…"}
+	if leading, ok := tailwindLeading[f.size]; ok {
+		// Gio scales an explicit LineHeight by 1.2 unless told otherwise.
+		hintLabel.LineHeight, hintLabel.LineHeightScale = leading, 1
+		f.editor.LineHeight, f.editor.LineHeightScale = leading, 1
+	}
 	hintMacro := op.Record(gtx.Ops)
-	hd := widget.Label{MaxLines: maxLines, Truncator: "…"}.Layout(gtx, f.theme.Shaper, f.font, f.size, f.placeholder, hintMat)
+	hd := hintLabel.Layout(gtx, f.theme.Shaper, f.font, f.size, f.placeholder, hintMat)
 	hintCall := hintMacro.Stop()
 	gtx.Constraints.Min.Y = max(gtx.Constraints.Min.Y, hd.Size.Y)
 	d := f.editor.Layout(gtx, f.theme.Shaper, f.font, f.size, textMat, selMat)
