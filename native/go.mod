@@ -27,4 +27,4 @@ require (
 
 // app.DropEvent (external file drop) and Window.Activate (raising the window on
 // Wayland) live in lichdotdev/gio, branch drop-event; gioui.org has neither.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261015013310-fb164c812c73
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261015151446-c609b88c89a0

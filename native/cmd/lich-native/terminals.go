@@ -291,6 +291,10 @@ func (ts *terminals) setVisible(hidden, shown string) {
 func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	gtx.Metric = ts.unzoomed
 	defer clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops).Pop()
+	// xterm.js keeps the arrow while the program takes the mouse (tmux, vim).
+	if !t.vt.MouseTracking() {
+		pointer.CursorText.Add(gtx.Ops)
+	}
 	defer op.Offset(image.Pt(gtx.Dp(terminalPadding.Left), gtx.Dp(terminalPadding.Top))).Push(gtx.Ops).Pop()
 	size := gridArea(gtx)
 	gtx.Constraints = layout.Exact(size)
