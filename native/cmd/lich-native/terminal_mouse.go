@@ -27,9 +27,9 @@ import (
 // selects. Shift selects even under tracking, as xterm.js lets it in the web
 // window. send is what goes to the program; copied is the text a selection
 // ended with, for the clipboard.
-func (t *termView) pointer(e pointer.Event, cellH int) (send []byte, copied string) {
+func (t *termView) pointer(e pointer.Event) (send []byte, copied string) {
 	if e.Kind == pointer.Scroll {
-		return t.wheel(e, cellH), ""
+		return t.wheel(e), ""
 	}
 	reported := t.vt.MouseTracking() && !e.Modifiers.Contain(key.ModShift)
 	if reported && !t.selecting {
@@ -101,11 +101,11 @@ func (t *termView) report(e pointer.Event) []byte {
 	return nil
 }
 
-// wheel scrolls a row per cell height of e: as wheel steps for a program
+// wheel scrolls a row per cell height scrolled: as wheel steps for a program
 // tracking the mouse, as arrow keys for a full-screen one that does not,
 // through scrollback otherwise.
-func (t *termView) wheel(e pointer.Event, cellH int) []byte {
-	rows := int(e.Scroll.Y) / max(cellH, 1)
+func (t *termView) wheel(e pointer.Event) []byte {
+	rows := t.vt.WheelRows(e.Scroll.Y)
 	tracking := t.vt.MouseTracking()
 	if !tracking && !t.vt.AlternateScroll() {
 		t.vt.Scroll(rows)

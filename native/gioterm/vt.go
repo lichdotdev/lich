@@ -252,6 +252,10 @@ type Terminal struct {
 	raw          []C.cell_t
 	dirty        []uint8
 	grid         []cell
+
+	// wheelRest is the wheel scroll short of a whole row, carried to the
+	// next WheelRows: a touchpad scrolls a few pixels at a time.
+	wheelRest float32
 }
 
 func check(what string, r C.GhosttyResult) error {
@@ -329,6 +333,18 @@ func (v *Terminal) Scroll(delta int) {
 	v.mu.Lock()
 	C.scroll_delta(v.t, C.intptr_t(delta))
 	v.mu.Unlock()
+}
+
+// WheelRows is the rows a wheel scroll of dy pixels moves, negative is up.
+// What falls short of a whole row counts toward the next call.
+func (v *Terminal) WheelRows(dy float32) int {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	h := float32(max(v.cellH, 1))
+	v.wheelRest += dy
+	rows := int(v.wheelRest / h)
+	v.wheelRest -= float32(rows) * h
+	return rows
 }
 
 // Size is the grid in cells.

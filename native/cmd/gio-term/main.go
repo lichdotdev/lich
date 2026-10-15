@@ -120,7 +120,7 @@ func run(w *app.Window, argv []string) error {
 					return err
 				}
 			}
-			s.handleInput(gtx, tag, cellH)
+			s.handleInput(gtx, tag)
 			snap, err := s.vt.Update()
 			if err != nil {
 				return err
@@ -221,7 +221,7 @@ func (s *session) send(b []byte) {
 	}
 }
 
-func (s *session) handleInput(gtx layout.Context, tag *int, cellH int) {
+func (s *session) handleInput(gtx layout.Context, tag *int) {
 	filters := append(gioterm.KeyFilters(tag),
 		pointer.Filter{Target: tag, Kinds: pointer.Scroll | pointer.Press, ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}})
 	gtx.Execute(key.FocusCmd{Tag: tag})
@@ -239,7 +239,7 @@ func (s *session) handleInput(gtx layout.Context, tag *int, cellH int) {
 			}
 		case pointer.Event:
 			if e.Kind == pointer.Scroll {
-				s.vt.Scroll(int(e.Scroll.Y) / max(cellH, 1))
+				s.vt.Scroll(s.vt.WheelRows(e.Scroll.Y))
 			}
 		}
 	}

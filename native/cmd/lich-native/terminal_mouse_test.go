@@ -48,17 +48,17 @@ func TestDragSelectsAndCopiesOnRelease(t *testing.T) {
 		ptr(pointer.Drag, at(4, 0), pointer.ButtonPrimary, 0),
 	}
 	for _, e := range steps {
-		if send, copied := v.pointer(e, mouseTestCellH); send != nil || copied != "" {
+		if send, copied := v.pointer(e); send != nil || copied != "" {
 			t.Fatalf("%v sent %q, copied %q mid-drag", e.Kind, send, copied)
 		}
 	}
-	send, copied := v.pointer(ptr(pointer.Release, at(4, 0), 0, 0), mouseTestCellH)
+	send, copied := v.pointer(ptr(pointer.Release, at(4, 0), 0, 0))
 	if send != nil || copied != "hello" {
 		t.Fatalf("release sent %q, copied %q; want nothing sent and %q copied", send, copied, "hello")
 	}
 	// A plain click drops the selection and copies nothing.
-	v.pointer(ptr(pointer.Press, at(8, 0), pointer.ButtonPrimary, 0), mouseTestCellH)
-	if _, copied := v.pointer(ptr(pointer.Release, at(8, 0), 0, 0), mouseTestCellH); copied != "" {
+	v.pointer(ptr(pointer.Press, at(8, 0), pointer.ButtonPrimary, 0))
+	if _, copied := v.pointer(ptr(pointer.Release, at(8, 0), 0, 0)); copied != "" {
 		t.Fatalf("a click copied %q", copied)
 	}
 	if got := v.vt.SelectionText(); got != "" {
@@ -83,7 +83,7 @@ func TestMouseGoesToTheProgramThatTracksIt(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			send, copied := v.pointer(c.e, mouseTestCellH)
+			send, copied := v.pointer(c.e)
 			if string(send) != c.want || copied != "" {
 				t.Fatalf("sent %q, copied %q; want %q sent", send, copied, c.want)
 			}
@@ -93,10 +93,10 @@ func TestMouseGoesToTheProgramThatTracksIt(t *testing.T) {
 
 func TestShiftSelectsUnderMouseTracking(t *testing.T) {
 	v := newMouseTestView(t, "hello world\x1b[?1000h\x1b[?1006h")
-	v.pointer(ptr(pointer.Press, from(6, 0), pointer.ButtonPrimary, key.ModShift), mouseTestCellH)
-	v.pointer(ptr(pointer.Drag, at(10, 0), pointer.ButtonPrimary, key.ModShift), mouseTestCellH)
+	v.pointer(ptr(pointer.Press, from(6, 0), pointer.ButtonPrimary, key.ModShift))
+	v.pointer(ptr(pointer.Drag, at(10, 0), pointer.ButtonPrimary, key.ModShift))
 	// Shift may be let go before the button: the drag it started stays a selection.
-	send, copied := v.pointer(ptr(pointer.Release, at(10, 0), 0, 0), mouseTestCellH)
+	send, copied := v.pointer(ptr(pointer.Release, at(10, 0), 0, 0))
 	if send != nil || copied != "world" {
 		t.Fatalf("sent %q, copied %q; want %q copied", send, copied, "world")
 	}
@@ -115,10 +115,24 @@ func TestWheelMovesTheCursorOnTheAlternateScreen(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			e := pointer.Event{Kind: pointer.Scroll, Position: at(0, 0), Scroll: f32.Pt(0, c.scroll)}
-			if send, _ := v.pointer(e, mouseTestCellH); string(send) != c.want {
+			if send, _ := v.pointer(e); string(send) != c.want {
 				t.Fatalf("sent %q, want %q", send, c.want)
 			}
 		})
+	}
+}
+
+func TestTouchpadDeltasUnderACellStillScroll(t *testing.T) {
+	v := newMouseTestView(t, "\x1b[?1049h")
+	// A touchpad sends a stream of deltas a few pixels each, never a whole row.
+	var sent string
+	for range 4 {
+		e := pointer.Event{Kind: pointer.Scroll, Position: at(0, 0), Scroll: f32.Pt(0, mouseTestCellH/4)}
+		send, _ := v.pointer(e)
+		sent += string(send)
+	}
+	if sent != "\x1b[B" {
+		t.Fatalf("four quarter-row deltas sent %q, want one row down", sent)
 	}
 }
 

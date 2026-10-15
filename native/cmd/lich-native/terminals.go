@@ -350,7 +350,6 @@ func (ts *terminals) refit(gtx layout.Context, t *termView, size image.Point, co
 }
 
 func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
-	_, cellH := t.r.Cell()
 	filters := append(gioterm.KeyFilters(t.tag),
 		pointer.Filter{Target: t.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move | pointer.Leave,
 			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
@@ -391,7 +390,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				}
 				break
 			}
-			send, copied := t.pointer(e, cellH)
+			send, copied := t.pointer(e)
 			ts.send(t.id, send)
 			if copied != "" {
 				ts.copySelection(gtx, copied)

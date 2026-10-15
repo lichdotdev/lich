@@ -36,3 +36,18 @@ func TestWriteNothing(t *testing.T) {
 	v := newSizedTerminal(t)
 	v.Write(nil)
 }
+
+func TestTouchpadDeltasUnderACellAddUpToARow(t *testing.T) {
+	v := newSizedTerminal(t)
+	// A touchpad sends a stream of deltas a few pixels each, never a whole row.
+	rows := 0
+	for range 4 {
+		rows += v.WheelRows(testCellH / 4)
+	}
+	if rows != 1 {
+		t.Fatalf("four quarter-row deltas scrolled %d rows, want 1", rows)
+	}
+	if got := v.WheelRows(-testCellH); got != -1 {
+		t.Fatalf("a row up scrolled %d rows, want -1", got)
+	}
+}
