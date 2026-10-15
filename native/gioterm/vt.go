@@ -243,6 +243,8 @@ type Terminal struct {
 	mouseEnc C.GhosttyMouseEncoder
 	mouseEv  C.GhosttyMouseEvent
 	gest     C.GhosttySelectionGesture
+	// pressCell is the viewport cell the last press landed on.
+	pressCell [2]int
 
 	handle  cgo.Handle
 	replies func([]byte)

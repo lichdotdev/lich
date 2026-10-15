@@ -184,6 +184,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Selecting in a terminal of the native window takes what is under the
+  pointer.** A drag dropped the cell it started on and the one under the
+  pointer until the pointer crossed 60% of it; it now runs from the clicked
+  cell to the cell under the pointer, both whole, as soon as it leaves the
+  clicked one.
 - **The native window shows lich in the tray.** With `lich native`
   (experimental), the tray icon never came up, so a lich whose window you
   closed to keep its sessions running had nothing on screen. The icon now

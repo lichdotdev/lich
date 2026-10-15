@@ -98,3 +98,31 @@ func TestDoubleClickSelectsTheWord(t *testing.T) {
 		t.Fatalf("selected %q, want %q", got, "world")
 	}
 }
+
+// A drag takes a cell as soon as the pointer is on it, in either direction,
+// and keeps the cell it started on: what is under the pointer is selected.
+func TestDragSelectsTheCellUnderThePointer(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		pressX, dragX float32
+		want          string
+	}{
+		{"rightward into the edge of a cell", 0*testCellW + 8, 4*testCellW + 1, "hello"},
+		{"leftward into the edge of a cell", 4*testCellW + 1, 1*testCellW + 9, "ello"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			v := newSizedTerminal(t)
+			v.Write([]byte("hello world"))
+			if _, err := v.Update(); err != nil {
+				t.Fatal(err)
+			}
+			y := float32(testCellH / 2)
+			v.SelectPress(tc.pressX, y, time.Second)
+			v.SelectDrag(tc.dragX, y)
+			v.SelectRelease(tc.dragX, y)
+			if got := v.SelectionText(); got != tc.want {
+				t.Fatalf("selected %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

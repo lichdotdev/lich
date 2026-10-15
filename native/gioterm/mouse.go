@@ -13,9 +13,26 @@ static GhosttyResult viewport_ref(GhosttyTerminal t, uint16_t x, uint32_t y, Gho
 	return ghostty_terminal_grid_ref(t, p, ref);
 }
 
+// cell_under_pointer has a single click's drag run from the cell clicked to
+// the cell under the pointer, both taken whole, in place of the selection
+// Ghostty's 60% threshold leaves short at either end. A drag still inside the
+// clicked cell, a word or line drag and a rectangle keep Ghostty's.
+static void cell_under_pointer(GhosttyTerminal t, GhosttySelectionGesture g, GhosttyGridRef ref, GhosttySelection* sel, GhosttyResult* r) {
+	if (*r == GHOSTTY_SUCCESS && sel->rectangle) return;
+	if (*r != GHOSTTY_SUCCESS && *r != GHOSTTY_NO_VALUE) return;
+	uint8_t clicks = 0;
+	if (ghostty_selection_gesture_get(g, t, GHOSTTY_SELECTION_GESTURE_DATA_CLICK_COUNT, &clicks) != GHOSTTY_SUCCESS || clicks != 1) return;
+	GhosttyGridRef anchor = GHOSTTY_INIT_SIZED(GhosttyGridRef);
+	if (ghostty_selection_gesture_get(g, t, GHOSTTY_SELECTION_GESTURE_DATA_ANCHOR, &anchor) != GHOSTTY_SUCCESS) return;
+	sel->start = anchor;
+	sel->end = ref;
+	sel->rectangle = false;
+	*r = GHOSTTY_SUCCESS;
+}
+
 static GhosttyResult apply_gesture(GhosttyTerminal t, GhosttySelectionGesture g, GhosttySelectionGestureEventType type,
 		uint16_t col, uint32_t row, double px, double py, uint64_t ns, uint32_t cols, uint32_t cell_w, uint32_t height,
-		uint64_t repeat_interval_ns, double repeat_distance) {
+		uint64_t repeat_interval_ns, double repeat_distance, bool left_clicked_cell) {
 	GhosttyGridRef ref;
 	GhosttyResult r = viewport_ref(t, col, row, &ref);
 	if (r != GHOSTTY_SUCCESS) return r;
@@ -41,6 +58,9 @@ static GhosttyResult apply_gesture(GhosttyTerminal t, GhosttySelectionGesture g,
 	GhosttySelection sel = GHOSTTY_INIT_SIZED(GhosttySelection);
 	r = ghostty_selection_gesture_event(g, t, ev, &sel);
 	ghostty_selection_gesture_event_free(ev);
+	if (type == GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_DRAG && left_clicked_cell) {
+		cell_under_pointer(t, g, ref, &sel, &r);
+	}
 	if (r == GHOSTTY_SUCCESS) {
 		return ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_SELECTION, &sel);
 	}
@@ -202,9 +222,13 @@ func (v *Terminal) gesture(kind C.GhosttySelectionGestureEventType, x, y float32
 		return
 	}
 	col, row := v.cellAt(x, y)
+	if kind == C.GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_PRESS {
+		v.pressCell = [2]int{col, row}
+	}
+	left := v.pressCell != [2]int{col, row}
 	C.apply_gesture(v.t, v.gest, kind, C.uint16_t(col), C.uint32_t(row), C.double(x), C.double(y),
 		C.uint64_t(at.Nanoseconds()), C.uint32_t(v.cols), C.uint32_t(max(v.cellW, 1)), C.uint32_t(v.rows*max(v.cellH, 1)),
-		C.uint64_t(repeatClickInterval.Nanoseconds()), C.double(repeatClickDistance))
+		C.uint64_t(repeatClickInterval.Nanoseconds()), C.double(repeatClickDistance), C.bool(left))
 }
 
 // cellAt is the viewport cell under pixel (x, y), clamped to the grid so a
