@@ -172,6 +172,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		return len(ids) > 0
 	}
 	u.model.prChanged = u.prChanged
+	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.terms.exited
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
@@ -336,6 +337,7 @@ func (u *window) connect() error {
 		u.settings.show(*flagSettingsScope, settingsProjectsOf(tabs))
 		u.settings.providers.open = *flagSettingsProvider
 		u.settings.providers.adding, u.settings.providers.addingSet = *flagSettingsAdd, *flagSettingsAdd
+		u.settings.theme.open = *flagSettingsThemes
 		u.settings.updates.patch.open = *flagPatchNotes
 		u.settings.nav.query.SetText(*flagSettingsQuery)
 		if *flagProfileDialog != "" {

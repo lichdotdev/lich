@@ -223,8 +223,10 @@ func terminalOf(def lichclient.Theme) (gioterm.Colors, error) {
 }
 
 // resolveTheme is themes.ts resolveTheme: System is the bundled theme the
-// OS asks for, and a selection no theme answers to falls back to it.
-func resolveTheme(selected string, themes []themeEntry, systemDark bool) themeEntry {
+// OS asks for, and a selection no theme answers to falls back to it. Following
+// the system, a theme of the scheme the OS does not ask for gives way to its
+// pair.
+func resolveTheme(selected string, themes []themeEntry, systemDark, followSystem bool) themeEntry {
 	systemID := themeLight
 	if systemDark {
 		systemID = themeDark
@@ -236,10 +238,23 @@ func resolveTheme(selected string, themes []themeEntry, systemDark bool) themeEn
 	if selected == themeSystem {
 		return system
 	}
-	if e, ok := themeByID(themes, selected); ok {
-		return e
+	e, ok := themeByID(themes, selected)
+	if !ok {
+		return system
 	}
-	return system
+	if pair, ok := pairOf(e, themes); ok && followSystem && e.light() == systemDark {
+		return pair
+	}
+	return e
+}
+
+// pairOf is e's variant for the other scheme. The backend lists a theme whose
+// pair has its own scheme as broken; a pair no theme answers to is none.
+func pairOf(e themeEntry, themes []themeEntry) (themeEntry, bool) {
+	if e.def.Pair == "" {
+		return themeEntry{}, false
+	}
+	return themeByID(themes, e.def.Pair)
 }
 
 func themeByID(themes []themeEntry, id string) (themeEntry, bool) {

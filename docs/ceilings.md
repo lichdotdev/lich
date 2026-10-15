@@ -1424,6 +1424,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   as holding Personal's plugin, and its next spawn rebuilt it with no plugin and no marketplace. The same
   layout moves a Claude Code profile's plugin cache off Personal's (the bullet on it above) at a start too.
   oh-my-pi needs no pass: lich's extension is in the `extensions/` every profile links to Personal's.
+- **A theme's pair and `lich theme switch` reach the native window only**: the web window (in maintenance,
+  `docs/native-window.md`) ignores a theme's `pair` and has no Follow system switch, and it reads the selection
+  once at load, so a `lich theme switch` while it is open shows at its next reload. The native window hears the
+  backend's `theme-selection` event. A theme chosen in the web window is written straight to the setting and
+  emits nothing, which no native window can be open to miss: the two windows take turns. Following the OS
+  reads the freedesktop appearance portal on Linux; on Windows and macOS the native window does not watch the
+  OS scheme yet, so a pair is not followed there.
 - **Profiles are managed in the native window only, and the window asks every profile at start**: the web
   window has no profile screen, no card tag and no Continue in (it is in maintenance, `docs/native-window.md`),
   though what it opens or resumes runs in its profile, the backend deciding. The native window reads

@@ -17,6 +17,7 @@ func customTheme(id string) Theme {
 	theme.ID = id
 	theme.Name = "Custom"
 	theme.Origin = OriginCustom
+	theme.Pair = ""
 	return theme
 }
 
@@ -347,7 +348,7 @@ func TestDefaultDirSeparatesDevThemes(t *testing.T) {
 	if filepath.Base(development) != "themes-dev" || filepath.Base(filepath.Dir(development)) != "lich" {
 		t.Fatalf("development dir = %q", development)
 	}
-	if got := New("dev").dir; got != development {
+	if got := New("dev", memorySettings{}, nil).dir; got != development {
 		t.Fatalf("New dir = %q, want %q", got, development)
 	}
 }

@@ -19,6 +19,39 @@ type Theme struct {
 	// Syntax styles the code views by highlighting tag; nil keeps the
 	// default palette of the theme's scheme.
 	Syntax map[string]SyntaxStyle `json:"syntax,omitempty"`
+	// Pair is the id of this theme's variant for the other scheme, "" for
+	// none.
+	Pair string `json:"pair,omitempty"`
+}
+
+// ThemeSelectionEvent is themes.SelectionEventName: the stored selection
+// changed, from this window, another, or `lich theme switch`.
+const ThemeSelectionEvent = "theme-selection"
+
+// ThemeSelection mirrors themes.Selection.
+type ThemeSelection struct {
+	Theme        string `json:"theme"`
+	FollowSystem bool   `json:"followSystem"`
+}
+
+// ThemeSelection reads the stored selection; a theme never chosen reads
+// "system".
+func (c *Client) ThemeSelection(ctx context.Context) (ThemeSelection, error) {
+	var out ThemeSelection
+	return out, c.Call(ctx, "themes.Selection", &out)
+}
+
+// SelectTheme stores id, "system" or an installed theme, as the selection.
+func (c *Client) SelectTheme(ctx context.Context, id string) error {
+	return c.Call(ctx, "themes.Select", nil, struct {
+		ID string `json:"id"`
+	}{id})
+}
+
+// SetFollowSystem stores whether the window draws the selected theme's pair
+// while the OS asks for the pair's scheme.
+func (c *Client) SetFollowSystem(ctx context.Context, on bool) error {
+	return c.Call(ctx, "themes.SetFollowSystem", nil, on)
 }
 
 // SyntaxStyle mirrors themes.SyntaxStyle: one tag's color and font style.

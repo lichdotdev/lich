@@ -16,6 +16,7 @@ import (
 	"github.com/omartelo/lich/internal/spawn"
 	"github.com/omartelo/lich/internal/store"
 	"github.com/omartelo/lich/internal/system"
+	"github.com/omartelo/lich/internal/themes"
 )
 
 // rpcMethodName is how the CLI spells a method it posts: "<service>.<Method>".
@@ -28,6 +29,7 @@ var cliServices = map[string]reflect.Type{
 	"relay":  reflect.TypeFor[*relay.Service](),
 	"store":  reflect.TypeFor[*store.Service](),
 	"system": reflect.TypeFor[*system.Service](),
+	"themes": reflect.TypeFor[*themes.Service](),
 }
 
 // TestEveryCallTheCLIPostsTakesOneOptionsObject keeps a call `lich` or `lich

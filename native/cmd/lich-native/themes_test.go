@@ -110,10 +110,65 @@ func TestResolveTheme(t *testing.T) {
 		{themeLight, true, themeLight},
 	}
 	for _, c := range cases {
-		if got := resolveTheme(c.selected, themes, c.systemDark).def.ID; got != c.want {
+		if got := resolveTheme(c.selected, themes, c.systemDark, false).def.ID; got != c.want {
 			t.Errorf("resolveTheme(%q, dark %v) = %q, want %q", c.selected, c.systemDark, got, c.want)
 		}
 	}
+}
+
+// Following the system, a theme the OS asks the other scheme of gives way
+// to its pair; without a pair, or not following, it stays.
+func TestResolveThemeFollowsTheSystemToThePair(t *testing.T) {
+	night := customTheme("forest-night", "Forest Night")
+	night.Scheme, night.Pair = "dark", "forest-day"
+	day := customTheme("forest-day", "Forest Day")
+	day.Scheme, day.Pair = "light", "forest-night"
+	lone := customTheme("lone", "Lone")
+	lone.Scheme = "dark"
+	themes, _ := readThemes([]lichclient.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), night, day, lone}, nil)
+	cases := []struct {
+		selected             string
+		systemDark, followOS bool
+		want                 string
+	}{
+		{"forest-night", false, true, "forest-day"},
+		{"forest-night", true, true, "forest-night"},
+		{"forest-day", true, true, "forest-night"},
+		{"forest-night", false, false, "forest-night"},
+		{"lone", false, true, "lone"},
+		{themeSystem, false, true, themeLight},
+	}
+	for _, c := range cases {
+		if got := resolveTheme(c.selected, themes, c.systemDark, c.followOS).def.ID; got != c.want {
+			t.Errorf("resolveTheme(%q, dark %v, follow %v) = %q, want %q", c.selected, c.systemDark, c.followOS, got, c.want)
+		}
+	}
+}
+
+// A selection stored elsewhere, `lich theme switch` or another window,
+// repaints this one.
+func TestAppearanceTakesASelectionStoredElsewhere(t *testing.T) {
+	f, client := newSidebarBackend(t)
+	night := customTheme("forest-night", "Forest Night")
+	night.Scheme, night.Pair = "dark", "forest-day"
+	day := customTheme("forest-day", "Forest Day")
+	day.Scheme, day.Pair = "light", "forest-night"
+	f.themes = []lichclient.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), night, day}
+	a := &appearance{ctx: context.Background(), client: client, invalidate: func() {}}
+	if err := a.load(); err != nil {
+		t.Fatal(err)
+	}
+	a.setSystemDark(false)
+	a.take()
+	a.applySelection(lichclient.ThemeSelection{Theme: "forest-night", FollowSystem: true})
+	if e, ok := a.take(); !ok || e.def.ID != "forest-day" {
+		t.Errorf("following a light desktop from forest-night took %q, %v", e.def.ID, ok)
+	}
+	a.setFollowSystem(false)
+	if e, ok := a.take(); !ok || e.def.ID != "forest-night" {
+		t.Errorf("no longer following took %q, %v", e.def.ID, ok)
+	}
+	waitForSetting(t, f, "appearance.followSystem@", "false")
 }
 
 func TestThemeCaption(t *testing.T) {

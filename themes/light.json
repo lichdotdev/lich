@@ -3,6 +3,7 @@
   "name": "Light",
   "scheme": "light",
   "origin": "bundled",
+  "pair": "dark",
   "app": {
     "background": "oklch(0.94 0.003 286.32)",
     "foreground": "oklch(0.21 0.006 285.885)",

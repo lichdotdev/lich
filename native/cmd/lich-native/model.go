@@ -88,6 +88,9 @@ type model struct {
 	pluginProfiles func(lichclient.PluginProfiles)
 	// prChanged hears a pull request write land (PRChangedEvent).
 	prChanged func()
+	// themeSelection hears the stored theme selection change
+	// (ThemeSelectionEvent).
+	themeSelection func(lichclient.ThemeSelection)
 	// exited hears a session's process end.
 	exited func(id string, e sessionExit)
 	// pluginIncompatible hears a session report from a lich plugin outside
@@ -292,6 +295,11 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			var pass lichclient.PluginProfiles
 			if json.Unmarshal(ev.Data, &pass) == nil && m.pluginProfiles != nil {
 				m.pluginProfiles(pass)
+			}
+		case lichclient.ThemeSelectionEvent:
+			var sel lichclient.ThemeSelection
+			if json.Unmarshal(ev.Data, &sel) == nil && m.themeSelection != nil {
+				m.themeSelection(sel)
 			}
 		case lichclient.PRChangedEvent:
 			if m.prChanged != nil {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -74,6 +75,10 @@ type Theme struct {
 	// Syntax is optional: a theme without it is highlighted in the native
 	// window's default palette for its scheme. The web window ignores it.
 	Syntax Syntax `json:"syntax,omitempty"`
+	// Pair is optional: the id of this theme's variant for the other scheme,
+	// which the native window draws while the OS asks for that scheme and
+	// the user turned on following it. The web window ignores it.
+	Pair string `json:"pair,omitempty"`
 }
 
 // BrokenTheme is a stored custom theme this lich cannot load. It is listed
@@ -104,13 +109,16 @@ type Service struct {
 	dir         string
 	lichVersion string
 	initErr     error
+	settings    Settings
+	emit        func(name string, data any)
 }
 
 // New returns a theme service rooted under lich's config directory, checking
-// theme packs against lichVersion, the running build's version.
-func New(lichVersion string) *Service {
+// theme packs against lichVersion, the running build's version. It stores the
+// selection in settings and reports a change to it through emit.
+func New(lichVersion string, settings Settings, emit func(name string, data any)) *Service {
 	dir, err := defaultDir()
-	return &Service{dir: dir, lichVersion: lichVersion, initErr: err}
+	return &Service{dir: dir, lichVersion: lichVersion, initErr: err, settings: settings, emit: emit}
 }
 
 // NewInDir returns a theme service rooted at dir. It is used by tests.
@@ -371,10 +379,35 @@ func (s *Service) customThemes() ([]Theme, []BrokenTheme, error) {
 		}
 		themes = append(themes, theme)
 	}
+	themes, broken = checkPairs(themes, broken)
 	sort.Slice(themes, func(i, j int) bool {
 		return strings.ToLower(themes[i].Name) < strings.ToLower(themes[j].Name)
 	})
 	return themes, broken, nil
+}
+
+// checkPairs moves to broken a custom theme whose pair is a theme of its own
+// scheme. A pair no theme answers to is not an error: the pack it came from
+// may be partly removed, and the theme then has no pair to follow the OS to.
+func checkPairs(custom []Theme, broken []BrokenTheme) ([]Theme, []BrokenTheme) {
+	schemes := make(map[string]string, len(bundledThemes)+len(custom))
+	for _, theme := range append(slices.Clone(bundledThemes), custom...) {
+		schemes[theme.ID] = theme.Scheme
+	}
+	kept := make([]Theme, 0, len(custom))
+	moved := false
+	for _, theme := range custom {
+		if scheme, ok := schemes[theme.Pair]; ok && scheme == theme.Scheme {
+			broken = append(broken, BrokenTheme{ID: theme.ID, Reason: fmt.Sprintf("pair %q is a %s theme too; a pair has the other scheme", theme.Pair, scheme)})
+			moved = true
+			continue
+		}
+		kept = append(kept, theme)
+	}
+	if moved {
+		slices.SortFunc(broken, func(a, b BrokenTheme) int { return strings.Compare(a.ID, b.ID) })
+	}
+	return kept, broken
 }
 
 // storedID is the id a directory entry is stored under. A name lich could never
@@ -449,7 +482,26 @@ func validateTheme(theme Theme) error {
 			return fmt.Errorf("terminal.%s is required", key)
 		}
 	}
+	if err := validatePair(theme); err != nil {
+		return err
+	}
 	return validateSyntax(theme.Syntax)
+}
+
+// validatePair checks what one file can tell about its pair. Whether the
+// pair exists and is of the other scheme is checked once every theme is
+// read, by checkPairs.
+func validatePair(theme Theme) error {
+	if theme.Pair == "" {
+		return nil
+	}
+	if theme.Pair == theme.ID {
+		return fmt.Errorf("theme %q cannot be its own pair", theme.ID)
+	}
+	if err := validateID(theme.Pair); err != nil {
+		return fmt.Errorf("pair: %w", err)
+	}
+	return nil
 }
 
 func validateFormatVersion(version int) error {
@@ -521,6 +573,7 @@ func cloneTheme(theme Theme) Theme {
 		App:           maps.Clone(theme.App),
 		Terminal:      maps.Clone(theme.Terminal),
 		Syntax:        maps.Clone(theme.Syntax),
+		Pair:          theme.Pair,
 	}
 	if theme.Source != nil {
 		source := *theme.Source

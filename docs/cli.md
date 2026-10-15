@@ -994,6 +994,34 @@ and `LICH_TOKEN`, so the command returns at once and closing the native window
 ends nothing. There is no `--json` and no MCP tool: it opens a window for the
 person at the screen.
 
+### `lich theme [--json] list | switch <theme>`
+
+`list` prints the installed themes, `system` first, with each one's scheme and
+the one in use marked; `--json` adds each theme's `pair`, its variant for the
+other scheme.
+
+```
+theme	scheme	name
+system	-	System, the bundled theme the OS asks for
+light	light	Light
+dark	dark	Dark
+everforest-dark	dark	Everforest Dark	(in use)
+everforest-light	light	Everforest Light
+```
+
+`switch` makes a theme, by its id, or `system`, the one in use, and the native
+window repaints at once. It is for the script that changes a desktop's theme:
+the one that recolors the compositor, the terminal and the editor can bring lich
+along with one more line. An id no installed theme has is refused, naming it.
+
+```
+Switched to "everforest-light".
+```
+
+A desktop that only goes from light to dark and back does not need it: a theme
+with a `pair` follows the OS to it while Follow system is on
+(`docs/themes.md`).
+
 ### `lich quit`
 
 Ends the running lich: its window closes, every session's process ends with it,

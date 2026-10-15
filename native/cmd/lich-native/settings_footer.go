@@ -46,4 +46,5 @@ var (
 	flagSettingsScope    = flag.String("settings-scope", "", "open Settings in this open project's scope (its id), for -shot with -settings")
 	flagSettingsProvider = flag.String("settings-provider", "", "open this provider's screen in Settings › Providers at start, for -shot with -settings providers")
 	flagSettingsAdd      = flag.Bool("settings-add-provider", false, "open the Add provider list in Settings › Providers at start, for -shot with -settings providers")
+	flagSettingsThemes   = flag.Bool("settings-themes", false, "open the theme list in Settings › Appearance at start, for -shot with -settings appearance")
 )

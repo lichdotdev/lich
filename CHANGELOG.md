@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A theme can follow your desktop from dark to light, in the native window.**
+  A theme's new optional `pair` names its variant for the other scheme, and
+  with Follow system on (Settings › Appearance, beside the theme list) the
+  native window (`lich native`, experimental) draws that variant while the OS
+  asks for its scheme, then goes back. The bundled Light and Dark pair each
+  other. See `docs/themes.md`.
+- **`lich theme list` and `lich theme switch <theme>`**, for the script that
+  changes your desktop's theme to bring lich along: the native window repaints
+  at once. See `docs/cli.md`.
+
 - **Themes can color the code, in the native window.** A theme's new optional
   `syntax` section styles the review, diff and file views of `lich native`
   (experimental) by CodeMirror highlighting tag, a color or a color with bold,

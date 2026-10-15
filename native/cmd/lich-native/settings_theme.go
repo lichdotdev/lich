@@ -39,6 +39,8 @@ const (
 	brokenHeadingOne   = "%d theme can't load"
 	brokenHeadingOther = "%d themes can't load"
 	brokenRemove       = "Remove"
+	themeFollowSystem  = "Follow system"
+	themePairCaption   = "%s pair"
 )
 
 // The picker's geometry, ThemePicker.tsx's classes.
@@ -88,6 +90,7 @@ type themePicker struct {
 	strip        widget.List
 	importCard   themeCard
 	systemCard   themeCard
+	follow       ui.SwitchState
 	cards        map[string]*themeCard
 	brokenRemove map[string]*brokenRowState
 	dialogs      themeDialogs
@@ -114,16 +117,49 @@ func (p *themePicker) layoutRow(gtx C, th *ui.Theme, r settingRow, first bool) D
 		p.open = !p.open
 	}
 	v := p.look.view()
-	row := func(gtx C) D {
+	if !p.open {
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return p.triggerButton(gtx, th, v) })
 	}
-	if !p.open {
-		return row(gtx)
+	row := func(gtx C) D {
+		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(th.Text(ui.TextXS, themeFollowSystem).Muted().Layout),
+				ui.Gap(2),
+				layout.Rigid(func(gtx C) D { return p.followSwitch(gtx, th, v) }),
+				ui.Gap(3),
+				layout.Rigid(func(gtx C) D { return p.triggerButton(gtx, th, v) }),
+			)
+		})
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(row),
 		layout.Rigid(func(gtx C) D { return p.stripLayout(gtx, th, v) }),
 	)
+}
+
+// followSwitch turns following the OS to the selected theme's pair on and
+// off. A selection with no pair, System included, has nothing to follow to.
+func (p *themePicker) followSwitch(gtx C, th *ui.Theme, v appearanceView) D {
+	if p.follow.Update(gtx) {
+		p.look.setFollowSystem(p.follow.Value)
+	}
+	p.follow.Value = v.followSystem
+	sw := th.Switch(&p.follow)
+	sw.Disabled = selectedPair(v) == ""
+	return sw.Layout(gtx)
+}
+
+// selectedPair is the id of the selected theme's pair, "" for none.
+func selectedPair(v appearanceView) string {
+	e, ok := themeByID(v.themes, v.selected)
+	if !ok {
+		return ""
+	}
+	pair, ok := pairOf(e, v.themes)
+	if !ok {
+		return ""
+	}
+	return pair.def.ID
 }
 
 // triggerButton is the outline h-10 button: the selection's miniature, its
@@ -241,8 +277,13 @@ func (p *themePicker) cardWidgets(th *ui.Theme, v appearanceView) []layout.Widge
 				id: themeSystem, name: themeSystemName, caption: themeFollowsOS, selected: v.selected == themeSystem, preview: preview})
 		},
 	}
+	pair := selectedPair(v)
 	for _, e := range v.themes {
-		spec := themeCardSpec{id: e.def.ID, name: e.def.Name, caption: themeCaption(e.def, v.selected),
+		caption := themeCaption(e.def, v.selected)
+		if e.def.ID == pair {
+			caption = fmt.Sprintf(themePairCaption, e.def.Scheme)
+		}
+		spec := themeCardSpec{id: e.def.ID, name: e.def.Name, caption: caption,
 			selected: v.selected == e.def.ID, custom: e.def.Origin == themeOriginCustom, fromRepo: e.def.Source != nil,
 			updating: busy.updating, preview: func(gtx C, th *ui.Theme, size image.Point) D {
 				return themeMiniature(gtx, th, e.palette, size, true)

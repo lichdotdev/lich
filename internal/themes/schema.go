@@ -67,6 +67,12 @@ func Schema() ([]byte, error) {
 			"app":      colorObject(appTokens, "#/$defs/appColor", sortedKeys(appTokens)),
 			"terminal": colorObject(terminalTokens, "#/$defs/terminalColor", []string{"background", "foreground"}),
 			"syntax":   syntaxObject(),
+			"pair": map[string]any{
+				"description": "The id of this theme's variant for the other scheme, drawn while the OS asks for that scheme and following it is on. lich lists a theme whose pair has the same scheme as broken.",
+				"type":        "string",
+				"pattern":     idPattern.String(),
+				"maxLength":   themeIDMaxLength,
+			},
 		},
 		"$defs": map[string]any{
 			"appColor":      colorValue(appColorPattern),

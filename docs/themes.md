@@ -215,6 +215,24 @@ drawn in `app.foreground`. The modifiers are `definition`, `constant`,
 A lich that predates `syntax` ignores the key, so a pack can add it without a
 `minLichVersion`.
 
+## Pairs
+
+`pair` is optional and names the theme's variant for the other scheme, by id:
+`"pair": "everforest-light"` in Everforest Dark, `"pair": "everforest-dark"` in
+Everforest Light. In the native window, with Follow system turned on (Settings ›
+Appearance › Theme, beside the theme list), the window draws the pair while the
+OS asks for the pair's scheme and goes back when it stops; the theme chosen
+stays the one in use. The bundled Light and Dark pair each other.
+
+A pair can be any installed theme, bundled or custom, and need not point back:
+Rosé Pine and Rosé Pine Moon can both pair with Rosé Pine Dawn, and Dawn with
+one of them. A pair of the same scheme is an error, and lich lists the theme
+among the ones that can't load. A pair no installed theme answers to is not: a
+pack removed in part leaves its themes loading, with nothing to follow to.
+
+The web window ignores `pair`, and a lich that predates it ignores the key, so a
+pack can add it without a `minLichVersion`.
+
 ## Validation Rules
 
 - `formatVersion`, when present, is a positive integer no greater than the

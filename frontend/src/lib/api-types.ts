@@ -605,6 +605,9 @@ export interface ThemeDefinition {
   /** Syntax highlighting by highlighting tag; the native window reads it, this
    * window ignores it. */
   syntax?: Record<string, SyntaxStyle>
+  /** The id of this theme's variant for the other scheme; the native window
+   * follows the OS to it, this window ignores it. */
+  pair?: string
 }
 
 /** internal/themes.SyntaxStyle — one tag's highlighting. A theme file may

@@ -242,6 +242,12 @@
         "custom"
       ]
     },
+    "pair": {
+      "description": "The id of this theme's variant for the other scheme, drawn while the OS asks for that scheme and following it is on. lich lists a theme whose pair has the same scheme as broken.",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "type": "string"
+    },
     "scheme": {
       "enum": [
         "light",
