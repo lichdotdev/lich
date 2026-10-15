@@ -16,6 +16,7 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
@@ -87,15 +88,15 @@ type codeTab struct {
 	batch   commentBatch
 }
 
-func newCodeTab(client *lichclient.Client, invalidate func(), family string, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
-	view, err := godemirror.New(family, previewFontSize)
+func newCodeTab(client *lichclient.Client, invalidate func(), family string, size unit.Sp, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
+	view, err := godemirror.New(family, size)
 	if err != nil {
 		return nil, err
 	}
 	c := &codeTab{client: client, comments: comments, notify: notify, toggled: map[string]bool{}}
 	c.mode.Value = browseByName
 	c.tree.invalidate, c.search.invalidate = invalidate, invalidate
-	c.preview = newPreview(client, view, invalidate)
+	c.preview = newPreview(client, view, family, size, invalidate)
 	c.rows.list.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
 	return c, nil
 }

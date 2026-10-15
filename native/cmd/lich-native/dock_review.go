@@ -403,3 +403,21 @@ func (p *reviewPanel) layoutSticky(gtx C, spans map[string]cardSpan) {
 	gtx.Constraints.Max.X -= 2 * pad
 	p.cards[path].header(gtx, p)
 }
+
+// setFont redraws the cards in family at size. Each card builds its editor
+// again on its next frame, with what it had filled in forgotten.
+func (p *reviewPanel) setFont(family string, size unit.Sp) error {
+	if family == p.family && size == p.size {
+		return nil
+	}
+	cells, err := glyphs.New(family)
+	if err != nil {
+		return err
+	}
+	p.cells, p.family, p.size = cells, family, size
+	for _, c := range p.cards {
+		c.view, c.viewFail, c.gen, c.filled = nil, false, c.gen+1, map[int]int{}
+	}
+	p.invalidate()
+	return nil
+}

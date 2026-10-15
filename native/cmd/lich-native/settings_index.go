@@ -89,6 +89,7 @@ var settingsSections = []settingsSection{
 	{id: sectionAppearance, label: "Appearance", icon: icons.Lucide("palette"), rows: []settingEntry{
 		{title: themeTitle, also: themeAlso, key: themeSettingKey},
 		{title: zoomTitle, key: zoomKey},
+		{title: uiFontTitle, also: uiFontAlso, key: uiFontKey},
 		{title: textSizeTitle, key: terminalFontSizeKey},
 		{title: fontTitle, also: fontAlso, key: terminalFontKey},
 		{title: footerTitle, also: footerAlso, key: footerLayoutKey},
@@ -107,6 +108,8 @@ var settingsSections = []settingsSection{
 		{title: vcsAccountTitle, also: vcsAccountAlso, key: vcsAccountKey, scope: scopeProjectOnly},
 	}},
 	{id: sectionEditor, label: "Editor", icon: icons.Lucide("code"), rows: []settingEntry{
+		{title: editorFontTitle, also: editorFontAlso, key: editorFontKey},
+		{title: editorSizeTitle, also: editorSizeAlso, key: editorFontSizeKey},
 		{title: hideWhitespaceTitle, also: hideWhitespaceAlso, key: hideWhitespaceKey},
 		{title: diffLayoutTitle, also: diffLayoutAlso, key: diffLayoutKey},
 	}},

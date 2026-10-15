@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   native window (`lich native`, experimental) draws that variant while the OS
   asks for its scheme, then goes back. The bundled Light and Dark pair each
   other. See `docs/themes.md`.
+- **Choose the interface font and the code's font and size, in the native
+  window.** In `lich native` (experimental), Settings › Appearance has an
+  interface font, and Settings › Editor an editor font and text size for the
+  code in the Code tab, the Review tab and pull requests, which drew at a fixed
+  12 or 13px before. Every font picker starts with System, now the default: the
+  system's sans for the interface and its monospace for the terminal and the
+  code, which draws at 14px. The file names, paths and counts the interface
+  sets in monospace follow the editor font. Onest, the interface's face until
+  now, is one of the choices.
 - **`lich theme list` and `lich theme switch <theme>`**, for the script that
   changes your desktop's theme to bring lich along: the native window repaints
   at once. See `docs/cli.md`.

@@ -16,7 +16,6 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/gioterm"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -28,6 +27,7 @@ const (
 	fontSample = "the quick brown fox 0O1lI"
 	fontSearch = "Search fonts"
 	fontEmpty  = "No font matches."
+	fontSystem = "System"
 )
 
 var (
@@ -37,9 +37,16 @@ var (
 	icCheck          = icons.Lucide("check")
 )
 
-// fontPicker is FontSetting's combobox: the installed monospace families,
-// a search over them, and a sample of the chosen one drawn in it.
+// fontPicker is FontSetting's combobox: System, then the families list
+// finds, a search over them, and a sample of the chosen one drawn in it. A
+// chosen family is stored by name, System as "".
 type fontPicker struct {
+	// families finds the ones offered; faces loads one, system being the
+	// fontconfig alias System draws in.
+	find   func() ([]string, error)
+	faces  func(family string) ([]font.FontFace, error)
+	system string
+
 	panel  ui.DropdownPanelState
 	search widget.Editor
 	list   widget.List
@@ -92,18 +99,38 @@ func parseFamilyLines(out string) []string {
 	return names
 }
 
-// fontOptions are the choices offered: the current family first even when
-// fontconfig does not list it, then the rest matching query.
+// uiFamilies lists the bundled Onest and every installed family, for the
+// interface's font.
+func uiFamilies() ([]string, error) {
+	out, err := exec.Command("fc-list", ":", "family").Output()
+	if err != nil {
+		return nil, fmt.Errorf("fc-list: %w", err)
+	}
+	names := parseFamilyLines(string(out))
+	slices.Sort(names)
+	return append([]string{onestFamily}, slices.Compact(names)...), nil
+}
+
+// fontOptions are the choices offered: System, the current family even when
+// fontconfig does not list it, then the rest, those matching query.
 func fontOptions(current string, families []string, query string) []string {
 	needle := strings.ToLower(strings.TrimSpace(query))
 	var out []string
-	for _, f := range append([]string{current}, families...) {
-		if slices.Contains(out, f) || !strings.Contains(strings.ToLower(f), needle) {
+	for _, f := range append([]string{"", current}, families...) {
+		if slices.Contains(out, f) || !strings.Contains(strings.ToLower(fontLabel(f)), needle) {
 			continue
 		}
 		out = append(out, f)
 	}
 	return out
+}
+
+// fontLabel is how a stored family reads: "" is System.
+func fontLabel(family string) string {
+	if family == "" {
+		return fontSystem
+	}
+	return family
 }
 
 // load asks fontconfig for the families once, the first time the picker is
@@ -114,7 +141,7 @@ func (f *fontPicker) load(invalidate func()) []string {
 	if !f.asked {
 		f.asked = true
 		go func() {
-			families, err := monoFamilies()
+			families, err := f.find()
 			if err != nil {
 				log.Printf("settings: list fonts: %v", err)
 			}
@@ -151,7 +178,7 @@ func (f *fontPicker) shaperFor(family string) (*familyShaper, error) {
 	if fs, ok := f.shapers[family]; ok {
 		return fs, nil
 	}
-	faces, err := gioterm.Faces(family)
+	faces, err := f.faces(systemOr(family, f.system))
 	if err != nil || len(faces) == 0 {
 		return nil, fmt.Errorf("load %s: %v", family, err)
 	}
@@ -164,15 +191,14 @@ func (f *fontPicker) shaperFor(family string) (*familyShaper, error) {
 }
 
 // fontControl is the combobox: the outline trigger naming the family, and
-// the panel with the search and the list under it.
-func (s *settingsScreen) fontControl(gtx C, th *ui.Theme) D {
-	f := &s.look.font
+// the panel with the search and the list under it; choose takes the family
+// picked.
+func (s *settingsScreen) fontControl(gtx C, th *ui.Theme, f *fontPicker, current string, choose func(string)) D {
 	families := f.load(s.invalidate)
-	current := s.look.prefs.font
 	pop := th.DropdownPanel(s.root, &f.panel, fontTriggerWidth, func(gtx C, th *ui.Theme) D {
-		return s.fontPanel(gtx, th, fontOptions(current, families, f.search.Text()), current)
+		return s.fontPanel(gtx, th, f, fontOptions(current, families, f.search.Text()), current, choose)
 	})
-	return pop.Layout(gtx, func(gtx C) D { return fontTrigger(gtx, th, current) })
+	return pop.Layout(gtx, func(gtx C) D { return fontTrigger(gtx, th, fontLabel(current)) })
 }
 
 // fontTrigger is the Button variant="outline" w-64 justify-between
@@ -195,8 +221,7 @@ func fontTrigger(gtx C, th *ui.Theme, family string) D {
 
 // fontPanel is ComboboxContent: the search field over the matching
 // families, the chosen one checked.
-func (s *settingsScreen) fontPanel(gtx C, th *ui.Theme, options []string, current string) D {
-	f := &s.look.font
+func (s *settingsScreen) fontPanel(gtx C, th *ui.Theme, f *fontPicker, options []string, current string, choose func(string)) D {
 	in := th.Input(&f.search, fontSearch)
 	in.Leading, in.Borderless = icSearch, true
 	list := func(gtx C) D {
@@ -206,7 +231,7 @@ func (s *settingsScreen) fontPanel(gtx C, th *ui.Theme, options []string, curren
 		gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(fontListHeight))
 		f.list.Axis = layout.Vertical
 		return th.ScrollArea(&f.list).Layout(gtx, len(options), func(gtx C, i int) D {
-			return s.fontRow(gtx, th, options[i], options[i] == current)
+			return fontRow(gtx, th, f, options[i], options[i] == current, choose)
 		})
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(in.Layout), ui.VGap(1), layout.Rigid(list))
@@ -214,16 +239,13 @@ func (s *settingsScreen) fontPanel(gtx C, th *ui.Theme, options []string, curren
 
 // fontRow is one ComboboxItem: the family, truncated, and the check on the
 // chosen one; picking it applies it and closes the panel.
-func (s *settingsScreen) fontRow(gtx C, th *ui.Theme, family string, chosen bool) D {
-	f := &s.look.font
+func fontRow(gtx C, th *ui.Theme, f *fontPicker, family string, chosen bool, choose func(string)) D {
 	if f.rows == nil {
 		f.rows = map[string]*widget.Clickable{}
 	}
 	click := clickableOf(f.rows, family)
 	if click.Clicked(gtx) {
-		p := s.look.prefs
-		p.font = family
-		s.commitAppearance(p, terminalFontKey, family)
+		choose(family)
 		f.panel.Close()
 		f.search.SetText("")
 	}
@@ -238,7 +260,7 @@ func (s *settingsScreen) fontRow(gtx C, th *ui.Theme, family string, chosen bool
 		on := th.On(bg)
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Flexed(1, on.Text(ui.TextSM, family).Layout),
+				layout.Flexed(1, on.Text(ui.TextSM, fontLabel(family)).Layout),
 				layout.Rigid(func(gtx C) D {
 					if !chosen {
 						return D{Size: image.Pt(gtx.Dp(ui.Space(4)), 0)}

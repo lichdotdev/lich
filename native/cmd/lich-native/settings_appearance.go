@@ -17,15 +17,25 @@ import (
 // ponytail: English until the native window has i18n (settings.appearanceSettings,
 // settings.footerSettings, settings.closeSetting, common.stepper).
 const (
-	zoomTitle      = "Zoom"
-	zoomOutLabel   = "Zoom out"
-	zoomInLabel    = "Zoom in"
-	zoomReset      = "Reset the zoom"
-	textSizeTitle  = "Terminal text size"
-	textSmaller    = "Smaller terminal text"
-	textLarger     = "Larger terminal text"
-	textSizeReset  = "Reset the terminal text size"
-	stepperDefault = "Default"
+	zoomTitle     = "Zoom"
+	zoomOutLabel  = "Zoom out"
+	zoomInLabel   = "Zoom in"
+	zoomReset     = "Reset the zoom"
+	textSizeTitle = "Terminal text size"
+	textSmaller   = "Smaller terminal text"
+	textLarger    = "Larger terminal text"
+	textSizeReset = "Reset the terminal text size"
+
+	editorSizeTitle = "Editor text size"
+	editorSizeAlso  = "code review font size"
+	editorSmaller   = "Smaller code text"
+	editorLarger    = "Larger code text"
+	editorSizeReset = "Reset the editor text size"
+	editorFontTitle = "Editor font"
+	uiFontTitle     = "Interface font"
+	uiFontAlso      = "ui sans text"
+	editorFontAlso  = "code review typeface monospace"
+	stepperDefault  = "Default"
 
 	ceilingTitle       = "Spend ceiling"
 	ceilingAlso        = "cost budget usd"
@@ -56,14 +66,17 @@ var (
 // appearanceControls are the Appearance rows past the theme and the footer,
 // over the values the window applies; apply hands it each change.
 type appearanceControls struct {
-	prefs   appearancePrefs
-	apply   func(appearancePrefs)
-	zoom    stepperState
-	size    stepperState
-	font    fontPicker
-	budget  widget.Editor
-	typed   bool // the ceiling field holds the user's text, not the stored value
-	closeTo widget.Enum
+	prefs      appearancePrefs
+	apply      func(appearancePrefs)
+	zoom       stepperState
+	size       stepperState
+	font       fontPicker
+	editorSize stepperState
+	editorFont fontPicker
+	uiFont     fontPicker
+	budget     widget.Editor
+	typed      bool // the ceiling field holds the user's text, not the stored value
+	closeTo    widget.Enum
 }
 
 // commit applies p at once and stores the setting that changed.
@@ -90,7 +103,33 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 		control = s.textSizeControl
 	case terminalFontKey:
 		r.sample = s.look.font.sample(th, s.look.prefs.font)
-		control = s.fontControl
+		control = func(gtx C, th *ui.Theme) D {
+			return s.fontControl(gtx, th, &s.look.font, s.look.prefs.font, func(family string) {
+				p := s.look.prefs
+				p.font = family
+				s.commitAppearance(p, terminalFontKey, family)
+			})
+		}
+	case uiFontKey:
+		r.sample = s.look.uiFont.sample(th, s.look.prefs.uiFont)
+		control = func(gtx C, th *ui.Theme) D {
+			return s.fontControl(gtx, th, &s.look.uiFont, s.look.prefs.uiFont, func(family string) {
+				p := s.look.prefs
+				p.uiFont = family
+				s.commitAppearance(p, uiFontKey, family)
+			})
+		}
+	case editorFontSizeKey:
+		control = s.editorSizeControl
+	case editorFontKey:
+		r.sample = s.look.editorFont.sample(th, s.look.prefs.editorFont)
+		control = func(gtx C, th *ui.Theme) D {
+			return s.fontControl(gtx, th, &s.look.editorFont, s.look.prefs.editorFont, func(family string) {
+				p := s.look.prefs
+				p.editorFont = family
+				s.commitAppearance(p, editorFontKey, family)
+			})
+		}
 	case costBudgetKey:
 		r.description = ceilingDesc
 		control = s.ceilingControl
@@ -124,6 +163,19 @@ func (s *settingsScreen) textSizeControl(gtx C, th *ui.Theme) D {
 		onChange: func(v float64) {
 			p.fontSize = clampTerminalFontSize(int(math.Round(v)))
 			s.commitAppearance(p, terminalFontSizeKey, strconv.Itoa(p.fontSize))
+		},
+	})
+}
+
+func (s *settingsScreen) editorSizeControl(gtx C, th *ui.Theme) D {
+	p := s.look.prefs
+	return s.look.editorSize.layout(gtx, th, s.root, stepperSpec{
+		value: float64(p.editorFontSize), min: editorFontSizeMin, max: editorFontSizeMax, step: terminalFontStep,
+		fallback: defaultEditorSize, display: fmt.Sprintf("%dpx", p.editorFontSize), reset: editorSizeReset,
+		dec: icMinus, inc: icPlus, decLabel: editorSmaller, incLabel: editorLarger,
+		onChange: func(v float64) {
+			p.editorFontSize = clampEditorFontSize(int(math.Round(v)))
+			s.commitAppearance(p, editorFontSizeKey, strconv.Itoa(p.editorFontSize))
 		},
 	})
 }

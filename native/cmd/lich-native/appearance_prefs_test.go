@@ -47,28 +47,49 @@ func TestCloseAnswers(t *testing.T) {
 // the default.
 func TestLoadAppearancePrefs(t *testing.T) {
 	f, client := newSidebarBackend(t)
-	p, err := loadAppearancePrefs(context.Background(), client, "JetBrainsMono Nerd Font")
+	p, err := loadAppearancePrefs(context.Background(), client)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := appearancePrefs{zoom: 1, fontSize: defaultTerminalSize, font: "JetBrainsMono Nerd Font", closeAction: closeAsk}
+	want := appearancePrefs{zoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk}
 	if p != want {
 		t.Errorf("defaults %+v, want %+v", p, want)
 	}
 	f.settings[zoomKey+"@"], f.settings[terminalFontSizeKey+"@"] = "3", "x"
 	f.settings[costBudgetKey+"@"], f.settings[closeActionKey+"@"] = "25.5", "quit"
 	f.settings[terminalFontKey+"@"] = "Iosevka"
-	p, _ = loadAppearancePrefs(context.Background(), client, "JetBrainsMono Nerd Font")
-	want = appearancePrefs{zoom: zoomMax, fontSize: defaultTerminalSize, font: "Iosevka", budget: 25.5, closeAction: closeQuit}
+	p, _ = loadAppearancePrefs(context.Background(), client)
+	want = appearancePrefs{zoom: zoomMax, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit}
 	if p != want {
 		t.Errorf("stored %+v, want %+v", p, want)
 	}
 }
 
+// Every font is System until one is stored: the system's monospace for the
+// terminal and the code, at 14 for the code, and its sans for the interface.
+func TestFontsAreSystemUntilChosen(t *testing.T) {
+	f, client := newSidebarBackend(t)
+	p, err := loadAppearancePrefs(context.Background(), client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.terminalFamily() != "monospace" || p.codeFamily() != "monospace" || p.uiFont != "" || p.editorFontSize != 14 {
+		t.Errorf("unchosen: terminal %q, code %q at %d, interface %q", p.terminalFamily(), p.codeFamily(), p.editorFontSize, p.uiFont)
+	}
+	f.settings[editorFontKey+"@"], f.settings[editorFontSizeKey+"@"], f.settings[uiFontKey+"@"] = "Fira Code", "99", "Onest"
+	p, _ = loadAppearancePrefs(context.Background(), client)
+	if p.codeFamily() != "Fira Code" || p.editorFontSize != editorFontSizeMax || p.uiFont != "Onest" || p.terminalFamily() != "monospace" {
+		t.Errorf("chosen: code %q at %d, interface %q, terminal %q", p.codeFamily(), p.editorFontSize, p.uiFont, p.terminalFamily())
+	}
+}
+
 func TestFontOptions(t *testing.T) {
 	families := []string{"Fira Code", "Iosevka", "JetBrains Mono"}
-	if got := fontOptions("Custom Mono", families, ""); !slices.Equal(got, []string{"Custom Mono", "Fira Code", "Iosevka", "JetBrains Mono"}) {
-		t.Errorf("unfiltered %v, want the current family first", got)
+	if got := fontOptions("Custom Mono", families, ""); !slices.Equal(got, []string{"", "Custom Mono", "Fira Code", "Iosevka", "JetBrains Mono"}) {
+		t.Errorf("unfiltered %v, want System, then the current family", got)
+	}
+	if got := fontOptions("", families, "sys"); !slices.Equal(got, []string{""}) {
+		t.Errorf("System is found by its label: %v", got)
 	}
 	if got := fontOptions("Iosevka", families, " MONO "); !slices.Equal(got, []string{"JetBrains Mono"}) {
 		t.Errorf("filtered %v", got)

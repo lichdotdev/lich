@@ -43,7 +43,7 @@ var (
 	flagRuntime  = flag.String("runtime", "", "the backend's runtime file (runtime.json / runtime-dev.json); without it, LICH_PORT and LICH_TOKEN as `lich native` sets them")
 	flagProject  = flag.String("project", "", "checkout to open when the backend has no project yet")
 	flagRenderer = flag.String("renderer", gioterm.RenderRows, "terminal renderer: rows, atlas or paths")
-	flagFont     = flag.String("font", "JetBrainsMono Nerd Font", "terminal and diff font family (fontconfig name)")
+	flagFont     = flag.String("font", fonts.SystemMono, "terminal and diff font family (fontconfig name) until Settings applies its own")
 	flagSize     = flag.Float64("size", 13, "terminal font size in sp")
 	flagShot     = flag.String("shot", "", "write a PNG of the frame drawn -shot-after into the run")
 	flagAfter    = flag.Duration("shot-after", 3*time.Second, "when to take -shot")
@@ -73,8 +73,10 @@ func main() {
 }
 
 type window struct {
-	ctx     context.Context
-	client  *lichclient.Client
+	ctx    context.Context
+	client *lichclient.Client
+	// uiFonts is what the interface's shaper was last built from.
+	uiFonts *interfaceFonts
 	model   *model
 	terms   *terminals
 	review  *reviewPanel
@@ -208,7 +210,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		return err
 	}
 	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
-	code, err := newCodeTab(client, w.Invalidate, *flagFont, comments, notify)
+	code, err := newCodeTab(client, w.Invalidate, *flagFont, unit.Sp(*flagSize), comments, notify)
 	if err != nil {
 		return err
 	}

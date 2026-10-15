@@ -26,14 +26,13 @@ const (
 	previewReadOnly = "read-only"
 )
 
-// previewFontSize is codemirror.ts's 12px.
-const previewFontSize = unit.Sp(12)
-
 var icPreviewBack = icons.Lucide("chevron-left")
 
 type preview struct {
 	client *lichclient.Client
 	view   *godemirror.View
+	family string
+	size   unit.Sp
 	file   remote[string]
 
 	rel  string // "" while closed
@@ -60,8 +59,8 @@ type previewEnv struct {
 	comments *commentStore
 }
 
-func newPreview(client *lichclient.Client, view *godemirror.View, invalidate func()) *preview {
-	p := &preview{client: client, view: view, blockAt: -1}
+func newPreview(client *lichclient.Client, view *godemirror.View, family string, size unit.Sp, invalidate func()) *preview {
+	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1}
 	p.file.invalidate = invalidate
 	return p
 }
@@ -231,4 +230,20 @@ var codeStyleTags = []godemirror.StyleTags{godemirror.RicherJavaTags()}
 func previewTheme(th *ui.Theme, code godemirror.Theme) godemirror.Theme {
 	code.Background, code.GutterBackground = th.Surface, th.Surface
 	return code
+}
+
+// setFont swaps the view for one in family at size, keeping what it shows.
+func (p *preview) setFont(family string, size unit.Sp) error {
+	if family == p.family && size == p.size {
+		return nil
+	}
+	view, err := godemirror.New(family, size)
+	if err != nil {
+		return err
+	}
+	p.view, p.family, p.size = view, family, size
+	if p.content.Text != "" {
+		p.view.SetContent(p.content)
+	}
+	return nil
 }

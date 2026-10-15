@@ -16,6 +16,8 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/omartelo/lich/native/fonts"
+	"github.com/omartelo/lich/native/gioterm"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
@@ -99,6 +101,12 @@ func newSettingsScreen(ctx context.Context, c *lichclient.Client, root *ui.Root,
 	s := &settingsScreen{ctx: ctx, client: c, root: root, invalidate: invalidate, section: defaultSection,
 		resets: map[string]*widget.Clickable{}, scrollTo: -1}
 	s.providers.book = newProviderBook(c, invalidate)
+	s.look.font = fontPicker{find: monoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
+	s.look.editorFont = fontPicker{find: monoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
+	s.look.uiFont = fontPicker{find: uiFamilies, faces: func(family string) ([]font.FontFace, error) {
+		faces, _, err := uiFaces(family)
+		return faces, err
+	}, system: fonts.SystemSans}
 	s.pane.Axis = layout.Vertical
 	s.nav.init()
 	return s
