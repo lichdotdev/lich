@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"sync"
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -36,7 +38,14 @@ var (
 	pullsPadX       = ui.Space(6)
 	pullsTitleSize  = unit.Sp(18)
 	pullsToolbarPad = ui.Space(2)
+	// pullsHeadingTop centers the title's first line on the h-8 buttons
+	// beside it.
+	pullsHeadingTop = ui.Space(0.5)
 )
+
+// pullsTitleMinWidth is the least the title keeps beside the actions; less
+// and the actions move to their own line above it.
+var pullsTitleMinWidth = unit.Dp(320)
 
 // pullsAction is what the screen asks of the window this frame.
 type pullsAction struct {
@@ -174,30 +183,83 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 }
 
 // withToolbar lays the h-12 strip over w: the list's show button when it is
-// hidden, and the pull request's actions at the right.
+// hidden, then the pull request's title and stats with its actions at the
+// right on the title's line. An island too narrow for both on one line puts
+// the actions on their own line above the title.
 func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *lichclient.PRDetail, act *pullsAction, w layout.Widget) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.UniformInset(pullsToolbarPad).Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						if !p.listHidden {
-							return D{}
-						}
-						return iconAction(gtx, th, p.root, &v.showList, icPullShow, pullsShowList, false)
-					}),
-					layout.Flexed(1, func(gtx C) D {
-						if d == nil {
-							return layout.Spacer{Width: gtx.Metric.PxToDp(gtx.Constraints.Max.X), Height: ui.Space(8)}.Layout(gtx)
-						}
-						return v.actions(gtx, th, p, *d, act)
-					}),
-				)
+				if d == nil {
+					return v.toolbarRow(gtx, th, p, func(gtx C) D {
+						return layout.Spacer{Width: gtx.Metric.PxToDp(gtx.Constraints.Max.X), Height: ui.Space(8)}.Layout(gtx)
+					}, nil)
+				}
+				actions, size := v.recordActions(gtx, th, p, *d, act)
+				if size.Y > gtx.Dp(ui.Space(8)) || gtx.Constraints.Max.X-size.X < gtx.Dp(pullsTitleMinWidth) {
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D {
+							return v.toolbarRow(gtx, th, p, func(gtx C) D {
+								gtx.Constraints.Min.X = gtx.Constraints.Max.X
+								return v.actions(gtx, th, p, *d, act)
+							}, nil)
+						}),
+						layout.Rigid(func(gtx C) D { return v.heading(gtx, th, p, *d, false) }),
+					)
+				}
+				return v.toolbarRow(gtx, th, p, func(gtx C) D { return v.heading(gtx, th, p, *d, p.listHidden) }, func(gtx C) D {
+					actions.Add(gtx.Ops)
+					return D{Size: size}
+				})
 			})
 		}),
 		layout.Flexed(1, w),
 	)
+}
+
+// toolbarRow is the list's show button while the list is hidden, fill
+// taking the width it leaves, and right at the end.
+func (v *pullView) toolbarRow(gtx C, th *ui.Theme, p *pullsScreen, fill, right layout.Widget) D {
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if !p.listHidden {
+				return D{}
+			}
+			return iconAction(gtx, th, p.root, &v.showList, icPullShow, pullsShowList, false)
+		}),
+		layout.Flexed(1, fill),
+		layout.Rigid(func(gtx C) D {
+			if right == nil {
+				return D{}
+			}
+			return right(gtx)
+		}),
+	)
+}
+
+// recordActions lays the actions at the width they want on one line, for
+// withToolbar to place or to drop for the stacked layout.
+func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) (op.CallOp, image.Point) {
+	macro := op.Record(gtx.Ops)
+	gtx.Constraints.Min = image.Point{}
+	size := v.actions(gtx, th, p, d, act).Size
+	return macro.Stop(), size
+}
+
+// heading is the title over its stats, its left edge on the body's px-6.
+func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, besideShowList bool) D {
+	left := pullsPadX - pullsToolbarPad
+	if besideShowList {
+		left = ui.Space(2)
+	}
+	return layout.Inset{Left: left, Right: ui.Space(4), Top: pullsHeadingTop}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return pullTitle(gtx, th, d) }),
+			ui.VGap(3),
+			layout.Rigid(func(gtx C) D { return v.stats(gtx, th, p, d) }),
+		)
+	})
 }
 
 // empty is PullsEmptyState: no pull request for the checkout's branch, and
@@ -228,9 +290,6 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDeta
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return pullTitle(gtx, th, d) }),
-					ui.VGap(3),
-					layout.Rigid(func(gtx C) D { return v.stats(gtx, th, p, d) }),
 					layout.Rigid(func(gtx C) D { return v.conflicts(gtx, th, p, d) }),
 					ui.VGap(4),
 					layout.Rigid(func(gtx C) D { return v.tabStrip(gtx, th, p, d) }),

@@ -87,7 +87,6 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRD
 			return b.Layout(gtx)
 		}),
 	)
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return ui.Wrap{GapX: ui.Space(2), GapY: ui.Space(2), Justify: ui.JustifyEnd}.Layout(gtx, items...)
 }
 
