@@ -238,26 +238,50 @@ func (f inputText) layout(gtx C, height int) D {
 	width := gtx.Constraints.Max.X
 	left, right, padY := gtx.Dp(f.padLeft), gtx.Dp(f.padRight), gtx.Dp(f.padY)
 	inner := image.Pt(max(width-left-right, 0), 0)
-	growMin, growMax := max(gtx.Dp(f.minHeight)-2*padY, 0), max(gtx.Constraints.Max.Y-2*padY, 0)
+	padTop, padBottom := padY, padY
+	if !f.single {
+		// The leading Gio leaves off the first and last lines rides on the
+		// padding, so the text box is lines × line-height as on the web.
+		leading := f.missingLeading(gtx)
+		padTop += leading / 2
+		padBottom += leading - leading/2
+	}
+	padding := padTop + padBottom
+	growMin, growMax := max(gtx.Dp(f.minHeight)-padding, 0), max(gtx.Constraints.Max.Y-padding, 0)
 	gtx.Constraints.Min = image.Pt(inner.X, 0)
 	gtx.Constraints.Max = image.Pt(inner.X, growMax)
 	if f.single {
-		gtx.Constraints.Max.Y = max(height-2*padY, 0)
+		gtx.Constraints.Max.Y = max(height-padding, 0)
 	} else {
 		gtx.Constraints.Min.Y = growMin
 	}
 	macro := op.Record(gtx.Ops)
 	d := f.layoutEditor(gtx)
 	call := macro.Stop()
-	h, y := height, padY
+	h, y := height, padTop
 	if f.single {
 		y = (height - d.Size.Y) / 2
 	} else {
-		h = d.Size.Y + 2*padY
+		h = d.Size.Y + padding
 	}
 	defer op.Offset(image.Pt(left, y)).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 	return D{Size: image.Pt(width, h)}
+}
+
+// missingLeading is the px Gio's text leaves off a block's first and last
+// lines together: it spaces lines at the line height but sizes a line alone
+// to its glyphs. 0 for a size the leading table does not hold.
+func (f inputText) missingLeading(gtx C) int {
+	leading, ok := tailwindLeading[f.size]
+	if !ok {
+		return 0
+	}
+	macro := op.Record(gtx.Ops)
+	gtx.Constraints = layout.Constraints{Max: image.Pt(math.MaxInt32, math.MaxInt32)}
+	line := widget.Label{MaxLines: 1, LineHeight: leading, LineHeightScale: 1}.Layout(gtx, f.theme.Shaper, f.font, f.size, "Mg", op.CallOp{})
+	macro.Stop()
+	return max(gtx.Sp(leading)-line.Size.Y, 0)
 }
 
 // layoutEditor is material.EditorStyle's recipe: the placeholder is measured

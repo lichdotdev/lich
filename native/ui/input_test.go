@@ -85,6 +85,15 @@ func TestTextareaSpacesLinesAtTextSMLeading(t *testing.T) {
 	}
 }
 
+// The web's text box is lines × 20px plus py-2: four lines are 96px tall.
+func TestTextareaIsAsTallAsItsLinesOfLeading(t *testing.T) {
+	th, ed := testTheme(), new(widget.Editor)
+	ed.SetText("one\ntwo\nthree\nfour")
+	if got := inputSize(th.Textarea(ed, "").Layout, 300, 1000).Y; got != 96 {
+		t.Errorf("four lines: height %d, want 96", got)
+	}
+}
+
 func TestInputGroupKeepsRowHeightAndFillsWidth(t *testing.T) {
 	th, ed := testTheme(), new(widget.Editor)
 	g := th.InputGroup(ed, "Filter")
