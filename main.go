@@ -152,6 +152,7 @@ func main() {
 	defer term.FlushHandsOn()
 	coord := newCoordinator(chromiumArgs)
 	window := newWindow(term.Transport(), configDir, chromiumArgs, term.LiveCount, coord.Quit)
+	coord.SetWindowOpen(window.Open)
 	registerServices(db, term, hub, configDir, logPath, env, launchEnv, window, coord)
 
 	term.SetRestart(coord.Do)

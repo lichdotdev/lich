@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 
@@ -47,23 +48,67 @@ func ReadRuntime(path string) (Runtime, error) {
 	return rt, nil
 }
 
+// RuntimePath is the runtime file a lich on this machine writes, the way
+// internal/singleton names it: LICH_DEV selects the dev instance's own.
+func RuntimePath(getenv func(string) string) (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve config directory: %w", err)
+	}
+	name := "runtime.json"
+	if getenv("LICH_DEV") != "" {
+		name = "runtime-dev.json"
+	}
+	return filepath.Join(dir, "lich", name), nil
+}
+
 // Client is a connection to one lich backend.
 type Client struct {
+	http *http.Client
+
+	mu    sync.Mutex
 	base  string // http://127.0.0.1:<port>
 	token string
-	http  *http.Client
 }
 
 // New returns a client for the backend rt describes.
 func New(rt Runtime) *Client {
-	return &Client{base: "http://127.0.0.1:" + strconv.Itoa(rt.Port), token: rt.Token, http: http.DefaultClient}
+	c := &Client{http: http.DefaultClient}
+	c.Retarget(rt)
+	return c
+}
+
+// Retarget points c at the backend rt describes, for every holder of c: a
+// restarted lich answers on a new token. Sockets already open stay on the old
+// backend.
+func (c *Client) Retarget(rt Runtime) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.base, c.token = "http://127.0.0.1:"+strconv.Itoa(rt.Port), rt.Token
+}
+
+// Answers reports whether the backend c points at is up and takes its token.
+func (c *Client) Answers(ctx context.Context) bool {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.url("http", "/ping"), nil)
+	if err != nil {
+		return false
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return resp.StatusCode == http.StatusNoContent
 }
 
 func (c *Client) url(scheme, path string) string {
-	u, _ := url.Parse(c.base)
+	c.mu.Lock()
+	base, token := c.base, c.token
+	c.mu.Unlock()
+	u, _ := url.Parse(base)
 	u.Scheme = scheme
 	u.Path = path
-	u.RawQuery = url.Values{"token": {c.token}}.Encode()
+	u.RawQuery = url.Values{"token": {token}}.Encode()
 	return u.String()
 }
 

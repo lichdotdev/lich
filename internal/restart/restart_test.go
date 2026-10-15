@@ -303,3 +303,49 @@ func envReader(env []string) func(string) string {
 		return ""
 	}
 }
+
+// A lich whose window is closed (`lich native` closed it to put its own on the
+// backend) restarts without one: a web window opening in the successor would
+// take the sockets the native window reconnects to.
+func TestRestartKeepsTheWindowAsItWas(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		open bool
+		want []string
+	}{
+		{"window open", true, []string{"--", "--ozone-platform=x11"}},
+		{"no window", false, []string{"--no-window", "--", "--ozone-platform=x11"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var spawnedArgs, installerEnv []string
+			c := New("lich.exe", nil, []string{"--", "--ozone-platform=x11"})
+			c.SetWindowOpen(func() bool { return tc.open })
+			c.spawn = func(_ string, _ []string, args []string) error {
+				spawnedArgs = args
+				return nil
+			}
+			if err := c.Do(); err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(spawnedArgs, tc.want) {
+				t.Fatalf("successor args = %v, want %v", spawnedArgs, tc.want)
+			}
+			c = New("lich.exe", nil, []string{"--", "--ozone-platform=x11"})
+			c.SetWindowOpen(func() bool { return tc.open })
+			c.spawn = func(_ string, env, _ []string) error {
+				installerEnv = env
+				return nil
+			}
+			if err := c.Install("setup.exe"); err != nil {
+				t.Fatal(err)
+			}
+			got, err := LaunchArgs(nil, envReader(installerEnv))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(got, tc.want) {
+				t.Fatalf("relaunched lich reads args %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

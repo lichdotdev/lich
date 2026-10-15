@@ -159,6 +159,18 @@ func TestFollowMarksTheWindowLostWhenTheStreamEnds(t *testing.T) {
 	}
 }
 
+func TestFollowHandsADroppedStreamToDropped(t *testing.T) {
+	m := newModel(nil, func() {})
+	dropped := false
+	m.dropped = func() { dropped = true }
+	events := make(chan lichclient.Event)
+	close(events)
+	m.follow(context.Background(), events)
+	if !dropped || m.connectionLost() {
+		t.Errorf("dropped called = %v, lost = %v; want the hook to decide, the model not lost yet", dropped, m.connectionLost())
+	}
+}
+
 func TestFollowStaysQuietWhenTheWindowCloses(t *testing.T) {
 	m := newModel(nil, func() {})
 	ctx, cancel := context.WithCancel(context.Background())

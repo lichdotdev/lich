@@ -114,6 +114,13 @@ func (w *Window) started(closeWindow func() error) {
 	w.mu.Unlock()
 }
 
+// Open reports whether a window is open or on its way up.
+func (w *Window) Open() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.open
+}
+
 // ErrNoWindow is Dismiss with no window up to close. It reaches a client only
 // as the RPC's error text, which is what `lich native` matches it by.
 var ErrNoWindow = errors.New("no lich window is open")

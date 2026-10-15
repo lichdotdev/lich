@@ -233,3 +233,20 @@ func (w *Window) hasStarted() bool {
 	defer w.mu.Unlock()
 	return w.closeWindow != nil
 }
+
+func TestWindowOpenFollowsTheWindow(t *testing.T) {
+	f, w := newFakeWindow()
+	if w.Open() {
+		t.Fatal("Open before any Show")
+	}
+	w.Show()
+	closed := f.opened(t)
+	if !w.Open() {
+		t.Fatal("not Open with a window up")
+	}
+	closed <- nil
+	f.ended(t)
+	if w.Open() {
+		t.Fatal("Open after the window ended")
+	}
+}

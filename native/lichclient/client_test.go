@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -132,5 +133,45 @@ func TestFileLinesSendsRefAndRange(t *testing.T) {
 	lines, err := c.FileLines(context.Background(), "/repo", "main.go", "", 3, 4)
 	if err != nil || len(lines) != 2 {
 		t.Fatalf("got %q, %v", lines, err)
+	}
+}
+
+func TestRetargetMovesEveryCallToTheNewBackend(t *testing.T) {
+	successor := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/ping" || r.URL.Query().Get("token") != "new" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(successor.Close)
+	u, _ := url.Parse(successor.URL)
+	port, _ := strconv.Atoi(u.Port())
+	c := New(Runtime{Port: port, Token: "stale"})
+	if c.Answers(context.Background()) {
+		t.Fatal("a backend that refuses the token answers")
+	}
+	c.Retarget(Runtime{Port: port, Token: "new"})
+	if !c.Answers(context.Background()) {
+		t.Fatal("the retargeted client does not reach the successor")
+	}
+	successor.Close()
+	if c.Answers(context.Background()) {
+		t.Fatal("a backend that is gone answers")
+	}
+}
+
+func TestRuntimePathFollowsLichDev(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	daily, err := RuntimePath(func(string) string { return "" })
+	if err != nil {
+		t.Fatal(err)
+	}
+	dev, err := RuntimePath(func(k string) string { return map[string]string{"LICH_DEV": "1"}[k] })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(daily, filepath.Join("lich", "runtime.json")) || !strings.HasSuffix(dev, filepath.Join("lich", "runtime-dev.json")) {
+		t.Fatalf("paths = %q, %q", daily, dev)
 	}
 }

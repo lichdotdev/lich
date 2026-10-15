@@ -98,6 +98,9 @@ type model struct {
 	pluginIncompatible func()
 	// appUpdateProgress hears a step of an update being applied.
 	appUpdateProgress func(lichclient.AppUpdateProgress)
+	// dropped hears /events end under an open window; nil marks the model
+	// lost there and then.
+	dropped func()
 	// closed is the closed projects, which the menu and the palette read.
 	closed *closedProjects
 }
@@ -237,10 +240,9 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 
 // follow applies /events until ctx ends. The backend replays nothing beyond
 // what hydrateTurnStates read, so a session's cwd is unknown until the next
-// cd. When the stream ends first, the backend dropped this
-// window: /events serves one client and a newer one replaces it, or lich quit.
-// follow marks the model lost rather than reconnecting, which would take the
-// socket back from the window that just took it.
+// cd. When the stream ends first, the backend dropped this window: /events
+// serves one client and a newer one replaces it, or lich quit or restarted.
+// dropped tells those apart.
 func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 	for ev := range events {
 		if id, exited := strings.CutPrefix(ev.Name, exitEventPrefix); exited {
@@ -366,6 +368,15 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 	if ctx.Err() != nil {
 		return
 	}
+	if m.dropped != nil {
+		m.dropped()
+		return
+	}
+	m.markLost()
+}
+
+// markLost gives the window up: the backend serves another one, or is gone.
+func (m *model) markLost() {
 	m.mu.Lock()
 	m.lost = true
 	m.mu.Unlock()

@@ -207,6 +207,14 @@ func (g *spawnGate) answer(ctx context.Context, choice string, remember bool) {
 	}
 }
 
+// forgetAll is forget for every session: a restarted backend runs none of
+// them.
+func (g *spawnGate) forgetAll() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.released, g.asking = nil, nil
+}
+
 // forget drops what the gate knows about a session that left the workspace,
 // so an id coming back goes through the gate again.
 func (g *spawnGate) forget(id string) {

@@ -145,7 +145,10 @@ func (ts *terminals) send(id string, b []byte) {
 	if len(b) == 0 {
 		return
 	}
-	if err := ts.stream.Send(context.Background(), id, b); err != nil {
+	ts.mu.Lock()
+	stream := ts.stream
+	ts.mu.Unlock()
+	if err := stream.Send(context.Background(), id, b); err != nil {
 		log.Printf("send to %s: %v", id, err)
 	}
 }
@@ -255,6 +258,19 @@ func (ts *terminals) setFont(family string, size unit.Sp) error {
 	ts.family, ts.size = family, size
 	ts.invalidate()
 	return nil
+}
+
+// reattach types into stream from now on and frees every terminal: the
+// sessions they showed belong to a backend that is gone, and each attaches
+// again, replay first, when it is next shown.
+func (ts *terminals) reattach(stream *lichclient.Stream) {
+	ts.mu.Lock()
+	views := ts.byID
+	ts.stream, ts.byID, ts.shown = stream, map[string]*termView{}, ""
+	ts.mu.Unlock()
+	for _, t := range views {
+		t.vt.Close()
+	}
 }
 
 // drop frees a closed session's terminal. Output still in flight for it finds

@@ -1095,7 +1095,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Restart and update end every running session, now with nobody watching** (`internal/restart.Coordinator`):
   /restart and an update stop this process and every PTY with it, as they always did. Before, the window
   closing explained that loss; a windowless lich restarted by `install.sh` from outside loses its sessions
-  with no window to show it, and the successor opens a window even when its predecessor had none.
+  with no window to show it. The successor opens a window only when its predecessor had one up
+  (`Coordinator.SetWindowOpen`), so a native window on that backend reconnects to it instead of losing it to
+  a web window.
 - **A window that dies after the first one is up only gets a dialog** (`chromium.EndingOf`): only the
   launch's first window failing within the 30-second startup grace exits lich. A crash later, or a reopened
   window that will not start, leaves the backend serving and shows "lich could not open its window"; the
@@ -1194,8 +1196,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **The native window and the web window take turns** (`lich native`, `docs/native-window.md`): `/events` and
   `/ws` hold one client, and a new one replaces the old with no close frame, so the two windows cannot share a
   backend. `lich native` closes the web window first, but everything else that opens one still does: the tray's
-  Show lich, `lich focus`, a second launch of lich, and the restart after an update (its successor is launched
-  without `--no-window`) all take the endpoints back and leave the native window telling you so. A window that
+  Show lich, `lich focus` and a second launch of lich all take the endpoints back and leave the native window
+  telling you so. A restart keeps it: the native window tells a backend that went away from one that kept
+  running, and moves onto the successor its runtime file names. It cannot tell a restart from a quit until the
+  15 seconds it waits run out, so a `lich quit` shows "Reconnecting to lich…" for that long. A window that
   connects late, either of them, shows a terminal's moved working directory only from the next `cd`, since
   nothing replays it; the native window reads each session's status and usage from `terminal.TurnStates` on
   connect, the web window does not. `system.CloseWindow` never quits lich, even
