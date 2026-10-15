@@ -247,9 +247,14 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		return err
 	}
 	started := time.Now()
+	stalls := newStallWatch()
+	go stalls.watch(ctx)
 	var ops op.Ops
 	for {
-		switch e := w.Event().(type) {
+		stalls.waiting()
+		event := w.Event()
+		stalls.handling()
+		switch e := event.(type) {
 		case app.DestroyEvent:
 			return e.Err
 		case app.ConfigEvent:
