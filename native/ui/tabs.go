@@ -197,7 +197,7 @@ func (t TabsStyle) tabsList(gtx C) D {
 }
 
 // tabsTriggerSizes are the triggers' sizes. flex-1 in a w-fit list makes
-// every trigger as wide as the widest; a vertical list is w-full over the
+// every trigger as wide as the widest while that fits the width given; a vertical list is w-full over the
 // same. The ghost list's triggers keep their own width: in the dock's
 // w-fit list the browser sizes the list to the sum of its triggers'
 // contents, so flex-1 has no free space to share.
@@ -220,11 +220,38 @@ func (t TabsStyle) tabsTriggerSizes(gtx C, geo tabsGeometry) []image.Point {
 	}
 	for i := range sizes {
 		sizes[i].Y = widest.Y
-		if t.Variant != TabsVariantGhost {
+	}
+	if t.Variant == TabsVariantGhost {
+		return sizes
+	}
+	inner := gtx.Constraints.Max.X - 2*gtx.Dp(geo.listPad) - (len(sizes)-1)*gtx.Dp(geo.listGap)
+	if t.Orientation == TabsVertical || len(sizes)*widest.X <= inner {
+		for i := range sizes {
 			sizes[i].X = widest.X
 		}
+		return sizes
 	}
+	tabsShareSpare(sizes, inner)
 	return sizes
+}
+
+// tabsShareSpare is flex-1 in a list too narrow for equal triggers: each keeps
+// its content's width and the space left over is split evenly. Content wider
+// than inner still overflows, as it does on the web.
+func tabsShareSpare(sizes []image.Point, inner int) {
+	spare := inner
+	for _, s := range sizes {
+		spare -= s.X
+	}
+	if spare <= 0 {
+		return
+	}
+	for i := range sizes {
+		sizes[i].X += spare / len(sizes)
+		if i < spare%len(sizes) {
+			sizes[i].X++
+		}
+	}
 }
 
 type tabsColors struct{ bg, fg, border color.NRGBA }

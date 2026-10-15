@@ -89,6 +89,20 @@ func TestTabsTriggersShareTheWidestWidth(t *testing.T) {
 	}
 }
 
+func TestTabsTriggersShrinkToTheirContentWhenTheWidestDoesNotFit(t *testing.T) {
+	th := testTheme()
+	names := tabsNames("a", "b", "c", "a much longer trigger")
+	natural := 0
+	for _, n := range names {
+		natural += layoutAt(func(gtx C) D { return th.Tabs(new(TabsState), n).Layout(gtx) }, 0, 2000).Size.X - 2*int(tabsListPad)
+	}
+	width := natural + 2*int(tabsListPad) + 20
+	d := layoutAt(func(gtx C) D { return th.Tabs(new(TabsState), names...).Layout(gtx) }, 0, width)
+	if d.Size.X != width {
+		t.Errorf("got width %d, want the %d available, shared past each trigger's content", d.Size.X, width)
+	}
+}
+
 func TestTabsVerticalStacksTriggers(t *testing.T) {
 	th := testTheme()
 	s := th.Tabs(new(TabsState), tabsNames("Account", "Password", "Billing")...)
