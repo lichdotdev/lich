@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -137,13 +138,27 @@ func copyTree(from, to string) error {
 	return nil
 }
 
+// copyLink recreates the link src at dst. Lstat proves src itself is there
+// first, so a Stat that then finds nothing is a missing target and never a bad
+// path, which Windows reports as not existing too.
 func copyLink(src, dst string) error {
+	info, err := os.Lstat(src)
+	if err != nil {
+		return err
+	}
 	target, err := os.Readlink(src)
 	if err != nil {
 		return err
 	}
-	if info, err := os.Stat(src); err == nil && info.IsDir() {
+	if linksDir(src, info) {
 		return LinkDir(target, dst)
+	}
+	_, err = os.Stat(src)
+	if errors.Is(err, fs.ErrNotExist) {
+		return linkMissingFile(target, dst)
+	}
+	if err != nil {
+		return err
 	}
 	_, err = linkFile(target, dst)
 	return err
