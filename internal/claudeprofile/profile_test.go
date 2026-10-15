@@ -23,6 +23,7 @@ func machine(t *testing.T) string {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("APPDATA", filepath.Join(home, "AppData"))
 	t.Setenv("CLAUDE_CONFIG_DIR", "")
+	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", "")
 	t.Setenv("LICH_DEV", "")
 	personal := filepath.Join(home, ".claude")
 	mustMkdir(t, personal)

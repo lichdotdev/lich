@@ -203,9 +203,11 @@ func TestClaudeInstalledVersionNoConfigDir(t *testing.T) {
 }
 
 // writeClaudeState lays out a Claude Code config dir holding body as its
-// installed-plugin state, and returns the dir.
+// installed-plugin state, and returns the dir. It clears the variable that
+// would move the plugins directory out of it.
 func writeClaudeState(t *testing.T, body string) string {
 	t.Helper()
+	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", "")
 	dir := t.TempDir()
 	pluginsDir := filepath.Join(dir, "plugins")
 	if err := os.MkdirAll(pluginsDir, 0o755); err != nil {
