@@ -49,3 +49,33 @@ func TestTreeFileClickBringsItsCardToTheTop(t *testing.T) {
 		t.Errorf("squeezed split position = %+v, want past the notice row", p.list.Position)
 	}
 }
+
+func TestViewedOnACardScrolledIntoBringsTheNextFileUnderIt(t *testing.T) {
+	p := &reviewPanel{order: []string{"a.go", "b.go", "c.go"}, pr: &prFiles{viewed: map[string]string{}}}
+	b := &fileCard{open: true}
+	b.git.path = "b.go"
+	p.list.Position.First, p.list.Position.Offset = 1, 900
+	p.markViewed(b)
+	if b.open || p.list.Position.First != 1 || p.list.Position.Offset != 0 {
+		t.Errorf("open %v, position = %+v, want b.go folded at the top", b.open, p.list.Position)
+	}
+
+	c := &fileCard{open: true}
+	c.git.path = "c.go"
+	p.list.Position.First, p.list.Position.Offset = 0, 40
+	p.markViewed(c)
+	if p.list.Position.First != 0 || p.list.Position.Offset != 40 {
+		t.Errorf("position = %+v, want a card in full view to leave the scroll alone", p.list.Position)
+	}
+}
+
+func TestFoldingACardScrolledIntoBringsTheNextFileUnderIt(t *testing.T) {
+	p := &reviewPanel{order: []string{"a.go", "b.go"}}
+	b := &fileCard{open: true}
+	b.git.path = "b.go"
+	p.list.Position.First, p.list.Position.Offset = 1, 900
+	p.fold(b)
+	if b.open || p.list.Position.First != 1 || p.list.Position.Offset != 0 {
+		t.Errorf("open %v, position = %+v, want b.go folded at the top", b.open, p.list.Position)
+	}
+}

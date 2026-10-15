@@ -226,6 +226,13 @@ func (p *reviewPanel) cellHeight(gtx C) int {
 // scrollToFile brings path's card to the top of the list, past the squeezed
 // note when it is drawn.
 func (p *reviewPanel) scrollToFile(path string) {
+	if i, ok := p.itemOf(path); ok {
+		p.list.Position.First, p.list.Position.Offset = i, 0
+	}
+}
+
+// itemOf is the list item path's card is drawn in.
+func (p *reviewPanel) itemOf(path string) (int, bool) {
 	for i, f := range p.order {
 		if f != path {
 			continue
@@ -233,8 +240,24 @@ func (p *reviewPanel) scrollToFile(path string) {
 		if p.split && !p.splitOK {
 			i++
 		}
-		p.list.Position.First, p.list.Position.Offset = i, 0
-		return
+		return i, true
+	}
+	return 0, false
+}
+
+// markViewed ticks c and folds it.
+func (p *reviewPanel) markViewed(c *fileCard) {
+	p.pr.viewed[c.git.path] = c.gitText
+	p.fold(c)
+}
+
+// fold closes c. When its top had already scrolled away, the list moves back
+// to it so the next file sits right under the fold instead of several files
+// further down.
+func (p *reviewPanel) fold(c *fileCard) {
+	c.open = false
+	if i, ok := p.itemOf(c.git.path); ok && p.list.Position.First == i && p.list.Position.Offset > 0 {
+		p.scrollToFile(c.git.path)
 	}
 }
 

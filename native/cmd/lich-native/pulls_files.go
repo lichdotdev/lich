@@ -80,7 +80,8 @@ type filesInput struct {
 }
 
 // viewedTick is the card's Viewed checkbox; ticking folds the file away.
-func (c *fileCard) viewedTick(gtx C, th *ui.Theme, f *prFiles) D {
+func (c *fileCard) viewedTick(gtx C, th *ui.Theme, p *reviewPanel) D {
+	f := p.pr
 	tick, ok := f.ticks[c.git.path]
 	if !ok {
 		tick = new(widget.Bool)
@@ -89,8 +90,7 @@ func (c *fileCard) viewedTick(gtx C, th *ui.Theme, f *prFiles) D {
 	tick.Value = f.isViewed(c)
 	if tick.Update(gtx) {
 		if tick.Value {
-			f.viewed[c.git.path] = c.gitText
-			c.open = false
+			p.markViewed(c)
 		} else {
 			delete(f.viewed, c.git.path)
 		}

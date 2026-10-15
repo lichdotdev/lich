@@ -178,6 +178,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (GNOME, KDE, mako, dunst, swaync); one that draws buttons, like swaync, shows
   Open and Dismiss. Windows and macOS keep the plain notification for now.
 
+### Changed
+
+- **Folding a file keeps your place in the diff.** Ticking Viewed, or clicking
+  the chevron of a file you had scrolled into, folds it at the top of the list
+  with the next file right under it, instead of leaving you several files
+  further down. Works in a pull request's files and in the dock's Review tab.
+
 ### Removed
 
 - **Project run scripts and the Run card.** The **Run** item in a checkout's

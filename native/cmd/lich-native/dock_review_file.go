@@ -113,7 +113,11 @@ func (c *fileCard) onlyWhitespace() bool { return whitespaceOnly(c.shown, c.git)
 // layout is the card: its header, then, open, its body.
 func (c *fileCard) layout(gtx C, p *reviewPanel) D {
 	if c.toggle.Clicked(gtx) {
-		c.open = !c.open
+		if c.open {
+			p.fold(c)
+		} else {
+			c.open = true
+		}
 	}
 	if c.attach.click.Clicked(gtx) {
 		p.inject(fileReference(c.git.path))
@@ -172,7 +176,7 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 			return iconAction(gtx, th, p.root, &c.attach, icAttach, fileAddAsContext, false)
 		}))
 	if p.pr != nil {
-		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p.pr) }))
+		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p) }))
 	} else {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			return iconAction(gtx, th, p.root, &c.discard, icDiscard, fileDiscard, false)
