@@ -1435,8 +1435,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   once at load, so a `lich theme switch` while it is open shows at its next reload. The native window hears the
   backend's `theme-selection` event. A theme chosen in the web window is written straight to the setting and
   emits nothing, which no native window can be open to miss: the two windows take turns. Following the OS
-  reads the freedesktop appearance portal on Linux; on Windows and macOS the native window does not watch the
-  OS scheme yet, so a pair is not followed there.
+  reads the freedesktop appearance portal on Linux and `AppsUseLightTheme` in the registry on Windows, both
+  watched. macOS polls `defaults read -g AppleInterfaceStyle` every 3 seconds, so a switch reaches the window
+  up to that late: observing `AppleInterfaceThemeChangedNotification` needs an Objective-C shim no one
+  could compile or run without a Mac. The BSDs read no scheme and draw dark.
 - **Profiles are managed in the native window only, and the window asks every profile at start**: the web
   window has no profile screen, no card tag and no Continue in (it is in maintenance, `docs/native-window.md`),
   though what it opens or resumes runs in its profile, the backend deciding. The native window reads

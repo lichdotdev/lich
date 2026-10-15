@@ -11,6 +11,7 @@ require (
 	github.com/lichdotdev/godemirror v0.5.0
 	golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607
 	golang.org/x/image v0.47.0
+	golang.org/x/sys v0.49.0
 )
 
 require (
@@ -21,7 +22,6 @@ require (
 	github.com/yuin/goldmark v1.4.13 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 )
 
