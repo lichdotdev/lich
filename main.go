@@ -64,6 +64,23 @@ var (
 	trayICO []byte
 )
 
+// trayIcons are the tray's icons; a dev instance's flame is amber, so it reads
+// apart from an installed lich's beside it. ponytail: Windows keeps the plain
+// .ico; a dev instance there has its own icon when one is wanted.
+func trayIcons() tray.Icons {
+	icons := tray.Icons{PNG: trayPNG, ICO: trayICO}
+	if os.Getenv("LICH_DEV") == "" {
+		return icons
+	}
+	dev, err := tray.DevPNG(trayPNG)
+	if err != nil {
+		slog.Warn("tray: dev icon", "err", err)
+		return icons
+	}
+	icons.PNG = dev
+	return icons
+}
+
 // version is the running build's version, injected at build time via
 // -ldflags "-X main.version=<git tag>" (see Taskfile.yml). Unset in dev builds
 // ("dev"), which the update check treats as "not a release".
@@ -452,7 +469,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	dispatcher.Register("themes", themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the page hands it its words (tray.SetLabels).
-	dispatcher.Register("tray", tray.New(tray.Icons{PNG: trayPNG, ICO: trayICO},
+	dispatcher.Register("tray", tray.New(trayIcons(),
 		func() { showFromTray(sys) }, coord.Quit, term.LiveCount))
 	denyInternal(dispatcher)
 	term.Mount("/rpc/", dispatcher)
