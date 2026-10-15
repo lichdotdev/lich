@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Comment on a pull request's lines from the native window.** In Pulls ›
+  Files of `lich native` (experimental), the menu over a selection offers
+  "Comment on the pull request", beside "Comment for the session": the comment
+  joins the pending review, shows under its lines, and reaches GitHub with
+  Submit review.
 - **A theme can follow your desktop from dark to light, in the native window.**
   A theme's new optional `pair` names its variant for the other scheme, and
   with Auto light/dark on (Settings › Appearance, beside the theme list) the

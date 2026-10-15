@@ -331,7 +331,10 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 		changes = c.view.SelectedChanges()
 	}
 	entries := injectEntries(path, lines, p.inject, func() { c.composer.open(path, lines) })
-	if c.git.status == statusRenamed || p.pr != nil {
+	if p.pr != nil {
+		return append(entries, reviewCommentEntry(lines, func() { c.composer.openReview(path, lines) }))
+	}
+	if c.git.status == statusRenamed {
 		return entries
 	}
 	revert := menuRevertSelected

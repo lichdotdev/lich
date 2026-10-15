@@ -50,6 +50,8 @@ const (
 	batchClear         = "Clear"
 	batchSend          = "Send"
 	composerForSession = "for the session · %s"
+	composerOnPR       = "on the pull request · %s"
+	composerPRPrompt   = "Leave a comment. It is sent when you submit the review."
 	composerAdd        = "Add to batch"
 	composerAddReview  = "Add to review"
 	composerPrompt     = "What should change here? It goes to the session with the rest."
@@ -126,25 +128,33 @@ func continuation(text string) string { return strings.ReplaceAll(text, "\n", "\
 
 // commentComposer is the box a "Comment for the session" opens under the
 // selection: Enter adds it to the batch, Shift+Enter is a new line, Escape
-// backs out.
+// backs out. Opened for the pull request it files into the pending review
+// instead, and sends on Ctrl+Enter, Enter being a new line.
 type commentComposer struct {
 	shown       bool
+	review      bool
 	path, lines string
 	editor      widget.Editor
 	resize      ui.TextareaResize
 	add, cancel widget.Clickable
 	focus       bool
 	// toReview files the comment into a pull request's pending review; nil
-	// outside the Pulls screen, where the batch is the only place it goes.
-	toReview  func(path, lines, body string)
-	addReview widget.Clickable
+	// outside the Pulls screen.
+	toReview func(path, lines, body string)
 }
 
 // open starts a comment on lines ("19", "12-30") of path, dropping one being
 // written.
 func (c *commentComposer) open(path, lines string) {
-	c.shown, c.path, c.lines, c.focus = true, path, lines, true
+	c.shown, c.review, c.path, c.lines, c.focus = true, false, path, lines, true
 	c.editor.SetText("")
+}
+
+// openReview starts a comment on lines of path for the pull request's
+// pending review.
+func (c *commentComposer) openReview(path, lines string) {
+	c.open(path, lines)
+	c.review = true
 }
 
 func (c *commentComposer) close() { c.shown = false }
@@ -166,36 +176,44 @@ func (c *commentComposer) at() int {
 	return n
 }
 
-// filed reads this frame's input: whether the comment was added or the box
-// dismissed, filing an added one into store.
+// filed reads this frame's input: whether the comment was sent or the box
+// dismissed, filing a sent one where the box was opened for.
 func (c *commentComposer) filed(gtx C, store *commentStore, target string) {
-	toBatch, toReview := c.add.Clicked(gtx), c.addReview.Clicked(gtx)
+	send := c.add.Clicked(gtx)
 	for {
 		ev, ok := c.editor.Update(gtx)
 		if !ok {
 			break
 		}
 		if _, is := ev.(widget.SubmitEvent); is {
-			// Enter files where the first button does: the review on the
-			// Pulls screen, the batch everywhere else.
-			toReview, toBatch = toReview || c.toReview != nil, toBatch || c.toReview == nil
+			send = true
 		}
+	}
+	if c.review && ctrlEnter(gtx, &c.editor) {
+		send = true
 	}
 	if _, ok := gtx.Event(key.Filter{Focus: &c.editor, Name: key.NameEscape}); ok || c.cancel.Clicked(gtx) {
 		c.close()
 		return
 	}
-	if strings.TrimSpace(c.editor.Text()) == "" {
+	if send {
+		c.commit(store, target)
+	}
+}
+
+// commit files the comment, unless it is blank: into the pending review for
+// a box opened for the pull request, into target's batch otherwise.
+func (c *commentComposer) commit(store *commentStore, target string) {
+	text := c.editor.Text()
+	if strings.TrimSpace(text) == "" {
 		return
 	}
-	switch {
-	case toReview && c.toReview != nil:
-		c.toReview(c.path, c.lines, c.editor.Text())
-		c.close()
-	case toBatch:
-		store.add(target, c.path, c.lines, c.editor.Text())
-		c.close()
+	if c.review {
+		c.toReview(c.path, c.lines, text)
+	} else {
+		store.add(target, c.path, c.lines, text)
 	}
+	c.close()
 }
 
 // layout draws the box (flex-col gap-1.5 rounded-md bg-sidebar px-3 py-2.5)
@@ -204,7 +222,7 @@ func (c *commentComposer) layout(gtx C, th *ui.Theme, store *commentStore, targe
 	if !c.shown {
 		return D{}
 	}
-	c.editor.Submit = true
+	c.editor.Submit = !c.review
 	c.filed(gtx, store, target)
 	if !c.shown {
 		return D{}
@@ -220,7 +238,7 @@ func (c *commentComposer) layout(gtx C, th *ui.Theme, store *commentStore, targe
 		func(gtx C) D {
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(on.Text(ui.TextXS, fmt.Sprintf(composerForSession, c.lines)).Mono().Muted().Layout),
+					layout.Rigid(on.Text(ui.TextXS, fmt.Sprintf(c.heading(), c.lines)).Mono().Muted().Layout),
 					ui.VGap(1.5),
 					layout.Rigid(c.box(on)),
 				)
@@ -229,25 +247,31 @@ func (c *commentComposer) layout(gtx C, th *ui.Theme, store *commentStore, targe
 	)
 }
 
+// heading is ReviewSlots' line over the box, which says where the comment is
+// going: the two boxes look alike and only one reaches GitHub.
+func (c *commentComposer) heading() string {
+	if c.review {
+		return composerOnPR
+	}
+	return composerForSession
+}
+
 // box is CommentBox: the field (max-h-64), then Add and Cancel.
 func (c *commentComposer) box(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
-		empty := strings.TrimSpace(c.editor.Text()) == ""
-		add := th.Button(&c.add, composerAdd)
-		add.Size, add.Disabled = ui.SizeSM, empty
+		label, prompt := composerAdd, composerPrompt
+		if c.review {
+			label, prompt = composerAddReview, composerPRPrompt
+		}
+		add := th.Button(&c.add, label)
+		add.Size, add.Disabled = ui.SizeSM, strings.TrimSpace(c.editor.Text()) == ""
 		cancel := th.Button(&c.cancel, composerCancel)
 		cancel.Size, cancel.Variant = ui.SizeSM, ui.VariantGhost
 		buttons := []layout.FlexChild{layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout)}
-		if c.toReview != nil {
-			review := th.Button(&c.addReview, composerAddReview)
-			review.Size, review.Disabled = ui.SizeSM, empty
-			add.Variant = ui.VariantOutline
-			buttons = []layout.FlexChild{layout.Rigid(review.Layout), ui.Gap(2), layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout)}
-		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(ui.Space(64)))
-				ta := th.Textarea(&c.editor, composerPrompt)
+				ta := th.Textarea(&c.editor, prompt)
 				ta.Resize = &c.resize
 				return ta.Layout(gtx)
 			}),

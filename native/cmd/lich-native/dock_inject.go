@@ -24,6 +24,8 @@ const (
 	injectLinesRange    = "Inject lines %s"
 	sessionComment      = "Comment for the session…"
 	sessionCommentRange = "Comment for the session %s…"
+	reviewCommentLabel  = "Comment on the pull request…"
+	reviewCommentRange  = "Comment on the pull request %s…"
 )
 
 // formatLineRef is diff.ts formatLineRef over 1-based file lines: a single
@@ -79,6 +81,16 @@ func dockInjector(client *lichclient.Client, id string) func(string) bool {
 		}()
 		return true
 	}
+}
+
+// reviewCommentEntry is InjectMenu's comment on the pull request, offered on
+// the Pulls screen: open starts the box that files into the pending review.
+func reviewCommentEntry(lines string, open func()) ui.MenuEntry {
+	label := reviewCommentLabel
+	if lines != "" {
+		label = fmt.Sprintf(reviewCommentRange, lines)
+	}
+	return ui.MenuEntry{Label: label, Disabled: lines == "", OnClick: open}
 }
 
 // injectEntries is the menu over the preview. lines is the selection as

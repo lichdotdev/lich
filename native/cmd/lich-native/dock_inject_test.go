@@ -58,3 +58,43 @@ func TestDockInjectorRefusesWithoutASession(t *testing.T) {
 		t.Error("a session-less inject reported taken")
 	}
 }
+
+// On a pull request the menu also offers a comment for GitHub, which opens
+// the box that files into the pending review.
+func TestReviewCommentEntryOpensTheReviewBox(t *testing.T) {
+	opened := false
+	if e := reviewCommentEntry("", func() { opened = true }); !e.Disabled || e.Label != "Comment on the pull request…" {
+		t.Errorf("without a selection: %+v", e)
+	}
+	e := reviewCommentEntry("3-4", func() { opened = true })
+	if e.Disabled || e.Label != "Comment on the pull request 3-4…" {
+		t.Errorf("with a selection: %+v", e)
+	}
+	e.OnClick()
+	if !opened {
+		t.Error("the entry opened no box")
+	}
+}
+
+// A box opened for the pull request files into the review, never the
+// session's batch; one opened for the session does the opposite.
+func TestComposerFilesWhereItWasOpenedFor(t *testing.T) {
+	var reviewed []string
+	store := new(commentStore)
+	c := commentComposer{toReview: func(path, lines, body string) { reviewed = append(reviewed, path+":"+lines+" "+body) }}
+	c.openReview("a.go", "3-4")
+	c.editor.SetText("rename this")
+	c.commit(store, "/repo")
+	if len(reviewed) != 1 || reviewed[0] != "a.go:3-4 rename this" || len(store.list("/repo")) != 0 {
+		t.Fatalf("review box filed review %v, batch %v", reviewed, store.list("/repo"))
+	}
+	if c.isOpen() {
+		t.Error("the box stayed open after filing")
+	}
+	c.open("a.go", "7")
+	c.editor.SetText("for the agent")
+	c.commit(store, "/repo")
+	if len(reviewed) != 1 || len(store.list("/repo")) != 1 {
+		t.Fatalf("session box filed review %v, batch %v", reviewed, store.list("/repo"))
+	}
+}
