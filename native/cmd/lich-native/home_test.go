@@ -46,3 +46,15 @@ func TestHomeCannotBeClosed(t *testing.T) {
 		t.Fatal("closing the home project went through; Home is permanent")
 	}
 }
+
+func TestAFreshWorkspaceOpensOnHomeWithAShell(t *testing.T) {
+	var ps []lichclient.Project
+	m := newModel(fakeState(t, &ps, ""), func() {})
+	if err := m.reload(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := m.project()
+	if !ok || p.ID != fakeHome.ID || len(p.Sessions) != 1 || p.Sessions[0].Kind != "shell" {
+		t.Fatalf("fresh workspace shows %+v, %v; want Home with one shell", p, ok)
+	}
+}

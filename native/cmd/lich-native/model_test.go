@@ -277,8 +277,8 @@ func TestReloadKeepsTheActiveProjectAndAdoptsAnOpenedOne(t *testing.T) {
 	if err := m.reload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := m.project(); ok {
-		t.Fatal("an empty backend reported a project")
+	if p, ok := m.project(); !ok || p.ID != fakeHome.ID {
+		t.Fatalf("an empty backend opened on %q, %v; want Home, the home directory's project", p.ID, ok)
 	}
 	ps = twoProjects()[1:]
 	if err := m.reload(context.Background()); err != nil {

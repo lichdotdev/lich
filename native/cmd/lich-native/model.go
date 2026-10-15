@@ -124,13 +124,16 @@ func (m *model) reload(ctx context.Context) error {
 		return err
 	}
 	m.mu.Lock()
-	choose := !m.launched && len(ps) > 0
+	first := !m.launched
 	m.mu.Unlock()
-	launch := ""
-	if choose {
+	if first {
 		if ps, err = m.ensureHome(ctx, ps); err != nil {
 			return err
 		}
+	}
+	choose := first && len(ps) > 0
+	launch := ""
+	if choose {
 		if launch, err = m.launchProject(ctx, ps); err != nil {
 			return err
 		}
