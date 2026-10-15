@@ -361,7 +361,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	sys.SetShowWindow(window.Show)
 	sys.SetQuit(coord.Quit)
 	sys.SetCloseWindow(window.Dismiss)
-	sys.SetNativeWindow(raiseNative(hub), launchNative(term))
+	sys.SetNativeWindow(raiseNative(hub), launchNative(term, filepath.Join(configDir, "lich")))
 	dispatcher.Register("system", sys)
 	// Deleting a session for good takes any prompt parked on it, and the row is
 	// the only copy of what the user wrote. Both channels are used, and neither
@@ -888,12 +888,17 @@ func raiseNative(hub *events.Hub) func() bool {
 }
 
 // launchNative starts the native window again on this backend, pointed at it
-// the way `lich native` points the first one.
-func launchNative(term *terminal.Service) func(string) error {
+// the way `lich native` points the first one, and logs how it ends.
+func launchNative(term *terminal.Service, logDir string) func(string) error {
 	return func(executable string) error {
 		info := term.Transport()
 		env := append(os.Environ(), "LICH_PORT="+strconv.Itoa(info.Port), "LICH_TOKEN="+info.Token)
-		return restart.StartDetached(executable, env, nil)
+		cmd, err := restart.StartNative(executable, env, logDir)
+		if err != nil {
+			return err
+		}
+		go restart.WatchNative(cmd)
+		return nil
 	}
 }
 

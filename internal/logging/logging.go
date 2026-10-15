@@ -29,7 +29,7 @@ const maxLogSize = 5 << 20
 // alone: the closer is nil and the error says why the persistent half is
 // missing — the caller reports it and carries on.
 func Init(dir string) (io.Closer, error) {
-	file, err := openLogFile(dir)
+	file, err := openLogFile(Path(dir))
 	out := io.Writer(os.Stderr)
 	var closer io.Closer
 	if err == nil {
@@ -66,13 +66,20 @@ func (b bestEffort) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// openLogFile opens the append-mode log file, first rotating the previous
-// generation out of the way once it outgrew maxLogSize.
-func openLogFile(dir string) (*os.File, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+// OpenNative opens the native window's log under dir, lich-native.log
+// (lich-native-dev.log under LICH_DEV), rotated as lich.log is. A native
+// window started detached has no terminal: its stdout and stderr go here, and
+// so does a crash or a stalled event loop it reports.
+func OpenNative(dir string) (*os.File, error) {
+	return openLogFile(filepath.Join(dir, nativeFileName(os.Getenv("LICH_DEV") != "")))
+}
+
+// openLogFile opens the append-mode log file at path, first rotating the
+// previous generation out of the way once it outgrew maxLogSize.
+func openLogFile(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("create log dir: %w", err)
 	}
-	path := Path(dir)
 	if info, err := os.Stat(path); err == nil && info.Size() >= maxLogSize {
 		if err := os.Rename(path, path+".old"); err != nil {
 			return nil, fmt.Errorf("rotate log: %w", err)
@@ -98,6 +105,13 @@ func fileName(dev bool) string {
 		return "lich-dev.log"
 	}
 	return "lich.log"
+}
+
+func nativeFileName(dev bool) string {
+	if dev {
+		return "lich-native-dev.log"
+	}
+	return "lich-native.log"
 }
 
 // parseLevel maps LICH_LOG_LEVEL onto slog levels. Unknown or empty values

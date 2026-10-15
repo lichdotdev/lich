@@ -49,7 +49,7 @@ func (c *client) native(args []string) error {
 		return fmt.Errorf("close the web window: %w", closed)
 	}
 	env := append(os.Environ(), "LICH_PORT="+port, "LICH_TOKEN="+token)
-	if err := c.start(window, env, nil); err != nil {
+	if err := c.startNative(window, env); err != nil {
 		return fmt.Errorf("launch %s: %w", window, err)
 	}
 	fmt.Fprintf(c.stdout, "Opening the native window on lich (port %s).\n", port)
@@ -123,6 +123,21 @@ func (c *client) start(exe string, env, args []string) error {
 		return c.launch(exe, env, args)
 	}
 	return restart.StartDetached(exe, env, args)
+}
+
+// startNative launches the native window detached, printing into the native
+// log beside lich's; nil c.launch takes the real one. Nothing here waits on it:
+// this command exits right after.
+func (c *client) startNative(exe string, env []string) error {
+	if c.launch != nil {
+		return c.launch(exe, env, nil)
+	}
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return fmt.Errorf("resolve config directory: %w", err)
+	}
+	_, err = restart.StartNative(exe, env, filepath.Join(dir, "lich"))
+	return err
 }
 
 // executableName is binary's file name on this OS.

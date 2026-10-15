@@ -282,3 +282,33 @@ func TestInitRoutesPanicToLogFile(t *testing.T) {
 		}
 	}
 }
+
+// TestOpenNativeKeepsItsOwnRotatedFile proves the native window's log sits
+// beside lich's under its own dev and release names, and rotates as lich.log
+// does.
+func TestOpenNativeKeepsItsOwnRotatedFile(t *testing.T) {
+	for dev, name := range map[string]string{"": "lich-native.log", "1": "lich-native-dev.log"} {
+		t.Setenv("LICH_DEV", dev)
+		dir := t.TempDir()
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Truncate(path, maxLogSize); err != nil {
+			t.Fatal(err)
+		}
+
+		file, err := OpenNative(dir)
+		if err != nil {
+			t.Fatalf("LICH_DEV=%q OpenNative: %v", dev, err)
+		}
+		file.Close()
+
+		if file.Name() != path {
+			t.Errorf("LICH_DEV=%q: opened %q, want %q", dev, file.Name(), path)
+		}
+		if _, err := os.Stat(path + ".old"); err != nil {
+			t.Errorf("LICH_DEV=%q: oversized log not rotated: %v", dev, err)
+		}
+	}
+}

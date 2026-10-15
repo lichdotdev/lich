@@ -1205,6 +1205,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   connect, the web window does not. `system.CloseWindow` never quits lich, even
   with no session running, where a window the user closes does (`quitIfIdle`). The native window's text is
   English only: the interface catalogs are TypeScript, and native/ has none yet (`docs/native-window.md`).
+- **Only a native window the backend starts tells lich how it ended** (`restart.StartNative`,
+  `restart.WatchNative`): the backend waits on the native window it starts again (the tray's Show lich after the
+  window closed) and logs its exit code or the signal that killed it, with its last `VmRSS`/`VmHWM` (Linux only,
+  sampled every 10s, so up to 10s old). The window `lich native` starts from a terminal is not the backend's
+  child: the command exits right after, nobody waits on that window, and its death leaves no line in `lich.log`.
+  Every window started either way prints into `lich-native.log` beside `lich.log`, where an event loop stuck on
+  one event for 3s or more is reported with every goroutine's stack (`native/cmd/lich-native/stall.go`); a
+  stall inside `w.Event()` itself, in Gio's own dispatch, looks like an idle window and is not reported.
 - **Profiles are Claude Code's, Codex's and oh-my-pi's everywhere, and opencode's, Cursor CLI's and Kiro CLI's
   on Linux only** (`internal/claudeprofile`, `internal/codexprofile`, `internal/ompprofile`,
   `internal/xdgprofile`, on one store, `internal/profilestore`): one account per profile. The first three are
