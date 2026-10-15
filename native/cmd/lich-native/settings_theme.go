@@ -39,7 +39,7 @@ const (
 	brokenHeadingOne   = "%d theme can't load"
 	brokenHeadingOther = "%d themes can't load"
 	brokenRemove       = "Remove"
-	themeFollowSystem  = "Follow system"
+	themeAutoLightDark = "Auto light/dark"
 	themePairCaption   = "%s pair"
 )
 
@@ -123,7 +123,7 @@ func (p *themePicker) layoutRow(gtx C, th *ui.Theme, r settingRow, first bool) D
 	row := func(gtx C) D {
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextXS, themeFollowSystem).Muted().Layout),
+				layout.Rigid(th.Text(ui.TextXS, themeAutoLightDark).Muted().Layout),
 				ui.Gap(2),
 				layout.Rigid(func(gtx C) D { return p.followSwitch(gtx, th, v) }),
 				ui.Gap(3),

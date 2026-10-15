@@ -219,7 +219,7 @@ A lich that predates `syntax` ignores the key, so a pack can add it without a
 
 `pair` is optional and names the theme's variant for the other scheme, by id:
 `"pair": "everforest-light"` in Everforest Dark, `"pair": "everforest-dark"` in
-Everforest Light. In the native window, with Follow system turned on (Settings ›
+Everforest Light. In the native window, with Auto light/dark turned on (Settings ›
 Appearance › Theme, beside the theme list), the window draws the pair while the
 OS asks for the pair's scheme and goes back when it stops; the theme chosen
 stays the one in use. The bundled Light and Dark pair each other.

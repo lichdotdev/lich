@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **A theme can follow your desktop from dark to light, in the native window.**
   A theme's new optional `pair` names its variant for the other scheme, and
-  with Follow system on (Settings › Appearance, beside the theme list) the
+  with Auto light/dark on (Settings › Appearance, beside the theme list) the
   native window (`lich native`, experimental) draws that variant while the OS
   asks for its scheme, then goes back. The bundled Light and Dark pair each
   other. See `docs/themes.md`.

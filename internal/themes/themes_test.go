@@ -707,6 +707,9 @@ func TestBundledTemplateIsImportable(t *testing.T) {
 	if !reflect.DeepEqual(keySet(template.Terminal), terminalTokens) {
 		t.Fatalf("template terminal tokens = %#v, want every supported one", keySet(template.Terminal))
 	}
+	if template.Pair == "" || len(template.Syntax) == 0 {
+		t.Fatalf("template shows pair %q and %d syntax styles, want both optional fields shown", template.Pair, len(template.Syntax))
+	}
 }
 
 func TestSaveTemplateWritesEveryColor(t *testing.T) {

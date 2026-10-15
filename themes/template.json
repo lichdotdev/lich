@@ -3,6 +3,7 @@
   "id": "purple-night",
   "name": "Purple Night",
   "scheme": "dark",
+  "pair": "purple-day",
   "app": {
     "background": "#15111f",
     "foreground": "#f4efff",

@@ -1425,7 +1425,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   layout moves a Claude Code profile's plugin cache off Personal's (the bullet on it above) at a start too.
   oh-my-pi needs no pass: lich's extension is in the `extensions/` every profile links to Personal's.
 - **A theme's pair and `lich theme switch` reach the native window only**: the web window (in maintenance,
-  `docs/native-window.md`) ignores a theme's `pair` and has no Follow system switch, and it reads the selection
+  `docs/native-window.md`) ignores a theme's `pair` and has no Auto light/dark switch, and it reads the selection
   once at load, so a `lich theme switch` while it is open shows at its next reload. The native window hears the
   backend's `theme-selection` event. A theme chosen in the web window is written straight to the setting and
   emits nothing, which no native window can be open to miss: the two windows take turns. Following the OS

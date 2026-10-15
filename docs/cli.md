@@ -1019,7 +1019,7 @@ Switched to "everforest-light".
 ```
 
 A desktop that only goes from light to dark and back does not need it: a theme
-with a `pair` follows the OS to it while Follow system is on
+with a `pair` follows the OS to it while Auto light/dark is on
 (`docs/themes.md`).
 
 ### `lich quit`
