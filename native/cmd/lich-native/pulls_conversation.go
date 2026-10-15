@@ -51,7 +51,7 @@ type talkState struct {
 	folds        map[string]*widget.Bool
 	foldClicks   map[string]*widget.Clickable
 	replying     map[string]bool
-	replyEditors map[string]*widget.Editor
+	replyFields  map[string]*replyField
 	replyClicks  map[string]*widget.Clickable
 	sendClicks   map[string]*widget.Clickable
 	cancelClicks map[string]*widget.Clickable
@@ -59,26 +59,36 @@ type talkState struct {
 	showResolved widget.Bool
 	resolvedTap  widget.Clickable
 	comment      widget.Editor
+	commentSize  ui.TextareaResize
 	commentSend  widget.Clickable
 	discards     map[int]*widget.Clickable
 }
 
 func (s *talkState) init() {
 	s.folds, s.foldClicks = map[string]*widget.Bool{}, map[string]*widget.Clickable{}
-	s.replying, s.replyEditors = map[string]bool{}, map[string]*widget.Editor{}
+	s.replying, s.replyFields = map[string]bool{}, map[string]*replyField{}
 	s.replyClicks, s.sendClicks = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
 	s.cancelClicks, s.resolveClick = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
 	s.discards = map[int]*widget.Clickable{}
 }
 
-func (s *talkState) editorOf(id string) *widget.Editor {
-	e, ok := s.replyEditors[id]
-	if !ok {
-		e = new(widget.Editor)
-		s.replyEditors[id] = e
-	}
-	return e
+// replyField is one thread's reply box: its text and the height it was
+// dragged to.
+type replyField struct {
+	editor widget.Editor
+	resize ui.TextareaResize
 }
+
+func (s *talkState) fieldOf(id string) *replyField {
+	f, ok := s.replyFields[id]
+	if !ok {
+		f = new(replyField)
+		s.replyFields[id] = f
+	}
+	return f
+}
+
+func (s *talkState) editorOf(id string) *widget.Editor { return &s.fieldOf(id).editor }
 
 // conversationRows is PullsConversation: the pending review, the timeline,
 // the resolved threads behind their count, and the box for a comment on the
@@ -321,7 +331,11 @@ func (v *pullView) replyBox(gtx C, th *ui.Theme, d lichclient.PRDetail, t lichcl
 	cancelB := th.Button(cancel, talkCancel)
 	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Textarea(ed, talkReplyHint).Layout),
+		layout.Rigid(func(gtx C) D {
+			ta := th.Textarea(ed, talkReplyHint)
+			ta.Resize = &s.fieldOf(t.ID).resize
+			return ta.Layout(gtx)
+		}),
 		ui.VGap(2),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(sendB.Layout), ui.Gap(2), layout.Rigid(cancelB.Layout))
@@ -371,7 +385,11 @@ func (v *pullView) commentBox(gtx C, th *ui.Theme, act *pullsAction) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(sectionHeading(th, talkCommentOn)),
 			ui.VGap(2),
-			layout.Rigid(th.Textarea(&s.comment, talkCommentHint).Layout),
+			layout.Rigid(func(gtx C) D {
+				ta := th.Textarea(&s.comment, talkCommentHint)
+				ta.Resize = &s.commentSize
+				return ta.Layout(gtx)
+			}),
 			ui.VGap(2),
 			layout.Rigid(send.Layout),
 		)

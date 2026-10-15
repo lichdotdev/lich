@@ -57,6 +57,7 @@ type mergeDialog struct {
 	dialog  ui.DialogState
 	subject widget.Editor
 	body    widget.Editor
+	bodyFit ui.TextareaResize
 	merge   widget.Clickable
 	cancel  widget.Clickable
 	focus   bool
@@ -150,7 +151,9 @@ func (m *mergeDialog) fields(gtx C, th *ui.Theme) D {
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min.Y = gtx.Dp(mergeBodyMin)
 			gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(mergeBodyMax))
-			return th.Textarea(&m.body, mergeEditOptional).Layout(gtx)
+			ta := th.Textarea(&m.body, mergeEditOptional)
+			ta.Resize = &m.bodyFit
+			return ta.Layout(gtx)
 		}),
 	)
 }

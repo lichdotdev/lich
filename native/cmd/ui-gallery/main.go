@@ -109,6 +109,7 @@ type gallery struct {
 	inert    widget.Clickable
 	inputs   [6]widget.Editor
 	textarea widget.Editor
+	areaFit  ui.TextareaResize
 	groups   [3]widget.Editor
 	copyURL  widget.Clickable
 

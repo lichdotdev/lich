@@ -57,6 +57,7 @@ type submitState struct {
 	verdict string
 	dialog  ui.DialogState
 	summary widget.Editor
+	fit     ui.TextareaResize
 	send    widget.Clickable
 	cancel  widget.Clickable
 }
@@ -139,7 +140,9 @@ func (u *window) layoutSubmitDialog(gtx C, th *ui.Theme) {
 	send := on.Button(&s.send, label)
 	send.Disabled = busy
 	dlg := th.Dialog(&s.dialog, open, submitVerdicts[s.verdict], description)
-	dlg.Body = on.Textarea(&s.summary, submitSummaryHint).Layout
+	summary := on.Textarea(&s.summary, submitSummaryHint)
+	summary.Resize = &s.fit
+	dlg.Body = summary.Layout
 	dlg.Actions = []layout.Widget{cancel.Layout, send.Layout}
 	dlg.Root = &u.root
 	if dlg.Layout(gtx) {

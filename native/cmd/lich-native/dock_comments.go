@@ -131,6 +131,7 @@ type commentComposer struct {
 	shown       bool
 	path, lines string
 	editor      widget.Editor
+	resize      ui.TextareaResize
 	add, cancel widget.Clickable
 	focus       bool
 	// toReview files the comment into a pull request's pending review; nil
@@ -246,7 +247,9 @@ func (c *commentComposer) box(th *ui.Theme) layout.Widget {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(ui.Space(64)))
-				return th.Textarea(&c.editor, composerPrompt).Layout(gtx)
+				ta := th.Textarea(&c.editor, composerPrompt)
+				ta.Resize = &c.resize
+				return ta.Layout(gtx)
 			}),
 			ui.VGap(2),
 			layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, buttons...) }),

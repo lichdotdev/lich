@@ -195,6 +195,7 @@ func (g *gallery) inputsSection(gtx C, th *ui.Theme) D {
 	leading.Leading = g.icon("search")
 
 	area := th.Textarea(&g.textarea, "Describe what the agent should do…")
+	area.Resize = &g.areaFit
 
 	withIcon := th.InputGroup(&g.groups[0], "Search sessions")
 	withIcon.Start = ui.InputGroupAddon{Items: []layout.Widget{th.InputGroupIcon(g.icon("search"))}}
