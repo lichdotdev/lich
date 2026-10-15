@@ -36,7 +36,7 @@ func (s *Service) BaseFreshness(path, branch string) (BaseFreshness, error) {
 		return BaseFreshness{}, nil
 	}
 	f := BaseFreshness{Upstream: remote + "/" + upstreamBranch}
-	if err := fetchBase(path, remote, upstreamBranch); err != nil {
+	if err := s.fetchBaseRef(path, remote, upstreamBranch); err != nil {
 		f.FetchError = err.Error()
 	}
 	counts, err := runGit(path, "rev-list", "--left-right", "--count", "refs/heads/"+branch+"...refs/remotes/"+f.Upstream)

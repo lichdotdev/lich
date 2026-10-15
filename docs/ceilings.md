@@ -409,7 +409,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
   base's upstream to start from the newer of the two, so against a remote that does not answer the session
   appears only once the fetch gives up (`baseFetchBudget`, 60s). A failed fetch starts from the local branch,
-  which may be behind without anything saying so.
+  which may be behind without anything saying so. The create reuses that fetch for `baseRefReuse` (15s,
+  `internal/project/worktree.go`) instead of fetching again, so a commit pushed in between is not in the
+  worktree.
 - **A working-tree row carries what git can name, and nothing else**
   (`internal/project/carry.go`): the copy is `git diff HEAD --binary` applied to the new checkout plus the
   untracked files `--exclude-standard` lists. What `.gitignore` covers is not carried from the forked

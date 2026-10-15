@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/omartelo/lich/internal/gitutil"
@@ -271,6 +272,41 @@ func fetchBase(projectPath, remote, branch string) error {
 	return fmt.Errorf("git fetched %s but this repository does not keep %s — its remote only tracks some branches.", branch, ref)
 }
 
+// baseRefReuse is how long a fetched base ref is taken as current. It spans
+// one spawn's BaseFreshness read and the CreateWorktree that follows it, and is
+// short enough that a New worktree dialog left open fetches again on create.
+const baseRefReuse = 15 * time.Second
+
+// refetchGuard is the time each base ref was last fetched, keyed on the
+// repository and the ref. The zero value is ready to use.
+type refetchGuard struct {
+	mu      sync.Mutex
+	fetched map[string]time.Time
+}
+
+// fetchBaseRef is fetchBase, skipped when the same ref was fetched less than
+// baseRefReuse ago.
+func (s *Service) fetchBaseRef(projectPath, remote, branch string) error {
+	g := &s.baseRefs
+	key := projectPath + "\x00" + remote + "/" + branch
+	g.mu.Lock()
+	recent := time.Since(g.fetched[key]) < baseRefReuse
+	g.mu.Unlock()
+	if recent {
+		return nil
+	}
+	if err := fetchBase(projectPath, remote, branch); err != nil {
+		return err
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.fetched == nil {
+		g.fetched = make(map[string]time.Time)
+	}
+	g.fetched[key] = time.Now()
+	return nil
+}
+
 // CreateWorktree creates a git worktree named name (random when empty) under
 // the app data dir, branching off base. A remote base is fetched first, and the
 // new branch is left with no upstream. A branch that already exists is checked
@@ -302,7 +338,7 @@ func (s *Service) CreateWorktree(projectPath, projectID, name, base string, base
 			if !ok {
 				return nil, fmt.Errorf("%q is not a remote branch lich can track.", base)
 			}
-			if err := fetchBase(projectPath, remote, branch); err != nil {
+			if err := s.fetchBaseRef(projectPath, remote, branch); err != nil {
 				return nil, err
 			}
 			// The full refname, never the "origin/main" shorthand: a repository

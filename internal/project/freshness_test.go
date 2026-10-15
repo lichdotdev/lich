@@ -3,6 +3,7 @@ package project
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -92,5 +93,34 @@ func TestBaseFreshnessNotABranch(t *testing.T) {
 
 	if _, err := New(nil).BaseFreshness(repo, "nope"); err == nil {
 		t.Error("BaseFreshness(unknown branch) = nil error, want a refusal")
+	}
+}
+
+// A worktree created right after BaseFreshness starts from the upstream that
+// read fetched, without a second fetch: the commit pushed in between is not
+// in it.
+func TestCreateWorktreeReusesTheFetchBaseFreshnessJustMade(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	repo, git := initRepo(t)
+	origin, originGit := originWithMain(t, git)
+	commitIn(t, origin, originGit, "seen\n")
+
+	svc := New(nil)
+	if _, err := svc.BaseFreshness(repo, "main"); err != nil {
+		t.Fatalf("BaseFreshness: %v", err)
+	}
+	seen := strings.TrimSpace(git("rev-parse", "refs/remotes/origin/main"))
+	commitIn(t, origin, originGit, "pushed after\n")
+
+	wt, err := svc.CreateWorktree(repo, "pid", "from-fresh", "origin/main", true)
+	if err != nil {
+		t.Fatalf("CreateWorktree: %v", err)
+	}
+	head, err := runGit(wt.Path, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatalf("rev-parse HEAD: %v", err)
+	}
+	if got := strings.TrimSpace(head); got != seen {
+		t.Errorf("worktree HEAD = %s, want the upstream BaseFreshness fetched, %s", got, seen)
 	}
 }
