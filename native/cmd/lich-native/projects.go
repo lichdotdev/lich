@@ -121,6 +121,24 @@ func (m *model) ensureHome(ctx context.Context, ps []lichclient.Project) ([]lich
 	return m.client.LoadState(ctx)
 }
 
+// openHome opens the home directory's project when the workspace lost it and
+// puts Home on screen, as the web's ensureHomeProject does for a command with
+// no project to run in.
+func (m *model) openHome(ctx context.Context) error {
+	ps, err := m.client.LoadState(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err := m.ensureHome(ctx, ps); err != nil {
+		return err
+	}
+	if err := m.reload(ctx); err != nil {
+		return err
+	}
+	m.showHome()
+	return nil
+}
+
 // runningIn counts a project's sessions holding a turn, which closing it
 // would kill (ProjectTabs.tsx requestClose).
 func (m *model) runningIn(projectID string) int {

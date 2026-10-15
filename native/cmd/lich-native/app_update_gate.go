@@ -119,17 +119,20 @@ func (u *window) promptAppUpdate(st lichclient.AppUpdateStatus) {
 }
 
 // openInstall opens a shell in the project in view and types the install
-// command there for the user to run; with no project open it opens the
-// release page instead.
-// ponytail: the web opens a $HOME project when none is open; the native
-// window has no such project yet, so the release page stands in.
+// command there for the user to run. With no project open it opens Home's
+// first, and the release page only when even that fails.
 func (u *window) openInstall(releaseURL, command string) {
-	if _, ok := u.model.project(); !ok {
-		u.settings.openExternal(releaseURL)
-		return
-	}
 	u.settings.hide()
-	go u.newSession(launchRequest{kind: "shell"}, command)
+	go func() {
+		if _, ok := u.model.project(); !ok {
+			if err := u.model.openHome(u.ctx); err != nil {
+				log.Printf("install: open the home project: %v", err)
+				u.settings.openExternal(releaseURL)
+				return
+			}
+		}
+		u.newSession(launchRequest{kind: "shell"}, command)
+	}()
 }
 
 // applyUpdate is runApply: the installer's progress in one toast, replaced

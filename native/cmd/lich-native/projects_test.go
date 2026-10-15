@@ -177,3 +177,30 @@ func clientOf(srv *httptest.Server) *lichclient.Client {
 	port, _ := strconv.Atoi(u.Port())
 	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
 }
+
+func TestOpenHomeBringsTheHomeProjectBack(t *testing.T) {
+	home := lichclient.Project{ID: "home", Name: "~", Path: "/home/me"}
+	state := threeProjects()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var result any
+		switch r.URL.Path {
+		case "/rpc/store.LoadState":
+			result = state
+		case "/rpc/project.Home":
+			result = home
+		case "/rpc/store.AddProject":
+			state = append(state, home)
+		}
+		_ = json.NewEncoder(w).Encode(result)
+	}))
+	defer srv.Close()
+	m := modelOn("a")
+	m.launched, m.projects = true, nil
+	m.client = clientOf(srv)
+	if err := m.openHome(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if p, ok := m.project(); !ok || p.ID != home.ID || !m.onHome() {
+		t.Errorf("project = %+v, %v, on Home %v; want Home in view", p, ok, m.onHome())
+	}
+}
