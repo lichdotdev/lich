@@ -28,7 +28,7 @@ function ScriptEditor({
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id} className="text-xs uppercase tracking-wide">
-        {t("sidebar.worktreeScriptRows.setupEditorLabel", { file: setupFile })}
+        {t("sidebar.worktreeSetupRow.setupEditorLabel", { file: setupFile })}
       </Label>
       <textarea
         id={id}
@@ -46,7 +46,7 @@ function ScriptEditor({
         </span>
         <div className="flex gap-1">
           <Button variant="ghost" size="xs" onClick={onCancel}>
-            {t("sidebar.worktreeScriptRows.discard")}
+            {t("sidebar.worktreeSetupRow.discard")}
           </Button>
           <Button variant="ghost" size="xs" onClick={onSave}>
             {t("common.action.save")}
@@ -76,11 +76,11 @@ function ConfiguredRow({ value }: { value: string }) {
   )
 }
 
-// WorktreeScriptRows is the New-worktree dialog's pre-flight block: the setup
+// WorktreeSetupRow is the New-worktree dialog's pre-flight block: the setup
 // script a fresh worktree will run, or a lockfile-detected suggestion when the
 // repository ships none. Read from the main checkout; Use/Save write the file
 // through the backend. It never blocks Create.
-export function WorktreeScriptRows({ projectPath }: { projectPath: string }) {
+export function WorktreeSetupRow({ projectPath }: { projectPath: string }) {
   const t = useT()
   const [info, setInfo] = useState<WorktreeSetup | null>(null)
   const [editing, setEditing] = useState(false)
@@ -147,7 +147,7 @@ export function WorktreeScriptRows({ projectPath }: { projectPath: string }) {
             <Terminal className="size-3.5 shrink-0" aria-hidden />
             <span className="min-w-0 truncate">
               <Trans
-                k="sidebar.worktreeScriptRows.detected"
+                k="sidebar.worktreeSetupRow.detected"
                 params={{
                   detected: info.detected,
                   command: <span className="font-mono text-foreground">{info.suggestion}</span>,
@@ -156,10 +156,10 @@ export function WorktreeScriptRows({ projectPath }: { projectPath: string }) {
             </span>
             <div className="ml-auto flex shrink-0 gap-1">
               <Button variant="ghost" size="xs" onClick={() => void save(info.suggestion ?? "")}>
-                {t("sidebar.worktreeScriptRows.use")}
+                {t("sidebar.worktreeSetupRow.use")}
               </Button>
               <Button variant="ghost" size="xs" onClick={() => edit(info.suggestion ?? "")}>
-                {t("sidebar.worktreeScriptRows.edit")}
+                {t("sidebar.worktreeSetupRow.edit")}
               </Button>
             </div>
           </div>

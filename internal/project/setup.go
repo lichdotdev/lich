@@ -18,14 +18,11 @@ const SetupScriptPath = ".lich/setup-worktree.sh"
 // repository ships none. Always read from the main checkout, never from the
 // worktree being created: a worktree opened on somebody else's branch (the PR
 // flow) must not execute that branch's script.
+//
+// Every read failure answers "": a script lich cannot read is a script it will
+// not run either.
 func SetupScript(projectPath string) string {
-	return readScript(projectPath, SetupScriptPath)
-}
-
-// readScript reads a script, answering "" for every failure — a script lich
-// cannot read is a script it will not run either.
-func readScript(projectPath, rel string) string {
-	data, err := os.ReadFile(filepath.Join(projectPath, filepath.FromSlash(rel)))
+	data, err := os.ReadFile(filepath.Join(projectPath, filepath.FromSlash(SetupScriptPath)))
 	if err != nil {
 		return ""
 	}
@@ -60,24 +57,18 @@ func (s *Service) WorktreeSetup(path string) WorktreeSetup {
 // user's call. Saving an empty script removes the file instead, returning the
 // dialog to the suggestion state rather than pinning an empty setup.
 func (s *Service) SaveWorktreeSetup(path, script string) error {
-	return writeScript(path, SetupScriptPath, script)
-}
-
-// writeScript writes a script into the checkout, an empty script removing the
-// file.
-func writeScript(path, rel, script string) error {
-	target := filepath.Join(path, filepath.FromSlash(rel))
+	target := filepath.Join(path, filepath.FromSlash(SetupScriptPath))
 	if strings.TrimSpace(script) == "" {
 		if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("remove %s: %w", rel, err)
+			return fmt.Errorf("remove %s: %w", SetupScriptPath, err)
 		}
 		return nil
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-		return fmt.Errorf("create %s: %w", filepath.Dir(rel), err)
+		return fmt.Errorf("create %s: %w", filepath.Dir(SetupScriptPath), err)
 	}
 	if err := os.WriteFile(target, []byte(script+"\n"), 0o755); err != nil {
-		return fmt.Errorf("write %s: %w", rel, err)
+		return fmt.Errorf("write %s: %w", SetupScriptPath, err)
 	}
 	return nil
 }

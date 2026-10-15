@@ -240,7 +240,7 @@ export const sidebar = {
       "位于 {path} 的工作树包含未提交的更改。删除后这些更改将被永久丢弃。分支会保留。",
     discardAndRemove: "丢弃更改并删除",
   },
-  worktreeScriptRows: {
+  worktreeSetupRow: {
     setupEditorLabel: "设置脚本，保存到 {file}",
     discard: "丢弃",
     detected: "检测到 {detected}。在新工作树中运行 {command}？",

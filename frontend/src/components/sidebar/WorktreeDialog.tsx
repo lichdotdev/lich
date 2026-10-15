@@ -5,7 +5,7 @@ import type { Branches, Issue, Worktree } from "@/lib/api-types"
 import { SearchInput } from "@/components/common/SearchInput"
 import { Trans } from "@/components/common/Trans"
 import { WorktreeSandboxRow } from "@/components/sidebar/WorktreeSandboxRow"
-import { WorktreeScriptRows } from "@/components/sidebar/WorktreeScriptRows"
+import { WorktreeSetupRow } from "@/components/sidebar/WorktreeSetupRow"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -537,7 +537,7 @@ export function WorktreeDialog({
           </div>
         </div>
 
-        <WorktreeScriptRows projectPath={projectPath} />
+        <WorktreeSetupRow projectPath={projectPath} />
 
         <WorktreeSandboxRow choice={sandbox} />
 

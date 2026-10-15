@@ -242,7 +242,7 @@ export const sidebar = {
       "The worktree at {path} contains uncommitted changes. Removing it will discard them permanently. The branch is kept.",
     discardAndRemove: "Discard changes and remove",
   },
-  worktreeScriptRows: {
+  worktreeSetupRow: {
     setupEditorLabel: "Setup script, saved to {file}",
     discard: "Discard",
     detected: "Detected {detected}. Run {command} in new worktrees?",

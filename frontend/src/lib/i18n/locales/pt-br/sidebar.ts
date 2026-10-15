@@ -244,7 +244,7 @@ export const sidebar = {
       "A worktree em {path} contém alterações não commitadas. Removê-la vai descartá-las para sempre. A branch é mantida.",
     discardAndRemove: "Descartar alterações e remover",
   },
-  worktreeScriptRows: {
+  worktreeSetupRow: {
     setupEditorLabel: "Script de setup, salvo em {file}",
     discard: "Descartar",
     detected: "{detected} detectado. Rodar {command} nas novas worktrees?",

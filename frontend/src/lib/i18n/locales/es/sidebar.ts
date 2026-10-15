@@ -244,7 +244,7 @@ export const sidebar = {
       "La worktree de {path} contiene cambios sin confirmar. Al eliminarla se descartarán de forma permanente. La rama se conserva.",
     discardAndRemove: "Descartar cambios y eliminar",
   },
-  worktreeScriptRows: {
+  worktreeSetupRow: {
     setupEditorLabel: "Script de preparación, guardado en {file}",
     discard: "Descartar",
     detected: "Se detectó {detected}. ¿Ejecutar {command} en las nuevas worktrees?",
