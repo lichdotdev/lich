@@ -31,6 +31,8 @@ github.com/lichdotdev/godemirror v0.4.0 h1:UTCukYdXxKFtJ7J+jV2WdAFqYGZKiOSbdzhrF
 github.com/lichdotdev/godemirror v0.4.0/go.mod h1:xCdFPbos7+4/bCymJIx7FnL4EpsuMpebRCbGM5Un4fg=
 github.com/lichdotdev/godemirror v0.5.0 h1:Xlh5hyLHRD5szXfWsMFhLExEjPJ8J/2E+tfjhH2NT9o=
 github.com/lichdotdev/godemirror v0.5.0/go.mod h1:xCdFPbos7+4/bCymJIx7FnL4EpsuMpebRCbGM5Un4fg=
+github.com/lichdotdev/godemirror v0.6.0 h1:ESZs49lAfjJF3HTKcp/hWg8GOmCgm028FMaaT1f6fik=
+github.com/lichdotdev/godemirror v0.6.0/go.mod h1:xCdFPbos7+4/bCymJIx7FnL4EpsuMpebRCbGM5Un4fg=
 github.com/yuin/goldmark v1.4.13 h1:fVcFKWvrslecOb/tg+Cc05dkeYx540o0FuFt3nUVDoE=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 h1:R84qjqJb5nVJMxqWYb3np9L5ZsaDtB+a39EqjV0JSUM=

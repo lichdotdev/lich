@@ -222,8 +222,15 @@ func (p *preview) composerBlock(gtx C) D {
 
 // codeStyleTags tags more of the code than CodeMirror's grammars do, so a
 // theme can color it as an IDE does: Java's enum constants, annotations,
-// fields and import paths.
-var codeStyleTags = []godemirror.StyleTags{godemirror.RicherJavaTags()}
+// fields and import paths, parameter declarations, and each language's
+// builtins.
+var codeStyleTags = []godemirror.StyleTags{
+	godemirror.RicherJavaTags(),
+	godemirror.RicherGoTags(), godemirror.GoBuiltinTags(),
+	godemirror.RicherJavaScriptTags(), godemirror.JavaScriptBuiltinTags(),
+	godemirror.RicherPythonTags(), godemirror.PythonBuiltinTags(),
+	godemirror.RicherRustTags(), godemirror.RustBuiltinTags(),
+}
 
 // previewTheme is the window theme's code palette on the dock's bg-sidebar,
 // which the web's transparent editor shows through.
