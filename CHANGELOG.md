@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Noto Color Emoji stores each emoji as a picture rather than an outline, and
   the terminal only drew outlines, so every emoji showed as a blank gap; they
   now draw in color, two cells wide.
+- **The native window's file tree shows each file's language icon.** Go,
+  TypeScript, Python and the other files the browser window marks with their
+  language's icon drew the same plain file glyph; they now carry the same
+  icons as in the browser window.
 - **A pull request an agent opens shows on its card when the turn ends.** The
   badge only looked again when the branch or its last commit moved, and opening
   a pull request moves neither, so it waited for the window to lose and regain
