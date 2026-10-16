@@ -66,8 +66,12 @@ built from a pinned Ghostty commit.
   the endpoints back, and the native window says another window took over instead of going stale. Making both
   endpoints accept several clients is what using the two side by side would take; it is not needed to
   homologate the native window.
-- **The tray and `lich focus` open the web window.** "Show lich" and `lich focus` know only the web window, so
-  with the native one open they open a second, competing client.
+- **Settings › Window picks the window lich opens** (`window.kind`, web by default). A launch, the tray's
+  Show lich, a second launch and `lich focus` all open the chosen one (`system.ShowWindow`), closing the other
+  first: the web window through `system.CloseWindow`, the native one through the `window-close` event. The
+  tray's second item opens the other window without changing the choice. A native window that is missing
+  beside `lich`, or ends before it attached, leaves the web window open in its place, with a toast saying why
+  (`system.TakeWindowFallback`). macOS has no native window build, so the choice is not offered there.
 - **No replay of a session's working directory.** The directory a terminal moved to arrives only as an event;
   a window that connects later shows the checkout's path until the next `cd`. A session's status and usage are
   not part of the gap: the native window reads `terminal.TurnStates` right after attaching to `/events`. The web

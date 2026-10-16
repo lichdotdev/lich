@@ -65,6 +65,11 @@ export const SETTING_ENTRIES: readonly IndexedSetting[] = [
   },
   {
     section: "appearance",
+    titleKey: "settings.windowSetting.title",
+    alsoKey: "settings.windowSetting.searchWords",
+  },
+  {
+    section: "appearance",
     titleKey: "settings.closeSetting.title",
     alsoKey: "settings.closeSetting.searchWords",
   },

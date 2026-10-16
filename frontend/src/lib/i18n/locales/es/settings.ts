@@ -282,6 +282,13 @@ export const settings = {
       },
     },
   },
+  windowSetting: {
+    title: "Ventana",
+    searchWords: "web nativa experimental ventana abrir",
+    description:
+      "Qué ventana abre lich. La ventana nativa es nueva y todavía experimental; si no logra abrirse, lich abre la ventana web en su lugar.",
+    choice: { web: { label: "Web" }, native: { label: "Nativa (experimental)" } },
+  },
   restoreSetting: {
     title: "Sesiones restauradas",
     searchWords:

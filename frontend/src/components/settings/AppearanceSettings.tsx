@@ -22,6 +22,7 @@ import { FontSetting } from "./FontSetting"
 import { FooterSettings } from "./FooterSettings"
 import { LanguageSettings } from "./LanguageSettings"
 import { CloseSetting } from "./CloseSetting"
+import { WindowSetting } from "./WindowSetting"
 import { ImportThemeDialog } from "./ImportThemeDialog"
 import { ThemePicker } from "./ThemePicker"
 import { Button } from "@/components/ui/button"
@@ -223,6 +224,7 @@ export function AppearanceSettings() {
 
       <FontSetting />
       <FooterSettings />
+      <WindowSetting />
       <CloseSetting />
 
       <ImportThemeDialog

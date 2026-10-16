@@ -27,6 +27,9 @@ type TrayLabels struct {
 	Show    string `json:"show"`
 	Running string `json:"running"`
 	Quit    string `json:"quit"`
+	// OpenNative and OpenWeb open the window Show does not.
+	OpenNative string `json:"openNative"`
+	OpenWeb    string `json:"openWeb"`
 }
 
 // SetTrayLabels gives the tray its words; the first call puts it up.

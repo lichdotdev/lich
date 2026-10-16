@@ -9,9 +9,11 @@ import (
 
 // ponytail: English until the native window has i18n (shell.tray).
 var trayLabels = lichclient.TrayLabels{
-	Show:    "Show lich",
-	Running: "Sessions running: {count}",
-	Quit:    "Quit lich",
+	Show:       "Show lich",
+	Running:    "Sessions running: {count}",
+	Quit:       "Quit lich",
+	OpenNative: "Open native window",
+	OpenWeb:    "Open web window",
 }
 
 // attachTray makes this window the one the tray and a second launch bring

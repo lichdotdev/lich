@@ -82,6 +82,7 @@ type settingsSection struct {
 // settingsSections is the nav in order.
 var settingsSections = []settingsSection{
 	{id: sectionGeneral, label: "General", icon: icons.Lucide("settings-2"), rows: []settingEntry{
+		{title: windowKindTitle, also: windowKindAlso, key: windowKindKey, group: groupWindow},
 		{title: closeSettingTitle, also: closeAlso, key: closeActionKey, group: groupWindow},
 		{title: needsInputTitle, also: notifyAlso, key: desktopNotifyKey, group: groupNotifications},
 		{title: finishedTitle, also: notifyAlso, key: finishedNotifyKey, group: groupNotifications},

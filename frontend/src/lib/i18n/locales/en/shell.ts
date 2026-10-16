@@ -145,6 +145,12 @@ export const shell = {
     show: "Show lich",
     running: "Sessions running: {count}",
     quit: "Quit lich",
+    openNative: "Open native window",
+    openWeb: "Open web window",
+  },
+  windowFallback: {
+    title: "Opened the web window",
+    openLog: "Open log",
   },
   closeDialog: {
     title: "Keep lich running?",

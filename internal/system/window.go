@@ -27,17 +27,11 @@ func (s *Service) SetQuit(quit func() error) {
 // does (the CLI's options-object rule).
 type ShowWindowOptions struct{}
 
-// ShowWindow opens lich's window on the running backend when none is open, and
-// brings the open one forward otherwise: the native one once it attached, the
-// Chromium one before. It returns as soon as the window is asked for, not when
-// it is on screen.
+// ShowWindow opens the window WindowKindKey picks on the running backend, or
+// brings it forward when it is open (OpenWindow). It returns as soon as the
+// window is asked for, not when it is on screen.
 func (s *Service) ShowWindow(ShowWindowOptions) error {
-	native, err := s.showNative()
-	if native {
-		return err
-	}
-	s.showWindow()
-	return nil
+	return s.OpenWindow(OpenWindowOptions{Kind: s.chosenWindow()})
 }
 
 // CloseWindowOptions is one CloseWindow call, an object for the reason

@@ -608,6 +608,9 @@ export const System = {
   /** Whether the run before this one ended without closing its window. Reading
    * it clears it, so only the first caller of a launch is told. */
   TakeUncleanExit: () => call<boolean>("system.TakeUncleanExit", []),
+  /** Why lich opened the web window in place of the chosen native one, ""
+   * when it did not. Reading it clears it. */
+  TakeWindowFallback: () => call<string>("system.TakeWindowFallback", []),
   /** End lich: the window closes and every session's process ends with it. The
    * reply can be lost to the exit it announces. */
   Quit: () => call<null>("system.Quit", [{}]),

@@ -1195,9 +1195,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `cursor-agent`, so `lich open --kind cursor --model` changes the user's Cursor default too.
 - **The native window and the web window take turns** (`lich native`, `docs/native-window.md`): `/events` and
   `/ws` hold one client, and a new one replaces the old with no close frame, so the two windows cannot share a
-  backend. `lich native` closes the web window first, but everything else that opens one still does: the tray's
-  Show lich, `lich focus` and a second launch of lich all take the endpoints back and leave the native window
-  telling you so. A restart keeps it: the native window tells a backend that went away from one that kept
+  backend. Whatever opens a window closes the other first: `lich native`, and the window chosen in
+  Settings › Window that a launch, the tray, `lich focus` and a second launch open (`system.ShowWindow`). A
+  native window someone else started, from a terminal with `LICH_NATIVE` say, is closed the same way, through
+  the `window-close` event; one too old to know the event says another window took over. A focus that has to
+  start the native window again loses the card it named: the window comes up on the session it last showed.
+  macOS has no native window build, so Settings › Window is not offered there and lich always opens the web
+  window. A restart keeps it: the native window tells a backend that went away from one that kept
   running, and moves onto the successor its runtime file names. It cannot tell a restart from a quit until the
   15 seconds it waits run out, so a `lich quit` shows "Reconnecting to lich…" for that long. A window that
   connects late, either of them, shows a terminal's moved working directory only from the next `cd`, since

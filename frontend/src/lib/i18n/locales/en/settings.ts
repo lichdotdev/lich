@@ -277,6 +277,13 @@ export const settings = {
       quit: { label: "Quit", consequence: "Closing the window ends lich and every session in it." },
     },
   },
+  windowSetting: {
+    title: "Window",
+    searchWords: "web native experimental window open",
+    description:
+      "Which window lich opens. The native window is new and still experimental; if it fails to start, lich opens the web window instead.",
+    choice: { web: { label: "Web" }, native: { label: "Native (experimental)" } },
+  },
   restoreSetting: {
     title: "Restored sessions",
     searchWords: "resume conversation start new restart ask",

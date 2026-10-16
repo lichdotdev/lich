@@ -221,6 +221,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
 	u.model.raise = func() { w.Activate("") }
+	u.model.leave = u.leave
 	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
 	u.settings.applyEditor = u.takeEditorPref
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged

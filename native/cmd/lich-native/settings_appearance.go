@@ -77,6 +77,7 @@ type appearanceControls struct {
 	budget     widget.Editor
 	typed      bool // the ceiling field holds the user's text, not the stored value
 	closeTo    widget.Enum
+	windowTo   widget.Enum
 }
 
 // commit applies p at once and stores the setting that changed.
@@ -135,6 +136,9 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 		control = s.ceilingControl
 	case closeActionKey:
 		return s.closeBlock(gtx, th, r, first), true
+	case windowKindKey:
+		r.description = windowKindDesc
+		control = s.windowKindControl
 	default:
 		return D{}, false
 	}

@@ -79,6 +79,8 @@ type model struct {
 	focusSession func(projectID, id string)
 	// raise brings the window forward, as the tray asks.
 	raise func()
+	// leave closes the window, the web one opening in its place.
+	leave func()
 	// projectClosed hears a project that left the strip, whoever closed it,
 	// once its tab is already gone: the window stops the terminals and moves
 	// the screen.
@@ -323,6 +325,10 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 		case raiseEventName:
 			if m.raise != nil {
 				m.raise()
+			}
+		case closeEventName:
+			if m.leave != nil {
+				m.leave()
 			}
 		case "project-closed":
 			var gone struct {

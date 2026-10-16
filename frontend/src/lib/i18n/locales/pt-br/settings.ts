@@ -283,6 +283,13 @@ export const settings = {
       },
     },
   },
+  windowSetting: {
+    title: "Janela",
+    searchWords: "web nativa experimental janela abrir",
+    description:
+      "Qual janela o lich abre. A janela nativa é nova e ainda experimental; se ela não abrir, o lich abre a janela web no lugar.",
+    choice: { web: { label: "Web" }, native: { label: "Nativa (experimental)" } },
+  },
   restoreSetting: {
     title: "Sessões restauradas",
     searchWords: "retomar conversa começar nova reiniciar perguntar",

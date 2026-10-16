@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Choose the native window in Settings.** Settings › Appearance (web) and
+  Settings › General (native) gain a Window choice, Web or Native
+  (experimental); lich opens the chosen one at launch, from the tray and from
+  `lich focus`, and the tray gains an item that opens the other one. If the
+  native window is missing or fails to start, lich opens the web window and
+  says why. Not offered on macOS, which has no native window build yet.
 - **The native window's Windows update shows a spinner while the installer
   runs.** Once the download is done, the update toast of `lich native`
   (experimental) turns its bar into a spinner beside "Installing lich …",

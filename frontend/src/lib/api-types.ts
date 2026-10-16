@@ -683,6 +683,9 @@ export interface TrayLabels {
   show: string
   running: string
   quit: string
+  /** Open the window Show does not. */
+  openNative: string
+  openWeb: string
 }
 
 /** internal/system.Diagnostics — what a bug report opens with. */

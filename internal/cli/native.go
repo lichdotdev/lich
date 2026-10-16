@@ -60,13 +60,24 @@ func (c *client) native(args []string) error {
 // nativeWindow is the native window to launch: the pinned one, else the one
 // beside this lich binary. A missing one is reported before anything starts.
 func (c *client) nativeWindow() (string, error) {
-	return c.companion(nativeEnv, nativeBinary, "build it from native/ (native/slice.sh)")
+	return NativeExecutable(c.env)
+}
+
+// NativeExecutable is the native window's binary: the one LICH_NATIVE pins,
+// else lich-native beside this lich binary. A missing one is an error that
+// says how to get one.
+func NativeExecutable(env func(string) string) (string, error) {
+	return companion(env, nativeEnv, nativeBinary, "build it from native/ (native/slice.sh)")
 }
 
 // companion is the executable pinned by envName, else binary beside this lich
 // binary; howToBuild finishes the sentence a missing one is reported with.
 func (c *client) companion(envName, binary, howToBuild string) (string, error) {
-	if pinned := c.env(envName); pinned != "" {
+	return companion(c.env, envName, binary, howToBuild)
+}
+
+func companion(env func(string) string, envName, binary, howToBuild string) (string, error) {
+	if pinned := env(envName); pinned != "" {
 		if _, err := os.Stat(pinned); err != nil {
 			return "", fmt.Errorf("%s=%s: %w", envName, pinned, err)
 		}

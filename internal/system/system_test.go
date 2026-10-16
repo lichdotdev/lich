@@ -477,44 +477,126 @@ func TestShowWindowAndQuitReachWhatMainWired(t *testing.T) {
 	}
 }
 
-func TestShowWindowBringsBackTheNativeWindowOnceItAttached(t *testing.T) {
-	s := New(nil, "", "0.23.0", false)
-	shown := 0
-	s.SetShowWindow(func() { shown++ })
-	connected := true
-	raised, launched := 0, ""
-	s.SetNativeWindow(
-		func() bool {
-			if connected {
-				raised++
+// nativeRig wires a Service's windows to counters: the web window shown,
+// the native one raised while connected, launched, closed, and its exit
+// handed to the test to fire.
+type nativeRig struct {
+	s                     *Service
+	kind                  string
+	shown, raised, closed int
+	connected             bool
+	launched              []string
+	exited                func(state string)
+	launchErr, locateErr  error
+	webClosed             int
+}
+
+func newNativeRig(t *testing.T) *nativeRig {
+	t.Helper()
+	r := &nativeRig{s: New(nil, "", "0.68.0", false), kind: WindowWeb}
+	r.s.SetShowWindow(func() { r.shown++ })
+	r.s.SetCloseWindow(func() error { r.webClosed++; return nil })
+	r.s.SetNativeWindow(NativeHooks{
+		Raise: func() bool {
+			if r.connected {
+				r.raised++
 			}
-			return connected
+			return r.connected
 		},
-		func(executable string) error {
-			launched = executable
+		Launch: func(exe string, exited func(string)) error {
+			if r.launchErr != nil {
+				return r.launchErr
+			}
+			r.launched = append(r.launched, exe)
+			r.exited = exited
 			return nil
 		},
-	)
+		Close: func() { r.closed++; r.connected = false },
+		Locate: func() (string, error) {
+			if r.locateErr != nil {
+				return "", r.locateErr
+			}
+			return "/opt/lich/lich-native", nil
+		},
+	})
+	r.s.SetWindowChoice(func() string { return r.kind })
+	return r
+}
 
-	if err := s.ShowWindow(ShowWindowOptions{}); err != nil || shown != 1 || raised != 0 {
-		t.Fatalf("before attaching: err %v, Chromium shown %d, native raised %d; want the Chromium window", err, shown, raised)
+func TestShowWindowOpensTheChosenWindow(t *testing.T) {
+	r := newNativeRig(t)
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.shown != 1 || len(r.launched) != 0 {
+		t.Fatalf("web chosen: err %v, web shown %d, native launched %v; want the web window", err, r.shown, r.launched)
 	}
 
-	s.AttachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
-	if err := s.ShowWindow(ShowWindowOptions{}); err != nil || raised != 1 || launched != "" || shown != 1 {
-		t.Fatalf("native connected: err %v, raised %d, launched %q, Chromium shown %d; want one raise only",
-			err, raised, launched, shown)
+	r.kind = WindowNative
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 || r.webClosed != 1 || r.shown != 1 {
+		t.Fatalf("native chosen: err %v, launched %v, web closed %d, web shown %d; want the web window closed and the native one started",
+			err, r.launched, r.webClosed, r.shown)
+	}
+	r.s.AttachNative(AttachNativeOptions{Executable: "/home/me/lich-native"})
+	r.connected = true
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.raised != 1 || len(r.launched) != 1 {
+		t.Fatalf("native open: err %v, raised %d, launched %v; want one raise only", err, r.raised, r.launched)
+	}
+	r.connected = false
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 2 || r.launched[1] != "/home/me/lich-native" {
+		t.Fatalf("native closed: err %v, launched %v; want the attached binary started again", err, r.launched)
+	}
+}
+
+func TestOpenWindowSwitchesToTheOtherOneWithoutChangingTheChoice(t *testing.T) {
+	r := newNativeRig(t)
+	r.kind = WindowNative
+	r.s.AttachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
+	r.connected = true
+
+	if err := r.s.OpenWindow(OpenWindowOptions{Kind: WindowWeb}); err != nil || r.closed != 1 || r.shown != 1 {
+		t.Fatalf("open web: err %v, native closed %d, web shown %d; want the native closed and the web shown", err, r.closed, r.shown)
+	}
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 {
+		t.Fatalf("show after: err %v, launched %v; want the chosen native window back", err, r.launched)
+	}
+	if err := r.s.OpenWindow(OpenWindowOptions{Kind: "electron"}); err == nil {
+		t.Error("an unknown kind opened something")
+	}
+}
+
+func TestNativeWindowThatCannotStartFallsBackToTheWebOne(t *testing.T) {
+	r := newNativeRig(t)
+	r.kind = WindowNative
+
+	r.locateErr = errors.New("no lich-native beside /usr/bin/lich")
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.shown != 1 {
+		t.Fatalf("missing binary: err %v, web shown %d; want the web window", err, r.shown)
+	}
+	if got := r.s.TakeWindowFallback(); !strings.Contains(got, "no lich-native") {
+		t.Errorf("fallback reason = %q, want the missing binary", got)
+	}
+	if got := r.s.TakeWindowFallback(); got != "" {
+		t.Errorf("second read = %q, want it told once", got)
 	}
 
-	connected = false
-	if err := s.ShowWindow(ShowWindowOptions{}); err != nil || launched != "/opt/lich/lich-native" || shown != 1 {
-		t.Fatalf("native closed: err %v, launched %q, Chromium shown %d; want the native binary started again",
-			err, launched, shown)
+	r.locateErr = nil
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 {
+		t.Fatalf("relaunch: err %v, launched %v", err, r.launched)
+	}
+	r.exited("exit status 1")
+	if r.shown != 2 || !strings.Contains(r.s.TakeWindowFallback(), "exit status 1") {
+		t.Fatalf("died before attaching: web shown %d; want the web window and the exit as the reason", r.shown)
 	}
 
-	failed := errors.New("exec format error")
-	s.SetNativeWindow(func() bool { return false }, func(string) error { return failed })
-	if err := s.ShowWindow(ShowWindowOptions{}); !errors.Is(err, failed) || shown != 1 {
-		t.Fatalf("launch failing: err %v, Chromium shown %d; want the launch's error and no Chromium window", err, shown)
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 2 {
+		t.Fatalf("third: err %v, launched %v", err, r.launched)
+	}
+	r.s.AttachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
+	r.exited("exit status 0")
+	if r.shown != 2 || r.s.TakeWindowFallback() != "" {
+		t.Fatalf("closed after attaching: web shown %d; want nothing opened in its place", r.shown)
+	}
+
+	r.launchErr = errors.New("exec format error")
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.shown != 3 {
+		t.Fatalf("launch failing: err %v, web shown %d; want the web window", err, r.shown)
 	}
 }

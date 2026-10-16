@@ -153,11 +153,11 @@ func main() {
 	coord := newCoordinator(chromiumArgs)
 	window := newWindow(term.Transport(), configDir, chromiumArgs, term.LiveCount, coord.Quit)
 	coord.SetWindowOpen(window.Open)
-	registerServices(db, term, hub, configDir, logPath, env, launchEnv, window, coord)
+	sys := registerServices(db, term, hub, configDir, logPath, env, launchEnv, window, coord)
 
 	term.SetRestart(coord.Do)
 
-	runChromium(term, configDir, coord, window, startWindow(window, noWindow))
+	runChromium(term, configDir, coord, window, startWindow(sys, noWindow))
 }
 
 // windowStart is what a launch does about lich's window: open it, its own or
@@ -169,11 +169,11 @@ type windowStart struct {
 	openRunning func(configDir string, running *singleton.Info)
 }
 
-func startWindow(window *restart.Window, noWindow bool) windowStart {
+func startWindow(sys *system.Service, noWindow bool) windowStart {
 	if noWindow {
 		return windowStart{open: func() {}, openRunning: func(string, *singleton.Info) {}}
 	}
-	return windowStart{open: window.Show, openRunning: showRunning}
+	return windowStart{open: func() { showWindow(sys, "at launch") }, openRunning: showRunning}
 }
 
 // launchArgs are lich's own arguments, or the ones an update on Windows handed
@@ -238,7 +238,7 @@ func resolveEnv() (launchEnv, env []string) {
 // to exist first. It is lifted out of main only for its length; nothing here
 // runs anywhere else.
 func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub,
-	configDir, logPath string, env, launchEnv []string, window *restart.Window, coord *restart.Coordinator) {
+	configDir, logPath string, env, launchEnv []string, window *restart.Window, coord *restart.Coordinator) *system.Service {
 	proj := project.New(project.ZenityPicker{})
 	// gh has one active account per host; a project can name a different one.
 	proj.SetAccounts(db.GHAccountForPath)
@@ -361,7 +361,13 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	sys.SetShowWindow(window.Show)
 	sys.SetQuit(coord.Quit)
 	sys.SetCloseWindow(window.Dismiss)
-	sys.SetNativeWindow(raiseNative(hub), launchNative(term, filepath.Join(configDir, "lich")))
+	sys.SetNativeWindow(system.NativeHooks{
+		Raise:  raiseNative(hub),
+		Launch: launchNative(term, filepath.Join(configDir, "lich")),
+		Close:  func() { hub.Emit(windowCloseEvent, nil) },
+		Locate: func() (string, error) { return cli.NativeExecutable(os.Getenv) },
+	})
+	sys.SetWindowChoice(func() string { return windowChoice(db) })
 	dispatcher.Register("system", sys)
 	// Deleting a session for good takes any prompt parked on it, and the row is
 	// the only copy of what the user wrote. Both channels are used, and neither
@@ -443,7 +449,13 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	rl.SetPlugins(plugins)
 	// `lich focus` opens a card for someone outside the window, who then needs
 	// the window in front, or open again: what a second launch of lich asks for.
-	rl.SetRaiseWindow(window.ShowSession)
+	rl.SetRaiseWindow(func(sessionID string) {
+		if windowChoice(db) == system.WindowNative {
+			showWindow(sys, "for lich focus")
+			return
+		}
+		window.ShowSession(sessionID)
+	})
 	// The language of the text lich types into sessions is read live from the
 	// settings table, by the relay at every message, by the terminal at
 	// every spawn and by drop at every copy notice.
@@ -473,13 +485,19 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	dispatcher.Register("themes", themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the page hands it its words (tray.SetLabels).
-	dispatcher.Register("tray", tray.New(trayIcons(),
-		func() { showFromTray(sys) }, coord.Quit, term.LiveCount))
+	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, term.LiveCount)
+	trayIcon.SetOtherWindow(func() string { return windowChoice(db) }, func(kind string) {
+		if err := sys.OpenWindow(system.OpenWindowOptions{Kind: kind}); err != nil {
+			slog.Warn("open the other window from the tray", "err", err)
+		}
+	})
+	dispatcher.Register("tray", trayIcon)
 	denyInternal(dispatcher)
 	term.Mount("/rpc/", dispatcher)
 	term.Mount("/drop", http.HandlerFunc(drops.Upload))
 	term.Mount("/blob", http.HandlerFunc(proj.ServeBlob))
 	term.Mount("/events", hub)
+	return sys
 }
 
 // denyInternal hides the methods that exist for Go callers inside this process
@@ -523,6 +541,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     checks; the relay calls it for a worker that reported back.
 //   - relay.SetPlugins, relay.SetWorkerFinished, relay.SetPromptLanguage, drop.SetPromptLanguage, project.SetAccounts, project.SetProjects,
 //     system.SetShowWindow, system.SetQuit, system.SetCloseWindow,
+//     system.SetNativeWindow, system.SetWindowChoice,
 //     quota.SetSessions, store.SetSessionGone, store.SetScheduleForfeited,
 //     store.SetSessionRenamed, store.SetProjectChanged,
 //     store.SetBranchOf, store.SetTranscriptOf, store.SetConversationsOf,
@@ -562,6 +581,8 @@ func denyInternal(d *rpc.Handler) {
 		"system.SetShowWindow",
 		"system.SetQuit",
 		"system.SetCloseWindow",
+		"system.SetNativeWindow",
+		"system.SetWindowChoice",
 		"store.SetSessionGone",
 		"store.SetScheduleForfeited",
 		"store.SetSessionRenamed",
@@ -872,8 +893,12 @@ func handleBindFailure(configDir string, cause error, openRunning func(string, *
 	os.Exit(1)
 }
 
-// windowRaiseEvent asks the native window on /events to come forward.
-const windowRaiseEvent = "window-raise"
+// windowRaiseEvent asks the native window on /events to come forward, and
+// windowCloseEvent to close, a web window taking its place.
+const (
+	windowRaiseEvent = "window-raise"
+	windowCloseEvent = "window-close"
+)
 
 // raiseNative brings the native window forward through /events, which only it
 // holds once it attached.
@@ -888,24 +913,39 @@ func raiseNative(hub *events.Hub) func() bool {
 }
 
 // launchNative starts the native window again on this backend, pointed at it
-// the way `lich native` points the first one, and logs how it ends.
-func launchNative(term *terminal.Service, logDir string) func(string) error {
-	return func(executable string) error {
+// the way `lich native` points the first one, logs how it ends and hands
+// that end to exited.
+func launchNative(term *terminal.Service, logDir string) func(string, func(string)) error {
+	return func(executable string, exited func(string)) error {
 		info := term.Transport()
 		env := append(os.Environ(), "LICH_PORT="+strconv.Itoa(info.Port), "LICH_TOKEN="+info.Token)
 		cmd, err := restart.StartNative(executable, env, logDir)
 		if err != nil {
 			return err
 		}
-		go restart.WatchNative(cmd)
+		go func() {
+			restart.WatchNative(cmd)
+			exited(cmd.ProcessState.String())
+		}()
 		return nil
 	}
 }
 
-// showFromTray is the tray's Show: a click has no one to answer but the log.
-func showFromTray(sys *system.Service) {
+// windowChoice is the window lich opens when asked for one; a store that
+// cannot answer opens the web one, which every install has.
+func windowChoice(db *store.Service) string {
+	kind, err := db.GetSetting(system.WindowKindKey, "")
+	if err != nil {
+		slog.Warn("read the window choice, opening the web window", "err", err)
+	}
+	return kind
+}
+
+// showWindow opens the chosen window where nobody waits on the answer but
+// the log: the launch and the tray.
+func showWindow(sys *system.Service, from string) {
 	if err := sys.ShowWindow(system.ShowWindowOptions{}); err != nil {
-		slog.Warn("show the window from the tray", "err", err)
+		slog.Warn("show the window "+from, "err", err)
 	}
 }
 

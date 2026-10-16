@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/omartelo/lich/internal/system"
 )
 
 // refreshEvery is how often the menu's session count is read again. The count
@@ -26,6 +28,18 @@ type Labels struct {
 	Show    string `json:"show"`
 	Running string `json:"running"`
 	Quit    string `json:"quit"`
+	// OpenNative and OpenWeb open the window Show does not.
+	OpenNative string `json:"openNative"`
+	OpenWeb    string `json:"openWeb"`
+}
+
+// other is the item for the window Show does not open, chosen being the one
+// it does: its label and the window it opens.
+func (l Labels) other(chosen string) (label, kind string) {
+	if chosen == system.WindowNative {
+		return l.OpenWeb, system.WindowWeb
+	}
+	return l.OpenNative, system.WindowNative
 }
 
 func (l Labels) running(live int) string {
@@ -45,6 +59,10 @@ type Tray struct {
 	live    func() int
 	// start puts the icon up; the build-tagged native one, or a test's.
 	start func(t *Tray)
+	// chosen is the window Show opens and openOther opens the other one; nil
+	// leaves the menu without that item (SetOtherWindow).
+	chosen    func() string
+	openOther func(kind string)
 }
 
 // Icons are the two encodings the platforms take: PNG for the Linux
@@ -58,6 +76,14 @@ type Icons struct {
 // lich, live counts the sessions with a process running.
 func New(icons Icons, show func(), quit func() error, live func() int) *Tray {
 	return &Tray{icons: icons, show: show, quit: quit, live: live, start: startNative}
+}
+
+// SetOtherWindow adds the item that opens the window Show does not, chosen
+// reading which one Show opens. Called before the tray is up.
+func (t *Tray) SetOtherWindow(chosen func() string, open func(kind string)) {
+	t.mu.Lock()
+	t.chosen, t.openOther = chosen, open
+	t.mu.Unlock()
 }
 
 // SetLabels gives the menu its words. The first call puts the tray up; a later

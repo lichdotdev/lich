@@ -144,6 +144,12 @@ export const shell = {
     show: "显示 lich",
     running: "运行中的会话：{count}",
     quit: "退出 lich",
+    openNative: "打开原生窗口",
+    openWeb: "打开网页窗口",
+  },
+  windowFallback: {
+    title: "已打开网页窗口",
+    openLog: "打开日志",
   },
   closeDialog: {
     title: "让 lich 继续运行？",

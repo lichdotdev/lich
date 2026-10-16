@@ -11,6 +11,8 @@ function pushTrayLabels(): void {
     // changes, long after this page may have closed.
     running: t("shell.tray.running", { count: "{count}" }),
     quit: t("shell.tray.quit"),
+    openNative: t("shell.tray.openNative"),
+    openWeb: t("shell.tray.openWeb"),
   }).catch(() => {})
 }
 

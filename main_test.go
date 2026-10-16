@@ -13,6 +13,7 @@ import (
 	"github.com/omartelo/lich/internal/relay"
 	"github.com/omartelo/lich/internal/rpc"
 	"github.com/omartelo/lich/internal/store"
+	"github.com/omartelo/lich/internal/system"
 	"github.com/omartelo/lich/internal/terminal"
 )
 
@@ -23,6 +24,8 @@ import (
 // Deny takes any string — fails TestDeniedMethodsExist.
 var denied = map[string]reflect.Type{
 	"store.Close":                     reflect.TypeFor[*store.Service](),
+	"system.SetNativeWindow":          reflect.TypeFor[*system.Service](),
+	"system.SetWindowChoice":          reflect.TypeFor[*system.Service](),
 	"store.SetSessionGone":            reflect.TypeFor[*store.Service](),
 	"store.SetProjectChanged":         reflect.TypeFor[*store.Service](),
 	"store.SetConversationsOf":        reflect.TypeFor[*store.Service](),

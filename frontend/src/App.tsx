@@ -45,6 +45,7 @@ import { PatchNotesGate } from "@/components/PatchNotesGate"
 import { GitMissingGate } from "@/components/GitMissingGate"
 import { ProviderSetupGate } from "@/components/ProviderSetupGate"
 import { UncleanExitGate } from "@/components/UncleanExitGate"
+import { WindowFallbackGate } from "@/components/WindowFallbackGate"
 import { CommandPalette } from "@/components/CommandPalette"
 import { StageMoveDialog } from "@/components/sidebar/StageMoveDialog"
 import { ShowBesidePicker } from "@/components/ShowBesidePicker"
@@ -274,6 +275,7 @@ function App() {
       {/* A toast, so it shares no surface with the gates around it: the launch
           after a crash can be the launch that also has a release to announce. */}
       <UncleanExitGate />
+      <WindowFallbackGate />
       {/* Ahead of the provider gate so that on a machine missing both, choosing
           a harness is still the dialog on top: a session with no agent is a
           worse first launch than one with no branch. */}

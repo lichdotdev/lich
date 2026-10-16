@@ -36,6 +36,7 @@ const (
 	uiFontKey           = "lich.appearance.font"
 	costBudgetKey       = "lich.footer.costBudget"
 	closeActionKey      = "window.closeAction" // close-request.ts CLOSE_ACTION_SETTING_KEY
+	windowKindKey       = "window.kind"        // system.WindowKindKey
 )
 
 // providers/settings.tsx's limits.
@@ -72,6 +73,7 @@ type appearancePrefs struct {
 	uiFont         string
 	budget         float64 // 0 is no ceiling
 	closeAction    string
+	windowKind     string
 }
 
 // clampZoom is settings.tsx clampZoom: bounded, snapped to one decimal.
@@ -131,7 +133,7 @@ func parseNumber(raw string, fallback float64) float64 {
 // loadAppearancePrefs reads the stored values.
 func loadAppearancePrefs(ctx context.Context, c *lichclient.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
-	for _, key := range []string{zoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey} {
+	for _, key := range []string{zoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, windowKindKey} {
 		v, err := c.GetSetting(ctx, key, "")
 		if err != nil {
 			return appearancePrefs{}, err
@@ -147,6 +149,7 @@ func loadAppearancePrefs(ctx context.Context, c *lichclient.Client) (appearanceP
 		uiFont:         raw[uiFontKey],
 		budget:         clampCostBudget(parseNumber(raw[costBudgetKey], 0)),
 		closeAction:    closeActionOf(raw[closeActionKey]),
+		windowKind:     windowKindOf(raw[windowKindKey]),
 	}
 	return p, nil
 }
