@@ -1,16 +1,14 @@
 // Package fonts embeds Onest (SIL Open Font License 1.1, onest/OFL.txt), an
 // interface face the native window offers, as static instances from Google
-// Fonts: Gio picks a weight by face, not by a variable axis. It also loads
-// an installed family through fontconfig.
+// Fonts: Gio picks a weight by face, not by a variable axis. It also finds
+// installed families: through fontconfig on Linux and the BSDs, by scanning
+// the system's font folders on Windows and macOS, which ship no fontconfig.
 package fonts
 
 import (
 	"embed"
 	"fmt"
 	"os"
-	"os/exec"
-	"strconv"
-	"strings"
 
 	"gioui.org/font"
 	"gioui.org/font/opentype"
@@ -50,48 +48,45 @@ func Faces() ([]font.FontFace, error) {
 	return faces, nil
 }
 
-// The fontconfig aliases for the system's own faces.
+// The aliases for the system's own faces, fontconfig's names for them.
 const (
 	SystemSans = "sans-serif"
 	SystemMono = "monospace"
 )
 
-// fontconfigWeights are fontconfig's numbers for the weights the interface
-// draws in (fontconfig.h FC_WEIGHT_*).
-var fontconfigWeights = []struct {
-	fc     int
-	weight font.Weight
-}{
-	{80, font.Normal},
-	{100, font.Medium},
-	{180, font.SemiBold},
-	{200, font.Bold},
+// Location is one face of an installed font file: Index picks it among a
+// collection's faces.
+type Location struct {
+	Path  string
+	Index int
 }
 
-// Load reads family's regular, medium, semibold and bold faces through
-// fontconfig, registered under family; SystemSans names the system's own.
-// fontconfig answers a weight the family lacks with its nearest one.
+// interfaceWeights are the weights the interface draws in.
+var interfaceWeights = []font.Weight{font.Normal, font.Medium, font.SemiBold, font.Bold}
+
+// Load reads family's regular, medium, semibold and bold faces from the
+// files Locate picks, registered under family; SystemSans names the
+// system's own.
 func Load(family string) ([]font.FontFace, error) {
-	faces := make([]font.FontFace, 0, len(fontconfigWeights))
-	for _, w := range fontconfigWeights {
-		out, err := exec.Command("fc-match", "-f", "%{file}\n%{index}", fmt.Sprintf("%s:weight=%d", family, w.fc)).Output()
+	faces := make([]font.FontFace, 0, len(interfaceWeights))
+	for _, w := range interfaceWeights {
+		want := font.Font{Typeface: font.Typeface(family), Weight: w}
+		loc, err := Locate(want)
 		if err != nil {
-			return nil, fmt.Errorf("fc-match %s: %w", family, err)
+			return nil, err
 		}
-		path, index, _ := strings.Cut(string(out), "\n")
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(loc.Path)
 		if err != nil {
 			return nil, err
 		}
 		parsed, err := opentype.ParseCollection(data)
 		if err != nil {
-			return nil, fmt.Errorf("parse %s: %w", path, err)
+			return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
 		}
-		i, err := strconv.Atoi(strings.TrimSpace(index))
-		if err != nil || i < 0 || i >= len(parsed) {
-			return nil, fmt.Errorf("fc-match %s: face index %q is not one of the %d in %s", family, index, len(parsed), path)
+		if loc.Index < 0 || loc.Index >= len(parsed) {
+			return nil, fmt.Errorf("locate %s: face index %d is not one of the %d in %s", family, loc.Index, len(parsed), loc.Path)
 		}
-		faces = append(faces, font.FontFace{Font: font.Font{Typeface: font.Typeface(family), Weight: w.weight}, Face: parsed[i].Face})
+		faces = append(faces, font.FontFace{Font: want, Face: parsed[loc.Index].Face})
 	}
 	return faces, nil
 }

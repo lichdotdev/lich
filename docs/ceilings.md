@@ -1218,6 +1218,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Every window started either way prints into `lich-native.log` beside `lich.log`, where an event loop stuck on
   one event for 3s or more is reported with every goroutine's stack (`native/cmd/lich-native/stall.go`); a
   stall inside `w.Event()` itself, in Gio's own dispatch, looks like an idle window and is not reported.
+- **The native window finds fonts through fontconfig on Linux and by scanning the font folders on Windows and
+  macOS** (`native/fonts/locate_fontconfig.go`, `native/fonts/locate_fontscan.go`): neither ships fontconfig,
+  and a window that shelled out to `fc-match` there closed at launch. The scan (go-text's fontscan) marks a
+  family monospace only when every glyph shares one advance, so the terminal and editor font pickers on Windows
+  and macOS leave out the dual-width Nerd Font families (the ones not named "Mono", whose icons take two cells)
+  that fontconfig's `spacing=dual` lists on Linux; the "Mono" variant of each is offered. Its family names come
+  from parsing one file per family, a few hundred on a stock Windows, the first time a font picker opens.
 - **Profiles are Claude Code's, Codex's and oh-my-pi's everywhere, and opencode's, Cursor CLI's and Kiro CLI's
   on Linux only** (`internal/claudeprofile`, `internal/codexprofile`, `internal/ompprofile`,
   `internal/xdgprofile`, on one store, `internal/profilestore`): one account per profile. The first three are

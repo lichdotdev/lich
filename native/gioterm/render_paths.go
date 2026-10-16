@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"os"
-	"os/exec"
 
 	"gioui.org/font"
 	"gioui.org/font/opentype"
@@ -15,6 +14,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
+	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/glyphs"
 	"golang.org/x/image/math/fixed"
 )
@@ -38,24 +38,25 @@ func newGrid(shaper *text.Shaper, typeface font.Typeface, size unit.Sp) *grid {
 	return &grid{shaper: shaper, font: font.Font{Typeface: typeface}, size: size}
 }
 
-// loadFamily reads the family's four styles from the files fontconfig picks.
+// loadFamily reads the family's four styles from the files fonts.Locate picks.
 // Gio's own lookup by name misses some families (Nerd Fonts among them) and
 // its fallback never reaches their private-use icons, so the grid loads the
 // files itself.
 func loadFamily(family string) ([]font.FontFace, error) {
 	var faces []font.FontFace
-	for _, style := range []string{"regular", "bold", "italic", "bold:italic"} {
-		path, err := exec.Command("fc-match", "-f", "%{file}", family+":"+style).Output()
+	for _, style := range []font.Font{{}, {Weight: font.Bold}, {Style: font.Italic}, {Weight: font.Bold, Style: font.Italic}} {
+		style.Typeface = font.Typeface(family)
+		loc, err := fonts.Locate(style)
 		if err != nil {
-			return nil, fmt.Errorf("fc-match %s:%s: %w", family, style, err)
+			return nil, err
 		}
-		data, err := os.ReadFile(string(path))
+		data, err := os.ReadFile(loc.Path)
 		if err != nil {
 			return nil, err
 		}
 		parsed, err := opentype.ParseCollection(data)
 		if err != nil {
-			return nil, fmt.Errorf("parse %s: %w", path, err)
+			return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
 		}
 		faces = append(faces, parsed...)
 	}

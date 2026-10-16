@@ -132,7 +132,7 @@ func paintBlock(ops *op.Ops, col int, rects []cellRect, c color.NRGBA, alpha uin
 	}
 }
 
-// Faces loads a font family's four styles from the files fontconfig picks, for
+// Faces loads a font family's four styles from the files fonts.Locate picks, for
 // building a text.Shaper that matches the terminal's font.
 func Faces(family string) ([]font.FontFace, error) { return loadFamily(family) }
 

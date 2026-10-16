@@ -1,4 +1,6 @@
-package glyphs
+//go:build !windows && !darwin
+
+package fonts
 
 import (
 	"slices"
@@ -13,5 +15,11 @@ func TestParseFcListFiles(t *testing.T) {
 	}
 	if got := parseFcListFiles(""); len(got) != 0 {
 		t.Fatalf("empty output parsed as %q", got)
+	}
+}
+
+func TestParseFamilyLines(t *testing.T) {
+	if got := parseFamilyLines("Iosevka,Iosevka Term\n\n JetBrains Mono \n"); !slices.Equal(got, []string{"Iosevka", "JetBrains Mono"}) {
+		t.Errorf("parsed %v", got)
 	}
 }

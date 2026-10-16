@@ -8,18 +8,23 @@ import (
 	"image"
 	"image/draw"
 	"os"
-	"os/exec"
-	"slices"
-	"strings"
 
+	gofont "gioui.org/font"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
+
+	"github.com/omartelo/lich/native/fonts"
 )
 
-// fontStyles are the fontconfig styles of a family, indexed by styleIndex.
-var fontStyles = [4]string{"regular", "bold", "italic", "bold:italic"}
+// fontStyles are the styles of a family, indexed by styleIndex.
+var fontStyles = [4]gofont.Font{
+	{},
+	{Weight: gofont.Bold},
+	{Style: gofont.Italic},
+	{Weight: gofont.Bold, Style: gofont.Italic},
+}
 
 func styleIndex(k Key) int {
 	i := 0
@@ -53,80 +58,35 @@ type Mask struct {
 // Rasterizer turns characters into coverage masks on the CPU, once each, for
 // the renderers that keep glyphs as images instead of Gio text paths. It also
 // owns the fallback Gio lacks: a character the family does not cover is drawn
-// from whichever installed font fontconfig says covers it.
+// from whichever installed font fonts.Covering says covers it.
 type Rasterizer struct {
-	family   string
-	px       float64
-	styles   [4]*fontFace
-	byFile   map[string]*fontFace
-	byRune   map[rune]*fontFace
-	masks    map[Key]*Mask
-	buf      sfnt.Buffer
-	cellW    int
-	cellH    int
-	ascent   int
-	fcLookup func(r rune) (string, error)
+	family string
+	px     float64
+	styles [4]*fontFace
+	byFile map[string]*fontFace
+	byRune map[rune]*fontFace
+	masks  map[Key]*Mask
+	buf    sfnt.Buffer
+	cellW  int
+	cellH  int
+	ascent int
 }
 
-// New loads the four styles fontconfig resolves for family. Call SetSize
+// New loads the four styles fonts.Locate resolves for family. Call SetSize
 // before Mask or Cell.
 func New(family string) (*Rasterizer, error) {
-	r := &Rasterizer{family: family, byFile: map[string]*fontFace{}, fcLookup: fontconfigCovering}
+	r := &Rasterizer{family: family, byFile: map[string]*fontFace{}}
 	for i, style := range fontStyles {
-		path, err := fcMatch(family + ":" + style)
+		style.Typeface = gofont.Typeface(family)
+		loc, err := fonts.Locate(style)
 		if err != nil {
 			return nil, err
 		}
-		if r.styles[i], err = r.load(path); err != nil {
+		if r.styles[i], err = r.load(loc.Path); err != nil {
 			return nil, err
 		}
 	}
 	return r, nil
-}
-
-func fcMatch(pattern string) (string, error) {
-	out, err := exec.Command("fc-match", "-f", "%{file}", pattern).Output()
-	if err != nil {
-		return "", fmt.Errorf("fc-match %s: %w", pattern, err)
-	}
-	return string(out), nil
-}
-
-// fontconfigCovering names a font file that has a glyph for r.
-func fontconfigCovering(r rune) (string, error) {
-	charset := fmt.Sprintf(":charset=%x", r)
-	out, err := exec.Command("fc-list", charset, "file").Output()
-	if err != nil {
-		return "", fmt.Errorf("fc-list %s: %w", charset, err)
-	}
-	covering := parseFcListFiles(string(out))
-	if len(covering) == 0 {
-		return "", nil
-	}
-	// fc-list knows who covers the character but in no useful order; fc-match
-	// ranks every font against a plain monospace, so the first covering font
-	// in its ranking is the closest regular face.
-	ranked, err := exec.Command("fc-match", "-s", "-f", "%{file}\n", "monospace").Output()
-	if err != nil {
-		return "", fmt.Errorf("fc-match -s monospace: %w", err)
-	}
-	for f := range strings.Lines(string(ranked)) {
-		if f = strings.TrimSpace(f); slices.Contains(covering, f) {
-			return f, nil
-		}
-	}
-	return covering[0], nil
-}
-
-// parseFcListFiles reads `fc-list <pattern> file`, one "path: " per line.
-func parseFcListFiles(out string) []string {
-	var files []string
-	for line := range strings.Lines(out) {
-		if f := strings.TrimSuffix(strings.TrimSpace(line), ":"); f != "" {
-			files = append(files, f)
-		}
-	}
-	return files
 }
 
 func (r *Rasterizer) load(path string) (*fontFace, error) {
@@ -194,7 +154,7 @@ func (r *Rasterizer) faceFor(k Key) (*fontFace, error) {
 	if f, ok := r.byRune[k.R]; ok {
 		return f, nil
 	}
-	path, err := r.fcLookup(k.R)
+	path, err := fonts.Covering(k.R)
 	if err != nil {
 		return nil, err
 	}

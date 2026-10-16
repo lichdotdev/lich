@@ -204,7 +204,7 @@ type interfaceFonts struct{ sans, mono string }
 
 // setInterfaceFonts builds the interface's shaper again when its sans or its
 // monospace changed: System's sans for "", Onest from the binary, any other
-// through fontconfig, and the code's family for the paths, file names and
+// through fonts.Load, and the code's family for the paths, file names and
 // counts the interface sets in monospace.
 func (u *window) setInterfaceFonts(want interfaceFonts) error {
 	if u.uiFonts != nil && *u.uiFonts == want {

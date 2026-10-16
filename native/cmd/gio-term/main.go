@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	flagFont     = flag.String("font", "JetBrainsMono Nerd Font", "font family for the grid, resolved to files by fc-match")
+	flagFont     = flag.String("font", "JetBrainsMono Nerd Font", "font family for the grid, resolved by fontconfig on Linux, the system font folders on Windows and macOS")
 	flagSize     = flag.Float64("size", 13, "font size in sp")
 	flagCols     = flag.Int("cols", 0, "fixed column count (0 fits the window)")
 	flagWidth    = flag.Int("width", 1200, "window width in dp")

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"os/exec"
 	"slices"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -42,7 +42,7 @@ var (
 // chosen family is stored by name, System as "".
 type fontPicker struct {
 	// families finds the ones offered; faces loads one, system being the
-	// fontconfig alias System draws in.
+	// alias System draws in.
 	find   func() ([]string, error)
 	faces  func(family string) ([]font.FontFace, error)
 	system string
@@ -64,55 +64,18 @@ type familyShaper struct {
 	face   font.Font
 }
 
-// monoFamilies lists the installed families fontconfig marks monospace or
-// dual-width (the Nerd Font families that are not "Mono"), which a terminal
-// can draw on its grid. The native window draws terminals through
-// fontconfig too (gioterm), so this is the roster it can render.
-func monoFamilies() ([]string, error) {
-	seen := map[string]bool{}
-	for _, spacing := range []string{":spacing=mono", ":spacing=dual"} {
-		out, err := exec.Command("fc-list", spacing, "family").Output()
-		if err != nil {
-			return nil, fmt.Errorf("fc-list %s: %w", spacing, err)
-		}
-		for _, name := range parseFamilyLines(string(out)) {
-			seen[name] = true
-		}
-	}
-	names := make([]string, 0, len(seen))
-	for name := range seen {
-		names = append(names, name)
-	}
-	slices.Sort(names)
-	return names, nil
-}
-
-// parseFamilyLines reads fc-list's family lines: a line may hold
-// comma-separated localized aliases, and the first is the family's name.
-func parseFamilyLines(out string) []string {
-	var names []string
-	for line := range strings.SplitSeq(out, "\n") {
-		if name := strings.TrimSpace(strings.SplitN(line, ",", 2)[0]); name != "" {
-			names = append(names, name)
-		}
-	}
-	return names
-}
-
 // uiFamilies lists the bundled Onest and every installed family, for the
 // interface's font.
 func uiFamilies() ([]string, error) {
-	out, err := exec.Command("fc-list", ":", "family").Output()
+	names, err := fonts.Families()
 	if err != nil {
-		return nil, fmt.Errorf("fc-list: %w", err)
+		return nil, err
 	}
-	names := parseFamilyLines(string(out))
-	slices.Sort(names)
-	return append([]string{onestFamily}, slices.Compact(names)...), nil
+	return append([]string{onestFamily}, names...), nil
 }
 
 // fontOptions are the choices offered: System, the current family even when
-// fontconfig does not list it, then the rest, those matching query.
+// the system does not list it, then the rest, those matching query.
 func fontOptions(current string, families []string, query string) []string {
 	needle := strings.ToLower(strings.TrimSpace(query))
 	var out []string
@@ -133,7 +96,7 @@ func fontLabel(family string) string {
 	return family
 }
 
-// load asks fontconfig for the families once, the first time the picker is
+// load asks for the installed families once, the first time the picker is
 // drawn, and keeps the answer for the next visit as the web does.
 func (f *fontPicker) load(invalidate func()) []string {
 	f.mu.Lock()
@@ -170,7 +133,7 @@ func (f *fontPicker) sample(th *ui.Theme, family string) layout.Widget {
 }
 
 // shaperFor loads family's faces the first time its sample is drawn.
-// ponytail: on the frame that first shows it, a fontconfig lookup and a
+// ponytail: on the frame that first shows it, a font lookup and a
 // parse; a background load waits for a family slow enough to be felt.
 func (f *fontPicker) shaperFor(family string) (*familyShaper, error) {
 	f.mu.Lock()

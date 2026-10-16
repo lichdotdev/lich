@@ -94,9 +94,6 @@ func TestFontOptions(t *testing.T) {
 	if got := fontOptions("Iosevka", families, " MONO "); !slices.Equal(got, []string{"JetBrains Mono"}) {
 		t.Errorf("filtered %v", got)
 	}
-	if got := parseFamilyLines("Iosevka,Iosevka Term\n\n JetBrains Mono \n"); !slices.Equal(got, []string{"Iosevka", "JetBrains Mono"}) {
-		t.Errorf("parsed %v", got)
-	}
 }
 
 func TestAppearanceRowsAreFoundBySearch(t *testing.T) {

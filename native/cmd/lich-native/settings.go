@@ -102,8 +102,8 @@ func newSettingsScreen(ctx context.Context, c *lichclient.Client, root *ui.Root,
 	s := &settingsScreen{ctx: ctx, client: c, root: root, invalidate: invalidate, section: defaultSection,
 		resets: map[string]*widget.Clickable{}, scrollTo: -1}
 	s.providers.book = newProviderBook(c, invalidate)
-	s.look.font = fontPicker{find: monoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
-	s.look.editorFont = fontPicker{find: monoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
+	s.look.font = fontPicker{find: fonts.MonoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
+	s.look.editorFont = fontPicker{find: fonts.MonoFamilies, faces: gioterm.Faces, system: fonts.SystemMono}
 	s.look.uiFont = fontPicker{find: uiFamilies, faces: func(family string) ([]font.FontFace, error) {
 		faces, _, err := uiFaces(family)
 		return faces, err
