@@ -52,8 +52,9 @@ type fontFace struct {
 	face font.Face
 	data []byte
 	// bitmaps reads the color bitmaps sfnt cannot (CBDT, sbix), parsed on the
-	// first character that has no outline.
+	// face's first glyph; strikes says whether it has any.
 	bitmaps *gotext.Face
+	strikes bool
 }
 
 // Mask is a glyph's coverage, placed relative to its cell's top-left.
@@ -191,14 +192,19 @@ func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The color bitmap wins over the outline: Apple Color Emoji carries both,
+	// and its outline is a monochrome stand-in.
 	if f != nil {
+		if m.Color, m.Off, err = r.colorBitmap(f, k.R); err != nil {
+			return nil, err
+		}
+	}
+	if f != nil && m.Color == nil {
 		dr, src, sp, _, ok := f.face.Glyph(fixed.P(0, r.ascent), k.R)
 		if ok && !dr.Empty() {
 			a := image.NewAlpha(image.Rect(0, 0, dr.Dx(), dr.Dy()))
 			draw.Draw(a, a.Bounds(), src, sp, draw.Src)
 			m.Img, m.Off = a, dr.Min
-		} else if m.Color, m.Off, err = r.colorBitmap(f, k.R); err != nil {
-			return nil, err
 		}
 	}
 	r.masks[k] = m
@@ -216,6 +222,10 @@ func (r *Rasterizer) colorBitmap(f *fontFace, c rune) (*image.RGBA, image.Point,
 			return nil, image.Point{}, fmt.Errorf("parse color bitmaps: %w", err)
 		}
 		f.bitmaps = faces[0]
+		f.strikes = len(f.bitmaps.BitmapSizes()) > 0
+	}
+	if !f.strikes {
+		return nil, image.Point{}, nil
 	}
 	gid, ok := f.bitmaps.NominalGlyph(c)
 	if !ok {
