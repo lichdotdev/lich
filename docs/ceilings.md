@@ -276,7 +276,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   around a libghostty-vt resize that clears a wrapped prompt only from its last wrapped row: it erases the rows
   above once the terminal has cleared that one, which is also how it tells a shell that asked from one that
   did not. The scripts are rewritten under lich's config dir at every start, so two lich builds running at once
-  share the newer one's.
+  share the newer one's. bash marks where a command's output starts from `PS0`, which it has since 4.4: the bash 3.2 macOS
+  ships marks its prompt but not that, which the resize clearing does not need.
 - **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
   `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn
   when the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session

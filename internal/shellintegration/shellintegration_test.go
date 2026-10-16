@@ -1,6 +1,7 @@
 package shellintegration
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -105,11 +106,33 @@ func TestShellsMarkTheirPromptAndStillReadTheUsersRC(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.shell, func(t *testing.T) {
 			out := runInteractive(t, c.shell, c.rc)
-			for _, want := range []string{"user-rc-ran", c.mark, "\x1b]133;B\a", "\x1b]133;C\a", "\x1b]133;D;0\a"} {
+			wants := []string{"user-rc-ran", c.mark, "\x1b]133;B\a", "\x1b]133;D;0\a"}
+			if marksOutputStart(t, c.shell) {
+				wants = append(wants, "\x1b]133;C\a")
+			}
+			for _, want := range wants {
 				if !strings.Contains(out, want) {
 					t.Errorf("output lacks %q:\n%q", want, out)
 				}
 			}
 		})
 	}
+}
+
+// marksOutputStart reports whether shell can mark where a command's output
+// starts: bash does it from PS0, which it has since 4.4; macOS ships 3.2.
+func marksOutputStart(t *testing.T, shell string) bool {
+	t.Helper()
+	if shell != "bash" {
+		return true
+	}
+	out, err := exec.Command("bash", "-c", "echo ${BASH_VERSINFO[0]} ${BASH_VERSINFO[1]}").Output()
+	if err != nil {
+		t.Fatalf("read bash's version: %v", err)
+	}
+	var major, minor int
+	if _, err := fmt.Sscan(string(out), &major, &minor); err != nil {
+		t.Fatalf("parse bash's version %q: %v", out, err)
+	}
+	return major > 4 || major == 4 && minor >= 4
 }
