@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [baseline, surfaceless]
+        variant: [baseline]
     defaults:
       run:
         working-directory: native
@@ -66,9 +66,13 @@ jobs:
           VARIANT: ${{ matrix.variant }}
         run: |
           [ "$VARIANT" = surfaceless ] && export EGL_PLATFORM=surfaceless
-          N=60; runs=0; badruns=0; skips=0
+          N=40; runs=0; badruns=0; skips=0
           for i in $(seq $N); do
-            xvfb-run -a go test -count=1 -v ./... > run.log 2>&1 || { echo "run $i exit $?"; tail -50 run.log; }
+            ( peak=0; while :; do n=$(ss -xH | grep -c X11-unix || true); [ "$n" -gt "$peak" ] && { peak=$n; echo $peak > peak.txt; }; sleep 0.05; done ) & sampler=$!
+            : > peak.txt
+            xvfb-run -a -e xvfb.err go test -count=1 -v ./... > run.log 2>&1 || { echo "run $i exit $?"; tail -50 run.log; }
+            kill $sampler; echo "run $i peak X sockets: $(cat peak.txt)"
+            [ -s xvfb.err ] && { echo "--- xvfb.err run $i"; sort xvfb.err | uniq -c | sort -rn | head -20; }
             s=$(grep -c 'no headless GPU' run.log || true)
             runs=$((runs+1)); skips=$((skips+s)); [ "$s" -gt 0 ] && badruns=$((badruns+1))
             if [ "$s" -gt 0 ]; then
