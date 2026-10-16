@@ -65,9 +65,13 @@
     "typeName": "#006e74",
     "className": "#006e74",
     "namespace": "#006e74",
+    "standard(variableName)": "#006e74",
     "propertyName": "#17559b",
     "tagName": "#17559b",
     "function(variableName)": "#17559b",
+    "definition(local(variableName))": {
+      "italic": true
+    },
     "punctuation": "#64636e",
     "operator": "#64636e",
     "operatorKeyword": "#64636e",
