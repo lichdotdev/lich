@@ -30,6 +30,9 @@ func TestCopyTreeKeepsADanglingJunctionADirectoryLink(t *testing.T) {
 	src := filepath.Join(t.TempDir(), "a")
 	target := filepath.Join(t.TempDir(), "shared")
 	mustWrite(t, filepath.Join(target, "f"), "x")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := LinkDir(target, filepath.Join(src, "skills")); err != nil {
 		t.Fatal(err)
 	}

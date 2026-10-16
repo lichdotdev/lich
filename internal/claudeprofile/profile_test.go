@@ -174,12 +174,9 @@ func TestCreateSeedsFromPersonalsMovedPlugins(t *testing.T) {
 		t.Fatal(err)
 	}
 	link := filepath.Join(p.Dir, "plugins", "marketplaces")
-	got, err := filepath.EvalSymlinks(link)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want, _ := filepath.EvalSymlinks(filepath.Join(moved, "marketplaces")); got != want {
-		t.Errorf("marketplaces link to %q, want %q", got, want)
+	mustWrite(t, filepath.Join(moved, "marketplaces", "probe"), "moved")
+	if got, err := os.ReadFile(filepath.Join(link, "probe")); err != nil || string(got) != "moved" {
+		t.Errorf("read through the marketplaces link: %q, %v; want the moved marketplaces", got, err)
 	}
 	var markets map[string]struct {
 		InstallLocation string `json:"installLocation"`
