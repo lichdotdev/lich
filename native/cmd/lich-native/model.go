@@ -327,6 +327,7 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 				m.raise()
 			}
 		case closeEventName:
+			log.Print("lich asked this window to close")
 			if m.leave != nil {
 				m.leave()
 			}

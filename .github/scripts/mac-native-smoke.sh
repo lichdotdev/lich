@@ -20,6 +20,7 @@ mkdir -p "$HOME" "$diag" "$proj"
 
 fail() {
   echo "::error::$1"
+  cat "$diag/native.out" 2>/dev/null || true
   screencapture -x "$diag/screen.png" || true
   cp "$config/lich.log" "$config/lich-native.log" "$diag/" 2>/dev/null || true
   cp /Users/runner/Library/Logs/DiagnosticReports/lich-native* "$diag/" 2>/dev/null || true
@@ -44,15 +45,20 @@ pid=$!
 for _ in $(seq 1 40); do
   sleep 1
   test -s "$diag/shot.png" && break
-  kill -0 "$pid" 2>/dev/null || { cat "$diag/native.out"; fail "lich-native exited before it drew"; }
+  kill -0 "$pid" 2>/dev/null || fail "lich-native exited before it drew"
 done
 test -s "$diag/shot.png" || fail "lich-native never wrote its shot"
 sleep 2
-kill -0 "$pid" 2>/dev/null || { cat "$diag/native.out"; fail "lich-native died after its shot"; }
+kill -0 "$pid" 2>/dev/null || fail "lich-native died after its shot"
 screencapture -x "$diag/screen.png" || true
 cp "$config/lich-native.log" "$diag/" 2>/dev/null || true
 
 "$lich" quit || fail "lich quit exited $?"
 for _ in $(seq 1 10); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
-kill -0 "$pid" 2>/dev/null && fail "lich-native outlived lich quit"
+if kill -0 "$pid" 2>/dev/null; then
+  # SIGQUIT makes Go print every goroutine's stack into native.out.
+  kill -QUIT "$pid"
+  sleep 2
+  fail "lich-native outlived lich quit"
+fi
 echo "lich-native came up, connected, drew and closed with lich; see the uploaded shot"
