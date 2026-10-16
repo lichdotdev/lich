@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pointer offset by the terminal's padding, so the cell they took sat below
   and to the right of the one pointed at, by most of a cell on a scaled
   display.
+- **The native window's terminal draws emoji.** A color emoji font such as
+  Noto Color Emoji stores each emoji as a picture rather than an outline, and
+  the terminal only drew outlines, so every emoji showed as a blank gap; they
+  now draw in color, two cells wide.
 - **A pull request an agent opens shows on its card when the turn ends.** The
   badge only looked again when the branch or its last commit moved, and opening
   a pull request moves neither, so it waited for the window to lose and regain
