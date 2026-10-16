@@ -74,9 +74,7 @@ func (t *Terminal) HandleKey(e key.Event) []byte {
 	if k, ok := functionKeys[e.Name]; ok {
 		return t.encodeKey(k, mods, 0, "")
 	}
-	// Without Ctrl or Alt the key's text arrives as an EditEvent, which also
-	// carries what dead keys and compose produced.
-	if mods&(modCtrl|modAlt) == 0 {
+	if textArrivesAsEdit(mods) {
 		return nil
 	}
 	k, unshifted, ok := characterKey(e.Name)
@@ -90,9 +88,20 @@ func (t *Terminal) HandleKey(e key.Event) []byte {
 	return t.encodeKey(k, mods, unshifted, text)
 }
 
+// textArrivesAsEdit reports whether a character key typed with mods reaches
+// the terminal as a key.EditEvent, which also carries what dead keys and
+// compose produced: always without Ctrl or Alt, and with Alt alone where
+// Option types text (optionTypesText).
+func textArrivesAsEdit(mods int) bool {
+	if mods&modCtrl != 0 {
+		return false
+	}
+	return mods&modAlt == 0 || optionTypesText
+}
+
 // KeyFilters are the key filters a terminal focused under tag needs: focus
 // (for key.EditEvent text), every function key by name, and everything typed
-// with Ctrl or Alt, which carries no EditEvent.
+// with Ctrl or Alt, which carries no EditEvent but for Option on macOS.
 func KeyFilters(tag event.Tag) []event.Filter {
 	anyMod := key.ModCtrl | key.ModShift | key.ModAlt
 	filters := []event.Filter{

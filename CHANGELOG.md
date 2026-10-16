@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The native window on macOS, experimental.** Lich.app ships it beside lich
   on Apple Silicon and Intel, and Settings › Appearance › Window offers it as
-  on Linux and Windows. It has only run on GitHub's macOS machines so far:
-  notifications are plain ones you cannot click, and there is no menu-bar
-  item.
+  on Linux and Windows. Option types characters in its terminal, as in
+  Terminal.app, so Option+letter shortcuts of an agent do not reach it. It
+  has only run on GitHub's macOS machines so far: notifications are plain
+  ones you cannot click, and there is no menu-bar item.
 - **The file tree knows many more file types.** Java, Gradle, C and C++, C#,
   PHP, Ruby, Swift, SQL, Vue, Svelte, Terraform, Dockerfile, .gitignore and
   about thirty more now show their own icon in the file tree and search

@@ -1208,7 +1208,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   start the native window again loses the card it named: the window comes up on the session it last showed.
   On macOS the native window is built and run only on GitHub's runners (`native.yml` draws one frame against a
   real backend, `.github/scripts/mac-e2e.sh` opens it from the bundle): its keys, Retina scaling, IME and menu
-  bar have never been looked at on a Mac. A restart keeps it: the native window tells a backend that went away
+  bar have never been looked at on a Mac. Option types what it composes there (Option+c is ç), as Ghostty's and
+  Terminal.app's default does, so an agent's Alt/Meta shortcut on a letter (Option+P) never reaches it; Option
+  with Backspace or an arrow still does (`native/gioterm/keys_option_darwin.go`). A restart keeps it: the native window tells a backend that went away
   from one that kept running, and moves onto the successor its runtime file names. A quit (`lich quit`, the
   tray, SIGINT or SIGTERM) closes it with the same `window-close` event; a backend killed outright or crashed
   sends nothing, so the window shows "Reconnecting to lich…" for the 15 seconds it waits and then lich as
