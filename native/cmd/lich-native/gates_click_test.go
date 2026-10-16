@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,35 +21,95 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"github.com/coder/websocket"
 
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
 
 // gateBackend answers every RPC the startup gates make and reports each one
-// as "method args".
+// as "method args". It also answers /ping and holds /events and /ws open, so
+// a window can attach to it and lose it again.
 type gateBackend struct {
 	calls  chan string
 	state  []lichclient.Project
 	answer map[string]any
+	srv    *httptest.Server
+
+	// refuseEvents and refuseTerminal make that socket's upgrade fail.
+	refuseEvents, refuseTerminal atomic.Bool
+	// eventsOpened and terminalOpened count the sockets a window attached.
+	eventsOpened, terminalOpened atomic.Int32
+
+	dropEvents     chan struct{}
+	dropEventsOnce sync.Once
+}
+
+func newGateBackend(t *testing.T) *gateBackend {
+	t.Helper()
+	b := &gateBackend{calls: make(chan string, 64), answer: map[string]any{}, dropEvents: make(chan struct{}),
+		state: []lichclient.Project{{ID: "p", Name: "repo", Path: "/repo"}}}
+	b.srv = httptest.NewServer(http.HandlerFunc(b.serve))
+	t.Cleanup(b.srv.Close)
+	return b
+}
+
+func (b *gateBackend) serve(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/ping":
+		w.WriteHeader(http.StatusNoContent)
+		return
+	case "/events":
+		b.hold(w, r, &b.refuseEvents, &b.eventsOpened, b.dropEvents)
+		return
+	case "/ws":
+		b.hold(w, r, &b.refuseTerminal, &b.terminalOpened, nil)
+		return
+	}
+	body, _ := io.ReadAll(r.Body)
+	method := strings.TrimPrefix(r.URL.Path, "/rpc/")
+	b.calls <- method + " " + string(body)
+	result := b.answer[method]
+	if method == "store.LoadState" {
+		result = b.state
+	}
+	_ = json.NewEncoder(w).Encode(result)
+}
+
+// hold keeps a socket open until the client leaves or drop closes.
+func (b *gateBackend) hold(w http.ResponseWriter, r *http.Request, refuse *atomic.Bool, opened *atomic.Int32, drop <-chan struct{}) {
+	if refuse.Load() {
+		http.Error(w, "refused", http.StatusServiceUnavailable)
+		return
+	}
+	conn, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		return
+	}
+	opened.Add(1)
+	gone := conn.CloseRead(r.Context())
+	select {
+	case <-drop:
+		conn.CloseNow()
+	case <-gone.Done():
+	}
+}
+
+// dropEventStream ends /events under the window, as a backend that gave its
+// sockets to another window does.
+func (b *gateBackend) dropEventStream() { b.dropEventsOnce.Do(func() { close(b.dropEvents) }) }
+
+// goAway stops the backend the way a quit does: nothing answers, and the
+// sockets end.
+func (b *gateBackend) goAway() {
+	b.srv.Close()
+	b.dropEventStream()
 }
 
 func newGateWindow(t *testing.T) (*window, *gateBackend) {
 	t.Helper()
-	b := &gateBackend{calls: make(chan string, 64), answer: map[string]any{},
-		state: []lichclient.Project{{ID: "p", Name: "repo", Path: "/repo"}}}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := io.ReadAll(r.Body)
-		method := strings.TrimPrefix(r.URL.Path, "/rpc/")
-		b.calls <- method + " " + string(body)
-		result := b.answer[method]
-		if method == "store.LoadState" {
-			result = b.state
-		}
-		_ = json.NewEncoder(w).Encode(result)
-	}))
-	t.Cleanup(srv.Close)
-	client := clientOf(srv)
+	b := newGateBackend(t)
+	client := clientOf(b.srv)
 	u := &window{ctx: t.Context(), client: client, win: new(app.Window),
 		theme: &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Canvas}}
 	u.model = newModel(client, func() {})

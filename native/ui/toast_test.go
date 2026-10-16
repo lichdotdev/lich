@@ -369,3 +369,15 @@ func TestToastIconOptionReservesTheLeadingBoxOnADefaultToast(t *testing.T) {
 		t.Fatal("the icon option took no room before the title")
 	}
 }
+
+func TestToasterLiveIsTrueUntilTheToastIsDismissed(t *testing.T) {
+	var state Toaster
+	state.Show(Toast{ID: "update", Duration: ToastForever})
+	if !state.Live("update") || state.Live("other") {
+		t.Fatal("a shown toast should be live and an unknown ID should not")
+	}
+	state.Dismiss("update")
+	if state.Live("update") {
+		t.Fatal("a dismissed toast is still live")
+	}
+}

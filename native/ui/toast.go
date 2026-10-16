@@ -252,6 +252,13 @@ func (t *Toaster) Dismiss(id string) {
 	t.invalidate()
 }
 
+// Live reports whether the toast with id is up and not yet dismissed.
+func (t *Toaster) Live(id string) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.stack.live(id) != nil
+}
+
 // SetHidden holds the timers while the window is out of sight or focus,
 // so a toast is not spent on nobody.
 func (t *Toaster) SetHidden(hidden bool) {

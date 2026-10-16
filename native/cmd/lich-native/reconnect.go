@@ -15,13 +15,13 @@ import (
 // ponytail: English until the native window has i18n.
 const reconnectingText = "Reconnecting to lich…"
 
-const (
-	// reconnectWait bounds waiting for a restarted lich to answer. Its
-	// successor is launched before it stops and binds the port the moment it
-	// is free; `lich native` gives a cold start 15s (internal/cli/native.go).
-	reconnectWait = 15 * time.Second
-	reconnectPoll = 250 * time.Millisecond
-)
+// reconnectWait bounds waiting for a restarted lich to answer. Its successor
+// is launched before it stops and binds the port the moment it is free;
+// `lich native` gives a cold start 15s (internal/cli/native.go). A var so a
+// test can let the wait run out without sleeping through it.
+var reconnectWait = 15 * time.Second
+
+const reconnectPoll = 250 * time.Millisecond
 
 // backendDropped is /events ending under the open window. A backend that
 // still answers gave its sockets to another window, and this one is lost. A
