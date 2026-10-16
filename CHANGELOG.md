@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.68.0] - 2026-10-16
+
+> [!IMPORTANT]
+> **Everyone on Linux and Windows: lich has a native window, experimental.**
+> Choose it in Settings › Appearance › Window, and the tray keeps the web window
+> one click away; if it fails to start, lich opens the web window instead.
+
 ### Added
 
 - **Choose the native window in Settings.** Settings › Appearance (web) and
@@ -14,60 +21,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (experimental); lich opens the chosen one at launch, from the tray and from
   `lich focus`, and the tray gains an item that opens the other one. Changing
   it offers to switch now, closing this window and opening the other one with
-  every session still running. If the
-  native window is missing or fails to start, lich opens the web window and
-  says why. Not offered on macOS, which has no native window build yet. The
-  native window now ships in the Linux packages, the AUR package, the Windows
-  installer and both archives, beside lich.
-- **The native window's Windows update shows a spinner while the installer
-  runs.** Once the download is done, the update toast of `lich native`
-  (experimental) turns its bar into a spinner beside "Installing lich …",
-  as the web window does, until lich closes and reopens.
-- **Comment on a pull request's lines from the native window.** In Pulls ›
-  Files of `lich native` (experimental), the menu over a selection offers
-  "Comment on the pull request", beside "Comment for the session": the comment
-  joins the pending review, shows under its lines, and reaches GitHub with
-  Submit review.
-- **A theme can follow your desktop from dark to light, in the native window.**
-  A theme's new optional `pair` names its variant for the other scheme, and
-  with Auto light/dark on (Settings › Appearance, beside the theme list) the
-  native window (`lich native`, experimental) draws that variant while the OS
-  asks for its scheme, then goes back. The bundled Light and Dark pair each
-  other. See `docs/themes.md`.
-- **Choose the interface font and the code's font and size, in the native
-  window.** In `lich native` (experimental), Settings › Appearance has an
-  interface font, and Settings › Editor an editor font and text size for the
-  code in the Code tab, the Review tab and pull requests, which drew at a fixed
-  12 or 13px before. Every font picker starts with System, now the default: the
-  system's sans for the interface and its monospace for the terminal and the
-  code, which draws at 14px. The file names, paths and counts the interface
-  sets in monospace follow the editor font. Onest, the interface's face until
-  now, is one of the choices.
-- **`lich theme list` and `lich theme switch <theme>`**, for the script that
-  changes your desktop's theme to bring lich along: the native window repaints
-  at once. See `docs/cli.md`.
-
-- **Themes can color the code, in the native window.** A theme's new optional
-  `syntax` section styles the review, diff and file views of `lich native`
-  (experimental) by CodeMirror highlighting tag, a color or a color with bold,
-  italic, underline or strikethrough per tag, so a theme's code reads the way
-  its editor does. The bundled themes keep their colors, and a theme without
-  the section keeps the default palette; the web window ignores it. See
-  `docs/themes.md`.
-- **See which binary of each agent lich runs, and its version.** When several
-  copies of a CLI sit on your `PATH` (say a global npm install, a mise shim and
-  a distro package of Codex), the first one silently drives every session,
-  login and plugin install. In the native window (`lich native`, experimental),
-  Settings › Providers now shows the version beside a provider whose row has no
-  plan reading, and a
-  provider's Binary block names the file a session runs, its version, and every
-  other version `PATH` holds, with a hint to pin one; the row in the list says
-  "other versions on PATH". `lich doctor` warns about the same thing and names
-  the setting that pins one (`provider.<id>.bin`).
+  every session still running. If the native window is missing or fails to
+  start, lich opens the web window and says why. The native window ships in
+  the Linux packages, the AUR package, the Windows installer and both
+  archives, beside lich; macOS has no build of it yet, so the choice is not
+  offered there.
+- **`lich native` opens the native window.** It is built in Go on Gio, beside
+  the web window, and opens on the running lich (starting one when none runs)
+  after closing the web window, so your sessions stay where they are. It
+  survives lich restarting after an update, shows lich in the tray, and Show
+  lich brings it back after you close it.
+- **The native window's terminal takes the mouse and the agent's keys.**
+  Dragging selects from the clicked cell to the one under the pointer and
+  copies on release, a double click takes the word and a triple click the
+  line; a program that asks for the mouse, as Claude Code and vim do, gets
+  clicks, drags and the wheel instead, and `Shift` selects over it; in a
+  full-screen program that does not, such as `less`, the wheel moves through
+  it. `Ctrl+Shift+V` (`Cmd+V` on macOS) pastes the clipboard's text, or hands
+  the agent an image or file it holds; `Ctrl+V` attaches a clipboard image
+  (`Alt+V` on Windows), `Shift+Enter` breaks the line and `Ctrl+Backspace`
+  erases a word, as in the web window. Resizing a zsh, bash or fish session
+  redraws its prompt instead of stacking copies of it: lich starts those
+  shells with prompt marks (OSC 133).
+- **Pull requests in the native window.** The pull request button in the top
+  bar, `Ctrl+Shift+P`, or a card's or the footer's `#123` opens the repository's
+  pull requests beside the one in view, filtered by text and by All, Ready,
+  Drafts or Failing, open, closed or merged. A pull request shows its checks,
+  mergeability and review, the files that conflict, its description and
+  conversation in Markdown, its commits, and its files as the Review tab draws
+  them beside a file tree, each file tickable as viewed and each review thread
+  under its line. Folding a file you had scrolled into keeps the next one
+  right under it, here and in the Review tab. A thread is answered or resolved
+  there or in the conversation, where the pull request is commented on too. A
+  selection of lines is commented for the session's batch or on the pull
+  request, into a pending review sent as a comment, an approval or a change
+  request. **Open in Session** reuses or creates the branch's worktree,
+  **Resolve conflicts** and **Fix CI errors** hand the problem to that
+  session's prompt, and **Merge** follows the base branch's rules, squashes or
+  merges with the commit message as you edit it when you ask to, then offers to
+  remove the merged worktree.
+- **A new worktree in the native window starts from the newest of its base.**
+  The **Worktree** item of the + menu (or its shortcut) opens a dialog that
+  takes a name, words or a `#123` issue, the branch to start from and whether to
+  bring the checkout's uncommitted changes. When that branch is behind its
+  upstream, as `main` is after a few merges, lich fetches it first and starts the
+  worktree from the upstream instead, saying so under the branch; a branch with
+  commits not pushed, an unreachable remote or uncommitted changes brought along
+  keep the local branch. Your local branch itself is left as it is. A worktree
+  opened from the command line or by an agent (`open_session`) on a local base
+  starts from the newer of the two the same way.
 - **Claude Code profiles: more than one account, each with its full login, in
   the native window.** Open Settings › Providers › Claude Code in `lich native`
-  (experimental) and make a profile per account: **New profile** takes a name
-  and the plugins to bring from Personal, then logs it in with Claude Code's own
+  and make a profile per account: **New profile** takes a name and the plugins
+  to bring from Personal, then logs it in with Claude Code's own
   `claude auth login` in a dialog (or from a terminal card), and plan usage,
   plugins and every Claude Code feature work for it as they do for your own; the
   setup tokens a wrapper binary used to hand over carried none of that. Your
@@ -75,33 +81,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   profiles, the plugins you pick are installed into the new one under its
   account's policy, and the lich plugin is installed there for you and follows
   Personal's: installing or updating it there updates every profile, and the
-  ones logged in before they got it get it at lich's next start. A project
-  picks the profile its new sessions start in (**Profile**, in the Global and
-  project scopes), a session keeps the one it was born in and its card names it,
-  and **Continue in** on the card's menu moves a session's conversation to
-  another logged-in account, with its five-hour usage beside it, and carries on
-  in the same card. The web window does not show profiles. Codex has its own,
-  below.
+  ones logged in before they got it get it at lich's next start. A confined
+  session of a profile can write to its plugins as it does to the profile. A
+  project picks the profile its new sessions start in (**Profile**, in the
+  Global and project scopes), a session keeps the one it was born in and its
+  card names it, and **Continue in** on the card's menu moves a session's
+  conversation to another logged-in account, with its five-hour usage beside
+  it, and carries on in the same card. The web window does not show profiles.
 - **Codex profiles: more than one login, in the native window.** Open Settings ›
-  Providers › Codex in `lich native` (experimental) and make a profile per
-  account: **New profile** takes a name and logs it in with Codex's own
-  `codex login`, which opens the browser and waits for its page on a local port,
-  so one login at a time. A profile keeps its own login, its own conversations
-  and its own plugins: the dialog asks which of Personal's plugins to bring,
-  **Copy plugins from…** on a profile's menu brings more later, and the lich
-  plugin is installed there for you and follows Personal's updates. Personal's `config.toml` settings (model,
-  features, MCP servers), `AGENTS.md`, hooks, skills and rules are the same in
-  all of them; a setting changed inside a profile goes back to Personal's at its
-  next session, so change it in Personal. A project picks the profile
-  its new Codex sessions start in, a session keeps the one it was born in and
-  its card names it, and **Continue in** on the card's menu moves a Codex
-  conversation to another logged-in account, with its five-hour usage beside it,
-  and carries on in the same card. Searching a conversation, resuming it from
-  the History tab and the context and cost readouts look in every profile.
+  Providers › Codex in `lich native` and make a profile per account: **New
+  profile** takes a name and logs it in with Codex's own `codex login`, which
+  opens the browser and waits for its page on a local port, so one login at a
+  time. A profile keeps its own login, its own conversations and its own
+  plugins: the dialog asks which of Personal's plugins to bring, **Copy plugins
+  from…** on a profile's menu brings more later, and the lich plugin is
+  installed there for you and follows Personal's updates. Personal's
+  `config.toml` settings (model, features, MCP servers), `AGENTS.md`, hooks,
+  skills and rules are the same in all of them; a setting changed inside a
+  profile goes back to Personal's at its next session, so change it in
+  Personal. A project picks the profile its new Codex sessions start in, a
+  session keeps the one it was born in and its card names it, and **Continue
+  in** on the card's menu moves a Codex conversation to another logged-in
+  account, with its five-hour usage beside it, and carries on in the same card.
+  Searching a conversation, resuming it from the History tab and the context
+  and cost readouts look in every profile.
 - **oh-my-pi profiles: more than one login, in the native window.** Open
-  Settings › Providers › oh-my-pi in `lich native` (experimental) and make a
-  profile per set of accounts: **New profile** takes a name and opens oh-my-pi's
-  own `omp login` in a terminal card, where you pick the provider to log in to,
+  Settings › Providers › oh-my-pi in `lich native` and make a profile per set
+  of accounts: **New profile** takes a name and opens oh-my-pi's own
+  `omp login` in a terminal card, where you pick the provider to log in to,
   since that login is an interactive picker. A profile keeps its own logins and
   its own conversations; `config.yml`, `models.yml`, MCP servers, `AGENTS.md`,
   skills, rules, commands, prompts and extensions are the same in all of them,
@@ -114,98 +121,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and cost readouts look in every profile.
 - **opencode, Cursor CLI and Kiro CLI profiles on Linux, in the native
   window.** Open Settings › Providers › opencode, Cursor CLI or Kiro CLI in
-  `lich native` (experimental) and make a profile per account: **New profile**
-  takes a name and opens the CLI's own login (`opencode auth login`,
-  `cursor-agent login`, `kiro-cli login`) in a terminal card. None of the three
-  has a setting of its own that moves its login, so a profile's sessions run
-  with their own `XDG_DATA_HOME` (opencode, Kiro CLI) or `XDG_CONFIG_HOME`
-  (Cursor CLI), a directory of links to yours in which only the provider's own
-  folder is the profile's: `gh`, `git`, `mise` and every other tool in the
-  session keep finding their state where it always was, and what a tool creates
-  there for the first time during a session stays in that profile.
-  An opencode profile keeps its own login and conversation history, and its
-  sessions cannot continue in another profile, since opencode keeps both in one
-  database. A Cursor CLI profile keeps its own login, chats and CLI settings,
-  and **Continue in** moves a chat to another logged-in profile. A Kiro CLI
+  `lich native` and make a profile per account: **New profile** takes a name
+  and opens the CLI's own login (`opencode auth login`, `cursor-agent login`,
+  `kiro-cli login`) in a terminal card. None of the three has a setting of its
+  own that moves its login, so a profile's sessions run with their own
+  `XDG_DATA_HOME` (opencode, Kiro CLI) or `XDG_CONFIG_HOME` (Cursor CLI), a
+  directory of links to yours in which only the provider's own folder is the
+  profile's: `gh`, `git`, `mise` and every other tool in the session keep
+  finding their state where it always was, and what a tool creates there for
+  the first time during a session stays in that profile. An opencode profile
+  keeps its own login and conversation history, and its sessions cannot
+  continue in another profile, since opencode keeps both in one database. A
+  Cursor CLI profile keeps its own login, chats and CLI settings, and
+  **Continue in** moves a chat to another logged-in profile. A Kiro CLI
   profile keeps its own login; conversations are every profile's, so
-  **Continue in** carries on in the other account at once. On macOS and Windows
-  these three keep their logins outside the XDG directories, so they have no
-  profiles there; `docs/ceilings.md` has what was measured for each provider.
-- **A new worktree in the native window starts from the newest of its base.**
-  The **Worktree** item of the + menu (or its shortcut) opens a dialog that
-  takes a name, words or a `#123` issue, the branch to start from and whether to
-  bring the checkout's uncommitted changes. When that branch is behind its
-  upstream, as `main` is after a few merges, lich fetches it first and starts the
-  worktree from the upstream instead, saying so under the branch; a branch with
-  commits not pushed, an unreachable remote or uncommitted changes brought along
-  keep the local branch. Your local branch itself is left as it is. A worktree
-  opened from the command line or by an agent (`open_session`) on a local base
-  starts from the newer of the two the same way.
-- **Pull requests in the native window.** The pull request button in the top
-  bar, `Ctrl+Shift+P`, or a card's or the footer's `#123` opens the repository's
-  pull requests beside the one in view, filtered by text and by All, Ready,
-  Drafts or Failing, open, closed or merged. A pull request shows its checks,
-  mergeability and review, the files that conflict, its description and
-  conversation in Markdown, its commits, its checks, and its files as the Review
-  tab draws them beside a file tree, each file tickable as viewed and each
-  review thread under its line. A thread is answered or resolved there or in
-  the conversation, where the pull request is commented on too. A line comment goes to the session's batch or into a pending
-  review, sent as a comment, an approval or a change request. **Open in
-  Session** reuses or creates the branch's worktree, **Resolve conflicts** and
-  **Fix CI errors** hand the problem to that session's prompt, and **Merge**
-  follows the base branch's rules, squashes or merges with the commit message
-  as you edit it when you ask to, then offers to remove the merged worktree.
-- **`lich native` opens an experimental native window.** It is built in Go on
-  Gio, beside the web window, and opens on the running lich (starting one when
-  none runs) after closing the web window, so your sessions stay where they
-  are. It is not in the release packages yet: build `lich-native` from
-  `native/` and put it beside `lich`, or point `LICH_NATIVE` at it.
-- **The native window's terminal takes the mouse and the agent's keys.**
-  Dragging selects text and copies it on release, a double click takes the
-  word and a triple click the line; a program that asks for the mouse, as
-  Claude Code and vim do, gets clicks, drags and the wheel instead, and
-  `Shift` selects over it; in a full-screen program that does not, such as
-  `less`, the wheel moves through it. `Ctrl+Shift+V` (`Cmd+V` on macOS)
-  pastes the clipboard's text, or hands the agent an image or file it holds;
-  `Ctrl+V` attaches a clipboard image (`Alt+V` on Windows), `Shift+Enter`
-  breaks the line and `Ctrl+Backspace` erases a word, as in the web window.
-  `lich native` finds `lich-native.exe` beside `lich.exe` on Windows, and
-  `native/build-windows.sh` cross-builds it from Linux. Resizing a shell
-  session in the native window no longer leaves copies of a zsh, bash or fish
-  prompt stacked above the live one: lich starts those shells with prompt
-  marks (OSC 133) and the terminal clears the prompt for the shell to redraw.
-- **`lich gallery` opens the native UI kit gallery.** It shows every primitive
-  of the experimental native window in each variant and state, fully
-  interactive, and needs no running lich. It is not in the release packages
-  yet: build `lich-gallery` from `native/` and put it beside `lich`, or point
-  `LICH_GALLERY` at it.
+  **Continue in** carries on in the other account at once. On macOS and
+  Windows these three keep their logins outside the XDG directories, so they
+  have no profiles there; `docs/ceilings.md` has what was measured for each
+  provider.
+- **See which binary of each agent lich runs, and its version.** When several
+  copies of a CLI sit on your `PATH` (say a global npm install, a mise shim and
+  a distro package of Codex), the first one silently drives every session,
+  login and plugin install. In the native window, Settings › Providers shows
+  the version beside a provider whose row has no plan reading, and a
+  provider's Binary block names the file a session runs, its version, and every
+  other version `PATH` holds, with a hint to pin one; the row in the list says
+  "other versions on PATH". `lich doctor` warns about the same thing and names
+  the setting that pins one (`provider.<id>.bin`).
+- **Desktop notifications you can click, in the native window on Linux.** A
+  session that needs your input or finished its turn raises a notification
+  with the provider's icon and a status badge, what the session asks (or the
+  last thing it said), and its project and branch. **Open** brings the window
+  up on that session, even from another workspace; each session keeps one
+  notification, replaced in place, and it goes away by itself once you answer
+  or open the session. Any notification server works (GNOME, KDE, mako, dunst,
+  swaync); one that draws buttons, like swaync, shows Open and Dismiss.
+  Windows and macOS keep the plain notification for now.
+- **Themes can color the code, in the native window.** A theme's new optional
+  `syntax` section styles the review, diff and file views by CodeMirror
+  highlighting tag, a color or a color with bold, italic, underline or
+  strikethrough per tag, so a theme's code reads the way its editor does. The
+  bundled themes mark a parameter's declaration in italics and give a
+  language's builtins (`len`, `print`, `Math`…) the type color, in Go, Java,
+  JavaScript, TypeScript, Python and Rust; a theme without the section keeps
+  the default palette, and the web window ignores it. See `docs/themes.md`.
+- **A theme can follow your desktop from dark to light, in the native window.**
+  A theme's new optional `pair` names its variant for the other scheme, and
+  with Auto light/dark on (Settings › Appearance, beside the theme list) the
+  native window draws that variant while the OS asks for its scheme, then goes
+  back. The bundled Light and Dark pair each other. See `docs/themes.md`.
+- **`lich theme list` and `lich theme switch <theme>`**, for the script that
+  changes your desktop's theme to bring lich along: the native window repaints
+  at once. See `docs/cli.md`.
+- **Choose the interface font and the code's font and size, in the native
+  window.** Settings › Appearance has an interface font, and Settings › Editor
+  an editor font and text size for the code in the Code tab, the Review tab and
+  pull requests. Every font picker starts with System, the default: the
+  system's sans for the interface and its monospace for the terminal and the
+  code, which draws at 14px. The file names, paths and counts the interface
+  sets in monospace follow the editor font, and Onest is one of the choices.
 - **`lich --no-window` starts lich without opening its window.** The sessions,
   the tray and the CLI are all there; the tray's Show lich, or launching lich
   again, opens the window when you want it.
-- **Desktop notifications you can click, in the native window on Linux.** In
-  `lich native` (experimental), a session that needs your input or finished its
-  turn raises a notification with the provider's icon and a status badge, what
-  the session asks (or the last thing it said), and its project and branch.
-  **Open** brings the window up on that session, even from another workspace;
-  each session keeps one notification, replaced in place, and it goes away by
-  itself once you answer or open the session. Any notification server works
-  (GNOME, KDE, mako, dunst, swaync); one that draws buttons, like swaync, shows
-  Open and Dismiss. Windows and macOS keep the plain notification for now.
+- **`lich gallery` opens the native UI kit gallery.** It shows every primitive
+  of the native window in each variant and state, fully interactive, and needs
+  no running lich. It is not in the release packages: build `lich-gallery`
+  from `native/` and put it beside `lich`, or point `LICH_GALLERY` at it.
 
 ### Changed
 
-- **Folding a file keeps your place in the diff.** Ticking Viewed, or clicking
-  the chevron of a file you had scrolled into, folds it at the top of the list
-  with the next file right under it, instead of leaving you several files
-  further down. Works in a pull request's files and in the dock's Review tab.
-- **The bundled themes mark parameters and builtins in the native window's
-  code views.** A parameter's declaration is in italics, and a language's
-  builtins (`len`, `print`, `Math`…) take the type color, in Go, Java,
-  JavaScript, TypeScript, Python and Rust.
 - **`lich rage` packs the native window's log too.** The bug report archive now
-  carries `lich-native.log` and its rotated `.old` beside `lich.log`, and
-  Settings › Help › Log file in the native window says the folder it opens
-  holds both.
+  carries `lich-native.log` and its rotated `.old` beside `lich.log`.
 
 ### Removed
 
@@ -218,31 +204,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **A confined session of a Claude Code profile can write to its plugins.**
-  The shared plugin store the profile's plugins live in was read-only in the
-  sandbox, so Claude Code could not mark the plugin versions it was running;
-  it is now writable there, like the profile itself.
-- **The native window survives lich restarting.** After an update's Restart,
-  or `install.sh` restarting lich, `lich native` (experimental) reconnects to
-  the new lich and reattaches its sessions, where it used to stop at "Another
-  lich window took over". The restarted lich no longer opens a web window in
-  its place when none was open before.
 - **Files saved in ISO-8859-1 show their accents in the code view, the Review
   tab and a pull request's files.** A Latin-1 file, common in older Java and
   XML projects, came up with `�` in place of every accented letter; lich now
   reads it as Latin-1 for display and leaves the file as it is on disk.
   Reverting one of its lines in the Review tab works too, where it used to
   answer that the file had changed, and so does undoing that revert.
-- **Selecting in a terminal of the native window takes what is under the
-  pointer.** A drag dropped the cell it started on and the one under the
-  pointer until the pointer crossed 60% of it; it now runs from the clicked
-  cell to the cell under the pointer, both whole, as soon as it leaves the
-  clicked one.
-- **The native window shows lich in the tray.** With `lich native`
-  (experimental), the tray icon never came up, so a lich whose window you
-  closed to keep its sessions running had nothing on screen. The icon now
-  appears with the native window, and Show lich, or launching lich again,
-  brings the native window back, starting it again if you closed it.
 - **Apps started from a lich terminal reach D-Bus and GTK again.** On
   coreutils 9.x, lich read your shell's environment with the quotes `env` adds
   when it prints to a terminal, so every session got values like
@@ -5979,7 +5946,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/omartelo/lich/compare/v0.67.0...HEAD
+[Unreleased]: https://github.com/omartelo/lich/compare/v0.68.0...HEAD
+[0.68.0]: https://github.com/omartelo/lich/compare/v0.67.0...v0.68.0
 [0.67.0]: https://github.com/omartelo/lich/compare/v0.66.0...v0.67.0
 [0.66.0]: https://github.com/omartelo/lich/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/omartelo/lich/compare/v0.64.0...v0.65.0
