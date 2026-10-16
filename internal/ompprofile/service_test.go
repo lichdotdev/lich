@@ -32,6 +32,9 @@ func fakeOmp(args []string) int {
 		fmt.Fprintln(os.Stderr, "Error: invalid config.yml")
 		return 1
 	}
+	if os.Getenv("LICH_TEST_FAKE_WARNS") != "" {
+		fmt.Fprintln(os.Stderr, "(node:1) Warning: something deprecated")
+	}
 	dir, err := PersonalDir()
 	if err != nil {
 		return 4
@@ -98,6 +101,19 @@ func TestAProfileTheCLICannotReadIsAnErrorNotALoggedOutProfile(t *testing.T) {
 	}
 	if list[0].LoggedIn || !strings.Contains(list[0].StatusError, "invalid config.yml") {
 		t.Errorf("Personal = %+v", list[0])
+	}
+}
+
+func TestProfilesReadPastAWarningOnStderr(t *testing.T) {
+	machine(t)
+	s := fakeService(t)
+	t.Setenv("LICH_TEST_FAKE_WARNS", "1")
+	list, err := s.Profiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list[0].StatusError != "" {
+		t.Errorf("a list with a warning on stderr read as %+v", list[0])
 	}
 }
 

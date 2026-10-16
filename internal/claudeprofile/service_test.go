@@ -31,6 +31,9 @@ func fakeClaude(args []string) int {
 	}
 	switch strings.Join(args, " ") {
 	case "auth status":
+		if os.Getenv("LICH_TEST_FAKE_STATUS_WARNS") != "" {
+			fmt.Fprintln(os.Stderr, "(node:1) Warning: something deprecated")
+		}
 		_, err := os.Stat(filepath.Join(dir, ".credentials.json"))
 		if err != nil {
 			fmt.Println(`{"loggedIn":false,"authMethod":"none"}`)
@@ -252,6 +255,26 @@ func TestDeleteProfileWaitsForItsSessions(t *testing.T) {
 	}
 	if len(forgotten) != 1 || forgotten[0] != p.Slug {
 		t.Errorf("settings forgotten for %v", forgotten)
+	}
+}
+
+func TestStatusReadsPastAWarningOnStderr(t *testing.T) {
+	machine(t)
+	s, _ := fakeService(t)
+	t.Setenv("LICH_TEST_FAKE_STATUS_WARNS", "1")
+	p, err := s.CreateProfile("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.Dir, ".credentials.json"), []byte("{}"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	infos, err := s.Profiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if work := infos[1]; !work.LoggedIn || work.StatusError != "" {
+		t.Errorf("a status with a warning on stderr read as %+v", work)
 	}
 }
 

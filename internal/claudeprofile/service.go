@@ -97,8 +97,8 @@ type Info struct {
 	StatusError string `json:"statusError,omitempty"`
 }
 
-// authStatus is the JSON `claude auth status` prints (measured on 2.1.296). It
-// prints it on a logged-out profile too, exiting 1.
+// authStatus is the JSON `claude auth status` prints on stdout (measured on
+// 2.1.296), on a logged-out profile too, exiting 1.
 type authStatus struct {
 	LoggedIn         bool   `json:"loggedIn"`
 	AuthMethod       string `json:"authMethod"`
@@ -137,12 +137,19 @@ func (s *Service) info(p Profile) Info {
 
 func (s *Service) authStatus(p Profile) (authStatus, error) {
 	var st authStatus
-	out, err := s.run(p, statusTimeout, "auth", "status")
-	if jsonErr := json.Unmarshal([]byte(out), &st); jsonErr != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), statusTimeout)
+	defer cancel()
+	cmd := s.command(ctx, p, "auth", "status")
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	err = explainTimeout(ctx, err, statusTimeout)
+	if jsonErr := json.Unmarshal(out, &st); jsonErr != nil {
 		if err == nil {
 			err = jsonErr
 		}
-		return st, fmt.Errorf("%s auth status: %w: %s", s.bin(), err, strings.TrimSpace(out))
+		words := strings.TrimSpace(string(out) + "\n" + stderr.String())
+		return st, fmt.Errorf("%s auth status: %w: %s", s.bin(), err, words)
 	}
 	return st, nil
 }
@@ -276,10 +283,14 @@ func (s *Service) run(p Profile, timeout time.Duration, args ...string) (string,
 	defer cancel()
 	cmd := s.command(ctx, p, args...)
 	out, err := cmd.CombinedOutput()
+	return string(out), explainTimeout(ctx, err, timeout)
+}
+
+func explainTimeout(ctx context.Context, err error, timeout time.Duration) error {
 	if err != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		err = fmt.Errorf("timed out after %s", timeout)
+		return fmt.Errorf("timed out after %s", timeout)
 	}
-	return string(out), err
+	return err
 }
 
 // command is the CLI run as a profile: Personal inherits lich's environment

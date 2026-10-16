@@ -94,13 +94,14 @@ func (s *Service) Profiles() ([]Info, error) {
 }
 
 func (s *Service) info(p Profile) Info {
-	out, err := s.run(p, statusTimeout, "usage", "accounts", "--json")
-	if err != nil {
-		return Info{Profile: p, StatusError: fmt.Sprintf("%s usage accounts: %v: %s", s.bin(), err, strings.TrimSpace(out))}
-	}
+	out, stderr, err := s.run(p, statusTimeout, "usage", "accounts", "--json")
 	var found accounts
-	if err := json.Unmarshal([]byte(out), &found); err != nil {
-		return Info{Profile: p, StatusError: fmt.Sprintf("%s usage accounts: %v: %s", s.bin(), err, strings.TrimSpace(out))}
+	if err == nil {
+		err = json.Unmarshal([]byte(out), &found)
+	}
+	if err != nil {
+		words := strings.TrimSpace(out + "\n" + stderr)
+		return Info{Profile: p, StatusError: fmt.Sprintf("%s usage accounts: %v: %s", s.bin(), err, words)}
 	}
 	info := Info{Profile: p, LoggedIn: len(found.Accounts) > 0}
 	var emails []string
@@ -169,8 +170,8 @@ func (s *Service) LoginCommand(slug string) (string, error) {
 	return store.LoginLine(s.bin(), "login", value), nil
 }
 
-// run executes the omp CLI as a profile and returns its combined output.
-func (s *Service) run(p Profile, timeout time.Duration, args ...string) (string, error) {
+// run executes the omp CLI as a profile and returns its stdout and stderr.
+func (s *Service) run(p Profile, timeout time.Duration, args ...string) (string, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, s.bin(), args...)
@@ -179,11 +180,13 @@ func (s *Service) run(p Profile, timeout time.Duration, args ...string) (string,
 	if !p.Personal {
 		cmd.Env = Env(os.Environ(), p.Dir)
 	}
-	out, err := cmd.CombinedOutput()
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
 	if err != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		err = fmt.Errorf("timed out after %s", timeout)
 	}
-	return string(out), err
+	return string(out), stderr.String(), err
 }
 
 func (s *Service) bin() string {
