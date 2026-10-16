@@ -51,10 +51,14 @@ func TestWindowsInstallerE2E(t *testing.T) {
 	}
 	writeFixture(t, filepath.Join(install, "shell", "libcef.dll"), []byte("0.7.0"))
 	writeFixture(t, filepath.Join(bin, "shell", "libcef.dll"), []byte("0.8.0"))
+	writeFixture(t, filepath.Join(bin, "lich-native.exe"), []byte("0.8.0"))
 	t.Setenv("VERSION", "0.8.0")
 	iscc := filepath.Join(os.Getenv("ProgramFiles(x86)"), "Inno Setup 6", "ISCC.exe")
 	runFixture(t, root, iscc, "/Qp", filepath.Join(build, "lich.iss"))
 	runInstalledUpdate(t, install, bin, work)
+	if got, err := os.ReadFile(filepath.Join(install, "lich-native.exe")); err != nil || string(got) != "0.8.0" {
+		t.Errorf("installed lich-native.exe = %q, %v; want the update's beside lich.exe", got, err)
+	}
 }
 
 func installerReleaseFixture(t *testing.T, installer, asset string) *httptest.Server {
