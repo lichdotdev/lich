@@ -71,7 +71,13 @@ func (b bestEffort) Write(p []byte) (int, error) {
 // window started detached has no terminal: its stdout and stderr go here, and
 // so does a crash or a stalled event loop it reports.
 func OpenNative(dir string) (*os.File, error) {
-	return openLogFile(filepath.Join(dir, nativeFileName(os.Getenv("LICH_DEV") != "")))
+	return openLogFile(NativePath(dir))
+}
+
+// NativePath is the file OpenNative writes to under dir, for a bug report to
+// attach beside Path's.
+func NativePath(dir string) string {
+	return filepath.Join(dir, nativeFileName(os.Getenv("LICH_DEV") != ""))
 }
 
 // openLogFile opens the append-mode log file at path, first rotating the

@@ -184,6 +184,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the chevron of a file you had scrolled into, folds it at the top of the list
   with the next file right under it, instead of leaving you several files
   further down. Works in a pull request's files and in the dock's Review tab.
+- **`lich rage` packs the native window's log too.** The bug report archive now
+  carries `lich-native.log` and its rotated `.old` beside `lich.log`, and
+  Settings › Help › Log file in the native window says the folder it opens
+  holds both.
 
 ### Removed
 

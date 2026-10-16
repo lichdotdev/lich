@@ -127,6 +127,35 @@ func TestBundleCarriesTheReportTheEnvAndBothLogs(t *testing.T) {
 	}
 }
 
+// The native window logs to its own file beside lich.log; a report about a
+// window that froze or never drew is read from there.
+func TestBundleCarriesTheNativeWindowLog(t *testing.T) {
+	configDir := lichDir(t, "live line\n", "")
+	dir := filepath.Join(configDir, "lich")
+	for name, body := range map[string]string{
+		"lich-native.log":     "native line token=" + liveToken + "\n",
+		"lich-native.log.old": "older native line\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := collector(t, configDir, &singleton.Info{PID: 42, Port: 47821, Token: liveToken}, true)
+
+	files, _ := bundle(t, c, "r")
+
+	native, ok := files["r/logs/lich-native.log"]
+	if !ok || !strings.Contains(native, "native line") {
+		t.Errorf("bundle has no native log (got %v)", keys(files))
+	}
+	if strings.Contains(native, liveToken) {
+		t.Error("the native log carries the loopback token")
+	}
+	if _, ok := files["r/logs/lich-native.log.old"]; !ok {
+		t.Errorf("bundle has no rotated native log (got %v)", keys(files))
+	}
+}
+
 func TestBundleNeverCarriesTheLoopbackToken(t *testing.T) {
 	configDir := lichDir(t,
 		"time=x msg=\"chromium shell opening\" url=http://127.0.0.1:47821/?token="+liveToken+" more=1\n"+

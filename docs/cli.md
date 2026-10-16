@@ -1063,7 +1063,7 @@ collects say where the process is stuck.
 |-------|---------------|
 | `report.md` | Version and build, platform, instance state, browser, whether a confined session would actually be confined here, providers on PATH, plugin state per provider, and the config directory one level deep. |
 | `env.txt` | Every `LICH_*` variable plus a fixed allowlist (`SHELL`, `PATH`, `EDITOR`, the desktop ones). Anything named like a token, key, secret or password is `<SET>` / `<UNSET>`, never a value. |
-| `logs/` | `lich.log` and the rotated `lich.log.old`, each carrying at most its last 4 MiB. |
+| `logs/` | `lich.log` and the native window's `lich-native.log`, each with its rotated `*.old`, each carrying at most its last 4 MiB. |
 | `goroutines.txt` | Every stack in the running instance, blocked ones included — only when one is running. A lich that holds its port but will not answer within 5s leaves that sentence here instead, which is the finding. |
 
 Nothing is uploaded and no issue is filed: the archive sits on disk until the

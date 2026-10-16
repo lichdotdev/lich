@@ -167,6 +167,7 @@ func (c *Collector) Bundle(w io.Writer, root string) (Report, error) {
 		{"env.txt", []byte(renderEnv(c.environ, token))},
 	}
 	files = append(files, logFiles(report.LogPath, token)...)
+	files = append(files, logFiles(logging.NativePath(report.ConfigDir), token)...)
 	if live != nil {
 		files = append(files, bundleFile{"goroutines.txt", c.goroutines(live)})
 	}
@@ -186,7 +187,7 @@ func (c *Collector) Bundle(w io.Writer, root string) (Report, error) {
 }
 
 // bundleFile is one entry of the archive, held in memory: the whole bundle is
-// two rendered pages and at most two capped log generations.
+// two rendered pages and at most two capped generations of each log.
 type bundleFile struct {
 	name string
 	data []byte
