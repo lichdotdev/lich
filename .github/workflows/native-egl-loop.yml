@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [baseline]
+        variant: [baseline, noreset]
     defaults:
       run:
         working-directory: native
@@ -65,14 +65,16 @@ jobs:
           EGL_LOG_LEVEL: debug
           VARIANT: ${{ matrix.variant }}
         run: |
-          [ "$VARIANT" = surfaceless ] && export EGL_PLATFORM=surfaceless
-          N=40; runs=0; badruns=0; skips=0
+          srv="$(sed -n 's/^XVFBARGS="\(.*\)"/\1/p' "$(command -v xvfb-run)")"; echo "xvfb-run default: $srv"
+          [ "$VARIANT" = noreset ] && srv="-noreset $srv"
+          N=80
+          runs=0; badruns=0; skips=0
           for i in $(seq $N); do
             ( peak=0; while :; do n=$(ss -xH | grep -c X11-unix || true); [ "$n" -gt "$peak" ] && { peak=$n; echo $peak > peak.txt; }; sleep 0.05; done ) & sampler=$!
-            : > peak.txt
-            xvfb-run -a -e xvfb.err go test -count=1 -v ./... > run.log 2>&1 || { echo "run $i exit $?"; tail -50 run.log; }
+            : > peak.txt; : > xvfb.err
+            xvfb-run -a -s "$srv" -e xvfb.err go test -count=1 -v ./... > run.log 2>&1 || { echo "run $i exit $?"; tail -50 run.log; }
             kill $sampler; echo "run $i peak X sockets: $(cat peak.txt)"
-            [ -s xvfb.err ] && { echo "--- xvfb.err run $i"; sort xvfb.err | uniq -c | sort -rn | head -20; }
+            echo "run $i server generations: $(grep -c 'xkbcomp) reports' xvfb.err || true)"
             s=$(grep -c 'no headless GPU' run.log || true)
             runs=$((runs+1)); skips=$((skips+s)); [ "$s" -gt 0 ] && badruns=$((badruns+1))
             if [ "$s" -gt 0 ]; then
