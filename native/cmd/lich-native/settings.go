@@ -88,6 +88,7 @@ type settingsScreen struct {
 	revealing *settingHit
 
 	general   generalSwitches
+	switcher  windowSwitch
 	notify    *notifier
 	sandbox   sandboxSettings
 	vcs       vcsSettings

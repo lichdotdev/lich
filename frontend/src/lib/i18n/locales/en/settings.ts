@@ -283,6 +283,13 @@ export const settings = {
     description:
       "Which window lich opens. The native window is new and still experimental; if it fails to start, lich opens the web window instead.",
     choice: { web: { label: "Web" }, native: { label: "Native (experimental)" } },
+    switch: {
+      title: "Switch to the native window now?",
+      description: "This window closes and the native one opens. Your sessions keep running.",
+      later: "Later",
+      now: "Switch now",
+      failed: "Could not open the native window",
+    },
   },
   restoreSetting: {
     title: "Restored sessions",

@@ -275,6 +275,13 @@ export const settings = {
     description:
       "lich 打开哪个窗口。原生窗口是新功能，仍处于实验阶段；如果它无法启动，lich 会改为打开网页窗口。",
     choice: { web: { label: "网页" }, native: { label: "原生（实验性）" } },
+    switch: {
+      title: "现在切换到原生窗口？",
+      description: "此窗口将关闭并打开原生窗口。你的会话会继续运行。",
+      later: "稍后",
+      now: "立即切换",
+      failed: "无法打开原生窗口",
+    },
   },
   restoreSetting: {
     title: "恢复的会话",

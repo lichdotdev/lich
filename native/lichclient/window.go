@@ -22,6 +22,14 @@ func (c *Client) AttachNative(ctx context.Context, executable string) error {
 	}{executable})
 }
 
+// OpenWindow opens lich's web or native window, closing the other one; kind
+// is "web" or "native".
+func (c *Client) OpenWindow(ctx context.Context, kind string) error {
+	return c.Call(ctx, "system.OpenWindow", nil, struct {
+		Kind string `json:"kind"`
+	}{kind})
+}
+
 // TrayLabels are the tray menu's words; Running carries a {count} placeholder.
 type TrayLabels struct {
 	Show    string `json:"show"`

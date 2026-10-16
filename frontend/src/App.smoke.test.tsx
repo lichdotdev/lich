@@ -127,6 +127,7 @@ function backendFor({ projects = [], settings = {} }: Workspace): Record<string,
     }),
     "patchnotes.Current": () => ({ version: VERSION, highlights: null, groups: null }),
     "system.TakeUncleanExit": () => false,
+    "system.TakeWindowFallback": () => "",
     "themes.List": () => [],
     "themes.ListBroken": () => [],
   }

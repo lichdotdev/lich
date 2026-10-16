@@ -7,8 +7,15 @@ import { expect, test, vi } from "vitest"
 import { WindowSetting, windowKindOf } from "./WindowSetting"
 
 const written: string[] = []
+const opened: string[] = []
 
 vi.mock("@/lib/rpc", () => ({
+  System: {
+    OpenWindow: (kind: string) => {
+      opened.push(kind)
+      return Promise.resolve()
+    },
+  },
   Store: {
     GetSetting: () => Promise.resolve(""),
     SetSetting: (key: string, scope: string, value: string) => {
@@ -35,5 +42,10 @@ test("writes the native choice globally", async () => {
   )
   await mounted.act(() => native?.click())
   expect(written).toEqual(["window.kind||native"])
+  expect(document.body.textContent).toContain("Switch to the native window now?")
+
+  const now = [...document.querySelectorAll("button")].find((b) => b.textContent === "Switch now")
+  await mounted.act(() => now?.click())
+  expect(opened).toEqual(["native"])
   await mounted.unmount()
 })

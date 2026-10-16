@@ -288,6 +288,13 @@ export const settings = {
     description:
       "Qué ventana abre lich. La ventana nativa es nueva y todavía experimental; si no logra abrirse, lich abre la ventana web en su lugar.",
     choice: { web: { label: "Web" }, native: { label: "Nativa (experimental)" } },
+    switch: {
+      title: "¿Cambiar a la ventana nativa ahora?",
+      description: "Esta ventana se cierra y se abre la nativa. Tus sesiones siguen en ejecución.",
+      later: "Más tarde",
+      now: "Cambiar ahora",
+      failed: "No se pudo abrir la ventana nativa",
+    },
   },
   restoreSetting: {
     title: "Sesiones restauradas",

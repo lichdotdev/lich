@@ -69,7 +69,8 @@ built from a pinned Ghostty commit.
 - **Settings › Window picks the window lich opens** (`window.kind`, web by default). A launch, the tray's
   Show lich, a second launch and `lich focus` all open the chosen one (`system.ShowWindow`), closing the other
   first: the web window through `system.CloseWindow`, the native one through the `window-close` event. The
-  tray's second item opens the other window without changing the choice. A native window that is missing
+  tray's second item opens the other window without changing the choice, and so does Switch now in the
+  dialog that changing the choice offers. A native window that is missing
   beside `lich`, or ends before it attached, leaves the web window open in its place, with a toast saying why
   (`system.TakeWindowFallback`). macOS has no native window build, so the choice is not offered there.
 - **No replay of a session's working directory.** The directory a terminal moved to arrives only as an event;

@@ -611,6 +611,8 @@ export const System = {
   /** Why lich opened the web window in place of the chosen native one, ""
    * when it did not. Reading it clears it. */
   TakeWindowFallback: () => call<string>("system.TakeWindowFallback", []),
+  /** Open the web or the native window, closing the other one. */
+  OpenWindow: (kind: "web" | "native") => call<null>("system.OpenWindow", [{ kind }]),
   /** End lich: the window closes and every session's process ends with it. The
    * reply can be lost to the exit it announces. */
   Quit: () => call<null>("system.Quit", [{}]),
