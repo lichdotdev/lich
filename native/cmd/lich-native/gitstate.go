@@ -119,20 +119,24 @@ func (m *model) stalePullRequests() {
 	}
 }
 
-// recheckMissingPR makes the next git tick ask gh again for the card of a
-// session whose turn just finished, when it shows no pull request: `gh pr
-// create` moves neither branch nor head, so nothing else would bring up the PR
-// the turn opened. Callers hold m.mu.
-func (m *model) recheckMissingPR(id string) {
+// recheckMissingPR forgets what gh answered for the card of a session whose
+// turn just finished, when it shows no pull request: `gh pr create` moves
+// neither branch nor head, so nothing else would bring up the PR the turn
+// opened. It answers the path to refresh, "" when there is none to ask about
+// again. Callers hold m.mu.
+func (m *model) recheckMissingPR(id string) string {
 	p, i := m.sessionAt(id)
 	if p == nil {
-		return
+		return ""
 	}
 	path := m.shownPath(*p, p.Sessions[i])
-	if l, looked := m.prs[path]; looked && l.pr == nil {
-		l.head = ""
-		m.prs[path] = l
+	l, looked := m.prs[path]
+	if !looked || l.pr != nil {
+		return ""
 	}
+	l.head = ""
+	m.prs[path] = l
+	return path
 }
 
 // forgetIfGone drops what is known of a path that no longer exists. Any other

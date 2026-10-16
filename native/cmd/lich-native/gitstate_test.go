@@ -80,6 +80,12 @@ func (f *fakeForge) client(t *testing.T) *lichclient.Client {
 func prOnCard(t *testing.T, m *model, want int) {
 	t.Helper()
 	m.refreshGit(context.Background())
+	awaitPROnCard(t, m, want)
+}
+
+// awaitPROnCard waits for the card's PR badge to read want, with no git tick.
+func awaitPROnCard(t *testing.T, m *model, want int) {
+	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for {
 		got := 0
@@ -170,5 +176,5 @@ func TestCardFindsThePullRequestItsTurnOpened(t *testing.T) {
 	forge.mu.Unlock()
 	send(m, statusEventName, statusEvent{ID: "s1", State: statusBusy})
 	send(m, statusEventName, statusEvent{ID: "s1", State: statusDone})
-	prOnCard(t, m, 5)
+	awaitPROnCard(t, m, 5)
 }
