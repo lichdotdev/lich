@@ -276,10 +276,10 @@ func (t *treeRows) rowParts(th *ui.Theme, r treeRow, lit bool) (lead, stat layou
 	return lead, stat
 }
 
-// fileIcon is FileIcon.tsx: the extension's devicon, or the muted file glyph
-// at 70% opacity for an extension it has none for.
+// fileIcon is FileIcon.tsx: the file's devicon, or the muted file glyph at 70%
+// opacity for a file it has none for.
 func fileIcon(gtx C, th *ui.Theme, p string) D {
-	if ic, ok := deviconByExt[extname(p)]; ok {
+	if ic := icons.DeviconFor(p); ic != nil {
 		return ic.Layout(gtx, treeGlyph, th.Foreground)
 	}
 	return icFileGlyph.Layout(gtx, treeGlyph, th.Over(ui.Alpha(th.MutedForeground, fileIconOpacity)))
@@ -288,31 +288,3 @@ func fileIcon(gtx C, th *ui.Theme, p string) D {
 const fileIconOpacity = 0.7
 
 var icFileGlyph = icons.Lucide("file")
-
-// deviconByExt is FileIcon.tsx's ICONS. Markdown and Rust ship with no fill of
-// their own and take the row's text color.
-var deviconByExt = func() map[string]*icons.Bitmap {
-	ts := icons.Devicon("typescript", false)
-	js := icons.Devicon("javascript", false)
-	kt := icons.Devicon("kotlin", false)
-	yaml := icons.Devicon("yaml", false)
-	return map[string]*icons.Bitmap{
-		"ts":   ts,
-		"tsx":  ts,
-		"js":   js,
-		"jsx":  js,
-		"go":   icons.Devicon("go", false),
-		"css":  icons.Devicon("css3", false),
-		"html": icons.Devicon("html5", false),
-		"json": icons.Devicon("json", false),
-		"kt":   kt,
-		"kts":  kt,
-		"md":   icons.Devicon("markdown", true),
-		"xml":  icons.Devicon("xml", false),
-		"yaml": yaml,
-		"yml":  yaml,
-		"sh":   icons.Devicon("bash", false),
-		"py":   icons.Devicon("python", false),
-		"rs":   icons.Devicon("rust", true),
-	}
-}()
