@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The native window offers to remove a worktree when its last session closes.** The
+  Closed toast gains Remove worktree beside Undo; a worktree lich did not create, or
+  one with uncommitted changes, is named in a dialog before it goes.
+
 ## [0.68.0] - 2026-10-16
 
 > [!IMPORTANT]

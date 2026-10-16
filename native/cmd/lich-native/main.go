@@ -100,6 +100,8 @@ type window struct {
 	worktree *worktreeDialog
 	// pulls is the Pulls screen, drawn over the stage while open.
 	pulls *pullsScreen
+	// closeWorktree is the closed toast's question before removing a worktree.
+	closeWorktree closeWorktreeConfirm
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
 	// hideSettings is a request, from another goroutine, to take Settings down
@@ -427,6 +429,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutPalette(gtx, u.theme)
 		u.layoutWorktreeDialog(gtx, u.theme)
 		u.layoutRemoveConfirm(gtx, u.theme)
+		u.layoutCloseWorktreeConfirm(gtx, u.theme)
 		u.layoutSubmitDialog(gtx, u.theme)
 		u.layoutMergeDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
@@ -786,9 +789,11 @@ func (u *window) applyOpenIn(act sidebarAction) {
 }
 
 // closeSession parks the session in the backend and stops its process, the
-// two halves of the web card's ×, and offers the park's undo.
+// two halves of the web card's ×, and offers the park's undo and, for the
+// last session of a worktree, the checkout's removal.
 func (u *window) closeSession(id string) {
 	closed, index, _ := u.model.slotOf(id)
+	project, worktree := u.model.worktreeLeftBy(id)
 	projectID, active, ok := u.model.closeSession(id)
 	if !ok {
 		return
@@ -803,7 +808,13 @@ func (u *window) closeSession(id string) {
 		u.logErr("close session", err)
 		u.logErr("close terminal", u.client.CloseTerminal(u.ctx, id))
 	}()
-	u.toaster.Show(u.closedToast(projectID, closed, index, parked))
+	toast := u.closedToast(projectID, closed, index, parked)
+	if worktree != "" {
+		toast.Secondary = &ui.ToastButton{Label: pullsRemoveWorktree, OnClick: func() {
+			go u.removeClosedWorktree(project, worktree, parked)
+		}}
+	}
+	u.toaster.Show(toast)
 }
 
 // parkSession is keepSession: the row leaves the open list and stays for a
