@@ -7,7 +7,8 @@ import { mountBudget } from "@/test/render-budget"
 import { createElement, useLayoutEffect, useState } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { PullRequest } from "@/lib/api-types"
-import { usePullRequest } from "./use-pull-request"
+import type { SessionStatus } from "@/lib/session/session-events"
+import { usePullRequest, useRecheckAfterTurn } from "./use-pull-request"
 
 const lookup = vi.fn()
 vi.mock("@/lib/rpc", () => ({
@@ -38,6 +39,23 @@ function badge(seen: Answer[], path: string, branch: string, head: string) {
     return null
   }
   return createElement(Badge)
+}
+
+// The session's status store moving under the card, the way its hook reports.
+let report: (next: SessionStatus | null) => void = () => {}
+
+function sessionCard(seen: Answer[], path: string) {
+  function Card() {
+    const [status, setStatus] = useState<SessionStatus | null>("busy")
+    report = setStatus
+    const pr = usePullRequest(path, "feat", "sha1")
+    useRecheckAfterTurn(path, status, pr)
+    useLayoutEffect(() => {
+      seen.push(pr)
+    })
+    return null
+  }
+  return createElement(Card)
 }
 
 beforeEach(() => {
@@ -87,5 +105,21 @@ describe("usePullRequest", () => {
     await mounted.act(() => moveTo({ branch: "other", head: "sha3" }))
 
     expect(seen[seen.length - 1]).toBeUndefined()
+  })
+
+  // gh pr create moves neither branch nor HEAD: the end of the turn that ran it
+  // is the only cue the badge gets.
+  it("asks again when a turn ends with no pull request shown", async () => {
+    lookup.mockResolvedValue(null)
+    const seen: Answer[] = []
+    const mounted = await mountBudget(sessionCard(seen, "/turn"))
+    await mounted.act(() => {})
+    const opened = { number: 5, url: "https://github.com/o/l/pull/5", state: "OPEN" }
+    lookup.mockResolvedValue(opened)
+
+    await mounted.act(() => report("done"))
+    await mounted.act(() => {})
+
+    expect(seen[seen.length - 1]).toEqual(opened)
   })
 })

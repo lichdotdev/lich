@@ -341,6 +341,9 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 		return err
 	}
 	t.drawHoveredLink(gtx, snap.Foreground())
+	// Gio reports a pointer in the space of the clip it hit, not of the
+	// event.Op: this one, inside the padding, is the grid's own.
+	defer clip.Rect(image.Rectangle{Max: size}).Push(gtx.Ops).Pop()
 	event.Op(gtx.Ops, t.tag)
 	return nil
 }

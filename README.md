@@ -108,6 +108,7 @@ reads what each CLI writes down and no two of them write down the same things.
 | How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no |
 | A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no |
 | Spinner while a turn runs, ring when it ends | yes | yes | yes | yes | yes | no | yes | yes |
+| A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | no, once the window regains focus | yes | yes |
 | Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no |
 | Bell when the agent is blocked on you | yes | yes | no | yes | no | no | no | no |
 | Ctrl+Shift+Y jumps to the next session waiting on you | yes | yes | no | yes | no | no | no | no |
@@ -137,10 +138,10 @@ reads what each CLI writes down and no two of them write down the same things.
 | Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no |
 
 Crush reports neither the start nor the end of a turn, and that is
-where five of those rows go at once: nothing opens a window for the card's
+where six of those rows go at once: nothing opens a window for the card's
 spinner, for the bell, for the Review tab's last turn, for the hold that keeps
-the machine awake, or for telling whoever handed it a task that the turn ended
-without an answer. The Review tab says so on the session itself rather than
+the machine awake, for the pull request it opened to reach its card, or for
+telling whoever handed it a task that the turn ended without an answer. The Review tab says so on the session itself rather than
 leaving you to notice the switch never appeared. Kiro CLI meters spend in credits
 rather than dollars, so its own footer is the only place that figure can be read.
 Antigravity's plan is read by asking `agy` itself (1.1.11 or newer; an older one

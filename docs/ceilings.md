@@ -584,6 +584,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   does mark the end (`finish.reason` other than `tool_use` in `.crush/crush.db`), but the conversation id
   reaches lich only on the first tool call, so a turn that calls no tool has nothing to read. The asker hears
   nothing until the ticket's deadline. The day Crush ships `Stop`, the existing `report-state.sh done` closes it.
+- **A pull request a Crush session opens reaches its card only when the window regains focus**
+  (`native/cmd/lich-native/gitstate.go` `recheckMissingPR`, `frontend/src/lib/pulls/use-pull-request.ts`
+  `useRecheckAfterTurn`): `gh pr create` moves neither branch nor HEAD, so a card showing no pull request
+  asks gh again when its session's turn ends, and Crush reports no `done` (`docs/hooks/session-state.md`).
+  The day Crush ships `Stop`, the existing `report-state.sh done` closes it.
 - **Only a merge lich makes is announced, and only to a card running at that moment** (`internal/relay`,
   `AnnounceMerge`; called from the Pulls screen's merge): a pull request merged on github.com, with `gh` in a
   terminal or by an agent leaves every session in its checkout believing it is still open, and so does one merged

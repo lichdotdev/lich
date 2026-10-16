@@ -290,12 +290,13 @@ func (u *window) removePRWorktree(project lichclient.Project, path string) {
 		u.model.invalidate()
 		return
 	}
-	u.removeCheckout(project, path)
+	u.removeCheckout(project, path, false, false)
 }
 
 // removeCheckout discards the sessions rooted in path, so none survives to
 // offer a resume in a directory that is gone, then removes the worktree.
-func (u *window) removeCheckout(project lichclient.Project, path string) {
+// force and adoptedAck are RemoveWorktree's.
+func (u *window) removeCheckout(project lichclient.Project, path string, force, adoptedAck bool) {
 	ids, _, _ := u.model.sessionsAt(project.ID, path)
 	for _, id := range ids {
 		u.parkSession(id)
@@ -303,7 +304,7 @@ func (u *window) removeCheckout(project lichclient.Project, path string) {
 		u.logErr("close terminal", u.client.CloseTerminal(u.ctx, id))
 	}
 	u.logErr("purge worktree sessions", u.client.PurgeWorktreeSessions(u.ctx, project.ID, path))
-	if err := u.client.RemoveWorktree(u.ctx, project.Path, path, false, false); err != nil {
+	if err := u.client.RemoveWorktree(u.ctx, project.Path, path, force, adoptedAck); err != nil {
 		u.toaster.Show(failure(pullsRemoveFailed, err))
 	} else {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(pullsRemoved, filepath.Base(path))})
@@ -360,7 +361,7 @@ func (u *window) layoutRemoveConfirm(gtx C, th *ui.Theme) {
 	if c.confirm.Clicked(gtx) && c.open {
 		c.open = false
 		project, path := c.project, c.path
-		go u.removeCheckout(project, path)
+		go u.removeCheckout(project, path, false, false)
 	}
 	if c.cancel.Clicked(gtx) {
 		c.open = false

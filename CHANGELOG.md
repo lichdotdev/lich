@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The native window offers to remove a worktree when its last session closes.** The
+  Closed toast gains Remove worktree beside Undo; a worktree lich did not create, or
+  one with uncommitted changes, is named in a dialog before it goes.
+
+- **The native window's terminal takes the cell under the pointer.** A click,
+  a drag selection, a link and a program tracking the mouse all read the
+  pointer offset by the terminal's padding, so the cell they took sat below
+  and to the right of the one pointed at, by most of a cell on a scaled
+  display.
+- **A pull request an agent opens shows on its card when the turn ends.** The
+  badge only looked again when the branch or its last commit moved, and opening
+  a pull request moves neither, so it waited for the window to lose and regain
+  focus.
 - **The native window opens on Windows.** It looked fonts up through
   fontconfig, which Windows does not ship, so it closed at launch and lich
   fell back to the web window. On Windows it now finds the installed fonts
