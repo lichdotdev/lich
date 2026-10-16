@@ -485,10 +485,12 @@ jobs:
           path: bin
           merge-multiple: true
 
+      # lich-v* and not lich-*: bin/ also holds the lich-native artifact the
+      # packages were built with, which is not an asset of its own.
       - name: Checksums
         run: |
           cd bin
-          sha256sum lich-* > checksums.txt
+          sha256sum lich-v* > checksums.txt
           cat checksums.txt
 
       # Rendered here rather than in a job of its own like the cask: the
@@ -549,7 +551,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            bin/lich-* bin/checksums.txt bin/lich.json \
+            bin/lich-v* bin/checksums.txt bin/lich.json \
             --title "$GITHUB_REF_NAME" \
             --notes-file notes.md
 
