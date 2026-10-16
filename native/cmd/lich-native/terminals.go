@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"maps"
 	"runtime"
 	"sync"
 	"time"
@@ -227,12 +228,14 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 }
 
 // setColors gives every terminal, and every one opened after, a theme's
-// default colors.
+// default colors. The lock is released before painting: a terminal whose
+// scheme flips under mode 2031 reports it through send, which takes the lock.
 func (ts *terminals) setColors(c gioterm.Colors) {
 	ts.mu.Lock()
-	defer ts.mu.Unlock()
 	ts.colors = c
-	for id, t := range ts.byID {
+	views := maps.Clone(ts.byID)
+	ts.mu.Unlock()
+	for id, t := range views {
 		if err := t.vt.SetColors(c); err != nil {
 			log.Printf("terminal colors %s: %v", id, err)
 		}

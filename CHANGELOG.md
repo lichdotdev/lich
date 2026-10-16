@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fell back to the web window. On Windows it now finds the installed fonts
   itself, Cascadia Mono or Consolas for the terminal by default, and the font
   pickers in Settings list them.
+- **Switching between a light and a dark theme no longer freezes the native
+  window.** A session that follows the terminal's color scheme, as Claude Code
+  does, was told of the change while the window still held its terminals, so
+  the window hung and closed.
 
 ## [0.68.0] - 2026-10-16
 
