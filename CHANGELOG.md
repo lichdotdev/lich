@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The native window's Windows update shows a spinner while the installer
+  runs.** Once the download is done, the update toast of `lich native`
+  (experimental) turns its bar into a spinner beside "Installing lich …",
+  as the web window does, until lich closes and reopens.
 - **Comment on a pull request's lines from the native window.** In Pulls ›
   Files of `lich native` (experimental), the menu over a selection offers
   "Comment on the pull request", beside "Comment for the session": the comment

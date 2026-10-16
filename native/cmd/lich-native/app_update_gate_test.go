@@ -43,6 +43,17 @@ func TestUpdateProgressToast(t *testing.T) {
 	}
 }
 
+func TestUpdateProgressToastSpinsOnlyThroughTheInstaller(t *testing.T) {
+	if got := updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: "installer"}); got.Icon == nil || !got.Spin {
+		t.Errorf("installer: icon %v spin %v, want a spinning glyph", got.Icon, got.Spin)
+	}
+	for _, p := range []*lichclient.AppUpdateProgress{nil, {Phase: "download", Received: 1, Total: 2}} {
+		if got := updateProgressToast("1.4.0", p); got.Icon != nil || got.Spin {
+			t.Errorf("%+v: icon %v spin %v, want no glyph while downloading", p, got.Icon, got.Spin)
+		}
+	}
+}
+
 func TestUpdateFailureTextNamesThePhase(t *testing.T) {
 	cases := []struct {
 		last *lichclient.AppUpdateProgress

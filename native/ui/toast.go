@@ -64,6 +64,8 @@ type Toast struct {
 	// sonner's icon option.
 	Icon      *icons.Icon
 	IconColor func(*Theme) color.NRGBA
+	// Spin turns Icon a lap a second, animate-spin's.
+	Spin bool
 	// Lines sit under the title in the muted foreground, one truncated line
 	// each, as a toast whose title is a block of its own draws them.
 	Lines []ToastLine

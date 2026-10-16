@@ -8,6 +8,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/omartelo/lich/native/ui"
+	"github.com/omartelo/lich/native/ui/icons"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 )
 
 // toastDemoCount is len(toastDemos), which an array length cannot read.
-const toastDemoCount = 7
+const toastDemoCount = 9
 
 // toastDemos are the gallery's toast buttons: one per variant, then the
 // buttons and description, then an update in place.
@@ -34,6 +35,8 @@ var toastDemos = []struct {
 	{"With action", ui.Toast{Title: "Session closed: Claude 3", Action: &ui.ToastButton{Label: "Undo"}}},
 	{"Progress", ui.Toast{Title: "Downloading lich 1.4.0", Description: "30% · 12.3 MB of 41.0 MB",
 		Progress: &ui.ToastProgress{Percent: 30}, Duration: ui.ToastForever}},
+	{"Spinner", ui.Toast{Title: "Installing lich 1.4.0…", Description: "lich closes and reopens on its own.",
+		Icon: icons.Lucide("loader-circle"), Spin: true, Duration: ui.ToastForever}},
 	{"Same id", ui.Toast{ID: "gallery-progress", Variant: ui.ToastInfo, Title: "Replaced in place"}},
 }
 
