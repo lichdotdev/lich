@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The native window's terminal takes the cell under the pointer.** A click,
+  a drag selection, a link and a program tracking the mouse all read the
+  pointer offset by the terminal's padding, so the cell they took sat below
+  and to the right of the one pointed at, by most of a cell on a scaled
+  display.
+
 ## [0.68.0] - 2026-10-16
 
 > [!IMPORTANT]
