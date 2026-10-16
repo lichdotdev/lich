@@ -35,7 +35,27 @@ func spawnLines(t *testing.T, log string) []string {
 	if err != nil {
 		return nil
 	}
-	return strings.Split(strings.TrimSpace(string(data)), "\n")
+	lines := strings.Split(string(data), "\n")
+	return lines[:len(lines)-1]
+}
+
+// TestSpawnLinesCountsOnlyWholeLines: `>>` creates the log before echo writes
+// to it, so a read in between sees an empty file, or half a line.
+func TestSpawnLinesCountsOnlyWholeLines(t *testing.T) {
+	log := filepath.Join(t.TempDir(), "spawns")
+	for _, c := range []struct{ data, want string }{
+		{"", "[]"},
+		{"a|b", "[]"},
+		{"a|b|x\n", `["a|b|x"]`},
+		{"a|b|x\nc|", `["a|b|x"]`},
+	} {
+		if err := os.WriteFile(log, []byte(c.data), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got := fmt.Sprintf("%q", spawnLines(t, log)); got != c.want {
+			t.Errorf("spawnLines over %q = %s, want %s", c.data, got, c.want)
+		}
+	}
 }
 
 // TestContinueInRespawnsTheCardInTheTargetProfile: the running process ends,
