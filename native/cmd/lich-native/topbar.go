@@ -3,7 +3,6 @@ package main
 import (
 	"image"
 	"image/color"
-	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -52,11 +51,10 @@ var (
 // the native window has no Home tab, and the active tab merges into the
 // island under it.
 type topbar struct {
-	root    *ui.Root
-	started time.Time
-	brand   widget.Clickable
-	sort    ui.Sortable
-	list    layout.List
+	root  *ui.Root
+	brand widget.Clickable
+	sort  ui.Sortable
+	list  layout.List
 	// tabW is the tabs' width as the strip last laid them out.
 	tabW int
 	// merge eases the active tab between detached and merged into merged,
@@ -74,7 +72,7 @@ type topbar struct {
 }
 
 func newTopbar(root *ui.Root) *topbar {
-	return &topbar{root: root, started: time.Now(), list: layout.List{Axis: layout.Horizontal},
+	return &topbar{root: root, list: layout.List{Axis: layout.Horizontal},
 		tabs: map[string]*tabState{}, hints: map[string]*ui.Tooltip{}}
 }
 

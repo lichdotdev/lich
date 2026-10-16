@@ -4,16 +4,12 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"math"
 	"strings"
-	"time"
 
-	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -65,7 +61,6 @@ const lichPluginName = "lich"
 
 var (
 	dialogListMax = ui.Space(56)
-	icDlgLoader   = icons.Lucide("loader-circle")
 	icDlgOK       = icons.Lucide("check")
 	icDlgBan      = icons.Lucide("ban")
 	icDlgOpen     = icons.Lucide("external-link")
@@ -502,16 +497,8 @@ func pluginResult(gtx C, th *ui.Theme, r lichclient.ProfilePluginResult) D {
 
 // spinnerLine is LoaderCircle turning one lap a second beside a muted label.
 func spinnerLine(gtx C, th *ui.Theme, label string) D {
-	const lap = time.Second
-	turn := float64(gtx.Now.UnixNano()%int64(lap)) / float64(lap)
-	size := ui.Space(4)
-	half := float32(gtx.Dp(size)) / 2
-	gtx.Execute(op.InvalidateCmd{})
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			defer op.Affine(f32.Affine2D{}.Rotate(f32.Pt(half, half), float32(turn*2*math.Pi))).Push(gtx.Ops).Pop()
-			return icDlgLoader.Layout(gtx, size, th.MutedForeground)
-		}),
+		layout.Rigid(func(gtx C) D { return ui.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
 		ui.Gap(2),
 		layout.Rigid(th.Text(ui.TextSM, label).Muted().Weight(font.Normal).Layout),
 	)

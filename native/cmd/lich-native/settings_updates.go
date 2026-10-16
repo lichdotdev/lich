@@ -3,12 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"sync"
 
-	"gioui.org/f32"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/widget"
 
 	"github.com/omartelo/lich/native/lichclient"
@@ -194,18 +191,8 @@ func busyButton(gtx C, th *ui.Theme, b ui.ButtonStyle, busy bool) D {
 		return b.Layout(gtx)
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return spinGlyph(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return ui.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
 		ui.Gap(2),
 		layout.Rigid(b.Layout),
 	)
-}
-
-// spinGlyph is LoaderCircle at size-4, one turn a second.
-func spinGlyph(gtx C, th *ui.Theme) D {
-	size := ui.Space(4)
-	turn := float64(gtx.Now.UnixNano()%int64(tabSpinPeriod)) / float64(tabSpinPeriod)
-	half := float32(gtx.Dp(size)) / 2
-	defer op.Affine(f32.Affine2D{}.Rotate(f32.Pt(half, half), float32(turn*2*math.Pi))).Push(gtx.Ops).Pop()
-	gtx.Execute(op.InvalidateCmd{})
-	return icTabLoader.Layout(gtx, size, th.MutedForeground)
 }

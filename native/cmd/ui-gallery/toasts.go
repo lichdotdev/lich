@@ -8,7 +8,6 @@ import (
 	"gioui.org/widget"
 
 	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
 )
 
 var (
@@ -36,7 +35,7 @@ var toastDemos = []struct {
 	{"Progress", ui.Toast{Title: "Downloading lich 1.4.0", Description: "30% · 12.3 MB of 41.0 MB",
 		Progress: &ui.ToastProgress{Percent: 30}, Duration: ui.ToastForever}},
 	{"Spinner", ui.Toast{Title: "Installing lich 1.4.0…", Description: "lich closes and reopens on its own.",
-		Icon: icons.Lucide("loader-circle"), Spin: true, Duration: ui.ToastForever}},
+		Spin: true, Duration: ui.ToastForever}},
 	{"Same id", ui.Toast{ID: "gallery-progress", Variant: ui.ToastInfo, Title: "Replaced in place"}},
 }
 

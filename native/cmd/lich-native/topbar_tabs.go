@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"math"
-	"time"
 
 	"gioui.org/f32"
 	"gioui.org/font"
@@ -41,15 +40,12 @@ const (
 	// tabDetachedFill is the active tab that sits over the gap between two
 	// islands and so grows out of neither: a raised fill instead of a merge.
 	tabDetachedFill = 0.08
-	// tabSpinPeriod is animate-spin's one turn a second.
-	tabSpinPeriod = time.Second
 	// kappa places a cubic's controls so it draws a quarter circle.
 	kappa = 0.5523
 )
 
 var (
 	icTabClose   = icons.Lucide("x")
-	icTabLoader  = icons.Lucide("loader-circle")
 	icTabWaiting = icons.Lucide("bell")
 	icTabDone    = icons.Lucide("check")
 )
@@ -224,7 +220,7 @@ func (t *topbar) tabBadge(gtx C, th *ui.Theme, status string) D {
 	var draw func(gtx C) D
 	switch status {
 	case statusBusy, statusCompacting:
-		draw = func(gtx C) D { return t.spinner(gtx, th) }
+		draw = func(gtx C) D { return ui.Spinner(gtx, tabGlyph, th.MutedForeground) }
 	case statusWaiting:
 		draw = func(gtx C) D { return icTabWaiting.Layout(gtx, tabGlyph, th.ToneWait) }
 	case statusDone:
@@ -233,15 +229,6 @@ func (t *topbar) tabBadge(gtx C, th *ui.Theme, status string) D {
 		return D{}
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(draw), ui.Gap(2))
-}
-
-// spinner is LoaderCircle under animate-spin.
-func (t *topbar) spinner(gtx C, th *ui.Theme) D {
-	turn := float64(time.Since(t.started)%tabSpinPeriod) / float64(tabSpinPeriod)
-	half := float32(gtx.Dp(tabGlyph)) / 2
-	defer op.Affine(f32.Affine2D{}.Rotate(f32.Pt(half, half), float32(turn*2*math.Pi))).Push(gtx.Ops).Pop()
-	gtx.Execute(op.InvalidateCmd{})
-	return icTabLoader.Layout(gtx, tabGlyph, th.MutedForeground)
 }
 
 // tabTooltip is ProjectTab's card tooltip: the name, and the path in mono.

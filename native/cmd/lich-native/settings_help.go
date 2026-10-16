@@ -22,6 +22,7 @@ const (
 	helpLogTitle      = "Log file"
 	helpLogAlso       = "debug logs native window"
 	helpLogDesc       = "The folder holds lich's log and, beside it, the native window's (lich-native.log). They hold absolute paths, project and branch names, and your gh login — never a session token. Read them before you attach them to anything."
+	helpLogOpening    = "Opening log folder…"
 	helpLogOpened     = "Log folder opened."
 	helpLogFailed     = "Could not open the log folder: %v"
 	helpOpenLog       = "Open log folder"
@@ -128,14 +129,19 @@ func (h *helpSettings) logLine(gtx C, th *ui.Theme, d *lichclient.Diagnostics) D
 	)
 }
 
-// revealLog is runWithToast over System.RevealLog without its loading
-// spinner, which the toaster does not draw yet.
+// revealLog is runWithToast over System.RevealLog: a spinning toast that the
+// outcome replaces in place.
 func (s *settingsScreen) revealLog() {
-	go func() {
-		if err := s.client.RevealLog(s.ctx); err != nil {
-			s.theme.toaster.Show(failure(helpLogFailed, err))
-			return
-		}
-		s.theme.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: helpLogOpened})
-	}()
+	id := s.theme.toaster.Show(ui.Toast{Title: helpLogOpening, Spin: true, Duration: ui.ToastForever})
+	go func() { s.theme.toaster.Show(revealLogOutcome(id, s.client.RevealLog(s.ctx))) }()
+}
+
+// revealLogOutcome is the toast that takes the loading one's place, id.
+func revealLogOutcome(id string, err error) ui.Toast {
+	t := ui.Toast{Variant: ui.ToastSuccess, Title: helpLogOpened}
+	if err != nil {
+		t = failure(helpLogFailed, err)
+	}
+	t.ID = id
+	return t
 }

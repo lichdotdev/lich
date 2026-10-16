@@ -40,8 +40,6 @@ const (
 	toastLineGap     unit.Dp = 2
 	toastLineIcon    unit.Dp = 12
 	toastLineIconGap unit.Dp = 4
-	// Tailwind's animate-spin: one linear turn a second.
-	toastSpinLap = time.Second
 	// box-shadow: 0 4px 12px rgba(0,0,0,.1).
 	toastShadowY      unit.Dp = 4
 	toastShadowBlur   unit.Dp = 12
@@ -414,7 +412,7 @@ type toastGlyph struct {
 
 // toastGlyphOf is the icon option over the variant's, nil for neither.
 func toastGlyphOf(th *Theme, e *toastEntry) *toastGlyph {
-	if e.Icon != nil {
+	if e.Icon != nil || e.Spin {
 		g := &toastGlyph{icon: e.Icon, size: toastIconBox, color: th.PopoverForeground, spin: e.Spin}
 		if e.IconColor != nil {
 			g.color = e.IconColor(th)
@@ -434,10 +432,8 @@ func (g *toastGlyph) layout(gtx C, top int) {
 	y := top + (gtx.Dp(toastIconBox)-gtx.Dp(g.size))/2
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
 	if g.spin {
-		turn := float64(gtx.Now.UnixNano()%int64(toastSpinLap)) / float64(toastSpinLap)
-		half := float32(gtx.Dp(g.size)) / 2
-		defer op.Affine(f32.Affine2D{}.Rotate(f32.Pt(half, half), float32(turn*2*math.Pi))).Push(gtx.Ops).Pop()
-		gtx.Execute(op.InvalidateCmd{})
+		Spinner(gtx, g.size, g.color)
+		return
 	}
 	g.icon.Layout(gtx, g.size, g.color)
 }

@@ -44,8 +44,8 @@ func TestUpdateProgressToast(t *testing.T) {
 }
 
 func TestUpdateProgressToastSpinsOnlyThroughTheInstaller(t *testing.T) {
-	if got := updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: "installer"}); got.Icon == nil || !got.Spin {
-		t.Errorf("installer: icon %v spin %v, want a spinning glyph", got.Icon, got.Spin)
+	if got := updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: "installer"}); !got.Spin {
+		t.Error("installer: no spinner")
 	}
 	for _, p := range []*lichclient.AppUpdateProgress{nil, {Phase: "download", Received: 1, Total: 2}} {
 		if got := updateProgressToast("1.4.0", p); got.Icon != nil || got.Spin {

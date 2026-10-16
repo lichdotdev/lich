@@ -8,7 +8,6 @@ import (
 
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
 )
 
 // ponytail: English until the native window has i18n (shell.appUpdateGate,
@@ -42,8 +41,6 @@ const (
 	appUpdateToastID   = "app-update"
 	bytesPerMB         = 1_000_000
 )
-
-var icUpdateInstalling = icons.Lucide("loader-circle")
 
 // appUpdateGate is AppUpdateGate: a check at start and hourly, a prompt per
 // release this run, and the Windows installer's progress.
@@ -197,7 +194,7 @@ func updateProgressToast(version string, p *lichclient.AppUpdateProgress) ui.Toa
 	case p == nil:
 	case p.Phase == lichclient.UpdatePhaseInstaller:
 		t.Title, t.Description, t.Progress = fmt.Sprintf(appUpdateInstalling, version), appUpdateReopens, nil
-		t.Icon, t.Spin = icUpdateInstalling, true
+		t.Spin = true
 	default:
 		percent, bytes := downloadReading(*p)
 		t.Description, t.Progress.Percent = bytes, percent
