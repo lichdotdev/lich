@@ -126,6 +126,10 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		if err != nil {
 			return err
 		}
+		if m.Color != nil {
+			draw.Draw(img, m.Color.Bounds().Add(m.Off).Add(image.Pt(x*cw, 0)), m.Color, image.Point{}, draw.Over)
+			continue
+		}
 		if m.Img == nil {
 			continue
 		}

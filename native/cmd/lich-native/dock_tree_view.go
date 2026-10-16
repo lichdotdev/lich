@@ -276,10 +276,12 @@ func (t *treeRows) rowParts(th *ui.Theme, r treeRow, lit bool) (lead, stat layou
 	return lead, stat
 }
 
-// fileIcon is FileIcon.tsx's fallback, the muted file glyph at 70% opacity.
-// ponytail: every file draws it; the web's per-language devicons are
-// multi-colored brand marks the kit's one-color icons cannot draw yet.
-func fileIcon(gtx C, th *ui.Theme, _ string) D {
+// fileIcon is FileIcon.tsx: the file's devicon, or the muted file glyph at 70%
+// opacity for a file it has none for.
+func fileIcon(gtx C, th *ui.Theme, p string) D {
+	if ic := icons.DeviconFor(p); ic != nil {
+		return ic.Layout(gtx, treeGlyph, th.Foreground)
+	}
 	return icFileGlyph.Layout(gtx, treeGlyph, th.Over(ui.Alpha(th.MutedForeground, fileIconOpacity)))
 }
 

@@ -11,9 +11,12 @@
 //     uses, the same paths frontend/src/components/ProviderIcon.tsx vendors.
 //   - Sonner (sonner.emilkowal.ski, MIT): the four type icons its toasts
 //     draw, Heroicons solid paths sonner 2.0.7 ships in its bundle.
+//   - Devicons (devicon.dev via devicons-react 1.5.0, MIT): the language marks
+//     frontend/src/components/FileIcon.tsx draws, rendered to PNG by
+//     devicon/gen.sh since they are multi-colored.
 //
 // Each set's license sits beside it (lucide/LICENSE, lobe/LICENSE,
-// sonner/LICENSE) and must travel with any copy, the binary's third-party
+// sonner/LICENSE, devicon/LICENSE) and must travel with any copy, the binary's third-party
 // notices included.
 package icons
 

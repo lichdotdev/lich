@@ -166,16 +166,22 @@ func (a *atlasRenderer) entry(c cell, st cellStyle) (tintEntry, error) {
 		return tintEntry{}, err
 	}
 	var e tintEntry
-	if m.Img != nil {
+	if m.Img != nil || m.Color != nil {
 		e = a.insert(m, k.c)
 	}
 	a.tinted[k] = e
 	return e, nil
 }
 
-// insert copies a mask, tinted, into the first page with room for it.
+// insert copies a mask, tinted, or a color glyph as it is, into the first page
+// with room for it.
 func (a *atlasRenderer) insert(m *glyphs.Mask, c color.NRGBA) tintEntry {
-	size := m.Img.Bounds().Size()
+	var size image.Point
+	if m.Color != nil {
+		size = m.Color.Bounds().Size()
+	} else {
+		size = m.Img.Bounds().Size()
+	}
 	var page *atlasPage
 	var at image.Point
 	for _, p := range a.pages {
@@ -190,7 +196,11 @@ func (a *atlasRenderer) insert(m *glyphs.Mask, c color.NRGBA) tintEntry {
 		at, _ = page.reserve(size)
 	}
 	rect := image.Rectangle{Min: at, Max: at.Add(size)}
-	draw.DrawMask(page.img, rect, image.NewUniform(c), image.Point{}, m.Img, image.Point{}, draw.Src)
+	if m.Color != nil {
+		draw.Draw(page.img, rect, m.Color, image.Point{}, draw.Src)
+	} else {
+		draw.DrawMask(page.img, rect, image.NewUniform(c), image.Point{}, m.Img, image.Point{}, draw.Src)
+	}
 	page.stale = true
 	return tintEntry{page: page, rect: rect, off: m.Off}
 }

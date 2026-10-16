@@ -4,12 +4,16 @@
 package glyphs
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/draw"
+	"image/png"
 	"os"
 
 	gofont "gioui.org/font"
+	gotext "github.com/go-text/typesetting/font"
+	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/font/sfnt"
@@ -46,13 +50,19 @@ type Key struct {
 type fontFace struct {
 	sf   *sfnt.Font
 	face font.Face
+	data []byte
+	// bitmaps reads the color bitmaps sfnt cannot (CBDT, sbix), parsed on the
+	// first character that has no outline.
+	bitmaps *gotext.Face
 }
 
 // Mask is a glyph's coverage, placed relative to its cell's top-left.
-// Img is nil for a glyph that draws nothing.
+// Img is nil for a glyph that draws nothing. Color is set instead of Img for a
+// glyph that carries its own colors, an emoji, and is drawn untinted.
 type Mask struct {
-	Img *image.Alpha
-	Off image.Point
+	Img   *image.Alpha
+	Color *image.RGBA
+	Off   image.Point
 }
 
 // Rasterizer turns characters into coverage masks on the CPU, once each, for
@@ -105,7 +115,7 @@ func (r *Rasterizer) load(path string) (*fontFace, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	f := &fontFace{sf: sf}
+	f := &fontFace{sf: sf, data: data}
 	if r.px > 0 {
 		if f.face, err = opentype.NewFace(sf, &opentype.FaceOptions{Size: r.px, DPI: 72}); err != nil {
 			return nil, err
@@ -187,10 +197,45 @@ func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 			a := image.NewAlpha(image.Rect(0, 0, dr.Dx(), dr.Dy()))
 			draw.Draw(a, a.Bounds(), src, sp, draw.Src)
 			m.Img, m.Off = a, dr.Min
+		} else if m.Color, m.Off, err = r.colorBitmap(f, k.R); err != nil {
+			return nil, err
 		}
 	}
 	r.masks[k] = m
 	return m, nil
+}
+
+// colorBitmap scales c's PNG bitmap to fit two cells, the width of an emoji,
+// centered in them. It returns nil when f has no PNG bitmap for c. The grid
+// carries no width per cell, so an emoji that is narrow (text presentation,
+// no VS16) still overhangs into the next cell.
+func (r *Rasterizer) colorBitmap(f *fontFace, c rune) (*image.RGBA, image.Point, error) {
+	if f.bitmaps == nil {
+		faces, err := gotext.ParseTTC(bytes.NewReader(f.data))
+		if err != nil {
+			return nil, image.Point{}, fmt.Errorf("parse color bitmaps: %w", err)
+		}
+		f.bitmaps = faces[0]
+	}
+	gid, ok := f.bitmaps.NominalGlyph(c)
+	if !ok {
+		return nil, image.Point{}, nil
+	}
+	bm, ok := f.bitmaps.GlyphDataBitmap(gid)
+	if !ok || bm.Format != gotext.PNG {
+		return nil, image.Point{}, nil
+	}
+	src, err := png.Decode(bytes.NewReader(bm.Data))
+	if err != nil {
+		return nil, image.Point{}, fmt.Errorf("decode bitmap of %U: %w", c, err)
+	}
+	boxW, boxH := 2*r.cellW, r.cellH
+	sw, sh := src.Bounds().Dx(), src.Bounds().Dy()
+	scale := min(float64(boxW)/float64(sw), float64(boxH)/float64(sh))
+	w, h := max(int(float64(sw)*scale), 1), max(int(float64(sh)*scale), 1)
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	xdraw.CatmullRom.Scale(dst, dst.Bounds(), src, src.Bounds(), xdraw.Src, nil)
+	return dst, image.Pt((boxW-w)/2, (boxH-h)/2), nil
 }
 
 // CellW is the width of one monospace cell in pixels at the current size.
