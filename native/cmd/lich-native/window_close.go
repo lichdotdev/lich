@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	"gioui.org/app"
@@ -46,6 +47,7 @@ func (u *window) onClosing(e *app.ClosingEvent) {
 	c.mu.Lock()
 	leaving := c.leaving
 	c.mu.Unlock()
+	log.Printf("window close requested (leaving: %v)", leaving)
 	action := u.settings.look.prefs.closeAction
 	if leaving || action == closeBackground {
 		return
@@ -89,6 +91,7 @@ func (u *window) leave() {
 	c.mu.Lock()
 	c.leaving, c.running = true, 0
 	c.mu.Unlock()
+	log.Print("closing the window")
 	u.win.Perform(system.ActionClose)
 }
 

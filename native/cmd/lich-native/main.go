@@ -259,6 +259,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		stalls.handling()
 		switch e := event.(type) {
 		case app.DestroyEvent:
+			log.Printf("window destroyed (%v)", e.Err)
 			return e.Err
 		case app.ConfigEvent:
 			u.model.setFocused(u.ctx, e.Config.Focused)
