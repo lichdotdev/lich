@@ -82,6 +82,20 @@ tasks:
       # extension), so `task run` fails on the binary `task build` just made.
       - cmd: CGO_ENABLED=0 go build {{.GO_BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}{{exeExt}} .
 
+  build:native:
+    desc: Build the native window into bin/lich-native (cgo; libghostty-vt on PKG_CONFIG_PATH, native/slice.sh)
+    # Its own module and binary, built with cgo (docs/native-window.md); it
+    # never reaches the lich binary's build. The packages ship it beside lich,
+    # where `lich native` and Settings › Window look for it.
+    dir: native
+    cmds:
+      - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-native ./cmd/lich-native
+
+  build:native:windows:
+    desc: Cross-build bin/lich-native.exe from Linux with Zig (native/build-windows.sh)
+    cmds:
+      - cmd: sh native/build-windows.sh ../{{.BIN_DIR}}/lich-native.exe
+
   icons:windows:
     desc: Regenerate rsrc_windows_amd64.syso from build/windows/lich.ico
     cmds:
@@ -194,6 +208,11 @@ tasks:
   package:
     desc: Build the Linux packages (deb, rpm, archlinux)
     deps: [build]
+    # The native window builds apart (cgo), in CI on an older glibc than a
+    # developer's machine: it is put in bin/ first, not rebuilt here.
+    preconditions:
+      - sh: test -x {{.BIN_DIR}}/lich-native
+        msg: "bin/lich-native is missing: task build:native puts it there"
     cmds:
       - task: package:nfpm
         vars: { FORMAT: deb, TARGET: '{{.APP_NAME}}.deb' }
@@ -211,6 +230,8 @@ tasks:
     preconditions:
       - sh: command -v iscc
         msg: "iscc (Inno Setup 6) is required — on Windows: choco install innosetup"
+      - sh: test -f {{.BIN_DIR}}/lich-native.exe
+        msg: "bin/lich-native.exe is missing: task build:native:windows cross-builds it from Linux"
     env:
       VERSION: '{{.VERSION}}'
     cmds:

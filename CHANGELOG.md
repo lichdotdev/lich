@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it offers to switch now, closing this window and opening the other one with
   every session still running. If the
   native window is missing or fails to start, lich opens the web window and
-  says why. Not offered on macOS, which has no native window build yet.
+  says why. Not offered on macOS, which has no native window build yet. The
+  native window now ships in the Linux packages, the AUR package, the Windows
+  installer and both archives, beside lich.
 - **The native window's Windows update shows a spinner while the installer
   runs.** Once the download is done, the update toast of `lich native`
   (experimental) turns its bar into a spinner beside "Installing lich …",

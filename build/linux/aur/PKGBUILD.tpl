@@ -10,12 +10,12 @@ url="https://github.com/omartelo/lich"
 license=('AGPL-3.0-only')
 provides=('lich')
 conflicts=('lich')
-# What the window links against; the same list, per format, lives in
-# build/linux/nfpm/nfpm.yaml.
+# What the window and the native window link against; the same list, per
+# format, lives in build/linux/nfpm/nfpm.yaml.
 depends=('glibc' 'gcc-libs' 'nss' 'nspr' 'glib2' 'at-spi2-core' 'dbus' 'libcups'
          'libx11' 'libxcomposite' 'libxdamage' 'libxext' 'libxfixes' 'libxrandr'
          'libxcb' 'mesa' 'expat' 'libxkbcommon' 'cairo' 'pango' 'systemd-libs'
-         'alsa-lib')
+         'alsa-lib' 'libglvnd' 'wayland' 'libxkbcommon-x11' 'libxcursor' 'fontconfig')
 optdepends=('zenity: native folder picker')
 source=("lich-v${pkgver}-linux-amd64.tar.zst::${url}/releases/download/v${pkgver}/lich-v${pkgver}-linux-amd64.tar.zst"
         "lich-${pkgver}.desktop::https://raw.githubusercontent.com/omartelo/lich/v${pkgver}/build/linux/lich.desktop"
@@ -25,9 +25,10 @@ sha256sums=('SKIP'
             'SKIP')
 
 package() {
-  # makepkg unpacks the release tarball: lich, and its window in shell/, which
+  # makepkg unpacks the release tarball: lich, lich-native, and its window in shell/, which
   # /usr/bin/lich looks for at /usr/lib/lich/shell.
   install -Dm755 lich "${pkgdir}/usr/bin/lich"
+  install -Dm755 lich-native "${pkgdir}/usr/bin/lich-native"
   install -d "${pkgdir}/usr/lib/lich"
   cp -a shell "${pkgdir}/usr/lib/lich/shell"
   # Chromium reads its setuid sandbox helper from cef/, beside libcef.so, and

@@ -13,8 +13,95 @@ permissions:
   contents: write
 
 jobs:
-  # linux and windows build in parallel; release fans in and publishes.
+  # The native window (native/, cgo: Gio and libghostty-vt) for both systems,
+  # built first and handed to the jobs that package it beside lich. Linux
+  # builds on the oldest supported runner: its glibc is the floor the binary
+  # asks of a user's machine. Windows is cross-built with Zig
+  # (native/build-windows.sh), as native.yml proves on every PR. macOS has no
+  # build yet (docs/ceilings.md).
+  native:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: native/go.mod
+          cache-dependency-path: native/go.sum
+
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      # Gio's Linux headers; see native.yml.
+      - name: System packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
+            libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+
+      - name: Pinned Ghostty commit
+        id: ghostty
+        run: echo "commit=$(cat GHOSTTY_COMMIT)" >> "$GITHUB_OUTPUT"
+
+      # Keyed apart from native.yml's: that one is built on ubuntu-latest, and
+      # its glibc would raise the floor.
+      - name: Cache libghostty-vt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/libghostty-vt
+            ~/libghostty-vt-windows
+          key: libghostty-vt-release-ubuntu-22.04-${{ steps.ghostty.outputs.commit }}
+
+      - name: Build libghostty-vt
+        run: |
+          if [ "$(cat ~/libghostty-vt/.commit 2>/dev/null)" != "${{ steps.ghostty.outputs.commit }}" ]; then
+            src="$RUNNER_TEMP/ghostty"
+            git init -q "$src"
+            git -C "$src" fetch -q --depth 1 https://github.com/ghostty-org/ghostty "${{ steps.ghostty.outputs.commit }}"
+            git -C "$src" checkout -q FETCH_HEAD
+            (cd "$src" && zig build -Demit-lib-vt -Doptimize=ReleaseFast --prefix ~/libghostty-vt)
+            echo "${{ steps.ghostty.outputs.commit }}" > ~/libghostty-vt/.commit
+          fi
+
+      - name: Build lich-native (linux, windows)
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          PKG_CONFIG_PATH="$HOME/libghostty-vt/share/pkgconfig" CGO_ENABLED=1 \
+            go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/out/lich-native" ./cmd/lich-native
+          LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
+
+      # libghostty-vt is linked in, and nothing asks for a glibc newer than
+      # the runner's: what the packages' requirements promise.
+      - name: Check what lich-native asks of a machine
+        run: |
+          bin="$RUNNER_TEMP/out/lich-native"
+          if objdump -p "$bin" | grep NEEDED | grep -qi ghostty; then
+            echo "::error::lich-native links libghostty-vt dynamically"; objdump -p "$bin" | grep NEEDED; exit 1
+          fi
+          floor="$(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)"
+          echo "lich-native asks for $floor"
+          [ "$(printf '%s\nGLIBC_2.35\n' "$floor" | sort -V | tail -1)" = GLIBC_2.35 ] || {
+            echo "::error::lich-native asks for $floor, newer than the 2.35 the packages promise"; exit 1
+          }
+
+      - name: Upload lich-native
+        uses: actions/upload-artifact@v7
+        with:
+          name: lich-native
+          path: ${{ runner.temp }}/out/lich-native*
+
+  # linux and windows build in parallel once the native window is built;
+  # release fans in and publishes.
   linux:
+    needs: [native]
     runs-on: ubuntu-latest
     env:
       # build/cef.sh fetches the CEF distribution the window ships into
@@ -80,8 +167,17 @@ jobs:
       - name: Backend tests
         run: bash .github/scripts/go-test-summary.sh linux
 
+      - name: Download lich-native
+        uses: actions/download-artifact@v8
+        with:
+          name: lich-native
+          path: bin
+
       - name: Build Linux packages
-        run: task package
+        run: |
+          chmod +x bin/lich-native
+          rm bin/lich-native.exe
+          task package
 
       - name: Assemble Linux assets
         run: |
@@ -98,7 +194,7 @@ jobs:
           # tar's zstd takes a level. Threads spelled out: unlike -T0,
           # ZSTD_NBTHREADS=0 is one thread, and level 19 on one thread is three
           # minutes.
-          ZSTD_CLEVEL=19 ZSTD_NBTHREADS="$(nproc)" tar --zstd -cf "lich-${tag}-linux-amd64.tar.zst" lich shell
+          ZSTD_CLEVEL=19 ZSTD_NBTHREADS="$(nproc)" tar --zstd -cf "lich-${tag}-linux-amd64.tar.zst" lich lich-native shell
           ls -la lich-${tag}-*
 
       - name: Upload Linux assets
@@ -108,6 +204,7 @@ jobs:
           path: bin/lich-*
 
   windows:
+    needs: [native]
     runs-on: windows-latest
     defaults:
       run:
@@ -155,8 +252,16 @@ jobs:
       # backend suite can even compile, hence build first, tests right after.
       # Frontend tests already gate the linux job; running them twice buys
       # nothing.
+      - name: Download lich-native
+        uses: actions/download-artifact@v8
+        with:
+          name: lich-native
+          path: bin
+
       - name: Build Windows binary + installer
-        run: task package:windows
+        run: |
+          rm bin/lich-native
+          task package:windows
 
       - name: Backend tests (windows)
         run: bash .github/scripts/go-test-summary.sh windows
@@ -174,7 +279,7 @@ jobs:
         run: |
           bin/lich-setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG="$RUNNER_TEMP/setup.log"
           app="$LOCALAPPDATA/Programs/lich"
-          test -f "$app/lich.exe" && test -f "$app/shell/lich-shell.exe" && test -f "$app/shell/libcef.dll"
+          test -f "$app/lich.exe" && test -f "$app/lich-native.exe" && test -f "$app/shell/lich-shell.exe" && test -f "$app/shell/libcef.dll"
           # The C runtime is static: a machine without the Visual C++
           # redistributable must open the window too.
           dumpbin /DEPENDENTS "$app/shell/lich-shell.exe" > "$RUNNER_TEMP/deps.txt"
@@ -249,9 +354,9 @@ jobs:
           cd bin
           tag="${GITHUB_REF_NAME//\//-}"
           mv lich-setup.exe "lich-${tag}-windows-amd64-setup.exe"
-          # The portable package: lich.exe with its window beside it as shell\,
-          # the layout the installer lays down.
-          7z a -bso0 -bsp0 "lich-${tag}-windows-amd64.zip" lich.exe shell
+          # The portable package: lich.exe with lich-native.exe and its window
+          # beside it as shell\, the layout the installer lays down.
+          7z a -bso0 -bsp0 "lich-${tag}-windows-amd64.zip" lich.exe lich-native.exe shell
           ls -la lich-${tag}-*
 
       - name: Upload Windows assets

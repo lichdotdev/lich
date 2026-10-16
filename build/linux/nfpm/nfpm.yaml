@@ -1,8 +1,8 @@
 # nfpm config for the lich packages (deb, rpm, archlinux) — invoked directly
 # by the root Taskfile (`task package`). The binary is static pure Go and the
-# window (lich's own Chromium, bin/shell) ships beside it; the only runtime
-# needs left are zenity and git, both soft (recommends where the format
-# supports it) so installs never block.
+# window (lich's own Chromium, bin/shell) ships beside it, with the native
+# window (bin/lich-native, cgo) next to lich; zenity and git stay soft
+# (recommends where the format supports it) so installs never block.
 
 name: "lich"
 arch: ${GOARCH}
@@ -20,6 +20,9 @@ license: "AGPL-3.0-only"
 contents:
   - src: "./bin/lich"
     dst: "/usr/local/bin/lich"
+  # Beside lich, where Settings › Window and `lich native` look for it.
+  - src: "./bin/lich-native"
+    dst: "/usr/local/bin/lich-native"
   # The window, where /usr/local/bin/lich looks for it: the lib directory
   # sibling to its bin (internal/chromium/shell.go). Its cef/chrome-sandbox gets
   # 4755 from the install scripts: a second entry for it collides with the tree,
@@ -44,8 +47,11 @@ recommends:
 # the list Chromium's own package declares. Without it a slim install gets a
 # window that dies on a missing libnss3 and falls back to a browser. rpm takes
 # sonames, which resolve on Fedora, openSUSE and RHEL alike where package
-# names do not. GTK, Wayland, GL and Vulkan are dlopen'ed and optional.
-# build/linux/aur/PKGBUILD.tpl carries the archlinux list too.
+# names do not. GTK, Wayland, GL and Vulkan are dlopen'ed and optional for it.
+# The native window links EGL, Wayland, xkbcommon-x11, X11-xcb and Xcursor
+# (`objdump -p bin/lich-native`) and asks fontconfig's fc-match for the
+# system fonts; those close each list. build/linux/aur/PKGBUILD.tpl carries
+# the archlinux list too.
 overrides:
   deb:
     depends:
@@ -73,6 +79,14 @@ overrides:
       - libpango-1.0-0
       - libudev1
       - libasound2
+      - libegl1
+      - libwayland-client0
+      - libwayland-cursor0
+      - libwayland-egl1
+      - libxkbcommon-x11-0
+      - libx11-xcb1
+      - libxcursor1
+      - fontconfig
   rpm:
     depends:
       - libc.so.6(GLIBC_2.34)(64bit)
@@ -103,6 +117,14 @@ overrides:
       - libpango-1.0.so.0()(64bit)
       - libudev.so.1()(64bit)
       - libasound.so.2()(64bit)
+      - libEGL.so.1()(64bit)
+      - libwayland-client.so.0()(64bit)
+      - libwayland-cursor.so.0()(64bit)
+      - libwayland-egl.so.1()(64bit)
+      - libxkbcommon-x11.so.0()(64bit)
+      - libX11-xcb.so.1()(64bit)
+      - libXcursor.so.1()(64bit)
+      - fontconfig
   archlinux:
     depends:
       - glibc
@@ -127,6 +149,11 @@ overrides:
       - pango
       - systemd-libs
       - alsa-lib
+      - libglvnd
+      - wayland
+      - libxkbcommon-x11
+      - libxcursor
+      - fontconfig
 
 # xz rather than the gzip default: ~30 MB less per package for the 480 MB
 # window, and unlike zstd every dpkg and rpm still in use unpacks it.

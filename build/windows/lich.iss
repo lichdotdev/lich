@@ -41,6 +41,9 @@ RestartApplications=no
 
 [Files]
 Source: "..\..\bin\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
+; The native window, beside lich.exe where Settings > Window and `lich native`
+; look for it. Cross-built from Linux (native/build-windows.sh).
+Source: "..\..\bin\lich-native.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; The window (lich's own Chromium), where lich.exe looks for it: shell\ beside
 ; the binary (internal/chromium/shell.go). Assembled by `task build:shell`.
 Source: "..\..\bin\shell\*"; DestDir: "{app}\shell"; Flags: ignoreversion recursesubdirs createallsubdirs
