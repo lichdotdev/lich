@@ -91,11 +91,13 @@ func Locate(f font.Font) (Location, error) {
 }
 
 // Covering names a font file that has a glyph for r, preferring the
-// monospace ones, or "" when none does.
+// monospace ones, or "" when none does. The platform's emoji family is asked
+// for by name: fontscan's fallback is by script, and an emoji's script is
+// Common, which reaches no emoji font the way fontconfig's lists do on Linux.
 func Covering(r rune) (string, error) {
 	var path string
 	err := withFontMap(func(fm *fontscan.FontMap) {
-		fm.SetQuery(fontscan.Query{Families: queryFamilies(SystemMono)})
+		fm.SetQuery(fontscan.Query{Families: append(queryFamilies(SystemMono), preferredEmoji...)})
 		face := fm.ResolveFace(r)
 		if face == nil {
 			return
