@@ -196,6 +196,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A confined session of a Claude Code profile can write to its plugins.**
+  The shared plugin store the profile's plugins live in was read-only in the
+  sandbox, so Claude Code could not mark the plugin versions it was running;
+  it is now writable there, like the profile itself.
 - **The native window survives lich restarting.** After an update's Restart,
   or `install.sh` restarting lich, `lich native` (experimental) reconnects to
   the new lich and reattaches its sessions, where it used to stop at "Another

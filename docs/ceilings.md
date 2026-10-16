@@ -1374,7 +1374,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Personal's cache is Personal's alone and is left as it is, so a version both use is on disk twice. A
   profile made when the whole cache was a link to Personal's is moved at its next spawn or lich start: each
   version it names is copied from Personal's into the store, and one Personal's sweep already deleted stays
-  missing. `.in_use` markers of every profile running a version land in the store's copy. On Windows each
+  missing. `.in_use` markers of every profile running a version land in the store's copy, which a confined
+  session reaches because the store is bound read-write beside the profile (`internal/terminal/sandbox.go`). On Windows each
   version is a junction, which Claude Code's sweep reads as a link too (read in the source, not run on
   Windows), and a version Windows will not move while a file in it is open stays the profile's own until a
   later spawn. `CLAUDE_CODE_PLUGIN_CACHE_DIR` moves Claude Code's whole `plugins/` directory, installed set,

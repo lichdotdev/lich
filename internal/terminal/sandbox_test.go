@@ -205,6 +205,27 @@ func TestWrapSandboxBindsTheClaudeProfile(t *testing.T) {
 	}
 }
 
+// TestWrapSandboxBindsTheClaudePluginStore: each plugin version a profile
+// runs is a link into the store beside the profiles, and Claude Code writes the
+// version's .in_use marker through that link, so the store is bound writable
+// too or a confined session cannot mark the plugins it runs.
+func TestWrapSandboxBindsTheClaudePluginStore(t *testing.T) {
+	if !sandbox.Available() {
+		t.Skip("no sandbox backend on this machine")
+	}
+	root := t.TempDir()
+	profile, plugins := filepath.Join(root, "work"), filepath.Join(root, "plugin_cache")
+	for _, dir := range []string{profile, plugins} {
+		if err := os.Mkdir(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", profile, true, sandboxCreds{})
+	if !slices.ContainsFunc(got.args, func(arg string) bool { return strings.Contains(arg, plugins) }) {
+		t.Fatalf("the plugin store %q is not in the confined spawn: %v", plugins, got.args)
+	}
+}
+
 // TestWrapSandboxMountsTheSessionsCopies is the drop's half of the sandbox: a
 // file dragged onto a confined terminal is copied by lich outside it, so the
 // path pasted at the prompt only names something the agent can open if the

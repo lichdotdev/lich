@@ -41,9 +41,9 @@ const replacedSuffix = ".lich-replaced"
 // may adopt the same version.
 var pluginStoreMu sync.Mutex
 
-// pluginStore is the store of the profile at dir, which sits under lich's
+// PluginStore is the store of the profile at dir, which sits under lich's
 // Claude profiles root like every profile lich creates.
-func pluginStore(dir string) string {
+func PluginStore(dir string) string {
 	return filepath.Join(filepath.Dir(dir), pluginStoreName)
 }
 
@@ -52,7 +52,7 @@ func pluginStore(dir string) string {
 // version the profile names into a link into the store. A version it does not
 // name stays as Claude Code left it, for its sweep to decide.
 func layoutPluginCache(_, dir string) error {
-	store := pluginStore(dir)
+	store := PluginStore(dir)
 	cache := filepath.Join(dir, "plugins", "cache")
 	versions, err := installedVersions(dir, cache)
 	if err != nil {

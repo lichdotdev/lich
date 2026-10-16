@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/project"
+	"github.com/omartelo/lich/internal/providers"
 	"github.com/omartelo/lich/internal/sandbox"
 	"github.com/omartelo/lich/internal/store"
 )
@@ -31,7 +33,9 @@ import (
 // profileDir is the Claude Code profile the session runs in, "" for Personal:
 // a profile lives under lich's config dir, which the sandbox mounts read-only,
 // so it is bound writable on top. The links inside it reach Personal's
-// directory, which the provider's state already mounts.
+// directory, which the provider's state already mounts, and the plugin store
+// beside the profiles, bound writable too: Claude Code writes each running
+// version's .in_use marker through the link.
 //
 // The second return is what the sandbox skipped for being a symlink, home-
 // relative (sandbox.Spec's SkippedLinks). It rides back with the spawn because
@@ -47,6 +51,12 @@ func wrapSandbox(
 	sb := sandbox.Describe(kind, home, spec.dir, project.GitCommonDir(spec.dir), read, creds.sshAgent)
 	if profileDir != "" {
 		sb.Write = append(sb.Write, profileDir)
+		// A bind of a missing source fails the whole spawn, and a profile that
+		// never installed a plugin has no store yet.
+		store := claudeprofile.PluginStore(profileDir)
+		if info, err := os.Stat(store); kind == providers.Claude && err == nil && info.IsDir() {
+			sb.Write = append(sb.Write, store)
+		}
 	}
 	spec.bin, spec.args = sandbox.Wrap(sb, spec.bin, spec.args)
 	// The token goes in the child's environment rather than through bubblewrap's
