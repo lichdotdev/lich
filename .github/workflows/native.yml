@@ -84,11 +84,14 @@ jobs:
 
       # The render tests skip where no GPU answers, which on a laptop is a
       # shrug and here would be a gate that checks nothing: a skip fails the job.
+      # -noreset: each headless window holds the only X connection and drops it
+      # on Release, so Xvfb regenerates about 60 times a run, and an
+      # eglInitialize that lands mid-reset fails xcb_connect (1 run in 5 did).
       - name: go test
         env:
           LIBGL_ALWAYS_SOFTWARE: "1"
         run: |
-          xvfb-run -a go test -v ./... > test.log 2>&1 || { cat test.log; exit 1; }
+          xvfb-run -a -s "-noreset -screen 0 1280x1024x24" go test -v ./... > test.log 2>&1 || { cat test.log; exit 1; }
           grep -E '^(ok|FAIL|---)' test.log
           if grep -q 'no headless GPU' test.log; then
             echo "::error::render tests skipped: no headless GPU under Xvfb"
