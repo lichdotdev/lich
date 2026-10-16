@@ -8,8 +8,9 @@
 # before kurogane#14), a second launch is forwarded to the window without
 # opening a second browser in it (#470), the window closes on SIGTERM, a close
 # request like the user's, lich keeps running without it,
-# a launch opens a new window on it, and `lich quit` ends it. Its config lives
-# under a HOME of its own.
+# a launch opens a new window on it, `lich native` swaps it for the bundled
+# native window, and `lich quit` ends it. Its config lives under a HOME of its
+# own.
 # What a failure leaves behind goes to $RUNNER_TEMP/diag for the artifact the
 # workflow uploads.
 #
@@ -109,9 +110,26 @@ for _ in $(seq 1 30); do
 done
 grep -q '"title": *"lich"' "$pages" || fail "a second launch did not reopen the window on the running lich"
 
+# The native window from the bundle takes over from the web one, and macOS
+# still counts one application in Lich.app.
+"$app/Contents/MacOS/lich" native || fail "lich native exited $?"
+for _ in $(seq 1 15); do sleep 1; pgrep -x lich-native > /dev/null && break; done
+pgrep -x lich-native > /dev/null || fail "lich native never started the bundled native window"
+for _ in $(seq 1 15); do sleep 1; pgrep -x lich-shell > /dev/null || break; done
+pgrep -x lich-shell > /dev/null && fail "the web window outlived lich native"
+sleep 10
+pgrep -x lich-native > /dev/null || { cp "$config/lich-native.log" "$diag/" 2>/dev/null || true; fail "the native window died"; }
+screencapture -x "$diag/native.png" || true
+lsappinfo list > "$RUNNER_TEMP/apps.txt"
+apps=$(grep -c 'bundle path=.*Lich.app' "$RUNNER_TEMP/apps.txt" || true)
+[ "$apps" = 1 ] || { grep -B1 -A3 'Lich.app' "$RUNNER_TEMP/apps.txt"; fail "macOS counts $apps applications in Lich.app with the native window, expected one"; }
+cp "$config/lich-native.log" "$diag/" 2>/dev/null || true
+
 "$app/Contents/MacOS/lich" quit || fail "lich quit exited $?"
 for _ in $(seq 1 10); do pgrep -x lich > /dev/null || break; sleep 1; done
 pgrep -x lich > /dev/null && fail "lich is still running after lich quit"
 pgrep -x lich-shell > /dev/null && fail "the window outlived lich quit"
+for _ in $(seq 1 10); do pgrep -x lich-native > /dev/null || break; sleep 1; done
+pgrep -x lich-native > /dev/null && fail "the native window outlived lich quit"
 cat "$pages"
 grep 'Lich.app' "$RUNNER_TEMP/apps.txt"

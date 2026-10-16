@@ -6,10 +6,10 @@ name: native
 # it gets this job instead of a step in ci.yml, and runs only when it changes.
 on:
   pull_request:
-    paths: [native/**, .github/workflows/native.yml]
+    paths: [native/**, .github/workflows/native.yml, .github/scripts/mac-native-*.sh]
   push:
     branches: [main]
-    paths: [native/**, .github/workflows/native.yml]
+    paths: [native/**, .github/workflows/native.yml, .github/scripts/mac-native-*.sh]
 
 permissions:
   contents: read
@@ -133,3 +133,93 @@ jobs:
 
       - name: Build lich-native.exe
         run: LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" ./build-windows.sh "$RUNNER_TEMP/lich-native.exe"
+
+  # Gio's Cocoa and Metal need Apple's SDK, so the macOS window builds on a Mac
+  # and nowhere else. Apple Silicon only on a PR: release.yml builds Intel too.
+  # Nobody here has a Mac, so this job also runs the window once against a real
+  # backend and keeps what it drew.
+  macos:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: native
+    env:
+      # The floor Info.plist and the cask promise (docs/ceilings.md); cgo's
+      # clang otherwise targets the runner's own macOS.
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: native/go.mod
+          cache-dependency-path: native/go.sum
+
+      - name: Pinned Ghostty commit
+        id: ghostty
+        run: echo "commit=$(cat GHOSTTY_COMMIT)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache libghostty-vt
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/libghostty-vt
+          key: libghostty-vt-macos-arm64-${{ steps.ghostty.outputs.commit }}
+
+      - name: Set up Zig
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - name: Build libghostty-vt
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: ${{ runner.temp }}
+        run: |
+          git init ghostty
+          cd ghostty
+          git fetch --depth 1 https://github.com/ghostty-org/ghostty "${{ steps.ghostty.outputs.commit }}"
+          git checkout FETCH_HEAD
+          zig build -Demit-lib-vt -Doptimize=ReleaseFast -Dtarget=aarch64-macos.13.0 --prefix ~/libghostty-vt
+
+      - name: Point pkg-config at libghostty-vt
+        run: echo "PKG_CONFIG_PATH=$HOME/libghostty-vt/share/pkgconfig" >> "$GITHUB_ENV"
+
+      - name: go vet
+        run: go vet ./...
+
+      # The render tests skip where no GPU answers; the Linux job is the one
+      # that fails on a skip, this one lists them.
+      - name: go test
+        run: |
+          go test -v ./... > test.log 2>&1 || { cat test.log; exit 1; }
+          grep -E '^(ok|FAIL|---)' test.log
+          grep -B1 'no headless GPU' test.log || true
+
+      - name: Build lich-native
+        run: go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/lich-native" ./cmd/lich-native
+
+      - name: Check what lich-native asks of a machine
+        run: bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-native"
+
+      # The native window reads nothing from the embedded frontend, so an empty
+      # dist is enough for go:embed.
+      - name: Build the backend
+        working-directory: .
+        run: |
+          mkdir -p frontend/dist
+          touch frontend/dist/index.html
+          CGO_ENABLED=0 go build -o "$RUNNER_TEMP/lich" .
+
+      - name: Run the window against the backend
+        working-directory: .
+        run: bash .github/scripts/mac-native-smoke.sh "$RUNNER_TEMP/lich" "$RUNNER_TEMP/lich-native"
+
+      - name: Upload what the window drew
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lich-native-macos
+          path: ${{ runner.temp }}/diag
+          if-no-files-found: ignore

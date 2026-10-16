@@ -1206,10 +1206,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   native window someone else started, from a terminal with `LICH_NATIVE` say, is closed the same way, through
   the `window-close` event; one too old to know the event says another window took over. A focus that has to
   start the native window again loses the card it named: the window comes up on the session it last showed.
-  macOS has no native window build, so Settings › Window is not offered there and lich always opens the web
-  window. A restart keeps it: the native window tells a backend that went away from one that kept
-  running, and moves onto the successor its runtime file names. It cannot tell a restart from a quit until the
-  15 seconds it waits run out, so a `lich quit` shows "Reconnecting to lich…" for that long. A window that
+  On macOS the native window is built and run only on GitHub's runners (`native.yml` draws one frame against a
+  real backend, `.github/scripts/mac-e2e.sh` opens it from the bundle): its keys, Retina scaling, IME and menu
+  bar have never been looked at on a Mac. A restart keeps it: the native window tells a backend that went away
+  from one that kept running, and moves onto the successor its runtime file names. A quit (`lich quit`, the
+  tray, SIGINT or SIGTERM) closes it with the same `window-close` event; a backend killed outright or crashed
+  sends nothing, so the window shows "Reconnecting to lich…" for the 15 seconds it waits and then lich as
+  lost. A window that
   connects late, either of them, shows a terminal's moved working directory only from the next `cd`, since
   nothing replays it; the native window reads each session's status and usage from `terminal.TurnStates` on
   connect, the web window does not. `system.CloseWindow` never quits lich, even

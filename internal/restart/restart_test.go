@@ -123,6 +123,42 @@ func TestQuit(t *testing.T) {
 	})
 }
 
+// The native window is not lich's child: it closes on a quit and stays for a
+// restart, and Relaunching is how main tells the two apart once stopped.
+func TestRelaunchingOnlyAfterASuccessorStarted(t *testing.T) {
+	spawnOK := func(string, []string, []string) error { return nil }
+
+	quit := &Coordinator{exePath: "/usr/local/bin/lich", spawn: spawnOK}
+	quit.SetStop(func() {})
+	if err := quit.Quit(); err != nil {
+		t.Fatalf("Quit() = %v", err)
+	}
+	if quit.Relaunching() {
+		t.Fatal("Relaunching() = true after Quit, want false")
+	}
+
+	restarted := &Coordinator{exePath: "/usr/local/bin/lich", spawn: spawnOK}
+	restarted.SetStop(func() {})
+	if err := restarted.Do(); err != nil {
+		t.Fatalf("Do() = %v", err)
+	}
+	if !restarted.Relaunching() {
+		t.Fatal("Relaunching() = false after Do, want true")
+	}
+
+	failed := &Coordinator{
+		exePath: "/usr/local/bin/lich",
+		spawn:   func(string, []string, []string) error { return errors.New("boom") },
+	}
+	failed.SetStop(func() {})
+	if err := failed.Do(); err == nil {
+		t.Fatal("Do() = nil, want the spawn error")
+	}
+	if failed.Relaunching() {
+		t.Fatal("Relaunching() = true after a failed spawn, want false")
+	}
+}
+
 func TestDoErrors(t *testing.T) {
 	t.Run("no exe path", func(t *testing.T) {
 		c := &Coordinator{spawn: func(string, []string, []string) error { return nil }}

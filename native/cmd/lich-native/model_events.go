@@ -18,7 +18,7 @@ const (
 	// asked for lich's window.
 	raiseEventName = "window-raise"
 	// closeEventName is main.windowCloseEvent: lich is opening the web window
-	// in this one's place.
+	// in this one's place, or quitting.
 	closeEventName = "window-close"
 )
 

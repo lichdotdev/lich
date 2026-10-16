@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { errorText } from "@/lib/utils"
 import { useT } from "@/lib/i18n/i18n"
-import { isMac } from "@/lib/platform"
 import { System } from "@/lib/rpc"
 import { useStoredSetting } from "@/lib/use-stored-setting"
 import { SettingBlock } from "./SettingBlock"
@@ -23,13 +22,11 @@ export function windowKindOf(stored: string | undefined): (typeof WINDOW_KINDS)[
 
 // WindowSetting picks the window lich opens. Choosing the native one from
 // this window offers to switch now; Later leaves it for the next time lich
-// opens its window. macOS has no native window build, so the choice is not
-// offered there.
+// opens its window.
 export function WindowSetting() {
   const t = useT()
   const [stored, persist] = useStoredSetting(WINDOW_KIND_SETTING_KEY, GLOBAL_SCOPE)
   const [offer, setOffer] = useState(false)
-  if (isMac) return null
   const choice = windowKindOf(stored)
 
   const choose = (next: string) => {

@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The native window on macOS, experimental.** Lich.app ships it beside lich
+  on Apple Silicon and Intel, and Settings › Appearance › Window offers it as
+  on Linux and Windows. It has only run on GitHub's macOS machines so far:
+  notifications are plain ones you cannot click, and there is no menu-bar
+  item.
+
 ### Fixed
 
+- **`lich quit` closes the native window.** It stayed open showing lich as
+  lost once the backend had gone; the tray's Quit and a stop signal close it
+  too, while a restart after an update still keeps it.
 - **The native window offers to remove a worktree when its last session closes.** The
   Closed toast gains Remove worktree beside Undo; a worktree lich did not create, or
   one with uncommitted changes, is named in a dialog before it goes.

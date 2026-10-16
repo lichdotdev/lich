@@ -157,7 +157,7 @@ func main() {
 
 	term.SetRestart(coord.Do)
 
-	runChromium(term, configDir, coord, window, startWindow(sys, noWindow))
+	runChromium(term, configDir, coord, window, startWindow(sys, noWindow), func() { hub.Emit(windowCloseEvent, nil) })
 }
 
 // windowStart is what a launch does about lich's window: open it, its own or
@@ -651,7 +651,7 @@ func denyInternal(d *rpc.Handler) {
 // elsewhere, internal/chromium) and serves until lich is told to quit. The
 // window is not the app's lifecycle: closing it leaves every session running,
 // and a second launch opens a new one on them (handleBindFailure).
-func runChromium(term *terminal.Service, configDir string, coord *restart.Coordinator, window *restart.Window, start windowStart) {
+func runChromium(term *terminal.Service, configDir string, coord *restart.Coordinator, window *restart.Window, start windowStart, closeNative func()) {
 	info := term.Transport()
 	if info.Port == 0 {
 		handleBindFailure(configDir, term.TransportError(), start.openRunning) // never returns
@@ -675,14 +675,16 @@ func runChromium(term *terminal.Service, configDir string, coord *restart.Coordi
 	}
 	term.MountPublic("/", http.FileServerFS(dist))
 
-	serve(coord, window, start.open)
+	serve(coord, window, start.open, closeNative)
 }
 
 // serve opens the window and returns when lich is told to quit (`lich quit`,
 // a restart, SIGINT or SIGTERM), so the caller's defers still run. The window
 // is closed on the way out rather than left to die with the process, so
-// Chromium flushes its profile first.
-func serve(coord *restart.Coordinator, window *restart.Window, open func()) {
+// Chromium flushes its profile first. The native window is told to close only
+// when nothing takes lich's place: across a restart it moves onto the
+// successor instead.
+func serve(coord *restart.Coordinator, window *restart.Window, open, closeNative func()) {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(stop)
@@ -696,6 +698,9 @@ func serve(coord *restart.Coordinator, window *restart.Window, open func()) {
 	open()
 	<-stop
 	slog.Info("quitting")
+	if !coord.Relaunching() {
+		closeNative()
+	}
 	window.Close()
 }
 
@@ -894,7 +899,7 @@ func handleBindFailure(configDir string, cause error, openRunning func(string, *
 }
 
 // windowRaiseEvent asks the native window on /events to come forward, and
-// windowCloseEvent to close, a web window taking its place.
+// windowCloseEvent to close, a web window taking its place or lich quitting.
 const (
 	windowRaiseEvent = "window-raise"
 	windowCloseEvent = "window-close"

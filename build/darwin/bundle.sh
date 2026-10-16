@@ -3,7 +3,10 @@
 # lich in /Applications, Launchpad and Spotlight and gives it its icon; a bare
 # binary on PATH appears in none of them.
 #
-#   build/darwin/bundle.sh bin/lich-darwin-arm64 0.30.0 bin [bin/shell]
+#   build/darwin/bundle.sh bin/lich-darwin-arm64 0.30.0 bin [bin/shell [bin/lich-native]]
+#
+# With a fifth, the native window goes beside lich in Contents/MacOS too, for
+# the same reason as lich-shell: it is the process holding the window.
 #
 # With a fourth argument, the window build/darwin/shell/assemble.sh laid out:
 # lich-shell goes beside lich in Contents/MacOS, where macOS counts a process
@@ -25,6 +28,7 @@ bin="${1:?usage: bundle.sh <binary> <version> <outdir> [shell dir]}"
 version="${2:?usage: bundle.sh <binary> <version> <outdir> [shell dir]}"
 outdir="${3:?usage: bundle.sh <binary> <version> <outdir> [shell dir]}"
 shell="${4:-}"
+native="${5:-}"
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 app="$outdir/Lich.app"
@@ -58,6 +62,11 @@ if [ -n "$shell" ]; then
   helper "Lich Helper (Alerts)" ".alerts"
 fi
 
+if [ -n "$native" ]; then
+  cp "$native" "$app/Contents/MacOS/lich-native"
+  chmod +x "$app/Contents/MacOS/lich-native"
+fi
+
 sed "s/@VERSION@/${version}/g" "$root/build/darwin/Info.plist.tpl" \
   > "$app/Contents/Info.plist"
 
@@ -88,6 +97,9 @@ if [ -n "$shell" ]; then
     codesign --force --sign - "$h"
   done
   codesign --force --sign - "$app/Contents/MacOS/lich-shell"
+fi
+if [ -n "$native" ]; then
+  codesign --force --sign - "$app/Contents/MacOS/lich-native"
 fi
 codesign --force --sign - "$app"
 

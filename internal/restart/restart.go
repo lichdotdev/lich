@@ -104,6 +104,14 @@ func (c *Coordinator) Quit() error {
 	return nil
 }
 
+// Relaunching reports whether a successor was launched to take this lich's
+// place, which is what tells a restart from a quit once lich is stopping.
+func (c *Coordinator) Relaunching() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.started
+}
+
 // Do launches the successor and stops this lich. Order matters: the successor
 // starts first and blocks retrying the pinned port; then this process exits,
 // and the freed port lets the successor bind and open a fresh window.

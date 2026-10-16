@@ -72,7 +72,8 @@ built from a pinned Ghostty commit.
   tray's second item opens the other window without changing the choice, and so does Switch now in the
   dialog that changing the choice offers. A native window that is missing
   beside `lich`, or ends before it attached, leaves the web window open in its place, with a toast saying why
-  (`system.TakeWindowFallback`). macOS has no native window build, so the choice is not offered there.
+  (`system.TakeWindowFallback`). The macOS window is built and run only on GitHub's runners
+  (`native.yml`, `.github/scripts/mac-e2e.sh`): nobody here has looked at it on a Mac.
 - **No replay of a session's working directory.** The directory a terminal moved to arrives only as an event;
   a window that connects later shows the checkout's path until the next `cd`. A session's status and usage are
   not part of the gap: the native window reads `terminal.TurnStates` right after attaching to `/events`. The web
