@@ -65,3 +65,16 @@ func TestCopyTreeLeavesOutADanglingFileLinkWindowsRefuses(t *testing.T) {
 		t.Errorf("real file copied as %q, %v", got, err)
 	}
 }
+
+func TestLinkFileCopiesARelativeTargetFromBesideTheLink(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "real"), "data")
+	refuseSymlinks(t)
+	copied, err := linkFile("real", filepath.Join(dir, "link"))
+	if err != nil || !copied {
+		t.Fatalf("linkFile = %v, %v; want a copy", copied, err)
+	}
+	if got, err := os.ReadFile(filepath.Join(dir, "link")); err != nil || string(got) != "data" {
+		t.Errorf("copy holds %q, %v; want the file beside the link, not one under the working directory", got, err)
+	}
+}

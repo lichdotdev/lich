@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -32,10 +33,14 @@ func LinkDir(target, path string) error {
 // linkFile makes path a symlink to the file target, which Windows allows only
 // with Developer Mode on, and copies the file when it refuses. A hard link is
 // not the fallback: a CLI that replaces the file on write leaves the two
-// diverged anyway (measured on Claude Code).
+// diverged anyway (measured on Claude Code). A relative target is read from
+// beside the link, as the symlink would have resolved it.
 func linkFile(target, path string) (copied bool, err error) {
 	if symlink(target, path) == nil {
 		return false, nil
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(path), target)
 	}
 	return true, copyFile(target, path)
 }
