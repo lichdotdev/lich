@@ -102,18 +102,9 @@ const (
 // workspace does not hold it, as the web window does on every launch, and
 // returns the workspace as it stands after.
 func (m *model) ensureHome(ctx context.Context, ps []lichclient.Project) ([]lichclient.Project, error) {
-	home, err := m.client.HomeProject(ctx)
-	if err != nil {
-		return nil, err
-	}
-	m.mu.Lock()
-	m.homeID = home.ID
-	m.mu.Unlock()
-	if slices.ContainsFunc(ps, func(p lichclient.Project) bool { return p.ID == home.ID }) {
-		return ps, nil
-	}
-	if err := m.client.AddProject(ctx, home.ID, home.Name, home.Path); err != nil {
-		return nil, err
+	home, added, err := m.addHome(ctx, ps)
+	if err != nil || !added {
+		return ps, err
 	}
 	if err := m.client.AddSession(ctx, home.ID, strings.ToLower(rand.Text()), homeSessionLabel, "shell", "", homeNextSeq); err != nil {
 		return nil, err
@@ -121,15 +112,32 @@ func (m *model) ensureHome(ctx context.Context, ps []lichclient.Project) ([]lich
 	return m.client.LoadState(ctx)
 }
 
+// addHome opens the home directory's project, with no session, when ps does
+// not hold it, and reports whether it did.
+func (m *model) addHome(ctx context.Context, ps []lichclient.Project) (lichclient.Project, bool, error) {
+	home, err := m.client.HomeProject(ctx)
+	if err != nil {
+		return home, false, err
+	}
+	m.mu.Lock()
+	m.homeID = home.ID
+	m.mu.Unlock()
+	if slices.ContainsFunc(ps, func(p lichclient.Project) bool { return p.ID == home.ID }) {
+		return home, false, nil
+	}
+	return home, true, m.client.AddProject(ctx, home.ID, home.Name, home.Path)
+}
+
 // openHome opens the home directory's project when the workspace lost it and
 // puts Home on screen, as the web's ensureHomeProject does for a command with
-// no project to run in.
+// no project to run in. No session is seeded: the caller opens the one it
+// needs.
 func (m *model) openHome(ctx context.Context) error {
 	ps, err := m.client.LoadState(ctx)
 	if err != nil {
 		return err
 	}
-	if _, err := m.ensureHome(ctx, ps); err != nil {
+	if _, _, err := m.addHome(ctx, ps); err != nil {
 		return err
 	}
 	if err := m.reload(ctx); err != nil {
