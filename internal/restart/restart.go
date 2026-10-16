@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/omartelo/lich/internal/chromium"
 )
 
 // WaitEnv marks a lich process spawned to succeed a restarting one. The
@@ -27,9 +29,6 @@ const WaitEnv = "LICH_RESTART_WAIT"
 // line (build/windows/lich.iss) and the environment of the lich that started
 // the installer, so the window's switches ride the environment (LaunchArgs).
 const ArgsEnv = "LICH_RELAUNCH_ARGS"
-
-// NoWindowArg starts lich without its window (chromium.ParseFlags reads it).
-const NoWindowArg = "--no-window"
 
 // Coordinator ends this lich: on its own (Quit), or after launching a detached
 // successor (Do, Install), so this process unwinds, exits, and frees the port.
@@ -81,7 +80,7 @@ func (c *Coordinator) SetWindowOpen(open func() bool) {
 }
 
 // successorArgs are the successor's arguments: this lich's window switches,
-// behind NoWindowArg when no window is up.
+// behind chromium.NoWindowArg when no window is up.
 func (c *Coordinator) successorArgs() []string {
 	c.mu.Lock()
 	open := c.windowOpen
@@ -89,7 +88,7 @@ func (c *Coordinator) successorArgs() []string {
 	if open == nil || open() {
 		return c.args
 	}
-	return append([]string{NoWindowArg}, c.args...)
+	return append([]string{chromium.NoWindowArg}, c.args...)
 }
 
 // Quit ends this lich: every session goes with it, and nothing is launched in

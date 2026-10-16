@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omartelo/lich/internal/chromium"
 	"github.com/omartelo/lich/internal/restart"
 	"github.com/omartelo/lich/internal/system"
 )
@@ -93,7 +94,7 @@ func (c *client) backend() (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("find the lich binary: %w", err)
 	}
-	if err := c.start(exe, os.Environ(), []string{"--no-window"}); err != nil {
+	if err := c.start(exe, os.Environ(), []string{chromium.NoWindowArg}); err != nil {
 		return "", "", fmt.Errorf("start lich: %w", err)
 	}
 	return c.awaitBackend(nativeStartWait)

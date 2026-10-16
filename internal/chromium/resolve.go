@@ -92,6 +92,9 @@ func RelaunchArgs(extra []string) []string {
 	return append([]string{"--"}, extra...)
 }
 
+// NoWindowArg starts lich without its window.
+const NoWindowArg = "--no-window"
+
 // ParseFlags splits lich's own launch arguments: --shell <path> pins the
 // window to open, --no-window starts the backend without one (`lich native`
 // uses it), and everything after `--` passes through to the window as Chromium
@@ -103,7 +106,7 @@ func ParseFlags(args []string) (pinned string, noWindow bool, extra []string) {
 		switch arg := args[i]; {
 		case arg == "--":
 			return pinned, noWindow, args[i+1:]
-		case arg == "--no-window":
+		case arg == NoWindowArg:
 			noWindow = true
 		case arg == "--shell" && i+1 < len(args):
 			i++
