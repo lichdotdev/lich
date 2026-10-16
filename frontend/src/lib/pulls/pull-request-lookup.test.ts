@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+  invalidatePullRequest,
   invalidatePullRequests,
   lookupPullRequest,
   onPullRequestInvalidated,
@@ -90,6 +91,19 @@ describe("pull-request-lookup", () => {
     unsubscribe()
     invalidatePullRequests()
     expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it("invalidates one checkout and leaves the others' answers", async () => {
+    await lookupPullRequest("/h", "main", "sha1")
+    await lookupPullRequest("/i", "main", "sha1")
+    const reload = vi.fn()
+    const unsubscribe = onPullRequestInvalidated(reload)
+    invalidatePullRequest("/h")
+    unsubscribe()
+    await lookupPullRequest("/h", "main", "sha1")
+    await lookupPullRequest("/i", "main", "sha1")
+    expect(pullRequest).toHaveBeenCalledTimes(3)
+    expect(reload).toHaveBeenCalledWith("/h")
   })
 
   it("resolves a failed lookup to no pull request", async () => {

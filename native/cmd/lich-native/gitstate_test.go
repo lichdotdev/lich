@@ -39,6 +39,7 @@ type fakeForge struct {
 	branch, head string
 	prs          map[string]*lichclient.PullRequest // head -> open PR
 	hold         chan struct{}                      // while set, gh does not answer
+	answered     int                                // pull request lookups served
 }
 
 func (f *fakeForge) set(branch, head string) {
@@ -64,6 +65,7 @@ func (f *fakeForge) client(t *testing.T) *lichclient.Client {
 			_ = json.NewEncoder(w).Encode(lichclient.BaseStatus{Behind: 2})
 		case "/rpc/project.PullRequest":
 			_ = json.NewEncoder(w).Encode(f.prs[f.head])
+			f.answered++
 		default:
 			t.Errorf("unexpected call %s", r.URL.Path)
 		}
@@ -142,4 +144,31 @@ func TestCardFollowsThePullRequestOfItsBranch(t *testing.T) {
 	forge.hold = nil
 	forge.mu.Unlock()
 	prOnCard(t, m, 9)
+}
+
+// gh pr create moves neither branch nor head, so the turn that ran it ending is
+// what makes the card ask again.
+func TestCardFindsThePullRequestItsTurnOpened(t *testing.T) {
+	forge := &fakeForge{prs: map[string]*lichclient.PullRequest{}}
+	forge.set("feat", "c1")
+	m := newTestModel(forge.client(t))
+	prOnCard(t, m, 0)
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		forge.mu.Lock()
+		answered := forge.answered
+		forge.mu.Unlock()
+		if answered > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("gh was never asked about c1")
+		}
+	}
+
+	forge.mu.Lock()
+	forge.prs["c1"] = &lichclient.PullRequest{Number: 5}
+	forge.mu.Unlock()
+	send(m, statusEventName, statusEvent{ID: "s1", State: statusBusy})
+	send(m, statusEventName, statusEvent{ID: "s1", State: statusDone})
+	prOnCard(t, m, 5)
 }

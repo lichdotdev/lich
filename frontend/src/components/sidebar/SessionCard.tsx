@@ -38,7 +38,7 @@ import { useSessionCwd } from "@/lib/session/use-session-cwd"
 import { useSessionAgent } from "@/lib/session/use-session-agent"
 import { useGitStatus } from "@/lib/git/use-git-status"
 import { baseReadout } from "@/lib/git/base-status"
-import { usePullRequest } from "@/lib/pulls/use-pull-request"
+import { usePullRequest, useRecheckAfterTurn } from "@/lib/pulls/use-pull-request"
 import { createPullRequestPrompt, offersPullRequest } from "@/lib/pulls/pr-handoff"
 import { CloseButton } from "@/components/common/CloseButton"
 import { DiffStat } from "@/components/DiffStat"
@@ -244,6 +244,7 @@ export function SessionCard({
   const shownPath = liveCwd || session.path || path
   const git = useGitStatus(shownPath)
   const pr = usePullRequest(shownPath, git?.branch ?? "", git?.head ?? "")
+  useRecheckAfterTurn(shownPath, status, pr)
   // How the checkout stands against the branch it merges into: null — the case
   // nearly all day — draws nothing at all.
   const base = baseReadout(git?.base ?? null)

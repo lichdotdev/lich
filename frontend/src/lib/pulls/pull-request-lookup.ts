@@ -16,14 +16,13 @@ interface Shared {
 
 const shared = new Map<string, Shared>()
 
-const listeners = new Set<() => void>()
+// A listener hears the checkout whose answer was dropped, or null for all of
+// them.
+const listeners = new Set<(path: string | null) => void>()
 
 // onPullRequestInvalidated registers a badge's re-read, returning its
-// unsubscribe. Every badge of every checkout is called, not just the one that
-// changed: a merge is a rare, deliberate action, and the callers of one
-// checkout still collapse into a single gh call. Key the listeners by path if
-// that ever stops being cheap enough.
-export function onPullRequestInvalidated(reload: () => void): () => void {
+// unsubscribe. The badge decides from the path whether the drop concerns it.
+export function onPullRequestInvalidated(reload: (path: string | null) => void): () => void {
   listeners.add(reload)
   return () => {
     listeners.delete(reload)
@@ -40,7 +39,20 @@ export function onPullRequestInvalidated(reload: () => void): () => void {
 export function invalidatePullRequests(): void {
   shared.clear()
   for (const reload of listeners) {
-    reload()
+    reload(null)
+  }
+}
+
+// invalidatePullRequest is invalidatePullRequests for one checkout: the other
+// badges keep their answers rather than each asking gh again.
+export function invalidatePullRequest(path: string): void {
+  for (const key of shared.keys()) {
+    if (key.startsWith(`${path}\n`)) {
+      shared.delete(key)
+    }
+  }
+  for (const reload of listeners) {
+    reload(path)
   }
 }
 

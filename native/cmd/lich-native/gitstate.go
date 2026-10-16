@@ -50,9 +50,10 @@ type prLookup struct {
 }
 
 // refreshPath re-reads a shown path's changes and base standing, and asks gh
-// for its pull request again when the branch or head moved: a PR the session
-// just opened, or a merge that closed one, shows without waiting. An open one
-// is asked about again every prRecheck.
+// for its pull request again when the branch or head moved: a merge that
+// closed one shows without waiting. An open one is asked about again every
+// prRecheck; one the session just opened, at the end of its turn
+// (recheckMissingPR).
 func (m *model) refreshPath(ctx context.Context, path string) {
 	d, err := m.client.Diff(ctx, path)
 	if err != nil {
@@ -113,6 +114,22 @@ func (m *model) lookupPR(ctx context.Context, path, branch, head string) {
 // shows when the user comes back. Callers hold m.mu.
 func (m *model) stalePullRequests() {
 	for path, l := range m.prs {
+		l.head = ""
+		m.prs[path] = l
+	}
+}
+
+// recheckMissingPR makes the next git tick ask gh again for the card of a
+// session whose turn just finished, when it shows no pull request: `gh pr
+// create` moves neither branch nor head, so nothing else would bring up the PR
+// the turn opened. Callers hold m.mu.
+func (m *model) recheckMissingPR(id string) {
+	p, i := m.sessionAt(id)
+	if p == nil {
+		return
+	}
+	path := m.shownPath(*p, p.Sessions[i])
+	if l, looked := m.prs[path]; looked && l.pr == nil {
 		l.head = ""
 		m.prs[path] = l
 	}

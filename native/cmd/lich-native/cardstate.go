@@ -56,6 +56,9 @@ func (m *model) applyStatus(ctx context.Context, ev lichclient.Event) error {
 	previous := m.status.status(s.ID)
 	_, err := m.status.apply(ev, time.Now())
 	report, routed := m.statusReport(s.ID, previous)
+	if previous != statusDone && m.status.status(s.ID) == statusDone {
+		m.recheckMissingPR(s.ID)
+	}
 	if s.State == "idle" {
 		// The CLI left: it can no longer answer a request either
 		// (session-relay-store.ts).
