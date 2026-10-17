@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
@@ -42,8 +43,9 @@ func (u *window) attachTray() {
 }
 
 // followLanguage runs each frame: what a table built once holds in the
-// interface language (the hotkeys' labels) or hands the backend (the tray's
-// words) is renewed when Settings changed the language since the last frame.
+// interface language (the hotkeys' labels, the CJK faces) or hands the
+// backend (the tray's words) is renewed when Settings changed the language
+// since the last frame.
 // Settings only sets the language, so the window notices rather than being
 // told. A send that fails is not retried until the language changes again.
 func (u *window) followLanguage() {
@@ -51,6 +53,12 @@ func (u *window) followLanguage() {
 	if lang != u.hotkeyLanguage {
 		u.hotkeyLanguage = lang
 		localizeHotkeys()
+	}
+	if u.uiFonts != nil && lang != u.fontsLanguage {
+		u.fontsLanguage = lang
+		if err := u.setInterfaceFonts(*u.uiFonts); err != nil {
+			u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(u.uiFonts.sans, fonts.SystemSans), "error": lichclient.ErrorText(err)})))
+		}
 	}
 	sent, attached := u.trayLanguage.Load().(i18n.Locale)
 	if !attached || sent == lang {

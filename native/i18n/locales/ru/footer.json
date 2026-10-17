@@ -1,0 +1,19 @@
+{
+  "item": {
+    "attach": {
+      "example": "Прикрепить файл"
+    },
+    "files": {
+      "example": "Файлы"
+    },
+    "model": {
+      "example": "Модель"
+    }
+  },
+  "footerEditor": {
+    "previewHint": "Предпросмотр · примерные значения"
+  },
+  "footerMenu": {
+    "customize": "Настроить нижнюю панель…"
+  }
+}

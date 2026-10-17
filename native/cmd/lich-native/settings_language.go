@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
+	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -27,27 +28,45 @@ const (
 	promptLanguageKey = "prompt.language"
 )
 
-var flagHanFontOffer = flag.String("han-font-offer", "", "open the Chinese-font offer at start as if 简体中文 were chosen in Settings, \"ask\" or \"download\" to also start the download, for -shot")
+var flagHanFontOffer = flag.String("han-font-offer", "", "open the CJK-font offer at start as if the language were chosen in Settings: zh-CN, ja or ko, with \":download\" (ko:download) to also start the download, for -shot")
 
 // languageMenus are the two pickers' menus, and the offer to download a
-// Chinese font when the interface switches to Chinese without one.
+// CJK font when the interface switches to Chinese, Japanese or Korean
+// without one.
 type languageMenus struct {
 	ui, prompt ui.MenuState
-	// han says whether the interface's shaper has a face that draws Chinese;
-	// reloadFonts builds the shaper again, for a font just downloaded.
-	han         bool
+	// draws says whether a face, installed or downloaded, draws a language's
+	// script; reloadFonts builds the shaper again, for a font just downloaded.
+	draws       func(i18n.Locale) bool
 	reloadFonts func() error
 	offer       hanFontOffer
 }
 
-// needsHanFont says whether showing the interface in l waits for a Chinese
-// font: every other language draws with the faces the window has.
-func needsHanFont(l i18n.Locale, han bool) bool { return l == i18n.ZhCN && !han }
+// needsHanFont says whether showing the interface in l waits for a CJK font:
+// every other language draws with the faces the window has.
+func needsHanFont(l i18n.Locale, draws func(i18n.Locale) bool) bool {
+	switch l {
+	case i18n.ZhCN, i18n.JA, i18n.KO:
+		return !draws(l)
+	}
+	return false
+}
+
+// drawsLanguage says whether hanFaces has a face for l. An error reading
+// them counts as none, which offers the download: it is logged, and the
+// download reports its own failure.
+func drawsLanguage(l i18n.Locale) bool {
+	faces, err := hanFaces(l)
+	if err != nil {
+		log.Printf("fonts: CJK faces for %s: %v", l, err)
+	}
+	return len(faces) > 0
+}
 
 // launchLanguage is the language the window opens in: l, or English while l
-// waits for a Chinese font, which is then offered.
-func launchLanguage(l i18n.Locale, han bool) (shown i18n.Locale, offer bool) {
-	if needsHanFont(l, han) {
+// waits for a CJK font, which is then offered.
+func launchLanguage(l i18n.Locale, draws func(i18n.Locale) bool) (shown i18n.Locale, offer bool) {
+	if needsHanFont(l, draws) {
 		return i18n.EN, true
 	}
 	return l, false
@@ -79,15 +98,16 @@ func (u *window) loadLanguages() error {
 		return err
 	}
 	languages := &u.settings.languages
-	languages.reloadFonts = u.reloadInterfaceFonts
-	shown, offer := launchLanguage(iface, languages.han)
+	languages.reloadFonts, languages.draws = u.reloadInterfaceFonts, drawsLanguage
+	shown, offer := launchLanguage(iface, languages.draws)
 	i18n.SetCurrent(shown)
 	if offer {
 		languages.offer.show(iface, i18n.SetCurrent)
 	}
 	if *flagHanFontOffer != "" {
-		languages.offer.show(i18n.ZhCN, u.settings.keepLanguage)
-		if *flagHanFontOffer == "download" {
+		tag, mode, _ := strings.Cut(*flagHanFontOffer, ":")
+		languages.offer.show(i18n.Match(tag), u.settings.keepLanguage)
+		if mode == "download" {
 			u.settings.startHanFontDownload()
 		}
 	}
@@ -114,9 +134,9 @@ func (s *settingsScreen) languageRow(gtx C, th *ui.Theme, key string, r settingR
 }
 
 // chooseLanguage shows the interface in l from the next frame on and keeps
-// the choice, once a Chinese font is in place for Chinese.
+// the choice, once a CJK font is in place for a CJK language.
 func (s *settingsScreen) chooseLanguage(l i18n.Locale) {
-	if needsHanFont(l, s.languages.han) {
+	if needsHanFont(l, s.languages.draws) {
 		s.languages.offer.show(l, s.keepLanguage)
 		return
 	}
@@ -152,8 +172,9 @@ func (s *settingsScreen) choosePromptLanguage(l i18n.Locale) {
 	}()
 }
 
-// hanFontOffer is the dialog that offers to download Noto Sans SC before the
-// interface switches to target, and the download it starts. The download
+// hanFontOffer is the dialog that offers to download target's Noto Sans
+// (fonts.NotoSansFor) before the interface switches to it, and the download
+// it starts. The download
 // runs on its own goroutine and hands its outcome to the next frame, which
 // loads the font and switches on the window's goroutine.
 type hanFontOffer struct {
@@ -219,7 +240,8 @@ func (s *settingsScreen) startHanFontDownload() {
 	run := o.run
 	go func() {
 		defer stop()
-		err := fonts.Fetch(ctx, fonts.NotoSansSC, dir, func(done, _ int64) {
+		_, files := fonts.NotoSansFor(string(o.target))
+		err := fonts.Fetch(ctx, files, dir, func(done, _ int64) {
 			o.done.Store(done)
 			s.invalidate()
 		})
@@ -242,8 +264,9 @@ func (s *settingsScreen) finishHanFontDownload(r *hanFontOutcome) {
 	if err == nil {
 		err = s.languages.reloadFonts()
 	}
-	if err == nil && !s.languages.han {
-		err = errors.New("the downloaded font does not draw Chinese")
+	if err == nil && !s.languages.draws(target) {
+		family, _ := fonts.NotoSansFor(string(target))
+		err = fmt.Errorf("the downloaded %s does not draw %s", family, target.Name())
 	}
 	if err != nil {
 		s.hanFontFailed(err)
@@ -254,7 +277,8 @@ func (s *settingsScreen) finishHanFontDownload(r *hanFontOutcome) {
 }
 
 func (s *settingsScreen) hanFontFailed(err error) {
-	title := i18n.T("settings.language.hanFontFailed", i18n.Args{"error": err.Error()})
+	family, _ := fonts.NotoSansFor(string(s.languages.offer.target))
+	title := i18n.T("settings.language.hanFontFailed", i18n.Args{"font": family, "error": err.Error()})
 	s.theme.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: title})
 }
 
@@ -274,10 +298,11 @@ func (s *settingsScreen) layoutHanFontDialog(gtx C, th *ui.Theme) {
 	if o.cancel.Clicked(gtx) {
 		o.dismiss()
 	}
-	total := fonts.TotalSize(fonts.NotoSansSC)
+	family, files := fonts.NotoSansFor(string(o.target))
+	total := fonts.TotalSize(files)
 	pop := th.On(th.Popover)
-	d := th.Dialog(&o.dialog, o.open, i18n.T("settings.language.hanFontTitle"),
-		i18n.T("settings.language.hanFontDescription", i18n.Args{"size": wholeMegabytes(total)}))
+	d := th.Dialog(&o.dialog, o.open, i18n.T("settings.language.hanFontTitle", i18n.Args{"language": o.target.Name()}),
+		i18n.T("settings.language.hanFontDescription", i18n.Args{"language": o.target.Name(), "font": family, "size": wholeMegabytes(total)}))
 	if o.downloading {
 		done := o.done.Load()
 		d.Body = func(gtx C) D {

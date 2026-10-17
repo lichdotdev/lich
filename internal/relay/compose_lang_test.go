@@ -72,3 +72,17 @@ func TestTheRelayTypesInThePromptLanguageReadLive(t *testing.T) {
 		t.Errorf("the message was not typed in the language set after startup:\n%s", typed)
 	}
 }
+
+// Russian's one form also covers 21, so the nudge prints the count in every
+// form and the noun agrees with it.
+func TestTheRussianNudgeAgreesWithItsCount(t *testing.T) {
+	for count, want := range map[int]string{
+		1: "1 отправленная вами задача готова", 2: "2 отправленные вами задачи готовы",
+		5: "5 отправленных вами задач готовы", 11: "11 отправленных вами задач готовы",
+		21: "21 отправленная вами задача готова", 22: "22 отправленные вами задачи готовы",
+	} {
+		if got := nudgeNotice(prompt.Russian, count, []string{"docs"}, false); !strings.Contains(got, want) {
+			t.Errorf("count %d: %q, want it to contain %q", count, got, want)
+		}
+	}
+}

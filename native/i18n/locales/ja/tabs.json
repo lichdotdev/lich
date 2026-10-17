@@ -1,0 +1,30 @@
+{
+  "notificationsButton": {
+    "title": "通知",
+    "caughtUp": "すべて確認済みです"
+  },
+  "openProjectMenu": {
+    "open": "プロジェクトを開く",
+    "recent": "最近のプロジェクト",
+    "relocate": "場所を変更",
+    "openFolder": "フォルダーを開く…"
+  },
+  "projectTabs": {
+    "pullRequests": "プルリクエスト",
+    "settings": "設定",
+    "closeTitle": "まだ実行中のセッションがあります",
+    "closeBody": {
+      "one": "{name} を閉じると、ターンの途中のセッションが停止します。プロジェクトを開き直すと、それぞれ中断したところから再開できますが、実行中のターンは失われます。",
+      "other": "{name} を閉じると、ターンの途中の {count} 件のセッションが停止します。プロジェクトを開き直すと、それぞれ中断したところから再開できますが、実行中のターンは失われます。"
+    },
+    "closeAnyway": "それでも閉じる"
+  },
+  "topbarTabs": {
+    "projectSettings": "プロジェクト設定…",
+    "closeProject": "プロジェクトを閉じる"
+  },
+  "topbarApply": {
+    "closeProjectFailed": "プロジェクトを閉じられませんでした: {error}",
+    "reorderFailed": "プロジェクトを並べ替えられませんでした: {error}"
+  }
+}

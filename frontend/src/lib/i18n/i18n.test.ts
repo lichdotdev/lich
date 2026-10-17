@@ -12,7 +12,10 @@ import {
 import { en } from "./locales/en"
 import { es } from "./locales/es"
 import { ptBR } from "./locales/pt-br"
+import { ja } from "./locales/ja"
+import { ru } from "./locales/ru"
 import { zhCN } from "./locales/zh-cn"
+import { ko } from "./locales/ko"
 
 function stubStorage(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial))
@@ -120,6 +123,22 @@ describe("t", () => {
     expect(matchLocale("zh-Hans-CN")).toBe("zh-CN")
   })
 
+  it("renders Japanese with its single plural form", () => {
+    stubStorage()
+    setLocale("ja")
+    const forms = ja.common.count.file
+    expect(forms.one).toBe(forms.other)
+    expect(t("common.count.file", { count: 1 })).toBe(forms.other.replace("{count}", "1"))
+    expect(t("common.count.file", { count: 2 })).toBe(forms.other.replace("{count}", "2"))
+    expect(t("common.action.cancel")).toBe(ja.common.action.cancel)
+    expect(t("common.action.cancel")).not.toBe("Cancel")
+  })
+
+  it("matches any Japanese browser language to ja", () => {
+    expect(matchLocale("ja")).toBe("ja")
+    expect(matchLocale("ja-JP")).toBe("ja")
+  })
+
   it("rejects misuse at compile time", () => {
     // @ts-expect-error a key that does not exist
     expect(() => t("sidebar.nothing.here")).toThrow()
@@ -153,7 +172,7 @@ const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) 
 // translation that renames, drops or invents a placeholder.
 describe("every locale against English", () => {
   const source = leaves(en as unknown as Tree)
-  const locales = { "pt-BR": ptBR, es, "zh-CN": zhCN }
+  const locales = { "pt-BR": ptBR, es, "zh-CN": zhCN, ja, ko, ru }
 
   it("covers every locale the picker offers", () => {
     expect(Object.keys(locales)).toEqual(LOCALES.filter((locale) => locale !== "en"))
@@ -179,8 +198,39 @@ describe("every locale against English", () => {
       }
       expect(mismatched).toEqual([])
     })
+
+    it(`${locale} writes every plural form its language selects`, () => {
+      const rules = new Intl.PluralRules(locale)
+      const missing: string[] = []
+      for (const [key, forms] of plurals(catalog as unknown as Tree)) {
+        for (let count = 0; count < 200; count++) {
+          const form = rules.select(count)
+          if (forms[form] === undefined) {
+            missing.push(`${key}.${form}`)
+            break
+          }
+        }
+      }
+      expect(missing).toEqual([])
+    })
   }
 })
+
+// A form a language selects but its catalog lacks silently reads `other`,
+// which in Russian is the form for fractions.
+function plurals(tree: Tree, prefix = ""): Map<string, Record<string, string>> {
+  const found = new Map<string, Record<string, string>>()
+  for (const [key, value] of Object.entries(tree)) {
+    if (typeof value === "string") continue
+    const path = prefix ? `${prefix}.${key}` : key
+    if (typeof value.other === "string") {
+      found.set(path, value as Record<string, string>)
+    } else {
+      for (const [leaf, forms] of plurals(value, path)) found.set(leaf, forms)
+    }
+  }
+  return found
+}
 
 describe("Spanish", () => {
   it("is what every Spanish browser language resolves to", () => {
@@ -200,5 +250,55 @@ describe("Spanish", () => {
     expect(t("common.count.file", { count: 0 })).toBe("0 archivos")
     expect(t("common.count.file", { count: 1 })).toBe("1 archivo")
     expect(t("common.count.file", { count: 2 })).toBe("2 archivos")
+  })
+})
+
+describe("Korean", () => {
+  it("is what every Korean browser language resolves to", () => {
+    for (const tag of ["ko", "ko-KR", "KO-kr"]) {
+      expect(matchLocale(tag)).toBe("ko")
+    }
+  })
+
+  it("renders messages with its single plural form", () => {
+    stubStorage()
+    setLocale("ko")
+    expect(ko.common.count.file).not.toHaveProperty("one")
+    expect(t("common.count.file", { count: 1 })).toBe("파일 1개")
+    expect(t("common.count.file", { count: 0 })).toBe("파일 0개")
+    expect(t("common.action.cancel")).toBe("취소")
+  })
+})
+
+describe("Russian", () => {
+  it("is what every Russian browser language resolves to", () => {
+    for (const tag of ["ru", "ru-RU", "ru-UA", "RU-by"]) {
+      expect(matchLocale(tag)).toBe("ru")
+    }
+  })
+
+  it("picks one, few or many the way Russian counts", () => {
+    stubStorage()
+    setLocale("ru")
+    const forms = ru.common.count.file
+    const cases: [number, string][] = [
+      [0, forms.many],
+      [1, forms.one],
+      [2, forms.few],
+      [5, forms.many],
+      [11, forms.many],
+      [12, forms.many],
+      [21, forms.one],
+      [22, forms.few],
+      [25, forms.many],
+      [111, forms.many],
+      [112, forms.many],
+    ]
+    for (const [count, form] of cases) {
+      expect(t("common.count.file", { count })).toBe(form.replace("{count}", String(count)))
+    }
+    expect(new Set([forms.one, forms.few, forms.many]).size).toBe(3)
+    expect(t("common.action.cancel")).toBe(ru.common.action.cancel)
+    expect(t("common.action.cancel")).not.toBe("Cancel")
   })
 })

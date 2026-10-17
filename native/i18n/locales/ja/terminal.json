@@ -1,0 +1,39 @@
+{
+  "dropHint": {
+    "attachTo": "{label} に添付",
+    "confined": "チェックアウトの外にあるものはコピーとして渡されます",
+    "pasted": "パスがプロンプトに貼り付けられます"
+  },
+  "exitBanner": {
+    "restart": "再起動",
+    "close": "閉じる"
+  },
+  "drop": {
+    "notAttached": "添付されませんでした: {files}"
+  },
+  "host": {
+    "rememberFailed": "選択を保存できませんでした: {error}",
+    "noRoom": "これ以上ペインを追加する余白がありません"
+  },
+  "view": {
+    "restartFailed": "セッションを再起動できませんでした: {error}",
+    "startFailed": "セッションを開始できませんでした: {error}"
+  },
+  "sessionExit": {
+    "ended": "セッションが終了しました",
+    "endedWithCode": "セッションがコード {code} で終了しました"
+  },
+  "dropFiles": {
+    "folderConfined": "このサンドボックス化されたセッションのチェックアウト外にあるフォルダーは渡せません。ファイルをドロップしてください"
+  },
+  "copyToast": {
+    "copied": {
+      "one": "{count} 文字をクリップボードにコピーしました",
+      "other": "{count} 文字をクリップボードにコピーしました"
+    }
+  },
+  "terminalDrop": {
+    "skipped": "{name}（{reason}）",
+    "tooLarge": "{name}（{size}MB 超）"
+  }
+}

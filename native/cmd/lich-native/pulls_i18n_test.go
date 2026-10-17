@@ -105,6 +105,10 @@ func TestCheckDurationSpeaksTheInterfaceLanguage(t *testing.T) {
 	if got := checkDuration("2025-12-31T22:30:00Z", "2026-01-01T00:00:00Z", now); got != "1小时 30分钟" {
 		t.Errorf("zh-CN hours = %q", got)
 	}
+	i18n.SetCurrent(i18n.KO)
+	if got := checkDuration("2025-12-31T22:30:00Z", "2026-01-01T00:00:00Z", now); got != "1시간 30분" {
+		t.Errorf("ko hours = %q", got)
+	}
 }
 
 func TestLineAnchorNamesOneLineOrASpan(t *testing.T) {

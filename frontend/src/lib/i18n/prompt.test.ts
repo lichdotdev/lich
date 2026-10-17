@@ -5,6 +5,7 @@ import { composeReviewComments } from "@/lib/review-comments"
 import { issueBrief } from "@/lib/issue"
 import { resetPromptLanguageStore, setPromptLanguage } from "@/lib/prompt-language-store"
 import { resetLocale, setLocale } from "./i18n"
+import { ru } from "./locales/ru"
 import type { Issue, PullRequestDetail } from "@/lib/api-types"
 
 vi.mock("@/lib/rpc", () => ({
@@ -95,6 +96,63 @@ describe("prompt text follows the prompt language, not the interface", () => {
     )
     expect(pullRequestHandoff(detail({ mergeStateStatus: "DIRTY" }))?.prompt).toContain(
       "#7 (quiet-willow) tiene conflictos de fusión con main",
+    )
+  })
+
+  it("UI en, prompt ja", async () => {
+    setLocale("en")
+    await setPromptLanguage("ja")
+    expect(delegatePrompt("claude", "api")).toBe("「api」セッションに委任: ")
+    expect(delegateWorktreePrompt("cursor")).toContain(
+      "`lich open --worktree <branch> --prompt <task>`",
+    )
+    expect(createPullRequestPrompt("feat-x")).toContain("`gh pr create`")
+    expect(createPullRequestPrompt("feat-x")).toContain("ブランチ feat-x にはまだ")
+    expect(composeReviewComments([])).toContain("レビューコメント:")
+    expect(issueBrief(issue)).toContain("GitHub issue #12: Crash on start\nhttps://x/y/issues/12")
+    expect(pullRequestHandoff(detail({ mergeStateStatus: "DIRTY" }))?.prompt).toContain(
+      "#7（quiet-willow）に main とのマージコンフリクトがあります",
+    )
+  })
+
+  it("UI en, prompt ko", async () => {
+    setLocale("en")
+    await setPromptLanguage("ko")
+    expect(delegatePrompt("claude", "api")).toBe('"api" 세션에 위임: ')
+    expect(delegateWorktreePrompt("cursor")).toContain(
+      "`lich open --worktree <branch> --prompt <task>`",
+    )
+    expect(createPullRequestPrompt("feat-x")).toContain("`gh pr create`")
+    expect(createPullRequestPrompt("feat-x")).toContain(
+      "브랜치 feat-x에는 아직 풀 리퀘스트가 없습니다",
+    )
+    expect(composeReviewComments([])).toContain("리뷰 코멘트:")
+    expect(issueBrief(issue)).toContain("GitHub 이슈 #12: Crash on start\nhttps://x/y/issues/12")
+    expect(pullRequestHandoff(detail({ mergeStateStatus: "DIRTY" }))?.prompt).toContain(
+      "#7(quiet-willow)에 main와(과)의 병합 충돌이 있습니다",
+    )
+  })
+
+  it("UI en, prompt ru", async () => {
+    setLocale("en")
+    await setPromptLanguage("ru")
+    expect(delegatePrompt("claude", "api")).toBe(
+      ru.prompts.delegate.session.replace("{target}", "api"),
+    )
+    expect(delegateWorktreePrompt("cursor")).toContain(
+      "`lich open --worktree <branch> --prompt <task>`",
+    )
+    expect(createPullRequestPrompt("feat-x")).toContain("`gh pr create`")
+    expect(createPullRequestPrompt("feat-x")).toContain("feat-x")
+    expect(composeReviewComments([])).toContain(ru.prompts.reviewComments.header)
+    expect(issueBrief(issue)).toContain(
+      ru.prompts.issue.head
+        .replace("{number}", "12")
+        .replace("{title}", "Crash on start")
+        .replace("{url}", "https://x/y/issues/12"),
+    )
+    expect(pullRequestHandoff(detail({ mergeStateStatus: "DIRTY" }))?.prompt).toContain(
+      "#7 (quiet-willow)",
     )
   })
 

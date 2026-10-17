@@ -1,0 +1,59 @@
+import type { Shape } from "../../catalog"
+import type { env as en } from "../en/env"
+export const env = {
+  providerSummary: {
+    installed: "설치됨",
+    installedCustomPath: "설치됨 · 사용자 지정 경로",
+    signedOut: "로그아웃됨",
+    windowPercent: "{length} 구간의 {percent}%",
+    percentUsed: "{percent}% 사용",
+  },
+  quota: {
+    tokenLogin: "토큰 로그인",
+    weekShort: "주",
+  },
+  paths: {
+    cwdUnknown: "cwd 알 수 없음 · {host} 내부",
+  },
+  sandbox: {
+    windowsReason: "lich는 Windows에서 샌드박스 백엔드가 없습니다",
+    windowsAdvice: "설치할 것은 없습니다. 모든 세션은 머신에서 직접 실행됩니다.",
+    macReason: "sandbox-exec를 사용할 수 없습니다",
+    macAdvice:
+      "macOS에는 /usr/bin/sandbox-exec가 기본으로 들어 있으므로, 이것이 동작하지 않는 머신은 lich가 고칠 수 없는 방식으로 망가진 상태입니다. 모든 세션은 머신에서 직접 실행됩니다.",
+    linuxReason: "bubblewrap이 설치되어 있지 않습니다",
+    linuxAdvice:
+      "bubblewrap을 설치하고 lich를 다시 여세요. 그전까지 모든 세션은 머신에서 직접 실행됩니다.",
+    confinedMeans:
+      "에이전트 자신의 상태만 담긴 빈 홈, 읽기 전용 머신, 그리고 자기 체크아웃 안에서만 쓰기가 허용됩니다. 네트워크는 그대로 켜져 있습니다.",
+  },
+  vcsTools: {
+    gitWithout: "이것이 없으면 브랜치, diff, worktree가 비어 있습니다.",
+    ghWithout: "이것이 없으면 풀 리퀘스트, 체크, PR 체크아웃을 사용할 수 없습니다.",
+  },
+  binary: {
+    parkedProject: "{name} 재정의 꺼짐",
+    parkedProjectFallback: "프로젝트",
+    parkedGlobal: "전역 재정의 꺼짐",
+    executable: "실행 파일",
+    noSuchFile: "파일 없음",
+    notOnPath: "$PATH에 없음",
+    notExecutable: "실행 불가",
+    homeNotExpanded: "~는 확장되지 않음",
+    relativePath: "상대 경로",
+    detailHomeShortcut:
+      "lich는 바이너리를 직접 실행하므로 ~를 확장하지 않고 글자 그대로 받아들입니다. 전체 경로를 쓰세요.",
+    detailRelative:
+      "상대 경로는 세션마다 자기 작업 디렉터리를 기준으로 해석되므로, 세션마다 다른 바이너리를 가리킵니다. 전체 경로를 쓰세요.",
+    detailBroken:
+      "이 문제를 고치기 전까지 세션이 시작되지 않습니다. 재정의를 끄거나 지우면 아래 단계의 설정으로 돌아갑니다.",
+  },
+  commitIdentity: {
+    noneLead: "이 체크아웃에 git ID가 없습니다.",
+    noneNote: "user.email을 설정하기 전까지 커밋이 거부됩니다.",
+    landAsNamed: "커밋 작성자: {name}",
+    landAs: "커밋 작성자:",
+    setLocal: "(이 저장소에 설정됨, 전역 설정보다 우선)",
+    setGlobal: "(이 계정이 아닌 git user.email)",
+  },
+} satisfies Shape<typeof en>

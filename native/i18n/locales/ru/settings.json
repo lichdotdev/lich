@@ -1,0 +1,614 @@
+{
+  "language": {
+    "group": "Язык",
+    "uiTitle": "Язык интерфейса",
+    "uiDescription": "Язык собственных экранов lich.",
+    "promptTitle": "Язык промптов",
+    "promptDescription": "Язык текста, который lich передаёт вашим агентам: вводные инструкции, пересылаемые сообщения и уведомления. Сессии, запущенные с этого момента, используют его везде; уже открытые получают его только в пересылаемых сообщениях.",
+    "uiSearchWords": "язык локаль перевод русский английский language locale translation",
+    "promptSearchWords": "язык локаль перевод агент инструкции пересылка русский английский language locale translation agent briefing relay",
+    "promptSaveFailed": "Не удалось сохранить язык промптов: {error}",
+    "hanFontTitle": "Скачать шрифт для языка {language}?",
+    "hanFontDescription": "Для языка {language} нужен шрифт {font}, а ни один шрифт на этом компьютере не умеет отображать этот язык. lich может скачать его (около {size} МБ) и хранить в своей папке.",
+    "hanFontDownload": "Скачать",
+    "hanFontProgress": "Загрузка… {done} из {total} МБ",
+    "hanFontFailed": "Не удалось скачать шрифт {font}: {error}"
+  },
+  "settings": {
+    "search": "Поиск настроек",
+    "resultCount": {
+      "one": "{count} настройка",
+      "few": "{count} настройки",
+      "many": "{count} настроек",
+      "other": "{count} настройки"
+    },
+    "noMatch": "По запросу {query} ничего нет. Поиск идёт по названиям настроек, а не по их значениям.",
+    "section": {
+      "appearance": "Оформление",
+      "notifications": "Уведомления",
+      "hotkeys": "Сочетания клавиш",
+      "providers": "Провайдеры",
+      "sandbox": "Песочница",
+      "versionControl": "Контроль версий",
+      "updates": "Обновления",
+      "help": "Справка"
+    },
+    "notYet": "Пока нет",
+    "projectDesc": "Что этот проект меняет относительно глобальных настроек. Строка без изменений следует глобальным."
+  },
+  "appearanceSettings": {
+    "importPickTitle": "Импорт темы",
+    "templatePickTitle": "Сохранить шаблон темы",
+    "imported": "Тема импортирована: {name}",
+    "importFailed": "Не удалось импортировать тему: {error}",
+    "installed": {
+      "one": "Установлена {count} тема из {pack} v{version}",
+      "few": "Установлено {count} темы из {pack} v{version}",
+      "many": "Установлено {count} тем из {pack} v{version}",
+      "other": "Установлено {count} темы из {pack} v{version}"
+    },
+    "installFailed": "Не удалось установить тему: {error}",
+    "upToDate": "{pack} уже версии v{version}",
+    "updated": "{pack} обновлён до v{version}",
+    "updateFailed": "Не удалось обновить тему: {error}",
+    "removed": "Тема удалена: {name}",
+    "removeFailed": "Не удалось удалить тему: {error}",
+    "templateSaved": "Шаблон темы сохранён в {path}",
+    "templateFailed": "Не удалось создать шаблон темы: {error}",
+    "zoomTitle": "Масштаб",
+    "zoomOut": "Уменьшить масштаб",
+    "zoomIn": "Увеличить масштаб",
+    "resetZoom": "Сбросить масштаб",
+    "resetTextSize": "Сбросить размер текста терминала",
+    "textSizeTitle": "Размер текста терминала",
+    "textSmaller": "Уменьшить текст терминала",
+    "textLarger": "Увеличить текст терминала",
+    "replaceThemesTitle": "Заменить импортированные темы?",
+    "replaceThemesDescription": "В репозитории есть темы, которые уже установлены: {themes}. Всё равно установить? Предыдущие версии будут удалены без возможности восстановления.",
+    "replaceThemes": "Заменить темы",
+    "removeThemeTitle": "Удалить импортированную тему?",
+    "removeThemeDescription": "Удалить {name}? Файл импортированной темы будет удалён из lich.",
+    "removeTheme": "Удалить тему",
+    "replaceThemeTitle": "Заменить импортированную тему?",
+    "replaceThemeDescription": "Тема с идентификатором {id} уже существует. Всё равно импортировать? Предыдущая тема будет удалена без возможности восстановления.",
+    "replaceTheme": "Заменить тему"
+  },
+  "themePicker": {
+    "title": "Тема",
+    "searchWords": "цвета тёмная светлая терминал палитра colors dark light",
+    "description": "Задаёт цвета интерфейса и терминала.",
+    "system": "Системная",
+    "followsOs": "следует за ОС",
+    "inUse": "используется",
+    "bundled": "встроенная",
+    "count": {
+      "one": "{count} тема",
+      "few": "{count} темы",
+      "many": "{count} тем",
+      "other": "{count} темы"
+    },
+    "updateHint": "Проверить репозиторий на наличие новой версии",
+    "removeNamed": "Удалить {name}"
+  },
+  "brokenThemeList": {
+    "heading": {
+      "one": "{count} тема не загрузилась",
+      "few": "{count} темы не загрузились",
+      "many": "{count} тем не загрузились",
+      "other": "{count} темы не загрузились"
+    },
+    "remove": "Удалить"
+  },
+  "importThemeDialog": {
+    "title": "Импорт темы",
+    "description": "Установите из git-репозитория, чтобы тема управлялась версиями, или выберите отдельный файл темы.",
+    "repositoryUrl": "URL репозитория",
+    "install": "Установить",
+    "installing": "Установка…",
+    "repositoryHint": "Репозиторий с файлом {file} и одним или несколькими файлами тем. При обновлении lich сравнивает версию из его манифеста.",
+    "or": "или",
+    "chooseFile": "Выбрать файл…",
+    "fileHint": "Отдельный файл темы. Без версии и без обновлений.",
+    "downloadTemplate": "Скачать шаблон"
+  },
+  "fontSetting": {
+    "title": "Шрифт терминала",
+    "searchWords": "гарнитура моноширинный typeface monospace",
+    "sample": "съешь же ещё этих мягких французских булок 0O1lI",
+    "search": "Поиск шрифтов",
+    "empty": "Нет подходящих шрифтов."
+  },
+  "footerSettings": {
+    "title": "Нижняя панель",
+    "searchWords": "строка состояния расположение status bar layout arrange footer",
+    "loading": "Загрузка сохранённых настроек…",
+    "saving": "Сохранение…",
+    "description": "Перетащите элемент на другую сторону или за пределы панели, чтобы скрыть его. Действует для всех проектов.",
+    "restoreDefault": "Сбросить по умолчанию",
+    "saveFailed": "Не удалось сохранить нижнюю панель: {error}",
+    "ceilingTitle": "Лимит расходов",
+    "ceilingSearchWords": "стоимость бюджет доллары cost budget usd",
+    "ceilingDescription": "Предупреждать, когда стоимость API в сессии приближается к этой сумме: жёлтым на 80%, красным на 95%. Пусто: без лимита.",
+    "ceilingPlaceholder": "Без лимита"
+  },
+  "footerLayoutEditor": {
+    "zone": {
+      "available": "Доступные",
+      "left": "Слева",
+      "right": "Справа"
+    },
+    "allPlaced": "Все элементы на нижней панели",
+    "dragHere": "Перетащите элементы сюда",
+    "previewEmpty": "Не выбрано ни одного элемента нижней панели"
+  },
+  "diffLayoutSetting": {
+    "title": "Вид изменений",
+    "searchWords": "рядом разделённый единый ревью side by side split unified review diff",
+    "description": "Как показываются изменения на вкладке «Ревью» и в pull requests. Режим «Рядом» переключается на «Единый», пока панель слишком узкая для двух колонок.",
+    "layout": {
+      "unified": "Единый",
+      "split": "Рядом"
+    }
+  },
+  "notificationsSettings": {
+    "needsInputTitle": "Уведомлять, когда сессии нужен ввод",
+    "needsInputDescription": "Показывать уведомление на рабочем столе, когда сессия ждёт вас (запрос разрешения, вопрос), а окно lich не активно. Пока вы в lich, ничего не меняется: об этом сообщают колокольчик на карточке и всплывающее уведомление.",
+    "finishedTitle": "Уведомлять, когда сессия закончила работу",
+    "finishedDescription": "Показывать уведомление на рабочем столе, когда сессия завершила ход и ей больше нечего у вас спросить, а окно lich не активно. Не зависит от настройки выше: о долгом запуске, от которого вы отошли, стоит знать, даже если вы не хотите слышать о каждом запросе. Всплывающего уведомления при этом нет: внутри lich об этом уже говорят карточка и вкладка проекта."
+  },
+  "hotkeysSettings": {
+    "alsoBound": "Также назначено: {actions}",
+    "pressKeys": "Нажмите клавиши…",
+    "unassignHint": "Оставить действие без сочетания",
+    "resetHint": "Восстановить сочетание по умолчанию",
+    "passthroughNote": "lich переписывает эти сочетания на пути к терминалу агента, поэтому они закреплены и не переназначаются."
+  },
+  "providersPane": {
+    "detecting": "Поиск провайдеров…",
+    "addProvider": "Добавить провайдера",
+    "moreDetected": "Найдено ещё: {count}",
+    "defaultTitle": "Провайдер по умолчанию",
+    "defaultSearchWords": "агент новая сессия agent new session",
+    "defaultDescription": "Какого провайдера запускают неявные действия: сочетание новой сессии, кнопка «Новая сессия» в пустом проекте и новые worktree.",
+    "defaultHere": "по умолчанию здесь",
+    "skipEverywhere": "без запросов"
+  },
+  "providerDetail": {
+    "back": "Все провайдеры",
+    "enabled": "Включён",
+    "documentation": "Документация"
+  },
+  "providerToggleRow": {
+    "notFound": "Не найден в PATH"
+  },
+  "providerDocsLink": {
+    "howToInstall": "Как установить"
+  },
+  "providerBinary": {
+    "title": "Исполняемый файл",
+    "searchWords": "путь команда бинарник path executable command binary",
+    "description": "Какой исполняемый файл запускает сессия.",
+    "descriptionProject": "Какой исполняемый файл запускает сессия в {name}.",
+    "pickTitle": "Выберите исполняемый файл {provider}",
+    "browse": "Обзор",
+    "sourceProjectNamed": "задан для {name}",
+    "sourceProject": "задан для этого проекта",
+    "sourceGlobal": "задан для всех проектов",
+    "sourcePath": "из $PATH"
+  },
+  "providerBinSettings": {
+    "skipTitle": "Пропускать запросы разрешений",
+    "skipSearchWords": "yolo опасно подтверждения dangerous approvals",
+    "skipDescription": "Насколько самостоятельно работает {provider}: он правит файлы, выполняет команды и устанавливает программы без подтверждения, а lich запускает его с {flag}.",
+    "skip": {
+      "never": {
+        "label": "Никогда",
+        "consequence": "Каждая правка и команда ждёт вас в любой рабочей копии."
+      },
+      "worktrees": {
+        "label": "Только worktree",
+        "consequence": "Сессии в папке проекта по-прежнему спрашивают."
+      },
+      "everywhere": {
+        "label": "Везде",
+        "consequence": "Включая каталог, в котором вы работаете. Никто ничего не спросит."
+      }
+    },
+    "confirmTitle": "Пропускать запросы разрешений: {level}",
+    "confirmDescription": "{provider} будет править файлы, выполнять команды и устанавливать программы без подтверждения; запуск с {flag}. {consequence}",
+    "confirm": "Пропускать запросы"
+  },
+  "planUsageSetting": {
+    "title": "Использование тарифа",
+    "searchWords": "лимиты квота подписка quota subscription limit",
+    "description": "Какую часть каждого окна израсходовала ваша подписка. Данные берутся из вашего аккаунта и обновляются каждые 5 минут, пока lich открыт.",
+    "signedOut": "Вход не выполнен.",
+    "signedOutRun": "Вход не выполнен. Выполните {command}, чтобы увидеть использование тарифа.",
+    "readFailed": "Не удалось прочитать использование тарифа. Эндпоинт использования у провайдера не документирован и мог измениться.",
+    "used": "использовано",
+    "resets": "сброс"
+  },
+  "closeSetting": {
+    "title": "При закрытии окна",
+    "searchWords": "выход фон закрыть окно трей продолжать quit exit background close window tray",
+    "description": "Что lich делает со своими сессиями при закрытии окна. Если ни одна сессия не запущена, закрытие окна завершает lich.",
+    "choice": {
+      "ask": {
+        "label": "Спрашивать",
+        "consequence": "Каждый раз lich спрашивает, продолжать ли работу в фоне."
+      },
+      "background": {
+        "label": "Продолжать работу",
+        "consequence": "Окно закрывается, а сессии продолжают работать; при новом запуске lich они вернутся."
+      },
+      "quit": {
+        "label": "Выйти",
+        "consequence": "Закрытие окна завершает lich и все его сессии."
+      }
+    }
+  },
+  "windowSetting": {
+    "title": "Окно",
+    "searchWords": "веб нативное экспериментальное окно web native experimental window",
+    "description": "Какое окно открывает lich. Нативное окно новое и пока экспериментальное; если оно не запустится, lich откроет веб-окно.",
+    "choice": {
+      "web": {
+        "label": "Веб"
+      },
+      "native": {
+        "label": "Нативное (экспериментально)"
+      }
+    },
+    "switch": {
+      "later": "Позже",
+      "now": "Переключить"
+    }
+  },
+  "restoreSetting": {
+    "title": "Восстановленные сессии",
+    "searchWords": "возобновить разговор новая перезапуск спрашивать resume conversation restart ask",
+    "description": "Что делает карточка, в которой до перезапуска lich работал {provider}, когда вы открываете её в первый раз.",
+    "choice": {
+      "ask": {
+        "label": "Спрашивать",
+        "consequence": "Каждая восстановленная карточка спрашивает перед открытием."
+      },
+      "resume": {
+        "label": "Возобновить",
+        "consequence": "Восстановленные карточки продолжают разговор при открытии. Для пустого разговора откройте новую сессию."
+      },
+      "fresh": {
+        "label": "Начать заново",
+        "consequence": "Восстановленные карточки открываются пустыми. Прежний разговор не подхватывается."
+      }
+    }
+  },
+  "pasteUnfoldSetting": {
+    "title": "Раскрывать длинные вставки",
+    "searchWords": "вставка свернуть заглушка вставленный текст paste fold chip summary placeholder",
+    "descriptionNextPaste": "Вставка, которую {provider} свернул бы в заглушку, попадает полным текстом, и её можно отредактировать перед отправкой. Действует со следующей вставки в каждой сессии {provider}.",
+    "descriptionNextSession": "Вставка, которую {provider} свернул бы в заглушку, попадает полным текстом, и её можно отредактировать перед отправкой. Действует для сессий, открытых после изменения."
+  },
+  "subagentCardsSetting": {
+    "title": "Субагенты как сессии lich",
+    "searchWords": "агент субагент карточка worktree делегировать фон agent subagent card delegate background",
+    "description": "Универсальный субагент открывает собственную карточку и worktree вместо того, чтобы работать скрыто внутри {provider}. Действует для сессий, открытых после изменения."
+  },
+  "ultracodeSetting": {
+    "title": "Ultracode",
+    "searchWords": "воркфлоу оркестрация мультиагентный усилие workflow orchestration multi-agent effort",
+    "description": "Каждая сессия {provider} запускается с включённым ultracode и оркестрирует мультиагентные воркфлоу при любом уровне усилия. Остаётся включённым при перезапуске и возобновлении сессии."
+  },
+  "sandboxSettings": {
+    "rung": {
+      "off": "Выкл.",
+      "ask": "Спрашивать",
+      "worktrees": "Worktree",
+      "everywhere": "Везде"
+    },
+    "exposes": {
+      "off": "Каждая сессия работает прямо на этом компьютере.",
+      "ask": "Сессия, для которой вы снимете флажок, работает прямо на этом компьютере.",
+      "worktrees": "Сессии в папке проекта работают прямо на этом компьютере."
+    },
+    "summary": "Пустой домашний каталог, система только для чтения, запись лишь в рабочей копии. Сеть остаётся включённой.",
+    "confinedTitle": "Какие сессии работают в песочнице",
+    "confinedSearchWords": "изоляция isolate bwrap seatbelt",
+    "confinedHint": "Режим «Спрашивать» задаёт вопрос в меню «Новая сессия» и в диалоге «Новый worktree». Сессия, открытая там, где ответить некому (другой сессией или через инструмент MCP), работает в песочнице. Терминалы в песочницу никогда не помещаются: песочница нужна для агентов, работающих без присмотра.",
+    "carryTitle": "Что сессия в песочнице может получить",
+    "sshTitle": "SSH-агент",
+    "sshSearchWords": "push ключи keys",
+    "sshDescription": "git push работает внутри. Подписывает любой ключ из вашего агента для любого хоста, пока сессия работает.",
+    "sshLoaded": "Загружено: {keys}",
+    "sshNone": "Ничего не загружено.",
+    "ghTitle": "Токен GitHub",
+    "ghSearchWords": "gh учётные данные credentials",
+    "ghDescription": "gh работает внутри. Агент может прочитать токен из своего окружения и использовать его за пределами этого репозитория.",
+    "ghAccount": "От имени {login}.",
+    "ghActiveAccount": "От имени активного аккаунта gh.",
+    "confirmTitle": "Меньше сессий {provider} в песочнице",
+    "confirmDescription": "{rung}: {exposes}",
+    "confirm": "Оставить без песочницы",
+    "canConfine": "Этот компьютер может изолировать сессии",
+    "cannotConfine": "Этот компьютер не может изолировать сессии",
+    "statusDetail": "({detail})"
+  },
+  "vcsToolsSetting": {
+    "title": "Утилиты командной строки",
+    "searchWords": "git gh установка install",
+    "description": "lich управляет git и CLI GitHub. Всё на этом экране работает через них.",
+    "notOnPath": "Нет в $PATH",
+    "install": "Установить"
+  },
+  "versionControlSettings": {
+    "account": "Аккаунт GitHub",
+    "accountFor": "Аккаунт GitHub для {name}",
+    "accountSearchWords": "вход gh переключить login switch",
+    "accountDescription": "От имени какого аккаунта lich запускает gh для этого проекта: pull requests, проверки и рабочие копии PR. У gh один активный аккаунт на хост, поэтому репозиторий, видимый только другому аккаунту, считается ненайденным. Аккаунты на корпоративном хосте перечислены вместе с ним.",
+    "activeAccount": "активный аккаунт gh",
+    "listFailed": "Не удалось получить список аккаунтов GitHub: {error}",
+    "noAccounts": "В gh не выполнен вход ни в один аккаунт. Выполните `gh auth login` в терминале."
+  },
+  "updatesSettings": {
+    "applicationTitle": "Приложение",
+    "applicationSearchWords": "версия обновление version upgrade",
+    "applicationDescription": "lich {version}: проверяет обновления при запуске и каждый час.",
+    "checkForUpdates": "Проверить обновления",
+    "available": "Доступен lich {version}: следуйте подсказке.",
+    "upToDate": "У вас последняя версия.",
+    "checkFailed": "Не удалось проверить: есть ли подключение к сети?",
+    "whatsNewTitle": "Что нового",
+    "whatsNewSearchWords": "список изменений заметки о релизе changelog release notes",
+    "patchNotesFor": "Заметки к v{version}.",
+    "noPatchNotes": "Для этой сборки заметок нет.",
+    "viewPatchNotes": "Показать заметки"
+  },
+  "pluginSetting": {
+    "title": "Плагин lich",
+    "searchWords": "хуки установка hooks install",
+    "description": "Статус сессий, названия, обновление git и возобновление в тех CLI провайдеров, которые умеют его запускать.",
+    "installed": "Плагин установлен. Перезапустите сессии, чтобы применить.",
+    "updated": "Плагин обновлён. Перезапустите сессии, чтобы применить.",
+    "checked": "Проверено.",
+    "checkFailed": "Не удалось проверить: есть ли подключение к сети?",
+    "cliMissing": "CLI не установлен",
+    "notInstalled": "Плагин не установлен",
+    "unsupported": "v{version}, не поддерживается этой версией lich",
+    "install": "Установить",
+    "updateTo": "Обновить до v{version}",
+    "updateAll": "Обновить все",
+    "installVersion": "Установить v{version}",
+    "checkForUpdates": "Проверить обновления"
+  },
+  "helpSettings": {
+    "bugTitle": "Сообщить об ошибке",
+    "bugSearchWords": "баг issue github",
+    "openBugReport": "Открыть форму ошибки",
+    "logTitle": "Файл журнала",
+    "openingLogFolder": "Открытие папки журнала…",
+    "logFolderOpened": "Папка журнала открыта.",
+    "openLogFolder": "Открыть папку журнала",
+    "noLogFile": "Журнал пишется только в stderr: файла журнала нет.",
+    "aboutTitle": "О программе",
+    "aboutSearchWords": "версия лицензия version license",
+    "aboutVersion": "lich {version}, {platform}.",
+    "repository": "Репозиторий"
+  },
+  "settingsIndex": {
+    "sectionGeneral": "Общие",
+    "sectionEditor": "Редактор",
+    "hideWhitespaceTitle": "Скрывать пробелы в изменениях",
+    "hideWhitespaceSearchWords": "пробелы отступы ревью игнорировать space indentation review ignore"
+  },
+  "settingsNav": {
+    "scopeLabel": "Область",
+    "scopeGlobal": "Глобальные",
+    "openProjects": "Открытые проекты",
+    "changes": {
+      "one": "{count} изменение",
+      "few": "{count} изменения",
+      "many": "{count} изменений",
+      "other": "{count} изменения"
+    },
+    "scopeNote": "Показаны только настройки, которые проект может менять. Остальные везде одинаковы."
+  },
+  "settingsRow": {
+    "overriddenIn": "Переопределено в",
+    "followsGlobal": "Как в глобальных",
+    "globalValue": "Глобально: {value}",
+    "useGlobal": "Как в глобальных",
+    "globalOnly": "Только глобально",
+    "projectOnly": "Только для проекта"
+  },
+  "settingsGeneral": {
+    "notifySearchWords": "уведомление оповещение звонок desktop notification alert bell"
+  },
+  "settingsWindow": {
+    "switchTitle": "Переключиться на веб-окно?",
+    "switchDescription": "Это окно закроется, откроется веб-окно. Ваши сессии продолжат работать.",
+    "switchFailed": "Не удалось открыть веб-окно: {error}"
+  },
+  "settingsHelp": {
+    "bugDescription": "Открывает в браузере форму сообщения об ошибке с заполненными версией и платформой. lich не создаёт обращение сам: вы пишете его самостоятельно. Выполните `lich rage` в терминале, чтобы собрать логи, версии и то, что lich обнаружил на этом компьютере, в один архив для вложения.",
+    "logSearchWords": "отладка логи нативное окно debug logs native window",
+    "logDescription": "В папке лежит лог lich, а рядом лог нативного окна (lich-native.log). В них есть абсолютные пути, названия проектов и веток и ваш логин gh, но никогда токен сессии. Прочитайте их, прежде чем куда-либо прикладывать.",
+    "logFailed": "Не удалось открыть папку с логами: {error}"
+  },
+  "settingsProviders": {
+    "pathRereadFailed": "Не удалось перечитать PATH, перезапустите lich.",
+    "otherVersionsOnPath": "другие версии в PATH"
+  },
+  "settingsProvidersBin": {
+    "pickFailed": "Не удалось открыть выбор файла: {error}"
+  },
+  "settingsProvidersVersion": {
+    "alsoOnPath": "Также в PATH: {versions}. Закрепите одну выше, чтобы выбрать."
+  },
+  "settingsAppearance": {
+    "uiFontTitle": "Шрифт интерфейса",
+    "uiFontSearchWords": "интерфейс без засечек текст ui sans text",
+    "editorFontTitle": "Шрифт редактора",
+    "editorFontSearchWords": "код ревью гарнитура моноширинный code review typeface monospace",
+    "editorSizeTitle": "Размер текста в редакторе",
+    "editorSizeSearchWords": "код ревью размер шрифта code review font size",
+    "editorSmaller": "Уменьшить текст кода",
+    "editorLarger": "Увеличить текст кода",
+    "editorSizeReset": "Сбросить размер текста в редакторе"
+  },
+  "settingsEditor": {
+    "hideWhitespaceDescription": "Не показывать на вкладке «Ревью» изменения, которые затрагивают только пробелы."
+  },
+  "settingsTheme": {
+    "autoLightDark": "Авто светлая/тёмная",
+    "pairLight": "светлая пара",
+    "pairDark": "тёмная пара"
+  },
+  "settingsThemeActions": {
+    "reloadFailed": "Не удалось перечитать темы: {error}"
+  },
+  "appearancePrefs": {
+    "terminalFontFailed": "Не удалось отрисовать терминал шрифтом {family}: {error}",
+    "editorFontFailed": "Не удалось отрисовать код шрифтом {family}: {error}",
+    "uiFontFailed": "Не удалось отрисовать интерфейс шрифтом {family}: {error}"
+  },
+  "settingsSandbox": {
+    "grantOn": "Вкл.",
+    "grantOff": "Выкл."
+  },
+  "settingsVcs": {
+    "pathReread": "Не удалось перечитать PATH, перезапустите lich."
+  },
+  "settingsUpdatesPlugin": {
+    "hint": {
+      "codex": "Чтобы доверять хукам плагина, выполните /hooks в сессии Codex.",
+      "crush": "Сообщает id сессии и обновляет статус git. События конца хода у него нет, поэтому у его карточек нет статуса и они сохраняют своё имя.",
+      "omp": "Сообщает статус, имя и изменения git. События запроса разрешения у него не замечено, поэтому сессия, ожидающая вашего разрешения, показывает спиннер вместо колокольчика.",
+      "antigravity": "Сообщает статус, имя и изменения git. События запроса разрешения у него не замечено, поэтому сессия, ожидающая вашего разрешения, показывает спиннер вместо колокольчика.",
+      "cursor": "Запускает плагин, установленный в Claude Code, поэтому сообщает то же, что и та версия, и обновляется вместе с ней. lich добавляет сюда только свои инструменты. События запроса разрешения он тоже не вызывает, поэтому сессия, ожидающая вашего разрешения, показывает спиннер вместо колокольчика."
+    },
+    "installFailed": "Не удалось установить: {error}",
+    "updateFailed": "Не удалось обновить: {error}",
+    "profileFailed": "Плагин lich не обновлён в профиле {profile} ({pass}): {error}"
+  },
+  "settingsProfiles": {
+    "title": "Профиль",
+    "profilesTitle": "Профили",
+    "creating": "Создание профиля…",
+    "startingLogin": "Запуск входа…",
+    "renaming": "Переименование…",
+    "deleting": "Удаление…",
+    "installing": "Установка плагинов…",
+    "loginFailed": "Вход не завершён.",
+    "noTerminal": "Откройте проект, чтобы войти из терминала."
+  },
+  "settingsProfilesView": {
+    "defaultTag": "· по умолчанию",
+    "logIn": "Войти",
+    "logInAgain": "Войти снова",
+    "copyFrom": "Скопировать плагины из…",
+    "rename": "Переименовать",
+    "delete": "Удалить",
+    "newProfile": "Новый профиль",
+    "options": "Параметры {name}",
+    "advancedBinary": "Дополнительно · Исполняемый файл",
+    "loading": "Чтение профилей…"
+  },
+  "settingsProfilesDialogs": {
+    "name": "Имя",
+    "namePlaceholder": "Работа",
+    "bring": "Плагины для переноса из {name}",
+    "noPlugins": "В {name} нет плагинов для переноса.",
+    "lichLocked": "lich устанавливает его в каждый профиль",
+    "pluginsHint": "Остальные можно скопировать позже из меню профиля. Ваша организация может запретить некоторые из них.",
+    "createAndLogin": "Создать и войти",
+    "renameTitle": "Переименовать профиль",
+    "readyDesc": "Выберите его как профиль проекта или всех новых сессий.",
+    "failedDesc": "Повторите из меню профиля или войдите из терминала.",
+    "deleteTitle": "Удалить {name}?",
+    "copyTitle": "Копирование плагинов в {name}",
+    "copyDesc": "Они устанавливаются через {provider} от имени этого профиля, поэтому действуют правила его аккаунта.",
+    "copyFrom": "Копировать из",
+    "copy": "Копировать плагины",
+    "loginTitle": "Вход в {name}",
+    "waiting": "Ожидание входа…",
+    "openBrowser": "Открыть в браузере",
+    "copyAddress": "Копировать",
+    "pasteCode": "Вставьте код",
+    "submitCode": "Отправить",
+    "terminal": "Войти из терминала",
+    "readyTitle": "Профиль {name} готов",
+    "failedTitle": "Не удалось войти в {name}",
+    "copiedTitle": "Плагины для {name}",
+    "loggedInAs": "Вход выполнен: {email}",
+    "lichPluginNote": "Не удалось установить плагин lich: {error}",
+    "done": "Готово"
+  },
+  "profiles": {
+    "usageLimit": "лимит",
+    "noPlugins": "нет плагинов",
+    "plugins": {
+      "one": "{count} плагин",
+      "few": "{count} плагина",
+      "many": "{count} плагинов",
+      "other": "{count} плагина"
+    },
+    "notLoggedIn": "Вход не выполнен",
+    "loggedIn": "Вход выполнен",
+    "personal": "Личный",
+    "profileDesc": "Какой вход в {provider} используют новые сессии. Сессия сохраняет профиль, в котором была запущена, в том числе при возобновлении.",
+    "renameDescPlugins": "Меняется только имя: вход, плагины и история остаются как есть.",
+    "deleteDescPlugins": "Его вход, плагины и история разговоров удаляются, а запущенные в нём сессии больше нельзя возобновить.",
+    "loginDesc": "Войдите во вкладке браузера, которую открыл {provider}. Когда закончите, процесс продолжится сам.",
+    "claude": {
+      "profilesDesc": "У каждого профиля свой вход в Claude, свои плагины и история. Настройки, CLAUDE.md, агенты, команды, навыки и хуки общие для всех профилей.",
+      "copiedNote": "Настройки, CLAUDE.md, агенты, команды, навыки и хуки в этом профиле являются копиями: правки в другом профиле сюда больше не попадают.",
+      "searchAlso": "claude аккаунт вход логин личный рабочий account login personal work",
+      "profilesAlso": "claude аккаунты входы логины личный рабочий войти плагины accounts logins personal work log in plugins",
+      "newDesc": "Отдельный вход в Claude со своими плагинами и историей.",
+      "addressDesc": "Если браузер не открылся, войдите по этому адресу и вставьте показанный код."
+    },
+    "codex": {
+      "profilesDesc": "У каждого профиля свой вход в Codex, свои плагины и история. Настройки config.toml профиля «Личный», AGENTS.md, хуки, навыки и правила общие для всех профилей.",
+      "copiedNote": "AGENTS.md и hooks.json в этом профиле являются копиями: правки в другом профиле сюда больше не попадают.",
+      "searchAlso": "codex аккаунт вход логин личный рабочий chatgpt account login personal work",
+      "profilesAlso": "codex аккаунты входы логины личный рабочий войти chatgpt плагины accounts logins personal work log in plugins",
+      "newDesc": "Отдельный вход в Codex со своими плагинами и историей.",
+      "addressDesc": "Если браузер не открылся, войдите по этому адресу."
+    },
+    "omp": {
+      "profilesDesc": "У каждого профиля свой набор входов в oh-my-pi и своя история. config.yml, models.yml, mcp.json, AGENTS.md, навыки, правила, команды, промпты и расширения общие для всех профилей.",
+      "copiedNote": "config.yml, models.yml, mcp.json и markdown-файлы в этом профиле являются копиями: правки в другом профиле сюда больше не попадают.",
+      "searchAlso": "omp oh-my-pi аккаунт вход логин личный рабочий account login personal work",
+      "profilesAlso": "omp oh-my-pi аккаунты входы логины личный рабочий войти accounts logins personal work log in",
+      "newDesc": "Отдельный вход в oh-my-pi со своей историей. После создания войдите из терминала.",
+      "renameDesc": "Меняется только имя: входы и история остаются как есть.",
+      "deleteDesc": "Его входы и история разговоров удаляются, а запущенные в нём сессии больше нельзя возобновить."
+    }
+  },
+  "profilesXdg": {
+    "opencode": {
+      "profilesDesc": "У каждого профиля свой вход в opencode и своя история. Конфигурация, плагины, агенты и MCP-серверы opencode общие для всех профилей.",
+      "searchAlso": "opencode аккаунт вход логин личный рабочий account login personal work",
+      "profilesAlso": "opencode аккаунты входы логины личный рабочий войти accounts logins personal work log in",
+      "newDesc": "Отдельный вход в opencode со своей историей. После создания войдите из терминала.",
+      "renameDesc": "Меняется только имя: вход и история остаются как есть.",
+      "deleteDesc": "Его вход и история разговоров удаляются, а запущенные в нём сессии больше нельзя возобновить."
+    },
+    "cursor": {
+      "profilesDesc": "У каждого профиля свой вход в Cursor, свои чаты и настройки CLI. mcp.json, хуки и навыки в ~/.cursor общие для всех профилей.",
+      "searchAlso": "cursor cursor-agent аккаунт вход логин личный рабочий account login personal work",
+      "profilesAlso": "cursor cursor-agent аккаунты входы логины личный рабочий войти accounts logins personal work log in",
+      "newDesc": "Отдельный вход в Cursor со своими чатами. После создания войдите из терминала.",
+      "renameDesc": "Меняется только имя: вход и чаты остаются как есть.",
+      "deleteDesc": "Его вход и чаты удаляются, а запущенные в нём сессии больше нельзя возобновить."
+    },
+    "kiro": {
+      "profilesDesc": "У каждого профиля свой вход в Kiro. Разговоры, агенты, steering и настройки в ~/.kiro общие для всех профилей.",
+      "searchAlso": "kiro kiro-cli аккаунт вход логин личный рабочий aws builder account login personal work",
+      "profilesAlso": "kiro kiro-cli аккаунты входы логины личный рабочий войти accounts logins personal work log in",
+      "newDesc": "Отдельный вход в Kiro. После создания войдите из терминала.",
+      "renameDesc": "Меняется только имя: вход остаётся как есть.",
+      "deleteDesc": "Его вход удаляется, а запущенные в нём сессии больше нельзя возобновить. Разговоры остаются: они общие для всех профилей."
+    }
+  }
+}

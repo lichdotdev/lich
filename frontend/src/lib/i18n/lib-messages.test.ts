@@ -72,4 +72,22 @@ describe("messages built in plain modules follow the language", () => {
     const at = Math.floor(now.getTime() / 1000) + 45 * 60
     expect(timeUntil(at, now)).toContain("45")
   })
+
+  it("formats units and ages for Korean", () => {
+    setLocale("ko")
+    expect(COST_MISS_REASON["mixed-models"]).toMatch(/[\uac00-\ud7a3]/)
+    expect(copyToastMessage("ab")).toBe("2자를 클립보드에 복사함")
+    const now = new Date(2026, 0, 5, 12, 0, 0)
+    const at = Math.floor(now.getTime() / 1000) + 45 * 60
+    expect(timeUntil(at, now)).toContain("45")
+  })
+
+  it("formats units and ages for Russian", () => {
+    setLocale("ru")
+    expect(COST_MISS_REASON["mixed-models"]).toMatch(/[\u0400-\u04ff]/)
+    expect(formatAge(5 * 60_000)).toMatch(/^5\s?мин/)
+    const now = new Date(2026, 0, 5, 12, 0, 0)
+    const at = Math.floor(now.getTime() / 1000) + 45 * 60
+    expect(timeUntil(at, now)).toContain("45")
+  })
 })

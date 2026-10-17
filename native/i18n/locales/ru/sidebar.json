@@ -1,0 +1,176 @@
+{
+  "cardColor": {
+    "menu": "Цвет",
+    "color": {
+      "theme": "Тема",
+      "red": "Красный",
+      "orange": "Оранжевый",
+      "amber": "Янтарный",
+      "green": "Зелёный",
+      "teal": "Бирюзовый",
+      "blue": "Синий",
+      "violet": "Фиолетовый",
+      "pink": "Розовый"
+    }
+  },
+  "newFolderDialog": {
+    "title": "Новая папка",
+    "description": {
+      "one": "Помещает {count} сессию в папку с названием по вашему выбору. Ничего не закрывается, рабочие копии не меняются.",
+      "few": "Помещает {count} сессии в папку с названием по вашему выбору. Ничего не закрывается, рабочие копии не меняются.",
+      "many": "Помещает {count} сессий в папку с названием по вашему выбору. Ничего не закрывается, рабочие копии не меняются.",
+      "other": "Помещает {count} сессии в папку с названием по вашему выбору. Ничего не закрывается, рабочие копии не меняются."
+    },
+    "name": "Название",
+    "placeholder": "Дизайн-система",
+    "exists": "{name} уже существует, поэтому сессии попадут в неё.",
+    "moveHere": "Переместить сюда"
+  },
+  "sessionCard": {
+    "openCheckoutFailed": "Не удалось открыть рабочую копию: {error}",
+    "openFolderFailed": "Не удалось открыть папку: {error}",
+    "rename": "Переименовать",
+    "pin": "Закрепить",
+    "unpin": "Открепить",
+    "moveToFolder": "В папку",
+    "takeOutOf": "Убрать из {folder}",
+    "newFolder": "Новая папка…",
+    "openIn": "Открыть в",
+    "terminal": "Терминал",
+    "editor": "Редактор",
+    "fileManager": "Файловый менеджер",
+    "pullRequest": "Pull request",
+    "closeSession": "Закрыть сессию"
+  },
+  "settingsCard": {
+    "close": "Закрыть настройки"
+  },
+  "sessionSidebar": {
+    "newSession": "Новая сессия",
+    "newSessionButton": "Новая сессия",
+    "filter": "Фильтр сессий",
+    "collapse": "Свернуть боковую панель"
+  },
+  "sidebarRail": {
+    "expand": "Развернуть боковую панель",
+    "newSession": "Новая сессия"
+  },
+  "sessionPhaseChips": {
+    "all": "Все",
+    "phase": {
+      "waiting": "Ждут",
+      "running": "Работают",
+      "unread": "Непрочитанные",
+      "idle": "Простаивают"
+    }
+  },
+  "sessionStatusRung": {
+    "commandLine": "командная строка",
+    "waitingOnYou": "Ждёт вас",
+    "compacting": "Сжатие…"
+  },
+  "sessionGroup": {
+    "pinned": "Закреплённые"
+  },
+  "sessionGroupHeader": {
+    "expand": "Развернуть {name}",
+    "collapse": "Свернуть {name}",
+    "newSessionIn": "Новая сессия в {name}",
+    "optionsFor": "Параметры {name}",
+    "renameFolder": "Переименовать папку",
+    "mergesInto": "{name} уже существует, поэтому переименование объединит эту папку с ней.",
+    "ungroup": "Разгруппировать",
+    "moveToFolder": "Переместить группу в папку",
+    "newFolder": "Новая папка…"
+  },
+  "sessionLaunchMenuItems": {
+    "terminal": "Терминал",
+    "newTerminal": "Новый терминал",
+    "worktree": "Worktree"
+  },
+  "folderLaunchMenuItems": {
+    "newSessionIn": "Новая сессия в {folder}",
+    "newSessionInOn": "Новая сессия в {folder}, на {checkout}"
+  },
+  "worktreeDialog": {
+    "lookingUpIssue": "Поиск #{number}…",
+    "loadingBranches": "Загрузка веток…",
+    "worktrees": "Worktree",
+    "creating": "Создание…",
+    "carryReused": "{name} уже существовал, поэтому открыт как есть, а ваши незакоммиченные изменения остались на месте.",
+    "carryFailed": "Worktree открыт, но не удалось скопировать ваши незакоммиченные изменения: {error}",
+    "issueLost": "Не удалось передать задачу сессии: {error}",
+    "neverPrompted": "сессия так и не дошла до приглашения ввода"
+  },
+  "worktreeCloseDialogs": {
+    "closeTitle": "Закрыть сессию worktree",
+    "remove": "Удалить worktree",
+    "dirtyTitle": "В worktree есть незакоммиченные изменения",
+    "dirtyDescription": "В worktree в {path} есть незакоммиченные изменения. При удалении они будут безвозвратно сброшены. Ветка сохранится.",
+    "discardAndRemove": "Сбросить изменения и удалить"
+  },
+  "worktreeSandboxRow": {
+    "runConfined": "Запуск в песочнице"
+  },
+  "sessionTooltip": {
+    "waitingOn": "Ждёт {peer}",
+    "answering": "Отвечает {peer}",
+    "commandLine": "командная строка",
+    "ticket": "тикет {ticket}",
+    "sandboxed": "В песочнице",
+    "confinedMeans": "Пустой домашний каталог, система только для чтения, запись только в эту рабочую копию.",
+    "setAtOpen": "Задаётся при открытии сессии; чтобы изменить, откройте её заново.",
+    "notMounted": "Не смонтировано (симлинки): {paths}",
+    "morePaths": "+ещё {count}"
+  },
+  "worktreeDialogView": {
+    "title": "Новая сессия в worktree",
+    "description": "Отдельная рабочая копия на своей ветке, со своей сессией.",
+    "name": "Имя",
+    "namePlaceholder": "Пусто для случайного имени, слова или #задача",
+    "branchLine": "ветка: {branch}",
+    "randomBranch": "случайное имя",
+    "opensSelected": "Открывает сессию выбранного worktree.",
+    "from": "От",
+    "searchBranches": "Поиск веток",
+    "noMatch": "Нет подходящих веток.",
+    "local": "Локальные",
+    "remote": "Удалённые",
+    "opensSession": "откроет её сессию",
+    "carry": "Перенести незакоммиченные изменения",
+    "carryFiles": {
+      "one": "{count} файл из этой рабочей копии",
+      "few": "{count} файла из этой рабочей копии",
+      "many": "{count} файлов из этой рабочей копии",
+      "other": "{count} файла из этой рабочей копии"
+    },
+    "create": "Создать",
+    "open": "Открыть"
+  },
+  "worktreeLogic": {
+    "checking": "Проверка удалённого репозитория…",
+    "behind": "Отстаёт от {upstream} на {count} · старт от {upstream}",
+    "notPushed": {
+      "one": "{count} коммит не отправлен · старт с локальной ветки {branch}",
+      "few": "{count} коммита не отправлено · старт с локальной ветки {branch}",
+      "many": "{count} коммитов не отправлено · старт с локальной ветки {branch}",
+      "other": "{count} коммита не отправлено · старт с локальной ветки {branch}"
+    },
+    "unreachable": "Нет связи с {remote} · старт с локальной ветки {branch}",
+    "unreachableRemote": "Нет связи с удалённым репозиторием · старт с локальной ветки {branch}",
+    "keepsChanges": "Старт с локальной ветки {branch}, чтобы сохранить ваши изменения"
+  },
+  "closeWorktree": {
+    "adopted": "lich не создавал worktree в {path}. Удаление сотрёт эту директорию, но сохранит её ветку."
+  },
+  "sidebarProfile": {
+    "continueIn": "Продолжить в",
+    "continueInHint": "Тот же разговор, другой вход",
+    "goneTitle": "{label} запущена в профиле, которого больше нет",
+    "goneDescription": "Её разговор нельзя возобновить. Вместо этого запустите новую сессию в профиле этого проекта.",
+    "startNew": "Запустить новую",
+    "dismiss": "Скрыть",
+    "resumesIn": "Возобновится в {profile} · {email}, профиле, в котором была запущена.",
+    "resumesInNoEmail": "Возобновится в {profile}, профиле, в котором была запущена."
+  }
+}

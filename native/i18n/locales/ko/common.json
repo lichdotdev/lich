@@ -1,0 +1,26 @@
+{
+  "count": {
+    "file": {
+      "other": "파일 {count}개"
+    }
+  },
+  "time": {
+    "justNow": "방금"
+  },
+  "action": {
+    "cancel": "취소",
+    "create": "만들기"
+  },
+  "checkAgainButton": {
+    "check": "다시 확인",
+    "checking": "확인 중…"
+  },
+  "stepper": {
+    "default": "기본값"
+  },
+  "pickerDialog": {
+    "navigate": "이동",
+    "filter": "필터",
+    "close": "닫기"
+  }
+}

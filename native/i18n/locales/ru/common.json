@@ -1,0 +1,29 @@
+{
+  "count": {
+    "file": {
+      "one": "{count} файл",
+      "few": "{count} файла",
+      "many": "{count} файлов",
+      "other": "{count} файла"
+    }
+  },
+  "time": {
+    "justNow": "только что"
+  },
+  "action": {
+    "cancel": "Отмена",
+    "create": "Создать"
+  },
+  "checkAgainButton": {
+    "check": "Проверить снова",
+    "checking": "Проверка…"
+  },
+  "stepper": {
+    "default": "По умолчанию"
+  },
+  "pickerDialog": {
+    "navigate": "навигация",
+    "filter": "фильтр",
+    "close": "закрыть"
+  }
+}

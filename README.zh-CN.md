@@ -4,7 +4,7 @@
     <img src="frontend/public/appicon-light.png" alt="lich" width="88" height="88" />
   </picture>
   <h1>lich</h1>
-  <p><a href="README.md">English</a> · <strong>简体中文</strong></p>
+  <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <strong>简体中文</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
   <p><a href="https://omartelo.github.io/lich/index.zh-CN.html"><strong>omartelo.github.io/lich</strong></a></p>
   <p><strong>为你已在用的编码智能体打造的终端优先 ADE（智能体开发环境）。</strong></p>
   <p>

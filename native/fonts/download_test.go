@@ -160,6 +160,39 @@ func TestNotoSansSCIsPinned(t *testing.T) {
 	}
 }
 
+func TestNotoSansJPAndKRArePinnedInSCsWeights(t *testing.T) {
+	for _, files := range [][]RemoteFile{NotoSansJP, NotoSansKR} {
+		if len(files) != len(NotoSansSC) {
+			t.Fatalf("%d files, want SC's %d", len(files), len(NotoSansSC))
+		}
+		for i, f := range files {
+			if !strings.Contains(f.URL, notoCJKCommit) || !strings.HasSuffix(f.URL, "/"+f.Name) || len(f.SHA256) != 64 || f.Size == 0 {
+				t.Errorf("%s is not pinned: %+v", f.Name, f)
+			}
+			if f.Weight != NotoSansSC[i].Weight {
+				t.Errorf("%s weighs %v, want SC's %v", f.Name, f.Weight, NotoSansSC[i].Weight)
+			}
+		}
+	}
+}
+
+func TestEachCJKLanguageDownloadsItsOwnNotoSans(t *testing.T) {
+	for _, c := range []struct {
+		language, family string
+		files            []RemoteFile
+	}{
+		{"zh-CN", "Noto Sans SC", NotoSansSC},
+		{"ja", "Noto Sans JP", NotoSansJP},
+		{"ko", "Noto Sans KR", NotoSansKR},
+		{"ru", "Noto Sans SC", NotoSansSC},
+	} {
+		family, files := NotoSansFor(c.language)
+		if family != c.family || &files[0] != &c.files[0] {
+			t.Errorf("%s downloads %s (%s), want %s", c.language, family, files[0].Name, c.family)
+		}
+	}
+}
+
 func assertEmpty(t *testing.T, dir string) {
 	t.Helper()
 	entries, err := os.ReadDir(dir)

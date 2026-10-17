@@ -1,0 +1,251 @@
+{
+  "prHandoff": {
+    "resolveConflicts": "コンフリクトを解決",
+    "fixChecks": "CI のエラーを修正"
+  },
+  "byline": {
+    "someone": "誰か"
+  },
+  "commentBox": {
+    "sending": "送信中…"
+  },
+  "verdict": {
+    "approved": "承認しました",
+    "changesRequested": "変更をリクエストしました",
+    "dismissed": "レビューは却下されました",
+    "commented": "コメントしました",
+    "requested": "レビューをリクエスト済み"
+  },
+  "mergeMessageDialog": {
+    "squashAndMerge": "スカッシュしてマージ",
+    "createMergeCommit": "マージコミットを作成",
+    "description": "コミットメッセージを編集してからマージします。",
+    "subject": "コミットメッセージ",
+    "body": "詳細な説明",
+    "optional": "任意",
+    "merging": "マージ中…"
+  },
+  "mergeGate": {
+    "changesRequested": "レビュアーが変更をリクエストしています",
+    "reviewRequired": "GitHub が求めるレビューがまだありません",
+    "merged": "プルリクエストはマージ済みです",
+    "closed": "プルリクエストはクローズ済みです",
+    "draft": "プルリクエストはドラフトです",
+    "conflicts": "{base} とコンフリクトしています",
+    "behind": "ベースブランチが進んでいます。先にこのブランチを更新してください",
+    "pattern": {
+      "match": "{target} は {pattern} に一致する必要があります",
+      "notMatch": "{target} は {pattern} に一致してはいけません",
+      "startWith": "{target} は {pattern} で始まる必要があります",
+      "notStartWith": "{target} は {pattern} で始まってはいけません",
+      "endWith": "{target} は {pattern} で終わる必要があります",
+      "notEndWith": "{target} は {pattern} で終わってはいけません",
+      "contain": "{target} は {pattern} を含む必要があります",
+      "notContain": "{target} は {pattern} を含んではいけません"
+    },
+    "target": {
+      "message": "メッセージ",
+      "authorEmail": "作成者のメールアドレス",
+      "committerEmail": "コミッターのメールアドレス"
+    },
+    "ruleNote": "{base} にはルールセットが適用されています: すべてのコミットについて、{clauses}。"
+  },
+  "pullsChecks": {
+    "none": "報告されたチェックはありません。"
+  },
+  "pullsCommits": {
+    "none": "コミットはありません。"
+  },
+  "pullsConflicts": {
+    "loading": "コンフリクトしているファイルを調べています…",
+    "failed": "コンフリクトしているファイルを特定できませんでした: {error}",
+    "stale": "現在コンフリクトしているファイルはありません。GitHub の情報がまだ更新されていない可能性があります。",
+    "count": {
+      "one": "コンフリクトしているファイル {count} 件",
+      "other": "コンフリクトしているファイル {count} 件"
+    },
+    "showFewer": "表示を減らす",
+    "more": "ほか {hidden} 件"
+  },
+  "pullsEmptyState": {
+    "openFailed": "プルリクエストを作成できませんでした: {error}",
+    "noneFor": "{branch} のオープンなプルリクエストはありません。",
+    "none": "オープンなプルリクエストはありません。",
+    "openOnGitHub": "GitHub で開く"
+  },
+  "submitReviewDialog": {
+    "verdict": {
+      "approve": {
+        "title": "承認"
+      },
+      "comment": {
+        "title": "コメント"
+      },
+      "request_changes": {
+        "title": "変更をリクエスト"
+      }
+    },
+    "summaryPlaceholder": "概要 (任意)",
+    "summaryAlone": "行コメントはありません。概要のみを送信します。"
+  },
+  "pullsConversation": {
+    "commentFailed": "コメントに失敗しました: {error}",
+    "loading": "会話を読み込んでいます…",
+    "resolved": {
+      "one": "解決済みのスレッド {count} 件",
+      "other": "解決済みのスレッド {count} 件"
+    },
+    "commentOn": "プルリクエストにコメント",
+    "comment": "コメント",
+    "commentPlaceholder": "プルリクエスト全体について",
+    "readFailed": "会話を読み込めませんでした: {error}",
+    "nothingYet": "まだ発言はありません。",
+    "line": "{line} 行目",
+    "lines": "{start}-{end} 行目",
+    "outdated": "古い",
+    "pendingHead": "保留中のレビュー",
+    "pendingNote": "レビューを送信すると送られます。",
+    "discard": "破棄"
+  },
+  "pullsOverview": {
+    "openedBy": "{author} が作成",
+    "description": "説明",
+    "noDescription": "説明はありません。",
+    "reviewers": "レビュアー",
+    "nobodyYet": "まだいません"
+  },
+  "pullsStats": {
+    "checksFailing": "{total} 件中 {failed} 件のチェックが失敗",
+    "checksRunning": "{total} 件中 {pending} 件のチェックが実行中",
+    "checksPassed": {
+      "one": "{count} 件のチェックが成功",
+      "other": "{count} 件のチェックが成功"
+    },
+    "merged": "マージ済み",
+    "closed": "クローズ済み",
+    "draft": "ドラフト",
+    "open": "オープン",
+    "approved": "承認済み",
+    "changesRequested": "変更をリクエスト済み",
+    "reviewRequired": "レビューが必要",
+    "threadsUnresolved": "変更をリクエスト済み · {total} 件中 {open} 件のスレッドが未解決",
+    "threadsResolved": "変更をリクエスト済み · すべてのスレッドが解決済み",
+    "conflictsWith": "{base} とコンフリクト",
+    "mergeable": "マージ可能",
+    "checkingMergeability": "マージ可能か確認中…"
+  },
+  "pullsList": {
+    "filter": {
+      "all": "すべて",
+      "ready": "準備完了",
+      "drafts": "ドラフト",
+      "failing": "失敗"
+    },
+    "show": "プルリクエスト一覧を表示",
+    "hide": "プルリクエスト一覧を隠す",
+    "none": {
+      "open": "オープンなプルリクエストはありません。",
+      "closed": "クローズ済みのプルリクエストはありません。",
+      "merged": "マージ済みのプルリクエストはありません。"
+    },
+    "noMatch": "このフィルターに一致するものはありません。",
+    "draft": "ドラフト",
+    "fork": "フォーク",
+    "checkedOut": "チェックアウト済み",
+    "searchHint": "番号、タイトル、作成者、ブランチで絞り込む"
+  },
+  "pullsFiles": {
+    "loadFailed": "差分を読み込めませんでした: {error}",
+    "hideTree": "ファイルツリーを隠す",
+    "showTree": "ファイルツリーを表示",
+    "viewed": "{total} 件中 {viewed} 件を確認済み",
+    "loading": "差分を読み込んでいます…"
+  },
+  "reviewThread": {
+    "replyFailed": "返信に失敗しました: {error}",
+    "resolveFailed": "解決に失敗しました: {error}",
+    "reopenFailed": "再オープンに失敗しました: {error}",
+    "resolved": "解決済み",
+    "reopen": "再オープン",
+    "resolve": "解決",
+    "reply": "返信",
+    "replyPlaceholder": "このスレッドに返信"
+  },
+  "pulls": {
+    "alreadyRemoved": "{name} はすでに削除されています",
+    "pinnedSession": "ワークツリーにピン留めされたセッションがあります。先にピン留めを外してください。",
+    "notCreatedByLich": "このワークツリーは lich が作成したものではありません。サイドバーから削除してください。",
+    "dirty": "ワークツリーに未コミットの変更があります。サイドバーから削除してください。",
+    "removed": "{name} を削除しました",
+    "removeFailed": "ワークツリーを削除できませんでした: {error}",
+    "merged": "#{number} を {base} にマージしました",
+    "announceFailed": "{name} のセッションに通知できませんでした: {error}",
+    "removeWorktree": "ワークツリーを削除",
+    "openSessionFailed": "セッションを開けませんでした: {error}",
+    "goToSession": "セッションへ移動",
+    "openInSession": "セッションで開く",
+    "forkBlocked": "head ブランチはメンテナーによる編集を許可していないフォークにあるため、コミットをプッシュし返せません",
+    "runningRemoval": {
+      "removeAnyway": "それでも削除"
+    }
+  },
+  "pullRequestView": {
+    "rebaseAndMerge": "リベースしてマージ",
+    "mergeFailed": "マージに失敗しました: {error}",
+    "approvedToast": "#{number} を承認しました",
+    "reviewSent": "#{number} にレビューを送信しました",
+    "reviewFailed": "レビューに失敗しました: {error}",
+    "opening": "開いています…",
+    "approving": "承認中…",
+    "approved": "承認済み",
+    "approve": "承認",
+    "discardPending": {
+      "one": "保留中のコメント {count} 件を破棄",
+      "other": "保留中のコメント {count} 件を破棄"
+    },
+    "merging": "マージ中…",
+    "merge": "マージ",
+    "methodBypass": "{method} (ルールを回避)",
+    "editMessage": "{method} (メッセージを編集…)",
+    "editMessageBypass": "{method} (メッセージを編集… ルールを回避)",
+    "refresh": "更新",
+    "open": "開く",
+    "tab": {
+      "overview": "概要",
+      "commits": "コミット",
+      "conversation": "会話",
+      "checks": "チェック"
+    }
+  },
+  "pullsActions": {
+    "runningTitle": "セッションはまだ実行中です",
+    "running": {
+      "one": "{name} のセッションがターンの途中です。ワークツリーを削除すると停止し、進行中のターンは失われます。",
+      "other": "{name} の {count} 件のセッションがターンの途中です。ワークツリーを削除すると停止し、進行中のターンは失われます。"
+    }
+  },
+  "pullsView": {
+    "tabFiles": "ファイル"
+  },
+  "pullsLogic": {
+    "failing": {
+      "one": "{count} 件のチェックが失敗していますが、GitHub はそのままマージします",
+      "other": "{count} 件のチェックが失敗していますが、GitHub はそのままマージします"
+    },
+    "durationSeconds": "{value}秒",
+    "durationMinutes": "{value}分",
+    "durationHours": "{value}時間"
+  },
+  "pullsPanels": {
+    "mergeFailing": "マージ · {count} 件失敗"
+  },
+  "pullsSubmit": {
+    "review": "レビューを送信 {count}",
+    "withComments": {
+      "one": "行コメント {count} 件付き。",
+      "other": "行コメント {count} 件付き。"
+    },
+    "send": "送信",
+    "sending": "送信中…"
+  }
+}

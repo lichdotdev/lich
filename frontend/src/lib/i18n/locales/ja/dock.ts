@@ -1,0 +1,37 @@
+import type { Shape } from "../../catalog"
+import type { dock as en } from "../en/dock"
+
+export const dock = {
+  rightDock: {
+    fileBrowser: "ファイルブラウザー",
+    reviewChanges: "変更をレビュー",
+    tabCode: "コード",
+    tabReview: "レビュー",
+    exitFullScreen: "全画面表示を終了",
+    fullScreen: "全画面表示",
+    closePanel: "パネルを閉じる",
+    fileTree: "ファイルツリー",
+    reviewPanel: "レビューパネル",
+    resizePanel: "パネルのサイズを変更",
+  },
+  searchResults: {
+    prompt: "このチェックアウト内のすべてのファイルのテキストを検索",
+    searching: "検索中…",
+    noMatch: "「{query}」を含むファイルはありません",
+  },
+  filesPanel: {
+    searchPlaceholder: "ファイル内を検索",
+    filterPlaceholder: "名前で絞り込み",
+    searchLabel: "ファイル内を検索",
+    filterLabel: "名前でファイルを絞り込み",
+    matchesLabel: "入力欄の照合対象",
+    byName: "名前",
+    byText: "テキスト",
+    readFailed: "このフォルダーを読み込めませんでした",
+    loading: "読み込み中…",
+    noMatch: "一致するファイルはありません",
+    empty: "ファイルがありません",
+    backToTree: "ファイルツリーに戻る",
+    readOnly: "読み取り専用",
+  },
+} satisfies Shape<typeof en>

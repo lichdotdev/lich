@@ -45,14 +45,55 @@ func Locate(f font.Font) (Location, error) {
 	return Location{Path: path, Index: i}, nil
 }
 
-// hanPattern asks fontconfig for the sans it would draw Simplified Chinese
-// in.
-const hanPattern = SystemSans + ":lang=zh-cn"
+// preferredHan are the families asked for by name before fontconfig's own
+// pick for the language, which on a stock install may be a face of another
+// region (WenQuanYi for Japanese) or one with no CJK at all at a weight.
+var preferredHan = [...][]string{
+	simplifiedChinese: {"Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC"},
+	japanese:          {"Noto Sans CJK JP", "Noto Sans JP", "Source Han Sans JP"},
+	korean:            {"Noto Sans CJK KR", "Noto Sans KR", "Source Han Sans KR"},
+}
 
-// locateHan is the face fontconfig picks for Simplified Chinese in weight w,
-// which may not cover Han at all when nothing installed does.
-func locateHan(w font.Weight) (Location, error) {
-	return Locate(font.Font{Typeface: hanPattern, Weight: w})
+// fontconfigLangs are fontconfig's names for each CJK language.
+var fontconfigLangs = [...]string{simplifiedChinese: "zh-cn", japanese: "ja", korean: "ko"}
+
+// locateHan is the face for c in weight w: the first of its preferred
+// families installed, else fontconfig's pick for its language, which may not
+// cover it at all when nothing installed does.
+func locateHan(c cjk, w font.Weight) (Location, error) {
+	for _, family := range preferredHan[c] {
+		loc, err := locateFamily(family, w)
+		if err != nil || loc.Path != "" {
+			return loc, err
+		}
+	}
+	return Locate(font.Font{Typeface: font.Typeface(SystemSans + ":lang=" + fontconfigLangs[c]), Weight: w})
+}
+
+// locateFamily is family's face in weight w, or no Location when family is
+// not installed and fontconfig would answer with another.
+func locateFamily(family string, w font.Weight) (Location, error) {
+	pattern := fmt.Sprintf("%s:weight=%d", family, fontconfigWeights[w])
+	out, err := exec.Command("fc-match", "-f", "%{family}\n%{file}\n%{index}", pattern).Output()
+	if err != nil {
+		return Location{}, fmt.Errorf("fc-match %s: %w", pattern, err)
+	}
+	return parseFamilyMatch(string(out), family)
+}
+
+// parseFamilyMatch reads `fc-match -f '%{family}\n%{file}\n%{index}'`, kept
+// only when one of the matched family's names is family.
+func parseFamilyMatch(out, family string) (Location, error) {
+	names, rest, _ := strings.Cut(out, "\n")
+	path, index, _ := strings.Cut(rest, "\n")
+	if !slices.Contains(strings.Split(names, ","), family) {
+		return Location{}, nil
+	}
+	i, err := strconv.Atoi(strings.TrimSpace(index))
+	if err != nil {
+		return Location{}, fmt.Errorf("fc-match %s: face index %q: %w", family, index, err)
+	}
+	return Location{Path: path, Index: i}, nil
 }
 
 // Covering names a font file that has a glyph for r, the closest to a plain

@@ -8,6 +8,10 @@ package prompt
 // the [lich] token, tool and CLI names, ticket ids, and tool parameters.
 type Catalog struct {
 	isOne func(int) bool
+	// isFew and isMany are nil in a language whose CLDR rule has no few or
+	// many form: Pick reads Other for every count isOne leaves out.
+	isFew  func(int) bool
+	isMany func(int) bool
 
 	// internal/relay: SpawnBriefing. These are passed as one argv entry and a
 	// provider shipped as a .cmd is spawned through cmd.exe, so they must not

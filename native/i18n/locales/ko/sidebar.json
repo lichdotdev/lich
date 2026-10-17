@@ -1,0 +1,167 @@
+{
+  "cardColor": {
+    "menu": "색상",
+    "color": {
+      "theme": "테마",
+      "red": "빨강",
+      "orange": "주황",
+      "amber": "호박색",
+      "green": "초록",
+      "teal": "청록",
+      "blue": "파랑",
+      "violet": "보라",
+      "pink": "분홍"
+    }
+  },
+  "newFolderDialog": {
+    "title": "새 폴더",
+    "description": {
+      "other": "세션 {count}개를 원하는 이름으로 정리합니다. 세션은 열린 채로 있고, 체크아웃도 바뀌지 않습니다."
+    },
+    "name": "이름",
+    "placeholder": "디자인 시스템",
+    "exists": "{name}이(가) 이미 있으므로 그 폴더에 넣습니다.",
+    "moveHere": "여기로 이동"
+  },
+  "sessionCard": {
+    "openCheckoutFailed": "체크아웃을 열 수 없습니다: {error}",
+    "openFolderFailed": "폴더를 열 수 없습니다: {error}",
+    "rename": "이름 바꾸기",
+    "pin": "고정",
+    "unpin": "고정 해제",
+    "moveToFolder": "폴더로 이동",
+    "takeOutOf": "{folder}에서 빼기",
+    "newFolder": "새 폴더…",
+    "openIn": "다음에서 열기",
+    "terminal": "터미널",
+    "editor": "에디터",
+    "fileManager": "파일 관리자",
+    "pullRequest": "풀 리퀘스트",
+    "closeSession": "세션 닫기"
+  },
+  "settingsCard": {
+    "close": "설정 닫기"
+  },
+  "sessionSidebar": {
+    "newSession": "새 세션",
+    "newSessionButton": "새 세션",
+    "filter": "세션 필터",
+    "collapse": "사이드바 접기"
+  },
+  "sidebarRail": {
+    "expand": "사이드바 펼치기",
+    "newSession": "새 세션"
+  },
+  "sessionPhaseChips": {
+    "all": "전체",
+    "phase": {
+      "waiting": "대기 중",
+      "running": "실행 중",
+      "unread": "읽지 않음",
+      "idle": "유휴"
+    }
+  },
+  "sessionStatusRung": {
+    "commandLine": "명령줄",
+    "waitingOnYou": "응답 대기 중",
+    "compacting": "압축 중…"
+  },
+  "sessionGroup": {
+    "pinned": "고정됨"
+  },
+  "sessionGroupHeader": {
+    "expand": "{name} 펼치기",
+    "collapse": "{name} 접기",
+    "newSessionIn": "{name}에 새 세션",
+    "optionsFor": "{name} 옵션",
+    "renameFolder": "폴더 이름 바꾸기",
+    "mergesInto": "{name}이(가) 이미 있으므로, 이름을 바꾸면 이 폴더가 그 폴더에 합쳐집니다.",
+    "ungroup": "그룹 해제",
+    "moveToFolder": "그룹을 폴더로 이동",
+    "newFolder": "새 폴더…"
+  },
+  "sessionLaunchMenuItems": {
+    "terminal": "터미널",
+    "newTerminal": "새 터미널",
+    "worktree": "Worktree"
+  },
+  "folderLaunchMenuItems": {
+    "newSessionIn": "{folder}에 새 세션",
+    "newSessionInOn": "{folder}에 새 세션, {checkout}에서"
+  },
+  "worktreeDialog": {
+    "lookingUpIssue": "#{number} 찾는 중…",
+    "loadingBranches": "브랜치 불러오는 중…",
+    "worktrees": "Worktree",
+    "creating": "만드는 중…",
+    "carryReused": "{name}이(가) 이미 있어서 현재 상태 그대로 열었고, 커밋하지 않은 변경 사항은 원래 자리에 남아 있습니다.",
+    "carryFailed": "worktree는 열렸지만, 커밋하지 않은 변경 사항을 복사하지 못했습니다: {error}",
+    "issueLost": "세션에 이슈를 넘기지 못했습니다: {error}",
+    "neverPrompted": "세션이 프롬프트 상태에 이르지 못했습니다"
+  },
+  "worktreeCloseDialogs": {
+    "closeTitle": "worktree 세션 닫기",
+    "remove": "worktree 삭제",
+    "dirtyTitle": "worktree에 커밋하지 않은 변경 사항이 있습니다",
+    "dirtyDescription": "{path}의 worktree에 커밋하지 않은 변경 사항이 있습니다. 삭제하면 변경 사항이 영구히 사라집니다. 브랜치는 남습니다.",
+    "discardAndRemove": "변경 사항 버리고 삭제"
+  },
+  "worktreeSandboxRow": {
+    "runConfined": "격리 실행"
+  },
+  "sessionTooltip": {
+    "waitingOn": "{peer}의 응답 대기 중",
+    "answering": "{peer}에 답하는 중",
+    "commandLine": "명령줄",
+    "ticket": "티켓 {ticket}",
+    "sandboxed": "샌드박스",
+    "confinedMeans": "빈 홈, 읽기 전용 머신, 이 체크아웃 안에서만 쓰기 가능.",
+    "setAtOpen": "세션을 열 때 정해집니다. 바꾸려면 다시 여세요.",
+    "notMounted": "마운트되지 않음(심볼릭 링크): {paths}",
+    "morePaths": "+{count}개 더"
+  },
+  "worktreeDialogView": {
+    "title": "새 worktree 세션",
+    "description": "자체 브랜치와 자체 세션을 가진 별도의 체크아웃입니다.",
+    "name": "이름",
+    "namePlaceholder": "비우면 무작위 이름, 단어 또는 #이슈",
+    "branchLine": "브랜치: {branch}",
+    "randomBranch": "무작위 이름",
+    "opensSelected": "선택한 worktree의 세션을 엽니다.",
+    "from": "기준",
+    "searchBranches": "브랜치 검색",
+    "noMatch": "일치하는 브랜치가 없습니다.",
+    "local": "로컬",
+    "remote": "원격",
+    "opensSession": "대신 해당 세션을 엶",
+    "carry": "커밋하지 않은 변경 사항 가져오기",
+    "carryFiles": {
+      "other": "이 체크아웃의 파일 {count}개"
+    },
+    "create": "만들기",
+    "open": "열기"
+  },
+  "worktreeLogic": {
+    "checking": "원격 확인 중…",
+    "behind": "{upstream}보다 {count}개 뒤처짐 · {upstream}에서 시작",
+    "notPushed": {
+      "other": "푸시하지 않은 커밋 {count}개 · 로컬 {branch}에서 시작"
+    },
+    "unreachable": "{remote}에 연결할 수 없음 · 로컬 {branch}에서 시작",
+    "unreachableRemote": "원격에 연결할 수 없음 · 로컬 {branch}에서 시작",
+    "keepsChanges": "변경 사항을 유지하려고 로컬 {branch}에서 시작"
+  },
+  "closeWorktree": {
+    "adopted": "{path}의 worktree는 lich가 만든 것이 아닙니다. 삭제하면 그 디렉터리는 지워지지만 브랜치는 남습니다."
+  },
+  "sidebarProfile": {
+    "continueIn": "다음에서 계속",
+    "continueInHint": "같은 대화, 다른 로그인",
+    "goneTitle": "{label}은(는) 더 이상 없는 프로필에서 시작되었습니다",
+    "goneDescription": "이 대화는 재개할 수 없습니다. 대신 이 프로젝트의 프로필로 새 세션을 시작하세요.",
+    "startNew": "새로 시작",
+    "dismiss": "닫기",
+    "resumesIn": "처음 시작한 프로필인 {profile} · {email}에서 재개됩니다.",
+    "resumesInNoEmail": "처음 시작한 프로필인 {profile}에서 재개됩니다."
+  }
+}

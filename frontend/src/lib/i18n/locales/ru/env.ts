@@ -1,0 +1,60 @@
+import type { Shape } from "../../catalog"
+import type { env as en } from "../en/env"
+
+export const env = {
+  providerSummary: {
+    installed: "Установлен",
+    installedCustomPath: "Установлен · свой путь",
+    signedOut: "Вход не выполнен",
+    windowPercent: "{percent}% окна {length}",
+    percentUsed: "Использовано {percent}%",
+  },
+  quota: {
+    tokenLogin: "Вход по токену",
+    weekShort: "нед.",
+  },
+  paths: {
+    cwdUnknown: "cwd неизвестен · внутри {host}",
+  },
+  sandbox: {
+    windowsReason: "В Windows у lich нет бэкенда песочницы",
+    windowsAdvice: "Устанавливать нечего: каждая сессия работает прямо на этом компьютере.",
+    macReason: "sandbox-exec недоступен",
+    macAdvice:
+      "В macOS /usr/bin/sandbox-exec входит в систему, поэтому если он не работает, система повреждена так, что lich не может это исправить. Каждая сессия работает прямо на этом компьютере.",
+    linuxReason: "bubblewrap не установлен",
+    linuxAdvice:
+      "Установите bubblewrap и заново откройте lich. До тех пор каждая сессия работает прямо на этом компьютере.",
+    confinedMeans:
+      "Пустой домашний каталог только с собственным состоянием агента, система доступна только для чтения, запись возможна лишь внутри рабочей копии. Сеть остаётся включённой.",
+  },
+  vcsTools: {
+    gitWithout: "Без него ветки, изменения и worktree остаются пустыми.",
+    ghWithout: "Без него pull requests, проверки и рабочие копии PR недоступны.",
+  },
+  binary: {
+    parkedProject: "переопределение для {name} выключено",
+    parkedProjectFallback: "проекта",
+    parkedGlobal: "глобальное переопределение выключено",
+    executable: "исполняемый файл",
+    noSuchFile: "файл не найден",
+    notOnPath: "нет в $PATH",
+    notExecutable: "не исполняемый",
+    homeNotExpanded: "~ не раскрывается",
+    relativePath: "относительный путь",
+    detailHomeShortcut:
+      "lich запускает исполняемый файл напрямую, поэтому ~ понимается буквально и не раскрывается. Укажите полный путь.",
+    detailRelative:
+      "Относительный путь разрешается от рабочей папки каждой сессии, поэтому в разных сессиях он указывает на разные файлы. Укажите полный путь.",
+    detailBroken:
+      "Пока это не исправлено, сессии не запустятся. Переопределение можно также выключить или очистить: тогда используется слой ниже.",
+  },
+  commitIdentity: {
+    noneLead: "В этой рабочей копии не задана git-личность.",
+    noneNote: "Коммиты будут отклоняться, пока не задан user.email.",
+    landAsNamed: "Коммиты будут от имени {name}",
+    landAs: "Коммиты будут от имени",
+    setLocal: "(задано в этом репозитории, перекрывает глобальное значение).",
+    setGlobal: "(git user.email, а не этот аккаунт).",
+  },
+} satisfies Shape<typeof en>

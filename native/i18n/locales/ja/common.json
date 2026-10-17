@@ -1,0 +1,27 @@
+{
+  "count": {
+    "file": {
+      "one": "{count} 個のファイル",
+      "other": "{count} 個のファイル"
+    }
+  },
+  "time": {
+    "justNow": "たった今"
+  },
+  "action": {
+    "cancel": "キャンセル",
+    "create": "作成"
+  },
+  "checkAgainButton": {
+    "check": "再確認",
+    "checking": "確認中…"
+  },
+  "stepper": {
+    "default": "デフォルト"
+  },
+  "pickerDialog": {
+    "navigate": "移動",
+    "filter": "絞り込み",
+    "close": "閉じる"
+  }
+}

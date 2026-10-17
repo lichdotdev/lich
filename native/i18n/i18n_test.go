@@ -11,7 +11,10 @@ func TestMatchPicksExactThenLanguageThenEnglish(t *testing.T) {
 	cases := map[string]Locale{
 		"pt-BR": PtBR, "pt-br": PtBR, "pt": PtBR, "pt-PT": PtBR,
 		"en-GB": EN, "es-MX": ES, "zh-CN": ZhCN, "zh-Hans-CN": ZhCN,
+		"ja": JA, "ja-JP": JA,
 		"fr-FR": EN, "": EN,
+		"ko": KO, "ko-KR": KO,
+		"ru": RU, "ru-RU": RU,
 	}
 	for tag, want := range cases {
 		if got := Match(tag); got != want {
@@ -21,7 +24,7 @@ func TestMatchPicksExactThenLanguageThenEnglish(t *testing.T) {
 }
 
 func TestEveryLocaleIsNamedInItself(t *testing.T) {
-	want := []string{"English", "Português (Brasil)", "Español", "简体中文"}
+	want := []string{"English", "Português (Brasil)", "Español", "简体中文", "日本語", "한국어", "Русский"}
 	for i, l := range Locales {
 		if got := l.Name(); got != want[i] {
 			t.Errorf("%s.Name() = %q, want %q", l, got, want[i])
@@ -70,10 +73,41 @@ func TestInPicksTheFormEachLanguageSelects(t *testing.T) {
 		{PtBR, 0, "0 arquivo"}, {PtBR, 1, "1 arquivo"}, {PtBR, 2, "2 arquivos"},
 		{ES, 1, "1 archivo"}, {ES, 3, "3 archivos"},
 		{ZhCN, 1, "1 个文件"}, {ZhCN, 2, "2 个文件"},
+		{JA, 1, "1 個のファイル"}, {JA, 2, "2 個のファイル"},
+		{KO, 1, "파일 1개"}, {KO, 2, "파일 2개"},
 	}
 	for _, c := range cases {
 		if got := In(c.l, "common.count.file", Args{"count": c.count}); got != c.want {
 			t.Errorf("%s count %d = %q, want %q", c.l, c.count, got, c.want)
+		}
+	}
+}
+
+func TestRussianFormFollowsCLDR(t *testing.T) {
+	for n, want := range map[int]string{
+		0: "many", 1: "one", 2: "few", 5: "many", 11: "many", 12: "many",
+		21: "one", 22: "few", 25: "many", 111: "many", 112: "many",
+	} {
+		if got := pluralForm(RU, n); got != want {
+			t.Errorf("pluralForm(ru, %d) = %q, want %q", n, got, want)
+		}
+	}
+}
+
+// A form the language's rule selects but the catalog lacks would silently
+// read "other", which in Russian is the fractions' form.
+func TestEveryPluralHasTheFormsItsLanguageSelects(t *testing.T) {
+	for _, l := range Locales {
+		for key, m := range catalogs[l] {
+			if m.plural == nil {
+				continue
+			}
+			for n := range 200 {
+				if form := pluralForm(l, n); m.plural[form] == "" {
+					t.Errorf("%s: %s has no %q form (count %d)", l, key, form, n)
+					break
+				}
+			}
 		}
 	}
 }

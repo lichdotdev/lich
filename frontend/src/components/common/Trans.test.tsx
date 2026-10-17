@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { resetLocale, setLocale } from "@/lib/i18n/i18n"
+import { ru } from "@/lib/i18n/locales/ru"
 import { zhCN } from "@/lib/i18n/locales/zh-cn"
 import { Trans } from "./Trans"
 
@@ -36,5 +37,19 @@ describe("Trans", () => {
     setLocale("zh-CN")
     const html = renderToStaticMarkup(<Trans k="common.count.file" params={{ count: 2 }} />)
     expect(html).toBe(zhCN.common.count.file.other.replace("{count}", "2"))
+  })
+
+  it("renders Korean", () => {
+    vi.stubGlobal("localStorage", { setItem: () => {}, getItem: () => null })
+    setLocale("ko")
+    const html = renderToStaticMarkup(<Trans k="common.count.file" params={{ count: 2 }} />)
+    expect(html).toBe("파일 2개")
+  })
+
+  it("renders Russian with the form its count selects", () => {
+    vi.stubGlobal("localStorage", { setItem: () => {}, getItem: () => null })
+    setLocale("ru")
+    const html = renderToStaticMarkup(<Trans k="common.count.file" params={{ count: 5 }} />)
+    expect(html).toBe(ru.common.count.file.many.replace("{count}", "5"))
   })
 })

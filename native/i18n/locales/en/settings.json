@@ -8,11 +8,11 @@
     "uiSearchWords": "language locale translation english portuguese",
     "promptSearchWords": "language locale translation agent briefing relay english portuguese",
     "promptSaveFailed": "Could not save the prompt language: {error}",
-    "hanFontTitle": "Download the Chinese font?",
-    "hanFontDescription": "Chinese needs the Noto Sans SC font, and no font installed on this computer draws Chinese. lich can download it (about {size} MB) and keep it in its own folder.",
+    "hanFontTitle": "Download the font for {language}?",
+    "hanFontDescription": "{language} needs the {font} font, and no font installed on this computer draws it. lich can download it (about {size} MB) and keep it in its own folder.",
     "hanFontDownload": "Download",
     "hanFontProgress": "Downloading… {done} of {total} MB",
-    "hanFontFailed": "Could not download the Chinese font: {error}"
+    "hanFontFailed": "Could not download {font}: {error}"
   },
   "settings": {
     "search": "Search settings",

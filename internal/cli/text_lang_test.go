@@ -122,3 +122,39 @@ func TestTheClientReadsSpanishFromTheEnvironment(t *testing.T) {
 		t.Errorf("%s=es: lang = %q, want %q", prompt.EnvVar, got, prompt.Spanish)
 	}
 }
+
+func TestTheClientReadsJapaneseFromTheEnvironment(t *testing.T) {
+	c := &client{env: func(key string) string {
+		if key == prompt.EnvVar {
+			return "ja"
+		}
+		return ""
+	}}
+	if got := c.lang(); got != prompt.Japanese {
+		t.Errorf("%s=ja: lang = %q, want %q", prompt.EnvVar, got, prompt.Japanese)
+	}
+}
+
+func TestTheClientReadsKoreanFromTheEnvironment(t *testing.T) {
+	c := &client{env: func(key string) string {
+		if key == prompt.EnvVar {
+			return "ko"
+		}
+		return ""
+	}}
+	if got := c.lang(); got != prompt.Korean {
+		t.Errorf("%s=ko: lang = %q, want %q", prompt.EnvVar, got, prompt.Korean)
+	}
+}
+
+func TestTheClientReadsRussianFromTheEnvironment(t *testing.T) {
+	c := &client{env: func(key string) string {
+		if key == prompt.EnvVar {
+			return "ru"
+		}
+		return ""
+	}}
+	if got := c.lang(); got != prompt.Russian {
+		t.Errorf("%s=ru: lang = %q, want %q", prompt.EnvVar, got, prompt.Russian)
+	}
+}

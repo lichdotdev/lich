@@ -1,0 +1,170 @@
+{
+  "cardColor": {
+    "menu": "色",
+    "color": {
+      "theme": "テーマ",
+      "red": "赤",
+      "orange": "オレンジ",
+      "amber": "琥珀",
+      "green": "緑",
+      "teal": "ティール",
+      "blue": "青",
+      "violet": "紫",
+      "pink": "ピンク"
+    }
+  },
+  "newFolderDialog": {
+    "title": "新しいフォルダー",
+    "description": {
+      "one": "このセッションを任意の名前でまとめます。セッションは開いたままで、チェックアウトも変わりません。",
+      "other": "これら {count} 件のセッションを任意の名前でまとめます。セッションは開いたままで、チェックアウトも変わりません。"
+    },
+    "name": "名前",
+    "placeholder": "デザインシステム",
+    "exists": "{name} はすでに存在するため、そこにまとめます。",
+    "moveHere": "ここに移動"
+  },
+  "sessionCard": {
+    "openCheckoutFailed": "チェックアウトを開けませんでした: {error}",
+    "openFolderFailed": "フォルダーを開けませんでした: {error}",
+    "rename": "名前を変更",
+    "pin": "ピン留め",
+    "unpin": "ピン留めを外す",
+    "moveToFolder": "フォルダーに移動",
+    "takeOutOf": "{folder} から出す",
+    "newFolder": "新しいフォルダー…",
+    "openIn": "次で開く",
+    "terminal": "ターミナル",
+    "editor": "エディター",
+    "fileManager": "ファイルマネージャー",
+    "pullRequest": "プルリクエスト",
+    "closeSession": "セッションを閉じる"
+  },
+  "settingsCard": {
+    "close": "設定を閉じる"
+  },
+  "sessionSidebar": {
+    "newSession": "新しいセッション",
+    "newSessionButton": "新規セッション",
+    "filter": "セッションを絞り込む",
+    "collapse": "サイドバーを折りたたむ"
+  },
+  "sidebarRail": {
+    "expand": "サイドバーを展開",
+    "newSession": "新しいセッション"
+  },
+  "sessionPhaseChips": {
+    "all": "すべて",
+    "phase": {
+      "waiting": "待機中",
+      "running": "実行中",
+      "unread": "未読",
+      "idle": "アイドル"
+    }
+  },
+  "sessionStatusRung": {
+    "commandLine": "コマンドライン",
+    "waitingOnYou": "あなたの入力待ち",
+    "compacting": "圧縮中…"
+  },
+  "sessionGroup": {
+    "pinned": "ピン留め"
+  },
+  "sessionGroupHeader": {
+    "expand": "{name} を展開",
+    "collapse": "{name} を折りたたむ",
+    "newSessionIn": "{name} に新しいセッション",
+    "optionsFor": "{name} のオプション",
+    "renameFolder": "フォルダー名を変更",
+    "mergesInto": "{name} はすでに存在するため、名前を変更するとこのフォルダーはそこに統合されます。",
+    "ungroup": "グループを解除",
+    "moveToFolder": "グループをフォルダーに移動",
+    "newFolder": "新しいフォルダー…"
+  },
+  "sessionLaunchMenuItems": {
+    "terminal": "ターミナル",
+    "newTerminal": "新しいターミナル",
+    "worktree": "ワークツリー"
+  },
+  "folderLaunchMenuItems": {
+    "newSessionIn": "{folder} に新しいセッション",
+    "newSessionInOn": "{folder} の {checkout} に新しいセッション"
+  },
+  "worktreeDialog": {
+    "lookingUpIssue": "#{number} を検索中…",
+    "loadingBranches": "ブランチを読み込み中…",
+    "worktrees": "ワークツリー",
+    "creating": "作成中…",
+    "carryReused": "{name} はすでに存在していたため、そのままの状態で開きました。未コミットの変更は元の場所に残っています。",
+    "carryFailed": "ワークツリーは開きましたが、未コミットの変更をコピーできませんでした: {error}",
+    "issueLost": "Issue をセッションに引き渡せませんでした: {error}",
+    "neverPrompted": "セッションがプロンプトの入力待ちになりませんでした"
+  },
+  "worktreeCloseDialogs": {
+    "closeTitle": "ワークツリーセッションを閉じる",
+    "remove": "ワークツリーを削除",
+    "dirtyTitle": "ワークツリーに未コミットの変更があります",
+    "dirtyDescription": "{path} のワークツリーには未コミットの変更があります。削除すると変更は完全に失われます。ブランチは残ります。",
+    "discardAndRemove": "変更を破棄して削除"
+  },
+  "worktreeSandboxRow": {
+    "runConfined": "隔離して実行"
+  },
+  "sessionTooltip": {
+    "waitingOn": "{peer} を待っています",
+    "answering": "{peer} に回答中",
+    "commandLine": "コマンドライン",
+    "ticket": "チケット {ticket}",
+    "sandboxed": "サンドボックス内",
+    "confinedMeans": "ホームは空、マシンは読み取り専用で、書き込みはこのチェックアウト内のみです。",
+    "setAtOpen": "セッションを開いたときに決まります。変更するには開き直してください。",
+    "notMounted": "マウントされていません (シンボリックリンク): {paths}",
+    "morePaths": "ほか {count} 件"
+  },
+  "worktreeDialogView": {
+    "title": "新しいワークツリーセッション",
+    "description": "専用のブランチ上の独立したチェックアウトと、専用のセッションです。",
+    "name": "名前",
+    "namePlaceholder": "空欄でランダムな名前、または語句か #issue",
+    "branchLine": "ブランチ: {branch}",
+    "randomBranch": "ランダムな名前",
+    "opensSelected": "選択したワークツリーのセッションを開きます。",
+    "from": "ベース",
+    "searchBranches": "ブランチを検索",
+    "noMatch": "一致するブランチはありません。",
+    "local": "ローカル",
+    "remote": "リモート",
+    "opensSession": "代わりにそのセッションを開きます",
+    "carry": "未コミットの変更を持ち込む",
+    "carryFiles": {
+      "one": "このチェックアウトのファイル {count} 件",
+      "other": "このチェックアウトのファイル {count} 件"
+    },
+    "create": "作成",
+    "open": "開く"
+  },
+  "worktreeLogic": {
+    "checking": "リモートを確認しています…",
+    "behind": "{upstream} より {count} 件遅れています · {upstream} から開始",
+    "notPushed": {
+      "one": "{count} 件のコミットが未プッシュ · ローカルの {branch} から開始",
+      "other": "{count} 件のコミットが未プッシュ · ローカルの {branch} から開始"
+    },
+    "unreachable": "{remote} に接続できませんでした · ローカルの {branch} から開始",
+    "unreachableRemote": "リモートに接続できませんでした · ローカルの {branch} から開始",
+    "keepsChanges": "変更を保持するため、ローカルの {branch} から開始します"
+  },
+  "closeWorktree": {
+    "adopted": "{path} のワークツリーは lich が作成したものではありません。削除するとそのディレクトリは消えますが、ブランチは残ります。"
+  },
+  "sidebarProfile": {
+    "continueIn": "次で続ける",
+    "continueInHint": "同じ会話を別のログインで",
+    "goneTitle": "{label} は、もう存在しないプロファイルで開始されました",
+    "goneDescription": "この会話は再開できません。代わりに、このプロジェクトのプロファイルで新しいセッションを始めてください。",
+    "startNew": "新規で始める",
+    "dismiss": "閉じる",
+    "resumesIn": "開始時のプロファイルである {profile} · {email} で再開します。",
+    "resumesInNoEmail": "開始時のプロファイルである {profile} で再開します。"
+  }
+}

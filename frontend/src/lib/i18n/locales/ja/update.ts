@@ -1,0 +1,18 @@
+import type { Shape } from "../../catalog"
+import type { update as en } from "../en/update"
+
+export const update = {
+  plugin: {
+    incompatibleInstall:
+      "{installs} にある lich プラグインは、この lich ではサポートされていません。この lich がサポートするリリースである v{version} をインストールしてください。",
+    incompatibleUpdate:
+      "{installs} にある lich プラグインは、この lich ではサポートされていません。lich をアップデートするか、この lich がサポートするリリースを見つけられるようオンラインであることを確認してください。",
+  },
+  progress: {
+    updateFailed: "アップデートに失敗しました: {error}",
+    installFailed: "インストールに失敗しました: {error}",
+    downloadFailed: "ダウンロードに失敗しました: {error}",
+    downloadFailedAt: "{percent}% でダウンロードに失敗しました: {error}",
+    bytesOf: "{received} / {total}",
+  },
+} satisfies Shape<typeof en>

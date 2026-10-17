@@ -21,6 +21,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   under Appearance. Before you pick one, the interface follows your
   system's language. Choosing Chinese on a machine with no Chinese font
   offers to download Noto Sans SC (about 25 MB) into lich's own folder.
+- **Japanese.** Both windows read in Japanese, and Japanese is a prompt
+  language, so lich talks to your agents in it. The native window draws
+  Japanese, Chinese and Korean each in its own region's font when one is
+  installed (Noto Sans CJK, Yu Gothic, Hiragino, Malgun Gothic and the like),
+  so kanji no longer take Chinese shapes, and offers to download Noto Sans JP
+  or KR when none is, as it does Noto Sans SC for Chinese. The README is in
+  Japanese too.
+- **Korean.** Both windows read in Korean, picked in Settings › Appearance
+  on the web and Settings › General in the native window, and Korean is a
+  prompt language: briefings, relayed messages and notices reach your agents
+  in Korean.
+- **lich speaks Russian.** Pick Русский as the interface language, in the web
+  window under Settings › Appearance or in the native window under
+  Settings › General, and as the prompt language, so the briefing, relay
+  notes and handoffs lich types into your agents read in Russian too. Counts
+  follow Russian's one, few and many forms (1 файл, 2 файла, 5 файлов).
 
 ### Fixed
 

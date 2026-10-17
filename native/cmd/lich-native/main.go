@@ -134,6 +134,9 @@ type window struct {
 	islandAt image.Point
 	// hotkeyLanguage is the language the hotkeys' labels were last put in.
 	hotkeyLanguage i18n.Locale
+	// fontsLanguage is the language the interface's CJK faces were last
+	// picked for.
+	fontsLanguage i18n.Locale
 	// trayLanguage is the language the tray's words were last sent in, unset
 	// until the tray is up.
 	trayLanguage atomic.Value

@@ -1,0 +1,18 @@
+{
+  "pullRequest": {
+    "conflicts": "풀 리퀘스트 #{number}({branch})에 {base}와(과)의 병합 충돌이 있습니다. 충돌을 해결하세요.",
+    "checksUnnamed": {
+      "other": "풀 리퀘스트 #{number}({branch})의 CI가 실패하고 있습니다. 실패한 체크가 {count}개 있으니, 어떤 체크인지 찾아서 고치세요."
+    },
+    "checksListed": "풀 리퀘스트 #{number}({branch})의 CI가 실패하고 있습니다. 다음 체크를 고치세요:\n\n{checks}",
+    "checksOmitted": {
+      "other": "\n\n…그리고 목록에 없는 실패한 체크가 {count}개 더 있습니다."
+    }
+  },
+  "reviewComments": {
+    "header": "리뷰 코멘트:"
+  },
+  "issue": {
+    "head": "GitHub 이슈 #{number}: {title}\n{url}"
+  }
+}

@@ -3,42 +3,71 @@ package fonts
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"gioui.org/font"
 	"gioui.org/font/opentype"
 )
 
-// Han is the typeface the Chinese faces are registered under. No text asks
-// for it by name: the shaper reaches it per rune, for the characters the
+// Han is the typeface the CJK faces are registered under. No text asks for
+// it by name: the shaper reaches it per rune, for the characters the
 // interface's own faces lack.
 const Han font.Typeface = "lich Han"
 
-// hanProbe is the character a face must draw to count as covering Han.
-const hanProbe = '中'
+// cjk is a CJK language's own faces: Chinese, Japanese and Korean draw the
+// same Han characters in different shapes, and Japanese and Korean need
+// their own script besides.
+type cjk int
 
-var installedHan struct {
+const (
+	simplifiedChinese cjk = iota
+	japanese
+	korean
+)
+
+// cjkOf is the CJK faces the interface in language draws with: its own for
+// Japanese and Korean, Simplified Chinese's for every other language.
+func cjkOf(language string) cjk {
+	tag, _, _ := strings.Cut(strings.ToLower(language), "-")
+	switch tag {
+	case "ja":
+		return japanese
+	case "ko":
+		return korean
+	}
+	return simplifiedChinese
+}
+
+// hanProbes are the characters a face must draw to count as covering each
+// language: Han for Chinese, kana for Japanese, Hangul for Korean.
+var hanProbes = [...]rune{simplifiedChinese: '中', japanese: 'あ', korean: '한'}
+
+var installedHan [len(hanProbes)]struct {
 	once  sync.Once
 	faces []font.FontFace
 	err   error
 }
 
-// InstalledHan reads, once, the installed faces that draw Simplified Chinese
-// in the interface's weights, registered under Han; none when nothing
-// installed covers it. Locating always answers with some face, so each is
-// kept only if it really has a glyph for hanProbe.
-func InstalledHan() ([]font.FontFace, error) {
-	installedHan.once.Do(func() {
-		installedHan.faces, installedHan.err = loadHan()
+// InstalledHan reads, once per CJK language, the installed faces that draw
+// the interface's language in the interface's weights, registered under Han;
+// none when nothing installed covers it. A language that is not Japanese or
+// Korean reads Simplified Chinese's. Locating always answers with some face,
+// so each is kept only if it really has a glyph for the language's probe.
+func InstalledHan(language string) ([]font.FontFace, error) {
+	c := cjkOf(language)
+	installed := &installedHan[c]
+	installed.once.Do(func() {
+		installed.faces, installed.err = loadHan(c)
 	})
-	return installedHan.faces, installedHan.err
+	return installed.faces, installed.err
 }
 
-func loadHan() ([]font.FontFace, error) {
+func loadHan(c cjk) ([]font.FontFace, error) {
 	var faces []font.FontFace
 	parsed := map[Location]font.Face{}
 	for _, w := range interfaceWeights {
-		loc, err := locateHan(w)
+		loc, err := locateHan(c, w)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +81,7 @@ func loadHan() ([]font.FontFace, error) {
 			}
 			parsed[loc] = face
 		}
-		if _, ok := face.Face().NominalGlyph(hanProbe); !ok {
+		if _, ok := face.Face().NominalGlyph(hanProbes[c]); !ok {
 			continue
 		}
 		faces = append(faces, font.FontFace{Font: font.Font{Typeface: Han, Weight: w}, Face: face})
@@ -78,7 +107,7 @@ func parseLocation(loc Location) (font.Face, error) {
 // coverWeights registers, for each interface weight faces lack, the face of
 // the nearest weight they have, the heavier on a tie: the shaper falls back
 // to a face of another family only in the weight asked for, so a missing
-// weight draws Chinese as tofu.
+// weight draws CJK as tofu.
 func coverWeights(faces []font.FontFace) []font.FontFace {
 	if len(faces) == 0 {
 		return faces

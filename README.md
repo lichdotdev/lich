@@ -4,7 +4,7 @@
     <img src="frontend/public/appicon-light.png" alt="lich" width="88" height="88" />
   </picture>
   <h1>lich</h1>
-  <p><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
+  <p><strong>English</strong> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
   <p><strong>A terminal-first ADE for the coding agents you already use.</strong></p>
   <p>
     Open your projects, run agents like Claude Code, Codex and opencode in real

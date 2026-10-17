@@ -1,0 +1,19 @@
+{
+  "item": {
+    "attach": {
+      "example": "ファイルを添付"
+    },
+    "files": {
+      "example": "ファイル"
+    },
+    "model": {
+      "example": "モデル"
+    }
+  },
+  "footerEditor": {
+    "previewHint": "プレビュー · サンプル値"
+  },
+  "footerMenu": {
+    "customize": "フッターをカスタマイズ…"
+  }
+}

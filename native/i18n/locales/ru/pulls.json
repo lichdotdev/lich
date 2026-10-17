@@ -1,0 +1,265 @@
+{
+  "prHandoff": {
+    "resolveConflicts": "Разрешить конфликты",
+    "fixChecks": "Исправить ошибки CI"
+  },
+  "byline": {
+    "someone": "кто-то"
+  },
+  "commentBox": {
+    "sending": "Отправка…"
+  },
+  "verdict": {
+    "approved": "одобрил(а)",
+    "changesRequested": "запросил(а) изменения",
+    "dismissed": "ревью отклонено",
+    "commented": "оставил(а) комментарий",
+    "requested": "запрошено ревью"
+  },
+  "mergeMessageDialog": {
+    "squashAndMerge": "Squash и слияние",
+    "createMergeCommit": "Создать коммит слияния",
+    "description": "Измените сообщение коммита, затем выполните слияние.",
+    "subject": "Сообщение коммита",
+    "body": "Подробное описание",
+    "optional": "Необязательно",
+    "merging": "Слияние…"
+  },
+  "mergeGate": {
+    "changesRequested": "Ревьюер запросил изменения",
+    "reviewRequired": "GitHub требует ревью, которого пока нет",
+    "merged": "Pull request уже слит",
+    "closed": "Pull request закрыт",
+    "draft": "Pull request в статусе черновика",
+    "conflicts": "Конфликты с {base}",
+    "behind": "Базовая ветка ушла вперёд: сначала обновите эту ветку",
+    "pattern": {
+      "match": "{target}: обязательно соответствие {pattern}",
+      "notMatch": "{target}: соответствие {pattern} запрещено",
+      "startWith": "{target}: обязательно начало с {pattern}",
+      "notStartWith": "{target}: начало с {pattern} запрещено",
+      "endWith": "{target}: обязательно окончание на {pattern}",
+      "notEndWith": "{target}: окончание на {pattern} запрещено",
+      "contain": "{target}: обязательно содержит {pattern}",
+      "notContain": "{target}: содержать {pattern} запрещено"
+    },
+    "target": {
+      "message": "сообщение",
+      "authorEmail": "email автора",
+      "committerEmail": "email коммитера"
+    },
+    "ruleNote": "Для {base} действует набор правил. Каждый коммит: {clauses}."
+  },
+  "pullsChecks": {
+    "none": "Проверок нет."
+  },
+  "pullsCommits": {
+    "none": "Коммитов нет."
+  },
+  "pullsConflicts": {
+    "loading": "Выясняем, в каких файлах конфликты…",
+    "failed": "Не удалось выяснить, в каких файлах конфликты: {error}",
+    "stale": "Сейчас конфликтующих файлов нет: возможно, GitHub ещё не обновил данные.",
+    "count": {
+      "one": "{count} конфликтующий файл",
+      "few": "{count} конфликтующих файла",
+      "many": "{count} конфликтующих файлов",
+      "other": "{count} конфликтующего файла"
+    },
+    "showFewer": "Свернуть",
+    "more": "+ещё {hidden}"
+  },
+  "pullsEmptyState": {
+    "openFailed": "Не удалось открыть pull request: {error}",
+    "noneFor": "Нет открытого pull request для {branch}.",
+    "none": "Нет открытого pull request.",
+    "openOnGitHub": "Открыть на GitHub"
+  },
+  "submitReviewDialog": {
+    "verdict": {
+      "approve": {
+        "title": "Одобрить"
+      },
+      "comment": {
+        "title": "Комментарий"
+      },
+      "request_changes": {
+        "title": "Запросить изменения"
+      }
+    },
+    "summaryPlaceholder": "Итог (необязательно)",
+    "summaryAlone": "Комментариев к строкам нет: отправится только итог."
+  },
+  "pullsConversation": {
+    "commentFailed": "Не удалось отправить комментарий: {error}",
+    "loading": "Чтение обсуждения…",
+    "resolved": {
+      "one": "{count} решённое обсуждение",
+      "few": "{count} решённых обсуждения",
+      "many": "{count} решённых обсуждений",
+      "other": "{count} решённого обсуждения"
+    },
+    "commentOn": "Комментарий к pull request",
+    "comment": "Комментировать",
+    "commentPlaceholder": "Что-нибудь о pull request в целом",
+    "readFailed": "Не удалось прочитать обсуждение: {error}",
+    "nothingYet": "Пока ничего не написано.",
+    "line": "строка {line}",
+    "lines": "строки {start}-{end}",
+    "outdated": "устарело",
+    "pendingHead": "Черновик ревью",
+    "pendingNote": "Отправится вместе с ревью.",
+    "discard": "Отбросить"
+  },
+  "pullsOverview": {
+    "openedBy": "Открыл(а) {author}",
+    "description": "Описание",
+    "noDescription": "Описания нет.",
+    "reviewers": "Ревьюеры",
+    "nobodyYet": "Пока никого"
+  },
+  "pullsStats": {
+    "checksFailing": "Не пройдено проверок: {failed} из {total}",
+    "checksRunning": "Выполняется проверок: {pending} из {total}",
+    "checksPassed": {
+      "one": "{count} проверка пройдена",
+      "few": "{count} проверки пройдены",
+      "many": "{count} проверок пройдено",
+      "other": "{count} проверки пройдено"
+    },
+    "merged": "Слит",
+    "closed": "Закрыт",
+    "draft": "Черновик",
+    "open": "Открыт",
+    "approved": "Одобрен",
+    "changesRequested": "Запрошены изменения",
+    "reviewRequired": "Нужно ревью",
+    "threadsUnresolved": "Запрошены изменения · нерешённых обсуждений: {open} из {total}",
+    "threadsResolved": "Запрошены изменения · все обсуждения решены",
+    "conflictsWith": "Конфликты с {base}",
+    "mergeable": "Можно слить",
+    "checkingMergeability": "Проверка возможности слияния…"
+  },
+  "pullsList": {
+    "filter": {
+      "all": "Все",
+      "ready": "Готовые",
+      "drafts": "Черновики",
+      "failing": "С ошибками"
+    },
+    "show": "Показать список pull request",
+    "hide": "Скрыть список pull request",
+    "none": {
+      "open": "Нет открытых pull request.",
+      "closed": "Нет закрытых pull request.",
+      "merged": "Нет слитых pull request."
+    },
+    "noMatch": "Под этот фильтр ничего не подходит.",
+    "draft": "Черновик",
+    "fork": "форк",
+    "checkedOut": "открыт локально",
+    "searchHint": "Фильтр по номеру, названию, автору или ветке"
+  },
+  "pullsFiles": {
+    "loadFailed": "Не удалось загрузить изменения: {error}",
+    "hideTree": "Скрыть дерево файлов",
+    "showTree": "Показать дерево файлов",
+    "viewed": "Просмотрено {viewed} из {total}",
+    "loading": "Чтение изменений…"
+  },
+  "reviewThread": {
+    "replyFailed": "Не удалось ответить: {error}",
+    "resolveFailed": "Не удалось отметить решённым: {error}",
+    "reopenFailed": "Не удалось открыть снова: {error}",
+    "resolved": "Решено",
+    "reopen": "Открыть снова",
+    "resolve": "Решено",
+    "reply": "Ответить",
+    "replyPlaceholder": "Ответьте в этом обсуждении"
+  },
+  "pulls": {
+    "alreadyRemoved": "{name} уже удалён",
+    "pinnedSession": "В worktree есть закреплённая сессия: сначала открепите её.",
+    "notCreatedByLich": "lich не создавал этот worktree: удалите его из боковой панели.",
+    "dirty": "В worktree есть незакоммиченные изменения: удалите его из боковой панели.",
+    "removed": "Удалено: {name}",
+    "removeFailed": "Не удалось удалить worktree: {error}",
+    "merged": "#{number} слит в {base}",
+    "announceFailed": "Не удалось сообщить сессиям в {name}: {error}",
+    "removeWorktree": "Удалить worktree",
+    "openSessionFailed": "Не удалось открыть сессию: {error}",
+    "goToSession": "Перейти к сессии",
+    "openInSession": "Открыть в сессии",
+    "forkBlocked": "Головная ветка находится в форке, который не разрешает правки от мейнтейнеров: коммиты нельзя отправить обратно",
+    "runningRemoval": {
+      "removeAnyway": "Всё равно удалить"
+    }
+  },
+  "pullRequestView": {
+    "rebaseAndMerge": "Rebase и слияние",
+    "mergeFailed": "Не удалось слить: {error}",
+    "approvedToast": "#{number} одобрен",
+    "reviewSent": "Ревью отправлено в #{number}",
+    "reviewFailed": "Не удалось отправить ревью: {error}",
+    "opening": "Открытие…",
+    "approving": "Одобрение…",
+    "approved": "Одобрено",
+    "approve": "Одобрить",
+    "discardPending": {
+      "one": "Удалить {count} ожидающий комментарий",
+      "few": "Удалить {count} ожидающих комментария",
+      "many": "Удалить {count} ожидающих комментариев",
+      "other": "Удалить {count} ожидающего комментария"
+    },
+    "merging": "Слияние…",
+    "merge": "Слить",
+    "methodBypass": "{method}, в обход правил",
+    "editMessage": "{method}, изменить сообщение…",
+    "editMessageBypass": "{method}, изменить сообщение… (в обход правил)",
+    "refresh": "Обновить",
+    "open": "Открыть",
+    "tab": {
+      "overview": "Обзор",
+      "commits": "Коммиты",
+      "conversation": "Обсуждение",
+      "checks": "Проверки"
+    }
+  },
+  "pullsActions": {
+    "runningTitle": "Сессии ещё работают",
+    "running": {
+      "one": "{count} сессия в {name} сейчас выполняет ход. Удаление worktree остановит её, текущий ход будет потерян.",
+      "few": "{count} сессии в {name} сейчас выполняют ход. Удаление worktree остановит их, текущий ход будет потерян.",
+      "many": "{count} сессий в {name} сейчас выполняют ход. Удаление worktree остановит их, текущий ход будет потерян.",
+      "other": "{count} сессии в {name} сейчас выполняют ход. Удаление worktree остановит их, текущий ход будет потерян."
+    }
+  },
+  "pullsView": {
+    "tabFiles": "Файлы"
+  },
+  "pullsLogic": {
+    "failing": {
+      "one": "{count} проверка не пройдена, GitHub всё равно выполнит слияние",
+      "few": "{count} проверки не пройдены, GitHub всё равно выполнит слияние",
+      "many": "{count} проверок не пройдено, GitHub всё равно выполнит слияние",
+      "other": "{count} проверки не пройдено, GitHub всё равно выполнит слияние"
+    },
+    "durationSeconds": "{value} с",
+    "durationMinutes": "{value} мин",
+    "durationHours": "{value} ч"
+  },
+  "pullsPanels": {
+    "mergeFailing": "Слияние · не пройдено: {count}"
+  },
+  "pullsSubmit": {
+    "review": "Отправить ревью {count}",
+    "withComments": {
+      "one": "С {count} комментарием к строке.",
+      "few": "С {count} комментариями к строкам.",
+      "many": "С {count} комментариями к строкам.",
+      "other": "С {count} комментариями к строкам."
+    },
+    "send": "Отправить",
+    "sending": "Отправка…"
+  }
+}

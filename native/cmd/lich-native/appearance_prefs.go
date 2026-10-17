@@ -201,16 +201,21 @@ func (u *window) setCodeFont(family string, size unit.Sp) error {
 // families.
 const onestFamily = "Onest"
 
-// interfaceFonts are the interface's two faces as stored: its sans ("" for
-// System) and its monospace, the code's family.
-type interfaceFonts struct{ sans, mono string }
+// interfaceFonts are the interface's two faces as stored, its sans ("" for
+// System) and its monospace, the code's family, and the language its CJK
+// faces are picked for.
+type interfaceFonts struct {
+	sans, mono string
+	language   i18n.Locale
+}
 
 // setInterfaceFonts builds the interface's shaper again when its sans or its
 // monospace changed: System's sans for "", Onest from the binary, any other
 // through fonts.Load, the code's family for the paths, file names and
-// counts the interface sets in monospace, and hanFaces for the Chinese the
-// other two cannot draw.
+// counts the interface sets in monospace, and hanFaces for the CJK the
+// other two cannot draw, in the current interface language's own shapes.
 func (u *window) setInterfaceFonts(want interfaceFonts) error {
+	want.language = i18n.Current()
 	if u.uiFonts != nil && *u.uiFonts == want {
 		return nil
 	}
@@ -222,7 +227,7 @@ func (u *window) setInterfaceFonts(want interfaceFonts) error {
 	if err != nil {
 		return err
 	}
-	han, err := hanFaces()
+	han, err := hanFaces(want.language)
 	if err != nil {
 		return err
 	}
@@ -231,24 +236,24 @@ func (u *window) setInterfaceFonts(want interfaceFonts) error {
 	u.th.Shaper, u.theme.Shaper = shaper, shaper
 	u.theme.Sans, u.theme.Mono = sansTypeface, mono[0].Font.Typeface
 	u.uiFonts = &want
-	u.settings.languages.han = len(han) > 0
 	return nil
 }
 
 // reloadInterfaceFonts builds the interface's shaper again from the same
-// stored fonts, for a Chinese font downloaded since.
+// stored fonts, for a CJK font downloaded since.
 func (u *window) reloadInterfaceFonts() error {
 	want := *u.uiFonts
 	u.uiFonts = nil
 	return u.setInterfaceFonts(want)
 }
 
-// hanFaces are the faces the shaper falls back to for Chinese, whatever the
-// interface's language: an installed one, else the Noto Sans SC lich
-// downloaded, else none. A download that no longer hashes right counts as
-// none, so choosing Chinese offers it again.
-func hanFaces() ([]font.FontFace, error) {
-	installed, err := fonts.InstalledHan()
+// hanFaces are the faces the shaper falls back to for CJK: an installed one
+// for the interface's language (Simplified Chinese's for a language that is
+// not CJK), else the Noto Sans set lich downloaded for it, else none. A
+// download that no longer hashes right counts as none, so choosing the
+// language offers it again.
+func hanFaces(language i18n.Locale) ([]font.FontFace, error) {
+	installed, err := fonts.InstalledHan(string(language))
 	if err != nil || len(installed) > 0 {
 		return installed, err
 	}
@@ -256,12 +261,13 @@ func hanFaces() ([]font.FontFace, error) {
 	if err != nil {
 		return nil, err
 	}
-	downloaded, err := fonts.LoadDownloaded(fonts.NotoSansSC, dir)
+	family, files := fonts.NotoSansFor(string(language))
+	downloaded, err := fonts.LoadDownloaded(files, dir)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {
-		log.Printf("fonts: downloaded Chinese font unusable: %v", err)
+		log.Printf("fonts: downloaded %s unusable: %v", family, err)
 		return nil, nil
 	}
 	return downloaded, nil

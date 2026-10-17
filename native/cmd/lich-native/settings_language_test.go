@@ -62,26 +62,52 @@ func TestTheLanguageRowsAreSearchedInTheInterfaceLanguage(t *testing.T) {
 	}
 }
 
-func TestOnlyChineseWaitsForAChineseFont(t *testing.T) {
+func drawsNone(i18n.Locale) bool { return false }
+func drawsAll(i18n.Locale) bool  { return true }
+
+func drawsOnly(l i18n.Locale) func(i18n.Locale) bool {
+	return func(asked i18n.Locale) bool { return asked == l }
+}
+
+func isCJK(l i18n.Locale) bool { return l == i18n.ZhCN || l == i18n.JA || l == i18n.KO }
+
+func TestOnlyCJKLanguagesWaitForTheirFont(t *testing.T) {
 	for _, l := range i18n.Locales {
-		if got, want := needsHanFont(l, false), l == i18n.ZhCN; got != want {
-			t.Errorf("%s without a Chinese font: waits %v, want %v", l, got, want)
+		if got, want := needsHanFont(l, drawsNone), isCJK(l); got != want {
+			t.Errorf("%s without a CJK font: waits %v, want %v", l, got, want)
 		}
-		if needsHanFont(l, true) {
-			t.Errorf("%s waits with a Chinese font in place", l)
+		if needsHanFont(l, drawsAll) {
+			t.Errorf("%s waits with its font in place", l)
+		}
+		if needsHanFont(l, drawsOnly(l)) {
+			t.Errorf("%s waits with its own script drawn", l)
 		}
 	}
 }
 
-func TestALaunchInChineseWithoutAFontOpensInEnglishAndOffersIt(t *testing.T) {
-	if shown, offer := launchLanguage(i18n.ZhCN, false); shown != i18n.EN || !offer {
-		t.Errorf("no font: shown %s, offer %v", shown, offer)
+// A face for one CJK script is no face for another: Chinese's draws no kana
+// and no Hangul.
+func TestAChineseFontLeavesJapaneseAndKoreanWaiting(t *testing.T) {
+	for _, l := range []i18n.Locale{i18n.JA, i18n.KO} {
+		if !needsHanFont(l, drawsOnly(i18n.ZhCN)) {
+			t.Errorf("%s does not wait with only a Chinese font", l)
+		}
 	}
-	if shown, offer := launchLanguage(i18n.ZhCN, true); shown != i18n.ZhCN || offer {
-		t.Errorf("with a font: shown %s, offer %v", shown, offer)
+}
+
+func TestALaunchInCJKWithoutAFontOpensInEnglishAndOffersIt(t *testing.T) {
+	for _, l := range []i18n.Locale{i18n.ZhCN, i18n.JA, i18n.KO} {
+		if shown, offer := launchLanguage(l, drawsNone); shown != i18n.EN || !offer {
+			t.Errorf("%s, no font: shown %s, offer %v", l, shown, offer)
+		}
+		if shown, offer := launchLanguage(l, drawsOnly(l)); shown != l || offer {
+			t.Errorf("%s, with a font: shown %s, offer %v", l, shown, offer)
+		}
 	}
-	if shown, offer := launchLanguage(i18n.PtBR, false); shown != i18n.PtBR || offer {
-		t.Errorf("pt-BR: shown %s, offer %v", shown, offer)
+	for _, l := range []i18n.Locale{i18n.PtBR, i18n.RU} {
+		if shown, offer := launchLanguage(l, drawsNone); shown != l || offer {
+			t.Errorf("%s: shown %s, offer %v", l, shown, offer)
+		}
 	}
 }
 
@@ -89,6 +115,7 @@ func languageScreen(t *testing.T) *settingsScreen {
 	_, client := newSidebarBackend(t)
 	s := newSettingsScreen(t.Context(), client, new(ui.Root), func() {})
 	s.theme = &themePicker{toaster: new(ui.Toaster)}
+	s.languages.draws = drawsNone
 	i18n.SetCurrent(i18n.PtBR)
 	t.Cleanup(func() { i18n.SetCurrent(i18n.EN) })
 	return s
@@ -105,9 +132,18 @@ func TestChoosingChineseWithoutAFontAsksBeforeSwitching(t *testing.T) {
 	}
 }
 
+func TestChoosingJapaneseWithOnlyAChineseFontAsksForJapanese(t *testing.T) {
+	s := languageScreen(t)
+	s.languages.draws = drawsOnly(i18n.ZhCN)
+	s.chooseLanguage(i18n.JA)
+	if !s.languages.offer.open || s.languages.offer.target != i18n.JA || i18n.Current() != i18n.PtBR {
+		t.Errorf("offer open %v for %s, current %s", s.languages.offer.open, s.languages.offer.target, i18n.Current())
+	}
+}
+
 func TestChoosingChineseWithAFontSwitchesAtOnce(t *testing.T) {
 	s := languageScreen(t)
-	s.languages.han = true
+	s.languages.draws = drawsAll
 	s.chooseLanguage(i18n.ZhCN)
 	if s.languages.offer.open || i18n.Current() != i18n.ZhCN {
 		t.Errorf("open %v, current %s", s.languages.offer.open, i18n.Current())
@@ -117,11 +153,21 @@ func TestChoosingChineseWithAFontSwitchesAtOnce(t *testing.T) {
 func TestADownloadSwitchesOnlyOnceItsFontLoads(t *testing.T) {
 	s := languageScreen(t)
 	var applied []i18n.Locale
-	s.languages.reloadFonts = func() error { s.languages.han = true; return nil }
-	s.languages.offer.show(i18n.ZhCN, func(l i18n.Locale) { applied = append(applied, l) })
+	s.languages.reloadFonts = func() error { s.languages.draws = drawsOnly(i18n.KO); return nil }
+	s.languages.offer.show(i18n.KO, func(l i18n.Locale) { applied = append(applied, l) })
 	s.finishHanFontDownload(&hanFontOutcome{run: s.languages.offer.run})
-	if len(applied) != 1 || applied[0] != i18n.ZhCN || s.languages.offer.open {
+	if len(applied) != 1 || applied[0] != i18n.KO || s.languages.offer.open {
 		t.Errorf("applied %v, open %v", applied, s.languages.offer.open)
+	}
+}
+
+func TestADownloadThatDoesNotDrawTheLanguageKeepsIt(t *testing.T) {
+	s := languageScreen(t)
+	s.languages.reloadFonts = func() error { return nil }
+	s.languages.offer.show(i18n.JA, func(l i18n.Locale) { t.Errorf("switched to %s", l) })
+	s.finishHanFontDownload(&hanFontOutcome{run: s.languages.offer.run})
+	if s.languages.offer.open || i18n.Current() != i18n.PtBR {
+		t.Errorf("open %v, current %s", s.languages.offer.open, i18n.Current())
 	}
 }
 

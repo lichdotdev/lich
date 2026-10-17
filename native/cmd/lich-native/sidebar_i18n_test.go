@@ -25,6 +25,7 @@ func TestFormatAgeReadsLikeIntlInEveryLocale(t *testing.T) {
 		{i18n.PtBR, [3]string{"3 s", "3 min", "3 h"}},
 		{i18n.ES, [3]string{"3s", "3min", "3h"}},
 		{i18n.ZhCN, [3]string{"3秒", "3分钟", "3小时"}},
+		{i18n.KO, [3]string{"3초", "3분", "3시간"}},
 	}
 	for _, c := range cases {
 		inLocale(t, c.locale)
@@ -49,6 +50,7 @@ func TestAgoLabelReadsLikeIntlInEveryLocale(t *testing.T) {
 		{i18n.PtBR, [4]string{"há 3 min.", "há 3 h", "há 3 dias", "há 3 sem."}},
 		{i18n.ES, [4]string{"hace 3 min", "hace 3 h", "hace 3 d", "hace 3 sem."}},
 		{i18n.ZhCN, [4]string{"3分钟前", "3小时前", "3天前", "3周前"}},
+		{i18n.KO, [4]string{"3분 전", "3시간 전", "3일 전", "3주 전"}},
 	}
 	for _, c := range cases {
 		inLocale(t, c.locale)
@@ -104,6 +106,7 @@ func TestAroundValueSplitsAtThePlaceholder(t *testing.T) {
 	}{
 		{i18n.EN, "No matches for ", " in sessions"},
 		{i18n.ZhCN, "在sessions中没有与 ", " 匹配的结果"},
+		{i18n.KO, "sessions에서 ", "와(과) 일치하는 항목이 없습니다"},
 	}
 	for _, c := range cases {
 		inLocale(t, c.locale)

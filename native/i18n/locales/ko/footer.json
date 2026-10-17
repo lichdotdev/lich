@@ -1,0 +1,19 @@
+{
+  "item": {
+    "attach": {
+      "example": "파일 첨부"
+    },
+    "files": {
+      "example": "파일"
+    },
+    "model": {
+      "example": "모델"
+    }
+  },
+  "footerEditor": {
+    "previewHint": "미리 보기 · 예시 값"
+  },
+  "footerMenu": {
+    "customize": "하단 바 사용자 지정…"
+  }
+}

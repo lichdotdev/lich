@@ -38,3 +38,24 @@ func TestTheCopyNoticeIsSpanishWhenChosen(t *testing.T) {
 		t.Errorf("notice = %q, want the Spanish text", got)
 	}
 }
+
+func TestTheCopyNoticeIsJapaneseWhenChosen(t *testing.T) {
+	got := copyNotice(prompt.Japanese, "a.png")
+	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "a.png のコピーです") {
+		t.Errorf("notice = %q, want the Japanese text", got)
+	}
+}
+
+func TestTheCopyNoticeIsKoreanWhenChosen(t *testing.T) {
+	got := copyNotice(prompt.Korean, "a.png")
+	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "a.png의 사본") {
+		t.Errorf("notice = %q, want the Korean text", got)
+	}
+}
+
+func TestTheCopyNoticeIsRussianWhenChosen(t *testing.T) {
+	got := copyNotice(prompt.Russian, "a.png")
+	if got == copyNotice(prompt.English, "a.png") || !strings.Contains(got, "копия a.png") {
+		t.Errorf("notice = %q, want the Russian text", got)
+	}
+}

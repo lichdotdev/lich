@@ -21,10 +21,13 @@ const (
 	PortugueseBR Lang = "pt-BR"
 	Spanish      Lang = "es"
 	ChineseCN    Lang = "zh-CN"
+	Japanese     Lang = "ja"
+	Korean       Lang = "ko"
+	Russian      Lang = "ru"
 )
 
 // Langs is every language a catalog exists for, English first as the default.
-var Langs = []Lang{English, PortugueseBR, Spanish, ChineseCN}
+var Langs = []Lang{English, PortugueseBR, Spanish, ChineseCN, Japanese, Korean, Russian}
 
 // EnvVar is the variable lich exports into every session PTY with the prompt
 // language at spawn time. Text composed outside the lich process (the lich CLI,
@@ -49,6 +52,9 @@ var catalogs = map[Lang]*Catalog{
 	PortugueseBR: &ptBR,
 	Spanish:      &es,
 	ChineseCN:    &zhCN,
+	Japanese:     &ja,
+	Korean:       &ko,
+	Russian:      &ru,
 }
 
 // For is the catalog of a language. A Lang that came through Parse always has
@@ -61,25 +67,46 @@ func For(lang Lang) *Catalog {
 	return catalog
 }
 
-// Plural is a text that changes with a count. Only the two forms both catalogs
-// need exist; a language with more CLDR forms adds fields when it arrives.
+// Plural is a text that changes with a count, one field per CLDR form. Few
+// and Many are written only by a language whose rule selects them (Russian)
+// and stay empty elsewhere.
 type Plural struct {
 	One   string
+	Few   string
+	Many  string
 	Other string
 }
 
 // Pick is the form of p this catalog's language uses for n.
 func (c *Catalog) Pick(n int, p Plural) string {
-	if c.isOne(n) {
+	switch {
+	case c.isOne(n):
 		return p.One
+	case c.isFew != nil && c.isFew(n):
+		return p.Few
+	case c.isMany != nil && c.isMany(n):
+		return p.Many
 	}
 	return p.Other
 }
 
 // isOneEnglish, isOnePortuguese and isOneSpanish are the CLDR "one" rules for
 // integers: Portuguese counts zero as singular, English and Spanish do not.
-// Chinese has no plural: isOneChinese is never true, so Pick always returns Other.
+// Chinese, Japanese and Korean have no plural: isOneChinese, isOneJapanese and
+// isOneKorean are never true, so Pick always returns Other.
 func isOneEnglish(n int) bool    { return n == 1 }
 func isOnePortuguese(n int) bool { return n == 0 || n == 1 }
 func isOneSpanish(n int) bool    { return n == 1 }
 func isOneChinese(int) bool      { return false }
+func isOneJapanese(int) bool     { return false }
+func isOneKorean(int) bool       { return false }
+
+// isOneRussian, isFewRussian and isManyRussian are Russian's CLDR rules for
+// integers: one is 1, 21, 31... but not 11; few is 2-4, 22-24... but not
+// 12-14; many is every other integer, 0 and 11-14 included. CLDR's other is
+// left to fractions, which no count here is.
+func isOneRussian(n int) bool { return n%10 == 1 && n%100 != 11 }
+func isFewRussian(n int) bool {
+	return n%10 >= 2 && n%10 <= 4 && (n%100 < 12 || n%100 > 14)
+}
+func isManyRussian(n int) bool { return !isOneRussian(n) && !isFewRussian(n) }

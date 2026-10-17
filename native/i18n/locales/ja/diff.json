@@ -1,0 +1,91 @@
+{
+  "binaryPreview": {
+    "before": "変更前",
+    "after": "変更後",
+    "added": "追加",
+    "deleted": "削除",
+    "binary": "バイナリファイル",
+    "loading": "読み込み中…",
+    "missing": "このリビジョンには存在しません"
+  },
+  "commentBatch": {
+    "openSession": "これらのコメントを送るセッションを開いてください",
+    "notePlaceholder": "変更全体についてのメモ…",
+    "count": {
+      "one": "{count} 件のコメント",
+      "other": "{count} 件のコメント"
+    },
+    "clear": "クリア",
+    "send": "送信"
+  },
+  "diffBulk": {
+    "collapseAll": "すべてのファイルを折りたたむ",
+    "expandAll": "すべてのファイルを展開"
+  },
+  "discardDialog": {
+    "title": "変更を破棄",
+    "description": "{path} のコミットされていない変更をすべて元に戻しますか？この操作は取り消せません。",
+    "descriptionAdded": "{path} のコミットされていない変更をすべて元に戻しますか？ファイルはディスクから削除されます。この操作は取り消せません。",
+    "confirm": "変更を破棄"
+  },
+  "injectMenu": {
+    "injectFile": "ファイルを挿入",
+    "injectLines": "行を挿入",
+    "injectLinesRange": "行 {lines} を挿入",
+    "sessionComment": "セッションへのコメント…",
+    "sessionCommentRange": "セッションへのコメント {lines}…",
+    "reviewComment": "プルリクエストにコメント…",
+    "reviewCommentRange": "プルリクエストにコメント {lines}…",
+    "revertSelected": "選択した行を元に戻す",
+    "revert": {
+      "one": "変更された {count} 行を元に戻す",
+      "other": "変更された {count} 行を元に戻す"
+    }
+  },
+  "fileDiff": {
+    "readFailed": "{path} を読み込めませんでした",
+    "whitespaceOnly": "空白のみ",
+    "onlyWhitespaceChanged": "空白のみ変更されました",
+    "addAsContext": "ファイルをコンテキストとして追加",
+    "discard": "変更を破棄",
+    "viewed": "確認済み"
+  },
+  "reviewPanel": {
+    "discardFailed": "変更を破棄できませんでした: {error}",
+    "reverted": "{name} の +{added} -{deleted} を元に戻しました",
+    "undo": "元に戻す",
+    "undoFailed": "{name} での復元を取り消せませんでした",
+    "revertFailed": "{name} の行を元に戻せませんでした",
+    "notRepository": "git リポジトリではありません",
+    "loading": "読み込み中…",
+    "noChanges": "コミットされていない変更はありません",
+    "squeezed": "左右に並べて表示するにはパネルの幅が足りません"
+  },
+  "reviewSlots": {
+    "forSession": "セッション向け · {lines}",
+    "onPullRequest": "プルリクエスト上 · {lines}",
+    "addToBatch": "バッチに追加",
+    "addToReview": "レビューに追加",
+    "sessionPlaceholder": "ここで何を変えるべきですか？ほかのコメントと一緒にセッションへ送られます。",
+    "reviewPlaceholder": "コメントを残してください。レビューを送信したときに送られます。"
+  },
+  "dockReviewBody": {
+    "split": "左右に並べる",
+    "unified": "統合"
+  },
+  "binaryState": {
+    "open": "既定のアプリで開く",
+    "reveal": "フォルダーに表示",
+    "pdf": "PDF ドキュメント",
+    "pdfHint": "デスクトップで PDF を開くアプリで開きます。",
+    "openFailed": "{name} を開けませんでした",
+    "revealFailed": "{name} をフォルダーに表示できませんでした"
+  },
+  "dockReviewBinary": {
+    "viewOnGitHub": "GitHub で表示"
+  },
+  "blobPreview": {
+    "tooManyPixels": "{width} × {height} はプレビュー上限の {megapixels} MP を超えています",
+    "undecodable": "この画像はデコードできません: {error}"
+  }
+}

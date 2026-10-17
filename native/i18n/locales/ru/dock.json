@@ -1,0 +1,26 @@
+{
+  "rightDock": {
+    "tabCode": "Код",
+    "tabReview": "Ревью",
+    "exitFullScreen": "Выйти из полноэкранного режима",
+    "fullScreen": "Во весь экран",
+    "closePanel": "Закрыть панель"
+  },
+  "searchResults": {
+    "prompt": "Поиск по тексту всех файлов в этой рабочей копии",
+    "searching": "Поиск…",
+    "noMatch": "Нет файлов, содержащих «{query}»"
+  },
+  "filesPanel": {
+    "searchPlaceholder": "Поиск в файлах",
+    "filterPlaceholder": "Фильтр по имени",
+    "byName": "Имя",
+    "byText": "Текст",
+    "readFailed": "Не удалось прочитать эту папку",
+    "loading": "Загрузка…",
+    "noMatch": "Нет подходящих файлов",
+    "empty": "Здесь нет файлов",
+    "backToTree": "Назад к дереву файлов",
+    "readOnly": "только чтение"
+  }
+}

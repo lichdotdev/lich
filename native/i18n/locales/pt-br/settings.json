@@ -8,11 +8,11 @@
     "uiSearchWords": "idioma língua tradução inglês português",
     "promptSearchWords": "idioma língua tradução agente instruções mensagens inglês português",
     "promptSaveFailed": "Não foi possível salvar o idioma dos prompts: {error}",
-    "hanFontTitle": "Baixar a fonte chinesa?",
-    "hanFontDescription": "O chinês precisa da fonte Noto Sans SC, e nenhuma fonte instalada neste computador desenha chinês. O lich pode baixá-la (cerca de {size} MB) e guardá-la na própria pasta.",
+    "hanFontTitle": "Baixar a fonte para {language}?",
+    "hanFontDescription": "{language} precisa da fonte {font}, e nenhuma fonte instalada neste computador desenha esse idioma. O lich pode baixá-la (cerca de {size} MB) e guardá-la na própria pasta.",
     "hanFontDownload": "Baixar",
     "hanFontProgress": "Baixando… {done} de {total} MB",
-    "hanFontFailed": "Não foi possível baixar a fonte chinesa: {error}"
+    "hanFontFailed": "Não foi possível baixar a fonte {font}: {error}"
   },
   "settings": {
     "search": "Buscar configurações",

@@ -54,8 +54,8 @@ Then, in the same PR:
 7. **Tests stay in English.** Assert another locale with `setLocale(...)` / a `prompt.Langs` loop, never
    by editing an English assertion.
 8. **Provider symmetry.** Prompt text reaches all eight providers through the relay. The spawn briefing
-   only exists where `docs/ceilings.md` says it does; a gap that grows goes there and in both README
-   provider tables.
+   only exists where `docs/ceilings.md` says it does; a gap that grows goes there and in every README
+   provider table.
 
 ### The native window
 
@@ -112,7 +112,7 @@ language at the **end** of every list so parallel additions merge as a union.
 **Docs**
 - `docs/hooks/README.md`: the accepted `LICH_PROMPT_LANG` values.
 - `CHANGELOG.md` `[Unreleased]` › Added.
-- README / README.zh-CN only if they enumerate languages.
+- README.md and each README.<lang>.md only if they enumerate languages.
 
 **Companion repo** `lichdotdev/lich-plugin` (separate PR, after lich's)
 - `hooks/prompt-text.js`: a catalog object registered under the exact tag.

@@ -3,7 +3,10 @@ import { readPref, writePref } from "@/lib/prefs"
 import type { At, ParamsArg, PluralForms, Shape } from "./catalog"
 import { en, type MessageKey, type Messages } from "./locales/en"
 import { es } from "./locales/es"
+import { ja } from "./locales/ja"
+import { ko } from "./locales/ko"
 import { ptBR } from "./locales/pt-br"
+import { ru } from "./locales/ru"
 import { zhCN } from "./locales/zh-cn"
 
 // The interface language. It is a page preference, not a workspace setting:
@@ -12,7 +15,7 @@ import { zhCN } from "./locales/zh-cn"
 // setting on purpose (prompt-language-store.ts, internal/prompt): people often
 // run the interface in one language and talk to their agents in another.
 
-export const LOCALES = ["en", "pt-BR", "es", "zh-CN"] as const
+export const LOCALES = ["en", "pt-BR", "es", "zh-CN", "ja", "ko", "ru"] as const
 export type Locale = (typeof LOCALES)[number]
 
 /** Each language named in itself, which is how someone who cannot read the
@@ -22,9 +25,20 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   "pt-BR": "Português (Brasil)",
   es: "Español",
   "zh-CN": "简体中文",
+  ja: "日本語",
+  ko: "한국어",
+  ru: "Русский",
 }
 
-const CATALOGS: Record<Locale, Shape<Messages>> = { en, "pt-BR": ptBR, es, "zh-CN": zhCN }
+const CATALOGS: Record<Locale, Shape<Messages>> = {
+  en,
+  "pt-BR": ptBR,
+  es,
+  "zh-CN": zhCN,
+  ja,
+  ko,
+  ru,
+}
 
 export const UI_LANGUAGE_PREF = "lich.appearance.language"
 // The backend setting the native window reads its language from; the page

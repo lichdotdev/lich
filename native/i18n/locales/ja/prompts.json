@@ -1,0 +1,20 @@
+{
+  "pullRequest": {
+    "conflicts": "プルリクエスト #{number}（{branch}）に {base} とのマージコンフリクトがあります。解決してください。",
+    "checksUnnamed": {
+      "one": "プルリクエスト #{number}（{branch}）で CI が失敗しています。{count} 件のチェックが失敗しています。どのチェックかを特定して修正してください。",
+      "other": "プルリクエスト #{number}（{branch}）で CI が失敗しています。{count} 件のチェックが失敗しています。どのチェックかを特定して修正してください。"
+    },
+    "checksListed": "プルリクエスト #{number}（{branch}）で CI が失敗しています。次のチェックを修正してください:\n\n{checks}",
+    "checksOmitted": {
+      "one": "\n\n…ほかに、一覧にない失敗したチェックが {count} 件あります。",
+      "other": "\n\n…ほかに、一覧にない失敗したチェックが {count} 件あります。"
+    }
+  },
+  "reviewComments": {
+    "header": "レビューコメント:"
+  },
+  "issue": {
+    "head": "GitHub issue #{number}: {title}\n{url}"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "baseStatus": {
+    "behind": {
+      "other": "{base}보다 커밋 {count}개 뒤처짐"
+    },
+    "conflict": {
+      "other": "파일 {count}개에 충돌"
+    }
+  },
+  "fileSearch": {
+    "cutMatches": "{count}개 이상 일치",
+    "summary": "{files}에서 {matches}",
+    "matches": {
+      "other": "{count}개 일치"
+    },
+    "cutNote": "일치하는 처음 {count}줄만 표시합니다. 검색 범위를 좁히세요.",
+    "tooLarge": {
+      "other": "1 MB를 넘는 파일 {count}개는 검색하지 않았습니다."
+    }
+  },
+  "fileTree": {
+    "hidden": "숨김: {names}.",
+    "cut": "이 폴더에는 트리에 표시할 수 있는 것보다 많은 파일이 있습니다."
+  },
+  "codemirror": {
+    "expand": {
+      "other": "변경되지 않은 줄 {count}개 펼치기"
+    },
+    "revert": "되돌리기"
+  }
+}

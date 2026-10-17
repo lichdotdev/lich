@@ -8,11 +8,11 @@
     "uiSearchWords": "idioma language locale traducción inglés english portugués portuguese español spanish",
     "promptSearchWords": "idioma language locale traducción agente briefing relay inglés english portugués portuguese español spanish",
     "promptSaveFailed": "No se pudo guardar el idioma de los prompts: {error}",
-    "hanFontTitle": "¿Descargar la fuente china?",
-    "hanFontDescription": "El chino necesita la fuente Noto Sans SC, y ninguna fuente instalada en este equipo dibuja chino. lich puede descargarla (unos {size} MB) y guardarla en su propia carpeta.",
+    "hanFontTitle": "¿Descargar la fuente para {language}?",
+    "hanFontDescription": "{language} necesita la fuente {font}, y ninguna fuente instalada en este equipo dibuja ese idioma. lich puede descargarla (unos {size} MB) y guardarla en su propia carpeta.",
     "hanFontDownload": "Descargar",
     "hanFontProgress": "Descargando… {done} de {total} MB",
-    "hanFontFailed": "No se pudo descargar la fuente china: {error}"
+    "hanFontFailed": "No se pudo descargar la fuente {font}: {error}"
   },
   "settings": {
     "search": "Buscar ajustes",

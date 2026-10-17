@@ -90,17 +90,17 @@ func Locate(f font.Font) (Location, error) {
 	return loc, nil
 }
 
-// locateHan is the face, among the platform's Chinese families first, that
-// draws hanProbe in weight w, or no Location when none does.
-func locateHan(w font.Weight) (Location, error) {
+// locateHan is the face, among the platform's families for c first, that
+// draws c's probe in weight w, or no Location when none does.
+func locateHan(c cjk, w font.Weight) (Location, error) {
 	var loc Location
 	err := withFontMap(func(fm *fontscan.FontMap) {
-		fm.SetQuery(fontscan.Query{Families: append(slices.Clone(preferredHan), SystemSans), Aspect: aspectOf(font.Font{Weight: w})})
-		face := fm.ResolveFace(hanProbe)
+		fm.SetQuery(fontscan.Query{Families: append(slices.Clone(preferredHan[c]), SystemSans), Aspect: aspectOf(font.Font{Weight: w})})
+		face := fm.ResolveFace(hanProbes[c])
 		if face == nil {
 			return
 		}
-		if _, ok := face.NominalGlyph(hanProbe); ok {
+		if _, ok := face.NominalGlyph(hanProbes[c]); ok {
 			id := fm.FontLocation(face.Font)
 			loc = Location{Path: id.File, Index: int(id.Index)}
 		}

@@ -31,3 +31,27 @@ func TestSessionEnvExportsSpanish(t *testing.T) {
 		t.Errorf("the chosen language was not exported: %v", env)
 	}
 }
+
+func TestSessionEnvExportsJapanese(t *testing.T) {
+	s := &Service{env: []string{"A=1"}, store: stubBins{}, ws: &transport{port: 4321, token: "tok"}}
+	s.SetPromptLanguage(func() prompt.Lang { return prompt.Japanese })
+	if env := s.sessionEnv("sess", "p1", ""); !slices.Contains(env, "LICH_PROMPT_LANG=ja") {
+		t.Errorf("the chosen language was not exported: %v", env)
+	}
+}
+
+func TestSessionEnvExportsKorean(t *testing.T) {
+	s := &Service{env: []string{"A=1"}, store: stubBins{}, ws: &transport{port: 4321, token: "tok"}}
+	s.SetPromptLanguage(func() prompt.Lang { return prompt.Korean })
+	if env := s.sessionEnv("sess", "p1", ""); !slices.Contains(env, "LICH_PROMPT_LANG=ko") {
+		t.Errorf("the chosen language was not exported: %v", env)
+	}
+}
+
+func TestSessionEnvExportsRussian(t *testing.T) {
+	s := &Service{env: []string{"A=1"}, store: stubBins{}, ws: &transport{port: 4321, token: "tok"}}
+	s.SetPromptLanguage(func() prompt.Lang { return prompt.Russian })
+	if env := s.sessionEnv("sess", "p1", ""); !slices.Contains(env, "LICH_PROMPT_LANG=ru") {
+		t.Errorf("the chosen language was not exported: %v", env)
+	}
+}

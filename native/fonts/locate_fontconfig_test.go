@@ -23,3 +23,14 @@ func TestParseFamilyLines(t *testing.T) {
 		t.Errorf("parsed %v", got)
 	}
 }
+
+func TestParseFamilyMatchKeepsOnlyTheFamilyAskedFor(t *testing.T) {
+	out := "Noto Sans CJK JP,Noto Sans CJK JP Regular\n/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc\n0"
+	got, err := parseFamilyMatch(out, "Noto Sans CJK JP")
+	if err != nil || got != (Location{Path: "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", Index: 0}) {
+		t.Errorf("got %+v, %v", got, err)
+	}
+	if got, err := parseFamilyMatch("Noto Sans\n/usr/share/fonts/noto/NotoSans-Regular.ttf\n0", "Noto Sans CJK JP"); err != nil || got.Path != "" {
+		t.Errorf("a substitute family read as %+v, %v", got, err)
+	}
+}

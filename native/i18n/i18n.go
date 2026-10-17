@@ -31,10 +31,13 @@ const (
 	PtBR Locale = "pt-BR"
 	ES   Locale = "es"
 	ZhCN Locale = "zh-CN"
+	JA   Locale = "ja"
+	KO   Locale = "ko"
+	RU   Locale = "ru"
 )
 
 // Locales are the languages the pickers offer, in the web window's order.
-var Locales = []Locale{EN, PtBR, ES, ZhCN}
+var Locales = []Locale{EN, PtBR, ES, ZhCN, JA, KO, RU}
 
 // Name is the language named in itself, which is how someone who cannot read
 // the current interface still finds their own.
@@ -46,6 +49,12 @@ func (l Locale) Name() string {
 		return "Español"
 	case ZhCN:
 		return "简体中文"
+	case JA:
+		return "日本語"
+	case KO:
+		return "한국어"
+	case RU:
+		return "Русский"
 	}
 	return "English"
 }
