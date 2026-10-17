@@ -51,7 +51,8 @@
     "ruleNote": "{base}에 규칙 세트가 적용됩니다. 모든 커밋에서 {clauses}."
   },
   "pullsChecks": {
-    "none": "보고된 체크가 없습니다."
+    "none": "보고된 체크가 없습니다.",
+    "required": "필수"
   },
   "pullsCommits": {
     "none": "커밋이 없습니다."

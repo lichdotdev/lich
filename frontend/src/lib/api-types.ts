@@ -120,6 +120,8 @@ export interface CheckItem {
   /** gh's ISO timestamps; "" while a check has not started or finished. */
   startedAt: string
   completedAt: string
+  /** The check gates the merge, as GitHub's own checks list labels Required. */
+  required: boolean
 }
 
 /** internal/project.PRCommit — one commit of the PR, for the Commits tab. */

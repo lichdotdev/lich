@@ -51,7 +51,8 @@
     "ruleNote": "{base} にはルールセットが適用されています: すべてのコミットについて、{clauses}。"
   },
   "pullsChecks": {
-    "none": "報告されたチェックはありません。"
+    "none": "報告されたチェックはありません。",
+    "required": "必須"
   },
   "pullsCommits": {
     "none": "コミットはありません。"

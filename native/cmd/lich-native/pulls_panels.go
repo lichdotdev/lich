@@ -375,6 +375,12 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d lichclient.PRDetail, act *pu
 							}),
 						)
 					}),
+					layout.Rigid(func(gtx C) D {
+						if !c.Required {
+							return D{}
+						}
+						return layout.Inset{Right: ui.Space(3)}.Layout(gtx, paletteChip(th, i18n.T("pulls.pullsChecks.required"), th.MutedForeground))
+					}),
 					layout.Rigid(th.Text(ui.TextXS, checkDuration(c.StartedAt, c.CompletedAt, now)).Muted().Layout),
 				)
 			})

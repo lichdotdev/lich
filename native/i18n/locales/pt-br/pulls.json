@@ -51,7 +51,8 @@
     "ruleNote": "Um ruleset governa {base}: em todo commit, {clauses}."
   },
   "pullsChecks": {
-    "none": "Nenhuma verificação reportada."
+    "none": "Nenhuma verificação reportada.",
+    "required": "Obrigatório"
   },
   "pullsCommits": {
     "none": "Nenhum commit."

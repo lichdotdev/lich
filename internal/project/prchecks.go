@@ -1,6 +1,10 @@
 package project
 
-import "sort"
+import (
+	"encoding/json"
+	"fmt"
+	"sort"
+)
 
 // gh reports a pull request's CI as a mixed array of two unrelated shapes. This
 // file is the whole translation from that array into the two things the screen
@@ -27,6 +31,9 @@ type CheckItem struct {
 	URL         string `json:"url"`         // where to read the run; "" when gh reports none
 	StartedAt   string `json:"startedAt"`
 	CompletedAt string `json:"completedAt"`
+	// Required is GitHub's own answer to "does this check gate the merge", the
+	// same verdict its checks list labels Required.
+	Required bool `json:"required"`
 }
 
 // checkItem is one statusCheckRollup entry. gh emits two shapes: a CheckRun
@@ -127,4 +134,84 @@ func toCheckItems(items []checkItem) []CheckItem {
 		return checkOrder[out[i].State] < checkOrder[out[j].State]
 	})
 	return out
+}
+
+// requiredChecksQuery asks GitHub which of the head commit's checks gate this
+// pull request's merge. gh's `pr view --json statusCheckRollup` does not carry
+// isRequired, which takes the pull request as an argument. The aliases fold a
+// StatusContext into a CheckRun's field names.
+// ponytail: first 100 checks only; a check past that never reads Required.
+const requiredChecksQuery = `query($owner:String!,$repo:String!,$number:Int!){
+  repository(owner:$owner,name:$repo){
+    pullRequest(number:$number){
+      commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){nodes{
+        ... on CheckRun{name detailsUrl isRequired(pullRequestNumber:$number)}
+        ... on StatusContext{name:context detailsUrl:targetUrl isRequired(pullRequestNumber:$number)}
+      }}}}}}
+    }
+  }
+}`
+
+// markRequiredChecks flags the checks that gate the merge of pull request
+// number. Checks are matched by name and URL: a name alone repeats across
+// workflows ("test" in two of them), and the URL names the run.
+func (s *Service) markRequiredChecks(path string, number int, checks []CheckItem) error {
+	out, err := s.gh(prReadTimeout, path, "api", "graphql",
+		"-F", "owner={owner}", "-F", "repo={repo}",
+		"-F", fmt.Sprintf("number=%d", number),
+		"-f", "query="+requiredChecksQuery)
+	if err != nil {
+		return err
+	}
+	required, err := parseRequiredChecks(out)
+	if err != nil {
+		return err
+	}
+	for i := range checks {
+		checks[i].Required = required[checkKey(checks[i].Name, checks[i].URL)]
+	}
+	return nil
+}
+
+func checkKey(name, url string) string { return name + "\n" + url }
+
+func parseRequiredChecks(out []byte) (map[string]bool, error) {
+	var payload struct {
+		Data struct {
+			Repository struct {
+				PullRequest struct {
+					Commits struct {
+						Nodes []struct {
+							Commit struct {
+								StatusCheckRollup *struct {
+									Contexts struct {
+										Nodes []struct {
+											Name       string `json:"name"`
+											DetailsURL string `json:"detailsUrl"`
+											IsRequired bool   `json:"isRequired"`
+										} `json:"nodes"`
+									} `json:"contexts"`
+								} `json:"statusCheckRollup"`
+							} `json:"commit"`
+						} `json:"nodes"`
+					} `json:"commits"`
+				} `json:"pullRequest"`
+			} `json:"repository"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(out, &payload); err != nil {
+		return nil, errUnreadableAnswer(err)
+	}
+	required := map[string]bool{}
+	for _, c := range payload.Data.Repository.PullRequest.Commits.Nodes {
+		if c.Commit.StatusCheckRollup == nil {
+			continue
+		}
+		for _, n := range c.Commit.StatusCheckRollup.Contexts.Nodes {
+			if n.IsRequired {
+				required[checkKey(n.Name, n.DetailsURL)] = true
+			}
+		}
+	}
+	return required, nil
 }

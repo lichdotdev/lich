@@ -51,7 +51,8 @@
     "ruleNote": "规则集约束着 {base}：对每个提交，{clauses}。"
   },
   "pullsChecks": {
-    "none": "没有检查结果。"
+    "none": "没有检查结果。",
+    "required": "必需"
   },
   "pullsCommits": {
     "none": "没有提交。"

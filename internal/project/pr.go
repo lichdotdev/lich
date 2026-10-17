@@ -213,7 +213,14 @@ func (s *Service) PullRequestDetail(path string, number int) (*PRDetail, error) 
 	// The OPEN-only gate belongs to the branch lookup alone. Naming a number is
 	// asking for that pull request, whatever became of it — the list can show
 	// merged and closed ones, and a row that cannot be opened is not a row.
-	return parsePRDetail(out, number == 0)
+	detail, err := parsePRDetail(out, number == 0)
+	if err != nil || detail == nil || len(detail.CheckRuns) == 0 {
+		return detail, err
+	}
+	if err := s.markRequiredChecks(path, detail.Number, detail.CheckRuns); err != nil {
+		return nil, err
+	}
+	return detail, nil
 }
 
 // parsePRDetail decodes gh's JSON and reduces the check rollup. With openOnly it

@@ -51,7 +51,8 @@
     "ruleNote": "Un conjunto de reglas gobierna {base}: cada commit {clauses}."
   },
   "pullsChecks": {
-    "none": "No se informó ninguna comprobación."
+    "none": "No se informó ninguna comprobación.",
+    "required": "Obligatorio"
   },
   "pullsCommits": {
     "none": "No hay commits."

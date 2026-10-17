@@ -33,6 +33,7 @@ const run = (name: string, state: CheckItem["state"] = "failed"): CheckItem => (
   url: `https://github.com/o/l/runs/${name}`,
   startedAt: "",
   completedAt: "",
+  required: false,
 })
 
 const red = (names: string[]): Partial<PullRequestDetail> => ({

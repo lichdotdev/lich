@@ -28,6 +28,7 @@ type CheckItem struct {
 	URL         string `json:"url"`
 	StartedAt   string `json:"startedAt"`
 	CompletedAt string `json:"completedAt"`
+	Required    bool   `json:"required"`
 }
 
 // PRSummary mirrors project.PRSummary: one row of the list.
