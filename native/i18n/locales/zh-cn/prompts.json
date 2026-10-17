@@ -9,13 +9,7 @@
     "checksOmitted": {
       "one": "\n\n…另有 {count} 项失败的检查未列出。",
       "other": "\n\n…另有 {count} 项失败的检查未列出。"
-    },
-    "create": "分支 {branch} 还没有拉取请求。请用 `gh pr create` 创建一个：如果分支尚未推送到远程，先推送；根据提交和与基础分支的差异撰写标题和正文；如果仓库有拉取请求模板，请遵循该模板。"
-  },
-  "delegate": {
-    "session": "委派给“{target}”会话：",
-    "newWorktree": "委派给一个新的工作树会话：",
-    "newWorktreeWithCommand": "委派给一个新的工作树会话（运行 `lich open --worktree <branch> --prompt <task>`）："
+    }
   },
   "reviewComments": {
     "header": "审查评论："

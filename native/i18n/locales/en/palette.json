@@ -1,14 +1,9 @@
 {
   "commandPalette": {
-    "title": "Command palette",
     "placeholder": "Jump to a session, project or something said, or type > for actions…",
-    "searchLabel": "Search sessions and projects",
-    "resultsLabel": "Results",
-    "filterLabel": "Filter results",
     "forgetFailed": "Could not forget {label}: {error}",
     "resumeFailed": "Could not resume {label}: {error}",
     "actionUnavailable": "{label} is not available here",
-    "showBeside": "show beside",
     "nothingClosed": "Nothing closed yet",
     "nothingClosedHint": "Close a session and it waits here — its branch, its agent and its conversation — until its worktree is removed.",
     "noMatches": "No matches for {query}",

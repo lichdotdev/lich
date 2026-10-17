@@ -1,25 +1,13 @@
 {
-  "homeTab": {
-    "home": "主页"
-  },
   "notificationsButton": {
     "title": "通知",
-    "titlePending": "通知，{count} 条待处理",
-    "caughtUp": "你已处理完所有通知",
-    "dismiss": "忽略 {name}"
+    "caughtUp": "你已处理完所有通知"
   },
   "openProjectMenu": {
     "open": "打开项目",
     "recent": "最近的项目",
     "relocate": "重新定位",
-    "openFolder": "打开文件夹…",
-    "moreClosed": {
-      "one": "还有 {count} 个已关闭的项目，请在命令面板中搜索",
-      "other": "还有 {count} 个已关闭的项目，请在命令面板中搜索"
-    }
-  },
-  "projectTab": {
-    "close": "关闭 {name}"
+    "openFolder": "打开文件夹…"
   },
   "projectTabs": {
     "pullRequests": "拉取请求",

@@ -1,15 +1,10 @@
 {
   "rightDock": {
-    "fileBrowser": "Explorador de archivos",
-    "reviewChanges": "Revisar cambios",
     "tabCode": "Código",
     "tabReview": "Revisión",
     "exitFullScreen": "Salir de pantalla completa",
     "fullScreen": "Pantalla completa",
-    "closePanel": "Cerrar panel",
-    "fileTree": "El árbol de archivos",
-    "reviewPanel": "El panel de revisión",
-    "resizePanel": "Cambiar el tamaño del panel"
+    "closePanel": "Cerrar panel"
   },
   "searchResults": {
     "prompt": "Busca el texto de cada archivo de este checkout",
@@ -19,9 +14,6 @@
   "filesPanel": {
     "searchPlaceholder": "Buscar en archivos",
     "filterPlaceholder": "Filtrar por nombre",
-    "searchLabel": "Buscar en archivos",
-    "filterLabel": "Filtrar archivos por nombre",
-    "matchesLabel": "Lo que coincide con el campo",
     "byName": "Nombre",
     "byText": "Texto",
     "readFailed": "No se pudo leer esta carpeta",

@@ -60,7 +60,9 @@ Then, in the same PR:
 ### The native window
 
 The native catalogs were seeded once from the web's and keep its keys, placeholders and plural objects, so
-a string ported from a web component reuses the web's key. From the seed on, each window owns its own
+a string ported from a web component reuses the web's key. They hold only what the native window reads: a
+message ported later is copied from `frontend/src/lib/i18n/locales/*` under the same key, in every locale,
+with its translations. From the seed on, each window owns its own
 catalogs: a native-only message lands only in `native/i18n/locales/*`, and a copy fix to a message both
 windows show lands in both until the cutover retires the web window.
 

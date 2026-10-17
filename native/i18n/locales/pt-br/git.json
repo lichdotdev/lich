@@ -26,21 +26,11 @@
     "hidden": "Ocultos: {names}.",
     "cut": "Esta pasta tem mais arquivos do que a árvore consegue listar."
   },
-  "lastTurn": {
-    "saidPreviousTurn": "do turno anterior",
-    "noTurnWindow": "{name} não informa o início nem o fim de um turno, então não há janela para delimitar."
-  },
-  "carry": {
-    "reused": "{name} já existia, então foi aberto como estava. O trabalho não commitado não foi transferido.",
-    "failed": "Não foi possível transferir o trabalho não commitado: {error}"
-  },
   "codemirror": {
     "expand": {
       "one": "Expandir {count} linha sem alteração",
       "other": "Expandir {count} linhas sem alteração"
     },
-    "showLines": "Mostrar linhas {from}–{to}",
-    "revertTitle": "Reverter esta alteração",
     "revert": "Reverter"
   }
 }

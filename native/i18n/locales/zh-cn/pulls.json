@@ -23,8 +23,7 @@
     "subject": "提交消息",
     "body": "详细描述",
     "optional": "可选",
-    "merging": "正在合并…",
-    "merge": "合并"
+    "merging": "正在合并…"
   },
   "mergeGate": {
     "changesRequested": "评审者请求了更改",
@@ -51,25 +50,6 @@
     },
     "ruleNote": "规则集约束着 {base}：对每个提交，{clauses}。"
   },
-  "commitAuthors": {
-    "committed": "{who} 于 {date} 提交",
-    "committedOn": "提交于 {date}",
-    "noAccount": "未关联 GitHub 账号",
-    "committedByNoAccount": "由未关联 GitHub 账号的地址提交",
-    "strays": {
-      "one": "有 {count} 个提交归在 {logins} 名下，而不是 @{author}。",
-      "other": "有 {count} 个提交归在 {logins} 名下，而不是 @{author}。"
-    },
-    "orphans": {
-      "one": "有 {count} 个提交未关联 GitHub 账号。",
-      "other": "有 {count} 个提交未关联 GitHub 账号。"
-    },
-    "orphansWithEmails": {
-      "one": "有 {count} 个提交未关联 GitHub 账号：{emails}。",
-      "other": "有 {count} 个提交未关联 GitHub 账号：{emails}。"
-    },
-    "andMore": "{shown} 等另外 {hidden} 项"
-  },
   "pullsChecks": {
     "none": "没有检查结果。"
   },
@@ -91,40 +71,26 @@
     "openFailed": "无法打开拉取请求：{error}",
     "noneFor": "{branch} 没有打开的拉取请求。",
     "none": "没有打开的拉取请求。",
-    "openingSession": "正在打开会话…",
-    "createWithAgent": "让智能体创建",
-    "opening": "正在打开…",
     "openOnGitHub": "在 GitHub 上打开"
   },
   "submitReviewDialog": {
     "verdict": {
       "approve": {
-        "title": "批准",
-        "action": "批准",
-        "description": "批准此拉取请求。GitHub 不允许批准自己的拉取请求。"
+        "title": "批准"
       },
       "comment": {
-        "title": "评论",
-        "action": "发送评审",
-        "description": "只发送评论，不给出结论。"
+        "title": "评论"
       },
       "request_changes": {
-        "title": "请求更改",
-        "action": "请求更改",
-        "description": "要求完成下面的更改后才能合入。"
+        "title": "请求更改"
       }
     },
     "summaryPlaceholder": "摘要（可选）",
-    "summaryAlone": "没有行评论，这次只发送摘要。",
-    "lineComments": {
-      "one": "随附 {count} 条行评论。",
-      "other": "随附 {count} 条行评论。"
-    }
+    "summaryAlone": "没有行评论，这次只发送摘要。"
   },
   "pullsConversation": {
     "commentFailed": "评论失败：{error}",
     "loading": "正在读取对话…",
-    "empty": "还没有任何发言。在这里发表的评论属于拉取请求本身；针对某一行的评论会出现在差异中。",
     "resolved": {
       "one": "{count} 个已解决的讨论串",
       "other": "{count} 个已解决的讨论串"
@@ -132,11 +98,6 @@
     "commentOn": "评论此拉取请求",
     "comment": "评论",
     "commentPlaceholder": "说点关于整个拉取请求的内容",
-    "dismissFailed": "驳回失败：{error}",
-    "dismiss": "驳回",
-    "why": "此评审不再适用的原因",
-    "dismissReview": "驳回评审",
-    "whyPlaceholder": "评审写下之后有什么变化",
     "readFailed": "无法读取对话：{error}",
     "nothingYet": "还没有任何发言。",
     "line": "第 {line} 行",
@@ -147,21 +108,11 @@
     "discard": "丢弃"
   },
   "pullsOverview": {
-    "saveFailed": "无法保存描述：{error}",
     "openedBy": "由 {author} 打开",
     "description": "描述",
-    "edit": "编辑",
     "noDescription": "没有描述。",
-    "descriptionPlaceholder": "描述此拉取请求",
-    "saving": "正在保存…",
-    "candidatesFailed": "无法读取可评审的人员：{error}",
-    "requestFailed": "无法向 {login} 请求评审：{error}",
-    "withdrawFailed": "无法撤回对 {login} 的评审请求：{error}",
     "reviewers": "评审者",
-    "nobodyYet": "暂无",
-    "requestReview": "请求评审",
-    "candidatesLoading": "正在读取可评审的人员…",
-    "nobodyElse": "没有其他人可以评审"
+    "nobodyYet": "暂无"
   },
   "pullsStats": {
     "checksFailing": "{total} 项检查中有 {failed} 项失败",
@@ -190,37 +141,14 @@
       "drafts": "草稿",
       "failing": "失败"
     },
-    "sort": {
-      "updated": "最近更新",
-      "oldest": "最早更新",
-      "failing": "失败的优先",
-      "number": "编号最大"
-    },
-    "qualifierWords": "关键词会匹配编号、标题、作者和分支。",
     "show": "显示拉取请求列表",
     "hide": "隐藏拉取请求列表",
-    "filterPlaceholder": "筛选，例如 is:merged",
-    "filterLabel": "筛选拉取请求",
-    "filterGroup": "拉取请求筛选",
-    "state": {
-      "open": "打开",
-      "closed": "已关闭",
-      "merged": "已合并",
-      "all": "全部"
-    },
-    "cappedHint": "只加载了最近更新的 {limit} 个，筛选只在这些中搜索。",
-    "capped": "前 {limit} 个",
     "none": {
       "open": "没有打开的拉取请求。",
       "closed": "没有已关闭的拉取请求。",
-      "merged": "没有已合并的拉取请求。",
-      "all": "没有拉取请求。"
+      "merged": "没有已合并的拉取请求。"
     },
     "noMatch": "没有符合该筛选条件的内容。",
-    "review": {
-      "approved": "已批准",
-      "changesRequested": "已请求更改"
-    },
     "draft": "草稿",
     "fork": "分叉",
     "checkedOut": "已检出",
@@ -228,8 +156,6 @@
   },
   "pullsFiles": {
     "loadFailed": "无法加载差异：{error}",
-    "none": "没有文件更改",
-    "resizeTree": "调整文件树大小",
     "hideTree": "隐藏文件树",
     "showTree": "显示文件树",
     "viewed": "已查看 {viewed}/{total}",
@@ -239,20 +165,11 @@
     "replyFailed": "回复失败：{error}",
     "resolveFailed": "标记为已解决失败：{error}",
     "reopenFailed": "重新打开失败：{error}",
-    "line": "第 {line} 行",
     "resolved": "已解决",
-    "outdated": "· 已过时",
-    "comments": {
-      "one": "{count} 条评论",
-      "other": "{count} 条评论"
-    },
     "reopen": "重新打开",
     "resolve": "标记为已解决",
     "reply": "回复",
-    "replyPlaceholder": "回复此讨论串",
-    "pending": "待处理，提交评审时发送",
-    "edit": "编辑此评论",
-    "discard": "丢弃此评论"
+    "replyPlaceholder": "回复此讨论串"
   },
   "pulls": {
     "alreadyRemoved": "{name} 已被移除",
@@ -265,42 +182,23 @@
     "announceFailed": "无法通知 {name} 中的会话：{error}",
     "removeWorktree": "移除工作树",
     "openSessionFailed": "无法打开会话：{error}",
-    "handOffFailed": "无法交给该会话：{error}",
     "goToSession": "前往会话",
     "openInSession": "在会话中打开",
     "forkBlocked": "头部分支位于不允许维护者编辑的分叉上，无法把提交推回去",
-    "noRepository": "没有仓库",
-    "loadFailed": "无法加载拉取请求：{error}",
     "runningRemoval": {
-      "title": "会话仍在运行",
-      "description": "{labels} 正在 {name} 中执行一轮。移除工作树会让它当场停止，进行中的这一轮将丢失。",
       "removeAnyway": "仍然移除"
-    },
-    "noSessionToHandOff": "此检出上没有可以交给的会话",
-    "headNotOnBranch": "HEAD 不在任何分支上"
+    }
   },
   "pullRequestView": {
     "rebaseAndMerge": "变基并合并",
-    "failingChecks": {
-      "one": "有 {count} 项检查失败，GitHub 仍会合并",
-      "other": "有 {count} 项检查失败，GitHub 仍会合并"
-    },
     "mergeFailed": "合并失败：{error}",
     "approvedToast": "已批准 #{number}",
     "reviewSent": "已在 #{number} 上发送评审",
-    "reviewSentWithComments": {
-      "one": "已在 #{number} 上发送评审，含 {count} 条评论",
-      "other": "已在 #{number} 上发送评审，含 {count} 条评论"
-    },
     "reviewFailed": "评审失败：{error}",
     "opening": "正在打开…",
-    "openingSession": "正在打开会话…",
     "approving": "正在批准…",
     "approved": "已批准",
     "approve": "批准",
-    "submitReview": "提交评审",
-    "comment": "评论",
-    "requestChanges": "请求更改",
     "discardPending": {
       "one": "丢弃 {count} 条待处理评论",
       "other": "丢弃 {count} 条待处理评论"
@@ -315,7 +213,6 @@
     "tab": {
       "overview": "概览",
       "commits": "提交",
-      "files": "文件更改",
       "conversation": "对话",
       "checks": "检查"
     }

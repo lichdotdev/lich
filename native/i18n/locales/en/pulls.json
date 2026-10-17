@@ -23,8 +23,7 @@
     "subject": "Commit message",
     "body": "Extended description",
     "optional": "Optional",
-    "merging": "Merging…",
-    "merge": "Merge"
+    "merging": "Merging…"
   },
   "mergeGate": {
     "changesRequested": "A reviewer asked for changes",
@@ -51,25 +50,6 @@
     },
     "ruleNote": "A ruleset governs {base}: every commit {clauses}."
   },
-  "commitAuthors": {
-    "committed": "{who} committed {date}",
-    "committedOn": "Committed {date}",
-    "noAccount": "linked to no GitHub account",
-    "committedByNoAccount": "Committed by an address linked to no GitHub account",
-    "strays": {
-      "one": "{count} commit landed under {logins}, not @{author}.",
-      "other": "{count} commits landed under {logins}, not @{author}."
-    },
-    "orphans": {
-      "one": "{count} commit is linked to no GitHub account.",
-      "other": "{count} commits are linked to no GitHub account."
-    },
-    "orphansWithEmails": {
-      "one": "{count} commit is linked to no GitHub account: {emails}.",
-      "other": "{count} commits are linked to no GitHub account: {emails}."
-    },
-    "andMore": "{shown} and {hidden} more"
-  },
   "pullsChecks": {
     "none": "No checks reported."
   },
@@ -91,40 +71,26 @@
     "openFailed": "Couldn’t open a pull request: {error}",
     "noneFor": "No open pull request for {branch}.",
     "none": "No open pull request.",
-    "openingSession": "Opening session…",
-    "createWithAgent": "Create with agent",
-    "opening": "Opening…",
     "openOnGitHub": "Open on GitHub"
   },
   "submitReviewDialog": {
     "verdict": {
       "approve": {
-        "title": "Approve",
-        "action": "Approve",
-        "description": "Sign this pull request off. GitHub refuses an approval of your own."
+        "title": "Approve"
       },
       "comment": {
-        "title": "Comment",
-        "action": "Send review",
-        "description": "Send the comments without a verdict."
+        "title": "Comment"
       },
       "request_changes": {
-        "title": "Request changes",
-        "action": "Request changes",
-        "description": "Ask for the changes below before this can land."
+        "title": "Request changes"
       }
     },
     "summaryPlaceholder": "Summary — optional",
-    "summaryAlone": "No line comments — this sends the summary alone.",
-    "lineComments": {
-      "one": "{count} line comment goes with it.",
-      "other": "{count} line comments go with it."
-    }
+    "summaryAlone": "No line comments — this sends the summary alone."
   },
   "pullsConversation": {
     "commentFailed": "Comment failed: {error}",
     "loading": "Reading the conversation…",
-    "empty": "Nothing said yet. A comment here goes on the pull request itself; a comment on a line goes in the diff.",
     "resolved": {
       "one": "{count} resolved thread",
       "other": "{count} resolved threads"
@@ -132,11 +98,6 @@
     "commentOn": "Comment on the pull request",
     "comment": "Comment",
     "commentPlaceholder": "Something about the pull request as a whole",
-    "dismissFailed": "Dismiss failed: {error}",
-    "dismiss": "Dismiss",
-    "why": "Why this review no longer applies",
-    "dismissReview": "Dismiss review",
-    "whyPlaceholder": "What changed since it was written",
     "readFailed": "Couldn’t read the conversation: {error}",
     "nothingYet": "Nothing said yet.",
     "line": "line {line}",
@@ -147,21 +108,11 @@
     "discard": "Discard"
   },
   "pullsOverview": {
-    "saveFailed": "Couldn’t save the description: {error}",
     "openedBy": "Opened by {author}",
     "description": "Description",
-    "edit": "Edit",
     "noDescription": "No description.",
-    "descriptionPlaceholder": "Describe the pull request",
-    "saving": "Saving…",
-    "candidatesFailed": "Couldn’t read who can review: {error}",
-    "requestFailed": "Couldn’t request a review from {login}: {error}",
-    "withdrawFailed": "Couldn’t withdraw the review request for {login}: {error}",
     "reviewers": "Reviewers",
-    "nobodyYet": "Nobody yet",
-    "requestReview": "Request review",
-    "candidatesLoading": "Reading who can review…",
-    "nobodyElse": "Nobody else can review this"
+    "nobodyYet": "Nobody yet"
   },
   "pullsStats": {
     "checksFailing": "{failed} of {total} checks failing",
@@ -190,37 +141,14 @@
       "drafts": "Drafts",
       "failing": "Failing"
     },
-    "sort": {
-      "updated": "Recently updated",
-      "oldest": "Least recently updated",
-      "failing": "Failing first",
-      "number": "Highest number"
-    },
-    "qualifierWords": "Words match the number, title, author and branch.",
     "show": "Show the pull request list",
     "hide": "Hide the pull request list",
-    "filterPlaceholder": "Filter — try is:merged",
-    "filterLabel": "Filter pull requests",
-    "filterGroup": "Pull request filter",
-    "state": {
-      "open": "open",
-      "closed": "closed",
-      "merged": "merged",
-      "all": "all"
-    },
-    "cappedHint": "Only the {limit} most recently updated are loaded — filtering searches those.",
-    "capped": "first {limit}",
     "none": {
       "open": "No open pull requests.",
       "closed": "No closed pull requests.",
-      "merged": "No merged pull requests.",
-      "all": "No pull requests."
+      "merged": "No merged pull requests."
     },
     "noMatch": "Nothing matches that filter.",
-    "review": {
-      "approved": "approved",
-      "changesRequested": "changes requested"
-    },
     "draft": "Draft",
     "fork": "fork",
     "checkedOut": "checked out",
@@ -228,8 +156,6 @@
   },
   "pullsFiles": {
     "loadFailed": "Couldn’t load the diff: {error}",
-    "none": "No file changes",
-    "resizeTree": "Resize the file tree",
     "hideTree": "Hide the file tree",
     "showTree": "Show the file tree",
     "viewed": "{viewed} of {total} viewed",
@@ -239,20 +165,11 @@
     "replyFailed": "Reply failed: {error}",
     "resolveFailed": "Resolve failed: {error}",
     "reopenFailed": "Reopen failed: {error}",
-    "line": "Line {line}",
     "resolved": "Resolved",
-    "outdated": "· outdated",
-    "comments": {
-      "one": "{count} comment",
-      "other": "{count} comments"
-    },
     "reopen": "Reopen",
     "resolve": "Resolve",
     "reply": "Reply",
-    "replyPlaceholder": "Reply to this thread",
-    "pending": "Pending — sent when you submit the review",
-    "edit": "Edit this comment",
-    "discard": "Discard this comment"
+    "replyPlaceholder": "Reply to this thread"
   },
   "pulls": {
     "alreadyRemoved": "{name} was already removed",
@@ -265,42 +182,23 @@
     "announceFailed": "Couldn’t tell the sessions in {name}: {error}",
     "removeWorktree": "Remove worktree",
     "openSessionFailed": "Couldn’t open a session: {error}",
-    "handOffFailed": "Couldn’t hand this to the session: {error}",
     "goToSession": "Go to session",
     "openInSession": "Open in Session",
     "forkBlocked": "The head branch lives on a fork that does not allow edits by maintainers — its commits could not be pushed back",
-    "noRepository": "No repository",
-    "loadFailed": "Couldn’t load the pull request: {error}",
     "runningRemoval": {
-      "title": "Session is still running",
-      "description": "{labels} is mid-turn in {name}. Removing the worktree stops it where it stands; the turn in flight is lost.",
       "removeAnyway": "Remove anyway"
-    },
-    "noSessionToHandOff": "No session on this checkout to hand it to",
-    "headNotOnBranch": "HEAD is not on a branch"
+    }
   },
   "pullRequestView": {
     "rebaseAndMerge": "Rebase and merge",
-    "failingChecks": {
-      "one": "{count} check is failing — GitHub will still merge this",
-      "other": "{count} checks are failing — GitHub will still merge this"
-    },
     "mergeFailed": "Merge failed: {error}",
     "approvedToast": "Approved #{number}",
     "reviewSent": "Review sent on #{number}",
-    "reviewSentWithComments": {
-      "one": "Review sent on #{number} — {count} comment",
-      "other": "Review sent on #{number} — {count} comments"
-    },
     "reviewFailed": "Review failed: {error}",
     "opening": "Opening…",
-    "openingSession": "Opening session…",
     "approving": "Approving…",
     "approved": "Approved",
     "approve": "Approve",
-    "submitReview": "Submit review",
-    "comment": "Comment",
-    "requestChanges": "Request changes",
     "discardPending": {
       "one": "Discard {count} pending comment",
       "other": "Discard {count} pending comments"
@@ -315,7 +213,6 @@
     "tab": {
       "overview": "Overview",
       "commits": "Commits",
-      "files": "Files changed",
       "conversation": "Conversation",
       "checks": "Checks"
     }

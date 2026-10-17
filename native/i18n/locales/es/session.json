@@ -1,18 +1,4 @@
 {
-  "schedule": {
-    "choice15Minutes": "15 min",
-    "choice1Hour": "1 hora",
-    "choice4Hours": "4 horas",
-    "choiceTomorrow": "Mañana",
-    "countdown": "en {amount}",
-    "today": "hoy {clock}",
-    "weekdayAt": "{weekday} {clock}"
-  },
-  "limitLine": {
-    "sessionWindow": "Límite de sesión",
-    "weeklyWindow": "Límite semanal",
-    "usageWindow": "Límite de uso"
-  },
   "filter": {
     "phase": {
       "waiting": "en espera",
@@ -37,9 +23,6 @@
   "spawnGate": {
     "checkoutGone": "La worktree de esta sesión ya no existe, así que la sesión se cerró. Vuelve a crear la worktree para retomarla.",
     "conversationGone": "La conversación anterior ya no está disponible: se inicia una nueva sesión."
-  },
-  "fork": {
-    "unavailable": "{name} no conserva forks; solo se puede reanudar."
   },
   "palette": {
     "untitledConversation": "Conversación sin título",

@@ -48,9 +48,7 @@
   },
   "unassigned": "未分配",
   "shortcuts": {
-    "terminalTitle": "终端",
     "passthroughTitle": "传递给智能体",
-    "searchOutput": "搜索会话的输出",
     "attachImage": "从剪贴板附加图片",
     "newline": "插入换行而不发送",
     "eraseWord": "删除前一个单词"

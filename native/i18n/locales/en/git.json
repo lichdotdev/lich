@@ -26,21 +26,11 @@
     "hidden": "Hidden: {names}.",
     "cut": "This folder has more files than the tree can list."
   },
-  "lastTurn": {
-    "saidPreviousTurn": "from the previous turn",
-    "noTurnWindow": "{name} reports neither the start nor the end of a turn, so there is no window to bracket."
-  },
-  "carry": {
-    "reused": "{name} already existed, so it was checked out as it stands — the uncommitted work was not carried over.",
-    "failed": "Couldn’t carry the uncommitted work over: {error}"
-  },
   "codemirror": {
     "expand": {
       "one": "Expand {count} unchanged line",
       "other": "Expand {count} unchanged lines"
     },
-    "showLines": "Show lines {from}–{to}",
-    "revertTitle": "Revert this change",
     "revert": "Revert"
   }
 }

@@ -48,9 +48,7 @@
   },
   "unassigned": "Sem atalho",
   "shortcuts": {
-    "terminalTitle": "Terminal",
     "passthroughTitle": "Repassados ao agente",
-    "searchOutput": "Buscar na saída da sessão",
     "attachImage": "Anexar uma imagem da área de transferência",
     "newline": "Inserir uma quebra de linha sem enviar",
     "eraseWord": "Apagar a palavra anterior"

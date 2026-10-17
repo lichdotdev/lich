@@ -4,9 +4,7 @@
     "update": "更新",
     "later": "稍后",
     "installVersion": "安装 v{version}",
-    "updating": "正在更新 lich 插件…",
     "updated": "插件已更新。重启会话以应用。",
-    "updateFailed": "更新失败",
     "installed": "插件已安装。重启会话以应用。",
     "codexTrust": "Codex：在 Codex 会话中运行 /hooks 以信任该插件的钩子。",
     "installFailed": "安装失败：{error}",
@@ -29,9 +27,6 @@
     "install": "安装",
     "viewRelease": "查看发布说明"
   },
-  "confirmDialog": {
-    "cancel": "取消"
-  },
   "emptySessions": {
     "title": "没有打开的会话",
     "description": "打开一个会话，开始在此项目中工作。",
@@ -39,20 +34,12 @@
     "newTerminal": "新建终端",
     "newSession": "新建会话"
   },
-  "fileTree": {
-    "openInEditor": "在编辑器中打开",
-    "expandAll": "全部展开",
-    "collapseAll": "全部折叠"
-  },
   "footerBar": {
-    "attachFailed": "无法附加文件",
     "attachFile": "附加文件",
     "browseCode": "浏览代码",
     "reviewChanges": "审查更改",
     "viewPullRequest": "查看拉取请求",
-    "pullRequest": "PR #{number}",
-    "leftFooter": "左侧页脚",
-    "rightFooter": "右侧页脚"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
     "contextWindow": "上下文窗口",
@@ -77,13 +64,8 @@
   },
   "notificationsOptIn": {
     "title": "会话需要你时通知你？",
-    "description": "刚才有会话在你离开时请求了你的输入。发生这种情况时，lich 可以弹出桌面通知，注明会话及其项目，这样你就可以启动任务后离开窗口。你正在查看的会话不会发送通知。你可以随时在设置 › 通知中更改。",
     "noThanks": "不用了",
     "notifyMe": "通知我"
-  },
-  "paneSeams": {
-    "resizeColumns": "调整列宽",
-    "resizeRows": "调整行高"
   },
   "patchNotesDialog": {
     "title": "lich {version} 的新功能",
@@ -103,11 +85,6 @@
     "pointToBinary": "已经安装了？在设置 › 提供商中让 lich 指向它的可执行文件。",
     "continue": "继续"
   },
-  "quotaGauge": {
-    "aheadOfPace": "超前于进度",
-    "aheadTooltip": "消耗速度超前于此窗口的进度。",
-    "locked": "已锁定"
-  },
   "resumeSessionDialog": {
     "title": "恢复之前的会话？",
     "description": "{label} 留下了一段对话（{id}）。选择恢复可从中断处继续，或选择新建以开始空白对话。",
@@ -122,26 +99,12 @@
     "rebind": "在设置 › 快捷键中重新绑定",
     "close": "关闭"
   },
-  "quitDialog": {
-    "title": "退出 lich？",
-    "description": "所有会话都会随之结束。改为关闭窗口，会话会在后台继续运行。",
-    "working": {
-      "one": "{count} 个会话正在进行一轮操作，将会中断：",
-      "other": "{count} 个会话正在进行一轮操作，将会中断："
-    },
-    "confirm": "退出 lich",
-    "failed": "无法退出 lich"
-  },
   "tray": {
     "show": "显示 lich",
     "running": "运行中的会话：{count}",
     "quit": "退出 lich",
     "openNative": "打开原生窗口",
     "openWeb": "打开网页窗口"
-  },
-  "windowFallback": {
-    "title": "已打开网页窗口",
-    "openLog": "打开日志"
   },
   "closeDialog": {
     "title": "让 lich 继续运行？",
@@ -150,18 +113,13 @@
       "other": "{count} 个会话正在运行。它们会在后台继续工作，再次打开 lich 即可回到屏幕上。"
     },
     "dontAsk": "不再询问",
-    "changeInSettings": "· 可在设置 › 外观中更改",
     "keep": "继续运行",
-    "quit": "退出 lich",
-    "failed": "无法关闭窗口"
+    "quit": "退出 lich"
   },
   "uncleanExitGate": {
     "title": "lich 上次运行意外结束",
     "description": "你的会话已恢复，但它们正在运行的内容已随之停止。",
     "openLogFolder": "打开日志文件夹",
-    "opening": "正在打开日志文件夹…",
-    "opened": "已打开日志文件夹。",
-    "openFailed": "无法打开日志文件夹",
     "dismiss": "忽略"
   },
   "updateProgressToast": {
@@ -169,35 +127,16 @@
     "installing": "正在安装 lich {version}…",
     "reopens": "lich 会自行关闭并重新打开。"
   },
-  "app": {
-    "stage": "舞台",
-    "reloadStage": "重新加载舞台",
-    "screen": "此界面",
-    "panel": "此面板"
-  },
   "projects": {
     "relocated": "{name} 现在打开 {path}",
     "relocateFailed": "重新定位失败：{error}",
     "noLongerAvailable": "{label} 已无法恢复",
     "bringBackFailed": "无法恢复 {label}",
     "closed": "已关闭 {label}",
-    "undo": "撤销",
-    "entrypointSet": "已设置入口命令",
-    "entrypointSetDescription": "将在此终端下次启动时运行。",
-    "entrypointCleared": "已清除入口命令",
-    "entrypointClearedDescription": "此终端将再次启动普通 shell。",
-    "entrypointFailed": "无法保存入口命令：{error}",
-    "scheduled": "已定时 {when}",
-    "scheduledNow": "已立即定时",
-    "scheduleCleared": "已清除定时",
-    "scheduleFailed": "无法设置定时：{error}"
+    "undo": "撤销"
   },
   "projectEvents": {
     "unlabeledSession": "一个会话",
-    "scheduleLost": "定时提示词随 {label} 一同丢失",
-    "scheduleDue": "{when} 到期：{prompt}",
-    "relayAnswered": "{target} 已在其自己的会话中回复",
-    "relayDetail": "它结束时没有通过 lich 回复，请打开它查看答案。",
     "open": "打开",
     "needsInput": "{label} 需要你的输入",
     "finished": "{label} 已完成工作"

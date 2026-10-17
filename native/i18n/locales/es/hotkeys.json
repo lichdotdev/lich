@@ -48,9 +48,7 @@
   },
   "unassigned": "Sin asignar",
   "shortcuts": {
-    "terminalTitle": "Terminal",
     "passthroughTitle": "Pasados al agente",
-    "searchOutput": "Buscar en la salida de la sesión",
     "attachImage": "Adjuntar una imagen del portapapeles",
     "newline": "Insertar un salto de línea sin enviar",
     "eraseWord": "Borrar la palabra anterior"

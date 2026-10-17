@@ -4,9 +4,7 @@
     "update": "Actualizar",
     "later": "Más tarde",
     "installVersion": "Instalar la v{version}",
-    "updating": "Actualizando el plugin de lich…",
     "updated": "Plugin actualizado. Reinicia tus sesiones para aplicarlo.",
-    "updateFailed": "Falló la actualización",
     "installed": "Plugin instalado. Reinicia tus sesiones para aplicarlo.",
     "codexTrust": "Codex: ejecuta /hooks en una sesión de Codex para confiar en los hooks del plugin.",
     "installFailed": "Falló la instalación: {error}",
@@ -29,9 +27,6 @@
     "install": "Instalar",
     "viewRelease": "Ver la versión"
   },
-  "confirmDialog": {
-    "cancel": "Cancelar"
-  },
   "emptySessions": {
     "title": "No hay ninguna sesión abierta",
     "description": "Abre una sesión para empezar a trabajar en este proyecto.",
@@ -39,20 +34,12 @@
     "newTerminal": "Nueva terminal",
     "newSession": "Nueva sesión"
   },
-  "fileTree": {
-    "openInEditor": "Abrir en el editor",
-    "expandAll": "Expandir todo",
-    "collapseAll": "Contraer todo"
-  },
   "footerBar": {
-    "attachFailed": "No se pudo adjuntar el archivo",
     "attachFile": "Adjuntar archivo",
     "browseCode": "Explorar el código",
     "reviewChanges": "Revisar cambios",
     "viewPullRequest": "Ver pull request",
-    "pullRequest": "PR #{number}",
-    "leftFooter": "Pie de ventana izquierdo",
-    "rightFooter": "Pie de ventana derecho"
+    "pullRequest": "PR #{number}"
   },
   "footerSession": {
     "contextWindow": "Ventana de contexto",
@@ -77,13 +64,8 @@
   },
   "notificationsOptIn": {
     "title": "¿Avisarte cuando una sesión te necesite?",
-    "description": "Una sesión acaba de pedirte una respuesta mientras estabas en otro sitio. lich puede mostrar una notificación de escritorio cuando eso pase, con el nombre de la sesión y de su proyecto, para que puedas iniciar algo y alejarte de la ventana. Las sesiones que estás mirando nunca notifican. Puedes cambiarlo cuando quieras en Ajustes › Notificaciones.",
     "noThanks": "No, gracias",
     "notifyMe": "Avisarme"
-  },
-  "paneSeams": {
-    "resizeColumns": "Cambiar el tamaño de las columnas",
-    "resizeRows": "Cambiar el tamaño de las filas"
   },
   "patchNotesDialog": {
     "title": "Novedades de lich {version}",
@@ -103,11 +85,6 @@
     "pointToBinary": "¿Ya tienes uno instalado? Indica a lich su binario en Ajustes › Proveedores.",
     "continue": "Continuar"
   },
-  "quotaGauge": {
-    "aheadOfPace": "Por delante del ritmo",
-    "aheadTooltip": "Gastando por delante del ritmo de esta ventana.",
-    "locked": "Bloqueado"
-  },
   "resumeSessionDialog": {
     "title": "¿Reanudar la sesión anterior?",
     "description": "{label} dejó una conversación ({id}). Reanúdala para retomarla donde se detuvo, o empieza de cero para una vacía.",
@@ -122,26 +99,12 @@
     "rebind": "Reasígnalos en Ajustes › Atajos",
     "close": "cerrar"
   },
-  "quitDialog": {
-    "title": "¿Salir de lich?",
-    "description": "Todas las sesiones terminan con él. Cerrar la ventana, en cambio, las mantiene en segundo plano.",
-    "working": {
-      "one": "{count} sesión está a mitad de un turno y lo pierde:",
-      "other": "{count} sesiones están a mitad de un turno y lo pierden:"
-    },
-    "confirm": "Salir de lich",
-    "failed": "No se pudo salir de lich"
-  },
   "tray": {
     "show": "Mostrar lich",
     "running": "Sesiones en ejecución: {count}",
     "quit": "Salir de lich",
     "openNative": "Abrir la ventana nativa",
     "openWeb": "Abrir la ventana web"
-  },
-  "windowFallback": {
-    "title": "Se abrió la ventana web",
-    "openLog": "Abrir el registro"
   },
   "closeDialog": {
     "title": "¿Mantener lich en ejecución?",
@@ -150,18 +113,13 @@
       "other": "{count} sesiones están en ejecución. En segundo plano siguen trabajando, y abrir lich de nuevo las devuelve a la pantalla."
     },
     "dontAsk": "No volver a preguntar",
-    "changeInSettings": "· cámbialo en Ajustes › Apariencia",
     "keep": "Mantener en ejecución",
-    "quit": "Salir de lich",
-    "failed": "No se pudo cerrar la ventana"
+    "quit": "Salir de lich"
   },
   "uncleanExitGate": {
     "title": "La ejecución anterior de lich terminó de forma inesperada",
     "description": "Tus sesiones se restauraron, pero lo que estaban ejecutando se detuvo con ella.",
     "openLogFolder": "Abrir carpeta del log",
-    "opening": "Abriendo la carpeta del log…",
-    "opened": "Carpeta del log abierta.",
-    "openFailed": "No se pudo abrir la carpeta del log",
     "dismiss": "Descartar"
   },
   "updateProgressToast": {
@@ -169,35 +127,16 @@
     "installing": "Instalando lich {version}…",
     "reopens": "lich se cierra y se vuelve a abrir solo."
   },
-  "app": {
-    "stage": "El escenario",
-    "reloadStage": "Recargar el escenario",
-    "screen": "Esta pantalla",
-    "panel": "El panel"
-  },
   "projects": {
     "relocated": "{name} ahora abre {path}",
     "relocateFailed": "No se pudo reubicar: {error}",
     "noLongerAvailable": "{label} ya no está disponible para reanudar",
     "bringBackFailed": "No se pudo recuperar {label}",
     "closed": "Se cerró {label}",
-    "undo": "Deshacer",
-    "entrypointSet": "Punto de entrada definido",
-    "entrypointSetDescription": "Se ejecuta la próxima vez que se inicie esta terminal.",
-    "entrypointCleared": "Punto de entrada borrado",
-    "entrypointClearedDescription": "Esta terminal vuelve a iniciar un shell normal.",
-    "entrypointFailed": "No se pudo guardar el punto de entrada: {error}",
-    "scheduled": "Programado {when}",
-    "scheduledNow": "Programado para ahora",
-    "scheduleCleared": "Programación borrada",
-    "scheduleFailed": "No se pudo programar: {error}"
+    "undo": "Deshacer"
   },
   "projectEvents": {
     "unlabeledSession": "Una sesión",
-    "scheduleLost": "Prompt programado perdido junto con {label}",
-    "scheduleDue": "Vence {when}: {prompt}",
-    "relayAnswered": "{target} respondió en su propia sesión",
-    "relayDetail": "Terminó sin responder a través de lich: ábrela para leer la respuesta.",
     "open": "Abrir",
     "needsInput": "{label} necesita una respuesta tuya",
     "finished": "{label} terminó de trabajar"

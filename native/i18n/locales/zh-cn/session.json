@@ -1,18 +1,4 @@
 {
-  "schedule": {
-    "choice15Minutes": "15 分钟",
-    "choice1Hour": "1 小时",
-    "choice4Hours": "4 小时",
-    "choiceTomorrow": "明天",
-    "countdown": "{amount}后",
-    "today": "今天 {clock}",
-    "weekdayAt": "{weekday} {clock}"
-  },
-  "limitLine": {
-    "sessionWindow": "会话上限",
-    "weeklyWindow": "每周上限",
-    "usageWindow": "用量上限"
-  },
   "filter": {
     "phase": {
       "waiting": "等待中",
@@ -37,9 +23,6 @@
   "spawnGate": {
     "checkoutGone": "此会话的工作树已不存在，因此会话已关闭。请重新创建工作树以继续。",
     "conversationGone": "之前的对话已不可用，正在启动新会话。"
-  },
-  "fork": {
-    "unavailable": "{name} 不支持分叉，只能恢复。"
   },
   "palette": {
     "untitledConversation": "未命名对话",

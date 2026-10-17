@@ -48,9 +48,7 @@
   },
   "unassigned": "Unassigned",
   "shortcuts": {
-    "terminalTitle": "Terminal",
     "passthroughTitle": "Passed through to the agent",
-    "searchOutput": "Search the session's output",
     "attachImage": "Attach an image from the clipboard",
     "newline": "Insert a newline without sending",
     "eraseWord": "Erase the previous word"

@@ -1,25 +1,13 @@
 {
-  "homeTab": {
-    "home": "Home"
-  },
   "notificationsButton": {
     "title": "Notifications",
-    "titlePending": "Notifications, {count} pending",
-    "caughtUp": "You're all caught up",
-    "dismiss": "Dismiss {name}"
+    "caughtUp": "You're all caught up"
   },
   "openProjectMenu": {
     "open": "Open project",
     "recent": "Recent projects",
     "relocate": "relocate",
-    "openFolder": "Open folder…",
-    "moreClosed": {
-      "one": "{count} more closed project — search the palette",
-      "other": "{count} more closed projects — search the palette"
-    }
-  },
-  "projectTab": {
-    "close": "Close {name}"
+    "openFolder": "Open folder…"
   },
   "projectTabs": {
     "pullRequests": "Pull requests",

@@ -1,25 +1,13 @@
 {
-  "homeTab": {
-    "home": "Início"
-  },
   "notificationsButton": {
     "title": "Notificações",
-    "titlePending": "Notificações, {count} pendentes",
-    "caughtUp": "Tudo em dia",
-    "dismiss": "Dispensar {name}"
+    "caughtUp": "Tudo em dia"
   },
   "openProjectMenu": {
     "open": "Abrir projeto",
     "recent": "Projetos recentes",
     "relocate": "relocalizar",
-    "openFolder": "Abrir pasta…",
-    "moreClosed": {
-      "one": "Mais {count} projeto fechado: busque na paleta",
-      "other": "Mais {count} projetos fechados: busque na paleta"
-    }
-  },
-  "projectTab": {
-    "close": "Fechar {name}"
+    "openFolder": "Abrir pasta…"
   },
   "projectTabs": {
     "pullRequests": "Pull requests",

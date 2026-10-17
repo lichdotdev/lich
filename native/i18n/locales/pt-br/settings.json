@@ -73,7 +73,6 @@
     "title": "Tema",
     "searchWords": "cores escuro claro terminal paleta",
     "description": "Dá cor à interface e ao terminal.",
-    "choose": "Escolher um tema",
     "system": "Sistema",
     "followsOs": "segue o SO",
     "inUse": "em uso",
@@ -82,18 +81,14 @@
       "one": "{count} tema",
       "other": "{count} temas"
     },
-    "import": "Importar",
-    "updateNamed": "Atualizar {name}",
     "updateHint": "Verificar no repositório se há uma versão mais nova",
     "removeNamed": "Remover {name}"
   },
   "brokenThemeList": {
-    "label": "Temas que não carregam",
     "heading": {
       "one": "{count} tema não carrega",
       "other": "{count} temas não carregam"
     },
-    "removeNamed": "Remover {name}",
     "remove": "Remover"
   },
   "importThemeDialog": {
@@ -126,8 +121,7 @@
     "ceilingTitle": "Teto de gasto",
     "ceilingSearchWords": "custo orçamento limite usd dólar",
     "ceilingDescription": "Avisa quando o custo de API da sessão se aproxima desse valor: âmbar em 80%, vermelho em 95%. Vazio para nenhum.",
-    "ceilingPlaceholder": "Sem teto",
-    "ceilingLabel": "Teto de gasto da sessão em dólares"
+    "ceilingPlaceholder": "Sem teto"
   },
   "footerLayoutEditor": {
     "zone": {
@@ -137,10 +131,6 @@
     },
     "allPlaced": "Todos os itens estão no rodapé",
     "dragHere": "Arraste itens para cá",
-    "moveNamed": "Mover {name}",
-    "previewLabel": "Prévia do rodapé",
-    "previewHint": "Prévia · valores de exemplo · role para ver todos os itens",
-    "previewScrollLabel": "Prévia do rodapé com rolagem",
     "previewEmpty": "Nenhum item do rodapé selecionado"
   },
   "diffLayoutSetting": {
@@ -155,56 +145,29 @@
   "notificationsSettings": {
     "needsInputTitle": "Me notificar quando uma sessão precisar de resposta",
     "needsInputDescription": "Mostra uma notificação do sistema quando uma sessão está parada esperando você (um pedido de permissão, uma pergunta) e a janela do lich não é aquela em que você está. Enquanto você está no lich nada muda: o sino do card e o toast avisam.",
-    "needsInputLabel": "Mostrar uma notificação do sistema quando uma sessão precisar de resposta",
     "finishedTitle": "Me notificar quando uma sessão terminar o trabalho",
-    "finishedDescription": "Mostra uma notificação do sistema quando uma sessão termina o turno sem nada mais a perguntar, e a janela do lich não é aquela em que você está. Independe da configuração acima: vale saber de uma execução longa da qual você se afastou, mesmo que prefira não ouvir falar de cada pedido de resposta. Nenhum toast acompanha: dentro do lich, o card e a aba do projeto já avisam.",
-    "finishedLabel": "Mostrar uma notificação do sistema quando uma sessão terminar o trabalho"
+    "finishedDescription": "Mostra uma notificação do sistema quando uma sessão termina o turno sem nada mais a perguntar, e a janela do lich não é aquela em que você está. Independe da configuração acima: vale saber de uma execução longa da qual você se afastou, mesmo que prefira não ouvir falar de cada pedido de resposta. Nenhum toast acompanha: dentro do lich, o card e a aba do projeto já avisam."
   },
   "hotkeysSettings": {
     "alsoBound": "Também atribuído a {actions}",
     "pressKeys": "Pressione as teclas…",
-    "unassignNamed": "Desatribuir o atalho de {name}",
     "unassignHint": "Deixar esta ação sem atalho",
-    "resetNamed": "Redefinir o atalho de {name}",
     "resetHint": "Restaurar o atalho padrão",
-    "terminalNote": "Do próprio lich, e fixos: este sobrepõe um atalho do navegador, que responde a um acorde e não ao que ele foi reatribuído.",
     "passthroughNote": "O lich reescreve estes no caminho até o terminal do agente, então são fixos e não podem ser reatribuídos."
   },
   "providersPane": {
     "detecting": "Detectando provedores…",
-    "heading": "Provedores",
     "addProvider": "Adicionar provedor",
     "moreDetected": "mais {count} detectados",
     "defaultTitle": "Provedor padrão",
     "defaultSearchWords": "agente nova sessão",
     "defaultDescription": "Qual provedor as ações implícitas de sessão iniciam: o atalho de nova sessão, o botão Nova sessão de um projeto vazio e as worktrees recém-criadas.",
-    "allProjects": "Todos os projetos",
-    "defaultForAll": "Provedor padrão para todos os projetos",
-    "defaultForProject": "Provedor padrão para {name}",
-    "clear": "Limpar",
-    "clearFallsBack": "Ao limpar, volta a {name}",
-    "following": "Seguindo todos os projetos: {name}",
-    "openSettings": "Abrir as configurações de {name}",
     "defaultHere": "padrão aqui",
-    "customPath": "caminho próprio",
-    "skipWorktrees": "worktrees",
-    "skipEverywhere": "sem prompts",
-    "enableNamed": "Ativar {name}"
-  },
-  "providersSettings": {
-    "defaultDescription": "O provedor que as ações implícitas de sessão usam, a menos que o projeto em que você está escolha o próprio em Configurações › Provedores.",
-    "defaultLabel": "Provedor padrão global",
-    "detected": "Detectados no PATH"
+    "skipEverywhere": "sem prompts"
   },
   "providerDetail": {
     "back": "Todos os provedores",
     "enabled": "Ativado",
-    "rightNowTitle": "Agora",
-    "rightNowSearchWords": "sessões abertas docs documentação",
-    "openSessions": {
-      "one": "{count} sessão aberta",
-      "other": "{count} sessões abertas"
-    },
     "documentation": "Documentação"
   },
   "providerToggleRow": {
@@ -219,16 +182,7 @@
     "description": "Qual executável uma sessão inicia.",
     "descriptionProject": "Qual executável uma sessão em {name} inicia.",
     "pickTitle": "Escolher o binário de {provider}",
-    "pickerFailed": "Não foi possível abrir o seletor de arquivos",
-    "projectOnly": "Só {name}",
-    "allProjects": "Todos os projetos",
-    "layersHint": "De onde vem: vale a primeira camada ligada",
-    "done": "Concluir",
-    "useLayer": "Usar o binário de {provider} definido para {layer}",
-    "layerPath": "Binário de {provider} para {layer}",
-    "pickLayer": "Escolher o binário de {provider} para {layer}",
     "browse": "Procurar",
-    "useDifferent": "Usar outro binário",
     "sourceProjectNamed": "definido para {name}",
     "sourceProject": "definido para este projeto",
     "sourceGlobal": "definido para todos os projetos",
@@ -238,7 +192,6 @@
     "skipTitle": "Pular pedidos de permissão",
     "skipSearchWords": "yolo perigoso aprovações",
     "skipDescription": "Até onde {provider} roda sem perguntar: edita arquivos, executa comandos e instala coisas sem confirmar, e o lich o inicia com {flag}.",
-    "skipLabel": "Até onde {provider} roda sem perguntar",
     "skip": {
       "never": {
         "label": "Nunca",
@@ -299,18 +252,14 @@
       }
     },
     "switch": {
-      "title": "Trocar para a janela nativa agora?",
-      "description": "Esta janela fecha e a nativa abre. Suas sessões continuam rodando.",
       "later": "Depois",
-      "now": "Trocar agora",
-      "failed": "Não foi possível abrir a janela nativa"
+      "now": "Trocar agora"
     }
   },
   "restoreSetting": {
     "title": "Sessões restauradas",
     "searchWords": "retomar conversa começar nova reiniciar perguntar",
     "description": "O que um card que rodava {provider} antes de o lich reiniciar faz na primeira vez que você o abre.",
-    "label": "O que um card restaurado de {provider} faz",
     "choice": {
       "ask": {
         "label": "Perguntar",
@@ -330,20 +279,17 @@
     "title": "Expandir pastes longos",
     "searchWords": "paste colar colado dobrar chip resumo placeholder texto",
     "descriptionNextPaste": "Um paste que {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale a partir do próximo paste, em todas as sessões de {provider}.",
-    "descriptionNextSession": "Um paste que {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale para as sessões abertas depois da mudança.",
-    "label": "Expandir pastes longos em {provider}"
+    "descriptionNextSession": "Um paste que {provider} dobraria num placeholder entra como o texto inteiro, para você editar antes de enviar. Vale para as sessões abertas depois da mudança."
   },
   "subagentCardsSetting": {
     "title": "Subagentes como sessões do lich",
     "searchWords": "agente subagente card worktree delegar segundo plano",
-    "description": "Um subagente de uso geral abre o próprio card e a própria worktree em vez de rodar escondido dentro de {provider}. Vale para as sessões abertas depois da mudança.",
-    "label": "Executar os subagentes de {provider} como sessões do lich"
+    "description": "Um subagente de uso geral abre o próprio card e a própria worktree em vez de rodar escondido dentro de {provider}. Vale para as sessões abertas depois da mudança."
   },
   "ultracodeSetting": {
     "title": "Ultracode",
     "searchWords": "fluxo de trabalho orquestração multiagente esforço",
-    "description": "Toda sessão de {provider} começa com o ultracode ligado, orquestrando fluxos multiagente no esforço em que rodar. Ele continua ligado quando a sessão reinicia ou é retomada.",
-    "label": "Iniciar sessões de {provider} em ultracode"
+    "description": "Toda sessão de {provider} começa com o ultracode ligado, orquestrando fluxos multiagente no esforço em que rodar. Ele continua ligado quando a sessão reinicia ou é retomada."
   },
   "sandboxSettings": {
     "rung": {
@@ -372,7 +318,6 @@
     "ghDescription": "gh funciona lá dentro. O agente pode ler o token do próprio ambiente e gastá-lo fora deste repositório.",
     "ghAccount": "Como {login}.",
     "ghActiveAccount": "Como a conta ativa do gh.",
-    "rungLabel": "Quais sessões de {provider} rodam confinadas",
     "confirmTitle": "Confinar menos sessões de {provider}",
     "confirmDescription": "{rung}: {exposes}",
     "confirm": "Deixar sem confinamento",
@@ -391,10 +336,8 @@
     "account": "Conta do GitHub",
     "accountFor": "Conta do GitHub para {name}",
     "accountSearchWords": "login gh trocar",
-    "openProject": "Abra um projeto para configurar o controle de versão dele.",
     "accountDescription": "Qual conta o lich usa para rodar o gh neste projeto: pull requests, checks e checkouts de PR. O gh mantém uma conta ativa por host, então um repositório que só outra conta enxerga aparece como não encontrado. Contas de um host enterprise aparecem listadas com ele.",
     "activeAccount": "conta ativa do gh",
-    "selectAccount": "Selecione uma conta",
     "listFailed": "Não foi possível listar as contas do GitHub: {error}",
     "noAccounts": "O gh não está logado em nenhuma conta. Execute `gh auth login` em um terminal."
   },
@@ -416,12 +359,8 @@
     "title": "Plugin do lich",
     "searchWords": "hooks instalar",
     "description": "Status da sessão, títulos, atualização do git e retomada, dentro das CLIs de provedor que conseguem rodá-lo.",
-    "installing": "Instalando o plugin do lich para {name}…",
     "installed": "Plugin instalado. Reinicie suas sessões para aplicar.",
-    "installFailed": "A instalação falhou",
-    "updating": "Atualizando o plugin do lich para {name}…",
     "updated": "Plugin atualizado. Reinicie suas sessões para aplicar.",
-    "updateFailed": "A atualização falhou",
     "checked": "Verificado.",
     "checkFailed": "A verificação falhou: você está online?",
     "cliMissing": "CLI não instalada",
@@ -430,26 +369,16 @@
     "install": "Instalar",
     "updateTo": "Atualizar para v{version}",
     "updateAll": "Atualizar todos",
-    "updatingAll": "Atualizando o plugin do lich em todas as CLIs…",
     "installVersion": "Instalar v{version}",
-    "codexHint": "Codex: rode /hooks em uma sessão do Codex para confiar nos hooks do plugin.",
-    "crushHint": "Crush: informa o id da sessão e atualiza o status do git. Não tem evento de fim de turno, então seus cards não mostram status e mantêm o próprio nome.",
-    "ompHint": "oh-my-pi: informa status, nome e mudanças do git. Não tem evento de aprovação observado, então uma sessão esperando sua permissão mostra um spinner em vez de um sino.",
-    "antigravityHint": "Antigravity: informa status, nome e mudanças do git. Não tem evento de aprovação observado, então uma sessão esperando sua permissão mostra um spinner em vez de um sino.",
-    "cursorHint": "Cursor CLI: roda o plugin instalado no Claude Code, então informa o que aquela versão informa e atualiza junto com ela. O lich adiciona aqui apenas as próprias ferramentas. Como os dois acima, não emite evento de aprovação, então uma sessão esperando sua permissão mostra um spinner em vez de um sino.",
     "checkForUpdates": "Buscar atualizações"
   },
   "helpSettings": {
     "bugTitle": "Reportar um bug",
     "bugSearchWords": "issue problema github",
-    "bugDescription": "Abre o formulário de bug no seu navegador com a versão e a plataforma preenchidas. O lich não cria a issue: você mesmo a escreve. Execute `lich rage` em um terminal para empacotar o log, as versões e o que o lich encontrou nesta máquina em um único arquivo para anexar.",
     "openBugReport": "Abrir reporte de bug",
     "logTitle": "Arquivo de log",
-    "logSearchWords": "depuração logs",
-    "logDescription": "O log contém caminhos absolutos, nomes de projetos e branches e o seu login do gh, mas nunca um token de sessão. Leia antes de anexá-lo a qualquer coisa.",
     "openingLogFolder": "Abrindo a pasta de logs…",
     "logFolderOpened": "Pasta de logs aberta.",
-    "openLogFolderFailed": "Não foi possível abrir a pasta de logs",
     "openLogFolder": "Abrir pasta de logs",
     "noLogFile": "Log só no stderr: não há arquivo de log.",
     "aboutTitle": "Sobre",
@@ -461,8 +390,7 @@
     "sectionGeneral": "Geral",
     "sectionEditor": "Editor",
     "hideWhitespaceTitle": "Ocultar espaços em branco nos diffs",
-    "hideWhitespaceSearchWords": "espaço indentação revisão ignorar",
-    "hideWhitespaceDescription": "Deixa de fora as mudanças que só mexem no espaçamento, na aba Revisão."
+    "hideWhitespaceSearchWords": "espaço indentação revisão ignorar"
   },
   "settingsNav": {
     "scopeLabel": "Escopo",
@@ -518,8 +446,6 @@
     "editorSizeReset": "Redefinir o tamanho do texto do editor"
   },
   "settingsEditor": {
-    "hideWhitespaceTitle": "Ocultar espaços em branco nos diffs",
-    "hideWhitespaceSearchWords": "espaço indentação revisão ignorar",
     "hideWhitespaceDescription": "Omite mudanças que só mexem no espaçamento na aba Review."
   },
   "settingsTheme": {

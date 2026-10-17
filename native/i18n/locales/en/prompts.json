@@ -9,13 +9,7 @@
     "checksOmitted": {
       "one": "\n\n…and {count} more failing check not listed.",
       "other": "\n\n…and {count} more failing checks not listed."
-    },
-    "create": "Branch {branch} has no pull request yet. Open one with `gh pr create`: push the branch first if it is not on the remote, write the title and body from the commits and the diff against the base branch, and follow the repository's pull request template if it has one."
-  },
-  "delegate": {
-    "session": "Delegate to the \"{target}\" session: ",
-    "newWorktree": "Delegate to a new worktree session: ",
-    "newWorktreeWithCommand": "Delegate to a new worktree session (run `lich open --worktree <branch> --prompt <task>`): "
+    }
   },
   "reviewComments": {
     "header": "Review comments:"

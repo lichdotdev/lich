@@ -3,10 +3,6 @@
     "file": {
       "one": "{count} arquivo",
       "other": "{count} arquivos"
-    },
-    "commit": {
-      "one": "{count} commit",
-      "other": "{count} commits"
     }
   },
   "time": {
@@ -14,33 +10,18 @@
   },
   "action": {
     "cancel": "Cancelar",
-    "save": "Salvar",
     "create": "Criar"
   },
   "checkAgainButton": {
     "check": "Verificar novamente",
     "checking": "Verificando…"
   },
-  "errorBoundary": {
-    "stoppedRendering": "{label} parou de renderizar",
-    "reload": "Recarregar a janela",
-    "retry": "Tentar novamente"
-  },
   "stepper": {
     "default": "Padrão"
-  },
-  "toolMissing": {
-    "notInstalled": "{label} não está instalado",
-    "install": "Instalar {bin}"
   },
   "pickerDialog": {
     "navigate": "navegar",
     "filter": "filtrar",
     "close": "fechar"
-  },
-  "ui": {
-    "dialog": {
-      "close": "Fechar"
-    }
   }
 }

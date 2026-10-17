@@ -9,13 +9,7 @@
     "checksOmitted": {
       "one": "\n\n…e mais {count} check com falha não listado.",
       "other": "\n\n…e mais {count} checks com falha não listados."
-    },
-    "create": "A branch {branch} ainda não tem pull request. Abra um com `gh pr create`: faça o push da branch antes se ela não estiver no remoto, escreva o título e o corpo a partir dos commits e do diff contra a branch base, e siga o template de pull request do repositório, se houver."
-  },
-  "delegate": {
-    "session": "Delegue para a sessão \"{target}\": ",
-    "newWorktree": "Delegue para uma nova sessão em worktree: ",
-    "newWorktreeWithCommand": "Delegue para uma nova sessão em worktree (rode `lich open --worktree <branch> --prompt <task>`): "
+    }
   },
   "reviewComments": {
     "header": "Comentários de revisão:"
