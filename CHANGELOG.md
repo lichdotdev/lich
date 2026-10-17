@@ -55,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Every update opens the native window.** The first launch of each release
+  switches lich to the native window, falling back to the web one where it
+  cannot start; switch back in Settings and lich stays on the web window until
+  the next release. The first time the native window opens, it says it is
+  experimental and links to a bug report.
 - **A lighter status ring in the native window.** The ring around a
   session card's icon is drawn thinner, to read at the weight the web
   window gives it.

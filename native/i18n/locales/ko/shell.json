@@ -51,6 +51,12 @@
     "handsOnTime": "직접 작업 시간",
     "handsOnFailed": "직접 작업 시간을 읽을 수 없습니다."
   },
+  "experimentalNotice": {
+    "title": "이 창은 실험적입니다",
+    "description": "네이티브 창은 새로 나온 실험적 기능입니다. 문제가 생기거나 이상하게 보이면 꼭 이슈를 열어 알려 주세요. 무엇을 고쳐야 할지 알 수 있는 방법입니다.",
+    "gotIt": "확인",
+    "reportIssue": "문제 보고"
+  },
   "gitMissingGate": {
     "title": "git이 설치되어 있지 않습니다",
     "description": "lich는 모든 브랜치, diff, worktree를 git으로 읽습니다. git이 없어도 세션은 실행되지만, 버전 관리 화면은 비어 있습니다.",

@@ -14,7 +14,21 @@ const (
 	WindowWeb     = "web"
 	WindowNative  = "native"
 	WindowKindKey = "window.kind"
+	// NativeReleaseKey is the release that last put lich on the native window.
+	NativeReleaseKey = "window.nativeRelease"
 )
+
+// devVersion is main.version in a build without a release tag.
+const devVersion = "dev"
+
+// SwitchesToNative reports whether a launch of version puts lich on the
+// native window, whatever was chosen before: once per release, so every
+// update is tried on it while it is experimental, and a user who switched
+// back keeps the web window until the next one. A dev build never does, nor
+// an install without the native binary, which would only fall back.
+func SwitchesToNative(version, lastSwitched string, nativeShipped bool) bool {
+	return nativeShipped && version != devVersion && version != lastSwitched
+}
 
 // NativeHooks are how lich drives the native window (`lich native`), wired by
 // main.

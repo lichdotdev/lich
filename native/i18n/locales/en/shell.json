@@ -51,6 +51,12 @@
     "handsOnTime": "Hands-on time",
     "handsOnFailed": "Could not read hands-on time."
   },
+  "experimentalNotice": {
+    "title": "This window is experimental",
+    "description": "The native window is new and still experimental. If anything breaks or looks wrong, please open an issue and tell us: it is how we find out what to fix.",
+    "gotIt": "Got it",
+    "reportIssue": "Report an issue"
+  },
   "gitMissingGate": {
     "title": "git is not installed",
     "description": "lich reads every branch, diff and worktree through git. Sessions still run without it — the version control surfaces stay empty.",

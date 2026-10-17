@@ -135,6 +135,7 @@ type window struct {
 	notifier   *notifier
 	optIn      notifyOptIn
 	gitMissing gitMissing
+	beta       experimentalNotice
 	setup      providerSetup
 	plugin     pluginGate
 	appUpdate  appUpdateGate
@@ -414,6 +415,10 @@ func (u *window) connect() error {
 		go u.checkGit(false)
 	}
 	go u.settings.startupPatchNotes()
+	u.beta.open.Store(*flagExperimentalNotice)
+	if !*flagExperimentalNotice {
+		go u.checkExperimentalNotice()
+	}
 	go u.pollAppUpdate()
 	return nil
 }
@@ -471,6 +476,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)
 		u.layoutGitMissing(gtx, u.theme)
+		u.layoutExperimentalNotice(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)

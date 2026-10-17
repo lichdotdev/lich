@@ -600,3 +600,21 @@ func TestNativeWindowThatCannotStartFallsBackToTheWebOne(t *testing.T) {
 		t.Fatalf("launch failing: err %v, web shown %d; want the web window", err, r.shown)
 	}
 }
+
+func TestSwitchesToNativeOncePerRelease(t *testing.T) {
+	cases := []struct {
+		name, version, last string
+		shipped, want       bool
+	}{
+		{"first launch of a release", "0.69.0", "", true, true},
+		{"an update", "0.69.0", "0.68.0", true, true},
+		{"the same release again", "0.69.0", "0.69.0", true, false},
+		{"no native binary", "0.69.0", "0.68.0", false, false},
+		{"a dev build", "dev", "", true, false},
+	}
+	for _, c := range cases {
+		if got := SwitchesToNative(c.version, c.last, c.shipped); got != c.want {
+			t.Errorf("%s: SwitchesToNative(%q, %q, %v) = %v, want %v", c.name, c.version, c.last, c.shipped, got, c.want)
+		}
+	}
+}

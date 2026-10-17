@@ -367,6 +367,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		Close:  func() { hub.Emit(windowCloseEvent, nil) },
 		Locate: func() (string, error) { return cli.NativeExecutable(os.Getenv) },
 	})
+	switchToNativeOnRelease(db)
 	sys.SetWindowChoice(func() string { return windowChoice(db) })
 	dispatcher.Register("system", sys)
 	// Deleting a session for good takes any prompt parked on it, and the row is
@@ -949,6 +950,28 @@ func windowChoice(db *store.Service) string {
 		slog.Warn("read the window choice, opening the web window", "err", err)
 	}
 	return kind
+}
+
+// switchToNativeOnRelease chooses the native window on the first launch of a
+// release (system.SwitchesToNative). Failing to write leaves the choice the
+// user had.
+func switchToNativeOnRelease(db *store.Service) {
+	last, err := db.GetSetting(system.NativeReleaseKey, "")
+	if err != nil {
+		slog.Warn("read the release that last chose the native window", "err", err)
+		return
+	}
+	_, locateErr := cli.NativeExecutable(os.Getenv)
+	if !system.SwitchesToNative(version, last, locateErr == nil) {
+		return
+	}
+	if err := db.SetSetting(system.WindowKindKey, "", system.WindowNative); err != nil {
+		slog.Warn("choose the native window for this release", "err", err)
+		return
+	}
+	if err := db.SetSetting(system.NativeReleaseKey, "", version); err != nil {
+		slog.Warn("record the release that chose the native window", "err", err)
+	}
 }
 
 // showWindow opens the chosen window where nobody waits on the answer but

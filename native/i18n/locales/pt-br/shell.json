@@ -51,6 +51,12 @@
     "handsOnTime": "Tempo de interação",
     "handsOnFailed": "Não foi possível ler o tempo de interação."
   },
+  "experimentalNotice": {
+    "title": "Esta janela é experimental",
+    "description": "A janela nativa é nova e ainda experimental. Se algo quebrar ou parecer errado, por favor, abra uma issue e conte pra gente: é assim que descobrimos o que corrigir.",
+    "gotIt": "Entendi",
+    "reportIssue": "Reportar um problema"
+  },
   "gitMissingGate": {
     "title": "O git não está instalado",
     "description": "O lich lê cada branch, diff e worktree pelo git. As sessões continuam funcionando sem ele, mas as telas de controle de versão ficam vazias.",

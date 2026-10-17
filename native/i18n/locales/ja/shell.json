@@ -51,6 +51,12 @@
     "handsOnTime": "作業時間",
     "handsOnFailed": "作業時間を取得できませんでした。"
   },
+  "experimentalNotice": {
+    "title": "このウィンドウは試験的です",
+    "description": "ネイティブウィンドウは新しく、まだ試験段階です。何かが壊れたり、おかしく見えたりしたら、ぜひ issue を作成して教えてください。修正すべき点を知る手がかりになります。",
+    "gotIt": "了解",
+    "reportIssue": "問題を報告"
+  },
   "gitMissingGate": {
     "title": "git がインストールされていません",
     "description": "lich はブランチ、差分、ワークツリーをすべて git で読み取ります。git がなくてもセッションは動きますが、バージョン管理の画面は空のままです。",

@@ -51,6 +51,12 @@
     "handsOnTime": "Tiempo activo",
     "handsOnFailed": "No se pudo leer el tiempo activo."
   },
+  "experimentalNotice": {
+    "title": "Esta ventana es experimental",
+    "description": "La ventana nativa es nueva y todavía experimental. Si algo falla o se ve mal, por favor, abre un issue y cuéntanoslo: así sabemos qué corregir.",
+    "gotIt": "Entendido",
+    "reportIssue": "Reportar un problema"
+  },
   "gitMissingGate": {
     "title": "git no está instalado",
     "description": "lich lee cada rama, diff y worktree a través de git. Las sesiones siguen funcionando sin él, pero las superficies de control de versiones quedan vacías.",
