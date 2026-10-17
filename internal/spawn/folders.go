@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // FiledEventName carries sessions whose folder changed outside the window, so

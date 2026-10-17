@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/store"
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // newControlService is a workspace where the caller s1 and the target auth-fix

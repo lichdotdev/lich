@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/omartelo/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // A scheduled prompt is the user's own words parked on a session to be typed at

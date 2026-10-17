@@ -32,10 +32,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/ghrelease"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/semver"
-	"github.com/omartelo/lich/internal/winexec"
+	"github.com/lichdotdev/lich/internal/ghrelease"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/winexec"
 )
 
 const (

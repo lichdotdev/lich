@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/omartelo/lich/internal/pricing"
+	"github.com/lichdotdev/lich/internal/pricing"
 )
 
 // rateSource prices a model's tokens. An interface so the cost scan can be

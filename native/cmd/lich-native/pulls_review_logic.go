@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // timelineItem is one entry of the Conversation tab: exactly one of review,

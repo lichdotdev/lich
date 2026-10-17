@@ -8,7 +8,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 var (

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // modStatus answers a mod's read of its session's errands

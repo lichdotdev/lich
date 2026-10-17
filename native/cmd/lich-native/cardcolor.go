@@ -3,7 +3,7 @@ package main
 import (
 	"image/color"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // cardColors is frontend/src/lib/session/card-color.ts's CARD_COLORS.

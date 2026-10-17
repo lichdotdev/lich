@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/gitutil"
-	"github.com/omartelo/lich/internal/semver"
-	"github.com/omartelo/lich/internal/winexec"
+	"github.com/lichdotdev/lich/internal/gitutil"
+	"github.com/lichdotdev/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/winexec"
 )
 
 const (

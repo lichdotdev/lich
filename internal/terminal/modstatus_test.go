@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 func modStatusURL(tr *transport, session string) string {

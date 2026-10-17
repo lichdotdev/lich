@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/rpc"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/rpc"
 )
 
 // costWorkspace opens a store with two projects and the sessions named, so a

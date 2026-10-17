@@ -40,7 +40,7 @@ fi
 
 # The root package is the main bootstrap invariant #1 exempts; its logic lives
 # in internal/, so its files leave the denominator. Every other boundary is counted.
-grep -v '^github.com/omartelo/lich/[^/]*\.go:' "$cover" >"$cover.gated"
+grep -v '^github.com/lichdotdev/lich/[^/]*\.go:' "$cover" >"$cover.gated"
 total="$(go tool cover -func="$cover.gated" | awk '/^total:/ {print $3}')"
 
 min=80

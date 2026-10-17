@@ -13,7 +13,7 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 const blockTestPatch = "diff --git a/a.go b/a.go\nindex 1..2 100644\n--- a/a.go\n+++ b/a.go\n@@ -1,3 +1,3 @@\n one\n-two\n+TWO\n three\n"

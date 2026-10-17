@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/project"
 )
 
 // TestWrapSetup proves the wrap decision table: no script or Windows leaves

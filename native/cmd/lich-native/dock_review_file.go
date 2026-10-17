@@ -11,10 +11,10 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichdiff"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichdiff"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // largeFileRows is FileDiff's LARGE_FILE_LINES: a file whose diff draws more

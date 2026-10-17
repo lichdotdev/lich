@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // now is time.Now, replaced in tests: a close stamps the row with it, and a

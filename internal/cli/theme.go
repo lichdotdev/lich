@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/omartelo/lich/internal/themes"
+	"github.com/lichdotdev/lich/internal/themes"
 )
 
 // themeRow is one installed theme as `lich theme list` prints it: what a

@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/profilestore"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/winexec"
+	"github.com/lichdotdev/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/winexec"
 )
 
 const (

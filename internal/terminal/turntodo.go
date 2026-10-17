@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // todoEventName carries how far a session got through the task list its agent

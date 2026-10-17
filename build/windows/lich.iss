@@ -19,8 +19,8 @@ AppId={{6B3E1DD5-3D8D-4AD8-8476-D8EA84D4CEBE}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=omartelo
-AppPublisherURL=https://github.com/omartelo/lich
-AppSupportURL=https://github.com/omartelo/lich/issues
+AppPublisherURL=https://github.com/lichdotdev/lich
+AppSupportURL=https://github.com/lichdotdev/lich/issues
 ; Per-user: lands in %LocalAppData%\Programs\lich, no admin rights involved.
 PrivilegesRequired=lowest
 DefaultDirName={autopf}\{#AppName}

@@ -16,7 +16,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/omartelo/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // newService builds a Service whose home fallback is an empty directory, so a

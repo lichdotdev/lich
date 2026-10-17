@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 func TestWorktreeLeftByOnlyTheLastSessionOfAWorktree(t *testing.T) {

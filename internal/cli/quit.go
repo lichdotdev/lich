@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/omartelo/lich/internal/system"
+	"github.com/lichdotdev/lich/internal/system"
 )
 
 // quitWait bounds waiting for a quitting lich to let go of its port. Most of it

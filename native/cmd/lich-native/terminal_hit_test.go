@@ -11,7 +11,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/gioterm"
 )
 
 // fixedCells is a renderer whose cells are mouseTestCellW×mouseTestCellH

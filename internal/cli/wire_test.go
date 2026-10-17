@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/rpc"
-	"github.com/omartelo/lich/internal/spawn"
-	"github.com/omartelo/lich/internal/store"
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/rpc"
+	"github.com/lichdotdev/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // The tests above answer the CLI with canned JSON, which proves what it prints

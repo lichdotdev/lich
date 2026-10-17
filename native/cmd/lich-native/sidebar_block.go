@@ -6,7 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // blockState is one SessionGroup's widget state, kept per project and block

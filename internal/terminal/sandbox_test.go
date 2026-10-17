@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/sandbox"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/sandbox"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // stubSandboxStore answers what confined asks, and records what it writes back.

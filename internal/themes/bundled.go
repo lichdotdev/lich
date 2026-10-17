@@ -3,7 +3,7 @@ package themes
 import (
 	"encoding/json"
 
-	themeassets "github.com/omartelo/lich/themes"
+	themeassets "github.com/lichdotdev/lich/themes"
 )
 
 func set(keys ...string) map[string]struct{} {

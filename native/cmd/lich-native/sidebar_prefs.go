@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // The web window's localStorage keys, kept as backend settings here. Width

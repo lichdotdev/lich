@@ -12,7 +12,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/gioterm"
 )
 
 // terminalRig is a router with a focused terminal-like handler, and a frame

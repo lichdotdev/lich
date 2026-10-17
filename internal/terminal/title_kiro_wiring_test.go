@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // titleStore records what reached the guarded write, which is the last thing

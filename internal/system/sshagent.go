@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/sandbox"
+	"github.com/lichdotdev/lich/internal/sandbox"
 )
 
 // agentListTimeout caps the call to ssh-add. Listing identities is a round trip

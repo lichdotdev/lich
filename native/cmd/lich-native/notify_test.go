@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 type sentNotice struct{ summary, detail string }

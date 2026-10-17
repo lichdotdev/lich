@@ -15,7 +15,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // toggleRig lays a widget out through an input.Router, so a pointer event

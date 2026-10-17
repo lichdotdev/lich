@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 // askCall bounds `lich ask`: the longest wait spawn.Ask holds, plus the trip

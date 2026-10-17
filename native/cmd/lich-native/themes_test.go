@@ -12,8 +12,8 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/godemirror/tags"
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // bundledTheme reads themes/<id>.json, the file the backend serves the

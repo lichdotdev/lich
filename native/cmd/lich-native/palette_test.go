@@ -12,8 +12,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // paletteRig is a router with the palette's field focused, and a frame that

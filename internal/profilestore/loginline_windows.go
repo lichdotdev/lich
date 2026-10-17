@@ -5,7 +5,7 @@ package profilestore
 import (
 	"strings"
 
-	"github.com/omartelo/lich/internal/shquote"
+	"github.com/lichdotdev/lich/internal/shquote"
 )
 
 // LoginLine is the PowerShell line that runs `bin args` as a profile,

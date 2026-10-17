@@ -1,6 +1,6 @@
 package terminal
 
-import "github.com/omartelo/lich/internal/providers"
+import "github.com/lichdotdev/lich/internal/providers"
 
 // ResumeAvailable reports whether the conversation providerSessionID names can
 // still be reopened, so the frontend only offers a resume it can honour.

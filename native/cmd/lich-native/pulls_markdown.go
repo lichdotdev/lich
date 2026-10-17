@@ -10,7 +10,7 @@ import (
 	"gioui.org/x/markdown"
 	"gioui.org/x/richtext"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // markdownH1 is mdProse's h1 text-lg.

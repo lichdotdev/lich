@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // The message lich types at the target's prompt, and the keystrokes that put it

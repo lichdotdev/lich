@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/rage"
+	"github.com/lichdotdev/lich/internal/rage"
 )
 
 // rageClient runs `lich rage` against a stub collector: the real one scans

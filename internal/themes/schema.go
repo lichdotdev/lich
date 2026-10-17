@@ -11,7 +11,7 @@ import (
 // tail of the raw URL a theme author points "$schema" at.
 const SchemaPath = "themes/lich-theme.schema.json"
 
-const schemaID = "https://raw.githubusercontent.com/omartelo/lich/main/" + SchemaPath
+const schemaID = "https://raw.githubusercontent.com/lichdotdev/lich/main/" + SchemaPath
 
 // Schema renders the JSON Schema a theme file is checked against in an editor.
 // It is generated from the same token sets and patterns validateTheme reads, so

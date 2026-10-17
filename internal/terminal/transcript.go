@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/ompprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/ompprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // globTranscript completes a transcript path under base: the parts lich does not

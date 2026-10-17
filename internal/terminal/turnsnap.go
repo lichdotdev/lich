@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // snapQueueDepth bounds the work waiting on the snapshot worker. A full queue

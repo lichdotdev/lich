@@ -8,7 +8,7 @@ import (
 
 	"gioui.org/layout"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // DiffStat.tsx's text-emerald-600 dark:text-emerald-400 and text-red-600

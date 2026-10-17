@@ -5,7 +5,7 @@
   </picture>
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <strong>简体中文</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
-  <p><a href="https://omartelo.github.io/lich/index.zh-CN.html"><strong>omartelo.github.io/lich</strong></a></p>
+  <p><a href="https://lichdotdev.github.io/lich/index.zh-CN.html"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p><strong>为你已在用的编码智能体打造的终端优先 ADE（智能体开发环境）。</strong></p>
   <p>
     打开你的项目，在真实终端里运行 Claude Code、Codex、opencode 这样的智能体，
@@ -14,7 +14,7 @@
     界面都在 lich 自带的内嵌 Chromium 里打开。
   </p>
   <p>
-    <a href="https://github.com/omartelo/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/omartelo/lich?color=4285F4&label=release" /></a>
+    <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
     <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
@@ -80,7 +80,7 @@
 `lich rage` / `lich doctor` 则留给它完全起不来的时候。
 
 项目处于活跃开发中：bug 和功能需求请提到
-[Issues](https://github.com/omartelo/lich/issues)，每个版本改了什么见
+[Issues](https://github.com/lichdotdev/lich/issues)，每个版本改了什么见
 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 各智能体支持到什么程度
@@ -137,14 +137,14 @@
 一行命令 —— 识别你的发行版、校验校验和，并通过你的包管理器安装原生软件包及其依赖：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omartelo/lich/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
 ```
 
 | 平台 | 安装方式 | 运行时依赖 |
 | --- | --- | --- |
 | **Linux** | 上面的 `install.sh`，或 AUR 的 [`lich-bin`](https://aur.archlinux.org/packages/lich-bin)（`yay -S lich-bin`） | `zenity`，以及随软件包附带的窗口所需的 glibc 2.34 或更新版本（Debian 12、Ubuntu 22.04、RHEL 9 及以上） |
 | **macOS** | `brew install --cask lichdotdev/tap/lich` | 无需任何东西 —— Apple Silicon 和 Intel 上窗口都随应用一起附带 |
-| **Windows** | 从 [Releases](https://github.com/omartelo/lich/releases) 下载安装程序或便携版 zip，或使用 Scoop：`scoop install https://github.com/omartelo/lich/releases/latest/download/lich.json` | 无需任何东西，每种方式都自带窗口 |
+| **Windows** | 从 [Releases](https://github.com/lichdotdev/lich/releases) 下载安装程序或便携版 zip，或使用 Scoop：`scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | 无需任何东西，每种方式都自带窗口 |
 
 手动的分发版软件包、Linux 压缩包和 Windows 便携版 zip 见 [INSTALL.md](INSTALL.md)。macOS 和 Windows 的
 二进制文件未签名 —— 在公证/签名做好之前，Gatekeeper 和 SmartScreen 会发出警告。用

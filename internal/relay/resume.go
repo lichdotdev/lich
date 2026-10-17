@@ -5,8 +5,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // A turn a plan's usage limit ended is picked up again once the limit resets:

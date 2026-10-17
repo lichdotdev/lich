@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/restart"
+	"github.com/lichdotdev/lich/internal/restart"
 )
 
 func newRestartTransport(t *testing.T) *transport {

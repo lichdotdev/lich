@@ -12,9 +12,9 @@
     without leaving the window. One static Go binary, no Electron: the UI
     opens in lich's own embedded Chromium on Linux, Windows and macOS.
   </p>
-  <p><a href="https://omartelo.github.io/lich/"><strong>omartelo.github.io/lich</strong></a></p>
+  <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
-    <a href="https://github.com/omartelo/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/omartelo/lich?color=4285F4&label=release" /></a>
+    <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
     <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
@@ -91,7 +91,7 @@ the conversation, a desktop notification when a session is waiting on you, and
 `lich rage` / `lich doctor` for when it will not start at all.
 
 Development is active: bugs and feature requests belong in
-[Issues](https://github.com/omartelo/lich/issues), and what changed in each
+[Issues](https://github.com/lichdotdev/lich/issues), and what changed in each
 version is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Provider support
@@ -151,14 +151,14 @@ One line — detects your distro, verifies the checksum, and installs the native
 package and its dependencies through your package manager:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omartelo/lich/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
 ```
 
 | Platform | Get it | Needs at runtime |
 | --- | --- | --- |
 | **Linux** | `install.sh` above, or AUR [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`) | `zenity`, plus glibc 2.34 or newer for the window that ships in the package (Debian 12, Ubuntu 22.04, RHEL 9 and up) |
 | **macOS** | `brew install --cask lichdotdev/tap/lich` | nothing, the window ships in the app on Apple Silicon and Intel alike |
-| **Windows** | installer or portable zip from [Releases](https://github.com/omartelo/lich/releases), or Scoop: `scoop install https://github.com/omartelo/lich/releases/latest/download/lich.json` | nothing, the window ships with each |
+| **Windows** | installer or portable zip from [Releases](https://github.com/lichdotdev/lich/releases), or Scoop: `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | nothing, the window ships with each |
 
 Manual per-distro packages, the Linux tarball and the Windows portable zip: [INSTALL.md](INSTALL.md). The
 macOS and Windows binaries are unsigned — Gatekeeper and SmartScreen warn until

@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // writeMCPConfig drops one JSON document into dir.

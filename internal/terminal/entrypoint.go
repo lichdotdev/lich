@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/omartelo/lich/internal/shquote"
+	"github.com/lichdotdev/lich/internal/shquote"
 )
 
 // wrapEntrypoint rewrites a terminal session's spawn so its PTY opens straight

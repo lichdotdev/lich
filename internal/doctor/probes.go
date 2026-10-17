@@ -3,9 +3,9 @@ package doctor
 import (
 	"context"
 
-	"github.com/omartelo/lich/internal/chromium"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/chromium"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/singleton"
 )
 
 // The three lookups below reach the machine the same way for both diagnostics:

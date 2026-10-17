@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // The section ids, Settings.tsx's plus General and Editor, which only the

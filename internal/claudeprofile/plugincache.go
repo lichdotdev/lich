@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/omartelo/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
 // A profile keeps a plugins/cache of its own, and every version its

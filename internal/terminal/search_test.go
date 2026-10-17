@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // userLine and assistantText build the two transcript shapes a search reads: a

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // spawnLogBin is a stand-in Claude Code that writes the config dir it was given

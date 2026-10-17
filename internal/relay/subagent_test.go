@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // plantSubagent is plant for an errand handed over with SendSubagent, already

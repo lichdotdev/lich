@@ -5,7 +5,7 @@ import (
 
 	"gioui.org/io/key"
 
-	"github.com/omartelo/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/gioterm"
 )
 
 func TestTerminalKeyBytesRewritesThePassedThroughChords(t *testing.T) {

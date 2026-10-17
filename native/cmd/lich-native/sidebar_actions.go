@@ -5,7 +5,7 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // errNoProject is an action on the sidebar with no project on screen.

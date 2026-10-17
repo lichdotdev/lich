@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/shquote"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/shquote"
 )
 
 // The Kiro CLI side. Kiro has no plugin system: its hooks are a block inside an

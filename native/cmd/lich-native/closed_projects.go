@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // closedProjects is the projects closed earlier, as the window knows them: one

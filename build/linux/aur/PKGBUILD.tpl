@@ -6,7 +6,7 @@ pkgver=@VERSION@
 pkgrel=1
 pkgdesc="A terminal-first ADE for the coding agents you already use"
 arch=('x86_64')
-url="https://github.com/omartelo/lich"
+url="https://github.com/lichdotdev/lich"
 license=('AGPL-3.0-only')
 provides=('lich')
 conflicts=('lich')
@@ -18,8 +18,8 @@ depends=('glibc' 'gcc-libs' 'nss' 'nspr' 'glib2' 'at-spi2-core' 'dbus' 'libcups'
          'alsa-lib' 'libglvnd' 'wayland' 'libxkbcommon-x11' 'libxcursor' 'fontconfig')
 optdepends=('zenity: native folder picker')
 source=("lich-v${pkgver}-linux-amd64.tar.zst::${url}/releases/download/v${pkgver}/lich-v${pkgver}-linux-amd64.tar.zst"
-        "lich-${pkgver}.desktop::https://raw.githubusercontent.com/omartelo/lich/v${pkgver}/build/linux/lich.desktop"
-        "lich-${pkgver}.png::https://raw.githubusercontent.com/omartelo/lich/v${pkgver}/build/appicon.png")
+        "lich-${pkgver}.desktop::https://raw.githubusercontent.com/lichdotdev/lich/v${pkgver}/build/linux/lich.desktop"
+        "lich-${pkgver}.png::https://raw.githubusercontent.com/lichdotdev/lich/v${pkgver}/build/appicon.png")
 sha256sums=('SKIP'
             'SKIP'
             'SKIP')

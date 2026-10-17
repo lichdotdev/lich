@@ -17,9 +17,9 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/lichdotdev/lich/internal/relpath"
+	"github.com/lichdotdev/lich/internal/sandbox"
 	"github.com/ncruces/zenity"
-	"github.com/omartelo/lich/internal/relpath"
-	"github.com/omartelo/lich/internal/sandbox"
 )
 
 type Service struct {

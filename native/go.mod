@@ -1,4 +1,4 @@
-module github.com/omartelo/lich/native
+module github.com/lichdotdev/lich/native
 
 go 1.27.0
 

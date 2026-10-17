@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // oldVersion is a release a profile was left on before Personal moved past it.

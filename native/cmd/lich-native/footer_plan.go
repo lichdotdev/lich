@@ -8,9 +8,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // sessionOf reads one session back out of the hydration the window loads, which

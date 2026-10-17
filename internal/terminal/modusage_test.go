@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/quota"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/quota"
 )
 
 func reportOf(conversation string, window int) usageReport {

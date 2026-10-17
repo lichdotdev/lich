@@ -6,8 +6,8 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // scopeSelector is the button at the top of the nav, Global or the project

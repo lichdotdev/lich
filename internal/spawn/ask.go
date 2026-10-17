@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // AskWaitLimit is how long Ask waits for an answer: the 90 seconds an MCP call

@@ -19,12 +19,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/ghrelease"
-	"github.com/omartelo/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/ghrelease"
+	"github.com/lichdotdev/lich/internal/semver"
 )
 
 const (
-	repo             = "omartelo/lich"
+	repo             = "lichdotdev/lich"
 	latestReleaseURL = "https://api.github.com/repos/" + repo + "/releases/latest"
 	releaseBase      = "https://github.com/" + repo + "/releases/download/"
 	releaseTagBase   = "https://github.com/" + repo + "/releases/tag/"

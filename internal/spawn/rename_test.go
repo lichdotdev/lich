@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 func TestRenameGivesTheCardTheName(t *testing.T) {

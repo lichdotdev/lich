@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // An agent CLI the session's agent runs as a tool (`claude -p`, `cursor-agent

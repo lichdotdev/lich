@@ -13,7 +13,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // ToggleVariant is shadcn's toggle variant (components/ui/toggle.tsx).

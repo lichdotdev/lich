@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/store"
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // added is one session row the fake store was asked to write.

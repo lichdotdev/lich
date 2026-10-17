@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/winexec"
+	"github.com/lichdotdev/lich/internal/winexec"
 )
 
 // waitDelay caps how long a call keeps this process after the child itself is

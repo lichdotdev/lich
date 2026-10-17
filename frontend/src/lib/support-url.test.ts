@@ -15,7 +15,7 @@ describe("bugReportUrl", () => {
   it("points at the repository's new-issue form", () => {
     const url = new URL(bugReportUrl(diagnostics))
     expect(url.origin).toBe("https://github.com")
-    expect(url.pathname).toBe("/omartelo/lich/issues/new")
+    expect(url.pathname).toBe("/lichdotdev/lich/issues/new")
   })
 
   it("carries a dev build through instead of dropping the field", () => {

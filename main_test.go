@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/agentplugin"
-	"github.com/omartelo/lich/internal/drop"
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/rpc"
-	"github.com/omartelo/lich/internal/store"
-	"github.com/omartelo/lich/internal/system"
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/drop"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/rpc"
+	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/system"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // denied spells out denyInternal's list a second time, and names the type each

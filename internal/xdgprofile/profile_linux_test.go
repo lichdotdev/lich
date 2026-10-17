@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
 // fakeCLIGuard turns the test binary into a stand-in for the three CLIs

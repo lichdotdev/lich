@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // What a caller may do with the checkout a session was the last one in. The

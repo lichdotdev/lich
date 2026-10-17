@@ -12,9 +12,9 @@
     ウィンドウを離れずに視界に収められます。静的な Go バイナリ1つで、Electron は使いません。
     UI は Linux、Windows、macOS のいずれでも、lich 独自の組み込み Chromium で開きます。
   </p>
-  <p><a href="https://omartelo.github.io/lich/"><strong>omartelo.github.io/lich</strong></a></p>
+  <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
-    <a href="https://github.com/omartelo/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/omartelo/lich?color=4285F4&label=release" /></a>
+    <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
     <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
@@ -91,7 +91,7 @@ lich でできること：
 まったく起動しないときのための `lich rage` / `lich doctor` があります。
 
 開発は活発に進んでいます。バグや機能要望は
-[Issues](https://github.com/omartelo/lich/issues) へ、各バージョンの変更点は
+[Issues](https://github.com/lichdotdev/lich/issues) へ、各バージョンの変更点は
 [CHANGELOG.md](CHANGELOG.md) をご覧ください。
 
 ## プロバイダー対応状況
@@ -149,14 +149,14 @@ lich は各 CLI が書き残したものを読むので、書き残す内容は 
 パッケージマネージャー経由でネイティブパッケージと依存関係をインストールします：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omartelo/lich/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
 ```
 
 | プラットフォーム | 入手方法 | 実行時に必要なもの |
 | --- | --- | --- |
 | **Linux** | 上記の `install.sh`、または AUR の [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`) | `zenity`。加えて、パッケージに同梱されるウィンドウのために glibc 2.34 以降（Debian 12、Ubuntu 22.04、RHEL 9 以上） |
 | **macOS** | `brew install --cask lichdotdev/tap/lich` | 不要。ウィンドウはアプリに同梱されており、Apple Silicon と Intel のどちらでも使えます |
-| **Windows** | [Releases](https://github.com/omartelo/lich/releases) のインストーラーまたはポータブル zip、または Scoop：`scoop install https://github.com/omartelo/lich/releases/latest/download/lich.json` | 不要。どちらにもウィンドウが同梱されています |
+| **Windows** | [Releases](https://github.com/lichdotdev/lich/releases) のインストーラーまたはポータブル zip、または Scoop：`scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | 不要。どちらにもウィンドウが同梱されています |
 
 ディストリビューションごとの手動パッケージ、Linux の tarball、Windows のポータブル zip については
 [INSTALL.md](INSTALL.md) をご覧ください。macOS と Windows のバイナリは署名されていないため、

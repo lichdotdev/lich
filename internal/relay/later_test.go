@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // scheduleWriter records what deliverDue wrote back to the session rows.

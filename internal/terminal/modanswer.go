@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/omartelo/lich/internal/agentplugin"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/semver"
 )
 
 // modAnswerRequest is a worker's final message, which its mod reports as the

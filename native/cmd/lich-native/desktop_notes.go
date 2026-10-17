@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // desktopNote is one session's desktop notification. A session has at most

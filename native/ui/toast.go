@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // ToastVariant is which sonner call raised the toast: toast(),

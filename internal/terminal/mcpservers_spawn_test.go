@@ -11,8 +11,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // The spawn is what resolves the list, so a server registered while lich was

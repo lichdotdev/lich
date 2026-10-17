@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
 // windowsMachine points the home, %APPDATA% and lich's config dir at one

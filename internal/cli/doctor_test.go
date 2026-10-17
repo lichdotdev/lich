@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/doctor"
+	"github.com/lichdotdev/lich/internal/doctor"
 )
 
 // doctorClient runs `lich doctor` against a canned walk: the real one binds the

@@ -5,7 +5,7 @@ import (
 	"hash/fnv"
 	"image/color"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // settingsProject is an open project as the scope selector lists it.

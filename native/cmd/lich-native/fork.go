@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // forkableKinds are providers.SupportsFork: the providers whose own CLI

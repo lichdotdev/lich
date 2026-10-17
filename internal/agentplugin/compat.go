@@ -1,7 +1,7 @@
 package agentplugin
 
 import (
-	"github.com/omartelo/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/semver"
 )
 
 // The plugin releases this lich speaks the hook contract with

@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Subagent cards are on unless the user turned them off, so only the literal

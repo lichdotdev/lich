@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // The harnesses lich installs by writing files rather than by calling a CLI.

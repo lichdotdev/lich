@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // filedWorkspace is closable with folders on it: two sessions in "Apps", one in

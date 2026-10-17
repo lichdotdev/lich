@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // agentEvent and sandboxEvent are internal/terminal's session-agent and

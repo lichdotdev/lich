@@ -18,12 +18,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/shquote"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/shquote"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // stubBins is a Store returning a fixed binary path and project directory,

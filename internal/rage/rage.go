@@ -21,12 +21,12 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/omartelo/lich/internal/agentplugin"
-	"github.com/omartelo/lich/internal/doctor"
-	"github.com/omartelo/lich/internal/logging"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/sandbox"
-	"github.com/omartelo/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/doctor"
+	"github.com/lichdotdev/lich/internal/logging"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/sandbox"
+	"github.com/lichdotdev/lich/internal/singleton"
 )
 
 // maxLogBytes bounds each log generation in the archive. Rotation caps the file

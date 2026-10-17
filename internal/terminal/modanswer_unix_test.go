@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // Unix-only with the stubBins it reads, which live in the PTY suite.

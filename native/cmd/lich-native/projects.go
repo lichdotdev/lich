@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // homeScreen is the route last-screen.ts saves for Home.

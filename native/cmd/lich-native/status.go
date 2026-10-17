@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // The states a card draws an indicator for. Every other reported state (the

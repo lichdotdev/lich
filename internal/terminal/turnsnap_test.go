@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // snapRepo creates a git repository with one commit and a Service wired to keep

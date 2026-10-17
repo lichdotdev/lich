@@ -13,7 +13,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // benchCardLines is the measured case: one open 60-line diff card.

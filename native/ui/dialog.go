@@ -18,7 +18,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // The classes of dialog.tsx's DialogOverlay and DialogContent.

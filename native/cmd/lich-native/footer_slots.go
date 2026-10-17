@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // footerInput is everything FooterBar reads about what is on screen: the

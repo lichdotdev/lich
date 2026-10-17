@@ -9,12 +9,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/ompprofile"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/ompprofile"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // conversationHeadBytes bounds how much of one transcript is read to describe

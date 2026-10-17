@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 func serviceWithSessions(t *testing.T, store Store, ids ...string) *Service {

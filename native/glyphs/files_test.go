@@ -3,7 +3,7 @@ package glyphs
 import (
 	"testing"
 
-	"github.com/omartelo/lich/native/fonts"
+	"github.com/lichdotdev/lich/native/fonts"
 )
 
 // Every terminal and diff view has a Rasterizer of its own; a font file is

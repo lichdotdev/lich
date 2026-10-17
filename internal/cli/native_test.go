@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/singleton"
 )
 
 // launched is one process `lich native` started.

@@ -3,7 +3,7 @@ package main
 import (
 	"gioui.org/io/key"
 
-	"github.com/omartelo/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/gioterm"
 )
 
 // terminalKeyBytes is what a key press sends to a session: the chords of the

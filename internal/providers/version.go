@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/winexec"
+	"github.com/lichdotdev/lich/internal/winexec"
 )
 
 // versionTimeout bounds one `--version`. The slowest of the eight measured

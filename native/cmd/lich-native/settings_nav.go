@@ -15,9 +15,9 @@ import (
 	"gioui.org/widget"
 	"golang.org/x/image/math/fixed"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // The nav's geometry and its dimmed rows' opacity, from the mockup.

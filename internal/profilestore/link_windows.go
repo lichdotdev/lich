@@ -12,7 +12,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/omartelo/lich/internal/winexec"
+	"github.com/lichdotdev/lich/internal/winexec"
 	"golang.org/x/sys/windows"
 )
 

@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // tailwindHue is a Tailwind color's 400, 500 and 600 shades, the three a

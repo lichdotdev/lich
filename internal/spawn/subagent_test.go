@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // A subagent edits what the session that asked for it sees, the way Claude

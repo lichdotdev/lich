@@ -1,6 +1,6 @@
 package main
 
-import "github.com/omartelo/lich/native/lichclient"
+import "github.com/lichdotdev/lich/native/lichclient"
 
 // opencode, Cursor CLI and Kiro CLI have profiles only where the backend keeps
 // them (internal/xdgprofile.Providers): xdgProfileProviders lists the same ones.

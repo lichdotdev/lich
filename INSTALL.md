@@ -2,7 +2,7 @@
 
 lich targets Linux x86_64, Windows x64 and macOS (Apple Silicon and Intel), with
 the same window on all three. Every artifact comes from the
-[Releases](https://github.com/omartelo/lich/releases) page.
+[Releases](https://github.com/lichdotdev/lich/releases) page.
 
 Pick your system:
 
@@ -176,7 +176,7 @@ Scoop installs the portable zip from the manifest every release publishes
 beside them, no bucket to add:
 
 ```powershell
-scoop install https://github.com/omartelo/lich/releases/latest/download/lich.json
+scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json
 ```
 
 It puts `lich.exe` in the app directory with the window beside it as `shell\`,

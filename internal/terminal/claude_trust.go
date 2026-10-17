@@ -3,9 +3,9 @@ package terminal
 import (
 	"log/slog"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // inheritClaudeTrust carries a trust answer the person gave in Personal into

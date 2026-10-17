@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // rpcStub answers /rpc calls with what answer says and counts them by method.

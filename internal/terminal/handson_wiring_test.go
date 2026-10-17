@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 type failingHandsOnStore struct {

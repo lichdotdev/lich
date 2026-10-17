@@ -6,7 +6,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/omartelo/lich/internal/snippet"
+	"github.com/lichdotdev/lich/internal/snippet"
 )
 
 // backfillRate is how long the lazy backfill waits between one parked session

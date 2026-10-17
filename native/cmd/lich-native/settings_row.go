@@ -13,9 +13,9 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // The row's opacities: a global-only row seen from a project dims whole, and

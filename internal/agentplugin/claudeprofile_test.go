@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // workProfile is a scratch home with one Claude Code profile in it, and the

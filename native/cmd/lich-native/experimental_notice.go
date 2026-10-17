@@ -8,8 +8,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 var flagExperimentalNotice = flag.Bool("experimental-notice", false, "open the experimental-window notice at start, for -shot")

@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // sandboxProject is a store holding one project rooted at path, which is what

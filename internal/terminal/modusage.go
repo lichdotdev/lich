@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/quota"
+	"github.com/lichdotdev/lich/internal/quota"
 )
 
 // usageReport is what a Claude Code session measured about itself

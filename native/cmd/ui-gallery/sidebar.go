@@ -13,8 +13,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // Sidebar widths, SessionSidebar's usePanelWidth bounds in dp.

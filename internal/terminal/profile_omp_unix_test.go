@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/ompprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/ompprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // ompMachine is profileMachine for oh-my-pi: Personal's agent directory exists

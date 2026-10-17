@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // RenamedEventName carries a session's new name, so every card takes it without

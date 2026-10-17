@@ -9,7 +9,7 @@ package terminal
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // TestSessionTodoReportsTheWrittenList proves the whole read the card's count

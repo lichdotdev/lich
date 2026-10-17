@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 func controlled(state, action, value string) string {

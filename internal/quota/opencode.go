@@ -3,7 +3,7 @@ package quota
 import (
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 const (

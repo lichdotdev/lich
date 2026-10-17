@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/agentplugin"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/singleton"
 )
 
 // liveToken is the loopback credential of the fake running instance: long

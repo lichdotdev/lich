@@ -20,9 +20,9 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/restart"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/restart"
 )
 
 // Terminal I/O rides one local WebSocket carrying binary frames, instead of

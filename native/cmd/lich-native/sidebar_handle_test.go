@@ -11,7 +11,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestSidebarHandleSitsInTheGutterClearOfTheBlockListsScrollbar(t *testing.T) {

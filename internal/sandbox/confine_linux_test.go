@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // confinedHome is a home directory with the shapes the sandbox has to tell

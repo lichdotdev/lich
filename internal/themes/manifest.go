@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/omartelo/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/semver"
 )
 
 // manifestName is what marks a repository as a lich theme pack. Every other

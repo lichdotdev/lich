@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 // speak runs the MCP server over one scripted conversation and returns the

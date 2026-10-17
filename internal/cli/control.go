@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 // controlCall bounds `lich control`: the longest wait spawn.Control holds, plus

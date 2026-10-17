@@ -10,7 +10,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/glyphs"
+	"github.com/lichdotdev/lich/native/glyphs"
 )
 
 // rowRenderer composes each changed row into an image on the CPU and hands

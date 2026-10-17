@@ -5,8 +5,8 @@ package terminal
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Unix-only with the stubBins it reads, which live in the PTY suite.

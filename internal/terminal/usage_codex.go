@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/omartelo/lich/internal/pricing"
+	"github.com/lichdotdev/lich/internal/pricing"
 )
 
 // A rollout line can be much larger than a normal event. Reading 64 KiB at a

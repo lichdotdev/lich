@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // A long paste stays folded unless the user turned unfolding on, so only the

@@ -8,7 +8,7 @@ package terminal
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // A card that reports a conversation another open card runs (a `/resume`

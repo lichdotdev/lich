@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omartelo/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // A subagent errand (SendSubagent) is an ordinary one with four differences,

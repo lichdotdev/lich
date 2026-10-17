@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/singleton"
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 // answer is one method's canned reply: an RPC failure is a 4xx/5xx carrying

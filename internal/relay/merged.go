@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // AnnounceMerge tells every agent running in checkout that the pull request on

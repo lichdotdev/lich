@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/omartelo/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
 // spawnWith writes Personal's and the profile's config.toml, runs what a spawn

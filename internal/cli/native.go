@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/chromium"
-	"github.com/omartelo/lich/internal/restart"
-	"github.com/omartelo/lich/internal/system"
+	"github.com/lichdotdev/lich/internal/chromium"
+	"github.com/lichdotdev/lich/internal/restart"
+	"github.com/lichdotdev/lich/internal/system"
 )
 
 // nativeEnv pins the native window to launch, by path, the way LICH_SHELL pins

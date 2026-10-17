@@ -4,8 +4,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 const defaultGitHubHost = "github.com"

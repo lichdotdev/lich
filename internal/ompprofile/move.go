@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/omartelo/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
 // Owner is the profile holding an oh-my-pi conversation, and the path of its

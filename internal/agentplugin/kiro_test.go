@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // decodeKiroAgent parses the agent file lich writes back into the shape Kiro

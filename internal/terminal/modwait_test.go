@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // attachedModService is a service whose session s1 runs a mod that has polled

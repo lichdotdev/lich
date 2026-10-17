@@ -14,7 +14,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 var toastT0 = time.Unix(1000, 0)

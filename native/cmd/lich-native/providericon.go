@@ -1,6 +1,6 @@
 package main
 
-import "github.com/omartelo/lich/native/ui/icons"
+import "github.com/lichdotdev/lich/native/ui/icons"
 
 // providerIcons is ProviderIcon.tsx: the Lobe mark of each provider, oh-my-pi
 // wearing Pi's, and a Lucide glyph for the kinds Lobe has no mark for. Its

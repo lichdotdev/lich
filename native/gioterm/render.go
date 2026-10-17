@@ -13,7 +13,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/glyphs"
+	"github.com/lichdotdev/lich/native/glyphs"
 )
 
 // Renderer draws a Terminal's cell grid with Gio.

@@ -9,9 +9,9 @@ import (
 	"io"
 	"strings"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 // `lich mcp` is the same surface as the commands beside it, offered as MCP

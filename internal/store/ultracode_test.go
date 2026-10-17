@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 func TestSessionUltracodeRoundTrips(t *testing.T) {

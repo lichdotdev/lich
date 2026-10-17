@@ -1,6 +1,6 @@
 package system
 
-import "github.com/omartelo/lich/internal/shquote"
+import "github.com/lichdotdev/lich/internal/shquote"
 
 // openDefault hands the file to its shell association when no $VISUAL/$EDITOR
 // is set. explorer takes the path as a plain argument, which is the point: the

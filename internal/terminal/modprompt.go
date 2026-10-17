@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // SubmitPrompt queues text as a prompt for session id's Claude Code mod, as a

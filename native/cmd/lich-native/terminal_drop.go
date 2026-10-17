@@ -12,8 +12,8 @@ import (
 
 	"gioui.org/app"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // Files dropped on the terminal land at its prompt as paths, as useTerminalDrop

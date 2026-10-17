@@ -14,7 +14,7 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // shape spells a tree as "name/ (children)" for dirs and "name" for files.

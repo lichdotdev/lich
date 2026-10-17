@@ -26,8 +26,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Spec is one confined spawn: what stays writable, what is merely readable, and

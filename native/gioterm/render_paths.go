@@ -12,8 +12,8 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/fonts"
-	"github.com/omartelo/lich/native/glyphs"
+	"github.com/lichdotdev/lich/native/fonts"
+	"github.com/lichdotdev/lich/native/glyphs"
 	"golang.org/x/image/math/fixed"
 )
 

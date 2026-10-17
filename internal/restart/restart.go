@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/omartelo/lich/internal/chromium"
+	"github.com/lichdotdev/lich/internal/chromium"
 )
 
 // WaitEnv marks a lich process spawned to succeed a restarting one. The

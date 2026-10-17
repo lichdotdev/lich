@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 func opencodeConfig(t *testing.T, env []string) map[string]any {

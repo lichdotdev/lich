@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 // The sidebar's folders, on both surfaces: `lich folders`, `lich file`,

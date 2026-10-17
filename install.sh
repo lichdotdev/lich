@@ -3,14 +3,14 @@
 # latest GitHub release, verifies its checksum and installs it through the
 # native package manager (which also resolves the runtime dependencies).
 #
-#   curl -fsSL https://raw.githubusercontent.com/omartelo/lich/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
 #
 # POSIX sh, no bashisms; everything runs inside main() so a truncated
 # download executes nothing.
 
 set -eu
 
-REPO="omartelo/lich"
+REPO="lichdotdev/lich"
 API="https://api.github.com/repos/${REPO}/releases/latest"
 
 info() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }

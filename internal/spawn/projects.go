@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // ensureProject resolves the project a session is being opened in, and is the

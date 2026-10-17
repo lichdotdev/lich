@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/omartelo/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/gioterm"
 )
 
 // A theme that flips the scheme of a terminal whose program asked for mode

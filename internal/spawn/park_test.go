@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // parked runs the close against the real store rather than the fake, because

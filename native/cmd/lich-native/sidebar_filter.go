@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // sessionPhase is the filter chip a session sits under (session-filter.ts).

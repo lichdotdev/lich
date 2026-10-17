@@ -3,7 +3,7 @@ package spawn
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/project"
 )
 
 func TestWorktreesReportsWhatIsInEachCheckout(t *testing.T) {

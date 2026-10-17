@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **lich lives at `lichdotdev/lich`.** The repository moved to the
+  [lichdotdev](https://github.com/lichdotdev) organization and the site to
+  [lichdotdev.github.io/lich](https://lichdotdev.github.io/lich/). Old GitHub
+  links, clones and update checks redirect; bookmarks of the old site do not.
+
 ### Fixed
 
 - **What's new follows a language you switch to.** In the native window, the

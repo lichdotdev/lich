@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/sandbox"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/sandbox"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // wrapSandbox rewrites a session's spawn so its whole process tree runs

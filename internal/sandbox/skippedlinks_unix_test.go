@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // link creates name under home pointing at a real file elsewhere, the shape a

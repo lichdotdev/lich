@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 func TestMCPFileSessionPostsItsArgumentsInOrder(t *testing.T) {
