@@ -202,21 +202,15 @@ func (t TabsStyle) tabsList(gtx C) D {
 // w-fit list the browser sizes the list to the sum of its triggers'
 // contents, so flex-1 has no free space to share.
 func (t TabsStyle) tabsTriggerSizes(gtx C, geo tabsGeometry) []image.Point {
-	frame := gtx.Dp(tabsBorder)
 	sizes := make([]image.Point, len(t.Triggers))
 	var widest image.Point
 	for i := range t.Triggers {
-		unbounded := gtx
-		unbounded.Constraints = layout.Constraints{Max: image.Pt(unboundedWidth, gtx.Constraints.Max.Y)}
-		macro := op.Record(gtx.Ops)
-		d := t.tabsContent(unbounded, i, geo, color.NRGBA{})
-		macro.Stop()
-		sizes[i] = d.Size.Add(image.Pt(2*(gtx.Dp(geo.padX)+frame), 2*(gtx.Dp(geo.padY)+frame)))
+		sizes[i] = t.tabsContentSize(gtx, i, geo)
 		widest = image.Pt(max(widest.X, sizes[i].X), max(widest.Y, sizes[i].Y))
 	}
 	if geo.listHeight > 0 && t.Orientation == TabsHorizontal {
 		// h-[calc(100%-1px)] of the list's inner height.
-		widest.Y = gtx.Dp(geo.listHeight) - 2*gtx.Dp(geo.listPad) - frame
+		widest.Y = gtx.Dp(geo.listHeight) - 2*gtx.Dp(geo.listPad) - gtx.Dp(tabsBorder)
 	}
 	for i := range sizes {
 		sizes[i].Y = widest.Y
@@ -233,6 +227,30 @@ func (t TabsStyle) tabsTriggerSizes(gtx C, geo tabsGeometry) []image.Point {
 	}
 	tabsShareSpare(sizes, inner)
 	return sizes
+}
+
+// tabsContentSize is trigger i at its content's width, padding and border
+// included.
+func (t TabsStyle) tabsContentSize(gtx C, i int, geo tabsGeometry) image.Point {
+	frame := gtx.Dp(tabsBorder)
+	unbounded := gtx
+	unbounded.Constraints = layout.Constraints{Max: image.Pt(unboundedWidth, gtx.Constraints.Max.Y)}
+	macro := op.Record(gtx.Ops)
+	d := t.tabsContent(unbounded, i, geo, color.NRGBA{})
+	macro.Stop()
+	return d.Size.Add(image.Pt(2*(gtx.Dp(geo.padX)+frame), 2*(gtx.Dp(geo.padY)+frame)))
+}
+
+// NaturalWidth is the width a horizontal list needs for every trigger at its
+// content's width, the list's padding and gaps included: what a container
+// that can grow asks for so that no trigger overflows it.
+func (t TabsStyle) NaturalWidth(gtx C) int {
+	geo := tabsGeometries[t.Variant]
+	w := 2*gtx.Dp(geo.listPad) + (len(t.Triggers)-1)*gtx.Dp(geo.listGap)
+	for i := range t.Triggers {
+		w += t.tabsContentSize(gtx, i, geo).X
+	}
+	return w
 }
 
 // tabsShareSpare is flex-1 in a list too narrow for equal triggers: each keeps

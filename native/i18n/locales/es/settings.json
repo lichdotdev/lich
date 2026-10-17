@@ -75,7 +75,7 @@
     "description": "Da color a la interfaz y a la terminal.",
     "choose": "Elige un tema",
     "system": "Sistema",
-    "followsOs": "sigue al sistema operativo",
+    "followsOs": "sigue al SO",
     "inUse": "en uso",
     "bundled": "incluido",
     "count": {

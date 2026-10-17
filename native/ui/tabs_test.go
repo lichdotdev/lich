@@ -277,3 +277,18 @@ func TestTabsGhostTriggersTakeTheirOwnWidth(t *testing.T) {
 		t.Errorf("ghost triggers: got list width %d, want each trigger at its own width (%d)", got, want)
 	}
 }
+
+// NaturalWidth is the narrowest list in which no trigger overflows: laid out
+// at it the list takes exactly that width, one pixel less and it spills.
+func TestTabsNaturalWidthFitsEveryTriggerAtItsContent(t *testing.T) {
+	th := testTheme()
+	s := th.Tabs(new(TabsState), tabsNames("a", "b", "a much longer trigger")...)
+	var natural int
+	layoutAt(func(gtx C) D { natural = s.NaturalWidth(gtx); return D{} }, 0, 2000)
+	if d := layoutAt(func(gtx C) D { return s.Layout(gtx) }, 0, natural); d.Size.X != natural {
+		t.Errorf("at its natural width %d the list is %d wide", natural, d.Size.X)
+	}
+	if d := layoutAt(func(gtx C) D { return s.Layout(gtx) }, 0, natural-1); d.Size.X <= natural-1 {
+		t.Errorf("one pixel narrower the list still fits (%d)", d.Size.X)
+	}
+}

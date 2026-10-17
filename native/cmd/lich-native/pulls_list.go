@@ -72,7 +72,7 @@ func (p *pullsScreen) listHeader(gtx C, th *ui.Theme) D {
 	})
 }
 
-func (p *pullsScreen) filterTrack(gtx C, th *ui.Theme, counts [pullsFilterCount]int) D {
+func (p *pullsScreen) filterTabs(th *ui.Theme, counts [pullsFilterCount]int) ui.TabsStyle {
 	triggers := make([]ui.TabsTrigger, pullsFilterCount)
 	for i := range triggers {
 		n := counts[i]
@@ -80,8 +80,21 @@ func (p *pullsScreen) filterTrack(gtx C, th *ui.Theme, counts [pullsFilterCount]
 			return th.Text(ui.TextXS, fmt.Sprint(n)).Muted().Layout(gtx)
 		}}
 	}
-	tabs := th.Tabs(&p.filter, triggers...)
-	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+	return th.Tabs(&p.filter, triggers...)
+}
+
+// listWidth is the list island's width: w-80, or what the filter tabs need
+// beside their px-2 inset, bounded by pullsListMaxWidth.
+func (p *pullsScreen) listWidth(gtx C, th *ui.Theme, counts [pullsFilterCount]int) int {
+	need := p.filterTabs(th, counts).NaturalWidth(gtx) + 2*gtx.Dp(filterTrackInset)
+	return min(max(gtx.Dp(pullsListWidth), need), gtx.Dp(pullsListMaxWidth))
+}
+
+var filterTrackInset = ui.Space(2)
+
+func (p *pullsScreen) filterTrack(gtx C, th *ui.Theme, counts [pullsFilterCount]int) D {
+	tabs := p.filterTabs(th, counts)
+	return layout.Inset{Left: filterTrackInset, Right: filterTrackInset}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return tabs.Layout(gtx)
 	})

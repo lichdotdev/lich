@@ -224,7 +224,7 @@
     "draft": "Borrador",
     "fork": "fork",
     "checkedOut": "en checkout",
-    "searchHint": "Filtra por número, título, autor o rama"
+    "searchHint": "Número, título, autor o rama"
   },
   "pullsFiles": {
     "loadFailed": "No se pudo cargar el diff: {error}",

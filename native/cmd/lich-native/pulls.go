@@ -16,8 +16,13 @@ import (
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// pullsListWidth is PullsList's w-80.
-var pullsListWidth = unit.Dp(320)
+// pullsListWidth is PullsList's w-80. The list grows past it, up to
+// pullsListMaxWidth, when the filter tabs need more: Portuguese and Spanish
+// labels do not fit in 320.
+var (
+	pullsListWidth    = unit.Dp(320)
+	pullsListMaxWidth = unit.Dp(400)
+)
 
 var (
 	icPullMerged  = icons.Lucide("git-merge")
@@ -135,7 +140,7 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	}
 	share := p.slide.at(gtx, !p.listHidden)
 	size := gtx.Constraints.Max
-	w := gtx.Dp(pullsListWidth)
+	w := p.listWidth(gtx, th, filterCounts(rows.val, p.query.Text()))
 	slot := int(share * float32(w+gtx.Dp(gutter)))
 	p.spans = p.spans[:0]
 	if slot > 0 {

@@ -224,7 +224,7 @@
     "draft": "Rascunho",
     "fork": "fork",
     "checkedOut": "em checkout",
-    "searchHint": "Filtre por número, título, autor ou branch"
+    "searchHint": "Número, título, autor ou branch"
   },
   "pullsFiles": {
     "loadFailed": "Não foi possível carregar o diff: {error}",
