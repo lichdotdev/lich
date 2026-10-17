@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"gioui.org/font"
 )
@@ -108,20 +109,30 @@ func Covering(r rune) (string, error) {
 	if len(covering) == 0 {
 		return "", nil
 	}
-	// fc-list knows who covers the character but in no useful order; fc-match
-	// ranks every font against a plain monospace, so the first covering font
-	// in its ranking is the closest regular face.
-	ranked, err := exec.Command("fc-match", "-s", "-f", "%{file}\n", SystemMono).Output()
+	ranked, err := rankedAgainstMono()
 	if err != nil {
-		return "", fmt.Errorf("fc-match -s %s: %w", SystemMono, err)
+		return "", err
 	}
-	for f := range strings.Lines(string(ranked)) {
+	for f := range strings.Lines(ranked) {
 		if f = strings.TrimSpace(f); slices.Contains(covering, f) {
 			return f, nil
 		}
 	}
 	return covering[0], nil
 }
+
+// rankedAgainstMono is every installed font file ranked against a plain
+// monospace, asked once per process: fc-list knows who covers a character but
+// in no useful order, so the first covering font in this ranking is the
+// closest regular face. A font installed since is missing from it and is
+// picked only when it is the first fc-list names.
+var rankedAgainstMono = sync.OnceValues(func() (string, error) {
+	out, err := exec.Command("fc-match", "-s", "-f", "%{file}\n", SystemMono).Output()
+	if err != nil {
+		return "", fmt.Errorf("fc-match -s %s: %w", SystemMono, err)
+	}
+	return string(out), nil
+})
 
 // parseFcListFiles reads `fc-list <pattern> file`, one "path: " per line.
 func parseFcListFiles(out string) []string {

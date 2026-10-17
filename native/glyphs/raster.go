@@ -81,6 +81,11 @@ type Rasterizer struct {
 	cellW  int
 	cellH  int
 	ascent int
+
+	// fallbacks are the faces fonts.Covering picked so far, in the order it
+	// picked them, tried before asking it again: on Linux each ask is a
+	// subprocess, and CJK text brings thousands of characters one face covers.
+	fallbacks []*fontFace
 }
 
 // New loads the four styles fonts.Locate resolves for family. Call SetSize
@@ -165,6 +170,12 @@ func (r *Rasterizer) faceFor(k Key) (*fontFace, error) {
 	if f, ok := r.byRune[k.R]; ok {
 		return f, nil
 	}
+	for _, f := range r.fallbacks {
+		if r.covers(f, k.R) {
+			r.byRune[k.R] = f
+			return f, nil
+		}
+	}
 	path, err := fonts.Covering(k.R)
 	if err != nil {
 		return nil, err
@@ -174,7 +185,9 @@ func (r *Rasterizer) faceFor(k Key) (*fontFace, error) {
 		if f, err = r.load(path); err != nil {
 			return nil, err
 		}
-		if !r.covers(f, k.R) {
+		if r.covers(f, k.R) {
+			r.fallbacks = append(r.fallbacks, f)
+		} else {
 			f = nil
 		}
 	}
