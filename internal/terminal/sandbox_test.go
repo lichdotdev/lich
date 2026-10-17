@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -334,5 +335,41 @@ func TestWrapSandboxSkipsClaudesTrustQuestion(t *testing.T) {
 	got, _ = wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", false, sandboxCreds{})
 	if slices.Contains(got.env, sandboxed) {
 		t.Errorf("unconfined Claude Code env carries %s", sandboxed)
+	}
+}
+
+// TestConfinedTrustArgs: a confined Codex is told its checkout's main top is
+// trusted, as the inline table Codex accepts, and a confined Cursor CLI gets
+// --trust; an unconfined spawn and a provider without a flag get nothing.
+func TestConfinedTrustArgs(t *testing.T) {
+	main, worktree := gitWorktree(t)
+	want := []string{"-c", "projects={" + strconv.Quote(main) + `={trust_level="trusted"}}`}
+	if got := confinedTrustArgs(providers.Codex, worktree, true); !slices.Equal(got, want) {
+		t.Errorf("confined Codex in a worktree = %q, want %q", got, want)
+	}
+	plain := t.TempDir()
+	if got := confinedTrustArgs(providers.Codex, plain, true); !slices.Contains(got, "projects={"+strconv.Quote(plain)+`={trust_level="trusted"}}`) {
+		t.Errorf("confined Codex outside a repository = %q, want the folder itself trusted", got)
+	}
+	if got := confinedTrustArgs(providers.Cursor, worktree, true); !slices.Equal(got, []string{"--trust"}) {
+		t.Errorf("confined Cursor CLI = %q, want --trust", got)
+	}
+	for _, kind := range []string{providers.Codex, providers.Cursor} {
+		if got := confinedTrustArgs(kind, worktree, false); got != nil {
+			t.Errorf("unconfined %s = %q, want nothing", kind, got)
+		}
+	}
+	if got := confinedTrustArgs(providers.Claude, worktree, true); got != nil {
+		t.Errorf("confined Claude Code = %q, want nothing (its trust rides confinedEnv)", got)
+	}
+}
+
+func TestWrapSandboxSkipsOMPSetup(t *testing.T) {
+	if !sandbox.Available() {
+		t.Skip("no sandbox backend on this machine")
+	}
+	got, _ := wrapSandbox(baseSpec(), providers.OMP, t.TempDir(), "", "", true, sandboxCreds{})
+	if !slices.Contains(got.env, "OMP_SKIP_SETUP=1") {
+		t.Errorf("confined oh-my-pi env lacks OMP_SKIP_SETUP=1: %v", got.env)
 	}
 }

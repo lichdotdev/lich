@@ -1419,20 +1419,37 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
   `.claude.json` is a copy everywhere, minus the account and its caches, since Claude Code replaces it through
   a rename that would turn a link into a file anyway.
-- **A folder trusted in Personal is trusted in a Claude Code profile only from that profile's next spawn
-  into it, and only Claude Code's trust is carried** (`internal/claudeprofile/trust.go`): the copied
-  `.claude.json` freezes the trust answers at the profile's birth, so before each spawn into a profile lich
-  writes `hasTrustDialogAccepted` for the checkout's top when Personal trusts it or the main checkout of the
-  worktree it is. It never trusts a folder nobody trusted, and a folder outside any git checkout is not
-  carried: Claude Code also finds an answer in a parent folder there, and lich asks git, not the parents.
-  The write is a read, an edit and a rename beside sessions that rewrite the same file; Claude Code re-reads
-  it before each write of its own (measured on 2.1.302, a key written mid-session survived its later writes),
-  so the window left is what either side writes between the other's read and rename. Codex already merges
-  its project trust across profiles (`codexprofile/config.go`); Cursor CLI's profiles were not measured for it.
-  A confined Claude Code session is spawned with `CLAUDE_CODE_SANDBOXED=1`, which Claude Code reads as every
-  folder trusted (measured on 2.1.302): the question guards against a folder's own settings running on the
-  machine, which is what the sandbox confines. Codex, Cursor CLI and Antigravity still ask inside the sandbox
-  and Crush asks to initialize; opencode, oh-my-pi and Kiro CLI ask nothing.
+- **A provider's "trust this folder?" answer is carried only where lich can find the person's own answer,
+  and a confined session is told to skip the question** (`internal/claudeprofile/trust.go`,
+  `internal/terminal/cursor_trust.go`, `antigravity_trust.go`, `crush_init.go`, `confinedEnv` and
+  `confinedTrustArgs` in `internal/terminal/sandbox.go`).
+  Claude Code: a profile's copied `.claude.json` freezes the trust answers at its birth, so before each spawn
+  into a profile lich writes `hasTrustDialogAccepted` for the checkout's top when Personal trusts it or the
+  main checkout of the worktree it is; Personal itself needs nothing, since Claude Code finds the answer for a
+  worktree in its main checkout and for a folder in its parents (measured on 2.1.302). A folder outside any
+  git checkout is not carried into a profile: lich asks git, not the parents. The write is a read, an edit and
+  a rename beside sessions that rewrite the same file; Claude Code re-reads it before each write of its own (a
+  key written mid-session survived its later writes), so the window left is what either side writes between
+  the other's read and rename. Codex keys trust by the main checkout's top, so its worktrees already count, and
+  its profiles merge Personal's trust (`codexprofile/config.go`). Cursor CLI finds a marker
+  (`~/.cursor/projects/<slug>/.workspace-trusted`) for the folder or a parent below the home, and a worktree
+  sits beside its repository rather than under it, so before each spawn in a worktree lich writes the marker
+  when the main checkout is trusted; its profiles need nothing, the marker following the home (measured on
+  2026.10.16, Windows not). It never trusts a folder nobody trusted. A confined session skips the question:
+  Claude Code with `CLAUDE_CODE_SANDBOXED=1`, Codex with `-c projects={"<main checkout>"={trust_level="trusted"}}`
+  (the dotted spelling still asks; measured on 0.144.5 and 0.162.1) and Cursor CLI with `--trust`, which also
+  writes its marker, so that folder stays trusted outside the sandbox too. The question guards against a
+  folder's own settings running on the machine, which is what the sandbox confines. Whether Codex's trust and
+  Cursor CLI's `--trust` loosen anything beyond the question was not measured. A confined oh-my-pi is spawned
+  with `OMP_SKIP_SETUP=1`: a profile's `config.yml` links into Personal, which the sandbox does not mount, and
+  without it the session opened on the setup wizard. Antigravity trusts only the exact folders in
+  `~/.gemini/antigravity-cli/settings.json` `trustedWorkspaces`, so worktrees and subfolders of a trusted
+  repository asked again (measured on 1.3.5): before each spawn lich adds the folder when its checkout's top or
+  main checkout is listed, and every confined folder whatever the list says, so a folder once opened confined
+  stays trusted outside the sandbox. Crush asks once per checkout whether to initialize the project and keeps
+  the answer as an empty `.crush/init` at the checkout's top (measured on v0.98.1); lich writes it, with
+  Crush's own `*` `.gitignore` beside it, before every Crush spawn, so the offer to write `AGENTS.md` never
+  comes up in a lich session. opencode, oh-my-pi and Kiro CLI ask nothing.
 - **A Claude Code profile's plugin cache is its own, and each version in it links into one store lich never
   empties** (`internal/claudeprofile/plugincache.go`): before every spawn, and in the startup pass of the lich
   plugin, each version a profile's `installed_plugins.json` names under its `plugins/cache` is moved into

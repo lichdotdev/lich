@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/omartelo/lich/internal/claudeprofile"
 	"github.com/omartelo/lich/internal/project"
@@ -59,12 +60,8 @@ func wrapSandbox(
 		}
 	}
 	spec.bin, spec.args = sandbox.Wrap(sb, spec.bin, spec.args)
-	// Claude Code reads it as "every folder is trusted" and skips its trust
-	// question (measured on 2.1.302): what the question guards against, a
-	// folder's own settings running on the machine, is what the sandbox
-	// confines.
-	if kind == providers.Claude {
-		spec.env = append(spec.env, claudeSandboxedVar+"=1")
+	if setting, ok := confinedEnv[kind]; ok {
+		spec.env = append(spec.env, setting)
 	}
 	// The token goes in the child's environment rather than through bubblewrap's
 	// --setenv, which would write it into an argument list any process on the
@@ -75,7 +72,58 @@ func wrapSandbox(
 	return spec, sb.SkippedLinks
 }
 
-const claudeSandboxedVar = "CLAUDE_CODE_SANDBOXED"
+// confinedEnv is what a provider is told in a confined spawn so it does not
+// open on a screen the sandbox makes moot, the first thing an unattended
+// session would otherwise stop on.
+var confinedEnv = map[string]string{
+	// Read as "every folder is trusted", which skips the trust question
+	// (measured on 2.1.302): what the question guards against, a folder's own
+	// settings running on the machine, is what the sandbox confines.
+	providers.Claude: "CLAUDE_CODE_SANDBOXED=1",
+	// Skips the first-run setup wizard (measured on 18.8.9). A profile's
+	// config.yml is a link into Personal, which the sandbox does not mount,
+	// so a confined omp reads no setup as done and opens on "Sign in".
+	providers.OMP: "OMP_SKIP_SETUP=1",
+}
+
+// confinedTrustArgs are the flags that keep a confined session from opening on
+// its provider's "trust this folder?" question, for the same reason
+// confinedEnv carries Claude Code's variable. They go first in the argv, which
+// every provider given one reads as a global option.
+func confinedTrustArgs(kind, cwd string, confined bool) []string {
+	if !confined {
+		return nil
+	}
+	switch kind {
+	case providers.Codex:
+		return []string{"-c", codexTrustOverride(codexTrustRoot(cwd))}
+	case providers.Cursor:
+		return []string{"--trust"}
+	}
+	return nil
+}
+
+// codexTrustRoot is the folder Codex keys a checkout's trust by: the main
+// checkout's top, which is what accepting its question in a linked worktree
+// records (measured on 0.144.5 and 0.162.1). Outside a repository it is the
+// folder itself, which 0.144.5 asks about and 0.162.1 does not.
+func codexTrustRoot(cwd string) string {
+	top, origin := project.CheckoutRoots(cwd)
+	switch {
+	case origin != "":
+		return origin
+	case top != "":
+		return top
+	}
+	return cwd
+}
+
+// codexTrustOverride is a `-c` value trusting root. Only an inline table works:
+// the dotted `projects."<root>".trust_level` form still asks (measured on
+// 0.144.5 and 0.162.1), and neither writes to config.toml.
+func codexTrustOverride(root string) string {
+	return "projects={" + strconv.Quote(root) + `={trust_level="trusted"}}`
+}
 
 // sandboxCreds is what a confined session is handed to act on the network as the
 // user: the ssh agent a push authenticates through, and the GitHub token gh

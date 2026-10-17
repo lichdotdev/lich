@@ -66,6 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Codex, Cursor CLI, Antigravity and Crush stop asking where you already
+  answered.** A sandboxed session of any of them opens straight at its
+  prompt. Cursor CLI and Antigravity no longer ask again in a worktree of a
+  folder you trusted, nor Antigravity in its subfolders, and Crush no longer
+  asks to initialize each new worktree. A sandboxed oh-my-pi session no
+  longer opens on its setup wizard.
 - **Claude Code stops asking "trust this folder?" where you already
   answered.** A folder you trusted in your main account is trusted in every
   other Claude Code profile from its next session there, and a sandboxed

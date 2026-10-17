@@ -84,6 +84,8 @@ func (s *Service) Start(
 		return err
 	}
 	inheritClaudeTrust(kind, cwd, profileDir)
+	inheritCursorTrust(kind, cwd)
+	markCrushInitialized(kind, cwd)
 	awaits := s.awaitsStart(kind, profileDir)
 	sess, cwd, err := s.spawnSession(id, projectID, cwd, kind, resume, profileDir, name, fork, setup, cols, rows)
 	if err != nil || sess == nil {
@@ -161,13 +163,20 @@ func (s *Service) spawnSession(
 	if profileDir != "" {
 		env = profileEnv(kind, env, profileDir)
 	}
+	// Decided before the argv, which carries the trust flags a confined spawn
+	// is given (confinedTrustArgs).
+	inSandbox := confined(s.store, id, kind, projectID, cwd)
+	// Here rather than beside the other trust writes in Start, before the lock,
+	// because it depends on the sandbox verdict; it reads one small file and
+	// asks git once, and only for an Antigravity spawn.
+	inheritAntigravityTrust(kind, cwd, inSandbox)
 	spec := ptySpec{
 		bin: resolveCommand(kind, s.store.ProviderBin(kind, projectID), userShell()),
-		args: providerArgs(
+		args: append(confinedTrustArgs(kind, cwd, inSandbox), providerArgs(
 			kind, name, resume, s.store.SessionModel(id), s.store.SessionEffort(id), mcpBin,
 			kiroPluginAgent(kind), fork, skipPermissions, ultracode, subagentRoute(kind, depth, cardsOn),
 			s.promptLanguage(),
-		),
+		)...),
 		dir:  cwd,
 		env:  env,
 		cols: cols,
@@ -186,7 +195,6 @@ func (s *Service) spawnSession(
 	}
 	// Outermost, so the setup script and the entrypoint are confined with the
 	// session they run in front of.
-	inSandbox := confined(s.store, id, kind, projectID, cwd)
 	creds := s.sandboxCredentials(projectID, cwd, inSandbox)
 	spec, skippedLinks := wrapSandbox(
 		spec, kind, userHome(), sessionDropDir(s.dropDir, id, inSandbox), profileDir, inSandbox, creds,
