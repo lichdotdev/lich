@@ -183,6 +183,7 @@ static GhosttyResult scroll_delta(GhosttyTerminal t, intptr_t delta) {
 import "C"
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"runtime/cgo"
@@ -231,6 +232,7 @@ type Terminal struct {
 	// runs inside Write with mu held; schemeSet is SetColors having set it.
 	dark      atomic.Bool
 	schemeSet bool
+	closed    bool
 	t         C.GhosttyTerminal
 	rs        C.GhosttyRenderState
 	it        C.GhosttyRenderStateRowIterator
@@ -259,6 +261,9 @@ type Terminal struct {
 	// next WheelRows: a touchpad scrolls a few pixels at a time.
 	wheelRest float32
 }
+
+// ErrClosed is a call on a Terminal after Close.
+var ErrClosed = errors.New("terminal closed")
 
 func check(what string, r C.GhosttyResult) error {
 	if r != C.GHOSTTY_SUCCESS {
@@ -312,6 +317,10 @@ func (v *Terminal) Write(b []byte) {
 		return
 	}
 	v.mu.Lock()
+	if v.closed {
+		v.mu.Unlock()
+		return
+	}
 	C.ghostty_terminal_vt_write(v.t, (*C.uint8_t)(unsafe.Pointer(&b[0])), C.size_t(len(b)))
 	v.mu.Unlock()
 }
@@ -321,6 +330,9 @@ func (v *Terminal) Write(b []byte) {
 func (v *Terminal) Resize(cols, rows, cellW, cellH int) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return ErrClosed
+	}
 	if err := check("terminal_resize", C.ghostty_terminal_resize(v.t, C.uint16_t(cols), C.uint16_t(rows), C.uint32_t(cellW), C.uint32_t(cellH))); err != nil {
 		return err
 	}
@@ -333,6 +345,10 @@ func (v *Terminal) Resize(cols, rows, cellW, cellH int) error {
 // Scroll moves the viewport through scrollback, negative is up.
 func (v *Terminal) Scroll(delta int) {
 	v.mu.Lock()
+	if v.closed {
+		v.mu.Unlock()
+		return
+	}
 	C.scroll_delta(v.t, C.intptr_t(delta))
 	v.mu.Unlock()
 }
@@ -394,6 +410,9 @@ type Colors struct {
 func (v *Terminal) SetColors(c Colors) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return ErrClosed
+	}
 	if err := check("set colors", C.set_default_colors(v.t, cRGB(c.Foreground), cRGB(c.Background))); err != nil {
 		return err
 	}
@@ -420,10 +439,15 @@ func cRGB(c color.NRGBA) C.GhosttyColorRgb {
 	return C.GhosttyColorRgb{r: C.uint8_t(c.R), g: C.uint8_t(c.G), b: C.uint8_t(c.B)}
 }
 
-// Close frees the terminal. It must not be used afterwards.
+// Close frees the terminal. Calls after it do nothing: those returning an
+// error return ErrClosed, the rest their zero value. Closing twice is a no-op.
 func (v *Terminal) Close() {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return
+	}
+	v.closed = true
 	C.ghostty_selection_gesture_free(v.gest, v.t)
 	C.ghostty_mouse_event_free(v.mouseEv)
 	C.ghostty_mouse_encoder_free(v.mouseEnc)
@@ -440,6 +464,9 @@ func (v *Terminal) Close() {
 func (v *Terminal) update() (snap, []uint8, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return snap{}, nil, ErrClosed
+	}
 	clear(v.dirty)
 	s := C.snapshot(v.rs, v.t, v.it, v.cells, &v.raw[0], (*C.uint8_t)(&v.dirty[0]), C.uint16_t(v.cols), C.uint16_t(v.rows))
 	if s.dirty == -1 {
@@ -515,6 +542,9 @@ const (
 func (v *Terminal) encodeKey(key int, mods int, unshifted rune, text string) []byte {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return nil
+	}
 	C.ghostty_key_encoder_setopt_from_terminal(v.enc, v.t)
 	C.ghostty_key_event_set_action(v.ev, C.GHOSTTY_KEY_ACTION_PRESS)
 	C.ghostty_key_event_set_key(v.ev, C.GhosttyKey(key))

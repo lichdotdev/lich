@@ -94,6 +94,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The native window writes agent prompts in your prompt language.** The
   pull request and issue handoffs and a batch of review comments were
   always typed in English.
+- **A theme change during a reconnect no longer crashes the native window.**
+  Switching the theme, or the system switching light and dark, while the
+  window reattached to a restarted lich could paint terminals the reconnect
+  had just freed and take the window down.
 - **Chinese, Japanese and Korean text no longer freezes the native window on
   Linux.** A session, a Review or a pull request full of CJK text could hang
   the window for seconds, long enough for "not responding", and a zoom

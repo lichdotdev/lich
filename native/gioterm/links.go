@@ -66,6 +66,9 @@ type Link struct {
 func (v *Terminal) LinkAt(x, y float32) (l Link, ok bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return Link{}, false
+	}
 	col, row := v.cellAt(x, y)
 	if uri := v.hyperlink(col, row); uri != "" {
 		from, to := col, col

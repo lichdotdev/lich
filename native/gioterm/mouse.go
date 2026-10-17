@@ -161,6 +161,9 @@ func MouseButtonOf(b pointer.Buttons) MouseButton {
 func (v *Terminal) MouseTracking() bool {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return false
+	}
 	return C.mouse_tracking(v.t) != C.GHOSTTY_MOUSE_TRACKING_NONE
 }
 
@@ -171,6 +174,9 @@ func (v *Terminal) MouseTracking() bool {
 func (v *Terminal) EncodeMouse(action MouseAction, button MouseButton, mods key.Modifiers, x, y float32, anyPressed bool) []byte {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return nil
+	}
 	if v.mouseEnc == nil {
 		if C.ghostty_mouse_encoder_new(nil, &v.mouseEnc) != C.GHOSTTY_SUCCESS {
 			return nil
@@ -218,6 +224,9 @@ func (v *Terminal) SelectRelease(x, y float32) {
 func (v *Terminal) gesture(kind C.GhosttySelectionGestureEventType, x, y float32, at time.Duration) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return
+	}
 	if v.gest == nil && C.ghostty_selection_gesture_new(nil, &v.gest) != C.GHOSTTY_SUCCESS {
 		return
 	}
@@ -243,6 +252,9 @@ func (v *Terminal) cellAt(x, y float32) (col, row int) {
 func (v *Terminal) ClearSelection() {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return
+	}
 	C.ghostty_terminal_set(v.t, C.GHOSTTY_TERMINAL_OPT_SELECTION, nil)
 }
 
@@ -251,6 +263,9 @@ func (v *Terminal) ClearSelection() {
 func (v *Terminal) SelectionText() string {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return ""
+	}
 	var out *C.uint8_t
 	var n C.size_t
 	if C.selection_text(v.t, &out, &n) != C.GHOSTTY_SUCCESS {

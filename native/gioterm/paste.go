@@ -33,6 +33,10 @@ const pasteFrame = 12
 // with spaces either way.
 func (v *Terminal) Paste(text string) []byte {
 	v.mu.Lock()
+	if v.closed {
+		v.mu.Unlock()
+		return nil
+	}
 	bracketed := C.bracketed_paste(v.t)
 	v.mu.Unlock()
 	data := C.CBytes([]byte(text))
@@ -52,5 +56,8 @@ func (v *Terminal) Paste(text string) []byte {
 func (v *Terminal) AlternateScroll() bool {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return false
+	}
 	return bool(C.alternate_scroll(v.t))
 }

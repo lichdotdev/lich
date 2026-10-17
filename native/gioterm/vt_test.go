@@ -1,6 +1,8 @@
 package gioterm
 
 import (
+	"errors"
+	"image/color"
 	"testing"
 )
 
@@ -54,4 +56,37 @@ func TestEncodeSpecialKeysUnderKitty(t *testing.T) {
 			}
 		})
 	}
+}
+
+// A window frees a terminal on one goroutine while another may still hold it:
+// a reconnect closes every terminal as a theme switch paints them.
+func TestClosedTerminalIgnoresCalls(t *testing.T) {
+	v, err := New(80, 24, testCellW, testCellH, func([]byte) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	v.Close()
+	if err := v.SetColors(Colors{Background: color.NRGBA{A: 0xff}}); !errors.Is(err, ErrClosed) {
+		t.Fatalf("SetColors after Close: %v, want ErrClosed", err)
+	}
+	if err := v.Resize(100, 30, testCellW, testCellH); !errors.Is(err, ErrClosed) {
+		t.Fatalf("Resize after Close: %v, want ErrClosed", err)
+	}
+	if _, err := v.Update(); !errors.Is(err, ErrClosed) {
+		t.Fatalf("Update after Close: %v, want ErrClosed", err)
+	}
+	v.Write([]byte("text"))
+	v.Scroll(-1)
+	v.ClearSelection()
+	v.SelectPress(1, 1, 0)
+	if v.Paste("x") != nil || v.EncodeMouse(0, 0, 0, 1, 1, false) != nil || v.encodeKey(keyEnter, 0, 0, "") != nil {
+		t.Fatal("a closed terminal encoded input")
+	}
+	if v.MouseTracking() || v.AlternateScroll() || v.SelectionText() != "" {
+		t.Fatal("a closed terminal reported a mode")
+	}
+	if _, ok := v.LinkAt(1, 1); ok {
+		t.Fatal("a closed terminal found a link")
+	}
+	v.Close()
 }

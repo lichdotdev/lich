@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -728,7 +729,14 @@ func (u *window) content(gtx C, active sessionView) error {
 	if err != nil {
 		return err
 	}
-	return u.terms.layout(gtx, t, u.terminalTakesKeys(gtx))
+	err = u.terms.layout(gtx, t, u.terminalTakesKeys(gtx))
+	// A reconnect frees every terminal off the frame goroutine; one shown
+	// since is replaced on the next frame, which the window must survive.
+	if errors.Is(err, gioterm.ErrClosed) {
+		gtx.Execute(op.InvalidateCmd{})
+		return nil
+	}
+	return err
 }
 
 // terminalTakesKeys is whether the terminal on screen takes the keyboard back
