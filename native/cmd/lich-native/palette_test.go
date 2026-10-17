@@ -13,6 +13,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/omartelo/lich/native/lichclient"
+	"github.com/omartelo/lich/native/ui"
 )
 
 // paletteRig is a router with the palette's field focused, and a frame that
@@ -154,7 +155,7 @@ func workspaceForView() paletteWorld {
 
 func TestPaletteViewJoinsTheWorkspaceToTheAnswers(t *testing.T) {
 	p := newCommandPalette(func() {})
-	p.show(map[string]bool{"s3": true})
+	p.show(map[string]string{"s3": statusBusy})
 	p.closed = closedHolding(closedAnswer{rows: paletteClosed, total: 63, missing: map[string]bool{"/home/u/snk/gh-turnkey": true}})
 	p.history.data = historyAnswer{rows: historyRows(paletteParked, paletteBranches, nil), total: 143, indexing: 12}
 	p.said.data = []lichclient.TranscriptMatch{{ID: "s1", Snippet: "flaky again", Count: 2}}
@@ -237,6 +238,18 @@ func TestRowVerbNamesWhatEnterDoes(t *testing.T) {
 	} {
 		if got := rowVerb(c.row); got != c.want {
 			t.Errorf("rowVerb(kind %d) = %q, want %q", c.row.kind, got, c.want)
+		}
+	}
+}
+
+func TestOnlyAWaitingSessionTrailsTheWaitingChip(t *testing.T) {
+	th := &ui.Theme{Palette: ui.Dark, Surface: ui.Dark.Popover}
+	ring := func(gtx C, th *ui.Theme, sv *sessionView) D { return D{} }
+	for _, status := range []string{statusWaiting, statusBusy, statusDone, ""} {
+		row := paletteRow{kind: rowSession, session: paletteSession{sessionID: "s1", label: "Claude 20", status: status}}
+		face := paletteFaceOf(th, &paletteView{}, row, th.Foreground, ring, time.Time{})
+		if got, want := face.trailing != nil, status == statusWaiting; got != want {
+			t.Errorf("status %q: trailing chip %v, want %v", status, got, want)
 		}
 	}
 }

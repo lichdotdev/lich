@@ -46,15 +46,15 @@ func (m *model) projectOpen(id string) bool {
 	return slices.ContainsFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id })
 }
 
-// runningAmong is the sessions that hold a turn.
-func runningAmong(sessions []paletteSession) map[string]bool {
-	running := map[string]bool{}
+// turnsAmong is the status of each session that holds a turn.
+func turnsAmong(sessions []paletteSession) map[string]string {
+	turns := map[string]string{}
 	for _, s := range sessions {
 		if isRunning(s.status) {
-			running[s.sessionID] = true
+			turns[s.sessionID] = s.status
 		}
 	}
-	return running
+	return turns
 }
 
 // hotkeyPalette is the chord's toggle: the same one closes it again.
@@ -64,7 +64,7 @@ func (u *window) hotkeyPalette(C) {
 		p.hide()
 		return
 	}
-	p.show(runningAmong(u.model.paletteWorld().sessions))
+	p.show(turnsAmong(u.model.paletteWorld().sessions))
 }
 
 // paletteAvailable is whether this window has a screen or a command for an
@@ -113,7 +113,7 @@ func (u *window) paletteFrame(gtx C, p *commandPalette) paletteView {
 	w := u.model.paletteWorld()
 	query := p.query.Text()
 	_, actions := actionTerm(query)
-	all := rankSessions(w.sessions, p.running)
+	all := rankSessions(w.sessions, p.turns)
 	p.ask(gtx, u.client, query, !actions, p.tab == tabHistory, all)
 	v := p.view(w, u.settings.hotkeys.current(), runtime.GOOS == "darwin", u.paletteAvailable)
 	p.total = len(v.rows)
@@ -264,7 +264,7 @@ func (u *window) paletteShot() {
 	if !*flagPalette {
 		return
 	}
-	u.palette.show(runningAmong(u.model.paletteWorld().sessions))
+	u.palette.show(turnsAmong(u.model.paletteWorld().sessions))
 	u.palette.query.SetText(*flagPaletteQuery)
 	if tab := paletteTab(*flagPaletteTab); slices.Contains(paletteTabs, tab) {
 		u.palette.tab = tab

@@ -57,6 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bar always opens Settings on Global instead of the scope you last left it
   in; a project's tab still opens its own settings from Project settings….
 
+- **A calmer command palette in the native window.** Each session, project
+  and message takes one line, with its path after the name; a worktree's
+  path shows its last three parts. Sessions waiting on you come first and
+  say so, and the filter tabs lose their pills for an underline. A closed
+  session in History shows its branch and age on the right, and a second
+  line only when a search matched its conversation, with the words marked.
+
 ### Fixed
 
 - **A reopened native window knows where each session went.** A session

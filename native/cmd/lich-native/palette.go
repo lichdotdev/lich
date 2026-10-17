@@ -74,12 +74,12 @@ type commandPalette struct {
 	// opened counts openings: an answer never outlives the opening it was
 	// asked in, so a reopened palette does not flash the last one's rows.
 	opened int
-	// running is the sessions holding a turn, sampled once per opening: an
-	// order that moved under the cursor while a row is being aimed at costs
-	// more than the freshness is worth.
-	running map[string]bool
-	polls   int
-	pollAt  time.Time
+	// turns is the status of each session holding a turn, sampled once per
+	// opening: an order that moved under the cursor while a row is being aimed
+	// at costs more than the freshness is worth.
+	turns  map[string]string
+	polls  int
+	pollAt time.Time
 	// dropped is the parked sessions forgotten from the list in place.
 	dropped map[string]bool
 	// picked is the actions Enter chose, run once the frame is over.
@@ -109,7 +109,7 @@ func newCommandPalette(invalidate func()) *commandPalette {
 }
 
 // show opens the palette on the plain list with the field focused.
-func (p *commandPalette) show(running map[string]bool) {
+func (p *commandPalette) show(turns map[string]string) {
 	p.open, p.focus = true, true
 	p.opened++
 	if p.closed != nil {
@@ -117,7 +117,7 @@ func (p *commandPalette) show(running map[string]bool) {
 		// backend sends, so each opening asks again.
 		p.closed.stale()
 	}
-	p.running = running
+	p.turns = turns
 	p.dropped = map[string]bool{}
 	p.reset()
 }
@@ -318,7 +318,7 @@ func (p *commandPalette) view(w paletteWorld, bound hotkeyBindings, isMac bool, 
 	query := p.query.Text()
 	closed, history, external, said := p.answers()
 	v := paletteView{query: strings.TrimSpace(query), missing: closed.missing, sessionCount: w.counts, counts: map[paletteTab]int{}}
-	all := rankSessions(w.sessions, p.running)
+	all := rankSessions(w.sessions, p.turns)
 	rows := history.rows
 	total := history.total
 	if len(p.dropped) > 0 {

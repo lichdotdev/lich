@@ -227,23 +227,45 @@ func paletteMessagesOf(matches []lichclient.TranscriptMatch, sessions []paletteS
 
 // rankSessions puts the sessions worth jumping to first, ahead of the cut the
 // All tab then makes: the tab strip's order alone would hand the whole group
-// to whatever sits in the first project. running is the snapshot of sessions
-// holding a turn, taken when the palette opens; a shell is last, having no
-// turn to hold and no agent to come back to. The sort is stable, so sessions
-// of equal rank keep the tab order.
-func rankSessions(sessions []paletteSession, running map[string]bool) []paletteSession {
+// to whatever sits in the first project. turns is the status of each session
+// holding a turn, taken when the palette opens. A session waiting on the user
+// leads, then the rest holding a turn; a shell is last, having no turn to hold
+// and no agent to come back to. The sort is stable, so sessions of equal rank
+// keep the tab order.
+func rankSessions(sessions []paletteSession, turns map[string]string) []paletteSession {
 	rank := func(s paletteSession) int {
+		status, holding := turns[s.sessionID]
 		switch {
-		case running[s.sessionID]:
+		case status == statusWaiting:
 			return 0
+		case holding:
+			return 1
 		case s.kind == "shell":
-			return 2
+			return 3
 		}
-		return 1
+		return 2
 	}
 	ranked := slices.Clone(sessions)
 	slices.SortStableFunc(ranked, func(a, b paletteSession) int { return rank(a) - rank(b) })
 	return ranked
+}
+
+// querySegments marks in text every run the query's tokens match, the way
+// the history search splits a query into words.
+func querySegments(text, query string) []segment {
+	segs := []segment{{text: text}}
+	for _, token := range strings.Fields(query) {
+		var next []segment
+		for _, s := range segs {
+			if s.hit {
+				next = append(next, s)
+				continue
+			}
+			next = append(next, highlightSegments(s.text, token)...)
+		}
+		segs = next
+	}
+	return segs
 }
 
 // rowKey identifies a row inside the list it is drawn in. A session and a

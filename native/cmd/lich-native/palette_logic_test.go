@@ -155,22 +155,24 @@ func TestPaletteDropsEmptyGroups(t *testing.T) {
 	}
 }
 
-func TestRankSessionsPutsTurnsFirstAndShellsLast(t *testing.T) {
+func TestRankSessionsPutsWaitingThenTurnsFirstAndShellsLast(t *testing.T) {
 	all := paletteSessionsOf(paletteWorkspace())
 	cases := []struct {
-		name    string
-		running map[string]bool
-		want    []string
+		name  string
+		turns map[string]string
+		want  []string
 	}{
-		{"a running agent leads, the shell is last", map[string]bool{"s3": true}, []string{"s3", "s1", "s2"}},
+		{"a running agent leads, the shell is last", map[string]string{"s3": statusBusy}, []string{"s3", "s1", "s2"}},
+		{"a waiting session leads a running one", map[string]string{"s1": statusBusy, "s3": statusWaiting}, []string{"s3", "s1", "s2"}},
+		{"a waiting shell still leads", map[string]string{"s2": statusWaiting, "s3": statusBusy}, []string{"s2", "s3", "s1"}},
 		{"equal rank keeps the tab order", nil, []string{"s1", "s3", "s2"}},
-		{"a running shell ranks with the running", map[string]bool{"s2": true}, []string{"s2", "s1", "s3"}},
+		{"a running shell ranks with the running", map[string]string{"s2": statusBusy}, []string{"s2", "s1", "s3"}},
 	}
 	for _, c := range cases {
-		equal(t, c.name, sessionIDsOf(rankSessions(all, c.running)), c.want)
+		equal(t, c.name, sessionIDsOf(rankSessions(all, c.turns)), c.want)
 	}
 	before := sessionIDsOf(all)
-	rankSessions(all, map[string]bool{"s3": true})
+	rankSessions(all, map[string]string{"s3": statusBusy})
 	equal(t, "the list it was given", sessionIDsOf(all), before)
 }
 
@@ -452,4 +454,19 @@ func TestAgoLabelPhrasesTheUnit(t *testing.T) {
 			t.Errorf("agoLabel(%d) = %q, want %q", c.at, got, c.want)
 		}
 	}
+}
+
+func TestQuerySegmentsMarksEveryToken(t *testing.T) {
+	hits := func(segs []segment) []string {
+		var out []string
+		for _, s := range segs {
+			if s.hit {
+				out = append(out, s.text)
+			}
+		}
+		return out
+	}
+	equal(t, "a token that is absent marks nothing of its own", hits(querySegments("…the ConPTY handle was recycled…", "recycled zombie")), []string{"recycled"})
+	equal(t, "two tokens, either case", hits(querySegments("…the ConPTY handle was recycled…", "conpty HANDLE")), []string{"ConPTY", "handle"})
+	equal(t, "no query", hits(querySegments("plain", "")), nil)
 }

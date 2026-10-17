@@ -10,6 +10,8 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -41,13 +43,13 @@ const (
 	paletteInputRow               = 11.5 // py-3 around a 22.5px line
 	paletteGlyphSize              = 16   // size-4
 	paletteEnterSize              = 14   // size-3.5
+	paletteTabGap                 = 4.5  // between two filter tabs
+	paletteTabUnderline   unit.Dp = 1.5  // under the current filter tab
 	paletteDimOpacity             = 0.4  // opacity-40, a tab with nothing in it
 	paletteCountOpacity           = 0.7  // the count's opacity-70
-	paletteSubOpacity             = 0.7  // text-foreground/70
-	paletteDotOpacity             = 0.45 // opacity-45 around the dots
 	paletteSnippetOpacity         = 0.8  // text-muted-foreground/80
-	paletteNoteOpacity            = 0.7  // text-muted-foreground/70
 	paletteQueryOpacity           = 0.8  // the query's text-foreground/80
+	paletteChipOpacity            = 0.4  // a chip's border, its tone at 40%
 )
 
 var (
@@ -56,7 +58,6 @@ var (
 	icPaletteFolderGone = icons.Lucide("folder-x")
 	icPaletteBranch     = icons.Lucide("git-branch")
 	icPaletteMessage    = icons.Lucide("message-square-text")
-	icPaletteWarn       = icons.Lucide("triangle-alert")
 	icPaletteAction     = icons.Lucide("chevron-right")
 	icPaletteEnter      = icons.Lucide("corner-down-left")
 )
@@ -141,44 +142,42 @@ func (p *commandPalette) filters(gtx C, th *ui.Theme, v *paletteView) D {
 	var children []layout.FlexChild
 	for i, tab := range paletteTabs {
 		if i > 0 {
-			children = append(children, ui.Gap(1))
+			children = append(children, ui.Gap(paletteTabGap))
 		}
-		children = append(children, layout.Rigid(func(gtx C) D { return p.pill(gtx, th, v, tab) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return p.filterTab(gtx, th, v, tab) }))
 	}
-	return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	})
 }
 
-func (p *commandPalette) pill(gtx C, th *ui.Theme, v *paletteView, tab paletteTab) D {
+// filterTab is one filter: its name and count, the current one in the foreground
+// and underlined, a hovered one brought up to the foreground.
+func (p *commandPalette) filterTab(gtx C, th *ui.Theme, v *paletteView, tab paletteTab) D {
 	click := p.tabClick(tab)
 	count, counted := v.counts[tab]
 	current := tab == p.tab
 	return click.Layout(gtx, func(gtx C) D {
-		bg, fg := th.Surface, th.MutedForeground
+		fg := th.MutedForeground
 		switch {
-		case current:
-			bg, fg = th.Accent, th.AccentForeground
-		case click.Hovered():
-			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
+		case current, click.Hovered():
+			fg = th.Foreground
+		case counted && count == 0:
+			fg = th.Over(ui.Alpha(fg, paletteDimOpacity))
 		}
-		on := th.On(bg)
-		if !current && counted && count == 0 {
-			fg = on.Over(ui.Alpha(fg, paletteDimOpacity))
+		d := layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+			children := []layout.FlexChild{layout.Rigid(th.Text(paletteTabSize, tab.label()).In(fg).Leading(20).Layout)}
+			if counted {
+				num := th.Text(paletteTinySize, fmt.Sprint(count)).Leading(paletteTinyLeading).Mono().In(th.Over(ui.Alpha(fg, paletteCountOpacity)))
+				children = append(children, ui.Gap(1), layout.Rigid(num.Layout))
+			}
+			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, children...)
+		})
+		if current {
+			line := gtx.Dp(paletteTabUnderline)
+			paint.FillShape(gtx.Ops, th.Foreground, clip.Rect{Min: image.Pt(0, d.Size.Y-line), Max: d.Size}.Op())
 		}
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-			func(gtx C) D {
-				return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-					children := []layout.FlexChild{layout.Rigid(on.Text(paletteTabSize, tab.label()).In(fg).Leading(20).Layout)}
-					if counted {
-						num := on.Text(paletteTinySize, fmt.Sprint(count)).Leading(paletteTinyLeading).Mono().In(on.Over(ui.Alpha(fg, paletteCountOpacity)))
-						children = append(children, ui.Gap(1.5), layout.Rigid(num.Layout))
-					}
-					return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, children...)
-				})
-			},
-		)
+		return d
 	})
 }
 
@@ -377,7 +376,7 @@ func (p *commandPalette) row(gtx C, th *ui.Theme, v *paletteView, i int, ring pa
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
 			func(gtx C) D {
-				return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+				return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 					children := []layout.FlexChild{
 						layout.Rigid(face.lead), ui.Gap(3),
 						layout.Flexed(1, face.text),
@@ -411,15 +410,19 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 	switch r.kind {
 	case rowSession:
 		s := r.session
-		return paletteFace{
+		face := paletteFace{
 			lead: paletteRingOf(on, ring, s.kind, s.status, s.unread, s.agent),
-			text: paletteLines(on, fg, s.label, paletteMeta(on, paletteFore(on, s.projectName), paletteTail(on, s.path))),
+			text: paletteLine(on, fg, s.label, shortPath(s.path)),
 		}
+		if s.status == statusWaiting {
+			face.trailing = paletteChip(on, i18n.T("session.filter.phase.waiting"), on.ToneWait)
+		}
+		return face
 	case rowMessage:
 		m := r.message
 		face := paletteFace{
 			lead: paletteGlyph(on, icPaletteMessage),
-			text: paletteLines(on, fg, m.snippet, paletteMeta(on, paletteFore(on, m.label), paletteTail(on, m.projectName))),
+			text: paletteLine(on, fg, m.snippet, m.label),
 		}
 		if m.count > 1 {
 			face.trailing = paletteSmall(on, i18n.T("palette.commandPalette.matches", i18n.Args{"count": m.count}))
@@ -428,7 +431,7 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 	case rowProject:
 		return paletteFace{
 			lead:     paletteGlyph(on, icPaletteFolder),
-			text:     paletteLines(on, fg, r.project.Name, paletteTail(on, r.project.Path)),
+			text:     paletteLine(on, fg, r.project.Name, shortPath(r.project.Path)),
 			trailing: paletteSmall(on, i18n.T("palette.commandPalette.sessions", i18n.Args{"count": v.sessionCount[r.project.ID]})),
 		}
 	case rowClosed:
@@ -438,11 +441,11 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 		}
 		return paletteFace{
 			lead:     paletteGlyph(on, icon),
-			text:     paletteLines(on, fg, r.project.Name, paletteTail(on, r.project.Path)),
+			text:     paletteLine(on, fg, r.project.Name, shortPath(r.project.Path)),
 			trailing: paletteSmall(on, word),
 		}
 	case rowHistory:
-		return paletteHistoryFace(on, r.history, fg, ring, now)
+		return paletteHistoryFace(on, r.history, v.query, fg, ring, now)
 	case rowExternal:
 		e := r.external
 		dir := e.Path
@@ -451,7 +454,7 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 		}
 		return paletteFace{
 			lead:     paletteRingOf(on, ring, e.Kind, "", false, ""),
-			text:     paletteLines(on, fg, externalLabel(e), paletteMeta(on, paletteFore(on, e.ProjectName), paletteTail(on, displayPath(dir)))),
+			text:     paletteLine(on, fg, externalLabel(e), shortPath(dir)),
 			trailing: paletteSmall(on, agoLabel(e.UpdatedAt, now)),
 		}
 	}
@@ -476,73 +479,93 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 // A checkout that is gone replaces the branch rather than sitting beside it:
 // there is no branch to read off a directory that is not there, and it is the
 // same absence that makes the row unresumable.
-func paletteHistoryFace(on *ui.Theme, h paletteHistory, fg color.NRGBA, ring paletteRing, now time.Time) paletteFace {
-	var meta []layout.FlexChild
-	meta = append(meta, layout.Rigid(paletteFore(on, h.ProjectName)))
-	switch {
-	case h.gone:
-		meta = append(meta, paletteDot(on), layout.Rigid(paletteIconText(on, icPaletteWarn, i18n.T("palette.commandPalette.checkoutGone"), on.ToneWait)))
-	case h.branch != "":
-		meta = append(meta, paletteDot(on), layout.Rigid(paletteIconText(on, icPaletteBranch, h.branch, on.MutedForeground)))
+//
+// Under a query a second line says why the row matched: the conversation's
+// snippet with the query's words marked, and the note that only the newest
+// part of a large transcript was searched.
+func paletteHistoryFace(on *ui.Theme, h paletteHistory, query string, fg color.NRGBA, ring paletteRing, now time.Time) paletteFace {
+	dir := h.Path
+	if dir == "" {
+		dir = h.ProjectPath
 	}
-	meta = append(meta, paletteDot(on), layout.Flexed(1, paletteTail(on, displayPath(h.Path))))
-	lines := []layout.Widget{
-		on.Text(ui.TextSM, h.Label).In(fg).Layout,
-		func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, meta...) },
-	}
+	title := paletteLine(on, fg, h.Label, shortPath(dir))
+	var why []layout.FlexChild
 	if h.Snippet != "" {
-		lines = append(lines, on.Text(ui.TextXS, h.Snippet).In(on.Over(ui.Alpha(on.MutedForeground, paletteSnippetOpacity))).Layout)
+		why = append(why, layout.Flexed(1, paletteSnippet(on, h.Snippet, query)))
 	}
-	if note := historyIndexNote(h); note != "" {
-		lines = append(lines, on.Text(paletteTinySize, note).Leading(paletteTinyLeading).Mono().In(on.Over(ui.Alpha(on.MutedForeground, paletteNoteOpacity))).Layout)
+	if note := historyIndexNote(h); note != "" && query != "" {
+		why = append(why, layout.Rigid(paletteSmall(on, note)))
+	}
+	text := title
+	if len(why) > 0 {
+		text = func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(title),
+				layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, why...) }),
+			)
+		}
+	}
+	mark := paletteIconText(on, icPaletteBranch, h.branch, on.MutedForeground)
+	if h.gone {
+		mark = paletteChip(on, i18n.T("palette.commandPalette.checkoutGone"), on.ToneWait)
 	}
 	return paletteFace{
 		lead: paletteRingOf(on, ring, h.Kind, "", false, ""),
-		text: func(gtx C) D {
-			children := make([]layout.FlexChild, len(lines))
-			for i, l := range lines {
-				children[i] = layout.Rigid(l)
+		text: text,
+		trailing: func(gtx C) D {
+			children := []layout.FlexChild{}
+			if h.gone || h.branch != "" {
+				children = append(children, layout.Rigid(mark), ui.Gap(2.5))
 			}
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+			children = append(children, layout.Rigid(paletteSmall(on, agoLabel(h.ClosedAt, now))))
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 		},
-		trailing: paletteSmall(on, agoLabel(h.ClosedAt, now)),
 	}
 }
 
-// paletteLines is a title over one mono line.
-func paletteLines(on *ui.Theme, fg color.NRGBA, title string, meta layout.Widget) layout.Widget {
+// paletteSnippet is one line of what was said, the query's words in the
+// foreground over the muted rest.
+func paletteSnippet(on *ui.Theme, snippet, query string) layout.Widget {
 	return func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		segs := querySegments(snippet, query)
+		kids := make([]layout.FlexChild, len(segs))
+		for i, seg := range segs {
+			l := on.Text(ui.TextXS, seg.text).In(on.Over(ui.Alpha(on.MutedForeground, paletteSnippetOpacity)))
+			if seg.hit {
+				l = on.Text(ui.TextXS, seg.text).In(on.Foreground).Weight(font.Medium)
+			}
+			l.MaxLines = 1
+			kids[i] = layout.Rigid(l.Layout)
+		}
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, kids...)
+	}
+}
+
+// paletteLine is a title and, after it on the same line, a muted mono note
+// that gives up its start when the row is too narrow, as a card's path does.
+func paletteLine(on *ui.Theme, fg color.NRGBA, title, note string) layout.Widget {
+	return func(gtx C) D {
+		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 			layout.Rigid(on.Text(ui.TextSM, title).In(fg).Layout),
-			layout.Rigid(meta),
+			ui.Gap(2.5),
+			layout.Flexed(1, on.Text(ui.TextXS, note).Mono().Muted().LayoutTail),
 		)
 	}
 }
 
-// paletteMeta is a mono line of a shrink-0 head and a tail that truncates,
-// the dot between them.
-func paletteMeta(on *ui.Theme, head, tail layout.Widget) layout.Widget {
+// paletteChip is an outlined word in a tone: the "waiting" a session waiting
+// on the user trails with, the "checkout gone" of a history row.
+func paletteChip(on *ui.Theme, word string, tone color.NRGBA) layout.Widget {
 	return func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(head), paletteDot(on), layout.Flexed(1, tail))
+		macro := op.Record(gtx.Ops)
+		gtx.Constraints.Min = image.Point{}
+		d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: unit.Dp(1), Bottom: unit.Dp(1)}.Layout(gtx,
+			on.Text(paletteTinySize, word).Leading(paletteTinyLeading).Mono().In(tone).Layout)
+		call := macro.Stop()
+		insetBorder(gtx, d.Size, d.Size.Y/2, on.Over(ui.Alpha(tone, paletteChipOpacity)))
+		call.Add(gtx.Ops)
+		return d
 	}
-}
-
-func paletteDot(on *ui.Theme) layout.FlexChild {
-	dot := on.Text(ui.TextXS, "·").Mono().In(on.Over(ui.Alpha(on.MutedForeground, paletteDotOpacity)))
-	return layout.Rigid(func(gtx C) D {
-		return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5)}.Layout(gtx, dot.Layout)
-	})
-}
-
-// paletteFore is a mono name in text-foreground/70, which leads a meta line.
-func paletteFore(on *ui.Theme, s string) layout.Widget {
-	return on.Text(ui.TextXS, s).Mono().In(on.Over(ui.Alpha(on.Foreground, paletteSubOpacity))).Layout
-}
-
-// paletteTail is a mono text-muted-foreground run.
-func paletteTail(on *ui.Theme, s string) layout.Widget {
-	return on.Text(ui.TextXS, s).Mono().Muted().Layout
 }
 
 // paletteSmall is the trailing note: font-mono text-[0.625rem] muted.
