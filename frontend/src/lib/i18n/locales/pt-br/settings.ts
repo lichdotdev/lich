@@ -10,6 +10,7 @@ export const settings = {
       "O idioma do texto que o lich entrega aos seus agentes: instruções, mensagens repassadas e avisos. Sessões iniciadas a partir de agora usam ele em tudo; as já abertas recebem ele só nas mensagens repassadas.",
     uiSearchWords: "idioma língua tradução inglês português",
     promptSearchWords: "idioma língua tradução agente instruções mensagens inglês português",
+    uiSaveFailed: "Não foi possível salvar o idioma da interface: {error}",
     promptSaveFailed: "Não foi possível salvar o idioma dos prompts: {error}",
   },
   settings: {

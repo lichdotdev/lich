@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client"
 import App from "./App"
 import { installBrowserDefaults } from "@/lib/browser-defaults"
 import { promptLanguageStore } from "@/lib/prompt-language-store"
+import { seedUiLanguageSetting } from "@/lib/ui-language-setting"
 import "./index.css"
 
 // Registered once for the page's life, before React: the shell's own reflexes
@@ -12,6 +13,10 @@ installBrowserDefaults(window)
 // Starts reading the prompt language now, so the first text lich types into an
 // agent is already in it.
 void promptLanguageStore.get()
+
+// A language picked here before the native window read the backend setting
+// reaches it too. A failed write surfaces as an unhandled rejection.
+void seedUiLanguageSetting()
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

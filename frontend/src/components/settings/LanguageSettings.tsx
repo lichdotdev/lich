@@ -8,8 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { LOCALES, LOCALE_NAMES, type Locale, setLocale, useLocale, useT } from "@/lib/i18n/i18n"
+import { LOCALES, LOCALE_NAMES, type Locale, useLocale, useT } from "@/lib/i18n/i18n"
 import { promptLanguageStore, setPromptLanguage } from "@/lib/prompt-language-store"
+import { saveLocale } from "@/lib/ui-language-setting"
 import { errorText } from "@/lib/utils"
 import { SettingRow } from "./SettingBlock"
 
@@ -22,6 +23,12 @@ export function LanguageSettings() {
     promptLanguageStore.subscribe,
     promptLanguageStore.get,
   )
+
+  const chooseUiLanguage = (next: Locale) => {
+    saveLocale(next).catch((error: unknown) =>
+      toast.error(t("settings.language.uiSaveFailed", { error: errorText(error) })),
+    )
+  }
 
   const choosePromptLanguage = (next: Locale) => {
     setPromptLanguage(next).catch((error: unknown) =>
@@ -38,7 +45,7 @@ export function LanguageSettings() {
         <LanguageSelect
           value={uiLanguage}
           ariaLabel={t("settings.language.uiTitle")}
-          onChange={setLocale}
+          onChange={chooseUiLanguage}
         />
       </SettingRow>
       <SettingRow

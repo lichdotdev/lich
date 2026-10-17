@@ -12,6 +12,7 @@ export const settings = {
       "idioma language locale traducción inglés english portugués portuguese español spanish",
     promptSearchWords:
       "idioma language locale traducción agente briefing relay inglés english portugués portuguese español spanish",
+    uiSaveFailed: "No se pudo guardar el idioma de la interfaz: {error}",
     promptSaveFailed: "No se pudo guardar el idioma de los prompts: {error}",
   },
   settings: {

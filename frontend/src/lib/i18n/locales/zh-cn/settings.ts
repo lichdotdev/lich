@@ -10,6 +10,7 @@ export const settings = {
       "lich 交给智能体的文本所用的语言：简报、转发的消息和通知。此后启动的会话在所有场景下都使用该语言；已打开的会话仅在转发的消息中使用。",
     uiSearchWords: "语言 区域 翻译 英语 葡萄牙语 简体中文",
     promptSearchWords: "语言 区域 翻译 智能体 简报 转发 英语 葡萄牙语 简体中文",
+    uiSaveFailed: "无法保存界面语言：{error}",
     promptSaveFailed: "无法保存提示词语言：{error}",
   },
   settings: {

@@ -27,6 +27,9 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 const CATALOGS: Record<Locale, Shape<Messages>> = { en, "pt-BR": ptBR, es, "zh-CN": zhCN }
 
 export const UI_LANGUAGE_PREF = "lich.appearance.language"
+// The backend setting the native window reads its language from; the page
+// mirrors its choice there (ui-language-setting.ts).
+export const UI_LANGUAGE_SETTING = "lich.appearance.language"
 
 /** The locale for a BCP 47 tag: an exact match, then a language match (any
  * Portuguese reads pt-BR), then English. */
