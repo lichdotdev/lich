@@ -35,6 +35,15 @@ func homeAt(t *testing.T, home string) *Service {
 	return New(t.TempDir(), nil)
 }
 
+// smallBudget shrinks the search budget for one test, so running past it takes
+// a handful of files rather than fifty thousand.
+func smallBudget(t *testing.T) {
+	t.Helper()
+	previous := maxEntries
+	maxEntries = 16
+	t.Cleanup(func() { maxEntries = previous })
+}
+
 // writeFile creates path with size bytes and a known modification time,
 // standing in for the file the user drags out of a file manager.
 func writeFile(t *testing.T, path string, size int, mtime time.Time) Item {
@@ -123,6 +132,7 @@ func TestResolveRefusesTwins(t *testing.T) {
 // is not a unique match, and answering with it hands the session the wrong file
 // — the exact failure the whole rule exists to prevent.
 func TestResolveRefusesTwinsSplitByTheBudget(t *testing.T) {
+	smallBudget(t)
 	root := t.TempDir()
 	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
 	item := writeFile(t, filepath.Join(root, "a", "app.ts"), 41, mtime)
@@ -221,6 +231,7 @@ func TestResolveMapsEveryItem(t *testing.T) {
 // reported the directory sitting right beside it as missing. The noise here is
 // one entry over the budget for exactly that reason.
 func TestResolveFindsShallowSiblingBeforeNoise(t *testing.T) {
+	smallBudget(t)
 	root := t.TempDir()
 	noise := filepath.Join(root, ".cache", "pkg")
 	if err := os.MkdirAll(noise, 0o755); err != nil {

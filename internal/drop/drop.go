@@ -63,8 +63,10 @@ const maxUpload = 32 << 20
 
 // maxEntries bounds one searched tree, so a drop over a home directory or a
 // vendored monorepo cannot stall the window. Past it the search gives up and
-// the item falls through to the upload copy.
-const maxEntries = 50_000
+// the item falls through to the upload copy. Replaced in tests: proving the
+// budget runs out takes one more file than it, and 50,001 files cost close to
+// forty seconds a test on Windows.
+var maxEntries = 50_000
 
 // homeDir is os.UserHomeDir, replaced in tests: the search must never reach
 // the machine's real home, on any OS.
