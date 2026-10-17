@@ -1,3 +1,8 @@
+// The suite reuses stubBins from terminal_test.go, which is Unix-tagged for its
+// PTY spawns; this file carries the same tag so the package still builds on
+// Windows. Nothing here is platform-specific.
+//go:build !windows
+
 package terminal
 
 import (
