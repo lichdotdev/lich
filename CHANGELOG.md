@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **What's new follows a language you switch to.** In the native window, the
+  release notes stayed in the language they were first read in after you
+  changed the interface language, under group names in the new one.
+
 ## [0.70.0] - 2026-10-17
 
 ### Added

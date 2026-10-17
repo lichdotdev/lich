@@ -146,6 +146,7 @@ func (s *settingsScreen) chooseLanguage(l i18n.Locale) {
 func (s *settingsScreen) keepLanguage(l i18n.Locale) {
 	i18n.SetCurrent(l)
 	s.invalidate()
+	go s.updates.readNotes(s)
 	go func() {
 		if err := s.client.SetSetting(s.ctx, uiLanguageKey, "", string(l)); err != nil {
 			log.Printf("settings: save %s: %v", uiLanguageKey, err)

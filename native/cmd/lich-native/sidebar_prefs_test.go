@@ -72,6 +72,8 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 		_ = json.Unmarshal(args[0], &opts)
 		f.settings["appearance.theme@"] = opts.ID
 		return nil
+	case "patchnotes.Current":
+		return lichclient.PatchNotes{Version: "1.0.0", Groups: []lichclient.PatchNotesGroup{{Label: "Added", Items: []string{str(0)}}}}
 	case "themes.SetFollowSystem":
 		f.settings["appearance.followSystem@"] = string(args[0])
 		return nil

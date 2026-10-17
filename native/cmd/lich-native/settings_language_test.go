@@ -190,3 +190,17 @@ func TestAFailedOrCanceledDownloadKeepsTheLanguage(t *testing.T) {
 		t.Errorf("current %s", i18n.Current())
 	}
 }
+
+// The notes are read once and kept; a new interface language reads them
+// again, or the dialog names its groups in one language and lists them in
+// the other.
+func TestChoosingALanguageRereadsThePatchNotes(t *testing.T) {
+	s := languageScreen(t)
+	s.updates.readNotes(s)
+	s.keepLanguage(i18n.RU)
+	eventually(t, "the notes in Russian", func() bool {
+		s.updates.mu.Lock()
+		defer s.updates.mu.Unlock()
+		return s.updates.notes.Groups[0].Items[0] == string(i18n.RU)
+	})
+}
