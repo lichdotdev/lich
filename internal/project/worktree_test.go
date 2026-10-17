@@ -9,29 +9,92 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
+
+// repoTemplate is the repository initRepo hands out, built once per package
+// run: on Windows every git process costs tens of milliseconds, and initRepo
+// is called by about a hundred tests, so each copies the template and runs one
+// process instead of init, config, add and commit.
+var repoTemplate struct {
+	once      sync.Once
+	dir       string
+	noGit     error
+	buildFail error
+}
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	if repoTemplate.dir != "" {
+		_ = os.RemoveAll(repoTemplate.dir)
+	}
+	os.Exit(code)
+}
+
+// buildRepoTemplate makes the repository initRepo describes: one commit on
+// branch main. A failed init means there is no usable git and the tests skip;
+// any later failure is a broken fixture and fails them.
+func buildRepoTemplate() {
+	dir, err := os.MkdirTemp("", "project-repo-template-")
+	if err != nil {
+		repoTemplate.buildFail = err
+		return
+	}
+	repoTemplate.dir = dir
+	run := func(args ...string) error {
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		cmd.Env = append(os.Environ(), testGitIdentity...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("git %v: %w (%s)", args, err, out)
+		}
+		return nil
+	}
+	if err := run("init", "-b", "main"); err != nil {
+		repoTemplate.noGit = err
+		return
+	}
+	repoTemplate.buildFail = commitTemplate(dir, run)
+}
+
+func commitTemplate(dir string, run func(args ...string) error) error {
+	// Byte-exact file content is part of the assertions (DiscardFile restores
+	// HEAD bytes); pin autocrlf so neither Git for Windows' default nor the
+	// machine's global config rewrites line endings on checkout.
+	if err := run("config", "core.autocrlf", "false"); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "a.txt"), []byte("one\n"), 0o644); err != nil {
+		return err
+	}
+	if err := run("add", "a.txt"); err != nil {
+		return err
+	}
+	return run("commit", "-m", "init")
+}
 
 // initRepo creates a git repository with one commit on branch main and returns
 // its path plus a helper that runs git inside it. Skips the test when git is
 // unavailable.
 func initRepo(t *testing.T) (string, func(args ...string) string) {
 	t.Helper()
+	repoTemplate.once.Do(buildRepoTemplate)
+	if repoTemplate.noGit != nil {
+		t.Skipf("git init unavailable: %v", repoTemplate.noGit)
+	}
+	if repoTemplate.buildFail != nil {
+		t.Fatalf("build repository template: %v", repoTemplate.buildFail)
+	}
 	repo := t.TempDir()
-	if out, err := exec.Command("git", "init", "-b", "main", repo).CombinedOutput(); err != nil {
-		t.Skipf("git init unavailable: %v (%s)", err, out)
+	if err := os.CopyFS(repo, os.DirFS(repoTemplate.dir)); err != nil {
+		t.Fatalf("copy repository template: %v", err)
 	}
 	git := gitIn(t, repo)
-	// Byte-exact file content is part of the assertions (DiscardFile restores
-	// HEAD bytes); pin autocrlf so neither Git for Windows' default nor the
-	// machine's global config rewrites line endings on checkout.
-	git("config", "core.autocrlf", "false")
-	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("one\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	git("add", "a.txt")
-	git("commit", "-m", "init")
+	// The copied index still holds the template's inodes and ctimes, so the
+	// first git read would rewrite it; refreshing here hands every test the
+	// clean index a freshly committed repository has.
+	git("update-index", "--refresh")
 	return repo, git
 }
 

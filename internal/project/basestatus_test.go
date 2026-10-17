@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+// testGitIdentity is the fixed author and committer every test commit carries.
+var testGitIdentity = []string{
+	"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
+	"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t",
+}
+
 // gitIn returns a helper running git inside dir with a fixed identity, failing
 // the test on any non-zero exit.
 func gitIn(t *testing.T, dir string) func(args ...string) string {
@@ -17,10 +23,7 @@ func gitIn(t *testing.T, dir string) func(args ...string) string {
 	return func(args ...string) string {
 		t.Helper()
 		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
-		cmd.Env = append(os.Environ(),
-			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
-			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t",
-		)
+		cmd.Env = append(os.Environ(), testGitIdentity...)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			t.Fatalf("git %v: %v (%s)", args, err, out)
