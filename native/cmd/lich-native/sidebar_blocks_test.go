@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 const sidebarProject = "/home/me/try/repo"

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // conversationHome points every provider's store at one throwaway home, with

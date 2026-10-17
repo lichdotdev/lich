@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // A few seconds cover an abort, a model or an effort, which the mod applies the

@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/rpc"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/rpc"
 )
 
 // These prove that a caller who stops waiting for results stops taking them. A

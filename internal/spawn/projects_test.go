@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // emittedNames is the order the window is told things in, which is the whole

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
 )
 
 // TestProfilePlanReadsTheProfilesOwnLogin: a profile is read from its own

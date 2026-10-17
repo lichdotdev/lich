@@ -1,8 +1,8 @@
 package terminal
 
 import (
-	"github.com/omartelo/lich/internal/agentplugin"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // startsAtPrompt is the providers whose session-start hook fires from the

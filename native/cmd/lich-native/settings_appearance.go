@@ -10,9 +10,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // closeChoices are CloseSetting's three answers, each with the keys of its

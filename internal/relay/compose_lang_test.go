@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // The briefing is one argv entry that cmd.exe reads on Windows (see

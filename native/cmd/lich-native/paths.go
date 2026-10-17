@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // homeRoot is frontend/src/lib/paths.ts's HOME_ROOTS.

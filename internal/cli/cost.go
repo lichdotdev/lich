@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 func (c *client) cost(args []string) error {

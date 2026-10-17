@@ -4,10 +4,10 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/profilestore"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Claude Code and Codex keep a plugin set per profile, so the lich plugin

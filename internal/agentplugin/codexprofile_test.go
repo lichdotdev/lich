@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // TestInstallInCodexProfileRunsAsTheProfile: the same pinned install Personal

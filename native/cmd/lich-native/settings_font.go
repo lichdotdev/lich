@@ -15,10 +15,10 @@ import (
 	"gioui.org/text"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/fonts"
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/fonts"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 var (

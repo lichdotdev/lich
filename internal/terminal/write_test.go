@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // shortWritePTY accepts at most chunk bytes per Write call, the way a Windows

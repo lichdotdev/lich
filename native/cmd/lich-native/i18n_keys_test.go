@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // keyFields are the settingEntry fields that hold a catalog key.

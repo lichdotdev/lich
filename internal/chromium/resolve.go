@@ -17,7 +17,7 @@ import (
 var ErrNoShell = errors.New(
 	"no window beside the lich binary: lich-shell is missing. Every release is a complete package, " +
 		"the binary and its shell folder together; install one from " +
-		"https://github.com/omartelo/lich/releases/latest, or point LICH_SHELL at a window build")
+		"https://github.com/lichdotdev/lich/releases/latest, or point LICH_SHELL at a window build")
 
 // OverrideEnv pins the window to launch, by path. The --shell flag is carried
 // in it rather than passed down as an argument, so the restart successor

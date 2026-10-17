@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // merging is a project with sessions spread over its own directory and two

@@ -7,9 +7,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // resumeDialog is ResumeSessionDialog: whether a restored card continues

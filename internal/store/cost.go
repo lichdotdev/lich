@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // CostLedger returns how far a session's cost accounting has read into one of

@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/gitutil"
-	"github.com/omartelo/lich/internal/relpath"
+	"github.com/lichdotdev/lich/internal/gitutil"
+	"github.com/lichdotdev/lich/internal/relpath"
 )
 
 // Worktree is a git worktree checkout: the branch it holds and its path.

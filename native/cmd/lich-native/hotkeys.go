@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // The keyboard shortcuts of frontend/src/lib/hotkeys.ts: the actions, their

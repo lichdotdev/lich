@@ -5,9 +5,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // homeView is Home.tsx, an EmptyScreen: the folder glyph, the title, one

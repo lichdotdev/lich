@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // mcpServersKey is the key an `mcpServers` document holds its servers under —

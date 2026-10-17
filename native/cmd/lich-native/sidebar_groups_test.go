@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // ss builds a stored session list: "id" for the project root, "id@path" for

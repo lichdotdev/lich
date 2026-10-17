@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // attachFile is the footer's attach button (FooterBar.tsx attachFile). The

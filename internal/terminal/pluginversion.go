@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/omartelo/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/agentplugin"
 )
 
 // pluginVersionHeader names the plugin release a hook report comes from

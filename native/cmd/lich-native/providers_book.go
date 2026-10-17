@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // providerInfo is providers-store.ts ProviderState.

@@ -17,7 +17,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // The geometry of input.tsx: h-9, px-2.5, py-1, and the pl-8 + left-2.5 of an

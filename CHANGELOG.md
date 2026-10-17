@@ -13,11 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Checks tab marks the checks that gate its merge with Required, as GitHub
   does.
 
+### Changed
+
+- **lich lives at `lichdotdev/lich`.** The repository moved to the
+  [lichdotdev](https://github.com/lichdotdev) organization and the site to
+  [lichdotdev.github.io/lich](https://lichdotdev.github.io/lich/). Old GitHub
+  links, clones and update checks redirect; bookmarks of the old site do not.
+
 ### Fixed
 
 - **What's new follows a language you switch to.** In the native window, the
   release notes stayed in the language they were first read in after you
   changed the interface language, under group names in the new one.
+- **Diffs no longer stall on CJK text or pile up memory per file.** In the
+  native window, a Review or a pull request's Files with Chinese, Japanese or
+  Korean text could freeze for seconds as each new character was looked up,
+  and every file's diff kept its own copy of the fonts, so a large pull
+  request held hundreds of megabytes.
 
 ## [0.70.0] - 2026-10-17
 

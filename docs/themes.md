@@ -88,7 +88,7 @@ into editor completion and errors, before the file is ever imported:
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/omartelo/lich/main/themes/lich-theme.schema.json",
+  "$schema": "https://raw.githubusercontent.com/lichdotdev/lich/main/themes/lich-theme.schema.json",
   "id": "tokyo-night"
 }
 ```

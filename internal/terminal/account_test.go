@@ -8,7 +8,7 @@ package terminal
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // A card whose PTY is not up has no environment to read, and reporting it as

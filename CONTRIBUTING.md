@@ -5,12 +5,12 @@ Bugs and ideas are welcome, and so are patches. This file is the short version;
 
 ## Reporting
 
-- **Something is broken** → the [bug form](https://github.com/omartelo/lich/issues/new?template=bug.yml).
+- **Something is broken** → the [bug form](https://github.com/lichdotdev/lich/issues/new?template=bug.yml).
   Settings → Help → *Report a bug* opens it with the version and platform
   already filled in, and *Open log folder* puts you next to the file to attach.
   Read the log before attaching it: it carries paths, project and branch names
   and your gh login — never a session token.
-- **Something is missing** → the [feature form](https://github.com/omartelo/lich/issues/new?template=feature.yml).
+- **Something is missing** → the [feature form](https://github.com/lichdotdev/lich/issues/new?template=feature.yml).
   Describe the problem first; the shape you have in mind is optional, and a
   well-described problem often has a better answer than either of us reaches
   for first.

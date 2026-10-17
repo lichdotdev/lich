@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/sandbox"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/sandbox"
 )
 
 // A confined session is still a PTY session: bubblewrap sits between lich and

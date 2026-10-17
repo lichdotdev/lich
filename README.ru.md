@@ -13,9 +13,9 @@
     Electron: интерфейс открывается во встроенном Chromium самого lich на Linux,
     Windows и macOS.
   </p>
-  <p><a href="https://omartelo.github.io/lich/"><strong>omartelo.github.io/lich</strong></a></p>
+  <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
-    <a href="https://github.com/omartelo/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/omartelo/lich?color=4285F4&label=release" /></a>
+    <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
     <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
@@ -102,7 +102,7 @@ lich позволяет:
 lich вообще не запускается.
 
 Разработка идёт активно: об ошибках и пожеланиях сообщайте в
-[Issues](https://github.com/omartelo/lich/issues), а что изменилось в каждой
+[Issues](https://github.com/lichdotdev/lich/issues), а что изменилось в каждой
 версии, описано в [CHANGELOG.md](CHANGELOG.md).
 
 ## Поддержка провайдеров
@@ -163,14 +163,14 @@ lich вообще не запускается.
 устанавливает нативный пакет вместе с зависимостями через ваш менеджер пакетов:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omartelo/lich/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
 ```
 
 | Платформа | Где взять | Что нужно во время работы |
 | --- | --- | --- |
 | **Linux** | `install.sh` выше или AUR [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`) | `zenity`, а также glibc 2.34 или новее для окна, которое поставляется в пакете (Debian 12, Ubuntu 22.04, RHEL 9 и новее) |
 | **macOS** | `brew install --cask lichdotdev/tap/lich` | ничего, окно входит в приложение, и на Apple Silicon, и на Intel |
-| **Windows** | установщик или portable zip со страницы [Releases](https://github.com/omartelo/lich/releases), либо Scoop: `scoop install https://github.com/omartelo/lich/releases/latest/download/lich.json` | ничего, окно поставляется в каждом из вариантов |
+| **Windows** | установщик или portable zip со страницы [Releases](https://github.com/lichdotdev/lich/releases), либо Scoop: `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | ничего, окно поставляется в каждом из вариантов |
 
 Ручные пакеты для отдельных дистрибутивов, tarball для Linux и portable zip для
 Windows: [INSTALL.md](INSTALL.md). Бинарные файлы для macOS и Windows не

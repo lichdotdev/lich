@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // The keys below are built at runtime or sit in tables, which the source

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/profilestore"
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // cursorTrustMarker is the file whose presence under a folder's project dir

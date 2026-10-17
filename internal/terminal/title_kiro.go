@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // The Kiro CLI side of the session title, and the one provider lich reads a

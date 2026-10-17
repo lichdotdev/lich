@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Only a shell session takes the integration: a provider is a full-screen

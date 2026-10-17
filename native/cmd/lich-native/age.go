@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // formatAge is lib/session/session-age.ts: how long a session has been in its

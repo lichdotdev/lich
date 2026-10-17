@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	themeassets "github.com/omartelo/lich/themes"
+	themeassets "github.com/lichdotdev/lich/themes"
 )
 
 const (

@@ -12,9 +12,9 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 var icRevertBlock = icons.Lucide("undo-2")

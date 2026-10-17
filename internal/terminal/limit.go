@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // limitEventName carries a turn a plan's usage limit ended ({id, window,

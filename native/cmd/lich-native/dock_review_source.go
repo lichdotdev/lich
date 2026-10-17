@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // diffPoll is ReviewPanel's DIFF_POLL_MS: how often the diff is read again,

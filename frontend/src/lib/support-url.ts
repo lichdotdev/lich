@@ -8,7 +8,7 @@
 
 import type { Diagnostics } from "./api-types"
 
-export const REPO_URL = "https://github.com/omartelo/lich"
+export const REPO_URL = "https://github.com/lichdotdev/lich"
 
 // bugReportUrl opens the bug form with the two fields a reporter should never
 // have to look up. The query keys are the `id`s in .github/ISSUE_TEMPLATE/bug.yml

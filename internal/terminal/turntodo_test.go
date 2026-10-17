@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // A `TodoWrite` line as Claude Code files one, with the list encoded the way it

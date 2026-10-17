@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // gitPoll is how often each shown path's branch and changes are re-read. The

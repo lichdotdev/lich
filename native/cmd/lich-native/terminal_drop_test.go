@@ -18,7 +18,7 @@ import (
 	"gioui.org/app"
 	"gioui.org/f32"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 func TestParseURIListKeepsLocalFilesOnly(t *testing.T) {

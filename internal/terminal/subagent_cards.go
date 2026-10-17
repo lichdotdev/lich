@@ -3,9 +3,9 @@ package terminal
 import (
 	"strconv"
 
-	"github.com/omartelo/lich/internal/agentplugin"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // maxSubagentDepth is how many levels of subagent cards lich nests: a session

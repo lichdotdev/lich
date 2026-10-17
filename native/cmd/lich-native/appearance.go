@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // themeSettingKey is providers/settings.tsx THEME_SETTING_KEY, a global

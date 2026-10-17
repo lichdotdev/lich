@@ -1,4 +1,4 @@
-module github.com/omartelo/lich
+module github.com/lichdotdev/lich
 
 go 1.27.0
 

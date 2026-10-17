@@ -18,7 +18,7 @@ import (
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // The buttons lich draws inside its diff, .cm-diff-expand and .cm-diff-revert

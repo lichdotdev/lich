@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // baseStanding is the part of base-status.ts baseReadout a card draws: how

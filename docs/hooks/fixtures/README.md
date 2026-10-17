@@ -65,7 +65,7 @@ and change freely; what the fixture fixes is *that* the payload is refused.
 - **The plugin (client side)** — the payload a script builds must match an
   `accept` case's `body` for the shape it sends. Vendor the files or read them
   from this repo at
-  `https://raw.githubusercontent.com/omartelo/lich/main/docs/hooks/fixtures/<name>.jsonl`.
+  `https://raw.githubusercontent.com/lichdotdev/lich/main/docs/hooks/fixtures/<name>.jsonl`.
 
 ## Changing them
 

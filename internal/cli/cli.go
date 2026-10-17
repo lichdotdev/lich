@@ -35,12 +35,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/doctor"
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/rage"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/singleton"
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/doctor"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/rage"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 // NotACommand is returned when the arguments name no lich subcommand at all,

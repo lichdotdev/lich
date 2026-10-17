@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 func TestModAnswersOnlyFromAPollingModOfARelease(t *testing.T) {

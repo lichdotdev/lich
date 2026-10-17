@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/ompprofile"
+	"github.com/lichdotdev/lich/internal/ompprofile"
 )
 
 // The oh-my-pi side. omp has no plugin CLI either, and its extensions are

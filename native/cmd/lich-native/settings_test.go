@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 var (

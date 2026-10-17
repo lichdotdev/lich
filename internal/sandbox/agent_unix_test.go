@@ -9,7 +9,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // listenUnix puts a real socket on disk and returns its path: what the ssh

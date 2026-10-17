@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // uncleanExitToast is UncleanExitGate's warning: it stays until dismissed,

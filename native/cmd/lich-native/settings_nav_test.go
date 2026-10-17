@@ -10,8 +10,8 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/fonts"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/fonts"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // A "1" in Onest has most of its advance to the right of its ink: centering

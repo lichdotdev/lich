@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/text/encoding/charmap"
 
-	"github.com/omartelo/lich/internal/relpath"
+	"github.com/lichdotdev/lich/internal/relpath"
 )
 
 // maxReadFileSize caps a previewed file. CodeMirror is a source viewer, not a

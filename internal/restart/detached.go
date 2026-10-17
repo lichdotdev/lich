@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/omartelo/lich/internal/logging"
+	"github.com/lichdotdev/lich/internal/logging"
 )
 
 // memorySampleEvery is how often WatchNative reads the running window's memory:

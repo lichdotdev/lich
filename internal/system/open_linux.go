@@ -1,6 +1,6 @@
 package system
 
-import "github.com/omartelo/lich/internal/shquote"
+import "github.com/lichdotdev/lich/internal/shquote"
 
 // openDefault hands the file to the desktop's default handler when no
 // $VISUAL/$EDITOR is set. xdg-open resolves the user's chosen application.

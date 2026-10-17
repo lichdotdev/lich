@@ -1,6 +1,6 @@
 package system
 
-import "github.com/omartelo/lich/internal/shquote"
+import "github.com/lichdotdev/lich/internal/shquote"
 
 // openDefault opens the file in the default text editor when no $VISUAL/$EDITOR
 // is set. `open -t` targets the editor bound to the Default Editor, not the

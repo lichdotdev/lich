@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // handsOnRung says which signals beat a provider's hands-on clock

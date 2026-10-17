@@ -18,7 +18,7 @@ import (
 	"golang.org/x/image/font/sfnt"
 	"golang.org/x/image/math/fixed"
 
-	"github.com/omartelo/lich/native/fonts"
+	"github.com/lichdotdev/lich/native/fonts"
 )
 
 // fontStyles are the styles of a family, indexed by styleIndex.

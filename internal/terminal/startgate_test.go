@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // quietSession is a session that went quiet long enough ago to have latched ready.

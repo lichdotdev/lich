@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/store"
-	"github.com/omartelo/lich/internal/xdgprofile"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/xdgprofile"
 )
 
 // The conversation lists of the five providers that describe a conversation in

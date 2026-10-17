@@ -6,7 +6,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // costReadoutKey is internal/store's costReadoutKey: the global flag that

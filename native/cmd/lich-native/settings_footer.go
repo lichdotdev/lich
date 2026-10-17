@@ -5,7 +5,7 @@ import (
 
 	"gioui.org/layout"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // footerRow is Settings › Appearance › Footer: the row with Restore default,

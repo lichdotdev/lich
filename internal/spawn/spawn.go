@@ -28,11 +28,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/store"
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 // OpenedEventName carries a session opened outside the window, so the card

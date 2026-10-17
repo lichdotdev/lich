@@ -1,6 +1,6 @@
 package terminal
 
-import "github.com/omartelo/lich/internal/shellintegration"
+import "github.com/lichdotdev/lich/internal/shellintegration"
 
 // SetShellIntegrationDir names the directory shellintegration.Install wrote
 // the shell scripts to; "" leaves shell sessions without them.

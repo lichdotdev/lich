@@ -14,7 +14,7 @@ priority: "extra"
 maintainer: "omartelo <meopedevts@proton.me>"
 description: "A terminal-first ADE for the coding agents you already use"
 vendor: "lich"
-homepage: "https://github.com/omartelo/lich"
+homepage: "https://github.com/lichdotdev/lich"
 license: "AGPL-3.0-only"
 
 contents:

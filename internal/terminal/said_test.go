@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // TestLastTurnSaidReadsTheClaudeTranscript proves the whole read the panel rides

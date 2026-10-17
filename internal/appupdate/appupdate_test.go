@@ -139,7 +139,7 @@ func TestStatus(t *testing.T) {
 		if got.CurrentVersion != "0.7.0" || got.LatestVersion != "0.8.0" {
 			t.Fatalf("versions = %+v", got)
 		}
-		if got.ReleaseURL != "https://github.com/omartelo/lich/releases/tag/v0.8.0" {
+		if got.ReleaseURL != "https://github.com/lichdotdev/lich/releases/tag/v0.8.0" {
 			t.Fatalf("ReleaseURL = %q", got.ReleaseURL)
 		}
 		// CanSelfApply tracks the platform: only Windows amd64 on a writable dir.

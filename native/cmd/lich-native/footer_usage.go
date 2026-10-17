@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // costMisses are the named absences of a cost figure this build has a

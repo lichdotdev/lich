@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omartelo/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
 // configFile is where Codex keeps its user config, the plugin set included, in

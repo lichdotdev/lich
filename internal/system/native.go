@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/omartelo/lich/internal/restart"
+	"github.com/lichdotdev/lich/internal/restart"
 )
 
 // The windows lich can open, and the setting that picks the one opened when

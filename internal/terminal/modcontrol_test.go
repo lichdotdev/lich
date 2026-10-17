@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // newModService is a service with a live transport whose empty polls answer

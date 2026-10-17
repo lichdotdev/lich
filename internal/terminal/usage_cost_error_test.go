@@ -11,7 +11,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // haltingReader serves body and then fails, the way a transcript on a

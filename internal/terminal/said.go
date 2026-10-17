@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // saidRuneCap bounds the closing words the panel is handed. A turn can end in a

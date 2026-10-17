@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // clearHarnessEnv blanks every variable a provider uses to move its state

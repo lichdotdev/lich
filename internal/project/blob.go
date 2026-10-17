@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/relpath"
+	"github.com/lichdotdev/lich/internal/relpath"
 )
 
 // maxPreviewBytes caps one side of an image or PDF preview. It covers a 4K

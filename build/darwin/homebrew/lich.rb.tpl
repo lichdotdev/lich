@@ -11,10 +11,10 @@ cask "lich" do
   version "@VERSION@"
   sha256 arm: "@SHA_ARM64@", intel: "@SHA_AMD64@"
 
-  url "https://github.com/omartelo/lich/releases/download/v#{version}/lich-v#{version}-darwin-#{arch}.zip"
+  url "https://github.com/lichdotdev/lich/releases/download/v#{version}/lich-v#{version}-darwin-#{arch}.zip"
   name "lich"
   desc "Terminal-first ADE for the coding agents you already use"
-  homepage "https://github.com/omartelo/lich"
+  homepage "https://github.com/lichdotdev/lich"
 
   depends_on macos: ">= :ventura"
 

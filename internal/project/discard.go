@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/relpath"
+	"github.com/lichdotdev/lich/internal/relpath"
 )
 
 // DiscardFile reverts one file's uncommitted changes. A file known to HEAD is

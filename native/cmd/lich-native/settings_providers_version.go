@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // binVersions is what one binary reports and every binary $PATH holds for its

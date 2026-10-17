@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/themes"
+	"github.com/lichdotdev/lich/internal/themes"
 )
 
 const installedThemes = `[{"id":"light","name":"Light","scheme":"light","pair":"dark"},` +

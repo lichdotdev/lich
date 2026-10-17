@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils"
 import { Trans } from "@/components/common/Trans"
 import { useT } from "@/lib/i18n/i18n"
 
-const RELEASE_TAG_BASE = "https://github.com/omartelo/lich/releases/tag/v"
+const RELEASE_TAG_BASE = "https://github.com/lichdotdev/lich/releases/tag/v"
 
 // Semantic per-group accents, deliberately separate from the app accent.
 function dotColor(label: string): string {

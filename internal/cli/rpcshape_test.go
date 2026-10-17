@@ -12,11 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/spawn"
-	"github.com/omartelo/lich/internal/store"
-	"github.com/omartelo/lich/internal/system"
-	"github.com/omartelo/lich/internal/themes"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/system"
+	"github.com/lichdotdev/lich/internal/themes"
 )
 
 // rpcMethodName is how the CLI spells a method it posts: "<service>.<Method>".

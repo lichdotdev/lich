@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/omartelo/lich/internal/relpath"
+	"github.com/lichdotdev/lich/internal/relpath"
 )
 
 // maxExpandLines caps one FileLines answer. The diff's expander asks for a

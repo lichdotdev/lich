@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/omartelo/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 func TestPromptLanguageIsEnglishUntilSetAndPersists(t *testing.T) {

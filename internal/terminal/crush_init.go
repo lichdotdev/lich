@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // markCrushInitialized writes the marker Crush reads as "this project was

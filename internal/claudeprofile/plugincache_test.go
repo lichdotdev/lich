@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/omartelo/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
 func isDir(path string) bool {

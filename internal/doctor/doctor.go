@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/logging"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/sandbox"
-	"github.com/omartelo/lich/internal/singleton"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/logging"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/sandbox"
+	"github.com/lichdotdev/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // Status is one check's verdict.

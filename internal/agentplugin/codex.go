@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // The Codex side: `codex plugin ...` for every mutation, and `codex plugin list

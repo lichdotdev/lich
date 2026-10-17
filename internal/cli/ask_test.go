@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/spawn"
 )
 
 func answered(answer string) string {

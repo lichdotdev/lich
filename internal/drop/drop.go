@@ -51,10 +51,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/rpc"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/rpc"
 
-	"github.com/omartelo/lich/internal/sandbox"
+	"github.com/lichdotdev/lich/internal/sandbox"
 )
 
 // maxUpload bounds one dropped file. Screenshots and logs are the payload; a

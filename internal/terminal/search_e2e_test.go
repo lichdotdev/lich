@@ -2,14 +2,14 @@ package terminal
 
 import (
 	"errors"
-	"github.com/omartelo/lich/internal/snippet"
+	"github.com/lichdotdev/lich/internal/snippet"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // searchStore answers the one Store method the search reaches. The embedded

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // cursorDefaultDirs is what a confined Cursor session binds with no variable

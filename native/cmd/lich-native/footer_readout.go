@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/i18n"
 )
 
 // usageTone is usageColor (ContextRing.tsx): one 0–100 scale for every

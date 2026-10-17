@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Antigravity keeps its Google credential in the OS keyring and mints its own

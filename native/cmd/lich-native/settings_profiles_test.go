@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // profileBackend answers the claudeprofile calls a dialog makes and records

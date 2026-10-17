@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // closable is a workspace with the three shapes a close has to tell apart: a

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 var errProbe = errors.New("rpc down")

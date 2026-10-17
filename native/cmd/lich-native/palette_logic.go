@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // The command palette's data join, frontend/src/lib/session/command-palette.ts:

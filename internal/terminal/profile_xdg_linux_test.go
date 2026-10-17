@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/xdgprofile"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/xdgprofile"
 )
 
 // xdgMachine is profileMachine for the link-home providers: Personal's base

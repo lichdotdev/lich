@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // launchRig is the window's providers wiring: a model, and the Settings

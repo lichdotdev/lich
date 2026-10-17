@@ -11,7 +11,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 
-	"github.com/omartelo/lich/native/glyphs"
+	"github.com/lichdotdev/lich/native/glyphs"
 )
 
 // atlasSize is the side of one atlas page in pixels: 4 MiB of RGBA, room for

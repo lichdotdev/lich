@@ -8,10 +8,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/semver"
-	"github.com/omartelo/lich/internal/shquote"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/shquote"
 )
 
 // The Crush side. Crush has no plugin system at all: its hooks are entries in

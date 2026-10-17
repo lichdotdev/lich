@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // cursorNow is the clock every Cursor test reads tokens against.

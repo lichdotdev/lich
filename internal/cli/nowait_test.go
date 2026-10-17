@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // Collecting without waiting is how a sender busy in a turn of its own looks in

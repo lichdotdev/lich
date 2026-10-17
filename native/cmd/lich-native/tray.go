@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/omartelo/lich/native/fonts"
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/fonts"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // trayLabels are the tray menu's words in the interface language. The

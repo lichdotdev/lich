@@ -8,9 +8,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 	helpBugKey        = "help.bug" // no backend key: the Help rows only act
 	helpLogKey        = "help.log"
 	helpAboutKey      = "help.about"
-	helpRepoURL       = "https://github.com/omartelo/lich" // support-url.ts REPO_URL
+	helpRepoURL       = "https://github.com/lichdotdev/lich" // support-url.ts REPO_URL
 	helpIssueTemplate = "bug.yml"
 )
 

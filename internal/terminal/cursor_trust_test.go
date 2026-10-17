@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // gitWorktree is a repository with one commit and a linked worktree of it,

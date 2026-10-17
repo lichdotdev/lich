@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/omartelo/lich/internal/relay"
-	"github.com/omartelo/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/singleton"
 )
 
 // call posts one RPC to the lich this session belongs to. Cancelling ctx drops

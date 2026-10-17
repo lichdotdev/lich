@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // pendingRecheck is use-pull-request-detail.ts's poll: a pull request with a

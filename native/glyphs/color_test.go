@@ -8,7 +8,7 @@ import (
 
 	gotext "github.com/go-text/typesetting/font"
 
-	"github.com/omartelo/lich/native/fonts"
+	"github.com/lichdotdev/lich/native/fonts"
 )
 
 // A color emoji font is a bitmap font (CBDT on Linux): it has no outline for

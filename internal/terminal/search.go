@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/omartelo/lich/internal/snippet"
+	"github.com/lichdotdev/lich/internal/snippet"
 )
 
 // minSearchQuery is the shortest query worth scanning transcripts for. One or

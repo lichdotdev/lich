@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // The roster: which sessions a caller may address, and how a name it typed

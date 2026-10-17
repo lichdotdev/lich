@@ -3,7 +3,7 @@ package main
 import (
 	"slices"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // The block keys of sidebar-groups.ts. The pinned and root blocks have no path

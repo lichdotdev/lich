@@ -21,10 +21,10 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/omartelo/lich/native/glyphs"
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/glyphs"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // revertUndoFor is REVERT_UNDO_MS: a revert's Undo stays longer than a plain

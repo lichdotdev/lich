@@ -12,9 +12,9 @@
     둡니다. 정적 Go 바이너리 하나, Electron 없음: UI는 Linux, Windows, macOS
     어디서나 lich에 내장된 Chromium에서 열립니다.
   </p>
-  <p><a href="https://omartelo.github.io/lich/"><strong>omartelo.github.io/lich</strong></a></p>
+  <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
-    <a href="https://github.com/omartelo/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/omartelo/lich?color=4285F4&label=release" /></a>
+    <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
     <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
@@ -87,7 +87,7 @@ lich로 할 수 있는 일:
 그리고 아예 시작되지 않을 때를 위한 `lich rage` / `lich doctor`가 있습니다.
 
 활발히 개발 중입니다. 버그와 기능 요청은
-[Issues](https://github.com/omartelo/lich/issues)에 남겨 주시고, 버전별 변경 사항은
+[Issues](https://github.com/lichdotdev/lich/issues)에 남겨 주시고, 버전별 변경 사항은
 [CHANGELOG.md](CHANGELOG.md)에 있습니다.
 
 ## 프로바이더 지원
@@ -146,14 +146,14 @@ lich로 할 수 있는 일:
 매니저로 설치합니다:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/omartelo/lich/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
 ```
 
 | 플랫폼 | 받는 방법 | 실행 시 필요한 것 |
 | --- | --- | --- |
 | **Linux** | 위의 `install.sh`, 또는 AUR [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`) | `zenity`, 그리고 패키지에 포함된 창을 위한 glibc 2.34 이상(Debian 12, Ubuntu 22.04, RHEL 9 이상) |
 | **macOS** | `brew install --cask lichdotdev/tap/lich` | 없음, Apple Silicon과 Intel 모두 앱에 창이 포함됨 |
-| **Windows** | [Releases](https://github.com/omartelo/lich/releases)의 설치 프로그램이나 포터블 zip, 또는 Scoop: `scoop install https://github.com/omartelo/lich/releases/latest/download/lich.json` | 없음, 어느 쪽이든 창이 포함됨 |
+| **Windows** | [Releases](https://github.com/lichdotdev/lich/releases)의 설치 프로그램이나 포터블 zip, 또는 Scoop: `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | 없음, 어느 쪽이든 창이 포함됨 |
 
 배포판별 수동 패키지, Linux tarball, Windows 포터블 zip: [INSTALL.md](INSTALL.md). macOS와
 Windows 바이너리는 서명되지 않았으므로, 공증/서명이 적용되기 전까지 Gatekeeper와

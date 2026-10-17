@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // inPortuguese puts the interface in pt-BR for the test and puts English, and

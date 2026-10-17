@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/native/i18n"
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 func inLocale(t *testing.T, l i18n.Locale) {

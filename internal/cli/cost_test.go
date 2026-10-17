@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // costBody is a report the fake lich hands back: two projects, one session in

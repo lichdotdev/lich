@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // editorWorkspace is a project with sessions in its root checkout and in a

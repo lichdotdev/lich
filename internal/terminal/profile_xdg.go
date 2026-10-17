@@ -3,9 +3,9 @@ package terminal
 import (
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/profilestore"
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/xdgprofile"
+	"github.com/lichdotdev/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/xdgprofile"
 )
 
 // withXDGProfiles adds to ops the providers whose profiles are link homes

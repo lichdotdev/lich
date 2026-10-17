@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/omartelo/lich/internal/relpath"
+	"github.com/lichdotdev/lich/internal/relpath"
 )
 
 // ErrLinesMoved is what a revert answers when the lines it was asked about are

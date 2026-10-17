@@ -28,8 +28,8 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 	"github.com/creack/pty"
-	"github.com/omartelo/lich/native/gioterm"
-	"github.com/omartelo/lich/native/internal/shot"
+	"github.com/lichdotdev/lich/native/gioterm"
+	"github.com/lichdotdev/lich/native/internal/shot"
 	"golang.org/x/image/math/fixed"
 )
 

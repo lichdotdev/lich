@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	themeassets "github.com/omartelo/lich/themes"
+	themeassets "github.com/lichdotdev/lich/themes"
 )
 
 func customTheme(id string) Theme {

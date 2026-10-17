@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // sidebarBackend is a backend holding settings by key@scope and answering

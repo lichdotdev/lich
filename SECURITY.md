@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report it privately through GitHub:
-**[Security → Report a vulnerability](https://github.com/omartelo/lich/security/advisories/new)**.
+**[Security → Report a vulnerability](https://github.com/lichdotdev/lich/security/advisories/new)**.
 That opens a private advisory only you and the maintainer can read.
 
 Please don't open a public issue for a security problem — the issue tracker is

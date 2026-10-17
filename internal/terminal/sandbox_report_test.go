@@ -9,8 +9,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // TestReportSandboxRecordsAndAnnouncesTheSkippedLinks is the second half of the

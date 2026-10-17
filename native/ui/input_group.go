@@ -6,7 +6,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/omartelo/lich/native/ui/icons"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // The inline addon classes of input-group.tsx: pl-2 / pr-2, gap-2, and the

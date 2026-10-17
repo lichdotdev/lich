@@ -4,7 +4,7 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // A hotkey's chord is the window's, not the terminal's: the frame polls the

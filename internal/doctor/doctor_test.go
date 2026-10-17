@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omartelo/lich/internal/providers"
-	"github.com/omartelo/lich/internal/singleton"
+	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/singleton"
 )
 
 // healthy builds a Doctor over a temp config dir with every probe answering the

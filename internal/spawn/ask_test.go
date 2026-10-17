@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omartelo/lich/internal/terminal"
+	"github.com/lichdotdev/lich/internal/terminal"
 )
 
 func TestAskHandsTheModTheQuestionAndReturnsTheAnswer(t *testing.T) {

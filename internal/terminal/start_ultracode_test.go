@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/omartelo/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // TestStartPassesUltracodeToTheProcess proves both sources of ultracode reach

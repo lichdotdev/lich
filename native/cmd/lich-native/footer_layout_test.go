@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/omartelo/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // fakeSettings serves store.GetSetting and store.SetSetting from an in-memory

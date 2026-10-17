@@ -4,7 +4,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // ReportedLimit is one rate-limit window as a Claude Code session measured it

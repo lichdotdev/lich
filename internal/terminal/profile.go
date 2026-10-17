@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"path/filepath"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/codexprofile"
-	"github.com/omartelo/lich/internal/ompprofile"
-	"github.com/omartelo/lich/internal/profilestore"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/ompprofile"
+	"github.com/lichdotdev/lich/internal/profilestore"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // profileEventName carries the profile a session moved to: Continue in, or a

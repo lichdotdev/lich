@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/awake"
-	"github.com/omartelo/lich/internal/events"
-	"github.com/omartelo/lich/internal/pricing"
-	"github.com/omartelo/lich/internal/prompt"
-	"github.com/omartelo/lich/internal/quota"
-	"github.com/omartelo/lich/internal/store"
+	"github.com/lichdotdev/lich/internal/awake"
+	"github.com/lichdotdev/lich/internal/events"
+	"github.com/lichdotdev/lich/internal/pricing"
+	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/quota"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // Event names. A terminal I/O event carries the session ID as a suffix (e.g.

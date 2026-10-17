@@ -3,8 +3,8 @@ package terminal
 import (
 	"strings"
 
-	"github.com/omartelo/lich/internal/project"
-	"github.com/omartelo/lich/internal/shquote"
+	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/shquote"
 )
 
 // wrapSetup rewrites a session's spawn so the project's worktree setup script

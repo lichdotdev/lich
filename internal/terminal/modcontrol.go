@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/omartelo/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/relay"
 	"log/slog"
 	"net/http"
 	"strconv"

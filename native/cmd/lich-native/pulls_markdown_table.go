@@ -12,7 +12,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/x/richtext"
 
-	"github.com/omartelo/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // markdownSegment is a stretch of a Markdown source: prose, or a GFM table's

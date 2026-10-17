@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omartelo/lich/internal/system"
+	"github.com/lichdotdev/lich/internal/system"
 )
 
 // refreshEvery is how often the menu's session count is read again. The count

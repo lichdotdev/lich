@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/omartelo/lich/internal/claudeprofile"
-	"github.com/omartelo/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // claudeProfileKey holds the Claude Code profile new sessions are born in: a
