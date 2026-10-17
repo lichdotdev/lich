@@ -60,7 +60,7 @@ func (b *statusBook) forget(id string) {
 // attached to /events: the last session-status report (State is empty for a
 // session that never reported) and the readout the last session-usage event
 // carried (nil when there is none to read). Since is when the session entered
-// State, in Unix milliseconds.
+// State, in Unix milliseconds. Cwd and Host are its last session-cwd report.
 type TurnState struct {
 	ID     string      `json:"id"`
 	State  string      `json:"state,omitempty"`
@@ -69,6 +69,8 @@ type TurnState struct {
 	Reason string      `json:"reason,omitempty"`
 	Since  int64       `json:"since,omitempty"`
 	Usage  *usageEvent `json:"usage,omitempty"`
+	Cwd    string      `json:"cwd,omitempty"`
+	Host   string      `json:"host,omitempty"`
 }
 
 // TurnStates is the catch-up a window takes right after attaching to /events:
@@ -94,7 +96,10 @@ func (s *Service) TurnStates() []TurnState {
 		if usage, ok := s.sessionUsage(id); ok {
 			ts.Usage = &usage
 		}
-		if ts.State != "" || ts.Usage != nil {
+		if c, ok := s.cwds.of(id); ok {
+			ts.Cwd, ts.Host = c.Cwd, c.Host
+		}
+		if ts.State != "" || ts.Usage != nil || ts.Cwd != "" || ts.Host != "" {
 			out = append(out, ts)
 		}
 	}
@@ -109,9 +114,10 @@ func (s *Service) publishStatus(ev statusEvent) {
 	s.hub.Emit(statusEventName, ev)
 }
 
-// forgetTurn drops what a session's process left behind that belongs to its
-// provider: the open turn and the last reported state.
+// forgetTurn drops what a session's process left behind: the open turn, the
+// last reported state and where it last was.
 func (s *Service) forgetTurn(id string) {
 	s.turns.forget(id)
 	s.statuses.forget(id)
+	s.cwds.forget(id)
 }

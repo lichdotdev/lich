@@ -96,7 +96,7 @@ func (s *Service) Start(
 	// Emitted outside s.mu: Emit blocks on a stalled /events client, which
 	// would freeze every session's I/O. Both are unconditional so a respawn
 	// overwrites whatever the previous PTY left in the frontend's stores.
-	s.hub.Emit(cwdEventName, cwdEvent{ID: id, Cwd: cwd})
+	s.publishCwd(cwdEvent{ID: id, Cwd: cwd})
 	s.hub.Emit(agentEventName, agentEvent{ID: id, Agent: ""})
 	s.reportProfileMove(id, bornIn)
 	s.reportSandbox(id, sess.confined, sess.sandboxLinks)
@@ -105,7 +105,7 @@ func (s *Service) Start(
 	// s.mu: track queues a warm-up of this checkout's snapshot index, and the
 	// first one on a large repository is measured in seconds.
 	s.snaps.track(id, cwd)
-	go watchCwd(id, sess.pty.Pid(), cwd, sess.done, s.hub)
+	go watchCwd(id, sess.pty.Pid(), cwd, sess.done, s.publishCwd)
 	return nil
 }
 

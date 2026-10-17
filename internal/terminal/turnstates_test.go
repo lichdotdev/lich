@@ -136,3 +136,24 @@ func TestTurnStatesLeaveOutUsageThereIsNoneOf(t *testing.T) {
 		t.Errorf("usage = %+v, want none", got.Usage)
 	}
 }
+
+// A window that attached after a cd reads where the session went, and the host
+// it went into, rather than its checkout.
+func TestTurnStatesCarryWhereTheSessionLastWas(t *testing.T) {
+	svc := serviceWithSessions(t, hookStore{}, "moved", "hosted")
+	svc.publishCwd(cwdEvent{ID: "moved", Cwd: "/repo"})
+	svc.publishCwd(cwdEvent{ID: "moved", Cwd: "/elsewhere"})
+	svc.publishCwd(cwdEvent{ID: "hosted", Host: "tmux"})
+
+	if got := turnStateOf(t, svc, "moved"); got.Cwd != "/elsewhere" || got.Host != "" || got.State != "" {
+		t.Errorf("moved = %+v, want only cwd /elsewhere", got)
+	}
+	if got := turnStateOf(t, svc, "hosted"); got.Cwd != "" || got.Host != "tmux" {
+		t.Errorf("hosted = %+v, want host tmux and no cwd", got)
+	}
+
+	svc.forgetTurn("moved")
+	if _, ok := svc.cwds.of("moved"); ok {
+		t.Error("a session whose process left kept its directory")
+	}
+}

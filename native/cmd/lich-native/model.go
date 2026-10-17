@@ -214,7 +214,7 @@ func (m *model) setActiveProject(id string) bool {
 	return true
 }
 
-// hydrateTurnStates seeds the status and usage stores from the backend's
+// hydrateTurnStates seeds the status, usage and cwd stores from the backend's
 // snapshot of what each live session last reported. /events replays nothing,
 // so without it a card is blank until its next hook. It runs after /events
 // attached and before follow starts: whatever the stream delivered meanwhile
@@ -227,6 +227,11 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 	}
 	m.mu.Lock()
 	m.status.hydrate(states)
+	for _, ts := range states {
+		if ts.Cwd != "" || ts.Host != "" {
+			m.cwd[ts.ID] = sessionCwd{ID: ts.ID, Cwd: ts.Cwd, Host: ts.Host}
+		}
+	}
 	m.mu.Unlock()
 	for _, ts := range states {
 		if len(ts.Usage) == 0 {
@@ -241,8 +246,7 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 }
 
 // follow applies /events until ctx ends. The backend replays nothing beyond
-// what hydrateTurnStates read, so a session's cwd is unknown until the next
-// cd. When the stream ends first, the backend dropped this window: /events
+// what hydrateTurnStates read. When the stream ends first, the backend dropped this window: /events
 // serves one client and a newer one replaces it, or lich quit or restarted.
 // dropped tells those apart.
 func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {

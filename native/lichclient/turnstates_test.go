@@ -15,7 +15,7 @@ func TestTurnStatesDecodesTheSnapshot(t *testing.T) {
 		return json.RawMessage(`[
 			{"id":"s1","state":"busy","tool":"Bash","detail":"go test","since":1000,"usage":{"id":"s1","percent":42}},
 			{"id":"s2","state":"waiting","reason":"permission","since":2000},
-			{"id":"s3","usage":{"id":"s3","percent":7}}]`), http.StatusOK
+			{"id":"s3","usage":{"id":"s3","percent":7},"cwd":"/elsewhere","host":"tmux"}]`), http.StatusOK
 	})
 	got, err := c.TurnStates(context.Background())
 	if err != nil {
@@ -30,7 +30,7 @@ func TestTurnStatesDecodesTheSnapshot(t *testing.T) {
 	if s := got[1]; s.State != "waiting" || s.Reason != "permission" || s.Usage != nil {
 		t.Errorf("s2 = %+v", s)
 	}
-	if s := got[2]; s.State != "" || len(s.Usage) == 0 {
+	if s := got[2]; s.State != "" || len(s.Usage) == 0 || s.Cwd != "/elsewhere" || s.Host != "tmux" {
 		t.Errorf("s3 = %+v", s)
 	}
 }

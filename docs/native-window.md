@@ -74,10 +74,10 @@ built from a pinned Ghostty commit.
   beside `lich`, or ends before it attached, leaves the web window open in its place, with a toast saying why
   (`system.TakeWindowFallback`). The macOS window is built and run only on GitHub's runners
   (`native.yml`, `.github/scripts/mac-e2e.sh`): nobody here has looked at it on a Mac.
-- **No replay of a session's working directory.** The directory a terminal moved to arrives only as an event;
-  a window that connects later shows the checkout's path until the next `cd`. A session's status and usage are
-  not part of the gap: the native window reads `terminal.TurnStates` right after attaching to `/events`. The web
-  window has the cwd gap too, and still the status and usage one after a reload; the same RPC would close them.
+- **Only the native window catches up on what it missed.** `/events` replays nothing, so right after attaching
+  the native window reads `terminal.TurnStates`: each live session's status, usage and the working directory
+  (or tmux, ssh and the like) it last moved to. The web window does not read it, so after a reload its cards
+  show the checkout's path until the next `cd`, and no status or usage until the next report.
 - **Clickable notifications are Linux only.** The native window talks to the freedesktop notification server
   itself (`desktop_notes_linux.go`); on Windows and macOS it still raises the backend's plain `system.Notify`,
   with no click, no replacing and nothing taken down. On Wayland, Open brings the window up through

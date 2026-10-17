@@ -1220,10 +1220,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   from one that kept running, and moves onto the successor its runtime file names. A quit (`lich quit`, the
   tray, SIGINT or SIGTERM) closes it with the same `window-close` event; a backend killed outright or crashed
   sends nothing, so the window shows "Reconnecting to lich…" for the 15 seconds it waits and then lich as
-  lost. A window that
-  connects late, either of them, shows a terminal's moved working directory only from the next `cd`, since
-  nothing replays it; the native window reads each session's status and usage from `terminal.TurnStates` on
-  connect, the web window does not. `system.CloseWindow` never quits lich, even
+  lost. `/events` replays nothing: the native window reads each session's status, usage and working directory
+  from `terminal.TurnStates` on connect, the web window does not, so after a reload it shows a terminal's
+  moved working directory only from the next `cd`. `system.CloseWindow` never quits lich, even
   with no session running, where a window the user closes does (`quitIfIdle`). The native window's text comes
   from its own catalogs (`native/i18n/locales`), a copy of the web window's, so a copy fix made in one window
   until the cutover lands in both (`docs/native-window.md`).

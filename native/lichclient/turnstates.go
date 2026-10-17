@@ -9,7 +9,7 @@ import (
 // session-status report and the session-usage payload behind its footer, both
 // raw as the /events stream would have carried them. State is empty for a
 // session that never reported; Since is when it entered State, in Unix
-// milliseconds.
+// milliseconds. Cwd and Host are its last session-cwd report.
 type TurnState struct {
 	ID     string          `json:"id"`
 	State  string          `json:"state"`
@@ -18,6 +18,8 @@ type TurnState struct {
 	Reason string          `json:"reason"`
 	Since  int64           `json:"since"`
 	Usage  json.RawMessage `json:"usage"`
+	Cwd    string          `json:"cwd"`
+	Host   string          `json:"host"`
 }
 
 // TurnStates is what each live session last reported, the catch-up for the

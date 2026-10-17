@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A reopened native window knows where each session went.** A session
+  that had moved with `cd`, or into tmux or ssh, came back showing its
+  checkout's path, branch and changes until its next `cd`; the window now
+  reads where each one last was as it connects.
 - **The native window writes agent prompts in your prompt language.** The
   pull request and issue handoffs and a batch of review comments were
   always typed in English.

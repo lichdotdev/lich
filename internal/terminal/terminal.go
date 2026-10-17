@@ -365,6 +365,8 @@ type Service struct {
 	// statuses is the last session-status payload of each live session, which
 	// TurnStates hands a window that attached after it was published.
 	statuses statusBook
+	// cwds is the last session-cwd payload of each live session, for the same.
+	cwds cwdBook
 	// shellIntegrationDir holds the shell scripts that mark a shell session's
 	// prompt (SetShellIntegrationDir); "" spawns shells without them.
 	shellIntegrationDir string

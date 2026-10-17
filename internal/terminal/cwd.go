@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-
-	"github.com/omartelo/lich/internal/events"
 )
 
 // cwdEventName carries a session's live working directory ({id, cwd, host}),
@@ -23,6 +22,45 @@ type cwdEvent struct {
 	ID   string `json:"id"`
 	Cwd  string `json:"cwd"`
 	Host string `json:"host"`
+}
+
+// cwdBook is the last session-cwd payload published for each session, which
+// TurnStates hands a window that attached after it: /events replays nothing,
+// and a directory changes only on a cd.
+//
+// The zero value is ready to use.
+type cwdBook struct {
+	mu   sync.Mutex
+	byID map[string]cwdEvent
+}
+
+func (b *cwdBook) note(ev cwdEvent) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.byID == nil {
+		b.byID = make(map[string]cwdEvent)
+	}
+	b.byID[ev.ID] = ev
+}
+
+func (b *cwdBook) of(id string) (cwdEvent, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	ev, ok := b.byID[id]
+	return ev, ok
+}
+
+func (b *cwdBook) forget(id string) {
+	b.mu.Lock()
+	delete(b.byID, id)
+	b.mu.Unlock()
+}
+
+// publishCwd records a session-cwd payload and pushes it, recorded first for
+// the reason publishStatus is.
+func (s *Service) publishCwd(ev cwdEvent) {
+	s.cwds.note(ev)
+	s.hub.Emit(cwdEventName, ev)
 }
 
 // cwdPollInterval is how often a session's child working directory is read.
@@ -120,7 +158,7 @@ func parseTpgid(stat []byte) int {
 // whenever it changes, until done closes. Each platform brings its own read
 // (see the cwd_* files); on one without any, and when the PTY reports no
 // child PID, this is a no-op.
-func watchCwd(id string, pid int, initial string, done <-chan struct{}, hub *events.Hub) {
+func watchCwd(id string, pid int, initial string, done <-chan struct{}, publish func(cwdEvent)) {
 	if !cwdTracked || pid <= 0 {
 		return
 	}
@@ -128,7 +166,7 @@ func watchCwd(id string, pid int, initial string, done <-chan struct{}, hub *eve
 	defer ticker.Stop()
 	read := func() (string, string) { return processCwd(pid) }
 	pollCwd(initial, ticker.C, done, read, func(cwd, host string) {
-		hub.Emit(cwdEventName, cwdEvent{ID: id, Cwd: cwd, Host: host})
+		publish(cwdEvent{ID: id, Cwd: cwd, Host: host})
 	})
 }
 

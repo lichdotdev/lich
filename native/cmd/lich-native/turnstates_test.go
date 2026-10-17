@@ -150,7 +150,7 @@ func fakeTurnStates(t *testing.T, states []lichclient.TurnState) *lichclient.Cli
 
 func TestModelHydratesStatusAndUsageThenFollowsNewerEvents(t *testing.T) {
 	busy := lichclient.TurnState{ID: "s1", State: "busy", Tool: "Bash", Since: time.Now().UnixMilli(),
-		Usage: json.RawMessage(opusReport)}
+		Usage: json.RawMessage(opusReport), Cwd: "/elsewhere"}
 	m := newTestModel(fakeTurnStates(t, []lichclient.TurnState{busy}))
 	toasts := 0
 	m.notify = func(statusReport) { toasts++ }
@@ -160,8 +160,11 @@ func TestModelHydratesStatusAndUsageThenFollowsNewerEvents(t *testing.T) {
 	}
 
 	m.mu.Lock()
-	status := m.status.status("s1")
+	status, cwd := m.status.status("s1"), m.cwd["s1"]
 	m.mu.Unlock()
+	if cwd.Cwd != "/elsewhere" {
+		t.Errorf("cwd = %+v, want the /elsewhere the session last moved to", cwd)
+	}
 	if status != statusBusy {
 		t.Errorf("status = %q, want busy", status)
 	}
