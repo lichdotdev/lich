@@ -41,6 +41,7 @@ var cliServices = map[string]reflect.Type{
 // like the version probe, has nothing to misalign and may take nothing; the day
 // it takes something, that something is the object.
 func TestEveryCallTheCLIPostsTakesOneOptionsObject(t *testing.T) {
+	t.Parallel()
 	methods := postedMethods(t)
 	if !methods["spawn.Open"] {
 		t.Fatalf("found %v, want spawn.Open among them: the scan no longer sees the CLI's calls", methods)

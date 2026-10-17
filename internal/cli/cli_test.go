@@ -143,6 +143,7 @@ func noInstance() (*singleton.Info, error) { return nil, nil }
 // The app's own arguments still fall through to it. A word that is not a
 // subcommand no longer does — see TestAnUnknownCommandDoesNotOpenTheApp.
 func TestTheAppsOwnArgumentsAreNotACommand(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	for _, args := range [][]string{
@@ -161,6 +162,7 @@ func TestTheAppsOwnArgumentsAreNotACommand(t *testing.T) {
 // a window that says nothing about the command that was run is not an answer to
 // a typo.
 func TestAnUnknownCommandDoesNotOpenTheApp(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, _, stderr := run(t, f, "sesions")
@@ -187,6 +189,7 @@ func TestAnUnknownCommandDoesNotOpenTheApp(t *testing.T) {
 }
 
 func TestVersionPrintsTheBuild(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	for _, args := range [][]string{{"version"}, {"--version"}, {"-v"}} {
@@ -204,6 +207,7 @@ func TestVersionPrintsTheBuild(t *testing.T) {
 // package's "flag: help requested" on stderr, which is what a user asking how to
 // run something used to be handed — as a failure, exit 1.
 func TestEveryCommandPrintsItsOwnHelp(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	for _, cmd := range commands {
@@ -228,6 +232,7 @@ func TestEveryCommandPrintsItsOwnHelp(t *testing.T) {
 // cannot drift: a flag added to a command shows up here without anyone editing
 // prose.
 func TestPerCommandHelpListsTheFlags(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	_, stdout, _ := run(t, f, "send", "--help")
@@ -247,6 +252,7 @@ func TestPerCommandHelpListsTheFlags(t *testing.T) {
 }
 
 func TestHelpPrintsEveryCommand(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, stdout, _ := run(t, f, "help")
@@ -264,6 +270,7 @@ func TestHelpPrintsEveryCommand(t *testing.T) {
 }
 
 func TestSessionsListsPeers(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[{"label":"docs","name":"lich-s2","project":"lich","kind":"codex","state":"waiting"},
 	                      {"label":"api","name":"revu-s5","project":"revu","kind":"crush"}]`)
 
@@ -295,6 +302,7 @@ func TestSessionsListsPeers(t *testing.T) {
 // The lich id rides --json last, so a mod holding a recorded LICH_SESSION_ID
 // can find that session's card.
 func TestSessionsJSONCarriesTheLichID(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[{"label":"docs","name":"lich-s2","project":"lich","kind":"codex","state":"done","id":"s2",`+
 		`"path":"/src/lich","projectPath":"/src/lich"}]`)
 
@@ -311,6 +319,7 @@ func TestSessionsJSONCarriesTheLichID(t *testing.T) {
 
 // whoami is the one entry sessions leaves out, asked for by the caller's own id.
 func TestWhoamiPrintsTheCallersOwnSession(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"label":"Session 3","name":"lich-s1","project":"lich","kind":"claude","state":"busy","id":"s1"}`)
 
 	code, stdout, stderr := run(t, f, "whoami")
@@ -327,6 +336,7 @@ func TestWhoamiPrintsTheCallersOwnSession(t *testing.T) {
 }
 
 func TestWhoamiJSONIsThePeerObject(t *testing.T) {
+	t.Parallel()
 	body := `{"label":"Session 3","name":"lich-s1","project":"lich","kind":"claude","state":"","id":"s1",` +
 		`"path":"/src/lich","projectPath":"/src/lich"}`
 	f := newFakeLich(t, body)
@@ -341,6 +351,7 @@ func TestWhoamiJSONIsThePeerObject(t *testing.T) {
 }
 
 func TestSessionsSaysWhenThereAreNone(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[]`)
 
 	code, stdout, _ := run(t, f, "sessions")
@@ -353,6 +364,7 @@ func TestSessionsSaysWhenThereAreNone(t *testing.T) {
 }
 
 func TestSendPrintsTheAnswer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"answered","answer":"3 failures"}`)
 
 	code, stdout, stderr := run(t, f, "send", "docs", "run the tests")
@@ -374,6 +386,7 @@ func TestSendPrintsTheAnswer(t *testing.T) {
 }
 
 func TestSendPassesProjectAndTimeout(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"api","status":"answered","answer":"ok"}`)
 
 	code, _, stderr := run(t, f, "send", "--project", "revu", "--timeout", "5", "api", "hello")
@@ -391,6 +404,7 @@ func TestSendPassesProjectAndTimeout(t *testing.T) {
 }
 
 func TestSendPointsAtTheTicketWhenTheWaitRunsOut(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"pending","answer":""}`)
 
 	// Contract change: a ticket used to exit 0, which a script could not tell
@@ -414,6 +428,7 @@ func TestSendPointsAtTheTicketWhenTheWaitRunsOut(t *testing.T) {
 }
 
 func TestWaitPicksUpAnAnswer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"answered","answer":"late but here"}`)
 
 	code, stdout, _ := run(t, f, "wait", "a1b2c3d4")
@@ -436,6 +451,7 @@ func TestWaitPicksUpAnAnswer(t *testing.T) {
 // Without a ticket, wait collects everything that is ready — the command the
 // nudge at a sender's prompt names.
 func TestWaitWithoutATicketCollectsEverything(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"results":[
 		{"ticket":"t1","target":"auth","status":"answered","answer":"all green"}],
 		"open":["docs"]}`)
@@ -460,6 +476,7 @@ func TestWaitWithoutATicketCollectsEverything(t *testing.T) {
 }
 
 func TestReplySendsTheAnswerHome(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, stdout, stderr := run(t, f, "reply", "a1b2c3d4", "3 failures in foo_test")
@@ -483,6 +500,7 @@ func TestReplySendsTheAnswerHome(t *testing.T) {
 // context was compacted past the message no longer has, and the session it runs
 // in names the errand for it.
 func TestReplyWithoutATicketSendsTheSessionsOwnErrandHome(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, stdout, stderr := run(t, f, "reply", "3 failures in foo_test")
@@ -503,6 +521,7 @@ func TestReplyWithoutATicketSendsTheSessionsOwnErrandHome(t *testing.T) {
 // refusal is the only thing that tells the agent which tickets it has to choose
 // between — so it has to reach the terminal whole, list and newlines included.
 func TestTheRefusalOfATicketlessAnswerReachesTheAgent(t *testing.T) {
+	t.Parallel()
 	refusal := "2 requests are open against this session, and an answer that names no ticket " +
 		"would close the wrong one. Name the ticket the answer belongs to:\n" +
 		"  lich reply a1b2c3d4 \"<answer>\"   — run the tests\n" +
@@ -529,6 +548,7 @@ func TestTheRefusalOfATicketlessAnswerReachesTheAgent(t *testing.T) {
 }
 
 func TestWrongArgumentCountsFailWithUsage(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	tests := [][]string{
@@ -567,6 +587,7 @@ func TestWrongArgumentCountsFailWithUsage(t *testing.T) {
 }
 
 func TestAnUnknownFlagFailsWithoutCallingTheApp(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, _, stderr := run(t, f, "send", "--nonsense", "docs", "hello")
@@ -582,6 +603,7 @@ func TestAnUnknownFlagFailsWithoutCallingTheApp(t *testing.T) {
 }
 
 func TestTheAppsErrorReachesTheUser(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"error":"no live session named \"ghost\""}`)
 	f.status = http.StatusInternalServerError
 
@@ -595,6 +617,7 @@ func TestTheAppsErrorReachesTheUser(t *testing.T) {
 }
 
 func TestAFailureWithNoEnvelopeFallsBackToTheStatus(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `<html>gateway</html>`)
 	f.status = http.StatusBadGateway
 
@@ -608,6 +631,7 @@ func TestAFailureWithNoEnvelopeFallsBackToTheStatus(t *testing.T) {
 }
 
 func TestWithNoLichAnywhereEveryCommandSaysSo(t *testing.T) {
+	t.Parallel()
 	bare := func(string) string { return "" }
 
 	for _, args := range [][]string{
@@ -630,6 +654,7 @@ func TestWithNoLichAnywhereEveryCommandSaysSo(t *testing.T) {
 }
 
 func TestOutsideASessionTheRuntimeFileIsUsed(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[{"label":"docs","project":"lich","kind":"codex"}]`)
 	port := f.server.Listener.Addr().(*net.TCPAddr).Port
 
@@ -657,6 +682,7 @@ func TestOutsideASessionTheRuntimeFileIsUsed(t *testing.T) {
 }
 
 func TestTheEnvironmentWinsOverTheRuntimeFile(t *testing.T) {
+	t.Parallel()
 	session := newFakeLich(t, `[]`)
 	other := newFakeLich(t, `[]`)
 	otherPort := other.server.Listener.Addr().(*net.TCPAddr).Port
@@ -685,6 +711,7 @@ func TestTheEnvironmentWinsOverTheRuntimeFile(t *testing.T) {
 // listener refuses from then on — measured on a background agent's `lich mcp`,
 // which the harness keeps alive in its own daemon across a lich restart.
 func TestARefusedTokenIsRetriedWithTheRecordedOne(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[{"label":"docs","project":"lich","kind":"claude"}]`)
 	f.token = "fresh"
 	port := f.server.Listener.Addr().(*net.TCPAddr).Port
@@ -718,6 +745,7 @@ func TestARefusedTokenIsRetriedWithTheRecordedOne(t *testing.T) {
 // `task dev` build at once, and a message delivered to the wrong one lands in a
 // window this caller cannot see.
 func TestARefusedTokenIsNotRetriedElsewhere(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		running func(port int) *singleton.Info
@@ -765,6 +793,7 @@ func TestARefusedTokenIsNotRetriedElsewhere(t *testing.T) {
 }
 
 func TestTheRuntimeFileFailureIsReported(t *testing.T) {
+	t.Parallel()
 	var stdout, stderr bytes.Buffer
 	c := &client{
 		env:     func(string) string { return "" },
@@ -781,6 +810,7 @@ func TestTheRuntimeFileFailureIsReported(t *testing.T) {
 }
 
 func TestJSONOutputIsMachineReadable(t *testing.T) {
+	t.Parallel()
 	peers := newFakeLich(t, `[{"label":"docs","project":"lich","kind":"codex","state":"waiting"}]`)
 	code, stdout, stderr := run(t, peers, "sessions", "--json")
 	if code != 0 {
@@ -814,6 +844,7 @@ func TestJSONOutputIsMachineReadable(t *testing.T) {
 }
 
 func TestEmptyPeersAreAnEmptyJSONArray(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, stdout, _ := run(t, f, "sessions", "--json")
@@ -831,6 +862,7 @@ const openedBody = `{"id":"9f8e","projectId":"p1","project":"lich","label":"auth
 	"name":"auth-fix-9f8e","kind":"claude","path":"/wt/auth-fix","nextSeq":5}`
 
 func TestOpenNamesBothWaysToAddressTheNewSession(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 
 	code, stdout, stderr := run(t, f, "open", "--worktree", "auth-fix")
@@ -857,6 +889,7 @@ func TestOpenNamesBothWaysToAddressTheNewSession(t *testing.T) {
 }
 
 func TestOpenPassesEveryFlagThrough(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 
 	code, _, stderr := run(t, f,
@@ -878,6 +911,7 @@ func TestOpenPassesEveryFlagThrough(t *testing.T) {
 }
 
 func TestOpenJSONIsMachineReadable(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 
 	code, stdout, stderr := run(t, f, "open", "--json")
@@ -901,6 +935,7 @@ func TestOpenJSONIsMachineReadable(t *testing.T) {
 // The whole point of the flag: opening a worker for a task is one command
 // rather than two, exactly as the open_session tool has been.
 func TestOpenHandsOverTheTaskItCameWith(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{
 		"relay.Send": {status: 200, body: `{"ticket":"a1b2c3d4","target":"auth-fix","status":"pending"}`},
@@ -932,6 +967,7 @@ func TestOpenHandsOverTheTaskItCameWith(t *testing.T) {
 }
 
 func TestOpenJSONCarriesTheHandOffBesideTheSession(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{
 		"relay.Send": {status: 200, body: `{"ticket":"a1b2c3d4","target":"auth-fix","status":"pending"}`},
@@ -969,6 +1005,7 @@ func TestOpenJSONCarriesTheHandOffBesideTheSession(t *testing.T) {
 // exit code has to say the task did not land, or a script reading 0 believes it
 // did.
 func TestOpenKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{
 		"relay.Send": {status: 500, body: `{"error":"the setup script is still running"}`},
@@ -1008,6 +1045,7 @@ func TestOpenKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
 }
 
 func TestOpenReportsTheAppsRefusal(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"error":"no open project named \"nope\""}`)
 	f.status = 400
 
@@ -1024,6 +1062,7 @@ func TestOpenReportsTheAppsRefusal(t *testing.T) {
 }
 
 func TestSendSaysWhenTheTaskWasNeverPickedUp(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"unread"}`)
 
 	code, stdout, stderr := run(t, f, "send", "docs", "run the tests")
@@ -1043,6 +1082,7 @@ func TestSendSaysWhenTheTaskWasNeverPickedUp(t *testing.T) {
 }
 
 func TestSendSaysWhenTheTaskNeverReachedAPrompt(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"undelivered"}`)
 
 	code, stdout, stderr := run(t, f, "send", "docs", "run the tests")
@@ -1063,6 +1103,7 @@ func TestSendSaysWhenTheTaskNeverReachedAPrompt(t *testing.T) {
 }
 
 func TestCloseSaysWhatWentWithTheSession(t *testing.T) {
+	t.Parallel()
 	kept := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix",
 		"worktree":"/wt/auth-fix","kept":true}`)
 	code, stdout, stderr := run(t, kept, "close", "--worktree", "keep", "auth-fix")
@@ -1097,6 +1138,7 @@ func TestCloseSaysWhatWentWithTheSession(t *testing.T) {
 }
 
 func TestCloseReportsTheRefusalToDecideForYou(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"error":"\"auth-fix\" is the last session in the worktree /wt/auth-fix"}`)
 	f.status = 400
 
@@ -1113,6 +1155,7 @@ func TestCloseReportsTheRefusalToDecideForYou(t *testing.T) {
 }
 
 func TestWorktreesListsWhatIsInEach(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[{"name":"auth-fix","path":"/wt/auth-fix","dirty":true,"sessions":["auth-fix"]},
 	                      {"name":"idle","path":"/wt/idle","dirty":false,"sessions":[]}]`)
 
@@ -1131,6 +1174,7 @@ func TestWorktreesListsWhatIsInEach(t *testing.T) {
 }
 
 func TestWorktreesSaysWhenThereAreNone(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, stdout, _ := run(t, f, "worktrees")
@@ -1152,6 +1196,7 @@ func TestWorktreesSaysWhenThereAreNone(t *testing.T) {
 // session is what lich did before the sandbox existed, and a line about it on
 // every open is a line nobody reads by the third one.
 func TestOpenSaysWhenTheSessionRunsConfined(t *testing.T) {
+	t.Parallel()
 	unconfined := newFakeLich(t, openedBody)
 	_, plain, _ := run(t, unconfined, "open", "--worktree", "auth-fix")
 	if strings.Contains(plain, "confined") {
@@ -1176,6 +1221,7 @@ func TestOpenSaysWhenTheSessionRunsConfined(t *testing.T) {
 // what a script branches on, so the flag that changes the output must not
 // change the status. Pinned as literals because the numbers are the contract.
 func TestSendAndWaitExitOnTheirOutcome(t *testing.T) {
+	t.Parallel()
 	for status, want := range map[string]int{
 		"answered": 0, "pending": 2, "unread": 3, "unanswered": 3, "undelivered": 3, "stopped": 3,
 		"expired": 3,
@@ -1199,6 +1245,7 @@ func TestSendAndWaitExitOnTheirOutcome(t *testing.T) {
 // A collect that held the line and came back empty-handed is a timeout; one that
 // brought anything home, or found nothing open to wait on, is done.
 func TestCollectExitsPendingOnlyWhenItCameBackEmpty(t *testing.T) {
+	t.Parallel()
 	for body, want := range map[string]int{
 		`{"results":[],"open":["docs"]}`: 2,
 		`{"results":[{"ticket":"t1","target":"auth","status":"unread"}],"open":["docs"]}`: 0,
@@ -1214,6 +1261,7 @@ func TestCollectExitsPendingOnlyWhenItCameBackEmpty(t *testing.T) {
 }
 
 func TestVersionReportsTheRunningServer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"version":"v1.2.3","platform":"linux/amd64","logPath":"/x"}`)
 
 	code, stdout, _ := run(t, f, "version")
@@ -1235,6 +1283,7 @@ func TestVersionReportsTheRunningServer(t *testing.T) {
 
 // No lich at all is the normal case for `lich version`, not a failure.
 func TestVersionWorksWithNoServer(t *testing.T) {
+	t.Parallel()
 	var stdout, stderr bytes.Buffer
 	c := &client{
 		env: func(string) string { return "" }, version: testVersion,
@@ -1264,6 +1313,7 @@ func runWithStdin(t *testing.T, f *fakeLich, stdin string, args ...string) (int,
 const insertedBody = `{"id":"s2","label":"docs","project":"lich","kind":"codex","bytes":5}`
 
 func TestInsertTakesTheTextFromItsArgument(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, insertedBody)
 
 	code, stdout, stderr := run(t, f, "insert", "--project", "/src/lich", "hello")
@@ -1281,6 +1331,7 @@ func TestInsertTakesTheTextFromItsArgument(t *testing.T) {
 }
 
 func TestInsertReadsStdinWhenTheTextIsLeftOutOrADash(t *testing.T) {
+	t.Parallel()
 	for _, args := range [][]string{
 		{"insert", "--session", "docs"}, {"insert", "--session", "docs", "-"},
 	} {
@@ -1297,6 +1348,7 @@ func TestInsertReadsStdinWhenTheTextIsLeftOutOrADash(t *testing.T) {
 }
 
 func TestInsertJSONIsTheInsertedObject(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, insertedBody)
 
 	code, stdout, stderr := run(t, f, "insert", "--session", "docs", "--json", "hello")
@@ -1309,6 +1361,7 @@ func TestInsertJSONIsTheInsertedObject(t *testing.T) {
 }
 
 func TestInsertNeedsAPlaceToGo(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, insertedBody)
 
 	for _, args := range [][]string{{"insert", "hello"}, {"insert", "--session", "docs", "a", "b"}} {
@@ -1323,6 +1376,7 @@ func TestInsertNeedsAPlaceToGo(t *testing.T) {
 }
 
 func TestInsertWithNothingToReadStdinFrom(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, insertedBody)
 
 	code, _, stderr := run(t, f, "insert", "--session", "docs")
@@ -1334,6 +1388,7 @@ func TestInsertWithNothingToReadStdinFrom(t *testing.T) {
 const focusedBody = `{"id":"s2","label":"docs","project":"lich"}`
 
 func TestFocusNamesTheSessionItBroughtUp(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, focusedBody)
 
 	code, stdout, stderr := run(t, f, "focus", "--project", "lich", "docs")
@@ -1351,6 +1406,7 @@ func TestFocusNamesTheSessionItBroughtUp(t *testing.T) {
 }
 
 func TestFocusJSONIsTheFocusedObject(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, focusedBody)
 
 	code, stdout, stderr := run(t, f, "focus", "--json", "docs")
@@ -1363,6 +1419,7 @@ func TestFocusJSONIsTheFocusedObject(t *testing.T) {
 }
 
 func TestFocusTakesExactlyOneSession(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, focusedBody)
 
 	for _, args := range [][]string{{"focus"}, {"focus", "docs", "extra"}} {

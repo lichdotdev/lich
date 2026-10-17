@@ -22,6 +22,7 @@ func themeLich(t *testing.T, selected string) *fakeLich {
 }
 
 func TestThemeListMarksTheThemeInUse(t *testing.T) {
+	t.Parallel()
 	code, stdout, stderr := run(t, themeLich(t, "everforest-dark"), "theme", "list")
 	if code != 0 {
 		t.Fatalf("exit = %d, stderr = %q", code, stderr)
@@ -36,6 +37,7 @@ func TestThemeListMarksTheThemeInUse(t *testing.T) {
 }
 
 func TestThemeListJSONNamesPairsAndTheOneInUse(t *testing.T) {
+	t.Parallel()
 	code, stdout, _ := run(t, themeLich(t, "system"), "theme", "--json", "list")
 	if code != 0 {
 		t.Fatalf("exit = %d", code)
@@ -48,6 +50,7 @@ func TestThemeListJSONNamesPairsAndTheOneInUse(t *testing.T) {
 }
 
 func TestThemeSwitchSelectsTheTheme(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, "null")
 	code, stdout, stderr := run(t, f, "theme", "switch", "everforest-light")
 	if code != 0 {
@@ -64,6 +67,7 @@ func TestThemeSwitchSelectsTheTheme(t *testing.T) {
 }
 
 func TestThemeSwitchReportsAThemeNotInstalled(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"error":"no theme \"nord\"; lich theme list shows the installed ones"}`)
 	f.status = http.StatusInternalServerError
 	code, _, stderr := run(t, f, "theme", "switch", "nord")
@@ -73,6 +77,7 @@ func TestThemeSwitchReportsAThemeNotInstalled(t *testing.T) {
 }
 
 func TestThemeTakesListOrSwitchWithOneTheme(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, "null")
 	for _, args := range [][]string{{"theme"}, {"theme", "use", "x"}, {"theme", "switch"}, {"theme", "list", "x"}} {
 		code, _, stderr := run(t, f, args...)

@@ -21,6 +21,7 @@ const costBody = `{"projects":[` +
 // it, because a sum over sessions lich could not price is a lower bound and a
 // reader has no other way to know.
 func TestCostPrintsTheTableAndWhatItLeavesOut(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, costBody)
 
 	code, stdout, stderr := run(t, f, "cost")
@@ -48,6 +49,7 @@ func TestCostPrintsTheTableAndWhatItLeavesOut(t *testing.T) {
 // A total with nothing missing says so rather than staying silent: "no warning"
 // and "nothing to warn about" are the two readings an empty line leaves open.
 func TestACompleteTotalSaysItIsComplete(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"projects":[{"project":"lich","sessions":2,"unpriced":0,"source":"priced","costUsd":1}],`+
 		`"sessions":2,"unpriced":0,"priced":2,"source":"priced","costUsd":1,"readout":true}`)
 
@@ -65,6 +67,7 @@ func TestACompleteTotalSaysItIsComplete(t *testing.T) {
 // a machine that spent nothing. The line says which it is, and where to change
 // it.
 func TestCostSaysWhenTheReadoutIsOff(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"projects":[{"project":"lich","sessions":2,"unpriced":2,"costUsd":0}],`+
 		`"sessions":2,"unpriced":2,"costUsd":0,"readout":false}`)
 
@@ -76,6 +79,7 @@ func TestCostSaysWhenTheReadoutIsOff(t *testing.T) {
 }
 
 func TestCostReportsAnEmptyWorkspace(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"projects":[],"sessions":0,"unpriced":0,"costUsd":0,"readout":true}`)
 
 	code, stdout, _ := run(t, f, "cost")
@@ -88,6 +92,7 @@ func TestCostReportsAnEmptyWorkspace(t *testing.T) {
 // The filters ride to the store as they were typed; --since arrives as the
 // unix second the window opens at, which is the only form the query can use.
 func TestCostPassesItsFilters(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, costBody)
 
 	if code, _, stderr := run(t, f, "cost", "--project", "lich", "--provider", "codex", "--since", "7d"); code != 0 {
@@ -107,6 +112,7 @@ func TestCostPassesItsFilters(t *testing.T) {
 // A window nothing can be made of stops before the call: a report over the
 // wrong stretch of time is a wrong number, and money is what this prints.
 func TestCostRefusesAWindowItCannotRead(t *testing.T) {
+	t.Parallel()
 	for _, window := range []string{"last week", "7", "-3d", "0h", "d"} {
 		f := newFakeLich(t, costBody)
 
@@ -128,6 +134,7 @@ func TestCostRefusesAWindowItCannotRead(t *testing.T) {
 // flag included — so a script piping this anywhere gets the exclusion and the
 // arithmetic behind the money along with it.
 func TestCostEmitsJSON(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, costBody)
 
 	code, stdout, _ := run(t, f, "cost", "--json")
@@ -149,6 +156,7 @@ func TestCostEmitsJSON(t *testing.T) {
 // the bound and whose arithmetic it is survive leaving lich. The exact figure
 // goes out, not the two places the table rounds to.
 func TestCostEmitsCSV(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, costBody)
 
 	code, stdout, _ := run(t, f, "cost", "--csv")
@@ -166,6 +174,7 @@ func TestCostEmitsCSV(t *testing.T) {
 // Two formats is no format: there is one stdout and the answer would be half
 // of each.
 func TestCostRefusesTwoFormatsAtOnce(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, costBody)
 
 	code, _, stderr := run(t, f, "cost", "--json", "--csv")
@@ -179,6 +188,7 @@ func TestCostRefusesTwoFormatsAtOnce(t *testing.T) {
 // table: the split line exists to warn that two kinds of arithmetic were summed,
 // and here they were not.
 func TestCostSplitsTheArithmeticOnlyWhenItIsMixed(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"projects":[{"project":"lich","sessions":2,"unpriced":0,"source":"priced","costUsd":1}],`+
 		`"sessions":2,"unpriced":0,"priced":2,"source":"priced","costUsd":1,"readout":true}`)
 
@@ -195,6 +205,7 @@ func TestCostSplitsTheArithmeticOnlyWhenItIsMixed(t *testing.T) {
 // A row with no money to attribute reads as an absence, not as a blank cell a
 // reader has to guess at — and no rung is claimed for it.
 func TestCostMarksARowWithNoRung(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"projects":[{"project":"lich","sessions":2,"unpriced":2,"costUsd":0}],`+
 		`"sessions":2,"unpriced":2,"costUsd":0,"readout":true}`)
 

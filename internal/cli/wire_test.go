@@ -119,6 +119,7 @@ func sessionEnv(port string) func(string) string {
 }
 
 func TestSessionsOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, _ := wiredLich(t)
 
 	var stdout, stderr bytes.Buffer
@@ -137,6 +138,7 @@ func TestSessionsOverTheRealDispatcher(t *testing.T) {
 // the text is pasted at the other session's prompt, bracketed so its newlines
 // are not submissions, and nothing presses Enter behind it.
 func TestInsertOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, term := wiredLich(t)
 
 	var stdout, stderr bytes.Buffer
@@ -149,6 +151,7 @@ func TestInsertOverTheRealDispatcher(t *testing.T) {
 }
 
 func TestFocusOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, _ := wiredLich(t)
 
 	var stdout, stderr bytes.Buffer
@@ -168,6 +171,7 @@ func TestFocusOverTheRealDispatcher(t *testing.T) {
 }
 
 func TestSendAndReplyOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, term := wiredLich(t)
 
 	var stdout, stderr bytes.Buffer
@@ -198,6 +202,7 @@ func TestSendAndReplyOverTheRealDispatcher(t *testing.T) {
 // waiting, a no-ticket wait from the same session finds nothing, and the ticket
 // still collects it.
 func TestSendPrivateOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, term := wiredLich(t)
 
 	var stdout, stderr bytes.Buffer
@@ -461,6 +466,7 @@ func wiredSpawn(t *testing.T, git *spawnGit) (func(string) string, *spawnStore, 
 // spawn.Open's fields — a misnamed tag here would otherwise drop the option
 // in silence and open the session on its default.
 func TestOpenOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, rows, term := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -492,6 +498,7 @@ func TestOpenOverTheRealDispatcher(t *testing.T) {
 // TestOpenUltracodeOverTheRealDispatcher proves the trailing boolean lands on
 // spawn.Open's ultracode, the one argument the codex case above cannot carry.
 func TestOpenUltracodeOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, rows, term := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -513,6 +520,7 @@ func TestOpenUltracodeOverTheRealDispatcher(t *testing.T) {
 // TestOpenSubagentOverTheRealDispatcher proves the options `lich open
 // --subagent` posts land on spawn.OpenSubagent's fields.
 func TestOpenSubagentOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, rows, term := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -543,6 +551,7 @@ func TestOpenSubagentOverTheRealDispatcher(t *testing.T) {
 // resolves no session at all, and a --force that misses its own is a removal
 // refused rather than the one the caller asked for.
 func TestCloseOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	git := &spawnGit{dirty: true}
 	env, _, term := wiredSpawn(t, git)
 
@@ -566,6 +575,7 @@ func TestCloseOverTheRealDispatcher(t *testing.T) {
 // on spawn.Rename's fields. Target and label are two strings side by side, and
 // swapped the command renames the wrong session to the name of the right one.
 func TestRenameOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, rows, _ := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -585,6 +595,7 @@ func TestRenameOverTheRealDispatcher(t *testing.T) {
 // form reads the label rather than a session: LICH_SESSION_ID is the target, and
 // a client that posted the name in the target's slot would resolve no session.
 func TestRenameWithoutATargetRenamesTheCallersOwnSession(t *testing.T) {
+	t.Parallel()
 	env, rows, _ := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -600,6 +611,7 @@ func TestRenameWithoutATargetRenamesTheCallersOwnSession(t *testing.T) {
 // on spawn.Control's fields: the action, the name and its arguments are strings
 // side by side, and a misnamed tag would run the wrong command.
 func TestControlOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, _, term := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -620,6 +632,7 @@ func TestControlOverTheRealDispatcher(t *testing.T) {
 // spawn.Ask's fields: the target, the project and the question are strings side
 // by side.
 func TestAskOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, _, term := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -636,6 +649,7 @@ func TestAskOverTheRealDispatcher(t *testing.T) {
 // session and the project name in their own fields: swapped, the app resolves
 // the project by a session id and finds none.
 func TestWorktreesOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	git := &spawnGit{dirty: true, checkouts: []project.Worktree{{Name: "auth-fix", Path: "/wt/auth-fix"}}}
 	env, _, _ := wiredSpawn(t, git)
 
@@ -652,6 +666,7 @@ func TestWorktreesOverTheRealDispatcher(t *testing.T) {
 // spawn.File's fields. Target and folder are two strings side by side, and
 // swapped the command files the wrong session under the name of the right one.
 func TestFileOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, rows, _ := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -670,6 +685,7 @@ func TestFileOverTheRealDispatcher(t *testing.T) {
 // TestFileWithoutATargetFilesTheCallersOwnSession proves the one-argument form
 // reads the folder rather than a session, as rename's does.
 func TestFileWithoutATargetFilesTheCallersOwnSession(t *testing.T) {
+	t.Parallel()
 	env, rows, _ := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -684,6 +700,7 @@ func TestFileWithoutATargetFilesTheCallersOwnSession(t *testing.T) {
 // TestFoldersOverTheRealDispatcher proves `lich folders` posts the caller's
 // session and the project name in their own fields, as `lich worktrees` does.
 func TestFoldersOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, _, _ := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -699,6 +716,7 @@ func TestFoldersOverTheRealDispatcher(t *testing.T) {
 // posts land on spawn.RenameFolder's fields: the old name and the new one
 // swapped would match no folder.
 func TestRenameFolderOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, rows, _ := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -718,6 +736,7 @@ func TestRenameFolderOverTheRealDispatcher(t *testing.T) {
 // posts land on spawn.ColorFolder's fields: the folder and the color swapped
 // would be refused as no such folder.
 func TestColorFolderOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, rows, _ := wiredSpawn(t, &spawnGit{})
 
 	var stdout, stderr bytes.Buffer
@@ -739,6 +758,7 @@ func TestColorFolderOverTheRealDispatcher(t *testing.T) {
 // another release. An option the backend does not know yet is dropped, and one
 // the client does not know yet is its zero value.
 func TestOpenAcrossVersions(t *testing.T) {
+	t.Parallel()
 	bodies := map[string]string{
 		"spawn.Open newer client":         `[{"from":"s1","kind":"codex","folder":"Apps","optionFromTheFuture":true}]`,
 		"spawn.Open older client":         `[{"from":"s1","kind":"codex"}]`,
@@ -780,6 +800,7 @@ func postRaw(t *testing.T, dispatcher *rpc.Handler, method, body string) string 
 // spawn calls a session makes: each body carries a field the backend does not
 // know and leaves out one it does, and the call still lands on the target.
 func TestSpawnCallsAcrossVersions(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		method, body string
 		landed       func(rows *spawnStore, term *spawnTerminal, answer string) bool
@@ -857,6 +878,7 @@ func TestSpawnCallsAcrossVersions(t *testing.T) {
 // TestSendsAcrossVersions is the same for the three ways to send: a field the
 // backend does not know is dropped, and the project left out searches them all.
 func TestSendsAcrossVersions(t *testing.T) {
+	t.Parallel()
 	for _, method := range []string{"relay.Send", "relay.SendPrivate", "relay.SendSubagent"} {
 		t.Run(method, func(t *testing.T) {
 			term := &wiredTerminal{}
@@ -875,6 +897,7 @@ func TestSendsAcrossVersions(t *testing.T) {
 // TestRelayCallsAcrossVersions is the same for the rest of the relay calls a
 // session makes, each body with a field the backend does not know.
 func TestRelayCallsAcrossVersions(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		method, body string
 		landed       func(term *wiredTerminal, answer string) bool
@@ -909,6 +932,7 @@ func TestRelayCallsAcrossVersions(t *testing.T) {
 // as a client of another release would post them: the reply leaves the ticket
 // out, which answers the one errand open against the replier.
 func TestErrandAcrossVersions(t *testing.T) {
+	t.Parallel()
 	dispatcher := rpc.New()
 	dispatcher.Register("relay", relay.New(wiredSessions{}, &wiredTerminal{}, nil))
 

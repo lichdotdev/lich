@@ -14,6 +14,7 @@ import (
 // would stall the work.
 
 func TestWaitNoWaitCollectsWhatIsReadyWithoutHoldingTheLine(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"results":[],"open":["docs"]}`)
 
 	code, stdout, _ := run(t, f, "wait", "--no-wait")
@@ -33,6 +34,7 @@ func TestWaitNoWaitCollectsWhatIsReadyWithoutHoldingTheLine(t *testing.T) {
 }
 
 func TestWaitNoWaitTakesNoTicket(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, _, stderr := run(t, f, "wait", "--no-wait", "a1b2c3d4")
@@ -45,6 +47,7 @@ func TestWaitNoWaitTakesNoTicket(t *testing.T) {
 }
 
 func TestMCPWaitNoWaitCollectsWhatIsReady(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"results":[{"ticket":"t1","target":"auth","status":"answered","answer":"all green"}],"open":[]}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -63,6 +66,7 @@ func TestMCPWaitNoWaitCollectsWhatIsReady(t *testing.T) {
 }
 
 func TestMCPWaitNoWaitRefusesATicket(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -81,6 +85,7 @@ func TestMCPWaitNoWaitRefusesATicket(t *testing.T) {
 // have to name the no-wait look, where to take it, and that looking again in a
 // loop is the polling they forbid.
 func TestMCPInstructionsTellWhenToLookWithoutWaiting(t *testing.T) {
+	t.Parallel()
 	for _, want := range []string{"no_wait", "before delegating more", "before the final synthesis", "in a loop"} {
 		if !strings.Contains(mcpInstructions(prompt.English), want) {
 			t.Errorf("instructions are missing %q", want)
@@ -89,6 +94,7 @@ func TestMCPInstructionsTellWhenToLookWithoutWaiting(t *testing.T) {
 }
 
 func TestCollectNowOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
 	env, term, _, _ := wiredRelay(t)
 	openErrand(t, env, term)
 

@@ -13,6 +13,7 @@ import (
 // Every text renders in every language with its arguments in place and the
 // literals agents match on untouched.
 func TestEveryTextRendersInEveryLanguage(t *testing.T) {
+	t.Parallel()
 	opened := spawn.Session{Label: "docs", Name: "docs-1", Kind: "claude", Project: "p", Path: "/w", Confined: true}
 	collected := relay.Collected{
 		Results: []relay.Result{
@@ -84,6 +85,7 @@ func TestEveryTextRendersInEveryLanguage(t *testing.T) {
 // The command line and the MCP server run outside lich, so the language comes
 // from the variable lich exported when it spawned the session.
 func TestTheClientReadsThePromptLanguageFromTheEnvironment(t *testing.T) {
+	t.Parallel()
 	for tag, want := range map[string]prompt.Lang{
 		"":      prompt.English,
 		"en":    prompt.English,
@@ -103,6 +105,7 @@ func TestTheClientReadsThePromptLanguageFromTheEnvironment(t *testing.T) {
 }
 
 func TestTheHandshakeCarriesTheInstructionsInTheClientsLanguage(t *testing.T) {
+	t.Parallel()
 	for _, lang := range prompt.Langs {
 		got := mcpHandshake(nil, "test", lang)["instructions"]
 		if got != mcpInstructions(lang) {
@@ -112,6 +115,7 @@ func TestTheHandshakeCarriesTheInstructionsInTheClientsLanguage(t *testing.T) {
 }
 
 func TestTheClientReadsSpanishFromTheEnvironment(t *testing.T) {
+	t.Parallel()
 	c := &client{env: func(key string) string {
 		if key == prompt.EnvVar {
 			return "es"
@@ -124,6 +128,7 @@ func TestTheClientReadsSpanishFromTheEnvironment(t *testing.T) {
 }
 
 func TestTheClientReadsJapaneseFromTheEnvironment(t *testing.T) {
+	t.Parallel()
 	c := &client{env: func(key string) string {
 		if key == prompt.EnvVar {
 			return "ja"
@@ -136,6 +141,7 @@ func TestTheClientReadsJapaneseFromTheEnvironment(t *testing.T) {
 }
 
 func TestTheClientReadsKoreanFromTheEnvironment(t *testing.T) {
+	t.Parallel()
 	c := &client{env: func(key string) string {
 		if key == prompt.EnvVar {
 			return "ko"
@@ -148,6 +154,7 @@ func TestTheClientReadsKoreanFromTheEnvironment(t *testing.T) {
 }
 
 func TestTheClientReadsRussianFromTheEnvironment(t *testing.T) {
+	t.Parallel()
 	c := &client{env: func(key string) string {
 		if key == prompt.EnvVar {
 			return "ru"

@@ -12,6 +12,7 @@ import (
 const subagentPending = `{"ticket":"a1b2c3d4","target":"Session 4","status":"pending","answer":""}`
 
 func TestOpenSubagentOpensAndHandsOverAsASubagent(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{"relay.SendSubagent": {status: 200, body: subagentPending}}
 
@@ -39,6 +40,7 @@ func TestOpenSubagentOpensAndHandsOverAsASubagent(t *testing.T) {
 }
 
 func TestOpenSubagentIsRefusedBeforeOpening(t *testing.T) {
+	t.Parallel()
 	cases := map[string][]string{
 		"--prompt":  {"open", "--subagent"},
 		"--project": {"open", "--subagent", "--prompt", "x", "--project", "lich"},
@@ -60,6 +62,7 @@ func TestOpenSubagentIsRefusedBeforeOpening(t *testing.T) {
 }
 
 func TestOpenSubagentNeedsACallingSession(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	outside := func(key string) string {
 		if key == "LICH_SESSION_ID" {

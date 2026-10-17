@@ -8,6 +8,7 @@ import (
 const privatePending = `{"ticket":"a1b2c3d4","target":"docs","status":"pending","private":true}`
 
 func TestSendPrivateCallsSendPrivate(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, privatePending)
 
 	code, stdout, _ := run(t, f, "send", "--private", "docs", "long errand")
@@ -30,6 +31,7 @@ func TestSendPrivateCallsSendPrivate(t *testing.T) {
 }
 
 func TestOpenPrivateHandsOverPrivately(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{"relay.SendPrivate": {status: 200, body: privatePending}}
 
@@ -43,6 +45,7 @@ func TestOpenPrivateHandsOverPrivately(t *testing.T) {
 }
 
 func TestOpenPrivateWithoutAPromptIsRefusedBeforeOpening(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 
 	code, _, stderr := run(t, f, "open", "--worktree", "auth-fix", "--private")
@@ -58,6 +61,7 @@ func TestOpenPrivateWithoutAPromptIsRefusedBeforeOpening(t *testing.T) {
 }
 
 func TestMCPSendPrivateCallsSendPrivate(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, privatePending)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -81,6 +85,7 @@ func TestMCPSendPrivateCallsSendPrivate(t *testing.T) {
 }
 
 func TestMCPOpenPrivateHandsOverPrivately(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{"relay.SendPrivate": {status: 200, body: privatePending}}
 
@@ -96,6 +101,7 @@ func TestMCPOpenPrivateHandsOverPrivately(t *testing.T) {
 }
 
 func TestMCPOpenPrivateWithoutAPromptIsRefusedBeforeOpening(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -113,6 +119,7 @@ func TestMCPOpenPrivateWithoutAPromptIsRefusedBeforeOpening(t *testing.T) {
 // A private hand-off that failed must not be retried in the open: the recovery
 // it names keeps the errand private.
 func TestAFailedPrivateHandOffNamesAPrivateRetry(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{"relay.SendPrivate": {status: 500, body: "boom"}}
 

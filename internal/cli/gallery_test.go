@@ -24,6 +24,7 @@ func runGallery(t *testing.T, env map[string]string, args ...string) (int, strin
 }
 
 func TestGalleryLaunchesThePinnedBuildWithNoBackend(t *testing.T) {
+	t.Parallel()
 	pinned := filepath.Join(t.TempDir(), galleryBinary)
 	if err := os.WriteFile(pinned, nil, 0o755); err != nil {
 		t.Fatal(err)
@@ -42,6 +43,7 @@ func TestGalleryLaunchesThePinnedBuildWithNoBackend(t *testing.T) {
 }
 
 func TestGalleryWithAMissingPinStartsNothing(t *testing.T) {
+	t.Parallel()
 	missing := filepath.Join(t.TempDir(), galleryBinary)
 
 	code, _, stderr, starts := runGallery(t, map[string]string{galleryEnv: missing})
@@ -56,6 +58,7 @@ func TestGalleryWithAMissingPinStartsNothing(t *testing.T) {
 // With no pin, the gallery is looked for beside the lich binary, which in a
 // test is the test binary, with no lich-gallery beside it.
 func TestGalleryWithNothingBesideLichSaysHowToBuildIt(t *testing.T) {
+	t.Parallel()
 	code, _, stderr, starts := runGallery(t, nil)
 	for _, want := range []string{"no " + galleryBinary + " beside", "./cmd/ui-gallery", galleryEnv} {
 		if !strings.Contains(stderr, want) {
@@ -68,6 +71,7 @@ func TestGalleryWithNothingBesideLichSaysHowToBuildIt(t *testing.T) {
 }
 
 func TestGalleryTakesNoArguments(t *testing.T) {
+	t.Parallel()
 	code, _, stderr, starts := runGallery(t, nil, "now")
 	if code != 1 || !strings.Contains(stderr, "usage: lich gallery") {
 		t.Fatalf("exit = %d, stderr = %q, want the usage line", code, stderr)

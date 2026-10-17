@@ -48,6 +48,7 @@ func runQuit(t *testing.T, srv *httptest.Server) (int, string, string) {
 }
 
 func TestQuitReturnsOnceLichIsGone(t *testing.T) {
+	t.Parallel()
 	srv, bodies := quittingLich(t, func(w http.ResponseWriter) bool {
 		_, _ = io.WriteString(w, "null")
 		return true
@@ -70,6 +71,7 @@ func TestQuitReturnsOnceLichIsGone(t *testing.T) {
 // The process can exit before its reply leaves: the call fails, and lich is
 // gone, which is what was asked.
 func TestQuitWhoseReplyIsLostToTheExitSucceeds(t *testing.T) {
+	t.Parallel()
 	srv, _ := quittingLich(t, func(w http.ResponseWriter) bool {
 		conn, _, err := w.(http.Hijacker).Hijack()
 		if err != nil {
@@ -85,6 +87,7 @@ func TestQuitWhoseReplyIsLostToTheExitSucceeds(t *testing.T) {
 }
 
 func TestQuitRefusedByARunningLichFails(t *testing.T) {
+	t.Parallel()
 	srv, _ := quittingLich(t, func(w http.ResponseWriter) bool {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = io.WriteString(w, `{"error":"quit: lich is still starting"}`)
@@ -100,6 +103,7 @@ func TestQuitRefusedByARunningLichFails(t *testing.T) {
 }
 
 func TestQuitTakesNoArguments(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 	code, _, stderr := run(t, f, "quit", "now")
 	if code != 1 || !strings.Contains(stderr, "usage: lich quit") {
@@ -111,6 +115,7 @@ func TestQuitTakesNoArguments(t *testing.T) {
 }
 
 func TestGoneGivesUpOnAPortStillListening(t *testing.T) {
+	t.Parallel()
 	srv := httptest.NewServer(http.NotFoundHandler())
 	defer srv.Close()
 	if gone(strconv.Itoa(srv.Listener.Addr().(*net.TCPAddr).Port), 3*quitPoll) {

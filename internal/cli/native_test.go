@@ -77,6 +77,7 @@ func runNative(t *testing.T, env map[string]string, running func() (*singleton.I
 }
 
 func TestNativeClosesTheWebWindowAndOpensOnTheRunningLich(t *testing.T) {
+	t.Parallel()
 	srv, bodies := windowedLich(t, http.StatusOK, "null")
 	native := nativeBuild(t)
 	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: native}
@@ -104,6 +105,7 @@ func TestNativeClosesTheWebWindowAndOpensOnTheRunningLich(t *testing.T) {
 // A lich with its window already closed (the tray, `lich native` run twice)
 // answers CloseWindow with ErrNoWindow's text, and that is nothing to stop for.
 func TestNativeOpensWhenNoWebWindowIsOpen(t *testing.T) {
+	t.Parallel()
 	srv, _ := windowedLich(t, http.StatusInternalServerError, `{"error":"no lich window is open"}`)
 	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: nativeBuild(t)}
 
@@ -114,6 +116,7 @@ func TestNativeOpensWhenNoWebWindowIsOpen(t *testing.T) {
 }
 
 func TestNativeStopsWhenTheWebWindowWillNotClose(t *testing.T) {
+	t.Parallel()
 	srv, _ := windowedLich(t, http.StatusInternalServerError, `{"error":"window: still starting"}`)
 	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: nativeBuild(t)}
 
@@ -129,6 +132,7 @@ func TestNativeStopsWhenTheWebWindowWillNotClose(t *testing.T) {
 // With no lich running, one is started without a window, and the native window
 // opens on it once its runtime file names a port that answers.
 func TestNativeStartsLichWithNoWindowWhenNoneRuns(t *testing.T) {
+	t.Parallel()
 	srv, _ := windowedLich(t, http.StatusInternalServerError, `{"error":"no lich window is open"}`)
 	native := nativeBuild(t)
 	var started *singleton.Info
@@ -149,6 +153,7 @@ func TestNativeStartsLichWithNoWindowWhenNoneRuns(t *testing.T) {
 }
 
 func TestNativeWithoutABuildStartsNothing(t *testing.T) {
+	t.Parallel()
 	srv, bodies := windowedLich(t, http.StatusOK, "null")
 	missing := filepath.Join(t.TempDir(), nativeBinary)
 	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: missing}
@@ -163,6 +168,7 @@ func TestNativeWithoutABuildStartsNothing(t *testing.T) {
 }
 
 func TestNativeTakesNoArguments(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 	code, _, stderr := run(t, f, "native", "now")
 	if code != 1 || !strings.Contains(stderr, "usage: lich native") {
@@ -173,6 +179,7 @@ func TestNativeTakesNoArguments(t *testing.T) {
 // With no pin, the native window is looked for beside the lich binary, which in
 // a test is the test binary, with no lich-native beside it.
 func TestNativeWithNothingBesideLichSaysWhereToGetIt(t *testing.T) {
+	t.Parallel()
 	srv, _ := windowedLich(t, http.StatusOK, "null")
 	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok"}
 
@@ -186,6 +193,7 @@ func TestNativeWithNothingBesideLichSaysWhereToGetIt(t *testing.T) {
 }
 
 func TestAwaitBackendGivesUpOnALichThatNeverAnswers(t *testing.T) {
+	t.Parallel()
 	c := &client{env: func(string) string { return "" }, running: noInstance}
 	if _, _, err := c.awaitBackend(3 * quitPoll); err == nil || !strings.Contains(err.Error(), "did not answer") {
 		t.Fatalf("err = %v, want the timeout", err)

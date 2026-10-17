@@ -70,6 +70,7 @@ func textOf(t *testing.T, reply jsonRPC) (string, bool) {
 }
 
 func TestMCPHandshakeAdvertisesTools(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26"}}`)
@@ -115,6 +116,7 @@ func TestMCPHandshakeAdvertisesTools(t *testing.T) {
 }
 
 func TestMCPHandshakeFallsBackToItsOwnVersion(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`)
@@ -131,6 +133,7 @@ func TestMCPHandshakeFallsBackToItsOwnVersion(t *testing.T) {
 // A literal would make every install of every release report the same thing,
 // which is the one number a bug report needs from the other side.
 func TestMCPHandshakeReportsTheBuildVersion(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	var stdout, stderr bytes.Buffer
@@ -165,6 +168,7 @@ func TestMCPHandshakeReportsTheBuildVersion(t *testing.T) {
 // object per line, so a decoder that cannot read one has lost the stream and
 // carrying on would answer the wrong message with the wrong id.
 func TestMCPUnreadableInputEndsTheServer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	var stdout, stderr bytes.Buffer
@@ -187,6 +191,7 @@ func TestMCPUnreadableInputEndsTheServer(t *testing.T) {
 }
 
 func TestMCPNotificationsGetNoReply(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f,
@@ -202,6 +207,7 @@ func TestMCPNotificationsGetNoReply(t *testing.T) {
 }
 
 func TestMCPListsEveryTool(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)
@@ -270,6 +276,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 }
 
 func TestMCPSendToSessionReturnsTheAnswer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"answered","answer":"3 failures"}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -294,6 +301,7 @@ func TestMCPSendToSessionReturnsTheAnswer(t *testing.T) {
 }
 
 func TestMCPSendPointsAtTheTicketWhenItRunsOut(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"pending","answer":""}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -313,6 +321,7 @@ func TestMCPSendPointsAtTheTicketWhenItRunsOut(t *testing.T) {
 // Without a ticket, wait_for_answer is the drain: one call collects every
 // result the nudge announced, over relay.Collect.
 func TestMCPWaitWithoutATicketCollectsEverything(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"results":[
 		{"ticket":"t1","target":"auth","status":"answered","answer":"all green"},
 		{"ticket":"t2","target":"api","status":"unanswered","answer":""},
@@ -348,6 +357,7 @@ func TestMCPWaitWithoutATicketCollectsEverything(t *testing.T) {
 // A worker closed by someone other than its caller is filed as stopped, and a
 // drain has to say so: a result with no words reads as nothing at all.
 func TestMCPWaitWithoutATicketSaysAStoppedWorkerStopped(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"results":[
 		{"ticket":"t1","target":"docs","status":"stopped","answer":""}],"open":[]}`)
 
@@ -364,6 +374,7 @@ func TestMCPWaitWithoutATicketSaysAStoppedWorkerStopped(t *testing.T) {
 }
 
 func TestMCPWaitWithNothingToCollectSaysSo(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"results":[],"open":[]}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -379,6 +390,7 @@ func TestMCPWaitWithNothingToCollectSaysSo(t *testing.T) {
 }
 
 func TestMCPWaitWithATicketWaitsOnIt(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"answered","answer":"done"}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -399,6 +411,7 @@ func TestMCPWaitWithATicketWaitsOnIt(t *testing.T) {
 // A worker its caller closed was stopped on purpose: the outcome says so and
 // sends nobody to a card that is gone.
 func TestMCPWaitOnAStoppedWorkerSaysItWasStopped(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"Session 3","status":"stopped"}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -414,6 +427,7 @@ func TestMCPWaitOnAStoppedWorkerSaysItWasStopped(t *testing.T) {
 }
 
 func TestMCPListSessionsReturnsThemAsJSON(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[{"label":"docs","project":"lich","kind":"codex","state":"waiting"},
 	                      {"label":"api","project":"lich","kind":"crush"}]`)
 
@@ -443,6 +457,7 @@ func TestMCPListSessionsReturnsThemAsJSON(t *testing.T) {
 }
 
 func TestMCPReplyToSession(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -462,6 +477,7 @@ func TestMCPReplyToSession(t *testing.T) {
 // told which requests are open and what each asked, or it has nothing to retry
 // with.
 func TestMCPReplyWithoutATicketCarriesTheRefusal(t *testing.T) {
+	t.Parallel()
 	refusal := "2 requests are open against this session, and an answer that names no ticket " +
 		"would close the wrong one. Name the ticket the answer belongs to:\n" +
 		"  lich reply a1b2c3d4 \"<answer>\"   — run the tests\n" +
@@ -488,6 +504,7 @@ func TestMCPReplyWithoutATicketCarriesTheRefusal(t *testing.T) {
 }
 
 func TestMCPAFailedCallIsAToolErrorNotAProtocolError(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"error":"no live session named \"ghost\""}`)
 	f.status = 500
 
@@ -507,6 +524,7 @@ func TestMCPAFailedCallIsAToolErrorNotAProtocolError(t *testing.T) {
 }
 
 func TestMCPRejectsUnknownMethodsAndTools(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f,
@@ -528,6 +546,7 @@ func TestMCPRejectsUnknownMethodsAndTools(t *testing.T) {
 }
 
 func TestMCPReadsLooseArgumentTypes(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"answered","answer":"ok"}`)
 
 	// A model that sends the timeout as a string should not lose its turn.
@@ -544,6 +563,7 @@ func TestMCPReadsLooseArgumentTypes(t *testing.T) {
 // seconds, so a caller asking for more than the cap gets the cap — the first
 // real run asked for 120 and then 180, and both stopped waiting.
 func TestMCPCapsTheWaitBelowTheClientsBackgroundThreshold(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		asked any
@@ -581,6 +601,7 @@ func TestMCPCapsTheWaitBelowTheClientsBackgroundThreshold(t *testing.T) {
 }
 
 func TestMCPStopsCleanlyAtEndOfInput(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	var stdout, stderr bytes.Buffer
@@ -594,6 +615,7 @@ func TestMCPStopsCleanlyAtEndOfInput(t *testing.T) {
 }
 
 func TestMCPOpenSessionReturnsTheNamesItIsAddressedBy(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix",
 		"name":"auth-fix-9f8e","kind":"claude","path":"/wt/auth-fix","nextSeq":5}`)
 
@@ -629,6 +651,7 @@ func TestMCPOpenSessionReturnsTheNamesItIsAddressedBy(t *testing.T) {
 // point of the prompt argument, since two calls per worker is what made the
 // harness's own subagents the cheaper thing to reach for.
 func TestMCPOpenSessionHandsOverTheTaskItCameWith(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix",
 		"name":"auth-fix-9f8e","kind":"claude","path":"/wt/auth-fix","nextSeq":5}`)
 	f.answers = map[string]answer{
@@ -664,6 +687,7 @@ func TestMCPOpenSessionHandsOverTheTaskItCameWith(t *testing.T) {
 // answer: reporting a failed call would leave an agent that opened three
 // workers believing it has none.
 func TestMCPOpenSessionKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix",
 		"name":"auth-fix-9f8e","kind":"claude","path":"/wt/auth-fix","nextSeq":5}`)
 	f.answers = map[string]answer{
@@ -685,6 +709,7 @@ func TestMCPOpenSessionKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
 }
 
 func TestMCPOpenSessionDefaultsEveryArgument(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"Session 4",
 		"name":"lich-9f8e","kind":"claude","path":"","nextSeq":5}`)
 
@@ -702,6 +727,7 @@ func TestMCPOpenSessionDefaultsEveryArgument(t *testing.T) {
 }
 
 func TestMCPSendReportsATaskNobodyRead(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"unread"}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -721,6 +747,7 @@ func TestMCPSendReportsATaskNobodyRead(t *testing.T) {
 }
 
 func TestMCPSendReportsATaskThatNeverReachedAPrompt(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"ticket":"a1b2c3d4","target":"docs","status":"undelivered"}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -741,6 +768,7 @@ func TestMCPSendReportsATaskThatNeverReachedAPrompt(t *testing.T) {
 }
 
 func TestMCPCloseSessionPassesTheWorktreeAnswer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix",
 		"worktree":"/wt/auth-fix","removed":true}`)
 
@@ -758,6 +786,7 @@ func TestMCPCloseSessionPassesTheWorktreeAnswer(t *testing.T) {
 }
 
 func TestMCPRenameSessionPassesTheTargetAndTheName(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"9f8e","project":"lich","label":"the login bug","previous":"auth-fix"}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -781,6 +810,7 @@ func TestMCPRenameSessionPassesTheTargetAndTheName(t *testing.T) {
 // target is what the app reads as "the caller's own" — so it must be sent, not
 // dropped into the label's slot.
 func TestMCPRenameSessionWithoutATargetRenamesItsOwn(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"s1","project":"lich","label":"planner","previous":"Session 1"}`)
 
 	speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -797,6 +827,7 @@ func TestMCPRenameSessionWithoutATargetRenamesItsOwn(t *testing.T) {
 // counts: the boolean, or the one string that spells it. A model that sends
 // "false" — or "yes", which reads like consent and is not the word — must not.
 func TestMCPForceIsOnlyTrueWhenItSaysTrue(t *testing.T) {
+	t.Parallel()
 	for sent, want := range map[string]bool{
 		`true`:    true,
 		`"true"`:  true,
@@ -815,6 +846,7 @@ func TestMCPForceIsOnlyTrueWhenItSaysTrue(t *testing.T) {
 }
 
 func TestMCPListWorktreesReturnsThemAsJSON(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[{"name":"auth-fix","path":"/wt/auth-fix","dirty":true,"sessions":["auth-fix"]}]`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":

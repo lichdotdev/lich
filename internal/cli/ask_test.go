@@ -14,6 +14,7 @@ func answered(answer string) string {
 }
 
 func TestAskPostsTheQuestionAndPrintsTheAnswer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, answered("Fixing the login test."))
 	code, stdout, stderr := run(t, f, "ask", "--project", "lich", "auth-fix", "what", "are you on?")
 	if code != 0 {
@@ -33,6 +34,7 @@ func TestAskPostsTheQuestionAndPrintsTheAnswer(t *testing.T) {
 }
 
 func TestAskJSON(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, answered("Fixing it."))
 	code, stdout, _ := run(t, f, "ask", "--json", "auth-fix", "status?")
 	if code != 0 {
@@ -48,6 +50,7 @@ func TestAskJSON(t *testing.T) {
 }
 
 func TestAskRefusesAMalformedCall(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 	if code, _, stderr := run(t, f, "ask", "auth-fix"); code != 1 || !strings.Contains(stderr, "usage: lich ask") {
 		t.Errorf("exit = %d, stderr %q; want 1 with the usage line", code, stderr)
@@ -58,6 +61,7 @@ func TestAskRefusesAMalformedCall(t *testing.T) {
 }
 
 func TestAskReportsTheRefusal(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"error":"\"Session 3\" is this session, and a session cannot ask itself"}`)
 	f.status = 400
 	code, stdout, stderr := run(t, f, "ask", "Session 3", "why?")
@@ -67,6 +71,7 @@ func TestAskReportsTheRefusal(t *testing.T) {
 }
 
 func TestMCPAskSessionAnswersWithTheAnswer(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, answered("Fixing the login test."))
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
 		{"name":"ask_session","arguments":{"session":"auth-fix","question":"what are you on?"}}}`)

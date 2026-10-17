@@ -103,6 +103,7 @@ func answerAndCheckTheInbox(t *testing.T, env func(string) string, svc *relay.Se
 }
 
 func TestAWaitKilledMidCollectLeavesTheResultInTheInbox(t *testing.T) {
+	t.Parallel()
 	env, term, svc, gate := wiredRelay(t)
 	ticket := openErrand(t, env, term)
 
@@ -134,6 +135,7 @@ func TestAWaitKilledMidCollectLeavesTheResultInTheInbox(t *testing.T) {
 }
 
 func TestACancelledWaitForAnswerLeavesTheResultInTheInbox(t *testing.T) {
+	t.Parallel()
 	env, term, svc, gate := wiredRelay(t)
 	ticket := openErrand(t, env, term)
 
@@ -195,6 +197,7 @@ func (b *lockedBuffer) String() string {
 }
 
 func TestCancelsMatchesOnlyItsOwnRequest(t *testing.T) {
+	t.Parallel()
 	id := json.RawMessage(`7`)
 	for _, tt := range []struct {
 		name    string
@@ -222,6 +225,7 @@ func TestCancelsMatchesOnlyItsOwnRequest(t *testing.T) {
 // A cancellation for some other request, or one that cannot be read, must leave
 // the call in flight alone: dropping it would lose a wait the client still wants.
 func TestAStrayCancellationLeavesTheCallInFlightAnswered(t *testing.T) {
+	t.Parallel()
 	env, term, _, gate := wiredRelay(t)
 	openErrand(t, env, term)
 

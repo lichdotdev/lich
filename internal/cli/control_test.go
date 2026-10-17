@@ -17,6 +17,7 @@ func controlled(state, action, value string) string {
 }
 
 func TestControlPostsTheActionAndItsArguments(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, controlled(spawn.ControlDone, "command", "compact"))
 	code, stdout, stderr := run(t, f, "control", "--project", "lich", "auth-fix", "command", "/compact", "keep the plan")
 	if code != 0 {
@@ -38,6 +39,7 @@ func TestControlPostsTheActionAndItsArguments(t *testing.T) {
 // Each outcome is an exit code a script can branch on, and a line that says
 // whether the command still goes through.
 func TestControlSaysHowFarTheCommandGot(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		state, action, value string
 		code                 int
@@ -71,6 +73,7 @@ func TestControlSaysHowFarTheCommandGot(t *testing.T) {
 }
 
 func TestControlJSONKeepsTheExitCode(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, controlled(spawn.ControlDelivered, "command", "compact"))
 	code, stdout, _ := run(t, f, "control", "--json", "auth-fix", "command", "compact")
 	if code != ExitPending {
@@ -86,6 +89,7 @@ func TestControlJSONKeepsTheExitCode(t *testing.T) {
 }
 
 func TestControlRefusesAMalformedCall(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 	for _, args := range [][]string{
 		{"control", "auth-fix"},
@@ -101,6 +105,7 @@ func TestControlRefusesAMalformedCall(t *testing.T) {
 }
 
 func TestControlReportsTheRefusal(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"error":"\"codex-run\" runs codex, and only a Claude Code session can be controlled"}`)
 	f.status = 400
 	code, stdout, stderr := run(t, f, "control", "codex-run", "abort")
@@ -114,6 +119,7 @@ func TestControlReportsTheRefusal(t *testing.T) {
 
 // A command still on its way is a result an agent reads, not a failed call.
 func TestMCPControlSessionReportsAPendingCommandAsAResult(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, controlled(spawn.ControlDelivered, "command", "compact"))
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
 		{"name":"control_session","arguments":{"session":"auth-fix","action":"command","value":"compact","args":"keep the plan"}}}`)

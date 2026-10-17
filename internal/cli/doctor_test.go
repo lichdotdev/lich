@@ -25,6 +25,7 @@ func doctorClient(t *testing.T, checks []doctor.Check, err error) (*client, *byt
 }
 
 func TestDoctorPrintsTheReportAndExitsZeroWhenNothingStopsALaunch(t *testing.T) {
+	t.Parallel()
 	c, stdout, stderr := doctorClient(t, []doctor.Check{
 		{Name: "home", Status: doctor.OK, Detail: "/home/u/.config/lich is writable"},
 		{Name: "store", Status: doctor.Skip, Detail: "held by the running lich (pid 42)"},
@@ -44,6 +45,7 @@ func TestDoctorPrintsTheReportAndExitsZeroWhenNothingStopsALaunch(t *testing.T) 
 }
 
 func TestDoctorExitsNonZeroOnACheckThatStopsALaunch(t *testing.T) {
+	t.Parallel()
 	c, stdout, stderr := doctorClient(t, []doctor.Check{
 		{Name: "browser", Status: doctor.Fail, Detail: "no window beside the lich binary"},
 	}, nil)
@@ -62,6 +64,7 @@ func TestDoctorExitsNonZeroOnACheckThatStopsALaunch(t *testing.T) {
 }
 
 func TestDoctorReportsAWalkItCouldNotStart(t *testing.T) {
+	t.Parallel()
 	c, stdout, stderr := doctorClient(t, nil, errors.New("resolve config directory: no home"))
 
 	if code := dispatch([]string{"doctor"}, c); code != 1 {
@@ -76,6 +79,7 @@ func TestDoctorReportsAWalkItCouldNotStart(t *testing.T) {
 }
 
 func TestDoctorTakesNoArguments(t *testing.T) {
+	t.Parallel()
 	c, stdout, stderr := doctorClient(t, []doctor.Check{{Name: "home", Status: doctor.OK}}, nil)
 
 	if code := dispatch([]string{"doctor", "--everything"}, c); code != 1 {
@@ -101,6 +105,7 @@ func TestDoctorTakesNoArguments(t *testing.T) {
 }
 
 func TestDoctorIsInTheHelp(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 	_, stdout, _ := run(t, f, "help")
 	if !strings.Contains(stdout, "lich doctor") {

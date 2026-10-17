@@ -58,6 +58,7 @@ func TestRageWritesATimestampedBundleAndSaysWhatItHolds(t *testing.T) {
 }
 
 func TestRageWritesWhereItWasTold(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "report.tar.gz")
 	var roots []string
@@ -80,6 +81,7 @@ func TestRageWritesWhereItWasTold(t *testing.T) {
 }
 
 func TestRageLeavesNoHalfWrittenBundleBehind(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "report.tar.gz")
 	var roots []string
@@ -113,6 +115,7 @@ func TestRageTakesNoArguments(t *testing.T) {
 }
 
 func TestRageIsInTheHelp(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 	_, stdout, _ := run(t, f, "help")
 	if !strings.Contains(stdout, "lich rage") {
@@ -121,6 +124,7 @@ func TestRageIsInTheHelp(t *testing.T) {
 }
 
 func TestArchiveRootStripsBothExtensions(t *testing.T) {
+	t.Parallel()
 	cases := map[string]string{
 		"lich-rage-20260810-150405.tar.gz": "lich-rage-20260810-150405",
 		"/tmp/report.tar.gz":               "report",

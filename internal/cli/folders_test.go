@@ -10,6 +10,7 @@ import (
 )
 
 func TestMCPFileSessionPostsItsArgumentsInOrder(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"s2","project":"lich","label":"auth-fix","folder":"Apps","previous":""}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -35,6 +36,7 @@ func TestMCPFileSessionPostsItsArgumentsInOrder(t *testing.T) {
 // An empty folder is a real request (take the session out), so the tool
 // passes it through rather than reading it as missing.
 func TestMCPFileSessionIntoAnEmptyFolderTakesItOut(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"id":"s1","project":"lich","label":"planner","folder":"","previous":"Apps"}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -55,6 +57,7 @@ func TestMCPFileSessionIntoAnEmptyFolderTakesItOut(t *testing.T) {
 // Because the empty name takes the session out, a call that left the folder
 // out entirely must not be read as one.
 func TestMCPFileSessionWithoutAFolderIsRefused(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -70,6 +73,7 @@ func TestMCPFileSessionWithoutAFolderIsRefused(t *testing.T) {
 }
 
 func TestMCPRenameFolderPostsItsArgumentsInOrder(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"project":"lich","from":"Apps","to":"Applications","sessions":["a","b"]}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -93,6 +97,7 @@ func TestMCPRenameFolderPostsItsArgumentsInOrder(t *testing.T) {
 }
 
 func TestMCPRenameFolderWithoutANewNameIsRefused(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -108,6 +113,7 @@ func TestMCPRenameFolderWithoutANewNameIsRefused(t *testing.T) {
 }
 
 func TestMCPColorFolderPostsItsArgumentsInOrder(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `{"project":"lich","folder":"Apps","color":"teal","sessions":["a","b"]}`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -133,6 +139,7 @@ func TestMCPColorFolderPostsItsArgumentsInOrder(t *testing.T) {
 // An empty color clears the folder's, so a call that left the color out must
 // not be read as one.
 func TestMCPColorFolderWithoutAColorIsRefused(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -148,6 +155,7 @@ func TestMCPColorFolderWithoutAColorIsRefused(t *testing.T) {
 }
 
 func TestColorFolderNeedsAFolderAndAColor(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, _, stderr := run(t, f, "color-folder", "Apps")
@@ -157,6 +165,7 @@ func TestColorFolderNeedsAFolderAndAColor(t *testing.T) {
 }
 
 func TestColoredTextClearingSaysSo(t *testing.T) {
+	t.Parallel()
 	got := coloredText(spawn.Colored{Folder: "Apps", Sessions: []string{"a", "b"}})
 	if !strings.Contains(got, `Cleared the color of "a", "b" in folder "Apps".`) {
 		t.Errorf("coloredText = %q", got)
@@ -164,6 +173,7 @@ func TestColoredTextClearingSaysSo(t *testing.T) {
 }
 
 func TestMCPListFoldersReturnsThemAsJSON(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -182,6 +192,7 @@ func TestMCPListFoldersReturnsThemAsJSON(t *testing.T) {
 }
 
 func TestFoldersJSONIsAListEvenWhenThereAreNone(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, stdout, stderr := run(t, f, "folders", "--json")
@@ -195,6 +206,7 @@ func TestFoldersJSONIsAListEvenWhenThereAreNone(t *testing.T) {
 }
 
 func TestFileTakesAtMostASessionAndAFolder(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, _, stderr := run(t, f, "file", "a", "b", "c")
@@ -204,6 +216,7 @@ func TestFileTakesAtMostASessionAndAFolder(t *testing.T) {
 }
 
 func TestRenameFolderNeedsBothNames(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `null`)
 
 	code, _, stderr := run(t, f, "rename-folder", "Apps")
@@ -213,6 +226,7 @@ func TestRenameFolderNeedsBothNames(t *testing.T) {
 }
 
 func TestFiledTextSaysWhereTheSessionIsNow(t *testing.T) {
+	t.Parallel()
 	cases := map[string]struct {
 		filed spawn.Filed
 		want  string
@@ -231,6 +245,7 @@ func TestFiledTextSaysWhereTheSessionIsNow(t *testing.T) {
 }
 
 func TestRefiledTextTakingAFolderApartSaysItIsGone(t *testing.T) {
+	t.Parallel()
 	got := refiledText(spawn.Refiled{From: "Apps", Sessions: []string{"a", "b"}})
 	if !strings.Contains(got, `Took folder "Apps" apart, taking out "a", "b".`) {
 		t.Errorf("refiledText = %q", got)
@@ -238,6 +253,7 @@ func TestRefiledTextTakingAFolderApartSaysItIsGone(t *testing.T) {
 }
 
 func TestFoldersWithNoneSaysSo(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[]`)
 
 	code, stdout, stderr := run(t, f, "folders")
@@ -247,6 +263,7 @@ func TestFoldersWithNoneSaysSo(t *testing.T) {
 }
 
 func TestFoldersTakesNoArguments(t *testing.T) {
+	t.Parallel()
 	f := newFakeLich(t, `[]`)
 
 	code, _, stderr := run(t, f, "folders", "Apps")
@@ -260,6 +277,7 @@ func TestFoldersTakesNoArguments(t *testing.T) {
 
 // --json hands a script the whole answer, not the sentence the text form prints.
 func TestFileAndRenameFolderPrintJSON(t *testing.T) {
+	t.Parallel()
 	cases := map[string]struct {
 		body string
 		args []string
@@ -304,6 +322,7 @@ func TestFileAndRenameFolderPrintJSON(t *testing.T) {
 // A refusal from lich reaches the caller as a failed exit with lich's own words,
 // on every folder command.
 func TestFolderCommandsReportWhatLichRefused(t *testing.T) {
+	t.Parallel()
 	for _, args := range [][]string{
 		{"folders"},
 		{"file", "Apps"},
@@ -325,6 +344,7 @@ func TestFolderCommandsReportWhatLichRefused(t *testing.T) {
 // The same refusal, reaching an agent through the MCP tools, is a failed tool
 // result carrying lich's words rather than a result that reads as success.
 func TestMCPFolderToolsReportWhatLichRefused(t *testing.T) {
+	t.Parallel()
 	for name, arguments := range map[string]string{
 		"list_folders":  `{}`,
 		"file_session":  `{"folder":"Apps"}`,
