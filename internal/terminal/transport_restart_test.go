@@ -132,7 +132,6 @@ func TestListenBailsOutFastOnUnretryableError(t *testing.T) {
 }
 
 func TestListenRetriesUntilPortFreesWithoutWaitMarker(t *testing.T) {
-	t.Parallel()
 	busy, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("occupy port: %v", err)

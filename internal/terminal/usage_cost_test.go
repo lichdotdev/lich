@@ -797,7 +797,6 @@ func TestAPricedSessionCarriesNoMissReason(t *testing.T) {
 // about to count that stretch a second time, and what it had cost the first time
 // is what has to come back off.
 func TestAForkRecordsWhatItsParentHadCost(t *testing.T) {
-	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}
@@ -819,7 +818,6 @@ func TestAForkRecordsWhatItsParentHadCost(t *testing.T) {
 // own figure and starts a forked session's at zero, so netting anything off it
 // would hide what the fork itself spent.
 func TestAForkOfAProviderThatPricesItselfOffsetsNothing(t *testing.T) {
-	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}
@@ -842,7 +840,6 @@ func TestAForkOfAProviderThatPricesItselfOffsetsNothing(t *testing.T) {
 // that only resumes must record no offset — one that did would bill the session
 // backwards for its own history.
 func TestAResumeIsNotAFork(t *testing.T) {
-	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}
@@ -864,7 +861,6 @@ func TestAResumeIsNotAFork(t *testing.T) {
 // session, and a readout that is too high is not worth losing it, so the
 // failure is logged and the spawn goes ahead with no offset recorded.
 func TestAForkWhoseOffsetCannotBeSavedStillStarts(t *testing.T) {
-	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}

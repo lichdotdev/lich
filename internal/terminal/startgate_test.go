@@ -146,7 +146,6 @@ func TestHoldForStartIgnoresASessionThatWasReplaced(t *testing.T) {
 // Through the real spawn: the session settles, stays held, and is released by
 // the provider's report coming through the same path the hook's POST takes.
 func TestStartHoldsAProviderSessionUntilItsReport(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	svc.SetStartReports(func(string) bool { return true })

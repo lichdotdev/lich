@@ -17,7 +17,6 @@ import (
 // reads back is the environment the provider actually runs with — not the one
 // lich spawned the wrapper with.
 func TestSessionAccountReadsWhatTheWrapperExecsInto(t *testing.T) {
-	t.Parallel()
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "claude-work.sh")
 	script := "#!/bin/sh\nexport CLAUDE_CONFIG_DIR=" + dir + "\nexec sleep 30\n"

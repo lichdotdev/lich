@@ -15,7 +15,6 @@ import (
 // argv ahead of --mcp-config, and that a resume carries it too: Claude Code
 // forgets ultracode on --resume, unlike the model and effort.
 func TestStartPassesUltracodeToTheProcess(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
 		name   string
 		store  stubBins
@@ -53,7 +52,6 @@ func TestStartPassesUltracodeToTheProcess(t *testing.T) {
 // spawns with it: the fork's row is a fresh insert, and Claude Code drops
 // ultracode on --resume --fork-session as on a plain resume.
 func TestStartCarriesUltracodeOntoAFork(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	store := stubBins{
 		bin:              bin,
@@ -80,7 +78,6 @@ func TestStartCarriesUltracodeOntoAFork(t *testing.T) {
 }
 
 func TestStartLeavesUltracodeOffByDefault(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })

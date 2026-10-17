@@ -569,7 +569,6 @@ func spawnedArgs(t *testing.T, svc *Service, id string) []string {
 // TestStartPassesResumeToTheProcess proves the resume id reaches the spawned
 // binary's argv — the wiring resumeArgs' unit test cannot see.
 func TestStartPassesResumeToTheProcess(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -593,7 +592,6 @@ func TestStartPassesResumeToTheProcess(t *testing.T) {
 // parent's id — and that the fork is *named*, which is the one place a spawn
 // carrying a resume id still gets --name (nameArgs).
 func TestStartForksIntoItsOwnConversation(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -619,7 +617,6 @@ func TestStartForksIntoItsOwnConversation(t *testing.T) {
 // otherwise reopen the parent's own conversation under a second card, which
 // is the one outcome a fork promises against. Nothing is spawned.
 func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -640,7 +637,6 @@ func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
 // it is not a fork — without one resumeArgs would start fresh and the card
 // would claim a conversation it never copied.
 func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -656,7 +652,6 @@ func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
 // TestStartWithoutResumeSpawnsBare proves a session with no id to resume spawns
 // the binary alone, with no dangling flag.
 func TestStartWithoutResumeSpawnsBare(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -681,7 +676,6 @@ func TestStartWithoutResumeSpawnsBare(t *testing.T) {
 // goes through spawnPins, which drops the briefing before comparing — so
 // nothing else here would notice it being lost between the two.
 func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -707,7 +701,6 @@ func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
 // through sh -c with the project's script ahead of the exec'd provider — the
 // wiring wrapSetup's unit test cannot see.
 func TestStartWithSetupWrapsTheSpawn(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, projectPath: projectWithSetup(t, "echo setup-ran")}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -733,7 +726,6 @@ func TestStartWithSetupWrapsTheSpawn(t *testing.T) {
 // TestStartWithSetupButNoScriptSpawnsBare proves the flag is inert for a
 // project with no setup script configured — no sh indirection sneaks in.
 func TestStartWithSetupButNoScriptSpawnsBare(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1015,7 +1007,6 @@ func TestSkipPermissionArgs(t *testing.T) {
 // see, and the one that decides whether a user who ticked the box actually gets
 // an agent that stops asking.
 func TestStartPassesSkipPermissionsToTheProcess(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, skipPerms: true}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1205,7 +1196,6 @@ func TestSupportsEffort(t *testing.T) {
 // TestStartPassesTheStoredEffortToTheProcess proves the effort on the row reaches
 // argv, read from the store like the model so a respawn keeps it.
 func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, model: "opus", effort: "high"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1226,7 +1216,6 @@ func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
 // passed to Start precisely so it survives a respawn, and this is the wiring
 // that carries it there.
 func TestStartPassesTheStoredModelToTheProcess(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, model: "opus"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1763,7 +1752,6 @@ func TestResizeRecordsTheWindowsSize(t *testing.T) {
 // TestStartWithoutASizeCopiesTheWindow drives the whole path: a card the window
 // measured, then a session opened with no terminal of its own.
 func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })
@@ -1787,7 +1775,6 @@ func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
 // the project's setup script is live but has nothing on the other end that can
 // read a message, until the wrapper's marker comes through its own output.
 func TestReadyWaitsForTheSetupScript(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, projectPath: projectWithSetup(t, "echo installing")}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1916,7 +1903,6 @@ func TestReadyRemembersAQuietThatAlreadyPassed(t *testing.T) {
 }
 
 func TestReadyWaitsOnlyTheSettleWithoutASetupScript(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1979,7 +1965,6 @@ func TestSetEnvMovesTheSpawnBase(t *testing.T) {
 // TestLiveCountCountsTheSessionsWithAProcess is what the tray reads: a session
 // counts while its process runs and stops counting once it is closed.
 func TestLiveCountCountsTheSessionsWithAProcess(t *testing.T) {
-	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })

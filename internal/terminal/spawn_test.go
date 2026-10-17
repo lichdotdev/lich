@@ -130,7 +130,6 @@ func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
 // the effective directory is what the card shows and what the cwd poller
 // degrades back to.
 func TestASpawnWithNoDirectoryStartsAtHome(t *testing.T) {
-	t.Parallel()
 	svc := New(stubBins{bin: stayAliveBin(t)}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 

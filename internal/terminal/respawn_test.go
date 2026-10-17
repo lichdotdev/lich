@@ -59,7 +59,6 @@ func respawn(t *testing.T, svc *Service, id string) *session {
 // so one landing on a session respawned under the same id lies about a live
 // shell.
 func TestRespawnedSessionIsNotToldItExited(t *testing.T) {
-	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{bin: echoBin(t)}, nil, hub)
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -79,7 +78,6 @@ func TestRespawnedSessionIsNotToldItExited(t *testing.T) {
 // evicts only its own PTY, so after Close+Start under one id that id still
 // resolves to the new PTY and input still reaches it.
 func TestRespawnedSessionKeepsItsPTY(t *testing.T) {
-	t.Parallel()
 	svc := New(stubBins{bin: echoBin(t)}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
@@ -107,7 +105,6 @@ func TestRespawnedSessionKeepsItsPTY(t *testing.T) {
 // The card reads it as the reason the session ended, and only a real spawn shows
 // whether the number survives the trip.
 func TestExitEventCarriesTheExitCode(t *testing.T) {
-	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{bin: exitBin(t, 3)}, nil, hub)
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -136,7 +133,6 @@ func TestExitEventCarriesTheExitCode(t *testing.T) {
 // the path that produces it: a child killed by a signal left no exit status, so
 // the event has to say nothing rather than report the 0 of a clean exit.
 func TestExitEventOmitsAnUnobservedStatus(t *testing.T) {
-	t.Parallel()
 	hub, rec := newProbeHub(t)
 	// echoBin execs cat, so the pid below is the process holding the PTY —
 	// a script that forked one would leave the slave open and never reach EOF.
@@ -195,7 +191,6 @@ func replayOf(t *testing.T, svc *Service, id string) string {
 // under it, takes the turn with it: the count that keeps the machine awake
 // must fall on the reap, not wait for someone to close the card.
 func TestReapForgetsOpenTurn(t *testing.T) {
-	t.Parallel()
 	svc := New(stubBins{bin: echoBin(t)}, nil, events.New())
 	var open atomic.Int64
 	svc.turns.onOpen = func(n int) { open.Store(int64(n)) }
