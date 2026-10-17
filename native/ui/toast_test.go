@@ -184,6 +184,7 @@ type toasterRig struct {
 	router input.Router
 	now    time.Time
 	size   image.Point
+	pos    ToastPosition
 }
 
 func newToasterRig(t *testing.T) *toasterRig {
@@ -197,7 +198,9 @@ func (r *toasterRig) frame() {
 		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
 		Constraints: layout.Exact(r.size),
 	}
-	testTheme().Toaster(&r.state, false).Layout(gtx)
+	toaster := testTheme().Toaster(&r.state, false)
+	toaster.Position = r.pos
+	toaster.Layout(gtx)
 	r.router.Frame(ops)
 }
 
@@ -212,9 +215,85 @@ func (r *toasterRig) pointer(kind pointer.Kind, at f32.Point) {
 	r.router.Queue(pointer.Event{Kind: kind, Source: pointer.Mouse, Position: at, Buttons: buttons})
 }
 
-// onFront is a point in the front toast's box, top-right corner.
+// onFront is a point in the front toast's box, 20dp in from the window side
+// and 10dp in from the window edge of the rig's corner.
 func (r *toasterRig) onFront() f32.Point {
-	return f32.Pt(float32(r.size.X-int(toastOffsetRight)-20), float32(toastOffsetTop)+10)
+	at := f32.Pt(float32(r.size.X-int(toastOffsetSide)-20), float32(toastOffsetTop)+10)
+	if r.pos.left() {
+		at.X = float32(toastOffsetSide) + 20
+	}
+	if r.pos.bottom() {
+		at.Y = float32(r.size.Y-int(toastOffsetBottom)) - 10
+	}
+	return at
+}
+
+// toward is a d dp step toward the rig's own side of the window.
+func (r *toasterRig) toward(d float32) f32.Point {
+	if r.pos.left() {
+		return f32.Pt(-d, 0)
+	}
+	return f32.Pt(d, 0)
+}
+
+var everyToastPosition = map[string]ToastPosition{
+	"top-right": ToastTopRight, "top-left": ToastTopLeft,
+	"bottom-right": ToastBottomRight, "bottom-left": ToastBottomLeft,
+}
+
+func TestToasterSitsInItsCorner(t *testing.T) {
+	for name, pos := range everyToastPosition {
+		t.Run(name, func(t *testing.T) {
+			r := newToasterRig(t)
+			r.pos = pos
+			r.state.Show(Toast{ID: "x", Title: "hello", Duration: ToastForever})
+			r.settle()
+			r.pointer(pointer.Move, r.onFront())
+			r.frame()
+			if !r.state.hovered {
+				t.Fatalf("a point in the %s corner is not on the toast", name)
+			}
+			r.pointer(pointer.Move, f32.Pt(float32(r.size.X)/2, float32(r.size.Y)/2))
+			r.frame()
+			if r.state.hovered {
+				t.Fatal("the middle of the window is on the toast")
+			}
+		})
+	}
+}
+
+func TestToasterSwipesOutTowardItsOwnSide(t *testing.T) {
+	for name, pos := range everyToastPosition {
+		t.Run(name, func(t *testing.T) {
+			r := newToasterRig(t)
+			r.pos = pos
+			r.state.Show(Toast{ID: "x", Title: "hello", Duration: ToastForever})
+			r.settle()
+			at := r.onFront().Sub(r.toward(100))
+			r.pointer(pointer.Press, at)
+			r.frame()
+			r.now = r.now.Add(time.Second)
+			r.pointer(pointer.Drag, at.Add(r.toward(60)))
+			r.frame()
+			r.pointer(pointer.Release, at.Add(r.toward(60)))
+			r.frame()
+			if r.live("x") {
+				t.Fatalf("a slow 60dp swipe toward the %s side left it up", name)
+			}
+		})
+	}
+}
+
+func TestToastPullAwayFromItsEdgeIsDampened(t *testing.T) {
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	pulls := map[ToastPosition]float32{ToastTopRight: 40, ToastBottomRight: -40}
+	for pos, delta := range pulls {
+		var d toastDrag
+		d.follow(gtx, f32.Pt(0, delta), pos)
+		if d.amount.Y != delta/3.5 {
+			t.Errorf("pull of %v at %v = %v, want it dampened to %v", delta, pos, d.amount.Y, delta/3.5)
+		}
+	}
 }
 
 // settle lays out a frame once the enter animation is over, so the areas
@@ -295,7 +374,7 @@ func TestToasterActionRunsItsHandlerAndDismisses(t *testing.T) {
 	button := e.view.actionAt.Add(e.view.bodyAt)
 	origin := e.view.place.Transform(f32.Point{})
 	r.state.mu.Unlock()
-	base := f32.Pt(float32(r.size.X-int(toastOffsetRight)-int(toastWidth)), float32(toastOffsetTop)).Add(origin)
+	base := f32.Pt(float32(r.size.X-int(toastOffsetSide)-int(toastWidth)), float32(toastOffsetTop)).Add(origin)
 	center := base.Add(f32.Pt(float32(button.Min.X+button.Dx()/2), float32(button.Min.Y+button.Dy()/2)))
 	r.pointer(pointer.Press, center)
 	r.pointer(pointer.Release, center)
@@ -323,7 +402,7 @@ func TestToasterSecondaryRunsItsOwnHandlerBetweenCancelAndAction(t *testing.T) {
 	if !(cancel.Max.X <= secondary.Min.X && secondary.Max.X <= action.Min.X) {
 		t.Fatalf("cancel %v, secondary %v, action %v: want them left to right", cancel, secondary, action)
 	}
-	base := f32.Pt(float32(r.size.X-int(toastOffsetRight)-int(toastWidth)), float32(toastOffsetTop)).Add(origin)
+	base := f32.Pt(float32(r.size.X-int(toastOffsetSide)-int(toastWidth)), float32(toastOffsetTop)).Add(origin)
 	center := base.Add(f32.Pt(float32(at.Min.X+at.Dx()/2), float32(at.Min.Y+at.Dy()/2)))
 	r.pointer(pointer.Press, center)
 	r.pointer(pointer.Release, center)

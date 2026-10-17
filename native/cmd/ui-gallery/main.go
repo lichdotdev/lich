@@ -40,6 +40,9 @@ const pagePad unit.Dp = 24
 
 func main() {
 	flag.Parse()
+	if _, ok := toastPositions[*flagToastsAt]; !ok {
+		log.Fatalf("-toasts-at %q: want top-right, top-left, bottom-right or bottom-left", *flagToastsAt)
+	}
 	go func() {
 		w := new(app.Window)
 		w.Option(app.Title("lich ui gallery"), app.Size(unit.Dp(1400), unit.Dp(900)))
@@ -183,6 +186,7 @@ func (g *gallery) layout(gtx C) D {
 		g.layoutDialog(gtx)
 		toaster := g.th.Toaster(&g.toaster, false)
 		toaster.Expand = *flagToastsExpanded
+		toaster.Position = toastPositions[*flagToastsAt]
 		toaster.Layout(gtx)
 		return g.th.ScrollArea(&g.page).Layout(gtx, 1, func(gtx C, _ int) D {
 			return layout.UniformInset(pagePad).Layout(gtx, g.content)

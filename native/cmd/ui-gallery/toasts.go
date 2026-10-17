@@ -13,7 +13,13 @@ import (
 var (
 	flagToasts         = flag.Bool("toasts", false, "raise the demo toasts at start, for -shot")
 	flagToastsExpanded = flag.Bool("toasts-expanded", false, "draw the toast stack expanded, as a hover would, for -shot")
+	flagToastsAt       = flag.String("toasts-at", "top-right", "the corner the toasts stack in: top-right, top-left, bottom-right or bottom-left")
 )
+
+var toastPositions = map[string]ui.ToastPosition{
+	"top-right": ui.ToastTopRight, "top-left": ui.ToastTopLeft,
+	"bottom-right": ui.ToastBottomRight, "bottom-left": ui.ToastBottomLeft,
+}
 
 // toastDemoCount is len(toastDemos), which an array length cannot read.
 const toastDemoCount = 9

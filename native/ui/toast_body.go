@@ -139,14 +139,17 @@ func (s ToasterStyle) place(gtx C) {
 			before += slot.own
 			live++
 		}
-		e.view.animate(gtx, targetOf(e, slot), width, inset, e.Description != "" || e.Progress != nil)
+		center, scale, y, h := e.view.animate(gtx, targetOf(e, slot), width, inset, e.Description != "" || e.Progress != nil)
+		e.view.place = s.Position.placeOf(center, scale, y, h)
 		e.view.canHit = visible(i) && !e.removed()
 	}
 }
 
-// animate runs the toast's transitions toward tg and works out its box.
-// A toast drawn for the first time enters from translateY(-100%).
-func (v *toastView) animate(gtx C, tg toastTarget, width, inset int, wrapped bool) {
+// animate runs the toast's transitions toward tg and works out its box, and
+// returns what placing it takes: its center, scale, distance from the stack's
+// edge and height. A toast drawn for the first time enters from
+// translateY(-100%).
+func (v *toastView) animate(gtx C, tg toastTarget, width, inset int, wrapped bool) (center f32.Point, scale, y, h float32) {
 	if !v.seeded {
 		v.seeded = true
 		v.y.seed(-tg.height)
@@ -155,9 +158,9 @@ func (v *toastView) animate(gtx C, tg toastTarget, width, inset int, wrapped boo
 		v.height.seed(tg.height)
 		v.content.seed(tg.inside)
 	}
-	y := v.y.at(gtx, tg.y, tg.move, ease)
-	scale := v.scale.at(gtx, tg.scale, tg.move, ease)
-	h := v.height.at(gtx, tg.height, toastTransition, ease)
+	y = v.y.at(gtx, tg.y, tg.move, ease)
+	scale = v.scale.at(gtx, tg.scale, tg.move, ease)
+	h = v.height.at(gtx, tg.height, toastTransition, ease)
 	v.alpha = v.opacity.at(gtx, tg.alpha, tg.fade, ease)
 	v.inside = v.content.at(gtx, tg.inside, toastTransition, ease)
 	if v.drag.active {
@@ -173,8 +176,7 @@ func (v *toastView) animate(gtx C, tg toastTarget, width, inset int, wrapped boo
 	if !wrapped {
 		v.bodyAt.Y = (v.boxSize.Y - v.bodySize.Y) / 2
 	}
-	center := f32.Pt(float32(width)/2, h/2)
-	v.place = f32.Affine2D{}.Scale(center, f32.Pt(scale, scale)).Offset(f32.Pt(0, y))
+	return f32.Pt(float32(width)/2, h/2), scale, y, h
 }
 
 // measure records the toast's content at the inner width.

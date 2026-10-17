@@ -37,9 +37,51 @@ const (
 )
 
 var (
-	toastOffsetTop   = Space(12) // sonner.tsx offset top 3rem, below the topbar
-	toastOffsetRight = Space(4)  // right 1rem
+	toastOffsetTop  = Space(12) // sonner.tsx offset top 3rem, below the topbar
+	toastOffsetSide = Space(4)  // right 1rem, and left by the same
+	// toastOffsetBottom mirrors the top: clear of the footer bar as the top
+	// one is of the topbar.
+	toastOffsetBottom = Space(12)
 )
+
+// ToastPosition is sonner's position prop: the corner a Toaster stacks in.
+// The zero value is top-right, sonner's own default.
+type ToastPosition int
+
+const (
+	ToastTopRight ToastPosition = iota
+	ToastTopLeft
+	ToastBottomRight
+	ToastBottomLeft
+)
+
+func (p ToastPosition) bottom() bool { return p == ToastBottomRight || p == ToastBottomLeft }
+func (p ToastPosition) left() bool   { return p == ToastTopLeft || p == ToastBottomLeft }
+
+// anchor is the top-left of the column the stack is laid out in, in a window
+// of size max: a bottom stack's column starts at its bottom edge and grows up
+// (placeOf).
+func (p ToastPosition) anchor(gtx C, max image.Point) image.Point {
+	at := image.Pt(max.X-gtx.Dp(toastOffsetSide)-gtx.Dp(toastWidth), gtx.Dp(toastOffsetTop))
+	if p.left() {
+		at.X = gtx.Dp(toastOffsetSide)
+	}
+	if p.bottom() {
+		at.Y = max.Y - gtx.Dp(toastOffsetBottom)
+	}
+	return at
+}
+
+// placeOf is where a toast of height h sits y away from the stack's edge,
+// scaled about its center: below the edge for a top stack, above it for a
+// bottom one, so entering from y = -h comes in from outside the window on
+// either side.
+func (p ToastPosition) placeOf(center f32.Point, scale, y, h float32) f32.Affine2D {
+	if p.bottom() {
+		y = -y - h
+	}
+	return f32.Affine2D{}.Scale(center, f32.Pt(scale, scale)).Offset(f32.Pt(0, y))
+}
 
 const (
 	toastTransition = 400 * time.Millisecond // transform, opacity, height .4s
@@ -87,9 +129,11 @@ type toastDrag struct {
 	amount f32.Point
 }
 
-// ToasterStyle draws a Toaster in the top-right corner, above everything.
+// ToasterStyle draws a Toaster in the corner Position names, above
+// everything.
 type ToasterStyle struct {
-	State *Toaster
+	State    *Toaster
+	Position ToastPosition
 	// Light is the scheme sonner's theme prop follows: the description and
 	// cancel colors are sonner's own, not the popover tokens.
 	Light bool
@@ -131,8 +175,7 @@ func (s ToasterStyle) frame(gtx C) []func() {
 	}
 	s.place(gtx)
 	macro := op.Record(gtx.Ops)
-	at := image.Pt(gtx.Constraints.Max.X-gtx.Dp(toastOffsetRight)-gtx.Dp(toastWidth), gtx.Dp(toastOffsetTop))
-	off := op.Offset(at).Push(gtx.Ops)
+	off := op.Offset(s.Position.anchor(gtx, gtx.Constraints.Max)).Push(gtx.Ops)
 	entries := t.stack.entries
 	for i := len(entries) - 1; i >= 0; i-- {
 		s.paint(gtx, entries[i])
@@ -213,7 +256,7 @@ func (s ToasterStyle) readDrag(gtx C, e *toastEntry) {
 			}
 		case pointer.Drag:
 			if d.active {
-				d.follow(gtx, p.Position.Sub(d.start))
+				d.follow(gtx, p.Position.Sub(d.start), s.Position)
 			}
 		case pointer.Release:
 			if d.active {
@@ -240,9 +283,9 @@ func (v *toastView) onButton(p f32.Point) bool {
 }
 
 // follow is sonner's onPointerMove: the first move past a pixel locks the
-// axis, and a pull the way top-right toasts do not leave (left, down) is
-// dampened.
-func (d *toastDrag) follow(gtx C, delta f32.Point) {
+// axis, and a pull the way toasts at pos do not leave is dampened. They leave
+// toward their own side and their own edge (sonner's default swipeDirections).
+func (d *toastDrag) follow(gtx C, delta f32.Point, pos ToastPosition) {
 	if d.axis == 0 && (abs32(delta.X) > 1 || abs32(delta.Y) > 1) {
 		d.axis = 'y'
 		if abs32(delta.X) > abs32(delta.Y) {
@@ -253,9 +296,9 @@ func (d *toastDrag) follow(gtx C, delta f32.Point) {
 	d.amount = f32.Point{}
 	switch d.axis {
 	case 'x':
-		d.amount.X = swipeAmount(delta.X/perDp, delta.X > 0) * perDp
+		d.amount.X = swipeAmount(delta.X/perDp, (delta.X > 0) != pos.left()) * perDp
 	case 'y':
-		d.amount.Y = swipeAmount(delta.Y/perDp, delta.Y < 0) * perDp
+		d.amount.Y = swipeAmount(delta.Y/perDp, (delta.Y < 0) != pos.bottom()) * perDp
 	}
 }
 
