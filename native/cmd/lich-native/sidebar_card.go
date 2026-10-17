@@ -252,7 +252,7 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	size := gtx.Dp(22)
-	stroke := float32(gtx.Dp(1.5))
+	stroke := float32(gtx.Dp(1.25))
 	center := f32.Pt(float32(size)/2, float32(size)/2)
 	radius := float32(size)/2 - stroke/2
 	switch sv.status {

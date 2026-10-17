@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   have none: there they keep the login in the Keychain or in a folder no
   setting can move, so every profile would share one account.
 
+### Changed
+
+- **A lighter status ring in the native window.** The ring around a
+  session card's icon is drawn thinner, to read at the weight the web
+  window gives it.
+
 ### Fixed
 
 - **A reopened native window knows where each session went.** A session
