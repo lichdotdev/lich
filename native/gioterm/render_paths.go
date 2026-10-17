@@ -3,10 +3,8 @@ package gioterm
 import (
 	"fmt"
 	"image"
-	"os"
 
 	"gioui.org/font"
-	"gioui.org/font/opentype"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -50,15 +48,11 @@ func loadFamily(family string) ([]font.FontFace, error) {
 		if err != nil {
 			return nil, err
 		}
-		data, err := os.ReadFile(loc.Path)
+		parsed, err := fonts.ParseFace(loc)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("load %s: %w", family, err)
 		}
-		parsed, err := opentype.ParseCollection(data)
-		if err != nil {
-			return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
-		}
-		faces = append(faces, parsed...)
+		faces = append(faces, parsed)
 	}
 	return faces, nil
 }

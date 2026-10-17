@@ -1,6 +1,10 @@
 package fonts
 
-import "testing"
+import (
+	"testing"
+
+	"gioui.org/font"
+)
 
 func TestFacesCoverEveryWeightTheWindowDraws(t *testing.T) {
 	faces, err := Faces()
@@ -38,5 +42,26 @@ func TestEveryLanguageButJapaneseAndKoreanDrawsSimplifiedChinese(t *testing.T) {
 		if got := cjkOf(language); got != want {
 			t.Errorf("cjkOf(%q) = %d, want %d", language, got, want)
 		}
+	}
+}
+
+func TestParseFaceReadsTheFaceLocated(t *testing.T) {
+	loc, err := Locate(font.Font{Typeface: SystemMono})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := ParseFace(loc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Font.Typeface == "" {
+		t.Errorf("%+v names no family", loc)
+	}
+	if _, ok := got.Face.Face().NominalGlyph('M'); !ok {
+		t.Errorf("%+v does not draw M", loc)
+	}
+	loc.Index = 64
+	if _, err := ParseFace(loc); err == nil {
+		t.Errorf("face index 64 of %s was read", loc.Path)
 	}
 }

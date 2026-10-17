@@ -6,12 +6,15 @@
 package fonts
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"os"
 
 	"gioui.org/font"
 	"gioui.org/font/opentype"
+	gotext "github.com/go-text/typesetting/font"
+	ot "github.com/go-text/typesetting/font/opentype"
 )
 
 // Sans is the typeface the faces are registered under.
@@ -75,18 +78,40 @@ func Load(family string) ([]font.FontFace, error) {
 		if err != nil {
 			return nil, err
 		}
-		data, err := os.ReadFile(loc.Path)
+		parsed, err := ParseFace(loc)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("load %s: %w", family, err)
 		}
-		parsed, err := opentype.ParseCollection(data)
-		if err != nil {
-			return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
-		}
-		if loc.Index < 0 || loc.Index >= len(parsed) {
-			return nil, fmt.Errorf("locate %s: face index %d is not one of the %d in %s", family, loc.Index, len(parsed), loc.Path)
-		}
-		faces = append(faces, font.FontFace{Font: want, Face: parsed[loc.Index].Face})
+		faces = append(faces, font.FontFace{Font: want, Face: parsed.Face})
 	}
 	return faces, nil
 }
+
+// ParseFace parses the one face loc names, under the family and style the face
+// gives itself. Only that face: a collection holds several (a CJK one about
+// ten), and opentype.ParseCollection parses them all, hundreds of megabytes
+// allocated to keep one.
+func ParseFace(loc Location) (font.FontFace, error) {
+	data, err := os.ReadFile(loc.Path)
+	if err != nil {
+		return font.FontFace{}, err
+	}
+	loaders, err := ot.NewLoaders(bytes.NewReader(data))
+	if err != nil {
+		return font.FontFace{}, fmt.Errorf("parse %s: %w", loc.Path, err)
+	}
+	if loc.Index < 0 || loc.Index >= len(loaders) {
+		return font.FontFace{}, fmt.Errorf("face index %d is not one of the %d in %s", loc.Index, len(loaders), loc.Path)
+	}
+	parsed, err := gotext.NewFont(loaders[loc.Index])
+	if err != nil {
+		return font.FontFace{}, fmt.Errorf("parse %s: %w", loc.Path, err)
+	}
+	return font.FontFace{Font: opentype.DescriptionToFont(parsed.Describe()), Face: collectionFace{parsed}}, nil
+}
+
+// collectionFace is a font.Face over one parsed face of a collection; like
+// Gio's own opentype.Face, each call hands a shaper a face of its own.
+type collectionFace struct{ font *gotext.Font }
+
+func (f collectionFace) Face() *gotext.Face { return gotext.NewFace(f.font) }
