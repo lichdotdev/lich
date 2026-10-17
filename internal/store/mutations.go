@@ -264,28 +264,26 @@ func (s *Service) SessionBranch(sessionID string) string {
 	return s.branchOf(path)
 }
 
-// ForgetSession deletes one parked session for good. It is the way out for the
-// row whose checkout was removed behind lich's back: nothing can resume it, and
-// PurgeWorktreeSessions never ran for it because the removal never went through
-// the app.
+// ForgetSession deletes one parked session for good, with every other parked
+// copy of its conversation: the history lists a conversation once
+// (ClosedSessions), so a copy left behind would take the forgotten row's place.
+// It is the way out for the row whose checkout was removed behind lich's back:
+// nothing can resume it, and PurgeWorktreeSessions never ran for it because the
+// removal never went through the app.
 //
 // is_open = 0 is the whole guard: a session on screen is closed, never
 // forgotten, so an id belonging to a live card matches nothing here. A row that
-// was already gone is not an error, and only a delete that actually removed one
-// reports the session gone.
+// was already gone is not an error, and only the rows a delete actually removed
+// are reported gone.
 func (s *Service) ForgetSession(sessionID string) error {
-	s.noteForfeitedSchedules(`id = ? AND is_open = 0`, sessionID)
-	res, err := s.db.Exec(`DELETE FROM sessions WHERE id = ? AND is_open = 0`, sessionID)
-	if err != nil {
+	const parkedCopies = `is_open = 0 AND (id = ? OR (provider_session_id <> '' AND provider_session_id =
+		(SELECT provider_session_id FROM sessions WHERE id = ? AND is_open = 0)))`
+	s.noteForfeitedSchedules(parkedCopies, sessionID, sessionID)
+	gone := s.sessionIDsWhere(parkedCopies, sessionID, sessionID)
+	if _, err := s.db.Exec(`DELETE FROM sessions WHERE `+parkedCopies, sessionID, sessionID); err != nil {
 		return fmt.Errorf("forget session %q: %w", sessionID, err)
 	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("forget session %q rows: %w", sessionID, err)
-	}
-	if n > 0 {
-		s.sessionIsGone(sessionID)
-	}
+	s.sessionIsGone(gone...)
 	return nil
 }
 
@@ -325,8 +323,14 @@ func (s *Service) ReopenSession(sessionID, newSessionID string) (*Session, error
 // The fresh id is deliberate: it makes the frontend treat the card as
 // never-spawned, so its resume prompt fires and the provider conversation
 // continues instead of starting cold.
+//
+// A parked row whose conversation an open session already runs is left parked,
+// and that open session is returned instead: the caller finds the id already
+// on screen and focuses it, where a second card would write into the same
+// transcript as the first.
 func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, error) {
 	var restored *Session
+	var holderProject, holderID string
 	err := s.tx(func(tx *sql.Tx) error {
 		var old Session
 		// label_auto rides along so a user rename survives the park/resume
@@ -374,6 +378,18 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 				return nil // nothing parked; caller creates a new session
 			}
 			return fmt.Errorf("find parked session: %w", err)
+		}
+		if old.ProviderSessionID != "" {
+			err := tx.QueryRow(
+				`SELECT project_id, id FROM sessions WHERE provider_session_id = ? AND is_open = 1 LIMIT 1`,
+				old.ProviderSessionID,
+			).Scan(&holderProject, &holderID)
+			if err == nil {
+				return nil
+			}
+			if !errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("find the session holding %q: %w", old.ProviderSessionID, err)
+			}
 		}
 		// The cost ledgers are read out before the row goes, because deleting it
 		// cascades them away — and a resumed session that forgot what it spent
@@ -445,7 +461,24 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 	if err != nil {
 		return nil, err
 	}
+	if holderID != "" {
+		return s.openSession(holderProject, holderID)
+	}
 	return restored, nil
+}
+
+// openSession is the open session id of projectID, as LoadState reads it.
+func (s *Service) openSession(projectID, id string) (*Session, error) {
+	sessions, err := s.sessionsOf(projectID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range sessions {
+		if sessions[i].ID == id {
+			return &sessions[i], nil
+		}
+	}
+	return nil, fmt.Errorf("session %q is no longer open", id)
 }
 
 // PurgeWorktreeSessions deletes every session row for the worktree at path in a
@@ -461,7 +494,7 @@ func (s *Service) PurgeWorktreeSessions(projectID, path string) error {
 	s.noteForfeitedSchedules(`project_id = ? AND path = ?`, projectID, path)
 	// Read before the delete, because what hangs off a session outside the
 	// database is keyed by id and the rows are about to be gone.
-	gone := s.sessionIDsAt(projectID, path)
+	gone := s.sessionIDsWhere(`project_id = ? AND path = ?`, projectID, path)
 	if _, err := s.db.Exec(
 		`DELETE FROM sessions WHERE project_id = ? AND path = ?`, projectID, path,
 	); err != nil {
@@ -471,19 +504,17 @@ func (s *Service) PurgeWorktreeSessions(projectID, path string) error {
 	return nil
 }
 
-// sessionIDsAt lists the sessions of a project living at path — the live one
-// and any parked leftovers alike. Only asked when something is listening for
-// deleted sessions, so a store without that wiring runs the query it always
-// ran. A failed read costs the cleanup, never the delete.
-func (s *Service) sessionIDsAt(projectID, path string) []string {
+// sessionIDsWhere lists the sessions a delete with the same WHERE is about to
+// remove. Only asked when something is listening for deleted sessions, so a
+// store without that wiring runs the query it always ran. A failed read costs
+// the cleanup, never the delete.
+func (s *Service) sessionIDsWhere(where string, args ...any) []string {
 	if s.sessionGone == nil {
 		return nil
 	}
-	rows, err := s.db.Query(
-		`SELECT id FROM sessions WHERE project_id = ? AND path = ?`, projectID, path,
-	)
+	rows, err := s.db.Query(`SELECT id FROM sessions WHERE `+where, args...)
 	if err != nil {
-		slog.Warn("list worktree sessions", "path", path, "err", err)
+		slog.Warn("list sessions to delete", "err", err)
 		return nil
 	}
 	defer rows.Close()
@@ -491,7 +522,7 @@ func (s *Service) sessionIDsAt(projectID, path string) []string {
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
-			slog.Warn("scan worktree session id", "path", path, "err", err)
+			slog.Warn("scan session id to delete", "err", err)
 			return ids
 		}
 		ids = append(ids, id)

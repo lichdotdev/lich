@@ -27,7 +27,8 @@ func (u *window) closedToast(projectID string, s lichclient.Session, index int, 
 // store can sit on a lock for seconds, and a reopen that overtook it would
 // find the row still open and do nothing. The row comes back under a fresh
 // id, unspawned, so the spawn gate offers the conversation's resume as for
-// any restored card.
+// any restored card; when another open card already runs that conversation,
+// the store hands that card back instead and the undo only focuses it.
 func (u *window) undoClose(projectID string, s lichclient.Session, index int, parked <-chan error) {
 	if err := <-parked; err != nil {
 		return // closeSession logged it; there is no parked row to bring back

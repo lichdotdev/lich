@@ -620,3 +620,59 @@ func TestClosedSessionsMatch(t *testing.T) {
 		})
 	}
 }
+
+// TestClosedSessionsListsAConversationOnce: copies of one conversation (a
+// `/resume` typed into another card, then both closed) are one entry to
+// resume, the newest park, and a conversation still running in a card is not
+// history at all: reopening it only focuses that card. A row with no
+// conversation is listed on its own, as it always was.
+func TestClosedSessionsListsAConversationOnce(t *testing.T) {
+	svc := newTestStore(t)
+	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
+	park(t, svc, "older", "older copy", 100)
+	park(t, svc, "newer", "newer copy", 200)
+	park(t, svc, "shell", "a shell", 300)
+	park(t, svc, "copy", "copy of the open one", 400)
+	_ = svc.SetProviderSession("older", "conv-parked")
+	_ = svc.SetProviderSession("newer", "conv-parked")
+	_ = svc.SetProviderSession("copy", "conv-open")
+	_ = svc.SetProviderSession("keep", "conv-open")
+
+	var ids []string
+	for _, c := range mustClosed(t, svc, "") {
+		ids = append(ids, c.ID)
+	}
+	if !slices.Equal(ids, []string{"shell", "newer"}) {
+		t.Errorf("history = %v, want [shell newer]", ids)
+	}
+}
+
+// TestForgetSessionForgetsEveryCopyOfItsConversation: the history shows one
+// row per conversation, so forgetting that row forgets the conversation; a
+// copy left behind would take its place in the list the moment it was gone.
+func TestForgetSessionForgetsEveryCopyOfItsConversation(t *testing.T) {
+	svc := newTestStore(t)
+	var gone []string
+	svc.SetSessionGone(func(id string) { gone = append(gone, id) })
+	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
+	park(t, svc, "older", "older copy", 100)
+	park(t, svc, "newer", "newer copy", 200)
+	park(t, svc, "other", "another conversation", 300)
+	_ = svc.SetProviderSession("older", "conv-parked")
+	_ = svc.SetProviderSession("newer", "conv-parked")
+	_ = svc.SetProviderSession("other", "conv-other")
+
+	if err := svc.ForgetSession("newer"); err != nil {
+		t.Fatalf("ForgetSession: %v", err)
+	}
+	closed := mustClosed(t, svc, "")
+	if len(closed) != 1 || closed[0].ID != "other" {
+		t.Errorf("closed = %+v, want only the other conversation left", closed)
+	}
+	slices.Sort(gone)
+	if !slices.Equal(gone, []string{"newer", "older"}) {
+		t.Errorf("reported gone = %v, want both copies", gone)
+	}
+}
