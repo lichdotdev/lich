@@ -83,6 +83,7 @@ func (s *Service) Start(
 	if err != nil {
 		return err
 	}
+	inheritClaudeTrust(kind, cwd, profileDir)
 	awaits := s.awaitsStart(kind, profileDir)
 	sess, cwd, err := s.spawnSession(id, projectID, cwd, kind, resume, profileDir, name, fork, setup, cols, rows)
 	if err != nil || sess == nil {

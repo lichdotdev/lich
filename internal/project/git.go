@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -114,6 +115,25 @@ func GitCommonDir(dir string) string {
 		return ""
 	}
 	return strings.TrimSpace(out)
+}
+
+// CheckoutRoots returns the top of the checkout dir is in and the top of the
+// main checkout of its repository: the same directory for a checkout that is
+// not a linked worktree, and origin "" for a worktree of a bare repository,
+// which has no main checkout. Both are "" when dir is not in a work tree.
+func CheckoutRoots(dir string) (top, origin string) {
+	out, ok := gitQuiet(dir, "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir")
+	if !ok {
+		return "", ""
+	}
+	lines := splitLines(out)
+	if len(lines) != 2 {
+		return "", ""
+	}
+	if common := lines[1]; filepath.Base(common) == ".git" {
+		origin = filepath.Dir(common)
+	}
+	return lines[0], origin
 }
 
 // splitNUL splits the -z output of a git list command into its entries. git

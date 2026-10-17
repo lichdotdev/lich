@@ -313,3 +313,26 @@ func TestWrapSandboxSkipsNoLinksWhenUnconfined(t *testing.T) {
 		t.Errorf("an unconfined spawn reported skipped links %v", links)
 	}
 }
+
+// TestWrapSandboxSkipsClaudesTrustQuestion: a confined Claude Code session is
+// told it is sandboxed, which is what makes it skip the "trust this folder?"
+// question a session lich opened unattended would otherwise stop on. Another
+// provider is told nothing it would not understand.
+func TestWrapSandboxSkipsClaudesTrustQuestion(t *testing.T) {
+	if !sandbox.Available() {
+		t.Skip("no sandbox backend on this machine")
+	}
+	sandboxed := "CLAUDE_CODE_SANDBOXED=1"
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", true, sandboxCreds{})
+	if !slices.Contains(got.env, sandboxed) {
+		t.Errorf("confined Claude Code env lacks %s: %v", sandboxed, got.env)
+	}
+	got, _ = wrapSandbox(baseSpec(), providers.Codex, t.TempDir(), "", "", true, sandboxCreds{})
+	if slices.Contains(got.env, sandboxed) {
+		t.Errorf("confined Codex env carries %s", sandboxed)
+	}
+	got, _ = wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", false, sandboxCreds{})
+	if slices.Contains(got.env, sandboxed) {
+		t.Errorf("unconfined Claude Code env carries %s", sandboxed)
+	}
+}

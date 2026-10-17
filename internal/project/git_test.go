@@ -179,3 +179,41 @@ func TestGitCommonDirOutsideARepository(t *testing.T) {
 		t.Errorf("GitCommonDir of a missing directory = %q, want \"\"", got)
 	}
 }
+
+// TestCheckoutRootsOfARepositoryAndItsWorktree: a linked worktree names its own
+// top and the main checkout it was made from; the main checkout names itself
+// twice; a directory outside a repository names nothing.
+func TestCheckoutRootsOfARepositoryAndItsWorktree(t *testing.T) {
+	repo := initBareRepo(t)
+	commit := exec.Command("git", "-C", repo, "-c", "user.email=t@example.com", "-c", "user.name=t",
+		"commit", "--allow-empty", "-m", "first")
+	if out, err := commit.CombinedOutput(); err != nil {
+		t.Skipf("git commit unavailable: %v (%s)", err, out)
+	}
+	linked := filepath.Join(t.TempDir(), "wt")
+	if out, err := exec.Command("git", "-C", repo, "worktree", "add", "-b", "side", linked).CombinedOutput(); err != nil {
+		t.Skipf("git worktree unavailable: %v (%s)", err, out)
+	}
+	sub := filepath.Join(linked, "sub")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Resolved before comparing: the temp dir may sit behind a symlink (macOS),
+	// and git answers with the resolved path, in forward slashes on Windows.
+	same := func(got, want string) bool {
+		resolved, err := filepath.EvalSymlinks(want)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return filepath.Clean(got) == filepath.Clean(resolved)
+	}
+	if top, origin := CheckoutRoots(sub); !same(top, linked) || !same(origin, repo) {
+		t.Errorf("CheckoutRoots(worktree) = %q, %q, want %q, %q", top, origin, linked, repo)
+	}
+	if top, origin := CheckoutRoots(repo); !same(top, repo) || !same(origin, repo) {
+		t.Errorf("CheckoutRoots(main) = %q, %q, want %q twice", top, origin, repo)
+	}
+	if top, origin := CheckoutRoots(t.TempDir()); top != "" || origin != "" {
+		t.Errorf("CheckoutRoots outside a repository = %q, %q, want nothing", top, origin)
+	}
+}

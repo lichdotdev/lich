@@ -45,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Claude Code stops asking "trust this folder?" where you already
+  answered.** A folder you trusted in your main account is trusted in every
+  other Claude Code profile from its next session there, and a sandboxed
+  Claude Code session opens without the question at all. A session lich
+  opened for you no longer sits on that screen, where Enter exits.
 - **A reopened native window knows where each session went.** A session
   that had moved with `cd`, or into tmux or ssh, came back showing its
   checkout's path, branch and changes until its next `cd`; the window now

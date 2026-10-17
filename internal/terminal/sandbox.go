@@ -59,6 +59,13 @@ func wrapSandbox(
 		}
 	}
 	spec.bin, spec.args = sandbox.Wrap(sb, spec.bin, spec.args)
+	// Claude Code reads it as "every folder is trusted" and skips its trust
+	// question (measured on 2.1.302): what the question guards against, a
+	// folder's own settings running on the machine, is what the sandbox
+	// confines.
+	if kind == providers.Claude {
+		spec.env = append(spec.env, claudeSandboxedVar+"=1")
+	}
 	// The token goes in the child's environment rather than through bubblewrap's
 	// --setenv, which would write it into an argument list any process on the
 	// machine can read out of /proc.
@@ -67,6 +74,8 @@ func wrapSandbox(
 	}
 	return spec, sb.SkippedLinks
 }
+
+const claudeSandboxedVar = "CLAUDE_CODE_SANDBOXED"
 
 // sandboxCreds is what a confined session is handed to act on the network as the
 // user: the ssh agent a push authenticates through, and the GitHub token gh

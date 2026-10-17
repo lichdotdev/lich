@@ -1419,6 +1419,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
   `.claude.json` is a copy everywhere, minus the account and its caches, since Claude Code replaces it through
   a rename that would turn a link into a file anyway.
+- **A folder trusted in Personal is trusted in a Claude Code profile only from that profile's next spawn
+  into it, and only Claude Code's trust is carried** (`internal/claudeprofile/trust.go`): the copied
+  `.claude.json` freezes the trust answers at the profile's birth, so before each spawn into a profile lich
+  writes `hasTrustDialogAccepted` for the checkout's top when Personal trusts it or the main checkout of the
+  worktree it is. It never trusts a folder nobody trusted, and a folder outside any git checkout is not
+  carried: Claude Code also finds an answer in a parent folder there, and lich asks git, not the parents.
+  The write is a read, an edit and a rename beside sessions that rewrite the same file; Claude Code re-reads
+  it before each write of its own (measured on 2.1.302, a key written mid-session survived its later writes),
+  so the window left is what either side writes between the other's read and rename. Codex already merges
+  its project trust across profiles (`codexprofile/config.go`); Cursor CLI's profiles were not measured for it.
+  A confined Claude Code session is spawned with `CLAUDE_CODE_SANDBOXED=1`, which Claude Code reads as every
+  folder trusted (measured on 2.1.302): the question guards against a folder's own settings running on the
+  machine, which is what the sandbox confines. Codex, Cursor CLI and Antigravity still ask inside the sandbox
+  and Crush asks to initialize; opencode, oh-my-pi and Kiro CLI ask nothing.
 - **A Claude Code profile's plugin cache is its own, and each version in it links into one store lich never
   empties** (`internal/claudeprofile/plugincache.go`): before every spawn, and in the startup pass of the lich
   plugin, each version a profile's `installed_plugins.json` names under its `plugins/cache` is moved into
