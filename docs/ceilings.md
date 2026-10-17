@@ -875,6 +875,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   version-1 step is the one step every database that already exists has long since run, so a column added
   there reaches none of them and every read of that table fails. 0.53.0 shipped a column that way and loaded
   no projects at all.
+- **The workspace database is three files while lich runs** (`internal/store/store.go`, `open`): WAL mode
+  appends commits to `lich.db-wal` beside `lich.db`, with `lich.db-shm` as its index, and folds them back into
+  `lich.db` at checkpoints and on a clean close. Copying `lich.db` alone off a running lich, as a backup or a
+  move, leaves the commits since the last checkpoint behind; copy all three, or close lich first. With
+  `synchronous(NORMAL)` a power loss can drop the last commits, never corrupt the file. The rollback journal it
+  replaced created, synced and deleted a file on every commit, tens of milliseconds each on Windows, which
+  was most of the backend suite's time there.
 - **The history's branch is read live, so a row whose checkout is gone has none** (`internal/project.BranchesOf`):
   the branch a row shows is not the one it stores — a worktree keeps the name it was created with while an
   agent moves the branch inside it, so the stored snapshot dates the close and only git can say what the

@@ -23,6 +23,27 @@ func newTestStore(t testing.TB) *Service {
 	return svc
 }
 
+// TestOpenCommitsWithoutAJournalFilePerWrite pins the journal setup: the
+// default rollback journal creates, syncs and deletes a file on every commit,
+// which costs tens of milliseconds each on Windows.
+func TestOpenCommitsWithoutAJournalFilePerWrite(t *testing.T) {
+	svc := newTestStore(t)
+	var mode string
+	var synchronous int
+	if err := svc.db.QueryRow("PRAGMA journal_mode").Scan(&mode); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.db.QueryRow("PRAGMA synchronous").Scan(&synchronous); err != nil {
+		t.Fatal(err)
+	}
+	if mode != "wal" {
+		t.Errorf("journal_mode = %q, want wal", mode)
+	}
+	if synchronous != 1 {
+		t.Errorf("synchronous = %d, want 1 (NORMAL)", synchronous)
+	}
+}
+
 // TestSessionExistsSpansParkedRows: the answer is what internal/drop asks
 // before ageing a dropped-file copy out, and a parked session is one a resume
 // walks straight back into, so its copies are still worth keeping and parking

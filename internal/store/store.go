@@ -458,13 +458,16 @@ func New() (*Service, error) {
 // open opens the database at path, creating parent directories and applying the
 // schema. foreign_keys is enabled per connection via the DSN so ON DELETE
 // CASCADE fires; a single open connection serializes writes and sidesteps SQLite
-// lock contention in this low-concurrency desktop app.
+// lock contention in this low-concurrency desktop app. WAL with synchronous
+// NORMAL appends each commit to lich.db-wal instead of creating, syncing and
+// deleting a rollback journal per write, which on Windows costs tens of
+// milliseconds a commit; a power loss can drop the last commits, never corrupt.
 func open(path string) (*Service, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, fmt.Errorf("create data directory: %w", err)
 	}
 
-	dsn := fmt.Sprintf("file:%s?_pragma=foreign_keys(1)&_pragma=busy_timeout(%d)", path, busyTimeoutMS)
+	dsn := fmt.Sprintf("file:%s?_pragma=foreign_keys(1)&_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", path, busyTimeoutMS)
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
