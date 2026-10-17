@@ -21,6 +21,7 @@ func other(lang prompt.Lang) prompt.Lang {
 // Every notice renders in every language with its arguments in place and the
 // [lich] token its readers match on.
 func TestEveryNoticeRendersInEveryLanguage(t *testing.T) {
+	t.Parallel()
 	for _, lang := range prompt.Langs {
 		entry := &inboxEntry{target: "docs", ticket: "t1", answer: "all done"}
 		notices := map[string]string{
@@ -68,6 +69,7 @@ func TestEveryNoticeRendersInEveryLanguage(t *testing.T) {
 // A parked continuation is stored as text, so a row written in one language
 // must still be recognised, and dropped, once the setting is another.
 func TestAParkedContinuationIsRecognisedInEveryLanguage(t *testing.T) {
+	t.Parallel()
 	for _, stored := range prompt.Langs {
 		for _, setting := range prompt.Langs {
 			writer := &parkWriter{}
@@ -86,6 +88,7 @@ func TestAParkedContinuationIsRecognisedInEveryLanguage(t *testing.T) {
 }
 
 func TestAPersonsPromptIsNotTakenForTheContinuationInAnyLanguage(t *testing.T) {
+	t.Parallel()
 	for _, setting := range prompt.Langs {
 		writer := &parkWriter{}
 		svc := newRelay(scheduledWith(5000, "ship the release notes", writer.set), newFakeTerminal("s1"), &fakeEvents{})
@@ -100,6 +103,7 @@ func TestAPersonsPromptIsNotTakenForTheContinuationInAnyLanguage(t *testing.T) {
 }
 
 func TestTheContinuationIsParkedInThePromptLanguage(t *testing.T) {
+	t.Parallel()
 	for _, lang := range prompt.Langs {
 		writer := &parkWriter{}
 		svc := newRelay(scheduledWith(0, "", writer.set), newFakeTerminal("s1"), &fakeEvents{})

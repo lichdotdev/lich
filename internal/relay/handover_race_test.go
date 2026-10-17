@@ -34,6 +34,7 @@ func (g *gatedEvents) Emit(_ string, data any) {
 // two critical sections apart, and a Wait between them found neither: "unknown
 // ticket" for an errand that had just been answered.
 func TestAWaitAsTheAnswerLandsNeverSeesAnUnknownTicket(t *testing.T) {
+	t.Parallel()
 	events := &gatedEvents{gate: "s2", reached: make(chan struct{}), release: make(chan struct{})}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -64,6 +65,7 @@ func TestAWaitAsTheAnswerLandsNeverSeesAnUnknownTicket(t *testing.T) {
 // ticket's marks are cleared after the lock is let go and before await runs,
 // and holding that event parks the Wait there while the answer lands.
 func TestAnAnswerAWaitCarriedOutIsNotAlsoFiled(t *testing.T) {
+	t.Parallel()
 	events := &gatedEvents{gate: "s3", reached: make(chan struct{}), release: make(chan struct{})}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), events)
 	plant(svc, "t1", "s1", "s2", "docs")

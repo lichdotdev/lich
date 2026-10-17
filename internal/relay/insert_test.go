@@ -25,6 +25,7 @@ func editorWorkspace(root, worktree string) fakeSessions {
 }
 
 func TestInsertPastesWithoutSubmitting(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
 
@@ -42,6 +43,7 @@ func TestInsertPastesWithoutSubmitting(t *testing.T) {
 }
 
 func TestInsertStripsWhatWouldBreakOutOfThePaste(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s3")
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
 
@@ -54,6 +56,7 @@ func TestInsertStripsWhatWouldBreakOutOfThePaste(t *testing.T) {
 }
 
 func TestInsertRefusesWhatItCannotPaste(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), newFakeTerminal("s3"), nil)
 
 	if _, err := svc.Insert(InsertOptions{Target: "solo", Text: " \n\x1b "}); err == nil {
@@ -69,6 +72,7 @@ func TestInsertRefusesWhatItCannotPaste(t *testing.T) {
 }
 
 func TestInsertFindsTheSessionByProjectName(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s3")
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
 
@@ -79,6 +83,7 @@ func TestInsertFindsTheSessionByProjectName(t *testing.T) {
 }
 
 func TestInsertByDirectoryPrefersTheSessionRunningThere(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	worktree := filepath.Join(root, "wt")
 	if err := os.Mkdir(worktree, 0o755); err != nil {
@@ -102,6 +107,7 @@ func TestInsertByDirectoryPrefersTheSessionRunningThere(t *testing.T) {
 }
 
 func TestInsertNamesEveryCandidateWhenTheDirectoryIsAmbiguous(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	work := fakeSessions{projects: []store.Project{
 		{ID: "p1", Name: "lich", Path: root, Sessions: []store.Session{
@@ -117,6 +123,7 @@ func TestInsertNamesEveryCandidateWhenTheDirectoryIsAmbiguous(t *testing.T) {
 }
 
 func TestInsertFallsBackToTheProjectsSessionsWhenNoneRunInTheDirectory(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	work := fakeSessions{projects: []store.Project{
 		{ID: "p1", Name: "lich", Path: root, Sessions: []store.Session{
@@ -132,6 +139,7 @@ func TestInsertFallsBackToTheProjectsSessionsWhenNoneRunInTheDirectory(t *testin
 }
 
 func TestInsertFindsNothingInAnUnknownProject(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), newFakeTerminal("s1"), nil)
 
 	for _, project := range []string{"nope", "/not/a/project"} {
@@ -146,6 +154,7 @@ func TestInsertFindsNothingInAnUnknownProject(t *testing.T) {
 }
 
 func TestInsertGoesInBesideTheUsersDraft(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s3")
 	term.typeAt("s3", true)
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
@@ -156,6 +165,7 @@ func TestInsertGoesInBesideTheUsersDraft(t *testing.T) {
 }
 
 func TestInsertRefusesASessionBlockedOnAPermission(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s3")
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
 	svc.reported["s3"] = stateWaiting
@@ -170,6 +180,7 @@ func TestInsertRefusesASessionBlockedOnAPermission(t *testing.T) {
 }
 
 func TestInsertGivesUpOnASessionThatNeverReachesItsPrompt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s3")
 	term.setUp("s3", true)
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
@@ -184,6 +195,7 @@ func TestInsertGivesUpOnASessionThatNeverReachesItsPrompt(t *testing.T) {
 }
 
 func TestInsertSurfacesAWriteTheTerminalRefuses(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s3")
 	term.writeErr = os.ErrClosed
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
@@ -194,6 +206,7 @@ func TestInsertSurfacesAWriteTheTerminalRefuses(t *testing.T) {
 }
 
 func TestPeersCarryTheirDirectories(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), newFakeTerminal("s1", "s2"), nil)
 
 	peers, err := svc.Peers(PeersOptions{})
@@ -209,6 +222,7 @@ func TestPeersCarryTheirDirectories(t *testing.T) {
 }
 
 func TestSendNarrowsByProjectDirectory(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	work := fakeSessions{projects: []store.Project{
 		{ID: "p1", Name: "a", Path: root, Sessions: []store.Session{{ID: "s1", Label: "api"}}},
@@ -223,6 +237,7 @@ func TestSendNarrowsByProjectDirectory(t *testing.T) {
 }
 
 func TestSamePath(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	link := filepath.Join(t.TempDir(), "link")
 	linked := os.Symlink(dir, link) == nil

@@ -44,6 +44,7 @@ func sendSubagentTask(t *testing.T, svc *Service) Result {
 // A worker whose mod answers for it is handed the task the way a native
 // subagent is: no ticket, no reply command, only who asked.
 func TestATaskForAWorkerWhoseModAnswersCarriesNoTicket(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.answerByMod("s2", ackedOK)
 	svc := viaMod(term, nil)
@@ -66,6 +67,7 @@ func TestATaskForAWorkerWhoseModAnswersCarriesNoTicket(t *testing.T) {
 // A worker whose mod does not answer (an older plugin, or none) still needs the
 // ticket: its reply is the only way home.
 func TestATaskForAWorkerWhoseModDoesNotAnswerKeepsTheTicket(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", ackedOK)
 	svc := viaMod(term, nil)
@@ -82,6 +84,7 @@ func TestATaskForAWorkerWhoseModDoesNotAnswerKeepsTheTicket(t *testing.T) {
 // Only a subagent errand is answered by the mod: an ordinary send to the same
 // session keeps its ticket.
 func TestAnOrdinaryTaskToAWorkerWhoseModAnswersKeepsTheTicket(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.answerByMod("s2", ackedOK)
 	svc := viaMod(term, nil)
@@ -99,6 +102,7 @@ func TestAnOrdinaryTaskToAWorkerWhoseModAnswersKeepsTheTicket(t *testing.T) {
 }
 
 func TestAWorkersModAnswersItsErrand(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -116,6 +120,7 @@ func TestAWorkersModAnswersItsErrand(t *testing.T) {
 // The caller reads a mod's answer exactly as it reads a reply: whole, through
 // its own mod, as a finished background agent.
 func TestAModsAnswerReachesTheCallerAsTheReport(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", ackedOK)
 	svc := viaMod(term, nil)
@@ -137,6 +142,7 @@ func TestAModsAnswerReachesTheCallerAsTheReport(t *testing.T) {
 // An answer from a session nobody handed a subagent errand is dropped: the mod
 // cannot tell a worker from a session whose subagents the user kept native.
 func TestAnAnswerFromASessionWithNoSubagentErrandIsIgnored(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 
@@ -152,6 +158,7 @@ func TestAnAnswerFromASessionWithNoSubagentErrandIsIgnored(t *testing.T) {
 // The worker may still call reply_to_session itself: the first answer wins and
 // the mod's, landing after it, is dropped.
 func TestTheFirstAnswerWins(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -172,6 +179,7 @@ func TestTheFirstAnswerWins(t *testing.T) {
 // With two subagent errands open nothing says which the text answers, so
 // neither is closed on a guess.
 func TestAnAnswerBetweenTwoSubagentErrandsIsIgnored(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 	plantAnsweredByMod(svc, "t2", "s1", "s2", "docs")
@@ -189,6 +197,7 @@ func TestAnAnswerBetweenTwoSubagentErrandsIsIgnored(t *testing.T) {
 // report yet; its mod answers when it resumes. That turn ending must not tell
 // the caller the errand went unanswered.
 func TestATurnEndingWithoutTheModsAnswerKeepsTheErrandOpen(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
@@ -218,6 +227,7 @@ func TestATurnEndingWithoutTheModsAnswerKeepsTheErrandOpen(t *testing.T) {
 // The mod's answer and the turn's done report race: whichever lands last
 // finishes the worker.
 func TestAWorkerWhoseAnswerLandsAfterItsTurnEndedIsFinished(t *testing.T) {
+	t.Parallel()
 	svc, finished := finishing(t)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -229,6 +239,7 @@ func TestAWorkerWhoseAnswerLandsAfterItsTurnEndedIsFinished(t *testing.T) {
 }
 
 func TestAWorkerWhoseAnswerLandsMidTurnIsFinishedWhenItEnds(t *testing.T) {
+	t.Parallel()
 	svc, finished := finishing(t)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -262,6 +273,7 @@ func expectAnswer(t *testing.T, svc *Service, id, want string) {
 // Claude Code's tasks. Its mod reports that turn, and the report is only "I
 // handed it off": the errand must wait for the turn that has the result.
 func TestAWorkersAnswerWaitsForTheErrandsItSent(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
@@ -284,6 +296,7 @@ func TestAWorkersAnswerWaitsForTheErrandsItSent(t *testing.T) {
 // An ordinary errand the worker sent holds its answer the same way: its
 // outcome reaches the worker's prompt and starts the turn that answers.
 func TestAWorkersAnswerWaitsForAnOrdinaryErrandItSent(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 	plant(svc, "t2", "s2", "s3", "api")
@@ -295,6 +308,7 @@ func TestAWorkersAnswerWaitsForAnOrdinaryErrandItSent(t *testing.T) {
 // A private errand reaches no prompt, so nothing would ever resume the worker
 // for it: it does not hold the answer.
 func TestAPrivateErrandDoesNotHoldAWorkersAnswer(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 	plant(svc, "t2", "s2", "s3", "api")
@@ -309,6 +323,7 @@ func TestAPrivateErrandDoesNotHoldAWorkersAnswer(t *testing.T) {
 // A result that lands while the worker is mid-turn is handed to it only when
 // that turn ends, so the turn's own report was written without it.
 func TestAWorkersAnswerWaitsForAResultItHasNotRead(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
@@ -331,6 +346,7 @@ func TestAWorkersAnswerWaitsForAResultItHasNotRead(t *testing.T) {
 // A result the worker was told about and chose not to collect does not hold
 // its answer forever: the turn after the notice is the one that read it.
 func TestAResultTheWorkerWasToldAboutDoesNotHoldItsAnswer(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
@@ -351,6 +367,7 @@ func TestAResultTheWorkerWasToldAboutDoesNotHoldItsAnswer(t *testing.T) {
 // that ended in silence. Someone is waiting on it, so it hears the errand
 // stopped, and that is what resumes it.
 func TestAWorkerHearsItsOwnWorkerStopped(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 	plantAnsweredByMod(svc, "t2", "s2", "s3", "api")
@@ -373,6 +390,7 @@ func TestAWorkerHearsItsOwnWorkerStopped(t *testing.T) {
 // its report until something else started a turn there. Someone is waiting on
 // the worker, so it hears the errand expired, and that is what resumes it.
 func TestAWorkerHearsItsOwnErrandExpired(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
@@ -401,6 +419,7 @@ func TestAWorkerHearsItsOwnErrandExpired(t *testing.T) {
 // A worker that answered by its ticket while its own worker still runs is not
 // closed under that worker: the report it is owed would reach no one.
 func TestAWorkerWithAnErrandOfItsOwnOpenIsNotFinished(t *testing.T) {
+	t.Parallel()
 	svc, finished := finishing(t)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
 	plantSubagent(svc, "t2", "s2", "s3", "api")
@@ -418,6 +437,7 @@ func TestAWorkerWithAnErrandOfItsOwnOpenIsNotFinished(t *testing.T) {
 // while the worker runs, its errand would never end: the caller hears
 // unanswered, with why.
 func TestAWorkersUnansweredTurnEndsItsErrand(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -439,6 +459,7 @@ func TestAWorkersUnansweredTurnEndsItsErrand(t *testing.T) {
 }
 
 func TestACallerHoldingTheLineHearsAWorkerWentUnanswered(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -463,6 +484,7 @@ func TestACallerHoldingTheLineHearsAWorkerWentUnanswered(t *testing.T) {
 // The worker's card stays open: its user can still steer it to an answer, and
 // that answer reaches the caller by the ticket.
 func TestAWorkersAnswerAfterAnUnansweredTurnStillReachesTheCaller(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -475,6 +497,7 @@ func TestAWorkersAnswerAfterAnUnansweredTurnStillReachesTheCaller(t *testing.T) 
 // An errand already ended is not ended twice: a second empty turn files no
 // second outcome.
 func TestASecondUnansweredTurnFilesNothingMore(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 
@@ -491,6 +514,7 @@ func TestASecondUnansweredTurnFilesNothingMore(t *testing.T) {
 // An empty turn while an errand of the worker's own is out is the turn that
 // handed it off: the outcome reaching the worker resumes it.
 func TestAnUnansweredTurnWaitsForTheErrandsTheWorkerSent(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 	plant(svc, "t2", "s2", "s3", "api")
@@ -502,6 +526,7 @@ func TestAnUnansweredTurnWaitsForTheErrandsTheWorkerSent(t *testing.T) {
 // A usage limit is an API error lich parks the continuation of, and that
 // continuation is the turn that answers.
 func TestAnErrorWhileAResumeIsParkedKeepsTheErrandOpen(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantAnsweredByMod(svc, "t1", "s1", "s2", "docs")
 	svc.markResume("s2")
@@ -517,6 +542,7 @@ func TestAnErrorWhileAResumeIsParkedKeepsTheErrandOpen(t *testing.T) {
 
 // An ordinary errand is not the mod's to end.
 func TestAnUnansweredTurnLeavesAnOrdinaryErrandAlone(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 
@@ -530,6 +556,7 @@ func TestAnUnansweredTurnLeavesAnOrdinaryErrandAlone(t *testing.T) {
 // without an answer, whether the report is still on its way or already waits
 // in its inbox for the prompt to free up.
 func TestATurnEndingWhileTheWorkerAwaitsItsOwnErrandKeepsItsErrandOpen(t *testing.T) {
+	t.Parallel()
 	for name, reportFirst := range map[string]bool{"report still running": false, "report waiting": true} {
 		t.Run(name, func(t *testing.T) {
 			term := newFakeTerminal("s1", "s2", "s3")

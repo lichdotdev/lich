@@ -27,6 +27,7 @@ func branched() fakeSessions {
 }
 
 func TestSendSubagentMarksItsErrand(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	got, err := svc.SendSubagent(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "write the docs", WaitSeconds: 1})
@@ -41,6 +42,7 @@ func TestSendSubagentMarksItsErrand(t *testing.T) {
 }
 
 func TestSendSubagentNeedsACallingSession(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s2"), nil)
 
 	_, err := svc.SendSubagent(context.Background(), SendOptions{Target: "docs", Prompt: "write the docs", WaitSeconds: 1})
@@ -52,6 +54,7 @@ func TestSendSubagentNeedsACallingSession(t *testing.T) {
 // Through the caller's mod the whole report goes, so the model reads it the
 // way it reads a native subagent's result, with no collect call.
 func TestASubagentReportReachesItsCallerWholeThroughTheMod(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", ackedOK)
 	svc := viaMod(term, nil)
@@ -93,6 +96,7 @@ func TestASubagentReportReachesItsCallerWholeThroughTheMod(t *testing.T) {
 // With nothing but a prompt to type at, the report is not typed: a long text
 // typed into a TUI is what the mod route exists to avoid.
 func TestASubagentReportIsNotTypedAtACallerWithoutAMod(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(branched(), term, nil)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
@@ -115,6 +119,7 @@ func TestASubagentReportIsNotTypedAtACallerWithoutAMod(t *testing.T) {
 // A mod that never collected the note leaves the report in the inbox, and the
 // caller hears the short note typed instead.
 func TestASubagentReportNoPollCollectedStaysCollectable(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", withdrawn)
 	svc := viaMod(term, nil)
@@ -137,6 +142,7 @@ func TestASubagentReportNoPollCollectedStaysCollectable(t *testing.T) {
 
 // A report the caller collected first is not delivered a second time.
 func TestASubagentReportCollectedFirstIsNotAlsoDelivered(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", ackedOK)
 	svc := viaMod(term, nil)
@@ -159,6 +165,7 @@ func TestASubagentReportCollectedFirstIsNotAlsoDelivered(t *testing.T) {
 
 // Results that are not subagent reports ride the same note as a nudge.
 func TestASubagentReportCarriesTheNudgeForTheRest(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	term.attachMod("s1", ackedOK)
 	svc := viaMod(term, nil)
@@ -192,6 +199,7 @@ func TestASubagentReportCarriesTheNudgeForTheRest(t *testing.T) {
 }
 
 func TestASubagentErrandOutlivesTheTTLWhileItsWorkerLives(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
@@ -227,6 +235,7 @@ func TestASubagentErrandOutlivesTheTTLWhileItsWorkerLives(t *testing.T) {
 }
 
 func TestAWorkerBlockedOnAPermissionTellsItsCallerOncePerBlock(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
@@ -254,6 +263,7 @@ func TestAWorkerBlockedOnAPermissionTellsItsCallerOncePerBlock(t *testing.T) {
 }
 
 func TestABlockedWorkerReachesACallerWithAModAsANotification(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", ackedOK)
 	svc := viaMod(term, nil)
@@ -277,6 +287,7 @@ func TestABlockedWorkerReachesACallerWithAModAsANotification(t *testing.T) {
 // waiting after a turn ended is a prompt at rest, and an ordinary errand's
 // worker is the user's to watch: neither is news for the caller.
 func TestOnlyABlockedSubagentWorkerIsReported(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
@@ -331,6 +342,7 @@ func expectNoneFinished(t *testing.T, finished chan string) {
 // A worker that reported and then ended the turn it reported in is done, as a
 // native subagent is once its result is back.
 func TestAWorkerThatReportedAndEndedItsTurnIsFinished(t *testing.T) {
+	t.Parallel()
 	svc, finished := finishing(t)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
 
@@ -350,6 +362,7 @@ func TestAWorkerThatReportedAndEndedItsTurnIsFinished(t *testing.T) {
 // A report that arrives after the errand lapsed (the worker ended a turn
 // without answering, then answered later) finishes the worker the same way.
 func TestAWorkerThatReportedLateIsFinished(t *testing.T) {
+	t.Parallel()
 	svc, finished := finishing(t)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
 	svc.Observe("s2", stateBusy)
@@ -367,6 +380,7 @@ func TestAWorkerThatReportedLateIsFinished(t *testing.T) {
 // Only a subagent errand ends with its worker: a session answering an ordinary
 // send is somebody's peer, and one still holding another errand has work left.
 func TestAWorkerWithMoreToDoIsNotFinished(t *testing.T) {
+	t.Parallel()
 	t.Run("ordinary errand", func(t *testing.T) {
 		svc, finished := finishing(t)
 		plant(svc, "t1", "s1", "s2", "docs")
@@ -398,6 +412,7 @@ func TestAWorkerWithMoreToDoIsNotFinished(t *testing.T) {
 }
 
 func TestReportsOfOneFlushAreSummedUpByEveryWorker(t *testing.T) {
+	t.Parallel()
 	got := reportNotification(prompt.English, []*inboxEntry{{target: "docs"}, {target: "api"}})
 	want := Notification{Status: NotifyCompleted, Summary: `lich sessions "docs", "api" finished`}
 	if *got != want {

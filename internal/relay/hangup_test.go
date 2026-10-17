@@ -63,6 +63,7 @@ func assertStashedAndNudged(t *testing.T, svc *Service, term *fakeTerminal, answ
 }
 
 func TestACollectWhoseCallerHungUpLeavesTheNextResultToTheNudge(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -90,6 +91,7 @@ func TestACollectWhoseCallerHungUpLeavesTheNextResultToTheNudge(t *testing.T) {
 // nudge, and the collector then finds its caller gone. The result must not be
 // drained, and something still has to say it is there.
 func TestAResultTheHungUpCollectorWasWokenForIsStillNudged(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.mu.Lock()
@@ -107,6 +109,7 @@ func TestAResultTheHungUpCollectorWasWokenForIsStillNudged(t *testing.T) {
 }
 
 func TestARenudgeLeavesAResultToTheCollectorStillHolding(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.mu.Lock()
@@ -124,6 +127,7 @@ func TestARenudgeLeavesAResultToTheCollectorStillHolding(t *testing.T) {
 }
 
 func TestCollectNowReturnsAtOnceWithWhoStillOwes(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -149,6 +153,7 @@ func TestCollectNowReturnsAtOnceWithWhoStillOwes(t *testing.T) {
 }
 
 func TestCollectNowRefusesACallerWithNoSession(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal(), nil)
 
 	if _, err := svc.CollectNow(CollectNowOptions{}); err == nil {
@@ -157,6 +162,7 @@ func TestCollectNowRefusesACallerWithNoSession(t *testing.T) {
 }
 
 func TestAWaitWhoseCallerHungUpLeavesTheAnswerToTheInbox(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -184,6 +190,7 @@ func TestAWaitWhoseCallerHungUpLeavesTheAnswerToTheInbox(t *testing.T) {
 // frozen clock is the case the timer path has to end on its own: a deadline
 // read off a clock that never moves would otherwise hold the line forever.
 func TestACollectWhoseWaitRunsOutReturnsWhoStillOwes(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name  string
 		clock func() time.Time
@@ -219,6 +226,7 @@ func TestACollectWhoseWaitRunsOutReturnsWhoStillOwes(t *testing.T) {
 // and never read) had that news meant for its caller; with the caller gone it
 // goes to the inbox.
 func TestAnAbandonedWaitStashesTheOutcomeItWasHolding(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -246,6 +254,7 @@ func TestAnAbandonedWaitStashesTheOutcomeItWasHolding(t *testing.T) {
 // Another caller still holding the ticket carries the outcome out itself, so
 // one hanging up must not also stash it.
 func TestAnAbandonedWaitLeavesTheOutcomeToAnotherWaiter(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -271,6 +280,7 @@ func TestAnAbandonedWaitLeavesTheOutcomeToAnotherWaiter(t *testing.T) {
 // not only when one finishes: Esc is how a wait for results is abandoned, and
 // the next turn end may be a long way off.
 func TestAnInterruptedSenderIsNudged(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.Observe("s1", stateBusy)

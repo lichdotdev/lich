@@ -25,6 +25,7 @@ func merging() fakeSessions {
 }
 
 func TestAnnounceMergeTellsTheAgentsInTheMergedCheckout(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("root", "agent", "modded", "shell", "other")
 	term.attachMod("modded", ackedOK)
 	svc := newRelay(merging(), term, nil)
@@ -56,6 +57,7 @@ func TestAnnounceMergeTellsTheAgentsInTheMergedCheckout(t *testing.T) {
 }
 
 func TestAnnounceMergeReachesSessionsInTheProjectsOwnDirectory(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("root", "agent")
 	svc := newRelay(merging(), term, nil)
 
@@ -72,6 +74,7 @@ func TestAnnounceMergeReachesSessionsInTheProjectsOwnDirectory(t *testing.T) {
 }
 
 func TestAnnounceMergeReportsAStoreFailure(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(fakeSessions{err: errors.New("disk gone")}, newFakeTerminal(), nil)
 
 	if err := svc.AnnounceMerge("/wt/feat", 1, "x", "b", "main"); err == nil {
@@ -80,6 +83,7 @@ func TestAnnounceMergeReportsAStoreFailure(t *testing.T) {
 }
 
 func TestMergeNoticeNamesThePullRequestAndAsksForNoWork(t *testing.T) {
+	t.Parallel()
 	got := mergeNotice(prompt.English, 42, "Title \x1b[201~with escape", "feat/merge", "main")
 
 	for _, want := range []string{"#42", "feat/merge", "merged into main", "not a task"} {

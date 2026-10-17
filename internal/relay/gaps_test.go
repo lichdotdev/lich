@@ -13,6 +13,7 @@ import (
 // comes later, on the same ticket, and has to reach the sender rather than be
 // refused as an unknown ticket.
 func TestAnAnswerAfterTheTurnEndedWithoutOneStillReachesTheSender(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -44,6 +45,7 @@ func TestAnAnswerAfterTheTurnEndedWithoutOneStillReachesTheSender(t *testing.T) 
 
 // A late answer is still one answer: a second one on the same ticket is refused.
 func TestALateAnswerIsTakenOnce(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	sent, _ := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1})
 	svc.Observe("s2", "busy")
@@ -61,6 +63,7 @@ func TestALateAnswerIsTakenOnce(t *testing.T) {
 // waiter used to be told the errand was still in progress on a ticket the sweep
 // had already dropped, so the next wait on it answered "unknown ticket".
 func TestATicketBeingWaitedOnOutlivesItsHour(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 	start := time.Now()
@@ -101,6 +104,7 @@ func TestATicketBeingWaitedOnOutlivesItsHour(t *testing.T) {
 // answering then is answering something else, and attributing it to the
 // message mid-delivery sends the sender a report of work nobody did.
 func TestATicketlessAnswerSkipsAMessageStillBeingDelivered(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.submitDelay = 5 * time.Millisecond
@@ -128,6 +132,7 @@ func TestATicketlessAnswerSkipsAMessageStillBeingDelivered(t *testing.T) {
 // ticket is unknown: the ticket still takes a late answer for an hour, and a
 // caller handed "expired" would stop looking for it.
 func TestAWaitOnALapsedTicketIsToldItWentUnanswered(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	sent, _ := svc.SendPrivate(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1})
 	svc.Observe("s2", "busy")
@@ -149,6 +154,7 @@ func TestAWaitOnALapsedTicketIsToldItWentUnanswered(t *testing.T) {
 // A caller hanging up as the turn ends, with the late answer landing in
 // between, must not have its leaving overwrite that answer with the stall.
 func TestALateAnswerSurvivesTheWaiterHangingUp(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	tk := &ticket{
 		fromID: "s1", targetID: "s2", target: "docs",
@@ -176,6 +182,7 @@ func TestALateAnswerSurvivesTheWaiterHangingUp(t *testing.T) {
 // A ticket that ages out unanswered, open or lapsed, answers a wait on it with
 // how it ended: "unknown ticket" would read as a ticket the caller mistyped.
 func TestAWaitOnAnExpiredTicketSaysItExpired(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 	plant(svc, "open", "s1", "s2", "docs")
 	plant(svc, "lapsed", "s1", "s3", "api")

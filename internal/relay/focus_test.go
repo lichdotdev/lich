@@ -6,6 +6,7 @@ import (
 )
 
 func TestFocusOpensTheCardAndRaisesTheWindow(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), newFakeTerminal("s1", "s2", "s3"), events)
 	var order []string
@@ -36,6 +37,7 @@ func TestFocusOpensTheCardAndRaisesTheWindow(t *testing.T) {
 }
 
 func TestFocusNamesTheLiveSessionsWhenTheTargetIsUnknown(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), newFakeTerminal("s1", "s3"), events)
 	raised := false
@@ -51,6 +53,7 @@ func TestFocusNamesTheLiveSessionsWhenTheTargetIsUnknown(t *testing.T) {
 }
 
 func TestFocusWorksWithoutAWindow(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), newFakeTerminal("s3"), nil)
 
 	if got, err := svc.Focus(FocusOptions{Target: "solo", Project: "revu"}); err != nil || got.ID != "s3" {

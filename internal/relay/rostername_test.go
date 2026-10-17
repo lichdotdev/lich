@@ -7,6 +7,7 @@ import "testing"
 // time. The derivation is only ever the answer when there is nothing to read —
 // and a name that is only whitespace is nothing to read.
 func TestRosterNameOf(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		recorded string
@@ -31,6 +32,7 @@ func TestRosterNameOf(t *testing.T) {
 // has nothing on record yet — the one it is spawned under, and the one the
 // roster falls back to.
 func TestRosterNameDerivesTheBirthName(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		cwd  string
@@ -96,6 +98,7 @@ func TestRosterNameDerivesTheBirthName(t *testing.T) {
 }
 
 func TestRosterNameSeparatesSessionsSharingACheckout(t *testing.T) {
+	t.Parallel()
 	const cwd = "/home/me/code/lich"
 	first := RosterName(cwd, "4f2a1b3c-0000-4000-8000-000000000000")
 	second := RosterName(cwd, "9d8e7f6a-0000-4000-8000-000000000000")
@@ -109,6 +112,7 @@ func TestRosterNameSeparatesSessionsSharingACheckout(t *testing.T) {
 // mints a session under, the name RosterName gives it is recognised as one, and
 // a name the user typed is not.
 func TestIsRosterNameRecognisesEveryBirthName(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ cwd, id string }{
 		{"/home/u/try/skipo", "3c5bd823-ad2f"},
 		{"/home/u/try/skipo/", "a-b-c-d-e"},

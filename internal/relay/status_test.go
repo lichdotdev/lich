@@ -18,6 +18,7 @@ func plantOwed(svc *Service, id, fromID, sender, targetID, asked string) {
 }
 
 func TestStatusOfASessionWithNoErrandsIsThreeEmptyLists(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1"), nil)
 
 	got := svc.Status("s1")
@@ -31,6 +32,7 @@ func TestStatusOfASessionWithNoErrandsIsThreeEmptyLists(t *testing.T) {
 }
 
 func TestStatusListsWhatTheSessionOwes(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantOwed(svc, "t1", "s1", "sender", "s2", "write the docs")
 	plantOwed(svc, "t2", "", "", "s2", "run the tests")
@@ -66,6 +68,7 @@ func sameOwed(got, want []OwedErrand) bool {
 }
 
 func TestStatusOrdersOwedErrandsByHandOff(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantOwed(svc, "late", "s1", "sender", "s2", "second")
 	plantOwed(svc, "early", "s1", "sender", "s2", "first")
@@ -82,6 +85,7 @@ func TestStatusOrdersOwedErrandsByHandOff(t *testing.T) {
 }
 
 func TestStatusListsOpenErrandsWithTheTargetsState(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 	base := time.Now()
 	plant(svc, "busy", "s1", "s2", "docs")
@@ -106,6 +110,7 @@ func TestStatusListsOpenErrandsWithTheTargetsState(t *testing.T) {
 }
 
 func TestStatusReadsTheTargetsWaitingAsWaiting(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 	svc.Observe("s2", stateBusy)
@@ -121,6 +126,7 @@ func TestStatusReadsTheTargetsWaitingAsWaiting(t *testing.T) {
 // Reading is not collecting: an answer listed as ready is still the agent's to
 // collect afterwards.
 func TestStatusListsReadyOutcomesWithoutCollectingThem(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
@@ -143,6 +149,7 @@ func TestStatusListsReadyOutcomesWithoutCollectingThem(t *testing.T) {
 }
 
 func TestStatusLeavesAPrivateOutcomeOut(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
 	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
@@ -155,6 +162,7 @@ func TestStatusLeavesAPrivateOutcomeOut(t *testing.T) {
 }
 
 func TestStatusNeverListsAnExpiredErrand(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 	svc.now = func() time.Time { return time.Now().Add(ticketTTL + time.Minute) }

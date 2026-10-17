@@ -17,6 +17,7 @@ func plantPrivate(svc *Service, id, fromID, targetID, target string) {
 }
 
 func TestSendPrivateMarksItsResult(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	var (
@@ -44,6 +45,7 @@ func TestSendPrivateMarksItsResult(t *testing.T) {
 // session, which is how a workflow agent's sibling or the session's own agent
 // drains its inbox, must not take it, and the ticket still finds it after.
 func TestANoTicketCollectNeverTakesAPrivateResult(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
 	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
@@ -70,6 +72,7 @@ func TestANoTicketCollectNeverTakesAPrivateResult(t *testing.T) {
 // The session's prompt does not speak for whoever sent privately, so nothing is
 // typed there and the card counts nothing it could not collect.
 func TestAPrivateResultIsNeverAnnounced(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), term, events)
@@ -93,6 +96,7 @@ func TestAPrivateResultIsNeverAnnounced(t *testing.T) {
 }
 
 func TestACollectDoesNotHoldTheLineForAPrivateErrand(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
 
@@ -110,6 +114,7 @@ func TestACollectDoesNotHoldTheLineForAPrivateErrand(t *testing.T) {
 }
 
 func TestAnOrdinaryResultIsStillNudgedBesideAPrivateOne(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
@@ -132,6 +137,7 @@ func TestAnOrdinaryResultIsStillNudgedBesideAPrivateOne(t *testing.T) {
 // Held for its ticket like any result, for as long, and dropped without a word:
 // nobody was ever told it existed.
 func TestAPrivateResultAgesOutSilently(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
@@ -155,6 +161,7 @@ func TestAPrivateResultAgesOutSilently(t *testing.T) {
 // must: told "unknown ticket", it cannot tell a result it missed from a ticket
 // it mistyped.
 func TestAWaitOnAnExpiredPrivateResultSaysItExpired(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
 	_ = svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"})

@@ -402,6 +402,7 @@ func workspace() fakeSessions {
 }
 
 func TestPeersListsLiveSessionsWithoutTheCaller(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3", "s5"), nil)
 
 	peers, err := svc.Peers(PeersOptions{From: "s1"})
@@ -434,6 +435,7 @@ func TestPeersListsLiveSessionsWithoutTheCaller(t *testing.T) {
 // can hand work to. A session that reported nothing carries no state at all —
 // never "idle", which would read as free.
 func TestPeersCarryTheStateEachSessionReported(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3", "s5"), nil)
 
 	svc.Observe("s2", "busy")
@@ -469,6 +471,7 @@ func TestPeersCarryTheStateEachSessionReported(t *testing.T) {
 // still busy and errands keep reading it so, and a /compact at the prompt
 // leaves a finished turn finished. The report that closes it says the rest.
 func TestACompactionMovesNoState(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 
 	svc.Observe("s2", "busy")
@@ -499,6 +502,7 @@ func TestACompactionMovesNoState(t *testing.T) {
 // human. Published as waiting it would tell every caller reading the roster to
 // hold off from the one session most able to take work.
 func TestPeersDoNotCallAnIdlePromptWaiting(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 
 	svc.Observe("s2", "busy")
@@ -521,6 +525,7 @@ func TestPeersDoNotCallAnIdlePromptWaiting(t *testing.T) {
 }
 
 func TestPeersReportsAStoreFailure(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(fakeSessions{err: errors.New("database is locked")}, newFakeTerminal(), nil)
 
 	if _, err := svc.Peers(PeersOptions{From: "s1"}); err == nil {
@@ -535,6 +540,7 @@ func TestPeersReportsAStoreFailure(t *testing.T) {
 // when a write here has returned, and an Enter pressed into that burst is read
 // as a newline inside the paste instead of as "send it".
 func TestTheEnterWaitsForTheTargetToFinishTakingThePasteIn(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.submitDelay = time.Millisecond
@@ -560,6 +566,7 @@ func TestTheEnterWaitsForTheTargetToFinishTakingThePasteIn(t *testing.T) {
 // (terminal.HoldInput). The window opens before the paste and closes after the
 // Enter, which is what this reads off the fake.
 func TestTheTargetsKeyboardIsHeldForTheWholeSubmission(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.submitDelay = time.Millisecond
@@ -583,6 +590,7 @@ func TestTheTargetsKeyboardIsHeldForTheWholeSubmission(t *testing.T) {
 // repaints on a timer of its own would never go quiet, and an errand that hangs
 // on that is worse than one whose Enter is late.
 func TestASilentTargetIsSentItsEnterAnyway(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.submitDelay = time.Millisecond
@@ -600,6 +608,7 @@ func TestASilentTargetIsSentItsEnterAnyway(t *testing.T) {
 }
 
 func TestSendDeliversAndReplyAnswers(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -660,6 +669,7 @@ func TestSendDeliversAndReplyAnswers(t *testing.T) {
 }
 
 func TestAMessageFromOutsideLichIsAttributedToTheCommandLine(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -682,6 +692,7 @@ func TestAMessageFromOutsideLichIsAttributedToTheCommandLine(t *testing.T) {
 // agent whose shell is locked down could otherwise have no way to answer at
 // all, and one pointed at a tool it does not have loses the turn to an error.
 func TestReplyInstructionOffersTheToolOnlyWhereItExists(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		tool bool
@@ -722,6 +733,7 @@ func TestReplyInstructionOffersTheToolOnlyWhereItExists(t *testing.T) {
 // session it names rather than on an error — that mismatch is what made an
 // agent use both channels at once on the first real run.
 func TestARosterNameReachesTheSameSession(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -745,6 +757,7 @@ func TestARosterNameReachesTheSameSession(t *testing.T) {
 // no longer to the one lich derived — which is the string an agent reads out of
 // /list-agents and writes back at a prompt.
 func TestARenamedSessionAnswersToItsNewName(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.renamed("s2", "reviewer")
 	svc := newRelay(workspace(), term, nil)
@@ -767,6 +780,7 @@ func TestARenamedSessionAnswersToItsNewName(t *testing.T) {
 // rather than reaching it under two names at once. Answering to both would put
 // the roster back where it was — an address lich mints and nothing keeps true.
 func TestADerivedNameIsGoneOnceTheSessionRenames(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.renamed("s2", "reviewer")
 	svc := newRelay(workspace(), term, nil)
@@ -786,6 +800,7 @@ func TestADerivedNameIsGoneOnceTheSessionRenames(t *testing.T) {
 // user chose and the one every message quotes, so it outranks a roster name that
 // happens to read the same.
 func TestTheLabelWinsARosterCollision(t *testing.T) {
+	t.Parallel()
 	collide := fakeSessions{projects: []store.Project{{
 		ID: "p1", Name: "lich", Path: "/src/lich",
 		Sessions: []store.Session{
@@ -813,6 +828,7 @@ func TestTheLabelWinsARosterCollision(t *testing.T) {
 // TestAnUnknownNameNamesWhatIsReachable proves a miss is one step from a hit:
 // both names of every live session come back with the error.
 func TestAnUnknownNameNamesWhatIsReachable(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	_, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "ghost", Prompt: "hello", WaitSeconds: 30})
@@ -829,6 +845,7 @@ func TestAnUnknownNameNamesWhatIsReachable(t *testing.T) {
 // TestWithNothingReachableTheErrorSaysSo proves the empty case reads as a fact
 // about the workspace rather than as a bad name.
 func TestWithNothingReachableTheErrorSaysSo(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1"), nil)
 
 	_, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "hello", WaitSeconds: 30})
@@ -844,6 +861,7 @@ func TestWithNothingReachableTheErrorSaysSo(t *testing.T) {
 // from one errand: the target learns who asked, the sender learns who it is
 // waiting on, and both marks come down when the answer lands.
 func TestBothCardsAreMarkedAndCleared(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 
@@ -892,6 +910,7 @@ func TestBothCardsAreMarkedAndCleared(t *testing.T) {
 // mark of its own — there is no session to put one on — while the target still
 // learns a request arrived.
 func TestAnExternalSenderMarksOnlyTheTarget(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s2"), events)
 
@@ -923,6 +942,7 @@ func TestAnExternalSenderMarksOnlyTheTarget(t *testing.T) {
 // TestAnUndeliveredMessageMarksNobody proves the mark follows the bytes: a write
 // that failed leaves no card claiming a request that never arrived.
 func TestAnUndeliveredMessageMarksNobody(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	term := newFakeTerminal("s1", "s2")
 	term.writeErr = errors.New("pty closed")
@@ -940,6 +960,7 @@ func TestAnUndeliveredMessageMarksNobody(t *testing.T) {
 // stops claiming both cards once it is swept, rather than marking them for the
 // life of the process.
 func TestAnExpiredTicketTakesItsMarksDown(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 	svc.tickets["stale"] = &ticket{
@@ -970,6 +991,7 @@ func TestAnExpiredTicketTakesItsMarksDown(t *testing.T) {
 // has to survive: the target worked and then answered somewhere lich cannot
 // read. The wait ends there, saying so, instead of running its full clock out.
 func TestATurnThatEndsWithoutAnAnswerEndsTheWait(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, events)
@@ -1011,6 +1033,7 @@ func TestATurnThatEndsWithoutAnAnswerEndsTheWait(t *testing.T) {
 // turn that ends with no reply is that news — what arrives is the short nudge,
 // and the outcome itself is collected, not typed.
 func TestTheSenderIsToldAtItsPromptWhenTheTargetStallsUnattended(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -1046,6 +1069,7 @@ func TestTheSenderIsToldAtItsPromptWhenTheTargetStallsUnattended(t *testing.T) {
 // without that it hears "still working" about an errand already closed, on a
 // ticket already gone from the map.
 func TestAWaiterGivingUpAsTheErrandStallsHearsSo(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	tk := &ticket{
 		target:   "docs",
@@ -1066,6 +1090,7 @@ func TestAWaiterGivingUpAsTheErrandStallsHearsSo(t *testing.T) {
 // of the turn in progress says nothing — reporting it as unanswered would
 // accuse a target that had not read the request yet.
 func TestAQueuedRequestIgnoresTheTurnAlreadyRunning(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	svc.Observe("s2", "busy")
 
@@ -1133,6 +1158,7 @@ func awaitDelivered(t *testing.T, svc *Service, n int) {
 // them that turn was — so the answer is not put on one of them by delivery
 // order, and the worker is asked at its own prompt to name the ticket.
 func TestADoneWithTwoErrandsOpenStallsBothAndAsksForTheTicket(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), term, events)
@@ -1197,6 +1223,7 @@ func TestADoneWithTwoErrandsOpenStallsBothAndAsksForTheTicket(t *testing.T) {
 // A single errand is the case there is nothing to pick between: it is stalled
 // on its own, and the worker is not asked to name anything.
 func TestADoneWithOneErrandOpenStallsItWithoutANotice(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, &fakeEvents{})
 
@@ -1236,6 +1263,7 @@ func openTickets(svc *Service) []string {
 // the second message arriving while the first errand's turn is already running:
 // its skipped turn is the same done that closes the first errand.
 func TestASecondErrandQueuedMidTurnSurvivesTheFirstsEnd(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 
 	first := make(chan Result, 1)
@@ -1268,6 +1296,7 @@ func TestASecondErrandQueuedMidTurnSurvivesTheFirstsEnd(t *testing.T) {
 // at delivery: a ticket still waiting out the target's setup script has no
 // message in that PTY, so nothing that happens there can close it.
 func TestAnUndeliveredTicketIgnoresTheTargetsTurns(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	svc.tickets["held"] = &ticket{
 		fromID: "s1", targetID: "s2", target: "docs",
@@ -1301,6 +1330,7 @@ func TestAnUndeliveredTicketIgnoresTheTargetsTurns(t *testing.T) {
 // queued and working, so the reply the target eventually sends has no ticket
 // left to land on.
 func TestABusyReportInsideTheDeliveryWindowCountsForTheTicket(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 	svc.submitDelay = 50 * time.Millisecond
@@ -1327,6 +1357,7 @@ func TestABusyReportInsideTheDeliveryWindowCountsForTheTicket(t *testing.T) {
 // arrives inside the window. Losing it spends the skip on the turn that carries
 // this request instead, and the errand never closes.
 func TestADoneInsideTheDeliveryWindowSpendsTheSkip(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.submitDelay = 50 * time.Millisecond
@@ -1358,6 +1389,7 @@ func TestADoneInsideTheDeliveryWindowSpendsTheSkip(t *testing.T) {
 // target that replies and ends its turn in the same breath has answered, and a
 // race between the two must not turn an answer into a shrug.
 func TestAnAnsweredTicketIsNotAlsoStalled(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	done := make(chan Result, 1)
@@ -1382,6 +1414,7 @@ func TestAnAnsweredTicketIsNotAlsoStalled(t *testing.T) {
 // TestASessionThatEndedStopsTheWaitOutright proves SessionEnd needs no turn:
 // the CLI has left the PTY, so nothing there will ever answer.
 func TestASessionThatEndedStopsTheWaitOutright(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 
@@ -1412,6 +1445,7 @@ func TestASessionThatEndedStopsTheWaitOutright(t *testing.T) {
 // TestAnotherSessionsTurnLeavesTheTicketAlone proves the ticket only answers to
 // its own target: a busy neighbour must not close it.
 func TestAnotherSessionsTurnLeavesTheTicketAlone(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 
 	done := make(chan Result, 1)
@@ -1435,6 +1469,7 @@ func TestAnotherSessionsTurnLeavesTheTicketAlone(t *testing.T) {
 // answer itself. The full text comes back through Collect, inside a turn the
 // sender chose, instead of restarting its turn as a prompt submission.
 func TestAnAnswerNobodyWaitedForIsStashedAndNudged(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -1491,6 +1526,7 @@ func TestAnAnswerNobodyWaitedForIsStashedAndNudged(t *testing.T) {
 // still holding the line carries the answer out itself, and typing it at the
 // prompt as well would deliver it twice.
 func TestAnAnswerSomeoneIsWaitingForIsNotAlsoTyped(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -1516,6 +1552,7 @@ func TestAnAnswerSomeoneIsWaitingForIsNotAlsoTyped(t *testing.T) {
 // return to: the CLI run from a script is not a session, so an answer nobody
 // waited for is simply not delivered rather than typed at a stranger.
 func TestAnExternalSenderHasNoPromptToAnswerAt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -1535,6 +1572,7 @@ func TestAnExternalSenderHasNoPromptToAnswerAt(t *testing.T) {
 }
 
 func TestSendRefusesAnAmbiguousLabel(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s3", "s5"), nil)
 
 	_, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "api", Prompt: "hello", WaitSeconds: 30})
@@ -1549,6 +1587,7 @@ func TestSendRefusesAnAmbiguousLabel(t *testing.T) {
 }
 
 func TestSendNarrowsAnAmbiguousLabelByProject(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s3", "s5")
 	svc := newRelay(workspace(), term, nil)
 
@@ -1572,6 +1611,7 @@ func TestSendNarrowsAnAmbiguousLabelByProject(t *testing.T) {
 }
 
 func TestSendRejectsUnreachableTargets(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	tests := []struct {
@@ -1595,6 +1635,7 @@ func TestSendRejectsUnreachableTargets(t *testing.T) {
 }
 
 func TestSendReportsADeliveryFailure(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.writeErr = errors.New("pty closed")
 	svc := newRelay(workspace(), term, nil)
@@ -1611,6 +1652,7 @@ func TestSendReportsADeliveryFailure(t *testing.T) {
 }
 
 func TestSendPendsWhenTheWaitRunsOutAndWaitPicksItUp(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	got, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "long errand", WaitSeconds: 1})
@@ -1638,6 +1680,7 @@ func TestSendPendsWhenTheWaitRunsOutAndWaitPicksItUp(t *testing.T) {
 }
 
 func TestReplyRefusesUnknownAndRepeatedTickets(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -1672,6 +1715,7 @@ func TestReplyRefusesUnknownAndRepeatedTickets(t *testing.T) {
 // exists for: an agent whose context was compacted past the message can still
 // send its answer home, because one open request needs no guessing.
 func TestReplyWithoutATicketAnswersTheOneOpenErrand(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 
@@ -1704,6 +1748,7 @@ func TestReplyWithoutATicketAnswersTheOneOpenErrand(t *testing.T) {
 // work nobody did. The refusal has to name both tickets and what each asked, or
 // the agent has nothing to retry with.
 func TestReplyWithoutATicketIsRefusedWithTwoErrandsOpen(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), events)
 
@@ -1764,6 +1809,7 @@ func TestReplyWithoutATicketIsRefusedWithTwoErrandsOpen(t *testing.T) {
 // boundary — the cut is in bytes, and half a rune is a replacement character in
 // the middle of the one line that tells two errands apart.
 func TestAnErrandIsNamedByTheOpeningOfItsPrompt(t *testing.T) {
+	t.Parallel()
 	if got := askedExcerpt("run the tests\n\nthen  report"); got != "run the tests then report" {
 		t.Errorf("excerpt = %q", got)
 	}
@@ -1789,6 +1835,7 @@ func TestAnErrandIsNamedByTheOpeningOfItsPrompt(t *testing.T) {
 // reads to tell them apart, and a list that shuffles between two runs is one it
 // cannot.
 func TestErrandOrderSurvivesAClockThatCannotTellThemApart(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), &fakeEvents{})
 	tick := time.Date(2026, 9, 4, 12, 0, 0, 0, time.UTC)
 
@@ -1812,6 +1859,7 @@ func TestErrandOrderSurvivesAClockThatCannotTellThemApart(t *testing.T) {
 // still queued for a prompt that never received it is not an errand this
 // session can be answering.
 func TestReplyWithoutATicketNeedsAnErrandItCanName(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.deliveryLimit = 50 * time.Millisecond
@@ -1836,6 +1884,7 @@ func TestReplyWithoutATicketNeedsAnErrandItCanName(t *testing.T) {
 }
 
 func TestWaitRefusesAnUnknownTicket(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal(), nil)
 
 	if _, err := svc.Wait(context.Background(), WaitOptions{Ticket: "deadbeef", WaitSeconds: 1}); err == nil {
@@ -1844,6 +1893,7 @@ func TestWaitRefusesAnUnknownTicket(t *testing.T) {
 }
 
 func TestExpiredTicketsAreSweptAway(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	svc.tickets["stale"] = &ticket{
 		target:  "docs",
@@ -1863,6 +1913,7 @@ func TestExpiredTicketsAreSweptAway(t *testing.T) {
 }
 
 func TestSendBoundsThePrompt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -1890,6 +1941,7 @@ func TestSendBoundsThePrompt(t *testing.T) {
 }
 
 func TestReplyTruncatesAnOversizedAnswer(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		answer string
@@ -1929,6 +1981,7 @@ func TestReplyTruncatesAnOversizedAnswer(t *testing.T) {
 // and idle mean the same "not working" — so it is dropped rather than kept for
 // the life of the process.
 func TestAnEndedSessionLeavesNoStateBehind(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	svc.Observe("s2", "busy")
@@ -1949,6 +2002,7 @@ func TestAnEndedSessionLeavesNoStateBehind(t *testing.T) {
 }
 
 func TestSanitizeKeepsWhitespaceAndDropsEscapes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		in   string
@@ -1975,6 +2029,7 @@ func TestSanitizeKeepsWhitespaceAndDropsEscapes(t *testing.T) {
 // under the 120s an agent's shell tool allows, and a 30 minute ceiling — so the
 // cap is pinned from both sides of the boundary rather than from far away.
 func TestWaitForClampsTheRequestedWait(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		seconds int
@@ -1996,6 +2051,7 @@ func TestWaitForClampsTheRequestedWait(t *testing.T) {
 }
 
 func TestTicketIDsAreDistinct(t *testing.T) {
+	t.Parallel()
 	seen := map[string]bool{}
 	for range 100 {
 		id, err := newTicketID()
@@ -2036,6 +2092,7 @@ func waitForTicket(svc *Service) string {
 // there to read it.
 
 func TestSendDeliversOnceTheSetupScriptFinishes(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.setUp("s2", true)
 	svc := newRelay(workspace(), term, nil)
@@ -2065,6 +2122,7 @@ func TestSendDeliversOnceTheSetupScriptFinishes(t *testing.T) {
 // to happen was a failed Send with the task gone; what has to happen is a
 // ticket now and a delivery later, on an errand that still answers.
 func TestSendQueuesForASessionThatIsNotAtAPromptYet(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.setUp("s2", true)
 	svc := newRelay(workspace(), term, nil)
@@ -2104,6 +2162,7 @@ func TestSendQueuesForASessionThatIsNotAtAPromptYet(t *testing.T) {
 // own timeout (internal/cli, waitBudget) and report a failure on an errand that
 // is running perfectly well.
 func TestSendDoesNotBlockOnASessionThatIsNotReady(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.setUp("s2", true)
 	svc := newRelay(workspace(), term, nil)
@@ -2127,6 +2186,7 @@ func TestSendDoesNotBlockOnASessionThatIsNotReady(t *testing.T) {
 // inbox, and told that nothing is queued anymore.
 
 func TestQueuedTaskGivesUpWhenTheTargetNeverReachesAPrompt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.setUp("s2", true)
 	svc := newRelay(workspace(), term, nil)
@@ -2153,6 +2213,7 @@ func TestQueuedTaskGivesUpWhenTheTargetNeverReachesAPrompt(t *testing.T) {
 }
 
 func TestQueuedTaskReportsTheTargetDyingToTheInbox(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.setUp("s2", true)
 	events := &fakeEvents{}
@@ -2217,6 +2278,7 @@ func (f fakePlugins) Installed(string) bool { return f.installed }
 func (f fakePlugins) HasTools(string) bool { return f.tools }
 
 func TestATaskNobodyPicksUpComesBackUnread(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 
@@ -2246,6 +2308,7 @@ func TestATaskNobodyPicksUpComesBackUnread(t *testing.T) {
 // prompt. The second write is the manual resend automated — seen with opencode,
 // whose startup goes quiet long enough to pass for a prompt.
 func TestATaskNobodyReadIsTypedInAgain(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 
@@ -2278,6 +2341,7 @@ func TestATaskNobodyReadIsTypedInAgain(t *testing.T) {
 // session ended — gets the unread verdict without a second write into whatever
 // holds it now.
 func TestNoRetryIntoATerminalThatIsNotReady(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 	term.onWrite = func(id, data string) {
@@ -2299,6 +2363,7 @@ func TestNoRetryIntoATerminalThatIsNotReady(t *testing.T) {
 }
 
 func TestATaskTheTargetStartsWorkingOnIsNotUnread(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 
@@ -2320,6 +2385,7 @@ func TestATaskTheTargetStartsWorkingOnIsNotUnread(t *testing.T) {
 // the message for the next turn and is busy the whole time, so there is nothing
 // here to tell apart.
 func TestABusyTargetIsNotCheckedForReceipt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 	svc.Observe("s2", stateBusy)
@@ -2338,6 +2404,7 @@ func TestABusyTargetIsNotCheckedForReceipt(t *testing.T) {
 // message queues behind the open turn, so calling it unread would drop a ticket
 // whose answer is still coming.
 func TestAWaitingTargetIsTreatedAsMidTurn(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 	svc.Observe("s2", stateBusy)
@@ -2359,6 +2426,7 @@ func TestAWaitingTargetIsTreatedAsMidTurn(t *testing.T) {
 // target is at its prompt, so a task typed there is read within seconds and the
 // receipt check has to stay armed.
 func TestWaitingAfterDoneStillArmsTheReceiptCheck(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 	svc.Observe("s2", stateBusy)
@@ -2377,6 +2445,7 @@ func TestWaitingAfterDoneStillArmsTheReceiptCheck(t *testing.T) {
 // Without the plugin a session reports nothing whatever happens in it, so its
 // silence says nothing either.
 func TestSilenceIsOnlyReadWhereTheProviderReports(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.receiptWindow = 40 * time.Millisecond
@@ -2395,6 +2464,7 @@ func TestSilenceIsOnlyReadWhereTheProviderReports(t *testing.T) {
 // moved on, so the news has to reach its prompt — as a nudge, with the unread
 // outcome itself waiting in the inbox.
 func TestTheSenderIsToldAtItsPromptWhenNobodyWasWaiting(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := withReceipts(term)
 	// A window the sender's own wait runs out before, which is the ordinary
@@ -2426,6 +2496,7 @@ func TestTheSenderIsToldAtItsPromptWhenNobodyWasWaiting(t *testing.T) {
 // what is left behind — without that it hears "still working" about a task
 // nothing read, on a ticket already gone from the map.
 func TestAWaiterGivingUpAsTheTaskGoesUnreadHearsSo(t *testing.T) {
+	t.Parallel()
 	svc := withReceipts(newFakeTerminal("s1", "s2"))
 	tk := &ticket{
 		target:   "docs",
@@ -2446,6 +2517,7 @@ func TestAWaiterGivingUpAsTheTaskGoesUnreadHearsSo(t *testing.T) {
 // read it. Whoever leaves last owns what is left behind — the answer is
 // written, accepted and gone otherwise, on a ticket already out of the map.
 func TestAnAnswerLandingAsItsLastWaiterGivesUpIsStashed(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	tk := &ticket{
 		fromID:   "s1",
@@ -2477,6 +2549,7 @@ func TestAnAnswerLandingAsItsLastWaiterGivesUpIsStashed(t *testing.T) {
 // only if the installed one is new enough. The relay asks rather than assumes.
 
 func TestTheMessageNamesTheToolWhenTheTargetHasIt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.SetPlugins(fakePlugins{installed: true, tools: true})
@@ -2493,6 +2566,7 @@ func TestTheMessageNamesTheToolWhenTheTargetHasIt(t *testing.T) {
 }
 
 func TestTheMessageNamesOnlyTheCommandWithoutTheTool(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.SetPlugins(fakePlugins{installed: true, tools: false})
@@ -2515,6 +2589,7 @@ func TestTheMessageNamesOnlyTheCommandWithoutTheTool(t *testing.T) {
 // Nothing wired is the state a test — and a lich whose plugin check never ran —
 // is in. It has to read as "no tools", never as "assume they are there".
 func TestWithoutAPluginCheckTheMessageNamesTheCommand(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -2551,6 +2626,7 @@ func plant(svc *Service, id, fromID, targetID, target string) {
 // sender's turn once per worker — the debounce folds the burst into one line
 // naming everything that is waiting.
 func TestABurstOfAnswersCoalescesIntoOneNudge(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	svc.nudgeDelay = 20 * time.Millisecond
@@ -2584,6 +2660,7 @@ func TestABurstOfAnswersCoalescesIntoOneNudge(t *testing.T) {
 // A delivery mid-turn queues as its own turn, which is the cost this whole
 // path exists to avoid — a busy sender hears nothing until its turn ends.
 func TestABusySenderIsNudgedOnlyWhenItsTurnEnds(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	svc.Observe("s1", stateBusy)
@@ -2607,6 +2684,7 @@ func TestABusySenderIsNudgedOnlyWhenItsTurnEnds(t *testing.T) {
 // must not be nudged again at every turn end — each nudge starts a turn, and
 // two of them chasing each other is a loop with a token bill.
 func TestANudgeIsNotRepeatedOnLaterTurnEnds(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -2630,6 +2708,7 @@ func TestANudgeIsNotRepeatedOnLaterTurnEnds(t *testing.T) {
 // the sender is never told about — the entry has to go back to unnudged and be
 // tried again at the next turn end.
 func TestANudgeThatNeverLandedIsSentAgain(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	term.failWrites(errors.New("pty closed"))
@@ -2659,6 +2738,7 @@ func TestANudgeThatNeverLandedIsSentAgain(t *testing.T) {
 // half is gone. The nudge is the path that has no other gate: it is typed at an
 // idle sender, which is exactly the session somebody is sitting at.
 func TestNothingIsTypedIntoAPromptItsUserIsHolding(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	term.typeAt("s1", true)
@@ -2680,6 +2760,7 @@ func TestNothingIsTypedIntoAPromptItsUserIsHolding(t *testing.T) {
 }
 
 func TestCollectHoldsTheLineForTheNextResult(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -2704,6 +2785,7 @@ func TestCollectHoldsTheLineForTheNextResult(t *testing.T) {
 }
 
 func TestCollectReportsWhoStillOwes(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -2725,6 +2807,7 @@ func TestCollectReportsWhoStillOwes(t *testing.T) {
 }
 
 func TestCollectWithNothingOpenReturnsAtOnce(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1"), nil)
 
 	start := time.Now()
@@ -2741,6 +2824,7 @@ func TestCollectWithNothingOpenReturnsAtOnce(t *testing.T) {
 }
 
 func TestCollectRefusesACallerWithNoSession(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal(), nil)
 
 	if _, err := svc.Collect(context.Background(), CollectOptions{WaitSeconds: 1}); err == nil {
@@ -2749,6 +2833,7 @@ func TestCollectRefusesACallerWithNoSession(t *testing.T) {
 }
 
 func TestWaitPicksAStashedOutcomeUp(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -2769,6 +2854,7 @@ func TestWaitPicksAStashedOutcomeUp(t *testing.T) {
 }
 
 func TestAnUncollectedResultExpiresWithItsTTL(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1"), nil)
 	svc.mu.Lock()
 	svc.ready["old"] = &inboxEntry{
@@ -2790,6 +2876,7 @@ func TestAnUncollectedResultExpiresWithItsTTL(t *testing.T) {
 // The window hears the inbox change size, so the card can say results are
 // waiting: the nudge tells the agent, the event tells the person.
 func TestTheInboxSizeIsAnnouncedAsItGrowsAndDrains(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(workspace(), term, events)
@@ -2816,6 +2903,7 @@ func TestTheInboxSizeIsAnnouncedAsItGrowsAndDrains(t *testing.T) {
 }
 
 func TestASingleTicketPickupAnnouncesTheSmallerInbox(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 	plant(svc, "t1", "s1", "s2", "docs")
@@ -2833,6 +2921,7 @@ func TestASingleTicketPickupAnnouncesTheSmallerInbox(t *testing.T) {
 }
 
 func TestAnExpiredInboxEntryAnnouncesItsAbsence(t *testing.T) {
+	t.Parallel()
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1"), events)
 	svc.mu.Lock()
@@ -2852,6 +2941,7 @@ func TestAnExpiredInboxEntryAnnouncesItsAbsence(t *testing.T) {
 }
 
 func TestTheNudgeNamesTheToolOnlyWhereItExists(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		tools bool
@@ -2889,6 +2979,7 @@ func TestTheNudgeNamesTheToolOnlyWhereItExists(t *testing.T) {
 // has. Naming tools that are not in the list would leave that session believing
 // it has no way to open anything.
 func TestSpawnBriefingNamesTheRouteThisSpawnGave(t *testing.T) {
+	t.Parallel()
 	withTools, withCommand := SpawnBriefing(prompt.English, true, RouteSessions), SpawnBriefing(prompt.English, false, RouteSessions)
 
 	if strings.Contains(withTools, "lich open") {
@@ -2920,6 +3011,7 @@ func TestSpawnBriefingNamesTheRouteThisSpawnGave(t *testing.T) {
 // report back on its own), so the briefing points at it instead of drawing a
 // line against it, and keeps open_session for what a subagent cannot be.
 func TestSpawnBriefingSendsCardsToTheAgentTool(t *testing.T) {
+	t.Parallel()
 	cards := SpawnBriefing(prompt.English, true, RouteCards)
 	for _, want := range []string{"Agent tool", "card", "isolation", "tools in your list"} {
 		if !strings.Contains(cards, want) {
@@ -2939,6 +3031,7 @@ func TestSpawnBriefingSendsCardsToTheAgentTool(t *testing.T) {
 // A card as deep as lich nests them is told its Agent tool stays inside it, and
 // is not sent to open sessions instead, which would nest cards by another door.
 func TestSpawnBriefingKeepsANativeCardsFanOutUnderIt(t *testing.T) {
+	t.Parallel()
 	for _, hasTools := range []bool{true, false} {
 		native := SpawnBriefing(prompt.English, hasTools, RouteNative)
 		for _, want := range []string{"Agent tool", "inside this session", "rather than with new lich sessions"} {
@@ -2960,6 +3053,7 @@ func TestSpawnBriefingKeepsANativeCardsFanOutUnderIt(t *testing.T) {
 // the one holding the request, and reporting it unanswered here would tell the
 // sender the work is over while the target sits at a prompt able to carry on.
 func TestAnInterruptedTurnDoesNotEndTheErrand(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -2989,6 +3083,7 @@ func TestAnInterruptedTurnDoesNotEndTheErrand(t *testing.T) {
 // An interrupted session is at its prompt with nothing running, which is
 // exactly when a delivery held back for a busy target may go in.
 func TestAnInterruptedTargetIsNotBusy(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
@@ -3007,6 +3102,7 @@ func TestAnInterruptedTargetIsNotBusy(t *testing.T) {
 // one a plugin already holds (LICH_SESSION_ID, lich whoami), and the one no
 // rename moves.
 func TestSendReachesASessionByItsID(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s5")
 	svc := newRelay(workspace(), term, nil)
 
@@ -3023,6 +3119,7 @@ func TestSendReachesASessionByItsID(t *testing.T) {
 // A caller naming itself by id is refused exactly as by label: the roster never
 // holds the caller, whichever name it is looked up by.
 func TestSendRefusesTheCallersOwnIDLikeItsLabel(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	_, byLabel := svc.Send(context.Background(), SendOptions{From: "s1", Target: "sender", Prompt: "hello", WaitSeconds: 30})
@@ -3036,6 +3133,7 @@ func TestSendRefusesTheCallersOwnIDLikeItsLabel(t *testing.T) {
 }
 
 func TestSelfIsTheCallersOwnEntry(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
 	got, err := svc.Self(SelfOptions{From: "s1"})
@@ -3052,6 +3150,7 @@ func TestSelfIsTheCallersOwnEntry(t *testing.T) {
 }
 
 func TestSelfRefusesACallerWithoutASession(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1"), nil)
 
 	for id, want := range map[string]string{"": "LICH_SESSION_ID is unset", "gone": `no session with id "gone"`} {
@@ -3066,6 +3165,7 @@ func TestSelfRefusesACallerWithoutASession(t *testing.T) {
 // card was closed, the same id respawned is a new process that has reported
 // nothing: it must not read busy to deliveries or in the roster.
 func TestAReapedOrClosedSessionForgetsItsState(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
 	svc.Observe("s2", "busy")
 	svc.Observe("s3", "busy")

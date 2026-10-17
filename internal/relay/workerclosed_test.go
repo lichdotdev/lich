@@ -11,6 +11,7 @@ import (
 // the errand ends there and the caller is told nothing: the SessionEnd its
 // dying CLI reports a moment later finds no errand to call unanswered.
 func TestClosingAWorkerEndsItsErrandSilently(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), term, events)
@@ -42,6 +43,7 @@ func TestClosingAWorkerEndsItsErrandSilently(t *testing.T) {
 // or by another session, ends work the caller never stopped, so the caller hears
 // it stopped the way it hears any other outcome: in its inbox, with a nudge.
 func TestAWorkerClosedByAnotherHandTellsItsCallerItStopped(t *testing.T) {
+	t.Parallel()
 	for _, closer := range []string{"", "s3"} {
 		t.Run("closer="+closer, func(t *testing.T) {
 			term := newFakeTerminal("s1", "s2", "s3")
@@ -67,6 +69,7 @@ func TestAWorkerClosedByAnotherHandTellsItsCallerItStopped(t *testing.T) {
 // A caller still holding the line hears how the errand ended: stopped, which no
 // card has to be opened about.
 func TestAWaiterOnAClosedWorkerHearsItStopped(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantSubagent(svc, "t1", "s1", "s2", "docs")
 
@@ -94,6 +97,7 @@ func TestAWaiterOnAClosedWorkerHearsItStopped(t *testing.T) {
 // Only subagent errands end with their worker's close: an ordinary errand at
 // a closed session still ends as it always did.
 func TestClosingASessionLeavesOrdinaryErrandsToTheirEnd(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 

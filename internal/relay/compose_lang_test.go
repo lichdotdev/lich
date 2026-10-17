@@ -12,6 +12,7 @@ import (
 // SpawnBriefing): a translation that brings a double quote or an angle bracket
 // in breaks every Windows spawn of a .cmd provider in that language.
 func TestSpawnBriefingIsCmdSafeInEveryLanguage(t *testing.T) {
+	t.Parallel()
 	for _, lang := range prompt.Langs {
 		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative} {
 			for _, hasTools := range []bool{true, false} {
@@ -28,6 +29,7 @@ func TestSpawnBriefingIsCmdSafeInEveryLanguage(t *testing.T) {
 // format that drops or misnumbers one shows as %!, which an agent would read as
 // part of the instruction.
 func TestEveryMessageRendersInEveryLanguage(t *testing.T) {
+	t.Parallel()
 	for _, lang := range prompt.Langs {
 		messages := []string{
 			compose(lang, "", "t1", "task", false),
@@ -56,6 +58,7 @@ func TestEveryMessageRendersInEveryLanguage(t *testing.T) {
 // The language is read when a message is composed, not when the relay starts,
 // so a change in Settings reaches the next message.
 func TestTheRelayTypesInThePromptLanguageReadLive(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s2")
 	svc := newRelay(workspace(), term, nil)
 	lang := prompt.English
@@ -76,6 +79,7 @@ func TestTheRelayTypesInThePromptLanguageReadLive(t *testing.T) {
 // Russian's one form also covers 21, so the nudge prints the count in every
 // form and the noun agrees with it.
 func TestTheRussianNudgeAgreesWithItsCount(t *testing.T) {
+	t.Parallel()
 	for count, want := range map[int]string{
 		1: "1 отправленная вами задача готова", 2: "2 отправленные вами задачи готовы",
 		5: "5 отправленных вами задач готовы", 11: "11 отправленных вами задач готовы",

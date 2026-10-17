@@ -53,6 +53,7 @@ func at(unix int64) func() time.Time {
 }
 
 func TestDeliverDueTypesThePromptAndClearsTheRow(t *testing.T) {
+	t.Parallel()
 	writer := &scheduleWriter{}
 	term := newFakeTerminal("s1")
 	events := &fakeEvents{}
@@ -79,6 +80,7 @@ func TestDeliverDueTypesThePromptAndClearsTheRow(t *testing.T) {
 // The prompt is typed as the user wrote it: no sender, no ticket, none of the
 // envelope a relayed task carries. A scheduled prompt has nobody to report to.
 func TestDeliverDueTypesNoEnvelope(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1")
 	svc := newRelay(scheduled(1000, "ship it", &scheduleWriter{}), term, nil)
 	svc.now = at(1000)
@@ -91,6 +93,7 @@ func TestDeliverDueTypesNoEnvelope(t *testing.T) {
 }
 
 func TestDeliverDueLeavesAPromptThatIsNotDueYet(t *testing.T) {
+	t.Parallel()
 	writer := &scheduleWriter{}
 	term := newFakeTerminal("s1")
 	svc := newRelay(scheduled(1001, "later", writer), term, nil)
@@ -110,6 +113,7 @@ func TestDeliverDueLeavesAPromptThatIsNotDueYet(t *testing.T) {
 // lich was closed. It arrives announced, because a reminder from three days ago
 // read as one written now is the trap being closed here.
 func TestDeliverDueTypesAnOverduePrompt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1")
 	svc := newRelay(scheduled(1000, "the overdue one", &scheduleWriter{}), term, nil)
 	svc.now = at(1000 + 3*24*60*60)
@@ -131,6 +135,7 @@ func TestDeliverDueTypesAnOverduePrompt(t *testing.T) {
 // A prompt found within one pass of its time is on time by every measure this
 // package can take, so it arrives as the user wrote it and nothing else.
 func TestDeliverDueTypesAnOnTimePromptBare(t *testing.T) {
+	t.Parallel()
 	for name, now := range map[string]int64{
 		"to the second": 1000,
 		"within a tick": 1000 + int64(scheduleTick/time.Second),
@@ -153,6 +158,7 @@ func TestDeliverDueTypesAnOnTimePromptBare(t *testing.T) {
 // a prompt that just missed its pass, hours for one held over a working day,
 // days for one that waited out a closed lich.
 func TestLateNoticeWordsTheDelay(t *testing.T) {
+	t.Parallel()
 	cases := map[string]struct {
 		late int64
 		want string
@@ -182,6 +188,7 @@ func TestLateNoticeWordsTheDelay(t *testing.T) {
 // A session with no prompt to type at keeps its schedule: the row is the only
 // copy of what the user wrote, and the next pass is when it lands.
 func TestDeliverDueKeepsThePromptWhileTheSessionIsNotReady(t *testing.T) {
+	t.Parallel()
 	cases := map[string]func(*fakeTerminal){
 		"no PTY":         func(term *fakeTerminal) { term.live["s1"] = false },
 		"setting up":     func(term *fakeTerminal) { term.settingUp["s1"] = true },
@@ -210,6 +217,7 @@ func TestDeliverDueKeepsThePromptWhileTheSessionIsNotReady(t *testing.T) {
 // The clear is what stops a second pass typing the same prompt again, so a
 // clear that fails has to stop the delivery with it.
 func TestDeliverDueSkipsWhenTheRowCannotBeCleared(t *testing.T) {
+	t.Parallel()
 	writer := &scheduleWriter{err: errors.New("database is locked")}
 	term := newFakeTerminal("s1")
 	svc := newRelay(scheduled(1000, "run it", writer), term, nil)
@@ -223,6 +231,7 @@ func TestDeliverDueSkipsWhenTheRowCannotBeCleared(t *testing.T) {
 }
 
 func TestDeliverDueIgnoresSessionsWithNothingScheduled(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3", "s4")
 	svc := newRelay(workspace(), term, nil)
 	svc.now = at(1000)
@@ -237,6 +246,7 @@ func TestDeliverDueIgnoresSessionsWithNothingScheduled(t *testing.T) {
 }
 
 func TestDeliverDueSurvivesAnUnreadableWorkspace(t *testing.T) {
+	t.Parallel()
 	svc := newRelay(fakeSessions{err: errors.New("no database")}, newFakeTerminal("s1"), nil)
 	svc.deliverDue()
 }
@@ -247,6 +257,7 @@ func TestDeliverDueSurvivesAnUnreadableWorkspace(t *testing.T) {
 // first free prompt, and the row cleared is the resumed one: the id it was
 // scheduled under is gone.
 func TestDeliverDueTypesAPromptParkedThroughAResume(t *testing.T) {
+	t.Parallel()
 	writer := &scheduleWriter{}
 	sessions := fakeSessions{
 		projects: []store.Project{{ID: "p1", Name: "lich", Sessions: []store.Session{

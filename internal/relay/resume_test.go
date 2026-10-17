@@ -26,6 +26,7 @@ func (w *parkWriter) all() []ScheduleEvent {
 }
 
 func TestParkResumeParksTheContinuationAfterTheReset(t *testing.T) {
+	t.Parallel()
 	writer := &parkWriter{}
 	events := &fakeEvents{}
 	svc := newRelay(scheduledWith(0, "", writer.set), newFakeTerminal("s1"), events)
@@ -43,6 +44,7 @@ func TestParkResumeParksTheContinuationAfterTheReset(t *testing.T) {
 }
 
 func TestParkResumeParksNothingItShouldNotWaitFor(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		resetsAt int64
@@ -72,6 +74,7 @@ func TestParkResumeParksNothingItShouldNotWaitFor(t *testing.T) {
 // than typed behind that turn. Learned from the row too, so a continuation
 // parked before a restart is dropped all the same.
 func TestATurnStartingDropsTheParkedContinuation(t *testing.T) {
+	t.Parallel()
 	writer := &parkWriter{}
 	events := &fakeEvents{}
 	svc := newRelay(scheduledWith(5000, resumePrompt, writer.set), newFakeTerminal("s1"), events)
@@ -90,6 +93,7 @@ func TestATurnStartingDropsTheParkedContinuation(t *testing.T) {
 }
 
 func TestATurnStartingLeavesThePersonsPromptAlone(t *testing.T) {
+	t.Parallel()
 	writer := &parkWriter{}
 	svc := newRelay(scheduledWith(5000, "ship the release notes", writer.set), newFakeTerminal("s1"), &fakeEvents{})
 	svc.now = at(1000)

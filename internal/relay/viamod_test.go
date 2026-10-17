@@ -129,6 +129,7 @@ func assertNotTyped(t *testing.T, term *fakeTerminal, id string) {
 }
 
 func TestATaskToASessionWithAModIsHandedToItNotTyped(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", ackedOK)
 	events := &fakeEvents{}
@@ -162,6 +163,7 @@ func TestATaskToASessionWithAModIsHandedToItNotTyped(t *testing.T) {
 // A prompt no poll collected never runs, so typing it keeps delivery at most
 // once; from there it is a typed task like any other, receipt check included.
 func TestATaskNoPollCollectedIsTypedInstead(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", withdrawn)
 	svc := viaMod(term, nil)
@@ -184,6 +186,7 @@ func TestATaskNoPollCollectedIsTypedInstead(t *testing.T) {
 // A prompt a poll collected may still run: typing it again could run the task
 // twice, so it is reported unread instead, and a late answer still lands.
 func TestATaskTheModCollectedIsNeverTypedAgain(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", collected)
 	svc := viaMod(term, nil)
@@ -207,6 +210,7 @@ func TestATaskTheModCollectedIsNeverTypedAgain(t *testing.T) {
 // A busy target runs the prompt once its turn ends, which can be long after
 // the window: the errand waits for its turn instead of being written off.
 func TestATaskTheModCollectedForABusyTargetWaitsForItsTurn(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", collected)
 	svc := viaMod(term, nil)
@@ -235,6 +239,7 @@ func TestATaskTheModCollectedForABusyTargetWaitsForItsTurn(t *testing.T) {
 // A UserPromptSubmit hook that blocks the prompt would block it typed as well,
 // so it is reported undelivered rather than typed.
 func TestATaskAHookDroppedComesBackUndelivered(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", PromptReceipt{State: PromptAcked, Reason: "blocked by a hook"})
 	svc := viaMod(term, nil)
@@ -253,6 +258,7 @@ func TestATaskAHookDroppedComesBackUndelivered(t *testing.T) {
 }
 
 func TestAModTaskTheTargetStartedIsNotUnread(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", ackedOK)
 	svc := viaMod(term, nil)
@@ -272,6 +278,7 @@ func TestAModTaskTheTargetStartedIsNotUnread(t *testing.T) {
 }
 
 func TestAnEndedSessionsModTaskIsNotTyped(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", PromptReceipt{State: PromptEnded})
 	svc := viaMod(term, nil)
@@ -289,6 +296,7 @@ func TestAnEndedSessionsModTaskIsNotTyped(t *testing.T) {
 // A fresh session is typed at while its mod has not polled yet; the receipt
 // check's second attempt goes to the mod once it has.
 func TestARetryReachesTheModOnceItAttaches(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	svc := viaMod(term, nil)
 	term.onWrite = func(id, data string) {
@@ -313,6 +321,7 @@ func TestARetryReachesTheModOnceItAttaches(t *testing.T) {
 }
 
 func TestSubmitPromptErrorIsTheSendsError(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	refused := errors.New("the transport is down")
 	term.failMod("s2", refused)
@@ -331,6 +340,7 @@ func TestSubmitPromptErrorIsTheSendsError(t *testing.T) {
 // The mod never touches the draft, so a sender typing at its prompt is told at
 // once instead of after its line goes stale.
 func TestANudgeReachesASenderThroughItsMod(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", ackedOK)
 	term.typeAt("s1", true)
@@ -354,6 +364,7 @@ func TestANudgeReachesASenderThroughItsMod(t *testing.T) {
 
 // Mirrors TestANudgeThatNeverLandedIsSentAgain for a nudge a hook refused.
 func TestANudgeTheModRefusedIsSentAgain(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", PromptReceipt{State: PromptAcked, Reason: "blocked"}, ackedOK)
 	svc := viaMod(term, nil)
@@ -373,6 +384,7 @@ func TestANudgeTheModRefusedIsSentAgain(t *testing.T) {
 }
 
 func TestANudgeNoPollCollectedIsTyped(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", withdrawn)
 	svc := viaMod(term, nil)
@@ -387,6 +399,7 @@ func TestANudgeNoPollCollectedIsTyped(t *testing.T) {
 }
 
 func TestAScheduledPromptGoesThroughTheMod(t *testing.T) {
+	t.Parallel()
 	writer := &scheduleWriter{}
 	term := newFakeTerminal("s1")
 	term.attachMod("s1", ackedOK)
@@ -402,6 +415,7 @@ func TestAScheduledPromptGoesThroughTheMod(t *testing.T) {
 }
 
 func TestTheTicketNoticeGoesThroughTheMod(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2", "s3")
 	term.attachMod("s2", ackedOK, ackedOK, ackedOK)
 	svc := viaMod(term, nil)
@@ -428,6 +442,7 @@ func TestTheTicketNoticeGoesThroughTheMod(t *testing.T) {
 // there meanwhile is not its turn: the errand stays open, and the task is typed
 // once it is withdrawn.
 func TestATurnBeforeAnyPollCollectedTheTaskDoesNotCloseIt(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", withdrawn)
 	svc := viaMod(term, nil)
@@ -454,6 +469,7 @@ func TestATurnBeforeAnyPollCollectedTheTaskDoesNotCloseIt(t *testing.T) {
 // once the report it raised is through: a report that waited on the nudge's
 // ack would wait on itself.
 func TestAStateReportDoesNotWaitOnTheNudgesAck(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s1", collected)
 	svc := viaMod(term, nil)
@@ -481,6 +497,7 @@ func TestAStateReportDoesNotWaitOnTheNudgesAck(t *testing.T) {
 
 // The mod never touches the user's line, so a task does not wait for it.
 func TestATaskReachesADraftingSessionThroughItsMod(t *testing.T) {
+	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
 	term.attachMod("s2", ackedOK)
 	term.typeAt("s2", true)
@@ -496,6 +513,7 @@ func TestATaskReachesADraftingSessionThroughItsMod(t *testing.T) {
 }
 
 func TestAScheduledPromptReachesADraftingSessionThroughItsMod(t *testing.T) {
+	t.Parallel()
 	writer := &scheduleWriter{}
 	term := newFakeTerminal("s1")
 	term.attachMod("s1", ackedOK)
