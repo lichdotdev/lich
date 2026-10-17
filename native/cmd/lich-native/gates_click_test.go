@@ -38,8 +38,11 @@ type gateBackend struct {
 
 	// refuseEvents and refuseTerminal make that socket's upgrade fail.
 	refuseEvents, refuseTerminal atomic.Bool
-	// eventsOpened and terminalOpened count the sockets a window attached.
-	eventsOpened, terminalOpened atomic.Int32
+	// eventsOpened and terminalOpened count the sockets a window attached;
+	// socketsLive those of them still open.
+	eventsOpened, terminalOpened, socketsLive atomic.Int32
+	// failing holds the RPC methods that answer with an error.
+	failing sync.Map
 
 	dropEvents     chan struct{}
 	dropEventsOnce sync.Once
@@ -69,6 +72,10 @@ func (b *gateBackend) serve(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	method := strings.TrimPrefix(r.URL.Path, "/rpc/")
 	b.calls <- method + " " + string(body)
+	if _, fails := b.failing.Load(method); fails {
+		http.Error(w, `{"error":"failing"}`, http.StatusInternalServerError)
+		return
+	}
 	result := b.answer[method]
 	if method == "store.LoadState" {
 		result = b.state
@@ -87,6 +94,8 @@ func (b *gateBackend) hold(w http.ResponseWriter, r *http.Request, refuse *atomi
 		return
 	}
 	opened.Add(1)
+	b.socketsLive.Add(1)
+	defer b.socketsLive.Add(-1)
 	gone := conn.CloseRead(r.Context())
 	select {
 	case <-drop:

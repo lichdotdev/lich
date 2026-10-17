@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -78,12 +79,21 @@ func (u *window) awaitSuccessor() (lichclient.Runtime, bool) {
 // reattach is connect's sockets and state again, on the backend the client
 // now points at: every terminal attaches again, the spawn gate asks about the
 // sessions the restart stopped, and the asks a new release brings run again.
-func (u *window) reattach() error {
-	events, err := u.client.Events(u.ctx)
+// The sockets belong to a context of their own, ended when reattach fails: the
+// window is lost then, and a socket left open would hold the backend's one
+// /events client for a window that shows nothing.
+func (u *window) reattach() (err error) {
+	ctx, cancel := context.WithCancel(u.ctx)
+	defer func() {
+		if err != nil {
+			cancel()
+		}
+	}()
+	events, err := u.client.Events(ctx)
 	if err != nil {
 		return err
 	}
-	stream, _, err := u.client.Terminal(u.ctx, func(id string, data []byte) { u.terms.onOutput(id, data) })
+	stream, _, err := u.client.Terminal(ctx, func(id string, data []byte) { u.terms.onOutput(id, data) })
 	if err != nil {
 		return err
 	}

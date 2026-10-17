@@ -150,17 +150,51 @@ func TestDropWithNoSuccessorWithinTheWaitMarksLost(t *testing.T) {
 	}
 }
 
-func TestDropWhenTheSuccessorRefusesASocketMarksLost(t *testing.T) {
-	for name, refuse := range map[string]func(*gateBackend){
-		"events":   func(b *gateBackend) { b.refuseEvents.Store(true) },
-		"terminal": func(b *gateBackend) { b.refuseTerminal.Store(true) },
+func TestDropWhenReattachFailsMarksLostAndLeavesNoSocketOpen(t *testing.T) {
+	for name, fail := range map[string]func(*gateBackend){
+		"events refused":   func(b *gateBackend) { b.refuseEvents.Store(true) },
+		"terminal refused": func(b *gateBackend) { b.refuseTerminal.Store(true) },
+		"state fails":      func(b *gateBackend) { b.failing.Store("store.LoadState", true) },
+		"turn states fail": func(b *gateBackend) { b.failing.Store("terminal.TurnStates", true) },
 	} {
 		t.Run(name, func(t *testing.T) {
 			r := newReconnectRig(t)
-			refuse(r.next)
+			fail(r.next)
 			r.name(t, r.next)
 			r.old.goAway()
 			waitFor(t, "the window lost", r.lost)
+			waitFor(t, "the successor's sockets closed", func() bool { return r.next.socketsLive.Load() == 0 })
+		})
+	}
+}
+
+func TestDropFindsTheSuccessorInTheDefaultRuntimeFile(t *testing.T) {
+	for dev, file := range map[string]string{"": "runtime.json", "1": "runtime-dev.json"} {
+		t.Run(file, func(t *testing.T) {
+			// UserConfigDir reads a different variable on each OS.
+			for _, env := range []string{"XDG_CONFIG_HOME", "HOME", "AppData"} {
+				t.Setenv(env, t.TempDir())
+			}
+			t.Setenv("LICH_DEV", dev)
+			r := newReconnectRig(t)
+			*flagRuntime = ""
+			r.old.goAway()
+			waitFor(t, "the window waiting for the restart", r.u.reconnecting.Load)
+
+			config, err := os.UserConfigDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(config, "lich", file)
+			if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			r.runtime = path
+			r.name(t, r.next)
+			waitFor(t, "the successor attached", func() bool { return r.next.eventsOpened.Load() == 1 })
+			if r.lost() {
+				t.Error("the window gave up on a successor named in the default runtime file")
+			}
 		})
 	}
 }
