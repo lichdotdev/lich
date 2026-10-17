@@ -69,6 +69,14 @@ The conversation id is what tells them apart:
   opened by a report from the bound conversation, so a nested CLI cannot hold
   one open against a later `/clear`.
 
+A subagent inside the session's own harness is the case the id cannot catch:
+Claude Code fires the session's `PreToolUse` and `PostToolUse` for its
+subagents' tools with the session's own `session_id`, adding an `agent_id` the
+main conversation never sends (2.1.302). Those tools can run after `Stop` (a
+background agent, and the fork that writes the next prompt suggestion), so the
+client sends no `busy` for a payload carrying `agent_id`. While a subagent works
+inside a turn, the card's tool line keeps naming the call that started it.
+
 ## Event → state mapping
 
 | Claude Code hook   | Codex hook          | Antigravity hook | opencode event           | oh-my-pi event | Crush hook | Cursor CLI hook    | Kiro CLI hook      | state     |
