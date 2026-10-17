@@ -143,7 +143,8 @@ derive one from the other. No i18n library: `lib/i18n/` is the whole mechanism.
   `import { t } from "@/lib/i18n/i18n"`, read at call time, never at import time. A key built at runtime
   must still be a typed template: `` t(`sidebar.cardColor.color.${name}`) `` with `name` a union.
 - **Not translated:** backend error text shown through `errorText()` (only the sentence around it is),
-  `CHANGELOG.md` and the What's new dialog, identifiers and names (providers, branches, commands, file
+  `CHANGELOG.md` (the What's new dialog reads its translations from `changelog/<locale>.md`, written by the
+  `lich-changelog-i18n` skill at release time), identifiers and names (providers, branches, commands, file
   paths, `lich`, `Claude Code`), keyboard shortcuts, and a test's fixture data.
 - **Tests stay English.** The node suites and jsdom both resolve to `en`; a test asserting English text keeps
   passing untouched. Assert another locale by calling `setLocale` in the test, never by editing an English

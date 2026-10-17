@@ -15,13 +15,13 @@ func TestPatchNotesKeepsNoSectionApartFromAnEmptyOne(t *testing.T) {
 		"no section":    {`{"version":"1.0.0","highlights":null,"groups":null}`, false},
 		"empty section": {`{"version":"1.0.0","highlights":null,"groups":[]}`, true},
 	} {
-		c := fakeBackend(t, func(method string, _ []json.RawMessage) (any, int) {
-			if method != "patchnotes.Current" {
-				t.Errorf("method %s", method)
+		c := fakeBackend(t, func(method string, args []json.RawMessage) (any, int) {
+			if method != "patchnotes.Current" || len(args) != 1 || string(args[0]) != `"pt-BR"` {
+				t.Errorf("call %s %s, want patchnotes.Current with the locale", method, args)
 			}
 			return json.RawMessage(tc.body), http.StatusOK
 		})
-		n, err := c.PatchNotes(context.Background())
+		n, err := c.PatchNotes(context.Background(), "pt-BR")
 		if err != nil || (n.Groups != nil) != tc.wantGroup {
 			t.Errorf("%s: groups %#v, %v; want non-nil %v", name, n.Groups, err, tc.wantGroup)
 		}

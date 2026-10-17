@@ -41,8 +41,8 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   (`internal/terminal`).
 - No literal user-visible or agent-facing text: a string a person reads on a lich screen, or that lich types
   into a session, goes through the catalogs and lands in **every** locale in the same PR (`lich-i18n` skill).
-  English is the source; tests stay English. Error text, CHANGELOG, MCP tool descriptions and CLI help stay
-  English by design.
+  English is the source; tests stay English. Error text, `CHANGELOG.md`, MCP tool descriptions and CLI help
+  stay English by design; the What's new dialog reads a release's translations from `changelog/<locale>.md`.
 - Service shapes are hand-owned in `frontend/src/lib/api-types.ts`: touch a Go struct's JSON tags and that mirror
   moves in the same change. There is no codegen.
 - A fact more than one place shows (git status, a pull request, plan quota, a session's profile or status) has
@@ -119,6 +119,9 @@ The version comes from the git tag (`git describe` in the Taskfile, env `VERSION
       greps `^## \[X.Y.Z\]` and ships empty notes if it misses. Keep the sections in their canonical order
       (Added, Changed, Deprecated, Removed, Fixed, Security), and refresh the compare links, `[Unreleased]`
       included.
+- [ ] Translate the cut section for the What's new dialog with the `lich-changelog-i18n` skill, alert blocks
+      included, in the same commit: `TestTranslations` (`internal/patchnotes`) fails until every
+      `changelog/<locale>.md` holds this release.
 - [ ] Want the release to announce itself? Write GitHub alert blocks right under its heading, before the first
       `###`: `> [!IMPORTANT]` is the release's headline and opens the What's new dialog (one per release — a
       second one is demoted to a callout, which is the signal to fold it into the groups); `> [!WARNING]` is

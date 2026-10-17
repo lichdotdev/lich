@@ -95,6 +95,40 @@ export const shell = {
     title: "lich {version}의 새로운 기능",
     viewChangelog: "전체 변경 내역 보기",
     gotIt: "확인",
+    groups: {
+      added: "추가",
+      changed: "변경",
+      deprecated: "지원 중단",
+      removed: "제거",
+      fixed: "수정",
+      security: "보안",
+    },
+    counts: {
+      added: {
+        one: "{count}개 추가",
+        other: "{count}개 추가",
+      },
+      changed: {
+        one: "{count}개 변경",
+        other: "{count}개 변경",
+      },
+      deprecated: {
+        one: "{count}개 지원 중단",
+        other: "{count}개 지원 중단",
+      },
+      removed: {
+        one: "{count}개 제거",
+        other: "{count}개 제거",
+      },
+      fixed: {
+        one: "{count}개 수정",
+        other: "{count}개 수정",
+      },
+      security: {
+        one: "{count}개 보안",
+        other: "{count}개 보안",
+      },
+    },
   },
   planQuota: {
     planUsage: "플랜 사용량",

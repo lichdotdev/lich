@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **What's new speaks your language.** The dialog that opens after an update
+  shows the release notes, and their group names, in the interface language
+  you picked, in both windows. A build whose notes have no translation yet
+  shows them in English.
 - **Fork a session in the native window.** Right-click a card and pick
   Fork › Here to carry its conversation on in a new card right under it, in
   the same checkout, or Fork › Worktree… to take it to a new worktree along

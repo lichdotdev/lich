@@ -6,6 +6,7 @@
 // Each facade mirrors its Go service's method names and signatures; shapes
 // live in lib/api-types.ts.
 
+import type { Locale } from "@/lib/i18n/i18n"
 import type {
   AppUpdateStatus,
   BaseStatus,
@@ -579,8 +580,9 @@ export const AppUpdate = {
 }
 
 export const PatchNotes = {
-  /** The running build's changelog section, for the "what's new" popup. */
-  Current: () => call<PatchNotesData>("patchnotes.Current", []),
+  /** The running build's changelog section in the interface language, for the
+   * "what's new" popup; English when the release has no translation into it. */
+  Current: (locale: Locale) => call<PatchNotesData>("patchnotes.Current", [locale]),
 }
 
 /** The system tray's menu, which the backend draws in the page's words. */

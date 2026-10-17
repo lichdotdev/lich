@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { SettingBlock } from "./SettingBlock"
 import { PatchNotesDialog } from "@/components/PatchNotesDialog"
 import { PluginSetting } from "./PluginSetting"
-import { useT } from "@/lib/i18n/i18n"
+import { useLocale, useT } from "@/lib/i18n/i18n"
 import { PatchNotes } from "@/lib/rpc"
 import { runUpdateCheck } from "@/lib/update/update-check"
 import { useRemoteResource } from "@/lib/use-remote-resource"
@@ -12,13 +12,14 @@ import type { PatchNotes as PatchNotesData } from "@/lib/api-types"
 
 export function UpdatesSettings() {
   const t = useT()
+  const locale = useLocale()
   const [notesOpen, setNotesOpen] = useState(false)
   const [checking, setChecking] = useState(false)
   const [checkResult, setCheckResult] = useState("")
   const { data: notes } = useRemoteResource<PatchNotesData | null>(
-    "patch-notes",
-    () => PatchNotes.Current(),
-    { empty: null, cache: "settings.patchNotes" },
+    `patch-notes:${locale}`,
+    () => PatchNotes.Current(locale),
+    { empty: null, cache: `settings.patchNotes.${locale}` },
   )
   const checkApp = async () => {
     setChecking(true)

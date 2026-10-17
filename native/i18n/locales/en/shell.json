@@ -70,7 +70,41 @@
   "patchNotesDialog": {
     "title": "What's new in lich {version}",
     "viewChangelog": "View full changelog",
-    "gotIt": "Got it"
+    "gotIt": "Got it",
+    "groups": {
+      "added": "Added",
+      "changed": "Changed",
+      "deprecated": "Deprecated",
+      "removed": "Removed",
+      "fixed": "Fixed",
+      "security": "Security"
+    },
+    "counts": {
+      "added": {
+        "one": "{count} added",
+        "other": "{count} added"
+      },
+      "changed": {
+        "one": "{count} changed",
+        "other": "{count} changed"
+      },
+      "deprecated": {
+        "one": "{count} deprecated",
+        "other": "{count} deprecated"
+      },
+      "removed": {
+        "one": "{count} removed",
+        "other": "{count} removed"
+      },
+      "fixed": {
+        "one": "{count} fixed",
+        "other": "{count} fixed"
+      },
+      "security": {
+        "one": "{count} security",
+        "other": "{count} security"
+      }
+    }
   },
   "planQuota": {
     "planUsage": "Plan usage",

@@ -98,6 +98,40 @@ export const shell = {
     title: "lich {version} の新機能",
     viewChangelog: "変更履歴をすべて見る",
     gotIt: "了解",
+    groups: {
+      added: "追加",
+      changed: "変更",
+      deprecated: "非推奨",
+      removed: "削除",
+      fixed: "修正",
+      security: "セキュリティ",
+    },
+    counts: {
+      added: {
+        one: "{count} 件の追加",
+        other: "{count} 件の追加",
+      },
+      changed: {
+        one: "{count} 件の変更",
+        other: "{count} 件の変更",
+      },
+      deprecated: {
+        one: "{count} 件の非推奨",
+        other: "{count} 件の非推奨",
+      },
+      removed: {
+        one: "{count} 件の削除",
+        other: "{count} 件の削除",
+      },
+      fixed: {
+        one: "{count} 件の修正",
+        other: "{count} 件の修正",
+      },
+      security: {
+        one: "{count} 件のセキュリティ",
+        other: "{count} 件のセキュリティ",
+      },
+    },
   },
   planQuota: {
     planUsage: "プランの使用量",

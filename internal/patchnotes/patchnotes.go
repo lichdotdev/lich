@@ -19,9 +19,18 @@
 // volume: "important" is the release's headline and opens the popup as its
 // title, "warning" is something the reader must do or avoid, "note" a detail
 // worth a line. The frontend decides how each kind looks.
+//
+// A translation of the latest release lives in changelog/<locale>.md, written
+// by the lich-changelog-i18n skill when a release is cut: the same section,
+// headings, alert openers and code spans left in English. TestTranslations
+// holds each file to the release it translates.
 package patchnotes
 
-import "strings"
+import (
+	"errors"
+	"io/fs"
+	"strings"
+)
 
 // Group is one "### Added / Changed / Fixed" block of a release's notes.
 type Group struct {
@@ -47,24 +56,46 @@ type Notes struct {
 
 // Service serves the notes for one fixed version — the running build.
 type Service struct {
-	version   string
-	changelog string
+	version      string
+	changelog    string
+	translations fs.FS
 }
 
 // New returns a service that parses changelog for version's section on demand.
-func New(version, changelog string) *Service {
-	return &Service{version: version, changelog: changelog}
+// translations holds one changelog/<locale>.md per translated language.
+func New(version, changelog string, translations fs.FS) *Service {
+	return &Service{version: version, changelog: changelog, translations: translations}
 }
 
-// Current returns the running build's changelog section. Groups is empty when
-// no section matches (a dev build, or a version not yet in the changelog), and
-// the frontend then shows nothing.
-func (s *Service) Current() Notes {
+// Current returns the running build's changelog section in locale, the
+// interface language's BCP 47 tag. A locale with no translation of this
+// version (English, a dev build, a release cut without the skill) gets the
+// English section. Groups is empty when no section matches (a dev build, or a
+// version not yet in the changelog), and the frontend then shows nothing.
+func (s *Service) Current(locale string) (Notes, error) {
+	changelog, err := s.changelogIn(locale)
+	if err != nil {
+		return Notes{}, err
+	}
 	return Notes{
 		Version:    normalize(s.version),
-		Highlights: Highlights(s.changelog, s.version),
-		Groups:     Section(s.changelog, s.version),
+		Highlights: Highlights(changelog, s.version),
+		Groups:     Section(changelog, s.version),
+	}, nil
+}
+
+func (s *Service) changelogIn(locale string) (string, error) {
+	translated, err := fs.ReadFile(s.translations, "changelog/"+locale+".md")
+	if errors.Is(err, fs.ErrNotExist) {
+		return s.changelog, nil
 	}
+	if err != nil {
+		return "", err
+	}
+	if _, ok := sliceSection(string(translated), normalize(s.version)); !ok {
+		return s.changelog, nil
+	}
+	return string(translated), nil
 }
 
 // Highlights returns the alert blocks under the "## [<version>]" heading, in

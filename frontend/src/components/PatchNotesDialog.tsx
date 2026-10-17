@@ -25,6 +25,31 @@ function dotColor(label: string): string {
   }
 }
 
+// Keep a Changelog's six headings, which every translation of the changelog
+// keeps in English so they can be named in the interface language here.
+const GROUP_KEYS = ["added", "changed", "deprecated", "removed", "fixed", "security"] as const
+type GroupKey = (typeof GROUP_KEYS)[number]
+
+function groupKey(label: string): GroupKey | null {
+  const key = label.toLowerCase()
+  return GROUP_KEYS.find((known) => known === key) ?? null
+}
+
+type Translate = ReturnType<typeof useT>
+
+// groupLabel shows any other heading as written.
+function groupLabel(t: Translate, label: string): string {
+  const key = groupKey(label)
+  return key ? t(`shell.patchNotesDialog.groups.${key}`) : label
+}
+
+function groupCount(t: Translate, label: string, count: number): string {
+  const key = groupKey(label)
+  return key
+    ? t(`shell.patchNotesDialog.counts.${key}`, { count })
+    : `${count} ${label.toLowerCase()}`
+}
+
 // renderInline renders a changelog item's markdown: **bold** lead-ins and
 // `code` spans. No full markdown parser — those two are all the CHANGELOG uses.
 // The split is positional and static for a given item, so the index is the key.
@@ -149,7 +174,7 @@ export function PatchNotesDialog({ notes, onClose }: PatchNotesDialogProps) {
             {groups.map((group) => (
               <span key={group.label} className="inline-flex items-center gap-1.5">
                 <span className={cn("size-1.5 rounded-full", dotColor(group.label))} />
-                {group.items.length} {group.label.toLowerCase()}
+                {groupCount(t, group.label, group.items.length)}
               </span>
             ))}
           </div>
@@ -170,7 +195,7 @@ export function PatchNotesDialog({ notes, onClose }: PatchNotesDialogProps) {
             <div key={group.label} className="border-t pt-3.5 pb-1.5 first:border-t-0">
               <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 <span className={cn("size-2 rounded-full", dotColor(group.label))} />
-                {group.label}
+                {groupLabel(t, group.label)}
               </div>
               {group.items.map((item, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: a release's notes are read-only and never reordered.

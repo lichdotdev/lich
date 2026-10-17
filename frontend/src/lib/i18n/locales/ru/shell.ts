@@ -97,6 +97,52 @@ export const shell = {
     title: "Что нового в lich {version}",
     viewChangelog: "Открыть полный журнал изменений",
     gotIt: "Понятно",
+    groups: {
+      added: "Добавлено",
+      changed: "Изменено",
+      deprecated: "Устарело",
+      removed: "Удалено",
+      fixed: "Исправлено",
+      security: "Безопасность",
+    },
+    counts: {
+      added: {
+        one: "{count} новинка",
+        few: "{count} новинки",
+        many: "{count} новинок",
+        other: "{count} новинки",
+      },
+      changed: {
+        one: "{count} изменение",
+        few: "{count} изменения",
+        many: "{count} изменений",
+        other: "{count} изменения",
+      },
+      deprecated: {
+        one: "{count} устаревшее",
+        few: "{count} устаревших",
+        many: "{count} устаревших",
+        other: "{count} устаревших",
+      },
+      removed: {
+        one: "{count} удаление",
+        few: "{count} удаления",
+        many: "{count} удалений",
+        other: "{count} удаления",
+      },
+      fixed: {
+        one: "{count} исправление",
+        few: "{count} исправления",
+        many: "{count} исправлений",
+        other: "{count} исправления",
+      },
+      security: {
+        one: "{count} по безопасности",
+        few: "{count} по безопасности",
+        many: "{count} по безопасности",
+        other: "{count} по безопасности",
+      },
+    },
   },
   planQuota: {
     planUsage: "Использование тарифа",

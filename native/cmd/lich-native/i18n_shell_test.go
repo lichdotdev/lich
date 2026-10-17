@@ -148,3 +148,20 @@ func TestShellMessagesWithPlaceholdersAndPluralsInPortuguese(t *testing.T) {
 		t.Errorf("unknown cwd: %q, hint %q", text, hint)
 	}
 }
+
+func TestPatchNotesGroupsAreNamedInTheInterfaceLanguage(t *testing.T) {
+	groups := []lichclient.PatchNotesGroup{{Label: "Added", Items: []string{"a"}}, {Label: "Fixed", Items: []string{"a", "b"}}}
+	if got := notesCounts(groups); got != "1 added"+notesCountSep+"2 fixed" {
+		t.Errorf("English counts %q", got)
+	}
+	inPortuguese(t)
+	if got := notesCounts(groups); got != "1 novidade"+notesCountSep+"2 correções" {
+		t.Errorf("pt-BR counts %q", got)
+	}
+	if got := notesGroupLabel("Fixed"); got != "Correções" {
+		t.Errorf("pt-BR label %q", got)
+	}
+	if got := notesGroupLabel("Highlights"); got != "Highlights" {
+		t.Errorf("a heading outside Keep a Changelog's six is shown as written, got %q", got)
+	}
+}

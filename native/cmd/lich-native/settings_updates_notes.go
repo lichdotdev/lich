@@ -325,7 +325,7 @@ func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *lichclient.PatchNotes)
 func notesCounts(groups []lichclient.PatchNotesGroup) string {
 	parts := make([]string, len(groups))
 	for i, g := range groups {
-		parts[i] = fmt.Sprintf("%d %s", len(g.Items), strings.ToLower(g.Label))
+		parts[i] = notesGroupCount(g.Label, len(g.Items))
 	}
 	return strings.Join(parts, notesCountSep)
 }
@@ -390,6 +390,47 @@ func notesCallout(th *ui.Theme, h lichclient.PatchNotesHighlight) layout.Widget 
 	}
 }
 
+// notesGroupLabel is a group's heading in the interface language. The
+// changelog keeps Keep a Changelog's six headings in English in every
+// translation; any other heading is shown as written.
+func notesGroupLabel(label string) string {
+	switch strings.ToLower(label) {
+	case "added":
+		return i18n.T("shell.patchNotesDialog.groups.added")
+	case "changed":
+		return i18n.T("shell.patchNotesDialog.groups.changed")
+	case "deprecated":
+		return i18n.T("shell.patchNotesDialog.groups.deprecated")
+	case "removed":
+		return i18n.T("shell.patchNotesDialog.groups.removed")
+	case "fixed":
+		return i18n.T("shell.patchNotesDialog.groups.fixed")
+	case "security":
+		return i18n.T("shell.patchNotesDialog.groups.security")
+	}
+	return label
+}
+
+// notesGroupCount is notesGroupLabel's "3 added", for the header.
+func notesGroupCount(label string, items int) string {
+	count := i18n.Args{"count": items}
+	switch strings.ToLower(label) {
+	case "added":
+		return i18n.T("shell.patchNotesDialog.counts.added", count)
+	case "changed":
+		return i18n.T("shell.patchNotesDialog.counts.changed", count)
+	case "deprecated":
+		return i18n.T("shell.patchNotesDialog.counts.deprecated", count)
+	case "removed":
+		return i18n.T("shell.patchNotesDialog.counts.removed", count)
+	case "fixed":
+		return i18n.T("shell.patchNotesDialog.counts.fixed", count)
+	case "security":
+		return i18n.T("shell.patchNotesDialog.counts.security", count)
+	}
+	return fmt.Sprintf("%d %s", items, strings.ToLower(label))
+}
+
 // notesGroupHeading is a group's divider and its dot and label.
 func notesGroupHeading(th *ui.Theme, label string, divider bool) layout.Widget {
 	return func(gtx C) D {
@@ -401,7 +442,7 @@ func notesGroupHeading(th *ui.Theme, label string, divider bool) layout.Widget {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return notesDotOf(gtx, noteDot(th, label), notesGroupDot) }),
 				ui.Gap(1.5),
-				layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Layout),
+				layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(notesGroupLabel(label))).Muted().Weight(font.SemiBold).Layout),
 			)
 		}), ui.VGap(1.5))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

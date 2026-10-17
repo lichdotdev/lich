@@ -78,10 +78,12 @@ func (c *Client) AppUpdateStatus(ctx context.Context) (AppUpdateStatus, error) {
 	return s, c.Call(ctx, "appupdate.Status", &s)
 }
 
-// PatchNotes returns the running build's changelog section.
-func (c *Client) PatchNotes(ctx context.Context) (PatchNotes, error) {
+// PatchNotes returns the running build's changelog section in locale, the
+// interface language's tag; the backend falls back to English when the release
+// has no translation into it.
+func (c *Client) PatchNotes(ctx context.Context, locale string) (PatchNotes, error) {
 	var n PatchNotes
-	return n, c.Call(ctx, "patchnotes.Current", &n)
+	return n, c.Call(ctx, "patchnotes.Current", &n, locale)
 }
 
 // PluginStatuses lists the lich plugin's state in every provider that can run

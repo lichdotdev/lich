@@ -70,7 +70,41 @@
   "patchNotesDialog": {
     "title": "lich {version} 的新功能",
     "viewChangelog": "查看完整更新日志",
-    "gotIt": "知道了"
+    "gotIt": "知道了",
+    "groups": {
+      "added": "新增",
+      "changed": "变更",
+      "deprecated": "弃用",
+      "removed": "移除",
+      "fixed": "修复",
+      "security": "安全"
+    },
+    "counts": {
+      "added": {
+        "one": "{count} 项新增",
+        "other": "{count} 项新增"
+      },
+      "changed": {
+        "one": "{count} 项变更",
+        "other": "{count} 项变更"
+      },
+      "deprecated": {
+        "one": "{count} 项弃用",
+        "other": "{count} 项弃用"
+      },
+      "removed": {
+        "one": "{count} 项移除",
+        "other": "{count} 项移除"
+      },
+      "fixed": {
+        "one": "{count} 项修复",
+        "other": "{count} 项修复"
+      },
+      "security": {
+        "one": "{count} 项安全",
+        "other": "{count} 项安全"
+      }
+    }
   },
   "planQuota": {
     "planUsage": "套餐用量",

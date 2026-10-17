@@ -7,6 +7,7 @@ import {
 } from "@/lib/update/patch-notes-gate"
 import { PatchNotes, Store } from "@/lib/rpc"
 import { readPref } from "@/lib/prefs"
+import { getLocale } from "@/lib/i18n/i18n"
 import type { PatchNotes as PatchNotesData } from "@/lib/api-types"
 
 // The setting is the app's, not a project's — it answers for this install.
@@ -21,7 +22,10 @@ export function PatchNotesGate() {
 
   useEffect(() => {
     let alive = true
-    void Promise.all([PatchNotes.Current(), Store.GetSetting(PATCH_NOTES_SEEN_KEY, GLOBAL_SCOPE)])
+    void Promise.all([
+      PatchNotes.Current(getLocale()),
+      Store.GetSetting(PATCH_NOTES_SEEN_KEY, GLOBAL_SCOPE),
+    ])
       .then(([current, seen]) => {
         if (!alive) return
         // A setting that was never written reads as "": the gate wants null for

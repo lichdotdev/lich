@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -41,7 +42,7 @@ func (s *settingsScreen) startupPatchNotes() {
 		log.Printf("patch notes: last seen: %v", err)
 		return
 	}
-	notes, err := s.client.PatchNotes(s.ctx)
+	notes, err := s.client.PatchNotes(s.ctx, string(i18n.Current()))
 	if err != nil {
 		log.Printf("patch notes: %v", err)
 		return

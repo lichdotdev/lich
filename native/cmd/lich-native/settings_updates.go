@@ -64,7 +64,7 @@ func (u *updatesSettings) ensure(s *settingsScreen) {
 }
 
 func (u *updatesSettings) readNotes(s *settingsScreen) {
-	n, err := s.client.PatchNotes(s.ctx)
+	n, err := s.client.PatchNotes(s.ctx, string(i18n.Current()))
 	if err != nil {
 		log.Printf("settings: patch notes: %v", err)
 		return

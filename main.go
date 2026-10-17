@@ -56,6 +56,12 @@ var assets embed.FS
 //go:embed CHANGELOG.md
 var changelog string
 
+// changelogTranslations are the latest release's notes in each interface
+// language (internal/patchnotes).
+//
+//go:embed changelog/*.md
+var changelogTranslations embed.FS
+
 // The tray icon, in the encoding each platform's tray takes (internal/tray).
 var (
 	//go:embed build/appicon-256.png
@@ -349,7 +355,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		dispatcher.Register(provider.ID+"profile", profiles)
 	}
 	dispatcher.Register("appupdate", appupdate.New(version, coord.Install, hub.Emit))
-	dispatcher.Register("patchnotes", patchnotes.New(version, changelog))
+	dispatcher.Register("patchnotes", patchnotes.New(version, changelog, changelogTranslations))
 	dispatcher.Register("store", db)
 	// Read before runChromium writes this run's runtime file over the previous
 	// run's: a file still there is the only trace a bad exit leaves, and the

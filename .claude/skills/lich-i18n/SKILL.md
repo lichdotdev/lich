@@ -31,7 +31,8 @@ Classify every string first. Who reads it?
 | An agent, typed by the frontend into a PTY | `locales/<lang>/prompts.ts`, read with `prompt()` from `lib/i18n/prompt.ts` | prompt |
 | An agent, typed by the native window into a PTY | `native/i18n/locales/<lang>/prompts.json`, read with `i18n.Prompt()` | prompt |
 | An agent, added by a lich-plugin mod | `hooks/prompt-text.js` in `lichdotdev/lich-plugin` | prompt |
-| Nobody localizes it | error text through `errorText()`, CHANGELOG, MCP tool descriptions, CLI `--help`, identifiers | none |
+| The user, in the What's new dialog | `changelog/<locale>.md`, one release, written by the `lich-changelog-i18n` skill when a release is cut | interface |
+| Nobody localizes it | error text through `errorText()`, `CHANGELOG.md`, MCP tool descriptions, CLI `--help`, identifiers | none |
 
 Then, in the same PR:
 
@@ -112,6 +113,8 @@ language at the **end** of every list so parallel additions merge as a union.
 **Docs**
 - `docs/hooks/README.md`: the accepted `LICH_PROMPT_LANG` values.
 - `CHANGELOG.md` `[Unreleased]` › Added.
+- `changelog/<locale>.md`: the latest release translated with the `lich-changelog-i18n` skill;
+  `TestTranslations` (`internal/patchnotes`) fails until it exists.
 - README.md and each README.<lang>.md only if they enumerate languages.
 
 **Companion repo** `lichdotdev/lich-plugin` (separate PR, after lich's)

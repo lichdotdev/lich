@@ -18,3 +18,4 @@ frontend/coverage
 .claude/skills/*
 !.claude/skills/lich-i18n/
 !.claude/skills/lich-build-dev/
+!.claude/skills/lich-changelog-i18n/

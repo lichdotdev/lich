@@ -98,6 +98,40 @@ export const shell = {
     title: "Novedades de lich {version}",
     viewChangelog: "Ver el changelog completo",
     gotIt: "Entendido",
+    groups: {
+      added: "Novedades",
+      changed: "Cambios",
+      deprecated: "Obsoleto",
+      removed: "Eliminado",
+      fixed: "Correcciones",
+      security: "Seguridad",
+    },
+    counts: {
+      added: {
+        one: "{count} novedad",
+        other: "{count} novedades",
+      },
+      changed: {
+        one: "{count} cambio",
+        other: "{count} cambios",
+      },
+      deprecated: {
+        one: "{count} obsoleto",
+        other: "{count} obsoletos",
+      },
+      removed: {
+        one: "{count} eliminado",
+        other: "{count} eliminados",
+      },
+      fixed: {
+        one: "{count} corrección",
+        other: "{count} correcciones",
+      },
+      security: {
+        one: "{count} de seguridad",
+        other: "{count} de seguridad",
+      },
+    },
   },
   planQuota: {
     planUsage: "Uso del plan",

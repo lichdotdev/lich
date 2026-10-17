@@ -3,6 +3,7 @@ package patchnotes
 import (
 	"reflect"
 	"testing"
+	"testing/fstest"
 )
 
 const sample = `# Changelog
@@ -80,8 +81,11 @@ func TestSectionMissingVersionIsNil(t *testing.T) {
 }
 
 func TestCurrentReportsNormalizedVersion(t *testing.T) {
-	svc := New("v0.11.0", sample)
-	got := svc.Current()
+	svc := New("v0.11.0", sample, fstest.MapFS{})
+	got, err := svc.Current("en")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if got.Version != "0.11.0" {
 		t.Fatalf("Version = %q, want 0.11.0", got.Version)
 	}
@@ -183,8 +187,72 @@ func TestHighlightsAreNilWithoutBlocksOrSection(t *testing.T) {
 }
 
 func TestCurrentCarriesHighlights(t *testing.T) {
-	got := New("v0.45.0", withHighlights).Current()
+	got, err := New("v0.45.0", withHighlights, fstest.MapFS{}).Current("en")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(got.Highlights) != 2 || got.Highlights[0].Kind != "important" {
 		t.Fatalf("Highlights = %#v, want the two blocks of 0.45.0", got.Highlights)
+	}
+}
+
+const ptBR = `## [0.11.0] - 2026-07-21
+
+> [!IMPORTANT]
+> **Um destaque traduzido.**
+
+### Added
+
+- **Provider padrão para novas sessões.** Escolha qual harness abre.
+- **Paleta de comandos.** Vá para qualquer sessão.
+
+### Fixed
+
+- **Reabrir uma worktree não cria outra** a partir da branch.
+`
+
+func TestCurrentReadsTheLocalesTranslation(t *testing.T) {
+	svc := New("v0.11.0", sample, fstest.MapFS{"changelog/pt-BR.md": {Data: []byte(ptBR)}})
+	got, err := svc.Current("pt-BR")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Notes{
+		Version:    "0.11.0",
+		Highlights: []Highlight{{Kind: "important", Text: "**Um destaque traduzido.**"}},
+		Groups: []Group{
+			{Label: "Added", Items: []string{
+				"**Provider padrão para novas sessões.** Escolha qual harness abre.",
+				"**Paleta de comandos.** Vá para qualquer sessão.",
+			}},
+			{Label: "Fixed", Items: []string{"**Reabrir uma worktree não cria outra** a partir da branch."}},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Current(pt-BR) mismatch:\n got %#v\nwant %#v", got, want)
+	}
+}
+
+func TestCurrentWithoutATranslationIsEnglish(t *testing.T) {
+	svc := New("v0.11.0", sample, fstest.MapFS{"changelog/pt-BR.md": {Data: []byte(ptBR)}})
+	got, err := svc.Current("ja")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := Section(sample, "0.11.0"); !reflect.DeepEqual(got.Groups, want) {
+		t.Fatalf("groups = %#v, want the English %#v", got.Groups, want)
+	}
+}
+
+// A translation is of one release; a build of another reads English rather
+// than a section that is not about it.
+func TestCurrentIgnoresATranslationOfAnotherRelease(t *testing.T) {
+	svc := New("v0.10.0", sample, fstest.MapFS{"changelog/pt-BR.md": {Data: []byte(ptBR)}})
+	got, err := svc.Current("pt-BR")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := Section(sample, "0.10.0"); !reflect.DeepEqual(got.Groups, want) {
+		t.Fatalf("groups = %#v, want the English %#v", got.Groups, want)
 	}
 }
