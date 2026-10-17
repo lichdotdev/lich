@@ -19,6 +19,7 @@ func assistantText(text string) string {
 }
 
 func TestSearchTranscript(t *testing.T) {
+	t.Parallel()
 	toolCall := `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash",` +
 		`"input":{"command":"grep -r worktree ."}}]}}`
 	toolResult := `{"type":"user","message":{"content":[{"type":"tool_result",` +
@@ -119,6 +120,7 @@ func TestSearchTranscript(t *testing.T) {
 }
 
 func TestSearchTranscriptsRejectsAShortQuery(t *testing.T) {
+	t.Parallel()
 	// Two characters match nearly every conversation, so the scan is refused
 	// before any transcript is opened — a bare Service (nil store) proves it
 	// never reaches one.
@@ -135,6 +137,7 @@ func TestSearchTranscriptsRejectsAShortQuery(t *testing.T) {
 // provider writes around them, because a search is asked from either side: the
 // words somebody remembers are as often their own prompt as the agent's answer.
 func TestSearchTranscriptReadsEveryProviderFormat(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		read turnReader
@@ -202,6 +205,7 @@ func TestSearchTranscriptReadsEveryProviderFormat(t *testing.T) {
 // one docs/ceilings.md carries: opencode files its messages in SQLite and Cursor
 // CLI in a blob store, so neither has a line for a reader to walk.
 func TestTranscriptReaderForNamesTheProvidersWithAJSONL(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{
 		providers.Claude, providers.Codex, providers.OMP, providers.Kiro, providers.Antigravity,
 	} {

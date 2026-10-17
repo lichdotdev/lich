@@ -28,6 +28,7 @@ func entrypointSpec() ptySpec {
 // WHERE clause) must not rewrite that spawn, because a provider's argv is the
 // whole session.
 func TestWrapEntrypointLeavesOtherSessionsAlone(t *testing.T) {
+	t.Parallel()
 	base := entrypointSpec()
 	cases := []struct {
 		name, kind, entrypoint, goos string
@@ -56,6 +57,7 @@ func TestWrapEntrypointLeavesOtherSessionsAlone(t *testing.T) {
 // dying with it. The exec argument is quoted, so a shell installed under a path
 // with a space is still the shell the user lands in.
 func TestWrapEntrypointRunsThenExecsTheShell(t *testing.T) {
+	t.Parallel()
 	spec := entrypointSpec()
 	spec.bin = "/opt/my shells/zsh"
 
@@ -86,6 +88,7 @@ func TestWrapEntrypointRunsThenExecsTheShell(t *testing.T) {
 // otherwise swallow the exec, and the card would die with the tool instead of
 // falling back to a prompt.
 func TestWrapEntrypointSurvivesATrailingComment(t *testing.T) {
+	t.Parallel()
 	for _, entrypoint := range []string{"lazygit # the good one", "pnpm dev \\"} {
 		script := wrapEntrypoint(entrypointSpec(), KindShell, entrypoint, "linux").args[1]
 		if !strings.Contains(script, "\nexec ") {
@@ -99,6 +102,7 @@ func TestWrapEntrypointSurvivesATrailingComment(t *testing.T) {
 // shell — and that wrapSetup's end marker still lands between the script and
 // everything the user asked for, so a session is never handed work mid-install.
 func TestWrapEntrypointComposesWithSetup(t *testing.T) {
+	t.Parallel()
 	spec := wrapEntrypoint(entrypointSpec(), KindShell, "lazygit", "linux")
 	spec, wrapped := wrapSetup(spec, "pnpm install", "linux")
 	if !wrapped {
@@ -128,6 +132,7 @@ func TestWrapEntrypointComposesWithSetup(t *testing.T) {
 // the POSIX branch loads no rc either. What that costs is proved on a real
 // shell by entrypoint_windows_test.go.
 func TestWrapEntrypointOnWindowsKeepsOneProcess(t *testing.T) {
+	t.Parallel()
 	spec := entrypointSpec()
 	spec.bin = `C:\Program Files\PowerShell\7\pwsh.exe`
 
@@ -154,6 +159,7 @@ func TestWrapEntrypointOnWindowsKeepsOneProcess(t *testing.T) {
 // does not undo. Non-ASCII proves the UTF-16 half — PowerShell reads the bytes
 // as little-endian UTF-16, so a wrong width or order turns the command to noise.
 func TestEncodePwshCommandSurvivesQuotesAndUnicode(t *testing.T) {
+	t.Parallel()
 	for _, script := range []string{
 		`pnpm run "dev server"`,
 		"echo 'it''s'",

@@ -18,6 +18,7 @@ func opencodeConfig(t *testing.T, env []string) map[string]any {
 }
 
 func TestPasteUnfoldEnvTurnsOffOpencodePasteSummary(t *testing.T) {
+	t.Parallel()
 	env, err := pasteUnfoldEnv([]string{"HOME=/h"}, providers.OpenCode, true)
 	if err != nil {
 		t.Fatalf("pasteUnfoldEnv: %v", err)
@@ -32,6 +33,7 @@ func TestPasteUnfoldEnvTurnsOffOpencodePasteSummary(t *testing.T) {
 }
 
 func TestPasteUnfoldEnvLeavesEveryOtherSpawnAlone(t *testing.T) {
+	t.Parallel()
 	base := []string{"HOME=/h"}
 	cases := []struct {
 		kind string
@@ -54,6 +56,7 @@ func TestPasteUnfoldEnvLeavesEveryOtherSpawnAlone(t *testing.T) {
 }
 
 func TestPasteUnfoldEnvExtendsTheUsersOwnInlineConfig(t *testing.T) {
+	t.Parallel()
 	own := opencodeConfigContentVar + `={"model":"m","experimental":{"other":1}}`
 	env, err := pasteUnfoldEnv([]string{own}, providers.OpenCode, true)
 	if err != nil {
@@ -70,6 +73,7 @@ func TestPasteUnfoldEnvExtendsTheUsersOwnInlineConfig(t *testing.T) {
 }
 
 func TestPasteUnfoldEnvRefusesAnInlineConfigItCannotExtend(t *testing.T) {
+	t.Parallel()
 	for _, own := range []string{`not json`, `{"experimental":true}`} {
 		_, err := pasteUnfoldEnv([]string{opencodeConfigContentVar + "=" + own}, providers.OpenCode, true)
 		if err == nil {

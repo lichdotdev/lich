@@ -14,6 +14,7 @@ import (
 // A card whose PTY is not up has no environment to read, and reporting it as
 // read is what would serve it the machine-wide login's quota.
 func TestSessionAccountWithoutALiveProcess(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{bin: "/opt/claude-work.sh"}, nil, events.New())
 
 	env, read := svc.SessionAccount("s1")

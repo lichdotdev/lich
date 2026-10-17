@@ -15,6 +15,7 @@ import (
 // (relay.SessionExited). A close is not: it reaches the relay through the
 // close watcher instead.
 func TestAReapedSessionIsReportedToTheExitWatcher(t *testing.T) {
+	t.Parallel()
 	hub, _ := newProbeHub(t)
 	svc := New(stubBins{bin: exitBin(t, 0)}, nil, hub)
 	var mu sync.Mutex

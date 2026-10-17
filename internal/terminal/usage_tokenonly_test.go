@@ -227,6 +227,7 @@ func TestOMPCostIgnoresALineStillBeingWritten(t *testing.T) {
 // TestOMPCostOnAMissingFile keeps the reader on the same "degrade, never break"
 // contract as every other transcript read.
 func TestOMPCostOnAMissingFile(t *testing.T) {
+	t.Parallel()
 	cost, miss, ok := ompTranscriptCost(filepath.Join(t.TempDir(), "nope.jsonl"))
 	if ok {
 		t.Errorf("ompTranscriptCost = %v, want a miss", cost)
@@ -452,6 +453,7 @@ func TestTheCostOnlyRungSurvivesAStoreFailure(t *testing.T) {
 // that reaches the cost switch anyway must read as "nothing to show" rather than
 // as free.
 func TestAProviderWithNoRecordsIsPricedByNobody(t *testing.T) {
+	t.Parallel()
 	svc := New(newCostStore("agy-1"), nil, events.New())
 	svc.prices = testRate
 

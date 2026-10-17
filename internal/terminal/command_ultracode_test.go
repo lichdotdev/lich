@@ -8,6 +8,7 @@ import (
 )
 
 func TestUltracodeArgs(t *testing.T) {
+	t.Parallel()
 	if got := ultracodeArgs(providers.Claude, true); !slices.Equal(got, []string{"--settings", `{"ultracode":true}`}) {
 		t.Errorf("claude, on: args = %v, want --settings with the ultracode key", got)
 	}

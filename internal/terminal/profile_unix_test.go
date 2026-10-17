@@ -42,6 +42,7 @@ func spawnLines(t *testing.T, log string) []string {
 // TestSpawnLinesCountsOnlyWholeLines: `>>` creates the log before echo writes
 // to it, so a read in between sees an empty file, or half a line.
 func TestSpawnLinesCountsOnlyWholeLines(t *testing.T) {
+	t.Parallel()
 	log := filepath.Join(t.TempDir(), "spawns")
 	for _, c := range []struct{ data, want string }{
 		{"", "[]"},

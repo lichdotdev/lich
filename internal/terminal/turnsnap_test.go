@@ -109,6 +109,7 @@ func closeAndWait(t *testing.T, svc *Service, id, want string) LastTurn {
 // The feature itself: what the checkout gained between a turn starting and
 // ending, rendered as the unified diff the panel already knows how to draw.
 func TestLastTurnDiffRendersTheWindow(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -138,6 +139,7 @@ func TestLastTurnDiffRendersTheWindow(t *testing.T) {
 // The distinction the whole contract exists for: a turn that ran and touched
 // nothing is an answer, and it must not wear the words for having no answer.
 func TestATurnThatChangedNothingIsEmpty(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -157,6 +159,7 @@ func TestATurnThatChangedNothingIsEmpty(t *testing.T) {
 // opening snapshot forward through the turn it is supposed to precede, so the
 // panel would show only whatever happened after the last tool.
 func TestARepeatBusyDoesNotMoveTheWindow(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -178,6 +181,7 @@ func TestARepeatBusyDoesNotMoveTheWindow(t *testing.T) {
 // report itself as quiet — offering the earlier turn's diff instead would
 // answer a question nobody asked, and would do it convincingly.
 func TestAQuietTurnDoesNotFallBackToTheOneBefore(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -196,6 +200,7 @@ func TestAQuietTurnDoesNotFallBackToTheOneBefore(t *testing.T) {
 // record instead of leaving the previous turn standing as if it were this one,
 // and says a turn ran here rather than that none did.
 func TestATurnWithNoOpeningSnapshotReadsAsLost(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -219,6 +224,7 @@ func TestATurnWithNoOpeningSnapshotReadsAsLost(t *testing.T) {
 // for a turn that ran and changed files. It has to read as a turn whose record
 // was lost — never as a session that has not had one.
 func TestASnapshotTheQueueDroppedReadsAsLost(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -259,6 +265,7 @@ func TestASnapshotTheQueueDroppedReadsAsLost(t *testing.T) {
 // session lich never tracked has nothing to show either. Both are the absence
 // of an answer, never a quiet turn.
 func TestNoClosedTurnIsUnavailable(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 
 	turn, err := svc.LastTurnDiff("never-tracked")
@@ -287,6 +294,7 @@ func TestNoClosedTurnIsUnavailable(t *testing.T) {
 // stopped turn still changed files. Without this the panel would hold the turn
 // before it open until some later one finished.
 func TestAnInterruptClosesTheWindow(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -304,6 +312,7 @@ func TestAnInterruptClosesTheWindow(t *testing.T) {
 // so that turn is abandoned — but the last one that did close is still the last
 // one that closed, and the session ending does not un-happen it.
 func TestSessionEndAbandonsTheOpenTurnAndKeepsTheClosedOne(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -338,6 +347,7 @@ func TestSessionEndAbandonsTheOpenTurnAndKeepsTheClosedOne(t *testing.T) {
 // A closed card's row is deleted, so its accounting is dead weight — and its
 // index file would outlive it under lich's config directory.
 func TestForgetDropsTheRecordAndTheIndex(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -366,6 +376,7 @@ func TestForgetDropsTheRecordAndTheIndex(t *testing.T) {
 // A respawn under the same id is a new session's turns. Whatever the provider
 // that left had recorded belongs to it, not to the one now typing.
 func TestRespawnDropsThePreviousProvidersTurn(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -387,6 +398,7 @@ func TestRespawnDropsThePreviousProvidersTurn(t *testing.T) {
 // A `done` for a session with no turn open is what every idle prompt produces,
 // and it must not invent a window out of two unrelated snapshots.
 func TestADoneWithNoTurnOpenRecordsNothing(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -404,6 +416,7 @@ func TestADoneWithNoTurnOpenRecordsNothing(t *testing.T) {
 // terminal says so, and the user closes the dead card some time later. The
 // accounting and the index file have to go with it either way.
 func TestCloseForgetsASessionWhosePTYAlreadyExited(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.sessions = map[string]*session{}
 	svc.snaps.track("s1", repo)
@@ -436,6 +449,7 @@ func TestCloseForgetsASessionWhosePTYAlreadyExited(t *testing.T) {
 // The panel is told when the record lands, not when the turn ends: the two are
 // different moments, and only the first one has an answer to give.
 func TestFilingATurnNotifiesOnce(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	filed := make(chan string, 4)
 	svc.snaps.filed = func(id string) { filed <- id }
@@ -463,6 +477,7 @@ func TestFilingATurnNotifiesOnce(t *testing.T) {
 // A close still on the worker must not leave the turn before it on screen
 // wearing this turn's name: until the snapshot lands there is no last turn.
 func TestACloseInFlightNeverShowsTheTurnBefore(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	svc.snaps.track("s1", repo)
 
@@ -497,6 +512,7 @@ func TestACloseInFlightNeverShowsTheTurnBefore(t *testing.T) {
 // A session opened outside a repository has nothing to snapshot. It is dropped
 // on the warm-up rather than warned about twice a turn for the rest of its life.
 func TestACheckoutGitCannotSnapshotIsDropped(t *testing.T) {
+	t.Parallel()
 	svc, _ := snapRepo(t)
 	plain := t.TempDir()
 	svc.snaps.track("s1", plain)
@@ -562,6 +578,7 @@ func relaunch(t *testing.T, db *memTurns) *Service {
 // session read as unrecorded until its next turn ended — which, for a session
 // nobody is typing at, is never.
 func TestARestoredSessionAnswersItsLastTurn(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	db := &memTurns{records: map[string]store.TurnRecord{}}
 	svc.snaps.store = db
@@ -600,6 +617,7 @@ func TestARestoredSessionAnswersItsLastTurn(t *testing.T) {
 // has to reach the database too — otherwise the next launch would answer with a
 // turn this lich had already taken back.
 func TestARetractedTurnIsNotRestored(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	db := &memTurns{records: map[string]store.TurnRecord{}}
 	svc.snaps.store = db
@@ -635,6 +653,7 @@ func TestARetractedTurnIsNotRestored(t *testing.T) {
 // under an id this run is already tracking is a new session's turns, so the one
 // the provider that left recorded stays where it is: on disk, not on screen.
 func TestARespawnDoesNotReadTheStoredTurnBack(t *testing.T) {
+	t.Parallel()
 	svc, repo := snapRepo(t)
 	db := &memTurns{records: map[string]store.TurnRecord{}}
 	svc.snaps.store = db

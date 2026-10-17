@@ -35,6 +35,7 @@ func (r *haltingReader) Read(p []byte) (int, error) {
 // lines it did reach add up to a total that is simply too small. Reported as
 // complete it becomes a money number the user reads as the session's cost.
 func TestAFailedReadIsNotACompleteScan(t *testing.T) {
+	t.Parallel()
 	body := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	r := &haltingReader{body: []byte(body), err: errors.New("input/output error")}
 
@@ -51,6 +52,7 @@ func TestAFailedReadIsNotACompleteScan(t *testing.T) {
 // The end of the file is the one error that means the scan is done — the same
 // reader, stopping the same way, but with io.EOF.
 func TestReachingTheEndIsACompleteScan(t *testing.T) {
+	t.Parallel()
 	body := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	r := &haltingReader{body: []byte(body), err: io.EOF}
 

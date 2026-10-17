@@ -15,6 +15,7 @@ import (
 // Unix-only with the stubBins it reads, which live in the PTY suite.
 
 func TestModAnswerEndpointHandsTheTextToTheRelay(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if svc.ws == nil {
 		t.Fatalf("transport: %v", svc.wsErr)
@@ -44,6 +45,7 @@ func TestModAnswerEndpointHandsTheTextToTheRelay(t *testing.T) {
 }
 
 func TestModAnswerEndpointHandsAnUnansweredTurnToTheRelay(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if svc.ws == nil {
 		t.Fatalf("transport: %v", svc.wsErr)

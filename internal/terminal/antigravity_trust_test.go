@@ -51,6 +51,7 @@ func resolved(t *testing.T, dir string) string {
 }
 
 func TestAntigravityTrustCarriesARepositorysAnswerToItsWorktreeAndSubfolders(t *testing.T) {
+	t.Parallel()
 	main, worktree := gitWorktree(t)
 	sub := filepath.Join(main, "pkg")
 	if err := os.Mkdir(sub, 0o755); err != nil {
@@ -76,6 +77,7 @@ func TestAntigravityTrustCarriesARepositorysAnswerToItsWorktreeAndSubfolders(t *
 }
 
 func TestAntigravityTrustNeverTrustsWhatNobodyTrustedUnconfined(t *testing.T) {
+	t.Parallel()
 	main, worktree := gitWorktree(t)
 	home := t.TempDir()
 	writeAntigravitySettings(t, home, map[string]any{"trustedWorkspaces": []string{filepath.Dir(main)}})
@@ -98,6 +100,7 @@ func TestAntigravityTrustNeverTrustsWhatNobodyTrustedUnconfined(t *testing.T) {
 // A confined session is trusted whatever the list says, and the file is made
 // when Antigravity has not written one yet.
 func TestAntigravityTrustsAConfinedFolder(t *testing.T) {
+	t.Parallel()
 	plain := t.TempDir()
 	home := t.TempDir()
 	if err := trustAntigravityFolder(home, plain, true); err != nil {
@@ -115,6 +118,7 @@ func TestAntigravityTrustsAConfinedFolder(t *testing.T) {
 }
 
 func TestAntigravityTrustRefusesSettingsItCannotRead(t *testing.T) {
+	t.Parallel()
 	home := t.TempDir()
 	path := antigravitySettingsFile(home)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

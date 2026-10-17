@@ -229,6 +229,7 @@ func TestCursorConfigDirPrecedence(t *testing.T) {
 // this repository's own checkout, so a change to how lich composes the key fails
 // here rather than by answering "conversation gone" to every Cursor resume.
 func TestCursorWorkspaceKey(t *testing.T) {
+	t.Parallel()
 	// The literal pair was read off a real Cursor install, and it only answers
 	// where that string is an absolute path: on Windows it is not one, Abs would
 	// prefix the process's own drive and the hash would be of a different path
@@ -260,6 +261,7 @@ func TestCursorWorkspaceKey(t *testing.T) {
 // fresh has lost a resume; one that errors has lost the session, inside the PTY,
 // with the provider's message in place of it.
 func TestSessionRowExistsSurvivesAnotherToolsSchema(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	renamed := filepath.Join(dir, "renamed.db")

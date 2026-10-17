@@ -11,6 +11,7 @@ import (
 )
 
 func TestParseShellEnvDump(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		out  string
@@ -68,6 +69,7 @@ func TestParseShellEnvDump(t *testing.T) {
 }
 
 func TestValidEnvKey(t *testing.T) {
+	t.Parallel()
 	valid := []string{"PATH", "_", "_X", "A1", "MY_VAR_2"}
 	invalid := []string{"", "1ABC", "MY-VAR", "MY VAR", "="}
 	for _, k := range valid {
@@ -83,6 +85,7 @@ func TestValidEnvKey(t *testing.T) {
 }
 
 func TestMergeEnv(t *testing.T) {
+	t.Parallel()
 	base := []string{"PATH=/orig", "BASE_ONLY=1"}
 	extra := []string{"PATH=/shell/bin", "TOKEN=secret"}
 	got := mergeEnv(base, extra)
@@ -93,6 +96,7 @@ func TestMergeEnv(t *testing.T) {
 }
 
 func TestMergeEnvBaseUntouchedWithoutExtra(t *testing.T) {
+	t.Parallel()
 	base := []string{"A=1", "B=2"}
 	if got := mergeEnv(base, nil); !slices.Equal(got, base) {
 		t.Fatalf("mergeEnv(base, nil) = %v, want %v", got, base)
@@ -262,6 +266,7 @@ func TestReresolveShellEnvWithoutShellRepinsLaunchPATH(t *testing.T) {
 }
 
 func TestShellDumpDigestRedactsAssignments(t *testing.T) {
+	t.Parallel()
 	got := shellDumpDigest("zsh: no such file\nAWS_SECRET_ACCESS_KEY=hunter2\n")
 	if strings.Contains(got, "hunter2") {
 		t.Fatalf("digest leaked a value: %q", got)
@@ -276,6 +281,7 @@ func TestShellDumpDigestRedactsAssignments(t *testing.T) {
 }
 
 func TestShellDumpDigestBounds(t *testing.T) {
+	t.Parallel()
 	if got := shellDumpDigest(""); got != "printed nothing" {
 		t.Errorf("empty dump = %q", got)
 	}

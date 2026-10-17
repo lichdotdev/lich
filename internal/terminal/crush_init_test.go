@@ -11,6 +11,7 @@ import (
 )
 
 func TestMarkCrushInitializedAtTheCheckoutsTop(t *testing.T) {
+	t.Parallel()
 	_, worktree := gitWorktree(t)
 	sub := filepath.Join(worktree, "pkg")
 	if err := os.Mkdir(sub, 0o755); err != nil {
@@ -34,6 +35,7 @@ func TestMarkCrushInitializedAtTheCheckoutsTop(t *testing.T) {
 }
 
 func TestMarkCrushInitializedKeepsWhatIsThere(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	crush := filepath.Join(dir, ".crush")
 	if err := os.Mkdir(crush, 0o755); err != nil {

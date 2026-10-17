@@ -13,6 +13,7 @@ import (
 const claudeLimitLine = `{"type":"assistant","isSidechain":false,"message":{"model":"<synthetic>","role":"assistant","content":[{"type":"text","text":"You've hit your session limit · resets 9:10pm (America/Sao_Paulo)"}]},"quotaLimits":{"status":"rejected","resetsAt":1788653400,"rateLimitType":"five_hour","overageStatus":"rejected"},"error":"rate_limit","isApiErrorMessage":true,"apiErrorStatus":429}`
 
 func TestClaudeUsageLimitIsReadOffTheLastAssistantLine(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		lines []string
@@ -86,6 +87,7 @@ const (
 )
 
 func TestCodexUsageLimitIsReadOffTheTurnsEnd(t *testing.T) {
+	t.Parallel()
 	weeklyToo := strings.Replace(codexLimitTokens, `"secondary":null`,
 		`"secondary":{"used_percent":100.0,"window_minutes":10080,"resets_at":1791900000}`, 1)
 	tests := []struct {
@@ -138,6 +140,7 @@ func TestCodexUsageLimitIsReadOffTheTurnsEnd(t *testing.T) {
 }
 
 func TestTurnLogNamesEveryOpenTurn(t *testing.T) {
+	t.Parallel()
 	var l turnLog
 	l.report("a", statusBusy)
 	l.report("b", statusBusy)

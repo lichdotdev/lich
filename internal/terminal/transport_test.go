@@ -42,6 +42,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestFrameRoundTrip(t *testing.T) {
+	t.Parallel()
 	frame, err := encodeFrame("sess-1", []byte("hello"))
 	if err != nil {
 		t.Fatalf("encodeFrame: %v", err)
@@ -56,6 +57,7 @@ func TestFrameRoundTrip(t *testing.T) {
 }
 
 func TestFrameEmptyPayload(t *testing.T) {
+	t.Parallel()
 	frame, err := encodeFrame("s", nil)
 	if err != nil {
 		t.Fatalf("encodeFrame: %v", err)
@@ -70,6 +72,7 @@ func TestFrameEmptyPayload(t *testing.T) {
 }
 
 func TestFrameErrors(t *testing.T) {
+	t.Parallel()
 	if _, err := encodeFrame("", []byte("x")); err == nil {
 		t.Fatal("expected error for empty id")
 	}
@@ -101,6 +104,7 @@ func dial(t *testing.T, tr *transport, token string) (*websocket.Conn, error) {
 }
 
 func TestTransportRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
@@ -111,6 +115,7 @@ func TestTransportRejectsBadToken(t *testing.T) {
 }
 
 func TestTransportInputReachesService(t *testing.T) {
+	t.Parallel()
 	got := make(chan string, 1)
 	tr, err := newTransport(func(id string, data []byte) {
 		got <- id + ":" + string(data)
@@ -167,6 +172,7 @@ func sendWhenRegistered(t *testing.T, tr *transport, id string, data []byte) boo
 }
 
 func TestTransportSendAndFallback(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
@@ -203,6 +209,7 @@ func TestTransportSendAndFallback(t *testing.T) {
 }
 
 func TestParseHookRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		body      string
@@ -242,6 +249,7 @@ func TestParseHookRequest(t *testing.T) {
 // that derives its input from the constant passes whatever the constant becomes,
 // which is exactly the mutation it exists to catch.
 func TestParseHookRequestCapsToolText(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		tool       string
@@ -280,6 +288,7 @@ func TestParseHookRequestCapsToolText(t *testing.T) {
 }
 
 func TestPingAnswersWithToken(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
@@ -295,6 +304,7 @@ func TestPingAnswersWithToken(t *testing.T) {
 }
 
 func TestPingRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
@@ -310,6 +320,7 @@ func TestPingRejectsBadToken(t *testing.T) {
 }
 
 func TestGoroutineDumpAnswersWithTheStacks(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
@@ -345,6 +356,7 @@ func TestGoroutineDumpAnswersWithTheStacks(t *testing.T) {
 }
 
 func TestGoroutineDumpRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
@@ -360,6 +372,7 @@ func TestGoroutineDumpRejectsBadToken(t *testing.T) {
 }
 
 func TestHookForwardsStatus(t *testing.T) {
+	t.Parallel()
 	got := make(chan hookRequest, 1)
 	tr, err := newTransport(func(string, []byte) {}, func(req hookRequest) {
 		got <- req
@@ -389,6 +402,7 @@ func TestHookForwardsStatus(t *testing.T) {
 }
 
 func TestHookRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	fired := make(chan struct{}, 1)
 	tr, err := newTransport(func(string, []byte) {}, func(hookRequest) { fired <- struct{}{} }, nil, nil, nil)
 	if err != nil {
@@ -411,6 +425,7 @@ func TestHookRejectsBadToken(t *testing.T) {
 }
 
 func TestParseSessionStart(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		body           string
@@ -477,6 +492,7 @@ func TestParseSessionStart(t *testing.T) {
 }
 
 func TestSessionStartLinksSession(t *testing.T) {
+	t.Parallel()
 	got := make(chan string, 1)
 	tr, err := newTransport(func(string, []byte) {}, nil, func(id, providerID, provider string) error {
 		got <- id + ":" + providerID + ":" + provider
@@ -506,6 +522,7 @@ func TestSessionStartLinksSession(t *testing.T) {
 }
 
 func TestSessionStartRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	fired := make(chan struct{}, 1)
 	tr, err := newTransport(func(string, []byte) {}, nil, func(string, string, string) error {
 		fired <- struct{}{}
@@ -532,6 +549,7 @@ func TestSessionStartRejectsBadToken(t *testing.T) {
 }
 
 func TestParseSessionTitle(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		body      string
@@ -566,6 +584,7 @@ func TestParseSessionTitle(t *testing.T) {
 }
 
 func TestSessionTitleApplies(t *testing.T) {
+	t.Parallel()
 	got := make(chan string, 1)
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, func(id, title string) error {
 		got <- id + ":" + title
@@ -595,6 +614,7 @@ func TestSessionTitleApplies(t *testing.T) {
 }
 
 func TestSessionTitleRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	fired := make(chan struct{}, 1)
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, func(string, string) error {
 		fired <- struct{}{}
@@ -621,6 +641,7 @@ func TestSessionTitleRejectsBadToken(t *testing.T) {
 }
 
 func TestParseSessionTouched(t *testing.T) {
+	t.Parallel()
 	if req, err := parseSessionTouched([]byte(`{"session_id":"s1"}`)); err != nil || req.SessionID != "s1" {
 		t.Fatalf("got (%q,%v), want (s1,nil)", req.SessionID, err)
 	}
@@ -633,6 +654,7 @@ func TestParseSessionTouched(t *testing.T) {
 }
 
 func TestSessionTouchedForwards(t *testing.T) {
+	t.Parallel()
 	got := make(chan string, 1)
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, func(id string) {
 		got <- id
@@ -660,6 +682,7 @@ func TestSessionTouchedForwards(t *testing.T) {
 }
 
 func TestSessionTouchedRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	fired := make(chan struct{}, 1)
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, func(string) {
 		fired <- struct{}{}
@@ -709,6 +732,7 @@ func newNilTransport(t *testing.T) *transport {
 }
 
 func TestHookEndpointsRejectNonPost(t *testing.T) {
+	t.Parallel()
 	tr := newNilTransport(t)
 	for _, e := range hookEndpoints {
 		t.Run(e.path, func(t *testing.T) {
@@ -725,6 +749,7 @@ func TestHookEndpointsRejectNonPost(t *testing.T) {
 }
 
 func TestHookEndpointsRejectInvalidJSON(t *testing.T) {
+	t.Parallel()
 	tr := newNilTransport(t)
 	for _, e := range hookEndpoints {
 		t.Run(e.path, func(t *testing.T) {
@@ -745,6 +770,7 @@ func TestHookEndpointsRejectInvalidJSON(t *testing.T) {
 // nothing is wired to receive it — the hook must never see an error for a
 // report lich simply has no use for.
 func TestHookEndpointsWithNilCallbacks(t *testing.T) {
+	t.Parallel()
 	tr := newNilTransport(t)
 	for _, e := range hookEndpoints {
 		t.Run(e.path, func(t *testing.T) {
@@ -765,6 +791,7 @@ func TestHookEndpointsWithNilCallbacks(t *testing.T) {
 // rather than being swallowed. These are the only two hooks that write, and the
 // 500 is the sole signal that the write was lost.
 func TestStoreFailuresReport500(t *testing.T) {
+	t.Parallel()
 	boom := errors.New("store is down")
 	tests := []struct {
 		name string
@@ -814,6 +841,7 @@ func TestStoreFailuresReport500(t *testing.T) {
 // memory: the JSON is valid but padded past hookBodyLimit, so the cut lands
 // mid-document and the parse fails. Without the limit this would be a 204.
 func TestHookBodyLimit(t *testing.T) {
+	t.Parallel()
 	fired := make(chan struct{}, 1)
 	tr, err := newTransport(func(string, []byte) {}, func(hookRequest) { fired <- struct{}{} }, nil, nil, nil)
 	if err != nil {
@@ -837,6 +865,7 @@ func TestHookBodyLimit(t *testing.T) {
 }
 
 func TestTransportInfoZeroWithoutTransport(t *testing.T) {
+	t.Parallel()
 	s := &Service{}
 	if info := s.Transport(); info.Port != 0 || info.Token != "" {
 		t.Fatalf("expected zero TransportInfo, got %+v", info)

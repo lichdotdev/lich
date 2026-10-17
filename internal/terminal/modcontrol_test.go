@@ -152,6 +152,7 @@ func postModAck(t *testing.T, tr *transport, body string) {
 }
 
 func TestModCommandsRefusesBadRequests(t *testing.T) {
+	t.Parallel()
 	tr := newNilTransport(t)
 	tests := []struct {
 		name   string
@@ -186,6 +187,7 @@ func TestModCommandsRefusesBadRequests(t *testing.T) {
 // A poll that times out is what attaches the mod, and a command queued after it
 // is handed out exactly once.
 func TestModCommandIsDeliveredOnce(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	if got := pollMod(t, svc.ws, "s1"); len(got) != 0 {
@@ -207,6 +209,7 @@ func TestModCommandIsDeliveredOnce(t *testing.T) {
 // Commands queued between two polls come back in one response, in order, and
 // each gets an id of its own.
 func TestModCommandsArriveInOrder(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	pollMod(t, svc.ws, "s1")
@@ -231,6 +234,7 @@ func TestModCommandsArriveInOrder(t *testing.T) {
 // A parked poll answers as soon as a command is queued, not when its wait runs
 // out.
 func TestModParkedPollWakesOnEnqueue(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), time.Minute)
 	runModSession(svc, "s1")
 	got := pollInBackground(t, svc.ws, "s1")
@@ -252,6 +256,7 @@ func TestModParkedPollWakesOnEnqueue(t *testing.T) {
 // A client that left takes nothing with it: the command it would have been
 // handed waits for the next poll.
 func TestModCancelledPollLeavesTheQueue(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), time.Minute)
 	runModSession(svc, "s1")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -279,6 +284,7 @@ func TestModCancelledPollLeavesTheQueue(t *testing.T) {
 
 // Closing the session releases its parked poll empty-handed and detaches it.
 func TestModCloseReleasesTheParkedPoll(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), time.Minute)
 	runModSession(svc, "s1")
 	got := pollInBackground(t, svc.ws, "s1")
@@ -300,6 +306,7 @@ func TestModCloseReleasesTheParkedPoll(t *testing.T) {
 }
 
 func TestEnqueueModCommandRefuses(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "attached")
 	pollMod(t, svc.ws, "attached")
@@ -354,6 +361,7 @@ func TestEnqueueModCommandRefuses(t *testing.T) {
 // A mod that stopped polling (disabled mid-session, or its process gone without
 // lich hearing) is detached once its re-poll grace has run out.
 func TestEnqueueModCommandRefusesAStaleMod(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	pollMod(t, svc.ws, "s1")
@@ -369,6 +377,7 @@ func TestEnqueueModCommandRefusesAStaleMod(t *testing.T) {
 // A command the mod never collected before it went quiet is not handed to the
 // mod that polls again later: by then it would land on an unrelated turn.
 func TestModCommandOutlivingTheAttachWindowIsDropped(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	pollMod(t, svc.ws, "s1")
@@ -387,6 +396,7 @@ func TestModCommandOutlivingTheAttachWindowIsDropped(t *testing.T) {
 // A poll whose client is already gone when it reaches the queue drains nothing:
 // the command stays for the next poll instead of vanishing unwritten.
 func TestModPollFromAGoneClientDrainsNothing(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	pollMod(t, svc.ws, "s1")
@@ -408,6 +418,7 @@ func TestModPollFromAGoneClientDrainsNothing(t *testing.T) {
 // The mod lives until Close kills its process, and the contract has it re-poll
 // at once. That last poll must not leave the closed session attached.
 func TestModPollWhileClosingDoesNotReattach(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	p := runModSession(svc, "s1")
 	pollMod(t, svc.ws, "s1")
@@ -427,6 +438,7 @@ func TestModPollWhileClosingDoesNotReattach(t *testing.T) {
 // A poll already on the wire when the session closed still lands. It must not
 // make the closed session take commands nobody will collect.
 func TestModPollLandingAfterCloseTakesNoCommands(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	pollMod(t, svc.ws, "s1")
@@ -440,6 +452,7 @@ func TestModPollLandingAfterCloseTakesNoCommands(t *testing.T) {
 }
 
 func TestEnqueueModCommandWithoutTransport(t *testing.T) {
+	t.Parallel()
 	svc := &Service{wsErr: errors.New("listen failed")}
 	if _, err := svc.EnqueueModCommand("s1", ModCommand{Kind: ModAbort}); err == nil {
 		t.Fatal("enqueue succeeded with no transport")
@@ -449,6 +462,7 @@ func TestEnqueueModCommandWithoutTransport(t *testing.T) {
 // Only an applied abort ends a turn: a failure ends nothing, and no other kind
 // is lich's to act on.
 func TestModAckCallsTheAbortSinkOnlyForAnAppliedAbort(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		body string
@@ -478,6 +492,7 @@ func TestModAckCallsTheAbortSinkOnlyForAnAppliedAbort(t *testing.T) {
 // The end of the wire for the gap this contract closes: Claude Code ends an
 // aborted turn without Stop, so the ack is what tells the window it is over.
 func TestModAbortAckEndsTheOpenTurn(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := newModService(t, hub, modPollWait)
 	postHook(t, svc, "s1", statusBusy)
@@ -500,6 +515,7 @@ func TestModAbortAckEndsTheOpenTurn(t *testing.T) {
 // docs/hooks/fixtures/mod-commands.json, so every shape lich sends must encode
 // to exactly what that file says.
 func TestModCommandsMatchFixture(t *testing.T) {
+	t.Parallel()
 	cmds := []ModCommand{
 		{ID: "m1", Kind: ModPrompt, Text: "run the tests"},
 		{ID: "m2", Kind: ModAbort},

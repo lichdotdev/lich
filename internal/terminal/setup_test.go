@@ -12,6 +12,7 @@ import (
 // subshell and the original argv exec'd after it, quoted against spaces and
 // embedded quotes.
 func TestWrapSetup(t *testing.T) {
+	t.Parallel()
 	base := ptySpec{
 		bin:  "/opt/claude bin/claude",
 		args: []string{"--resume", "it's-an-id"},
@@ -52,6 +53,7 @@ func TestWrapSetup(t *testing.T) {
 // the PTY and the pid are the same across the exec — and a session still
 // running its setup must not be handed work (see Service.Ready).
 func TestSetupWrapperMarksItsEnd(t *testing.T) {
+	t.Parallel()
 	spec, _ := wrapSetup(ptySpec{bin: "claude", args: []string{"--name", "x"}}, "pnpm install", "linux")
 
 	script := spec.args[1]
@@ -72,6 +74,7 @@ func TestSetupWrapperMarksItsEnd(t *testing.T) {
 // The escaped form printf receives has to produce the bytes the service scans
 // for; two spellings of one sequence would mean a marker nobody ever matches.
 func TestSetupMarkerSpellingsAgree(t *testing.T) {
+	t.Parallel()
 	unescaped := strings.ReplaceAll(setupDoneEscaped, `\033`, "\x1b")
 	unescaped = strings.ReplaceAll(unescaped, `\007`, "\x07")
 	if unescaped != setupDone {
@@ -84,6 +87,7 @@ func TestSetupMarkerSpellingsAgree(t *testing.T) {
 // wrapSetup refuses is exactly the script this announces, so neither OS can end
 // up both skipping the setup and saying nothing about it.
 func TestSetupSkippedNotice(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct{ script, goos string }{
 		{"pnpm i", "linux"},
 		{"pnpm i", "darwin"},
@@ -132,6 +136,7 @@ func TestSetupSkippedNotice(t *testing.T) {
 // Unix-only, so a test that went through spawnSession would assert this
 // nowhere.
 func TestAnnounceReachesBothTheReplayAndTheWindow(t *testing.T) {
+	t.Parallel()
 	var written []byte
 	sess := &session{
 		replay: newReplayBuffer(replayCapBytes),
@@ -153,6 +158,7 @@ func TestAnnounceReachesBothTheReplayAndTheWindow(t *testing.T) {
 // notice, and a blank line pushed into a fresh session's scrollback would be a
 // line the user has to account for.
 func TestAnnounceWritesNothingWithoutALine(t *testing.T) {
+	t.Parallel()
 	emitted := false
 	sess := &session{
 		replay: newReplayBuffer(replayCapBytes),

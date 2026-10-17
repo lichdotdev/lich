@@ -26,6 +26,7 @@ func quietSession(svc *Service, id string, awaitsStart bool) *session {
 // its provider sends only from the agent's own prompt, however long the screen
 // has been still.
 func TestReadyHoldsASessionUntilItsProviderReportsStart(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	quietSession(svc, "s1", true)
 
@@ -42,6 +43,7 @@ func TestReadyHoldsASessionUntilItsProviderReportsStart(t *testing.T) {
 // be found quiet before the hold is recorded on it (holdForStart), and that
 // latch must not let work through.
 func TestReadyHoldsASessionWhoseQuietWasAlreadyLatched(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := quietSession(svc, "s1", false)
 	if !svc.Ready("s1") {
@@ -56,6 +58,7 @@ func TestReadyHoldsASessionWhoseQuietWasAlreadyLatched(t *testing.T) {
 }
 
 func TestReadyDoesNotHoldASessionThatReportsNoStart(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	quietSession(svc, "s1", false)
 
@@ -65,6 +68,7 @@ func TestReadyDoesNotHoldASessionThatReportsNoStart(t *testing.T) {
 }
 
 func TestAwaitsStartOnlyForProvidersThatReportFromTheirPrompt(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if svc.awaitsStart(providers.Claude, "") {
 		t.Error("a session was held with nothing wired to say whether hooks run")
@@ -88,6 +92,7 @@ func TestAwaitsStartOnlyForProvidersThatReportFromTheirPrompt(t *testing.T) {
 // Without lich's hooks in a provider no report ever comes, and waiting for one
 // would leave its sessions unable to take work at all.
 func TestAwaitsStartIsOffWhereTheHooksAreNotInstalled(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	svc.SetStartReports(func(provider string) bool { return provider != providers.Kiro })
 
@@ -102,6 +107,7 @@ func TestAwaitsStartIsOffWhereTheHooksAreNotInstalled(t *testing.T) {
 // Only a Claude Code profile has a plugin set of its own to ask about; an
 // oh-my-pi profile links Personal's extension, so Personal's answer is its.
 func TestAwaitsStartInAProfileAsksTheProvidersOwnPluginSet(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	svc.SetStartReports(func(provider string) bool { return provider == providers.OMP })
 
@@ -114,6 +120,7 @@ func TestAwaitsStartInAProfileAsksTheProvidersOwnPluginSet(t *testing.T) {
 }
 
 func TestMarkStartedIgnoresASessionThatIsNotRunning(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	svc.markStarted("ghost")
 	if svc.Ready("ghost") {
@@ -124,6 +131,7 @@ func TestMarkStartedIgnoresASessionThatIsNotRunning(t *testing.T) {
 // A respawn is a new session under the same id: the report its predecessor
 // made does not release it.
 func TestHoldForStartIgnoresASessionThatWasReplaced(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	old := quietSession(svc, "s1", false)
 	quietSession(svc, "s1", false)
@@ -138,6 +146,7 @@ func TestHoldForStartIgnoresASessionThatWasReplaced(t *testing.T) {
 // Through the real spawn: the session settles, stays held, and is released by
 // the provider's report coming through the same path the hook's POST takes.
 func TestStartHoldsAProviderSessionUntilItsReport(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	svc.SetStartReports(func(string) bool { return true })

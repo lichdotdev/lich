@@ -11,6 +11,7 @@ import (
 // This is the pure slice of commandLine; the LookPath/ComposeCommandLine
 // boundaries around it stay in pty_windows.go and run only under Windows CI.
 func TestWrapArgv(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		path string

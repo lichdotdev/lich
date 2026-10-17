@@ -26,6 +26,7 @@ func todoItemJSON(status string) string {
 // the array the tool's schema describes, and the string Claude Code actually
 // writes. A version that stops double-encoding must not stop the count.
 func TestClaudeTodoReadsBothEncodings(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		line string
@@ -98,6 +99,7 @@ func TestClaudeTodoReadsBothEncodings(t *testing.T) {
 // task list lich can read, and every other provider answers with nothing rather
 // than with a reader that finds nothing.
 func TestTodoReaderForClaudeOnly(t *testing.T) {
+	t.Parallel()
 	if _, _, ok := todoReaderFor(usageSource{kind: providers.Claude, path: "/t.jsonl"}); !ok {
 		t.Error("Claude should have a reader")
 	}
@@ -116,6 +118,7 @@ func TestTodoReaderForClaudeOnly(t *testing.T) {
 // no new line. A report lands on every tool call, so a re-emitted pair would
 // re-render the card through a whole turn to say nothing.
 func TestTodoReadReportsOnlyChanges(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "transcript.jsonl")
 	write := func(lines ...string) {
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
@@ -157,6 +160,7 @@ func TestTodoReadReportsOnlyChanges(t *testing.T) {
 // happens on the first report of every session instead of on a panel somebody
 // opened, and the transcripts it would walk run to hundreds of MB.
 func TestTodoReadLooksNoFurtherBackThanTheTail(t *testing.T) {
+	t.Parallel()
 	filler := strings.Repeat(
 		`{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{}}]}}`+"\n",
 		searchTailBytes/90+40,
@@ -194,6 +198,7 @@ func TestTodoReadLooksNoFurtherBackThanTheTail(t *testing.T) {
 // for another file (a forked conversation), and the same file rewritten shorter
 // than the cursor had already reached.
 func TestTodoReadRereadsAReplacedTranscript(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "transcript.jsonl")
 	src := usageSource{kind: providers.Claude, path: path, id: "x"}

@@ -36,6 +36,7 @@ func boundaryLine(trigger string, preTokens, postTokens int) string {
 }
 
 func TestParseContextUsage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		tail        string
@@ -195,6 +196,7 @@ func TestParseContextUsage(t *testing.T) {
 }
 
 func TestParseContextUsageEffort(t *testing.T) {
+	t.Parallel()
 	// effort is a top-level field on the entry, beside type/isSidechain.
 	withEffort := `{"type":"assistant","effort":"xhigh","message":{"model":"` + modelOpus +
 		`","usage":{"input_tokens":2,"cache_read_input_tokens":20000,"cache_creation_input_tokens":0}}}`
@@ -210,6 +212,7 @@ func TestParseContextUsageEffort(t *testing.T) {
 }
 
 func TestWindowForModel(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		model  string
 		tokens int
@@ -233,6 +236,7 @@ func TestWindowForModel(t *testing.T) {
 }
 
 func TestReadTailReturnsLastBytes(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "t.jsonl")
 	if err := os.WriteFile(path, []byte("0123456789"), 0o600); err != nil {
 		t.Fatal(err)
@@ -247,6 +251,7 @@ func TestReadTailReturnsLastBytes(t *testing.T) {
 }
 
 func TestReadTailWholeFileWhenSmaller(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "t.jsonl")
 	if err := os.WriteFile(path, []byte("abc"), 0o600); err != nil {
 		t.Fatal(err)
@@ -258,6 +263,7 @@ func TestReadTailWholeFileWhenSmaller(t *testing.T) {
 }
 
 func TestReadTailMissingFile(t *testing.T) {
+	t.Parallel()
 	if _, ok := readTail(filepath.Join(t.TempDir(), "nope.jsonl"), 16); ok {
 		t.Error("readTail on a missing file should be not-ok")
 	}

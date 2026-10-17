@@ -22,6 +22,7 @@ func frameFor(t *testing.T, id, payload string) []byte {
 // and only a full queue makes a session wait — for the socket it is filling,
 // never for another session's.
 func TestWriteQueueBlocksOnlyOnceFull(t *testing.T) {
+	t.Parallel()
 	q := newWriteQueue()
 
 	filled := make(chan struct{})
@@ -65,6 +66,7 @@ func TestWriteQueueBlocksOnlyOnceFull(t *testing.T) {
 // itself, so a push may only report failure after the frames queued ahead of it
 // are out — otherwise the newest frame would reach the client first.
 func TestWriteQueueDrainsBeforeRejectingAPush(t *testing.T) {
+	t.Parallel()
 	q := newWriteQueue()
 	q.push(frameFor(t, "sess", "a"))
 	q.push(frameFor(t, "sess", "b"))
@@ -113,6 +115,7 @@ func TestWriteQueueDrainsBeforeRejectingAPush(t *testing.T) {
 // after flush returns, and a frame the writer has taken but not yet put on the
 // socket would otherwise be overtaken by the banner.
 func TestWriteQueueFlushWaitsForTheFrameInTheWritersHands(t *testing.T) {
+	t.Parallel()
 	q := newWriteQueue()
 	q.push(frameFor(t, "sess", "last"))
 
@@ -145,6 +148,7 @@ func TestWriteQueueFlushWaitsForTheFrameInTheWritersHands(t *testing.T) {
 // the /events bridge instead, in the order the sessions produced them, and the
 // transport is told once that the client is gone.
 func TestWriteQueueTakesRefusedFramesToTheFallback(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)

@@ -31,6 +31,7 @@ func (p *shortWritePTY) Close() error             { return nil }
 // of a write still receives every byte: writeBytes has to loop rather than
 // trust the first call, which is what a large paste needs on Windows.
 func TestWriteBytesSurvivesShortWrites(t *testing.T) {
+	t.Parallel()
 	fake := &shortWritePTY{chunk: 3}
 	s := New(nil, nil, events.New())
 	s.sessions["s1"] = &session{pty: fake}

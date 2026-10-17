@@ -68,6 +68,7 @@ func ackBody(session, id, kind string, ok bool, reason string) string {
 }
 
 func TestRunModCommandReportsTheAck(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		cmd    ModCommand
@@ -100,6 +101,7 @@ func TestRunModCommandReportsTheAck(t *testing.T) {
 // A mod from before the command kind acks it as an unknown kind. What the user
 // can do about that is update the plugin, so that is what they are told.
 func TestRunModCommandNamesTheUpdateForAnOldMod(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	done := runInBackground(context.Background(), svc, ModCommand{Kind: ModRunCommand, Name: "compact"})
 	cmd := collectMod(t, svc.ws, "s1")
@@ -115,6 +117,7 @@ func TestRunModCommandNamesTheUpdateForAnOldMod(t *testing.T) {
 // nobody is told it is still coming, so it must never run. The contract
 // changed here: it used to stay queued for a poll inside the attach window.
 func TestRunModCommandTimingOutBeforeAPollWithdrawsIt(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -132,6 +135,7 @@ func TestRunModCommandTimingOutBeforeAPollWithdrawsIt(t *testing.T) {
 
 // Withdrawing one command leaves the others queued for the same session.
 func TestRunModCommandWithdrawsOnlyItsOwnCommand(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	kept, err := svc.EnqueueModCommand("s1", ModCommand{Kind: ModPrompt, Text: "go"})
 	if err != nil {
@@ -148,6 +152,7 @@ func TestRunModCommandWithdrawsOnlyItsOwnCommand(t *testing.T) {
 }
 
 func TestRunModCommandTimingOutAfterAPollIsDelivered(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := runInBackground(ctx, svc, ModCommand{Kind: ModPrompt, Text: "go"})
@@ -163,6 +168,7 @@ func TestRunModCommandTimingOutAfterAPollIsDelivered(t *testing.T) {
 // An ack carries its session: another session's mod acking the same id does
 // not settle the wait.
 func TestRunModCommandIgnoresAnotherSessionsAck(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := runInBackground(ctx, svc, ModCommand{Kind: ModAbort})
@@ -176,6 +182,7 @@ func TestRunModCommandIgnoresAnotherSessionsAck(t *testing.T) {
 }
 
 func TestRunModCommandEndsWithTheSession(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	done := runInBackground(context.Background(), svc, ModCommand{Kind: ModAbort})
 	cmd := collectMod(t, svc.ws, "s1")
@@ -192,6 +199,7 @@ func TestRunModCommandEndsWithTheSession(t *testing.T) {
 // A session whose process exited (or never started) is not running, which is
 // not the same fix as a session whose mod is missing.
 func TestRunModCommandRefusesASessionThatIsNotRunning(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	if err := svc.Close("s1"); err != nil {
 		t.Fatalf("close: %v", err)
@@ -204,6 +212,7 @@ func TestRunModCommandRefusesASessionThatIsNotRunning(t *testing.T) {
 }
 
 func TestRunModCommandRefusesADetachedSession(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	if _, err := svc.RunModCommand(context.Background(), "s1", ModCommand{Kind: ModAbort}); !errors.Is(err, errModDetached) {
@@ -214,6 +223,7 @@ func TestRunModCommandRefusesADetachedSession(t *testing.T) {
 // An ack can land before anyone waits on it (a fast mod, a slow caller). It is
 // kept for the wait rather than lost.
 func TestModAckBeforeTheWaitIsKept(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	w, err := svc.queueModCommand("s1", ModCommand{Kind: ModAbort})
 	if err != nil {
@@ -228,6 +238,7 @@ func TestModAckBeforeTheWaitIsKept(t *testing.T) {
 }
 
 func TestModCommandDropsTheLeadingSlash(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	id, err := svc.EnqueueModCommand("s1", ModCommand{Kind: ModRunCommand, Name: " /compact", Args: "keep the plan"})
 	if err != nil {
@@ -242,6 +253,7 @@ func TestModCommandDropsTheLeadingSlash(t *testing.T) {
 // An ask's answer rides its ack, and an answer runs past the 4 KiB every other
 // hook body is held to.
 func TestRunModCommandReturnsAnAsksAnswer(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	done := runInBackground(context.Background(), svc, ModCommand{Kind: ModAsk, Question: "what now?"})
 	cmd := collectMod(t, svc.ws, "s1")
@@ -259,6 +271,7 @@ func TestRunModCommandReturnsAnAsksAnswer(t *testing.T) {
 }
 
 func TestModAckOverItsLimitIsRefused(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	body := fmt.Sprintf(`{"session_id":"s1","id":"m1","kind":"ask","ok":true,"answer":%q}`,
 		strings.Repeat("x", modAckBodyLimit))

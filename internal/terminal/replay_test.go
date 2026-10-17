@@ -8,6 +8,7 @@ import (
 )
 
 func TestReplayBufferKeepsOutputInOrder(t *testing.T) {
+	t.Parallel()
 	b := newReplayBuffer(1024)
 	b.append([]byte("hello "))
 	b.append([]byte("world"))
@@ -17,6 +18,7 @@ func TestReplayBufferKeepsOutputInOrder(t *testing.T) {
 }
 
 func TestReplayBufferIgnoresEmptyAppend(t *testing.T) {
+	t.Parallel()
 	b := newReplayBuffer(1024)
 	b.append(nil)
 	b.append([]byte{})
@@ -26,6 +28,7 @@ func TestReplayBufferIgnoresEmptyAppend(t *testing.T) {
 }
 
 func TestReplayBufferCopiesInput(t *testing.T) {
+	t.Parallel()
 	b := newReplayBuffer(1024)
 	buf := []byte("abc")
 	b.append(buf)
@@ -36,6 +39,7 @@ func TestReplayBufferCopiesInput(t *testing.T) {
 }
 
 func TestReplayBufferDropsOldestOnOverflow(t *testing.T) {
+	t.Parallel()
 	b := newReplayBuffer(10)
 	b.append([]byte("aaaaa")) // 5
 	b.append([]byte("bbbbb")) // 10, still within cap
@@ -50,6 +54,7 @@ func TestReplayBufferDropsOldestOnOverflow(t *testing.T) {
 }
 
 func TestReplayBufferKeepsOneChunkLargerThanCap(t *testing.T) {
+	t.Parallel()
 	b := newReplayBuffer(4)
 	big := bytes.Repeat([]byte("x"), 100)
 	b.append(big)
@@ -61,6 +66,7 @@ func TestReplayBufferKeepsOneChunkLargerThanCap(t *testing.T) {
 // A bare Service with a hand-built session exercises Replay without a PTY, so
 // this stays OS-agnostic (no !windows build tag): Replay only reads the tail.
 func TestServiceReplayEncodesTheTail(t *testing.T) {
+	t.Parallel()
 	b := newReplayBuffer(replayCapBytes)
 	b.append([]byte("scrollback"))
 	svc := &Service{sessions: map[string]*session{"s1": {replay: b}}}
@@ -79,6 +85,7 @@ func TestServiceReplayEncodesTheTail(t *testing.T) {
 }
 
 func TestServiceReplayUnknownSessionIsEmpty(t *testing.T) {
+	t.Parallel()
 	svc := &Service{sessions: map[string]*session{}}
 	got, err := svc.Replay("nope")
 	if err != nil {

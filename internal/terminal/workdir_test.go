@@ -10,6 +10,7 @@ import (
 // absence answers true, because a false answer costs a spawn that reports its
 // own failure while a true one closes the user's session.
 func TestWorkdirMissing(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	file := filepath.Join(dir, "not-a-dir")
 	if err := os.WriteFile(file, []byte("x"), 0o600); err != nil {

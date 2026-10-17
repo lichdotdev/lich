@@ -265,6 +265,7 @@ func TestConversationsReadsEveryProvider(t *testing.T) {
 }
 
 func TestFirstWorkspaceKeepsAWindowsDrive(t *testing.T) {
+	t.Parallel()
 	if got := firstWorkspace(`["file:///C:/work/alpha"]`); got != filepath.FromSlash("C:/work/alpha") {
 		t.Errorf("firstWorkspace = %q, want the drive kept", got)
 	}
@@ -274,6 +275,7 @@ func TestFirstWorkspaceKeepsAWindowsDrive(t *testing.T) {
 }
 
 func TestPromptTitleCutsALongPromptToOneLine(t *testing.T) {
+	t.Parallel()
 	long := strings.Repeat("ã", conversationTitleRunes+10)
 	if got := promptTitle(long); got != strings.Repeat("ã", conversationTitleRunes)+"…" {
 		t.Errorf("promptTitle(long) = %q", got)
@@ -286,6 +288,7 @@ func TestPromptTitleCutsALongPromptToOneLine(t *testing.T) {
 // TestHeadLinesDropsTheLineTheBoundCuts pins the bound: a record cut in half
 // by it would otherwise reach the parser as a different, shorter record.
 func TestHeadLinesDropsTheLineTheBoundCuts(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "long.jsonl")
 	first := `{"type":"session"}`
 	plant(t, path, first+"\n"+strings.Repeat("x", conversationHeadBytes)+"\n")

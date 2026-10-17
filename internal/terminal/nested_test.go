@@ -17,6 +17,7 @@ import (
 // each report carries (docs/hooks/session-state.md, Nested agent CLIs).
 
 func TestHookDropsAReportFromAnotherConversation(t *testing.T) {
+	t.Parallel()
 	svc, states := nestedRig(t, "host")
 
 	postReport(t, svc, `{"session_id":"s1","state":"busy","provider_session_id":"nested"}`)
@@ -32,6 +33,7 @@ func TestHookDropsAReportFromAnotherConversation(t *testing.T) {
 // The measured failure: a nested CLI exiting reported SessionEnd as the host's
 // `idle`, and the relay closed every errand delivered to the host.
 func TestNestedSessionEndDoesNotReachTheRelay(t *testing.T) {
+	t.Parallel()
 	svc, states := nestedRig(t, "host")
 
 	postReport(t, svc, `{"session_id":"s1","state":"busy","provider_session_id":"host"}`)
@@ -51,6 +53,7 @@ func TestNestedSessionEndDoesNotReachTheRelay(t *testing.T) {
 // `/clear` (and `/resume`, `/new`) starts another conversation at the prompt,
 // with no turn open: that start is the session's own and moves the binding.
 func TestStartBetweenTurnsRebindsTheSession(t *testing.T) {
+	t.Parallel()
 	svc, states := nestedRig(t, "host")
 
 	postReport(t, svc, `{"session_id":"s1","state":"busy","provider_session_id":"host"}`)
@@ -72,6 +75,7 @@ func TestStartBetweenTurnsRebindsTheSession(t *testing.T) {
 // The first start binds whenever it lands: a provider that reports its id late
 // (Crush, on its first tool call) has nothing bound to be confused with.
 func TestFirstStartBindsInsideATurn(t *testing.T) {
+	t.Parallel()
 	svc, _ := nestedRig(t, "")
 
 	postReport(t, svc, `{"session_id":"s1","state":"busy"}`)

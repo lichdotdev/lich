@@ -69,6 +69,7 @@ func TestLastTurnSaidMissesAreSilent(t *testing.T) {
 // sub-agent — so a reader that matched too widely would fail here rather than in
 // front of a user.
 func TestSaidReadersPickTheLastProse(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		read turnReader
@@ -142,6 +143,7 @@ func TestSaidReadersPickTheLastProse(t *testing.T) {
 // TestSaidWalkSkipsAHalfLine pins that a line the seed tail cut in half costs
 // the cut line and nothing else.
 func TestSaidWalkSkipsAHalfLine(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "transcript.jsonl")
 	body := `ontent":[{"type":"text","text":"cut in half"}]}}` + "\n" +
 		`{"type":"assistant","message":{"content":[{"type":"text","text":"whole line"}]}}` + "\n"
@@ -158,6 +160,7 @@ func TestSaidWalkSkipsAHalfLine(t *testing.T) {
 // format, and Kiro must reach the `.jsonl` rather than the `.json` its source
 // carries — the one arm that transforms the path it is given.
 func TestSaidRoutesByProvider(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		kind string
 		// name of the file to plant; the source's path is `file` unless the
@@ -209,6 +212,7 @@ func TestSaidRoutesByProvider(t *testing.T) {
 // lives on the message row and the text on a part row beside it, so the join is
 // what keeps a tool result from being read as the agent's own words.
 func TestSaidReadsTheOpenCodeDatabase(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "opencode.db")
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -244,6 +248,7 @@ func TestSaidReadsTheOpenCodeDatabase(t *testing.T) {
 // a chat filed as content-addressed blobs is not a transcript to walk and not a
 // query to run, so the read is empty rather than wrong (docs/ceilings.md).
 func TestSaidIsEmptyForCursor(t *testing.T) {
+	t.Parallel()
 	src := usageSource{kind: providers.Cursor, path: "/nope", id: "x"}
 	if got := new(saidCursors).said("s1", src); got != "" {
 		t.Errorf("said(cursor) = %q, want empty", got)
@@ -254,6 +259,7 @@ func TestSaidIsEmptyForCursor(t *testing.T) {
 // on the file kiroSessionPath resolves, so no other provider's path can be
 // turned into a Kiro transcript by suffix alone.
 func TestKiroTranscriptPathAnswersOnlyForItsMetadata(t *testing.T) {
+	t.Parallel()
 	if got := kiroTranscriptPath("/k/sessions/cli/abc.json"); got != "/k/sessions/cli/abc.jsonl" {
 		t.Errorf("kiroTranscriptPath = %q, want the .jsonl beside it", got)
 	}
@@ -267,6 +273,7 @@ func TestKiroTranscriptPathAnswersOnlyForItsMetadata(t *testing.T) {
 // worth as much as the recap it opens with. Counted in runes, so the cut can
 // never land inside a character.
 func TestCapRunesKeepsBothEnds(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("á", 100) + "TAIL"
 	got := capRunes(text, 30)
 	if !strings.HasPrefix(got, strings.Repeat("á", 20)) {
@@ -289,6 +296,7 @@ func TestCapRunesKeepsBothEnds(t *testing.T) {
 // tool output (the band used to go empty there, which is what a turn that
 // ended on a tool call looks like), and a new turn's words replace it.
 func TestSaidCursorContinuesWhereItStopped(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "t.jsonl")
 	writeLines(t, path, saidLine("First turn."))
 	var cursors saidCursors
@@ -313,6 +321,7 @@ func TestSaidCursorContinuesWhereItStopped(t *testing.T) {
 // cursor exists. Every other cursor test appends before it re-walks, so this is
 // the one that pins a walk with no growth behind it.
 func TestSaidCursorStandsOnAnUnchangedTranscript(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "t.jsonl")
 	writeLines(t, path, saidLine("Three failures in parser_test.go."))
 	var cursors saidCursors
@@ -333,6 +342,7 @@ func TestSaidCursorStandsOnAnUnchangedTranscript(t *testing.T) {
 // that ended on a tool call looks like. The cursor walks what was appended and
 // keeps the words it already read.
 func TestSaidCursorKeepsWordsBehindTheTailBound(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "t.jsonl")
 	writeLines(t, path, saidLine("Three failures."))
 	var cursors saidCursors
@@ -351,6 +361,7 @@ func TestSaidCursorKeepsWordsBehindTheTailBound(t *testing.T) {
 // tail holding no prose at all (one tool result larger than it) is walked
 // again from the start rather than answered empty.
 func TestSaidCursorSeedsPastAHugeToolResult(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "t.jsonl")
 	writeLines(t, path, saidLine("Behind the wall."), saidPad(searchTailBytes+(1<<20)))
 
@@ -363,6 +374,7 @@ func TestSaidCursorSeedsPastAHugeToolResult(t *testing.T) {
 // be trusted in: a file that shrank under it, and a file it was never counted
 // against: a conversation forked or rewritten (see saidCursor).
 func TestSaidCursorResetsOnANewTranscript(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "t.jsonl")
 	writeLines(t, path, saidLine("Long conversation."), saidPad(16<<10))

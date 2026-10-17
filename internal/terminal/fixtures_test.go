@@ -111,6 +111,7 @@ func loadHookFixtures(t *testing.T, file string) []hookFixtureCase {
 // in both directions: a contract without fixtures and a fixture file without a
 // contract are both failures.
 func TestHookFixturesCoverEveryContract(t *testing.T) {
+	t.Parallel()
 	found, err := filepath.Glob(filepath.Join(hookFixtureDir, "*.jsonl"))
 	if err != nil {
 		t.Fatalf("glob fixtures: %v", err)
@@ -134,6 +135,7 @@ func TestHookFixturesCoverEveryContract(t *testing.T) {
 // README, so a malformed case fails as itself rather than as a confusing
 // failure in one of the tests below.
 func TestHookFixturesAreWellFormed(t *testing.T) {
+	t.Parallel()
 	for _, contract := range hookContracts {
 		t.Run(contract.file, func(t *testing.T) {
 			cases := loadHookFixtures(t, contract.file)
@@ -177,6 +179,7 @@ func checkFixtureShape(t *testing.T, i int, c hookFixtureCase) {
 // a reject case must error, and an accept case must produce exactly the field
 // values the fixture names, after the contract's defaulting and trimming.
 func TestHookFixturesMatchParsers(t *testing.T) {
+	t.Parallel()
 	for _, contract := range hookContracts {
 		t.Run(contract.file, func(t *testing.T) {
 			for _, c := range loadHookFixtures(t, contract.file) {
@@ -227,6 +230,7 @@ func assertFixtureFields(t *testing.T, parsed any, want map[string]any) {
 // fixtures pin the wire contract a hook script actually meets — auth, body
 // limit, parse and apply — and not just the parser underneath it.
 func TestHookFixturesMatchEndpoints(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(
 		func(string, []byte) {},
 		func(hookRequest) {},

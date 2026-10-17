@@ -14,6 +14,7 @@ func neverFree(int) bool  { return false }
 // port is a function of the path and nothing else, so a worktree keeps its
 // number across restarts of the session and of lich.
 func TestWorktreePortIsStable(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("src", "repo", "feature-a")
 	first := worktreePort(path)
 	for range 100 {
@@ -27,6 +28,7 @@ func TestWorktreePortIsStable(t *testing.T) {
 // the same port — otherwise a trailing slash would hand the same checkout two
 // numbers depending on which caller asked.
 func TestWorktreePortIgnoresPathNoise(t *testing.T) {
+	t.Parallel()
 	clean := filepath.Join("src", "repo")
 	noisy := filepath.Join("src", "nested", "..", "repo") + string(filepath.Separator)
 	if worktreePort(clean) != worktreePort(noisy) {
@@ -40,6 +42,7 @@ func TestWorktreePortIgnoresPathNoise(t *testing.T) {
 // server at once. Not a guarantee for arbitrary paths (the hash may collide),
 // which is why these are named rather than generated.
 func TestWorktreePortSeparatesCheckouts(t *testing.T) {
+	t.Parallel()
 	seen := map[int]string{}
 	for _, name := range []string{"repo", "repo-feature-a", "repo-feature-b", "repo-fix"} {
 		path := filepath.Join("src", name)
@@ -62,6 +65,7 @@ const lichListenPort = 47821
 // lich's own listener — and comparing against the constants under test would
 // only restate the arithmetic.
 func TestWorktreePortStaysInRange(t *testing.T) {
+	t.Parallel()
 	for i := range 5000 {
 		path := filepath.Join("src", "repo", string(rune('a'+i%26)), string(rune(i)))
 		port := worktreePort(path)
@@ -75,6 +79,7 @@ func TestWorktreePortStaysInRange(t *testing.T) {
 // pinned listener, not merely the paths the range test happens to sample: a
 // checkout handed the app's own port would collide with lich itself.
 func TestWorktreePortWindowClearsListener(t *testing.T) {
+	t.Parallel()
 	if lichListenPort >= worktreePortBase && lichListenPort < worktreePortBase+worktreePortCount {
 		t.Fatalf("window [%d, %d) contains lich's listener %d",
 			worktreePortBase, worktreePortBase+worktreePortCount, lichListenPort)
@@ -85,6 +90,7 @@ func TestWorktreePortWindowClearsListener(t *testing.T) {
 // caller is told there is no port to export rather than handed a number every
 // pathless session would share.
 func TestWorktreePortWithoutPath(t *testing.T) {
+	t.Parallel()
 	if got := worktreePort(""); got != 0 {
 		t.Fatalf("worktreePort(\"\") = %d, want 0", got)
 	}
@@ -93,6 +99,7 @@ func TestWorktreePortWithoutPath(t *testing.T) {
 // TestPickWorktreePortPrefersHash proves an uncontested checkout still gets its
 // hashed number, which is what keeps a worktree's port stable for free.
 func TestPickWorktreePortPrefersHash(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("src", "repo", "feature-a")
 	if got := pickWorktreePort(path, map[int]bool{}, alwaysFree); got != worktreePort(path) {
 		t.Fatalf("pickWorktreePort(%q) = %d, want the hashed %d", path, got, worktreePort(path))
@@ -104,6 +111,7 @@ func TestPickWorktreePortPrefersHash(t *testing.T) {
 // holds is moved off it rather than handed a number two dev servers would fight
 // over.
 func TestPickWorktreePortWalksPastReserved(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("src", "repo", "feature-a")
 	hashed := worktreePort(path)
 	got := pickWorktreePort(path, map[int]bool{hashed: true}, alwaysFree)
@@ -119,6 +127,7 @@ func TestPickWorktreePortWalksPastReserved(t *testing.T) {
 // cannot see: a port some unrelated process on this machine is already
 // listening on is skipped too.
 func TestPickWorktreePortWalksPastBoundPort(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("src", "repo", "feature-a")
 	hashed := worktreePort(path)
 	free := func(port int) bool { return port != hashed }
@@ -131,6 +140,7 @@ func TestPickWorktreePortWalksPastBoundPort(t *testing.T) {
 // port from the hashed one to the end of the window taken, the checkout is
 // served from the start of the window rather than out of it.
 func TestPickWorktreePortWrapsAtWindowEnd(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("src", "repo", "feature-a")
 	hashed := worktreePort(path)
 	inUse := map[int]bool{}
@@ -148,6 +158,7 @@ func TestPickWorktreePortWrapsAtWindowEnd(t *testing.T) {
 // session nothing it did not already have: it gets its hashed number back,
 // which is the collision the caller lived with before any of this.
 func TestPickWorktreePortExhaustedFallsBackToHash(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join("src", "repo", "feature-a")
 	if got := pickWorktreePort(path, map[int]bool{}, neverFree); got != worktreePort(path) {
 		t.Fatalf("pickWorktreePort(%q) = %d, want the hashed %d", path, got, worktreePort(path))
@@ -157,6 +168,7 @@ func TestPickWorktreePortExhaustedFallsBackToHash(t *testing.T) {
 // TestPickWorktreePortWithoutPath proves a pathless session is not walked into
 // a port: it has no checkout to own one.
 func TestPickWorktreePortWithoutPath(t *testing.T) {
+	t.Parallel()
 	if got := pickWorktreePort("", map[int]bool{}, alwaysFree); got != 0 {
 		t.Fatalf("pickWorktreePort(\"\") = %d, want 0", got)
 	}

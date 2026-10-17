@@ -34,6 +34,7 @@ func withClaudePlugin(t *testing.T, version string) {
 // tell a worker, and LICH_SUBAGENT_CARDS=off only where its subagents stay
 // native, so a session whose subagents become cards carries no off at all.
 func TestSubagentEnv(t *testing.T) {
+	t.Parallel()
 	base := []string{"A=1"}
 	cases := []struct {
 		name    string
@@ -97,6 +98,7 @@ func TestSubagentRouteWithoutTheCardPlugin(t *testing.T) {
 // A Claude Code spawn whose subagents become lich cards is briefed to fan out
 // through its own Agent tool; every other spawn keeps the line against it.
 func TestBriefingFollowsSubagentCards(t *testing.T) {
+	t.Parallel()
 	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteCards, prompt.English)
 	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English)
 	briefing := func(args []string) string {

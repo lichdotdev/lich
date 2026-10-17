@@ -27,6 +27,7 @@ func settled(t *testing.T) (*Service, *session) {
 // Enter is sent behind it, so one arriving while the user is mid-sentence sends
 // both halves as one submission and the user's half is gone.
 func TestTypingTakesThePromptBackFromTheRelay(t *testing.T) {
+	t.Parallel()
 	svc, _ := settled(t)
 
 	svc.noteInput("s1", []byte("what about the"))
@@ -44,6 +45,7 @@ func TestTypingTakesThePromptBackFromTheRelay(t *testing.T) {
 // user's anymore, and a prompt held by a draft nobody has is a relay that never
 // delivers here again.
 func TestAnAbandonedLineReleasesThePrompt(t *testing.T) {
+	t.Parallel()
 	svc, _ := settled(t)
 
 	svc.noteInput("s1", []byte("half a thought"))
@@ -57,6 +59,7 @@ func TestAnAbandonedLineReleasesThePrompt(t *testing.T) {
 // input, and the digits inside those reports are printable. Read as typing they
 // would hold the prompt forever without anybody touching a key.
 func TestPointerAndCursorInputIsNotADraft(t *testing.T) {
+	t.Parallel()
 	svc, _ := settled(t)
 
 	svc.noteInput("s1", []byte("\x1b[<35;42;7M\x1b[<35;43;7M"))
@@ -78,6 +81,7 @@ func TestPointerAndCursorInputIsNotADraft(t *testing.T) {
 // half-written line is where it belongs, so it must not count against the
 // prompt, while a session that is not at one at all still does.
 func TestAtPromptIgnoresTheUsersDraft(t *testing.T) {
+	t.Parallel()
 	svc, _ := settled(t)
 
 	svc.noteInput("s1", []byte("explain this: "))
@@ -90,6 +94,7 @@ func TestAtPromptIgnoresTheUsersDraft(t *testing.T) {
 }
 
 func TestAtPromptIsFalseWhereThereIsNoPrompt(t *testing.T) {
+	t.Parallel()
 	svc, sess := settled(t)
 
 	svc.mu.Lock()
@@ -107,6 +112,7 @@ func TestAtPromptIsFalseWhereThereIsNoPrompt(t *testing.T) {
 // the line itself, so an edit it cannot read as one would wedge the relay
 // silently. A draft nobody has touched goes stale and gives the prompt back.
 func TestAStaleDraftGivesThePromptBack(t *testing.T) {
+	t.Parallel()
 	svc, sess := settled(t)
 
 	svc.mu.Lock()
@@ -125,6 +131,7 @@ func TestAStaleDraftGivesThePromptBack(t *testing.T) {
 }
 
 func TestEscapeSpan(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		in   string
@@ -153,6 +160,7 @@ func TestEscapeSpan(t *testing.T) {
 // holding it back forever would leave the relay pasting into a line that has a
 // paragraph of the user's on it.
 func TestAnEscapeThatNeverEndsDoesNotSwallowTyping(t *testing.T) {
+	t.Parallel()
 	svc, _ := settled(t)
 
 	svc.noteInput("s1", []byte("\x1b[0123456789012345678901234567890123456789"))
@@ -167,6 +175,7 @@ func TestAnEscapeThatNeverEndsDoesNotSwallowTyping(t *testing.T) {
 // pressed: a lone Ctrl+C or Escape, never a byte carried in by a paste and
 // never one inside an escape sequence.
 func TestInterruptIsReadFromALoneKey(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		writes []string
@@ -203,6 +212,7 @@ func TestInterruptIsReadFromALoneKey(t *testing.T) {
 
 // A session lich is not running has no turn to end and no prompt to hold.
 func TestInterruptForAnUnknownSessionIsANoOp(t *testing.T) {
+	t.Parallel()
 	svc, _ := settled(t)
 	if svc.noteInput("nobody", []byte{ctrlC}) {
 		t.Fatal("a keystroke for a session lich does not run read as an interrupt")
@@ -213,6 +223,7 @@ func TestInterruptForAnUnknownSessionIsANoOp(t *testing.T) {
 // at that keyboard types inside it would be submitted as part of a message they
 // never sent, so it is held and written at the prompt the Enter leaves behind.
 func TestKeystrokesDuringADeliveryLandAfterIt(t *testing.T) {
+	t.Parallel()
 	svc, sess := settled(t)
 	pty := &shortWritePTY{chunk: 4096}
 	svc.mu.Lock()
@@ -246,6 +257,7 @@ func TestKeystrokesDuringADeliveryLandAfterIt(t *testing.T) {
 // A hold on a session that has gone leaves nothing behind, and its release is
 // safe to call: a delivery races the PTY exiting under it like any other write.
 func TestHoldingAGoneSessionIsHarmless(t *testing.T) {
+	t.Parallel()
 	svc, _ := settled(t)
 	svc.HoldInput("gone")()
 }
@@ -254,6 +266,7 @@ func TestHoldingAGoneSessionIsHarmless(t *testing.T) {
 // must not hand the keyboard back while the second delivery is still between
 // its own paste and Enter, or the keystrokes ride along with that one instead.
 func TestOverlappingDeliveriesKeepTheKeyboardHeld(t *testing.T) {
+	t.Parallel()
 	svc, sess := settled(t)
 	pty := &shortWritePTY{chunk: 4096}
 	svc.mu.Lock()

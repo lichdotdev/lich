@@ -18,6 +18,7 @@ import (
 // are resolved once, by a spawn that outlives the page, so they have to reach
 // both the window watching now and the row a reload reads them back from.
 func TestReportSandboxRecordsAndAnnouncesTheSkippedLinks(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	recorded := map[string][]string{}
 	svc := New(stubBins{sandboxLinks: recorded}, nil, hub)
@@ -44,6 +45,7 @@ func TestReportSandboxRecordsAndAnnouncesTheSkippedLinks(t *testing.T) {
 // by then, so the window watching now still has the line; refusing to open a
 // terminal over what its tooltip says would be the worse trade.
 func TestReportSandboxSurvivesARowThatRefusesTheWrite(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{sandboxLinksErr: errors.New("database is locked")}, nil, hub)
 

@@ -9,6 +9,7 @@ import (
 )
 
 func TestModAnswersOnlyFromAPollingModOfARelease(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		release string
@@ -43,6 +44,7 @@ func TestModAnswersOnlyFromAPollingModOfARelease(t *testing.T) {
 // it, so the watcher hears who closed the session; the window's close names no
 // one.
 func TestCloseTellsTheWatcherWhoClosedTheSession(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	runModSession(svc, "s2")
@@ -64,6 +66,7 @@ func TestCloseTellsTheWatcherWhoClosedTheSession(t *testing.T) {
 // The relay hears about a close while the process still runs, so it can end a
 // worker's errand before the SessionEnd the dying CLI reports.
 func TestCloseTellsTheWatcherBeforeTheProcessDies(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	p := runModSession(svc, "s1")
 	var order []string

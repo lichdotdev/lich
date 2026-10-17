@@ -36,6 +36,7 @@ func turnStateOf(t *testing.T, svc *Service, id string) TurnState {
 // A window that was away reads its cards from this: the last report of each
 // live session, with the tool a pre-tool report named.
 func TestTurnStatesCarryTheLastReportOfEachLiveSession(t *testing.T) {
+	t.Parallel()
 	svc := serviceWithSessions(t, hookStore{}, "s1", "s2")
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy, Tool: "Bash", Detail: "go test ./..."})
@@ -55,6 +56,7 @@ func TestTurnStatesCarryTheLastReportOfEachLiveSession(t *testing.T) {
 // A report the window was never told (a `waiting` outside a turn) is not the
 // session's state either.
 func TestTurnStatesHoldBackWhatTheWindowWasNotTold(t *testing.T) {
+	t.Parallel()
 	svc := serviceWithSessions(t, hookStore{}, "s1")
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
@@ -66,6 +68,7 @@ func TestTurnStatesHoldBackWhatTheWindowWasNotTold(t *testing.T) {
 }
 
 func TestTurnStatesRecordAnInterruptedTurn(t *testing.T) {
+	t.Parallel()
 	svc := serviceWithSessions(t, hookStore{}, "s1")
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
 	svc.noteInterrupt("s1")
@@ -78,6 +81,7 @@ func TestTurnStatesRecordAnInterruptedTurn(t *testing.T) {
 // Since moves on a transition only: the hook repeats a state through a turn and
 // a session has been busy since it started.
 func TestTurnStatesStampTheTransitionNotTheRepeat(t *testing.T) {
+	t.Parallel()
 	svc := serviceWithSessions(t, hookStore{}, "s1")
 	clock := time.UnixMilli(1_000)
 	svc.statuses.now = func() time.Time { return clock }
@@ -96,6 +100,7 @@ func TestTurnStatesStampTheTransitionNotTheRepeat(t *testing.T) {
 // A dead session answers for nothing: a closed card, and a PTY that exited,
 // are not in the snapshot, and a respawn under the same id starts blank.
 func TestTurnStatesForgetASessionThatLeft(t *testing.T) {
+	t.Parallel()
 	svc := serviceWithSessions(t, hookStore{}, "closed", "respawned")
 	svc.onHookState(hookRequest{SessionID: "closed", State: statusBusy})
 	svc.onHookState(hookRequest{SessionID: "respawned", State: statusBusy})
@@ -129,6 +134,7 @@ func TestTurnStatesCarryTheUsageReadout(t *testing.T) {
 // With no transcript behind it a session has no usage to report, and reports
 // its state alone.
 func TestTurnStatesLeaveOutUsageThereIsNoneOf(t *testing.T) {
+	t.Parallel()
 	svc := serviceWithSessions(t, hookStore{}, "s1")
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
 
@@ -140,6 +146,7 @@ func TestTurnStatesLeaveOutUsageThereIsNoneOf(t *testing.T) {
 // A window that attached after a cd reads where the session went, and the host
 // it went into, rather than its checkout.
 func TestTurnStatesCarryWhereTheSessionLastWas(t *testing.T) {
+	t.Parallel()
 	svc := serviceWithSessions(t, hookStore{}, "moved", "hosted")
 	svc.publishCwd(cwdEvent{ID: "moved", Cwd: "/repo"})
 	svc.publishCwd(cwdEvent{ID: "moved", Cwd: "/elsewhere"})

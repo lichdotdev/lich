@@ -11,6 +11,7 @@ import (
 )
 
 func TestSubmitPromptFindsNoModToHandItTo(t *testing.T) {
+	t.Parallel()
 	unpolled := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(unpolled, "s1")
 	stopped := attachedModService(t)
@@ -61,6 +62,7 @@ func receiptOf(t *testing.T, done <-chan relay.PromptReceipt) relay.PromptReceip
 }
 
 func TestSubmitPromptReportsTheAck(t *testing.T) {
+	t.Parallel()
 	for _, want := range []relay.PromptReceipt{
 		{State: relay.PromptAcked, OK: true},
 		{State: relay.PromptAcked, Reason: "blocked by a hook"},
@@ -79,6 +81,7 @@ func TestSubmitPromptReportsTheAck(t *testing.T) {
 }
 
 func TestSubmitPromptNoPollCollectedIsWithdrawn(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -91,6 +94,7 @@ func TestSubmitPromptNoPollCollectedIsWithdrawn(t *testing.T) {
 }
 
 func TestSubmitPromptCollectedThenUnackedIsDelivered(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := submitInBackground(t, ctx, svc)
@@ -102,6 +106,7 @@ func TestSubmitPromptCollectedThenUnackedIsDelivered(t *testing.T) {
 }
 
 func TestSubmitPromptEndsWithTheSession(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	done := submitInBackground(t, context.Background(), svc)
 	collectMod(t, svc.ws, "s1")
@@ -114,6 +119,7 @@ func TestSubmitPromptEndsWithTheSession(t *testing.T) {
 }
 
 func TestSubmitPromptIsCollectedOnceAPollCarriesIt(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	handed, err := svc.SubmitPrompt("s1", "run the tests", nil)
 	if err != nil {
@@ -129,6 +135,7 @@ func TestSubmitPromptIsCollectedOnceAPollCarriesIt(t *testing.T) {
 }
 
 func TestModAttachedOnlyWhileAModPollsFromARunningSession(t *testing.T) {
+	t.Parallel()
 	unpolled := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(unpolled, "s1")
 	stopped := attachedModService(t)
@@ -155,6 +162,7 @@ func TestModAttachedOnlyWhileAModPollsFromARunningSession(t *testing.T) {
 }
 
 func TestSubmitPromptCarriesItsNotification(t *testing.T) {
+	t.Parallel()
 	svc := attachedModService(t)
 	note := &relay.Notification{Status: relay.NotifyCompleted, Summary: `lich session "docs" finished`}
 	if _, err := svc.SubmitPrompt("s1", "the report", note); err != nil {

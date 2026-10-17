@@ -35,6 +35,7 @@ func (s stubSandboxStore) SetSessionSandbox(_, sandbox string) error {
 // when the rung is turned off under it, and one opened on the machine is not
 // confined later because the rung moved.
 func TestConfinedPrefersTheSessionRow(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		row  string
 		rung bool
@@ -64,6 +65,7 @@ func baseSpec() ptySpec {
 const t0dir = "/tmp"
 
 func TestWrapSandboxLeavesAnUnconfinedSpawnAlone(t *testing.T) {
+	t.Parallel()
 	original := baseSpec()
 	for _, tt := range []struct {
 		name     string
@@ -81,6 +83,7 @@ func TestWrapSandboxLeavesAnUnconfinedSpawnAlone(t *testing.T) {
 }
 
 func TestWrapSandboxKeepsTheCommandAndItsArguments(t *testing.T) {
+	t.Parallel()
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}
@@ -123,6 +126,7 @@ func lastIndex(args []string, value string) int {
 // binary case is BinaryDirs' own (TestBinaryDirsOfAMissingBinary); what is here
 // is that this caller asks for both binaries and passes the answer through.
 func TestExecutablesAreDirectoriesOnDisk(t *testing.T) {
+	t.Parallel()
 	dirs := executables("sh")
 	if len(dirs) == 0 {
 		t.Fatal("sh resolved to nothing")
@@ -158,6 +162,7 @@ func TestExecutablesAreDirectoriesOnDisk(t *testing.T) {
 // already — a bind of a source that does not exist is dropped from the spec,
 // and the copy would then land where the session cannot read it.
 func TestSessionDropDirCreatesTheDirectory(t *testing.T) {
+	t.Parallel()
 	copies := t.TempDir()
 
 	got := sessionDropDir(copies, "s1", true)
@@ -174,6 +179,7 @@ func TestSessionDropDirCreatesTheDirectory(t *testing.T) {
 // its card. An unconfined one wants no directory at all — it opens the copy at
 // the path it was written to, like any other file.
 func TestSessionDropDirWithoutABase(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		base, session string
 		confined      bool
@@ -196,6 +202,7 @@ func TestSessionDropDirWithoutABase(t *testing.T) {
 // dir, which the sandbox mounts read-only, and a session that cannot write its
 // own config dir cannot keep a conversation.
 func TestWrapSandboxBindsTheClaudeProfile(t *testing.T) {
+	t.Parallel()
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}
@@ -211,6 +218,7 @@ func TestWrapSandboxBindsTheClaudeProfile(t *testing.T) {
 // version's .in_use marker through that link, so the store is bound writable
 // too or a confined session cannot mark the plugins it runs.
 func TestWrapSandboxBindsTheClaudePluginStore(t *testing.T) {
+	t.Parallel()
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}
@@ -232,6 +240,7 @@ func TestWrapSandboxBindsTheClaudePluginStore(t *testing.T) {
 // path pasted at the prompt only names something the agent can open if the
 // directory holding it is bound in.
 func TestWrapSandboxMountsTheSessionsCopies(t *testing.T) {
+	t.Parallel()
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}
@@ -253,6 +262,7 @@ func TestWrapSandboxMountsTheSessionsCopies(t *testing.T) {
 // is readable by every process on the machine, so a token passed through
 // bubblewrap's --setenv would be handed to more than the session it is for.
 func TestWrapSandboxKeepsTheTokenOutOfTheArguments(t *testing.T) {
+	t.Parallel()
 	if _, err := exec.LookPath("bwrap"); err != nil {
 		t.Skip("bubblewrap is not installed")
 	}
@@ -270,6 +280,7 @@ func TestWrapSandboxKeepsTheTokenOutOfTheArguments(t *testing.T) {
 // No flag, no credential: the sandbox as it shipped puts nothing in the
 // environment, so a session that was never granted a token cannot find one.
 func TestWrapSandboxAddsNoTokenWithoutOne(t *testing.T) {
+	t.Parallel()
 	if _, err := exec.LookPath("bwrap"); err != nil {
 		t.Skip("bubblewrap is not installed")
 	}
@@ -287,6 +298,7 @@ func TestWrapSandboxAddsNoTokenWithoutOne(t *testing.T) {
 // wrapSandbox hand back nil and leave a session unable to find its own
 // ~/.gitconfig with nothing to read about why.
 func TestWrapSandboxNamesTheLinksItSkipped(t *testing.T) {
+	t.Parallel()
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}
@@ -310,6 +322,7 @@ func TestWrapSandboxNamesTheLinksItSkipped(t *testing.T) {
 // the sandbox's own answer, and reporting one for a session running on the
 // machine would put a warning on a card that has no sandbox to warn about.
 func TestWrapSandboxSkipsNoLinksWhenUnconfined(t *testing.T) {
+	t.Parallel()
 	if _, links := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", false, sandboxCreds{}); links != nil {
 		t.Errorf("an unconfined spawn reported skipped links %v", links)
 	}
@@ -320,6 +333,7 @@ func TestWrapSandboxSkipsNoLinksWhenUnconfined(t *testing.T) {
 // question a session lich opened unattended would otherwise stop on. Another
 // provider is told nothing it would not understand.
 func TestWrapSandboxSkipsClaudesTrustQuestion(t *testing.T) {
+	t.Parallel()
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}
@@ -342,6 +356,7 @@ func TestWrapSandboxSkipsClaudesTrustQuestion(t *testing.T) {
 // trusted, as the inline table Codex accepts, and a confined Cursor CLI gets
 // --trust; an unconfined spawn and a provider without a flag get nothing.
 func TestConfinedTrustArgs(t *testing.T) {
+	t.Parallel()
 	main, worktree := gitWorktree(t)
 	want := []string{"-c", "projects={" + strconv.Quote(main) + `={trust_level="trusted"}}`}
 	if got := confinedTrustArgs(providers.Codex, worktree, true); !slices.Equal(got, want) {
@@ -365,6 +380,7 @@ func TestConfinedTrustArgs(t *testing.T) {
 }
 
 func TestWrapSandboxSkipsOMPSetup(t *testing.T) {
+	t.Parallel()
 	if !sandbox.Available() {
 		t.Skip("no sandbox backend on this machine")
 	}

@@ -21,6 +21,7 @@ func captureEmit(buf int) (func([]byte), chan []byte) {
 // hour-long hidden one, so the flush also proves the timer picked the visible
 // cadence.
 func TestCoalescerVisibleBatchesBurstOnShortTimer(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(3)
 	c := newCoalescer(emit, 20*time.Millisecond, time.Hour)
 
@@ -57,6 +58,7 @@ func TestCoalescerVisibleBatchesBurstOnShortTimer(t *testing.T) {
 // lone write on an idle visible terminal — a keystroke echo — has no burst to
 // collapse, so it must not pay the window.
 func TestCoalescerVisibleLeadingEdgeEmitsIdleWriteAtOnce(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(1)
 	c := newCoalescer(emit, time.Hour, time.Hour)
 
@@ -76,6 +78,7 @@ func TestCoalescerVisibleLeadingEdgeEmitsIdleWriteAtOnce(t *testing.T) {
 // write a whole window after the last emission is leading, one still inside
 // the window is not.
 func TestCoalescerLeadingEdgeWindowBoundary(t *testing.T) {
+	t.Parallel()
 	const window = 20 * time.Millisecond
 
 	atEdge, atEdgeEmits := captureEmit(1)
@@ -111,6 +114,7 @@ func TestCoalescerLeadingEdgeWindowBoundary(t *testing.T) {
 // TestCoalescerHiddenNeverTakesLeadingEdge: a hidden terminal does not paint,
 // so it has no echo latency to protect and batches hard instead.
 func TestCoalescerHiddenNeverTakesLeadingEdge(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(1)
 	c := newCoalescer(emit, time.Hour, time.Hour)
 	c.SetVisible(false)
@@ -127,6 +131,7 @@ func TestCoalescerHiddenNeverTakesLeadingEdge(t *testing.T) {
 // TestCoalescerHiddenBuffersThenFlushesOnTimer is the mirror image: an
 // hour-long visible interval with a short hidden one.
 func TestCoalescerHiddenBuffersThenFlushesOnTimer(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(1)
 	c := newCoalescer(emit, time.Hour, 10*time.Millisecond)
 	c.SetVisible(false)
@@ -151,6 +156,7 @@ func TestCoalescerHiddenBuffersThenFlushesOnTimer(t *testing.T) {
 }
 
 func TestCoalescerTimerRearmsPerBurst(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(2)
 	c := newCoalescer(emit, time.Hour, 10*time.Millisecond)
 	c.SetVisible(false)
@@ -172,6 +178,7 @@ func TestCoalescerTimerRearmsPerBurst(t *testing.T) {
 }
 
 func TestCoalescerSetVisibleFlushesPending(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(1)
 	c := newCoalescer(emit, time.Hour, time.Hour)
 	c.SetVisible(false)
@@ -190,6 +197,7 @@ func TestCoalescerSetVisibleFlushesPending(t *testing.T) {
 }
 
 func TestCoalescerSetVisibleWithEmptyPendingEmitsNothing(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(1)
 	c := newCoalescer(emit, time.Hour, time.Hour)
 	c.SetVisible(false)
@@ -204,6 +212,7 @@ func TestCoalescerSetVisibleWithEmptyPendingEmitsNothing(t *testing.T) {
 }
 
 func TestCoalescerOverflowForcesEarlyFlush(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(1)
 	c := newCoalescer(emit, time.Hour, time.Hour)
 	c.SetVisible(false)
@@ -221,6 +230,7 @@ func TestCoalescerOverflowForcesEarlyFlush(t *testing.T) {
 }
 
 func TestCoalescerCloseFlushesOnceAndSeals(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(2)
 	c := newCoalescer(emit, time.Hour, time.Hour)
 	c.SetVisible(false)
@@ -244,6 +254,7 @@ func TestCoalescerCloseFlushesOnceAndSeals(t *testing.T) {
 // multiple goroutines; under -race this checks the locking, and afterwards the
 // total emitted bytes must equal the total written.
 func TestCoalescerConcurrentWritesAndFlips(t *testing.T) {
+	t.Parallel()
 	var mu sync.Mutex
 	var emitted bytes.Buffer
 	c := newCoalescer(func(data []byte) {

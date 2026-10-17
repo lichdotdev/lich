@@ -12,6 +12,7 @@ import (
 // read loop behind them keeps draining and only this session — never its
 // neighbours — feels the backpressure.
 func TestOutboxQueuesWhileDeliveryIsStuck(t *testing.T) {
+	t.Parallel()
 	release := make(chan struct{})
 	entered := make(chan struct{}, 1)
 	box := newOutbox(func([]byte) {
@@ -60,6 +61,7 @@ func TestOutboxQueuesWhileDeliveryIsStuck(t *testing.T) {
 // already queued: the exit event a caller emits after it can never overtake the
 // session's last bytes.
 func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
+	t.Parallel()
 	var mu sync.Mutex
 	var got []string
 	box := newOutbox(func(data []byte) {
@@ -83,6 +85,7 @@ func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
 // TestOutboxCopiesTheFrame proves a caller may reuse its buffer after push —
 // the coalescer hands over the slice it keeps appending to.
 func TestOutboxCopiesTheFrame(t *testing.T) {
+	t.Parallel()
 	delivered := make(chan []byte, 1)
 	box := newOutbox(func(data []byte) { delivered <- data }, 1)
 

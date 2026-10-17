@@ -318,6 +318,7 @@ func (s stubBins) TurnRecord(sessionID string) (store.TurnRecord, bool, error) {
 // TestChildEnvStripsAppImageVars proves the AppImage runtime variables that break
 // mise/asdf shims are dropped while the real user environment is passed through.
 func TestChildEnvStripsAppImageVars(t *testing.T) {
+	t.Parallel()
 	in := []string{
 		"PATH=/usr/bin",
 		"ARGV0=lich.AppImage",
@@ -343,6 +344,7 @@ func TestChildEnvStripsAppImageVars(t *testing.T) {
 // APPDIR nothing is dropped or rewritten, even values that look like mount
 // paths or AppImage-ish keys the user happens to have set.
 func TestChildEnvOutsideAppImageIsUntouched(t *testing.T) {
+	t.Parallel()
 	in := []string{
 		"HOME=/home/user",
 		"LD_LIBRARY_PATH=/opt/lib:/tmp/.mount_other/usr/lib",
@@ -358,6 +360,7 @@ func TestChildEnvOutsideAppImageIsUntouched(t *testing.T) {
 // the AppImage mount: user-set entries survive, values reduced to nothing are
 // dropped, and unrelated values are never rewritten.
 func TestChildEnvScrubsMountPaths(t *testing.T) {
+	t.Parallel()
 	const mount = "/tmp/.mount_lich"
 	in := []string{
 		"APPDIR=" + mount,
@@ -405,6 +408,7 @@ func TestChildEnvScrubsMountPaths(t *testing.T) {
 // TestChildEnvKeepsUserLibraryPath proves a user's own LD_LIBRARY_PATH suffix
 // survives the scrub — AppRun prepends the mount to whatever was already set.
 func TestChildEnvKeepsUserLibraryPath(t *testing.T) {
+	t.Parallel()
 	in := []string{
 		"APPDIR=/tmp/.mount_lich",
 		"LD_LIBRARY_PATH=/tmp/.mount_lich/usr/lib:/opt/cuda/lib64",
@@ -418,6 +422,7 @@ func TestChildEnvKeepsUserLibraryPath(t *testing.T) {
 // TestNewSessionEnv proves the service derives its session environment at
 // construction: cleaned of AppImage leakage and terminated by TERM.
 func TestNewSessionEnv(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, []string{"APPDIR=/tmp/.mount_lich", "ARGV0=lich.AppImage", "HOME=/home/user"}, events.New())
 	got := strings.Join(svc.env, "\n")
 	if strings.Contains(got, "ARGV0=") || strings.Contains(got, "APPDIR=") {
@@ -431,6 +436,7 @@ func TestNewSessionEnv(t *testing.T) {
 // TestOperationsOnUnknownSessionAreNoops proves Write/Resize/Close on a session
 // that was never started return nil instead of panicking on a missing PTY.
 func TestOperationsOnUnknownSessionAreNoops(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if err := svc.Write("ghost", "hi"); err != nil {
 		t.Errorf("Write unknown = %v, want nil", err)
@@ -450,6 +456,7 @@ func TestOperationsOnUnknownSessionAreNoops(t *testing.T) {
 // the session's coalescer: output buffered while hidden is flushed when the
 // session is made visible.
 func TestSetVisibleReachesCoalescer(t *testing.T) {
+	t.Parallel()
 	emit, emits := captureEmit(1)
 	out := newCoalescer(emit, time.Hour, time.Hour)
 	out.SetVisible(false)
@@ -488,6 +495,7 @@ func spawnSession(t *testing.T) *session {
 // TestWriteResizeCloseOnLiveSession drives a real session end to end: input is
 // written, the window is resized and Close reaps the shell and drops it.
 func TestWriteResizeCloseOnLiveSession(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	svc.sessions["s1"] = spawnSession(t)
 
@@ -508,6 +516,7 @@ func TestWriteResizeCloseOnLiveSession(t *testing.T) {
 // TestStartIsNoopWhenAlreadyRunning proves Start returns without spawning a
 // second shell for a session ID that is already tracked.
 func TestStartIsNoopWhenAlreadyRunning(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := spawnSession(t)
 	svc.sessions["s1"] = sess
@@ -560,6 +569,7 @@ func spawnedArgs(t *testing.T, svc *Service, id string) []string {
 // TestStartPassesResumeToTheProcess proves the resume id reaches the spawned
 // binary's argv — the wiring resumeArgs' unit test cannot see.
 func TestStartPassesResumeToTheProcess(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -583,6 +593,7 @@ func TestStartPassesResumeToTheProcess(t *testing.T) {
 // parent's id — and that the fork is *named*, which is the one place a spawn
 // carrying a resume id still gets --name (nameArgs).
 func TestStartForksIntoItsOwnConversation(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -608,6 +619,7 @@ func TestStartForksIntoItsOwnConversation(t *testing.T) {
 // otherwise reopen the parent's own conversation under a second card, which
 // is the one outcome a fork promises against. Nothing is spawned.
 func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -628,6 +640,7 @@ func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
 // it is not a fork — without one resumeArgs would start fresh and the card
 // would claim a conversation it never copied.
 func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -643,6 +656,7 @@ func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
 // TestStartWithoutResumeSpawnsBare proves a session with no id to resume spawns
 // the binary alone, with no dangling flag.
 func TestStartWithoutResumeSpawnsBare(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -667,6 +681,7 @@ func TestStartWithoutResumeSpawnsBare(t *testing.T) {
 // goes through spawnPins, which drops the briefing before comparing — so
 // nothing else here would notice it being lost between the two.
 func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -692,6 +707,7 @@ func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
 // through sh -c with the project's script ahead of the exec'd provider — the
 // wiring wrapSetup's unit test cannot see.
 func TestStartWithSetupWrapsTheSpawn(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, projectPath: projectWithSetup(t, "echo setup-ran")}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -717,6 +733,7 @@ func TestStartWithSetupWrapsTheSpawn(t *testing.T) {
 // TestStartWithSetupButNoScriptSpawnsBare proves the flag is inert for a
 // project with no setup script configured — no sh indirection sneaks in.
 func TestStartWithSetupButNoScriptSpawnsBare(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -739,6 +756,7 @@ func TestStartWithSetupButNoScriptSpawnsBare(t *testing.T) {
 // default binary (and to defaultBin for an unknown kind), while a configured
 // path is passed through unchanged.
 func TestResolveBin(t *testing.T) {
+	t.Parallel()
 	if got := resolveBin("claude", ""); got != defaultBin {
 		t.Errorf("resolveBin(claude, %q) = %q, want %q", "", got, defaultBin)
 	}
@@ -756,6 +774,7 @@ func TestResolveBin(t *testing.T) {
 // TestResolveCommand proves kind selects between the user's shell and the
 // Claude Code binary, with fallbacks when either source is empty.
 func TestResolveCommand(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, kind, bin, shell, want string
 	}{
@@ -782,6 +801,7 @@ func TestResolveCommand(t *testing.T) {
 // `claude` from inside a Cursor session. What lich spawned wins; only a shell,
 // where lich genuinely does not know what is running inside, wears the report.
 func TestProviderKindOutranksTheReport(t *testing.T) {
+	t.Parallel()
 	svc := &Service{}
 	for id, kind := range map[string]string{
 		"cursor-card": providers.Cursor,
@@ -812,6 +832,7 @@ func TestProviderKindOutranksTheReport(t *testing.T) {
 // session runs would hold the report — and with it the agent's next step — for
 // however long another session takes to spawn.
 func TestAReportNeverQueuesBehindASpawn(t *testing.T) {
+	t.Parallel()
 	svc := &Service{}
 	svc.spawns.Store("s1", spawn{kind: providers.Cursor})
 
@@ -834,6 +855,7 @@ func TestAReportNeverQueuesBehindASpawn(t *testing.T) {
 // A kind that outlived its PTY would have providerKind answering for a session
 // that is gone, which is the one case the report is the better answer.
 func TestClosingASessionDropsItsKind(t *testing.T) {
+	t.Parallel()
 	svc := &Service{sessions: map[string]*session{}}
 	svc.spawns.Store("s1", spawn{kind: providers.Cursor})
 	if err := svc.Close("s1"); err != nil {
@@ -849,6 +871,7 @@ func TestClosingASessionDropsItsKind(t *testing.T) {
 // for Codex, one they happen to share for opencode and Crush — and that a kind
 // with none wired never grows one: a shell must not be handed a stray id.
 func TestResumeArgs(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, kind, resume string
 		fork               bool
@@ -909,6 +932,7 @@ func TestResumeArgs(t *testing.T) {
 // from the transcript, and naming it again would overwrite a /rename the user
 // typed inside the session.
 func TestNameArgs(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, kind, peer, resume string
 		fork                     bool
@@ -947,6 +971,7 @@ func TestNameArgs(t *testing.T) {
 // test that follows the map would keep passing while the map handed opencode
 // Claude Code's flag. A kind with no spelling — a shell — gets none.
 func TestSkipPermissionArgs(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, kind string
 		skip       bool
@@ -990,6 +1015,7 @@ func TestSkipPermissionArgs(t *testing.T) {
 // see, and the one that decides whether a user who ticked the box actually gets
 // an agent that stops asking.
 func TestStartPassesSkipPermissionsToTheProcess(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, skipPerms: true}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1079,6 +1105,7 @@ func spawnName(got []string) string {
 // name and a provider/model pair all reach the argv untouched. lich knows no
 // model names, so none of these is a catalogue entry to keep up to date.
 func TestModelArgs(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, kind, model string
 		want              []string
@@ -1111,6 +1138,7 @@ func TestModelArgs(t *testing.T) {
 // a model for a provider lich cannot pass one to hears about it instead of
 // getting a session quietly running the provider's default.
 func TestSupportsModel(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{
 		providers.Claude, providers.Codex, providers.Antigravity, providers.OpenCode, providers.OMP,
 	} {
@@ -1128,6 +1156,7 @@ func TestSupportsModel(t *testing.T) {
 // TestEffortArgs pins each provider's own spelling, literally, for TestModelArgs'
 // reason, and the kinds that must never be handed one.
 func TestEffortArgs(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name, kind, effort string
 		want               []string
@@ -1158,6 +1187,7 @@ func TestEffortArgs(t *testing.T) {
 
 // TestSupportsEffort pins what the spawn service rejects on, as TestSupportsModel does.
 func TestSupportsEffort(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{
 		providers.Claude, providers.Codex, providers.Antigravity, providers.OMP, providers.Kiro,
 	} {
@@ -1175,6 +1205,7 @@ func TestSupportsEffort(t *testing.T) {
 // TestStartPassesTheStoredEffortToTheProcess proves the effort on the row reaches
 // argv, read from the store like the model so a respawn keeps it.
 func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, model: "opus", effort: "high"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1195,6 +1226,7 @@ func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
 // passed to Start precisely so it survives a respawn, and this is the wiring
 // that carries it there.
 func TestStartPassesTheStoredModelToTheProcess(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, model: "opus"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1217,6 +1249,7 @@ func TestStartPassesTheStoredModelToTheProcess(t *testing.T) {
 // under a PTY and its output is readable. If this platform's startPTY breaks,
 // this fails.
 func TestPTYEcho(t *testing.T) {
+	t.Parallel()
 	const marker = "lich-pty-test"
 
 	p, err := startPTY(ptySpec{
@@ -1250,6 +1283,7 @@ func TestPTYEcho(t *testing.T) {
 // a port keeps it untouched — probing would read its own running dev server as
 // "taken" and move the checkout off the port it is serving on.
 func TestReserveWorktreePortKeepsReservation(t *testing.T) {
+	t.Parallel()
 	store := stubBins{ports: map[string]int{"/src/repo": 24007}}
 	s := &Service{store: store}
 	if got := s.reserveWorktreePort("/src/repo/"); got != 24007 {
@@ -1264,6 +1298,7 @@ func TestReserveWorktreePortKeepsReservation(t *testing.T) {
 // written into the table under its cleaned path — without that write the next
 // checkout to collide with it would never learn the port is spoken for.
 func TestReserveWorktreePortRecordsAllocation(t *testing.T) {
+	t.Parallel()
 	store := stubBins{ports: map[string]int{}}
 	s := &Service{store: store}
 	got := s.reserveWorktreePort("/src/repo/")
@@ -1279,6 +1314,7 @@ func TestReserveWorktreePortRecordsAllocation(t *testing.T) {
 // point of the reservation: two checkouts that hash to one port do not both
 // leave with it.
 func TestReserveWorktreePortSeparatesCollidingCheckouts(t *testing.T) {
+	t.Parallel()
 	first := "/src/repo/feature-a"
 	// A path is not free to choose — it has to hash onto first's port — so the
 	// collision is manufactured by seeding the table with first's number under
@@ -1296,6 +1332,7 @@ func TestReserveWorktreePortSeparatesCollidingCheckouts(t *testing.T) {
 // the one the checkout holds in the reservation table, not a number recomputed
 // here.
 func TestSessionEnvInjectsCoordinates(t *testing.T) {
+	t.Parallel()
 	store := stubBins{projectPath: "/src/repo", ports: map[string]int{"/src/repo/wt": 24007}}
 	s := &Service{env: []string{"A=1"}, store: store, ws: &transport{port: 4321, token: "tok"}}
 	env := s.sessionEnv("sess", "p1", "/src/repo/wt")
@@ -1348,6 +1385,7 @@ func spawnPins(t *testing.T, got []string, want ...string) {
 // TestProviderArgsRegistersTheMCPServer proves each provider that can be handed
 // an MCP server at spawn is handed lich's, spelled its own way.
 func TestProviderArgsRegistersTheMCPServer(t *testing.T) {
+	t.Parallel()
 	const bin = "/usr/bin/lich"
 
 	claude := providerArgs(providers.Claude, "", "", "", "", bin, "", false, false, false, relay.RouteSessions, prompt.English)
@@ -1390,6 +1428,7 @@ func TestProviderArgsRegistersTheMCPServer(t *testing.T) {
 // follows it, and Codex reads resume as a subcommand that every global option
 // must precede.
 func TestProviderArgsOrdersEachProvidersConstraint(t *testing.T) {
+	t.Parallel()
 	claude := providerArgs(providers.Claude, "lich-4f2a", "conv-1", "", "", "/usr/bin/lich", "", false, true, false, relay.RouteSessions, prompt.English)
 	if claude[len(claude)-2] != "--mcp-config" {
 		t.Errorf("--mcp-config is not last, so it eats what follows: %v", claude)
@@ -1429,6 +1468,7 @@ func TestProviderArgsOrdersEachProvidersConstraint(t *testing.T) {
 // model and effort are the user's, and a `/model` or `/effort` typed inside it
 // must survive the next resume (the contract nameArgs already keeps for names).
 func TestModelAndEffortAreBirthValues(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		kind, model, effort string
 		born                []string
@@ -1467,6 +1507,7 @@ func TestModelAndEffortAreBirthValues(t *testing.T) {
 // hold for the two that take a briefing without taking an MCP server — for
 // those, what is proven is that no registration rode along with it.
 func TestProviderArgsWithoutARegistration(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		kind string
@@ -1500,6 +1541,7 @@ func TestProviderArgsWithoutARegistration(t *testing.T) {
 // line, because naming a tool it does not have is the one thing that leaves it
 // with no route at all.
 func TestTheBriefingGoesToTheProvidersThatTakeOne(t *testing.T) {
+	t.Parallel()
 	briefed := map[string]string{
 		providers.Claude: "tools in your list",
 		providers.OMP:    "lich open --worktree",
@@ -1532,6 +1574,7 @@ func TestTheBriefingGoesToTheProvidersThatTakeOne(t *testing.T) {
 // (internal/cli), and on a machine running an installed lich beside a dev build
 // the bare name would resolve to the wrong one.
 func TestSessionEnvExportsTheBinary(t *testing.T) {
+	t.Parallel()
 	exe, err := os.Executable()
 	if err != nil {
 		t.Skipf("no executable path on this platform: %v", err)
@@ -1554,6 +1597,7 @@ func TestSessionEnvExportsTheBinary(t *testing.T) {
 // the project directory and the checkout's dev-server port, which owe the
 // transport nothing, still land.
 func TestSessionEnvNoTransport(t *testing.T) {
+	t.Parallel()
 	store := stubBins{projectPath: "/src/repo", ports: map[string]int{"/src/repo/wt": 24007}}
 	s := &Service{env: []string{"A=1"}, store: store}
 	env := s.sessionEnv("sess", "p1", "/src/repo/wt")
@@ -1572,6 +1616,7 @@ func TestSessionEnvNoTransport(t *testing.T) {
 // TestSessionEnvWithoutCwd proves a session with no start directory names no
 // checkout, so no port is invented for it.
 func TestSessionEnvWithoutCwd(t *testing.T) {
+	t.Parallel()
 	s := &Service{env: []string{"A=1"}, store: stubBins{}}
 	env := s.sessionEnv("sess", "p1", "")
 	if len(env) != 1 || env[0] != "A=1" {
@@ -1583,6 +1628,7 @@ func TestSessionEnvWithoutCwd(t *testing.T) {
 // resolve is left without LICH_PROJECT_DIR rather than handed an empty one: a
 // setup script reading it would `cd` to the filesystem root.
 func TestSessionEnvWithoutProject(t *testing.T) {
+	t.Parallel()
 	s := &Service{env: []string{"A=1"}, store: stubBins{}}
 	for _, e := range s.sessionEnv("sess", "gone", "") {
 		if strings.HasPrefix(e, "LICH_PROJECT_DIR=") {
@@ -1597,6 +1643,7 @@ func TestSessionEnvWithoutProject(t *testing.T) {
 // look exactly like a feature that simply never fires — which is what an
 // unanswered request looked like on the first real run.
 func TestSessionStateReachesItsWatcher(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if svc.ws == nil {
 		t.Skip("no transport on this machine")
@@ -1630,6 +1677,7 @@ func TestSessionStateReachesItsWatcher(t *testing.T) {
 // TestSessionStateWithoutAWatcherIsHarmless proves the default: nothing is wired
 // until main wires it, and a report arriving first must not take the hook down.
 func TestSessionStateWithoutAWatcherIsHarmless(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if svc.ws == nil {
 		t.Skip("no transport on this machine")
@@ -1652,6 +1700,7 @@ func TestSessionStateWithoutAWatcherIsHarmless(t *testing.T) {
 // is gone from the screen (see sizeFor).
 
 func TestSizeForKeepsAMeasuredSize(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 
 	svc.mu.Lock()
@@ -1664,6 +1713,7 @@ func TestSizeForKeepsAMeasuredSize(t *testing.T) {
 }
 
 func TestSizeForFallsBackWhenNothingHasBeenMeasured(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 
 	svc.mu.Lock()
@@ -1678,6 +1728,7 @@ func TestSizeForFallsBackWhenNothingHasBeenMeasured(t *testing.T) {
 }
 
 func TestSizeForCopiesTheWindowsLastSize(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 
 	svc.mu.Lock()
@@ -1694,6 +1745,7 @@ func TestSizeForCopiesTheWindowsLastSize(t *testing.T) {
 // lich has — including for the session an agent opens next, whose own PTY
 // nobody is looking at.
 func TestResizeRecordsTheWindowsSize(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 
 	if err := svc.Resize("ghost", 174, 51); err != nil {
@@ -1711,6 +1763,7 @@ func TestResizeRecordsTheWindowsSize(t *testing.T) {
 // TestStartWithoutASizeCopiesTheWindow drives the whole path: a card the window
 // measured, then a session opened with no terminal of its own.
 func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })
@@ -1734,6 +1787,7 @@ func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
 // the project's setup script is live but has nothing on the other end that can
 // read a message, until the wrapper's marker comes through its own output.
 func TestReadyWaitsForTheSetupScript(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, projectPath: projectWithSetup(t, "echo installing")}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1769,6 +1823,7 @@ func TestReadyWaitsForTheSetupScript(t *testing.T) {
 // script at all: the provider still takes the terminal over, and a message
 // written before it does is lost the same way.
 func TestReadyWaitsForTheProviderToStopDrawing(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := &session{}
 
@@ -1790,6 +1845,7 @@ func TestReadyWaitsForTheProviderToStopDrawing(t *testing.T) {
 // continuously, and a target mid-turn has always been written to — its provider
 // queues the input and answers a turn later.
 func TestReadyStaysTrueThroughABusyTurn(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := &session{lastOut: time.Now().Add(-time.Second)}
 	svc.mu.Lock()
@@ -1812,6 +1868,7 @@ func TestReadyStaysTrueThroughABusyTurn(t *testing.T) {
 // splash would clear the settle, and the message the relay then types lands in a
 // TUI that has not taken the terminal yet.
 func TestTheWaitForTheProviderToStartIsNotItsQuiet(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := &session{settingUp: true}
 	svc.mu.Lock()
@@ -1839,6 +1896,7 @@ func TestTheWaitForTheProviderToStartIsNotItsQuiet(t *testing.T) {
 // like a provider that never took the terminal, and the message it was sent is
 // refused instead of queued.
 func TestReadyRemembersAQuietThatAlreadyPassed(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := &session{}
 	svc.mu.Lock()
@@ -1858,6 +1916,7 @@ func TestReadyRemembersAQuietThatAlreadyPassed(t *testing.T) {
 }
 
 func TestReadyWaitsOnlyTheSettleWithoutASetupScript(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
@@ -1874,6 +1933,7 @@ func TestReadyWaitsOnlyTheSettleWithoutASetupScript(t *testing.T) {
 }
 
 func TestReadyIsFalseForASessionThatIsNotRunning(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 
 	if svc.Ready("ghost") {
@@ -1885,6 +1945,7 @@ func TestReadyIsFalseForASessionThatIsNotRunning(t *testing.T) {
 // gh for a token there would spend a subprocess to hand over something the
 // session never lacked.
 func TestSandboxCredentialsAreOnlyForConfinedSessions(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{sshAgent: true, ghToken: true, ghAccount: "github.com/someone"}, nil, events.New())
 	if got := svc.sandboxCredentials("p1", "/repo", false); got != (sandboxCreds{}) {
 		t.Errorf("an unconfined session was handed %+v, want nothing", got)
@@ -1898,6 +1959,7 @@ func TestSandboxCredentialsAreOnlyForConfinedSessions(t *testing.T) {
 // session opened after the re-check is spawned with the resolved environment,
 // not the one lich booted with (providers.Service.RefreshPath).
 func TestSetEnvMovesTheSpawnBase(t *testing.T) {
+	t.Parallel()
 	s := &Service{env: sessionBaseEnv([]string{"PATH=/orig"}), store: stubBins{}}
 
 	s.SetEnv([]string{"PATH=/late/install:/orig"})
@@ -1917,6 +1979,7 @@ func TestSetEnvMovesTheSpawnBase(t *testing.T) {
 // TestLiveCountCountsTheSessionsWithAProcess is what the tray reads: a session
 // counts while its process runs and stops counting once it is closed.
 func TestLiveCountCountsTheSessionsWithAProcess(t *testing.T) {
+	t.Parallel()
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })

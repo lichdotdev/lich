@@ -35,6 +35,7 @@ const (
 // the socket and stay there. A quiet session's send must still return promptly
 // — it is handing a frame to the connection's writer, not waiting on the wire.
 func TestStalledSessionDoesNotBlockAnother(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)

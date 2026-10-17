@@ -50,6 +50,7 @@ func waitEmit(t *testing.T, emits <-chan emitted) emitted {
 // empty buffer — the Windows walk reads into &buf[0], so a zero-length buffer
 // there panics and, on its bare goroutine, takes the whole app with it.
 func TestDosPathRunesRejectsUnusableLengths(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		in   uint16
@@ -74,6 +75,7 @@ func TestDosPathRunesRejectsUnusableLengths(t *testing.T) {
 // with no controlling terminal (tpgid -1, what every non-PTY child reports)
 // yields no group rather than a negative pid the cwd read would chase.
 func TestParseTpgidSurvivesComm(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		in   string
@@ -95,6 +97,7 @@ func TestParseTpgidSurvivesComm(t *testing.T) {
 // TestProcessCwdReadsSelf proves the platform read resolves a live process's
 // working directory — exercised against the test process itself.
 func TestProcessCwdReadsSelf(t *testing.T) {
+	t.Parallel()
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Getwd: %v", err)
@@ -111,6 +114,7 @@ func TestProcessCwdReadsSelf(t *testing.T) {
 // TestProcessCwdOfDeadPidIsEmpty proves an unresolvable process degrades to
 // "", which pollCwd skips instead of reporting.
 func TestProcessCwdOfDeadPidIsEmpty(t *testing.T) {
+	t.Parallel()
 	// Far beyond any real PID space (Linux pid_max < 2^22, macOS ~1e5); Windows
 	// simply finds no such process to open.
 	if got, host := processCwd(1 << 30); got != "" || host != "" {
@@ -178,6 +182,7 @@ func TestPollCwdEmitsOnlyOnChange(t *testing.T) {
 // it is a real path, and naming it is the whole failure this seam exists to
 // end. Driven off a hand-fed read, because the alternative is starting a tmux.
 func TestPollCwdPublishesTheHostInsteadOfAPath(t *testing.T) {
+	t.Parallel()
 	readings := make(chan emitted, 8)
 	tick := make(chan time.Time)
 	done := make(chan struct{})
@@ -218,6 +223,7 @@ func TestPollCwdPublishesTheHostInsteadOfAPath(t *testing.T) {
 // answered with, an ordinary foreground job is not, and tmux's own comm — which
 // carries its role after a colon — still matches.
 func TestShellHostNamesOnlyKnownHosts(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want string
@@ -257,6 +263,7 @@ func TestShellHostNamesOnlyKnownHosts(t *testing.T) {
 // exit and the card closing — a session's last visible state would be that it
 // is nowhere.
 func TestPollCwdSkipsAReadThatAnswersNothing(t *testing.T) {
+	t.Parallel()
 	readings := make(chan emitted, 4)
 	tick := make(chan time.Time)
 	done := make(chan struct{})

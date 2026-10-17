@@ -26,6 +26,7 @@ func incompatibleRecorder(p *pluginVersions) func() []string {
 }
 
 func TestPluginVersionsRaisesOncePerSessionAndRelease(t *testing.T) {
+	t.Parallel()
 	var p pluginVersions
 	raised := incompatibleRecorder(&p)
 
@@ -46,12 +47,14 @@ func TestPluginVersionsRaisesOncePerSessionAndRelease(t *testing.T) {
 }
 
 func TestPluginVersionsWithoutCallback(t *testing.T) {
+	t.Parallel()
 	var p pluginVersions
 	p.note("a", "9.0.0") // must not panic with nothing wired
 }
 
 // The header rides every hook endpoint, since servePost is where it is read.
 func TestHookEndpointsReadThePluginHeader(t *testing.T) {
+	t.Parallel()
 	for _, e := range hookEndpoints {
 		t.Run(e.path, func(t *testing.T) {
 			tr := newNilTransport(t)
@@ -79,6 +82,7 @@ func TestHookEndpointsReadThePluginHeader(t *testing.T) {
 }
 
 func TestPluginLabel(t *testing.T) {
+	t.Parallel()
 	if got := pluginLabel(""); got != "absent" {
 		t.Errorf("pluginLabel(\"\") = %q", got)
 	}

@@ -57,6 +57,7 @@ func startTrapped(t *testing.T, trap string) ptyHandle {
 // run its exit path — Claude Code counts a session killed during its first ten
 // seconds as a failed fullscreen start (see closeGrace).
 func TestCloseHangsUpBeforeKilling(t *testing.T) {
+	t.Parallel()
 	p := startTrapped(t, "exit 7")
 
 	if err := p.Close(); err != nil {
@@ -72,6 +73,7 @@ func TestCloseHangsUpBeforeKilling(t *testing.T) {
 // period and not a promise: a child that ignores SIGTERM is still gone when
 // Close returns, the way it was before the signal was ever sent.
 func TestCloseKillsAChildThatIgnoresTheHangUp(t *testing.T) {
+	t.Parallel()
 	p := startTrapped(t, "")
 
 	start := time.Now()
@@ -100,6 +102,7 @@ func TestCloseKillsAChildThatIgnoresTheHangUp(t *testing.T) {
 // while stream reaps the same one the moment its child dies. Handing that error
 // to whichever lost failed the close its caller asked for.
 func TestUnixPTYCloseIsSingleShot(t *testing.T) {
+	t.Parallel()
 	p := startTrapped(t, "exit 7")
 
 	if err := p.Close(); err != nil {

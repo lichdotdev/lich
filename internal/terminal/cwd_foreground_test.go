@@ -24,6 +24,7 @@ import (
 // and e_tpgid on macOS are set by a shell handing the terminal to a job, and
 // nothing about that is reachable without one.
 func TestProcessCwdFollowsForegroundJob(t *testing.T) {
+	t.Parallel()
 	outer := physical(t, t.TempDir())
 	inner := physical(t, t.TempDir())
 
@@ -78,6 +79,7 @@ func TestProcessCwdFollowsForegroundJob(t *testing.T) {
 // refuse. And that an ordinary command is not mistaken for a shell host, which
 // is the half of shellHost no list of names can assert on its own.
 func TestReadCommNamesTheProcess(t *testing.T) {
+	t.Parallel()
 	comm := readComm(os.Getpid())
 	if comm == "" {
 		t.Fatal(`readComm(self) = "", want the test binary's name`)
@@ -94,6 +96,7 @@ func TestReadCommNamesTheProcess(t *testing.T) {
 // so processCwd falls through to the directory read rather than matching the
 // empty string against the host list.
 func TestReadCommOfDeadPidIsEmpty(t *testing.T) {
+	t.Parallel()
 	// Far beyond any real PID space (Linux pid_max < 2^22, macOS ~1e5).
 	if got := readComm(1 << 30); got != "" {
 		t.Errorf("readComm(dead) = %q, want empty", got)
@@ -111,6 +114,7 @@ func TestReadCommOfDeadPidIsEmpty(t *testing.T) {
 // under that name is one: it reads as a host to the very seam a real tmux would,
 // without a multiplexer, a socket or a server anywhere in the test.
 func TestProcessCwdNamesAShellHostInTheForeground(t *testing.T) {
+	t.Parallel()
 	// A hard link to this test binary, which is the one executable that is both
 	// nameable and runnable on both OSes. The two other shapes are dead ends,
 	// and each was measured against the macOS runner:
@@ -210,6 +214,7 @@ const (
 // bound for the run where that does not arrive: three times the caller's own
 // deadline, so it can never be what a passing run is waiting on.
 func TestStandsInForAShellHost(t *testing.T) {
+	t.Parallel()
 	if os.Getenv(hostStubVar) == "" {
 		t.Skip("runs only as the hard-linked stand-in")
 	}

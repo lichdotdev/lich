@@ -82,6 +82,7 @@ func TestKiroPluginAgentIsNeverAskedForByAnotherProvider(t *testing.T) {
 // unusable name is dropped rather than passed on: a value starting with a dash
 // would be read by Kiro as another flag.
 func TestAgentArgsIsKiroOnly(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name, kind, agent string
 		want              []string
@@ -108,6 +109,7 @@ func TestAgentArgsIsKiroOnly(t *testing.T) {
 // not conditional on which settings a session happens to carry — it is argv[0]
 // on every Kiro spawn, ahead of all of them.
 func TestKiroSpawnsTheChatSubcommandBeforeEveryFlag(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		agent           string
@@ -148,6 +150,7 @@ func TestKiroSpawnsTheChatSubcommandBeforeEveryFlag(t *testing.T) {
 // argv[0] that the harness has no subcommand for is a spawn that dies before the
 // session exists, which is the same failure from the other direction.
 func TestSubcommandArgsIsKiroOnly(t *testing.T) {
+	t.Parallel()
 	for _, kind := range []string{
 		providers.Claude, providers.Codex, providers.Antigravity, providers.OpenCode,
 		providers.OMP, providers.Crush, providers.Cursor, KindShell,

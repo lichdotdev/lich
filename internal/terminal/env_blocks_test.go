@@ -8,6 +8,7 @@ import (
 )
 
 func TestProcArgsEnvironment(t *testing.T) {
+	t.Parallel()
 	fixture := append([]byte{3, 0, 0, 0}, []byte("/bin/agent\x00\x00agent\x00CLAUDE_CONFIG_DIR=argument\x00\x00CLAUDE_CONFIG_DIR=/work\x00CLAUDE_SECURESTORAGE_CONFIG_DIR=\x00TOKEN=a=b\x00\x00apple=ignored\x00")...)
 	want := map[string]string{"CLAUDE_CONFIG_DIR": "/work", "CLAUDE_SECURESTORAGE_CONFIG_DIR": "", "TOKEN": "a=b"}
 	if got := parseProcArgsEnv(fixture); !reflect.DeepEqual(got, want) {
@@ -37,6 +38,7 @@ func utf16EnvFixture(s string) []byte {
 }
 
 func TestUTF16Environment(t *testing.T) {
+	t.Parallel()
 	data := utf16EnvFixture("=C:=C:\\work\x00CLAUDE_CONFIG_DIR=C:\\café😀\x00CLAUDE_SECURESTORAGE_CONFIG_DIR=\x00TOKEN=a=b\x00\x00")
 	want := map[string]string{"CLAUDE_CONFIG_DIR": "C:\\café😀", "CLAUDE_SECURESTORAGE_CONFIG_DIR": "", "TOKEN": "a=b"}
 	if got := parseUTF16Env(data); !reflect.DeepEqual(got, want) {

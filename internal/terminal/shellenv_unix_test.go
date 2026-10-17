@@ -18,6 +18,7 @@ import (
 // script, a shell dropped into its own prompt) must still be cut off by ctx
 // rather than hanging ResolveShellEnv past its timeout ceiling.
 func TestRunShellDumpTimeoutDegrades(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
@@ -36,6 +37,7 @@ func TestRunShellDumpTimeoutDegrades(t *testing.T) {
 // only the shell process killed on ctx, the read did not return until the
 // backgrounded sleep itself did, 30s later, ignoring a 200ms ctx entirely.
 func TestRunShellDumpBackgroundJobDoesNotBlockDeadline(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
@@ -51,6 +53,7 @@ func TestRunShellDumpBackgroundJobDoesNotBlockDeadline(t *testing.T) {
 // printed before the job is backgrounded, so it, not the far longer ctx, is
 // what ends the read, and what it returns still carries what the shell said.
 func TestRunShellDumpBackgroundJobStillYieldsOutput(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -73,6 +76,7 @@ func TestRunShellDumpBackgroundJobStillYieldsOutput(t *testing.T) {
 // privacy-protected folder) before printing. Measured on a user's Mac before
 // this test: a 300ms silence window returned the sentinel alone, 20 bytes.
 func TestRunShellDumpWaitsOutSilenceBeforeEnd(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -87,6 +91,7 @@ func TestRunShellDumpWaitsOutSilenceBeforeEnd(t *testing.T) {
 }
 
 func TestRunShellDumpSurfacesShellFailure(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -144,6 +149,7 @@ func TestReresolveShellEnvSingleFlightWhileReaderParked(t *testing.T) {
 // the read does. Whatever holds the pty letting go is the only thing that ends
 // one, and nothing reports it — so the next attempt is where it is noticed.
 func TestShellDumpParkedClearsWhenCollected(t *testing.T) {
+	t.Parallel()
 	t.Cleanup(func() { noteParkedReader(nil) })
 	collected := make(chan struct{})
 	noteParkedReader(collected)

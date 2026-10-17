@@ -49,6 +49,7 @@ func newQuietService(store Store, clock *fakeClock) *Service {
 // server, a TUI repainting its spinner all draw forever — so it counts only
 // while the provider's own report says a turn is open.
 func TestOutputCountsOnlyWhileBusy(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	svc := newQuietService(stubBins{}, clock)
 	sess := &session{}
@@ -78,6 +79,7 @@ func TestOutputCountsOnlyWhileBusy(t *testing.T) {
 // accumulator: output arrives in fragments, and one beat per fragment would
 // chain gaps too small to ever look like a silence.
 func TestOutputBeatsAreThrottled(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	svc := newQuietService(stubBins{}, clock)
 	svc.turns.report("s1", statusBusy)
@@ -98,6 +100,7 @@ func TestOutputBeatsAreThrottled(t *testing.T) {
 // session has: a shell, and a provider that reports no state at all, are
 // counted from the user's own typing.
 func TestKeystrokesCountWithoutAnyProviderReport(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	svc := newQuietService(stubBins{}, clock)
 
@@ -113,6 +116,7 @@ func TestKeystrokesCountWithoutAnyProviderReport(t *testing.T) {
 // TestFlushWritesThroughToTheStore proves the arrears reach the row, and reach
 // it as an addition — a second flush must not restate the first.
 func TestFlushWritesThroughToTheStore(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	store := stubBins{handsOn: map[string]int64{}}
 	svc := newQuietService(store, clock)
@@ -135,6 +139,7 @@ func TestFlushWritesThroughToTheStore(t *testing.T) {
 }
 
 func TestFlushRestoresTimeAfterAStoreFailure(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	store := &failingHandsOnStore{
 		stubBins: stubBins{handsOn: map[string]int64{}},
@@ -158,6 +163,7 @@ func TestFlushRestoresTimeAfterAStoreFailure(t *testing.T) {
 // window deletes the row: a write that loses that race is dropped silently, and
 // this is a closed card's last chance to keep its number.
 func TestClosingASessionWritesWhatItWasWorked(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	store := stubBins{handsOn: map[string]int64{}}
 	svc := newQuietService(store, clock)
@@ -186,6 +192,7 @@ func TestClosingASessionWritesWhatItWasWorked(t *testing.T) {
 // wiring is the whole claim: the beat has to survive being written into a
 // callback that is about something else.
 func TestEveryHookReportBeats(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ name, path, body string }{
 		{"session-start", "/session-start", `{"session_id":"s1","provider_session_id":"u9","provider":"crush"}`},
 		{"session-title", "/session-title", `{"session_id":"s1","title":"Explore this directory"}`},

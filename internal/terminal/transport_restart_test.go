@@ -20,6 +20,7 @@ func newRestartTransport(t *testing.T) *transport {
 }
 
 func TestRestartTriggersCallback(t *testing.T) {
+	t.Parallel()
 	tr := newRestartTransport(t)
 	fired := make(chan struct{}, 1)
 	tr.setRestart(func() error { fired <- struct{}{}; return nil })
@@ -41,6 +42,7 @@ func TestRestartTriggersCallback(t *testing.T) {
 }
 
 func TestRestartRejectsBadToken(t *testing.T) {
+	t.Parallel()
 	tr := newRestartTransport(t)
 	fired := make(chan struct{}, 1)
 	tr.setRestart(func() error { fired <- struct{}{}; return nil })
@@ -62,6 +64,7 @@ func TestRestartRejectsBadToken(t *testing.T) {
 }
 
 func TestRestartRejectsGet(t *testing.T) {
+	t.Parallel()
 	tr := newRestartTransport(t)
 	tr.setRestart(func() error { return nil })
 
@@ -77,6 +80,7 @@ func TestRestartRejectsGet(t *testing.T) {
 }
 
 func TestRestartUnavailableWhenUnset(t *testing.T) {
+	t.Parallel()
 	tr := newRestartTransport(t) // restart left nil
 
 	url := fmt.Sprintf("http://127.0.0.1:%d/restart?token=%s", tr.port, tr.token)
@@ -91,6 +95,7 @@ func TestRestartUnavailableWhenUnset(t *testing.T) {
 }
 
 func TestListenGivesUpAfterBindTimeoutWithoutWaitMarker(t *testing.T) {
+	t.Parallel()
 	busy, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("occupy port: %v", err)
@@ -111,6 +116,7 @@ func TestListenGivesUpAfterBindTimeoutWithoutWaitMarker(t *testing.T) {
 }
 
 func TestListenBailsOutFastOnUnretryableError(t *testing.T) {
+	t.Parallel()
 	// An out-of-range port can never free itself; retrying it only delays the
 	// real error (seen in the field as LICH_LISTEN_PORT=321654 burning the
 	// whole bindTimeout before reporting "invalid port").
@@ -126,6 +132,7 @@ func TestListenBailsOutFastOnUnretryableError(t *testing.T) {
 }
 
 func TestListenRetriesUntilPortFreesWithoutWaitMarker(t *testing.T) {
+	t.Parallel()
 	busy, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("occupy port: %v", err)

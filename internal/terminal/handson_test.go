@@ -39,6 +39,7 @@ func drainSeconds(h *handsOn, id string) int64 {
 // credits nothing: there is no earlier beat to measure against, and inventing a
 // start would bill the session for however long lich had been running.
 func TestFirstBeatCountsNothing(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -52,6 +53,7 @@ func TestFirstBeatCountsNothing(t *testing.T) {
 // TestGapUnderIdleGapCounts proves the ordinary case: two beats a few minutes
 // apart are minutes at the keyboard, and the whole gap is credited.
 func TestGapUnderIdleGapCounts(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -69,6 +71,7 @@ func TestGapUnderIdleGapCounts(t *testing.T) {
 // so moving the constant fails this test instead of silently moving the rule
 // with it.
 func TestGapAtIdleGapCounts(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -85,6 +88,7 @@ func TestGapAtIdleGapCounts(t *testing.T) {
 // silence longer than the idle gap is time away, and it contributes zero rather
 // than a capped amount — a session left open overnight must not bill the night.
 func TestGapOverIdleGapCountsNothing(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -101,6 +105,7 @@ func TestGapOverIdleGapCountsNothing(t *testing.T) {
 // beat that ends it is the start of the next stretch, and the work after it is
 // counted in full.
 func TestSilenceStillRearmsTheChain(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -119,6 +124,7 @@ func TestSilenceStillRearmsTheChain(t *testing.T) {
 // closer together than minGap are dropped whole — neither counted nor recorded
 // as the previous beat — so a stream of them cannot chain its way to a total.
 func TestThrottleDropsCloseBeats(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -138,6 +144,7 @@ func TestThrottleDropsCloseBeats(t *testing.T) {
 // TestThrottleAdmitsBeatAtTheGap pins the throttle's own boundary: a beat
 // exactly minGap after the last one is admitted, not dropped.
 func TestThrottleAdmitsBeatAtTheGap(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -153,6 +160,7 @@ func TestThrottleAdmitsBeatAtTheGap(t *testing.T) {
 // TestBackwardsClockCountsNothing proves a clock that jumps back — an NTP step,
 // a laptop resuming — neither credits negative time nor corrupts the chain.
 func TestBackwardsClockCountsNothing(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -171,6 +179,7 @@ func TestBackwardsClockCountsNothing(t *testing.T) {
 // At two flushes a minute, throwing it away would lose most of a minute an hour
 // and the readout would drift quietly low.
 func TestDrainKeepsTheRemainder(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -191,6 +200,7 @@ func TestDrainKeepsTheRemainder(t *testing.T) {
 // TestDrainSkipsQuietSessions proves an app full of idle cards drains to
 // nothing, so the debounced write touches no row it has nothing to say about.
 func TestDrainSkipsQuietSessions(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -211,6 +221,7 @@ func TestDrainSkipsQuietSessions(t *testing.T) {
 // TestSessionsAreCountedApart proves the accumulator keys everything by session:
 // one card's beats never advance another's chain.
 func TestSessionsAreCountedApart(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -233,6 +244,7 @@ func TestSessionsAreCountedApart(t *testing.T) {
 // write: the debounce is armed by whoever crosses the line, so two beats a
 // millisecond apart cannot both spawn a writer.
 func TestFlushIsDueOncePerWindow(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now, lastFlush: clock.now()}
 
@@ -251,6 +263,7 @@ func TestFlushIsDueOncePerWindow(t *testing.T) {
 // TestForgetBreaksTheChain proves a card closed and reopened under the same id
 // does not count the gap it was gone for.
 func TestForgetBreaksTheChain(t *testing.T) {
+	t.Parallel()
 	clock := newFakeClock()
 	h := &handsOn{now: clock.now}
 
@@ -268,6 +281,7 @@ func TestForgetBreaksTheChain(t *testing.T) {
 // state every bare Service the tests build is in — a readout must never be the
 // reason a keystroke panics.
 func TestZeroValueAccumulatorWorks(t *testing.T) {
+	t.Parallel()
 	var h handsOn
 
 	h.beat("s1", 0)

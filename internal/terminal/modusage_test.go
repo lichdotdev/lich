@@ -118,6 +118,7 @@ func TestTranscriptTokensNewerThanTheReportKeepMoving(t *testing.T) {
 // POSTed to /mod/usage is kept for its session and its rate limits reach the
 // plan gauge's reader.
 func TestModUsageEndpointHandsRateLimitsToTheGauge(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if svc.ws == nil {
 		t.Fatalf("transport: %v", svc.wsErr)
@@ -158,6 +159,7 @@ func TestModUsageEndpointHandsRateLimitsToTheGauge(t *testing.T) {
 // TestAClosedSessionDropsItsReport keeps a closed card's report from outliving
 // it: the id is never reused, and the map would only grow.
 func TestAClosedSessionDropsItsReport(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	svc.usageReports.set(reportOf("c1", 200_000))
 

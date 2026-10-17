@@ -11,6 +11,7 @@ import (
 // that reads COMSPEC, which names it on every box — fails here rather than on a
 // user's machine.
 func TestWindowsShellsPreferPowerShell7(t *testing.T) {
+	t.Parallel()
 	if len(windowsShells) != 2 || windowsShells[0] != "pwsh.exe" || windowsShells[1] != "powershell.exe" {
 		t.Errorf("windowsShells = %v, want pwsh.exe before powershell.exe", windowsShells)
 	}

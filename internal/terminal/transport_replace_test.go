@@ -15,6 +15,7 @@ import (
 // transport that forgets it has a client sends every session's output down the
 // /events fallback instead, for a socket that is still open.
 func TestReplacedClientDoesNotSilenceTransport(t *testing.T) {
+	t.Parallel()
 	tr, err := newTransport(func(string, []byte) {}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
@@ -87,6 +88,7 @@ const stallCeiling = 2 * time.Second
 // the read loop starts — so a replaced client that is alive but not reading
 // would hold the new client's input hostage for the length of that handshake.
 func TestReplacingAClientDoesNotStallTheNewOne(t *testing.T) {
+	t.Parallel()
 	arrived := make(chan struct{}, 1)
 	tr, err := newTransport(func(string, []byte) { arrived <- struct{}{} }, nil, nil, nil, nil)
 	if err != nil {

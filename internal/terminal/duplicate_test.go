@@ -14,6 +14,7 @@ import (
 // A card that reports a conversation another open card runs (a `/resume`
 // typed in its TUI) is the one the window warns about, naming the holder.
 func TestASessionStartOnAHeldConversationTellsTheWindow(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{holder: "holder"}, nil, hub)
 
@@ -29,6 +30,7 @@ func TestASessionStartOnAHeldConversationTellsTheWindow(t *testing.T) {
 }
 
 func TestASessionStartOnItsOwnConversationRaisesNoWarning(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{}, nil, hub)
 

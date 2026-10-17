@@ -34,6 +34,7 @@ func getModStatus(t *testing.T, url string) (int, []byte) {
 }
 
 func TestModStatusRefusesBadRequests(t *testing.T) {
+	t.Parallel()
 	tr := newNilTransport(t)
 	tests := []struct {
 		name   string
@@ -68,6 +69,7 @@ func TestModStatusRefusesBadRequests(t *testing.T) {
 // The contract promises three lists, never null, even before the relay is
 // wired.
 func TestModStatusAnswersEmptyListsWithNothingWired(t *testing.T) {
+	t.Parallel()
 	tr := newNilTransport(t)
 
 	code, body := getModStatus(t, modStatusURL(tr, "s1"))
@@ -81,6 +83,7 @@ func TestModStatusAnswersEmptyListsWithNothingWired(t *testing.T) {
 }
 
 func TestModStatusAnswersWithTheCallingSessionsErrands(t *testing.T) {
+	t.Parallel()
 	svc := newModService(t, events.New(), modPollWait)
 	var asked string
 	svc.SetErrandStatus(func(id string) relay.Status {
@@ -108,6 +111,7 @@ func TestModStatusAnswersWithTheCallingSessionsErrands(t *testing.T) {
 // docs/hooks/fixtures/mod-status.json, so the shape lich sends must encode to
 // exactly what that file says.
 func TestModStatusMatchesFixture(t *testing.T) {
+	t.Parallel()
 	status := relay.Status{
 		Owed: []relay.OwedErrand{
 			{Ticket: "b19cb405", From: "Session 26", Asked: "Sou a sessão Claude do lich-plugin"},

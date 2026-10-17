@@ -89,6 +89,7 @@ func crushMessageDB(t *testing.T) string {
 // newest assistant message: the thinking that preceded it is not something the
 // agent said, and another conversation's closing words are not this one's.
 func TestSaidReadsTheCrushDatabase(t *testing.T) {
+	t.Parallel()
 	src := usageSource{kind: providers.Crush, path: crushMessageDB(t), id: "crush-1"}
 	if got := new(saidCursors).said("s1", src); got != "The worktree port is a hash." {
 		t.Errorf("said = %q, want the newest assistant text part", got)
@@ -100,6 +101,7 @@ func TestSaidReadsTheCrushDatabase(t *testing.T) {
 // in a tool's arguments is not, and the newest match is what the palette row
 // shows.
 func TestSearchSourceCountsAndWindowsADatabase(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		kind string
 		path string
@@ -125,6 +127,7 @@ func TestSearchSourceCountsAndWindowsADatabase(t *testing.T) {
 // reverse: opencode files each sub-agent as a session of its own, and a hit in
 // one points at a message this session never showed.
 func TestSearchSourceLeavesOpenCodeSubAgentsOut(t *testing.T) {
+	t.Parallel()
 	path := opencodeMessageDB(t)
 	parent, ok := searchSource(usageSource{kind: providers.OpenCode, path: path, id: "ses_1"}, "worktree")
 	if !ok || parent.Count != 3 {
@@ -142,6 +145,7 @@ func TestSearchSourceLeavesOpenCodeSubAgentsOut(t *testing.T) {
 // nothing in it — never as an error at the card, which is what the cost readers
 // promise too.
 func TestSessionDBTextsIsSilentForASchemaThatMoved(t *testing.T) {
+	t.Parallel()
 	path := writeMessageDB(t, `CREATE TABLE messages_v2 (id TEXT PRIMARY KEY, prose TEXT)`,
 		`INSERT INTO messages_v2 VALUES ('m1','a worktree line nothing here can reach')`)
 	for _, kind := range []string{providers.OpenCode, providers.Crush} {

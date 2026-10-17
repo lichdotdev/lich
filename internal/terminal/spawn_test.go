@@ -59,6 +59,7 @@ func TestASetupSpawnWithAScriptWaitsForItsMarker(t *testing.T) {
 // a marker matches nothing, so the session would stay settingUp for good and
 // refuse every message it is ever sent.
 func TestTheSetupMarkerSurvivesASplitRead(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := &session{settingUp: true}
 	svc.mu.Lock()
@@ -87,6 +88,7 @@ func TestTheSetupMarkerSurvivesASplitRead(t *testing.T) {
 // forever: what is kept is a bounded tail, and it never ends the setup on its
 // own.
 func TestAPartialMarkerNeverEndsTheSetup(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	sess := &session{settingUp: true}
 
@@ -108,6 +110,7 @@ func TestAPartialMarkerNeverEndsTheSetup(t *testing.T) {
 // error, because the frontend surfaces it and "no such file" alone names
 // neither the session nor what lich was trying to run.
 func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{bin: "/nonexistent/lich-test-provider"}, nil, events.New())
 
 	err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24)
@@ -127,6 +130,7 @@ func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
 // the effective directory is what the card shows and what the cwd poller
 // degrades back to.
 func TestASpawnWithNoDirectoryStartsAtHome(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{bin: stayAliveBin(t)}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 

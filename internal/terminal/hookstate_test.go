@@ -19,6 +19,7 @@ import (
 // turnLog: inside a turn a human is blocking it, outside one the session is
 // merely sitting at its prompt.
 func TestTurnLogTellsBlockedFromIdle(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		before []string
@@ -51,6 +52,7 @@ func TestTurnLogTellsBlockedFromIdle(t *testing.T) {
 // Every state but `waiting` reaches the window as sent — the filter is one
 // distinction, not a gate on the stream.
 func TestTurnLogPublishesEveryOtherState(t *testing.T) {
+	t.Parallel()
 	var log turnLog
 	for _, state := range []string{statusBusy, statusCompacting, statusDone, statusIdle, statusBusy} {
 		if !log.report("s1", state) {
@@ -62,6 +64,7 @@ func TestTurnLogPublishesEveryOtherState(t *testing.T) {
 // One session's turn says nothing about another's: a permission prompt in a
 // busy session must not vouch for an idle one.
 func TestTurnLogKeepsSessionsApart(t *testing.T) {
+	t.Parallel()
 	var log turnLog
 	log.report("busy-one", statusBusy)
 	if log.report("idle-one", statusWaiting) {
@@ -76,6 +79,7 @@ func TestTurnLogKeepsSessionsApart(t *testing.T) {
 // provider left open died with it, and reading the new one against it would
 // badge its first idle notification as a block.
 func TestTurnLogForgetsARespawnedSession(t *testing.T) {
+	t.Parallel()
 	var log turnLog
 	log.report("s1", statusBusy)
 	log.forget("s1")
@@ -89,6 +93,7 @@ func TestTurnLogForgetsARespawnedSession(t *testing.T) {
 // same run covers both directions, because the second `waiting` is the one the
 // author saw badge a worker that had just answered.
 func TestHookPublishesOnlyABlockingWait(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := New(hookStore{}, nil, hub)
 	if svc.wsErr != nil {
@@ -141,6 +146,7 @@ func (l *stateLog) seen() []string {
 // ending told twice, and it must neither ring the card again nor close an
 // errand delivered in the gap between the two.
 func TestACursorTurnReachesTheWindowAndTheRelayOnce(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	marks := &unreadStore{}
 	svc := New(marks, nil, hub)
@@ -177,6 +183,7 @@ func TestACursorTurnReachesTheWindowAndTheRelayOnce(t *testing.T) {
 // opens. The repeated `busy` is the point of the dedupe: a report per tool call
 // must not take the workspace database's write lock to change nothing.
 func TestHookRecordsTheUnreadMarkAtTurnEdges(t *testing.T) {
+	t.Parallel()
 	hub, _ := newProbeHub(t)
 	marks := &unreadStore{}
 	svc := New(marks, nil, hub)
@@ -198,6 +205,7 @@ func TestHookRecordsTheUnreadMarkAtTurnEdges(t *testing.T) {
 // sight, so a finished turn is written every time it happens: a memo of the mark
 // would hand back a card with no ring for the turn after the one that was read.
 func TestHookWritesEveryFinishedTurn(t *testing.T) {
+	t.Parallel()
 	hub, _ := newProbeHub(t)
 	marks := &unreadStore{}
 	svc := New(marks, nil, hub)
@@ -218,6 +226,7 @@ func TestHookWritesEveryFinishedTurn(t *testing.T) {
 // A session end clears the mark, the way it clears the ring: a card with no
 // provider left in it has nothing to come back to.
 func TestHookClearsTheUnreadMarkOnSessionEnd(t *testing.T) {
+	t.Parallel()
 	hub, _ := newProbeHub(t)
 	marks := &unreadStore{}
 	svc := New(marks, nil, hub)
@@ -289,6 +298,7 @@ func postHook(t *testing.T, svc *Service, id, state string) {
 // The turn an interrupt ends is one lich heard start. Ctrl+C at a prompt with
 // nothing running is how a line is thrown away, and it must say nothing at all.
 func TestTurnLogInterruptOnlyEndsAnOpenTurn(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		before []string
@@ -317,6 +327,7 @@ func TestTurnLogInterruptOnlyEndsAnOpenTurn(t *testing.T) {
 // session at its prompt, so a `waiting` that follows is the provider's "your
 // turn" nudge rather than a human being blocked.
 func TestTurnLogInterruptClosesTheTurn(t *testing.T) {
+	t.Parallel()
 	var log turnLog
 	log.report("s1", statusBusy)
 	if !log.interrupt("s1") {
@@ -332,6 +343,7 @@ func TestTurnLogInterruptClosesTheTurn(t *testing.T) {
 
 // One session's interrupt is not another's: the key was pressed at one prompt.
 func TestTurnLogInterruptKeepsSessionsApart(t *testing.T) {
+	t.Parallel()
 	var log turnLog
 	log.report("one", statusBusy)
 	log.report("two", statusBusy)
@@ -345,6 +357,7 @@ func TestTurnLogInterruptKeepsSessionsApart(t *testing.T) {
 // terminal reaches the window as the turn ending, and the provider's own report
 // still outranks it when one finally arrives.
 func TestInterruptedTurnReachesTheWindow(t *testing.T) {
+	t.Parallel()
 	hub, rec := newProbeHub(t)
 	svc := New(hookStore{}, nil, hub)
 	if svc.wsErr != nil {
@@ -379,6 +392,7 @@ func TestInterruptedTurnReachesTheWindow(t *testing.T) {
 // The state lich raises itself is not one a hook may claim: it says something
 // only lich is in a position to know, and the endpoint stays closed to it.
 func TestHookRejectsTheInterruptedState(t *testing.T) {
+	t.Parallel()
 	svc := New(hookStore{}, nil, events.New())
 	if svc.wsErr != nil {
 		t.Fatalf("transport: %v", svc.wsErr)
@@ -425,6 +439,7 @@ func sendInput(t *testing.T, svc *Service, id string, data []byte) {
 // whether or not it changed: the consumer reads a level, and a `waiting` or
 // a repeated interrupt repeats the count rather than going silent.
 func TestTurnLogReportsOpenCount(t *testing.T) {
+	t.Parallel()
 	var got []int
 	l := &turnLog{onOpen: func(n int) { got = append(got, n) }}
 	l.report("a", statusBusy)
@@ -444,6 +459,7 @@ func TestTurnLogReportsOpenCount(t *testing.T) {
 // A closed card takes its turn with it: the count that keeps the machine
 // awake must not remember a session that no longer exists.
 func TestCloseForgetsOpenTurn(t *testing.T) {
+	t.Parallel()
 	s := &Service{sessions: map[string]*session{}, hub: events.New()}
 	var last int
 	s.turns.onOpen = func(n int) { last = n }

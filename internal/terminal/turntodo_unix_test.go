@@ -74,6 +74,7 @@ func TestSessionTodoIsSilentWithoutAList(t *testing.T) {
 // readouts share: a session whose provider has not reported its conversation
 // yet, which is every session until its first hook lands.
 func TestTranscriptSourceIsSilentWithoutAProviderSession(t *testing.T) {
+	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 	if _, ok := svc.transcriptSource("s1"); ok {
 		t.Error("transcriptSource: want false without a provider session")

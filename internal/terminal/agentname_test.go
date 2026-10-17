@@ -11,6 +11,7 @@ import (
 // again every turn and on every /rename. The name a session answers to is
 // therefore the last record in the file, whichever of the two it is.
 func TestClaudeAgentNameReadsTheLastRecord(t *testing.T) {
+	t.Parallel()
 	const (
 		head = `{"type":"last-prompt","leafUuid":"a"}
 {"type":"custom-title","customTitle":"lich-4f2a"}

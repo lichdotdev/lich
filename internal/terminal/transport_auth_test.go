@@ -43,6 +43,7 @@ func status(t *testing.T, tr *transport, path, token string) int {
 }
 
 func TestMountRequiresTheToken(t *testing.T) {
+	t.Parallel()
 	tr := mountedTransport(t)
 	if code := status(t, tr, "/gated", ""); code != http.StatusForbidden {
 		t.Errorf("no token: want 403, got %d", code)
@@ -56,6 +57,7 @@ func TestMountRequiresTheToken(t *testing.T) {
 }
 
 func TestMountPublicServesWithoutTheToken(t *testing.T) {
+	t.Parallel()
 	tr := mountedTransport(t)
 	if code := status(t, tr, "/open", ""); code != http.StatusOK {
 		t.Errorf("public without token: want 200, got %d", code)

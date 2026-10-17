@@ -25,6 +25,7 @@ func kiroSessionFile(t *testing.T, state string) string {
 // the percent lich shows is the one Kiro's own TUI drew: a session carrying
 // 0.74200004 against a 200k window was displayed as "1%".
 func TestKiroContextUsageReadsThePercentage(t *testing.T) {
+	t.Parallel()
 	path := kiroSessionFile(t, `{"rts_model_state":{
 		"model_info":{"model_id":"auto","context_window_tokens":200000},
 		"context_usage_percentage":0.74200004}}`)
@@ -54,6 +55,7 @@ func TestKiroContextUsageReadsThePercentage(t *testing.T) {
 // the same expression the code uses: a half-percent rounds up, and a window
 // share too small to reach one percent still reports the tokens it spent.
 func TestKiroContextUsageRounding(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		percent string
@@ -85,6 +87,7 @@ func TestKiroContextUsageRounding(t *testing.T) {
 // not yet asked anything writes both fields as null, which is the common one:
 // repainting the ring at 0% there would blank a figure the last turn earned.
 func TestKiroContextUsageMisses(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		state string
@@ -107,6 +110,7 @@ func TestKiroContextUsageMisses(t *testing.T) {
 // miss rather than a panic — a session file is written by another process and
 // can be read mid-write.
 func TestKiroContextUsageUnreadable(t *testing.T) {
+	t.Parallel()
 	if _, ok := kiroContextUsage(filepath.Join(t.TempDir(), "absent.json")); ok {
 		t.Errorf("kiroContextUsage(absent) = _, true, want a miss")
 	}

@@ -12,6 +12,7 @@ import (
 // own: both platforms read a live process, so the fixture has to be a process,
 // and the child re-runs this same test to be one.
 func TestProcessEnvironmentReadsSelf(t *testing.T) {
+	t.Parallel()
 	const marker = "LICH_TEST_PROCESS_ENV"
 	const value = "café😀=account"
 	if os.Getenv(marker) == value {

@@ -126,6 +126,7 @@ func plantCodexRollout(t *testing.T, providerSessionID, body string) {
 // snippet: lowercasing "Ⱥ" yields a longer rune, so a match offset taken from a
 // lowered copy runs past the end of the text it is meant to index.
 func TestSnippetAroundSurvivesGrowingCaseFolding(t *testing.T) {
+	t.Parallel()
 	for _, text := range []string{
 		strings.Repeat("Ⱥ", 200) + " worktree",
 		strings.Repeat("İ", 200) + " worktree",

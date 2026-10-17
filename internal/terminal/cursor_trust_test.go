@@ -84,6 +84,7 @@ func TestInheritCursorTrustNeverTrustsWhatNobodyTrusted(t *testing.T) {
 // The rule is the bundle's: one dash per run of anything outside [A-Za-z0-9],
 // none at either end.
 func TestCursorSlug(t *testing.T) {
+	t.Parallel()
 	for in, want := range map[string]string{
 		"/home/u/.local/share/lich/worktrees/e48f04f46a4a/fuzzy-pine": "home-u-local-share-lich-worktrees-e48f04f46a4a-fuzzy-pine",
 		`C:\Users\u\my repo_1\`: "C-Users-u-my-repo-1",
@@ -97,6 +98,7 @@ func TestCursorSlug(t *testing.T) {
 // A marker on a parent counts only below home and three components deep, so
 // trusting the home (or / ) once does not trust every folder under it.
 func TestCursorTrustsAParentOnlyBelowHome(t *testing.T) {
+	t.Parallel()
 	sep := string(filepath.Separator)
 	home := filepath.Join(sep+"h", "u")
 	deep := filepath.Join(home, "src", "app")

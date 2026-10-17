@@ -100,6 +100,7 @@ func TestTranscriptTextReadsTheCrushDatabase(t *testing.T) {
 // session's index holds. What it drops is the oldest end, and what it keeps is
 // whole: a half sentence in the index is a search hit nobody can read.
 func TestNewestBytesKeepsTheNewestWholeLines(t *testing.T) {
+	t.Parallel()
 	text := "oldest line\nmiddle line\nnewest line\n"
 	tests := []struct {
 		name    string
@@ -128,6 +129,7 @@ func TestNewestBytesKeepsTheNewestWholeLines(t *testing.T) {
 // at: a single message longer than the cap, in a script where a rune is more
 // than one byte. A cut inside one would put invalid UTF-8 in the database.
 func TestNewestBytesNeverCutsARune(t *testing.T) {
+	t.Parallel()
 	text := strings.Repeat("é", 40)
 	for max := 1; max <= len(text); max++ {
 		got, _ := newestBytes(text, max)

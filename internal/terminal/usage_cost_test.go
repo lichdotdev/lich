@@ -78,6 +78,7 @@ func writeFile(t *testing.T, body string) string {
 // context gauge does not: the whole file, not its tail, and output tokens
 // included — they are the expensive half of a bill.
 func TestCostSumsEveryAssistantLine(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t,
 		costLineJSON("m1", modelOpus, 100, 10, 0, 0)+"\n"+
 			`{"type":"user","message":{"content":"hi"}}`+"\n"+
@@ -99,6 +100,7 @@ func TestCostSumsEveryAssistantLine(t *testing.T) {
 // the file each time would make a long session's readout cost more than the
 // turn it reports on.
 func TestCostResumesWhereItStopped(t *testing.T) {
+	t.Parallel()
 	first := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	path := writeFile(t, first)
 
@@ -122,6 +124,7 @@ func TestCostResumesWhereItStopped(t *testing.T) {
 // appends while lich reads, so a tail with no newline is content that is not
 // there yet. Counting it would bill a half-written number.
 func TestAPartialLineIsLeftForTheNextScan(t *testing.T) {
+	t.Parallel()
 	whole := costLineJSON("m1", modelOpus, 100, 0, 0, 0) + "\n"
 	path := writeFile(t, whole+`{"type":"assistant","message":{"id":"m2"`)
 
@@ -142,6 +145,7 @@ func TestAPartialLineIsLeftForTheNextScan(t *testing.T) {
 // one assistant message across several lines, each repeating that message's
 // cumulative usage; counting the repeat doubles the turn.
 func TestOneMessageWrittenTwiceIsBilledOnce(t *testing.T) {
+	t.Parallel()
 	line := costLineJSON("m1", modelOpus, 100, 0, 0, 0)
 	path := writeFile(t, line+"\n"+line+"\n")
 
@@ -156,6 +160,7 @@ func TestOneMessageWrittenTwiceIsBilledOnce(t *testing.T) {
 // repeat can land in the next scan, so the last billed message id is part of
 // what the ledger remembers.
 func TestTheDedupSurvivesAScanBoundary(t *testing.T) {
+	t.Parallel()
 	line := costLineJSON("m1", modelOpus, 100, 0, 0, 0)
 	path := writeFile(t, line+"\n")
 
@@ -175,6 +180,7 @@ func TestTheDedupSurvivesAScanBoundary(t *testing.T) {
 // turn. The scan stops there, the readout goes absent, and the same line is
 // retried once a price for it lands.
 func TestAnUnpricedModelStopsTheCount(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t,
 		costLineJSON("m1", modelOpus, 100, 0, 0, 0)+"\n"+
 			costLineJSON("m2", "model-from-the-future", 900, 0, 0, 0)+"\n"+
@@ -209,6 +215,7 @@ func TestAnUnpricedModelStopsTheCount(t *testing.T) {
 // — no tokens, and a placeholder where the model id goes — neither cost
 // anything nor block the count behind a model that will never have a price.
 func TestASyntheticLineIsNotAModelToPrice(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t,
 		costLineJSON("m1", "<synthetic>", 0, 0, 0, 0)+"\n"+
 			costLineJSON("m2", modelOpus, 100, 0, 0, 0)+"\n")
@@ -229,6 +236,7 @@ func TestASyntheticLineIsNotAModelToPrice(t *testing.T) {
 // rate reads a session as cheaper than it was. The wants are written out, not
 // rebuilt from testRate, so a rate applied to the wrong counter fails here.
 func TestACacheWriteIsPricedByHowLongItIsKept(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		cacheCreate int
@@ -265,6 +273,7 @@ func TestACacheWriteIsPricedByHowLongItIsKept(t *testing.T) {
 // billed at the five-minute one, because that total is wrong in the direction
 // that flatters the bill.
 func TestAnUnpricedCacheLifetimeStopsTheCount(t *testing.T) {
+	t.Parallel()
 	fiveMinuteOnly := fixedRates{modelOpus: {Input: 0.001, Output: 0.01, CacheRead: 0.001, CacheWrite: 0.001}}
 	path := writeFile(t, cacheLineJSON("m1", modelOpus, 1000, 1000)+"\n")
 
@@ -289,6 +298,7 @@ func TestAnUnpricedCacheLifetimeStopsTheCount(t *testing.T) {
 // counted; where the same tokens live now is
 // TestASubAgentTranscriptIsBilledIntoTheSession.
 func TestASubAgentsTokensAreBilled(t *testing.T) {
+	t.Parallel()
 	sidechain := `{"type":"assistant","isSidechain":true,"message":{"id":"m2","model":"` + modelOpus +
 		`","usage":{"input_tokens":100,"output_tokens":0,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}`
 	path := writeFile(t, costLineJSON("m1", modelOpus, 100, 0, 0, 0)+"\n"+sidechain+"\n")
@@ -304,6 +314,7 @@ func TestASubAgentsTokensAreBilled(t *testing.T) {
 // shorter than what was already counted is not the file that was counted, so
 // its row is rebuilt rather than resumed into content that is gone.
 func TestAReplacedTranscriptIsRecounted(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t, costLineJSON("m1", modelOpus, 500, 0, 0, 0)+"\n")
 	ledger, _, _ := scanTranscriptCost(path, costLedger{}, testRate)
 
@@ -324,6 +335,7 @@ func TestAReplacedTranscriptIsRecounted(t *testing.T) {
 // TestAnUnreadableTranscriptIsAMiss keeps the readout on the same "degrade,
 // never break" contract as the context gauge.
 func TestAnUnreadableTranscriptIsAMiss(t *testing.T) {
+	t.Parallel()
 	if _, _, ok := scanTranscriptCost(filepath.Join(t.TempDir(), "nope.jsonl"), costLedger{}, testRate); ok {
 		t.Error("scan: want a miss for a transcript that does not exist")
 	}
@@ -492,6 +504,7 @@ func codexTurnContextJSON(model string) string {
 // the turn, and cached_input_tokens is a subset of input_tokens, so only the
 // uncached share prices at the input rate — summing both would double-count.
 func TestCodexTranscriptCostPricesTheRunningTotal(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t,
 		codexTurnContextJSON("gpt-5.1-codex")+"\n"+codexTokenLineJSON(1000, 400, 25, 10)+"\n")
 
@@ -511,6 +524,7 @@ func TestCodexTranscriptCostPricesTheRunningTotal(t *testing.T) {
 // whole new total, not a delta to add to the first, so only the last one read
 // backward from the end may count.
 func TestCodexTranscriptCostIsCumulativeNotSummed(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t,
 		codexTurnContextJSON("gpt-5.1-codex")+"\n"+
 			codexTokenLineJSON(500, 0, 0, 5)+"\n"+
@@ -532,6 +546,7 @@ func TestCodexTranscriptCostIsCumulativeNotSummed(t *testing.T) {
 // over from the Claude scan: a model nothing can price yields no number,
 // never a guess.
 func TestCodexTranscriptCostWithholdsForAnUnpricedModel(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t,
 		codexTurnContextJSON("model-from-the-future")+"\n"+codexTokenLineJSON(1000, 0, 0, 10)+"\n")
 
@@ -550,6 +565,7 @@ func TestCodexTranscriptCostWithholdsForAnUnpricedModel(t *testing.T) {
 // either rate bills some of those tokens wrong. Absent beats a guess — the same
 // answer an unpriced line gets.
 func TestCodexTranscriptCostWithholdsAcrossAModelSwitch(t *testing.T) {
+	t.Parallel()
 	rates := fixedRates{
 		"gpt-5.1-codex":      {Input: 0.001, Output: 0.01, CacheRead: 0.0005, CacheWrite: 0.002},
 		"gpt-5.1-codex-mini": {Input: 0.0001, Output: 0.001, CacheRead: 0.00005, CacheWrite: 0.0002},
@@ -573,6 +589,7 @@ func TestCodexTranscriptCostWithholdsAcrossAModelSwitch(t *testing.T) {
 // the walk that reaches the start of the file without finding a second is what
 // proves it — not a failure to price.
 func TestCodexTranscriptCostPricesTheWholeTotalForOneModel(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t,
 		codexTurnContextJSON("gpt-5.1-codex")+"\n"+
 			codexTokenLineJSON(500, 0, 0, 5)+"\n"+
@@ -594,6 +611,7 @@ func TestCodexTranscriptCostPricesTheWholeTotalForOneModel(t *testing.T) {
 }
 
 func TestCodexTranscriptCostMissesWithoutATokenLine(t *testing.T) {
+	t.Parallel()
 	path := writeFile(t, codexTurnContextJSON("gpt-5.1-codex")+"\n")
 
 	_, miss, ok := codexTranscriptCost(path, codexTestRate)
@@ -779,6 +797,7 @@ func TestAPricedSessionCarriesNoMissReason(t *testing.T) {
 // about to count that stretch a second time, and what it had cost the first time
 // is what has to come back off.
 func TestAForkRecordsWhatItsParentHadCost(t *testing.T) {
+	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}
@@ -800,6 +819,7 @@ func TestAForkRecordsWhatItsParentHadCost(t *testing.T) {
 // own figure and starts a forked session's at zero, so netting anything off it
 // would hide what the fork itself spent.
 func TestAForkOfAProviderThatPricesItselfOffsetsNothing(t *testing.T) {
+	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}
@@ -822,6 +842,7 @@ func TestAForkOfAProviderThatPricesItselfOffsetsNothing(t *testing.T) {
 // that only resumes must record no offset — one that did would bill the session
 // backwards for its own history.
 func TestAResumeIsNotAFork(t *testing.T) {
+	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}
@@ -843,6 +864,7 @@ func TestAResumeIsNotAFork(t *testing.T) {
 // session, and a readout that is too high is not worth losing it, so the
 // failure is logged and the spawn goes ahead with no offset recorded.
 func TestAForkWhoseOffsetCannotBeSavedStillStarts(t *testing.T) {
+	t.Parallel()
 	store := newCostStore("")
 	store.bin = stayAliveBin(t)
 	store.forkOffsets = map[string]float64{}

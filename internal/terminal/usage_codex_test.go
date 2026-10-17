@@ -8,6 +8,7 @@ import (
 )
 
 func TestScanCodexContextUsage(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "rollout.jsonl")
 	body := `{"type":"turn_context","payload":{"model":"gpt-5.6-sol","effort":"high"}}` + "\n" +
 		`{"type":"response_item","payload":{"text":"` + strings.Repeat("x", 2*int(codexScanBlockBytes)) + `"}}` + "\n" +
@@ -31,6 +32,7 @@ func TestScanCodexContextUsage(t *testing.T) {
 }
 
 func TestCodexContextUsageMisses(t *testing.T) {
+	t.Parallel()
 	for _, body := range []string{
 		`{"type":"event_msg","payload":{"type":"token_count","info":null}}`,
 		`{"type":"event_msg","payload":{"type":"token_count","info":{"model_context_window":258400}}}`,

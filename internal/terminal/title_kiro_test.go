@@ -11,6 +11,7 @@ import (
 // absent reads as silence (a card keeping the name lich gave it) rather than as
 // a title of "".
 func TestKiroMetadataTitle(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		body string
@@ -48,6 +49,7 @@ func TestKiroMetadataTitle(t *testing.T) {
 // A conversation whose metadata file is not there yet, or was pruned, is the
 // common absence, and it must not reach the card as an error.
 func TestKiroMetadataTitleAbsentFile(t *testing.T) {
+	t.Parallel()
 	if got, ok := kiroMetadataTitle(filepath.Join(t.TempDir(), "absent.json")); ok {
 		t.Errorf("kiroMetadataTitle(absent) = %q, true, want a miss", got)
 	}

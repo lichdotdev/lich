@@ -11,6 +11,7 @@ import (
 // program that draws its own screen, and its binary is no shell to point at
 // scripts.
 func TestShellIntegrationReachesShellSessionsOnly(t *testing.T) {
+	t.Parallel()
 	spec := ptySpec{bin: "/bin/bash", args: []string{"-l"}, env: []string{"A=1"}}
 	got := withShellIntegration(spec, KindShell, "/cfg/lich/shell-integration")
 	if !slices.Contains(got.args, "--rcfile") {

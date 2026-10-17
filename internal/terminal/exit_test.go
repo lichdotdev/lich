@@ -7,6 +7,7 @@ import "testing"
 // reads a code as the reason a session ended, so an invented one would explain a
 // crash as a successful exit.
 func TestExitPayloadReportsOnlyAnObservedStatus(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		code int
