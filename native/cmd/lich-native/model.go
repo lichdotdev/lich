@@ -95,6 +95,9 @@ type model struct {
 	themeSelection func(lichclient.ThemeSelection)
 	// exited hears a session's process end.
 	exited func(id string, e sessionExit)
+	// duplicate hears a session report a conversation another open card
+	// runs (duplicateEventName).
+	duplicate func(sessionDuplicate)
 	// pluginIncompatible hears a session report from a lich plugin outside
 	// the range this lich speaks (PluginIncompatibleEvent).
 	pluginIncompatible func()
@@ -317,6 +320,11 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			var p lichclient.AppUpdateProgress
 			if json.Unmarshal(ev.Data, &p) == nil && m.appUpdateProgress != nil {
 				m.appUpdateProgress(p)
+			}
+		case duplicateEventName:
+			var d sessionDuplicate
+			if json.Unmarshal(ev.Data, &d) == nil && m.duplicate != nil {
+				m.duplicate(d)
 			}
 		case lichclient.PluginIncompatibleEvent:
 			if m.pluginIncompatible != nil {

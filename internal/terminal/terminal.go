@@ -81,7 +81,18 @@ const (
 	// snapshot runs on a worker, so a panel refreshed off the state report reads
 	// the record before it exists (see turnSnaps).
 	turnEventName = "session-turn"
+	// duplicateEventName carries a session that just reported a conversation
+	// another open card already runs ({id, heldBy}): a resume typed in the
+	// provider's own TUI, which lich cannot stop, only point out. Emitted once
+	// the report is stored, so the window can offer to switch to heldBy.
+	duplicateEventName = "session-duplicate"
 )
+
+// duplicateEvent is the payload of duplicateEventName.
+type duplicateEvent struct {
+	ID     string `json:"id"`
+	HeldBy string `json:"heldBy"`
+}
 
 // statusEvent is the payload of statusEventName: the session whose processing
 // state changed, the new state, and — on a pre-tool report alone — the tool it
@@ -229,6 +240,7 @@ type Store interface {
 	WorktreePorts() map[string]int
 	SetWorktreePort(path string, port int) error
 	SetProviderSession(sessionID, providerSessionID string) error
+	ConversationHolder(providerSessionID, sessionID string) (string, error)
 	ProviderSession(sessionID string) (string, error)
 	SessionModel(sessionID string) string
 	SessionEffort(sessionID string) string
@@ -596,6 +608,7 @@ func (s *Service) onSessionStart(sessionID, providerSessionID, provider string) 
 	if err := s.store.SetProviderSession(sessionID, providerSessionID); err != nil {
 		return err
 	}
+	s.reportDuplicate(sessionID, providerSessionID)
 	// A SessionStart report is proof that *a* provider's CLI is running
 	// in this PTY, and for a shell session that report is the only thing
 	// that knows which — so its icon wears the reported mark.
@@ -610,6 +623,20 @@ func (s *Service) onSessionStart(sessionID, providerSessionID, provider string) 
 	// spawned is a fact.
 	s.hub.Emit(agentEventName, agentEvent{ID: sessionID, Agent: s.providerKind(sessionID, provider)})
 	return nil
+}
+
+// reportDuplicate tells the window when the conversation sessionID just
+// reported is already open in another card. A failed lookup costs the warning,
+// never the report it rides on.
+func (s *Service) reportDuplicate(sessionID, providerSessionID string) {
+	holder, err := s.store.ConversationHolder(providerSessionID, sessionID)
+	if err != nil {
+		slog.Warn("terminal: find the conversation's other card", "session", sessionID, "err", err)
+		return
+	}
+	if holder != "" {
+		s.hub.Emit(duplicateEventName, duplicateEvent{ID: sessionID, HeldBy: holder})
+	}
 }
 
 // onTitle is the transport's ai-title callback.

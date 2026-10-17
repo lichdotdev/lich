@@ -35,5 +35,10 @@
   "terminalDrop": {
     "skipped": "{name} ({reason})",
     "tooLarge": "{name} (más de {size} MB)"
+  },
+  "duplicate": {
+    "title": "{label} retomó una conversación que ya está abierta en {holder}.",
+    "keepBoth": "Mantener ambas",
+    "switch": "Cambiar"
   }
 }

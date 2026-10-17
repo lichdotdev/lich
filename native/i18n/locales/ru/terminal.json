@@ -37,5 +37,10 @@
   "terminalDrop": {
     "skipped": "{name} ({reason})",
     "tooLarge": "{name} (больше {size} МБ)"
+  },
+  "duplicate": {
+    "title": "{label} продолжил разговор, который уже открыт в {holder}.",
+    "keepBoth": "Оставить оба",
+    "switch": "Переключиться"
   }
 }

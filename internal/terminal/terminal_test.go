@@ -41,6 +41,7 @@ type stubBins struct {
 	projectPath       string
 	providerSession   string
 	providerErr       error
+	holder            string // the other open card ConversationHolder names
 	model             string
 	effort            string
 	entrypoint        string
@@ -189,6 +190,8 @@ func (s stubBins) SandboxSSHAgent(_ string) bool        { return s.sshAgent }
 func (s stubBins) SandboxGHToken(_ string) bool         { return s.ghToken }
 func (s stubBins) GHAccountForPath(_ string) string     { return s.ghAccount }
 func (s stubBins) SetProviderSession(_, _ string) error { return nil }
+
+func (s stubBins) ConversationHolder(_, _ string) (string, error) { return s.holder, nil }
 
 func (s stubBins) WorktreePorts() map[string]int {
 	if s.ports == nil {

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The native window warns when two cards run one conversation.** Resuming,
+  from inside an agent's own TUI, a conversation another card already has
+  open raises a warning in the bottom-right corner; Switch closes the card
+  that resumed and brings up the one that had it.
 - **The native window shows images.** A PNG, JPEG, GIF, WebP or BMP opens in
   the Files tab's preview over a checkerboard, with its size and dimensions,
   and a changed image in the Review shows before and after side by side. A

@@ -100,6 +100,9 @@ type window struct {
 	theme    *ui.Theme
 	root     ui.Root
 	toaster  ui.Toaster
+	// duplicates holds the warnings about a conversation resumed in two
+	// cards, in the bottom-right corner, apart from every other toast.
+	duplicates ui.Toaster
 	// shortcuts is the keyboard shortcuts overlay.
 	shortcuts shortcutsOverlay
 	// palette is the command palette.
@@ -183,6 +186,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	}
 	u.appearance = &appearance{ctx: ctx, client: client, invalidate: w.Invalidate}
 	u.toaster.Invalidate = w.Invalidate
+	u.duplicates.Invalidate = w.Invalidate
 	u.terms.toaster = &u.toaster
 	u.terms.profileGone = u.profileGone
 	u.sidebar = newSidebar(&u.root)
@@ -196,6 +200,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.terms.exited
+	u.model.duplicate = u.warnDuplicate
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
 	u.model.dropped = u.backendDropped
@@ -473,6 +478,9 @@ func (u *window) layout(gtx C) error {
 		toasts := u.theme.Toaster(&u.toaster, u.light)
 		toasts.Expand = *flagToastsExpanded
 		toasts.Layout(gtx)
+		duplicates := u.theme.Toaster(&u.duplicates, u.light)
+		duplicates.Position = ui.ToastBottomRight
+		duplicates.Layout(gtx)
 		return D{Size: gtx.Constraints.Max}
 	})
 	u.apply(act)

@@ -955,6 +955,25 @@ func (s *Service) SetProviderSession(sessionID, providerSessionID string) error 
 	return nil
 }
 
+// ConversationHolder is the open session other than sessionID that runs
+// providerSessionID, or "" when no other card has it open. Parked rows are not
+// asked: they run nothing until reopened, and reopen hands back the open card
+// instead (reopen).
+func (s *Service) ConversationHolder(providerSessionID, sessionID string) (string, error) {
+	var holder string
+	err := s.db.QueryRow(
+		`SELECT id FROM sessions WHERE provider_session_id = ? AND is_open = 1 AND id <> ? LIMIT 1`,
+		providerSessionID, sessionID,
+	).Scan(&holder)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("find the session holding %q: %w", providerSessionID, err)
+	}
+	return holder, nil
+}
+
 // ProviderSession returns the provider conversation id recorded for a lich
 // session, or "" when none has been reported yet (or the session is gone — a
 // missing row is not an error). Pairs with SetProviderSession: the context-usage

@@ -83,3 +83,36 @@ func TestReopenHandsBackTheCardThatHoldsTheConversation(t *testing.T) {
 		})
 	}
 }
+
+// TestConversationHolderNamesAnotherOpenCard: a session reporting a
+// conversation is told which other card already runs it, never itself, and
+// never a parked row, which runs nothing.
+func TestConversationHolderNamesAnotherOpenCard(t *testing.T) {
+	svc := newTestStore(t)
+	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_ = svc.AddSession("p1", "holder", "auth-refactor", "claude", "", 2, "")
+	_ = svc.AddSession("p1", "resumer", "Claude 4", "claude", "", 3, "")
+	_ = svc.AddSession("p1", "parked", "old", "claude", "", 4, "")
+	_ = svc.SetProviderSession("holder", "conv-shared")
+	_ = svc.SetProviderSession("resumer", "conv-shared")
+	_ = svc.SetProviderSession("parked", "conv-parked")
+	_ = svc.CloseSession("p1", "parked", "holder")
+	_ = svc.AddSession("p1", "fresh", "Claude 5", "claude", "", 5, "")
+	_ = svc.SetProviderSession("fresh", "conv-parked")
+
+	cases := []struct{ conversation, asking, want string }{
+		{"conv-shared", "resumer", "holder"},
+		{"conv-shared", "holder", "resumer"},
+		{"conv-parked", "fresh", ""},
+		{"conv-nobody", "fresh", ""},
+	}
+	for _, c := range cases {
+		got, err := svc.ConversationHolder(c.conversation, c.asking)
+		if err != nil {
+			t.Fatalf("ConversationHolder(%q, %q): %v", c.conversation, c.asking, err)
+		}
+		if got != c.want {
+			t.Errorf("ConversationHolder(%q, %q) = %q, want %q", c.conversation, c.asking, got, c.want)
+		}
+	}
+}

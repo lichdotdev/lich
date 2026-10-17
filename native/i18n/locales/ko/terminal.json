@@ -34,5 +34,10 @@
   "terminalDrop": {
     "skipped": "{name}({reason})",
     "tooLarge": "{name}({size}MB 초과)"
+  },
+  "duplicate": {
+    "title": "{label}에서 {holder}에 이미 열려 있는 대화를 재개했습니다.",
+    "keepBoth": "둘 다 유지",
+    "switch": "전환"
   }
 }

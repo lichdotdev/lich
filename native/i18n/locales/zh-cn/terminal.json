@@ -35,5 +35,10 @@
   "terminalDrop": {
     "skipped": "{name}（{reason}）",
     "tooLarge": "{name}（超过 {size} MB）"
+  },
+  "duplicate": {
+    "title": "{label} 恢复了一个已在 {holder} 中打开的对话。",
+    "keepBoth": "保留两者",
+    "switch": "切换"
   }
 }

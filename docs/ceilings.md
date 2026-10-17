@@ -1194,6 +1194,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   passed on every spawn, and a fork inherits it from the session whose conversation it branches. The cost is that
   an ultracode turned off inside the session comes back on the next restart, and nothing turns it off for one
   session while the provider-wide switch is on.
+- **The two-cards-one-conversation warning reaches only the providers that report an in-app switch**
+  (`internal/terminal/terminal.go` `reportDuplicate`, `native/cmd/lich-native/duplicate.go`): lich learns
+  which conversation a card runs from its session-start report, so a resume typed inside the agent's own app
+  is warned about only once that report names the new id. Measured on 2026-10-17: Claude Code (`/resume`) and
+  Kiro CLI 2.21.0 (`/chat`, `agentSpawn` fires per switch) report at the switch; Codex 0.162.1 reports it with
+  its next prompt and Crush v0.98.1 with its next tool call, so a turn may already have run in both cards;
+  Antigravity 1.4.0 carries the id on every `PreInvocation`, read in the binary and not run. oh-my-pi 18.8.9
+  emits `session_switch`, which the plugin does not hear; Cursor CLI skips `sessionStart` on any resume
+  (2026.10.16); opencode 1.18.35 raises nothing on `/sessions`. Cursor CLI and opencode report nothing at
+  all, so their row keeps the old id and a restart resumes the conversation the card opened with. Reopening
+  from lich itself is not this gap: every door through `store.reopen` focuses the card that holds the
+  conversation.
 - **A model or effort is a birth value, and two providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
   `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. What a

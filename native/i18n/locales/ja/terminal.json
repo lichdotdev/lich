@@ -35,5 +35,10 @@
   "terminalDrop": {
     "skipped": "{name}（{reason}）",
     "tooLarge": "{name}（{size}MB 超）"
+  },
+  "duplicate": {
+    "title": "{label} は {holder} で開いている会話を再開しました。",
+    "keepBoth": "両方残す",
+    "switch": "切り替える"
   }
 }

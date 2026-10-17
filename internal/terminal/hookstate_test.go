@@ -268,6 +268,8 @@ type hookStore struct{ Store }
 func (hookStore) ProviderSession(string) (string, error) { return "", nil }
 func (hookStore) SetSessionUnread(string, bool) error    { return nil }
 
+func (hookStore) ConversationHolder(string, string) (string, error) { return "", nil }
+
 // postHook reports one state the way the companion plugin does, and fails the
 // test unless lich accepted it (docs/hooks/session-state.md).
 func postHook(t *testing.T, svc *Service, id, state string) {
