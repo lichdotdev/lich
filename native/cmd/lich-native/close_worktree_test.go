@@ -21,12 +21,12 @@ func TestWorktreeLeftByOnlyTheLastSessionOfAWorktree(t *testing.T) {
 
 func TestCloseWorktreeConfirmNamesWhatTheRemovalTakes(t *testing.T) {
 	c := closeWorktreeConfirm{path: "/wt/a", adopted: true}
-	if title, desc, action := c.copy(); title != closeWorktreeTitle || action != pullsRemoveWorktree || !strings.Contains(desc, "did not create") {
+	if title, desc, action := c.copy(); title != "Close worktree session" || action != "Remove worktree" || !strings.Contains(desc, "did not create") {
 		t.Fatalf("adopted: %q / %q / %q", title, desc, action)
 	}
 	c.dirty = true
 	title, desc, action := c.copy()
-	if title != closeWorktreeDirtyTitle || action != closeWorktreeDiscard ||
+	if title != "Worktree has uncommitted changes" || action != "Discard changes and remove" ||
 		!strings.HasPrefix(desc, "lich did not create") || !strings.Contains(desc, "uncommitted changes") {
 		t.Fatalf("adopted and dirty: %q / %q / %q", title, desc, action)
 	}

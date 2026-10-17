@@ -5,28 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog
-// (settings.appearanceSettings).
-const (
-	themeImportPickTitle   = "Import Theme"
-	themeTemplatePickTitle = "Save Theme Template"
-	themeImported          = "Imported theme: %s"
-	themeImportFailed      = "Theme import failed: %v"
-	themeInstalledOne      = "Installed %d theme from %s v%s"
-	themeInstalledOther    = "Installed %d themes from %s v%s"
-	themeInstallFailed     = "Theme install failed: %v"
-	themeUpToDate          = "%s is already at v%s"
-	themeUpdated           = "Updated %s to v%s"
-	themeUpdateFailed      = "Theme update failed: %v"
-	themeRemoved           = "Removed theme: %s"
-	themeRemoveFailed      = "Theme removal failed: %v"
-	themeTemplateSaved     = "Saved theme template to %s"
-	themeTemplateFailed    = "Theme template failed: %v"
-	themeReloadFailed      = "Couldn't reread the themes: %v"
 )
 
 // themeRef is a theme a dialog names.
@@ -66,15 +47,23 @@ func (p *themePicker) with(change func(t *themeTasks)) {
 	p.look.invalidate()
 }
 
-func (p *themePicker) success(format string, args ...any) {
-	p.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(format, args...)})
+func (p *themePicker) success(title string) {
+	p.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: title})
 }
+
+func (p *themePicker) fail(title string) {
+	p.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: title})
+}
+
+// failedWith is the {error} argument of a failure message, in the backend's
+// own words.
+func failedWith(err error) i18n.Args { return i18n.Args{"error": lichclient.ErrorText(err)} }
 
 // reloadThemes rereads the list after a change, so the strip and the window
 // follow it at once.
 func (p *themePicker) reloadThemes() {
 	if err := p.look.reload(); err != nil {
-		p.toaster.Show(failure(themeReloadFailed, err))
+		p.fail(i18n.T("settings.settingsThemeActions.reloadFailed", failedWith(err)))
 	}
 }
 
@@ -106,19 +95,12 @@ func (p *themePicker) installRepository(url string, overwrite bool) {
 		})
 		switch {
 		case err != nil:
-			p.toaster.Show(failure(themeInstallFailed, err))
+			p.fail(i18n.T("settings.appearanceSettings.installFailed", failedWith(err)))
 		case len(res.Conflicts) == 0:
-			p.success(pluralFormat(len(res.Themes), themeInstalledOne, themeInstalledOther), len(res.Themes), res.Pack, res.Version)
+			p.success(i18n.T("settings.appearanceSettings.installed", i18n.Args{"count": len(res.Themes), "pack": res.Pack, "version": res.Version}))
 			p.reloadThemes()
 		}
 	}()
-}
-
-func pluralFormat(n int, one, other string) string {
-	if n == 1 {
-		return one
-	}
-	return other
 }
 
 // chooseFile picks a theme file through the backend's picker and imports
@@ -127,14 +109,16 @@ func (p *themePicker) chooseFile() {
 	p.with(func(t *themeTasks) { t.importing = true })
 	go func() {
 		defer p.with(func(t *themeTasks) { t.importing = false })
-		path, err := p.client.PickFile(p.ctx, themeImportPickTitle)
+		path, err := p.client.PickFile(p.ctx, i18n.T("settings.appearanceSettings.importPickTitle"))
+		if err != nil {
+			p.fail(i18n.T("settings.appearanceSettings.importFailed", failedWith(err)))
+		}
 		if err != nil || path == "" {
-			p.toastIfFailed(themeImportFailed, err)
 			return
 		}
 		res, err := p.client.ImportTheme(p.ctx, path, false)
 		if err != nil {
-			p.toaster.Show(failure(themeImportFailed, err))
+			p.fail(i18n.T("settings.appearanceSettings.importFailed", failedWith(err)))
 			return
 		}
 		p.with(func(t *themeTasks) {
@@ -144,27 +128,21 @@ func (p *themePicker) chooseFile() {
 			}
 		})
 		if !res.NeedsOverwrite {
-			p.success(themeImported, res.Theme.Name)
+			p.success(i18n.T("settings.appearanceSettings.imported", i18n.Args{"name": res.Theme.Name}))
 			p.reloadThemes()
 		}
 	}()
-}
-
-func (p *themePicker) toastIfFailed(format string, err error) {
-	if err != nil {
-		p.toaster.Show(failure(format, err))
-	}
 }
 
 func (p *themePicker) overwriteFile(f themeFile) {
 	go func() {
 		res, err := p.client.ImportTheme(p.ctx, f.path, true)
 		if err != nil {
-			p.toaster.Show(failure(themeImportFailed, err))
+			p.fail(i18n.T("settings.appearanceSettings.importFailed", failedWith(err)))
 			return
 		}
 		p.with(func(t *themeTasks) { t.overwrite = nil })
-		p.success(themeImported, res.Theme.Name)
+		p.success(i18n.T("settings.appearanceSettings.imported", i18n.Args{"name": res.Theme.Name}))
 		p.reloadThemes()
 	}()
 }
@@ -176,11 +154,11 @@ func (p *themePicker) updateTheme(id string) {
 		res, err := p.client.UpdateTheme(p.ctx, id)
 		switch {
 		case err != nil:
-			p.toaster.Show(failure(themeUpdateFailed, err))
+			p.fail(i18n.T("settings.appearanceSettings.updateFailed", failedWith(err)))
 		case res.UpToDate:
-			p.success(themeUpToDate, res.Pack, res.Version)
+			p.success(i18n.T("settings.appearanceSettings.upToDate", i18n.Args{"pack": res.Pack, "version": res.Version}))
 		default:
-			p.success(themeUpdated, res.Pack, res.Version)
+			p.success(i18n.T("settings.appearanceSettings.updated", i18n.Args{"pack": res.Pack, "version": res.Version}))
 			p.reloadThemes()
 		}
 	}()
@@ -191,30 +169,32 @@ func (p *themePicker) updateTheme(id string) {
 func (p *themePicker) removeTheme(r themeRef) {
 	go func() {
 		if err := p.client.RemoveTheme(p.ctx, r.id); err != nil {
-			p.toaster.Show(failure(themeRemoveFailed, err))
+			p.fail(i18n.T("settings.appearanceSettings.removeFailed", failedWith(err)))
 			return
 		}
 		p.with(func(t *themeTasks) { t.removal = nil })
 		if selected := p.look.view().selected; themeAfterRemoval(r.id, selected) != selected {
 			p.look.choose(themeSystem)
 		}
-		p.success(themeRemoved, r.name)
+		p.success(i18n.T("settings.appearanceSettings.removed", i18n.Args{"name": r.name}))
 		p.reloadThemes()
 	}()
 }
 
 func (p *themePicker) saveTemplate() {
 	go func() {
-		path, err := p.client.PickSaveFile(p.ctx, themeTemplatePickTitle, themeTemplateName)
+		path, err := p.client.PickSaveFile(p.ctx, i18n.T("settings.appearanceSettings.templatePickTitle"), themeTemplateName)
+		if err != nil {
+			p.fail(i18n.T("settings.appearanceSettings.templateFailed", failedWith(err)))
+		}
 		if err != nil || path == "" {
-			p.toastIfFailed(themeTemplateFailed, err)
 			return
 		}
 		if err := p.client.SaveThemeTemplate(p.ctx, path); err != nil {
-			p.toaster.Show(failure(themeTemplateFailed, err))
+			p.fail(i18n.T("settings.appearanceSettings.templateFailed", failedWith(err)))
 			return
 		}
-		p.success(themeTemplateSaved, path)
+		p.success(i18n.T("settings.appearanceSettings.templateSaved", i18n.Args{"path": path}))
 	}()
 }
 

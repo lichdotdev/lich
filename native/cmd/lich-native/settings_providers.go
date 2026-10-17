@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"slices"
 	"strings"
@@ -9,98 +8,14 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (settings.providersPane,
-// settings.providerDetail, settings.providerBinary, settings.providerBinSettings,
-// settings.planUsageSetting, settings.ultracodeSetting,
-// settings.subagentCardsSetting, settings.pasteUnfoldSetting,
-// settings.restoreSetting, settings.providerToggleRow,
-// settings.providerDocsLink, env.providerSummary).
-const (
-	providersDetecting   = "Detecting providers…"
-	providersAdd         = "Add provider"
-	providersMoreFound   = "%d more detected"
-	providersCheckAgain  = "Check again"
-	providersChecking    = "Checking…"
-	providersPathReread  = "PATH could not be re-read; relaunch lich." // path-refresh.ts PATH_REREAD_FAILED
-	providersNotFound    = "Not found on PATH"
-	providersHowToGet    = "How to install"
-	providersInstalled   = "Installed"
-	providersCustomPath  = "Installed · custom path"
-	providersSignedOut   = "Signed out"
-	providersWindowPct   = "%d%% of the %s window"
-	providersPercentUsed = "%d%% used"
-	providerBack         = "All providers"
-	providerEnabledLabel = "Enabled"
-	providerDocsLabel    = "Documentation"
-	providerTagDefault   = "default here"
-	providerTagNoPrompts = "no prompts"
-	providerTagOthers    = "other versions on PATH"
-
-	providerDefaultTitle = "Default provider"
-	providerDefaultAlso  = "agent new session"
-	providerDefaultDesc  = "Which provider implicit session actions spawn: the new-session shortcut, an empty project's New session button, and newly created worktrees."
-
-	planTitle = "Plan usage"
-	planAlso  = "quota subscription limit"
-	planDesc  = "How much of each window your subscription has spent, read from your account and refreshed every 5 minutes while lich is open."
-
-	binTitle        = "Binary"
-	binAlso         = "path executable command"
-	binDesc         = "Which executable a session spawns."
-	binDescProject  = "Which executable a session in %s spawns."
-	binPickTitle    = "Choose the %s binary"
-	binBrowse       = "Browse"
-	binSourceName   = "set for %s"
-	binSourceThis   = "set for this project"
-	binSourceGlobal = "set for all projects"
-	binSourcePath   = "from $PATH"
-	binGlobalPath   = "$PATH"
-	binAlsoOnPath   = "Also on PATH: %s. Pin one above to choose."
-
-	skipTitle        = "Skip permission prompts"
-	skipAlso         = "yolo dangerous approvals"
-	skipDesc         = "How far %s runs without asking: it edits files, runs commands and installs things unconfirmed, and lich spawns it with %s."
-	skipConfirmTitle = "Skip permission prompts: %s"
-	skipConfirmDesc  = "%s will edit files, run commands and install things unconfirmed, spawned with %s. %s"
-	skipConfirm      = "Skip prompts"
-
-	ultracodeTitle = "Ultracode"
-	ultracodeAlso  = "workflow orchestration multi-agent effort"
-	ultracodeDesc  = "Every %s session starts with ultracode on, orchestrating multi-agent workflows at whatever effort it runs. It stays on when a session restarts or resumes."
-
-	subagentTitle = "Subagents as lich sessions"
-	subagentAlso  = "agent subagent card worktree delegate background"
-	subagentDesc  = "A general-purpose subagent opens its own card and worktree instead of running hidden inside %s. Applies to sessions opened after you change it."
-
-	pasteTitle           = "Unfold long pastes"
-	pasteAlso            = "paste fold chip summary placeholder pasted text"
-	pasteDescNextPaste   = "A paste %s would fold into a placeholder lands as the full text, so you can edit it before sending. Applies to the next paste, in every %s session."
-	pasteDescNextSession = "A paste %s would fold into a placeholder lands as the full text, so you can edit it before sending. Applies to sessions opened after you change it."
-
-	restoreTitle = "Restored sessions"
-	restoreAlso  = "resume conversation start new restart ask"
-	restoreDesc  = "What a card that ran %s before lich restarted does the first time you open it."
-)
-
-// ponytail: English until the native window has i18n (env.binary).
-const (
-	binExecutable    = "executable"
-	binNoSuchFile    = "no such file"
-	binNotOnPath     = "not on $PATH"
-	binNotExecutable = "not executable"
-	binHomeShortcut  = "~ is not expanded"
-	binRelativePath  = "relative path"
-	binDetailHome    = "lich spawns the binary directly, so ~ is taken literally rather than expanded. Use the full path."
-	binDetailRel     = "A relative path is resolved against each session's own working directory, so it names a different binary per session. Use a full path."
-	binDetailBroken  = "Sessions will not start until this is fixed. An override can also be switched off or cleared, falling back to the layer below."
-	binParkedProject = "%s override off"
-	binParkedFallbck = "project"
-	binParkedGlobal  = "global override off"
-)
+// binGlobalPath is how the Global layer reads when nothing is set: the shell
+// variable, which no language translates.
+const binGlobalPath = "$PATH"
 
 // The binary layers, in the order the spawn reads them (store.ProviderBin).
 const (
@@ -116,18 +31,22 @@ const (
 	skipEverywhere = "everywhere"
 )
 
-var skipRungs = []struct{ value, label, consequence string }{
-	{skipNever, "Never", "Every edit and command waits for you, in every checkout."},
-	{skipWorktrees, "Worktrees only", "Sessions in the project directory keep asking."},
-	{skipEverywhere, "Everywhere", "Including the tree you work in. Nothing will ask."},
+// ladderRung is one answer of a segmented choice: the value stored, and the
+// catalog keys of its name and of what it means.
+type ladderRung struct{ value, labelKey, consequenceKey string }
+
+var skipRungs = []ladderRung{
+	{skipNever, "settings.providerBinSettings.skip.never.label", "settings.providerBinSettings.skip.never.consequence"},
+	{skipWorktrees, "settings.providerBinSettings.skip.worktrees.label", "settings.providerBinSettings.skip.worktrees.consequence"},
+	{skipEverywhere, "settings.providerBinSettings.skip.everywhere.label", "settings.providerBinSettings.skip.everywhere.consequence"},
 }
 
 // restoreRungs are the three answers of the resume prompt, as the value the
 // spawn gate reads (restoreChoice).
-var restoreRungs = []struct{ value, label, consequence string }{
-	{restoreAsk, "Ask", "Every restored card asks before it opens."},
-	{restoreResume, "Resume", "Restored cards continue their conversation on open. For an empty one, open a new session."},
-	{restoreFresh, "Start new", "Restored cards open empty. The old conversation is not picked up."},
+var restoreRungs = []ladderRung{
+	{restoreAsk, "settings.restoreSetting.choice.ask.label", "settings.restoreSetting.choice.ask.consequence"},
+	{restoreResume, "settings.restoreSetting.choice.resume.label", "settings.restoreSetting.choice.resume.consequence"},
+	{restoreFresh, "settings.restoreSetting.choice.fresh.label", "settings.restoreSetting.choice.fresh.consequence"},
 }
 
 // skipFlags is terminal.skipPermissionFlags: how each provider spells "run
@@ -207,27 +126,27 @@ func kindsWhere(has func(kind string) bool) []string {
 // providerBinEntries and the rows Settings keeps global.
 func providerEntries() []settingEntry {
 	entries := []settingEntry{
-		{title: providerDefaultTitle, also: providerDefaultAlso, key: providerDefaultKey, scope: scopeOverridable},
-		{title: profileTitle, also: claudeProfileProvider.words.searchAlso, key: claudeProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{claudeKind}},
-		{title: profilesTitle, also: claudeProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{claudeKind}},
-		{title: profileTitle, also: codexProfileProvider.words.searchAlso, key: codexProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{codexKind}},
-		{title: profilesTitle, also: codexProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{codexKind}},
-		{title: profileTitle, also: ompProfileProvider.words.searchAlso, key: ompProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{ompKind}},
-		{title: profilesTitle, also: ompProfileProvider.words.profilesAlso, perProvider: true, onlyFor: []string{ompKind}},
+		{titleKey: "settings.providersPane.defaultTitle", alsoKey: "settings.providersPane.defaultSearchWords", key: providerDefaultKey, scope: scopeOverridable},
+		{titleKey: "settings.settingsProfiles.title", alsoKey: claudeProfileProvider.words.searchAlsoKey, key: claudeProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{claudeKind}},
+		{titleKey: "settings.settingsProfiles.profilesTitle", alsoKey: claudeProfileProvider.words.profilesAlsoKey, perProvider: true, onlyFor: []string{claudeKind}},
+		{titleKey: "settings.settingsProfiles.title", alsoKey: codexProfileProvider.words.searchAlsoKey, key: codexProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{codexKind}},
+		{titleKey: "settings.settingsProfiles.profilesTitle", alsoKey: codexProfileProvider.words.profilesAlsoKey, perProvider: true, onlyFor: []string{codexKind}},
+		{titleKey: "settings.settingsProfiles.title", alsoKey: ompProfileProvider.words.searchAlsoKey, key: ompProfileKey, scope: scopeOverridable, perProvider: true, onlyFor: []string{ompKind}},
+		{titleKey: "settings.settingsProfiles.profilesTitle", alsoKey: ompProfileProvider.words.profilesAlsoKey, perProvider: true, onlyFor: []string{ompKind}},
 	}
 	for _, p := range xdgProfileProviders {
 		entries = append(entries,
-			settingEntry{title: profileTitle, also: p.words.searchAlso, key: p.key, scope: scopeOverridable, perProvider: true, onlyFor: []string{p.kind}},
-			settingEntry{title: profilesTitle, also: p.words.profilesAlso, perProvider: true, onlyFor: []string{p.kind}})
+			settingEntry{titleKey: "settings.settingsProfiles.title", alsoKey: p.words.searchAlsoKey, key: p.key, scope: scopeOverridable, perProvider: true, onlyFor: []string{p.kind}},
+			settingEntry{titleKey: "settings.settingsProfiles.profilesTitle", alsoKey: p.words.profilesAlsoKey, perProvider: true, onlyFor: []string{p.kind}})
 	}
 	return append(entries, []settingEntry{
-		{title: planTitle, also: planAlso, perProvider: true},
-		{title: binTitle, also: binAlso, perProvider: true},
-		{title: skipTitle, also: skipAlso, perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
-		{title: ultracodeTitle, also: ultracodeAlso, perProvider: true, onlyFor: kindsWhere(supportsUltracode)},
-		{title: subagentTitle, also: subagentAlso, perProvider: true, onlyFor: kindsWhere(supportsSubagentCards)},
-		{title: pasteTitle, also: pasteAlso, perProvider: true, onlyFor: kindsWhere(hasPasteUnfold)},
-		{title: restoreTitle, also: restoreAlso, perProvider: true, onlyFor: kindsWhere(canResume)},
+		{titleKey: "settings.planUsageSetting.title", alsoKey: "settings.planUsageSetting.searchWords", perProvider: true},
+		{titleKey: "settings.providerBinary.title", alsoKey: "settings.providerBinary.searchWords", perProvider: true},
+		{titleKey: "settings.providerBinSettings.skipTitle", alsoKey: "settings.providerBinSettings.skipSearchWords", perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
+		{titleKey: "settings.ultracodeSetting.title", alsoKey: "settings.ultracodeSetting.searchWords", perProvider: true, onlyFor: kindsWhere(supportsUltracode)},
+		{titleKey: "settings.subagentCardsSetting.title", alsoKey: "settings.subagentCardsSetting.searchWords", perProvider: true, onlyFor: kindsWhere(supportsSubagentCards)},
+		{titleKey: "settings.pasteUnfoldSetting.title", alsoKey: "settings.pasteUnfoldSetting.searchWords", perProvider: true, onlyFor: kindsWhere(hasPasteUnfold)},
+		{titleKey: "settings.restoreSetting.title", alsoKey: "settings.restoreSetting.searchWords", perProvider: true, onlyFor: kindsWhere(canResume)},
 	}...)
 }
 
@@ -314,7 +233,7 @@ func skipLevelPair(level string) (here, worktrees bool) {
 // direction. Re-choosing the rung is no move.
 func skipClimbs(current, next string) bool {
 	rank := func(v string) int {
-		return slices.IndexFunc(skipRungs, func(r struct{ value, label, consequence string }) bool { return r.value == v })
+		return slices.IndexFunc(skipRungs, func(r ladderRung) bool { return r.value == v })
 	}
 	return rank(next) > rank(current)
 }
@@ -322,7 +241,7 @@ func skipClimbs(current, next string) bool {
 func skipRung(value string) (label, consequence string) {
 	for _, r := range skipRungs {
 		if r.value == value {
-			return r.label, r.consequence
+			return i18n.T(r.labelKey), i18n.T(r.consequenceKey)
 		}
 	}
 	return value, ""
@@ -372,12 +291,12 @@ func parkedLabel(scope string, project, global binLayer, projectName string) str
 	var names []string
 	if scope != binScopeProject && project.parked() {
 		if projectName == "" {
-			projectName = binParkedFallbck
+			projectName = i18n.T("env.binary.parkedProjectFallback")
 		}
-		names = append(names, fmt.Sprintf(binParkedProject, projectName))
+		names = append(names, i18n.T("env.binary.parkedProject", i18n.Args{"name": projectName}))
 	}
 	if scope == binScopePath && global.parked() {
-		names = append(names, binParkedGlobal)
+		names = append(names, i18n.T("env.binary.parkedGlobal"))
 	}
 	var out strings.Builder
 	for _, n := range names {
@@ -392,18 +311,18 @@ func parkedLabel(scope string, project, global binLayer, projectName string) str
 func binCheckLabel(c lichclient.BinaryCheck, bin string) string {
 	switch c.Status {
 	case lichclient.CheckOK:
-		return binExecutable
+		return i18n.T("env.binary.executable")
 	case "not-found":
 		if strings.ContainsAny(bin, `/\`) {
-			return binNoSuchFile
+			return i18n.T("env.binary.noSuchFile")
 		}
-		return binNotOnPath
+		return i18n.T("env.binary.notOnPath")
 	case "not-executable":
-		return binNotExecutable
+		return i18n.T("env.binary.notExecutable")
 	case "home-shortcut":
-		return binHomeShortcut
+		return i18n.T("env.binary.homeNotExpanded")
 	case "relative":
-		return binRelativePath
+		return i18n.T("env.binary.relativePath")
 	}
 	return ""
 }
@@ -413,11 +332,11 @@ func binCheckLabel(c lichclient.BinaryCheck, bin string) string {
 func binCheckDetail(c lichclient.BinaryCheck) string {
 	switch c.Status {
 	case "home-shortcut":
-		return binDetailHome
+		return i18n.T("env.binary.detailHomeShortcut")
 	case "relative":
-		return binDetailRel
+		return i18n.T("env.binary.detailRelative")
 	case "not-found", "not-executable":
-		return binDetailBroken
+		return i18n.T("env.binary.detailBroken")
 	}
 	return ""
 }
@@ -427,9 +346,9 @@ func binCheckDetail(c lichclient.BinaryCheck) string {
 // does not.
 func installSummary(p providerInfo) string {
 	if p.source == "setting" {
-		return providersCustomPath
+		return i18n.T("env.providerSummary.installedCustomPath")
 	}
-	return providersInstalled
+	return i18n.T("env.providerSummary.installed")
 }
 
 // planSummary is the plan reading in the width a list row has, "" for a
@@ -440,7 +359,7 @@ func planSummary(plan lichclient.QuotaPlan, ok bool) string {
 		return ""
 	}
 	if plan.Status == "signed-out" {
-		return providersSignedOut
+		return i18n.T("env.providerSummary.signedOut")
 	}
 	if plan.Status != "ok" {
 		return ""
@@ -450,9 +369,9 @@ func planSummary(plan lichclient.QuotaPlan, ok bool) string {
 		return ""
 	}
 	if length := formatWindow(w.Seconds); length != "" {
-		return fmt.Sprintf(providersWindowPct, w.Percent, length)
+		return i18n.T("env.providerSummary.windowPercent", i18n.Args{"percent": w.Percent, "length": length})
 	}
-	return fmt.Sprintf(providersPercentUsed, w.Percent)
+	return i18n.T("env.providerSummary.percentUsed", i18n.Args{"percent": w.Percent})
 }
 
 // providerTags are the facts a list row states without being opened: this is
@@ -460,10 +379,10 @@ func planSummary(plan lichclient.QuotaPlan, ok bool) string {
 func providerTags(kind, projectDefault, skip string) []string {
 	var tags []string
 	if projectDefault == kind {
-		tags = append(tags, providerTagDefault)
+		tags = append(tags, i18n.T("settings.providersPane.defaultHere"))
 	}
 	if skip == skipEverywhere {
-		tags = append(tags, providerTagNoPrompts)
+		tags = append(tags, i18n.T("settings.providersPane.skipEverywhere"))
 	}
 	return tags
 }
@@ -572,7 +491,7 @@ func (p *providerSettings) recheckPath(s *settingsScreen) {
 		p.rechecking = false
 		if err != nil {
 			log.Printf("settings: re-check providers: %v", err)
-			p.recheckErr = providersPathReread
+			p.recheckErr = i18n.T("settings.settingsProviders.pathRereadFailed")
 		} else {
 			p.checks.reset()
 			p.versions.reset()

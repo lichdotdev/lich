@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
+	"io/fs"
+	"log"
 	"math"
 	"strconv"
 
@@ -12,14 +15,9 @@ import (
 
 	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/gioterm"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	toastTerminalFontFailed = "Couldn't draw the terminal in %s: %v"
-	toastEditorFontFailed   = "Couldn't draw the code in %s: %v"
-	toastUIFontFailed       = "Couldn't draw the interface in %s: %v"
+	"github.com/omartelo/lich/native/ui"
 )
 
 // The Appearance settings beyond the theme. The web keeps zoom, the terminal
@@ -166,18 +164,23 @@ func (u *window) loadAppearance() error {
 	return nil
 }
 
+// fontFailure is the error toast for a font the window could not draw in.
+func fontFailure(title string) ui.Toast {
+	return ui.Toast{Variant: ui.ToastError, Title: title}
+}
+
 // applyAppearance puts p on screen: the interface zoom, the terminals'
 // font, and the ceiling the cost readout colours against.
 func (u *window) applyAppearance(p appearancePrefs) {
 	u.zoom = p.zoom
 	if err := u.terms.setFont(p.terminalFamily(), unit.Sp(p.fontSize)); err != nil {
-		u.toaster.Show(failure(toastTerminalFontFailed, p.terminalFamily(), err))
+		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.terminalFontFailed", i18n.Args{"family": p.terminalFamily(), "error": lichclient.ErrorText(err)})))
 	}
 	if err := u.setCodeFont(p.codeFamily(), unit.Sp(p.editorFontSize)); err != nil {
-		u.toaster.Show(failure(toastEditorFontFailed, p.codeFamily(), err))
+		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.editorFontFailed", i18n.Args{"family": p.codeFamily(), "error": lichclient.ErrorText(err)})))
 	}
 	if err := u.setInterfaceFonts(interfaceFonts{sans: p.uiFont, mono: p.codeFamily()}); err != nil {
-		u.toaster.Show(failure(toastUIFontFailed, systemOr(p.uiFont, fonts.SystemSans), err))
+		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(p.uiFont, fonts.SystemSans), "error": lichclient.ErrorText(err)})))
 	}
 	u.footer.setBudget(p.budget)
 	u.win.Invalidate()
@@ -204,8 +207,9 @@ type interfaceFonts struct{ sans, mono string }
 
 // setInterfaceFonts builds the interface's shaper again when its sans or its
 // monospace changed: System's sans for "", Onest from the binary, any other
-// through fonts.Load, and the code's family for the paths, file names and
-// counts the interface sets in monospace.
+// through fonts.Load, the code's family for the paths, file names and
+// counts the interface sets in monospace, and hanFaces for the Chinese the
+// other two cannot draw.
 func (u *window) setInterfaceFonts(want interfaceFonts) error {
 	if u.uiFonts != nil && *u.uiFonts == want {
 		return nil
@@ -218,11 +222,49 @@ func (u *window) setInterfaceFonts(want interfaceFonts) error {
 	if err != nil {
 		return err
 	}
-	shaper := text.NewShaper(text.WithCollection(append(append(gofont.Collection(), sans...), mono...)))
+	han, err := hanFaces()
+	if err != nil {
+		return err
+	}
+	collection := append(append(append(gofont.Collection(), sans...), mono...), han...)
+	shaper := text.NewShaper(text.WithCollection(collection))
 	u.th.Shaper, u.theme.Shaper = shaper, shaper
 	u.theme.Sans, u.theme.Mono = sansTypeface, mono[0].Font.Typeface
 	u.uiFonts = &want
+	u.settings.languages.han = len(han) > 0
 	return nil
+}
+
+// reloadInterfaceFonts builds the interface's shaper again from the same
+// stored fonts, for a Chinese font downloaded since.
+func (u *window) reloadInterfaceFonts() error {
+	want := *u.uiFonts
+	u.uiFonts = nil
+	return u.setInterfaceFonts(want)
+}
+
+// hanFaces are the faces the shaper falls back to for Chinese, whatever the
+// interface's language: an installed one, else the Noto Sans SC lich
+// downloaded, else none. A download that no longer hashes right counts as
+// none, so choosing Chinese offers it again.
+func hanFaces() ([]font.FontFace, error) {
+	installed, err := fonts.InstalledHan()
+	if err != nil || len(installed) > 0 {
+		return installed, err
+	}
+	dir, err := fonts.DownloadDir()
+	if err != nil {
+		return nil, err
+	}
+	downloaded, err := fonts.LoadDownloaded(fonts.NotoSansSC, dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		log.Printf("fonts: downloaded Chinese font unusable: %v", err)
+		return nil, nil
+	}
+	return downloaded, nil
 }
 
 func uiFaces(stored string) ([]font.FontFace, font.Typeface, error) {

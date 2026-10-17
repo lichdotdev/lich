@@ -3,16 +3,9 @@ package main
 import (
 	"slices"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	renameFolderLabel = "Rename folder"
-	ungroupLabel      = "Ungroup"
-	colorLabel        = "Color"
-	moveGroupLabel    = "Move group to folder"
 )
 
 var (
@@ -42,13 +35,13 @@ func folderLaunchEntries(folder string, checkouts []launchCheckout, providers []
 	heading := ui.MenuEntry{Kind: ui.MenuLabel, Label: folderLaunchHeading(folder, checkouts)}
 	if len(checkouts) == 1 {
 		only := checkouts[0]
-		return append([]ui.MenuEntry{heading}, launchEntries(providers, newTerminalLabel, func(kind string) { open(kind, only.path) })...)
+		return append([]ui.MenuEntry{heading}, launchEntries(providers, i18n.T("sidebar.sessionLaunchMenuItems.newTerminal"), func(kind string) { open(kind, only.path) })...)
 	}
 	entries := []ui.MenuEntry{heading}
 	for _, c := range checkouts {
 		entries = append(entries, ui.MenuEntry{
 			Kind: ui.MenuSubTrigger, Label: c.label, Icon: icCheckout,
-			Sub: launchEntries(providers, newTerminalLabel, func(kind string) { open(kind, c.path) }),
+			Sub: launchEntries(providers, i18n.T("sidebar.sessionLaunchMenuItems.newTerminal"), func(kind string) { open(kind, c.path) }),
 		})
 	}
 	return entries
@@ -65,7 +58,7 @@ func blockLaunch(b blockView, providers []launchProvider, act *sidebarAction) []
 			act.launch = launchRequest{kind: kind, dir: dir, folder: b.folder}
 		})
 	}
-	return launchEntries(providers, newTerminalLabel, func(kind string) { act.launch = launchRequest{kind: kind, dir: b.path} })
+	return launchEntries(providers, i18n.T("sidebar.sessionLaunchMenuItems.newTerminal"), func(kind string) { act.launch = launchRequest{kind: kind, dir: b.path} })
 }
 
 // blockMenuHooks are the header's ways to act on its own state rather than
@@ -86,19 +79,19 @@ func blockOptions(b blockView, folders []string, filtering bool, act *sidebarAct
 		return nil
 	case blockFolder:
 		entries := []ui.MenuEntry{
-			{Label: renameFolderLabel, Icon: icMenuRename, OnClick: hooks.rename},
-			{Label: ungroupLabel, Icon: icUngroup, OnClick: func() { act.folder = folderRename{from: b.folder} }},
+			{Label: i18n.T("sidebar.sessionGroupHeader.renameFolder"), Icon: icMenuRename, OnClick: hooks.rename},
+			{Label: i18n.T("sidebar.sessionGroupHeader.ungroup"), Icon: icUngroup, OnClick: func() { act.folder = folderRename{from: b.folder} }},
 		}
 		if filtering {
 			return entries
 		}
-		return append(entries, ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: colorLabel, Icon: icMenuColor, Columns: 3,
+		return append(entries, ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.cardColor.menu"), Icon: icMenuColor, Columns: 3,
 			Sub: colorSwatches(b.color, func(name string) { act.paint = paintRequest{ids: ids, color: name} })})
 	}
 	if filtering {
 		return nil
 	}
-	return []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: moveGroupLabel, Icon: icFolder, Sub: groupFolderMenu(ids, folders, act, hooks.newFolder)}}
+	return []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionGroupHeader.moveToFolder"), Icon: icFolder, Sub: groupFolderMenu(ids, folders, act, hooks.newFolder)}}
 }
 
 // groupFolderMenu files a checkout's whole block: every folder, then a new one.
@@ -110,7 +103,7 @@ func groupFolderMenu(ids, folders []string, act *sidebarAction, newFolder func([
 	if len(sub) > 0 {
 		sub = append(sub, ui.MenuEntry{Kind: ui.MenuSeparator})
 	}
-	return append(sub, ui.MenuEntry{Label: newFolderLabel, Icon: icNewFolder, OnClick: func() { newFolder(ids) }})
+	return append(sub, ui.MenuEntry{Label: i18n.T("sidebar.sessionGroupHeader.newFolder"), Icon: icNewFolder, OnClick: func() { newFolder(ids) }})
 }
 
 func blockIDs(b blockView) []string {

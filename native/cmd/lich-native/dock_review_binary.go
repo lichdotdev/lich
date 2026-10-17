@@ -9,7 +9,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"image"
 	"image/color"
 	"strings"
@@ -17,17 +16,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (diff.binaryPreview).
-const (
-	sideBefore   = "Before"
-	sideAfter    = "After"
-	sideAdded    = "Added"
-	sideDeleted  = "Deleted"
-	viewOnGitHub = "View on GitHub"
 )
 
 // binaryPreview is a binary card's state: its sides' reads and its buttons.
@@ -55,7 +46,7 @@ func (c *fileCard) binaryBody(gtx C, p *reviewPanel) D {
 	}
 	c.bin.exits.update(gtx, p.client, p.notify, p.target, c.git.path)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return bodyLine(gtx, p.th, fileBinary) }),
+		layout.Rigid(func(gtx C) D { return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.binary")) }),
 		layout.Rigid(func(gtx C) D {
 			if c.git.status == statusDeleted {
 				return D{}
@@ -71,14 +62,14 @@ func (c *fileCard) prBinary(gtx C, p *reviewPanel) D {
 		_, name := splitPath(c.git.path)
 		go func() {
 			if err := p.client.OpenExternal(context.Background(), url); err != nil {
-				p.notify(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(toastOpenFailed, name), Description: lichclient.ErrorText(err)})
+				p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
 			}
 		}()
 	}
-	b := p.th.Button(&c.bin.github, viewOnGitHub)
+	b := p.th.Button(&c.bin.github, i18n.T("diff.dockReviewBinary.viewOnGitHub"))
 	b.Size, b.Variant = ui.SizeXS, ui.VariantOutline
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return bodyLine(gtx, p.th, fileBinary) }),
+		layout.Rigid(func(gtx C) D { return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.binary")) }),
 		layout.Rigid(b.Layout),
 	)
 }
@@ -104,14 +95,14 @@ func (c *fileCard) imageSides(gtx C, p *reviewPanel) D {
 	switch c.git.status {
 	case statusAdded:
 		c.bin.after.want(p.client, p.target, c.git.path, "", c.git.blobs)
-		sides = append(sides, side(c.bin.after, sideAdded, p.th.TonePass))
+		sides = append(sides, side(c.bin.after, i18n.T("diff.binaryPreview.added"), p.th.TonePass))
 	case statusDeleted:
 		c.bin.before.want(p.client, p.target, old, "HEAD", c.git.blobs)
-		sides = append(sides, side(c.bin.before, sideDeleted, p.th.Destructive))
+		sides = append(sides, side(c.bin.before, i18n.T("diff.binaryPreview.deleted"), p.th.Destructive))
 	default:
 		c.bin.before.want(p.client, p.target, old, "HEAD", c.git.blobs)
 		c.bin.after.want(p.client, p.target, c.git.path, "", c.git.blobs)
-		sides = append(sides, side(c.bin.before, sideBefore, p.th.Destructive), ui.Gap(2.5), side(c.bin.after, sideAfter, p.th.TonePass))
+		sides = append(sides, side(c.bin.before, i18n.T("diff.binaryPreview.before"), p.th.Destructive), ui.Gap(2.5), side(c.bin.after, i18n.T("diff.binaryPreview.after"), p.th.TonePass))
 	}
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2.5), Bottom: ui.Space(3.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx, sides...)

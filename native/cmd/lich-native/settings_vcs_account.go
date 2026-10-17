@@ -1,21 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
-)
-
-// ponytail: English until the native window has i18n (env.commitIdentity).
-const (
-	identityNoneLead    = "No git identity in this checkout."
-	identityNoneNote    = "Commits will be refused until user.email is set."
-	identityLandAsNamed = "Commits land as %s"
-	identityLandAs      = "Commits land as"
-	identitySetLocal    = "— set in this repository, overriding your global one."
-	identitySetGlobal   = "— git user.email, not this account."
 )
 
 const defaultGitHubHost = "github.com"
@@ -83,14 +73,14 @@ type identityLine struct{ lead, email, note string }
 
 func identityLineOf(id lichclient.CommitIdentity) identityLine {
 	if id.Email == "" {
-		return identityLine{lead: identityNoneLead, note: identityNoneNote}
+		return identityLine{lead: i18n.T("env.commitIdentity.noneLead"), note: i18n.T("env.commitIdentity.noneNote")}
 	}
-	l := identityLine{lead: identityLandAs, email: "<" + id.Email + ">", note: identitySetGlobal}
+	l := identityLine{lead: i18n.T("env.commitIdentity.landAs"), email: "<" + id.Email + ">", note: i18n.T("env.commitIdentity.setGlobal")}
 	if id.Name != "" {
-		l.lead = fmt.Sprintf(identityLandAsNamed, id.Name)
+		l.lead = i18n.T("env.commitIdentity.landAsNamed", i18n.Args{"name": id.Name})
 	}
 	if id.Local {
-		l.note = identitySetLocal
+		l.note = i18n.T("env.commitIdentity.setLocal")
 	}
 	return l
 }

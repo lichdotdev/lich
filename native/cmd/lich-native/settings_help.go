@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/url"
 	"sync"
@@ -9,29 +8,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (settings.helpSettings).
 const (
-	helpBugTitle      = "Report a bug"
-	helpBugAlso       = "issue github"
-	helpBugDesc       = "Opens the bug form in your browser with the version and platform filled in. lich does not file the issue — you write it yourself. Run `lich rage` in a terminal to pack the logs, the versions and what lich found on this machine into one archive to attach."
-	helpOpenBug       = "Open bug report"
-	helpLogTitle      = "Log file"
-	helpLogAlso       = "debug logs native window"
-	helpLogDesc       = "The folder holds lich's log and, beside it, the native window's (lich-native.log). They hold absolute paths, project and branch names, and your gh login — never a session token. Read them before you attach them to anything."
-	helpLogOpening    = "Opening log folder…"
-	helpLogOpened     = "Log folder opened."
-	helpLogFailed     = "Could not open the log folder: %v"
-	helpOpenLog       = "Open log folder"
-	helpNoLogFile     = "Logging to stderr only — there is no log file."
-	helpAboutTitle    = "About"
-	helpAboutAlso     = "version license"
-	helpAboutVersion  = "lich %s — %s."
 	helpAboutUnknown  = "lich."
-	helpRepository    = "Repository"
 	helpBugKey        = "help.bug" // no backend key: the Help rows only act
 	helpLogKey        = "help.log"
 	helpAboutKey      = "help.about"
@@ -85,9 +68,9 @@ func (s *settingsScreen) helpRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 		if h.bug.Clicked(gtx) && d != nil {
 			s.openExternal(bugReportURL(*d))
 		}
-		r.description = helpBugDesc
+		r.description = i18n.T("settings.settingsHelp.bugDescription")
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-			b := th.Button(&h.bug, helpOpenBug)
+			b := th.Button(&h.bug, i18n.T("settings.helpSettings.openBugReport"))
 			b.Size, b.Disabled = ui.SizeSM, d == nil
 			return b.Layout(gtx)
 		}), true
@@ -95,7 +78,7 @@ func (s *settingsScreen) helpRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 		if h.reveal.Clicked(gtx) {
 			s.revealLog()
 		}
-		r.description = helpLogDesc
+		r.description = i18n.T("settings.settingsHelp.logDescription")
 		return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D { return h.logLine(gtx, th, d) }), true
 	case helpAboutKey:
 		if h.repo.Clicked(gtx) {
@@ -103,10 +86,10 @@ func (s *settingsScreen) helpRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 		}
 		r.description = helpAboutUnknown
 		if d != nil {
-			r.description = fmt.Sprintf(helpAboutVersion, d.Version, d.Platform)
+			r.description = i18n.T("settings.helpSettings.aboutVersion", i18n.Args{"version": d.Version, "platform": d.Platform})
 		}
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-			b := th.Button(&h.repo, helpRepository)
+			b := th.Button(&h.repo, i18n.T("settings.helpSettings.repository"))
 			b.Size, b.Variant = ui.SizeSM, ui.VariantGhost
 			return b.Layout(gtx)
 		}), true
@@ -116,11 +99,11 @@ func (s *settingsScreen) helpRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 
 // logLine is the Open log folder button and the log's path beside it.
 func (h *helpSettings) logLine(gtx C, th *ui.Theme, d *lichclient.Diagnostics) D {
-	path := helpNoLogFile
+	path := i18n.T("settings.helpSettings.noLogFile")
 	if d != nil && d.LogPath != "" {
 		path = d.LogPath
 	}
-	b := th.Button(&h.reveal, helpOpenLog)
+	b := th.Button(&h.reveal, i18n.T("settings.helpSettings.openLogFolder"))
 	b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantOutline, d == nil || d.LogPath == ""
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(b.Layout),
@@ -132,15 +115,15 @@ func (h *helpSettings) logLine(gtx C, th *ui.Theme, d *lichclient.Diagnostics) D
 // revealLog is runWithToast over System.RevealLog: a spinning toast that the
 // outcome replaces in place.
 func (s *settingsScreen) revealLog() {
-	id := s.theme.toaster.Show(ui.Toast{Title: helpLogOpening, Spin: true, Duration: ui.ToastForever})
+	id := s.theme.toaster.Show(ui.Toast{Title: i18n.T("settings.helpSettings.openingLogFolder"), Spin: true, Duration: ui.ToastForever})
 	go func() { s.theme.toaster.Show(revealLogOutcome(id, s.client.RevealLog(s.ctx))) }()
 }
 
 // revealLogOutcome is the toast that takes the loading one's place, id.
 func revealLogOutcome(id string, err error) ui.Toast {
-	t := ui.Toast{Variant: ui.ToastSuccess, Title: helpLogOpened}
+	t := ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("settings.helpSettings.logFolderOpened")}
 	if err != nil {
-		t = failure(helpLogFailed, err)
+		t = ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.settingsHelp.logFailed", i18n.Args{"error": lichclient.ErrorText(err)})}
 	}
 	t.ID = id
 	return t

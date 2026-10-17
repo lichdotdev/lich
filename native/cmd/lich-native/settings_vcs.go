@@ -7,24 +7,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n (settings.vcsToolsSetting,
-// env.vcsTools, common.checkAgainButton).
 const (
-	vcsToolsTitle   = "Command-line tools"
-	vcsToolsAlso    = "git gh install"
-	vcsToolsDesc    = "lich drives git and the GitHub CLI. Everything on this screen runs through them."
-	vcsNotOnPath    = "Not on $PATH"
-	vcsInstall      = "Install"
-	vcsCheckAgain   = "Check again"
-	vcsChecking     = "Checking…"
-	vcsPathReread   = "PATH could not be re-read; relaunch lich." // path-refresh.ts PATH_REREAD_FAILED
-	vcsGitWithout   = "Branches, diffs and worktrees stay empty without it."
-	vcsGhWithout    = "Pull requests, checks and PR checkouts are unavailable without it."
 	vcsToolsKey     = "vcs.tools" // no backend key: the row only reads the machine
 	vcsAccountKey   = "vcs.account"
 	vcsGitBin       = "git"
@@ -44,15 +33,16 @@ var (
 )
 
 // vcsTool is vcs-tools.ts VcsTool: the binary as lich spawns it, and the
-// page a machine without it installs it from.
+// page a machine without it installs it from. without is the catalog key of
+// what goes without it.
 type vcsTool struct {
 	bin, label, url, without string
 	icon                     *icons.Icon
 }
 
 var (
-	vcsGit = vcsTool{vcsGitBin, vcsGitLabel, vcsGitURL, vcsGitWithout, icVcsGit}
-	vcsGh  = vcsTool{vcsGhBin, vcsGhLabel, vcsGhURL, vcsGhWithout, icVcsGh}
+	vcsGit = vcsTool{vcsGitBin, vcsGitLabel, vcsGitURL, "env.vcsTools.gitWithout", icVcsGit}
+	vcsGh  = vcsTool{vcsGhBin, vcsGhLabel, vcsGhURL, "env.vcsTools.ghWithout", icVcsGh}
 )
 
 // vcsSettings is Settings › Version Control's reads, each nil until it
@@ -160,7 +150,7 @@ func (v *vcsSettings) recheckTools(s *settingsScreen) {
 		v.checking = false
 		if err != nil {
 			log.Printf("settings: refresh PATH: %v", err)
-			v.recheckErr = vcsPathReread
+			v.recheckErr = i18n.T("settings.settingsVcs.pathReread")
 		}
 		v.mu.Unlock()
 		s.invalidate()
@@ -183,7 +173,7 @@ func (s *settingsScreen) vcsRow(gtx C, th *ui.Theme, e settingEntry, r settingRo
 // vcsToolsBlock is VcsToolsSetting: where git and gh resolve, and the way to
 // either one that does not.
 func (s *settingsScreen) vcsToolsBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
-	r.description = vcsToolsDesc
+	r.description = i18n.T("settings.vcsToolsSetting.description")
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)
 	}
@@ -211,10 +201,10 @@ func (v *vcsSettings) recheckButton(gtx C, th *ui.Theme) D {
 	v.mu.Lock()
 	checking, failure := v.checking, v.recheckErr
 	v.mu.Unlock()
-	b := th.Button(&v.recheck, vcsCheckAgain)
+	b := th.Button(&v.recheck, i18n.T("common.checkAgainButton.check"))
 	b.Variant, b.Size, b.Icon, b.Disabled = ui.VariantGhost, ui.SizeSM, icVcsRecheck, checking
 	if checking {
-		b.Text = vcsChecking
+		b.Text = i18n.T("common.checkAgainButton.checking")
 	}
 	if failure == "" {
 		return b.Layout(gtx)
@@ -241,7 +231,7 @@ func (s *settingsScreen) vcsToolRow(gtx C, th *ui.Theme, t vcsTool) D {
 	}
 	verdict := th.Text(ui.TextXS, c.Path).Muted().Mono()
 	if gone {
-		verdict = th.Text(ui.TextXS, vcsNotOnPath).In(th.Destructive)
+		verdict = th.Text(ui.TextXS, i18n.T("settings.vcsToolsSetting.notOnPath")).In(th.Destructive)
 	}
 	line := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -252,7 +242,7 @@ func (s *settingsScreen) vcsToolRow(gtx C, th *ui.Theme, t vcsTool) D {
 			layout.Flexed(1, func(gtx C) D { return layout.E.Layout(gtx, verdict.Layout) }),
 		}
 		if gone {
-			b := th.Button(install, vcsInstall)
+			b := th.Button(install, i18n.T("settings.vcsToolsSetting.install"))
 			b.Size, b.Icon = ui.SizeSM, icVcsExternal
 			children = append(children, ui.Gap(2.5), layout.Rigid(b.Layout))
 		}
@@ -266,7 +256,7 @@ func (s *settingsScreen) vcsToolRow(gtx C, th *ui.Theme, t vcsTool) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(line),
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(vcsWithoutInset)}.Layout(gtx, th.Text(ui.TextXS, t.without).Muted().Layout)
+			return layout.Inset{Left: ui.Space(vcsWithoutInset)}.Layout(gtx, th.Text(ui.TextXS, i18n.T(t.without)).Muted().Layout)
 		}),
 	)
 }

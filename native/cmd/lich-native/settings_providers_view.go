@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
@@ -36,7 +36,7 @@ var (
 func (s *settingsScreen) providerPaneRows(th *ui.Theme, values scopedValues, base int) []layout.Widget {
 	m := s.providers.snapshot()
 	if !m.loaded {
-		return []layout.Widget{th.Text(settingsDescSize, providersDetecting).Muted().Layout}
+		return []layout.Widget{th.Text(settingsDescSize, i18n.T("settings.providersPane.detecting")).Muted().Layout}
 	}
 	if p, ok := s.providerScreen(); ok {
 		return s.providerScreenRows(th, values, m, p, base)
@@ -60,7 +60,7 @@ func (s *settingsScreen) providerRow(gtx C, e settingEntry, values scopedValues)
 		s.useGlobal(e.key, s.scope)
 		s.refresh()
 	}
-	if s.lit == e.title && gtx.Now.Before(s.litUntil) {
+	if s.lit == e.titleText() && gtx.Now.Before(s.litUntil) {
 		r.lit = min(1, float32(s.litUntil.Sub(gtx.Now))/float32(settingsLitFadingFor))
 		gtx.Execute(op.InvalidateCmd{})
 	}
@@ -71,7 +71,7 @@ func (s *settingsScreen) providerRow(gtx C, e settingEntry, values scopedValues)
 // at, when the search chose it.
 func (s *settingsScreen) scrollToBlock(title string, at int) {
 	rows := sectionByID(sectionProviders).rows
-	if s.scrollTo >= 0 && s.scrollTo < len(rows) && rows[s.scrollTo].title == title {
+	if s.scrollTo >= 0 && s.scrollTo < len(rows) && rows[s.scrollTo].titleText() == title {
 		s.pane.ScrollTo(at)
 		s.scrollTo = -1
 	}
@@ -95,7 +95,7 @@ func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m p
 	}
 	var rows []layout.Widget
 	if len(enabled) > 0 {
-		s.scrollToBlock(providerDefaultTitle, base+len(rows))
+		s.scrollToBlock(i18n.T("settings.providersPane.defaultTitle"), base+len(rows))
 		rows = append(rows, func(gtx C) D { return s.providerDefaultRow(gtx, th, values, m, true) },
 			func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), ui.VGap(4))
@@ -117,7 +117,7 @@ func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m p
 // project's own default is a change from Global like any other overridable
 // row, and Use Global is what clears it.
 func (s *settingsScreen) providerDefaultRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, first bool) D {
-	e := settingEntry{title: providerDefaultTitle, key: providerDefaultKey, scope: scopeOverridable}
+	e := settingEntry{titleKey: "settings.providersPane.defaultTitle", key: providerDefaultKey, scope: scopeOverridable}
 	r := s.providerRow(gtx, e, values)
 	list := m.launchList()
 	global := resolveProjectDefaultProvider(list, m.globals[providerDefaultKey], "")
@@ -126,7 +126,7 @@ func (s *settingsScreen) providerDefaultRow(gtx C, th *ui.Theme, values scopedVa
 		stored, _ := values.set(providerDefaultKey, s.scope)
 		shown = resolveProjectDefaultProvider(list, m.globals[providerDefaultKey], stored)
 	}
-	r.description, r.globalValue = providerDefaultDesc, m.nameOf(global)
+	r.description, r.globalValue = i18n.T("settings.providersPane.defaultDescription"), m.nameOf(global)
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return s.providerPicker(gtx, th, m, shown) })
 }
 
@@ -211,7 +211,7 @@ func (s *settingsScreen) providerListRow(gtx C, th *ui.Theme, values scopedValue
 	}
 	tags := append(providerTags(p.id, projectDefault, m.skipLevel(p.id)), s.profileTags(p.id, values, m)...)
 	if len(versions.others(spawned.Path)) > 0 {
-		tags = append(tags, providerTagOthers)
+		tags = append(tags, i18n.T("settings.settingsProviders.otherVersionsOnPath"))
 	}
 
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -275,9 +275,9 @@ func (s *settingsScreen) providerAddToggle(gtx C, th *ui.Theme, count int) D {
 					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 						layout.Rigid(func(gtx C) D { return lead.Layout(gtx, ui.Space(4), ink) }),
 						ui.Gap(2),
-						layout.Rigid(th.Text(ui.TextSM, providersAdd).In(ink).Layout),
+						layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.providersPane.addProvider")).In(ink).Layout),
 						ui.Gap(2),
-						layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf(providersMoreFound, count)).Muted().Layout),
+						layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providersPane.moreDetected", i18n.Args{"count": count})).Muted().Layout),
 					)
 				})
 			},
@@ -295,10 +295,10 @@ func (s *settingsScreen) providerAddList(gtx C, th *ui.Theme, off []providerInfo
 	pr.mu.Lock()
 	checking, failure := pr.rechecking, pr.recheckErr
 	pr.mu.Unlock()
-	check := th.Button(&pr.recheck, providersCheckAgain)
+	check := th.Button(&pr.recheck, i18n.T("common.checkAgainButton.check"))
 	check.Variant, check.Size, check.Icon, check.Disabled = ui.VariantGhost, ui.SizeSM, icProviderCheck, checking
 	if checking {
-		check.Text = providersChecking
+		check.Text = i18n.T("common.checkAgainButton.checking")
 	}
 	head := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} })}
 	if failure != "" {
@@ -331,10 +331,10 @@ func (s *settingsScreen) providerToggleRow(gtx C, th *ui.Theme, p providerInfo, 
 	sw.Disabled = !p.installed && !p.enabled
 	sub := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, installSummary(p)).Muted().Layout)}
 	if !p.installed {
-		sub = []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, providersNotFound).Muted().Layout)}
+		sub = []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerToggleRow.notFound")).Muted().Layout)}
 		if p.docs != "" {
 			sub = append(sub, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, "·").Muted().Layout), ui.Gap(1.5),
-				layout.Rigid(func(gtx C) D { return docsLink(gtx, th, &st.docs, providersHowToGet) }))
+				layout.Rigid(func(gtx C) D { return docsLink(gtx, th, &st.docs, i18n.T("settings.providerDocsLink.howToInstall")) }))
 		}
 	}
 	row := func(gtx C) D {
@@ -393,7 +393,7 @@ func (s *settingsScreen) providerHeader(th *ui.Theme, p providerInfo) []layout.W
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icProviderBack.Layout(gtx, ui.Space(3.5), ink) }),
 					ui.Gap(1),
-					layout.Rigid(th.Text(ui.TextXS, providerBack).In(ink).Layout),
+					layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerDetail.back")).In(ink).Layout),
 				)
 			})
 		})
@@ -413,11 +413,11 @@ func (s *settingsScreen) providerHeader(th *ui.Theme, p providerInfo) []layout.W
 			layout.Rigid(th.Text(settingsTitle, p.name).Weight(font.SemiBold).Leading(32).Layout),
 		}
 		if p.docs != "" {
-			children = append(children, ui.Gap(4), layout.Rigid(func(gtx C) D { return docsLink(gtx, th, &pr.docs, providerDocsLabel) }))
+			children = append(children, ui.Gap(4), layout.Rigid(func(gtx C) D { return docsLink(gtx, th, &pr.docs, i18n.T("settings.providerDetail.documentation")) }))
 		}
 		children = append(children,
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
-			layout.Rigid(th.Text(ui.TextXS, providerEnabledLabel).Muted().Layout),
+			layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerDetail.enabled")).Muted().Layout),
 			ui.Gap(2),
 			layout.Rigid(th.Switch(&pr.header).Layout),
 		)
@@ -443,43 +443,43 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 	profiles := s.providers.profiles(p.id)
 	if profiles != nil {
 		s.ensureProfiles(profiles)
-		add(profileTitle, func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, profiles, values, m, first) })
-		add(profilesTitle, func(gtx C, first bool) D { return s.profilesBlock(gtx, th, profiles, values, first) })
+		add(i18n.T("settings.settingsProfiles.title"), func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, profiles, values, m, first) })
+		add(i18n.T("settings.settingsProfiles.profilesTitle"), func(gtx C, first bool) D { return s.profilesBlock(gtx, th, profiles, values, first) })
 		slug := s.scopeProfile(profiles, values, m)
 		if plan, ok := s.profilePlan(profiles, slug); ok {
-			add(planTitle, func(gtx C, first bool) D { return s.profilePlanBlock(gtx, th, profiles, values, slug, plan, first) })
+			add(i18n.T("settings.planUsageSetting.title"), func(gtx C, first bool) D { return s.profilePlanBlock(gtx, th, profiles, values, slug, plan, first) })
 		}
 	} else {
 		if plan, ok := s.planOf(p.id); ok {
-			add(planTitle, func(gtx C, first bool) D { return s.planBlock(gtx, th, values, plan, first, "") })
+			add(i18n.T("settings.planUsageSetting.title"), func(gtx C, first bool) D { return s.planBlock(gtx, th, values, plan, first, "") })
 		}
-		add(binTitle, func(gtx C, first bool) D { return s.binBlock(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.providerBinary.title"), func(gtx C, first bool) D { return s.binBlock(gtx, th, values, m, p, first) })
 	}
 	if hasSkipFlag(p.id) {
-		add(skipTitle, func(gtx C, first bool) D { return s.skipBlock(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.providerBinSettings.skipTitle"), func(gtx C, first bool) D { return s.skipBlock(gtx, th, values, m, p, first) })
 	}
 	if supportsUltracode(p.id) {
-		add(ultracodeTitle, func(gtx C, first bool) D { return s.ultracodeRow(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.ultracodeSetting.title"), func(gtx C, first bool) D { return s.ultracodeRow(gtx, th, values, m, p, first) })
 	}
 	if supportsSubagentCards(p.id) {
-		add(subagentTitle, func(gtx C, first bool) D { return s.subagentRow(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.subagentCardsSetting.title"), func(gtx C, first bool) D { return s.subagentRow(gtx, th, values, m, p, first) })
 	}
 	if hasPasteUnfold(p.id) {
-		add(pasteTitle, func(gtx C, first bool) D { return s.pasteRow(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.pasteUnfoldSetting.title"), func(gtx C, first bool) D { return s.pasteRow(gtx, th, values, m, p, first) })
 	}
 	if canResume(p.id) {
-		add(restoreTitle, func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.restoreSetting.title"), func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, m, p, first) })
 	}
 	if profiles != nil {
-		add(binTitle, func(gtx C, first bool) D { return s.advancedBinaryFold(gtx, th, profiles, values, m, p, first) })
+		add(i18n.T("settings.providerBinary.title"), func(gtx C, first bool) D { return s.advancedBinaryFold(gtx, th, profiles, values, m, p, first) })
 	}
 	return rows
 }
 
 // switchRow is a global-only switch under a provider's screen: seen from a
 // project it is dimmed with no control, as every global row is.
-func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, first bool, title, key, desc string, sw *ui.SwitchState, on bool) D {
-	r := s.providerRow(gtx, settingEntry{title: title, key: key}, values)
+func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, first bool, titleKey, key, desc string, sw *ui.SwitchState, on bool) D {
+	r := s.providerRow(gtx, settingEntry{titleKey: titleKey, key: key}, values)
 	r.description = desc
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)
@@ -493,30 +493,30 @@ func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, fir
 
 func (s *settingsScreen) ultracodeRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
 	key := providerUltracodeKey(p.id)
-	return s.switchRow(gtx, th, values, first, ultracodeTitle, key, fmt.Sprintf(ultracodeDesc, p.name), &s.providers.ultra, m.globals[key] == "true")
+	return s.switchRow(gtx, th, values, first, "settings.ultracodeSetting.title", key, i18n.T("settings.ultracodeSetting.description", i18n.Args{"provider": p.name}), &s.providers.ultra, m.globals[key] == "true")
 }
 
 // subagentRow is on until turned off, so only a stored "false" reads as off.
 func (s *settingsScreen) subagentRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
 	key := providerSubagentKey(p.id)
-	return s.switchRow(gtx, th, values, first, subagentTitle, key, fmt.Sprintf(subagentDesc, p.name), &s.providers.agents, m.globals[key] != "false")
+	return s.switchRow(gtx, th, values, first, "settings.subagentCardsSetting.title", key, i18n.T("settings.subagentCardsSetting.description", i18n.Args{"provider": p.name}), &s.providers.agents, m.globals[key] != "false")
 }
 
 func (s *settingsScreen) pasteRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
 	key := providerPasteKey(p.id)
-	desc := fmt.Sprintf(pasteDescNextSession, p.name)
+	desc := i18n.T("settings.pasteUnfoldSetting.descriptionNextSession", i18n.Args{"provider": p.name})
 	if pasteUnfoldTiming(p.id) == pasteNextPaste {
-		desc = fmt.Sprintf(pasteDescNextPaste, p.name, p.name)
+		desc = i18n.T("settings.pasteUnfoldSetting.descriptionNextPaste", i18n.Args{"provider": p.name})
 	}
-	return s.switchRow(gtx, th, values, first, pasteTitle, key, desc, &s.providers.unfold, m.globals[key] == "true")
+	return s.switchRow(gtx, th, values, first, "settings.pasteUnfoldSetting.title", key, desc, &s.providers.unfold, m.globals[key] == "true")
 }
 
 // skipBlock is the skip ladder. The pair of keys is the storage and the rung
 // is the choice, so one rung writes both.
 func (s *settingsScreen) skipBlock(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
-	e := settingEntry{title: skipTitle, key: providerSkipKey(p.id, false)}
+	e := settingEntry{titleKey: "settings.providerBinSettings.skipTitle", key: providerSkipKey(p.id, false)}
 	r := s.providerRow(gtx, e, values)
-	r.description = fmt.Sprintf(skipDesc, p.name, skipFlags[p.id])
+	r.description = i18n.T("settings.providerBinSettings.skipDescription", i18n.Args{"provider": p.name, "flag": skipFlags[p.id]})
 	level := m.skipLevel(p.id)
 	return s.ladderBlock(gtx, th, r, first, &s.providers.skip, skipRungs, level, func(next string) { s.chooseSkip(p, level, next) })
 }
@@ -526,8 +526,8 @@ func (s *settingsScreen) skipBlock(gtx C, th *ui.Theme, values scopedValues, m p
 // writes, so the gate's next decision is this block's choice.
 func (s *settingsScreen) restoreBlock(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
 	key := restoreKey(p.id)
-	r := s.providerRow(gtx, settingEntry{title: restoreTitle, key: key}, values)
-	r.description = fmt.Sprintf(restoreDesc, p.name)
+	r := s.providerRow(gtx, settingEntry{titleKey: "settings.restoreSetting.title", key: key}, values)
+	r.description = i18n.T("settings.restoreSetting.description", i18n.Args{"provider": p.name})
 	choice := restoreChoice(m.globals[key])
 	return s.ladderBlock(gtx, th, r, first, &s.providers.restore, restoreRungs, choice,
 		func(next string) { s.writeProviderKey(key, "", next, nil) })
@@ -536,7 +536,7 @@ func (s *settingsScreen) restoreBlock(gtx C, th *ui.Theme, values scopedValues, 
 // ladderBlock is a global-only choice of one rung: the segmented control, and
 // under it what the chosen rung means.
 func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bool, enum *widget.Enum,
-	rungs []struct{ value, label, consequence string }, current string, choose func(next string)) D {
+	rungs []ladderRung, current string, choose func(next string)) D {
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)
 	}
@@ -547,9 +547,9 @@ func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bo
 	items := make([]ui.ToggleItem, len(rungs))
 	consequence := ""
 	for i, rung := range rungs {
-		items[i] = ui.ToggleItem{Value: rung.value, Text: rung.label}
+		items[i] = ui.ToggleItem{Value: rung.value, Text: i18n.T(rung.labelKey)}
 		if rung.value == current {
-			consequence = rung.consequence
+			consequence = i18n.T(rung.consequenceKey)
 		}
 	}
 	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D {
@@ -594,12 +594,12 @@ func (s *settingsScreen) layoutProviderDialog(gtx C, th *ui.Theme) {
 	c := pr.change
 	label, consequence := skipRung(c.level)
 	on := th.On(th.Popover)
-	cancel := on.Button(&pr.cancel, dialogCancel)
+	cancel := on.Button(&pr.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
-	confirm := on.Button(&pr.confirm, skipConfirm)
+	confirm := on.Button(&pr.confirm, i18n.T("settings.providerBinSettings.confirm"))
 	confirm.Variant = ui.VariantDestructive
-	dlg := th.Dialog(&pr.dialog, pr.asking && s.open, fmt.Sprintf(skipConfirmTitle, strings.ToLower(label)),
-		fmt.Sprintf(skipConfirmDesc, c.provider.name, skipFlags[c.provider.id], consequence))
+	dlg := th.Dialog(&pr.dialog, pr.asking && s.open, i18n.T("settings.providerBinSettings.confirmTitle", i18n.Args{"level": strings.ToLower(label)}),
+		i18n.T("settings.providerBinSettings.confirmDescription", i18n.Args{"provider": c.provider.name, "flag": skipFlags[c.provider.id], "consequence": consequence}))
 	dlg.MaxWidth = ui.DialogWidthXL
 	dlg.Actions = []layout.Widget{cancel.Layout, confirm.Layout}
 	if dlg.Layout(gtx) {

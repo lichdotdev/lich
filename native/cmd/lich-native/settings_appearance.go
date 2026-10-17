@@ -10,49 +10,17 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n (settings.appearanceSettings,
-// settings.footerSettings, settings.closeSetting, common.stepper).
-const (
-	zoomTitle     = "Zoom"
-	zoomOutLabel  = "Zoom out"
-	zoomInLabel   = "Zoom in"
-	zoomReset     = "Reset the zoom"
-	textSizeTitle = "Terminal text size"
-	textSmaller   = "Smaller terminal text"
-	textLarger    = "Larger terminal text"
-	textSizeReset = "Reset the terminal text size"
-
-	editorSizeTitle = "Editor text size"
-	editorSizeAlso  = "code review font size"
-	editorSmaller   = "Smaller code text"
-	editorLarger    = "Larger code text"
-	editorSizeReset = "Reset the editor text size"
-	editorFontTitle = "Editor font"
-	uiFontTitle     = "Interface font"
-	uiFontAlso      = "ui sans text"
-	editorFontAlso  = "code review typeface monospace"
-	stepperDefault  = "Default"
-
-	ceilingTitle       = "Spend ceiling"
-	ceilingAlso        = "cost budget usd"
-	ceilingDesc        = "Warn as the session's API cost nears this amount: amber at 80%, red at 95%. Empty for none."
-	ceilingPlaceholder = "No ceiling"
-
-	closeSettingTitle = "When the window closes"
-	closeAlso         = "quit exit background close window tray keep running"
-	closeDesc         = "What lich does with its sessions when you close its window. With none running, closing the window quits lich."
-)
-
-// closeChoices are CloseSetting's three answers, each with its label and
-// the line saying what it does.
-var closeChoices = []struct{ value, label, consequence string }{
-	{closeAsk, "Ask", "lich asks each time whether to keep running in the background."},
-	{closeBackground, "Keep running", "The window closes and the sessions keep working; opening lich again brings them back."},
-	{closeQuit, "Quit", "Closing the window ends lich and every session in it."},
+// closeChoices are CloseSetting's three answers, each with the keys of its
+// label and of the line saying what it does.
+var closeChoices = []struct{ value, labelKey, consequenceKey string }{
+	{closeAsk, "settings.closeSetting.choice.ask.label", "settings.closeSetting.choice.ask.consequence"},
+	{closeBackground, "settings.closeSetting.choice.background.label", "settings.closeSetting.choice.background.consequence"},
+	{closeQuit, "settings.closeSetting.choice.quit.label", "settings.closeSetting.choice.quit.consequence"},
 }
 
 var (
@@ -132,12 +100,12 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 			})
 		}
 	case costBudgetKey:
-		r.description = ceilingDesc
+		r.description = i18n.T("settings.footerSettings.ceilingDescription")
 		control = s.ceilingControl
 	case closeActionKey:
 		return s.closeBlock(gtx, th, r, first), true
 	case windowKindKey:
-		r.description = windowKindDesc
+		r.description = i18n.T("settings.windowSetting.description")
 		control = s.windowKindControl
 	default:
 		return D{}, false
@@ -149,8 +117,8 @@ func (s *settingsScreen) zoomControl(gtx C, th *ui.Theme) D {
 	p := s.look.prefs
 	return s.look.zoom.layout(gtx, th, s.root, stepperSpec{
 		value: p.zoom, min: zoomMin, max: zoomMax, step: zoomStep, fallback: defaultZoom,
-		display: fmt.Sprintf("%d%%", int(math.Round(p.zoom*100))), reset: zoomReset,
-		dec: icZoomOut, inc: icZoomIn, decLabel: zoomOutLabel, incLabel: zoomInLabel,
+		display: fmt.Sprintf("%d%%", int(math.Round(p.zoom*100))), reset: i18n.T("settings.appearanceSettings.resetZoom"),
+		dec: icZoomOut, inc: icZoomIn, decLabel: i18n.T("settings.appearanceSettings.zoomOut"), incLabel: i18n.T("settings.appearanceSettings.zoomIn"),
 		onChange: func(v float64) {
 			p.zoom = clampZoom(v)
 			s.commitAppearance(p, zoomKey, strconv.FormatFloat(p.zoom, 'f', -1, 64))
@@ -162,8 +130,8 @@ func (s *settingsScreen) textSizeControl(gtx C, th *ui.Theme) D {
 	p := s.look.prefs
 	return s.look.size.layout(gtx, th, s.root, stepperSpec{
 		value: float64(p.fontSize), min: terminalFontSizeMin, max: terminalFontSizeMax, step: terminalFontStep,
-		fallback: defaultTerminalSize, display: fmt.Sprintf("%dpx", p.fontSize), reset: textSizeReset,
-		dec: icMinus, inc: icPlus, decLabel: textSmaller, incLabel: textLarger,
+		fallback: defaultTerminalSize, display: fmt.Sprintf("%dpx", p.fontSize), reset: i18n.T("settings.appearanceSettings.resetTextSize"),
+		dec: icMinus, inc: icPlus, decLabel: i18n.T("settings.appearanceSettings.textSmaller"), incLabel: i18n.T("settings.appearanceSettings.textLarger"),
 		onChange: func(v float64) {
 			p.fontSize = clampTerminalFontSize(int(math.Round(v)))
 			s.commitAppearance(p, terminalFontSizeKey, strconv.Itoa(p.fontSize))
@@ -175,8 +143,8 @@ func (s *settingsScreen) editorSizeControl(gtx C, th *ui.Theme) D {
 	p := s.look.prefs
 	return s.look.editorSize.layout(gtx, th, s.root, stepperSpec{
 		value: float64(p.editorFontSize), min: editorFontSizeMin, max: editorFontSizeMax, step: terminalFontStep,
-		fallback: defaultEditorSize, display: fmt.Sprintf("%dpx", p.editorFontSize), reset: editorSizeReset,
-		dec: icMinus, inc: icPlus, decLabel: editorSmaller, incLabel: editorLarger,
+		fallback: defaultEditorSize, display: fmt.Sprintf("%dpx", p.editorFontSize), reset: i18n.T("settings.settingsAppearance.editorSizeReset"),
+		dec: icMinus, inc: icPlus, decLabel: i18n.T("settings.settingsAppearance.editorSmaller"), incLabel: i18n.T("settings.settingsAppearance.editorLarger"),
 		onChange: func(v float64) {
 			p.editorFontSize = clampEditorFontSize(int(math.Round(v)))
 			s.commitAppearance(p, editorFontSizeKey, strconv.Itoa(p.editorFontSize))
@@ -205,7 +173,7 @@ func (s *settingsScreen) ceilingControl(gtx C, th *ui.Theme) D {
 			s.commitAppearance(p, costBudgetKey, strconv.FormatFloat(p.budget, 'f', -1, 64))
 		}
 	}
-	in := th.Input(ed, ceilingPlaceholder)
+	in := th.Input(ed, i18n.T("settings.footerSettings.ceilingPlaceholder"))
 	in.Mono, in.Width = true, ceilingWidth
 	return in.Layout(gtx)
 }
@@ -220,7 +188,7 @@ func budgetText(budget float64) string {
 // closeBlock is CloseSetting, a SettingBlock: the title and description,
 // the three answers under them, and what the chosen one does.
 func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
-	r.description = closeDesc
+	r.description = i18n.T("settings.closeSetting.description")
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)
 	}
@@ -234,9 +202,9 @@ func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first boo
 	items := make([]ui.ToggleItem, len(closeChoices))
 	consequence := ""
 	for i, c := range closeChoices {
-		items[i] = ui.ToggleItem{Value: c.value, Text: c.label}
+		items[i] = ui.ToggleItem{Value: c.value, Text: i18n.T(c.labelKey)}
 		if c.value == g.Value {
-			consequence = c.consequence
+			consequence = i18n.T(c.consequenceKey)
 		}
 	}
 	under := func(gtx C, th *ui.Theme) D {

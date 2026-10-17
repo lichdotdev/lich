@@ -87,5 +87,24 @@
     "addToReview": "Add to review",
     "sessionPlaceholder": "What should change here? It goes to the session with the rest.",
     "reviewPlaceholder": "Leave a comment. It is sent when you submit the review."
+  },
+  "dockReviewBody": {
+    "split": "Side by side",
+    "unified": "Unified"
+  },
+  "binaryState": {
+    "open": "Open in default app",
+    "reveal": "Show in folder",
+    "pdf": "PDF document",
+    "pdfHint": "Opens in the app your desktop reads PDFs with.",
+    "openFailed": "Could not open {name}",
+    "revealFailed": "Could not show {name} in its folder"
+  },
+  "dockReviewBinary": {
+    "viewOnGitHub": "View on GitHub"
+  },
+  "blobPreview": {
+    "tooManyPixels": "{width} × {height} is above the {megapixels} MP preview limit",
+    "undecodable": "this image can't be decoded: {error}"
   }
 }

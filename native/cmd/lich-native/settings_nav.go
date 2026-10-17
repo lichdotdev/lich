@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"strconv"
 	"strings"
@@ -16,18 +15,9 @@ import (
 	"gioui.org/widget"
 	"golang.org/x/image/math/fixed"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	scopeLabelGlobal  = "Scope"
-	scopeGlobal       = "Global"
-	scopeOpenProjects = "Open projects"
-	scopeChangeOne    = "1 change"
-	scopeChangeMany   = "%d changes"
-	scopeNote         = "Only the settings a project can change are on. The rest are the same everywhere."
 )
 
 // The nav's geometry and its dimmed rows' opacity, from the mockup.
@@ -93,7 +83,7 @@ func (s *settingsScreen) navLayout(gtx C, th *ui.Theme, values scopedValues) D {
 			}),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-					field := th.Input(&n.query, settingsSearchHint)
+					field := th.Input(&n.query, i18n.T("settings.settings.search"))
 					field.Leading, field.LeadingSize, field.Height, field.TextSize, field.Clear = icNavSearch, unit.Dp(15), ui.Space(8), 13, &n.clear
 					return field.Layout(gtx)
 				})
@@ -163,7 +153,7 @@ func (s *settingsScreen) sectionList(gtx C, th *ui.Theme, values scopedValues, f
 	if !footer && s.scope != "" {
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: ui.Space(2.5), Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-				l := th.Text(ui.TextXS, scopeNote).Muted().Leading(17.4)
+				l := th.Text(ui.TextXS, i18n.T("settings.settingsNav.scopeNote")).Muted().Leading(17.4)
 				l.MaxLines = 0
 				return l.Layout(gtx)
 			})
@@ -206,7 +196,7 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, va
 		children := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D { return sec.icon.Layout(gtx, ui.Space(4), icon) }),
 			ui.Gap(2.5),
-			layout.Flexed(1, th.Text(ui.TextSM, sec.label).In(fg).Layout),
+			layout.Flexed(1, th.Text(ui.TextSM, sec.label()).In(fg).Layout),
 		}
 		if where != "" {
 			children = append(children, layout.Rigid(th.Text(ui.TextXS, where).In(th.Over(ui.Alpha(fg, navWhereOpacity))).Layout), ui.Gap(1.5))
@@ -275,7 +265,7 @@ func (s *settingsScreen) results(gtx C, th *ui.Theme, hits []settingHit) D {
 	n := &s.nav
 	if len(hits) == 0 {
 		return layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2.5), Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			l := th.Text(ui.TextXS, fmt.Sprintf(settingsNoMatch, strings.TrimSpace(n.query.Text()))).Muted()
+			l := th.Text(ui.TextXS, i18n.T("settings.settings.noMatch", i18n.Args{"query": strings.TrimSpace(n.query.Text())})).Muted()
 			l.MaxLines = 0
 			return l.Layout(gtx)
 		})
@@ -289,10 +279,7 @@ func (s *settingsScreen) results(gtx C, th *ui.Theme, hits []settingHit) D {
 			s.choose(gtx, hits[i])
 		}
 	}
-	count := fmt.Sprintf(settingsResultMany, len(hits))
-	if len(hits) == 1 {
-		count = fmt.Sprintf(settingsResultOne, 1)
-	}
+	count := i18n.T("settings.settings.resultCount", i18n.Args{"count": len(hits)})
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: ui.Space(3), Bottom: ui.Space(0.5)}.Layout(gtx, th.Text(navHitPath, strings.ToUpper(count)).Muted().Mono().Layout)

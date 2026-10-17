@@ -39,5 +39,11 @@
     "clock": {
       "label": "Date & time"
     }
+  },
+  "footerEditor": {
+    "previewHint": "Preview · example values"
+  },
+  "footerMenu": {
+    "customize": "Customize footer…"
   }
 }

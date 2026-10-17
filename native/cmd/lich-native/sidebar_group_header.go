@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
+	"maps"
 	"math"
 	"strconv"
 	"strings"
@@ -16,6 +16,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -39,14 +40,20 @@ const (
 	headerRefuseOpacity = 0.45
 )
 
-// ponytail: English until the native window has i18n.
-const (
-	expandGroupHint  = "Expand %s"
-	collapseGroupHnt = "Collapse %s"
-	newSessionInHint = "New session in %s"
-	optionsForHint   = "Options for %s"
-	mergesIntoText   = " already exists, so renaming merges this folder into it."
-)
+// valueMarker stands for a value the message renders in a weight of its own
+// (a folder's typed name, a peer): the message splits around it.
+const valueMarker = "\x00"
+
+// aroundValue is the text before and after the value in the message under key
+// at {placeholder}; rest fills the message's other placeholders.
+func aroundValue(key, placeholder string, rest ...i18n.Args) (before, after string) {
+	args := i18n.Args{placeholder: valueMarker}
+	for _, r := range rest {
+		maps.Copy(args, r)
+	}
+	before, after, _ = strings.Cut(i18n.T(key, args), valueMarker)
+	return before, after
+}
 
 var (
 	icGroupChevron = icons.Lucide("chevron-right")
@@ -105,13 +112,13 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	act := f.act
 	if entries := blockLaunch(b, s.launchProviders, act); entries != nil {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
-			return s.headerMenu(gtx, th, &st.launch, &st.plus, icPlus, fmt.Sprintf(newSessionInHint, b.title), entries)
+			return s.headerMenu(gtx, th, &st.launch, &st.plus, icPlus, i18n.T("sidebar.sessionGroupHeader.newSessionIn", i18n.Args{"name": b.title}), entries)
 		}))
 	}
 	hooks := blockMenuHooks{rename: func() { st.rename.Start(b.folder) }, newFolder: s.askFolderName}
 	if entries := blockOptions(b, f.view.folders, f.filtering, act, hooks); entries != nil {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
-			return s.headerMenu(gtx, th, &st.options, &st.more, icGroupMore, fmt.Sprintf(optionsForHint, b.title), entries)
+			return s.headerMenu(gtx, th, &st.options, &st.more, icGroupMore, i18n.T("sidebar.sessionGroupHeader.optionsFor", i18n.Args{"name": b.title}), entries)
 		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
@@ -132,9 +139,9 @@ func (s *sidebar) headerMenu(gtx C, th *ui.Theme, state *ui.MenuState, click *wi
 // gap-1.5 rounded-sm px-1 py-0.5`, the chevron, a folder's glyph and count,
 // the folded block's mark, then the rule to the row's end.
 func (s *sidebar) titleButton(gtx C, th *ui.Theme, b blockView, st *blockState, over, refuses bool) D {
-	hint := fmt.Sprintf(collapseGroupHnt, b.title)
+	hint := i18n.T("sidebar.sessionGroupHeader.collapse", i18n.Args{"name": b.title})
 	if b.collapsed {
-		hint = fmt.Sprintf(expandGroupHint, b.title)
+		hint = i18n.T("sidebar.sessionGroupHeader.expand", i18n.Args{"name": b.title})
 	}
 	return layout.Inset{Left: -ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return th.Tooltip(s.root, s.hint("fold:"+b.key), hint).Layout(gtx, func(gtx C) D {
@@ -243,10 +250,12 @@ func (s *sidebar) mergeNote(gtx C, th *ui.Theme, b blockView, st *blockState, fo
 	if b.kind != blockFolder || !st.rename.Active() || !mergesInto(b.folder, typed, folders) {
 		return D{}
 	}
-	rest := th.Text(ui.TextXS, mergesIntoText).Muted()
+	before, after := aroundValue("sidebar.sessionGroupHeader.mergesInto", "name")
+	rest := th.Text(ui.TextXS, after).Muted()
 	rest.MaxLines = 0
 	return layout.Inset{Left: ui.Space(1), Right: ui.Space(1), Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
+			layout.Rigid(th.Text(ui.TextXS, before).Muted().Layout),
 			layout.Rigid(th.Text(ui.TextXS, typed).Weight(font.Medium).Layout),
 			layout.Flexed(1, rest.Layout),
 		)

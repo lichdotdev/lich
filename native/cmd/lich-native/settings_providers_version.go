@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"strings"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -57,5 +57,5 @@ func alsoOnPathLine(others []lichclient.ProviderBinary) string {
 	for i, b := range others {
 		named[i] = b.Path + " " + b.Version
 	}
-	return fmt.Sprintf(binAlsoOnPath, strings.Join(named, ", "))
+	return i18n.T("settings.settingsProvidersVersion.alsoOnPath", i18n.Args{"versions": strings.Join(named, ", ")})
 }

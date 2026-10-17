@@ -30,5 +30,13 @@
       "other": "Cerrar {name} detiene {count} sesiones a mitad de un turno. Al reabrir el proyecto se ofrece reanudar donde se quedó cada una; el turno en curso se pierde."
     },
     "closeAnyway": "Cerrar de todos modos"
+  },
+  "topbarTabs": {
+    "projectSettings": "Ajustes del proyecto…",
+    "closeProject": "Cerrar proyecto"
+  },
+  "topbarApply": {
+    "closeProjectFailed": "No se pudo cerrar el proyecto: {error}",
+    "reorderFailed": "No se pudieron reordenar los proyectos: {error}"
   }
 }

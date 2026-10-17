@@ -12,17 +12,10 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
+	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog.
-const (
-	exitEnded          = "Session ended"
-	exitEndedWithCode  = "Session ended with code %d"
-	exitRestart        = "Restart"
-	exitClose          = "Close"
-	toastRestartFailed = "Session failed to restart: %v"
 )
 
 var icExitRestart = icons.Lucide("rotate-cw")
@@ -45,9 +38,9 @@ func readSessionExit(data json.RawMessage) sessionExit {
 // tells a crash from a session the user ended.
 func exitNotice(e sessionExit) string {
 	if e.Code == nil || *e.Code == 0 {
-		return exitEnded
+		return i18n.T("terminal.sessionExit.ended")
 	}
-	return fmt.Sprintf(exitEndedWithCode, *e.Code)
+	return i18n.T("terminal.sessionExit.endedWithCode", i18n.Args{"code": *e.Code})
 }
 
 // exitMarker is session-exit.ts exitMarker: the scrollback line where the
@@ -97,7 +90,7 @@ func (ts *terminals) restart(ctx context.Context, s sessionView) {
 	}
 	cols, rows := t.vt.Size()
 	if err := ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, "", cols, rows); err != nil {
-		ts.toaster.Show(failure(toastRestartFailed, err))
+		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.restartFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
 	ts.mu.Lock()
@@ -135,13 +128,13 @@ func (b *exitBand) content(gtx C, th *ui.Theme, e sessionExit) D {
 			layout.Rigid(on.Text(ui.TextXS, exitNotice(e)).Muted().Layout),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 			layout.Rigid(func(gtx C) D {
-				btn := on.Button(&b.restart, exitRestart)
+				btn := on.Button(&b.restart, i18n.T("terminal.exitBanner.restart"))
 				btn.Icon, btn.Variant, btn.Size = icExitRestart, ui.VariantGhost, ui.SizeXS
 				return btn.Layout(gtx)
 			}),
 			ui.Gap(1),
 			layout.Rigid(func(gtx C) D {
-				btn := on.Button(&b.close, exitClose)
+				btn := on.Button(&b.close, i18n.T("terminal.exitBanner.close"))
 				btn.Variant, btn.Size = ui.VariantDestructive, ui.SizeXS
 				return btn.Layout(gtx)
 			}),

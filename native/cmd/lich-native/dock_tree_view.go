@@ -13,6 +13,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -82,9 +83,9 @@ func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 	data, loading, err := c.tree.get()
 	switch {
 	case err != nil:
-		return notice(gtx, th, codeReadFailed)
+		return notice(gtx, th, i18n.T("dock.filesPanel.readFailed"))
 	case loading || data == nil:
-		return notice(gtx, th, codeLoading)
+		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
 	}
 	query := c.query.Text()
 	filtering := strings.TrimSpace(query) != ""
@@ -96,9 +97,9 @@ func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if len(rows) == 0 {
-				empty := codeEmpty
+				empty := i18n.T("dock.filesPanel.empty")
 				if filtering {
-					empty = codeNoMatch
+					empty = i18n.T("dock.filesPanel.noMatch")
 				}
 				return notice(gtx, th, empty)
 			}

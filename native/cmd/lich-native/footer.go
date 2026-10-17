@@ -4,19 +4,17 @@ import (
 	"context"
 	"log"
 	"runtime"
-	"strconv"
 	"sync"
 	"time"
 
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
-
-// ponytail: English until the native window has i18n.
 
 var (
 	icAttach   = icons.Lucide("paperclip")
@@ -165,7 +163,7 @@ func (f *footer) layoutBar(gtx C, th *ui.Theme, in footerInput) D {
 	// The clock and every countdown read on the minute.
 	gtx.Execute(op.InvalidateCmd{At: in.now.Add(untilNextMinute(in.now))})
 	entries := []ui.MenuEntry{{
-		Label:   "Customize footer…",
+		Label:   i18n.T("footer.footerMenu.customize"),
 		OnClick: func() { f.customize() },
 	}}
 	return th.ContextMenu(f.root, &f.menu, entries).Layout(gtx, func(gtx C) D {
@@ -233,13 +231,13 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	w := f.w(s.ID)
 	switch s.ID {
 	case "attach":
-		return footerButton(gtx, th, f.root, w, "Attach file", false, in.sessionID == "", iconOnly(icAttach))
+		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.attachFile"), false, in.sessionID == "", iconOnly(icAttach))
 	case "files":
-		return footerButton(gtx, th, f.root, w, "Browse code", false, false, iconOnly(icCode))
+		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.browseCode"), false, false, iconOnly(icCode))
 	case "changes":
-		return footerButton(gtx, th, f.root, w, "Review changes", true, false, changesContent(in.git))
+		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.reviewChanges"), true, false, changesContent(in.git))
 	case "pr":
-		return footerButton(gtx, th, f.root, w, "View pull request", true, false, glyphText(icPR, "PR #"+strconv.Itoa(in.pr.Number)))
+		return footerButton(gtx, th, f.root, w, i18n.T("shell.footerBar.viewPullRequest"), true, false, glyphText(icPR, i18n.T("shell.footerBar.pullRequest", i18n.Args{"number": in.pr.Number})))
 	case "checkout", "path":
 		ic := icFolder
 		if s.ID == "checkout" && in.git.Branch != "" {

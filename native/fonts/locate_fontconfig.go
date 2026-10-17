@@ -45,6 +45,16 @@ func Locate(f font.Font) (Location, error) {
 	return Location{Path: path, Index: i}, nil
 }
 
+// hanPattern asks fontconfig for the sans it would draw Simplified Chinese
+// in.
+const hanPattern = SystemSans + ":lang=zh-cn"
+
+// locateHan is the face fontconfig picks for Simplified Chinese in weight w,
+// which may not cover Han at all when nothing installed does.
+func locateHan(w font.Weight) (Location, error) {
+	return Locate(font.Font{Typeface: hanPattern, Weight: w})
+}
+
 // Covering names a font file that has a glyph for r, the closest to a plain
 // monospace among those that do, or "" when none does.
 func Covering(r rune) (string, error) {

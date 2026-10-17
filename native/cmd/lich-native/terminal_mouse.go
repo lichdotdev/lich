@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"io"
@@ -19,6 +18,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/omartelo/lich/native/gioterm"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 )
 
@@ -126,10 +126,7 @@ func (t *termView) wheel(e pointer.Event) []byte {
 	return out
 }
 
-// ponytail: English until the native window has i18n.
 const (
-	terminalCopiedOne   = "copied %d char to clipboard"
-	terminalCopiedOther = "copied %d chars to clipboard"
 	terminalCopyToastID = "terminal-copy"
 	// copy-toast.ts COPY_TOAST_DURATION_MS.
 	terminalCopyToastDuration = 1500 * time.Millisecond
@@ -140,7 +137,7 @@ const (
 func (ts *terminals) copySelection(gtx layout.Context, text string) {
 	gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(text))})
 	n := utf8.RuneCountInString(text)
-	title := fmt.Sprintf(pluralFormat(n, terminalCopiedOne, terminalCopiedOther), n)
+	title := i18n.T("terminal.copyToast.copied", i18n.Args{"count": n})
 	ts.toaster.Show(ui.Toast{ID: terminalCopyToastID, Title: title, Duration: terminalCopyToastDuration})
 }
 

@@ -9,26 +9,6 @@ import (
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n (settings.settings.*,
-// diffLayoutSetting, and the scope copy of the approved mockup).
-const (
-	settingsSearchHint = "Search settings"
-	settingsNoMatch    = "Nothing matches %s. The search reads the name of every setting, not their values."
-	settingsResultOne  = "%d setting"
-	settingsResultMany = "%d settings"
-
-	themeTitle = "Theme"
-	themeDesc  = "Colors the interface and the terminal."
-	themeAlso  = "colors dark light terminal palette"
-
-	hideWhitespaceTitle = "Hide whitespace in diffs"
-	hideWhitespaceDesc  = "Leave out changes that only touch spacing in the Review tab."
-	hideWhitespaceAlso  = "space indentation review ignore"
-	diffLayoutTitle     = "Diff layout"
-	diffLayoutDesc      = "How changes are drawn in the Review tab and in pull requests. Side-by-side shows unified while the panel is too narrow for two columns."
-	diffLayoutAlso      = "side by side split unified review"
-)
-
 // The section ids, Settings.tsx's plus General and Editor, which only the
 // native window has: General holds what the web keeps under Notifications.
 const (
@@ -55,16 +35,13 @@ const (
 )
 
 // settingEntry is one row of a section: settings-index.ts's SettingEntry plus
-// the backend key and scope the row's states are read from. group is the
-// heading the row sits under, "" in a section without groups. A translated
-// row names its catalog keys (titleKey, alsoKey, groupKey) in place of the
-// text, as settings-index.ts does, and is read through titleText, alsoText
-// and groupText.
+// the backend key and scope the row's states are read from. groupKey names the
+// heading the row sits under, "" in a section without groups. A row names
+// its catalog keys (titleKey, alsoKey, groupKey), as settings-index.ts does,
+// and is read through titleText, alsoText and groupText.
 type settingEntry struct {
-	title, also string
-	group       string
-	key         string
-	scope       settingScope
+	key   string
+	scope settingScope
 
 	titleKey, alsoKey, groupKey string
 
@@ -75,15 +52,15 @@ type settingEntry struct {
 	onlyFor     []string
 }
 
-func (e settingEntry) titleText() string { return textOrKey(e.title, e.titleKey) }
-func (e settingEntry) alsoText() string  { return textOrKey(e.also, e.alsoKey) }
-func (e settingEntry) groupText() string { return textOrKey(e.group, e.groupKey) }
+func (e settingEntry) titleText() string { return keyText(e.titleKey) }
+func (e settingEntry) alsoText() string  { return keyText(e.alsoKey) }
+func (e settingEntry) groupText() string { return keyText(e.groupKey) }
 
-// textOrKey is key's message in the interface language, or text for a row
-// not translated yet.
-func textOrKey(text, key string) string {
+// keyText is key's message in the interface language, "" for a row without
+// that part.
+func keyText(key string) string {
 	if key == "" {
-		return text
+		return ""
 	}
 	return i18n.T(key)
 }
@@ -92,59 +69,62 @@ func textOrKey(text, key string) string {
 // searched; unported are the scoped keys of rows still to be ported, counted
 // for the override badges until they are.
 type settingsSection struct {
-	id, label string
-	icon      *icons.Icon
-	footer    bool
-	rows      []settingEntry
-	unported  []settingEntry
+	id       string
+	labelKey string
+	icon     *icons.Icon
+	footer   bool
+	rows     []settingEntry
+	unported []settingEntry
 }
+
+func (s settingsSection) label() string { return i18n.T(s.labelKey) }
 
 // settingsSections is the nav in order.
 var settingsSections = []settingsSection{
-	{id: sectionGeneral, label: "General", icon: icons.Lucide("settings-2"), rows: []settingEntry{
+	{id: sectionGeneral, labelKey: "settings.settingsIndex.sectionGeneral", icon: icons.Lucide("settings-2"), rows: []settingEntry{
 		{titleKey: "settings.language.uiTitle", alsoKey: "settings.language.uiSearchWords", key: uiLanguageKey, groupKey: "settings.language.group"},
 		{titleKey: "settings.language.promptTitle", alsoKey: "settings.language.promptSearchWords", key: promptLanguageKey, groupKey: "settings.language.group"},
-		{title: windowKindTitle, also: windowKindAlso, key: windowKindKey, group: groupWindow},
-		{title: closeSettingTitle, also: closeAlso, key: closeActionKey, group: groupWindow},
-		{title: needsInputTitle, also: notifyAlso, key: desktopNotifyKey, group: groupNotifications},
-		{title: finishedTitle, also: notifyAlso, key: finishedNotifyKey, group: groupNotifications},
+		{titleKey: "settings.windowSetting.title", alsoKey: "settings.windowSetting.searchWords", key: windowKindKey, groupKey: "settings.windowSetting.title"},
+		{titleKey: "settings.closeSetting.title", alsoKey: "settings.closeSetting.searchWords", key: closeActionKey, groupKey: "settings.windowSetting.title"},
+		{titleKey: "settings.notificationsSettings.needsInputTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: desktopNotifyKey, groupKey: "settings.settings.section.notifications"},
+		{titleKey: "settings.notificationsSettings.finishedTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: finishedNotifyKey, groupKey: "settings.settings.section.notifications"},
 	}},
-	{id: sectionAppearance, label: "Appearance", icon: icons.Lucide("palette"), rows: []settingEntry{
-		{title: themeTitle, also: themeAlso, key: themeSettingKey},
-		{title: zoomTitle, key: zoomKey},
-		{title: uiFontTitle, also: uiFontAlso, key: uiFontKey},
-		{title: fontTitle, also: fontAlso, key: terminalFontKey},
-		{title: textSizeTitle, key: terminalFontSizeKey},
-		{title: footerTitle, also: footerAlso, key: footerLayoutKey},
-		{title: ceilingTitle, also: ceilingAlso, key: costBudgetKey},
+	{id: sectionAppearance, labelKey: "settings.settings.section.appearance", icon: icons.Lucide("palette"), rows: []settingEntry{
+		{titleKey: "settings.themePicker.title", alsoKey: "settings.themePicker.searchWords", key: themeSettingKey},
+		{titleKey: "settings.appearanceSettings.zoomTitle", key: zoomKey},
+		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey},
+		{titleKey: "settings.fontSetting.title", alsoKey: "settings.fontSetting.searchWords", key: terminalFontKey},
+		{titleKey: "settings.appearanceSettings.textSizeTitle", key: terminalFontSizeKey},
+		{titleKey: "settings.footerSettings.title", alsoKey: "settings.footerSettings.searchWords", key: footerLayoutKey},
+		{titleKey: "settings.footerSettings.ceilingTitle", alsoKey: "settings.footerSettings.ceilingSearchWords", key: costBudgetKey},
 	}},
-	{id: sectionHotkeys, label: "Hotkeys", icon: icons.Lucide("keyboard"), rows: hotkeyEntries()},
-	{id: sectionProviders, label: "Providers", icon: icons.Lucide("blocks"),
+	{id: sectionHotkeys, labelKey: "settings.settings.section.hotkeys", icon: icons.Lucide("keyboard"), rows: hotkeyEntries()},
+	{id: sectionProviders, labelKey: "settings.settings.section.providers", icon: icons.Lucide("blocks"),
 		rows: providerEntries(), unported: providerBinEntries()},
-	{id: sectionSandbox, label: "Sandbox", icon: icons.Lucide("shield-check"), rows: []settingEntry{
-		{title: confinedTitle, also: confinedAlso, key: sandboxLadderKey},
-		{title: sshTitle, also: sshAlso, key: sshAgentKey, scope: scopeOverridable, group: carryTitle},
-		{title: ghTitle, also: ghAlso, key: ghTokenKey, scope: scopeOverridable, group: carryTitle},
+	{id: sectionSandbox, labelKey: "settings.settings.section.sandbox", icon: icons.Lucide("shield-check"), rows: []settingEntry{
+		{titleKey: "settings.sandboxSettings.confinedTitle", alsoKey: "settings.sandboxSettings.confinedSearchWords", key: sandboxLadderKey},
+		{titleKey: "settings.sandboxSettings.sshTitle", alsoKey: "settings.sandboxSettings.sshSearchWords", key: sshAgentKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
+		{titleKey: "settings.sandboxSettings.ghTitle", alsoKey: "settings.sandboxSettings.ghSearchWords", key: ghTokenKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
 	}, unported: sandboxRungEntries()},
-	{id: sectionVersionControl, label: "Version Control", icon: icons.Lucide("git-branch"), rows: []settingEntry{
-		{title: vcsToolsTitle, also: vcsToolsAlso, key: vcsToolsKey},
-		{title: vcsAccountTitle, also: vcsAccountAlso, key: vcsAccountKey, scope: scopeProjectOnly},
+	{id: sectionVersionControl, labelKey: "settings.settings.section.versionControl", icon: icons.Lucide("git-branch"), rows: []settingEntry{
+		{titleKey: "settings.vcsToolsSetting.title", alsoKey: "settings.vcsToolsSetting.searchWords", key: vcsToolsKey},
+		{titleKey: "settings.versionControlSettings.account", alsoKey: "settings.versionControlSettings.accountSearchWords", key: vcsAccountKey, scope: scopeProjectOnly},
 	}},
-	{id: sectionEditor, label: "Editor", icon: icons.Lucide("code"), rows: []settingEntry{
-		{title: editorFontTitle, also: editorFontAlso, key: editorFontKey},
-		{title: editorSizeTitle, also: editorSizeAlso, key: editorFontSizeKey},
-		{title: hideWhitespaceTitle, also: hideWhitespaceAlso, key: hideWhitespaceKey},
-		{title: diffLayoutTitle, also: diffLayoutAlso, key: diffLayoutKey},
+	{id: sectionEditor, labelKey: "settings.settingsIndex.sectionEditor", icon: icons.Lucide("code"), rows: []settingEntry{
+		{titleKey: "settings.settingsAppearance.editorFontTitle", alsoKey: "settings.settingsAppearance.editorFontSearchWords", key: editorFontKey},
+		{titleKey: "settings.settingsAppearance.editorSizeTitle", alsoKey: "settings.settingsAppearance.editorSizeSearchWords", key: editorFontSizeKey},
+		{titleKey: "settings.settingsIndex.hideWhitespaceTitle", alsoKey: "settings.settingsIndex.hideWhitespaceSearchWords", key: hideWhitespaceKey},
+		{titleKey: "settings.diffLayoutSetting.title", alsoKey: "settings.diffLayoutSetting.searchWords", key: diffLayoutKey},
 	}},
-	{id: sectionUpdates, label: "Updates", icon: icons.Lucide("download"), footer: true, rows: []settingEntry{
-		{title: updatesAppTitle, also: updatesAppAlso, key: updatesAppKey},
-		{title: updatesNotesTitle, also: updatesNotesAlso, key: updatesNotesKey},
-		{title: pluginTitle, also: pluginAlso, key: updatesPluginKey},
+	{id: sectionUpdates, labelKey: "settings.settings.section.updates", icon: icons.Lucide("download"), footer: true, rows: []settingEntry{
+		{titleKey: "settings.updatesSettings.applicationTitle", alsoKey: "settings.updatesSettings.applicationSearchWords", key: updatesAppKey},
+		{titleKey: "settings.updatesSettings.whatsNewTitle", alsoKey: "settings.updatesSettings.whatsNewSearchWords", key: updatesNotesKey},
+		{titleKey: "settings.pluginSetting.title", alsoKey: "settings.pluginSetting.searchWords", key: updatesPluginKey},
 	}},
-	{id: sectionHelp, label: "Help", icon: icons.Lucide("circle-question-mark"), footer: true, rows: []settingEntry{
-		{title: helpBugTitle, also: helpBugAlso, key: helpBugKey},
-		{title: helpLogTitle, also: helpLogAlso, key: helpLogKey},
-		{title: helpAboutTitle, also: helpAboutAlso, key: helpAboutKey},
+	{id: sectionHelp, labelKey: "settings.settings.section.help", icon: icons.Lucide("circle-question-mark"), footer: true, rows: []settingEntry{
+		{titleKey: "settings.helpSettings.bugTitle", alsoKey: "settings.helpSettings.bugSearchWords", key: helpBugKey},
+		{titleKey: "settings.helpSettings.logTitle", alsoKey: "settings.settingsHelp.logSearchWords", key: helpLogKey},
+		{titleKey: "settings.helpSettings.aboutTitle", alsoKey: "settings.helpSettings.aboutSearchWords", key: helpAboutKey},
 	}},
 }
 
@@ -192,7 +172,7 @@ type settingHit struct {
 // path is settings-index.ts hitPath, the line a result shows above its
 // title: the section, then the group; "" when it would repeat the title.
 func (h settingHit) path() string {
-	label := sectionByID(h.section).label
+	label := sectionByID(h.section).label()
 	switch {
 	case h.group != "":
 		return label + " › " + h.group
@@ -243,7 +223,7 @@ func searchSettings(query string, providers ...launchProvider) []settingHit {
 		}
 	}
 	for _, s := range settingsSections {
-		consider(settingHit{section: s.id, title: s.label}, "")
+		consider(settingHit{section: s.id, title: s.label()}, "")
 	}
 	sort.SliceStable(found, func(i, j int) bool { return found[i].rank < found[j].rank })
 	hits := make([]settingHit, len(found))

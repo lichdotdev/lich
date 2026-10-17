@@ -96,6 +96,13 @@ built from a pinned Ghostty commit.
   fix made in the web window until the cutover lands in both. The interface language is the global setting
   `lich.appearance.language` (the system's language before anyone picks one), which the web window writes
   beside its localStorage copy, so a language picked there is the one the native window opens in.
+- **Chinese needs a font the window may not have.** None of the faces it ships draws Han, so its interface
+  shaper adds an installed Chinese face (found through fontconfig on Linux, Microsoft YaHei on Windows,
+  PingFang SC or Hiragino Sans GB on macOS) whatever the language. With none installed, choosing 简体中文, or
+  opening in it, first offers to download Noto Sans SC (Regular, Medium and Bold, about 25 MB, pinned and
+  hash-checked in `native/fonts/download.go`) into lich's cache folder (`<user cache dir>/lich/fonts`); the
+  language switches only once the font loads, and a launch that would open in Chinese opens in English until
+  then.
 
 ## How the native window catches up
 

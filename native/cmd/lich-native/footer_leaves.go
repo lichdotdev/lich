@@ -19,8 +19,6 @@ import (
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n.
-
 const (
 	// footerDisabledOpacity is FooterButton's disabled:opacity-40.
 	footerDisabledOpacity = 0.4

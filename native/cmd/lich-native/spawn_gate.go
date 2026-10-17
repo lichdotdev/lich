@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -150,7 +151,7 @@ func (g *spawnGate) decide(ctx context.Context, s sessionView) {
 	case spawnPark:
 		g.mu.Unlock()
 		g.park(s.ID)
-		g.notify(ui.Toast{Title: toastCheckoutGone})
+		g.notify(ui.Toast{Title: i18n.T("session.spawnGate.checkoutGone")})
 		g.invalidate()
 		return
 	case spawnAsk:
@@ -163,7 +164,7 @@ func (g *spawnGate) decide(ctx context.Context, s sessionView) {
 	}
 	g.mu.Unlock()
 	if verdict == spawnFresh {
-		g.notify(ui.Toast{Title: toastConversationGone})
+		g.notify(ui.Toast{Title: i18n.T("session.spawnGate.conversationGone")})
 	}
 	g.invalidate()
 }
@@ -203,7 +204,7 @@ func (g *spawnGate) answer(ctx context.Context, choice string, remember bool) {
 		return
 	}
 	if err := g.probe.SetSetting(ctx, restoreKey(s.Kind), "", choice); err != nil {
-		g.notify(failure(toastRememberFailed, err))
+		g.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.host.rememberFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 	}
 }
 

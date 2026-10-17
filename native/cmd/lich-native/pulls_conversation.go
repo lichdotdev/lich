@@ -9,41 +9,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
-
-// ponytail: English until the native window has i18n (pulls.pullsConversation,
-// pulls.reviewThread).
-const (
-	talkLoading       = "Reading the conversation…"
-	talkFailed        = "Couldn’t read the conversation: %s"
-	talkEmpty         = "Nothing said yet."
-	talkResolvedOne   = "1 resolved thread"
-	talkResolvedMany  = "%d resolved threads"
-	talkCommentOn     = "Comment on the pull request"
-	talkCommentHint   = "Something about the pull request as a whole"
-	talkComment       = "Comment"
-	talkSending       = "Sending…"
-	talkLine          = "line %d"
-	talkLines         = "lines %d-%d"
-	talkOutdated      = "outdated"
-	talkResolved      = "Resolved"
-	talkResolve       = "Resolve"
-	talkReopen        = "Reopen"
-	talkReply         = "Reply"
-	talkReplyHint     = "Reply to this thread"
-	talkCancel        = "Cancel"
-	talkPendingHead   = "Pending review"
-	talkPendingNote   = "Sent when you submit the review."
-	talkDiscard       = "Discard"
-	talkSomeone       = "someone"
-	talkVerdictFormat = "%s %s"
-)
-
-var talkVerdicts = map[string]string{
-	"APPROVED": "approved", "CHANGES_REQUESTED": "requested changes", "COMMENTED": "commented", "DISMISSED": "review dismissed",
-}
 
 // talkState is the Conversation tab's widgets, by thread id where a thread
 // owns one.
@@ -97,15 +66,17 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d lichc
 	read := p.store.conversation(p.project.Path, d.Number)
 	switch {
 	case read.val == nil && read.err != "":
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, fmt.Sprintf(talkFailed, read.err)) }}
+		return []layout.Widget{func(gtx C) D {
+			return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.readFailed", i18n.Args{"error": read.err}))
+		}}
 	case read.val == nil:
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, talkLoading) }}
+		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.loading")) }}
 	}
 	items, resolved := conversationTimeline(read.val)
 	now := gtx.Now
 	rows := v.pendingRows(th, v.pendingOf(d.URL))
 	if len(items) == 0 && len(resolved) == 0 {
-		rows = append(rows, func(gtx C) D { return panelNotice(gtx, th, talkEmpty) })
+		rows = append(rows, func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.nothingYet")) })
 	}
 	for _, it := range items {
 		switch {
@@ -130,7 +101,7 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d lichc
 }
 
 func verdictLine(r lichclient.PRReview) string {
-	if v, ok := talkVerdicts[r.State]; ok {
+	if v, ok := reviewVerdict(r.State); ok {
 		return v
 	}
 	return strings.ToLower(r.State)
@@ -158,7 +129,7 @@ func (v *pullView) talkEntry(th *ui.Theme, key, author, verdict, body, date stri
 // byline is Byline: the author, what they did, and how long ago.
 func byline(gtx C, th *ui.Theme, author, verdict, date string, now time.Time) D {
 	if author == "" {
-		author = talkSomeone
+		author = i18n.T("pulls.byline.someone")
 	}
 	children := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, author).Weight(font.Medium).Layout)}
 	if verdict != "" {
@@ -215,10 +186,11 @@ func threadHeader(gtx C, th *ui.Theme, t lichclient.PRReviewThread, open bool) D
 	if open {
 		chevron = icPullDown
 	}
-	anchor := fmt.Sprintf(talkLine, t.Line)
-	if t.StartLine > 0 && t.StartLine != t.Line {
-		anchor = fmt.Sprintf(talkLines, t.StartLine, t.Line)
+	start := t.StartLine
+	if start == t.Line {
+		start = 0
 	}
+	anchor := lineAnchor(start, t.Line)
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 		ui.Gap(1.5),
@@ -227,10 +199,12 @@ func threadHeader(gtx C, th *ui.Theme, t lichclient.PRReviewThread, open bool) D
 		}),
 	}
 	if t.IsOutdated {
-		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, talkOutdated).In(th.ToneWait).Layout))
+		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsConversation.outdated")).In(th.ToneWait).Layout))
 	}
 	if t.IsResolved {
-		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return metaGlyph(gtx, th, icPullCheck, talkResolved, th.TonePass) }))
+		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
+			return metaGlyph(gtx, th, icPullCheck, i18n.T("pulls.reviewThread.resolved"), th.TonePass)
+		}))
 	}
 	children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, fmt.Sprint(len(t.Comments))).Muted().Layout))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
@@ -259,6 +233,15 @@ func (v *pullView) threadBody(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.
 		return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return v.threadActions(gtx, th, d, t, act) })
 	}))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
+}
+
+// lineAnchor names the line a comment sits on, or the lines it spans from a
+// positive start.
+func lineAnchor(start, line int) string {
+	if start > 0 {
+		return i18n.T("pulls.pullsConversation.lines", i18n.Args{"start": start, "end": line})
+	}
+	return i18n.T("pulls.pullsConversation.line", i18n.Args{"line": line})
 }
 
 // hunkLines is ThreadHunk's tail: the last lines of GitHub's hunk, the ones
@@ -297,11 +280,11 @@ func (v *pullView) threadActions(gtx C, th *ui.Theme, d lichclient.PRDetail, t l
 		return v.replyBox(gtx, th, d, t, act)
 	}
 	busy := v.busyNow()
-	label := talkResolve
+	label := i18n.T("pulls.reviewThread.resolve")
 	if t.IsResolved {
-		label = talkReopen
+		label = i18n.T("pulls.reviewThread.reopen")
 	}
-	replyB := th.Button(reply, talkReply)
+	replyB := th.Button(reply, i18n.T("pulls.reviewThread.reply"))
 	replyB.Variant, replyB.Size = ui.VariantOutline, ui.SizeXS
 	resolveB := th.Button(resolve, label)
 	resolveB.Variant, resolveB.Size, resolveB.Disabled = ui.VariantGhost, ui.SizeXS, busy == "resolve:"+t.ID
@@ -322,17 +305,17 @@ func (v *pullView) replyBox(gtx C, th *ui.Theme, d lichclient.PRDetail, t lichcl
 		act.reply = &threadReply{commentID: t.Comments[len(t.Comments)-1].ID, body: body, thread: t.ID}
 	}
 	busy := v.busyNow() == "reply:"+t.ID
-	label := talkReply
+	label := i18n.T("pulls.reviewThread.reply")
 	if busy {
-		label = talkSending
+		label = i18n.T("pulls.commentBox.sending")
 	}
 	sendB := th.Button(send, label)
 	sendB.Size, sendB.Disabled = ui.SizeXS, body == "" || busy
-	cancelB := th.Button(cancel, talkCancel)
+	cancelB := th.Button(cancel, i18n.T("common.action.cancel"))
 	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			ta := th.Textarea(ed, talkReplyHint)
+			ta := th.Textarea(ed, i18n.T("pulls.reviewThread.replyPlaceholder"))
 			ta.Resize = &s.fieldOf(t.ID).resize
 			return ta.Layout(gtx)
 		}),
@@ -348,10 +331,7 @@ func (v *pullView) resolvedToggle(gtx C, th *ui.Theme, n int) D {
 	if s.resolvedTap.Clicked(gtx) {
 		s.showResolved.Value = !s.showResolved.Value
 	}
-	label := talkResolvedOne
-	if n != 1 {
-		label = fmt.Sprintf(talkResolvedMany, n)
-	}
+	label := i18n.T("pulls.pullsConversation.resolved", i18n.Args{"count": n})
 	chevron := icPullRight
 	if s.showResolved.Value {
 		chevron = icPullDown
@@ -375,18 +355,18 @@ func (v *pullView) commentBox(gtx C, th *ui.Theme, act *pullsAction) D {
 		act.comment = body
 	}
 	busy := v.busyNow() == "comment"
-	label := talkComment
+	label := i18n.T("pulls.pullsConversation.comment")
 	if busy {
-		label = talkSending
+		label = i18n.T("pulls.commentBox.sending")
 	}
 	send := th.Button(&s.commentSend, label)
 	send.Size, send.Disabled = ui.SizeSM, body == "" || busy
 	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(5), Bottom: ui.Space(5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(sectionHeading(th, talkCommentOn)),
+			layout.Rigid(sectionHeading(th, i18n.T("pulls.pullsConversation.commentOn"))),
 			ui.VGap(2),
 			layout.Rigid(func(gtx C) D {
-				ta := th.Textarea(&s.comment, talkCommentHint)
+				ta := th.Textarea(&s.comment, i18n.T("pulls.pullsConversation.commentPlaceholder"))
 				ta.Resize = &s.commentSize
 				return ta.Layout(gtx)
 			}),
@@ -406,9 +386,9 @@ func (v *pullView) pendingRows(th *ui.Theme, r *pendingReview) []layout.Widget {
 	rows := []layout.Widget{func(gtx C) D {
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-				layout.Rigid(sectionHeading(th, talkPendingHead)),
+				layout.Rigid(sectionHeading(th, i18n.T("pulls.pullsConversation.pendingHead"))),
 				ui.Gap(2),
-				layout.Rigid(th.Text(ui.TextXS, talkPendingNote).Muted().Layout),
+				layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsConversation.pendingNote")).Muted().Layout),
 			)
 		})
 	}}
@@ -422,11 +402,8 @@ func (v *pullView) pendingRows(th *ui.Theme, r *pendingReview) []layout.Widget {
 			if discard.Clicked(gtx) {
 				r.remove(i)
 			}
-			anchor := fmt.Sprintf(talkLine, c.Line)
-			if c.StartLine > 0 {
-				anchor = fmt.Sprintf(talkLines, c.StartLine, c.Line)
-			}
-			b := th.Button(discard, talkDiscard)
+			anchor := lineAnchor(c.StartLine, c.Line)
+			b := th.Button(discard, i18n.T("pulls.pullsConversation.discard"))
 			b.Size, b.Variant = ui.SizeXS, ui.VariantGhost
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{}.Layout(gtx,

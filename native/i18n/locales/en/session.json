@@ -54,5 +54,16 @@
       "one": "indexing {count} session",
       "other": "indexing {count} sessions"
     }
+  },
+  "age": {
+    "second": "{count}s",
+    "minute": "{count}m",
+    "hour": "{count}h",
+    "ago": {
+      "minute": "{count}m ago",
+      "hour": "{count}h ago",
+      "day": "{count}d ago",
+      "week": "{count}w ago"
+    }
   }
 }

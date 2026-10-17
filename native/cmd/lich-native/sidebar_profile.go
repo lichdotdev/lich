@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"image"
 	"log"
 
@@ -10,15 +9,10 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (claudeProfile.continueIn*).
-const (
-	continueInLabel = "Continue in"
-	continueInHint  = "Same conversation, another login"
 )
 
 var (
@@ -90,7 +84,7 @@ func (m *model) profileNameOf(kind, profile string) string {
 // five-hour usage, a spent one in the destructive color and still clickable,
 // since moving to it is what the user may want while it resets.
 func continueInItem(th *ui.Theme, sv *sessionView, act *sidebarAction) ui.MenuEntry {
-	sub := []ui.MenuEntry{{Kind: ui.MenuLabel, Label: continueInHint}}
+	sub := []ui.MenuEntry{{Kind: ui.MenuLabel, Label: i18n.T("sidebar.sidebarProfile.continueInHint")}}
 	for _, t := range sv.continueIn {
 		sub = append(sub, ui.MenuEntry{
 			Label: t.name, Shortcut: t.usage, ShortcutDestructive: t.limited,
@@ -98,7 +92,7 @@ func continueInItem(th *ui.Theme, sv *sessionView, act *sidebarAction) ui.MenuEn
 			OnClick: func() { act.continueIn = continueRequest{id: sv.ID, slug: t.slug} },
 		})
 	}
-	return ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: continueInLabel, Icon: icContinueIn, Sub: sub}
+	return ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sidebarProfile.continueIn"), Icon: icContinueIn, Sub: sub}
 }
 
 // profileChip is the outlined name of the profile a session runs in.
@@ -176,18 +170,10 @@ func (m *model) resumeProfileLine(s lichclient.Session) string {
 	}
 	p, ok := book.find(s.Profile)
 	if !ok || p.Email == "" {
-		return fmt.Sprintf(resumeInProfileNoMail, book.nameOf(s.Profile))
+		return i18n.T("sidebar.sidebarProfile.resumesInNoEmail", i18n.Args{"profile": book.nameOf(s.Profile)})
 	}
-	return fmt.Sprintf(resumeInProfile, p.Name, p.Email)
+	return i18n.T("sidebar.sidebarProfile.resumesIn", i18n.Args{"profile": p.Name, "email": p.Email})
 }
-
-// ponytail: English until the native window has i18n.
-const (
-	toastProfileGone     = "%s was started in a profile that no longer exists"
-	toastProfileGoneDesc = "Its conversation cannot be resumed. Start a new session in this project's profile instead."
-	toastProfileStartNew = "Start new"
-	toastProfileDismiss  = "Dismiss"
-)
 
 // profileGone offers a new session in the project's own profile for a card
 // whose profile was deleted: the card's row keeps its mark, so it could never
@@ -195,10 +181,10 @@ const (
 func (u *window) profileGone(s sessionView) {
 	u.toaster.Show(ui.Toast{
 		ID: "profile-gone-" + s.ID, Variant: ui.ToastWarning, Duration: ui.ToastForever,
-		Title:       fmt.Sprintf(toastProfileGone, s.Label),
-		Description: toastProfileGoneDesc,
-		Action:      &ui.ToastButton{Label: toastProfileStartNew, OnClick: func() { go u.startNewInProjectProfile(s) }},
-		Cancel:      &ui.ToastButton{Label: toastProfileDismiss},
+		Title:       i18n.T("sidebar.sidebarProfile.goneTitle", i18n.Args{"label": s.Label}),
+		Description: i18n.T("sidebar.sidebarProfile.goneDescription"),
+		Action:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.startNew"), OnClick: func() { go u.startNewInProjectProfile(s) }},
+		Cancel:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.dismiss")},
 	})
 }
 

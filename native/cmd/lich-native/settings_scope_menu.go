@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"image"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 )
 
@@ -41,7 +41,7 @@ func projectIDs(projects []settingsProject) []string {
 // "Scope" is its tooltip; the menu it opens says the rest.
 func (s *settingsScreen) scopeButton(gtx C, th *ui.Theme) D {
 	n := &s.nav
-	tip := th.Tooltip(s.root, &n.scopeTip, scopeLabelGlobal)
+	tip := th.Tooltip(s.root, &n.scopeTip, i18n.T("settings.settingsNav.scopeLabel"))
 	tip.Side = ui.SideBottom
 	return tip.Layout(gtx, func(gtx C) D {
 		return n.scopeHover.Layout(gtx, func(gtx C) D {
@@ -54,7 +54,7 @@ func (s *settingsScreen) scopeButton(gtx C, th *ui.Theme) D {
 			}
 			insetBorder(gtx, size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
 			on := th.On(bg)
-			value := scopeGlobal
+			value := i18n.T("settings.settingsNav.scopeGlobal")
 			lead := func(gtx C) D { return icScopeGlobal.Layout(gtx, ui.Space(4), on.MutedForeground) }
 			if p, ok := s.scopeProject(); ok {
 				value = p.name
@@ -94,11 +94,11 @@ func (s *settingsScreen) scopeMenu(gtx C, th *ui.Theme, values scopedValues) D {
 		layout.Rigid(func(gtx C) D {
 			return s.scopeRow(gtx, th, "", func(gtx C, th *ui.Theme) D {
 				return icScopeGlobal.Layout(gtx, scopeMenuIcon, th.MutedForeground)
-			}, scopeGlobal, "")
+			}, i18n.T("settings.settingsNav.scopeGlobal"), "")
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx,
-				th.Text(ui.TextXS, scopeOpenProjects).Muted().Layout)
+				th.Text(ui.TextXS, i18n.T("settings.settingsNav.openProjects")).Muted().Layout)
 		}),
 	}
 	for _, p := range s.projects {
@@ -114,13 +114,10 @@ func (s *settingsScreen) scopeMenu(gtx C, th *ui.Theme, values scopedValues) D {
 var scopeMenuIcon = ui.Space(3.75)
 
 func changesLabel(n int) string {
-	switch n {
-	case 0:
+	if n == 0 {
 		return ""
-	case 1:
-		return scopeChangeOne
 	}
-	return fmt.Sprintf(scopeChangeMany, n)
+	return i18n.T("settings.settingsNav.changes", i18n.Args{"count": n})
 }
 
 // scopeRow is one menu row: lead, the name, the change count in amber and

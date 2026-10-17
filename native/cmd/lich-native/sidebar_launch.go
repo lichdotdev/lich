@@ -1,22 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"slices"
+
+	"github.com/omartelo/lich/native/i18n"
 )
 
 // providerDefaultKey is providers-store.ts defaultKey (store.providerDefaultKey
 // in Go): the provider an implicit new session spawns, globally or per project.
 const providerDefaultKey = "provider.default"
-
-// ponytail: English until the native window has i18n.
-const (
-	folderLaunchTitle   = "New session in %s"
-	folderLaunchOnTitle = "New session in %s, on %s"
-	newTerminalLabel    = "New Terminal"
-	terminalLabel       = "Terminal"
-	worktreeLabel       = "Worktree"
-)
 
 // launchProvider is providers-store.ts ProviderState, trimmed to what the
 // launch menu and the implicit kind read.
@@ -88,7 +80,7 @@ type launchCheckout struct {
 // checkout opens there and says so; with more, each checkout is a submenu.
 func folderLaunchHeading(folder string, checkouts []launchCheckout) string {
 	if len(checkouts) == 1 {
-		return fmt.Sprintf(folderLaunchOnTitle, folder, checkouts[0].label)
+		return i18n.T("sidebar.folderLaunchMenuItems.newSessionInOn", i18n.Args{"folder": folder, "checkout": checkouts[0].label})
 	}
-	return fmt.Sprintf(folderLaunchTitle, folder)
+	return i18n.T("sidebar.folderLaunchMenuItems.newSessionIn", i18n.Args{"folder": folder})
 }

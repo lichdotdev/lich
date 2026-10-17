@@ -87,5 +87,24 @@
     "addToReview": "添加到审查",
     "sessionPlaceholder": "这里应该改什么？它会连同其他内容一起发送给会话。",
     "reviewPlaceholder": "留下评论。提交审查时一并发送。"
+  },
+  "dockReviewBody": {
+    "split": "并排",
+    "unified": "统一"
+  },
+  "binaryState": {
+    "open": "用默认应用打开",
+    "reveal": "在文件夹中显示",
+    "pdf": "PDF 文档",
+    "pdfHint": "用桌面上阅读 PDF 的应用打开。",
+    "openFailed": "无法打开 {name}",
+    "revealFailed": "无法在文件夹中显示 {name}"
+  },
+  "dockReviewBinary": {
+    "viewOnGitHub": "在 GitHub 上查看"
+  },
+  "blobPreview": {
+    "tooManyPixels": "{width} × {height} 超过了 {megapixels} MP 的预览上限",
+    "undecodable": "无法解码此图片：{error}"
   }
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
@@ -9,20 +8,8 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	newFolderTitle       = "New folder"
-	newFolderDescOne     = "Files this session under a name of your own. It stays open, and its checkout does not change."
-	newFolderDescOther   = "Files these %d sessions under a name of your own. They stay open, and their checkouts do not change."
-	newFolderName        = "Name"
-	newFolderPlaceholder = "Design system"
-	newFolderExists      = " already exists, so this files into it."
-	newFolderMoveHere    = "Move here"
-	newFolderCreate      = "Create"
-	newFolderCancel      = "Cancel"
 )
 
 // folderNaming is NewFolderDialog's state: the sessions a new folder will
@@ -84,15 +71,15 @@ func (s *sidebar) layoutFolderDialog(gtx C, th *ui.Theme, existing []string) fil
 		n.focus = false
 	}
 	on := th.On(th.Popover)
-	cancel := on.Button(&n.cancel, newFolderCancel)
+	cancel := on.Button(&n.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
-	label := newFolderCreate
+	label := i18n.T("common.action.create")
 	if known {
-		label = newFolderMoveHere
+		label = i18n.T("sidebar.newFolderDialog.moveHere")
 	}
 	create := on.Button(&n.create, label)
 	create.Disabled = !ok
-	d := th.Dialog(&n.dialog, n.open, newFolderTitle, folderDescription(len(n.ids)))
+	d := th.Dialog(&n.dialog, n.open, i18n.T("sidebar.newFolderDialog.title"), folderDescription(len(n.ids)))
 	d.Body = func(gtx C) D { return folderField(gtx, on, &n.name, name, known) }
 	d.Actions = []layout.Widget{cancel.Layout, create.Layout}
 	if d.Layout(gtx) {
@@ -102,10 +89,7 @@ func (s *sidebar) layoutFolderDialog(gtx C, th *ui.Theme, existing []string) fil
 }
 
 func folderDescription(count int) string {
-	if count == 1 {
-		return newFolderDescOne
-	}
-	return fmt.Sprintf(newFolderDescOther, count)
+	return i18n.T("sidebar.newFolderDialog.description", i18n.Args{"count": count})
 }
 
 // folderField is `flex flex-col gap-1.5`: the label, the field, and the note
@@ -113,15 +97,17 @@ func folderDescription(count int) string {
 func folderField(gtx C, th *ui.Theme, editor *widget.Editor, name string, known bool) D {
 	editor.Submit = true
 	children := []layout.FlexChild{
-		layout.Rigid(th.Label(newFolderName).Layout),
+		layout.Rigid(th.Label(i18n.T("sidebar.newFolderDialog.name")).Layout),
 		ui.VGap(1.5),
-		layout.Rigid(th.Input(editor, newFolderPlaceholder).Layout),
+		layout.Rigid(th.Input(editor, i18n.T("sidebar.newFolderDialog.placeholder")).Layout),
 	}
 	if known {
-		rest := th.Text(ui.TextXS, newFolderExists).Muted()
+		before, after := aroundValue("sidebar.newFolderDialog.exists", "name")
+		rest := th.Text(ui.TextXS, after).Muted()
 		rest.MaxLines = 0
 		children = append(children, ui.VGap(1.5), layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
+				layout.Rigid(th.Text(ui.TextXS, before).Muted().Layout),
 				layout.Rigid(th.Text(ui.TextXS, name).Weight(font.Medium).Layout),
 				layout.Flexed(1, rest.Layout),
 			)

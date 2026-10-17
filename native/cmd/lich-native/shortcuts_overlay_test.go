@@ -10,7 +10,7 @@ func TestShortcutGroupsFollowTheWebsGroupsAndEndOnThePassthrough(t *testing.T) {
 		titles = append(titles, g.title)
 		rows += len(g.rows)
 	}
-	want := []string{"Sessions", "View", "App", hotkeyPassthroughTitle}
+	want := []string{"Sessions", "View", "App", "Passed through to the agent"}
 	if len(titles) != len(want) {
 		t.Fatalf("groups = %v, want %v", titles, want)
 	}

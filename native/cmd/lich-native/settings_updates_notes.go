@@ -14,23 +14,20 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n (shell.patchNotesDialog).
 const (
-	notesDialogTitle   = "What's new in lich v%s"
-	notesViewChangelog = "View full changelog"
-	notesGotIt         = "Got it"
-	notesLeadCh        = 22 // max-w-[22ch] on the headline
-	notesLeadBodyCh    = 56
-	notesItemBodyCh    = 60
-	notesBodyHeight    = 60 // max-h-[60vh], as a percentage of what the panel is given
-	notesSpaceEm       = 0.27
-	notesCodeEm        = 0.85 // text-[0.85em] on a code span
-	notesCountSep      = " · "
+	notesLeadCh     = 22 // max-w-[22ch] on the headline
+	notesLeadBodyCh = 56
+	notesItemBodyCh = 60
+	notesBodyHeight = 60 // max-h-[60vh], as a percentage of what the panel is given
+	notesSpaceEm    = 0.27
+	notesCodeEm     = 0.85 // text-[0.85em] on a code span
+	notesCountSep   = " · "
 )
 
 var (
@@ -249,9 +246,9 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 		s.openExternal(helpRepoURL + updatesReleaseTagAt + notes.Version)
 	}
 	on := th.On(th.Popover)
-	got := on.Button(&v.gotIt, notesGotIt)
+	got := on.Button(&v.gotIt, i18n.T("shell.patchNotesDialog.gotIt"))
 	got.Size = ui.SizeSM
-	dlg := th.Dialog(&v.dialog, v.open && (s.open || v.startup), fmt.Sprintf(notesDialogTitle, notes.Version), notesCounts(notes.Groups))
+	dlg := th.Dialog(&v.dialog, v.open && (s.open || v.startup), i18n.T("shell.patchNotesDialog.title", i18n.Args{"version": "v" + notes.Version}), notesCounts(notes.Groups))
 	dlg.MaxWidth, dlg.HideClose = ui.DialogWidthXL, true
 	dlg.Body = func(gtx C) D { return v.body(gtx, on, notes) }
 	dlg.Actions = []layout.Widget{func(gtx C) D {
@@ -295,7 +292,7 @@ func (v *patchNotesView) changelogLink(gtx C, th *ui.Theme) D {
 			ink = th.Foreground
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(notesSmall, notesViewChangelog).In(ink).Layout),
+			layout.Rigid(th.Text(notesSmall, i18n.T("shell.patchNotesDialog.viewChangelog")).In(ink).Layout),
 			ui.Gap(1),
 			layout.Rigid(func(gtx C) D { return icNotesChangelog.Layout(gtx, unit.Dp(14), ink) }),
 		)

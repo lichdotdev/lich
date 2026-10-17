@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"math"
 	"sync"
-)
 
-// English until the native window has i18n.
+	"github.com/omartelo/lich/native/i18n"
+)
 
 // costReadoutKey is internal/store's costReadoutKey: the global flag that
 // turns the per-session cost readout on, and with it transcript pricing.
 const costReadoutKey = "usage.cost"
 
-var costMissReason = map[string]string{
-	"mixed-models":   "This conversation switched models, so lich cannot price it.",
-	"unpriced-model": "No price for this model yet — lich needs the network to fetch one.",
+// costMissReasonKeys are the catalog keys of why a session has no cost,
+// keyed by the reason the backend names.
+var costMissReasonKeys = map[string]string{
+	"mixed-models":   "session.cost.mixedModels",
+	"unpriced-model": "session.cost.unpricedModel",
 }
 
 // costGate is the window's copy of the cost-readout flag (cost-readout-store.ts).
@@ -129,17 +131,17 @@ func costReadout(u sessionUsage, budget float64) (footerReadout, bool) {
 	}
 	if u.CostUSD == nil {
 		return footerReadout{
-			Label: "Cost unavailable", Text: "$—",
-			Detail: []string{costMissReason[u.CostMiss]},
+			Label: i18n.T("shell.footerSession.costUnavailable"), Text: "$—",
+			Detail: []string{i18n.T(costMissReasonKeys[u.CostMiss])},
 		}, true
 	}
-	detail := []string{"API cost across this session's conversations. Subscription charges may differ."}
+	detail := []string{i18n.T("shell.footerSession.costNote")}
 	if budget > 0 {
-		line := fmt.Sprintf("%s of %s budget", formatCost(*u.CostUSD), formatCost(budget))
+		line := i18n.T("shell.footerSession.costOfBudget", i18n.Args{"cost": formatCost(*u.CostUSD), "budget": formatCost(budget)})
 		detail = append([]string{line}, detail...)
 	}
 	return footerReadout{
-		Label: "Session cost", Text: formatCost(*u.CostUSD),
+		Label: i18n.T("shell.footerSession.sessionCost"), Text: formatCost(*u.CostUSD),
 		Detail: detail, Tone: toneOf(budgetShare(*u.CostUSD, budget)),
 	}, true
 }

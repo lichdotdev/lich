@@ -221,7 +221,11 @@
     "creating": "Criando…",
     "open": "Abrir worktree",
     "fork": "Fazer fork",
-    "create": "Criar worktree"
+    "create": "Criar worktree",
+    "carryReused": "{name} já existia, então foi aberta como estava e suas alterações não commitadas ficaram onde estavam.",
+    "carryFailed": "A worktree foi aberta, mas não foi possível copiar suas alterações não commitadas: {error}",
+    "issueLost": "Não foi possível passar a issue para a sessão: {error}",
+    "neverPrompted": "a sessão nunca chegou a um prompt"
   },
   "worktreeCloseDialogs": {
     "runningTitle": "A sessão ainda está rodando",
@@ -263,5 +267,51 @@
     "setAtOpen": "Definido quando a sessão abriu; reabra-a para mudar.",
     "notMounted": "Não montados (symlinks): {paths}",
     "morePaths": "+{count} a mais"
+  },
+  "worktreeDialogView": {
+    "title": "Nova sessão em worktree",
+    "description": "Um checkout separado em sua própria branch, com uma sessão própria.",
+    "name": "Nome",
+    "namePlaceholder": "Vazio para um nome aleatório, palavras ou #issue",
+    "branchLine": "branch: {branch}",
+    "randomBranch": "um nome aleatório",
+    "opensSelected": "Abre a sessão da worktree selecionada.",
+    "from": "A partir de",
+    "searchBranches": "Buscar branches",
+    "noMatch": "Nenhuma branch corresponde.",
+    "local": "Locais",
+    "remote": "Remotas",
+    "opensSession": "abre a sessão dela",
+    "carry": "Levar alterações não commitadas",
+    "carryFiles": {
+      "one": "{count} arquivo deste checkout",
+      "other": "{count} arquivos deste checkout"
+    },
+    "create": "Criar",
+    "open": "Abrir"
+  },
+  "worktreeLogic": {
+    "checking": "Verificando o remoto…",
+    "behind": "{count} atrás de {upstream} · começa de {upstream}",
+    "notPushed": {
+      "one": "{count} commit não enviado · começa da {branch} local",
+      "other": "{count} commits não enviados · começa da {branch} local"
+    },
+    "unreachable": "Não foi possível alcançar {remote} · começa da {branch} local",
+    "unreachableRemote": "Não foi possível alcançar o remoto · começa da {branch} local",
+    "keepsChanges": "Começa da {branch} local para manter suas alterações"
+  },
+  "closeWorktree": {
+    "adopted": "O lich não criou a worktree em {path}. Remover apaga esse diretório, mas mantém a branch."
+  },
+  "sidebarProfile": {
+    "continueIn": "Continuar em",
+    "continueInHint": "Mesma conversa, outro login",
+    "goneTitle": "{label} foi iniciada em um perfil que não existe mais",
+    "goneDescription": "A conversa dela não pode ser retomada. Inicie uma nova sessão no perfil deste projeto.",
+    "startNew": "Iniciar nova",
+    "dismiss": "Dispensar",
+    "resumesIn": "Ela é retomada em {profile} · {email}, o perfil em que começou.",
+    "resumesInNoEmail": "Ela é retomada em {profile}, o perfil em que começou."
   }
 }

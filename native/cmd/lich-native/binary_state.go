@@ -6,25 +6,15 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (diff.binaryPreview).
-const (
-	binaryOpen        = "Open in default app"
-	binaryReveal      = "Show in folder"
-	binaryPDF         = "PDF document"
-	binaryPDFHint     = "Opens in the app your desktop reads PDFs with."
-	toastOpenFailed   = "Could not open %s"
-	toastRevealFailed = "Could not show %s in its folder"
 )
 
 // fileExits are the two buttons out of lich for one work-tree file.
@@ -39,7 +29,7 @@ func (e *fileExits) update(gtx C, client *lichclient.Client, notify func(ui.Toas
 	if e.open.Clicked(gtx) {
 		go func() {
 			if err := client.OpenFile(context.Background(), checkout, rel); err != nil {
-				notify(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(toastOpenFailed, name), Description: lichclient.ErrorText(err)})
+				notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
 			}
 		}()
 	}
@@ -47,16 +37,16 @@ func (e *fileExits) update(gtx C, client *lichclient.Client, notify func(ui.Toas
 		dir := filepath.Join(checkout, filepath.Dir(filepath.FromSlash(rel)))
 		go func() {
 			if err := client.OpenFolder(context.Background(), dir); err != nil {
-				notify(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(toastRevealFailed, name), Description: lichclient.ErrorText(err)})
+				notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.revealFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
 			}
 		}()
 	}
 }
 
 func (e *fileExits) layout(gtx C, th *ui.Theme) D {
-	open := th.Button(&e.open, binaryOpen)
+	open := th.Button(&e.open, i18n.T("diff.binaryState.open"))
 	open.Size = ui.SizeXS
-	reveal := th.Button(&e.reveal, binaryReveal)
+	reveal := th.Button(&e.reveal, i18n.T("diff.binaryState.reveal"))
 	reveal.Size, reveal.Variant = ui.SizeXS, ui.VariantOutline
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(open.Layout),

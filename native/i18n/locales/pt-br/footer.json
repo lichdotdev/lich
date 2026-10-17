@@ -39,5 +39,11 @@
     "clock": {
       "label": "Data e hora"
     }
+  },
+  "footerEditor": {
+    "previewHint": "Prévia · valores de exemplo"
+  },
+  "footerMenu": {
+    "customize": "Personalizar rodapé…"
   }
 }

@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strconv"
 	"sync"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -15,13 +15,6 @@ import (
 const (
 	desktopNotifyKey  = "lich.notifications.desktop"
 	finishedNotifyKey = "lich.notifications.finishedTurn"
-)
-
-// ponytail: English until the native window has i18n (shell.projectEvents).
-const (
-	notifyNeedsInput = "%s needs your input"
-	notifyFinished   = "%s has finished working"
-	notifyUnlabeled  = "A session"
 )
 
 // desktopNotice is what the desktop channel does with a status report
@@ -137,7 +130,7 @@ func (n *notifier) report(r statusReport) {
 	case noticeAsk:
 		n.invalidate()
 	case noticeNotify:
-		n.sink.show(noteFor(r, fmt.Sprintf(notifySummary(r.status), r.label)))
+		n.sink.show(noteFor(r, notifySummary(r.status, r.label)))
 	}
 }
 
@@ -159,11 +152,11 @@ func (n *notifier) closed(id string) {
 	n.mu.Unlock()
 }
 
-func notifySummary(status string) string {
+func notifySummary(status, label string) string {
 	if status == statusWaiting {
-		return notifyNeedsInput
+		return i18n.T("shell.projectEvents.needsInput", i18n.Args{"label": label})
 	}
-	return notifyFinished
+	return i18n.T("shell.projectEvents.finished", i18n.Args{"label": label})
 }
 
 func (n *notifier) snapshot() (notifyPrefs, bool) {

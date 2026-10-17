@@ -11,24 +11,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (shell.agentPluginGate,
-// update.plugin).
-const (
-	pluginGateTitle          = "Enable the agent integration"
-	pluginGateDesc           = "The lich plugin reports your sessions' status and titles to the app, refreshes their git status, and lets a restored session resume its conversation. Install it into the CLIs you use."
-	pluginGateNeedsHooks     = "needs /hooks to trust it"
-	pluginGateDontAsk        = "Don't ask again"
-	pluginGateNotNow         = "Not now"
-	pluginGateInstalling     = "Installing…"
-	pluginGateAvailable      = "lich plugin %s is available"
-	pluginGateUpdate         = "Update"
-	pluginGateLater          = "Later"
-	pluginGateIncompatInst   = "The lich plugin in %s is not supported by this lich. Install v%s, the release this lich supports."
-	pluginGateIncompatUpdate = "The lich plugin in %s is not supported by this lich. Update lich, or check that you are online to find a release this lich supports."
 )
 
 // The web's plugin-gate.ts prefs, global settings here.
@@ -90,9 +75,9 @@ func incompatibleMessage(version string, providers []lichclient.PluginStatus) st
 		installs[i] = fmt.Sprintf("%s (v%s)", p.Name, p.InstalledVersion)
 	}
 	if version == "" {
-		return fmt.Sprintf(pluginGateIncompatUpdate, strings.Join(installs, ", "))
+		return i18n.T("update.plugin.incompatibleUpdate", i18n.Args{"installs": strings.Join(installs, ", ")})
 	}
-	return fmt.Sprintf(pluginGateIncompatInst, strings.Join(installs, ", "), version)
+	return i18n.T("update.plugin.incompatibleInstall", i18n.Args{"installs": strings.Join(installs, ", "), "version": version})
 }
 
 // pluginGate is AgentPluginGate: once per start, after the first-run dialog
@@ -152,7 +137,7 @@ func (u *window) checkPlugin() {
 		t := ui.Toast{ID: lichclient.PluginIncompatibleEvent, Variant: ui.ToastWarning,
 			Title: incompatibleMessage(a.version, a.providers), Duration: ui.ToastForever}
 		if a.version != "" {
-			t.Action = &ui.ToastButton{Label: fmt.Sprintf(pluginInstallThis, a.version), OnClick: func() { go u.updatePlugins(a.providers) }}
+			t.Action = &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.installVersion", i18n.Args{"version": a.version}), OnClick: func() { go u.updatePlugins(a.providers) }}
 		}
 		u.toaster.Show(t)
 	case pluginActionInstall:
@@ -168,9 +153,9 @@ func (u *window) checkPlugin() {
 
 // pluginUpdateToast offers a's release, Later remembering it was declined.
 func (u *window) pluginUpdateToast(a pluginGateAction) ui.Toast {
-	return ui.Toast{Title: fmt.Sprintf(pluginGateAvailable, a.version), Duration: ui.ToastForever,
-		Action: &ui.ToastButton{Label: pluginGateUpdate, OnClick: func() { go u.updatePlugins(a.providers) }},
-		Cancel: &ui.ToastButton{Label: pluginGateLater, OnClick: func() { u.writePref(pluginUpdateDismissedKey, a.version) }}}
+	return ui.Toast{Title: i18n.T("shell.agentPluginGate.updateAvailable", i18n.Args{"version": a.version}), Duration: ui.ToastForever,
+		Action: &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.update"), OnClick: func() { go u.updatePlugins(a.providers) }},
+		Cancel: &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.later"), OnClick: func() { u.writePref(pluginUpdateDismissedKey, a.version) }}}
 }
 
 // updatePlugins runs one update per provider in order, stopping at the first
@@ -178,11 +163,11 @@ func (u *window) pluginUpdateToast(a pluginGateAction) ui.Toast {
 func (u *window) updatePlugins(providers []lichclient.PluginStatus) {
 	for _, p := range providers {
 		if err := u.client.UpdatePlugin(u.ctx, p.Provider); err != nil {
-			u.toaster.Show(failure(pluginUpdateFailed, err))
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("update.progress.updateFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 			return
 		}
 	}
-	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: pluginUpdated})
+	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("shell.agentPluginGate.updated")})
 }
 
 func (u *window) installPlugins(providers []string) {
@@ -195,16 +180,16 @@ func (u *window) installPlugins(providers []string) {
 	}()
 	for _, p := range providers {
 		if err := u.client.InstallPlugin(u.ctx, p); err != nil {
-			u.toaster.Show(failure(pluginInstallFailed, err))
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.agentPluginGate.installFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 			return
 		}
 	}
 	g.mu.Lock()
 	g.offer = nil
 	g.mu.Unlock()
-	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: pluginInstalled})
+	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("shell.agentPluginGate.installed")})
 	if slices.Contains(providers, codexKind) {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastInfo, Title: pluginCodexTrust, Duration: ui.ToastForever})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastInfo, Title: i18n.T("shell.agentPluginGate.codexTrust"), Duration: ui.ToastForever})
 	}
 }
 
@@ -253,16 +238,16 @@ func (u *window) layoutPluginGate(gtx C, th *ui.Theme) {
 		go u.installPlugins(picked)
 	}
 	on := th.On(th.Popover)
-	dontAsk, notNow := on.Button(&g.dontAsk, pluginGateDontAsk), on.Button(&g.notNow, pluginGateNotNow)
+	dontAsk, notNow := on.Button(&g.dontAsk, i18n.T("shell.agentPluginGate.dontAskAgain")), on.Button(&g.notNow, i18n.T("shell.agentPluginGate.notNow"))
 	dontAsk.Variant, notNow.Variant = ui.VariantGhost, ui.VariantGhost
 	dontAsk.Disabled, notNow.Disabled = installing, installing
-	label := pluginInstall
+	label := i18n.T("shell.agentPluginGate.install")
 	if installing {
-		label = pluginGateInstalling
+		label = i18n.T("shell.agentPluginGate.installing")
 	}
 	install := on.Button(&g.install, label)
 	install.Disabled = installing || len(picked) == 0
-	d := th.Dialog(&g.dialog, len(offer) > 0, pluginGateTitle, pluginGateDesc)
+	d := th.Dialog(&g.dialog, len(offer) > 0, i18n.T("shell.agentPluginGate.title"), i18n.T("shell.agentPluginGate.description"))
 	d.MaxWidth = optInWidth
 	d.Body = func(gtx C) D {
 		rows := make([]layout.FlexChild, len(offer))
@@ -295,7 +280,7 @@ func (g *pluginGate) offerRow(gtx C, th *ui.Theme, p lichclient.PluginStatus, in
 				layout.Flexed(1, th.Text(ui.TextSM, p.Name).Weight(font.Medium).Layout),
 			}
 			if p.Provider == codexKind {
-				children = append(children, layout.Rigid(th.Text(ui.TextXS, pluginGateNeedsHooks).Muted().Layout))
+				children = append(children, layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.agentPluginGate.needsHooks")).Muted().Layout))
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 		})

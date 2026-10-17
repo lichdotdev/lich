@@ -1,34 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (settings.updatesSettings,
-// shell.appUpdateGate).
 const (
-	updatesAppTitle     = "Application"
-	updatesAppAlso      = "version upgrade"
-	updatesAppDesc      = "lich %s — checks for updates on startup and hourly."
-	updatesCheck        = "Check for updates"
-	updatesAvailable    = "lich %s is available — follow the prompt."
-	updatesUpToDate     = "You're on the latest version."
-	updatesCheckFailed  = "Check failed — are you online?"
-	updatesToastTitle   = "lich %s is available"
-	updatesViewRelease  = "View release"
-	updatesNotesTitle   = "What's new"
-	updatesNotesAlso    = "changelog release notes"
-	updatesNotesFor     = "Patch notes for v%s."
-	updatesNoNotes      = "No patch notes for this build."
-	updatesViewNotes    = "View patch notes"
 	updatesAppKey       = "updates.app" // no backend key: the rows only act
 	updatesNotesKey     = "updates.notes"
 	updatesPluginKey    = "updates.plugin"
@@ -121,7 +105,7 @@ func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r setti
 		if u.checkApp.Clicked(gtx) {
 			go u.runAppCheck(s)
 		}
-		r.description = fmt.Sprintf(updatesAppDesc, u.version())
+		r.description = i18n.T("settings.updatesSettings.applicationDescription", i18n.Args{"version": u.version()})
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return u.appControl(gtx, th) }), true
 	case updatesNotesKey:
 		u.ensure(s)
@@ -129,12 +113,12 @@ func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r setti
 		if u.viewNotes.Clicked(gtx) && hasPatchNotes(notes) {
 			u.patch.show()
 		}
-		r.description = updatesNoNotes
+		r.description = i18n.T("settings.updatesSettings.noPatchNotes")
 		if hasPatchNotes(notes) {
-			r.description = fmt.Sprintf(updatesNotesFor, notes.Version)
+			r.description = i18n.T("settings.updatesSettings.patchNotesFor", i18n.Args{"version": notes.Version})
 		}
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-			b := th.Button(&u.viewNotes, updatesViewNotes)
+			b := th.Button(&u.viewNotes, i18n.T("settings.updatesSettings.viewPatchNotes"))
 			b.Size, b.Variant, b.Disabled = ui.SizeSM, ui.VariantOutline, !hasPatchNotes(notes)
 			return b.Layout(gtx)
 		}), true
@@ -149,7 +133,7 @@ func (u *updatesSettings) appControl(gtx C, th *ui.Theme) D {
 	u.mu.Lock()
 	checking, result := u.checkingApp, u.appResult
 	u.mu.Unlock()
-	b := th.Button(&u.checkApp, updatesCheck)
+	b := th.Button(&u.checkApp, i18n.T("settings.updatesSettings.checkForUpdates"))
 	b.Size, b.Disabled = ui.SizeSM, checking
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return busyButton(gtx, th, b, checking) })}
 	if result != "" {
@@ -167,13 +151,13 @@ func (u *updatesSettings) runAppCheck(s *settingsScreen) {
 	u.mu.Unlock()
 	s.invalidate()
 	st, err := s.client.AppUpdateStatus(s.ctx)
-	result := updatesUpToDate
+	result := i18n.T("settings.updatesSettings.upToDate")
 	switch {
 	case err != nil:
 		log.Printf("settings: update check: %v", err)
-		result = updatesCheckFailed
+		result = i18n.T("settings.updatesSettings.checkFailed")
 	case st.UpdateAvailable:
-		result = fmt.Sprintf(updatesAvailable, st.LatestVersion)
+		result = i18n.T("settings.updatesSettings.available", i18n.Args{"version": st.LatestVersion})
 		if s.promptUpdate != nil {
 			s.promptUpdate(st)
 		}

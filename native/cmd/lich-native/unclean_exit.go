@@ -3,22 +3,15 @@ package main
 import (
 	"log"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog.
-const (
-	uncleanExitTitle   = "lich's previous run ended unexpectedly"
-	uncleanExitDesc    = "Your sessions were restored, but whatever they were running stopped with it."
-	uncleanExitOpenLog = "Open log folder"
-	uncleanExitDismiss = "Dismiss"
 )
 
 // uncleanExitToast is UncleanExitGate's warning: it stays until dismissed,
 // and its action opens the log's folder.
 func uncleanExitToast(openLog func()) ui.Toast {
-	return ui.Toast{Variant: ui.ToastWarning, Title: uncleanExitTitle, Description: uncleanExitDesc,
-		Action: &ui.ToastButton{Label: uncleanExitOpenLog, OnClick: openLog}, Cancel: &ui.ToastButton{Label: uncleanExitDismiss},
+	return ui.Toast{Variant: ui.ToastWarning, Title: i18n.T("shell.uncleanExitGate.title"), Description: i18n.T("shell.uncleanExitGate.description"),
+		Action: &ui.ToastButton{Label: i18n.T("shell.uncleanExitGate.openLogFolder"), OnClick: openLog}, Cancel: &ui.ToastButton{Label: i18n.T("shell.uncleanExitGate.dismiss")},
 		Duration: ui.ToastForever}
 }
 

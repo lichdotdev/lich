@@ -16,18 +16,9 @@ import (
 	"gioui.org/widget"
 
 	"github.com/omartelo/lich/native/fonts"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (settings.fontSetting).
-const (
-	fontTitle  = "Terminal font"
-	fontAlso   = "typeface monospace"
-	fontSample = "the quick brown fox 0O1lI"
-	fontSearch = "Search fonts"
-	fontEmpty  = "No font matches."
-	fontSystem = "System"
 )
 
 var (
@@ -91,7 +82,7 @@ func fontOptions(current string, families []string, query string) []string {
 // fontLabel is how a stored family reads: "" is System.
 func fontLabel(family string) string {
 	if family == "" {
-		return fontSystem
+		return i18n.T("settings.themePicker.system")
 	}
 	return family
 }
@@ -123,12 +114,12 @@ func (f *fontPicker) sample(th *ui.Theme, family string) layout.Widget {
 	return func(gtx C) D {
 		fs, err := f.shaperFor(family)
 		if err != nil {
-			return th.Text(rowDescSize, fontSample).Muted().Layout(gtx)
+			return th.Text(rowDescSize, i18n.T("settings.fontSetting.sample")).Muted().Layout(gtx)
 		}
 		macro := op.Record(gtx.Ops)
 		paint.ColorOp{Color: th.MutedForeground}.Add(gtx.Ops)
 		ink := macro.Stop()
-		return widget.Label{MaxLines: 1}.Layout(gtx, fs.shaper, fs.face, rowDescSize, fontSample, ink)
+		return widget.Label{MaxLines: 1}.Layout(gtx, fs.shaper, fs.face, rowDescSize, i18n.T("settings.fontSetting.sample"), ink)
 	}
 }
 
@@ -185,11 +176,11 @@ func fontTrigger(gtx C, th *ui.Theme, family string) D {
 // fontPanel is ComboboxContent: the search field over the matching
 // families, the chosen one checked.
 func (s *settingsScreen) fontPanel(gtx C, th *ui.Theme, f *fontPicker, options []string, current string, choose func(string)) D {
-	in := th.Input(&f.search, fontSearch)
+	in := th.Input(&f.search, i18n.T("settings.fontSetting.search"))
 	in.Leading, in.Borderless = icSearch, true
 	list := func(gtx C) D {
 		if len(options) == 0 {
-			return layout.UniformInset(ui.Space(2)).Layout(gtx, th.Text(ui.TextSM, fontEmpty).Muted().Layout)
+			return layout.UniformInset(ui.Space(2)).Layout(gtx, th.Text(ui.TextSM, i18n.T("settings.fontSetting.empty")).Muted().Layout)
 		}
 		gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(fontListHeight))
 		f.list.Axis = layout.Vertical

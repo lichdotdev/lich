@@ -6,11 +6,11 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
+	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
-
-// ponytail: English until the native window has i18n.
 
 // footerItemIcons is FooterLayoutEditor's ICONS: the glyph each chip wears
 // beside its example reading.
@@ -20,24 +20,14 @@ var footerItemIcons = map[string]*icons.Icon{
 	"plan": icGauge, "cost": icons.Lucide("coins"), "handsOn": icTimer, "clock": icons.Lucide("clock"),
 }
 
-var footerZoneLabels = map[string]string{footerLeft: "Left", footerRight: "Right", footerAvailable: "Available"}
+var footerZoneLabelKeys = map[string]string{
+	footerLeft:      "settings.footerLayoutEditor.zone.left",
+	footerRight:     "settings.footerLayoutEditor.zone.right",
+	footerAvailable: "settings.footerLayoutEditor.zone.available",
+}
 
 // placeholderOpacity is the chip left behind's opacity-30 while it is dragged.
 const placeholderOpacity = 0.3
-
-// ponytail: English until the native window has i18n (settings.footerSettings,
-// settings.footerLayoutEditor).
-const (
-	footerTitle          = "Footer"
-	footerAlso           = "status bar layout arrange"
-	footerDescription    = "Drag an item between the sides, or out to hide it. Applies to every project."
-	footerLoading        = "Loading saved choices…"
-	footerSaving         = "Saving…"
-	footerRestoreDefault = "Restore default"
-	footerSaveFailed     = "Could not save the footer: %v"
-	footerPreviewHint    = "Preview · example values"
-	footerPreviewEmpty   = "No footer items selected"
-)
 
 // footerEditor is the state of Settings › Appearance › Footer, FooterSettings'
 // row and the FooterLayoutEditor and FooterLayoutPreview under it.
@@ -52,11 +42,11 @@ func (f *footer) editorState() (description string, disabled bool) {
 	_, saving := f.snapshot()
 	switch {
 	case !f.cost.isReady():
-		return footerLoading, true
+		return i18n.T("settings.footerSettings.loading"), true
 	case saving:
-		return footerSaving, true
+		return i18n.T("settings.footerSettings.saving"), true
 	}
-	return footerDescription, false
+	return i18n.T("settings.footerSettings.description"), false
 }
 
 // restoreButton is the row's Restore default.
@@ -65,7 +55,7 @@ func (f *footer) restoreButton(gtx C, th *ui.Theme) D {
 	if f.editor.restore.Clicked(gtx) && !disabled {
 		f.change(defaultFooterLayout())
 	}
-	b := th.Button(&f.editor.restore, footerRestoreDefault)
+	b := th.Button(&f.editor.restore, i18n.T("settings.footerSettings.restoreDefault"))
 	b.Variant, b.Size, b.Disabled = ui.VariantGhost, ui.SizeXS, disabled
 	return b.Layout(gtx)
 }
@@ -120,7 +110,7 @@ func (f *footer) change(next footerLayout) {
 	f.mu.Unlock()
 	go func() {
 		if err := f.commit(next); err != nil {
-			f.toaster.Show(failure(footerSaveFailed, err))
+			f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.footerSettings.saveFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		}
 	}()
 }
@@ -162,7 +152,7 @@ func (f *footer) zone(th *ui.Theme, zone string, items []string, in footerInput)
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return f.editor.sortable.Zone(gtx, zone, func(gtx C) D { return f.zoneBox(gtx, th, zone, items, in) })
 		}
-		return stack(gtx, 1.5, []layout.Widget{th.Text(ui.TextXS, footerZoneLabels[zone]).Muted().Layout, box})
+		return stack(gtx, 1.5, []layout.Widget{th.Text(ui.TextXS, i18n.T(footerZoneLabelKeys[zone])).Muted().Layout, box})
 	}
 }
 
@@ -185,9 +175,9 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 		kids = append(kids, ui.WrapItem(f.chip(on, id, zone != footerAvailable, in)))
 	}
 	if len(items) == 0 {
-		empty := "Drag items here"
+		empty := i18n.T("settings.footerLayoutEditor.dragHere")
 		if zone == footerAvailable {
-			empty = "Every item is in the footer"
+			empty = i18n.T("settings.footerLayoutEditor.allPlaced")
 		}
 		label := on.Text(ui.TextXS, empty).Muted().Layout
 		kids = append(kids, ui.WrapItem(func(gtx C) D { return layout.Inset{Left: ui.Space(1), Right: ui.Space(1)}.Layout(gtx, label) }))
@@ -276,9 +266,13 @@ func itemReading(gtx C, th *ui.Theme, id string, fg color.NRGBA, in footerInput)
 
 func footerExample(id string) string {
 	for _, item := range footerItems {
-		if item.ID == id {
-			return item.Example
+		if item.ID != id {
+			continue
 		}
+		if item.ExampleKey != "" {
+			return i18n.T(item.ExampleKey)
+		}
+		return item.Example
 	}
 	return id
 }
@@ -300,14 +294,14 @@ func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInp
 				})
 			})
 	}
-	return stack(gtx, 2, []layout.Widget{th.Text(ui.TextXS, footerPreviewHint).Muted().Layout, strip})
+	return stack(gtx, 2, []layout.Widget{th.Text(ui.TextXS, i18n.T("footer.footerEditor.previewHint")).Muted().Layout, strip})
 }
 
 // previewSides is the footer's wrap: the left side, the right side at the
 // far end, or the empty line when neither holds an item.
 func previewSides(gtx C, th *ui.Theme, l footerLayout, in footerInput) D {
 	if len(l.Left)+len(l.Right) == 0 {
-		return layout.W.Layout(gtx, th.Text(ui.TextXS, footerPreviewEmpty).Muted().Layout)
+		return layout.W.Layout(gtx, th.Text(ui.TextXS, i18n.T("settings.footerLayoutEditor.previewEmpty")).Muted().Layout)
 	}
 	side := func(items []string, justify ui.Justify) layout.Widget {
 		return func(gtx C) D {

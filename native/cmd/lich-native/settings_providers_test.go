@@ -5,6 +5,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -129,12 +130,12 @@ func TestBinaryVerdictWordsFollowWhatWasAskedFor(t *testing.T) {
 		status, bin, label, detail string
 	}{
 		{lichclient.CheckOK, "claude", "executable", ""},
-		{"not-found", "claude", "not on $PATH", binDetailBroken},
-		{"not-found", "/opt/claude", "no such file", binDetailBroken},
-		{"not-found", `C:\bin\claude.exe`, "no such file", binDetailBroken},
-		{"not-executable", "/opt/claude", "not executable", binDetailBroken},
-		{"home-shortcut", "~/claude", "~ is not expanded", binDetailHome},
-		{"relative", "./claude", "relative path", binDetailRel},
+		{"not-found", "claude", "not on $PATH", i18n.T("env.binary.detailBroken")},
+		{"not-found", "/opt/claude", "no such file", i18n.T("env.binary.detailBroken")},
+		{"not-found", `C:\bin\claude.exe`, "no such file", i18n.T("env.binary.detailBroken")},
+		{"not-executable", "/opt/claude", "not executable", i18n.T("env.binary.detailBroken")},
+		{"home-shortcut", "~/claude", "~ is not expanded", i18n.T("env.binary.detailHomeShortcut")},
+		{"relative", "./claude", "relative path", i18n.T("env.binary.detailRelative")},
 		{lichclient.CheckEmpty, "", "", ""},
 	}
 	for _, c := range cases {
@@ -226,7 +227,7 @@ func TestThePromptsAlwaysIsASettingsChoice(t *testing.T) {
 	g.asking = &lichclient.Session{ID: "s", Kind: "codex", ProviderSessionID: "thread"}
 	g.answer(context.Background(), restoreResume, true)
 	stored := probe.store[restoreKey("codex")]
-	if !slices.ContainsFunc(restoreRungs, func(r struct{ value, label, consequence string }) bool { return r.value == stored }) {
+	if !slices.ContainsFunc(restoreRungs, func(r ladderRung) bool { return r.value == stored }) {
 		t.Errorf("the prompt stored %q, which no Settings rung is", stored)
 	}
 }
@@ -279,7 +280,7 @@ func providerBlockTitlesFor(kind string) []string {
 	var titles []string
 	for _, e := range providerEntries() {
 		if e.perProvider && (len(e.onlyFor) == 0 || slices.Contains(e.onlyFor, kind)) {
-			titles = append(titles, e.title)
+			titles = append(titles, e.titleText())
 		}
 	}
 	return titles

@@ -52,5 +52,9 @@
       "one": "已复制 {count} 个字符到剪贴板",
       "other": "已复制 {count} 个字符到剪贴板"
     }
+  },
+  "terminalDrop": {
+    "skipped": "{name}（{reason}）",
+    "tooLarge": "{name}（超过 {size} MB）"
   }
 }

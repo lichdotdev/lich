@@ -8,30 +8,30 @@ import (
 	"github.com/omartelo/lich/native/lichclient"
 )
 
-// English until the native window has i18n.
-
 // footerItem is one control of the footer strip (footer-layout.ts
 // FOOTER_ITEMS).
 type footerItem struct {
-	ID      string
-	Label   string
-	Example string
+	ID string
+	// Example is the reading the editor previews, ExampleKey its catalog key
+	// where the reading is a word rather than a value.
+	Example    string
+	ExampleKey string
 }
 
 var footerItems = []footerItem{
-	{"attach", "Attach file", "Attach file"},
-	{"files", "File explorer", "Files"},
-	{"changes", "Changes", "3 · +10 −2"},
-	{"pr", "Pull request", "PR #123"},
-	{"checkout", "Branch", "feature/toolbar"},
-	{"path", "Working directory", "~/project"},
+	{ID: "attach", ExampleKey: "footer.item.attach.example"},
+	{ID: "files", ExampleKey: "footer.item.files.example"},
+	{ID: "changes", Example: "3 · +10 −2"},
+	{ID: "pr", Example: "PR #123"},
+	{ID: "checkout", Example: "feature/toolbar"},
+	{ID: "path", Example: "~/project"},
 	// The editor shows the active session's model; this is its fallback.
-	{"model", "Model", "Model"},
-	{"context", "Context window", "42%"},
-	{"plan", "Plan usage", "5h 28%"},
-	{"cost", "Cost", "$1.25"},
-	{"handsOn", "Hands-on time", "12m"},
-	{"clock", "Date & time", "Sep 6 · 14:30"},
+	{ID: "model", ExampleKey: "footer.item.model.example"},
+	{ID: "context", Example: "42%"},
+	{ID: "plan", Example: "5h 28%"},
+	{ID: "cost", Example: "$1.25"},
+	{ID: "handsOn", Example: "12m"},
+	{ID: "clock", Example: "Sep 6 · 14:30"},
 }
 
 // Footer zones: the two sides, and the pool of items on neither.

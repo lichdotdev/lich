@@ -16,3 +16,15 @@ func TestFacesCoverEveryWeightTheWindowDraws(t *testing.T) {
 		}
 	}
 }
+
+func TestInstalledHanFacesDrawHan(t *testing.T) {
+	faces, err := InstalledHan()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range faces {
+		if _, ok := f.Face.Face().NominalGlyph(hanProbe); !ok || f.Font.Typeface != Han {
+			t.Errorf("%+v does not draw %c under Han", f.Font, hanProbe)
+		}
+	}
+}

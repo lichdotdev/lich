@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"log"
 
@@ -11,21 +10,13 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (settings.versionControlSettings).
-const (
-	vcsAccountTitle    = "GitHub account"
-	vcsAccountFor      = "GitHub account for %s"
-	vcsAccountAlso     = "login gh switch"
-	vcsAccountDesc     = "Which account lich runs gh as for this project — pull requests, checks and PR checkouts. gh keeps one active account per host, so a repository only another account can see reads as not found. Accounts on an enterprise host are listed with it."
-	vcsActiveAccount   = "gh's active account"
-	vcsListFailed      = "Could not list GitHub accounts: %s"
-	vcsNoAccounts      = "gh is signed in to no account. Run `gh auth login` in a terminal."
-	vcsActiveAccountID = "" // the stored value of no override
-)
+// vcsActiveAccountID is the stored value of no override.
+const vcsActiveAccountID = ""
 
 // vcsPickerWidth is the SelectTrigger's w-72.
 var vcsPickerWidth = ui.Space(72)
@@ -45,8 +36,8 @@ func (s *settingsScreen) vcsAccountBlock(gtx C, th *ui.Theme, r settingRow, firs
 		stored = up
 	}
 	options := accountOptions(accounts, stored)
-	r.title = fmt.Sprintf(vcsAccountFor, s.scopeName())
-	r.description = vcsAccountDesc
+	r.title = i18n.T("settings.versionControlSettings.accountFor", i18n.Args{"name": s.scopeName()})
+	r.description = i18n.T("settings.versionControlSettings.accountDescription")
 	under := func(gtx C, th *ui.Theme) D {
 		children := []layout.FlexChild{
 			layout.Rigid(th.Text(ui.TextXS, path).Muted().Layout),
@@ -56,9 +47,9 @@ func (s *settingsScreen) vcsAccountBlock(gtx C, th *ui.Theme, r settingRow, firs
 		var notice ui.LabelStyle
 		switch {
 		case listErr != "":
-			notice = th.Text(ui.TextXS, fmt.Sprintf(vcsListFailed, listErr)).In(th.Destructive)
+			notice = th.Text(ui.TextXS, i18n.T("settings.versionControlSettings.listFailed", i18n.Args{"error": listErr})).In(th.Destructive)
 		case accounts != nil && len(accounts) == 0:
-			notice = th.Text(ui.TextXS, vcsNoAccounts).Muted()
+			notice = th.Text(ui.TextXS, i18n.T("settings.versionControlSettings.noAccounts")).Muted()
 		}
 		if notice.Text != "" {
 			notice.MaxLines = 0
@@ -146,13 +137,13 @@ func identityRow(gtx C, th *ui.Theme, l identityLine) D {
 // list of gh's active account and every option under it.
 func (s *settingsScreen) vcsPicker(gtx C, th *ui.Theme, project, stored string, options []string) D {
 	v := &s.vcs
-	label := vcsActiveAccount
+	label := i18n.T("settings.versionControlSettings.activeAccount")
 	if stored != "" {
 		label = accountLabel(stored, options)
 	}
 	pop := th.DropdownPanel(s.root, &v.picker, vcsPickerWidth, func(gtx C, th *ui.Theme) D {
 		rows := []layout.FlexChild{layout.Rigid(func(gtx C) D {
-			return s.vcsOption(gtx, th, project, vcsActiveAccountID, vcsActiveAccount, stored == "")
+			return s.vcsOption(gtx, th, project, vcsActiveAccountID, i18n.T("settings.versionControlSettings.activeAccount"), stored == "")
 		})}
 		for _, o := range options {
 			rows = append(rows, layout.Rigid(func(gtx C) D {

@@ -37,19 +37,10 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog
-// (dock.rightDock).
-const (
-	dockTabCode        = "Code"
-	dockTabReview      = "Review"
-	dockFullScreen     = "Full screen"
-	dockExitFullScreen = "Exit full screen"
-	dockClosePanel     = "Close panel"
 )
 
 var (
@@ -193,15 +184,15 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	d.act(gtx)
 	changed := in.isGit && in.git.Files > 0
-	review := ui.TabsTrigger{Text: dockTabReview, Icon: icDockReview}
+	review := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabReview"), Icon: icDockReview}
 	if changed {
 		review.Trailing = func(gtx C) D { return diffStat(gtx, th, in.git.Added, in.git.Deleted) }
 	}
-	tabs := th.Tabs(&d.tabs, ui.TabsTrigger{Text: dockTabCode, Icon: icDockCode}, review)
+	tabs := th.Tabs(&d.tabs, ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabCode"), Icon: icDockCode}, review)
 	tabs.Variant = ui.TabsVariantGhost
-	fullIcon, fullLabel := icDockMaximize, dockFullScreen
+	fullIcon, fullLabel := icDockMaximize, i18n.T("dock.rightDock.fullScreen")
 	if d.fullscreen {
-		fullIcon, fullLabel = icDockMinimize, dockExitFullScreen
+		fullIcon, fullLabel = icDockMinimize, i18n.T("dock.rightDock.exitFullScreen")
 	}
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(dockHeaderHeight)))
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
@@ -245,7 +236,7 @@ func (d *dock) act(gtx C) {
 func (d *dock) closeButton(gtx C, th *ui.Theme, root *ui.Root) D {
 	b := th.Button(&d.close.click, "")
 	b.Icon, b.Variant, b.Size = icDockClose, ui.VariantGhost, ui.SizeIconXS
-	tip := th.Tooltip(root, &d.close.tip, dockClosePanel)
+	tip := th.Tooltip(root, &d.close.tip, i18n.T("dock.rightDock.closePanel"))
 	return tip.Layout(gtx, b.Layout)
 }
 

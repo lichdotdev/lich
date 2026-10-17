@@ -32,5 +32,14 @@
     },
     "relocate": "relocate",
     "reopen": "reopen"
+  },
+  "paletteLogic": {
+    "indexedNewest": "indexed: newest {size}"
+  },
+  "palette": {
+    "verbOpen": "open",
+    "verbForget": "forget",
+    "verbResume": "resume",
+    "verbRun": "run"
   }
 }

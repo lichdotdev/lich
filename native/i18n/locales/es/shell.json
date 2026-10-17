@@ -201,5 +201,21 @@
     "open": "Abrir",
     "needsInput": "{label} necesita una respuesta tuya",
     "finished": "{label} terminó de trabajar"
+  },
+  "windowClose": {
+    "changeInSettings": "· cámbialo en Ajustes › General",
+    "quitFailed": "No se pudo salir de lich: {error}",
+    "countFailed": "No se pudieron contar las sesiones en ejecución: {error}"
+  },
+  "reconnect": {
+    "reconnecting": "Reconectando con lich…"
+  },
+  "main": {
+    "lostTitle": "Otra ventana de lich tomó el control, o lich se cerró.",
+    "lostHint": "Ejecuta `lich native` para reabrir aquí.",
+    "renameFailed": "No se pudo renombrar la sesión: {error}"
+  },
+  "notifyPrompt": {
+    "description": "Una sesión acaba de pedirte una respuesta mientras estabas en otro sitio. lich puede mostrar una notificación de escritorio cuando eso pase, con el nombre de la sesión y de su proyecto, para que puedas iniciar algo y alejarte de la ventana. Las sesiones que estás mirando nunca notifican. Puedes cambiarlo cuando quieras en Ajustes › General."
   }
 }

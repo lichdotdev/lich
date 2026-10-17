@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -9,20 +8,6 @@ import (
 
 	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
-)
-
-// ponytail: English until the native window has i18n (pulls.*).
-const (
-	pullsMergedText    = "Pull request is merged"
-	pullsClosedText    = "Pull request is closed"
-	pullsDraftText     = "Pull request is a draft"
-	pullsConflictsText = "Conflicts with %s"
-	pullsBehindText    = "Base branch has moved — update this branch first"
-	pullsChangesText   = "A reviewer asked for changes"
-	pullsReviewReqText = "GitHub requires a review that has not been left"
-	pullsRuleNoteText  = "A ruleset governs %s: every commit %s."
-	pullsFailingOne    = "1 check is failing; GitHub will merge over it"
-	pullsFailingMany   = "%d checks are failing; GitHub will merge over them"
 )
 
 // pullsState is which pull requests gh is asked for.
@@ -47,7 +32,17 @@ const (
 	pullsFilterCount
 )
 
-var pullsFilterLabels = [pullsFilterCount]string{"All", "Ready", "Drafts", "Failing"}
+func (f pullsFilter) label() string {
+	switch f {
+	case filterReady:
+		return i18n.T("pulls.pullsList.filter.ready")
+	case filterDrafts:
+		return i18n.T("pulls.pullsList.filter.drafts")
+	case filterFailing:
+		return i18n.T("pulls.pullsList.filter.failing")
+	}
+	return i18n.T("pulls.pullsList.filter.all")
+}
 
 type checkVerdict int
 
@@ -137,7 +132,15 @@ func updatedAgo(iso string, now time.Time) string {
 
 var everyMergeMethod = []string{"squash", "merge", "rebase"}
 
-var mergeMethodLabels = map[string]string{"squash": "Squash and merge", "merge": "Create a merge commit", "rebase": "Rebase and merge"}
+func mergeMethodLabel(method string) string {
+	switch method {
+	case "squash":
+		return i18n.T("pulls.mergeMessageDialog.squashAndMerge")
+	case "merge":
+		return i18n.T("pulls.mergeMessageDialog.createMergeCommit")
+	}
+	return i18n.T("pulls.pullRequestView.rebaseAndMerge")
+}
 
 // allowedMergeMethods is merge-gate.ts: what the base's rules name, all three
 // when they name none.
@@ -164,21 +167,21 @@ func conflictsWithBase(d lichclient.PRDetail) bool {
 func mergeBlockedReason(d lichclient.PRDetail) string {
 	switch {
 	case d.State == "MERGED":
-		return pullsMergedText
+		return i18n.T("pulls.mergeGate.merged")
 	case d.State != "OPEN":
-		return pullsClosedText
+		return i18n.T("pulls.mergeGate.closed")
 	case d.IsDraft:
-		return pullsDraftText
+		return i18n.T("pulls.mergeGate.draft")
 	case conflictsWithBase(d):
-		return fmt.Sprintf(pullsConflictsText, d.BaseRefName)
+		return i18n.T("pulls.mergeGate.conflicts", i18n.Args{"base": d.BaseRefName})
 	case d.MergeStateStatus == "BEHIND":
-		return pullsBehindText
+		return i18n.T("pulls.mergeGate.behind")
 	case d.MergeStateStatus != "BLOCKED":
 		return ""
 	case d.ReviewDecision == "CHANGES_REQUESTED":
-		return pullsChangesText
+		return i18n.T("pulls.mergeGate.changesRequested")
 	case d.ReviewDecision == "REVIEW_REQUIRED":
-		return pullsReviewReqText
+		return i18n.T("pulls.mergeGate.reviewRequired")
 	}
 	return ""
 }
@@ -192,11 +195,42 @@ func canAdminOverride(d lichclient.PRDetail, rules *lichclient.BranchRules) bool
 	return d.MergeStateStatus == "BLOCKED" || d.MergeStateStatus == "BEHIND"
 }
 
-var patternVerbs = map[string][2]string{
-	"regex":       {"match", "not match"},
-	"starts_with": {"start with", "not start with"},
-	"ends_with":   {"end with", "not end with"},
-	"contains":    {"contain", "not contain"},
+// patternClause is "<target> must <verb> <pattern>" in the interface
+// language. An operator this build has never seen reads as a match, the
+// pattern beside it still saying what is asked.
+func patternClause(p lichclient.CommitPattern) string {
+	args := i18n.Args{"target": patternTarget(p.Target), "pattern": strconv.Quote(p.Pattern)}
+	switch {
+	case p.Operator == "starts_with" && p.Negate:
+		return i18n.T("pulls.mergeGate.pattern.notStartWith", args)
+	case p.Operator == "starts_with":
+		return i18n.T("pulls.mergeGate.pattern.startWith", args)
+	case p.Operator == "ends_with" && p.Negate:
+		return i18n.T("pulls.mergeGate.pattern.notEndWith", args)
+	case p.Operator == "ends_with":
+		return i18n.T("pulls.mergeGate.pattern.endWith", args)
+	case p.Operator == "contains" && p.Negate:
+		return i18n.T("pulls.mergeGate.pattern.notContain", args)
+	case p.Operator == "contains":
+		return i18n.T("pulls.mergeGate.pattern.contain", args)
+	case p.Negate:
+		return i18n.T("pulls.mergeGate.pattern.notMatch", args)
+	}
+	return i18n.T("pulls.mergeGate.pattern.match", args)
+}
+
+// patternTarget is the word the backend names a commit field by
+// (internal/project.commitPatternTargets), one it does not know left as is.
+func patternTarget(target string) string {
+	switch target {
+	case "message":
+		return i18n.T("pulls.mergeGate.target.message")
+	case "author email":
+		return i18n.T("pulls.mergeGate.target.authorEmail")
+	case "committer email":
+		return i18n.T("pulls.mergeGate.target.committerEmail")
+	}
+	return target
 }
 
 // mergeRuleNote is merge-gate.ts: on BLOCKED, the commit patterns the base's
@@ -207,17 +241,9 @@ func mergeRuleNote(d lichclient.PRDetail, rules *lichclient.BranchRules) string 
 	}
 	clauses := make([]string, len(rules.CommitPatterns))
 	for i, p := range rules.CommitPatterns {
-		verbs, ok := patternVerbs[p.Operator]
-		if !ok {
-			verbs = patternVerbs["regex"]
-		}
-		verb := verbs[0]
-		if p.Negate {
-			verb = verbs[1]
-		}
-		clauses[i] = fmt.Sprintf("%s must %s %q", p.Target, verb, p.Pattern)
+		clauses[i] = patternClause(p)
 	}
-	return fmt.Sprintf(pullsRuleNoteText, d.BaseRefName, strings.Join(clauses, "; "))
+	return i18n.T("pulls.mergeGate.ruleNote", i18n.Args{"base": d.BaseRefName, "clauses": strings.Join(clauses, "; ")})
 }
 
 // mergeHint is what the Merge button's tooltip says: the block, else the rule
@@ -229,13 +255,10 @@ func mergeHint(d lichclient.PRDetail, rules *lichclient.BranchRules) string {
 	if n := mergeRuleNote(d, rules); n != "" {
 		return n
 	}
-	switch d.Checks.Failed {
-	case 0:
+	if d.Checks.Failed == 0 {
 		return ""
-	case 1:
-		return pullsFailingOne
 	}
-	return fmt.Sprintf(pullsFailingMany, d.Checks.Failed)
+	return i18n.T("pulls.pullsLogic.failing", i18n.Args{"count": d.Checks.Failed})
 }
 
 // handoffNamedChecks is pr-handoff.ts NAMED_CHECKS: past it the prompt counts.
@@ -249,11 +272,11 @@ func pullHandoff(d lichclient.PRDetail) (label, prompt string, ok bool) {
 		return "", "", false
 	}
 	if conflictsWithBase(d) {
-		return "Resolve conflicts", i18n.Prompt("prompts.pullRequest.conflicts",
+		return i18n.T("pulls.prHandoff.resolveConflicts"), i18n.Prompt("prompts.pullRequest.conflicts",
 			i18n.Args{"number": d.Number, "branch": d.HeadRefName, "base": d.BaseRefName}), true
 	}
 	if d.Checks.Failed > 0 {
-		return "Fix CI errors", checksPrompt(d), true
+		return i18n.T("pulls.prHandoff.fixChecks"), checksPrompt(d), true
 	}
 	return "", "", false
 }
@@ -304,17 +327,32 @@ func checkDuration(started, completed string, now time.Time) string {
 	total := int(end.Sub(start).Round(time.Second) / time.Second)
 	switch {
 	case total < 60:
-		return fmt.Sprintf("%ds", total)
+		return durationUnit("second", total)
 	case total < 3600:
+		minutes := durationUnit("minute", total/60)
 		if total%60 == 0 {
-			return fmt.Sprintf("%dm", total/60)
+			return minutes
 		}
-		return fmt.Sprintf("%dm %ds", total/60, total%60)
+		return minutes + " " + durationUnit("second", total%60)
 	}
+	hours := durationUnit("hour", total/3600)
 	if m := total / 60 % 60; m != 0 {
-		return fmt.Sprintf("%dh %dm", total/3600, m)
+		return hours + " " + durationUnit("minute", m)
 	}
-	return fmt.Sprintf("%dh", total/3600)
+	return hours
+}
+
+// durationUnit is value of unit ("second", "minute" or "hour") in the
+// interface language's narrow form.
+func durationUnit(unit string, value int) string {
+	args := i18n.Args{"value": value}
+	switch unit {
+	case "second":
+		return i18n.T("pulls.pullsLogic.durationSeconds", args)
+	case "minute":
+		return i18n.T("pulls.pullsLogic.durationMinutes", args)
+	}
+	return i18n.T("pulls.pullsLogic.durationHours", args)
 }
 
 // commitMeta is the commit's second line: who and when.

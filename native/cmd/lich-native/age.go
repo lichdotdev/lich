@@ -1,8 +1,9 @@
 package main
 
 import (
-	"strconv"
 	"time"
+
+	"github.com/omartelo/lich/native/i18n"
 )
 
 // formatAge is lib/session/session-age.ts: how long a session has been in its
@@ -10,16 +11,17 @@ import (
 // readout never claims time that has not passed. A backwards clock reads as
 // none.
 //
-// ponytail: English narrow units until the native window has i18n.
+// The unit is a catalog message so each language writes it as Intl's narrow
+// unit does ("3 h" in pt-BR, "3小时" in zh-CN).
 func formatAge(elapsed time.Duration) string {
 	elapsed = max(elapsed, 0)
 	switch {
 	case elapsed < time.Minute:
-		return strconv.Itoa(int(elapsed/time.Second)) + "s"
+		return i18n.T("session.age.second", i18n.Args{"count": int(elapsed / time.Second)})
 	case elapsed < time.Hour:
-		return strconv.Itoa(int(elapsed/time.Minute)) + "m"
+		return i18n.T("session.age.minute", i18n.Args{"count": int(elapsed / time.Minute)})
 	}
-	return strconv.Itoa(int(elapsed/time.Hour)) + "h"
+	return i18n.T("session.age.hour", i18n.Args{"count": int(elapsed / time.Hour)})
 }
 
 // nextAgeChange is how long until formatAge(elapsed) reads differently, so a

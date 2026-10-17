@@ -54,5 +54,16 @@
       "one": "正在索引 {count} 个会话",
       "other": "正在索引 {count} 个会话"
     }
+  },
+  "age": {
+    "second": "{count}秒",
+    "minute": "{count}分钟",
+    "hour": "{count}小时",
+    "ago": {
+      "minute": "{count}分钟前",
+      "hour": "{count}小时前",
+      "day": "{count}天前",
+      "week": "{count}周前"
+    }
   }
 }

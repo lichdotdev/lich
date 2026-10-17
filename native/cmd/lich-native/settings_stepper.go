@@ -6,6 +6,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -48,7 +49,7 @@ func (st *stepperState) layout(gtx C, th *ui.Theme, root *ui.Root, s stepperSpec
 		b.Icon, b.Variant, b.Size, b.Disabled = ic, ui.VariantOutline, ui.SizeIcon, disabled
 		return func(gtx C) D { return th.Tooltip(root, tip, label).Layout(gtx, b.Layout) }
 	}
-	valueHint := stepperDefault
+	valueHint := i18n.T("common.stepper.default")
 	if custom {
 		valueHint = s.reset
 	}

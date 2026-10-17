@@ -15,9 +15,6 @@ const (
 	folderKeyPrefix = "__folder__:"
 )
 
-// ponytail: English until the native window has i18n.
-const pinnedBlockTitle = "Pinned"
-
 // blockKind is which block a session is drawn in, sidebar-groups.ts blockOf.
 type blockKind int
 

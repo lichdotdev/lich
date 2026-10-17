@@ -7,7 +7,12 @@
     "promptDescription": "lich 交给智能体的文本所用的语言：简报、转发的消息和通知。此后启动的会话在所有场景下都使用该语言；已打开的会话仅在转发的消息中使用。",
     "uiSearchWords": "语言 区域 翻译 英语 葡萄牙语 简体中文",
     "promptSearchWords": "语言 区域 翻译 智能体 简报 转发 英语 葡萄牙语 简体中文",
-    "promptSaveFailed": "无法保存提示词语言：{error}"
+    "promptSaveFailed": "无法保存提示词语言：{error}",
+    "hanFontTitle": "下载中文字体？",
+    "hanFontDescription": "中文需要 Noto Sans SC 字体，而这台电脑上安装的字体都无法显示中文。lich 可以下载它（约 {size} MB）并保存在自己的文件夹中。",
+    "hanFontDownload": "下载",
+    "hanFontProgress": "正在下载… {done} / {total} MB",
+    "hanFontFailed": "无法下载中文字体：{error}"
   },
   "settings": {
     "search": "搜索设置",
@@ -25,7 +30,9 @@
       "versionControl": "版本控制",
       "updates": "更新",
       "help": "帮助"
-    }
+    },
+    "notYet": "这里还没有",
+    "projectDesc": "此项目相对全局所做的更改。没有更改的行沿用全局。"
   },
   "appearanceSettings": {
     "importPickTitle": "导入主题",
@@ -449,5 +456,220 @@
     "aboutSearchWords": "版本 许可证",
     "aboutVersion": "lich {version}，{platform}。",
     "repository": "仓库"
+  },
+  "settingsIndex": {
+    "sectionGeneral": "常规",
+    "sectionEditor": "编辑器",
+    "hideWhitespaceTitle": "在差异中隐藏空白",
+    "hideWhitespaceSearchWords": "空格 缩进 审查 忽略",
+    "hideWhitespaceDescription": "在“审查”标签页中，略去只改动空白的更改。"
+  },
+  "settingsNav": {
+    "scopeLabel": "范围",
+    "scopeGlobal": "全局",
+    "openProjects": "已打开的项目",
+    "changes": {
+      "one": "{count} 项更改",
+      "other": "{count} 项更改"
+    },
+    "scopeNote": "只有项目可以更改的设置处于启用状态，其余设置在所有地方都相同。"
+  },
+  "settingsRow": {
+    "overriddenIn": "已在以下项目覆盖",
+    "followsGlobal": "沿用全局",
+    "globalValue": "全局：{value}",
+    "useGlobal": "使用全局",
+    "globalOnly": "仅全局",
+    "projectOnly": "仅项目"
+  },
+  "settingsGeneral": {
+    "notifySearchWords": "桌面 通知 提醒 铃"
+  },
+  "settingsWindow": {
+    "switchTitle": "现在切换到网页窗口吗？",
+    "switchDescription": "此窗口将关闭，网页窗口随即打开。你的会话会继续运行。",
+    "switchFailed": "无法打开网页窗口：{error}"
+  },
+  "settingsHelp": {
+    "bugDescription": "在浏览器中打开缺陷表单，并已填好版本和平台。lich 不会替你提交 issue，需要你自己填写。在终端运行 `lich rage`，可把日志、版本以及 lich 在这台机器上发现的内容打包成一个压缩包以便附上。",
+    "logSearchWords": "调试 日志 原生窗口",
+    "logDescription": "该文件夹包含 lich 的日志，旁边是原生窗口的日志（lich-native.log）。其中有绝对路径、项目和分支名称以及你的 gh 登录名，但绝不含会话令牌。附加到任何地方之前请先阅读。",
+    "logFailed": "无法打开日志文件夹：{error}"
+  },
+  "settingsProviders": {
+    "pathRereadFailed": "无法重新读取 PATH；请重新启动 lich。",
+    "otherVersionsOnPath": "PATH 中还有其他版本"
+  },
+  "settingsProvidersBin": {
+    "pickFailed": "无法打开文件选择器：{error}"
+  },
+  "settingsProvidersVersion": {
+    "alsoOnPath": "PATH 中还有：{versions}。在上方固定其中一个即可选用。"
+  },
+  "settingsAppearance": {
+    "uiFontTitle": "界面字体",
+    "uiFontSearchWords": "界面 无衬线 文字 字体",
+    "editorFontTitle": "编辑器字体",
+    "editorFontSearchWords": "代码 评审 字体 等宽",
+    "editorSizeTitle": "编辑器文字大小",
+    "editorSizeSearchWords": "代码 评审 字号",
+    "editorSmaller": "减小代码文字",
+    "editorLarger": "增大代码文字",
+    "editorSizeReset": "重置编辑器文字大小"
+  },
+  "settingsEditor": {
+    "hideWhitespaceTitle": "在差异中隐藏空白",
+    "hideWhitespaceSearchWords": "空格 缩进 评审 忽略",
+    "hideWhitespaceDescription": "在审查标签页中忽略仅改动空白的变更。"
+  },
+  "settingsTheme": {
+    "autoLightDark": "自动浅色/深色",
+    "pairLight": "浅色配对",
+    "pairDark": "深色配对"
+  },
+  "settingsThemeActions": {
+    "reloadFailed": "无法重新读取主题：{error}"
+  },
+  "appearancePrefs": {
+    "terminalFontFailed": "无法用 {family} 绘制终端：{error}",
+    "editorFontFailed": "无法用 {family} 绘制代码：{error}",
+    "uiFontFailed": "无法用 {family} 绘制界面：{error}"
+  },
+  "settingsSandbox": {
+    "grantOn": "开启",
+    "grantOff": "关闭"
+  },
+  "settingsVcs": {
+    "pathReread": "无法重新读取 PATH；请重新启动 lich。"
+  },
+  "settingsUpdatesPlugin": {
+    "hint": {
+      "codex": "在 Codex 会话中运行 /hooks，以信任插件的钩子。",
+      "crush": "上报其会话 ID 并刷新 git 状态。它没有回合结束事件，因此其卡片不显示状态，并保留自己的名称。",
+      "omp": "上报其状态、名称和 git 变更。它没有可观察到的审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。",
+      "antigravity": "上报其状态、名称和 git 变更。它没有可观察到的审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。",
+      "cursor": "运行 Claude Code 中已安装的插件，因此上报该版本所上报的内容，并随其更新。lich 在此仅添加自己的工具。它同样不会触发审批事件，因此等待你授权的会话会显示加载动画，而不是铃铛。"
+    },
+    "installFailed": "安装失败：{error}",
+    "updateFailed": "更新失败：{error}",
+    "profileFailed": "lich 插件未在 {pass} 的配置文件 {profile} 中更新：{error}"
+  },
+  "settingsProfiles": {
+    "title": "配置文件",
+    "profilesTitle": "配置文件列表",
+    "creating": "正在创建配置文件…",
+    "startingLogin": "正在开始登录…",
+    "renaming": "正在重命名…",
+    "deleting": "正在删除…",
+    "installing": "正在安装插件…",
+    "loginFailed": "登录未完成。",
+    "noTerminal": "请先打开一个项目，才能在终端中登录。"
+  },
+  "settingsProfilesView": {
+    "defaultTag": "· 默认",
+    "logIn": "登录",
+    "logInAgain": "重新登录",
+    "copyFrom": "从…复制插件",
+    "rename": "重命名",
+    "delete": "删除",
+    "newProfile": "新建配置文件",
+    "options": "{name} 的选项",
+    "advancedBinary": "高级 · 可执行文件",
+    "loading": "正在读取配置文件…"
+  },
+  "settingsProfilesDialogs": {
+    "name": "名称",
+    "namePlaceholder": "工作",
+    "bring": "从 {name} 带来的插件",
+    "noPlugins": "{name} 没有可带来的插件。",
+    "lichLocked": "lich 会在每个配置文件中安装它",
+    "pluginsHint": "之后还可以从配置文件的菜单中复制更多插件。你的组织可能会拒绝其中一些。",
+    "createAndLogin": "创建并登录",
+    "renameTitle": "重命名配置文件",
+    "readyDesc": "可将它选为某个项目或所有新会话的配置文件。",
+    "failedDesc": "请从配置文件的菜单重试，或在终端中登录。",
+    "deleteTitle": "删除 {name}？",
+    "copyTitle": "将插件复制到 {name}",
+    "copyDesc": "它们会以此配置文件的身份通过 {provider} 安装，因此适用该账户的规则。",
+    "copyFrom": "复制自",
+    "copy": "复制插件",
+    "loginTitle": "登录 {name}",
+    "waiting": "正在等待登录…",
+    "openBrowser": "在浏览器中打开",
+    "copyAddress": "复制",
+    "pasteCode": "粘贴验证码",
+    "submitCode": "提交",
+    "terminal": "改为在终端中登录",
+    "readyTitle": "{name} 已就绪",
+    "failedTitle": "无法登录 {name}",
+    "copiedTitle": "{name} 的插件",
+    "loggedInAs": "已登录为 {email}",
+    "lichPluginNote": "无法安装 lich 插件：{error}",
+    "done": "完成"
+  },
+  "profiles": {
+    "usageLimit": "已达上限",
+    "noPlugins": "无插件",
+    "plugins": {
+      "other": "{count} 个插件"
+    },
+    "notLoggedIn": "未登录",
+    "loggedIn": "已登录",
+    "personal": "个人",
+    "profileDesc": "新会话使用哪个 {provider} 登录。会话会一直使用创建时的配置文件，恢复时也一样。",
+    "renameDescPlugins": "只会更改名称：其登录、插件和历史记录保持不变。",
+    "deleteDescPlugins": "其登录、插件和对话历史将被删除，在其中启动的会话将无法再恢复。",
+    "loginDesc": "请在 {provider} 打开的浏览器标签页中登录。完成后会自动继续。",
+    "claude": {
+      "profilesDesc": "每个配置文件都是独立的 Claude 登录，有各自的插件和历史记录。设置、CLAUDE.md、智能体、命令、技能和钩子在所有配置文件中都相同。",
+      "copiedNote": "设置、CLAUDE.md、智能体、命令、技能和钩子在此配置文件中是副本：在其他配置文件中编辑它们不再影响这里。",
+      "searchAlso": "claude 账户 登录 个人 工作",
+      "profilesAlso": "claude 账户 登录 个人 工作 插件",
+      "newDesc": "独立的 Claude 登录，有各自的插件和历史记录。",
+      "addressDesc": "如果浏览器没有打开，请在此地址登录并粘贴它显示的验证码。"
+    },
+    "codex": {
+      "profilesDesc": "每个配置文件都是独立的 Codex 登录，有各自的插件和历史记录。个人配置文件的 config.toml 设置、AGENTS.md、钩子、技能和规则在所有配置文件中都相同。",
+      "copiedNote": "AGENTS.md 和 hooks.json 在此配置文件中是副本：在其他配置文件中编辑它们不再影响这里。",
+      "searchAlso": "codex 账户 登录 个人 工作 chatgpt",
+      "profilesAlso": "codex 账户 登录 个人 工作 chatgpt 插件",
+      "newDesc": "独立的 Codex 登录，有各自的插件和历史记录。",
+      "addressDesc": "如果浏览器没有打开，请在此地址登录。"
+    },
+    "omp": {
+      "profilesDesc": "每个配置文件都是独立的一组 oh-my-pi 登录，有各自的历史记录。config.yml、models.yml、mcp.json、AGENTS.md、技能、规则、命令、提示词和扩展在所有配置文件中都相同。",
+      "copiedNote": "config.yml、models.yml、mcp.json 和 markdown 文件在此配置文件中是副本：在其他配置文件中编辑它们不再影响这里。",
+      "searchAlso": "omp oh-my-pi 账户 登录 个人 工作",
+      "profilesAlso": "omp oh-my-pi 账户 登录 个人 工作",
+      "newDesc": "独立的 oh-my-pi 登录，有各自的历史记录。创建后需在终端中登录。",
+      "renameDesc": "只会更改名称：其登录和历史记录保持不变。",
+      "deleteDesc": "其登录和对话历史将被删除，在其中启动的会话将无法再恢复。"
+    }
+  },
+  "profilesXdg": {
+    "opencode": {
+      "profilesDesc": "每个配置文件都是独立的 opencode 登录，有各自的历史记录。opencode 的配置、插件、智能体和 MCP 服务器在所有配置文件中都相同。",
+      "searchAlso": "opencode 账户 登录 个人 工作",
+      "profilesAlso": "opencode 账户 登录 个人 工作",
+      "newDesc": "独立的 opencode 登录，有各自的历史记录。创建后需在终端中登录。",
+      "renameDesc": "只会更改名称：其登录和历史记录保持不变。",
+      "deleteDesc": "其登录和对话历史将被删除，在其中启动的会话将无法再恢复。"
+    },
+    "cursor": {
+      "profilesDesc": "每个配置文件都是独立的 Cursor 登录，有各自的聊天和 CLI 设置。~/.cursor 中的 mcp.json、钩子和技能在所有配置文件中都相同。",
+      "searchAlso": "cursor cursor-agent 账户 登录 个人 工作",
+      "profilesAlso": "cursor cursor-agent 账户 登录 个人 工作",
+      "newDesc": "独立的 Cursor 登录，有各自的聊天记录。创建后需在终端中登录。",
+      "renameDesc": "只会更改名称：其登录和聊天记录保持不变。",
+      "deleteDesc": "其登录和聊天记录将被删除，在其中启动的会话将无法再恢复。"
+    },
+    "kiro": {
+      "profilesDesc": "每个配置文件都是独立的 Kiro 登录。~/.kiro 中的对话、智能体、steering 和设置在所有配置文件中都相同。",
+      "searchAlso": "kiro kiro-cli 账户 登录 个人 工作 aws builder",
+      "profilesAlso": "kiro kiro-cli 账户 登录 个人 工作",
+      "newDesc": "独立的 Kiro 登录。创建后需在终端中登录。",
+      "renameDesc": "只会更改名称：其登录保持不变。",
+      "deleteDesc": "其登录将被删除，在其中启动的会话将无法再恢复。对话会保留：所有配置文件共享它们。"
+    }
   }
 }

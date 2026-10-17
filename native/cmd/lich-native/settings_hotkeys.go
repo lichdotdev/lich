@@ -8,6 +8,7 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 )
 
@@ -165,10 +166,17 @@ func (h *hotkeyEditor) startRecording(id hotkeyID) {
 	}
 }
 
+// hotkeyActionText and hotkeyGroupText are the action's and the group's
+// names in the interface language, the catalog's hotkeys.action.<id> and
+// hotkeys.group.<id>.
+func hotkeyActionText(id hotkeyID) string { return i18n.T("hotkeys.action." + string(id)) }
+
+func hotkeyGroupText(id hotkeyGroup) string { return i18n.T("hotkeys.group." + string(id)) }
+
 func hotkeyLabels(ids []hotkeyID) []string {
 	labels := make([]string, len(ids))
 	for i, id := range ids {
-		labels[i] = hotkeyLabel(id)
+		labels[i] = hotkeyActionText(id)
 	}
 	return labels
 }
@@ -176,13 +184,13 @@ func hotkeyLabels(ids []hotkeyID) []string {
 // hotkeyEntries are the pane's searchable rows, one per action: the label and
 // the part of the app it acts on, as settings-index.ts hotkeyEntries.
 func hotkeyEntries() []settingEntry {
-	groups := map[hotkeyGroup]string{}
-	for _, g := range hotkeyGroups {
-		groups[g.id] = g.label
-	}
 	entries := make([]settingEntry, len(hotkeyActions))
 	for i, a := range hotkeyActions {
-		entries[i] = settingEntry{title: a.label, group: groups[a.group], key: "hotkeys." + string(a.id)}
+		entries[i] = settingEntry{
+			titleKey: "hotkeys.action." + string(a.id),
+			groupKey: "hotkeys.group." + string(a.group),
+			key:      "hotkeys." + string(a.id),
+		}
 	}
 	return entries
 }

@@ -97,8 +97,8 @@ func TestFontOptions(t *testing.T) {
 }
 
 func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
-	for q, title := range map[string]string{"zoom": zoomTitle, "text size": textSizeTitle, "typeface": fontTitle,
-		"budget": ceilingTitle} {
+	for q, title := range map[string]string{"zoom": "Zoom", "text size": "Terminal text size", "typeface": "Terminal font",
+		"budget": "Spend ceiling"} {
 		if got := searchSettings(q); len(got) == 0 || got[0].title != title || got[0].section != sectionAppearance {
 			t.Errorf("%q: %+v, want %q", q, got, title)
 		}
@@ -106,7 +106,7 @@ func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
 	// The Hotkeys rows are searchable as the web's are, so "Quit lich" is a
 	// prefix match and outranks the close setting, found by its also words.
 	if got := searchSettings("quit"); !slices.ContainsFunc(got, func(h settingHit) bool {
-		return h.title == closeSettingTitle && h.path() == "General › Window"
+		return h.title == "When the window closes" && h.path() == "General › Window"
 	}) {
 		t.Errorf("quit: %+v, want the close setting under General › Window", got)
 	}

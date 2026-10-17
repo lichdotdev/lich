@@ -15,7 +15,7 @@ func TestXDGProfilesShowOnTheirOwnScreens(t *testing.T) {
 	for _, kind := range []string{opencodeKind, cursorKind, kiroKind} {
 		var rows int
 		for _, e := range providerEntries() {
-			if slices.Equal(e.onlyFor, []string{kind}) && (e.title == profileTitle || e.title == profilesTitle) {
+			if slices.Equal(e.onlyFor, []string{kind}) && (e.titleText() == "Profile" || e.titleText() == "Profiles") {
 				rows++
 			}
 		}

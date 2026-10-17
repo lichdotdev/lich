@@ -30,11 +30,11 @@ func TestHotkeyRowsFollowTheGroupsInOrder(t *testing.T) {
 	seen := map[string]bool{}
 	last := ""
 	for _, e := range entries {
-		if e.group != last {
-			if seen[e.group] {
-				t.Fatalf("group %q comes back after another: the pane draws one heading per group", e.group)
+		if group := e.groupText(); group != last {
+			if seen[group] {
+				t.Fatalf("group %q comes back after another: the pane draws one heading per group", group)
 			}
-			seen[e.group], last = true, e.group
+			seen[group], last = true, group
 		}
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -128,9 +129,9 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 	// ponytail: the mockup's Rename and Pin join the menu when the native
 	// window has them.
 	entries := []ui.MenuEntry{
-		{Label: projectSettings, Icon: icSettings, OnClick: func() { act.projectSettings = tab.ID }},
+		{Label: i18n.T("tabs.topbarTabs.projectSettings"), Icon: icSettings, OnClick: func() { act.projectSettings = tab.ID }},
 		{Kind: ui.MenuSeparator},
-		{Label: closeProjectItem, Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.ask = tab.ID }},
+		{Label: i18n.T("tabs.topbarTabs.closeProject"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.ask = tab.ID }},
 	}
 	return t.sort.Item(gtx, tab.ID, func(gtx C) D {
 		return th.ContextMenu(t.root, &st.menu, entries).Layout(gtx, func(gtx C) D {

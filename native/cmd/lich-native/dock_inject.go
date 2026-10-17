@@ -7,25 +7,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog
-// (diff.injectMenu).
-const (
-	injectFile          = "Inject file"
-	injectLines         = "Inject lines"
-	injectLinesRange    = "Inject lines %s"
-	sessionComment      = "Comment for the session…"
-	sessionCommentRange = "Comment for the session %s…"
-	reviewCommentLabel  = "Comment on the pull request…"
-	reviewCommentRange  = "Comment on the pull request %s…"
 )
 
 // formatLineRef is diff.ts formatLineRef over 1-based file lines: a single
@@ -86,9 +74,9 @@ func dockInjector(client *lichclient.Client, id string) func(string) bool {
 // reviewCommentEntry is InjectMenu's comment on the pull request, offered on
 // the Pulls screen: open starts the box that files into the pending review.
 func reviewCommentEntry(lines string, open func()) ui.MenuEntry {
-	label := reviewCommentLabel
+	label := i18n.T("diff.injectMenu.reviewComment")
 	if lines != "" {
-		label = fmt.Sprintf(reviewCommentRange, lines)
+		label = i18n.T("diff.injectMenu.reviewCommentRange", i18n.Args{"lines": lines})
 	}
 	return ui.MenuEntry{Label: label, Disabled: lines == "", OnClick: open}
 }
@@ -96,13 +84,13 @@ func reviewCommentEntry(lines string, open func()) ui.MenuEntry {
 // injectEntries is the menu over the preview. lines is the selection as
 // formatLineRef spells it, "" for none, which disables what needs one.
 func injectEntries(rel, lines string, inject func(string) bool, comment func()) []ui.MenuEntry {
-	linesLabel, commentLabel := injectLines, sessionComment
+	linesLabel, commentLabel := i18n.T("diff.injectMenu.injectLines"), i18n.T("diff.injectMenu.sessionComment")
 	if lines != "" {
-		linesLabel = fmt.Sprintf(injectLinesRange, lines)
-		commentLabel = fmt.Sprintf(sessionCommentRange, lines)
+		linesLabel = i18n.T("diff.injectMenu.injectLinesRange", i18n.Args{"lines": lines})
+		commentLabel = i18n.T("diff.injectMenu.sessionCommentRange", i18n.Args{"lines": lines})
 	}
 	return []ui.MenuEntry{
-		{Label: injectFile, OnClick: func() { inject(fileReference(rel)) }},
+		{Label: i18n.T("diff.injectMenu.injectFile"), OnClick: func() { inject(fileReference(rel)) }},
 		{Label: linesLabel, Disabled: lines == "", OnClick: func() { inject(linesReference(rel, lines)) }},
 		{Label: commentLabel, Disabled: lines == "", OnClick: comment},
 	}

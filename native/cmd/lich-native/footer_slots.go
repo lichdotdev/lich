@@ -6,8 +6,6 @@ import (
 	"github.com/omartelo/lich/native/lichclient"
 )
 
-// ponytail: English until the native window has i18n.
-
 // footerInput is everything FooterBar reads about what is on screen: the
 // active session, or with none the project's own checkout.
 type footerInput struct {

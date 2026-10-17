@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -49,7 +50,7 @@ func TestBudgetShare(t *testing.T) {
 
 func TestEveryCostMissHasASentence(t *testing.T) {
 	for _, miss := range costMisses {
-		if costMissReason[miss] == "" {
+		if i18n.T(costMissReasonKeys[miss]) == "" {
 			t.Errorf("no sentence for %q", miss)
 		}
 	}
@@ -71,7 +72,7 @@ func TestCostReadout(t *testing.T) {
 		t.Error("no figure and no reason drew a readout")
 	}
 	miss, ok := costReadout(sessionUsage{CostMiss: "mixed-models"}, 10)
-	if !ok || miss.Text != "$—" || miss.Label != "Cost unavailable" || miss.Detail[0] != costMissReason["mixed-models"] {
+	if !ok || miss.Text != "$—" || miss.Label != "Cost unavailable" || miss.Detail[0] != "This conversation switched models, so lich cannot price it." {
 		t.Errorf("cost miss: %+v, %v", miss, ok)
 	}
 	r, _ := costReadout(sessionUsage{CostUSD: cost(9)}, 10)

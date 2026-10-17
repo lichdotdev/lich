@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"image"
 	"math"
 	"strings"
@@ -17,30 +16,10 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog
-// (settings.themePicker, settings.brokenThemeList).
-const (
-	themeChoose        = "Choose a theme"
-	themeSystemName    = "System"
-	themeFollowsOS     = "follows the OS"
-	themeInUse         = "in use"
-	themeBundled       = "bundled"
-	themeCountOne      = "%d theme"
-	themeCountOther    = "%d themes"
-	themeImportCard    = "Import theme"
-	themeUpdateNamed   = "Update %s"
-	themeUpdateHint    = "Check the repository for a newer version"
-	themeRemoveNamed   = "Remove %s"
-	brokenHeadingOne   = "%d theme can't load"
-	brokenHeadingOther = "%d themes can't load"
-	brokenRemove       = "Remove"
-	themeAutoLightDark = "Auto light/dark"
-	themePairCaption   = "%s pair"
 )
 
 // The picker's geometry, ThemePicker.tsx's classes.
@@ -123,7 +102,7 @@ func (p *themePicker) layoutRow(gtx C, th *ui.Theme, r settingRow, first bool) D
 	row := func(gtx C) D {
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextXS, themeAutoLightDark).Muted().Layout),
+				layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.settingsTheme.autoLightDark")).Muted().Layout),
 				ui.Gap(2),
 				layout.Rigid(func(gtx C) D { return p.followSwitch(gtx, th, v) }),
 				ui.Gap(3),
@@ -194,7 +173,7 @@ func (p *themePicker) triggerButton(gtx C, th *ui.Theme, v appearanceView) D {
 
 func selectionName(v appearanceView) string {
 	if v.selected == themeSystem {
-		return themeSystemName
+		return i18n.T("settings.themePicker.system")
 	}
 	return v.resolved.def.Name
 }
@@ -274,14 +253,14 @@ func (p *themePicker) cardWidgets(th *ui.Theme, v appearanceView) []layout.Widge
 				return systemMiniature(gtx, th, light.palette, dark.palette, size)
 			}
 			return p.cardLayout(gtx, th, &p.systemCard, themeCardSpec{
-				id: themeSystem, name: themeSystemName, caption: themeFollowsOS, selected: v.selected == themeSystem, preview: preview})
+				id: themeSystem, name: i18n.T("settings.themePicker.system"), caption: i18n.T("settings.themePicker.followsOs"), selected: v.selected == themeSystem, preview: preview})
 		},
 	}
 	pair := selectedPair(v)
 	for _, e := range v.themes {
 		caption := themeCaption(e.def, v.selected)
 		if e.def.ID == pair {
-			caption = fmt.Sprintf(themePairCaption, e.def.Scheme)
+			caption = pairCaption(e.def.Scheme)
 		}
 		spec := themeCardSpec{id: e.def.ID, name: e.def.Name, caption: caption,
 			selected: v.selected == e.def.ID, custom: e.def.Origin == themeOriginCustom, fromRepo: e.def.Source != nil,
@@ -294,15 +273,20 @@ func (p *themePicker) cardWidgets(th *ui.Theme, v appearanceView) []layout.Widge
 	return cards
 }
 
+// pairCaption is the card line of the selected theme's pair: the scheme it
+// is the other half of.
+func pairCaption(scheme string) string {
+	if scheme == themeSchemeLight {
+		return i18n.T("settings.settingsTheme.pairLight")
+	}
+	return i18n.T("settings.settingsTheme.pairDark")
+}
+
 // brokenList is BrokenThemeList: a theme with no colors to preview is a row
 // under the strip, its reason written out.
 func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []lichclient.BrokenTheme) D {
 	if len(broken) == 0 {
 		return D{}
-	}
-	heading := brokenHeadingOther
-	if len(broken) == 1 {
-		heading = brokenHeadingOne
 	}
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return ruleAbove(gtx, th) }),
@@ -312,7 +296,7 @@ func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []lichclient.Broken
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icTriangleAlert.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 					ui.Gap(1.5),
-					layout.Rigid(th.Text(text2XS, strings.ToUpper(fmt.Sprintf(heading, len(broken)))).Leading(text2XSLeading).Muted().Weight(font.Medium).Layout),
+					layout.Rigid(th.Text(text2XS, strings.ToUpper(i18n.T("settings.brokenThemeList.heading", i18n.Args{"count": len(broken)}))).Leading(text2XSLeading).Muted().Weight(font.Medium).Layout),
 				)
 			})
 		}),
@@ -352,7 +336,9 @@ func (p *themePicker) brokenRow(gtx C, th *ui.Theme, b lichclient.BrokenTheme, r
 			ui.Gap(4),
 			layout.Flexed(1, reason.Layout),
 			ui.Gap(4),
-			layout.Rigid(func(gtx C) D { return ghostTextButton(gtx, on, &row.remove, brokenRemove, on.Destructive) }),
+			layout.Rigid(func(gtx C) D {
+				return ghostTextButton(gtx, on, &row.remove, i18n.T("settings.brokenThemeList.remove"), on.Destructive)
+			}),
 		)
 	})
 	call := macro.Stop()

@@ -9,22 +9,15 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (pulls.mergeMessageDialog).
+// The commit message gh would write itself, which goes into git as is.
 const (
-	mergeEditLabel       = "%s, edit message…"
-	mergeEditBypass      = "%s, edit message… (bypasses rules)"
-	mergeEditDescription = "Edit the commit message, then merge."
-	mergeEditSubject     = "Commit message"
-	mergeEditBody        = "Extended description"
-	mergeEditOptional    = "Optional"
-	mergeEditSquashTitle = "Squash and merge"
-	mergeEditMergeTitle  = "Create a merge commit"
-	mergeEditSquashSubj  = "%s (#%d)"
-	mergeEditMergeSubj   = "Merge pull request #%d from %s"
+	mergeEditSquashSubj = "%s (#%d)"
+	mergeEditMergeSubj  = "Merge pull request #%d from %s"
 )
 
 // The body field's room: MergeMessageDialog's min-h-[30vh] and max-h-[50vh],
@@ -43,9 +36,9 @@ type mergeEdit struct {
 
 func mergeEditFor(method string, d lichclient.PRDetail) mergeEdit {
 	if method == "squash" {
-		return mergeEdit{method: method, title: mergeEditSquashTitle, subject: fmt.Sprintf(mergeEditSquashSubj, d.Title, d.Number), body: d.Body}
+		return mergeEdit{method: method, title: i18n.T("pulls.mergeMessageDialog.squashAndMerge"), subject: fmt.Sprintf(mergeEditSquashSubj, d.Title, d.Number), body: d.Body}
 	}
-	return mergeEdit{method: method, title: mergeEditMergeTitle, subject: fmt.Sprintf(mergeEditMergeSubj, d.Number, d.HeadRefName)}
+	return mergeEdit{method: method, title: i18n.T("pulls.mergeMessageDialog.createMergeCommit"), subject: fmt.Sprintf(mergeEditMergeSubj, d.Number, d.HeadRefName)}
 }
 
 // mergeDialog is MergeMessageDialog: the subject, one line that wraps so its
@@ -80,11 +73,11 @@ func (v *pullView) editEntries(methods []string, bypass bool, d lichclient.PRDet
 		if m == "rebase" {
 			continue
 		}
-		format := mergeEditLabel
+		label := i18n.T("pulls.pullRequestView.editMessage", i18n.Args{"method": mergeMethodLabel(m)})
 		if bypass {
-			format = mergeEditBypass
+			label = i18n.T("pulls.pullRequestView.editMessageBypass", i18n.Args{"method": mergeMethodLabel(m)})
 		}
-		out = append(out, ui.MenuEntry{Label: fmt.Sprintf(format, mergeMethodLabels[m]), OnClick: func() { v.mergeEdit.show(m, bypass, d) }})
+		out = append(out, ui.MenuEntry{Label: label, OnClick: func() { v.mergeEdit.show(m, bypass, d) }})
 	}
 	if len(out) == 0 {
 		return nil
@@ -118,15 +111,15 @@ func (u *window) layoutMergeDialog(gtx C, th *ui.Theme) {
 		}()
 	}
 	on := th.On(th.Popover)
-	cancel := on.Button(&m.cancel, pullsCancel)
+	cancel := on.Button(&m.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
 	label := m.edit.title
 	if busy {
-		label = pullsMerging
+		label = i18n.T("pulls.mergeMessageDialog.merging")
 	}
 	merge := on.Button(&m.merge, label)
 	merge.Icon, merge.Disabled = icPullMerged, busy || subject == ""
-	dlg := th.Dialog(&m.dialog, open, m.edit.title, mergeEditDescription)
+	dlg := th.Dialog(&m.dialog, open, m.edit.title, i18n.T("pulls.mergeMessageDialog.description"))
 	dlg.MaxWidth = ui.DialogWidthXL
 	dlg.Body = func(gtx C) D { return m.fields(gtx, on) }
 	dlg.Actions = []layout.Widget{cancel.Layout, merge.Layout}
@@ -142,16 +135,16 @@ func (m *mergeDialog) fields(gtx C, th *ui.Theme) D {
 		m.focus = false
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Label(mergeEditSubject).Layout),
+		layout.Rigid(th.Label(i18n.T("pulls.mergeMessageDialog.subject")).Layout),
 		ui.VGap(1.5),
 		layout.Rigid(th.Textarea(&m.subject, "").Layout),
 		ui.VGap(3),
-		layout.Rigid(th.Label(mergeEditBody).Layout),
+		layout.Rigid(th.Label(i18n.T("pulls.mergeMessageDialog.body")).Layout),
 		ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min.Y = gtx.Dp(mergeBodyMin)
 			gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(mergeBodyMax))
-			ta := th.Textarea(&m.body, mergeEditOptional)
+			ta := th.Textarea(&m.body, i18n.T("pulls.mergeMessageDialog.optional"))
 			ta.Resize = &m.bodyFit
 			return ta.Layout(gtx)
 		}),

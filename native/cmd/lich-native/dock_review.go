@@ -9,7 +9,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"image"
 	"log"
 	"sync"
@@ -23,22 +22,9 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/omartelo/lich/native/glyphs"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (diff.reviewPanel,
-// diff.discardDialog).
-const (
-	reviewDiscardFailed     = "Failed to discard changes: %s"
-	reviewReverted          = "Reverted +%d -%d in %s"
-	reviewUndo              = "Undo"
-	reviewUndoFailed        = "Couldn't undo the revert in %s"
-	discardTitle            = "Discard changes"
-	discardDescription      = "Revert all uncommitted changes to %s? This cannot be undone."
-	discardDescriptionAdded = "Revert all uncommitted changes to %s? The file will be deleted from disk. This cannot be undone."
-	discardConfirm          = "Discard changes"
-	discardCancel           = "Cancel"
 )
 
 // revertUndoFor is REVERT_UNDO_MS: a revert's Undo stays longer than a plain
@@ -283,7 +269,7 @@ func (p *reviewPanel) expand(c *fileCard, gen int, g godemirror.Gap) {
 	go func() {
 		lines, err := p.client.FileLines(context.Background(), path, rel, ref, g.From, g.To)
 		if err != nil {
-			p.notify(failure(toastReadFailed, rel))
+			p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.fileDiff.readFailed", i18n.Args{"path": rel})})
 			return
 		}
 		p.mu.Lock()
@@ -322,19 +308,19 @@ func (p *reviewPanel) revert(rel string, lines []lichclient.RevertLine) {
 		defer p.written(path)
 		undo, err := p.client.RevertLines(context.Background(), path, rel, lines)
 		if err != nil {
-			p.notify(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(toastRevertFailed, name), Description: lichclient.ErrorText(err)})
+			p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.revertFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
 			return
 		}
 		added, deleted := revertStat(lines)
-		p.notify(ui.Toast{Title: fmt.Sprintf(reviewReverted, added, deleted, name), Duration: revertUndoFor,
-			Action: &ui.ToastButton{Label: reviewUndo, OnClick: func() { go p.restore(path, rel, name, undo) }}})
+		p.notify(ui.Toast{Title: i18n.T("diff.reviewPanel.reverted", i18n.Args{"added": added, "deleted": deleted, "name": name}), Duration: revertUndoFor,
+			Action: &ui.ToastButton{Label: i18n.T("diff.reviewPanel.undo"), OnClick: func() { go p.restore(path, rel, name, undo) }}})
 	}()
 }
 
 func (p *reviewPanel) restore(path, rel, name string, undo lichclient.RevertResult) {
 	defer p.written(path)
 	if err := p.client.Call(context.Background(), "project.RestoreLines", nil, path, rel, undo); err != nil {
-		p.notify(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(reviewUndoFailed, name), Description: lichclient.ErrorText(err)})
+		p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.undoFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
 	}
 }
 
@@ -361,16 +347,16 @@ func (p *reviewPanel) layoutDialogs(gtx C, th *ui.Theme) {
 	case p.back.Clicked(gtx):
 		p.pendingDiscard = nil
 	}
-	description := discardDescription
+	description := i18n.T("diff.discardDialog.description", i18n.Args{"path": f.path})
 	if f.status == statusAdded {
-		description = discardDescriptionAdded
+		description = i18n.T("diff.discardDialog.descriptionAdded", i18n.Args{"path": f.path})
 	}
 	pop := th.On(th.Popover)
-	d := th.Dialog(&p.dialog, p.pendingDiscard != nil, discardTitle, fmt.Sprintf(description, f.path))
+	d := th.Dialog(&p.dialog, p.pendingDiscard != nil, i18n.T("diff.discardDialog.title"), description)
 	d.MaxWidth = ui.DialogWidthXL
-	confirm := pop.Button(&p.confirm, discardConfirm)
+	confirm := pop.Button(&p.confirm, i18n.T("diff.discardDialog.confirm"))
 	confirm.Variant = ui.VariantDestructive
-	back := pop.Button(&p.back, discardCancel)
+	back := pop.Button(&p.back, i18n.T("common.action.cancel"))
 	back.Variant = ui.VariantOutline
 	d.Actions = []layout.Widget{back.Layout, confirm.Layout}
 	if d.Layout(gtx) {
@@ -386,7 +372,7 @@ func (p *reviewPanel) discard(f patchFile) {
 		defer p.written(path)
 		for _, rel := range discardTargets(f) {
 			if err := p.client.Call(context.Background(), "project.DiscardFile", nil, path, rel); err != nil {
-				p.notify(failure(reviewDiscardFailed, err))
+				p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.discardFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 				return
 			}
 		}

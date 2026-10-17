@@ -39,5 +39,11 @@
     "clock": {
       "label": "日期和时间"
     }
+  },
+  "footerEditor": {
+    "previewHint": "预览 · 示例值"
+  },
+  "footerMenu": {
+    "customize": "自定义页脚…"
   }
 }

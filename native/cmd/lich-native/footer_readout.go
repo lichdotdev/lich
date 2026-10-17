@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 	"time"
-)
 
-// English until the native window has i18n.
+	"github.com/omartelo/lich/native/i18n"
+)
 
 // usageTone is usageColor (ContextRing.tsx): one 0–100 scale for every
 // bounded share, so a budget half spent and a context half full read alike.
@@ -47,9 +47,9 @@ func contextReadout(u sessionUsage) (footerReadout, bool) {
 		return footerReadout{}, false
 	}
 	return footerReadout{
-		Label:  "Context window",
+		Label:  i18n.T("shell.footerSession.contextWindow"),
 		Text:   fmt.Sprintf("%d%%", u.Percent),
-		Detail: []string{fmt.Sprintf("%s / %s tokens", groupThousands(u.Tokens), groupThousands(u.Window))},
+		Detail: []string{i18n.T("shell.footerSession.contextTokens", i18n.Args{"tokens": groupThousands(u.Tokens), "window": groupThousands(u.Window)})},
 		Tone:   toneOf(float64(u.Percent)),
 	}, true
 }

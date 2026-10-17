@@ -32,5 +32,14 @@
     },
     "relocate": "relocalizar",
     "reopen": "reabrir"
+  },
+  "paletteLogic": {
+    "indexedNewest": "indexado: os {size} mais recentes"
+  },
+  "palette": {
+    "verbOpen": "abrir",
+    "verbForget": "esquecer",
+    "verbResume": "retomar",
+    "verbRun": "executar"
   }
 }

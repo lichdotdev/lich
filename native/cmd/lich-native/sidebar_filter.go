@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -21,17 +21,19 @@ const (
 // moving, what is new, the rest.
 var sessionPhases = []sessionPhase{phaseWaiting, phaseRunning, phaseUnread, phaseIdle}
 
-// ponytail: English until the native window has i18n.
-var (
-	phaseLabels = map[sessionPhase]string{
-		phaseWaiting: "waiting", phaseRunning: "running", phaseUnread: "unread", phaseIdle: "idle",
+// phaseNoticeLabel is a phase named inside the empty-filter sentence, lower
+// case, where the chip's label starts a capital.
+func phaseNoticeLabel(p sessionPhase) string {
+	switch p {
+	case phaseWaiting:
+		return i18n.T("session.filter.phase.waiting")
+	case phaseRunning:
+		return i18n.T("session.filter.phase.running")
+	case phaseUnread:
+		return i18n.T("session.filter.phase.unread")
 	}
-	phaseJoiner            = " or "
-	noMatchText            = "No sessions. The active session stays."
-	noMatchQueryText       = "No sessions match “%s”. The active session stays."
-	noMatchPhasesText      = "No %s sessions. The active session stays."
-	noMatchPhasesQueryText = "No %s sessions match “%s”. The active session stays."
-)
+	return i18n.T("session.filter.phase.idle")
+}
 
 // phaseOf files a status under one chip. A read turn is idle: its ring
 // already says nothing is happening and nothing is new. A session that never
@@ -125,17 +127,17 @@ func noMatchNotice(query string, phases map[sessionPhase]bool) string {
 	var picked []string
 	for _, p := range sessionPhases {
 		if phases[p] {
-			picked = append(picked, phaseLabels[p])
+			picked = append(picked, phaseNoticeLabel(p))
 		}
 	}
-	named := strings.Join(picked, phaseJoiner)
+	named := strings.Join(picked, i18n.T("session.filter.phaseJoiner"))
 	switch {
 	case named == "" && trimmed == "":
-		return noMatchText
+		return i18n.T("session.filter.noMatch")
 	case named == "":
-		return fmt.Sprintf(noMatchQueryText, trimmed)
+		return i18n.T("session.filter.noMatchQuery", i18n.Args{"query": trimmed})
 	case trimmed == "":
-		return fmt.Sprintf(noMatchPhasesText, named)
+		return i18n.T("session.filter.noMatchPhases", i18n.Args{"phases": named})
 	}
-	return fmt.Sprintf(noMatchPhasesQueryText, named, trimmed)
+	return i18n.T("session.filter.noMatchPhasesQuery", i18n.Args{"phases": named, "query": trimmed})
 }

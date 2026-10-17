@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"slices"
 
@@ -9,45 +8,24 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (settings.pluginSetting).
 // The loading toasts (installing, updating, updatingAll) wait on the toaster
 // drawing a spinner; the button's own spinner stands in for them.
-const (
-	pluginTitle         = "lich plugin"
-	pluginAlso          = "hooks install"
-	pluginDesc          = "Session status, titles, git refresh and resume, inside the provider CLIs that can run it."
-	pluginInstalled     = "Plugin installed. Restart your sessions to apply."
-	pluginInstallFailed = "Install failed: %v"
-	pluginUpdated       = "Plugin updated. Restart your sessions to apply."
-	pluginUpdateFailed  = "Update failed: %v"
-	pluginProfileFailed = "The lich plugin is not updated in the %s profile %s: %s"
-	pluginChecked       = "Checked."
-	pluginCliMissing    = "CLI not installed"
-	pluginNotInstalled  = "Plugin not installed"
-	pluginUnsupported   = "v%s, not supported by this lich"
-	pluginInstall       = "Install"
-	pluginUpdateTo      = "Update to v%s"
-	pluginUpdateAll     = "Update all"
-	pluginInstallThis   = "Install v%s"
-	pluginProviderIcon  = 15 // ProviderIcon size={15}
-)
+const pluginProviderIcon = 15 // ProviderIcon size={15}
 
-// pluginHints are the notes under a provider's row, shown while its plugin
-// is installed.
+// pluginHints are the catalog keys of the notes under a provider's row, shown
+// while its plugin is installed.
 var pluginHints = map[string]string{
-	"codex":       "Run /hooks in a Codex session to trust the plugin's hooks.",
-	"crush":       "Reports its session id and refreshes git status. It has no end-of-turn event, so its cards show no status and keep their own name.",
-	"omp":         "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
-	"antigravity": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
-	"cursor":      "Runs the plugin installed in Claude Code, so it reports what that version reports and updates with it. lich adds only its own tools here. It raises no approval event either, so a session waiting on your permission shows a spinner rather than a bell.",
+	"codex":       "settings.settingsUpdatesPlugin.hint.codex",
+	"crush":       "settings.settingsUpdatesPlugin.hint.crush",
+	"omp":         "settings.settingsUpdatesPlugin.hint.omp",
+	"antigravity": "settings.settingsUpdatesPlugin.hint.antigravity",
+	"cursor":      "settings.settingsUpdatesPlugin.hint.cursor",
 }
-
-// pluginCodexTrust is the toast after installing into Codex.
-const pluginCodexTrust = "Codex: run /hooks in a Codex session to trust the plugin's hooks."
 
 // pluginControls are the plugin block's buttons: one action per provider row.
 type pluginControls struct {
@@ -59,13 +37,13 @@ type pluginControls struct {
 func pluginVersionText(st lichclient.PluginStatus) string {
 	switch {
 	case !st.Available:
-		return pluginCliMissing
+		return i18n.T("settings.pluginSetting.cliMissing")
 	case !st.Installed:
-		return pluginNotInstalled
+		return i18n.T("settings.pluginSetting.notInstalled")
 	case st.Compatible:
 		return "v" + st.InstalledVersion
 	}
-	return fmt.Sprintf(pluginUnsupported, st.InstalledVersion)
+	return i18n.T("settings.pluginSetting.unsupported", i18n.Args{"version": st.InstalledVersion})
 }
 
 // pluginAction is the button a row offers, none when there is nothing to
@@ -73,11 +51,11 @@ func pluginVersionText(st lichclient.PluginStatus) string {
 func pluginAction(st lichclient.PluginStatus) (label string, variant ui.Variant, ok bool) {
 	switch {
 	case st.Available && !st.Installed:
-		return pluginInstall, ui.VariantDefault, true
+		return i18n.T("settings.pluginSetting.install"), ui.VariantDefault, true
 	case st.Installed && st.UpdateAvailable && st.Compatible:
-		return fmt.Sprintf(pluginUpdateTo, st.LatestVersion), ui.VariantOutline, true
+		return i18n.T("settings.pluginSetting.updateTo", i18n.Args{"version": st.LatestVersion}), ui.VariantOutline, true
 	case st.Installed && st.UpdateAvailable:
-		return fmt.Sprintf(pluginInstallThis, st.LatestVersion), ui.VariantOutline, true
+		return i18n.T("settings.pluginSetting.installVersion", i18n.Args{"version": st.LatestVersion}), ui.VariantOutline, true
 	}
 	return "", ui.VariantDefault, false
 }
@@ -125,9 +103,9 @@ func (u *updatesSettings) act(s *settingsScreen, provider string) {
 	}
 	switch row := fresh[i]; {
 	case row.Available && !row.Installed:
-		u.run(s, func() error { return s.client.InstallPlugin(s.ctx, provider) }, pluginInstalled, pluginInstallFailed)
+		u.run(s, func() error { return s.client.InstallPlugin(s.ctx, provider) }, "settings.pluginSetting.installed", "settings.settingsUpdatesPlugin.installFailed")
 	case row.Installed && row.UpdateAvailable:
-		u.run(s, func() error { return s.client.UpdatePlugin(s.ctx, provider) }, pluginUpdated, pluginUpdateFailed)
+		u.run(s, func() error { return s.client.UpdatePlugin(s.ctx, provider) }, "settings.pluginSetting.updated", "settings.settingsUpdatesPlugin.updateFailed")
 	}
 }
 
@@ -142,7 +120,7 @@ func (u *updatesSettings) updateAllOutdated(s *settingsScreen) {
 			}
 		}
 		return nil
-	}, pluginUpdated, pluginUpdateFailed)
+	}, "settings.pluginSetting.updated", "settings.settingsUpdatesPlugin.updateFailed")
 }
 
 // check re-reads the rows on request; the outcome is what the read left in
@@ -159,21 +137,22 @@ func (u *updatesSettings) check(s *settingsScreen) {
 	u.mu.Unlock()
 }
 
-// run is the action behind a toast, which says how it ended; the rows are
-// read again after a success so the next visit shows what it changed.
+// run is the action behind a toast, which says how it ended; done and failed
+// are catalog keys, failed taking the error. The rows are read again after a
+// success so the next visit shows what it changed.
 func (u *updatesSettings) run(s *settingsScreen, call func() error, done, failed string) {
 	if err := call(); err != nil {
-		s.theme.toaster.Show(failure(failed, err))
+		s.theme.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T(failed, i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
-	s.theme.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: done})
+	s.theme.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T(done)})
 	u.readPlugins(s)
 }
 
 // pluginBlock is PluginSetting: a row per provider CLI, each with its note
 // while its plugin is installed, and the check.
 func (u *updatesSettings) pluginBlock(gtx C, th *ui.Theme, s *settingsScreen, r settingRow, first bool) D {
-	r.description = pluginDesc
+	r.description = i18n.T("settings.pluginSetting.description")
 	c := &u.plugin
 	if c.check.Clicked(gtx) {
 		go u.check(s)
@@ -212,9 +191,9 @@ func pluginOutcome(checked, failed bool) string {
 	case !checked:
 		return ""
 	case failed:
-		return updatesCheckFailed
+		return i18n.T("settings.pluginSetting.checkFailed")
 	}
-	return pluginChecked
+	return i18n.T("settings.pluginSetting.checked")
 }
 
 // row is one provider CLI: its mark and name, what it has installed, and the
@@ -250,7 +229,7 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st lichclient.PluginStatus, bu
 			layout.Rigid(line),
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Left: indent, Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-					return wrapped(gtx, th.Text(ui.TextXS, hint).Muted())
+					return wrapped(gtx, th.Text(ui.TextXS, i18n.T(hint)).Muted())
 				})
 			}),
 		)
@@ -260,11 +239,11 @@ func (c *pluginControls) row(gtx C, th *ui.Theme, st lichclient.PluginStatus, bu
 // footer is the check, the update-all for more than one outdated plugin, and
 // the outcome.
 func (c *pluginControls) footer(gtx C, th *ui.Theme, offerAll, busy bool, outcome string) D {
-	check := th.Button(&c.check, updatesCheck)
+	check := th.Button(&c.check, i18n.T("settings.pluginSetting.checkForUpdates"))
 	check.Size, check.Variant, check.Disabled = ui.SizeSM, ui.VariantOutline, busy
 	children := []layout.FlexChild{layout.Rigid(check.Layout)}
 	if offerAll {
-		all := th.Button(&c.updateAll, pluginUpdateAll)
+		all := th.Button(&c.updateAll, i18n.T("settings.pluginSetting.updateAll"))
 		all.Size, all.Disabled = ui.SizeSM, busy
 		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D { return busyButton(gtx, th, all, busy) }))
 	}
@@ -279,6 +258,6 @@ func (c *pluginControls) footer(gtx C, th *ui.Theme, offerAll, busy bool, outcom
 // update already did.
 func (u *window) pluginProfilesFailed(pass lichclient.PluginProfiles) {
 	for _, f := range pass.Failures {
-		u.toaster.Show(failure(pluginProfileFailed, pass.Name, f.Name, f.Error))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.settingsUpdatesPlugin.profileFailed", i18n.Args{"pass": pass.Name, "profile": f.Name, "error": f.Error})})
 	}
 }

@@ -221,7 +221,11 @@
     "creating": "Creating…",
     "open": "Open worktree",
     "fork": "Fork",
-    "create": "Create worktree"
+    "create": "Create worktree",
+    "carryReused": "{name} already existed, so it opened as it stands and your uncommitted changes stayed where they were.",
+    "carryFailed": "The worktree opened, but your uncommitted changes could not be copied: {error}",
+    "issueLost": "The issue could not be handed to the session: {error}",
+    "neverPrompted": "the session never reached a prompt"
   },
   "worktreeCloseDialogs": {
     "runningTitle": "Session is still running",
@@ -263,5 +267,51 @@
     "setAtOpen": "Set when the session opened; reopen it to change.",
     "notMounted": "Not mounted (symlinks): {paths}",
     "morePaths": "+{count} more"
+  },
+  "worktreeDialogView": {
+    "title": "New worktree session",
+    "description": "A separate checkout on its own branch, with a session of its own.",
+    "name": "Name",
+    "namePlaceholder": "Blank for a random name, words or #issue",
+    "branchLine": "branch: {branch}",
+    "randomBranch": "a random name",
+    "opensSelected": "Opens the selected worktree's session.",
+    "from": "From",
+    "searchBranches": "Search branches",
+    "noMatch": "No branch matches.",
+    "local": "Local",
+    "remote": "Remote",
+    "opensSession": "opens its session instead",
+    "carry": "Bring uncommitted changes",
+    "carryFiles": {
+      "one": "{count} file from this checkout",
+      "other": "{count} files from this checkout"
+    },
+    "create": "Create",
+    "open": "Open"
+  },
+  "worktreeLogic": {
+    "checking": "Checking the remote…",
+    "behind": "{count} behind {upstream} · starts from {upstream}",
+    "notPushed": {
+      "one": "{count} commit not pushed · starts from local {branch}",
+      "other": "{count} commits not pushed · starts from local {branch}"
+    },
+    "unreachable": "Couldn't reach {remote} · starts from local {branch}",
+    "unreachableRemote": "Couldn't reach the remote · starts from local {branch}",
+    "keepsChanges": "Starts from local {branch} to keep your changes"
+  },
+  "closeWorktree": {
+    "adopted": "lich did not create the worktree at {path}. Removing deletes that directory but keeps its branch."
+  },
+  "sidebarProfile": {
+    "continueIn": "Continue in",
+    "continueInHint": "Same conversation, another login",
+    "goneTitle": "{label} was started in a profile that no longer exists",
+    "goneDescription": "Its conversation cannot be resumed. Start a new session in this project's profile instead.",
+    "startNew": "Start new",
+    "dismiss": "Dismiss",
+    "resumesIn": "It resumes in {profile} · {email}, the profile it started in.",
+    "resumesInNoEmail": "It resumes in {profile}, the profile it started in."
   }
 }

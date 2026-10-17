@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/omartelo/lich/native/i18n"
 )
 
 // The keyboard shortcuts of frontend/src/lib/hotkeys.ts: the actions, their
 // default chords and the pure rules over them. The stored value is the web's
 // own (hotkeys.bindings), so the two windows share their bindings.
 
-// ponytail: English until the native window has i18n (hotkeys.group,
-// hotkeys.action, hotkeys.terminalCost, hotkeys.unassigned).
-const (
-	hotkeysSettingKey = "hotkeys.bindings"
-	hotkeyUnassigned  = "Unassigned"
-	hotkeyKeyPlaceTag = "{key}"
-)
+const hotkeysSettingKey = "hotkeys.bindings"
+
+// hotkeyUnassigned is what a chord bound to nothing reads as, in the
+// interface language localizeHotkeys last put it in.
+var hotkeyUnassigned = i18n.T("hotkeys.unassigned")
 
 type hotkeyID string
 
@@ -55,13 +55,20 @@ const (
 	hotkeyGroupApp      hotkeyGroup = "app"
 )
 
-var hotkeyGroups = []struct {
-	id    hotkeyGroup
-	label string
-}{
-	{hotkeyGroupSessions, "Sessions"},
-	{hotkeyGroupView, "View"},
-	{hotkeyGroupApp, "App"},
+// hotkeyGroups hold each heading's catalog key; label is its text in the
+// interface language localizeHotkeys last put it in (English at start, since
+// the tables are built before the window reads the language), for the
+// screens that read the field.
+var hotkeyGroups = labelGroups([]hotkeyGroupHeading{
+	{id: hotkeyGroupSessions, labelKey: "hotkeys.group.sessions"},
+	{id: hotkeyGroupView, labelKey: "hotkeys.group.view"},
+	{id: hotkeyGroupApp, labelKey: "hotkeys.group.app"},
+})
+
+type hotkeyGroupHeading struct {
+	id       hotkeyGroup
+	labelKey string
+	label    string
 }
 
 // combo is a chord. Mod is the platform's primary modifier, Ctrl or Cmd, so
@@ -76,42 +83,45 @@ type combo struct {
 // comboUnassigned never matches: no keypress produces an empty key.
 var comboUnassigned = combo{}
 
+// hotkeyAction is a bindable action. labelKey is its catalog key; label is
+// the text in the interface language localizeHotkeys last put it in.
 type hotkeyAction struct {
-	id    hotkeyID
-	label string
-	group hotkeyGroup
-	combo combo
+	id       hotkeyID
+	labelKey string
+	label    string
+	group    hotkeyGroup
+	combo    combo
 }
 
 func shiftChord(key string) combo { return combo{Mod: true, Shift: true, Key: key} }
 
 // hotkeyActions drives the defaults, the settings list and its search, in
 // this order. Why each default is free is hotkeys.ts's to say.
-var hotkeyActions = []hotkeyAction{
-	{hotkeyNewSession, "New session", hotkeyGroupSessions, shiftChord("t")},
-	{hotkeyNewWorktree, "New worktree session", hotkeyGroupSessions, shiftChord("b")},
-	{hotkeyRenameSession, "Rename the active session", hotkeyGroupSessions, shiftChord("e")},
-	{hotkeyCloseSession, "Close the active session", hotkeyGroupSessions, shiftChord("x")},
-	{hotkeyTogglePin, "Pin or unpin the active session", hotkeyGroupSessions, shiftChord("k")},
-	{hotkeyOpenTerminal, "Open a terminal in the session's directory", hotkeyGroupSessions, shiftChord("l")},
-	{hotkeyDelegate, "Delegate to another session", hotkeyGroupSessions, shiftChord("h")},
-	{hotkeyNextSession, "Next session", hotkeyGroupSessions, shiftChord("ArrowDown")},
-	{hotkeyPrevSession, "Previous session", hotkeyGroupSessions, shiftChord("ArrowUp")},
-	{hotkeyNextWaitingSession, "Next session waiting for input", hotkeyGroupSessions, shiftChord("y")},
-	{hotkeyFocusTerminal, "Focus the session terminal", hotkeyGroupSessions, shiftChord("Enter")},
-	{hotkeyNextProject, "Next project", hotkeyGroupView, shiftChord("ArrowRight")},
-	{hotkeyPrevProject, "Previous project", hotkeyGroupView, shiftChord("ArrowLeft")},
-	{hotkeyToggleSidebar, "Toggle the session sidebar", hotkeyGroupView, shiftChord("s")},
-	{hotkeyToggleDock, "Toggle the right dock", hotkeyGroupView, shiftChord("d")},
-	{hotkeySearchInFiles, "Search in files", hotkeyGroupView, comboUnassigned},
-	{hotkeySplitBeside, "Show another session beside this one", hotkeyGroupView, shiftChord("g")},
-	{hotkeyOtherPane, "Focus the next pane", hotkeyGroupView, shiftChord("f")},
-	{hotkeyCommandPalette, "Command palette", hotkeyGroupApp, combo{Mod: true, Key: "k"}},
-	{hotkeySettings, "Settings", hotkeyGroupApp, combo{Mod: true, Key: ","}},
-	{hotkeyPulls, "Pull requests", hotkeyGroupApp, shiftChord("p")},
-	{hotkeyShortcuts, "Keyboard shortcuts", hotkeyGroupApp, combo{Mod: true, Key: "/"}},
-	{hotkeyQuit, "Quit lich", hotkeyGroupApp, comboUnassigned},
-}
+var hotkeyActions = labelActions([]hotkeyAction{
+	{id: hotkeyNewSession, labelKey: "hotkeys.action.newSession", group: hotkeyGroupSessions, combo: shiftChord("t")},
+	{id: hotkeyNewWorktree, labelKey: "hotkeys.action.newWorktree", group: hotkeyGroupSessions, combo: shiftChord("b")},
+	{id: hotkeyRenameSession, labelKey: "hotkeys.action.renameSession", group: hotkeyGroupSessions, combo: shiftChord("e")},
+	{id: hotkeyCloseSession, labelKey: "hotkeys.action.closeSession", group: hotkeyGroupSessions, combo: shiftChord("x")},
+	{id: hotkeyTogglePin, labelKey: "hotkeys.action.togglePin", group: hotkeyGroupSessions, combo: shiftChord("k")},
+	{id: hotkeyOpenTerminal, labelKey: "hotkeys.action.openTerminal", group: hotkeyGroupSessions, combo: shiftChord("l")},
+	{id: hotkeyDelegate, labelKey: "hotkeys.action.delegate", group: hotkeyGroupSessions, combo: shiftChord("h")},
+	{id: hotkeyNextSession, labelKey: "hotkeys.action.nextSession", group: hotkeyGroupSessions, combo: shiftChord("ArrowDown")},
+	{id: hotkeyPrevSession, labelKey: "hotkeys.action.prevSession", group: hotkeyGroupSessions, combo: shiftChord("ArrowUp")},
+	{id: hotkeyNextWaitingSession, labelKey: "hotkeys.action.nextWaitingSession", group: hotkeyGroupSessions, combo: shiftChord("y")},
+	{id: hotkeyFocusTerminal, labelKey: "hotkeys.action.focusTerminal", group: hotkeyGroupSessions, combo: shiftChord("Enter")},
+	{id: hotkeyNextProject, labelKey: "hotkeys.action.nextProject", group: hotkeyGroupView, combo: shiftChord("ArrowRight")},
+	{id: hotkeyPrevProject, labelKey: "hotkeys.action.prevProject", group: hotkeyGroupView, combo: shiftChord("ArrowLeft")},
+	{id: hotkeyToggleSidebar, labelKey: "hotkeys.action.toggleSidebar", group: hotkeyGroupView, combo: shiftChord("s")},
+	{id: hotkeyToggleDock, labelKey: "hotkeys.action.toggleDock", group: hotkeyGroupView, combo: shiftChord("d")},
+	{id: hotkeySearchInFiles, labelKey: "hotkeys.action.searchInFiles", group: hotkeyGroupView, combo: comboUnassigned},
+	{id: hotkeySplitBeside, labelKey: "hotkeys.action.splitBeside", group: hotkeyGroupView, combo: shiftChord("g")},
+	{id: hotkeyOtherPane, labelKey: "hotkeys.action.otherPane", group: hotkeyGroupView, combo: shiftChord("f")},
+	{id: hotkeyCommandPalette, labelKey: "hotkeys.action.commandPalette", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "k"}},
+	{id: hotkeySettings, labelKey: "hotkeys.action.settings", group: hotkeyGroupApp, combo: combo{Mod: true, Key: ","}},
+	{id: hotkeyPulls, labelKey: "hotkeys.action.pulls", group: hotkeyGroupApp, combo: shiftChord("p")},
+	{id: hotkeyShortcuts, labelKey: "hotkeys.action.shortcuts", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "/"}},
+	{id: hotkeyQuit, labelKey: "hotkeys.action.quit", group: hotkeyGroupApp, combo: comboUnassigned},
+})
 
 // hotkeyBindings is every action's chord.
 type hotkeyBindings map[hotkeyID]combo
@@ -127,10 +137,35 @@ func defaultHotkeys() hotkeyBindings {
 func hotkeyLabel(id hotkeyID) string {
 	for _, a := range hotkeyActions {
 		if a.id == id {
-			return a.label
+			return i18n.T(a.labelKey)
 		}
 	}
 	return string(id)
+}
+
+// localizeHotkeys puts the group headings, the action labels and the
+// unassigned chord's text in the interface language. The tables are read
+// as fields by the Settings, palette and shortcuts screens, so they are
+// renewed when the language changes (window.followLanguage) rather than
+// resolved at every read.
+func localizeHotkeys() {
+	labelGroups(hotkeyGroups)
+	labelActions(hotkeyActions)
+	hotkeyUnassigned = i18n.T("hotkeys.unassigned")
+}
+
+func labelGroups(groups []hotkeyGroupHeading) []hotkeyGroupHeading {
+	for i := range groups {
+		groups[i].label = i18n.T(groups[i].labelKey)
+	}
+	return groups
+}
+
+func labelActions(actions []hotkeyAction) []hotkeyAction {
+	for i := range actions {
+		actions[i].label = i18n.T(actions[i].labelKey)
+	}
+	return actions
 }
 
 // keyState is the part of a key event the matcher reads, so tests pass plain
@@ -203,25 +238,25 @@ func hotkeyConflicts(b hotkeyBindings) map[hotkeyID][]hotkeyID {
 	return conflicts
 }
 
-// terminalChordCosts is what the terminal side already spends a chord on,
-// keyed by the combo's key. Ctrl+letter and nothing else: Ctrl+Shift+anything
-// reaches no TUI at all.
+// terminalChordCosts is the catalog key of what the terminal side already
+// spends a chord on, keyed by the combo's key. Ctrl+letter and nothing else:
+// Ctrl+Shift+anything reaches no TUI at all.
 var terminalChordCosts = map[string]string{
-	"a":         "Ctrl+{key} is the shell's move to the start of the line; sessions will no longer see it.",
-	"c":         "Ctrl+{key} is the shell's interrupt; sessions will no longer see it.",
-	"d":         "Ctrl+{key} is the shell's end of input; sessions will no longer see it.",
-	"e":         "Ctrl+{key} is the shell's move to the end of the line; sessions will no longer see it.",
-	"k":         "Ctrl+{key} is the shell's kill to the end of the line; sessions will no longer see it.",
-	"l":         "Ctrl+{key} is the shell's clear screen; sessions will no longer see it.",
-	"q":         "Ctrl+{key} is the shell's resume output; sessions will no longer see it.",
-	"r":         "Ctrl+{key} is the shell's history search; sessions will no longer see it.",
-	"s":         "Ctrl+{key} is the shell's stop output; sessions will no longer see it.",
-	"u":         "Ctrl+{key} is the shell's kill to the start of the line; sessions will no longer see it.",
-	"w":         "Ctrl+{key} is the shell's erase word; sessions will no longer see it.",
-	"z":         "Ctrl+{key} is the shell's suspend; sessions will no longer see it.",
-	"f":         "Ctrl+{key} is the session terminal's own search; sessions will no longer see it.",
-	"v":         "Ctrl+{key} is the image paste lich sends the agent; sessions will no longer see it.",
-	"Backspace": "Ctrl+{key} is the erase word lich sends the agent; sessions will no longer see it.",
+	"a":         "hotkeys.terminalCost.a",
+	"c":         "hotkeys.terminalCost.c",
+	"d":         "hotkeys.terminalCost.d",
+	"e":         "hotkeys.terminalCost.e",
+	"k":         "hotkeys.terminalCost.k",
+	"l":         "hotkeys.terminalCost.l",
+	"q":         "hotkeys.terminalCost.q",
+	"r":         "hotkeys.terminalCost.r",
+	"s":         "hotkeys.terminalCost.s",
+	"u":         "hotkeys.terminalCost.u",
+	"w":         "hotkeys.terminalCost.w",
+	"z":         "hotkeys.terminalCost.z",
+	"f":         "hotkeys.terminalCost.f",
+	"v":         "hotkeys.terminalCost.v",
+	"Backspace": "hotkeys.terminalCost.Backspace",
 }
 
 // terminalCost is the line the recorder shows for a chord the terminal side
@@ -235,7 +270,7 @@ func terminalCost(c combo) string {
 	if !ok {
 		return ""
 	}
-	return strings.ReplaceAll(cost, hotkeyKeyPlaceTag, formatKey(c.Key))
+	return i18n.T(cost, i18n.Args{"key": formatKey(c.Key)})
 }
 
 func formatKey(key string) string {
@@ -252,7 +287,7 @@ func formatKey(key string) string {
 
 func formatCombo(c combo, isMac bool) string {
 	if c.Key == "" {
-		return hotkeyUnassigned
+		return i18n.T("hotkeys.unassigned")
 	}
 	var parts []string
 	for _, m := range []struct {

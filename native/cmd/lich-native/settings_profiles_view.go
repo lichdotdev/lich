@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 
 	"gioui.org/font"
@@ -9,24 +8,10 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (claudeProfile.*).
-const (
-	profileDefaultTag = "· default"
-	profileLogIn      = "Log in"
-	profileLogInAgain = "Log in again"
-	profileCopyFrom   = "Copy plugins from…"
-	profileRename     = "Rename"
-	profileDelete     = "Delete"
-	profileNew        = "New profile"
-	profileOptions    = "Options for %s"
-	profilePlanTitle  = "Plan usage · %s"
-	advancedBinary    = "Advanced · Binary"
-	profileLoading    = "Reading the profiles…"
 )
 
 var (
@@ -99,9 +84,9 @@ func (s *settingsScreen) profileTags(kind string, values scopedValues, m provide
 // profilePickerRow is Profile: which login new sessions are born in, in the
 // scope system like any overridable row.
 func (s *settingsScreen) profilePickerRow(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, m providersMachine, first bool) D {
-	e := settingEntry{title: profileTitle, key: c.provider.key, scope: scopeOverridable}
+	e := settingEntry{titleKey: "settings.settingsProfiles.title", key: c.provider.key, scope: scopeOverridable}
 	r := s.providerRow(gtx, e, values)
-	r.description = c.provider.words.profileDesc
+	r.description = profileSentence(c.provider, c.provider.words.profileDescKey)
 	r.globalValue = c.book.nameOf(m.globals[c.provider.key])
 	shown := s.scopeProfile(c, values, m)
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return s.profilePicker(gtx, th, c, shown) })
@@ -159,8 +144,8 @@ func (s *settingsScreen) profileOption(gtx C, th *ui.Theme, c *profileSettings, 
 // profilesBlock is Profiles: the logins this machine keeps for the provider, a
 // row each, and the way to add one. It is global; from a project it is dimmed.
 func (s *settingsScreen) profilesBlock(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, first bool) D {
-	r := s.providerRow(gtx, settingEntry{title: profilesTitle}, values)
-	r.description = c.provider.words.profilesDesc
+	r := s.providerRow(gtx, settingEntry{titleKey: "settings.settingsProfiles.profilesTitle"}, values)
+	r.description = profileSentence(c.provider, c.provider.words.profilesDescKey)
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)
 	}
@@ -170,7 +155,7 @@ func (s *settingsScreen) profilesBlock(gtx C, th *ui.Theme, c *profileSettings, 
 func (s *settingsScreen) profileRows(gtx C, th *ui.Theme, c *profileSettings) D {
 	list, loaded := c.book.snapshot()
 	if !loaded {
-		return th.Text(ui.TextXS, profileLoading).Muted().Layout(gtx)
+		return th.Text(ui.TextXS, i18n.T("settings.settingsProfilesView.loading")).Muted().Layout(gtx)
 	}
 	var children []layout.FlexChild
 	for i, p := range list {
@@ -179,7 +164,7 @@ func (s *settingsScreen) profileRows(gtx C, th *ui.Theme, c *profileSettings) D 
 	if c.add.Clicked(gtx) {
 		s.startNewProfile(c)
 	}
-	add := th.Button(&c.add, profileNew)
+	add := th.Button(&c.add, i18n.T("settings.settingsProfilesView.newProfile"))
 	add.Variant, add.Size, add.Icon = ui.VariantGhost, ui.SizeSM, icProfileNew
 	children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return layout.W.Layout(gtx, add.Layout) }))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
@@ -201,7 +186,7 @@ func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings,
 			ui.Gap(2),
 		}
 		if !p.LoggedIn {
-			in := th.Button(&st.login, profileLogIn)
+			in := th.Button(&st.login, i18n.T("settings.settingsProfilesView.logIn"))
 			in.Variant, in.Size = ui.VariantOutline, ui.SizeSM
 			children = append(children, layout.Rigid(in.Layout), ui.Gap(1))
 		}
@@ -219,14 +204,16 @@ func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings,
 func profileText(gtx C, th *ui.Theme, prov profileProvider, p lichclient.Profile) D {
 	name := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, p.Name).Weight(font.Medium).Layout)}
 	if p.Personal {
-		name = append(name, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, profileDefaultTag).Muted().Layout))
+		name = append(name, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.settingsProfilesView.defaultTag")).Muted().Layout))
 	}
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, name...) }),
 		layout.Rigid(func(gtx C) D { return profileStatusLine(gtx, th, prov, p) }),
 	}
 	if len(p.Copied) > 0 {
-		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, prov.words.copiedNote).Muted()) }))
+		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
+			return wrapped(gtx, th.Text(ui.TextXS, profileSentence(prov, prov.words.copiedNoteKey)).Muted())
+		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -238,22 +225,22 @@ func profileStatusLine(gtx C, th *ui.Theme, prov profileProvider, p lichclient.P
 	case p.StatusError != "":
 		return th.Text(ui.TextXS, p.StatusError).In(th.Destructive).Layout(gtx)
 	}
-	return th.Text(ui.TextXS, profileNotLoggedIn).In(th.ToneWait).Layout(gtx)
+	return th.Text(ui.TextXS, i18n.T("settings.profiles.notLoggedIn")).In(th.ToneWait).Layout(gtx)
 }
 
 // profileMenu is a row's ⋯: logging in again, bringing plugins over and
 // renaming for every profile, deleting for every one but Personal.
 func (s *settingsScreen) profileMenu(gtx C, th *ui.Theme, c *profileSettings, p lichclient.Profile, st *profileRowState) D {
-	entries := []ui.MenuEntry{{Label: profileLogInAgain, Icon: icProfileLogIn, OnClick: func() { s.startLogin(c, p, nil) }}}
+	entries := []ui.MenuEntry{{Label: i18n.T("settings.settingsProfilesView.logInAgain"), Icon: icProfileLogIn, OnClick: func() { s.startLogin(c, p, nil) }}}
 	if c.provider.plugins {
-		entries = append(entries, ui.MenuEntry{Label: profileCopyFrom, Icon: icProfileCopy, Disabled: !p.LoggedIn, OnClick: func() { s.startCopy(c, p) }})
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("settings.settingsProfilesView.copyFrom"), Icon: icProfileCopy, Disabled: !p.LoggedIn, OnClick: func() { s.startCopy(c, p) }})
 	}
-	entries = append(entries, ui.MenuEntry{Label: profileRename, Icon: icProfileRename, OnClick: func() { s.startRename(c, p) }})
+	entries = append(entries, ui.MenuEntry{Label: i18n.T("settings.settingsProfilesView.rename"), Icon: icProfileRename, OnClick: func() { s.startRename(c, p) }})
 	if !p.Personal {
 		entries = append(entries, ui.MenuEntry{Kind: ui.MenuSeparator},
-			ui.MenuEntry{Label: profileDelete, Icon: icProfileDelete, Variant: ui.VariantDestructive, OnClick: func() { s.startDelete(c, p) }})
+			ui.MenuEntry{Label: i18n.T("settings.settingsProfilesView.delete"), Icon: icProfileDelete, Variant: ui.VariantDestructive, OnClick: func() { s.startDelete(c, p) }})
 	}
-	hint := fmt.Sprintf(profileOptions, p.Name)
+	hint := i18n.T("settings.settingsProfilesView.options", i18n.Args{"name": p.Name})
 	return th.DropdownMenu(s.root, &st.menu, entries).Layout(gtx, func(gtx C) D {
 		return th.Tooltip(s.root, &st.tip, hint).Layout(gtx, func(gtx C) D {
 			btn := th.Button(&st.more, "")
@@ -266,7 +253,7 @@ func (s *settingsScreen) profileMenu(gtx C, th *ui.Theme, c *profileSettings, p 
 // profilePlanBlock is Plan usage for the profile the open scope uses: Personal
 // is the machine's own reading, any other profile is asked for by itself.
 func (s *settingsScreen) profilePlanBlock(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, slug string, plan lichclient.QuotaPlan, first bool) D {
-	title := fmt.Sprintf(profilePlanTitle, c.book.nameOf(slug))
+	title := i18n.T("settings.planUsageSetting.title") + profileAccountSplit + c.book.nameOf(slug)
 	return s.planBlock(gtx, th, values, plan, first, title)
 }
 
@@ -284,7 +271,7 @@ func (s *settingsScreen) advancedBinaryFold(gtx C, th *ui.Theme, c *profileSetti
 	if c.fold.Clicked(gtx) {
 		c.advanced = !c.advanced
 	}
-	if s.lit == binTitle && gtx.Now.Before(s.litUntil) {
+	if s.lit == i18n.T("settings.providerBinary.title") && gtx.Now.Before(s.litUntil) {
 		c.advanced = true
 	}
 	lead := icFoldShut
@@ -302,7 +289,7 @@ func (s *settingsScreen) advancedBinaryFold(gtx C, th *ui.Theme, c *profileSetti
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return lead.Layout(gtx, ui.Space(4), ink) }),
 					ui.Gap(2),
-					layout.Rigid(th.Text(ui.TextSM, advancedBinary).In(ink).Layout),
+					layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.settingsProfilesView.advancedBinary")).In(ink).Layout),
 				)
 			})
 		})

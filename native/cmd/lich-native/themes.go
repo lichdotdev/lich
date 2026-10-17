@@ -11,6 +11,7 @@ import (
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/godemirror/tags"
 	"github.com/omartelo/lich/native/gioterm"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -286,11 +287,11 @@ func themeAfterRemoval(removedID, selected string) string {
 func themeCaption(def lichclient.Theme, selected string) string {
 	switch {
 	case def.ID == selected:
-		return themeInUse
+		return i18n.T("settings.themePicker.inUse")
 	case def.Source != nil:
 		return repoLabel(def.Source.URL) + " v" + def.Source.Version
 	}
-	return themeBundled
+	return i18n.T("settings.themePicker.bundled")
 }
 
 var repoSeparators = regexp.MustCompile(`[/\\:]+`)
@@ -313,8 +314,5 @@ func repoLabel(url string) string {
 
 // themeCount is the strip's count line, System included.
 func themeCount(themes int) string {
-	if themes+1 == 1 {
-		return fmt.Sprintf(themeCountOne, themes+1)
-	}
-	return fmt.Sprintf(themeCountOther, themes+1)
+	return i18n.T("settings.themePicker.count", i18n.Args{"count": themes + 1})
 }

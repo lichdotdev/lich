@@ -19,16 +19,9 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (pulls.pullsFiles.*).
-const (
-	pullsFilesViewed = "%d of %d viewed"
-	pullsViewedLabel = "Viewed"
-	pullsHideTree    = "Hide the file tree"
-	pullsShowTree    = "Show the file tree"
 )
 
 // The file tree's width in rem, PullsFiles' TREE_DEFAULT_REM and the bounds
@@ -98,7 +91,7 @@ func (c *fileCard) viewedTick(gtx C, th *ui.Theme, p *reviewPanel) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(th.Checkbox(tick).Layout),
 		ui.Gap(1.5),
-		layout.Rigid(th.Text(ui.TextXS, pullsViewedLabel).Muted().Layout),
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("diff.fileDiff.viewed")).Muted().Layout),
 	)
 }
 
@@ -128,9 +121,9 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PR
 	read := p.store.diff(p.project.Path, d.Number)
 	switch {
 	case !read.loaded:
-		return panelNotice(gtx, th, pullsDiffLoading)
+		return panelNotice(gtx, th, i18n.T("pulls.pullsFiles.loading"))
 	case read.err != "":
-		return panelNotice(gtx, th, fmt.Sprintf(pullsDiffFailed, read.err))
+		return panelNotice(gtx, th, i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}))
 	}
 	files.takeRead(d.URL, &diffRead{text: read.val})
 	files.takeAnswers()
@@ -252,15 +245,15 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 	if v.tree.toggle.click.Clicked(gtx) {
 		v.tree.hidden = !v.tree.hidden
 	}
-	treeIcon, treeLabel := icPullHide, pullsHideTree
+	treeIcon, treeLabel := icPullHide, i18n.T("pulls.pullsFiles.hideTree")
 	if v.tree.hidden {
-		treeIcon, treeLabel = icPullShow, pullsShowTree
+		treeIcon, treeLabel = icPullShow, i18n.T("pulls.pullsFiles.showTree")
 	}
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return iconAction(gtx, th, v.root, &v.tree.toggle, treeIcon, treeLabel, false) }),
 			ui.Gap(2),
-			layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf(pullsFilesViewed, viewed, len(files.order))).Muted().Layout),
+			layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.viewed", i18n.Args{"viewed": viewed, "total": len(files.order)})).Muted().Layout),
 			ui.Gap(3),
 			layout.Rigid(func(gtx C) D { return diffStat(gtx, th, added, deleted) }),
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
@@ -345,7 +338,7 @@ func (v *pullView) inlinePending(gtx C, c lichclient.ReviewComment) D {
 				on := th.On(th.Sidebar)
 				return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(on.Text(ui.TextXS, talkPendingNote).In(on.ToneWait).Layout),
+						layout.Rigid(on.Text(ui.TextXS, i18n.T("pulls.pullsConversation.pendingNote")).In(on.ToneWait).Layout),
 						ui.VGap(1),
 						layout.Rigid(func(gtx C) D { return wrapped(gtx, on.Text(ui.TextSM, c.Body)) }),
 					)

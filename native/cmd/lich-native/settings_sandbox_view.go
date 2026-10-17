@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"runtime"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 )
 
@@ -38,19 +38,20 @@ func (s *settingsScreen) sandboxLadder(gtx C, th *ui.Theme) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 	values := s.snapshot()
-	children = append(children, ui.VGap(2), layout.Rigid(proseLine(th, sandboxSummary)),
-		layout.Rigid(groupHeading(th, confinedTitle, false)))
+	children = append(children, ui.VGap(2), layout.Rigid(proseLine(th, i18n.T("settings.sandboxSettings.summary"))),
+		layout.Rigid(groupHeading(th, i18n.T("settings.sandboxSettings.confinedTitle"), false)))
 	for i, p := range s.providers.book.launchProviders() {
 		children = append(children, layout.Rigid(func(gtx C) D { return s.rungRow(gtx, th, m, p, values, i == 0) }))
 	}
-	children = append(children, ui.VGap(2), layout.Rigid(proseLine(th, confinedHint)))
+	children = append(children, ui.VGap(2), layout.Rigid(proseLine(th, i18n.T("settings.sandboxSettings.confinedHint"))))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
 // rungRow is one provider's ladder, its scope state read from its own key.
 func (s *settingsScreen) rungRow(gtx C, th *ui.Theme, m sandboxMachine, p launchProvider, values scopedValues, first bool) D {
-	e := settingEntry{title: p.name, key: sandboxKey(p.id), scope: scopeOverridable}
+	e := settingEntry{key: sandboxKey(p.id), scope: scopeOverridable}
 	r := s.rowFor(e, values)
+	r.title = p.name
 	if r.kind == rowChanged {
 		r.globalValue = rungLabel(sandboxLevel(m.globals[e.key]))
 		if r.reset.Clicked(gtx) {
@@ -66,7 +67,7 @@ func (s *settingsScreen) rungRow(gtx C, th *ui.Theme, m sandboxMachine, p launch
 	enum.Value = level
 	items := make([]ui.ToggleItem, len(sandboxRungs))
 	for i, rung := range sandboxRungs {
-		items[i] = ui.ToggleItem{Value: rung.value, Text: rung.label}
+		items[i] = ui.ToggleItem{Value: rung, Text: rungLabel(rung)}
 	}
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
 		g := th.ToggleGroup(enum, items...)
@@ -101,10 +102,10 @@ func (s *settingsScreen) chooseRung(p launchProvider, current, next string) {
 // the line naming what exactly it hands over.
 func (s *settingsScreen) grantRow(gtx C, th *ui.Theme, e settingEntry, r settingRow, first bool) D {
 	m, values := s.sandbox.snapshot(), s.snapshot()
-	sw, desc, detail := &s.sandbox.ssh, sshDesc, agentKeysLine(m.agentKeys)
+	sw, desc, detail := &s.sandbox.ssh, i18n.T("settings.sandboxSettings.sshDescription"), agentKeysLine(m.agentKeys)
 	if e.key == ghTokenKey {
 		account, _ := values.set(vcsAccountKey, s.scope)
-		sw, desc, detail = &s.sandbox.gh, ghDesc, ghAccountLine(account)
+		sw, desc, detail = &s.sandbox.gh, i18n.T("settings.sandboxSettings.ghDescription"), ghAccountLine(account)
 	}
 	if sw.Update(gtx) {
 		s.writeSandbox(e.key, strconv.FormatBool(sw.Value))
@@ -129,9 +130,9 @@ func wrapped(gtx C, l ui.LabelStyle) D {
 // sandboxStatus is StatusStrip: the machine's answer drawn as state, the
 // backend named because the two have different holes.
 func sandboxStatus(gtx C, th *ui.Theme, backend string) D {
-	dot, title, detail := th.TonePass, canConfineText, backend
+	dot, title, detail := th.TonePass, i18n.T("settings.sandboxSettings.canConfine"), backend
 	if backend == "" {
-		dot, title = th.MutedForeground, cannotConfineText
+		dot, title = th.MutedForeground, i18n.T("settings.sandboxSettings.cannotConfine")
 		detail, _ = cannotConfineCopy(runtime.GOOS)
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -150,7 +151,7 @@ func sandboxStatus(gtx C, th *ui.Theme, backend string) D {
 					ui.Gap(2.5),
 					layout.Rigid(th.Text(ui.TextXS, title).Weight(font.Medium).Layout),
 					ui.Gap(2.5),
-					layout.Flexed(1, th.Text(ui.TextXS, statusDetailPrefix+detail).Muted().Layout),
+					layout.Flexed(1, th.Text(ui.TextXS, i18n.T("settings.sandboxSettings.statusDetail", i18n.Args{"detail": detail})).Muted().Layout),
 				)
 			})
 		}),
@@ -180,12 +181,12 @@ func (s *settingsScreen) layoutSandboxDialog(gtx C, th *ui.Theme) {
 	}
 	c := sb.change
 	on := th.On(th.Popover)
-	cancel := on.Button(&sb.cancel, dialogCancel)
+	cancel := on.Button(&sb.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
-	confirm := on.Button(&sb.confirm, rungConfirm)
+	confirm := on.Button(&sb.confirm, i18n.T("settings.sandboxSettings.confirm"))
 	confirm.Variant = ui.VariantDestructive
-	dlg := th.Dialog(&sb.dialog, sb.asking && s.open, fmt.Sprintf(rungConfirmTitle, c.providerName),
-		fmt.Sprintf(rungConfirmDesc, rungLabel(c.level), rungExposes(c.level)))
+	dlg := th.Dialog(&sb.dialog, sb.asking && s.open, i18n.T("settings.sandboxSettings.confirmTitle", i18n.Args{"provider": c.providerName}),
+		i18n.T("settings.sandboxSettings.confirmDescription", i18n.Args{"rung": rungLabel(c.level), "exposes": rungExposes(c.level)}))
 	dlg.MaxWidth = ui.DialogWidthXL
 	dlg.Actions = []layout.Widget{cancel.Layout, confirm.Layout}
 	if dlg.Layout(gtx) {

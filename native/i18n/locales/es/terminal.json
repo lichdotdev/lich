@@ -52,5 +52,9 @@
       "one": "se copió {count} carácter al portapapeles",
       "other": "se copiaron {count} caracteres al portapapeles"
     }
+  },
+  "terminalDrop": {
+    "skipped": "{name} ({reason})",
+    "tooLarge": "{name} (más de {size} MB)"
   }
 }

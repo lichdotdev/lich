@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -45,16 +45,7 @@ const profileListMaxAge = time.Minute
 // the one a "Continue in" row quotes.
 const sessionWindowSeconds = 5 * hour
 
-// ponytail: English until the native window has i18n (claudeProfile.*).
-const (
-	profileUsageLimit   = "limit"
-	profileNoPlugins    = "no plugins"
-	profileOnePlugin    = "1 plugin"
-	profileManyPlugins  = "%d plugins"
-	profileNotLoggedIn  = "Not logged in"
-	profileLoggedIn     = "Logged in"
-	profileAccountSplit = " · "
-)
+const profileAccountSplit = " · "
 
 // profileProvider is what differs between the providers that have profiles: the
 // profile service, the setting that names the profile new sessions are born in,
@@ -83,9 +74,19 @@ type profileProvider struct {
 	words profileWords
 }
 
+// profileWords are catalog keys, read through profileSentence; "" is a sentence
+// the provider has none of. A sentence takes the provider's label as
+// {provider}.
 type profileWords struct {
-	profileDesc, profilesDesc, copiedNote, searchAlso, profilesAlso string
-	newDesc, renameDesc, deleteDesc, loginDesc, addressDesc         string
+	profileDescKey, profilesDescKey, copiedNoteKey, searchAlsoKey, profilesAlsoKey string
+	newDescKey, renameDescKey, deleteDescKey, loginDescKey, addressDescKey         string
+}
+
+func profileSentence(prov profileProvider, key string) string {
+	if key == "" {
+		return ""
+	}
+	return i18n.T(key, i18n.Args{"provider": prov.label})
 }
 
 var claudeProfileProvider = profileProvider{
@@ -93,16 +94,16 @@ var claudeProfileProvider = profileProvider{
 	api:     func(c *lichclient.Client) lichclient.ProfileAPI { return c.ClaudeProfiles() },
 	plugins: true, loginCode: true,
 	words: profileWords{
-		profileDesc:  "Which Claude login new sessions use. A session keeps the profile it was born in, resumes included.",
-		profilesDesc: "Each profile is its own Claude login with its own plugins and history. Settings, CLAUDE.md, agents, commands, skills and hooks are the same in all of them.",
-		copiedNote:   "Settings, CLAUDE.md, agents, commands, skills and hooks are copies in this profile: editing them in another profile no longer reaches it.",
-		searchAlso:   "claude account login personal work",
-		profilesAlso: "claude accounts logins personal work log in plugins",
-		newDesc:      "A Claude login of its own, with its own plugins and history.",
-		renameDesc:   "Only its name changes: its login, plugins and history stay as they are.",
-		deleteDesc:   "Its login, plugins and conversation history are removed, and sessions started in it can no longer be resumed.",
-		loginDesc:    "Sign in in the browser tab Claude Code opened. This carries on by itself when you are done.",
-		addressDesc:  "If the browser did not open, sign in at this address and paste the code it shows.",
+		profileDescKey:  "settings.profiles.profileDesc",
+		profilesDescKey: "settings.profiles.claude.profilesDesc",
+		copiedNoteKey:   "settings.profiles.claude.copiedNote",
+		searchAlsoKey:   "settings.profiles.claude.searchAlso",
+		profilesAlsoKey: "settings.profiles.claude.profilesAlso",
+		newDescKey:      "settings.profiles.claude.newDesc",
+		renameDescKey:   "settings.profiles.renameDescPlugins",
+		deleteDescKey:   "settings.profiles.deleteDescPlugins",
+		loginDescKey:    "settings.profiles.loginDesc",
+		addressDescKey:  "settings.profiles.claude.addressDesc",
 	},
 }
 
@@ -111,16 +112,16 @@ var codexProfileProvider = profileProvider{
 	api:     func(c *lichclient.Client) lichclient.ProfileAPI { return c.CodexProfiles() },
 	plugins: true,
 	words: profileWords{
-		profileDesc:  "Which Codex login new sessions use. A session keeps the profile it was born in, resumes included.",
-		profilesDesc: "Each profile is its own Codex login with its own plugins and history. Personal's config.toml settings, AGENTS.md, hooks, skills and rules are the same in all of them.",
-		copiedNote:   "AGENTS.md and hooks.json are copies in this profile: editing them in another profile no longer reaches it.",
-		searchAlso:   "codex account login personal work chatgpt",
-		profilesAlso: "codex accounts logins personal work log in chatgpt plugins",
-		newDesc:      "A Codex login of its own, with its own plugins and history.",
-		renameDesc:   "Only its name changes: its login, plugins and history stay as they are.",
-		deleteDesc:   "Its login, plugins and conversation history are removed, and sessions started in it can no longer be resumed.",
-		loginDesc:    "Sign in in the browser tab Codex opened. This carries on by itself when you are done.",
-		addressDesc:  "If the browser did not open, sign in at this address.",
+		profileDescKey:  "settings.profiles.profileDesc",
+		profilesDescKey: "settings.profiles.codex.profilesDesc",
+		copiedNoteKey:   "settings.profiles.codex.copiedNote",
+		searchAlsoKey:   "settings.profiles.codex.searchAlso",
+		profilesAlsoKey: "settings.profiles.codex.profilesAlso",
+		newDescKey:      "settings.profiles.codex.newDesc",
+		renameDescKey:   "settings.profiles.renameDescPlugins",
+		deleteDescKey:   "settings.profiles.deleteDescPlugins",
+		loginDescKey:    "settings.profiles.loginDesc",
+		addressDescKey:  "settings.profiles.codex.addressDesc",
 	},
 }
 
@@ -129,14 +130,14 @@ var ompProfileProvider = profileProvider{
 	api:           func(c *lichclient.Client) lichclient.ProfileAPI { return c.OMPProfiles() },
 	terminalLogin: true,
 	words: profileWords{
-		profileDesc:  "Which oh-my-pi login new sessions use. A session keeps the profile it was born in, resumes included.",
-		profilesDesc: "Each profile is its own set of oh-my-pi logins with its own history. config.yml, models.yml, mcp.json, AGENTS.md, skills, rules, commands, prompts and extensions are the same in all of them.",
-		copiedNote:   "config.yml, models.yml, mcp.json and the markdown files are copies in this profile: editing them in another profile no longer reaches it.",
-		searchAlso:   "omp oh-my-pi account login personal work",
-		profilesAlso: "omp oh-my-pi accounts logins personal work log in",
-		newDesc:      "An oh-my-pi login of its own, with its own history. You log in from a terminal once it is made.",
-		renameDesc:   "Only its name changes: its logins and history stay as they are.",
-		deleteDesc:   "Its logins and conversation history are removed, and sessions started in it can no longer be resumed.",
+		profileDescKey:  "settings.profiles.profileDesc",
+		profilesDescKey: "settings.profiles.omp.profilesDesc",
+		copiedNoteKey:   "settings.profiles.omp.copiedNote",
+		searchAlsoKey:   "settings.profiles.omp.searchAlso",
+		profilesAlsoKey: "settings.profiles.omp.profilesAlso",
+		newDescKey:      "settings.profiles.omp.newDesc",
+		renameDescKey:   "settings.profiles.omp.renameDesc",
+		deleteDescKey:   "settings.profiles.omp.deleteDesc",
 	},
 }
 
@@ -294,7 +295,7 @@ func (b *profileBook) nameOf(stored string) string {
 	if slug := effectiveProfile(stored); slug != personalProfile {
 		return slug
 	}
-	return "Personal"
+	return i18n.T("settings.profiles.personal")
 }
 
 // loggedIn is every profile with a login, in the book's order.
@@ -340,17 +341,14 @@ func profileAccountLine(prov profileProvider, p lichclient.Profile) string {
 		parts = append(parts, strings.Join(p.Providers, ", "))
 	}
 	if prov.plugins {
-		switch p.Plugins {
-		case 0:
-			parts = append(parts, profileNoPlugins)
-		case 1:
-			parts = append(parts, profileOnePlugin)
-		default:
-			parts = append(parts, fmt.Sprintf(profileManyPlugins, p.Plugins))
+		if p.Plugins == 0 {
+			parts = append(parts, i18n.T("settings.profiles.noPlugins"))
+		} else {
+			parts = append(parts, i18n.T("settings.profiles.plugins", i18n.Args{"count": p.Plugins}))
 		}
 	}
 	if len(parts) == 0 {
-		return profileLoggedIn
+		return i18n.T("settings.profiles.loggedIn")
 	}
 	return strings.Join(parts, profileAccountSplit)
 }
@@ -377,9 +375,9 @@ func profileUsage(plan lichclient.QuotaPlan, ok bool) (text string, limited bool
 		return "", false
 	}
 	if w.Percent >= 100 || w.LockedReason != "" {
-		return profileUsageLimit, true
+		return i18n.T("settings.profiles.usageLimit"), true
 	}
-	return fmt.Sprintf(providersPercentUsed, w.Percent), false
+	return i18n.T("env.providerSummary.percentUsed", i18n.Args{"percent": w.Percent}), false
 }
 
 // setProfile records the profile a session now runs in, from a

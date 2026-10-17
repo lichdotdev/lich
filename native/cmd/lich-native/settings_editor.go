@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -19,12 +20,6 @@ const (
 	diffLayoutKey     = "editor.diffLayout"
 	diffUnified       = "unified"
 	diffSplit         = "split"
-)
-
-// ponytail: English until the native window has i18n (diffLayoutSetting.layout).
-const (
-	diffUnifiedLabel = "Unified"
-	diffSplitLabel   = "Side-by-side"
 )
 
 // editorPrefs are the Editor section's values, which the review panel reads.
@@ -63,9 +58,9 @@ type editorSettings struct {
 func (e *editorSettings) row(gtx C, key string, s *settingsScreen) (string, func(gtx C, th *ui.Theme) D) {
 	switch key {
 	case hideWhitespaceKey:
-		return hideWhitespaceDesc, func(gtx C, th *ui.Theme) D { return e.hideControl(gtx, th, s) }
+		return i18n.T("settings.settingsEditor.hideWhitespaceDescription"), func(gtx C, th *ui.Theme) D { return e.hideControl(gtx, th, s) }
 	case diffLayoutKey:
-		return diffLayoutDesc, func(gtx C, th *ui.Theme) D { return e.layoutControl(gtx, th, s) }
+		return i18n.T("settings.diffLayoutSetting.description"), func(gtx C, th *ui.Theme) D { return e.layoutControl(gtx, th, s) }
 	}
 	panic("settings: no Editor row for " + key)
 }
@@ -86,8 +81,8 @@ func (e *editorSettings) layoutControl(gtx C, th *ui.Theme, s *settingsScreen) D
 	}
 	e.layout.Value = e.prefs.diffLayout
 	return th.ToggleGroup(&e.layout,
-		ui.ToggleItem{Value: diffUnified, Text: diffUnifiedLabel},
-		ui.ToggleItem{Value: diffSplit, Text: diffSplitLabel},
+		ui.ToggleItem{Value: diffUnified, Text: i18n.T("settings.diffLayoutSetting.layout.unified")},
+		ui.ToggleItem{Value: diffSplit, Text: i18n.T("settings.diffLayoutSetting.layout.split")},
 	).Layout(gtx)
 }
 

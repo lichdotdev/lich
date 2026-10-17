@@ -1,6 +1,10 @@
 package main
 
-import "regexp"
+import (
+	"regexp"
+
+	"github.com/omartelo/lich/native/i18n"
+)
 
 // homeRoot is frontend/src/lib/paths.ts's HOME_ROOTS.
 var homeRoot = regexp.MustCompile(`^(?:/home/[^/]+|/Users/[^/]+|[A-Za-z]:\\Users\\[^\\]+)`)
@@ -14,5 +18,5 @@ func displayPath(path string) string {
 // cannot see into (tmux, ssh, a container): the last local path is a
 // directory the user has left. Mirrors env.paths.cwdUnknown.
 func unknownCwd(host string) string {
-	return "cwd unknown · inside " + host
+	return i18n.T("env.paths.cwdUnknown", i18n.Args{"host": host})
 }

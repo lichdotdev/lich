@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"gioui.org/io/key"
@@ -9,36 +8,17 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n; the web's en catalog
-// (settings.importThemeDialog, settings.appearanceSettings, common).
-const (
-	importTitle          = "Import theme"
-	importDesc           = "Install from a git repository to keep the theme versioned, or pick a single theme file."
-	importRepositoryURL  = "Repository URL"
-	importPlaceholder    = "https://github.com/you/lich-themes.git"
-	importInstall        = "Install"
-	importInstalling     = "Installing…"
-	importRepositoryHint = "A repository holding lich-theme.json and one or more theme files. Its manifest version is what lich compares on update."
-	importOr             = "or"
-	importChooseFile     = "Choose file…"
-	importFileHint       = "A single theme file. No version, no updates."
-	importTemplate       = "Download template"
-	dialogCancel         = "Cancel"
+// importPlaceholder is the repository field's example, a URL and no prose.
+const importPlaceholder = "https://github.com/you/lich-themes.git"
 
-	replaceThemesTitle = "Replace imported themes?"
-	replaceThemesDesc  = "The repository carries themes that are already installed: %s. Install anyway? This permanently deletes the previous versions."
-	replaceThemes      = "Replace themes"
-	removeThemeTitle   = "Remove imported theme?"
-	removeThemeDesc    = "Delete %s? This removes the imported theme file from lich."
-	removeTheme        = "Remove theme"
-	replaceThemeTitle  = "Replace imported theme?"
-	replaceThemeDesc   = "A theme with the id %s already exists. Import anyway? This permanently deletes the previous theme."
-	replaceTheme       = "Replace theme"
-)
+// repositoryManifest is the file a theme repository holds, named in the
+// import dialog's hint.
+const repositoryManifest = "lich-theme.json"
 
 // importDialogWidth is ImportThemeDialog's sm:max-w-lg.
 const importDialogWidth unit.Dp = 512
@@ -66,24 +46,24 @@ func (p *themePicker) layoutDialogs(gtx C, th *ui.Theme) {
 	p.importDialog(gtx, th, t)
 	d := &p.dialogs
 	dismiss := func(change func(t *themeTasks)) func() { return func() { p.with(change) } }
-	removal := confirmSpec{state: &d.remove, slot: 0, open: t.removal != nil, title: removeThemeTitle, action: removeTheme,
+	removal := confirmSpec{state: &d.remove, slot: 0, open: t.removal != nil, title: i18n.T("settings.appearanceSettings.removeThemeTitle"), action: i18n.T("settings.appearanceSettings.removeTheme"),
 		closed: dismiss(func(t *themeTasks) { t.removal = nil })}
 	if t.removal != nil {
-		removal.desc = fmt.Sprintf(removeThemeDesc, t.removal.name)
+		removal.desc = i18n.T("settings.appearanceSettings.removeThemeDescription", i18n.Args{"name": t.removal.name})
 	}
 	if p.confirmDialog(gtx, th, removal) {
 		p.removeTheme(*t.removal)
 	}
-	overwrite := confirmSpec{state: &d.overwrite, slot: 1, open: t.overwrite != nil, title: replaceThemeTitle, action: replaceTheme,
+	overwrite := confirmSpec{state: &d.overwrite, slot: 1, open: t.overwrite != nil, title: i18n.T("settings.appearanceSettings.replaceThemeTitle"), action: i18n.T("settings.appearanceSettings.replaceTheme"),
 		closed: dismiss(func(t *themeTasks) { t.overwrite = nil })}
 	if t.overwrite != nil {
-		overwrite.desc = fmt.Sprintf(replaceThemeDesc, t.overwrite.id)
+		overwrite.desc = i18n.T("settings.appearanceSettings.replaceThemeDescription", i18n.Args{"id": t.overwrite.id})
 	}
 	if p.confirmDialog(gtx, th, overwrite) {
 		p.overwriteFile(*t.overwrite)
 	}
-	pack := confirmSpec{state: &d.pack, slot: 2, open: t.pack != nil, busy: t.importing, title: replaceThemesTitle,
-		desc: fmt.Sprintf(replaceThemesDesc, joinConflicts(t.pack)), action: replaceThemes,
+	pack := confirmSpec{state: &d.pack, slot: 2, open: t.pack != nil, busy: t.importing, title: i18n.T("settings.appearanceSettings.replaceThemesTitle"),
+		desc: i18n.T("settings.appearanceSettings.replaceThemesDescription", i18n.Args{"themes": joinConflicts(t.pack)}), action: i18n.T("settings.appearanceSettings.replaceThemes"),
 		closed: dismiss(func(t *themeTasks) { t.pack = nil })}
 	if p.confirmDialog(gtx, th, pack) {
 		p.installRepository(t.pack.url, true)
@@ -109,7 +89,7 @@ func (p *themePicker) confirmDialog(gtx C, th *ui.Theme, c confirmSpec) bool {
 		c.closed()
 	}
 	on := th.On(th.Popover)
-	cancel := on.Button(&d.cancel[c.slot], dialogCancel)
+	cancel := on.Button(&d.cancel[c.slot], i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
 	confirm := on.Button(&d.confirm[c.slot], c.action)
 	confirm.Variant, confirm.Disabled = ui.VariantDestructive, c.busy
@@ -152,7 +132,7 @@ func (p *themePicker) importDialog(gtx C, th *ui.Theme, t themeTasks) {
 		p.with(func(t *themeTasks) { t.focusURL = false })
 	}
 	on := th.On(th.Popover)
-	dlg := th.Dialog(&d.imp, t.importOpen, importTitle, importDesc)
+	dlg := th.Dialog(&d.imp, t.importOpen, i18n.T("settings.importThemeDialog.title"), i18n.T("settings.importThemeDialog.description"))
 	dlg.MaxWidth = importDialogWidth
 	dlg.Body = func(gtx C) D { return p.importBody(gtx, on, url, t.importing) }
 	dlg.Actions = []layout.Widget{func(gtx C) D { return p.importFooter(gtx, on, t.importing) }}
@@ -166,19 +146,19 @@ func (p *themePicker) importDialog(gtx C, th *ui.Theme, t themeTasks) {
 func (p *themePicker) importBody(gtx C, th *ui.Theme, url string, busy bool) D {
 	d := &p.dialogs
 	d.url.Submit = true
-	install := th.Button(&d.install, importInstall)
+	install := th.Button(&d.install, i18n.T("settings.importThemeDialog.install"))
 	if busy {
-		install.Text = importInstalling
+		install.Text = i18n.T("settings.importThemeDialog.installing")
 	}
 	install.Disabled = url == "" || busy
 	field := th.Input(&d.url, importPlaceholder)
 	field.Mono, field.TextSize, field.Disabled = true, ui.TextXS, busy
-	hint := th.Text(ui.TextXS, importRepositoryHint).Muted()
+	hint := th.Text(ui.TextXS, i18n.T("settings.importThemeDialog.repositoryHint", i18n.Args{"file": repositoryManifest})).Muted()
 	hint.MaxLines = 0
-	choose := th.Button(&d.choose, importChooseFile)
+	choose := th.Button(&d.choose, i18n.T("settings.importThemeDialog.chooseFile"))
 	choose.Variant, choose.Icon, choose.Disabled = ui.VariantOutline, icFileJSON, busy
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Label(importRepositoryURL).Layout),
+		layout.Rigid(th.Label(i18n.T("settings.importThemeDialog.repositoryUrl")).Layout),
 		ui.VGap(2),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -196,7 +176,7 @@ func (p *themePicker) importBody(gtx C, th *ui.Theme, url string, busy bool) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(choose.Layout),
 				ui.Gap(3),
-				layout.Flexed(1, th.Text(ui.TextXS, importFileHint).Muted().Layout),
+				layout.Flexed(1, th.Text(ui.TextXS, i18n.T("settings.importThemeDialog.fileHint")).Muted().Layout),
 			)
 		}),
 	)
@@ -213,7 +193,7 @@ func orRule(gtx C, th *ui.Theme) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Flexed(1, line),
 		ui.Gap(3),
-		layout.Rigid(th.Text(ui.TextXS, importOr).Muted().Layout),
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.importThemeDialog.or")).Muted().Layout),
 		ui.Gap(3),
 		layout.Flexed(1, line),
 	)
@@ -223,9 +203,9 @@ func orRule(gtx C, th *ui.Theme) D {
 // left, Cancel on the right.
 func (p *themePicker) importFooter(gtx C, th *ui.Theme, busy bool) D {
 	d := &p.dialogs
-	template := th.Button(&d.template, importTemplate)
+	template := th.Button(&d.template, i18n.T("settings.importThemeDialog.downloadTemplate"))
 	template.Variant, template.Icon, template.Disabled = ui.VariantGhost, icDownload, busy
-	cancel := th.Button(&d.close, dialogCancel)
+	cancel := th.Button(&d.close, i18n.T("common.action.cancel"))
 	cancel.Variant, cancel.Disabled = ui.VariantGhost, busy
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Spacing: layout.SpaceBetween}.Layout(gtx,

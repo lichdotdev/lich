@@ -30,5 +30,13 @@
       "other": "Fechar {name} interrompe {count} sessões no meio do turno. Ao reabrir o projeto, você pode retomar de onde cada uma parou; o turno em andamento é perdido."
     },
     "closeAnyway": "Fechar mesmo assim"
+  },
+  "topbarTabs": {
+    "projectSettings": "Configurações do projeto…",
+    "closeProject": "Fechar projeto"
+  },
+  "topbarApply": {
+    "closeProjectFailed": "Não foi possível fechar o projeto: {error}",
+    "reorderFailed": "Não foi possível reordenar os projetos: {error}"
   }
 }

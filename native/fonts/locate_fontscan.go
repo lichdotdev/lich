@@ -90,6 +90,24 @@ func Locate(f font.Font) (Location, error) {
 	return loc, nil
 }
 
+// locateHan is the face, among the platform's Chinese families first, that
+// draws hanProbe in weight w, or no Location when none does.
+func locateHan(w font.Weight) (Location, error) {
+	var loc Location
+	err := withFontMap(func(fm *fontscan.FontMap) {
+		fm.SetQuery(fontscan.Query{Families: append(slices.Clone(preferredHan), SystemSans), Aspect: aspectOf(font.Font{Weight: w})})
+		face := fm.ResolveFace(hanProbe)
+		if face == nil {
+			return
+		}
+		if _, ok := face.NominalGlyph(hanProbe); ok {
+			id := fm.FontLocation(face.Font)
+			loc = Location{Path: id.File, Index: int(id.Index)}
+		}
+	})
+	return loc, err
+}
+
 // Covering names a font file that has a glyph for r, preferring the
 // monospace ones, or "" when none does. The platform's emoji family is asked
 // for by name: fontscan's fallback is by script, and an emoji's script is

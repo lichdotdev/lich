@@ -8,15 +8,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (shell.gitMissingGate).
-const (
-	gitMissingTitle   = "git is not installed"
-	gitMissingDesc    = "lich reads every branch, diff and worktree through git. Sessions still run without it — the version control surfaces stay empty."
-	gitMissingNotNow  = "Not now"
-	gitMissingInstall = "Install git"
 )
 
 var flagGitMissing = flag.Bool("git-missing", false, "open the git-missing dialog at start, for -shot")
@@ -66,18 +59,18 @@ func (u *window) layoutGitMissing(gtx C, th *ui.Theme) {
 		go func() { u.logErr("install git", u.client.OpenExternal(u.ctx, vcsGitURL)) }()
 	}
 	on := th.On(th.Popover)
-	notNow := on.Button(&g.notNow, gitMissingNotNow)
+	notNow := on.Button(&g.notNow, i18n.T("shell.gitMissingGate.notNow"))
 	notNow.Variant = ui.VariantGhost
-	label := vcsCheckAgain
+	label := i18n.T("common.checkAgainButton.check")
 	if g.checking.Load() {
-		label = vcsChecking
+		label = i18n.T("common.checkAgainButton.checking")
 	}
 	again := on.Button(&g.again, label)
 	again.Variant, again.Disabled = ui.VariantOutline, g.checking.Load()
-	d := th.Dialog(&g.dialog, g.missing.Load(), gitMissingTitle, gitMissingDesc)
+	d := th.Dialog(&g.dialog, g.missing.Load(), i18n.T("shell.gitMissingGate.title"), i18n.T("shell.gitMissingGate.description"))
 	d.MaxWidth = optInWidth
 	d.HideClose = true
-	d.Actions = []layout.Widget{notNow.Layout, again.Layout, on.Button(&g.install, gitMissingInstall).Layout}
+	d.Actions = []layout.Widget{notNow.Layout, again.Layout, on.Button(&g.install, i18n.T("shell.gitMissingGate.installGit")).Layout}
 	if d.Layout(gtx) {
 		g.missing.Store(false)
 	}

@@ -20,21 +20,9 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog
-// (dock.filesPanel).
-const (
-	codeSearchPlaceholder = "Search in files"
-	codeFilterPlaceholder = "Filter by name"
-	codeByName            = "Name"
-	codeByText            = "Text"
-	codeReadFailed        = "Could not read this folder"
-	codeLoading           = "Loading…"
-	codeNoMatch           = "No file matches"
-	codeEmpty             = "No files here"
 )
 
 // plainFolderTick is use-git-status.ts GIT_POLL.slowMs. A plain folder has no
@@ -213,13 +201,13 @@ func (c *codeTab) browseBox(gtx C, th *ui.Theme) D {
 		c.query.SetCaret(0, c.query.Len())
 	}
 	text := c.mode.Value == browseByText
-	placeholder := codeFilterPlaceholder
+	placeholder := i18n.T("dock.filesPanel.filterPlaceholder")
 	if text {
-		placeholder = codeSearchPlaceholder
+		placeholder = i18n.T("dock.filesPanel.searchPlaceholder")
 	}
 	field := th.Input(&c.query, placeholder)
 	field.Leading, field.Height, field.TextSize, field.Clear = icSearch, ui.Space(7), ui.TextXS, &c.clearQuery
-	modes := th.ToggleGroup(&c.mode, ui.ToggleItem{Value: browseByName, Text: codeByName}, ui.ToggleItem{Value: browseByText, Text: codeByText})
+	modes := th.ToggleGroup(&c.mode, ui.ToggleItem{Value: browseByName, Text: i18n.T("dock.filesPanel.byName")}, ui.ToggleItem{Value: browseByText, Text: i18n.T("dock.filesPanel.byText")})
 	modes.Size, modes.ItemHeight, modes.ItemPadX, modes.ItemText = ui.ToggleSizeSM, ui.Space(5), ui.Space(2), ui.TextXS
 	return layout.UniformInset(ui.Space(1.5)).Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

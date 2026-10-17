@@ -201,5 +201,21 @@
     "open": "Abrir",
     "needsInput": "{label} precisa da sua atenção",
     "finished": "{label} terminou o trabalho"
+  },
+  "windowClose": {
+    "changeInSettings": "· mude em Configurações › Geral",
+    "quitFailed": "Não foi possível encerrar o lich: {error}",
+    "countFailed": "Não foi possível contar as sessões em execução: {error}"
+  },
+  "reconnect": {
+    "reconnecting": "Reconectando ao lich…"
+  },
+  "main": {
+    "lostTitle": "Outra janela do lich assumiu o lugar, ou o lich foi encerrado.",
+    "lostHint": "Execute `lich native` para reabrir aqui.",
+    "renameFailed": "Não foi possível renomear a sessão: {error}"
+  },
+  "notifyPrompt": {
+    "description": "Uma sessão acabou de pedir sua atenção enquanto você estava em outro lugar. O lich pode mostrar uma notificação na área de trabalho quando isso acontecer, com o nome da sessão e do projeto, para você iniciar uma tarefa e se afastar da janela. Sessões que você está olhando nunca notificam. Você pode mudar isso quando quiser em Configurações › Geral."
   }
 }

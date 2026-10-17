@@ -136,7 +136,15 @@
     "dismiss": "Dismiss",
     "why": "Why this review no longer applies",
     "dismissReview": "Dismiss review",
-    "whyPlaceholder": "What changed since it was written"
+    "whyPlaceholder": "What changed since it was written",
+    "readFailed": "Couldn’t read the conversation: {error}",
+    "nothingYet": "Nothing said yet.",
+    "line": "line {line}",
+    "lines": "lines {start}-{end}",
+    "outdated": "outdated",
+    "pendingHead": "Pending review",
+    "pendingNote": "Sent when you submit the review.",
+    "discard": "Discard"
   },
   "pullsOverview": {
     "saveFailed": "Couldn’t save the description: {error}",
@@ -215,7 +223,8 @@
     },
     "draft": "Draft",
     "fork": "fork",
-    "checkedOut": "checked out"
+    "checkedOut": "checked out",
+    "searchHint": "Filter by number, title, author or branch"
   },
   "pullsFiles": {
     "loadFailed": "Couldn’t load the diff: {error}",
@@ -223,7 +232,8 @@
     "resizeTree": "Resize the file tree",
     "hideTree": "Hide the file tree",
     "showTree": "Show the file tree",
-    "viewed": "{viewed} of {total} viewed"
+    "viewed": "{viewed} of {total} viewed",
+    "loading": "Reading the diff…"
   },
   "reviewThread": {
     "replyFailed": "Reply failed: {error}",
@@ -309,5 +319,36 @@
       "conversation": "Conversation",
       "checks": "Checks"
     }
+  },
+  "pullsActions": {
+    "runningTitle": "Sessions are still running",
+    "running": {
+      "one": "A session in {name} is mid-turn. Removing the worktree stops it; the turn in flight is lost.",
+      "other": "{count} sessions in {name} are mid-turn. Removing the worktree stops them; the turn in flight is lost."
+    }
+  },
+  "pullsView": {
+    "tabFiles": "Files"
+  },
+  "pullsLogic": {
+    "failing": {
+      "one": "{count} check is failing; GitHub will merge over it",
+      "other": "{count} checks are failing; GitHub will merge over them"
+    },
+    "durationSeconds": "{value}s",
+    "durationMinutes": "{value}m",
+    "durationHours": "{value}h"
+  },
+  "pullsPanels": {
+    "mergeFailing": "Merge · {count} failing"
+  },
+  "pullsSubmit": {
+    "review": "Submit review {count}",
+    "withComments": {
+      "one": "With {count} line comment.",
+      "other": "With {count} line comments."
+    },
+    "send": "Submit",
+    "sending": "Submitting…"
   }
 }

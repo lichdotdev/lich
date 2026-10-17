@@ -7,7 +7,7 @@ import (
 
 func TestFooterIsFoundBySearch(t *testing.T) {
 	for _, q := range []string{"footer", "status bar"} {
-		if got := searchSettings(q); len(got) == 0 || got[0].title != footerTitle || got[0].section != sectionAppearance {
+		if got := searchSettings(q); len(got) == 0 || got[0].title != "Footer" || got[0].section != sectionAppearance {
 			t.Errorf("%q: %+v", q, got)
 		}
 	}
@@ -19,11 +19,11 @@ func TestRevealOpensTheFooterRow(t *testing.T) {
 	f, client := newSidebarBackend(t)
 	s := newSettingsScreen(context.Background(), client, nil, func() {})
 	s.scope = "pg"
-	s.reveal(sectionAppearance, footerTitle, openTabs)
+	s.reveal(sectionAppearance, "Footer", openTabs)
 	if !s.open || s.section != sectionAppearance || s.scope != "" {
 		t.Errorf("open %v section %q scope %q", s.open, s.section, s.scope)
 	}
-	if s.revealing == nil || *s.revealing != (settingHit{section: sectionAppearance, title: footerTitle}) {
+	if s.revealing == nil || *s.revealing != (settingHit{section: sectionAppearance, title: "Footer"}) {
 		t.Errorf("revealing %+v", s.revealing)
 	}
 	waitForSetting(t, f, settingsSectionKey+"@", sectionAppearance)

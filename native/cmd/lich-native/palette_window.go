@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"fmt"
 	"math"
 	"runtime"
 	"slices"
@@ -11,17 +10,9 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (palette.commandPalette,
-// shell.projects).
-const (
-	paletteForgetFailed      = "Could not forget %s: %v"
-	paletteResumeFailed      = "Could not resume %s: %v"
-	paletteActionUnavailable = "%s is not available here"
-	paletteNoLongerAvailable = "%s is no longer available to resume"
 )
 
 // paletteWorld is the open workspace as the palette reads it: the projects,
@@ -199,7 +190,7 @@ func (u *window) forgetParked(h paletteHistory) {
 	go func() {
 		if err := u.client.ForgetSession(u.ctx, h.ID); err != nil {
 			u.logErr("forget session", err)
-			u.toaster.Show(failure(paletteForgetFailed, h.Label, err))
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.forgetFailed", i18n.Args{"label": h.Label, "error": lichclient.ErrorText(err)})})
 		}
 	}()
 }
@@ -220,13 +211,13 @@ func (u *window) resumeParked(c lichclient.ClosedSession) {
 	switch {
 	case err != nil:
 		u.logErr("reopen session", err)
-		u.toaster.Show(failure(paletteResumeFailed, c.Label, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.resumeFailed", i18n.Args{"label": c.Label, "error": lichclient.ErrorText(err)})})
 		return
 	case restored == nil:
 		// Another window resumed it, or its worktree was removed since the
 		// list was drawn: not an error, but the row vanishing unexplained
 		// reads as one.
-		u.toaster.Show(ui.Toast{Title: fmt.Sprintf(paletteNoLongerAvailable, c.Label)})
+		u.toaster.Show(ui.Toast{Title: i18n.T("shell.projects.noLongerAvailable", i18n.Args{"label": c.Label})})
 		return
 	}
 	if _, ok := u.model.restoreSession(c.ProjectID, *restored, math.MaxInt); !ok {
@@ -243,7 +234,7 @@ func (u *window) adoptExternal(e lichclient.ExternalSession) {
 	label := externalLabel(e)
 	if err := u.client.AdoptExternalSession(u.ctx, e.ProjectID, id, e.Kind, e.Path, e.ProviderSessionID, label); err != nil {
 		u.logErr("adopt external session", err)
-		u.toaster.Show(failure(paletteResumeFailed, label, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.resumeFailed", i18n.Args{"label": label, "error": lichclient.ErrorText(err)})})
 		return
 	}
 	u.resumeParked(adoptedSession(e, id))
@@ -262,7 +253,7 @@ func (u *window) pickedHotkeys() []hotkeyID {
 			run = append(run, id)
 			continue
 		}
-		u.toaster.Show(ui.Toast{Title: fmt.Sprintf(paletteActionUnavailable, hotkeyLabel(id))})
+		u.toaster.Show(ui.Toast{Title: i18n.T("palette.commandPalette.actionUnavailable", i18n.Args{"label": hotkeyLabel(id)})})
 	}
 	return run
 }

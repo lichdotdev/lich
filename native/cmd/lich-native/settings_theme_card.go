@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -14,6 +13,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -153,13 +153,13 @@ func (p *themePicker) cardActions(gtx C, th *ui.Theme, c *themeCard, s themeCard
 			turn = spinAngle(gtx)
 		}
 		t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
-		tip := on.Tooltip(p.root, &c.updateTip, themeUpdateHint)
+		tip := on.Tooltip(p.root, &c.updateTip, i18n.T("settings.themePicker.updateHint"))
 		tip.Layout(gtx, func(gtx C) D { return cardIconButton(gtx, on, &c.update, icRefresh, turn, s.updating != "") })
 		t.Pop()
 		x += btn + gap
 	}
 	t := op.Offset(image.Pt(x, pad)).Push(gtx.Ops)
-	tip := on.Tooltip(p.root, &c.removeTip, fmt.Sprintf(themeRemoveNamed, s.name))
+	tip := on.Tooltip(p.root, &c.removeTip, i18n.T("settings.themePicker.removeNamed", i18n.Args{"name": s.name}))
 	tip.Layout(gtx, func(gtx C) D { return cardIconButton(gtx, on, &c.remove, icTrash, 0, false) })
 	t.Pop()
 }
@@ -223,7 +223,7 @@ func (p *themePicker) importCardLayout(gtx C, th *ui.Theme) D {
 			icImportTheme.Layout(gtx, ui.Space(5), ink)
 			return D{Size: size}
 		}
-		return cardBody(gtx, th, themeImportCard, "", false, preview)
+		return cardBody(gtx, th, i18n.T("settings.importThemeDialog.title"), "", false, preview)
 	})
 }
 

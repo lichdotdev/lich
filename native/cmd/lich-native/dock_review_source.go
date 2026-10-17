@@ -10,14 +10,6 @@ import (
 	"github.com/omartelo/lich/native/lichclient"
 )
 
-// ponytail: English until the native window has i18n (diff.reviewPanel).
-const (
-	reviewNotRepository = "Not a git repository"
-	reviewLoading       = "Loading…"
-	reviewNoChanges     = "No uncommitted changes"
-	reviewSqueezed      = "Side-by-side needs a wider panel"
-)
-
 // diffPoll is ReviewPanel's DIFF_POLL_MS: how often the diff is read again,
 // catching the edits the status counts are blind to.
 const diffPoll = 2 * time.Second

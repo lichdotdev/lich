@@ -7,7 +7,12 @@
     "promptDescription": "The language of the text lich hands your agents: briefings, relayed messages and notices. Sessions started from now on use it everywhere; open ones get it in relayed messages only.",
     "uiSearchWords": "language locale translation english portuguese",
     "promptSearchWords": "language locale translation agent briefing relay english portuguese",
-    "promptSaveFailed": "Could not save the prompt language: {error}"
+    "promptSaveFailed": "Could not save the prompt language: {error}",
+    "hanFontTitle": "Download the Chinese font?",
+    "hanFontDescription": "Chinese needs the Noto Sans SC font, and no font installed on this computer draws Chinese. lich can download it (about {size} MB) and keep it in its own folder.",
+    "hanFontDownload": "Download",
+    "hanFontProgress": "Downloading… {done} of {total} MB",
+    "hanFontFailed": "Could not download the Chinese font: {error}"
   },
   "settings": {
     "search": "Search settings",
@@ -25,7 +30,9 @@
       "versionControl": "Version Control",
       "updates": "Updates",
       "help": "Help"
-    }
+    },
+    "notYet": "Not here yet",
+    "projectDesc": "What this project changes from Global. A row without a change follows Global."
   },
   "appearanceSettings": {
     "importPickTitle": "Import Theme",
@@ -449,5 +456,221 @@
     "aboutSearchWords": "version license",
     "aboutVersion": "lich {version} — {platform}.",
     "repository": "Repository"
+  },
+  "settingsIndex": {
+    "sectionGeneral": "General",
+    "sectionEditor": "Editor",
+    "hideWhitespaceTitle": "Hide whitespace in diffs",
+    "hideWhitespaceSearchWords": "space indentation review ignore",
+    "hideWhitespaceDescription": "Leave out changes that only touch spacing in the Review tab."
+  },
+  "settingsNav": {
+    "scopeLabel": "Scope",
+    "scopeGlobal": "Global",
+    "openProjects": "Open projects",
+    "changes": {
+      "one": "{count} change",
+      "other": "{count} changes"
+    },
+    "scopeNote": "Only the settings a project can change are on. The rest are the same everywhere."
+  },
+  "settingsRow": {
+    "overriddenIn": "Overridden in",
+    "followsGlobal": "Follows Global",
+    "globalValue": "Global: {value}",
+    "useGlobal": "Use Global",
+    "globalOnly": "Global only",
+    "projectOnly": "Project only"
+  },
+  "settingsGeneral": {
+    "notifySearchWords": "desktop notification alert bell"
+  },
+  "settingsWindow": {
+    "switchTitle": "Switch to the web window now?",
+    "switchDescription": "This window closes and the web one opens. Your sessions keep running.",
+    "switchFailed": "Could not open the web window: {error}"
+  },
+  "settingsHelp": {
+    "bugDescription": "Opens the bug form in your browser with the version and platform filled in. lich does not file the issue — you write it yourself. Run `lich rage` in a terminal to pack the logs, the versions and what lich found on this machine into one archive to attach.",
+    "logSearchWords": "debug logs native window",
+    "logDescription": "The folder holds lich's log and, beside it, the native window's (lich-native.log). They hold absolute paths, project and branch names, and your gh login — never a session token. Read them before you attach them to anything.",
+    "logFailed": "Could not open the log folder: {error}"
+  },
+  "settingsProviders": {
+    "pathRereadFailed": "PATH could not be re-read; relaunch lich.",
+    "otherVersionsOnPath": "other versions on PATH"
+  },
+  "settingsProvidersBin": {
+    "pickFailed": "Could not open the file picker: {error}"
+  },
+  "settingsProvidersVersion": {
+    "alsoOnPath": "Also on PATH: {versions}. Pin one above to choose."
+  },
+  "settingsAppearance": {
+    "uiFontTitle": "Interface font",
+    "uiFontSearchWords": "ui sans text",
+    "editorFontTitle": "Editor font",
+    "editorFontSearchWords": "code review typeface monospace",
+    "editorSizeTitle": "Editor text size",
+    "editorSizeSearchWords": "code review font size",
+    "editorSmaller": "Smaller code text",
+    "editorLarger": "Larger code text",
+    "editorSizeReset": "Reset the editor text size"
+  },
+  "settingsEditor": {
+    "hideWhitespaceTitle": "Hide whitespace in diffs",
+    "hideWhitespaceSearchWords": "space indentation review ignore",
+    "hideWhitespaceDescription": "Leave out changes that only touch spacing in the Review tab."
+  },
+  "settingsTheme": {
+    "autoLightDark": "Auto light/dark",
+    "pairLight": "light pair",
+    "pairDark": "dark pair"
+  },
+  "settingsThemeActions": {
+    "reloadFailed": "Couldn't reread the themes: {error}"
+  },
+  "appearancePrefs": {
+    "terminalFontFailed": "Couldn't draw the terminal in {family}: {error}",
+    "editorFontFailed": "Couldn't draw the code in {family}: {error}",
+    "uiFontFailed": "Couldn't draw the interface in {family}: {error}"
+  },
+  "settingsSandbox": {
+    "grantOn": "On",
+    "grantOff": "Off"
+  },
+  "settingsVcs": {
+    "pathReread": "PATH could not be re-read; relaunch lich."
+  },
+  "settingsUpdatesPlugin": {
+    "hint": {
+      "codex": "Run /hooks in a Codex session to trust the plugin's hooks.",
+      "crush": "Reports its session id and refreshes git status. It has no end-of-turn event, so its cards show no status and keep their own name.",
+      "omp": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
+      "antigravity": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
+      "cursor": "Runs the plugin installed in Claude Code, so it reports what that version reports and updates with it. lich adds only its own tools here. It raises no approval event either, so a session waiting on your permission shows a spinner rather than a bell."
+    },
+    "installFailed": "Install failed: {error}",
+    "updateFailed": "Update failed: {error}",
+    "profileFailed": "The lich plugin is not updated in the {pass} profile {profile}: {error}"
+  },
+  "settingsProfiles": {
+    "title": "Profile",
+    "profilesTitle": "Profiles",
+    "creating": "Creating the profile…",
+    "startingLogin": "Starting the login…",
+    "renaming": "Renaming…",
+    "deleting": "Deleting…",
+    "installing": "Installing plugins…",
+    "loginFailed": "The login did not complete.",
+    "noTerminal": "Open a project to log in from a terminal."
+  },
+  "settingsProfilesView": {
+    "defaultTag": "· default",
+    "logIn": "Log in",
+    "logInAgain": "Log in again",
+    "copyFrom": "Copy plugins from…",
+    "rename": "Rename",
+    "delete": "Delete",
+    "newProfile": "New profile",
+    "options": "Options for {name}",
+    "advancedBinary": "Advanced · Binary",
+    "loading": "Reading the profiles…"
+  },
+  "settingsProfilesDialogs": {
+    "name": "Name",
+    "namePlaceholder": "Work",
+    "bring": "Plugins to bring from {name}",
+    "noPlugins": "{name} has no plugins to bring.",
+    "lichLocked": "lich installs it in every profile",
+    "pluginsHint": "More can be copied later from the profile's menu. Your organization may refuse some of them.",
+    "createAndLogin": "Create and log in",
+    "renameTitle": "Rename profile",
+    "readyDesc": "Pick it as the Profile of a project, or of every new session.",
+    "failedDesc": "Try again from the profile's menu, or log in from a terminal.",
+    "deleteTitle": "Delete {name}?",
+    "copyTitle": "Copy plugins to {name}",
+    "copyDesc": "They are installed through {provider} as this profile, so its account's rules apply.",
+    "copyFrom": "Copy from",
+    "copy": "Copy plugins",
+    "loginTitle": "Log in to {name}",
+    "waiting": "Waiting for the login…",
+    "openBrowser": "Open in browser",
+    "copyAddress": "Copy",
+    "pasteCode": "Paste the code",
+    "submitCode": "Submit",
+    "terminal": "Log in from a terminal instead",
+    "readyTitle": "{name} is ready",
+    "failedTitle": "Could not log in to {name}",
+    "copiedTitle": "Plugins for {name}",
+    "loggedInAs": "Logged in as {email}",
+    "lichPluginNote": "The lich plugin could not be installed: {error}",
+    "done": "Done"
+  },
+  "profiles": {
+    "usageLimit": "limit",
+    "noPlugins": "no plugins",
+    "plugins": {
+      "one": "{count} plugin",
+      "other": "{count} plugins"
+    },
+    "notLoggedIn": "Not logged in",
+    "loggedIn": "Logged in",
+    "personal": "Personal",
+    "profileDesc": "Which {provider} login new sessions use. A session keeps the profile it was born in, resumes included.",
+    "renameDescPlugins": "Only its name changes: its login, plugins and history stay as they are.",
+    "deleteDescPlugins": "Its login, plugins and conversation history are removed, and sessions started in it can no longer be resumed.",
+    "loginDesc": "Sign in in the browser tab {provider} opened. This carries on by itself when you are done.",
+    "claude": {
+      "profilesDesc": "Each profile is its own Claude login with its own plugins and history. Settings, CLAUDE.md, agents, commands, skills and hooks are the same in all of them.",
+      "copiedNote": "Settings, CLAUDE.md, agents, commands, skills and hooks are copies in this profile: editing them in another profile no longer reaches it.",
+      "searchAlso": "claude account login personal work",
+      "profilesAlso": "claude accounts logins personal work log in plugins",
+      "newDesc": "A Claude login of its own, with its own plugins and history.",
+      "addressDesc": "If the browser did not open, sign in at this address and paste the code it shows."
+    },
+    "codex": {
+      "profilesDesc": "Each profile is its own Codex login with its own plugins and history. Personal's config.toml settings, AGENTS.md, hooks, skills and rules are the same in all of them.",
+      "copiedNote": "AGENTS.md and hooks.json are copies in this profile: editing them in another profile no longer reaches it.",
+      "searchAlso": "codex account login personal work chatgpt",
+      "profilesAlso": "codex accounts logins personal work log in chatgpt plugins",
+      "newDesc": "A Codex login of its own, with its own plugins and history.",
+      "addressDesc": "If the browser did not open, sign in at this address."
+    },
+    "omp": {
+      "profilesDesc": "Each profile is its own set of oh-my-pi logins with its own history. config.yml, models.yml, mcp.json, AGENTS.md, skills, rules, commands, prompts and extensions are the same in all of them.",
+      "copiedNote": "config.yml, models.yml, mcp.json and the markdown files are copies in this profile: editing them in another profile no longer reaches it.",
+      "searchAlso": "omp oh-my-pi account login personal work",
+      "profilesAlso": "omp oh-my-pi accounts logins personal work log in",
+      "newDesc": "An oh-my-pi login of its own, with its own history. You log in from a terminal once it is made.",
+      "renameDesc": "Only its name changes: its logins and history stay as they are.",
+      "deleteDesc": "Its logins and conversation history are removed, and sessions started in it can no longer be resumed."
+    }
+  },
+  "profilesXdg": {
+    "opencode": {
+      "profilesDesc": "Each profile is its own opencode login with its own history. opencode's config, plugins, agents and MCP servers are the same in all of them.",
+      "searchAlso": "opencode account login personal work",
+      "profilesAlso": "opencode accounts logins personal work log in",
+      "newDesc": "An opencode login of its own, with its own history. You log in from a terminal once it is made.",
+      "renameDesc": "Only its name changes: its login and history stay as they are.",
+      "deleteDesc": "Its login and conversation history are removed, and sessions started in it can no longer be resumed."
+    },
+    "cursor": {
+      "profilesDesc": "Each profile is its own Cursor login with its own chats and CLI settings. mcp.json, hooks and skills in ~/.cursor are the same in all of them.",
+      "searchAlso": "cursor cursor-agent account login personal work",
+      "profilesAlso": "cursor cursor-agent accounts logins personal work log in",
+      "newDesc": "A Cursor login of its own, with its own chats. You log in from a terminal once it is made.",
+      "renameDesc": "Only its name changes: its login and chats stay as they are.",
+      "deleteDesc": "Its login and chats are removed, and sessions started in it can no longer be resumed."
+    },
+    "kiro": {
+      "profilesDesc": "Each profile is its own Kiro login. Conversations, agents, steering and settings in ~/.kiro are the same in all of them.",
+      "searchAlso": "kiro kiro-cli account login personal work aws builder",
+      "profilesAlso": "kiro kiro-cli accounts logins personal work log in",
+      "newDesc": "A Kiro login of its own. You log in from a terminal once it is made.",
+      "renameDesc": "Only its name changes: its login stays as it is.",
+      "deleteDesc": "Its login is removed and sessions started in it can no longer be resumed. Conversations stay: every profile shares them."
+    }
   }
 }

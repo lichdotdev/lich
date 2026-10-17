@@ -20,7 +20,7 @@ func TestBugReportURLPrefillsTheForm(t *testing.T) {
 }
 
 func TestRevealLogOutcomeReplacesTheLoadingToast(t *testing.T) {
-	if got := revealLogOutcome("toast-3", nil); got.ID != "toast-3" || got.Variant != ui.ToastSuccess || got.Title != helpLogOpened {
+	if got := revealLogOutcome("toast-3", nil); got.ID != "toast-3" || got.Variant != ui.ToastSuccess || got.Title != "Log folder opened." {
 		t.Errorf("success = %+v, want the opened toast in toast-3's place", got)
 	}
 	if got := revealLogOutcome("toast-3", errors.New("no file manager")); got.ID != "toast-3" || got.Variant != ui.ToastError || !strings.Contains(got.Title, "no file manager") {

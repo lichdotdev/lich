@@ -12,19 +12,10 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	openProjectHint     = "Open project"
-	recentProjectsLabel = "Recent projects"
-	relocateMark        = "relocate"
-	openFolderLabel     = "Open folder…"
-	notificationsTitle  = "Notifications"
-	caughtUpLabel       = "You're all caught up"
 )
 
 // recentLimit is OpenProjectMenu's MENU_LIMIT: what fits above the picker
@@ -67,7 +58,7 @@ func (o *openMenu) snapshot() ([]lichclient.RecentProject, map[string]bool) {
 func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 	o := &t.open
 	recents, missing := o.snapshot()
-	tip := th.Tooltip(t.root, t.hint("open"), openProjectHint)
+	tip := th.Tooltip(t.root, t.hint("open"), i18n.T("tabs.openProjectMenu.open"))
 	tip.Side = ui.SideBottom
 	if len(recents) == 0 {
 		if o.plus.Clicked(gtx) {
@@ -97,7 +88,7 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 
 func (o *openMenu) content(gtx C, th *ui.Theme, recents []lichclient.RecentProject, missing map[string]bool) D {
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, recentProjectsLabel, "") }),
+		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, i18n.T("tabs.openProjectMenu.recent"), "") }),
 		layout.Rigid(menuSeparator(th)),
 	}
 	for i, r := range recents {
@@ -110,7 +101,7 @@ func (o *openMenu) content(gtx C, th *ui.Theme, recents []lichclient.RecentProje
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return icFolderOpen.Layout(gtx, ui.Space(4), th.MutedForeground) }),
 					ui.Gap(2),
-					layout.Rigid(th.Text(ui.TextSM, openFolderLabel).Layout),
+					layout.Rigid(th.Text(ui.TextSM, i18n.T("tabs.openProjectMenu.openFolder")).Layout),
 				)
 			})
 		}),
@@ -130,7 +121,7 @@ func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r lichclient.Recent
 			layout.Flexed(1, twoLines(th, r.Name, displayPath(r.Path))),
 		}
 		if gone {
-			children = append(children, ui.Gap(2), layout.Rigid(th.Text(10, relocateMark).Muted().Mono().Layout))
+			children = append(children, ui.Gap(2), layout.Rigid(th.Text(10, i18n.T("tabs.openProjectMenu.relocate")).Muted().Mono().Layout))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	})
@@ -209,7 +200,7 @@ func (t *topbar) bellButton(gtx C, th *ui.Theme, items []notification, act *topb
 			b.popover.Close()
 		}
 	}
-	tip := th.Tooltip(t.root, t.hint("bell"), notificationsTitle)
+	tip := th.Tooltip(t.root, t.hint("bell"), i18n.T("tabs.notificationsButton.title"))
 	tip.Side = ui.SideBottom
 	pop := th.DropdownPanel(t.root, &b.popover, menuWidth, func(gtx C, th *ui.Theme) D { return b.content(gtx, th, items) })
 	pop.AlignEnd = true
@@ -243,14 +234,14 @@ func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
 		count = strconv.Itoa(len(items))
 	}
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, notificationsTitle, count) }),
+		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, i18n.T("tabs.notificationsButton.title"), count) }),
 		layout.Rigid(menuSeparator(th)),
 	}
 	if len(items) == 0 {
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: ui.Space(6), Bottom: ui.Space(6)}.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Center.Layout(gtx, th.Text(ui.TextXS, caughtUpLabel).Muted().Layout)
+				return layout.Center.Layout(gtx, th.Text(ui.TextXS, i18n.T("tabs.notificationsButton.caughtUp")).Muted().Layout)
 			})
 		}))
 	}

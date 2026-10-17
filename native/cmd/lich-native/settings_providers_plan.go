@@ -7,17 +7,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (settings.planUsageSetting).
-const (
-	planSignedOut    = "Signed out."
-	planSignedOutRun = "Signed out. Run %s to read plan usage."
-	planReadFailed   = "Could not read plan usage. The provider's usage endpoint is undocumented and may have changed."
-	planUsed         = "used"
-	planResets       = "resets"
 )
 
 // The gauge grid's columns (gaugeGrid): every one fixed but the bar's, so
@@ -32,11 +24,11 @@ var (
 // planBlock is PlanUsageSetting: what is left of the provider's subscription,
 // the state of the provider above everything that configures it. It is a
 // reading, not a setting, so it has no scope of its own. heading is the title
-// it is drawn under, planTitle when "".
+// it is drawn under, "settings.planUsageSetting.title" when "".
 func (s *settingsScreen) planBlock(gtx C, th *ui.Theme, values scopedValues, plan lichclient.QuotaPlan, first bool, heading string) D {
-	r := s.providerRow(gtx, settingEntry{title: planTitle}, values)
+	r := s.providerRow(gtx, settingEntry{titleKey: "settings.planUsageSetting.title"}, values)
 	r.kind, r.overriddenIn = rowPlain, nil
-	r.description = planDesc
+	r.description = i18n.T("settings.planUsageSetting.description")
 	if heading != "" {
 		r.title = heading
 	}
@@ -48,7 +40,7 @@ func planBody(gtx C, th *ui.Theme, plan lichclient.QuotaPlan) D {
 	case "signed-out":
 		return planSignedOutLine(gtx, th, loginCommands[plan.Provider])
 	case "error":
-		return wrapped(gtx, th.Text(ui.TextXS, planReadFailed).Muted())
+		return wrapped(gtx, th.Text(ui.TextXS, i18n.T("settings.planUsageSetting.readFailed")).Muted())
 	}
 	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(ui.TextXS)*proseCh*6/10)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return planHead(gtx, th, plan.Plan) })}
@@ -61,13 +53,17 @@ func planBody(gtx C, th *ui.Theme, plan lichclient.QuotaPlan) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
+// commandSlot stands in for the command while the sentence is split around
+// it, so the command can be drawn in mono between its two halves.
+const commandSlot = "\x00"
+
 // planSignedOutLine says how the login is redone, the command in mono: lich
 // reads the credentials that command writes and never refreshes them itself.
 func planSignedOutLine(gtx C, th *ui.Theme, command string) D {
 	if command == "" {
-		return th.Text(ui.TextXS, planSignedOut).Muted().Layout(gtx)
+		return th.Text(ui.TextXS, i18n.T("settings.planUsageSetting.signedOut")).Muted().Layout(gtx)
 	}
-	lead, tail, _ := strings.Cut(planSignedOutRun, "%s")
+	lead, tail, _ := strings.Cut(i18n.T("settings.planUsageSetting.signedOutRun", i18n.Args{"command": commandSlot}), commandSlot)
 	return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 		layout.Rigid(th.Text(ui.TextXS, lead).Muted().Layout),
 		layout.Rigid(th.Text(ui.TextXS, command).Mono().Layout),
@@ -84,7 +80,7 @@ func planHead(gtx C, th *ui.Theme, plan string) D {
 	return planRow(gtx,
 		th.Text(ui.TextXS, plan).Muted().Layout,
 		func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} },
-		muted(planUsed), muted(planResets))
+		muted(i18n.T("settings.planUsageSetting.used")), muted(i18n.T("settings.planUsageSetting.resets")))
 }
 
 // planGauge is QuotaGauge on one line: the label (and the pace mark), the

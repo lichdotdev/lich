@@ -5,26 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog.
-const (
-	toastCheckoutGone       = "This session's worktree is gone, so the session was closed. Re-create the worktree to pick it up again."
-	toastConversationGone   = "The previous conversation is no longer available — starting a new session."
-	toastRememberFailed     = "Couldn't remember the choice: %v"
-	toastStartFailed        = "Session failed to start: %v"
-	toastNotAttached        = "Not attached: %s"
-	toastOpenCheckoutFailed = "Could not open the checkout: %v"
-	toastOpenFolderFailed   = "Could not open the folder: %v"
-	toastCloseProjectFailed = "Could not close the project: %v"
-	toastReorderFailed      = "Could not reorder the projects: %v"
-	toastRelocated          = "%s now opens %s"
-	toastRelocateFailed     = "Relocate failed: %v"
-	toastRenameFailed       = "Couldn't rename the session: %v"
-	toastReadFailed         = "Couldn't read %s"
-	toastRevertFailed       = "Couldn't revert lines in %s"
 )
 
 var (
@@ -45,26 +28,29 @@ func failure(format string, args ...any) ui.Toast {
 // demoToasts are what -toasts raises, by name: one of each variant; action,
 // the shape of the web's unclean-exit warning; attention and undo, the
 // needs-your-input and closed-session toasts; update and progress, the app
-// update's prompt and its download.
-var demoToasts = map[string]ui.Toast{
-	"default": {Title: "Closed Claude 3"},
-	"success": {Variant: ui.ToastSuccess, Title: "lich now opens ~/try/skipo"},
-	"info":    {Variant: ui.ToastInfo, Title: "No room to show it beside"},
-	"warning": {Variant: ui.ToastWarning, Title: uncleanExitTitle},
-	"error":   failure(toastOpenFolderFailed, "no file manager found"),
-	"action":  uncleanExitToast(func() {}),
-	"attention": needsInputToast(statusReport{label: "Claude 3", project: "skipo",
-		reason: "Claude needs your permission to use Bash"}, func(string, string) {}),
-	"undo": {Title: fmt.Sprintf(toastClosed, "Claude 3"), Action: &ui.ToastButton{Label: toastUndo}},
-	"update": {Title: fmt.Sprintf(updatesToastTitle, "1.4.0"), Cancel: &ui.ToastButton{Label: appUpdateLater},
-		Secondary: &ui.ToastButton{Label: updatesViewRelease}, Action: &ui.ToastButton{Label: appUpdateInstall}},
-	"progress": updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: lichclient.UpdatePhaseDownload, Received: 12_300_000, Total: 41_000_000}),
+// update's prompt and its download. A function, so the texts that come from
+// the catalog are read in the language of the moment.
+func demoToasts() map[string]ui.Toast {
+	return map[string]ui.Toast{
+		"default": {Title: i18n.T("shell.projects.closed", i18n.Args{"label": "Claude 3"})},
+		"success": {Variant: ui.ToastSuccess, Title: i18n.T("shell.projects.relocated", i18n.Args{"name": "lich", "path": "~/try/skipo"})},
+		"info":    {Variant: ui.ToastInfo, Title: i18n.T("terminal.host.noRoom")},
+		"warning": {Variant: ui.ToastWarning, Title: i18n.T("shell.uncleanExitGate.title")},
+		"error":   {Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openFolderFailed", i18n.Args{"error": "no file manager found"})},
+		"action":  uncleanExitToast(func() {}),
+		"attention": needsInputToast(statusReport{label: "Claude 3", project: "skipo",
+			reason: "Claude needs your permission to use Bash"}, func(string, string) {}),
+		"undo": {Title: "Closed Claude 3", Action: &ui.ToastButton{Label: "Undo"}},
+		"update": {Title: i18n.T("shell.appUpdateGate.available", i18n.Args{"version": "1.4.0"}), Cancel: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later")},
+			Secondary: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.viewRelease")}, Action: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.updateAndInstall")}},
+		"progress": updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: lichclient.UpdatePhaseDownload, Received: 12_300_000, Total: 41_000_000}),
+	}
 }
 
 // raiseDemoToasts is -toasts. They stay up, so the shot finds them.
 func (u *window) raiseDemoToasts(names string) error {
 	for name := range strings.SplitSeq(names, ",") {
-		t, ok := demoToasts[name]
+		t, ok := demoToasts()[name]
 		if !ok {
 			return fmt.Errorf("-toasts: no demo toast %q", name)
 		}

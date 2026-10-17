@@ -283,7 +283,7 @@ func TestContinueInOffersOnlyOtherLoggedInProfiles(t *testing.T) {
 	}
 	m.quota.seed(profileQuotaKey(claudeProfileProvider, "work"), []lichclient.QuotaPlan{{Provider: claudeKind, Status: "ok", Windows: []lichclient.QuotaWindow{{Seconds: 5 * hour, Percent: 100}}}})
 	got := m.continueTargets(claudeKind, "")
-	if len(got) != 1 || got[0].slug != "work" || got[0].usage != profileUsageLimit || !got[0].limited {
+	if len(got) != 1 || got[0].slug != "work" || got[0].usage != "limit" || !got[0].limited {
 		t.Errorf("from Personal = %+v", got)
 	}
 	if got := m.continueTargets(claudeKind, "work"); len(got) != 1 || got[0].slug != personalProfile {
@@ -521,8 +521,8 @@ func TestAnOMPLoginWithNoCardToOpenEndsOnTheFailure(t *testing.T) {
 	f := &c.flow
 	s.startLogin(c, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
 	eventually(t, "the failure", func() bool { return f.view().step == stepResult })
-	if d := f.view(); !d.open || d.failure != profileNoTerminal {
-		t.Errorf("dialog = %+v, want it open on %q", d, profileNoTerminal)
+	if d := f.view(); !d.open || d.failure != "Open a project to log in from a terminal." {
+		t.Errorf("dialog = %+v, want it open on %q", d, "Open a project to log in from a terminal.")
 	}
 }
 

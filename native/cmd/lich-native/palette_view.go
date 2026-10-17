@@ -13,27 +13,10 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (palette.commandPalette,
-// common.pickerDialog).
-const (
-	palettePlaceholder      = "Jump to a session, project or something said, or type > for actions…"
-	paletteNothingClosed    = "Nothing closed yet"
-	paletteNothingClosedHow = "Close a session and it waits here — its branch, its agent and its conversation — until its worktree is removed."
-	paletteNoMatchesFor     = "No matches for "
-	paletteNoMatchesIn      = " in "
-	paletteCheckoutGone     = "checkout gone"
-	paletteRelocate         = "relocate"
-	paletteReopen           = "reopen"
-	paletteShownOfTotal     = "%d of %d"
-	paletteMatchesFormat    = "%d matches"
-	paletteHintNavigate     = "navigate"
-	paletteHintFilter       = "filter"
-	paletteHintClose        = "close"
 )
 
 // The geometry of PickerDialog's popup and rows.
@@ -143,7 +126,7 @@ func (p *commandPalette) field(gtx C, th *ui.Theme) D {
 			// The input carries its own px-2.5; the gap makes up the rest of gap-3.
 			ui.Gap(0.5),
 			layout.Flexed(1, func(gtx C) D {
-				in := th.Input(&p.query, palettePlaceholder)
+				in := th.Input(&p.query, i18n.T("palette.commandPalette.placeholder"))
 				in.Bare, in.TextSize, in.Height = true, paletteInputSize, ui.Space(paletteInputRow)
 				return in.Layout(gtx)
 			}),
@@ -187,7 +170,7 @@ func (p *commandPalette) pill(gtx C, th *ui.Theme, v *paletteView, tab paletteTa
 			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
 			func(gtx C) D {
 				return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-					children := []layout.FlexChild{layout.Rigid(on.Text(paletteTabSize, string(tab)).In(fg).Leading(20).Layout)}
+					children := []layout.FlexChild{layout.Rigid(on.Text(paletteTabSize, tab.label()).In(fg).Leading(20).Layout)}
 					if counted {
 						num := on.Text(paletteTinySize, fmt.Sprint(count)).Leading(paletteTinyLeading).Mono().In(on.Over(ui.Alpha(fg, paletteCountOpacity)))
 						children = append(children, ui.Gap(1.5), layout.Rigid(num.Layout))
@@ -202,20 +185,20 @@ func (p *commandPalette) pill(gtx C, th *ui.Theme, v *paletteView, tab paletteTa
 // footer is the hint bar: what the arrows, Enter, Tab and Escape do, on
 // bg-black/10 under its own hairline.
 func (p *commandPalette) footer(gtx C, th *ui.Theme, v *paletteView) D {
-	action := "open"
+	action := i18n.T("palette.palette.verbOpen")
 	if at := p.active(len(v.rows)); at < len(v.rows) {
 		action = rowVerb(v.rows[at])
 	}
 	fill := th.Over(ui.Alpha(color.NRGBA{A: 0xff}, paletteHintBarFill))
 	on := th.On(fill)
 	hints := []layout.Widget{
-		paletteHint(on, paletteHintNavigate, "↑", "↓"),
+		paletteHint(on, i18n.T("common.pickerDialog.navigate"), "↑", "↓"),
 		paletteHint(on, action, "↵"),
 	}
 	if !v.actionMode {
-		hints = append(hints, paletteHint(on, paletteHintFilter, "⇥"))
+		hints = append(hints, paletteHint(on, i18n.T("common.pickerDialog.filter"), "⇥"))
 	}
-	hints = append(hints, paletteHint(on, paletteHintClose, "esc"))
+	hints = append(hints, paletteHint(on, i18n.T("common.pickerDialog.close"), "esc"))
 	var children []layout.FlexChild
 	for i, h := range hints {
 		if i > 0 {
@@ -328,7 +311,7 @@ func (p *commandPalette) keepInView(items []paletteItem, v *paletteView) {
 func (p *commandPalette) heading(gtx C, th *ui.Theme, g paletteGroup) D {
 	trailing := g.note
 	if trailing == "" && g.total > len(g.rows) {
-		trailing = fmt.Sprintf(paletteShownOfTotal, len(g.rows), g.total)
+		trailing = i18n.T("palette.commandPalette.shownOfTotal", i18n.Args{"shown": len(g.rows), "total": g.total})
 	}
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(3), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		children := []layout.FlexChild{
@@ -350,23 +333,26 @@ func (p *commandPalette) empty(gtx C, th *ui.Theme, v *paletteView) D {
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(8), Bottom: ui.Space(8)}.Layout(gtx, func(gtx C) D {
 		if v.emptyHistory {
 			return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextSM, paletteNothingClosed).Centered().Layout),
+				layout.Rigid(th.Text(ui.TextSM, i18n.T("palette.commandPalette.nothingClosed")).Centered().Layout),
 				ui.VGap(2),
 				layout.Rigid(func(gtx C) D {
 					gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(paletteEmptyWidth))
 					gtx.Constraints.Min.X = gtx.Constraints.Max.X
-					l := th.Text(ui.TextSM, paletteNothingClosedHow).Muted().Leading(22.75).Centered()
+					l := th.Text(ui.TextSM, i18n.T("palette.commandPalette.nothingClosedHint")).Muted().Leading(22.75).Centered()
 					l.MaxLines = 0
 					return l.Layout(gtx)
 				}),
 			)
 		}
-		parts := []layout.FlexChild{
-			layout.Rigid(th.Text(ui.TextSM, paletteNoMatchesFor).Muted().Layout),
-			layout.Rigid(th.Text(ui.TextSM, v.query).Mono().In(th.Over(ui.Alpha(th.Foreground, paletteQueryOpacity))).Layout),
-		}
+		key, rest := "palette.commandPalette.noMatches", i18n.Args{}
 		if !v.actionMode && p.tab != tabAll {
-			parts = append(parts, layout.Rigid(th.Text(ui.TextSM, paletteNoMatchesIn+strings.ToLower(string(p.tab))).Muted().Layout))
+			key, rest = "palette.commandPalette.noMatchesInTab", i18n.Args{"tab": strings.ToLower(p.tab.label())}
+		}
+		before, after := aroundValue(key, "query", rest)
+		parts := []layout.FlexChild{
+			layout.Rigid(th.Text(ui.TextSM, before).Muted().Layout),
+			layout.Rigid(th.Text(ui.TextSM, v.query).Mono().In(th.Over(ui.Alpha(th.Foreground, paletteQueryOpacity))).Layout),
+			layout.Rigid(th.Text(ui.TextSM, after).Muted().Layout),
 		}
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, parts...)
@@ -436,19 +422,19 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 			text: paletteLines(on, fg, m.snippet, paletteMeta(on, paletteFore(on, m.label), paletteTail(on, m.projectName))),
 		}
 		if m.count > 1 {
-			face.trailing = paletteSmall(on, fmt.Sprintf(paletteMatchesFormat, m.count))
+			face.trailing = paletteSmall(on, i18n.T("palette.commandPalette.matches", i18n.Args{"count": m.count}))
 		}
 		return face
 	case rowProject:
 		return paletteFace{
 			lead:     paletteGlyph(on, icPaletteFolder),
 			text:     paletteLines(on, fg, r.project.Name, paletteTail(on, r.project.Path)),
-			trailing: paletteSmall(on, plural(v.sessionCount[r.project.ID], "session", "sessions")),
+			trailing: paletteSmall(on, i18n.T("palette.commandPalette.sessions", i18n.Args{"count": v.sessionCount[r.project.ID]})),
 		}
 	case rowClosed:
-		icon, word := icPaletteFolder, paletteReopen
+		icon, word := icPaletteFolder, i18n.T("palette.commandPalette.reopen")
 		if v.missing[r.project.Path] {
-			icon, word = icPaletteFolderGone, paletteRelocate
+			icon, word = icPaletteFolderGone, i18n.T("palette.commandPalette.relocate")
 		}
 		return paletteFace{
 			lead:     paletteGlyph(on, icon),
@@ -495,7 +481,7 @@ func paletteHistoryFace(on *ui.Theme, h paletteHistory, fg color.NRGBA, ring pal
 	meta = append(meta, layout.Rigid(paletteFore(on, h.ProjectName)))
 	switch {
 	case h.gone:
-		meta = append(meta, paletteDot(on), layout.Rigid(paletteIconText(on, icPaletteWarn, paletteCheckoutGone, on.ToneWait)))
+		meta = append(meta, paletteDot(on), layout.Rigid(paletteIconText(on, icPaletteWarn, i18n.T("palette.commandPalette.checkoutGone"), on.ToneWait)))
 	case h.branch != "":
 		meta = append(meta, paletteDot(on), layout.Rigid(paletteIconText(on, icPaletteBranch, h.branch, on.MutedForeground)))
 	}

@@ -34,6 +34,7 @@ import (
 	"github.com/lichdotdev/godemirror"
 	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/gioterm"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/internal/shot"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
@@ -131,6 +132,11 @@ type window struct {
 	reconnecting atomic.Bool
 	// islandAt is the island's top-left in window pixels, where body put it.
 	islandAt image.Point
+	// hotkeyLanguage is the language the hotkeys' labels were last put in.
+	hotkeyLanguage i18n.Locale
+	// trayLanguage is the language the tray's words were last sent in, unset
+	// until the tray is up.
+	trayLanguage atomic.Value
 }
 
 // backendRuntime is the backend to talk to: the -runtime file when given,
@@ -241,13 +247,13 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.footer.openPullRequest = u.showPulls
 	u.settings.footer = u.footer
 	u.footer.customize = u.customizeFooter
+	if err := u.connect(); err != nil {
+		return err
+	}
 	if *flagToasts != "" {
 		if err := u.raiseDemoToasts(*flagToasts); err != nil {
 			return err
 		}
-	}
-	if err := u.connect(); err != nil {
-		return err
 	}
 	started := time.Now()
 	stalls := newStallWatch()
@@ -397,6 +403,7 @@ func (u *window) connect() error {
 }
 
 func (u *window) layout(gtx C) error {
+	u.followLanguage()
 	u.takeTheme()
 	if u.hideSettings.CompareAndSwap(true, false) {
 		u.settings.hide()
@@ -444,6 +451,7 @@ func (u *window) layout(gtx C) error {
 		u.settings.layoutProfileDialogs(gtx, u.theme)
 		u.settings.layoutPatchNotesDialog(gtx, u.theme)
 		u.settings.layoutWindowSwitch(gtx, u.theme)
+		u.settings.layoutHanFontDialog(gtx, u.theme)
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)
 		u.layoutGitMissing(gtx, u.theme)
@@ -683,9 +691,9 @@ func (u *window) lostNotice(gtx C) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(u.theme.Text(ui.TextSM, "Another lich window took over, or lich quit.").Weight(font.Medium).Layout),
+			layout.Rigid(u.theme.Text(ui.TextSM, i18n.T("shell.main.lostTitle")).Weight(font.Medium).Layout),
 			ui.VGap(1.5),
-			layout.Rigid(u.theme.Text(ui.TextSM, "Run `lich native` to reopen here.").Muted().Layout),
+			layout.Rigid(u.theme.Text(ui.TextSM, i18n.T("shell.main.lostHint")).Muted().Layout),
 		)
 	})
 }
@@ -758,7 +766,7 @@ func (u *window) apply(act sidebarAction) {
 // that fails changes nothing on screen and says why.
 func renameSession(ctx context.Context, c *lichclient.Client, show func(ui.Toast) string, id, label string) {
 	if err := c.RenameSession(ctx, id, label); err != nil {
-		show(failure(toastRenameFailed, err))
+		show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.main.renameFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 	}
 }
 
@@ -772,7 +780,7 @@ func (u *window) applyOpenIn(act sidebarAction) {
 		go func() {
 			command, err := u.client.OpenFolderInEditor(u.ctx, dir)
 			if err != nil {
-				u.toaster.Show(failure(toastOpenCheckoutFailed, err))
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openCheckoutFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 				return
 			}
 			// A terminal editor runs in a shell at the directory, as the
@@ -785,7 +793,7 @@ func (u *window) applyOpenIn(act sidebarAction) {
 	if dir := act.folderAt; dir != "" {
 		go func() {
 			if err := u.client.OpenFolder(u.ctx, dir); err != nil {
-				u.toaster.Show(failure(toastOpenFolderFailed, err))
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openFolderFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 			}
 		}()
 	}
@@ -813,7 +821,7 @@ func (u *window) closeSession(id string) {
 	}()
 	toast := u.closedToast(projectID, closed, index, parked)
 	if worktree != "" {
-		toast.Secondary = &ui.ToastButton{Label: pullsRemoveWorktree, OnClick: func() {
+		toast.Secondary = &ui.ToastButton{Label: i18n.T("pulls.pulls.removeWorktree"), OnClick: func() {
 			go u.removeClosedWorktree(project, worktree, parked)
 		}}
 	}

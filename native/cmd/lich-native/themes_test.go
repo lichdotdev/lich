@@ -179,10 +179,10 @@ func TestThemeCaption(t *testing.T) {
 		selected string
 		want     string
 	}{
-		{repo, "rose-pine", themeInUse},
+		{repo, "rose-pine", "in use"},
 		{repo, themeSystem, "lichdotdev/rose-pine-lich v1.2.0"},
-		{customTheme("file", "File"), themeSystem, themeBundled},
-		{bundledTheme(t, themeDark), themeSystem, themeBundled},
+		{customTheme("file", "File"), themeSystem, "bundled"},
+		{bundledTheme(t, themeDark), themeSystem, "bundled"},
 	}
 	for _, c := range cases {
 		if got := themeCaption(c.def, c.selected); got != c.want {
@@ -215,14 +215,14 @@ func TestRemovingTheThemeInUseFallsBackToSystem(t *testing.T) {
 
 func TestThemeIsFoundBySearch(t *testing.T) {
 	for _, q := range []string{"theme", "DARK"} {
-		if got := searchSettings(q); len(got) == 0 || got[0].title != themeTitle || got[0].section != sectionAppearance {
+		if got := searchSettings(q); len(got) == 0 || got[0].title != "Theme" || got[0].section != sectionAppearance {
 			t.Errorf("%q: %+v", q, got)
 		}
 	}
 	// "palette" is also the title of a Hotkeys row, a prefix match that
 	// outranks the theme's also words, so the theme is found but not first.
 	if got := searchSettings("palette"); !slices.ContainsFunc(got, func(h settingHit) bool {
-		return h.title == themeTitle && h.section == sectionAppearance
+		return h.title == "Theme" && h.section == sectionAppearance
 	}) {
 		t.Errorf("palette: %+v", got)
 	}

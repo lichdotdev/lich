@@ -5,18 +5,12 @@ package main
 // and flattened into the rows on screen.
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/lichdotdev/godemirror"
-)
 
-// ponytail: English until the native window has i18n; the web's en catalog
-// (git.fileTree).
-const (
-	treeHiddenNote = "Hidden: %s."
-	treeCutNote    = "This folder has more files than the tree can list."
+	"github.com/omartelo/lich/native/i18n"
 )
 
 type treeNode struct {
@@ -167,10 +161,10 @@ func visibleRows(tree []*treeNode, isOpen func(path string) bool) []treeRow {
 func treeFootnote(cut bool, hidden []string) string {
 	var parts []string
 	if len(hidden) > 0 {
-		parts = append(parts, fmt.Sprintf(treeHiddenNote, strings.Join(hidden, ", ")))
+		parts = append(parts, i18n.T("git.fileTree.hidden", i18n.Args{"names": strings.Join(hidden, ", ")}))
 	}
 	if cut {
-		parts = append(parts, treeCutNote)
+		parts = append(parts, i18n.T("git.fileTree.cut"))
 	}
 	return strings.Join(parts, " ")
 }

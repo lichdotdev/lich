@@ -13,8 +13,6 @@ import (
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n.
-
 var (
 	icGauge     = icons.Lucide("gauge")
 	icAhead     = icons.Lucide("trending-up")

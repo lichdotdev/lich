@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"io"
 	"strings"
@@ -13,45 +12,10 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (claudeProfileDialogs.*).
-const (
-	dlgNewTitle        = "New profile"
-	dlgName            = "Name"
-	dlgNamePlaceholder = "Work"
-	dlgBring           = "Plugins to bring from %s"
-	dlgNoPlugins       = "%s has no plugins to bring."
-	dlgLichLocked      = "lich installs it in every profile"
-	dlgPluginsHint     = "More can be copied later from the profile's menu. Your organization may refuse some of them."
-	dlgCreateAndLogin  = "Create and log in"
-	dlgRenameTitle     = "Rename profile"
-	dlgRename          = "Rename"
-	dlgReadyDesc       = "Pick it as the Profile of a project, or of every new session."
-	dlgFailedDesc      = "Try again from the profile's menu, or log in from a terminal."
-	dlgDeleteTitle     = "Delete %s?"
-	dlgDelete          = "Delete"
-	dlgCopyTitle       = "Copy plugins to %s"
-	dlgCopyDesc        = "They are installed through %s as this profile, so its account's rules apply."
-	dlgCopyFrom        = "Copy from"
-	dlgCopy            = "Copy plugins"
-	dlgLoginTitle      = "Log in to %s"
-	dlgWaiting         = "Waiting for the login…"
-	dlgOpenBrowser     = "Open in browser"
-	dlgCopyAddress     = "Copy"
-	dlgPasteCode       = "Paste the code"
-	dlgSubmitCode      = "Submit"
-	dlgTerminal        = "Log in from a terminal instead"
-	dlgReadyTitle      = "%s is ready"
-	dlgFailedTitle     = "Could not log in to %s"
-	dlgCopiedTitle     = "Plugins for %s"
-	dlgLoggedInAs      = "Logged in as %s"
-	dlgLoggedIn        = "Logged in"
-	dlgLichPluginNote  = "The lich plugin could not be installed: %s"
-	dlgDone            = "Done"
 )
 
 // The lich plugin is in every Claude Code and Codex profile whether or not the
@@ -72,33 +36,33 @@ func flowHeading(prov profileProvider, d flowData) (title, desc string) {
 	name := d.target.Name
 	switch d.kind {
 	case flowNew:
-		return dlgNewTitle, prov.words.newDesc
+		return i18n.T("settings.settingsProfilesView.newProfile"), profileSentence(prov, prov.words.newDescKey)
 	case flowRename:
-		return dlgRenameTitle, prov.words.renameDesc
+		return i18n.T("settings.settingsProfilesDialogs.renameTitle"), profileSentence(prov, prov.words.renameDescKey)
 	case flowDelete:
-		return fmt.Sprintf(dlgDeleteTitle, name), prov.words.deleteDesc
+		return i18n.T("settings.settingsProfilesDialogs.deleteTitle", i18n.Args{"name": name}), profileSentence(prov, prov.words.deleteDescKey)
 	case flowCopy:
-		desc := fmt.Sprintf(dlgCopyDesc, prov.label)
+		desc := i18n.T("settings.settingsProfilesDialogs.copyDesc", i18n.Args{"provider": prov.label})
 		if d.step == stepResult {
-			return fmt.Sprintf(dlgCopiedTitle, name), desc
+			return i18n.T("settings.settingsProfilesDialogs.copiedTitle", i18n.Args{"name": name}), desc
 		}
-		return fmt.Sprintf(dlgCopyTitle, name), desc
+		return i18n.T("settings.settingsProfilesDialogs.copyTitle", i18n.Args{"name": name}), desc
 	}
 	switch {
 	case d.step != stepResult:
-		return fmt.Sprintf(dlgLoginTitle, name), prov.words.loginDesc
+		return i18n.T("settings.settingsProfilesDialogs.loginTitle", i18n.Args{"name": name}), profileSentence(prov, prov.words.loginDescKey)
 	case d.failure != "":
-		return fmt.Sprintf(dlgFailedTitle, name), dlgFailedDesc
+		return i18n.T("settings.settingsProfilesDialogs.failedTitle", i18n.Args{"name": name}), i18n.T("settings.settingsProfilesDialogs.failedDesc")
 	}
-	return fmt.Sprintf(dlgReadyTitle, name), dlgReadyDesc
+	return i18n.T("settings.settingsProfilesDialogs.readyTitle", i18n.Args{"name": name}), i18n.T("settings.settingsProfilesDialogs.readyDesc")
 }
 
 // loggedInAs is the line a finished login opens its result with.
 func loggedInAs(p lichclient.Profile) string {
 	if p.Email == "" {
-		return dlgLoggedIn
+		return i18n.T("settings.profiles.loggedIn")
 	}
-	line := fmt.Sprintf(dlgLoggedInAs, p.Email)
+	line := i18n.T("settings.settingsProfilesDialogs.loggedInAs", i18n.Args{"email": p.Email})
 	if p.Plan != "" {
 		line += profileAccountSplit + strings.ToUpper(p.Plan[:1]) + p.Plan[1:]
 	}
@@ -210,23 +174,34 @@ func (s *settingsScreen) submitLoginCode(c *profileSettings, slug, code string) 
 }
 
 func (s *settingsScreen) flowActions(on *ui.Theme, f *profileFlow, d flowData) []layout.Widget {
-	cancel := on.Button(&f.cancel, dialogCancel)
+	cancel := on.Button(&f.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
 	switch {
 	case d.step == stepResult:
-		return []layout.Widget{on.Button(&f.done, dlgDone).Layout}
+		return []layout.Widget{on.Button(&f.done, i18n.T("settings.settingsProfilesDialogs.done")).Layout}
 	case d.step == stepWaiting || (d.step == stepWorking && d.kind == flowLogin):
 		return []layout.Widget{cancel.Layout}
 	case d.step == stepWorking:
 		return nil
 	}
-	label := map[flowKind]string{flowNew: dlgCreateAndLogin, flowRename: dlgRename, flowDelete: dlgDelete, flowCopy: dlgCopy}[d.kind]
-	confirm := on.Button(&f.confirm, label)
+	confirm := on.Button(&f.confirm, confirmLabel(d.kind))
 	confirm.Disabled = !s.canConfirm(d, f)
 	if d.kind == flowDelete {
 		confirm.Variant = ui.VariantDestructive
 	}
 	return []layout.Widget{cancel.Layout, confirm.Layout}
+}
+
+func confirmLabel(kind flowKind) string {
+	switch kind {
+	case flowNew:
+		return i18n.T("settings.settingsProfilesDialogs.createAndLogin")
+	case flowRename:
+		return i18n.T("settings.settingsProfilesView.rename")
+	case flowDelete:
+		return i18n.T("settings.settingsProfilesView.delete")
+	}
+	return i18n.T("settings.settingsProfilesDialogs.copy")
 }
 
 func (s *settingsScreen) flowBody(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
@@ -260,9 +235,9 @@ func (s *settingsScreen) formBody(gtx C, th *ui.Theme, f *profileFlow, d flowDat
 
 func nameField(gtx C, th *ui.Theme, name *widget.Editor) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Label(dlgName).Layout),
+		layout.Rigid(th.Label(i18n.T("settings.settingsProfilesDialogs.name")).Layout),
 		ui.VGap(1.5),
-		layout.Rigid(th.Input(name, dlgNamePlaceholder).Layout),
+		layout.Rigid(th.Input(name, i18n.T("settings.settingsProfilesDialogs.namePlaceholder")).Layout),
 	)
 }
 
@@ -284,7 +259,7 @@ func (s *settingsScreen) copySource(gtx C, th *ui.Theme, f *profileFlow, d flowD
 	name := book.nameOf(d.source)
 	lead := func(gtx C) D { return profileAvatar(gtx, th, name, d.source, profileAvatarSel) }
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Label(dlgCopyFrom).Layout),
+		layout.Rigid(th.Label(i18n.T("settings.settingsProfilesDialogs.copyFrom")).Layout),
 		ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D {
 			return pop.Layout(gtx, func(gtx C) D { return selectTriggerWith(gtx, th, lead, name, profilePickerW) })
@@ -329,7 +304,7 @@ func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p lic
 // each ticked until unticked, and for a new profile the lich plugin locked on.
 func (s *settingsScreen) checklist(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
 	source := f.ps.book.nameOf(d.source)
-	heading := fmt.Sprintf(dlgBring, source)
+	heading := i18n.T("settings.settingsProfilesDialogs.bring", i18n.Args{"name": source})
 	if d.kind == flowCopy {
 		heading = ""
 	}
@@ -341,12 +316,14 @@ func (s *settingsScreen) checklist(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 		children = append(children, layout.Rigid(func(gtx C) D { return lockedPlugin(gtx, th) }))
 	}
 	if len(d.plugins) == 0 {
-		children = append(children, layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf(dlgNoPlugins, source)).Muted().Layout))
+		children = append(children, layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.settingsProfilesDialogs.noPlugins", i18n.Args{"name": source})).Muted().Layout))
 	} else {
 		children = append(children, layout.Rigid(func(gtx C) D { return s.pluginList(gtx, th, f, d.plugins) }))
 	}
 	if d.kind == flowNew {
-		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, dlgPluginsHint).Muted()) }))
+		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D {
+			return wrapped(gtx, th.Text(ui.TextXS, i18n.T("settings.settingsProfilesDialogs.pluginsHint")).Muted())
+		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -362,7 +339,7 @@ func lockedPlugin(gtx C, th *ui.Theme) D {
 			ui.Gap(2),
 			layout.Rigid(th.Text(ui.TextSM, lichPluginName).Layout),
 			ui.Gap(2),
-			layout.Flexed(1, th.Text(ui.TextXS, dlgLichLocked).Muted().Layout),
+			layout.Flexed(1, th.Text(ui.TextXS, i18n.T("settings.settingsProfilesDialogs.lichLocked")).Muted().Layout),
 		)
 	})
 }
@@ -400,7 +377,7 @@ func pluginRow(gtx C, th *ui.Theme, p lichclient.ProfilePlugin, box *widget.Bool
 // buttons, the field for the code the page shows, and the way out to a
 // terminal.
 func (s *settingsScreen) loginBody(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return spinnerLine(gtx, th, dlgWaiting) })}
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return spinnerLine(gtx, th, i18n.T("settings.settingsProfilesDialogs.waiting")) })}
 	if d.url != "" {
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.addressBlock(gtx, th, f, d.url) }))
 	}
@@ -415,12 +392,14 @@ func (s *settingsScreen) loginBody(gtx C, th *ui.Theme, f *profileFlow, d flowDa
 }
 
 func (s *settingsScreen) addressBlock(gtx C, th *ui.Theme, f *profileFlow, url string) D {
-	open := th.Button(&f.openURL, dlgOpenBrowser)
+	open := th.Button(&f.openURL, i18n.T("settings.settingsProfilesDialogs.openBrowser"))
 	open.Variant, open.Size, open.Icon = ui.VariantOutline, ui.SizeSM, icDlgOpen
-	copyURL := th.Button(&f.copyURL, dlgCopyAddress)
+	copyURL := th.Button(&f.copyURL, i18n.T("settings.settingsProfilesDialogs.copyAddress"))
 	copyURL.Variant, copyURL.Size, copyURL.Icon = ui.VariantGhost, ui.SizeSM, icDlgCopy
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, f.ps.provider.words.addressDesc).Muted()) }),
+		layout.Rigid(func(gtx C) D {
+			return wrapped(gtx, th.Text(ui.TextXS, profileSentence(f.ps.provider, f.ps.provider.words.addressDescKey)).Muted())
+		}),
 		ui.VGap(1.5),
 		layout.Rigid(th.Text(ui.TextXS, url).Mono().Layout),
 		ui.VGap(2),
@@ -431,10 +410,10 @@ func (s *settingsScreen) addressBlock(gtx C, th *ui.Theme, f *profileFlow, url s
 }
 
 func (s *settingsScreen) codeBlock(gtx C, th *ui.Theme, f *profileFlow) D {
-	submit := th.Button(&f.submitCode, dlgSubmitCode)
+	submit := th.Button(&f.submitCode, i18n.T("settings.settingsProfilesDialogs.submitCode"))
 	submit.Variant, submit.Size = ui.VariantOutline, ui.SizeDefault
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Label(dlgPasteCode).Layout),
+		layout.Rigid(th.Label(i18n.T("settings.settingsProfilesDialogs.pasteCode")).Layout),
 		ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -452,7 +431,7 @@ func terminalLink(gtx C, th *ui.Theme, click *widget.Clickable) D {
 		if click.Hovered() {
 			ink = th.Foreground
 		}
-		return th.Text(ui.TextXS, dlgTerminal).In(ink).Layout(gtx)
+		return th.Text(ui.TextXS, i18n.T("settings.settingsProfilesDialogs.terminal")).In(ink).Layout(gtx)
 	})
 }
 
@@ -470,7 +449,7 @@ func (s *settingsScreen) resultBody(gtx C, th *ui.Theme, d flowData) D {
 		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return pluginResult(gtx, th, r) }))
 	}
 	if d.pluginNote != "" {
-		note := fmt.Sprintf(dlgLichPluginNote, d.pluginNote)
+		note := i18n.T("settings.settingsProfilesDialogs.lichPluginNote", i18n.Args{"error": d.pluginNote})
 		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, note).In(th.Destructive)) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)

@@ -8,21 +8,22 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/widget"
+
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n.
-const (
-	newSessionHint     = "New session"
-	newSessionButton   = "New Session"
-	filterSessionsHint = "Filter sessions"
-	collapseHint       = "Collapse sidebar"
-	allPhasesChip      = "All"
-)
-
-var phaseChipLabels = map[sessionPhase]string{
-	phaseWaiting: "Waiting", phaseRunning: "Running", phaseUnread: "Unread", phaseIdle: "Idle",
+func phaseChipLabel(p sessionPhase) string {
+	switch p {
+	case phaseWaiting:
+		return i18n.T("sidebar.sessionPhaseChips.phase.waiting")
+	case phaseRunning:
+		return i18n.T("sidebar.sessionPhaseChips.phase.running")
+	case phaseUnread:
+		return i18n.T("sidebar.sessionPhaseChips.phase.unread")
+	}
+	return i18n.T("sidebar.sessionPhaseChips.phase.idle")
 }
 
 var (
@@ -87,13 +88,13 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 	if h.collapse.Clicked(gtx) {
 		s.setOpen(gtx, false, act)
 	}
-	entries := append(launchEntries(s.launchProviders, terminalLabel, func(kind string) { act.launch = launchRequest{kind: kind} }),
-		ui.MenuEntry{Label: worktreeLabel, Icon: icWtBranch, OnClick: func() { act.worktree = true }})
+	entries := append(launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.terminal"), func(kind string) { act.launch = launchRequest{kind: kind} }),
+		ui.MenuEntry{Label: i18n.T("sidebar.sessionLaunchMenuItems.worktree"), Icon: icWtBranch, OnClick: func() { act.worktree = true }})
 	trigger := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		tip := th.Tooltip(s.root, s.hint("new"), newSessionHint)
+		tip := th.Tooltip(s.root, s.hint("new"), i18n.T("sidebar.sessionSidebar.newSession"))
 		tip.Side = ui.SideBottom
-		return tip.Layout(gtx, sideButton{click: &h.newHover, icon: icPlus, label: newSessionButton, on: h.newMenu.Opened(), morph: &s.morph, glyph: glyphNew}.layout(th))
+		return tip.Layout(gtx, sideButton{click: &h.newHover, icon: icPlus, label: i18n.T("sidebar.sessionSidebar.newSessionButton"), on: h.newMenu.Opened(), morph: &s.morph, glyph: glyphNew}.layout(th))
 	}
 	square := func(key, label string, b sideButton) layout.FlexChild {
 		return layout.Rigid(func(gtx C) D {
@@ -105,9 +106,9 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D { return th.DropdownMenu(s.root, &h.newMenu, entries).Layout(gtx, trigger) }),
 		ui.Gap(1),
-		square("filter", filterSessionsHint, sideButton{click: &h.search, icon: icSearch, on: h.open}),
+		square("filter", i18n.T("sidebar.sessionSidebar.filter"), sideButton{click: &h.search, icon: icSearch, on: h.open}),
 		ui.Gap(1),
-		square("collapse", collapseHint, sideButton{click: &h.collapse, icon: icCollapse, morph: &s.morph, glyph: glyphToggle}),
+		square("collapse", i18n.T("sidebar.sessionSidebar.collapse"), sideButton{click: &h.collapse, icon: icCollapse, morph: &s.morph, glyph: glyphToggle}),
 	)
 }
 
@@ -129,7 +130,7 @@ func (s *sidebar) filterRow(gtx C, th *ui.Theme, view sidebarView) D {
 		h.focusQuery = false
 	}
 	h.searchFocused = gtx.Focused(&h.query)
-	field := th.Input(&h.query, filterSessionsHint)
+	field := th.Input(&h.query, i18n.T("sidebar.sessionSidebar.filter"))
 	field.Leading, field.Height, field.TextSize, field.Clear = icSearch, ui.Space(7), ui.TextXS, &h.clearQuery
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(field.Layout),
@@ -157,9 +158,9 @@ func (s *sidebar) phaseChips(gtx C, th *ui.Theme, counts map[sessionPhase]int) D
 			h.phases[p] = true
 		}
 	}
-	kids := []ui.WrapChild{ui.WrapItem(th.Chip(&h.chips[0], allPhasesChip, total, len(h.phases) == 0).Layout)}
+	kids := []ui.WrapChild{ui.WrapItem(th.Chip(&h.chips[0], i18n.T("sidebar.sessionPhaseChips.all"), total, len(h.phases) == 0).Layout)}
 	for i, p := range sessionPhases {
-		kids = append(kids, ui.WrapItem(th.Chip(&h.chips[i+1], phaseChipLabels[p], counts[p], h.phases[p]).Layout))
+		kids = append(kids, ui.WrapItem(th.Chip(&h.chips[i+1], phaseChipLabel(p), counts[p], h.phases[p]).Layout))
 	}
 	return ui.Wrap{GapX: ui.Space(0.5), GapY: ui.Space(0.5)}.Layout(gtx, kids...)
 }

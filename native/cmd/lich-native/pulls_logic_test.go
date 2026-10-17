@@ -70,14 +70,14 @@ func TestMergeBlockedReasonFollowsTheWebOrder(t *testing.T) {
 		d    lichclient.PRDetail
 		want string
 	}{
-		"merged":            {detail("MERGED", "", "", ""), pullsMergedText},
-		"closed":            {detail("CLOSED", "", "", ""), pullsClosedText},
-		"draft":             {draft, pullsDraftText},
+		"merged":            {detail("MERGED", "", "", ""), "Pull request is merged"},
+		"closed":            {detail("CLOSED", "", "", ""), "Pull request is closed"},
+		"draft":             {draft, "Pull request is a draft"},
 		"conflicting":       {detail("OPEN", "CONFLICTING", "BLOCKED", "APPROVED"), "Conflicts with main"},
 		"dirty":             {detail("OPEN", "UNKNOWN", "DIRTY", ""), "Conflicts with main"},
-		"behind":            {detail("OPEN", "MERGEABLE", "BEHIND", ""), pullsBehindText},
-		"changes requested": {detail("OPEN", "MERGEABLE", "BLOCKED", "CHANGES_REQUESTED"), pullsChangesText},
-		"review required":   {detail("OPEN", "MERGEABLE", "BLOCKED", "REVIEW_REQUIRED"), pullsReviewReqText},
+		"behind":            {detail("OPEN", "MERGEABLE", "BEHIND", ""), "Base branch has moved — update this branch first"},
+		"changes requested": {detail("OPEN", "MERGEABLE", "BLOCKED", "CHANGES_REQUESTED"), "A reviewer asked for changes"},
+		"review required":   {detail("OPEN", "MERGEABLE", "BLOCKED", "REVIEW_REQUIRED"), "GitHub requires a review that has not been left"},
 		"blocked unknown":   {detail("OPEN", "MERGEABLE", "BLOCKED", "APPROVED"), ""},
 		"clean":             {detail("OPEN", "MERGEABLE", "CLEAN", ""), ""},
 	}
@@ -189,7 +189,7 @@ func TestCheckDuration(t *testing.T) {
 
 func TestMergeEditStartsFromGitHubsOwnMessage(t *testing.T) {
 	d := lichclient.PRDetail{Number: 7, Title: "feat: x", Body: "why", HeadRefName: "feat/x"}
-	if got := mergeEditFor("squash", d); got.subject != "feat: x (#7)" || got.body != "why" || got.title != mergeEditSquashTitle {
+	if got := mergeEditFor("squash", d); got.subject != "feat: x (#7)" || got.body != "why" || got.title != "Squash and merge" {
 		t.Errorf("squash edit = %+v", got)
 	}
 	if got := mergeEditFor("merge", d); got.subject != "Merge pull request #7 from feat/x" || got.body != "" {

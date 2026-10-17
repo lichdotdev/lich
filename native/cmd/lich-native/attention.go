@@ -1,18 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 )
 
 // attentionToastDuration is project-events.tsx ATTENTION_TOAST_MS.
 const attentionToastDuration = 10 * time.Second
-
-// ponytail: English until the native window has i18n (shell.projectEvents.open).
-const attentionOpen = "Open"
 
 // attentionToast is project-events.tsx's needs-your-input toast, raised for
 // every waiting report on a session other than the one on screen, whose own
@@ -34,8 +31,8 @@ func (a attentionToast) report(r statusReport) {
 // needsInputToast is the toast's body: the title, what the session is
 // blocked on when the provider said, and the project it lives in.
 func needsInputToast(r statusReport, open func(projectID, sessionID string)) ui.Toast {
-	t := ui.Toast{Title: fmt.Sprintf(notifyNeedsInput, r.label), Icon: icBell, IconColor: waitTone, Duration: attentionToastDuration,
-		Action: &ui.ToastButton{Label: attentionOpen, OnClick: func() { open(r.projectID, r.id) }}}
+	t := ui.Toast{Title: i18n.T("shell.projectEvents.needsInput", i18n.Args{"label": r.label}), Icon: icBell, IconColor: waitTone, Duration: attentionToastDuration,
+		Action: &ui.ToastButton{Label: i18n.T("shell.projectEvents.open"), OnClick: func() { open(r.projectID, r.id) }}}
 	if r.reason != "" {
 		t.Lines = append(t.Lines, ui.ToastLine{Text: r.reason})
 	}

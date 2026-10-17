@@ -6,20 +6,8 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n
-// (settings.notificationsSettings).
-const (
-	groupWindow        = "Window"
-	groupNotifications = "Notifications"
-
-	needsInputTitle = "Notify me when a session needs input"
-	needsInputDesc  = "Raise a desktop notification when a session is blocked on you — a permission prompt, a question — and the lich window is not the one you are in. While you are in lich nothing changes: the card's bell and the toast do the telling."
-	finishedTitle   = "Notify me when a session finishes working"
-	finishedDesc    = "Raise a desktop notification when a session ends its turn with nothing left to ask you, and the lich window is not the one you are in. Independent of the setting above — a long run you walked away from is worth knowing about even if you would rather not hear about every prompt. No toast comes with it: inside lich, the card and its project tab already say so."
-	notifyAlso      = "desktop notification alert bell"
 )
 
 // SettingGroup's pt-8 above a group past the first, and its mb-1 under the
@@ -44,13 +32,13 @@ func (s *settingsScreen) notifyRow(gtx C, key string) (string, func(gtx C, th *u
 	var desc string
 	switch key {
 	case desktopNotifyKey:
-		sw, desc = &s.general.needsInput, needsInputDesc
+		sw, desc = &s.general.needsInput, i18n.T("settings.notificationsSettings.needsInputDescription")
 		if sw.Update(gtx) {
 			s.notify.setAttention(sw.Value)
 		}
 		sw.Value = prefs.attention == optInYes
 	case finishedNotifyKey:
-		sw, desc = &s.general.finished, finishedDesc
+		sw, desc = &s.general.finished, i18n.T("settings.notificationsSettings.finishedDescription")
 		if sw.Update(gtx) {
 			s.notify.setFinishedTurn(sw.Value)
 		}

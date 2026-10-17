@@ -22,6 +22,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/omartelo/lich/native/gioterm"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -216,7 +217,7 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 			ts.profileGone(s)
 			return t, nil
 		}
-		ts.toaster.Show(failure(toastStartFailed, err))
+		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.startFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return t, nil
 	}
 	ts.mu.Lock()

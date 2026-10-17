@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -103,7 +104,7 @@ func (m *model) dressBlock(p lichclient.Project, b sessionBlock, header bool, pe
 	}
 	switch b.kind {
 	case blockPinned:
-		v.title = pinnedBlockTitle
+		v.title = i18n.T("sidebar.sessionGroup.pinned")
 	case blockFolder:
 		v.title, v.color = b.folder, sharedColor(b.sessions)
 		for _, path := range checkoutsOf(b.sessions) {

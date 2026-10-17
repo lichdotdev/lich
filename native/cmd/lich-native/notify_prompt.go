@@ -7,15 +7,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (shell.notificationsOptIn).
-const (
-	optInTitle    = "Notify you when a session needs you?"
-	optInDesc     = "A session just asked for your input while you were somewhere else. lich can raise a desktop notification when that happens, naming the session and its project, so you can start something and walk away from the window. Sessions you are looking at never notify. You can change this any time in Settings › General."
-	optInNoThanks = "No thanks"
-	optInNotifyMe = "Notify me"
 )
 
 var flagNotifyOptIn = flag.Bool("notify-opt-in", false, "open the desktop-notification opt-in at start, for -shot")
@@ -42,11 +35,11 @@ func (u *window) layoutNotifyOptIn(gtx C, th *ui.Theme) {
 	}
 	_, asking := u.notifier.snapshot()
 	on := th.On(th.Popover)
-	no := on.Button(&o.no, optInNoThanks)
+	no := on.Button(&o.no, i18n.T("shell.notificationsOptIn.noThanks"))
 	no.Variant = ui.VariantGhost
-	d := th.Dialog(&o.dialog, asking, optInTitle, optInDesc)
+	d := th.Dialog(&o.dialog, asking, i18n.T("shell.notificationsOptIn.title"), i18n.T("shell.notifyPrompt.description"))
 	d.MaxWidth = optInWidth
-	d.Actions = []layout.Widget{no.Layout, on.Button(&o.yes, optInNotifyMe).Layout}
+	d.Actions = []layout.Widget{no.Layout, on.Button(&o.yes, i18n.T("shell.notificationsOptIn.notifyMe")).Layout}
 	if d.Layout(gtx) {
 		u.notifier.dismiss()
 	}

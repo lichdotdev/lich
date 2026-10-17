@@ -61,9 +61,9 @@ func TestIdentityLineSaysWhereTheEmailComesFrom(t *testing.T) {
 		id   lichclient.CommitIdentity
 		want identityLine
 	}{
-		{lichclient.CommitIdentity{}, identityLine{identityNoneLead, "", identityNoneNote}},
-		{lichclient.CommitIdentity{Name: "Ana", Email: "a@x.io"}, identityLine{"Commits land as Ana", "<a@x.io>", identitySetGlobal}},
-		{lichclient.CommitIdentity{Email: "a@x.io", Local: true}, identityLine{identityLandAs, "<a@x.io>", identitySetLocal}},
+		{lichclient.CommitIdentity{}, identityLine{"No git identity in this checkout.", "", "Commits will be refused until user.email is set."}},
+		{lichclient.CommitIdentity{Name: "Ana", Email: "a@x.io"}, identityLine{"Commits land as Ana", "<a@x.io>", "— git user.email, not this account."}},
+		{lichclient.CommitIdentity{Email: "a@x.io", Local: true}, identityLine{"Commits land as", "<a@x.io>", "— set in this repository, overriding your global one."}},
 	}
 	for _, c := range cases {
 		if got := identityLineOf(c.id); got != c.want {
@@ -87,7 +87,7 @@ func TestVersionControlRowsFollowTheScope(t *testing.T) {
 	if got := rowKindOf(account, "pg", openTabs, nil); got != rowProjectOnly {
 		t.Errorf("account from a project = %d, want project only", got)
 	}
-	if hits := searchSettings("gh"); !slices.ContainsFunc(hits, func(h settingHit) bool { return h.title == vcsAccountTitle }) {
+	if hits := searchSettings("gh"); !slices.ContainsFunc(hits, func(h settingHit) bool { return h.title == "GitHub account" }) {
 		t.Errorf("searching gh misses the account: %v", hits)
 	}
 }

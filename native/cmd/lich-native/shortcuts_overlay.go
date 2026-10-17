@@ -9,16 +9,11 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (shell.shortcutsOverlay).
-const (
-	shortcutsTitle  = "Keyboard shortcuts"
-	shortcutsRebind = "Rebind in Settings › Hotkeys"
-	shortcutsClose  = "close"
-	shortcutsEsc    = "esc"
-)
+const shortcutsEsc = "esc"
 
 const (
 	shortcutsWidth unit.Dp = 544 // max-w-[34rem]
@@ -41,15 +36,15 @@ type shortcutGroup struct {
 func shortcutGroupsOf(bound hotkeyBindings, goos string) []shortcutGroup {
 	groups := make([]shortcutGroup, 0, len(hotkeyGroups)+1)
 	for _, g := range hotkeyGroups {
-		group := shortcutGroup{title: g.label}
+		group := shortcutGroup{title: i18n.T(g.labelKey)}
 		for _, a := range hotkeyActions {
 			if a.group == g.id {
-				group.rows = append(group.rows, shortcutRow{a.label, formatCombo(bound[a.id], goos == "darwin")})
+				group.rows = append(group.rows, shortcutRow{i18n.T(a.labelKey), formatCombo(bound[a.id], goos == "darwin")})
 			}
 		}
 		groups = append(groups, group)
 	}
-	return append(groups, shortcutGroup{title: hotkeyPassthroughTitle, rows: passthroughRows(goos)})
+	return append(groups, shortcutGroup{title: i18n.T("hotkeys.shortcuts.passthroughTitle"), rows: passthroughRows(goos)})
 }
 
 // shortcutsOverlay is ShortcutsOverlay: what is bound, listed and not
@@ -64,7 +59,7 @@ type shortcutsOverlay struct {
 // it, so it takes Escape ahead of any key filter there.
 func (o *shortcutsOverlay) layout(gtx C, th *ui.Theme, bound hotkeyBindings) {
 	on := th.On(th.Popover)
-	dlg := th.Dialog(&o.dialog, o.open, shortcutsTitle, shortcutsRebind)
+	dlg := th.Dialog(&o.dialog, o.open, i18n.T("shell.shortcutsOverlay.title"), i18n.T("shell.shortcutsOverlay.rebind"))
 	dlg.MaxWidth, dlg.HideClose, dlg.Scrim = shortcutsWidth, true, shortcutsScrim
 	dlg.Body = func(gtx C) D { return o.body(gtx, on, shortcutGroupsOf(bound, runtime.GOOS)) }
 	dlg.Actions = []layout.Widget{func(gtx C) D { return closeHint(gtx, on) }}
@@ -99,7 +94,7 @@ func closeHint(gtx C, th *ui.Theme) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return keyCap(gtx, th, shortcutsEsc) }),
 		ui.Gap(1.5),
-		layout.Rigid(th.Text(ui.TextXS, shortcutsClose).Muted().Layout),
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.shortcutsOverlay.close")).Muted().Layout),
 	)
 }
 

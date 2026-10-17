@@ -9,5 +9,8 @@
     "downloadFailed": "Falló la descarga: {error}",
     "downloadFailedAt": "Falló la descarga al {percent}%: {error}",
     "bytesOf": "{received} de {total}"
+  },
+  "appUpdateGate": {
+    "percentBytes": "{percent}% · {bytes}"
   }
 }

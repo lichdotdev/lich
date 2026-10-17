@@ -41,24 +41,6 @@ import (
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n; the web's en catalog
-// (diff.commentBatch, diff.reviewSlots, prompts.reviewComments).
-const (
-	batchOpenSession   = "Open a session to send these comments to"
-	batchNotePrompt    = "A note about the whole change…"
-	batchCountOne      = "%d comment"
-	batchCountOther    = "%d comments"
-	batchClear         = "Clear"
-	batchSend          = "Send"
-	composerForSession = "for the session · %s"
-	composerOnPR       = "on the pull request · %s"
-	composerPRPrompt   = "Leave a comment. It is sent when you submit the review."
-	composerAdd        = "Add to batch"
-	composerAddReview  = "Add to review"
-	composerPrompt     = "What should change here? It goes to the session with the rest."
-	composerCancel     = "Cancel"
-)
-
 var (
 	icBatchRemove = icons.Lucide("x")
 	icBatchSend   = icons.Lucide("send")
@@ -238,7 +220,7 @@ func (c *commentComposer) layout(gtx C, th *ui.Theme, store *commentStore, targe
 		func(gtx C) D {
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(on.Text(ui.TextXS, fmt.Sprintf(c.heading(), c.lines)).Mono().Muted().Layout),
+					layout.Rigid(on.Text(ui.TextXS, c.heading()).Mono().Muted().Layout),
 					ui.VGap(1.5),
 					layout.Rigid(c.box(on)),
 				)
@@ -251,21 +233,21 @@ func (c *commentComposer) layout(gtx C, th *ui.Theme, store *commentStore, targe
 // going: the two boxes look alike and only one reaches GitHub.
 func (c *commentComposer) heading() string {
 	if c.review {
-		return composerOnPR
+		return i18n.T("diff.reviewSlots.onPullRequest", i18n.Args{"lines": c.lines})
 	}
-	return composerForSession
+	return i18n.T("diff.reviewSlots.forSession", i18n.Args{"lines": c.lines})
 }
 
 // box is CommentBox: the field (max-h-64), then Add and Cancel.
 func (c *commentComposer) box(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
-		label, prompt := composerAdd, composerPrompt
+		label, prompt := i18n.T("diff.reviewSlots.addToBatch"), i18n.T("diff.reviewSlots.sessionPlaceholder")
 		if c.review {
-			label, prompt = composerAddReview, composerPRPrompt
+			label, prompt = i18n.T("diff.reviewSlots.addToReview"), i18n.T("diff.reviewSlots.reviewPlaceholder")
 		}
 		add := th.Button(&c.add, label)
 		add.Size, add.Disabled = ui.SizeSM, strings.TrimSpace(c.editor.Text()) == ""
-		cancel := th.Button(&c.cancel, composerCancel)
+		cancel := th.Button(&c.cancel, i18n.T("common.action.cancel"))
 		cancel.Size, cancel.Variant = ui.SizeSM, ui.VariantGhost
 		buttons := []layout.FlexChild{layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout)}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -344,7 +326,7 @@ func (b *commentBatch) update(gtx C, store *commentStore, target string, inject 
 	}
 	if b.send.Clicked(gtx) {
 		if !inject(composeReviewComments(store.list(target), b.note.Text())) {
-			notify(ui.Toast{Variant: ui.ToastError, Title: batchOpenSession})
+			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.openSession")})
 			return
 		}
 		b.drop(store, target)
@@ -403,7 +385,7 @@ func (b *commentBatch) row(gtx C, th *ui.Theme, c reviewComment) D {
 // noteField is the h-7 text-xs input; Enter adds the note to the batch.
 func (b *commentBatch) noteField(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
-		in := th.Input(&b.note, batchNotePrompt)
+		in := th.Input(&b.note, i18n.T("diff.commentBatch.notePlaceholder"))
 		in.Height, in.TextSize = ui.Space(7), ui.TextXS
 		return in.Layout(gtx)
 	}
@@ -412,14 +394,10 @@ func (b *commentBatch) noteField(th *ui.Theme) layout.Widget {
 // footer is the count, then Clear and Send (bg-accent/55).
 func (b *commentBatch) footer(th *ui.Theme, count int) layout.Widget {
 	return func(gtx C) D {
-		format := batchCountOther
-		if count == 1 {
-			format = batchCountOne
-		}
-		clear := th.Button(&b.clear, batchClear)
+		clear := th.Button(&b.clear, i18n.T("diff.commentBatch.clear"))
 		clear.Variant, clear.Size = ui.VariantGhost, ui.SizeSM
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf(format, count)).Muted().Layout),
+			layout.Rigid(th.Text(ui.TextXS, i18n.T("diff.commentBatch.count", i18n.Args{"count": count})).Muted().Layout),
 			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 			layout.Rigid(clear.Layout),
 			ui.Gap(1),
@@ -432,7 +410,7 @@ func (b *commentBatch) footer(th *ui.Theme, count int) layout.Widget {
 const sendButtonFill = 0.55
 
 func (b *commentBatch) sendButton(gtx C, th *ui.Theme) D {
-	send := th.Button(&b.send, batchSend)
+	send := th.Button(&b.send, i18n.T("diff.commentBatch.send"))
 	send.Icon, send.Variant, send.Size = icBatchSend, ui.VariantGhost, ui.SizeSM
 	if b.send.Hovered() {
 		return send.Layout(gtx)

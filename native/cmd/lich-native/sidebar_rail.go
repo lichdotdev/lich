@@ -6,18 +6,13 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
 // SidebarRail's buttons hover bg-accent/60.
 const railHoverFill = 0.6
-
-// ponytail: English until the native window has i18n.
-const (
-	expandSidebarHint = "Expand sidebar"
-	railNewSession    = "New session"
-)
 
 var icExpand = icons.Lucide("panel-left")
 
@@ -55,9 +50,9 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 	}
 	blocks := m.sidebarBlocks(sidebarFilter{}).blocks
 	d := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-		button(&r.expand, icExpand, expandSidebarHint, glyphToggle),
+		button(&r.expand, icExpand, i18n.T("sidebar.sidebarRail.expand"), glyphToggle),
 		ui.VGap(1),
-		button(&r.add, icPlus, railNewSession, glyphNew),
+		button(&r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), glyphNew),
 		ui.VGap(1),
 		layout.Flexed(1, func(gtx C) D { return r.sessions(gtx, th, s, blocks, active, &act) }),
 	)

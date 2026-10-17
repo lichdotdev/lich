@@ -30,7 +30,7 @@ func TestUpdateProgressToast(t *testing.T) {
 		{"before the first step", nil, "Downloading lich 1.4.0", "", &ui.ToastProgress{Percent: -1}},
 		{"known total", &lichclient.AppUpdateProgress{Phase: "download", Received: 12_300_000, Total: 41_000_000}, "Downloading lich 1.4.0", "30% · 12.3 MB of 41.0 MB", &ui.ToastProgress{Percent: 30}},
 		{"no Content-Length", &lichclient.AppUpdateProgress{Phase: "download", Received: 5_000_000, Total: -1}, "Downloading lich 1.4.0", "5.0 MB", &ui.ToastProgress{Percent: -1}},
-		{"installer", &lichclient.AppUpdateProgress{Phase: "installer"}, "Installing lich 1.4.0…", appUpdateReopens, nil},
+		{"installer", &lichclient.AppUpdateProgress{Phase: "installer"}, "Installing lich 1.4.0…", "lich closes and reopens on its own.", nil},
 	}
 	for _, c := range cases {
 		got := updateProgressToast("1.4.0", c.p)

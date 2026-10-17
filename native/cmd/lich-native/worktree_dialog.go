@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"flag"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -13,15 +12,9 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (sidebar.worktreeDialog.*).
-const (
-	wtCarryReused = "%s already existed, so it opened as it stands and your uncommitted changes stayed where they were."
-	wtCarryFailed = "The worktree opened, but your uncommitted changes could not be copied: %s"
-	wtIssueLost   = "The issue could not be handed to the session: %s"
 )
 
 // issueLookupDelay is how long the name has to settle before the issue
@@ -368,11 +361,11 @@ func (d *worktreeDialog) closeAfter() {
 // and says so when it cannot: the worktree is worth opening either way.
 func (u *window) carryInto(from string, wt *lichclient.Worktree) {
 	if wt.Reused {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastWarning, Title: fmt.Sprintf(wtCarryReused, wt.Name)})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastWarning, Title: i18n.T("sidebar.worktreeDialog.carryReused", i18n.Args{"name": wt.Name})})
 		return
 	}
 	if err := u.client.CarryUncommitted(u.ctx, from, wt.Path); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(wtCarryFailed, lichclient.ErrorText(err))})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.carryFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 	}
 }
 
@@ -433,13 +426,13 @@ func (u *window) writeAtPrompt(id, text string) {
 			break
 		}
 		if time.Now().After(deadline) {
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(wtIssueLost, "the session never reached a prompt")})
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.issueLost", i18n.Args{"error": i18n.T("sidebar.worktreeDialog.neverPrompted")})})
 			return
 		}
 		time.Sleep(promptPoll)
 	}
 	if err := u.client.Write(u.ctx, id, text); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(wtIssueLost, lichclient.ErrorText(err))})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.issueLost", i18n.Args{"error": lichclient.ErrorText(err)})})
 	}
 }
 

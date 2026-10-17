@@ -26,16 +26,9 @@ import (
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (diff.binaryPreview).
-const (
-	blobLoading     = "Loading…"
-	blobMissing     = "Not in this revision"
-	blobTooManyPx   = "%d × %d is above the %d MP preview limit"
-	blobUndecodable = "this image can't be decoded: %v"
 )
 
 // maxPreviewPixels bounds an image by its header before it is decoded: the
@@ -95,14 +88,14 @@ func (p *previewImage) caption() string {
 func decodePreview(data []byte) (*previewImage, error) {
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf(blobUndecodable, err)
+		return nil, errors.New(i18n.T("diff.blobPreview.undecodable", i18n.Args{"error": err}))
 	}
 	if cfg.Width*cfg.Height > maxPreviewPixels {
-		return nil, fmt.Errorf(blobTooManyPx, cfg.Width, cfg.Height, maxPreviewPixels/1_000_000)
+		return nil, errors.New(i18n.T("diff.blobPreview.tooManyPixels", i18n.Args{"width": cfg.Width, "height": cfg.Height, "megapixels": maxPreviewPixels / 1_000_000}))
 	}
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf(blobUndecodable, err)
+		return nil, errors.New(i18n.T("diff.blobPreview.undecodable", i18n.Args{"error": err}))
 	}
 	return &previewImage{
 		src:    paint.NewImageOp(fitEdge(img, maxPreviewEdge)),
@@ -169,13 +162,13 @@ func (v *blobView) layout(gtx C, th *ui.Theme) D {
 	img, loading, err := v.read.get()
 	switch {
 	case errors.Is(err, lichclient.ErrNoBlob):
-		return th.Text(ui.TextXS, blobMissing).Muted().Layout(gtx)
+		return th.Text(ui.TextXS, i18n.T("diff.binaryPreview.missing")).Muted().Layout(gtx)
 	case err != nil:
 		l := th.Text(ui.TextXS, lichclient.ErrorText(err)).Muted()
 		l.MaxLines = 0
 		return l.Layout(gtx)
 	case loading || img == nil:
-		return th.Text(ui.TextXS, blobLoading).Muted().Layout(gtx)
+		return th.Text(ui.TextXS, i18n.T("diff.binaryPreview.loading")).Muted().Layout(gtx)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return img.draw(gtx, th) }),

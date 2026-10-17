@@ -52,5 +52,9 @@
       "one": "{count} caractere copiado para a área de transferência",
       "other": "{count} caracteres copiados para a área de transferência"
     }
+  },
+  "terminalDrop": {
+    "skipped": "{name} ({reason})",
+    "tooLarge": "{name} (acima de {size} MB)"
   }
 }

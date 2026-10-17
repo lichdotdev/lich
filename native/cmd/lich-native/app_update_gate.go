@@ -6,29 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (shell.appUpdateGate,
-// shell.updateProgressToast, update.progress).
-const (
-	appUpdateAndInstall    = "Update & install"
-	appUpdateLater         = "Later"
-	appUpdateInstall       = "Install"
-	appUpdateUpdated       = "lich updated to %s"
-	appUpdateRetry         = "Retry"
-	appUpdateRestart       = "Restart"
-	appUpdateRestartFailed = "Restart failed: %v"
-	appUpdateDownloading   = "Downloading lich %s"
-	appUpdateInstalling    = "Installing lich %s…"
-	appUpdateReopens       = "lich closes and reopens on its own."
-	appUpdateFailed        = "Update failed: %s"
-	appUpdateInstallFailed = "Install failed: %s"
-	appUpdateDownloadFail  = "Download failed: %s"
-	appUpdateDownloadAt    = "Download failed at %d%%: %s"
-	appUpdateBytesOf       = "%s of %s"
-	appUpdatePercentBytes  = "%d%% · %s"
 )
 
 const (
@@ -108,14 +88,14 @@ func (u *window) promptAppUpdate(st lichclient.AppUpdateStatus) {
 // and otherwise the command to paste and the release page.
 func (u *window) appUpdateToast(st lichclient.AppUpdateStatus) ui.Toast {
 	version := st.LatestVersion
-	later := &ui.ToastButton{Label: appUpdateLater, OnClick: func() { u.writePref(appUpdateDismissedKey, version) }}
-	t := ui.Toast{ID: appUpdateToastID, Title: fmt.Sprintf(updatesToastTitle, version), Duration: ui.ToastForever, Cancel: later}
-	release := &ui.ToastButton{Label: updatesViewRelease, OnClick: func() { u.settings.openExternal(st.ReleaseURL) }}
+	later := &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later"), OnClick: func() { u.writePref(appUpdateDismissedKey, version) }}
+	t := ui.Toast{ID: appUpdateToastID, Title: i18n.T("shell.appUpdateGate.available", i18n.Args{"version": version}), Duration: ui.ToastForever, Cancel: later}
+	release := &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.viewRelease"), OnClick: func() { u.settings.openExternal(st.ReleaseURL) }}
 	switch {
 	case st.CanSelfApply:
-		t.Action = &ui.ToastButton{Label: appUpdateAndInstall, OnClick: func() { go u.applyUpdate(version) }}
+		t.Action = &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.updateAndInstall"), OnClick: func() { go u.applyUpdate(version) }}
 	case st.InstallCommand != "":
-		t.Action = &ui.ToastButton{Label: appUpdateInstall, OnClick: func() { u.openInstall(st.ReleaseURL, st.InstallCommand) }}
+		t.Action = &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.install"), OnClick: func() { u.openInstall(st.ReleaseURL, st.InstallCommand) }}
 		t.Secondary = release
 	default:
 		t.Action = release
@@ -156,15 +136,15 @@ func (u *window) applyUpdate(version string) {
 	if err != nil {
 		u.toaster.Show(ui.Toast{ID: appUpdateToastID, Variant: ui.ToastError, Duration: ui.ToastForever,
 			Title:  updateFailureText(last, lichclient.ErrorText(err)),
-			Action: &ui.ToastButton{Label: appUpdateRetry, OnClick: func() { go u.applyUpdate(version) }}})
+			Action: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.retry"), OnClick: func() { go u.applyUpdate(version) }}})
 		return
 	}
 	u.toaster.Show(ui.Toast{ID: appUpdateToastID, Variant: ui.ToastSuccess, Duration: ui.ToastForever,
-		Title: fmt.Sprintf(appUpdateUpdated, version),
-		Action: &ui.ToastButton{Label: appUpdateRestart, OnClick: func() {
+		Title: i18n.T("shell.appUpdateGate.updated", i18n.Args{"version": version}),
+		Action: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.restart"), OnClick: func() {
 			go func() {
 				if err := u.client.Restart(u.ctx); err != nil {
-					u.toaster.Show(failure(appUpdateRestartFailed, err))
+					u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.appUpdateGate.restartFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 				}
 			}()
 		}}})
@@ -188,18 +168,18 @@ func (u *window) updateProgressed(p lichclient.AppUpdateProgress) {
 // updateProgressToast is UpdateProgressToast: the download's bar, with its
 // percent and bytes under it, then the installer's step behind a spinner.
 func updateProgressToast(version string, p *lichclient.AppUpdateProgress) ui.Toast {
-	t := ui.Toast{ID: appUpdateToastID, Duration: ui.ToastForever, Title: fmt.Sprintf(appUpdateDownloading, version),
+	t := ui.Toast{ID: appUpdateToastID, Duration: ui.ToastForever, Title: i18n.T("shell.updateProgressToast.downloading", i18n.Args{"version": version}),
 		Progress: &ui.ToastProgress{Percent: -1}}
 	switch {
 	case p == nil:
 	case p.Phase == lichclient.UpdatePhaseInstaller:
-		t.Title, t.Description, t.Progress = fmt.Sprintf(appUpdateInstalling, version), appUpdateReopens, nil
+		t.Title, t.Description, t.Progress = i18n.T("shell.updateProgressToast.installing", i18n.Args{"version": version}), i18n.T("shell.updateProgressToast.reopens"), nil
 		t.Spin = true
 	default:
 		percent, bytes := downloadReading(*p)
 		t.Description, t.Progress.Percent = bytes, percent
 		if percent >= 0 {
-			t.Description = fmt.Sprintf(appUpdatePercentBytes, percent, bytes)
+			t.Description = i18n.T("update.appUpdateGate.percentBytes", i18n.Args{"percent": percent, "bytes": bytes})
 		}
 	}
 	return t
@@ -211,7 +191,7 @@ func downloadReading(p lichclient.AppUpdateProgress) (percent int, bytes string)
 	if p.Total <= 0 {
 		return -1, megabytes(p.Received)
 	}
-	return int(min(100, p.Received*100/p.Total)), fmt.Sprintf(appUpdateBytesOf, megabytes(p.Received), megabytes(p.Total))
+	return int(min(100, p.Received*100/p.Total)), i18n.T("update.progress.bytesOf", i18n.Args{"received": megabytes(p.Received), "total": megabytes(p.Total)})
 }
 
 func megabytes(n int64) string { return fmt.Sprintf("%.1f MB", float64(n)/bytesPerMB) }
@@ -221,12 +201,12 @@ func megabytes(n int64) string { return fmt.Sprintf("%.1f MB", float64(n)/bytesP
 func updateFailureText(last *lichclient.AppUpdateProgress, err string) string {
 	switch {
 	case last == nil:
-		return fmt.Sprintf(appUpdateFailed, err)
+		return i18n.T("update.progress.updateFailed", i18n.Args{"error": err})
 	case last.Phase != lichclient.UpdatePhaseDownload:
-		return fmt.Sprintf(appUpdateInstallFailed, err)
+		return i18n.T("update.progress.installFailed", i18n.Args{"error": err})
 	}
 	if percent, _ := downloadReading(*last); percent >= 0 {
-		return fmt.Sprintf(appUpdateDownloadAt, percent, err)
+		return i18n.T("update.progress.downloadFailedAt", i18n.Args{"percent": percent, "error": err})
 	}
-	return fmt.Sprintf(appUpdateDownloadFail, err)
+	return i18n.T("update.progress.downloadFailed", i18n.Args{"error": err})
 }

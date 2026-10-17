@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -11,20 +10,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
+	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (shell.closeDialog).
-const (
-	closeDialogTitle  = "Keep lich running?"
-	closeRunningOne   = "%d session is running. In the background it keeps working, and opening lich again brings it back on screen."
-	closeRunningOther = "%d sessions are running. In the background they keep working, and opening lich again brings them back on screen."
-	closeDontAsk      = "Don't ask again"
-	closeInSettings   = "· change it in Settings › General"
-	closeKeepLabel    = "Keep running"
-	closeQuitLabel    = "Quit lich"
-	closeFailed       = "Could not quit lich: %v"
-	closeCountFailed  = "Could not count the running sessions: %v"
 )
 
 // closePrompt is CloseDialog: what closing the window does with the
@@ -62,7 +50,7 @@ func (u *window) onClosing(e *app.ClosingEvent) {
 func (u *window) askOrQuit(action string) {
 	live, err := u.client.LiveCount(u.ctx)
 	if err != nil {
-		u.toaster.Show(failure(closeCountFailed, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.windowClose.countFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
 	if closeQuits(action, live) {
@@ -79,7 +67,7 @@ func (u *window) askOrQuit(action string) {
 
 func (u *window) quitLich() {
 	if err := u.client.Quit(u.ctx); err != nil {
-		u.toaster.Show(failure(closeFailed, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.windowClose.quitFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
 	u.leave()
@@ -120,10 +108,10 @@ func (u *window) layoutClosePrompt(gtx C, th *ui.Theme) {
 		answer(closeQuit, u.quitLich)
 	}
 	on := th.On(th.Popover)
-	quit := on.Button(&c.quit, closeQuitLabel)
+	quit := on.Button(&c.quit, i18n.T("shell.closeDialog.quit"))
 	quit.Variant = ui.VariantGhost
-	keep := on.Button(&c.keep, closeKeepLabel)
-	d := th.Dialog(&c.dialog, running > 0, closeDialogTitle, closeRunning(running))
+	keep := on.Button(&c.keep, i18n.T("shell.closeDialog.keep"))
+	d := th.Dialog(&c.dialog, running > 0, i18n.T("shell.closeDialog.title"), closeRunning(running))
 	d.MaxWidth = ui.DialogWidthXL
 	d.Body = func(gtx C) D { return closeRemember(gtx, on, &c.remember) }
 	d.Actions = []layout.Widget{quit.Layout, keep.Layout}
@@ -135,7 +123,7 @@ func (u *window) layoutClosePrompt(gtx C, th *ui.Theme) {
 }
 
 func closeRunning(n int) string {
-	return fmt.Sprintf(pluralFormat(n, closeRunningOne, closeRunningOther), n)
+	return i18n.T("shell.closeDialog.running", i18n.Args{"count": n})
 }
 
 // closeRemember is the checkbox and its label, the hint of where the
@@ -144,8 +132,8 @@ func closeRemember(gtx C, th *ui.Theme, remember *widget.Bool) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(th.Checkbox(remember).Layout),
 		ui.Gap(2),
-		layout.Rigid(th.Text(ui.TextSM, closeDontAsk).Layout),
+		layout.Rigid(th.Text(ui.TextSM, i18n.T("shell.closeDialog.dontAsk")).Layout),
 		ui.Gap(1),
-		layout.Rigid(th.Text(ui.TextSM, closeInSettings).Muted().Layout),
+		layout.Rigid(th.Text(ui.TextSM, i18n.T("shell.windowClose.changeInSettings")).Muted().Layout),
 	)
 }

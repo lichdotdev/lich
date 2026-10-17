@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -22,41 +20,32 @@ var (
 	icNewFolder  = icons.Lucide("plus")
 )
 
-// ponytail: English until the native window has i18n.
-const (
-	moveToFolderLabel = "Move to folder"
-	takeOutOfLabel    = "Take out of %s"
-	newFolderLabel    = "New folder…"
-)
-
 // cardMenu is the session card's right-click menu, cut to what this window
 // keeps; a pick lands in act, but Rename only turns the label into a field and
 // New folder… asks for a name first. A pinned card offers no close: closing is
 // what the pin withholds.
 //
-// ponytail: English labels until the native window has i18n.
-//
 // extra are entries the window adds after Pull request, such as Continue in.
 func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename, newFolder func(), extra ...ui.MenuEntry) []ui.MenuEntry {
-	pin := ui.MenuEntry{Label: "Pin", Icon: icMenuPin, OnClick: func() { act.pin, act.pinTo = sv.ID, true }}
+	pin := ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.pin"), Icon: icMenuPin, OnClick: func() { act.pin, act.pinTo = sv.ID, true }}
 	if sv.Pinned {
-		pin = ui.MenuEntry{Label: "Unpin", Icon: icMenuUnpin, OnClick: func() { act.pin, act.pinTo = sv.ID, false }}
+		pin = ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.unpin"), Icon: icMenuUnpin, OnClick: func() { act.pin, act.pinTo = sv.ID, false }}
 	}
 	entries := []ui.MenuEntry{
-		{Label: "Rename", Icon: icMenuRename, OnClick: startRename},
+		{Label: i18n.T("sidebar.sessionCard.rename"), Icon: icMenuRename, OnClick: startRename},
 		pin,
-		{Kind: ui.MenuSubTrigger, Label: "Color", Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
+		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.cardColor.menu"), Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
 			act.color, act.colorTo = sv.ID, name
 		})},
-		{Kind: ui.MenuSubTrigger, Label: moveToFolderLabel, Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
-		{Kind: ui.MenuSubTrigger, Label: "Open in", Icon: icOpenIn, Sub: openInMenu(sv, act)},
+		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
+		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
 	}
 	entries = append(entries, extra...)
 	if !sv.Pinned {
 		entries = append(entries,
 			ui.MenuEntry{Kind: ui.MenuSeparator},
-			ui.MenuEntry{Label: "Close session", Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.close = sv.ID }},
+			ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.closeSession"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.close = sv.ID }},
 		)
 	}
 	return entries
@@ -66,14 +55,35 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 // current checked.
 func colorSwatches(current string, pick func(name string)) []ui.MenuEntry {
 	picker := func(name string) func() { return func() { pick(name) } }
-	swatches := []ui.MenuEntry{{Kind: ui.MenuSwatch, Label: "Theme", Checked: current == "", OnClick: picker("")}}
+	swatches := []ui.MenuEntry{{Kind: ui.MenuSwatch, Label: i18n.T("sidebar.cardColor.color.theme"), Checked: current == "", OnClick: picker("")}}
 	for _, name := range cardColorNames {
 		swatches = append(swatches, ui.MenuEntry{
-			Kind: ui.MenuSwatch, Label: strings.ToUpper(name[:1]) + name[1:], Swatch: cardColors[name],
+			Kind: ui.MenuSwatch, Label: cardColorLabel(name), Swatch: cardColors[name],
 			Checked: current == name, OnClick: picker(name),
 		})
 	}
 	return swatches
+}
+
+// cardColorLabel is a palette entry named in the interface language.
+func cardColorLabel(name string) string {
+	switch name {
+	case "red":
+		return i18n.T("sidebar.cardColor.color.red")
+	case "orange":
+		return i18n.T("sidebar.cardColor.color.orange")
+	case "amber":
+		return i18n.T("sidebar.cardColor.color.amber")
+	case "green":
+		return i18n.T("sidebar.cardColor.color.green")
+	case "teal":
+		return i18n.T("sidebar.cardColor.color.teal")
+	case "blue":
+		return i18n.T("sidebar.cardColor.color.blue")
+	case "violet":
+		return i18n.T("sidebar.cardColor.color.violet")
+	}
+	return i18n.T("sidebar.cardColor.color.pink")
 }
 
 // cardFolderMenu is the card's Move to folder: every other folder, the way
@@ -84,13 +94,13 @@ func cardFolderMenu(sv *sessionView, folders []string, act *sidebarAction, newFo
 		sub = append(sub, ui.MenuEntry{Label: name, Icon: icFolder, OnClick: func() { act.file = fileRequest{ids: []string{sv.ID}, folder: name} }})
 	}
 	if sv.Folder != "" {
-		sub = append(sub, ui.MenuEntry{Label: fmt.Sprintf(takeOutOfLabel, sv.Folder), Icon: icTakeOut,
+		sub = append(sub, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.takeOutOf", i18n.Args{"folder": sv.Folder}), Icon: icTakeOut,
 			OnClick: func() { act.file = fileRequest{ids: []string{sv.ID}} }})
 	}
 	if len(sub) > 0 {
 		sub = append(sub, ui.MenuEntry{Kind: ui.MenuSeparator})
 	}
-	return append(sub, ui.MenuEntry{Label: newFolderLabel, Icon: icNewFolder, OnClick: newFolder})
+	return append(sub, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.newFolder"), Icon: icNewFolder, OnClick: newFolder})
 }
 
 // openInMenu opens the directory the card shows. A shell session has no use
@@ -98,18 +108,18 @@ func cardFolderMenu(sv *sessionView, folders []string, act *sidebarAction, newFo
 func openInMenu(sv *sessionView, act *sidebarAction) []ui.MenuEntry {
 	var sub []ui.MenuEntry
 	if sv.Kind != "shell" {
-		sub = append(sub, ui.MenuEntry{Label: "Terminal", Icon: icInTerminal, OnClick: func() { act.terminalAt = sv.shown }})
+		sub = append(sub, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.terminal"), Icon: icInTerminal, OnClick: func() { act.terminalAt = sv.shown }})
 	}
 	return append(sub,
-		ui.MenuEntry{Label: "Editor", Icon: icInEditor, OnClick: func() { act.editorAt = sv.shown }},
-		ui.MenuEntry{Label: "File manager", Icon: icOpenIn, OnClick: func() { act.folderAt = sv.shown }},
+		ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.editor"), Icon: icInEditor, OnClick: func() { act.editorAt = sv.shown }},
+		ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.fileManager"), Icon: icOpenIn, OnClick: func() { act.folderAt = sv.shown }},
 	)
 }
 
 // pullRequestItem opens the branch's PR on the Pulls screen, the session
 // brought up with it; disabled while the branch has none.
 func pullRequestItem(sv *sessionView, act *sidebarAction) ui.MenuEntry {
-	item := ui.MenuEntry{Label: "Pull request", Icon: icMenuPR, Disabled: sv.pr == nil}
+	item := ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.pullRequest"), Icon: icMenuPR, Disabled: sv.pr == nil}
 	if sv.pr != nil {
 		id, number := sv.ID, sv.pr.Number
 		item.OnClick = func() { act.activate, act.openPR = id, number }

@@ -1241,6 +1241,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and macOS leave out the dual-width Nerd Font families (the ones not named "Mono", whose icons take two cells)
   that fontconfig's `spacing=dual` lists on Linux; the "Mono" variant of each is offered. Its family names come
   from parsing one file per family, a few hundred on a stock Windows, the first time a font picker opens.
+- **The Chinese font the native window downloads reaches its interface, not its terminal on Linux**
+  (`native/fonts/download.go`, `native/glyphs/raster.go`): the terminal finds a glyph its family lacks through
+  fontconfig (`fonts.Covering`), which never sees `<user cache dir>/lich/fonts`, so with no Chinese font
+  installed a branch name or agent output in Chinese still draws as tofu in the terminal while the cards and
+  Settings around it read fine. Installing a Chinese font system-wide covers both. Windows and macOS find the
+  terminal's fallback by scanning the system font folders, which leave lich's cache out the same way.
 - **Profiles are Claude Code's, Codex's and oh-my-pi's everywhere, and opencode's, Cursor CLI's and Kiro CLI's
   on Linux only** (`internal/claudeprofile`, `internal/codexprofile`, `internal/ompprofile`,
   `internal/xdgprofile`, on one store, `internal/profilestore`): one account per profile. The first three are

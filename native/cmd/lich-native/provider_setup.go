@@ -5,18 +5,11 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 )
 
-// ponytail: English until the native window has i18n (shell.providerSetupDialog).
 const (
-	setupChooseTitle  = "Choose your agents"
-	setupNoneTitle    = "No coding agents found"
-	setupChooseDesc   = "lich found these on your machine. Turn on the ones you use — the rest stay out of the New Session menu."
-	setupNoneDesc     = "lich runs the agents already installed on your machine, and found none. Install one, then check again."
-	setupChangeLater  = "You can change this any time in Settings › Providers."
-	setupPointToBin   = "Already have one installed? Point lich at its binary in Settings › Providers."
-	setupContinue     = "Continue"
 	setupBodyHeight   = 60 // max-h share of the window the provider list may take, as the notes dialog
 	setupDocsColumns  = 2
 	setupDocsRowWidth = unit.Dp(200)
@@ -101,9 +94,9 @@ func (u *window) layoutProviderSetup(gtx C, th *ui.Theme) {
 		return
 	}
 	on := th.On(th.Popover)
-	title, desc, foot := setupChooseTitle, setupChooseDesc, setupChangeLater
+	title, desc, foot := i18n.T("shell.providerSetupDialog.chooseTitle"), i18n.T("shell.providerSetupDialog.chooseDescription"), i18n.T("shell.providerSetupDialog.changeLater")
 	if !g.installed {
-		title, desc, foot = setupNoneTitle, setupNoneDesc, setupPointToBin
+		title, desc, foot = i18n.T("shell.providerSetupDialog.noneTitle"), i18n.T("shell.providerSetupDialog.noneDescription"), i18n.T("shell.providerSetupDialog.pointToBinary")
 	}
 	d := th.Dialog(&g.dialog, true, title, desc)
 	d.MaxWidth, d.HideClose = ui.DialogWidthXL, true
@@ -123,7 +116,7 @@ func (u *window) layoutProviderSetup(gtx C, th *ui.Theme) {
 	if !g.installed {
 		actions = append(actions, s.recheckButton(gtx, on))
 	}
-	d.Actions = append(actions, on.Button(&g.cont, setupContinue).Layout)
+	d.Actions = append(actions, on.Button(&g.cont, i18n.T("shell.providerSetupDialog.continue")).Layout)
 	d.Layout(gtx)
 }
 
@@ -184,10 +177,10 @@ func (s *settingsScreen) recheckButton(gtx C, th *ui.Theme) layout.Widget {
 	pr.mu.Lock()
 	checking := pr.rechecking
 	pr.mu.Unlock()
-	b := th.Button(&pr.recheck, providersCheckAgain)
+	b := th.Button(&pr.recheck, i18n.T("common.checkAgainButton.check"))
 	b.Variant, b.Disabled = ui.VariantOutline, checking
 	if checking {
-		b.Text = providersChecking
+		b.Text = i18n.T("common.checkAgainButton.checking")
 	}
 	return b.Layout
 }

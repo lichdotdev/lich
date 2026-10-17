@@ -30,5 +30,13 @@
       "other": "关闭 {name} 会中断 {count} 个正在进行一轮的会话。重新打开项目时可选择从每个会话中断处恢复，进行中的那一轮会丢失。"
     },
     "closeAnyway": "仍然关闭"
+  },
+  "topbarTabs": {
+    "projectSettings": "项目设置…",
+    "closeProject": "关闭项目"
+  },
+  "topbarApply": {
+    "closeProjectFailed": "无法关闭项目：{error}",
+    "reorderFailed": "无法重新排序项目：{error}"
   }
 }

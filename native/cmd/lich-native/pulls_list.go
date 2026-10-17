@@ -14,24 +14,31 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n (pulls.pullsList.*).
-const (
-	pullsSearchHint = "Filter by number, title, author or branch"
-	pullsHideList   = "Hide the pull request list"
-	pullsShowList   = "Show the pull request list"
-	pullsNoMatch    = "Nothing matches that filter."
-	pullsNoneOf     = "No %s pull requests."
-	pullsDraftLabel = "Draft"
-	pullsForkLabel  = "fork"
-	pullsCheckedOut = "checked out"
-)
+func (s pullsState) label() string {
+	switch s {
+	case pullsClosed:
+		return i18n.T("pulls.pullsStats.closed")
+	case pullsMerged:
+		return i18n.T("pulls.pullsStats.merged")
+	}
+	return i18n.T("pulls.pullsStats.open")
+}
 
-var pullsStateLabels = map[pullsState]string{pullsOpen: "Open", pullsClosed: "Closed", pullsMerged: "Merged"}
+func (s pullsState) none() string {
+	switch s {
+	case pullsClosed:
+		return i18n.T("pulls.pullsList.none.closed")
+	case pullsMerged:
+		return i18n.T("pulls.pullsList.none.merged")
+	}
+	return i18n.T("pulls.pullsList.none.open")
+}
 
 // listLayout is PullsList: the filter field and the counted quick filters,
 // the state menu, then the rows.
@@ -52,22 +59,24 @@ func (p *pullsScreen) listHeader(gtx C, th *ui.Theme) D {
 	if p.toggleList.click.Clicked(gtx) {
 		p.listHidden = true
 	}
-	field := th.Input(&p.query, pullsSearchHint)
+	field := th.Input(&p.query, i18n.T("pulls.pullsList.searchHint"))
 	field.Leading, field.Height, field.TextSize, field.Clear = icPullSearch, ui.Space(7), ui.TextXS, &p.clearQuery
 	return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, field.Layout),
 			ui.Gap(1.5),
-			layout.Rigid(func(gtx C) D { return iconAction(gtx, th, p.root, &p.toggleList, icPullHide, pullsHideList, false) }),
+			layout.Rigid(func(gtx C) D {
+				return iconAction(gtx, th, p.root, &p.toggleList, icPullHide, i18n.T("pulls.pullsList.hide"), false)
+			}),
 		)
 	})
 }
 
 func (p *pullsScreen) filterTrack(gtx C, th *ui.Theme, counts [pullsFilterCount]int) D {
 	triggers := make([]ui.TabsTrigger, pullsFilterCount)
-	for i, label := range pullsFilterLabels {
+	for i := range triggers {
 		n := counts[i]
-		triggers[i] = ui.TabsTrigger{Text: label, Trailing: func(gtx C) D {
+		triggers[i] = ui.TabsTrigger{Text: pullsFilter(i).label(), Trailing: func(gtx C) D {
 			return th.Text(ui.TextXS, fmt.Sprint(n)).Muted().Layout(gtx)
 		}}
 	}
@@ -83,7 +92,7 @@ func (p *pullsScreen) filterTrack(gtx C, th *ui.Theme, counts [pullsFilterCount]
 func (p *pullsScreen) stateRow(gtx C, th *ui.Theme) D {
 	entries := make([]ui.MenuEntry, len(pullsStates))
 	for i, s := range pullsStates {
-		entries[i] = ui.MenuEntry{Kind: ui.MenuRadioItem, Label: pullsStateLabels[s], Checked: s == p.state, OnClick: func() { p.state = s }}
+		entries[i] = ui.MenuEntry{Kind: ui.MenuRadioItem, Label: s.label(), Checked: s == p.state, OnClick: func() { p.state = s }}
 	}
 	menu := th.DropdownMenu(p.root, &p.stateMenu, entries)
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
@@ -94,7 +103,7 @@ func (p *pullsScreen) stateRow(gtx C, th *ui.Theme) D {
 					fg = th.Foreground
 				}
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(pullsStateLabels[p.state])).In(fg).Layout),
+					layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(p.state.label())).In(fg).Layout),
 					ui.Gap(1),
 					layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, ui.Space(3), fg) }),
 				)
@@ -110,9 +119,9 @@ func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]lichclient.P
 	case list.err != "":
 		return notice(gtx, th, list.err)
 	case len(list.val) == 0:
-		return notice(gtx, th, fmt.Sprintf(pullsNoneOf, strings.ToLower(pullsStateLabels[p.state])))
+		return notice(gtx, th, p.state.none())
 	case len(rows) == 0:
-		return notice(gtx, th, pullsNoMatch)
+		return notice(gtx, th, i18n.T("pulls.pullsList.noMatch"))
 	}
 	now := gtx.Now
 	return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Bottom: ui.Space(3)}.Layout(gtx, func(gtx C) D {
@@ -219,19 +228,21 @@ func rowMeta(gtx C, th *ui.Theme, pr lichclient.PRSummary, checkedOut bool, now 
 		add(func(gtx C) D { return verdictDot(gtx, th, v) })
 	}
 	if pr.IsDraft {
-		add(th.Text(ui.TextXS, pullsDraftLabel).In(th.ToneWait).Layout)
+		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.draft")).In(th.ToneWait).Layout)
 	}
 	switch pr.ReviewDecision {
 	case "APPROVED":
-		add(th.Text(ui.TextXS, "Approved").In(th.TonePass).Layout)
+		add(th.Text(ui.TextXS, i18n.T("pulls.pullsStats.approved")).In(th.TonePass).Layout)
 	case "CHANGES_REQUESTED":
-		add(th.Text(ui.TextXS, "Changes requested").In(th.Destructive).Layout)
+		add(th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout)
 	}
 	if pr.IsCrossRepository {
-		add(th.Text(ui.TextXS, pullsForkLabel).Muted().Layout)
+		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)
 	}
 	if checkedOut {
-		add(func(gtx C) D { return metaGlyph(gtx, th, icPullTerm, pullsCheckedOut, th.MutedForeground) })
+		add(func(gtx C) D {
+			return metaGlyph(gtx, th, icPullTerm, i18n.T("pulls.pullsList.checkedOut"), th.MutedForeground)
+		})
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, items...)
 }

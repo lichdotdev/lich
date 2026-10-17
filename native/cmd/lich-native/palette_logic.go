@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -14,22 +14,6 @@ import (
 // and what was said inside a session become one list of groups the palette
 // draws and routes from. Pure, so the flatten, the filter and the ranking are
 // tested without a frame.
-
-// ponytail: English until the native window has i18n (session.palette,
-// common.time).
-const (
-	paletteUntitled       = "Untitled conversation"
-	paletteGroupSessions  = "Sessions"
-	paletteGroupProjects  = "Projects"
-	paletteGroupMessages  = "Messages"
-	paletteGroupOpen      = "Open"
-	paletteGroupClosed    = "Closed"
-	paletteGroupParked    = "Closed sessions"
-	paletteGroupOutside   = "Outside lich"
-	paletteIndexingFormat = "indexing %s"
-	paletteJustNow        = "just now"
-	paletteAgoFormat      = "%s ago"
-)
 
 // paletteMessageMinQuery mirrors the backend's minSearchQuery: under three
 // characters the transcript search is refused, so it is not asked for.
@@ -92,6 +76,22 @@ const (
 	tabMessages paletteTab = "Messages"
 	tabHistory  paletteTab = "History"
 )
+
+// label is the tab named in the interface language. The tab's value stays
+// English: it is the -palette-tab flag and the identity the window compares.
+func (t paletteTab) label() string {
+	switch t {
+	case tabSessions:
+		return i18n.T("palette.commandPalette.tab.Sessions")
+	case tabProjects:
+		return i18n.T("palette.commandPalette.tab.Projects")
+	case tabMessages:
+		return i18n.T("palette.commandPalette.tab.Messages")
+	case tabHistory:
+		return i18n.T("palette.commandPalette.tab.History")
+	}
+	return i18n.T("palette.commandPalette.tab.All")
+}
 
 // paletteTabs is the filter row in the order Tab walks it. History is last
 // because it is the one posture the palette is not opened in: the other four
@@ -269,7 +269,7 @@ func rowKey(r paletteRow) string {
 // found nothing there found nothing in the part that was kept.
 func historyIndexNote(h paletteHistory) string {
 	if h.Truncated {
-		return "indexed: newest " + paletteIndexCap
+		return i18n.T("palette.paletteLogic.indexedNewest", i18n.Args{"size": paletteIndexCap})
 	}
 	return ""
 }
@@ -297,7 +297,7 @@ func externalLabel(e lichclient.ExternalSession) string {
 	if title := strings.TrimSpace(e.Title); title != "" {
 		return title
 	}
-	return paletteUntitled
+	return i18n.T("session.palette.untitledConversation")
 }
 
 // adoptedSession is the parked row AdoptExternalSession files, as the
@@ -343,32 +343,32 @@ func paletteGroupsOf(tab paletteTab, r paletteResults, messages []paletteMessage
 	var groups []paletteGroup
 	switch tab {
 	case tabSessions:
-		groups = []paletteGroup{group(paletteGroupSessions, sessions, 0, 0)}
+		groups = []paletteGroup{group(i18n.T("session.palette.groupSessions"), sessions, 0, 0)}
 	case tabProjects:
-		groups = []paletteGroup{group(paletteGroupOpen, open, 0, 0), group(paletteGroupClosed, closed, 0, r.closedTotal)}
+		groups = []paletteGroup{group(i18n.T("session.palette.groupOpen"), open, 0, 0), group(i18n.T("session.palette.groupClosed"), closed, 0, r.closedTotal)}
 	case tabMessages:
-		groups = []paletteGroup{group(paletteGroupMessages, said, 0, 0)}
+		groups = []paletteGroup{group(i18n.T("session.palette.groupMessages"), said, 0, 0)}
 	case tabHistory:
-		parked := group(paletteGroupParked, history, 0, historyTotal)
+		parked := group(i18n.T("session.palette.groupClosedSessions"), history, 0, historyTotal)
 		if indexing > 0 {
 			parked.note = indexingNote(indexing)
 		}
-		groups = []paletteGroup{parked, group(paletteGroupOutside, external, 0, 0)}
+		groups = []paletteGroup{parked, group(i18n.T("session.palette.groupOutsideLich"), external, 0, 0)}
 	default:
 		// No closed projects or sessions here: bringing one back is not what
 		// the palette is reached for mid-work, and the rows it costs are rows
 		// the sessions and the open projects are cut to make room for.
 		groups = []paletteGroup{
-			group(paletteGroupSessions, sessions, paletteAllRows, 0),
-			group(paletteGroupProjects, open, paletteAllRows, 0),
-			group(paletteGroupMessages, said, paletteAllRows, 0),
+			group(i18n.T("session.palette.groupSessions"), sessions, paletteAllRows, 0),
+			group(i18n.T("session.palette.groupProjects"), open, paletteAllRows, 0),
+			group(i18n.T("session.palette.groupMessages"), said, paletteAllRows, 0),
 		}
 	}
 	return slices.DeleteFunc(groups, func(g paletteGroup) bool { return len(g.rows) == 0 })
 }
 
 func indexingNote(n int) string {
-	return fmt.Sprintf(paletteIndexingFormat, plural(n, "session", "sessions"))
+	return i18n.T("session.palette.indexing", i18n.Args{"count": n})
 }
 
 // paletteTabCount is what a tab reports it holds; All reports nothing, being
@@ -438,21 +438,17 @@ func agoLabel(at int64, now time.Time) string {
 	minutes := int(max(now.Sub(time.Unix(at, 0)), 0) / time.Minute)
 	switch {
 	case minutes < 1:
-		return paletteJustNow
+		return i18n.T("common.time.justNow")
 	case minutes < agoMinutesPerHour:
-		return agoPhrase(minutes, "m")
+		return i18n.T("session.age.ago.minute", i18n.Args{"count": minutes})
 	}
 	hours := minutes / agoMinutesPerHour
 	if hours < agoHoursPerDay {
-		return agoPhrase(hours, "h")
+		return i18n.T("session.age.ago.hour", i18n.Args{"count": hours})
 	}
 	days := hours / agoHoursPerDay
 	if days < agoDaysPerWeek {
-		return agoPhrase(days, "d")
+		return i18n.T("session.age.ago.day", i18n.Args{"count": days})
 	}
-	return agoPhrase(days/agoDaysPerWeek, "w")
-}
-
-func agoPhrase(n int, unit string) string {
-	return fmt.Sprintf(paletteAgoFormat, fmt.Sprint(n)+unit)
+	return i18n.T("session.age.ago.week", i18n.Args{"count": days / agoDaysPerWeek})
 }

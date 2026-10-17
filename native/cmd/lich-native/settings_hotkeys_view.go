@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"runtime"
 	"strings"
@@ -14,22 +13,9 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n
-// (settings.hotkeysSettings, hotkeys.shortcuts).
-const (
-	hotkeyAlsoBound        = "Also bound to %s"
-	hotkeyPressKeys        = "Press keys…"
-	hotkeyUnassignHint     = "Leave this action unbound"
-	hotkeyResetHint        = "Restore the default shortcut"
-	hotkeyPassthroughTitle = "Passed through to the agent"
-	hotkeyPassthroughNote  = "lich rewrites these on their way to the agent's terminal, so they are fixed rather than rebindable."
-	hotkeyAttachImage      = "Attach an image from the clipboard"
-	hotkeyNewline          = "Insert a newline without sending"
-	hotkeyEraseWord        = "Erase the previous word"
 )
 
 var (
@@ -74,9 +60,9 @@ func passthroughRows(goos string) []shortcutRow {
 		attach = "⌘V or Ctrl+V"
 	}
 	return []shortcutRow{
-		{hotkeyAttachImage, attach},
-		{hotkeyNewline, "Shift+Enter"},
-		{hotkeyEraseWord, "Ctrl+Backspace"},
+		{i18n.T("hotkeys.shortcuts.attachImage"), attach},
+		{i18n.T("hotkeys.shortcuts.newline"), "Shift+Enter"},
+		{i18n.T("hotkeys.shortcuts.eraseWord"), "Ctrl+Backspace"},
 	}
 }
 
@@ -90,7 +76,7 @@ func (s *settingsScreen) hotkeyPaneRows(th *ui.Theme) []layout.Widget {
 	conflicts := hotkeyConflicts(bound)
 	index := 0
 	for g, group := range hotkeyGroups {
-		rows = append(rows, groupHeading(th, group.label, g == 0))
+		rows = append(rows, groupHeading(th, hotkeyGroupText(group.id), g == 0))
 		for _, a := range hotkeyActions {
 			if a.group != group.id {
 				continue
@@ -103,7 +89,7 @@ func (s *settingsScreen) hotkeyPaneRows(th *ui.Theme) []layout.Widget {
 		}
 	}
 	s.scrollTo = -1
-	rows = append(rows, groupHeading(th, hotkeyPassthroughTitle, false), hotkeyNote(th, hotkeyPassthroughNote))
+	rows = append(rows, groupHeading(th, i18n.T("hotkeys.shortcuts.passthroughTitle"), false), hotkeyNote(th, i18n.T("settings.hotkeysSettings.passthroughNote")))
 	for _, r := range passthroughRows(runtime.GOOS) {
 		rows = append(rows, func(gtx C) D { return shortcutLine(gtx, th, r) })
 	}
@@ -143,7 +129,7 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 	}
 	c := h.current()[a.id]
 	lit := float32(0)
-	if s.lit == a.label && gtx.Now.Before(s.litUntil) {
+	if s.lit == hotkeyActionText(a.id) && gtx.Now.Before(s.litUntil) {
 		lit = min(1, float32(s.litUntil.Sub(gtx.Now))/float32(settingsLitFadingFor))
 		gtx.Execute(op.InvalidateCmd{})
 	}
@@ -152,16 +138,18 @@ func (s *settingsScreen) hotkeyRow(gtx C, th *ui.Theme, a hotkeyAction, conflict
 		macro := op.Record(gtx.Ops)
 		d := layout.Inset{Left: rowPadX, Right: rowPadX, Top: hotkeyRowPadY, Bottom: hotkeyRowPadY}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Flexed(1, func(gtx C) D { return hotkeyName(gtx, th, a.label, hotkeyLabels(conflicts), terminalCost(c)) }),
+				layout.Flexed(1, func(gtx C) D {
+					return hotkeyName(gtx, th, hotkeyActionText(a.id), hotkeyLabels(conflicts), terminalCost(c))
+				}),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D { return captureButton(gtx, th, r, c, recording, len(conflicts) > 0) }),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return hotkeyIconButton(gtx, th, s.root, &r.unassign, &r.unassignTip, icHotkeyUnassign, hotkeyUnassignHint, c.Key == "")
+					return hotkeyIconButton(gtx, th, s.root, &r.unassign, &r.unassignTip, icHotkeyUnassign, i18n.T("settings.hotkeysSettings.unassignHint"), c.Key == "")
 				}),
 				layout.Rigid(layout.Spacer{Width: hotkeyRowGap}.Layout),
 				layout.Rigid(func(gtx C) D {
-					return hotkeyIconButton(gtx, th, s.root, &r.reset, &r.resetTip, icHotkeyReset, hotkeyResetHint, c == defaultHotkeys()[a.id])
+					return hotkeyIconButton(gtx, th, s.root, &r.reset, &r.resetTip, icHotkeyReset, i18n.T("settings.hotkeysSettings.resetHint"), c == defaultHotkeys()[a.id])
 				}),
 			)
 		})
@@ -188,7 +176,7 @@ func fillRow(gtx C, th *ui.Theme, size image.Point, alpha float32) {
 func hotkeyName(gtx C, th *ui.Theme, label string, conflicts []string, cost string) D {
 	children := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, label).Layout)}
 	if len(conflicts) > 0 {
-		line := th.Text(ui.TextXS, fmt.Sprintf(hotkeyAlsoBound, strings.Join(conflicts, ", "))).In(th.ToneWait)
+		line := th.Text(ui.TextXS, i18n.T("settings.hotkeysSettings.alsoBound", i18n.Args{"actions": strings.Join(conflicts, ", ")})).In(th.ToneWait)
 		line.MaxLines = 0
 		children = append(children, ui.VGap(0.5), layout.Rigid(func(gtx C) D {
 			return layout.Flex{}.Layout(gtx,
@@ -214,7 +202,7 @@ func captureButton(gtx C, th *ui.Theme, r *hotkeyRow, c combo, recording, confli
 	label, ink := formatCombo(c, runtime.GOOS == "darwin"), th.Foreground
 	switch {
 	case recording:
-		label, ink = hotkeyPressKeys, th.MutedForeground
+		label, ink = i18n.T("settings.hotkeysSettings.pressKeys"), th.MutedForeground
 	case c.Key == "":
 		ink = th.MutedForeground
 	}

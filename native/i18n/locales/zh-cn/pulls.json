@@ -136,7 +136,15 @@
     "dismiss": "驳回",
     "why": "此评审不再适用的原因",
     "dismissReview": "驳回评审",
-    "whyPlaceholder": "评审写下之后有什么变化"
+    "whyPlaceholder": "评审写下之后有什么变化",
+    "readFailed": "无法读取对话：{error}",
+    "nothingYet": "还没有任何发言。",
+    "line": "第 {line} 行",
+    "lines": "第 {start}-{end} 行",
+    "outdated": "已过时",
+    "pendingHead": "待提交的评审",
+    "pendingNote": "提交评审时发送。",
+    "discard": "丢弃"
   },
   "pullsOverview": {
     "saveFailed": "无法保存描述：{error}",
@@ -215,7 +223,8 @@
     },
     "draft": "草稿",
     "fork": "分叉",
-    "checkedOut": "已检出"
+    "checkedOut": "已检出",
+    "searchHint": "按编号、标题、作者或分支筛选"
   },
   "pullsFiles": {
     "loadFailed": "无法加载差异：{error}",
@@ -223,7 +232,8 @@
     "resizeTree": "调整文件树大小",
     "hideTree": "隐藏文件树",
     "showTree": "显示文件树",
-    "viewed": "已查看 {viewed}/{total}"
+    "viewed": "已查看 {viewed}/{total}",
+    "loading": "正在读取差异…"
   },
   "reviewThread": {
     "replyFailed": "回复失败：{error}",
@@ -309,5 +319,36 @@
       "conversation": "对话",
       "checks": "检查"
     }
+  },
+  "pullsActions": {
+    "runningTitle": "会话仍在运行",
+    "running": {
+      "one": "{name} 中有 {count} 个会话正在执行一轮。移除工作树会让它停止，进行中的这一轮将丢失。",
+      "other": "{name} 中有 {count} 个会话正在执行一轮。移除工作树会让它们停止，进行中的这一轮将丢失。"
+    }
+  },
+  "pullsView": {
+    "tabFiles": "文件"
+  },
+  "pullsLogic": {
+    "failing": {
+      "one": "有 {count} 项检查失败；GitHub 仍会合并",
+      "other": "有 {count} 项检查失败；GitHub 仍会合并"
+    },
+    "durationSeconds": "{value}秒",
+    "durationMinutes": "{value}分钟",
+    "durationHours": "{value}小时"
+  },
+  "pullsPanels": {
+    "mergeFailing": "合并 · {count} 项失败"
+  },
+  "pullsSubmit": {
+    "review": "提交评审 {count}",
+    "withComments": {
+      "one": "附带 {count} 条行评论。",
+      "other": "附带 {count} 条行评论。"
+    },
+    "send": "提交",
+    "sending": "正在提交…"
   }
 }

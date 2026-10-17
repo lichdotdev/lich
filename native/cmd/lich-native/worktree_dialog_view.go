@@ -13,36 +13,10 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (sidebar.worktreeDialog.*).
-const (
-	wtTitle           = "New worktree session"
-	wtDesc            = "A separate checkout on its own branch, with a session of its own."
-	wtName            = "Name"
-	wtNamePlaceholder = "Blank for a random name, words or #issue"
-	wtBranchLine      = "branch: %s"
-	wtRandomBranch    = "a random name"
-	wtLookingUp       = "Looking up #%d…"
-	wtOpensSelected   = "Opens the selected worktree's session."
-	wtFrom            = "From"
-	wtLoading         = "Loading branches…"
-	wtSearch          = "Search branches"
-	wtNoMatch         = "No branch matches."
-	wtWorktrees       = "Worktrees"
-	wtLocal           = "Local"
-	wtRemote          = "Remote"
-	wtOpensSession    = "opens its session instead"
-	wtCarry           = "Bring uncommitted changes"
-	wtCarryOne        = "1 file from this checkout"
-	wtCarryMany       = "%d files from this checkout"
-	wtConfined        = "Run confined"
-	wtCreate          = "Create"
-	wtOpen            = "Open"
-	wtCreating        = "Creating…"
 )
 
 var (
@@ -77,7 +51,7 @@ func branchRows(b *lichclient.Branches, query string) []wtRow {
 	var trees, local, remote []wtRow
 	for _, w := range b.Worktrees {
 		if match(w.Name) {
-			trees = append(trees, wtRow{value: baseValue(baseWorktree, w.Path), label: w.Name, note: wtOpensSession})
+			trees = append(trees, wtRow{value: baseValue(baseWorktree, w.Path), label: w.Name, note: i18n.T("sidebar.worktreeDialogView.opensSession")})
 		}
 	}
 	for _, name := range b.Local {
@@ -90,9 +64,9 @@ func branchRows(b *lichclient.Branches, query string) []wtRow {
 			remote = append(remote, wtRow{value: baseValue(baseRemote, name), label: name})
 		}
 	}
-	group(wtWorktrees, trees)
-	group(wtLocal, local)
-	group(wtRemote, remote)
+	group(i18n.T("sidebar.worktreeDialog.worktrees"), trees)
+	group(i18n.T("sidebar.worktreeDialogView.local"), local)
+	group(i18n.T("sidebar.worktreeDialogView.remote"), remote)
 	return rows
 }
 
@@ -141,18 +115,18 @@ func (u *window) layoutWorktreeDialog(gtx C, th *ui.Theme) {
 	d.input(gtx, u)
 	v := d.view()
 	on := th.On(th.Popover)
-	cancel := on.Button(&d.cancel, dialogCancel)
+	cancel := on.Button(&d.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
-	label := wtCreate
+	label := i18n.T("sidebar.worktreeDialogView.create")
 	switch group, _ := splitBase(v.base); {
 	case v.submitting:
-		label = wtCreating
+		label = i18n.T("sidebar.worktreeDialog.creating")
 	case group == baseWorktree:
-		label = wtOpen
+		label = i18n.T("sidebar.worktreeDialogView.open")
 	}
 	create := on.Button(&d.create, label)
 	create.Disabled = v.base == "" || v.submitting
-	dlg := th.Dialog(&d.dialog, d.open, wtTitle, wtDesc)
+	dlg := th.Dialog(&d.dialog, d.open, i18n.T("sidebar.worktreeDialogView.title"), i18n.T("sidebar.worktreeDialogView.description"))
 	dlg.Root = d.root
 	dlg.Body = func(gtx C) D { return d.body(gtx, on, u.ctx, v) }
 	dlg.Actions = []layout.Widget{cancel.Layout, create.Layout}
@@ -238,7 +212,7 @@ func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktr
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return d.nameField(gtx, th, v, group == baseWorktree) }),
 		ui.VGap(4),
-		layout.Rigid(th.Label(wtFrom).Layout),
+		layout.Rigid(th.Label(i18n.T("sidebar.worktreeDialogView.from")).Layout),
 		ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D { return d.basePicker(gtx, th, ctx, v) }),
 	}
@@ -253,7 +227,9 @@ func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktr
 		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return d.carryRow(gtx, th) }))
 	}
 	if v.canConfine && group != baseWorktree {
-		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return checkRow(gtx, th, &d.confined, wtConfined, "") }))
+		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D {
+			return checkRow(gtx, th, &d.confined, i18n.T("sidebar.worktreeSandboxRow.runConfined"), "")
+		}))
 	}
 	if failure := v.loadErr + v.submitErr; failure != "" {
 		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextXS, failure).In(th.Destructive)) }))
@@ -264,10 +240,10 @@ func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktr
 // nameField is the name, and under it what it creates: the issue it names
 // and the branch, or that a worktree is being reopened instead.
 func (d *worktreeDialog) nameField(gtx C, th *ui.Theme, v worktreeView, reopening bool) D {
-	field := th.Input(&d.name, wtNamePlaceholder)
+	field := th.Input(&d.name, i18n.T("sidebar.worktreeDialogView.namePlaceholder"))
 	field.Disabled = reopening
 	children := []layout.FlexChild{
-		layout.Rigid(th.Label(wtName).Layout),
+		layout.Rigid(th.Label(i18n.T("sidebar.worktreeDialogView.name")).Layout),
 		ui.VGap(1.5),
 		layout.Rigid(field.Layout),
 		ui.VGap(1.5),
@@ -277,9 +253,9 @@ func (d *worktreeDialog) nameField(gtx C, th *ui.Theme, v worktreeView, reopenin
 	}
 	switch {
 	case reopening:
-		children = append(children, hint(wtOpensSelected))
+		children = append(children, hint(i18n.T("sidebar.worktreeDialogView.opensSelected")))
 	case v.issueRef != 0 && v.issue == nil && v.issueErr == "":
-		children = append(children, hint(fmt.Sprintf(wtLookingUp, v.issueRef)))
+		children = append(children, hint(i18n.T("sidebar.worktreeDialog.lookingUpIssue", i18n.Args{"number": v.issueRef})))
 	default:
 		if v.issue != nil {
 			children = append(children, layout.Rigid(th.Text(ui.TextXS, fmt.Sprintf("#%d %s", v.issue.Number, v.issue.Title)).Layout))
@@ -289,9 +265,9 @@ func (d *worktreeDialog) nameField(gtx C, th *ui.Theme, v worktreeView, reopenin
 		}
 		branch := v.newBranch(d.name.Text())
 		if branch == "" {
-			branch = wtRandomBranch
+			branch = i18n.T("sidebar.worktreeDialogView.randomBranch")
 		}
-		children = append(children, hint(fmt.Sprintf(wtBranchLine, branch)))
+		children = append(children, hint(i18n.T("sidebar.worktreeDialogView.branchLine", i18n.Args{"branch": branch})))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
@@ -302,7 +278,7 @@ func (d *worktreeDialog) basePicker(gtx C, th *ui.Theme, ctx context.Context, v 
 	width := unit.Dp(float32(gtx.Constraints.Max.X) / gtx.Metric.PxPerDp)
 	label := baseLabel(v.base)
 	if v.branches == nil && v.loadErr == "" {
-		label = wtLoading
+		label = i18n.T("sidebar.worktreeDialog.loadingBranches")
 	}
 	pop := th.DropdownPanel(d.root, &d.picker, width, func(gtx C, th *ui.Theme) D {
 		return d.branchList(gtx, th, ctx, v)
@@ -312,7 +288,7 @@ func (d *worktreeDialog) basePicker(gtx C, th *ui.Theme, ctx context.Context, v 
 }
 
 func (d *worktreeDialog) branchList(gtx C, th *ui.Theme, ctx context.Context, v worktreeView) D {
-	search := th.Input(&d.search, wtSearch)
+	search := th.Input(&d.search, i18n.T("sidebar.worktreeDialogView.searchBranches"))
 	search.Leading, search.Height, search.TextSize, search.Mono = icSearch, ui.Space(8), ui.TextXS, true
 	rows := branchRows(v.branches, d.search.Text())
 	children := []layout.FlexChild{
@@ -320,7 +296,7 @@ func (d *worktreeDialog) branchList(gtx C, th *ui.Theme, ctx context.Context, v 
 	}
 	if len(rows) == 0 {
 		children = append(children, layout.Rigid(func(gtx C) D {
-			return layout.UniformInset(ui.Space(3)).Layout(gtx, th.Text(ui.TextXS, wtNoMatch).Muted().Layout)
+			return layout.UniformInset(ui.Space(3)).Layout(gtx, th.Text(ui.TextXS, i18n.T("sidebar.worktreeDialogView.noMatch")).Muted().Layout)
 		}))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
@@ -375,11 +351,8 @@ func (d *worktreeDialog) branchRow(gtx C, th *ui.Theme, ctx context.Context, r w
 }
 
 func (d *worktreeDialog) carryRow(gtx C, th *ui.Theme) D {
-	note := wtCarryOne
-	if d.checkout.Files != 1 {
-		note = fmt.Sprintf(wtCarryMany, d.checkout.Files)
-	}
-	return checkRow(gtx, th, &d.carry, wtCarry, note)
+	note := i18n.T("sidebar.worktreeDialogView.carryFiles", i18n.Args{"count": d.checkout.Files})
+	return checkRow(gtx, th, &d.carry, i18n.T("sidebar.worktreeDialogView.carry"), note)
 }
 
 // checkRow is a checkbox with its label, and a muted line under the label.

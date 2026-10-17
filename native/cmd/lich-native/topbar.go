@@ -11,19 +11,13 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n.
-const (
-	brandName        = "lich"
-	pullRequestsHint = "Pull requests"
-	settingsHint     = "Settings"
-	projectSettings  = "Project settings…"
-	closeProjectItem = "Close project"
-)
+const brandName = "lich"
 
 // barDisabledOpacity is button.tsx's disabled:opacity-50.
 const barDisabledOpacity = 0.5
@@ -236,7 +230,7 @@ func (t *topbar) settingsButton(gtx C, th *ui.Theme, open bool, act *topbarActio
 	if t.settings.Clicked(gtx) {
 		act.settings = true
 	}
-	tip := th.Tooltip(t.root, t.hint("settings"), settingsHint)
+	tip := th.Tooltip(t.root, t.hint("settings"), i18n.T("tabs.projectTabs.settings"))
 	tip.Side = ui.SideBottom
 	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.settings, icSettings, open) })
 }
@@ -246,7 +240,7 @@ func (t *topbar) pullsButton(gtx C, th *ui.Theme, open bool, act *topbarAction) 
 	if t.pulls.Clicked(gtx) {
 		act.pulls = true
 	}
-	tip := th.Tooltip(t.root, t.hint("pulls"), pullRequestsHint)
+	tip := th.Tooltip(t.root, t.hint("pulls"), i18n.T("tabs.projectTabs.pullRequests"))
 	tip.Side = ui.SideBottom
 	return tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &t.pulls, icPullRequests, open) })
 }

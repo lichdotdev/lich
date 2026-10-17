@@ -30,5 +30,13 @@
       "other": "Closing {name} stops {count} sessions mid-turn. Reopening the project offers to resume where each left off; the turn in flight is lost."
     },
     "closeAnyway": "Close anyway"
+  },
+  "topbarTabs": {
+    "projectSettings": "Project settings…",
+    "closeProject": "Close project"
+  },
+  "topbarApply": {
+    "closeProjectFailed": "Could not close the project: {error}",
+    "reorderFailed": "Could not reorder the projects: {error}"
   }
 }

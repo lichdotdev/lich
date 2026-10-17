@@ -7,7 +7,12 @@
     "promptDescription": "El idioma del texto que lich entrega a tus agentes: briefings, mensajes retransmitidos y avisos. Las sesiones que se inicien desde ahora lo usan en todo; las abiertas lo reciben solo en los mensajes retransmitidos.",
     "uiSearchWords": "idioma language locale traducción inglés english portugués portuguese español spanish",
     "promptSearchWords": "idioma language locale traducción agente briefing relay inglés english portugués portuguese español spanish",
-    "promptSaveFailed": "No se pudo guardar el idioma de los prompts: {error}"
+    "promptSaveFailed": "No se pudo guardar el idioma de los prompts: {error}",
+    "hanFontTitle": "¿Descargar la fuente china?",
+    "hanFontDescription": "El chino necesita la fuente Noto Sans SC, y ninguna fuente instalada en este equipo dibuja chino. lich puede descargarla (unos {size} MB) y guardarla en su propia carpeta.",
+    "hanFontDownload": "Descargar",
+    "hanFontProgress": "Descargando… {done} de {total} MB",
+    "hanFontFailed": "No se pudo descargar la fuente china: {error}"
   },
   "settings": {
     "search": "Buscar ajustes",
@@ -25,7 +30,9 @@
       "versionControl": "Control de versiones",
       "updates": "Actualizaciones",
       "help": "Ayuda"
-    }
+    },
+    "notYet": "Aún no está aquí",
+    "projectDesc": "Lo que este proyecto cambia respecto a Global. Una fila sin cambios sigue a Global."
   },
   "appearanceSettings": {
     "importPickTitle": "Importar tema",
@@ -449,5 +456,221 @@
     "aboutSearchWords": "versión licencia version license",
     "aboutVersion": "lich {version} · {platform}.",
     "repository": "Repositorio"
+  },
+  "settingsIndex": {
+    "sectionGeneral": "General",
+    "sectionEditor": "Editor",
+    "hideWhitespaceTitle": "Ocultar espacios en blanco en los diffs",
+    "hideWhitespaceSearchWords": "espacio sangría revisión ignorar",
+    "hideWhitespaceDescription": "Deja fuera los cambios que solo tocan el espaciado, en la pestaña Revisión."
+  },
+  "settingsNav": {
+    "scopeLabel": "Ámbito",
+    "scopeGlobal": "Global",
+    "openProjects": "Proyectos abiertos",
+    "changes": {
+      "one": "{count} cambio",
+      "other": "{count} cambios"
+    },
+    "scopeNote": "Solo están activos los ajustes que un proyecto puede cambiar. El resto es igual en todas partes."
+  },
+  "settingsRow": {
+    "overriddenIn": "Reemplazado en",
+    "followsGlobal": "Sigue a Global",
+    "globalValue": "Global: {value}",
+    "useGlobal": "Usar Global",
+    "globalOnly": "Solo global",
+    "projectOnly": "Solo del proyecto"
+  },
+  "settingsGeneral": {
+    "notifySearchWords": "notificación escritorio alerta campana"
+  },
+  "settingsWindow": {
+    "switchTitle": "¿Cambiar ahora a la ventana web?",
+    "switchDescription": "Esta ventana se cierra y se abre la web. Tus sesiones siguen en marcha.",
+    "switchFailed": "No se pudo abrir la ventana web: {error}"
+  },
+  "settingsHelp": {
+    "bugDescription": "Abre el formulario de errores en tu navegador con la versión y la plataforma ya rellenadas. lich no registra el issue: lo escribes tú. Ejecuta `lich rage` en una terminal para reunir los logs, las versiones y lo que lich encontró en esta máquina en un solo archivo para adjuntar.",
+    "logSearchWords": "depuración logs ventana nativa",
+    "logDescription": "La carpeta contiene el log de lich y, junto a él, el de la ventana nativa (lich-native.log). Contienen rutas absolutas, nombres de proyectos y ramas, y tu login de gh, nunca un token de sesión. Léelos antes de adjuntarlos a nada.",
+    "logFailed": "No se pudo abrir la carpeta de logs: {error}"
+  },
+  "settingsProviders": {
+    "pathRereadFailed": "No se pudo volver a leer el PATH; reinicia lich.",
+    "otherVersionsOnPath": "otras versiones en el PATH"
+  },
+  "settingsProvidersBin": {
+    "pickFailed": "No se pudo abrir el selector de archivos: {error}"
+  },
+  "settingsProvidersVersion": {
+    "alsoOnPath": "También en el PATH: {versions}. Fija uno arriba para elegir."
+  },
+  "settingsAppearance": {
+    "uiFontTitle": "Fuente de la interfaz",
+    "uiFontSearchWords": "interfaz sans texto tipografía ui font",
+    "editorFontTitle": "Fuente del editor",
+    "editorFontSearchWords": "código revisión tipografía monoespaciada code review typeface monospace",
+    "editorSizeTitle": "Tamaño del texto del editor",
+    "editorSizeSearchWords": "código revisión tamaño de fuente code review font size",
+    "editorSmaller": "Texto de código más pequeño",
+    "editorLarger": "Texto de código más grande",
+    "editorSizeReset": "Restablecer el tamaño del texto del editor"
+  },
+  "settingsEditor": {
+    "hideWhitespaceTitle": "Ocultar espacios en blanco en los diffs",
+    "hideWhitespaceSearchWords": "espacio sangría revisión ignorar space indentation review ignore",
+    "hideWhitespaceDescription": "Omite los cambios que solo afectan al espaciado en la pestaña Revisión."
+  },
+  "settingsTheme": {
+    "autoLightDark": "Claro/oscuro automático",
+    "pairLight": "par claro",
+    "pairDark": "par oscuro"
+  },
+  "settingsThemeActions": {
+    "reloadFailed": "No se pudieron volver a leer los temas: {error}"
+  },
+  "appearancePrefs": {
+    "terminalFontFailed": "No se pudo dibujar la terminal en {family}: {error}",
+    "editorFontFailed": "No se pudo dibujar el código en {family}: {error}",
+    "uiFontFailed": "No se pudo dibujar la interfaz en {family}: {error}"
+  },
+  "settingsSandbox": {
+    "grantOn": "Activado",
+    "grantOff": "Desactivado"
+  },
+  "settingsVcs": {
+    "pathReread": "No se pudo volver a leer el PATH; reinicia lich."
+  },
+  "settingsUpdatesPlugin": {
+    "hint": {
+      "codex": "Ejecuta /hooks en una sesión de Codex para confiar en los hooks del plugin.",
+      "crush": "Informa el id de la sesión y actualiza el estado de git. No tiene evento de fin de turno, así que sus tarjetas no muestran estado y conservan su propio nombre.",
+      "omp": "Informa su estado, nombre y cambios de git. No tiene un evento de aprobación observado, así que una sesión que espera tu permiso muestra un spinner en lugar de una campana.",
+      "antigravity": "Informa su estado, nombre y cambios de git. No tiene un evento de aprobación observado, así que una sesión que espera tu permiso muestra un spinner en lugar de una campana.",
+      "cursor": "Ejecuta el plugin instalado en Claude Code, así que informa lo que esa versión informa y se actualiza con ella. lich solo añade aquí sus propias herramientas. Tampoco genera un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner en lugar de una campana."
+    },
+    "installFailed": "Error al instalar: {error}",
+    "updateFailed": "Error al actualizar: {error}",
+    "profileFailed": "El plugin de lich no se actualizó en el perfil {profile} de {pass}: {error}"
+  },
+  "settingsProfiles": {
+    "title": "Perfil",
+    "profilesTitle": "Perfiles",
+    "creating": "Creando el perfil…",
+    "startingLogin": "Iniciando el inicio de sesión…",
+    "renaming": "Renombrando…",
+    "deleting": "Eliminando…",
+    "installing": "Instalando plugins…",
+    "loginFailed": "El inicio de sesión no se completó.",
+    "noTerminal": "Abre un proyecto para iniciar sesión desde un terminal."
+  },
+  "settingsProfilesView": {
+    "defaultTag": "· predeterminado",
+    "logIn": "Iniciar sesión",
+    "logInAgain": "Volver a iniciar sesión",
+    "copyFrom": "Copiar plugins de…",
+    "rename": "Renombrar",
+    "delete": "Eliminar",
+    "newProfile": "Nuevo perfil",
+    "options": "Opciones de {name}",
+    "advancedBinary": "Avanzado · Binario",
+    "loading": "Leyendo los perfiles…"
+  },
+  "settingsProfilesDialogs": {
+    "name": "Nombre",
+    "namePlaceholder": "Trabajo",
+    "bring": "Plugins que traer de {name}",
+    "noPlugins": "{name} no tiene plugins que traer.",
+    "lichLocked": "lich lo instala en todos los perfiles",
+    "pluginsHint": "Puedes copiar más después desde el menú del perfil. Tu organización puede rechazar algunos.",
+    "createAndLogin": "Crear e iniciar sesión",
+    "renameTitle": "Renombrar perfil",
+    "readyDesc": "Elígelo como Perfil de un proyecto o de cada nueva sesión.",
+    "failedDesc": "Inténtalo de nuevo desde el menú del perfil o inicia sesión desde un terminal.",
+    "deleteTitle": "¿Eliminar {name}?",
+    "copyTitle": "Copiar plugins a {name}",
+    "copyDesc": "Se instalan a través de {provider} como este perfil, así que se aplican las reglas de su cuenta.",
+    "copyFrom": "Copiar de",
+    "copy": "Copiar plugins",
+    "loginTitle": "Iniciar sesión en {name}",
+    "waiting": "Esperando el inicio de sesión…",
+    "openBrowser": "Abrir en el navegador",
+    "copyAddress": "Copiar",
+    "pasteCode": "Pega el código",
+    "submitCode": "Enviar",
+    "terminal": "Iniciar sesión desde un terminal",
+    "readyTitle": "{name} está listo",
+    "failedTitle": "No se pudo iniciar sesión en {name}",
+    "copiedTitle": "Plugins de {name}",
+    "loggedInAs": "Sesión iniciada como {email}",
+    "lichPluginNote": "No se pudo instalar el plugin de lich: {error}",
+    "done": "Hecho"
+  },
+  "profiles": {
+    "usageLimit": "límite",
+    "noPlugins": "sin plugins",
+    "plugins": {
+      "one": "{count} plugin",
+      "other": "{count} plugins"
+    },
+    "notLoggedIn": "Sin sesión iniciada",
+    "loggedIn": "Sesión iniciada",
+    "personal": "Personal",
+    "profileDesc": "Qué inicio de sesión de {provider} usan las nuevas sesiones. Una sesión conserva el perfil en el que nació, también al reanudarse.",
+    "renameDescPlugins": "Solo cambia su nombre: su inicio de sesión, sus plugins y su historial se quedan como están.",
+    "deleteDescPlugins": "Se eliminan su inicio de sesión, sus plugins y su historial de conversaciones, y las sesiones iniciadas en él ya no pueden reanudarse.",
+    "loginDesc": "Inicia sesión en la pestaña del navegador que abrió {provider}. Esto continúa solo cuando termines.",
+    "claude": {
+      "profilesDesc": "Cada perfil es un inicio de sesión de Claude propio, con sus plugins y su historial. Los ajustes, CLAUDE.md, agentes, comandos, skills y hooks son los mismos en todos.",
+      "copiedNote": "Los ajustes, CLAUDE.md, agentes, comandos, skills y hooks son copias en este perfil: editarlos en otro perfil ya no llega aquí.",
+      "searchAlso": "claude cuenta inicio de sesión personal trabajo",
+      "profilesAlso": "claude cuentas inicios de sesión personal trabajo iniciar sesión plugins",
+      "newDesc": "Un inicio de sesión de Claude propio, con sus plugins y su historial.",
+      "addressDesc": "Si el navegador no se abrió, inicia sesión en esta dirección y pega el código que muestra."
+    },
+    "codex": {
+      "profilesDesc": "Cada perfil es un inicio de sesión de Codex propio, con sus plugins y su historial. Los ajustes de config.toml de Personal, AGENTS.md, hooks, skills y reglas son los mismos en todos.",
+      "copiedNote": "AGENTS.md y hooks.json son copias en este perfil: editarlos en otro perfil ya no llega aquí.",
+      "searchAlso": "codex cuenta inicio de sesión personal trabajo chatgpt",
+      "profilesAlso": "codex cuentas inicios de sesión personal trabajo iniciar sesión chatgpt plugins",
+      "newDesc": "Un inicio de sesión de Codex propio, con sus plugins y su historial.",
+      "addressDesc": "Si el navegador no se abrió, inicia sesión en esta dirección."
+    },
+    "omp": {
+      "profilesDesc": "Cada perfil es un conjunto propio de inicios de sesión de oh-my-pi, con su historial. config.yml, models.yml, mcp.json, AGENTS.md, skills, reglas, comandos, prompts y extensiones son los mismos en todos.",
+      "copiedNote": "config.yml, models.yml, mcp.json y los archivos markdown son copias en este perfil: editarlos en otro perfil ya no llega aquí.",
+      "searchAlso": "omp oh-my-pi cuenta inicio de sesión personal trabajo",
+      "profilesAlso": "omp oh-my-pi cuentas inicios de sesión personal trabajo iniciar sesión",
+      "newDesc": "Un inicio de sesión de oh-my-pi propio, con su historial. Inicias sesión desde un terminal una vez creado.",
+      "renameDesc": "Solo cambia su nombre: sus inicios de sesión y su historial se quedan como están.",
+      "deleteDesc": "Se eliminan sus inicios de sesión y su historial de conversaciones, y las sesiones iniciadas en él ya no pueden reanudarse."
+    }
+  },
+  "profilesXdg": {
+    "opencode": {
+      "profilesDesc": "Cada perfil es un inicio de sesión de opencode propio, con su historial. La configuración, los plugins, los agentes y los servidores MCP de opencode son los mismos en todos.",
+      "searchAlso": "opencode cuenta inicio de sesión personal trabajo",
+      "profilesAlso": "opencode cuentas inicios de sesión personal trabajo iniciar sesión",
+      "newDesc": "Un inicio de sesión de opencode propio, con su historial. Inicias sesión desde un terminal una vez creado.",
+      "renameDesc": "Solo cambia su nombre: su inicio de sesión y su historial se quedan como están.",
+      "deleteDesc": "Se eliminan su inicio de sesión y su historial de conversaciones, y las sesiones iniciadas en él ya no pueden reanudarse."
+    },
+    "cursor": {
+      "profilesDesc": "Cada perfil es un inicio de sesión de Cursor propio, con sus chats y los ajustes de su CLI. mcp.json, hooks y skills en ~/.cursor son los mismos en todos.",
+      "searchAlso": "cursor cursor-agent cuenta inicio de sesión personal trabajo",
+      "profilesAlso": "cursor cursor-agent cuentas inicios de sesión personal trabajo iniciar sesión",
+      "newDesc": "Un inicio de sesión de Cursor propio, con sus chats. Inicias sesión desde un terminal una vez creado.",
+      "renameDesc": "Solo cambia su nombre: su inicio de sesión y sus chats se quedan como están.",
+      "deleteDesc": "Se eliminan su inicio de sesión y sus chats, y las sesiones iniciadas en él ya no pueden reanudarse."
+    },
+    "kiro": {
+      "profilesDesc": "Cada perfil es un inicio de sesión de Kiro propio. Las conversaciones, los agentes, el steering y los ajustes en ~/.kiro son los mismos en todos.",
+      "searchAlso": "kiro kiro-cli cuenta inicio de sesión personal trabajo aws builder",
+      "profilesAlso": "kiro kiro-cli cuentas inicios de sesión personal trabajo iniciar sesión",
+      "newDesc": "Un inicio de sesión de Kiro propio. Inicias sesión desde un terminal una vez creado.",
+      "renameDesc": "Solo cambia su nombre: su inicio de sesión se queda como está.",
+      "deleteDesc": "Se elimina su inicio de sesión y las sesiones iniciadas en él ya no pueden reanudarse. Las conversaciones se quedan: todos los perfiles las comparten."
+    }
   }
 }

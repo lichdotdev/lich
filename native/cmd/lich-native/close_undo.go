@@ -2,11 +2,11 @@ package main
 
 import (
 	"crypto/rand"
-	"fmt"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -14,18 +14,11 @@ import (
 // undoToastDuration is projects.tsx UNDO_TOAST_MS.
 const undoToastDuration = 10 * time.Second
 
-// ponytail: English until the native window has i18n (shell.projects).
-const (
-	toastClosed          = "Closed %s"
-	toastUndo            = "Undo"
-	toastBringBackFailed = "Could not bring %s back"
-)
-
 // closedToast is closeSession's toast: Undo puts s back at index of its
 // project once parked reports the park done.
 func (u *window) closedToast(projectID string, s lichclient.Session, index int, parked <-chan error) ui.Toast {
-	return ui.Toast{Title: fmt.Sprintf(toastClosed, s.Label), Duration: undoToastDuration,
-		Action: &ui.ToastButton{Label: toastUndo, OnClick: func() {
+	return ui.Toast{Title: i18n.T("shell.projects.closed", i18n.Args{"label": s.Label}), Duration: undoToastDuration,
+		Action: &ui.ToastButton{Label: i18n.T("shell.projects.undo"), OnClick: func() {
 			go u.undoClose(projectID, s, index, parked)
 		}}}
 }
@@ -42,7 +35,7 @@ func (u *window) undoClose(projectID string, s lichclient.Session, index int, pa
 	restored, err := u.client.ReopenSession(u.ctx, s.ID, strings.ToLower(rand.Text()))
 	if err != nil || restored == nil {
 		u.logErr("reopen session", err)
-		u.toaster.Show(failure(toastBringBackFailed, s.Label))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.projects.bringBackFailed", i18n.Args{"label": s.Label})})
 		return
 	}
 	ids, ok := u.model.restoreSession(projectID, *restored, index)

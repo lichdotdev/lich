@@ -23,13 +23,13 @@ func xdgProfileProvider(kind, label string, words profileWords) profileProvider 
 
 var opencodeProfileProvider = func() profileProvider {
 	p := xdgProfileProvider(opencodeKind, "opencode", profileWords{
-		profileDesc:  "Which opencode login new sessions use. A session keeps the profile it was born in, resumes included.",
-		profilesDesc: "Each profile is its own opencode login with its own history. opencode's config, plugins, agents and MCP servers are the same in all of them.",
-		searchAlso:   "opencode account login personal work",
-		profilesAlso: "opencode accounts logins personal work log in",
-		newDesc:      "An opencode login of its own, with its own history. You log in from a terminal once it is made.",
-		renameDesc:   "Only its name changes: its login and history stay as they are.",
-		deleteDesc:   "Its login and conversation history are removed, and sessions started in it can no longer be resumed.",
+		profileDescKey:  "settings.profiles.profileDesc",
+		profilesDescKey: "settings.profilesXdg.opencode.profilesDesc",
+		searchAlsoKey:   "settings.profilesXdg.opencode.searchAlso",
+		profilesAlsoKey: "settings.profilesXdg.opencode.profilesAlso",
+		newDescKey:      "settings.profilesXdg.opencode.newDesc",
+		renameDescKey:   "settings.profilesXdg.opencode.renameDesc",
+		deleteDescKey:   "settings.profilesXdg.opencode.deleteDesc",
 	})
 	// opencode keeps a conversation in the database that holds the login.
 	p.noContinue = true
@@ -37,23 +37,23 @@ var opencodeProfileProvider = func() profileProvider {
 }()
 
 var cursorProfileProvider = xdgProfileProvider(cursorKind, "Cursor CLI", profileWords{
-	profileDesc:  "Which Cursor login new sessions use. A session keeps the profile it was born in, resumes included.",
-	profilesDesc: "Each profile is its own Cursor login with its own chats and CLI settings. mcp.json, hooks and skills in ~/.cursor are the same in all of them.",
-	searchAlso:   "cursor cursor-agent account login personal work",
-	profilesAlso: "cursor cursor-agent accounts logins personal work log in",
-	newDesc:      "A Cursor login of its own, with its own chats. You log in from a terminal once it is made.",
-	renameDesc:   "Only its name changes: its login and chats stay as they are.",
-	deleteDesc:   "Its login and chats are removed, and sessions started in it can no longer be resumed.",
+	profileDescKey:  "settings.profiles.profileDesc",
+	profilesDescKey: "settings.profilesXdg.cursor.profilesDesc",
+	searchAlsoKey:   "settings.profilesXdg.cursor.searchAlso",
+	profilesAlsoKey: "settings.profilesXdg.cursor.profilesAlso",
+	newDescKey:      "settings.profilesXdg.cursor.newDesc",
+	renameDescKey:   "settings.profilesXdg.cursor.renameDesc",
+	deleteDescKey:   "settings.profilesXdg.cursor.deleteDesc",
 })
 
 var kiroProfileProvider = xdgProfileProvider(kiroKind, "Kiro CLI", profileWords{
-	profileDesc:  "Which Kiro login new sessions use. A session keeps the profile it was born in, resumes included.",
-	profilesDesc: "Each profile is its own Kiro login. Conversations, agents, steering and settings in ~/.kiro are the same in all of them.",
-	searchAlso:   "kiro kiro-cli account login personal work aws builder",
-	profilesAlso: "kiro kiro-cli accounts logins personal work log in",
-	newDesc:      "A Kiro login of its own. You log in from a terminal once it is made.",
-	renameDesc:   "Only its name changes: its login stays as it is.",
-	deleteDesc:   "Its login is removed and sessions started in it can no longer be resumed. Conversations stay: every profile shares them.",
+	profileDescKey:  "settings.profiles.profileDesc",
+	profilesDescKey: "settings.profilesXdg.kiro.profilesDesc",
+	searchAlsoKey:   "settings.profilesXdg.kiro.searchAlso",
+	profilesAlsoKey: "settings.profilesXdg.kiro.profilesAlso",
+	newDescKey:      "settings.profilesXdg.kiro.newDesc",
+	renameDescKey:   "settings.profilesXdg.kiro.renameDesc",
+	deleteDescKey:   "settings.profilesXdg.kiro.deleteDesc",
 })
 
 // xdgProfileProviderOf is the link-home provider of kind on this platform.

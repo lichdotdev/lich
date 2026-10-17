@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"sync"
@@ -9,17 +8,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (sidebar.worktreeCloseDialogs).
-const (
-	closeWorktreeTitle      = "Close worktree session"
-	closeWorktreeAdopted    = "lich did not create the worktree at %s. Removing deletes that directory but keeps its branch."
-	closeWorktreeDirtyTitle = "Worktree has uncommitted changes"
-	closeWorktreeDirty      = "The worktree at %s contains uncommitted changes. Removing it will discard them permanently. The branch is kept."
-	closeWorktreeDiscard    = "Discard changes and remove"
 )
 
 // worktreeLeftBy is the project and the worktree whose last open session is
@@ -83,13 +74,13 @@ func (c *closeWorktreeConfirm) ask(project lichclient.Project, path string, adop
 // holds. A dirty one is removed with force, and the adopted sentence leads
 // when both apply, so the directory is named as the user's before it goes.
 func (c *closeWorktreeConfirm) copy() (title, desc, action string) {
-	title, action = closeWorktreeTitle, pullsRemoveWorktree
+	title, action = i18n.T("sidebar.worktreeCloseDialogs.closeTitle"), i18n.T("sidebar.worktreeCloseDialogs.remove")
 	if c.adopted {
-		desc = fmt.Sprintf(closeWorktreeAdopted, c.path)
+		desc = i18n.T("sidebar.closeWorktree.adopted", i18n.Args{"path": c.path})
 	}
 	if c.dirty {
-		title, action = closeWorktreeDirtyTitle, closeWorktreeDiscard
-		desc = strings.TrimSpace(desc + " " + fmt.Sprintf(closeWorktreeDirty, c.path))
+		title, action = i18n.T("sidebar.worktreeCloseDialogs.dirtyTitle"), i18n.T("sidebar.worktreeCloseDialogs.discardAndRemove")
+		desc = strings.TrimSpace(desc + " " + i18n.T("sidebar.worktreeCloseDialogs.dirtyDescription", i18n.Args{"path": c.path}))
 	}
 	return title, desc, action
 }
@@ -110,7 +101,7 @@ func (u *window) layoutCloseWorktreeConfirm(gtx C, th *ui.Theme) {
 	}
 	title, desc, action := c.copy()
 	on := th.On(th.Popover)
-	cancel := on.Button(&c.cancel, pullsCancel)
+	cancel := on.Button(&c.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantOutline
 	remove := on.Button(&c.confirm, action)
 	remove.Variant = ui.VariantDestructive

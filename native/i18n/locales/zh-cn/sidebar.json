@@ -221,7 +221,11 @@
     "creating": "正在创建…",
     "open": "打开工作树",
     "fork": "分叉",
-    "create": "创建工作树"
+    "create": "创建工作树",
+    "carryReused": "{name} 已经存在，因此按原样打开，你未提交的更改仍留在原处。",
+    "carryFailed": "工作树已打开，但无法复制你未提交的更改：{error}",
+    "issueLost": "无法将议题交给该会话：{error}",
+    "neverPrompted": "会话始终没有进入提示符"
   },
   "worktreeCloseDialogs": {
     "runningTitle": "会话仍在运行",
@@ -263,5 +267,51 @@
     "setAtOpen": "会话打开时确定；重新打开以更改。",
     "notMounted": "未挂载（符号链接）：{paths}",
     "morePaths": "另外 {count} 项"
+  },
+  "worktreeDialogView": {
+    "title": "新建工作树会话",
+    "description": "在独立分支上的单独检出，并带有自己的会话。",
+    "name": "名称",
+    "namePlaceholder": "留空则随机命名，也可填写文字或 #议题",
+    "branchLine": "分支：{branch}",
+    "randomBranch": "随机名称",
+    "opensSelected": "打开所选工作树的会话。",
+    "from": "基于",
+    "searchBranches": "搜索分支",
+    "noMatch": "没有匹配的分支。",
+    "local": "本地",
+    "remote": "远程",
+    "opensSession": "改为打开其会话",
+    "carry": "带上未提交的更改",
+    "carryFiles": {
+      "one": "此检出中的 {count} 个文件",
+      "other": "此检出中的 {count} 个文件"
+    },
+    "create": "创建",
+    "open": "打开"
+  },
+  "worktreeLogic": {
+    "checking": "正在检查远程…",
+    "behind": "落后 {upstream} {count} 个提交 · 从 {upstream} 开始",
+    "notPushed": {
+      "one": "{count} 个提交未推送 · 从本地 {branch} 开始",
+      "other": "{count} 个提交未推送 · 从本地 {branch} 开始"
+    },
+    "unreachable": "无法连接 {remote} · 从本地 {branch} 开始",
+    "unreachableRemote": "无法连接远程 · 从本地 {branch} 开始",
+    "keepsChanges": "从本地 {branch} 开始，以保留你的更改"
+  },
+  "closeWorktree": {
+    "adopted": "位于 {path} 的工作树不是 lich 创建的。删除会移除该目录，但保留其分支。"
+  },
+  "sidebarProfile": {
+    "continueIn": "转到",
+    "continueInHint": "同一对话，换一个登录",
+    "goneTitle": "{label} 是在一个已不存在的配置档案中启动的",
+    "goneDescription": "无法恢复它的对话。请改为在此项目的配置档案中新建会话。",
+    "startNew": "新建会话",
+    "dismiss": "忽略",
+    "resumesIn": "它将在 {profile} · {email} 中恢复，即它启动时所用的配置档案。",
+    "resumesInNoEmail": "它将在 {profile} 中恢复，即它启动时所用的配置档案。"
   }
 }

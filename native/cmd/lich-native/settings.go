@@ -18,16 +18,13 @@ import (
 
 	"github.com/omartelo/lich/native/fonts"
 	"github.com/omartelo/lich/native/gioterm"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
-// ponytail: English until the native window has i18n.
 const (
-	settingsNotYet       = "Not here yet"
-	settingsProjectDesc  = "What this project changes from Global. A row without a change follows Global."
-	settingsCloseHint    = "Close settings"
 	settingsSectionKey   = "lich.settings.section"
 	settingsLitFor       = 2 * time.Second
 	settingsLitFadingFor = 700 * time.Millisecond // SettingBlock's duration-700
@@ -255,7 +252,7 @@ func (s *settingsScreen) paneLayout(gtx C, th *ui.Theme, values scopedValues) D 
 	inset := gtx.Dp(settingsCloseInset)
 	size := gtx.Dp(settingsCloseSize)
 	defer op.Offset(image.Pt(gtx.Constraints.Max.X-inset-size, inset)).Push(gtx.Ops).Pop()
-	tip := th.Tooltip(s.root, &s.nav.closeTip, settingsCloseHint)
+	tip := th.Tooltip(s.root, &s.nav.closeTip, i18n.T("sidebar.settingsCard.close"))
 	tip.Layout(gtx, func(gtx C) D { return barIconButton(gtx, th, &s.close, icSettingsClose, false) })
 	return d
 }
@@ -285,7 +282,7 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 		rows = append(rows, s.providerHeader(th, p)...)
 	} else {
 		rows = append(rows, func(gtx C) D {
-			return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, th.Text(settingsTitle, sec.label).Weight(font.SemiBold).Leading(32).Layout)
+			return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, th.Text(settingsTitle, sec.label()).Weight(font.SemiBold).Leading(32).Layout)
 		})
 	}
 	if desc := s.paneDescription(sec); desc != "" {
@@ -305,7 +302,7 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 		return append(rows, s.providerPaneRows(th, values, len(rows))...)
 	}
 	if len(sec.rows) == 0 {
-		return append(rows, th.Text(settingsDescSize, settingsNotYet).Muted().Layout)
+		return append(rows, th.Text(settingsDescSize, i18n.T("settings.settings.notYet")).Muted().Layout)
 	}
 	shown, group := 0, ""
 	for i, e := range sec.rows {
@@ -330,7 +327,7 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 
 func (s *settingsScreen) paneDescription(sec settingsSection) string {
 	if s.scope != "" && sec.projectScoped() {
-		return settingsProjectDesc
+		return i18n.T("settings.settings.projectDesc")
 	}
 	return ""
 }
@@ -362,7 +359,7 @@ func (s *settingsScreen) drawRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 	case uiLanguageKey, promptLanguageKey:
 		return s.languageRow(gtx, th, e.key, r, first)
 	case themeSettingKey:
-		r.description = themeDesc
+		r.description = i18n.T("settings.themePicker.description")
 		return s.theme.layoutRow(gtx, th, r, first)
 	case footerLayoutKey:
 		return s.footerRow(gtx, th, r, first)

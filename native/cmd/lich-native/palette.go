@@ -15,6 +15,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -374,13 +375,13 @@ func rowVerb(r paletteRow) string {
 	switch r.kind {
 	case rowHistory:
 		if historyAction(r.history) == historyForget {
-			return "forget"
+			return i18n.T("palette.palette.verbForget")
 		}
-		return "resume"
+		return i18n.T("palette.palette.verbResume")
 	case rowExternal:
-		return "resume"
+		return i18n.T("palette.palette.verbResume")
 	case rowAction:
-		return "run"
+		return i18n.T("palette.palette.verbRun")
 	}
-	return "open"
+	return i18n.T("palette.palette.verbOpen")
 }

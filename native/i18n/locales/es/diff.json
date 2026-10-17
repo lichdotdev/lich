@@ -87,5 +87,24 @@
     "addToReview": "Añadir a la revisión",
     "sessionPlaceholder": "¿Qué debería cambiar aquí? Se envía a la sesión junto con el resto.",
     "reviewPlaceholder": "Deja un comentario. Se envía cuando envías la revisión."
+  },
+  "dockReviewBody": {
+    "split": "En paralelo",
+    "unified": "Unificado"
+  },
+  "binaryState": {
+    "open": "Abrir en la app predeterminada",
+    "reveal": "Mostrar en la carpeta",
+    "pdf": "Documento PDF",
+    "pdfHint": "Se abre en la app con la que tu escritorio lee PDF.",
+    "openFailed": "No se pudo abrir {name}",
+    "revealFailed": "No se pudo mostrar {name} en su carpeta"
+  },
+  "dockReviewBinary": {
+    "viewOnGitHub": "Ver en GitHub"
+  },
+  "blobPreview": {
+    "tooManyPixels": "{width} × {height} supera el límite de {megapixels} MP de la vista previa",
+    "undecodable": "no se puede decodificar esta imagen: {error}"
   }
 }

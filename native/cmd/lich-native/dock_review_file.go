@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"log"
 
@@ -12,22 +11,10 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichdiff"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (diff.fileDiff,
-// diff.injectMenu, diff.binaryPreview).
-const (
-	fileWhitespaceOnly = "Whitespace only"
-	fileOnlyWhitespace = "Only whitespace changed"
-	fileBinary         = "Binary file"
-	fileAddAsContext   = "Add file as context"
-	fileDiscard        = "Discard Changes"
-	menuRevertSelected = "Revert selected lines"
-	menuRevertOne      = "Revert %d changed line"
-	menuRevertOther    = "Revert %d changed lines"
 )
 
 // largeFileRows is FileDiff's LARGE_FILE_LINES: a file whose diff draws more
@@ -170,20 +157,20 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 	if !c.git.binary {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
 			if c.onlyWhitespace() {
-				return th.Text(ui.TextXS, fileWhitespaceOnly).Muted().Layout(gtx)
+				return th.Text(ui.TextXS, i18n.T("diff.fileDiff.whitespaceOnly")).Muted().Layout(gtx)
 			}
 			return diffStat(gtx, th, c.patch.Added, c.patch.Deleted)
 		}))
 	}
 	children = append(children,
 		ui.Gap(2), layout.Rigid(func(gtx C) D {
-			return iconAction(gtx, th, p.root, &c.attach, icAttach, fileAddAsContext, false)
+			return iconAction(gtx, th, p.root, &c.attach, icAttach, i18n.T("diff.fileDiff.addAsContext"), false)
 		}))
 	if p.pr != nil {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p) }))
 	} else {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
-			return iconAction(gtx, th, p.root, &c.discard, icDiscard, fileDiscard, false)
+			return iconAction(gtx, th, p.root, &c.discard, icDiscard, i18n.T("diff.fileDiff.discard"), false)
 		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
@@ -239,11 +226,11 @@ func (c *fileCard) body(gtx C, p *reviewPanel) D {
 	case c.git.binary:
 		return c.binaryBody(gtx, p)
 	case c.onlyWhitespace():
-		return bodyLine(gtx, th, fileOnlyWhitespace)
+		return bodyLine(gtx, th, i18n.T("diff.fileDiff.onlyWhitespaceChanged"))
 	}
 	view := c.ensureView(p)
 	if view == nil {
-		return bodyLine(gtx, th, fmt.Sprintf(toastReadFailed, c.git.path))
+		return bodyLine(gtx, th, i18n.T("diff.fileDiff.readFailed", i18n.Args{"path": c.git.path}))
 	}
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return th.ContextMenu(p.root, &c.menu, c.menuEntries(p)).Layout(gtx, func(gtx C) D {
@@ -345,12 +332,10 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 	if c.git.status == statusRenamed {
 		return entries
 	}
-	revert := menuRevertSelected
+	revert := i18n.T("diff.injectMenu.revertSelected")
 	switch n := len(changes); {
-	case n == 1:
-		revert = fmt.Sprintf(menuRevertOne, n)
-	case n > 1:
-		revert = fmt.Sprintf(menuRevertOther, n)
+	case n > 0:
+		revert = i18n.T("diff.injectMenu.revert", i18n.Args{"count": n})
 	}
 	reverted := lichdiff.RevertLines(godemirror.Chunk{Lines: changes})
 	return append(entries, ui.MenuEntry{Kind: ui.MenuSeparator},

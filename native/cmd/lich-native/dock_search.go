@@ -9,18 +9,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-)
 
-// ponytail: English until the native window has i18n; the web's en catalog
-// (dock.searchResults, git.fileSearch, common.count.file).
-const (
-	searchPrompt      = "Search the text of every file in this checkout"
-	searchSearching   = "Searching…"
-	searchNoMatch     = "No file contains “%s”"
-	searchCutMatches  = "%d+ matches"
-	searchSummaryText = "%s in %s"
-	searchCutNote     = "Showing the first %d matching lines. Narrow the search."
-	searchTooLarge    = "%s over 1 MB not searched."
+	"github.com/omartelo/lich/native/i18n"
 )
 
 // searchSettle is how long typing has to pause before the checkout is read:
@@ -101,9 +91,12 @@ func highlightSegments(text, query string) []segment {
 func searchSummary(r searchResult, groups int) string {
 	lines := len(r.Matches)
 	if r.Cut {
-		return fmt.Sprintf(searchCutMatches, lines)
+		return i18n.T("git.fileSearch.cutMatches", i18n.Args{"count": lines})
 	}
-	return fmt.Sprintf(searchSummaryText, plural(lines, "match", "matches"), plural(groups, "file", "files"))
+	return i18n.T("git.fileSearch.summary", i18n.Args{
+		"matches": i18n.T("git.fileSearch.matches", i18n.Args{"count": lines}),
+		"files":   i18n.T("common.count.file", i18n.Args{"count": groups}),
+	})
 }
 
 // searchFootnote is what the answer did not read: the lines past the cap and
@@ -111,10 +104,10 @@ func searchSummary(r searchResult, groups int) string {
 func searchFootnote(r searchResult) string {
 	var parts []string
 	if r.Cut {
-		parts = append(parts, fmt.Sprintf(searchCutNote, len(r.Matches)))
+		parts = append(parts, i18n.T("git.fileSearch.cutNote", i18n.Args{"count": len(r.Matches)}))
 	}
 	if r.TooLarge > 0 {
-		parts = append(parts, fmt.Sprintf(searchTooLarge, plural(r.TooLarge, "file", "files")))
+		parts = append(parts, i18n.T("git.fileSearch.tooLarge", i18n.Args{"count": r.TooLarge}))
 	}
 	return strings.Join(parts, " ")
 }

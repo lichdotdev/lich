@@ -5,12 +5,14 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/omartelo/lich/native/i18n"
 )
 
 var (
-	overridable = settingEntry{title: "SSH agent", key: "sandbox.ssh-agent", scope: scopeOverridable}
-	globalOnly  = settingEntry{title: "Diff layout", key: diffLayoutKey}
-	projectOnly = settingEntry{title: "GitHub account", key: "vcs.account", scope: scopeProjectOnly}
+	overridable = settingEntry{key: "sandbox.ssh-agent", scope: scopeOverridable}
+	globalOnly  = settingEntry{key: diffLayoutKey}
+	projectOnly = settingEntry{key: "vcs.account", scope: scopeProjectOnly}
 	openTabs    = []settingsProject{{"lich", "lich"}, {"pg", "lich-playground"}, {"ij", "lich-intellij"}}
 )
 
@@ -31,7 +33,7 @@ func TestRowStateFollowsTheScope(t *testing.T) {
 	}
 	for _, c := range cases {
 		if got := rowKindOf(c.entry, c.scope, openTabs, values); got != c.want {
-			t.Errorf("%s from %q = %d, want %d", c.entry.title, c.scope, got, c.want)
+			t.Errorf("%s from %q = %d, want %d", c.entry.key, c.scope, got, c.want)
 		}
 	}
 	if got := rowKindOf(overridable, "", openTabs, scopedValues{}); got != rowPlain {
@@ -91,10 +93,10 @@ func TestSearchRanksPrefixThenContainsThenAlso(t *testing.T) {
 		}
 		return out
 	}
-	if got := titles("diff"); !slices.Equal(got, []string{diffLayoutTitle, hideWhitespaceTitle}) {
+	if got := titles("diff"); !slices.Equal(got, []string{"Diff layout", "Hide whitespace in diffs"}) {
 		t.Errorf("diff: %v", got)
 	}
-	if got := titles("  SPLIT "); !slices.Equal(got, []string{diffLayoutTitle}) {
+	if got := titles("  SPLIT "); !slices.Equal(got, []string{"Diff layout"}) {
 		t.Errorf("split, found by its also words: %v", got)
 	}
 	if got := searchSettings("sand"); len(got) != 1 || got[0].section != sectionSandbox || got[0].path() != "" {
@@ -106,7 +108,7 @@ func TestSearchRanksPrefixThenContainsThenAlso(t *testing.T) {
 	if got := searchSettings("finishes"); len(got) != 1 || got[0].path() != "General › Notifications" {
 		t.Errorf("finishes: %+v; a grouped row's path names its group", got)
 	}
-	if got := searchSettings("notifications"); len(got) != 2 || got[0].title != needsInputTitle || got[1].title != finishedTitle {
+	if got := searchSettings("notifications"); len(got) != 2 || got[0].title != "Notify me when a session needs input" || got[1].title != "Notify me when a session finishes working" {
 		t.Errorf("notifications: %+v; a group's name finds its rows", got)
 	}
 	if searchSettings("  ") != nil {
@@ -187,4 +189,19 @@ func waitForSetting(t *testing.T, f *sidebarBackend, key, want string) {
 		}
 	}
 	t.Fatalf("setting %s never became %q", key, want)
+}
+
+func TestSearchAndLabelsFollowTheInterfaceLanguage(t *testing.T) {
+	i18n.SetCurrent(i18n.PtBR)
+	defer i18n.SetCurrent(i18n.EN)
+	hits := searchSettings("indentação")
+	if len(hits) != 1 || hits[0].title != "Ocultar espaços em branco nos diffs" || hits[0].path() != "Editor" {
+		t.Errorf("indentação: %+v; the also words are read in the interface language", hits)
+	}
+	if got := searchSettings("notificações"); len(got) != 2 || got[0].path() != "Geral › Notificações" {
+		t.Errorf("notificações: %+v", got)
+	}
+	if changesLabel(1) != "1 mudança" || changesLabel(2) != "2 mudanças" {
+		t.Errorf("labels: %q %q", changesLabel(1), changesLabel(2))
+	}
 }

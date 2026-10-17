@@ -6,6 +6,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -41,8 +42,6 @@ const minDetail = 24
 // open request with another session, a block on the user, a compaction, and
 // the tool the turn is running, the first that holds. It reports false when
 // none does, and the card stays its usual size.
-//
-// ponytail: English text until the native window has i18n.
 func statusRung(th *ui.Theme, sv *sessionView) (layout.Widget, bool) {
 	switch {
 	case sv.relay.Direction != "":
@@ -50,11 +49,11 @@ func statusRung(th *ui.Theme, sv *sessionView) (layout.Widget, bool) {
 	case sv.status == statusWaiting:
 		reason := sv.reason
 		if reason == "" {
-			reason = "Waiting on you"
+			reason = i18n.T("sidebar.sessionStatusRung.waitingOnYou")
 		}
 		return rungLine(th, icWaiting, th.ToneWait, th.Text(ui.TextXS, reason).In(th.ToneWait).Weight(font.Medium)), true
 	case sv.status == statusCompacting:
-		return rungLine(th, icCompacting, th.MutedForeground, th.Text(ui.TextXS, "Compacting…").Weight(font.Medium)), true
+		return rungLine(th, icCompacting, th.MutedForeground, th.Text(ui.TextXS, i18n.T("sidebar.sessionStatusRung.compacting")).Weight(font.Medium)), true
 	case sv.tool.Name != "":
 		return toolRung(th, sv), true
 	}
@@ -68,7 +67,7 @@ func relayRung(th *ui.Theme, r sessionRelay) layout.Widget {
 	}
 	peer := th.Text(ui.TextXS, r.Peer).Weight(font.Medium)
 	if r.Peer == "" {
-		peer = th.Text(ui.TextXS, "command line").Muted().Italic()
+		peer = th.Text(ui.TextXS, i18n.T("sidebar.sessionStatusRung.commandLine")).Muted().Italic()
 	}
 	return rungLine(th, ic, th.MutedForeground, peer)
 }

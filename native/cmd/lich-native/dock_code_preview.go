@@ -14,16 +14,10 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n; the web's en catalog
-// (dock.filesPanel).
-const (
-	previewBack     = "Back to file tree"
-	previewReadOnly = "read-only"
 )
 
 var icPreviewBack = icons.Lucide("chevron-left")
@@ -112,7 +106,7 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 			case blobImage:
 				return p.imageBody(gtx, th)
 			case blobPDF:
-				return binaryState(gtx, th, binaryPDF, binaryPDFHint, &p.exits)
+				return binaryState(gtx, th, i18n.T("diff.binaryState.pdf"), i18n.T("diff.binaryState.pdfHint"), &p.exits)
 			}
 			var d D
 			d, err = p.body(gtx, th, root, key)
@@ -143,13 +137,13 @@ func (p *preview) headerRow(gtx C, th *ui.Theme, root *ui.Root) D {
 			return l.Layout(gtx)
 		}),
 		ui.Gap(1.5),
-		layout.Rigid(th.Text(text2XS, strings.ToUpper(previewReadOnly)).Leading(text2XSLeading).Muted().Layout),
+		layout.Rigid(th.Text(text2XS, strings.ToUpper(i18n.T("dock.filesPanel.readOnly"))).Leading(text2XSLeading).Muted().Layout),
 	)
 }
 
 // backButton is a size-5 rounded button, its chevron muted until hovered.
 func (p *preview) backButton(gtx C, th *ui.Theme, root *ui.Root) D {
-	tip := th.Tooltip(root, &p.backTip, previewBack)
+	tip := th.Tooltip(root, &p.backTip, i18n.T("dock.filesPanel.backToTree"))
 	return tip.Layout(gtx, func(gtx C) D {
 		return p.back.Layout(gtx, func(gtx C) D {
 			side := gtx.Dp(ui.Space(5))
@@ -170,7 +164,7 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 	case err != nil:
 		return binaryState(gtx, th, lichclient.ErrorText(err), "", &p.exits), nil
 	case loading:
-		return notice(gtx, th, codeLoading), nil
+		return notice(gtx, th, i18n.T("dock.filesPanel.loading")), nil
 	}
 	p.show(key, text)
 	p.syncComposer()

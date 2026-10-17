@@ -32,5 +32,14 @@
     },
     "relocate": "重新定位",
     "reopen": "重新打开"
+  },
+  "paletteLogic": {
+    "indexedNewest": "已索引：最新的 {size}"
+  },
+  "palette": {
+    "verbOpen": "打开",
+    "verbForget": "忘记",
+    "verbResume": "恢复",
+    "verbRun": "执行"
   }
 }

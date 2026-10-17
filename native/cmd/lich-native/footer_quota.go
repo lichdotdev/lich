@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -279,13 +280,13 @@ func planReadout(plan lichclient.QuotaPlan) (footerReadout, bool) {
 	if !ok {
 		return footerReadout{}, false
 	}
-	r := footerReadout{Label: "Plan usage", Title: plan.Name, Tone: toneOf(float64(w.Percent))}
+	r := footerReadout{Label: i18n.T("shell.planQuota.planUsage"), Title: plan.Name, Tone: toneOf(float64(w.Percent))}
 	if plan.Plan != "" {
 		r.Title = plan.Name + " · " + plan.Plan
 	}
 	reading := fmt.Sprintf("%d%%", w.Percent)
 	if w.LockedReason != "" {
-		reading, r.Tone = "Locked", toneDestructive
+		reading, r.Tone = i18n.T("shell.planQuota.locked"), toneDestructive
 	}
 	r.Text = joinNonEmpty(" ", shortWindow(w.Seconds), reading)
 	return r, true
@@ -311,7 +312,7 @@ func quotaGauges(plan lichclient.QuotaPlan, now time.Time) []quotaGauge {
 			Tone: toneOf(float64(w.Percent)),
 		}
 		if w.LockedReason != "" {
-			g.Reading = "Locked"
+			g.Reading = i18n.T("shell.planQuota.locked")
 		}
 		rows = append(rows, g)
 	}
@@ -325,7 +326,7 @@ func accountLine(plan lichclient.QuotaPlan) string {
 		return plan.Account
 	}
 	if plan.NoAccount == "token-login" {
-		return "Token login"
+		return i18n.T("env.quota.tokenLogin")
 	}
 	return ""
 }
@@ -333,7 +334,7 @@ func accountLine(plan lichclient.QuotaPlan) string {
 // shortWindow names a window's length at status-bar width: "5h", "wk", "30d".
 func shortWindow(seconds int) string {
 	if seconds >= day && roundDiv(seconds, day) == 7 {
-		return "wk"
+		return i18n.T("env.quota.weekShort")
 	}
 	return formatWindow(seconds)
 }

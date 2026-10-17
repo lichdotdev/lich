@@ -2,27 +2,14 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	resumeTitle            = "Resume previous session?"
-	resumeDescription      = "%s left a conversation behind (%s). Resume it to pick the conversation up where it stopped, or start new for an empty one."
-	resumeAlwaysFor        = "Always do this for %s"
-	resumeChangeInSettings = "· change it in Settings › Providers"
-	resumeThisProvider     = "this provider"
-	resumeStartNew         = "Start new"
-	resumeResume           = "Resume"
-	resumeInProfile        = "It resumes in %s · %s, the profile it started in."
-	resumeInProfileNoMail  = "It resumes in %s, the profile it started in."
 )
 
 // resumeDialog is ResumeSessionDialog: whether a restored card continues
@@ -60,16 +47,16 @@ func (r *resumeDialog) layout(ctx context.Context, gtx C, th *ui.Theme, g *spawn
 		go g.answer(ctx, restoreResume, r.remember.Value)
 	}
 	pop := th.On(th.Popover)
-	description := fmt.Sprintf(resumeDescription, r.shown.Label, r.shown.ProviderSessionID)
+	description := i18n.T("shell.resumeSessionDialog.description", i18n.Args{"label": r.shown.Label, "id": r.shown.ProviderSessionID})
 	if line := m.resumeProfileLine(r.shown); line != "" {
 		description += " " + line
 	}
-	d := th.Dialog(&r.dialog, open, resumeTitle, description)
+	d := th.Dialog(&r.dialog, open, i18n.T("shell.resumeSessionDialog.title"), description)
 	d.MaxWidth = ui.DialogWidthXL
 	d.Body = func(gtx C) D { return r.rememberRow(gtx, pop, r.provider) }
-	startNew := pop.Button(&r.startNew, resumeStartNew)
+	startNew := pop.Button(&r.startNew, i18n.T("shell.resumeSessionDialog.startNew"))
 	startNew.Variant = ui.VariantGhost
-	d.Actions = []layout.Widget{startNew.Layout, pop.Button(&r.resume, resumeResume).Layout}
+	d.Actions = []layout.Widget{startNew.Layout, pop.Button(&r.resume, i18n.T("shell.resumeSessionDialog.resume")).Layout}
 	if d.Layout(gtx) {
 		go g.answer(ctx, restoreFresh, false)
 	}
@@ -78,7 +65,7 @@ func (r *resumeDialog) layout(ctx context.Context, gtx C, th *ui.Theme, g *spawn
 // rememberRow is the checkbox and its label (flex items-center gap-2); a
 // click on the label ticks the box, as htmlFor does.
 func (r *resumeDialog) rememberRow(gtx C, th *ui.Theme, provider string) D {
-	caption := th.Label(fmt.Sprintf(resumeAlwaysFor, provider))
+	caption := th.Label(i18n.T("shell.resumeSessionDialog.alwaysFor", i18n.Args{"provider": provider}))
 	caption.Weight = font.Normal
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(th.Checkbox(&r.remember).Layout),
@@ -88,7 +75,7 @@ func (r *resumeDialog) rememberRow(gtx C, th *ui.Theme, provider string) D {
 				return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
 					layout.Rigid(caption.Layout),
 					ui.Gap(2),
-					layout.Rigid(th.Text(ui.TextSM, resumeChangeInSettings).Muted().Layout),
+					layout.Rigid(th.Text(ui.TextSM, i18n.T("shell.resumeSessionDialog.changeInSettings")).Muted().Layout),
 				)
 			})
 		}),
@@ -100,5 +87,5 @@ func (m *model) providerName(kind string) string {
 	if p, ok := m.providers.find(kind); ok {
 		return p.name
 	}
-	return resumeThisProvider
+	return i18n.T("shell.resumeSessionDialog.thisProvider")
 }

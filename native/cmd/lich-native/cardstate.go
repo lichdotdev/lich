@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -91,7 +92,7 @@ func (m *model) statusReport(id, previous string) (statusReport, bool) {
 	s := p.Sessions[i]
 	label := s.Label
 	if label == "" {
-		label = notifyUnlabeled
+		label = i18n.T("shell.projectEvents.unlabeledSession")
 	}
 	return statusReport{id: id, projectID: p.ID, status: m.status.status(id), previous: previous, focused: m.focused,
 		onScreen: m.shownProject() == p && m.active == id, label: label, project: p.Name, reason: m.status.reason(id),

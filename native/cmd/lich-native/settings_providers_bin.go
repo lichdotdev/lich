@@ -1,20 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
-
-// ponytail: English until the native window has i18n (settings.providerBinary).
-const binPickFailed = "Could not open the file picker: %v"
 
 var (
 	icBinBrowse = icons.Lucide("folder-open")
@@ -114,10 +111,11 @@ func (s *settingsScreen) writeBin(m providersMachine, kind, scope, value string)
 }
 
 func (s *settingsScreen) pickBin(m providersMachine, p providerInfo, scope string) {
-	file, err := s.client.PickFile(s.ctx, fmt.Sprintf(binPickTitle, p.name))
+	file, err := s.client.PickFile(s.ctx, i18n.T("settings.providerBinary.pickTitle", i18n.Args{"provider": p.name}))
 	if err != nil {
 		log.Printf("settings: pick %s binary: %v", p.id, err)
-		s.theme.toaster.Show(failure(binPickFailed, err))
+		title := i18n.T("settings.settingsProvidersBin.pickFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+		s.theme.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: title})
 		return
 	}
 	if file != "" {
@@ -131,12 +129,12 @@ func (s *settingsScreen) pickBin(m providersMachine, p providerInfo, scope strin
 // layer and Global's are the scope selector's, not two fields.
 func (s *settingsScreen) binBlock(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
 	pr := &s.providers
-	e := settingEntry{title: binTitle, key: providerBinKey(p.id), scope: scopeOverridable}
+	e := settingEntry{titleKey: "settings.providerBinary.title", key: providerBinKey(p.id), scope: scopeOverridable}
 	r := s.providerRow(gtx, e, values)
 	name := s.scopeName()
-	r.description = binDesc
+	r.description = i18n.T("settings.providerBinary.description")
 	if s.scope != "" {
-		r.description = fmt.Sprintf(binDescProject, name)
+		r.description = i18n.T("settings.providerBinary.descriptionProject", i18n.Args{"name": name})
 	}
 	r.globalValue = m.globals[providerBinKey(p.id)]
 	if r.globalValue == "" {
@@ -216,7 +214,7 @@ func (s *settingsScreen) binField(gtx C, th *ui.Theme, p providerInfo) D {
 	b := &s.providers.bin
 	field := th.Input(&b.editor, p.binary)
 	field.Mono, field.Height, field.TextSize = true, ui.Space(8), ui.TextXS
-	browse := th.Button(&b.browse, binBrowse)
+	browse := th.Button(&b.browse, i18n.T("settings.providerBinary.browse"))
 	browse.Variant, browse.Size, browse.Icon = ui.VariantGhost, ui.SizeSM, icBinBrowse
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Flexed(1, field.Layout),
@@ -231,13 +229,13 @@ func binSource(scope, projectName string) string {
 	switch scope {
 	case binScopeProject:
 		if projectName == "" {
-			return binSourceThis
+			return i18n.T("settings.providerBinary.sourceProject")
 		}
-		return fmt.Sprintf(binSourceName, projectName)
+		return i18n.T("settings.providerBinary.sourceProjectNamed", i18n.Args{"name": projectName})
 	case binScopeGlobal:
-		return binSourceGlobal
+		return i18n.T("settings.providerBinary.sourceGlobal")
 	}
-	return binSourcePath
+	return i18n.T("settings.providerBinary.sourcePath")
 }
 
 // binVerdict is the glyph of what the path resolves to, the executable it

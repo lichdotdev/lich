@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 
@@ -13,15 +12,9 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (git.codemirror).
-const (
-	expandOne   = "Expand %d unchanged line"
-	expandOther = "Expand %d unchanged lines"
-	revertLabel = "Revert"
 )
 
 var icRevertBlock = icons.Lucide("undo-2")
@@ -65,11 +58,8 @@ func clickableAt(m map[int]*widget.Clickable, key int) *widget.Clickable {
 func (a *affordances) expandButton(g godemirror.Gap, onClick func()) layout.Widget {
 	c := clickableAt(a.expand, g.To)
 	count := g.To - g.From + 1
-	text := fmt.Sprintf(expandOther, count)
-	if count == 1 {
-		text = fmt.Sprintf(expandOne, count)
-	}
 	return func(gtx C) D {
+		text := i18n.T("git.codemirror.expand", i18n.Args{"count": count})
 		for c.Clicked(gtx) {
 			onClick()
 		}
@@ -98,7 +88,7 @@ func (a *affordances) revertButton(chunk godemirror.Chunk, onClick func()) layou
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icRevertBlock.Layout(gtx, affordanceIcon, th.Foreground) }),
 				layout.Rigid(layout.Spacer{Width: affordanceGap}.Layout),
-				layout.Rigid(th.Text(affordanceText, revertLabel).Leading(revertLeading).Layout),
+				layout.Rigid(th.Text(affordanceText, i18n.T("git.codemirror.revert")).Leading(revertLeading).Layout),
 			)
 		})
 	}

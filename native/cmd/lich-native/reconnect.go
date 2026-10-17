@@ -9,12 +9,10 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
-
-// ponytail: English until the native window has i18n.
-const reconnectingText = "Reconnecting to lich…"
 
 // reconnectWait bounds waiting for a restarted lich to answer. Its successor
 // is launched before it stops and binds the port the moment it is free;
@@ -116,5 +114,5 @@ func (u *window) reattach() (err error) {
 // restarted lich.
 func (u *window) reconnectingNotice(gtx C) D {
 	gtx.Constraints.Min = gtx.Constraints.Max
-	return layout.Center.Layout(gtx, u.theme.Text(ui.TextSM, reconnectingText).Weight(font.Medium).Layout)
+	return layout.Center.Layout(gtx, u.theme.Text(ui.TextSM, i18n.T("shell.reconnect.reconnecting")).Weight(font.Medium).Layout)
 }

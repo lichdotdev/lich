@@ -13,31 +13,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (pulls.pulls.*).
-const (
-	pullsMergedToast      = "Merged #%d into %s"
-	pullsMergeFailed      = "Merge failed: %s"
-	pullsApprovedToast    = "Approved #%d"
-	pullsReviewFailed     = "Review failed: %s"
-	pullsOpenFailed       = "Couldn’t open a session: %s"
-	pullsCreateFailed     = "Couldn’t open a pull request: %s"
-	pullsAnnounceFailed   = "Couldn’t tell the sessions in %s: %s"
-	pullsRemoveWorktree   = "Remove worktree"
-	pullsAlreadyRemoved   = "%s was already removed"
-	pullsPinnedSession    = "Worktree has a pinned session — unpin it first."
-	pullsNotCreatedByLich = "lich did not create this worktree — remove it from the sidebar."
-	pullsDirty            = "Worktree has uncommitted changes — remove it from the sidebar."
-	pullsRemoved          = "Removed %s"
-	pullsRemoveFailed     = "Failed to remove worktree: %s"
-	pullsRunningTitle     = "Sessions are still running"
-	pullsRunningOne       = "A session in %s is mid-turn. Removing the worktree stops it; the turn in flight is lost."
-	pullsRunningMany      = "%d sessions in %s are mid-turn. Removing the worktree stops them; the turn in flight is lost."
-	pullsRemoveAnyway     = "Remove anyway"
-	pullsCancel           = "Cancel"
 )
 
 // cleanupToastFor is Pulls.tsx CLEANUP_TOAST_MS: how long the offer to remove
@@ -111,7 +89,7 @@ func (u *window) applyPulls(act pullsAction) {
 	if act.create {
 		go func() {
 			if err := u.client.CreatePullRequest(u.ctx, u.checkoutPath(path)); err != nil {
-				u.toaster.Show(failure(pullsCreateFailed, err))
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullsEmptyState.openFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 			}
 		}()
 	}
@@ -155,10 +133,10 @@ func (u *window) approvePR(path string, number int) {
 	u.pulls.view.setBusy("approve")
 	defer u.pulls.view.setBusy("")
 	if err := u.client.SubmitReview(u.ctx, path, number, "approve", "", "", nil); err != nil {
-		u.toaster.Show(failure(pullsReviewFailed, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.reviewFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
-	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(pullsApprovedToast, number)})
+	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pullRequestView.approvedToast", i18n.Args{"number": number})})
 }
 
 // openPRSession is Pulls.tsx openInSession, then hands prompt (when any) to
@@ -170,7 +148,7 @@ func (u *window) openPRSession(project lichclient.Project, d lichclient.PRDetail
 	defer u.pulls.view.setBusy("")
 	id, err := u.prSession(project, d)
 	if err != nil {
-		u.toaster.Show(failure(pullsOpenFailed, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.openSessionFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
 	u.pulls.hide()
@@ -236,10 +214,10 @@ func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, meth
 		if note := mergeRuleNote(d, u.pulls.store.branchRules(project.Path, d.BaseRefName)); note != "" {
 			text += " " + note
 		}
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(pullsMergeFailed, text)})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.mergeFailed", i18n.Args{"error": text})})
 		return false
 	}
-	merged := ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(pullsMergedToast, d.Number, d.BaseRefName)}
+	merged := ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.merged", i18n.Args{"number": d.Number, "base": d.BaseRefName})}
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
 	u.logErr("list checkouts", err)
 	i := slices.IndexFunc(checkouts, func(c lichclient.Worktree) bool { return c.Name == d.HeadRefName })
@@ -249,11 +227,11 @@ func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, meth
 	}
 	wt := checkouts[i]
 	if err := u.client.AnnounceMerge(u.ctx, wt.Path, d.Number, d.Title, d.HeadRefName, d.BaseRefName); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(pullsAnnounceFailed, filepath.Base(wt.Path), lichclient.ErrorText(err))})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.announceFailed", i18n.Args{"name": filepath.Base(wt.Path), "error": lichclient.ErrorText(err)})})
 	}
 	if wt.Path != project.Path {
 		merged.Duration = cleanupToastFor
-		merged.Action = &ui.ToastButton{Label: pullsRemoveWorktree, OnClick: func() { go u.removePRWorktree(project, wt.Path) }}
+		merged.Action = &ui.ToastButton{Label: i18n.T("pulls.pulls.removeWorktree"), OnClick: func() { go u.removePRWorktree(project, wt.Path) }}
 	}
 	u.toaster.Show(merged)
 	return true
@@ -265,24 +243,24 @@ func (u *window) removePRWorktree(project lichclient.Project, path string) {
 	name := filepath.Base(path)
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
 	if err != nil {
-		u.toaster.Show(failure(pullsRemoveFailed, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.removeFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
 	if !slices.ContainsFunc(checkouts, func(c lichclient.Worktree) bool { return c.Path == path }) {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(pullsAlreadyRemoved, name)})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.alreadyRemoved", i18n.Args{"name": name})})
 		return
 	}
 	_, pinned, running := u.model.sessionsAt(project.ID, path)
 	if pinned {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: pullsPinnedSession})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.pinnedSession")})
 		return
 	}
 	if adopted, err := u.client.WorktreeAdopted(u.ctx, path); err != nil || adopted {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: pullsNotCreatedByLich})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.notCreatedByLich")})
 		return
 	}
 	if dirty, err := u.client.WorktreeDirty(u.ctx, path); err == nil && dirty {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: pullsDirty})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.dirty")})
 		return
 	}
 	if running > 0 {
@@ -305,9 +283,9 @@ func (u *window) removeCheckout(project lichclient.Project, path string, force, 
 	}
 	u.logErr("purge worktree sessions", u.client.PurgeWorktreeSessions(u.ctx, project.ID, path))
 	if err := u.client.RemoveWorktree(u.ctx, project.Path, path, force, adoptedAck); err != nil {
-		u.toaster.Show(failure(pullsRemoveFailed, err))
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.removeFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 	} else {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: fmt.Sprintf(pullsRemoved, filepath.Base(path))})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.removed", i18n.Args{"name": filepath.Base(path)})})
 	}
 	_, err := u.pulls.store.freshCheckouts(project.Path)
 	u.logErr("list checkouts", err)
@@ -366,16 +344,13 @@ func (u *window) layoutRemoveConfirm(gtx C, th *ui.Theme) {
 	if c.cancel.Clicked(gtx) {
 		c.open = false
 	}
-	body := fmt.Sprintf(pullsRunningOne, filepath.Base(c.path))
-	if c.running > 1 {
-		body = fmt.Sprintf(pullsRunningMany, c.running, filepath.Base(c.path))
-	}
+	body := i18n.T("pulls.pullsActions.running", i18n.Args{"count": c.running, "name": filepath.Base(c.path)})
 	on := th.On(th.Popover)
-	cancel := on.Button(&c.cancel, pullsCancel)
+	cancel := on.Button(&c.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantOutline
-	anyway := on.Button(&c.confirm, pullsRemoveAnyway)
+	anyway := on.Button(&c.confirm, i18n.T("pulls.pulls.runningRemoval.removeAnyway"))
 	anyway.Variant = ui.VariantDestructive
-	d := th.Dialog(&c.dialog, c.open, pullsRunningTitle, body)
+	d := th.Dialog(&c.dialog, c.open, i18n.T("pulls.pullsActions.runningTitle"), body)
 	d.Actions = []layout.Widget{cancel.Layout, anyway.Layout}
 	if d.Layout(gtx) {
 		c.open = false

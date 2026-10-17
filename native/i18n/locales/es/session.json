@@ -54,5 +54,16 @@
       "one": "indexando {count} sesión",
       "other": "indexando {count} sesiones"
     }
+  },
+  "age": {
+    "second": "{count}s",
+    "minute": "{count}min",
+    "hour": "{count}h",
+    "ago": {
+      "minute": "hace {count} min",
+      "hour": "hace {count} h",
+      "day": "hace {count} d",
+      "week": "hace {count} sem."
+    }
   }
 }

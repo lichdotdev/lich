@@ -7,23 +7,9 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n (settings.claudeProfile*,
-// claudeProfileDialogs.*).
-const (
-	profileTitle  = "Profile"
-	profilesTitle = "Profiles"
-
-	profileCreating      = "Creating the profile…"
-	profileStartingLogin = "Starting the login…"
-	profileRenaming      = "Renaming…"
-	profileDeleting      = "Deleting…"
-	profileInstalling    = "Installing plugins…"
-	profileLoginFailed   = "The login did not complete."
-	profileNoTerminal    = "Open a project to log in from a terminal."
 )
 
 // flowKind is what the profile dialog is doing.
@@ -281,7 +267,9 @@ func (s *settingsScreen) failFlow(c *profileSettings, err error) {
 
 func (s *settingsScreen) createProfile(c *profileSettings, name string, keys []string) {
 	f := &c.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileCreating, "" })
+	f.set(func(d *flowData) {
+		d.step, d.working, d.failure = stepWorking, i18n.T("settings.settingsProfiles.creating"), ""
+	})
 	go func() {
 		p, err := c.provider.api(s.client).Create(s.ctx, name)
 		if err != nil {
@@ -298,7 +286,9 @@ func (s *settingsScreen) createProfile(c *profileSettings, name string, keys []s
 
 func (s *settingsScreen) renameProfile(c *profileSettings, slug, name string) {
 	f := &c.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileRenaming, "" })
+	f.set(func(d *flowData) {
+		d.step, d.working, d.failure = stepWorking, i18n.T("settings.settingsProfiles.renaming"), ""
+	})
 	go func() {
 		if err := c.provider.api(s.client).Rename(s.ctx, slug, name); err != nil {
 			s.failFlow(c, err)
@@ -311,7 +301,9 @@ func (s *settingsScreen) renameProfile(c *profileSettings, slug, name string) {
 
 func (s *settingsScreen) deleteProfile(c *profileSettings, slug string) {
 	f := &c.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileDeleting, "" })
+	f.set(func(d *flowData) {
+		d.step, d.working, d.failure = stepWorking, i18n.T("settings.settingsProfiles.deleting"), ""
+	})
 	go func() {
 		if err := c.provider.api(s.client).Delete(s.ctx, slug); err != nil {
 			s.failFlow(c, err)
@@ -324,7 +316,9 @@ func (s *settingsScreen) deleteProfile(c *profileSettings, slug string) {
 
 func (s *settingsScreen) copyPlugins(c *profileSettings, target lichclient.Profile, keys []string) {
 	f := &c.flow
-	f.set(func(d *flowData) { d.step, d.working, d.failure = stepWorking, profileInstalling, "" })
+	f.set(func(d *flowData) {
+		d.step, d.working, d.failure = stepWorking, i18n.T("settings.settingsProfiles.installing"), ""
+	})
 	go func() {
 		results, err := c.provider.api(s.client).InstallPlugins(s.ctx, target.Slug, keys)
 		if err != nil {
@@ -345,7 +339,7 @@ func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, ke
 		return
 	}
 	f.set(func(d *flowData) {
-		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: profileStartingLogin, target: p, keys: keys}
+		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: i18n.T("settings.settingsProfiles.startingLogin"), target: p, keys: keys}
 	})
 	s.invalidate()
 	go func() {
@@ -368,7 +362,7 @@ func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, ke
 func (s *settingsScreen) startTerminalLogin(c *profileSettings, p lichclient.Profile) {
 	f := &c.flow
 	f.set(func(d *flowData) {
-		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: profileStartingLogin, target: p}
+		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: i18n.T("settings.settingsProfiles.startingLogin"), target: p}
 	})
 	s.invalidate()
 	go func() {
@@ -377,7 +371,7 @@ func (s *settingsScreen) startTerminalLogin(c *profileSettings, p lichclient.Pro
 		case err != nil:
 			f.set(func(d *flowData) { d.step, d.failure = stepResult, lichclient.ErrorText(err) })
 		case c.openTerminal == nil || !c.openTerminal(command):
-			f.set(func(d *flowData) { d.step, d.failure = stepResult, profileNoTerminal })
+			f.set(func(d *flowData) { d.step, d.failure = stepResult, i18n.T("settings.settingsProfiles.noTerminal") })
 		default:
 			f.set(func(d *flowData) { d.open = false })
 		}
@@ -407,7 +401,7 @@ func (s *settingsScreen) loginProgress(kind string, ev lichclient.ProfileLogin) 
 	case !ev.LoggedIn:
 		failure := ev.Error
 		if failure == "" {
-			failure = profileLoginFailed
+			failure = i18n.T("settings.settingsProfiles.loginFailed")
 		}
 		f.set(func(d *flowData) { d.step, d.failure = stepResult, failure })
 	default:
@@ -427,7 +421,7 @@ func (s *settingsScreen) finishLogin(c *profileSettings, d flowData, ev lichclie
 	}
 	var results []lichclient.ProfilePluginResult
 	if len(d.keys) > 0 {
-		c.flow.set(func(d *flowData) { d.step, d.working = stepWorking, profileInstalling })
+		c.flow.set(func(d *flowData) { d.step, d.working = stepWorking, i18n.T("settings.settingsProfiles.installing") })
 		s.invalidate()
 		var err error
 		if results, err = c.provider.api(s.client).InstallPlugins(s.ctx, d.target.Slug, d.keys); err != nil {
@@ -462,7 +456,7 @@ func (s *settingsScreen) loginInTerminal(c *profileSettings, d flowData) {
 			return
 		}
 		if c.openTerminal == nil || !c.openTerminal(command) {
-			c.flow.set(func(d *flowData) { d.failure = profileNoTerminal })
+			c.flow.set(func(d *flowData) { d.failure = i18n.T("settings.settingsProfiles.noTerminal") })
 			s.invalidate()
 			return
 		}

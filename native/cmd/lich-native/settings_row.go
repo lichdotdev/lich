@@ -13,18 +13,9 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	rowOverriddenIn = "Overridden in "
-	rowFollowsText  = "Follows Global"
-	rowGlobalPrefix = "Global: "
-	rowUseGlobal    = "Use Global"
-	rowGlobalOnlyP  = "Global only"
-	rowProjectOnlyT = "Project only"
 )
 
 // The row's opacities: a global-only row seen from a project dims whole, and
@@ -124,7 +115,7 @@ func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Them
 			layout.Rigid(layout.Spacer{Width: rowGap}.Layout),
 			layout.Rigid(func(gtx C) D {
 				if r.kind == rowGlobalOnly {
-					return pill(gtx, text, text.Text(ui.TextXS, rowGlobalOnlyP).Muted().Layout, ui.Space(2), ui.Space(2))
+					return pill(gtx, text, text.Text(ui.TextXS, i18n.T("settings.settingsRow.globalOnly")).Muted().Layout, ui.Space(2), ui.Space(2))
 				}
 				return control(gtx, th)
 			}),
@@ -160,16 +151,17 @@ func (r settingRow) note(th *ui.Theme) layout.Widget {
 		return line(
 			layout.Rigid(func(gtx C) D { return icRowFolder.Layout(gtx, ui.Space(3), th.ToneWait) }),
 			ui.Gap(1.25),
-			layout.Rigid(th.Text(rowNoteSize, rowOverriddenIn).In(th.ToneWait).Layout),
+			layout.Rigid(th.Text(rowNoteSize, i18n.T("settings.settingsRow.overriddenIn")).In(th.ToneWait).Layout),
+			ui.Gap(1),
 			layout.Rigid(th.Text(rowNoteSize, strings.Join(r.overriddenIn, ", ")).In(th.ToneWait).Weight(font.SemiBold).Layout),
 		)
 	case rowFollows:
-		return th.Text(rowNoteSize, rowFollowsText).Muted().Layout
+		return th.Text(rowNoteSize, i18n.T("settings.settingsRow.followsGlobal")).Muted().Layout
 	case rowProjectOnly:
-		return th.Text(rowNoteSize, rowProjectOnlyT).Muted().Layout
+		return th.Text(rowNoteSize, i18n.T("settings.settingsRow.projectOnly")).Muted().Layout
 	case rowChanged:
 		return line(
-			layout.Rigid(th.Text(rowNoteSize, rowGlobalPrefix+r.globalValue).In(th.ToneWait).Layout),
+			layout.Rigid(th.Text(rowNoteSize, i18n.T("settings.settingsRow.globalValue", i18n.Args{"value": r.globalValue})).In(th.ToneWait).Layout),
 			ui.Gap(2.5),
 			layout.Rigid(func(gtx C) D { return resetButton(gtx, th, r.reset) }),
 		)
@@ -188,7 +180,7 @@ func resetButton(gtx C, th *ui.Theme, click *widget.Clickable) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icRowReset.Layout(gtx, ui.Space(3), th.Foreground) }),
 				ui.Gap(1),
-				layout.Rigid(th.Text(rowNoteSize, rowUseGlobal).Layout),
+				layout.Rigid(th.Text(rowNoteSize, i18n.T("settings.settingsRow.useGlobal")).Layout),
 			)
 		})
 		call := macro.Stop()

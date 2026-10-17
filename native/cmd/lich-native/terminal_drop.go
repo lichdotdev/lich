@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"image"
 	"net/url"
 	"os"
@@ -13,6 +12,7 @@ import (
 
 	"gioui.org/app"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -83,25 +83,30 @@ func resolveDrop(ctx context.Context, up *lichclient.Client, target dropTarget, 
 		info, err := os.Stat(path)
 		switch {
 		case err != nil:
-			r.skipped = append(r.skipped, fmt.Sprintf("%s (%v)", name, err))
+			r.skipped = append(r.skipped, skippedDrop(name, err.Error()))
 		case !target.confined || under(target.checkout, path):
 			r.paths = append(r.paths, path)
 		case info.IsDir():
 			// The web's folderRefused, confined half: the other half, a folder
 			// not found, cannot happen with a real path.
-			r.skipped = append(r.skipped, name+" (folders outside this sandboxed session's checkout cannot be handed over; drop files)")
+			r.skipped = append(r.skipped, skippedDrop(name, i18n.T("terminal.dropFiles.folderConfined")))
 		case info.Size() > maxDropUpload:
-			r.skipped = append(r.skipped, fmt.Sprintf("%s (over %dMB)", name, maxDropUpload>>20))
+			r.skipped = append(r.skipped, i18n.T("terminal.terminalDrop.tooLarge", i18n.Args{"name": name, "size": maxDropUpload >> 20}))
 		default:
 			a, err := uploadDropped(ctx, up, target.sessionID, path)
 			if err != nil {
-				r.skipped = append(r.skipped, fmt.Sprintf("%s (%v)", name, err))
+				r.skipped = append(r.skipped, skippedDrop(name, err.Error()))
 				continue
 			}
 			r.paths, r.notices = append(r.paths, a.Path), append(r.notices, a.Notice)
 		}
 	}
 	return r
+}
+
+// skippedDrop is a dropped file that yielded no path, with why.
+func skippedDrop(name, reason string) string {
+	return i18n.T("terminal.terminalDrop.skipped", i18n.Args{"name": name, "reason": reason})
 }
 
 func uploadDropped(ctx context.Context, up *lichclient.Client, sessionID, path string) (lichclient.Attachment, error) {

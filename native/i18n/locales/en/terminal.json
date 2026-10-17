@@ -52,5 +52,9 @@
       "one": "copied {count} char to clipboard",
       "other": "copied {count} chars to clipboard"
     }
+  },
+  "terminalDrop": {
+    "skipped": "{name} ({reason})",
+    "tooLarge": "{name} (over {size}MB)"
   }
 }

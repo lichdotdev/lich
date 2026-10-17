@@ -12,16 +12,6 @@ import (
 	"github.com/omartelo/lich/native/lichclient"
 )
 
-// ponytail: English until the native window has i18n (sidebar.worktreeDialog.*).
-const (
-	wtChecking      = "Checking the remote…"
-	wtBehind        = "%d behind %s · starts from %s"
-	wtNotPushedOne  = "1 commit not pushed · starts from local %s"
-	wtNotPushedMany = "%d commits not pushed · starts from local %s"
-	wtUnreachable   = "Couldn't reach %s · starts from local %s"
-	wtKeepsChanges  = "Starts from local %s to keep your changes"
-)
-
 // Base options carry their group so one string names the selection, as
 // WorktreeDialog's rowValue does: "local:main", "remote:origin/main",
 // "worktree:/path/to/checkout".
@@ -190,24 +180,22 @@ func freshnessLine(branch string, check *baseCheck, carry bool) (text string, wa
 		return "", false
 	}
 	if !check.finished() {
-		return wtChecking, false
+		return i18n.T("sidebar.worktreeLogic.checking"), false
 	}
 	f := check.freshness
 	switch {
 	case check.err != "":
-		return fmt.Sprintf(wtUnreachable, "the remote", branch), true
+		return i18n.T("sidebar.worktreeLogic.unreachableRemote", i18n.Args{"branch": branch}), true
 	case f.Upstream == "":
 		return "", false
 	case f.FetchError != "":
-		return fmt.Sprintf(wtUnreachable, remoteOf(f.Upstream), branch), true
+		return i18n.T("sidebar.worktreeLogic.unreachable", i18n.Args{"remote": remoteOf(f.Upstream), "branch": branch}), true
 	case carry && check.upstreamWins():
-		return fmt.Sprintf(wtKeepsChanges, branch), false
+		return i18n.T("sidebar.worktreeLogic.keepsChanges", i18n.Args{"branch": branch}), false
 	case check.upstreamWins():
-		return fmt.Sprintf(wtBehind, f.Behind, f.Upstream, f.Upstream), false
-	case f.Ahead == 1:
-		return fmt.Sprintf(wtNotPushedOne, branch), false
-	case f.Ahead > 1:
-		return fmt.Sprintf(wtNotPushedMany, f.Ahead, branch), false
+		return i18n.T("sidebar.worktreeLogic.behind", i18n.Args{"count": f.Behind, "upstream": f.Upstream}), false
+	case f.Ahead > 0:
+		return i18n.T("sidebar.worktreeLogic.notPushed", i18n.Args{"count": f.Ahead, "branch": branch}), false
 	}
 	return "", false
 }

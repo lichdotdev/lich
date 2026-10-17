@@ -70,8 +70,8 @@ func TestPluginRowsSayWhatTheMachineHas(t *testing.T) {
 		action  string
 		variant ui.Variant
 	}{
-		{"cli missing", missing, pluginCliMissing, "", ui.VariantDefault},
-		{"not installed", base, pluginNotInstalled, "Install", ui.VariantDefault},
+		{"cli missing", missing, "CLI not installed", "", ui.VariantDefault},
+		{"not installed", base, "Plugin not installed", "Install", ui.VariantDefault},
 		{"installed", installed, "v0.9.0", "", ui.VariantDefault},
 		{"outdated", outdated, "v0.8.0", "Update to v0.9.0", ui.VariantOutline},
 		{"unsupported", unsupported, "v0.14.0, not supported by this lich", "Install v0.9.0", ui.VariantOutline},
@@ -106,7 +106,7 @@ func TestPluginOutcomeReadsTheLastCheck(t *testing.T) {
 	for _, tc := range []struct {
 		checked, failed bool
 		want            string
-	}{{false, true, ""}, {true, false, pluginChecked}, {true, true, updatesCheckFailed}} {
+	}{{false, true, ""}, {true, false, "Checked."}, {true, true, "Check failed — are you online?"}} {
 		if got := pluginOutcome(tc.checked, tc.failed); got != tc.want {
 			t.Errorf("pluginOutcome(%v, %v) = %q, want %q", tc.checked, tc.failed, got, tc.want)
 		}

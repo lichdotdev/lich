@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -9,32 +8,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	pullsOpening          = "Opening…"
-	pullsApproving        = "Approving…"
-	pullsMerging          = "Merging…"
-	pullsMergeFailing     = "%s · %d failing"
-	pullsConflictsLoading = "Working out which files conflict…"
-	pullsConflictsFailed  = "Couldn’t work out which files conflict: %s"
-	pullsConflictsStale   = "No file conflicts here now — GitHub may not have caught up."
-	pullsConflictOne      = "1 conflicting file"
-	pullsConflictMany     = "%d conflicting files"
-	pullsShowFewer        = "Show fewer"
-	pullsMore             = "+%d more"
-	pullsOpenedBy         = "Opened by %s"
-	pullsReviewers        = "Reviewers"
-	pullsNobodyYet        = "Nobody yet"
-	pullsDescription      = "Description"
-	pullsNoDescription    = "No description."
-	pullsNoCommits        = "No commits."
-	pullsNoChecks         = "No checks reported."
-	pullsDiffLoading      = "Reading the diff…"
-	pullsDiffFailed       = "Couldn’t load the diff: %s"
 )
 
 // conflictsNamed is conflict-files.ts NAMED: the files shown before "+N more".
@@ -47,7 +23,7 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRD
 	handLabel, handPrompt, handOK := pullHandoff(d)
 	blocked := ""
 	if d.IsCrossRepository && !d.MaintainerCanModify {
-		blocked = pullsForkBlocked
+		blocked = i18n.T("pulls.pulls.forkBlocked")
 	}
 	if v.session.Clicked(gtx) && blocked == "" {
 		act.session = &d
@@ -79,10 +55,10 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRD
 		ui.WrapItem(func(gtx C) D {
 			b := th.Button(&v.refresh, "")
 			b.Icon, b.Variant, b.Size = icPullRefresh, ui.VariantGhost, ui.SizeIconSM
-			return v.withTip(gtx, th, p, "refresh", pullsRefresh, b.Layout)
+			return v.withTip(gtx, th, p, "refresh", i18n.T("pulls.pullRequestView.refresh"), b.Layout)
 		}),
 		ui.WrapItem(func(gtx C) D {
-			b := th.Button(&v.external, pullsOpenExternal)
+			b := th.Button(&v.external, i18n.T("pulls.pullRequestView.open"))
 			b.Icon, b.Variant, b.Size = icPullOut, ui.VariantGhost, ui.SizeSM
 			return b.Layout(gtx)
 		}),
@@ -93,12 +69,12 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRD
 // sessionButton is Open in Session, or Go to session when a session already
 // sits in the branch's checkout.
 func (v *pullView) sessionButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, busy, blocked string) D {
-	label := pullsOpenInSession
+	label := i18n.T("pulls.pulls.openInSession")
 	if wt, ok := p.checkedOut(d.HeadRefName); ok && p.hasSessionAt(wt.Path) {
-		label = pullsGoToSession
+		label = i18n.T("pulls.pulls.goToSession")
 	}
 	if busy == "session" {
-		label = pullsOpening
+		label = i18n.T("pulls.pullRequestView.opening")
 	}
 	b := th.Button(&v.session, label)
 	b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantSecondary, ui.SizeSM, blocked != "" || busy != ""
@@ -112,9 +88,9 @@ func mergeReasonForReview(d lichclient.PRDetail) string {
 	case "OPEN":
 		return ""
 	case "MERGED":
-		return pullsMergedText
+		return i18n.T("pulls.mergeGate.merged")
 	}
-	return pullsClosedText
+	return i18n.T("pulls.mergeGate.closed")
 }
 
 // withTip wraps w in a tooltip saying text, w alone for none.
@@ -133,19 +109,19 @@ func (v *pullView) mergeButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient
 	blocked := mergeBlockedReason(d) != "" && !bypass
 	var entries []ui.MenuEntry
 	for _, m := range allowedMergeMethods(rules) {
-		label := mergeMethodLabels[m]
+		label := mergeMethodLabel(m)
 		if bypass {
-			label = fmt.Sprintf(pullsBypass, label)
+			label = i18n.T("pulls.pullRequestView.methodBypass", i18n.Args{"method": label})
 		}
 		entries = append(entries, ui.MenuEntry{Label: label, OnClick: func() { act.merge, act.admin = m, bypass }})
 	}
 	entries = append(entries, v.editEntries(allowedMergeMethods(rules), bypass, d)...)
-	label := pullsMerge
+	label := i18n.T("pulls.pullRequestView.merge")
 	if busy == "merge" {
-		label = pullsMerging
+		label = i18n.T("pulls.pullRequestView.merging")
 	}
 	if d.Checks.Failed > 0 && busy != "merge" {
-		label = fmt.Sprintf(pullsMergeFailing, pullsMerge, d.Checks.Failed)
+		label = i18n.T("pulls.pullsPanels.mergeFailing", i18n.Args{"count": d.Checks.Failed})
 	}
 	b := th.Button(&v.mergeClick, label)
 	b.Icon, b.Size, b.Disabled = icPullMerged, ui.SizeSM, blocked || busy != ""
@@ -168,20 +144,17 @@ func (v *pullView) conflicts(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.P
 	}
 	switch {
 	case !read.loaded:
-		return line(pullsConflictsLoading)
+		return line(i18n.T("pulls.pullsConflicts.loading"))
 	case read.err != "":
-		return line(fmt.Sprintf(pullsConflictsFailed, read.err))
+		return line(i18n.T("pulls.pullsConflicts.failed", i18n.Args{"error": read.err}))
 	case len(read.val) == 0:
-		return line(pullsConflictsStale)
+		return line(i18n.T("pulls.pullsConflicts.stale"))
 	}
 	if v.conflictsMore.Clicked(gtx) {
 		v.conflictsAll.Value = !v.conflictsAll.Value
 	}
 	files := read.val
-	count := pullsConflictOne
-	if len(files) != 1 {
-		count = fmt.Sprintf(pullsConflictMany, len(files))
-	}
+	count := i18n.T("pulls.pullsConflicts.count", i18n.Args{"count": len(files)})
 	shown := files
 	if !v.conflictsAll.Value {
 		shown = files[:min(len(files), conflictsNamed)]
@@ -191,9 +164,9 @@ func (v *pullView) conflicts(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.P
 		items = append(items, ui.WrapItem(func(gtx C) D { return conflictPath(gtx, th, f) }))
 	}
 	if hidden := len(files) - conflictsNamed; hidden > 0 {
-		more := fmt.Sprintf(pullsMore, hidden)
+		more := i18n.T("pulls.pullsConflicts.more", i18n.Args{"hidden": hidden})
 		if v.conflictsAll.Value {
-			more = pullsShowFewer
+			more = i18n.T("pulls.pullsConflicts.showFewer")
 		}
 		items = append(items, ui.WrapItem(func(gtx C) D {
 			return v.conflictsMore.Layout(gtx, th.Text(ui.TextXS, more).In(th.Foreground).Weight(font.Medium).Layout)
@@ -242,13 +215,13 @@ func (v *pullView) overviewRows(th *ui.Theme, d lichclient.PRDetail, act *pullsA
 	}
 	body := strings.TrimSpace(d.Body)
 	return []layout.Widget{
-		pad(4, th.Text(ui.TextSM, fmt.Sprintf(pullsOpenedBy, d.Author)).Muted().Layout),
-		pad(5, sectionHeading(th, pullsReviewers)),
+		pad(4, th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": d.Author})).Muted().Layout),
+		pad(5, sectionHeading(th, i18n.T("pulls.pullsOverview.reviewers"))),
 		pad(2, func(gtx C) D { return reviewerChips(gtx, th, d.Reviewers) }),
-		pad(5, sectionHeading(th, pullsDescription)),
+		pad(5, sectionHeading(th, i18n.T("pulls.pullsOverview.description"))),
 		pad(2, func(gtx C) D {
 			if body == "" {
-				return th.Text(ui.TextSM, pullsNoDescription).Muted().Layout(gtx)
+				return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.noDescription")).Muted().Layout(gtx)
 			}
 			return v.md.layout(gtx, th, "body:"+d.URL, body, act.open)
 		}),
@@ -259,15 +232,26 @@ func sectionHeading(th *ui.Theme, text string) layout.Widget {
 	return th.Text(ui.TextXS, strings.ToUpper(text)).Muted().Weight(font.Medium).Layout
 }
 
-var reviewerVerdicts = map[string]string{
-	"APPROVED": "approved", "CHANGES_REQUESTED": "requested changes", "COMMENTED": "commented",
-	"DISMISSED": "review dismissed", "": "review requested",
+// reviewVerdict is what a review state says its author did, ok false for a
+// state GitHub has but this window has no words for.
+func reviewVerdict(state string) (text string, ok bool) {
+	switch state {
+	case "APPROVED":
+		return i18n.T("pulls.verdict.approved"), true
+	case "CHANGES_REQUESTED":
+		return i18n.T("pulls.verdict.changesRequested"), true
+	case "COMMENTED":
+		return i18n.T("pulls.verdict.commented"), true
+	case "DISMISSED":
+		return i18n.T("pulls.verdict.dismissed"), true
+	}
+	return "", false
 }
 
 // reviewerChips is the reviewers row: each login and what they said.
 func reviewerChips(gtx C, th *ui.Theme, reviewers []lichclient.PRReviewer) D {
 	if len(reviewers) == 0 {
-		return th.Text(ui.TextSM, pullsNobodyYet).Muted().Layout(gtx)
+		return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.nobodyYet")).Muted().Layout(gtx)
 	}
 	items := make([]ui.WrapChild, len(reviewers))
 	for i, r := range reviewers {
@@ -282,13 +266,17 @@ func reviewerChips(gtx C, th *ui.Theme, reviewers []lichclient.PRReviewer) D {
 		if r.IsTeam {
 			ic = icPullTeam
 		}
+		verdict, _ := reviewVerdict(r.State)
+		if r.State == "" {
+			verdict = i18n.T("pulls.verdict.requested")
+		}
 		items[i] = ui.WrapItem(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), fg) }),
 				ui.Gap(1.5),
 				layout.Rigid(th.Text(ui.TextSM, r.Login).Layout),
 				ui.Gap(1),
-				layout.Rigid(th.Text(ui.TextXS, reviewerVerdicts[r.State]).Muted().Layout),
+				layout.Rigid(th.Text(ui.TextXS, verdict).Muted().Layout),
 			)
 		})
 	}
@@ -298,7 +286,7 @@ func reviewerChips(gtx C, th *ui.Theme, reviewers []lichclient.PRReviewer) D {
 // commitRows is PullsCommits: each commit, its body behind a click.
 func (v *pullView) commitRows(gtx C, th *ui.Theme, d lichclient.PRDetail) []layout.Widget {
 	if len(d.Commits) == 0 {
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, pullsNoCommits) }}
+		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsCommits.none")) }}
 	}
 	now := gtx.Now
 	rows := make([]layout.Widget, len(d.Commits))
@@ -355,7 +343,7 @@ func commitRow(gtx C, th *ui.Theme, c lichclient.PRCommit, click *widget.Clickab
 // checkRows is PullsChecks: each check, its run opened in the browser.
 func (v *pullView) checkRows(gtx C, th *ui.Theme, d lichclient.PRDetail, act *pullsAction) []layout.Widget {
 	if len(d.CheckRuns) == 0 {
-		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, pullsNoChecks) }}
+		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsChecks.none")) }}
 	}
 	now := gtx.Now
 	rows := make([]layout.Widget, len(d.CheckRuns))

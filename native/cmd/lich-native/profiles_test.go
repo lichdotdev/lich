@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -46,8 +47,8 @@ func TestProfileUsageQuotesTheFiveHourWindow(t *testing.T) {
 		t.Errorf("profileUsage = %q, %v; want 12%% used", text, limited)
 	}
 	plan.Windows[1].Percent = 100
-	if text, limited := profileUsage(plan, true); text != profileUsageLimit || !limited {
-		t.Errorf("a spent window = %q, %v; want %q, limited", text, limited, profileUsageLimit)
+	if text, limited := profileUsage(plan, true); text != "limit" || !limited {
+		t.Errorf("a spent window = %q, %v; want \"limit\", limited", text, limited)
 	}
 	if text, _ := profileUsage(lichclient.QuotaPlan{Status: "signed-out"}, true); text != "" {
 		t.Errorf("a signed-out plan quoted %q", text)
@@ -63,6 +64,25 @@ func TestProfileBookNamesWhatItDoesNotKnow(t *testing.T) {
 	for stored, want := range map[string]string{"": "Personal", personalProfile: "Personal", "work": "Work", "gone": "gone"} {
 		if got := b.nameOf(stored); got != want {
 			t.Errorf("nameOf(%q) = %q, want %q", stored, got, want)
+		}
+	}
+}
+
+// The words name their keys at runtime, where the catalog scan cannot see
+// them: every provider's must read in every language, as the dialog and the
+// rows do.
+func TestEveryProfileSentenceReadsInEveryLanguage(t *testing.T) {
+	t.Cleanup(func() { i18n.SetCurrent(i18n.EN) })
+	providers := append([]profileProvider{claudeProfileProvider, codexProfileProvider, ompProfileProvider}, xdgProfileProviders...)
+	for _, locale := range i18n.Locales {
+		i18n.SetCurrent(locale)
+		for _, prov := range providers {
+			w := prov.words
+			for _, key := range []string{w.profileDescKey, w.profilesDescKey, w.copiedNoteKey, w.searchAlsoKey, w.profilesAlsoKey, w.newDescKey, w.renameDescKey, w.deleteDescKey, w.loginDescKey, w.addressDescKey} {
+				if key != "" && profileSentence(prov, key) == "" {
+					t.Errorf("%s %s: %q reads empty", locale, prov.kind, key)
+				}
+			}
 		}
 	}
 }

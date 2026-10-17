@@ -8,6 +8,8 @@ import (
 	"sync"
 
 	"github.com/godbus/dbus/v5"
+
+	"github.com/omartelo/lich/native/i18n"
 )
 
 // The freedesktop notification server (Desktop Notifications Specification
@@ -29,12 +31,6 @@ const (
 	noteActionDefault = "default"
 	noteActionOpen    = "open"
 	noteActionDismiss = "dismiss"
-)
-
-// ponytail: English until the native window has i18n.
-const (
-	noteOpenLabel    = "Open"
-	noteDismissLabel = "Dismiss"
 )
 
 // Expiry in milliseconds as the spec reads it: a waiting session's note stays
@@ -108,7 +104,8 @@ func (d *dbusNotes) notify(n desktopNote) {
 	if n.status == statusWaiting {
 		expire = noteNeverExpires
 	}
-	actions := []string{noteActionDefault, noteOpenLabel, noteActionOpen, noteOpenLabel, noteActionDismiss, noteDismissLabel}
+	open, dismiss := i18n.T("shell.projectEvents.open"), i18n.T("shell.uncleanExitGate.dismiss")
+	actions := []string{noteActionDefault, open, noteActionOpen, open, noteActionDismiss, dismiss}
 	var id uint32
 	err := d.conn.Object(notesService, notesPath).Call(notesIface+".Notify", 0,
 		notesApp, replaces, noteAppIcon(n), n.title, d.body(n), actions, d.hints(), expire).Store(&id)

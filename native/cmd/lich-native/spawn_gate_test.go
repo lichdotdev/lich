@@ -151,7 +151,7 @@ func TestParkClosesInsteadOfSpawning(t *testing.T) {
 	if parked != restored.ID {
 		t.Errorf("parked %q", parked)
 	}
-	if len(told) != 1 || told[0].Title != toastCheckoutGone {
+	if len(told) != 1 || told[0].Title != "This session's worktree is gone, so the session was closed. Re-create the worktree to pick it up again." {
 		t.Errorf("toasts %+v, want the checkout-gone notice", told)
 	}
 	g.mu.Lock()
@@ -168,7 +168,7 @@ func TestGoneConversationSpawnsFreshAndSaysSo(t *testing.T) {
 	if got := released(t, g); got != "" {
 		t.Errorf("resume = %q, want fresh", got)
 	}
-	if len(told) != 1 || told[0].Title != toastConversationGone {
+	if len(told) != 1 || told[0].Title != "The previous conversation is no longer available — starting a new session." {
 		t.Errorf("toasts %+v, want the conversation-gone notice", told)
 	}
 }

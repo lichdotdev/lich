@@ -10,6 +10,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -49,14 +50,14 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 	}
 	c.fetchSearch(settled)
 	if settled == "" {
-		return notice(gtx, th, searchPrompt)
+		return notice(gtx, th, i18n.T("dock.searchResults.prompt"))
 	}
 	data, loading, err := c.search.get()
 	switch {
 	case err != nil:
 		return notice(gtx, th, lichclient.ErrorText(err))
 	case loading:
-		return notice(gtx, th, searchSearching)
+		return notice(gtx, th, i18n.T("dock.searchResults.searching"))
 	}
 	groups := groupMatches(data.Matches)
 	note := strings.TrimSpace(searchFootnote(data) + " " + c.listingNote())
@@ -64,7 +65,7 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			if len(groups) == 0 {
-				return notice(gtx, th, fmt.Sprintf(searchNoMatch, settled))
+				return notice(gtx, th, i18n.T("dock.searchResults.noMatch", i18n.Args{"query": settled}))
 			}
 			return c.hitsView(gtx, th, data, groups)
 		}),

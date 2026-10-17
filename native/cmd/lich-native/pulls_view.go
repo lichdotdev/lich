@@ -12,25 +12,10 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (pulls.pullRequestView.*).
-const (
-	pullsOpenInSession = "Open in Session"
-	pullsGoToSession   = "Go to session"
-	pullsForkBlocked   = "The head branch lives on a fork that does not allow edits by maintainers — its commits could not be pushed back"
-	pullsApprove       = "Approve"
-	pullsApproved      = "Approved"
-	pullsMerge         = "Merge"
-	pullsRefresh       = "Refresh"
-	pullsOpenExternal  = "Open"
-	pullsBypass        = "%s, bypass rules"
-	pullsNoneForBranch = "No open pull request for %s."
-	pullsNone          = "No open pull request."
-	pullsOpenOnGitHub  = "Open on GitHub"
 )
 
 // The PR island's padding: PullRequestView's px-6 under the toolbar strip.
@@ -226,7 +211,7 @@ func (v *pullView) toolbarRow(gtx C, th *ui.Theme, p *pullsScreen, fill, right l
 			if !p.listHidden {
 				return D{}
 			}
-			return iconAction(gtx, th, p.root, &v.showList, icPullShow, pullsShowList, false)
+			return iconAction(gtx, th, p.root, &v.showList, icPullShow, i18n.T("pulls.pullsList.show"), false)
 		}),
 		layout.Flexed(1, fill),
 		layout.Rigid(func(gtx C) D {
@@ -268,16 +253,16 @@ func (v *pullView) empty(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction) 
 	if v.create.Clicked(gtx) {
 		act.create = true
 	}
-	text := pullsNone
+	text := i18n.T("pulls.pullsEmptyState.none")
 	if p.branch != "" {
-		text = fmt.Sprintf(pullsNoneForBranch, p.branch)
+		text = i18n.T("pulls.pullsEmptyState.noneFor", i18n.Args{"branch": p.branch})
 	}
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(th.Text(ui.TextSM, text).Muted().Layout),
 			ui.VGap(3),
 			layout.Rigid(func(gtx C) D {
-				b := th.Button(&v.create, pullsOpenOnGitHub)
+				b := th.Button(&v.create, i18n.T("pulls.pullsEmptyState.openOnGitHub"))
 				b.Icon, b.Variant, b.Size = icPullOut, ui.VariantOutline, ui.SizeSM
 				return b.Layout(gtx)
 			}),
@@ -356,26 +341,23 @@ func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDet
 func stateStat(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
 	switch {
 	case d.State == "MERGED":
-		return stat(gtx, th, icPullMerged, "Merged", th.MutedForeground)
+		return stat(gtx, th, icPullMerged, i18n.T("pulls.pullsStats.merged"), th.MutedForeground)
 	case d.State == "CLOSED":
-		return stat(gtx, th, icPullX, "Closed", th.MutedForeground)
+		return stat(gtx, th, icPullX, i18n.T("pulls.pullsStats.closed"), th.MutedForeground)
 	case d.IsDraft:
-		return stat(gtx, th, icPullRequests, "Draft", th.ToneWait)
+		return stat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.draft"), th.ToneWait)
 	}
-	return stat(gtx, th, icPullRequests, "Open", th.TonePass)
+	return stat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.open"), th.TonePass)
 }
 
 func checksStat(th *ui.Theme, c lichclient.ChecksRollup) (*icons.Icon, string, color.NRGBA, bool) {
 	switch verdictOf(c) {
 	case verdictFailed:
-		return icPullX, fmt.Sprintf("%d of %d checks failing", c.Failed, c.Total), th.Destructive, true
+		return icPullX, i18n.T("pulls.pullsStats.checksFailing", i18n.Args{"failed": c.Failed, "total": c.Total}), th.Destructive, true
 	case verdictPending:
-		return icPullClock, fmt.Sprintf("%d of %d checks running", c.Pending, c.Total), th.ToneWait, true
+		return icPullClock, i18n.T("pulls.pullsStats.checksRunning", i18n.Args{"pending": c.Pending, "total": c.Total}), th.ToneWait, true
 	case verdictPassed:
-		if c.Passed == 1 {
-			return icPullCheck, "1 check passed", th.TonePass, true
-		}
-		return icPullCheck, fmt.Sprintf("%d checks passed", c.Passed), th.TonePass, true
+		return icPullCheck, i18n.T("pulls.pullsStats.checksPassed", i18n.Args{"count": c.Passed}), th.TonePass, true
 	}
 	return nil, "", color.NRGBA{}, false
 }
@@ -385,11 +367,11 @@ func mergeableStat(th *ui.Theme, d lichclient.PRDetail) (*icons.Icon, string, co
 	case d.State != "OPEN":
 		return nil, "", color.NRGBA{}, false
 	case conflictsWithBase(d):
-		return icPullX, fmt.Sprintf(pullsConflictsText, d.BaseRefName), th.Destructive, true
+		return icPullX, i18n.T("pulls.pullsStats.conflictsWith", i18n.Args{"base": d.BaseRefName}), th.Destructive, true
 	case d.Mergeable == "MERGEABLE":
-		return icPullMerged, "Mergeable", th.TonePass, true
+		return icPullMerged, i18n.T("pulls.pullsStats.mergeable"), th.TonePass, true
 	}
-	return icPullDashed, "Checking mergeability…", th.MutedForeground, true
+	return icPullDashed, i18n.T("pulls.pullsStats.checkingMergeability"), th.MutedForeground, true
 }
 
 // reviewStat is ReviewStat: the verdict, and on changes requested how the
@@ -397,17 +379,17 @@ func mergeableStat(th *ui.Theme, d lichclient.PRDetail) (*icons.Icon, string, co
 func reviewStat(th *ui.Theme, decision string, open, total int) (*icons.Icon, string, color.NRGBA, bool) {
 	switch {
 	case decision == "CHANGES_REQUESTED" && total > 0 && open > 0:
-		return icPullX, fmt.Sprintf("Changes requested · %d of %d threads unresolved", open, total), th.Destructive, true
+		return icPullX, i18n.T("pulls.pullsStats.threadsUnresolved", i18n.Args{"open": open, "total": total}), th.Destructive, true
 	case decision == "CHANGES_REQUESTED" && total > 0:
-		return icPullCheck2, "Changes requested · all threads resolved", th.ToneWait, true
+		return icPullCheck2, i18n.T("pulls.pullsStats.threadsResolved"), th.ToneWait, true
 	}
 	switch decision {
 	case "APPROVED":
-		return icPullCheck, "Approved", th.TonePass, true
+		return icPullCheck, i18n.T("pulls.pullsStats.approved"), th.TonePass, true
 	case "CHANGES_REQUESTED":
-		return icPullX, "Changes requested", th.Destructive, true
+		return icPullX, i18n.T("pulls.pullsStats.changesRequested"), th.Destructive, true
 	case "REVIEW_REQUIRED":
-		return icPullDashed, "Review required", th.MutedForeground, true
+		return icPullDashed, i18n.T("pulls.pullsStats.reviewRequired"), th.MutedForeground, true
 	}
 	return nil, "", color.NRGBA{}, false
 }
@@ -440,14 +422,26 @@ func (v *pullView) showTab(d lichclient.PRDetail, tab pullsTab) {
 	}
 }
 
-var pullsTabLabels = map[pullsTab]string{tabOverview: "Overview", tabConversation: "Conversation", tabCommits: "Commits", tabFiles: "Files", tabChecks: "Checks"}
+func (t pullsTab) label() string {
+	switch t {
+	case tabConversation:
+		return i18n.T("pulls.pullRequestView.tab.conversation")
+	case tabCommits:
+		return i18n.T("pulls.pullRequestView.tab.commits")
+	case tabFiles:
+		return i18n.T("pulls.pullsView.tabFiles")
+	case tabChecks:
+		return i18n.T("pulls.pullRequestView.tab.checks")
+	}
+	return i18n.T("pulls.pullRequestView.tab.overview")
+}
 
 func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail) D {
 	items, resolved := conversationTimeline(p.store.conversation(p.project.Path, d.Number).val)
 	counts := map[pullsTab]int{tabConversation: len(items) + len(resolved), tabCommits: len(d.Commits), tabFiles: d.ChangedFiles, tabChecks: d.Checks.Total}
 	var triggers []ui.TabsTrigger
 	for _, t := range tabsOf(d) {
-		trigger := ui.TabsTrigger{Text: pullsTabLabels[t]}
+		trigger := ui.TabsTrigger{Text: t.label()}
 		if n := counts[t]; n > 0 {
 			trigger.Trailing = th.Text(ui.TextSM, fmt.Sprint(n)).Muted().Layout
 		}

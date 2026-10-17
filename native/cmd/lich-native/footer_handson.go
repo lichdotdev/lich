@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 	"time"
-)
 
-// English until the native window has i18n.
+	"github.com/omartelo/lich/native/i18n"
+)
 
 // handsOnRung says which signals beat a provider's hands-on clock
 // (hands-on.ts RUNG): a "turn" provider's hooks open a turn, a "tool" one is
@@ -100,9 +100,9 @@ func (h *handsOn) refresh() {
 // handsOnReadout is HandsOnReadout. False under a minute: "0m" reads as a
 // broken readout rather than a new session.
 func handsOnReadout(seconds int64, err error, provider string) (footerReadout, bool) {
-	const label = "Hands-on time"
+	label := i18n.T("shell.footerSession.handsOnTime")
 	if err != nil {
-		return footerReadout{Label: label, Text: "—", Detail: []string{"Could not read hands-on time."}}, true
+		return footerReadout{Label: label, Text: "—", Detail: []string{i18n.T("shell.footerSession.handsOnFailed")}}, true
 	}
 	hours, minutes, ok := handsOnParts(seconds)
 	if !ok {
@@ -134,7 +134,7 @@ func handsOnParts(seconds int64) (hours, minutes string, ok bool) {
 // internal/terminal/handson.go.
 func handsOnDetail(provider string) string {
 	if handsOnRung[provider] == "tool" {
-		return "How long this session has been worked on — typed at, or reporting a tool call. A gap longer than 15 minutes counts as time away."
+		return i18n.T("session.handsOn.detailTool")
 	}
-	return "How long this session has been worked on — typed at, reporting, or running a turn. A gap longer than 15 minutes counts as time away."
+	return i18n.T("session.handsOn.detailTurn")
 }

@@ -6,18 +6,10 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
-)
-
-// ponytail: English until the native window has i18n (diff.diffBulk, and
-// the header's per-panel take on Settings › Editor's diff layout).
-const (
-	actionCollapseAll = "Collapse all files"
-	actionExpandAll   = "Expand all files"
-	actionSplit       = "Side by side"
-	actionUnified     = "Unified"
 )
 
 var (
@@ -59,13 +51,13 @@ func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 	for a.split.click.Clicked(gtx) {
 		p.split = !p.split
 	}
-	bulkIcon, bulkLabel := icExpandAll, actionExpandAll
+	bulkIcon, bulkLabel := icExpandAll, i18n.T("diff.diffBulk.expandAll")
 	if p.bulkOpen {
-		bulkIcon, bulkLabel = icCollapseAll, actionCollapseAll
+		bulkIcon, bulkLabel = icCollapseAll, i18n.T("diff.diffBulk.collapseAll")
 	}
-	splitLabel := actionSplit
+	splitLabel := i18n.T("diff.dockReviewBody.split")
 	if p.split {
-		splitLabel = actionUnified
+		splitLabel = i18n.T("diff.dockReviewBody.unified")
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return iconAction(gtx, th, p.root, &a.split, icSplit, splitLabel, p.split) }),
@@ -78,11 +70,11 @@ func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 func (p *reviewPanel) panelBody(gtx C, th *ui.Theme) {
 	switch r := p.shown; {
 	case r == nil:
-		notice(gtx, th, reviewLoading)
+		notice(gtx, th, i18n.T("diff.reviewPanel.loading"))
 	case r.failed:
-		notice(gtx, th, reviewNotRepository)
+		notice(gtx, th, i18n.T("diff.reviewPanel.notRepository"))
 	case len(p.order) == 0:
-		notice(gtx, th, reviewNoChanges)
+		notice(gtx, th, i18n.T("diff.reviewPanel.noChanges"))
 	default:
 		p.fileList(gtx, th)
 	}
@@ -150,7 +142,7 @@ func (p *reviewPanel) squeezedNote(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icSplit.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 			ui.Gap(1.5),
-			layout.Rigid(th.Text(small, reviewSqueezed).Muted().Layout),
+			layout.Rigid(th.Text(small, i18n.T("diff.reviewPanel.squeezed")).Muted().Layout),
 		)
 	})
 }

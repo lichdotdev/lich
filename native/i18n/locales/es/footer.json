@@ -39,5 +39,11 @@
     "clock": {
       "label": "Fecha y hora"
     }
+  },
+  "footerEditor": {
+    "previewHint": "Vista previa · valores de ejemplo"
+  },
+  "footerMenu": {
+    "customize": "Personalizar pie de ventana…"
   }
 }

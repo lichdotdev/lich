@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"slices"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 	"github.com/omartelo/lich/native/ui"
 )
@@ -24,34 +24,6 @@ const (
 	sandboxLadderKey = "sandbox.ladder"
 )
 
-// ponytail: English until the native window has i18n (settings.sandboxSettings,
-// env.sandbox).
-const (
-	sandboxSummary     = "An empty home, the machine read-only, writes only in the checkout. The network stays on."
-	confinedTitle      = "Which sessions run confined"
-	confinedAlso       = "isolate bwrap seatbelt"
-	confinedHint       = "Ask puts the question in the New session menu and the New worktree dialog. A session opened where nobody can answer — by another session, or through the MCP tool — is confined. Terminals are never confined; the sandbox is for agents working unattended."
-	carryTitle         = "What a confined session may carry in"
-	sshTitle           = "SSH agent"
-	sshAlso            = "push keys"
-	sshDesc            = "git push works inside. Signs with every identity in your agent, against any host, for as long as the session runs."
-	sshLoaded          = "Loaded: "
-	sshNone            = "Nothing loaded."
-	ghTitle            = "GitHub token"
-	ghAlso             = "gh credentials"
-	ghDesc             = "gh works inside. The agent can read the token out of its environment and spend it outside this repository."
-	ghAccountAs        = "As %s."
-	ghActiveAccount    = "As gh's active account."
-	rungConfirmTitle   = "Confine fewer %s sessions"
-	rungConfirmDesc    = "%s — %s"
-	rungConfirm        = "Leave unconfined"
-	canConfineText     = "This machine can confine sessions"
-	cannotConfineText  = "This machine cannot confine sessions"
-	statusDetailPrefix = "— "
-	grantOn            = "On"
-	grantOff           = "Off"
-)
-
 // The rungs, ordered by how much of the machine a confined session's
 // provider leaves out of the sandbox: "off" confines nothing.
 const (
@@ -61,21 +33,14 @@ const (
 	rungEverywhere = "everywhere"
 )
 
-var sandboxRungs = []struct{ value, label, exposes string }{
-	{rungOff, "Off", "Every session runs on the machine."},
-	{rungAsk, "Ask", "A session whose box you untick runs on the machine."},
-	{rungWorktrees, "Worktrees", "Sessions in the project directory run on the machine."},
-	{rungEverywhere, "Everywhere", ""},
-}
+var sandboxRungs = []string{rungOff, rungAsk, rungWorktrees, rungEverywhere}
 
 func sandboxKey(providerID string) string { return "provider." + providerID + ".sandbox" }
 
 // sandboxLevel is providers-store.ts sandboxLevel: anything unknown is off.
 func sandboxLevel(raw string) string {
-	for _, r := range sandboxRungs {
-		if r.value == raw {
-			return raw
-		}
+	if slices.Contains(sandboxRungs, raw) {
+		return raw
 	}
 	return rungOff
 }
@@ -83,37 +48,30 @@ func sandboxLevel(raw string) string {
 // loosens is climbsToRiskier over the ladder: a move toward fewer confined
 // sessions, the only one confirmed. Re-choosing the same rung is no move.
 func loosens(current, next string) bool {
-	rank := func(v string) int {
-		return slices.IndexFunc(sandboxRungs, func(r struct{ value, label, exposes string }) bool { return r.value == v })
-	}
-	return rank(next) < rank(current)
+	return slices.Index(sandboxRungs, next) < slices.Index(sandboxRungs, current)
 }
 
 func rungLabel(value string) string {
-	for _, r := range sandboxRungs {
-		if r.value == value {
-			return r.label
-		}
+	if !slices.Contains(sandboxRungs, value) {
+		return value
 	}
-	return value
+	return i18n.T("settings.sandboxSettings.rung." + value)
 }
 
 // rungExposes is what a rung leaves running on the machine, said only when
-// it is being climbed to.
+// it is being climbed to. The widest rung leaves nothing running there.
 func rungExposes(value string) string {
-	for _, r := range sandboxRungs {
-		if r.value == value {
-			return r.exposes
-		}
+	if value == rungEverywhere || !slices.Contains(sandboxRungs, value) {
+		return ""
 	}
-	return ""
+	return i18n.T("settings.sandboxSettings.exposes." + value)
 }
 
 func grantLabel(raw string) string {
 	if raw == "true" {
-		return grantOn
+		return i18n.T("settings.settingsSandbox.grantOn")
 	}
-	return grantOff
+	return i18n.T("settings.settingsSandbox.grantOff")
 }
 
 // effectiveValue is what a spawn in scope reads, as the backend's
@@ -133,16 +91,16 @@ func ghAccountLine(account string) string {
 		login = after
 	}
 	if login == "" {
-		return ghActiveAccount
+		return i18n.T("settings.sandboxSettings.ghActiveAccount")
 	}
-	return fmt.Sprintf(ghAccountAs, login)
+	return i18n.T("settings.sandboxSettings.ghAccount", i18n.Args{"login": login})
 }
 
 func agentKeysLine(keys []string) string {
 	if len(keys) == 0 {
-		return sshNone
+		return i18n.T("settings.sandboxSettings.sshNone")
 	}
-	return sshLoaded + strings.Join(keys, " · ")
+	return i18n.T("settings.sandboxSettings.sshLoaded", i18n.Args{"keys": strings.Join(keys, " · ")})
 }
 
 // cannotConfineCopy is sandbox-copy.ts: the reason after the em dash and the
@@ -150,11 +108,11 @@ func agentKeysLine(keys []string) string {
 func cannotConfineCopy(goos string) (reason, advice string) {
 	switch goos {
 	case "windows":
-		return "lich has no sandbox backend on Windows", "There is nothing to install — every session runs on the machine."
+		return i18n.T("env.sandbox.windowsReason"), i18n.T("env.sandbox.windowsAdvice")
 	case "darwin":
-		return "sandbox-exec is not available", "macOS ships /usr/bin/sandbox-exec, so a machine without a working one is broken in a way lich cannot repair. Every session runs on the machine."
+		return i18n.T("env.sandbox.macReason"), i18n.T("env.sandbox.macAdvice")
 	}
-	return "bubblewrap is not installed", "Install bubblewrap and reopen lich. Until then every session runs on the machine."
+	return i18n.T("env.sandbox.linuxReason"), i18n.T("env.sandbox.linuxAdvice")
 }
 
 // sandboxRungEntries are every provider's rung, scoped on its own key. They

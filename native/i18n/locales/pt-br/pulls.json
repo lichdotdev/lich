@@ -136,7 +136,15 @@
     "dismiss": "Dispensar",
     "why": "Por que esta revisão não vale mais",
     "dismissReview": "Dispensar revisão",
-    "whyPlaceholder": "O que mudou desde que foi escrita"
+    "whyPlaceholder": "O que mudou desde que foi escrita",
+    "readFailed": "Não foi possível ler a conversa: {error}",
+    "nothingYet": "Nada dito ainda.",
+    "line": "linha {line}",
+    "lines": "linhas {start}-{end}",
+    "outdated": "desatualizada",
+    "pendingHead": "Revisão pendente",
+    "pendingNote": "Enviada quando você enviar a revisão.",
+    "discard": "Descartar"
   },
   "pullsOverview": {
     "saveFailed": "Não foi possível salvar a descrição: {error}",
@@ -215,7 +223,8 @@
     },
     "draft": "Rascunho",
     "fork": "fork",
-    "checkedOut": "em checkout"
+    "checkedOut": "em checkout",
+    "searchHint": "Filtre por número, título, autor ou branch"
   },
   "pullsFiles": {
     "loadFailed": "Não foi possível carregar o diff: {error}",
@@ -223,7 +232,8 @@
     "resizeTree": "Redimensionar a árvore de arquivos",
     "hideTree": "Ocultar a árvore de arquivos",
     "showTree": "Mostrar a árvore de arquivos",
-    "viewed": "{viewed} de {total} vistos"
+    "viewed": "{viewed} de {total} vistos",
+    "loading": "Lendo o diff…"
   },
   "reviewThread": {
     "replyFailed": "Falha ao responder: {error}",
@@ -309,5 +319,36 @@
       "conversation": "Conversa",
       "checks": "Verificações"
     }
+  },
+  "pullsActions": {
+    "runningTitle": "As sessões ainda estão em execução",
+    "running": {
+      "one": "Uma sessão em {name} está no meio de um turno. Remover o worktree a interrompe; o turno em andamento é perdido.",
+      "other": "{count} sessões em {name} estão no meio de um turno. Remover o worktree as interrompe; o turno em andamento é perdido."
+    }
+  },
+  "pullsView": {
+    "tabFiles": "Arquivos"
+  },
+  "pullsLogic": {
+    "failing": {
+      "one": "{count} verificação está falhando; o GitHub fará o merge mesmo assim",
+      "other": "{count} verificações estão falhando; o GitHub fará o merge mesmo assim"
+    },
+    "durationSeconds": "{value}s",
+    "durationMinutes": "{value}min",
+    "durationHours": "{value}h"
+  },
+  "pullsPanels": {
+    "mergeFailing": "Merge · {count} falhando"
+  },
+  "pullsSubmit": {
+    "review": "Enviar revisão {count}",
+    "withComments": {
+      "one": "Com {count} comentário em linha.",
+      "other": "Com {count} comentários em linha."
+    },
+    "send": "Enviar",
+    "sending": "Enviando…"
   }
 }

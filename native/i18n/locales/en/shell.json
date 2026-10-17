@@ -201,5 +201,21 @@
     "open": "Open",
     "needsInput": "{label} needs your input",
     "finished": "{label} has finished working"
+  },
+  "windowClose": {
+    "changeInSettings": "· change it in Settings › General",
+    "quitFailed": "Could not quit lich: {error}",
+    "countFailed": "Could not count the running sessions: {error}"
+  },
+  "reconnect": {
+    "reconnecting": "Reconnecting to lich…"
+  },
+  "main": {
+    "lostTitle": "Another lich window took over, or lich quit.",
+    "lostHint": "Run `lich native` to reopen here.",
+    "renameFailed": "Couldn't rename the session: {error}"
+  },
+  "notifyPrompt": {
+    "description": "A session just asked for your input while you were somewhere else. lich can raise a desktop notification when that happens, naming the session and its project, so you can start something and walk away from the window. Sessions you are looking at never notify. You can change this any time in Settings › General."
   }
 }
