@@ -225,6 +225,27 @@ func (s *Service) OpenFolder(dir string) error {
 	return s.openFolder(dir)
 }
 
+// OpenFile hands one work-tree file to the application the desktop opens its
+// type with: an image viewer, a PDF reader. Unlike OpenInEditor it never
+// consults $VISUAL/$EDITOR, which would open a PNG in vim. rel goes through
+// relpath.Resolve, as project.ReadFile does, so a symlink out of the checkout
+// is refused rather than opened. The launcher is openFolder's: xdg-open, open
+// and explorer each hand any path, file or folder, to its default handler.
+func (s *Service) OpenFile(dir, rel string) error {
+	full, err := relpath.Resolve(dir, rel)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(full)
+	if err != nil {
+		return fmt.Errorf("stat %s: %w", rel, err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%s is not a regular file", rel)
+	}
+	return s.openFolder(full)
+}
+
 // requireDir refuses a path that is not a directory any more, naming it. lich
 // watches no checkout: a worktree removed from a terminal, or a project folder
 // moved, still has its card, and a launcher handed the dead path either does

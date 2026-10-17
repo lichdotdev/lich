@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The native window shows images.** A PNG, JPEG, GIF, WebP or BMP opens in
+  the Files tab's preview over a checkerboard, with its size and dimensions,
+  and a changed image in the Review shows before and after side by side. A
+  PDF, or any other file with no preview, offers Open in default app and Show
+  in folder instead of an error; in a pull request, a binary file links to
+  itself on GitHub.
+
 ## [0.69.0] - 2026-10-16
 
 ### Added

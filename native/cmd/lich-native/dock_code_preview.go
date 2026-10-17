@@ -34,6 +34,9 @@ type preview struct {
 	family string
 	size   unit.Sp
 	file   remote[string]
+	image  *blobView
+	exits  fileExits
+	scroll widget.List
 
 	rel  string // "" while closed
 	line int    // the line to land on, 1-based; 0 for the top
@@ -57,11 +60,13 @@ type previewEnv struct {
 	code     godemirror.Theme
 	inject   func(string) bool
 	comments *commentStore
+	notify   func(ui.Toast)
 }
 
 func newPreview(client *lichclient.Client, view *godemirror.View, family string, size unit.Sp, invalidate func()) *preview {
-	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1}
+	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1, image: newBlobView(invalidate)}
 	p.file.invalidate = invalidate
+	p.scroll.Axis = layout.Vertical
 	return p
 }
 
@@ -76,6 +81,7 @@ func (p *preview) close() {
 	p.rel = ""
 	p.composer.close()
 	p.file.stop()
+	p.image.read.stop()
 }
 
 func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D, error) {
@@ -85,16 +91,29 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 		return D{Size: gtx.Constraints.Max}, nil
 	}
 	key, path, rel := env.checkout+"\x00"+p.rel, env.checkout, p.rel
-	p.file.want(key, key, func(ctx context.Context) (string, error) {
-		var text string
-		return text, p.client.Call(ctx, "project.ReadFile", &text, path, rel)
-	})
+	kind := previewKindOf(rel)
+	p.exits.update(gtx, p.client, env.notify, path, rel)
+	switch kind {
+	case blobImage:
+		p.image.want(p.client, path, rel, "", "")
+	case blobNone:
+		p.file.want(key, key, func(ctx context.Context) (string, error) {
+			var text string
+			return text, p.client.Call(ctx, "project.ReadFile", &text, path, rel)
+		})
+	}
 	var err error
 	dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.header(gtx, th, root) }),
 		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
+			switch kind {
+			case blobImage:
+				return p.imageBody(gtx, th)
+			case blobPDF:
+				return binaryState(gtx, th, binaryPDF, binaryPDFHint, &p.exits)
+			}
 			var d D
 			d, err = p.body(gtx, th, root, key)
 			return d
@@ -149,7 +168,7 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 	text, loading, err := p.file.get()
 	switch {
 	case err != nil:
-		return notice(gtx, th, lichclient.ErrorText(err)), nil
+		return binaryState(gtx, th, lichclient.ErrorText(err), "", &p.exits), nil
 	case loading:
 		return notice(gtx, th, codeLoading), nil
 	}
@@ -171,6 +190,13 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 		})
 	})
 	return dims, viewErr
+}
+
+// imageBody is the image in p-3, scrolling when it is taller than the panel.
+func (p *preview) imageBody(gtx C, th *ui.Theme) D {
+	return th.ScrollArea(&p.scroll).Layout(gtx, 1, func(gtx C, _ int) D {
+		return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D { return p.image.layout(gtx, th) })
+	})
 }
 
 // show puts a new read on the view, landing on the line a search hit named,

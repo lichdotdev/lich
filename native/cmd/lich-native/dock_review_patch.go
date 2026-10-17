@@ -17,6 +17,7 @@ type patchFile struct {
 	path, oldPath string
 	status        fileStatus
 	binary        bool
+	blobs         string // the index line's "old..new", which tells one state of the file from another
 	header        []string
 	hunks         []patchHunk
 }
@@ -92,6 +93,10 @@ func (f *patchFile) readHeader(line string) {
 		f.status = statusDeleted
 	case strings.HasPrefix(line, "rename from "):
 		f.status, f.oldPath = statusRenamed, strings.TrimPrefix(line, "rename from ")
+	case strings.HasPrefix(line, "index "):
+		if fields := strings.Fields(line); len(fields) > 1 {
+			f.blobs = fields[1]
+		}
 	case strings.HasPrefix(line, "Binary files ") || line == "GIT binary patch":
 		f.binary = true
 	case strings.HasPrefix(line, "--- a/"):

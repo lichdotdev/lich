@@ -322,7 +322,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `<img>`, so HEIC, TIFF and PSD fall back to the "can't be previewed" line, and a Git LFS file shows the
   pointer's text diff, never the image. Previews are not deferred the way a text diff's editor is
   (`LazyDiffBody`): every image or PDF in an open Review panel is fetched as the panel opens, and a working
-  tree side is fetched again whenever its blob id in the diff changes.
+  tree side is fetched again whenever its blob id in the diff changes. The native window reads the same
+  endpoint and decodes in Go (`native/cmd/lich-native/blob_preview.go`): PNG, JPEG, GIF (its first frame
+  only), WebP and BMP, so AVIF and ICO, which the web draws, show the no-preview state there. It refuses an
+  image whose header claims more than 40 MP before decoding it, holds it scaled to 2048 px on its longest
+  side (no zoom), and never draws a PDF: Open in default app (`system.OpenFile`) reaches only a file in the
+  working tree, so the old side of a change, a turn's snapshot and a pull request's file have no way out but
+  GitHub's page.
 - **A line revert rebuilds its patch, and some of it cannot be done** (`internal/project/revertlines.go`): the
   panel sends line numbers and the text it drew, never a patch, so a file that moved since the draw is refused
   instead of reverting whatever those numbers point at now. The index is reverted with the working tree when it

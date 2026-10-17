@@ -56,6 +56,7 @@ type fileCard struct {
 	filled map[int]int
 
 	view         *godemirror.DiffView
+	bin          *binaryPreview
 	viewFail     bool
 	afford       *affordances
 	blocks       cardBlocks
@@ -105,7 +106,10 @@ func (c *fileCard) sync(f patchFile, hiding bool) {
 }
 
 func (c *fileCard) openByDefault() bool {
-	return !c.git.binary && diffRows(c.git, false, nil) <= largeFileRows
+	if c.git.binary {
+		return c.previewsImage()
+	}
+	return diffRows(c.git, false, nil) <= largeFileRows
 }
 
 func (c *fileCard) onlyWhitespace() bool { return whitespaceOnly(c.shown, c.git) }
@@ -233,7 +237,7 @@ func (c *fileCard) body(gtx C, p *reviewPanel) D {
 	th := p.th
 	switch {
 	case c.git.binary:
-		return bodyLine(gtx, th, fileBinary)
+		return c.binaryBody(gtx, p)
 	case c.onlyWhitespace():
 		return bodyLine(gtx, th, fileOnlyWhitespace)
 	}

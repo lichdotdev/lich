@@ -106,6 +106,7 @@ type reviewPanel struct {
 // PR's head, and each file tickable as viewed.
 type prFiles struct {
 	head string
+	url  string // the pull request's page
 	// viewed is each ticked file's diff text when it was ticked: a commit
 	// that changes the file unticks it, one that does not leaves it
 	// (pull-request-viewed.ts).

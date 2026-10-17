@@ -114,7 +114,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PR
 		viewed = map[string]string{}
 		v.viewed[d.URL] = viewed
 	}
-	files.pr.viewed = viewed
+	files.pr.viewed, files.pr.url = viewed, d.URL
 	review := v.pendingOf(d.URL)
 	files.pr.toReview = review.add
 	v.inline = inlineFrame{th: th, p: p, d: d, act: act, now: gtx.Now}

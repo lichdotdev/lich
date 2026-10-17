@@ -38,7 +38,7 @@ from `main` either drowns in merges or freezes the web app for months.
   keep every PTY and session running, with the tray to bring a window back and `lich quit` to end it. A native
   window is one more client of that backend, the way the web page is.
 - **`native/` is its own Go module**, built into its own binary, `lich-native`. It talks to the backend only
-  through the contract the web page uses (RPC, `/events`, `/ws`), never by importing `internal/`. That keeps
+  through the contract the web page uses (RPC, `/events`, `/ws`, and `/blob` for an image's bytes), never by importing `internal/`. That keeps
   the two windows honest against one contract, and keeps the next point possible.
 - **`lich native`** is how it starts. The subcommand finds the running lich the way `lich quit` and
   `lich focus` do (its runtime file: port and token), or starts `lich --no-window` in the background when none

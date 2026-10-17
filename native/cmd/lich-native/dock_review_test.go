@@ -98,9 +98,36 @@ func TestBigFilesStartCollapsed(t *testing.T) {
 	if c := newFileCard(nil, onlyFile(t, addedLines(largeFileRows+1)), false, 0); c.open {
 		t.Error("a file past the bar starts open, want collapsed")
 	}
-	bin := onlyFile(t, "diff --git a/a.png b/a.png\nBinary files a/a.png and b/a.png differ\n")
-	if c := newFileCard(nil, bin, false, 0); c.open {
-		t.Error("a binary file starts open, want collapsed: it has no preview to show")
+}
+
+func TestBinaryFilesOpenWhenTheyHaveAPreview(t *testing.T) {
+	p := &reviewPanel{}
+	img := onlyFile(t, "diff --git a/a.png b/a.png\nBinary files a/a.png and b/a.png differ\n")
+	if c := newFileCard(p, img, false, 0); !c.open {
+		t.Error("a changed image starts collapsed, want open: its two sides are the diff")
+	}
+	zip := onlyFile(t, "diff --git a/a.zip b/a.zip\nBinary files a/a.zip and b/a.zip differ\n")
+	if c := newFileCard(p, zip, false, 0); c.open {
+		t.Error("a binary with no preview starts open, want collapsed")
+	}
+	p.pr = &prFiles{}
+	if c := newFileCard(p, img, false, 0); c.open {
+		t.Error("an image in a pull request starts open, want collapsed: this clone holds neither side")
+	}
+}
+
+func TestPatchKeepsTheBlobIDsOfABinary(t *testing.T) {
+	f := onlyFile(t, "diff --git a/a.png b/a.png\nindex 1a2b3c4..5d6e7f8 100644\nBinary files a/a.png and b/a.png differ\n")
+	if f.blobs != "1a2b3c4..5d6e7f8" {
+		t.Errorf("blobs = %q, want the index line's ids", f.blobs)
+	}
+}
+
+func TestPRFileURLAnchorsTheFile(t *testing.T) {
+	got := prFileURL("https://github.com/o/r/pull/7/", "frontend/public/og-card.png")
+	want := "https://github.com/o/r/pull/7/files#diff-d90a4ea99bc7c7480992c895a9d777870268f64a5b9b12c354b632cc7c21b6dd"
+	if got != want {
+		t.Errorf("got %s\nwant %s", got, want)
 	}
 }
 

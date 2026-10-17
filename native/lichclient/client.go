@@ -1,6 +1,6 @@
 // Package lichclient talks to a lich backend the way its web page does:
 // positional-argument RPC over HTTP, the /events WebSocket for state changes,
-// and the /ws WebSocket for terminal bytes.
+// the /ws WebSocket for terminal bytes, and /blob for a preview's raw bytes.
 //
 // The backend serves one client per socket and a new connection drops the
 // previous one, so a backend the lich window is using cannot also serve this

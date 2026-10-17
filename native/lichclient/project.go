@@ -74,3 +74,9 @@ func (c *Client) TakeUncleanExit(ctx context.Context) (bool, error) {
 	var unclean bool
 	return unclean, c.Call(ctx, "system.TakeUncleanExit", &unclean)
 }
+
+// OpenFile opens rel, a file of the checkout at dir, in the application the
+// desktop opens its type with, never in the user's editor.
+func (c *Client) OpenFile(ctx context.Context, dir, rel string) error {
+	return c.Call(ctx, "system.OpenFile", nil, dir, rel)
+}

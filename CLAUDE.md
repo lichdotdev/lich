@@ -35,8 +35,8 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   window is a *separate* binary, `shell/` (Rust on CEF via a kurogane fork), launched with the same argv as a
   system browser plus one switch of its own — nothing about it reaches the Go build (`docs/chromium-shell.md`).
   The native window, `native/`, is the other exception: its own Go module and binary, `lich-native`, built
-  with cgo (Gio, libghostty-vt), talking to the backend only over RPC, `/events` and `/ws`, never importing
-  `internal/` (`docs/native-window.md`).
+  with cgo (Gio, libghostty-vt), talking to the backend only over RPC, `/events`, `/ws` and `/blob`, never
+  importing `internal/` (`docs/native-window.md`).
 - OS-specific code is selected by build tags behind small seams, never by runtime checks — the PTY is the model
   (`internal/terminal`).
 - No literal user-visible or agent-facing text: a string a person reads on a lich screen, or that lich types
