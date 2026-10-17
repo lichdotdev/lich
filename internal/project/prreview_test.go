@@ -10,6 +10,7 @@ import (
 )
 
 func TestReviewPayload(t *testing.T) {
+	t.Parallel()
 	t.Run("a plain approval carries no body and no comments", func(t *testing.T) {
 		payload, err := reviewPayload("approve", "", "abc123", nil)
 		if err != nil {
@@ -79,6 +80,7 @@ func TestReviewPayload(t *testing.T) {
 }
 
 func TestSubmitReviewFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("the review reaches gh as a JSON body, and the file does not outlive it", func(t *testing.T) {
 		gh := &fakeGH{}
 		comments := []ReviewComment{{Path: "a.go", Line: 4, Body: "why"}}
@@ -151,6 +153,7 @@ func TestSubmitReviewFlow(t *testing.T) {
 }
 
 func TestReplyToReviewThreadFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("a reply is addressed to the comment's database id", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).ReplyToReviewThread("/repo", 42, 900001, "dropped it"); err != nil {
@@ -178,6 +181,7 @@ func TestReplyToReviewThreadFlow(t *testing.T) {
 }
 
 func TestResolveReviewThreadFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("resolving and reopening are two mutations, one node id", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).ResolveReviewThread("/repo", "PRRT_kw1", true); err != nil {
@@ -208,6 +212,7 @@ func TestResolveReviewThreadFlow(t *testing.T) {
 }
 
 func TestDismissReviewFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("the node id and the reason both reach the mutation", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).DismissReview("/repo", "PRR_kw1", "fixed in 4a1c2f0"); err != nil {
@@ -245,6 +250,7 @@ func TestDismissReviewFlow(t *testing.T) {
 }
 
 func TestCommentOnPullRequestFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("a numbered pull request is addressed by number", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).CommentOnPullRequest("/repo", 42, "rebased"); err != nil {

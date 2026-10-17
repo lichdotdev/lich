@@ -28,6 +28,7 @@ func commitIn(t *testing.T, dir string, git func(args ...string) string, content
 }
 
 func TestBaseFreshnessWithoutUpstream(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 
 	got, err := New(nil).BaseFreshness(repo, "main")
@@ -42,6 +43,7 @@ func TestBaseFreshnessWithoutUpstream(t *testing.T) {
 // TestBaseFreshnessBehindFetchesFirst proves the count is taken after a fetch:
 // the commit merged on origin since the last fetch is what makes main behind.
 func TestBaseFreshnessBehindFetchesFirst(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	origin, originGit := originWithMain(t, git)
 	commitIn(t, origin, originGit, "merged\n")
@@ -57,6 +59,7 @@ func TestBaseFreshnessBehindFetchesFirst(t *testing.T) {
 }
 
 func TestBaseFreshnessAhead(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	originWithMain(t, git)
 	commitIn(t, repo, git, "local\n")
@@ -75,6 +78,7 @@ func TestBaseFreshnessAhead(t *testing.T) {
 // the answer, not as an error: the dialog still opens the worktree, from the
 // local branch, and says why.
 func TestBaseFreshnessFetchFailure(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	originWithMain(t, git)
 	git("remote", "set-url", "origin", filepath.Join(t.TempDir(), "unreachable"))
@@ -89,6 +93,7 @@ func TestBaseFreshnessFetchFailure(t *testing.T) {
 }
 
 func TestBaseFreshnessNotABranch(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 
 	if _, err := New(nil).BaseFreshness(repo, "nope"); err == nil {

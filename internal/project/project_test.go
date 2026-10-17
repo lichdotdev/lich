@@ -36,6 +36,7 @@ func (p *pickerStub) PickSaveFile(title, defaultName string) (string, error) {
 }
 
 func TestPickFileUsesRequestedTitle(t *testing.T) {
+	t.Parallel()
 	picker := &pickerStub{filePath: "/tmp/theme.json"}
 	path, err := New(picker).PickFile("Import Theme")
 	if err != nil || path != picker.filePath || picker.fileTitle != "Import Theme" {
@@ -49,6 +50,7 @@ func TestPickFileUsesRequestedTitle(t *testing.T) {
 }
 
 func TestPickSaveFileSeedsTheDefaultName(t *testing.T) {
+	t.Parallel()
 	picker := &pickerStub{filePath: "/tmp/lich-theme-template.json"}
 	path, err := New(picker).PickSaveFile("Save Theme Template", "lich-theme-template.json")
 	if err != nil || path != picker.filePath {
@@ -69,6 +71,7 @@ func TestPickSaveFileSeedsTheDefaultName(t *testing.T) {
 // has to come back as nil with no error — an error there would put a failure
 // dialog on a user who simply closed the picker.
 func TestOpen(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	picker := &pickerStub{dirPath: dir}
 	p, err := New(picker).Open()
@@ -100,6 +103,7 @@ func TestOpen(t *testing.T) {
 // TestProjectID proves the ID is deterministic per path and differs across
 // paths.
 func TestProjectID(t *testing.T) {
+	t.Parallel()
 	a := projectID("/tmp/alpha")
 	again := projectID("/tmp/alpha")
 	b := projectID("/tmp/beta")
@@ -118,6 +122,7 @@ func TestProjectID(t *testing.T) {
 // TestNewProject proves the path→Project mapping the dialog feeds into: Name is
 // the base directory, Path is verbatim, ID matches projectID.
 func TestNewProject(t *testing.T) {
+	t.Parallel()
 	p := newProject("/tmp/some/alpha")
 	if p.Name != "alpha" {
 		t.Errorf("Name = %q, want alpha", p.Name)
@@ -151,6 +156,7 @@ func TestHome(t *testing.T) {
 // TestBranch proves Branch reads the checked-out branch of a git work tree and
 // returns "" for a directory that is not a repository.
 func TestBranch(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	if out, err := exec.Command("git", "init", "-b", "trunk", repo).CombinedOutput(); err != nil {
 		t.Skipf("git init unavailable: %v (%s)", err, out)
@@ -170,6 +176,7 @@ func TestBranch(t *testing.T) {
 // from a missing key, so a path mapped to "" would draw an empty badge instead
 // of none at all.
 func TestBranchesOf(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	if out, err := exec.Command("git", "init", "-b", "trunk", repo).CombinedOutput(); err != nil {
 		t.Skipf("git init unavailable: %v (%s)", err, out)
@@ -187,6 +194,7 @@ func TestBranchesOf(t *testing.T) {
 // it on every palette opening, including the one where no session has ever been
 // closed.
 func TestBranchesOfNothing(t *testing.T) {
+	t.Parallel()
 	if got := New(nil).BranchesOf(nil); got == nil || len(got) != 0 {
 		t.Errorf("BranchesOf(nil) = %v, want an empty map", got)
 	}
@@ -196,6 +204,7 @@ func TestBranchesOfNothing(t *testing.T) {
 // and URL, while malformed JSON, an empty object, and a PR missing its number or
 // URL all collapse to nil so the badge hides instead of showing garbage.
 func TestParsePullRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		out  string
@@ -227,6 +236,7 @@ func TestParsePullRequest(t *testing.T) {
 // TestDiff proves Diff counts dirty files and added/deleted lines against HEAD,
 // and returns the zero value for clean repositories and non-repositories.
 func TestDiff(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	git := func(args ...string) {
 		t.Helper()
@@ -312,6 +322,7 @@ func TestDiff(t *testing.T) {
 // the collapse saves — so the detached case has to hold here too, not only in
 // Branch.
 func TestDiffCarriesTheBranch(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 
 	if got := New(nil).Diff(repo); got.Branch != "main" {
@@ -327,6 +338,7 @@ func TestDiffCarriesTheBranch(t *testing.T) {
 // against HEAD fails, and the untracked additions must still be counted rather
 // than the whole stat collapsing to +0 -0.
 func TestDiffNoCommits(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	if out, err := exec.Command("git", "init", repo).CombinedOutput(); err != nil {
 		t.Skipf("git init unavailable: %v (%s)", err, out)
@@ -429,6 +441,7 @@ func sparseTextFile(t *testing.T, name string, size int64) {
 // untracked file past it adds no lines to the diff counters rather than being
 // read whole into memory.
 func TestCountFileLinesRefusesAFileOverTheCap(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	small := filepath.Join(dir, "small.txt")
 	if err := os.WriteFile(small, []byte("one\ntwo\n"), 0o644); err != nil {
@@ -448,6 +461,7 @@ func TestCountFileLinesRefusesAFileOverTheCap(t *testing.T) {
 // TestExistsAcceptsOnlyDirectories: a project path that now names a file is as
 // unopenable as one that names nothing, so both have to read as gone.
 func TestExistsAcceptsOnlyDirectories(t *testing.T) {
+	t.Parallel()
 	svc := New(nil)
 	dir := t.TempDir()
 	file := filepath.Join(dir, "file.txt")
@@ -469,6 +483,7 @@ func TestExistsAcceptsOnlyDirectories(t *testing.T) {
 // TestMissingNamesOnlyTheGoneDirectories: the answer is what the lists mark, so
 // a path that is still there must never appear in it.
 func TestMissingNamesOnlyTheGoneDirectories(t *testing.T) {
+	t.Parallel()
 	svc := New(nil)
 	dir := t.TempDir()
 	gone := filepath.Join(dir, "gone")
@@ -487,6 +502,7 @@ func TestMissingNamesOnlyTheGoneDirectories(t *testing.T) {
 // would hand back a project the store has never seen, and the sessions and the
 // worktree directory of the one that moved would stay with the dead id.
 func TestRelocateKeepsTheProjectIdentity(t *testing.T) {
+	t.Parallel()
 	moved := filepath.Join(t.TempDir(), "renamed")
 	picker := &pickerStub{dirPath: moved}
 	svc := New(picker)
@@ -514,6 +530,7 @@ func TestRelocateKeepsTheProjectIdentity(t *testing.T) {
 // on one directory under different ids is a workspace no path-addressed lookup
 // can read — and no undo puts the sessions back afterwards.
 func TestRelocateRefusesADirectoryAnotherProjectHolds(t *testing.T) {
+	t.Parallel()
 	taken := filepath.Join(t.TempDir(), "taken")
 	svc := New(&pickerStub{dirPath: taken})
 	svc.SetProjects(func(path string) (string, string) {
@@ -537,6 +554,7 @@ func TestRelocateRefusesADirectoryAnotherProjectHolds(t *testing.T) {
 // is the relocation being repeated, not a collision, and refusing it would
 // dead-end the only flow that can fix a project.
 func TestRelocateAcceptsTheProjectsOwnDirectory(t *testing.T) {
+	t.Parallel()
 	own := filepath.Join(t.TempDir(), "own")
 	svc := New(&pickerStub{dirPath: own})
 	svc.SetProjects(func(string) (string, string) { return "stored-id", "own" })
@@ -550,6 +568,7 @@ func TestRelocateAcceptsTheProjectsOwnDirectory(t *testing.T) {
 // TestRelocateCancelledChangesNothing: a cancelled dialog must not read as a
 // chosen directory — the caller writes whatever comes back over the stored row.
 func TestRelocateCancelledChangesNothing(t *testing.T) {
+	t.Parallel()
 	project, err := New(&pickerStub{}).Relocate("stored-id")
 	if err != nil || project != nil {
 		t.Fatalf("Relocate(cancelled) = %+v, %v; want nil, nil", project, err)

@@ -9,6 +9,7 @@ import (
 // TestDiscardFileTracked proves a modified tracked file is restored to its
 // HEAD content, staged or not.
 func TestDiscardFileTracked(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("uno\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -33,6 +34,7 @@ func TestDiscardFileTracked(t *testing.T) {
 // TestDiscardFileNew proves untracked and staged-new files are removed from
 // disk and index.
 func TestDiscardFileNew(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	if err := os.WriteFile(filepath.Join(repo, "staged.txt"), []byte("s\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -58,6 +60,7 @@ func TestDiscardFileNew(t *testing.T) {
 // TestDiscardFileRejectsEscape proves traversal and absolute paths never reach
 // the filesystem.
 func TestDiscardFileRejectsEscape(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	for _, rel := range []string{"../outside.txt", "/etc/passwd", "a/../../b"} {
 		if err := New(nil).DiscardFile(repo, rel); err == nil {

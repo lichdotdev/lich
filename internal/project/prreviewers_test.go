@@ -7,6 +7,7 @@ import (
 )
 
 func TestToReviewers(t *testing.T) {
+	t.Parallel()
 	t.Run("the two halves merge into one roster", func(t *testing.T) {
 		reviewers := toReviewers(
 			[]ghLatestReview{{Author: ghPRAuthor{Login: "ana"}, State: "APPROVED"}},
@@ -62,6 +63,7 @@ func TestToReviewers(t *testing.T) {
 }
 
 func TestParsePRDetailReviewers(t *testing.T) {
+	t.Parallel()
 	out := []byte(`{
 		"number": 7,
 		"state": "OPEN",
@@ -86,6 +88,7 @@ func TestParsePRDetailReviewers(t *testing.T) {
 }
 
 func TestAssignableReviewers(t *testing.T) {
+	t.Parallel()
 	t.Run("the nodes are the picker's list", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`{"data":{"repository":{"assignableUsers":{"nodes":[
 			{"login":"ana","name":"Ana"},{"login":"bo","name":""}]}}}}`)}
@@ -125,6 +128,7 @@ func TestAssignableReviewers(t *testing.T) {
 }
 
 func TestRequestReview(t *testing.T) {
+	t.Parallel()
 	t.Run("asking adds the reviewer to the numbered pull request", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).RequestReview("/repo", 12, "ana", true); err != nil {
@@ -161,6 +165,7 @@ func TestRequestReview(t *testing.T) {
 }
 
 func TestEditPullRequestBody(t *testing.T) {
+	t.Parallel()
 	t.Run("the body replaces the description of the numbered PR", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).EditPullRequestBody("/repo", 12, "what it does"); err != nil {

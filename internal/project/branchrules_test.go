@@ -6,6 +6,7 @@ import (
 )
 
 func TestParseBranchRules(t *testing.T) {
+	t.Parallel()
 	t.Run("a ruleset that narrows the merge methods", func(t *testing.T) {
 		out := []byte(`[
 			{"type":"deletion","parameters":null},
@@ -73,6 +74,7 @@ func TestParseBranchRules(t *testing.T) {
 }
 
 func TestBranchRulesFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("the branch is addressed in the path, escaped", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`[]`)}
 		if _, err := withGH(gh).BranchRules("/repo", "feat/IMPEX-728"); err != nil {

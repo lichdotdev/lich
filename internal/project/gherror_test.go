@@ -12,6 +12,7 @@ import (
 // failure comes back as a sentence about what happened, and gh's own words are
 // never part of it.
 func TestGHMessage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		stderr string
@@ -133,6 +134,7 @@ func TestGHMessage(t *testing.T) {
 // TestGHMessageLeaksNothing is the rule itself rather than one case of it: no
 // message may carry gh's vocabulary onto the screen.
 func TestGHMessageLeaksNothing(t *testing.T) {
+	t.Parallel()
 	leaks := []string{"graphql", "stderr", "exit status", "http 4", "http 5", "gh: "}
 	stderrs := []string{
 		"GraphQL: Could not resolve to a Repository with the name 'acme/private'. (repository)",
@@ -152,6 +154,7 @@ func TestGHMessageLeaksNothing(t *testing.T) {
 }
 
 func TestErrUnreadableAnswer(t *testing.T) {
+	t.Parallel()
 	err := errUnreadableAnswer(errors.New("invalid character 'n' looking for beginning of value"))
 	if want := "GitHub's answer could not be read."; err.Error() != want {
 		t.Errorf("errUnreadableAnswer() = %q, want %q", err, want)
@@ -162,6 +165,7 @@ func TestErrUnreadableAnswer(t *testing.T) {
 // request flows actually call: the error that reaches the screen is ghMessage's
 // sentence, and gh's own words stay behind in the log.
 func TestGHFailureCarriesTheMessageAndNotTheStderr(t *testing.T) {
+	t.Parallel()
 	stderr := "GraphQL: Could not resolve to a Repository with the name 'acme/private'. (repository)"
 	err := ghFailure([]string{"pr", "view"}, stderr, errTest, nil)
 	if err == nil {
@@ -179,6 +183,7 @@ func TestGHFailureCarriesTheMessageAndNotTheStderr(t *testing.T) {
 // it still has to come back as a sentence rather than as "context deadline
 // exceeded".
 func TestGHFailureAnswersATimeout(t *testing.T) {
+	t.Parallel()
 	err := ghFailure([]string{"pr", "merge"}, "", errTest, context.DeadlineExceeded)
 	if err == nil {
 		t.Fatal("ghFailure() = nil, want the screen's message")

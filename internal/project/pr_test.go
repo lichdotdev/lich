@@ -9,6 +9,7 @@ import (
 )
 
 func TestParsePRDetail(t *testing.T) {
+	t.Parallel()
 	t.Run("open PR with mixed checks", func(t *testing.T) {
 		out := []byte(`{
 			"number": 88,
@@ -126,6 +127,7 @@ func TestParsePRDetail(t *testing.T) {
 }
 
 func TestReduceChecks(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		items []checkItem
@@ -183,6 +185,7 @@ func TestReduceChecks(t *testing.T) {
 }
 
 func TestToCheckItems(t *testing.T) {
+	t.Parallel()
 	t.Run("no checks yields no list", func(t *testing.T) {
 		if got := toCheckItems(nil); got != nil {
 			t.Errorf("toCheckItems(nil) = %+v, want nil", got)
@@ -263,6 +266,7 @@ func TestToCheckItems(t *testing.T) {
 }
 
 func TestToCommits(t *testing.T) {
+	t.Parallel()
 	t.Run("no commits yields no list", func(t *testing.T) {
 		if got := toCommits(nil); got != nil {
 			t.Errorf("toCommits(nil) = %+v, want nil", got)
@@ -327,6 +331,7 @@ func TestToCommits(t *testing.T) {
 }
 
 func TestMergeArgs(t *testing.T) {
+	t.Parallel()
 	// An unrecognised method must be refused before any gh shell-out.
 	if _, err := mergeArgs(0, "force", "", "", false); err == nil {
 		t.Error("expected an error for an unknown merge method")
@@ -400,6 +405,7 @@ func TestMergeArgs(t *testing.T) {
 }
 
 func TestIsNoPullRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		stderr string
 		want   bool
@@ -466,6 +472,7 @@ func (f *fakeGH) run(timeout time.Duration, dir, token string, args ...string) (
 func withGH(f *fakeGH) *Service { return &Service{runner: f.run} }
 
 func TestPullRequestDetailFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("open PR decodes, scoped to the path", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`{"number":7,"state":"OPEN","title":"t"}`)}
 		pr, err := withGH(gh).PullRequestDetail("/repo", 0)
@@ -521,6 +528,7 @@ func TestPullRequestDetailFlow(t *testing.T) {
 // the rest: it used to shell out to gh on its own, which left it running as
 // whatever account gh had active while the screen beside it used the project's.
 func TestPullRequestBadgeRunsThroughTheRunner(t *testing.T) {
+	t.Parallel()
 	gh := &fakeGH{out: []byte(`{"number":7,"url":"https://github.com/o/r/pull/7","state":"OPEN"}`)}
 	pr := withGH(gh).PullRequest("/repo")
 	if pr == nil || pr.Number != 7 {
@@ -551,6 +559,7 @@ func TestPullRequestBadgeRunsThroughTheRunner(t *testing.T) {
 }
 
 func TestMergePullRequestFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("the built args reach gh", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).MergePullRequest("/repo", 0, "squash", "", "", false); err != nil {
@@ -587,6 +596,7 @@ func TestMergePullRequestFlow(t *testing.T) {
 }
 
 func TestCreatePullRequestFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("opens the web flow in the path", func(t *testing.T) {
 		gh := &fakeGH{}
 		if err := withGH(gh).CreatePullRequest("/repo"); err != nil {
@@ -613,6 +623,7 @@ func TestCreatePullRequestFlow(t *testing.T) {
 }
 
 func TestPullRequestDiffFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("plain diff text is returned verbatim", func(t *testing.T) {
 		gh := &fakeGH{out: []byte("diff --git a/a.txt b/a.txt\n")}
 		text, err := withGH(gh).PullRequestDiff("/repo", 0)
@@ -662,6 +673,7 @@ func TestPullRequestDiffFlow(t *testing.T) {
 }
 
 func TestPRArgs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		number int
@@ -683,6 +695,7 @@ func TestPRArgs(t *testing.T) {
 }
 
 func TestPullRequestDetailByNumber(t *testing.T) {
+	t.Parallel()
 	gh := &fakeGH{out: []byte(`{"number":42,"state":"OPEN","title":"t"}`)}
 	pr, err := withGH(gh).PullRequestDetail("/repo", 42)
 	if err != nil {
@@ -697,6 +710,7 @@ func TestPullRequestDetailByNumber(t *testing.T) {
 }
 
 func TestParsePRList(t *testing.T) {
+	t.Parallel()
 	t.Run("rows carry the author, the fork flag and the rollup", func(t *testing.T) {
 		out := []byte(`[
 			{
@@ -767,6 +781,7 @@ func TestParsePRList(t *testing.T) {
 }
 
 func TestListPullRequestsFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("the call is scoped and bounded", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`[{"number":1,"title":"t"}]`)}
 		list, err := withGH(gh).ListPullRequests("/repo", "")
@@ -822,6 +837,7 @@ func TestListPullRequestsFlow(t *testing.T) {
 // TestParsePRDetailReview proves the aggregate review verdict survives the
 // decode — the field the Pulls header reads to say a PR is approved.
 func TestParsePRDetailReview(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		raw  string
@@ -855,6 +871,7 @@ func TestParsePRDetailReview(t *testing.T) {
 // merged PR must not keep showing on the badge — but a row the list offers has
 // to open, and the list can be asked for merged and closed ones.
 func TestPullRequestDetailByNumberIgnoresState(t *testing.T) {
+	t.Parallel()
 	merged := []byte(`{"number":13960,"state":"MERGED","title":"Add macos keyring security doc"}`)
 
 	pr, err := withGH(&fakeGH{out: merged}).PullRequestDetail("/repo", 13960)

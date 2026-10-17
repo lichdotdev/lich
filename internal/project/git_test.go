@@ -115,6 +115,7 @@ func TestRunGitStillReportsRealFailures(t *testing.T) {
 // -z output the way git writes it: a NUL after every entry, so the last one is
 // a terminator and never an empty path.
 func TestSplitNULDropsTheTrailingTerminator(t *testing.T) {
+	t.Parallel()
 	got := splitNUL("a.txt\x00dir/b.txt\x00")
 	if len(got) != 2 || got[0] != "a.txt" || got[1] != "dir/b.txt" {
 		t.Errorf("splitNUL = %q, want [a.txt dir/b.txt]", got)
@@ -129,6 +130,7 @@ func TestSplitNULDropsTheTrailingTerminator(t *testing.T) {
 // directory, so a sandbox that mounts the worktree and not the common directory
 // hands the agent a checkout git refuses to read.
 func TestGitCommonDirOfARepositoryAndItsWorktree(t *testing.T) {
+	t.Parallel()
 	repo := initBareRepo(t)
 	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("a\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -172,6 +174,7 @@ func TestGitCommonDirOfARepositoryAndItsWorktree(t *testing.T) {
 // A directory that is not in a repository is not an error: a session can be
 // opened anywhere, and the sandbox simply has no common directory to mount.
 func TestGitCommonDirOutsideARepository(t *testing.T) {
+	t.Parallel()
 	if got := GitCommonDir(t.TempDir()); got != "" {
 		t.Errorf("GitCommonDir outside a repository = %q, want \"\"", got)
 	}
@@ -184,6 +187,7 @@ func TestGitCommonDirOutsideARepository(t *testing.T) {
 // top and the main checkout it was made from; the main checkout names itself
 // twice; a directory outside a repository names nothing.
 func TestCheckoutRootsOfARepositoryAndItsWorktree(t *testing.T) {
+	t.Parallel()
 	repo := initBareRepo(t)
 	commit := exec.Command("git", "-C", repo, "-c", "user.email=t@example.com", "-c", "user.name=t",
 		"commit", "--allow-empty", "-m", "first")

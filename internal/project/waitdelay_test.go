@@ -18,6 +18,7 @@ const helperEnv = "LICH_WAITDELAY_HELPER"
 // exits at once; as "grandchild" it holds that pipe open far past any budget
 // the parent could set. A plain run does nothing.
 func TestSubprocessHelper(t *testing.T) {
+	t.Parallel()
 	switch os.Getenv(helperEnv) {
 	case "child":
 		grandchild := exec.Command(os.Args[0], "-test.run=TestSubprocessHelper")
@@ -38,6 +39,7 @@ func TestSubprocessHelper(t *testing.T) {
 // seconds: with nothing closing that pipe, Output waits all ten and reports
 // success, deadline or none.
 func TestSubprocessBudgetOutlivesAGrandchild(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 	cmd := commandContext(ctx, os.Args[0], "-test.run=TestSubprocessHelper")

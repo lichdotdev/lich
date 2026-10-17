@@ -7,6 +7,7 @@ import "testing"
 // break a build — it turns a broken check green on the panel, and a merge
 // affordance opens on a red pull request.
 func TestIsFailureConclusion(t *testing.T) {
+	t.Parallel()
 	tests := map[string]bool{
 		"FAILURE":         true,
 		"TIMED_OUT":       true,

@@ -11,6 +11,7 @@ import (
 // TestDiffText proves tracked edits (staged and unstaged) and untracked files
 // all land in one unified diff.
 func TestDiffText(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("uno\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -41,6 +42,7 @@ func TestDiffText(t *testing.T) {
 // TestDiffTextNoHead proves a repository without commits diffs staged and
 // untracked files against the empty tree instead of erroring on HEAD.
 func TestDiffTextNoHead(t *testing.T) {
+	t.Parallel()
 	repo := t.TempDir()
 	if out, err := exec.Command("git", "init", "-b", "main", repo).CombinedOutput(); err != nil {
 		t.Skipf("git init unavailable: %v (%s)", err, out)
@@ -69,6 +71,7 @@ func TestDiffTextNoHead(t *testing.T) {
 // TestDiffTextClean proves a clean repository yields an empty diff, and a
 // non-repository path an error.
 func TestDiffTextClean(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	out, err := New(nil).DiffText(repo)
 	if err != nil {
@@ -89,6 +92,7 @@ func TestDiffTextClean(t *testing.T) {
 // itself cannot open it — the last one is the "any other failure" branch, which
 // has to be told apart from git's exit 1 for "the files differ".
 func TestUntrackedDiffYieldsNothingItCannotRender(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 
 	if got := untrackedDiff(repo, "vanished.txt"); got != "" {
@@ -119,6 +123,7 @@ func TestUntrackedDiffYieldsNothingItCannotRender(t *testing.T) {
 // TestDiffTextBinaryUntracked proves an untracked binary shows up as git's
 // "Binary files ... differ" stanza rather than a textual hunk.
 func TestDiffTextBinaryUntracked(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	if err := os.WriteFile(filepath.Join(repo, "blob.bin"), []byte{0, 1, 2, 0}, 0o644); err != nil {
 		t.Fatal(err)
@@ -136,6 +141,7 @@ func TestDiffTextBinaryUntracked(t *testing.T) {
 // TestDiffTextDecodesLatin1 covers a file saved in ISO-8859-1 next to a UTF-8
 // one: each line reaches the review as UTF-8 instead of U+FFFD.
 func TestDiffTextDecodesLatin1(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	if err := os.WriteFile(filepath.Join(repo, "latin.java"), []byte("// servi\xe7os padr\xe3o\n"), 0o644); err != nil {
 		t.Fatal(err)

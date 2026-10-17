@@ -162,6 +162,7 @@ func TestListBranches(t *testing.T) {
 // TestParseWorktrees proves the porcelain parser skips the main worktree and
 // bare/detached entries and keeps linked worktrees on a branch.
 func TestParseWorktrees(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		out  string
@@ -864,6 +865,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 // TestPullRequestHead covers what gh can answer with that is not a head branch:
 // the flow has to stop at the lookup rather than build a worktree named "".
 func TestPullRequestHead(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		gh   *scriptedGH

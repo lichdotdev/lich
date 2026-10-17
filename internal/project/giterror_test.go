@@ -7,6 +7,7 @@ import (
 )
 
 func TestGitMessage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		stderr string
@@ -99,6 +100,7 @@ func TestGitMessage(t *testing.T) {
 // TestGitMessageLeaksNothing is the rule rather than one case of it: git's own
 // vocabulary never reaches the screen.
 func TestGitMessageLeaksNothing(t *testing.T) {
+	t.Parallel()
 	leaks := []string{"fatal:", "error:", "exit status", "usage:", "hint:", "--force"}
 	stderrs := []string{
 		"fatal: not a git repository (or any of the parent directories): .git",
@@ -120,6 +122,7 @@ func TestGitMessageLeaksNothing(t *testing.T) {
 // TestRunGitMessage runs the real git against a directory that is not a
 // repository: the whole path, from stderr to the sentence the screen shows.
 func TestRunGitMessage(t *testing.T) {
+	t.Parallel()
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git unavailable")
 	}

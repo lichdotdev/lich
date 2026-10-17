@@ -29,6 +29,7 @@ func digest(t *testing.T, path string) string {
 // The whole point of the pair: every kind of change a turn can make to the
 // working tree reaches the rendered diff, whether or not the user staged it.
 func TestSnapshotPairRendersEveryChange(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "sub/b.txt", "keep\n")
 	git("add", "-A")
@@ -72,6 +73,7 @@ func TestSnapshotPairRendersEveryChange(t *testing.T) {
 // The one comparison the panel makes without running a diff: a turn that left
 // the checkout as it found it has to be recognisable by the oids alone.
 func TestSnapshotTreeIsStableWhenNothingChanged(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	index := snapIndex(t)
 
@@ -92,6 +94,7 @@ func TestSnapshotTreeIsStableWhenNothingChanged(t *testing.T) {
 // halfway through staging, and moving HEAD or their index would be data loss
 // they never asked for.
 func TestSnapshotTreeLeavesTheRepositoryAlone(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "staged.txt", "s\n")
 	git("add", "staged.txt")
@@ -125,6 +128,7 @@ func TestSnapshotTreeLeavesTheRepositoryAlone(t *testing.T) {
 // in one view and missing from the other with nothing saying why. DiffText's
 // untracked pass obeys .gitignore; `add -A` does too, and this pins it.
 func TestSnapshotTreeSkipsIgnoredFiles(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, ".gitignore", "build/\n")
 	git("add", "-A")
@@ -151,6 +155,7 @@ func TestSnapshotTreeSkipsIgnoredFiles(t *testing.T) {
 // repository it promised not to touch. Refused rather than resolved, because
 // the caller that passed one is the bug.
 func TestSnapshotTreeRefusesARelativeIndex(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	if _, err := SnapshotTree(repo, "turn.idx"); err == nil {
 		t.Fatal("a relative index path was accepted")
@@ -160,6 +165,7 @@ func TestSnapshotTreeRefusesARelativeIndex(t *testing.T) {
 // The index lives under lich's own directory, which need not exist yet on a
 // fresh install — the first snapshot of the first session is what creates it.
 func TestSnapshotTreeCreatesItsOwnDirectory(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	index := filepath.Join(t.TempDir(), "turns", "s1.idx")
 
@@ -175,6 +181,7 @@ func TestSnapshotTreeCreatesItsOwnDirectory(t *testing.T) {
 // has no trees to compare, and the panel has to hear that as an error rather
 // than as a turn that changed nothing.
 func TestSnapshotTreeOutsideARepository(t *testing.T) {
+	t.Parallel()
 	if _, err := SnapshotTree(t.TempDir(), snapIndex(t)); err == nil {
 		t.Fatal("SnapshotTree outside a repository: want an error, got nil")
 	}
@@ -184,6 +191,7 @@ func TestSnapshotTreeOutsideARepository(t *testing.T) {
 // `git diff` behind DiffText does. Without -M the two sources would describe the
 // same change differently — a rename in one, a delete plus an add in the other.
 func TestTreeDiffDetectsARename(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "long.txt", strings.Repeat("a stable line of content\n", 20))
 	git("add", "-A")
@@ -215,6 +223,7 @@ func TestTreeDiffDetectsARename(t *testing.T) {
 // the pair would otherwise look taken and the panel would report a turn that
 // changed nothing when what actually happened is that nothing was recorded.
 func TestSnapshotTreeReportsAnUnusableIndexLocation(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	// A file where the index's directory should be, which is the shape a
 	// misconfigured config directory takes on disk.

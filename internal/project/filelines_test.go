@@ -19,6 +19,7 @@ func numbered(n int) string {
 }
 
 func TestSliceLines(t *testing.T) {
+	t.Parallel()
 	text := "a\nb\nc\nd\n"
 	tests := []struct {
 		name     string
@@ -46,6 +47,7 @@ func TestSliceLines(t *testing.T) {
 // The cap is pinned to a literal and probed on both sides of it, so a change to
 // maxExpandLines has to move this test rather than ride along with it.
 func TestSliceLinesCap(t *testing.T) {
+	t.Parallel()
 	if maxExpandLines != 500 {
 		t.Fatalf("maxExpandLines = %d, want 500 — the wire contract moved", maxExpandLines)
 	}
@@ -67,6 +69,7 @@ func TestSliceLinesCap(t *testing.T) {
 }
 
 func TestIsOID(t *testing.T) {
+	t.Parallel()
 	valid := []string{"a4dbc1f", strings.Repeat("0", 40), "533f1af9fc740d2335cb3b4aae0e6481acfc5211"}
 	for _, ref := range valid {
 		if !isOID(ref) {
@@ -82,6 +85,7 @@ func TestIsOID(t *testing.T) {
 }
 
 func TestContentsPath(t *testing.T) {
+	t.Parallel()
 	got := contentsPath("internal/rpc/rpc go.md", "abcdef1234567890")
 	want := "repos/{owner}/{repo}/contents/internal/rpc/rpc%20go.md?ref=abcdef1234567890"
 	if got != want {
@@ -90,6 +94,7 @@ func TestContentsPath(t *testing.T) {
 }
 
 func TestFileLinesWorkTree(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "src/app.ts", "one\ntwo\nthree\nfour\n")
 
@@ -120,6 +125,7 @@ func TestFileLinesWorkTree(t *testing.T) {
 // A local object is read by git, and never costs a gh call — the turn diff's
 // snapshot tree is the case, and it is the reason the local read comes first.
 func TestFileLinesLocalObject(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "a.txt", "one\ntwo\nthree\n")
 	git("add", "a.txt")
@@ -146,6 +152,7 @@ func TestFileLinesLocalObject(t *testing.T) {
 }
 
 func TestFileLinesLocalObjectRejectsADirectory(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "src/a.txt", "one\n")
 	git("add", "src/a.txt")
@@ -162,6 +169,7 @@ func TestFileLinesLocalObjectRejectsADirectory(t *testing.T) {
 }
 
 func TestFileLinesLocalObjectRejectsBinary(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "blob.bin", "text\x00more")
 	git("add", "blob.bin")
@@ -176,6 +184,7 @@ func TestFileLinesLocalObjectRejectsBinary(t *testing.T) {
 // An oid the clone does not have is a pull request's head: GitHub answers for
 // it, through the contents API rather than through git.
 func TestFileLinesMissingObjectAsksGitHub(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	missing := strings.Repeat("b", 40)
 
@@ -197,6 +206,7 @@ func TestFileLinesMissingObjectAsksGitHub(t *testing.T) {
 }
 
 func TestFileLinesGitHubRejectsOversize(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	gh := &fakeGH{out: []byte(strings.Repeat("x", maxReadFileSize+1))}
 
@@ -206,6 +216,7 @@ func TestFileLinesGitHubRejectsOversize(t *testing.T) {
 }
 
 func TestFileLinesGitHubFailureSurfaces(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	gh := &fakeGH{err: errors.New("gh: not found")}
 	if _, err := withGH(gh).FileLines(repo, "a.txt", strings.Repeat("c", 40), 1, 5); err == nil {

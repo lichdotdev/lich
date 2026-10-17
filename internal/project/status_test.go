@@ -25,6 +25,7 @@ func v2(records ...string) string {
 // with no commits "(initial)" where the diff base is git's empty tree — mapped
 // straight through, the badge would read a literal "(detached)".
 func TestParseWorkTreeBranchAndHead(t *testing.T) {
+	t.Parallel()
 	oid := "6d19bac07168c90c890aab654501e68498ac4d57"
 	tests := []struct {
 		name       string
@@ -84,6 +85,7 @@ func TestParseWorkTreeBranchAndHead(t *testing.T) {
 // original path as a second record of its own, so a naive split counts one
 // renamed file twice.
 func TestParseWorkTreeCountsEveryDirtyEntryOnce(t *testing.T) {
+	t.Parallel()
 	oid := "6d19bac07168c90c890aab654501e68498ac4d57"
 	blobs := "45b983be36b73c0788dc9cbcb76cbb80fc7bb057 45b983be36b73c0788dc9cbcb76cbb80fc7bb057"
 	tests := []struct {
@@ -153,6 +155,7 @@ func TestParseWorkTreeCountsEveryDirtyEntryOnce(t *testing.T) {
 // record it cannot read has to cost that record alone. Nothing here may panic,
 // and the headers must still land.
 func TestParseWorkTreeSurvivesMalformedOutput(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		out  string
@@ -183,6 +186,7 @@ func TestParseWorkTreeSurvivesMalformedOutput(t *testing.T) {
 // pair diffBase did, so DiffText's `git diff <base>` still fails as a git error
 // rather than on some new shape.
 func TestReadWorkTreeOnANonRepository(t *testing.T) {
+	t.Parallel()
 	got := readWorkTree(t.TempDir())
 	if got.branch != "" || got.head != "" || got.files != 0 || got.untracked != nil {
 		t.Errorf("readWorkTree(non-repo) = %+v, want the zero readout", got)
@@ -196,6 +200,7 @@ func TestReadWorkTreeOnANonRepository(t *testing.T) {
 // the table tests above pin shapes captured from git 2.55, and this is what
 // notices when a git in the wild stops writing them.
 func TestReadWorkTreeAgainstRealGit(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 
 	clean := readWorkTree(repo)
@@ -271,6 +276,7 @@ func subRepo(t *testing.T) (repo, sub string) {
 // scoped to it, and both callers still join these paths onto the project path,
 // so the readout has to answer the way ls-files did.
 func TestReadWorkTreeFromASubdirectory(t *testing.T) {
+	t.Parallel()
 	_, sub := subRepo(t)
 
 	got := readWorkTree(sub)
@@ -291,6 +297,7 @@ func TestReadWorkTreeFromASubdirectory(t *testing.T) {
 // overwhelmingly common case, and every entry must come back byte for byte as
 // git wrote it.
 func TestReadWorkTreeAtTheRepositoryRootIsUntouched(t *testing.T) {
+	t.Parallel()
 	repo, _ := subRepo(t)
 
 	got := readWorkTree(repo)
@@ -348,6 +355,7 @@ func TestReadWorkTreeSpendsNoPrefixCallOnACleanTree(t *testing.T) {
 // on its card: the untracked lines under it are counted, and the untracked file
 // beside it — outside the directory the caller asked about — is not.
 func TestDiffFromASubdirectory(t *testing.T) {
+	t.Parallel()
 	_, sub := subRepo(t)
 
 	got := New(nil).Diff(sub)
@@ -365,6 +373,7 @@ func TestDiffFromASubdirectory(t *testing.T) {
 // project renders its untracked files as new-file hunks, and shows nothing from
 // outside the directory.
 func TestDiffTextFromASubdirectory(t *testing.T) {
+	t.Parallel()
 	_, sub := subRepo(t)
 
 	out, err := New(nil).DiffText(sub)

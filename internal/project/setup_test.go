@@ -21,6 +21,7 @@ func writeSetup(t *testing.T, dir, script string) {
 // repository without one answers "" — which is what tells wrapSetup not to
 // wrap at all.
 func TestSetupScriptReadsTheRepoFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	if got := SetupScript(dir); got != "" {
 		t.Errorf("missing file: got %q, want empty", got)
@@ -34,6 +35,7 @@ func TestSetupScriptReadsTheRepoFile(t *testing.T) {
 // A whitespace-only file must read as "no script": wrapping the spawn to run
 // nothing would still make the session wait out a marker for an empty setup.
 func TestSetupScriptTreatsBlankFileAsAbsent(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	writeSetup(t, dir, "\n  \n")
 	if got := SetupScript(dir); got != "" {
@@ -44,6 +46,7 @@ func TestSetupScriptTreatsBlankFileAsAbsent(t *testing.T) {
 // TestWorktreeSetupPrefersTheFile: with a file present the dialog shows it and
 // no suggestion is offered — detection only speaks when nothing is configured.
 func TestWorktreeSetupPrefersTheFile(t *testing.T) {
+	t.Parallel()
 	svc := &Service{}
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "pnpm-lock.yaml"), nil, 0o644); err != nil {
@@ -63,6 +66,7 @@ func TestWorktreeSetupPrefersTheFile(t *testing.T) {
 // TestWorktreeSetupDetection pins the probe table's visible behaviour: which
 // root files speak, what they propose, and that multiple hits chain.
 func TestWorktreeSetupDetection(t *testing.T) {
+	t.Parallel()
 	svc := &Service{}
 	tests := []struct {
 		name       string
@@ -103,6 +107,7 @@ func TestWorktreeSetupDetection(t *testing.T) {
 // with its directory, read back by SetupScript, and an empty save removes it
 // instead of pinning an empty setup.
 func TestSaveWorktreeSetup(t *testing.T) {
+	t.Parallel()
 	svc := &Service{}
 	dir := t.TempDir()
 

@@ -8,6 +8,7 @@ import (
 )
 
 func TestParseGHAccounts(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		out  string
@@ -44,6 +45,7 @@ func TestParseGHAccounts(t *testing.T) {
 }
 
 func TestGitHubAccounts(t *testing.T) {
+	t.Parallel()
 	gh := &fakeGH{out: []byte("  ✓ Logged in to github.com account omartelo (keyring)\n")}
 	got, err := withGH(gh).GitHubAccounts()
 	if err != nil {
@@ -65,6 +67,7 @@ func TestGitHubAccounts(t *testing.T) {
 // TestAccountTokenReachesGH proves the configured account governs the gh call:
 // its token is resolved once and carried by the pull request lookup.
 func TestAccountTokenReachesGH(t *testing.T) {
+	t.Parallel()
 	var seen []string
 	gh := &accountGH{token: "gho_secret", pr: `{"number":7,"state":"OPEN"}`, calls: &seen}
 	svc := &Service{runner: gh.run}
@@ -85,6 +88,7 @@ func TestAccountTokenReachesGH(t *testing.T) {
 // TestNoAccountRunsAsActive proves both no-override paths run gh with no token,
 // which is gh answering as its own active account.
 func TestNoAccountRunsAsActive(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		lookup  accountLookup
@@ -114,6 +118,7 @@ func TestNoAccountRunsAsActive(t *testing.T) {
 // is not authenticated as that account anymore) degrades to the active account
 // instead of failing the lookup.
 func TestAccountTokenFailureFallsBack(t *testing.T) {
+	t.Parallel()
 	gh := &accountGH{tokenErr: errTest, pr: `{"number":7,"state":"OPEN"}`}
 	svc := &Service{runner: gh.run}
 	svc.SetAccounts(func(string) string { return "github.com/gone" })
@@ -153,6 +158,7 @@ func (g *accountGH) run(_ time.Duration, _, token string, args ...string) ([]byt
 // looks the login up on its default host, answers "no oauth token found", and
 // tokenFor falls back to the active account without a word.
 func TestTokenArgs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		account string
@@ -190,6 +196,7 @@ func TestTokenArgs(t *testing.T) {
 // session that answered as whichever account gh has active would push and
 // comment as the wrong person.
 func TestGHTokenNamesTheAccount(t *testing.T) {
+	t.Parallel()
 	gh := &fakeGH{out: []byte("gho_project_account\n")}
 	if got := ghToken(gh.run, "github.com/marcelo-filho_snk"); got != "gho_project_account" {
 		t.Errorf("ghToken = %q, want the account's token", got)
@@ -214,6 +221,7 @@ func TestGHTokenNamesTheAccount(t *testing.T) {
 // session without a token rather than fail it over a credential it may never
 // use.
 func TestGHTokenSwallowsEveryFailure(t *testing.T) {
+	t.Parallel()
 	gh := &fakeGH{err: errTest}
 	if got := ghToken(gh.run, "github.com/nobody"); got != "" {
 		t.Errorf("ghToken on failure = %q, want \"\"", got)

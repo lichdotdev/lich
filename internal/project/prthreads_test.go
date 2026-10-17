@@ -38,6 +38,7 @@ const conversationPayload = `{"data":{"repository":{"pullRequest":{
 }}}}`
 
 func TestParseConversation(t *testing.T) {
+	t.Parallel()
 	convo, err := parseConversation([]byte(conversationPayload))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -127,6 +128,7 @@ func TestParseConversation(t *testing.T) {
 }
 
 func TestParseConversationEdges(t *testing.T) {
+	t.Parallel()
 	t.Run("a pull request nobody has said anything about", func(t *testing.T) {
 		convo, err := parseConversation([]byte(`{"data":{"repository":{"pullRequest":{
 			"headRefOid":"abc","reviews":{"nodes":[]},"comments":{"nodes":[]},"reviewThreads":{"nodes":[]}}}}}`))
@@ -150,6 +152,7 @@ func TestParseConversationEdges(t *testing.T) {
 }
 
 func TestPullRequestConversationFlow(t *testing.T) {
+	t.Parallel()
 	t.Run("the query is addressed by number and scoped to the path", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(conversationPayload)}
 		convo, err := withGH(gh).PullRequestConversation("/repo", 104)

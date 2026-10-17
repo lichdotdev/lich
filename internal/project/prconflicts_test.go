@@ -25,6 +25,7 @@ func pullRequestOrigin(t *testing.T, number int) (clone, origin string, originGi
 }
 
 func TestPullRequestConflictsNamesTheFiles(t *testing.T) {
+	t.Parallel()
 	clone, origin, originGit := pullRequestOrigin(t, 7)
 	commitFile(t, origin, originGit, "a.txt", "the base branch's line\n", "base edits a")
 
@@ -38,6 +39,7 @@ func TestPullRequestConflictsNamesTheFiles(t *testing.T) {
 }
 
 func TestPullRequestConflictsNoneWhenTheMergeIsClean(t *testing.T) {
+	t.Parallel()
 	clone, origin, originGit := pullRequestOrigin(t, 7)
 	commitFile(t, origin, originGit, "b.txt", "elsewhere\n", "base adds b")
 
@@ -51,6 +53,7 @@ func TestPullRequestConflictsNoneWhenTheMergeIsClean(t *testing.T) {
 }
 
 func TestPullRequestConflictsRefusesAnUnaddressedPullRequest(t *testing.T) {
+	t.Parallel()
 	clone, _, _ := pullRequestOrigin(t, 7)
 
 	if _, err := New(nil).PullRequestConflicts(clone, 0, "main", ""); err == nil {
@@ -62,6 +65,7 @@ func TestPullRequestConflictsRefusesAnUnaddressedPullRequest(t *testing.T) {
 }
 
 func TestPullRequestConflictsReportsAFetchItCannotMake(t *testing.T) {
+	t.Parallel()
 	clone, _, _ := pullRequestOrigin(t, 7)
 
 	if _, err := New(nil).PullRequestConflicts(clone, 404, "main", ""); err == nil {
@@ -74,12 +78,14 @@ func TestPullRequestConflictsReportsAFetchItCannotMake(t *testing.T) {
 // no repository is the reachable stand-in for the git too old to know
 // --write-tree, which exits the same way — anything but 0 or 1.
 func TestMergeConflictsReportsAMergeItCannotCompute(t *testing.T) {
+	t.Parallel()
 	if _, ok := mergeConflicts(t.TempDir(), "refs/heads/main", "refs/heads/pr"); ok {
 		t.Error("want ok=false where merge-tree could not run — a clean merge and an unanswered one must not read alike")
 	}
 }
 
 func TestPullRequestConflictsFetchesTheRemoteTheURLNames(t *testing.T) {
+	t.Parallel()
 	clone, origin, originGit := pullRequestOrigin(t, 7)
 	commitFile(t, origin, originGit, "a.txt", "the base branch's line\n", "base edits a")
 	// The clone of a fork lich has to answer for: the pull request lives on a
@@ -99,6 +105,7 @@ func TestPullRequestConflictsFetchesTheRemoteTheURLNames(t *testing.T) {
 }
 
 func TestPRRemoteFallsBackToOrigin(t *testing.T) {
+	t.Parallel()
 	clone, _, _ := pullRequestOrigin(t, 7)
 
 	if got := prRemote(clone, ""); got != "origin" {
@@ -110,6 +117,7 @@ func TestPRRemoteFallsBackToOrigin(t *testing.T) {
 }
 
 func TestRemoteRepoReadsBothSpellings(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct{ url, want string }{
 		{"git@github.com:Owner/Repo.git (fetch)", "owner/repo"},
 		{"https://github.com/owner/repo.git (push)", "owner/repo"},
@@ -127,6 +135,7 @@ func TestRemoteRepoReadsBothSpellings(t *testing.T) {
 }
 
 func TestRepoFromPRURLRefusesWhatItCannotRead(t *testing.T) {
+	t.Parallel()
 	for _, bad := range []string{"", "https://github.com/owner", "not a url at all", "://"} {
 		if got := repoFromPRURL(bad); got != "" {
 			t.Errorf("repoFromPRURL(%q) = %q, want empty", bad, got)
@@ -138,6 +147,7 @@ func TestRepoFromPRURLRefusesWhatItCannotRead(t *testing.T) {
 // their repository to carry: left behind they outlive the answer, and a
 // `git push --mirror` would publish them.
 func TestPullRequestConflictsLeavesNoRefsBehind(t *testing.T) {
+	t.Parallel()
 	clone, origin, originGit := pullRequestOrigin(t, 7)
 	commitFile(t, origin, originGit, "a.txt", "the base branch's line\n", "base edits a")
 	lichRefs := func() string {

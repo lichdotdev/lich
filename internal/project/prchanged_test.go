@@ -16,6 +16,7 @@ func (l *changeLog) emit(name string, data any) {
 }
 
 func TestPullRequestWritesAnnounceTheChange(t *testing.T) {
+	t.Parallel()
 	writes := map[string]func(s *Service) error{
 		"merge":          func(s *Service) error { return s.MergePullRequest("/repo", 7, "squash", "", "", false) },
 		"edit body":      func(s *Service) error { return s.EditPullRequestBody("/repo", 7, "body") },
@@ -56,6 +57,7 @@ func TestPullRequestWritesAnnounceTheChange(t *testing.T) {
 }
 
 func TestPullRequestChangeNamesTheNumber(t *testing.T) {
+	t.Parallel()
 	log := &changeLog{}
 	s := withGH(&fakeGH{})
 	s.SetEmit(log.emit)
@@ -68,6 +70,7 @@ func TestPullRequestChangeNamesTheNumber(t *testing.T) {
 }
 
 func TestPullRequestWriteWithoutEmitter(t *testing.T) {
+	t.Parallel()
 	if err := withGH(&fakeGH{}).CommentOnPullRequest("/repo", 7, "hi"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

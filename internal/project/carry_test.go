@@ -11,6 +11,7 @@ import (
 // untracked file in a directory that does not exist in dst yet, and a binary
 // change. What git ignores stays behind, and everything arrives unstaged.
 func TestCarryUncommitted(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "mod.txt", "one\n")
 	write(t, repo, "del.txt", "gone\n")
@@ -60,6 +61,7 @@ func TestCarryUncommitted(t *testing.T) {
 // TestCarryUncommittedClean proves a clean source is a no-op rather than an
 // error — the fork of a committed checkout goes through the same call.
 func TestCarryUncommittedClean(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	dst := filepath.Join(t.TempDir(), "fork")
 	git("worktree", "add", "-b", "fork", dst, "main")
@@ -75,6 +77,7 @@ func TestCarryUncommittedClean(t *testing.T) {
 // TestCarryUncommittedNotRepo proves a source git cannot read is reported
 // rather than silently carrying nothing.
 func TestCarryUncommittedNotRepo(t *testing.T) {
+	t.Parallel()
 	if err := New(nil).CarryUncommitted(t.TempDir(), t.TempDir()); err == nil {
 		t.Fatal("CarryUncommitted accepted a directory that is not a checkout")
 	}
@@ -93,6 +96,7 @@ func read(t *testing.T, dir, name string) string {
 // is stepped over rather than dereferenced or reported: the rest of the carry
 // still lands.
 func TestCarryUncommittedSkipsNonRegular(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	if err := os.Symlink("a.txt", filepath.Join(repo, "link.txt")); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
@@ -117,6 +121,7 @@ func TestCarryUncommittedSkipsNonRegular(t *testing.T) {
 // the listing and the copy are two calls, and a build in the source checkout
 // deletes its own scratch between them — is not a failure.
 func TestCarryFileVanished(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	if err := carryFile(filepath.Join(dir, "gone.txt"), filepath.Join(dir, "copy.txt")); err != nil {
 		t.Fatalf("carryFile on a missing source: %v", err)
@@ -129,6 +134,7 @@ func TestCarryFileVanished(t *testing.T) {
 // which Go maps onto fs.ErrNotExist — the same error a vanished source gives.
 // Caught by the Windows runner after passing here (#616).
 func TestCarryFileReportsRealFailure(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	write(t, dir, "from.txt", "data\n")
 	// The destination's parent is a file, so MkdirAll cannot make the directory.

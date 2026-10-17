@@ -20,6 +20,7 @@ index 1111111..2222222 100644
 `
 
 func TestParseHunks(t *testing.T) {
+	t.Parallel()
 	hunks, err := parseHunks(sampleDiff)
 	if err != nil {
 		t.Fatal(err)
@@ -37,6 +38,7 @@ func TestParseHunks(t *testing.T) {
 }
 
 func TestParseHunksMalformed(t *testing.T) {
+	t.Parallel()
 	for name, diff := range map[string]string{
 		"short hunk": "@@ -1,3 +1,3 @@\n one\n",
 		"bad header": "@@ -x +1 @@\n one\n",
@@ -49,6 +51,7 @@ func TestParseHunksMalformed(t *testing.T) {
 }
 
 func TestPartialPatch(t *testing.T) {
+	t.Parallel()
 	hunks, err := parseHunks(sampleDiff)
 	if err != nil {
 		t.Fatal(err)
@@ -64,6 +67,7 @@ func TestPartialPatch(t *testing.T) {
 }
 
 func TestOldLineOf(t *testing.T) {
+	t.Parallel()
 	hunks, err := parseHunks("@@ -2,2 +2,3 @@\n b\n+x\n c\n@@ -10,2 +11,1 @@\n j\n-k\n")
 	if err != nil {
 		t.Fatal(err)
@@ -80,6 +84,7 @@ func TestOldLineOf(t *testing.T) {
 }
 
 func TestPartialPatchEmptySide(t *testing.T) {
+	t.Parallel()
 	hunks, err := parseHunks("@@ -0,0 +1,2 @@\n+a\n+b\n")
 	if err != nil {
 		t.Fatal(err)
@@ -95,6 +100,7 @@ func TestPartialPatchEmptySide(t *testing.T) {
 }
 
 func TestPartialPatchStale(t *testing.T) {
+	t.Parallel()
 	hunks, _ := parseHunks(sampleDiff)
 	if _, err := partialPatch("f.txt", hunks, []RevertLine{{Side: "old", Line: 2, Text: "zwei"}}); !errors.Is(err, ErrLinesMoved) {
 		t.Errorf("err = %v, want ErrLinesMoved", err)

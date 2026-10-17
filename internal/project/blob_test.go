@@ -16,6 +16,7 @@ import (
 const pngBytes = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
 
 func TestBlobWorkTree(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "img/logo.PNG", pngBytes)
 
@@ -34,6 +35,7 @@ func TestBlobWorkTree(t *testing.T) {
 // The review's two sides: HEAD for a working-tree diff, a tree oid for a turn.
 // Each reads its own revision while the working tree has moved on.
 func TestBlobAtRevision(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "doc.pdf", "%PDF-old\x00")
 	git("add", "doc.pdf")
@@ -56,6 +58,7 @@ func TestBlobAtRevision(t *testing.T) {
 // An added file has no old side and a deleted one no new side; both must read
 // as absent, which the page draws as no column at all.
 func TestBlobMissingSideIsNotExist(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	svc := New(nil)
 	for _, ref := range []string{"", "HEAD"} {
@@ -66,6 +69,7 @@ func TestBlobMissingSideIsNotExist(t *testing.T) {
 }
 
 func TestBlobRefusals(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "assets/x.png", pngBytes)
 	write(t, repo, "notes.txt", "text\n")
@@ -93,6 +97,7 @@ func TestBlobRefusals(t *testing.T) {
 }
 
 func TestBlobDirectoryNamedLikeAnImage(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "shots.png/a.txt", "x\n")
 	git("add", ".")
@@ -109,6 +114,7 @@ func TestBlobDirectoryNamedLikeAnImage(t *testing.T) {
 // The limit is pinned to a literal and probed on both sides, in the working
 // tree and in git's object store, which are read by different code.
 func TestBlobSizeLimit(t *testing.T) {
+	t.Parallel()
 	if maxPreviewBytes != 20<<20 {
 		t.Fatalf("maxPreviewBytes = %d, want 20 MiB", maxPreviewBytes)
 	}
@@ -141,6 +147,7 @@ func serveBlob(t *testing.T, method string, query url.Values, header http.Header
 }
 
 func TestServeBlob(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "logo.png", pngBytes)
 
@@ -164,6 +171,7 @@ func TestServeBlob(t *testing.T) {
 
 // Chromium's PDF viewer fetches a large document in ranges.
 func TestServeBlobHonoursRange(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "doc.pdf", "%PDF-1.4\x00rest")
 
@@ -175,6 +183,7 @@ func TestServeBlobHonoursRange(t *testing.T) {
 }
 
 func TestServeBlobStatuses(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "big.png", strings.Repeat("\x00", maxPreviewBytes+1))
 
@@ -203,6 +212,7 @@ func TestServeBlobStatuses(t *testing.T) {
 
 // The page prints these bodies verbatim, so their words are the contract.
 func TestServeBlobRefusalWording(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "big.png", strings.Repeat("\x00", maxPreviewBytes+1))
 

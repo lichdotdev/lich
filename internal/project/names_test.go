@@ -10,6 +10,7 @@ import (
 // free names come out as adjective-noun, and persistent collisions fall back
 // to a numeric suffix instead of looping forever.
 func TestRandomWorktreeName(t *testing.T) {
+	t.Parallel()
 	pair := regexp.MustCompile(`^[a-z]+-[a-z]+$`)
 	suffixed := regexp.MustCompile(`^[a-z]+-[a-z]+-\d+$`)
 

@@ -15,6 +15,7 @@ import (
 // repo-relative and slash-separated, untracked-but-not-ignored files included,
 // .gitignore'd files excluded, all sorted.
 func TestTree(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	mkdir(t, repo, "internal/rpc")
 	write(t, repo, "internal/rpc/rpc.go", "package rpc\n")
@@ -43,6 +44,7 @@ func TestTree(t *testing.T) {
 // TestTreeDropsDeleted proves a tracked file removed from disk (but not yet
 // staged) disappears from the tree, so the list is not frozen at HEAD.
 func TestTreeDropsDeleted(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	if err := os.Remove(filepath.Join(repo, "a.txt")); err != nil {
 		t.Fatal(err)
@@ -61,6 +63,7 @@ func TestTreeDropsDeleted(t *testing.T) {
 // and .git skipped whole. The contract changed here — a non-repository path used
 // to be an error, matching DiffText; browsing files is not a git feature.
 func TestTreeWalksNonRepo(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	write(t, dir, "b.txt", "b\n")
 	write(t, dir, "src/main.go", "package main\n")
@@ -85,6 +88,7 @@ func TestTreeWalksNonRepo(t *testing.T) {
 // rev-parse, so its ls-files failure is the answer. Walking it instead would
 // draw a plausible tree over a repository nobody can list.
 func TestTreeReportsBrokenRepo(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, ".git/index", "not an index")
 	tree, err := New(nil).Tree(repo)
@@ -96,6 +100,7 @@ func TestTreeReportsBrokenRepo(t *testing.T) {
 // TestTreeMissingDir proves an absent directory is still an error, so the panel
 // says so instead of drawing an empty tree over a folder that is gone.
 func TestTreeMissingDir(t *testing.T) {
+	t.Parallel()
 	if _, err := New(nil).Tree(filepath.Join(t.TempDir(), "nope")); err == nil {
 		t.Error("Tree on missing dir: want error, got nil")
 	}
@@ -107,6 +112,7 @@ func TestTreeMissingDir(t *testing.T) {
 // listing is partial. walkLimit's own value is pinned as a literal (deriving
 // it would make the test follow the constant instead of pinning it).
 func TestWalkFilesStopsAtLimit(t *testing.T) {
+	t.Parallel()
 	if walkLimit != 20000 {
 		t.Errorf("walkLimit = %d, want 20000", walkLimit)
 	}
@@ -131,6 +137,7 @@ func TestWalkFilesStopsAtLimit(t *testing.T) {
 // name matches an ignored directory is a file, and a directory whose name only
 // contains one is not the one being skipped.
 func TestWalkIgnoresDependencyDirs(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	write(t, dir, "main.go", "package main\n")
 	write(t, dir, "node_modules/left-pad/index.js", "x")
@@ -167,6 +174,7 @@ func TestWalkIgnoresDependencyDirs(t *testing.T) {
 // in it that is not on disk sends the reader looking for a directory that was
 // never there.
 func TestWalkHiddenNamesOnlyWhatIsThere(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	write(t, dir, "main.go", "package main\n")
 	write(t, dir, "dist/out.js", "x")
@@ -195,6 +203,7 @@ func TestWalkHiddenNamesOnlyWhatIsThere(t *testing.T) {
 // in the panel, and a name silently added is a directory of somebody's source
 // gone from it.
 func TestWalkIgnoreNames(t *testing.T) {
+	t.Parallel()
 	want := []string{
 		".cache", ".git", ".venv", "__pycache__", "build",
 		"dist", "node_modules", "target", "vendor", "venv",
@@ -207,6 +216,7 @@ func TestWalkIgnoreNames(t *testing.T) {
 
 // TestReadFile proves a tracked text file's bytes come back verbatim.
 func TestReadFile(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	got, err := New(nil).ReadFile(repo, "a.txt")
 	if err != nil {
@@ -220,6 +230,7 @@ func TestReadFile(t *testing.T) {
 // TestReadFileDecodesLatin1 covers a file saved in ISO-8859-1: its accented
 // bytes are not UTF-8, and handed over raw they reach the viewer as U+FFFD.
 func TestReadFileDecodesLatin1(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "menu.xml", "Log\xedstica Servi\xe7os Requisi\xe7\xe3o\n")
 	got, err := New(nil).ReadFile(repo, "menu.xml")
@@ -234,6 +245,7 @@ func TestReadFileDecodesLatin1(t *testing.T) {
 // TestReadFileRejectsEscape proves traversal and absolute paths never reach the
 // filesystem, mirroring DiscardFile's guard.
 func TestReadFileRejectsEscape(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	for _, rel := range []string{"../outside.txt", "/etc/passwd", "a/../../b"} {
 		if _, err := New(nil).ReadFile(repo, rel); err == nil {
@@ -250,6 +262,7 @@ func TestReadFileRejectsEscape(t *testing.T) {
 // genuinely ship — git records it as its target text, and a preview that
 // followed it would print a file the diff beside it never mentions.
 func TestReadFileRejectsALinkOutOfTheCheckout(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	outside := filepath.Join(t.TempDir(), "secret.txt")
 	if err := os.WriteFile(outside, []byte("not the repository's\n"), 0o600); err != nil {
@@ -266,6 +279,7 @@ func TestReadFileRejectsALinkOutOfTheCheckout(t *testing.T) {
 // TestReadFileRejectsBinary proves a NUL-bearing file is refused rather than
 // streamed into the text preview.
 func TestReadFileRejectsBinary(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "bin", "abc\x00def")
 	if _, err := New(nil).ReadFile(repo, "bin"); err == nil {
@@ -275,6 +289,7 @@ func TestReadFileRejectsBinary(t *testing.T) {
 
 // TestReadFileRejectsLarge proves a file above the size cap is refused.
 func TestReadFileRejectsLarge(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "big", strings.Repeat("x", maxReadFileSize+1))
 	if _, err := New(nil).ReadFile(repo, "big"); err == nil {
@@ -288,6 +303,7 @@ func TestReadFileRejectsLarge(t *testing.T) {
 // 8000 on purpose — deriving them from binarySniffBytes would make the test
 // follow the constant instead of pinning it.
 func TestIsBinaryWindow(t *testing.T) {
+	t.Parallel()
 	nulAt := func(offset int) []byte {
 		data := bytes.Repeat([]byte("x"), offset+1)
 		data[offset] = 0
@@ -315,6 +331,7 @@ func TestIsBinaryWindow(t *testing.T) {
 
 // TestReadFileMissing proves an absent (but path-valid) file is an error.
 func TestReadFileMissing(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	if _, err := New(nil).ReadFile(repo, "nope.txt"); err == nil {
 		t.Error("ReadFile(missing): want error, got nil")

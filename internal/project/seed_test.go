@@ -13,6 +13,7 @@ import (
 // repo-relative path, and an invalid pattern matches nothing instead of
 // panicking.
 func TestMatchesInclude(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		rel      string
@@ -41,6 +42,7 @@ func TestMatchesInclude(t *testing.T) {
 // default, a present file governs alone (comments and blanks skipped), and an
 // empty file means seed nothing.
 func TestIncludePatterns(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	if got := includePatterns(dir); !slices.Equal(got, defaultIncludes) {
 		t.Errorf("no file: patterns = %v, want %v", got, defaultIncludes)
@@ -69,6 +71,7 @@ func TestIncludePatterns(t *testing.T) {
 // off a file nobody could read would copy exactly what the override may exist
 // to keep out of the worktree.
 func TestIncludePatternsRefusesAnUnreadableFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, includeFile)
 	if err := os.WriteFile(path, []byte("config/*.json\n"), 0o644); err != nil {

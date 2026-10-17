@@ -12,6 +12,7 @@ import (
 // what a project's sessions and its worktree directory hang off, so a second one
 // for the same directory is a second project on top of the first.
 func TestIdentifyMatchesThePicker(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	p, err := Identify(dir)
@@ -69,6 +70,7 @@ func TestIdentifyNormalizes(t *testing.T) {
 // window's own directory, not the caller's, so accepting it would silently open
 // somewhere else.
 func TestIdentifyRefuses(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	file := filepath.Join(dir, "README.md")
 	if err := os.WriteFile(file, []byte("x"), 0o600); err != nil {

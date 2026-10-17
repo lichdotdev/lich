@@ -68,6 +68,7 @@ func commitFile(t *testing.T, dir string, git func(args ...string) string, name,
 }
 
 func TestBaseStatusNoRemote(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	if got := New(nil).BaseStatus(repo); got != nil {
 		t.Fatalf("want nil for a repository with no origin, got %+v", got)
@@ -75,12 +76,14 @@ func TestBaseStatusNoRemote(t *testing.T) {
 }
 
 func TestBaseStatusNotARepository(t *testing.T) {
+	t.Parallel()
 	if got := New(nil).BaseStatus(t.TempDir()); got != nil {
 		t.Fatalf("want nil outside a repository, got %+v", got)
 	}
 }
 
 func TestBaseStatusUpToDate(t *testing.T) {
+	t.Parallel()
 	clone, cloneGit, _ := initClone(t)
 	cloneGit("checkout", "-b", "feature")
 	commitFile(t, clone, cloneGit, "b.txt", "two\n", "add b")
@@ -103,6 +106,7 @@ func TestBaseStatusUpToDate(t *testing.T) {
 }
 
 func TestBaseStatusBehindWithoutConflict(t *testing.T) {
+	t.Parallel()
 	clone, cloneGit, originGit := initClone(t)
 	cloneGit("checkout", "-b", "feature")
 	commitFile(t, clone, cloneGit, "b.txt", "two\n", "add b")
@@ -125,6 +129,7 @@ func TestBaseStatusBehindWithoutConflict(t *testing.T) {
 }
 
 func TestBaseStatusConflict(t *testing.T) {
+	t.Parallel()
 	clone, cloneGit, originGit := initClone(t)
 	cloneGit("checkout", "-b", "feature")
 	commitFile(t, clone, cloneGit, "a.txt", "mine\n", "edit a")
@@ -147,6 +152,7 @@ func TestBaseStatusConflict(t *testing.T) {
 // stale one pins the badge to a state the checkout has left, which is the only
 // way this cache can be wrong. Both keys are moved, one at a time.
 func TestBaseStatusRecomputes(t *testing.T) {
+	t.Parallel()
 	clone, cloneGit, originGit := initClone(t)
 	cloneGit("checkout", "-b", "feature")
 	commitFile(t, clone, cloneGit, "b.txt", "two\n", "add b")
@@ -175,6 +181,7 @@ func TestBaseStatusRecomputes(t *testing.T) {
 // the parser's own idea of them: the tree OID, the conflicted paths, an empty
 // entry, then the informational messages that must not be read as paths.
 func TestConflictPaths(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		out  string
@@ -210,6 +217,7 @@ func TestConflictPaths(t *testing.T) {
 }
 
 func TestClaimFetchThrottles(t *testing.T) {
+	t.Parallel()
 	var cache baseCache
 	now := time.Now()
 	if !cache.claimFetch("/repo/.git", now) {

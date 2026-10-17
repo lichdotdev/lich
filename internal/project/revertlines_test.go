@@ -40,6 +40,7 @@ func readFile(t *testing.T, repo, rel string) string {
 }
 
 func TestRevertLinesAddition(t *testing.T) {
+	t.Parallel()
 	repo, git := revertRepo(t, strings.Replace(revertBase, "bravo\n", "bravo\nNEW1\n", 1)+"TAIL\n")
 
 	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 3, Text: "NEW1"}})
@@ -57,6 +58,7 @@ func TestRevertLinesAddition(t *testing.T) {
 // TestRevertLinesLatin1 picks a line by the text the review shows, decoded
 // from Latin-1, while git's diff holds the raw bytes.
 func TestRevertLinesLatin1(t *testing.T) {
+	t.Parallel()
 	for _, staged := range []bool{false, true} {
 		repo, git := revertRepo(t, strings.Replace(revertBase, "bravo\n", "bravo\nservi\xe7os\n", 1))
 		if staged {
@@ -76,6 +78,7 @@ func TestRevertLinesLatin1(t *testing.T) {
 // as it comes back from a client: through JSON, which would turn each raw byte
 // into U+FFFD if the patch traveled as text.
 func TestRestoreLinesLatin1AfterTheWire(t *testing.T) {
+	t.Parallel()
 	changed := strings.Replace(revertBase, "bravo\n", "bravo\nservi\xe7os\n", 1)
 	repo, git := revertRepo(t, changed)
 	git("add", "code.txt")
@@ -104,6 +107,7 @@ func TestRestoreLinesLatin1AfterTheWire(t *testing.T) {
 }
 
 func TestRevertLinesDeletion(t *testing.T) {
+	t.Parallel()
 	repo, _ := revertRepo(t, strings.Replace(revertBase, "delta\n", "", 1))
 
 	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "old", Line: 4, Text: "delta"}})
@@ -118,6 +122,7 @@ func TestRevertLinesDeletion(t *testing.T) {
 // TestRevertLinesPartOfABlock reverts the additions of a replace block and keeps
 // its replacement line: the unpicked deletion must not come back.
 func TestRevertLinesPartOfABlock(t *testing.T) {
+	t.Parallel()
 	edited := strings.Replace(revertBase, "charlie\n", "CHARLIE\nextra1\nextra2\n", 1)
 	repo, _ := revertRepo(t, edited)
 
@@ -137,6 +142,7 @@ func TestRevertLinesPartOfABlock(t *testing.T) {
 // TestRevertLinesStagedChange reverts a fully staged change in the index too, so
 // it cannot ride the next commit invisibly.
 func TestRevertLinesStagedChange(t *testing.T) {
+	t.Parallel()
 	repo, git := revertRepo(t, strings.Replace(revertBase, "echo\n", "ECHO\n", 1))
 	git("add", "code.txt")
 
@@ -158,6 +164,7 @@ func TestRevertLinesStagedChange(t *testing.T) {
 // TestRevertLinesOtherHunkStaged keeps the index out when what is staged is a
 // different change of the same file.
 func TestRevertLinesOtherHunkStaged(t *testing.T) {
+	t.Parallel()
 	repo, git := revertRepo(t, strings.Replace(revertBase, "alpha\n", "ALPHA\n", 1))
 	git("add", "code.txt")
 	writeFile(t, repo, "code.txt", strings.Replace(readFile(t, repo, "code.txt"), "hotel\n", "HOTEL\n", 1))
@@ -178,6 +185,7 @@ func TestRevertLinesOtherHunkStaged(t *testing.T) {
 }
 
 func TestRevertLinesStagedDiverged(t *testing.T) {
+	t.Parallel()
 	repo, git := revertRepo(t, strings.Replace(revertBase, "golf\n", "GOLF-staged\n", 1))
 	git("add", "code.txt")
 	edited := strings.Replace(revertBase, "golf\n", "GOLF-edited\n", 1)
@@ -196,6 +204,7 @@ func TestRevertLinesStagedDiverged(t *testing.T) {
 }
 
 func TestRevertLinesStale(t *testing.T) {
+	t.Parallel()
 	repo, _ := revertRepo(t, strings.Replace(revertBase, "bravo\n", "bravo\nNEW1\n", 1))
 	cases := map[string]RevertLine{
 		"text moved":           {Side: "new", Line: 3, Text: "something else"},
@@ -212,6 +221,7 @@ func TestRevertLinesStale(t *testing.T) {
 }
 
 func TestRevertLinesRejectsBadInput(t *testing.T) {
+	t.Parallel()
 	repo, _ := revertRepo(t, revertBase+"TAIL\n")
 	s := New(nil)
 	if _, err := s.RevertLines(repo, "../escape.txt", []RevertLine{{Side: "new", Line: 9, Text: "TAIL"}}); err == nil {
@@ -226,6 +236,7 @@ func TestRevertLinesRejectsBadInput(t *testing.T) {
 }
 
 func TestRevertLinesUntracked(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	writeFile(t, repo, "new file.txt", "one\ntwo\nthree\n")
 
@@ -242,6 +253,7 @@ func TestRevertLinesUntracked(t *testing.T) {
 }
 
 func TestRevertLinesNoNewlineAtEOF(t *testing.T) {
+	t.Parallel()
 	repo, _ := revertRepo(t, strings.TrimSuffix(revertBase, "\n")+"\nindia")
 
 	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 9, Text: "india"}})
@@ -256,6 +268,7 @@ func TestRevertLinesNoNewlineAtEOF(t *testing.T) {
 // TestRestoreLinesUndoesRevert round-trips both a working-tree-only and a staged
 // revert back to where they started.
 func TestRestoreLinesUndoesRevert(t *testing.T) {
+	t.Parallel()
 	for _, staged := range []bool{false, true} {
 		edited := strings.Replace(revertBase, "foxtrot\n", "FOXTROT\n", 1)
 		repo, git := revertRepo(t, edited)
@@ -284,6 +297,7 @@ func TestRestoreLinesUndoesRevert(t *testing.T) {
 }
 
 func TestRestoreLinesRefusesForeignPatch(t *testing.T) {
+	t.Parallel()
 	repo, _ := revertRepo(t, revertBase)
 	s := New(nil)
 	foreign := RevertResult{Patch: patchFileHeader("a.txt") + "@@ -1 +1 @@\n-one\n+two\n"}
@@ -302,6 +316,7 @@ func TestRestoreLinesRefusesForeignPatch(t *testing.T) {
 // TestRevertLinesStagedWithUnstagedNeighbour reverts a staged change whose hunk
 // also holds an unstaged one: both sides are reverted, and the neighbour stays.
 func TestRevertLinesStagedWithUnstagedNeighbour(t *testing.T) {
+	t.Parallel()
 	repo, git := revertRepo(t, strings.Replace(revertBase, "bravo\n", "BRAVO\n", 1))
 	git("add", "code.txt")
 	writeFile(t, repo, "code.txt", strings.Replace(readFile(t, repo, "code.txt"), "delta\n", "delta\nextra\n", 1))
@@ -327,6 +342,7 @@ func TestRevertLinesStagedWithUnstagedNeighbour(t *testing.T) {
 // TestRevertLinesStagedNewFile reverts a line of a file HEAD never had but the
 // index does.
 func TestRevertLinesStagedNewFile(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	writeFile(t, repo, "fresh.txt", "one\ntwo\n")
 	git("add", "fresh.txt")
@@ -347,6 +363,7 @@ func TestRevertLinesStagedNewFile(t *testing.T) {
 // committed: the file has nothing left to diff, and the line the panel names
 // still sits there with the same text. It must be refused, not deleted.
 func TestRevertLinesCleanTrackedFile(t *testing.T) {
+	t.Parallel()
 	repo, _ := revertRepo(t, revertBase)
 
 	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 2, Text: "bravo"}})
@@ -361,6 +378,7 @@ func TestRevertLinesCleanTrackedFile(t *testing.T) {
 // TestRevertLinesGitFailure keeps a git that cannot read the checkout from
 // passing for an empty diff.
 func TestRevertLinesGitFailure(t *testing.T) {
+	t.Parallel()
 	repo, _ := revertRepo(t, strings.Replace(revertBase, "bravo\n", "bravo\nNEW1\n", 1))
 	if err := os.WriteFile(filepath.Join(repo, ".git", "index"), []byte("not an index"), 0o644); err != nil {
 		t.Fatal(err)

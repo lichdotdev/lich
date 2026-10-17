@@ -20,6 +20,7 @@ func matchKeys(matches []SearchMatch) string {
 // listing: tracked and untracked files hit, an ignored one never does, in the
 // tree's order, with 1-based lines and the indentation dropped.
 func TestSearchCoversWhatTheTreeLists(t *testing.T) {
+	t.Parallel()
 	repo, git := initRepo(t)
 	write(t, repo, "src/main.go", "package main\n\n\tfunc Needle() {}\n")
 	write(t, repo, ".gitignore", "ignored.txt\n")
@@ -49,6 +50,7 @@ func TestSearchCoversWhatTheTreeLists(t *testing.T) {
 // TestSearchIsLiteral proves a query is text, not a pattern: regexp
 // metacharacters match themselves.
 func TestSearchIsLiteral(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "a.txt", "a.b\naxb\n")
 	got, err := New(nil).Search(repo, "a.b")
@@ -62,6 +64,7 @@ func TestSearchIsLiteral(t *testing.T) {
 
 // TestSearchWalksPlainFolder proves search works where the tree does, without git.
 func TestSearchWalksPlainFolder(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	write(t, dir, "notes.md", "find me\n")
 	write(t, dir, "node_modules/dep.js", "find me\n")
@@ -77,6 +80,7 @@ func TestSearchWalksPlainFolder(t *testing.T) {
 // TestSearchSkipsWhatThePreviewRefuses proves every hit is a file the preview
 // opens: binaries, oversize files and symlinks never match.
 func TestSearchSkipsWhatThePreviewRefuses(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "bin", "needle\x00")
 	write(t, repo, "big", "needle"+strings.Repeat("x", maxReadFileSize))
@@ -99,6 +103,7 @@ func TestSearchSkipsWhatThePreviewRefuses(t *testing.T) {
 // TestSearchStopsAtTheCap proves a loose query stops at maxSearchMatches and
 // says so.
 func TestSearchStopsAtTheCap(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "many.txt", strings.Repeat("hit\n", maxSearchMatches+10))
 	write(t, repo, "zz.txt", "hit\n")
@@ -113,6 +118,7 @@ func TestSearchStopsAtTheCap(t *testing.T) {
 
 // TestSearchRefusesEmptyQuery proves a blank query is an error, not every line.
 func TestSearchRefusesEmptyQuery(t *testing.T) {
+	t.Parallel()
 	repo, _ := initRepo(t)
 	if _, err := New(nil).Search(repo, "  "); err == nil {
 		t.Error("Search(blank): want error, got nil")
@@ -122,6 +128,7 @@ func TestSearchRefusesEmptyQuery(t *testing.T) {
 // TestSearchReportsMissingDir proves a checkout that is gone is an error, not
 // "no matches".
 func TestSearchReportsMissingDir(t *testing.T) {
+	t.Parallel()
 	if _, err := New(nil).Search(filepath.Join(t.TempDir(), "gone"), "x"); err == nil {
 		t.Error("Search(missing dir): want error, got nil")
 	}
@@ -131,6 +138,7 @@ func TestSearchReportsMissingDir(t *testing.T) {
 // what precedes it survives, the cut never splits a rune, and each cut side is
 // marked.
 func TestExcerpt(t *testing.T) {
+	t.Parallel()
 	short := "short line"
 	if got := excerpt(short, 0); got != short {
 		t.Errorf("excerpt(short) = %q, want it whole", got)

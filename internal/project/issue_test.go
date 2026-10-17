@@ -7,6 +7,7 @@ import (
 )
 
 func TestIssue(t *testing.T) {
+	t.Parallel()
 	t.Run("decodes and asks gh for the number", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`{"number":381,"title":"Sandbox backend","body":"why","url":"https://github.com/o/l/issues/381"}`)}
 		issue, err := withGH(gh).Issue("/repo", 381)
@@ -80,6 +81,7 @@ func TestIssue(t *testing.T) {
 }
 
 func TestTruncateRunes(t *testing.T) {
+	t.Parallel()
 	// The cap is pinned as a literal and crossed by one, rather than derived
 	// from the constant: a test that follows the constant proves nothing about
 	// where the boundary is.
@@ -108,6 +110,7 @@ func TestTruncateRunes(t *testing.T) {
 // the sentence the dialog shows. The literal is what gh answered in the field —
 // a reword there is a fallback message on screen, never a wrong one.
 func TestIssueNotFoundMessage(t *testing.T) {
+	t.Parallel()
 	const stderr = "GraphQL: Could not resolve to an issue or pull request with the number of 99999. (repository.issue)"
 	got := ghMessage(stderr, errors.New("exit status 1"), nil)
 	if got != "GitHub has no issue with that number." {
