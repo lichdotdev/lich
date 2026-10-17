@@ -164,13 +164,6 @@ jobs:
         # git-bash on Windows keeps these steps byte-identical to the linux job's.
         shell: bash
     steps:
-      # Real-time scanning inspects every test binary go test links and runs;
-      # nothing on a throwaway runner needs it.
-      - name: Disable Defender real-time scanning
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Set-MpPreference -DisableRealtimeMonitoring $true
-
       - uses: actions/checkout@v7
 
       - name: Set up Go
