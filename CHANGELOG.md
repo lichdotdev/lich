@@ -82,6 +82,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Linux.** A session, a Review or a pull request full of CJK text could hang
   the window for seconds, long enough for "not responding", and a zoom
   brought the freeze back.
+- **The native window holds less memory.** Each session's terminal and the
+  Review loaded its own copy of the fonts it falls back on, tens of megabytes
+  apiece for a CJK or emoji font: six open sessions now take about half
+  the memory they did. It also starts quicker on a machine with CJK fonts
+  installed.
 
 ## [0.69.0] - 2026-10-16
 

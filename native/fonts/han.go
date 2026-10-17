@@ -1,13 +1,15 @@
 package fonts
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
 
 	"gioui.org/font"
-	"gioui.org/font/opentype"
+	gotext "github.com/go-text/typesetting/font"
+	ot "github.com/go-text/typesetting/font/opentype"
 )
 
 // Han is the typeface the CJK faces are registered under. No text asks for
@@ -89,20 +91,33 @@ func loadHan(c cjk) ([]font.FontFace, error) {
 	return faces, nil
 }
 
+// parseLocation parses the one face loc names: a CJK collection holds about
+// ten, and opentype.ParseCollection parsed all of them to keep one, hundreds
+// of megabytes allocated at every start.
 func parseLocation(loc Location) (font.Face, error) {
 	data, err := os.ReadFile(loc.Path)
 	if err != nil {
 		return nil, err
 	}
-	parsed, err := opentype.ParseCollection(data)
+	loaders, err := ot.NewLoaders(bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
 	}
-	if loc.Index < 0 || loc.Index >= len(parsed) {
-		return nil, fmt.Errorf("locate Han: face index %d is not one of the %d in %s", loc.Index, len(parsed), loc.Path)
+	if loc.Index < 0 || loc.Index >= len(loaders) {
+		return nil, fmt.Errorf("locate Han: face index %d is not one of the %d in %s", loc.Index, len(loaders), loc.Path)
 	}
-	return parsed[loc.Index].Face, nil
+	parsed, err := gotext.NewFont(loaders[loc.Index])
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
+	}
+	return collectionFace{parsed}, nil
 }
+
+// collectionFace is a font.Face over one parsed face of a collection; like
+// Gio's own opentype.Face, each call hands a shaper a face of its own.
+type collectionFace struct{ font *gotext.Font }
+
+func (f collectionFace) Face() *gotext.Face { return gotext.NewFace(f.font) }
 
 // coverWeights registers, for each interface weight faces lack, the face of
 // the nearest weight they have, the heavier on a tie: the shaper falls back

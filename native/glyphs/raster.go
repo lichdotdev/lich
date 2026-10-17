@@ -9,7 +9,6 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
-	"os"
 
 	gofont "gioui.org/font"
 	gotext "github.com/go-text/typesetting/font"
@@ -47,14 +46,13 @@ type Key struct {
 	Bold, Italic bool
 }
 
+// fontFace is one Rasterizer's view of a shared fontFile: its face at the
+// rasterizer's size and its reader of color bitmaps, neither safe to share.
 type fontFace struct {
-	sf   *sfnt.Font
+	file *fontFile
 	face font.Face
-	data []byte
-	// bitmaps reads the color bitmaps sfnt cannot (CBDT, sbix), parsed on the
-	// face's first glyph; strikes says whether it has any.
+	// bitmaps reads file's color bitmaps; nil when it has none.
 	bitmaps *gotext.Face
-	strikes bool
 }
 
 // Mask is a glyph's coverage, placed relative to its cell's top-left.
@@ -109,21 +107,16 @@ func (r *Rasterizer) load(path string) (*fontFace, error) {
 	if f, ok := r.byFile[path]; ok {
 		return f, nil
 	}
-	data, err := os.ReadFile(path)
+	file, err := openFontFile(path)
 	if err != nil {
 		return nil, err
 	}
-	coll, err := opentype.ParseCollection(data)
-	if err != nil {
-		return nil, fmt.Errorf("parse %s: %w", path, err)
+	f := &fontFace{file: file}
+	if file.color != nil {
+		f.bitmaps = gotext.NewFace(file.color)
 	}
-	sf, err := coll.Font(0)
-	if err != nil {
-		return nil, fmt.Errorf("parse %s: %w", path, err)
-	}
-	f := &fontFace{sf: sf, data: data}
 	if r.px > 0 {
-		if f.face, err = opentype.NewFace(sf, &opentype.FaceOptions{Size: r.px, DPI: 72}); err != nil {
+		if f.face, err = opentype.NewFace(file.sf, &opentype.FaceOptions{Size: r.px, DPI: 72}); err != nil {
 			return nil, err
 		}
 	}
@@ -139,7 +132,7 @@ func (r *Rasterizer) SetSize(px float64) (bool, error) {
 	}
 	r.px = px
 	for _, f := range r.byFile {
-		face, err := opentype.NewFace(f.sf, &opentype.FaceOptions{Size: px, DPI: 72})
+		face, err := opentype.NewFace(f.file.sf, &opentype.FaceOptions{Size: px, DPI: 72})
 		if err != nil {
 			return false, err
 		}
@@ -156,7 +149,7 @@ func (r *Rasterizer) SetSize(px float64) (bool, error) {
 }
 
 func (r *Rasterizer) covers(f *fontFace, c rune) bool {
-	gi, err := f.sf.GlyphIndex(&r.buf, c)
+	gi, err := f.file.sf.GlyphIndex(&r.buf, c)
 	return err == nil && gi != 0
 }
 
@@ -230,14 +223,6 @@ func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 // no VS16) still overhangs into the next cell.
 func (r *Rasterizer) colorBitmap(f *fontFace, c rune) (*image.RGBA, image.Point, error) {
 	if f.bitmaps == nil {
-		faces, err := gotext.ParseTTC(bytes.NewReader(f.data))
-		if err != nil {
-			return nil, image.Point{}, fmt.Errorf("parse color bitmaps: %w", err)
-		}
-		f.bitmaps = faces[0]
-		f.strikes = len(f.bitmaps.BitmapSizes()) > 0
-	}
-	if !f.strikes {
 		return nil, image.Point{}, nil
 	}
 	gid, ok := f.bitmaps.NominalGlyph(c)

@@ -48,6 +48,10 @@ from `main` either drowns in merges or freezes the web app for months.
   again.
 - **`lich gallery`** opens `lich-gallery` (built from `native/cmd/ui-gallery`), the UI kit's gallery, which needs no
   backend; it is looked up beside `lich` the same way, or at `LICH_GALLERY`.
+- **`LICH_NATIVE_PPROF=127.0.0.1:6060`**, set where `lich native` starts, has `lich-native` serve Go's
+  runtime profiles (`net/http/pprof`) on that address, for a heap or CPU profile of a real window:
+  `go tool pprof http://127.0.0.1:6060/debug/pprof/heap`. Only a loopback address is accepted, and any
+  process on the machine can read what the profiles carry.
 - **`frontend/` and `shell/` stay untouched** until the cutover. The native window does not reuse the
   frontend's code; it is a reference for what to port, nothing more.
 

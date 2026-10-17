@@ -59,6 +59,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if addr := os.Getenv(pprofEnv); addr != "" {
+		ln, err := pprofListener(addr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		go servePprof(ln)
+	}
 	go func() {
 		width, height := windowSize(*flagWindow)
 		w := new(app.Window)

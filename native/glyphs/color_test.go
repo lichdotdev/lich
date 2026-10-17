@@ -58,7 +58,7 @@ func whyNoColor(r *Rasterizer, c rune) string {
 	if err != nil {
 		return fmt.Sprintf("Covering = %q, load: %v", path, err)
 	}
-	faces, err := gotext.ParseTTC(bytes.NewReader(f.data))
+	faces, err := gotext.ParseTTC(bytes.NewReader(f.file.data))
 	if err != nil {
 		return fmt.Sprintf("Covering = %q, covers %v, ParseTTC: %v", path, r.covers(f, c), err)
 	}
