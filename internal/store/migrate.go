@@ -22,6 +22,7 @@ var migrations = []func(*sql.Tx) error{
 	addSessionColor,
 	addProviderSessionTombstones,
 	addSessionProfile,
+	addSessionForked,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -120,6 +121,14 @@ END;`)
 // ran in.
 func addSessionProfile(tx *sql.Tx) error {
 	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN profile TEXT NOT NULL DEFAULT ''`)
+	return err
+}
+
+// addSessionForked is version 10: whether the session was born branching
+// another's conversation (MarkForked). The origin columns cannot say it: a
+// delegate and a subagent card carry an origin too.
+func addSessionForked(tx *sql.Tx) error {
+	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN forked INTEGER NOT NULL DEFAULT 0`)
 	return err
 }
 

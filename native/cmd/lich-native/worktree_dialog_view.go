@@ -108,7 +108,7 @@ func (u *window) layoutWorktreeDialog(gtx C, th *ui.Theme) {
 	if d.view().done {
 		d.open = false
 	}
-	if checkout, ok := u.model.gitStatus(d.project.Path); ok {
+	if checkout, ok := u.model.gitStatus(d.source); ok {
 		d.checkout = checkout
 	}
 	d.applyRung()
@@ -117,7 +117,13 @@ func (u *window) layoutWorktreeDialog(gtx C, th *ui.Theme) {
 	on := th.On(th.Popover)
 	cancel := on.Button(&d.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
+	title, description := i18n.T("sidebar.worktreeDialogView.title"), i18n.T("sidebar.worktreeDialogView.description")
 	label := i18n.T("sidebar.worktreeDialogView.create")
+	if d.fork != nil {
+		title = i18n.T("sidebar.worktreeDialogView.forkTitle", i18n.Args{"label": d.fork.label})
+		description = i18n.T("sidebar.worktreeDialogView.forkDescription")
+		label = i18n.T("sidebar.worktreeDialogView.fork")
+	}
 	switch group, _ := splitBase(v.base); {
 	case v.submitting:
 		label = i18n.T("sidebar.worktreeDialog.creating")
@@ -126,7 +132,7 @@ func (u *window) layoutWorktreeDialog(gtx C, th *ui.Theme) {
 	}
 	create := on.Button(&d.create, label)
 	create.Disabled = v.base == "" || v.submitting
-	dlg := th.Dialog(&d.dialog, d.open, i18n.T("sidebar.worktreeDialogView.title"), i18n.T("sidebar.worktreeDialogView.description"))
+	dlg := th.Dialog(&d.dialog, d.open, title, description)
 	dlg.Root = d.root
 	dlg.Body = func(gtx C) D { return d.body(gtx, on, u.ctx, v) }
 	dlg.Actions = []layout.Widget{cancel.Layout, create.Layout}
@@ -226,7 +232,9 @@ func (d *worktreeDialog) body(gtx C, th *ui.Theme, ctx context.Context, v worktr
 	if d.canCarry(v.base) {
 		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return d.carryRow(gtx, th) }))
 	}
-	if v.canConfine && group != baseWorktree {
+	// A fork opens like a session another one asked for, on its provider's
+	// rung, so it has no box to tick.
+	if v.canConfine && group != baseWorktree && d.fork == nil {
 		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D {
 			return checkRow(gtx, th, &d.confined, i18n.T("sidebar.worktreeSandboxRow.runConfined"), "")
 		}))

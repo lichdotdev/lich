@@ -105,6 +105,11 @@ type terminals struct {
 	// sent right after Start; the PTY holds it until the shell reads it.
 	typeahead map[string]string
 	toaster   *ui.Toaster
+
+	// forks are the sessions whose first start branches a conversation, by
+	// the conversation: the provider assigns the copy its own id, reported by
+	// the session-start hook, so nothing here outlives that start.
+	forks map[string]string
 	// profileGone takes a session whose Claude Code profile was deleted: its
 	// spawn is refused, so a toast in place of the generic failure offers a
 	// way on.
@@ -119,6 +124,36 @@ func (ts *terminals) queue(id, text string) {
 		ts.typeahead = map[string]string{}
 	}
 	ts.typeahead[id] += text
+}
+
+// queueFork makes session id's first start branch the provider conversation
+// parent rather than open a fresh one.
+func (ts *terminals) queueFork(id, parent string) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	if ts.forks == nil {
+		ts.forks = map[string]string{}
+	}
+	ts.forks[id] = parent
+}
+
+// takeFork is the conversation session id's start branches, "" for none,
+// and forgets it.
+func (ts *terminals) takeFork(id string) string {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	parent := ts.forks[id]
+	delete(ts.forks, id)
+	return parent
+}
+
+// start spawns s's process: a fork of the conversation queued for it, else
+// resume (or a fresh one for "").
+func (ts *terminals) start(ctx context.Context, s sessionView, resume string, cols, rows int) error {
+	if parent := ts.takeFork(s.ID); parent != "" {
+		return ts.client.Fork(ctx, s.ID, s.projectID, s.path, s.Kind, parent, cols, rows)
+	}
+	return ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, resume, cols, rows)
 }
 
 func (ts *terminals) onOutput(id string, data []byte) {
@@ -212,7 +247,7 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.byID[s.ID] = t
 	ts.mu.Unlock()
 	// A failed start leaves the terminal in place, empty, as the web's does.
-	if err := ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, resume, cols, rows); err != nil {
+	if err := ts.start(ctx, s, resume, cols, rows); err != nil {
 		if lichclient.ProfileGone(err) && ts.profileGone != nil {
 			ts.profileGone(s)
 			return t, nil

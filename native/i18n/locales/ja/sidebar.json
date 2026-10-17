@@ -38,7 +38,11 @@
     "editor": "エディター",
     "fileManager": "ファイルマネージャー",
     "pullRequest": "プルリクエスト",
-    "closeSession": "セッションを閉じる"
+    "closeSession": "セッションを閉じる",
+    "fork": "フォーク",
+    "forkHere": "ここで",
+    "forkWorktree": "ワークツリー…",
+    "forkResumeOnly": "再開のみ"
   },
   "settingsCard": {
     "close": "設定を閉じる"
@@ -119,7 +123,8 @@
     "confinedMeans": "ホームは空、マシンは読み取り専用で、書き込みはこのチェックアウト内のみです。",
     "setAtOpen": "セッションを開いたときに決まります。変更するには開き直してください。",
     "notMounted": "マウントされていません (シンボリックリンク): {paths}",
-    "morePaths": "ほか {count} 件"
+    "morePaths": "ほか {count} 件",
+    "forkedFrom": "{label} からフォーク"
   },
   "worktreeDialogView": {
     "title": "新しいワークツリーセッション",
@@ -141,7 +146,10 @@
       "other": "このチェックアウトのファイル {count} 件"
     },
     "create": "作成",
-    "open": "開く"
+    "open": "開く",
+    "forkTitle": "{label} をワークツリーにフォーク",
+    "forkDescription": "独自のブランチを持つ別のチェックアウト。",
+    "fork": "フォーク"
   },
   "worktreeLogic": {
     "checking": "リモートを確認しています…",
@@ -166,5 +174,9 @@
     "dismiss": "閉じる",
     "resumesIn": "開始時のプロファイルである {profile} · {email} で再開します。",
     "resumesInNoEmail": "開始時のプロファイルである {profile} で再開します。"
+  },
+  "fork": {
+    "pruned": "{name} にはフォークできる会話がもうありません: {provider} が削除しました。",
+    "failed": "{name} をフォークできませんでした: {error}"
   }
 }

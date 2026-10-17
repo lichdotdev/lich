@@ -38,7 +38,11 @@
     "editor": "Editor",
     "fileManager": "Gerenciador de arquivos",
     "pullRequest": "Pull request",
-    "closeSession": "Fechar sessão"
+    "closeSession": "Fechar sessão",
+    "fork": "Fork",
+    "forkHere": "Aqui",
+    "forkWorktree": "Worktree…",
+    "forkResumeOnly": "só retoma"
   },
   "settingsCard": {
     "close": "Fechar configurações"
@@ -119,7 +123,8 @@
     "confinedMeans": "Home vazia, máquina somente leitura, escrita só neste checkout.",
     "setAtOpen": "Definido quando a sessão abriu; reabra-a para mudar.",
     "notMounted": "Não montados (symlinks): {paths}",
-    "morePaths": "+{count} a mais"
+    "morePaths": "+{count} a mais",
+    "forkedFrom": "Fork de {label}"
   },
   "worktreeDialogView": {
     "title": "Nova sessão em worktree",
@@ -141,7 +146,10 @@
       "other": "{count} arquivos deste checkout"
     },
     "create": "Criar",
-    "open": "Abrir"
+    "open": "Abrir",
+    "forkTitle": "Fork de {label} para uma worktree",
+    "forkDescription": "Um checkout separado, na própria branch.",
+    "fork": "Fazer fork"
   },
   "worktreeLogic": {
     "checking": "Verificando o remoto…",
@@ -166,5 +174,9 @@
     "dismiss": "Dispensar",
     "resumesIn": "Ela é retomada em {profile} · {email}, o perfil em que começou.",
     "resumesInNoEmail": "Ela é retomada em {profile}, o perfil em que começou."
+  },
+  "fork": {
+    "pruned": "{name} não tem mais conversa para fazer fork: o {provider} a apagou.",
+    "failed": "Não foi possível fazer fork de {name}: {error}"
   }
 }

@@ -38,7 +38,11 @@
     "editor": "Editor",
     "fileManager": "File manager",
     "pullRequest": "Pull request",
-    "closeSession": "Close session"
+    "closeSession": "Close session",
+    "fork": "Fork",
+    "forkHere": "Here",
+    "forkWorktree": "Worktree…",
+    "forkResumeOnly": "resume only"
   },
   "settingsCard": {
     "close": "Close settings"
@@ -119,7 +123,8 @@
     "confinedMeans": "Empty home, machine read-only, writes only in this checkout.",
     "setAtOpen": "Set when the session opened; reopen it to change.",
     "notMounted": "Not mounted (symlinks): {paths}",
-    "morePaths": "+{count} more"
+    "morePaths": "+{count} more",
+    "forkedFrom": "Forked from {label}"
   },
   "worktreeDialogView": {
     "title": "New worktree session",
@@ -141,7 +146,10 @@
       "other": "{count} files from this checkout"
     },
     "create": "Create",
-    "open": "Open"
+    "open": "Open",
+    "forkTitle": "Fork {label} to a worktree",
+    "forkDescription": "A separate checkout on its own branch.",
+    "fork": "Fork"
   },
   "worktreeLogic": {
     "checking": "Checking the remote…",
@@ -166,5 +174,9 @@
     "dismiss": "Dismiss",
     "resumesIn": "It resumes in {profile} · {email}, the profile it started in.",
     "resumesInNoEmail": "It resumes in {profile}, the profile it started in."
+  },
+  "fork": {
+    "pruned": "{name} has no conversation left to fork: {provider} pruned it.",
+    "failed": "Couldn't fork {name}: {error}"
   }
 }

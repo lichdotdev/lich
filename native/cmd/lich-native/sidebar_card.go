@@ -131,7 +131,8 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 }
 
 // titleRow is the card's first line: the status ring around the provider
-// mark, a shield on a session that runs sandboxed, and the label, which stops
+// mark, a shield on a session that runs sandboxed, a fork on one born of a
+// fork, and the label, which stops
 // short of the corner controls (pr-11, pr-6 for a pinned card's lone pin).
 func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	row := []layout.FlexChild{
@@ -140,6 +141,9 @@ func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	}
 	if sv.sandbox.Confined {
 		row = append(row, layout.Rigid(func(gtx C) D { return s.icShield.Layout(gtx, 12, th.MutedForeground) }), ui.Gap(1.5))
+	}
+	if sv.Forked {
+		row = append(row, layout.Rigid(func(gtx C) D { return icMenuFork.Layout(gtx, 12, th.MutedForeground) }), ui.Gap(1.5))
 	}
 	if s.renaming(sv.ID) {
 		return append(row, layout.Flexed(1, func(gtx C) D { return s.renameField(gtx, th, sv.ID, s.renames[sv.ID]) }))

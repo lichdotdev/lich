@@ -128,7 +128,7 @@ porque lee lo que cada CLI deja escrito y no hay dos que anoten las mismas cosas
 | Buscar en la conversación desde la paleta | sí | sí | sí | sí | sí | sí | no | sí |
 | Reanudar una conversación iniciada fuera de lich, desde la pestaña Historial de la paleta | sí | sí | sí | sí | sí | Linux; macOS y Windows sin probar | sí | sí |
 | Un pegado largo puede llegar como texto editable en vez de un marcador plegado (Ajustes › Proveedores, desactivado por defecto) | sí | no | no | sí | no medido | no, se convierte en un adjunto `paste_N.txt` | no | sí |
-| Bifurcar una conversación en un nuevo worktree | sí | sí | no | sí | no | no | no | no |
+| Bifurcar una conversación en un nuevo worktree, o en su propio checkout en la ventana nativa | sí | sí | no | sí | no | no | no | no |
 | Aviso en la ventana nativa cuando retomas, desde la propia app del agente, una conversación que otra tarjeta tiene abierta | sí | en tu próximo prompt | en tu próximo prompt, sin probar | no | no | en su próxima llamada a una tool | no | sí |
 | Abrir una sesión con un esfuerzo de razonamiento elegido | sí | sí | sí | no | sí | no | en el nombre del modelo | sí |
 | Abrir una sesión con ultracode activado | sí | no | no | no | no | no | no | no |

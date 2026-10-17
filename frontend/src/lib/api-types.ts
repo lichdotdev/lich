@@ -414,6 +414,9 @@ export interface StoredSession {
   originSessionId: string
   /** What that session was called at the time; all that survives its close. */
   originLabel: string
+  /** Whether the session was born branching its origin's conversation, rather
+   * than delegated or opened as a subagent. Only the native window reads it. */
+  forked?: boolean
   /** When the prompt below is due, in unix seconds; 0 for a session with
    * nothing waiting. One slot per session — scheduling again replaces it. */
   scheduledAt: number

@@ -38,6 +38,9 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 		th.Text(ui.TextXS, sv.Label).Weight(font.Medium).Layout,
 		para(th.Text(ui.TextXS, path).Muted().Mono()).Layout,
 	}
+	if sv.Forked && sv.OriginLabel != "" {
+		sections = append(sections, para(th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.forkedFrom", i18n.Args{"label": sv.OriginLabel})).Muted()).Layout)
+	}
 	if sv.relay.Direction != "" {
 		sections = append(sections, relaySection(th, sv.relay))
 	}

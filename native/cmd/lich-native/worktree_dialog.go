@@ -54,7 +54,11 @@ type worktreeDialog struct {
 
 	project  lichclient.Project
 	kind     string
-	checkout lichclient.DiffStats // the project's own checkout, for the carry
+	source   string               // the checkout the carry copies from
+	checkout lichclient.DiffStats // that checkout's git status
+	// fork is the session a fork-to-worktree branches, nil for the + menu's
+	// new worktree.
+	fork *forkSource
 
 	mu         sync.Mutex
 	branches   *lichclient.Branches
@@ -77,15 +81,17 @@ func newWorktreeDialog(c *lichclient.Client, root *ui.Root, invalidate func()) *
 	return &worktreeDialog{client: c, root: root, invalidate: invalidate}
 }
 
-// show opens the dialog on p's checkout, for a session of kind, and starts
-// the reads it draws: branches, the sandbox rung, the base's freshness.
-func (d *worktreeDialog) show(ctx context.Context, p lichclient.Project, kind string, checkout lichclient.DiffStats) {
+// show opens the dialog for a session of kind, based on source (a checkout
+// of p) and fork (nil for a new session), and starts the reads it draws:
+// branches, the sandbox rung, the base's freshness. A fork opens with its
+// checkout's uncommitted work coming along, the moment a fork is usually made.
+func (d *worktreeDialog) show(ctx context.Context, p lichclient.Project, kind, source string, checkout lichclient.DiffStats, fork *forkSource) {
 	d.open, d.focus, d.pickerOpen = true, true, false
 	d.picker.Close()
-	d.project, d.kind, d.checkout = p, kind, checkout
+	d.project, d.kind, d.source, d.checkout, d.fork = p, kind, source, checkout, fork
 	d.name.SetText("")
 	d.search.SetText("")
-	d.carry.Value = false
+	d.carry.Value = fork != nil
 	d.mu.Lock()
 	d.branches, d.loadErr, d.base, d.checks = nil, "", "", map[string]*baseCheck{}
 	d.issueRef, d.issue, d.issueErr = 0, nil, ""
@@ -102,6 +108,10 @@ func (d *worktreeDialog) loadBranches(ctx context.Context) {
 	if err != nil {
 		d.loadErr = lichclient.ErrorText(err)
 	} else {
+		// Picking a worktree opens its session, which forks nothing.
+		if d.fork != nil {
+			b.Worktrees = nil
+		}
 		d.branches = &b
 		if d.base == "" {
 			d.base = preferredBase(b, d.checkout.Branch)
@@ -291,15 +301,17 @@ type worktreeRequest struct {
 	base    string
 	check   *baseCheck
 	carry   bool
+	source  string
 	sandbox string
 	brief   string
+	fork    *forkSource
 }
 
 // request reads the form into a worktreeRequest.
 func (d *worktreeDialog) request(v worktreeView) worktreeRequest {
 	r := worktreeRequest{
 		project: d.project, kind: d.kind, name: v.newBranch(d.name.Text()), base: v.base,
-		check: v.check, carry: d.carry.Value && d.canCarry(v.base),
+		check: v.check, carry: d.carry.Value && d.canCarry(v.base), source: d.source, fork: d.fork,
 	}
 	if v.canConfine {
 		r.sandbox = map[bool]string{true: "on", false: "off"}[d.confined.Value]
@@ -326,6 +338,12 @@ func (u *window) openWorktree(r worktreeRequest) {
 		u.reopenWorktree(r, path)
 		return
 	}
+	if r.fork != nil {
+		if err := u.conversationLeft(r.project, *r.fork); err != nil {
+			d.setSubmitting(err.Error())
+			return
+		}
+	}
 	if r.check != nil {
 		<-r.check.done
 	}
@@ -336,9 +354,9 @@ func (u *window) openWorktree(r worktreeRequest) {
 		return
 	}
 	if r.carry {
-		u.carryInto(r.project.Path, wt)
+		u.carryInto(r.source, wt)
 	}
-	id, err := u.addWorktreeSession(r, wt, r.sandbox)
+	id, err := u.worktreeSession(r, wt)
 	if err != nil {
 		d.setSubmitting(lichclient.ErrorText(err))
 		return
@@ -367,6 +385,15 @@ func (u *window) carryInto(from string, wt *lichclient.Worktree) {
 	if err := u.client.CarryUncommitted(u.ctx, from, wt.Path); err != nil {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.carryFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 	}
+}
+
+// worktreeSession is the new worktree's session: a fork of the dialog's
+// source, or a fresh one.
+func (u *window) worktreeSession(r worktreeRequest, wt *lichclient.Worktree) (string, error) {
+	if r.fork != nil {
+		return u.addForkSession(r.project, *r.fork, wt.Path)
+	}
+	return u.addWorktreeSession(r, wt, r.sandbox)
 }
 
 // addWorktreeSession records the worktree's session, named after it, and
@@ -445,7 +472,7 @@ func (u *window) showWorktreeDialog() {
 	}
 	u.settings.hide()
 	checkout, _ := u.model.gitStatus(p.Path)
-	u.worktree.show(u.ctx, p, u.model.newSessionKind(), checkout)
+	u.worktree.show(u.ctx, p, u.model.newSessionKind(), p.Path, checkout, nil)
 	// The git store reads the checkouts cards show; the project's own may
 	// have none on screen, and the carry row needs where it stands now.
 	go u.model.refreshPath(u.ctx, p.Path)

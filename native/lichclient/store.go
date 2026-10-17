@@ -34,6 +34,18 @@ func (c *Client) RenameFolder(ctx context.Context, projectID, from, to string) (
 	return moved, c.Call(ctx, "store.RenameFolder", &moved, projectID, from, to)
 }
 
+// AddSessionFrom adds a session opened from the session originID, which the
+// row remembers along with originLabel, what it was called then.
+func (c *Client) AddSessionFrom(ctx context.Context, projectID, sessionID, label, kind, path string, nextSeq int, originID, originLabel, folder string) error {
+	return c.Call(ctx, "store.AddSessionFrom", nil, projectID, sessionID, label, kind, path, nextSeq, originID, originLabel, folder)
+}
+
+// MarkForked records that the session was born branching its origin's
+// conversation.
+func (c *Client) MarkForked(ctx context.Context, sessionID string) error {
+	return c.Call(ctx, "store.MarkForked", nil, sessionID)
+}
+
 // AddSessionInFolder is AddSession for a session opened into folder, written
 // with the row. The sandbox answer is always "": the native window has no
 // confinement step, so the provider's rung decides.

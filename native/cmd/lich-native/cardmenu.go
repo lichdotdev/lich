@@ -1,6 +1,8 @@
 package main
 
 import (
+	"slices"
+
 	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
@@ -18,6 +20,7 @@ var (
 	icMenuClose  = icons.Lucide("x")
 	icTakeOut    = icons.Lucide("folder-minus")
 	icNewFolder  = icons.Lucide("plus")
+	icMenuFork   = icons.Lucide("git-fork")
 )
 
 // cardMenu is the session card's right-click menu, cut to what this window
@@ -40,6 +43,9 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
 		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
+	}
+	if fork, ok := forkItem(sv, act); ok {
+		entries = append(entries, fork)
 	}
 	entries = append(entries, extra...)
 	if !sv.Pinned {
@@ -118,6 +124,28 @@ func openInMenu(sv *sessionView, act *sidebarAction) []ui.MenuEntry {
 
 // pullRequestItem opens the branch's PR on the Pulls screen, the session
 // brought up with it; disabled while the branch has none.
+// forkItem is Fork ▸ Here / Worktree… on a session whose provider branches
+// conversations and that has one to branch. A provider that only resumes
+// keeps the row, dead and saying why, so a missing Fork never reads as an
+// oversight; a shell has nothing to fork and gets no row.
+func forkItem(sv *sessionView, act *sidebarAction) (ui.MenuEntry, bool) {
+	label := i18n.T("sidebar.sessionCard.fork")
+	if !canFork(sv.Kind) {
+		if !slices.Contains(resumableKinds, sv.Kind) {
+			return ui.MenuEntry{}, false
+		}
+		return ui.MenuEntry{Label: label, Icon: icMenuFork, Disabled: true, Shortcut: i18n.T("sidebar.sessionCard.forkResumeOnly")}, true
+	}
+	if sv.ProviderSessionID == "" {
+		return ui.MenuEntry{}, false
+	}
+	id := sv.ID
+	return ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: label, Icon: icMenuFork, Sub: []ui.MenuEntry{
+		{Label: i18n.T("sidebar.sessionCard.forkHere"), Icon: icFolder, OnClick: func() { act.forkHere = id }},
+		{Label: i18n.T("sidebar.sessionCard.forkWorktree"), Icon: icBranch, OnClick: func() { act.forkWorktree = id }},
+	}}, true
+}
+
 func pullRequestItem(sv *sessionView, act *sidebarAction) ui.MenuEntry {
 	item := ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.pullRequest"), Icon: icMenuPR, Disabled: sv.pr == nil}
 	if sv.pr != nil {

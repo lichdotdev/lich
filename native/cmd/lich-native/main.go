@@ -755,6 +755,12 @@ func (u *window) apply(act sidebarAction) {
 	if act.worktree {
 		u.showWorktreeDialog()
 	}
+	if act.forkHere != "" {
+		go u.forkHere(act.forkHere)
+	}
+	if act.forkWorktree != "" {
+		u.showForkDialog(act.forkWorktree)
+	}
 	if act.close != "" {
 		u.closeSession(act.close)
 	}

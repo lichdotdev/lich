@@ -97,3 +97,37 @@ func TestReopenWorktreeSessionCarriesTheOrigin(t *testing.T) {
 		t.Errorf("reloaded origin = %+v, want the parent it was opened from", reloaded)
 	}
 }
+
+// TestMarkForkedRidesTheRowThroughAReopen: a fork is told apart from a
+// delegate or a subagent, which carry an origin too, by its own mark, and a
+// park and resume is not what makes a card stop being a fork.
+func TestMarkForkedRidesTheRowThroughAReopen(t *testing.T) {
+	svc := newTestStore(t)
+	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_ = svc.AddSession("p1", "keep", "auth-refactor", "claude", "", 1, "")
+	_ = svc.AddSessionFrom("p1", "fork", "auth-refactor 2", "claude", "", 2, "keep", "auth-refactor", "")
+	_ = svc.AddSessionFrom("p1", "worker", "worker", "claude", "", 3, "keep", "auth-refactor", "")
+	if err := svc.MarkForked("fork"); err != nil {
+		t.Fatalf("MarkForked: %v", err)
+	}
+
+	forked := func() map[string]bool {
+		projects, _ := svc.LoadState()
+		got := map[string]bool{}
+		for _, s := range projects[0].Sessions {
+			got[s.ID] = s.Forked
+		}
+		return got
+	}
+	if got := forked(); !got["fork"] || got["worker"] || got["keep"] {
+		t.Fatalf("forked = %v, want only the fork marked", got)
+	}
+	_ = svc.CloseSession("p1", "fork", "keep")
+	restored, err := svc.ReopenSession("fork", "fork-again")
+	if err != nil || restored == nil || !restored.Forked {
+		t.Fatalf("reopen = %+v, %v; want the mark carried", restored, err)
+	}
+	if !forked()["fork-again"] {
+		t.Error("the reopened row lost its fork mark on reload")
+	}
+}

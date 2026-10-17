@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Fork a session in the native window.** Right-click a card and pick
+  Fork › Here to carry its conversation on in a new card right under it, in
+  the same checkout, or Fork › Worktree… to take it to a new worktree along
+  with your uncommitted changes. The copy is named after the original
+  ("auth-refactor 2") and wears a fork mark. Claude Code, Codex and opencode
+  only: the other providers only resume.
 - **The native window warns when two cards run one conversation.** Resuming,
   from inside an agent's own TUI, a conversation another card already has
   open raises a warning in the bottom-right corner; Switch closes the card

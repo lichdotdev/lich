@@ -40,7 +40,11 @@
     "editor": "Редактор",
     "fileManager": "Файловый менеджер",
     "pullRequest": "Pull request",
-    "closeSession": "Закрыть сессию"
+    "closeSession": "Закрыть сессию",
+    "fork": "Форк",
+    "forkHere": "Здесь",
+    "forkWorktree": "Worktree…",
+    "forkResumeOnly": "только возобновление"
   },
   "settingsCard": {
     "close": "Закрыть настройки"
@@ -121,7 +125,8 @@
     "confinedMeans": "Пустой домашний каталог, система только для чтения, запись только в эту рабочую копию.",
     "setAtOpen": "Задаётся при открытии сессии; чтобы изменить, откройте её заново.",
     "notMounted": "Не смонтировано (симлинки): {paths}",
-    "morePaths": "+ещё {count}"
+    "morePaths": "+ещё {count}",
+    "forkedFrom": "Форк от {label}"
   },
   "worktreeDialogView": {
     "title": "Новая сессия в worktree",
@@ -145,7 +150,10 @@
       "other": "{count} файла из этой рабочей копии"
     },
     "create": "Создать",
-    "open": "Открыть"
+    "open": "Открыть",
+    "forkTitle": "Форк {label} в worktree",
+    "forkDescription": "Отдельный checkout в собственной ветке.",
+    "fork": "Форк"
   },
   "worktreeLogic": {
     "checking": "Проверка удалённого репозитория…",
@@ -172,5 +180,9 @@
     "dismiss": "Скрыть",
     "resumesIn": "Возобновится в {profile} · {email}, профиле, в котором была запущена.",
     "resumesInNoEmail": "Возобновится в {profile}, профиле, в котором была запущена."
+  },
+  "fork": {
+    "pruned": "У {name} больше нет разговора для форка: {provider} его удалил.",
+    "failed": "Не удалось сделать форк {name}: {error}"
   }
 }

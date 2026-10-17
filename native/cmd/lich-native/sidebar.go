@@ -126,6 +126,8 @@ type sidebarAction struct {
 	color, colorTo                 string // session id, and its new tint ("" for the theme)
 	continueIn                     continueRequest
 	worktree                       bool // the + menu asked for a worktree session
+	// The session to fork, in its own checkout or into a new worktree.
+	forkHere, forkWorktree string
 	sidebarWrites
 }
 
@@ -187,6 +189,8 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	pick(&a.terminalAt, c.terminalAt)
 	pick(&a.editorAt, c.editorAt)
 	pick(&a.folderAt, c.folderAt)
+	pick(&a.forkHere, c.forkHere)
+	pick(&a.forkWorktree, c.forkWorktree)
 	if c.pin != "" {
 		a.pin, a.pinTo = c.pin, c.pinTo
 	}

@@ -38,7 +38,11 @@
     "editor": "编辑器",
     "fileManager": "文件管理器",
     "pullRequest": "拉取请求",
-    "closeSession": "关闭会话"
+    "closeSession": "关闭会话",
+    "fork": "分叉",
+    "forkHere": "在此处",
+    "forkWorktree": "Worktree…",
+    "forkResumeOnly": "仅可恢复"
   },
   "settingsCard": {
     "close": "关闭设置"
@@ -119,7 +123,8 @@
     "confinedMeans": "主目录为空，机器只读，仅可写入此检出。",
     "setAtOpen": "会话打开时确定；重新打开以更改。",
     "notMounted": "未挂载（符号链接）：{paths}",
-    "morePaths": "另外 {count} 项"
+    "morePaths": "另外 {count} 项",
+    "forkedFrom": "分叉自 {label}"
   },
   "worktreeDialogView": {
     "title": "新建工作树会话",
@@ -141,7 +146,10 @@
       "other": "此检出中的 {count} 个文件"
     },
     "create": "创建",
-    "open": "打开"
+    "open": "打开",
+    "forkTitle": "将 {label} 分叉到 worktree",
+    "forkDescription": "一个独立的检出，位于自己的分支上。",
+    "fork": "分叉"
   },
   "worktreeLogic": {
     "checking": "正在检查远程…",
@@ -166,5 +174,9 @@
     "dismiss": "忽略",
     "resumesIn": "它将在 {profile} · {email} 中恢复，即它启动时所用的配置档案。",
     "resumesInNoEmail": "它将在 {profile} 中恢复，即它启动时所用的配置档案。"
+  },
+  "fork": {
+    "pruned": "{name} 已没有可分叉的对话：{provider} 已将其删除。",
+    "failed": "无法分叉 {name}：{error}"
   }
 }

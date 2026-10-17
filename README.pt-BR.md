@@ -131,7 +131,7 @@ mesmas coisas.
 | Pesquisar a conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
 | Retomar pela aba Histórico da paleta uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows não testados | sim | sim |
 | Um paste longo pode chegar como texto editável em vez de um marcador dobrado (Configurações › Provedores, desligado por padrão) | sim | não | não | sim | não medido | não, vira um anexo `paste_N.txt` | não | sim |
-| Fazer fork de uma conversa para uma nova worktree | sim | sim | não | sim | não | não | não | não |
+| Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout na janela nativa | sim | sim | não | sim | não | não | não | não |
 | Aviso na janela nativa quando você retoma, pelo próprio app do agente, uma conversa que outro card tem aberta | sim | no seu próximo prompt | no seu próximo prompt, não testado | não | não | na próxima chamada de tool | não | sim |
 | Abrir uma sessão com um esforço de raciocínio escolhido | sim | sim | sim | não | sim | não | no nome do modelo | sim |
 | Abrir uma sessão com o ultracode ligado | sim | não | não | não | não | não | não | não |

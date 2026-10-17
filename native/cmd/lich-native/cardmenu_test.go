@@ -86,3 +86,33 @@ func TestCardMenuFilesIntoAnotherFolderOrOutOfItsOwn(t *testing.T) {
 		t.Errorf("unfiled card with no folders: %v, want %v", labels(sub), want)
 	}
 }
+
+func TestCardMenuForkEntry(t *testing.T) {
+	var act sidebarAction
+	sv := &sessionView{Session: lichclient.Session{ID: "s1", Kind: "claude", ProviderSessionID: "conv-1"}}
+	fork := entry(t, cardMenu(sv, nil, &act, func() {}, func() {}), "Fork")
+	if fork.Kind != ui.MenuSubTrigger || !slices.Equal(labels(fork.Sub), []string{"Here", "Worktree…"}) {
+		t.Fatalf("fork entry %+v, want a submenu of Here and Worktree…", labels(fork.Sub))
+	}
+	entry(t, fork.Sub, "Here").OnClick()
+	entry(t, fork.Sub, "Worktree…").OnClick()
+	if act.forkHere != "s1" || act.forkWorktree != "s1" {
+		t.Fatalf("act %+v, want both forks asked for s1", act)
+	}
+
+	sv.Kind = "crush"
+	dead := entry(t, cardMenu(sv, nil, &act, func() {}, func() {}), "Fork")
+	if !dead.Disabled || dead.Sub != nil || dead.Shortcut == "" {
+		t.Errorf("crush fork entry %+v, want it disabled, saying why, with no submenu", dead)
+	}
+
+	for _, s := range []lichclient.Session{
+		{ID: "s1", Kind: "claude"},                             // no conversation to branch yet
+		{ID: "s1", Kind: "shell", ProviderSessionID: "conv-1"}, // nothing a shell could fork
+	} {
+		sv.Session = s
+		if slices.Contains(labels(cardMenu(sv, nil, &act, func() {}, func() {})), "Fork") {
+			t.Errorf("%s session with conversation %q offers Fork", s.Kind, s.ProviderSessionID)
+		}
+	}
+}

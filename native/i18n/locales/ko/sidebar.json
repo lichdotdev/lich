@@ -37,7 +37,11 @@
     "editor": "에디터",
     "fileManager": "파일 관리자",
     "pullRequest": "풀 리퀘스트",
-    "closeSession": "세션 닫기"
+    "closeSession": "세션 닫기",
+    "fork": "포크",
+    "forkHere": "여기서",
+    "forkWorktree": "worktree…",
+    "forkResumeOnly": "재개만 가능"
   },
   "settingsCard": {
     "close": "설정 닫기"
@@ -118,7 +122,8 @@
     "confinedMeans": "빈 홈, 읽기 전용 머신, 이 체크아웃 안에서만 쓰기 가능.",
     "setAtOpen": "세션을 열 때 정해집니다. 바꾸려면 다시 여세요.",
     "notMounted": "마운트되지 않음(심볼릭 링크): {paths}",
-    "morePaths": "+{count}개 더"
+    "morePaths": "+{count}개 더",
+    "forkedFrom": "{label}에서 포크됨"
   },
   "worktreeDialogView": {
     "title": "새 worktree 세션",
@@ -139,7 +144,10 @@
       "other": "이 체크아웃의 파일 {count}개"
     },
     "create": "만들기",
-    "open": "열기"
+    "open": "열기",
+    "forkTitle": "{label}을(를) worktree로 포크",
+    "forkDescription": "자체 브랜치를 가진 별도의 체크아웃입니다.",
+    "fork": "포크"
   },
   "worktreeLogic": {
     "checking": "원격 확인 중…",
@@ -163,5 +171,9 @@
     "dismiss": "닫기",
     "resumesIn": "처음 시작한 프로필인 {profile} · {email}에서 재개됩니다.",
     "resumesInNoEmail": "처음 시작한 프로필인 {profile}에서 재개됩니다."
+  },
+  "fork": {
+    "pruned": "{name}에는 포크할 대화가 더 이상 없습니다: {provider}이(가) 삭제했습니다.",
+    "failed": "{name}을(를) 포크하지 못했습니다: {error}"
   }
 }

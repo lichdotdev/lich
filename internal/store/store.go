@@ -400,6 +400,9 @@ type Session struct {
 	Profile         string `json:"profile"`
 	OriginSessionID string `json:"originSessionId"`
 	OriginLabel     string `json:"originLabel"`
+	// Forked is whether the session was born branching its origin's
+	// conversation, rather than delegated or opened as a subagent.
+	Forked bool `json:"forked"`
 	// ScheduledAt is when the prompt below is due, in unix seconds, 0 for a
 	// session with nothing waiting. It rides the session row so the card that
 	// draws the countdown and the relay that delivers it read the same hydration
@@ -690,7 +693,7 @@ func (s *Service) ProjectAt(path string) (string, string) {
 func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 	rows, err := s.db.Query(
 		`SELECT id, label, kind, path, provider_session_id, entrypoint, sandbox, pinned,
-		        folder, color, profile, origin_session_id, origin_label, scheduled_at, scheduled_prompt, unread,
+		        folder, color, profile, origin_session_id, origin_label, forked, scheduled_at, scheduled_prompt, unread,
 		        mcp_servers, sandbox_links,
 		        EXISTS (SELECT 1 FROM session_last_turn WHERE session_id = sessions.id)
 		   FROM sessions WHERE project_id = ? AND is_open = 1 ORDER BY position, rowid`,
@@ -708,7 +711,7 @@ func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 		if err := rows.Scan(
 			&sess.ID, &sess.Label, &sess.Kind, &sess.Path, &sess.ProviderSessionID,
 			&sess.Entrypoint, &sess.Sandbox, &sess.Pinned, &sess.Folder, &sess.Color, &sess.Profile,
-			&sess.OriginSessionID, &sess.OriginLabel,
+			&sess.OriginSessionID, &sess.OriginLabel, &sess.Forked,
 			&sess.ScheduledAt, &sess.ScheduledPrompt, &sess.Unread, &servers, &links,
 			&sess.HasLastTurn,
 		); err != nil {

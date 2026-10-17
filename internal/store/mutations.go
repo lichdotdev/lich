@@ -364,14 +364,14 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		row := tx.QueryRow(
 			`SELECT id, project_id, label, kind, path, provider_session_id, label_auto,
 			        model, effort, ultracode, subagent, entrypoint, sandbox, pinned, folder, color, origin_session_id, origin_label,
-			        scheduled_at, scheduled_prompt, fork_cost_offset, profile
+			        forked, scheduled_at, scheduled_prompt, fork_cost_offset, profile
 			   FROM sessions `+where,
 			args...,
 		)
 		if err := row.Scan(
 			&old.ID, &projectID, &old.Label, &old.Kind, &old.Path, &old.ProviderSessionID,
 			&labelAuto, &model, &effort, &ultracode, &subagent, &entrypoint, &sandbox, &old.Pinned, &folder, &color,
-			&old.OriginSessionID, &old.OriginLabel,
+			&old.OriginSessionID, &old.OriginLabel, &old.Forked,
 			&old.ScheduledAt, &old.ScheduledPrompt, &forkOffset, &profile,
 		); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -422,11 +422,11 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			`INSERT INTO sessions
 			   (id, project_id, label, kind, path, provider_session_id, label_auto,
 			    model, effort, ultracode, subagent, entrypoint, sandbox, pinned, folder, color, origin_session_id, origin_label,
-			    scheduled_at, scheduled_prompt, fork_cost_offset, profile, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			    forked, scheduled_at, scheduled_prompt, fork_cost_offset, profile, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
 			newSessionID, projectID, old.Label, old.Kind, old.Path, old.ProviderSessionID, labelAuto,
 			model, effort, ultracode, subagent, entrypoint, sandbox, old.Pinned, folder, color, old.OriginSessionID, old.OriginLabel,
-			old.ScheduledAt, old.ScheduledPrompt, forkOffset, profile, projectID,
+			old.Forked, old.ScheduledAt, old.ScheduledPrompt, forkOffset, profile, projectID,
 		); err != nil {
 			return fmt.Errorf("reinsert session %q: %w", newSessionID, err)
 		}
@@ -453,6 +453,7 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			Profile:           profile,
 			OriginSessionID:   old.OriginSessionID,
 			OriginLabel:       old.OriginLabel,
+			Forked:            old.Forked,
 			ScheduledAt:       old.ScheduledAt,
 			ScheduledPrompt:   old.ScheduledPrompt,
 		}
@@ -817,6 +818,15 @@ func (s *Service) InheritSubagent(sessionID, forkedFrom string) error {
 		forkedFrom, sessionID, forkedFrom,
 	); err != nil {
 		return fmt.Errorf("inherit the subagent mark on %q: %w", sessionID, err)
+	}
+	return nil
+}
+
+// MarkForked records that sessionID was born branching its origin's
+// conversation, written by the window that opens the fork along with the row.
+func (s *Service) MarkForked(sessionID string) error {
+	if _, err := s.db.Exec(`UPDATE sessions SET forked = 1 WHERE id = ?`, sessionID); err != nil {
+		return fmt.Errorf("mark %q forked: %w", sessionID, err)
 	}
 	return nil
 }

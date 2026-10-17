@@ -120,7 +120,7 @@ reads what each CLI writes down and no two of them write down the same things.
 | Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes |
 | Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |
 | A long paste can land as editable text instead of a folded placeholder (Settings › Providers, off by default) | yes | no | no | yes | not measured | no, it becomes a `paste_N.txt` attachment | no | yes |
-| Fork a conversation into a new worktree | yes | yes | no | yes | no | no | no | no |
+| Fork a conversation into a new worktree, or in its own checkout in the native window | yes | yes | no | yes | no | no | no | no |
 | Warned in the native window when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | no | at its next tool call | no | yes |
 | Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes |
 | Open a session with ultracode on | yes | no | no | no | no | no | no | no |

@@ -38,6 +38,12 @@ type Session struct {
 	// Profile is the Claude Code profile the session runs in (a slug), "" for
 	// Personal and for every other provider.
 	Profile string `json:"profile"`
+	// OriginLabel is what the session this one came from was called when it
+	// did, "" for one nobody opened from another.
+	OriginLabel string `json:"originLabel"`
+	// Forked is whether the session was born branching that session's
+	// conversation, rather than delegated or opened as a subagent.
+	Forked bool `json:"forked"`
 }
 
 // DiffStats mirrors project.DiffStats.
@@ -88,6 +94,13 @@ func (c *Client) Replay(ctx context.Context, id string) ([]byte, error) {
 // runs. resume is a provider conversation id to reopen, "" to start fresh.
 func (c *Client) Start(ctx context.Context, id, projectID, cwd, kind, resume string, cols, rows int) error {
 	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, resume, "", false, false, cols, rows)
+}
+
+// Fork spawns the session's process branching the provider conversation
+// parent: the conversation is copied into one of its own, and the card that
+// runs parent goes on untouched. A no-op when the session already runs.
+func (c *Client) Fork(ctx context.Context, id, projectID, cwd, kind, parent string, cols, rows int) error {
+	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, parent, "", true, false, cols, rows)
 }
 
 // Resize sets the session's PTY size.
