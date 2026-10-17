@@ -3,6 +3,7 @@ package system
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/omartelo/lich/internal/restart"
@@ -92,6 +93,7 @@ func (s *Service) AttachNative(opts AttachNativeOptions) {
 	defer s.native.mu.Unlock()
 	s.native.executable = opts.Executable
 	s.native.active, s.native.attached = true, true
+	slog.Info("native window attached", "executable", opts.Executable)
 }
 
 // OpenWindowOptions is one OpenWindow call.

@@ -62,9 +62,11 @@ test -n "$token" || fail "lich never wrote runtime.json"
 
 # The first launch of a release opens the native window (#809). What follows
 # checks the web one, so lich is switched back the way Settings does it: the
-# choice, then the window.
-for _ in $(seq 1 30); do sleep 1; pgrep -x lich-native > /dev/null && break; done
-pgrep -x lich-native > /dev/null || fail "the first launch of a release did not open the native window"
+# choice, then the window. Only once the native window has attached, as it has
+# for anyone switching from its Settings: before that, lich has no window of
+# it to close.
+for _ in $(seq 1 60); do sleep 1; grep -q 'native window attached' "$log" && break; done
+grep -q 'native window attached' "$log" || fail "the first launch of a release did not open the native window"
 rpc() {
   curl -sf -X POST -H 'Content-Type: application/json' -d "$2" \
     "http://127.0.0.1:$LICH_LISTEN_PORT/rpc/$1?token=$token" > /dev/null || fail "rpc $1 failed"

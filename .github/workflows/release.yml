@@ -306,7 +306,11 @@ jobs:
           # The first launch of a release opens the native window (#809); on
           # the runner it exits before it attaches and lich falls back to the
           # web one. What follows checks the web window, so lich is switched
-          # back the way Settings does it, and later launches open the web one.
+          # back the way Settings does it, and later launches open the web one,
+          # once the native window has attached or exited: before either, lich
+          # has no window of it to close.
+          for _ in $(seq 1 60); do sleep 1; grep -q 'native window attached\|native window exited' "$APPDATA/lich/lich.log" && break; done
+          grep -q 'native window attached\|native window exited' "$APPDATA/lich/lich.log" || { echo "::error::the first launch of a release did not start the native window"; cat "$APPDATA/lich/lich.log"; exit 1; }
           for args in 'store.SetSetting ["window.kind", "", "web"]' 'system.OpenWindow [{"kind": "web"}]'; do
             curl -sf -X POST -H 'Content-Type: application/json' -d "${args#* }" \
               "http://127.0.0.1:$LICH_LISTEN_PORT/rpc/${args%% *}?token=$token" > /dev/null \
