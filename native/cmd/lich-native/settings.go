@@ -134,9 +134,6 @@ func (s *settingsScreen) hide() {
 	s.watchPlans()
 }
 
-// showRemembered opens the screen on the scope it was left in.
-func (s *settingsScreen) showRemembered(projects []settingsProject) { s.show(s.scope, projects) }
-
 func (s *settingsScreen) refresh() {
 	projects := s.projects
 	s.loadSandbox()

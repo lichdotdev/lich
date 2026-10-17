@@ -103,22 +103,18 @@ func (u *window) applyTopbar(act topbarAction) {
 // applySettingsAction opens or closes Settings from the strip: its button,
 // a tab's "Project settings…", and a tab or Home leaving it for the stage.
 func (u *window) applySettingsAction(act topbarAction) {
-	open := func(scope string, remembered bool) {
+	open := func(scope string) {
 		tabs, _ := u.model.projectTabs()
-		if remembered {
-			u.settings.showRemembered(settingsProjectsOf(tabs))
-			return
-		}
 		u.settings.show(scope, settingsProjectsOf(tabs))
 	}
 	leaving := act.home || act.show != ""
 	switch {
 	case act.projectSettings != "":
-		open(act.projectSettings, false)
+		open(act.projectSettings)
 	case act.settings && u.settings.open, leaving && u.settings.open:
 		u.settings.hide()
 	case act.settings:
-		open("", true)
+		open("")
 	default:
 		return
 	}

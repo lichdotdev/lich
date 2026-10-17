@@ -83,3 +83,16 @@ func TestActiveTabMergesOnlyIntoTheIslandUnderIt(t *testing.T) {
 		t.Error("with one island the active tab did not merge")
 	}
 }
+
+func TestSettingsButtonOpensOnGlobalAfterAProjectScope(t *testing.T) {
+	u, _ := newGateWindow(t)
+	u.applySettingsAction(topbarAction{projectSettings: "p"})
+	if u.settings.scope != "p" {
+		t.Fatalf("Project settings… opened on scope %q, want p", u.settings.scope)
+	}
+	u.applySettingsAction(topbarAction{settings: true})
+	u.applySettingsAction(topbarAction{settings: true})
+	if !u.settings.open || u.settings.scope != "" {
+		t.Errorf("the settings button opened on scope %q (open %v), want Global", u.settings.scope, u.settings.open)
+	}
+}

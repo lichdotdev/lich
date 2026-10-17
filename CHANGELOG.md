@@ -53,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   command palette, the shortcuts overlay and Settings › Hotkeys have more
   room around their text, which sits centred.
 
+- **Settings in the native window opens on Global.** The gear in the top
+  bar always opens Settings on Global instead of the scope you last left it
+  in; a project's tab still opens its own settings from Project settings….
+
 ### Fixed
 
 - **A reopened native window knows where each session went.** A session
