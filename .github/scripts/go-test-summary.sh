@@ -9,8 +9,10 @@ label="${1:+ — $1}"
 json="$(mktemp)"
 cover="$(mktemp)"
 
+started=$SECONDS
 go test -json -coverprofile="$cover" ./... >"$json"
 code=$?
+wall=$((SECONDS - started))
 
 read -r pass fail skip < <(jq -rs '
   map(select(.Test != null and (.Action == "pass" or .Action == "fail" or .Action == "skip")))
@@ -42,6 +44,7 @@ grep -v '^github.com/omartelo/lich/[^/]*\.go:' "$cover" >"$cover.gated"
 total="$(go tool cover -func="$cover.gated" | awk '/^total:/ {print $3}')"
 
 min=80
+slowest=15
 if ! awk -v t="${total%\%}" -v m="$min" 'BEGIN { exit !(t != "" && t + 0 >= m) }'; then
   echo "::error::backend coverage ${total:-n/a} is below the ${min}% bar (CLAUDE.md invariant 1)"
   [ "$code" = "0" ] && code=1
@@ -62,6 +65,26 @@ summary="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
     echo ""
     echo "</details>"
   fi
+  # Elapsed is run time only: the gap between the wall time and the slowest
+  # package is compiling and linking the test binaries, which is where one OS
+  # can lose minutes to another without any test getting slower.
+  echo "<details><summary>Timings: ${wall}s wall</summary>"
+  echo ""
+  echo "| Package | Seconds |"
+  echo "|:--|--:|"
+  jq -rs --argjson n "$slowest" '
+    map(select(.Test == null and .Elapsed != null and (.Action == "pass" or .Action == "fail")))
+    | sort_by(-.Elapsed) | .[:$n][] | "| `\(.Package)` | \(.Elapsed) |"
+  ' "$json"
+  echo ""
+  echo "| Test | Seconds |"
+  echo "|:--|--:|"
+  jq -rs --argjson n "$slowest" '
+    map(select(.Test != null and (.Test | contains("/") | not) and .Elapsed != null and (.Action == "pass" or .Action == "fail")))
+    | sort_by(-.Elapsed) | .[:$n][] | "| `\(.Package | sub(".*/"; "")).\(.Test)` | \(.Elapsed) |"
+  ' "$json"
+  echo ""
+  echo "</details>"
 } >>"$summary"
 
 exit "$code"
