@@ -303,6 +303,16 @@ jobs:
             token=$(jq -r .token "$APPDATA/lich/runtime.json" 2>/dev/null) && break
           done
           test -n "$token" || { echo "::error::lich never wrote runtime.json"; cat "$APPDATA/lich/lich.log"; exit 1; }
+          # The first launch of a release opens the native window (#809); on
+          # the runner it exits before it attaches and lich falls back to the
+          # web one. What follows checks the web window, so lich is switched
+          # back the way Settings does it, and later launches open the web one.
+          for args in 'store.SetSetting ["window.kind", "", "web"]' 'system.OpenWindow [{"kind": "web"}]'; do
+            curl -sf -X POST -H 'Content-Type: application/json' -d "${args#* }" \
+              "http://127.0.0.1:$LICH_LISTEN_PORT/rpc/${args%% *}?token=$token" > /dev/null \
+              || { echo "::error::rpc ${args%% *} failed"; cat "$APPDATA/lich/lich.log"; exit 1; }
+          done
+          for _ in $(seq 1 30); do sleep 1; grep -q 'the bundled window' "$APPDATA/lich/lich.log" && break; done
           grep -q 'the bundled window' "$APPDATA/lich/lich.log" || { echo "::error::lich did not resolve its own window"; cat "$APPDATA/lich/lich.log"; exit 1; }
           for _ in $(seq 1 30); do
             sleep 1

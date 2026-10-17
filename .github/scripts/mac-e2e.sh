@@ -59,6 +59,21 @@ for _ in $(seq 1 30); do
   token=$(jq -r .token "$config/runtime.json" 2>/dev/null) && break
 done
 test -n "$token" || fail "lich never wrote runtime.json"
+
+# The first launch of a release opens the native window (#809). What follows
+# checks the web one, so lich is switched back the way Settings does it: the
+# choice, then the window.
+for _ in $(seq 1 30); do sleep 1; pgrep -x lich-native > /dev/null && break; done
+pgrep -x lich-native > /dev/null || fail "the first launch of a release did not open the native window"
+rpc() {
+  curl -sf -X POST -H 'Content-Type: application/json' -d "$2" \
+    "http://127.0.0.1:$LICH_LISTEN_PORT/rpc/$1?token=$token" > /dev/null || fail "rpc $1 failed"
+}
+rpc store.SetSetting '["window.kind", "", "web"]'
+rpc system.OpenWindow '[{"kind": "web"}]'
+for _ in $(seq 1 15); do sleep 1; pgrep -x lich-native > /dev/null || break; done
+pgrep -x lich-native > /dev/null && fail "the native window outlived the switch to the web one"
+for _ in $(seq 1 30); do sleep 1; grep -q 'the bundled window' "$log" && break; done
 grep -q 'the bundled window' "$log" || fail "lich did not resolve its own window"
 
 for _ in $(seq 1 30); do
