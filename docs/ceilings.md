@@ -1224,8 +1224,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   connects late, either of them, shows a terminal's moved working directory only from the next `cd`, since
   nothing replays it; the native window reads each session's status and usage from `terminal.TurnStates` on
   connect, the web window does not. `system.CloseWindow` never quits lich, even
-  with no session running, where a window the user closes does (`quitIfIdle`). The native window's text is
-  English only: the interface catalogs are TypeScript, and native/ has none yet (`docs/native-window.md`).
+  with no session running, where a window the user closes does (`quitIfIdle`). The native window's text comes
+  from its own catalogs (`native/i18n/locales`), a copy of the web window's, so a copy fix made in one window
+  until the cutover lands in both (`docs/native-window.md`).
 - **Only a native window the backend starts tells lich how it ended** (`restart.StartNative`,
   `restart.WatchNative`): the backend waits on the native window it starts again (the tray's Show lich after the
   window closed) and logs its exit code or the signal that killed it, with its last `VmRSS`/`VmHWM` (Linux only,
