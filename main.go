@@ -442,6 +442,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	term.SetWorkerAnswer(rl.WorkerAnswered)
 	term.SetWorkerUnanswered(rl.WorkerUnanswered)
 	term.SetSessionClosed(rl.SessionClosed)
+	term.SetSessionExited(rl.SessionExited)
 	term.SetErrandStatus(rl.Status)
 	// Both questions the relay asks about a provider — whether its sessions
 	// report at all, and whether they can answer with a tool — are about what
@@ -516,7 +517,9 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     relay.WorkerUnanswered arrives the same way and ends one unanswered.
 //   - relay.SessionClosed is what the terminal tells the relay as it closes a
 //     session: called here it ends a running worker's errand, in silence when
-//     the closer named is the worker's caller.
+//     the closer named is the worker's caller. relay.SessionExited is what it
+//     tells the relay as it reaps a process that ended on its own: called here
+//     it erases a live session's reported state.
 //   - terminal.CloseBy is a close on behalf of a session, which `lich close`
 //     reaches through spawn.Close: called here with the worker's caller as the
 //     closer, it ends that caller's errand without telling it. The window
@@ -547,7 +550,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     store.SetBranchOf, store.SetTranscriptOf, store.SetConversationsOf,
 //     store.SetCheckoutsOf, terminal.SetDropDir,
 //     terminal.SetRateLimitReports, terminal.SetUsageLimit, terminal.SetWorkerAnswer,
-//     terminal.SetWorkerUnanswered, terminal.SetStartReports, terminal.SetPromptLanguage and terminal.SetSessionClosed are startup wiring. Called with [null] they silently
+//     terminal.SetWorkerUnanswered, terminal.SetStartReports, terminal.SetPromptLanguage, terminal.SetSessionClosed and terminal.SetSessionExited are startup wiring. Called with [null] they silently
 //     nil what they wired (encoding/json leaves a func or pointer alone on
 //     null), and the write races the readers already serving — nilling
 //     SetProjects also disarms the guard that keeps two projects off the same
@@ -600,6 +603,7 @@ func denyInternal(d *rpc.Handler) {
 		"relay.WorkerAnswered",
 		"relay.WorkerUnanswered",
 		"relay.SessionClosed",
+		"relay.SessionExited",
 		"terminal.CloseBy",
 		"relay.RunSchedules",
 		"relay.ParkResume",
@@ -622,6 +626,7 @@ func denyInternal(d *rpc.Handler) {
 		"terminal.SetWorkerAnswer",
 		"terminal.SetWorkerUnanswered",
 		"terminal.SetSessionClosed",
+		"terminal.SetSessionExited",
 		"terminal.SetStartReports",
 		"terminal.SetPromptLanguage",
 		"terminal.EnqueueModCommand",

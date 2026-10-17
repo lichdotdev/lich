@@ -147,6 +147,25 @@ func (s *Service) recordState(sessionID, state string) {
 
 }
 
+// SessionExited drops what the session's last process reported, once lich
+// has reaped it: a process that dies mid-turn never sends the SessionEnd
+// (idle) that would, so its busy outlived it, and the same id respawned read
+// as busy to every delivery and in every roster until its own process ended a
+// turn. The terminal calls it for a process that ended on its own
+// (terminal.SetSessionExited); a close goes through SessionClosed.
+func (s *Service) SessionExited(sessionID string) {
+	s.mu.Lock()
+	s.forgetStateLocked(sessionID)
+	s.mu.Unlock()
+}
+
+// forgetStateLocked removes a session from the turn map and the roster, as an
+// idle report does. Called with s.mu held.
+func (s *Service) forgetStateLocked(sessionID string) {
+	delete(s.state, sessionID)
+	delete(s.reported, sessionID)
+}
+
 // endedErrands takes every ticket the report ends off the table and closes its
 // stall channel, for Observe to announce outside the lock. Called with s.mu
 // held.

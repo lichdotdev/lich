@@ -70,6 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A restarted session no longer reads as busy forever.** A session whose
+  agent died mid-turn, or that was closed mid-turn, came back under the same
+  card still listed as busy to other sessions: a task sent to it waited for a
+  turn that would never end. It now starts with no state, like a new one.
 - **Codex, Cursor CLI, Antigravity and Crush stop asking where you already
   answered.** A sandboxed session of any of them opens straight at its
   prompt. Cursor CLI and Antigravity no longer ask again in a worktree of a

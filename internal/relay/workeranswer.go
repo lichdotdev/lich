@@ -226,12 +226,14 @@ func (s *Service) errandOpenAtLocked(sessionID string) bool {
 // (WorkerAnswered). The terminal calls this before the process dies
 // (terminal.SetSessionClosed), so the SessionEnd its CLI reports on the way out
 // finds nothing to call unanswered. Errands of any other kind end as they
-// always did.
+// always did. The session's reported state goes too: the same id reopened is
+// a new process that has reported nothing yet.
 func (s *Service) SessionClosed(sessionID, closerID string) {
 	var stopped []*ticket
 	var told []string
 	s.mu.Lock()
 	delete(s.reportedWorkers, sessionID)
+	s.forgetStateLocked(sessionID)
 	for id, t := range s.tickets {
 		if t.targetID != sessionID || !t.subagent {
 			continue

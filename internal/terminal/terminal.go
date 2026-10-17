@@ -311,6 +311,10 @@ type Service struct {
 	// errand there, ahead of the SessionEnd the dying CLI reports. Guarded by mu
 	// like onState.
 	onClosed func(id, closerID string)
+	// onExited, when set, is told about every session whose process ended on
+	// its own and was reaped: the relay drops the state that process reported.
+	// Guarded by mu like onState.
+	onExited func(id string)
 	// onLimit, when set, is told about every turn a usage limit ended that names
 	// its reset (limit.go). Guarded by mu like onState.
 	onLimit func(id string, resetsAt int64)
@@ -736,6 +740,15 @@ func (s *Service) SetSessionClosed(fn func(id, closerID string)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onClosed = fn
+}
+
+// SetSessionExited wires fn to every session whose process ended on its own,
+// called once lich has reaped it. Only one watcher, the relay
+// (relay.SessionExited).
+func (s *Service) SetSessionExited(fn func(id string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onExited = fn
 }
 
 // stateWatcher reads the watcher under the lock, so a report arriving while it

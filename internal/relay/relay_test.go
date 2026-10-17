@@ -3060,3 +3060,33 @@ func TestSelfRefusesACallerWithoutASession(t *testing.T) {
 		}
 	}
 }
+
+// A session's process can die mid-turn, and a dead process never reports the
+// SessionEnd (idle) that would clear its busy. Once lich has reaped it, or the
+// card was closed, the same id respawned is a new process that has reported
+// nothing: it must not read busy to deliveries or in the roster.
+func TestAReapedOrClosedSessionForgetsItsState(t *testing.T) {
+	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3"), nil)
+	svc.Observe("s2", "busy")
+	svc.Observe("s3", "busy")
+
+	svc.SessionExited("s2")
+	svc.SessionClosed("s3", "")
+
+	peers, err := svc.Peers(PeersOptions{From: "s1"})
+	if err != nil {
+		t.Fatalf("Peers: %v", err)
+	}
+	for _, p := range peers {
+		if p.State != "" {
+			t.Errorf("%s state = %q after its process went, want none", p.Name, p.State)
+		}
+	}
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+	for _, id := range []string{"s2", "s3"} {
+		if turn, ok := svc.state[id]; ok {
+			t.Errorf("turn state of %s = %q after its process went, want none", id, turn)
+		}
+	}
+}

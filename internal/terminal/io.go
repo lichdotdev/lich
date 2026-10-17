@@ -48,6 +48,7 @@ func (s *Service) stream(id string, sess *session) {
 
 	s.mu.Lock()
 	reaped := false
+	exited := s.onExited
 	if current, ok := s.sessions[id]; ok && current.pty == p {
 		delete(s.sessions, id)
 		close(current.done)
@@ -79,6 +80,11 @@ func (s *Service) stream(id string, sess *session) {
 	// Emit blocks on a stalled /events client, and holding s.mu across it would
 	// freeze every session's I/O.
 	if reaped {
+		// Outside mu: the relay takes its own lock, and it calls into this
+		// service under it.
+		if exited != nil {
+			exited(id)
+		}
 		s.hub.Emit(exitEventPrefix+id, exitPayload(code))
 	}
 }
