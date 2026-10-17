@@ -145,34 +145,6 @@ porque lee lo que cada CLI deja escrito y no hay dos que anoten las mismas cosas
 | Los mensajes propios de lich al agente (tareas entregadas, resultados listos, avisos) en el idioma de prompt que elijas | sí | sí | sí | sí | sí | sí | sí | sí |
 | Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no |
 
-Crush no informa ni del inicio ni del fin de un turno, y de ahí salen de golpe
-seis de esas filas: nada abre una ventana para el spinner de la tarjeta, para la
-campana, para el último turno de la pestaña Revisión, para la retención que
-mantiene despierta la máquina, para que el pull request que abrió llegue a su
-tarjeta, ni para avisar a quien le entregó una tarea de que el turno terminó sin
-respuesta. La pestaña Revisión lo dice en la propia sesión en lugar de dejar que
-notes que el interruptor nunca apareció. Kiro CLI mide el gasto en créditos y no
-en dólares, así que su propio pie de ventana es el único lugar donde se puede
-leer esa cifra.
-El plan de Antigravity se lee preguntándole al propio `agy` (1.1.11 o posterior;
-uno anterior gastaría un turno en responder, así que lich no se lo pregunta); el
-de opencode solo cuando iniciaste sesión en una suscripción de OpenCode Go, ya
-que en otro caso factura con tus propias claves de API; el de Cursor CLI, desde
-el inicio de sesión que escribió `cursor-agent login`, nunca el del editor
-Cursor. oh-my-pi, Crush y Kiro CLI no informan ningún plan que lich pueda leer.
-Dirigir una sesión en ejecución requiere Claude Code 2.1.280 o posterior con
-lich-plugin 0.15.0: funciona a través de un mod de Claude Code, y ningún otro CLI
-tiene algo ejecutándose por dentro a lo que lich pueda entregar un comando. El
-mismo mod, con lich-plugin 0.16.0, informa lo que Claude Code midió de sí mismo;
-el pie de ventana de cualquier otro CLI, y el de una sesión de Claude Code sin
-él, muestra lo que lich lee de lo que el CLI dejó escrito.
-El grupo **Fuera de lich** de la pestaña Historial lista las conversaciones que
-corrieron en el checkout de alguno de tus proyectos y que lich no tiene. Una
-sesión que lich abrió y que cerraste para siempre no aparece ahí, salvo una
-cerrada antes de la 0.62.0: lich distingue sus propias conversaciones de Claude
-Code por el nombre con el que las inicia, y los otros siete CLI no dejan escrito
-nada que permita distinguirlas, así que las suyas aparecen ahí una vez.
-
 Cada carencia es deliberada, ninguna es lich ocultando algo que el CLI informa,
 y [`docs/ceilings.md`](docs/ceilings.md) dice qué se midió detrás de cada una.
 

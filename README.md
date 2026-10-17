@@ -137,30 +137,6 @@ reads what each CLI writes down and no two of them write down the same things.
 | lich's own messages to the agent (handed tasks, results ready, notices) in the prompt language you pick | yes | yes | yes | yes | yes | yes | yes | yes |
 | Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no |
 
-Crush reports neither the start nor the end of a turn, and that is
-where six of those rows go at once: nothing opens a window for the card's
-spinner, for the bell, for the Review tab's last turn, for the hold that keeps
-the machine awake, for the pull request it opened to reach its card, or for
-telling whoever handed it a task that the turn ended without an answer. The Review tab says so on the session itself rather than
-leaving you to notice the switch never appeared. Kiro CLI meters spend in credits
-rather than dollars, so its own footer is the only place that figure can be read.
-Antigravity's plan is read by asking `agy` itself (1.1.11 or newer; an older one
-would spend a turn answering, so lich does not ask it); opencode's only when you
-signed in to an OpenCode Go subscription, since otherwise it bills your own API
-keys; Cursor CLI's from the login `cursor-agent login` wrote, never the Cursor
-editor's. oh-my-pi, Crush and Kiro CLI report no plan lich can read.
-Driving a running session needs Claude Code 2.1.280 or newer with lich-plugin
-0.15.0: it runs through a Claude Code mod, and no other CLI has anything running
-inside it that lich could hand a command to. The same mod, with lich-plugin 0.16.0,
-reports what Claude Code measured about itself; every other CLI's footer, and a
-Claude Code session without it, shows what lich reads from what the CLI wrote down.
-The History tab's **Outside lich** group lists conversations that ran in one of
-your projects' checkouts and that lich does not hold. A session lich opened and you
-closed for good stays out of it, except one closed before 0.62.0: lich tells
-its own Claude Code conversations apart by the name it starts them under, and the
-other seven CLIs write down nothing that could tell them apart, so theirs show up
-there once.
-
 Every gap is deliberate, none of them is lich withholding something the CLI
 reports, and [`docs/ceilings.md`](docs/ceilings.md) says what was measured behind
 each one.

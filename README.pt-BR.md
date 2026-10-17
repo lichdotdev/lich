@@ -148,33 +148,6 @@ mesmas coisas.
 | As próprias mensagens do lich para o agente (tarefas entregues, resultados prontos, avisos) no idioma de prompt que você escolher | sim | sim | sim | sim | sim | sim | sim | sim |
 | Avisado na criação, no idioma de prompt, para distribuir o trabalho como sessões do lich em vez de subagentes ocultos | sim | não | não | não | sim | não | não | não |
 
-O Crush não informa nem o início nem o fim de um turno, e é aí que seis dessas
-linhas somem de uma vez: nada abre uma janela para o spinner do card, para o
-sino, para o último turno da aba Revisão, para a retenção que mantém a máquina
-acordada, para o pull request que ele abriu chegar ao card, nem para avisar
-quem lhe entregou uma tarefa que o turno terminou sem resposta. A aba Revisão
-diz isso na própria sessão, em vez de deixar você notar que o interruptor
-nunca apareceu. O Kiro CLI mede o gasto em créditos e não em dólares, então o
-rodapé dele é o único lugar onde esse valor pode ser lido.
-O plano do Antigravity é lido perguntando ao próprio `agy` (1.1.11 ou mais
-novo; um anterior gastaria um turno para responder, então o lich não pergunta
-a ele); o do opencode só quando você entrou em uma assinatura do OpenCode Go,
-já que fora isso ele cobra das suas próprias chaves de API; o do Cursor CLI
-vem do login que o `cursor-agent login` gravou, nunca do editor Cursor.
-oh-my-pi, Crush e Kiro CLI não informam nenhum plano que o lich consiga ler.
-Conduzir uma sessão em execução exige o Claude Code 2.1.280 ou mais novo com o
-lich-plugin 0.15.0: isso passa por um mod do Claude Code, e nenhuma outra CLI
-tem algo rodando por dentro a que o lich possa entregar um comando. O mesmo
-mod, com o lich-plugin 0.16.0, informa o que o Claude Code mediu sobre si
-mesmo; o rodapé de todas as outras CLIs, e o de uma sessão do Claude Code sem
-ele, mostra o que o lich lê do que a CLI registrou.
-O grupo **Fora do lich** da aba Histórico lista conversas que rodaram em um
-dos checkouts dos seus projetos e que o lich não guarda. Uma sessão que o lich
-abriu e você fechou de vez fica de fora dele, exceto uma fechada antes da
-0.62.0: o lich distingue as conversas do próprio Claude Code pelo nome com que
-as inicia, e as outras sete CLIs não registram nada que permita distingui-las,
-então as delas aparecem ali uma vez.
-
 Toda lacuna é deliberada, nenhuma é o lich escondendo algo que a CLI informa, e
 o [`docs/ceilings.md`](docs/ceilings.md) diz o que foi medido por trás de cada
 uma.
