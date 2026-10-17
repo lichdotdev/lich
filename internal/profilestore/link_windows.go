@@ -73,3 +73,16 @@ func linkMissingFile(target, path string) error {
 	}
 	return err
 }
+
+// linkHomeFile links a link home's path to Personal's file target. Without
+// Developer Mode Windows refuses a file symlink, and the file is left out
+// rather than copied: a copy would be the profile's own from then on and miss
+// every later change to Personal's, where a missing entry is linked by the
+// first spawn after Developer Mode is on.
+func linkHomeFile(target, path string) error {
+	err := symlink(target, path)
+	if errors.Is(err, windows.ERROR_PRIVILEGE_NOT_HELD) {
+		return nil
+	}
+	return err
+}

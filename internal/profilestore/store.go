@@ -86,6 +86,11 @@ type Spec struct {
 	// profile's own login: a spawn into a profile drops them, or the account in
 	// its directory is never the one spent.
 	Override []string
+	// Pinned are variables besides HomeVar that a spawn into a profile sets,
+	// each to a path under the profile's directory: state HomeVar alone does
+	// not move (Cursor CLI's config dir on Windows). Only for a provider whose
+	// HomeVar value is that directory.
+	Pinned []PinnedVar
 	// Reserved are slugs a profile cannot take because the provider reads them
 	// as something else ("default" selects oh-my-pi's default profile).
 	Reserved []string
@@ -97,6 +102,10 @@ type Spec struct {
 	// Personal's: Codex's config.toml, whose plugin set is the profile's.
 	Sync func(personal, dir string) error
 }
+
+// PinnedVar is one of Spec.Pinned: Name set to Rel under the profile's
+// directory.
+type PinnedVar struct{ Name, Rel string }
 
 // metaFile is the sidecar lich keeps beside each profile, outside its
 // directory: the directory itself is the provider's.
@@ -435,7 +444,20 @@ func (s Spec) Env(base []string, value string) []string {
 		}
 		out = append(out, kv)
 	}
-	return append(out, s.HomeVar+"="+value)
+	for _, v := range s.assignments(value) {
+		out = append(out, v[0]+"="+v[1])
+	}
+	return out
+}
+
+// assignments is every variable a spawn into the profile at value sets, as
+// name and value: HomeVar, then Pinned.
+func (s Spec) assignments(value string) [][2]string {
+	out := [][2]string{{s.HomeVar, value}}
+	for _, p := range s.Pinned {
+		out = append(out, [2]string{p.Name, filepath.Join(value, p.Rel)})
+	}
+	return out
 }
 
 // WriteFileAtomic writes data to path through a temporary file and a rename, so

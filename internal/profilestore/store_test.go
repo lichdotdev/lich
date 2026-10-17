@@ -209,6 +209,18 @@ func TestEnvHandsTheProfileItsOwnLogin(t *testing.T) {
 	}
 }
 
+func TestEnvPointsPinnedVariablesUnderTheProfile(t *testing.T) {
+	s := toy(machine(t))
+	s.Override = append(s.Override, "TOY_STATE")
+	s.Pinned = []PinnedVar{{Name: "TOY_STATE", Rel: "Toy"}}
+	profile := filepath.Join(t.TempDir(), "work")
+	got := s.Env([]string{"A=1", "TOY_STATE=/elsewhere"}, profile)
+	want := []string{"A=1", "TOY_HOME=" + profile, "TOY_STATE=" + filepath.Join(profile, "Toy")}
+	if !slices.Equal(got, want) {
+		t.Errorf("Env = %v, want %v", got, want)
+	}
+}
+
 func TestADirOfPlacesTheStateElsewhereThanLichsRoot(t *testing.T) {
 	personal := machine(t)
 	s := toy(personal)

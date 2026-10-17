@@ -1,7 +1,7 @@
-//go:build !linux
+//go:build !linux && !windows
 
 package main
 
-// xdgProfileProviders is empty: the backend keeps no link-home profiles off
-// Linux (internal/xdgprofile).
-var xdgProfileProviders []profileProvider
+// xdgProfileProviders are the link-home providers with profiles here: opencode
+// alone on macOS (internal/xdgprofile).
+var xdgProfileProviders = []profileProvider{opencodeProfileProvider}

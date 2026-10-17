@@ -1247,8 +1247,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   installed a branch name or agent output in Chinese still draws as tofu in the terminal while the cards and
   Settings around it read fine. Installing a Chinese font system-wide covers both. Windows and macOS find the
   terminal's fallback by scanning the system font folders, which leave lich's cache out the same way.
-- **Profiles are Claude Code's, Codex's and oh-my-pi's everywhere, and opencode's, Cursor CLI's and Kiro CLI's
-  on Linux only** (`internal/claudeprofile`, `internal/codexprofile`, `internal/ompprofile`,
+- **Profiles are Claude Code's, Codex's, oh-my-pi's and opencode's everywhere, Cursor CLI's on Linux and
+  Windows, and Kiro CLI's on Linux only** (`internal/claudeprofile`, `internal/codexprofile`, `internal/ompprofile`,
   `internal/xdgprofile`, on one store, `internal/profilestore`): one account per profile. The first three are
   each its own `CLAUDE_CONFIG_DIR`, `CODEX_HOME` or `OMP_PROFILE` with a real `claude auth login`, `codex login`
   or `omp login`. The other three have no variable of their own that moves their login, which is what makes them
@@ -1282,18 +1282,40 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     `~/.aws/sso/cache`, which no profile moves, and a TUI run from a linked bundle.
   - **Crush** is unmeasured. **Antigravity** cannot: its `~/.gemini` is fixed by the CLI.
 
-  On macOS and Windows Cursor CLI and Kiro CLI keep their logins outside the XDG directories (above, and the Rust
-  `dirs` locations for Kiro), so `internal/xdgprofile` lists no provider there (`supported_other.go`) and the
-  native window shows no profile rows for them (`profiles_xdg_other.go`). opencode is xdg-basedir on every
-  platform, but its profiles were measured on Linux alone and are off elsewhere with the other two. A project's
-  profile setting, the per-session profile and Continue in therefore exist for Claude Code, Codex and oh-my-pi
-  sessions everywhere and opencode, Cursor CLI and Kiro CLI sessions on Linux. The profile slug of a session row
+  Off Linux, read in the shipped artifacts (2026-10-17) and never run on a Mac or a Windows machine:
+  - **opencode** (1.18.35 bundle) resolves its data as `$XDG_DATA_HOME`, else `<home>/.local/share`, with
+    `opencode` under it, in JavaScript with no branch per platform, and keeps no secret in the Keychain or the
+    Credential Manager. Its profiles are the Linux ones on macOS and Windows too.
+  - **Cursor CLI** (2026.10.01 bundle, `cli-credentials`) keeps its login on macOS in the Keychain by default:
+    services `cursor-access-token`, `cursor-refresh-token` and `cursor-api-key` under the account `cursor-user`,
+    names no variable changes, in the one login keychain every profile's session would read. So it has no
+    profiles on macOS. `AGENT_CLI_CREDENTIAL_STORE=file` moves the login to `$HOME/.cursor/auth.json`, which only
+    `HOME` moves; lich does not set either. On Windows the login is `%APPDATA%\Cursor\auth.json` (`APPDATA`,
+    else `<home>\AppData\Roaming`) and the config dir is `~/.cursor`, so a profile is a link home of
+    `%APPDATA%` whose `Cursor` folder is its own, with `CURSOR_CONFIG_DIR` pinned to that same folder so the chats
+    and `cli-config.json` (which names the account) go with the login (`internal/xdgprofile/cursor_windows.go`).
+  - **Kiro CLI** (2.32.0 macOS `.dmg` and Windows `.msi`): on macOS the `kiro-cli` launcher keeps its tokens in
+    the Keychain through `/usr/bin/security` (`kirocli:odic:token`, `kirocli:odic:device-registration`,
+    `kirocli:external-idp:token`, fixed names), so it has no profiles on macOS. On Windows the login is in
+    `data.sqlite3` under the local AppData folder, found through `SHGetKnownFolderPath`, which no variable moves
+    (the binary reads neither `LOCALAPPDATA` nor `APPDATA`), so it has no profiles on Windows either.
+    `KIRO_DATA_DIR` and `KIRO_HOME` leave `data.sqlite3` where it was (run on the 2.32.0 Linux build in a
+    throwaway home); `KIRO_TEST_DB_PATH` moves it but is a test hook, which lich does not lean on. Kiro's docs
+    announce sign-ins under `KIRO_HOME` "in V3", which would give it profiles on every platform with a variable
+    of its own.
+
+  `internal/xdgprofile` lists the providers each platform has (`supported_linux.go`, `supported_windows.go`,
+  `supported_other.go`), and the native window shows profile rows for the same ones (`profiles_xdg_*.go`). A
+  project's profile setting, the per-session profile and Continue in therefore exist for Claude Code, Codex,
+  oh-my-pi and opencode sessions everywhere, Cursor CLI sessions on Linux and Windows and Kiro CLI sessions on
+  Linux. The profile slug of a session row
   belongs to that row's provider: a Codex profile named "work" and a Claude Code one named "work" are two
   profiles.
-- **An opencode, Cursor CLI or Kiro CLI profile is an XDG base directory of links, and only Linux has one**
+- **An opencode, Cursor CLI or Kiro CLI profile is a base directory of links**
   (`internal/xdgprofile`, `internal/profilestore/linkhome.go`): the profile is
-  `<lich config dir>/profiles/<provider>/<slug>/`, and its sessions run with `XDG_DATA_HOME` (opencode, Kiro CLI)
-  or `XDG_CONFIG_HOME` (Cursor CLI) pointing at it, because moving that variable to an empty directory breaks
+  `<lich config dir>/profiles/<provider>/<slug>/`, and its sessions run with `XDG_DATA_HOME` (opencode, Kiro CLI),
+  `XDG_CONFIG_HOME` (Cursor CLI) or, on Windows, `APPDATA` (Cursor CLI, with `CURSOR_CONFIG_DIR` at the
+  profile's `Cursor` folder) pointing at it, because moving that variable to an empty directory breaks
   `gh`, `git`, `mise` and lich's own worktrees in the same session. It mirrors your own base directory entry by
   entry, each a link, except what is the profile's: `opencode/` whole, `cursor/` whole, and in `kiro-cli/` only
   `data.sqlite3` (with its `-wal`, `-shm` and `-journal`) and `.refresh.lock`, the rest of that folder linked so
@@ -1308,7 +1330,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   locks, Cursor's compile cache). The entry of your base directory that holds the profiles themselves is never
   linked: for Cursor CLI the mirror is of `~/.config`, so `~/.config/lich` (lich's config dir, profiles
   included) is absent from its profiles, and a tool in a Cursor profile session that reads
-  `$XDG_CONFIG_HOME/lich` finds nothing. Dropped from a profile's spawn, because each would point
+  `$XDG_CONFIG_HOME/lich` finds nothing; on Windows the same holds for `%APPDATA%\lich`. On Windows a folder
+  is linked by a junction and a file by a symlink, which Windows refuses without Developer Mode: such a file is
+  then left out of the profile rather than copied, and linked by the first spawn after Developer Mode is on.
+  A Windows Cursor profile owns `%APPDATA%\Cursor` whole, which is also where the Cursor editor keeps its user
+  data, so an editor started from inside a Cursor profile session sees none of yours. Dropped from a profile's
+  spawn, because each would point
   the CLI at another account or another profile's state: `OPENCODE_DB`, `OPENCODE_AUTH_CONTENT`,
   `OPENCODE_CONSOLE_TOKEN` and `OPENCODE_API_KEY`; `CURSOR_CONFIG_DIR`, `CURSOR_API_KEY` and
   `CURSOR_AUTH_TOKEN`; `KIRO_API_KEY`. The provider API-key variables (`ANTHROPIC_API_KEY` and the rest) are not

@@ -2,6 +2,6 @@
 
 package xdgprofile
 
-// supported is whether the providers keep their logins under an XDG base
-// directory on this platform.
-const supported = true
+// providersHere are the providers with link-home profiles on Linux: all three
+// keep their logins under an XDG base directory.
+var providersHere = []*Provider{OpenCode, Cursor, Kiro}

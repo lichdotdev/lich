@@ -3,7 +3,7 @@ package main
 import "github.com/omartelo/lich/native/lichclient"
 
 // opencode, Cursor CLI and Kiro CLI have profiles only where the backend keeps
-// them (internal/xdgprofile, Linux): xdgProfileProviders is empty elsewhere.
+// them (internal/xdgprofile.Providers): xdgProfileProviders lists the same ones.
 // Each logs in from a terminal card and has no plan gauge per profile.
 const (
 	opencodeKind = "opencode"

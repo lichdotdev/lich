@@ -339,7 +339,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	ompProfiles.SetSessions(term.OMPProfileSessions, db.ForgetOMPProfile)
 	dispatcher.Register("ompprofile", ompProfiles)
 	// opencode, Cursor CLI and Kiro CLI log in from a terminal card too, and have
-	// profiles only where their logins are under an XDG directory (Linux).
+	// profiles only where a variable moves their logins (xdgprofile.Providers).
 	for _, provider := range xdgprofile.Providers() {
 		profiles := xdgprofile.New(provider, db)
 		profiles.SetSessions(

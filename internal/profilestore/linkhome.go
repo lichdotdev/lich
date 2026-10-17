@@ -61,11 +61,20 @@ func (s Spec) linkHome(personal, dir, rel string) error {
 		if _, err := os.Lstat(path); err == nil || holdsDir(target, dir) {
 			continue
 		}
-		if err := LinkDir(target, path); err != nil {
+		if err := linkEntry(target, path); err != nil {
 			return fmt.Errorf("link %s: %w", path, err)
 		}
 	}
 	return nil
+}
+
+// linkEntry links path to Personal's entry target: a directory with LinkDir, a
+// file with linkHomeFile, since a Windows junction stands only for a directory.
+func linkEntry(target, path string) error {
+	if info, err := os.Stat(target); err == nil && info.IsDir() {
+		return LinkDir(target, path)
+	}
+	return linkHomeFile(target, path)
 }
 
 // mirrorDir makes the directory rel holding one of Own's entries and lays it
@@ -102,7 +111,7 @@ func (s Spec) tidyHome(dir, rel string) error {
 		switch {
 		case own:
 			continue
-		case e.Type()&fs.ModeSymlink != 0:
+		case IsLink(path):
 			if err := pruneLink(path, dir); err != nil {
 				return err
 			}

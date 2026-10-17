@@ -1,7 +1,9 @@
-//go:build !linux
+//go:build !linux && !windows
 
 package xdgprofile
 
-// supported is whether the providers keep their logins under an XDG base
-// directory on this platform: macOS and Windows put them elsewhere.
-const supported = false
+// providersHere are the providers with link-home profiles on macOS: opencode
+// alone, whose data is xdg-basedir on every platform. Cursor CLI and Kiro CLI
+// keep their logins in the macOS Keychain under fixed names, which one login
+// session shares between every profile (docs/ceilings.md).
+var providersHere = []*Provider{OpenCode}

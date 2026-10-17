@@ -37,6 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Settings › General, and as the prompt language, so the briefing, relay
   notes and handoffs lich types into your agents read in Russian too. Counts
   follow Russian's one, few and many forms (1 файл, 2 файла, 5 файлов).
+- **opencode profiles on macOS and Windows, and Cursor CLI profiles on
+  Windows.** Settings › Providers in the native window lists them as it
+  does on Linux. Cursor CLI on macOS and Kiro CLI on macOS and Windows still
+  have none: there they keep the login in the Keychain or in a folder no
+  setting can move, so every profile would share one account.
 
 ### Fixed
 

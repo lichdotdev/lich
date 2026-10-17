@@ -1,16 +1,17 @@
 // Package xdgprofile keeps more than one login of opencode, Cursor CLI and Kiro
 // CLI on one machine, the way internal/claudeprofile does for Claude Code. None
 // of the three has a variable of its own that moves its login: opencode keeps it
-// in $XDG_DATA_HOME/opencode, Cursor CLI in $XDG_CONFIG_HOME/cursor and Kiro CLI
-// in $XDG_DATA_HOME/kiro-cli/data.sqlite3, all measured (docs/ceilings.md). A
-// profile is therefore a base directory of its own that the session's
-// XDG_DATA_HOME or XDG_CONFIG_HOME points at, made of links to every entry of
-// the real one but the provider's (profilestore's link home), so every other
-// tool in the session (gh, git, mise) reads its own state where it always was.
+// in $XDG_DATA_HOME/opencode, Cursor CLI in $XDG_CONFIG_HOME/cursor (on Windows
+// %APPDATA%\Cursor) and Kiro CLI in $XDG_DATA_HOME/kiro-cli/data.sqlite3, all
+// measured (docs/ceilings.md). A profile is therefore a base directory of its
+// own that the session's XDG_DATA_HOME, XDG_CONFIG_HOME or APPDATA points at,
+// made of links to every entry of the real one but the provider's
+// (profilestore's link home), so every other tool in the session (gh, git,
+// mise) reads its own state where it always was.
 //
-// Only Linux keeps those logins under an XDG directory: on macOS and Windows
-// Cursor and Kiro use the platform's own (~/.cursor, Application Support,
-// %APPDATA%), so there Providers is empty and none of the three has profiles.
+// Which of the three have profiles depends on the platform (Providers): on
+// macOS Cursor CLI and Kiro CLI keep their logins in the Keychain, and on
+// Windows Kiro CLI finds its data folder with no variable in the way.
 package xdgprofile
 
 import (
@@ -35,8 +36,9 @@ var ErrProfileGone = profilestore.ErrGone
 type Profile = profilestore.Profile
 
 const (
-	configHomeVar = "XDG_CONFIG_HOME"
-	dataHomeVar   = "XDG_DATA_HOME"
+	configHomeVar      = "XDG_CONFIG_HOME"
+	dataHomeVar        = "XDG_DATA_HOME"
+	cursorConfigDirVar = "CURSOR_CONFIG_DIR"
 )
 
 // Provider is one provider whose profiles are link homes.
@@ -81,8 +83,11 @@ var OpenCode = &Provider{
 // Cursor is Cursor CLI's profiles. With XDG_CONFIG_HOME set and no
 // CURSOR_CONFIG_DIR, the CLI keeps its login (auth.json), its config
 // (cli-config.json, which names the account) and its chats in
-// $XDG_CONFIG_HOME/cursor, so that folder is the profile's. Its mcp.json, hooks
-// and skills hang off ~/.cursor whatever is set, and are every profile's.
+// $XDG_CONFIG_HOME/cursor, so that folder is the profile's. On Windows the login
+// is %APPDATA%\Cursor\auth.json and the config dir ~/.cursor, so there a
+// profile moves APPDATA and pins CURSOR_CONFIG_DIR to that same folder
+// (cursor_windows.go). Its mcp.json, hooks and skills hang off ~/.cursor
+// whatever is set, and are every profile's.
 // Dropped from a profile's spawn: CURSOR_CONFIG_DIR, which would put its chats
 // back in Personal's, and the variables that stand in for a login.
 var Cursor = &Provider{
@@ -90,12 +95,13 @@ var Cursor = &Provider{
 	store: profilestore.Spec{
 		Provider:    providers.Cursor,
 		Label:       "Cursor CLI",
-		HomeVar:     configHomeVar,
-		PersonalDir: configHome,
-		Own:         []string{"cursor"},
-		Override:    []string{"CURSOR_CONFIG_DIR", "CURSOR_API_KEY", "CURSOR_AUTH_TOKEN"},
+		HomeVar:     cursorHomeVar,
+		PersonalDir: cursorBase,
+		Own:         []string{cursorFolder},
+		Override:    []string{cursorConfigDirVar, "CURSOR_API_KEY", "CURSOR_AUTH_TOKEN"},
+		Pinned:      cursorPinned,
 	},
-	folder: "cursor",
+	folder: cursorFolder,
 	personalState: func() (string, error) {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -135,14 +141,8 @@ var Kiro = &Provider{
 	login:         "login",
 }
 
-// Providers is every provider with link-home profiles on this platform, none
-// off Linux.
-func Providers() []*Provider {
-	if !supported {
-		return nil
-	}
-	return []*Provider{OpenCode, Cursor, Kiro}
-}
+// Providers is every provider with link-home profiles on this platform.
+func Providers() []*Provider { return providersHere }
 
 // Of is the provider with id, nil when it has no profiles here.
 func Of(id string) *Provider {

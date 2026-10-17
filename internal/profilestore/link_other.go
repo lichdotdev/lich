@@ -31,3 +31,6 @@ func linksDir(path string, _ fs.FileInfo) bool {
 
 // linkMissingFile makes path a symlink to target, a file that does not exist.
 func linkMissingFile(target, path string) error { return os.Symlink(target, path) }
+
+// linkHomeFile links a link home's path to Personal's file target.
+func linkHomeFile(target, path string) error { return os.Symlink(target, path) }
