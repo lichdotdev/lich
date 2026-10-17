@@ -7,27 +7,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
 // ponytail: English until the native window has i18n (pulls.*).
 const (
-	pullsMergedText     = "Pull request is merged"
-	pullsClosedText     = "Pull request is closed"
-	pullsDraftText      = "Pull request is a draft"
-	pullsConflictsText  = "Conflicts with %s"
-	pullsBehindText     = "Base branch has moved — update this branch first"
-	pullsChangesText    = "A reviewer asked for changes"
-	pullsReviewReqText  = "GitHub requires a review that has not been left"
-	pullsRuleNoteText   = "A ruleset governs %s: every commit %s."
-	pullsFailingOne     = "1 check is failing; GitHub will merge over it"
-	pullsFailingMany    = "%d checks are failing; GitHub will merge over them"
-	pullsPromptConflict = "Pull request #%d (%s) has merge conflicts with %s. Resolve them."
-	pullsPromptChecksN  = "CI is failing on pull request #%d (%s). %d checks are red; find out which and fix them."
-	pullsPromptChecks1  = "CI is failing on pull request #%d (%s). 1 check is red; find out which and fix them."
-	pullsPromptListed   = "CI is failing on pull request #%d (%s). Fix these checks:\n\n%s"
-	pullsPromptOmitted1 = "\n\n…and 1 more failing check not listed."
-	pullsPromptOmittedN = "\n\n…and %d more failing checks not listed."
+	pullsMergedText    = "Pull request is merged"
+	pullsClosedText    = "Pull request is closed"
+	pullsDraftText     = "Pull request is a draft"
+	pullsConflictsText = "Conflicts with %s"
+	pullsBehindText    = "Base branch has moved — update this branch first"
+	pullsChangesText   = "A reviewer asked for changes"
+	pullsReviewReqText = "GitHub requires a review that has not been left"
+	pullsRuleNoteText  = "A ruleset governs %s: every commit %s."
+	pullsFailingOne    = "1 check is failing; GitHub will merge over it"
+	pullsFailingMany   = "%d checks are failing; GitHub will merge over them"
 )
 
 // pullsState is which pull requests gh is asked for.
@@ -254,7 +249,8 @@ func pullHandoff(d lichclient.PRDetail) (label, prompt string, ok bool) {
 		return "", "", false
 	}
 	if conflictsWithBase(d) {
-		return "Resolve conflicts", fmt.Sprintf(pullsPromptConflict, d.Number, d.HeadRefName, d.BaseRefName), true
+		return "Resolve conflicts", i18n.Prompt("prompts.pullRequest.conflicts",
+			i18n.Args{"number": d.Number, "branch": d.HeadRefName, "base": d.BaseRefName}), true
 	}
 	if d.Checks.Failed > 0 {
 		return "Fix CI errors", checksPrompt(d), true
@@ -270,10 +266,8 @@ func checksPrompt(d lichclient.PRDetail) string {
 		}
 	}
 	if len(failed) == 0 {
-		if d.Checks.Failed == 1 {
-			return fmt.Sprintf(pullsPromptChecks1, d.Number, d.HeadRefName)
-		}
-		return fmt.Sprintf(pullsPromptChecksN, d.Number, d.HeadRefName, d.Checks.Failed)
+		return i18n.Prompt("prompts.pullRequest.checksUnnamed",
+			i18n.Args{"number": d.Number, "branch": d.HeadRefName, "count": d.Checks.Failed})
 	}
 	named := failed[:min(len(failed), handoffNamedChecks)]
 	lines := make([]string, len(named))
@@ -283,12 +277,10 @@ func checksPrompt(d lichclient.PRDetail) string {
 			lines[i] += " — " + c.URL
 		}
 	}
-	out := fmt.Sprintf(pullsPromptListed, d.Number, d.HeadRefName, strings.Join(lines, "\n"))
-	switch omitted := len(failed) - len(named); {
-	case omitted == 1:
-		out += pullsPromptOmitted1
-	case omitted > 1:
-		out += fmt.Sprintf(pullsPromptOmittedN, omitted)
+	out := i18n.Prompt("prompts.pullRequest.checksListed",
+		i18n.Args{"number": d.Number, "branch": d.HeadRefName, "checks": strings.Join(lines, "\n")})
+	if omitted := len(failed) - len(named); omitted > 0 {
+		out += i18n.Prompt("prompts.pullRequest.checksOmitted", i18n.Args{"count": omitted})
 	}
 	return out
 }

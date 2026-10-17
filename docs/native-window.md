@@ -91,9 +91,11 @@ built from a pinned Ghostty commit.
   - **dunst** closes a note on a left click without running its action unless its config says
     `mouse_left_click = do_action, close_current`.
   Measured with swaync and mako on Hyprland; dunst, GNOME, KDE and niri are read from their documentation.
-- **Translations are TypeScript.** The interface catalogs live in `frontend/src/lib/i18n`; the native window
-  needs the same strings. Before the native window shows user text beyond the spike's, the catalogs move to a
-  form both windows read.
+- **Translations are copied, not shared.** The native window's catalogs (`native/i18n/locales`) were seeded
+  once from the web's TypeScript ones and keep their keys; from then on each window owns its own, so a copy
+  fix made in the web window until the cutover lands in both. The interface language is the global setting
+  `lich.appearance.language` (the system's language before anyone picks one), which the web window writes
+  beside its localStorage copy, so a language picked there is the one the native window opens in.
 
 ## How the native window catches up
 

@@ -36,6 +36,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui"
 	"github.com/omartelo/lich/native/ui/icons"
 )
@@ -56,7 +57,6 @@ const (
 	composerAddReview  = "Add to review"
 	composerPrompt     = "What should change here? It goes to the session with the rest."
 	composerCancel     = "Cancel"
-	reviewPromptHeader = "Review comments:"
 )
 
 var (
@@ -120,7 +120,7 @@ func composeReviewComments(list []reviewComment, note string) string {
 	if note = strings.TrimSpace(note); note != "" {
 		items = append(items, "- "+continuation(note))
 	}
-	return bracketedPaste(reviewPromptHeader + "\n\n" + strings.Join(items, "\n"))
+	return bracketedPaste(i18n.Prompt("prompts.reviewComments.header") + "\n\n" + strings.Join(items, "\n"))
 }
 
 // continuation keeps a multi-line comment one list item.

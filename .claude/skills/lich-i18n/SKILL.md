@@ -7,8 +7,10 @@ description: Map and carry out translation work in lich, for both the interface 
 
 lich has two languages that never derive from each other:
 
-- **Interface language**: lich's own screens. Catalogs in `frontend/src/lib/i18n/`, chosen in
-  Settings › Appearance, stored as a localStorage pref.
+- **Interface language**: lich's own screens. The web window's catalogs are in `frontend/src/lib/i18n/`,
+  chosen in Settings › Appearance; the native window's are in `native/i18n/locales/`, chosen in
+  Settings › General. Both store the choice in the global setting `lich.appearance.language` (the web
+  window keeps a localStorage copy); the native window follows the system's language until one is picked.
 - **Prompt language**: every word lich hands an agent (spawn briefing, `[lich]` relay notes, nudges,
   merge notices, MCP and CLI results, prompts the frontend types into a PTY, lich-plugin's mod text).
   Stored as the global `prompt.language` setting, exported to every session as `LICH_PROMPT_LANG`.
@@ -24,8 +26,10 @@ Classify every string first. Who reads it?
 | Reader | Where it goes | Language |
 |---|---|---|
 | The user, on a lich screen | `locales/<lang>/<namespace>.ts`, read with `t()` / `useT()` | interface |
+| The user, in the native window | `native/i18n/locales/<lang>/<namespace>.json`, read with `i18n.T()` | interface |
 | An agent, composed in Go (relay, briefing, notices, MCP/CLI output) | a field of `prompt.Catalog` (`internal/prompt/catalog.go`) | prompt |
 | An agent, typed by the frontend into a PTY | `locales/<lang>/prompts.ts`, read with `prompt()` from `lib/i18n/prompt.ts` | prompt |
+| An agent, typed by the native window into a PTY | `native/i18n/locales/<lang>/prompts.json`, read with `i18n.Prompt()` | prompt |
 | An agent, added by a lich-plugin mod | `hooks/prompt-text.js` in `lichdotdev/lich-plugin` | prompt |
 | Nobody localizes it | error text through `errorText()`, CHANGELOG, MCP tool descriptions, CLI `--help`, identifiers | none |
 
@@ -53,6 +57,24 @@ Then, in the same PR:
    only exists where `docs/ceilings.md` says it does; a gap that grows goes there and in both README
    provider tables.
 
+### The native window
+
+The native catalogs were seeded once from the web's and keep its keys, placeholders and plural objects, so
+a string ported from a web component reuses the web's key. From the seed on, each window owns its own
+catalogs: a native-only message lands only in `native/i18n/locales/*`, and a copy fix to a message both
+windows show lands in both until the cutover retires the web window.
+
+- Read a key at layout, never into a package-level `const` or `var`: Gio draws every frame, so a label
+  that reads `i18n.T` while it lays out changes language on the next one. A table built at init (the
+  settings index, the hotkeys) holds keys and resolves them when drawn; a settings row names
+  `titleKey`/`alsoKey`/`groupKey` and is read through `titleText`/`alsoText`/`groupText`.
+- `go:embed` cannot leave the `native/` module: the catalogs live under it, never in `frontend/`.
+- `TestEveryLocaleMatchesEnglish` (`native/i18n`) is the parity check, keys and placeholders;
+  `TestEveryKeyTheSourceNamesIsInTheCatalog` (`native/cmd/lich-native`) fails on a literal key no catalog
+  has. Write the key literally at the call so that test sees it.
+- Tests stay English: nothing sets the interface language under `go test`. Assert another locale with
+  `i18n.SetCurrent` / `i18n.In`, and set it back.
+
 ## Job 2: add a language
 
 Pick the BCP 47 tag first (`es`, `zh-CN`, `pt-BR`); the same string is the TS locale, the Go `Lang`, the
@@ -69,6 +91,11 @@ language at the **end** of every list so parallel additions merge as a union.
   `Intl.PluralRules` picks. A language without plurals fills `other` (and `one` where en has it).
 - Tests: the locale map in `i18n.test.ts`; a render test beside the others (`Trans.test.tsx`,
   `prompt.test.ts`, `lib-messages.test.ts`).
+
+**Native window** (`native/i18n/`)
+- `i18n.go`: a `Locale` const, `Locales` (append), its name in `Name`. A language with plural forms other
+  than one/other extends `pluralForm` (`plural.go`).
+- `locales/<tag-lowercase>/`: one JSON file per namespace in `locales/en/`, every key English has.
 
 **Backend** (`internal/prompt/`)
 - `prompt.go`: a `Lang` const, `Langs` (append), the `catalogs` map.

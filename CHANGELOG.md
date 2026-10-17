@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   PDF, or any other file with no preview, offers Open in default app and Show
   in folder instead of an error; in a pull request, a binary file links to
   itself on GitHub.
+- **Language settings in the native window.** Settings › General has the
+  interface language and the prompt language, as the web window has them
+  under Appearance. Before you pick one, the interface follows your
+  system's language. The native window's screens are translated as they
+  are ported, so most of them still read English for now.
+
+### Fixed
+
+- **The native window writes agent prompts in your prompt language.** The
+  pull request and issue handoffs and a batch of review comments were
+  always typed in English.
 
 ## [0.69.0] - 2026-10-16
 

@@ -8,6 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/lichclient"
 )
 
@@ -19,7 +20,6 @@ const (
 	wtNotPushedMany = "%d commits not pushed · starts from local %s"
 	wtUnreachable   = "Couldn't reach %s · starts from local %s"
 	wtKeepsChanges  = "Starts from local %s to keep your changes"
-	wtIssueHead     = "GitHub issue #%d — %s\n%s"
 )
 
 // Base options carry their group so one string names the selection, as
@@ -67,7 +67,7 @@ func issueName(i lichclient.Issue) string { return fmt.Sprintf("%d %s", i.Number
 // issueBrief is what the issue's session finds at its prompt: one bracketed
 // paste, left unsent.
 func issueBrief(i lichclient.Issue) string {
-	head := fmt.Sprintf(wtIssueHead, i.Number, i.Title, i.URL)
+	head := i18n.Prompt("prompts.issue.head", i18n.Args{"number": i.Number, "title": i.Title, "url": i.URL})
 	if body := strings.TrimSpace(i.Body); body != "" {
 		return bracketedPaste(head + "\n\n" + body)
 	}

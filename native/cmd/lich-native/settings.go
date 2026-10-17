@@ -88,6 +88,7 @@ type settingsScreen struct {
 	revealing *settingHit
 
 	general   generalSwitches
+	languages languageMenus
 	switcher  windowSwitch
 	notify    *notifier
 	sandbox   sandboxSettings
@@ -183,7 +184,7 @@ func (s *settingsScreen) choose(gtx C, h settingHit) {
 	s.providers.open = h.providerID
 	s.lit, s.litUntil, s.scrollTo = h.title, gtx.Now.Add(settingsLitFor), -1
 	for i, e := range sectionByID(h.section).rows {
-		if e.title == h.title {
+		if e.titleText() == h.title {
 			s.scrollTo = i
 		}
 	}
@@ -312,9 +313,9 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 		if r.kind == rowHidden || !s.rowApplies(e) {
 			continue
 		}
-		if e.group != group {
-			rows = append(rows, groupHeading(th, e.group, shown == 0))
-			group, shown = e.group, 0
+		if g := e.groupText(); g != group {
+			rows = append(rows, groupHeading(th, g, shown == 0))
+			group, shown = g, 0
 		}
 		if i == s.scrollTo {
 			s.pane.ScrollTo(len(rows))
@@ -336,7 +337,7 @@ func (s *settingsScreen) paneDescription(sec settingsSection) string {
 
 // rowFor is e's SettingRow without its control.
 func (s *settingsScreen) rowFor(e settingEntry, values scopedValues) settingRow {
-	r := settingRow{title: e.title, kind: rowKindOf(e, s.scope, s.projects, values)}
+	r := settingRow{title: e.titleText(), kind: rowKindOf(e, s.scope, s.projects, values)}
 	switch r.kind {
 	case rowOverridden:
 		r.overriddenIn = overriders(e, s.projects, values)
@@ -353,11 +354,13 @@ func (s *settingsScreen) drawRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 		s.useGlobal(e.key, s.scope)
 		s.refresh()
 	}
-	if s.lit == e.title && gtx.Now.Before(s.litUntil) {
+	if s.lit == e.titleText() && gtx.Now.Before(s.litUntil) {
 		r.lit = min(1, float32(s.litUntil.Sub(gtx.Now))/float32(settingsLitFadingFor))
 		gtx.Execute(op.InvalidateCmd{})
 	}
 	switch e.key {
+	case uiLanguageKey, promptLanguageKey:
+		return s.languageRow(gtx, th, e.key, r, first)
 	case themeSettingKey:
 		r.description = themeDesc
 		return s.theme.layoutRow(gtx, th, r, first)

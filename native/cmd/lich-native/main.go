@@ -340,6 +340,9 @@ func (u *window) connect() error {
 	if err := u.loadAppearance(); err != nil {
 		return err
 	}
+	if err := u.loadLanguages(); err != nil {
+		return err
+	}
 	if u.notifier.prefs, err = loadNotifyPrefs(u.ctx, u.client); err != nil {
 		return err
 	}

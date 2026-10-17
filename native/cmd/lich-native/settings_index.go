@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/omartelo/lich/native/i18n"
 	"github.com/omartelo/lich/native/ui/icons"
 )
 
@@ -55,17 +56,36 @@ const (
 
 // settingEntry is one row of a section: settings-index.ts's SettingEntry plus
 // the backend key and scope the row's states are read from. group is the
-// heading the row sits under, "" in a section without groups.
+// heading the row sits under, "" in a section without groups. A translated
+// row names its catalog keys (titleKey, alsoKey, groupKey) in place of the
+// text, as settings-index.ts does, and is read through titleText, alsoText
+// and groupText.
 type settingEntry struct {
 	title, also string
 	group       string
 	key         string
 	scope       settingScope
+
+	titleKey, alsoKey, groupKey string
+
 	// perProvider is a block of a provider's own screen: it is searched once
 	// per enabled provider, only the ones in onlyFor when that is set, and a
 	// result opens that provider's screen (settings-index.ts perProvider).
 	perProvider bool
 	onlyFor     []string
+}
+
+func (e settingEntry) titleText() string { return textOrKey(e.title, e.titleKey) }
+func (e settingEntry) alsoText() string  { return textOrKey(e.also, e.alsoKey) }
+func (e settingEntry) groupText() string { return textOrKey(e.group, e.groupKey) }
+
+// textOrKey is key's message in the interface language, or text for a row
+// not translated yet.
+func textOrKey(text, key string) string {
+	if key == "" {
+		return text
+	}
+	return i18n.T(key)
 }
 
 // settingsSection is one nav row. rows are the ported rows, drawn and
@@ -82,6 +102,8 @@ type settingsSection struct {
 // settingsSections is the nav in order.
 var settingsSections = []settingsSection{
 	{id: sectionGeneral, label: "General", icon: icons.Lucide("settings-2"), rows: []settingEntry{
+		{titleKey: "settings.language.uiTitle", alsoKey: "settings.language.uiSearchWords", key: uiLanguageKey, groupKey: "settings.language.group"},
+		{titleKey: "settings.language.promptTitle", alsoKey: "settings.language.promptSearchWords", key: promptLanguageKey, groupKey: "settings.language.group"},
 		{title: windowKindTitle, also: windowKindAlso, key: windowKindKey, group: groupWindow},
 		{title: closeSettingTitle, also: closeAlso, key: closeActionKey, group: groupWindow},
 		{title: needsInputTitle, also: notifyAlso, key: desktopNotifyKey, group: groupNotifications},
@@ -210,12 +232,12 @@ func searchSettings(query string, providers ...launchProvider) []settingHit {
 	for _, s := range settingsSections {
 		for _, e := range s.rows {
 			if !e.perProvider {
-				consider(settingHit{section: s.id, group: e.group, title: e.title}, e.also+" "+e.group)
+				consider(settingHit{section: s.id, group: e.groupText(), title: e.titleText()}, e.alsoText()+" "+e.groupText())
 				continue
 			}
 			for _, p := range providers {
 				if len(e.onlyFor) == 0 || slices.Contains(e.onlyFor, p.id) {
-					consider(settingHit{section: s.id, group: p.name, title: e.title, providerID: p.id}, e.also+" "+p.name)
+					consider(settingHit{section: s.id, group: p.name, title: e.titleText(), providerID: p.id}, e.alsoText()+" "+p.name)
 				}
 			}
 		}
