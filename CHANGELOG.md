@@ -49,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   session card's icon is drawn thinner, to read at the weight the web
   window gives it.
 
+- **Roomier shortcut keys in the native window.** The key caps in the
+  command palette, the shortcuts overlay and Settings › Hotkeys have more
+  room around their text, which sits centred.
+
 ### Fixed
 
 - **A reopened native window knows where each session went.** A session

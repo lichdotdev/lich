@@ -261,7 +261,7 @@ func shortcutLine(gtx C, th *ui.Theme, r shortcutRow) D {
 func keyCap(gtx C, th *ui.Theme, keys string) D {
 	macro := op.Record(gtx.Ops)
 	gtx.Constraints.Min = image.Point{}
-	d := layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx,
+	d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5) + 1}.Layout(gtx,
 		th.Text(hotkeyKeyCapSize, keys).Mono().Muted().Leading(hotkeyKeyCapSize).Layout)
 	call := macro.Stop()
 	box := gtx
