@@ -76,14 +76,24 @@ type moveConfirm struct {
 	session string
 	label   string
 	from    string
-	cancel  widget.Clickable
-	confirm widget.Clickable
+	// orchestrator and delegates are a delegates chip's move instead: the
+	// delegates to lay out, away how many of them are in other layouts.
+	orchestrator string
+	delegates    []string
+	away         int
+	cancel       widget.Clickable
+	confirm      widget.Clickable
 }
 
 func (u *window) askMove(r besideRequest, id, from string) {
 	c := &u.layoutStage.move
 	c.open, c.req, c.session, c.from = true, r, id, u.model.layoutName(from)
-	c.label = u.model.sessionLabel(id)
+	c.label, c.delegates = u.model.sessionLabel(id), nil
+}
+
+func (u *window) askMoveDelegates(orchestrator string, ids []string, away int) {
+	c := &u.layoutStage.move
+	c.open, c.orchestrator, c.delegates, c.away = true, orchestrator, ids, away
 }
 
 // layoutMoveConfirm draws the question and makes the move it is answered
@@ -92,7 +102,11 @@ func (u *window) layoutMoveConfirm(gtx C, th *ui.Theme) {
 	c := &u.layoutStage.move
 	if c.confirm.Clicked(gtx) && c.open {
 		c.open = false
-		u.model.splitBeside(u.ctx, c.req.target, c.session, c.req.edge, true)
+		if c.delegates != nil {
+			u.model.showDelegates(u.ctx, c.orchestrator, c.delegates)
+		} else {
+			u.model.splitBeside(u.ctx, c.req.target, c.session, c.req.edge, true)
+		}
 		u.model.invalidate()
 	}
 	if c.cancel.Clicked(gtx) {
@@ -102,10 +116,19 @@ func (u *window) layoutMoveConfirm(gtx C, th *ui.Theme) {
 	cancel := on.Button(&c.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantOutline
 	move := on.Button(&c.confirm, i18n.T("layouts.move.confirm"))
-	body := i18n.T("layouts.move.body", i18n.Args{"label": c.label, "layout": c.from})
-	d := th.Dialog(&c.dialog, c.open, i18n.T("layouts.move.title", i18n.Args{"label": c.label}), body)
+	title, body := c.question()
+	d := th.Dialog(&c.dialog, c.open, title, body)
 	d.Actions = []layout.Widget{cancel.Layout, move.Layout}
 	if d.Layout(gtx) {
 		c.open = false
 	}
+}
+
+func (c *moveConfirm) question() (title, body string) {
+	if c.delegates != nil {
+		return i18n.T("layouts.delegates.moveTitle", i18n.Args{"count": len(c.delegates)}),
+			i18n.T("layouts.delegates.moveBody", i18n.Args{"count": c.away})
+	}
+	return i18n.T("layouts.move.title", i18n.Args{"label": c.label}),
+		i18n.T("layouts.move.body", i18n.Args{"label": c.label, "layout": c.from})
 }

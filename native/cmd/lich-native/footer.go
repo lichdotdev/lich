@@ -34,10 +34,12 @@ type footer struct {
 	invalidate func()
 	// openPullRequest opens the Pulls screen on a pull request.
 	openPullRequest func(number int)
-	usage           *footerUsage
-	quota           *planQuota
-	handsOn         *handsOn
-	cost            *costGate
+	// showDelegates lays a session's delegates out beside it.
+	showDelegates func(id string)
+	usage         *footerUsage
+	quota         *planQuota
+	handsOn       *handsOn
+	cost          *costGate
 
 	mu     sync.Mutex
 	layout footerLayout
@@ -116,6 +118,9 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 		if in.provider == "" {
 			in.provider = sv.Kind
 		}
+		if m.layoutOf(sv.ID) == "" {
+			in.delegates = len(m.delegatesOf(sv.ID))
+		}
 	} else if p, ok := m.project(); ok {
 		in.path = p.Path
 	}
@@ -173,11 +178,21 @@ func (f *footer) layoutBar(gtx C, th *ui.Theme, in footerInput) D {
 			// min-h-11 counts the padding, and Inset leaves Min as it finds it.
 			gtx.Constraints.Min.Y = gtx.Dp(ui.Space(11)) - 2*gtx.Dp(pad)
 			return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1), Justify: ui.JustifyBetween}.Layout(gtx,
-				ui.WrapItem(f.side(th, footerSlots(l.Left, in), in, ui.JustifyStart)),
+				ui.WrapItem(f.side(th, withDelegates(footerSlots(l.Left, in), in), in, ui.JustifyStart)),
 				ui.WrapMLAuto(f.side(th, footerSlots(l.Right, in), in, ui.JustifyEnd)),
 			)
 		})
 	})
+}
+
+// withDelegates ends the left side with the delegates item while the
+// active session has delegates to lay out. It is no item of the user's
+// layout: it shows only when there is something to offer.
+func withDelegates(left []footerSlot, in footerInput) []footerSlot {
+	if in.delegates == 0 {
+		return left
+	}
+	return append(left, footerSlot{ID: "delegates", Text: i18n.T("layouts.delegates.showBeside", i18n.Args{"count": in.delegates})})
 }
 
 func (f *footer) side(th *ui.Theme, slots []footerSlot, in footerInput, justify ui.Justify) layout.Widget {
@@ -205,6 +220,9 @@ func (f *footer) act(gtx C, in footerInput) {
 	f.w("changes").pressed = f.dock.tab == dockReview
 	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
 		f.openPullRequest(in.pr.Number)
+	}
+	if f.w("delegates").click.Clicked(gtx) && in.delegates > 0 {
+		f.showDelegates(in.sessionID)
 	}
 }
 
@@ -248,6 +266,8 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	case "model":
 		glyph := func(gtx C) D { return providerIcon(in.provider).Layout(gtx, 14, th.MutedForeground) }
 		return footerSpan(gtx, th, f.root, &w.tip, s.Hint, modelMaxWidth, glyph, s.Text)
+	case "delegates":
+		return footerButton(gtx, th, f.root, w, i18n.T("layouts.delegates.hint"), true, false, glyphText(icDelegates, s.Text))
 	case "clock":
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, th.Text(ui.TextXS, s.Text).Muted().Layout)
 	}

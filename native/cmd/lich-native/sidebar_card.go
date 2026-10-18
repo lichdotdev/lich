@@ -160,13 +160,45 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 	if rung, ok := statusRung(th, sv); ok {
 		rows = append(rows, ui.VGap(2), layout.Rigid(rung))
 	}
-	rows = append(rows, ui.VGap(2), layout.Rigid(th.Text(ui.TextXS, path).Muted().Mono().LayoutTail))
+	rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return pathRow(gtx, th, sv.layout, path) }))
 	if sv.git.Branch != "" || sv.profileName != "" {
 		rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.branchRow(gtx, th, sv, prChip) }))
 	}
 	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 	})
+}
+
+// pathRow is the card's path, after the chip of the layout the session sits
+// in: clicking the card shows it there.
+func pathRow(gtx C, th *ui.Theme, layoutName, path string) D {
+	text := th.Text(ui.TextXS, path).Muted().Mono().LayoutTail
+	if layoutName == "" {
+		return text(gtx)
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return layoutChip(gtx, th, layoutName) }),
+		ui.Gap(1.5),
+		layout.Flexed(1, text),
+	)
+}
+
+// layoutChip is profileChip's outline around the layout glyph and name.
+func layoutChip(gtx C, th *ui.Theme, name string) D {
+	macro := op.Record(gtx.Ops)
+	gtx.Constraints.Min = image.Point{}
+	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(profileChipMaxW))
+	d := layout.Inset{Left: ui.Space(1), Right: ui.Space(1.5), Top: unit.Dp(1), Bottom: unit.Dp(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return icTabLayout.Layout(gtx, 11, th.MutedForeground) }),
+			ui.Gap(1),
+			layout.Rigid(th.Text(profileChipSize, name).Muted().Layout),
+		)
+	})
+	call := macro.Stop()
+	insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusSM), th.Over(th.Border))
+	call.Add(gtx.Ops)
+	return d
 }
 
 // titleRow is the card's first line: the status ring around the provider

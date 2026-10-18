@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   layout down to one pane closes. Rest a dragged session on another tab and
   that tab comes up, as a browser does with a dragged file. The sidebar and
   the footer follow the pane in focus.
+- **Show a session's delegates beside it.** In the native window, a session
+  that opened others, in any project, offers them in the footer: Show beside
+  lays it out with its delegates stacked at its right, as many as fit. In a
+  layout its pane header counts how many are there and adds the rest, asking
+  first before taking one out of another layout. A card in a layout names it.
 - **Required checks are labelled.** In the native window, a pull request's
   Checks tab marks the checks that gate its merge with Required, as GitHub
   does.

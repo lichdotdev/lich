@@ -277,7 +277,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   heard the release go (`endStrandedDrag`). The layout hotkeys the web window has no
   action for (split below, zoom, take out of the layout, rotate) live in the shared `hotkeys.bindings` value,
   which the web window rewrites with its own actions only: rebinding anything there drops a custom chord set
-  for those four in the native window.
+  for those four in the native window. Show beside lays out only the delegates that fit the 180dp pane
+  floor, counted from where the panes were drawn the frame before (`columnRoom`); the rest stay out and
+  the pane header offers them. Its footer item is not an item of the Footer layout, so Settings can neither
+  move nor hide it: it shows only while the session, in no layout, has delegates.
 - **A theme switch reaches only the apps that asked, and only since the page loaded**
   (`frontend/src/lib/terminal/theme-notify.ts`): lich answers mode 2031 and sends the light or dark report on a
   switch, but the "asked" flag lives on the page's terminal entry. A full page reload forgets it, so a session

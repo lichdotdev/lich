@@ -522,6 +522,8 @@ type sessionView struct {
 	// continueIn are the other logins its conversation could move to.
 	profileName string
 	continueIn  []continueTarget
+	// layout is the name of the layout the session sits in, "" for none.
+	layout string
 }
 
 // viewOf is what s's card shows at now. Callers hold m.mu.
@@ -536,6 +538,7 @@ func (m *model) viewOf(p lichclient.Project, s lichclient.Session, now time.Time
 		base: m.base[shown], pr: m.prs[shown].pr,
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID),
 		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
+		layout: m.layoutNameOfLocked(s.ID),
 	}
 }
 

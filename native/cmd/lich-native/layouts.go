@@ -171,6 +171,36 @@ func (t *layoutTab) rotate(session string) bool {
 	return true
 }
 
+// stackUnder puts ids under target's pane, the column of them all sharing
+// target's area evenly. It reports false when target is not in the tab.
+func (t *layoutTab) stackUnder(target string, ids []string) bool {
+	n := findLeaf(t.Root, target)
+	if n == nil {
+		return false
+	}
+	*n = *stackColumn(append([]string{target}, ids...))
+	return true
+}
+
+// columnBeside halves target's pane, a column of ids taking its right half.
+// It reports false when target is not in the tab.
+func (t *layoutTab) columnBeside(target string, ids []string) bool {
+	n := findLeaf(t.Root, target)
+	if n == nil {
+		return false
+	}
+	*n = paneNode{Axis: splitRow, Ratio: 0.5, First: &paneNode{Session: target}, Second: stackColumn(ids)}
+	return true
+}
+
+// stackColumn is ids stacked top to bottom, each taking an even share.
+func stackColumn(ids []string) *paneNode {
+	if len(ids) == 1 {
+		return &paneNode{Session: ids[0]}
+	}
+	return &paneNode{Axis: splitColumn, Ratio: 1 / float64(len(ids)), First: &paneNode{Session: ids[0]}, Second: stackColumn(ids[1:])}
+}
+
 // parentOf is the split whose side is session's leaf, nil for none.
 func parentOf(n *paneNode, session string) *paneNode {
 	if n == nil || n.leaf() {
@@ -245,6 +275,17 @@ func (ls *layoutTabs) open(name, first, second string, edge paneEdge) string {
 	ls.seq++
 	t := layoutTab{ID: fmt.Sprintf("layout-%d", ls.seq), Name: name, Root: &paneNode{Session: first}, Focus: second}
 	t.split(first, second, edge)
+	ls.tabs = append(ls.tabs, t)
+	return t.ID
+}
+
+// openBeside makes a layout of left with a column of ids at its right,
+// named name and focused on left, and answers its id. As with open, none of
+// them may be in a layout already.
+func (ls *layoutTabs) openBeside(name, left string, column []string) string {
+	ls.seq++
+	t := layoutTab{ID: fmt.Sprintf("layout-%d", ls.seq), Name: name, Root: &paneNode{Session: left}, Focus: left}
+	t.columnBeside(left, column)
 	ls.tabs = append(ls.tabs, t)
 	return t.ID
 }

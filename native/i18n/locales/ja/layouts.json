@@ -30,5 +30,18 @@
     "top": "上に分割",
     "bottom": "下に分割",
     "swap": "入れ替え"
+  },
+  "delegates": {
+    "showBeside": {
+      "other": "委任先 {count} 件 · 横に表示"
+    },
+    "add": "{count} 件中 {here} 件を表示中 · {missing} 件を追加",
+    "hint": "このセッションが開いたセッションを横に並べます",
+    "moveTitle": {
+      "other": "委任先 {count} 件をここに並べますか?"
+    },
+    "moveBody": {
+      "other": "委任先 {count} 件が別のレイアウトにあります。ここに並べるとそこから外れます。セッションは動き続けます。"
+    }
   }
 }

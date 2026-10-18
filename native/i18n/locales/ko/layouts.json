@@ -30,5 +30,18 @@
     "top": "위로 분할",
     "bottom": "아래로 분할",
     "swap": "바꾸기"
+  },
+  "delegates": {
+    "showBeside": {
+      "other": "위임 {count}개 · 옆에 보기"
+    },
+    "add": "{count}개 중 {here}개 표시 중 · {missing}개 추가",
+    "hint": "이 세션이 연 세션들을 옆에 배치합니다",
+    "moveTitle": {
+      "other": "위임 {count}개를 여기에 배치할까요?"
+    },
+    "moveBody": {
+      "other": "위임 {count}개가 다른 레이아웃에 있습니다. 여기에 배치하면 거기서 빠집니다. 세션은 계속 실행됩니다."
+    }
   }
 }

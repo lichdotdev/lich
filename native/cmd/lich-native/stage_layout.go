@@ -45,8 +45,8 @@ var (
 
 // paneUI is one pane's widgets, kept across frames by session id.
 type paneUI struct {
-	zoom, unsplit, chip widget.Clickable
-	zoomTip, unsplitTip ui.Tooltip
+	zoom, unsplit, chip, delegates    widget.Clickable
+	zoomTip, unsplitTip, delegatesTip ui.Tooltip
 }
 
 // paneDivider is the gap between a split's two sides, dragged to move the
@@ -74,6 +74,8 @@ type layoutStage struct {
 	// switchTab is a strip tab something carried rested on, to bring on
 	// screen.
 	switchTab string
+	// delegates is the session whose delegates chip was clicked.
+	delegates string
 	// sort drags the panes by their headers, over the sidebar's carry.
 	sort ui.Sortable
 }
@@ -333,6 +335,9 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 	if p.unsplit.Clicked(gtx) {
 		u.layoutStage.unsplit = sv.ID
 	}
+	if p.delegates.Clicked(gtx) {
+		u.layoutStage.delegates = sv.ID
+	}
 	fg, weight := th.MutedForeground, font.Normal
 	if focused {
 		fg, weight = th.Foreground, font.Medium
@@ -354,6 +359,7 @@ func (u *window) paneHeader(gtx C, th *ui.Theme, v stageView, sv sessionView, fo
 					layout.Flexed(1, th.Text(ui.TextXS, worktreeLabel(sv, v.projectPaths[sv.projectID])).Muted().Mono().Layout),
 				)
 			}),
+			layout.Rigid(func(gtx C) D { return u.delegatesChip(gtx, th, v, sv, p) }),
 			layout.Rigid(func(gtx C) D { return u.paneButtons(gtx, th, v, sv, p) }),
 		)
 	})
@@ -433,6 +439,10 @@ func (u *window) applyLayoutStage() {
 	}
 	if drop.ID != "" {
 		u.dropOnPane(drop.ID, drop.Over)
+	}
+	if id := st.delegates; id != "" {
+		st.delegates = ""
+		u.layDelegatesOut(id)
 	}
 	if focus != "" {
 		if active, ok := u.model.activeSession(); !ok || active.ID != focus {

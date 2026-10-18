@@ -324,3 +324,21 @@ func TestShowOtherThanNeverLeavesTheDraggedSessionAloneOnScreen(t *testing.T) {
 		t.Fatalf("layout %q active %q, want orch, the session in no layout", id, active)
 	}
 }
+
+func TestALayoutTabSaysAPaneWaitsWhileAnotherTabIsUp(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	ctx := context.Background()
+	m.splitBeside(ctx, "orch", "wa", edgeRight, false)
+	report(t, m, "wa", statusWaiting)
+	layoutTab := func() projectTab {
+		tabs, _ := m.stripTabs()
+		return tabs[len(tabs)-1]
+	}
+	if got := layoutTab().status; got != statusNone {
+		t.Fatalf("the layout on screen badged %q, want none: its panes say it", got)
+	}
+	m.setActive(ctx, "notes")
+	if got := layoutTab().status; got != statusWaiting {
+		t.Fatalf("the layout off screen badged %q, want waiting", got)
+	}
+}

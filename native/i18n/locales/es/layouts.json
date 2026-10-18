@@ -32,5 +32,21 @@
     "top": "Dividir arriba",
     "bottom": "Dividir abajo",
     "swap": "Intercambiar"
+  },
+  "delegates": {
+    "showBeside": {
+      "one": "{count} delegado · Mostrar al lado",
+      "other": "{count} delegados · Mostrar al lado"
+    },
+    "add": "{here} de {count} aquí · Añadir {missing}",
+    "hint": "Coloca al lado las sesiones que abrió esta",
+    "moveTitle": {
+      "one": "¿Traer {count} delegado aquí?",
+      "other": "¿Traer {count} delegados aquí?"
+    },
+    "moveBody": {
+      "one": "{count} delegado está en otro layout. Traerlo aquí lo saca de allí; la sesión sigue en marcha.",
+      "other": "{count} delegados están en otros layouts. Traerlos aquí los saca de allí; las sesiones siguen en marcha."
+    }
   }
 }

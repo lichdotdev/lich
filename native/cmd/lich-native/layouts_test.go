@@ -223,3 +223,32 @@ func TestPaneHeaderNamesOnlyAWorktree(t *testing.T) {
 		t.Errorf("worktree label = %q, want imfl", got)
 	}
 }
+
+func TestOpenBesideStacksTheDelegatesEvenlyAtTheRight(t *testing.T) {
+	var ls layoutTabs
+	tab := ls.byID(ls.openBeside("orch", "orch", []string{"w1", "w2", "w3"}))
+	if got, want := paneShape(tab.Root), "row(orch,column(w1,column(w2,w3)))"; got != want {
+		t.Fatalf("got %s, want %s", got, want)
+	}
+	column := tab.Root.Second
+	if column.Ratio != 1.0/3 || column.Second.Ratio != 0.5 {
+		t.Errorf("column ratios %v and %v, want each pane a third", column.Ratio, column.Second.Ratio)
+	}
+	if tab.Focus != "orch" {
+		t.Errorf("focus %q, want the orchestrator", tab.Focus)
+	}
+}
+
+func TestStackUnderSharesThePaneItJoins(t *testing.T) {
+	var ls layoutTabs
+	tab := ls.byID(ls.openBeside("orch", "orch", []string{"w1"}))
+	if !tab.stackUnder("w1", []string{"w2", "w3"}) {
+		t.Fatal("stackUnder refused a pane the tab holds")
+	}
+	if got, want := paneShape(tab.Root), "row(orch,column(w1,column(w2,w3)))"; got != want {
+		t.Fatalf("got %s, want %s", got, want)
+	}
+	if tab.stackUnder("missing", []string{"w4"}) {
+		t.Fatal("stackUnder into a session the tab does not hold succeeded")
+	}
+}

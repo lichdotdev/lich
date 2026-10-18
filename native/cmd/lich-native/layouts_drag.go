@@ -218,6 +218,23 @@ func (d *dragPointer) fits(target string, edge paneEdge) bool {
 	return true
 }
 
+// columnRoom is how many panes a column fits in target's pane as last
+// drawn: under target, below set, else in a column taking its right half.
+func (d *dragPointer) columnRoom(target string, below bool) int {
+	r, ok := d.last[target]
+	if !ok {
+		return 0
+	}
+	stacked := (r.Dy() + d.gap) / (d.paneH + d.gap)
+	if below {
+		return stacked - 1
+	}
+	if r.Dx() < 2*d.paneW+d.gap {
+		return 0
+	}
+	return stacked
+}
+
 // zoneAt is the drop zone at p of a pane other than carried, "" for none.
 // Only a pane of the layout on screen swaps with another, through the
 // middle; a card from the sidebar or a session alone has none.

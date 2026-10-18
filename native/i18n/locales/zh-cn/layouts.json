@@ -30,5 +30,18 @@
     "top": "向上分割",
     "bottom": "向下分割",
     "swap": "交换"
+  },
+  "delegates": {
+    "showBeside": {
+      "other": "{count} 个委派 · 并排显示"
+    },
+    "add": "已显示 {here}/{count} · 添加 {missing} 个",
+    "hint": "把此会话打开的会话并排放在旁边",
+    "moveTitle": {
+      "other": "把 {count} 个委派放到这里?"
+    },
+    "moveBody": {
+      "other": "有 {count} 个委派在其他布局中。放到这里会把它们从那里移出;会话会继续运行。"
+    }
   }
 }

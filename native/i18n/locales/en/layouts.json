@@ -32,5 +32,21 @@
     "top": "Split above",
     "bottom": "Split below",
     "swap": "Swap"
+  },
+  "delegates": {
+    "showBeside": {
+      "one": "{count} delegate · Show beside",
+      "other": "{count} delegates · Show beside"
+    },
+    "add": "{here} of {count} here · Add {missing}",
+    "hint": "Lay the sessions this one opened out beside it",
+    "moveTitle": {
+      "one": "Lay {count} delegate out here?",
+      "other": "Lay {count} delegates out here?"
+    },
+    "moveBody": {
+      "one": "{count} delegate is in another layout. Laying it out here takes it out of there; the session keeps running.",
+      "other": "{count} delegates are in other layouts. Laying them out here takes them out of there; the sessions keep running."
+    }
   }
 }

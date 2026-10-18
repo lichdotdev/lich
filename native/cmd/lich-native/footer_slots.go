@@ -27,6 +27,9 @@ type footerInput struct {
 	cost       bool    // the cost readout is turned on
 	budget     float64 // the spend ceiling, 0 for none
 	now        time.Time
+	// delegates counts the sessions the active one opened, while it is in no
+	// layout: in one, its pane header offers them instead.
+	delegates int
 }
 
 // footerSlot is one item the strip draws, with what it shows; an item whose

@@ -102,3 +102,25 @@ func TestPickZoneGivesALeftOutEdgeToTheOthers(t *testing.T) {
 		}
 	}
 }
+
+func TestColumnRoomCountsThePanesThatFit(t *testing.T) {
+	d := dragPointer{
+		last:  map[string]image.Rectangle{"wide": image.Rect(0, 0, 1000, 600), "narrow": image.Rect(0, 0, 900, 600)},
+		paneW: 480, paneH: 180, gap: 6,
+	}
+	cases := []struct {
+		target string
+		below  bool
+		want   int
+	}{
+		{"wide", false, 3},
+		{"narrow", false, 0},
+		{"narrow", true, 2},
+		{"missing", false, 0},
+	}
+	for _, c := range cases {
+		if got := d.columnRoom(c.target, c.below); got != c.want {
+			t.Errorf("columnRoom(%s, below %v) = %d, want %d", c.target, c.below, got, c.want)
+		}
+	}
+}

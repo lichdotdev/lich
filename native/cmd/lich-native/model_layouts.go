@@ -145,6 +145,15 @@ func cloneNode(n *paneNode) *paneNode {
 	return &c
 }
 
+// layoutNameOfLocked is the name of the layout holding session id, "" for
+// none. Callers hold m.mu.
+func (m *model) layoutNameOfLocked(id string) string {
+	if i := m.layouts.of(id); i >= 0 {
+		return m.layouts.tabs[i].Name
+	}
+	return ""
+}
+
 // layoutOf is the id of the layout holding session id, "" for none.
 func (m *model) layoutOf(id string) string {
 	m.mu.Lock()
