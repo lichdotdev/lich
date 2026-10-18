@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/libghostty-vt
-          key: libghostty-vt-${{ runner.os }}-${{ steps.ghostty.outputs.commit }}
+          key: libghostty-vt-${{ runner.os }}-baseline-${{ steps.ghostty.outputs.commit }}
 
       - name: Set up Zig
         if: steps.cache.outputs.cache-hit != 'true'
@@ -65,7 +65,7 @@ jobs:
           cd ghostty
           git fetch --depth 1 https://github.com/ghostty-org/ghostty "${{ steps.ghostty.outputs.commit }}"
           git checkout FETCH_HEAD
-          zig build -Demit-lib-vt -Doptimize=ReleaseFast --prefix ~/libghostty-vt
+          zig build -Demit-lib-vt -Doptimize=ReleaseFast -Dcpu=baseline --prefix ~/libghostty-vt
 
       - name: Point pkg-config at libghostty-vt
         run: echo "PKG_CONFIG_PATH=$HOME/libghostty-vt/share/pkgconfig" >> "$GITHUB_ENV"

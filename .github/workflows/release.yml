@@ -104,7 +104,9 @@ jobs:
   # release fans in and publishes.
   linux:
     needs: [native]
-    runs-on: ubuntu-latest
+    # The window links glibc dynamically, so this image's glibc is the oldest
+    # one the package runs on; ubuntu-latest would move it with the label.
+    runs-on: ubuntu-24.04
     env:
       # build/cef.sh fetches the CEF distribution the window ships into
       # CEF_DIR (~1.4 GB unpacked); the cache step below keeps it between runs.

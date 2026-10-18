@@ -87,7 +87,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # ubuntu-24.04, not latest: the release's linux job builds on what
+        # this job caches, and stays on 24.04 for its glibc.
+        os: [ubuntu-24.04, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
