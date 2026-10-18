@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.71.1] - 2026-10-18
+
 ### Fixed
 
 - The native window on Linux no longer crashes with an illegal instruction when a terminal opens on a CPU without AVX-512.
@@ -6166,7 +6168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.71.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.71.1...HEAD
+[0.71.1]: https://github.com/lichdotdev/lich/compare/v0.71.0...v0.71.1
 [0.71.0]: https://github.com/lichdotdev/lich/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/omartelo/lich/compare/v0.69.0...v0.70.0
 [0.69.0]: https://github.com/omartelo/lich/compare/v0.68.0...v0.69.0
