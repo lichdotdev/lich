@@ -7,6 +7,7 @@ import (
 	"log"
 	"maps"
 	"runtime"
+	"slices"
 	"sync"
 	"time"
 
@@ -50,6 +51,9 @@ type termView struct {
 	pointerIn bool
 	// exit is set once the process in the PTY is gone, until a restart.
 	exit *sessionExit
+	// background is the default background the grid last drew, under
+	// terminals.mu.
+	background color.NRGBA
 }
 
 // terminalPadding is term-view.ts TERMINAL_PADDING, in the terminal's own
@@ -93,14 +97,13 @@ type terminals struct {
 	// the interface zoom: a zoom step never changes a grid's cols×rows.
 	unzoomed unit.Metric
 
-	mu    sync.Mutex
-	byID  map[string]*termView
-	shown string
+	mu   sync.Mutex
+	byID map[string]*termView
+	// shown are the sessions whose terminals the last frame drew, which the
+	// backend streams output for without coalescing.
+	shown map[string]bool
 	// colors are the theme's terminal defaults, given to every terminal.
 	colors gioterm.Colors
-	// background is the shown terminal's default background as last drawn,
-	// the color of the island it fills and of the tab merged into it.
-	background color.NRGBA
 	// typeahead is input for a session whose terminal has not started yet,
 	// sent right after Start; the PTY holds it until the shell reads it.
 	typeahead map[string]string
@@ -158,13 +161,13 @@ func (ts *terminals) start(ctx context.Context, s sessionView, resume string, co
 
 func (ts *terminals) onOutput(id string, data []byte) {
 	ts.mu.Lock()
-	t, shown := ts.byID[id], ts.shown
+	t, shown := ts.byID[id], ts.shown[id]
 	ts.mu.Unlock()
 	if t == nil {
 		return
 	}
 	t.vt.Write(data)
-	if id == shown {
+	if shown {
 		ts.invalidate()
 	}
 }
@@ -203,12 +206,8 @@ func (ts *terminals) has(id string) bool {
 // the view is dropped; the page subscribes before replaying instead.
 func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView, resume string) (*termView, error) {
 	ts.mu.Lock()
-	t, previous := ts.byID[s.ID], ts.shown
-	ts.shown = s.ID
+	t := ts.byID[s.ID]
 	ts.mu.Unlock()
-	if previous != s.ID {
-		go ts.setVisible(previous, s.ID)
-	}
 	if t != nil {
 		return t, nil
 	}
@@ -305,7 +304,7 @@ func (ts *terminals) setFont(family string, size unit.Sp) error {
 func (ts *terminals) reattach(stream *lichclient.Stream) {
 	ts.mu.Lock()
 	views := ts.byID
-	ts.stream, ts.byID, ts.shown = stream, map[string]*termView{}, ""
+	ts.stream, ts.byID, ts.shown = stream, map[string]*termView{}, nil
 	ts.mu.Unlock()
 	for _, t := range views {
 		t.vt.Close()
@@ -318,25 +317,61 @@ func (ts *terminals) drop(id string) {
 	ts.mu.Lock()
 	t := ts.byID[id]
 	delete(ts.byID, id)
-	if ts.shown == id {
-		ts.shown = ""
-	}
+	delete(ts.shown, id)
 	ts.mu.Unlock()
 	if t != nil {
 		t.vt.Close()
 	}
 }
 
-func (ts *terminals) setVisible(hidden, shown string) {
-	ctx := context.Background()
-	if hidden != "" {
-		if err := ts.client.SetVisible(ctx, hidden, false); err != nil {
-			log.Printf("hide %s: %v", hidden, err)
+// onScreen records the sessions this frame draws a terminal for, and tells
+// the backend about each that came on or went off screen.
+func (ts *terminals) onScreen(ids ...string) {
+	ts.mu.Lock()
+	var hidden, shown []string
+	for id := range ts.shown {
+		if !slices.Contains(ids, id) {
+			hidden = append(hidden, id)
 		}
 	}
-	if err := ts.client.SetVisible(ctx, shown, true); err != nil {
-		log.Printf("show %s: %v", shown, err)
+	next := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		if !ts.shown[id] {
+			shown = append(shown, id)
+		}
+		next[id] = true
 	}
+	ts.shown = next
+	ts.mu.Unlock()
+	if len(hidden)+len(shown) > 0 {
+		go ts.setVisible(hidden, shown)
+	}
+}
+
+func (ts *terminals) setVisible(hidden, shown []string) {
+	ctx := context.Background()
+	for _, id := range hidden {
+		if err := ts.client.SetVisible(ctx, id, false); err != nil {
+			log.Printf("hide %s: %v", id, err)
+		}
+	}
+	for _, id := range shown {
+		if err := ts.client.SetVisible(ctx, id, true); err != nil {
+			log.Printf("show %s: %v", id, err)
+		}
+	}
+}
+
+// backgroundOf is session id's terminal default background as last drawn,
+// transparent before it ever was: the color of the island it fills and of the
+// tab merged into it.
+func (ts *terminals) backgroundOf(id string) color.NRGBA {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	if t := ts.byID[id]; t != nil {
+		return t.background
+	}
+	return color.NRGBA{}
 }
 
 // layout draws t into the whole of gtx.Constraints.Max, following the area's
@@ -375,7 +410,9 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	if err != nil {
 		return err
 	}
-	ts.background = snap.Background()
+	ts.mu.Lock()
+	t.background = snap.Background()
+	ts.mu.Unlock()
 	if _, err := t.r.Draw(gtx, snap); err != nil {
 		return err
 	}

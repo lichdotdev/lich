@@ -1,0 +1,36 @@
+{
+  "tab": {
+    "rename": "Renomear layout",
+    "close": "Fechar layout"
+  },
+  "pane": {
+    "zoom": "Ampliar este painel",
+    "unsplit": "Tirar do layout",
+    "hidden": {
+      "one": "mais {count}",
+      "other": "mais {count}"
+    },
+    "hiddenWaiting": {
+      "one": "mais {count} · {waiting} esperando",
+      "other": "mais {count} · {waiting} esperando"
+    }
+  },
+  "split": {
+    "noRoom": "Não há espaço para outro painel aqui. Alargue a janela ou tire um painel antes."
+  },
+  "move": {
+    "title": "Mover {label} para cá?",
+    "body": "{label} está no layout {layout}. Mover tira a sessão de lá; ela continua rodando.",
+    "confirm": "Mover"
+  },
+  "load": {
+    "failed": "Não foi possível ler os layouts salvos: {error}"
+  },
+  "drop": {
+    "left": "Dividir à esquerda",
+    "right": "Dividir à direita",
+    "top": "Dividir acima",
+    "bottom": "Dividir abaixo",
+    "swap": "Trocar"
+  }
+}

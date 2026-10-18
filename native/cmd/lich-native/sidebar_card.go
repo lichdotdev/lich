@@ -13,6 +13,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -101,6 +102,44 @@ func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, pinClick
 		)
 	})
 }
+
+// inHand is a session carried over the window, a card out of the sidebar
+// or a pane by its header: a pill with its ring and name just right of the
+// pointer at p, or left of it where the window ends first.
+func (s *sidebar) inHand(gtx C, th *ui.Theme, sv *sessionView, p image.Point) {
+	size := gtx.Constraints.Max
+	on := th.On(th.Popover)
+	m := op.Record(gtx.Ops)
+	cgtx := gtx
+	cgtx.Constraints = layout.Constraints{Max: image.Pt(gtx.Dp(cardInHandWidth), size.Y)}
+	pill := layout.Inset{Left: ui.Space(1), Right: ui.Space(3), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(cgtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return s.statusGlyph(gtx, on, sv) }),
+			ui.Gap(1.5),
+			layout.Rigid(on.Text(ui.TextSM, sv.Label).Weight(font.Medium).Layout),
+		)
+	})
+	body := m.Stop()
+	gap := gtx.Dp(cardInHandGap)
+	x := p.X + gap
+	if x+pill.Size.X > size.X {
+		x = p.X - gap - pill.Size.X
+	}
+	at := image.Pt(x, p.Y-pill.Size.Y/2)
+	defer op.Offset(at).Push(gtx.Ops).Pop()
+	shape := clip.UniformRRect(image.Rectangle{Max: pill.Size}, pill.Size.Y/2)
+	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
+	paint.FillShape(gtx.Ops, th.Ring, clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	body.Add(gtx.Ops)
+}
+
+// The pill a carried session becomes sits cardInHandGap right of the
+// pointer, clear of the cursor, or as far left of it where the window ends
+// first, its name cut short past cardInHandWidth.
+var (
+	cardInHandGap   = unit.Dp(14)
+	cardInHandWidth = unit.Dp(240)
+)
 
 func (s *sidebar) renaming(id string) bool {
 	rename := s.renames[id]

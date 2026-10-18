@@ -84,6 +84,9 @@ type commandPalette struct {
 	dropped map[string]bool
 	// picked is the actions Enter chose, run once the frame is over.
 	picked []hotkeyID
+	// beside is the pane a picked session splits, while the palette is
+	// choosing one; nil for the plain switcher.
+	beside *besideRequest
 	// last is the list the last open frame drew, which the closing fade keeps
 	// drawing.
 	last paletteView
@@ -122,9 +125,23 @@ func (p *commandPalette) show(turns map[string]string) {
 	p.reset()
 }
 
+// besideRequest is a split waiting on its session: target's pane, the edge
+// the picked session goes against.
+type besideRequest struct {
+	target string
+	edge   paneEdge
+}
+
+// showBeside opens the palette on the sessions to pick the one that splits
+// target's pane against edge.
+func (p *commandPalette) showBeside(turns map[string]string, target string, edge paneEdge) {
+	p.show(turns)
+	p.tab, p.beside = tabSessions, &besideRequest{target: target, edge: edge}
+}
+
 // hide closes the palette; the next one opens on the plain list again.
 func (p *commandPalette) hide() {
-	p.open = false
+	p.open, p.beside = false, nil
 	p.reset()
 }
 

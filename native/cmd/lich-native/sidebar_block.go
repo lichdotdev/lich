@@ -199,7 +199,10 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	keys := st.presence.Update(gtx.Now, blockIDs(b))
 	keys = slices.DeleteFunc(keys, func(id string) bool { _, ok := views[id]; return !ok })
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	d := st.cards.List(gtx, ui.SortList{}, keys, func(gtx C, i int) D {
+	// A card carried out of the sidebar goes back to its slot; the window
+	// draws what follows the pointer over the panes (drawCarried).
+	list := ui.SortList{Leaves: st.cards.Carry != nil}
+	d := st.cards.List(gtx, list, keys, func(gtx C, i int) D {
 		return s.blockCard(gtx, th, st, views[keys[i]], f, dragEnded)
 	})
 	if len(keys) > 0 {

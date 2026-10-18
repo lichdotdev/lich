@@ -36,6 +36,10 @@ type listRig struct {
 	probes  map[string]*bool
 	drops   []SortDrop
 	hovered []string
+	// leaves is the inner lists' SortList.Leaves; hideA leaves block A's
+	// cards out of the frame, as a sidebar switched to another project does.
+	leaves bool
+	hideA  bool
 }
 
 const listRow = 20
@@ -61,6 +65,7 @@ func (r *listRig) frame() {
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Now: r.now, Source: r.router.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(300, 300)}}
 	r.readProbes(gtx)
+	r.carry.Hold(gtx)
 	r.collect(r.outer.Update(gtx))
 	r.outer.List(gtx, SortList{Within: true}, r.blocks, func(gtx C, i int) D { return r.block(gtx, r.blocks[i]) })
 	r.router.Frame(&ops)
@@ -87,7 +92,10 @@ func (r *listRig) block(gtx C, id string) D {
 			return header(gtx)
 		}),
 		layout.Rigid(func(gtx C) D {
-			return in.List(gtx, SortList{}, r.cards[id], func(gtx C, i int) D { return r.card(gtx, in, r.cards[id][i]) })
+			if id == "A" && r.hideA {
+				return D{}
+			}
+			return in.List(gtx, SortList{Leaves: r.leaves}, r.cards[id], func(gtx C, i int) D { return r.card(gtx, in, r.cards[id][i]) })
 		}),
 	)
 }
@@ -284,5 +292,69 @@ func TestSortListSettlesIntoTheNewSlot(t *testing.T) {
 	r.frame()
 	if under := r.probe(image.Pt(5, 45)); !slices.Equal(under, []string{"a1"}) {
 		t.Errorf("settled: under (5, 45) %v, want a1 in slot 2", under)
+	}
+}
+
+// Carried out past the 40px list's side, a1 is back in its slot, a2 makes
+// no room, and let go there it lands nowhere.
+func TestSortListLeavesTheListPastItsSide(t *testing.T) {
+	r := newListRig()
+	r.leaves = true
+	r.press(onA1)
+	r.move(a1Lifted, image.Pt(150, 52))
+	if under := r.probe(image.Pt(5, 25)); !slices.Contains(under, "a1") {
+		t.Errorf("under a1's slot: %v, want a1 back in it", under)
+	}
+	if under := r.probe(image.Pt(5, 45)); !slices.Equal(under, []string{"a2"}) {
+		t.Errorf("under a2's slot: %v, want a2 unmoved", under)
+	}
+	r.release(image.Pt(150, 52))
+	r.want(t, SortDrop{ID: "a1", Over: "a1"})
+}
+
+// Brought back over the list, the item rides its axis and makes room again.
+func TestSortListLeavesComesBackIntoTheList(t *testing.T) {
+	r := newListRig()
+	r.leaves = true
+	r.press(onA1)
+	r.move(a1Lifted, image.Pt(150, 52), image.Pt(20, 52))
+	if got := r.inner["A"].Over(); got != "a2" {
+		t.Errorf("over %q back in the list, want a2", got)
+	}
+}
+
+// A carry released for a drag whose list stopped being laid out lets that
+// list's Sortable go of the item, so the next press picks up again.
+func TestSortCarryReleaseEndsAStrandedDrag(t *testing.T) {
+	r := newListRig()
+	r.press(onA1)
+	r.move(a1Lifted, image.Pt(20, 52))
+	if r.carry.Carrying() != "a1" {
+		t.Fatalf("carrying %q, want a1", r.carry.Carrying())
+	}
+	r.carry.Release()
+	r.wait(time.Millisecond)
+	if got := r.inner["A"].Dragging(); got != "" {
+		t.Fatalf("still dragging %q after the carry was released", got)
+	}
+	r.release(image.Pt(20, 52))
+	r.want(t)
+}
+
+// The list a1 was picked up from stops being laid out mid-drag: the drag's
+// source is held, the pointer keeps moving and letting go over nothing ends
+// it, where Gio would otherwise trip over the source it forgot.
+func TestSortCarryHoldsTheSourceOfADragWhoseListLeft(t *testing.T) {
+	r := newListRig()
+	r.press(onA1)
+	r.move(a1Lifted, image.Pt(20, 52))
+	r.hideA = true
+	r.move(image.Pt(60, 90), image.Pt(200, 200))
+	r.release(image.Pt(200, 200))
+	r.carry.Release()
+	r.hideA = false
+	r.wait(time.Millisecond)
+	if got := r.inner["A"].Dragging(); got != "" {
+		t.Fatalf("still dragging %q once A is back", got)
 	}
 }

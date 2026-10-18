@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Split layouts in the native window (experimental).** Put sessions from
+  any open project side by side and split them however you like: Ctrl+Shift+G
+  splits the focused session to the right, Ctrl+Shift+I below, each asking
+  which session goes there, or drag a card from the sidebar onto a pane's
+  edge. Rearrange a layout by dragging a pane by its header onto another
+  pane's edge, or onto its middle to swap the two, and turn a pair between
+  side by side and stacked with Ctrl+Shift+R. Every layout is a tab after the
+  projects, with the status of its panes, renamed by double-clicking it; drag
+  the gap between two panes to resize them, zoom one with Ctrl+Shift+M, move
+  between them with Ctrl+Shift+F, and take one out with Ctrl+Shift+W; a
+  layout down to one pane closes. Rest a dragged session on another tab and
+  that tab comes up, as a browser does with a dragged file. The sidebar and
+  the footer follow the pane in focus.
 - **Required checks are labelled.** In the native window, a pull request's
   Checks tab marks the checks that gate its merge with Required, as GitHub
   does.

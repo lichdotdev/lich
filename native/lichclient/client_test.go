@@ -64,6 +64,19 @@ func TestCallWithNoArgsSendsEmptyArray(t *testing.T) {
 	}
 }
 
+func TestLoadStateDecodesTheDelegatingSession(t *testing.T) {
+	c := fakeBackend(t, func(string, []json.RawMessage) (any, int) {
+		return json.RawMessage(`[{"id":"p","sessions":[{"id":"s2","originSessionId":"s1","originLabel":"orchestrator"}]}]`), http.StatusOK
+	})
+	ps, err := c.LoadState(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := ps[0].Sessions[0]; s.OriginSessionID != "s1" || s.OriginLabel != "orchestrator" {
+		t.Fatalf("got %+v", s)
+	}
+}
+
 func TestCallReturnsBackendError(t *testing.T) {
 	c := fakeBackend(t, func(string, []json.RawMessage) (any, int) {
 		return map[string]string{"error": "want 2 arguments, got 1"}, http.StatusBadRequest

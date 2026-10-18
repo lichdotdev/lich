@@ -1,0 +1,36 @@
+{
+  "tab": {
+    "rename": "Renombrar diseño",
+    "close": "Cerrar diseño"
+  },
+  "pane": {
+    "zoom": "Ampliar este panel",
+    "unsplit": "Sacar del diseño",
+    "hidden": {
+      "one": "{count} más",
+      "other": "{count} más"
+    },
+    "hiddenWaiting": {
+      "one": "{count} más · {waiting} esperando",
+      "other": "{count} más · {waiting} esperando"
+    }
+  },
+  "split": {
+    "noRoom": "No hay espacio para otro panel aquí. Ensancha la ventana o saca antes un panel."
+  },
+  "move": {
+    "title": "¿Mover {label} aquí?",
+    "body": "{label} está en el diseño {layout}. Al moverla sale de allí; la sesión sigue en ejecución.",
+    "confirm": "Mover"
+  },
+  "load": {
+    "failed": "No se pudieron leer los diseños guardados: {error}"
+  },
+  "drop": {
+    "left": "Dividir a la izquierda",
+    "right": "Dividir a la derecha",
+    "top": "Dividir arriba",
+    "bottom": "Dividir abajo",
+    "swap": "Intercambiar"
+  }
+}

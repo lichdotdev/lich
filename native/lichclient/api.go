@@ -38,9 +38,11 @@ type Session struct {
 	// Profile is the Claude Code profile the session runs in (a slug), "" for
 	// Personal and for every other provider.
 	Profile string `json:"profile"`
-	// OriginLabel is what the session this one came from was called when it
-	// did, "" for one nobody opened from another.
-	OriginLabel string `json:"originLabel"`
+	// OriginSessionID is the session this one came from, in any project, ""
+	// for one nobody opened from another; OriginLabel is what that session
+	// was called when it did.
+	OriginSessionID string `json:"originSessionId"`
+	OriginLabel     string `json:"originLabel"`
 	// Forked is whether the session was born branching that session's
 	// conversation, rather than delegated or opened as a subagent.
 	Forked bool `json:"forked"`

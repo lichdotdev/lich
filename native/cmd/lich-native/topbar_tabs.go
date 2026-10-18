@@ -49,6 +49,7 @@ var (
 	icTabClose   = icons.Lucide("x")
 	icTabWaiting = icons.Lucide("bell")
 	icTabDone    = icons.Lucide("check")
+	icTabLayout  = icons.Lucide("layout-panel-left")
 )
 
 type tabState struct {
@@ -56,6 +57,19 @@ type tabState struct {
 	close widget.Clickable
 	tip   ui.Tooltip
 	menu  ui.MenuState
+	// rename is a layout tab's name as a field, while it is renamed.
+	rename ui.InlineEdit
+}
+
+// holdsKeys reports whether a tab's name is being edited, which keeps the
+// keyboard off the terminal.
+func (t *topbar) holdsKeys() bool {
+	for _, st := range t.tabs {
+		if st.rename.Active() {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *topbar) tabState(id string) *tabState {
@@ -80,6 +94,8 @@ func tabWidth(room, count, widest, narrowest int) int {
 // strip is the scrolling row of tabs with the open-project button right after
 // the last one, and the fillets that merge the active tab into the island.
 func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D {
+	// A tab being renamed takes presses for its field, not for a drag.
+	t.sort.Disabled = t.holdsKeys()
 	before := t.sort.Dragging()
 	if d, ok := t.sort.Update(gtx); ok && d.ID != d.Over {
 		act.drop = d
@@ -88,6 +104,7 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	plus := gtx.Dp(barButton) + gtx.Dp(barGap)
 	w := tabWidth(gtx.Constraints.Max.X-plus, len(f.tabs), gtx.Dp(tabWidthMax), gtx.Dp(tabWidthMin))
 	t.tabW = w
+	t.lay(gtx, f, w)
 	ids := make([]string, len(f.tabs))
 	for i, tab := range f.tabs {
 		ids[i] = tab.ID
@@ -115,10 +132,49 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	return D{Size: size}
 }
 
+// laidTab is a strip tab and where it was drawn.
+type laidTab struct {
+	id   string
+	rect image.Rectangle
+}
+
+// lay records where each tab of the strip, w wide and scrolled as the list
+// is, sits in the window, cut to the strip's own width.
+func (t *topbar) lay(gtx C, f topbarFrame, w int) {
+	t.laid = t.laid[:0]
+	top := gtx.Dp(tabTop)
+	strip := image.Rect(f.stripX, 0, f.stripX+gtx.Constraints.Max.X, gtx.Constraints.Max.Y)
+	for i, tab := range f.tabs {
+		x := f.stripX + i*w - t.list.Position.Offset
+		r := image.Rect(x, top, x+w, top+gtx.Dp(tabHeight)).Intersect(strip)
+		t.laid = append(t.laid, laidTab{id: tab.ID, rect: r})
+	}
+}
+
+// tabAt is the strip tab at window point p, "" for none.
+func (t *topbar) tabAt(p image.Point) string {
+	for _, l := range t.laid {
+		if p.In(l.rect) {
+			return l.id
+		}
+	}
+	return ""
+}
+
 func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded bool, act *topbarAction) D {
 	tab := f.tabs[i]
 	st := t.tabState(tab.ID)
-	closed, clicked := st.close.Clicked(gtx), st.click.Clicked(gtx)
+	closed, clicked := st.close.Clicked(gtx), false
+	for {
+		c, ok := st.click.Update(gtx)
+		if !ok {
+			break
+		}
+		clicked = true
+		if c.NumClicks >= 2 && tab.layout {
+			st.rename.Start(tab.Name)
+		}
+	}
 	switch {
 	case closed:
 		act.ask = tab.ID
@@ -133,12 +189,19 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 		{Kind: ui.MenuSeparator},
 		{Label: i18n.T("tabs.topbarTabs.closeProject"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.ask = tab.ID }},
 	}
+	if tab.layout {
+		entries = []ui.MenuEntry{
+			{Label: i18n.T("layouts.tab.rename"), Icon: icMenuRename, OnClick: func() { st.rename.Start(tab.Name) }},
+			{Kind: ui.MenuSeparator},
+			{Label: i18n.T("layouts.tab.close"), Icon: icMenuClose, OnClick: func() { act.ask = tab.ID }},
+		}
+	}
 	return t.sort.Item(gtx, tab.ID, func(gtx C) D {
 		return th.ContextMenu(t.root, &st.menu, entries).Layout(gtx, func(gtx C) D {
 			tip := th.TooltipCard(t.root, &st.tip, tabTooltip(th.On(th.Popover), tab))
 			tip.Side = ui.SideBottom
 			return tip.Layout(gtx, func(gtx C) D {
-				return st.click.Layout(gtx, func(gtx C) D { return t.tabFace(gtx, th, f, i, st) })
+				return st.click.Layout(gtx, func(gtx C) D { return t.tabFace(gtx, th, f, i, st, act) })
 			})
 		})
 	}, nil)
@@ -147,7 +210,7 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 // tabFace draws a tab: the island's color when active, a faint fill when
 // hovered, the hairline before an inactive tab that follows another, then
 // the badge, the name and the ×, shown on hover and on the active tab.
-func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState) D {
+func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState, act *topbarAction) D {
 	tab := f.tabs[i]
 	active := tab.ID == f.active
 	hovered := st.click.Hovered() || st.close.Hovered()
@@ -179,7 +242,7 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 	// tabs never moves one.
 	gtx.Constraints = layout.Exact(image.Pt(size.X, size.Y-gtx.Dp(gutter)))
 	layout.Inset{Left: tabPadLeft, Right: tabPadRight}.Layout(gtx, func(gtx C) D {
-		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, active || hovered) })
+		return layout.W.Layout(gtx, func(gtx C) D { return t.tabContent(gtx, on, tab, st, fg, weight, active || hovered, act) })
 	})
 	return D{Size: size}
 }
@@ -201,10 +264,25 @@ func detachedTab(gtx C, size image.Point, r int) clip.RRect {
 }
 
 // tabContent is the badge, the name and the × in a row.
-func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, fg color.NRGBA, weight font.Weight, showClose bool) D {
+func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, fg color.NRGBA, weight font.Weight, showClose bool, act *topbarAction) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			if !tab.layout {
+				return D{}
+			}
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return icTabLayout.Layout(gtx, tabGlyph, fg) }), ui.Gap(2))
+		}),
 		layout.Rigid(func(gtx C) D { return t.tabBadge(gtx, on, tab.status) }),
-		layout.Flexed(1, on.Text(tabTextSize, tab.Name).Leading(tabTextLeading).In(fg).Weight(weight).Layout),
+		layout.Flexed(1, func(gtx C) D {
+			if !st.rename.Active() {
+				return on.Text(tabTextSize, tab.Name).Leading(tabTextLeading).In(fg).Weight(weight).Layout(gtx)
+			}
+			d, res := on.InlineEdit(&st.rename, tabTextSize).Weight(weight).Layout(gtx)
+			if res.Outcome == ui.InlineEditCommitted {
+				act.renamed = layoutRename{id: tab.ID, name: res.Value}
+			}
+			return d
+		}),
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			if !showClose {

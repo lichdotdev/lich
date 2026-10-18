@@ -41,6 +41,10 @@ const (
 	hotkeySearchInFiles      hotkeyID = "searchInFiles"
 	hotkeySplitBeside        hotkeyID = "splitBeside"
 	hotkeyOtherPane          hotkeyID = "otherPane"
+	hotkeySplitBelow         hotkeyID = "splitBelow"
+	hotkeyZoomPane           hotkeyID = "zoomPane"
+	hotkeyUnsplitPane        hotkeyID = "unsplitPane"
+	hotkeyRotateSplit        hotkeyID = "rotateSplit"
 	hotkeySettings           hotkeyID = "settings"
 	hotkeyPulls              hotkeyID = "pulls"
 	hotkeyShortcuts          hotkeyID = "shortcuts"
@@ -115,7 +119,11 @@ var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeyToggleDock, labelKey: "hotkeys.action.toggleDock", group: hotkeyGroupView, combo: shiftChord("d")},
 	{id: hotkeySearchInFiles, labelKey: "hotkeys.action.searchInFiles", group: hotkeyGroupView, combo: comboUnassigned},
 	{id: hotkeySplitBeside, labelKey: "hotkeys.action.splitBeside", group: hotkeyGroupView, combo: shiftChord("g")},
+	{id: hotkeySplitBelow, labelKey: "hotkeys.action.splitBelow", group: hotkeyGroupView, combo: shiftChord("i")},
 	{id: hotkeyOtherPane, labelKey: "hotkeys.action.otherPane", group: hotkeyGroupView, combo: shiftChord("f")},
+	{id: hotkeyZoomPane, labelKey: "hotkeys.action.zoomPane", group: hotkeyGroupView, combo: shiftChord("m")},
+	{id: hotkeyUnsplitPane, labelKey: "hotkeys.action.unsplitPane", group: hotkeyGroupView, combo: shiftChord("w")},
+	{id: hotkeyRotateSplit, labelKey: "hotkeys.action.rotateSplit", group: hotkeyGroupView, combo: shiftChord("r")},
 	{id: hotkeyCommandPalette, labelKey: "hotkeys.action.commandPalette", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "k"}},
 	{id: hotkeySettings, labelKey: "hotkeys.action.settings", group: hotkeyGroupApp, combo: combo{Mod: true, Key: ","}},
 	{id: hotkeyPulls, labelKey: "hotkeys.action.pulls", group: hotkeyGroupApp, combo: shiftChord("p")},

@@ -23,9 +23,14 @@ type hotkeyHandler struct {
 }
 
 // hotkeyHandlers are the actions with a native screen or command. Absent,
-// and so inert: delegate (no delegate flow),
-// splitBeside and otherPane (no split panes).
+// and so inert: delegate (no delegate flow).
 var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
+	hotkeySplitBeside:        {(*window).hasActiveSession, func(u *window, _ C) { u.pickBeside(edgeRight) }},
+	hotkeySplitBelow:         {(*window).hasActiveSession, func(u *window, _ C) { u.pickBeside(edgeBottom) }},
+	hotkeyOtherPane:          {(*window).hasLayout, func(u *window, _ C) { u.model.cyclePane(u.ctx, 1); u.model.invalidate() }},
+	hotkeyZoomPane:           {(*window).hasLayout, func(u *window, _ C) { u.model.toggleZoom(); u.model.invalidate() }},
+	hotkeyUnsplitPane:        {(*window).hasLayout, (*window).hotkeyUnsplit},
+	hotkeyRotateSplit:        {(*window).hasLayout, func(u *window, _ C) { u.model.rotateFocused(); u.model.invalidate() }},
 	hotkeyNewSession:         {(*window).canNewSession, (*window).hotkeyNewSession},
 	hotkeyNewWorktree:        {(*window).hasProject, func(u *window, _ C) { u.showWorktreeDialog() }},
 	hotkeyRenameSession:      {(*window).hasActiveSession, (*window).hotkeyRename},
@@ -230,10 +235,10 @@ func (u *window) hotkeyFocusTerminal(gtx C) {
 	gtx.Execute(key.FocusCmd{})
 }
 
-// neighborTab is the project the step lands on in the strip's order, Home
-// first, and false when the strip has nowhere to go. "" is Home.
+// neighborTab is the project or layout the step lands on in the strip's
+// order, Home first, and false when the strip has nowhere to go. "" is Home.
 func (u *window) neighborTab(step int) (string, bool) {
-	tabs, active := u.model.projectTabs()
+	tabs, active := u.model.stripTabs()
 	ids := make([]string, 0, len(tabs)+1)
 	ids = append(ids, "")
 	for _, t := range tabs {
@@ -256,7 +261,7 @@ func (u *window) hotkeyTab(step int) {
 		u.saveScreen("")
 		return
 	}
-	u.showProject(target)
+	u.showStripTab(target)
 }
 
 // setSidebarOpen is the sidebar's own toggle, stored and morphed to.

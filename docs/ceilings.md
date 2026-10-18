@@ -259,6 +259,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   project's sessions drop out of every wall, and a wall left with one live member is not drawn. "Show
   beside its N delegates" still reads the routed project only (`delegatesOf`), so a delegate opened in
   another project is left out of the wall it builds.
+- **The native window's layouts are not the web's walls** (`native/cmd/lich-native/layouts.go`,
+  `model_layouts.go`, `stage_layout.go`): a layout is a free split tree stored under `lich.native.layouts`,
+  and neither window reads the other's. A session sits in one pane of one layout, because its PTY has one
+  size; clicking its card anywhere shows it in that layout, while its project's tab shows it alone. A split
+  is refused, with a toast, when a pane would drop under 480dp (51 columns at the default 13sp, measured with
+  Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
+  draws its exit band and takes a dropped file; a pane in the background whose process ended keeps its last
+  frame until focused, and a file dropped on it goes nowhere. A pinned card cannot be dragged onto a pane: the
+  pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
+  not SortCarry targets: Gio's transfer delivered Enter to targets laid out mid-drag only some of the time, so
+  the window reads the pointer from a handler over the whole window and works the zone out from where the
+  panes were drawn (`layouts_drag.go`). A new drop target over the stage belongs there, not in the carry.
+  Resting a drag on a strip tab switches to it, which can take the drag's own list off screen; Gio drops a
+  handler nobody asked about in a frame and then dereferences the forgotten source on the next move, so the
+  window calls `SortCarry.Hold` every frame to keep the source asked about, and lets a drag whose list never
+  heard the release go (`endStrandedDrag`). The layout hotkeys the web window has no
+  action for (split below, zoom, take out of the layout, rotate) live in the shared `hotkeys.bindings` value,
+  which the web window rewrites with its own actions only: rebinding anything there drops a custom chord set
+  for those four in the native window.
 - **A theme switch reaches only the apps that asked, and only since the page loaded**
   (`frontend/src/lib/terminal/theme-notify.ts`): lich answers mode 2031 and sends the light or dark report on a
   switch, but the "asked" flag lives on the page's terminal entry. A full page reload forgets it, so a session

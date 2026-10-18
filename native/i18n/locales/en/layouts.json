@@ -1,0 +1,36 @@
+{
+  "tab": {
+    "rename": "Rename layout",
+    "close": "Close layout"
+  },
+  "pane": {
+    "zoom": "Zoom this pane",
+    "unsplit": "Take out of the layout",
+    "hidden": {
+      "one": "{count} more",
+      "other": "{count} more"
+    },
+    "hiddenWaiting": {
+      "one": "{count} more · {waiting} waiting",
+      "other": "{count} more · {waiting} waiting"
+    }
+  },
+  "split": {
+    "noRoom": "No room for another pane here. Make the window wider or take a pane out first."
+  },
+  "move": {
+    "title": "Move {label} here?",
+    "body": "{label} is in the layout {layout}. Moving it takes it out of there; the session keeps running.",
+    "confirm": "Move"
+  },
+  "load": {
+    "failed": "Could not read the saved layouts: {error}"
+  },
+  "drop": {
+    "left": "Split left",
+    "right": "Split right",
+    "top": "Split above",
+    "bottom": "Split below",
+    "swap": "Swap"
+  }
+}

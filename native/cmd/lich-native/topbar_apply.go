@@ -66,15 +66,22 @@ func (u *window) applyTopbar(act topbarAction) {
 		u.saveScreen("")
 	}
 	if act.show != "" {
-		u.showProject(act.show)
+		u.showStripTab(act.show)
 	}
 	if act.ask != "" {
 		u.requestClose(act.ask)
 	}
+	if r := act.renamed; r.id != "" && u.model.renameLayout(r.id, r.name) {
+		u.model.saveLayouts()
+		u.model.invalidate()
+	}
 	if act.close != "" {
 		u.closeProject(act.close)
 	}
-	if d := act.drop; d.ID != "" {
+	if d := act.drop; d.ID != "" && u.model.moveLayout(d.ID, d.Over) {
+		u.model.saveLayouts()
+		u.model.invalidate()
+	} else if d.ID != "" {
 		if ids := u.model.moveProject(d.ID, d.Over); ids != nil {
 			u.model.invalidate()
 			go func() {
@@ -139,6 +146,15 @@ func (u *window) showProject(id string) {
 	u.saveScreen(id)
 }
 
+// showStripTab puts a strip tab on screen: a project, or a layout.
+func (u *window) showStripTab(id string) {
+	if u.model.showLayout(u.ctx, id) {
+		u.model.invalidate()
+		return
+	}
+	u.showProject(id)
+}
+
 func (u *window) saveScreen(projectID string) {
 	go func() { u.logErr("save last screen", saveLastScreen(u.ctx, u.client, projectID)) }()
 }
@@ -146,6 +162,11 @@ func (u *window) saveScreen(projectID string) {
 // requestClose closes a project at once, or asks first while any of its
 // sessions is mid-turn.
 func (u *window) requestClose(id string) {
+	if u.model.isLayout(id) {
+		u.model.closeLayout(u.ctx, id)
+		u.model.invalidate()
+		return
+	}
 	running := u.model.runningIn(id)
 	if running == 0 {
 		u.closeProject(id)

@@ -1,0 +1,34 @@
+{
+  "tab": {
+    "rename": "重命名布局",
+    "close": "关闭布局"
+  },
+  "pane": {
+    "zoom": "放大此窗格",
+    "unsplit": "移出布局",
+    "hidden": {
+      "other": "另外 {count} 个"
+    },
+    "hiddenWaiting": {
+      "other": "另外 {count} 个 · {waiting} 个等待中"
+    }
+  },
+  "split": {
+    "noRoom": "这里没有空间再放一个窗格。请加宽窗口，或先移出一个窗格。"
+  },
+  "move": {
+    "title": "将 {label} 移到这里？",
+    "body": "{label} 在布局 {layout} 中。移动后会离开那里，会话继续运行。",
+    "confirm": "移动"
+  },
+  "load": {
+    "failed": "无法读取已保存的布局：{error}"
+  },
+  "drop": {
+    "left": "向左分割",
+    "right": "向右分割",
+    "top": "向上分割",
+    "bottom": "向下分割",
+    "swap": "交换"
+  }
+}

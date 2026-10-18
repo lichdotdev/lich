@@ -34,6 +34,8 @@ type projectTab struct {
 	// status is the badge, statusNone on the active tab: its cards are on
 	// screen saying the same, per session (ProjectTab.tsx).
 	status string
+	// layout marks a split layout's tab, whose Path lists its sessions.
+	layout bool
 }
 
 // projectTabs is the strip: every open project in order with its badge, and
@@ -70,7 +72,7 @@ func sessionIDs(p lichclient.Project) []string {
 func (m *model) showHome() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.home = true
+	m.home, m.shownLayout = true, ""
 	if p := m.projectByID(m.homeID); p != nil {
 		m.active = p.ActiveSessionID
 	}

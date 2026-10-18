@@ -7,7 +7,6 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -23,6 +22,7 @@ import (
 	"gioui.org/app"
 	"gioui.org/font"
 	"gioui.org/font/gofont"
+	"gioui.org/io/event"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -144,6 +144,8 @@ type window struct {
 	reconnecting atomic.Bool
 	// islandAt is the island's top-left in window pixels, where body put it.
 	islandAt image.Point
+	// layoutStage is the panes' state while a layout is on screen.
+	layoutStage layoutStage
 	// hotkeyLanguage is the language the hotkeys' labels were last put in.
 	hotkeyLanguage i18n.Locale
 	// fontsLanguage is the language the interface's CJK faces were last
@@ -331,6 +333,12 @@ func (u *window) connect() error {
 	if err := u.model.hydrateTurnStates(u.ctx); err != nil {
 		return err
 	}
+	// A stored value this build cannot read starts the window with no
+	// layouts and says so; the next split stores over it.
+	if err := u.model.loadLayouts(u.ctx); err != nil {
+		u.logErr("load layouts", err)
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("layouts.load.failed", i18n.Args{"error": lichclient.ErrorText(err)})})
+	}
 	if _, ok := u.model.project(); !ok && *flagProject != "" {
 		path, err := filepath.Abs(*flagProject)
 		if err != nil {
@@ -443,6 +451,9 @@ func (u *window) layout(gtx C) error {
 		u.openShotMenu()
 	}
 	fired := u.pollHotkeys(gtx)
+	u.readDragPointer(gtx)
+	pointerArea := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
+	event.Op(gtx.Ops, &u.layoutStage.pointer.tag)
 	var act sidebarAction
 	var top topbarAction
 	var contentErr error
@@ -477,10 +488,12 @@ func (u *window) layout(gtx C) error {
 		u.layoutNotifyOptIn(gtx, u.theme)
 		u.layoutGitMissing(gtx, u.theme)
 		u.layoutExperimentalNotice(gtx, u.theme)
+		u.layoutMoveConfirm(gtx, u.theme)
 		var edge int
 		edge, act, contentErr = u.body(gtx, v)
 		u.sidebar.flight(gtx, u.theme, u.model)
 		top = u.topbar.layout(gtx, u.theme, u.topbarFrame(gtx, v, edge))
+		u.drawCarried(gtx)
 		top.close = closed
 		toasts := u.theme.Toaster(&u.toaster, u.light)
 		toasts.Expand = *flagToastsExpanded
@@ -490,8 +503,11 @@ func (u *window) layout(gtx C) error {
 		duplicates.Layout(gtx)
 		return D{Size: gtx.Constraints.Max}
 	})
+	pointerArea.Pop()
+	u.endStrandedDrag(gtx)
 	u.apply(act)
 	u.applyTopbar(top)
+	u.applyLayoutStage()
 	u.runHotkeys(gtx, fired)
 	return contentErr
 }
@@ -506,6 +522,19 @@ type stageView struct {
 	in      footerInput
 	tabs    []projectTab
 	project string // the active tab's project
+	// strip is the topbar's tabs, the projects then the layouts, and
+	// stripActive the one on screen.
+	strip       []projectTab
+	stripActive string
+	// layout is the layout on screen when hasLayout, with each pane's
+	// session; mixed is its panes coming from more than one project, whose
+	// names and paths the headers read.
+	layout       layoutTab
+	hasLayout    bool
+	panes        map[string]sessionView
+	mixed        bool
+	projectNames map[string]string
+	projectPaths map[string]string
 }
 
 func (u *window) stageView(now time.Time) stageView {
@@ -513,6 +542,17 @@ func (u *window) stageView(now time.Time) stageView {
 	v := stageView{in: u.footer.input(u.model, now), home: !shown}
 	v.active, v.hasActive = u.model.activeSession()
 	v.tabs, v.project = u.model.projectTabs()
+	v.strip, v.stripActive = u.model.stripTabs()
+	v.layout, v.hasLayout = u.model.shownLayoutTab()
+	if v.hasLayout {
+		v.panes = u.model.viewsOf(v.layout.sessions(), now)
+		v.projectNames, v.projectPaths = u.model.projectNamesAndPaths()
+		seen := map[string]bool{}
+		for _, sv := range v.panes {
+			seen[sv.projectID] = true
+		}
+		v.mixed = len(seen) > 1
+	}
 	return v
 }
 
@@ -544,7 +584,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					if u.pulls.open && !v.home {
 						u.pulls.files = filesInput{sessionID: v.in.sessionID, checkout: v.in.path, light: u.light, code: u.code}
 						u.pulls.squareX = -1
-						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.tabs, active: v.project, islands: u.pulls.spans}); ok {
+						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans}); ok {
 							u.pulls.squareX = x
 						}
 						u.applyPulls(u.pulls.layout(gtx, u.theme))
@@ -568,7 +608,7 @@ func (u *window) island(gtx C, v stageView) error {
 	gtx.Constraints.Min = size
 	r := gtx.Dp(ui.RadiusLG)
 	nw := r
-	if _, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.tabs, active: v.project}); ok {
+	if _, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive}); ok {
 		nw = 0
 	}
 	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
@@ -585,11 +625,15 @@ func (u *window) island(gtx C, v stageView) error {
 	case v.home:
 		homeView(gtx, u.theme.On(fill), &u.homeOpen)
 		return nil
+	case v.hasLayout:
+		return u.layoutIsland(gtx, v)
 	case !v.hasActive:
 		emptySessionsView(gtx, u.theme.On(fill), &u.emptyNew, u.model.newSessionKind() == "shell")
 		return nil
 	}
-	if err := u.content(gtx, v.active); err != nil {
+	u.layoutStage.metric = gtx.Metric
+	u.terms.onScreen(v.active.ID)
+	if err := u.content(gtx, v.active, u.terminalTakesKeys(gtx)); err != nil {
 		return err
 	}
 	if e, ok := u.terms.exitOf(v.active.ID); ok {
@@ -601,6 +645,7 @@ func (u *window) island(gtx C, v stageView) error {
 			u.closeSession(v.active.ID)
 		}
 	}
+	u.paneDropZones(gtx, v.active.ID, image.Rectangle{Max: size}, image.Rectangle{Max: size}.Add(u.islandAt), true)
 	if u.terms.has(v.active.ID) {
 		u.drop.setRect(image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
 		if u.drop.hinting() || *flagDropHint {
@@ -613,17 +658,20 @@ func (u *window) island(gtx C, v stageView) error {
 // islandColor is the terminal's own background while it is on the island,
 // else the theme's.
 func (u *window) islandColor(v stageView) color.NRGBA {
-	if v.home || !v.hasActive || u.terms.background.A == 0 {
+	if v.home || !v.hasActive || v.hasLayout {
 		return u.theme.Background
 	}
-	return u.terms.background
+	if bg := u.terms.backgroundOf(v.active.ID); bg.A != 0 {
+		return bg
+	}
+	return u.theme.Background
 }
 
 func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	width, name := u.sidebar.column(gtx)
 	f := topbarFrame{
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
-		tabs: v.tabs, active: v.project, pending: u.model.notifications(),
+		tabs: v.strip, active: v.stripActive, pending: u.model.notifications(),
 	}
 	// Settings is no project's screen, so no tab merges into it.
 	if u.settings.open {
@@ -723,32 +771,10 @@ func (u *window) lostNotice(gtx C) D {
 	})
 }
 
-func (u *window) content(gtx C, active sessionView) error {
-	resume, ok := "", u.terms.has(active.ID)
-	if !ok {
-		resume, ok = u.gate.release(u.ctx, active)
-	}
-	if !ok {
-		return nil
-	}
-	t, err := u.terms.show(u.ctx, gtx, active, resume)
-	if err != nil {
-		return err
-	}
-	err = u.terms.layout(gtx, t, u.terminalTakesKeys(gtx))
-	// A reconnect frees every terminal off the frame goroutine; one shown
-	// since is replaced on the next frame, which the window must survive.
-	if errors.Is(err, gioterm.ErrClosed) {
-		gtx.Execute(op.InvalidateCmd{})
-		return nil
-	}
-	return err
-}
-
 // terminalTakesKeys is whether the terminal on screen takes the keyboard back
 // this frame: not while a field or a dialog over it is typing.
 func (u *window) terminalTakesKeys(gtx C) bool {
-	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx)
+	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx) || u.topbar.holdsKeys()
 	return !typing && !u.palette.open && !u.worktree.open
 }
 

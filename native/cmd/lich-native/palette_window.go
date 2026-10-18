@@ -149,14 +149,19 @@ func (u *window) paletteFrame(gtx C, p *commandPalette) paletteView {
 func (u *window) runPaletteRow(r paletteRow) {
 	p := u.palette
 	switch r.kind {
-	case rowSession:
+	case rowSession, rowMessage:
+		id, projectID := r.session.sessionID, r.session.projectID
+		if r.kind == rowMessage {
+			id, projectID = r.message.sessionID, r.message.projectID
+		}
+		beside := p.beside
 		p.hide()
 		u.settings.hide()
-		u.openSession(r.session.projectID, r.session.sessionID)
-	case rowMessage:
-		p.hide()
-		u.settings.hide()
-		u.openSession(r.message.projectID, r.message.sessionID)
+		if beside != nil {
+			u.besidePicked(*beside, id)
+			return
+		}
+		u.openSession(projectID, id)
 	case rowProject:
 		p.hide()
 		u.settings.hide()

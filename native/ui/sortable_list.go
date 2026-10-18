@@ -38,6 +38,12 @@ type SortList struct {
 	// withinList. Without it the item goes wherever the pointer takes it
 	// along the axis, out to a SortCarry target.
 	Within bool
+	// Leaves lets an item the pointer carries out across the list's side
+	// leave it: the item goes back to its slot and the others stop making
+	// room, the caller drawing what follows the pointer out there. Let go
+	// there, it lands on a SortCarry target or nowhere. Without Leaves the
+	// item stays on the list's axis.
+	Leaves bool
 }
 
 // sortList is the geometry List laid out last frame, which Over reads before
@@ -52,6 +58,9 @@ type sortList struct {
 	horizontal    bool
 	press         f32.Point
 	slots         map[string]*sortSlot
+	// away is the item in the air carried out across the list's side this
+	// frame, which then makes room nowhere.
+	away bool
 }
 
 // sortSlot is an item's offset from its slot, animated, and where it was
@@ -74,9 +83,17 @@ func (s *Sortable) List(gtx C, l SortList, ids []string, item func(gtx C, i int)
 	calls, cross := s.measure(gtx, l, ids, item)
 	a := slices.Index(ids, s.active)
 	size := s.list.size(cross)
+	s.list.away = l.Leaves && a >= 0 && !s.keyboard && s.list.pastSide(s, size)
 	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 	if !s.Disabled {
 		event.Op(gtx.Ops, &s.list)
+	}
+	if s.list.away {
+		for j := range ids {
+			s.place(gtx, j, s.offset(gtx, j, -1), calls[j])
+		}
+		s.prune(ids)
+		return D{Size: size}
 	}
 	for j := range ids {
 		if j != a {
@@ -88,6 +105,16 @@ func (s *Sortable) List(gtx C, l SortList, ids []string, item func(gtx C, i int)
 	}
 	s.prune(ids)
 	return D{Size: size}
+}
+
+// pastSide reports whether the pointer carrying the item in the air is
+// beyond the list's sides, across its axis.
+func (g *sortList) pastSide(s *Sortable, size image.Point) bool {
+	at := s.press.Add(s.delta)
+	if g.horizontal {
+		return at.Y < 0 || at.Y > float32(size.Y)
+	}
+	return at.X < 0 || at.X > float32(size.X)
 }
 
 // listPress keeps where the last press landed in the list, which the hang
@@ -270,7 +297,7 @@ func (g *sortList) over(s *Sortable, a int) int {
 		}
 		return a
 	}
-	if s.Carry != nil && s.Carry.Over() != "" {
+	if g.away || s.Carry != nil && s.Carry.Over() != "" {
 		return a
 	}
 	center := g.tops[a] + g.heights[a]/2 + g.dy(s, a)
@@ -315,7 +342,9 @@ func (g *sortList) target(s *Sortable, j, a int) int {
 type SortCarry struct {
 	targets  map[string]*carryTarget
 	carrying string
-	latest   time.Time
+	// source is the Sortable the item in the air was picked up from.
+	source *Sortable
+	latest time.Time
 }
 
 // carryTarget is a target's event tag; laid is the frame it was last laid
@@ -328,6 +357,24 @@ type carryTarget struct {
 // Carrying is the item in the air from any Sortable sharing c, "" when none
 // is, for a target to decide whether it takes it.
 func (c *SortCarry) Carrying() string { return c.carrying }
+
+// Release drops the item in the air as if let go over nothing, for a drag
+// whose own Sortable is no longer laid out to hear the pointer go up; that
+// Sortable lets the item go when it is next updated.
+func (c *SortCarry) Release() { c.carrying, c.source = "", nil }
+
+// Hold keeps the drag's source alive for a frame in which the list it was
+// picked up from may not be laid out, as when the screen under the drag
+// changed: Gio forgets a handler nobody asked about in a frame, and a drag
+// whose source it forgot brings the window down. Call it every frame.
+func (c *SortCarry) Hold(gtx C) {
+	if c.carrying == "" || c.source == nil {
+		return
+	}
+	if t := c.source.targets[c.carrying]; t != nil {
+		c.source.hover(gtx, t)
+	}
+}
 
 // Over is the target under the pointer while an item is carried, "" for
 // none: the header that would draw as the drop target.

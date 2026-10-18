@@ -49,8 +49,10 @@ type topbar struct {
 	brand widget.Clickable
 	sort  ui.Sortable
 	list  layout.List
-	// tabW is the tabs' width as the strip last laid them out.
+	// tabW is the tabs' width as the strip last laid them out, and laid
+	// where each tab was drawn, in window pixels.
 	tabW int
+	laid []laidTab
 	// merge eases the active tab between detached and merged into merged,
 	// the island it last grew out of; mergedFor is the tab it eases.
 	merge     dockSlide
@@ -86,7 +88,12 @@ type topbarAction struct {
 	settings        bool
 	projectSettings string
 	pulls           bool // the Pull requests button
+	// renamed is a layout tab's new name, committed this frame.
+	renamed layoutRename
 }
+
+// layoutRename is a layout's new name.
+type layoutRename struct{ id, name string }
 
 // topbarFrame is what the window measured for the strip this frame.
 type topbarFrame struct {

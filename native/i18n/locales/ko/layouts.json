@@ -1,0 +1,34 @@
+{
+  "tab": {
+    "rename": "레이아웃 이름 바꾸기",
+    "close": "레이아웃 닫기"
+  },
+  "pane": {
+    "zoom": "이 창 확대",
+    "unsplit": "레이아웃에서 빼기",
+    "hidden": {
+      "other": "{count}개 더"
+    },
+    "hiddenWaiting": {
+      "other": "{count}개 더 · {waiting}개 대기 중"
+    }
+  },
+  "split": {
+    "noRoom": "여기에는 창을 하나 더 놓을 공간이 없습니다. 창을 넓히거나 먼저 창 하나를 빼세요."
+  },
+  "move": {
+    "title": "{label}을(를) 여기로 옮길까요?",
+    "body": "{label}은(는) {layout} 레이아웃에 있습니다. 옮기면 그곳에서 빠지며, 세션은 계속 실행됩니다.",
+    "confirm": "옮기기"
+  },
+  "load": {
+    "failed": "저장된 레이아웃을 읽을 수 없습니다: {error}"
+  },
+  "drop": {
+    "left": "왼쪽으로 분할",
+    "right": "오른쪽으로 분할",
+    "top": "위로 분할",
+    "bottom": "아래로 분할",
+    "swap": "바꾸기"
+  }
+}

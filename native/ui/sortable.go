@@ -84,10 +84,15 @@ type sortTarget struct {
 func (s *Sortable) Update(gtx C) (SortDrop, bool) {
 	if s.Carry != nil {
 		s.Carry.hover(gtx)
+		if s.active != "" && !s.keyboard && s.Carry.carrying == "" {
+			s.end()
+		}
 	}
 	s.order, s.laying = s.laying, s.order[:0]
 	for id := range s.targets {
-		if !slices.Contains(s.order, id) {
+		// The item in the air keeps its target while it is not laid out,
+		// for SortCarry.Hold to keep the drag's source alive.
+		if !slices.Contains(s.order, id) && id != s.active {
 			delete(s.targets, id)
 		}
 	}
@@ -324,7 +329,7 @@ func (s *Sortable) pointer(gtx C, t *sortTarget, e pointer.Event) {
 		if s.active == "" && s.delta.X*s.delta.X+s.delta.Y*s.delta.Y >= travel*travel {
 			s.active, s.keyboard = t.id, false
 			if s.Carry != nil {
-				s.Carry.carrying = t.id
+				s.Carry.carrying, s.Carry.source = t.id, s
 			}
 		}
 	case pointer.Release:
@@ -385,7 +390,7 @@ func (s *Sortable) finish(over string, carried bool) {
 
 func (s *Sortable) end() {
 	if s.Carry != nil && s.active != "" && s.Carry.carrying == s.active {
-		s.Carry.carrying = ""
+		s.Carry.carrying, s.Carry.source = "", nil
 	}
 	s.active, s.keyboard, s.kbOver, s.pressed = "", false, "", ""
 }
