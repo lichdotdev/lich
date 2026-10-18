@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The native window on Linux no longer crashes with an illegal instruction when a terminal opens on a CPU without AVX-512.
+
 ## [0.71.0] - 2026-10-17
 
 ### Added

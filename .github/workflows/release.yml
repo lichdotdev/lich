@@ -58,7 +58,7 @@ jobs:
           path: |
             ~/libghostty-vt
             ~/libghostty-vt-windows
-          key: libghostty-vt-release-ubuntu-22.04-${{ steps.ghostty.outputs.commit }}
+          key: libghostty-vt-release-ubuntu-22.04-baseline-${{ steps.ghostty.outputs.commit }}
 
       - name: Build libghostty-vt
         run: |
@@ -67,7 +67,9 @@ jobs:
             git init -q "$src"
             git -C "$src" fetch -q --depth 1 https://github.com/ghostty-org/ghostty "${{ steps.ghostty.outputs.commit }}"
             git -C "$src" checkout -q FETCH_HEAD
-            (cd "$src" && zig build -Demit-lib-vt -Doptimize=ReleaseFast --prefix ~/libghostty-vt)
+            # Without a target zig builds for the runner's own CPU, and a runner
+            # with AVX-512 ships a window that dies with SIGILL everywhere else.
+            (cd "$src" && zig build -Demit-lib-vt -Doptimize=ReleaseFast -Dcpu=baseline --prefix ~/libghostty-vt)
             echo "${{ steps.ghostty.outputs.commit }}" > ~/libghostty-vt/.commit
           fi
 
