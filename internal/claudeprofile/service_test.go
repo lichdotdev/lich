@@ -145,6 +145,37 @@ func TestLoginLogsTheProfileInAndInstallsLich(t *testing.T) {
 	}
 }
 
+func TestLoginReportsAllOutputBeforeItIsDone(t *testing.T) {
+	machine(t)
+	t.Setenv(fakeClaudeGuard, "1")
+	t.Setenv("CLAUDE_CODE_OAUTH_TOKEN", "personal-token")
+	rec := newRecorder()
+	slowEmit := func(name string, data any) {
+		if e, ok := data.(LoginEvent); ok && !e.Done {
+			time.Sleep(100 * time.Millisecond)
+		}
+		rec.emit(name, data)
+	}
+	s := New(fakeBins{}, slowEmit)
+	p, err := s.CreateProfile("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Login(p.Slug); err != nil {
+		t.Fatal(err)
+	}
+	rec.wait(t)
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	last := rec.events[len(rec.events)-1]
+	if !last.Done {
+		t.Errorf("an event came after the last one: %+v", rec.events)
+	}
+	if len(rec.events) < 2 {
+		t.Errorf("the login was done before its output arrived: %+v", rec.events)
+	}
+}
+
 func TestCancelledLoginSaysSo(t *testing.T) {
 	machine(t)
 	s, rec := fakeService(t)

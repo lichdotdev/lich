@@ -73,10 +73,15 @@ func (s *Service) Login(slug string) error {
 	}
 	run := &login{cancel: cancel, stdin: stdin}
 	s.logins[slug] = run
-	go s.relayOutput(slug, out)
+	relayed := make(chan struct{})
+	go func() {
+		s.relayOutput(slug, out)
+		close(relayed)
+	}()
 	go func() {
 		err := cmd.Wait()
 		_ = w.Close()
+		<-relayed
 		s.finishLogin(ctx, p, run, err)
 	}()
 	return nil
