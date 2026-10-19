@@ -67,9 +67,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   replacing it; opencode's own "Disable paste summary" command is stored in its state and wins over any config, so
   once used there the switch changes nothing. Codex, Antigravity, Crush and Cursor CLI fold with a constant, no
   setting and no key that unfolds, so they have no switch; oh-my-pi was not measured. The native window also
-  unfolds what it writes as a paste itself (a batch of review comments, a pull request's or an issue's prompt),
-  measured against the session's own terminal; one written into a session whose terminal the window never opened
-  has no height to measure and lands folded. Dropped and attached file paths are never unfolded.
+  unfolds what it writes as a paste itself (a batch of review comments, a pull request's or an issue's prompt,
+  dropped and attached file paths), measured against the session's own terminal; one written into a session whose
+  terminal the window never opened has no height to measure and lands folded. No caller does that today: each
+  writes into the session on screen, or waits for a session it just opened to reach its prompt, which only
+  happens after the window started its terminal.
 - **`LICH_WORKTREE_PORT` is reserved, never held** (`internal/terminal/worktreeport.go`): the number is a name the
   checkout owns, nothing binds it, and anything on the machine can take the port before the dev server starts.
 - **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,

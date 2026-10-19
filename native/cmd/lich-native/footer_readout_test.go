@@ -351,7 +351,7 @@ func attachBackend(t *testing.T, picked lichclient.Attachment, writes *[][]strin
 func TestAttachFilePastesThePickedPathUnsent(t *testing.T) {
 	var writes [][]string
 	c := attachBackend(t, lichclient.Attachment{Path: "/cfg/dropped/b.png", Notice: "copy of b"}, &writes)
-	if err := attachFile(context.Background(), c, "s1", "/repo", true, false); err != nil {
+	if err := attachFile(context.Background(), c, c.Write, "s1", "/repo", true, false); err != nil {
 		t.Fatal(err)
 	}
 	want := [][]string{{"s1", "\x1b[200~/cfg/dropped/b.png\ncopy of b\n\x1b[201~"}}
@@ -363,7 +363,7 @@ func TestAttachFilePastesThePickedPathUnsent(t *testing.T) {
 func TestAttachFileCancelledWritesNothing(t *testing.T) {
 	var writes [][]string
 	c := attachBackend(t, lichclient.Attachment{}, &writes)
-	if err := attachFile(context.Background(), c, "s1", "/repo", true, false); err != nil || len(writes) != 0 {
+	if err := attachFile(context.Background(), c, c.Write, "s1", "/repo", true, false); err != nil || len(writes) != 0 {
 		t.Errorf("cancelled dialog: err %v, writes %q", err, writes)
 	}
 }

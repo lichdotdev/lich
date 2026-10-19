@@ -2,6 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -143,5 +146,27 @@ func TestBatchOfCommentsStaysFoldedWithTheSwitchOff(t *testing.T) {
 	ts.injector("s")(batch)
 	if got := injectedWrite(t, b); got != batch {
 		t.Errorf("wrote %q, want the batch once", got)
+	}
+}
+
+// Dropping enough files writes a paste Claude Code would fold, and it lands
+// unfolded the same as any other.
+func TestDropOfManyFilesUnfoldsInClaudeCode(t *testing.T) {
+	u, b := newGateWindow(t)
+	b.answer["store.GetSetting"] = "true"
+	u.terms = claudeTerminals(t, b)
+	dir := t.TempDir()
+	var paths []string
+	for i := range 12 {
+		path := filepath.Join(dir, strings.Repeat("a-file-with-a-long-name-", 3)+strconv.Itoa(i))
+		if err := os.WriteFile(path, nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		paths = append(paths, path)
+	}
+	u.dropFiles(dropTarget{sessionID: "s", checkout: dir}, paths)
+	paste := composeDroppedPaths(paths, false, nil)
+	if got := injectedWrite(t, b); got != paste+paste {
+		t.Errorf("wrote %q, want the drop twice", got)
 	}
 }

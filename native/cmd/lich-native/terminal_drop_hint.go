@@ -97,5 +97,5 @@ func (u *window) dropFiles(target dropTarget, paths []string) {
 	if paste == "" {
 		return
 	}
-	u.logErr("drop files", u.client.Write(u.ctx, target.sessionID, paste))
+	u.logErr("drop files", u.terms.writePaste(u.ctx, target.sessionID, paste))
 }
