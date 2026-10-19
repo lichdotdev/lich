@@ -90,7 +90,7 @@ func (p *reviewPanel) fileList(gtx C, th *ui.Theme) {
 	if squeezed {
 		count++
 	}
-	th.ScrollArea(&p.list).Layout(gtx, count, func(gtx C, i int) D {
+	p.scrollArea(gtx, th, count, func(gtx C, i int) D {
 		if squeezed {
 			if i == 0 {
 				return p.squeezedNote(gtx, th)

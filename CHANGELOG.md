@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lich quit` no longer fails with "EOF" when lich quits before answering: it waits for the port to close instead of calling the lost reply a refusal.
 - On Wayland, the native window shows the desktop's own cursor, in its theme and size, where it could show another theme. On a monitor with a smaller scale than the largest one, the cursor no longer jumps as it enters the window.
 - On Linux, the native window groups under lich's own icon in the dock, where it showed up as a separate app with a generic icon.
+- In the native window's Review and a pull request's Files, the scrollbar keeps its size as you scroll, where it grew and shrank with whichever file filled the view. Dragging it now moves through the diff evenly, not file by file.
 
 ## [0.71.2] - 2026-10-19
 
