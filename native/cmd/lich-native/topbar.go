@@ -142,7 +142,7 @@ func (t *topbar) layout(gtx C, th *ui.Theme, f topbarFrame) topbarAction {
 	right := t.rightSide(gtx, th, f, &act)
 	left := t.leftSide(gtx, th, f, &act)
 	f.brandWidth = max(f.brandWidth-left, gtx.Dp(brandHeight))
-	start := max(f.stripX, g+left+f.brandWidth+gtx.Dp(barGap))
+	start := stripStart(f.stripX, g+left+f.brandWidth+gtx.Dp(barGap), gtx.Dp(tabRadius))
 	t.shift, f.stripX = start-f.stripX, start
 	t.place(gtx, image.Pt(g+left, 0), func(gtx C) D { return t.brandButton(gtx, th, f) })
 	stripW := gtx.Constraints.Max.X - right - g - gtx.Dp(barGap) - f.stripX
@@ -151,6 +151,16 @@ func (t *topbar) layout(gtx C, th *ui.Theme, f topbarFrame) topbarAction {
 		return t.strip(gtx, th, f, &act)
 	})
 	return act
+}
+
+// stripStart is where the tab strip starts: at the island's edge, or, when
+// the window's own buttons and the brand reach past it, a fillet radius after
+// them, the room the active first tab's left fillet draws in.
+func stripStart(islandEdge, brandEnd, radius int) int {
+	if brandEnd <= islandEdge {
+		return islandEdge
+	}
+	return brandEnd + radius
 }
 
 // place lays w out at p.

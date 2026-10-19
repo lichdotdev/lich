@@ -96,3 +96,16 @@ func TestSettingsButtonOpensOnGlobalAfterAProjectScope(t *testing.T) {
 		t.Errorf("the settings button opened on scope %q (open %v), want Global", u.settings.scope, u.settings.open)
 	}
 }
+
+// Past the window's own buttons, the strip leaves the active first tab's
+// left fillet a radius of room after the brand, where it would otherwise be
+// cut off at the strip's edge.
+func TestStripStartLeavesTheFilletRoom(t *testing.T) {
+	const island, radius = 44, 8
+	if got := stripStart(island, 40, radius); got != island {
+		t.Errorf("brand short of the island: start %d, want the island's edge %d", got, island)
+	}
+	if got := stripStart(island, 120, radius); got != 120+radius {
+		t.Errorf("brand past the island: start %d, want %d", got, 120+radius)
+	}
+}

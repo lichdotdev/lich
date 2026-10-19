@@ -111,7 +111,13 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 		ids[i] = tab.ID
 	}
 	size := gtx.Constraints.Max
-	clipped := clip.Rect{Max: size}.Push(gtx.Ops)
+	// A strip pushed past the island's edge reaches left over the room
+	// stripStart left, where the active first tab's left fillet draws.
+	var filletRoom int
+	if t.shift > 0 {
+		filletRoom = gtx.Dp(tabRadius)
+	}
+	clipped := clip.Rect{Min: image.Pt(-filletRoom, 0), Max: size}.Push(gtx.Ops)
 	tabs := t.list.Layout(gtx, 1, func(gtx C, _ int) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
