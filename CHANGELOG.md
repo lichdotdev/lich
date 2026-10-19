@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The native window opens again on Windows and macOS, where it closed right
+  away looking for fontconfig to draw the code and diff views.
+
 ## [0.71.1] - 2026-10-18
 
 ### Fixed

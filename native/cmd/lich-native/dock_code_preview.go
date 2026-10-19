@@ -264,7 +264,7 @@ func (p *preview) setFont(family string, size unit.Sp) error {
 	if family == p.family && size == p.size {
 		return nil
 	}
-	view, err := godemirror.New(family, size)
+	view, err := newCodeView(family, size)
 	if err != nil {
 		return err
 	}

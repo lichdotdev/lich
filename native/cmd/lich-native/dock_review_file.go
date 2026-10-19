@@ -280,7 +280,7 @@ func (c *fileCard) ensureView(p *reviewPanel) *godemirror.DiffView {
 	if c.git.status != statusRenamed && p.pr == nil {
 		opts.Revert = func(ch godemirror.Chunk) { p.revert(c.git.path, lichdiff.RevertLines(ch)) }
 	}
-	view, err := godemirror.NewDiffView(p.family, p.size, opts)
+	view, err := newDiffView(p.family, p.size, opts)
 	if err != nil {
 		c.viewFail = true
 		log.Printf("review %s: %v", c.git.path, err)

@@ -100,8 +100,8 @@ jobs:
           fi
 
   # The Windows window is cross-built from Linux with Zig as cgo's toolchain
-  # (native/build-windows.sh); this proves it still links. Running it is left
-  # to a real Windows machine.
+  # (native/build-windows.sh), and so are its tests and the backend; the
+  # windows job below runs them on a real Windows machine.
   windows-build:
     runs-on: ubuntu-latest
     defaults:
@@ -132,7 +132,89 @@ jobs:
           key: libghostty-vt-windows-${{ steps.ghostty.outputs.commit }}
 
       - name: Build lich-native.exe
-        run: LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" ./build-windows.sh "$RUNNER_TEMP/lich-native.exe"
+        run: LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
+
+      # One test binary per package, at the package's own path, so the windows
+      # job runs each from its package directory the way go test does. The
+      # toolchain is build-windows.sh's.
+      - name: Build the tests for Windows
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: "1"
+          CC: zig cc -target x86_64-windows-gnu
+          CXX: zig c++ -target x86_64-windows-gnu
+          CGO_LDFLAGS_ALLOW: '.*\.lib'
+        run: |
+          export PKG_CONFIG_PATH="$HOME/libghostty-vt-windows/share/pkgconfig"
+          for dir in $(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.Dir}}{{end}}' ./...); do
+            rel="${dir#"$PWD"/}"
+            go test -c -o "$RUNNER_TEMP/out/tests/$rel/pkg.test.exe" "./$rel"
+          done
+
+      # The native window reads nothing from the embedded frontend, so an empty
+      # dist is enough for go:embed.
+      - name: Build lich.exe
+        working-directory: .
+        run: |
+          mkdir -p frontend/dist
+          touch frontend/dist/index.html
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o "$RUNNER_TEMP/out/lich.exe" .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-windows-build
+          path: ${{ runner.temp }}/out
+          retention-days: 1
+
+  # Runs on Windows what windows-build made there: the native tests, then the
+  # window itself once against a real backend, which has to come up and draw.
+  windows:
+    needs: windows-build
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-windows-build
+          path: ${{ runner.temp }}/out
+
+      # Like the Linux job, a render test that skips for want of a GPU fails
+      # the job: Windows always has one, WARP's software one at least.
+      - name: go test
+        working-directory: native
+        run: |
+          out="$(cygpath -u "$RUNNER_TEMP")/out"
+          status=0
+          for exe in $(cd "$out/tests" && find . -name pkg.test.exe); do
+            rel="$(dirname "$exe")"
+            echo "### $rel" >> test.log
+            (cd "$rel" && "$out/tests/$exe" -test.v) >> test.log 2>&1 || status=1
+          done
+          [ "$status" = 0 ] || { cat test.log; exit 1; }
+          grep -E '^(### |--- FAIL|--- SKIP|PASS|FAIL)' test.log
+          if grep -q 'no headless GPU' test.log; then
+            echo "::error::render tests skipped: no headless GPU"
+            grep -B1 'no headless GPU' test.log
+            exit 1
+          fi
+
+      - name: Run the window against the backend
+        run: |
+          out="$(cygpath -u "$RUNNER_TEMP")/out"
+          bash .github/scripts/win-native-smoke.sh "$out/lich.exe" "$out/lich-native.exe"
+
+      - name: Upload what the window drew
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lich-native-windows
+          path: ${{ runner.temp }}/diag
+          if-no-files-found: ignore
 
   # Gio's Cocoa and Metal need Apple's SDK, so the macOS window builds on a Mac
   # and nowhere else. Apple Silicon only on a PR: release.yml builds Intel too.

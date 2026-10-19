@@ -77,7 +77,7 @@ type codeTab struct {
 }
 
 func newCodeTab(client *lichclient.Client, invalidate func(), family string, size unit.Sp, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
-	view, err := godemirror.New(family, size)
+	view, err := newCodeView(family, size)
 	if err != nil {
 		return nil, err
 	}
