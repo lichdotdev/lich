@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `lich quit` no longer fails with "EOF" when lich quits before answering: it waits for the port to close instead of calling the lost reply a refusal.
+- On Wayland, the native window shows the desktop's own cursor, in its theme and size, where it could show another theme. On a monitor with a smaller scale than the largest one, the cursor no longer jumps as it enters the window.
 
 ## [0.71.2] - 2026-10-19
 
