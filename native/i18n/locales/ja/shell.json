@@ -186,6 +186,12 @@
     "quitFailed": "lich を終了できませんでした: {error}",
     "countFailed": "実行中のセッション数を取得できませんでした: {error}"
   },
+  "windowControls": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "元に戻す",
+    "close": "閉じる"
+  },
   "reconnect": {
     "reconnecting": "lich に再接続しています…"
   },

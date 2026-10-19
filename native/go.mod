@@ -27,6 +27,7 @@ require (
 
 // lichdotdev/gio, branch drop-event, carries what gioui.org lacks: app.DropEvent
 // (external file drop), Window.Activate (raising the window on Wayland), word
-// deletion with Ctrl off macOS, and Wayland fixes for EGL vsync, clipboard
-// reads, pointer.Leave and the cursor (cursor-shape-v1).
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261019145824-c389a6eb0b04
+// deletion with Ctrl off macOS, Wayland fixes for EGL vsync, clipboard reads,
+// pointer.Leave and the cursor (cursor-shape-v1), and an undecorated window
+// that moves, resizes and maximizes on Wayland and X11.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261019191456-c03974435341

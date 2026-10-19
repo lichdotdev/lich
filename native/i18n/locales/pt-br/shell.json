@@ -186,6 +186,12 @@
     "quitFailed": "Não foi possível encerrar o lich: {error}",
     "countFailed": "Não foi possível contar as sessões em execução: {error}"
   },
+  "windowControls": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "restore": "Restaurar",
+    "close": "Fechar"
+  },
   "reconnect": {
     "reconnecting": "Reconectando ao lich…"
   },

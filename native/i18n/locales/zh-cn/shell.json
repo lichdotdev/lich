@@ -186,6 +186,12 @@
     "quitFailed": "无法退出 lich：{error}",
     "countFailed": "无法统计运行中的会话：{error}"
   },
+  "windowControls": {
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "restore": "还原",
+    "close": "关闭"
+  },
   "reconnect": {
     "reconnecting": "正在重新连接 lich…"
   },

@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/font"
+	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -111,7 +112,7 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 	}
 	size := gtx.Constraints.Max
 	clipped := clip.Rect{Max: size}.Push(gtx.Ops)
-	t.list.Layout(gtx, 1, func(gtx C, _ int) D {
+	tabs := t.list.Layout(gtx, 1, func(gtx C, _ int) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: tabTop}.Layout(gtx, func(gtx C) D {
@@ -128,6 +129,13 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 		)
 	})
 	t.fillets(gtx, f, w)
+	if f.chrome.drawn() {
+		// The strip's empty run drags the window, and a double click on it
+		// maximizes, as a title bar does.
+		area := clip.Rect{Min: image.Pt(tabs.Size.X, 0), Max: size}.Push(gtx.Ops)
+		system.ActionInputOp(system.ActionMove).Add(gtx.Ops)
+		area.Pop()
+	}
 	clipped.Pop()
 	return D{Size: size}
 }
@@ -371,7 +379,7 @@ func (t *topbar) mergeSpan(gtx C, f topbarFrame) (islandSpan, bool) {
 		return islandSpan{}, false
 	}
 	if len(f.islands) == 0 {
-		return islandSpan{x1: math.MaxInt, color: f.island}, true
+		return islandSpan{x0: -t.shift, x1: math.MaxInt, color: f.island}, true
 	}
 	r := gtx.Dp(tabRadius)
 	left := at*t.tabW - t.list.Position.Offset
@@ -426,6 +434,7 @@ func (t *topbar) hoverSquare(f topbarFrame) (x0 int, ok bool) {
 	if st == nil || !(st.click.Hovered() || st.close.Hovered()) {
 		return 0, false
 	}
+	x0 = -t.shift
 	if len(f.islands) > 0 {
 		x0 = f.islands[0].x0
 	}

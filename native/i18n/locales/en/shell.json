@@ -186,6 +186,12 @@
     "quitFailed": "Could not quit lich: {error}",
     "countFailed": "Could not count the running sessions: {error}"
   },
+  "windowControls": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
+  },
   "reconnect": {
     "reconnecting": "Reconnecting to lich…"
   },

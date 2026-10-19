@@ -9,6 +9,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -65,6 +66,11 @@ type topbar struct {
 	settings  widget.Clickable
 	pulls     widget.Clickable
 	confirm   closeConfirm
+	controls  captionControls
+	// shift is how far right of the terminal island's edge the strip starts:
+	// past the window's own buttons on the left when the sidebar is too
+	// narrow to hold them and the brand.
+	shift int
 }
 
 func newTopbar(root *ui.Root) *topbar {
@@ -90,6 +96,9 @@ type topbarAction struct {
 	pulls           bool // the Pull requests button
 	// renamed is a layout tab's new name, committed this frame.
 	renamed layoutRename
+	// caption is a window button clicked, when captionClicked.
+	caption        captionButton
+	captionClicked bool
 }
 
 // layoutRename is a layout's new name.
@@ -110,6 +119,8 @@ type topbarFrame struct {
 	pending  []notification
 	settings bool // the Settings screen is open
 	pulls    bool // the Pulls screen is open
+	caption  captionLayout
+	chrome   windowChrome
 }
 
 // islandSpan is one island under the tab strip: its left and right edges in
@@ -129,7 +140,11 @@ func (t *topbar) layout(gtx C, th *ui.Theme, f topbarFrame) topbarAction {
 	}
 	g := gtx.Dp(gutter)
 	right := t.rightSide(gtx, th, f, &act)
-	t.place(gtx, image.Pt(g, 0), func(gtx C) D { return t.brandButton(gtx, th, f) })
+	left := t.leftSide(gtx, th, f, &act)
+	f.brandWidth = max(f.brandWidth-left, gtx.Dp(brandHeight))
+	start := max(f.stripX, g+left+f.brandWidth+gtx.Dp(barGap))
+	t.shift, f.stripX = start-f.stripX, start
+	t.place(gtx, image.Pt(g+left, 0), func(gtx C) D { return t.brandButton(gtx, th, f) })
 	stripW := gtx.Constraints.Max.X - right - g - gtx.Dp(barGap) - f.stripX
 	t.place(gtx, image.Pt(f.stripX, 0), func(gtx C) D {
 		gtx.Constraints = layout.Exact(image.Pt(max(stripW, 0), gtx.Constraints.Max.Y))
@@ -150,18 +165,68 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 	macro := op.Record(gtx.Ops)
 	row := gtx
 	row.Constraints.Min = image.Point{}
-	d := layout.Flex{Alignment: layout.Middle}.Layout(row,
+	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return t.bellButton(gtx, th, f.pending, act) }),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.pullsButton(gtx, th, f.pulls, act) }),
 		ui.Gap(1),
 		layout.Rigid(func(gtx C) D { return t.settingsButton(gtx, th, f.settings, act) }),
-	)
+	}
+	pad := gtx.Dp(gutter)
+	if f.chrome.drawn() && len(f.caption.right) > 0 {
+		children = append(children,
+			layout.Rigid(func(gtx C) D { return captionDivider(gtx, th) }),
+			layout.Rigid(func(gtx C) D { return t.captionButtons(gtx, th, f, f.caption.right, act) }))
+		// Windows' buttons sit in the window's corner, as its own do.
+		if f.caption.style == captionStyleWindows {
+			pad = 0
+		}
+	}
+	d := layout.Flex{Alignment: layout.Middle}.Layout(row, children...)
 	call := macro.Stop()
-	x := gtx.Constraints.Max.X - gtx.Dp(gutter) - d.Size.X
+	x := gtx.Constraints.Max.X - pad - d.Size.X
 	defer op.Offset(image.Pt(x, (gtx.Constraints.Max.Y-d.Size.Y)/2)).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 	return d.Size.X
+}
+
+// leftSide draws the window's buttons the desktop puts on the left, or
+// leaves room for the system's own, and answers how wide that is.
+func (t *topbar) leftSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) int {
+	if !f.chrome.drawn() {
+		return 0
+	}
+	if len(f.caption.left) == 0 {
+		return gtx.Dp(f.caption.leftReserve)
+	}
+	macro := op.Record(gtx.Ops)
+	row := gtx
+	row.Constraints.Min = image.Point{}
+	d := layout.Flex{Alignment: layout.Middle}.Layout(row,
+		layout.Rigid(func(gtx C) D { return t.captionButtons(gtx, th, f, f.caption.left, act) }),
+		layout.Rigid(func(gtx C) D { return captionDivider(gtx, th) }),
+	)
+	call := macro.Stop()
+	defer op.Offset(image.Pt(gtx.Dp(gutter), (gtx.Constraints.Max.Y-d.Size.Y)/2)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+	return d.Size.X
+}
+
+func (t *topbar) captionButtons(gtx C, th *ui.Theme, f topbarFrame, buttons []captionButton, act *topbarAction) D {
+	d, b, ok := t.controls.layout(gtx, th, t.root, f.caption.style, buttons, f.chrome)
+	if ok {
+		act.caption, act.captionClicked = b, true
+	}
+	return d
+}
+
+// captionDivider is the rule between lich's own buttons and the window's.
+func captionDivider(gtx C, th *ui.Theme) D {
+	return layout.Inset{Left: gutter, Right: gutter}.Layout(gtx, func(gtx C) D {
+		size := image.Pt(gtx.Dp(unit.Dp(1)), gtx.Dp(captionSeparator))
+		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
+		return D{Size: size}
+	})
 }
 
 // brandButton is the mark and the name over the sidebar's column, a

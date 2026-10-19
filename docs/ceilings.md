@@ -1280,6 +1280,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Every window started either way prints into `lich-native.log` beside `lich.log`, where an event loop stuck on
   one event for 3s or more is reported with every goroutine's stack (`native/cmd/lich-native/stall.go`); a
   stall inside `w.Event()` itself, in Gio's own dispatch, looks like an idle window and is not reported.
+- **The native window draws its own title bar, and a few desktops keep theirs**
+  (`native/cmd/lich-native/caption*.go`, the Gio fork's `app/caption_unix.go` and `app/os_x11_caption.go`):
+  the topbar is the title bar, with the window's buttons drawn by lich in each desktop's look (Windows 11,
+  GNOME's round buttons on the side and in the order of `button-layout`, Breeze under Plasma) and macOS's own
+  traffic lights in a 78dp reserve. A desktop that decorates its windows itself keeps its bar and lich draws no
+  buttons: on Wayland, a compositor that answers the request for client-side decorations with server-side
+  (KWin was measured granting client-side; what Hyprland, sway and niri answer was not measured); on X11, a window manager whose `_NET_WM_NAME` is on the fork's
+  tiling list (`tilingWMs`), so a tiling window manager missing from it gets buttons it cannot use. Under
+  Plasma the buttons are always Breeze's, whatever decoration theme is set. `button-layout` is read once, at
+  start, and only GNOME's portal key. On X11 the window has square corners and no shadow (Gio's surface has
+  no alpha), and a WM with no `_NET_WM_MOVERESIZE` cannot move it. Windows 11's Snap Layouts flyout does not
+  open over Maximize (it needs `HTMAXBUTTON` from the fork's hit test). On macOS the traffic lights sit where
+  AppKit puts them in its 28pt title bar, not centered on the 44dp topbar, and a double click on the empty
+  strip does not zoom; neither was looked at on a Mac. The web window keeps the system's title bar.
 - **The native window finds fonts through fontconfig on Linux and by scanning the font folders on Windows and
   macOS** (`native/fonts/locate_fontconfig.go`, `native/fonts/locate_fontscan.go`): neither ships fontconfig,
   and a window that shelled out to `fc-match` there closed at launch. The scan (go-text's fontscan) marks a

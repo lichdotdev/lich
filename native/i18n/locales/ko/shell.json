@@ -185,6 +185,12 @@
     "quitFailed": "lich를 종료할 수 없습니다: {error}",
     "countFailed": "실행 중인 세션 수를 셀 수 없습니다: {error}"
   },
+  "windowControls": {
+    "minimize": "최소화",
+    "maximize": "최대화",
+    "restore": "이전 크기로 복원",
+    "close": "닫기"
+  },
   "reconnect": {
     "reconnecting": "lich에 다시 연결하는 중…"
   },

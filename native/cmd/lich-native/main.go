@@ -71,7 +71,7 @@ func main() {
 	go func() {
 		width, height := windowSize(*flagWindow)
 		w := new(app.Window)
-		w.Option(app.Title("lich (native slice)"), app.Size(width, height))
+		w.Option(app.Title("lich (native slice)"), app.Size(width, height), app.Decorated(false))
 		code := 0
 		if err := run(w, rt); err != nil {
 			log.Print(err)
@@ -117,6 +117,10 @@ type window struct {
 	// duplicates holds the warnings about a conversation resumed in two
 	// cards, in the bottom-right corner, apart from every other toast.
 	duplicates ui.Toaster
+	// caption is where the topbar draws the window's buttons, chrome what
+	// the window manager last said about the window.
+	caption captionLayout
+	chrome  windowChrome
 	// shortcuts is the keyboard shortcuts overlay.
 	shortcuts shortcutsOverlay
 	// palette is the command palette.
@@ -195,7 +199,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	u := &window{
-		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom,
+		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, caption: platformCaption(),
 		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
 		model: newModel(client, w.Invalidate),
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
@@ -301,6 +305,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		case app.DestroyEvent:
 			return e.Err
 		case app.ConfigEvent:
+			u.chrome = chromeOf(e.Config)
 			u.model.setFocused(u.ctx, e.Config.Focused)
 			u.toaster.SetHidden(!e.Config.Focused)
 		case *app.ClosingEvent:
@@ -687,6 +692,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	f := topbarFrame{
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
 		tabs: v.strip, active: v.stripActive, pending: u.model.notifications(),
+		caption: u.caption, chrome: u.chrome,
 	}
 	// Settings is no project's screen, so no tab merges into it.
 	if u.settings.open {

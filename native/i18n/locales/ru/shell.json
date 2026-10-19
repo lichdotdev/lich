@@ -200,6 +200,12 @@
     "quitFailed": "Не удалось выйти из lich: {error}",
     "countFailed": "Не удалось подсчитать запущенные сессии: {error}"
   },
+  "windowControls": {
+    "minimize": "Свернуть",
+    "maximize": "Развернуть",
+    "restore": "Восстановить",
+    "close": "Закрыть"
+  },
   "reconnect": {
     "reconnecting": "Переподключение к lich…"
   },

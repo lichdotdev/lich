@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The native window's topbar is now its title bar: the system's bar is gone, and minimize, maximize and close sit beside Settings, drawn the way Windows, GNOME and KDE draw them and on the side your desktop puts them; on macOS the traffic lights sit in the topbar. Drag the empty part of the topbar to move the window, and double-click it to maximize. Tiling window managers keep their own decorations.
+
 ### Fixed
 
 - `lich quit` no longer fails with "EOF" when lich quits before answering: it waits for the port to close instead of calling the lost reply a refusal.
