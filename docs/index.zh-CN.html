@@ -12,6 +12,13 @@
 <meta property="og:url" content="https://lichdotdev.github.io/lich/index.zh-CN.html" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="alternate" hreflang="en" href="https://lichdotdev.github.io/lich/" />
+<link rel="alternate" hreflang="pt-BR" href="https://lichdotdev.github.io/lich/index.pt-BR.html" />
+<link rel="alternate" hreflang="es" href="https://lichdotdev.github.io/lich/index.es.html" />
+<link rel="alternate" hreflang="zh-CN" href="https://lichdotdev.github.io/lich/index.zh-CN.html" />
+<link rel="alternate" hreflang="ja" href="https://lichdotdev.github.io/lich/index.ja.html" />
+<link rel="alternate" hreflang="ko" href="https://lichdotdev.github.io/lich/index.ko.html" />
+<link rel="alternate" hreflang="ru" href="https://lichdotdev.github.io/lich/index.ru.html" />
+<link rel="alternate" hreflang="x-default" href="https://lichdotdev.github.io/lich/" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
@@ -28,15 +35,26 @@
       <a href="#features">功能</a>
       <a href="https://github.com/lichdotdev/lich/blob/main/CHANGELOG.md">更新日志</a>
       <a href="https://github.com/lichdotdev/lich">GitHub</a>
-      <a href="index.html" lang="en">English</a>
     </nav>
+    <details class="lang">
+      <summary lang="zh-CN">简体中文</summary>
+      <div>
+        <a href="index.html" lang="en">English</a>
+        <a href="index.pt-BR.html" lang="pt-BR">Português (Brasil)</a>
+        <a href="index.es.html" lang="es">Español</a>
+        <a href="index.zh-CN.html" lang="zh-CN" aria-current="page">简体中文</a>
+        <a href="index.ja.html" lang="ja">日本語</a>
+        <a href="index.ko.html" lang="ko">한국어</a>
+        <a href="index.ru.html" lang="ru">Русский</a>
+      </div>
+    </details>
     <a class="btn primary small" href="#install">安装</a>
   </div>
 </header>
 
 <main>
   <section class="hero wrap">
-    <span class="chip"><i></i><b>v0.62</b> · 免费开源</span>
+    <span class="chip"><i></i><b id="version">v0.72.0</b> · 免费开源</span>
     <h1>面向你已在用的编码智能体的终端优先 ADE</h1>
     <p class="lede">并排运行 <b>Claude Code、Codex</b> 以及另外六个智能体 CLI，每个都在自己的 git worktree 里，diff 和 Pull Request 就在同一个窗口。</p>
     <div class="cta">
@@ -202,7 +220,7 @@
 
 <footer>
   <div class="wrap">
-    <span>AGPL-3.0-only · 作者 <a href="https://github.com/omartelo">omartelo</a></span>
+    <span>AGPL-3.0-only · 作者 <a href="https://github.com/lichdotdev">lichdotdev</a></span>
     <nav aria-label="更多">
       <a href="https://github.com/lichdotdev/lich/blob/main/docs/ceilings.md">已知限制</a>
       <a href="https://github.com/lichdotdev/lich/blob/main/docs/cli.md">CLI</a>
@@ -213,6 +231,9 @@
 </footer>
 
 <script>
+fetch("https://api.github.com/repos/lichdotdev/lich/releases/latest")
+  .then(function (r) { return r.ok ? r.json() : null; })
+  .then(function (release) { if (release) document.getElementById("version").textContent = release.tag_name; });
 (function () {
   var ua = navigator.userAgentData && navigator.userAgentData.platform || navigator.userAgent || "";
   if (/android|iphone|ipad/i.test(ua)) return;
