@@ -1,10 +1,11 @@
-## [0.71.2] - 2026-10-19
+## [0.72.0] - 2026-10-19
+
+### Changed
+
+- A barra superior da janela nativa agora é a barra de título: a barra do sistema sumiu, e minimizar, maximizar e fechar ficam ao lado de Configurações, desenhados como o Windows, o GNOME e o KDE os desenham e no lado em que o seu desktop os coloca; no macOS os semáforos ficam na barra superior. Arraste a parte vazia da barra superior para mover a janela e dê um duplo clique nela para maximizar. Gerenciadores de janela tiling mantêm as próprias decorações.
 
 ### Fixed
 
-- A janela nativa volta a abrir no Windows e no macOS, onde fechava logo em
-  seguida procurando o fontconfig para desenhar as visões de código e de diff.
-- Emojis no terminal da janela nativa são desenhados em cores no Windows, onde
-  apareciam só como contornos.
-- O comando de atualização oferecido a uma instalação no macOS agora faz o tap de `lichdotdev/tap` antes de atualizar. Uma instalação vinda do antigo `omartelo/tap` falhava com "Cask 'lichdotdev/tap/lich' is unavailable", já que o Homebrew não segue um tap que mudou de lugar; faça o tap uma vez com `brew tap lichdotdev/tap` para atualizar a partir de um lich mais antigo.
-- Na janela nativa, "Expandir pastes longos" agora expande os pastes do Claude Code e do Kiro CLI: a área de transferência, um lote de comentários de revisão, o prompt com que um pull request ou issue abre uma sessão e caminhos de arquivo soltos ou anexados.
+- `lich quit` não falha mais com "EOF" quando o lich fecha antes de responder: ele espera a porta fechar em vez de tratar a resposta perdida como recusa.
+- No Wayland, a janela nativa mostra o cursor do próprio desktop, no tema e no tamanho dele, onde podia mostrar outro tema. Num monitor com escala menor que a do maior, o cursor não pula mais ao entrar na janela.
+- No Linux, a janela nativa se agrupa sob o ícone do próprio lich no dock, onde aparecia como um app separado com um ícone genérico.
