@@ -71,6 +71,7 @@ type reviewPanel struct {
 	cards    map[string]*fileCard
 	order    []string
 	list     widget.List
+	heights  itemHeights
 	batch    commentBatch
 	actions  reviewActions
 
