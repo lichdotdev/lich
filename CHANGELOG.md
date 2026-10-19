@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `lich quit` no longer fails with "EOF" when lich quits before answering: it waits for the port to close instead of calling the lost reply a refusal.
+
 ## [0.71.2] - 2026-10-19
 
 ### Fixed

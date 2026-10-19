@@ -2,8 +2,10 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"time"
 
 	"github.com/lichdotdev/lich/internal/system"
@@ -33,9 +35,11 @@ func (c *client) quit(args []string) error {
 		return err
 	}
 	asked := c.call(context.Background(), "system.Quit", []any{system.QuitOptions{}}, shortCall, nil)
-	// A lich that exits fast enough takes the reply down with it, so a failed
-	// call is only a failure while lich is still there to have refused it.
-	if asked != nil && listening(port) {
+	// A lich that exits fast enough takes the reply down with it, and its port
+	// can outlive that connection by a moment, so only a call lich answered is
+	// a refusal; one that got no reply is settled by waiting for the port.
+	var unanswered *url.Error
+	if asked != nil && !errors.As(asked, &unanswered) {
 		return asked
 	}
 	if !gone(port, quitWait) {

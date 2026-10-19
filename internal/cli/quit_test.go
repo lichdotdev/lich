@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // quittingLich is a running lich that answers system.Quit with answer and
@@ -81,6 +82,29 @@ func TestQuitWhoseReplyIsLostToTheExitSucceeds(t *testing.T) {
 		_ = conn.Close()
 		return true
 	})
+	if code, _, stderr := runQuit(t, srv); code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+}
+
+// The lost reply and the closed port are not one event: the process can still
+// hold its listener a moment after the connection carrying the reply is gone.
+func TestQuitWhoseReplyIsLostBeforeThePortClosesSucceeds(t *testing.T) {
+	t.Parallel()
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		conn, _, err := w.(http.Hijacker).Hijack()
+		if err != nil {
+			t.Errorf("hijack: %v", err)
+			return
+		}
+		_ = conn.Close()
+		go func() {
+			time.Sleep(3 * quitPoll)
+			srv.Close()
+		}()
+	}))
+	t.Cleanup(srv.Close)
 	if code, _, stderr := runQuit(t, srv); code != 0 {
 		t.Fatalf("exit = %d, stderr = %q", code, stderr)
 	}
