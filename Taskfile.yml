@@ -199,6 +199,29 @@ tasks:
       # models the floor carries stays a hand-picked list.
       - cmd: go run internal/pricing/genfloor.go
 
+  stats:
+    desc: Downloads per release and OS from GitHub Releases, the AUR package and clone traffic (needs gh)
+    preconditions:
+      - sh: command -v gh
+        msg: "gh is required: https://cli.github.com"
+    cmds:
+      # Downloads count installs and updates through the package's own asset; a
+      # Homebrew, Scoop or AUR update fetches the same files, so this is downloads,
+      # not people. Checksums and update manifests are left out of the count.
+      - cmd: |
+          gh api --paginate repos/lichdotdev/lich/releases --jq '
+            .[] | select(.prerelease | not)
+            | [.assets[] | select(.name | test("checksums|SHA256SUMS|\\.json$") | not)] as $a
+            | def os($re): [$a[] | select(.name | test($re)) | .download_count] | add // 0;
+            [.tag_name, .published_at[:10], os("."), os("linux|\\.deb$|\\.rpm$|pkg\\.tar"), os("windows"), os("darwin")]
+            | @tsv' | awk 'BEGIN { print "release\tdate\ttotal\tlinux\twindows\tmac" } { print; t += $3 } END { print "all\t\t" t }' | column -t
+      - cmd: |
+          curl -fsS 'https://aur.archlinux.org/rpc/v5/info?arg[]=lich-bin' | jq -r '.results[] | "AUR \(.Name) \(.Version): \(.NumVotes) votes, popularity \(.Popularity)"'
+      # GitHub keeps only the last 14 days and needs push access to the repo.
+      # Every CI checkout is a clone too, so the totals lean on our own runs.
+      - cmd: |
+          gh api repos/lichdotdev/lich/traffic/clones --jq '"Clones, last 14 days: \(.count) total, \(.uniques) unique", (.clones[] | "  \(.timestamp[:10])  \(.count)  \(.uniques) unique")'
+
   mutation:
     desc: Mutation tests via gremlins — .gremlins.yaml, scope with -- ./internal/pkg/
     preconditions:
