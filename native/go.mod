@@ -25,6 +25,8 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 )
 
-// app.DropEvent (external file drop) and Window.Activate (raising the window on
-// Wayland) live in lichdotdev/gio, branch drop-event; gioui.org has neither.
+// lichdotdev/gio, branch drop-event, carries what gioui.org lacks: app.DropEvent
+// (external file drop), Window.Activate (raising the window on Wayland), word
+// deletion with Ctrl off macOS, and Wayland fixes for EGL vsync, clipboard
+// reads, pointer.Leave and the cursor (cursor-shape-v1).
 replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261019145824-c389a6eb0b04
