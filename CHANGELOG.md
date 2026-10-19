@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   away looking for fontconfig to draw the code and diff views.
 - Emoji in the native window's terminal are drawn in color on Windows, where
   they came out as plain outlines.
-- In the native window, "Unfold long pastes" now unfolds Claude Code and Kiro CLI pastes: the clipboard, a batch of review comments, and the prompt a pull request or issue opens a session with.
+- In the native window, "Unfold long pastes" now unfolds Claude Code and Kiro CLI pastes: the clipboard, a batch of review comments, the prompt a pull request or issue opens a session with, and dropped or attached file paths.
 
 ## [0.71.1] - 2026-10-18
 
