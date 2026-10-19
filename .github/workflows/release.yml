@@ -7,6 +7,13 @@ on:
       # A pre-release (v0.68.0-pre.1) is built and uploaded by hand: running this
       # would publish it to the AUR, Homebrew and every install's updater.
       - "!v*-*"
+    # A tag run only restores caches saved on its own ref or on main, so the
+    # libghostty-vt builds it saves are never seen by the next tag: without
+    # this every release rebuilds them (~14 min on the Intel mac). A run on
+    # main saves them where tags can read them, and publishes nothing (the
+    # release job is tag-only). Paths are ignored on tag pushes.
+    branches: [main]
+    paths: [native/GHOSTTY_COMMIT, .github/workflows/release.yml]
   workflow_dispatch:
 
 permissions:
