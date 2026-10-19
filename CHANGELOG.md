@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.71.2] - 2026-10-19
+
 ### Fixed
 
 - The native window opens again on Windows and macOS, where it closed right
@@ -6178,7 +6180,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.71.1...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.71.2...HEAD
+[0.71.2]: https://github.com/lichdotdev/lich/compare/v0.71.1...v0.71.2
 [0.71.1]: https://github.com/lichdotdev/lich/compare/v0.71.0...v0.71.1
 [0.71.0]: https://github.com/lichdotdev/lich/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/omartelo/lich/compare/v0.69.0...v0.70.0
