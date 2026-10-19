@@ -51,7 +51,7 @@ type Key struct {
 type fontFace struct {
 	file *fontFile
 	face font.Face
-	// bitmaps reads file's color bitmaps; nil when it has none.
+	// bitmaps reads file's color glyphs; nil when it has none.
 	bitmaps *gotext.Face
 }
 
@@ -198,10 +198,11 @@ func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 	if err != nil {
 		return nil, err
 	}
-	// The color bitmap wins over the outline: Apple Color Emoji carries both,
-	// and its outline is a monochrome stand-in.
+	// A color glyph wins over the outline: Apple Color Emoji carries both, and
+	// its outline is a monochrome stand-in, as Segoe UI Emoji's base glyph is
+	// for its COLR layers.
 	if f != nil {
-		if m.Color, m.Off, err = r.colorBitmap(f, k.R); err != nil {
+		if m.Color, m.Off, err = r.colorGlyph(f, k.R); err != nil {
 			return nil, err
 		}
 	}
@@ -215,6 +216,16 @@ func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 	}
 	r.masks[k] = m
 	return m, nil
+}
+
+// colorGlyph draws c in its own colors from f's PNG bitmap or, failing one,
+// its COLR layers; nil when f has neither for c.
+func (r *Rasterizer) colorGlyph(f *fontFace, c rune) (*image.RGBA, image.Point, error) {
+	img, off, err := r.colorBitmap(f, c)
+	if img != nil || err != nil {
+		return img, off, err
+	}
+	return r.colorLayers(f, c)
 }
 
 // colorBitmap scales c's PNG bitmap to fit two cells, the width of an emoji,

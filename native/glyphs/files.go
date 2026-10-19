@@ -19,8 +19,9 @@ type fontFile struct {
 	// sf is the file's first face; sfnt keeps reading from data.
 	sf   *sfnt.Font
 	data []byte
-	// color is the first face as go-text reads it, for the color bitmaps
-	// sfnt cannot (CBDT, sbix); nil when the file has none.
+	// color is the first face as go-text reads it, for the color glyphs sfnt
+	// cannot draw (CBDT and sbix bitmaps, COLR layers); nil when the file has
+	// none.
 	color *gotext.Font
 }
 
@@ -29,8 +30,9 @@ var fontFiles = struct {
 	byPath map[string]*fontFile
 }{byPath: map[string]*fontFile{}}
 
-// colorTables are the tables that hold PNG glyphs.
-var colorTables = [...]ot.Tag{ot.MustNewTag("CBDT"), ot.MustNewTag("sbix")}
+// colorTables are the tables that hold color glyphs: PNG bitmaps (CBDT, sbix)
+// or layered outlines (COLR).
+var colorTables = [...]ot.Tag{ot.MustNewTag("CBDT"), ot.MustNewTag("sbix"), ot.MustNewTag("COLR")}
 
 func openFontFile(path string) (*fontFile, error) {
 	fontFiles.Lock()
@@ -52,14 +54,14 @@ func openFontFile(path string) (*fontFile, error) {
 	}
 	color, err := parseColor(data)
 	if err != nil {
-		return nil, fmt.Errorf("parse color bitmaps of %s: %w", path, err)
+		return nil, fmt.Errorf("parse color glyphs of %s: %w", path, err)
 	}
 	f := &fontFile{sf: sf, data: data, color: color}
 	fontFiles.byPath[path] = f
 	return f, nil
 }
 
-// parseColor parses the first face of data when it carries PNG glyphs, and
+// parseColor parses the first face of data when it carries color glyphs, and
 // only that face: reading the headers of a collection costs nothing, parsing
 // all of its faces is what a CJK collection makes expensive.
 func parseColor(data []byte) (*gotext.Font, error) {

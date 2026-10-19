@@ -203,7 +203,10 @@ jobs:
             exit 1
           fi
 
+      # Runs after a failed go test too: whether the window comes up at all is
+      # its own answer.
       - name: Run the window against the backend
+        if: success() || failure()
         run: |
           out="$(cygpath -u "$RUNNER_TEMP")/out"
           bash .github/scripts/win-native-smoke.sh "$out/lich.exe" "$out/lich-native.exe"
