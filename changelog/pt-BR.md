@@ -9,3 +9,4 @@
 - `lich quit` não falha mais com "EOF" quando o lich fecha antes de responder: ele espera a porta fechar em vez de tratar a resposta perdida como recusa.
 - No Wayland, a janela nativa mostra o cursor do próprio desktop, no tema e no tamanho dele, onde podia mostrar outro tema. Num monitor com escala menor que a do maior, o cursor não pula mais ao entrar na janela.
 - No Linux, a janela nativa se agrupa sob o ícone do próprio lich no dock, onde aparecia como um app separado com um ícone genérico.
+- Na Revisão da janela nativa e nos Arquivos de um pull request, a barra de rolagem mantém o tamanho enquanto você rola, onde crescia e encolhia conforme o arquivo que ocupava a tela. Arrastá-la agora percorre o diff por igual, não arquivo por arquivo.
