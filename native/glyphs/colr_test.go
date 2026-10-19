@@ -94,10 +94,12 @@ func TestAffineThenAppliesTheInnerTransformFirst(t *testing.T) {
 // and nothing outside it.
 func TestPainterFillsAGlyphWhereItsTransformsPutIt(t *testing.T) {
 	r := sizedRasterizer(t)
-	face, err := gotext.ParseTTF(bytes.NewReader(r.styles[0].file.data))
+	// The rasterizer reads a collection's first face, macOS's Menlo is one.
+	faces, err := gotext.ParseTTC(bytes.NewReader(r.styles[0].file.data))
 	if err != nil {
 		t.Fatal(err)
 	}
+	face := faces[0]
 	gid, ok := face.NominalGlyph('I')
 	if !ok {
 		t.Fatal("the monospace face has no I")
