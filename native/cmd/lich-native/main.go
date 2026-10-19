@@ -264,6 +264,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
 	u.footer.openPullRequest = u.showPulls
+	u.footer.writePaste = u.terms.writePaste
 	u.footer.showDelegates = func(id string) { u.layoutStage.delegates = id }
 	u.settings.footer = u.footer
 	u.footer.customize = u.customizeFooter

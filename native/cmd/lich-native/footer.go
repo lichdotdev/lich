@@ -40,6 +40,8 @@ type footer struct {
 	quota         *planQuota
 	handsOn       *handsOn
 	cost          *costGate
+	// writePaste is terminals.writePaste, which unfolds a long paste.
+	writePaste func(ctx context.Context, id, block string) error
 
 	mu     sync.Mutex
 	layout footerLayout
@@ -230,7 +232,7 @@ func (f *footer) act(gtx C, in footerInput) {
 // A failure is toasted in the backend's own words, which name the ceiling a
 // file was refused for.
 func (f *footer) attach(in footerInput) {
-	if err := attachFile(f.ctx, f.client, in.sessionID, in.checkout, in.sandboxed, runtime.GOOS == "windows"); err != nil {
+	if err := attachFile(f.ctx, f.client, f.writePaste, in.sessionID, in.checkout, in.sandboxed, runtime.GOOS == "windows"); err != nil {
 		f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: lichclient.ErrorText(err)})
 	}
 }
