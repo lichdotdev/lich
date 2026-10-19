@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The update command offered to a macOS install now taps `lichdotdev/tap` before upgrading. An install from the old `omartelo/tap` failed with "Cask 'lichdotdev/tap/lich' is unavailable", since Homebrew does not follow a moved tap on its own; tap it once with `brew tap lichdotdev/tap` to upgrade from an older lich.
 - In the native window, "Unfold long pastes" now unfolds Claude Code and Kiro CLI pastes: the clipboard, a batch of review comments, and the prompt a pull request or issue opens a session with.
 
 ## [0.71.1] - 2026-10-18
@@ -492,7 +493,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it was on when the window closed instead of Home.
 - **The Homebrew tap moved to `lichdotdev/tap`.** New installs run
   `brew install --cask lichdotdev/tap/lich`. An install from `omartelo/tap`
-  keeps upgrading: the old tap points Homebrew at the new one.
+  upgrades after `brew tap lichdotdev/tap`: the old tap points Homebrew at the
+  new one, but Homebrew does not add it on its own.
 
 ### Fixed
 

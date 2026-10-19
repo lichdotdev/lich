@@ -33,7 +33,12 @@ const (
 	aurPackage = "lich-bin"
 	// brewPackage is the tap-qualified name Homebrew users update through; brew
 	// owns its copy, so lich never swaps it itself.
-	brewPackage = "lichdotdev/tap/lich"
+	brewPackage = brewTap + "/lich"
+	// brewTap is tapped before every upgrade: an install from the old
+	// omartelo/tap is redirected here by its tap_migrations.json, but Homebrew
+	// refuses to add a third-party tap on its own, so the upgrade fails until
+	// it is tapped. Tapping an already-tapped tap is a no-op.
+	brewTap = "lichdotdev/tap"
 	// installScript is the deb/rpm/other-distro update path: install.sh detects
 	// the distro, installs the matching package, and POSTs /restart itself.
 	installScript = "curl -fsSL https://raw.githubusercontent.com/" + repo + "/main/install.sh | sh"
@@ -218,7 +223,7 @@ func bundled(exePath string) bool {
 // whichever platform it runs, and macOS ships as a cask.
 func (s *Service) installCommand() string {
 	if bundled(s.exePath) {
-		return "brew upgrade --cask " + brewPackage + restartChain
+		return "brew tap " + brewTap + " && brew upgrade --cask " + brewPackage + restartChain
 	}
 	if scoopOwned(s.exePath) {
 		return "scoop update " + scoopPackage + restartChainPwsh
