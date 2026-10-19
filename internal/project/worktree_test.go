@@ -65,6 +65,12 @@ func commitTemplate(dir string, run func(args ...string) error) error {
 	if err := run("config", "core.autocrlf", "false"); err != nil {
 		return err
 	}
+	// A commit starts `git maintenance run --auto --detach` (git 2.46+), which
+	// outlives it holding objects/maintenance.lock: initRepo's copy of the
+	// template then lists the lock and finds it gone when it opens it.
+	if err := run("config", "maintenance.auto", "false"); err != nil {
+		return err
+	}
 	if err := os.WriteFile(filepath.Join(dir, "a.txt"), []byte("one\n"), 0o644); err != nil {
 		return err
 	}
