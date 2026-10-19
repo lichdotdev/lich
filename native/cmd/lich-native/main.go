@@ -56,6 +56,7 @@ var (
 
 func main() {
 	flag.Parse()
+	app.ID = windowClass(os.Getenv)
 	rt, err := backendRuntime()
 	if err != nil {
 		log.Fatal(err)
@@ -79,6 +80,18 @@ func main() {
 		os.Exit(code)
 	}()
 	app.Main()
+}
+
+// windowClass is the Wayland app_id and X11 WM_CLASS. Gio's default, the
+// binary's name, matches no .desktop entry, so the dock shows the window as an
+// unknown app beside lich's own icon. It mirrors the web window's (main.go's
+// windowTarget): build/linux/lich.desktop claims "lich", and the dev window
+// keeps its own so compositor rules for the daily driver never capture it.
+func windowClass(getenv func(string) string) string {
+	if getenv("LICH_DEV") != "" {
+		return "lichdev"
+	}
+	return "lich"
 }
 
 type window struct {
