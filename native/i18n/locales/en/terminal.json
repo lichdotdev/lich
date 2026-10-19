@@ -17,6 +17,7 @@
   },
   "view": {
     "restartFailed": "Session failed to restart: {error}",
+    "pasteSettingFailed": "Could not read whether to unfold long pastes, so this one was pasted once: {error}",
     "startFailed": "Session failed to start: {error}"
   },
   "sessionExit": {

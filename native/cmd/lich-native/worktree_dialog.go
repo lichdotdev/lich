@@ -443,8 +443,9 @@ func (u *window) showNewSession(projectID, id string) error {
 	return nil
 }
 
-// writeAtPrompt is write-at-prompt.ts: text written before the session sits
-// at a prompt lands in its boot and is thrown away.
+// writeAtPrompt is write-at-prompt.ts: text, a block bracketedPaste built,
+// written before the session sits at a prompt lands in its boot and is thrown
+// away.
 func (u *window) writeAtPrompt(id, text string) {
 	deadline := time.Now().Add(promptLimit)
 	for {
@@ -458,7 +459,7 @@ func (u *window) writeAtPrompt(id, text string) {
 		}
 		time.Sleep(promptPoll)
 	}
-	if err := u.client.Write(u.ctx, id, text); err != nil {
+	if err := u.terms.writePaste(u.ctx, id, text); err != nil {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.issueLost", i18n.Args{"error": lichclient.ErrorText(err)})})
 	}
 }

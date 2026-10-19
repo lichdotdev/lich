@@ -99,7 +99,7 @@ func (c *codeTab) hidden() {
 func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 	c.follow(in.checkout)
 	c.fetchTree(gtx, in)
-	inject := dockInjector(c.client, in.sessionID)
+	inject := in.inject
 	var err error
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {

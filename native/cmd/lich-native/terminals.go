@@ -32,10 +32,11 @@ import (
 // (renderers cache per-row state, so they cannot be shared between grids) and
 // the input tag that focuses it.
 type termView struct {
-	id  string
-	vt  *gioterm.Terminal
-	r   gioterm.Renderer
-	tag *int
+	id   string
+	kind string
+	vt   *gioterm.Terminal
+	r    gioterm.Renderer
+	tag  *int
 	// The area size waiting to be fitted, and since when it has held.
 	fitFor   image.Point
 	fitSince time.Time
@@ -241,7 +242,7 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	if len(replay) > 0 {
 		vt.Write(replay)
 	}
-	t = &termView{id: s.ID, vt: vt, r: r, tag: new(int)}
+	t = &termView{id: s.ID, kind: s.Kind, vt: vt, r: r, tag: new(int)}
 	ts.mu.Lock()
 	ts.byID[s.ID] = t
 	ts.mu.Unlock()
@@ -480,7 +481,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				log.Printf("paste into %s: %v", t.id, err)
 				break
 			}
-			ts.send(t.id, pastedClipboard(t.vt, text, runtime.GOOS))
+			go ts.pasteClipboard(t, text, runtime.GOOS)
 		case pointer.Event:
 			t.track(e)
 			if url, took := t.linkClick(e); took {

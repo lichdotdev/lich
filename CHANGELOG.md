@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- In the native window, "Unfold long pastes" now unfolds Claude Code and Kiro CLI pastes: the clipboard, a batch of review comments, and the prompt a pull request or issue opens a session with.
+
 ## [0.71.1] - 2026-10-18
 
 ### Fixed

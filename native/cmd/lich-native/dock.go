@@ -86,6 +86,7 @@ func (t dockTab) toggled(to dockTab) dockTab {
 // light is the palette on screen, for what draws with its own theme.
 type dockInput struct {
 	sessionID string
+	inject    func(string) bool
 	checkout  string
 	git       lichclient.DiffStats
 	isGit     bool

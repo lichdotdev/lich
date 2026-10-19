@@ -54,7 +54,7 @@ func TestInjectEntriesNeedASelectionForLinesAndComment(t *testing.T) {
 }
 
 func TestDockInjectorRefusesWithoutASession(t *testing.T) {
-	if dockInjector(nil, "")("x") {
+	if (&terminals{}).injector("")("x") {
 		t.Error("a session-less inject reported taken")
 	}
 }
