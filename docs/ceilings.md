@@ -55,7 +55,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and MCP tool descriptions and the `lich` CLI's `--help`, which agents read and which do not follow the prompt
   language either.
 - **"Unfold long pastes" copies three providers' own rules** (`frontend/src/lib/terminal/paste-unfold.ts`,
-  `internal/terminal/paste_unfold.go`), and is off until turned on. For Claude Code lich pastes twice wherever it
+  `native/cmd/lich-native/paste_unfold.go`, `internal/terminal/paste_unfold.go`), and is off until turned on. For Claude Code lich pastes twice wherever it
   predicts the fold, because a repeat of the same text unfolds the `[Pasted text #N +M lines]` chip. The prediction
   is Claude Code's rule copied from its 2.1.296 bundle (more than 800 characters, or more than `min(rows - 10, 2)`
   newlines, up to 100 000), and nothing tells lich when that rule moves: a paste lich thinks folds and Claude Code
@@ -66,7 +66,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `experimental.disable_paste_summary` through `OPENCODE_CONFIG_CONTENT`, extending one the user exports rather than
   replacing it; opencode's own "Disable paste summary" command is stored in its state and wins over any config, so
   once used there the switch changes nothing. Codex, Antigravity, Crush and Cursor CLI fold with a constant, no
-  setting and no key that unfolds, so they have no switch; oh-my-pi was not measured.
+  setting and no key that unfolds, so they have no switch; oh-my-pi was not measured. The native window also
+  unfolds what it writes as a paste itself (a batch of review comments, a pull request's or an issue's prompt),
+  measured against the session's own terminal; one written into a session whose terminal the window never opened
+  has no height to measure and lands folded. Dropped and attached file paths are never unfolded.
 - **`LICH_WORKTREE_PORT` is reserved, never held** (`internal/terminal/worktreeport.go`): the number is a name the
   checkout owns, nothing binds it, and anything on the machine can take the port before the dev server starts.
 - **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,

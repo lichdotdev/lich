@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -55,15 +54,24 @@ func safeToWrite(text string) string {
 	}, text)
 }
 
-// dockInjector is use-inject.ts: what writes into session id's PTY, false
-// with no session to take it. The write runs off the UI goroutine.
-func dockInjector(client *lichclient.Client, id string) func(string) bool {
+// injector is use-inject.ts: what writes into session id's PTY, false with
+// no session to take it. A batch of comments is a paste, unfolded where the
+// provider would fold it. The write runs off the UI goroutine.
+func (ts *terminals) injector(id string) func(string) bool {
 	return func(text string) bool {
 		if id == "" {
 			return false
 		}
 		go func() {
-			if err := client.Write(context.Background(), id, safeToWrite(text)); err != nil {
+			ctx := context.Background()
+			safe := safeToWrite(text)
+			var err error
+			if strings.HasPrefix(safe, pasteStart) {
+				err = ts.writePaste(ctx, id, safe)
+			} else {
+				err = ts.client.Write(ctx, id, safe)
+			}
+			if err != nil {
 				log.Printf("inject: %v", err)
 			}
 		}()

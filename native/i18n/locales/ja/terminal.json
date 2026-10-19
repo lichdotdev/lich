@@ -17,6 +17,7 @@
   },
   "view": {
     "restartFailed": "セッションを再起動できませんでした: {error}",
+    "pasteSettingFailed": "長い貼り付けを展開するかどうかの設定を読み込めなかったため、今回は一度だけ貼り付けました: {error}",
     "startFailed": "セッションを開始できませんでした: {error}"
   },
   "sessionExit": {

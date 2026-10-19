@@ -149,7 +149,7 @@ func (p *reviewPanel) holdsKeys(gtx C) bool {
 // working-tree diff, and the comment batch at its foot.
 func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 	p.th, p.light, p.code, p.target = th, in.light, in.code, in.checkout
-	p.inject = dockInjector(p.client, in.sessionID)
+	p.inject = in.inject
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())
 	p.takeAnswers()

@@ -17,6 +17,7 @@
   },
   "view": {
     "restartFailed": "세션을 다시 시작하지 못했습니다: {error}",
+    "pasteSettingFailed": "긴 붙여넣기를 펼칠지 읽을 수 없어서 이번에는 한 번만 붙여 넣었습니다: {error}",
     "startFailed": "세션을 시작하지 못했습니다: {error}"
   },
   "sessionExit": {
