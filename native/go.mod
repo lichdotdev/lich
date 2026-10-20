@@ -31,4 +31,4 @@ require (
 // pointer.Leave and the cursor (cursor-shape-v1), an undecorated window that
 // moves, resizes and maximizes on Wayland and X11, and app.TrafficLights
 // (macOS's buttons on an undecorated window).
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261020125704-8529e700778c
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261020184659-08b70c1175a6

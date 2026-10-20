@@ -8,6 +8,7 @@ import (
 	"math"
 	"strconv"
 
+	"gioui.org/app"
 	"gioui.org/font"
 	"gioui.org/font/gofont"
 	"gioui.org/text"
@@ -167,6 +168,9 @@ func fontFailure(title string) ui.Toast {
 // font, and the ceiling the cost readout colours against.
 func (u *window) applyAppearance(p appearancePrefs) {
 	u.zoom = p.zoom
+	if u.caption.leftReserve > 0 {
+		u.win.Option(app.TrafficLights(topbarHeight * unit.Dp(p.zoom)))
+	}
 	if err := u.terms.setFont(p.terminalFamily(), unit.Sp(p.fontSize)); err != nil {
 		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.terminalFontFailed", i18n.Args{"family": p.terminalFamily(), "error": lichclient.ErrorText(err)})))
 	}

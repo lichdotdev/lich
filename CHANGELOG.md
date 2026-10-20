@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- On macOS, the close, minimize and zoom buttons sit centered in the native window's title bar, not pressed against its top edge, and follow the interface zoom.
+
 ## [0.73.0] - 2026-10-20
 
 > [!IMPORTANT]
