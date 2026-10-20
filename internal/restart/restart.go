@@ -6,7 +6,6 @@
 package restart
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -20,12 +19,6 @@ import (
 // listener bind path retries while this is set, because the outgoing process
 // still holds the pinned port for a moment (see internal/terminal transport).
 const WaitEnv = "LICH_RESTART_WAIT"
-
-// ArgsEnv carries a lich's arguments, as a JSON list, to the lich Inno Setup
-// launches again after an update on Windows. That launch has a fixed command
-// line (build/windows/lich.iss) and the environment of the lich that started
-// the installer, so its arguments ride the environment (LaunchArgs).
-const ArgsEnv = "LICH_RELAUNCH_ARGS"
 
 // NoWindowArg starts lich without its window.
 const NoWindowArg = "--no-window"
@@ -41,8 +34,11 @@ type Coordinator struct {
 	mu      sync.Mutex
 	stop    func()
 	started bool
-	exePath string
-	env     []string
+	// windowMoves is whether the open window reconnects to the successor
+	// rather than closing with this lich.
+	windowMoves bool
+	exePath     string
+	env         []string
 	// spawn is the seam for tests; it defaults to the build-tagged primitive.
 	spawn func(exe string, env, args []string) error
 }
@@ -80,58 +76,29 @@ func (c *Coordinator) Quit() error {
 	return nil
 }
 
-// Relaunching reports whether a successor was launched to take this lich's
-// place, which is what tells a restart from a quit once lich is stopping.
-func (c *Coordinator) Relaunching() bool {
+// WindowMovesToSuccessor reports whether the open window stays to reconnect
+// to a successor once lich is stopping, rather than closing with it: true only
+// after a restart in place (Do) launched one.
+func (c *Coordinator) WindowMovesToSuccessor() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.started
+	return c.started && c.windowMoves
 }
 
 // Do launches the successor and stops this lich. Order matters: the successor
 // starts first and blocks retrying the pinned port; then this process exits,
 // and the freed port lets the successor bind, where the native window reconnects.
 func (c *Coordinator) Do() error {
-	return c.launch(c.exePath, successorArgs, successorEnv(c.env))
+	return c.launch(c.exePath, successorArgs, successorEnv(c.env), true)
 }
 
 // Install hands replacement and relaunch to Inno Setup. It waits for this PID
-// to exit before touching files, so the window and main's defers finish first.
+// to exit before touching files, so main's defers finish first. The window
+// closes with this lich instead of reconnecting: the installer replaces
+// lich-native.exe too, which Windows will not overwrite while it runs, and the
+// lich it launches again opens a window of its own.
 func (c *Coordinator) Install(installer string) error {
-	env, err := relaunchEnv(c.env, successorArgs)
-	if err != nil {
-		return err
-	}
-	return c.launch(installer, installerArgs(filepath.Dir(c.exePath), os.Getpid()), env)
-}
-
-// relaunchEnv is the installer's environment: the successor's, plus args in
-// ArgsEnv for the lich it launches again.
-func relaunchEnv(env, args []string) ([]string, error) {
-	out := successorEnv(env)
-	encoded, err := json.Marshal(args)
-	if err != nil {
-		return nil, fmt.Errorf("restart: encode the relaunch arguments: %w", err)
-	}
-	return append(out, ArgsEnv+"="+string(encoded)), nil
-}
-
-// LaunchArgs are the arguments this lich runs with: its own argv when it has
-// one, and otherwise the ones a lich updating on Windows handed it through
-// ArgsEnv. An ArgsEnv that is not a JSON list of strings is an error.
-func LaunchArgs(argv []string, getenv func(string) string) ([]string, error) {
-	if len(argv) > 0 {
-		return argv, nil
-	}
-	handed := getenv(ArgsEnv)
-	if handed == "" {
-		return nil, nil
-	}
-	var args []string
-	if err := json.Unmarshal([]byte(handed), &args); err != nil {
-		return nil, fmt.Errorf("read %s: %w", ArgsEnv, err)
-	}
-	return args, nil
+	return c.launch(installer, installerArgs(filepath.Dir(c.exePath), os.Getpid()), successorEnv(c.env), false)
 }
 
 // installerArgs is half of a contract with build/windows/lich.iss. /UPDATEPID is
@@ -144,7 +111,7 @@ func installerArgs(dir string, pid int) []string {
 		"/LOG=" + filepath.Join(dir, ".lich-update-setup.log")}
 }
 
-func (c *Coordinator) launch(exe string, args, env []string) error {
+func (c *Coordinator) launch(exe string, args, env []string, windowMoves bool) error {
 	if c.exePath == "" {
 		return errors.New("restart: executable path unknown")
 	}
@@ -163,6 +130,7 @@ func (c *Coordinator) launch(exe string, args, env []string) error {
 		return fmt.Errorf("restart: launch successor: %w", err)
 	}
 	c.started = true
+	c.windowMoves = windowMoves
 	if c.stop != nil {
 		c.stop()
 	}
@@ -174,15 +142,14 @@ func successorEnv(env []string) []string {
 	return append(append([]string(nil), env...), WaitEnv+"=1")
 }
 
-// WithoutMarker is env minus the wait marker and ArgsEnv, on a fresh slice.
-// Both are for this process's own startup alone: what it spawns must not read
-// as a restart successor, or a lich launched from one of its sessions never
-// looks for the running one and dies on the busy port, and it must not take
-// this lich's arguments for its own.
+// WithoutMarker is env minus the wait marker, on a fresh slice. The marker is
+// for this process's own startup alone: what it spawns must not read as a
+// restart successor, or a lich launched from one of its sessions never looks
+// for the running one and dies on the busy port.
 func WithoutMarker(env []string) []string {
 	out := make([]string, 0, len(env))
 	for _, kv := range env {
-		if !strings.HasPrefix(kv, WaitEnv+"=") && !strings.HasPrefix(kv, ArgsEnv+"=") {
+		if !strings.HasPrefix(kv, WaitEnv+"=") {
 			out = append(out, kv)
 		}
 	}

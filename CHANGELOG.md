@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - In Brazilian Portuguese, every message now calls a worktree "a worktree", where a few said "o worktree".
 - On macOS the native window has its close, minimize and zoom buttons again; since 0.72.0 the topbar left their room empty.
+- On Windows, updating lich from the native window no longer rolls back with "Setup was unable to automatically close all applications": the window stayed open on `lich-native.exe`, which the installer has to replace. It now closes before the installer runs and opens again once lich is back. Updating from 0.72.0 or older still hits it once: end `lich-native.exe` in Task Manager when the message shows, choose Retry, and open lich from the Start menu afterwards.
 
 ## [0.72.0] - 2026-10-19
 

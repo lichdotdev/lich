@@ -124,8 +124,9 @@ func TestQuit(t *testing.T) {
 }
 
 // The native window is not lich's child: it closes on a quit and stays for a
-// restart, and Relaunching is how main tells the two apart once stopped.
-func TestRelaunchingOnlyAfterASuccessorStarted(t *testing.T) {
+// restart, and WindowMovesToSuccessor is how main tells the two apart once
+// stopped.
+func TestWindowMovesOnlyAfterASuccessorStarted(t *testing.T) {
 	spawnOK := func(string, []string, []string) error { return nil }
 
 	quit := &Coordinator{exePath: "/usr/local/bin/lich", spawn: spawnOK}
@@ -133,8 +134,8 @@ func TestRelaunchingOnlyAfterASuccessorStarted(t *testing.T) {
 	if err := quit.Quit(); err != nil {
 		t.Fatalf("Quit() = %v", err)
 	}
-	if quit.Relaunching() {
-		t.Fatal("Relaunching() = true after Quit, want false")
+	if quit.WindowMovesToSuccessor() {
+		t.Fatal("WindowMovesToSuccessor() = true after Quit, want false")
 	}
 
 	restarted := &Coordinator{exePath: "/usr/local/bin/lich", spawn: spawnOK}
@@ -142,8 +143,8 @@ func TestRelaunchingOnlyAfterASuccessorStarted(t *testing.T) {
 	if err := restarted.Do(); err != nil {
 		t.Fatalf("Do() = %v", err)
 	}
-	if !restarted.Relaunching() {
-		t.Fatal("Relaunching() = false after Do, want true")
+	if !restarted.WindowMovesToSuccessor() {
+		t.Fatal("WindowMovesToSuccessor() = false after Do, want true")
 	}
 
 	failed := &Coordinator{
@@ -154,8 +155,34 @@ func TestRelaunchingOnlyAfterASuccessorStarted(t *testing.T) {
 	if err := failed.Do(); err == nil {
 		t.Fatal("Do() = nil, want the spawn error")
 	}
-	if failed.Relaunching() {
-		t.Fatal("Relaunching() = true after a failed spawn, want false")
+	if failed.WindowMovesToSuccessor() {
+		t.Fatal("WindowMovesToSuccessor() = true after a failed spawn, want false")
+	}
+}
+
+// Inno Setup replaces lich-native.exe beside lich.exe, and Windows will not
+// overwrite the executable of a running process: a window left open to
+// reconnect held its own exe, Restart Manager could not close it, and the
+// update rolled back ("RestartManager found an application using one of our
+// files: lich-native"). The lich the installer launches again opens the
+// window that closed.
+func TestInstallClosesTheWindow(t *testing.T) {
+	var installerEnv []string
+	c := &Coordinator{exePath: `C:\lich\lich.exe`, spawn: func(_ string, env, _ []string) error {
+		installerEnv = env
+		return nil
+	}}
+	c.SetStop(func() {})
+	if err := c.Install("setup.exe"); err != nil {
+		t.Fatalf("Install() = %v", err)
+	}
+	if c.WindowMovesToSuccessor() {
+		t.Fatal("WindowMovesToSuccessor() = true after Install: the window stays open on the files the installer replaces")
+	}
+	for _, kv := range installerEnv {
+		if strings.Contains(kv, NoWindowArg) {
+			t.Fatalf("installer env hands %q to the relaunched lich, which then opens no window", kv)
+		}
 	}
 }
 
@@ -257,8 +284,7 @@ func TestWithoutMarkerKeepsTheRestartMarkerOutOfChildren(t *testing.T) {
 }
 
 // The native window open on a restarting lich reconnects to its successor, so
-// a successor never opens one of its own, whether the restart is in place or an
-// update on Windows that Inno Setup relaunches through the environment.
+// a successor never opens one of its own.
 func TestSuccessorStartsWithoutAWindow(t *testing.T) {
 	var spawnedArgs []string
 	c := New("lich.exe", nil)
@@ -271,64 +297,5 @@ func TestSuccessorStartsWithoutAWindow(t *testing.T) {
 	}
 	if want := []string{"--no-window"}; !slices.Equal(spawnedArgs, want) {
 		t.Fatalf("successor args = %v, want %v", spawnedArgs, want)
-	}
-
-	var installerEnv []string
-	c = New("lich.exe", []string{"LICH_LISTEN_PORT=47821"})
-	c.spawn = func(_ string, env, _ []string) error {
-		installerEnv = env
-		return nil
-	}
-	if err := c.Install("setup.exe"); err != nil {
-		t.Fatal(err)
-	}
-	got, err := LaunchArgs(nil, envReader(installerEnv))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := []string{"--no-window"}; !slices.Equal(got, want) {
-		t.Fatalf("relaunched lich reads args %v, want %v", got, want)
-	}
-}
-
-func TestLaunchArgs(t *testing.T) {
-	handed := envReader([]string{ArgsEnv + `=["--","--ozone-platform=x11"]`})
-	cases := []struct {
-		name   string
-		argv   []string
-		getenv func(string) string
-		want   []string
-	}{
-		{"its own argv wins", []string{"--", "--use-gl=egl"}, handed, []string{"--", "--use-gl=egl"}},
-		{"none of its own takes the handed ones", nil, handed, []string{"--", "--ozone-platform=x11"}},
-		{"nothing either way", nil, envReader(nil), nil},
-	}
-	for _, c := range cases {
-		got, err := LaunchArgs(c.argv, c.getenv)
-		if err != nil || !slices.Equal(got, c.want) {
-			t.Errorf("%s: LaunchArgs = %v, %v, want %v", c.name, got, err, c.want)
-		}
-	}
-	if _, err := LaunchArgs(nil, envReader([]string{ArgsEnv + "=--ozone"})); err == nil {
-		t.Error("LaunchArgs of a value that is no JSON list = nil error, want one")
-	}
-}
-
-func TestWithoutMarkerDropsTheHandedArgsToo(t *testing.T) {
-	got := WithoutMarker([]string{"PATH=/bin", ArgsEnv + `=["--"]`, WaitEnv + "=1"})
-	if !slices.Equal(got, []string{"PATH=/bin"}) {
-		t.Fatalf("WithoutMarker = %v, want only PATH", got)
-	}
-}
-
-// envReader reads one environment the way os.Getenv reads the process's.
-func envReader(env []string) func(string) string {
-	return func(key string) string {
-		for _, kv := range env {
-			if k, v, ok := strings.Cut(kv, "="); ok && k == key {
-				return v
-			}
-		}
-		return ""
 	}
 }
