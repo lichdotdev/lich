@@ -5,14 +5,14 @@
   </picture>
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <strong>简体中文</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
-  <p><a href="https://lichdotdev.github.io/lich/index.zh-CN.html"><strong>lichdotdev.github.io/lich</strong></a></p>
-  <p><strong>为你已在用的编码智能体打造的终端优先 ADE（智能体开发环境）。</strong></p>
+  <p><strong>终端优先的 ADE，接入你正在用的 AI 编程智能体。</strong></p>
   <p>
-    打开你的项目，在真实终端里运行 Claude Code、Codex、opencode 这样的智能体，
-    并把 git —— worktree、diff 和 Pull Request —— 一并留在视野里，无需离开窗口。
-    单个静态 Go 二进制文件，没有 Electron：在 Linux、Windows 和 macOS 上，
-    界面都在 lich 自带的内嵌 Chromium 里打开。
+    打开项目，在真正的终端里运行 Claude Code、Codex、opencode 等智能体，git 也一直在
+    眼前：worktree、diff 和 Pull Request，都不用离开这个窗口。整个程序就是一个静态 Go
+    二进制文件，不用 Electron：在 Linux、Windows 和 macOS 上，界面都在 lich 自带的内嵌
+    Chromium 里打开。
   </p>
+  <p><a href="https://lichdotdev.github.io/lich/index.zh-CN.html"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
@@ -21,120 +21,118 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="同一面墙上并排的四个 Claude Code 会话，各自待在自己的 git worktree 里 —— 侧栏逐个列出它们的分支和 diff 徽标，底栏显示模型、套餐额度与分支" width="1000" />
+  <img src="docs/media/session.png" alt="同一分屏里并排的四个 Claude Code 会话，各自在独立的 git worktree 里；侧栏列出每个会话的分支和 diff 标记，底栏显示模型、套餐和分支" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
-> 本文档译自英文 [README.md](README.md)。英文版本是唯一的事实来源；若两者出现分歧，以英文为准。
+> 本文档译自英文 [README.md](README.md)。英文版是唯一的事实来源；两者不一致时，以英文版为准。
 
 ## 为什么选 lich
 
 用 lich，你可以：
 
-- **用你已经有的智能体。** [Claude Code](https://www.anthropic.com/claude-code)、
+- **直接用你手上的智能体。** [Claude Code](https://www.anthropic.com/claude-code)、
   [Codex](https://github.com/openai/codex)、Antigravity、
   [opencode](https://github.com/sst/opencode)、oh-my-pi、
   [Crush](https://github.com/charmbracelet/crush)、
   [Cursor CLI](https://cursor.com/docs/cli) 和
-  [Kiro CLI](https://kiro.dev/docs/cli/) 在这里都以同样的方式运行。把 lich
-  指向各自的二进制文件，这只需一次，之后选一个默认的，或者逐个会话单独指定。而
-  lich 能从一个会话里*读*回什么，则因智能体而异，
-  [各智能体支持到什么程度](#各智能体支持到什么程度)是那张表。
-- **留住一个真正的终端。** 由 PTY 支撑的 shell，每个项目可以开好几个，在 GPU 上渲染
-  —— 滚动缓冲区可以搜索，还能挺过整页刷新。给其中一个设一个入口命令 —— `lazygit`、
-  `k9s`、`pnpm dev` —— 它每次启动都会直接进到那个工具里，在 Linux、macOS 和 Windows
-  上都一样：不会先加载 shell rc 或 PowerShell profile，所以对你管用的入口命令，对你分享给
-  的人也一样管用。底栏跟随 `cd` 并标明分支
-  —— 对于 Claude Code、Codex 或 Kiro CLI 会话，还有模型和已占用的上下文窗口；对于
-  Claude Code、Codex、Antigravity、Cursor CLI 和 OpenCode Go 订阅，还有你的套餐额度还剩
-  多少；如果你要求的话，还有会话花了多少钱，只要该智能体记下了这个数。
-- **让一个会话为另一个干活。** 把任务交给另一张卡片，答案由它自己的智能体写回来，两端
-  各跑着什么都不影响：智能体通过启动时交予的工具够到其他会话 —— Claude Code 和 Codex
-  走 MCP —— 其余的随插件获得。这整套能力同时也是任何 shell 里的 `lich` 命令，`--json`
-  也在其中，所以脚本不需要智能体参与也能驱动一个会话
-  （[`docs/cli.md`](docs/cli.md)）。
-- **一次看住好几个。** 把任意会话摆到你正在看的那个旁边，凑成一面墙，pane 怎么排由
-  lich 自己算 —— 依据有几个，以及窗口还剩多少地方：八个在超宽屏上是横四竖二，在笔记本
-  上则横着摆两个。一个把活派出去的会话，一次点击就能围着它把墙搭起来。每面墙都有名字，
-  一个项目想留多少面都行，每面墙在侧栏里各占一块，可以折叠、重命名，也可以拆掉。
-- **免去配置地分出一个 worktree。** 从任意基础分支开一个，lich 会把你被 gitignore 掉的
-  `.env*` 文件播种进去，派给它一个既不与其他检出目录重合、也没被机器上任何进程占用的
-  开发服务器端口，并在智能体启动前跑一遍按项目配置的初始化脚本。也可以从当前检出目录
-  尚未提交的改动开一个，这些改动会一起带过去，未跟踪的文件也包括在内。
-- **让会话在沙箱里运行。** 一个智能体可以开在操作系统的沙箱里：一个只装着该 provider
-  自身状态的空白 home，机器的其余部分只读，只有它被打开时所在的那个检出目录可写。你的
-  ssh 密钥、你的云凭据以及磁盘上其他所有仓库，在里面根本不存在 —— 这正是放手让智能体
-  跳过权限确认的那一头的配重。Linux 用 bubblewrap，macOS 用 `sandbox-exec`；它不是
-  针对恶意代码的边界，[`docs/ceilings.md`](docs/ceilings.md) 写明了它挡不住什么。
-- **在读 diff 的地方审查它。** 一个 CodeMirror 面板在实时文件树旁展示工作区改动，可以
-  按需折叠只改了空白的部分，改动过的图片或 PDF 会显示改动前后。右键选中的内容就能针对
-  这些行写评论；整批评论会作为一条 prompt 粘贴进会话，但不发送。它的 Code 标签页可以浏览
-  检出目录，并搜索其中文件的文本。
-- **在这里把 Pull Request 送到终点。** 列出仓库开启的 Pull Request，把其中一个检出到
-  它专属的 worktree，然后阅读 diff、内联审查并合并它 —— 用基础分支实际接受的方式。
-  在还没有 Pull Request 的分支上，**Create with agent** 会让该分支的会话去开一个，
-  你按下回车之前什么都不会发送。
+  [Kiro CLI](https://kiro.dev/docs/cli/) 在 lich 里的运行方式完全相同。每个智能体的
+  可执行文件只需指定一次，之后可以设一个默认，也可以每个会话单独选。lich 能从会话里
+  *读出*哪些信息，各智能体不尽相同，详见[各智能体支持情况](#各智能体支持情况)一表。
+- **用的是真正的终端。** shell 由 PTY 驱动，每个项目可以开多个，用 GPU 渲染；滚动
+  缓冲区支持搜索，整页刷新后也不会丢。给某个终端设一个入口命令（`lazygit`、`k9s`、
+  `pnpm dev`），它每次打开都直接进入这个工具，Linux、macOS 和 Windows 上都一样：
+  启动前不加载 shell rc 或 PowerShell profile，所以你这里能用的入口命令，分享给别人
+  也照样能用。底栏会跟着 `cd` 切换目录并显示当前分支；Claude Code、Codex 和 Kiro CLI
+  会话还会显示模型和上下文窗口用量；Claude Code、Codex、Antigravity、Cursor CLI 和
+  OpenCode Go 订阅会显示套餐滚动窗口还剩多少额度；如果你需要，还能显示会话花了多少钱，
+  前提是该智能体记录了这项数据。
+- **让会话之间互派任务。** 把任务交给另一张卡片，由那张卡片上的智能体写回答案，两边跑的
+  是什么智能体都可以：智能体通过启动时注入的工具访问其他会话，Claude Code 和 Codex 用
+  MCP，其余的由插件提供。这整套能力在任何 shell 里也都能通过 `lich` 命令使用，同样支持
+  `--json`，脚本不需要智能体参与就能操控会话（[`docs/cli.md`](docs/cli.md)）。
+- **同时盯住好几个会话。** 把任意会话放到当前会话旁边组成分屏，lich 会根据面板数量和
+  窗口大小自动排版：八个会话在超宽屏上排成两行、每行四个，在笔记本上每行两个。派出过任务
+  的会话，点一下就能把相关会话围着它排好。每个分屏都有名字，一个项目可以保存任意多个，
+  每个分屏在侧栏里占一块，可以折叠、重命名或拆散。
+- **一键开 worktree，免去准备工作。** 从任意基础分支创建 worktree，lich 会复制被
+  gitignore 忽略的 `.env*` 文件，分配一个其他检出和本机任何进程都没在用的开发服务器端口，
+  并在智能体启动前运行项目自己的初始化脚本。如果从当前检出里未提交的改动开始，这些改动
+  也会一并带过去，包括未跟踪的文件。
+- **在沙箱里跑会话。** 智能体可以在操作系统沙箱里启动：全新的空 home 目录，里面只有该
+  智能体自己的状态，机器其余部分只读，只有打开它的那个检出目录可写。你的 ssh 密钥、云服务
+  凭据和磁盘上的其他仓库，在沙箱里根本看不到；放手让智能体跳过权限确认时，这就是对应的
+  防护。Linux 上用 bubblewrap，macOS 上用 `sandbox-exec`；它不能用来防御恶意代码，
+  它拦不住哪些事，见 [`docs/ceilings.md`](docs/ceilings.md)。
+- **在原处审查 diff。** CodeMirror 面板在实时文件树旁显示工作区改动，可以按需折叠只改了
+  空白的部分，改过的图片或 PDF 会对比显示改动前后。选中内容后右键，就能针对这些行写评论；
+  这批评论会合成一条 prompt 粘贴到会话里，但不会自动发送。面板的“代码”标签页可以浏览
+  检出目录，并搜索文件内容。
+- **在这里完成 Pull Request。** 列出仓库里开着的 PR，把其中一个检出到独立的 worktree，
+  然后阅读 diff、直接在 lich 里审查并合并，可选的合并方式就是基础分支实际允许的那些。
+  在还没有 PR 的分支上，点 **让智能体创建** 会请该分支的会话去开一个，你按回车之前什么
+  都不会发出去。
 
-除此之外：[主题](docs/themes.md)可以按 JSON 导入或从 git 仓库安装，`Ctrl`/`Cmd`+`K`
-命令面板既能按名字也能按对话里说过的内容跳转，某个会话在等你输入时会发一条桌面通知，
-`lich rage` / `lich doctor` 则留给它完全起不来的时候。
+此外还有：[主题](docs/themes.md)，可以导入 JSON，也可以从 git 仓库安装；`Ctrl`/`Cmd`+`K`
+命令面板，可以按名称或聊过的内容跳到会话；会话等你回复时弹出桌面通知；以及 lich 完全
+起不来时用的 `lich rage` / `lich doctor`。
 
-项目处于活跃开发中：bug 和功能需求请提到
-[Issues](https://github.com/lichdotdev/lich/issues)，每个版本改了什么见
+项目正在积极开发中：bug 和功能需求请提交到
+[Issues](https://github.com/lichdotdev/lich/issues)，各版本的改动见
 [CHANGELOG.md](CHANGELOG.md)。
 
-## 各智能体支持到什么程度
+## 各智能体支持情况
 
-每个智能体的启动方式都一样：在真实终端里拉起，按会话 id 恢复，用同一套沙箱隔离，也用
-同一套办法去找你的其他会话。不一样的是 lich 能从一个会话里**读**回什么，因为它读的是
-各家 CLI 自己写下来的东西，而没有两家写下的是同一批。
+每个智能体都在真实终端里启动，都按对话 id 恢复，都用同一套沙箱隔离，访问其他会话的方式也
+相同。区别在于 lich 能从会话里*读出*什么：lich 读取的是各 CLI 自己写下的记录，而每家
+记录的内容都不一样。
 
-| 你能看到什么 | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
+| 功能 | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
-| 底栏里的上下文窗口 | 有 | 有 | 无 | 无 | 无 | 无 | 无 | 有 |
-| 底栏里的花费 | 有 | 有 | 无 | 有 | 有 | 有 | 无 | 按点数计 |
-| 套餐额度还剩多少 | 有 | 有 | 有 | 仅 OpenCode Go | 无 | 无 | 有 | 无 |
-| 被套餐用量上限打断的一轮，在上限重置后自动接着做 | 有 | 有 | 无 | 由其自身重试 | 由其自身重试 | 无 | 无 | 无 |
-| 一轮进行中转圈，结束后成环 | 有 | 有 | 有 | 有 | 有 | 无 | 有 | 有 |
-| 智能体开的拉取请求在一轮结束时出现在卡片上 | 有 | 有 | 有 | 有 | 有 | 无，等窗口重新获得焦点 | 有 | 有 |
-| lich 在浅色和深色主题之间切换时，按新外观重绘 | 有 | 无 | 无 | 有 | 有 | 无 | 有 | 无 |
-| 智能体卡在等你时响铃 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
-| Ctrl+Shift+Y 跳到下一个在等你的会话 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
-| 对话正在压缩时，卡片会标明 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 侧栏按状态筛选：Waiting、Running、Unread | 有 | 有 | 无 Waiting | 有 | 无 Waiting | 无，总在 Idle | 无 Waiting | 无 Waiting |
-| 被你的智能体在另一个会话里当作工具运行时（`claude -p`、`cursor-agent -p`），不会冒充那个会话的卡片 | 有 | 有 | 有 | 有 | 有 | 有 | 有 | 无 |
-| 一轮跑着时不让机器进入空闲休眠 | 有 | 有 | 有 | 有 | 有 | 无 | 有 | 有 |
-| Review 页的 **Last turn**，带智能体自己的收尾话 | 有 | 有 | 有 | 有 | 有 | 无 | 有 | 有 |
-| 从命令面板搜索对话里说过的内容 | 有 | 有 | 有 | 有 | 有 | 有 | 无 | 有 |
-| 在命令面板的 History 页恢复在 lich 之外开始的对话 | 有 | 有 | 有 | 有 | 有 | Linux；macOS 和 Windows 未测 | 有 | 有 |
-| 长文本粘贴可以以可编辑的完整文本出现，而不是折叠成占位符（设置 › Providers，默认关闭） | 有 | 无 | 无 | 有 | 未测 | 无，会变成 `paste_N.txt` 附件 | 无 | 有 |
-| 把一段对话分叉到新的 worktree，在原生窗口中也可在同一检出内分叉 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
-| 在智能体自己的应用里恢复另一张卡片已打开的对话时，原生窗口发出警告 | 有 | 在你的下一个提示时 | 在你的下一个提示时，未测试 | 无 | 有 | 在它的下一次工具调用时 | 无 | 有 |
-| 按指定的推理强度打开会话 | 有 | 有 | 有 | 无 | 有 | 无 | 写在模型名里 | 有 |
+| 底栏显示上下文窗口 | 有 | 有 | 无 | 无 | 无 | 无 | 无 | 有 |
+| 底栏显示花费 | 有 | 有 | 无 | 有 | 有 | 有 | 无 | 按点数计 |
+| 套餐剩余额度 | 有 | 有 | 有 | 仅 OpenCode Go | 无 | 无 | 有 | 无 |
+| 因套餐用量上限中断的一轮，在额度重置后自动继续 | 有 | 有 | 无 | 由其自身重试 | 由其自身重试 | 无 | 无 | 无 |
+| 一轮运行中显示转圈，结束时显示圆环 | 有 | 有 | 有 | 有 | 有 | 无 | 有 | 有 |
+| 智能体开的 PR 在一轮结束时显示在卡片上 | 有 | 有 | 有 | 有 | 有 | 无，等窗口重新获得焦点时显示 | 有 | 有 |
+| lich 在浅色和深色主题间切换时，按新主题重绘 | 有 | 无 | 无 | 有 | 有 | 无 | 有 | 无 |
+| 智能体等你处理时响铃 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
+| Ctrl+Shift+Y 跳到下一个等你处理的会话 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
+| 对话正在压缩时，卡片上会显示 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 侧栏按状态筛选：等待中、运行中、未读 | 有 | 有 | 无“等待中” | 有 | 无“等待中” | 无，始终为“空闲” | 无“等待中” | 无“等待中” |
+| 由你的智能体在另一个会话里调用（`claude -p`、`cursor-agent -p`）时，不会算到那个会话的卡片上 | 有 | 有 | 有 | 有 | 有 | 有 | 有 | 无 |
+| 一轮运行时阻止机器空闲休眠 | 有 | 有 | 有 | 有 | 有 | 无 | 有 | 有 |
+| “审查”标签页的 **上一轮**，附智能体自己的总结 | 有 | 有 | 有 | 有 | 有 | 无 | 有 | 有 |
+| 在命令面板里搜索对话内容 | 有 | 有 | 有 | 有 | 有 | 有 | 无 | 有 |
+| 在命令面板的“历史”标签页恢复在 lich 之外开始的对话 | 有 | 有 | 有 | 有 | 有 | Linux；macOS 和 Windows 未测试 | 有 | 有 |
+| 长文本粘贴可以作为可编辑的文本出现，不折叠成占位符（设置 › 提供商，默认关闭） | 有 | 无 | 无 | 有 | 未测量 | 无，会变成 `paste_N.txt` 附件 | 无 | 有 |
+| 把对话分叉到新的 worktree；在原生窗口里也可以分叉到原检出目录 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
+| 在智能体自己的应用里恢复另一张卡片已打开的对话时，原生窗口会发出警告 | 有 | 在你下一次发提示词时 | 在你下一次发提示词时，未测试 | 无 | 有 | 在它下一次调用工具时 | 无 | 有 |
+| 以指定的推理强度打开会话 | 有 | 有 | 有 | 无 | 有 | 无 | 写在模型名里 | 有 |
 | 以 ultracode 模式打开会话 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 多个账号以 profile 并存，各自完整登录；会话可以移到另一个账号，在同一张卡片里接着做（在原生窗口中，实验性：设置 › Providers） | 有 | 有；每个 profile 有自己的插件，Personal 的设置所有 profile 共用 | 无 | 有；在终端卡片里登录。会话不能移到另一个 profile：对话和登录信息存在同一个数据库里 | 有；在终端卡片里登录，各 profile 共用设置 | 未测量 | Linux 和 Windows（macOS 上登录信息在钥匙串里）；在终端卡片里登录，`mcp.json`、hooks 和 skills 各 profile 共用 | 仅 Linux（macOS 把登录信息放在钥匙串里，Windows 上没有办法移动它）；在终端卡片里登录，对话由所有 profile 共用 |
-| 在主账号里信任过的文件夹，在其他所有 profile 中打开时都不再问“trust this folder?” | 有 | 有 | 无 profile | 什么都不问 | 什么都不问 | 未测量 | 有 | 什么都不问 |
-| 沙箱里的会话打开时不问“trust this folder?” | 有 | 有 | 有 | 什么都不问 | 什么都不问 | 有，也不再问是否初始化项目 | 有 | 什么都不问 |
-| 信任过的文件夹的 worktree 打开时不问“trust this folder?” | 有 | 有 | 有 | 什么都不问 | 什么都不问 | 有，也不再问是否初始化项目 | 有 | 什么都不问 |
-| 用 `lich control` 或智能体操控运行中的会话：发提示、停止、换模型、推理强度、斜杠命令 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 其他会话发来的消息直接送达，不经终端键入 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 智能体启动的子智能体作为 lich 会话运行，有自己的卡片，在发起会话的检出目录中工作，交回完整报告后自动关闭；它自己启动的子智能体也有卡片，再往下一层为止 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 向运行中的会话问一个旁支问题，不打断它（`lich ask`） | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 上下文、花费和套餐用量取 CLI 自己量出的数 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 终端状态栏显示本会话欠谁一个回复、在等谁，以及待收取的回复 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 子代理或工作流步骤私下委派任务 | 有 | 有 | 有 | 有 | 有 | 有 | 有 | 有 |
-| 恢复的会话保留原来的模型和推理强度 | 仅模型 | 有 | 无 | 模型 | 有 | 无 | 模型 | 模型；推理强度未测 |
-| 打断等待结果后，结果仍留着等你收取 | 有 | 有 | 有 | 有 | 无 | 有 | 有 | 有 |
-| 交给另一个会话的任务，对方一轮结束却没回复时立即报告"未回复" | 有 | 有 | 有 | 有 | 有 | 无，等到期限 | 有 | 有 |
-| lich 发给智能体的消息（交办的任务、结果已就绪、提醒）使用你选择的提示语言 | 有 | 有 | 有 | 有 | 有 | 有 | 有 | 有 |
-| 启动时用提示语言告诉智能体：分派工作要开 lich 会话，而不是看不见的子代理 | 有 | 无 | 无 | 无 | 有 | 无 | 无 | 无 |
+| 多个账号以配置档案并存，各自独立完整登录；会话换到另一个账号后仍在同一张卡片里继续（原生窗口，实验性功能：设置 › 提供商） | 有 | 有，每个配置档案有自己的插件，“个人”的设置由所有配置档案共用 | 无 | 有，在终端卡片里登录；会话不能换到另一个配置档案，因为对话和登录信息存在同一个数据库里 | 有，在终端卡片里登录，所有配置档案共用设置 | 未测量 | Linux 和 Windows（macOS 上登录信息在钥匙串里），在终端卡片里登录，`mcp.json`、hooks 和 skills 由所有配置档案共用 | 仅 Linux（macOS 把登录信息放在钥匙串里，Windows 上没有办法迁移），在终端卡片里登录，对话由所有配置档案共用 |
+| 主账号里信任过的文件夹，在其他配置档案里打开时都不再问“trust this folder?” | 有 | 有 | 无配置档案 | 本来就不问 | 本来就不问 | 未测量 | 有 | 本来就不问 |
+| 沙箱会话打开时不问“trust this folder?” | 有 | 有 | 有 | 本来就不问 | 本来就不问 | 有，也不再问是否初始化项目 | 有 | 本来就不问 |
+| 信任过的文件夹，其 worktree 打开时不问“trust this folder?” | 有 | 有 | 有 | 本来就不问 | 本来就不问 | 有，也不再问是否初始化项目 | 有 | 本来就不问 |
+| 用 `lich control` 或智能体操控运行中的会话：发提示词、停止、换模型、换推理强度、斜杠命令 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 其他会话发来的消息直接送达，不经终端输入 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 智能体启动的子智能体作为 lich 会话运行：有自己的卡片，在发起会话的检出目录里工作，交回完整报告后自动关闭；子智能体再启动的子智能体也有卡片，多一层为止 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 不打断运行中的会话，顺带问它一个问题（`lich ask`） | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 上下文、花费和套餐用量直接采用 CLI 自己的统计 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 终端状态栏显示该会话欠谁一个回复、在等谁，以及有哪些回复可以收取 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
+| 从子智能体或工作流步骤私下委派任务 | 有 | 有 | 有 | 有 | 有 | 有 | 有 | 有 |
+| 恢复的会话保留原来的模型和推理强度 | 仅模型 | 有 | 无 | 模型 | 有 | 无 | 模型 | 模型；推理强度未测试 |
+| 中断等待后，结果仍会留着等你收取 | 有 | 有 | 有 | 有 | 无 | 有 | 有 | 有 |
+| 交给另一个会话的任务，对方一轮结束却没回复时，立即报告“未回复” | 有 | 有 | 有 | 有 | 有 | 无，要等到截止时间 | 有 | 有 |
+| lich 发给智能体的消息（派出的任务、结果已就绪、通知）使用你选的提示词语言 | 有 | 有 | 有 | 有 | 有 | 有 | 有 | 有 |
+| 启动时用提示词语言告诉智能体，要把工作分派成 lich 会话，而不是看不见的子智能体 | 有 | 无 | 无 | 无 | 有 | 无 | 无 | 无 |
 
-每一处缺口都是刻意的，没有一处是 lich 藏起了 CLI 已经报告的东西，
-[`docs/ceilings.md`](docs/ceilings.md) 写着每一处背后量到了什么。
+每一处差异都是有意为之，没有一处是 CLI 报告了而 lich 不显示；每一处背后实测了什么，见
+[`docs/ceilings.md`](docs/ceilings.md)。
 
 ## 安装
 
-一行命令 —— 识别你的发行版、校验校验和，并通过你的包管理器安装原生软件包及其依赖：
+一行命令即可：脚本会识别你的发行版、校验 checksum，再通过包管理器安装原生软件包及其依赖：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
@@ -142,76 +140,74 @@ curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | s
 
 | 平台 | 安装方式 | 运行时依赖 |
 | --- | --- | --- |
-| **Linux** | 上面的 `install.sh`，或 AUR 的 [`lich-bin`](https://aur.archlinux.org/packages/lich-bin)（`yay -S lich-bin`） | `zenity`，以及随软件包附带的窗口所需的 glibc 2.34 或更新版本（Debian 12、Ubuntu 22.04、RHEL 9 及以上） |
-| **macOS** | `brew install --cask lichdotdev/tap/lich` | 无需任何东西 —— Apple Silicon 和 Intel 上窗口都随应用一起附带 |
-| **Windows** | 从 [Releases](https://github.com/lichdotdev/lich/releases) 下载安装程序或便携版 zip，或使用 Scoop：`scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | 无需任何东西，每种方式都自带窗口 |
+| **Linux** | 上面的 `install.sh`，或 AUR 的 [`lich-bin`](https://aur.archlinux.org/packages/lich-bin)（`yay -S lich-bin`） | `zenity`；软件包自带的窗口需要 glibc 2.34 或更高版本（Debian 12、Ubuntu 22.04、RHEL 9 及以上） |
+| **macOS** | `brew install --cask lichdotdev/tap/lich` | 无，Apple Silicon 和 Intel 上窗口都随应用附带 |
+| **Windows** | 从 [Releases](https://github.com/lichdotdev/lich/releases) 下载安装程序或便携版 zip，或用 Scoop：`scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | 无，两种方式都自带窗口 |
 
-手动的分发版软件包、Linux 压缩包和 Windows 便携版 zip 见 [INSTALL.md](INSTALL.md)。macOS 和 Windows 的
-二进制文件未签名 —— 在公证/签名做好之前，Gatekeeper 和 SmartScreen 会发出警告。用
-Homebrew 安装可以绕开 Gatekeeper 的提示；从 Releases 页面下载的二进制文件则需要手动
-清除隔离标记。在 macOS 上，cask 会把 `Lich.app` 装进 `/Applications`，lich 因此有了
-自己的图标，运行期间 Dock 里显示的也是它。从旧的 formula 升级需要先 `brew uninstall lich`，
-[INSTALL.md](INSTALL.md) 里写了这一点。
+各发行版的手动安装包、Linux tarball 和 Windows 便携版 zip 见 [INSTALL.md](INSTALL.md)。macOS 和
+Windows 的二进制文件没有签名，在公证和签名上线之前，Gatekeeper 和 SmartScreen 会弹出警告。
+用 Homebrew 安装不会触发 Gatekeeper 提示；从 Releases 页面下载的则需要手动清除隔离标记。
+macOS 上 cask 会安装 `Lich.app`，所以 lich 在 `/Applications` 和运行时的 Dock 里都有自己的
+图标。从旧的 formula 升级，需要先执行 `brew uninstall lich`，原因见 [INSTALL.md](INSTALL.md)。
 
 ## 快速上手
 
 1. **安装**并启动 `lich`。
-2. **打开一个项目** —— 标签栏里的 `+` 会列出你最近关掉的项目，也能调起系统的文件夹
-   选择器；指向一个 git 仓库即可。
-3. **把 lich 指向你的智能体** —— 首次启动会列出在你机器上找到的智能体；之后可以在
-   设置 › Providers 里设置各自的二进制文件路径，并选定默认用哪一个。项目可以沿用
-   这个默认，也可以在同一屏里选另一个 provider。
-4. **开一个会话** —— *New Session* 会在项目里启动一个跑着你的智能体的终端。每个
-   checkout 的标题栏也有一个 `+` 菜单，可以在那个 checkout 里直接打开任意已启用的
-   provider 或一个纯终端；点标题栏本身则会折叠或展开它下面的会话。
-5. **分出一个 worktree**（可选）—— 从任意基础分支创建一个；lich 会为它播种文件，并把你
-   带进一个新的会话。
+2. **打开项目**：标签栏里的 `+` 会列出最近关闭的项目，并打开系统的文件夹选择器；选一个
+   git 仓库即可。
+3. **为 lich 指定智能体**：首次启动时会列出在你机器上找到的智能体；之后可以在
+   设置 › 提供商里设置每个智能体的可执行文件路径，并选定默认智能体。每个项目可以沿用
+   默认，也可以在同一界面里改选别的智能体。
+4. **开启会话**：*新建会话*会在项目里打开一个终端并运行你的智能体。每个检出目录的标题栏
+   也有一个 `+` 菜单，可以直接在该检出目录里打开任意已启用的智能体或普通终端；点击标题栏
+   本身可以折叠或展开其下的会话。
+5. **新建 worktree** *（可选）*：从任意基础分支创建；lich 准备好文件后，会直接带你进入
+   一个新会话。
 
 ## 配置
 
-- **智能体** —— 在设置 › Providers 里为每个 provider 设定二进制文件路径，并选定所有
-  项目的默认。那里当前项目的那一行可以覆盖这个选择；**Clear** 会移除这层覆盖，之后默认
-  的变化便会自动流过来。没有设定路径时，会话运行登录 shell 的 `PATH` 上第一个找到的
-  该 provider 二进制文件；原生窗口的 Binary 一栏会写出是哪个文件、它的版本，并列出
-  `PATH` 上其他版本的同名文件，`lich doctor` 也会就此发出警告。要选定其中一个，在
-  Binary 里填它的路径（即设置项 `provider.<id>.bin`，例如 `provider.codex.bin`）。
-  lich 能读到套餐的 provider，其一节的开头是你的套餐还剩多少。底栏显示什么，在设置 ›
-  Appearance 里拖动它的各项来设定；费用读数一开始是隐藏的，因为只有当你按 token 计费时
-  这个数字才有意义。
-- **Worktree** —— 项目仓库里的 `.lich/setup-worktree.sh` 会在新 worktree 的终端里
-  先于智能体运行；New worktree 对话框会展示这个脚本，若仓库没有则给出检测到的建议。
-  `.worktreeinclude` 文件用来调整哪些被 gitignore 的文件会被复制过去。
-- **会话钩子** —— 在设置里装上 [lich 插件](https://github.com/lichdotdev/lich-plugin)
-  之后，会话会给自己的卡片起标题，并在它写入文件的那一刻刷新 git。
-- **稳定性承诺** —— 哪些部分可以放心写脚本依赖、哪些可能在任何版本里变动，写在
-  [docs/stability.md](docs/stability.md)（英文）。
+- **智能体**：在设置 › 提供商里设置每个智能体的可执行文件路径，以及所有项目的默认智能体。
+  当前项目在那里的那一行可以覆盖这个选择；点**清除**会去掉覆盖，之后默认值的改动就会自动
+  生效。没有设置路径时，会话会运行登录 shell 的 `PATH` 里找到的第一个该智能体可执行文件；
+  在原生窗口里，“可执行文件”一栏会显示具体是哪个文件及其版本，并列出 `PATH` 里的其他版本，
+  `lich doctor` 也会对此发出警告。要指定其中一个，在“可执行文件”里填写它的路径（对应设置项
+  `provider.<id>.bin`，例如 `provider.codex.bin`）。
+  只要 lich 能读到套餐信息，智能体那一节开头就会显示套餐剩余额度。底栏显示哪些内容，在
+  设置 › 外观里拖动各项来调整；花费默认隐藏，因为只有按 token 计费时这个数字才有意义。
+- **Worktree**：项目检出目录里的 `.lich/setup-worktree.sh` 会在新 worktree 的终端里、
+  智能体启动前运行；“新建工作树”对话框会显示这个脚本，仓库里没有时会给出自动检测到的建议。
+  `.worktreeinclude` 文件可以调整哪些被 gitignore 忽略的文件会被复制过去。
+- **会话钩子**：在设置里安装 [lich 插件](https://github.com/lichdotdev/lich-plugin)后，
+  会话会自动给自己的卡片起标题，并在写入文件时立即刷新 git 状态。
+- **稳定性**：lich 哪些部分可以放心用脚本调用、哪些在任何版本里都可能变动，见
+  [docs/stability.md](docs/stability.md)。
 
 ## 隐私与更新
 
-一切都跑在你自己的机器上。没有账号，不用登录，没有遥测：后端是一个带 token 鉴权的本地
-回环监听器。lich 只会为下面这些事主动联网，除此之外没有别的：
+一切都在你的机器上运行。不需要账号，不需要登录，没有遥测：后端只监听本地回环地址，并用
+token 鉴权。lich 自己只会为下面这几件事联网，别的一概不连：
 
-- **更新**：启动时以及每小时向 GitHub Releases 查询一次版本，启动时还会读取 GitHub 上
+- **更新**：启动时和之后每小时向 GitHub Releases 检查一次新版本，启动时还会读取 GitHub 上
   lich 插件的发布列表。
-- **套餐用量**：各 provider 自己的用量接口（Anthropic、OpenAI、Cursor、OpenCode Go），
-  用会话的 CLI 已有的登录，最多每五分钟一次。Antigravity 的套餐直接问 `agy` 本身。
-- **价格**：GitHub 上 LiteLLM 公开的价格表，只在内置价格表不认识某个模型时取一次。
+- **套餐用量**：使用会话 CLI 已有的登录，查询各智能体自己的用量接口（Anthropic、OpenAI、
+  Cursor、OpenCode Go），最多每五分钟一次。Antigravity 的套餐信息直接从 `agy` 读取。
+- **价格**：GitHub 上 LiteLLM 的公开价格表，只在内置价格表里没有某个模型时下载一次。
 
-Windows 安装程序装的版本会就地更新；用 Homebrew、Scoop、AUR 或 Linux 软件包装的，
-则通过各自的包管理器更新，lich 会把命令递给你。
-设置 › 帮助会在你把日志附到 bug 报告之前，说明日志文件里都带了什么 —— 路径、项目名和
-分支名、你的 gh 登录名，绝不包含会话 token；`lich rage` 会把这份报告收进一个压缩包，
-而不上传其中任何内容。
+Windows 安装程序装的版本会自动原地更新；通过 Homebrew、Scoop、AUR 或 Linux 软件包安装的，
+则通过对应的包管理器更新，lich 会给出要执行的命令。
+在你把日志附到 bug 报告之前，设置 › 帮助会说明日志文件里有哪些内容：路径、项目名和分支名、
+你的 gh 登录名，但绝不包含会话 token；`lich rage` 会把这份报告打包成一个压缩文件，不会上传
+任何内容。
 
 ## 从源码构建
 
-纯 Go 后端（Go 1.27，`CGO_ENABLED=0`），通过带 token 鉴权的本地回环监听器（HTTP RPC +
-WebSocket）伺服内嵌的 React 18 / TypeScript / Vite 前端。终端是 xterm.js 配 WebGL
-插件；代码和 diff 界面是 CodeMirror 6。Chromium 外壳有一份决策记录：
-[`docs/chromium-shell.md`](docs/chromium-shell.md)。前置条件是 **Go 1.27.0+**、
-**Node + pnpm** 和 **[Task](https://taskfile.dev)** —— Go 二进制文件不需要 C 工具链。
-窗口（`shell/`，基于 CEF 的 Rust）另外需要 Rust 工具链，Linux 上还要
-Chromium 的开发库，Windows 上还要 MSVC；[CONTRIBUTING.md](CONTRIBUTING.md) 列出了它们。
+后端是纯 Go（Go 1.27，`CGO_ENABLED=0`），通过本地回环监听器（HTTP RPC + WebSocket，
+token 鉴权）提供内嵌的 React 18 / TypeScript / Vite 前端。终端用 xterm.js 加 WebGL
+插件；代码和 diff 界面用 CodeMirror 6。选择 Chromium 外壳的决策记录见
+[`docs/chromium-shell.md`](docs/chromium-shell.md)。前置条件：**Go 1.27.0+**、
+**Node + pnpm** 和 **[Task](https://taskfile.dev)**；构建 Go 二进制文件不需要 C 工具链。
+窗口（`shell/`，基于 CEF 的 Rust 程序）还需要 Rust 工具链，Linux 上另需 Chromium 的开发库，
+Windows 上另需 MSVC，详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ```bash
 task dev      # 热重载开发模式（Vite 跑在 :9245）
@@ -220,19 +216,19 @@ task run      # 构建并运行
 task test     # Go 与前端测试套件
 ```
 
-在本地打包一个 Linux 发行版本（需要 [nfpm](https://nfpm.goreleaser.com/)）：
+在本地打包 Linux 发布版本（需要 [nfpm](https://nfpm.goreleaser.com/)）：
 
 ```bash
 task package   # bin/ 下生成 .deb + .rpm + Arch .pkg.tar.zst
 ```
 
-在 lich 已经跑着的八个之外再加一个智能体 CLI，是唯一一处会落到两个仓库、十几个文件里
-的改动：[`docs/adding-a-provider.md`](docs/adding-a-provider.md) 就是那张地图。
+在 lich 现有的八个智能体 CLI 之外再接入一个，是唯一一种要改两个仓库、十几个文件的改动：
+具体要改哪些地方，见 [`docs/adding-a-provider.md`](docs/adding-a-provider.md)。
 
 ## 赞助
 
-lich 由一个人编写和维护。赞助为投入其中的时间买单，也让这个项目保持独立：这个应用没有
-付费版本，将来也不会有。
+lich 由一个人开发和维护。你的赞助用来支付投入的时间，也让项目保持独立：这个应用没有
+付费版，将来也不会有。
 
 [**成为赞助者**](https://github.com/sponsors/omartelo)
 
@@ -248,6 +244,6 @@ lich 由一个人编写和维护。赞助为投入其中的时间买单，也让
 
 [AGPL-3.0-only](LICENSE) © 2026 omartelo
 
-lich 是自由软件：你可以在 GNU Affero 通用公共许可证第 3 版的条款下使用、研究、修改和
-再分发它。任何被分发或通过网络提供服务的衍生作品，都必须以同一许可证发布。截至 v0.9.0
-（含）的发行版本仍为 MIT 许可。
+lich 是自由软件：你可以按照 GNU Affero 通用公共许可证第 3 版的条款使用、研究、修改和
+再分发它。任何分发出去或通过网络提供服务的衍生作品，都必须以同一许可证发布。v0.9.0
+及更早的版本仍采用 MIT 许可证。

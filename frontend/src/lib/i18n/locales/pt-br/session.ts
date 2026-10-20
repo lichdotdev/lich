@@ -41,7 +41,7 @@ export const session = {
   },
   spawnGate: {
     checkoutGone:
-      "O worktree desta sessão não existe mais, então a sessão foi fechada. Recrie o worktree para retomá-la.",
+      "A worktree desta sessão não existe mais, então a sessão foi fechada. Recrie a worktree para retomá-la.",
     conversationGone: "A conversa anterior não está mais disponível. Iniciando uma nova sessão.",
   },
   fork: {

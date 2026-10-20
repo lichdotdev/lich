@@ -252,11 +252,11 @@ export const pulls = {
   },
   pulls: {
     alreadyRemoved: "{name} já foi removido",
-    pinnedSession: "O worktree tem uma sessão fixada. Desafixe-a primeiro.",
-    notCreatedByLich: "O lich não criou este worktree. Remova-o pela barra lateral.",
-    dirty: "O worktree tem alterações não commitadas. Remova-o pela barra lateral.",
+    pinnedSession: "A worktree tem uma sessão fixada. Desafixe-a primeiro.",
+    notCreatedByLich: "O lich não criou esta worktree. Remova-a pela barra lateral.",
+    dirty: "A worktree tem alterações não commitadas. Remova-a pela barra lateral.",
     removed: "{name} removido",
-    removeFailed: "Falha ao remover o worktree: {error}",
+    removeFailed: "Falha ao remover a worktree: {error}",
     merged: "#{number} mergeado em {base}",
     announceFailed: "Não foi possível avisar as sessões em {name}: {error}",
     removeWorktree: "Remover worktree",
@@ -271,7 +271,7 @@ export const pulls = {
     runningRemoval: {
       title: "A sessão ainda está em execução",
       description:
-        "{labels} está no meio de um turno em {name}. Remover o worktree a interrompe onde está; o turno em andamento é perdido.",
+        "{labels} está no meio de um turno em {name}. Remover a worktree a interrompe onde está; o turno em andamento é perdido.",
       removeAnyway: "Remover mesmo assim",
     },
     noSessionToHandOff: "Não há sessão neste checkout para receber isto",
