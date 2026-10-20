@@ -1405,6 +1405,19 @@ func TestFocusNamesTheSessionItBroughtUp(t *testing.T) {
 	}
 }
 
+func TestFocusTakesTheSessionLinkANotificationClickHandsIt(t *testing.T) {
+	t.Parallel()
+	f := newFakeLich(t, focusedBody)
+
+	code, _, stderr := run(t, f, "focus", "lich-session:abc-123")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	if got := optionsOf[relay.FocusOptions](t, f.only(t)).Target; got != "abc-123" {
+		t.Errorf("target = %q, want the session id inside the link", got)
+	}
+}
+
 func TestFocusJSONIsTheFocusedObject(t *testing.T) {
 	t.Parallel()
 	f := newFakeLich(t, focusedBody)

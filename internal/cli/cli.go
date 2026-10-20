@@ -432,6 +432,12 @@ func (c *client) insert(args []string) error {
 	return nil
 }
 
+// sessionLinkScheme is the link a click on the native window's Windows
+// toast starts `lich focus "%1"` with (native/cmd/lich-native,
+// desktop_notes_toast.go): lich-session:<id>. Windows may close the link
+// with a slash.
+const sessionLinkScheme = "lich-session"
+
 func (c *client) focus(args []string) error {
 	flags := newFlagSet("focus")
 	project := flags.String(
@@ -446,8 +452,10 @@ func (c *client) focus(args []string) error {
 		return usageError("focus")
 	}
 
+	allowWindowForeground()
+	target := strings.TrimSuffix(strings.TrimPrefix(flags.Arg(0), sessionLinkScheme+":"), "/")
 	var focused relay.Focused
-	call := []any{relay.FocusOptions{From: c.sessionID(), Target: flags.Arg(0), Project: *project}}
+	call := []any{relay.FocusOptions{From: c.sessionID(), Target: target, Project: *project}}
 	if err := c.call(context.Background(), "relay.Focus", call, shortCall, &focused); err != nil {
 		return err
 	}

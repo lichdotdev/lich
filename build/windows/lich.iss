@@ -54,6 +54,13 @@ Source: "..\..\bin\shell\*"; DestDir: "{app}\shell"; Flags: ignoreversion recurs
 ; shortcut and draws its icon, pinned or not.
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"; AppUserModelID: "omartelo.lich"
 
+[Registry]
+; The native window writes these at every start (its toasts' name and the
+; lich-session: link a click goes through), so a Scoop or zip install gets
+; them too; the installer only takes them away on uninstall.
+Root: HKCU; Subkey: "Software\Classes\lich-session"; Flags: uninsdeletekey dontcreatekey
+Root: HKCU; Subkey: "Software\Classes\AppUserModelId\omartelo.lich"; Flags: uninsdeletekey dontcreatekey
+
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
 ; Explicit update mode inherits lich's pinned port, restart marker and window

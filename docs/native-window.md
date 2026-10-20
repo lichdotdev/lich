@@ -82,12 +82,16 @@ built from a pinned Ghostty commit.
   the native window reads `terminal.TurnStates`: each live session's status, usage and the working directory
   (or tmux, ssh and the like) it last moved to. The web window does not read it, so after a reload its cards
   show the checkout's path until the next `cd`, and no status or usage until the next report.
-- **Clickable notifications are Linux only.** The native window talks to the freedesktop notification server
-  itself (`desktop_notes_linux.go`); on Windows and macOS it still raises the backend's plain `system.Notify`,
-  with no click, no replacing and nothing taken down. On Wayland, Open brings the window up through
-  xdg-activation (`Window.Activate` in the lichdotdev/gio fork) with the token the server hands over; a
-  compositor may only mark the window urgent instead (Hyprland does unless `misc:focus_on_activate` is on).
-  What each notification server makes of it:
+- **Notifications are clickable on every system, each its own way.** On Linux the native window talks to
+  the freedesktop notification server itself (`desktop_notes_linux.go`). On Windows it raises a toast under
+  lich's AppUserModelID through Windows PowerShell (`desktop_notes_windows.go`): Open and a click on the
+  toast go through the `lich-session:` link, registered per user, to `lich focus`, so they also work from
+  the notification center after the window closed, and each toast costs about a second of a PowerShell
+  process. On macOS it uses the Notification Center (`desktop_notes_darwin.m`), which answers only from
+  inside Lich.app; a bare `lich-native` falls back to the backend's plain `system.Notify`. On Wayland, Open
+  brings the window up through xdg-activation (`Window.Activate` in the lichdotdev/gio fork) with the token
+  the server hands over; a compositor may only mark the window urgent instead (Hyprland does unless `misc:focus_on_activate` is on).
+  What each Linux notification server makes of it:
   - **swaync** draws Open and Dismiss as buttons and hands over the activation token, so Open raises the
     window. It crops the icon to a circle, which is why lich's icon is a disc with its badge inside.
   - **mako** draws no buttons: a left click is Open, a right click dismisses, and `makoctl menu` lists both.
