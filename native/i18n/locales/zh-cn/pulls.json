@@ -64,9 +64,7 @@
     "count": {
       "one": "{count} 个冲突文件",
       "other": "{count} 个冲突文件"
-    },
-    "showFewer": "收起",
-    "more": "另有 {hidden} 个"
+    }
   },
   "pullsEmptyState": {
     "openFailed": "无法打开拉取请求：{error}",
@@ -132,6 +130,10 @@
     "threadsUnresolved": "已请求更改 · {total} 个讨论串中有 {open} 个未解决",
     "threadsResolved": "已请求更改 · 所有讨论串均已解决",
     "conflictsWith": "与 {base} 存在冲突",
+    "conflictFiles": {
+      "one": "· {count} 个文件",
+      "other": "· {count} 个文件"
+    },
     "mergeable": "可合并",
     "checkingMergeability": "正在检查是否可合并…"
   },

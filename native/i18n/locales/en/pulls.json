@@ -64,9 +64,7 @@
     "count": {
       "one": "{count} conflicting file",
       "other": "{count} conflicting files"
-    },
-    "showFewer": "Show fewer",
-    "more": "+{hidden} more"
+    }
   },
   "pullsEmptyState": {
     "openFailed": "Couldn’t open a pull request: {error}",
@@ -132,6 +130,10 @@
     "threadsUnresolved": "Changes requested · {open} of {total} threads unresolved",
     "threadsResolved": "Changes requested · all threads resolved",
     "conflictsWith": "Conflicts with {base}",
+    "conflictFiles": {
+      "one": "· {count} file",
+      "other": "· {count} files"
+    },
     "mergeable": "Mergeable",
     "checkingMergeability": "Checking mergeability…"
   },

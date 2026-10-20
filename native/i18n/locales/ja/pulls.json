@@ -64,9 +64,7 @@
     "count": {
       "one": "コンフリクトしているファイル {count} 件",
       "other": "コンフリクトしているファイル {count} 件"
-    },
-    "showFewer": "表示を減らす",
-    "more": "ほか {hidden} 件"
+    }
   },
   "pullsEmptyState": {
     "openFailed": "プルリクエストを作成できませんでした: {error}",
@@ -132,6 +130,10 @@
     "threadsUnresolved": "変更をリクエスト済み · {total} 件中 {open} 件のスレッドが未解決",
     "threadsResolved": "変更をリクエスト済み · すべてのスレッドが解決済み",
     "conflictsWith": "{base} とコンフリクト",
+    "conflictFiles": {
+      "one": "· {count} 件",
+      "other": "· {count} 件"
+    },
     "mergeable": "マージ可能",
     "checkingMergeability": "マージ可能か確認中…"
   },

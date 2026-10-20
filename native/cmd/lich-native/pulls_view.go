@@ -51,7 +51,7 @@ type pullsAction struct {
 func (a *pullsAction) open(url string) { a.external = url }
 
 // pullView is PullRequestView: the toolbar, the title, the status line, the
-// conflicting files, the tabs and the open tab's panel.
+// tabs and the open tab's panel.
 type pullView struct {
 	session, handoff, approve, refresh, external, create widget.Clickable
 	mergeClick                                           widget.Clickable
@@ -65,8 +65,8 @@ type pullView struct {
 	commitOpen                                           map[string]*widget.Bool
 	commitClicks                                         map[string]*widget.Clickable
 	checkClicks                                          map[string]*widget.Clickable
-	conflictsAll                                         widget.Bool
-	conflictsMore                                        widget.Clickable
+	conflictsPanel                                       ui.DropdownPanelState
+	conflictsRows                                        widget.List
 	// files is the Files tab, the dock's Review cards in pull request mode;
 	// viewed is each PR's ticks, by URL, kept while the window lives.
 	files  *reviewPanel
@@ -121,6 +121,7 @@ func (v *pullView) busyNow() string {
 
 func (v *pullView) init() {
 	v.panel.Axis = layout.Vertical
+	v.conflictsRows.Axis = layout.Vertical
 	v.tips = map[string]*ui.Tooltip{}
 	v.commitOpen = map[string]*widget.Bool{}
 	v.commitClicks = map[string]*widget.Clickable{}
@@ -275,7 +276,6 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDeta
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return v.conflicts(gtx, th, p, d) }),
 					ui.VGap(4),
 					layout.Rigid(func(gtx C) D { return v.tabStrip(gtx, th, p, d) }),
 				)
@@ -328,7 +328,13 @@ func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDet
 		}))
 	}
 	if ic, text, fg, ok := mergeableStat(th, d); ok {
-		items = append(items, ui.WrapItem(func(gtx C) D { return stat(gtx, th, ic, text, fg) }))
+		items = append(items, ui.WrapItem(func(gtx C) D {
+			face := func(gtx C) D { return stat(gtx, th, ic, text, fg) }
+			if conflictsWithBase(d) {
+				return v.conflictsStat(gtx, th, p, d, face)
+			}
+			return face(gtx)
+		}))
 	}
 	if ic, text, fg, ok := reviewStat(th, d.ReviewDecision, open, total); ok {
 		items = append(items, ui.WrapItem(func(gtx C) D {
