@@ -7,7 +7,6 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/font"
-	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -117,7 +116,11 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 		filletRoom = gtx.Dp(tabRadius)
 	}
 	clipped := clip.Rect{Min: image.Pt(-filletRoom, 0), Max: size}.Push(gtx.Ops)
-	tabs := t.list.Layout(gtx, 1, func(gtx C, _ int) D {
+	// Sized to its tabs, the list leaves the strip's empty run to the band
+	// under it, which drags the window.
+	content := gtx
+	content.Constraints.Min.X = 0
+	t.list.Layout(content, 1, func(gtx C, _ int) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: tabTop}.Layout(gtx, func(gtx C) D {
@@ -134,13 +137,6 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 		)
 	})
 	t.fillets(gtx, f, w)
-	if f.chrome.drawn() {
-		// The strip's empty run drags the window, and a double click on it
-		// maximizes, as a title bar does.
-		area := clip.Rect{Min: image.Pt(tabs.Size.X, 0), Max: size}.Push(gtx.Ops)
-		system.ActionInputOp(system.ActionMove).Add(gtx.Ops)
-		area.Pop()
-	}
 	clipped.Pop()
 	return D{Size: size}
 }

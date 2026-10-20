@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"gioui.org/font"
+	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -136,6 +137,14 @@ func (t *topbar) layout(gtx C, th *ui.Theme, f topbarFrame) topbarAction {
 	gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(topbarHeight)))
 	if t.brand.Clicked(gtx) {
 		act.home = true
+	}
+	if f.chrome.drawn() {
+		// The band's bare background drags the window, and a double click on
+		// it maximizes, as a title bar does; what is laid over it keeps its
+		// own presses.
+		area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
+		system.ActionInputOp(system.ActionMove).Add(gtx.Ops)
+		area.Pop()
 	}
 	g := gtx.Dp(gutter)
 	right := t.rightSide(gtx, th, f, &act)

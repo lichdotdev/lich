@@ -1,11 +1,20 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"testing"
 
+	"gioui.org/f32"
+	"gioui.org/font/gofont"
+	"gioui.org/io/input"
+	"gioui.org/io/system"
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/unit"
+
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestTabWidthShrinksEvenlyToItsFloor(t *testing.T) {
@@ -107,5 +116,29 @@ func TestStripStartLeavesTheFilletRoom(t *testing.T) {
 	}
 	if got := stripStart(island, 120, radius); got != 120+radius {
 		t.Errorf("brand past the island: start %d, want %d", got, 120+radius)
+	}
+}
+
+// The band's bare background is the window's title bar: past the last tab,
+// and in the gaps around the brand and the buttons, a press drags the
+// window; a tab keeps its own press.
+func TestTopbarBareBandDragsTheWindow(t *testing.T) {
+	var router input.Router
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Source: router.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(1400, 800))}
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Canvas}
+	bar := newTopbar(&ui.Root{})
+	f := topbarFrame{brandWidth: 200, stripX: 240, tabs: []projectTab{{ID: "a", Name: "a"}}, active: "a"}
+	bar.layout(gtx, th, f)
+	router.Frame(&ops)
+	tab := bar.laid[0].rect
+	middle := f32.Pt(0, float32(tab.Min.Y+tab.Dy()/2))
+	for _, x := range []int{tab.Max.X + 200, gtx.Dp(gutter) / 2} {
+		if a, ok := router.ActionAt(f32.Pt(float32(x), middle.Y)); !ok || a != system.ActionMove {
+			t.Errorf("a press at x=%d does not drag the window", x)
+		}
+	}
+	if _, ok := router.ActionAt(f32.Pt(float32(tab.Min.X+tab.Dx()/2), middle.Y)); ok {
+		t.Error("a press on the tab drags the window")
 	}
 }
