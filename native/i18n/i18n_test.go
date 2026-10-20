@@ -172,9 +172,9 @@ func (m message) texts() []string {
 	return out
 }
 
-// The web's i18n.test.ts and tsc together, over the JSON: every locale has
-// English's keys and no other, each a plural where English's is, and uses
-// the placeholders English uses (count aside, which a form may leave out).
+// Over the JSON, every locale has English's keys and no other, each a plural
+// where English's is, and uses the placeholders English uses (count aside,
+// which a form may leave out).
 func TestEveryLocaleMatchesEnglish(t *testing.T) {
 	source := catalogs[EN]
 	for _, l := range Locales[1:] {

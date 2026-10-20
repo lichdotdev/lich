@@ -17,8 +17,8 @@ import (
 // confined: a private empty home holding only the provider's own state, the
 // machine read-only, and write access to the checkout alone (internal/sandbox).
 //
-// It is the outermost wrapper, applied after wrapEntrypoint and wrapSetup, so
-// everything those two put in front of the provider — the worktree setup script
+// It is the outermost wrapper, applied after wrapSetup, so everything that
+// puts in front of the provider — the worktree setup script
 // above all — is confined too. A setup script is the first thing to run in a
 // new checkout and the last thing anyone reads before it does.
 //
@@ -218,7 +218,7 @@ func executables(bin string) []string {
 // provider's rung for this project and checkout.
 //
 // The row wins outright, in both directions. A session the user opened confined
-// stays confined through every later spawn — a reload, a respawn, the resume of
+// stays confined through every later spawn — a reopened window, a respawn, the resume of
 // a parked worktree session — and one they deliberately opened on the machine is
 // not quietly confined later because the rung moved under it.
 //

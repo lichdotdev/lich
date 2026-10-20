@@ -25,14 +25,13 @@ const planQuotaRefresh = time.Minute
 // sessionLimitEvent is terminal limitEventName: a turn a usage limit ended.
 const sessionLimitEvent = "session-limit"
 
-// planQuota shares one poll loop per key across its watchers, ported from
-// plan-quota-store.ts, and is the window's only reader of plan quota. The key
-// is the session the reading is for, "" the machine's own login (which is
-// Personal's), "profile:<slug>" another Claude Code profile's own login and
-// "codex-profile:<slug>" another Codex one: a session can spend another
-// account entirely.
-// A reading outlives its watchers: coming back to a card draws the numbers it
-// had while the fresh read is in flight.
+// planQuota shares one poll loop per key across its watchers and is the
+// window's only reader of plan quota. The key is the session the reading is
+// for, "" the machine's own login (which is Personal's), "profile:<slug>"
+// another Claude Code profile's own login and "codex-profile:<slug>" another
+// Codex one: a session can spend another account entirely. A reading outlives
+// its watchers: coming back to a card draws the numbers it had while the fresh
+// read is in flight.
 type planQuota struct {
 	fetch    func(sessionID string) ([]lichclient.QuotaPlan, error)
 	after    func(time.Duration) <-chan time.Time
@@ -220,9 +219,9 @@ func (q *planQuota) refresh(key string, e *quotaEntry) {
 	}
 }
 
-// sameQuota keeps a reading nobody is spending from redrawing every minute.
-// It compares what the web's unchanged() compares, plus the account: a session
-// moved to another login can read the same numbers under another name.
+// sameQuota keeps a reading nobody is spending from redrawing every minute. It
+// compares the plans and their windows, the account included: a session moved
+// to another login can read the same numbers under another name.
 func sameQuota(a, b []lichclient.QuotaPlan) bool {
 	return slices.EqualFunc(a, b, func(p, o lichclient.QuotaPlan) bool {
 		return p.Provider == o.Provider && p.Status == o.Status && p.Plan == o.Plan && p.Account == o.Account &&
@@ -261,8 +260,8 @@ func hottestWindow(plan lichclient.QuotaPlan) (lichclient.QuotaWindow, bool) {
 	return hottest, true
 }
 
-// footerWindow is PlanQuota's pick: a locked window stays visible even when
-// another is fuller. False unless the reading is ok.
+// footerWindow picks the window the strip shows: a locked window stays visible
+// even when another is fuller. False unless the reading is ok.
 func footerWindow(plan lichclient.QuotaPlan) (lichclient.QuotaWindow, bool) {
 	if plan.Status != "ok" {
 		return lichclient.QuotaWindow{}, false
@@ -273,8 +272,8 @@ func footerWindow(plan lichclient.QuotaPlan) (lichclient.QuotaWindow, bool) {
 	return hottestWindow(plan)
 }
 
-// planReadout is PlanQuota's strip text and tooltip title; the tooltip body
-// is quotaGauges and accountLine.
+// planReadout is the plan quota's strip text and tooltip title; the tooltip
+// body is quotaGauges and accountLine.
 func planReadout(plan lichclient.QuotaPlan) (footerReadout, bool) {
 	w, ok := footerWindow(plan)
 	if !ok {
@@ -292,7 +291,7 @@ func planReadout(plan lichclient.QuotaPlan) (footerReadout, bool) {
 	return r, true
 }
 
-// quotaGauge is one row of PlanQuota's tooltip (QuotaGauge stacked).
+// quotaGauge is one row of the plan quota's tooltip.
 type quotaGauge struct {
 	Label   string // "Session · 5h"
 	Reading string // "42%" or "Locked"

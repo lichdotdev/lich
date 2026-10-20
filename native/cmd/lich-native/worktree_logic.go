@@ -12,9 +12,8 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// Base options carry their group so one string names the selection, as
-// WorktreeDialog's rowValue does: "local:main", "remote:origin/main",
-// "worktree:/path/to/checkout".
+// Base options carry their group so one string names the selection:
+// "local:main", "remote:origin/main", "worktree:/path/to/checkout".
 const (
 	baseLocal    = "local"
 	baseRemote   = "remote"
@@ -28,8 +27,8 @@ func splitBase(value string) (group, id string) {
 	return group, id
 }
 
-// issueHash and issueURL are issue.ts's: GitHub's spelling of a reference and
-// the address copied out of the browser. A bare number is a branch name.
+// issueHash and issueURL match GitHub's spelling of a reference and the
+// address copied out of the browser. A bare number is a branch name.
 var (
 	issueHash = regexp.MustCompile(`^#(\d+)$`)
 	issueURL  = regexp.MustCompile(`^https?://[^/\s]+/[^/\s]+/[^/\s]+/issues/(\d+)(?:[/?#].*)?$`)
@@ -64,8 +63,8 @@ func issueBrief(i lichclient.Issue) string {
 	return bracketedPaste(head)
 }
 
-// The bounds branch-name.ts grows a slug of typed words within, in words and
-// in characters, so a run of short words still reads as a phrase and a pasted
+// The bounds a slug of typed words grows within, in words and in
+// characters, so a run of short words still reads as a phrase and a pasted
 // sentence does not become the branch.
 const (
 	slugMinWords = 2
@@ -97,8 +96,8 @@ func validBranchName(name string) bool {
 	return true
 }
 
-// toBranchName is branch-name.ts toBranchName: the typed name when git takes
-// it, a kebab-case slug of its first words when not, "" for nothing usable.
+// toBranchName returns the typed name when git takes it, a kebab-case slug of
+// its first words when not, "" for nothing usable.
 func toBranchName(typed string) string {
 	trimmed := strings.TrimSpace(typed)
 	if trimmed == "" || validBranchName(trimmed) {

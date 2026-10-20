@@ -13,8 +13,7 @@ import (
 // child process moves (the user runs `cd`). A non-empty host names a
 // foreground process the directory cannot be read through (see shellHosts) and
 // comes with an empty cwd: the session is somewhere, but not somewhere this
-// machine can name. Global like the other session events: its consumer (the
-// session card's path line) may be unmounted when it fires.
+// machine can name. Global like the other session events.
 const cwdEventName = "session-cwd"
 
 // cwdEvent is the payload of cwdEventName.
@@ -154,7 +153,7 @@ func parseTpgid(stat []byte) int {
 	return pgrp
 }
 
-// watchCwd reports the session child's working directory to the frontend
+// watchCwd reports the session child's working directory to the window
 // whenever it changes, until done closes. Each platform brings its own read
 // (see the cwd_* files); on one without any, and when the PTY reports no
 // child PID, this is a no-op.

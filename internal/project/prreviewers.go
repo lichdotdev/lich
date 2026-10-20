@@ -1,22 +1,5 @@
 package project
 
-import (
-	"encoding/json"
-	"fmt"
-)
-
-// prAssignableQuery lists the accounts that may be asked for a review — GitHub's
-// assignableUsers, the same list gh's own `pr edit` prompt offers, and one a
-// read-only account can still see (the collaborators endpoint needs push).
-//
-// Ceiling: the first 100, unpaged. A larger organisation keeps a tail the picker
-// cannot reach, and github.com is the way to those until somebody hits it.
-const prAssignableQuery = `query($owner:String!,$repo:String!){
-  repository(owner:$owner,name:$repo){
-    assignableUsers(first:100){nodes{login name}}
-  }
-}`
-
 // PRReviewer is one entry of a pull request's review roster: somebody who was
 // asked and has not answered yet, or somebody who has.
 type PRReviewer struct {
@@ -27,12 +10,6 @@ type PRReviewer struct {
 	// State is "" while the review is still owed, else gh's APPROVED |
 	// CHANGES_REQUESTED | COMMENTED | DISMISSED.
 	State string `json:"state"`
-}
-
-// PRCandidate is one account the reviewer picker may offer.
-type PRCandidate struct {
-	Login string `json:"login"`
-	Name  string `json:"name"`
 }
 
 // ghReviewRequest is one entry of gh's reviewRequests: a User carries a login, a
@@ -83,50 +60,4 @@ func toReviewers(reviews []ghLatestReview, requests []ghReviewRequest) []PRRevie
 		return nil
 	}
 	return out
-}
-
-// AssignableReviewers lists who this repository allows on a review, so the
-// picker offers accounts GitHub will accept rather than a typed login it would
-// refuse. Returns nil for a repository that reports none.
-func (s *Service) AssignableReviewers(path string) ([]PRCandidate, error) {
-	out, err := s.gh(prReadTimeout, path, "api", "graphql",
-		"-F", "owner={owner}", "-F", "repo={repo}", "-f", "query="+prAssignableQuery)
-	if err != nil {
-		return nil, err
-	}
-	return parseAssignable(out)
-}
-
-func parseAssignable(out []byte) ([]PRCandidate, error) {
-	var payload struct {
-		Data struct {
-			Repository struct {
-				AssignableUsers struct {
-					Nodes []PRCandidate `json:"nodes"`
-				} `json:"assignableUsers"`
-			} `json:"repository"`
-		} `json:"data"`
-	}
-	if err := json.Unmarshal(out, &payload); err != nil {
-		return nil, errUnreadableAnswer(err)
-	}
-	nodes := payload.Data.Repository.AssignableUsers.Nodes
-	if len(nodes) == 0 {
-		return nil, nil
-	}
-	return nodes, nil
-}
-
-// RequestReview asks login for a review on the pull request, or withdraws the
-// request. GitHub refuses one addressed to the pull request's own author, which
-// is why the picker never offers them (the detail carries the author).
-func (s *Service) RequestReview(path string, number int, login string, requested bool) error {
-	if login == "" {
-		return fmt.Errorf("a reviewer is required")
-	}
-	flag := "--remove-reviewer"
-	if requested {
-		flag = "--add-reviewer"
-	}
-	return s.writePR(prEditTimeout, path, number, prArgs("edit", number, flag, login)...)
 }

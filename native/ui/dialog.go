@@ -21,7 +21,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The classes of dialog.tsx's DialogOverlay and DialogContent.
+// The classes of shadcn's DialogOverlay and DialogContent.
 const (
 	dialogTransition  = 100 * time.Millisecond // duration-100
 	dialogRadius      = unit.Dp(12)            // rounded-xl

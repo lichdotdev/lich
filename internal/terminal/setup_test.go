@@ -128,7 +128,7 @@ func TestSetupSkippedNotice(t *testing.T) {
 // that says nothing is a checkout whose dependencies are missing for a reason
 // nobody can find. Both destinations are asserted because they answer different
 // moments — the coalescer is the window that is already open, the replay is the
-// one opened after a reload — and a line in only one of them is a line half the
+// one opened later — and a line in only one of them is a line half the
 // users never see.
 //
 // Driven off announce rather than off a spawn: the notice is composed for

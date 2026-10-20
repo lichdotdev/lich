@@ -9,17 +9,16 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// The web window's localStorage keys, kept as backend settings here. Width
-// and open state are global; a fold is scoped to its project, which is what
-// the web spelled into the key: the root and pinned stand-in keys exist in
-// every project.
+// The sidebar's backend settings. Width and open state are global; a fold is
+// scoped to its project, which the key spells out: the root and pinned
+// stand-in keys exist in every project.
 const (
 	sidebarWidthKey     = "lich.sidebar.width"
 	sidebarOpenKey      = "lich.sidebar.open"
 	sidebarCollapsedKey = "lich.sidebar.collapsed."
 )
 
-// SessionSidebar.tsx's width bounds in rem: the floor is the header row's
+// The sidebar's width bounds in rem: the floor is the header row's
 // natural width, the cap short of crowding the terminal.
 const (
 	sidebarMinRem     = 14
@@ -37,7 +36,7 @@ func clampSidebarWidth(rem float64) float64 {
 	return min(sidebarMaxRem, max(sidebarMinRem, rem))
 }
 
-// parseSidebarWidth is panel-width.ts parseStoredWidth: garbage, negatives
+// parseSidebarWidth reads a stored width: garbage, negatives
 // and an unset value fall back to the default.
 func parseSidebarWidth(raw string) float64 {
 	rem, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
@@ -47,7 +46,7 @@ func parseSidebarWidth(raw string) float64 {
 	return clampSidebarWidth(rem)
 }
 
-// parseBoolSetting is prefs.ts parseBoolPref: only what a write emits counts,
+// parseBoolSetting reads a stored bool: only what a write emits counts,
 // so a foreign value cannot pin a toggle.
 func parseBoolSetting(raw string, fallback bool) bool {
 	switch raw {

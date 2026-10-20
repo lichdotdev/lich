@@ -6,7 +6,7 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// The block keys of sidebar-groups.ts. The pinned and root blocks have no path
+// The block keys. The pinned and root blocks have no path
 // to key them by, and a folder is prefixed so one named like a real checkout
 // cannot key that checkout's block.
 const (
@@ -15,7 +15,7 @@ const (
 	folderKeyPrefix = "__folder__:"
 )
 
-// blockKind is which block a session is drawn in, sidebar-groups.ts blockOf.
+// blockKind is which block a session is drawn in.
 type blockKind int
 
 const (
@@ -43,7 +43,7 @@ type sessionBlock struct {
 }
 
 // blockOf orders the checks by precedence: pin, then folder, then the
-// session's own checkout. A wall (split group) outranks the pin on the web
+// session's own checkout. A wall (split group) outranks the pin
 // and would be the first check here once the native window has panes.
 func blockOf(s lichclient.Session) blockKind {
 	switch {
@@ -71,7 +71,7 @@ func blockKeyOf(s lichclient.Session) string {
 	return checkoutKey(s.Path)
 }
 
-// sessionBlocks is sidebar-groups.ts sidebarGroups without walls: the pinned
+// sessionBlocks groups the sessions into blocks, without walls: the pinned
 // block first, then folders and checkouts interleaved, each landing where its
 // first card sits in the stored list and keeping that order inside. Block
 // order lives nowhere else, which is what lets a drag move a folder past a
@@ -151,8 +151,8 @@ func foldersOf(sessions []lichclient.Session) []string {
 	return names
 }
 
-// sharedColor is card-color.ts sharedColor: the palette color every card of a
-// folder wears, "" when they differ or are untinted.
+// sharedColor is the palette color every card of a folder wears, "" when they
+// differ or are untinted.
 func sharedColor(sessions []lichclient.Session) string {
 	if len(sessions) == 0 {
 		return ""
@@ -221,7 +221,7 @@ func dragOrder(stored []lichclient.Session, blocks []sessionBlock, keys []string
 
 // blockOrder is the order a drag inside block commits: ids fill the slots of
 // the cards that block drew, asked of the block rather than restated as a rule
-// about pins and paths (SessionSidebar.tsx commitGroupOrder).
+// about pins and paths.
 func blockOrder(stored []lichclient.Session, block sessionBlock, ids []string) []string {
 	drawn := map[string]bool{}
 	for _, s := range block.sessions {
@@ -230,7 +230,7 @@ func blockOrder(stored []lichclient.Session, block sessionBlock, ids []string) [
 	return reorderSubset(stored, ids, func(s lichclient.Session) bool { return drawn[s.ID] })
 }
 
-// applyOrder is lib/reorder.ts applyOrder: sessions in ids order, false when
+// applyOrder returns sessions in ids order, false when
 // ids does not name exactly that set (a close raced the drag).
 func applyOrder(sessions []lichclient.Session, ids []string) ([]lichclient.Session, bool) {
 	if len(ids) != len(sessions) {
@@ -247,16 +247,15 @@ func applyOrder(sessions []lichclient.Session, ids []string) ([]lichclient.Sessi
 	return next, true
 }
 
-// fileSessions is sessions.ts setSessionsFolder: the sessions ids names filed
-// under folder, or unfiled for "", the stored order untouched. false when ids
-// names none of them.
+// fileSessions files the sessions ids names under folder, or unfiled for "",
+// the stored order untouched. false when ids names none of them.
 func fileSessions(sessions []lichclient.Session, ids []string, folder string) ([]lichclient.Session, bool) {
 	return refile(sessions, func(s lichclient.Session) bool { return slices.Contains(ids, s.ID) }, folder)
 }
 
-// renameFolder is sessions.ts renameFolder: every session filed under from
-// moves to to, or out of any folder for "". An empty from is refused, or it
-// would sweep every unfiled session into a folder nobody asked for.
+// renameFolder moves every session filed under from to to, or out of any folder
+// for "". An empty from is refused, or it would sweep every unfiled session
+// into a folder nobody asked for.
 func renameFolder(sessions []lichclient.Session, from, to string) ([]lichclient.Session, bool) {
 	if from == "" {
 		return sessions, false

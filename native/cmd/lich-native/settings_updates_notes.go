@@ -112,8 +112,8 @@ func inlineWords(text string) [][]inlineRun {
 	return words
 }
 
-// splitLeadIn is splitLeadIn of patch-notes-layout.ts: the bold sentence an
-// item opens with, and the paragraph behind it.
+// splitLeadIn splits an item into the bold sentence it opens with and the
+// paragraph behind it.
 func splitLeadIn(item string) (headline, body string) {
 	if !strings.HasPrefix(item, "**") {
 		return item, ""
@@ -125,8 +125,8 @@ func splitLeadIn(item string) (headline, body string) {
 	return strings.TrimSpace(item[2 : 2+end]), strings.TrimSpace(item[2+end+2:])
 }
 
-// layoutHighlights is layoutHighlights of patch-notes-layout.ts: the first
-// important block is the headline, every other block a callout under it.
+// layoutHighlights makes the first important block the headline and every
+// other block a callout under it.
 func layoutHighlights(highlights []lichclient.PatchNotesHighlight) (lead *lichclient.PatchNotesHighlight, callouts []lichclient.PatchNotesHighlight) {
 	for i := range highlights {
 		if lead == nil && highlights[i].Kind == "important" {
@@ -300,7 +300,7 @@ func (v *patchNotesView) changelogLink(gtx C, th *ui.Theme) D {
 }
 
 // body is the release: the counts, the headline, the callouts and the groups,
-// in a scroll area capped at the share of the panel the web gives it.
+// in a scroll area capped at a share of the panel.
 func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *lichclient.PatchNotes) D {
 	var rows []layout.Widget
 	lead, callouts := layoutHighlights(notes.Highlights)
@@ -321,7 +321,7 @@ func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *lichclient.PatchNotes)
 	return th.ScrollArea(&v.list).Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
 }
 
-// notesCounts is the line of "3 added" counts the web's header ends on.
+// notesCounts is the line of "3 added" counts the header ends on.
 func notesCounts(groups []lichclient.PatchNotesGroup) string {
 	parts := make([]string, len(groups))
 	for i, g := range groups {

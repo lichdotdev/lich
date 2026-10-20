@@ -10,7 +10,6 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// providerInfo is providers-store.ts ProviderState.
 type providerInfo struct {
 	launchProvider
 	binary string // the executable a session spawns, which an id is not

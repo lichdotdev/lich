@@ -7,7 +7,7 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// sessionPhase is the filter chip a session sits under (session-filter.ts).
+// sessionPhase is the filter chip a session sits under .
 type sessionPhase string
 
 const (
@@ -52,8 +52,8 @@ func phaseOf(status string, unread bool) sessionPhase {
 	return phaseIdle
 }
 
-// matchesQuery is command-palette.ts matchesQuery: every whitespace token of
-// the query appears in haystack, case-insensitively.
+// matchesQuery reports whether every whitespace token of the query appears in
+// haystack, case-insensitively.
 func matchesQuery(haystack, query string) bool {
 	hay := strings.ToLower(haystack)
 	for _, token := range strings.Fields(strings.ToLower(query)) {
@@ -65,8 +65,8 @@ func matchesQuery(haystack, query string) bool {
 }
 
 // queryHit matches a session's label and checkout, which is what makes typing
-// a worktree name narrow to that checkout. The branch is left out on purpose,
-// as on the web: the checkout path already gives most of it.
+// a worktree name narrow to that checkout. The branch is left out on purpose:
+// the checkout path already gives most of it.
 func queryHit(query, projectPath string) func(lichclient.Session) bool {
 	return func(s lichclient.Session) bool {
 		path := s.Path

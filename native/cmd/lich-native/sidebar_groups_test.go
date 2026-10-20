@@ -43,8 +43,7 @@ func pin(sessions []lichclient.Session, id string) []lichclient.Session {
 	return with(sessions, id, func(s *lichclient.Session) { s.Pinned = true })
 }
 
-// layout is each block's key with its session ids, the shape the web tests
-// assert.
+// blockLayout is each block's key with its session ids.
 func blockLayout(blocks []sessionBlock) [][]string {
 	var out [][]string
 	for _, b := range blocks {

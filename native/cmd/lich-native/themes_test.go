@@ -43,7 +43,7 @@ func customTheme(id, name string) lichclient.Theme {
 	return th
 }
 
-// The bundled files read into the palettes ported by hand from index.css,
+// The bundled files read into the hand-written palettes (ui.Light, ui.Dark),
 // so a token wired to the wrong field shows here.
 func TestBundledThemesReadIntoTheIndexCSSPalettes(t *testing.T) {
 	for id, want := range map[string]ui.Palette{themeLight: ui.Light, themeDark: ui.Dark} {
@@ -229,7 +229,7 @@ func TestThemeIsFoundBySearch(t *testing.T) {
 }
 
 // The window opens on System when nothing was stored, takes the theme a
-// choice resolves to once, and stores the choice where the web reads it.
+// choice resolves to once, and stores the choice.
 func TestAppearanceChoosesAndStores(t *testing.T) {
 	f, client := newSidebarBackend(t)
 	f.themes = []lichclient.Theme{bundledTheme(t, themeDark), bundledTheme(t, themeLight), customTheme("rose-pine", "Rosé Pine")}

@@ -28,11 +28,10 @@ var (
 	chipGap  = Space(1)
 )
 
-// ChipStyle is SessionPhaseChips' Chip: a filter toggle with the count of
-// what it would show. A click is the caller's to read from Click, and On is
-// the caller's aria-pressed, so a set of chips can be several at once or
-// cleared by an All chip. Clicking one takes no focus, as the web's
-// preventDefault on mousedown keeps it in the filter field.
+// ChipStyle is a filter toggle with the count of what it would show. A click is
+// the caller's to read from Click, and On is the caller's aria-pressed, so a
+// set of chips can be several at once or cleared by an All chip. Clicking one
+// takes no focus, which keeps it in the filter field.
 type ChipStyle struct {
 	Click *widget.Clickable
 	Label string

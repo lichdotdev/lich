@@ -7,8 +7,8 @@
 // It exists as its own service because opening a session is four things at once
 // and no single package owns them: a worktree (internal/project), a row
 // (internal/store), a PTY (internal/terminal) and a card in the window
-// (internal/events). The window does the same four in its own order, in
-// providers/projects.tsx.
+// (internal/events). The window does the same four in its own order
+// (native/cmd/lich-native/main.go, newSession).
 //
 // The PTY is started here rather than left to the window, and that is the whole
 // point of the feature. The window spawns a session's terminal only once
@@ -16,7 +16,8 @@
 // clicked would have no process in it — invisible to `lich sessions`,
 // unreachable by `lich send`, useless to whoever asked for it. Starting it here
 // makes it addressable the moment Open returns; the card's first view attaches
-// to the PTY that is already running, exactly as it does after a page reload.
+// to the PTY that is already running, exactly as it does when the window opens
+// again on a backend that kept it.
 package spawn
 
 import (
@@ -45,7 +46,7 @@ const OpenedEventName = "session-opened"
 // appears without a reload. Its payload is the whole store.Project, sessions
 // included: a reopened project brings back the cards it was closed with, and the
 // session this open is about to announce lands in a tab the window has to be
-// holding already (frontend/src/lib/session/sessions.ts, adoptSession).
+// holding already.
 const ProjectOpenedEventName = "project-opened"
 
 // ClosedEventName carries a session closed outside the window, so the card goes

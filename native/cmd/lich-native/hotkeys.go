@@ -8,9 +8,8 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// The keyboard shortcuts of frontend/src/lib/hotkeys.ts: the actions, their
-// default chords and the pure rules over them. The stored value is the web's
-// own (hotkeys.bindings), so the two windows share their bindings.
+// The keyboard shortcuts: the actions, their default chords and the pure
+// rules over them, stored under hotkeys.bindings.
 
 const hotkeysSettingKey = "hotkeys.bindings"
 
@@ -100,7 +99,7 @@ type hotkeyAction struct {
 func shiftChord(key string) combo { return combo{Mod: true, Shift: true, Key: key} }
 
 // hotkeyActions drives the defaults, the settings list and its search, in
-// this order. Why each default is free is hotkeys.ts's to say.
+// this order.
 var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeyNewSession, labelKey: "hotkeys.action.newSession", group: hotkeyGroupSessions, combo: shiftChord("t")},
 	{id: hotkeyNewWorktree, labelKey: "hotkeys.action.newWorktree", group: hotkeyGroupSessions, combo: shiftChord("b")},
@@ -317,8 +316,8 @@ func formatCombo(c combo, isMac bool) string {
 	return strings.Join(parts, "+")
 }
 
-// comboOf is hotkeys.ts isCombo over a decoded JSON value: all three flags
-// booleans and the key a string, or nothing.
+// comboOf reads a decoded JSON value as a combo: all three flags booleans
+// and the key a string, or nothing.
 func comboOf(value any) (combo, bool) {
 	m, ok := value.(map[string]any)
 	if !ok {
@@ -371,8 +370,7 @@ func parseHotkeys(raw string) hotkeyBindings {
 	return mergeHotkeys(decoded)
 }
 
-// stringifyHotkeys is the stored value: every action's chord, as the web
-// writes it.
+// stringifyHotkeys is the stored value: every action's chord.
 func stringifyHotkeys(b hotkeyBindings) (string, error) {
 	out, err := json.Marshal(b)
 	return string(out), err

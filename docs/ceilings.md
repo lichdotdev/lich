@@ -230,10 +230,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   deliberately: a pane nobody demoted is the entire point of opening it. So the window's hot path carries
   as many streams as there are panes, and anything reasoning about that cadence from the constants alone
   will read a number that was true for one terminal.
-- **A layout is a free split tree, and the web window's walls never became one**
-  (`native/cmd/lich-native/layouts.go`, `model_layouts.go`, `stage_layout.go`): a layout is stored under
-  `lich.native.layouts`, and the walls the retired web window kept under `lich.panes` are not read, so a
-  wall made there is gone from the window. A session sits in one pane of one layout, because its PTY has one
+- **A layout is a free split tree** (`native/cmd/lich-native/layouts.go`, `model_layouts.go`,
+  `stage_layout.go`): a layout is stored under `lich.native.layouts`. A session sits in one pane of one layout, because its PTY has one
   size; clicking its card anywhere shows it in that layout, while its project's tab shows it alone. A split
   is refused, with a toast, when a pane would drop under 480dp (51 columns at the default 13sp, measured with
   Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
@@ -289,17 +287,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   would each turn one reader's file into dozens of calls. The per-request line cap is the only bound, and
   a gap wider than it is several calls already. Two things follow from the same shape. The expander needs
   the revision the diff's new side stands at, so a source that cannot name one has no expander at all
-  rather than a wrong one — a last-turn record from before `LastTurn.After` existed, or a pull request
-  whose detail carries no commits. And there is no expanding *past the last hunk*: a unified diff carries
+  rather than a wrong one — a pull request whose detail carries no commits.
+  And there is no expanding *past the last hunk*: a unified diff carries
   no file length, so nothing here knows whether anything follows it, and an affordance drawn there would
   be a no-op on every file whose change reaches the end.
-- **A side-by-side diff never wraps, and its left column only mirrors** (`frontend/src/lib/git/split-doc.ts`,
-  `SplitDiffBody.tsx`): the two sides are two editors kept level by having the same number of rows, every row
-  exactly one line tall, so a long line scrolls sideways in its own column instead of wrapping. A change block
-  pairs deletions with additions by position, so the rows beside each other in a block that rewrites one thing
-  and inserts another are unrelated lines. Threads, comment boxes and the gap expanders live in the right
-  column only; the left one holds an empty gap resized by a `ResizeObserver` to match, and anything that grows
-  a right-hand gap without a resize the observer sees would push the columns out of step.
+- **A side-by-side diff never wraps** (`hunkRows`, `native/cmd/lich-native/dock_review_patch.go`;
+  `fileCard.diff`, `dock_review_file.go`): the card is laid out exactly as tall as its rows, every row one
+  line, so a long line never wraps to keep the two sides level. A run of changes takes as many rows as its
+  longer side and pairs deletions with additions by position, so the rows beside each other in a block that
+  rewrites one thing and inserts another are unrelated lines.
 - **An image or PDF preview reads only what this clone holds** (`internal/project/blob.go`): `/blob` serves the
   working tree, `HEAD` or a snapshot tree, and has no GitHub fallback the way `FileLines` does, so the Pulls
   screen still prints "Binary file". Adding it there takes two reads this endpoint does not make: the head blob
@@ -322,32 +318,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a path the one-file diff cannot see. The Undo is the reversed patch the window keeps for as long as the toast
   is on screen (`revertUndoFor`, `native/cmd/lich-native/dock_review.go`); nothing on disk records it after that. And a revert does exactly the lines it
   names: reverting part of a block can leave code that no longer compiles, which is the reader's call to make.
-- **The Review panel's "Last turn" is a window of wall-clock time**
-  (`internal/terminal/turnsnap.go`, `internal/project/turnsnap.go`): the panel brackets a turn with two
-  `git write-tree` snapshots taken against an index of lich's own, so what it shows is everything that
-  touched the checkout between the `busy` and the `done` — a formatter, an editor open beside lich, the
-  user's own hands. Nothing in it can attribute a line, which is why the copy names the window and never
-  the agent. Four traps follow. `add -A` obeys `.gitignore` (deliberately, so this and `DiffText` never
-  disagree about which files exist), so a turn that only touched ignored files reports itself as having
-  changed nothing. Every snapshot in the app runs on one FIFO worker, because git refuses a second `add`
-  against an index another holds — so one session's first snapshot of a large checkout delays the next
-  session's, and a queue past `snapQueueDepth` drops a job, costing that turn its record — the panel reads
-  "lost" for it, which is a turn that ran and cannot be shown, never the "no last turn recorded" of a card
-  that has not had one. It says so for that turn alone: the next one to close files a record like any other,
-  and nothing carries the gap into the workspace database, so a lich relaunched between the two answers
-  "unrecorded" for a turn it lost before the restart. A checkout whose *first* snapshot fails is dropped outright and never asked again — the
-  ordinary reason is a session opened outside a repository, but a transient failure at spawn reads the same
-  and leaves that card with no last turn until it respawns. A pair read back at launch names loose objects
-  no ref reaches, so a `git gc --prune` in that checkout between one run and the next leaves the panel
-  reporting a failure rather than an absent turn. And the boundary is the session-state contract, so
-  **Crush has no last turn at all**: it reports no state
-  (`docs/hooks/session-state.md`), so nothing ever opens or closes a window there, and the recap band beside it
-  is never drawn either. Whether the switch is *offered* is read off the session's own reports and corrects
-  itself the day it starts reporting (`turnSwitchable`), but the sentence under the dead switch naming
-  the provider is a hand-written list (`turnUnavailableReason`, `frontend/src/lib/git/last-turn.ts`),
-  because the frontend cannot tell a provider that never reports from one that has not reported yet. The
-  panel draws that sentence only while the switch is off, so a listed provider that starts reporting is
-  named only until its first report, and the list stays wrong in source until it is moved with the contract.
 - **A finished turn is unread until its own card is watched** (`native/cmd/lich-native/cardstate.go`,
   `setFocused`): the solid emerald ring means "back from the agent, not read yet", and it
   fades only for the session whose terminal is on screen **while the window has focus**. A card left focused in a
@@ -858,17 +828,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   workspace database under the project's own id. The trap is for whoever adds a pane that is genuinely about
   one repository's content. Its remembered state belongs on the per-project side, which means a new key with
   the project id in it, not another global one beside this one.
-- **The settings search reads names, and its index is written by hand** (`frontend/src/lib/settings-index.ts`):
-  every control is listed there with the section and group it lives in, because the panes are React components
-  whose blocks exist only once rendered and the suite runs in node. Two things follow. A block added without
-  an entry is a control the search cannot find, which is why `settings-index.test.ts` reads the
-  `SettingBlock` and `SettingRow` literals back out of the source and fails on one nobody indexed; that guard is the only
-  thing standing between this file and silent rot, so deleting it costs more than it looks. And the search
-  matches titles plus a few hand-picked keywords, never a description, a stored value or a theme's name: a
-  user hunting for `emerald` or a port number finds nothing, and the empty state says as much rather than
-  pretending the setting is absent. Shortcuts and the panes themselves are indexed off `HOTKEY_ACTIONS` and
-  `SETTING_SECTIONS`, so those two never fall behind.
-
+- **The settings search reads names, and its index is written by hand** (`settingsSections`,
+  `native/cmd/lich-native/settings_index.go`): every row is listed there with the section and group it lives
+  in, and the panes draw their rows off that list, so a control exists only once it has an entry. The search
+  matches a row's title, its hand-picked search words and its group, never a description, a stored value or
+  a theme's name: a user hunting for `emerald` or a port number finds nothing, and the empty state says as
+  much rather than pretending the setting is absent.
 - **The footer editor's sides wrap, and stop lining up when they do**
   (`native/cmd/lich-native/footer_editor.go`, `zoneBox`): each side is a tray of chips that wraps, so a user who turns on
   most of the twelve items gets two rows in one column and one in the other, and the two stop reading as the
@@ -925,11 +890,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   on a windowless lich may do nothing. On Windows the Start-menu launch is a new process and takes the same
   path, and quitting closes the window with WM_CLOSE as restart did, but neither has run on Windows
   hardware with the window closed first.
-- **The gate run inside lich kills lich's window** (measured 2026-10-10): `go vet`, `go test ./...`, the
-  cross-compile loop and the web frontend's build of the time started together from a session ran the machine
-  out of memory, and every Chromium on it, the lich window of the time and an unrelated browser alike, died
-  with SIGBUS; the
-  window took the session that ran the gate down with it. `/tmp` is tmpfs on many distributions, so the Go
+- **The gate run inside lich kills lich's window** (measured 2026-10-10): `go vet`, `go test ./...` and the
+  cross-compile loop started together from a session ran the machine out of memory, and the lich window died
+  with SIGBUS; the window took the session that ran the gate down with it. `/tmp` is tmpfs on many distributions, so the Go
   build's temporaries count as RAM too. Nothing in lich bounds what a session spends. The way around it is
   in CLAUDE.md › Local Gate: one step at a time, in a `systemd-run --user --scope` with `MemoryMax`, with
   `GOTMPDIR`/`TMPDIR` on a short path on disk (`/var/tmp/lich-gate`; under `~/.cache` the sandbox suite's

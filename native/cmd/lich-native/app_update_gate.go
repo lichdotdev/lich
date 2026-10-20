@@ -12,10 +12,9 @@ import (
 )
 
 const (
-	// appUpdateDismissedKey is app-update-gate.ts's UPDATE_DISMISSED_KEY:
-	// the version Later was clicked for.
+	// appUpdateDismissedKey holds the version Later was clicked for.
 	appUpdateDismissedKey = "lich.appUpdateDismissed"
-	// appUpdatePollEvery is the web's POLL_INTERVAL_MS: releases are rare, and
+	// appUpdatePollEvery is the poll interval: releases are rare, and
 	// the unauthenticated GitHub API allows 60 requests an hour per IP.
 	appUpdatePollEvery = time.Hour
 	appUpdateToastID   = "app-update"
@@ -185,7 +184,7 @@ func updateProgressToast(version string, p *lichclient.AppUpdateProgress) ui.Toa
 	return t
 }
 
-// downloadReading is update-progress.ts's: percent is -1 while the total is
+// downloadReading reads a download's progress: percent is -1 while the total is
 // unknown.
 func downloadReading(p lichclient.AppUpdateProgress) (percent int, bytes string) {
 	if p.Total <= 0 {

@@ -13,7 +13,7 @@ import (
 // user's half is gone — it was never in a scrollback, and no provider offers a
 // way to get it back.
 //
-// Only the frontend's keystrokes reach here; what the relay itself types goes
+// Only the window's keystrokes reach here; what the relay itself types goes
 // in through Write. The two paths were already separate, which is what makes
 // this answerable at all — and answerable the same way for every provider,
 // because it is asked of the PTY rather than of the TUI drawing on it.

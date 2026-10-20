@@ -88,7 +88,7 @@ func fontLabel(family string) string {
 }
 
 // load asks for the installed families once, the first time the picker is
-// drawn, and keeps the answer for the next visit as the web does.
+// drawn, and keeps the answer for the next visit.
 func (f *fontPicker) load(invalidate func()) []string {
 	f.mu.Lock()
 	defer f.mu.Unlock()

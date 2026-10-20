@@ -15,7 +15,7 @@ func inLocale(t *testing.T, l i18n.Locale) {
 }
 
 // The narrow units are what Intl.NumberFormat(locale, {style: "unit",
-// unitDisplay: "narrow"}) writes, which is how the web window prints an age.
+// unitDisplay: "narrow"}) writes.
 func TestFormatAgeReadsLikeIntlInEveryLocale(t *testing.T) {
 	cases := []struct {
 		locale i18n.Locale
@@ -38,7 +38,7 @@ func TestFormatAgeReadsLikeIntlInEveryLocale(t *testing.T) {
 }
 
 // The palette's phrase is Intl.RelativeTimeFormat(locale, {style: "narrow",
-// numeric: "always"}), as lib/ago.ts writes it.
+// numeric: "always"}) writes.
 func TestAgoLabelReadsLikeIntlInEveryLocale(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 	ago := func(d time.Duration) int64 { return now.Add(-d).Unix() }

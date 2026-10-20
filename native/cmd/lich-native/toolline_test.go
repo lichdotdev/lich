@@ -2,7 +2,6 @@ package main
 
 import "testing"
 
-// Mirrors frontend/src/lib/session/tool-label.test.ts.
 func TestToolLine(t *testing.T) {
 	servers := []string{"lich", "ai-memory"}
 	cases := []struct {

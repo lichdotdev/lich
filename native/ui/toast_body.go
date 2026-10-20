@@ -17,13 +17,13 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// sonner 2.0.7's toast classes (dist/styles.css), and the wrap index.css
-// gives a toast with a description.
+// sonner 2.0.7's toast classes (dist/styles.css), and the wrap a toast with a
+// description gets.
 const (
 	toastItemGap       unit.Dp = 6  // gap: 6px
-	toastWrapRowGap    unit.Dp = 12 // index.css row-gap: 12px
+	toastWrapRowGap    unit.Dp = 12 // row-gap: 12px
 	toastContentGap    unit.Dp = 2  // [data-content] gap: 2px
-	toastProgressGap   unit.Dp = 10 // UpdateProgressToast's gap-2.5
+	toastProgressGap   unit.Dp = 10 // gap-2.5
 	toastTitleSize     unit.Sp = 13 // font-size: 13px
 	toastTitleLeading  unit.Sp = 13 * 1.5
 	toastDescLeading   unit.Sp = 13 * 1.4
@@ -238,9 +238,9 @@ func (r recorded) at(gtx C, p image.Point) {
 
 // body lays the toast's content out as sonner's flex row: icon, title and
 // description, then cancel and action, each button pushed right by its
-// margin-left: auto. With a description, index.css wraps the buttons onto a
-// row of their own under the text, grouped at the right edge; three buttons
-// take that row too, as the web's custom update toast stacks them.
+// margin-left: auto. With a description, the buttons wrap onto a row of their
+// own under the text, grouped at the right edge; three buttons take that row
+// too.
 func (s ToasterStyle) body(gtx C, e *toastEntry) D {
 	th := s.theme.On(s.theme.Popover)
 	gtx.Constraints.Min = image.Point{}

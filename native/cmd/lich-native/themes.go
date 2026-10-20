@@ -16,7 +16,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// themes.ts's ids and origins.
+// Theme ids, origins and terminal tokens.
 const (
 	themeSystem         = "system"
 	themeOriginBundled  = "bundled"
@@ -28,14 +28,14 @@ const (
 	terminalCursorToken = "cursor"
 )
 
-// The canvas behind the islands is index.css's --canvas, the background
-// mixed toward black: 8% in :root (light), 35% in .dark.
+// The canvas behind the islands is the background mixed toward black: 8% in
+// the light scheme, 35% in the dark one.
 const (
 	canvasDarkenLight = 0.08
 	canvasDarkenDark  = 0.35
 )
 
-// bundledOrder is themes.ts BUNDLED: light before dark.
+// bundledOrder lists the bundled themes: light before dark.
 var bundledOrder = []string{themeLight, themeDark}
 
 // ansiTokens are xterm's ITheme names for palette entries 0-15.
@@ -105,10 +105,10 @@ func readTheme(def lichclient.Theme) (themeEntry, error) {
 	return themeEntry{def: def, palette: p, terminal: term, code: code}, nil
 }
 
-// codeThemeOf is the code views' palette: godemirror's for the scheme, with
-// the text and the gutter in the theme's foreground and muted foreground, as
-// the web's editor draws them, and the theme's syntax highlighting when it
-// has one. Each view lays its own ground over Background.
+// codeThemeOf is the code views' palette: godemirror's for the scheme, with the
+// text and the gutter in the theme's foreground and muted foreground, and the
+// theme's syntax highlighting when it has one. Each view lays its own ground
+// over Background.
 func codeThemeOf(def lichclient.Theme, p ui.Palette) (godemirror.Theme, error) {
 	t := godemirror.DarkTheme
 	if def.Scheme == themeSchemeLight {
@@ -223,7 +223,7 @@ func terminalOf(def lichclient.Theme) (gioterm.Colors, error) {
 	return c, nil
 }
 
-// resolveTheme is themes.ts resolveTheme: System is the bundled theme the
+// resolveTheme picks the theme to wear: System is the bundled theme the
 // OS asks for, and a selection no theme answers to falls back to it. Following
 // the system, a theme of the scheme the OS does not ask for gives way to its
 // pair.
@@ -273,8 +273,8 @@ func bundledPair(themes []themeEntry) (light, dark themeEntry) {
 	return light, dark
 }
 
-// themeAfterRemoval is themes.ts themeAfterRemoval: removing the theme in
-// use hands the window back to System.
+// themeAfterRemoval returns the selection once removedID is gone: removing
+// the theme in use hands the window back to System.
 func themeAfterRemoval(removedID, selected string) string {
 	if selected == removedID {
 		return themeSystem
@@ -296,8 +296,7 @@ func themeCaption(def lichclient.Theme, selected string) string {
 
 var repoSeparators = regexp.MustCompile(`[/\\:]+`)
 
-// repoLabel is themes.ts repoLabel: a clone URL cut to the owner/repo a
-// user recognizes.
+// repoLabel cuts a clone URL to the owner/repo a user recognizes.
 func repoLabel(url string) string {
 	trimmed := strings.TrimRight(strings.TrimSuffix(strings.TrimSpace(url), ".git"), `/\`)
 	var segments []string

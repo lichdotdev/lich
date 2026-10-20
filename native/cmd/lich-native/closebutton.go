@@ -11,9 +11,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// cornerButton is common/CloseButton.tsx, the shape of both controls in a
-// card's corner: size-4, rounded, hover:bg-foreground/15, a glyph at size-3.
-// On is the set pin: the glyph in the foreground and filled.
+// cornerButton is the shape of both controls in a card's corner. On is
+// the set pin: the glyph in the foreground and filled.
 func cornerButton(gtx C, th *ui.Theme, click *widget.Clickable, ic *icons.Icon, on bool) D {
 	return click.Layout(gtx, func(gtx C) D {
 		gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(16), gtx.Dp(16)))

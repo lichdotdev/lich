@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// The harnesses spell an MCP tool three ways (lib/session/tool-label.ts):
+// The harnesses spell an MCP tool three ways:
 // mcp__<server>__<tool> (Claude Code, Codex), mcp__<server>_<tool>
 // (oh-my-pi) and <server>_<tool> (opencode). Antigravity runs every MCP call
 // as the one step call_mcp_tool, naming <server>/<tool> in the detail.
@@ -19,7 +19,7 @@ const (
 	mcpStep   = "call_mcp_tool"
 )
 
-// toolLine is tool-label.ts toolLine: the label a card draws for the tool a
+// toolLine is the label a card draws for the tool a
 // turn runs, an MCP tool as "<server> · <tool>", and the detail beside it.
 func toolLine(tool sessionTool, servers []string) (label, detail string) {
 	if tool.Name == mcpStep {

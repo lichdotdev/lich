@@ -10,9 +10,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// homeView is Home.tsx, an EmptyScreen: the folder glyph, the title, one
-// line of copy, and the button to the directory picker. th is on the
-// island it fills.
+// homeView is the empty screen of Home: the folder glyph, the title, one line
+// of copy, and the button to the directory picker. th is on the island it
+// fills.
 func homeView(gtx C, th *ui.Theme, open *widget.Clickable) D {
 	button := th.Button(open, i18n.T("shell.home.openProject"))
 	button.Icon = icFolderOpen
@@ -30,9 +30,9 @@ func homeView(gtx C, th *ui.Theme, open *widget.Clickable) D {
 
 var icSquareTerminal = icons.Lucide("square-terminal")
 
-// emptySessionsView is EmptySessions.tsx, an EmptyScreen over a project with
-// no session open. noAgent is a project whose new session would be a shell,
-// so the button says what it will spawn. th is on the island it fills.
+// emptySessionsView is the empty screen over a project with no session open.
+// noAgent is a project whose new session would be a shell, so the button says
+// what it will spawn. th is on the island it fills.
 func emptySessionsView(gtx C, th *ui.Theme, open *widget.Clickable, noAgent bool) D {
 	description, text, icon := i18n.T("shell.emptySessions.description"), i18n.T("shell.emptySessions.newSession"), icPlus
 	if noAgent {

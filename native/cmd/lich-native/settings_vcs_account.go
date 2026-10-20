@@ -10,8 +10,8 @@ import (
 
 const defaultGitHubHost = "github.com"
 
-// splitAccount is gh-account.ts splitAccount: "<host>/<login>", the host ""
-// for the host-less form stored before accounts carried one.
+// splitAccount splits "<host>/<login>", the host "" for the
+// host-less form stored before accounts carried one.
 func splitAccount(account string) (host, login string) {
 	host, login, ok := strings.Cut(account, "/")
 	if !ok {
@@ -67,8 +67,7 @@ func accountOptions(accounts []string, stored string) []string {
 	return options
 }
 
-// identityLine is commit-identity.ts commitIdentityRow: the lead, the email
-// in angle brackets ("" with no identity), and the note.
+// identityLine is the lead, the email in angle brackets ("" with no identity), and the note.
 type identityLine struct{ lead, email, note string }
 
 func identityLineOf(id lichclient.CommitIdentity) identityLine {

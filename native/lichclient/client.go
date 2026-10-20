@@ -1,6 +1,6 @@
-// Package lichclient talks to a lich backend the way its web page does:
-// positional-argument RPC over HTTP, the /events WebSocket for state changes,
-// the /ws WebSocket for terminal bytes, and /blob for a preview's raw bytes.
+// Package lichclient talks to a lich backend: positional-argument RPC over
+// HTTP, the /events WebSocket for state changes, the /ws WebSocket for
+// terminal bytes, and /blob for a preview's raw bytes.
 //
 // The backend serves one client per socket and a new connection drops the
 // previous one, so a backend the lich window is using cannot also serve this
@@ -165,8 +165,8 @@ func (e *RemoteError) Error() string {
 	return fmt.Sprintf("%s: %s (HTTP %d)", e.Method, e.Message, e.Status)
 }
 
-// ErrorText is what a person reads for err, as the web's errorText: the
-// backend's sentence when the backend refused, err as it is otherwise.
+// ErrorText is what a person reads for err: the backend's sentence when the
+// backend refused, err as it is otherwise.
 func ErrorText(err error) string {
 	var remote *RemoteError
 	if errors.As(err, &remote) {

@@ -1,7 +1,6 @@
 package main
 
-// The review comment batch (lib/review-comments.ts, CommentBatch.tsx and the
-// session composer of ReviewSlots.tsx): line comments written while reading a
+// The review comment batch: line comments written while reading a
 // diff or a file, held per checkout until they go to the session as one
 // prompt. Every surface reviewing a checkout shares its batch.
 //
@@ -198,8 +197,7 @@ func (c *commentComposer) commit(store *commentStore, target string) {
 	c.close()
 }
 
-// layout draws the box (flex-col gap-1.5 rounded-md bg-sidebar px-3 py-2.5)
-// while open; it is zero-sized when closed.
+// layout draws the box while open; it is zero-sized when closed.
 func (c *commentComposer) layout(gtx C, th *ui.Theme, store *commentStore, target string) D {
 	if !c.shown {
 		return D{}
@@ -382,7 +380,7 @@ func (b *commentBatch) row(gtx C, th *ui.Theme, c reviewComment) D {
 	})
 }
 
-// noteField is the h-7 text-xs input; Enter adds the note to the batch.
+// noteField is the note input; Enter adds the note to the batch.
 func (b *commentBatch) noteField(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
 		in := th.Input(&b.note, i18n.T("diff.commentBatch.notePlaceholder"))
@@ -391,7 +389,7 @@ func (b *commentBatch) noteField(th *ui.Theme) layout.Widget {
 	}
 }
 
-// footer is the count, then Clear and Send (bg-accent/55).
+// footer is the count, then Clear and Send.
 func (b *commentBatch) footer(th *ui.Theme, count int) layout.Widget {
 	return func(gtx C) D {
 		clear := th.Button(&b.clear, i18n.T("diff.commentBatch.clear"))
@@ -406,7 +404,7 @@ func (b *commentBatch) footer(th *ui.Theme, count int) layout.Widget {
 	}
 }
 
-// sendButtonFill is the Send button's bg-accent/55 at rest.
+// sendButtonFill is the accent's alpha on the Send button at rest.
 const sendButtonFill = 0.55
 
 func (b *commentBatch) sendButton(gtx C, th *ui.Theme) D {

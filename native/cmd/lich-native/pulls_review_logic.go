@@ -19,7 +19,7 @@ type timelineItem struct {
 	thread  *lichclient.PRReviewThread
 }
 
-// conversationTimeline is conversation-timeline.ts: reviews, comments and the
+// conversationTimeline orders reviews, comments and the
 // open threads oldest first, the resolved threads apart, newest first.
 func conversationTimeline(c *lichclient.PRConversation) (items []timelineItem, resolved []lichclient.PRReviewThread) {
 	if c == nil {
@@ -82,8 +82,8 @@ func lineSpan(lines string) (start, line int) {
 	return first, last
 }
 
-// pendingReview is pending-review-store.ts, in memory: a review's summary and
-// its line comments, sent together when the review is submitted.
+// pendingReview holds, in memory, a review's summary and its line comments,
+// sent together when the review is submitted.
 type pendingReview struct {
 	mu       sync.Mutex
 	body     string

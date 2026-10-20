@@ -42,7 +42,7 @@ type reviewActions struct {
 
 // layoutActions is the Review tab's part of the dock header: the
 // unified/split toggle, which starts from Settings › Editor's diff layout and
-// then holds per panel, and collapse/expand all, as RightDock.tsx draws it.
+// then holds per panel, and collapse/expand all.
 func (p *reviewPanel) layoutActions(gtx C, th *ui.Theme) D {
 	a := &p.actions
 	for a.bulk.click.Clicked(gtx) {
@@ -80,8 +80,8 @@ func (p *reviewPanel) panelBody(gtx C, th *ui.Theme) {
 	}
 }
 
-// fileList is FileList: the cards p-2, each after the first set off by
-// mt-2.5 border-t pt-2.5, and the note when a split does not fit.
+// fileList lays out the cards, each after the first set off by a top border,
+// and the note when a split does not fit.
 func (p *reviewPanel) fileList(gtx C, th *ui.Theme) {
 	p.splitOK = gtx.Constraints.Max.X-2*gtx.Dp(ui.Space(2)) >= gtx.Dp(splitMinWidth)
 	heights := map[string]cardSpan{}

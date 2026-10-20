@@ -24,7 +24,7 @@ var (
 	icHotkeyReset    = icons.Lucide("rotate-ccw")
 )
 
-// The web's row classes: the capture button's min-w-36, the row's gap-4, and
+// The row's measures: the capture button's minimum width, the row's gap, and
 // what the shortcut lines and the terminal notes measure from them.
 var (
 	hotkeyCaptureMin = unit.Dp(144)
@@ -67,9 +67,7 @@ func passthroughRows(goos string) []shortcutRow {
 }
 
 // hotkeyPaneRows are the Hotkeys pane's list children: a group per part of
-// the app, then the passed-through group under its note. The web's
-// Terminal group is left out: its one row is the terminal search, which the
-// native window does not have.
+// the app, then the passed-through group under its note.
 func (s *settingsScreen) hotkeyPaneRows(th *ui.Theme) []layout.Widget {
 	var rows []layout.Widget
 	bound := s.hotkeys.current()

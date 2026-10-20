@@ -272,8 +272,8 @@ func (c *Collector) collect() (Report, *singleton.Info) {
 }
 
 // entries lists the lich config directory one level deep. Directories are named
-// but never descended into: below them are the Chromium profile's cookies and
-// the workspace database, neither of which belongs in a bug report.
+// but never descended into: below them is the workspace database, which does
+// not belong in a bug report.
 func entries(dir string) []Entry {
 	found, err := os.ReadDir(dir)
 	if err != nil {

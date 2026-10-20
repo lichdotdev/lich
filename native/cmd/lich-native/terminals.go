@@ -57,8 +57,8 @@ type termView struct {
 	background color.NRGBA
 }
 
-// terminalPadding is term-view.ts TERMINAL_PADDING, in the terminal's own
-// background: the grid sits inside it.
+// terminalPadding is the margin kept in the terminal's own background: the
+// grid sits inside it.
 var terminalPadding = layout.Inset{Top: 6, Right: 6, Bottom: 6, Left: 10}
 
 // gridArea is the part of gtx's area the grid fits in, inside the padding.
@@ -69,7 +69,7 @@ func gridArea(gtx layout.Context) image.Point {
 		max(gtx.Constraints.Max.Y-gtx.Dp(p.Top)-gtx.Dp(p.Bottom), 0))
 }
 
-// refitSettle is TerminalView.tsx REFIT_DEBOUNCE_MS: a resize reaches the
+// refitSettle is the debounce on a refit: a resize reaches the
 // PTY, and every one makes the agent redraw its screen, so a dragged edge
 // refits once it stops rather than on every frame of the drag.
 const refitSettle = 100 * time.Millisecond
@@ -201,10 +201,11 @@ func (ts *terminals) has(id string) bool {
 	return ts.byID[id] != nil
 }
 
-// show returns s's terminal, attaching it on first use the way the web page
-// does: the replayed tail first, then Start (a no-op for a running session)
-// resuming the conversation resume names, "" for none, then the size. ponytail: output that lands between Replay and registering
-// the view is dropped; the page subscribes before replaying instead.
+// show returns s's terminal, attaching it on first use: the replayed tail
+// first, then Start (a no-op for a running session) resuming the conversation
+// resume names, "" for none, then the size. ponytail: output that lands between
+// Replay and registering the view is dropped; subscribing before replaying
+// would keep it.
 func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView, resume string) (*termView, error) {
 	ts.mu.Lock()
 	t := ts.byID[s.ID]
@@ -246,7 +247,7 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Lock()
 	ts.byID[s.ID] = t
 	ts.mu.Unlock()
-	// A failed start leaves the terminal in place, empty, as the web's does.
+	// A failed start leaves the terminal in place, empty.
 	if err := ts.start(ctx, s, resume, cols, rows); err != nil {
 		if lichclient.ProfileGone(err) && ts.profileGone != nil {
 			ts.profileGone(s)
@@ -382,7 +383,7 @@ func (ts *terminals) backgroundOf(id string) color.NRGBA {
 func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	gtx.Metric = ts.unzoomed
 	defer clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops).Pop()
-	// xterm.js keeps the arrow while the program takes the mouse (tmux, vim).
+	// The arrow stays while the program takes the mouse (tmux, vim).
 	if !t.vt.MouseTracking() {
 		pointer.CursorText.Add(gtx.Ops)
 	}

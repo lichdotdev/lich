@@ -32,7 +32,7 @@ var (
 	icCollapse = icons.Lucide("panel-left-close")
 )
 
-// sidebarHeader is SessionSidebar's top row and the filter it reveals. The
+// sidebarHeader is the sidebar's top row and the filter it reveals. The
 // filter is never persisted (sidebarFilter says why).
 type sidebarHeader struct {
 	newMenu    ui.MenuState
@@ -78,8 +78,7 @@ func (h *sidebarHeader) escape() {
 	h.open = false
 }
 
-// headerRow is `mb-2 flex items-center gap-1`: New Session, the filter
-// toggle and the collapse button.
+// headerRow is New Session, the filter toggle and the collapse button.
 func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D {
 	h := &s.header
 	if h.search.Clicked(gtx) {
@@ -112,8 +111,7 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D
 	)
 }
 
-// filterRow is `mb-2 flex flex-col gap-1.5`: the SearchInput, then the
-// phase chips.
+// filterRow is the SearchInput, then the phase chips.
 func (s *sidebar) filterRow(gtx C, th *ui.Theme, view sidebarView) D {
 	h := &s.header
 	for {
@@ -184,7 +182,7 @@ type sideButton struct {
 	glyph string
 }
 
-// ghostHoverFill is button.tsx ghost's dark:hover:bg-muted/50.
+// ghostHoverFill is the opacity of the fill under a hovered ghost button.
 const ghostHoverFill = 0.5
 
 func (b sideButton) layout(th *ui.Theme) layout.Widget {
@@ -256,7 +254,6 @@ func labelFace(gtx C, th *ui.Theme, bg color.NRGBA, icon layout.Widget, label st
 	)
 }
 
-// noticeText is common/Notice at the sidebar's `px-2 py-3`.
 func noticeText(gtx C, th *ui.Theme, text string) D {
 	l := th.Text(ui.TextXS, text).Muted()
 	l.MaxLines = 0

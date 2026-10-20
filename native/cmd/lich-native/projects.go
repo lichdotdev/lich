@@ -10,11 +10,11 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// homeScreen is the route last-screen.ts saves for Home.
+// homeScreen is the route saved for Home.
 const homeScreen = "/"
 
-// screenPath is the route the web saves under lastScreenKey for a project's
-// screen, Home for "".
+// screenPath is the route saved under lastScreenKey for a project's screen,
+// Home for "".
 func screenPath(projectID string) string {
 	if projectID == "" {
 		return homeScreen
@@ -22,8 +22,7 @@ func screenPath(projectID string) string {
 	return "/projects/" + projectID
 }
 
-// saveLastScreen is last-screen.ts saveLastScreen: the screen the next
-// window opens on, a global setting.
+// saveLastScreen saves the screen the next window opens on, a global setting.
 func saveLastScreen(ctx context.Context, c *lichclient.Client, projectID string) error {
 	return c.SetSetting(ctx, lastScreenKey, "", screenPath(projectID))
 }
@@ -32,7 +31,7 @@ func saveLastScreen(ctx context.Context, c *lichclient.Client, projectID string)
 type projectTab struct {
 	ID, Name, Path string
 	// status is the badge, statusNone on the active tab: its cards are on
-	// screen saying the same, per session (ProjectTab.tsx).
+	// screen saying the same, per session.
 	status string
 	// layout marks a split layout's tab, whose Path lists its sessions.
 	layout bool
@@ -101,8 +100,7 @@ const (
 )
 
 // ensureHome opens the home directory's project with a shell in it when the
-// workspace does not hold it, as the web window does on every launch, and
-// returns the workspace as it stands after.
+// workspace does not hold it, and returns the workspace as it stands after.
 func (m *model) ensureHome(ctx context.Context, ps []lichclient.Project) ([]lichclient.Project, error) {
 	home, added, err := m.addHome(ctx, ps)
 	if err != nil || !added {
@@ -131,9 +129,7 @@ func (m *model) addHome(ctx context.Context, ps []lichclient.Project) (lichclien
 }
 
 // openHome opens the home directory's project when the workspace lost it and
-// puts Home on screen, as the web's ensureHomeProject does for a command with
-// no project to run in. No session is seeded: the caller opens the one it
-// needs.
+// puts Home on screen. No session is seeded: the caller opens the one it needs.
 func (m *model) openHome(ctx context.Context) error {
 	ps, err := m.client.LoadState(ctx)
 	if err != nil {
@@ -149,8 +145,8 @@ func (m *model) openHome(ctx context.Context) error {
 	return nil
 }
 
-// runningIn counts a project's sessions holding a turn, which closing it
-// would kill (ProjectTabs.tsx requestClose).
+// runningIn counts a project's sessions holding a turn, which closing it would
+// kill.
 func (m *model) runningIn(projectID string) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -169,10 +165,9 @@ type closedProject struct {
 	next     string
 }
 
-// closeProject drops a project from the strip. Closing the one on screen
-// moves to the tab before it, else the one after, else Home; any other
-// leaves the screen alone (projects.tsx closeProject). ok is false when no
-// open project has that id.
+// closeProject drops a project from the strip. Closing the one on screen moves
+// to the tab before it, else the one after, else Home; any other leaves the
+// screen alone. ok is false when no open project has that id.
 func (m *model) closeProject(id string) (closedProject, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -284,7 +279,7 @@ func (m *model) askClose(ctx context.Context, id string) ([]string, error) {
 	return sessions, nil
 }
 
-// notification is a row of the bell's queue (notifications.ts Notification).
+// notification is a row of the bell's queue.
 type notification struct {
 	pendingStatus
 	projectID, projectName, sessionLabel string
@@ -292,7 +287,7 @@ type notification struct {
 
 // notifications joins the pending queue to the open projects, dropping a
 // session that is gone (nowhere to route) and the focused one, whose own
-// terminal already shows its state (notifications.ts notificationsFrom).
+// terminal already shows its state.
 func (m *model) notifications() []notification {
 	m.mu.Lock()
 	defer m.mu.Unlock()

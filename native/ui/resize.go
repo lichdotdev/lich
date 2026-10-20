@@ -10,9 +10,8 @@ import (
 	"gioui.org/unit"
 )
 
-// PanelEdge is lib/panel-width.ts's: the edge of the panel the handle sits
-// on. A right-edge panel is anchored on its left and grows rightward, a
-// left-edge one the other way.
+// PanelEdge is the edge of the panel the handle sits on. A right-edge panel is
+// anchored on its left and grows rightward, a left-edge one the other way.
 type PanelEdge uint8
 
 const (
@@ -27,10 +26,9 @@ var (
 	resizeInset = Space(2)
 )
 
-// ResizeHandle is common/ResizeHandle.tsx with usePanelWidth's drag: the
-// strip along a panel's edge, invisible until hovered (hover:bg-accent, held
-// while dragging, as pointer capture holds :hover on the web), that drags
-// the panel's width. The caller owns the width, and persists it on release.
+// ResizeHandle is the strip along a panel's edge, invisible until hovered
+// (hover:bg-accent, held while dragging), that drags the panel's width. The
+// caller owns the width, and persists it on release.
 type ResizeHandle struct {
 	Edge PanelEdge
 
@@ -77,7 +75,7 @@ func (r *ResizeHandle) Update(gtx C, width, minWidth, maxWidth unit.Dp) (next un
 	}
 }
 
-// drag is dragWidth of panel-width.ts. Positions are in the panel's own
+// drag is the width a pointer at x asks for. Positions are in the panel's own
 // box, whose left edge stays put on a right-edge panel and travels with the
 // width on a left-edge one, so that travel is taken back out. It is the
 // box's drawn width that says how far, not the width the caller holds: a
@@ -96,8 +94,8 @@ func (r *ResizeHandle) drag(gtx C, x float32, minWidth, maxWidth unit.Dp) unit.D
 func (r *ResizeHandle) Dragging() bool { return r.dragging }
 
 // Layout draws the handle on the edge of the panel box gtx.Constraints.Max,
-// in the panel's own coordinates, over whatever the panel drew: lay it out last, as ResizeHandle.tsx comes
-// after the panel's content to win the tie on z-10.
+// in the panel's own coordinates, over whatever the panel drew: lay it out
+// last, to win the tie with the panel's content.
 func (r *ResizeHandle) Layout(gtx C, th *Theme) D {
 	box := gtx.Constraints.Max
 	r.laidOut = box.X

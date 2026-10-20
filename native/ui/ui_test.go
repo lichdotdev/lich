@@ -17,7 +17,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The zinc ramp Tailwind publishes as hex for the oklch values index.css uses.
+// The zinc ramp Tailwind publishes as hex for the oklch values the tokens use.
 func TestOKLCHMatchesTailwindHex(t *testing.T) {
 	cases := []struct {
 		l, c, h float64
@@ -144,7 +144,7 @@ func TestSeparatorIsBorderOverThePage(t *testing.T) {
 	}
 }
 
-// index.css's thumb is currentColor at 25%, 40% hovered.
+// The thumb is currentColor at 25%, 40% hovered.
 func TestScrollAreaThumbIsForegroundOverThePage(t *testing.T) {
 	list := testTheme().ScrollArea(new(widget.List))
 	if want := (color.NRGBA{R: 69, G: 69, B: 71, A: 255}); !near2(list.Indicator.Color, want) {

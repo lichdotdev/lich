@@ -16,7 +16,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The web's plugin-gate.ts prefs, global settings here.
+// The plugin gate's prefs, kept as global settings.
 const (
 	pluginInstallDismissedKey = "lich.pluginInstallDismissed"
 	pluginUpdateDismissedKey  = "lich.pluginUpdateDismissed"
@@ -41,7 +41,7 @@ type pluginGateAction struct {
 	providers []lichclient.PluginStatus
 }
 
-// decidePluginAction is plugin-gate.ts's: an incompatible install wins and
+// decidePluginAction picks what to offer: an incompatible install wins and
 // ignores every dismissal; a CLI missing the plugin comes before an update.
 func decidePluginAction(statuses []lichclient.PluginStatus, installDismissed bool, updateDismissed string) pluginGateAction {
 	available := slices.DeleteFunc(slices.Clone(statuses), func(s lichclient.PluginStatus) bool { return !s.Available })
@@ -80,9 +80,9 @@ func incompatibleMessage(version string, providers []lichclient.PluginStatus) st
 	return i18n.T("update.plugin.incompatibleInstall", i18n.Args{"installs": strings.Join(installs, ", "), "version": version})
 }
 
-// pluginGate is AgentPluginGate: once per start, after the first-run dialog
-// stored a default, and again whenever a session reports from a release this
-// lich does not speak. Any failure is silent: it never blocks startup.
+// pluginGate runs once per start, after the first-run dialog stored a default,
+// and again whenever a session reports from a release this lich does not speak.
+// Any failure is silent: it never blocks startup.
 type pluginGate struct {
 	started bool
 

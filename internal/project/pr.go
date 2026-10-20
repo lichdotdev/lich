@@ -19,9 +19,6 @@ const (
 	prMergeTimeout  = 30 * time.Second
 	prCreateTimeout = 20 * time.Second
 	prReviewTimeout = 20 * time.Second
-	// An edit (the description, a reviewer) is one mutating round-trip, the same
-	// budget a review write gets.
-	prEditTimeout = 20 * time.Second
 	// A checkout fetches the head ref, so it is bounded by the size of the
 	// branch rather than by a round-trip.
 	prCheckoutTimeout = 90 * time.Second
@@ -40,7 +37,7 @@ var errNoPullRequest = errors.New("no pull request for this branch")
 
 // runGH shells out to gh with the call capped by timeout, and turns a failure
 // into the message the screen shows (gherror.go); gh's own stderr reaches the
-// log, never the page. A non-empty token rides in GH_TOKEN, which is how gh is
+// log, never the screen. A non-empty token rides in GH_TOKEN, which is how gh is
 // told to answer as one specific account.
 func runGH(timeout time.Duration, dir, token string, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -358,18 +355,10 @@ func (s *Service) CreatePullRequest(path string) error {
 	return nil
 }
 
-// EditPullRequestBody replaces the pull request's description — the one thing
-// about a pull request that could only be changed on github.com, and the one an
-// agent's first draft usually needs. An empty body is a real edit (it clears the
-// description), so nothing is rejected here.
-func (s *Service) EditPullRequestBody(path string, number int, body string) error {
-	return s.writePR(prEditTimeout, path, number, prArgs("edit", number, "--body", body)...)
-}
-
 // PullRequestDiff returns the unified diff of the path's branch pull request —
 // every change the PR would merge into its base, as GitHub computes it — for the
 // Pulls screen's "Files changed" tab. --color never keeps the output plain so
-// the frontend's parseDiff reads it. An empty string with no error means the
+// the window's parsePatchFiles reads it. An empty string with no error means the
 // branch has no open PR (nothing to show).
 //
 // Ceiling: the whole diff is buffered here and shipped as one JSON string, so a
@@ -398,8 +387,8 @@ const (
 	prListLimit  = 50
 )
 
-// prListStates allow-lists the values gh's --state takes, so a query built in
-// the page can never widen into an arbitrary flag.
+// prListStates allow-lists the values gh's --state takes, so a state sent by
+// the window can never widen into an arbitrary flag.
 var prListStates = map[string]bool{"open": true, "closed": true, "merged": true, "all": true}
 
 // PRSummary is one row of the repository's open pull requests — what the list
@@ -446,7 +435,7 @@ type ghPRAuthor struct {
 
 // ListPullRequests returns the repository's pull requests in the given state
 // (open|closed|merged|all, defaulting to open), newest update first — gh's own
-// order, which the frontend re-sorts. It returns nil for a repository with none;
+// order, which the window re-sorts. It returns nil for a repository with none;
 // a real failure (gh missing, unauthenticated, not a GitHub repo) yields an
 // error so the column can say why it is empty.
 func (s *Service) ListPullRequests(path, state string) ([]PRSummary, error) {

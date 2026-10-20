@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/lichdotdev/lich/internal/providers"
@@ -106,7 +105,7 @@ func (s *Service) DeleteProject(id string) error {
 }
 
 // AddSession inserts a session, makes it the project's active one and records the
-// project's next label counter — all atomically, mirroring the frontend reducer.
+// project's next label counter, all atomically.
 // Kind selects what the session's PTY runs (a provider id or "shell"); empty
 // defaults to "claude", which is the schema's own default and the answer for a
 // caller that reached this over RPC without one. Path is the session's working
@@ -186,7 +185,7 @@ func (s *Service) addSession(
 }
 
 // DeleteSession removes a session for good and sets the project's active session
-// to activeID (the neighbor the frontend picked, or "" when none remain).
+// to activeID (the neighbor the window picked, or "" when none remain).
 func (s *Service) DeleteSession(projectID, sessionID, activeID string) error {
 	s.noteForfeitedSchedules(`id = ?`, sessionID)
 	if err := s.tx(func(tx *sql.Tx) error {
@@ -204,7 +203,7 @@ func (s *Service) DeleteSession(projectID, sessionID, activeID string) error {
 // CloseSession parks a session instead of deleting it: is_open flips to 0, which
 // hides it from LoadState while keeping its row — and its provider session id —
 // intact for a later resume. The project's active session moves to activeID (the
-// neighbor the frontend picked).
+// neighbor the window picked).
 //
 // Every close lands here. DeleteSession is what the checkout's own removal uses,
 // where the row must not outlive the directory it points at.
@@ -319,8 +318,8 @@ func (s *Service) ReopenSession(sessionID, newSessionID string) (*Session, error
 // reopen is the resume behind both doors: it finds one parked session with the
 // given WHERE clause and re-adds it to the workspace under a fresh id
 // (newSessionID), carrying over the old label, kind, path, provider session id,
-// label_auto flag, model, effort, ultracode, subagent depth, entrypoint, sandbox, profile, pin, origin and scheduled prompt.
-// The fresh id is deliberate: it makes the frontend treat the card as
+// label_auto flag, model, effort, ultracode, subagent depth, sandbox, profile, pin, origin and scheduled prompt.
+// The fresh id is deliberate: it makes the window treat the card as
 // never-spawned, so its resume prompt fires and the provider conversation
 // continues instead of starting cold.
 //
@@ -337,11 +336,9 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		// cycle — reinserting without it would reset to 1 and let the ai-title
 		// stomp the chosen name, breaking SetSessionTitle's contract.
 		//
-		// model, effort, ultracode, the subagent depth and entrypoint ride along for the same reason, one rung lower:
+		// model, effort, ultracode and the subagent depth ride along for the same reason, one rung lower:
 		// they are what the session was born with, and a resumed card that the
-		// user restarts as a new conversation starts on them again; a reinsert
-		// that dropped the entrypoint would put the terminal back on a bare shell
-		// silently, on the one path where the card keeps its identity but not its id.
+		// user restarts as a new conversation starts on them again.
 		//
 		// The scheduled prompt rides along because the row is the only copy of
 		// what the user parked there: parking a session is not cancelling its
@@ -357,20 +354,20 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		// project_id is read rather than passed: reopening by id knows only the
 		// session, and the row is what says where it belongs.
 		var labelAuto int
-		var projectID, model, effort, entrypoint, sandbox, folder, color, profile string
+		var projectID, model, effort, sandbox, folder, color, profile string
 		var ultracode bool
 		var subagent int
 		var forkOffset float64
 		row := tx.QueryRow(
 			`SELECT id, project_id, label, kind, path, provider_session_id, label_auto,
-			        model, effort, ultracode, subagent, entrypoint, sandbox, pinned, folder, color, origin_session_id, origin_label,
+			        model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
 			        forked, scheduled_at, scheduled_prompt, fork_cost_offset, profile
 			   FROM sessions `+where,
 			args...,
 		)
 		if err := row.Scan(
 			&old.ID, &projectID, &old.Label, &old.Kind, &old.Path, &old.ProviderSessionID,
-			&labelAuto, &model, &effort, &ultracode, &subagent, &entrypoint, &sandbox, &old.Pinned, &folder, &color,
+			&labelAuto, &model, &effort, &ultracode, &subagent, &sandbox, &old.Pinned, &folder, &color,
 			&old.OriginSessionID, &old.OriginLabel, &old.Forked,
 			&old.ScheduledAt, &old.ScheduledPrompt, &forkOffset, &profile,
 		); err != nil {
@@ -421,11 +418,11 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		if _, err := tx.Exec(
 			`INSERT INTO sessions
 			   (id, project_id, label, kind, path, provider_session_id, label_auto,
-			    model, effort, ultracode, subagent, entrypoint, sandbox, pinned, folder, color, origin_session_id, origin_label,
+			    model, effort, ultracode, subagent, sandbox, pinned, folder, color, origin_session_id, origin_label,
 			    forked, scheduled_at, scheduled_prompt, fork_cost_offset, profile, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
 			newSessionID, projectID, old.Label, old.Kind, old.Path, old.ProviderSessionID, labelAuto,
-			model, effort, ultracode, subagent, entrypoint, sandbox, old.Pinned, folder, color, old.OriginSessionID, old.OriginLabel,
+			model, effort, ultracode, subagent, sandbox, old.Pinned, folder, color, old.OriginSessionID, old.OriginLabel,
 			old.Forked, old.ScheduledAt, old.ScheduledPrompt, forkOffset, profile, projectID,
 		); err != nil {
 			return fmt.Errorf("reinsert session %q: %w", newSessionID, err)
@@ -445,7 +442,6 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 			Kind:              old.Kind,
 			Path:              old.Path,
 			ProviderSessionID: old.ProviderSessionID,
-			Entrypoint:        entrypoint,
 			Sandbox:           sandbox,
 			Pinned:            old.Pinned,
 			Folder:            folder,
@@ -846,46 +842,6 @@ func (s *Service) InheritUltracode(sessionID, forkedFrom string) error {
 	return nil
 }
 
-// SetSessionEntrypoint records the command a terminal session opens into, so
-// every later spawn of that session runs it again — a reload, a respawn, and the
-// resume of a parked worktree session all go through the same path. An empty
-// command clears it and leaves a plain shell.
-//
-// The kind clause is the guard that keeps this out of every other session: lich
-// has one project-wide way to put something in front of a PTY already
-// (.lich/setup-worktree.sh), and this is deliberately the opposite — one row,
-// one shell. Written in SQL rather than checked in Go because that is the only
-// spelling no future caller can skip: an RPC or an MCP tool that aims this at a
-// provider row changes nothing instead of parking a setting nothing reads.
-// 'shell' is terminal.KindShell, which SQL cannot interpolate — the same
-// coupling the schema's 'claude' default already carries.
-//
-// A session whose row is gone, or whose kind is not shell, matches nothing and
-// is not an error.
-func (s *Service) SetSessionEntrypoint(sessionID, entrypoint string) error {
-	if _, err := s.db.Exec(
-		`UPDATE sessions SET entrypoint = ? WHERE id = ? AND kind = 'shell'`,
-		strings.TrimSpace(entrypoint), sessionID,
-	); err != nil {
-		return fmt.Errorf("set entrypoint on %q: %w", sessionID, err)
-	}
-	return nil
-}
-
-// SessionEntrypoint returns the command recorded for a session, or "" for none —
-// which is what every provider session has, and what leaves a terminal on a
-// plain shell. A read failure answers "" for the same reason SessionModel does:
-// the entrypoint is an override, and the bare shell is the safe fallback.
-func (s *Service) SessionEntrypoint(sessionID string) string {
-	var entrypoint sql.NullString
-	if err := s.db.QueryRow(
-		`SELECT entrypoint FROM sessions WHERE id = ?`, sessionID,
-	).Scan(&entrypoint); err != nil {
-		return ""
-	}
-	return entrypoint.String
-}
-
 // Session sandbox answers, the row's own spelling. Empty is not one of them: it
 // is the absence of an answer, and it means the provider's rung decides.
 const (
@@ -918,8 +874,8 @@ func (s *Service) SetSessionSandbox(sessionID, sandbox string) error {
 
 // SessionSandbox returns the answer recorded for a session, or "" when nobody
 // decided for this one and the provider's rung stands. A read failure answers
-// "" for SessionEntrypoint's reason: the row is an override, and deferring to
-// the setting is the honest fallback.
+// "": the row is an override, and deferring to the setting is the honest
+// fallback.
 func (s *Service) SessionSandbox(sessionID string) string {
 	var sandbox sql.NullString
 	if err := s.db.QueryRow(
@@ -1003,7 +959,7 @@ func (s *Service) ProviderSession(sessionID string) (string, error) {
 }
 
 // ReorderProjects records the tab order after a drag. It writes every project's
-// position from the full list the frontend rendered, so the stored order is
+// position from the full list the window rendered, so the stored order is
 // rewritten as a whole rather than patched around the moved tab.
 func (s *Service) ReorderProjects(ids []string) error {
 	err := s.tx(func(tx *sql.Tx) error {

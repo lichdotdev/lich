@@ -21,9 +21,9 @@ const (
 )
 
 // SkeletonStyle is shadcn's Skeleton: a pulsing bg-foreground/20 rounded-md
-// block, the pulse an opacity over the whole element. Width and Height are the w-* and h-* of the TSX; a zero Width is a
-// block div's auto width, the whole row. A width past the constraint is
-// clamped to it, as max-w-full does.
+// block, the pulse an opacity over the whole element. Width and Height are the
+// w-* and h-*; a zero Width is a block div's auto width, the whole row. A
+// width past the constraint is clamped to it, as max-w-full does.
 type SkeletonStyle struct {
 	Width, Height unit.Dp
 	theme         *Theme

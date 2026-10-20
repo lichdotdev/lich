@@ -28,7 +28,7 @@ var deviconFiles embed.FS
 type Bitmap struct {
 	src *image.NRGBA
 	// mono marks ship with no fill of their own and take the color passed to
-	// Layout, as FileIcon.tsx draws them with fill=currentColor.
+	// Layout.
 	mono   bool
 	scaled map[bitmapKey]paint.ImageOp
 }

@@ -120,7 +120,7 @@ func New(version string, install func(string) error, emit func(name string, data
 	}
 }
 
-// Status is lich's install/update state, reported to the frontend.
+// Status is lich's install/update state, reported to the window.
 type Status struct {
 	CurrentVersion  string `json:"currentVersion"`
 	LatestVersion   string `json:"latestVersion"`

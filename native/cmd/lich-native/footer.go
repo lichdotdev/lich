@@ -25,8 +25,8 @@ var (
 	icTimer    = icons.Lucide("timer")
 )
 
-// footer is FooterBar: the status strip under the stage, following the
-// active session, laid out as the user arranged it.
+// footer is the status strip under the stage, following the active session,
+// laid out as the user arranged it.
 type footer struct {
 	ctx        context.Context
 	client     *lichclient.Client
@@ -75,8 +75,8 @@ func newFooter(ctx context.Context, client *lichclient.Client, root *ui.Root, us
 }
 
 // start loads the cost flag, then the layout resolved against it, and starts
-// the hands-on clock. A failed flag load leaves the readout off, as the web's
-// gate does; a failed layout load is a backend that cannot answer at all.
+// the hands-on clock. A failed flag load leaves the readout off; a failed
+// layout load is a backend that cannot answer at all.
 func (f *footer) start() error {
 	if err := f.cost.load(f.ctx); err != nil {
 		log.Printf("load %s: %v", costReadoutKey, err)
@@ -135,7 +135,7 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 }
 
 // follow polls plan and hands-on time only for a session whose footer shows
-// them, as each web readout subscribes only while it is mounted.
+// them.
 func (f *footer) follow(in footerInput) {
 	l, _ := f.snapshot()
 	handsOnID := ""
@@ -160,9 +160,9 @@ func (f *footer) follow(in footerInput) {
 	}
 }
 
-// layoutBar draws the strip: flex-wrap justify-between gap-x-4 gap-y-1,
-// min-h-11 py-1.5, the right side ml-auto justify-end. A right press on it
-// opens the menu that leads to Settings › Appearance › Footer.
+// layoutBar draws the strip: wrapping items spread between the two sides, the
+// right one pushed to the end. A right press on it opens the menu that leads
+// to Settings › Appearance › Footer.
 func (f *footer) layoutBar(gtx C, th *ui.Theme, in footerInput) D {
 	f.act(gtx, in)
 	f.shown = in
@@ -177,7 +177,7 @@ func (f *footer) layoutBar(gtx C, th *ui.Theme, in footerInput) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		pad := ui.Space(1.5)
 		return layout.Inset{Top: pad, Bottom: pad}.Layout(gtx, func(gtx C) D {
-			// min-h-11 counts the padding, and Inset leaves Min as it finds it.
+			// The minimum height counts the padding, and Inset leaves Min as it finds it.
 			gtx.Constraints.Min.Y = gtx.Dp(ui.Space(11)) - 2*gtx.Dp(pad)
 			return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1), Justify: ui.JustifyBetween}.Layout(gtx,
 				ui.WrapItem(f.side(th, withDelegates(footerSlots(l.Left, in), in), in, ui.JustifyStart)),
@@ -246,7 +246,7 @@ func (f *footer) w(id string) *footerWidgets {
 	return w
 }
 
-// slot draws one item, FooterBar's controls and FooterSession's readings.
+// slot draws one item, a control or a reading.
 func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	w := f.w(s.ID)
 	switch s.ID {
@@ -276,7 +276,7 @@ func (f *footer) slot(gtx C, th *ui.Theme, s footerSlot, in footerInput) D {
 	return f.readout(gtx, th, w, s, in)
 }
 
-// readout draws FooterSession's tooltip readings.
+// readout draws the readings that carry a tooltip.
 func (f *footer) readout(gtx C, th *ui.Theme, w *footerWidgets, s footerSlot, in footerInput) D {
 	r := s.Readout
 	pop := th.On(th.Popover)

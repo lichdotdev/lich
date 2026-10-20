@@ -8,21 +8,20 @@ import (
 const (
 	// visibleFlushInterval batches a visible session's output just under one
 	// 60Hz frame: a burst of tiny PTY reads (an nvim redraw) collapses into a
-	// couple of events instead of dozens, each paying the event-bridge
-	// overhead (IPC + base64 + WASM parse), while echo latency stays
-	// imperceptible.
+	// couple of events instead of dozens, each paying the per-event
+	// overhead, while echo latency stays imperceptible.
 	visibleFlushInterval = 8 * time.Millisecond
 	// hiddenFlushInterval is how often a hidden session's buffered output is
-	// flushed to the frontend. Hidden terminals don't paint, so latency is
-	// irrelevant; batching cuts the event-bridge overhead to a few events per
+	// flushed to the window. Hidden terminals don't paint, so latency is
+	// irrelevant; batching cuts the per-event overhead to a few events per
 	// second.
 	hiddenFlushInterval = 250 * time.Millisecond
 	// maxPendingBytes forces an early flush, bounding both the buffer's
-	// memory and the size of a single frontend event.
+	// memory and the size of a single event.
 	maxPendingBytes = 256 * 1024
 )
 
-// coalescer batches PTY output before it is emitted to the frontend, on a
+// coalescer batches PTY output before it is emitted to the window, on a
 // short cadence while visible and a long one while hidden. It is leading +
 // trailing while visible: the first write after a silent window goes out at
 // once, and the timer then batches whatever the burst adds behind it. emit is

@@ -13,8 +13,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// namedConflicts is base-status.ts NAMED_CONFLICTS: how many conflicting
-// files the tooltip names before counting the rest.
+// namedConflicts is how many conflicting files the tooltip names before
+// counting the rest.
 const namedConflicts = 3
 
 var (
@@ -143,7 +143,7 @@ func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 	}
 }
 
-// baseSections spell out base-status.ts baseReadout: commits behind the
+// baseSections spell out the base readout: commits behind the
 // named base, then the conflict, then the first files it is in.
 func baseSections(th *ui.Theme, b *lichclient.BaseStatus) []layout.Widget {
 	if b == nil {

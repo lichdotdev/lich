@@ -62,7 +62,7 @@ func TestFileName(t *testing.T) {
 	}
 }
 
-// TestPathIsWhatInitWrites proves the path the frontend reveals is the file
+// TestPathIsWhatInitWrites proves the path the window reveals is the file
 // Init actually opened, under both the dev and the release name — the two
 // would drift apart the moment they were spelled out twice.
 func TestPathIsWhatInitWrites(t *testing.T) {

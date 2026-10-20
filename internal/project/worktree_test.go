@@ -734,7 +734,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 	})
 
 	// The checkout runs inside a worktree the store has never seen — it has no
-	// session row until the frontend opens one — so resolving the account from
+	// session row until the window opens one — so resolving the account from
 	// the directory gh runs in would answer "none" and fall back to gh's active
 	// account, failing on exactly the repositories the picker exists for.
 	t.Run("the checkout runs as the project's account", func(t *testing.T) {

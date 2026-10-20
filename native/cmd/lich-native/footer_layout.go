@@ -8,8 +8,7 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// footerItem is one control of the footer strip (footer-layout.ts
-// FOOTER_ITEMS).
+// footerItem is one control of the footer strip.
 type footerItem struct {
 	ID string
 	// Example is the reading the editor previews, ExampleKey its catalog key
@@ -41,8 +40,7 @@ const (
 	footerAvailable = "available"
 )
 
-// footerLayoutKey is the global setting the layout persists under, holding
-// the JSON the web keeps in localStorage's lich.footer.layout.
+// footerLayoutKey is the global setting the layout persists under, as JSON.
 const footerLayoutKey = "footer.layout"
 
 type footerLayout struct {
@@ -50,8 +48,8 @@ type footerLayout struct {
 	Right []string `json:"right"`
 }
 
-// footerVisibility is footer-prefs.ts FooterVisibility: the web's pre-layout
-// switches, which only seed a layout nobody has saved yet.
+// footerVisibility is the pre-layout set of switches, which only seed a layout
+// nobody has saved yet.
 type footerVisibility struct {
 	Model, Plan, HandsOn, Clock bool
 }
@@ -164,7 +162,7 @@ func moveFooterItem(l footerLayout, id, over string) (footerLayout, bool) {
 }
 
 // insertAt puts id at index, or appends for -1. index is taken against the
-// side before id left it, as the web's splice does.
+// side before id left it.
 func insertAt(items []string, index int, id string) []string {
 	if index < 0 || index > len(items) {
 		index = len(items)
@@ -174,7 +172,7 @@ func insertAt(items []string, index int, id string) []string {
 
 // loadFooterLayout reads the saved layout and resolves it against the cost
 // flag. The native window has no visibility switches or context toggle of its
-// own, so an unsaved layout seeds from the web's defaults.
+// own, so an unsaved layout seeds from defaultFooterVisibility.
 func loadFooterLayout(ctx context.Context, c *lichclient.Client, cost bool) (footerLayout, error) {
 	raw, err := c.GetSetting(ctx, footerLayoutKey, "")
 	if err != nil {
@@ -196,7 +194,7 @@ func saveFooterLayout(ctx context.Context, c *lichclient.Client, l footerLayout)
 }
 
 // nonNil keeps an emptied side saved as [] rather than null, which
-// parseFooterLayout (and the web's) rejects.
+// parseFooterLayout rejects.
 func nonNil(items []string) []string {
 	if items == nil {
 		return []string{}

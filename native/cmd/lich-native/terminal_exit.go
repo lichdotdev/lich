@@ -34,8 +34,7 @@ func readSessionExit(data json.RawMessage) sessionExit {
 	return e
 }
 
-// exitNotice is session-exit.ts exitNotice: a failing code is named, for it
-// tells a crash from a session the user ended.
+// exitNotice names a failing code, for it tells a crash from a session the user ended.
 func exitNotice(e sessionExit) string {
 	if e.Code == nil || *e.Code == 0 {
 		return i18n.T("terminal.sessionExit.ended")
@@ -43,7 +42,7 @@ func exitNotice(e sessionExit) string {
 	return i18n.T("terminal.sessionExit.endedWithCode", i18n.Args{"code": *e.Code})
 }
 
-// exitMarker is session-exit.ts exitMarker: the scrollback line where the
+// exitMarker is the scrollback line where the
 // process died, which outlives the band after a restart.
 func exitMarker(e sessionExit) string {
 	if e.Code == nil {
@@ -79,7 +78,7 @@ func (ts *terminals) exitOf(id string) (sessionExit, bool) {
 	return *t.exit, true
 }
 
-// restart is TerminalView.tsx restart: the same kind in the same directory,
+// restart starts the same kind in the same directory,
 // as a conversation of its own, into the same terminal and its scrollback.
 func (ts *terminals) restart(ctx context.Context, s sessionView) {
 	ts.mu.Lock()

@@ -21,17 +21,15 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// text2XS is index.css --text-2xs (0.65625rem), the uppercase label that
-// heads a group of rows; it sets no line height, so the 16px of text-xs's is
-// taken for the row.
+// text2XS is 0.65625rem, the uppercase label that heads a group of rows; it
+// sets no line height, so a 16px line is taken for the row.
 const (
 	text2XS        unit.Sp = 10.5
 	text2XSLeading unit.Sp = 16
 )
 
-// SessionGroupHeader's tints: the title's text-muted-foreground/70, the
-// count's /60, the title button's hover:bg-accent/50, the drop target's
-// bg-tone-pass/15 and a refusing header's opacity-45.
+// The header's tints: the title's opacity, the count's, the title button's
+// hover fill, the drop target's fill and a refusing header's opacity.
 const (
 	headerTitleOpacity  = 0.7
 	headerCountOpacity  = 0.6
@@ -61,8 +59,7 @@ var (
 	icGroupMore    = icons.Lucide("ellipsis")
 )
 
-// groupHeader is SessionGroupHeader: `flex flex-wrap items-center gap-1 px-1
-// pb-0.5 pt-1.5`, the title (or the folder's rename field), the + and the …,
+// groupHeader is a block's header: the title (or the folder's rename field), the + and the …,
 // and under them the note a rename onto another folder earns. While a card is
 // carried, a header that takes it is a drop target; every other one fades.
 func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
@@ -85,7 +82,7 @@ func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, 
 }
 
 // headerDrop is how the header answers the card in the air: whether it takes
-// it, and whether it refuses it (file-drag-store.ts dropState).
+// it, and whether it refuses it.
 func (s *sidebar) headerDrop(b blockView, view sidebarView) (takes, refuses bool) {
 	carried := s.carry.Carrying()
 	if carried == "" {
@@ -135,9 +132,8 @@ func (s *sidebar) headerMenu(gtx C, th *ui.Theme, state *ui.MenuState, click *wi
 	})
 }
 
-// titleButton is SessionGroupTitleButton: `-ml-1 flex flex-1 items-center
-// gap-1.5 rounded-sm px-1 py-0.5`, the chevron, a folder's glyph and count,
-// the folded block's mark, then the rule to the row's end.
+// titleButton is the header's title button: the chevron, a folder's glyph and
+// count, the folded block's mark, then the rule to the row's end.
 func (s *sidebar) titleButton(gtx C, th *ui.Theme, b blockView, st *blockState, over, refuses bool) D {
 	hint := i18n.T("sidebar.sessionGroupHeader.collapse", i18n.Args{"name": b.title})
 	if b.collapsed {
@@ -211,15 +207,14 @@ func markColor(th *ui.Theme, b blockView) (color.NRGBA, bool) {
 	return color.NRGBA{}, false
 }
 
-// markDot is `size-1.5 rounded-full`.
 func markDot(gtx C, c color.NRGBA) D {
 	size := gtx.Dp(ui.Space(1.5))
 	paint.FillShape(gtx.Ops, c, clip.Ellipse{Max: image.Pt(size, size)}.Op(gtx.Ops))
 	return D{Size: image.Pt(size, size)}
 }
 
-// chevron is the size-3 ChevronRight, turned down (rotate-90) while open.
-// ponytail: turns at once, where the web eases it over 150ms.
+// chevron is a ChevronRight, turned down while open.
+// ponytail: turns at once instead of easing.
 func chevron(gtx C, c color.NRGBA, open bool) D {
 	size := gtx.Dp(ui.Space(3))
 	if open {
@@ -243,8 +238,8 @@ func (s *sidebar) folderRenameField(gtx C, th *ui.Theme, b blockView, st *blockS
 	})
 }
 
-// mergeNote is `basis-full px-1 text-xs text-muted-foreground`, the typed
-// name in font-medium foreground.
+// mergeNote is the note a rename onto another folder earns, the typed name in
+// medium-weight foreground.
 func (s *sidebar) mergeNote(gtx C, th *ui.Theme, b blockView, st *blockState, folders []string) D {
 	typed := strings.TrimSpace(st.rename.Text())
 	if b.kind != blockFolder || !st.rename.Active() || !mergesInto(b.folder, typed, folders) {

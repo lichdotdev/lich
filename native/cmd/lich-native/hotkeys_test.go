@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// The cases of frontend/src/lib/hotkeys.test.ts, with its expected values.
-
 func TestMatchesComboAcceptsCtrlOrCmdForThePrimaryModifier(t *testing.T) {
 	newSession := defaultHotkeys()[hotkeyNewSession] // Ctrl+Shift+T
 	if !matchesCombo(keyState{ctrl: true, shift: true, key: "T"}, newSession) {

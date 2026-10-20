@@ -14,7 +14,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The list keeps the web's w-80 in English and grows only as far as the
+// The list keeps pullsListWidth in English and grows only as far as the
 // filter tabs need in a language whose labels run longer.
 func TestPullsListGrowsForLongerFilterLabels(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
@@ -23,7 +23,7 @@ func TestPullsListGrowsForLongerFilterLabels(t *testing.T) {
 	p := new(pullsScreen)
 	counts := [pullsFilterCount]int{12, 3, 1, 2}
 	if w := p.listWidth(gtx, th, counts); w != int(pullsListWidth) {
-		t.Errorf("English: %d, want the web's %v", w, pullsListWidth)
+		t.Errorf("English: %d, want %v", w, pullsListWidth)
 	}
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)

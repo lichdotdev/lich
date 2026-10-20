@@ -11,7 +11,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// undoToastDuration is projects.tsx UNDO_TOAST_MS.
 const undoToastDuration = 10 * time.Second
 
 // closedToast is closeSession's toast: Undo puts s back at index of its
@@ -23,7 +22,7 @@ func (u *window) closedToast(projectID string, s lichclient.Session, index int, 
 		}}}
 }
 
-// undoClose is projects.tsx restoreClosedSession. It waits on the park: the
+// undoClose restores a closed session. It waits on the park: the
 // store can sit on a lock for seconds, and a reopen that overtook it would
 // find the row still open and do nothing. The row comes back under a fresh
 // id, unspawned, so the spawn gate offers the conversation's resume as for
@@ -59,10 +58,9 @@ func (m *model) slotOf(id string) (lichclient.Session, int, bool) {
 	return p.Sessions[i], i, true
 }
 
-// restoreSession is sessions.ts restoreSession: s goes back into its
-// project at index, or the end when the project has fewer, and becomes the
-// project's active session. It returns the project's card order, and false
-// when the project is no longer open.
+// restoreSession puts s back into its project at index, or the end when the
+// project has fewer, and makes it the project's active session. It returns
+// the project's card order, and false when the project is no longer open.
 func (m *model) restoreSession(projectID string, s lichclient.Session, index int) ([]string, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

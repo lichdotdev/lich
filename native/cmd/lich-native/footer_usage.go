@@ -14,9 +14,9 @@ import (
 // reads as no reason.
 var costMisses = []string{"mixed-models", "unpriced-model"}
 
-// sessionUsage is a session's context-window occupancy and what it has cost
-// (session-events.ts SessionUsage). CostUSD is nil whenever the backend sent
-// no number; CostMiss names the one absence the user has to know about.
+// sessionUsage is a session's context-window occupancy and what it has cost.
+// CostUSD is nil whenever the backend sent no number; CostMiss names the one
+// absence the user has to know about.
 type sessionUsage struct {
 	Percent  int
 	Tokens   int
@@ -41,9 +41,8 @@ type usageEvent struct {
 	CostMiss json.RawMessage `json:"costMiss"`
 }
 
-// footerUsage keeps the last usage report of every session, ported from
-// session-usage-store.ts: retained while the card is off screen, cleared when
-// the provider changes or leaves.
+// footerUsage keeps the last usage report of every session: retained while the
+// card is off screen, cleared when the provider changes or leaves.
 type footerUsage struct {
 	mu    sync.Mutex
 	usage map[string]sessionUsage

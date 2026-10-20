@@ -26,8 +26,8 @@ func sessionOf(t *testing.T, svc *Service, sessionID string) Session {
 	return Session{}
 }
 
-// The spawn writes the names and the hydration reads them back: a page reload
-// finds the PTY already running, so there is no second spawn to report them.
+// The spawn writes the names and the hydration reads them back: a window
+// restart finds the PTY already running, so there is no second spawn to report them.
 func TestSessionMCPServersRoundTrip(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
 	if err := svc.AddSession("p1", "s1", "one", providers.OMP, "", 0, ""); err != nil {

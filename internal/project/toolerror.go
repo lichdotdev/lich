@@ -14,7 +14,7 @@ import (
 // the log, and the screen gets a sentence it can act on.
 //
 // The messages are causes, not sentences about an operation: every call site in
-// the frontend already says which one failed ("Failed to remove worktree: …").
+// the window already says which one failed ("Failed to remove worktree: …").
 
 // toolFailure is one recognised failure: what the tool's stderr contains,
 // lowercased, and what the screen says in its place.

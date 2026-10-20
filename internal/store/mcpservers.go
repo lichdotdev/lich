@@ -7,7 +7,7 @@ import (
 
 // SetSessionMCPServers records the MCP servers a session's provider could reach
 // at the spawn that just happened. The window divides a tool name against them
-// (frontend/src/lib/session/tool-label.ts), and the row is what a page reload
+// (native/cmd/lich-native/toolline.go), and the row is what a window restart
 // comes back to — the PTY is still running by then, so there is no second spawn
 // to report it again.
 //
@@ -23,7 +23,7 @@ func (s *Service) SetSessionMCPServers(sessionID string, servers []string) error
 // ~/.gitconfig symlinked out of a dotfiles repository is an absence the session
 // is told about rather than one it discovers by failing. Written by the spawn
 // that resolved them, and read back on hydration for the reason above: the PTY
-// outlives the page.
+// outlives the window.
 func (s *Service) SetSessionSandboxLinks(sessionID string, links []string) error {
 	return s.setSessionList(sessionID, "sandbox_links", links)
 }

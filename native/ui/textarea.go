@@ -14,7 +14,7 @@ import (
 	"gioui.org/widget"
 )
 
-// textareaPadY is textarea.tsx's py-2; its px is the Input's.
+// textareaPadY is shadcn's textarea py-2; its px is the Input's.
 var (
 	textareaPadY      = Space(2)
 	textareaMinHeight = Space(16) // min-h-16

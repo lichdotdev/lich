@@ -10,15 +10,14 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// The web keeps these two in localStorage (providers/settings.tsx); the
-// native window keeps them in the backend under the same names.
+// These two live in the backend. Renaming one would orphan what is already
+// stored under it.
 const (
 	desktopNotifyKey  = "lich.notifications.desktop"
 	finishedNotifyKey = "lich.notifications.finishedTurn"
 )
 
-// desktopNotice is what the desktop channel does with a status report
-// (session-events.ts DesktopNotice).
+// desktopNotice is what the desktop channel does with a status report.
 type desktopNotice uint8
 
 const (
@@ -36,14 +35,13 @@ const (
 	optInYes
 )
 
-// notifyPrefs are session-events.ts DesktopNotifyPrefs.
 type notifyPrefs struct {
 	attention    optIn
 	finishedTurn bool
 }
 
-// decideDesktopNotice is session-events.ts decideDesktopNotice: nothing while
-// the window is in front, the opt-in's question while it is unanswered.
+// decideDesktopNotice picks nothing while the window is in front and the
+// opt-in's question while it is unanswered.
 func decideDesktopNotice(focused bool, enabled optIn) desktopNotice {
 	switch {
 	case focused:
@@ -56,9 +54,9 @@ func decideDesktopNotice(focused bool, enabled optIn) desktopNotice {
 	return noticeNone
 }
 
-// decideStatusNotice is session-events.ts decideStatusNotice: every
-// "waiting" report notifies, a second prompt being a second question; a
-// "done" repeated with no run between, or closing a /compact, does not.
+// decideStatusNotice notifies on every "waiting" report, a second prompt
+// being a second question; a "done" repeated with no run between, or closing
+// a /compact, does not.
 func decideStatusNotice(status, previous string, focused bool, prefs notifyPrefs) desktopNotice {
 	switch {
 	case status == statusWaiting:

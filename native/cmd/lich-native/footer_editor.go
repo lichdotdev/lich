@@ -12,8 +12,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// footerItemIcons is FooterLayoutEditor's ICONS: the glyph each chip wears
-// beside its example reading.
+// footerItemIcons is the glyph each chip wears beside its example reading.
 var footerItemIcons = map[string]*icons.Icon{
 	"attach": icAttach, "files": icCode, "changes": icons.Lucide("file-diff"), "pr": icPR,
 	"checkout": icBranch, "path": icFolder, "model": icons.Lucide("cpu"), "context": icGauge,
@@ -26,11 +25,11 @@ var footerZoneLabelKeys = map[string]string{
 	footerAvailable: "settings.footerLayoutEditor.zone.available",
 }
 
-// placeholderOpacity is the chip left behind's opacity-30 while it is dragged.
+// placeholderOpacity is the chip left behind's opacity while it is dragged.
 const placeholderOpacity = 0.3
 
-// footerEditor is the state of Settings › Appearance › Footer, FooterSettings'
-// row and the FooterLayoutEditor and FooterLayoutPreview under it.
+// footerEditor is the state of Settings › Appearance › Footer: its row, the
+// layout editor and the preview under it.
 type footerEditor struct {
 	sortable ui.Sortable
 	restore  widget.Clickable
@@ -89,7 +88,7 @@ func (f *footer) editorBody(gtx C, th *ui.Theme, l footerLayout, disabled bool, 
 	return stack(gtx, 4, []layout.Widget{sides, f.zone(th, footerAvailable, availableItems(l), in)})
 }
 
-// drop applies a drag that landed, as FooterLayoutEditor's onDragEnd does.
+// drop applies a drag that landed.
 func (f *footer) drop(d ui.SortDrop) {
 	l, _ := f.snapshot()
 	if next, moved := moveFooterItem(l, d.ID, d.Over); moved {
@@ -97,9 +96,9 @@ func (f *footer) drop(d ui.SortDrop) {
 	}
 }
 
-// change is FooterSettings' change: one write at a time, the cost flag
-// first when the cost item crossed in or out, since it also turns pricing
-// on or off, then the layout, applied at once and saved.
+// change writes one thing at a time: the cost flag first when the cost item
+// crossed in or out, since it also turns pricing on or off, then the layout,
+// applied at once and saved.
 func (f *footer) change(next footerLayout) {
 	f.mu.Lock()
 	if f.saving || !f.cost.isReady() {
@@ -145,7 +144,7 @@ func availableItems(l footerLayout) []string {
 	return out
 }
 
-// zone is FooterZoneView: a text-xs heading over the drop area.
+// zone is a heading over the drop area.
 func (f *footer) zone(th *ui.Theme, zone string, items []string, in footerInput) layout.Widget {
 	return func(gtx C) D {
 		box := func(gtx C) D {
@@ -156,9 +155,9 @@ func (f *footer) zone(th *ui.Theme, zone string, items []string, in footerInput)
 	}
 }
 
-// zoneBox is the drop area: flex-wrap content-start gap-1.5 rounded-lg p-2,
-// bg-sidebar min-h-18 on a side, min-h-11 for available, ring-2 ring-ring
-// only while the item in the air would land on it.
+// zoneBox is the drop area: wrapping chips from the start, rounded, a side
+// filled with the sidebar color and taller than available, which is bare. It
+// is ringed only while the item in the air would land on it.
 func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in footerInput) D {
 	var bg color.NRGBA
 	minHeight := ui.Space(11)
@@ -186,9 +185,9 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 		func(gtx C) D {
 			d := fillIf(gtx, bg, ui.RadiusLG)
 			if f.editor.sortable.Over() == zone {
-				// Inside the box rather than the web's ring-2 outside it: the
-				// zone is clipped to its own bounds, which hid all but the
-				// corners of an outer ring.
+				// Inside the box rather than outside it: the zone is clipped
+				// to its own bounds, which hid all but the corners of an
+				// outer ring.
 				insetRing(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), gtx.Dp(2), th.Ring)
 			}
 			return d
@@ -202,10 +201,10 @@ func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in fo
 	)
 }
 
-// chip is FooterEditorItem: the item's reading on a ghost xs button with an
-// inset ring-border, bg-background once in the footer and transparent and
-// muted before; ring-ring on focus and as the keyboard's target, opacity-30
-// while it is the placeholder of the chip in the air.
+// chip is the item's reading in a small ghost button inside a ring: colored
+// as the footer once in it, muted before; the ring takes the focus color on
+// focus and as the keyboard's target, and fades while the chip is the
+// placeholder of the one in the air.
 func (f *footer) chip(th *ui.Theme, id string, inFooter bool, in footerInput) layout.Widget {
 	s := &f.editor.sortable
 	lifted := func(gtx C) D {
@@ -227,8 +226,7 @@ func (f *footer) chip(th *ui.Theme, id string, inFooter bool, in footerInput) la
 	}
 }
 
-// chipBox is buttonVariants ghost xs (h-6 px-2 gap-1 text-xs rounded-md,
-// size-3 glyph) inside a 1px ring.
+// chipBox is a small ghost button inside a 1px ring.
 func chipBox(gtx C, th *ui.Theme, ring, bg, fg color.NRGBA, id string, in footerInput) D {
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, ring, ui.RadiusMD) },
@@ -248,9 +246,8 @@ func chipBox(gtx C, th *ui.Theme, ring, bg, fg color.NRGBA, id string, in footer
 	)
 }
 
-// itemReading is ItemReading: the glyph and example the item shows, except
-// the model, which shows the active session's own provider and model once
-// it has reported them.
+// itemReading is the glyph and example the item shows, except the model, which
+// shows the active session's own provider and model once it has reported them.
 func itemReading(gtx C, th *ui.Theme, id string, fg color.NRGBA, in footerInput) D {
 	ic, size, text := footerItemIcons[id], ui.Space(3), footerExample(id)
 	model, _, hasModel := sessionModelText(in.usage)
@@ -277,10 +274,9 @@ func footerExample(id string) string {
 	return id
 }
 
-// previewLayout is FooterLayoutPreview: the hint over a rounded-lg
-// bg-sidebar strip, rounded like the zones above it where the web's is square,
-// that reads each side's items with example values. The items wrap as the
-// footer's own do, so the strip never scrolls.
+// previewLayout is the hint over a strip on the sidebar color, rounded like
+// the zones above it, that reads each side's items with example values. The
+// items wrap as the footer's own do, so the strip never scrolls.
 func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInput) D {
 	on := th.On(th.Sidebar)
 	strip := func(gtx C) D {

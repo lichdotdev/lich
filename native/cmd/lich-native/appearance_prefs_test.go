@@ -42,7 +42,7 @@ func TestCloseAnswers(t *testing.T) {
 	}
 }
 
-// Nothing stored reads the web's defaults and the window's own font; a
+// Nothing stored reads the defaults and the window's own font; a
 // stored value that is out of range or not a number reads clamped or as
 // the default.
 func TestLoadAppearancePrefs(t *testing.T) {
@@ -103,7 +103,7 @@ func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
 			t.Errorf("%q: %+v, want %q", q, got, title)
 		}
 	}
-	// The Hotkeys rows are searchable as the web's are, so "Quit lich" is a
+	// The Hotkeys rows are searchable, so "Quit lich" is a
 	// prefix match and outranks the close setting, found by its also words.
 	if got := searchSettings("quit"); !slices.ContainsFunc(got, func(h settingHit) bool {
 		return h.title == "When the window closes" && h.path() == "General › Window"

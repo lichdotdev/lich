@@ -74,12 +74,12 @@ func TestEmitDropsDeadClient(t *testing.T) {
 	t.Fatal("dead client never detached")
 }
 
-// TestReplacedClientDoesNotSilenceHub models a page reload: a second /events
+// TestReplacedClientDoesNotSilenceHub models a second window connecting: a second /events
 // socket opens, the hub replaces the first, and the first's read loop then
 // drops the connection it was reading. The live client must keep receiving —
 // forgetting the replaced connection must not forget the current one. A hub
-// that goes silent here never closes the live socket either, so the window,
-// which only reconnects on close, stays dark until the page is reloaded again.
+// that goes silent here never closes the live socket either, so the window
+// behind it stays dark with nothing telling it that it was dropped.
 func TestReplacedClientDoesNotSilenceHub(t *testing.T) {
 	hub := New()
 	server := httptest.NewServer(hub)

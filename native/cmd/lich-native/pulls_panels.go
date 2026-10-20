@@ -13,7 +13,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// conflictsNamed is conflict-files.ts NAMED: the files shown before "+N more".
+// conflictsNamed is the files shown before "+N more".
 const conflictsNamed = 6
 
 // actions is the header's buttons, left to right: the session, the hand-off,

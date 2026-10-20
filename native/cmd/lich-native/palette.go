@@ -20,12 +20,12 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The command palette, frontend/src/components/CommandPalette.tsx: the
-// app-wide quick switcher. One chord opens it from anywhere, to jump to any
-// session of any open project, to a project open or closed, to what was said
-// inside a session or to a session parked in the history, or, behind a
-// leading ">", to run an action. This file is its state and its searches; the
-// panel is palette_view.go and what a row does is palette_window.go.
+// The command palette: the app-wide quick switcher. One chord opens it from
+// anywhere, to jump to any session of any open project, to a project open or
+// closed, to what was said inside a session or to a session parked in the
+// history, or, behind a leading ">", to run an action. This file is its state
+// and its searches; the panel is palette_view.go and what a row does is
+// palette_window.go.
 
 // paletteBackfillPoll is how long the History list waits before asking again
 // while the store is still indexing parked conversations. The backfill reads

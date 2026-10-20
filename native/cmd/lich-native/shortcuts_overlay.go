@@ -16,11 +16,11 @@ import (
 const shortcutsEsc = "esc"
 
 const (
-	shortcutsWidth unit.Dp = 544 // max-w-[34rem]
-	// shortcutsScrim is ShortcutsOverlay.tsx's bg-black/50, the palette's and not a dialog's.
+	shortcutsWidth unit.Dp = 544
+	// shortcutsScrim is the scrim's opacity, the palette's and not a dialog's.
 	shortcutsScrim = 0.5
 	// shortcutsBodyHeight is the share of the room the panel has left that the
-	// list may take: the web's max-h-[82vh], less the chrome around the list.
+	// list may take.
 	shortcutsBodyHeight = 80
 )
 
@@ -31,8 +31,7 @@ type shortcutGroup struct {
 }
 
 // shortcutGroupsOf is shortcutGroups: the actions of every group at the
-// chords bound now, then the passed-through chords. The web's Terminal group
-// is left out, its one row being the terminal search this window lacks.
+// chords bound now, then the passed-through chords.
 func shortcutGroupsOf(bound hotkeyBindings, goos string) []shortcutGroup {
 	groups := make([]shortcutGroup, 0, len(hotkeyGroups)+1)
 	for _, g := range hotkeyGroups {

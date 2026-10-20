@@ -9,8 +9,8 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// usageTone is usageColor (ContextRing.tsx): one 0–100 scale for every
-// bounded share, so a budget half spent and a context half full read alike.
+// usageTone is one 0–100 scale for every bounded share, so a budget half
+// spent and a context half full read alike.
 type usageTone int
 
 const (
@@ -29,7 +29,7 @@ func toneOf(percent float64) usageTone {
 	return toneMuted
 }
 
-// footerReadout is what FooterReadout draws: Text in the strip, and a tooltip
+// footerReadout is what a readout draws: Text in the strip, and a tooltip
 // headed by Title (Label when empty) over the Detail lines. Label is also the
 // accessible name.
 type footerReadout struct {
@@ -40,8 +40,8 @@ type footerReadout struct {
 	Tone   usageTone
 }
 
-// contextReadout is FooterSession's SessionContext. A zero window is a
-// provider that reports spend and no window: no ring then.
+// contextReadout is the context readout. A zero window is a provider that
+// reports spend and no window: no ring then.
 func contextReadout(u sessionUsage) (footerReadout, bool) {
 	if u.Window <= 0 {
 		return footerReadout{}, false
@@ -63,9 +63,9 @@ func groupThousands(n int) string {
 	return s
 }
 
-// sessionModelText is SessionModel's slot: the short model name and the
-// full id for its hint. False for a report with no model — the cost-only
-// rung — so the slot stays empty rather than drawing a glyph beside nothing.
+// sessionModelText is the model slot: the short model name and the full id for
+// its hint. False for a report with no model — the cost-only rung — so the slot
+// stays empty rather than drawing a glyph beside nothing.
 func sessionModelText(u sessionUsage) (text, hint string, ok bool) {
 	if u.Model == "" {
 		return "", "", false
@@ -95,13 +95,13 @@ func formatModel(id string) string {
 	return family + " " + strings.ReplaceAll(version, "-", ".")
 }
 
-// clockText is FooterClock in en-US: "Sun, Oct 11, 2026 · 02:30 PM".
+// clockText is the clock in en-US: "Sun, Oct 11, 2026 · 02:30 PM".
 func clockText(now time.Time) string {
 	return now.Format("Mon, Jan 02, 2006 · 03:04 PM")
 }
 
 // untilNextMinute is how long until the wall clock turns over, the cadence
-// every minute-resolution readout re-reads on (use-now.ts).
+// every minute-resolution readout re-reads on.
 func untilNextMinute(now time.Time) time.Duration {
 	return now.Truncate(time.Minute).Add(time.Minute).Sub(now)
 }

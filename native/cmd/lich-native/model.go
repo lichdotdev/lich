@@ -14,15 +14,13 @@ import (
 )
 
 // gitPoll is how often each shown path's branch and changes are re-read. The
-// backend pushes no git events (the web page polls project.Diff at 1-3s too).
+// backend pushes no git events.
 const gitPoll = 3 * time.Second
 
-// lastScreenKey is the global setting the web window saves its route under
-// (frontend/src/lib/last-screen.ts), the one record of which project the user
-// was on.
+// lastScreenKey is the global setting the last route is saved under, the one
+// record of which project the user was on.
 const lastScreenKey = "window.lastScreen"
 
-// projectScreen is last-screen.ts's PROJECT_SCREEN.
 var projectScreen = regexp.MustCompile(`^/projects/([^/]+)(?:/.*)?$`)
 
 // model is the backend state the window draws, fed by LoadState, the /events
@@ -50,7 +48,7 @@ type model struct {
 	activeProject string                            // project id on screen
 	home          bool                              // Home is on screen instead
 	// homeID is the project rooted at the home directory, which Home shows:
-	// pinned out of the strip and never closed (projects.tsx homeId).
+	// pinned out of the strip and never closed.
 	homeID    string
 	active    string          // session id on screen
 	lost      bool            // /events ended under an open window
@@ -79,7 +77,7 @@ type model struct {
 	focusSession func(projectID, id string)
 	// raise brings the window forward, as the tray asks.
 	raise func()
-	// leave closes the window, the web one opening in its place.
+	// leave closes the window.
 	leave func()
 	// projectClosed hears a project that left the strip, whoever closed it,
 	// once its tab is already gone: the window stops the terminals and moves
@@ -184,9 +182,8 @@ func (m *model) reload(ctx context.Context) error {
 }
 
 // launchProject is the project the window opens on: the one the last screen
-// was on while it is still open (last-screen.ts resumableScreen), else "" for
-// Home, as the web lands there for anything else, Home and a closed project
-// included.
+// was on while it is still open, else "" for Home, where anything else lands
+// too, Home and a closed project included.
 func (m *model) launchProject(ctx context.Context, ps []lichclient.Project) (string, error) {
 	saved, err := m.client.GetSetting(ctx, lastScreenKey, "")
 	if err != nil {
@@ -569,8 +566,7 @@ func (m *model) activeSession() (sessionView, bool) {
 // as the session that project shows when it is put back on screen.
 //
 // Leaving a card reads its turn, so one that finished while it was on screen
-// does not stay news; arriving reads the new one while the window has focus
-// (project-events.tsx).
+// does not stay news; arriving reads the new one while the window has focus.
 func (m *model) setActive(ctx context.Context, id string) {
 	m.mu.Lock()
 	refocused := m.routeLocked(id)
@@ -605,9 +601,9 @@ func (m *model) project() (lichclient.Project, bool) {
 }
 
 // closeSession drops a session from its project and, when it was on screen,
-// puts its neighbor there: the session that fills its slot, else the one
-// before it (sessions.ts neighborId). It returns the project and the session
-// now active, and false when no open session has that id.
+// puts its neighbor there: the session that fills its slot, else the one before
+// it. It returns the project and the session now active, and false when no open
+// session has that id.
 func (m *model) closeSession(id string) (projectID, active string, ok bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -650,11 +646,10 @@ func (m *model) sessionAt(id string) (*lichclient.Project, int) {
 	return nil, -1
 }
 
-// checkoutLabel is frontend/src/lib/git/checkout-label.ts: a group is titled
-// with the project folder for the root checkout (an empty path), else with
-// the name the worktree was made with, read past <worktrees-root>/<projectID>/
-// because a branch name may hold a slash. A checkout outside that root keeps
-// its last segment.
+// checkoutLabel titles a group with the project folder for the root checkout
+// (an empty path), else with the name the worktree was made with, read past
+// <worktrees-root>/<projectID>/ because a branch name may hold a slash. A
+// checkout outside that root keeps its last segment.
 func checkoutLabel(path, projectPath, projectID string) string {
 	if path == "" {
 		return baseName(projectPath)
@@ -670,8 +665,8 @@ func checkoutLabel(path, projectPath, projectID string) string {
 	return unix[at+len(root):]
 }
 
-// baseName is frontend/src/lib/paths.ts's: the last segment under either
-// separator, ignoring a trailing one.
+// baseName is the last segment under either separator, ignoring a trailing
+// one.
 func baseName(path string) string {
 	segments := strings.FieldsFunc(path, func(r rune) bool { return r == '/' || r == '\\' })
 	if len(segments) == 0 {
@@ -694,8 +689,8 @@ func unreadSessions(ps []lichclient.Project) []string {
 	return ids
 }
 
-// checkoutPath is sessions.ts checkoutPath: a session in the project's own
-// directory stores no path of its own.
+// checkoutPath is the path a session stores; one in the project's own
+// directory stores none of its own.
 func checkoutPath(dir, projectPath string) string {
 	if dir == projectPath {
 		return ""

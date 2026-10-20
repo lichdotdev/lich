@@ -9,15 +9,14 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// baseStanding is the part of base-status.ts baseReadout a card draws: how
-// many files would conflict with the base, else how many commits it is
-// behind. The zero value draws nothing.
+// baseStanding is what a card draws of a base status: how many files would
+// conflict with the base, else how many commits it is behind. The zero value
+// draws nothing.
 type baseStanding struct {
 	conflict bool
 	count    int
 }
 
-// sameBase is git-status-store.ts sameBase.
 func sameBase(a, b *lichclient.BaseStatus) bool {
 	if a == nil || b == nil {
 		return a == b
@@ -42,7 +41,7 @@ const prRecheck = time.Minute
 
 // prLookup is a path's pull request as asked for at a branch and head. The
 // pr survives a new commit on the same branch, so the badge does not blink,
-// and is dropped with a new branch (use-pull-request.ts resetOn).
+// and is dropped with a new branch.
 type prLookup struct {
 	branch, head string
 	pr           *lichclient.PullRequest

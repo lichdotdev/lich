@@ -14,8 +14,7 @@ import (
 
 // hotkeyEditor is Settings › Hotkeys' state and the bindings the window
 // obeys. The bindings are read at connect and written at once on every
-// change, under the key the web writes, global scope: a rebind here is a
-// rebind there.
+// change, under hotkeysSettingKey, global scope.
 type hotkeyEditor struct {
 	bindings hotkeyBindings // nil until loaded: the defaults
 	rows     map[hotkeyID]*hotkeyRow
@@ -182,7 +181,7 @@ func hotkeyLabels(ids []hotkeyID) []string {
 }
 
 // hotkeyEntries are the pane's searchable rows, one per action: the label and
-// the part of the app it acts on, as settings-index.ts hotkeyEntries.
+// the part of the app it acts on.
 func hotkeyEntries() []settingEntry {
 	entries := make([]settingEntry, len(hotkeyActions))
 	for i, a := range hotkeyActions {

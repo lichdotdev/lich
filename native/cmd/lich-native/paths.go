@@ -7,7 +7,7 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// homeRoot is frontend/src/lib/paths.ts's HOME_ROOTS.
+// homeRoot matches a home directory prefix on Linux, macOS and Windows.
 var homeRoot = regexp.MustCompile(`^(?:/home/[^/]+|/Users/[^/]+|[A-Za-z]:\\Users\\[^\\]+)`)
 
 // displayPath collapses a home directory prefix to "~", as shells render it.

@@ -1,4 +1,4 @@
-// Package system holds the few OS integrations the frontend needs that are
+// Package system holds the few OS integrations the window needs that are
 // not tied to any domain service — opening a URL in the user's default browser,
 // opening a work-tree file in their editor, raising a desktop notification, and
 // the handful of facts a bug report needs (version, platform, where the log
@@ -24,19 +24,20 @@ import (
 
 type Service struct {
 	// mu guards env alone: a re-read of the login shell replaces it while the
-	// page is asking to open a file (SetEnv).
+	// window is asking to open a file (SetEnv).
 	mu sync.RWMutex
 	// env is the resolved login-shell environment (see terminal.ResolveShellEnv),
 	// the source of $VISUAL/$EDITOR — a GUI launch never sourced the user's rc.
 	env []string
-	// logPath is the running build's log file (see logging.Path). The page cannot
-	// derive it: the config dir is resolved by the process, not by the browser.
+	// logPath is the running build's log file (see logging.Path). The window
+	// cannot derive it: the config dir is resolved by this process, not by the
+	// window.
 	logPath string
 	// version is the running build's version, "dev" outside a release.
 	version string
 	// uncleanExit records that the previous run never reached its clean exit
 	// (see singleton.UncleanExit). Consumed by the first reader, so it is
-	// atomic: a page reload calls in again on the same process.
+	// atomic: a window opened again on the same backend calls in again.
 	uncleanExit atomic.Bool
 	// run launches a detached process; injected in tests, exec in production.
 	run func(name string, args ...string) error
@@ -76,9 +77,9 @@ func (s *Service) SetEnv(env []string) {
 
 // TakeUncleanExit reports whether the run before this one ended without
 // quitting cleanly, and clears the flag. It is consumed rather than read because the
-// notice belongs to the launch that followed the bad exit, not to every page
-// reload of it: the page mounts its gate again on each reload, the process does
-// not start again with it.
+// notice belongs to the launch that followed the bad exit, not to every window
+// that opens on it: each window runs its gate again, the process does not
+// start again with it.
 func (s *Service) TakeUncleanExit() bool {
 	return s.uncleanExit.Swap(false)
 }
@@ -139,7 +140,7 @@ const notifyLimit = 120
 // lich window. summary is the headline, detail the second line (empty omits
 // it).
 //
-// Delivery only: the page decides when a notification is warranted, because it
+// Delivery only: the window decides when a notification is warranted, because it
 // is the side that knows whether the window has focus and which session the
 // user is looking at.
 func (s *Service) Notify(summary, detail string) error {
@@ -174,42 +175,18 @@ func (s *Service) OpenExternal(rawURL string) error {
 	return s.run(argv[0], argv[1:]...)
 }
 
-// OpenURL hands a URL to the desktop's default browser, through the same
-// per-OS launcher OpenExternal uses. It is package-level because the launch
-// path needs it before any service exists: a Mac with no window of its own
-// degrades to a plain tab in whatever browser it does have (main.go). No scheme gate here — the only caller passes
-// lich's own loopback URL, not one a page handed it.
-func OpenURL(rawURL string) error {
-	argv := urlOpenArgv(rawURL)
-	return exec.Command(argv[0], argv[1:]...).Start()
-}
-
-// OpenInEditor decides how to open a work-tree file. rel is validated against
-// traversal (internal/relpath, the same guard project.ReadFile answers to), then
-// joined onto dir. It prefers $VISUAL, then $EDITOR — resolved from the login
-// shell, so a GUI launch still sees rc exports.
-//
-// When the editor is a terminal editor (vim, nvim, nano, …) it launches nothing
-// and returns the shell command line to run in a lich terminal session: a
-// detached launch would give it no controlling terminal. Otherwise it launches
-// the GUI editor — or, with no editor set, the platform's default opener —
-// detached, and returns "". The caller runs the returned command in a terminal
-// only when it is non-empty.
-func (s *Service) OpenInEditor(dir, rel string) (string, error) {
-	if err := relpath.Validate(rel); err != nil {
-		return "", err
-	}
-	return s.openInEditor(filepath.Join(dir, rel), s.openDefault)
-}
-
-// OpenFolderInEditor opens a session's checkout — the directory itself, not a
-// file under it — exactly the way OpenInEditor opens one of its files, terminal
-// editors included.
+// OpenFolderInEditor opens a session's checkout in the user's editor. It prefers
+// $VISUAL, then $EDITOR, resolved from the login shell, so a GUI launch still
+// sees rc exports. A terminal editor (vim, nvim, nano, …) is launched nothing:
+// the shell command line to run in a lich terminal session comes back instead,
+// since a detached launch would give it no controlling terminal. A GUI editor,
+// or the file manager when none is set, is launched detached, and "" comes
+// back.
 func (s *Service) OpenFolderInEditor(dir string) (string, error) {
 	if err := requireDir(dir); err != nil {
 		return "", err
 	}
-	return s.openInEditor(dir, s.openFolder)
+	return s.openInEditor(dir)
 }
 
 // OpenFolder shows a checkout in the platform's file manager. It never consults
@@ -223,7 +200,7 @@ func (s *Service) OpenFolder(dir string) error {
 }
 
 // OpenFile hands one work-tree file to the application the desktop opens its
-// type with: an image viewer, a PDF reader. Unlike OpenInEditor it never
+// type with: an image viewer, a PDF reader. Unlike OpenFolderInEditor it never
 // consults $VISUAL/$EDITOR, which would open a PNG in vim. rel goes through
 // relpath.Resolve, as project.ReadFile does, so a symlink out of the checkout
 // is refused rather than opened. The launcher is openFolder's: xdg-open, open
@@ -255,11 +232,10 @@ func requireDir(dir string) error {
 	return nil
 }
 
-// openInEditor resolves the editor for one absolute target — a file or a
-// directory — and either launches it or hands back the command line to run.
-// fallback opens the target without an editor, and differs by what it is: a
-// file goes to its default handler, a folder to the file manager.
-func (s *Service) openInEditor(full string, fallback func(string) error) (string, error) {
+// openInEditor resolves the editor for one absolute directory and either
+// launches it or hands back the command line to run; with no editor set, the
+// file manager shows the directory.
+func (s *Service) openInEditor(full string) (string, error) {
 	editor := s.getenv("VISUAL")
 	if editor == "" {
 		editor = s.getenv("EDITOR")
@@ -272,18 +248,18 @@ func (s *Service) openInEditor(full string, fallback func(string) error) (string
 		return editor + " " + s.quoteForShell(full), nil
 	}
 	if editor != "" {
-		return "", s.runEditor(editor, full, fallback)
+		return "", s.runEditor(editor, full)
 	}
-	return "", fallback(full)
+	return "", s.openFolder(full)
 }
 
 // runEditor launches a GUI $EDITOR value that may carry flags ("code --wait"),
 // appending the target as the final argument. An all-whitespace value degrades
-// to the fallback opener rather than launching an empty command.
-func (s *Service) runEditor(editor, full string, fallback func(string) error) error {
+// to the file manager rather than launching an empty command.
+func (s *Service) runEditor(editor, full string) error {
 	fields := strings.Fields(editor)
 	if len(fields) == 0 {
-		return fallback(full)
+		return s.openFolder(full)
 	}
 	args := append(fields[1:], full)
 	return s.run(fields[0], args...)

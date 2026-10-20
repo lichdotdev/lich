@@ -9,17 +9,16 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// handsOnRung says which signals beat a provider's hands-on clock
-// (hands-on.ts RUNG): a "turn" provider's hooks open a turn, a "tool" one is
-// heard only through its tool calls. Every provider is spelled out so a new
-// one has to pick a side.
+// handsOnRung says which signals beat a provider's hands-on clock: a "turn"
+// provider's hooks open a turn, a "tool" one is heard only through its tool
+// calls. Every provider is spelled out so a new one has to pick a side.
 var handsOnRung = map[string]string{
 	"claude": "turn", "codex": "turn", "antigravity": "turn", "opencode": "turn",
 	"omp": "turn", "crush": "tool", "cursor": "turn", "kiro": "turn",
 }
 
 // handsOn reads the active session's hands-on time, re-read on every turn of
-// the wall clock as the web's HandsOnReadout does through useNow.
+// the wall clock.
 type handsOn struct {
 	fetch    func(sessionID string) (int64, error)
 	onChange func()
@@ -97,8 +96,8 @@ func (h *handsOn) refresh() {
 	}
 }
 
-// handsOnReadout is HandsOnReadout. False under a minute: "0m" reads as a
-// broken readout rather than a new session.
+// handsOnReadout is the hands-on time readout. False under a minute: "0m" reads
+// as a broken readout rather than a new session.
 func handsOnReadout(seconds int64, err error, provider string) (footerReadout, bool) {
 	label := i18n.T("shell.footerSession.handsOnTime")
 	if err != nil {

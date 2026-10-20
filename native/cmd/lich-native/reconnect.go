@@ -25,7 +25,7 @@ const reconnectPoll = 250 * time.Millisecond
 // backendDropped is /events ending under the open window. A backend that
 // still answers gave its sockets to another window, and this one is lost. A
 // backend that is gone quit or restarted: the runtime file names a successor
-// once it is up, and the window moves onto it as the web page does.
+// once it is up, and the window moves onto it.
 func (u *window) backendDropped() {
 	if u.client.Answers(u.ctx) {
 		u.model.markLost()

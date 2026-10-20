@@ -9,7 +9,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The inline addon classes of input-group.tsx: pl-2 / pr-2, gap-2, and the
+// The inline addon classes of shadcn's input group: pl-2 / pr-2, gap-2, and the
 // 1.5 the control gives up beside an addon (has-[>input]:pl-1.5).
 const inputGroupAddonGap = 2
 

@@ -55,7 +55,7 @@ func respawn(t *testing.T, svc *Service, id string) *session {
 
 // TestRespawnedSessionIsNotToldItExited proves the exit event belongs to the
 // PTY that died, not to whichever session holds its id by the time the reap
-// runs. The frontend writes "[process exited]" into the terminal on that event,
+// runs. The window writes "[process exited]" into the terminal on that event,
 // so one landing on a session respawned under the same id lies about a live
 // shell.
 func TestRespawnedSessionIsNotToldItExited(t *testing.T) {

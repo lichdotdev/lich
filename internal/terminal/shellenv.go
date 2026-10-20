@@ -248,8 +248,7 @@ func mergeEnv(base, extra []string) []string {
 // resolves a bare binary name: exec.LookPath — and exec.Command, which calls it
 // — reads the process PATH, never cmd.Env. So a GUI launch that never sourced
 // the rc files fails to find anything the rc files put on PATH: provider
-// detection reports codex missing, the spawn cannot start it, and the Chromium
-// search misses a browser outside the system prefix. macOS is where this bites
+// detection reports codex missing and the spawn cannot start it. macOS is where this bites
 // hardest — a Finder-launched .app gets launchd's bare PATH, without Homebrew's
 // prefix — but a .desktop launch is the same shape.
 func PinPath(env []string) {

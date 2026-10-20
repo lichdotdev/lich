@@ -11,7 +11,7 @@ import (
 	"gioui.org/widget"
 )
 
-// The rename field of SessionCard.tsx: ring-1 ring-accent-foreground/30 on a
+// The rename field of a session card: ring-1 ring-accent-foreground/30 on a
 // rounded-sm, transparent box.
 var inlineEditRingWidth = unit.Dp(1)
 
@@ -54,7 +54,7 @@ const (
 	// differs from the text Start was given.
 	InlineEditCommitted
 	// InlineEditCancelled is Escape, and also Enter or blur on an empty or
-	// unchanged value: the web card leaves editing without renaming then.
+	// unchanged value: the card leaves editing without renaming then.
 	InlineEditCancelled
 )
 
@@ -70,7 +70,7 @@ type InlineEditStyle struct {
 	State    *InlineEdit
 	Size     unit.Sp
 	Font     font.Font
-	PadRight unit.Dp // pr-*: inside the ring, as the web input's padding is
+	PadRight unit.Dp // pr-*: inside the ring
 	theme    *Theme
 }
 

@@ -56,7 +56,7 @@ func TestBlobAtRevision(t *testing.T) {
 }
 
 // An added file has no old side and a deleted one no new side; both must read
-// as absent, which the page draws as no column at all.
+// as absent, which the window reads as a side with nothing to show.
 func TestBlobMissingSideIsNotExist(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
@@ -169,7 +169,7 @@ func TestServeBlob(t *testing.T) {
 	}
 }
 
-// Chromium's PDF viewer fetches a large document in ranges.
+// A client may fetch a large document in ranges.
 func TestServeBlobHonoursRange(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
@@ -210,7 +210,7 @@ func TestServeBlobStatuses(t *testing.T) {
 	}
 }
 
-// The page prints these bodies verbatim, so their words are the contract.
+// The window prints these bodies verbatim, so their words are the contract.
 func TestServeBlobRefusalWording(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)

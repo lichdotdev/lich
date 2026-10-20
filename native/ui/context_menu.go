@@ -7,10 +7,10 @@ import (
 	"gioui.org/layout"
 )
 
-// contextGeometry transcribes context-menu.tsx: content at the pointer (side
-// right, alignOffset 4), items px-2 py-1.5, shortcuts pl-5, and submenus that
-// are the same content again. The web's min-w-36 read cramped beside the
-// card it opens on, so the native menu is min-w-44.
+// contextGeometry transcribes shadcn's context menu: content at the pointer
+// (side right, alignOffset 4), items px-2 py-1.5, shortcuts pl-5, and submenus
+// that are the same content again. A narrower min-w-36 read cramped beside the
+// card it opens on, so the menu is min-w-44.
 var contextGeometry = menuGeometry{
 	minWidth: Space(44), subMinWidth: Space(44),
 	itemPadX: Space(2), itemPadY: Space(1.5), shortcutPL: Space(5),

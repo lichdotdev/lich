@@ -165,7 +165,7 @@ func (p *themePicker) updateTheme(id string) {
 }
 
 // removeTheme removes r; removing the theme in use hands the window back
-// to System, as the web's removeTheme does.
+// to System.
 func (p *themePicker) removeTheme(r themeRef) {
 	go func() {
 		if err := p.client.RemoveTheme(p.ctx, r.id); err != nil {

@@ -15,7 +15,7 @@ import (
 
 // TestReportSandboxRecordsAndAnnouncesTheSkippedLinks is the second half of the
 // journey wrapSandbox starts (TestWrapSandboxNamesTheLinksItSkipped): the links
-// are resolved once, by a spawn that outlives the page, so they have to reach
+// are resolved once, by a spawn that outlives the window, so they have to reach
 // both the window watching now and the row a reload reads them back from.
 func TestReportSandboxRecordsAndAnnouncesTheSkippedLinks(t *testing.T) {
 	t.Parallel()

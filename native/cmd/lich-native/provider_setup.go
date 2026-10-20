@@ -24,9 +24,9 @@ const (
 	setupShow
 )
 
-// decideProviderSetup is provider-setup.ts's: the dialog is the first launch
-// with no default chosen, and preselects the first provider installed, ""
-// when there is none.
+// decideProviderSetup decides when the dialog shows: the first launch with no
+// default chosen. It preselects the first provider installed, "" when there
+// is none.
 func decideProviderSetup(m providersMachine) (setupDecision, string) {
 	if !m.loaded || len(m.list) == 0 {
 		return setupWait, ""

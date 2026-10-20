@@ -18,12 +18,13 @@ const (
 	helpBugKey        = "help.bug" // no backend key: the Help rows only act
 	helpLogKey        = "help.log"
 	helpAboutKey      = "help.about"
-	helpRepoURL       = "https://github.com/lichdotdev/lich" // support-url.ts REPO_URL
+	helpRepoURL       = "https://github.com/lichdotdev/lich"
 	helpIssueTemplate = "bug.yml"
 )
 
-// bugReportURL is support-url.ts bugReportUrl. The query keys are the ids in
-// .github/ISSUE_TEMPLATE/bug.yml; GitHub ignores a key that matches no field.
+// bugReportURL is the new-issue link prefilled from the diagnostics. The query
+// keys are the ids in .github/ISSUE_TEMPLATE/bug.yml; GitHub ignores a key that
+// matches no field.
 func bugReportURL(d lichclient.Diagnostics) string {
 	q := url.Values{"template": {helpIssueTemplate}, "version": {d.Version}, "platform": {d.Platform}}
 	return helpRepoURL + "/issues/new?" + q.Encode()

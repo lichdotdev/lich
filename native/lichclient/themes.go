@@ -6,8 +6,8 @@ import (
 )
 
 // Theme mirrors themes.Theme: a color theme for the app tokens (CSS colors,
-// keyed by the index.css names without "--") and the terminal (hex colors,
-// keyed by xterm's ITheme names).
+// keyed by token name without "--") and the terminal (hex colors, keyed by
+// color name).
 type Theme struct {
 	ID       string            `json:"id"`
 	Name     string            `json:"name"`

@@ -102,8 +102,8 @@ func contentsPath(rel, ref string) string {
 	)
 }
 
-// isOID reports whether ref is a git object name — the only revision the page
-// ever names, and the guard that keeps a value from the page out of git's
+// isOID reports whether ref is a git object name — the only revision the window
+// ever names, and the guard that keeps a value from the window out of git's
 // option parsing and out of GitHub's URL.
 func isOID(ref string) bool {
 	// 7 is the shortest abbreviation git prints; 64 is a full SHA-256 name.

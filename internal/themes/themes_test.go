@@ -636,8 +636,7 @@ func TestBundledThemesPassValidation(t *testing.T) {
 	}
 }
 
-// The bundled assets carry an "origin" for the frontend, which imports the same
-// JSON. Go must not read it back: a typo there would ship a theme the UI sorts
+// The bundled assets carry an "origin" of their own. Go must not read it back: a typo there would ship a theme the UI sorts
 // and filters as neither bundled nor custom.
 func TestBundledThemeOriginIgnoresAsset(t *testing.T) {
 	for name, field := range map[string]string{

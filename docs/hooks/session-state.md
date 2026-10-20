@@ -407,18 +407,6 @@ missing reason never costs a bell.
   because a session idle at its prompt is the most available it will ever be.
   `compacting` reaches neither: `Observe` drops it on arrival, so a session
   compacting mid-turn keeps reading as `busy` to its errands and to its peers.
-- **The turn's window** — `internal/terminal/turnsnap.go`: reads the same stream
-  for a third question, what the turn changed on disk. `busy` opens a window and
-  `done` closes it, each taking a `git write-tree` snapshot of the session's
-  checkout; the Review panel diffs the pair. Only the first `busy` of a run opens
-  anything — the repeat every provider sends between tools would otherwise walk
-  the opening snapshot forward through the turn it is meant to precede — and
-  `idle` abandons an open window rather than closing it, there being no closing
-  report coming. lich's own `interrupted` closes one: a stopped turn is a turn
-  that ended, and it changed files like any other. A provider that reports no
-  state has no window here at all, which today is Crush.
-  `compacting` neither opens nor closes one, and the `done` that closes a
-  `/compact` finds no window open and closes nothing.
 - **Store** — `statusStore` (`native/cmd/lich-native/status.go`): fed by the
   window's one `/events` subscription, it keeps the last state of every session,
   keyed by id. The card cannot hold it: the sidebar only draws cards for the

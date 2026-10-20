@@ -490,7 +490,7 @@ func claudeMCPConfig(lichBin string) string {
 
 // resumeArgs returns the arguments that reopen a provider conversation, or nil
 // when the session must start fresh. Each provider spells resume its own way,
-// and a provider with no spelling here never grows one — the frontend only
+// and a provider with no spelling here never grows one — the window only
 // passes a resume id for a kind it knows resumes, but a stray one must not reach
 // a shell either.
 //

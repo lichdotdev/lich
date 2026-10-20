@@ -38,10 +38,9 @@ func TestSettingGlobalAndProjectScope(t *testing.T) {
 }
 
 // The hotkey bindings are a JSON document rather than the flag or path every
-// other setting holds (frontend/src/lib/hotkeys.ts), and they are what a
-// recreated Chromium profile used to take with it. Nothing may reshape the value
-// on the way through: a binding that comes back re-quoted or trimmed is a
-// shortcut that no longer fires, with nothing on screen saying why.
+// other setting holds (native/cmd/lich-native/hotkeys.go). Nothing may reshape
+// the value on the way through: a binding that comes back re-quoted or trimmed
+// is a shortcut that no longer fires, with nothing on screen saying why.
 func TestSettingRoundTripsAJSONDocument(t *testing.T) {
 	svc := newTestStore(t)
 

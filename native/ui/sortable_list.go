@@ -21,7 +21,7 @@ const (
 	// `transform 250ms ease`: siblings stepping aside, and an item settling
 	// into its slot after the drop.
 	sortSettle = 250 * time.Millisecond
-	// sortHang is HANG_BELOW_POINTER_PX of file-drag-store.ts.
+	// sortHang is how far below the pointer the carried item's top hangs.
 	sortHang unit.Dp = 8
 	// sortCursorReach is how far the drag's grabbing cursor reaches around
 	// the item, past the edge of any window.
@@ -334,11 +334,11 @@ func (g *sortList) target(s *Sortable, j, a int) int {
 	return 0
 }
 
-// SortCarry is file-drag-store.ts: it lets an item of any Sortable that
-// shares it be carried out of its own list and dropped on a target that
-// belongs to none of them, the header of another block a card is filed into.
-// The drop comes from the item's Sortable, with Carried set. A keyboard drag
-// moves no pointer and never reaches a target: the card's menu is that path.
+// SortCarry lets an item of any Sortable that shares it be carried out of its
+// own list and dropped on a target that belongs to none of them, the header of
+// another block a card is filed into. The drop comes from the item's Sortable,
+// with Carried set. A keyboard drag moves no pointer and never reaches a
+// target: the card's menu is that path.
 type SortCarry struct {
 	targets  map[string]*carryTarget
 	carrying string

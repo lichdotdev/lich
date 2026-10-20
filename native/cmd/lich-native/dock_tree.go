@@ -1,8 +1,7 @@
 package main
 
-// The Code tab's tree, the pure half of lib/git/file-tree.ts and FileTree.tsx:
-// flat repo-relative paths nested into folders, narrowed by the name filter,
-// and flattened into the rows on screen.
+// The Code tab's tree logic: flat repo-relative paths nested into folders,
+// narrowed by the name filter, and flattened into the rows on screen.
 
 import (
 	"slices"

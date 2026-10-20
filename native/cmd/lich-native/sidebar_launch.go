@@ -6,12 +6,12 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// providerDefaultKey is providers-store.ts defaultKey (store.providerDefaultKey
-// in Go): the provider an implicit new session spawns, globally or per project.
+// providerDefaultKey is store.providerDefaultKey in Go: the provider an
+// implicit new session spawns, globally or per project.
 const providerDefaultKey = "provider.default"
 
-// launchProvider is providers-store.ts ProviderState, trimmed to what the
-// launch menu and the implicit kind read.
+// launchProvider is a provider's state, trimmed to what the launch menu and
+// the implicit kind read.
 type launchProvider struct {
 	id        string
 	name      string
@@ -59,7 +59,7 @@ func resolveProjectDefaultProvider(list []launchProvider, globalDefault, project
 // machine where detection found no binary at all it is the shell, where the
 // install command gets pasted, rather than a card failing on `claude: command
 // not found`.
-// ponytail: skips the web's per-project binary overrides (provider.<id>.bin in
+// ponytail: skips the per-project binary overrides (provider.<id>.bin in
 // project scope), so a bare machine whose project points at a binary still
 // opens a shell; read them here when that case shows up.
 func implicitSessionKind(list []launchProvider, globalDefault, projectDefault string) string {
@@ -76,7 +76,7 @@ type launchCheckout struct {
 	label string
 }
 
-// folderLaunchHeading is FolderLaunchMenuItems.tsx's label: a folder of one
+// folderLaunchHeading is the menu label: a folder of one
 // checkout opens there and says so; with more, each checkout is a submenu.
 func folderLaunchHeading(folder string, checkouts []launchCheckout) string {
 	if len(checkouts) == 1 {

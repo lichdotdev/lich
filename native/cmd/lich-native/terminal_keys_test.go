@@ -22,7 +22,7 @@ func TestTerminalKeyBytesRewritesThePassedThroughChords(t *testing.T) {
 		{"enter still sends", "linux", key.Event{Name: key.NameReturn}, "\r"},
 	}
 	// The agent may turn on the kitty keyboard protocol; the chords are the
-	// same bytes either way, as the web window sends them.
+	// same bytes either way.
 	for _, mode := range []struct{ name, setup string }{{"legacy", ""}, {"kitty", "\x1b[>1u"}} {
 		for _, c := range cases {
 			t.Run(mode.name+"/"+c.name, func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestPastedClipboard(t *testing.T) {
 	}{
 		{"text goes in bracketed", "linux", "ls\n", "\x1b[200~ls\n\x1b[201~"},
 		// No text on the clipboard is an image (or a file) for the agent to
-		// read itself, as the web window's paste of files does.
+		// read itself.
 		{"no text attaches the image", "darwin", "", "\x16"},
 		{"no text on Windows", "windows", "", "\x1bv"},
 	}

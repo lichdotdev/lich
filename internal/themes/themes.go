@@ -30,14 +30,12 @@ const (
 	// that omits it is format 1; bump it only for a change an older lich would
 	// misread, so that lich refuses the file by name instead of by a token.
 	FormatVersion = 1
-	// App colors are set as CSS custom properties, so the allowlist is what
-	// both a CSS color context and xterm's parser accept — anything able to
-	// name a resource (url(), image-set()) or defer a value (var(), attr())
-	// is out by construction, not by blocklist.
+	// App colors are CSS color values, parsed by the window
+	// (native/ui/csscolor.go). Anything able to name a resource (url(),
+	// image-set()) or defer a value (var(), attr()) is out by construction,
+	// not by blocklist.
 	appColorPattern = `^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20}|(rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\([0-9a-zA-Z.,%/ +-]*\))$`
-	// Terminal colors are stricter: xterm parses hex directly, and everything
-	// else goes through a canvas round-trip that throws on alpha and is caught
-	// into a silent fallback — a theme that half-applies with no error.
+	// Terminal colors are stricter: hex only.
 	terminalColorPattern = `^#[0-9a-fA-F]{3,8}$`
 )
 
@@ -61,8 +59,8 @@ var (
 	)
 )
 
-// Theme describes every color value the frontend needs to paint the app and
-// the xterm terminal.
+// Theme describes every color value the window needs to paint the app and
+// the terminal.
 type Theme struct {
 	FormatVersion int               `json:"formatVersion,omitempty"`
 	ID            string            `json:"id"`
@@ -72,12 +70,12 @@ type Theme struct {
 	Source        *Source           `json:"source,omitempty"`
 	App           map[string]string `json:"app"`
 	Terminal      map[string]string `json:"terminal"`
-	// Syntax is optional: a theme without it is highlighted in the native
-	// window's default palette for its scheme. The web window ignores it.
+	// Syntax is optional: a theme without it is highlighted in the window's
+	// default palette for its scheme.
 	Syntax Syntax `json:"syntax,omitempty"`
 	// Pair is optional: the id of this theme's variant for the other scheme,
-	// which the native window draws while the OS asks for that scheme and
-	// the user turned on following it. The web window ignores it.
+	// which the window draws while the OS asks for that scheme and the user
+	// turned on following it.
 	Pair string `json:"pair,omitempty"`
 }
 

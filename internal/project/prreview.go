@@ -20,8 +20,6 @@ const (
 	resolveThreadMutation = `mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}`
 
 	unresolveThreadMutation = `mutation($id:ID!){unresolveReviewThread(input:{threadId:$id}){thread{isResolved}}}`
-
-	dismissReviewMutation = `mutation($id:ID!,$message:String!){dismissPullRequestReview(input:{pullRequestReviewId:$id,message:$message}){pullRequestReview{state}}}`
 )
 
 // reviewEvents allow-lists what a submitted review can say, and doubles as the
@@ -34,13 +32,12 @@ var reviewEvents = map[string]string{
 }
 
 // reviewSides allow-lists which side of the diff a comment may hang off, so a
-// value built in the page can never reach GitHub as something else.
+// value sent by the window can never reach GitHub as something else.
 var reviewSides = map[string]bool{"RIGHT": true, "LEFT": true}
 
 // ReviewComment is one line comment of a review being submitted. Line is the
 // last line it covers and StartLine the first (0 for a single-line comment) —
-// GitHub's own convention, kept here so the page can hand over a selection
-// unchanged.
+// GitHub's own convention, kept here so a selection crosses unchanged.
 type ReviewComment struct {
 	Path      string `json:"path"`
 	Line      int    `json:"line"`
@@ -71,7 +68,7 @@ type ghReviewComment struct {
 }
 
 // SubmitReview files one review on GitHub: the verdict, the summary body, and
-// every line comment the page has been holding, in a single call. head is the
+// every line comment the window has been holding, in a single call. head is the
 // commit the comments were written against — empty lets GitHub assume its own
 // latest, which is wrong the moment a push landed while the review was open.
 //
@@ -186,25 +183,6 @@ func (s *Service) ResolveReviewThread(path, threadID string, resolved bool) erro
 		mutation = resolveThreadMutation
 	}
 	return s.writePR(prReviewTimeout, path, 0, "api", "graphql", "-f", "query="+mutation, "-f", "id="+threadID)
-}
-
-// DismissReview withdraws a submitted review, so its verdict stops counting
-// towards the pull request's. reviewID is the GraphQL node id the conversation
-// read carries. GitHub requires a reason and records it on the pull request,
-// which is why an empty message is refused here rather than round-tripped.
-//
-// Resolving every thread a review opened does not undo it: GitHub keeps the
-// verdict until the reviewer submits another one or dismisses this one. This is
-// the second door, for a review whose author was talked out of it.
-func (s *Service) DismissReview(path, reviewID, message string) error {
-	if reviewID == "" {
-		return fmt.Errorf("a review is required")
-	}
-	if message == "" {
-		return fmt.Errorf("dismissing a review needs a reason")
-	}
-	return s.writePR(prReviewTimeout, path, 0, "api", "graphql", "-f", "query="+dismissReviewMutation,
-		"-f", "id="+reviewID, "-f", "message="+message)
 }
 
 // CommentOnPullRequest leaves a comment on the pull request itself — the

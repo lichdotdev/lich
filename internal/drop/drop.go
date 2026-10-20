@@ -1,26 +1,14 @@
 // Package drop turns a file dropped on the terminal into a path the session
 // can paste.
 //
-// The shell is a Chromium window, not a native terminal emulator, so a drop
-// arrives through the page's DataTransfer — which carries the bytes and the
-// metadata (name, size, mtime) but never the file's path: Chromium exposes
-// neither `text/uri-list` nor `File.path` for a local drop. Two ways back to a
-// path, in order:
-//
-//   - Resolve: find the item by that metadata — under the session's directory
-//     first, then under home. The path is then the real one, so an edit lands
-//     on the user's file.
-//   - Upload: for anything neither tree holds, keep a copy under the config dir
-//     and paste the copy's path. Reading it works; editing it edits the copy —
-//     which is why Resolve is tried first, and why the copy's path never lands
-//     at a prompt without the line that says so (copyNotice).
-//
-// A confined session takes the second way far more often, and has to: its home
-// is an empty private one (internal/sandbox), so a path found under the real
-// home is a path only lich can open. Resolve is told which sessions those are
-// and does not search home for them at all — the copy is what reaches the
-// session, because the sandbox binds the copies directory and nothing else of
-// the home.
+// The window hands over the dropped files' own paths, and an unconfined
+// session takes them as they are. A confined session's home is an empty
+// private one (internal/sandbox), so a file outside its checkout is a path
+// only lich can open: for those the window uploads the bytes (Upload), lich
+// keeps a copy under the config dir, and the copy's path is pasted. Reading it
+// works; editing it edits the copy, which is why the copy's path never lands at
+// a prompt without the line that says so (copyNotice). The sandbox binds the
+// copies directory and nothing else of the home.
 //
 // The copies are kept one directory per session, and that is the unit they are
 // deleted in: a confined session sees its own directory mounted and not the one
@@ -28,13 +16,9 @@
 // (Purge): a copy lives exactly as long as the session it was dropped into,
 // and the clock only ever collects the orphans (Prune).
 //
-// A dropped directory only ever takes the first path: the page can walk one,
-// but copying a tree to paste a path to the copy is not what the drop meant.
-//
 // The footer's attach button lands here too (Attach): a file chosen from the
-// native picker already has its path, so there is nothing to look up — but a
-// confined session cannot open one outside its checkout either, and the same
-// copy is the answer.
+// native picker already has its path, but a confined session cannot open one
+// outside its checkout either, and the same copy is the answer.
 package drop
 
 import (
@@ -61,25 +45,10 @@ import (
 // bigger drop is a mistake the terminal should refuse rather than copy.
 const maxUpload = 32 << 20
 
-// maxEntries bounds one searched tree, so a drop over a home directory or a
-// vendored monorepo cannot stall the window. Past it the search gives up and
-// the item falls through to the upload copy. Replaced in tests: proving the
-// budget runs out takes one more file than it, and 50,001 files cost close to
-// forty seconds a test on Windows.
-var maxEntries = 50_000
-
-// homeDir is os.UserHomeDir, replaced in tests: the search must never reach
-// the machine's real home, on any OS.
-var homeDir = os.UserHomeDir
-
 // sandboxAvailable is sandbox.Available, replaced in tests: whether a machine
 // can confine anything is the host's answer — bubblewrap installed, macOS —
-// and a test about the search must not take it.
+// and a test about the copy must not take it.
 var sandboxAvailable = sandbox.Available
-
-// mtimeSlackMs absorbs the rounding between the browser's millisecond
-// File.lastModified and the filesystem's timestamp.
-const mtimeSlackMs = 2_000
 
 // maxCopies bounds how many copies of one name live side by side (the name
 // itself plus its -2… suffixes). Past it a caller is looping on something other
@@ -92,26 +61,6 @@ const maxCopies = 999
 // (prune), so this is the bound on what a crash leaks, not on what a drop
 // lasts.
 const keepDropped = 3 * 24 * time.Hour
-
-// skipDirs are trees a dropped file is never meaningfully found in, and the
-// ones that make the search expensive.
-var skipDirs = map[string]bool{
-	".git":         true,
-	"node_modules": true,
-	"vendor":       true,
-	"target":       true,
-	"dist":         true,
-	".venv":        true,
-}
-
-// Item is one dropped entry as the page sees it — the whole of what Chromium
-// hands over about a local file. Mtime is File.lastModified: milliseconds.
-type Item struct {
-	Name  string `json:"name"`
-	Size  int64  `json:"size"`
-	Mtime int64  `json:"mtime"`
-	Dir   bool   `json:"dir"`
-}
 
 type Service struct {
 	dir string
@@ -172,161 +121,6 @@ func New(configDir string, live func(sessionID string) bool) *Service {
 		slog.Warn("drop: could not create the copies dir", "dir", dir, "err", err)
 	}
 	return &Service{dir: dir, live: live}
-}
-
-// Resolve maps each item to its absolute path, or "" when neither the
-// session's tree nor the home directory holds a match for it.
-//
-// The session's directory is searched first, then home — a drop is most often
-// the session's own file, but it is just as often a screenshot or a directory
-// from somewhere else entirely, and a directory has no copy to fall back to.
-//
-// confined is the verdict recorded for the calling session (internal/sandbox):
-// its home is an empty private one, so a match under the real home is a path
-// the session cannot open, and answering with it hands the prompt a file that
-// is not there. Those sessions search their checkout and nothing else, and
-// everything outside it falls through to the copy — which the sandbox does
-// bind. A machine with no sandbox backend confines nothing, so the flag alone
-// is not enough to stop searching: Windows, which has no backend at all, keeps
-// the unconfined behaviour whatever the row says.
-func (s *Service) Resolve(root string, items []Item, confined bool) []string {
-	paths := make([]string, len(items))
-	pending := make(map[int]bool, len(items))
-	for i := range items {
-		pending[i] = true
-	}
-	home := searchableHome(confined)
-	for _, search := range []struct {
-		root string
-		// Hidden directories are the session tree's own (.github, .config of a
-		// dotfiles checkout) but home's are its caches — tens of thousands of
-		// files that would spend the whole budget before the search reaches
-		// anything a person drags.
-		skipHidden bool
-	}{{root: root}, {root: home, skipHidden: true}} {
-		if len(pending) == 0 || search.root == "" || (search.root == root && search.skipHidden) {
-			continue
-		}
-		find(search.root, search.skipHidden, items, pending, paths)
-	}
-	return paths
-}
-
-// searchableHome is the home directory Resolve falls back to, or "" when the
-// caller is a confined session on a machine that can actually confine one — see
-// Resolve for why that home is worse than no home at all.
-func searchableHome(confined bool) string {
-	if confined && sandboxAvailable() {
-		return ""
-	}
-	home, err := homeDir()
-	if err != nil {
-		slog.Warn("drop: no home directory to search", "err", err)
-	}
-	return home
-}
-
-// find walks root a level at a time, resolving each pending item to the
-// shallowest match it has. Breadth first, because depth first spends its
-// budget on whichever subtree sorts first — the caches under a home directory,
-// which is how a directory sitting right beside the search root goes missing.
-//
-// Deciding at the end of a level is what keeps the ambiguity rule meaningful:
-// every twin at the same depth is seen together, and two of them resolve to
-// nothing rather than to the wrong one.
-func find(root string, skipHidden bool, items []Item, pending map[int]bool, paths []string) {
-	wanted := make(map[string][]int, len(items))
-	for i, item := range items {
-		wanted[item.Name] = append(wanted[item.Name], i)
-	}
-	scan := &levelScan{
-		items:      items,
-		wanted:     wanted,
-		pending:    pending,
-		skipHidden: skipHidden,
-		budget:     maxEntries,
-	}
-	for dirs := []string{root}; len(dirs) > 0 && len(pending) > 0 && scan.budget > 0; {
-		scan.hits = make(map[int][]string)
-		scan.next = nil
-		for _, dir := range dirs {
-			scan.read(dir)
-		}
-		// A level the budget cut short was never seen whole, so a lone candidate
-		// in it may still have a twin among the entries never read: deciding
-		// here is how the ambiguity rule hands back the wrong file instead of
-		// nothing.
-		if scan.budget > 0 {
-			for i, candidates := range scan.hits {
-				if len(candidates) == 1 {
-					paths[i] = candidates[0]
-				}
-				// Ambiguous at this depth is answered here and not deeper: a
-				// match further down is not the one the shallow twins were
-				// competing for.
-				delete(pending, i)
-			}
-		}
-		dirs = scan.next
-	}
-}
-
-// levelScan is one breadth-first level in progress: what is still being looked
-// for, what this level has hit, the directories the next level will read, and
-// what is left of the search budget.
-type levelScan struct {
-	items      []Item
-	wanted     map[string][]int
-	pending    map[int]bool
-	skipHidden bool
-
-	hits   map[int][]string
-	next   []string
-	budget int
-}
-
-// read walks one directory into the level, stopping the moment the budget runs
-// out — which leaves the level undecided rather than half-decided.
-func (l *levelScan) read(dir string) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		// An unreadable directory costs its items their real path, nothing more.
-		return
-	}
-	for _, entry := range entries {
-		l.budget--
-		if l.budget <= 0 {
-			return
-		}
-		path := filepath.Join(dir, entry.Name())
-		if entry.IsDir() && !skipDirs[entry.Name()] &&
-			!(l.skipHidden && strings.HasPrefix(entry.Name(), ".")) {
-			l.next = append(l.next, path)
-		}
-		for _, i := range l.wanted[entry.Name()] {
-			if l.pending[i] && matches(l.items[i], entry) {
-				l.hits[i] = append(l.hits[i], path)
-			}
-		}
-	}
-}
-
-// matches reports whether entry is the dropped item. A directory can only be
-// matched by name — the page reports a placeholder size for one — so the
-// uniqueness rule in Resolve is what keeps that honest.
-func matches(item Item, entry fs.DirEntry) bool {
-	if entry.IsDir() != item.Dir {
-		return false
-	}
-	if item.Dir {
-		return true
-	}
-	info, err := entry.Info()
-	if err != nil || info.Size() != item.Size {
-		return false
-	}
-	delta := info.ModTime().UnixMilli() - item.Mtime
-	return delta > -mtimeSlackMs && delta < mtimeSlackMs
 }
 
 // Upload stores one dropped file's bytes and answers with the path it landed
@@ -481,7 +275,7 @@ func (s *Service) copyIn(sessionID, path string) (string, error) {
 // left, which the callers refuse.
 //
 // The control characters go first because the name leaves again in copyNotice,
-// which the page writes into the session's terminal inside a bracketed paste:
+// which the window writes into the session's terminal inside a bracketed paste:
 // an ESC of the name's own closes that paste early and every byte after it
 // arrives as keystrokes the agent runs, and a bare newline forges a line of
 // lich's own at the prompt. They are replaced rather than refused so a file

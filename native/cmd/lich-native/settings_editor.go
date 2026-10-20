@@ -12,9 +12,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The Editor section's global settings. The web keeps the diff layout in
-// localStorage (lich.diff.layout), so the backend has no key to share with
-// it; these are the native window's.
+// The Editor section's global settings.
 const (
 	hideWhitespaceKey = "editor.hideWhitespace"
 	diffLayoutKey     = "editor.diffLayout"

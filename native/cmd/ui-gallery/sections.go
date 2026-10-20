@@ -429,7 +429,6 @@ func (g *gallery) layoutDialog(gtx C) {
 	}
 }
 
-// cardColors are CARD_COLORS of frontend/src/lib/session/card-color.ts.
 var cardColors = []struct {
 	name  string
 	color color.NRGBA
@@ -444,7 +443,7 @@ var cardColors = []struct {
 	{"Pink", ui.OKLCH(0.656, 0.241, 354.308, 1)},
 }
 
-// swatches is CardColorMenu's grid: the theme option, then every card color.
+// swatches is the card color menu's grid: the theme option, then every card color.
 func (g *gallery) swatches() []ui.MenuEntry {
 	pick := func(name, label string) func() { return func() { g.cardColor, g.lastAction = name, label } }
 	entries := []ui.MenuEntry{{Kind: ui.MenuSwatch, Label: "Theme", Checked: g.cardColor == "", OnClick: pick("", "Theme color")}}
@@ -474,7 +473,7 @@ func (g *gallery) layoutSection(gtx C, th *ui.Theme) D {
 	)(gtx)
 }
 
-// moveFooterItem is lib/footer-layout.ts's: over a side appends, over an item
+// moveFooterItem moves the dragged item: over a side appends, over an item
 // takes its place, over available takes the item out of the footer.
 func moveFooterItem(left, right []string, d ui.SortDrop) ([]string, []string) {
 	if d.ID == d.Over {

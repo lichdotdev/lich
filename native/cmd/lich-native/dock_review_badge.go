@@ -9,14 +9,14 @@ import (
 )
 
 // tailwindHue is a Tailwind color's 400, 500 and 600 shades, the three a
-// language badge reads (bg-X-500/15 text-X-600 dark:text-X-400).
+// language badge reads.
 type tailwindHue struct{ c400, c500, c600 color.NRGBA }
 
 func hue(l4, c4, h4, l5, c5, h5, l6, c6, h6 float64) tailwindHue {
 	return tailwindHue{ui.OKLCH(l4, c4, h4, 1), ui.OKLCH(l5, c5, h5, 1), ui.OKLCH(l6, c6, h6, 1)}
 }
 
-// Tailwind v4's palette, the shades lang-badge.ts names.
+// Tailwind v4's palette, the shades the language badges use.
 var (
 	twBlue    = hue(0.707, 0.165, 254.624, 0.623, 0.214, 259.815, 0.546, 0.245, 262.881)
 	twYellow  = hue(0.852, 0.199, 91.936, 0.795, 0.184, 86.047, 0.681, 0.162, 75.834)
@@ -34,10 +34,10 @@ var (
 
 type langBadge struct {
 	abbr string
-	tint *tailwindHue // nil: bg-muted text-muted-foreground
+	tint *tailwindHue // nil: muted background and text
 }
 
-// langBadges is lib/git/lang-badge.ts's BADGES.
+// langBadges maps a file extension to its badge.
 var langBadges = map[string]langBadge{
 	"ts": {"TS", &twBlue}, "tsx": {"TS", &twBlue},
 	"js": {"JS", &twYellow}, "jsx": {"JS", &twYellow},

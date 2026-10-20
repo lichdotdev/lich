@@ -10,7 +10,7 @@ import (
 // readBufSize is the chunk size read from a session's PTY per iteration.
 const readBufSize = 32 * 1024
 
-// stream copies PTY output to the frontend until the PTY is closed, then reaps
+// stream copies PTY output to the window until the PTY is closed, then reaps
 // the process, drops the session and emits its exit event. Output goes through
 // the session's coalescer, which batches it on a short cadence while the
 // terminal is visible and a long one while it is hidden, and then through its
@@ -36,7 +36,7 @@ func (s *Service) stream(id string, sess *session) {
 	// the handles are already gone (see windowsPTY, where they are reissued).
 	_ = p.Close()
 	// Flush any batched output and wait for it to be delivered before the exit
-	// event, so the frontend always sees the final bytes ahead of the exit
+	// event, so the window always sees the final bytes ahead of the exit
 	// banner. Delivery now ends at the transport's writer rather than at the
 	// socket, so the wait runs one step further: the outbox for this session's
 	// own frames, then the connection's queue for the wire.
@@ -75,7 +75,7 @@ func (s *Service) stream(id string, sess *session) {
 
 	// Only the goroutine that actually evicted its own PTY owes an exit event:
 	// a reap that lost the race to a respawn under the same id would otherwise
-	// tell a live session it exited, and the frontend writes "[process exited]"
+	// tell a live session it exited, and the window writes "[process exited]"
 	// into that terminal. Emitted outside s.mu for the reason Start gives —
 	// Emit blocks on a stalled /events client, and holding s.mu across it would
 	// freeze every session's I/O.
@@ -89,7 +89,7 @@ func (s *Service) stream(id string, sess *session) {
 	}
 }
 
-// Write forwards keyboard input from the frontend to a session's PTY.
+// Write forwards keyboard input from the window to a session's PTY.
 func (s *Service) Write(id, data string) error {
 	return s.writeBytes(id, []byte(data))
 }
@@ -136,8 +136,8 @@ func (s *Service) SetVisible(id string, visible bool) error {
 }
 
 // Replay returns the capped tail of a session's PTY output, base64-encoded, so a
-// reconnecting frontend can reseed its scrollback after a page reload discarded
-// the page-side buffer. Empty for an unknown session — a brand-new one has no
+// window attaching to a running session can reseed a fresh terminal's
+// scrollback. Empty for an unknown session — a brand-new one has no
 // history yet. Base64 for the same reason the data event is: raw PTY bytes may
 // split a multi-byte UTF-8 sequence across the JSON envelope.
 func (s *Service) Replay(id string) (string, error) {
@@ -150,7 +150,7 @@ func (s *Service) Replay(id string) (string, error) {
 	return base64.StdEncoding.EncodeToString(sess.replay.snapshot()), nil
 }
 
-// Resize updates a session's PTY window size. The frontend only calls this for
+// Resize updates a session's PTY window size. The window only calls this for
 // the visible terminal; a hidden terminal is resized on the next time it is
 // shown.
 func (s *Service) Resize(id string, cols, rows int) error {

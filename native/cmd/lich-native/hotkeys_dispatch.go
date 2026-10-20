@@ -11,8 +11,7 @@ import (
 // bound chords before anything is laid out, so the focused terminal's own
 // filters never see a key that is one. An action this window has no screen
 // for, or one that declines right now, contributes no filter at all, and its
-// chord reaches the PTY as if lich had never bound it, as the web's handler
-// returning false does.
+// chord reaches the PTY as if lich had never bound it.
 
 // hotkeyHandler is an action this window can carry out. ready is asked
 // before the chord is polled, so an action that declines costs the terminal
@@ -185,7 +184,7 @@ func (u *window) hotkeyTerminal(C) {
 }
 
 // hotkeyCards are the cards in the order the sidebar draws them, the ones in
-// a folded block marked hidden (sidebar-groups.ts sidebarCards).
+// a folded block marked hidden.
 func (u *window) hotkeyCards() []hotkeyCard {
 	var cards []hotkeyCard
 	for _, b := range u.model.sidebarBlocks(u.sidebar.header.filter()).blocks {

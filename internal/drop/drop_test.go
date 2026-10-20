@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -19,34 +18,14 @@ import (
 	"github.com/lichdotdev/lich/internal/prompt"
 )
 
-// newService builds a Service whose home fallback is an empty directory, so a
-// test that expects no match cannot be answered by the machine's real home.
-// homeAt does the same with a home the test controls.
 func newService(t *testing.T) *Service {
 	t.Helper()
-	return homeAt(t, t.TempDir())
-}
-
-func homeAt(t *testing.T, home string) *Service {
-	t.Helper()
-	previous := homeDir
-	homeDir = func() (string, error) { return home, nil }
-	t.Cleanup(func() { homeDir = previous })
 	return New(t.TempDir(), nil)
-}
-
-// smallBudget shrinks the search budget for one test, so running past it takes
-// a handful of files rather than fifty thousand.
-func smallBudget(t *testing.T) {
-	t.Helper()
-	previous := maxEntries
-	maxEntries = 16
-	t.Cleanup(func() { maxEntries = previous })
 }
 
 // writeFile creates path with size bytes and a known modification time,
 // standing in for the file the user drags out of a file manager.
-func writeFile(t *testing.T, path string, size int, mtime time.Time) Item {
+func writeFile(t *testing.T, path string, size int, mtime time.Time) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
@@ -57,247 +36,10 @@ func writeFile(t *testing.T, path string, size int, mtime time.Time) Item {
 	if err := os.Chtimes(path, mtime, mtime); err != nil {
 		t.Fatalf("chtimes %s: %v", path, err)
 	}
-	return Item{Name: filepath.Base(path), Size: int64(size), Mtime: mtime.UnixMilli()}
-}
-
-// TestResolveFindsFileByMetadata proves the one thing the whole feature rests
-// on: name, size and mtime are enough to turn a pathless drop back into the
-// user's own file, nested dirs included.
-func TestResolveFindsFileByMetadata(t *testing.T) {
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	want := filepath.Join(root, "src", "app.ts")
-	item := writeFile(t, want, 41, mtime)
-
-	got := newService(t).Resolve(root, []Item{item}, false)
-
-	if len(got) != 1 || got[0] != want {
-		t.Fatalf("Resolve = %v, want [%s]", got, want)
-	}
-}
-
-// TestResolveRejectsNearMiss pins the fields that must disagree for a match to
-// be refused. Sizes are literals a mutation cannot make agree by widening the
-// slack, and the stale mtime is a whole minute past it.
-func TestResolveRejectsNearMiss(t *testing.T) {
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	item := writeFile(t, filepath.Join(root, "app.ts"), 41, mtime)
-
-	cases := map[string]Item{
-		"wrong size":  {Name: "app.ts", Size: 42, Mtime: item.Mtime},
-		"stale mtime": {Name: "app.ts", Size: 41, Mtime: mtime.Add(-time.Minute).UnixMilli()},
-		"wrong name":  {Name: "other.ts", Size: 41, Mtime: item.Mtime},
-		"file as dir": {Name: "app.ts", Size: 41, Mtime: item.Mtime, Dir: true},
-	}
-	for name, dropped := range cases {
-		t.Run(name, func(t *testing.T) {
-			if got := newService(t).Resolve(root, []Item{dropped}, false); got[0] != "" {
-				t.Fatalf("Resolve = %q, want no match", got[0])
-			}
-		})
-	}
-}
-
-// TestResolveAcceptsMtimeWithinSlack keeps the browser's millisecond clock and
-// the filesystem's from having to agree exactly.
-func TestResolveAcceptsMtimeWithinSlack(t *testing.T) {
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	item := writeFile(t, filepath.Join(root, "app.ts"), 41, mtime)
-	item.Mtime += mtimeSlackMs - 1
-
-	if got := newService(t).Resolve(root, []Item{item}, false); got[0] == "" {
-		t.Fatal("Resolve found nothing, want the file within the mtime slack")
-	}
-}
-
-// TestResolveRefusesTwins is the safety rule: two identical files under the
-// tree make the drop ambiguous, and pasting the wrong one silently edits the
-// wrong file. No path is the correct answer — the caller falls back to a copy.
-func TestResolveRefusesTwins(t *testing.T) {
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	item := writeFile(t, filepath.Join(root, "a", "app.ts"), 41, mtime)
-	writeFile(t, filepath.Join(root, "b", "app.ts"), 41, mtime)
-
-	if got := newService(t).Resolve(root, []Item{item}, false); got[0] != "" {
-		t.Fatalf("Resolve = %q, want no match for twins", got[0])
-	}
-}
-
-// TestResolveRefusesTwinsSplitByTheBudget is the twin rule at the one place it
-// could quietly break: the budget dies inside a level, so one twin was seen and
-// the other never will be. A lone candidate in a level nobody finished reading
-// is not a unique match, and answering with it hands the session the wrong file
-// — the exact failure the whole rule exists to prevent.
-func TestResolveRefusesTwinsSplitByTheBudget(t *testing.T) {
-	smallBudget(t)
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	item := writeFile(t, filepath.Join(root, "a", "app.ts"), 41, mtime)
-	writeFile(t, filepath.Join(root, "b", "app.ts"), 41, mtime)
-	// Noise inside the first directory only, named to sort after the twin it
-	// hides behind: the hit lands, then the budget runs out before the level's
-	// second directory is read at all.
-	for i := 0; i <= maxEntries; i++ {
-		name := filepath.Join(root, "a", fmt.Sprintf("z%d", i))
-		if err := os.WriteFile(name, nil, 0o644); err != nil {
-			t.Fatalf("write noise: %v", err)
-		}
-	}
-
-	if got := newService(t).Resolve(root, []Item{item}, false); got[0] != "" {
-		t.Fatalf("Resolve = %q, want no match for twins the budget split", got[0])
-	}
-}
-
-// TestResolveSurvivesAnUnreadableDir: a directory the user cannot read costs
-// its own items their path and nothing else — the sibling tree is still
-// searched, and the walk does not end there.
-func TestResolveSurvivesAnUnreadableDir(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("directory mode bits do not gate reads on Windows")
-	}
-	if os.Geteuid() == 0 {
-		t.Skip("root reads a directory whatever its mode")
-	}
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	// Sorts before the readable sibling, so the failed read happens first.
-	locked := filepath.Join(root, "a-locked")
-	if err := os.Mkdir(locked, 0o000); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chmod(locked, 0o755) })
-	want := filepath.Join(root, "b-src", "app.ts")
-	item := writeFile(t, want, 41, mtime)
-
-	if got := newService(t).Resolve(root, []Item{item}, false); got[0] != want {
-		t.Fatalf("Resolve = %q, want %q", got[0], want)
-	}
-}
-
-// TestResolveSkipsNoiseDirs proves the skip list is a search boundary, not a
-// speed-up: a match found inside .git would be the wrong file to hand a
-// session, and it must not even count towards ambiguity.
-func TestResolveSkipsNoiseDirs(t *testing.T) {
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	want := filepath.Join(root, "app.ts")
-	item := writeFile(t, want, 41, mtime)
-	writeFile(t, filepath.Join(root, ".git", "app.ts"), 41, mtime)
-	writeFile(t, filepath.Join(root, "node_modules", "pkg", "app.ts"), 41, mtime)
-
-	if got := newService(t).Resolve(root, []Item{item}, false); got[0] != want {
-		t.Fatalf("Resolve = %q, want %q", got[0], want)
-	}
-}
-
-// TestResolveMatchesDirectoryByName covers the item the page cannot describe:
-// a dropped directory reports a placeholder size, so the name is all there is.
-func TestResolveMatchesDirectoryByName(t *testing.T) {
-	root := t.TempDir()
-	want := filepath.Join(root, "src", "components")
-	if err := os.MkdirAll(want, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	item := Item{Name: "components", Size: 4096, Mtime: 0, Dir: true}
-
-	if got := newService(t).Resolve(root, []Item{item}, false); got[0] != want {
-		t.Fatalf("Resolve = %q, want %q", got[0], want)
-	}
-}
-
-// TestResolveMapsEveryItem proves a batch drop keeps its order and reports the
-// unfound ones in place, so the caller can pair path to item by index.
-func TestResolveMapsEveryItem(t *testing.T) {
-	root := t.TempDir()
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	first := writeFile(t, filepath.Join(root, "a.ts"), 10, mtime)
-	third := writeFile(t, filepath.Join(root, "c.ts"), 30, mtime)
-	elsewhere := Item{Name: "b.ts", Size: 20, Mtime: mtime.UnixMilli()}
-
-	got := newService(t).Resolve(root, []Item{first, elsewhere, third}, false)
-
-	if len(got) != 3 || got[0] == "" || got[1] != "" || got[2] == "" {
-		t.Fatalf("Resolve = %v, want the outer two found and the middle empty", got)
-	}
-}
-
-// TestResolveFindsShallowSiblingBeforeNoise is the measured regression: a home
-// directory's caches sort before an ordinary name and hold tens of thousands
-// of files, so a depth-first search spent its whole budget inside them and
-// reported the directory sitting right beside it as missing. The noise here is
-// one entry over the budget for exactly that reason.
-func TestResolveFindsShallowSiblingBeforeNoise(t *testing.T) {
-	smallBudget(t)
-	root := t.TempDir()
-	noise := filepath.Join(root, ".cache", "pkg")
-	if err := os.MkdirAll(noise, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	for i := 0; i <= maxEntries; i++ {
-		if err := os.WriteFile(filepath.Join(noise, fmt.Sprint(i)), nil, 0o644); err != nil {
-			t.Fatalf("write noise: %v", err)
-		}
-	}
-	want := filepath.Join(root, "project")
-	if err := os.Mkdir(want, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	item := Item{Name: "project", Dir: true}
-
-	if got := newService(t).Resolve(root, []Item{item}, false); got[0] != want {
-		t.Fatalf("Resolve = %q, want %q", got[0], want)
-	}
-}
-
-// TestResolveFallsBackToHome covers the drop a session's own tree can never
-// answer: a directory from elsewhere, which has no copy to fall back on.
-func TestResolveFallsBackToHome(t *testing.T) {
-	home := t.TempDir()
-	want := filepath.Join(home, "notes")
-	if err := os.Mkdir(want, 0o755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	service := homeAt(t, home)
-
-	got := service.Resolve(t.TempDir(), []Item{{Name: "notes", Dir: true}}, false)
-
-	if got[0] != want {
-		t.Fatalf("Resolve = %q, want %q", got[0], want)
-	}
-}
-
-// TestResolveSearchesHiddenDirsOfTheSessionOnly draws the line between the two
-// trees: .github is part of a checkout and worth searching, while home's dot
-// directories are caches whose size is the reason the search is bounded.
-func TestResolveSearchesHiddenDirsOfTheSessionOnly(t *testing.T) {
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	root := t.TempDir()
-	inSession := writeFile(t, filepath.Join(root, ".github", "ci.yml"), 12, mtime)
-	home := t.TempDir()
-	inHome := writeFile(t, filepath.Join(home, ".cache", "blob.bin"), 13, mtime)
-
-	got := homeAt(t, home).Resolve(root, []Item{inSession, inHome}, false)
-
-	if want := filepath.Join(root, ".github", "ci.yml"); got[0] != want {
-		t.Fatalf("session hidden dir = %q, want %q", got[0], want)
-	}
-	if got[1] != "" {
-		t.Fatalf("home hidden dir = %q, want no match", got[1])
-	}
-}
-
-func TestResolveEmptyRoot(t *testing.T) {
-	if got := newService(t).Resolve("", []Item{{Name: "app.ts"}}, false); len(got) != 1 || got[0] != "" {
-		t.Fatalf("Resolve = %v, want one empty path", got)
-	}
 }
 
 // canConfine fixes what the host would answer about the sandbox, so the tests
-// below describe a confined session on any machine — with or without
+// describe a confined session on any machine — with or without
 // bubblewrap installed, on any OS.
 func canConfine(t *testing.T, available bool) {
 	t.Helper()
@@ -306,60 +48,9 @@ func canConfine(t *testing.T, available bool) {
 	t.Cleanup(func() { sandboxAvailable = previous })
 }
 
-// TestResolveSkipsHomeForAConfinedSession is the whole point of the flag: the
-// file is there, under the user's real home, and its path names nothing inside
-// a sandbox whose home is empty. Answering with it would paste a path the agent
-// cannot open, so the item is left for the copy instead.
-func TestResolveSkipsHomeForAConfinedSession(t *testing.T) {
-	canConfine(t, true)
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	home := t.TempDir()
-	item := writeFile(t, filepath.Join(home, "Downloads", "spec.pdf"), 20, mtime)
-
-	got := homeAt(t, home).Resolve(t.TempDir(), []Item{item}, true)
-
-	if got[0] != "" {
-		t.Fatalf("Resolve = %q, want no path — the sandbox has no such file", got[0])
-	}
-}
-
-// TestResolveSearchesTheCheckoutOfAConfinedSession: the checkout is the one
-// tree a confined session does see, so the real path is still the answer there.
-func TestResolveSearchesTheCheckoutOfAConfinedSession(t *testing.T) {
-	canConfine(t, true)
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	root := t.TempDir()
-	want := filepath.Join(root, "src", "app.ts")
-	item := writeFile(t, want, 41, mtime)
-
-	got := newService(t).Resolve(root, []Item{item}, true)
-
-	if got[0] != want {
-		t.Fatalf("Resolve = %q, want %q", got[0], want)
-	}
-}
-
-// TestResolveSearchesHomeWhereNothingConfines pins the other half of the
-// answer, and with it the Windows behaviour: the row can say a session is
-// confined on a machine that has no backend to confine it, and there the home
-// is the session's own — searching it is what a drop there has always done.
-func TestResolveSearchesHomeWhereNothingConfines(t *testing.T) {
-	canConfine(t, false)
-	mtime := time.Now().Add(-time.Hour).Truncate(time.Second)
-	home := t.TempDir()
-	want := filepath.Join(home, "Downloads", "spec.pdf")
-	item := writeFile(t, want, 20, mtime)
-
-	got := homeAt(t, home).Resolve(t.TempDir(), []Item{item}, true)
-
-	if got[0] != want {
-		t.Fatalf("Resolve = %q, want %q", got[0], want)
-	}
-}
-
-// TestUploadAnswersPreflight is the one the browser asks first: the body
-// carries the dropped file's own content type, which is not a type a simple
-// request may have, so a POST that skips this never leaves the page.
+// TestUploadAnswersPreflight pins the CORS preflight: the body carries the
+// dropped file's own content type, which is not a type a simple request may
+// have, so a cross-origin POST is preceded by this OPTIONS probe.
 func TestUploadAnswersPreflight(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
@@ -374,7 +65,7 @@ func TestUploadAnswersPreflight(t *testing.T) {
 }
 
 // TestUploadRefusesOtherMethods: the endpoint writes a file, so a method that
-// is not the POST the page makes is refused rather than answered.
+// is not the POST the window makes is refused rather than answered.
 func TestUploadRefusesOtherMethods(t *testing.T) {
 	for _, method := range []string{http.MethodGet, http.MethodPut} {
 		t.Run(method, func(t *testing.T) {
@@ -390,10 +81,10 @@ func TestUploadRefusesOtherMethods(t *testing.T) {
 	}
 }
 
-// TestUploadStoresBytes covers the whole endpoint: the page posts the file and
-// gets back a path that holds exactly what it sent. The CORS header is asserted
-// with it because in dev the page's origin is the Vite server, so a response
-// without it is one the page is not allowed to read.
+// TestUploadStoresBytes covers the whole endpoint: the window posts the file
+// and gets back a path that holds exactly what it sent. The CORS header is
+// asserted with it because a cross-origin caller cannot read a response
+// without it.
 func TestUploadStoresBytes(t *testing.T) {
 	dir := t.TempDir()
 	recorder := httptest.NewRecorder()
@@ -436,7 +127,7 @@ func TestCopyNoticeAnnouncesTheCopy(t *testing.T) {
 	}
 }
 
-// TestUploadAnswersWithTheNotice: a dropped file is uploaded by the page, so
+// TestUploadAnswersWithTheNotice: a dropped file is uploaded by the window, so
 // the line has to come back with the path or the drag would paste a bare copy's
 // path while the attach button announces its own.
 func TestUploadAnswersWithTheNotice(t *testing.T) {
@@ -458,7 +149,7 @@ func TestUploadAnswersWithTheNotice(t *testing.T) {
 }
 
 // TestUploadStripsControlCharactersFromTheName: the name comes back inside the
-// notice, which the page writes into the terminal as a bracketed paste. An ESC
+// notice, which the window writes into the terminal as a bracketed paste. An ESC
 // in it would close that paste early and hand the rest to the agent as typed
 // keys; a newline alone forges a second line at the prompt under lich's own
 // prefix. Both are pinned end to end, because the notice and the file's name
@@ -630,7 +321,7 @@ func TestSavePrunes(t *testing.T) {
 	}
 }
 
-// failingReader gives some bytes and then stops, like a request the page
+// failingReader gives some bytes and then stops, like a request the window
 // aborts halfway through.
 type failingReader struct{ read bool }
 

@@ -90,8 +90,8 @@ func (p *providerSettings) check(s *settingsScreen, bin string) (lichclient.Bina
 }
 
 // writeBin stores the path of provider's layer in scope. A path typed or
-// picked is meant to be used, so a layer parked by the web window is put back
-// with it: this window has no switch to do that with.
+// picked is meant to be used, so a parked layer is put back with it: this
+// window has no switch to do that with.
 func (s *settingsScreen) writeBin(m providersMachine, kind, scope, value string) {
 	s.writeProviderKey(providerBinKey(kind), scope, value, s.providersChanged)
 	if value == "" {

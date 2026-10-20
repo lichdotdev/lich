@@ -17,7 +17,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// Sidebar widths, SessionSidebar's usePanelWidth bounds in dp.
+// Sidebar widths: the bounds of the panel's drag, in dp.
 const (
 	sideMinWidth  unit.Dp = 200
 	sideMaxWidth  unit.Dp = 380
@@ -48,8 +48,7 @@ type sideBlock struct {
 	presence ui.Presence
 }
 
-// sidebar is the gallery's SessionSidebar: the state the web keeps in
-// SessionSidebar and its groups.
+// sidebar is the gallery's session sidebar: its state and its groups'.
 type sidebar struct {
 	blocks  []*sideBlock
 	sort    ui.Sortable
@@ -249,7 +248,7 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, b *sideBlock, refuses bool) D {
 	)
 }
 
-// card is a SessionCard stand-in inside CardTransition: the gap between
+// card is a session card stand-in inside a Presence: the gap between
 // cards (pb-1.5) lives inside the motion, so a closing card takes it along.
 func (s *sidebar) card(gtx C, th *ui.Theme, b *sideBlock, id string) D {
 	closer := s.closers[id]

@@ -20,7 +20,7 @@ var costMissReasonKeys = map[string]string{
 	"unpriced-model": "session.cost.unpricedModel",
 }
 
-// costGate is the window's copy of the cost-readout flag (cost-readout-store.ts).
+// costGate is the window's copy of the cost-readout flag.
 // Off until loaded and on a failed load: nobody should see a money figure
 // appear and vanish.
 type costGate struct {
@@ -123,7 +123,7 @@ func budgetShare(usd, budget float64) float64 {
 	return math.Min(usd/budget*100, 100)
 }
 
-// costReadout is FooterSession's CostReadout. False when there is neither a
+// costReadout is the readout of a session's cost. False when there is neither a
 // figure nor a named reason for its absence.
 func costReadout(u sessionUsage, budget float64) (footerReadout, bool) {
 	if u.CostUSD == nil && u.CostMiss == "" {

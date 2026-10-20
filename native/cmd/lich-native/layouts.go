@@ -11,9 +11,7 @@ import (
 // not to a project, and a session sits in at most one pane of one layout,
 // since its PTY has one size.
 
-// layoutsKey is the backend setting the layouts persist under. The web's
-// walls live under lich.panes in a shape of their own; the two never read
-// each other.
+// layoutsKey is the backend setting the layouts persist under.
 const layoutsKey = "lich.native.layouts"
 
 // splitAxis is how a node divides its area: side by side or stacked.

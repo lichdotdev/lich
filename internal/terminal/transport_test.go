@@ -259,7 +259,7 @@ func TestParseHookRequestCapsToolText(t *testing.T) {
 		{"one past the cap", strings.Repeat("x", 121), 120},
 		{"far past the cap", strings.Repeat("x", 5000), 120},
 		// Runes, not bytes: a cut between the two bytes of "é" would produce a
-		// name the page renders as a replacement character.
+		// name the window renders as a replacement character.
 		{"multi-byte runes", strings.Repeat("é", 200), 120},
 	}
 	for _, tc := range tests {

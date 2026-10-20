@@ -14,8 +14,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The web's FooterBar is min-h-11 with py-1.5 around h-8 buttons: 44px.
-func TestFooterBarIsTheWebsFortyFourPixels(t *testing.T) {
+// The footer bar is 44px tall.
+func TestFooterBarIsFortyFourPixels(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Canvas}
 	f := newFooter(context.Background(), nil, new(ui.Root), newFooterUsage(), newPlanQuota(quotaReader(nil), func() {}), func() {})
 	f.dock = new(dock)

@@ -15,7 +15,7 @@ import (
 )
 
 // The sandbox keys: the grants mirror store.sshAgentKey and store.ghTokenKey,
-// which the spawn reads; the rung is providers-store.ts sandboxKey.
+// which the spawn reads; the rung's key is sandboxKey(providerID).
 const (
 	sshAgentKey = "sandbox.ssh-agent"
 	ghTokenKey  = "sandbox.gh-token"
@@ -37,7 +37,7 @@ var sandboxRungs = []string{rungOff, rungAsk, rungWorktrees, rungEverywhere}
 
 func sandboxKey(providerID string) string { return "provider." + providerID + ".sandbox" }
 
-// sandboxLevel is providers-store.ts sandboxLevel: anything unknown is off.
+// sandboxLevel is the rung a stored value names: anything unknown is off.
 func sandboxLevel(raw string) string {
 	if slices.Contains(sandboxRungs, raw) {
 		return raw
@@ -103,8 +103,8 @@ func agentKeysLine(keys []string) string {
 	return i18n.T("settings.sandboxSettings.sshLoaded", i18n.Args{"keys": strings.Join(keys, " · ")})
 }
 
-// cannotConfineCopy is sandbox-copy.ts: the reason after the em dash and the
-// advice under the strip, per platform.
+// cannotConfineCopy is the reason after the em dash and the advice under the
+// strip, per platform.
 func cannotConfineCopy(goos string) (reason, advice string) {
 	switch goos {
 	case "windows":

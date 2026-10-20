@@ -16,8 +16,8 @@ import (
 // FormLabelStyle is shadcn's Label: the caption of a form control, text-sm
 // font-medium leading-none. It is not LabelStyle, which is a run of text.
 //
-// The TSX's htmlFor, which makes a click on the caption act on its control, is
-// the caller's to wire: wrap this in the control's own Clickable.
+// A click on the caption acting on its control is the caller's to wire: wrap
+// this in the control's own Clickable.
 // ponytail: tracking-wide is not ported; the Gio shaper has no letter spacing.
 type FormLabelStyle struct {
 	Text      string

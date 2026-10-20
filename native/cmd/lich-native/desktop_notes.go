@@ -79,8 +79,8 @@ func (r recapping) show(n desktopNote) {
 
 func (r recapping) withdraw(id string) { r.next.withdraw(id) }
 
-// backendNotes raises notifications through the backend's system.Notify, the
-// RPC the web uses: no click, no replacing, nothing to take down.
+// backendNotes raises notifications through the backend's system.Notify
+// RPC: no click, no replacing, nothing to take down.
 type backendNotes struct {
 	ctx    context.Context
 	client *lichclient.Client

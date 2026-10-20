@@ -1,6 +1,6 @@
-// Package rpc exposes the app's Go services to the frontend over plain HTTP
-// on the local transport listener — the Chromium --app window has no binding
-// bridge of its own (docs/native-window.md). One POST per call:
+// Package rpc exposes the app's Go services to the window over plain HTTP
+// on the local transport listener: the window is its own process and never
+// imports internal/ (docs/native-window.md). One POST per call:
 //
 //	POST /rpc/<service>.<Method>?token=...   body: JSON array of arguments
 //	→ 200 with the method's JSON result (null when it only returns error)
@@ -51,16 +51,15 @@ func (h *Handler) Register(name string, svc any) {
 }
 
 // Deny hides one method ("store.Close") from dispatch — for methods that are
-// public for Go callers but must not be reachable from the frontend.
+// public for Go callers but must not be reachable from the window.
 func (h *Handler) Deny(method string) {
 	h.denied[method] = true
 }
 
 // Preflight answers the CORS handshake every POST endpoint on the listener
 // shares, and reports whether it consumed the request. CORS is wide open on
-// purpose: in dev the page's origin is the Vite server, not this listener, and
-// the random token — enforced by the transport mount — is the actual auth, as
-// with /ws. Only the OPTIONS probe is answered here; the caller still gates
+// purpose: the random token, enforced by the transport mount, is the actual
+// auth, as with /ws. Only the OPTIONS probe is answered here; the caller still gates
 // the method, because each endpoint spells its own refusal.
 func Preflight(w http.ResponseWriter, r *http.Request) bool {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -156,7 +155,7 @@ func decodeArgs(ctx context.Context, t reflect.Type, body []byte) ([]reflect.Val
 // writeResult maps Go returns onto the response: a trailing non-nil error is
 // a 500, otherwise the first non-error value (or null) is the 200 body.
 // Every service error is also logged with the method name — the RPC is the
-// single funnel all frontend-triggered failures pass through, which makes
+// single funnel every client-triggered failure passes through, which makes
 // this the one line that turns them into an audit trail.
 func writeResult(w http.ResponseWriter, method string, results []reflect.Value) {
 	var payload any
@@ -176,7 +175,7 @@ func writeResult(w http.ResponseWriter, method string, results []reflect.Value) 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		// Headers are gone — the response cannot change anymore, but the
-		// audit trail can still say the reply never reached the page.
+		// audit trail can still say the reply never reached the client.
 		slog.Warn("rpc: encode response", "method", method, "err", err)
 	}
 }

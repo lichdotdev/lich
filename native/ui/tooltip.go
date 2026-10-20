@@ -16,7 +16,7 @@ import (
 	"gioui.org/unit"
 )
 
-// TooltipVariant is tooltip.tsx's variant: Label names a control in a few
+// TooltipVariant is the tooltip's variant: Label names a control in a few
 // words, Card carries several lines about the thing under the pointer.
 type TooltipVariant uint8
 
@@ -225,7 +225,7 @@ type tooltipPlacement struct {
 	towardTrigger f32.Point
 }
 
-// anchor places the arrow as tooltip.tsx's Arrow classes do: on the top and
+// anchor places the arrow as shadcn's tooltip arrow classes do: on the top and
 // bottom sides it points at the trigger's center, kept arrow-padding inside
 // the bubble; on the left and right ones top-1/2! pins it to the middle.
 func (m tooltipMetrics) anchor(side Side, box image.Rectangle, trigger image.Point) tooltipPlacement {

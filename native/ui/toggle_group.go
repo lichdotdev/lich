@@ -27,8 +27,7 @@ type ToggleItem struct {
 // ToggleGroupStyle draws a shadcn ToggleGroup of one selected value around a
 // caller-owned widget.Enum, in the form lich uses it: the options spaced by 1
 // inside a bordered track (border border-border p-[0.1875rem], the segmented
-// control of DESIGN.md). Pressing the chosen option again keeps it chosen, as
-// every call site in the web app does.
+// control of DESIGN.md). Pressing the chosen option again keeps it chosen.
 type ToggleGroupStyle struct {
 	Value   *widget.Enum
 	Items   []ToggleItem

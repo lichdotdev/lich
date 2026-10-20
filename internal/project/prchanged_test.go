@@ -19,13 +19,10 @@ func TestPullRequestWritesAnnounceTheChange(t *testing.T) {
 	t.Parallel()
 	writes := map[string]func(s *Service) error{
 		"merge":          func(s *Service) error { return s.MergePullRequest("/repo", 7, "squash", "", "", false) },
-		"edit body":      func(s *Service) error { return s.EditPullRequestBody("/repo", 7, "body") },
 		"submit review":  func(s *Service) error { return s.SubmitReview("/repo", 7, "approve", "", "", nil) },
 		"reply":          func(s *Service) error { return s.ReplyToReviewThread("/repo", 7, 1, "ok") },
 		"resolve thread": func(s *Service) error { return s.ResolveReviewThread("/repo", "T_1", true) },
-		"dismiss review": func(s *Service) error { return s.DismissReview("/repo", "R_1", "why") },
 		"comment":        func(s *Service) error { return s.CommentOnPullRequest("/repo", 7, "hi") },
-		"request review": func(s *Service) error { return s.RequestReview("/repo", 7, "octocat", true) },
 	}
 	for name, write := range writes {
 		t.Run(name+" emits once it landed", func(t *testing.T) {

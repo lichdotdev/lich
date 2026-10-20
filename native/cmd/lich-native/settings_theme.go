@@ -22,16 +22,16 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The picker's geometry, ThemePicker.tsx's classes.
+// The picker's geometry.
 var (
-	themeTriggerHeight = ui.Space(10)  // h-10
-	themeTriggerPadL   = ui.Space(1.5) // pl-1.5
+	themeTriggerHeight = ui.Space(10)
+	themeTriggerPadL   = ui.Space(1.5)
 	themeTriggerMini   = image.Pt(44, 28)
-	themeCardWidth     = unit.Dp(152) // w-[9.5rem]
-	themeCardPreview   = ui.Space(22) // h-22
-	themeCardPad       = ui.Space(1)  // p-1
-	themeCardGap       = ui.Space(3)  // gap-3
-	themeCaptionSize   = unit.Sp(11)  // text-[0.6875rem]
+	themeCardWidth     = unit.Dp(152)
+	themeCardPreview   = ui.Space(22)
+	themeCardPad       = ui.Space(1)
+	themeCardGap       = ui.Space(3)
+	themeCaptionSize   = unit.Sp(11)
 	icTriangleAlert    = icons.Lucide("triangle-alert")
 )
 

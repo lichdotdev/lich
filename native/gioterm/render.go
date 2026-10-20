@@ -95,8 +95,8 @@ func styleOf(c cell, sn snap) cellStyle {
 }
 
 // cursorStyleOf is c drawn under the block cursor: on the cursor's color
-// with the terminal's background for ink, as xterm's default cursorAccent,
-// or inverted when the theme sets no cursor color.
+// with the terminal's background for ink, or inverted when the theme sets no
+// cursor color.
 func cursorStyleOf(c cell, sn snap) cellStyle {
 	st := styleOf(c, sn)
 	if sn.hasCursor {

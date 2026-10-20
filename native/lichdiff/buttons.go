@@ -21,8 +21,8 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// The buttons lich draws inside its diff, .cm-diff-expand and .cm-diff-revert
-// (frontend/src/index.css), in its dark theme's colors.
+// The buttons lich draws inside its diff, to expand and to revert, in its dark
+// theme's colors.
 var (
 	foreground      = color.NRGBA{R: 0xfa, G: 0xfa, B: 0xfa, A: 0xff}
 	mutedForeground = color.NRGBA{R: 0x9f, G: 0x9f, B: 0xa9, A: 0xff}

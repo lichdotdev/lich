@@ -67,7 +67,7 @@ func TestPickSaveFileSeedsTheDefaultName(t *testing.T) {
 }
 
 // TestOpen covers the three answers the dialog can give. The cancelled one is
-// the contract that matters: the frontend reads Project-or-null, so a cancel
+// the contract that matters: the window reads Project-or-null, so a cancel
 // has to come back as nil with no error — an error there would put a failure
 // dialog on a user who simply closed the picker.
 func TestOpen(t *testing.T) {
@@ -265,7 +265,7 @@ func TestDiff(t *testing.T) {
 	if clean.Files != 0 || clean.Added != 0 || clean.Deleted != 0 {
 		t.Errorf("Diff(clean repo) = %+v, want no changes", clean)
 	}
-	// Head names the commit the counts sit on — the signal the frontend watches
+	// Head names the commit the counts sit on — the signal the window watches
 	// to notice a commit, so a clean tree still has to report it.
 	if len(clean.Head) < 7 {
 		t.Errorf("Diff(clean repo).Head = %q, want a commit sha", clean.Head)

@@ -22,16 +22,15 @@ import (
 // reference on its way to the one meant.
 const issueLookupDelay = 400 * time.Millisecond
 
-// The wait for the prompt an issue is pasted at (write-at-prompt.ts): a
-// worktree's first boot can be minutes, and a session that never comes up must
-// stop being waited for.
+// The wait for the prompt an issue is pasted at: a worktree's first boot can
+// be minutes, and a session that never comes up must stop being waited for.
 const (
 	promptPoll  = 250 * time.Millisecond
 	promptLimit = 5 * time.Minute
 )
 
-// worktreeDialog is WorktreeDialog: a name (blank for a random one, words for
-// a slug, #N for an issue), the base it starts from, whether the checkout's
+// worktreeDialog asks for a name (blank for a random one, words for a slug,
+// #N for an issue), the base it starts from, whether the checkout's
 // uncommitted changes come along, and whether the session runs confined.
 // Fields under mu are written by the reads it starts.
 type worktreeDialog struct {
@@ -443,9 +442,8 @@ func (u *window) showNewSession(projectID, id string) error {
 	return nil
 }
 
-// writeAtPrompt is write-at-prompt.ts: text, a block bracketedPaste built,
-// written before the session sits at a prompt lands in its boot and is thrown
-// away.
+// writeAtPrompt writes text, a block bracketedPaste built, once the session
+// sits at a prompt: written before, it lands in the boot and is thrown away.
 func (u *window) writeAtPrompt(id, text string) {
 	deadline := time.Now().Add(promptLimit)
 	for {

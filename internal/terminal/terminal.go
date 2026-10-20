@@ -1,7 +1,7 @@
 // Package terminal spawns PTY-backed shell sessions and bridges their I/O to the
-// frontend over the local WebSocket transport (transport.go), falling back to
+// window over the local WebSocket transport (transport.go), falling back to
 // the /events channel. Sessions are keyed by an opaque session ID and run
-// independently of the frontend, so navigating away from a project (or hiding
+// independently of the window, so navigating away from a project (or hiding
 // its terminal) never kills its shell. A project may own several sessions.
 package terminal
 
@@ -20,11 +20,10 @@ import (
 	"github.com/lichdotdev/lich/internal/pricing"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/quota"
-	"github.com/lichdotdev/lich/internal/store"
 )
 
 // Event names. A terminal I/O event carries the session ID as a suffix (e.g.
-// "terminal:data:home") so each frontend terminal subscribes only to its own
+// "terminal:data:home") so each terminal subscribes only to its own
 // stream instead of filtering a global broadcast. The session events below are
 // global and carry the id in their payload: their consumers outlive any one
 // card, and a per-session name can only reach a subscriber that exists when it
@@ -42,9 +41,8 @@ const (
 	// tool a pre-tool report names and what a waiting one is blocked on),
 	// reported by the lich hooks running inside the PTY (see transport.hook and
 	// docs/hooks/session-state.md). "interrupted" is the one value lich raises
-	// itself, for a turn the user stopped at the PTY. The frontend keeps it in
-	// stores keyed by id (session-status-store.ts, session-tool-store.ts) rather
-	// than in the card, which is only mounted while its project is active.
+	// itself, for a turn the user stopped at the PTY. The window keeps it in a
+	// store keyed by id (statusStore, native/cmd/lich-native/status.go).
 	statusEventName = "session-status"
 	// titleEventName carries an auto-applied session label ({id, label}).
 	titleEventName = "session-title"
@@ -64,23 +62,18 @@ const (
 	// rather than asked to work it out again. skippedLinks is what that sandbox
 	// left out of the private home for being a symlink, which is the one absence
 	// a session has no other way of learning about. Both persisted with the row
-	// (store.Session's Sandbox and SandboxSkippedLinks), which is what a page
-	// reload hydrates from.
+	// (store.Session's Sandbox and SandboxSkippedLinks), which is what a
+	// reopened window hydrates from.
 	sandboxEventName = "session-sandbox"
 	// mcpEventName carries the MCP servers a session's provider could reach at
 	// its spawn ({id, servers}), emitted by every spawn. The card divides a tool
 	// name against them — two harnesses spell an MCP tool with a single
 	// underscore between the server and the tool, which nothing in the string
 	// divides (docs/hooks/session-state.md). Persisted with the row too
-	// (store.Session's MCPServers), which is what a page reload hydrates from:
-	// the PTY outlives the page, so there is no second spawn to report it again.
+	// (store.Session's MCPServers), which is what a reopened window hydrates
+	// from: the PTY outlives the window, so there is no second spawn to report
+	// it again.
 	mcpEventName = "session-mcp"
-	// turnEventName carries the id of a session whose last finished turn has
-	// just been filed ({id}) — emitted when the closing snapshot lands, not when
-	// the turn's `done` is reported. The two are not the same moment: the
-	// snapshot runs on a worker, so a panel refreshed off the state report reads
-	// the record before it exists (see turnSnaps).
-	turnEventName = "session-turn"
 	// duplicateEventName carries a session that just reported a conversation
 	// another open card already runs ({id, heldBy}): a resume typed in the
 	// provider's own TUI, which lich cannot stop, only point out. Emitted once
@@ -162,18 +155,11 @@ type mcpEvent struct {
 	Servers []string `json:"servers"`
 }
 
-// turnEvent is the payload of turnEventName: the session whose last-turn record
-// just changed. It carries no diff — the panel asks for one only while it is on
-// screen, and a turn's diff is far larger than an event ought to be.
-type turnEvent struct {
-	ID string `json:"id"`
-}
-
 // session is a single running PTY-backed shell. done closes when the session
 // is reaped (by stream or Close — whichever removes it from the map), stopping
 // its cwd watcher. replay holds a capped tail of the PTY's output so a
-// reconnecting frontend can reseed its scrollback after a page reload. outbox
-// carries the coalesced output to the frontend off the PTY read path.
+// window attaching to the session can reseed its scrollback. outbox carries
+// the coalesced output to the window off the PTY read path.
 type session struct {
 	pty    ptyHandle
 	out    *coalescer
@@ -251,7 +237,6 @@ type Store interface {
 	SessionSubagentDepth(sessionID string) int
 	InheritUltracode(sessionID, forkedFrom string) error
 	InheritSubagent(sessionID, forkedFrom string) error
-	SessionEntrypoint(sessionID string) string
 	SessionSandbox(sessionID string) string
 	SetSessionSandbox(sessionID, sandbox string) error
 	SetSessionMCPServers(sessionID string, servers []string) error
@@ -270,8 +255,6 @@ type Store interface {
 	SaveForkCostOffset(sessionID, forkedFrom string) error
 	AddHandsOn(sessionID string, seconds int64) error
 	HandsOn(sessionID string) (int64, error)
-	SaveTurnRecord(sessionID string, rec store.TurnRecord) error
-	TurnRecord(sessionID string) (store.TurnRecord, bool, error)
 }
 
 // Service manages PTY-backed shell sessions keyed by session ID.
@@ -358,11 +341,6 @@ type Service struct {
 	// leave the older count on the card (see emitTodo).
 	todos    todoCursors
 	todoEmit sync.Mutex
-	// snaps brackets each session's turn with a tree snapshot of its checkout,
-	// which is what the Review panel's "Last turn" mode diffs (see turnSnaps).
-	// It reads the same boundary turns does and carries its own lock for the
-	// same reason.
-	snaps turnSnaps
 	// lastCols/lastRows is the last terminal size the window reported, and the
 	// size a session spawned with none of its own is started at. See
 	// sizeFor. Guarded by mu.
@@ -451,17 +429,6 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 		env:      sessionBaseEnv(env),
 		prices:   pricing.New(),
 	}
-	// Wired here rather than emitted from the hook's own goroutine: the record
-	// is filed on the snapshot worker, minutes-of-CPU later on a cold checkout,
-	// and the panel has no other way to learn that the answer it already asked
-	// for has changed.
-	s.snaps.filed = func(id string) {
-		hub.Emit(turnEventName, turnEvent{ID: id})
-	}
-	// What a turn recorded outlives the process that recorded it: a session
-	// restored at launch answers for its last turn straight away, instead of
-	// reading as unrecorded until its next one ends.
-	s.snaps.store = store
 	// While any turn is open the machine is kept from idling into sleep, the
 	// way a playing media player keeps it: a locked screen no longer pauses
 	// the agents (internal/awake).
@@ -537,11 +504,6 @@ func (s *Service) onHookState(req hookRequest) {
 	if watch := s.stateWatcher(); watch != nil {
 		watch(req.SessionID, req.State)
 	}
-	// The same boundary brackets the Review panel's "Last turn": `busy`
-	// opens the window, `done` closes it. Queued, never taken here — a
-	// snapshot on this goroutine would hold the hook's own response, and
-	// with it the agent's next step (see turnSnaps).
-	s.snaps.note(req.SessionID, req.State)
 	// Every non-idle state is a point where a fresh assistant usage line
 	// may have landed — a tool call mid-turn (busy), a prompt (waiting),
 	// or the turn's end (done) — so refresh the context window then, and
@@ -569,9 +531,10 @@ func (s *Service) onHookState(req hookRequest) {
 }
 
 // noteUnread persists whether this session's card is holding a finished turn
-// nobody has read, so the mark survives a page reload (docs/ceilings.md). It is
-// written from here rather than from the window because a turn can end with no
-// window attached at all: during a reload, or served as a tab.
+// nobody has read, so the mark survives the window reopening (docs/ceilings.md).
+// It is written from here rather than from the window because a turn can end
+// with no window attached at all: closed, or between a restart and its
+// reconnect.
 //
 // Only the clear is deduped, and it is the whole hot path: `busy` is reported
 // once per tool call, and without this every one of them would take the
@@ -697,10 +660,6 @@ func (s *Service) noteInterrupt(id string) {
 		return
 	}
 	s.publishStatus(statusEvent{ID: id, State: statusInterrupted})
-	// An interrupted turn is still a turn that ended, and it changed files like
-	// any other. Closing the window here is what keeps the panel from holding
-	// an older turn open until the next one finishes.
-	s.snaps.closeTurn(id)
 	// The relay keeps its own turn accounting off the same stream, and a turn
 	// that ended has to read as ended there too — a queued delivery waits on the
 	// target's prompt being free.
@@ -871,11 +830,6 @@ func (s *Service) CloseBy(id, closerID string) error {
 	// machine awake for a card that no longer exists.
 	s.forgetTurn(id)
 
-	// Before the bail below, because a card is closed far more often than it is
-	// running: its row is deleted either way, so nothing will ever ask what its
-	// last turn changed — and its snapshot index would otherwise outlive it on
-	// disk for the rest of the machine's life.
-	s.snaps.forget(id)
 	s.recap.cursors.forget(id)
 	s.todos.cursors.forget(id)
 	// Synchronously, and before the row that the window is about to delete goes:
@@ -930,8 +884,8 @@ func (s *Service) beatHandsOn(id string, minGap time.Duration) {
 }
 
 // Live reports whether a session has a process running right now. It is the
-// difference between a card and a PTY: a session the user has never opened in
-// this page has a row in the store and nothing behind it to type at, so it can
+// difference between a card and a PTY: a session the user has not opened since
+// lich started has a row in the store and nothing behind it to type at, so it can
 // be listed but never addressed (internal/relay).
 func (s *Service) Live(id string) bool {
 	return s.ptyOf(id) != nil

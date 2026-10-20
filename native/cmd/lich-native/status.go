@@ -73,12 +73,11 @@ type statusEntry struct {
 	tool  *sessionTool
 }
 
-// statusStore keeps the last reported status of every session, ported from
-// the web's session-status-store.ts and session-tool-store.ts. It is not safe
+// statusStore keeps the last reported status of every session. It is not safe
 // for concurrent use: the model guards it with its own mutex.
 type statusStore struct {
 	entries map[string]*statusEntry
-	// order keeps the queue in first-seen order, as the web's Map does.
+	// order keeps the queue in first-seen order.
 	order []string
 }
 

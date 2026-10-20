@@ -10,8 +10,8 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// sidebarFilter is the lens over the shown project's cards. Like the web's,
-// it is never persisted: a window that boots showing two of nine sessions is
+// sidebarFilter is the lens over the shown project's cards. It is never
+// persisted: a window that boots showing two of nine sessions is
 // a bug report, not a restored setting.
 type sidebarFilter struct {
 	query  string
@@ -57,7 +57,7 @@ type sidebarView struct {
 // separator cannot collide.
 func foldKey(projectID, blockKey string) string { return projectID + ":" + blockKey }
 
-// sidebarBlocks is SessionSidebar.tsx's derivation for the shown project:
+// sidebarBlocks derives the shown project's blocks:
 // filter the stored list, group the survivors, and dress each block.
 func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 	m.mu.Lock()
@@ -90,7 +90,7 @@ func isLoneWorktree(blocks []sessionBlock) bool {
 	return len(blocks) == 1 && blocks[0].kind == blockCheckout && blocks[0].path != ""
 }
 
-// dressBlock is SessionGroup.tsx's per-block reading. Callers hold m.mu.
+// dressBlock reads one block into its view. Callers hold m.mu.
 func (m *model) dressBlock(p lichclient.Project, b sessionBlock, header bool, pending []pendingStatus, now time.Time) blockView {
 	collapsed := m.folds[foldKey(p.ID, b.key)]
 	v := blockView{key: b.key, kind: b.kind, folder: b.folder, path: b.path, collapsed: collapsed, folded: header && collapsed}
@@ -116,7 +116,7 @@ func (m *model) dressBlock(p lichclient.Project, b sessionBlock, header bool, pe
 	return v
 }
 
-// phaseOfSession is useSessionPhases' lookup. Callers hold m.mu.
+// phaseOfSession looks up a session's phase. Callers hold m.mu.
 func (m *model) phaseOfSession(id string) sessionPhase {
 	return phaseOf(m.status.status(id), m.status.unread(id))
 }

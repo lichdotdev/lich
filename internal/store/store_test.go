@@ -1551,7 +1551,7 @@ func TestSessionGoneReportsEveryRowOfARemovedWorktree(t *testing.T) {
 }
 
 // The mark behind a card's solid ring is workspace state: a finished turn
-// nobody has read has to come back unread after a page reload, and a turn the
+// nobody has read has to come back unread after a window restart, and a turn the
 // user already read has to come back read.
 func TestSessionUnreadSurvivesHydration(t *testing.T) {
 	svc := newTestStore(t)

@@ -77,7 +77,7 @@ func TestAConfinedSessionRunsInItsPTY(t *testing.T) {
 
 // TestAConfinedSpawnRecordsWhatItsSandboxSkipped closes the journey the links
 // take: resolved by wrapSandbox, carried on the session, and written to the row
-// by Start. Only the spawn ever resolves them and the PTY outlives the page, so
+// by Start. Only the spawn ever resolves them and the PTY outlives the window, so
 // a reload has no second spawn to hear them from — a card whose session cannot
 // find its own ~/.gitconfig would then have nothing to say about why.
 func TestAConfinedSpawnRecordsWhatItsSandboxSkipped(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// toolGlyphs is lib/session/tool-glyph.ts: the glyph a tool family wears,
+// toolGlyphs is the glyph a tool family wears,
 // keyed by the names the harnesses report. An unknown name draws none.
 var toolGlyphs = map[string]*icons.Icon{
 	"Bash":         icons.Lucide("terminal"),

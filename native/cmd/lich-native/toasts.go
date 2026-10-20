@@ -15,7 +15,7 @@ var (
 	flagToastsExpanded = flag.Bool("toasts-expanded", false, "draw the toast stack expanded, as a hover would, for -shot")
 )
 
-// failure is the web's toast.error with a formatted title.
+// failure is an error toast with a formatted title.
 func failure(format string, args ...any) ui.Toast {
 	for i, arg := range args {
 		if err, ok := arg.(error); ok {
@@ -26,7 +26,7 @@ func failure(format string, args ...any) ui.Toast {
 }
 
 // demoToasts are what -toasts raises, by name: one of each variant; action,
-// the shape of the web's unclean-exit warning; attention and undo, the
+// an unclean-exit warning; attention and undo, the
 // needs-your-input and closed-session toasts; update and progress, the app
 // update's prompt and its download. A function, so the texts that come from
 // the catalog are read in the language of the moment.

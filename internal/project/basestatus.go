@@ -39,11 +39,12 @@ const baseFetchTimeout = 30 * time.Second
 // share — this is polled, and a checkout without a remote is an ordinary state.
 //
 // The answer is memoised on the two commits it was computed from, because the
-// poll runs every second and merge-tree writes tree objects into the object
+// poll runs every few seconds and merge-tree writes tree objects into the object
 // database on every call. Only a moved HEAD or a moved base recomputes.
 func (s *Service) BaseStatus(path string) *BaseStatus {
-	// One subprocess for all three, because this runs per second per checkout
-	// and the poller it rides was already the frontend's git-subprocess budget.
+	// One subprocess for all three, because this runs every few seconds per
+	// checkout and the poller it rides was already the window's git-subprocess
+	// budget.
 	// --path-format=absolute: the common dir comes back relative from inside the
 	// repository root, and two repositories would share the key ".git".
 	out, ok := gitQuiet(path, "rev-parse", "--path-format=absolute",

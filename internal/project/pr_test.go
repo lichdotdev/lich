@@ -821,7 +821,7 @@ func TestListPullRequestsFlow(t *testing.T) {
 		}
 	})
 
-	// The state comes from a query typed in the page, so anything outside the
+	// The state comes from the window's RPC call, so anything outside the
 	// allow-list has to stop here rather than reach gh's flags.
 	t.Run("an unknown state never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}

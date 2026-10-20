@@ -75,8 +75,8 @@ func TestCommitIdentity(t *testing.T) {
 	}
 }
 
-// TestCommitIdentityOutsideARepositoryStaysSilent covers the path a settings
-// page can always reach — a project directory that is not a checkout. git has
+// TestCommitIdentityOutsideARepositoryStaysSilent covers the path Settings can
+// always reach — a project directory that is not a checkout. git has
 // no local scope to read there, so the answer must degrade to the global
 // identity without filing a warning for the scope that does not exist.
 func TestCommitIdentityOutsideARepositoryStaysSilent(t *testing.T) {

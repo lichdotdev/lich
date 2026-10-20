@@ -19,8 +19,8 @@ import (
 
 var icRevertBlock = icons.Lucide("undo-2")
 
-// The buttons drawn inside a diff, .cm-diff-expand and .cm-diff-revert
-// (index.css): text-[0.6875rem], px 0.375rem, rounded 0.25rem, a 0.75rem icon.
+// The buttons drawn inside a diff, expand and revert: 0.6875rem text, 0.375rem
+// horizontal padding, a 0.25rem radius, a 0.75rem icon.
 const (
 	affordanceText   = unit.Sp(11)
 	expandLeading    = unit.Sp(13.2) // line-height: 1.2

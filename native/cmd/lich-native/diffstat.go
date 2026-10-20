@@ -11,8 +11,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// DiffStat.tsx's text-emerald-600 dark:text-emerald-400 and text-red-600
-// dark:text-red-400: Tailwind colors, not theme tokens.
+// The added and deleted colors are fixed shades, not theme tokens.
 var (
 	colAddedLight   = ui.OKLCH(0.596, 0.145, 163.225, 1)
 	colDeletedLight = ui.OKLCH(0.577, 0.245, 27.325, 1)
@@ -29,8 +28,7 @@ func diffStatColors(th *ui.Theme) (added, deleted color.NRGBA) {
 	return colAddedDark, colDeletedDark
 }
 
-// diffStat is the +added -deleted pair every diff surface shows, spaced by
-// the gap-1.5 of the clusters it sits in.
+// diffStat is the +added -deleted pair every diff surface shows.
 func diffStat(gtx C, th *ui.Theme, added, deleted int) D {
 	addedColor, deletedColor := diffStatColors(th)
 	return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,

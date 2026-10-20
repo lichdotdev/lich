@@ -1,6 +1,6 @@
 // Package prompt holds the natural-language text lich types into an agent
 // session, in every language a user can pick for it. The UI has its own
-// language and its own catalogs (frontend/src/lib/i18n); the two settings are
+// language and its own catalogs (native/i18n); the two settings are
 // independent because people often run the interface in one language and talk
 // to their agents in another.
 //
@@ -13,7 +13,7 @@ package prompt
 
 // Lang is a prompt language, spelled as a BCP 47 tag: the same value is stored
 // in the settings table, exported to every session as EnvVar, and offered by
-// the frontend's select.
+// the window's select.
 type Lang string
 
 const (

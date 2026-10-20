@@ -234,10 +234,10 @@ func hunkRows(lines []string, split bool) int {
 	return n
 }
 
-// hideWhitespace is lib/git/whitespace.ts: a change block whose deletions
-// and additions pair up one for one, each pair equal once whitespace is
-// ignored, becomes unchanged lines showing the file as it is now; any other
-// block is left whole. A hunk left with no change is dropped.
+// hideWhitespace turns a change block whose deletions and additions pair up
+// one for one, each pair equal once whitespace is ignored, into unchanged
+// lines showing the file as it is now; any other block is left whole. A hunk
+// left with no change is dropped.
 func hideWhitespace(f patchFile) patchFile {
 	if f.binary {
 		return f

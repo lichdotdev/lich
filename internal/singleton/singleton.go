@@ -36,9 +36,7 @@ type Info struct {
 const pingTimeout = time.Second
 
 // DefaultPort is the loopback port lich pins when LICH_LISTEN_PORT does not
-// override it. It lives here because binding it is the single-instance lock,
-// and because the page's localStorage (lich.* settings) is keyed by the origin
-// it forms — a moved port is a wiped settings store.
+// override it. It lives here because binding it is the single-instance lock.
 const DefaultPort = 47821
 
 // Port is the listener port this launch pins: LICH_LISTEN_PORT when it holds a

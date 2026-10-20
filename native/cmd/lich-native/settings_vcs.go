@@ -32,9 +32,8 @@ var (
 	icVcsRecheck  = icons.Lucide("refresh-cw")
 )
 
-// vcsTool is vcs-tools.ts VcsTool: the binary as lich spawns it, and the
-// page a machine without it installs it from. without is the catalog key of
-// what goes without it.
+// vcsTool is the binary as lich spawns it, and the page a machine without it
+// installs it from. without is the catalog key of what goes without it.
 type vcsTool struct {
 	bin, label, url, without string
 	icon                     *icons.Icon

@@ -36,20 +36,20 @@ func (c *Collapse) Layout(gtx C, open bool, w layout.Widget) D {
 	return reveal(gtx, p, 1, p, w)
 }
 
-// Presence timings: CardTransition's `duration-[160ms] ease-out` in and its
-// EXIT_MS `ease-in` out, from the `scale-[0.6]` pose.
+// Presence timings: 160ms ease-out in, 180ms ease-in out, from a 0.6 scale
+// pose.
 const (
 	presenceEnter = 160 * time.Millisecond
-	// PresenceExit is EXIT_MS of use-closing-sessions.ts: how long an item
-	// that left the list stays drawn, playing its exit.
+	// PresenceExit is how long an item that left the list stays drawn, playing
+	// its exit.
 	PresenceExit  = 180 * time.Millisecond
 	presenceScale = 0.6
 )
 
-// Presence is CardTransition plus useClosingSessions for a keyed list: an
-// item that arrives after the list first drew grows in (height from 0, scale
-// from .6 at the top edge, opacity from 0), and one that leaves is kept in
-// the list, in its slot, while it plays the same motion backwards.
+// Presence animates a keyed list: an item that arrives after the list first
+// drew grows in (height from 0, scale from .6 at the top edge, opacity from
+// 0), and one that leaves is kept in the list, in its slot, while it plays the
+// same motion backwards.
 type Presence struct {
 	items   map[string]*presenceItem
 	drawn   []string
@@ -96,8 +96,7 @@ func (p *Presence) Update(now time.Time, live []string) []string {
 	return p.drawn
 }
 
-// withLeaving is withClosing of use-closing-sessions.ts: live with each
-// leaving key spliced back at the slot it left.
+// withLeaving is live with each leaving key spliced back at the slot it left.
 func (p *Presence) withLeaving(live []string) []string {
 	var leaving []string
 	for _, k := range p.drawn {

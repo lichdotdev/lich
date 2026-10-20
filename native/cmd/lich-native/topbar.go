@@ -20,7 +20,7 @@ import (
 
 const brandName = "lich"
 
-// barDisabledOpacity is button.tsx's disabled:opacity-50.
+// barDisabledOpacity is the opacity of a disabled bar button.
 const barDisabledOpacity = 0.5
 
 // The strip's geometry, from the approved topbar mockup (option E3).
@@ -42,9 +42,8 @@ var (
 
 // topbar is the native window's top strip: the brand over the sidebar's
 // column, the project tabs from the terminal island's edge, and the bell,
-// Pull requests and Settings on the right. It is not the web's ProjectTabs:
-// the native window has no Home tab, and the active tab merges into the
-// island under it.
+// Pull requests and Settings on the right. The native window has no Home tab,
+// and the active tab merges into the island under it.
 type topbar struct {
 	root  *ui.Root
 	brand widget.Clickable

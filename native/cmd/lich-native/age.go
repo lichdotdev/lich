@@ -6,10 +6,9 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// formatAge is lib/session/session-age.ts: how long a session has been in its
-// status, in one floored unit (seconds, then minutes, then hours), so the
-// readout never claims time that has not passed. A backwards clock reads as
-// none.
+// formatAge reports how long a session has been in its status, in one floored
+// unit (seconds, then minutes, then hours), so the readout never claims time
+// that has not passed. A backwards clock reads as none.
 //
 // The unit is a catalog message so each language writes it as Intl's narrow
 // unit does ("3 h" in pt-BR, "3小时" in zh-CN).

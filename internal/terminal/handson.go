@@ -10,7 +10,8 @@ import (
 // between them, only beats and the gaps between consecutive ones.
 const (
 	// handsOnIdleGap is the longest silence that still counts as working time.
-	// Keep the matching tooltip in frontend/src/components/FooterBar.tsx in sync.
+	// Keep the matching tooltip in sync (handsOnDetail,
+	// native/cmd/lich-native/footer_handson.go).
 	// A gap under it is time the user spent reading, thinking or waiting on the
 	// agent, which is time on this session; a gap over it is lunch, another
 	// window or another day, and it contributes nothing at all — which is what

@@ -1,6 +1,6 @@
 // Package project opens project directories through the OS file picker. Project
-// metadata (list, active, sessions) lives in the frontend; this service only
-// turns a picked directory into a stable identity the frontend can group its
+// metadata (list, active, sessions) lives in internal/store; this service only
+// turns a picked directory into a stable identity the window can group its
 // terminal sessions under.
 package project
 
@@ -142,7 +142,7 @@ func (s *Service) Branch(path string) string {
 
 // PullRequest identifies the open GitHub pull request for a work tree's current
 // branch, as reported by the gh CLI. State is one of gh's OPEN, CLOSED, MERGED;
-// only OPEN reaches the frontend (see parsePullRequest).
+// only OPEN reaches the window (see parsePullRequest).
 type PullRequest struct {
 	Number int    `json:"number"`
 	URL    string `json:"url"`
@@ -207,8 +207,8 @@ func (s *Service) Missing(paths []string) []string {
 //
 // The batch exists because the list that asks is a list of parked sessions: it
 // wants each row's branch once, when it is drawn, not the per-path poll a live
-// card subscribes to (frontend/src/lib/git/use-git-status.ts). Three RPCs per
-// row per second is what that poll costs, and a history list is long.
+// card rides (native/cmd/lich-native/model.go, pollGit). Two RPCs per row every
+// few seconds is what that poll costs, and a history list is long.
 func (s *Service) BranchesOf(paths []string) map[string]string {
 	branches := map[string]string{}
 	for _, path := range paths {
@@ -240,7 +240,7 @@ func (s *Service) PickSaveFile(title, defaultName string) (string, error) {
 }
 
 // DiffStats is what one status read says about a work tree: its uncommitted
-// changes, and the two things they sit on. Head is the commit — the frontend
+// changes, and the two things they sit on. Head is the commit — the window
 // watches it to notice a commit the way it watches Files/Added/Deleted to
 // notice an edit — and Branch is the branch, carried here because git answers
 // both in the same call the counts come out of.
@@ -263,8 +263,9 @@ func (s *Service) Diff(path string) DiffStats {
 	status := readWorkTree(path)
 	stats := DiffStats{Files: status.files, Head: status.head, Branch: status.branch}
 	// A tree the status read found nothing dirty in has nothing to total, so the
-	// second child would spend a process to be told so — on a call the frontend
-	// runs per second per checkout on screen, most of which nobody is editing.
+	// second child would spend a process to be told so — on a call the window
+	// polls every few seconds per checkout on screen, most of which nobody is
+	// editing.
 	// The implication runs one way only: untracked files are dirty and produce
 	// no numstat lines, so this over-asks rather than under-counts.
 	if status.files > 0 {

@@ -9,11 +9,10 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// The command palette's data join, frontend/src/lib/session/command-palette.ts:
-// open projects and their sessions, the closed projects, the parked sessions
-// and what was said inside a session become one list of groups the palette
-// draws and routes from. Pure, so the flatten, the filter and the ranking are
-// tested without a frame.
+// The command palette's data join: open projects and their sessions, the closed
+// projects, the parked sessions and what was said inside a session become one
+// list of groups the palette draws and routes from. Pure, so the flatten, the
+// filter and the ranking are tested without a frame.
 
 // paletteMessageMinQuery mirrors the backend's minSearchQuery: under three
 // characters the transcript search is refused, so it is not asked for.
@@ -449,10 +448,10 @@ const (
 	agoDaysPerWeek    = 7
 )
 
-// agoLabel is lib/ago.ts agoLabel: how long ago at (Unix seconds) was, in the
-// coarsest unit that still says something, floored so it never claims time
-// that has not passed. 0 is a row that predates lich recording it, which is no
-// date rather than 1970, and under a minute is "just now".
+// agoLabel says how long ago at (Unix seconds) was, in the coarsest unit that
+// still says something, floored so it never claims time that has not passed. 0
+// is a row that predates lich recording it, which is no date rather than 1970,
+// and under a minute is "just now".
 func agoLabel(at int64, now time.Time) string {
 	if at <= 0 {
 		return ""

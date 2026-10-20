@@ -18,10 +18,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The two languages, never derived from each other. The interface's is the
-// web's localStorage key, kept as a global setting here; the web window
-// writes its own choice to the same setting, so a language picked there is
-// the one this window opens in. The prompt language is the backend's own
+// The two languages, never derived from each other. The interface's is a
+// global setting. The prompt language is the backend's own
 // setting (internal/store promptLanguageKey).
 const (
 	uiLanguageKey     = "lich.appearance.language"

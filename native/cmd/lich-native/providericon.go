@@ -2,9 +2,9 @@ package main
 
 import "github.com/lichdotdev/lich/native/ui/icons"
 
-// providerIcons is ProviderIcon.tsx: the Lobe mark of each provider, oh-my-pi
-// wearing Pi's, and a Lucide glyph for the kinds Lobe has no mark for. Its
-// keys are every session kind (sessions.ts isSessionKind).
+// providerIcons holds the Lobe mark of each provider, oh-my-pi wearing Pi's,
+// and a Lucide glyph for the kinds Lobe has no mark for. Its keys are every
+// session kind.
 var providerIcons = map[string]*icons.Icon{
 	"claude":      icons.Lobe("claude"),
 	"codex":       icons.Lobe("codex"),
@@ -18,7 +18,7 @@ var providerIcons = map[string]*icons.Icon{
 }
 
 // providerIcon falls back to the terminal glyph for a kind from a newer
-// backend, as ProviderIcon does.
+// backend.
 func providerIcon(kind string) *icons.Icon {
 	if ic, ok := providerIcons[kind]; ok {
 		return ic

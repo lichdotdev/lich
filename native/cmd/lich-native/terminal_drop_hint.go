@@ -15,19 +15,18 @@ import (
 )
 
 const (
-	// dropHintFill is TerminalDropHint's bg-accent/45.
+	// dropHintFill is the accent's opacity over the terminal.
 	dropHintFill = 0.45
-	// dropHintDetailMin is the pane height below which the detail line goes,
-	// the web's @container(max-height:120px).
+	// dropHintDetailMin is the pane height below which the detail line goes.
 	dropHintDetailMin = unit.Dp(120)
 )
 
-// dropHint covers the terminal while a file drag is over it, as
-// TerminalDropHint does: which session the file lands in, and under it what
+// dropHint covers the terminal while a file drag is over it:
+// which session the file lands in, and under it what
 // the drop does. th draws on the terminal's background.
 func dropHint(gtx C, th *ui.Theme, label string, confined bool) D {
-	// The fill stays translucent so the terminal reads through it, as the
-	// web's does; th.Over is only the color the text measures its contrast
+	// The fill stays translucent so the terminal reads through it;
+	// th.Over is only the color the text measures its contrast
 	// against.
 	tint := ui.Alpha(th.Accent, dropHintFill)
 	paint.Fill(gtx.Ops, tint)

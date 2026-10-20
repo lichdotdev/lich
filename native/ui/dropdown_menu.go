@@ -7,7 +7,7 @@ import (
 	"gioui.org/layout"
 )
 
-// dropdownGeometry transcribes dropdown-menu.tsx: min-w-32 content below the
+// dropdownGeometry transcribes shadcn's dropdown menu: min-w-32 content below the
 // trigger (sideOffset 4), items px-2.5 py-2, submenus min-w-[6rem] to the
 // right (alignOffset -3).
 var dropdownGeometry = menuGeometry{

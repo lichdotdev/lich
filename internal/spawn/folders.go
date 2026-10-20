@@ -13,7 +13,7 @@ import (
 // FiledEventName carries sessions whose folder changed outside the window, so
 // their cards move into or out of the folder's block without a reload. One
 // event for a card filed and for a folder renamed, because the window's answer
-// to both is the same: set these cards' folder (sessions.ts, setSessionsFolder).
+// to both is the same: set these cards' folder.
 const FiledEventName = "sessions-filed"
 
 // FiledEvent is FiledEventName's payload. Folder is "" when the cards were taken
@@ -25,7 +25,7 @@ type FiledEvent struct {
 }
 
 // ColoredEventName carries sessions painted outside the window, so their cards
-// take the colour without a reload (sessions.ts, setSessionsColor).
+// take the colour without a reload.
 const ColoredEventName = "sessions-colored"
 
 // ColoredEvent is ColoredEventName's payload. Color is "" when the cards went
@@ -93,7 +93,7 @@ func (s *Service) Folders(opts FoldersOptions) ([]Folder, error) {
 
 // foldersOf names a project's folders with their sessions, each folder where its
 // first card sits in the stored list: the order the sidebar draws their blocks
-// in (sessions.ts, foldersOf).
+// in (native/cmd/lich-native/sidebar_groups.go, foldersOf).
 func foldersOf(p store.Project) []Folder {
 	folders := []Folder{}
 	at := map[string]int{}

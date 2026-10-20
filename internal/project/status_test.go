@@ -314,7 +314,7 @@ func TestReadWorkTreeAtTheRepositoryRootIsUntouched(t *testing.T) {
 // TestReadWorkTreeSpendsNoPrefixCallOnACleanTree pins the call budget the
 // translation is allowed: the prefix answers where the read ran, so it is worth
 // a git child only when there are untracked paths to move. A clean checkout —
-// what the frontend polls per second per checkout on screen — must still cost
+// what the window polls every few seconds per checkout on screen — must still cost
 // the one status call.
 //
 // Counted through git's own GIT_TRACE, the way the numstat budget is, so

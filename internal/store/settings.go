@@ -369,7 +369,7 @@ func (s *Service) CostReadout() bool {
 
 // promptLanguageKey is the settings key holding the language of the text lich
 // types into agent sessions (internal/prompt). Global only. It is independent
-// of the UI language, which is a page preference: people often run the
+// of the UI language, which is the window's preference: people often run the
 // interface in one language and talk to their agents in another.
 const promptLanguageKey = "prompt.language"
 

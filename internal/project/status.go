@@ -9,8 +9,8 @@ const emptyTreeHash = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 // workTreeStatus is everything one `git status --porcelain=v2 --branch` read
 // answers at once: the branch, the commit it sits on, and every dirty entry.
 // It replaces three separate git children — `symbolic-ref --short HEAD`,
-// `rev-parse --verify HEAD` and `ls-files --others` — on a read the frontend
-// runs per second per checkout on screen, where process startup, not work, is
+// `rev-parse --verify HEAD` and `ls-files --others` — on a read the window
+// polls every few seconds per checkout on screen, where process startup, not work, is
 // what a tick costs on a normal repository.
 type workTreeStatus struct {
 	branch    string   // "" for a detached HEAD, as Branch answers
@@ -38,7 +38,7 @@ func readWorkTree(path string) workTreeStatus {
 	status := parseWorkTree(out)
 	// Asked for only when there is something to translate: on a clean tree the
 	// prefix would cost a second git child to be told nothing, on the read the
-	// frontend runs per second per checkout on screen.
+	// window polls every few seconds per checkout on screen.
 	if len(status.untracked) > 0 {
 		status.untracked = relativeToPath(path, status.untracked)
 	}

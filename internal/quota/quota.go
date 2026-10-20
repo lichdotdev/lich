@@ -69,7 +69,7 @@ const (
 )
 
 // A plan's Status. Anything other than StatusOK carries no windows: the reading
-// failed, and the frontend says so rather than drawing an empty gauge.
+// failed, and the window says so rather than drawing an empty gauge.
 const (
 	StatusOK = "ok"
 	// StatusSignedOut is "there is no usable login here" — no credentials file,
@@ -122,7 +122,7 @@ const (
 //
 // Label is the window's name as the provider frames it ("Session", "Weekly"), or
 // the display name of the model a scoped window belongs to. Seconds is its
-// length, so the frontend can print the window it is looking at; 0 when the
+// length, so the window can print the metered window it is looking at; 0 when the
 // provider does not report one. ResetsAt is RFC 3339, empty when unreported.
 // Active is the provider's own verdict on which window is the binding one, when
 // it reports one at all. LockedReason is non-empty only when the provider says
@@ -139,7 +139,7 @@ type Window struct {
 }
 
 // Plan is one provider's quota reading. Provider is a providers.Registry id, so
-// the frontend resolves the icon and the login command it already knows.
+// the window resolves the icon and the login command it already knows.
 //
 // Account names the login the windows were read against — the whole point of
 // the custom-binary path being that a session can spend an account lich's own

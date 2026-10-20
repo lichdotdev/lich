@@ -27,10 +27,8 @@ import (
 const scheduleTick = 30 * time.Second
 
 // ScheduleEventName is emitted when a session's scheduled prompt changes
-// without the window having written it: delivered, so the card drops its mark
-// at the moment the prompt is typed rather than at the next reload, or parked
-// and dropped by lich itself around a usage limit (resume.go). Payload:
-// ScheduleEvent.
+// without the window having written it: delivered, or parked and dropped by
+// lich itself around a usage limit (resume.go). Payload: ScheduleEvent.
 const ScheduleEventName = "session-schedule"
 
 // ScheduleEvent is the payload of ScheduleEventName: the session whose mark
@@ -139,9 +137,8 @@ func lateNotice(lang prompt.Lang, at, now int64) string {
 }
 
 // lateBy words how far past its time a prompt is, in one unit — "45m", "3h",
-// "2d". The same three rungs the card counts down on (frontend, timeUntil): the
-// reader wants the scale, and a prompt that is two days late is not helped by
-// the minutes on the end of it.
+// "2d". The reader wants the scale, and a prompt that is two days late is not
+// helped by the minutes on the end of it.
 //
 // The rung is picked off the rounded figure, not the raw one: 59m40s is under
 // the hour but rounds to 60 minutes, and printing that in minutes puts a "60m"

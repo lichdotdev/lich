@@ -1,6 +1,6 @@
 package main
 
-// The inject half of InjectMenu.tsx over the Code tab's preview: the
+// The inject half of the Code tab's preview menu: the
 // right-click menu that writes a reference to the file, or to the lines under
 // the selection, into the session's terminal, plus the comment for the
 // session that opens the review agent's composer under the selection.
@@ -15,8 +15,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// formatLineRef is diff.ts formatLineRef over 1-based file lines: a single
-// line reads "19", not "19-19".
+// formatLineRef formats 1-based file lines: a single line reads "19", not "19-19".
 func formatLineRef(from, to int) string {
 	if from == to {
 		return strconv.Itoa(from)
@@ -36,8 +35,8 @@ const (
 	pasteEnd   = "\x1b[201~"
 )
 
-// safeToWrite is bracketed-paste.ts safeToWrite. Nothing wraps an inject, so
-// every control character goes, newline and tab too: a file committed with a
+// safeToWrite makes text safe to type into the terminal. Nothing wraps an
+// inject, so every control character goes, newline and tab too: a file committed with a
 // newline or an ESC in its name would otherwise send the prompt, or type keys,
 // on the agent's behalf. A block bracketedPaste built (a batch of comments) is
 // unwrapped and wrapped again, which runs the paste's rule over its inside
@@ -54,7 +53,7 @@ func safeToWrite(text string) string {
 	}, text)
 }
 
-// injector is use-inject.ts: what writes into session id's PTY, false with
+// injector is what writes into session id's PTY, false with
 // no session to take it. A batch of comments is a paste, unfolded where the
 // provider would fold it. The write runs off the UI goroutine.
 func (ts *terminals) injector(id string) func(string) bool {

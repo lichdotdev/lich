@@ -39,7 +39,7 @@ const (
 	// the connection so output falls back to the /events channel.
 	wsWriteTimeout = 5 * time.Second
 	// wsReadLimit bounds one input frame; keystrokes and pastes are far
-	// smaller, and the frontend chunks nothing above this.
+	// smaller.
 	wsReadLimit = 1 << 20
 	// tokenBytes is the size of the random connect token.
 	tokenBytes = 16
@@ -105,7 +105,7 @@ func decodeFrame(buf []byte) (string, []byte, error) {
 	return string(buf[1 : 1+n]), buf[1+n:], nil
 }
 
-// transport is the local WebSocket endpoint. One client (the webview) is
+// transport is the local WebSocket endpoint. One client (the window) is
 // expected; a new connection replaces the previous one.
 type transport struct {
 	mu   sync.Mutex
@@ -171,13 +171,11 @@ func newTransport(
 	if _, err := rand.Read(raw); err != nil {
 		return nil, fmt.Errorf("failed to generate transport token: %w", err)
 	}
-	// The port is random by default; LICH_LISTEN_PORT pins it. The Chromium
-	// shell needs a stable port (main.go defaults it there): the page's origin
-	// is host:port, and the frontend's localStorage (lich.* settings) only
-	// survives restarts when the origin does. Distinct from LICH_PORT, which
-	// is the per-session hook-contract variable pointing at THIS listener —
-	// reusing it would make a lich launched from inside a lich session try to
-	// bind its parent's port.
+	// The port is random by default; LICH_LISTEN_PORT pins it (main.go
+	// defaults it to singleton.DefaultPort, whose bind is the single-instance
+	// lock). Distinct from LICH_PORT, which is the per-session hook-contract
+	// variable pointing at THIS listener — reusing it would make a lich
+	// launched from inside a lich session try to bind its parent's port.
 	addr := "127.0.0.1:0"
 	if port := os.Getenv("LICH_LISTEN_PORT"); port != "" {
 		addr = "127.0.0.1:" + port
@@ -213,7 +211,7 @@ func newTransport(
 	t.mux = mux
 	// Server and listener live for the process lifetime, like the PTY sessions
 	// they serve; add Shutdown if the app ever needs teardown. Serve returning
-	// is therefore always abnormal — the frontend just lost RPC and terminals.
+	// is therefore always abnormal — the window just lost RPC and terminals.
 	go func() {
 		if err := http.Serve(listener, mux); err != nil {
 			slog.Error("transport listener stopped", "err", err)
@@ -225,7 +223,7 @@ func newTransport(
 // bindTimeout / restartBindTimeout / bindRetryInterval bound the wait any
 // launch spends retrying the pinned port while a just-exited lich still holds
 // it: quitting ends the process, but on Windows its child processes
-// (Chromium, the PTYs) can take a moment longer to release the port than the
+// (the PTYs) can take a moment longer to release the port than the
 // parent takes to exit, so even a plain relaunch can lose that race. A
 // restarting lich (restart.WaitEnv set) gets the longer bound: install.sh
 // hands off immediately after spawning it, before the predecessor it is
@@ -491,7 +489,7 @@ type hookRequest struct {
 const hookTextLimit = 120
 
 // hook receives a session status POST from a provider's hook running inside a
-// spawned PTY and forwards it to the frontend via the status callback.
+// spawned PTY and forwards it to the window via the status callback.
 func (t *transport) hook(w http.ResponseWriter, r *http.Request) {
 	servePost(t, w, r, parseHookRequest, func(req hookRequest) error {
 		if t.status != nil {
@@ -660,7 +658,7 @@ type touchedRequest struct {
 // sessionTouched receives a POST from a provider's hook when a session likely
 // changed files on disk (a file-mutating tool ran) and forwards the session id
 // via the touched callback, which nudges an immediate git-status refresh. It is
-// a best-effort latency optimization over the frontend's steady poll, so a
+// a best-effort latency optimization over the window's steady poll, so a
 // failure is harmless — the poll still catches the change.
 func (t *transport) sessionTouched(w http.ResponseWriter, r *http.Request) {
 	servePost(t, w, r, parseSessionTouched, func(req touchedRequest) error {
@@ -704,7 +702,7 @@ func (t *transport) handle(w http.ResponseWriter, r *http.Request) {
 	if previous != nil {
 		// Not a graceful close: that waits for the replaced client's close
 		// reply, on this goroutine, before the new client's read loop starts.
-		// Nothing reads the status anyway — the page reconnects on any close.
+		// Nothing reads the status anyway.
 		_ = previous.CloseNow()
 	}
 	if previousOut != nil {
@@ -795,16 +793,15 @@ func (t *transport) flush() {
 	}
 }
 
-// TransportInfo tells the frontend where the terminal I/O WebSocket lives. A
-// zero Port means the transport failed to start and the event bridge is the
-// only path.
+// TransportInfo is where the terminal I/O WebSocket lives, handed to the
+// window at launch (main.go). A zero Port means the transport failed to start.
 type TransportInfo struct {
 	Port  int    `json:"port"`
 	Token string `json:"token"`
 }
 
 // TransportError reports why the transport is absent, nil when it started. It
-// stays out of TransportInfo on purpose: the page has no use for an OS error,
+// stays out of TransportInfo on purpose: the window has no use for an OS error,
 // and the launch-failure log is the only caller.
 func (s *Service) TransportError() error {
 	return s.wsErr

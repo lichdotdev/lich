@@ -39,8 +39,9 @@ func TestHotkeyRowsFollowTheGroupsInOrder(t *testing.T) {
 	}
 }
 
-// What the web reads back is what native wrote, and the other way round.
-func TestHotkeysShareTheWebsStoredShape(t *testing.T) {
+// Bindings are stored with every action, an unassigned one as an empty key,
+// and read back.
+func TestHotkeysStoreEveryAction(t *testing.T) {
 	f, client := newSidebarBackend(t)
 	s := newSettingsScreen(context.Background(), client, nil, func() {})
 	if err := s.loadHotkeys(); err != nil || !equalBindings(s.hotkeys.current(), defaultHotkeys()) {
@@ -56,7 +57,7 @@ func TestHotkeysShareTheWebsStoredShape(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(raw) != len(hotkeyActions) {
-		t.Errorf("stored %d actions, want all %d as the web writes them", len(raw), len(hotkeyActions))
+		t.Errorf("stored %d actions, want all %d", len(raw), len(hotkeyActions))
 	}
 	if got := raw["delegate"]; got["key"] != "" || got["mod"] != false {
 		t.Errorf("delegate = %v, want the unassigned shape", got)

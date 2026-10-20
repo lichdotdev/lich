@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// exitDuration is use-closing-sessions.ts EXIT_MS: how long a closed card
-// stays drawn, animating out. The card's exit animation is timed from it.
+// exitDuration is how long a closed card stays drawn, animating out. The card's
+// exit animation is timed from it.
 const exitDuration = 180 * time.Millisecond
 
 // closingCard is a session that left the list and the slot it left behind.
@@ -65,9 +65,8 @@ func holdDeparted(held []closingCard, previous, live []sessionView) ([]closingCa
 	return append(kept, gone...), true
 }
 
-// closingCards is useClosingSessions for one block, with the clock passed in.
-// Every held card is dropped exitDuration after the held set last changed,
-// which is the web's timer restarting on each change.
+// closingCards holds the closed cards of one block, with the clock passed in.
+// Every held card is dropped exitDuration after the held set last changed.
 type closingCards struct {
 	previous []sessionView
 	held     []closingCard

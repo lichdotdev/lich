@@ -1,7 +1,5 @@
-// gio-lich is a vertical slice of lich as a native Gio app: the session
-// sidebar, the active session's terminal and its checkout's diff, all driven
-// by a real (isolated) lich backend. It exists to judge whether a native
-// lich feels native, not to replace the web window.
+// lich-native is lich's window, a Gio app driven by the lich backend over its
+// loopback contract (docs/native-window.md).
 package main
 
 import (
@@ -84,9 +82,9 @@ func main() {
 
 // windowClass is the Wayland app_id and X11 WM_CLASS. Gio's default, the
 // binary's name, matches no .desktop entry, so the dock shows the window as an
-// unknown app beside lich's own icon. It mirrors the web window's (main.go's
-// windowTarget): build/linux/lich.desktop claims "lich", and the dev window
-// keeps its own so compositor rules for the daily driver never capture it.
+// unknown app beside lich's own icon. build/linux/lich.desktop claims "lich",
+// and the dev window keeps its own so compositor rules for the daily driver
+// never capture it.
 func windowClass(getenv func(string) string) string {
 	if getenv("LICH_DEV") != "" {
 		return "lichdev"
@@ -619,7 +617,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 	return edge, act, err
 }
 
-// island is the stage's rounded-lg box: Home, the empty notice, the diff or
+// island is the stage's rounded box: Home, the empty notice, the diff or
 // the terminal, in the color the active tab merges with. Its top-left corner
 // is square while that tab sits on it.
 func (u *window) island(gtx C, v stageView) error {
@@ -704,9 +702,9 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	return f
 }
 
-// stageRow is App.tsx's row above the footer: the island and, gap-1.5 to its
-// right, the dock, which covers the whole row in full screen. Home has no
-// dock, as the web's project-less screens have no checkout to show.
+// stageRow is the row above the footer: the island and, to its right, the dock,
+// which covers the whole row in full screen. Home has no dock: a project-less
+// screen has no checkout to show.
 func (u *window) stageRow(gtx C, v stageView) error {
 	d := u.dock
 	open := d.tab != dockClosed && !v.home
@@ -749,7 +747,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	return err
 }
 
-// gutter is the canvas around the sidebar: App.tsx's pl-1.5 and gap-1.5.
+// gutter is the canvas around the sidebar.
 const gutter = unit.Dp(6)
 
 // stage lays the main column out from x, the sidebar's edge, at the width the
@@ -867,8 +865,7 @@ func (u *window) applyOpenIn(act sidebarAction) {
 				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openCheckoutFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 				return
 			}
-			// A terminal editor runs in a shell at the directory, as the
-			// web card does.
+			// A terminal editor runs in a shell at the directory.
 			if command != "" {
 				u.newSession(launchRequest{kind: "shell", dir: dir}, command+"\n")
 			}
@@ -883,9 +880,9 @@ func (u *window) applyOpenIn(act sidebarAction) {
 	}
 }
 
-// closeSession parks the session in the backend and stops its process, the
-// two halves of the web card's ×, and offers the park's undo and, for the
-// last session of a worktree, the checkout's removal.
+// closeSession parks the session in the backend and stops its process, and
+// offers the park's undo and, for the last session of a worktree, the
+// checkout's removal.
 func (u *window) closeSession(id string) {
 	closed, index, _ := u.model.slotOf(id)
 	project, worktree := u.model.worktreeLeftBy(id)

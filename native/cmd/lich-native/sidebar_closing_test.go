@@ -88,8 +88,7 @@ func TestClosingCardsPlaysTheExitThenDrops(t *testing.T) {
 	}
 }
 
-// A second close restarts the clock for every held card, as the web's timer
-// restarts when the held set changes.
+// A second close restarts the clock for every held card.
 func TestClosingCardsRestartsTheClockOnAnotherClose(t *testing.T) {
 	var c closingCards
 	t0 := time.Unix(1000, 0)

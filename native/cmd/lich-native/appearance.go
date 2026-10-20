@@ -8,9 +8,8 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// themeSettingKey is providers/settings.tsx THEME_SETTING_KEY, a global
-// setting: "system" (the web's default), "light", "dark", or the id of a
-// custom theme.
+// themeSettingKey is a global setting: "system" (the default), "light", "dark",
+// or the id of a custom theme.
 const themeSettingKey = "appearance.theme"
 
 const (
@@ -71,7 +70,7 @@ func (a *appearance) update(change func()) {
 	a.invalidate()
 }
 
-// choose selects id and stores it where the web reads it.
+// choose selects id and stores it.
 func (a *appearance) choose(id string) {
 	a.update(func() { a.selected = id })
 	go func() {
@@ -120,7 +119,7 @@ func (a *appearance) reload() error {
 
 // load reads the stored selection, the themes and the OS's scheme before the
 // first frame, and follows the OS's scheme from then on. A setting never
-// written reads "", which is the web's default, System.
+// written reads "", which is the default, System.
 func (a *appearance) load() error {
 	stored, err := a.client.ThemeSelection(a.ctx)
 	if err != nil {

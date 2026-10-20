@@ -8,8 +8,7 @@ const (
 	portalPreferDark   = 1
 )
 
-// portalDark maps a color-scheme value to dark. "No preference" is light, as
-// Chromium reads it for the web window's prefers-color-scheme.
+// portalDark maps a color-scheme value to dark. "No preference" is light.
 func portalDark(scheme uint32) bool { return scheme == portalPreferDark }
 
 // appsUseLightThemeDark maps Windows' AppsUseLightTheme DWORD to dark: 0 is

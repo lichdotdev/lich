@@ -11,9 +11,9 @@ import (
 // errNoProject is an action on the sidebar with no project on screen.
 var errNoProject = errors.New("no project open")
 
-// The sidebar's writes follow projects.tsx: change the model at once, then
-// tell the store. A failed write is returned, not rolled back, as on the web;
-// the sessions-filed event a folder write emits reloads the truth anyway.
+// The sidebar's writes change the model at once, then tell the store. A failed
+// write is returned, not rolled back; the sessions-filed event a folder write
+// emits reloads the truth anyway.
 
 // reorderSessions applies a full id order to the shown project and stores
 // it. An order that no longer names the project's exact session set (a close
@@ -63,7 +63,7 @@ func (m *model) commitBlockOrder(ctx context.Context, blockKey string, ids []str
 }
 
 // fileSessions files sessions under folder, "" to take them out. Every id is
-// written, as the web does: one the project does not hold fails nothing.
+// written: one the project does not hold fails nothing.
 func (m *model) fileSessions(ctx context.Context, ids []string, folder string) error {
 	if !m.refileShown(func(s []lichclient.Session) ([]lichclient.Session, bool) { return fileSessions(s, ids, folder) }) {
 		return nil
@@ -138,7 +138,7 @@ func (m *model) storedSessions() ([]lichclient.Session, bool) {
 func (m *model) launchProviders() []launchProvider { return m.providers.launchProviders() }
 
 // newSessionKind is what an implicit new session spawns in the shown
-// project (providers-store.ts projectNewSessionKind).
+// project.
 func (m *model) newSessionKind() string {
 	m.mu.Lock()
 	projectID := ""

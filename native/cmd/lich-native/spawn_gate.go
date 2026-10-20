@@ -11,8 +11,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// spawnVerdict is what a session's first view does (spawn-gate.ts
-// SpawnDecision).
+// spawnVerdict is what a session's first view does.
 type spawnVerdict uint8
 
 const (
@@ -23,15 +22,14 @@ const (
 	spawnPark                       // the checkout is gone: nothing to spawn into
 )
 
-// Restore choices, the values of restoreKey (providers-store.ts RestoreChoice).
+// Restore choices, the values of restoreKey.
 const (
 	restoreAsk    = "ask"
 	restoreResume = "resume"
 	restoreFresh  = "fresh"
 )
 
-// resumableKinds are the providers whose resume lich wires
-// (sessions.ts RESUMABLE_KINDS).
+// resumableKinds are the providers whose resume lich wires.
 var resumableKinds = []string{"claude", "codex", "antigravity", "omp", "opencode", "crush", "cursor", "kiro"}
 
 // spawnProbe is the backend reads the gate asks, *lichclient.Client in the
@@ -45,8 +43,7 @@ type spawnProbe interface {
 }
 
 // restoreKey is the global setting holding what a restored card of provider
-// kind does when its conversation is still there; the web's Settings writes
-// the same key.
+// kind does when its conversation is still there.
 func restoreKey(kind string) string { return "provider." + kind + ".on-restore" }
 
 // restoreChoice reads a stored value: anything but the two answers is ask.
@@ -63,11 +60,11 @@ func resumable(s lichclient.Session) bool {
 	return s.ProviderSessionID != "" && slices.Contains(resumableKinds, s.Kind)
 }
 
-// spawnDecision is spawn-gate.ts spawnDecision. The checkout is settled
-// first: a session with no directory has nothing to resume either. The checks
-// fail safe in opposite directions: a workdir check that errors spawns (the
-// PTY reports its own failure), a resume or choice read that errors asks
-// (losing a live conversation to an answer nobody gave costs more).
+// spawnDecision settles the checkout first: a session with no directory has
+// nothing to resume either. The checks fail safe in opposite directions: a
+// workdir check that errors spawns (the PTY reports its own failure), a resume
+// or choice read that errors asks (losing a live conversation to an answer
+// nobody gave costs more).
 func spawnDecision(ctx context.Context, probe spawnProbe, cwd string, s lichclient.Session) spawnVerdict {
 	missing, err := probe.WorkdirMissing(ctx, cwd)
 	logGateErr("workdir check", err)

@@ -9,8 +9,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The section ids, Settings.tsx's plus General and Editor, which only the
-// native window has: General holds what the web keeps under Notifications.
 const (
 	sectionGeneral        = "general"
 	sectionAppearance     = "appearance"
@@ -34,11 +32,10 @@ const (
 	scopeProjectOnly
 )
 
-// settingEntry is one row of a section: settings-index.ts's SettingEntry plus
-// the backend key and scope the row's states are read from. groupKey names the
-// heading the row sits under, "" in a section without groups. A row names
-// its catalog keys (titleKey, alsoKey, groupKey), as settings-index.ts does,
-// and is read through titleText, alsoText and groupText.
+// settingEntry is one row of a section, with the backend key and scope the
+// row's states are read from. groupKey names the heading the row sits under, ""
+// in a section without groups. A row names its catalog keys (titleKey, alsoKey,
+// groupKey) and is read through titleText, alsoText and groupText.
 type settingEntry struct {
 	key   string
 	scope settingScope
@@ -47,7 +44,7 @@ type settingEntry struct {
 
 	// perProvider is a block of a provider's own screen: it is searched once
 	// per enabled provider, only the ones in onlyFor when that is set, and a
-	// result opens that provider's screen (settings-index.ts perProvider).
+	// result opens that provider's screen.
 	perProvider bool
 	onlyFor     []string
 }
@@ -139,8 +136,8 @@ func sectionByID(id string) settingsSection {
 	return settingsSections[0]
 }
 
-// parseSettingsSection is settings-prefs.ts readSettingsSection: an id this
-// build has no section for opens the default.
+// parseSettingsSection reads a section id: one this build has no section for
+// opens the default.
 func parseSettingsSection(raw string) string {
 	if slices.ContainsFunc(settingsSections, func(s settingsSection) bool { return s.id == raw }) {
 		return raw
@@ -168,8 +165,8 @@ type settingHit struct {
 	providerID string
 }
 
-// path is settings-index.ts hitPath, the line a result shows above its
-// title: the section, then the group; "" when it would repeat the title.
+// path is the line a result shows above its title: the section, then the
+// group; "" when it would repeat the title.
 func (h settingHit) path() string {
 	label := sectionByID(h.section).label()
 	switch {
@@ -181,12 +178,11 @@ func (h settingHit) path() string {
 	return label
 }
 
-// searchSettings is settings-index.ts searchSettings over the ported rows and
-// the sections: a title that starts with the query beats one that contains
-// it, and both beat a match on the also words, a row's group among them;
-// ties keep the nav's order. providers are the enabled ones: a block of a
-// provider's screen is a result once per provider, named after it, and none
-// at all without any.
+// searchSettings searches the rows and the sections: a title that starts with
+// the query beats one that contains it, and both beat a match on the also
+// words, a row's group among them; ties keep the nav's order. providers are
+// the enabled ones: a block of a provider's screen is a result once per
+// provider, named after it, and none at all without any.
 func searchSettings(query string, providers ...launchProvider) []settingHit {
 	needle := strings.ToLower(strings.TrimSpace(query))
 	if needle == "" {

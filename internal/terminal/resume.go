@@ -3,7 +3,7 @@ package terminal
 import "github.com/lichdotdev/lich/internal/providers"
 
 // ResumeAvailable reports whether the conversation providerSessionID names can
-// still be reopened, so the frontend only offers a resume it can honour.
+// still be reopened, so the window only offers a resume it can honour.
 //
 // The session row keeps its provider session id for good, but a provider prunes
 // its own transcripts, so the id outlives the conversation it points at. Resuming

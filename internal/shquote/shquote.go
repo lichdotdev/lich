@@ -5,13 +5,6 @@
 // Windows, where the session's shell is PowerShell. All of them interpolate a
 // path or a binary name the user or an agent chose. One copy of each rule, so a
 // metacharacter that survives one call site cannot survive the other.
-//
-// The window composes a fourth — the `lich send` line a session's card hands
-// out — and carries both rules the same way in
-// frontend/src/lib/session/send-command.ts, the page-side half of this file,
-// tested against the same cases. It picks between them by the platform the
-// window itself runs on: that line is pasted into a terminal on this machine,
-// so the shell that decides is the user's own.
 package shquote
 
 import "strings"

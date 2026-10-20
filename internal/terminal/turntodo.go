@@ -10,8 +10,7 @@ import (
 
 // todoEventName carries how far a session got through the task list its agent
 // wrote for itself ({id, done, total}), emitted whenever that pair changes.
-// Global like the other session events: the card that reads it is only mounted
-// while its project is active, so a per-session name could not reach it.
+// Global like the other session events.
 //
 // The pair is what the agent last wrote, not what is true: an agent that
 // abandons a list without closing its items leaves the card reporting the
@@ -224,7 +223,7 @@ func (s *Service) sessionTodo(id string, src usageSource) (todoEvent, bool) {
 }
 
 // emitTodo reads the task list of the conversation running in session id and
-// pushes it to the frontend when it has moved. Silent on every miss (a provider
+// pushes it to the window when it has moved. Silent on every miss (a provider
 // that writes no list, an unreadable transcript, a list that has not changed),
 // so the card keeps the count it has.
 //

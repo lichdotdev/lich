@@ -16,14 +16,13 @@ import (
 var (
 	icGauge     = icons.Lucide("gauge")
 	icAhead     = icons.Lucide("trending-up")
-	planMinWide = ui.Space(52)  // PlanDetails' min-w-52
-	accountSize = ui.TextXS - 1 // text-[0.6875rem]
-	// accountLeading is what the account line inherits on the web: text-xs's
-	// unitless 4/3 line height, at 11px.
+	planMinWide = ui.Space(52)
+	accountSize = ui.TextXS - 1
+	// accountLeading is a 4/3 line height, at 11px.
 	accountLeading unit.Sp = 14.67
 )
 
-// planDetails is PlanQuota's tooltip body: a stacked gauge per window, its
+// planDetails is the plan quota's tooltip body: a stacked gauge per window, its
 // lock reason under it, and the account the reading was taken against.
 //
 // ponytail: the pace mark and the Locked reading carry no tooltip of their
@@ -43,8 +42,8 @@ func planDetails(th *ui.Theme, plan lichclient.QuotaPlan, now time.Time) layout.
 	}
 }
 
-// quotaGaugeRow is QuotaGauge stacked, in the window's tone: the label (and
-// pace mark) over the bar, the reading and time left on the right.
+// quotaGaugeRow is one gauge stacked, in the window's tone: the label (and pace
+// mark) over the bar, the reading and time left on the right.
 func quotaGaugeRow(th *ui.Theme, g quotaGauge) layout.Widget {
 	tone := toneColor(th, g.Tone)
 	reading := g.Reading
@@ -80,8 +79,8 @@ func gaugeLabel(gtx C, th *ui.Theme, g quotaGauge) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
-// gaugeBar is the h-1.5 rounded-full bg-muted track, filled to percent in
-// the window's tone.
+// gaugeBar is a rounded track in the muted color, filled to percent in the
+// window's tone.
 func gaugeBar(gtx C, th *ui.Theme, percent int, tone color.NRGBA) D {
 	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(ui.Space(1.5)))
 	radius := ui.Space(0.75)
@@ -96,7 +95,7 @@ func gaugeBar(gtx C, th *ui.Theme, percent int, tone color.NRGBA) D {
 	return D{Size: size}
 }
 
-// accountRow is the border-t pt-2 font-mono line naming the account.
+// accountRow is the monospace line naming the account, under a separator.
 func accountRow(th *ui.Theme, account string) layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

@@ -22,11 +22,10 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// pointer handles a pointer event on t's grid: a program that tracks the
-// mouse gets it reported, otherwise a drag or a double or triple click
-// selects. Shift selects even under tracking, as xterm.js lets it in the web
-// window. send is what goes to the program; copied is the text a selection
-// ended with, for the clipboard.
+// pointer handles a pointer event on t's grid: a program that tracks the mouse
+// gets it reported, otherwise a drag or a double or triple click selects. Shift
+// selects even under tracking. send is what goes to the program; copied is the
+// text a selection ended with, for the clipboard.
 func (t *termView) pointer(e pointer.Event) (send []byte, copied string) {
 	if e.Kind == pointer.Scroll {
 		return t.wheel(e), ""
@@ -59,8 +58,8 @@ func (t *termView) pointer(e pointer.Event) (send []byte, copied string) {
 	return nil, ""
 }
 
-// linkClick is the link a Ctrl+click (Cmd+click on macOS) opens, as
-// linkClickIsOurs rules in the web window, whether the program tracks the
+// linkClick is the link a Ctrl+click (Cmd+click on macOS) opens,
+// whether the program tracks the
 // mouse or not. took is e kept from the program and the selection: the press
 // that found a link and its release.
 func (t *termView) linkClick(e pointer.Event) (url string, took bool) {
@@ -127,13 +126,11 @@ func (t *termView) wheel(e pointer.Event) []byte {
 }
 
 const (
-	terminalCopyToastID = "terminal-copy"
-	// copy-toast.ts COPY_TOAST_DURATION_MS.
+	terminalCopyToastID       = "terminal-copy"
 	terminalCopyToastDuration = 1500 * time.Millisecond
 )
 
-// copySelection puts a selection on the clipboard and says so, as the web
-// window's copy-on-select does.
+// copySelection puts a selection on the clipboard and says so.
 func (ts *terminals) copySelection(gtx layout.Context, text string) {
 	gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(text))})
 	n := utf8.RuneCountInString(text)
@@ -169,7 +166,7 @@ func (t *termView) hoveredLink() (gioterm.Link, bool) {
 }
 
 // drawHoveredLink underlines the hovered link in fg and gives the grid a
-// hand cursor, as xterm.js marks a link under the pointer in the web window.
+// hand cursor.
 func (t *termView) drawHoveredLink(gtx layout.Context, fg color.NRGBA) {
 	l, ok := t.hoveredLink()
 	if !ok {

@@ -1,6 +1,6 @@
 // Package patchnotes serves the changelog section for the running build so the
 // app can show a "what's new" popup after an update. CHANGELOG.md is embedded
-// at the module root (see main.go) and parsed here — the frontend stays a dumb
+// at the module root (see main.go) and parsed here — the window stays a dumb
 // renderer.
 //
 // A section is the groups ("### Added / Changed / Fixed") plus, optionally,
@@ -18,7 +18,7 @@
 // release page, so a release announces itself in one place. The kind is the
 // volume: "important" is the release's headline and opens the popup as its
 // title, "warning" is something the reader must do or avoid, "note" a detail
-// worth a line. The frontend decides how each kind looks.
+// worth a line. The window decides how each kind looks.
 //
 // A translation of the latest release lives in changelog/<locale>.md, written
 // by the lich-changelog-i18n skill when a release is cut: the same section,
@@ -35,7 +35,7 @@ import (
 // Group is one "### Added / Changed / Fixed" block of a release's notes.
 type Group struct {
 	Label string `json:"label"`
-	// Items keep their markdown bold/code markers; the frontend renders them.
+	// Items keep their markdown bold/code markers; the window renders them.
 	Items []string `json:"items"`
 }
 
@@ -43,11 +43,11 @@ type Group struct {
 // release's heading and its first group. Kind is the alert type, lowercased.
 type Highlight struct {
 	Kind string `json:"kind"`
-	// Text keeps its markdown bold/code markers; the frontend renders them.
+	// Text keeps its markdown bold/code markers; the window renders them.
 	Text string `json:"text"`
 }
 
-// Notes is a release's changelog section, ready for the frontend to render.
+// Notes is a release's changelog section, ready for the window to render.
 type Notes struct {
 	Version    string      `json:"version"`
 	Highlights []Highlight `json:"highlights"`
@@ -71,7 +71,7 @@ func New(version, changelog string, translations fs.FS) *Service {
 // interface language's BCP 47 tag. A locale with no translation of this
 // version (English, a dev build, a release cut without the skill) gets the
 // English section. Groups is empty when no section matches (a dev build, or a
-// version not yet in the changelog), and the frontend then shows nothing.
+// version not yet in the changelog), and the window then shows nothing.
 func (s *Service) Current(locale string) (Notes, error) {
 	changelog, err := s.changelogIn(locale)
 	if err != nil {

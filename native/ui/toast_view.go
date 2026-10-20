@@ -15,8 +15,8 @@ import (
 	"gioui.org/widget"
 )
 
-// sonner 2.0.7's geometry (dist/index.mjs, dist/styles.css) and
-// sonner.tsx's offset.
+// sonner 2.0.7's geometry (dist/index.mjs, dist/styles.css) and the toast
+// offset.
 const (
 	toastWidth          unit.Dp = 356 // TOAST_WIDTH
 	toastGap            unit.Dp = 14  // GAP
@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	toastOffsetTop  = Space(12) // sonner.tsx offset top 3rem, below the topbar
+	toastOffsetTop  = Space(12) // top 3rem, below the topbar
 	toastOffsetSide = Space(4)  // right 1rem, and left by the same
 	// toastOffsetBottom mirrors the top: clear of the footer bar as the top
 	// one is of the topbar.
@@ -143,7 +143,7 @@ type ToasterStyle struct {
 	theme  *Theme
 }
 
-// Toaster is sonner.tsx's Toaster over state.
+// Toaster is sonner's Toaster over state.
 func (th *Theme) Toaster(state *Toaster, light bool) ToasterStyle {
 	return ToasterStyle{State: state, Light: light, theme: th}
 }
@@ -202,8 +202,7 @@ func (t *Toaster) readHover(gtx C) {
 		case pointer.Enter, pointer.Move:
 			t.hovered = true
 		case pointer.Leave:
-			// A swipe dragged out of the stack keeps it open, as sonner's
-			// onMouseLeave does while interacting.
+			// A swipe dragged out of the stack keeps it open.
 			t.hovered = t.pressed
 		case pointer.Press:
 			t.pressed = true

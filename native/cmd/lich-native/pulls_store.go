@@ -9,8 +9,8 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// pendingRecheck is use-pull-request-detail.ts's poll: a pull request with a
-// check still running is read again this often while it is on screen.
+// pendingRecheck is how often a pull request with a check still running is
+// read again while it is on screen.
 const pendingRecheck = 10 * time.Second
 
 // pullsRead is one backend read: its last answer, and whether a newer one is

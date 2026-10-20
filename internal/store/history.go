@@ -15,7 +15,7 @@ import (
 // is the snapshot this row was closed on, which is what the search matches, and
 // what the window draws is read live off the checkout, because a worktree's
 // directory stops agreeing with its branch the moment an agent branches inside
-// it (frontend/src/lib/git/checkout-label.ts). A row whose checkout is gone has
+// it (native/cmd/lich-native/model.go, checkoutLabel). A row whose checkout is gone has
 // nothing live to show — which is the same row that cannot be resumed anyway.
 type ClosedSession struct {
 	ID          string `json:"id"`

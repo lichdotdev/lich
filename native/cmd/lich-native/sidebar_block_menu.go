@@ -68,7 +68,7 @@ type blockMenuHooks struct {
 	newFolder func(ids []string)
 }
 
-// blockOptions is the … of a block's header (SessionGroupHeader): a folder
+// blockOptions is the … of a block's header: a folder
 // renames, ungroups and recolors itself; a checkout's block files all its
 // cards at once. The recolor and the filing are withheld under a filter, where
 // the cards drawn are only the ones that matched. nil hides the button.
@@ -114,7 +114,7 @@ func blockIDs(b blockView) []string {
 	return ids
 }
 
-// takesCard is file-drag-store.ts accepts: a folder's header takes any card
+// takesCard reports whether target accepts card: a folder's header takes any card
 // not already in it, a checkout's takes one of its own cards back out of a
 // folder, and the pinned block takes none.
 func takesCard(target blockView, card sessionView) bool {

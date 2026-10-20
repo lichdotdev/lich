@@ -17,8 +17,8 @@ import (
 	"gioui.org/unit"
 )
 
-// sortActivation is DRAG_THRESHOLD_PX of lib/use-sortable-list.ts: how far a
-// press travels before it turns into a drag, so a plain click stays a click.
+// sortActivation is how far a press travels before it turns into a drag, so a
+// plain click stays a click.
 const sortActivation unit.Dp = 5
 
 // Sortable is dnd-kit's DndContext with its pointer and keyboard sensors:

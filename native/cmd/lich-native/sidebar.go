@@ -11,7 +11,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// remDp is one rem in dp: the web's 16px root font.
+// remDp is one rem in dp.
 const remDp = 16
 
 type sidebar struct {
@@ -208,8 +208,7 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	}
 }
 
-// layout is App.tsx's sidebar mount: the open sidebar, or its rail, or the
-// morph between them.
+// layout draws the open sidebar, or its rail, or the morph between them.
 func (s *sidebar) layout(gtx C, th *ui.Theme, m *model, active string) (D, sidebarAction) {
 	if s.morph.active() {
 		return s.morphing(gtx, th, m, active)
@@ -224,15 +223,14 @@ func (s *sidebar) shape(gtx C, th *ui.Theme, m *model, active string, open bool)
 	return s.panel(gtx, th, m, active)
 }
 
-// setOpen is App.tsx's toggleSidebar: the switch, stored, morphed to.
+// setOpen switches the sidebar, stores the choice and morphs to it.
 func (s *sidebar) setOpen(gtx C, open bool, act *sidebarAction) {
 	s.open, act.saveOpen = open, true
 	s.morph.begin(gtx)
 }
 
-// panel is SessionSidebar's aside: `relative flex flex-col rounded-lg
-// bg-sidebar p-2`, the header row, the filter when open, the blocks, and the
-// resize strip (resizeHandle).
+// panel is the open sidebar: the header row, the filter when open, the blocks,
+// and the resize strip (resizeHandle).
 func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sidebarAction) {
 	var act sidebarAction
 	width, released := s.resize.Update(gtx, unit.Dp(s.widthRem*remDp), sidebarMinRem*remDp, sidebarMaxRem*remDp)

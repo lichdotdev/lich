@@ -117,8 +117,8 @@ func (s *Service) Close(opts CloseOptions) (Closed, error) {
 	// Parked, not deleted: nothing about this close is a decision to destroy the
 	// session. The row carries the conversation, the cost ledgers and the name
 	// the user gave it, and it is what puts the session in the history a resume
-	// reads back — the same close the window performs (projects.tsx,
-	// closeSession). Only a checkout's removal takes a row with it. For the
+	// reads back — the same close the window performs
+	// (native/cmd/lich-native/main.go, closeSession). Only a checkout's removal takes a row with it. For the
 	// last session of a worktree this is the keep answer, and the row says so.
 	if err := s.sessions.CloseSession(found.project.ID, found.session.ID, active); err != nil {
 		return Closed{}, err
@@ -338,11 +338,12 @@ func lastInWorktree(p store.Project, sess store.Session) bool {
 
 // neighborOf picks the session that takes the closed one's place as the
 // project's active card: the one that fills its slot, else the one before it,
-// else none. The same rule the window applies (sessions.ts, neighborId) — the
+// else none. The same rule the window applies (native/cmd/lich-native/model.go,
+// closeSession) — the
 // row it writes is the one the window reads back on the next launch.
 func neighborOf(p store.Project, id string) string {
 	// Only the active card's close moves the focus. The window applies whatever
-	// this returns without a second thought (sessions.ts, dropClosedSession), so
+	// this returns without a second thought, so
 	// naming a neighbour for a card nobody was looking at takes the user off the
 	// session they were reading.
 	if p.ActiveSessionID != id {

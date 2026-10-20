@@ -5,11 +5,11 @@ import (
 	"sync"
 )
 
-// remote is use-remote-resource.ts for the Code tab: the answer to the latest
-// key, fetched off the UI goroutine. A new key keeps the last answer on screen
-// until its own lands, so a poll tick or a keystroke never flashes the panel
-// empty; a new reset (another checkout) drops it, so one checkout's answer
-// never stands in for another's. An empty key holds nothing.
+// remote holds the Code tab's answer to the latest key, fetched off the UI
+// goroutine. A new key keeps the last answer on screen until its own lands, so
+// a poll tick or a keystroke never flashes the panel empty; a new reset
+// (another checkout) drops it, so one checkout's answer never stands in for
+// another's. An empty key holds nothing.
 type remote[T any] struct {
 	invalidate func()
 

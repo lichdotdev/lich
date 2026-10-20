@@ -9,16 +9,8 @@
 // <config-dir>/lich/lich.db, or lich-dev.db under LICH_DEV so a rig never
 // touches an installed lich's workspace (databasePath).
 //
-// A UI preference stays in the frontend's localStorage by default: it needs
-// synchronous access on first paint and the backend never reads it. It moves
-// here when losing it costs more than reading it a frame late — the theme
-// selections and the "what's new" mark did, because Chromium recreates a
-// damaged profile from scratch and takes every `lich.*` key with it (the why is
-// at the setting keys in frontend/src/providers/settings.tsx). Those `lich.*`
-// keys are also why the listener port is pinned rather than picked: localStorage
-// is keyed by the origin the port forms, so moving it wipes the store
-// (internal/singleton.DefaultPort, which LICH_LISTEN_PORT overrides; not
-// LICH_PORT, the per-session hook variable).
+// The window's UI preferences live here too, in the settings table: the window
+// keeps no storage of its own.
 package store
 
 import (
@@ -65,10 +57,9 @@ CREATE TABLE IF NOT EXISTS sessions (
     position            INTEGER NOT NULL DEFAULT 0,
     pinned              INTEGER NOT NULL DEFAULT 0,
     model               TEXT NOT NULL DEFAULT '',
-    -- The command a terminal session opens into, empty for a plain shell. Only
-    -- a kind = 'shell' row ever holds one (SetSessionEntrypoint's WHERE clause):
-    -- on a provider row the entrypoint is the provider, and a value parked there
-    -- would be a setting nothing reads.
+    -- The command a terminal session opened into, a feature since removed.
+    -- Nothing reads or writes it any more; it stays because a migration that
+    -- shipped is never edited, and legacyAlters adds it to every workspace.
     entrypoint          TEXT NOT NULL DEFAULT '',
     -- Marked the row a checkout's Run card, a feature since removed. Nothing
     -- reads or writes it any more; it stays because a migration that shipped is
@@ -109,7 +100,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     -- Whether this session's last finished turn is still waiting to be read:
     -- the mark behind the card's solid ring. It is workspace state rather than a
     -- UI preference because the window is not always there to hold it. A turn
-    -- that ends while the page reloads, or with lich running without a window at
+    -- that ends while the window restarts, or with lich running without a window at
     -- all, is still news when somebody comes back. Two writers own one edge each
     -- (SetSessionUnread): the terminal service, on the turn's own boundaries,
     -- and the window, when the card is read.
@@ -222,9 +213,9 @@ END;
 
 CREATE TABLE IF NOT EXISTS session_last_turn (
     session_id  TEXT NOT NULL PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
-    -- The trees a session's last finished turn ran between, and when its window
-    -- shut in unix milliseconds. One row per session, replaced by each turn:
-    -- the panel answers for the LAST turn and there is no history behind it.
+    -- The trees a session's last finished turn ran between, a feature since
+    -- removed. Nothing reads or writes it any more; it stays because a
+    -- migration that shipped is never edited.
     before_tree TEXT    NOT NULL,
     after_tree  TEXT    NOT NULL,
     ended_at    INTEGER NOT NULL DEFAULT 0
@@ -234,7 +225,7 @@ CREATE TABLE IF NOT EXISTS session_last_turn (
 // busyTimeoutMS is how long a write waits on SQLite's lock before failing.
 const busyTimeoutMS = 5000
 
-// Service owns the SQLite connection and exposes persistence to the frontend.
+// Service owns the SQLite connection and exposes persistence to the window.
 type Service struct {
 	db *sql.DB
 	// sessionGone, when set, is told the id of every session whose row is
@@ -377,10 +368,6 @@ type Session struct {
 	Kind              string `json:"kind"`
 	Path              string `json:"path"`
 	ProviderSessionID string `json:"providerSessionId"`
-	// Entrypoint is the command a terminal session opens into; always empty for
-	// a provider session. The window reads it to prefill its dialog and to say
-	// on the card what a renamed terminal actually runs.
-	Entrypoint string `json:"entrypoint"`
 	// Sandbox is whether this session runs confined: "on", "off", or empty for a
 	// row nothing has spawned yet. The spawn writes its own verdict here, so the
 	// window can mark a confined card without re-deriving a decision that took
@@ -409,27 +396,21 @@ type Session struct {
 	// call, and neither needs a channel of its own.
 	ScheduledAt     int64  `json:"scheduledAt"`
 	ScheduledPrompt string `json:"scheduledPrompt"`
-	// HasLastTurn is whether a last-turn record survives for this session
-	// (SaveTurnRecord). It rides the hydration because the Review panel's
-	// source switch is drawn before anything has asked what the turn changed:
-	// without it the panel would have to wait for the session to report before
-	// it could offer a record it is already holding.
-	HasLastTurn bool `json:"hasLastTurn"`
 	// Unread is whether this session's last finished turn is still waiting to be
-	// read. It rides the hydration call because the mark has to survive a page
-	// reload: the window holds it while it is up, and this row is what it comes
+	// read. It rides the hydration call because the mark has to survive a window
+	// restart: the window holds it while it is up, and this row is what it comes
 	// back to (see SetSessionUnread).
 	Unread bool `json:"unread"`
 	// MCPServers names the MCP servers this session's provider could reach when
 	// it was spawned. It rides the row for the reason Sandbox does: the spawn is
 	// what resolved it — from the provider's own config documents and this
-	// session's directory — and a page reload has to come back to the same
+	// session's directory — and a window restart has to come back to the same
 	// answer without re-deriving it. Nil for a row nothing has spawned yet.
 	MCPServers []string `json:"mcpServers"`
 	// SandboxSkippedLinks names the paths under the user's home this session's
 	// sandbox left out for being symlinks, relative to that home. It rides the
 	// row for the reason MCPServers does — the spawn is what resolved it, and a
-	// page reload has to come back to the same answer. Nil for an unconfined
+	// window restart has to come back to the same answer. Nil for an unconfined
 	// session and for one whose sandbox skipped nothing.
 	SandboxSkippedLinks []string `json:"sandboxSkippedLinks"`
 }
@@ -509,7 +490,7 @@ func (s *Service) Close() error {
 }
 
 // LoadState returns the open projects (is_open = 1) with their sessions, in the
-// order the user dragged them into. It is the single hydration call the frontend
+// order the user dragged them into. It is the single hydration call the window
 // makes on launch to restore the workspace.
 //
 // Rows that predate the position column all carry the default 0, so the rowid
@@ -692,13 +673,12 @@ func (s *Service) ProjectAt(path string) (string, string) {
 // Pinned rows are not hoisted here, and pinning never rewrites position: this is
 // the drag order, and the sidebar lifts the pinned cards over it when it draws.
 // Hoisting in both places would cost a session its slot on every reload, since
-// the frontend would have no order left to put an unpinned card back into.
+// the window would have no order left to put an unpinned card back into.
 func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 	rows, err := s.db.Query(
-		`SELECT id, label, kind, path, provider_session_id, entrypoint, sandbox, pinned,
+		`SELECT id, label, kind, path, provider_session_id, sandbox, pinned,
 		        folder, color, profile, origin_session_id, origin_label, forked, scheduled_at, scheduled_prompt, unread,
-		        mcp_servers, sandbox_links,
-		        EXISTS (SELECT 1 FROM session_last_turn WHERE session_id = sessions.id)
+		        mcp_servers, sandbox_links
 		   FROM sessions WHERE project_id = ? AND is_open = 1 ORDER BY position, rowid`,
 		projectID,
 	)
@@ -713,10 +693,9 @@ func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 		var servers, links string
 		if err := rows.Scan(
 			&sess.ID, &sess.Label, &sess.Kind, &sess.Path, &sess.ProviderSessionID,
-			&sess.Entrypoint, &sess.Sandbox, &sess.Pinned, &sess.Folder, &sess.Color, &sess.Profile,
+			&sess.Sandbox, &sess.Pinned, &sess.Folder, &sess.Color, &sess.Profile,
 			&sess.OriginSessionID, &sess.OriginLabel, &sess.Forked,
 			&sess.ScheduledAt, &sess.ScheduledPrompt, &sess.Unread, &servers, &links,
-			&sess.HasLastTurn,
 		); err != nil {
 			return nil, fmt.Errorf("scan session: %w", err)
 		}

@@ -16,8 +16,7 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// Files dropped on the terminal land at its prompt as paths, as useTerminalDrop
-// does on the web. The window gets what the web never does, the files' own
+// Files dropped on the terminal land at its prompt as paths. The window gets the files' own
 // paths (text/uri-list), so there is no lookup by name, size and mtime: an
 // unconfined session takes the paths as they are. A confined one reads only
 // its checkout, so anything outside it is uploaded to /drop and pasted as the
@@ -87,7 +86,7 @@ func resolveDrop(ctx context.Context, up *lichclient.Client, target dropTarget, 
 		case !target.confined || under(target.checkout, path):
 			r.paths = append(r.paths, path)
 		case info.IsDir():
-			// The web's folderRefused, confined half: the other half, a folder
+			// The confined half of a folder refusal: the other half, a folder
 			// not found, cannot happen with a real path.
 			r.skipped = append(r.skipped, skippedDrop(name, i18n.T("terminal.dropFiles.folderConfined")))
 		case info.Size() > maxDropUpload:

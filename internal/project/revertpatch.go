@@ -217,7 +217,7 @@ func patchFileHeader(rel string) string {
 	return "--- a/" + rel + "\n+++ b/" + rel + "\n"
 }
 
-// checkPatchFile holds a patch handed back by the frontend to the shape
+// checkPatchFile holds a patch handed back by the window to the shape
 // partialPatch writes for rel: that one file's header, then whole hunks and
 // nothing else, so it cannot reach another path in the checkout.
 func checkPatchFile(patch, rel string) error {

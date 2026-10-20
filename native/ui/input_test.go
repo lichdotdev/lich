@@ -85,7 +85,7 @@ func TestTextareaSpacesLinesAtTextSMLeading(t *testing.T) {
 	}
 }
 
-// The web's text box is lines × 20px plus py-2: four lines are 96px tall.
+// A text box is lines × 20px plus py-2: four lines are 96px tall.
 func TestTextareaIsAsTallAsItsLinesOfLeading(t *testing.T) {
 	th, ed := testTheme(), new(widget.Editor)
 	ed.SetText("one\ntwo\nthree\nfour")

@@ -12,17 +12,18 @@ import (
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
-// saidRuneCap bounds the closing words the panel is handed. A turn can end in a
-// full report, and the panel is polled while it is open, so the whole of one is
-// not worth pushing over the socket every two seconds. What is cut is the middle
-// of a long answer, never the start — the first paragraph is the recap.
+// saidRuneCap bounds the closing words the window is handed. A turn can end in a
+// full report, and the window only recaps it in a notification, so the whole of
+// one is not worth sending. What is cut is the middle of a long answer, never
+// the start — the first paragraph is the recap.
 const saidRuneCap = 4000
 
-// LastSaid is the prose the agent ended its last turn with, as the Review
-// panel's "Last turn" shows it beside the diff. Text is empty for every absence
-// there is — a provider whose conversation lich cannot read, a turn that ended
-// in a tool call, a transcript still being written — because the panel draws
-// nothing either way and a reason it cannot act on is a reason not worth wiring.
+// LastSaid is the prose the agent ended its last turn with, the body of the
+// window's finished-turn notification. Text is empty for every absence there is
+// — a provider whose conversation lich cannot read, a turn that ended in a tool
+// call, a transcript still being written — because the notification goes out
+// without a body either way and a reason it cannot act on is a reason not worth
+// wiring.
 type LastSaid struct {
 	Text string `json:"text,omitempty"`
 }
@@ -60,17 +61,14 @@ type textBlock struct {
 // LastTurnSaid returns the last thing the agent said in this session's
 // conversation, as plain text.
 //
-// It answers the half of "what happened while I was away" that the diff beside
-// it cannot: a turn that ran the suite and reported three failures changed
-// nothing on disk, and that is exactly the turn worth catching up on. Nothing
+// It answers the half of "what happened while I was away" that a diff cannot:
+// a turn that ran the suite and reported three failures changed nothing on disk, and that is exactly the turn worth catching up on. Nothing
 // here summarises anything — the agent wrote this sentence itself, and lich only
 // finds it.
 //
-// It is the last message on record, not the last message of the turn the diff
-// brackets. The two agree whenever a turn has finished, which is the only time
-// the panel offers a diff at all; mid-turn this is still the previous turn's
-// words while the diff reads "unavailable", which is why the band labels them
-// as such while the card is busy (saidNote, frontend/src/lib/git/last-turn.ts).
+// It is the last message on record, not the last message of the current turn:
+// the two agree once a turn has finished, and mid-turn this is still the
+// previous turn's words.
 func (s *Service) LastTurnSaid(id string) (LastSaid, error) {
 	providerSessionID, err := s.store.ProviderSession(id)
 	if err != nil {

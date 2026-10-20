@@ -7,8 +7,7 @@ import (
 )
 
 // terminalKeyBytes is what a key press sends to a session: the chords of the
-// "Passed through to the agent" group as the bytes the agent binds, the same
-// the web window sends (frontend/src/lib/terminal/term-keys.ts), and every
+// "Passed through to the agent" group as the bytes the agent binds, and every
 // other key as the terminal's encoder spells it.
 func terminalKeyBytes(vt *gioterm.Terminal, e key.Event, goos string) []byte {
 	if b := passedThroughChord(e, goos); b != "" {
@@ -38,8 +37,7 @@ func imageAttach(goos string) string {
 	return "\x16"
 }
 
-// isPasteChord is the clipboard paste: Ctrl+Shift+V, as xterm.js has it in the
-// web window, and Cmd+V on macOS.
+// isPasteChord is the clipboard paste: Ctrl+Shift+V, and Cmd+V on macOS.
 func isPasteChord(e key.Event, goos string) bool {
 	if e.Name != "V" {
 		return false
@@ -49,7 +47,7 @@ func isPasteChord(e key.Event, goos string) bool {
 
 // pastedClipboard is what a paste of the clipboard's text sends. A clipboard
 // with no text holds an image or a file, which the agent reads itself on the
-// image key, as the web window's paste of files does (pastedImageSequence).
+// image key.
 func pastedClipboard(vt *gioterm.Terminal, text, goos string) []byte {
 	if text == "" {
 		return []byte(imageAttach(goos))

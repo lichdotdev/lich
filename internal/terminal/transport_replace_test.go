@@ -8,7 +8,7 @@ import (
 	"github.com/coder/websocket"
 )
 
-// TestReplacedClientDoesNotSilenceTransport models a page reload: a second /ws
+// TestReplacedClientDoesNotSilenceTransport models a second window attaching: a second /ws
 // socket opens, the transport replaces the first, and the first's read loop
 // then drops the connection it was reading. The live client must keep receiving
 // — forgetting the replaced connection must not forget the current one. A

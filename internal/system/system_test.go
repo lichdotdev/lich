@@ -127,8 +127,8 @@ func TestDiagnosticsReportsTheRunningBuild(t *testing.T) {
 	}
 }
 
-// TestTakeUncleanExitIsConsumed pins the notice to one telling. A page reload
-// asks the same process again, and a second warning about a crash the user has
+// TestTakeUncleanExitIsConsumed pins the notice to one telling. A window
+// opened again on the same backend asks the same process again, and a second warning about a crash the user has
 // already been told about reads as a second crash.
 func TestTakeUncleanExitIsConsumed(t *testing.T) {
 	s := New(nil, "", "0.23.0", true)
@@ -147,115 +147,22 @@ func TestTakeUncleanExitAfterACleanExit(t *testing.T) {
 	}
 }
 
-func TestOpenInEditorTerminalReturnsCommand(t *testing.T) {
-	launched := false
-	s := &Service{env: []string{"EDITOR=nvim"}, run: func(string, ...string) error {
-		launched = true
-		return nil
-	}}
-
-	cmd, err := s.OpenInEditor("/repo", "src/main.go")
-	if err != nil {
-		t.Fatalf("OpenInEditor: %v", err)
-	}
-	// The quoting belongs to the session's shell — sh on Unix, PowerShell on
-	// Windows — and both spell a quoted argument with single quotes, differing
-	// only in how an embedded one is escaped (see internal/shquote).
-	full := filepath.Join("/repo", "src/main.go")
-	want := "nvim '" + full + "'"
-	if cmd != want {
-		t.Errorf("cmd = %q, want %q", cmd, want)
-	}
-	if launched {
-		t.Error("a terminal editor was launched detached instead of returned")
-	}
-}
-
-// TestOpenDefaultKeepsThePathOutOfAShell proves the default opener passes the
-// file as its own argument. On Windows that is what stops a checked-out file
-// named "a&calc.txt" from ending the command and running calc.
-func TestOpenDefaultKeepsThePathOutOfAShell(t *testing.T) {
-	const rel = "a&calc.txt"
-	var name string
-	var args []string
-	s := &Service{run: captureRun(&name, &args)}
-
-	if _, err := s.OpenInEditor("/repo", rel); err != nil {
-		t.Fatalf("OpenInEditor: %v", err)
-	}
-	if name == "cmd" || name == "sh" || name == "bash" {
-		t.Errorf("launcher is %q: the default opener must not route through a shell", name)
-	}
-	if want := filepath.Join("/repo", rel); len(args) == 0 || args[len(args)-1] != want {
-		t.Errorf("args = %v, want the whole path %q as one argument", args, want)
-	}
-}
-
-func TestOpenInEditorPrefersVisual(t *testing.T) {
+func TestOpenFolderInEditorPrefersVisual(t *testing.T) {
 	// VISUAL wins over EDITOR: a terminal EDITOR is ignored when VISUAL is GUI.
 	var name string
 	var args []string
+	dir := t.TempDir()
 	s := &Service{env: []string{"EDITOR=nvim", "VISUAL=zed"}, run: captureRun(&name, &args)}
 
-	cmd, err := s.OpenInEditor("/repo", "a.txt")
+	cmd, err := s.OpenFolderInEditor(dir)
 	if err != nil {
-		t.Fatalf("OpenInEditor: %v", err)
+		t.Fatalf("OpenFolderInEditor: %v", err)
 	}
 	if cmd != "" {
 		t.Errorf("cmd = %q, want empty (GUI editor launched)", cmd)
 	}
-	if want := filepath.Join("/repo", "a.txt"); name != "zed" || len(args) != 1 || args[0] != want {
-		t.Errorf("launched %q %v, want zed [%s]", name, args, want)
-	}
-}
-
-func TestOpenInEditorGUISplitsFlags(t *testing.T) {
-	var name string
-	var args []string
-	s := &Service{env: []string{"EDITOR=code --wait"}, run: captureRun(&name, &args)}
-
-	if _, err := s.OpenInEditor("/repo", "a.txt"); err != nil {
-		t.Fatalf("OpenInEditor: %v", err)
-	}
-	want := filepath.Join("/repo", "a.txt")
-	if name != "code" || len(args) != 2 || args[0] != "--wait" || args[1] != want {
-		t.Errorf("got %q %v, want code [--wait %s]", name, args, want)
-	}
-}
-
-func TestOpenInEditorRejectsTraversal(t *testing.T) {
-	launched := false
-	s := &Service{env: []string{"EDITOR=nvim"}, run: func(string, ...string) error {
-		launched = true
-		return nil
-	}}
-	for _, rel := range []string{"../escape", "/etc/passwd", "a/../../b"} {
-		if cmd, err := s.OpenInEditor("/repo", rel); err == nil || cmd != "" {
-			t.Errorf("rel %q: want error, got cmd %q err %v", rel, cmd, err)
-		}
-	}
-	if launched {
-		t.Error("a traversal path reached the launcher")
-	}
-}
-
-// TestOpenInEditorFallsBackToDefault proves that with no editor set the file is
-// handed to the default opener (launched, empty command). The opener command is
-// per-OS, so only the file argument (always last) is portable to assert.
-func TestOpenInEditorFallsBackToDefault(t *testing.T) {
-	var name string
-	var args []string
-	s := &Service{run: captureRun(&name, &args)}
-
-	cmd, err := s.OpenInEditor("/repo", "a.txt")
-	if err != nil {
-		t.Fatalf("OpenInEditor: %v", err)
-	}
-	if cmd != "" {
-		t.Errorf("cmd = %q, want empty (default opener launched)", cmd)
-	}
-	if want := filepath.Join("/repo", "a.txt"); len(args) == 0 || args[len(args)-1] != want {
-		t.Errorf("args = %v, want file %s as last arg", args, want)
+	if name != "zed" || len(args) != 1 || args[0] != dir {
+		t.Errorf("launched %q %v, want zed [%s]", name, args, dir)
 	}
 }
 
@@ -448,8 +355,8 @@ func TestSetEnvMovesTheEditorLookup(t *testing.T) {
 
 	s.SetEnv([]string{"EDITOR=zed"})
 
-	if _, err := s.OpenInEditor("/repo", "a.txt"); err != nil {
-		t.Fatalf("OpenInEditor: %v", err)
+	if _, err := s.OpenFolderInEditor(t.TempDir()); err != nil {
+		t.Fatalf("OpenFolderInEditor: %v", err)
 	}
 	if name != "zed" {
 		t.Fatalf("launched %q, want the re-read editor", name)

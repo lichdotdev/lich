@@ -14,9 +14,8 @@ import (
 )
 
 // worktreeLeftBy is the project and the worktree whose last open session is
-// id, the close that decides that checkout's fate (close-intent.ts
-// ask-worktree). path is empty when the session shares its checkout or runs
-// in the project's own directory.
+// id, the close that decides that checkout's fate. path is empty when the
+// session shares its checkout or runs in the project's own directory.
 func (m *model) worktreeLeftBy(id string) (project lichclient.Project, path string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

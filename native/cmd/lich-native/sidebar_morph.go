@@ -17,12 +17,12 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// index.css's ::view-transition-group, the web sidebar's collapse and expand.
+// sidebarMorphDuration times the sidebar's collapse and expand.
 const sidebarMorphDuration = 180 * time.Millisecond
 
 var sidebarMorphCurve = ui.CubicBezier(0.2, 0, 0, 1)
 
-// The glyphs both shapes name, view-transition.ts's SIDEBAR_MORPH.
+// The glyphs both shapes name.
 const (
 	glyphToggle  = "toggle"
 	glyphNew     = "new"
@@ -51,7 +51,7 @@ const (
 	sideTo
 )
 
-// sidebarMorph is App.tsx's morph(() => showSidebar(...)): the sidebar's box
+// sidebarMorph is the morph between the two shapes: the sidebar's box
 // eases between the two shapes' widths, the shapes crossfade inside it, and
 // the named glyphs fly from their box in one shape to their box in the other.
 type sidebarMorph struct {
@@ -173,10 +173,9 @@ func (s *sidebar) column(gtx C) (int, float32) {
 
 // stageReserve is the sidebar width the stage makes room for. Mid-morph it is
 // the narrower shape's for the whole flight: the stage keeps one size and
-// slides with the sidebar's edge, clipped by the window, the way the web's
-// unscaled snapshot does. A terminal resize reaches the PTY, so the stage
-// resizes once, as a collapse starts or once an expand lands, and never to a
-// size in between.
+// slides with the sidebar's edge, clipped by the window. A terminal resize
+// reaches the PTY, so the stage resizes once, as a collapse starts or once an
+// expand lands, and never to a size in between.
 func (s *sidebar) stageReserve(gtx C) int {
 	if !s.morph.active() {
 		return s.boxWidth(gtx, s.open)
@@ -186,8 +185,7 @@ func (s *sidebar) stageReserve(gtx C) int {
 
 // morphing is the sidebar mid-morph: its box eases between the two shapes'
 // widths, each shape drawn at its own size from the box's leading corner and
-// clipped by it (index.css's object-fit: none, object-position: left top),
-// the old one fading out as the new one fades in.
+// clipped by it, the old one fading out as the new one fades in.
 func (s *sidebar) morphing(gtx C, th *ui.Theme, m *model, active string) (D, sidebarAction) {
 	mo := &s.morph
 	width := lerpInt(s.boxWidth(gtx, !s.open), s.boxWidth(gtx, s.open), mo.p)

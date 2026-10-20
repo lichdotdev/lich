@@ -16,7 +16,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// ToggleVariant is shadcn's toggle variant (components/ui/toggle.tsx).
+// ToggleVariant is shadcn's toggle variant.
 type ToggleVariant uint8
 
 const (
@@ -37,7 +37,7 @@ type toggleGeometry struct {
 	height, padX, padIcon unit.Dp
 }
 
-// toggleSizes transcribes the size classes of toggle.tsx. min-w-N repeats the
+// toggleSizes transcribes the size classes of shadcn's toggle. min-w-N repeats the
 // height of every size, so the minimum width is the table's own height.
 var toggleSizes = map[ToggleSize]toggleGeometry{
 	ToggleSizeDefault: {height: Space(9), padX: Space(2.5), padIcon: Space(2)},
@@ -121,7 +121,7 @@ type toggleSpec struct {
 
 type toggleColorSet struct{ bg, fg, border color.NRGBA }
 
-// colors are the dark-mode classes of toggle.tsx: aria-pressed beats hover.
+// colors are the dark-mode classes of shadcn's toggle: aria-pressed beats hover.
 // The outline's border lands on whatever fill runs under it.
 func (th *Theme) toggleColorsOf(s toggleSpec) toggleColorSet {
 	p := th.Palette

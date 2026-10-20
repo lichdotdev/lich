@@ -20,7 +20,6 @@ import (
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/drop"
 	"github.com/lichdotdev/lich/internal/events"
-	"github.com/lichdotdev/lich/internal/fonts"
 	"github.com/lichdotdev/lich/internal/logging"
 	"github.com/lichdotdev/lich/internal/ompprofile"
 	"github.com/lichdotdev/lich/internal/patchnotes"
@@ -282,7 +281,6 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	drops.SetPicker(proj.PickFile)
 	dispatcher.Register("terminal", term)
 	dispatcher.Register("drop", drops)
-	dispatcher.Register("fonts", fonts.New())
 	dispatcher.Register("project", proj)
 	plugins := agentplugin.New(db)
 	dispatcher.Register("agentplugin", plugins)

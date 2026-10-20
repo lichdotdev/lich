@@ -23,7 +23,6 @@ import (
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/shquote"
-	"github.com/lichdotdev/lich/internal/store"
 )
 
 // stubBins is a Store returning a fixed binary path and project directory,
@@ -44,7 +43,6 @@ type stubBins struct {
 	holder            string // the other open card ConversationHolder names
 	model             string
 	effort            string
-	entrypoint        string
 	sandbox           string
 	sandboxOn         bool
 	sshAgent          bool
@@ -72,10 +70,6 @@ type stubBins struct {
 	// Nil until a test cares: the flush only ever writes for a session the
 	// accumulator actually counted something for.
 	handsOn map[string]int64
-	// The last finished turn per session, the shape store.SaveTurnRecord files.
-	// Nil until a test cares, and then it stands in for the workspace database
-	// across a restart.
-	turns map[string]store.TurnRecord
 	// The MCP servers the spawn recorded per session, the shape
 	// store.SetSessionMCPServers writes. Nil until a test cares.
 	mcpServers map[string][]string
@@ -164,7 +158,6 @@ func (s stubBins) InheritUltracode(sessionID, forkedFrom string) error {
 	}
 	return nil
 }
-func (s stubBins) SessionEntrypoint(_ string) string   { return s.entrypoint }
 func (s stubBins) SessionSandbox(_ string) string      { return s.sandbox }
 func (s stubBins) SetSessionSandbox(_, _ string) error { return nil }
 
@@ -302,18 +295,6 @@ func (s stubBins) AddHandsOn(sessionID string, seconds int64) error {
 }
 
 func (s stubBins) HandsOn(sessionID string) (int64, error) { return s.handsOn[sessionID], nil }
-
-func (s stubBins) SaveTurnRecord(sessionID string, rec store.TurnRecord) error {
-	if s.turns != nil {
-		s.turns[sessionID] = rec
-	}
-	return nil
-}
-
-func (s stubBins) TurnRecord(sessionID string) (store.TurnRecord, bool, error) {
-	rec, ok := s.turns[sessionID]
-	return rec, ok, nil
-}
 
 // TestChildEnvStripsAppImageVars proves the AppImage runtime variables that break
 // mise/asdf shims are dropped while the real user environment is passed through.
@@ -613,7 +594,7 @@ func TestStartForksIntoItsOwnConversation(t *testing.T) {
 }
 
 // TestStartRefusesAForkTheProviderCannotSpell proves the guard sits in Start,
-// not in the frontend's copy of the list: a fork for a kind with no verb would
+// not in the window's copy of the list: a fork for a kind with no verb would
 // otherwise reopen the parent's own conversation under a second card, which
 // is the one outcome a fork promises against. Nothing is spawned.
 func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {

@@ -68,8 +68,8 @@ func TestDeviconKeepsItsColors(t *testing.T) {
 	}
 }
 
-// Markdown's devicon sets no fill and renders black, as FileIcon.tsx's mono
-// flag says; it must take the color it is given.
+// Markdown's devicon sets no fill and renders black; it must take the color it
+// is given.
 func TestInkOnlyDeviconTakesTheGivenColor(t *testing.T) {
 	want := color.NRGBA{R: 200, G: 10, B: 90, A: 255}
 	img := DeviconFor("README.md").render(28, want).(*image.NRGBA)

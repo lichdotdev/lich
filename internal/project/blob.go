@@ -17,13 +17,11 @@ import (
 
 // maxPreviewBytes caps one side of an image or PDF preview. It covers a 4K
 // screenshot saved as PNG (5 to 15 MB) with room to spare, and keeps a stray
-// asset from being held whole in memory twice, here and in the page.
+// asset from being held whole in memory twice, here and in the window.
 const maxPreviewBytes = 20 << 20
 
-// previewTypes is both the allowlist and the Content-Type table: what Chromium
-// decodes in an <img>, plus PDF for its built-in viewer. SVG is left out on
-// purpose: git diffs it as text, and served from lich's own origin a document
-// with a script would run there.
+// previewTypes is both the allowlist and the Content-Type table. SVG is left
+// out on purpose: git diffs it as text.
 var previewTypes = map[string]string{
 	".avif": "image/avif",
 	".bmp":  "image/bmp",
@@ -36,15 +34,15 @@ var previewTypes = map[string]string{
 	".webp": "image/webp",
 }
 
-// The two refusals a reader meets are worded for the page, which prints the
-// response body as it is after "Binary file · ".
+// The two refusals a reader meets are worded for the window, which prints the
+// response body as it is.
 var (
 	errPreviewUnsupported = errors.New("this file type can't be previewed")
 	errPreviewTooLarge    = fmt.Errorf("above the %d MB preview limit", maxPreviewBytes>>20)
 	errBlobRequest        = errors.New("invalid preview request")
 )
 
-// Blob is one file's bytes at one revision, with the type a page renders it as.
+// Blob is one file's bytes at one revision, with the type it is served as.
 type Blob struct {
 	Data        []byte
 	ContentType string
@@ -143,13 +141,13 @@ func checkPreviewSize(size int64) error {
 	return nil
 }
 
-// ServeBlob is Blob over HTTP, for an <img> or a PDF viewer to load directly
-// rather than as base64 inside an RPC answer. The query carries path, rel and
-// ref. Range requests are honoured because the PDF viewer makes them.
+// ServeBlob is Blob over HTTP, so the bytes travel raw rather than as base64
+// inside an RPC answer. The query carries path, rel and ref. Range requests
+// are honoured.
 //
-// The page tells the sides apart by status: 404 is a side with no file, 413 a
-// file over the limit, 415 a type with no preview. The body says which, in the
-// words the page shows.
+// The window tells the sides apart by status: 404 is a side with no file, 413
+// a file over the limit, 415 a type with no preview. The body says which, in
+// the words the window shows.
 func (s *Service) ServeBlob(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -164,7 +162,7 @@ func (s *Service) ServeBlob(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", blob.ContentType)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	// The working tree answers differently under the same URL as the agent
-	// writes; the page keys each side by its blob oid instead of by caching.
+	// writes; the window keys each side by its blob oid instead of by caching.
 	w.Header().Set("Cache-Control", "no-store")
 	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(blob.Data))
 }

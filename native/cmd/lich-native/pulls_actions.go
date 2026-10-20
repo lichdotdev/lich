@@ -18,8 +18,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// cleanupToastFor is Pulls.tsx CLEANUP_TOAST_MS: how long the offer to remove
-// a merged branch's worktree stays.
+// cleanupToastFor is how long the offer to remove a merged branch's worktree
+// stays.
 const cleanupToastFor = 10 * time.Second
 
 var (
@@ -139,7 +139,7 @@ func (u *window) approvePR(path string, number int) {
 	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pullRequestView.approvedToast", i18n.Args{"number": number})})
 }
 
-// openPRSession is Pulls.tsx openInSession, then hands prompt (when any) to
+// openPRSession opens the PR in a session, then hands prompt (when any) to
 // the session: a checkout already holding the branch is reused, its live
 // session brought up or a new one opened; else the PR is checked out into a
 // new worktree. The checkouts are read fresh, never from what drew the button.
@@ -237,7 +237,7 @@ func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, meth
 	return true
 }
 
-// removePRWorktree is Pulls.tsx removeWorktree: the refusals first, the
+// removePRWorktree removes a PR's worktree: the refusals first, the
 // question about running sessions last, a click the refusals would make moot.
 func (u *window) removePRWorktree(project lichclient.Project, path string) {
 	name := filepath.Base(path)

@@ -152,7 +152,7 @@ func jwtClaims(token string, out any) bool {
 	return json.Unmarshal(payload, out) == nil
 }
 
-// unixTimestamp renders a Unix-seconds reset as the RFC 3339 the frontend
+// unixTimestamp renders a Unix-seconds reset as the RFC 3339 the window
 // parses. Empty for the absent value, which older CLIs write as 0.
 func unixTimestamp(sec int64) string {
 	if sec <= 0 {

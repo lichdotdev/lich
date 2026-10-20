@@ -7,9 +7,9 @@ import (
 	"gioui.org/io/key"
 )
 
-// Gio's key names against the web's KeyboardEvent.key, which a stored combo
-// spells. Letters are the exception to the table: Gio names them upper case,
-// and normalizeKey lowers them.
+// Gio's key names against the KeyboardEvent.key names a stored combo spells.
+// Letters are the exception to the table: Gio names them upper case, and
+// normalizeKey lowers them.
 var namedKeys = []struct {
 	web string
 	gio []key.Name
@@ -43,7 +43,7 @@ var namedKeys = []struct {
 }
 
 // modifierKeys are the key names Gio reports for a modifier pressed alone,
-// and what the web calls each; comboFromEvent waits past them.
+// and the KeyboardEvent.key name of each; comboFromEvent waits past them.
 var modifierKeys = map[key.Name]string{
 	key.NameCtrl: "Control", key.NameShift: "Shift", key.NameAlt: "Alt",
 	key.NameSuper: "Meta", key.NameCommand: "Meta",
@@ -82,8 +82,7 @@ func gioNames(web string) []key.Name {
 }
 
 // chordModifiers are the modifier sets a combo's chord arrives with: the
-// primary modifier is Ctrl, Command or the Super key, as the web's
-// ctrlKey || metaKey.
+// primary modifier is Ctrl, Command or the Super key.
 func chordModifiers(c combo) []key.Modifiers {
 	var base key.Modifiers
 	if c.Shift {

@@ -43,8 +43,7 @@ const (
 
 // applyStatus feeds a session-status report to the status store. An idle
 // report is the provider CLI leaving the PTY, so the card drops its agent
-// mark (session-agent-store.ts), and a report on the session being watched
-// is read on arrival (project-events.tsx markSeenIfWatched).
+// mark, and a report on the session being watched is read on arrival.
 func (m *model) applyStatus(ctx context.Context, ev lichclient.Event) error {
 	var s struct {
 		ID    string `json:"id"`
@@ -62,8 +61,7 @@ func (m *model) applyStatus(ctx context.Context, ev lichclient.Event) error {
 		recheck = m.recheckMissingPR(s.ID)
 	}
 	if s.State == "idle" {
-		// The CLI left: it can no longer answer a request either
-		// (session-relay-store.ts).
+		// The CLI left: it can no longer answer a request either.
 		delete(m.agent, s.ID)
 		delete(m.relay, s.ID)
 	}
@@ -82,8 +80,8 @@ func (m *model) applyStatus(ctx context.Context, ev lichclient.Event) error {
 }
 
 // statusReport is the reading of the report just applied to id the desktop
-// channel and the attention toast take, false for a session no open project holds, which has nowhere to
-// route (project-events.tsx). The caller holds m.mu.
+// channel and the attention toast take, false for a session no open project
+// holds, which has nowhere to route. The caller holds m.mu.
 func (m *model) statusReport(id, previous string) (statusReport, bool) {
 	p, i := m.sessionAt(id)
 	if p == nil {
@@ -192,8 +190,8 @@ func (m *model) setColor(id, tint string) bool {
 	return true
 }
 
-// setPinned flips a session's pin here, ahead of the backend, as the web's
-// optimistic commit does. It reports false when no open session has that id.
+// setPinned flips a session's pin here, ahead of the
+// backend. It reports false when no open session has that id.
 func (m *model) setPinned(id string, pinned bool) bool {
 	m.mu.Lock()
 	p, i := m.sessionAt(id)

@@ -87,8 +87,9 @@ jobs:
             go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/out/lich-native" ./cmd/lich-native
           LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
 
-      # libghostty-vt is linked in, and nothing asks for a glibc newer than
-      # the runner's: what the packages' requirements promise.
+      # libghostty-vt is linked in, and nothing asks for a glibc newer than the
+      # 2.34 the packages require (build/linux/nfpm/nfpm.yaml, README): the
+      # runner's own 2.35 is not the promise.
       - name: Check what lich-native asks of a machine
         run: |
           bin="$RUNNER_TEMP/out/lich-native"
@@ -97,8 +98,8 @@ jobs:
           fi
           floor="$(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)"
           echo "lich-native asks for $floor"
-          [ "$(printf '%s\nGLIBC_2.35\n' "$floor" | sort -V | tail -1)" = GLIBC_2.35 ] || {
-            echo "::error::lich-native asks for $floor, newer than the 2.35 the packages promise"; exit 1
+          [ "$(printf '%s\nGLIBC_2.34\n' "$floor" | sort -V | tail -1)" = GLIBC_2.34 ] || {
+            echo "::error::lich-native asks for $floor, newer than the 2.34 the packages promise"; exit 1
           }
 
       - name: Upload lich-native

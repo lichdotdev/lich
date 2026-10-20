@@ -1,12 +1,11 @@
 package main
 
-// paste-unfold.ts in the web window. Two providers fold a long paste into a
-// placeholder the user cannot edit, and each unfolds it on a key of its own:
-// Claude Code ("[Pasted text #1 +32 lines]") when the identical text is pasted
-// again while the chip is in the prompt, Kiro CLI ("32 lines ▸") on Tab. lich
-// sends that key right after the paste wherever the provider would fold, so
-// the text lands editable. Mirroring each provider's own rule is the point and
-// the risk (docs/ceilings.md).
+// Two providers fold a long paste into a placeholder the user cannot edit, and
+// each unfolds it on a key of its own: Claude Code ("[Pasted text #1 +32
+// lines]") when the identical text is pasted again while the chip is in the
+// prompt, Kiro CLI ("32 lines ▸") on Tab. lich sends that key right after the
+// paste wherever the provider would fold, so the text lands editable. Mirroring
+// each provider's own rule is the point and the risk (docs/ceilings.md).
 
 import (
 	"context"

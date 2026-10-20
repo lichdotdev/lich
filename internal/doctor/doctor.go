@@ -284,7 +284,7 @@ func (d *Doctor) checkSandbox() (Status, string) {
 }
 
 // What a machine loses with each version control tool missing. The same two
-// sentences answer on screen (frontend/src/lib/vcs-tools.ts) — a diagnosis that
+// sentences answer on screen (native/i18n/locales/*/env.json) — a diagnosis that
 // disagrees with the app about what is broken is worse than no diagnosis.
 const (
 	gitWithout = "branches, diffs and worktrees stay empty"

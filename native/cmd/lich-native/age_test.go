@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// Mirrors frontend/src/lib/session/session-age.test.ts.
 func TestFormatAge(t *testing.T) {
 	cases := []struct {
 		elapsed time.Duration

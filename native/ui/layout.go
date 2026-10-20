@@ -49,9 +49,8 @@ func (th *Theme) Separator(gtx C) D {
 	return D{Size: size}
 }
 
-// Scrollbar thumb opacities, index.css's ::-webkit-scrollbar-thumb: currentColor
-// at 25%, 40% hovered. Mixing with transparent keeps the hue, so oklch and
-// plain alpha agree.
+// Scrollbar thumb opacities: currentColor at 25%, 40% hovered. Mixing with
+// transparent keeps the hue, so oklch and plain alpha agree.
 const (
 	scrollThumbOpacity      = 0.25
 	scrollThumbHoverOpacity = 0.4

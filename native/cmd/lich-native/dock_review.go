@@ -1,8 +1,8 @@
 package main
 
-// The dock's Review tab (ReviewPanel.tsx): the active session's
-// working-tree diff, one collapsible card per file, with the comment batch at
-// its foot. It is the dock's reviewTab; the dock owns the chrome around it.
+// The dock's Review tab: the active session's working-tree diff, one
+// collapsible card per file, with the comment batch at its foot. It is the
+// dock's reviewTab; the dock owns the chrome around it.
 //
 // The window lays the discard confirmation out at its own level, before the
 // content, as it does every dialog: review.layoutDialogs(gtx, th).
@@ -95,8 +95,7 @@ type prFiles struct {
 	head string
 	url  string // the pull request's page
 	// viewed is each ticked file's diff text when it was ticked: a commit
-	// that changes the file unticks it, one that does not leaves it
-	// (pull-request-viewed.ts).
+	// that changes the file unticks it, one that does not leaves it.
 	viewed map[string]string
 	ticks  map[string]*widget.Bool
 	// toReview files a line comment into the PR's pending review.
@@ -394,8 +393,7 @@ func stickyAt(offset, cardHeight, headerHeight int) (y int, ok bool) {
 // height and its header's.
 type cardSpan struct{ top, height, header int }
 
-// layoutSticky draws the first visible card's header again over the list,
-// as the web's sticky top-0 does.
+// layoutSticky draws the first visible card's header again over the list.
 func (p *reviewPanel) layoutSticky(gtx C, spans map[string]cardSpan) {
 	pos := p.list.Position
 	if pos.First >= len(p.order) {

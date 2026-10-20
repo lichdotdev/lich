@@ -8,9 +8,7 @@ import (
 )
 
 // usageEventName carries a session's context-window usage ({id, percent, tokens}),
-// emitted after a turn ends. Global like the other session events: the card that
-// shows it is only mounted while its project is active, so a per-session name
-// could not reach it.
+// emitted after a turn ends. Global like the other session events.
 const usageEventName = "session-usage"
 
 // usageEvent is the payload of usageEventName. Percent is the share of the
@@ -21,7 +19,7 @@ const usageEventName = "session-usage"
 //
 // All five are zero for a provider that records what a turn spent but not the
 // window it spent it against — oh-my-pi, opencode and Crush, the cost-only rung
-// of docs/ceilings.md. A zero Window is the frontend's signal to draw the cost
+// of docs/ceilings.md. A zero Window is the window's signal to draw the cost
 // alone rather than a ring around a window nobody reported.
 //
 // CostUSD is what the session has cost so far, and is omitted — not zeroed —
@@ -46,7 +44,7 @@ type usageEvent struct {
 }
 
 // emitUsage reads the context-window usage of the provider conversation running
-// in session id and pushes it to the frontend. Called off the status hook on
+// in session id and pushes it to the window. Called off the status hook on
 // every non-idle state (see New), so it tracks the context as it grows through a
 // turn, not only at the end. Silent on any miss — no provider id yet, no
 // transcript, an unreadable or half-written file — so the readout keeps its last

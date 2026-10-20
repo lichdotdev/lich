@@ -120,7 +120,7 @@ func (q *writeQueue) waitDrained() {
 }
 
 // close retires the queue. The writer drains what is left to the fallback and
-// then stops; close itself does not wait, so a page reload never blocks the
+// then stops; close itself does not wait, so a replacing window never blocks the
 // incoming client on the outgoing one.
 func (q *writeQueue) close() {
 	q.mu.Lock()

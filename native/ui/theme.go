@@ -8,7 +8,7 @@ import (
 	"gioui.org/unit"
 )
 
-// Palette is the color tokens of frontend/src/index.css, by the same names.
+// Palette is the color tokens of an app theme.
 type Palette struct {
 	Background, Foreground                 color.NRGBA
 	Canvas                                 color.NRGBA
@@ -26,11 +26,11 @@ type Palette struct {
 	SidebarBorder                          color.NRGBA
 }
 
-// Dark is index.css's .dark block (themes/dark.json).
+// Dark is the dark theme (themes/dark.json).
 var Dark = Palette{
 	Background: OKLCH(0.141, 0.005, 285.823, 1),
 	Foreground: OKLCH(0.985, 0, 0, 1),
-	// index.css .dark: color-mix(in oklab, var(--background) 65%, black).
+	// color-mix(in oklab, var(--background) 65%, black).
 	Canvas:                  MixOKLab(OKLCH(0.141, 0.005, 285.823, 1), color.NRGBA{A: 255}, 0.35),
 	Card:                    OKLCH(0.21, 0.006, 285.885, 1),
 	CardForeground:          OKLCH(0.985, 0, 0, 1),
@@ -57,11 +57,11 @@ var Dark = Palette{
 	SidebarBorder:           OKLCH(1, 0, 0, 0.10),
 }
 
-// Light is index.css's :root block, the light theme (themes/light.json).
+// Light is the light theme (themes/light.json).
 var Light = Palette{
 	Background: OKLCH(0.94, 0.003, 286.32, 1),
 	Foreground: OKLCH(0.21, 0.006, 285.885, 1),
-	// index.css :root: color-mix(in oklab, var(--background) 92%, black).
+	// color-mix(in oklab, var(--background) 92%, black).
 	Canvas:                  MixOKLab(OKLCH(0.94, 0.003, 286.32, 1), color.NRGBA{A: 255}, 0.08),
 	Card:                    OKLCH(0.98, 0.002, 286.32, 1),
 	CardForeground:          OKLCH(0.21, 0.006, 285.885, 1),
@@ -130,9 +130,7 @@ const (
 	TextBase unit.Sp = 16
 )
 
-// Tailwind's radius scale (rounded-sm, rounded-md, rounded-lg). index.css
-// declares a --radius that no rounded-* class reads, so the web app renders
-// Tailwind's own values, and so do these.
+// Tailwind's radius scale (rounded-sm, rounded-md, rounded-lg).
 const (
 	RadiusSM unit.Dp = 4
 	RadiusMD unit.Dp = 6

@@ -141,7 +141,7 @@ func (p *preview) headerRow(gtx C, th *ui.Theme, root *ui.Root) D {
 	)
 }
 
-// backButton is a size-5 rounded button, its chevron muted until hovered.
+// backButton is a rounded button, its chevron muted until hovered.
 func (p *preview) backButton(gtx C, th *ui.Theme, root *ui.Root) D {
 	tip := th.Tooltip(root, &p.backTip, i18n.T("dock.filesPanel.backToTree"))
 	return tip.Layout(gtx, func(gtx C) D {
@@ -211,10 +211,9 @@ func (p *preview) show(key, text string) {
 
 // syncComposer hangs the composer under its line while it is open, and takes
 // it down once it closed itself. Opening sets the content outright and
-// scrolls to it, where the web's textarea scrolls itself into view on focus:
-// UpdateContent would keep the scroll but swap the block in only once the
-// file is highlighted again, a frame the view would scroll against the old
-// content in.
+// scrolls to it: UpdateContent would keep the scroll but swap the block in
+// only once the file is highlighted again, a frame the view would scroll
+// against the old content in.
 func (p *preview) syncComposer() {
 	at := -1
 	if p.composer.isOpen() {
@@ -252,8 +251,7 @@ var codeStyleTags = []godemirror.StyleTags{
 	godemirror.RicherRustTags(), godemirror.RustBuiltinTags(),
 }
 
-// previewTheme is the window theme's code palette on the dock's bg-sidebar,
-// which the web's transparent editor shows through.
+// previewTheme is the window theme's code palette on the theme's surface.
 func previewTheme(th *ui.Theme, code godemirror.Theme) godemirror.Theme {
 	code.Background, code.GutterBackground = th.Surface, th.Surface
 	return code

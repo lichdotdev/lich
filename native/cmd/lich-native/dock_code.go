@@ -1,6 +1,6 @@
 package main
 
-// The dock's Code tab (FilesPanel.tsx): a read-only tree of the active
+// The dock's Code tab: a read-only tree of the active
 // session's checkout, tracked and untracked in a repository, whatever is on
 // disk in a plain folder, with one field that filters it by name or searches
 // the files' text, and an in-dock preview that covers it. Clicks only
@@ -25,8 +25,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// plainFolderTick is use-git-status.ts GIT_POLL.slowMs. A plain folder has no
-// git status to notice a file the agent just wrote, so its tree re-reads on
+// plainFolderTick is how often a plain folder's tree re-reads. A plain folder
+// has no git status to notice a file the agent just wrote, so it re-reads on
 // the cadence an idle repository's poll settles at.
 const plainFolderTick = 3 * time.Second
 
@@ -191,8 +191,7 @@ func (c *codeTab) browse(gtx C, th *ui.Theme) D {
 	)
 }
 
-// browseBox is BrowseBox: the one field over the tab, p-1.5 gap-1.5, and the
-// switch saying how it reads.
+// browseBox is the one field over the tab and the switch saying how it reads.
 func (c *codeTab) browseBox(gtx C, th *ui.Theme) D {
 	c.fieldKeys(gtx)
 	if c.focusQuery {

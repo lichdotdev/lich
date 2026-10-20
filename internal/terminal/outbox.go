@@ -1,18 +1,17 @@
 package terminal
 
-// outboxDepth is how many flushed frames may wait on a stalled frontend before
+// outboxDepth is how many flushed frames may wait on a stalled window before
 // the session's own PTY read blocks. A frame is one coalescer flush — 8ms of
 // output while visible, capped at maxPendingBytes — so this bounds both the
 // memory one session may hold and how far ahead of the window it may run.
 const outboxDepth = 32
 
-// outbox carries one session's coalesced output to the frontend on a goroutine
+// outbox carries one session's coalesced output to the window on a goroutine
 // of its own.
 //
 // Delivery blocks: one WebSocket carries every session (transport.send) and
-// the /events fallback is one socket too, so a window that stops reading — the
-// page busy parsing a resumed session's transcript is enough — backs pressure
-// up into whoever is writing. Doing that on the PTY read path stalls the read,
+// the /events fallback is one socket too, so a window that stops reading backs
+// pressure up into whoever is writing. Doing that on the PTY read path stalls the read,
 // the PTY buffer fills, and the child stops producing; because the socket is
 // shared, that reaches every session, not just the slow one. The queue is what
 // decouples them: a stalled window backs up one session's frames and, only

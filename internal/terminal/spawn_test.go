@@ -107,7 +107,7 @@ func TestAPartialMarkerNeverEndsTheSetup(t *testing.T) {
 }
 
 // A spawn that cannot start is reported as itself: the session id is in the
-// error, because the frontend surfaces it and "no such file" alone names
+// error, because the window surfaces it and "no such file" alone names
 // neither the session nor what lich was trying to run.
 func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
 	t.Parallel()

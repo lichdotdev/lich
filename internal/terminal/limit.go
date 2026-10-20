@@ -11,9 +11,8 @@ import (
 )
 
 // limitEventName carries a turn a plan's usage limit ended ({id, window,
-// resetsAt}). Nothing clears it: the next state report the session makes does,
-// on the window's side (session-limit-store.ts), because any turn starting is
-// the proof the limit no longer holds.
+// resetsAt}). Nothing clears it; the window reads plan quota again when it
+// arrives (planQuota, native/cmd/lich-native/footer_quota.go).
 const limitEventName = "session-limit"
 
 // limitWatchTick is how often an open Codex turn is checked for having ended on

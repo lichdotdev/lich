@@ -23,7 +23,7 @@ type ChecksRollup struct {
 // CheckItem is one check, flattened from gh's two rollup shapes into what the
 // Checks tab lists. State is this package's own passed|failed|pending, the same
 // verdict ChecksRollup counts. The timestamps are gh's ISO strings, left for the
-// frontend to turn into a duration.
+// window to turn into a duration.
 type CheckItem struct {
 	Name        string `json:"name"`
 	State       string `json:"state"`

@@ -8,10 +8,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// attentionToastDuration is project-events.tsx ATTENTION_TOAST_MS.
 const attentionToastDuration = 10 * time.Second
 
-// attentionToast is project-events.tsx's needs-your-input toast, raised for
+// attentionToast is the needs-your-input toast, raised for
 // every waiting report on a session other than the one on screen, whose own
 // terminal shows the prompt. It keeps no state: a second prompt in one turn
 // is a second question, so a repeat raises a second toast.

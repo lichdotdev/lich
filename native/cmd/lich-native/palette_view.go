@@ -21,35 +21,35 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The geometry of PickerDialog's popup and rows.
+// The geometry of the popup and its rows.
 const (
-	paletteWidth unit.Dp = 640 // max-w-[40rem]
-	// paletteTop is top-[14vh].
+	paletteWidth unit.Dp = 640
+	// paletteTop is the popup's offset from the top, as a fraction of the
+	// window height.
 	paletteTop = 0.14
-	// paletteScrim is bg-black/50.
+	// paletteScrim is the opacity of the black scrim.
 	paletteScrim = 0.5
-	// paletteMaxHeight is max-h-[70vh], in percent of the window.
+	// paletteMaxHeight is the popup's height cap, in percent of the window.
 	paletteMaxHeight = 70
-	// paletteHintBarFill is the hint bar's bg-black/10.
+	// paletteHintBarFill is the opacity of the hint bar's black fill.
 	paletteHintBarFill = 0.1
-	// paletteEmptyWidth is the hint's max-w-[44ch], in dp.
+	// paletteEmptyWidth is the widest the empty hint grows, in dp.
 	paletteEmptyWidth unit.Dp = 330
-	paletteInputSize  unit.Sp = 15 // text-[0.9375rem]
-	paletteTabSize    unit.Sp = 13 // text-[0.8125rem]
-	paletteTinySize   unit.Sp = 10 // text-[0.625rem]
-	// paletteTinyLeading is what the tiny text inherits from its text-sm row
-	// on the web: the 20/14 line height, at 10px.
+	paletteInputSize  unit.Sp = 15
+	paletteTabSize    unit.Sp = 13
+	paletteTinySize   unit.Sp = 10
+	// paletteTinyLeading is the tiny text's line height, 20/14 of its 10px size.
 	paletteTinyLeading    unit.Sp = 14.3
-	paletteInputRow               = 11.5 // py-3 around a 22.5px line
-	paletteGlyphSize              = 16   // size-4
-	paletteEnterSize              = 14   // size-3.5
-	paletteTabGap                 = 4.5  // between two filter tabs
-	paletteTabUnderline   unit.Dp = 1.5  // under the current filter tab
-	paletteDimOpacity             = 0.4  // opacity-40, a tab with nothing in it
-	paletteCountOpacity           = 0.7  // the count's opacity-70
-	paletteSnippetOpacity         = 0.8  // text-muted-foreground/80
-	paletteQueryOpacity           = 0.8  // the query's text-foreground/80
-	paletteChipOpacity            = 0.4  // a chip's border, its tone at 40%
+	paletteInputRow               = 11.5 // 12px of padding around a 22.5px line
+	paletteGlyphSize              = 16
+	paletteEnterSize              = 14
+	paletteTabGap                 = 4.5 // between two filter tabs
+	paletteTabUnderline   unit.Dp = 1.5 // under the current filter tab
+	paletteDimOpacity             = 0.4 // a tab with nothing in it
+	paletteCountOpacity           = 0.7 // the count's
+	paletteSnippetOpacity         = 0.8 // the snippet's
+	paletteQueryOpacity           = 0.8 // the query's
+	paletteChipOpacity            = 0.4 // a chip's border, its tone at 40%
 )
 
 var (
@@ -84,10 +84,10 @@ func (r recorded) place(gtx C, y int) {
 	r.call.Add(gtx.Ops)
 }
 
-// panel is the popup of PickerDialog: the field and the filters over the
-// list, the hint bar under it. The list takes what the field, the filters and
-// the bar leave of 70% of the window, and no more than its rows need, so the
-// panel is as tall as its content.
+// panel is the popup: the field and the filters over the list, the hint bar
+// under it. The list takes what the field, the filters and the bar leave of 70%
+// of the window, and no more than its rows need, so the panel is as tall as its
+// content.
 func (p *commandPalette) panel(gtx C, th *ui.Theme, v *paletteView, ring paletteRing, now time.Time) D {
 	width := gtx.Constraints.Max.X
 	gtx.Constraints.Min = image.Pt(width, 0)
@@ -119,12 +119,13 @@ func (p *commandPalette) header(gtx C, th *ui.Theme, v *paletteView) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-// field is px-4 gap-3 over a search glyph and the bare input.
+// field is a search glyph and the bare input.
 func (p *commandPalette) field(gtx C, th *ui.Theme) D {
 	return layout.Inset{Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icPaletteSearch.Layout(gtx, ui.Space(4), th.MutedForeground) }),
-			// The input carries its own px-2.5; the gap makes up the rest of gap-3.
+			// The input carries its own 10px of horizontal padding; the gap
+			// makes up the rest of the 12px between glyph and text.
 			ui.Gap(0.5),
 			layout.Flexed(1, func(gtx C) D {
 				in := th.Input(&p.query, i18n.T("palette.commandPalette.placeholder"))
@@ -182,7 +183,7 @@ func (p *commandPalette) filterTab(gtx C, th *ui.Theme, v *paletteView, tab pale
 }
 
 // footer is the hint bar: what the arrows, Enter, Tab and Escape do, on
-// bg-black/10 under its own hairline.
+// a faint black fill under its own hairline.
 func (p *commandPalette) footer(gtx C, th *ui.Theme, v *paletteView) D {
 	action := i18n.T("palette.palette.verbOpen")
 	if at := p.active(len(v.rows)); at < len(v.rows) {
@@ -221,7 +222,7 @@ func (p *commandPalette) footer(gtx C, th *ui.Theme, v *paletteView) D {
 	)
 }
 
-// paletteHint is Hint: the key caps, gap-1, then what they do, gap-1.5.
+// paletteHint is the key caps and then what they do.
 func paletteHint(th *ui.Theme, label string, keys ...string) layout.Widget {
 	return func(gtx C) D {
 		var children []layout.FlexChild
@@ -305,8 +306,8 @@ func (p *commandPalette) keepInView(items []paletteItem, v *paletteView) {
 	}
 }
 
-// heading is PickerGroup's label: px-3 pb-1 pt-3, uppercase, and opposite it
-// what the group is holding back.
+// heading is a group's label, uppercase, and opposite it what the group is
+// holding back.
 func (p *commandPalette) heading(gtx C, th *ui.Theme, g paletteGroup) D {
 	trailing := g.note
 	if trailing == "" && g.total > len(g.rows) {
@@ -323,10 +324,10 @@ func (p *commandPalette) heading(gtx C, th *ui.Theme, g paletteGroup) D {
 	})
 }
 
-// empty is PickerEmpty. Two different empties, deliberately not sharing a
-// sentence: one says the query found nothing, the other says nothing has ever
-// been closed, and states the retention rule where somebody wondering what
-// this remembers will read it.
+// empty is the palette's empty state. Two different empties, deliberately not
+// sharing a sentence: one says the query found nothing, the other says nothing
+// has ever been closed, and states the retention rule where somebody wondering
+// what this remembers will read it.
 func (p *commandPalette) empty(gtx C, th *ui.Theme, v *paletteView) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(8), Bottom: ui.Space(8)}.Layout(gtx, func(gtx C) D {
@@ -359,8 +360,8 @@ func (p *commandPalette) empty(gtx C, th *ui.Theme, v *paletteView) D {
 	})
 }
 
-// row is PickerRow: rounded-md px-3 py-2 gap-3, accent while the cursor is on
-// it, and the corner arrow that says Enter will run it.
+// row is one result, accent while the cursor is on it, and the corner arrow
+// that says Enter will run it.
 func (p *commandPalette) row(gtx C, th *ui.Theme, v *paletteView, i int, ring paletteRing, now time.Time) D {
 	row := v.rows[i]
 	click := &p.rows[i]
@@ -568,7 +569,7 @@ func paletteChip(on *ui.Theme, word string, tone color.NRGBA) layout.Widget {
 	}
 }
 
-// paletteSmall is the trailing note: font-mono text-[0.625rem] muted.
+// paletteSmall is the trailing note: monospace, tiny, muted.
 func paletteSmall(on *ui.Theme, s string) layout.Widget {
 	return on.Text(paletteTinySize, s).Leading(paletteTinyLeading).Mono().Muted().Layout
 }
@@ -577,7 +578,7 @@ func paletteGlyph(on *ui.Theme, icon *icons.Icon) layout.Widget {
 	return func(gtx C) D { return icon.Layout(gtx, paletteGlyphSize, on.MutedForeground) }
 }
 
-// paletteIconText is a size-3 glyph and its words, gap-1.
+// paletteIconText is a small glyph and its words.
 func paletteIconText(on *ui.Theme, icon *icons.Icon, s string, c color.NRGBA) layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

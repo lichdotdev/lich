@@ -2,8 +2,7 @@
 // a session (Claude Code, Codex, Antigravity, opencode, oh-my-pi, Crush, Cursor
 // CLI, Kiro CLI). A provider id doubles as the session kind that spawns it; the terminal
 // resolves the id to a binary, and the settings store keys per-provider
-// overrides on it. Detection reads that override and then scans PATH, mirroring
-// internal/chromium's browser detection.
+// overrides on it. Detection reads that override and then scans PATH.
 package providers
 
 import (
@@ -16,7 +15,8 @@ import (
 )
 
 // Provider ids. Each id is also the session kind (store column + terminal.Start)
-// that runs the provider. Kept in sync with frontend/src/lib/session/sessions.ts.
+// that runs the provider. Kept in sync with the window's provider tables
+// (native/cmd/lich-native/providericon.go, spawn_gate.go resumableKinds).
 const (
 	Claude      = "claude"
 	Codex       = "codex"

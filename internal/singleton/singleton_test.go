@@ -88,9 +88,8 @@ func TestUncleanExit(t *testing.T) {
 }
 
 // TestDefaultPortIsPinned spells the number out rather than reading the
-// constant: the page's localStorage (lich.* settings) is keyed by the origin
-// this port forms, so moving it wipes every user's preferences. A test that
-// followed the constant would let that move through green.
+// constant: a test that followed the constant would let a moved port through
+// green.
 func TestDefaultPortIsPinned(t *testing.T) {
 	if DefaultPort != 47821 {
 		t.Fatalf("DefaultPort = %d, want 47821 — moving it wipes the page's localStorage", DefaultPort)

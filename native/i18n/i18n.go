@@ -1,9 +1,7 @@
 // Package i18n is the native window's translations: the catalogs under
 // locales/<tag>/<namespace>.json, one tree per namespace, read by a dotted
-// key ("settings.language.uiTitle"). They were seeded from the web window's
-// TypeScript catalogs (frontend/src/lib/i18n) and keep its keys, its {name}
-// placeholders and its CLDR plural objects; from then on these files are the
-// native window's own, and a message lands in every locale in the same change.
+// key ("settings.language.uiTitle"). A message holds {name} placeholders or is
+// a CLDR plural object, and it lands in every locale in the same change.
 //
 // Two languages never derive from each other: the interface's (Current, set
 // by the window from the lich.appearance.language setting or the system's),
@@ -22,8 +20,8 @@ import (
 	"sync/atomic"
 )
 
-// Locale is a BCP 47 tag lich ships a catalog for: the same string the web
-// window, the prompt.language setting and LICH_PROMPT_LANG use.
+// Locale is a BCP 47 tag lich ships a catalog for: the same string the
+// prompt.language setting and LICH_PROMPT_LANG use.
 type Locale string
 
 const (
@@ -36,7 +34,7 @@ const (
 	RU   Locale = "ru"
 )
 
-// Locales are the languages the pickers offer, in the web window's order.
+// Locales are the languages the pickers offer, in their order.
 var Locales = []Locale{EN, PtBR, ES, ZhCN, JA, KO, RU}
 
 // Name is the language named in itself, which is how someone who cannot read
@@ -60,8 +58,7 @@ func (l Locale) Name() string {
 }
 
 // Match is the locale for a BCP 47 tag: an exact match, then a language
-// match (any Portuguese reads pt-BR), then English. It is the web window's
-// matchLocale, so both windows land on the same language for the same tag.
+// match (any Portuguese reads pt-BR), then English.
 func Match(tag string) Locale {
 	for _, l := range Locales {
 		if strings.EqualFold(string(l), tag) {
@@ -126,7 +123,7 @@ func load(fsys fs.FS, dir string) (map[string]message, error) {
 }
 
 // flatten walks tree into out under prefix. An object holding "other" is a
-// plural, as in the web's catalog type: every CLDR rule falls back to it.
+// plural: every CLDR rule falls back to it.
 func flatten(out map[string]message, prefix string, tree map[string]any) error {
 	if _, ok := tree["other"]; ok {
 		forms := make(map[string]string, len(tree))
@@ -200,8 +197,8 @@ func Prompt(key string, args ...Args) string { return In(PromptLanguage(), key, 
 
 // In is T in a named locale: the prompt language for text typed into a
 // session. A key no catalog has, a plural without an int count or a
-// placeholder without a value panics, as the web's t() throws: each is a
-// programming error the tests are there to catch.
+// placeholder without a value panics: each is a programming error the tests
+// are there to catch.
 func In(l Locale, key string, args ...Args) string {
 	var values Args
 	if len(args) > 0 {

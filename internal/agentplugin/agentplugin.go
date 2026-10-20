@@ -134,7 +134,7 @@ func New(bins BinResolver) *Service {
 	}
 }
 
-// Status is one provider's plugin state, reported to the frontend.
+// Status is one provider's plugin state, reported to the window.
 type Status struct {
 	Provider string `json:"provider"`
 	Name     string `json:"name"`

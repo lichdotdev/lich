@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	// progressHeight is the update toast's h-1.5 bar (UpdateProgressToast.tsx).
+	// progressHeight is the update toast's h-1.5 bar.
 	progressHeight = 1.5
-	// progressSlide is index.css's update-indeterminate: a third of the track
-	// sliding from translateX(-100%) to translateX(300%) every 1.4s.
+	// progressSlide is the indeterminate slide: a third of the track sliding
+	// from translateX(-100%) to translateX(300%) every 1.4s.
 	progressSlide      = 1400 * time.Millisecond
 	progressSlideShare = 3
 	progressSlideFrom  = -1

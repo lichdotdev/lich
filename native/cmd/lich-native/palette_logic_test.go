@@ -8,8 +8,6 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// These mirror command-palette.test.ts: same fixtures, same expected values.
-
 var paletteOpen = []paletteProject{
 	{ID: "p1", Name: "lich", Path: "/home/u/try/skipo"},
 	{ID: "p2", Name: "revu", Path: "/home/u/try/revu"},

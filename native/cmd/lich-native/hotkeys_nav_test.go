@@ -12,7 +12,6 @@ func cardsOf(ids ...string) []hotkeyCard {
 
 func all(string) bool { return true }
 
-// The cases of sessions.test.ts neighborSessionId and nextWaitingSessionId.
 func TestNextShownCardStepsForwardAndBackward(t *testing.T) {
 	cards := cardsOf("s1", "s2", "s3")
 	if got := nextShownCard(cards, "s1", 1, all); got != "s2" {
@@ -117,8 +116,7 @@ func TestNextWaitingSearchesTheWholeListForAnUnknownSession(t *testing.T) {
 	}
 }
 
-// The cases of project-order.test.ts, with Home first the way the strip draws
-// it.
+// Home comes first, the way the strip draws it.
 func TestNeighborProject(t *testing.T) {
 	strip := []string{"home", "a", "b"}
 	step := func(ids []string, active string, by int) string {

@@ -15,14 +15,14 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// TabsVariant is shadcn's tabs list variant (tabsListVariants in tabs.tsx).
+// TabsVariant is shadcn's tabs list variant.
 type TabsVariant uint8
 
 const (
 	TabsVariantDefault TabsVariant = iota
 	TabsVariantLine
-	// TabsVariantGhost is the dock header's look: RightDock.tsx overrides the
-	// default list with a transparent one, accent fills and text-xs triggers.
+	// TabsVariantGhost is the dock header's look: the default list overridden
+	// with a transparent one, accent fills and text-xs triggers.
 	TabsVariantGhost
 )
 
@@ -115,13 +115,12 @@ const (
 	tabsLineHeightXS = unit.Dp(16)
 	// tabsGhostPadY makes a ghost trigger 28dp (h-7) with no list padding:
 	// in the dock's header it then keeps the 8dp inset every island's first
-	// control keeps, on the left and the top alike. The web's 27px tab sits
-	// 10 from the left and 6 from the top, which reads as squeezed.
+	// control keeps, on the left and the top alike.
 	tabsGhostPadY = unit.Dp(5)
 )
 
-// tabsGeometries transcribes tabs.tsx and, for the ghost variant, RightDock's
-// TAB_CLASS: h-9 p-[0.1875rem] and px-2 py-1 gap-1.5 text-sm, against
+// tabsGeometries transcribes shadcn's tabs and, for the ghost variant, the
+// dock's tab classes: h-9 p-[0.1875rem] and px-2 py-1 gap-1.5 text-sm, against
 // p-0.5 gap-1 and px-2 py-0.5 gap-1 text-xs. The ghost list is h-8: its
 // h-auto loses to the list's own group-data-horizontal:h-9, and the h-8
 // Tabs root, a flex column, shrinks it to 32, so its triggers are 27 tall.
@@ -174,7 +173,7 @@ func (t TabsStyle) tabsList(gtx C) D {
 	lead := image.Pt(pad, pad)
 	if !vertical && geo.listHeight > 0 {
 		size.Y = gtx.Dp(geo.listHeight)
-		// Rounded half up, as Chromium snaps the trigger's half-pixel offset.
+		// Rounded half up for the trigger's half-pixel offset.
 		lead.Y = pad + (size.Y-2*pad-trigs[0].Y+1)/2
 	}
 	if t.Variant == TabsVariantDefault {
@@ -255,7 +254,7 @@ func (t TabsStyle) NaturalWidth(gtx C) int {
 
 // tabsShareSpare is flex-1 in a list too narrow for equal triggers: each keeps
 // its content's width and the space left over is split evenly. Content wider
-// than inner still overflows, as it does on the web.
+// than inner still overflows.
 func tabsShareSpare(sizes []image.Point, inner int) {
 	spare := inner
 	for _, s := range sizes {

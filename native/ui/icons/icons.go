@@ -1,19 +1,18 @@
-// Package icons draws the icon sets the web app uses, from their SVG
+// Package icons draws the icon sets lich uses, from their SVG
 // geometry:
 //
 //   - Lucide (lucide.dev, ISC; some icons MIT from Feather): the whole set of
-//     lucide-static 1.23.0, the version frontend/package.json pins for
-//     lucide-react, vendored as its icon-nodes.json. Names are Lucide's
-//     canonical kebab-case ones ("git-branch"); the deprecated aliases
-//     lucide-react still exports (Home, MoreHorizontal, ...) are not included,
-//     so a port uses the name they alias ("house", "ellipsis").
+//     lucide-static 1.23.0, vendored as its icon-nodes.json. Names are
+//     Lucide's canonical kebab-case ones ("git-branch"); the deprecated
+//     aliases (Home, MoreHorizontal, ...) are not included, so use the name
+//     they alias ("house", "ellipsis").
 //   - Lobe (github.com/lobehub/lobe-icons, MIT): the AI provider marks lich
-//     uses, the same paths frontend/src/components/ProviderIcon.tsx vendors.
+//     uses.
 //   - Sonner (sonner.emilkowal.ski, MIT): the four type icons its toasts
 //     draw, Heroicons solid paths sonner 2.0.7 ships in its bundle.
 //   - Devicons (devicon.dev via devicons-react 1.5.0, MIT): the language marks
-//     frontend/src/components/FileIcon.tsx draws, rendered to PNG by
-//     devicon/gen.sh since they are multi-colored.
+//     the file tree draws, rendered to PNG by devicon/gen.sh since they are
+//     multi-colored.
 //
 // Each set's license sits beside it (lucide/LICENSE, lobe/LICENSE,
 // sonner/LICENSE, devicon/LICENSE) and must travel with any copy, the binary's third-party

@@ -49,9 +49,8 @@ func isDark(bg color.NRGBA) bool {
 
 // setScheme takes the scheme of background bg: what DSR 996 answers from
 // now on, and, when it changed and the program turned mode 2031 on, the
-// report that tells it so, as the web window's theme-notify.ts does. Claude
-// Code's "auto" theme reads it to follow lich's own light and dark. Called
-// with v.mu held.
+// report that tells it so. Claude Code's "auto" theme reads it to follow
+// lich's own light and dark. Called with v.mu held.
 func (v *Terminal) setScheme(bg color.NRGBA) {
 	dark := isDark(bg)
 	changed := v.schemeSet && v.dark.Load() != dark

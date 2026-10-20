@@ -24,7 +24,7 @@ const (
 	binScopePath    = "path"
 )
 
-// The skip ladder's rungs, ordered by exposure (providers-store.ts SkipLevel).
+// The skip ladder's rungs, ordered by exposure.
 const (
 	skipNever      = "never"
 	skipWorktrees  = "worktrees"
@@ -122,7 +122,7 @@ func kindsWhere(has func(kind string) bool) []string {
 
 // providerEntries are the Providers section's searchable rows, in the order
 // its screens draw them. A perProvider row is the block of a provider's own
-// screen: settings-index.ts lists it once per enabled provider. Its keys are
+// screen: it is listed once per enabled provider. Its keys are
 // providerBinEntries and the rows Settings keeps global.
 func providerEntries() []settingEntry {
 	entries := []settingEntry{
@@ -161,8 +161,8 @@ func providerBinEntries() []settingEntry {
 	return entries
 }
 
-// providerBinKey is providers-store.ts binKey (store.binKey): Claude keeps the
-// key it had before providers could be chosen.
+// providerBinKey is the setting key of kind's binary: Claude keeps the key it
+// had before providers could be chosen.
 func providerBinKey(kind string) string {
 	if kind == "claude" {
 		return "claude.bin"
@@ -260,8 +260,8 @@ func (l binLayer) resolves() bool { return !l.off && strings.TrimSpace(l.bin) !=
 
 func (l binLayer) parked() bool { return l.off && strings.TrimSpace(l.bin) != "" }
 
-// winningBinScope is binary-layers.ts winningScope: the first layer that
-// resolves, project then global, else $PATH.
+// winningBinScope is the scope of the first layer that resolves, project then
+// global, else $PATH.
 func winningBinScope(project, global binLayer) string {
 	switch {
 	case project.resolves():

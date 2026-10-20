@@ -15,7 +15,7 @@ import (
 // echoed and the provider execs anyway. goos is runtime.GOOS, passed in so the
 // decision stays pure and testable off-Windows (wrapArgv's pattern): Windows is
 // skipped, and not for the shell's sake — a Windows session runs PowerShell now
-// (windowsShells), which wrapEntrypoint composes for. What is skipped is the
+// (windowsShells). What is skipped is the
 // script: project.SetupScriptPath is `.lich/setup-worktree.sh`, one file, versioned in
 // the repository and shared by everyone who checks it out, and its contents are
 // sh. Running that through PowerShell would not fail cleanly — it would run the
@@ -55,8 +55,7 @@ func wrapSetup(spec ptySpec, script, goos string) (ptySpec, bool) {
 // answer nobody was ever asked for.
 //
 // An OSC sequence with a private code carries it. Terminals ignore an OSC they
-// do not know — xterm.js parses and drops it — so the marker never reaches the
-// screen the user is watching.
+// do not know, so the marker never reaches the screen the user is watching.
 const (
 	setupDone        = "\x1b]6969;lich-setup-done\x07"
 	setupDoneEscaped = "\\033]6969;lich-setup-done\\007"

@@ -9,8 +9,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// blockState is one SessionGroup's widget state, kept per project and block
-// as the web keys its component.
+// blockState is one block's widget state, kept per project and block.
 type blockState struct {
 	toggle   widget.Clickable
 	fold     ui.Collapse
@@ -47,9 +46,9 @@ type blockFrame struct {
 	act             *sidebarAction
 }
 
-// blockList is SessionSidebar's scrolling list: the no-match Notice, the
-// pinned block, fixed first, then every other block in one sortable list
-// dragged by their headers, `flex-col gap-1.5`.
+// blockList is the sidebar's scrolling list: the no-match Notice, the pinned
+// block, fixed first, then every other block in one sortable list dragged by
+// their headers.
 func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string, act *sidebarAction) D {
 	f := blockFrame{view: view, active: active, filtering: s.header.filter().narrows(), act: act}
 	var pinned *blockView
@@ -102,9 +101,9 @@ func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string
 	return d
 }
 
-// scrollColumn is the block list's overflow-y-auto under the app-wide
-// ::-webkit-scrollbar (index.css): an 8px thumb on a transparent track that
-// takes room only once the list overflows, as a classic scrollbar does.
+// scrollColumn is the block list's scroll area: an 8px thumb on a transparent
+// track that takes room only once the list overflows, as a classic scrollbar
+// does.
 // Overflow is read off the previous frame's list.
 func (s *sidebar) scrollColumn(gtx C, th *ui.Theme) material.ListStyle {
 	list := th.ScrollArea(&s.list)
@@ -136,7 +135,7 @@ func arrayMove(ids []string, id, over string) []string {
 	return slices.Insert(moved, to, id)
 }
 
-// block is SessionGroup: the header, then the cards in the fold. A block
+// block draws one block: the header, then the cards in the fold. A block
 // dragged by its header wears the sidebar's fill, so it covers the blocks it
 // passes over.
 func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {

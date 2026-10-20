@@ -17,11 +17,11 @@ import (
 // shell when kind is "shell", otherwise the provider binary for that kind
 // resolved from the project's settings (falling back to the provider's default
 // on $PATH) — attached to a new PTY sized to cols x rows and rooted at cwd, then
-// streams its output to the frontend. An empty cwd defaults to the user's home
+// streams its output to the window. An empty cwd defaults to the user's home
 // directory. Starting a session that is already running is a no-op.
 //
 // A non-empty resume is a provider conversation id to reopen, spelled for the
-// session's kind by resumeArgs, which the frontend passes after the user
+// session's kind by resumeArgs, which the window passes after the user
 // accepted the prompt to continue the session this card ran before the last
 // restart. The prompt is only raised for a conversation ResumeAvailable still
 // finds, so an id the provider no longer knows normally never reaches here; one
@@ -98,16 +98,12 @@ func (s *Service) Start(
 	s.holdForStart(id, sess, awaits)
 	// Emitted outside s.mu: Emit blocks on a stalled /events client, which
 	// would freeze every session's I/O. Both are unconditional so a respawn
-	// overwrites whatever the previous PTY left in the frontend's stores.
+	// overwrites whatever the previous PTY left in the window's stores.
 	s.publishCwd(cwdEvent{ID: id, Cwd: cwd})
 	s.hub.Emit(agentEventName, agentEvent{ID: id, Agent: ""})
 	s.reportProfileMove(id, bornIn)
 	s.reportSandbox(id, sess.confined, sess.sandboxLinks)
 	s.reportMCPServers(id, kind, cwd)
-	// Bound to the effective cwd rather than the requested one, and outside
-	// s.mu: track queues a warm-up of this checkout's snapshot index, and the
-	// first one on a large repository is measured in seconds.
-	s.snaps.track(id, cwd)
 	go watchCwd(id, sess.pty.Pid(), cwd, sess.done, s.publishCwd)
 	return nil
 }
@@ -183,9 +179,6 @@ func (s *Service) spawnSession(
 		rows: rows,
 	}
 	spec = withShellIntegration(spec, kind, s.shellIntegrationDir)
-	// Before wrapSetup, so a fresh worktree terminal carrying both runs the
-	// project's setup script first, then the entrypoint, then the shell.
-	spec = wrapEntrypoint(spec, kind, s.store.SessionEntrypoint(id), runtime.GOOS)
 	settingUp := false
 	skipped := ""
 	if setup {
@@ -193,8 +186,8 @@ func (s *Service) spawnSession(
 		spec, settingUp = wrapSetup(spec, script, runtime.GOOS)
 		skipped = setupSkippedNotice(script, runtime.GOOS)
 	}
-	// Outermost, so the setup script and the entrypoint are confined with the
-	// session they run in front of.
+	// Outermost, so the setup script is confined with the session it runs in
+	// front of.
 	creds := s.sandboxCredentials(projectID, cwd, inSandbox)
 	spec, skippedLinks := wrapSandbox(
 		spec, kind, userHome(), sessionDropDir(s.dropDir, id, inSandbox), profileDir, inSandbox, creds,
@@ -236,8 +229,8 @@ func (s *Service) spawnSession(
 
 // announce puts a line lich wrote itself into a session, the way stream puts
 // the PTY's own bytes there and before the reader that would race it: into the
-// replay so a reload still finds it, and through the coalescer so an attached
-// window has it now. Nothing to say writes nothing.
+// replay so a window attaching later still finds it, and through the
+// coalescer so an attached window has it now. Nothing to say writes nothing.
 //
 // Its one caller is the setup-skipped notice (setupSkippedNotice), whose
 // composition is a Windows answer and whose delivery is not: kept apart so the
@@ -307,8 +300,8 @@ func (s *Service) repeatedEnding(id, state string) bool {
 // reportSandbox records and announces how this spawn was confined: the verdict,
 // and the home paths the sandbox skipped for being symlinks. The verdict is
 // already on the row (confined writes it); the skipped links are written here,
-// because only the spawn resolves them and the PTY outlives the page — a reload
-// has no second spawn to hear them from.
+// because only the spawn resolves them and the PTY outlives the window — a
+// reload has no second spawn to hear them from.
 //
 // A failed write is logged and nothing else, for the reason reportMCPServers
 // gives: it costs the card a line at the next reload, and refusing to spawn a
@@ -327,7 +320,7 @@ func (s *Service) reportSandbox(id string, confined bool, links []string) {
 // divided on the next card to spawn.
 //
 // A failed write is logged and nothing else. It costs a card the split on the
-// next page reload — the event has already gone out — and refusing to spawn a
+// next reload — the event has already gone out — and refusing to spawn a
 // session over the way its tool names draw would be the worse trade.
 func (s *Service) reportMCPServers(id, kind, cwd string) {
 	servers := agentplugin.MCPServers(kind, cwd)

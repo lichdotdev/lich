@@ -178,7 +178,7 @@ func TestACursorTurnReachesTheWindowAndTheRelayOnce(t *testing.T) {
 	}
 }
 
-// The unread mark the card's ring is restored from after a page reload, written
+// The unread mark the card's ring is restored from when the window reopens, written
 // at the turn's own edges: set when a turn ends, cleared when the next one
 // opens. The repeated `busy` is the point of the dedupe: a report per tool call
 // must not take the workspace database's write lock to change nothing.
@@ -409,7 +409,7 @@ func TestHookRejectsTheInterruptedState(t *testing.T) {
 	}
 }
 
-// sendInput writes one terminal input frame the way the window's xterm does —
+// sendInput writes one terminal input frame the way the window's terminal does —
 // through the socket, so the whole path the keystroke takes is under test and
 // not just the two halves of it.
 func sendInput(t *testing.T, svc *Service, id string, data []byte) {

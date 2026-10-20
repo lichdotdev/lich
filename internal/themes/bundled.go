@@ -27,9 +27,8 @@ func mustBundledTheme(data []byte) Theme {
 	if err := json.Unmarshal(data, &theme); err != nil {
 		panic("invalid bundled theme: " + err.Error())
 	}
-	// The constant is the invariant; the asset's own "origin" only exists
-	// because the frontend imports the same JSON at build time. A typo there
-	// would otherwise ship a theme the UI sorts and filters as neither
+	// The constant is the invariant, not the asset's own "origin": a typo
+	// there would otherwise ship a theme the UI sorts and filters as neither
 	// bundled nor custom.
 	theme.Origin = OriginBundled
 	return theme

@@ -128,8 +128,7 @@ func (v *Terminal) cellRune(col, row int) rune {
 	return rune(buf[0])
 }
 
-// linkPattern is a URL as text shows one, the shape xterm's web-links addon
-// finds in the web window.
+// linkPattern is a URL as text shows one.
 var linkPattern = regexp.MustCompile(`(?i)\bhttps?://[^\s<>"'` + "`" + `]+`)
 
 // linkTrailing is punctuation that ends a sentence around a URL rather than

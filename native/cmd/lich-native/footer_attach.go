@@ -8,7 +8,7 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// attachFile is the footer's attach button (FooterBar.tsx attachFile). The
+// attachFile is the footer's attach button. The
 // picker runs on the backend: a confined session cannot open a file outside
 // its checkout, so the call that chooses the file also copies it where the
 // session can read it. checkout, not the shell's cwd, because the sandbox is
@@ -23,8 +23,8 @@ func attachFile(ctx context.Context, c *lichclient.Client, write func(ctx contex
 	return write(ctx, sessionID, composeDroppedPaths([]string{a.Path}, windows, []string{a.Notice}))
 }
 
-// composeDroppedPaths is drop-files.ts: the paths quoted and space-separated
-// as a terminal pastes a drop, with a trailing space so what is typed next
+// composeDroppedPaths returns the paths quoted and space-separated as a
+// terminal pastes a drop, with a trailing space so what is typed next
 // does not run into the last path. Notices, the backend's lines about paths
 // that are copies', go under the paths inside the same paste. "" for no paths.
 func composeDroppedPaths(paths []string, windows bool, notices []string) string {

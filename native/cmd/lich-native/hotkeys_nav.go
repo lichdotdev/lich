@@ -7,10 +7,10 @@ type hotkeyCard struct {
 	shown bool
 }
 
-// nextShownCard is sidebar-groups.ts nextShownCard: it walks cards from id in
-// step's direction, wrapping, and answers the first shown card pick accepts.
-// The card on screen never answers for itself, and an id no longer in the
-// list starts from the end the step comes from. "" is nowhere to go.
+// nextShownCard walks cards from id in step's direction, wrapping, and answers
+// the first shown card pick accepts. The card on screen never answers for
+// itself, and an id no longer in the list starts from the end the step comes
+// from. "" is nowhere to go.
 func nextShownCard(cards []hotkeyCard, id string, step int, pick func(id string) bool) string {
 	count := len(cards)
 	from := -1
@@ -31,10 +31,10 @@ func nextShownCard(cards []hotkeyCard, id string, step int, pick func(id string)
 	return ""
 }
 
-// neighborProject is project-order.ts neighborProjectId over the tab strip's
-// ids, the one on screen included, wrapping at both ends. Nothing to step
-// from (the active id is not in the strip) moves onto the end the step comes
-// from. ok is false for a strip with nowhere to go.
+// neighborProject steps over the tab strip's ids, the one on screen included,
+// wrapping at both ends. Nothing to step from (the active id is not in the
+// strip) moves onto the end the step comes from. ok is false for a strip with
+// nowhere to go.
 func neighborProject(ids []string, active string, step int) (id string, ok bool) {
 	if len(ids) < 2 {
 		return "", false

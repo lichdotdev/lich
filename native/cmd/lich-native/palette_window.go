@@ -200,11 +200,11 @@ func (u *window) forgetParked(h paletteHistory) {
 	}()
 }
 
-// resumeParked is projects.tsx resumeClosedSession: a session picked out of the
-// history, wherever it was parked. The project comes back first when its tab is
-// gone, and a cancelled relocate stops the resume rather than reopening the
-// session into nowhere. The backend's own resume runs it afterwards, in the
-// profile that holds the conversation.
+// resumeParked resumes a session picked out of the history, wherever it was
+// parked. The project comes back first when its tab is gone, and a cancelled
+// relocate stops the resume rather than reopening the session into nowhere. The
+// backend's own resume runs it afterwards, in the profile that holds the
+// conversation.
 func (u *window) resumeParked(c lichclient.ClosedSession) {
 	if !u.model.projectOpen(c.ProjectID) {
 		u.reopenProject(lichclient.RecentProject{ID: c.ProjectID, Name: c.ProjectName, Path: c.ProjectPath})

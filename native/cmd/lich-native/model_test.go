@@ -267,7 +267,7 @@ func onScreen(m *model) (project, session string) {
 }
 
 func TestLaunchOpensTheProjectTheLastScreenWasOn(t *testing.T) {
-	// Home is the home directory's project: the web opens there for anything
+	// Home is the home directory's project: launch lands there for anything
 	// but an open project's screen.
 	cases := map[string]string{"/projects/b/settings": "b", "/projects/gone": "home", "/": "home", "": "home"}
 	for saved, want := range cases {

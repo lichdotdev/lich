@@ -13,7 +13,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// Variant is shadcn's button variant (components/ui/button.tsx).
+// Variant is shadcn's button variant.
 type Variant uint8
 
 const (
@@ -44,7 +44,7 @@ type buttonGeometry struct {
 	square                  bool
 }
 
-// buttonSizes transcribes the size classes of button.tsx (h-9 gap-1.5 px-2.5,
+// buttonSizes transcribes shadcn's button size classes (h-9 gap-1.5 px-2.5,
 // ...). Every size is rounded-md: the min(--radius-md, 8px) of the small ones
 // is 6px too.
 var buttonSizes = map[Size]buttonGeometry{
@@ -58,12 +58,12 @@ var buttonSizes = map[Size]buttonGeometry{
 	SizeIconLG:  {height: Space(10), icon: Space(4), text: TextSM, square: true},
 }
 
-// disabledOpacity is button.tsx's disabled:opacity-50.
+// disabledOpacity is the opacity of a disabled button.
 const disabledOpacity = 0.5
 
-// fade is the opaque color c as disabled:opacity-50 leaves it over the surface.
-// The web fades the finished widget as one layer; fading each opaque color it
-// is made of gives the same pixels, since every pixel is the top one's color.
+// fade is the opaque color c as disabled opacity leaves it over the surface.
+// Fading each opaque color a widget is made of gives the same pixels as fading
+// the finished widget as one layer, since every pixel is the top one's color.
 // Transparent stays transparent, so a ghost button at rest paints nothing.
 func (th *Theme) fade(c color.NRGBA) color.NRGBA {
 	if c.A == 0 {

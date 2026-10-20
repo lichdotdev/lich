@@ -115,8 +115,6 @@ func TestTabsVerticalStacksTriggers(t *testing.T) {
 	}
 }
 
-// The ghost list matches the web dock's: RightDock's h-8 Tabs root shrinks
-// the list to 32px, and its triggers fill it less p-0.5 and 1px: 27px.
 func TestTabsGhostIsTwentyEightTall(t *testing.T) {
 	s := testTheme().Tabs(new(TabsState), tabsNames("Code", "Review")...)
 	s.Variant = TabsVariantGhost

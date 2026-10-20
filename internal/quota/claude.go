@@ -325,7 +325,7 @@ func (l claudeLimit) window() (string, int) {
 	}
 }
 
-// timestamp passes through a reset time the frontend can parse, and drops
+// timestamp passes through a reset time the window can parse, and drops
 // anything else: a gauge with no reset reads better than one counting down to
 // an unparseable date.
 func timestamp(s string) string {

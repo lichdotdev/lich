@@ -19,9 +19,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The project tab, from the approved mockup: browser tabs sized like
-// Chromium's, a fixed width that shrinks evenly to a floor before the strip
-// scrolls.
+// The project tab, from the approved mockup: browser-style tabs of a fixed
+// width that shrinks evenly to a floor before the strip scrolls.
 var (
 	tabWidthMax    = ui.Space(49)   // 196px
 	tabWidthMin    = ui.Space(29.5) // 118px

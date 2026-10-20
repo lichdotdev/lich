@@ -1,11 +1,9 @@
-// Package ui is the native client's counterpart of frontend/src/components/ui
-// and the Tailwind vocabulary around it: the design tokens of
-// frontend/src/index.css, a spacing and type scale named after Tailwind's, and
-// shadcn-style primitives whose variants carry shadcn's names, so a screen is
-// ported by reading its TSX side by side.
+// Package ui is the native client's widget kit: the design tokens, a spacing
+// and type scale named after Tailwind's, and shadcn-style primitives whose
+// variants carry shadcn's names.
 //
 // Gio is immediate mode: widget state (a widget.Clickable) belongs to the
-// caller, and a primitive only draws it, like a controlled React component.
+// caller, and a primitive only draws it.
 package ui
 
 import (
@@ -13,8 +11,8 @@ import (
 	"math"
 )
 
-// OKLCH converts a CSS oklch() color to sRGB, so tokens are written with the
-// same numbers as index.css. alpha is 0..1.
+// OKLCH converts a CSS oklch() color to sRGB, so tokens can be written as CSS
+// writes them. alpha is 0..1.
 func OKLCH(l, c, h, alpha float64) color.NRGBA {
 	hr := h * math.Pi / 180
 	a, b := c*math.Cos(hr), c*math.Sin(hr)
@@ -89,7 +87,7 @@ func fromOKLab(lab [3]float64, alpha float64) color.NRGBA {
 // Over composites c onto the opaque backdrop the way a browser does, in sRGB,
 // and returns the opaque result. Gio blends translucent paint in linear light
 // instead, which renders a dark UI's /10 borders and /60 hovers about twice
-// as bright as the web (white at 10% over #18181b: #5d5d5e against #2f2f31),
+// as bright as a browser blends them (white at 10% over #18181b: #5d5d5e against #2f2f31),
 // so a translucent token must reach paint already composited.
 func Over(backdrop, c color.NRGBA) color.NRGBA {
 	a := float32(c.A) / 255

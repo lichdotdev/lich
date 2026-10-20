@@ -1,6 +1,6 @@
 package main
 
-// The right dock (RightDock.tsx): the panel at the terminal's right that the
+// The right dock: the panel at the terminal's right that the
 // footer's Browse code and Review changes buttons open, on its Code or its
 // Review tab. It owns the chrome around both bodies: the drag-resizable width
 // (one, persisted, for both tabs), full screen, the tab bar and the close
@@ -15,14 +15,14 @@ package main
 //		holdsKeys(gtx C) bool                               // a field of its own has focus
 //	}
 //
-// layoutActions is drawn at the header's right, before full screen, only
-// while the Review tab is on and the checkout has changes, as RightDock.tsx
-// does. th is the header's: the actions sit on bg-sidebar. holdsKeys keeps
-// the terminal, which takes focus every frame it is not told otherwise, off a
-// field of the body; the terminal asks before the dock is laid out, so a flag
-// the body sets during its own layout answers one frame late, and that frame
-// is the one the terminal takes the focus back in. iconAction is the
-// IconAction both halves draw them with, and notice the panels' Notice.
+// layoutActions is drawn at the header's right, before full screen, only while
+// the Review tab is on and the checkout has changes. th is the header's: the
+// actions sit on the sidebar surface. holdsKeys keeps the terminal, which takes
+// focus every frame it is not told otherwise, off a field of the body; the
+// terminal asks before the dock is laid out, so a flag the body sets during its
+// own layout answers one frame late, and that frame is the one the terminal
+// takes the focus back in. iconAction is what both halves draw them with, and
+// notice is the panels' quiet line.
 
 import (
 	"context"
@@ -51,9 +51,8 @@ var (
 	icDockClose    = icons.Lucide("x")
 )
 
-// The web's localStorage key for the dock's width, kept as a backend setting,
-// and RightDock's bounds in rem: wide enough for a diff line at the review's
-// 12px font, short of eating the terminal whole.
+// The dock's width key, a backend setting, and its bounds in rem: wide enough for a diff line at the
+// review's 12px font, short of eating the terminal whole.
 const (
 	dockWidthKey   = "lich.dock.width"
 	dockMinRem     = 20
@@ -72,7 +71,8 @@ const (
 	dockReview
 )
 
-// toggled is App.tsx toggleDock: asking for the tab on screen closes the dock.
+// toggled returns the tab after asking for to: asking for the tab on screen
+// closes the dock.
 func (t dockTab) toggled(to dockTab) dockTab {
 	if t == to {
 		return dockClosed
@@ -139,8 +139,8 @@ func (d *dock) width(gtx C) int {
 	return gtx.Dp(unit.Dp(d.widthRem * remDp))
 }
 
-// layout draws the dock in gtx.Constraints.Max, the box App.tsx gives it: its
-// column beside the terminal, or the whole row in full screen. It reports
+// layout draws the dock in gtx.Constraints.Max: its column beside the
+// terminal, or the whole row in full screen. It reports
 // whether a drag of its width ended, the moment to persist it.
 func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWidth bool, err error) {
 	if d.tab != dockCode {
@@ -232,8 +232,8 @@ func (d *dock) act(gtx C) {
 	}
 }
 
-// closeButton is RightDock's ghost icon-xs ×: the size-4 glyph a size-6
-// IconAction would draw at 3.5.
+// closeButton is the dock's ghost ×: a 1rem glyph, where an iconAction would
+// draw its icon at 0.875rem.
 func (d *dock) closeButton(gtx C, th *ui.Theme, root *ui.Root) D {
 	b := th.Button(&d.close.click, "")
 	b.Icon, b.Variant, b.Size = icDockClose, ui.VariantGhost, ui.SizeIconXS
@@ -247,8 +247,8 @@ type iconActionState struct {
 	tip   ui.Tooltip
 }
 
-// iconAction is IconAction.tsx: a size-6 bare icon button for a panel's
-// header, its meaning in a tooltip, bg-accent while hovered or pressed.
+// iconAction is a bare icon button for a panel's header, its meaning in a
+// tooltip, filled with the accent while hovered or pressed.
 func iconAction(gtx C, th *ui.Theme, root *ui.Root, s *iconActionState, ic *icons.Icon, label string, pressed bool) D {
 	tip := th.Tooltip(root, &s.tip, label)
 	return tip.Layout(gtx, func(gtx C) D {
@@ -265,16 +265,15 @@ func iconAction(gtx C, th *ui.Theme, root *ui.Root, s *iconActionState, ic *icon
 	})
 }
 
-// notice is Notice.tsx: the quiet line a panel shows instead of content,
-// px-3 py-4 text-xs muted.
+// notice is the quiet line a panel shows instead of content.
 func notice(gtx C, th *ui.Theme, text string) D {
 	l := th.Text(ui.TextXS, text).Muted()
 	l.MaxLines = 0
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(4), Bottom: ui.Space(4)}.Layout(gtx, l.Layout)
 }
 
-// footnote is a Notice under a list, border-t py-2: what the listing owes
-// the reader about itself.
+// footnote is a notice under a list: what the listing owes the reader about
+// itself.
 func footnote(gtx C, th *ui.Theme, text string) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(th.Separator),
@@ -289,8 +288,8 @@ func footnote(gtx C, th *ui.Theme, text string) D {
 	)
 }
 
-// parseDockWidth is panel-width.ts parseStoredWidth with the dock's bounds:
-// garbage, negatives and an unset value fall back to the default.
+// parseDockWidth parses a stored width within the dock's bounds: garbage,
+// negatives and an unset value fall back to the default.
 func parseDockWidth(raw string) float64 {
 	rem, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
 	if err != nil || math.IsInf(rem, 0) || math.IsNaN(rem) || rem <= 0 {

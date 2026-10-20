@@ -11,8 +11,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// closeConfirm is ProjectTabs' ConfirmDialog: closing a project kills its
-// terminals, and an agent mid-turn dies with them, so that close asks first.
+// closeConfirm asks before a project closes: closing a project kills its
+// terminals, and an agent mid-turn dies with them.
 type closeConfirm struct {
 	dialog  ui.DialogState
 	open    bool
@@ -247,8 +247,8 @@ func (u *window) pickProject() {
 	u.logErr("open project", u.adopt(*p))
 }
 
-// reopenProject is projects.tsx openRecent: a project whose directory is
-// gone asks the picker where it went, keeping its id.
+// reopenProject opens a recent project; one whose directory is gone asks the
+// picker where it went, keeping its id.
 func (u *window) reopenProject(r lichclient.RecentProject) {
 	there, err := u.client.PathExists(u.ctx, r.Path)
 	if err != nil {
@@ -274,8 +274,7 @@ func (u *window) reopenProject(r lichclient.RecentProject) {
 	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("shell.projects.relocated", i18n.Args{"name": moved.Name, "path": displayPath(moved.Path)})})
 }
 
-// adopt is projects.tsx adopt: add (or reopen) the project, reload, and put
-// it on screen.
+// adopt adds (or reopens) the project, reloads, and puts it on screen.
 func (u *window) adopt(p lichclient.RecentProject) error {
 	if err := u.client.AddProject(u.ctx, p.ID, p.Name, p.Path); err != nil {
 		return fmt.Errorf("add project: %w", err)

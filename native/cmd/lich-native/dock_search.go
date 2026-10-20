@@ -1,6 +1,6 @@
 package main
 
-// The Code tab in text mode (SearchResults.tsx and lib/git/file-search.ts):
+// The Code tab in text mode :
 // the lines holding the query, one group per file, each opening the preview
 // on its line.
 
@@ -133,7 +133,7 @@ func (s *settler) at(query string, now time.Time) (string, time.Time) {
 	return s.settled, s.since.Add(searchSettle)
 }
 
-// splitPath is lang-badge.ts splitPath: the directory and the base name.
+// splitPath splits p into the directory and the base name.
 func splitPath(p string) (dir, base string) {
 	slash := strings.LastIndexByte(p, '/')
 	if slash < 0 {

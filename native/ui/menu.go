@@ -29,13 +29,12 @@ const (
 	MenuSubTrigger
 	MenuLabel
 	MenuSeparator
-	// MenuSwatch is a color swatch cell of a grid submenu, as
-	// CardColorMenu.tsx draws one; Label is its Hint.
+	// MenuSwatch is a color swatch cell of a grid submenu; Label is its Hint.
 	MenuSwatch
 )
 
-// MenuEntry is one row of a DropdownMenu or ContextMenu, the props of its
-// TSX part. Variant is VariantDefault or VariantDestructive.
+// MenuEntry is one row of a DropdownMenu or ContextMenu. Variant is
+// VariantDefault or VariantDestructive.
 type MenuEntry struct {
 	Kind     MenuEntryKind
 	Label    string
@@ -135,8 +134,8 @@ func (s *MenuState) menuPrune(entries []MenuEntry) {
 	}
 }
 
-// menuGeometry is what differs between dropdown-menu.tsx and
-// context-menu.tsx; every other class is shared.
+// menuGeometry is what differs between the dropdown and the context menu;
+// every other class is shared.
 type menuGeometry struct {
 	minWidth, subMinWidth          unit.Dp
 	itemPadX, itemPadY, shortcutPL unit.Dp

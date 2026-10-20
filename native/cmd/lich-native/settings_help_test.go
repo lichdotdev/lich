@@ -10,7 +10,7 @@ import (
 )
 
 // TestBugReportURLPrefillsTheForm pins the query keys to the field ids of
-// .github/ISSUE_TEMPLATE/bug.yml, as support-url.test.ts does for the web.
+// .github/ISSUE_TEMPLATE/bug.yml.
 func TestBugReportURLPrefillsTheForm(t *testing.T) {
 	got := bugReportURL(lichclient.Diagnostics{Version: "1.2.3", Platform: "linux/amd64"})
 	want := "https://github.com/lichdotdev/lich/issues/new?platform=linux%2Famd64&template=bug.yml&version=1.2.3"

@@ -77,8 +77,8 @@ func (f pullsFilter) matches(pr lichclient.PRSummary) bool {
 	return true
 }
 
-// matchesText is pull-request-list.ts matchesText: the number with or without
-// its "#", the title, the author and the branch.
+// matchesText matches text against the number with or without its "#", the
+// title, the author and the branch.
 func matchesText(pr lichclient.PRSummary, text string) bool {
 	needle := strings.ToLower(strings.TrimSpace(text))
 	if needle == "" {
@@ -142,7 +142,7 @@ func mergeMethodLabel(method string) string {
 	return i18n.T("pulls.pullRequestView.rebaseAndMerge")
 }
 
-// allowedMergeMethods is merge-gate.ts: what the base's rules name, all three
+// allowedMergeMethods is what the base's rules name, all three
 // when they name none.
 func allowedMergeMethods(rules *lichclient.BranchRules) []string {
 	var allowed []string
@@ -161,7 +161,7 @@ func conflictsWithBase(d lichclient.PRDetail) bool {
 	return d.MergeStateStatus == "DIRTY" || d.Mergeable == "CONFLICTING"
 }
 
-// mergeBlockedReason is merge-gate.ts: why the merge cannot go, "" when GitHub
+// mergeBlockedReason is why the merge cannot go, "" when GitHub
 // would take it (or a BLOCKED it gives no reason for, which only the merge
 // attempt can explain).
 func mergeBlockedReason(d lichclient.PRDetail) string {
@@ -186,8 +186,8 @@ func mergeBlockedReason(d lichclient.PRDetail) string {
 	return ""
 }
 
-// canAdminOverride is merge-gate.ts: an administrator may merge past BLOCKED
-// or BEHIND, never past a conflict.
+// canAdminOverride says whether an administrator may merge past BLOCKED or
+// BEHIND, never past a conflict.
 func canAdminOverride(d lichclient.PRDetail, rules *lichclient.BranchRules) bool {
 	if rules == nil || !rules.ViewerCanBypass || d.State != "OPEN" || d.IsDraft || d.Mergeable == "CONFLICTING" {
 		return false
@@ -233,7 +233,7 @@ func patternTarget(target string) string {
 	return target
 }
 
-// mergeRuleNote is merge-gate.ts: on BLOCKED, the commit patterns the base's
+// mergeRuleNote is, on BLOCKED, the commit patterns the base's
 // rules hold every commit to, the one rule nothing else on the PR shows.
 func mergeRuleNote(d lichclient.PRDetail, rules *lichclient.BranchRules) string {
 	if d.MergeStateStatus != "BLOCKED" || rules == nil || len(rules.CommitPatterns) == 0 {
@@ -261,10 +261,11 @@ func mergeHint(d lichclient.PRDetail, rules *lichclient.BranchRules) string {
 	return i18n.T("pulls.pullsLogic.failing", i18n.Args{"count": d.Checks.Failed})
 }
 
-// handoffNamedChecks is pr-handoff.ts NAMED_CHECKS: past it the prompt counts.
+// handoffNamedChecks is how many checks the prompt names; past it the prompt
+// counts.
 const handoffNamedChecks = 8
 
-// pullHandoff is pr-handoff.ts: what is wrong with an open PR, conflicts
+// pullHandoff finds what is wrong with an open PR, conflicts
 // first, as a button label and the prompt that hands it over; ok false when
 // nothing is.
 func pullHandoff(d lichclient.PRDetail) (label, prompt string, ok bool) {
@@ -308,7 +309,7 @@ func checksPrompt(d lichclient.PRDetail) string {
 	return out
 }
 
-// checkDuration is check-duration.ts: how long a check ran, or has run while
+// checkDuration is how long a check ran, or has run while
 // it still does; "" without a start.
 func checkDuration(started, completed string, now time.Time) string {
 	start, err := time.Parse(time.RFC3339, started)

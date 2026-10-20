@@ -20,8 +20,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The geometry of input.tsx: h-9, px-2.5, py-1, and the pl-8 + left-2.5 of an
-// icon tucked into the field (common/SearchInput.tsx).
+// The geometry of shadcn's input: h-9, px-2.5, py-1, and the pl-8 + left-2.5
+// of an icon tucked into the field.
 var (
 	inputHeight        = Space(9)
 	inputPadX          = Space(2.5)
@@ -38,14 +38,14 @@ var (
 	inputClearIcon     = icons.Lucide("x")
 )
 
-// The dark-mode alphas of input.tsx: dark:bg-input/30, focus-visible:ring-ring/50,
+// The dark-mode alphas of shadcn's input: dark:bg-input/30, focus-visible:ring-ring/50,
 // dark:aria-invalid:border-destructive/50 and ring-destructive/40.
 const (
 	inputFillAlpha          = 0.3
 	inputFocusRingAlpha     = 0.5
 	inputInvalidBorderAlpha = 0.5
 	inputInvalidRingAlpha   = 0.4
-	// inputSelectionAlpha is index.css's ::selection, primary at 25%.
+	// inputSelectionAlpha is the selection highlight: primary at 25%.
 	inputSelectionAlpha = 0.25
 )
 
@@ -241,7 +241,7 @@ func (f inputText) layout(gtx C, height int) D {
 	padTop, padBottom := padY, padY
 	if !f.single {
 		// The leading Gio leaves off the first and last lines rides on the
-		// padding, so the text box is lines × line-height as on the web.
+		// padding, so the text box is lines × line-height.
 		leading := f.missingLeading(gtx)
 		padTop += leading / 2
 		padBottom += leading - leading/2

@@ -147,7 +147,7 @@ func TestShortcutClickOnAURLOpensItAndReachesNothingElse(t *testing.T) {
 		t.Fatalf("the click's release = %q, %v; want it kept from the program and nothing reopened", url, took)
 	}
 	if _, took := v.linkClick(ptr(pointer.Press, at(20, 0), pointer.ButtonPrimary, 0)); took {
-		t.Fatal("a plain click was taken; only Ctrl/Cmd+click opens, as in the web window")
+		t.Fatal("a plain click was taken; only Ctrl/Cmd+click opens")
 	}
 	if _, took := v.linkClick(ptr(pointer.Press, at(2, 0), pointer.ButtonPrimary, key.ModShortcut)); took {
 		t.Fatal("Ctrl/Cmd+click off any link was taken")

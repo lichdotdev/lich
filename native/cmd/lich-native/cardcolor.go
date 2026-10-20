@@ -6,7 +6,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// cardColors is frontend/src/lib/session/card-color.ts's CARD_COLORS.
 var cardColors = map[string]color.NRGBA{
 	"red":    ui.OKLCH(0.637, 0.237, 25.331, 1),
 	"orange": ui.OKLCH(0.705, 0.213, 47.604, 1),
@@ -18,27 +17,27 @@ var cardColors = map[string]color.NRGBA{
 	"pink":   ui.OKLCH(0.656, 0.241, 354.308, 1),
 }
 
-// cardColorNames is card-color.ts CARD_COLOR_NAMES, the swatch order.
+// cardColorNames is the swatch order.
 var cardColorNames = []string{"red", "orange", "amber", "green", "teal", "blue", "violet", "pink"}
 
-// The tint's share of each fill, card-color.ts's TINTED_FILL.
+// The tint's share of each fill.
 const (
 	tintRest   = 0.10
 	tintHover  = 0.22
 	tintActive = 0.38
 )
 
-// hoverFill is the hover:bg-accent/60 of an untinted card.
+// hoverFill is the accent's alpha on an untinted card under the pointer.
 const hoverFill = 0.6
 
-// cardFill is SessionCard.tsx's cardFill plus its hover class: the card's
-// background for its state, composited onto the surface it sits on.
+// cardFill is the card's background for its state, composited onto the
+// surface it sits on.
 func cardFill(th *ui.Theme, tint string, active, hovered bool) color.NRGBA {
 	return th.Over(cardLayer(th, tint, active, hovered))
 }
 
-// cardLayer is the card's fill as the web declares it, translucent where the
-// classes are; transparent for an untinted card at rest.
+// cardLayer is the card's fill, translucent where it is tinted or hovered;
+// transparent for an untinted card at rest.
 func cardLayer(th *ui.Theme, tint string, active, hovered bool) color.NRGBA {
 	c, tinted := cardColors[tint]
 	switch {

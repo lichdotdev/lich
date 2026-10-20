@@ -25,8 +25,8 @@ var (
 	icTreeFolderOpen = icons.Lucide("folder-open")
 )
 
-// FileTree.tsx geometry: rows indented 0.75rem a level from a 0.5rem base,
-// size-3.5 glyphs, gap-1.5, py-0.5 pr-2, the tree's own py-1.
+// Tree geometry: rows indented 0.75rem a level from a 0.5rem base, 0.875rem
+// glyphs.
 var (
 	treeIndent     = ui.Space(3)
 	treeIndentBase = ui.Space(2)
@@ -132,7 +132,7 @@ func (c *codeTab) treeList(gtx C, th *ui.Theme, rows []treeRow) D {
 	return c.rows.layout(gtx, th, rows, c.selected)
 }
 
-// layout is the tree's rows, py-1, scrolling down and, once a row is wider
+// layout is the tree's rows, scrolling down and, once a row is wider
 // than the column, sideways, with its own bar along the bottom. While the
 // rows overflow downward they stop short of the vertical bar, as the
 // sidebar's Occupy keeps its cards off it.
@@ -277,7 +277,7 @@ func (t *treeRows) rowParts(th *ui.Theme, r treeRow, lit bool) (lead, stat layou
 	return lead, stat
 }
 
-// fileIcon is FileIcon.tsx: the file's devicon, or the muted file glyph at 70%
+// fileIcon draws the file's devicon, or the muted file glyph at 70%
 // opacity for a file it has none for.
 func fileIcon(gtx C, th *ui.Theme, p string) D {
 	if ic := icons.DeviconFor(p); ic != nil {

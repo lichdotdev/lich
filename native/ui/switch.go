@@ -25,7 +25,7 @@ const toggleRem unit.Dp = 16
 
 type toggleSwitchGeometry struct{ width, height, thumb unit.Dp }
 
-// toggleSwitchSizes transcribes data-[size=*] of switch.tsx. The default
+// toggleSwitchSizes transcribes shadcn's switch sizes. The default
 // track is 1.15rem, 18.4px, around a 16px thumb.
 var toggleSwitchSizes = map[SwitchSize]toggleSwitchGeometry{
 	SwitchSizeDefault: {width: 2 * toggleRem, height: 1.15 * toggleRem, thumb: Space(4)},
@@ -34,8 +34,7 @@ var toggleSwitchSizes = map[SwitchSize]toggleSwitchGeometry{
 
 const (
 	// toggleSlideDuration and the curve below are Tailwind's default
-	// transition (150ms, cubic-bezier(0.4, 0, 0.2, 1)); index.css overrides
-	// neither.
+	// transition (150ms, cubic-bezier(0.4, 0, 0.2, 1)).
 	toggleSlideDuration = 150 * time.Millisecond
 	toggleSwitchOffFill = 0.8 // dark:data-unchecked:bg-input/80
 )

@@ -9,7 +9,7 @@ import (
 	"gioui.org/op/paint"
 )
 
-// The swatch grid of CardColorMenu.tsx: grid gap-0.5 of items p-1.5, each a
+// The swatch grid of the card color menu: grid gap-0.5 of items p-1.5, each a
 // size-4 rounded-full ring-1 ring-foreground/15 swatch, the current one with
 // outline-2 outline-offset-2 outline-foreground.
 const menuSwatchRing = 0.15
@@ -90,7 +90,7 @@ func (m menuCore) layoutGrid(gtx C, lv *menuLevel, entries []MenuEntry, cols int
 	return size
 }
 
-// measureSwatch is a swatch cell, its Hint on the swatch as the web wraps it.
+// measureSwatch is a swatch cell, its Hint on the swatch.
 func (m menuCore) measureSwatch(gtx C, e MenuEntry, highlighted bool, hint *Tooltip) menuRow {
 	bg := m.rowColors(e, highlighted).bg
 	on := m.panel
