@@ -22,7 +22,7 @@ import (
 // reference on its way to the one meant.
 const issueLookupDelay = 400 * time.Millisecond
 
-// The wait for the prompt an issue is pasted at: a worktree's first boot can
+// The wait for the prompt a handoff is written at: a worktree's first boot can
 // be minutes, and a session that never comes up must stop being waited for.
 const (
 	promptPoll  = 250 * time.Millisecond
@@ -361,7 +361,7 @@ func (u *window) openWorktree(r worktreeRequest) {
 		return
 	}
 	if r.brief != "" {
-		go u.writeAtPrompt(id, r.brief)
+		go u.submitAtPrompt(id, r.brief)
 	}
 	d.closeAfter()
 }
@@ -442,23 +442,31 @@ func (u *window) showNewSession(projectID, id string) error {
 	return nil
 }
 
-// writeAtPrompt writes text, a block bracketedPaste built, once the session
-// sits at a prompt: written before, it lands in the boot and is thrown away.
-func (u *window) writeAtPrompt(id, text string) {
+// submitAtPrompt sends message as the session's prompt once it sits at one.
+func (u *window) submitAtPrompt(id, message string) {
+	if !u.awaitPrompt(id) {
+		return
+	}
+	if err := u.client.Submit(u.ctx, id, message); err != nil {
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": lichclient.ErrorText(err)})})
+	}
+}
+
+// awaitPrompt waits for the session to sit at a prompt, and says so with a
+// toast when it never does: text written before lands in the boot and is
+// thrown away.
+func (u *window) awaitPrompt(id string) bool {
 	deadline := time.Now().Add(promptLimit)
 	for {
 		ready, err := u.client.Ready(u.ctx, id)
 		if err == nil && ready {
-			break
+			return true
 		}
 		if time.Now().After(deadline) {
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.issueLost", i18n.Args{"error": i18n.T("sidebar.worktreeDialog.neverPrompted")})})
-			return
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": i18n.T("sidebar.worktreeDialog.neverPrompted")})})
+			return false
 		}
 		time.Sleep(promptPoll)
-	}
-	if err := u.terms.writePaste(u.ctx, id, text); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.issueLost", i18n.Args{"error": lichclient.ErrorText(err)})})
 	}
 }
 

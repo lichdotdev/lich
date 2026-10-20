@@ -139,8 +139,8 @@ func (u *window) approvePR(path string, number int) {
 	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pullRequestView.approvedToast", i18n.Args{"number": number})})
 }
 
-// openPRSession opens the PR in a session, then hands prompt (when any) to
-// the session: a checkout already holding the branch is reused, its live
+// openPRSession opens the PR in a session, then sends prompt (when any) as
+// the session's prompt: a checkout already holding the branch is reused, its live
 // session brought up or a new one opened; else the PR is checked out into a
 // new worktree. The checkouts are read fresh, never from what drew the button.
 func (u *window) openPRSession(project lichclient.Project, d lichclient.PRDetail, prompt string) {
@@ -154,7 +154,7 @@ func (u *window) openPRSession(project lichclient.Project, d lichclient.PRDetail
 	u.pulls.hide()
 	u.model.invalidate()
 	if prompt != "" {
-		u.writeAtPrompt(id, bracketedPaste(prompt))
+		u.submitAtPrompt(id, prompt)
 	}
 }
 

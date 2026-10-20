@@ -101,7 +101,7 @@
     "creating": "Creando…",
     "carryReused": "{name} ya existía, así que se abrió tal como estaba y tus cambios sin confirmar se quedaron donde estaban.",
     "carryFailed": "La worktree se abrió, pero no se pudieron copiar tus cambios sin confirmar: {error}",
-    "issueLost": "No se pudo pasar el issue a la sesión: {error}",
+    "handoffLost": "No se pudo enviar el mensaje a la sesión: {error}",
     "neverPrompted": "la sesión nunca llegó a un prompt"
   },
   "worktreeCloseDialogs": {

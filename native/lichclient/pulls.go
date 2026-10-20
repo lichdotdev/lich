@@ -178,6 +178,12 @@ func (c *Client) AnnounceMerge(ctx context.Context, checkout string, number int,
 	return c.Call(ctx, "relay.AnnounceMerge", nil, checkout, number, title, branch, base)
 }
 
+// Submit types message at session id's prompt and sends it; the session has to
+// be a running agent.
+func (c *Client) Submit(ctx context.Context, id, message string) error {
+	return c.Call(ctx, "relay.Submit", nil, id, message)
+}
+
 // ReviewComment mirrors project.ReviewComment: one line comment of a review.
 type ReviewComment struct {
 	Path      string `json:"path"`

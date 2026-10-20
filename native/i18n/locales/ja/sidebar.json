@@ -101,7 +101,7 @@
     "creating": "作成中…",
     "carryReused": "{name} はすでに存在していたため、そのままの状態で開きました。未コミットの変更は元の場所に残っています。",
     "carryFailed": "ワークツリーは開きましたが、未コミットの変更をコピーできませんでした: {error}",
-    "issueLost": "Issue をセッションに引き渡せませんでした: {error}",
+    "handoffLost": "セッションにメッセージを送信できませんでした: {error}",
     "neverPrompted": "セッションがプロンプトの入力待ちになりませんでした"
   },
   "worktreeCloseDialogs": {

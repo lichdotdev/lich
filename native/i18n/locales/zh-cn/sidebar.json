@@ -101,7 +101,7 @@
     "creating": "正在创建…",
     "carryReused": "{name} 已经存在，因此按原样打开，你未提交的更改仍留在原处。",
     "carryFailed": "工作树已打开，但无法复制你未提交的更改：{error}",
-    "issueLost": "无法将议题交给该会话：{error}",
+    "handoffLost": "无法将消息发送给该会话：{error}",
     "neverPrompted": "会话始终没有进入提示符"
   },
   "worktreeCloseDialogs": {

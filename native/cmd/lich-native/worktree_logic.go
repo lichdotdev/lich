@@ -53,14 +53,13 @@ func parseIssueRef(typed string) int {
 
 func issueName(i lichclient.Issue) string { return fmt.Sprintf("%d %s", i.Number, i.Title) }
 
-// issueBrief is what the issue's session finds at its prompt: one bracketed
-// paste, left unsent.
+// issueBrief is the message the issue's session is sent as its first prompt.
 func issueBrief(i lichclient.Issue) string {
 	head := i18n.Prompt("prompts.issue.head", i18n.Args{"number": i.Number, "title": i.Title, "url": i.URL})
 	if body := strings.TrimSpace(i.Body); body != "" {
-		return bracketedPaste(head + "\n\n" + body)
+		return head + "\n\n" + body
 	}
-	return bracketedPaste(head)
+	return head
 }
 
 // The bounds a slug of typed words grows within, in words and in

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A pull request that conflicts with its base no longer lists the conflicting files under its title. The "Conflicts with" status counts them, and clicking it opens a panel over the screen that names each one.
+- **Resolve conflicts** and **Fix CI errors** on a pull request, and a worktree started from a `#123` issue, now send their message to the session they open, where it used to sit at the prompt waiting for you to press Enter. A terminal card in that checkout is never sent anything.
 
 ### Fixed
 

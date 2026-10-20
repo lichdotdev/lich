@@ -101,7 +101,7 @@
     "creating": "Creating…",
     "carryReused": "{name} already existed, so it opened as it stands and your uncommitted changes stayed where they were.",
     "carryFailed": "The worktree opened, but your uncommitted changes could not be copied: {error}",
-    "issueLost": "The issue could not be handed to the session: {error}",
+    "handoffLost": "The message could not be sent to the session: {error}",
     "neverPrompted": "the session never reached a prompt"
   },
   "worktreeCloseDialogs": {

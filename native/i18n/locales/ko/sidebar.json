@@ -100,7 +100,7 @@
     "creating": "만드는 중…",
     "carryReused": "{name}이(가) 이미 있어서 현재 상태 그대로 열었고, 커밋하지 않은 변경 사항은 원래 자리에 남아 있습니다.",
     "carryFailed": "worktree는 열렸지만, 커밋하지 않은 변경 사항을 복사하지 못했습니다: {error}",
-    "issueLost": "세션에 이슈를 넘기지 못했습니다: {error}",
+    "handoffLost": "세션에 메시지를 보내지 못했습니다: {error}",
     "neverPrompted": "세션이 프롬프트 상태에 이르지 못했습니다"
   },
   "worktreeCloseDialogs": {
