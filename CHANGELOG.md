@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.74.0] - 2026-10-20
+
 ### Added
 
 - F11 puts the window in full screen and back, without the minimize, maximize and close buttons while it is. The chord can be changed in Settings › Hotkeys.
@@ -6238,7 +6240,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.73.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.74.0...HEAD
+[0.74.0]: https://github.com/lichdotdev/lich/compare/v0.73.0...v0.74.0
 [0.73.0]: https://github.com/lichdotdev/lich/compare/v0.72.0...v0.73.0
 [0.72.0]: https://github.com/lichdotdev/lich/compare/v0.71.2...v0.72.0
 [0.71.2]: https://github.com/lichdotdev/lich/compare/v0.71.1...v0.71.2
