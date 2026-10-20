@@ -150,7 +150,7 @@ func TestRunningRemovalNamesTheWorktreeAndCountsTheSessions(t *testing.T) {
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
 	many := i18n.T("pulls.pullsActions.running", i18n.Args{"count": 3, "name": "wt"})
-	if many != "3 sessões em wt estão no meio de um turno. Remover o worktree as interrompe; o turno em andamento é perdido." {
+	if many != "3 sessões em wt estão no meio de um turno. Remover a worktree as interrompe; o turno em andamento é perdido." {
 		t.Errorf("pt-BR other = %q", many)
 	}
 }
