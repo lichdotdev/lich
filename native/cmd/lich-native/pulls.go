@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -66,6 +67,8 @@ type pullsScreen struct {
 	root  *ui.Root
 
 	open bool
+	// focused is whether the window has the user's focus.
+	focused bool
 	// squareX is the left edge of the island the active project tab sits on
 	// the top-left corner of, -1 for none: that island drops the rounding for
 	// the tab to grow out of, as the stage's island does.
@@ -129,11 +132,35 @@ func (p *pullsScreen) show(project lichclient.Project, branch string, branchPR i
 
 func (p *pullsScreen) hide() { p.open = false }
 
+// setFocused follows the window's focus: coming back to it reads again what
+// the screen shows, which may have moved on GitHub meanwhile.
+func (p *pullsScreen) setFocused(focused bool) {
+	if focused && !p.focused && p.open {
+		p.store.stale()
+	}
+	p.focused = focused
+}
+
+// recheck owes what the screen shows a newer answer once prRecheck has passed
+// since the last one: a push or a merge made outside lich announces nothing.
+// It answers when the next one is due.
+func (p *pullsScreen) recheck(now time.Time) time.Time {
+	due := p.store.lastStale().Add(prRecheck)
+	if now.Before(due) {
+		return due
+	}
+	p.store.stale()
+	return now.Add(prRecheck)
+}
+
 // layout draws the two islands across gtx and answers what was asked of the
 // window; th is on the window's canvas.
 func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	var act pullsAction
 	gtx.Constraints.Min = gtx.Constraints.Max
+	if p.focused {
+		gtx.Execute(op.InvalidateCmd{At: p.recheck(gtx.Now)})
+	}
 	rows := p.store.list(p.project.Path, p.state)
 	if p.selected == 0 && p.branchPR == 0 && len(rows.val) > 0 {
 		p.selected = filterPulls(rows.val, filterAll, "")[0].Number

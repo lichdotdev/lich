@@ -310,6 +310,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 		case app.ConfigEvent:
 			u.chrome = chromeOf(e.Config)
 			u.model.setFocused(u.ctx, e.Config.Focused)
+			u.pulls.setFocused(e.Config.Focused)
 			u.toaster.SetHidden(!e.Config.Focused)
 		case *app.ClosingEvent:
 			u.onClosing(e)

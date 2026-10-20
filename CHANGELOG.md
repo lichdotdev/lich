@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - On macOS, the close, minimize and zoom buttons sit centered in the native window's title bar, not pressed against its top edge, and follow the interface zoom.
 - The window can be dragged by its top bar: past the last tab and in the gaps around the brand and the buttons. Before, no part of the bar moved it.
+- The Pulls screen keeps what it shows up to date without pressing Refresh. It reads a pull request again every few seconds while GitHub is still working out whether it can merge, once a minute while the screen is open, and when you come back to the window, so a push, a merge or a conflict made outside lich shows up on its own.
 
 ## [0.73.0] - 2026-10-20
 

@@ -160,6 +160,9 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return v.empty(gtx, th, p, act) })
 	}
 	d := *read.val
+	if stillSettling(d) && !read.loading {
+		gtx.Execute(op.InvalidateCmd{At: read.at.Add(pendingRecheck)})
+	}
 	if v.shotMergeEdit != "" {
 		v.mergeEdit.show(v.shotMergeEdit, false, d)
 		v.shotMergeEdit = ""

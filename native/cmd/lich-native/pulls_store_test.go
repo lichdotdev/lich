@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestPullsStoreReadsOnceUntilAChangeIsAnnounced(t *testing.T) {
@@ -52,4 +53,59 @@ func TestPullsStoreRereadsADetailWhileAChecksRuns(t *testing.T) {
 	s.mu.Unlock()
 	s.detail("/repo", 7)
 	waitFor(t, "the recheck", func() bool { return stub.calls("project.PullRequestDetail") == 2 })
+}
+
+func TestPullsStoreRereadsADetailWhileGitHubWorksOutMergeability(t *testing.T) {
+	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
+		return lichclient.PRDetail{Number: 7, State: "OPEN", Mergeable: "UNKNOWN", MergeStateStatus: "UNKNOWN"}, http.StatusOK
+	}}
+	s := newPullsStore(context.Background(), stub.client(t), func() {})
+	s.detail("/repo", 7)
+	waitFor(t, "the first read", func() bool { return s.detail("/repo", 7).loaded })
+	s.mu.Lock()
+	for _, e := range s.details {
+		e.at = time.Now().Add(-pendingRecheck)
+	}
+	s.mu.Unlock()
+	s.detail("/repo", 7)
+	waitFor(t, "the recheck", func() bool { return stub.calls("project.PullRequestDetail") == 2 })
+}
+
+func pullsScreenOnAList(t *testing.T) (*pullsScreen, *rpcStub) {
+	t.Helper()
+	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
+		return []lichclient.PRSummary{{Number: 7}}, http.StatusOK
+	}}
+	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
+	p.show(lichclient.Project{ID: "p", Path: "/repo"}, "main", 0)
+	waitFor(t, "the first read", func() bool { return p.store.list("/repo", pullsOpen).loaded })
+	return p, stub
+}
+
+func TestPullsScreenRereadsWhenTheWindowGetsFocusBack(t *testing.T) {
+	p, stub := pullsScreenOnAList(t)
+	p.setFocused(true)
+	p.setFocused(true)
+	p.store.list("/repo", pullsOpen)
+	waitFor(t, "the read focus owes", func() bool { return stub.calls("project.ListPullRequests") == 2 })
+	p.setFocused(false)
+	p.store.list("/repo", pullsOpen)
+	if got := stub.calls("project.ListPullRequests"); got != 2 {
+		t.Errorf("calls after losing focus = %d, want 2", got)
+	}
+}
+
+func TestPullsScreenRereadsWhatItShowsEveryRecheck(t *testing.T) {
+	p, stub := pullsScreenOnAList(t)
+	now := time.Now()
+	if due := p.recheck(now); !due.After(now) {
+		t.Fatalf("a fresh read is owed again at %v, want after %v", due, now)
+	}
+	p.store.list("/repo", pullsOpen)
+	if got := stub.calls("project.ListPullRequests"); got != 1 {
+		t.Fatalf("calls before the recheck = %d, want 1", got)
+	}
+	p.recheck(now.Add(prRecheck))
+	p.store.list("/repo", pullsOpen)
+	waitFor(t, "the recheck", func() bool { return stub.calls("project.ListPullRequests") == 2 })
 }

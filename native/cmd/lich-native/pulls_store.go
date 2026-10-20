@@ -9,8 +9,8 @@ import (
 	"github.com/lichdotdev/lich/native/lichclient"
 )
 
-// pendingRecheck is how often a pull request with a check still running is
-// read again while it is on screen.
+// pendingRecheck is how often a pull request still settling is read again
+// while it is on screen.
 const pendingRecheck = 10 * time.Second
 
 // pullsRead is one backend read: its last answer, and whether a newer one is
@@ -33,7 +33,9 @@ type pullsStore struct {
 	client     *lichclient.Client
 	invalidate func()
 
-	mu        sync.Mutex
+	mu sync.Mutex
+	// staledAt is when every read was last owed a newer answer.
+	staledAt  time.Time
 	lists     map[string]*pullsRead[[]lichclient.PRSummary]
 	details   map[string]*pullsRead[*lichclient.PRDetail]
 	rules     map[string]*pullsRead[*lichclient.BranchRules]
@@ -83,16 +85,23 @@ func read[T any](s *pullsStore, entries map[string]*pullsRead[T], key string, lo
 	return *e
 }
 
+func (s *pullsStore) lastStale() time.Time {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.staledAt
+}
+
 func staleAll[T any](entries map[string]*pullsRead[T]) {
 	for _, e := range entries {
 		e.stale = true
 	}
 }
 
-// stale owes every read a newer answer: a write landed, the user asked, or the
-// screen came back into view.
+// stale owes every read a newer answer: a write landed, the user asked, the
+// screen or the window came back into view, or prRecheck passed.
 func (s *pullsStore) stale() {
 	s.mu.Lock()
+	s.staledAt = time.Now()
 	staleAll(s.lists)
 	staleAll(s.details)
 	staleAll(s.rules)
@@ -110,18 +119,28 @@ func (s *pullsStore) list(path string, state pullsState) pullsRead[[]lichclient.
 	})
 }
 
-// detail reads pull request number, again every pendingRecheck while one of
-// its checks is still running.
+// detail reads pull request number, again every pendingRecheck while it is
+// still settling (stillSettling).
 func (s *pullsStore) detail(path string, number int) pullsRead[*lichclient.PRDetail] {
 	key := fmt.Sprint(path, "\x00", number)
 	s.mu.Lock()
-	if e, ok := s.details[key]; ok && e.val != nil && e.val.Checks.Pending > 0 && time.Since(e.at) >= pendingRecheck {
+	if e, ok := s.details[key]; ok && e.val != nil && stillSettling(*e.val) && time.Since(e.at) >= pendingRecheck {
 		e.stale = true
 	}
 	s.mu.Unlock()
 	return read(s, s.details, key, func() (*lichclient.PRDetail, error) {
 		return s.client.PullRequestDetail(s.ctx, path, number)
 	})
+}
+
+// stillSettling is a pull request whose answer GitHub has not finished: a check
+// still running, or mergeability it reads UNKNOWN while it recomputes after a
+// push to the branch or its base. Nothing announces the end of either.
+func stillSettling(d lichclient.PRDetail) bool {
+	if d.Checks.Pending > 0 {
+		return true
+	}
+	return d.State == "OPEN" && (d.Mergeable == "UNKNOWN" || d.MergeStateStatus == "UNKNOWN")
 }
 
 func (s *pullsStore) branchRules(path, base string) *lichclient.BranchRules {
