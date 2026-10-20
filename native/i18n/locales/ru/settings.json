@@ -512,6 +512,7 @@
     "copy": "Копировать плагины",
     "loginTitle": "Вход в {name}",
     "waiting": "Ожидание входа…",
+    "authenticating": "Выполняется аутентификация…",
     "openBrowser": "Открыть в браузере",
     "copyAddress": "Копировать",
     "pasteCode": "Вставьте код",

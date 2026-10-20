@@ -165,9 +165,10 @@ func (s *settingsScreen) submitLoginCode(c *profileSettings, slug, code string) 
 	if code == "" || !c.provider.loginCode {
 		return
 	}
+	c.flow.set(func(d *flowData) { d.authenticating, d.failure = true, "" })
 	go func() {
 		if err := c.provider.api(s.client).LoginCode(s.ctx, slug, code); err != nil {
-			c.flow.set(func(d *flowData) { d.failure = lichclient.ErrorText(err) })
+			c.flow.set(func(d *flowData) { d.authenticating, d.failure = false, lichclient.ErrorText(err) })
 			s.invalidate()
 		}
 	}()
@@ -377,11 +378,15 @@ func pluginRow(gtx C, th *ui.Theme, p lichclient.ProfilePlugin, box *widget.Bool
 // buttons, the field for the code the page shows, and the way out to a
 // terminal.
 func (s *settingsScreen) loginBody(gtx C, th *ui.Theme, f *profileFlow, d flowData) D {
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return spinnerLine(gtx, th, i18n.T("settings.settingsProfilesDialogs.waiting")) })}
+	waiting := i18n.T("settings.settingsProfilesDialogs.waiting")
+	if d.authenticating {
+		waiting = i18n.T("settings.settingsProfilesDialogs.authenticating")
+	}
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return spinnerLine(gtx, th, waiting) })}
 	if d.url != "" {
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.addressBlock(gtx, th, f, d.url) }))
 	}
-	if f.ps.provider.loginCode {
+	if f.ps.provider.loginCode && !d.authenticating {
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.codeBlock(gtx, th, f) }))
 	}
 	if d.failure != "" {

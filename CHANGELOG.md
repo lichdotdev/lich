@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Logging a Claude Code or Codex profile in now shows that it is authenticating once you are through in the browser, or once you submit a pasted code, where the dialog kept waiting for the login until the very end and the code field just emptied.
 - In Brazilian Portuguese, every message now calls a worktree "a worktree", where a few said "o worktree".
 
 ## [0.72.0] - 2026-10-19

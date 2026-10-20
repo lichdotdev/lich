@@ -502,6 +502,7 @@
     "copy": "プラグインをコピー",
     "loginTitle": "{name} にログイン",
     "waiting": "ログインを待っています…",
+    "authenticating": "認証しています…",
     "openBrowser": "ブラウザーで開く",
     "copyAddress": "コピー",
     "pasteCode": "コードを貼り付け",

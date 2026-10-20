@@ -502,6 +502,7 @@
     "copy": "Copiar plugins",
     "loginTitle": "Iniciar sesión en {name}",
     "waiting": "Esperando el inicio de sesión…",
+    "authenticating": "Autenticando…",
     "openBrowser": "Abrir en el navegador",
     "copyAddress": "Copiar",
     "pasteCode": "Pega el código",

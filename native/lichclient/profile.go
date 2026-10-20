@@ -62,16 +62,18 @@ type ProfilePluginResult struct {
 
 // ProfileLogin mirrors claudeprofile.LoginEvent and codexprofile.LoginEvent:
 // Output (and URL, when that text holds the sign-in address) while the CLI
-// talks, then one event with Done set.
+// talks, Authenticating once it is through with the browser, then one event
+// with Done set.
 type ProfileLogin struct {
-	Profile     string `json:"profile"`
-	Output      string `json:"output,omitempty"`
-	URL         string `json:"url,omitempty"`
-	Done        bool   `json:"done,omitempty"`
-	LoggedIn    bool   `json:"loggedIn,omitempty"`
-	Cancelled   bool   `json:"cancelled,omitempty"`
-	Error       string `json:"error,omitempty"`
-	PluginError string `json:"pluginError,omitempty"`
+	Profile        string `json:"profile"`
+	Output         string `json:"output,omitempty"`
+	URL            string `json:"url,omitempty"`
+	Authenticating bool   `json:"authenticating,omitempty"`
+	Done           bool   `json:"done,omitempty"`
+	LoggedIn       bool   `json:"loggedIn,omitempty"`
+	Cancelled      bool   `json:"cancelled,omitempty"`
+	Error          string `json:"error,omitempty"`
+	PluginError    string `json:"pluginError,omitempty"`
 }
 
 // ProfileMoved is the session-profile payload: Profile is the slug the session

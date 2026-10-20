@@ -502,6 +502,7 @@
     "copy": "复制插件",
     "loginTitle": "登录 {name}",
     "waiting": "正在等待登录…",
+    "authenticating": "正在验证身份…",
     "openBrowser": "在浏览器中打开",
     "copyAddress": "复制",
     "pasteCode": "粘贴验证码",

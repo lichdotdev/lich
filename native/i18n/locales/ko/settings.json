@@ -497,6 +497,7 @@
     "copy": "플러그인 복사",
     "loginTitle": "{name}에 로그인",
     "waiting": "로그인을 기다리는 중…",
+    "authenticating": "인증하는 중…",
     "openBrowser": "브라우저에서 열기",
     "copyAddress": "복사",
     "pasteCode": "코드 붙여 넣기",

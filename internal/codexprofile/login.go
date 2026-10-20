@@ -22,18 +22,21 @@ const loginTimeout = 10 * time.Minute
 var loginURL = regexp.MustCompile(`https://\S+`)
 
 // LoginEvent is one step of a login. Output carries what the CLI printed, with
-// URL set when that text holds the sign-in address. The last event has Done set:
+// URL set when that text holds the sign-in address. Authenticating says the CLI
+// is through with the browser and lich is reading whether the login took. The
+// last event has Done set:
 // LoggedIn is what `codex login status` answered afterwards, Error why the login
 // failed or was cancelled, and PluginError why the lich plugin did not install.
 type LoginEvent struct {
-	Profile     string `json:"profile"`
-	Output      string `json:"output,omitempty"`
-	URL         string `json:"url,omitempty"`
-	Done        bool   `json:"done,omitempty"`
-	LoggedIn    bool   `json:"loggedIn,omitempty"`
-	Cancelled   bool   `json:"cancelled,omitempty"`
-	Error       string `json:"error,omitempty"`
-	PluginError string `json:"pluginError,omitempty"`
+	Profile        string `json:"profile"`
+	Output         string `json:"output,omitempty"`
+	URL            string `json:"url,omitempty"`
+	Authenticating bool   `json:"authenticating,omitempty"`
+	Done           bool   `json:"done,omitempty"`
+	LoggedIn       bool   `json:"loggedIn,omitempty"`
+	Cancelled      bool   `json:"cancelled,omitempty"`
+	Error          string `json:"error,omitempty"`
+	PluginError    string `json:"pluginError,omitempty"`
 }
 
 type login struct {
@@ -118,6 +121,7 @@ func (s *Service) finishLogin(ctx context.Context, p Profile, run *login, waitEr
 		s.emit(LoginEventName, done)
 		return
 	}
+	s.emit(LoginEventName, LoginEvent{Profile: p.Slug, Authenticating: true})
 	loggedIn, err := s.loggedIn(p)
 	switch {
 	case err != nil:

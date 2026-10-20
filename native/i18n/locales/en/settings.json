@@ -502,6 +502,7 @@
     "copy": "Copy plugins",
     "loginTitle": "Log in to {name}",
     "waiting": "Waiting for the login…",
+    "authenticating": "Authenticating…",
     "openBrowser": "Open in browser",
     "copyAddress": "Copy",
     "pasteCode": "Paste the code",

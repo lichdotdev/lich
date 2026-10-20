@@ -47,11 +47,14 @@ type flowData struct {
 	refresh bool
 	working string
 	// keys are the plugins to install once the login is through.
-	keys    []string
-	url     string
-	failure string
-	account string
-	results []lichclient.ProfilePluginResult
+	keys []string
+	url  string
+	// authenticating is a login past the browser, or handed a code: the field
+	// is hidden until the login ends or the hand-over fails.
+	authenticating bool
+	failure        string
+	account        string
+	results        []lichclient.ProfilePluginResult
 	// pluginNote is why the lich plugin did not install, in the backend's
 	// words.
 	pluginNote string
@@ -394,6 +397,9 @@ func (s *settingsScreen) loginProgress(kind string, ev lichclient.ProfileLogin) 
 	case !ev.Done:
 		if mine && ev.URL != "" {
 			f.set(func(d *flowData) { d.url = ev.URL })
+		}
+		if mine && ev.Authenticating {
+			f.set(func(d *flowData) { d.authenticating = true })
 		}
 	case !mine:
 	case ev.Cancelled:

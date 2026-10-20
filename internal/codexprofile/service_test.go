@@ -233,6 +233,25 @@ func TestALoggedInProfileCarriesItsAccount(t *testing.T) {
 	}
 }
 
+func TestLoginSaysItIsAuthenticatingOnceTheCLIIsThrough(t *testing.T) {
+	machine(t)
+	s, rec := fakeService(t)
+	p, err := s.CreateProfile("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Login(p.Slug); err != nil {
+		t.Fatal(err)
+	}
+	rec.wait(t)
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	n := len(rec.events)
+	if n < 2 || !rec.events[n-2].Authenticating || rec.events[n-2].Done {
+		t.Errorf("the event before the last one is not Authenticating: %+v", rec.events)
+	}
+}
+
 func TestCancelledLoginSaysSo(t *testing.T) {
 	machine(t)
 	s, rec := fakeService(t)
@@ -251,6 +270,13 @@ func TestCancelledLoginSaysSo(t *testing.T) {
 	done := rec.wait(t)
 	if !done.Cancelled || done.LoggedIn {
 		t.Errorf("finished with %+v", done)
+	}
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	for _, e := range rec.events {
+		if e.Authenticating {
+			t.Errorf("a cancelled login said it was authenticating: %+v", rec.events)
+		}
 	}
 }
 

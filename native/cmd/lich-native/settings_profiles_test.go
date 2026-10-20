@@ -20,10 +20,11 @@ import (
 // profileBackend answers the claudeprofile calls a dialog makes and records
 // their order, so a test can say which came after which.
 type profileBackend struct {
-	mu        sync.Mutex
-	calls     []string
-	loggedIn  bool
-	deleteErr string
+	mu           sync.Mutex
+	calls        []string
+	loggedIn     bool
+	deleteErr    string
+	loginCodeErr string
 }
 
 func (b *profileBackend) record(call string) {
@@ -65,6 +66,12 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 			if b.deleteErr != "" {
 				w.WriteHeader(http.StatusInternalServerError)
 				_ = json.NewEncoder(w).Encode(map[string]string{"error": b.deleteErr})
+				return
+			}
+		case "claudeprofile.LoginCode":
+			if b.loginCodeErr != "" {
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": b.loginCodeErr})
 				return
 			}
 		}
@@ -172,6 +179,58 @@ func TestALoginThatDidNotTakeShowsItsReason(t *testing.T) {
 		if strings.HasPrefix(c, "claudeprofile.InstallPlugins") {
 			t.Errorf("plugins installed into a profile nobody is logged in to: %v", b.log())
 		}
+	}
+}
+
+func TestASubmittedCodeShowsItIsBeingChecked(t *testing.T) {
+	b := &profileBackend{}
+	s := flowScreen(t, b)
+	f := &s.providers.claude.flow
+	s.startLogin(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
+	s.submitLoginCode(&s.providers.claude, "work", " abc ")
+	if !f.view().authenticating {
+		t.Error("the dialog did not show the code was sent")
+	}
+	eventually(t, "the code reached the login", func() bool {
+		return slices.Contains(b.log(), `claudeprofile.LoginCode["work","abc"]`)
+	})
+	if !f.view().authenticating {
+		t.Error("a code the login took stopped being checked")
+	}
+}
+
+func TestALoginPastTheBrowserShowsItIsAuthenticating(t *testing.T) {
+	b := &profileBackend{}
+	s := codexFlowScreen(t, b)
+	c := &s.providers.codex
+	f := &c.flow
+	s.startLogin(c, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
+	s.loginProgress(claudeKind, lichclient.ProfileLogin{Profile: "work", Authenticating: true})
+	if f.view().authenticating {
+		t.Error("a Claude login step reached the Codex dialog")
+	}
+	s.loginProgress(codexKind, lichclient.ProfileLogin{Profile: "other", Authenticating: true})
+	if f.view().authenticating {
+		t.Error("another profile's login reached this dialog")
+	}
+	s.loginProgress(codexKind, lichclient.ProfileLogin{Profile: "work", Authenticating: true})
+	if !f.view().authenticating {
+		t.Error("the dialog did not show the login is authenticating")
+	}
+}
+
+func TestACodeTheLoginRefusesBringsTheFieldBack(t *testing.T) {
+	b := &profileBackend{loginCodeErr: "profile \"work\" is not logging in"}
+	s := flowScreen(t, b)
+	f := &s.providers.claude.flow
+	s.startLogin(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
+	s.submitLoginCode(&s.providers.claude, "work", "abc")
+	eventually(t, "the refusal", func() bool { return f.view().failure != "" })
+	if d := f.view(); d.authenticating || d.failure != `profile "work" is not logging in` {
+		t.Errorf("flow = %+v", d)
 	}
 }
 
