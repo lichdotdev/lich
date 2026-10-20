@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- F11 puts the window in full screen and back, without the minimize, maximize and close buttons while it is. The chord can be changed in Settings › Hotkeys.
+
 ### Fixed
 
 - On macOS, the close, minimize and zoom buttons sit centered in the native window's title bar, not pressed against its top edge, and follow the interface zoom.

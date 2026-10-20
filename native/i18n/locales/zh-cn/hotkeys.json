@@ -21,6 +21,7 @@
     "prevProject": "上一个项目",
     "toggleSidebar": "切换会话侧边栏",
     "toggleDock": "切换右侧停靠栏",
+    "toggleFullscreen": "切换全屏",
     "searchInFiles": "在文件中搜索",
     "splitBeside": "在此会话旁显示另一个会话",
     "splitBelow": "在此会话下方显示另一个会话",

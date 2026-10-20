@@ -21,6 +21,7 @@
     "prevProject": "이전 프로젝트",
     "toggleSidebar": "세션 사이드바 전환",
     "toggleDock": "오른쪽 독 전환",
+    "toggleFullscreen": "전체 화면 전환",
     "searchInFiles": "파일 내용 검색",
     "splitBeside": "이 세션 옆에 다른 세션 표시",
     "splitBelow": "이 세션 아래에 다른 세션 표시",

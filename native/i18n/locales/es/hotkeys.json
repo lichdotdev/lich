@@ -21,6 +21,7 @@
     "prevProject": "Proyecto anterior",
     "toggleSidebar": "Mostrar u ocultar la barra lateral de sesiones",
     "toggleDock": "Mostrar u ocultar el panel derecho",
+    "toggleFullscreen": "Activar o desactivar pantalla completa",
     "searchInFiles": "Buscar en archivos",
     "splitBeside": "Mostrar otra sesión junto a esta",
     "splitBelow": "Mostrar otra sesión debajo de esta",

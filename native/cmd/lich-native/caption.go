@@ -272,3 +272,13 @@ func (u *window) performCaption(b captionButton) {
 		u.win.Perform(system.ActionClose)
 	}
 }
+
+// toggleFullscreen leaves the caption's buttons to windowChrome.drawn, which
+// hides them while the window is full screen.
+func (u *window) toggleFullscreen() {
+	mode := app.Fullscreen
+	if u.chrome.fullscreen {
+		mode = app.Windowed
+	}
+	u.win.Option(mode.Option())
+}

@@ -44,6 +44,7 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyPrevProject:        {func(u *window) bool { _, ok := u.neighborTab(-1); return ok }, func(u *window, _ C) { u.hotkeyTab(-1) }},
 	hotkeyToggleSidebar:      {nil, (*window).hotkeySidebar},
 	hotkeyToggleDock:         {nil, (*window).hotkeyDock},
+	hotkeyToggleFullscreen:   {nil, func(u *window, _ C) { u.toggleFullscreen() }},
 	hotkeySearchInFiles:      {(*window).hasProject, (*window).hotkeySearch},
 	hotkeySettings:           {(*window).hasProject, (*window).hotkeyOpenSettings},
 	hotkeyPulls:              {(*window).hasProject, func(u *window, _ C) { u.togglePulls() }},

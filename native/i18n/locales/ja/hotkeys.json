@@ -21,6 +21,7 @@
     "prevProject": "前のプロジェクト",
     "toggleSidebar": "セッションサイドバーの表示を切り替え",
     "toggleDock": "右ドックの表示を切り替え",
+    "toggleFullscreen": "フルスクリーンの切り替え",
     "searchInFiles": "ファイル内を検索",
     "splitBeside": "このセッションの横に別のセッションを表示",
     "splitBelow": "このセッションの下に別のセッションを表示",

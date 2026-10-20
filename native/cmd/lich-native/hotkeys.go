@@ -37,6 +37,7 @@ const (
 	hotkeyPrevProject        hotkeyID = "prevProject"
 	hotkeyToggleSidebar      hotkeyID = "toggleSidebar"
 	hotkeyToggleDock         hotkeyID = "toggleDock"
+	hotkeyToggleFullscreen   hotkeyID = "toggleFullscreen"
 	hotkeySearchInFiles      hotkeyID = "searchInFiles"
 	hotkeySplitBeside        hotkeyID = "splitBeside"
 	hotkeyOtherPane          hotkeyID = "otherPane"
@@ -116,6 +117,7 @@ var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeyPrevProject, labelKey: "hotkeys.action.prevProject", group: hotkeyGroupView, combo: shiftChord("ArrowLeft")},
 	{id: hotkeyToggleSidebar, labelKey: "hotkeys.action.toggleSidebar", group: hotkeyGroupView, combo: shiftChord("s")},
 	{id: hotkeyToggleDock, labelKey: "hotkeys.action.toggleDock", group: hotkeyGroupView, combo: shiftChord("d")},
+	{id: hotkeyToggleFullscreen, labelKey: "hotkeys.action.toggleFullscreen", group: hotkeyGroupView, combo: combo{Key: "F11"}},
 	{id: hotkeySearchInFiles, labelKey: "hotkeys.action.searchInFiles", group: hotkeyGroupView, combo: comboUnassigned},
 	{id: hotkeySplitBeside, labelKey: "hotkeys.action.splitBeside", group: hotkeyGroupView, combo: shiftChord("g")},
 	{id: hotkeySplitBelow, labelKey: "hotkeys.action.splitBelow", group: hotkeyGroupView, combo: shiftChord("i")},

@@ -21,6 +21,7 @@
     "prevProject": "Previous project",
     "toggleSidebar": "Toggle the session sidebar",
     "toggleDock": "Toggle the right dock",
+    "toggleFullscreen": "Toggle full screen",
     "searchInFiles": "Search in files",
     "splitBeside": "Show another session beside this one",
     "splitBelow": "Show another session below this one",
