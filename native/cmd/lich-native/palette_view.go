@@ -79,6 +79,12 @@ func record(gtx C, w layout.Widget) recorded {
 	return recorded{call: macro.Stop(), size: d.Size}
 }
 
+// layout replays r where gtx stands, as a widget.
+func (r recorded) layout(gtx C) D {
+	r.call.Add(gtx.Ops)
+	return D{Size: r.size}
+}
+
 func (r recorded) place(gtx C, y int) {
 	defer op.Offset(image.Pt(0, y)).Push(gtx.Ops).Pop()
 	r.call.Add(gtx.Ops)

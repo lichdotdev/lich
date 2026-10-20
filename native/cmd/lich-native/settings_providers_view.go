@@ -23,6 +23,7 @@ var (
 	providerHeadIcon  = ui.Space(5.5) // ProviderIcon size={22}
 	providerTriggerW  = ui.Space(64)  // ProviderSelect's w-64
 	providerAddInsetR = ui.Space(9)   // pr-9: under the switches, not the chevrons
+	providerTitleGap  = ui.Space(4)
 	icProviderOpen    = icons.Lucide("chevron-right")
 	icProviderBack    = icons.Lucide("chevron-left")
 	icProviderAdd     = icons.Lucide("plus")
@@ -407,26 +408,55 @@ func (s *settingsScreen) providerHeader(th *ui.Theme, p providerInfo) []layout.W
 		if pr.docs.Clicked(gtx) {
 			s.openExternal(p.docs)
 		}
-		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return providerIcon(p.id).Layout(gtx, providerHeadIcon, th.Foreground) }),
-			ui.Gap(3),
-			layout.Rigid(th.Text(settingsTitle, p.name).Weight(font.SemiBold).Leading(32).Layout),
-		}
-		if p.docs != "" {
-			children = append(children, ui.Gap(4), layout.Rigid(func(gtx C) D { return docsLink(gtx, th, &pr.docs, i18n.T("settings.providerDetail.documentation")) }))
-		}
-		children = append(children,
-			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
-			layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerDetail.enabled")).Muted().Layout),
-			ui.Gap(2),
-			layout.Rigid(th.Switch(&pr.header).Layout),
-		)
 		return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+			loose := gtx
+			loose.Constraints.Min = image.Point{}
+			name := record(loose, func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return providerIcon(p.id).Layout(gtx, providerHeadIcon, th.Foreground) }),
+					ui.Gap(3),
+					layout.Rigid(th.Text(settingsTitle, p.name).Weight(font.SemiBold).Leading(32).Layout),
+				)
+			})
+			var docs *recorded
+			if p.docs != "" {
+				d := record(loose, func(gtx C) D { return docsLink(gtx, th, &pr.docs, i18n.T("settings.providerDetail.documentation")) })
+				docs = &d
+			}
+			toggle := record(loose, func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.providerDetail.enabled")).Muted().Layout),
+					ui.Gap(2),
+					layout.Rigid(th.Switch(&pr.header).Layout),
+				)
+			})
+			return providerTitleRow(gtx, name, docs, toggle)
 		})
 	}
 	return []layout.Widget{back, title}
+}
+
+// providerTitleRow puts the documentation link beside the name, or on its
+// own line under it when the window is too narrow for it, the name and the
+// switch on one line.
+func providerTitleRow(gtx C, name recorded, docs *recorded, toggle recorded) D {
+	gap := gtx.Dp(providerTitleGap)
+	used := name.size.X + gap + toggle.size.X
+	beside := docs != nil && used+gap+docs.size.X <= gtx.Constraints.Max.X
+	line := []layout.FlexChild{layout.Rigid(name.layout)}
+	if beside {
+		line = append(line, layout.Rigid(layout.Spacer{Width: providerTitleGap}.Layout), layout.Rigid(docs.layout))
+	}
+	line = append(line,
+		layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
+		layout.Rigid(toggle.layout),
+	)
+	row := func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) }
+	if docs == nil || beside {
+		return row(gtx)
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(row), layout.Rigid(docs.layout))
 }
 
 // providerScreenRows are one provider's blocks, each present only where the

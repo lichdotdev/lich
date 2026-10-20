@@ -116,23 +116,17 @@ func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Them
 		padL = rowChangedPL
 	}
 	return layout.Inset{Left: padL, Right: rowPadX, Top: rowPadY, Bottom: rowPadY}.Layout(gtx, func(gtx C) D {
-		macro := op.Record(gtx.Ops)
-		cgtx := gtx
-		cgtx.Constraints.Min = image.Point{}
-		size := r.control(cgtx, th, text, control).Size
-		call := macro.Stop()
-		drawn := func(gtx C) D {
-			call.Add(gtx.Ops)
-			return D{Size: size}
-		}
+		loose := gtx
+		loose.Constraints.Min = image.Point{}
+		drawn := record(loose, func(gtx C) D { return r.control(gtx, th, text, control) })
 		textW := func(gtx C) D { return r.text(gtx, text) }
-		if gtx.Constraints.Max.X-size.X-gtx.Dp(rowGap) < gtx.Dp(rowTextMinW) {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(textW), ui.VGap(3), layout.Rigid(drawn))
+		if gtx.Constraints.Max.X-drawn.size.X-gtx.Dp(rowGap) < gtx.Dp(rowTextMinW) {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(textW), ui.VGap(3), layout.Rigid(drawn.layout))
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, textW),
 			layout.Rigid(layout.Spacer{Width: rowGap}.Layout),
-			layout.Rigid(drawn),
+			layout.Rigid(drawn.layout),
 		)
 	})
 }
