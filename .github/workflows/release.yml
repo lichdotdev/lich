@@ -240,12 +240,14 @@ jobs:
           # Ask, the default, holds a close with a session running behind a
           # dialog nobody here answers. Keep running is stored, and the window
           # reads it once at its start, so lich is quit and launched again.
+          for _ in $(seq 1 60); do sleep 1; grep -q 'native window attached' "$config/lich.log" && break; done
+          grep -q 'native window attached' "$config/lich.log" || fail "lich did not open its first window"
           token=$(sed -n 's/.*"token":"\([^"]*\)".*/\1/p' "$config/runtime.json")
           curl -fsS -X POST -H 'Content-Type: application/json' -d '["window.closeAction","","background"]' \
             "http://127.0.0.1:$LICH_LISTEN_PORT/rpc/store.SetSetting?token=$token" > /dev/null || fail "storing Keep running failed"
           "$app/lich.exe" quit || fail "the first lich quit exited $?"
           for _ in $(seq 1 10); do tasklist | grep -q -e '^lich.exe' -e lich-native.exe || break; sleep 1; done
-          tasklist | grep -q -e '^lich.exe' -e lich-native.exe && fail "lich outlived the first lich quit"
+          tasklist | grep -e '^lich.exe' -e lich-native.exe && fail "lich outlived the first lich quit"
           rm -f "$config/runtime.json" "$config/lich.log"
           "$app/lich.exe" &
           for _ in $(seq 1 30); do sleep 1; test -s "$config/runtime.json" && break; done
