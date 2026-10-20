@@ -29,19 +29,27 @@ type closePrompt struct {
 	quit     widget.Clickable
 }
 
-// onClosing answers the window manager's close. Keep running lets it
-// through; Ask and Quit hold it until the running sessions are counted.
+// onClosing answers the window manager's close: let through, or held until
+// the running sessions are counted (closeIsHeld).
 func (u *window) onClosing(e *app.ClosingEvent) {
+	if !u.closeIsHeld() {
+		return
+	}
+	e.Abort()
+	go u.askOrQuit(u.settings.look.prefs.closeAction)
+}
+
+// closeIsHeld reports whether a close waits on lich counting its sessions,
+// which Ask and Quit do. Keep running lets it through, and so does a window
+// lich dropped or is restarting under: nobody is there to count, and holding
+// the close kept the window open for good, Windows' installer included.
+func (u *window) closeIsHeld() bool {
 	c := &u.closer
 	c.mu.Lock()
 	leaving := c.leaving
 	c.mu.Unlock()
-	action := u.settings.look.prefs.closeAction
-	if leaving || action == closeBackground {
-		return
-	}
-	e.Abort()
-	go u.askOrQuit(action)
+	lichAway := u.model.connectionLost() || u.reconnecting.Load()
+	return !leaving && !lichAway && u.settings.look.prefs.closeAction != closeBackground
 }
 
 // askOrQuit is CloseDialog's close request: quit outright with nothing
