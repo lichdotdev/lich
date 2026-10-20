@@ -63,9 +63,7 @@
     "stale": "지금은 충돌하는 파일이 없습니다. GitHub가 아직 따라잡지 못했을 수 있습니다.",
     "count": {
       "other": "충돌하는 파일 {count}개"
-    },
-    "showFewer": "줄여 보기",
-    "more": "+{hidden}개 더"
+    }
   },
   "pullsEmptyState": {
     "openFailed": "풀 리퀘스트를 열지 못했습니다: {error}",
@@ -129,6 +127,9 @@
     "threadsUnresolved": "변경 요청됨 · 스레드 {total}개 중 {open}개 미해결",
     "threadsResolved": "변경 요청됨 · 모든 스레드 해결됨",
     "conflictsWith": "{base}와(과) 충돌",
+    "conflictFiles": {
+      "other": "· 파일 {count}개"
+    },
     "mergeable": "병합 가능",
     "checkingMergeability": "병합 가능 여부 확인 중…"
   },

@@ -64,9 +64,7 @@
     "count": {
       "one": "{count} archivo en conflicto",
       "other": "{count} archivos en conflicto"
-    },
-    "showFewer": "Mostrar menos",
-    "more": "+{hidden} más"
+    }
   },
   "pullsEmptyState": {
     "openFailed": "No se pudo abrir un pull request: {error}",
@@ -132,6 +130,10 @@
     "threadsUnresolved": "Cambios solicitados · {open} de {total} hilos sin resolver",
     "threadsResolved": "Cambios solicitados · todos los hilos resueltos",
     "conflictsWith": "Conflictos con {base}",
+    "conflictFiles": {
+      "one": "· {count} archivo",
+      "other": "· {count} archivos"
+    },
     "mergeable": "Se puede fusionar",
     "checkingMergeability": "Comprobando si se puede fusionar…"
   },

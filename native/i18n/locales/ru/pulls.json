@@ -66,9 +66,7 @@
       "few": "{count} конфликтующих файла",
       "many": "{count} конфликтующих файлов",
       "other": "{count} конфликтующего файла"
-    },
-    "showFewer": "Свернуть",
-    "more": "+ещё {hidden}"
+    }
   },
   "pullsEmptyState": {
     "openFailed": "Не удалось открыть pull request: {error}",
@@ -138,6 +136,12 @@
     "threadsUnresolved": "Запрошены изменения · нерешённых обсуждений: {open} из {total}",
     "threadsResolved": "Запрошены изменения · все обсуждения решены",
     "conflictsWith": "Конфликты с {base}",
+    "conflictFiles": {
+      "one": "· {count} файл",
+      "few": "· {count} файла",
+      "many": "· {count} файлов",
+      "other": "· {count} файла"
+    },
     "mergeable": "Можно слить",
     "checkingMergeability": "Проверка возможности слияния…"
   },

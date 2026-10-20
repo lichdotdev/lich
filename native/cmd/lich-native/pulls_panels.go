@@ -6,15 +6,13 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
-
-// conflictsNamed is the files shown before "+N more".
-const conflictsNamed = 6
 
 // actions is the header's buttons, left to right: the session, the hand-off,
 // Approve, Merge, Refresh and Open.
@@ -132,58 +130,75 @@ func (v *pullView) mergeButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient
 	return v.withTip(gtx, th, p, "merge", mergeHint(d, rules), func(gtx C) D { return menu.Layout(gtx, b.Layout) })
 }
 
-// conflicts is PullsConflicts: on an open, conflicting PR, which files
-// collide with the base, six named and the rest folded.
-func (v *pullView) conflicts(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail) D {
-	if d.State != "OPEN" || !conflictsWithBase(d) {
-		return D{}
-	}
+// conflictsPanelWidth and conflictsPanelHeight bound the conflicting files'
+// panel; a longer list scrolls inside it.
+const (
+	conflictsPanelWidth  = unit.Dp(520)
+	conflictsPanelHeight = unit.Dp(260)
+)
+
+// conflictsStat is the "Conflicts with" stat, face: once the files are known
+// it opens a panel naming them, and until then its tooltip says why not.
+func (v *pullView) conflictsStat(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, face layout.Widget) D {
 	read := p.store.conflictFiles(p.project.Path, &d)
-	line := func(text string) D {
-		return layout.Inset{Top: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, text).Muted().Layout)
-	}
-	switch {
-	case !read.loaded:
-		return line(i18n.T("pulls.pullsConflicts.loading"))
-	case read.err != "":
-		return line(i18n.T("pulls.pullsConflicts.failed", i18n.Args{"error": read.err}))
-	case len(read.val) == 0:
-		return line(i18n.T("pulls.pullsConflicts.stale"))
-	}
-	if v.conflictsMore.Clicked(gtx) {
-		v.conflictsAll.Value = !v.conflictsAll.Value
+	if hint := conflictsHint(read); hint != "" {
+		return v.withTip(gtx, th, p, "conflicts", hint, face)
 	}
 	files := read.val
-	count := i18n.T("pulls.pullsConflicts.count", i18n.Args{"count": len(files)})
-	shown := files
-	if !v.conflictsAll.Value {
-		shown = files[:min(len(files), conflictsNamed)]
-	}
-	items := []ui.WrapChild{ui.WrapItem(th.Text(ui.TextXS, count).Muted().Layout)}
-	for _, f := range shown {
-		items = append(items, ui.WrapItem(func(gtx C) D { return conflictPath(gtx, th, f) }))
-	}
-	if hidden := len(files) - conflictsNamed; hidden > 0 {
-		more := i18n.T("pulls.pullsConflicts.more", i18n.Args{"hidden": hidden})
-		if v.conflictsAll.Value {
-			more = i18n.T("pulls.pullsConflicts.showFewer")
-		}
-		items = append(items, ui.WrapItem(func(gtx C) D {
-			return v.conflictsMore.Layout(gtx, th.Text(ui.TextXS, more).In(th.Foreground).Weight(font.Medium).Layout)
-		}))
-	}
-	return layout.Inset{Top: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-		return ui.Wrap{GapX: ui.Space(3), GapY: ui.Space(1)}.Layout(gtx, items...)
+	pop := th.DropdownPanel(p.root, &v.conflictsPanel, conflictsPanelWidth, func(gtx C, th *ui.Theme) D {
+		return v.conflictsList(gtx, th, files)
+	})
+	count := i18n.T("pulls.pullsStats.conflictFiles", i18n.Args{"count": len(files)})
+	return pop.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(face),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.TextXS, count).Muted().Layout),
+			ui.Gap(1),
+			layout.Rigid(func(gtx C) D { return icChevronDown.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
+		)
 	})
 }
 
-// conflictPath is a path with its directory dimmed, so the file names read.
-func conflictPath(gtx C, th *ui.Theme, file string) D {
-	cut := strings.LastIndex(file, "/") + 1
-	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextXS, file[:cut]).Mono().Muted().Layout),
-		layout.Rigid(th.Text(ui.TextXS, file[cut:]).Mono().Layout),
+// conflictsHint is why the conflicting files cannot be listed yet, empty
+// once they can.
+func conflictsHint(read pullsRead[[]string]) string {
+	switch {
+	case !read.loaded:
+		return i18n.T("pulls.pullsConflicts.loading")
+	case read.err != "":
+		return i18n.T("pulls.pullsConflicts.failed", i18n.Args{"error": read.err})
+	case len(read.val) == 0:
+		return i18n.T("pulls.pullsConflicts.stale")
+	}
+	return ""
+}
+
+// conflictsList is the panel's content: the count, then a row per file.
+func (v *pullView) conflictsList(gtx C, th *ui.Theme, files []string) D {
+	gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(conflictsPanelHeight))
+	heading := i18n.T("pulls.pullsConflicts.count", i18n.Args{"count": len(files)})
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, sectionHeading(th, heading))
+		}),
+		layout.Rigid(func(gtx C) D {
+			return th.ScrollArea(&v.conflictsRows).Layout(gtx, len(files), func(gtx C, i int) D { return conflictRow(gtx, th, files[i]) })
+		}),
 	)
+}
+
+// conflictRow is one conflicting file: its name, then its directory dimmed,
+// the directory cut first when the row runs out of room.
+func conflictRow(gtx C, th *ui.Theme, file string) D {
+	dir, base := splitPath(file)
+	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, base).Mono().Weight(font.Medium)) }),
+			ui.Gap(2),
+			layout.Flexed(1, func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, dir).Mono().Muted()) }),
+		)
+	})
 }
 
 func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) D {
