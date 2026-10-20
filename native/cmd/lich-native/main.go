@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -113,7 +114,8 @@ type window struct {
 	root     ui.Root
 	toaster  ui.Toaster
 	// duplicates holds the warnings about a conversation resumed in two
-	// cards, in the bottom-right corner, apart from every other toast.
+	// cards and the questions of cards whose process exited, in the
+	// bottom-right corner, apart from every other toast.
 	duplicates ui.Toaster
 	// caption is where the topbar draws the window's buttons, chrome what
 	// the window manager last said about the window.
@@ -136,10 +138,13 @@ type window struct {
 	hideSettings atomic.Bool
 	// emptyNew is the empty stage's New session button.
 	emptyNew widget.Clickable
-	// exitBand is the active terminal's band once its process is gone.
-	exitBand exitBand
-	light    bool // the theme on screen is a light one
-	code     godemirror.Theme
+	// exitFocus is the card that had focus last frame, and exitRaised the
+	// cards whose exit toast is up, under exitMu: syncExitToasts reads both.
+	exitFocus  string
+	exitMu     sync.Mutex
+	exitRaised map[string]bool
+	light      bool // the theme on screen is a light one
+	code       godemirror.Theme
 	// appearance is the theme state the frame repaints from.
 	appearance *appearance
 	// zoom scales everything but the terminals, which keep their own size.
@@ -218,7 +223,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	}
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
-	u.model.exited = u.terms.exited
+	u.model.exited = u.sessionExited
 	u.model.duplicate = u.warnDuplicate
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
@@ -638,6 +643,7 @@ func (u *window) island(gtx C, v stageView) error {
 	if u.emptyNew.Clicked(gtx) {
 		go u.newSession(launchRequest{kind: u.model.newSessionKind()}, "")
 	}
+	u.syncExitToasts(focusedCard(v))
 	switch {
 	case v.home:
 		homeView(gtx, u.theme.On(fill), &u.homeOpen)
@@ -653,15 +659,6 @@ func (u *window) island(gtx C, v stageView) error {
 	if err := u.content(gtx, v.active, u.terminalTakesKeys(gtx)); err != nil {
 		return err
 	}
-	if e, ok := u.terms.exitOf(v.active.ID); ok {
-		restart, closing := u.exitBand.layout(gtx, u.theme, e)
-		if restart {
-			go u.terms.restart(u.ctx, v.active)
-		}
-		if closing {
-			u.closeSession(v.active.ID)
-		}
-	}
 	u.paneDropZones(gtx, v.active.ID, image.Rectangle{Max: size}, image.Rectangle{Max: size}.Add(u.islandAt), true)
 	if u.terms.has(v.active.ID) {
 		u.drop.setRect(image.Rectangle{Min: u.islandAt, Max: u.islandAt.Add(size)})
@@ -670,6 +667,19 @@ func (u *window) island(gtx C, v stageView) error {
 		}
 	}
 	return nil
+}
+
+// focusedCard is the session whose terminal takes the keys, "" for none.
+func focusedCard(v stageView) string {
+	switch {
+	case v.home:
+		return ""
+	case v.hasLayout:
+		return v.layout.Focus
+	case v.hasActive:
+		return v.active.ID
+	}
+	return ""
 }
 
 // islandColor is the terminal's own background while it is on the island,

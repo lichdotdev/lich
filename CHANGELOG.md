@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Desktop notifications you can click, in the native window on Windows and macOS.** As on Linux, a session that needs your input or finished its turn raises a notification with Open and Dismiss: Open brings lich up on that session's card, and the notification goes away once you answer or open the session. On macOS it needs lich run from Lich.app and asks once for permission; on Windows a session waiting on you keeps its notification on screen until you act on it.
 
+### Changed
+
+- When a session's process exits, a toast in the bottom-right corner now asks what to do, in place of the band at the bottom of the terminal. A card with a conversation offers Resume, which opens that same conversation again (in the profile the card names), Start new, which begins another one in the card as Restart did, and Close session. A shell, or an agent that ended before its first prompt, offers Restart and Close session. Dismissing the toast leaves the card as it is, and focusing the card brings the toast back.
+
 ### Removed
 
 - The web window. lich opens the native window, and a release no longer ships Chromium. The Window choice in Settings (web or native) and the tray item that opened the other window are gone, and so are `lich -- <chromium flags>`, `lich --shell` and `LICH_SHELL`. If the native window cannot start, lich says why and where its log is.

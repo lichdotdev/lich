@@ -4,9 +4,15 @@
     "confined": "Fora do checkout, chega como uma cópia",
     "pasted": "O caminho é colado no prompt"
   },
-  "exitBanner": {
-    "restart": "Reiniciar",
-    "close": "Fechar"
+  "exitToast": {
+    "ended": "{label} encerrou",
+    "endedWithCode": "{label} encerrou com código {code}",
+    "resumes": "Retomar abre {id}… de novo.",
+    "resumesIn": "Retomar abre {id}… de novo em {profile}.",
+    "closeSession": "Fechar sessão",
+    "startNew": "Começar outra",
+    "resume": "Retomar",
+    "restart": "Reiniciar"
   },
   "drop": {
     "notAttached": "Não anexado: {files}"
@@ -19,10 +25,6 @@
     "restartFailed": "Falha ao reiniciar a sessão: {error}",
     "pasteSettingFailed": "Não deu para ler se o paste longo deve ser expandido, então este foi colado uma vez: {error}",
     "startFailed": "Falha ao iniciar a sessão: {error}"
-  },
-  "sessionExit": {
-    "ended": "Sessão encerrada",
-    "endedWithCode": "Sessão encerrada com código {code}"
   },
   "dropFiles": {
     "folderConfined": "pastas fora do checkout desta sessão em sandbox não podem ser entregues; solte arquivos"

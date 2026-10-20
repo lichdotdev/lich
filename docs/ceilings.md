@@ -235,8 +235,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   size; clicking its card anywhere shows it in that layout, while its project's tab shows it alone. A split
   is refused, with a toast, when a pane would drop under 480dp (51 columns at the default 13sp, measured with
   Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
-  draws its exit band and takes a dropped file; a pane in the background whose process ended keeps its last
-  frame until focused, and a file dropped on it goes nowhere. A pinned card cannot be dragged onto a pane: the
+  takes a dropped file; a file dropped on a pane in the background goes nowhere. A pinned card cannot be dragged onto a pane: the
   pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
   not SortCarry targets: Gio's transfer delivered Enter to targets laid out mid-drag only some of the time, so
   the window reads the pointer from a handler over the whole window and works the zone out from where the
@@ -958,6 +957,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   nothing at all, so their row keeps the old id and a restart resumes the conversation the card opened with.
   Reopening from lich itself is not this gap: every door through `store.reopen` focuses the card that holds
   the conversation.
+- **Start new hands the card to a new conversation** (`native/cmd/lich-native/exit_toast.go`): the toast a
+  card raises when its process exits offers Resume, which starts the conversation the card holds again, and
+  Start new, which starts without one. Once the new conversation's session-start report arrives, the backend
+  writes its id over the card's `provider_session_id`, and nothing on the card points back at the old one:
+  it is reachable only through History search. Start new asks no confirmation for that reason, and a card
+  that never reported a conversation (a shell, an agent that exited before its first prompt) offers Restart
+  alone.
 - **A model or effort is a birth value, and two providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
   `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. What a

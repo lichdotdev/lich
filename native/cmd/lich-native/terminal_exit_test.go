@@ -4,17 +4,17 @@ import "testing"
 
 func TestSessionExitWording(t *testing.T) {
 	cases := []struct {
-		payload, notice, marker string
+		payload, title, marker string
 	}{
-		{`{"code":0}`, "Session ended", "\r\n[process exited: 0]\r\n"},
-		{`{"code":3}`, "Session ended with code 3", "\r\n[process exited: 3]\r\n"},
-		{`{}`, "Session ended", "\r\n[process exited]\r\n"},
-		{`null`, "Session ended", "\r\n[process exited]\r\n"},
+		{`{"code":0}`, "Shell 78 ended", "\r\n[process exited: 0]\r\n"},
+		{`{"code":3}`, "Shell 78 ended with code 3", "\r\n[process exited: 3]\r\n"},
+		{`{}`, "Shell 78 ended", "\r\n[process exited]\r\n"},
+		{`null`, "Shell 78 ended", "\r\n[process exited]\r\n"},
 	}
 	for _, c := range cases {
 		e := readSessionExit([]byte(c.payload))
-		if got := exitNotice(e); got != c.notice {
-			t.Errorf("%s: notice %q, want %q", c.payload, got, c.notice)
+		if got := exitTitle("Shell 78", e); got != c.title {
+			t.Errorf("%s: title %q, want %q", c.payload, got, c.title)
 		}
 		if got := exitMarker(e); got != c.marker {
 			t.Errorf("%s: marker %q, want %q", c.payload, got, c.marker)

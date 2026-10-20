@@ -55,6 +55,11 @@ const (
 	// CLI runs in it. An empty agent clears the mark; every PTY spawn emits that
 	// clear so a respawned session never wears a dead agent's icon.
 	agentEventName = "session-agent"
+	// conversationEventName carries the provider conversation a session's
+	// row now names ({id, providerSessionId}, "" once it names none), emitted
+	// after the row is written: the window offers that conversation back when
+	// the session's process exits.
+	conversationEventName = "session-conversation"
 	// sandboxEventName carries whether a session's PTY runs confined ({id,
 	// confined, skippedLinks}), emitted by every spawn. The card marks a confined
 	// session, and the answer is the spawn's own — it takes the provider's rung,
@@ -136,6 +141,21 @@ func exitPayload(code int) exitEvent {
 type agentEvent struct {
 	ID    string `json:"id"`
 	Agent string `json:"agent"`
+}
+
+type conversationEvent struct {
+	ID                string `json:"id"`
+	ProviderSessionID string `json:"providerSessionId"`
+}
+
+// setConversation writes the conversation session id's row names, then tells
+// the window.
+func (s *Service) setConversation(id, providerSessionID string) error {
+	if err := s.store.SetProviderSession(id, providerSessionID); err != nil {
+		return err
+	}
+	s.hub.Emit(conversationEventName, conversationEvent{ID: id, ProviderSessionID: providerSessionID})
+	return nil
 }
 
 // sandboxEvent is the payload of sandboxEventName: the session, whether its PTY
@@ -572,7 +592,7 @@ func (s *Service) onSessionStart(sessionID, providerSessionID, provider string) 
 		return nil
 	}
 	s.markStarted(sessionID)
-	if err := s.store.SetProviderSession(sessionID, providerSessionID); err != nil {
+	if err := s.setConversation(sessionID, providerSessionID); err != nil {
 		return err
 	}
 	s.reportDuplicate(sessionID, providerSessionID)

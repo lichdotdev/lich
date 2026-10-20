@@ -302,6 +302,11 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			if json.Unmarshal(ev.Data, &s) == nil {
 				m.rename(s.ID, s.Label)
 			}
+		case lichclient.SessionConversationEvent:
+			var c lichclient.ConversationReported
+			if json.Unmarshal(ev.Data, &c) == nil {
+				m.setConversation(c.ID, c.ProviderSessionID)
+			}
 		case lichclient.SessionProfileEvent:
 			var moved lichclient.ProfileMoved
 			if json.Unmarshal(ev.Data, &moved) == nil {
@@ -546,6 +551,28 @@ func (m *model) gitStatus(path string) (lichclient.DiffStats, bool) {
 	defer m.mu.Unlock()
 	g, ok := m.git[path]
 	return g, ok
+}
+
+// setConversation records the provider conversation session id runs, which
+// its exit offers back.
+func (m *model) setConversation(id, providerSessionID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if p, i := m.sessionAt(id); p != nil {
+		p.Sessions[i].ProviderSessionID = providerSessionID
+	}
+}
+
+// sessionViewOf is what session id's card shows now, false once it left
+// the open sessions.
+func (m *model) sessionViewOf(id string) (sessionView, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p, i := m.sessionAt(id)
+	if p == nil {
+		return sessionView{}, false
+	}
+	return m.viewOf(*p, p.Sessions[i], time.Now()), true
 }
 
 func (m *model) activeSession() (sessionView, bool) {

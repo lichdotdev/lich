@@ -236,7 +236,7 @@ func (s *Service) ContinueIn(id, profile string) error {
 	err = profilestores[kind].moveTo(conversation, profile)
 	if errors.Is(err, profilestore.ErrNoConversation) {
 		// Nothing written yet to carry over: the card starts afresh there.
-		if err := s.store.SetProviderSession(id, ""); err != nil {
+		if err := s.setConversation(id, ""); err != nil {
 			return err
 		}
 		conversation, err = "", nil

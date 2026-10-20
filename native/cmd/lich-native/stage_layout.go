@@ -258,7 +258,6 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	off := op.Offset(image.Pt(0, head)).Push(gtx.Ops)
 	err := u.content(body, sv, focused && u.terminalTakesKeys(gtx))
 	if focused {
-		u.paneExit(body, sv)
 		u.paneDrop(body, on, sv, r.Min.Add(image.Pt(0, head)))
 	}
 	if several && !focused {
@@ -274,23 +273,6 @@ func (u *window) paneAt(gtx C, v stageView, id string, r image.Rectangle, severa
 	}
 	paint.FillShape(gtx.Ops, border, clip.Stroke{Path: shape.Path(gtx.Ops), Width: width}.Op())
 	return err
-}
-
-// paneExit is the exit band of the focused pane's terminal once its process
-// is gone. ponytail: only the focused pane shows it, the band's state being
-// the window's one; a pane in the background shows its last frame.
-func (u *window) paneExit(gtx C, sv sessionView) {
-	e, ok := u.terms.exitOf(sv.ID)
-	if !ok {
-		return
-	}
-	restart, closing := u.exitBand.layout(gtx, u.theme, e)
-	if restart {
-		go u.terms.restart(u.ctx, sv)
-	}
-	if closing {
-		u.closeSession(sv.ID)
-	}
 }
 
 // paneDrop takes a file dragged over the focused pane's terminal, at at in

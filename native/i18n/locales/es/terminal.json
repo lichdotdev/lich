@@ -4,9 +4,15 @@
     "confined": "Fuera del checkout llega como una copia",
     "pasted": "Su ruta se pega en el prompt"
   },
-  "exitBanner": {
-    "restart": "Reiniciar",
-    "close": "Cerrar"
+  "exitToast": {
+    "ended": "{label} terminó",
+    "endedWithCode": "{label} terminó con el código {code}",
+    "resumes": "Retomar vuelve a abrir {id}….",
+    "resumesIn": "Retomar vuelve a abrir {id}… en {profile}.",
+    "closeSession": "Cerrar sesión",
+    "startNew": "Empezar otra",
+    "resume": "Retomar",
+    "restart": "Reiniciar"
   },
   "drop": {
     "notAttached": "No adjuntado: {files}"
@@ -19,10 +25,6 @@
     "restartFailed": "La sesión no se pudo reiniciar: {error}",
     "pasteSettingFailed": "No se pudo leer si los pegados largos se despliegan, así que este se pegó una vez: {error}",
     "startFailed": "La sesión no se pudo iniciar: {error}"
-  },
-  "sessionExit": {
-    "ended": "La sesión terminó",
-    "endedWithCode": "La sesión terminó con el código {code}"
   },
   "dropFiles": {
     "folderConfined": "las carpetas fuera del checkout de esta sesión en sandbox no se pueden entregar; suelta archivos"

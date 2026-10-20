@@ -44,3 +44,19 @@ func TestASessionStartOnItsOwnConversationRaisesNoWarning(t *testing.T) {
 		t.Errorf("duplicate event = %v, want none for a conversation nobody else runs", payload)
 	}
 }
+
+func TestASessionStartTellsTheWindowTheConversation(t *testing.T) {
+	t.Parallel()
+	hub, rec := newProbeHub(t)
+	svc := New(stubBins{}, nil, hub)
+
+	if err := svc.onSessionStart("s1", "conv-own", providers.Claude); err != nil {
+		t.Fatalf("onSessionStart = %v, want nil", err)
+	}
+	waitFor(t, func() bool { _, ok := rec.payloadOf(conversationEventName); return ok }, "the conversation event")
+	payload, _ := rec.payloadOf(conversationEventName)
+	got, _ := payload.(map[string]any)
+	if got["id"] != "s1" || got["providerSessionId"] != "conv-own" {
+		t.Errorf("conversation event = %v, want s1 running conv-own", payload)
+	}
+}

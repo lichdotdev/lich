@@ -4,21 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"image"
-
-	"gioui.org/layout"
-	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
-	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/native/ui/icons"
 )
-
-var icExitRestart = icons.Lucide("rotate-cw")
 
 // sessionExit is internal/terminal's exitEvent: the status the PTY child left,
 // nil when it left none (killed by a signal), which is not a clean exit.
@@ -34,16 +24,8 @@ func readSessionExit(data json.RawMessage) sessionExit {
 	return e
 }
 
-// exitNotice names a failing code, for it tells a crash from a session the user ended.
-func exitNotice(e sessionExit) string {
-	if e.Code == nil || *e.Code == 0 {
-		return i18n.T("terminal.sessionExit.ended")
-	}
-	return i18n.T("terminal.sessionExit.endedWithCode", i18n.Args{"code": *e.Code})
-}
-
 // exitMarker is the scrollback line where the
-// process died, which outlives the band after a restart.
+// process died, which outlives the exit after a restart.
 func exitMarker(e sessionExit) string {
 	if e.Code == nil {
 		return "\r\n[process exited]\r\n"
@@ -78,65 +60,32 @@ func (ts *terminals) exitOf(id string) (sessionExit, bool) {
 	return *t.exit, true
 }
 
-// restart starts the same kind in the same directory,
-// as a conversation of its own, into the same terminal and its scrollback.
-func (ts *terminals) restart(ctx context.Context, s sessionView) {
+// restart starts the same kind in the same directory into the same terminal
+// and its scrollback, reopening conversation resume, or a conversation of
+// its own for "". It reports whether the process started.
+func (ts *terminals) restart(ctx context.Context, s sessionView, resume string) bool {
 	ts.mu.Lock()
 	t := ts.byID[s.ID]
 	ts.mu.Unlock()
 	if t == nil {
-		return
+		return false
 	}
 	cols, rows := t.vt.Size()
-	if err := ts.client.Start(ctx, s.ID, s.projectID, s.path, s.Kind, "", cols, rows); err != nil {
+	if err := ts.start(ctx, s, resume, cols, rows); err != nil {
 		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.restartFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
-		return
+		return false
 	}
+	ts.running(s.ID)
+	return true
+}
+
+// running clears the exit of session id's terminal: a process runs in its
+// PTY again.
+func (ts *terminals) running(id string) {
 	ts.mu.Lock()
-	t.exit = nil
+	if t := ts.byID[id]; t != nil {
+		t.exit = nil
+	}
 	ts.mu.Unlock()
 	ts.invalidate()
-}
-
-// exitBand is TerminalExitBanner: anchored to the bottom of the terminal
-// rather than raised as a dialog, so the scrollback that says why the process
-// is gone stays readable.
-type exitBand struct {
-	restart, close widget.Clickable
-}
-
-// layout draws the band at the bottom of gtx's area and reports which button
-// was clicked this frame.
-func (b *exitBand) layout(gtx C, th *ui.Theme, e sessionExit) (restart, closing bool) {
-	restart, closing = b.restart.Clicked(gtx), b.close.Clicked(gtx)
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, 0)
-	dims := b.content(gtx, th, e)
-	call := macro.Stop()
-	defer op.Offset(image.Pt(0, gtx.Constraints.Max.Y-dims.Size.Y)).Push(gtx.Ops).Pop()
-	paint.FillShape(gtx.Ops, th.Card, clip.Rect{Max: dims.Size}.Op())
-	call.Add(gtx.Ops)
-	th.Separator(gtx)
-	return restart, closing
-}
-
-func (b *exitBand) content(gtx C, th *ui.Theme, e sessionExit) D {
-	on := th.On(th.Card)
-	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(3), Right: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(on.Text(ui.TextXS, exitNotice(e)).Muted().Layout),
-			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
-			layout.Rigid(func(gtx C) D {
-				btn := on.Button(&b.restart, i18n.T("terminal.exitBanner.restart"))
-				btn.Icon, btn.Variant, btn.Size = icExitRestart, ui.VariantGhost, ui.SizeXS
-				return btn.Layout(gtx)
-			}),
-			ui.Gap(1),
-			layout.Rigid(func(gtx C) D {
-				btn := on.Button(&b.close, i18n.T("terminal.exitBanner.close"))
-				btn.Variant, btn.Size = ui.VariantDestructive, ui.SizeXS
-				return btn.Layout(gtx)
-			}),
-		)
-	})
 }

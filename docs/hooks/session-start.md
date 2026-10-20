@@ -109,6 +109,10 @@ scripted run would have said this contract could not be closed.
 - **Persistence** — `internal/store/mutations.go`, `Service.SetProviderSession`:
   `UPDATE sessions SET provider_session_id`. Surfaced on `store.Session`
   (`providerSessionId`) and returned by `LoadState`.
+- **Conversation push**: `Service.setConversation` emits `session-conversation`
+  (`{id, providerSessionId}`) once the row is written, so the window's copy of
+  the row names the conversation a card's exit offers to resume
+  (`native/cmd/lich-native/exit_toast.go`) without a reload.
 - **UI push** — after persisting, the same closure (`internal/terminal/terminal.go`,
   `New`) emits the global app event `session-agent` (`{id, agent: <provider>}`):
   a report is proof that provider's CLI runs in this PTY, so a shell card wears

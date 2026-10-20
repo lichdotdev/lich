@@ -4,9 +4,15 @@
     "confined": "チェックアウトの外にあるものはコピーとして渡されます",
     "pasted": "パスがプロンプトに貼り付けられます"
   },
-  "exitBanner": {
-    "restart": "再起動",
-    "close": "閉じる"
+  "exitToast": {
+    "ended": "{label} が終了しました",
+    "endedWithCode": "{label} がコード {code} で終了しました",
+    "resumes": "再開すると {id}… をもう一度開きます。",
+    "resumesIn": "再開すると {id}… を {profile} でもう一度開きます。",
+    "closeSession": "セッションを閉じる",
+    "startNew": "新しく始める",
+    "resume": "再開",
+    "restart": "再起動"
   },
   "drop": {
     "notAttached": "添付されませんでした: {files}"
@@ -19,10 +25,6 @@
     "restartFailed": "セッションを再起動できませんでした: {error}",
     "pasteSettingFailed": "長い貼り付けを展開するかどうかの設定を読み込めなかったため、今回は一度だけ貼り付けました: {error}",
     "startFailed": "セッションを開始できませんでした: {error}"
-  },
-  "sessionExit": {
-    "ended": "セッションが終了しました",
-    "endedWithCode": "セッションがコード {code} で終了しました"
   },
   "dropFiles": {
     "folderConfined": "このサンドボックス化されたセッションのチェックアウト外にあるフォルダーは渡せません。ファイルをドロップしてください"

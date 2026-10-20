@@ -120,6 +120,7 @@ func (u *window) applyContinueIn(act sidebarAction) {
 			u.toaster.Show(failure("%v", err))
 			return
 		}
+		u.terms.running(req.id)
 		u.terms.resync(u.ctx, req.id)
 	}()
 }
