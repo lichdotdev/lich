@@ -10,12 +10,10 @@ url="https://github.com/lichdotdev/lich"
 license=('AGPL-3.0-only')
 provides=('lich')
 conflicts=('lich')
-# What the window and the native window link against; the same list, per
-# format, lives in build/linux/nfpm/nfpm.yaml.
-depends=('glibc' 'gcc-libs' 'nss' 'nspr' 'glib2' 'at-spi2-core' 'dbus' 'libcups'
-         'libx11' 'libxcomposite' 'libxdamage' 'libxext' 'libxfixes' 'libxrandr'
-         'libxcb' 'mesa' 'expat' 'libxkbcommon' 'cairo' 'pango' 'systemd-libs'
-         'alsa-lib' 'libglvnd' 'wayland' 'libxkbcommon-x11' 'libxcursor' 'fontconfig')
+# What the native window links against; the same list, per format, lives in
+# build/linux/nfpm/nfpm.yaml.
+depends=('glibc' 'libglvnd' 'wayland' 'libxkbcommon' 'libxkbcommon-x11' 'libx11'
+         'libxcursor' 'libxfixes' 'fontconfig')
 optdepends=('zenity: native folder picker')
 source=("lich-v${pkgver}-linux-amd64.tar.zst::${url}/releases/download/v${pkgver}/lich-v${pkgver}-linux-amd64.tar.zst"
         "lich-${pkgver}.desktop::https://raw.githubusercontent.com/lichdotdev/lich/v${pkgver}/build/linux/lich.desktop"
@@ -25,15 +23,10 @@ sha256sums=('SKIP'
             'SKIP')
 
 package() {
-  # makepkg unpacks the release tarball: lich, lich-native, and its window in shell/, which
-  # /usr/bin/lich looks for at /usr/lib/lich/shell.
+  # makepkg unpacks the release tarball: lich and lich-native, which lich
+  # looks for beside itself.
   install -Dm755 lich "${pkgdir}/usr/bin/lich"
   install -Dm755 lich-native "${pkgdir}/usr/bin/lich-native"
-  install -d "${pkgdir}/usr/lib/lich"
-  cp -a shell "${pkgdir}/usr/lib/lich/shell"
-  # Chromium reads its setuid sandbox helper from cef/, beside libcef.so, and
-  # aborts the window when the one there is not root-owned (fakeroot) and 4755.
-  chmod 4755 "${pkgdir}/usr/lib/lich/shell/cef/chrome-sandbox"
   install -Dm644 "lich-${pkgver}.desktop" "${pkgdir}/usr/share/applications/lich.desktop"
   install -Dm644 "lich-${pkgver}.png" "${pkgdir}/usr/share/icons/hicolor/128x128/apps/lich.png"
 }

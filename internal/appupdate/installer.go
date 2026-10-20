@@ -9,14 +9,15 @@ import (
 	"path/filepath"
 )
 
-// The installer includes Chromium, several hundred MiB larger than the exe.
+// installerLimit caps the download well above the installer, lich and its
+// window, so only a runaway response is cut short.
 const installerLimit = 1 << 30
 
 func (s *Service) applyInstaller(r io.Reader, checksum []byte) error {
 	if s.install == nil {
 		return fmt.Errorf("installer updates unavailable")
 	}
-	// One retained installer, replaced on the next update; no growing cache of CEF.
+	// One retained installer, replaced on the next update; no growing cache of them.
 	path := filepath.Join(filepath.Dir(s.exePath), ".lich-update-setup.exe")
 	if err := stageInstaller(r, checksum, path, installerLimit); err != nil {
 		return fmt.Errorf("verify installer: %w", err)

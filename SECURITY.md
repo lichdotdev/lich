@@ -30,8 +30,8 @@ telemetry, so the interesting boundaries are local ones:
   without that token, or from off-host, is a vulnerability.
 - **The session token.** It is never written to the log. Finding it in a log,
   a crash report or a URL is a vulnerability.
-- **The workspace.** Projects and sessions live in SQLite under your config
-  directory; UI preferences live in the Chromium profile beside it.
+- **The workspace.** Projects, sessions and settings live in SQLite under your
+  config directory.
 - **`GH_TOKEN`.** A project can name the GitHub account `gh` runs as, which
   puts that account's token in the environment of the `gh` calls lich makes.
   A path that leaks it, or hands it to the wrong project, is a vulnerability.

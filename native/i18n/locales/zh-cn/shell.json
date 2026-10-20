@@ -142,9 +142,7 @@
   "tray": {
     "show": "显示 lich",
     "running": "运行中的会话：{count}",
-    "quit": "退出 lich",
-    "openNative": "打开原生窗口",
-    "openWeb": "打开网页窗口"
+    "quit": "退出 lich"
   },
   "closeDialog": {
     "title": "让 lich 继续运行？",

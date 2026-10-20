@@ -29,13 +29,6 @@ cask "lich" do
                    args: ["-dr", "com.apple.quarantine", "#{appdir}/Lich.app"]
   end
 
-  caveats <<~EOS
-    The app brings its own window on Apple Silicon and Intel. Should the
-    window fail to open, lich opens as a tab in your default browser instead
-    and keeps running after the tab is closed, so stop it from the terminal
-    or by signalling the process.
-  EOS
-
   zap trash: [
     "~/Library/Application Support/lich",
   ]

@@ -456,46 +456,31 @@ func TestSetEnvMovesTheEditorLookup(t *testing.T) {
 	}
 }
 
-func TestShowWindowAndQuitReachWhatMainWired(t *testing.T) {
+func TestQuitReachesWhatMainWired(t *testing.T) {
 	s := New(nil, "", "0.23.0", false)
-	shown := 0
-	s.SetShowWindow(func() { shown++ })
 	refused := errors.New("quit: lich is still starting")
 	s.SetQuit(func() error { return refused })
-
-	s.ShowWindow(ShowWindowOptions{})
-	if shown != 1 {
-		t.Fatalf("ShowWindow reached the window %d times, want 1", shown)
-	}
 	if err := s.Quit(QuitOptions{}); !errors.Is(err, refused) {
 		t.Fatalf("Quit = %v, want the wired quit's error", err)
 	}
-	closed := errors.New("no lich window is open")
-	s.SetCloseWindow(func() error { return closed })
-	if err := s.CloseWindow(CloseWindowOptions{}); !errors.Is(err, closed) {
-		t.Fatalf("CloseWindow = %v, want the wired close's error", err)
-	}
 }
 
-// nativeRig wires a Service's windows to counters: the web window shown,
-// the native one raised while connected, launched, closed, and its exit
-// handed to the test to fire.
+// nativeRig wires a Service's native window to counters: raised while
+// connected, launched, and its failures, with its exit handed to the test to
+// fire.
 type nativeRig struct {
-	s                     *Service
-	kind                  string
-	shown, raised, closed int
-	connected             bool
-	launched              []string
-	exited                func(state string)
-	launchErr, locateErr  error
-	webClosed             int
+	s                    *Service
+	raised               int
+	connected            bool
+	launched             []string
+	failures             []string
+	exited               func(state string)
+	launchErr, locateErr error
 }
 
 func newNativeRig(t *testing.T) *nativeRig {
 	t.Helper()
-	r := &nativeRig{s: New(nil, "", "0.68.0", false), kind: WindowWeb}
-	r.s.SetShowWindow(func() { r.shown++ })
-	r.s.SetCloseWindow(func() error { r.webClosed++; return nil })
+	r := &nativeRig{s: New(nil, "", "0.68.0", false)}
 	r.s.SetNativeWindow(NativeHooks{
 		Raise: func() bool {
 			if r.connected {
@@ -511,28 +496,21 @@ func newNativeRig(t *testing.T) *nativeRig {
 			r.exited = exited
 			return nil
 		},
-		Close: func() { r.closed++; r.connected = false },
 		Locate: func() (string, error) {
 			if r.locateErr != nil {
 				return "", r.locateErr
 			}
 			return "/opt/lich/lich-native", nil
 		},
+		Failed: func(reason string) { r.failures = append(r.failures, reason) },
 	})
-	r.s.SetWindowChoice(func() string { return r.kind })
 	return r
 }
 
-func TestShowWindowOpensTheChosenWindow(t *testing.T) {
+func TestShowWindowStartsOrRaisesTheNativeWindow(t *testing.T) {
 	r := newNativeRig(t)
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.shown != 1 || len(r.launched) != 0 {
-		t.Fatalf("web chosen: err %v, web shown %d, native launched %v; want the web window", err, r.shown, r.launched)
-	}
-
-	r.kind = WindowNative
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 || r.webClosed != 1 || r.shown != 1 {
-		t.Fatalf("native chosen: err %v, launched %v, web closed %d, web shown %d; want the web window closed and the native one started",
-			err, r.launched, r.webClosed, r.shown)
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 || r.launched[0] != "/opt/lich/lich-native" {
+		t.Fatalf("none open: err %v, launched %v; want the located binary started", err, r.launched)
 	}
 	r.s.AttachNative(AttachNativeOptions{Executable: "/home/me/lich-native"})
 	r.connected = true
@@ -543,38 +521,17 @@ func TestShowWindowOpensTheChosenWindow(t *testing.T) {
 	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 2 || r.launched[1] != "/home/me/lich-native" {
 		t.Fatalf("native closed: err %v, launched %v; want the attached binary started again", err, r.launched)
 	}
-}
-
-func TestOpenWindowSwitchesToTheOtherOneWithoutChangingTheChoice(t *testing.T) {
-	r := newNativeRig(t)
-	r.kind = WindowNative
-	r.s.AttachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
-	r.connected = true
-
-	if err := r.s.OpenWindow(OpenWindowOptions{Kind: WindowWeb}); err != nil || r.closed != 1 || r.shown != 1 {
-		t.Fatalf("open web: err %v, native closed %d, web shown %d; want the native closed and the web shown", err, r.closed, r.shown)
-	}
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 {
-		t.Fatalf("show after: err %v, launched %v; want the chosen native window back", err, r.launched)
-	}
-	if err := r.s.OpenWindow(OpenWindowOptions{Kind: "electron"}); err == nil {
-		t.Error("an unknown kind opened something")
+	if len(r.failures) != 0 {
+		t.Fatalf("failures = %v, want none", r.failures)
 	}
 }
 
-func TestNativeWindowThatCannotStartFallsBackToTheWebOne(t *testing.T) {
+func TestNativeWindowThatCannotStartIsReported(t *testing.T) {
 	r := newNativeRig(t)
-	r.kind = WindowNative
 
 	r.locateErr = errors.New("no lich-native beside /usr/bin/lich")
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.shown != 1 {
-		t.Fatalf("missing binary: err %v, web shown %d; want the web window", err, r.shown)
-	}
-	if got := r.s.TakeWindowFallback(); !strings.Contains(got, "no lich-native") {
-		t.Errorf("fallback reason = %q, want the missing binary", got)
-	}
-	if got := r.s.TakeWindowFallback(); got != "" {
-		t.Errorf("second read = %q, want it told once", got)
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.failures) != 1 || !strings.Contains(r.failures[0], "no lich-native") {
+		t.Fatalf("missing binary: err %v, failures %v; want the missing binary reported", err, r.failures)
 	}
 
 	r.locateErr = nil
@@ -582,8 +539,8 @@ func TestNativeWindowThatCannotStartFallsBackToTheWebOne(t *testing.T) {
 		t.Fatalf("relaunch: err %v, launched %v", err, r.launched)
 	}
 	r.exited("exit status 1")
-	if r.shown != 2 || !strings.Contains(r.s.TakeWindowFallback(), "exit status 1") {
-		t.Fatalf("died before attaching: web shown %d; want the web window and the exit as the reason", r.shown)
+	if len(r.failures) != 2 || !strings.Contains(r.failures[1], "exit status 1") {
+		t.Fatalf("died before attaching: failures %v; want the exit as the reason", r.failures)
 	}
 
 	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 2 {
@@ -591,30 +548,12 @@ func TestNativeWindowThatCannotStartFallsBackToTheWebOne(t *testing.T) {
 	}
 	r.s.AttachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
 	r.exited("exit status 0")
-	if r.shown != 2 || r.s.TakeWindowFallback() != "" {
-		t.Fatalf("closed after attaching: web shown %d; want nothing opened in its place", r.shown)
+	if len(r.failures) != 2 {
+		t.Fatalf("closed after attaching: failures %v; want nothing reported", r.failures)
 	}
 
 	r.launchErr = errors.New("exec format error")
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.shown != 3 {
-		t.Fatalf("launch failing: err %v, web shown %d; want the web window", err, r.shown)
-	}
-}
-
-func TestSwitchesToNativeOncePerRelease(t *testing.T) {
-	cases := []struct {
-		name, version, last string
-		shipped, want       bool
-	}{
-		{"first launch of a release", "0.69.0", "", true, true},
-		{"an update", "0.69.0", "0.68.0", true, true},
-		{"the same release again", "0.69.0", "0.69.0", true, false},
-		{"no native binary", "0.69.0", "0.68.0", false, false},
-		{"a dev build", "dev", "", true, false},
-	}
-	for _, c := range cases {
-		if got := SwitchesToNative(c.version, c.last, c.shipped); got != c.want {
-			t.Errorf("%s: SwitchesToNative(%q, %q, %v) = %v, want %v", c.name, c.version, c.last, c.shipped, got, c.want)
-		}
+	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.failures) != 3 || !strings.Contains(r.failures[2], "exec format error") {
+		t.Fatalf("launch failing: err %v, failures %v; want the launch error reported", err, r.failures)
 	}
 }

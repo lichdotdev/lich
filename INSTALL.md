@@ -15,23 +15,21 @@ Pick your system:
 - [Verifying checksums](#verifying-checksums)
 - [If it does not start](#if-it-does-not-start)
 
-**Runtime dependencies** — lich ships its own window: an embedded Chromium
-(CEF) inside the package, so no browser is required. On Linux `zenity` is the
-one thing left to install, for the folder picker; on Windows nothing is. The
-Linux window needs glibc 2.34 or newer — Debian 12, Ubuntu 22.04, RHEL 9, or
-anything current — and the libraries Chromium itself links against, which the
-deb, rpm and AUR packages declare. The window carries lich's own class and
-title, so the launcher icon, window rules by class and `StartupWMClass` all
-match it. A package missing its window, or a binary copied out of the
-package it came in, does not start: `lich doctor` says so, and `--shell` or `LICH_SHELL`
-points lich at a window build of your own
-([docs/chromium-shell.md](docs/chromium-shell.md)).
+**Runtime dependencies** — lich ships its own window, `lich-native`, beside
+the `lich` binary in every package, so no browser is required. On Linux
+`zenity` is the one thing left to install, for the folder picker; on Windows
+nothing is. The Linux window needs glibc 2.34 or newer — Debian 12, Ubuntu
+22.04, RHEL 9, or anything current — and the Wayland, X11, EGL and fontconfig
+libraries it links against, which the deb, rpm and AUR packages declare. The
+window carries lich's own class and title, so the launcher icon, window rules
+by class and `StartupWMClass` all match it. A package missing its window, or a
+binary copied out of the package it came in, does not open one: `lich doctor`
+says so, and `LICH_NATIVE` points lich at a window build of your own
+([docs/native-window.md](docs/native-window.md)).
 
-On macOS, `Lich.app` carries the same window on Apple Silicon and Intel. When
-that window fails to open, lich serves itself anyway: it opens a plain tab in
-your default browser, tells you so in a desktop notification, and goes on
-running until you stop it — closing the tab leaves it running, so stop it with
-Ctrl-C or by signalling the process. The folder picker is native either way.
+When the window cannot start, lich shows a dialog with the reason and the path
+of its log. With no session running it then quits; with sessions running it
+keeps them, and launching lich again, or `lich native`, retries the window.
 
 **git and the GitHub CLI** — every version control surface shells out to
 `git`, and lich does not bundle it: without `git` on your `PATH`, branches,
@@ -102,7 +100,7 @@ sudo pacman -S zenity
 ## Tarball
 
 Every release also ships `lich-*-linux-amd64.tar.zst`: the static binary with
-its window beside it as `shell/`. Download it from the releases page and
+its window, `lich-native`, beside it. Download it from the releases page and
 unpack it into a directory on your PATH:
 
 ```bash
@@ -112,8 +110,7 @@ ln -s ~/.local/lib/lich/lich ~/.local/bin/lich
 ```
 
 lich finds its window beside the real binary, through the link. If the window
-fails to start on your machine, lich does not open: a dialog and the log say
-why. `zenity` still comes from your package manager. A tarball install updates
+fails to start on your machine, a dialog and the log say why. `zenity` still comes from your package manager. A tarball install updates
 by hand: the update prompt links the release page, since a package installed
 over it would leave the old binary first on your PATH.
 
@@ -133,10 +130,10 @@ the Finder list it under its own icon — and symlinks the same binary onto
 steps aside on a Homebrew install.
 
 The app carries its own window on Apple Silicon and Intel alike, the same
-embedded Chromium the Linux packages ship, and the Dock shows the lich icon
-while it runs. The Intel build is exercised on a CI runner only — nobody on the
+native window the Linux packages ship, and the Dock shows the lich icon while
+it runs. The Intel build is exercised on a CI runner only — nobody on the
 project has an Intel Mac — so if its window does not come up, say so in an
-issue; lich still opens as a tab in your default browser meanwhile.
+issue.
 
 **Upgrading from the old formula** — releases up to v0.32.0 shipped a bare CLI
 as `Formula/lich.rb`. Homebrew refuses to install the cask over it (both want
@@ -161,7 +158,7 @@ xattr -dr com.apple.quarantine /Applications/Lich.app
 
 Download `lich-*-windows-amd64-setup.exe` from the releases page and run it.
 The install is per-user (no admin prompt): lich lands in
-`%LocalAppData%\Programs\lich` with its window beside it as `shell\`, shows
+`%LocalAppData%\Programs\lich` with its window, `lich-native.exe`, beside it, shows
 up in the Start Menu and in Settings → Installed apps, and uninstalls from
 there like any other application. The update button downloads the next
 installer, verifies it and runs it over the install, then reopens lich.
@@ -179,13 +176,13 @@ beside them, no bucket to add:
 scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json
 ```
 
-It puts `lich.exe` in the app directory with the window beside it as `shell\`,
+It puts `lich.exe` in the app directory with `lich-native.exe` beside it,
 keeps `lich` on PATH and adds a Start Menu entry; `scoop update lich` re-reads
 the manifest from that URL, which is always the latest release's. The workspace stays in `%AppData%\lich`, so
 `scoop uninstall lich` leaves your projects and sessions alone.
 
 `lich-*-windows-amd64.zip` is the portable package, for a no-install run:
-`lich.exe` with its window beside it as `shell\`. Unzip it anywhere you can
+`lich.exe` with `lich-native.exe` beside it. Unzip it anywhere you can
 write and run `lich.exe`; keep the two together, since `lich.exe` alone does
 not open. The update button runs the installer into that folder, which also
 adds lich to Installed apps.
@@ -212,11 +209,11 @@ lich doctor
 ```
 
 It walks the same boot a launch walks — the config directory, the log file, the
-pinned loopback port, the workspace database, the browser, the provider CLIs on
+pinned loopback port, the workspace database, the window, the provider CLIs on
 PATH — and says which step would stop it, exiting non-zero when one does. A port
 already held by the lich you have open is not a failure; a port held by
 something else is, and so is a missing window — the one lich ships, or the
-build `LICH_SHELL` points at.
+build `LICH_NATIVE` points at.
 
 When you file the issue, attach the bundle:
 

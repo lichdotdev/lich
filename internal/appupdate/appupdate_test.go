@@ -61,11 +61,7 @@ func TestCanSelfApply(t *testing.T) {
 func windowedExe(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	shell := filepath.Join(dir, "shell")
-	if err := os.MkdirAll(shell, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(shell, "lich-shell.exe"), nil, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "lich-native.exe"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return filepath.Join(dir, "lich.exe")
@@ -77,10 +73,10 @@ func windowedExe(t *testing.T) string {
 func scoopExe(t *testing.T) string {
 	t.Helper()
 	dir := filepath.Join(t.TempDir(), "Scoop", "apps", "lich", "current")
-	if err := os.MkdirAll(filepath.Join(dir, "shell"), 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "shell", "lich-shell.exe"), nil, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "lich-native.exe"), nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return filepath.Join(dir, "lich.exe")
@@ -99,12 +95,12 @@ func bundleExe(t *testing.T) string {
 }
 
 // packagedExe returns a path laid out the way the deb, rpm and AUR packages
-// install lich: <root>/bin/lich with the window in <root>/lib/lich/shell.
+// install lich: <root>/usr/bin/lich with the window beside it.
 func packagedExe(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	touch(t, filepath.Join(root, "lib", "lich", "shell", "lich-shell"))
-	return filepath.Join(root, "bin", "lich")
+	touch(t, filepath.Join(root, "usr", "bin", "lich-native"))
+	return filepath.Join(root, "usr", "bin", "lich")
 }
 
 // serveBody points a Service's latest endpoint at a test server.

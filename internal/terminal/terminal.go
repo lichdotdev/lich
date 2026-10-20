@@ -680,15 +680,6 @@ func (s *Service) Mount(pattern string, handler http.Handler) {
 	s.ws.mount(pattern, handler)
 }
 
-// MountPublic exposes a tokenless handler on the transport listener — the
-// static frontend the Chromium shell loads before it knows the token.
-func (s *Service) MountPublic(pattern string, handler http.Handler) {
-	if s.ws == nil {
-		return
-	}
-	s.ws.mountPublic(pattern, handler)
-}
-
 // noteInterrupt publishes the end of a turn the user stopped at the PTY: a lone
 // Ctrl+C or Escape while lich has a turn open for that session (see noteInput
 // and turnLog.interrupt). It is the fallback for the three providers that raise

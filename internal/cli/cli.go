@@ -45,7 +45,7 @@ import (
 
 // NotACommand is returned when the arguments name no lich subcommand at all,
 // which is how main tells "the user ran a command" apart from "the user opened
-// the app" (and from `lich -- <chromium flags>`).
+// the app" (and from `lich --no-window`).
 const NotACommand = -1
 
 // Exit codes past 0 (done) and 1 (failed) are outcomes a script branches on
@@ -204,7 +204,7 @@ func dispatch(args []string, c *client) int {
 	// A word that names no subcommand is a typo, and opening the whole app for
 	// one is an answer nobody reads: the window it puts on screen says nothing
 	// about the command that was run. A leading dash is not a typo — that is
-	// `lich --` and the Chromium flags behind it, which the app still takes.
+	// a flag of the launch itself, such as --no-window.
 	if strings.HasPrefix(args[0], "-") {
 		return NotACommand
 	}

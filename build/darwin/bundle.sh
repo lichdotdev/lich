@@ -3,20 +3,11 @@
 # lich in /Applications, Launchpad and Spotlight and gives it its icon; a bare
 # binary on PATH appears in none of them.
 #
-#   build/darwin/bundle.sh bin/lich-darwin-arm64 0.30.0 bin [bin/shell [bin/lich-native]]
+#   build/darwin/bundle.sh bin/lich-darwin-arm64 0.30.0 bin bin/lich-native
 #
-# With a fifth, the native window goes beside lich in Contents/MacOS too, for
-# the same reason as lich-shell: it is the process holding the window.
-#
-# With a fourth argument, the window build/darwin/shell/assemble.sh laid out:
-# lich-shell goes beside lich in Contents/MacOS, where macOS counts a process
-# as the app's own (its Dock tile, its icon, its name in the menu bar), the
-# CEF framework into Contents/Frameworks, where kurogane looks for it, and
-# five copies of lich-shell into the helper apps beside the framework that
-# CEF's subprocesses run as ("Lich Helper", plus the Renderer, GPU, Plugin
-# and Alerts variants Chromium derives from it: without them a bundled
-# browser never launches a renderer, measured). Without one the bundle opens
-# lich as a tab in the default browser.
+# The native window goes beside lich in Contents/MacOS, where macOS counts a
+# process as the app's own (its Dock tile, its icon, its name in the menu
+# bar): it is the process holding the window.
 #
 # macOS host only: sips and iconutil are Apple's, so the icon is generated at
 # build time from build/appicon-mac.png instead of committing an .icns — one
@@ -24,48 +15,21 @@
 # anywhere (task build:mac); only this wrapping step needs a Mac.
 set -eu
 
-bin="${1:?usage: bundle.sh <binary> <version> <outdir> [shell dir]}"
-version="${2:?usage: bundle.sh <binary> <version> <outdir> [shell dir]}"
-outdir="${3:?usage: bundle.sh <binary> <version> <outdir> [shell dir]}"
-shell="${4:-}"
-native="${5:-}"
+usage="usage: bundle.sh <binary> <version> <outdir> <lich-native>"
+bin="${1:?$usage}"
+version="${2:?$usage}"
+outdir="${3:?$usage}"
+native="${4:?$usage}"
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 app="$outdir/Lich.app"
-framework="Chromium Embedded Framework.framework"
 
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/lich"
 chmod +x "$app/Contents/MacOS/lich"
-
-# One helper app: <name>.app with the window's binary under that name and an
-# LSUIElement plist, so no subprocess owns a Dock tile.
-helper() {
-  name="$1"
-  role="$2"
-  dir="$app/Contents/Frameworks/$name.app/Contents"
-  mkdir -p "$dir/MacOS"
-  cp "$shell/lich-shell" "$dir/MacOS/$name"
-  sed -e "s/@VERSION@/${version}/g" -e "s/@NAME@/${name}/g" -e "s/@ROLE@/${role}/g" \
-    "$root/build/darwin/Helper-Info.plist.tpl" > "$dir/Info.plist"
-}
-
-if [ -n "$shell" ]; then
-  mkdir -p "$app/Contents/Frameworks"
-  cp "$shell/lich-shell" "$app/Contents/MacOS/lich-shell"
-  ditto "$shell/$framework" "$app/Contents/Frameworks/$framework"
-  helper "Lich Helper" ""
-  helper "Lich Helper (Renderer)" ".renderer"
-  helper "Lich Helper (GPU)" ".gpu"
-  helper "Lich Helper (Plugin)" ".plugin"
-  helper "Lich Helper (Alerts)" ".alerts"
-fi
-
-if [ -n "$native" ]; then
-  cp "$native" "$app/Contents/MacOS/lich-native"
-  chmod +x "$app/Contents/MacOS/lich-native"
-fi
+cp "$native" "$app/Contents/MacOS/lich-native"
+chmod +x "$app/Contents/MacOS/lich-native"
 
 sed "s/@VERSION@/${version}/g" "$root/build/darwin/Info.plist.tpl" \
   > "$app/Contents/Info.plist"
@@ -83,24 +47,9 @@ rm -rf "$(dirname "$iconset")"
 
 # Ad-hoc signature: arm64 refuses to run an executable carrying none, and a
 # bundle whose seal does not cover Info.plist and the icon reads as damaged.
-# Innermost first, as codesign wants it: the framework's dylibs are not in a
-# place --deep would find them, the framework's seal must cover the trimmed
-# Resources, not the distribution's, and each helper app seals its own plist.
-# This is not notarization — Gatekeeper still calls the developer unidentified.
-if [ -n "$shell" ]; then
-  fw="$app/Contents/Frameworks/$framework"
-  for lib in "$fw/Libraries/"*.dylib; do
-    codesign --force --sign - "$lib"
-  done
-  codesign --force --sign - "$fw"
-  for h in "$app/Contents/Frameworks/Lich Helper"*.app; do
-    codesign --force --sign - "$h"
-  done
-  codesign --force --sign - "$app/Contents/MacOS/lich-shell"
-fi
-if [ -n "$native" ]; then
-  codesign --force --sign - "$app/Contents/MacOS/lich-native"
-fi
+# Innermost first, as codesign wants it. This is not notarization —
+# Gatekeeper still calls the developer unidentified.
+codesign --force --sign - "$app/Contents/MacOS/lich-native"
 codesign --force --sign - "$app"
 
 echo "built $app"

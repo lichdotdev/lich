@@ -428,13 +428,17 @@ func TestColorFolderThatCannotBeWrittenAnnouncesNothing(t *testing.T) {
 // colours, or a name the window offers would be refused here and one it lacks
 // accepted and drawn as nothing.
 func TestCardColorsNameTheWindowsPalette(t *testing.T) {
-	src, err := os.ReadFile("../../frontend/src/lib/session/card-color.ts")
+	src, err := os.ReadFile("../../native/cmd/lich-native/cardcolor.go")
 	if err != nil {
 		t.Fatalf("read the window's palette: %v", err)
 	}
+	order := regexp.MustCompile(`cardColorNames = \[\]string\{([^}]*)\}`).FindSubmatch(src)
+	if order == nil {
+		t.Fatal("cardColorNames not found in the window's palette")
+	}
 	var names []string
-	for _, m := range regexp.MustCompile(`(?m)^\s+(\w+): "oklch\(`).FindAllStringSubmatch(string(src), -1) {
-		names = append(names, m[1])
+	for _, m := range regexp.MustCompile(`"(\w+)"`).FindAllSubmatch(order[1], -1) {
+		names = append(names, string(m[1]))
 	}
 	if !slices.Equal(names, cardColors) {
 		t.Errorf("window palette %v, cardColors %v", names, cardColors)

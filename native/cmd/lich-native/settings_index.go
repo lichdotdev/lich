@@ -84,7 +84,6 @@ var settingsSections = []settingsSection{
 	{id: sectionGeneral, labelKey: "settings.settingsIndex.sectionGeneral", icon: icons.Lucide("settings-2"), rows: []settingEntry{
 		{titleKey: "settings.language.uiTitle", alsoKey: "settings.language.uiSearchWords", key: uiLanguageKey, groupKey: "settings.language.group"},
 		{titleKey: "settings.language.promptTitle", alsoKey: "settings.language.promptSearchWords", key: promptLanguageKey, groupKey: "settings.language.group"},
-		{titleKey: "settings.windowSetting.title", alsoKey: "settings.windowSetting.searchWords", key: windowKindKey, groupKey: "settings.windowSetting.title"},
 		{titleKey: "settings.closeSetting.title", alsoKey: "settings.closeSetting.searchWords", key: closeActionKey, groupKey: "settings.windowSetting.title"},
 		{titleKey: "settings.notificationsSettings.needsInputTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: desktopNotifyKey, groupKey: "settings.settings.section.notifications"},
 		{titleKey: "settings.notificationsSettings.finishedTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: finishedNotifyKey, groupKey: "settings.settings.section.notifications"},

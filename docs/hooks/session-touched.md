@@ -75,11 +75,11 @@ refresh reads a tree the tool has not touched yet (see the ceilings).
   session id.
 - **UI push** — `internal/terminal/terminal.go`: emits the global app event
   `session-touched` (`{id}`).
-- **Refresh** — `frontend/src/providers/project-events.tsx`: resolves the session id to the
-  path its card watches (its worktree, else the project path) and calls
-  `refreshGitStatus(path)` (`frontend/src/lib/git/use-git-status.ts`), which fetches
-  that path now, ahead of the poll tick. A no-op when no card watches the path
-  (the session lives in a background project), so it costs no git call.
+- **Refresh** — `sessionTouched` (`native/cmd/lich-native/model_events.go`): resolves
+  the session id to the path its card watches (its worktree, else the project path)
+  and calls `refreshPath` (`native/cmd/lich-native/gitstate.go`), which fetches
+  that path now, ahead of the poll tick. A no-op when the session lives in a
+  project not on screen, so it costs no git call.
 
 ## Known ceilings
 
@@ -90,7 +90,7 @@ refresh reads a tree the tool has not touched yet (see the ceilings).
 - **No debounce.** A burst of edits fires one POST per tool, each an immediate
   git fetch. Cheap and idempotent (unchanged status short-circuits re-renders),
   but a trailing debounce could collapse bursts if it ever matters.
-- **Session id, not path.** The hook sends the session id and lich/the frontend
+- **Session id, not path.** The hook sends the session id and lich/the window
   resolve the path, so a `cd` inside a Bash tool can't point the refresh at the
   wrong repository.
 - **On Crush the refresh runs one tool early.** `PreToolUse` is the only event

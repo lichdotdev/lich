@@ -154,9 +154,7 @@
   "tray": {
     "show": "Показать lich",
     "running": "Запущено сессий: {count}",
-    "quit": "Выйти из lich",
-    "openNative": "Открыть нативное окно",
-    "openWeb": "Открыть веб-окно"
+    "quit": "Выйти из lich"
   },
   "closeDialog": {
     "title": "Оставить lich работать?",

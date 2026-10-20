@@ -24,7 +24,6 @@ func mountedTransport(t *testing.T) *transport {
 		t.Fatalf("newTransport: %v", err)
 	}
 	tr.mount("/gated", probe)
-	tr.mountPublic("/open", probe)
 	return tr
 }
 
@@ -53,13 +52,5 @@ func TestMountRequiresTheToken(t *testing.T) {
 	}
 	if code := status(t, tr, "/gated", tr.token); code != http.StatusOK {
 		t.Errorf("with the token: want 200, got %d", code)
-	}
-}
-
-func TestMountPublicServesWithoutTheToken(t *testing.T) {
-	t.Parallel()
-	tr := mountedTransport(t)
-	if code := status(t, tr, "/open", ""); code != http.StatusOK {
-		t.Errorf("public without token: want 200, got %d", code)
 	}
 }

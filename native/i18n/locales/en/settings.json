@@ -240,21 +240,7 @@
     }
   },
   "windowSetting": {
-    "title": "Window",
-    "searchWords": "web native experimental window open",
-    "description": "Which window lich opens. The native window is new and still experimental; if it fails to start, lich opens the web window instead.",
-    "choice": {
-      "web": {
-        "label": "Web"
-      },
-      "native": {
-        "label": "Native (experimental)"
-      }
-    },
-    "switch": {
-      "later": "Later",
-      "now": "Switch now"
-    }
+    "title": "Window"
   },
   "restoreSetting": {
     "title": "Restored sessions",
@@ -412,11 +398,6 @@
   },
   "settingsGeneral": {
     "notifySearchWords": "desktop notification alert bell"
-  },
-  "settingsWindow": {
-    "switchTitle": "Switch to the web window now?",
-    "switchDescription": "This window closes and the web one opens. Your sessions keep running.",
-    "switchFailed": "Could not open the web window: {error}"
   },
   "settingsHelp": {
     "bugDescription": "Opens the bug form in your browser with the version and platform filled in. lich does not file the issue — you write it yourself. Run `lich rage` in a terminal to pack the logs, the versions and what lich found on this machine into one archive to attach.",

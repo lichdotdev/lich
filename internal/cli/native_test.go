@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/internal/restart"
 	"github.com/lichdotdev/lich/internal/singleton"
 )
 
@@ -23,23 +23,12 @@ type launched struct {
 	args []string
 }
 
-// windowedLich is a running lich answering system.CloseWindow with status and
-// body, recording each call's body.
-func windowedLich(t *testing.T, status int, body string) (*httptest.Server, *[]string) {
+// listeningLich is a lich listening on its port, answering nothing.
+func listeningLich(t *testing.T) *httptest.Server {
 	t.Helper()
-	var bodies []string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/rpc/system.CloseWindow" {
-			http.NotFound(w, r)
-			return
-		}
-		payload, _ := io.ReadAll(r.Body)
-		bodies = append(bodies, string(payload))
-		w.WriteHeader(status)
-		_, _ = io.WriteString(w, body)
-	}))
+	srv := httptest.NewServer(http.NotFoundHandler())
 	t.Cleanup(srv.Close)
-	return srv, &bodies
+	return srv
 }
 
 func portOf(srv *httptest.Server) string {
@@ -49,7 +38,7 @@ func portOf(srv *httptest.Server) string {
 // nativeBuild is a lich-native on disk for LICH_NATIVE to point at.
 func nativeBuild(t *testing.T) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), nativeBinary)
+	path := filepath.Join(t.TempDir(), restart.NativeBinary)
 	if err := os.WriteFile(path, nil, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -76,18 +65,15 @@ func runNative(t *testing.T, env map[string]string, running func() (*singleton.I
 	return code, stdout.String(), stderr.String(), starts
 }
 
-func TestNativeClosesTheWebWindowAndOpensOnTheRunningLich(t *testing.T) {
+func TestNativeOpensOnTheRunningLich(t *testing.T) {
 	t.Parallel()
-	srv, bodies := windowedLich(t, http.StatusOK, "null")
+	srv := listeningLich(t)
 	native := nativeBuild(t)
-	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: native}
+	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", restart.NativeEnv: native}
 
 	code, stdout, stderr, starts := runNative(t, env, noInstance, nil)
 	if code != 0 {
 		t.Fatalf("exit = %d, stderr = %q", code, stderr)
-	}
-	if len(*bodies) != 1 || (*bodies)[0] != "[{}]" {
-		t.Errorf("CloseWindow bodies = %q, want one call with one options object", *bodies)
 	}
 	if len(starts) != 1 || starts[0].exe != native {
 		t.Fatalf("launched %+v, want only %s", starts, native)
@@ -102,44 +88,17 @@ func TestNativeClosesTheWebWindowAndOpensOnTheRunningLich(t *testing.T) {
 	}
 }
 
-// A lich with its window already closed (the tray, `lich native` run twice)
-// answers CloseWindow with ErrNoWindow's text, and that is nothing to stop for.
-func TestNativeOpensWhenNoWebWindowIsOpen(t *testing.T) {
-	t.Parallel()
-	srv, _ := windowedLich(t, http.StatusInternalServerError, `{"error":"no lich window is open"}`)
-	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: nativeBuild(t)}
-
-	code, _, stderr, starts := runNative(t, env, noInstance, nil)
-	if code != 0 || len(starts) != 1 {
-		t.Fatalf("exit = %d, launched %+v, stderr = %q", code, starts, stderr)
-	}
-}
-
-func TestNativeStopsWhenTheWebWindowWillNotClose(t *testing.T) {
-	t.Parallel()
-	srv, _ := windowedLich(t, http.StatusInternalServerError, `{"error":"window: still starting"}`)
-	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: nativeBuild(t)}
-
-	code, _, stderr, starts := runNative(t, env, noInstance, nil)
-	if code != 1 || !strings.Contains(stderr, "still starting") {
-		t.Fatalf("exit = %d, stderr = %q, want the refusal", code, stderr)
-	}
-	if len(starts) != 0 {
-		t.Errorf("launched %+v over a window that would not close", starts)
-	}
-}
-
 // With no lich running, one is started without a window, and the native window
 // opens on it once its runtime file names a port that answers.
 func TestNativeStartsLichWithNoWindowWhenNoneRuns(t *testing.T) {
 	t.Parallel()
-	srv, _ := windowedLich(t, http.StatusInternalServerError, `{"error":"no lich window is open"}`)
+	srv := listeningLich(t)
 	native := nativeBuild(t)
 	var started *singleton.Info
 	running := func() (*singleton.Info, error) { return started, nil }
 	port, _ := strconv.Atoi(portOf(srv))
 
-	code, _, stderr, starts := runNative(t, map[string]string{nativeEnv: native}, running, func(l launched) {
+	code, _, stderr, starts := runNative(t, map[string]string{restart.NativeEnv: native}, running, func(l launched) {
 		if l.exe != native {
 			started = &singleton.Info{Port: port, Token: "tok"}
 		}
@@ -154,16 +113,16 @@ func TestNativeStartsLichWithNoWindowWhenNoneRuns(t *testing.T) {
 
 func TestNativeWithoutABuildStartsNothing(t *testing.T) {
 	t.Parallel()
-	srv, bodies := windowedLich(t, http.StatusOK, "null")
-	missing := filepath.Join(t.TempDir(), nativeBinary)
-	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", nativeEnv: missing}
+	srv := listeningLich(t)
+	missing := filepath.Join(t.TempDir(), restart.NativeBinary)
+	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok", restart.NativeEnv: missing}
 
 	code, _, stderr, starts := runNative(t, env, noInstance, nil)
-	if code != 1 || !strings.Contains(stderr, nativeEnv) {
+	if code != 1 || !strings.Contains(stderr, restart.NativeEnv) {
 		t.Fatalf("exit = %d, stderr = %q, want the pin named", code, stderr)
 	}
-	if len(starts) != 0 || len(*bodies) != 0 {
-		t.Errorf("launched %+v and closed the window %d times without a native window to open", starts, len(*bodies))
+	if len(starts) != 0 {
+		t.Errorf("launched %+v without a native window to open", starts)
 	}
 }
 
@@ -180,11 +139,11 @@ func TestNativeTakesNoArguments(t *testing.T) {
 // a test is the test binary, with no lich-native beside it.
 func TestNativeWithNothingBesideLichSaysWhereToGetIt(t *testing.T) {
 	t.Parallel()
-	srv, _ := windowedLich(t, http.StatusOK, "null")
+	srv := listeningLich(t)
 	env := map[string]string{"LICH_PORT": portOf(srv), "LICH_TOKEN": "tok"}
 
 	code, _, stderr, starts := runNative(t, env, noInstance, nil)
-	if code != 1 || !strings.Contains(stderr, "no "+nativeBinary+" beside") || !strings.Contains(stderr, nativeEnv) {
+	if code != 1 || !strings.Contains(stderr, "no "+restart.NativeBinary+" beside") || !strings.Contains(stderr, restart.NativeEnv) {
 		t.Fatalf("exit = %d, stderr = %q, want where to build it and the pin", code, stderr)
 	}
 	if len(starts) != 0 {

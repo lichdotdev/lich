@@ -128,9 +128,8 @@ none answered.
 
 A word that names no subcommand is refused with `lich: unknown command "…"`, a
 guess at the one it resembles, and exit 1 — a typo does not open a window.
-Arguments the app itself takes still do: bare `lich`, `lich --shell <path>`,
-`lich --no-window` (the backend with no window, which `lich native` starts), and
-`lich --` with the Chromium flags behind it.
+Arguments the app itself takes still do: bare `lich`, and `lich --no-window`
+(the backend with no window, which `lich native` starts).
 
 `--json` on `sessions`, `whoami`, `send`, `insert`, `focus`, `wait`, `open`, `close`, `rename`, `control`, `ask`, `worktrees`, `folders`, `file`,
 `rename-folder`, `color-folder`, `cost` and `version`
@@ -976,12 +975,11 @@ clears a folder's, and a model that forgot the field did not ask for that.
 
 ### `lich native`
 
-Opens the native window, experimental (`docs/native-window.md`), on the running
-lich. With no lich running it starts one in the background first, as
-`lich --no-window`: the backend and its tray, no web window. The web window is
-closed before the native one opens, through the same call as the page's "keep
-running" answer, so lich and its sessions go on; the two windows cannot share
-the backend's event and terminal streams, and the newest one takes them.
+Opens the native window (`docs/native-window.md`) on the running lich. With no
+lich running it starts one in the background first, as `lich --no-window`: the
+backend and its tray, no window. A native window already open gives way: the
+backend's event and terminal streams take one client at a time, and the newest
+one takes them.
 
 ```
 Opening the native window on lich (port 47900).
@@ -1061,7 +1059,7 @@ collects say where the process is stuck.
 
 | Entry | What it holds |
 |-------|---------------|
-| `report.md` | Version and build, platform, instance state, browser, whether a confined session would actually be confined here, providers on PATH, plugin state per provider, and the config directory one level deep. |
+| `report.md` | Version and build, platform, instance state, window, whether a confined session would actually be confined here, providers on PATH, plugin state per provider, and the config directory one level deep. |
 | `env.txt` | Every `LICH_*` variable plus a fixed allowlist (`SHELL`, `PATH`, `EDITOR`, the desktop ones). Anything named like a token, key, secret or password is `<SET>` / `<UNSET>`, never a value. |
 | `logs/` | `lich.log` and the native window's `lich-native.log`, each with its rotated `*.old`, each carrying at most its last 4 MiB. |
 | `goroutines.txt` | Every stack in the running instance, blocked ones included — only when one is running. A lich that holds its port but will not answer within 5s leaves that sentence here instead, which is the finding. |
@@ -1069,8 +1067,8 @@ collects say where the process is stuck.
 Nothing is uploaded and no issue is filed: the archive sits on disk until the
 user attaches it to one they wrote. The loopback token is masked wherever it
 appeared — by value for the running instance, and by the `token=` query shape
-for every earlier one. The Chromium profile, the workspace database and its
-directories are named but never read.
+for every earlier one. The workspace database and its directories are named
+but never read.
 
 ### `lich doctor`
 
@@ -1083,7 +1081,7 @@ lich v0.25.0 — linux/amd64
   ok    log          <1ms  /home/u/.config/lich/lich.log
   ok    listener     <1ms  port 47821 is held by the running lich (pid 4242)
   skip  store        <1ms  held by the running lich (pid 4242)
-  ok    browser       2ms  /usr/lib/lich/shell/lich-shell
+  ok    window        2ms  /usr/local/bin/lich-native
   ok    providers     3ms  4 of 8 on PATH: claude, codex, opencode, crush
   ok    sandbox      11ms  bubblewrap confines a session here
   ok    git          <1ms  /usr/bin/git
@@ -1101,7 +1099,7 @@ The checks are in boot order, and each carries its own verdict:
 | `log` | — | The log file will not open; lich would run on stderr only. |
 | `listener` | The pinned port (`LICH_LISTEN_PORT`, else 47821) cannot be bound and no live lich holds it. | — |
 | `store` | The workspace database will not open or migrate. Skipped while an instance is running — a second process migrating the store is not a price a diagnosis may charge. | It will not close cleanly. |
-| `browser` | No window resolves — neither one beside the binary nor a `LICH_SHELL` pin. lich would run and show nothing. | — |
+| `window` | No window resolves — neither `lich-native` beside the binary nor a `LICH_NATIVE` pin. lich would run and show nothing. | — |
 | `providers` | — | None on PATH: the window opens, but no session can spawn. |
 | `sandbox` | — | The backend will not start (an AppArmor policy denying user namespaces, say), so a session opened with the sandbox on will not start either; or it starts and confines nothing, so a session marked confined runs on the machine. Skipped where the platform has no backend at all. |
 | `git` | Never. | Not on PATH: branches, diffs and worktrees stay empty. |
@@ -1290,14 +1288,16 @@ receiving agent only because this text describes it.
   the worktree (`internal/project`), the row (`internal/store`), the PTY
   (`internal/terminal`) and the card (the `session-opened` event) — because no
   existing package owns more than one of them. The window does the same four in
-  `frontend/src/providers/projects.tsx`, in its own order.
+  `newSession` (`native/cmd/lich-native/main.go`) and `openWorktree`
+  (`native/cmd/lich-native/worktree_dialog.go`), in its own order.
 - **The card** — `session-opened` carries the whole session
   (`{id, projectId, project, label, name, kind, path, nextSeq, originSessionId,
   originLabel, confined, folder, run}`) rather than an
   id to look up: the row is already written and the PTY is already running, so
-  the window has nothing to fetch and nothing to spawn. `adoptSession`
-  (`frontend/src/lib/session/sessions.ts`) appends it **without focusing it** —
-  an agent opening three workers must not drag the view along three times.
+  the window has nothing to spawn. The window reloads the workspace on it
+  (`native/cmd/lich-native/model.go`, the `session-opened` case) and shows the
+  new card **without focusing it**: an agent opening three workers must not drag
+  the view along three times.
 - **Relay** — `internal/relay`: resolves a label to a live session, composes the
   message above, hands it to the target's Claude Code mod when one is polling and
   types it through the terminal service otherwise, and holds the ticket the
@@ -1314,16 +1314,13 @@ receiving agent only because this text describes it.
   happened would be a card claiming something untrue. A caller with no session
   of its own gets no mark — there is no card to put one on — and the target's
   `peer` is then empty, which the card words as the command line.
-- **Store and card** — `frontend/src/lib/session/session-relay-store.ts`, keyed
-  by session id, read by `SessionCard`. The row outranks the tool line while a
+- **Store and card** — the window's `relay` map, keyed by session id
+  (`applyLive` in `native/cmd/lich-native/cardstate.go`), drawn by `relayRung`
+  (`native/cmd/lich-native/statusrung.go`). The row outranks the tool line while a
   request is open: it explains the whole turn, and the tool comes back when the
   errand closes. The store also clears on `idle` (SessionEnd), which the relay's
   own clear cannot reach — a session that ended can answer nothing, and its
   ticket would otherwise hold the mark for an hour.
-- **Delegating from the window** — `delegate-targets.ts` lists every other
-  session, `delegate-prompt.ts` decides what is typed: a plain request where the
-  sender has lich's tools, the spelled-out command where it has none. That split
-  mirrors `providers.AcceptsMCPServer` and has to keep mirroring it.
 - **Delivery** — `internal/terminal`, `Service.Write`: the same PTY write the
   window's keyboard input takes. The message is wrapped in bracketed paste
   (`\x1b[200~`…`\x1b[201~`) and followed by a carriage return, so a multi-line
@@ -1466,7 +1463,7 @@ whoever asked.
   worktree port reservation does: anything on the machine can take it between
   the check and the launch that follows.
 - **A green `doctor` is not a green window.** It goes as far as resolving the
-  browser binary; whether that browser opens under this compositor, this
+  window binary; whether that window opens under this compositor, this
   display server or this sandbox is not something a check can answer without
   becoming the launch.
 - **The answer is the agent's summary, not the transcript.** Nothing reads the

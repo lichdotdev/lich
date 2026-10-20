@@ -27,8 +27,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # genfloor is a //go:build ignore program: it needs no frontend/dist,
-      # because it never imports the package that embeds it.
       - name: Reprice the floor
         run: go run internal/pricing/genfloor.go
 

@@ -19,7 +19,7 @@ old form keeps working, with a visible warning, for at least one minor release b
 - **Project files.** `.lich/setup-worktree.sh` and `.worktreeinclude`.
 - **Environment variables lich sets in every session:** `LICH_PORT`, `LICH_TOKEN`, `LICH_SESSION_ID`, `LICH_BIN`, `LICH_PROMPT_LANG`,
   `LICH_PROJECT_DIR` and `LICH_WORKTREE_PORT`.
-- **Environment variables lich reads at startup:** `LICH_SHELL`, `LICH_LISTEN_PORT` and `LICH_LOG_LEVEL`.
+- **Environment variables lich reads at startup:** `LICH_LISTEN_PORT` and `LICH_LOG_LEVEL`.
 
 ## What is experimental
 

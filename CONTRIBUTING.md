@@ -20,37 +20,27 @@ Bugs and ideas are welcome, and so are patches. This file is the short version;
 
 ## Getting it running
 
-Prerequisites: **Go 1.27.0+**, **Node + pnpm**, and **[Task](https://taskfile.dev)**.
-The backend is pure Go (`CGO_ENABLED=0`) and needs no C toolchain. On Linux
-and Windows the window is lich's own Chromium, built out of `shell/` (Rust on
-CEF), and `task dev` and `task build` build it: that one needs a **stable Rust
-toolchain**, plus on Linux the libraries Chromium links against
-(`libgtk-3-dev libnss3-dev libnspr4-dev libasound2-dev libcups2-dev
-libdrm-dev libgbm-dev libxcomposite-dev libxdamage-dev libxfixes-dev
-libxrandr-dev libxkbcommon-dev libxss-dev libxtst-dev libwayland-dev` on
-Debian/Ubuntu), on Windows **MSVC** (Visual Studio Build Tools) and git-bash
-on PATH for the scripts, and on macOS the Xcode command line tools. Nothing
-of CEF is compiled: the window loads it when it starts. The first build
-fetches the CEF distribution (~200 MB download, 1.4 GB unpacked) into a
-per-user cache keyed by CEF version (`${XDG_CACHE_HOME:-~/.cache}/lich-cef/`,
-`~/Library/Caches/lich-cef/` on macOS, `%LOCALAPPDATA%\lich-cef\` on
-Windows); later builds, from any worktree, reuse it. `CEF_DIR` overrides the
-location. `zenity` provides the folder picker on
-Linux.
+Prerequisites: **Go 1.27.0+** and **[Task](https://taskfile.dev)**. The
+backend, `lich`, is pure Go (`CGO_ENABLED=0`) and needs no C toolchain.
+`zenity` provides the folder picker on Linux.
+
+The window, `lich-native`, is its own Go module in `native/`, built with cgo:
+it needs a C compiler and `pkg-config`, Gio's system libraries (on
+Debian/Ubuntu `libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev
+libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev`),
+and a `libghostty-vt` built with **Zig 0.16** from the Ghostty commit in
+`native/GHOSTTY_COMMIT`, with `PKG_CONFIG_PATH` pointing at it. The header of
+`native/slice.sh` says how to build it; `native/build-windows.sh` cross-builds
+the Windows window from Linux.
 
 ```bash
-task dev      # Vite HMR + backend
-task --list   # everything else
+native/slice.sh <checkout>   # a window on its own backend, DB and port
+task --list                  # everything else
 ```
 
-`task dev` gets its own database, port and Chromium profile, so it never
-touches the workspace of a lich you have installed. Stop it with Ctrl+C — that
-takes the Vite server and the dev backend with it. Closing the window leaves
-both running, as an installed lich's backend outlives its window: `LICH_DEV=1 go
-run . quit` ends the dev backend, and the next `task dev` refuses to start while
-Vite still holds its port.
-
-The frontend is **pnpm**, not npm — `npm install` errors out.
+`native/slice.sh` never touches the workspace of a lich you have installed.
+Closing its window leaves the backend and its sessions running, as an
+installed lich's backend outlives its window; `native/slice.sh stop` ends it.
 
 ## Before you open a pull request
 
@@ -59,9 +49,8 @@ Run the same gate CI runs:
 ```bash
 gofmt -l .                      # must print nothing (fix: gofmt -w .)
 go vet ./...
-cd frontend && pnpm check       # biome — the frontend's gofmt + vet
-cd frontend && pnpm build       # tsc typecheck + vite
-task test                       # both suites
+go test ./...
+cd native && gofmt -l . && go vet ./... && go test ./...
 ```
 
 Then:
@@ -76,11 +65,8 @@ Then:
   ```bash
   for os in linux darwin windows; do GOOS=$os go build ./... && GOOS=$os go vet ./...; done
   ```
-- **Touched a Go struct's JSON tags?** `frontend/src/lib/api-types.ts` mirrors
-  them by hand — there is no codegen, so it moves in the same change.
-- **Touched the UI?** `frontend/DESIGN.md` is the visual system, and it is
-  opinionated: surfaces are defined by space, hover and hairline seams rather
-  than by borders and nested boxes.
+- **Touched a Go struct's JSON tags?** `native/lichclient` mirrors them by
+  hand. There is no codegen, so it moves in the same change.
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org)
 (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`).

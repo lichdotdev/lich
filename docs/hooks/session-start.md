@@ -112,15 +112,15 @@ scripted run would have said this contract could not be closed.
 - **UI push** — after persisting, the same closure (`internal/terminal/terminal.go`,
   `New`) emits the global app event `session-agent` (`{id, agent: <provider>}`):
   a report is proof that provider's CLI runs in this PTY, so a shell card wears
-  its icon while it does. The mark lives in
-  `frontend/src/lib/session/session-agent-store.ts`, never the store: it clears on the
+  its icon while it does. The mark lives in the window's `agent` map
+  (`applyLive` in `native/cmd/lich-native/cardstate.go`), never the store: it clears on the
   session-state contract's `idle` (SessionEnd — the CLI left) and on every PTY
   spawn (the backend emits an empty agent), so it dies with the process that
   earned it. The card's persisted kind — what a respawn runs, what the resume
   prompt keys on — never changes.
 - **Consumer** — the resume prompt. `LoadState` hydrates the id onto the
-  frontend session (`resumableSession` in `frontend/src/lib/session/sessions.ts`), and
-  the first time a restored card is opened `TerminalHost` asks before spawning:
+  window's session (`resumable` in `native/cmd/lich-native/spawn_gate.go`), and
+  the first time a restored card is opened `spawnGate` asks before spawning:
   accepting passes the id to `terminal.Start`, which spawns the kind's resume
   invocation (`resumeArgs` in `internal/terminal/command.go`).
 
@@ -142,7 +142,7 @@ scripted run would have said this contract could not be closed.
   <id>`, `codex resume <id>`, `agy --conversation <id>`, `omp -r <id>`,
   `opencode --session <id>`, `crush --session <id>`, `cursor-agent --resume <id>`,
   `kiro-cli --resume-id <id>`), so both `resumeArgs` (`internal/terminal/command.go`) and
-  `resumableSession` (`frontend/src/lib/session/sessions.ts`) list the kinds that
+  `resumableKinds` (`native/cmd/lich-native/spawn_gate.go`) list the kinds that
   have one. A shell session that had a provider CLI run inside it by hand carries
   an id and is still never offered a resume — the shell cannot reopen it.
 - **Resume availability is asked of whatever the provider left on disk.**

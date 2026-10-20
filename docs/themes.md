@@ -185,9 +185,8 @@ bump and lich reports the pack as already up to date.
 
 ## Syntax Highlighting
 
-`syntax` is optional and colors the code in the native window's review, diff
-and file views (`lich native`); the web window ignores it. A theme without it
-is highlighted in the native window's default palette for its `scheme`, which
+`syntax` is optional and colors the code in the review, diff and file views. A
+theme without it is highlighted in the default palette for its `scheme`, which
 is what the bundled themes write out.
 
 Each key is a [CodeMirror highlighting tag](https://lezer.codemirror.net/docs/ref/#highlight.tags),
@@ -230,8 +229,8 @@ one of them. A pair of the same scheme is an error, and lich lists the theme
 among the ones that can't load. A pair no installed theme answers to is not: a
 pack removed in part leaves its themes loading, with nothing to follow to.
 
-The web window ignores `pair`, and a lich that predates it ignores the key, so a
-pack can add it without a `minLichVersion`.
+A lich that predates `pair` ignores the key, so a pack can add it without a
+`minLichVersion`.
 
 ## Validation Rules
 
@@ -259,14 +258,16 @@ pack can add it without a `minLichVersion`.
 
 Each color block takes what its consumer actually parses:
 
-- **`app`** values become CSS custom properties, so they accept hex
+- **`app`** values are CSS colors, so they accept hex
   (`#rgb` through `#rrggbbaa`), a CSS color name, or a color function —
   `rgb()`, `rgba()`, `hsl()`, `hsla()`, `oklch()`, `oklab()`, `lab()`, `lch()`,
   `color()`. Anything that could name a resource or defer a value — `url()`,
-  `image-set()`, `var()`, `attr()`, `color-mix()` — is rejected.
-- **`terminal`** values must be hex. xterm parses hex directly; every other form
-  goes through a round-trip that fails on translucency and is swallowed into a
-  silent fallback, which would apply a theme only halfway with no error shown.
+  `image-set()`, `var()`, `attr()`, `color-mix()` — is rejected. The window
+  draws hex, `rgb()`, `rgba()`, `hsl()`, `hsla()`, `oklch()`, `oklab()`,
+  `transparent`, `black` and `white` (`native/ui/csscolor.go`); a theme using
+  any other form passes validation and is refused when the window applies it.
+- **`terminal`** values must be hex. The terminal draws them opaque, so an
+  alpha component is dropped.
 
 Import opens a dialog holding both ways in: a repository URL, or the native file
 picker for a single theme. Re-importing a theme whose `id` already exists asks

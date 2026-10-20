@@ -241,12 +241,12 @@ func (s *Service) installCommand() string {
 }
 
 // packaged reports whether exePath is where the deb, rpm and AUR packages put
-// lich, with the window in ../lib/lich/shell. The tarball keeps it beside the
-// binary instead, and a package installed over a tarball would leave /restart
+// lich: /usr/local/bin (nfpm) or /usr/bin (AUR). The tarball is unpacked
+// anywhere else, and a package installed over a tarball would leave /restart
 // relaunching the tarball's binary, still at the old version.
 func packaged(exePath string) bool {
-	_, err := os.Stat(filepath.Join(filepath.Dir(exePath), "..", "lib", "lich", "shell", "lich-shell"))
-	return err == nil
+	dir := filepath.ToSlash(filepath.Dir(exePath))
+	return strings.HasSuffix(dir, "/usr/bin") || strings.HasSuffix(dir, "/usr/local/bin")
 }
 
 // isArch reports whether os-release content describes Arch or an Arch

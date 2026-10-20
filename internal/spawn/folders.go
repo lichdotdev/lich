@@ -37,8 +37,8 @@ type ColoredEvent struct {
 }
 
 // cardColors are the names a card can be painted with, in the order the
-// window's menu offers them: CARD_COLORS in frontend/src/lib/session/card-color.ts,
-// which owns the values and draws any other name as no colour at all.
+// window's menu offers them: cardColorNames in native/cmd/lich-native/cardcolor.go,
+// whose window owns the values and draws any other name as no colour at all.
 var cardColors = []string{"red", "orange", "amber", "green", "teal", "blue", "violet", "pink"}
 
 // Folder is one of a project's folders as a caller outside the window sees it:

@@ -142,9 +142,7 @@
   "tray": {
     "show": "lich 보기",
     "running": "실행 중인 세션: {count}",
-    "quit": "lich 종료",
-    "openNative": "네이티브 창 열기",
-    "openWeb": "웹 창 열기"
+    "quit": "lich 종료"
   },
   "closeDialog": {
     "title": "lich를 계속 실행할까요?",

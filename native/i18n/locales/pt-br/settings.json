@@ -240,21 +240,7 @@
     }
   },
   "windowSetting": {
-    "title": "Janela",
-    "searchWords": "web nativa experimental janela abrir",
-    "description": "Qual janela o lich abre. A janela nativa é nova e ainda experimental; se ela não abrir, o lich abre a janela web no lugar.",
-    "choice": {
-      "web": {
-        "label": "Web"
-      },
-      "native": {
-        "label": "Nativa (experimental)"
-      }
-    },
-    "switch": {
-      "later": "Depois",
-      "now": "Trocar agora"
-    }
+    "title": "Janela"
   },
   "restoreSetting": {
     "title": "Sessões restauradas",
@@ -412,11 +398,6 @@
   },
   "settingsGeneral": {
     "notifySearchWords": "notificação desktop alerta sino"
-  },
-  "settingsWindow": {
-    "switchTitle": "Trocar para a janela web agora?",
-    "switchDescription": "Esta janela fecha e a web abre. Suas sessões continuam rodando.",
-    "switchFailed": "Não foi possível abrir a janela web: {error}"
   },
   "settingsHelp": {
     "bugDescription": "Abre o formulário de bug no navegador com a versão e a plataforma preenchidas. O lich não registra o issue — você mesmo o escreve. Rode `lich rage` num terminal para juntar os logs, as versões e o que o lich encontrou nesta máquina num único arquivo para anexar.",

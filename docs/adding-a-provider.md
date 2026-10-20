@@ -77,18 +77,17 @@ Nothing else in the backend enumerates providers: the settings store keys
 everything on the id (`provider.<id>.bin`, `.enabled`, `.sandbox`,
 `.skip-permissions`), and `providers.Known` guards ids arriving from outside.
 
-## The frontend
+## The native window
 
 | File | What a new provider adds |
 |---|---|
-| `frontend/src/lib/session/sessions.ts` | the id in `PROVIDER_KINDS`, in `RESUMABLE_KINDS` if its CLI reopens a conversation, and in `FORKABLE_KINDS` if it branches one |
-| `frontend/src/lib/providers-store.ts` | its `skipPermissionFlags` spelling — the switch in Settings is hidden for a provider absent here, which is what stops the UI promising a flag the spawn has none for |
-| `frontend/src/components/ProviderIcon.tsx` | a brand path, or a lucide fallback |
-| `frontend/src/lib/session/delegate-prompt.ts` | `TOOL_KINDS` only if it is handed lich's tools at spawn |
-| `frontend/src/lib/session/tool-label.ts` | a rule only if it spells MCP tool names in a shape not already handled |
-| `frontend/src/components/settings/PlanUsageSetting.tsx` | a `loginCommand` entry only if `internal/quota` reads a plan for it |
-| `frontend/src/lib/session/hands-on.ts` | a rung in `RUNG`: whether the hands-on clock hears that provider through a turn its hooks open, or only through its tool calls. The record is exhaustive over `ProviderKind`, so `tsc` refuses a provider that has not picked a side |
-| `frontend/src/lib/api-types.ts` | nothing, unless the change moves a JSON tag — the `DetectedProvider` mirror is hand-owned and moves in the same commit |
+| `native/cmd/lich-native/providericon.go` | the id in `providerIcons`, with a Lobe mark or a Lucide fallback. Its keys are every kind the window knows (`providerKinds`), so a provider absent here is absent from every per-provider list in Settings |
+| `native/cmd/lich-native/spawn_gate.go` | the id in `resumableKinds` if its CLI reopens a conversation |
+| `native/cmd/lich-native/fork.go` | the id in `forkableKinds` if its CLI branches a conversation |
+| `native/cmd/lich-native/settings_providers.go` | its `skipFlags` spelling (the switch in Settings is hidden for a provider absent here, which is what stops the UI promising a flag the spawn has none for), and a `loginCommands` entry only if `internal/quota` reads a plan for it |
+| `native/cmd/lich-native/toolline.go` | a rule only if it spells MCP tool names in a shape not already handled |
+| `native/cmd/lich-native/footer_handson.go` | a rung in `handsOnRung`: whether the hands-on clock hears that provider through a turn its hooks open, or only through its tool calls. No compiler checks it, and a provider missing from it reads as a turn one |
+| `native/lichclient/store.go` | nothing, unless the change moves a JSON tag: the `DetectedProvider` mirror is hand-owned and moves in the same commit |
 
 `Registry.Docs` is the one field with a check outside the compiler: it is what the
 "Not found on PATH" row and the no-agents dialog link to, so a blank or dead one
@@ -165,10 +164,7 @@ Not optional, and all in the same PR:
 - **The Provider support table in both READMEs** — a column, and an answer in
   every row of it. That table is what a stranger reads before choosing a binary,
   and nothing derives it from the code, so a column left out of it reads as a
-  provider that gives you nothing. `turnUnavailableReason`
-  (`frontend/src/lib/git/last-turn.ts`) is a hand-written list of the same shape:
-  a provider that reports no session state belongs in it, and one that starts
-  reporting has to leave.
+  provider that gives you nothing.
 
 ## The gate
 

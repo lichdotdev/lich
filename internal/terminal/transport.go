@@ -403,17 +403,8 @@ func (t *transport) mount(pattern string, handler http.Handler) {
 	}))
 }
 
-// mountPublic adds a handler without the token check — for the static
-// frontend assets the Chromium shell loads before it knows the token (which
-// rides the page URL). Loopback-only like everything else; the RPC, terminal
-// and event surfaces stay token-gated.
-func (t *transport) mountPublic(pattern string, handler http.Handler) {
-	t.mux.Handle(pattern, handler)
-}
-
 // authorized reports whether the request carries the transport's connect token.
-// The origin is not checked — in dev the page comes from the Vite server, not
-// this listener — the random token is the auth.
+// The origin is not checked: the random token is the auth.
 func (t *transport) authorized(r *http.Request) bool {
 	provided := r.URL.Query().Get("token")
 	return subtle.ConstantTimeCompare([]byte(provided), []byte(t.token)) == 1

@@ -147,8 +147,8 @@ being debugged.
   off the `done` report and handed to the same guarded write.
 - **Live update** — `internal/terminal/terminal.go`: when the label changed,
   emits the global app event `session-title` (`{id, label}`);
-  `frontend/src/providers/project-events.tsx` mirrors it into session state so the card
-  updates without a reload.
+  the window's `session-title` case (`native/cmd/lich-native/model.go`) mirrors it
+  into session state so the card updates without a reload.
 - **A chosen name** — `Service.RenameSession` emits the same `session-title`
   event once the row is written (`store.SetSessionRenamed`, wired in
   `main.go`), whoever renamed: the window, `lich rename` or the MCP tool.

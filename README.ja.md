@@ -1,22 +1,19 @@
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="frontend/public/appicon.png" />
-    <img src="frontend/public/appicon-light.png" alt="lich" width="88" height="88" />
-  </picture>
+  <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <strong>日本語</strong> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
   <p><strong>いま使っているコーディングエージェントのための、ターミナル中心の ADE</strong></p>
   <p>
     プロジェクトを開いて、Claude Code、Codex、opencode などのエージェントを実際のターミナルで動かせます。
     ワークツリー、差分、プルリクエストといった git の状態も、同じウィンドウで確認できます。
-    静的な Go バイナリ1つで動き、Electron は使っていません。UI は Linux、Windows、macOS のどれでも
-    lich に組み込まれた Chromium で開きます。
+    Electron もブラウザも使っていません。Linux、Windows、macOS のどれでも、lich は Gio で
+    描いた自前のネイティブウィンドウで開きます。
   </p>
   <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
+    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
@@ -39,7 +36,7 @@ lich でできることは次のとおりです。
   セッションごとに選ぶこともできます。セッションから lich が読み取れる情報はプロバイダーによって違い、
   詳しくは[プロバイダー対応状況](#プロバイダー対応状況)の表にまとめています。
 - **ターミナルは実際のターミナルのままです。** PTY ベースのシェルをプロジェクトごとにいくつでも開け、
-  描画は GPU で行います。スクロールバックは検索でき、ページを完全に再読み込みしても消えません。
+  描画は GPU で行います。スクロールバックは検索でき、ウィンドウを閉じて開き直しても消えません。
   ターミナルにエントリポイント（`lazygit`、`k9s`、`pnpm dev` など）を設定すると、
   開くたびにそのツールがすぐ起動します。これは Linux、macOS、Windows のどれでも同じです。
   シェルの rc や PowerShell プロファイルを先に読み込まないので、自分の環境で動くエントリポイントは
@@ -72,7 +69,7 @@ lich でできることは次のとおりです。
   スキップさせるなら、その分の歯止めになります。Linux では bubblewrap、macOS では `sandbox-exec` を使います。
   ただし悪意のあるコードを防ぐための仕組みではありません。防げないことは
   [`docs/ceilings.md`](docs/ceilings.md) にまとめています。
-- **差分は読むその場でレビューできます。** CodeMirror ベースのパネルに、作業中の変更が
+- **差分は読むその場でレビューできます。** 差分パネルに、作業中の変更が
   リアルタイムに更新されるファイルツリーと並んで表示されます。必要なら空白だけの変更を折りたため、
   画像や PDF の変更は変更前と変更後で見比べられます。選択範囲を右クリックするとその行にコメントでき、
   コメントはまとめて1つのプロンプトとしてセッションに貼り付けられます（送信は手動です）。
@@ -117,11 +114,11 @@ lich は各 CLI が書き出す情報を読んでいて、何を書き出すか�
 | パレットから会話を検索 | あり | あり | あり | あり | あり | あり | なし | あり |
 | lich の外で始めた会話を、パレットの「履歴」タブから再開 | あり | あり | あり | あり | あり | Linux のみ。macOS と Windows は未検証 | あり | あり |
 | 長いテキストを貼り付けたとき、折りたたまれたプレースホルダーではなく編集できるテキストとして入る（設定 › プロバイダー、既定ではオフ） | あり | なし | なし | あり | 未計測 | なし（`paste_N.txt` の添付になる） | なし | あり |
-| 会話を新しいワークツリーにフォーク（ネイティブウィンドウでは同じチェックアウト内にも） | あり | あり | なし | あり | なし | なし | なし | なし |
-| 別のカードで開いている会話をエージェント本体のアプリで再開すると、ネイティブウィンドウで警告が出る | あり | 次のプロンプトで | 次のプロンプトで（未検証） | なし | あり | 次のツール呼び出しで | なし | あり |
+| 会話を新しいワークツリーにフォーク（同じチェックアウト内にも） | あり | あり | なし | あり | なし | なし | なし | なし |
+| 別のカードで開いている会話をエージェント本体のアプリで再開すると警告が出る | あり | 次のプロンプトで | 次のプロンプトで（未検証） | なし | あり | 次のツール呼び出しで | なし | あり |
 | 推論エフォートを指定してセッションを開く | あり | あり | あり | なし | あり | なし | モデル名で指定 | あり |
 | ultracode をオンにしてセッションを開く | あり | なし | なし | なし | なし | なし | なし | なし |
-| 複数のアカウントをプロファイルとして併用でき、それぞれが独立したログインを持つ。別のアカウントに移したセッションは同じカードのまま続く（ネイティブウィンドウ、実験的機能：設定 › プロバイダー） | あり | あり。プラグインはプロファイルごとに持ち、「個人」の設定はすべてのプロファイルで共有される | なし | あり。ターミナルカードからログインする。会話がログインを保持するデータベースにあるため、セッションを別のプロファイルへ移すことはできない | あり。ターミナルカードからログインし、設定はすべてのプロファイルで共有される | 未計測 | Linux と Windows（macOS ではログインがキーチェーンにある）。ターミナルカードからログインし、`mcp.json`、フック、スキルはすべてのプロファイルで共有される | Linux のみ（macOS ではログインがキーチェーンにあり、Windows ではそれを移す手段がない）。ターミナルカードからログインし、会話はすべてのプロファイルで共有される |
+| 複数のアカウントをプロファイルとして併用でき、それぞれが独立したログインを持つ。別のアカウントに移したセッションは同じカードのまま続く（設定 › プロバイダー） | あり | あり。プラグインはプロファイルごとに持ち、「個人」の設定はすべてのプロファイルで共有される | なし | あり。ターミナルカードからログインする。会話がログインを保持するデータベースにあるため、セッションを別のプロファイルへ移すことはできない | あり。ターミナルカードからログインし、設定はすべてのプロファイルで共有される | 未計測 | Linux と Windows（macOS ではログインがキーチェーンにある）。ターミナルカードからログインし、`mcp.json`、フック、スキルはすべてのプロファイルで共有される | Linux のみ（macOS ではログインがキーチェーンにあり、Windows ではそれを移す手段がない）。ターミナルカードからログインし、会話はすべてのプロファイルで共有される |
 | メインのアカウントで信頼したフォルダーは、ほかのどのプロファイルでも「trust this folder?」と聞かれずに開く | あり | あり | プロファイルなし | 何も聞かない | 何も聞かない | 未計測 | あり | 何も聞かない |
 | サンドボックス内のセッションは「trust this folder?」と聞かれずに開く | あり | あり | あり | 何も聞かない | 何も聞かない | あり。プロジェクトの初期化も聞かれない | あり | 何も聞かない |
 | 信頼したフォルダーのワークツリーは「trust this folder?」と聞かれずに開く | あり | あり | あり | 何も聞かない | 何も聞かない | あり。プロジェクトの初期化も聞かれない | あり | 何も聞かない |
@@ -185,7 +182,7 @@ macOS ではこの cask が `Lich.app` をインストールするので、`/App
   全プロジェクト共通の既定を設定します。開いているプロジェクトの行で、その選択を上書きできます。
   **クリア** で上書きを外せば、その後の既定の変更が自動で反映されます。
   パスを設定していない場合、セッションはログインシェルの `PATH` で最初に見つかったそのプロバイダーのバイナリを実行します。
-  ネイティブウィンドウでは、「バイナリ」ブロックにそのファイルとバージョンが表示され、
+  「バイナリ」ブロックにそのファイルとバージョンが表示され、
   `PATH` 上にあるほかのバージョンも一覧されます（`lich doctor` もこれを警告します）。
   特定のバイナリを使うには、「バイナリ」にそのパスを設定します
   （設定名は `provider.<id>.bin`、例：`provider.codex.bin`）。
@@ -224,21 +221,22 @@ Linux のパッケージでインストールした場合はそれぞれのパ�
 
 ## ソースからのビルド
 
-純粋な Go のバックエンド（Go 1.27、`CGO_ENABLED=0`）が、組み込みの React 18 /
-TypeScript / Vite フロントエンドを、トークン認証付きのループバックリスナー
-（HTTP RPC と WebSocket）経由で配信します。ターミナルは WebGL アドオン付きの xterm.js で、
-コードと差分の画面は CodeMirror 6 です。Chromium シェルを選んだ経緯は決定記録
-[`docs/chromium-shell.md`](docs/chromium-shell.md) にあります。必要なのは **Go
-1.27.0 以降**、**Node + pnpm**、**[Task](https://taskfile.dev)** で、
-Go バイナリのビルドに C ツールチェーンは要りません。ウィンドウ（`shell/`、CEF 上の Rust）をビルドするには
-Rust ツールチェーンに加えて、Linux では Chromium の開発用ライブラリ、Windows では MSVC が必要です。
-一覧は [CONTRIBUTING.md](CONTRIBUTING.md) にあります。
+lich は2つのバイナリでできています。バックエンドの `lich` は純粋な Go（Go 1.27、
+`CGO_ENABLED=0`、静的バイナリ1つ）で、トークン認証付きのループバックリスナー
+（HTTP RPC と WebSocket）経由でセッションを配信します。ウィンドウの `lich-native` は
+`native/` にある独立した Go モジュールで、cgo でビルドします。描画は [Gio](https://gioui.org)、
+ターミナルは `libghostty-vt`、コードと差分の画面は [godemirror](https://github.com/lichdotdev/godemirror)
+が担います。必要なのは **Go 1.27.0 以降** と **[Task](https://taskfile.dev)** で、
+ウィンドウにはさらに C ツールチェーン、Gio のシステムパッケージ、そして `native/GHOSTTY_COMMIT` に
+記された Ghostty のコミットから Zig 0.16 でビルドした `libghostty-vt` が必要です。
+ビルド方法は [`native/slice.sh`](native/slice.sh)、ウィンドウの詳細は
+[`docs/native-window.md`](docs/native-window.md) にあります。
 
 ```bash
-task dev      # hot-reload dev mode (Vite on :9245)
-task build    # production binary -> bin/lich
-task run      # build + run
-task test     # Go + frontend suites
+task build          # バックエンドのバイナリ -> bin/lich
+task build:native   # ウィンドウ -> bin/lich-native
+task run            # ビルドして実行
+task test           # Go のテストスイート
 ```
 
 Linux のリリースパッケージをローカルで作るには、次のコマンドを実行します

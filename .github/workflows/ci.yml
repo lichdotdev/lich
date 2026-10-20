@@ -1,8 +1,9 @@
 name: ci
 
-# Per-PR gate: format/vet + both suites on linux, with pass/fail counts and
-# coverage rendered into the job summary, plus the backend suite on windows and
-# macOS in parallel (os-tests below).
+# Per-PR gate for the backend: format/vet + the suite on linux, with pass/fail
+# counts and coverage rendered into the job summary, plus the suite on windows
+# and macOS in parallel (os-tests below). The native window's gate is
+# native.yml.
 on:
   pull_request:
   push:
@@ -21,32 +22,6 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          package_json_file: frontend/package.json
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      # dist must exist before any Go step: the backend go:embeds frontend/dist,
-      # so it will not even compile without it. build also runs tsc (typecheck).
-      - name: Frontend install + build
-        working-directory: frontend
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm build
-
-      # biome is the frontend's gofmt + vet: formatting and lint in one pass.
-      # Warnings (the a11y backlog) are reported without failing; errors fail.
-      - name: Frontend format + lint
-        working-directory: frontend
-        run: pnpm check
 
       - name: gofmt
         run: |
@@ -73,75 +48,8 @@ jobs:
             CGO_ENABLED=0 GOOS=$os go vet ./...
           done
 
-      - name: Frontend tests
-        run: bash .github/scripts/web-test-summary.sh
-
       - name: Backend tests
         run: bash .github/scripts/go-test-summary.sh linux
-
-  # The window (shell/, Rust on CEF): format, lint and the crate's suite, on
-  # the three OSes that ship it. Linking needs the CEF distribution, so this
-  # carries the same toolchain and caches the release build does; --release
-  # shares one CEF wrapper build between clippy and the tests.
-  shell:
-    strategy:
-      fail-fast: false
-      matrix:
-        # ubuntu-24.04, not latest: the release's linux job builds on what
-        # this job caches, and stays on 24.04 for its glibc.
-        os: [ubuntu-24.04, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash
-    env:
-      CEF_DIR: ${{ github.workspace }}/.cef
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: ./.github/actions/shell-toolchain
-        with:
-          components: rustfmt, clippy
-
-      - name: Format
-        working-directory: shell
-        run: cargo fmt --check
-
-      - name: Clippy
-        working-directory: shell
-        run: cargo clippy --release --all-targets -- -D warnings
-
-      - name: Tests
-        working-directory: shell
-        run: cargo test --release
-
-      # This runner enforces Ubuntu's AppArmor policy on user namespaces, the
-      # desktop the window died on at launch: the namespace can be entered and
-      # the id maps inside it are denied. Nobody can make an assembled tree's
-      # helper setuid, so the window has to open unsandboxed and stay up rather
-      # than abort at its zygote with 133.
-      - name: Window opens under Ubuntu's user namespace policy
-        if: runner.os == 'Linux'
-        working-directory: shell
-        run: |
-          if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" != 1 ]; then
-            echo "::error::the runner no longer restricts user namespaces, so this step proves nothing"
-            exit 1
-          fi
-          cargo build --release
-          ../build/cef.sh "$CEF_DIR"
-          ../build/linux/shell/assemble.sh target/release "$CEF_DIR" "$RUNNER_TEMP/shell"
-          log="$RUNNER_TEMP/shell.log"
-          status=0
-          timeout 20 env -u DISPLAY -u WAYLAND_DISPLAY "$RUNNER_TEMP/shell/lich-shell" \
-            --ozone-platform=headless --user-data-dir="$RUNNER_TEMP/profile" --url=about:blank \
-            > "$log" 2>&1 || status=$?
-          # 124 is timeout's own: the window was still up after 20 seconds.
-          if [ "$status" != 124 ] || ! grep -q "opening the window unsandboxed" "$log"; then
-            echo "::error::the window did not open unsandboxed (exit $status)"
-            cat "$log"
-            exit 1
-          fi
 
   # The backend suite on the OSes the linux job cannot speak for. The
   # cross-compile step above proves every target still builds; only a real runner
@@ -172,26 +80,6 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          package_json_file: frontend/package.json
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      # dist must exist before the Go suite (go:embed), same as the linux job.
-      # The frontend suite is OS-independent and already ran there.
-      - name: Frontend install + build
-        working-directory: frontend
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm build
 
       - name: Backend tests
         run: bash .github/scripts/go-test-summary.sh ${{ matrix.os }}

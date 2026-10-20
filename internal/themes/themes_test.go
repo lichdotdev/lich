@@ -626,38 +626,6 @@ func TestBundledThemesAreCloned(t *testing.T) {
 	}
 }
 
-func TestBootCSSMatchesBundledThemes(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("..", "..", "frontend", "src", "index.css"))
-	if err != nil {
-		t.Fatalf("read index.css: %v", err)
-	}
-	css := string(data)
-	selectors := []string{":root", ".dark"}
-	for i, theme := range bundledThemes {
-		t.Run(theme.ID, func(t *testing.T) {
-			got := cssVariables(t, css, selectors[i])
-			if !reflect.DeepEqual(got, theme.App) {
-				t.Fatalf("%s boot variables differ from bundled JSON\nCSS: %#v\nJSON: %#v", selectors[i], got, theme.App)
-			}
-		})
-	}
-}
-
-func cssVariables(t *testing.T, css, selector string) map[string]string {
-	t.Helper()
-	blockPattern := regexp.MustCompile(`(?s)` + regexp.QuoteMeta(selector) + `\s*\{([^}]*)\}`)
-	match := blockPattern.FindStringSubmatch(css)
-	if match == nil {
-		t.Fatalf("CSS selector %q not found", selector)
-	}
-	variables := make(map[string]string)
-	propertyPattern := regexp.MustCompile(`(?m)^\s*--([a-z0-9-]+):\s*([^;]+);`)
-	for _, property := range propertyPattern.FindAllStringSubmatch(match[1], -1) {
-		variables[property[1]] = strings.TrimSpace(property[2])
-	}
-	return variables
-}
-
 func TestBundledThemesPassValidation(t *testing.T) {
 	for _, theme := range bundledThemes {
 		t.Run(theme.ID, func(t *testing.T) {

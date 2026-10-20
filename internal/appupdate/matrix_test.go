@@ -18,7 +18,6 @@ func TestUpgradeMatrix(t *testing.T) {
 	)
 	cask := "paste brew tap lichdotdev/tap && brew upgrade --cask lichdotdev/tap/lich" + restartChain
 	scoop := "paste scoop update lich" + restartChainPwsh
-	packaged := []string{"usr/lib/lich/shell/lich-shell"}
 
 	rows := []struct {
 		name      string
@@ -29,18 +28,18 @@ func TestUpgradeMatrix(t *testing.T) {
 		osRelease string
 		want      string
 	}{
-		{"windows installer", "windows", "amd64", []string{"lich/unins000.exe", "lich/shell/lich-shell.exe"}, "lich/lich.exe", "", "installer"},
-		{"windows portable zip", "windows", "amd64", []string{"lich/shell/lich-shell.exe"}, "lich/lich.exe", "", "installer"},
-		{"scoop, current junction", "windows", "amd64", []string{"scoop/apps/lich/current/shell/lich-shell.exe"}, "scoop/apps/lich/current/lich.exe", "", scoop},
-		{"scoop, version directory", "windows", "amd64", []string{"scoop/apps/lich/0.50.0/shell/lich-shell.exe"}, "scoop/apps/lich/0.50.0/lich.exe", "", scoop},
-		{"deb", "linux", "amd64", packaged, "usr/bin/lich", debian, "paste " + installScript},
-		{"rpm", "linux", "amd64", packaged, "usr/bin/lich", fedora, "paste " + installScript},
-		{"aur lich-bin", "linux", "amd64", packaged, "usr/bin/lich", arch, "paste yay -S lich-bin" + restartChain},
+		{"windows installer", "windows", "amd64", []string{"lich/unins000.exe", "lich/lich-native.exe"}, "lich/lich.exe", "", "installer"},
+		{"windows portable zip", "windows", "amd64", []string{"lich/lich-native.exe"}, "lich/lich.exe", "", "installer"},
+		{"scoop, current junction", "windows", "amd64", []string{"scoop/apps/lich/current/lich-native.exe"}, "scoop/apps/lich/current/lich.exe", "", scoop},
+		{"scoop, version directory", "windows", "amd64", []string{"scoop/apps/lich/0.50.0/lich-native.exe"}, "scoop/apps/lich/0.50.0/lich.exe", "", scoop},
+		{"deb", "linux", "amd64", []string{"usr/local/bin/lich-native"}, "usr/local/bin/lich", debian, "paste " + installScript},
+		{"rpm", "linux", "amd64", []string{"usr/local/bin/lich-native"}, "usr/local/bin/lich", fedora, "paste " + installScript},
+		{"aur lich-bin", "linux", "amd64", []string{"usr/bin/lich-native"}, "usr/bin/lich", arch, "paste yay -S lich-bin" + restartChain},
 		// A package installed over a tarball would leave /restart relaunching the
 		// tarball's lich, so the tarball gets the release page, on Arch too.
-		{"linux tarball", "linux", "amd64", []string{"opt/lich/shell/lich-shell"}, "opt/lich/lich", debian, "release page"},
-		{"linux tarball on arch", "linux", "amd64", []string{"opt/lich/shell/lich-shell"}, "opt/lich/lich", arch, "release page"},
-		{"cask, apple silicon", "darwin", "arm64", []string{"Applications/Lich.app/Contents/MacOS/lich-shell"}, "Applications/Lich.app/Contents/MacOS/lich", "", cask},
+		{"linux tarball", "linux", "amd64", []string{"opt/lich/lich-native"}, "opt/lich/lich", debian, "release page"},
+		{"linux tarball on arch", "linux", "amd64", []string{"opt/lich/lich-native"}, "opt/lich/lich", arch, "release page"},
+		{"cask, apple silicon", "darwin", "arm64", []string{"Applications/Lich.app/Contents/MacOS/lich-native"}, "Applications/Lich.app/Contents/MacOS/lich", "", cask},
 		{"cask, intel", "darwin", "amd64", nil, "Applications/Lich.app/Contents/MacOS/lich", "", cask},
 	}
 	for _, row := range rows {

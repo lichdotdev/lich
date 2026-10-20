@@ -236,21 +236,7 @@
     }
   },
   "windowSetting": {
-    "title": "창",
-    "searchWords": "웹 네이티브 실험 창 열기",
-    "description": "lich가 여는 창입니다. 네이티브 창은 새로 나온 실험 기능이며, 시작에 실패하면 lich가 대신 웹 창을 엽니다.",
-    "choice": {
-      "web": {
-        "label": "웹"
-      },
-      "native": {
-        "label": "네이티브(실험)"
-      }
-    },
-    "switch": {
-      "later": "나중에",
-      "now": "지금 전환"
-    }
+    "title": "창"
   },
   "restoreSetting": {
     "title": "복원된 세션",
@@ -407,11 +393,6 @@
   },
   "settingsGeneral": {
     "notifySearchWords": "데스크톱 알림 경고 종 notification"
-  },
-  "settingsWindow": {
-    "switchTitle": "지금 웹 창으로 전환할까요?",
-    "switchDescription": "이 창이 닫히고 웹 창이 열립니다. 세션은 계속 실행됩니다.",
-    "switchFailed": "웹 창을 열 수 없습니다: {error}"
   },
   "settingsHelp": {
     "bugDescription": "버전과 플랫폼이 채워진 버그 양식을 브라우저에서 엽니다. lich가 이슈를 대신 올리지 않으며, 직접 작성해야 합니다. 터미널에서 `lich rage`를 실행하면 로그, 버전, lich가 이 머신에서 찾은 정보를 첨부용 압축 파일 하나로 묶습니다.",

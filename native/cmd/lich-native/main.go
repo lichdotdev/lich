@@ -502,7 +502,6 @@ func (u *window) layout(gtx C) error {
 		u.settings.layoutProviderDialog(gtx, u.theme)
 		u.settings.layoutProfileDialogs(gtx, u.theme)
 		u.settings.layoutPatchNotesDialog(gtx, u.theme)
-		u.settings.layoutWindowSwitch(gtx, u.theme)
 		u.settings.layoutHanFontDialog(gtx, u.theme)
 		u.layoutClosePrompt(gtx, u.theme)
 		u.layoutNotifyOptIn(gtx, u.theme)

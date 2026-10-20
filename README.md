@@ -1,22 +1,19 @@
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="frontend/public/appicon.png" />
-    <img src="frontend/public/appicon-light.png" alt="lich" width="88" height="88" />
-  </picture>
+  <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><strong>English</strong> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
   <p><strong>A terminal-first ADE for the coding agents you already use.</strong></p>
   <p>
     Open your projects, run agents like Claude Code, Codex and opencode in real
     terminals, and keep git — worktrees, diffs and pull requests — in view
-    without leaving the window. One static Go binary, no Electron: the UI
-    opens in lich's own embedded Chromium on Linux, Windows and macOS.
+    without leaving the window. No Electron and no browser: lich draws its own
+    native window with Gio, on Linux, Windows and macOS.
   </p>
   <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
+    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
@@ -39,8 +36,8 @@ lich lets you:
   can read back *out* of a session differs by provider, and
   [Provider support](#provider-support) is the table.
 - **Keep a real terminal.** PTY-backed shells, several per project, rendered on
-  the GPU — searchable scrollback that survives a full page reload. Give one an
-  entrypoint — `lazygit`, `k9s`, `pnpm dev` — and it opens straight into that
+  the GPU, with searchable scrollback that survives closing and reopening the
+  window. Give one an entrypoint — `lazygit`, `k9s`, `pnpm dev` — and it opens straight into that
   tool every time, on Linux, macOS and Windows alike: no shell rc or PowerShell
   profile is loaded first, so an entrypoint that works for you works for whoever
   you share it with. The footer follows `cd` and names the branch — and, for a
@@ -73,7 +70,7 @@ lich lets you:
   there — the counterweight to letting an agent skip permission prompts. Linux
   runs bubblewrap and macOS `sandbox-exec`; it is not a boundary against hostile
   code, and [`docs/ceilings.md`](docs/ceilings.md) says what it does not stop.
-- **Review the diff where you read it.** A CodeMirror dock shows the working
+- **Review the diff where you read it.** A diff dock shows the working
   changes beside a live file tree, folds the ones that only moved whitespace when
   you ask it to, and shows a changed image or PDF before and after. Right-click a
   selection to comment against those lines; the batch is pasted into the session
@@ -120,11 +117,11 @@ reads what each CLI writes down and no two of them write down the same things.
 | Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes |
 | Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |
 | A long paste can land as editable text instead of a folded placeholder (Settings › Providers, off by default) | yes | no | no | yes | not measured | no, it becomes a `paste_N.txt` attachment | no | yes |
-| Fork a conversation into a new worktree, or in its own checkout in the native window | yes | yes | no | yes | no | no | no | no |
-| Warned in the native window when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | at its next tool call | no | yes |
+| Fork a conversation into a new worktree, or in its own checkout | yes | yes | no | yes | no | no | no | no |
+| Warned when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | at its next tool call | no | yes |
 | Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes |
 | Open a session with ultracode on | yes | no | no | no | no | no | no | no |
-| Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card (in the native window, experimental: Settings › Providers) | yes | yes, with its own plugins in each profile and Personal's settings shared by all of them | no | yes, logged in from a terminal card; a session cannot move to another profile, since its conversations sit in the database that holds the login | yes, logged in from a terminal card, with its settings shared by every profile | not measured | Linux and Windows (on macOS its login is in the Keychain), logged in from a terminal card, with `mcp.json`, hooks and skills shared by every profile | Linux only (macOS keeps its login in the Keychain, and on Windows nothing moves it), logged in from a terminal card, with its conversations shared by every profile |
+| Several accounts side by side as profiles, each with its own full login, and a session moved to another account carrying on in the same card (Settings › Providers) | yes | yes, with its own plugins in each profile and Personal's settings shared by all of them | no | yes, logged in from a terminal card; a session cannot move to another profile, since its conversations sit in the database that holds the login | yes, logged in from a terminal card, with its settings shared by every profile | not measured | Linux and Windows (on macOS its login is in the Keychain), logged in from a terminal card, with `mcp.json`, hooks and skills shared by every profile | Linux only (macOS keeps its login in the Keychain, and on Windows nothing moves it), logged in from a terminal card, with its conversations shared by every profile |
 | A folder you trusted in your main account opens without the "trust this folder?" question in every other profile | yes | yes | no profiles | asks nothing | asks nothing | not measured | yes | asks nothing |
 | A sandboxed session opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
 | A worktree of a folder you trusted opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
@@ -190,8 +187,7 @@ needs `brew uninstall lich` first — [INSTALL.md](INSTALL.md) says why.
   projects in Settings › Providers. The open project's row there can override
   that choice; **Clear** removes the override, so later changes to the default
   flow through automatically. With no path set, a session runs the first of
-  the provider's binaries on your login shell's `PATH`; in the native window the
-  Binary block names that file and its version, and lists any other version
+  the provider's binaries on your login shell's `PATH`; the Binary block names that file and its version, and lists any other version
   `PATH` holds, which `lich doctor` also warns about. To pick one, set its path
   in Binary (the setting `provider.<id>.bin`, e.g. `provider.codex.bin`).
   A provider's section opens
@@ -232,21 +228,22 @@ your gh login, never a session token — before you attach it to a bug report, a
 
 ## Build from source
 
-Pure-Go backend (Go 1.27, `CGO_ENABLED=0`) serving an embedded React 18 /
-TypeScript / Vite frontend over a token-authenticated loopback listener (HTTP RPC
-+ WebSockets). Terminals are xterm.js with the WebGL addon; the code and diff
-surfaces are CodeMirror 6. The Chromium shell is a decision record:
-[`docs/chromium-shell.md`](docs/chromium-shell.md). Prerequisites are **Go
-1.27.0+**, **Node + pnpm** and **[Task](https://taskfile.dev)** — no C toolchain
-for the Go binary. The window (`shell/`, Rust on CEF) adds a Rust toolchain,
-plus Chromium's dev libraries on Linux and MSVC on Windows;
-[CONTRIBUTING.md](CONTRIBUTING.md) lists them.
+lich is two binaries. The backend, `lich`, is pure Go (Go 1.27, `CGO_ENABLED=0`,
+one static binary) and serves sessions over a token-authenticated loopback
+listener (HTTP RPC + WebSockets). The window, `lich-native`, is its own Go module
+in `native/`, built with cgo: [Gio](https://gioui.org) draws it, `libghostty-vt`
+runs its terminals and [godemirror](https://github.com/lichdotdev/godemirror)
+its code and diff views. Prerequisites are **Go 1.27.0+** and
+**[Task](https://taskfile.dev)**; the window adds a C toolchain, Gio's system
+packages and a `libghostty-vt` built with Zig 0.16 from the Ghostty commit in
+`native/GHOSTTY_COMMIT`. [`native/slice.sh`](native/slice.sh) says how to build
+it, and [`docs/native-window.md`](docs/native-window.md) covers the window.
 
 ```bash
-task dev      # hot-reload dev mode (Vite on :9245)
-task build    # production binary -> bin/lich
-task run      # build + run
-task test     # Go + frontend suites
+task build          # backend binary -> bin/lich
+task build:native   # window -> bin/lich-native
+task run            # build + run
+task test           # Go suites
 ```
 
 Package a Linux release locally (needs

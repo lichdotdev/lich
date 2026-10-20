@@ -142,9 +142,7 @@
   "tray": {
     "show": "Mostrar o lich",
     "running": "Sessões rodando: {count}",
-    "quit": "Encerrar o lich",
-    "openNative": "Abrir a janela nativa",
-    "openWeb": "Abrir a janela web"
+    "quit": "Encerrar o lich"
   },
   "closeDialog": {
     "title": "Manter o lich rodando?",

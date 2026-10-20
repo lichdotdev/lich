@@ -12,7 +12,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	c := New("/usr/local/bin/lich", []string{"PATH=/bin"}, nil)
+	c := New("/usr/local/bin/lich", []string{"PATH=/bin"})
 	if c.exePath != "/usr/local/bin/lich" {
 		t.Fatalf("exePath = %q", c.exePath)
 	}
@@ -117,7 +117,7 @@ func TestQuit(t *testing.T) {
 	})
 
 	t.Run("refused before lich serves", func(t *testing.T) {
-		if err := New("/usr/local/bin/lich", nil, nil).Quit(); err == nil {
+		if err := New("/usr/local/bin/lich", nil).Quit(); err == nil {
 			t.Fatal("Quit() = nil before SetStop, want an error")
 		}
 	})
@@ -203,7 +203,7 @@ func TestDoErrors(t *testing.T) {
 
 func TestInstallLaunchesBeforeShutdown(t *testing.T) {
 	var order []string
-	c := New(filepath.Join(t.TempDir(), "lich.exe"), []string{"LICH_LISTEN_PORT=47821"}, nil)
+	c := New(filepath.Join(t.TempDir(), "lich.exe"), []string{"LICH_LISTEN_PORT=47821"})
 	c.spawn = func(exe string, env, args []string) error {
 		if exe != "verified-setup.exe" {
 			t.Fatalf("spawned %q instead of installer", exe)
@@ -233,7 +233,7 @@ func TestInstallLaunchesBeforeShutdown(t *testing.T) {
 }
 
 func TestInstallerLaunchFailureKeepsRunning(t *testing.T) {
-	c := New("lich.exe", nil, nil)
+	c := New("lich.exe", nil)
 	c.spawn = func(string, []string, []string) error { return io.ErrClosedPipe }
 	c.SetStop(func() { t.Fatal("stopped after launch failure") })
 	if err := c.Install("setup.exe"); !errors.Is(err, io.ErrClosedPipe) {
@@ -256,32 +256,25 @@ func TestWithoutMarkerKeepsTheRestartMarkerOutOfChildren(t *testing.T) {
 	}
 }
 
-// A successor is lich launched again, and a lich launched with
-// `lich -- <chromium flags>` opened its window with them: re-executed with no
-// arguments, the restarted window lost them (an --ozone-platform=x11 that
-// worked around a driver, gone after the first update).
-func TestDoRelaunchesWithTheArgsItWasGiven(t *testing.T) {
+// The native window open on a restarting lich reconnects to its successor, so
+// a successor never opens one of its own, whether the restart is in place or an
+// update on Windows that Inno Setup relaunches through the environment.
+func TestSuccessorStartsWithoutAWindow(t *testing.T) {
 	var spawnedArgs []string
-	c := New("/usr/local/bin/lich", nil, []string{"--", "--ozone-platform=x11"})
+	c := New("lich.exe", nil)
 	c.spawn = func(_ string, _ []string, args []string) error {
 		spawnedArgs = args
 		return nil
 	}
 	if err := c.Do(); err != nil {
-		t.Fatalf("Do() = %v", err)
+		t.Fatal(err)
 	}
-	if want := []string{"--", "--ozone-platform=x11"}; !slices.Equal(spawnedArgs, want) {
+	if want := []string{"--no-window"}; !slices.Equal(spawnedArgs, want) {
 		t.Fatalf("successor args = %v, want %v", spawnedArgs, want)
 	}
-}
 
-// An update on Windows ends with Inno Setup launching lich again, with a fixed
-// command line (build/windows/lich.iss), so the window's switches cannot ride
-// it: they ride the environment the installer passes on, as the pinned port
-// and the restart marker already do.
-func TestInstallHandsTheArgsToTheRelaunchThroughTheEnvironment(t *testing.T) {
 	var installerEnv []string
-	c := New("lich.exe", []string{"LICH_LISTEN_PORT=47821"}, []string{"--", "--ozone-platform=x11"})
+	c = New("lich.exe", []string{"LICH_LISTEN_PORT=47821"})
 	c.spawn = func(_ string, env, _ []string) error {
 		installerEnv = env
 		return nil
@@ -291,9 +284,9 @@ func TestInstallHandsTheArgsToTheRelaunchThroughTheEnvironment(t *testing.T) {
 	}
 	got, err := LaunchArgs(nil, envReader(installerEnv))
 	if err != nil {
-		t.Fatalf("LaunchArgs = %v", err)
+		t.Fatal(err)
 	}
-	if want := []string{"--", "--ozone-platform=x11"}; !slices.Equal(got, want) {
+	if want := []string{"--no-window"}; !slices.Equal(got, want) {
 		t.Fatalf("relaunched lich reads args %v, want %v", got, want)
 	}
 }
@@ -337,51 +330,5 @@ func envReader(env []string) func(string) string {
 			}
 		}
 		return ""
-	}
-}
-
-// A lich whose window is closed (`lich native` closed it to put its own on the
-// backend) restarts without one: a web window opening in the successor would
-// take the sockets the native window reconnects to.
-func TestRestartKeepsTheWindowAsItWas(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		open bool
-		want []string
-	}{
-		{"window open", true, []string{"--", "--ozone-platform=x11"}},
-		{"no window", false, []string{"--no-window", "--", "--ozone-platform=x11"}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			var spawnedArgs, installerEnv []string
-			c := New("lich.exe", nil, []string{"--", "--ozone-platform=x11"})
-			c.SetWindowOpen(func() bool { return tc.open })
-			c.spawn = func(_ string, _ []string, args []string) error {
-				spawnedArgs = args
-				return nil
-			}
-			if err := c.Do(); err != nil {
-				t.Fatal(err)
-			}
-			if !slices.Equal(spawnedArgs, tc.want) {
-				t.Fatalf("successor args = %v, want %v", spawnedArgs, tc.want)
-			}
-			c = New("lich.exe", nil, []string{"--", "--ozone-platform=x11"})
-			c.SetWindowOpen(func() bool { return tc.open })
-			c.spawn = func(_ string, env, _ []string) error {
-				installerEnv = env
-				return nil
-			}
-			if err := c.Install("setup.exe"); err != nil {
-				t.Fatal(err)
-			}
-			got, err := LaunchArgs(nil, envReader(installerEnv))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !slices.Equal(got, tc.want) {
-				t.Fatalf("relaunched lich reads args %v, want %v", got, tc.want)
-			}
-		})
 	}
 }

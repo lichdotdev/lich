@@ -188,9 +188,8 @@ var commands = []command{
 	{
 		name: "native",
 		args: "",
-		about: "Open the native window (experimental) on the running lich, starting lich\n" +
-			"in the background with no window when none runs. The web window closes\n" +
-			"first: one window at a time. lich-native is looked up beside the lich\n" +
+		about: "Open the window on the running lich, starting lich in the background\n" +
+			"with no window when none runs. lich-native is looked up beside the lich\n" +
 			"binary, or wherever LICH_NATIVE points.",
 	},
 	{
@@ -217,7 +216,7 @@ var commands = []command{
 	{
 		name: "rage",
 		args: "[--output <path>]",
-		about: "Collect a bug report — versions, browser, providers, plugin state and\n" +
+		about: "Collect a bug report — versions, window, providers, plugin state and\n" +
 			"the logs, with secrets masked — into one .tar.gz to attach to an issue.\n" +
 			"Nothing is uploaded, and it works with no lich running.",
 	},
@@ -225,7 +224,7 @@ var commands = []command{
 		name: "doctor",
 		args: "",
 		about: "Walk the boot lich walks — config dir, log, the pinned port, the\n" +
-			"workspace database, the browser, the providers — and say whether it\n" +
+			"workspace database, the window, the providers — and say whether it\n" +
 			"would start here. Exits non-zero when something would stop it.",
 	},
 }
@@ -242,15 +241,11 @@ Exit status: 0 done, 1 failed. send and wait also exit 2 when the wait ran
 out and a ticket came back, and 3 when the errand ended with no answer
 coming through lich (never read, never delivered, answered elsewhere).
 
-With no command, lich opens its window. Two flags belong to that launch:
+With no command, lich opens its window, lich-native, looked up beside the
+lich binary or wherever LICH_NATIVE points.
 
-  lich --shell <path>
-      Open this window build instead of the one installed beside lich.
-      LICH_SHELL says the same thing; the flag wins. Either way lich fails
-      loudly when it is not there, rather than opening a different one.
-
-  lich -- <flags>
-      Pass everything after -- to the window (e.g. --ozone-platform=wayland).
+  lich --no-window
+      Start lich without its window; the tray and lich native open it later.
 
 Run inside a lich session these address the sessions beside it. Run anywhere
 else on the machine they find the running lich on their own, and what they

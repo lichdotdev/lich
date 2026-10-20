@@ -47,8 +47,8 @@ as_root() {
   if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi
 }
 
-# The window ships inside the package (lich's own Chromium); zenity, the
-# folder picker, is the one runtime dependency left to check for.
+# The window ships inside the package; zenity, the folder picker, is the one
+# runtime dependency left to check for.
 check_runtime_deps() {
   if have zenity; then
     info "runtime dependencies present (zenity)"

@@ -28,7 +28,7 @@ const liveToken = "s3cr3t-loopback-token"
 func collector(t *testing.T, configDir string, info *singleton.Info, alive bool) *Collector {
 	t.Helper()
 	c := New(configDir, "v1.2.3", []string{"SHELL=/bin/zsh", "LICH_TOKEN=" + liveToken, "LICH_DEV=1"})
-	c.browser = func() (string, error) { return "/usr/bin/chromium", nil }
+	c.window = func() (string, error) { return "/usr/lib/lich/lich-native", nil }
 	c.detect = func() []providers.Detected {
 		return []providers.Detected{{ID: "claude", Name: "Claude Code", Installed: true, Path: "/usr/bin/claude"}}
 	}

@@ -2,9 +2,10 @@ package doctor
 
 import (
 	"context"
+	"os"
 
-	"github.com/lichdotdev/lich/internal/chromium"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/restart"
 	"github.com/lichdotdev/lich/internal/singleton"
 )
 
@@ -13,14 +14,10 @@ import (
 // They live here, exported, because a probe that drifted between the two tools
 // would have them describe two different machines.
 
-// Browser resolves the window lich launches, and says which rung produced it —
-// the bundled one or a LICH_SHELL pin.
-func Browser() (string, error) {
-	found, err := chromium.Resolve(chromium.RealEnv())
-	if err != nil {
-		return "", err
-	}
-	return found.Describe(), nil
+// Window resolves the native window lich launches: the LICH_NATIVE pin, else
+// lich-native beside the lich binary.
+func Window() (string, error) {
+	return restart.NativeExecutable(os.Getenv)
 }
 
 // Providers lists the harnesses on PATH. A detection that fails outright is

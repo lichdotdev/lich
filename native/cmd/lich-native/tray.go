@@ -13,11 +13,9 @@ import (
 // backend fills Running's {count} placeholder itself.
 func trayLabels() lichclient.TrayLabels {
 	return lichclient.TrayLabels{
-		Show:       i18n.T("shell.tray.show"),
-		Running:    i18n.T("shell.tray.running", i18n.Args{"count": "{count}"}),
-		Quit:       i18n.T("shell.tray.quit"),
-		OpenNative: i18n.T("shell.tray.openNative"),
-		OpenWeb:    i18n.T("shell.tray.openWeb"),
+		Show:    i18n.T("shell.tray.show"),
+		Running: i18n.T("shell.tray.running", i18n.Args{"count": "{count}"}),
+		Quit:    i18n.T("shell.tray.quit"),
 	}
 }
 

@@ -1,6 +1,6 @@
 // Package rpc exposes the app's Go services to the frontend over plain HTTP
 // on the local transport listener — the Chromium --app window has no binding
-// bridge of its own (docs/chromium-shell.md). One POST per call:
+// bridge of its own (docs/native-window.md). One POST per call:
 //
 //	POST /rpc/<service>.<Method>?token=...   body: JSON array of arguments
 //	→ 200 with the method's JSON result (null when it only returns error)

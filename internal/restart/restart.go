@@ -1,8 +1,7 @@
-// Package restart owns how a running lich ends and how its window comes and
-// goes. The backend outlives its window (Window); it ends only when stopped, by
-// `lich quit`, a signal, or a restart: a detached successor is started and this
-// process is stopped, freeing the pinned listener port for the successor to
-// bind. The restart is what the POST /restart endpoint drives after install.sh
+// Package restart owns how a running lich ends. The backend outlives its
+// window; it ends only when stopped, by `lich quit`, a signal, or a restart: a
+// detached successor is started and this process is stopped, freeing the
+// pinned listener port for the successor to bind. The restart is what the POST /restart endpoint drives after install.sh
 // replaces the binary on disk.
 package restart
 
@@ -15,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/lichdotdev/lich/internal/chromium"
 )
 
 // WaitEnv marks a lich process spawned to succeed a restarting one. The
@@ -27,8 +24,16 @@ const WaitEnv = "LICH_RESTART_WAIT"
 // ArgsEnv carries a lich's arguments, as a JSON list, to the lich Inno Setup
 // launches again after an update on Windows. That launch has a fixed command
 // line (build/windows/lich.iss) and the environment of the lich that started
-// the installer, so the window's switches ride the environment (LaunchArgs).
+// the installer, so its arguments ride the environment (LaunchArgs).
 const ArgsEnv = "LICH_RELAUNCH_ARGS"
+
+// NoWindowArg starts lich without its window.
+const NoWindowArg = "--no-window"
+
+// successorArgs start a successor without a window: the native window open on
+// this backend reconnects to the successor, and a second one opening there
+// would take its sockets.
+var successorArgs = []string{NoWindowArg}
 
 // Coordinator ends this lich: on its own (Quit), or after launching a detached
 // successor (Do, Install), so this process unwinds, exits, and frees the port.
@@ -38,57 +43,28 @@ type Coordinator struct {
 	started bool
 	exePath string
 	env     []string
-	// args are the successor's arguments: lich's own, so its window opens
-	// with the switches this one was launched with.
-	args []string
-	// windowOpen reports whether lich's window is up; nil until SetWindowOpen.
-	windowOpen func() bool
 	// spawn is the seam for tests; it defaults to the build-tagged primitive.
 	spawn func(exe string, env, args []string) error
 }
 
 // New returns a coordinator that relaunches exePath with env (plus the wait
-// marker) and args. env should be the current process environment so the
-// successor pins the same listener port; args are what the successor is
-// launched with (chromium.RelaunchArgs), nil for none.
-func New(exePath string, env, args []string) *Coordinator {
+// marker). env should be the current process environment so the successor
+// pins the same listener port.
+func New(exePath string, env []string) *Coordinator {
 	return &Coordinator{
 		exePath: exePath,
 		env:     env,
-		args:    args,
 		spawn:   StartDetached,
 	}
 }
 
-// SetStop supplies the clean exit: stop makes main close the window, unwind its
+// SetStop supplies the clean exit: stop makes main unwind its
 // defers and return. Called once lich is serving; a restart before that only
 // spawns the successor.
 func (c *Coordinator) SetStop(stop func()) {
 	c.mu.Lock()
 	c.stop = stop
 	c.mu.Unlock()
-}
-
-// SetWindowOpen supplies whether lich's window is up when a restart happens.
-// With none up the successor starts without one as well: whatever client was
-// on this backend instead (`lich native`'s window) reconnects to the successor,
-// and a web window opening in its place would take its sockets.
-func (c *Coordinator) SetWindowOpen(open func() bool) {
-	c.mu.Lock()
-	c.windowOpen = open
-	c.mu.Unlock()
-}
-
-// successorArgs are the successor's arguments: this lich's window switches,
-// behind chromium.NoWindowArg when no window is up.
-func (c *Coordinator) successorArgs() []string {
-	c.mu.Lock()
-	open := c.windowOpen
-	c.mu.Unlock()
-	if open == nil || open() {
-		return c.args
-	}
-	return append([]string{chromium.NoWindowArg}, c.args...)
 }
 
 // Quit ends this lich: every session goes with it, and nothing is launched in
@@ -114,15 +90,15 @@ func (c *Coordinator) Relaunching() bool {
 
 // Do launches the successor and stops this lich. Order matters: the successor
 // starts first and blocks retrying the pinned port; then this process exits,
-// and the freed port lets the successor bind and open a fresh window.
+// and the freed port lets the successor bind, where the native window reconnects.
 func (c *Coordinator) Do() error {
-	return c.launch(c.exePath, c.successorArgs(), successorEnv(c.env))
+	return c.launch(c.exePath, successorArgs, successorEnv(c.env))
 }
 
 // Install hands replacement and relaunch to Inno Setup. It waits for this PID
 // to exit before touching files, so the window and main's defers finish first.
 func (c *Coordinator) Install(installer string) error {
-	env, err := relaunchEnv(c.env, c.successorArgs())
+	env, err := relaunchEnv(c.env, successorArgs)
 	if err != nil {
 		return err
 	}
@@ -133,9 +109,6 @@ func (c *Coordinator) Install(installer string) error {
 // ArgsEnv for the lich it launches again.
 func relaunchEnv(env, args []string) ([]string, error) {
 	out := successorEnv(env)
-	if len(args) == 0 {
-		return out, nil
-	}
 	encoded, err := json.Marshal(args)
 	if err != nil {
 		return nil, fmt.Errorf("restart: encode the relaunch arguments: %w", err)
@@ -205,7 +178,7 @@ func successorEnv(env []string) []string {
 // Both are for this process's own startup alone: what it spawns must not read
 // as a restart successor, or a lich launched from one of its sessions never
 // looks for the running one and dies on the busy port, and it must not take
-// this lich's window switches for its own.
+// this lich's arguments for its own.
 func WithoutMarker(env []string) []string {
 	out := make([]string, 0, len(env))
 	for _, kv := range env {

@@ -1,22 +1,19 @@
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="frontend/public/appicon.png" />
-    <img src="frontend/public/appicon-light.png" alt="lich" width="88" height="88" />
-  </picture>
+  <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <strong>Português (Brasil)</strong> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
   <p><strong>Um ADE para quem trabalha no terminal, com os agentes de código que você já usa.</strong></p>
   <p>
     Abra seus projetos, rode agentes como Claude Code, Codex e opencode em
     terminais de verdade e acompanhe o git (worktrees, diffs e pull requests)
-    sem sair da janela. Um único binário Go estático, sem Electron: a interface
-    abre no Chromium embutido do lich, no Linux, no Windows e no macOS.
+    sem sair da janela. Sem Electron e sem navegador: o lich desenha a própria
+    janela nativa com Gio, no Linux, no Windows e no macOS.
   </p>
   <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
+    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
@@ -40,8 +37,8 @@ O que dá para fazer com o lich:
   provedor, e está tudo na tabela de
   [Suporte por provedor](#suporte-por-provedor).
 - **Usar um terminal de verdade.** Shells com PTY, vários por projeto,
-  renderizados na GPU, com scrollback pesquisável que sobrevive a um reload
-  completo da página. Defina um entrypoint (`lazygit`, `k9s`, `pnpm dev`) e o
+  renderizados na GPU, com scrollback pesquisável que sobrevive a fechar e
+  reabrir a janela. Defina um entrypoint (`lazygit`, `k9s`, `pnpm dev`) e o
   terminal abre direto nessa ferramenta, sempre, no Linux, no macOS e no
   Windows. Nenhum rc do shell nem perfil do PowerShell é carregado antes, então
   o entrypoint que funciona para você funciona para qualquer pessoa com quem
@@ -79,7 +76,7 @@ O que dá para fazer com o lich:
   bubblewrap e no macOS com `sandbox-exec`. Não protege contra código
   malicioso, e o [`docs/ceilings.md`](docs/ceilings.md) diz o que ela não
   impede.
-- **Revisar o diff no mesmo lugar em que você lê.** Um dock com CodeMirror
+- **Revisar o diff no mesmo lugar em que você lê.** Um dock de diff
   mostra as mudanças em andamento ao lado de uma árvore de arquivos ao vivo,
   recolhe as que só mexeram em espaço em branco quando você pede e mostra o
   antes e depois de uma imagem ou PDF alterado. Clique com o botão direito
@@ -129,11 +126,11 @@ mesmas coisas.
 | Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
 | Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim |
 | Um paste longo pode entrar como texto editável em vez de um placeholder recolhido (Configurações › Provedores, desligado por padrão) | sim | não | não | sim | não medido | não, vira o anexo `paste_N.txt` | não | sim |
-| Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout na janela nativa | sim | sim | não | sim | não | não | não | não |
-| Aviso na janela nativa quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | na próxima chamada de tool | não | sim |
+| Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout | sim | sim | não | sim | não | não | não | não |
+| Aviso quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | na próxima chamada de tool | não | sim |
 | Abrir uma sessão com o esforço de raciocínio escolhido | sim | sim | sim | não | sim | não | no nome do modelo | sim |
 | Abrir uma sessão com ultracode ligado | sim | não | não | não | não | não | não | não |
-| Várias contas lado a lado como perfis, cada uma com login completo próprio, e uma sessão que muda de conta continua no mesmo card (na janela nativa, experimental: Configurações › Provedores) | sim | sim, com plugins próprios em cada perfil e as configurações do Pessoal compartilhadas por todos | não | sim, com login feito num card de terminal; a sessão não muda de perfil, porque as conversas ficam no mesmo banco que guarda o login | sim, com login feito num card de terminal e configurações compartilhadas por todos os perfis | não medido | Linux e Windows (no macOS o login fica no Keychain), com login feito num card de terminal e `mcp.json`, hooks e skills compartilhados por todos os perfis | só Linux (o macOS guarda o login no Keychain, e no Windows nada consegue mudá-lo de lugar), com login feito num card de terminal e as conversas compartilhadas por todos os perfis |
+| Várias contas lado a lado como perfis, cada uma com login completo próprio, e uma sessão que muda de conta continua no mesmo card (Configurações › Provedores) | sim | sim, com plugins próprios em cada perfil e as configurações do Pessoal compartilhadas por todos | não | sim, com login feito num card de terminal; a sessão não muda de perfil, porque as conversas ficam no mesmo banco que guarda o login | sim, com login feito num card de terminal e configurações compartilhadas por todos os perfis | não medido | Linux e Windows (no macOS o login fica no Keychain), com login feito num card de terminal e `mcp.json`, hooks e skills compartilhados por todos os perfis | só Linux (o macOS guarda o login no Keychain, e no Windows nada consegue mudá-lo de lugar), com login feito num card de terminal e as conversas compartilhadas por todos os perfis |
 | Uma pasta que você marcou como confiável na conta principal abre sem a pergunta "trust this folder?" em todos os outros perfis | sim | sim | sem perfis | não pergunta nada | não pergunta nada | não medido | sim | não pergunta nada |
 | Uma sessão na sandbox abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
 | Uma worktree de uma pasta confiável abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
@@ -203,7 +200,7 @@ por quê.
   projeto aberto pode sobrescrever essa escolha; **Limpar** remove a
   sobrescrita, e as mudanças futuras no padrão passam a valer
   automaticamente. Sem caminho definido, a sessão roda o primeiro binário do
-  provedor que aparece no `PATH` do seu shell de login. Na janela nativa, o
+  provedor que aparece no `PATH` do seu shell de login. O
   bloco Binário mostra esse arquivo e a versão dele e lista outras versões que
   estejam no `PATH`, o que o `lich doctor` também avisa. Para escolher uma,
   defina o caminho em Binário (a configuração `provider.<id>.bin`, por
@@ -248,21 +245,23 @@ arquivo, sem enviar nada.
 
 ## Compilar a partir do código-fonte
 
-Backend em Go puro (Go 1.27, `CGO_ENABLED=0`) servindo um frontend React 18 /
-TypeScript / Vite embutido, por um listener em loopback autenticado por token
-(RPC HTTP + WebSockets). Os terminais usam xterm.js com o addon WebGL; código e
-diff usam CodeMirror 6. A escolha do shell Chromium está registrada em
-[`docs/chromium-shell.md`](docs/chromium-shell.md). Pré-requisitos:
-**Go 1.27.0+**, **Node + pnpm** e **[Task](https://taskfile.dev)**, sem
-toolchain C para o binário Go. A janela (`shell/`, Rust sobre CEF) pede também
-um toolchain Rust, mais as bibliotecas de desenvolvimento do Chromium no Linux
-e o MSVC no Windows; a lista está no [CONTRIBUTING.md](CONTRIBUTING.md).
+O lich são dois binários. O backend, `lich`, é Go puro (Go 1.27, `CGO_ENABLED=0`,
+um único binário estático) e serve as sessões por um listener em loopback
+autenticado por token (RPC HTTP + WebSockets). A janela, `lich-native`, é um
+módulo Go próprio em `native/`, compilado com cgo: o [Gio](https://gioui.org)
+desenha a janela, a `libghostty-vt` roda os terminais e o
+[godemirror](https://github.com/lichdotdev/godemirror) as telas de código e diff.
+Pré-requisitos: **Go 1.27.0+** e **[Task](https://taskfile.dev)**; a janela pede
+também um toolchain C, os pacotes de sistema do Gio e uma `libghostty-vt`
+compilada com Zig 0.16 a partir do commit do Ghostty em `native/GHOSTTY_COMMIT`.
+O [`native/slice.sh`](native/slice.sh) explica como compilá-la, e o
+[`docs/native-window.md`](docs/native-window.md) descreve a janela.
 
 ```bash
-task dev      # hot-reload dev mode (Vite on :9245)
-task build    # production binary -> bin/lich
-task run      # build + run
-task test     # Go + frontend suites
+task build          # binário do backend -> bin/lich
+task build:native   # janela -> bin/lich-native
+task run            # compila + roda
+task test           # suítes Go
 ```
 
 Para empacotar um release Linux localmente (precisa do

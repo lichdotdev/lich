@@ -1,15 +1,12 @@
 version: '3'
 
-# lich is a pure-Go binary (no CGO) serving its embedded frontend to a Chromium
-# --app window — see docs/chromium-shell.md. That window is lich's own, an
-# embedded Chromium built out of shell/ (Rust, CEF) and launched like a
-# browser, on Linux, Windows and Apple Silicon; an Intel Mac still opens the
-# system browser. Linux first; Windows and macOS supported.
+# lich is a pure-Go binary (no CGO), the backend; its window is lich-native,
+# a separate cgo binary out of native/ that lich launches from beside itself
+# (docs/native-window.md). Linux first; Windows and macOS supported.
 
 vars:
   APP_NAME: "lich"
   BIN_DIR: "bin"
-  VITE_PORT: '{{.LICH_VITE_PORT | default 9245}}'
   # Package version follows the git tag (env VERSION overrides) — no manual bump.
   # The tag is trimmed in the template, not with sed: Task's shell is mvdan/sh
   # on every OS, and a plain Windows box has no sed on PATH — the pipeline would
@@ -23,59 +20,8 @@ vars:
   GO_BUILD_FLAGS: '-trimpath -ldflags "{{.LDFLAGS}}"'
 
 tasks:
-  build:frontend:
-    desc: Build frontend/dist (embedded by the Go binary)
-    cmds:
-      - cmd: cd frontend && pnpm install --frozen-lockfile && pnpm run build
-
-  build:shell:
-    desc: Build the window (embedded Chromium) into bin/shell/
-    # Skipped while bin/shell is up to date with the crate: the window changes
-    # far less often than the Go side, and `task dev` should not wait on cargo
-    # for it.
-    sources:
-      - shell/src/**/*
-      - shell/Cargo.toml
-      - shell/Cargo.lock
-      - shell/.cargo/config.toml
-      - shell/build.rs
-      - build/cef.sh
-      - build/linux/shell/assemble.sh
-      - build/windows/shell/assemble.sh
-      - build/darwin/shell/assemble.sh
-      - build/windows/shell/lich-shell.exe.manifest
-      - build/windows/lich.ico
-    generates:
-      - "{{.BIN_DIR}}/shell/lich-shell{{exeExt}}"
-      - "{{.BIN_DIR}}/shell/{{if eq OS \"windows\"}}libcef.dll{{else if eq OS \"darwin\"}}Chromium Embedded Framework.framework{{else}}cef/libcef.so{{end}}"
-    vars:
-      # Where build/cef.sh puts the CEF distribution: CEF_DIR when set (CI
-      # points it at .cef, and caches it), else a per-user cache shared by
-      # every worktree on the same CEF version. kurogane links nothing of CEF:
-      # the window loads libcef when it starts, so the distribution is only
-      # what assemble.sh ships beside the binary.
-      CEF_DIR:
-        sh: bash build/cef.sh --dir
-    cmds:
-      # The Go binary stays pure and static; the window is a separate Rust
-      # binary on CEF, found beside it at run time (internal/chromium/shell.go).
-      # assemble.sh strips libcef.so and keeps only the runtime files lich
-      # needs — the 1.4 GB distribution becomes ~300 MB.
-      - cmd: cd shell && cargo build --release
-      # Through bash on purpose: Task's own shell runs the command line, but a
-      # script file needs a real sh, and git-bash is the one every Windows
-      # machine with git has.
-      - cmd: bash build/cef.sh "{{.CEF_DIR}}"
-      - cmd: build/linux/shell/assemble.sh shell/target/release "{{.CEF_DIR}}" {{.BIN_DIR}}/shell
-        platforms: [linux]
-      - cmd: bash build/windows/shell/assemble.sh shell/target/release "{{.CEF_DIR}}" {{.BIN_DIR}}/shell
-        platforms: [windows]
-      - cmd: build/darwin/shell/assemble.sh shell/target/release "{{.CEF_DIR}}" {{.BIN_DIR}}/shell
-        platforms: [darwin]
-
   build:
-    desc: Build the static binary into bin/ (with the window beside it)
-    deps: [build:frontend, build:shell]
+    desc: Build the static backend binary into bin/
     cmds:
       # {{exeExt}}: `go build -o bin/lich` writes exactly that name — no .exe —
       # and Windows then refuses to exec it (PATHEXT resolution needs the
@@ -86,7 +32,7 @@ tasks:
     desc: Build the native window into bin/lich-native (cgo; libghostty-vt on PKG_CONFIG_PATH, native/slice.sh)
     # Its own module and binary, built with cgo (docs/native-window.md); it
     # never reaches the lich binary's build. The packages ship it beside lich,
-    # where `lich native` and Settings › Window look for it.
+    # where lich looks for it.
     dir: native
     cmds:
       - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-native ./cmd/lich-native
@@ -109,7 +55,6 @@ tasks:
 
   build:windows:
     desc: Cross-compile the Windows binary
-    deps: [build:frontend]
     cmds:
       # GUI subsystem: no console window rides along. stdout/stderr go
       # nowhere — the persistent lich.log is the diagnostic surface.
@@ -117,7 +62,6 @@ tasks:
 
   build:mac:
     desc: Cross-compile the macOS binaries
-    deps: [build:frontend]
     cmds:
       # Both arches: Apple Silicon (arm64) and Intel (amd64). Pure Go, so both
       # cross-compile from any host. Unsigned — Gatekeeper quarantines until
@@ -126,8 +70,8 @@ tasks:
       - cmd: CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build {{.GO_BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}-darwin-amd64 .
 
   bundle:mac:
-    desc: Wrap the macOS binary and both windows in bin/Lich.app (macOS host only)
-    deps: [build:mac, build:shell]
+    desc: Wrap the macOS binary and the window in bin/Lich.app (macOS host only)
+    deps: [build:mac]
     # The native window builds apart (cgo, libghostty-vt), as for package.
     preconditions:
       - sh: test -x {{.BIN_DIR}}/lich-native
@@ -135,61 +79,33 @@ tasks:
     cmds:
       # The binary cross-compiles from anywhere; the bundle needs Apple's sips
       # and iconutil for the icon, so this task only runs on a Mac.
-      - cmd: build/darwin/bundle.sh {{.BIN_DIR}}/{{.APP_NAME}}-darwin-{{ARCH}} {{.VERSION}} {{.BIN_DIR}} {{.BIN_DIR}}/shell {{.BIN_DIR}}/lich-native
+      - cmd: build/darwin/bundle.sh {{.BIN_DIR}}/{{.APP_NAME}}-darwin-{{ARCH}} {{.VERSION}} {{.BIN_DIR}} {{.BIN_DIR}}/lich-native
 
   run:
     desc: Build and run
-    deps: [build]
+    deps: [build, build:native]
     cmds:
       - cmd: ./{{.BIN_DIR}}/{{.APP_NAME}}{{exeExt}}
 
   dev:
-    desc: Dev mode — Vite HMR, isolated DB, port and Chromium profile
-    deps: [build:shell]
+    desc: Dev mode — the native window on a backend with its own DB and port
+    deps: [build:native]
     cmds:
-      # frontend/dist must exist for go:embed to compile, even though the
-      # window loads the Vite server; build it once, then serve with HMR.
-      # Dev isolation: separate DB (LICH_DEV, store.databasePath), separate
-      # listener port and Chromium profile (LICH_DEV_URL side effect), so a
-      # daily-driver lich keeps running untouched.
-      - cmd: |
-          set -e
-          # Ctrl+C reaches the whole process group and takes Vite with it;
-          # closing the window instead leaves it, and the dev backend, running (Task's shell has no
-          # kill and its `$!` is not a pid). The next run's Vite then dies on
-          # strictPort in the background, unseen, while the window loads the
-          # survivor, which serves whatever checkout it was started from. So
-          # the port is proved free before anything else, and a taken one stops
-          # the run here.
-          node -e "const s = require('net').createServer(); s.once('error', () => { console.error('task dev: port {{.VITE_PORT}} on 127.0.0.1 is taken, most likely by the Vite of an earlier task dev whose window was closed. That Vite serves its own checkout, not this one. Stop it (ss -ltnp \'sport = :{{.VITE_PORT}}\' on Linux, lsof -i :{{.VITE_PORT}} on macOS) or set LICH_VITE_PORT to another port.'); process.exit(1) }); s.listen({{.VITE_PORT}}, '127.0.0.1', () => s.close())"
-          (cd frontend && pnpm install --frozen-lockfile && pnpm run build)
-          (cd frontend && pnpm run dev) &
-          # node, not `sleep`: Task interprets every command with its own shell
-          # (mvdan/sh) on every OS, where sleep is no builtin — a plain Windows
-          # box has no such binary on PATH and `task dev` dies right here. node
-          # is already required by the pnpm line above.
-          node -e "setTimeout(() => {}, 1500)"
-          # go run leaves the binary in a temp dir, where the bundled-window
-          # lookup finds nothing; the pin names the window build:shell made.
-          # The build reports "dev" unless VERSION is set: `VERSION=Unreleased
-          # task dev` is how the What's new dialog is smoked against the
-          # [Unreleased] changelog section, `VERSION=v0.44.0` against a release.
-          LICH_DEV=1 LICH_DEV_URL="http://127.0.0.1:{{.VITE_PORT}}" LICH_LISTEN_PORT=47822 LICH_SHELL="{{.ROOT_DIR}}/{{.BIN_DIR}}/shell/lich-shell{{exeExt}}" go run {{if env "VERSION"}}-ldflags "-X main.version={{.VERSION}}" {{end}}.
-
-  test:shell:
-    desc: Run the window crate's suite (Linux, macOS)
-    platforms: [linux, darwin]
-    cmds:
-      # --release shares cargo's CEF download and C++ wrapper build with
-      # build:shell; a debug profile would fetch and build both again.
-      - cmd: cd shell && cargo test --release
+      # Dev isolation: separate DB (LICH_DEV, store.databasePath) and listener
+      # port, so a daily-driver lich keeps running untouched; LICH_DEV also
+      # gives the window its own class, lichdev. go run leaves the binary in a
+      # temp dir, where nothing sits beside it; the pin names the window
+      # build:native made. The build reports "dev" unless VERSION is set:
+      # `VERSION=Unreleased task dev` is how the What's new dialog is smoked
+      # against the [Unreleased] changelog section, `VERSION=v0.44.0` against
+      # a release.
+      - cmd: LICH_DEV=1 LICH_LISTEN_PORT=47822 LICH_NATIVE="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-native" go run {{if env "VERSION"}}-ldflags "-X main.version={{.VERSION}}" {{end}}.
 
   test:
-    desc: Run the backend, frontend and window suites
+    desc: Run the backend and native window suites (native needs libghostty-vt on PKG_CONFIG_PATH)
     cmds:
       - cmd: go test ./...
-      - cmd: cd frontend && pnpm test
-      - task: test:shell
+      - cmd: cd native && go test ./...
 
   pricing:refresh:
     desc: Reprice internal/pricing/prices.json from LiteLLM — run it when cutting a release
@@ -250,10 +166,7 @@ tasks:
 
   package:windows:
     desc: Build bin/lich-setup.exe with the window inside (needs Inno Setup 6, on Windows)
-    # The window only builds on Windows itself (MSVC, CEF's wrapper), which
-    # is also the only place iscc runs; build:windows alone still
-    # cross-compiles the bare exe from anywhere.
-    deps: [build:windows, build:shell]
+    deps: [build:windows]
     preconditions:
       - sh: command -v iscc
         msg: "iscc (Inno Setup 6) is required — on Windows: choco install innosetup"

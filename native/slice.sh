@@ -44,21 +44,14 @@ for entry in "$HOME"/.config/* "$HOME"/.config/.[!.]*; do
   [ "$name" = lich ] || ln -sfn "$entry" "$CONFIG/$name"
 done
 
-# Stands in for the lich window: holds until lich exits and closes its stdin.
-cat > "$SLICE_HOME/no-window" <<'STUB'
-#!/bin/sh
-cat > /dev/null
-STUB
-chmod +x "$SLICE_HOME/no-window"
-
 if ! curl -sf -o /dev/null -X POST -d '[]' "http://127.0.0.1:$PORT/rpc/store.LoadState?token=$(sed -n 's/.*"token":"\([^"]*\)".*/\1/p' "$RUNTIME" 2>/dev/null)"; then
   rm -f "$RUNTIME"
   (
     # Whatever lich or agent session launched this must not leak into the
     # backend or its sessions.
     for v in $(env | sed -n 's/^\(LICH_[A-Z_]*\|CLAUDE[A-Z_]*\)=.*/\1/p'); do unset "$v"; done
-    exec setsid -f env XDG_CONFIG_HOME="$CONFIG" LICH_DEV=1 LICH_LISTEN_PORT=$PORT LICH_SHELL="$SLICE_HOME/no-window" \
-      "$BACKEND_BIN" > "$SLICE_HOME/backend.log" 2>&1 < /dev/null
+    exec setsid -f env XDG_CONFIG_HOME="$CONFIG" LICH_DEV=1 LICH_LISTEN_PORT=$PORT \
+      "$BACKEND_BIN" --no-window > "$SLICE_HOME/backend.log" 2>&1 < /dev/null
   )
   i=0
   until [ -s "$RUNTIME" ]; do

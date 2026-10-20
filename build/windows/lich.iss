@@ -41,17 +41,13 @@ RestartApplications=no
 
 [Files]
 Source: "..\..\bin\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
-; The native window, beside lich.exe where Settings > Window and `lich native`
-; look for it. Cross-built from Linux (native/build-windows.sh).
+; The window, beside lich.exe where lich looks for it. Cross-built from
+; Linux (native/build-windows.sh).
 Source: "..\..\bin\lich-native.exe"; DestDir: "{app}"; Flags: ignoreversion
-; The window (lich's own Chromium), where lich.exe looks for it: shell\ beside
-; the binary (internal/chromium/shell.go). Assembled by `task build:shell`.
-Source: "..\..\bin\shell\*"; DestDir: "{app}\shell"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-; The AppUserModelID is the one lich-shell.exe claims for its process
-; (shell/src/main.rs): the taskbar then groups the running window under this
-; shortcut and draws its icon, pinned or not.
+; The AppUserModelID is the one the native window's toasts are sent under
+; (native/cmd/lich-native/desktop_notes_toast.go).
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"; AppUserModelID: "omartelo.lich"
 
 [Registry]
@@ -102,7 +98,7 @@ begin
     Exit;
   end;
   { lich closes its window and flushes its database before releasing its exe.
-    Restart Manager then handles any remaining Chromium file holders. }
+    Restart Manager then handles any remaining file holders. }
   Process := OpenProcess(SynchronizeAccess, False, PID);
   if Process <> 0 then begin
     Result := WaitForSingleObject(Process, ShutdownTimeout) = WaitObject0;

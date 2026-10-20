@@ -2,10 +2,10 @@
 // a lich whose window is closed is still running its sessions, and the way back
 // to the window or out of lich from there.
 //
-// The menu's words are the page's: the interface language lives in the page,
-// so the page hands its translated labels over (SetLabels), and the tray comes
-// up with the first of them. A lich whose page never loaded shows no tray, and
-// has its window, or the error that kept it from opening, on screen instead.
+// The menu's words are the window's: the interface language lives in the
+// window, so the window hands its translated labels over (SetLabels), and the
+// tray comes up with the first of them. A lich whose window never opened shows
+// no tray, and has the error that kept it from opening on screen instead.
 package tray
 
 import (
@@ -13,8 +13,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/lichdotdev/lich/internal/system"
 )
 
 // refreshEvery is how often the menu's session count is read again. The count
@@ -28,18 +26,6 @@ type Labels struct {
 	Show    string `json:"show"`
 	Running string `json:"running"`
 	Quit    string `json:"quit"`
-	// OpenNative and OpenWeb open the window Show does not.
-	OpenNative string `json:"openNative"`
-	OpenWeb    string `json:"openWeb"`
-}
-
-// other is the item for the window Show does not open, chosen being the one
-// it does: its label and the window it opens.
-func (l Labels) other(chosen string) (label, kind string) {
-	if chosen == system.WindowNative {
-		return l.OpenWeb, system.WindowWeb
-	}
-	return l.OpenNative, system.WindowNative
 }
 
 func (l Labels) running(live int) string {
@@ -59,10 +45,6 @@ type Tray struct {
 	live    func() int
 	// start puts the icon up; the build-tagged native one, or a test's.
 	start func(t *Tray)
-	// chosen is the window Show opens and openOther opens the other one; nil
-	// leaves the menu without that item (SetOtherWindow).
-	chosen    func() string
-	openOther func(kind string)
 }
 
 // Icons are the two encodings the platforms take: PNG for the Linux
@@ -76,14 +58,6 @@ type Icons struct {
 // lich, live counts the sessions with a process running.
 func New(icons Icons, show func(), quit func() error, live func() int) *Tray {
 	return &Tray{icons: icons, show: show, quit: quit, live: live, start: startNative}
-}
-
-// SetOtherWindow adds the item that opens the window Show does not, chosen
-// reading which one Show opens. Called before the tray is up.
-func (t *Tray) SetOtherWindow(chosen func() string, open func(kind string)) {
-	t.mu.Lock()
-	t.chosen, t.openOther = chosen, open
-	t.mu.Unlock()
 }
 
 // SetLabels gives the menu its words. The first call puts the tray up; a later

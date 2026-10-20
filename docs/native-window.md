@@ -1,11 +1,12 @@
-# Decision: a native window for lich, grown beside the web one
+# Decision: a native window for lich
 
-**Status: accepted on 2026-10-10. The native window lives in `native/` and opens with `lich native`; it is
-experimental until the cutover below.**
+**Status: accepted on 2026-10-10; cut over on 2026-10-20. The native window, `native/`, is lich's only
+window: `lich` starts the backend and opens it. The web window, its embedded page and the Chromium shell are
+gone.**
 
 ## Why
 
-lich's window is a web page in an embedded Chromium (`docs/chromium-shell.md`). It works, and it is fast enough;
+lich's window was a web page in an embedded Chromium. It worked, and it was fast enough;
 the reason to move is not speed but feel. The tools lich sits next to on a developer's screen (Warp, the
 oh-my-pi team's `tern`) are native apps, and a web page in a window reads as one: its fonts, its scrolling, its
 focus and its menus are a browser's, not the desktop's. The goal is a lich that feels like an application
@@ -25,63 +26,53 @@ A native lich is buildable on [Gio](https://gioui.org), in Go, against lich's ex
   (unified with an old | new gutter, side by side, expandable gaps, revert per chunk, intra-line changes,
   search). Layout costs about 0.3ms of CPU a frame.
 - **The app**: `lich-native`, a vertical slice (sidebar, terminal, diff, card with live path and changes),
-  talks to an isolated lich backend over the same RPC, `/events` and `/ws` the web page uses. Expand and revert
+  talked to an isolated lich backend over the same RPC, `/events` and `/ws` the web page used. Expand and revert
   go through `project.FileLines` and `project.RevertLines` unchanged.
 
 ## Decision: strangle the web window, do not rewrite lich
 
-The native window grows **in this repository, on `main`, beside the web window**, and replaces it only once
-it covers daily use. No new repository and no long-lived branch: lich ships often, and a rewrite kept apart
+The native window grew **in this repository, on `main`, beside the web window**, and replaced it once it
+covered daily use. No new repository and no long-lived branch: lich ships often, and a rewrite kept apart
 from `main` either drowns in merges or freezes the web app for months.
 
 - **The backend is the product and stays as it is.** Since #755 it outlives its window: closing the window can
-  keep every PTY and session running, with the tray to bring a window back and `lich quit` to end it. A native
-  window is one more client of that backend, the way the web page is.
+  keep every PTY and session running, with the tray to bring a window back and `lich quit` to end it. The
+  window is a client of that backend.
 - **`native/` is its own Go module**, built into its own binary, `lich-native`. It talks to the backend only
-  through the contract the web page uses (RPC, `/events`, `/ws`, and `/blob` for an image's bytes), never by importing `internal/`. That keeps
-  the two windows honest against one contract, and keeps the next point possible.
-- **`lich native`** is how it starts. The subcommand finds the running lich the way `lich quit` and
+  through the backend's loopback contract (RPC, `/events`, `/ws`, and `/blob` for an image's bytes), never by
+  importing `internal/`. That keeps the window honest against one contract, and keeps the backend's own
+  build free of cgo.
+- **`lich`** starts the backend and launches `lich-native` found beside the `lich` binary (or the one
+  `LICH_NATIVE` pins) with the backend's port and token in its environment. A window that cannot start
+  shows an error dialog with the reason and the log path; lich then quits when no session is running, and
+  otherwise keeps running (the tray, a second launch and `lich quit` still reach it).
+- **`lich native`** opens the window on the running lich. The subcommand finds it the way `lich quit` and
   `lich focus` do (its runtime file: port and token), or starts `lich --no-window` in the background when none
-  is running. It closes the web window (`system.CloseWindow`, which leaves lich running), then launches
-  `lich-native` next to the `lich` binary with the backend's port and token in its environment. Closing the
-  native window ends nothing: the backend and its sessions go on, and the web window can be opened on them
-  again.
+  is running. Closing the window ends nothing: the backend and its sessions go on, and a window can be
+  opened on them again.
 - **`lich gallery`** opens `lich-gallery` (built from `native/cmd/ui-gallery`), the UI kit's gallery, which needs no
   backend; it is looked up beside `lich` the same way, or at `LICH_GALLERY`.
 - **`LICH_NATIVE_PPROF=127.0.0.1:6060`**, set where `lich native` starts, has `lich-native` serve Go's
   runtime profiles (`net/http/pprof`) on that address, for a heap or CPU profile of a real window:
   `go tool pprof http://127.0.0.1:6060/debug/pprof/heap`. Only a loopback address is accepted, and any
   process on the machine can read what the profiles carry.
-- **`frontend/` and `shell/` stay untouched** until the cutover. The native window does not reuse the
-  frontend's code; it is a reference for what to port, nothing more.
 
-## cgo: an exception, the way `shell/` is one
+## cgo: the one exception
 
 lich's rule is pure Go, `CGO_ENABLED=0`, one static binary. `lich-native` cannot follow it: Gio needs cgo for
 Wayland, X11 and EGL on Linux, and `libghostty-vt` is a C library. It is a separate binary for exactly that
-reason, as the Rust `shell/` is: the `lich` binary stays pure Go and static, and nothing about `native/`
-reaches its build. The native module gets its own CI job, with Gio's system packages and a `libghostty-vt`
+reason: the `lich` binary stays pure Go and static, and nothing about `native/` reaches its build. The native module gets its own CI job, with Gio's system packages and a `libghostty-vt`
 built from a pinned Ghostty commit.
 
-## Known limits while both windows exist
+## Known limits
 
 - **One window at a time.** `/events` and `/ws` accept a single client, and the newest replaces the one
-  before. `lich native` closes the web window before it opens the native one; a web window opened later takes
-  the endpoints back, and the native window says another window took over instead of going stale. Making both
-  endpoints accept several clients is what using the two side by side would take; it is not needed to
-  homologate the native window.
-- **Settings › Window picks the window lich opens** (`window.kind`, web by default). A launch, the tray's
-  Show lich, a second launch and `lich focus` all open the chosen one (`system.ShowWindow`), closing the other
-  first: the web window through `system.CloseWindow`, the native one through the `window-close` event. The
-  tray's second item opens the other window without changing the choice, and so does Switch now in the
-  dialog that changing the choice offers. A native window that is missing
-  beside `lich`, or ends before it attached, leaves the web window open in its place, with a toast saying why
-  (`system.TakeWindowFallback`). The macOS window is built and run only on GitHub's runners
-  (`native.yml`, `.github/scripts/mac-e2e.sh`): nobody here has looked at it on a Mac.
-- **Only the native window catches up on what it missed.** `/events` replays nothing, so right after attaching
-  the native window reads `terminal.TurnStates`: each live session's status, usage and the working directory
-  (or tmux, ssh and the like) it last moved to. The web window does not read it, so after a reload its cards
-  show the checkout's path until the next `cd`, and no status or usage until the next report.
+  before; the window that lost them says another window took over instead of going stale.
+- **The macOS window is built and run only on GitHub's runners** (`native.yml`,
+  `.github/scripts/mac-e2e.sh`): nobody here has looked at it on a Mac.
+- **The window catches up on what it missed by asking.** `/events` replays nothing, so right after attaching
+  the window reads `terminal.TurnStates`: each live session's status, usage and the working directory (or
+  tmux, ssh and the like) it last moved to.
 - **Notifications are clickable on every system, each its own way.** On Linux the native window talks to
   the freedesktop notification server itself (`desktop_notes_linux.go`). On Windows it raises a toast under
   lich's AppUserModelID through Windows PowerShell (`desktop_notes_windows.go`): Open and a click on the
@@ -99,11 +90,9 @@ built from a pinned Ghostty commit.
   - **dunst** closes a note on a left click without running its action unless its config says
     `mouse_left_click = do_action, close_current`.
   Measured with swaync and mako on Hyprland; dunst, GNOME, KDE and niri are read from their documentation.
-- **Translations are copied, not shared.** The native window's catalogs (`native/i18n/locales`) were seeded
-  once from the web's TypeScript ones and keep their keys; from then on each window owns its own, so a copy
-  fix made in the web window until the cutover lands in both. The interface language is the global setting
-  `lich.appearance.language` (the system's language before anyone picks one), which the web window writes
-  beside its localStorage copy, so a language picked there is the one the native window opens in.
+- **The interface language is a global setting.** The catalogs (`native/i18n/locales`) were seeded from the
+  web window's and keep their keys. The language is `lich.appearance.language`, the system's language before
+  anyone picks one.
 - **Chinese needs a font the window may not have.** None of the faces it ships draws Han, so its interface
   shaper adds an installed Chinese face (found through fontconfig on Linux, Microsoft YaHei on Windows,
   PingFang SC or Hiragino Sans GB on macOS) whatever the language. With none installed, choosing 简体中文, or
@@ -112,7 +101,7 @@ built from a pinned Ghostty commit.
   language switches only once the font loads, and a launch that would open in Chinese opens in English until
   then.
 
-## How the native window catches up
+## How the native window caught up
 
 1. **This document.**
 2. **The entry PR**: `spike/native` becomes `native/`; `lich native` and `lich --no-window` land; the native
@@ -123,7 +112,10 @@ built from a pinned Ghostty commit.
 
 ## Cutover
 
-When the maintainer has used only the native window for a week without going back to the web one, the native
-window becomes the default. Then `frontend/`, the embedded page and `shell/` are retired, and the question of
-running the backend inside the native process (dropping RPC and WebSockets for in-process calls) is decided,
-with the native window's own measurements in hand. Until then, both windows ship.
+Decided by the maintainer on 2026-10-20: `frontend/`, the embedded page, `shell/` and `internal/chromium` were
+retired together. `lich` opens the native window; the window
+choice in Settings, `lich -- <Chromium flags>`, `--shell` and `LICH_SHELL` went with them. A release ships
+`lich` and `lich-native`.
+
+Still open: running the backend inside the native process (dropping RPC and WebSockets for in-process calls),
+to be decided with the native window's own measurements in hand.

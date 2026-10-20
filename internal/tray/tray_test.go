@@ -32,13 +32,3 @@ func TestSetLabelsStartsOnceThenRelabels(t *testing.T) {
 		t.Fatalf("second SetLabels: starts=%d relabeled=%v, want the menu rewritten in place", starts, relabeled)
 	}
 }
-
-func TestOtherOpensTheWindowShowDoesNot(t *testing.T) {
-	l := Labels{OpenNative: "Open native window", OpenWeb: "Open web window"}
-	if label, kind := l.other("web"); label != l.OpenNative || kind != "native" {
-		t.Errorf("web chosen: %q opens %q, want the native window", label, kind)
-	}
-	if label, kind := l.other("native"); label != l.OpenWeb || kind != "web" {
-		t.Errorf("native chosen: %q opens %q, want the web window", label, kind)
-	}
-}

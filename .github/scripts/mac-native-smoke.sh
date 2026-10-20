@@ -28,11 +28,7 @@ fail() {
   exit 1
 }
 
-# Stands in for the web window: holds until lich exits and closes its stdin.
-printf '#!/bin/sh\ncat > /dev/null\n' > "$RUNNER_TEMP/no-window"
-chmod +x "$RUNNER_TEMP/no-window"
-
-LICH_SHELL="$RUNNER_TEMP/no-window" "$lich" > "$diag/backend.out" 2>&1 &
+"$lich" --no-window > "$diag/backend.out" 2>&1 &
 for _ in $(seq 1 30); do
   sleep 1
   test -s "$runtime" && break

@@ -138,8 +138,8 @@ func TestNewProbesTheConfigDirItWasGiven(t *testing.T) {
 	if alive {
 		t.Error("probe called a recorded instance alive with nothing listening on its port")
 	}
-	if _, err := c.browser(); err != nil && !strings.Contains(err.Error(), "lich-shell is missing") {
-		t.Errorf("browser probe failed for an unexpected reason: %v", err)
+	if _, err := c.window(); err != nil && !strings.Contains(err.Error(), "no lich-native beside") {
+		t.Errorf("window probe failed for an unexpected reason: %v", err)
 	}
 	if len(c.detect()) == 0 {
 		t.Error("provider detection returned no rows at all — every known provider should be listed")

@@ -86,7 +86,6 @@ type settingsScreen struct {
 
 	general   generalSwitches
 	languages languageMenus
-	switcher  windowSwitch
 	notify    *notifier
 	sandbox   sandboxSettings
 	vcs       vcsSettings

@@ -25,10 +25,6 @@ func (t *Tray) ready() {
 	systray.SetTooltip("lich")
 	labels := t.currentLabels()
 	m := menu{show: systray.AddMenuItem(labels.Show, "")}
-	if t.chosen != nil {
-		label, _ := labels.other(t.chosen())
-		m.other = systray.AddMenuItem(label, "")
-	}
 	m.running = systray.AddMenuItem(labels.running(t.live()), "")
 	m.running.Disable()
 	systray.AddSeparator()
@@ -41,27 +37,14 @@ func (t *Tray) ready() {
 	go t.serve(m)
 }
 
-// menu is the tray's items; other is nil without SetOtherWindow.
+// menu is the tray's items.
 type menu struct {
-	show, other, running, quit *systray.MenuItem
+	show, running, quit *systray.MenuItem
 }
 
-// otherClicked is other's clicks, none when the item is not there.
-func (m menu) otherClicked() <-chan struct{} {
-	if m.other == nil {
-		return nil
-	}
-	return m.other.ClickedCh
-}
-
-// refresh rewrites what changes without a new language: the session count and
-// which window the other item opens.
+// refresh rewrites what changes without a new language: the session count.
 func (t *Tray) refresh(m menu, l Labels) {
 	m.running.SetTitle(l.running(t.live()))
-	if m.other != nil {
-		label, _ := l.other(t.chosen())
-		m.other.SetTitle(label)
-	}
 }
 
 func (t *Tray) serve(m menu) {
@@ -71,9 +54,6 @@ func (t *Tray) serve(m menu) {
 		select {
 		case <-m.show.ClickedCh:
 			t.show()
-		case <-m.otherClicked():
-			_, kind := t.currentLabels().other(t.chosen())
-			t.openOther(kind)
 		case <-m.quit.ClickedCh:
 			if err := t.quit(); err != nil {
 				slog.Warn("tray: quit", "err", err)

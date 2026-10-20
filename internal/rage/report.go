@@ -49,7 +49,7 @@ func render(r Report) string {
 	row(&b, "instance", r.Instance)
 	row(&b, "config dir", r.ConfigDir)
 	row(&b, "log", logLine(r.LogPath))
-	row(&b, "browser", r.Browser)
+	row(&b, "window", r.Window)
 	row(&b, "sandbox", r.Sandbox)
 
 	b.WriteString("\n## Providers\n\n")

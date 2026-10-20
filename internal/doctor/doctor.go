@@ -1,6 +1,6 @@
 // Package doctor answers "would lich start on this machine, and why not". It
 // walks the same boot the app walks — config dir, log file, the pinned listener,
-// the workspace database, the browser, the providers — and reports each step
+// the workspace database, the window, the providers — and reports each step
 // with a verdict and how long it took.
 //
 // It is a command line because the failure it diagnoses is a window that never
@@ -68,7 +68,7 @@ type Doctor struct {
 
 	bind     func(port int) error
 	instance func() (*singleton.Info, bool)
-	browser  func() (string, error)
+	window   func() (string, error)
 	detect   func() []providers.Detected
 	onPath   func(id string) []providers.Binary
 	store    func() (io.Closer, error)
@@ -85,7 +85,7 @@ func New(configDir string, getenv func(string) string) *Doctor {
 		port:      singleton.Port(getenv),
 		bind:      bindProbe,
 		instance:  func() (*singleton.Info, bool) { return Instance(configDir) },
-		browser:   Browser,
+		window:    Window,
 		detect:    Providers,
 		onPath:    OnPath,
 		store:     func() (io.Closer, error) { return store.New() },
@@ -110,7 +110,7 @@ func (d *Doctor) Run() []Check {
 		{"log", d.checkLog},
 		{"listener", func() (Status, string) { return d.checkListener(info, running) }},
 		{"store", func() (Status, string) { return d.checkStore(info, running) }},
-		{"browser", d.checkBrowser},
+		{"window", d.checkWindow},
 		{"providers", d.checkProviders},
 		{"sandbox", d.checkSandbox},
 		{"git", func() (Status, string) { return d.checkTool("git", gitWithout) }},
@@ -192,11 +192,11 @@ func (d *Doctor) checkStore(info *singleton.Info, running bool) (Status, string)
 	return OK, "the workspace database opens and its schema is current"
 }
 
-// checkBrowser resolves the window lich would open. Its absence is the one
+// checkWindow resolves the window lich would open. Its absence is the one
 // failure where lich runs perfectly and shows nothing — a package missing its
-// window, or a bare binary with no LICH_SHELL pin.
-func (d *Doctor) checkBrowser() (Status, string) {
-	path, err := d.browser()
+// window, or a bare binary with no LICH_NATIVE pin.
+func (d *Doctor) checkWindow() (Status, string) {
+	path, err := d.window()
 	if err != nil {
 		return Fail, err.Error()
 	}

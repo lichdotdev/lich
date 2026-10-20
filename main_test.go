@@ -25,7 +25,6 @@ import (
 var denied = map[string]reflect.Type{
 	"store.Close":                     reflect.TypeFor[*store.Service](),
 	"system.SetNativeWindow":          reflect.TypeFor[*system.Service](),
-	"system.SetWindowChoice":          reflect.TypeFor[*system.Service](),
 	"store.SetSessionGone":            reflect.TypeFor[*store.Service](),
 	"store.SetProjectChanged":         reflect.TypeFor[*store.Service](),
 	"store.SetConversationsOf":        reflect.TypeFor[*store.Service](),

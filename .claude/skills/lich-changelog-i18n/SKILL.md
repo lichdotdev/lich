@@ -54,9 +54,8 @@ The parser and both windows read these, so `TestTranslations` fails when one is 
   Cursor CLI, Kiro CLI), OS and app names (Linux, Windows, macOS, Wayland, Terminal.app), commands and key
   names, plus the rest of `lich-i18n`'s literal list.
 - **Interface words match the interface.** A setting, menu or button named in the English (Settings ›
-  Appearance › Window, Remove worktree, Undo) is written the way that language's catalog shows it on
-  screen: look it up in `native/i18n/locales/<lang>/` or `frontend/src/lib/i18n/locales/<lang>/` instead of
-  translating it afresh. `›` stays as the path separator.
+  Notifications, Remove worktree, Undo) is written the way that language's catalog shows it on
+  screen: look it up in `native/i18n/locales/<lang>/` instead of translating it afresh. `›` stays as the path separator.
 - **Plain release-note register** for that language, written for a developer: what changed for them, in
   the same tone and length as the English. Do not add, drop or explain.
 

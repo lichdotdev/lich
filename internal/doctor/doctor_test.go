@@ -23,7 +23,7 @@ func healthy(t *testing.T) *Doctor {
 	d := New(t.TempDir(), func(string) string { return "" })
 	d.bind = func(int) error { return nil }
 	d.instance = func() (*singleton.Info, bool) { return nil, false }
-	d.browser = func() (string, error) { return "/usr/bin/chromium", nil }
+	d.window = func() (string, error) { return "/usr/lib/lich/lich-native", nil }
 	d.detect = func() []providers.Detected {
 		return []providers.Detected{
 			{ID: "claude", Installed: true, Path: "/usr/bin/claude"},
@@ -54,7 +54,7 @@ func TestAHealthyMachineWalksTheWholeBoot(t *testing.T) {
 	for _, c := range checks {
 		names = append(names, c.Name)
 	}
-	want := []string{"home", "log", "listener", "store", "browser", "providers", "sandbox", "git", "gh"}
+	want := []string{"home", "log", "listener", "store", "window", "providers", "sandbox", "git", "gh"}
 	if strings.Join(names, ",") != strings.Join(want, ",") {
 		t.Errorf("checks ran as %v, want the boot order %v", names, want)
 	}
@@ -221,15 +221,15 @@ type closerFunc func() error
 
 func (c closerFunc) Close() error { return c() }
 
-func TestAMissingBrowserStopsALaunchAndMissingProvidersDoNot(t *testing.T) {
+func TestAMissingWindowStopsALaunchAndMissingProvidersDoNot(t *testing.T) {
 	d := healthy(t)
-	d.browser = func() (string, error) { return "", errors.New("no window beside the lich binary") }
+	d.window = func() (string, error) { return "", errors.New("no lich-native beside the lich binary") }
 	d.detect = func() []providers.Detected { return []providers.Detected{{ID: "claude"}} }
 
 	checks := statuses(d.Run())
 
-	if checks["browser"].Status != Fail {
-		t.Errorf("browser = %s, want fail — lich runs and shows nothing", checks["browser"].Status)
+	if checks["window"].Status != Fail {
+		t.Errorf("window = %s, want fail — lich runs and shows nothing", checks["window"].Status)
 	}
 	if checks["providers"].Status != Warn {
 		t.Errorf("providers = %s, want warn — the window still opens", checks["providers"].Status)

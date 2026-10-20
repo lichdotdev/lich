@@ -1,8 +1,8 @@
 # lich
 
 `lich` is an **ADE (agentic development environment) for AI coding agents**; the agents it runs, Claude Code,
-Codex and the rest, are what this codebase calls harnesses. A Go backend serves an embedded React frontend to a system
-Chromium window in `--app` mode — no Electron, no webview toolkit (`docs/chromium-shell.md`). It is built for
+Codex and the rest, are what this codebase calls harnesses. A pure-Go backend drives a native window, `native/`
+(Gio, libghostty-vt), over a loopback contract (`docs/native-window.md`). It is built for
 other developers to use, not only its author: docs, errors and defaults answer to a stranger. Linux first;
 Windows and macOS are supported, with no hardware here for either.
 
@@ -14,37 +14,34 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
 - **Deliberate limits and the traps they set**: `docs/ceilings.md`. Read it before changing anything a session
   touches — spawn and naming, hooks, transcripts and cost, git and worktree flows, persistence, plugin install.
   A change that sets a new trap or closes an old one moves that file in the same PR.
-- **Frontend rules and the visual system**: `frontend/CLAUDE.md` and `frontend/DESIGN.md`.
 - **Session hooks**: `docs/hooks/` is the canonical, contract-first spec. lich owns the server side; the scripts
   live in the companion repo `lichdotdev/lich-plugin`, so an endpoint or payload change breaks a repo this one
   cannot see — move the contract first, then both sides.
-- **Every task**: `task --list`. `task dev` gets its own DB, port and Chromium profile; it never touches an
-  installed lich's workspace. That isolation is one `pkill` wide: a pattern like `chromium-profile` matches the
-  running lich's own window, and killing it exits that backend and every session under it. Kill a rig's browser
-  by the PID it was launched with.
-- **Building, `task dev` and the local gate from an agent session**: `.claude/skills/lich-build-dev/`, the
-  procedure and the traps of running them inside the user's own lich window.
+- **Every task**: `task --list`. `native/slice.sh` runs a window on its own backend, DB and port; it never
+  touches an installed lich's workspace. That isolation is one `pkill` wide: a pattern like `lich` matches the
+  running lich's own backend, and killing it ends every session under it. Kill a rig by the PID it was
+  launched with.
+- **Building, a rig window and the local gate from an agent session**: `.claude/skills/lich-build-dev/`, the
+  procedure and the traps of running them inside the user's own lich.
 - **Translations**: two independent languages, the interface and the prompt language (what lich and
   lich-plugin hand agents). `.claude/skills/lich-i18n/` maps where a string lands and every point a new
-  language touches; the rules for writing a message are in `frontend/CLAUDE.md` › Translations.
+  language touches, and the rules for writing a message.
 - **User-facing feature history**: `CHANGELOG.md`.
 
 ## Rules of the codebase
 
-- Go 1.27, pure Go: `CGO_ENABLED=0` and a fully static binary are a constraint, not a default. The Linux
-  window is a *separate* binary, `shell/` (Rust on CEF via a kurogane fork), launched with the same argv as a
-  system browser plus one switch of its own — nothing about it reaches the Go build (`docs/chromium-shell.md`).
-  The native window, `native/`, is the other exception: its own Go module and binary, `lich-native`, built
-  with cgo (Gio, libghostty-vt), talking to the backend only over RPC, `/events`, `/ws` and `/blob`, never
-  importing `internal/` (`docs/native-window.md`).
+- Go 1.27, pure Go: `CGO_ENABLED=0` and a fully static binary are a constraint, not a default. The window,
+  `native/`, is the one exception: its own Go module and binary, `lich-native`, built with cgo (Gio,
+  libghostty-vt), talking to the backend only over RPC, `/events`, `/ws` and `/blob`, never importing
+  `internal/` (`docs/native-window.md`).
 - OS-specific code is selected by build tags behind small seams, never by runtime checks — the PTY is the model
   (`internal/terminal`).
 - No literal user-visible or agent-facing text: a string a person reads on a lich screen, or that lich types
   into a session, goes through the catalogs and lands in **every** locale in the same PR (`lich-i18n` skill).
   English is the source; tests stay English. Error text, `CHANGELOG.md`, MCP tool descriptions and CLI help
   stay English by design; the What's new dialog reads a release's translations from `changelog/<locale>.md`.
-- Service shapes are hand-owned in `frontend/src/lib/api-types.ts`: touch a Go struct's JSON tags and that mirror
-  moves in the same change. There is no codegen.
+- Service shapes are hand-owned in `native/lichclient`: touch a Go struct's JSON tags and its mirror there moves
+  in the same change. There is no codegen.
 - A fact more than one place shows (git status, a pull request, plan quota, a session's profile or status) has
   one store per window, fed by one reader, and every screen reads that store. A change to the fact reaches the
   store as an event on `/events`, emitted by the backend once the change is true (after the respawn, not before),
@@ -54,25 +51,16 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
 ## Local Gate (before every commit / PR)
 
 - **Run from inside a lich session, the gate runs in a memory jail** (Linux, systemd): an unbounded
-  `go test ./...`, the cross-compile loop and the frontend build starve the lich window you are running in,
-  and its Chromium dies with SIGBUS (`docs/ceilings.md` › the gate kills the window). Run each step
-  sequentially through:
+  `go test ./...`, the cross-compile loop and the native build starve the lich you are running in
+  (`docs/ceilings.md` › the gate kills the window). Run each step sequentially through:
   `T=/var/tmp/lich-gate; mkdir -p $T; systemd-run --user --scope --quiet -p MemoryMax=6G -p MemorySwapMax=2G --nice=10 env GOTMPDIR=$T TMPDIR=$T GOFLAGS=-p=2 <step>`.
   Never start two gate steps at once. The directory stays short: `go test` hands GOTMPDIR to the tests as
   their TMPDIR, and a deeper one pushes the sandbox suite's Unix sockets past the 108-byte path limit.
 - `gofmt -l .` clean (fix with `gofmt -w .`) and `go vet ./...` clean.
-- `cd frontend && pnpm exec biome ci .` **exit 0** — biome is the frontend's gofmt + vet (fix with
-  `pnpm format`). Read the exit code, never the last lines: `pnpm check` ends on the same
-  "Some errors were emitted" banner whether the count is one error or none, and the standing 17 a11y
-  warnings sit right above it. A single unformatted file has reached `main` this way.
-- `go test ./...` (backend) and `cd frontend && pnpm test` (frontend) green — or `task test` for both.
-- Touched `shell/`? `cd shell && cargo fmt --check && cargo clippy --release --all-targets -- -D warnings &&
-  cargo test --release` clean (`--release` shares the CEF build with `task build:shell`).
-- `cd frontend && pnpm build` succeeds (tsc typecheck + vite).
-- Touched `native/`? From `native/`, `gofmt -l .`, `go vet ./...` and `go test ./...` clean, with
-  `PKG_CONFIG_PATH` pointing at a libghostty-vt built from the commit in `native/GHOSTTY_COMMIT`
-  (`native/slice.sh` says how). Changed what it draws? Take a `-shot` and look at it; the maintainer's review
-  in a real window is the one to trust.
+- `go test ./...` green.
+- From `native/`, `gofmt -l .`, `go vet ./...` and `go test ./...` clean, with `PKG_CONFIG_PATH` pointing at a
+  libghostty-vt built from the commit in `native/GHOSTTY_COMMIT` (`native/slice.sh` says how). Changed what it
+  draws? Take a `-shot` and look at it; the maintainer's review in a real window is the one to trust.
 - Shipped anything a user can see? Its `CHANGELOG.md` `[Unreleased]` entry lands in the same PR — the release notes
   are read from there, so an entry written later is an entry that missed its release.
 - Touched an OS seam or a `_test.go` build tag? Run the same cross-compile loop CI runs:
@@ -84,11 +72,10 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
 
 Non-negotiable rules. A violation means the work is not done.
 
-1. **Test coverage ≥ 80%**, backend and frontend. CI fails below the bar on each side's total: backend
-   in `.github/scripts/go-test-summary.sh`, frontend in `coverage.thresholds` of `frontend/vitest.config.ts`. An
-   exclusion goes in that config, never into a skipped test. OS/framework boundaries (the PTY, the Chromium
-   launcher/zenity subprocesses, WebSocket wiring, the `main` bootstrap, xterm.js internals) are the documented
-   exception: cover the pure logic and leave the boundary itself alone.
+1. **Test coverage ≥ 80%** on the backend. CI fails below the bar on its total
+   (`.github/scripts/go-test-summary.sh`). An exclusion goes in that script, never into a skipped test.
+   OS/framework boundaries (the PTY, the zenity subprocesses, WebSocket wiring, the `main` bootstrap) are the
+   documented exception: cover the pure logic and leave the boundary itself alone.
 2. **Tests answer to the contract, never the other way round.** Never weaken, skip, delete or rewrite a test to buy
    a green run or a coverage number. A test may change for exactly two reasons: the contract changed, or the test
    asserted something the contract never promised — name which one in the diff. When in doubt, change the product,

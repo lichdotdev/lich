@@ -240,21 +240,7 @@
     }
   },
   "windowSetting": {
-    "title": "ウィンドウ",
-    "searchWords": "ウェブ ネイティブ 実験的 ウィンドウ 開く",
-    "description": "lich が開くウィンドウです。ネイティブウィンドウは新しく、まだ実験的です。起動に失敗した場合は、代わりにウェブウィンドウを開きます。",
-    "choice": {
-      "web": {
-        "label": "ウェブ"
-      },
-      "native": {
-        "label": "ネイティブ（実験的）"
-      }
-    },
-    "switch": {
-      "later": "後で",
-      "now": "今すぐ切り替える"
-    }
+    "title": "ウィンドウ"
   },
   "restoreSetting": {
     "title": "復元されたセッション",
@@ -412,11 +398,6 @@
   },
   "settingsGeneral": {
     "notifySearchWords": "デスクトップ 通知 アラート ベル"
-  },
-  "settingsWindow": {
-    "switchTitle": "今すぐウェブウィンドウに切り替えますか？",
-    "switchDescription": "このウィンドウが閉じてウェブウィンドウが開きます。セッションは実行を続けます。",
-    "switchFailed": "ウェブウィンドウを開けませんでした：{error}"
   },
   "settingsHelp": {
     "bugDescription": "バージョンとプラットフォームが入力された状態で、ブラウザーでバグ報告フォームを開きます。lich が issue を作成するのではなく、あなた自身が書きます。ターミナルで `lich rage` を実行すると、ログ、バージョン、このマシンで lich が見つけた情報を 1 つのアーカイブにまとめて添付できます。",

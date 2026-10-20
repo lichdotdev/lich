@@ -1,15 +1,14 @@
 name: native
 
-# The native window (native/) is its own Go module and its own binary, built
-# with cgo: Gio needs it for Wayland, X11 and EGL, and libghostty-vt is a C
-# library (docs/native-window.md). It never reaches the lich binary's build, so
-# it gets this job instead of a step in ci.yml, and runs only when it changes.
+# The window (native/) is its own Go module and its own binary, built with
+# cgo: Gio needs it for Wayland, X11 and EGL, and libghostty-vt is a C library
+# (docs/native-window.md). It never reaches the lich binary's build, so it gets
+# these jobs instead of a step in ci.yml. They run on every change, not only
+# native/'s: the smoke runs the window on the backend the change built.
 on:
   pull_request:
-    paths: [native/**, .github/workflows/native.yml, .github/scripts/mac-native-*.sh]
   push:
     branches: [main]
-    paths: [native/**, .github/workflows/native.yml, .github/scripts/mac-native-*.sh]
 
 permissions:
   contents: read
@@ -152,14 +151,9 @@ jobs:
             go test -c -o "$RUNNER_TEMP/out/tests/$rel/pkg.test.exe" "./$rel"
           done
 
-      # The native window reads nothing from the embedded frontend, so an empty
-      # dist is enough for go:embed.
       - name: Build lich.exe
         working-directory: .
-        run: |
-          mkdir -p frontend/dist
-          touch frontend/dist/index.html
-          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o "$RUNNER_TEMP/out/lich.exe" .
+        run: GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o "$RUNNER_TEMP/out/lich.exe" .
 
       - uses: actions/upload-artifact@v7
         with:
@@ -288,14 +282,9 @@ jobs:
       - name: Check what lich-native asks of a machine
         run: bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-native"
 
-      # The native window reads nothing from the embedded frontend, so an empty
-      # dist is enough for go:embed.
       - name: Build the backend
         working-directory: .
-        run: |
-          mkdir -p frontend/dist
-          touch frontend/dist/index.html
-          CGO_ENABLED=0 go build -o "$RUNNER_TEMP/lich" .
+        run: CGO_ENABLED=0 go build -o "$RUNNER_TEMP/lich" .
 
       - name: Run the window against the backend
         working-directory: .

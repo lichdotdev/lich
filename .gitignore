@@ -1,16 +1,9 @@
 .task
 bin
-# CEF distribution build/cef.sh fetches here (CI does too)
-.cef
 # Stray root binaries from `go build .` (use `task build` -> bin/)
 /lich
 # IDE
 .idea/
-frontend/dist
-frontend/node_modules
-frontend/coverage
-# tsc --build incremental cache
-*.tsbuildinfo
 # Claude Code local state (skills restore from skills-lock.json), except the
 # project's own skills, which are versioned here
 .claude/*

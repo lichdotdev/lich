@@ -142,9 +142,7 @@
   "tray": {
     "show": "Show lich",
     "running": "Sessions running: {count}",
-    "quit": "Quit lich",
-    "openNative": "Open native window",
-    "openWeb": "Open web window"
+    "quit": "Quit lich"
   },
   "closeDialog": {
     "title": "Keep lich running?",

@@ -16,8 +16,8 @@ import (
 	"time"
 )
 
-// Runs the real backend and production Inno script. Only Chromium is a fixture:
-// a WinForms window with a child holding libcef.dll until a delayed clean close.
+// Runs the real backend and production Inno script, with a stand-in for the
+// native window's binary, on a lich started without a window.
 func TestWindowsInstallerE2E(t *testing.T) {
 	root, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
@@ -27,7 +27,7 @@ func TestWindowsInstallerE2E(t *testing.T) {
 	install := filepath.Join(work, "installed lich")
 	build := filepath.Join(work, "build", "windows")
 	bin := filepath.Join(work, "bin")
-	for _, dir := range []string{install, build, filepath.Join(bin, "shell")} {
+	for _, dir := range []string{install, build, bin} {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -35,9 +35,6 @@ func TestWindowsInstallerE2E(t *testing.T) {
 	for _, name := range []string{"lich.iss", "lich.ico"} {
 		copyFixture(t, filepath.Join(root, "build", "windows", name), filepath.Join(build, name))
 	}
-	csc := filepath.Join(os.Getenv("WINDIR"), "Microsoft.NET", "Framework64", "v4.0.30319", "csc.exe")
-	runFixture(t, root, csc, "/nologo", "/target:winexe", "/r:System.Windows.Forms.dll",
-		"/out:"+filepath.Join(bin, "shell", "lich-shell.exe"), filepath.Join(root, "internal", "appupdate", "testdata", "window.cs"))
 	asset := "lich-v0.8.0-windows-amd64-setup.exe"
 	installer := filepath.Join(bin, "lich-setup.exe")
 	srv := installerReleaseFixture(t, installer, asset)
@@ -46,11 +43,7 @@ func TestWindowsInstallerE2E(t *testing.T) {
 	oldExe := filepath.Join(install, "lich.exe")
 	runFixture(t, root, "go", "build", "-overlay", overlay, "-ldflags=-H=windowsgui -X main.version=0.7.0", "-o", oldExe, ".")
 	runFixture(t, root, "go", "build", "-overlay", overlay, "-ldflags=-H=windowsgui -X main.version=0.8.0", "-o", filepath.Join(bin, "lich.exe"), ".")
-	if err := os.CopyFS(filepath.Join(install, "shell"), os.DirFS(filepath.Join(bin, "shell"))); err != nil {
-		t.Fatal(err)
-	}
-	writeFixture(t, filepath.Join(install, "shell", "libcef.dll"), []byte("0.7.0"))
-	writeFixture(t, filepath.Join(bin, "shell", "libcef.dll"), []byte("0.8.0"))
+	writeFixture(t, filepath.Join(install, "lich-native.exe"), []byte("0.7.0"))
 	writeFixture(t, filepath.Join(bin, "lich-native.exe"), []byte("0.8.0"))
 	t.Setenv("VERSION", "0.8.0")
 	iscc := filepath.Join(os.Getenv("ProgramFiles(x86)"), "Inno Setup 6", "ISCC.exe")
@@ -108,20 +101,18 @@ func runInstalledUpdate(t *testing.T, install, bin, work string) {
 	t.Helper()
 	t.Setenv("APPDATA", filepath.Join(work, "config"))
 	t.Setenv("LICH_LISTEN_PORT", "47983")
-	t.Setenv("LICH_UPDATE_EVENTS", filepath.Join(work, "events.txt"))
-	t.Setenv("LICH_SHELL", "")
 	t.Setenv("CGO_ENABLED", "0")
-	cmd := exec.Command(filepath.Join(install, "lich.exe"), "--", "--lich-e2e-flag")
+	cmd := exec.Command(filepath.Join(install, "lich.exe"), "--no-window")
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { cleanupInstalledFixture(t, install, work, cmd.Process.Pid) })
 	waitFixture(t, func() bool {
-		return fixtureVersion(work) == "0.7.0" && strings.Contains(fixtureEvents(work), "window ready 0.7.0")
+		return fixtureVersion(work) == "0.7.0"
 	})
 	oldToken := fixtureToken(work)
 	resp, err := http.Post("http://127.0.0.1:47983/rpc/appupdate.Apply?token="+oldToken, "application/json", strings.NewReader("[]"))
-	// Closing the window may end the RPC connection before its response flushes.
+	// The exit Apply starts may end the RPC connection before its response flushes.
 	if err == nil {
 		resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
@@ -129,7 +120,7 @@ func runInstalledUpdate(t *testing.T, install, bin, work string) {
 		}
 	}
 	waitFixture(t, func() bool {
-		return fixtureVersion(work) == "0.8.0" && strings.Contains(fixtureEvents(work), "window ready 0.8.0")
+		return fixtureVersion(work) == "0.8.0"
 	})
 	if err := cmd.Wait(); err != nil {
 		t.Fatalf("old lich did not exit cleanly: %v", err)
@@ -143,7 +134,7 @@ func runInstalledUpdate(t *testing.T, install, bin, work string) {
 func cleanupInstalledFixture(t *testing.T, install, work string, pid int) {
 	t.Helper()
 	if t.Failed() {
-		for _, path := range []string{filepath.Join(install, ".lich-update-setup.log"), filepath.Join(work, "config", "lich", "lich.log"), filepath.Join(work, "events.txt")} {
+		for _, path := range []string{filepath.Join(install, ".lich-update-setup.log"), filepath.Join(work, "config", "lich", "lich.log")} {
 			data, err := os.ReadFile(path)
 			t.Logf("%s: %v\n%s", path, err, data)
 		}
@@ -174,20 +165,6 @@ func assertInstalledUpdate(t *testing.T, install, bin, work string) {
 	if sha256.Sum256(installed) != sha256.Sum256(want) {
 		t.Fatal("installed exe was not replaced")
 	}
-	// The window Inno Setup launched again kept the switch lich was started
-	// with (restart.ArgsEnv), as the one before the update had it.
-	if events := fixtureEvents(work); !strings.Contains(events, "window ready 0.8.0 flagged") {
-		t.Fatalf("the relaunched window lost lich's switches:\n%s", events)
-	}
-	events := fixtureEvents(work)
-	last := -1
-	for _, event := range []string{"window ready 0.7.0", "close requested 0.7.0", "locks released", "window closed 0.7.0", "window ready 0.8.0"} {
-		index := strings.Index(events, event)
-		if index <= last {
-			t.Fatalf("incorrect shutdown order for %q:\n%s", event, events)
-		}
-		last = index
-	}
 	log, err := os.ReadFile(filepath.Join(install, ".lich-update-setup.log"))
 	if err != nil {
 		t.Fatal(err)
@@ -197,7 +174,7 @@ func assertInstalledUpdate(t *testing.T, install, bin, work string) {
 	if !strings.Contains(text, "outgoing process exited before file replacement") {
 		t.Fatalf("installer did not await lich:\n%s", text)
 	}
-	t.Logf("installer replaced exe and locked DLL; successor owns port 47983\n%s", events)
+	t.Log("installer replaced lich.exe and lich-native.exe; successor owns port 47983")
 }
 
 func fixtureToken(work string) string {
@@ -228,11 +205,6 @@ func fixtureVersion(work string) string {
 		return ""
 	}
 	return info.Version
-}
-
-func fixtureEvents(work string) string {
-	data, _ := os.ReadFile(filepath.Join(work, "events.txt"))
-	return string(data)
 }
 
 func waitFixture(t *testing.T, ready func() bool) {

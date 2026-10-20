@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> [!IMPORTANT]
+> **Everyone: the native window is now lich's only window.** lich opens it on every
+> launch; the web window and its embedded Chromium are gone.
+
 ### Added
 
 - **Desktop notifications you can click, in the native window on Windows and macOS.** As on Linux, a session that needs your input or finished its turn raises a notification with Open and Dismiss: Open brings lich up on that session's card, and the notification goes away once you answer or open the session. On macOS it needs lich run from Lich.app and asks once for permission; on Windows a session waiting on you keeps its notification on screen until you act on it.
+
+### Removed
+
+- The web window. lich opens the native window, and a release no longer ships Chromium. The Window choice in Settings (web or native) and the tray item that opened the other window are gone, and so are `lich -- <chromium flags>`, `lich --shell` and `LICH_SHELL`. If the native window cannot start, lich says why and where its log is.
 
 ### Fixed
 

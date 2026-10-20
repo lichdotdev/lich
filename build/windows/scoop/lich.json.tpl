@@ -7,9 +7,9 @@
         "There is no bucket repository, and nothing on a branch to bump: a manifest that pins one release",
         "and lives on main is stale the moment the next tag lands, which is how 0.46.0 shipped installing",
         "0.45.0.",
-        "One asset: lich-<tag>-windows-amd64.zip is the portable package, lich.exe with the window beside it as",
-        "shell\\ at the zip's root, so Scoop's default extraction lands both in the app directory. That is the",
-        "layout build/windows/lich.iss installs too."
+        "One asset: lich-<tag>-windows-amd64.zip is the portable package, lich.exe with lich-native.exe, the",
+        "window, beside it at the zip's root, so Scoop's default extraction lands both in the app directory.",
+        "That is the layout build/windows/lich.iss installs too."
     ],
     "version": "@VERSION@",
     "description": "A terminal-first ADE for the coding agents you already use",

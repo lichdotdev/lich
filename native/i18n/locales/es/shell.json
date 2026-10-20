@@ -142,9 +142,7 @@
   "tray": {
     "show": "Mostrar lich",
     "running": "Sesiones en ejecución: {count}",
-    "quit": "Salir de lich",
-    "openNative": "Abrir la ventana nativa",
-    "openWeb": "Abrir la ventana web"
+    "quit": "Salir de lich"
   },
   "closeDialog": {
     "title": "¿Mantener lich en ejecución?",

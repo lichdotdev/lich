@@ -1,22 +1,18 @@
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="frontend/public/appicon.png" />
-    <img src="frontend/public/appicon-light.png" alt="lich" width="88" height="88" />
-  </picture>
+  <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <strong>简体中文</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
   <p><strong>终端优先的 ADE，接入你正在用的 AI 编程智能体。</strong></p>
   <p>
     打开项目，在真正的终端里运行 Claude Code、Codex、opencode 等智能体，git 也一直在
-    眼前：worktree、diff 和 Pull Request，都不用离开这个窗口。整个程序就是一个静态 Go
-    二进制文件，不用 Electron：在 Linux、Windows 和 macOS 上，界面都在 lich 自带的内嵌
-    Chromium 里打开。
+    眼前：worktree、diff 和 Pull Request，都不用离开这个窗口。不用 Electron，也不用浏览器：
+    在 Linux、Windows 和 macOS 上，lich 都用 Gio 绘制自己的原生窗口。
   </p>
   <p><a href="https://lichdotdev.github.io/lich/index.zh-CN.html"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
+    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
@@ -40,7 +36,7 @@
   可执行文件只需指定一次，之后可以设一个默认，也可以每个会话单独选。lich 能从会话里
   *读出*哪些信息，各智能体不尽相同，详见[各智能体支持情况](#各智能体支持情况)一表。
 - **用的是真正的终端。** shell 由 PTY 驱动，每个项目可以开多个，用 GPU 渲染；滚动
-  缓冲区支持搜索，整页刷新后也不会丢。给某个终端设一个入口命令（`lazygit`、`k9s`、
+  缓冲区支持搜索，关掉窗口再打开也不会丢。给某个终端设一个入口命令（`lazygit`、`k9s`、
   `pnpm dev`），它每次打开都直接进入这个工具，Linux、macOS 和 Windows 上都一样：
   启动前不加载 shell rc 或 PowerShell profile，所以你这里能用的入口命令，分享给别人
   也照样能用。底栏会跟着 `cd` 切换目录并显示当前分支；Claude Code、Codex 和 Kiro CLI
@@ -64,7 +60,7 @@
   凭据和磁盘上的其他仓库，在沙箱里根本看不到；放手让智能体跳过权限确认时，这就是对应的
   防护。Linux 上用 bubblewrap，macOS 上用 `sandbox-exec`；它不能用来防御恶意代码，
   它拦不住哪些事，见 [`docs/ceilings.md`](docs/ceilings.md)。
-- **在原处审查 diff。** CodeMirror 面板在实时文件树旁显示工作区改动，可以按需折叠只改了
+- **在原处审查 diff。** diff 面板在实时文件树旁显示工作区改动，可以按需折叠只改了
   空白的部分，改过的图片或 PDF 会对比显示改动前后。选中内容后右键，就能针对这些行写评论；
   这批评论会合成一条 prompt 粘贴到会话里，但不会自动发送。面板的“代码”标签页可以浏览
   检出目录，并搜索文件内容。
@@ -106,11 +102,11 @@
 | 在命令面板里搜索对话内容 | 有 | 有 | 有 | 有 | 有 | 有 | 无 | 有 |
 | 在命令面板的“历史”标签页恢复在 lich 之外开始的对话 | 有 | 有 | 有 | 有 | 有 | Linux；macOS 和 Windows 未测试 | 有 | 有 |
 | 长文本粘贴可以作为可编辑的文本出现，不折叠成占位符（设置 › 提供商，默认关闭） | 有 | 无 | 无 | 有 | 未测量 | 无，会变成 `paste_N.txt` 附件 | 无 | 有 |
-| 把对话分叉到新的 worktree；在原生窗口里也可以分叉到原检出目录 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
-| 在智能体自己的应用里恢复另一张卡片已打开的对话时，原生窗口会发出警告 | 有 | 在你下一次发提示词时 | 在你下一次发提示词时，未测试 | 无 | 有 | 在它下一次调用工具时 | 无 | 有 |
+| 把对话分叉到新的 worktree，也可以分叉到原检出目录 | 有 | 有 | 无 | 有 | 无 | 无 | 无 | 无 |
+| 在智能体自己的应用里恢复另一张卡片已打开的对话时会发出警告 | 有 | 在你下一次发提示词时 | 在你下一次发提示词时，未测试 | 无 | 有 | 在它下一次调用工具时 | 无 | 有 |
 | 以指定的推理强度打开会话 | 有 | 有 | 有 | 无 | 有 | 无 | 写在模型名里 | 有 |
 | 以 ultracode 模式打开会话 | 有 | 无 | 无 | 无 | 无 | 无 | 无 | 无 |
-| 多个账号以配置档案并存，各自独立完整登录；会话换到另一个账号后仍在同一张卡片里继续（原生窗口，实验性功能：设置 › 提供商） | 有 | 有，每个配置档案有自己的插件，“个人”的设置由所有配置档案共用 | 无 | 有，在终端卡片里登录；会话不能换到另一个配置档案，因为对话和登录信息存在同一个数据库里 | 有，在终端卡片里登录，所有配置档案共用设置 | 未测量 | Linux 和 Windows（macOS 上登录信息在钥匙串里），在终端卡片里登录，`mcp.json`、hooks 和 skills 由所有配置档案共用 | 仅 Linux（macOS 把登录信息放在钥匙串里，Windows 上没有办法迁移），在终端卡片里登录，对话由所有配置档案共用 |
+| 多个账号以配置档案并存，各自独立完整登录；会话换到另一个账号后仍在同一张卡片里继续（设置 › 提供商） | 有 | 有，每个配置档案有自己的插件，“个人”的设置由所有配置档案共用 | 无 | 有，在终端卡片里登录；会话不能换到另一个配置档案，因为对话和登录信息存在同一个数据库里 | 有，在终端卡片里登录，所有配置档案共用设置 | 未测量 | Linux 和 Windows（macOS 上登录信息在钥匙串里），在终端卡片里登录，`mcp.json`、hooks 和 skills 由所有配置档案共用 | 仅 Linux（macOS 把登录信息放在钥匙串里，Windows 上没有办法迁移），在终端卡片里登录，对话由所有配置档案共用 |
 | 主账号里信任过的文件夹，在其他配置档案里打开时都不再问“trust this folder?” | 有 | 有 | 无配置档案 | 本来就不问 | 本来就不问 | 未测量 | 有 | 本来就不问 |
 | 沙箱会话打开时不问“trust this folder?” | 有 | 有 | 有 | 本来就不问 | 本来就不问 | 有，也不再问是否初始化项目 | 有 | 本来就不问 |
 | 信任过的文件夹，其 worktree 打开时不问“trust this folder?” | 有 | 有 | 有 | 本来就不问 | 本来就不问 | 有，也不再问是否初始化项目 | 有 | 本来就不问 |
@@ -169,7 +165,7 @@ macOS 上 cask 会安装 `Lich.app`，所以 lich 在 `/Applications` 和运行�
 - **智能体**：在设置 › 提供商里设置每个智能体的可执行文件路径，以及所有项目的默认智能体。
   当前项目在那里的那一行可以覆盖这个选择；点**清除**会去掉覆盖，之后默认值的改动就会自动
   生效。没有设置路径时，会话会运行登录 shell 的 `PATH` 里找到的第一个该智能体可执行文件；
-  在原生窗口里，“可执行文件”一栏会显示具体是哪个文件及其版本，并列出 `PATH` 里的其他版本，
+  “可执行文件”一栏会显示具体是哪个文件及其版本，并列出 `PATH` 里的其他版本，
   `lich doctor` 也会对此发出警告。要指定其中一个，在“可执行文件”里填写它的路径（对应设置项
   `provider.<id>.bin`，例如 `provider.codex.bin`）。
   只要 lich 能读到套餐信息，智能体那一节开头就会显示套餐剩余额度。底栏显示哪些内容，在
@@ -201,19 +197,20 @@ Windows 安装程序装的版本会自动原地更新；通过 Homebrew、Scoop�
 
 ## 从源码构建
 
-后端是纯 Go（Go 1.27，`CGO_ENABLED=0`），通过本地回环监听器（HTTP RPC + WebSocket，
-token 鉴权）提供内嵌的 React 18 / TypeScript / Vite 前端。终端用 xterm.js 加 WebGL
-插件；代码和 diff 界面用 CodeMirror 6。选择 Chromium 外壳的决策记录见
-[`docs/chromium-shell.md`](docs/chromium-shell.md)。前置条件：**Go 1.27.0+**、
-**Node + pnpm** 和 **[Task](https://taskfile.dev)**；构建 Go 二进制文件不需要 C 工具链。
-窗口（`shell/`，基于 CEF 的 Rust 程序）还需要 Rust 工具链，Linux 上另需 Chromium 的开发库，
-Windows 上另需 MSVC，详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+lich 由两个二进制文件组成。后端 `lich` 是纯 Go（Go 1.27，`CGO_ENABLED=0`，一个静态
+二进制文件），通过本地回环监听器（HTTP RPC + WebSocket，token 鉴权）提供会话。窗口
+`lich-native` 是 `native/` 下独立的 Go 模块，用 cgo 构建：由 [Gio](https://gioui.org) 绘制，
+终端用 `libghostty-vt`，代码和 diff 界面用 [godemirror](https://github.com/lichdotdev/godemirror)。
+前置条件：**Go 1.27.0+** 和 **[Task](https://taskfile.dev)**；窗口另需 C 工具链、Gio 的系统软件包，
+以及用 Zig 0.16 从 `native/GHOSTTY_COMMIT` 记录的 Ghostty 提交构建的 `libghostty-vt`。
+构建方法见 [`native/slice.sh`](native/slice.sh)，窗口说明见
+[`docs/native-window.md`](docs/native-window.md)。
 
 ```bash
-task dev      # 热重载开发模式（Vite 跑在 :9245）
-task build    # 生产二进制文件 -> bin/lich
-task run      # 构建并运行
-task test     # Go 与前端测试套件
+task build          # 后端二进制文件 -> bin/lich
+task build:native   # 窗口 -> bin/lich-native
+task run            # 构建并运行
+task test           # Go 测试套件
 ```
 
 在本地打包 Linux 发布版本（需要 [nfpm](https://nfpm.goreleaser.com/)）：

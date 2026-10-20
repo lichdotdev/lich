@@ -1,22 +1,19 @@
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="frontend/public/appicon.png" />
-    <img src="frontend/public/appicon-light.png" alt="lich" width="88" height="88" />
-  </picture>
+  <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <strong>한국어</strong> · <a href="README.ru.md">Русский</a></p>
   <p><strong>이미 쓰고 있는 코딩 에이전트를 위한 터미널 중심 ADE.</strong></p>
   <p>
     프로젝트를 열고, Claude Code, Codex, opencode 같은 에이전트를 실제 터미널에서
     실행하고, worktree와 diff, 풀 리퀘스트까지 git 작업을 창을 벗어나지 않고 한눈에
-    볼 수 있습니다. 정적 Go 바이너리 하나로 동작하며 Electron은 쓰지 않습니다. UI는
-    Linux, Windows, macOS 모두에서 lich에 내장된 Chromium으로 열립니다.
+    볼 수 있습니다. Electron도 브라우저도 쓰지 않습니다. Linux, Windows, macOS 모두에서
+    lich는 Gio로 직접 그리는 네이티브 창으로 열립니다.
   </p>
   <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
     <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Shell" src="https://img.shields.io/badge/shell-embedded%20Chromium%20(CEF)-4285F4?logo=googlechrome&logoColor=white" />
+    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
@@ -41,7 +38,7 @@ lich로 할 수 있는 일:
   *읽어 올* 수 있는 정보는 프로바이더마다 다르며,
   [프로바이더 지원](#프로바이더-지원) 표에 정리해 두었습니다.
 - **실제 터미널을 그대로 씁니다.** 프로젝트마다 PTY 기반 셸을 여러 개 띄울 수 있고,
-  렌더링은 GPU가 맡습니다. 스크롤백은 검색할 수 있고 페이지를 완전히 새로 고쳐도
+  렌더링은 GPU가 맡습니다. 스크롤백은 검색할 수 있고 창을 닫았다가 다시 열어도
   사라지지 않습니다. 셸에 `lazygit`, `k9s`, `pnpm dev` 같은 엔트리포인트를 지정하면
   Linux, macOS, Windows 어디서든 매번 그 도구가 바로 열립니다. 셸 rc나 PowerShell
   프로필을 먼저 불러오지 않기 때문에, 내 환경에서 동작하는 엔트리포인트는 공유받은
@@ -73,7 +70,7 @@ lich로 할 수 있는 일:
   확인을 건너뛰도록 허용할 때 위험을 상쇄해 주는 장치입니다. Linux에서는 bubblewrap,
   macOS에서는 `sandbox-exec`를 씁니다. 악성 코드를 막아 주는 보안 경계는 아니며, 무엇을
   막지 못하는지는 [`docs/ceilings.md`](docs/ceilings.md)에 정리되어 있습니다.
-- **diff를 읽는 바로 그 자리에서 리뷰합니다.** CodeMirror 독이 작업 중인 변경 사항을
+- **diff를 읽는 바로 그 자리에서 리뷰합니다.** diff 독이 작업 중인 변경 사항을
   실시간 파일 트리 옆에 보여 줍니다. 원하면 공백만 바뀐 변경은 접어 두고, 바뀐 이미지나
   PDF는 변경 전후를 함께 보여 줍니다. 선택 영역을 우클릭하면 해당 줄에 코멘트를 달 수
   있고, 모아 둔 코멘트는 프롬프트 하나로 묶여 세션에 붙여 넣어지며 전송되지는 않습니다.
@@ -118,11 +115,11 @@ lich로 할 수 있는 일:
 | 팔레트에서 대화 내용 검색 | 예 | 예 | 예 | 예 | 예 | 예 | 아니요 | 예 |
 | lich 밖에서 시작한 대화를 팔레트의 기록 탭에서 재개 | 예 | 예 | 예 | 예 | 예 | Linux 지원, macOS와 Windows는 미검증 | 예 | 예 |
 | 긴 붙여넣기를 접힌 자리 표시자 대신 편집 가능한 텍스트로 넣기(설정 › 프로바이더, 기본값은 꺼짐) | 예 | 아니요 | 아니요 | 예 | 측정 안 됨 | 아니요, `paste_N.txt` 첨부 파일이 됨 | 아니요 | 예 |
-| 대화를 새 worktree로 포크, 네이티브 창에서는 같은 체크아웃에서도 포크 | 예 | 예 | 아니요 | 예 | 아니요 | 아니요 | 아니요 | 아니요 |
-| 다른 카드에 열려 있는 대화를 에이전트 앱에서 직접 재개하면 네이티브 창에서 경고 | 예 | 다음 프롬프트에서 | 다음 프롬프트에서, 미검증 | 아니요 | 예 | 다음 도구 호출 때 | 아니요 | 예 |
+| 대화를 새 worktree로 포크, 같은 체크아웃에서도 포크 | 예 | 예 | 아니요 | 예 | 아니요 | 아니요 | 아니요 | 아니요 |
+| 다른 카드에 열려 있는 대화를 에이전트 앱에서 직접 재개하면 경고 | 예 | 다음 프롬프트에서 | 다음 프롬프트에서, 미검증 | 아니요 | 예 | 다음 도구 호출 때 | 아니요 | 예 |
 | 원하는 reasoning effort로 세션 열기 | 예 | 예 | 예 | 아니요 | 예 | 아니요 | 모델 이름으로 지정 | 예 |
 | ultracode를 켠 채로 세션 열기 | 예 | 아니요 | 아니요 | 아니요 | 아니요 | 아니요 | 아니요 | 아니요 |
-| 여러 계정을 프로필로 나란히 두고 프로필마다 따로 로그인하며, 다른 계정으로 옮긴 세션이 같은 카드에서 이어짐(네이티브 창, 실험적 기능: 설정 › 프로바이더) | 예 | 예, 플러그인은 프로필마다 따로 두고 개인 프로필의 설정은 모든 프로필이 공유 | 아니요 | 예, 터미널 카드에서 로그인. 대화가 로그인 정보와 같은 데이터베이스에 있어서 세션을 다른 프로필로 옮길 수 없음 | 예, 터미널 카드에서 로그인하며 설정은 모든 프로필이 공유 | 측정 안 됨 | Linux와 Windows(macOS에서는 로그인 정보가 키체인에 있음), 터미널 카드에서 로그인하며 `mcp.json`, hooks, skills는 모든 프로필이 공유 | Linux만(macOS는 로그인 정보를 키체인에 두고, Windows에서는 그 위치를 옮길 방법이 없음), 터미널 카드에서 로그인하며 대화는 모든 프로필이 공유 |
+| 여러 계정을 프로필로 나란히 두고 프로필마다 따로 로그인하며, 다른 계정으로 옮긴 세션이 같은 카드에서 이어짐(설정 › 프로바이더) | 예 | 예, 플러그인은 프로필마다 따로 두고 개인 프로필의 설정은 모든 프로필이 공유 | 아니요 | 예, 터미널 카드에서 로그인. 대화가 로그인 정보와 같은 데이터베이스에 있어서 세션을 다른 프로필로 옮길 수 없음 | 예, 터미널 카드에서 로그인하며 설정은 모든 프로필이 공유 | 측정 안 됨 | Linux와 Windows(macOS에서는 로그인 정보가 키체인에 있음), 터미널 카드에서 로그인하며 `mcp.json`, hooks, skills는 모든 프로필이 공유 | Linux만(macOS는 로그인 정보를 키체인에 두고, Windows에서는 그 위치를 옮길 방법이 없음), 터미널 카드에서 로그인하며 대화는 모든 프로필이 공유 |
 | 기본 계정에서 신뢰한 폴더는 다른 모든 프로필에서도 "trust this folder?" 질문 없이 열림 | 예 | 예 | 프로필 없음 | 아무것도 묻지 않음 | 아무것도 묻지 않음 | 측정 안 됨 | 예 | 아무것도 묻지 않음 |
 | 샌드박스 안의 세션은 "trust this folder?" 질문 없이 열림 | 예 | 예 | 예 | 아무것도 묻지 않음 | 아무것도 묻지 않음 | 예, 프로젝트 초기화 여부도 더는 묻지 않음 | 예 | 아무것도 묻지 않음 |
 | 신뢰한 폴더의 worktree는 "trust this folder?" 질문 없이 열림 | 예 | 예 | 예 | 아무것도 묻지 않음 | 아무것도 묻지 않음 | 예, 프로젝트 초기화 여부도 더는 묻지 않음 | 예 | 아무것도 묻지 않음 |
@@ -184,8 +181,8 @@ macOS에서는 cask가 `Lich.app`을 설치하므로 `/Applications`에 lich 아
 - **프로바이더**: 설정 › 프로바이더에서 프로바이더별 바이너리 경로와 모든 프로젝트에 적용할
   기본값을 지정합니다. 같은 화면의 현재 프로젝트 행에서 이 선택을 덮어쓸 수 있고, **지우기**를
   누르면 덮어쓴 값이 사라져 이후 기본값을 바꾸면 자동으로 반영됩니다. 경로를 지정하지 않으면
-  세션은 로그인 셸의 `PATH`에서 가장 먼저 찾은 프로바이더 바이너리를 실행합니다. 네이티브
-  창에서는 바이너리 블록에 그 파일과 버전이 표시되고 `PATH`에 있는 다른 버전도 함께
+  세션은 로그인 셸의 `PATH`에서 가장 먼저 찾은 프로바이더 바이너리를 실행합니다.
+  바이너리 블록에 그 파일과 버전이 표시되고 `PATH`에 있는 다른 버전도 함께
   나열되며, `lich doctor`도 이를 경고합니다. 특정 바이너리를 쓰려면 바이너리 블록에서 경로를
   지정하세요(설정 키는 `provider.<id>.bin`, 예: `provider.codex.bin`).
   lich가 플랜 정보를 읽을 수 있으면 프로바이더 섹션 맨 위에 남은 플랜 사용량이 표시됩니다.
@@ -222,20 +219,21 @@ Linux 패키지로 설치했다면 해당 패키지 매니저로 업데이트하
 
 ## 소스에서 빌드
 
-순수 Go 백엔드(Go 1.27, `CGO_ENABLED=0`)가 내장된 React 18 / TypeScript / Vite 프런트엔드를
-토큰으로 인증하는 loopback 리스너(HTTP RPC + WebSockets)로 서빙합니다. 터미널은 WebGL addon을
-쓰는 xterm.js이고, 코드와 diff 화면은 CodeMirror 6입니다. Chromium 셸을 택한 결정은
-[`docs/chromium-shell.md`](docs/chromium-shell.md)에 기록되어 있습니다. 필요한 것은 **Go 1.27.0+**,
-**Node + pnpm**, **[Task](https://taskfile.dev)**이며, Go 바이너리를 빌드하는 데 C 툴체인은 필요
-없습니다. 창(`shell/`, CEF 기반 Rust)을 빌드하려면 Rust 툴체인이 추가로 필요하고, Linux에서는
-Chromium 개발 라이브러리, Windows에서는 MSVC도 있어야 합니다. 전체 목록은
-[CONTRIBUTING.md](CONTRIBUTING.md)에 있습니다.
+lich는 바이너리 두 개로 이루어집니다. 백엔드 `lich`는 순수 Go(Go 1.27, `CGO_ENABLED=0`,
+정적 바이너리 하나)이며, 토큰으로 인증하는 loopback 리스너(HTTP RPC + WebSockets)로 세션을
+서빙합니다. 창 `lich-native`는 `native/`에 있는 별도의 Go 모듈로, cgo로 빌드합니다. 창은
+[Gio](https://gioui.org)가 그리고, 터미널은 `libghostty-vt`가, 코드와 diff 화면은
+[godemirror](https://github.com/lichdotdev/godemirror)가 맡습니다. 필요한 것은 **Go 1.27.0+**와
+**[Task](https://taskfile.dev)**이며, 창을 빌드하려면 C 툴체인과 Gio의 시스템 패키지, 그리고
+`native/GHOSTTY_COMMIT`에 적힌 Ghostty 커밋에서 Zig 0.16으로 빌드한 `libghostty-vt`가 추가로
+필요합니다. 빌드 방법은 [`native/slice.sh`](native/slice.sh)에, 창에 대한 설명은
+[`docs/native-window.md`](docs/native-window.md)에 있습니다.
 
 ```bash
-task dev      # 핫 리로드 개발 모드(Vite는 :9245)
-task build    # 프로덕션 바이너리 -> bin/lich
-task run      # 빌드 + 실행
-task test     # Go + 프런트엔드 테스트 스위트
+task build          # 백엔드 바이너리 -> bin/lich
+task build:native   # 창 -> bin/lich-native
+task run            # 빌드 + 실행
+task test           # Go 테스트 스위트
 ```
 
 Linux 릴리스를 로컬에서 패키징하려면

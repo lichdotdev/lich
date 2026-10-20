@@ -419,13 +419,13 @@ missing reason never costs a bell.
   state has no window here at all, which today is Crush.
   `compacting` neither opens nor closes one, and the `done` that closes a
   `/compact` finds no window open and closes nothing.
-- **Store** — `frontend/src/lib/session/session-status-store.ts`: one subscription taken
-  at page load keeps the last state of every session, keyed by id. The card
-  cannot hold it: the sidebar only renders cards for the active project, so
-  switching projects unmounts them, and a status reported meanwhile would be lost.
-  `session-tool-store.ts` reads the same event for the tool pair, keeping its own
-  keyed entry so a repeat `busy` — which the status store collapses into no
-  change at all — still moves the tool line. The `waiting` reason is held by the
+- **Store** — `statusStore` (`native/cmd/lich-native/status.go`): fed by the
+  window's one `/events` subscription, it keeps the last state of every session,
+  keyed by id. The card cannot hold it: the sidebar only draws cards for the
+  active project, and a status reported meanwhile would be lost. The tool pair
+  rides in the same entry (`applyTool`), read on every report so a repeat
+  `busy`, which `applyState` collapses into no change at all, still moves the
+  tool line. The `waiting` reason is held by the
   status store itself, beside the state it belongs to: it is the only field whose
   own state is the thing that clears it, and a second prompt in one turn moves the
   line because the store weighs the reason alongside the state. The status store
@@ -433,12 +433,12 @@ missing reason never costs a bell.
   for the one session whose terminal is on screen, while the window has focus, and
   a fresh report clears the mark again. Only `done` reads it — the live states say
   what they say whether or not anybody is watching.
-- **Render** — `frontend/src/components/sidebar/SessionCard.tsx` and
-  `SessionStatusRung.tsx`: read the stores
-  (`useSessionStatus`, `useSessionTool`, `useSessionWaitingReason`) and show a
-  spinner (`busy` and `compacting`), check (`done`) or bell (`waiting`); any other value, including
+- **Render** — `native/cmd/lich-native/sidebar_card.go` (`statusRing`) and
+  `statusrung.go` (`statusRung`): read the store and draw a ring round the
+  provider mark that spins (`busy` and `compacting`), is amber (`waiting`) or
+  emerald (`done`); any other value, including
   `idle` and `interrupted`, clears the indicator. A `done` is drawn at two weights
-  (`SessionStatusIcon`, `useSessionUnread`): solid while the finished turn is
+  (`statusRing`, `statusStore.unread`): solid while the finished turn is
   still unread, faded once the user has watched that card. It is the same mark
   the tab badge and the notification queue read, so one session cannot be news
   in one place and read in another. A reported reason takes the waiting line's
@@ -446,28 +446,31 @@ missing reason never costs a bell.
   spending the line on that phrase again would cost the card the only words on it
   the user does not already know. The tool line sits under the session's label and exists only while
   one is reported, so a card outside a turn is exactly the card it was before.
-  `compacting` takes that line for "Compacting…" (`SessionStatusRung.tsx`): the
+  `compacting` takes that line for "Compacting…" (`statusRung`): the
   spinner alone reads as a turn running a tool it does not name.
-- **Tab badge** — `frontend/src/components/tabs/ProjectTab.tsx`: reduces a
-  project's sessions to one indicator (`useProjectStatus`, ranking `waiting` over
+- **Tab badge** — `projectTabs` (`native/cmd/lich-native/projects.go`): reduces a
+  project's sessions to one indicator (`statusStore.projectStatus`, ranking `waiting` over
   `busy` over `compacting` over `done`, the middle two drawn as the same spinner), shown only while the project is not the active one. A
   `done` stops badging once *that session's* card has been watched, so a project
   left with three finished agents in it still badges for the two nobody opened;
   `busy` and `waiting` badge for as long as they hold, being live states rather
   than notifications.
-- **Toast + route** — `frontend/src/providers/project-events.tsx`: raises an actionable toast
+- **Toast + route** — `attentionToast` (`native/cmd/lich-native/attention.go`): raises an actionable toast
   that navigates to the session's card when a report says `waiting`, carrying the
   reason under the session's name, skipped for the session already focused. It reads the raw event rather than the store: the
   store collapses a repeat state into no notification, which would swallow a
   toast.
-- **Desktop notification** — same handler, `system.Notify`
-  (`internal/system/system.go`, zenity's per-OS notifier). It answers to
-  `document.hasFocus()`, not to the toast's rule: with the window unfocused every
+- **Desktop notification** — `notifier` (`native/cmd/lich-native/notify.go`),
+  fed the same report, through the desktop's own notification server where the
+  window talks to one (`desktop_notes_<os>.go`) and the backend's `system.Notify`
+  (`internal/system/system.go`) elsewhere. It answers to the window's focus, not
+  to the toast's rule: with the window unfocused every
   `waiting` session is unseen, the focused one included, so that exclusion does
-  not apply here. The page decides, the backend only delivers — focus is a fact
-  only the page holds. Gated on an opt-in (`lich.notifications.desktop`, tri-state
+  not apply here. The window decides, the backend only delivers: focus is a fact
+  only the window holds. Gated on an opt-in (`lich.notifications.desktop`, tri-state
   so "refused" and "not asked" stay apart): the first report that would have
-  notified puts the dialog instead (`NotificationsOptIn`), and **Settings ›
+  notified puts the dialog instead (`layoutNotifyOptIn`,
+  `native/cmd/lich-native/notify_prompt.go`), and **Settings ›
   Notifications** owns the switch from then on.
 
 ## Known ceilings
@@ -482,13 +485,7 @@ missing reason never costs a bell.
   so its card closes the turn on its own — as a *finished* one, which is the
   only word its event has. lich therefore reads the interrupt off the PTY
   instead (below), and the state it publishes is not `done`.
-- Status is retained in the page, not in Go: a reload starts the store empty, so
-  a session Claude is already working on shows no indicator until its next
-  report. The PTY is backend-owned and survives the reload, so it does keep
-  running. Same for the ~1s the `/events` socket takes to reconnect — the hub
-  drops what it emits with no client attached. Fix path: keep the last state per
-  session in Go and hand it to the store on connect.
-- The attention toast auto-dismisses on a timer (`ATTENTION_TOAST_MS`); it does
+- The attention toast auto-dismisses on a timer (`attentionToastDuration`); it does
   not clear when the session leaves `waiting` (user handled it in the terminal).
   Fix path: track the toast id per session and dismiss it on the next
   busy/done.
@@ -528,7 +525,8 @@ missing reason never costs a bell.
   `tool_approval_requested` event, but no real run was ever observed emitting it
   — and a report wired to an event name that never fires is one that silently
   never arrives. So an omp session waiting on a permission shows a spinner
-  rather than a bell, which Settings says out loud (`NO_APPROVAL_EVENT_HINT`) because
+  rather than a bell, which Settings says out loud (`pluginHints`,
+  `native/cmd/lich-native/settings_updates_plugin.go`) because
   a missing bell reads as a broken install.
 - **An opencode report is only as precise as the server it runs in.** The plugin
   reads `LICH_SESSION_ID` from the environment of the process it was loaded by,
@@ -552,9 +550,10 @@ missing reason never costs a bell.
   no `reason` at all, because neither reports `waiting` in the first place (see
   the two bullets above), so their cards keep today's "Waiting on you".
 - **A reason is only as fresh as the report that carried it.** It lives beside the
-  state in the page's status store, so it clears when the state leaves `waiting`
-  and is gone after a reload like the state itself — a session already blocked
-  when the page loads shows nothing until its next report. Two prompts in one turn
+  state in the window's status store, so it clears when the state leaves `waiting`.
+  A window that attaches to a session already blocked takes the reason from the
+  backend's snapshot (`terminal.TurnStates`, `hydrateTurnStates` in
+  `native/cmd/lich-native/model.go`) along with the state. Two prompts in one turn
   do move the line: the store weighs the reason alongside the state, so a repeat
   `waiting` with different words is a change rather than a no-op.
 - **The tool line names the call, not its progress.** It appears when the tool

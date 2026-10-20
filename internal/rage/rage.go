@@ -1,5 +1,5 @@
 // Package rage collects what a lich bug report needs into one archive: the
-// facts that decide whether a report is actionable (version, platform, browser,
+// facts that decide whether a report is actionable (version, platform, window,
 // provider and plugin state), the environment lich was launched with, and the
 // log generations — with the loopback token masked wherever it appeared.
 //
@@ -49,7 +49,7 @@ type Report struct {
 	Instance  string
 	ConfigDir string
 	LogPath   string
-	Browser   string
+	Window    string
 	// Sandbox is what a confined session would actually get on this machine,
 	// proved rather than looked up: a backend installed and refused by the
 	// kernel is a whole class of report where the session never opened and the
@@ -77,7 +77,7 @@ type Collector struct {
 	version   string
 	environ   []string
 
-	browser func() (string, error)
+	window  func() (string, error)
 	detect  func() []providers.Detected
 	confine func() (string, error)
 	plugin  func() []agentplugin.Status
@@ -93,7 +93,7 @@ func New(configDir, version string, environ []string) *Collector {
 		configDir: configDir,
 		version:   version,
 		environ:   environ,
-		browser:   doctor.Browser,
+		window:    doctor.Window,
 		detect:    doctor.Providers,
 		confine:   sandbox.Probe,
 		plugin:    func() []agentplugin.Status { return agentplugin.New(pathBins{}).Status() },
@@ -249,10 +249,10 @@ func (c *Collector) collect() (Report, *singleton.Info) {
 		report.LogPath = ""
 	}
 
-	browser, err := c.browser()
-	report.Browser = browser
+	window, err := c.window()
+	report.Window = window
 	if err != nil {
-		report.Browser = err.Error()
+		report.Window = err.Error()
 	}
 	report.Sandbox = sandboxLine(c.confine())
 

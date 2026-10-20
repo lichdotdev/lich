@@ -17,8 +17,7 @@ const (
 	// raiseEventName is main.windowRaiseEvent: the tray or a second launch
 	// asked for lich's window.
 	raiseEventName = "window-raise"
-	// closeEventName is main.windowCloseEvent: lich is opening the web window
-	// in this one's place, or quitting.
+	// closeEventName is main.windowCloseEvent: lich is quitting.
 	closeEventName = "window-close"
 )
 
