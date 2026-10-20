@@ -111,8 +111,8 @@ type topbarFrame struct {
 	stripX     int     // the terminal island's left edge
 	island     color.NRGBA
 	// islands are the islands under the strip, in strip pixels, when the
-	// screen has more than one (Pulls); none is one island of island's color
-	// under the whole strip.
+	// screen has more than one (Pulls or the dock); none is one island of
+	// island's color under the whole strip.
 	islands  []islandSpan
 	tabs     []projectTab
 	active   string

@@ -103,6 +103,10 @@ type reviewTab interface {
 
 type dock struct {
 	tab dockTab
+	// islands are the visible stage and dock bounds from the last layout,
+	// in the project tab strip's coordinates. The strip uses them to detach
+	// its active tab when a resize makes it cross an island edge.
+	islands []islandSpan
 	// shown is the tab the dock last opened on, which it keeps drawing while
 	// it slides out.
 	shown      dockTab

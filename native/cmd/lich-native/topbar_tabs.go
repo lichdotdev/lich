@@ -410,7 +410,7 @@ func (t *topbar) activeIndex(f topbarFrame) int {
 // active tab sits on, which then drops its rounding for the tab to grow out
 // of.
 func (t *topbar) islandSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
-	if x0, ok := t.hoverSquare(f); ok {
+	if x0, ok := t.hoverSquare(gtx, f); ok {
 		return x0, true
 	}
 	s, merged := t.mergeSpan(gtx, f)
@@ -427,7 +427,7 @@ func (t *topbar) islandSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
 // hoverSquare is the first island's left edge while the first tab, flush
 // with it and not active, is hovered: the hover reaches down to the island,
 // and the island's rounded corner under its square foot showed as a curve.
-func (t *topbar) hoverSquare(f topbarFrame) (x0 int, ok bool) {
+func (t *topbar) hoverSquare(gtx C, f topbarFrame) (x0 int, ok bool) {
 	if len(f.tabs) == 0 || f.tabs[0].ID == f.active || t.sort.Dragging() != "" {
 		return 0, false
 	}
@@ -436,10 +436,12 @@ func (t *topbar) hoverSquare(f topbarFrame) (x0 int, ok bool) {
 		return 0, false
 	}
 	x0 = -t.shift
+	x1 := math.MaxInt
 	if len(f.islands) > 0 {
-		x0 = f.islands[0].x0
+		x0, x1 = f.islands[0].x0, f.islands[0].x1
 	}
-	return x0, -t.list.Position.Offset == x0
+	left := -t.list.Position.Offset
+	return x0, left == x0 && left+t.tabW+gtx.Dp(tabRadius) <= x1
 }
 
 // fillet fills the r×r box at p minus the quarter disc around its top corner

@@ -631,7 +631,7 @@ func (u *window) island(gtx C, v stageView) error {
 	gtx.Constraints.Min = size
 	r := gtx.Dp(ui.RadiusLG)
 	nw := r
-	if _, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive}); ok {
+	if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.dock.islands}); ok && x == 0 {
 		nw = 0
 	}
 	defer clip.RRect{Rect: image.Rectangle{Max: size}, NW: nw, NE: r, SE: r, SW: r}.Push(gtx.Ops).Pop()
@@ -709,6 +709,8 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	f.pulls = u.pulls.open && !v.home
 	if f.pulls && !f.settings {
 		f.islands = u.pulls.spans
+	} else if !f.settings {
+		f.islands = u.dock.islands
 	}
 	return f
 }
@@ -727,6 +729,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	share := d.slide.at(gtx, open)
 	if share == 0 {
+		d.islands = nil
 		return u.island(gtx, v)
 	}
 	size := gtx.Constraints.Max
@@ -735,6 +738,13 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		w = d.width(gtx)
 		slot = int(share * float32(w+gtx.Dp(gutter)))
 		at = size.X - slot + gtx.Dp(gutter)
+		mainEnd := max(size.X-slot, 0)
+		d.islands = []islandSpan{
+			{x0: 0, x1: mainEnd, color: u.islandColor(v)},
+			{x0: max(at, 0), x1: min(at+w, size.X), color: u.theme.Sidebar},
+		}
+	} else {
+		d.islands = []islandSpan{{x0: 0, x1: size.X, color: u.theme.Sidebar}}
 	}
 	island := gtx
 	island.Constraints = layout.Exact(image.Pt(max(size.X-slot, 0), size.Y))
