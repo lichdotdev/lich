@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ctrl+F (Cmd+F on macOS) on a file open in the Code tab finds text in it. A bar under the file's name lights every match, steps through them with Enter and Shift+Enter, and can match case, whole words or a regular expression. Its list button shows every line with a match under the bar, and clicking one takes the code there. Escape closes it.
+
 ## [0.74.0] - 2026-10-20
 
 ### Added

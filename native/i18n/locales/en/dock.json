@@ -22,5 +22,22 @@
     "empty": "No files here",
     "backToTree": "Back to file tree",
     "readOnly": "read-only"
+  },
+  "findBar": {
+    "placeholder": "Find",
+    "matchCase": "Match case",
+    "wholeWord": "Match whole word",
+    "regexp": "Use regular expression",
+    "showAll": "Show all matches",
+    "previous": "Previous match",
+    "next": "Next match",
+    "close": "Close",
+    "position": "{current} of {total}",
+    "matches": {
+      "one": "{count} match",
+      "other": "{count} matches"
+    },
+    "noResults": "No results",
+    "invalidRegexp": "Invalid regex"
   }
 }

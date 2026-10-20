@@ -111,6 +111,14 @@ func TestToggleSizes(t *testing.T) {
 	}
 }
 
+func TestToggleHeightOverridesTheSize(t *testing.T) {
+	tg := testTheme().Toggle(new(widget.Bool), "Aa")
+	tg.Size, tg.Height = ToggleSizeSM, Space(6)
+	if d := layoutAt(tg.Layout, 0, 500); d.Size.Y != 24 {
+		t.Errorf("h-6 toggle: got height %d, want 24", d.Size.Y)
+	}
+}
+
 // min-w-9: a toggle of one narrow glyph or an icon alone is still a square.
 func TestToggleIsNoNarrowerThanItsHeight(t *testing.T) {
 	th := testTheme()
