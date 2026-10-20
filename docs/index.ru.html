@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>lich, ADE с терминалом в центре</title>
-<meta name="description" content="Запускайте Claude Code, Codex и ещё шесть агентных CLI рядом, каждый в своём git worktree, а diff и pull request держите в том же окне." />
+<title>lich: терминальная ADE для ИИ-агентов</title>
+<meta name="description" content="Запускайте Claude Code, Codex и ещё шесть агентных CLI рядом, каждый в своём git worktree, а diff и pull request — в том же окне." />
 <link rel="icon" href="media/appicon.svg" />
 <meta property="og:title" content="lich" />
-<meta property="og:description" content="ADE с терминалом в центре для кодинг-агентов, которыми вы уже пользуетесь." />
+<meta property="og:description" content="Терминальная ADE для ИИ-агентов, которыми вы уже пользуетесь." />
 <meta property="og:image" content="https://lichdotdev.github.io/lich/media/og.png" />
 <meta property="og:url" content="https://lichdotdev.github.io/lich/index.ru.html" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -55,8 +55,8 @@
 <main>
   <section class="hero wrap">
     <span class="chip"><i></i><b id="version">v0.72.0</b> · бесплатно и с открытым исходным кодом</span>
-    <h1>ADE с терминалом в центре для кодинг-агентов, которыми вы уже пользуетесь</h1>
-    <p class="lede">Запускайте <b>Claude Code, Codex</b> и ещё шесть агентных CLI рядом, каждый в своём git worktree, а diff и pull request держите в том же окне.</p>
+    <h1>Терминальная ADE для ИИ-агентов, которыми вы уже пользуетесь</h1>
+    <p class="lede">Запускайте <b>Claude Code, Codex</b> и ещё шесть агентных CLI рядом, каждый в своём git worktree, а diff и pull request — в том же окне.</p>
     <div class="cta">
       <a class="btn primary" id="download" href="#install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>Скачать</span></a>
       <a class="btn ghost" href="https://github.com/lichdotdev/lich"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.25-1.28-5.25-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.27 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>Открыть на GitHub</a>
@@ -66,7 +66,7 @@
 
   <div class="stage wrap">
     <div class="window">
-      <img src="media/session.png" width="2732" height="1536" alt="lich с четырьмя сессиями Claude Code на одной стене, каждая в своём git worktree; боковая панель показывает их с веткой и diff, а нижняя панель показывает модель, контекст и расход тарифа." />
+      <img src="media/session.png" width="2732" height="1536" alt="lich с четырьмя сессиями Claude Code на одном экране, каждая в своём git worktree. В боковой панели видны их ветки и diff, внизу — модель, контекст и лимиты подписки." />
     </div>
   </div>
 
@@ -78,32 +78,32 @@
     <div class="seg" role="presentation">
       <label for="t1">Разные агенты</label>
       <label for="t2">Ревью diff</label>
-      <label for="t3">Pull request</label>
+      <label for="t3">Pull request'ы</label>
       <label for="t4">Темы</label>
     </div>
     <div class="pane p1">
-      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="Одна стена, на которой одновременно работают сессии Claude Code, Codex и opencode." /></div>
-      <p><b>Claude Code рядом с Codex и opencode.</b> Каждая панель это CLI как есть, в настоящем терминале; боковая панель показывает, чем занят каждый.</p>
+      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="Сессии Claude Code, Codex и opencode работают одновременно на одном экране." /></div>
+      <p><b>Claude Code, Codex и opencode рядом.</b> Каждая панель — это CLI как есть, в настоящем терминале, а в боковой панели видно, чем занят каждый агент.</p>
     </div>
     <div class="pane p2">
-      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="Панель ревью с diff для README и двумя комментариями, ожидающими отправки в сессию." /></div>
-      <p><b>Читайте написанное агентом прямо там, где он это написал.</b> Выделите строки, оставьте комментарий, и вся пачка уйдёт в ту сессию одним промптом, который вы отправляете сами.</p>
+      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="Панель ревью: diff README и два комментария, которые ждут отправки в сессию." /></div>
+      <p><b>Читайте правки агента там же, где он их сделал.</b> Выделите строки и прокомментируйте их: все комментарии уйдут в сессию одним промптом, отправите его сами.</p>
     </div>
     <div class="pane p3">
-      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="Экран pull request со списком репозитория и открытым обзором слитого pull request." /></div>
-      <p><b>Pull request репозитория, отфильтрованные собственными квалификаторами GitHub.</b> Переключитесь на любой в worktree, проведите ревью прямо в коде и слейте теми способами, которые разрешает базовая ветка.</p>
+      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="Экран pull request'ов: список репозитория и открытый смёрженный PR." /></div>
+      <p><b>Pull request'ы репозитория с фильтрами из поиска GitHub.</b> Откройте любой в отдельном worktree, оставьте ревью прямо в diff и смёржите тем способом, который разрешён для базовой ветки.</p>
     </div>
     <div class="pane p4">
-      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="Настройки, Внешний вид: набор тем Rosé Pine, установленный из git-репозитория и применённый." /></div>
-      <p><b>Темы это JSON.</b> Импортируйте файл или установите набор из git-репозитория и обновляйте его, когда он меняется.</p>
+      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="Настройки → Внешний вид: набор тем Rosé Pine установлен из git-репозитория и применён." /></div>
+      <p><b>Темы — это JSON.</b> Импортируйте файл или установите набор из git-репозитория и обновляйте его, когда в нём появляются изменения.</p>
     </div>
   </section>
 
   <section class="block wrap" id="agents">
     <div class="head">
       <div class="eyebrow">$ which claude codex agy …</div>
-      <h2>Берите агентов, за которых вы уже платите</h2>
-      <p>lich находит их в вашем <code>PATH</code> и открывает их терминал. Вход, тариф и конфигурация остаются за ними; у lich нет ни своего аккаунта, ни своего API-ключа.</p>
+      <h2>Работает с агентами, за которые вы уже платите</h2>
+      <p>lich находит их в вашем <code>PATH</code> и открывает их терминал. Логин, подписка и настройки остаются в самих агентах; своего аккаунта и API-ключа у lich нет.</p>
     </div>
     <div class="agents">
       <div class="agent"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/></svg><div><b>Claude Code</b><code>claude</code></div></div>
@@ -115,41 +115,41 @@
       <div class="agent"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z"/></svg><div><b>Cursor CLI</b><code>cursor-agent</code></div></div>
       <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/></svg><div><b>Kiro CLI</b><code>kiro-cli</code></div></div>
     </div>
-    <p class="agents-note">Что lich читает у каждого из них (контекст, стоимость, расход тарифа, возобновление) описано в <a href="https://github.com/lichdotdev/lich/blob/main/README.ru.md">таблице провайдеров</a>.</p>
+    <p class="agents-note">Что lich узнаёт от каждого агента (контекст, стоимость, лимиты подписки, resume), смотрите в <a href="https://github.com/lichdotdev/lich/blob/main/README.ru.md">таблице провайдеров</a>.</p>
   </section>
 
   <section class="block wrap" id="features">
     <div class="head">
       <div class="eyebrow">$ lich open --worktree auth-fix</div>
       <h2>Одна задача, одна ветка, один агент</h2>
-      <p>Всё, что нужно сессии, чтобы начать работу, и всё, что нужно вам, чтобы прочитать результат.</p>
+      <p>Всё, что нужно сессии для старта, и всё, что нужно вам, чтобы разобраться в результате.</p>
     </div>
     <div class="bento">
       <article class="card w4">
         <div class="txt">
-          <h3>Свой worktree на каждую задачу, готовый до старта агента</h3>
-          <p>Ветвитесь от любой базы. lich копирует ваши <code>.env*</code> из gitignore, резервирует порт для dev-сервера и запускает <code>.lich/setup-worktree.sh</code>. Если начать с незакоммиченной работы, она переедет вместе с вами.</p>
+          <h3>Отдельный worktree на каждую задачу, готовый ещё до запуска агента</h3>
+          <p>Ветку можно создать от любой базовой. lich копирует ваши <code>.env*</code>-файлы, игнорируемые git, резервирует порт для dev-сервера и запускает <code>.lich/setup-worktree.sh</code>. Незакоммиченные изменения переносятся в новый worktree.</p>
         </div>
         <div class="shot"><img src="media/session.png" style="width:1100px;left:-6px;top:-44px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>Комментарии возвращаются промптом</h3>
-          <p>Щёлкните правой кнопкой по выделению в diff, напишите, что не так, и отправьте всю пачку в сессию, когда будете готовы.</p>
+          <h3>Комментарии уходят агенту промптом</h3>
+          <p>Щёлкните правой кнопкой по выделению в diff, напишите, что не так, и отправьте все комментарии в сессию разом, когда будете готовы.</p>
         </div>
         <div class="shot"><img src="media/review-comments.png" style="width:900px;left:-137px;top:-385px" alt="" /></div>
       </article>
       <article class="card w3">
         <div class="txt">
-          <h3>Ревью pull request прямо в коде</h3>
-          <p>Черновые комментарии остаются на вашей машине, пока вы не отправите ревью, и только тогда уходят в GitHub через <code>gh</code>.</p>
+          <h3>Ревью pull request'а прямо в коде</h3>
+          <p>Черновики комментариев хранятся у вас на машине, пока вы не отправите ревью, и только тогда уходят в GitHub через <code>gh</code>.</p>
         </div>
         <div class="shot"><img src="media/pull-request-review.png" style="width:1200px;left:-640px;top:-255px" alt="" /></div>
       </article>
       <article class="card w3">
         <div class="txt">
           <h3>Агенты передают работу друг другу</h3>
-          <p>Та же команда <code>lich</code>, которую вы вводите сами, позволяет одной сессии поручить задачу другой и прочитать ответ, как и 14 инструментов MCP.</p>
+          <p>Одна сессия ставит задачу другой и читает ответ той же командой <code>lich</code>, что и вы, или через 14 инструментов MCP.</p>
         </div>
 <pre class="term"><span class="p">$</span> lich send docs "document the new --base flag"
 <span class="o">Added --base under lich open, with the rule</span>
@@ -161,20 +161,20 @@
       <article class="card w2">
         <div class="txt">
           <h3>Настройте под себя</h3>
-          <p>Каждый цвет это токен темы. Импортируйте JSON-файл или установите набор из git.</p>
+          <p>Каждый цвет — это токен темы. Импортируйте JSON-файл или установите набор из git.</p>
         </div>
         <div class="shot"><img src="media/themes.png" style="width:1000px;left:-432px;top:-95px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
           <h3>Запускайте сессию в песочнице</h3>
-          <p>Агент может стартовать в песочнице ОС с чистым домашним каталогом: остальная машина доступна только для чтения, записывать можно лишь в его checkout. bubblewrap на Linux, <code>sandbox-exec</code> на macOS. Это не защита от враждебного кода.</p>
+          <p>Агента можно запустить в песочнице ОС с чистым домашним каталогом: остальная система доступна только для чтения, писать можно лишь в его checkout. На Linux это bubblewrap, на macOS <code>sandbox-exec</code>. От вредоносного кода это не защищает.</p>
         </div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>Не теряйте нить</h3>
-          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> переходит к сессии по имени или по тому, что в ней говорилось, и возобновляет диалоги, начатые вне lich. Уведомление на рабочем столе подскажет, когда сессия ждёт вас.</p>
+          <h3>Ни одна сессия не потеряется</h3>
+          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> открывает сессию по имени или по тому, что в ней обсуждалось, и возобновляет диалоги, начатые вне lich. Когда сессия ждёт вас, придёт уведомление на рабочий стол.</p>
         </div>
       </article>
     </div>
@@ -182,10 +182,10 @@
 
   <section class="wrap" aria-label="lich в цифрах">
     <div class="facts">
-      <div class="fact"><b>8</b><span>агентных CLI, запускаемых как есть</span></div>
-      <div class="fact"><b>14</b><span>инструментов MCP, которыми агенты управляют lich</span></div>
+      <div class="fact"><b>8</b><span>агентных CLI работают как есть</span></div>
+      <div class="fact"><b>14</b><span>инструментов MCP, через которые агенты управляют lich</span></div>
       <div class="fact"><b>3</b><span>платформы: Linux, Windows, macOS</span></div>
-      <div class="fact"><b>0</b><span>аккаунтов, API-ключей или телеметрии</span></div>
+      <div class="fact"><b>0</b><span>аккаунтов, API-ключей и телеметрии</span></div>
     </div>
   </section>
 
@@ -194,13 +194,13 @@
       <div class="head">
         <div class="eyebrow">$ lich</div>
         <h2>Установка одной строкой</h2>
-        <p>Затем откройте проект и выберите агента. Нужен <code>git</code> в <code>PATH</code>; <code>gh</code> нужен только для pull request.</p>
+        <p>Потом откройте проект и выберите агента. Нужен <code>git</code> в <code>PATH</code>; <code>gh</code> нужен только для pull request'ов.</p>
       </div>
       <div class="os">
         <div id="install-linux">
           <h3>Linux <small>x86_64</small></h3>
 <pre>curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh</pre>
-          <p>Выбирает <code>.deb</code>, <code>.rpm</code> или <code>.pkg.tar.zst</code> под ваш дистрибутив и сверяет его с <code>checksums.txt</code>. В Arch: <code>yay -S lich-bin</code>. Нужны glibc 2.34+ и <code>zenity</code>.</p>
+          <p>Скрипт сам выберет <code>.deb</code>, <code>.rpm</code> или <code>.pkg.tar.zst</code> под ваш дистрибутив и сверит его с <code>checksums.txt</code>. В Arch: <code>yay -S lich-bin</code>. Нужны glibc 2.34+ и <code>zenity</code>.</p>
         </div>
         <div id="install-macos">
           <h3>macOS <small>Apple Silicon и Intel</small></h3>
@@ -210,10 +210,10 @@
         <div id="install-windows">
           <h3>Windows <small>x64</small></h3>
 <pre>scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json</pre>
-          <p>Или установщик со страницы <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a>, который обновляется сам.</p>
+          <p>Или установщик со страницы <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a>, который сам себя обновляет.</p>
         </div>
       </div>
-      <p class="under" style="text-align:center">Tarball, портативный zip и шаги проверки контрольных сумм описаны в <a href="https://github.com/lichdotdev/lich/blob/main/INSTALL.md">INSTALL.md</a>.</p>
+      <p class="under" style="text-align:center">Tarball, портативный zip и проверка контрольных сумм описаны в <a href="https://github.com/lichdotdev/lich/blob/main/INSTALL.md">INSTALL.md</a>.</p>
     </div>
   </section>
 </main>

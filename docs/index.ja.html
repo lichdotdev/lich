@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>lich｜ターミナルファーストな ADE</title>
-<meta name="description" content="Claude Code、Codex、さらに6つのエージェント CLI を並べて実行。それぞれ専用の git ワークツリーで動き、diff もプルリクエストも同じウィンドウで確認できます。" />
+<title>lich｜ターミナル中心の ADE</title>
+<meta name="description" content="Claude Code、Codex など 8 つのエージェント CLI を並べて実行できます。セッションごとに専用の git ワークツリーを用意し、差分もプルリクエストも同じウィンドウで確認できます。" />
 <link rel="icon" href="media/appicon.svg" />
 <meta property="og:title" content="lich" />
-<meta property="og:description" content="すでに使っているコーディングエージェントのための、ターミナルファーストな ADE。" />
+<meta property="og:description" content="いま使っているコーディングエージェントのための、ターミナル中心の ADE。" />
 <meta property="og:image" content="https://lichdotdev.github.io/lich/media/og.png" />
 <meta property="og:url" content="https://lichdotdev.github.io/lich/index.ja.html" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -54,9 +54,9 @@
 
 <main>
   <section class="hero wrap">
-    <span class="chip"><i></i><b id="version">v0.72.0</b> · 無料のオープンソース</span>
-    <h1>すでに使っているコーディングエージェントのための、ターミナルファーストな ADE</h1>
-    <p class="lede"><b>Claude Code、Codex</b> とさらに6つのエージェント CLI を並べて実行。それぞれ専用の git ワークツリーで動き、diff もプルリクエストも同じウィンドウで確認できます。</p>
+    <span class="chip"><i></i><b id="version">v0.72.0</b> · 無料・オープンソース</span>
+    <h1>いま使っているコーディングエージェントのための、ターミナル中心の ADE</h1>
+    <p class="lede"><b>Claude Code、Codex</b> など 8 つのエージェント CLI を並べて実行できます。セッションごとに専用の git ワークツリーを用意し、差分もプルリクエストも同じウィンドウで確認できます。</p>
     <div class="cta">
       <a class="btn primary" id="download" href="#install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>ダウンロード</span></a>
       <a class="btn ghost" href="https://github.com/lichdotdev/lich"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.25-1.28-5.25-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.27 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>GitHub で見る</a>
@@ -66,7 +66,7 @@
 
   <div class="stage wrap">
     <div class="window">
-      <img src="media/session.png" width="2732" height="1536" alt="1つのウォールに並んだ4つの Claude Code セッション。それぞれ専用の git ワークツリーで動いており、サイドバーにはブランチと diff が一覧され、フッターにはモデル、コンテキスト、プランの使用量が表示されています。" />
+      <img src="media/session.png" width="2732" height="1536" alt="1つの画面に4つの Claude Code セッションを並べた lich。各セッションは専用の git ワークツリーで動いています。サイドバーにはセッションごとのブランチと差分、フッターにはモデル、コンテキスト、プランの使用量が表示されています。" />
     </div>
   </div>
 
@@ -76,34 +76,34 @@
     <input type="radio" name="tour" id="t3" />
     <input type="radio" name="tour" id="t4" />
     <div class="seg" role="presentation">
-      <label for="t1">エージェントを混在</label>
-      <label for="t2">diff をレビュー</label>
+      <label for="t1">複数のエージェント</label>
+      <label for="t2">差分をレビュー</label>
       <label for="t3">プルリクエスト</label>
       <label for="t4">テーマ</label>
     </div>
     <div class="pane p1">
-      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="Claude Code、Codex、opencode のセッションが同時に動く1つのウォール。" /></div>
-      <p><b>Claude Code、Codex、opencode を並べて。</b>各ペインは配布されたままの CLI を本物のターミナルで動かし、サイドバーにはそれぞれの作業状況が表示されます。</p>
+      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="Claude Code、Codex、opencode のセッションを1つの画面で同時に動かしている様子。" /></div>
+      <p><b>Claude Code、Codex、opencode を並べて使えます。</b>各ペインでは公式の CLI をそのまま実際のターミナルで動かします。それぞれが何をしているかはサイドバーで確認できます。</p>
     </div>
     <div class="pane p2">
-      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="README の diff と、セッションに渡す順番待ちの2件のコメントを表示したレビュードック。" /></div>
-      <p><b>エージェントが書いた場所で、その変更を読めます。</b>行を選択してコメントを残すと、まとめたコメントが1つのプロンプトとしてそのセッションに戻り、送信はあなたの手で行います。</p>
+      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="README の差分と、セッションへ送る前の2件のコメントを表示したレビューパネル。" /></div>
+      <p><b>エージェントの変更を、書かれたその場所で確認できます。</b>行を選んでコメントを付けると、まとめて1つのプロンプトとしてそのセッションに戻ります。送信は手動です。</p>
     </div>
     <div class="pane p3">
-      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="リポジトリのプルリクエスト一覧と、マージ済みプルリクエストの概要を開いた画面。" /></div>
-      <p><b>リポジトリのプルリクエストを、GitHub 自身の検索修飾子で絞り込めます。</b>ワークツリーにチェックアウトし、インラインでレビューして、ベースブランチが許可する方法でマージできます。</p>
+      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="プルリクエスト画面。リポジトリのプルリクエスト一覧と、マージ済みプルリクエストの概要が表示されています。" /></div>
+      <p><b>リポジトリのプルリクエストを、GitHub と同じ検索修飾子で絞り込めます。</b>ワークツリーにチェックアウトしてインラインでレビューし、ベースブランチで許可されているマージ方法でマージできます。</p>
     </div>
     <div class="pane p4">
-      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="設定の外観画面。git リポジトリからインストールして適用した Rosé Pine テーマパック。" /></div>
-      <p><b>テーマは JSON です。</b>インポートするか、git リポジトリからパックをインストールして、更新があれば追従できます。</p>
+      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="設定の「外観」画面。Rosé Pine テーマパックを git リポジトリからインストールして適用しています。" /></div>
+      <p><b>テーマは JSON ファイルです。</b>個別にインポートすることも、git リポジトリからパックをインストールして更新を追いかけることもできます。</p>
     </div>
   </section>
 
   <section class="block wrap" id="agents">
     <div class="head">
       <div class="eyebrow">$ which claude codex agy …</div>
-      <h2>すでに契約しているエージェントをそのまま</h2>
-      <p>lich は <code>PATH</code> 上のエージェントを見つけて、そのターミナルを開きます。ログイン、プラン、設定はエージェント側のまま。lich 自身にはアカウントも API キーもありません。</p>
+      <h2>契約中のエージェントをそのまま使えます</h2>
+      <p>lich は <code>PATH</code> 上のエージェントを見つけて、そのターミナルを開くだけです。ログインもプランも設定も、これまでどおり各エージェントのものを使います。lich 自体にはアカウントも API キーもありません。</p>
     </div>
     <div class="agents">
       <div class="agent"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/></svg><div><b>Claude Code</b><code>claude</code></div></div>
@@ -115,41 +115,41 @@
       <div class="agent"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z"/></svg><div><b>Cursor CLI</b><code>cursor-agent</code></div></div>
       <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/></svg><div><b>Kiro CLI</b><code>kiro-cli</code></div></div>
     </div>
-    <p class="agents-note">lich が各エージェントから読み取れる内容（コンテキスト、費用、プランの使用量、再開）は、<a href="https://github.com/lichdotdev/lich/blob/main/README.ja.md">プロバイダー対応状況の表</a>にあります。</p>
+    <p class="agents-note">エージェントごとに lich が取得できる情報（コンテキスト、費用、プランの使用量、再開）は、<a href="https://github.com/lichdotdev/lich/blob/main/README.ja.md">プロバイダー対応状況の表</a>にあります。</p>
   </section>
 
   <section class="block wrap" id="features">
     <div class="head">
       <div class="eyebrow">$ lich open --worktree auth-fix</div>
       <h2>1つのタスクに、1つのブランチと1つのエージェント</h2>
-      <p>セッションが作業を始めるのに必要なものと、その成果を読むのに必要なものがそろっています。</p>
+      <p>セッションの準備から、成果の確認まで。</p>
     </div>
     <div class="bento">
       <article class="card w4">
         <div class="txt">
-          <h3>タスクごとのワークツリーを、エージェントの起動前に用意</h3>
-          <p>任意のベースから分岐できます。lich は gitignore 対象の <code>.env*</code> ファイルをコピーし、開発サーバーのポートを確保して、<code>.lich/setup-worktree.sh</code> を実行します。未コミットの作業から始めれば、その変更も引き継がれます。</p>
+          <h3>タスクごとのワークツリーを、エージェントの起動前に準備</h3>
+          <p>どのブランチからでも分岐できます。lich が gitignore 対象の <code>.env*</code> ファイルをコピーし、開発サーバー用のポートを確保して、<code>.lich/setup-worktree.sh</code> を実行します。未コミットの変更があれば、それも引き継がれます。</p>
         </div>
         <div class="shot"><img src="media/session.png" style="width:1100px;left:-6px;top:-44px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>コメントはプロンプトとして戻る</h3>
-          <p>diff で選択範囲を右クリックして問題点を書き、準備ができたらまとめてセッションに送ります。</p>
+          <h3>コメントをプロンプトとしてセッションへ</h3>
+          <p>差分の選択範囲を右クリックして指摘を書き、準備ができたらまとめてセッションに送れます。</p>
         </div>
         <div class="shot"><img src="media/review-comments.png" style="width:900px;left:-137px;top:-385px" alt="" /></div>
       </article>
       <article class="card w3">
         <div class="txt">
           <h3>プルリクエストをインラインでレビュー</h3>
-          <p>保留中のコメントはレビューを送信するまでマシン上に残り、送信すると <code>gh</code> 経由で GitHub に届きます。</p>
+          <p>保留中のコメントはレビューを送信するまでローカルに保存され、送信時に <code>gh</code> 経由で GitHub に投稿されます。</p>
         </div>
         <div class="shot"><img src="media/pull-request-review.png" style="width:1200px;left:-640px;top:-255px" alt="" /></div>
       </article>
       <article class="card w3">
         <div class="txt">
-          <h3>エージェント同士で仕事を渡せる</h3>
-          <p>あなたが打つ <code>lich</code> コマンドと同じもので、あるセッションが別のセッションにタスクを渡し、答えを読み取れます。14 個の MCP ツールからも使えます。</p>
+          <h3>エージェント間でのタスクの受け渡し</h3>
+          <p>セッション間のタスクの受け渡しも結果の取得も、ふだん自分で打つのと同じ <code>lich</code> コマンドで行えます。14 個の MCP ツールからも使えます。</p>
         </div>
 <pre class="term"><span class="p">$</span> lich send docs "document the new --base flag"
 <span class="o">Added --base under lich open, with the rule</span>
@@ -160,21 +160,21 @@
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>自分好みに</h3>
-          <p>すべての色がテーマトークンです。JSON ファイルをインポートするか、git からパックをインストールできます。</p>
+          <h3>テーマで自分好みの見た目に</h3>
+          <p>色はすべてテーマトークンで定義されています。JSON ファイルをインポートするか、git からパックをインストールできます。</p>
         </div>
         <div class="shot"><img src="media/themes.png" style="width:1000px;left:-432px;top:-95px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>セッションを隔離して実行</h3>
-          <p>エージェントを OS のサンドボックス内で起動できます。空の新しいホーム、読み取り専用のそれ以外のマシン、書き込めるのはそのチェックアウトだけ。Linux では bubblewrap、macOS では <code>sandbox-exec</code> を使います。悪意あるコードに対する境界ではありません。</p>
+          <h3>サンドボックスでのセッション実行</h3>
+          <p>エージェントを OS のサンドボックス内で起動できます。ホームディレクトリは新しい空のものになり、書き込めるのはそのチェックアウトだけで、それ以外はすべて読み取り専用です。Linux では bubblewrap、macOS では <code>sandbox-exec</code> を使います。悪意のあるコードを防ぐための仕組みではありません。</p>
         </div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>流れを見失わない</h3>
-          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> で、名前やセッション内の発言からセッションへジャンプでき、lich の外で始めた会話も再開できます。あなたの応答待ちになると、デスクトップ通知でお知らせします。</p>
+          <h3>どのセッションもすぐに呼び出し</h3>
+          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> で、名前や会話の内容からセッションにジャンプできます。lich の外で始めた会話の再開も可能です。入力待ちのセッションがあると、デスクトップ通知でお知らせします。</p>
         </div>
       </article>
     </div>
@@ -182,10 +182,10 @@
 
   <section class="wrap" aria-label="数字で見る lich">
     <div class="facts">
-      <div class="fact"><b>8</b><span>配布されたまま動かせるエージェント CLI</span></div>
-      <div class="fact"><b>14</b><span>エージェントが lich を操作する MCP ツール</span></div>
+      <div class="fact"><b>8</b><span>そのまま動かせるエージェント CLI</span></div>
+      <div class="fact"><b>14</b><span>エージェントが lich を操作するための MCP ツール</span></div>
       <div class="fact"><b>3</b><span>対応プラットフォーム：Linux、Windows、macOS</span></div>
-      <div class="fact"><b>0</b><span>アカウント、API キー、テレメトリ</span></div>
+      <div class="fact"><b>0</b><span>アカウント・API キー・テレメトリ</span></div>
     </div>
   </section>
 
@@ -194,26 +194,26 @@
       <div class="head">
         <div class="eyebrow">$ lich</div>
         <h2>1行でインストール</h2>
-        <p>あとはプロジェクトを開いてエージェントを選ぶだけ。<code>PATH</code> に <code>git</code> が必要で、<code>gh</code> が必要なのはプルリクエストを使うときだけです。</p>
+        <p>あとはプロジェクトを開いてエージェントを選ぶだけです。<code>PATH</code> に <code>git</code> が必要です。<code>gh</code> はプルリクエスト機能を使う場合のみ必要です。</p>
       </div>
       <div class="os">
         <div id="install-linux">
           <h3>Linux <small>x86_64</small></h3>
 <pre>curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh</pre>
-          <p>ディストリビューションに合った <code>.deb</code>、<code>.rpm</code>、<code>.pkg.tar.zst</code> を選び、<code>checksums.txt</code> で検証します。Arch では <code>yay -S lich-bin</code>。glibc 2.34 以上と <code>zenity</code> が必要です。</p>
+          <p>スクリプトがディストリビューションに合った <code>.deb</code>、<code>.rpm</code>、<code>.pkg.tar.zst</code> を自動で選び、<code>checksums.txt</code> で検証します。Arch なら <code>yay -S lich-bin</code> でも入ります。glibc 2.34 以上と <code>zenity</code> が必要です。</p>
         </div>
         <div id="install-macos">
           <h3>macOS <small>Apple Silicon / Intel</small></h3>
 <pre>brew install --cask lichdotdev/tap/lich</pre>
-          <p>Homebrew 経由です。次のリリースへは <code>brew upgrade</code> で更新できます。</p>
+          <p>Homebrew でインストールします。新しいリリースは <code>brew upgrade</code> で更新できます。</p>
         </div>
         <div id="install-windows">
           <h3>Windows <small>x64</small></h3>
 <pre>scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json</pre>
-          <p>または <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a> のインストーラーでも入れられ、自動で更新されます。</p>
+          <p>または <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a> のインストーラーも使えます（自動更新に対応）。</p>
         </div>
       </div>
-      <p class="under" style="text-align:center">tarball、ポータブル zip、チェックサムの手順は <a href="https://github.com/lichdotdev/lich/blob/main/INSTALL.md">INSTALL.md</a> にあります。</p>
+      <p class="under" style="text-align:center">tarball やポータブル版 zip、チェックサムの検証手順は <a href="https://github.com/lichdotdev/lich/blob/main/INSTALL.md">INSTALL.md</a> にあります。</p>
     </div>
   </section>
 </main>

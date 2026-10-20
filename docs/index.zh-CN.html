@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>lich：终端优先的 ADE</title>
-<meta name="description" content="并排运行 Claude Code、Codex 以及另外六个智能体 CLI，每个都在自己的 git worktree 里，diff 和 Pull Request 就在同一个窗口。" />
+<title>lich：终端优先的智能体开发环境（ADE）</title>
+<meta name="description" content="Claude Code、Codex 和另外六个智能体 CLI 并排运行，各自用独立的 git worktree，diff 和 Pull Request 都在同一个窗口里。" />
 <link rel="icon" href="media/appicon.svg" />
 <meta property="og:title" content="lich" />
-<meta property="og:description" content="A terminal-first ADE for the coding agents you already use." />
+<meta property="og:description" content="终端优先的 ADE，接入你正在用的 AI 编程智能体。" />
 <meta property="og:image" content="https://lichdotdev.github.io/lich/media/og.png" />
 <meta property="og:url" content="https://lichdotdev.github.io/lich/index.zh-CN.html" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -29,8 +29,8 @@
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#"><svg fill="currentColor" viewBox="0 0 1024 1024" aria-hidden="true"> <path fill-rule="evenodd" d="M681.0,315.8L680.5,316.5L689.0,332.8L701.8,361.5L713.8,394.2L722.0,426.2L726.5,453.8L729.0,484.2L729.0,502.2L728.0,518.5L725.8,538.2L723.0,554.2L715.5,584.2L708.0,605.2L696.0,631.5L680.0,658.2L664.2,679.0L655.2,689.2L641.8,702.8L620.2,721.2L600.0,736.0L561.0,761.0L542.2,776.0L534.0,784.5L524.2,797.5L516.0,813.2L512.0,825.8L511.0,825.2L509.5,818.8L505.8,809.5L499.5,798.0L491.8,787.5L483.0,778.0L463.8,762.0L422.5,735.5L399.8,718.8L381.5,702.8L368.5,689.8L357.2,677.0L341.8,656.2L326.8,630.8L317.8,611.5L310.0,591.0L304.8,573.8L300.0,553.5L295.8,522.8L294.5,489.0L297.0,453.5L300.0,433.8L303.8,416.2L312.8,385.0L326.8,349.5L343.5,316.2L322.8,333.5L305.0,351.0L289.0,369.8L276.2,387.0L261.2,411.8L252.2,429.5L242.2,453.8L235.0,476.5L229.2,502.8L225.2,537.2L225.0,568.0L226.2,586.2L228.2,601.5L234.8,632.2L244.0,660.2L255.2,685.2L268.2,708.0L283.2,729.0L296.2,744.0L311.8,759.0L328.8,772.8L357.8,791.8L415.2,823.0L437.2,835.8L454.8,847.8L468.0,858.5L483.0,873.2L494.8,888.2L504.0,903.2L511.5,919.8L520.8,900.8L528.8,887.8L535.0,879.5L549.5,863.8L563.2,851.8L578.8,840.5L594.0,831.0L650.2,800.8L670.0,789.5L685.2,779.8L704.2,765.8L724.0,747.8L734.5,736.2L745.8,722.2L760.2,700.5L768.5,685.5L776.0,669.2L781.5,655.2L789.0,631.5L793.8,610.2L797.2,587.5L798.8,565.2L798.5,541.5L796.5,517.5L792.8,494.5L788.0,474.2L780.8,451.0L771.8,428.8L759.5,404.5L749.8,388.5L738.5,372.5L724.5,355.5L708.8,339.2L695.2,327.0ZM518.5,102.8L496.8,117.0L479.8,131.0L470.0,140.8L459.0,153.8L447.2,171.8L441.0,183.5L434.0,199.8L426.8,223.8L423.0,247.0L423.0,269.8L425.8,288.2L431.2,307.8L437.0,322.0L446.2,339.2L454.5,352.0L469.8,372.0L532.0,444.0L546.0,463.8L556.0,481.5L560.2,491.2L564.0,502.5L566.8,515.0L567.8,524.8L567.0,545.0L564.0,558.8L560.2,569.5L550.2,588.0L543.0,597.5L535.0,605.8L529.0,611.0L518.0,618.5L502.8,625.0L489.8,626.8L466.5,611.8L452.5,600.2L444.8,592.5L437.2,583.2L433.0,575.5L429.2,563.2L428.5,552.5L430.0,542.5L433.0,533.8L438.0,525.8L446.2,517.8L454.5,513.0L462.8,510.5L475.0,510.0L484.5,512.0L493.2,516.0L502.0,522.5L510.5,532.5L511.2,532.5L507.8,515.8L501.2,499.5L494.8,487.5L483.5,472.5L472.8,462.2L459.0,453.0L448.2,448.0L434.0,444.0L418.8,442.8L408.2,443.5L399.5,445.2L383.5,451.8L369.0,462.0L357.2,475.2L349.0,489.8L342.0,510.8L339.5,530.0L340.0,548.2L341.8,560.8L344.2,572.0L350.0,590.5L358.0,609.0L365.2,622.2L372.8,634.0L384.0,649.0L393.8,660.2L403.2,669.8L427.8,690.8L439.8,699.5L460.5,712.8L511.5,742.0L559.2,716.5L588.2,698.5L612.0,679.8L622.2,670.0L634.8,656.2L642.8,646.0L651.5,632.8L659.8,617.2L666.5,602.0L672.8,583.2L676.5,567.2L679.2,550.0L680.2,534.5L679.2,506.8L676.5,487.8L672.8,469.8L665.5,445.2L660.0,430.8L653.5,415.8L643.8,396.5L623.5,363.8L603.2,336.5L582.8,312.5L545.8,273.2L525.8,249.5L511.5,228.0L504.0,212.0L500.2,200.0L497.8,187.8L496.8,176.0L497.8,160.0L499.5,150.2L504.0,134.2L510.5,118.5L518.8,103.8Z"/> </svg>lich</a>
-    <nav aria-label="页面分区">
-      <a href="#tour">导览</a>
+    <nav aria-label="页面导航">
+      <a href="#tour">功能一览</a>
       <a href="#agents">智能体</a>
       <a href="#features">功能</a>
       <a href="https://github.com/lichdotdev/lich/blob/main/CHANGELOG.md">更新日志</a>
@@ -55,22 +55,22 @@
 <main>
   <section class="hero wrap">
     <span class="chip"><i></i><b id="version">v0.72.0</b> · 免费开源</span>
-    <h1>面向你已在用的编码智能体的终端优先 ADE</h1>
-    <p class="lede">并排运行 <b>Claude Code、Codex</b> 以及另外六个智能体 CLI，每个都在自己的 git worktree 里，diff 和 Pull Request 就在同一个窗口。</p>
+    <h1>终端优先的 ADE，接入你正在用的 AI 编程智能体</h1>
+    <p class="lede"><b>Claude Code、Codex</b> 和另外六个智能体 CLI 并排运行，各自用独立的 git worktree，diff 和 Pull Request 都在同一个窗口里。</p>
     <div class="cta">
       <a class="btn primary" id="download" href="#install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>下载</span></a>
       <a class="btn ghost" href="https://github.com/lichdotdev/lich"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.25-1.28-5.25-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.27 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>在 GitHub 上查看</a>
     </div>
-    <p class="under">Linux、Windows 和 macOS · <a href="#install">其他安装方式</a></p>
+    <p class="under">支持 Linux、Windows 和 macOS · <a href="#install">其他安装方式</a></p>
   </section>
 
   <div class="stage wrap">
     <div class="window">
-      <img src="media/session.png" width="2732" height="1536" alt="同一面墙上的四个 Claude Code 会话，各自在自己的 git worktree 里；侧栏列出它们的分支和 diff，底栏显示模型、上下文和套餐用量。" />
+      <img src="media/session.png" width="2732" height="1536" alt="lich 同屏运行四个 Claude Code 会话，各自在独立的 git worktree 里；侧栏列出每个会话的分支和 diff，底栏显示模型、上下文和套餐用量。" />
     </div>
   </div>
 
-  <section class="tour wrap" id="tour" aria-label="窗口导览">
+  <section class="tour wrap" id="tour" aria-label="界面一览">
     <input type="radio" name="tour" id="t1" checked />
     <input type="radio" name="tour" id="t2" />
     <input type="radio" name="tour" id="t3" />
@@ -82,28 +82,28 @@
       <label for="t4">主题</label>
     </div>
     <div class="pane p1">
-      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="同一面墙上同时运行的 Claude Code、Codex 和 opencode 会话。" /></div>
-      <p><b>Claude Code、Codex、opencode 并排。</b>每个面板都是原样发布的 CLI，跑在真正的终端里；侧栏显示每个会话在做什么。</p>
+      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="Claude Code、Codex 和 opencode 会话同屏运行。" /></div>
+      <p><b>Claude Code、Codex、opencode 并排跑。</b>每个面板里都是未经改动的官方 CLI，跑在真正的终端里；侧栏显示每个会话正在做什么。</p>
     </div>
     <div class="pane p2">
-      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="审查面板显示 README 的 diff，以及两条排队等待交给会话的评论。" /></div>
-      <p><b>在智能体写下改动的地方读它。</b>选中几行、写下评论，整批评论会作为一条 prompt 回到那个会话，由你自己发送。</p>
+      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="审查面板：README 的 diff，以及两条待发给会话的评论。" /></div>
+      <p><b>在智能体改动的原位置直接阅读。</b>选中几行、写条评论，这批评论会合成一条 prompt 交回给那个会话，由你自己发出。</p>
     </div>
     <div class="pane p3">
-      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="Pull Request 页面：左侧是仓库的列表，右侧打开了一个已合并 PR 的概览。" /></div>
-      <p><b>仓库的 Pull Request，用 GitHub 自己的限定符筛选。</b>把某个 PR 检出到 worktree，内联审查，并用基础分支允许的方式合并。</p>
+      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="Pull Request 页面：左侧是仓库的 PR 列表，右侧打开了一个已合并 PR 的概览。" /></div>
+      <p><b>仓库里的 Pull Request，直接用 GitHub 自带的搜索限定符筛选。</b>把 PR 检出到 worktree，直接在 lich 里审查，再用基础分支允许的方式合并。</p>
     </div>
     <div class="pane p4">
-      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="设置 › 外观：从 git 仓库安装并已应用的 Rosé Pine 主题包。" /></div>
-      <p><b>主题就是 JSON。</b>导入一个，或者从 git 仓库安装一个主题包，仓库更新时随之更新。</p>
+      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="设置 › 外观：已从 git 仓库安装并启用 Rosé Pine 主题包。" /></div>
+      <p><b>主题就是 JSON。</b>可以直接导入，也可以从 git 仓库安装主题包，仓库有更新时跟着更新。</p>
     </div>
   </section>
 
   <section class="block wrap" id="agents">
     <div class="head">
       <div class="eyebrow">$ which claude codex agy …</div>
-      <h2>带上你已经付费的智能体</h2>
-      <p>lich 在你的 <code>PATH</code> 上找到它们，并打开它们的终端。登录、套餐和配置都还是它们自己的；lich 没有自己的账号，也没有自己的 API 密钥。</p>
+      <h2>你已付费的智能体，直接拿来用</h2>
+      <p>lich 会在你的 <code>PATH</code> 里找到它们，打开各自的终端。登录、套餐和配置都还是它们自己的；lich 本身没有账号，也没有 API 密钥。</p>
     </div>
     <div class="agents">
       <div class="agent"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/></svg><div><b>Claude Code</b><code>claude</code></div></div>
@@ -115,41 +115,41 @@
       <div class="agent"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z"/></svg><div><b>Cursor CLI</b><code>cursor-agent</code></div></div>
       <div class="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 10h.01"/><path d="M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/></svg><div><b>Kiro CLI</b><code>kiro-cli</code></div></div>
     </div>
-    <p class="agents-note">lich 从每个智能体读回什么（上下文、费用、套餐用量、恢复会话），见 <a href="https://github.com/lichdotdev/lich/blob/main/README.zh-CN.md">provider 支持表</a>。</p>
+    <p class="agents-note">lich 能从各智能体读取哪些信息（上下文、费用、套餐用量、恢复会话），见<a href="https://github.com/lichdotdev/lich/blob/main/README.zh-CN.md">各智能体支持情况表</a>。</p>
   </section>
 
   <section class="block wrap" id="features">
     <div class="head">
       <div class="eyebrow">$ lich open --worktree auth-fix</div>
       <h2>一个任务，一个分支，一个智能体</h2>
-      <p>会话开工所需的一切，以及你读懂它做了什么所需的一切。</p>
+      <p>会话开工要用的都已备好，回头看它做了什么也一目了然。</p>
     </div>
     <div class="bento">
       <article class="card w4">
         <div class="txt">
-          <h3>每个任务一个 worktree，在智能体启动前就已就绪</h3>
-          <p>从任意基础分支创建。lich 会复制你被 gitignore 掉的 <code>.env*</code> 文件，预留一个开发服务器端口，并运行 <code>.lich/setup-worktree.sh</code>。从尚未提交的改动开始，这些改动也会一起带过去。</p>
+          <h3>每个任务一个 worktree，智能体启动前就已备好</h3>
+          <p>可以从任意基础分支拉出。lich 会复制被 gitignore 忽略的 <code>.env*</code> 文件，预留一个开发服务器端口，并运行 <code>.lich/setup-worktree.sh</code>。如果从未提交的改动开始，这些改动也会一并带过去。</p>
         </div>
         <div class="shot"><img src="media/session.png" style="width:1100px;left:-6px;top:-44px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>评论作为 prompt 回到会话</h3>
-          <p>在 diff 里右键选中的内容，写下哪里不对，准备好之后再把整批评论交给会话。</p>
+          <h3>评论直接变成 prompt</h3>
+          <p>在 diff 里选中内容后右键，写下哪里有问题，准备好了再把这批评论一起发给会话。</p>
         </div>
         <div class="shot"><img src="media/review-comments.png" style="width:900px;left:-137px;top:-385px" alt="" /></div>
       </article>
       <article class="card w3">
         <div class="txt">
-          <h3>内联审查 Pull Request</h3>
-          <p>待提交的评论留在你的机器上，直到你提交审查，再通过 <code>gh</code> 发到 GitHub。</p>
+          <h3>直接在 lich 里审查 Pull Request</h3>
+          <p>待提交的评论只保存在你本机，提交审查时才通过 <code>gh</code> 发到 GitHub。</p>
         </div>
         <div class="shot"><img src="media/pull-request-review.png" style="width:1200px;left:-640px;top:-255px" alt="" /></div>
       </article>
       <article class="card w3">
         <div class="txt">
-          <h3>智能体之间互相交接工作</h3>
-          <p>你敲的那个 <code>lich</code> 命令，也是一个会话给另一个会话派任务、再读回答案的方式；也可以通过 14 个 MCP 工具。</p>
+          <h3>智能体之间互派任务</h3>
+          <p>会话之间派任务、取回结果，用的就是你平时敲的 <code>lich</code> 命令，或者 14 个 MCP 工具。</p>
         </div>
 <pre class="term"><span class="p">$</span> lich send docs "document the new --base flag"
 <span class="o">Added --base under lich open, with the rule</span>
@@ -160,32 +160,32 @@
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>按你的喜好来</h3>
-          <p>每种颜色都是一个主题 token。导入一个 JSON 文件，或者从 git 安装一个主题包。</p>
+          <h3>随心定制</h3>
+          <p>每种颜色都是一个主题 token。导入 JSON 文件，或者从 git 安装主题包都行。</p>
         </div>
         <div class="shot"><img src="media/themes.png" style="width:1000px;left:-432px;top:-95px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>让会话在沙箱里运行</h3>
-          <p>智能体可以在操作系统沙箱里启动：一个全新的 home，机器的其余部分只读，只有它自己的检出目录可写。Linux 用 bubblewrap，macOS 用 <code>sandbox-exec</code>。它不是针对恶意代码的边界。</p>
+          <h3>在沙箱里跑会话</h3>
+          <p>智能体可以在操作系统沙箱里启动：全新的 home 目录，机器其余部分只读，只有它自己的检出目录可写。Linux 上用 bubblewrap，macOS 上用 <code>sandbox-exec</code>。它不能用来防御恶意代码。</p>
         </div>
       </article>
       <article class="card w2">
         <div class="txt">
-          <h3>不丢任何一条线索</h3>
-          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> 按名称或按会话里说过的话跳到某个会话，还能恢复你在 lich 之外开始的对话。有会话在等你时，桌面通知会告诉你。</p>
+          <h3>随时接上之前的对话</h3>
+          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> 可以按名称或聊过的内容跳到某个会话，也能恢复你在 lich 之外开始的对话。有会话在等你回复时，会弹出桌面通知。</p>
         </div>
       </article>
     </div>
   </section>
 
-  <section class="wrap" aria-label="lich 的数字">
+  <section class="wrap" aria-label="lich 数据一览">
     <div class="facts">
-      <div class="fact"><b>8</b><span>个原样运行的智能体 CLI</span></div>
-      <div class="fact"><b>14</b><span>个供智能体驱动 lich 的 MCP 工具</span></div>
+      <div class="fact"><b>8</b><span>个未经改动的官方智能体 CLI</span></div>
+      <div class="fact"><b>14</b><span>个 MCP 工具，供智能体操控 lich</span></div>
       <div class="fact"><b>3</b><span>个平台：Linux、Windows、macOS</span></div>
-      <div class="fact"><b>0</b><span>账号、API 密钥或遥测</span></div>
+      <div class="fact"><b>0</b><span>个账号，不需要 API 密钥，也没有遥测</span></div>
     </div>
   </section>
 
@@ -194,33 +194,33 @@
       <div class="head">
         <div class="eyebrow">$ lich</div>
         <h2>一行命令安装</h2>
-        <p>然后打开一个项目，选一个智能体。需要 <code>PATH</code> 上有 <code>git</code>；只有 Pull Request 需要 <code>gh</code>。</p>
+        <p>装好后打开项目、选个智能体就能用。需要 <code>PATH</code> 里有 <code>git</code>；只有 Pull Request 功能需要 <code>gh</code>。</p>
       </div>
       <div class="os">
         <div id="install-linux">
           <h3>Linux <small>x86_64</small></h3>
 <pre>curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh</pre>
-          <p>按你的发行版选择 <code>.deb</code>、<code>.rpm</code> 或 <code>.pkg.tar.zst</code>，并用 <code>checksums.txt</code> 校验。Arch 上：<code>yay -S lich-bin</code>。需要 glibc 2.34+ 和 <code>zenity</code>。</p>
+          <p>脚本会按你的发行版选择 <code>.deb</code>、<code>.rpm</code> 或 <code>.pkg.tar.zst</code>，并用 <code>checksums.txt</code> 校验。Arch 用户：<code>yay -S lich-bin</code>。需要 glibc 2.34+ 和 <code>zenity</code>。</p>
         </div>
         <div id="install-macos">
           <h3>macOS <small>Apple Silicon 和 Intel</small></h3>
 <pre>brew install --cask lichdotdev/tap/lich</pre>
-          <p>通过 Homebrew；<code>brew upgrade</code> 会装上下一个版本。</p>
+          <p>通过 Homebrew 安装，之后用 <code>brew upgrade</code> 即可升级。</p>
         </div>
         <div id="install-windows">
           <h3>Windows <small>x64</small></h3>
 <pre>scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json</pre>
-          <p>或者用 <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a> 里的安装程序，它会原地自我更新。</p>
+          <p>也可以用 <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a> 里的安装程序，支持自动更新。</p>
         </div>
       </div>
-      <p class="under" style="text-align:center">tarball、便携 zip 和校验步骤见 <a href="https://github.com/lichdotdev/lich/blob/main/INSTALL.md">INSTALL.md</a>。</p>
+      <p class="under" style="text-align:center">tarball、便携版 zip 和校验步骤见 <a href="https://github.com/lichdotdev/lich/blob/main/INSTALL.md">INSTALL.md</a>。</p>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <span>AGPL-3.0-only · 作者 <a href="https://github.com/lichdotdev">lichdotdev</a></span>
+    <span>AGPL-3.0-only · 由 <a href="https://github.com/lichdotdev">lichdotdev</a> 开发</span>
     <nav aria-label="更多">
       <a href="https://github.com/lichdotdev/lich/blob/main/docs/ceilings.md">已知限制</a>
       <a href="https://github.com/lichdotdev/lich/blob/main/docs/cli.md">CLI</a>

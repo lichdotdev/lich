@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>lich, 터미널 우선 ADE</title>
-<meta name="description" content="Claude Code, Codex 외 여섯 가지 에이전트 CLI를 각자 자기 git worktree에서 나란히 실행하세요. diff와 풀 리퀘스트도 같은 창에서 확인합니다." />
+<title>lich, 터미널 중심 ADE</title>
+<meta name="description" content="Claude Code, Codex 외 에이전트 CLI 6종을 각각 별도의 git worktree에서 나란히 실행하세요. diff와 풀 리퀘스트까지 한 창에서 확인할 수 있습니다." />
 <link rel="icon" href="media/appicon.svg" />
 <meta property="og:title" content="lich" />
-<meta property="og:description" content="이미 쓰고 있는 코딩 에이전트를 위한, 터미널 우선 ADE." />
+<meta property="og:description" content="이미 쓰고 있는 코딩 에이전트를 위한 터미널 중심 ADE." />
 <meta property="og:image" content="https://lichdotdev.github.io/lich/media/og.png" />
 <meta property="og:url" content="https://lichdotdev.github.io/lich/index.ko.html" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -55,8 +55,8 @@
 <main>
   <section class="hero wrap">
     <span class="chip"><i></i><b id="version">v0.72.0</b> · 무료 오픈 소스</span>
-    <h1>이미 쓰고 있는 코딩 에이전트를 위한 터미널 우선 ADE</h1>
-    <p class="lede"><b>Claude Code, Codex</b> 외 여섯 가지 에이전트 CLI를 각자 자기 git worktree에서 나란히 실행하세요. diff와 풀 리퀘스트도 같은 창에 있습니다.</p>
+    <h1>이미 쓰고 있는 코딩 에이전트를 위한 터미널 중심 ADE</h1>
+    <p class="lede"><b>Claude Code, Codex</b> 외 에이전트 CLI 6종을 각각 별도의 git worktree에서 나란히 실행하세요. diff와 풀 리퀘스트까지 한 창에서 확인할 수 있습니다.</p>
     <div class="cta">
       <a class="btn primary" id="download" href="#install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>다운로드</span></a>
       <a class="btn ghost" href="https://github.com/lichdotdev/lich"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.25-1.28-5.25-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.27 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>GitHub에서 보기</a>
@@ -66,7 +66,7 @@
 
   <div class="stage wrap">
     <div class="window">
-      <img src="media/session.png" width="2732" height="1536" alt="한 분할 화면에 놓인 네 개의 Claude Code 세션, 각자 자기 git worktree에서 실행 중. 사이드바는 세션마다 브랜치와 diff를 보여 주고, 푸터는 모델, 컨텍스트, 플랜 사용량을 보여 준다." />
+      <img src="media/session.png" width="2732" height="1536" alt="화면 하나에 나란히 띄운 Claude Code 세션 4개와 각 세션의 git worktree. 세션별 브랜치와 diff를 보여 주는 사이드바, 모델과 컨텍스트, 플랜 사용량을 보여 주는 푸터" />
     </div>
   </div>
 
@@ -82,28 +82,28 @@
       <label for="t4">테마</label>
     </div>
     <div class="pane p1">
-      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="Claude Code, Codex, opencode 세션이 한 분할 화면에서 동시에 실행 중이다." /></div>
-      <p><b>Claude Code, Codex, opencode를 나란히.</b> 패널마다 CLI가 배포된 그대로 진짜 터미널에서 돌아가고, 사이드바에는 각 세션이 하는 일이 보입니다.</p>
+      <div class="window"><img src="media/wall-mixed.png" width="2732" height="1536" loading="lazy" alt="화면 하나에 나란히 띄워 동시에 실행 중인 Claude Code, Codex, opencode 세션" /></div>
+      <p><b>Claude Code, Codex, opencode를 나란히.</b> 패널마다 CLI가 손대지 않은 그대로 실제 터미널에서 돌아가고, 사이드바에서 세션마다 무슨 일을 하고 있는지 볼 수 있습니다.</p>
     </div>
     <div class="pane p2">
-      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="README diff와 세션으로 보낼 코멘트 두 개가 쌓여 있는 리뷰 독." /></div>
-      <p><b>에이전트가 쓴 코드를, 쓴 자리에서 읽으세요.</b> 줄을 선택해 코멘트를 남기면, 코멘트 묶음이 하나의 프롬프트로 그 세션에 돌아가고 보내는 건 직접 합니다.</p>
+      <div class="window"><img src="media/review-comments.png" width="1600" height="1000" loading="lazy" alt="README diff와 세션으로 보낼 코멘트 2개가 대기 중인 리뷰 독" /></div>
+      <p><b>에이전트가 작성한 코드를 작성한 그 자리에서 읽으세요.</b> 줄을 선택해 코멘트를 남기면 모아 둔 코멘트가 프롬프트 하나로 묶여 해당 세션으로 돌아갑니다. 전송은 직접 하면 됩니다.</p>
     </div>
     <div class="pane p3">
-      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="저장소의 풀 리퀘스트 목록과, 개요가 열린 머지된 풀 리퀘스트가 보이는 풀 리퀘스트 화면." /></div>
-      <p><b>저장소의 풀 리퀘스트를 GitHub 자체 검색 한정자로 걸러 보세요.</b> worktree로 체크아웃하고, 인라인으로 리뷰하고, 베이스 브랜치가 허용하는 방식으로 머지합니다.</p>
+      <div class="window"><img src="media/pulls-list.png" width="1600" height="1000" loading="lazy" alt="저장소의 풀 리퀘스트 목록과 병합된 풀 리퀘스트의 개요가 열려 있는 풀 리퀘스트 화면" /></div>
+      <p><b>저장소의 풀 리퀘스트를 GitHub 검색 한정자를 그대로 써서 걸러 보세요.</b> PR을 worktree에 체크아웃해 인라인으로 리뷰하고, 베이스 브랜치가 허용하는 방식으로 병합하세요.</p>
     </div>
     <div class="pane p4">
-      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="설정의 모양 화면. git 저장소에서 설치한 Rosé Pine 테마 팩이 적용되어 있다." /></div>
-      <p><b>테마는 JSON입니다.</b> 가져오거나, git 저장소에서 팩을 설치하고 저장소가 바뀌면 업데이트하세요.</p>
+      <div class="window"><img src="media/themes.png" width="1600" height="1000" loading="lazy" alt="git 저장소에서 설치한 Rosé Pine 테마 팩이 적용된 설정의 모양 화면" /></div>
+      <p><b>테마는 JSON입니다.</b> JSON 파일을 가져오거나, git 저장소에서 테마 팩을 설치하고 저장소가 바뀌면 업데이트하세요.</p>
     </div>
   </section>
 
   <section class="block wrap" id="agents">
     <div class="head">
       <div class="eyebrow">$ which claude codex agy …</div>
-      <h2>이미 결제하고 있는 에이전트를 그대로 가져오세요</h2>
-      <p>lich는 <code>PATH</code>에서 에이전트를 찾아 그 터미널을 엽니다. 로그인, 플랜, 설정은 에이전트 몫으로 남고, lich에는 자체 계정도 API 키도 없습니다.</p>
+      <h2>이미 구독 중인 에이전트를 그대로 쓰세요</h2>
+      <p>lich는 <code>PATH</code>에서 에이전트를 찾아 그 터미널을 엽니다. 로그인, 플랜, 설정은 각 에이전트의 것을 그대로 쓰고, lich에는 자체 계정도 API 키도 없습니다.</p>
     </div>
     <div class="agents">
       <div class="agent"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"/></svg><div><b>Claude Code</b><code>claude</code></div></div>
@@ -122,20 +122,20 @@
     <div class="head">
       <div class="eyebrow">$ lich open --worktree auth-fix</div>
       <h2>작업 하나, 브랜치 하나, 에이전트 하나</h2>
-      <p>세션이 일을 시작하는 데 필요한 모든 것, 그리고 세션이 한 일을 읽는 데 필요한 모든 것.</p>
+      <p>세션이 일을 시작하는 데도, 세션이 한 일을 검토하는 데도 필요한 건 다 있습니다.</p>
     </div>
     <div class="bento">
       <article class="card w4">
         <div class="txt">
-          <h3>작업마다 worktree 하나, 에이전트가 시작하기 전에 준비 완료</h3>
-          <p>어떤 베이스에서든 브랜치를 만듭니다. lich가 gitignore된 <code>.env*</code> 파일을 복사하고, 개발 서버 포트를 예약하고, <code>.lich/setup-worktree.sh</code>를 실행합니다. 커밋하지 않은 작업에서 시작해도 함께 따라옵니다.</p>
+          <h3>작업마다 worktree 하나, 에이전트가 시작하기 전에 미리 준비</h3>
+          <p>원하는 베이스에서 브랜치를 만들 수 있습니다. lich가 gitignore된 <code>.env*</code> 파일을 복사하고, 개발 서버 포트를 예약하고, <code>.lich/setup-worktree.sh</code>를 실행합니다. 커밋하지 않은 작업에서 시작하면 그 변경 사항도 함께 옮겨 갑니다.</p>
         </div>
         <div class="shot"><img src="media/session.png" style="width:1100px;left:-6px;top:-44px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
           <h3>코멘트가 프롬프트로 돌아갑니다</h3>
-          <p>diff에서 선택 영역을 우클릭하고 무엇이 문제인지 적은 다음, 준비되면 묶음째 세션에 보내세요.</p>
+          <p>diff에서 선택 영역을 우클릭해 무엇이 문제인지 적고, 준비되면 모아 둔 코멘트를 한꺼번에 세션에 보내세요.</p>
         </div>
         <div class="shot"><img src="media/review-comments.png" style="width:900px;left:-137px;top:-385px" alt="" /></div>
       </article>
@@ -149,7 +149,7 @@
       <article class="card w3">
         <div class="txt">
           <h3>에이전트끼리 일을 넘깁니다</h3>
-          <p>직접 입력하는 것과 같은 <code>lich</code> 명령으로, 또는 14개의 MCP 도구로 한 세션이 다른 세션에 작업을 넘기고 답을 읽어 옵니다.</p>
+          <p>직접 입력하는 그 <code>lich</code> 명령으로, 또는 MCP 도구 14개로 한 세션이 다른 세션에 일을 넘기고 답을 받아 옵니다.</p>
         </div>
 <pre class="term"><span class="p">$</span> lich send docs "document the new --base flag"
 <span class="o">Added --base under lich open, with the rule</span>
@@ -161,20 +161,20 @@
       <article class="card w2">
         <div class="txt">
           <h3>내 취향대로</h3>
-          <p>모든 색이 테마 토큰입니다. JSON 파일을 가져오거나 git에서 팩을 설치하세요.</p>
+          <p>모든 색이 테마 토큰입니다. JSON 파일을 가져오거나 git에서 테마 팩을 설치하세요.</p>
         </div>
         <div class="shot"><img src="media/themes.png" style="width:1000px;left:-432px;top:-95px" alt="" /></div>
       </article>
       <article class="card w2">
         <div class="txt">
           <h3>세션을 격리해서 실행</h3>
-          <p>에이전트를 OS 샌드박스 안에서 시작할 수 있습니다. 새 홈 디렉터리를 주고, 머신의 나머지는 읽기 전용, 쓰기는 해당 체크아웃에만 허용합니다. Linux는 bubblewrap, macOS는 <code>sandbox-exec</code>를 씁니다. 악의적인 코드를 막는 경계는 아닙니다.</p>
+          <p>에이전트를 OS 샌드박스 안에서 시작할 수 있습니다. 새 홈 디렉터리가 주어지고, 머신의 나머지 부분은 읽기 전용이며, 쓰기는 해당 체크아웃에만 허용됩니다. Linux에서는 bubblewrap, macOS에서는 <code>sandbox-exec</code>를 씁니다. 악성 코드를 막아 주는 보안 경계는 아닙니다.</p>
         </div>
       </article>
       <article class="card w2">
         <div class="txt">
           <h3>흐름을 놓치지 않습니다</h3>
-          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd> 로 이름이나 대화 내용으로 세션에 바로 이동하고, lich 밖에서 시작한 대화도 이어 갑니다. 세션이 입력을 기다리면 데스크톱 알림으로 알려 줍니다.</p>
+          <p><kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd>로 세션 이름이나 대화 내용을 검색해 바로 이동하고, lich 밖에서 시작한 대화도 이어서 할 수 있습니다. 세션이 입력을 기다리면 데스크톱 알림으로 알려 줍니다.</p>
         </div>
       </article>
     </div>
@@ -182,10 +182,10 @@
 
   <section class="wrap" aria-label="숫자로 보는 lich">
     <div class="facts">
-      <div class="fact"><b>8</b><span>배포된 그대로 실행하는 에이전트 CLI</span></div>
+      <div class="fact"><b>8</b><span>수정 없이 그대로 실행하는 에이전트 CLI</span></div>
       <div class="fact"><b>14</b><span>에이전트가 lich를 조작하는 MCP 도구</span></div>
-      <div class="fact"><b>3</b><span>플랫폼: Linux, Windows, macOS</span></div>
-      <div class="fact"><b>0</b><span>계정, API 키, 텔레메트리</span></div>
+      <div class="fact"><b>3</b><span>지원 플랫폼: Linux, Windows, macOS</span></div>
+      <div class="fact"><b>0</b><span>계정·API 키·텔레메트리 없음</span></div>
     </div>
   </section>
 
@@ -194,13 +194,13 @@
       <div class="head">
         <div class="eyebrow">$ lich</div>
         <h2>한 줄로 설치하세요</h2>
-        <p>그다음 프로젝트를 열고 에이전트를 고르면 됩니다. <code>PATH</code>에 <code>git</code>이 있어야 하고, <code>gh</code>는 풀 리퀘스트에만 필요합니다.</p>
+        <p>설치한 다음 프로젝트를 열고 에이전트를 고르면 됩니다. <code>PATH</code>에 <code>git</code>이 있어야 하고, <code>gh</code>는 풀 리퀘스트 기능에만 필요합니다.</p>
       </div>
       <div class="os">
         <div id="install-linux">
           <h3>Linux <small>x86_64</small></h3>
 <pre>curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh</pre>
-          <p>배포판에 맞는 <code>.deb</code>, <code>.rpm</code>, <code>.pkg.tar.zst</code>를 골라 <code>checksums.txt</code>로 검증합니다. Arch에서는 <code>yay -S lich-bin</code>. glibc 2.34 이상과 <code>zenity</code>가 필요합니다.</p>
+          <p>배포판에 맞는 <code>.deb</code>, <code>.rpm</code>, <code>.pkg.tar.zst</code> 패키지를 골라 <code>checksums.txt</code>로 검증합니다. Arch에서는 <code>yay -S lich-bin</code>으로 설치할 수 있습니다. glibc 2.34 이상과 <code>zenity</code>가 필요합니다.</p>
         </div>
         <div id="install-macos">
           <h3>macOS <small>Apple Silicon 및 Intel</small></h3>
@@ -210,7 +210,7 @@
         <div id="install-windows">
           <h3>Windows <small>x64</small></h3>
 <pre>scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json</pre>
-          <p>또는 <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a>의 설치 프로그램을 쓰세요. 스스로 제자리에서 업데이트합니다.</p>
+          <p>또는 <a href="https://github.com/lichdotdev/lich/releases/latest">Releases</a>에서 설치 프로그램을 받으세요. 설치 프로그램은 자체적으로 업데이트됩니다.</p>
         </div>
       </div>
       <p class="under" style="text-align:center">tarball, 포터블 zip, 체크섬 확인 절차는 <a href="https://github.com/lichdotdev/lich/blob/main/INSTALL.md">INSTALL.md</a>에 있습니다.</p>
@@ -225,7 +225,7 @@
       <a href="https://github.com/lichdotdev/lich/blob/main/docs/ceilings.md">알려진 한계</a>
       <a href="https://github.com/lichdotdev/lich/blob/main/docs/cli.md">CLI</a>
       <a href="https://github.com/lichdotdev/lich-plugin">플러그인</a>
-      <a href="https://github.com/lichdotdev/lich/issues">Issues</a>
+      <a href="https://github.com/lichdotdev/lich/issues">이슈</a>
     </nav>
   </div>
 </footer>
