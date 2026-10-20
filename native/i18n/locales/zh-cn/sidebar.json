@@ -173,7 +173,10 @@
     "startNew": "新建会话",
     "dismiss": "忽略",
     "resumesIn": "它将在 {profile} · {email} 中恢复，即它启动时所用的配置档案。",
-    "resumesInNoEmail": "它将在 {profile} 中恢复，即它启动时所用的配置档案。"
+    "resumesInNoEmail": "它将在 {profile} 中恢复，即它启动时所用的配置档案。",
+    "footerTitle": "{project} 中新的 {provider} 会话",
+    "useGlobal": "使用全局（{profile}）",
+    "otherProviders": "其他提供商"
   },
   "fork": {
     "pruned": "{name} 已没有可分叉的对话：{provider} 已将其删除。",

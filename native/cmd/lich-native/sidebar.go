@@ -48,6 +48,7 @@ type sidebar struct {
 	naming   folderNaming
 	rail     sidebarRail
 	morph    sidebarMorph
+	profile  profileFooter
 	// launchProviders is this frame's m.launchProviders(), what every launch
 	// menu lists.
 	launchProviders []launchProvider
@@ -100,7 +101,7 @@ func (s *sidebar) holdsKeys() bool {
 			return true
 		}
 	}
-	if s.header.newMenu.Opened() {
+	if s.header.newMenu.Opened() || s.profile.menu.Opened() {
 		return true
 	}
 	for _, b := range s.blocks {
@@ -125,6 +126,7 @@ type sidebarAction struct {
 	rename                         sessionRename
 	color, colorTo                 string // session id, and its new tint ("" for the theme)
 	continueIn                     continueRequest
+	profilePick                    profilePick
 	worktree                       bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
@@ -255,6 +257,9 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 			gtx.Constraints.Max.X += gtx.Dp(ui.Space(2))
 			return s.blockList(gtx, on, view, active, &act)
 		}))
+		if f, ok := m.focusedProfile(); ok {
+			children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.profile.layout(gtx, on, s.root, m, f, &act) }))
+		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	})
 	s.resizeHandle(gtx, on, size)

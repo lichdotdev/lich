@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- When a session's process exits, a toast in the bottom-right corner now asks what to do, in place of the band at the bottom of the terminal. A card with a conversation offers Resume, which opens that same conversation again (in the profile the card names), Start new, which begins another one in the card as Restart did, and Close session. A shell, or an agent that ended before its first prompt, offers Restart and Close session. Dismissing the toast leaves the card as it is, and focusing the card brings the toast back.
+- When a session's process exits, a toast in the bottom-right corner now asks what to do, in place of the band at the bottom of the terminal. A card with a conversation offers Resume, which opens that same conversation again (in the profile it started in), Start new, which begins another one in the card as Restart did, and Close session. A shell, or an agent that ended before its first prompt, offers Restart and Close session. Dismissing the toast leaves the card as it is, and focusing the card brings the toast back.
+- **The project's profile lives at the foot of the sidebar, not on every card.** With more than one login for a provider, the sidebar's last line names the profile this project's new sessions of it start in: the provider of the card on screen, or the default one for a terminal. Click it to pick another login, with each one's five-hour usage, or to go back to Global's; Other providers changes the rest from the same menu. Cards no longer carry the profile chip beside their branch.
 
 ### Removed
 

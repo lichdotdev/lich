@@ -173,7 +173,10 @@
     "startNew": "Iniciar nova",
     "dismiss": "Dispensar",
     "resumesIn": "Ela é retomada em {profile} · {email}, o perfil em que começou.",
-    "resumesInNoEmail": "Ela é retomada em {profile}, o perfil em que começou."
+    "resumesInNoEmail": "Ela é retomada em {profile}, o perfil em que começou.",
+    "footerTitle": "Novas sessões do {provider} em {project}",
+    "useGlobal": "Usar o Global ({profile})",
+    "otherProviders": "Outros provedores"
   },
   "fork": {
     "pruned": "{name} não tem mais conversa para fazer fork: o {provider} a apagou.",

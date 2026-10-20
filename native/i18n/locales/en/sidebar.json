@@ -173,7 +173,10 @@
     "startNew": "Start new",
     "dismiss": "Dismiss",
     "resumesIn": "It resumes in {profile} · {email}, the profile it started in.",
-    "resumesInNoEmail": "It resumes in {profile}, the profile it started in."
+    "resumesInNoEmail": "It resumes in {profile}, the profile it started in.",
+    "footerTitle": "New {provider} sessions in {project}",
+    "useGlobal": "Use Global ({profile})",
+    "otherProviders": "Other providers"
   },
   "fork": {
     "pruned": "{name} has no conversation left to fork: {provider} pruned it.",

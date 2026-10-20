@@ -2,11 +2,8 @@ package main
 
 import (
 	"context"
-	"image"
 	"log"
 
-	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -16,9 +13,7 @@ import (
 )
 
 var (
-	profileChipSize = unit.Sp(11) // text-[11px]
-	profileChipMaxW = ui.Space(24)
-	icContinueIn    = icons.Lucide("arrow-right-left")
+	icContinueIn = icons.Lucide("arrow-right-left")
 )
 
 // continueTarget is a profile a card's conversation can move to, with the
@@ -70,8 +65,8 @@ func (m *model) continueTargets(kind, profile string) []continueTarget {
 	return out
 }
 
-// profileNameOf is the profile a card names beside its branch: Personal is the
-// default and says nothing.
+// profileNameOf is the profile the exit toast names for a session's resume:
+// Personal is the default and says nothing.
 func (m *model) profileNameOf(kind, profile string) string {
 	book := m.profileBook(kind)
 	if book == nil || effectiveProfile(profile) == personalProfile {
@@ -93,19 +88,6 @@ func continueInItem(th *ui.Theme, sv *sessionView, act *sidebarAction) ui.MenuEn
 		})
 	}
 	return ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sidebarProfile.continueIn"), Icon: icContinueIn, Sub: sub}
-}
-
-// profileChip is the outlined name of the profile a session runs in.
-func profileChip(gtx C, th *ui.Theme, name string) D {
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Point{}
-	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(profileChipMaxW))
-	d := layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Top: unit.Dp(1), Bottom: unit.Dp(1)}.Layout(gtx,
-		th.Text(profileChipSize, name).Muted().Layout)
-	call := macro.Stop()
-	insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusSM), th.Over(th.Border))
-	call.Add(gtx.Ops)
-	return d
 }
 
 // applyContinueIn moves the conversation of the card the menu was opened on,

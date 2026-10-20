@@ -170,7 +170,10 @@
     "startNew": "새로 시작",
     "dismiss": "닫기",
     "resumesIn": "처음 시작한 프로필인 {profile} · {email}에서 재개됩니다.",
-    "resumesInNoEmail": "처음 시작한 프로필인 {profile}에서 재개됩니다."
+    "resumesInNoEmail": "처음 시작한 프로필인 {profile}에서 재개됩니다.",
+    "footerTitle": "{project}의 새 {provider} 세션",
+    "useGlobal": "전역 설정 사용 ({profile})",
+    "otherProviders": "다른 프로바이더"
   },
   "fork": {
     "pruned": "{name}에는 포크할 대화가 더 이상 없습니다: {provider}이(가) 삭제했습니다.",

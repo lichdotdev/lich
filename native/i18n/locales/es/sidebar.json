@@ -173,7 +173,10 @@
     "startNew": "Empezar nueva",
     "dismiss": "Descartar",
     "resumesIn": "Se reanuda en {profile} · {email}, el perfil en el que empezó.",
-    "resumesInNoEmail": "Se reanuda en {profile}, el perfil en el que empezó."
+    "resumesInNoEmail": "Se reanuda en {profile}, el perfil en el que empezó.",
+    "footerTitle": "Sesiones nuevas de {provider} en {project}",
+    "useGlobal": "Usar Global ({profile})",
+    "otherProviders": "Otros proveedores"
   },
   "fork": {
     "pruned": "{name} ya no tiene una conversación que bifurcar: {provider} la borró.",

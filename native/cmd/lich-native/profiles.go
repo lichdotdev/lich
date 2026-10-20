@@ -143,6 +143,21 @@ var ompProfileProvider = profileProvider{
 
 // profileProviderOf is the profile provider for a session kind, false for a
 // provider with no profiles.
+// isProfileKey reports whether key is the profile setting of a provider with
+// profiles.
+func isProfileKey(key string) bool {
+	kind, ok := strings.CutPrefix(key, "provider.")
+	if !ok {
+		return false
+	}
+	kind, ok = strings.CutSuffix(kind, ".profile")
+	if !ok {
+		return false
+	}
+	prov, ok := profileProviderOf(kind)
+	return ok && prov.key == key
+}
+
 func profileProviderOf(kind string) (profileProvider, bool) {
 	switch kind {
 	case claudeKind:

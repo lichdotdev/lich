@@ -179,7 +179,10 @@
     "startNew": "Запустить новую",
     "dismiss": "Скрыть",
     "resumesIn": "Возобновится в {profile} · {email}, профиле, в котором была запущена.",
-    "resumesInNoEmail": "Возобновится в {profile}, профиле, в котором была запущена."
+    "resumesInNoEmail": "Возобновится в {profile}, профиле, в котором была запущена.",
+    "footerTitle": "Новые сессии {provider} в {project}",
+    "useGlobal": "Как в глобальных ({profile})",
+    "otherProviders": "Другие провайдеры"
   },
   "fork": {
     "pruned": "У {name} больше нет разговора для форка: {provider} его удалил.",

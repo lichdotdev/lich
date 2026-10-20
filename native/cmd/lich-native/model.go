@@ -157,7 +157,7 @@ func (m *model) reload(ctx context.Context) error {
 	normalizeCheckouts(ps)
 	m.mu.Lock()
 	m.projects = ps
-	m.providers.noteProjects(ps)
+	fresh := m.providers.noteProjects(ps)
 	if !m.restored {
 		m.status.restoreUnread(unreadSessions(ps))
 		m.restored = true
@@ -176,6 +176,9 @@ func (m *model) reload(ctx context.Context) error {
 	m.mu.Unlock()
 	if pruned {
 		m.saveLayouts()
+	}
+	if len(fresh) > 0 {
+		go m.providers.readProfiles(ctx, fresh)
 	}
 	m.invalidate()
 	return nil

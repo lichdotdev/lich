@@ -161,7 +161,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 		rows = append(rows, ui.VGap(2), layout.Rigid(rung))
 	}
 	rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return pathRow(gtx, th, sv.layout, path) }))
-	if sv.git.Branch != "" || sv.profileName != "" {
+	if sv.git.Branch != "" {
 		rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.branchRow(gtx, th, sv, prChip) }))
 	}
 	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
@@ -183,16 +183,21 @@ func pathRow(gtx C, th *ui.Theme, layoutName, path string) D {
 	)
 }
 
-// layoutChip is profileChip's outline around the layout glyph and name.
+var (
+	layoutChipSize = unit.Sp(11) // text-[11px]
+	layoutChipMaxW = ui.Space(24)
+)
+
+// layoutChip is the outlined layout glyph and name.
 func layoutChip(gtx C, th *ui.Theme, name string) D {
 	macro := op.Record(gtx.Ops)
 	gtx.Constraints.Min = image.Point{}
-	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(profileChipMaxW))
+	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(layoutChipMaxW))
 	d := layout.Inset{Left: ui.Space(1), Right: ui.Space(1.5), Top: unit.Dp(1), Bottom: unit.Dp(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icTabLayout.Layout(gtx, 11, th.MutedForeground) }),
 			ui.Gap(1),
-			layout.Rigid(th.Text(profileChipSize, name).Muted().Layout),
+			layout.Rigid(th.Text(layoutChipSize, name).Muted().Layout),
 		)
 	})
 	call := macro.Stop()
@@ -271,9 +276,6 @@ func (s *sidebar) branchRow(gtx C, th *ui.Theme, sv *sessionView, prChip *widget
 			ui.Gap(1),
 			layout.Flexed(1, th.Text(ui.TextXS, git.Branch).Muted().Layout),
 		}
-	}
-	if sv.profileName != "" {
-		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return profileChip(gtx, th, sv.profileName) }))
 	}
 	if standing := standingOf(sv.base); standing.count > 0 {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return s.baseReadout(gtx, th, standing) }))

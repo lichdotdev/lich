@@ -842,6 +842,9 @@ func (u *window) apply(act sidebarAction) {
 	}
 	u.applyOpenIn(act)
 	u.applyContinueIn(act)
+	if pick := act.profilePick; pick.key != "" {
+		u.settings.writeProviderKey(pick.key, pick.projectID, pick.value, nil)
+	}
 	u.applySidebarWrites(act.sidebarWrites)
 	if act.color != "" && u.model.setColor(act.color, act.colorTo) {
 		u.model.invalidate()

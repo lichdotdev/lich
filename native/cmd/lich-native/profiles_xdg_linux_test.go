@@ -72,6 +72,6 @@ func TestContinueInIsOfferedWhereTheConversationCanMove(t *testing.T) {
 		}
 	}
 	if got := m.profileNameOf(cursorKind, "work"); got != "Work" {
-		t.Errorf("a Cursor card in work names %q", got)
+		t.Errorf("a Cursor session in work names %q", got)
 	}
 }

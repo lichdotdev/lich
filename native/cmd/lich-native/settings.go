@@ -149,8 +149,8 @@ func (s *settingsScreen) refresh() {
 	}()
 }
 
-// snapshot is what the open projects set, the providers' own defaults taken
-// from the book rather than read a second time.
+// snapshot is what the open projects set, the providers' own defaults and
+// profiles taken from the book rather than read a second time.
 func (s *settingsScreen) snapshot() scopedValues {
 	s.mu.Lock()
 	values := maps.Clone(s.values)
@@ -158,7 +158,9 @@ func (s *settingsScreen) snapshot() scopedValues {
 	if values == nil {
 		values = scopedValues{}
 	}
-	values[providerDefaultKey] = s.providers.book.snapshot().projectDefaults
+	book := s.providers.book.snapshot()
+	values[providerDefaultKey] = book.projectDefaults
+	maps.Copy(values, book.projectProfiles)
 	return values
 }
 
@@ -185,9 +187,12 @@ func (s *settingsScreen) choose(gtx C, h settingHit) {
 
 // useGlobal deletes a project's value: the backend reads "" as unset.
 func (s *settingsScreen) useGlobal(key, projectID string) {
-	if key == providerDefaultKey {
+	switch {
+	case key == providerDefaultKey:
 		s.providers.book.setProjectDefault(projectID, "")
-	} else {
+	case isProfileKey(key):
+		s.providers.book.setProjectProfile(projectID, key, "")
+	default:
 		s.mu.Lock()
 		delete(s.values[key], projectID)
 		s.mu.Unlock()

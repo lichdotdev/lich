@@ -4,6 +4,7 @@ import (
 	"context"
 	"hash/fnv"
 	"image/color"
+	"maps"
 
 	"github.com/lichdotdev/lich/native/lichclient"
 )
@@ -29,6 +30,26 @@ type scopedValues map[string]map[string]string
 func (v scopedValues) set(key, projectID string) (string, bool) {
 	value, ok := v[key][projectID]
 	return value, ok
+}
+
+// put stores a project's value, "" unsetting it.
+func (v scopedValues) put(key, projectID, value string) {
+	if value == "" {
+		delete(v[key], projectID)
+		return
+	}
+	if v[key] == nil {
+		v[key] = map[string]string{}
+	}
+	v[key][projectID] = value
+}
+
+func (v scopedValues) clone() scopedValues {
+	out := make(scopedValues, len(v))
+	for key, byProject := range v {
+		out[key] = maps.Clone(byProject)
+	}
+	return out
 }
 
 // rowKind is the scope state a setting row is drawn in.
@@ -135,13 +156,13 @@ func scopedKeys() []string {
 }
 
 // loadScopedValues reads every scoped key of every open project, but the
-// provider default, which the provider book reads. There is no
+// provider default and profiles, which the provider book reads. There is no
 // RPC that lists a project's settings, so it is one GetSetting per pair; the
 // keys are a handful and the projects are the open tabs.
 func loadScopedValues(ctx context.Context, c *lichclient.Client, projects []settingsProject) (scopedValues, error) {
 	values := scopedValues{}
 	for _, key := range scopedKeys() {
-		if key == providerDefaultKey {
+		if key == providerDefaultKey || isProfileKey(key) {
 			continue
 		}
 		for _, p := range projects {

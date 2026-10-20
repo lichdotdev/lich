@@ -19,12 +19,15 @@ type providerInfo struct {
 
 // providersMachine is what the backend answered: the detected providers with
 // their enabled flags, the global values of every key their screens read, and
-// each known project's own default provider.
+// each known project's own default provider and profiles.
 type providersMachine struct {
 	loaded          bool
 	list            []providerInfo
 	globals         map[string]string
 	projectDefaults map[string]string
+	// projectProfiles is each project's own profile, by the provider's
+	// profile key; a project absent follows Global.
+	projectProfiles scopedValues
 }
 
 func (m providersMachine) enabled() []providerInfo {
@@ -73,13 +76,13 @@ func providerFrom(d lichclient.DetectedProvider, enabled bool) providerInfo {
 
 // readProvidersMachine is the one read of the providers: detection, each
 // provider's enabled flag and the global values of the keys its screen reads,
-// and the default of each project in projectIDs.
+// and the default and profiles of each project in projectIDs.
 func readProvidersMachine(ctx context.Context, c *lichclient.Client, projectIDs []string) (providersMachine, error) {
 	detected, err := c.DetectProviders(ctx)
 	if err != nil {
 		return providersMachine{}, err
 	}
-	m := providersMachine{loaded: true, globals: map[string]string{}, projectDefaults: map[string]string{}}
+	m := providersMachine{loaded: true, globals: map[string]string{}, projectDefaults: map[string]string{}, projectProfiles: scopedValues{}}
 	read := func(key string) error {
 		v, err := c.GetSetting(ctx, key, "")
 		m.globals[key] = v
@@ -105,7 +108,48 @@ func readProvidersMachine(ctx context.Context, c *lichclient.Client, projectIDs 
 			m.projectDefaults[id] = v
 		}
 	}
-	return m, nil
+	return m, m.readProfiles(ctx, c, projectIDs)
+}
+
+// readProfiles reads each project's profile of every detected provider with
+// profiles.
+func (m *providersMachine) readProfiles(ctx context.Context, c *lichclient.Client, projectIDs []string) error {
+	var profileKeys []string
+	for _, p := range m.list {
+		if prov, ok := profileProviderOf(p.id); ok {
+			profileKeys = append(profileKeys, prov.key)
+		}
+	}
+	for _, id := range projectIDs {
+		for _, key := range profileKeys {
+			v, err := c.GetSetting(ctx, key, id)
+			if err != nil {
+				return err
+			}
+			m.projectProfiles.put(key, id, v)
+		}
+	}
+	return nil
+}
+
+// projectProfile is the profile a project's new sessions of one provider are
+// born in: shown, the project's own when it sets one (own), else global.
+type projectProfile struct {
+	shown, global string
+	own           bool
+}
+
+func (m providersMachine) projectProfile(kind, projectID string) projectProfile {
+	prov, ok := profileProviderOf(kind)
+	if !ok {
+		return projectProfile{shown: personalProfile, global: personalProfile}
+	}
+	project, own := m.projectProfiles.set(prov.key, projectID)
+	return projectProfile{
+		shown:  effectiveScopeProfile(m.globals[prov.key], project, own),
+		global: effectiveProfile(m.globals[prov.key]),
+		own:    own,
+	}
 }
 
 // providerBook is the window's one store of the providers: what detection
@@ -139,6 +183,7 @@ func (b *providerBook) snapshot() providersMachine {
 	m.list = slices.Clone(m.list)
 	m.globals = maps.Clone(m.globals)
 	m.projectDefaults = maps.Clone(m.projectDefaults)
+	m.projectProfiles = m.projectProfiles.clone()
 	return m
 }
 
@@ -147,6 +192,13 @@ func (b *providerBook) launchProviders() []launchProvider {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.machine.launchEnabled()
+}
+
+// projectProfile is the profile projectID's new sessions of kind are born in.
+func (b *providerBook) projectProfile(kind, projectID string) projectProfile {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.machine.projectProfile(kind, projectID)
 }
 
 // implicitKind is what a session nobody picked a kind for spawns in project.
@@ -211,8 +263,9 @@ func (b *providerBook) readUntilQuiet(ctx context.Context) {
 
 // noteProjects is the open projects, which the book takes a default for. The
 // default of one it has not read yet is what the state it came in with says,
-// until the next read.
-func (b *providerBook) noteProjects(projects []lichclient.Project) {
+// until the next read. Its profiles are not in the state: it returns the
+// projects it had not seen, for readProfiles.
+func (b *providerBook) noteProjects(projects []lichclient.Project) (fresh []string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.ids = b.ids[:0]
@@ -221,6 +274,7 @@ func (b *providerBook) noteProjects(projects []lichclient.Project) {
 		if slices.Contains(b.known, p.ID) {
 			continue
 		}
+		fresh = append(fresh, p.ID)
 		b.known = append(b.known, p.ID)
 		if p.DefaultProvider != "" {
 			if b.machine.projectDefaults == nil {
@@ -229,6 +283,7 @@ func (b *providerBook) noteProjects(projects []lichclient.Project) {
 			b.machine.projectDefaults[p.ID] = p.DefaultProvider
 		}
 	}
+	return fresh
 }
 
 // setGlobal shows a global write before the backend has it.
@@ -264,5 +319,40 @@ func (b *providerBook) setProjectDefault(projectID, id string) {
 	} else {
 		b.machine.projectDefaults[projectID] = id
 	}
+	b.mu.Unlock()
+}
+
+// readProfiles reads the profiles of projects the book learned of from the
+// state, without detecting the providers again. Before the first read there is
+// no provider to read them for, and that read takes them.
+func (b *providerBook) readProfiles(ctx context.Context, projectIDs []string) {
+	b.mu.Lock()
+	m := providersMachine{list: slices.Clone(b.machine.list), projectProfiles: scopedValues{}}
+	b.mu.Unlock()
+	if err := m.readProfiles(ctx, b.client, projectIDs); err != nil {
+		log.Printf("providers: project profiles: %v", err)
+		return
+	}
+	b.mu.Lock()
+	if b.machine.projectProfiles == nil {
+		b.machine.projectProfiles = scopedValues{}
+	}
+	for key, byProject := range m.projectProfiles {
+		for id, v := range byProject {
+			b.machine.projectProfiles.put(key, id, v)
+		}
+	}
+	b.mu.Unlock()
+	b.invalidate()
+}
+
+// setProjectProfile shows a project's profile for the provider of key before
+// the backend has it; "" is the project following Global again.
+func (b *providerBook) setProjectProfile(projectID, key, value string) {
+	b.mu.Lock()
+	if b.machine.projectProfiles == nil {
+		b.machine.projectProfiles = scopedValues{}
+	}
+	b.machine.projectProfiles.put(key, projectID, value)
 	b.mu.Unlock()
 }

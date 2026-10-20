@@ -522,7 +522,7 @@ func TestContinueInOffersCodexProfilesOfCodexCards(t *testing.T) {
 		t.Errorf("a provider with no profiles was offered %+v", got)
 	}
 	if got := m.profileNameOf(codexKind, "work"); got != "Work" {
-		t.Errorf("a Codex card's chip = %q", got)
+		t.Errorf("a Codex session's profile name = %q", got)
 	}
 }
 

@@ -533,6 +533,8 @@ func (s *settingsScreen) writeProviderKey(key, scope, value string, after func()
 		s.providers.book.setGlobal(key, value)
 	case key == providerDefaultKey:
 		s.providers.book.setProjectDefault(scope, value)
+	case isProfileKey(key):
+		s.providers.book.setProjectProfile(scope, key, value)
 	default:
 		s.mu.Lock()
 		if value == "" {

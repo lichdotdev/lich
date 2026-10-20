@@ -173,7 +173,10 @@
     "startNew": "新規で始める",
     "dismiss": "閉じる",
     "resumesIn": "開始時のプロファイルである {profile} · {email} で再開します。",
-    "resumesInNoEmail": "開始時のプロファイルである {profile} で再開します。"
+    "resumesInNoEmail": "開始時のプロファイルである {profile} で再開します。",
+    "footerTitle": "{project} の新しい {provider} セッション",
+    "useGlobal": "グローバルを使う（{profile}）",
+    "otherProviders": "その他のプロバイダー"
   },
   "fork": {
     "pruned": "{name} にはフォークできる会話がもうありません: {provider} が削除しました。",
