@@ -32,6 +32,7 @@ var (
 	rowChangedPL = ui.Space(3.5)
 	rowRule      = unit.Dp(2)
 	rowGap       = ui.Space(6)
+	rowTextMinW  = ui.Space(40)
 	rowNoteSize  = ui.TextXS
 	rowDescSize  = unit.Sp(13)
 	icRowFolder  = icons.Lucide("folder")
@@ -103,6 +104,8 @@ func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, t
 	return d
 }
 
+// content puts the control beside the text, or under it when the control
+// would leave the text less than rowTextMinW, as layoutBlock does.
 func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Theme) D) D {
 	text := th
 	if r.kind == rowGlobalOnly {
@@ -113,17 +116,33 @@ func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Them
 		padL = rowChangedPL
 	}
 	return layout.Inset{Left: padL, Right: rowPadX, Top: rowPadY, Bottom: rowPadY}.Layout(gtx, func(gtx C) D {
+		macro := op.Record(gtx.Ops)
+		cgtx := gtx
+		cgtx.Constraints.Min = image.Point{}
+		size := r.control(cgtx, th, text, control).Size
+		call := macro.Stop()
+		drawn := func(gtx C) D {
+			call.Add(gtx.Ops)
+			return D{Size: size}
+		}
+		textW := func(gtx C) D { return r.text(gtx, text) }
+		if gtx.Constraints.Max.X-size.X-gtx.Dp(rowGap) < gtx.Dp(rowTextMinW) {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(textW), ui.VGap(3), layout.Rigid(drawn))
+		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, func(gtx C) D { return r.text(gtx, text) }),
+			layout.Flexed(1, textW),
 			layout.Rigid(layout.Spacer{Width: rowGap}.Layout),
-			layout.Rigid(func(gtx C) D {
-				if r.kind == rowGlobalOnly {
-					return pill(gtx, text, text.Text(ui.TextXS, i18n.T("settings.settingsRow.globalOnly")).Muted().Layout, ui.Space(2), ui.Space(2))
-				}
-				return control(gtx, th)
-			}),
+			layout.Rigid(drawn),
 		)
 	})
+}
+
+// control is the row's control, or the Global only pill in its place.
+func (r settingRow) control(gtx C, th, text *ui.Theme, control func(gtx C, th *ui.Theme) D) D {
+	if r.kind == rowGlobalOnly {
+		return pill(gtx, text, text.Text(ui.TextXS, i18n.T("settings.settingsRow.globalOnly")).Muted().Layout, ui.Space(2), ui.Space(2))
+	}
+	return control(gtx, th)
 }
 
 // text is the title, the description and the scope line under them.

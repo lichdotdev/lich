@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On macOS the native window has its close, minimize and zoom buttons again; since 0.72.0 the topbar left their room empty.
 - On Windows, updating lich from the native window no longer rolls back with "Setup was unable to automatically close all applications": the window stayed open on `lich-native.exe`, which the installer has to replace. It now closes before the installer runs and opens again once lich is back. Updating from 0.72.0 or older still hits it once: end `lich-native.exe` in Task Manager when the message shows, choose Retry, and open lich from the Start menu afterwards.
 - Closing the native window while lich is away, after it quit or while it restarts, closes it, whatever "When the window closes" is set to. With Ask or Quit it stayed open and only showed an error that the sessions could not be counted.
+- In a narrow Settings window, a setting whose control is too wide to share the line, such as a provider's Profile picker, now puts the control under its title and description, where the text was squeezed into a sliver and broke letter by letter.
 - Continue in can move a Claude Code conversation back to the profile it just left, where a plugin hook that kept running after the session ended (WakaTime's, for one) left a file behind and the move refused with "already holds".
 
 ## [0.72.0] - 2026-10-19
