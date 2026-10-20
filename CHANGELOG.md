@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Desktop notifications you can click, in the native window on Windows and macOS.** As on Linux, a session that needs your input or finished its turn raises a notification with Open and Dismiss: Open brings lich up on that session's card, and the notification goes away once you answer or open the session. On macOS it needs lich run from Lich.app and asks once for permission; on Windows a session waiting on you keeps its notification on screen until you act on it.
+- Settings › Providers warns under Profile when sessions start through a custom binary, with its path and buttons to show it or go back to the default. A wrapper that sets its own login or config directory overrides the profile, and the Binary setting sits folded at the bottom of the screen.
 
 ### Removed
 

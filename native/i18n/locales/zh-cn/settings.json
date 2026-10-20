@@ -482,6 +482,9 @@
     "newProfile": "新建配置文件",
     "options": "{name} 的选项",
     "advancedBinary": "高级 · 可执行文件",
+    "binaryOverrides": "这里的会话通过 {path} 启动。自行设置登录或配置目录的脚本会覆盖 {profile}，“转到”可能找不到对话。",
+    "showBinary": "显示可执行文件",
+    "useDefaultBinary": "使用默认可执行文件",
     "loading": "正在读取配置文件…"
   },
   "settingsProfilesDialogs": {

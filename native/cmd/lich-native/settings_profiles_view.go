@@ -83,12 +83,13 @@ func (s *settingsScreen) profileTags(kind string, values scopedValues, m provide
 
 // profilePickerRow is Profile: which login new sessions are born in, in the
 // scope system like any overridable row.
-func (s *settingsScreen) profilePickerRow(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, m providersMachine, first bool) D {
+func (s *settingsScreen) profilePickerRow(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, m providersMachine, p providerInfo, first bool) D {
 	e := settingEntry{titleKey: "settings.settingsProfiles.title", key: c.provider.key, scope: scopeOverridable}
 	r := s.providerRow(gtx, e, values)
 	r.description = profileSentence(c.provider, c.provider.words.profileDescKey)
 	r.globalValue = c.book.nameOf(m.globals[c.provider.key])
 	shown := s.scopeProfile(c, values, m)
+	r.warning = s.profileBinaryWarning(gtx, c, values, m, p, c.book.nameOf(shown))
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return s.profilePicker(gtx, th, c, shown) })
 }
 

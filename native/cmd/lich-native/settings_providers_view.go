@@ -443,7 +443,7 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 	profiles := s.providers.profiles(p.id)
 	if profiles != nil {
 		s.ensureProfiles(profiles)
-		add(i18n.T("settings.settingsProfiles.title"), func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, profiles, values, m, first) })
+		add(i18n.T("settings.settingsProfiles.title"), func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, profiles, values, m, p, first) })
 		add(i18n.T("settings.settingsProfiles.profilesTitle"), func(gtx C, first bool) D { return s.profilesBlock(gtx, th, profiles, values, first) })
 		slug := s.scopeProfile(profiles, values, m)
 		if plan, ok := s.profilePlan(profiles, slug); ok {

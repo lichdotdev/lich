@@ -477,6 +477,9 @@
     "newProfile": "새 프로필",
     "options": "{name} 옵션",
     "advancedBinary": "고급 · 바이너리",
+    "binaryOverrides": "여기 세션은 {path}(으)로 시작합니다. 자체 로그인이나 설정 디렉터리를 지정하는 스크립트는 {profile}보다 우선하며, '다음에서 계속'이 대화를 찾지 못할 수 있습니다.",
+    "showBinary": "바이너리 보기",
+    "useDefaultBinary": "기본 바이너리 사용",
     "loading": "프로필 읽는 중…"
   },
   "settingsProfilesDialogs": {

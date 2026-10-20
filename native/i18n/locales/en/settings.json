@@ -482,6 +482,9 @@
     "newProfile": "New profile",
     "options": "Options for {name}",
     "advancedBinary": "Advanced · Binary",
+    "binaryOverrides": "Sessions here start through {path}. A script that sets its own login or config directory overrides {profile}, and Continue in can lose the conversation.",
+    "showBinary": "Show binary",
+    "useDefaultBinary": "Use the default binary",
     "loading": "Reading the profiles…"
   },
   "settingsProfilesDialogs": {

@@ -482,6 +482,9 @@
     "newProfile": "Novo perfil",
     "options": "Opções de {name}",
     "advancedBinary": "Avançado · Binário",
+    "binaryOverrides": "As sessões daqui sobem por {path}. Um script que define o próprio login ou diretório de configuração passa por cima de {profile}, e o Continuar em pode perder a conversa.",
+    "showBinary": "Mostrar binário",
+    "useDefaultBinary": "Usar o binário padrão",
     "loading": "Lendo os perfis…"
   },
   "settingsProfilesDialogs": {

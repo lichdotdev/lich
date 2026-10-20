@@ -119,6 +119,7 @@ type profileSettings struct {
 	asked    bool
 	advanced bool
 	fold     widget.Clickable
+	binary   profileBinaryLinks
 	picker   ui.DropdownPanelState
 	options  map[string]*widget.Clickable
 	rows     map[string]*profileRowState

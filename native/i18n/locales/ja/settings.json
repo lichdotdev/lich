@@ -482,6 +482,9 @@
     "newProfile": "新しいプロファイル",
     "options": "{name} のオプション",
     "advancedBinary": "詳細 · バイナリ",
+    "binaryOverrides": "ここのセッションは {path} から起動します。独自のログインや設定ディレクトリを指定するスクリプトは {profile} より優先され、「次で続ける」で会話を見失うことがあります。",
+    "showBinary": "バイナリを表示",
+    "useDefaultBinary": "既定のバイナリを使う",
     "loading": "プロファイルを読み込み中…"
   },
   "settingsProfilesDialogs": {

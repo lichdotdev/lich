@@ -52,6 +52,9 @@ type settingRow struct {
 	// sample is drawn in the description's place when set, for a
 	// description that is not text in the interface's font.
 	sample layout.Widget
+	// warning is drawn under the scope line, for a row whose value something
+	// outside it overrides.
+	warning func(gtx C, th *ui.Theme) D
 }
 
 // layout draws the row across gtx; first drops the divider above it. The
@@ -137,6 +140,9 @@ func (r settingRow) text(gtx C, th *ui.Theme) D {
 	}
 	if note := r.note(th); note != nil {
 		children = append(children, ui.VGap(1), layout.Rigid(note))
+	}
+	if r.warning != nil {
+		children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return r.warning(gtx, th) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
