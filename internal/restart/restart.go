@@ -89,7 +89,14 @@ func (c *Coordinator) WindowMovesToSuccessor() bool {
 // starts first and blocks retrying the pinned port; then this process exits,
 // and the freed port lets the successor bind, where the native window reconnects.
 func (c *Coordinator) Do() error {
-	return c.launch(c.exePath, successorArgs, successorEnv(c.env), true)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	spawned, err := c.spawnOnce(c.exePath, successorArgs, successorEnv(c.env))
+	if spawned {
+		c.windowMoves = true
+		c.stopLocked()
+	}
+	return err
 }
 
 // Install hands replacement and relaunch to Inno Setup. It waits for this PID
@@ -98,7 +105,13 @@ func (c *Coordinator) Do() error {
 // lich-native.exe too, which Windows will not overwrite while it runs, and the
 // lich it launches again opens a window of its own.
 func (c *Coordinator) Install(installer string) error {
-	return c.launch(installer, installerArgs(filepath.Dir(c.exePath), os.Getpid()), successorEnv(c.env), false)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	spawned, err := c.spawnOnce(installer, installerArgs(filepath.Dir(c.exePath), os.Getpid()), successorEnv(c.env))
+	if spawned {
+		c.stopLocked()
+	}
+	return err
 }
 
 // installerArgs is half of a contract with build/windows/lich.iss. /UPDATEPID is
@@ -111,30 +124,32 @@ func installerArgs(dir string, pid int) []string {
 		"/LOG=" + filepath.Join(dir, ".lich-update-setup.log")}
 }
 
-func (c *Coordinator) launch(exe string, args, env []string, windowMoves bool) error {
+// spawnOnce launches the successor and reports whether this call did; the
+// caller holds c.mu across it, so concurrent calls cannot both slip past the
+// check. Once only: a second /restart (two install.sh runs) must not spawn a
+// second successor that would then lose the port race and burn the bind
+// timeout. The latch is set only after a successful spawn — a failed launch
+// (say, the exe mid-swap by the package manager) must leave /restart
+// retryable, not silently dead.
+func (c *Coordinator) spawnOnce(exe string, args, env []string) (bool, error) {
 	if c.exePath == "" {
-		return errors.New("restart: executable path unknown")
+		return false, errors.New("restart: executable path unknown")
 	}
-	// Once only: a second /restart (two install.sh runs) must not spawn a second
-	// successor that would then lose the port race and burn the bind timeout.
-	// The latch is set only after a successful spawn — a failed launch (say,
-	// the exe mid-swap by the package manager) must leave /restart retryable,
-	// not silently dead. The lock spans the spawn so concurrent calls cannot
-	// both slip past the check.
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.started {
-		return nil
+		return false, nil
 	}
 	if err := c.spawn(exe, env, args); err != nil {
-		return fmt.Errorf("restart: launch successor: %w", err)
+		return false, fmt.Errorf("restart: launch successor: %w", err)
 	}
 	c.started = true
-	c.windowMoves = windowMoves
+	return true, nil
+}
+
+// stopLocked ends this lich once a successor is up; the caller holds c.mu.
+func (c *Coordinator) stopLocked() {
 	if c.stop != nil {
 		c.stop()
 	}
-	return nil
 }
 
 // successorEnv is env plus the wait marker, on a fresh slice.

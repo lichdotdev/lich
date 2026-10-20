@@ -177,3 +177,65 @@ func TestAttachedFollowsTheClient(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+// lich waits on Gone after telling the window to close: on Windows an update
+// cannot replace lich-native.exe while the window's process still runs.
+func TestGoneClosesOnceTheClientLeaves(t *testing.T) {
+	hub := New()
+	select {
+	case <-hub.Gone():
+	default:
+		t.Fatal("Gone is open with no client ever connected")
+	}
+	server := httptest.NewServer(hub)
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(server.URL, "http"), nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	waitForAttach(t, hub)
+	gone := hub.Gone()
+	select {
+	case <-gone:
+		t.Fatal("Gone is closed with a client connected")
+	default:
+	}
+	_ = conn.CloseNow()
+	select {
+	case <-gone:
+	case <-ctx.Done():
+		t.Fatal("Gone still open after the client closed")
+	}
+}
+
+// A window replaced by another one is gone too: whoever waited on it is not
+// left waiting on a connection that no longer exists.
+func TestGoneClosesWhenAnotherClientTakesOver(t *testing.T) {
+	hub := New()
+	server := httptest.NewServer(hub)
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	url := "ws" + strings.TrimPrefix(server.URL, "http")
+	first, _, err := websocket.Dial(ctx, url, nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer first.CloseNow()
+	waitForAttach(t, hub)
+	gone := hub.Gone()
+	second, _, err := websocket.Dial(ctx, url, nil)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer second.CloseNow()
+	select {
+	case <-gone:
+	case <-ctx.Done():
+		t.Fatal("Gone of the replaced client still open")
+	}
+}

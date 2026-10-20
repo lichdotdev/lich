@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/appupdate"
@@ -146,7 +147,7 @@ func main() {
 
 	term.SetRestart(coord.Do)
 
-	run(term, configDir, coord, startWindow(sys, noWindow), func() { hub.Emit(windowCloseEvent, nil) })
+	run(term, configDir, coord, startWindow(sys, noWindow), closeWindow(hub))
 }
 
 // windowStart is what a launch does about lich's window: open it, its own or
@@ -722,6 +723,26 @@ const (
 	windowRaiseEvent = "window-raise"
 	windowCloseEvent = "window-close"
 )
+
+// windowLeaveWait bounds waiting for the native window to end once told to
+// close. It ends at once (os.Exit on the event); the bound is for a window
+// that never reads it, which must not keep lich from quitting.
+const windowLeaveWait = 5 * time.Second
+
+// closeWindow tells the native window to close and waits for its process to
+// end, so a Windows update that runs once lich has exited finds lich-native.exe
+// free to replace.
+func closeWindow(hub *events.Hub) func() {
+	return func() {
+		gone := hub.Gone()
+		hub.Emit(windowCloseEvent, nil)
+		select {
+		case <-gone:
+		case <-time.After(windowLeaveWait):
+			slog.Warn("the window did not close", "waited", windowLeaveWait)
+		}
+	}
+}
 
 // raiseNative brings the native window forward through /events, which only it
 // holds once it attached.

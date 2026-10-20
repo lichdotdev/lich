@@ -30,10 +30,14 @@ type Envelope struct {
 type Hub struct {
 	mu   sync.Mutex
 	conn *websocket.Conn
+	// gone is closed once conn leaves: dropped, or replaced by another client.
+	gone chan struct{}
 }
 
 func New() *Hub {
-	return &Hub{}
+	gone := make(chan struct{})
+	close(gone)
+	return &Hub{gone: gone}
 }
 
 // Emit pushes one event to the connected client; without one it is dropped.
@@ -56,6 +60,15 @@ func (h *Hub) Emit(name string, data any) {
 	}
 }
 
+// Gone is closed once the client connected now leaves, and already closed
+// with none connected. The client's process ends with its connection, so this
+// is how lich waits for the window it told to close.
+func (h *Hub) Gone() <-chan struct{} {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.gone
+}
+
 // Attached reports whether a client is connected to hear what is emitted.
 func (h *Hub) Attached() bool {
 	h.mu.Lock()
@@ -67,6 +80,10 @@ func (h *Hub) attach(conn *websocket.Conn) {
 	h.mu.Lock()
 	previous := h.conn
 	h.conn = conn
+	if previous != nil {
+		close(h.gone)
+	}
+	h.gone = make(chan struct{})
 	h.mu.Unlock()
 	if previous != nil {
 		_ = previous.CloseNow()
@@ -77,6 +94,7 @@ func (h *Hub) drop(conn *websocket.Conn) {
 	h.mu.Lock()
 	if h.conn == conn {
 		h.conn = nil
+		close(h.gone)
 	}
 	h.mu.Unlock()
 	_ = conn.CloseNow()
