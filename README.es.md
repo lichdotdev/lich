@@ -291,7 +291,7 @@ versión de pago y no la va a tener.
 
 <!-- sponsor-names: monthly sponsors go here -->
 
-### Donantes
+### Apoyos puntuales
 
 <!-- backers: one-time supporters go here -->
 

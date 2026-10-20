@@ -64,7 +64,7 @@ O que dá para fazer com o lich:
   monta o split com as outras em volta dela num clique. Cada split tem nome,
   um projeto guarda quantos você quiser e cada um ganha um bloco na barra
   lateral, que dá para recolher, renomear ou desfazer.
-- **Criar um worktree sem fazer setup.** Crie um a partir de qualquer branch
+- **Criar uma worktree sem fazer setup.** Crie uma a partir de qualquer branch
   base: o lich copia os seus `.env*` ignorados pelo git, reserva uma porta
   para o servidor de dev que nenhum outro checkout nem processo da máquina
   está usando e roda o script de setup do projeto antes do agente começar.
@@ -87,7 +87,7 @@ O que dá para fazer com o lich:
   sessão num prompt só, colado e não enviado. A aba Código navega pelo
   checkout e busca no texto dos arquivos.
 - **Levar o pull request até o merge daqui.** Liste os pull requests abertos
-  do repositório, faça checkout de um num worktree próprio, leia o diff,
+  do repositório, faça checkout de um numa worktree própria, leia o diff,
   revise inline e faça o merge com os métodos que a branch base aceita de
   fato. Numa branch que ainda não tem pull request, **Criar com agente** pede
   para a sessão dessa branch abrir um, e nada é enviado até você apertar
@@ -129,14 +129,14 @@ mesmas coisas.
 | Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
 | Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim |
 | Um paste longo pode entrar como texto editável em vez de um placeholder recolhido (Configurações › Provedores, desligado por padrão) | sim | não | não | sim | não medido | não, vira o anexo `paste_N.txt` | não | sim |
-| Fazer fork de uma conversa para um novo worktree, ou no mesmo checkout na janela nativa | sim | sim | não | sim | não | não | não | não |
+| Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout na janela nativa | sim | sim | não | sim | não | não | não | não |
 | Aviso na janela nativa quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | na próxima chamada de tool | não | sim |
 | Abrir uma sessão com o esforço de raciocínio escolhido | sim | sim | sim | não | sim | não | no nome do modelo | sim |
 | Abrir uma sessão com ultracode ligado | sim | não | não | não | não | não | não | não |
 | Várias contas lado a lado como perfis, cada uma com login completo próprio, e uma sessão que muda de conta continua no mesmo card (na janela nativa, experimental: Configurações › Provedores) | sim | sim, com plugins próprios em cada perfil e as configurações do Pessoal compartilhadas por todos | não | sim, com login feito num card de terminal; a sessão não muda de perfil, porque as conversas ficam no mesmo banco que guarda o login | sim, com login feito num card de terminal e configurações compartilhadas por todos os perfis | não medido | Linux e Windows (no macOS o login fica no Keychain), com login feito num card de terminal e `mcp.json`, hooks e skills compartilhados por todos os perfis | só Linux (o macOS guarda o login no Keychain, e no Windows nada consegue mudá-lo de lugar), com login feito num card de terminal e as conversas compartilhadas por todos os perfis |
 | Uma pasta que você marcou como confiável na conta principal abre sem a pergunta "trust this folder?" em todos os outros perfis | sim | sim | sem perfis | não pergunta nada | não pergunta nada | não medido | sim | não pergunta nada |
 | Uma sessão na sandbox abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
-| Um worktree de uma pasta confiável abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
+| Uma worktree de uma pasta confiável abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
 | Controlar uma sessão em execução por `lich control` ou por um agente: prompt, parar, modelo, esforço, slash command | sim | não | não | não | não | não | não | não |
 | Uma mensagem de outra sessão chega sem ser digitada no terminal | sim | não | não | não | não | não | não | não |
 | Um subagente iniciado pelo agente roda como sessão do lich com card próprio, no checkout da sessão que pediu, entrega o relatório completo e fecha ao terminar; os subagentes dele também ganham card, um nível abaixo | sim | não | não | não | não | não | não | não |
@@ -193,8 +193,8 @@ por quê.
    para abrir qualquer provedor ativado, ou um terminal comum, exatamente
    naquele checkout. Clique no cabeçalho para recolher ou expandir as sessões
    dele.
-5. **Crie um worktree** *(opcional)*: a partir de qualquer branch base. O lich
-   prepara o worktree e já abre uma sessão nova nele.
+5. **Crie uma worktree** *(opcional)*: a partir de qualquer branch base. O lich
+   prepara a worktree e já abre uma sessão nova nela.
 
 ## Configuração
 
@@ -213,7 +213,7 @@ por quê.
   Configurações › Aparência, arrastando cada um; o custo começa oculto, porque
   esse número só faz sentido se você paga por token.
 - **Worktrees**: o `.lich/setup-worktree.sh` no checkout do projeto roda no
-  terminal de cada worktree novo, antes do agente. O diálogo Nova worktree
+  terminal de cada worktree nova, antes do agente. O diálogo Nova worktree
   mostra o script e sugere um com base no que detectou quando o repo não tem
   nenhum. Um arquivo `.worktreeinclude` ajusta quais arquivos ignorados pelo
   git são copiados.
