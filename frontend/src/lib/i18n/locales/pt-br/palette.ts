@@ -14,7 +14,7 @@ export const palette = {
     showBeside: "mostrar ao lado",
     nothingClosed: "Nada fechado ainda",
     nothingClosedHint:
-      "Feche uma sessão e ela espera aqui, com sua branch, seu agente e sua conversa, até que o worktree seja removido.",
+      "Feche uma sessão e ela espera aqui, com sua branch, seu agente e sua conversa, até que a worktree seja removida.",
     noMatches: "Nenhum resultado para {query}",
     noMatchesInTab: "Nenhum resultado para {query} em {tab}",
     shownOfTotal: "{shown} de {total}",

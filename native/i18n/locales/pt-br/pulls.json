@@ -174,11 +174,11 @@
   },
   "pulls": {
     "alreadyRemoved": "{name} já foi removido",
-    "pinnedSession": "O worktree tem uma sessão fixada. Desafixe-a primeiro.",
-    "notCreatedByLich": "O lich não criou este worktree. Remova-o pela barra lateral.",
-    "dirty": "O worktree tem alterações não commitadas. Remova-o pela barra lateral.",
+    "pinnedSession": "A worktree tem uma sessão fixada. Desafixe-a primeiro.",
+    "notCreatedByLich": "O lich não criou esta worktree. Remova-a pela barra lateral.",
+    "dirty": "A worktree tem alterações não commitadas. Remova-a pela barra lateral.",
     "removed": "{name} removido",
-    "removeFailed": "Falha ao remover o worktree: {error}",
+    "removeFailed": "Falha ao remover a worktree: {error}",
     "merged": "#{number} mergeado em {base}",
     "announceFailed": "Não foi possível avisar as sessões em {name}: {error}",
     "removeWorktree": "Remover worktree",
@@ -221,8 +221,8 @@
   "pullsActions": {
     "runningTitle": "As sessões ainda estão em execução",
     "running": {
-      "one": "Uma sessão em {name} está no meio de um turno. Remover o worktree a interrompe; o turno em andamento é perdido.",
-      "other": "{count} sessões em {name} estão no meio de um turno. Remover o worktree as interrompe; o turno em andamento é perdido."
+      "one": "Uma sessão em {name} está no meio de um turno. Remover a worktree a interrompe; o turno em andamento é perdido.",
+      "other": "{count} sessões em {name} estão no meio de um turno. Remover a worktree as interrompe; o turno em andamento é perdido."
     }
   },
   "pullsView": {

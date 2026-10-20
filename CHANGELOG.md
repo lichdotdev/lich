@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- In Brazilian Portuguese, every message now calls a worktree "a worktree", where a few said "o worktree".
+
 ## [0.72.0] - 2026-10-19
 
 ### Changed

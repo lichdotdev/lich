@@ -21,7 +21,7 @@
     "detailTool": "Há quanto tempo esta sessão está em uso: digitando nela ou recebendo o relatório de uma chamada de ferramenta. Uma pausa maior que 15 minutos conta como tempo ausente."
   },
   "spawnGate": {
-    "checkoutGone": "O worktree desta sessão não existe mais, então a sessão foi fechada. Recrie o worktree para retomá-la.",
+    "checkoutGone": "A worktree desta sessão não existe mais, então a sessão foi fechada. Recrie a worktree para retomá-la.",
     "conversationGone": "A conversa anterior não está mais disponível. Iniciando uma nova sessão."
   },
   "palette": {
