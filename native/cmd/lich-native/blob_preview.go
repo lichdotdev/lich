@@ -56,9 +56,8 @@ const (
 	blobPDF
 )
 
-// imageExtensions are the formats internal/project.previewTypes serves that
-// this binary decodes; AVIF and ICO fall to the state with no
-// preview.
+// imageExtensions are the formats this binary decodes, the same ones
+// internal/project.previewTypes serves.
 var imageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true, ".bmp": true}
 
 func previewKindOf(rel string) blobKind {

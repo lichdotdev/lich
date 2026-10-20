@@ -86,9 +86,7 @@ func (h *Hub) drop(conn *websocket.Conn) {
 // connection replaces the previous one. The read loop only watches for close.
 // Token auth is applied by the transport mount, like every mounted handler.
 func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		OriginPatterns: []string{"*"},
-	})
+	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		slog.Warn("events: accept", "err", err)
 		return

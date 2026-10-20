@@ -48,26 +48,10 @@ func canConfine(t *testing.T, available bool) {
 	t.Cleanup(func() { sandboxAvailable = previous })
 }
 
-// TestUploadAnswersPreflight pins the CORS preflight: the body carries the
-// dropped file's own content type, which is not a type a simple request may
-// have, so a cross-origin POST is preceded by this OPTIONS probe.
-func TestUploadAnswersPreflight(t *testing.T) {
-	recorder := httptest.NewRecorder()
-
-	New(t.TempDir(), nil).Upload(recorder, httptest.NewRequest(http.MethodOptions, "/drop", nil))
-
-	if recorder.Code != http.StatusNoContent {
-		t.Fatalf("preflight = %d, want %d", recorder.Code, http.StatusNoContent)
-	}
-	if got := recorder.Header().Get("Access-Control-Allow-Origin"); got != "*" {
-		t.Fatalf("preflight Allow-Origin = %q, want %q", got, "*")
-	}
-}
-
 // TestUploadRefusesOtherMethods: the endpoint writes a file, so a method that
 // is not the POST the window makes is refused rather than answered.
 func TestUploadRefusesOtherMethods(t *testing.T) {
-	for _, method := range []string{http.MethodGet, http.MethodPut} {
+	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodOptions} {
 		t.Run(method, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
@@ -82,9 +66,7 @@ func TestUploadRefusesOtherMethods(t *testing.T) {
 }
 
 // TestUploadStoresBytes covers the whole endpoint: the window posts the file
-// and gets back a path that holds exactly what it sent. The CORS header is
-// asserted with it because a cross-origin caller cannot read a response
-// without it.
+// and gets back a path that holds exactly what it sent.
 func TestUploadStoresBytes(t *testing.T) {
 	dir := t.TempDir()
 	recorder := httptest.NewRecorder()
@@ -95,9 +77,6 @@ func TestUploadStoresBytes(t *testing.T) {
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("upload = %d (%s), want %d", recorder.Code, recorder.Body, http.StatusOK)
-	}
-	if got := recorder.Header().Get("Access-Control-Allow-Origin"); got != "*" {
-		t.Fatalf("Allow-Origin = %q, want %q", got, "*")
 	}
 	var answer struct {
 		Path string `json:"path"`

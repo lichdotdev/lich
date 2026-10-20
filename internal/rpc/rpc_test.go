@@ -120,19 +120,16 @@ func TestMultipleNonErrorReturnsUseFirst(t *testing.T) {
 	}
 }
 
-func TestOptionsPreflightAndMethodGate(t *testing.T) {
+// Only a POST is a call, and no CORS header is answered: a page in a browser
+// holding the token cannot read a reply cross-origin.
+func TestOnlyPostIsACall(t *testing.T) {
 	h := newTestHandler()
-	req := httptest.NewRequest(http.MethodOptions, "/rpc/fake.Add", nil)
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusNoContent || rec.Header().Get("Access-Control-Allow-Origin") != "*" {
-		t.Fatalf("preflight: %d %v", rec.Code, rec.Header())
-	}
-	req = httptest.NewRequest(http.MethodGet, "/rpc/fake.Add", nil)
-	rec = httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	if rec.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("GET: %d", rec.Code)
+	for _, method := range []string{http.MethodOptions, http.MethodGet} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(method, "/rpc/fake.Add", nil))
+		if rec.Code != http.StatusMethodNotAllowed || rec.Header().Get("Access-Control-Allow-Origin") != "" {
+			t.Fatalf("%s: %d %v", method, rec.Code, rec.Header())
+		}
 	}
 }
 

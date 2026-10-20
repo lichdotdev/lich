@@ -56,27 +56,8 @@ func (h *Handler) Deny(method string) {
 	h.denied[method] = true
 }
 
-// Preflight answers the CORS handshake every POST endpoint on the listener
-// shares, and reports whether it consumed the request. CORS is wide open on
-// purpose: the random token, enforced by the transport mount, is the actual
-// auth, as with /ws. Only the OPTIONS probe is answered here; the caller still gates
-// the method, because each endpoint spells its own refusal.
-func Preflight(w http.ResponseWriter, r *http.Request) bool {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	if r.Method != http.MethodOptions {
-		return false
-	}
-	w.WriteHeader(http.StatusNoContent)
-	return true
-}
-
 // ServeHTTP handles one call.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if Preflight(w, r) {
-		return
-	}
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "POST only")
 		return

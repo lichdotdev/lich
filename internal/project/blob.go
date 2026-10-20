@@ -15,21 +15,19 @@ import (
 	"github.com/lichdotdev/lich/internal/relpath"
 )
 
-// maxPreviewBytes caps one side of an image or PDF preview. It covers a 4K
+// maxPreviewBytes caps one side of an image preview. It covers a 4K
 // screenshot saved as PNG (5 to 15 MB) with room to spare, and keeps a stray
 // asset from being held whole in memory twice, here and in the window.
 const maxPreviewBytes = 20 << 20
 
-// previewTypes is both the allowlist and the Content-Type table. SVG is left
-// out on purpose: git diffs it as text.
+// previewTypes is both the allowlist and the Content-Type table: the formats
+// the window decodes (imageExtensions in native/cmd/lich-native/blob_preview.go).
+// SVG is left out on purpose: git diffs it as text.
 var previewTypes = map[string]string{
-	".avif": "image/avif",
 	".bmp":  "image/bmp",
 	".gif":  "image/gif",
-	".ico":  "image/x-icon",
 	".jpeg": "image/jpeg",
 	".jpg":  "image/jpeg",
-	".pdf":  "application/pdf",
 	".png":  "image/png",
 	".webp": "image/webp",
 }
@@ -48,9 +46,9 @@ type Blob struct {
 	ContentType string
 }
 
-// Blob reads rel at ref for an image or PDF preview. ref is "" for the working
-// tree, "HEAD" for the commit a checkout's uncommitted diff stands on, or an
-// object this clone holds (a turn's snapshot tree). A pull request's head is
+// Blob reads rel at ref for an image preview. ref is "" for the working tree,
+// "HEAD" for the commit a checkout's uncommitted diff stands on, or an object
+// this clone holds. A pull request's head is
 // not reached: unlike FileLines there is no GitHub fallback.
 //
 // A path absent at ref is fs.ErrNotExist: the side of an added or deleted file
@@ -142,8 +140,7 @@ func checkPreviewSize(size int64) error {
 }
 
 // ServeBlob is Blob over HTTP, so the bytes travel raw rather than as base64
-// inside an RPC answer. The query carries path, rel and ref. Range requests
-// are honoured.
+// inside an RPC answer. The query carries path, rel and ref.
 //
 // The window tells the sides apart by status: 404 is a side with no file, 413
 // a file over the limit, 415 a type with no preview. The body says which, in
@@ -160,7 +157,6 @@ func (s *Service) ServeBlob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", blob.ContentType)
-	w.Header().Set("X-Content-Type-Options", "nosniff")
 	// The working tree answers differently under the same URL as the agent
 	// writes; the window keys each side by its blob oid instead of by caching.
 	w.Header().Set("Cache-Control", "no-store")

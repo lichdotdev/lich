@@ -36,7 +36,6 @@ import (
 	"unicode"
 
 	"github.com/lichdotdev/lich/internal/prompt"
-	"github.com/lichdotdev/lich/internal/rpc"
 
 	"github.com/lichdotdev/lich/internal/sandbox"
 )
@@ -127,11 +126,6 @@ func New(configDir string, live func(sessionID string) bool) *Service {
 // at. The name and the session ride the query because the body is the file
 // itself.
 func (s *Service) Upload(w http.ResponseWriter, r *http.Request) {
-	// The preflight is not optional here — the body carries the file's own
-	// content type, which is not one a simple request may have.
-	if rpc.Preflight(w, r) {
-		return
-	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "POST only", http.StatusMethodNotAllowed)
 		return
