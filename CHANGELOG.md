@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - In Brazilian Portuguese, every message now calls a worktree "a worktree", where a few said "o worktree".
+- On macOS the native window has its close, minimize and zoom buttons again; since 0.72.0 the topbar left their room empty.
 
 ## [0.72.0] - 2026-10-19
 
