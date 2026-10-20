@@ -5,12 +5,13 @@
   </picture>
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <strong>Español</strong> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
-  <p><strong>Un ADE centrado en la terminal para los agentes de código que ya usas.</strong></p>
+  <p><strong>Un ADE de terminal para los agentes de código que ya usas.</strong></p>
   <p>
-    Abre tus proyectos, ejecuta agentes como Claude Code, Codex y opencode en
-    terminales reales y mantén git (worktrees, diffs y pull requests) a la vista
-    sin salir de la ventana. Un solo binario Go estático, sin Electron: la
-    interfaz se abre en el Chromium embebido de lich en Linux, Windows y macOS.
+    Abre tus proyectos, corre agentes como Claude Code, Codex y opencode en
+    terminales de verdad y ten git (worktrees, diffs y pull requests) a la vista
+    sin salir de la ventana. Un único binario estático de Go, sin Electron: la
+    interfaz se abre en el Chromium embebido del propio lich, en Linux, Windows y
+    macOS.
   </p>
   <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
@@ -21,7 +22,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="Cuatro sesiones de Claude Code lado a lado en un mismo grupo, cada una en su propio git worktree: la barra lateral las lista con su rama y su indicador de diff, y el pie de ventana muestra el modelo, el plan y la rama" width="1000" />
+  <img src="docs/media/session.png" alt="Cuatro sesiones de Claude Code una al lado de la otra en un mismo grupo, cada una en su propio git worktree; la barra lateral muestra cada una con su rama y su indicador de diff, y en el pie de ventana se ven el modelo, el plan y la rama" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -29,85 +30,86 @@
 
 lich te permite:
 
-- **Ejecutar el agente que ya tienes.** [Claude Code](https://www.anthropic.com/claude-code),
+- **Usar el agente que ya tienes.** [Claude Code](https://www.anthropic.com/claude-code),
   [Codex](https://github.com/openai/codex), Antigravity,
   [opencode](https://github.com/sst/opencode), oh-my-pi,
   [Crush](https://github.com/charmbracelet/crush), el
   [Cursor CLI](https://cursor.com/docs/cli) y el
-  [Kiro CLI](https://kiro.dev/docs/cli/) se ejecutan aquí exactamente igual.
-  Indica a lich una sola vez dónde está el binario de cada uno y luego elige el
-  predeterminado o uno por sesión. Lo que lich puede leer *de vuelta* de una
-  sesión cambia según el proveedor, y la tabla está en
+  [Kiro CLI](https://kiro.dev/docs/cli/) funcionan aquí todos igual. Le
+  indicas a lich una sola vez dónde está cada binario y después eliges el
+  predeterminado o uno distinto por sesión. Lo que lich consigue *leer* de una
+  sesión depende del proveedor; el detalle está en la tabla de
   [Compatibilidad por proveedor](#compatibilidad-por-proveedor).
-- **Tener una terminal de verdad.** Shells respaldados por PTY, varios por
-  proyecto, renderizados en la GPU, con un historial de desplazamiento con
-  búsqueda que sobrevive a una recarga completa de la página. Dale a una un
-  punto de entrada (`lazygit`, `k9s`, `pnpm dev`) y se abre directamente en esa
-  herramienta cada vez, igual en Linux, macOS y Windows: antes no se carga ningún
-  rc del shell ni perfil de PowerShell, así que un punto de entrada que te
-  funciona a ti también le funciona a quien lo compartas. El pie de ventana
-  sigue los `cd` y muestra la rama; y, en una sesión de Claude Code, Codex o Kiro
-  CLI, el modelo y la ventana de contexto en uso; en Claude Code, Codex,
-  Antigravity, Cursor CLI y una suscripción de OpenCode Go, cuánto queda de la
-  ventana móvil de tu plan; y, si lo pides, lo que ha gastado la sesión, en los
-  proveedores que lo registran.
-- **Poner una sesión a trabajar para otra.** Entrega una tarea a otra tarjeta y
-  su propio agente escribe la respuesta de vuelta, sea lo que sea que se ejecute
-  en cada extremo: el agente llega a las demás sesiones mediante herramientas
-  que recibe al iniciarse (MCP en Claude Code y Codex) o que trae el plugin.
-  Toda esa superficie funciona también como el comando `lich` en cualquier shell,
-  `--json` incluido, de modo que un script puede dirigir una sesión sin ningún
-  agente de por medio ([`docs/cli.md`](docs/cli.md)).
-- **Vigilar varias a la vez.** Pon cualquier sesión en un grupo junto a aquella en
-  la que estás y lich distribuye los paneles solo, según cuántos haya y cuánto
-  espacio tenga la ventana: ocho quedan cuatro en fila en un monitor ultrapanorámico
-  y dos en fila en un portátil. Una sesión que delegó trabajo en otras arma el
-  grupo a su alrededor con un clic. Cada grupo tiene nombre, un proyecto conserva
-  tantos como quieras, y cada uno recibe un bloque en la barra lateral que puedes
-  plegar, renombrar o deshacer.
-- **Ramificar un worktree sin la preparación.** Crea uno desde cualquier rama
-  base y lich lo llena con tus archivos `.env*` ignorados por git, le asigna un
-  puerto de servidor de desarrollo que ningún otro checkout ni proceso de la
-  máquina esté usando, y ejecuta el script de preparación de tu proyecto antes de
-  que arranque el agente. Si lo inicias desde el trabajo sin confirmar del
-  checkout, esos cambios viajan con él, archivos sin seguimiento incluidos.
-- **Ejecutar una sesión confinada.** Un agente puede abrirse dentro de un sandbox
-  del sistema operativo: un home nuevo y vacío que contiene solo el estado propio
-  de ese proveedor, el resto de la máquina en solo lectura y acceso de escritura
-  al checkout para el que se abrió. Tus claves ssh, tus credenciales de la nube
-  y todos los demás repositorios del disco sencillamente no están ahí: el
-  contrapeso de dejar que un agente se salte las peticiones de permiso. Linux usa
-  bubblewrap y macOS `sandbox-exec`; no es una barrera contra código hostil, y
-  [`docs/ceilings.md`](docs/ceilings.md) dice qué es lo que no detiene.
-- **Revisar el diff donde lo lees.** Un dock de CodeMirror muestra los cambios en
-  curso junto a un árbol de archivos en vivo, pliega los que solo movieron
-  espacios en blanco cuando se lo pides, y muestra una imagen o un PDF modificado
-  antes y después. Haz clic derecho sobre una selección para comentar esas
-  líneas; el lote se pega en la sesión como un único prompt, sin enviar. Su
-  pestaña Código recorre el checkout y busca en el texto de sus archivos.
-- **Entregar el pull request desde aquí.** Lista los pull requests abiertos del
-  repositorio, haz checkout de uno en un worktree propio, y luego lee el diff,
-  revísalo en línea y haz merge, con los métodos que la rama base realmente
-  acepta. En una rama que todavía no tiene pull request, **Crear con el agente**
-  le pide a la sesión de esa rama que abra uno, y no se envía nada hasta que
-  pulses Enter.
+- **Tener una terminal de verdad.** Shells sobre PTY, varios por proyecto,
+  renderizados en la GPU, con un historial en el que puedes buscar y que
+  sobrevive a una recarga completa de la página. Si a una le pones un punto de
+  entrada (`lazygit`, `k9s`, `pnpm dev`), se abre siempre directo en esa
+  herramienta, igual en Linux, macOS y Windows: no se carga antes ningún rc del
+  shell ni perfil de PowerShell, así que el punto de entrada que te funciona a
+  ti también le funciona a cualquiera con quien lo compartas. El pie de ventana
+  sigue cada `cd` y muestra la rama. En una sesión de Claude Code, Codex o Kiro
+  CLI muestra además el modelo y la ventana de contexto en uso; con Claude Code,
+  Codex, Antigravity, Cursor CLI y una suscripción de OpenCode Go, cuánto te
+  queda de la ventana móvil del plan; y, si lo pides, cuánto lleva gastado la
+  sesión, en los proveedores que lo registran.
+- **Poner una sesión a trabajar para otra.** Le pasas una tarea a otra tarjeta y
+  el agente de esa tarjeta te devuelve la respuesta, sea cual sea el agente de
+  cada lado: llega a las demás sesiones con herramientas que recibe al
+  arrancar (MCP en Claude Code y Codex) o que trae el plugin. Todo eso también
+  está disponible como el comando `lich` en cualquier shell, con `--json`
+  incluido, así que un script puede controlar una sesión sin ningún agente de
+  por medio ([`docs/cli.md`](docs/cli.md)).
+- **Seguir varias a la vez.** Pon cualquier sesión en un grupo junto a la que
+  estás usando y lich acomoda los paneles por su cuenta, según cuántos sean y el
+  espacio que tenga la ventana: ocho sesiones quedan en filas de cuatro en un
+  monitor ultrawide y de dos en un portátil. Una sesión que delegó trabajo en
+  otras arma el grupo a su alrededor con un clic. Cada grupo tiene nombre, un
+  proyecto puede tener todos los que quieras, y cada uno aparece como un bloque
+  en la barra lateral que puedes plegar, renombrar o deshacer.
+- **Crear un worktree sin preparar nada a mano.** Créalo a partir de cualquier
+  rama base y lich le copia tus archivos `.env*` ignorados por git, le asigna un
+  puerto para el servidor de desarrollo que no usa ningún otro checkout ni
+  ningún proceso de la máquina, y ejecuta el script de preparación del proyecto
+  antes de que arranque el agente. Si partes de los cambios sin commitear del
+  checkout, se vienen con él, incluidos los archivos sin seguimiento.
+- **Correr una sesión aislada.** Un agente puede abrirse dentro de un sandbox del
+  sistema operativo: un home nuevo y vacío, solo con el estado de ese proveedor,
+  el resto de la máquina en solo lectura y permiso de escritura únicamente en el
+  checkout para el que se abrió. Las claves ssh, las credenciales de la nube y
+  los demás repositorios del disco simplemente no están ahí, y eso compensa
+  dejar que el agente se salte las confirmaciones de permisos. En Linux usa
+  bubblewrap y en macOS `sandbox-exec`; no protege frente a código malicioso, y
+  [`docs/ceilings.md`](docs/ceilings.md) explica qué es lo que no frena.
+- **Revisar el diff justo donde lo lees.** Un panel de CodeMirror muestra los
+  cambios del working tree junto a un árbol de archivos en vivo, pliega si se lo
+  pides los que solo tocan espacios en blanco, y muestra el antes y el después de
+  una imagen o un PDF modificado. Haz clic derecho sobre una selección para
+  comentar esas líneas; todo el lote se pega en la sesión como un solo prompt,
+  sin enviarlo. Su pestaña Código permite navegar el checkout y buscar en el
+  texto de sus archivos.
+- **Llevar el pull request hasta el final sin salir de aquí.** Ve los pull
+  requests abiertos del repositorio, haz checkout de uno en su propio worktree,
+  lee el diff, revísalo inline y fusiónalo con los métodos que la rama base
+  acepta de verdad. En una rama que todavía no tiene pull request, **Crear con el
+  agente** le pide a la sesión de esa rama que lo abra, y no se envía nada hasta
+  que presiones Enter.
 
-Además: [temas](docs/themes.md) que importas como JSON o instalas desde un
-repositorio git, una paleta de comandos `Ctrl`/`Cmd`+`K` que salta por nombre o
-por lo que se dijo en la conversación, una notificación de escritorio cuando una
-sesión te está esperando, y `lich rage` / `lich doctor` para cuando no arranca
-en absoluto.
+Y además: [temas](docs/themes.md) que importas como JSON o instalas desde un
+repositorio git, una paleta `Ctrl`/`Cmd`+`K` que te lleva a una sesión por su
+nombre o por algo que se dijo en la conversación, una notificación de escritorio
+cuando una sesión te está esperando, y `lich rage` / `lich doctor` para cuando
+directamente no arranca.
 
-El desarrollo está activo: los bugs y las solicitudes de funciones van en
+El proyecto está en desarrollo activo: los bugs y los pedidos de funciones van a
 [Issues](https://github.com/lichdotdev/lich/issues), y lo que cambió en cada
 versión está en [CHANGELOG.md](CHANGELOG.md).
 
 ## Compatibilidad por proveedor
 
-Cada proveedor se inicia en una terminal real, se reanuda por id de conversación,
-se confina con el mismo sandbox y recibe la misma forma de llegar a tus otras
-sesiones. Lo que cambia es lo que lich puede *leer* de vuelta de una sesión,
-porque lee lo que cada CLI deja escrito y no hay dos que anoten las mismas cosas.
+Todos los proveedores arrancan en una terminal de verdad, se reanudan por id de
+conversación, se aíslan con el mismo sandbox y reciben la misma forma de llegar
+a tus otras sesiones. Lo que cambia es lo que lich puede *leer* de cada sesión,
+porque lee lo que cada CLI deja escrito, y no hay dos que registren lo mismo.
 
 | Lo que obtienes | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -122,19 +124,19 @@ porque lee lo que cada CLI deja escrito y no hay dos que anoten las mismas cosas
 | Ctrl+Shift+Y salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no |
 | La tarjeta avisa cuando la conversación se está compactando | sí | no | no | no | no | no | no | no |
 | Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera |
-| Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no ensucia la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
+| Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
 | La máquina no entra en reposo mientras corre un turno | sí | sí | sí | sí | sí | no | sí | sí |
 | **Último turno** de la pestaña Revisión, con el resumen del agente | sí | sí | sí | sí | sí | no | sí | sí |
 | Buscar en la conversación desde la paleta | sí | sí | sí | sí | sí | sí | no | sí |
 | Reanudar una conversación iniciada fuera de lich, desde la pestaña Historial de la paleta | sí | sí | sí | sí | sí | Linux; macOS y Windows sin probar | sí | sí |
 | Un pegado largo puede llegar como texto editable en vez de un marcador plegado (Ajustes › Proveedores, desactivado por defecto) | sí | no | no | sí | no medido | no, se convierte en un adjunto `paste_N.txt` | no | sí |
 | Bifurcar una conversación en un nuevo worktree, o en su propio checkout en la ventana nativa | sí | sí | no | sí | no | no | no | no |
-| Aviso en la ventana nativa cuando retomas, desde la propia app del agente, una conversación que otra tarjeta tiene abierta | sí | en tu próximo prompt | en tu próximo prompt, sin probar | no | sí | en su próxima llamada a una tool | no | sí |
+| Aviso en la ventana nativa cuando retomas, desde la propia app del agente, una conversación que otra tarjeta tiene abierta | sí | en tu próximo prompt | en tu próximo prompt, sin probar | no | sí | en su próxima llamada a una herramienta | no | sí |
 | Abrir una sesión con un esfuerzo de razonamiento elegido | sí | sí | sí | no | sí | no | en el nombre del modelo | sí |
 | Abrir una sesión con ultracode activado | sí | no | no | no | no | no | no | no |
 | Varias cuentas lado a lado como perfiles, cada una con su propio inicio de sesión completo, y una sesión movida a otra cuenta que sigue en la misma tarjeta (en la ventana nativa, experimental: Ajustes › Proveedores) | sí | sí, con sus propios plugins en cada perfil y los ajustes de Personal compartidos por todos | no | sí, con sesión iniciada desde una tarjeta de terminal; una sesión no puede pasar a otro perfil, porque sus conversaciones están en la base de datos que guarda el inicio de sesión | sí, con sesión iniciada desde una tarjeta de terminal, con sus ajustes compartidos por todos los perfiles | no medido | Linux y Windows (en macOS su inicio de sesión está en el Llavero), con sesión iniciada desde una tarjeta de terminal, con `mcp.json`, hooks y skills compartidos por todos los perfiles | solo Linux (macOS guarda su inicio de sesión en el Llavero y en Windows nada lo mueve), con sesión iniciada desde una tarjeta de terminal, con sus conversaciones compartidas por todos los perfiles |
 | Una carpeta en la que confiaste en tu cuenta principal se abre sin la pregunta "trust this folder?" en todos los demás perfiles | sí | sí | sin perfiles | no pregunta nada | no pregunta nada | no medido | sí | no pregunta nada |
-| Una sesión en el sandbox se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
+| Una sesión en sandbox se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
 | Un worktree de una carpeta en la que confiaste se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
 | Dirigir una sesión en ejecución desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, slash command | sí | no | no | no | no | no | no | no |
 | Un mensaje de otra sesión llega sin escribirse en la terminal | sí | no | no | no | no | no | no | no |
@@ -149,13 +151,14 @@ porque lee lo que cada CLI deja escrito y no hay dos que anoten las mismas cosas
 | Los mensajes propios de lich al agente (tareas entregadas, resultados listos, avisos) en el idioma de prompt que elijas | sí | sí | sí | sí | sí | sí | sí | sí |
 | Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no |
 
-Cada carencia es deliberada, ninguna es lich ocultando algo que el CLI informa,
-y [`docs/ceilings.md`](docs/ceilings.md) dice qué se midió detrás de cada una.
+Ninguna de estas diferencias es un descuido, y en ningún caso lich se guarda
+algo que el CLI informe; [`docs/ceilings.md`](docs/ceilings.md) cuenta qué se
+midió detrás de cada una.
 
 ## Instalación
 
-Una línea: detecta tu distro, verifica el checksum e instala el paquete nativo y
-sus dependencias a través de tu gestor de paquetes:
+Con una sola línea: el script detecta tu distro, verifica el checksum e instala
+el paquete nativo y sus dependencias con tu gestor de paquetes:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
@@ -170,8 +173,8 @@ curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | s
 Paquetes manuales por distro, el tarball de Linux y el zip portable de Windows:
 [INSTALL.md](INSTALL.md). Los binarios de macOS y Windows no están firmados:
 Gatekeeper y SmartScreen avisan hasta que lleguen la notarización y la firma.
-Las instalaciones con Homebrew evitan el aviso de Gatekeeper; una descarga desde
-la página de Releases necesita que se le quite a mano la marca de cuarentena.
+Si instalas con Homebrew no ves el aviso de Gatekeeper; si descargas desde la
+página de Releases, tienes que quitarle a mano la marca de cuarentena.
 En macOS el cask instala `Lich.app`, así que lich tiene su propio icono en
 `/Applications` y en el Dock mientras se ejecuta. Actualizar desde la fórmula
 antigua requiere `brew uninstall lich` primero: [INSTALL.md](INSTALL.md) explica
@@ -183,82 +186,82 @@ por qué.
 2. **Abre un proyecto**: el `+` de la barra de pestañas lista lo que cerraste
    hace poco y abre el selector de carpetas de tu sistema operativo; apúntalo a
    un repositorio git.
-3. **Indica a lich tu agente**: la primera vez que se abre lista los agentes que
-   encontró en tu máquina; en Ajustes › Proveedores puedes fijar la ruta de cada
-   binario y elegir el predeterminado. Un proyecto puede seguirlo o elegir un
-   proveedor distinto en la misma pantalla.
-4. **Inicia una sesión**: *Nueva sesión* lanza una terminal que ejecuta tu agente
-   en el proyecto. El encabezado de cada checkout también tiene un menú `+` para
-   abrir cualquier proveedor habilitado o una terminal simple en ese checkout
-   exacto; haz clic en el propio encabezado para contraer o expandir sus
+3. **Indícale a lich tu agente**: la primera vez que lo abres, lista los agentes
+   que encontró en tu máquina; en Ajustes › Proveedores puedes definir la ruta de
+   cada binario y elegir el predeterminado. En esa misma pantalla, cada proyecto
+   puede usar ese predeterminado o elegir otro proveedor.
+4. **Inicia una sesión**: *Nueva sesión* abre una terminal con tu agente
+   corriendo en el proyecto. El encabezado de cada checkout también tiene un menú
+   `+` para abrir cualquier proveedor habilitado, o una terminal sin agente,
+   justo en ese checkout; haz clic en el encabezado para contraer o expandir sus
    sesiones.
-5. **Ramifica un worktree** *(opcional)*: créalo desde cualquier rama base; lich
-   lo prepara y te lleva a una sesión nueva.
+5. **Crea un worktree** *(opcional)*: créalo a partir de cualquier rama base;
+   lich lo prepara y te deja en una sesión nueva.
 
 ## Configuración
 
-- **Proveedores**: fija la ruta del binario de cada proveedor y el predeterminado
-  para todos los proyectos en Ajustes › Proveedores. La fila del proyecto abierto
-  puede reemplazar esa elección; **Limpiar** quita el reemplazo, así que los
-  cambios posteriores al predeterminado se propagan solos. Sin ruta fijada, una
-  sesión ejecuta el primero de los binarios del proveedor que haya en el `PATH`
-  de tu shell de inicio de sesión; en la ventana nativa el bloque Binario nombra
-  ese archivo y su versión, y lista cualquier otra versión que haya en el `PATH`,
-  de lo que `lich doctor` también avisa. Para elegir una, fija su ruta en Binario
-  (el ajuste `provider.<id>.bin`, p. ej. `provider.codex.bin`).
-  La sección de un proveedor se abre
-  con cuánto queda de tu plan, cuando lich puede leerlo. Lo que muestra el pie de
-  ventana se define en Ajustes › Apariencia arrastrando sus elementos; el
-  indicador de costo empieza oculto, ya que la cifra solo significa algo cuando
-  te facturan por token.
+- **Proveedores**: en Ajustes › Proveedores defines la ruta del binario de cada
+  proveedor y el predeterminado para todos los proyectos. La fila del proyecto
+  abierto puede sobrescribir esa elección; **Borrar** quita esa excepción, así
+  que los cambios que hagas después en el predeterminado le llegan solos. Si no
+  defines ninguna ruta, la sesión ejecuta el primer binario del proveedor que
+  encuentre en el `PATH` de tu login shell; en la ventana nativa, el bloque
+  Binario muestra qué archivo es y su versión, y lista cualquier otra versión que
+  haya en el `PATH`, algo de lo que `lich doctor` también avisa. Para quedarte
+  con una, pon su ruta en Binario (el ajuste `provider.<id>.bin`, p. ej.
+  `provider.codex.bin`).
+  La sección de cada proveedor empieza mostrando
+  cuánto te queda del plan, cuando lich puede leerlo. Lo que aparece en el pie de
+  ventana se elige en Ajustes › Apariencia arrastrando sus elementos; el costo
+  arranca oculto, porque esa cifra solo tiene sentido si pagas por token.
 - **Worktrees**: el `.lich/setup-worktree.sh` del checkout del proyecto se ejecuta
-  en la terminal de un worktree nuevo antes del agente; el diálogo Nueva sesión
-  en worktree lo muestra y ofrece una sugerencia detectada cuando el repositorio
-  no trae ninguno. Un archivo `.worktreeinclude` ajusta qué archivos ignorados
-  por git se copian.
+  en la terminal de cada worktree nuevo antes que el agente; el diálogo Nueva
+  sesión en worktree lo muestra y, si el repositorio no trae ninguno, sugiere uno
+  a partir de lo que detecta. Con un archivo `.worktreeinclude` eliges qué
+  archivos ignorados por git se copian.
 - **Hooks de sesión**: con el
   [plugin de lich](https://github.com/lichdotdev/lich-plugin) instalado desde
-  Ajustes, una sesión pone título a su propia tarjeta y actualiza git en el
-  momento en que escribe un archivo.
-- **Estabilidad**: qué partes de lich son seguras para automatizar con scripts y
-  cuáles pueden cambiar en cualquier versión está escrito en
-  [docs/stability.md](docs/stability.md).
+  Ajustes, cada sesión le pone título a su propia tarjeta y refresca el estado
+  de git en cuanto escribe un archivo.
+- **Estabilidad**: en [docs/stability.md](docs/stability.md) está escrito en qué
+  partes de lich puedes apoyarte desde un script y cuáles pueden cambiar en
+  cualquier versión.
 
 ## Privacidad y actualizaciones
 
-Todo se ejecuta en tu máquina. Sin cuenta, sin inicio de sesión, sin telemetría:
-el backend es un listener de loopback autenticado con token. Por sí solo, lich
-sale a la red por esto y nada más:
+Todo corre en tu máquina. Sin cuenta, sin login, sin telemetría: el backend es un
+listener en loopback autenticado con token. Por iniciativa propia, lich solo se
+conecta a la red para esto:
 
-- **Actualizaciones**: una comprobación de versión contra GitHub Releases al
-  iniciar y cada hora, y la lista de versiones del plugin de lich en GitHub al
-  iniciar.
+- **Actualizaciones**: consulta la última versión en GitHub Releases al arrancar
+  y cada hora, y la lista de versiones del plugin de lich en GitHub al arrancar.
 - **Uso del plan**: el endpoint de uso de cada proveedor (Anthropic, OpenAI,
-  Cursor, OpenCode Go), con el inicio de sesión que el CLI de la sesión ya usa,
-  como máximo cada cinco minutos. El plan de Antigravity se lee del propio `agy`.
+  Cursor, OpenCode Go), con el mismo login que ya usa el CLI de la sesión, como
+  mucho cada cinco minutos. El plan de Antigravity se lee del propio `agy`.
 - **Precios**: la tabla pública de precios de LiteLLM en GitHub, una sola vez por
-  cada modelo que la tabla incluida no conoce.
+  cada modelo que no esté en la tabla que trae lich.
 
-La compilación del instalador de Windows se actualiza en el lugar; una
-instalación con Homebrew, Scoop, AUR o un paquete de Linux se actualiza a través
-de su gestor de paquetes, y lich te da el comando.
-Ajustes › Ayuda dice qué lleva el archivo de log (rutas, nombres de proyectos y
-de ramas, tu login de gh, nunca un token de sesión) antes de que lo adjuntes a un
-reporte de bug, y `lich rage` reúne ese reporte en un solo archivo sin subir
-nada.
+La versión del instalador de Windows se actualiza sola; si instalaste con
+Homebrew, Scoop, AUR o un paquete de Linux, la actualización pasa por tu gestor
+de paquetes y lich te da el comando.
+Antes de que adjuntes el archivo de log a un reporte de bug, Ajustes › Ayuda te
+dice qué contiene (rutas, nombres de proyectos y de ramas, tu login de gh, nunca
+un token de sesión), y `lich rage` junta ese reporte en un solo archivo sin
+subir nada a ningún lado.
 
 ## Compilar desde el código fuente
 
-Backend en Go puro (Go 1.27, `CGO_ENABLED=0`) que sirve un frontend embebido en
-React 18 / TypeScript / Vite sobre un listener de loopback autenticado con token
-(RPC HTTP + WebSockets). Las terminales son xterm.js con el addon WebGL; las
-superficies de código y diff son CodeMirror 6. El shell de Chromium es un
-registro de decisión: [`docs/chromium-shell.md`](docs/chromium-shell.md). Los
-requisitos son **Go 1.27.0+**, **Node + pnpm** y **[Task](https://taskfile.dev)**;
-no hace falta toolchain de C para el binario de Go. La ventana (`shell/`, Rust
-sobre CEF) añade un toolchain de Rust, además de las bibliotecas de desarrollo de
-Chromium en Linux y MSVC en Windows;
-[CONTRIBUTING.md](CONTRIBUTING.md) las lista.
+Backend en Go puro (Go 1.27, `CGO_ENABLED=0`) que sirve un frontend embebido de
+React 18 / TypeScript / Vite a través de un listener en loopback autenticado con
+token (RPC por HTTP + WebSockets). Las terminales son xterm.js con el addon
+WebGL; las vistas de código y de diff usan CodeMirror 6. La elección del shell
+de Chromium está documentada como registro de decisión en
+[`docs/chromium-shell.md`](docs/chromium-shell.md). Necesitas **Go 1.27.0+**,
+**Node + pnpm** y **[Task](https://taskfile.dev)**; el binario de Go no
+necesita toolchain de C. La ventana (`shell/`, Rust sobre CEF) suma un
+toolchain de Rust, más las bibliotecas de desarrollo de Chromium en Linux y
+MSVC en Windows;
+[CONTRIBUTING.md](CONTRIBUTING.md) tiene la lista.
 
 ```bash
 task dev      # hot-reload dev mode (Vite on :9245)
@@ -267,28 +270,28 @@ task run      # build + run
 task test     # Go + frontend suites
 ```
 
-Empaqueta una versión de Linux en local (requiere
+Para empaquetar una versión de Linux en local (requiere
 [nfpm](https://nfpm.goreleaser.com/)):
 
 ```bash
 task package   # .deb + .rpm + Arch .pkg.tar.zst in bin/
 ```
 
-Añadir otro CLI de agente a los ocho que ejecuta lich es el cambio que llega a
-una docena de archivos en dos repositorios:
-[`docs/adding-a-provider.md`](docs/adding-a-provider.md) es el mapa.
+Sumar otro CLI de agente a los ocho que ya corre lich es un cambio que toca una
+docena de archivos repartidos en dos repositorios; el mapa está en
+[`docs/adding-a-provider.md`](docs/adding-a-provider.md).
 
 ## Patrocinadores
 
-lich lo escribe y lo mantiene una sola persona. Patrocinar paga el tiempo que se
-le dedica y mantiene independiente al proyecto: no hay un nivel de pago de la app
-y no lo habrá.
+lich lo escribe y lo mantiene una sola persona. El patrocinio paga el tiempo
+que se le dedica y mantiene el proyecto independiente: la app no tiene una
+versión de pago y no la va a tener.
 
 [**Hazte patrocinador**](https://github.com/sponsors/omartelo)
 
 <!-- sponsor-names: monthly sponsors go here -->
 
-### Colaboradores
+### Donantes
 
 <!-- backers: one-time supporters go here -->
 
@@ -299,6 +302,7 @@ Todavía nadie.
 [AGPL-3.0-only](LICENSE) © 2026 omartelo
 
 lich es software libre: puedes usarlo, estudiarlo, modificarlo y redistribuirlo
-bajo los términos de la Licencia Pública General de Affero de GNU v3. Todo
-derivado distribuido o servido en red debe publicarse bajo la misma licencia. Las
-versiones hasta la v0.9.0 incluida siguen bajo licencia MIT.
+bajo los términos de la GNU Affero General Public License v3. Cualquier obra
+derivada que se distribuya o se ofrezca a través de la red debe publicarse bajo
+la misma licencia. Las versiones hasta la v0.9.0, inclusive, siguen bajo
+licencia MIT.
