@@ -27,14 +27,20 @@ func (s Spec) Owner(conversationID string, locate func(dir, conversationID strin
 }
 
 // Pair is one entry of a conversation moving between profiles: where it is and
-// where it goes.
-type Pair struct{ From, To string }
+// where it goes. Replaces marks an entry a process outside the provider's own
+// may file again after the conversation left, such as an async hook that
+// outlives it: a copy of it in the target is that leftover, and the move
+// replaces it instead of refusing.
+type Pair struct {
+	From, To string
+	Replaces bool
+}
 
 // MoveConversation moves a conversation from the profile that holds it to
 // toSlug, and back by calling it again. locate finds its transcript under one
 // state directory; entries lists everything the provider keyed by the
 // conversation's id, given that transcript and the two directories. The move
-// refuses a target that already holds any entry.
+// refuses a target that already holds any entry, but for one that Replaces.
 //
 // A failure part way moves back whatever had already moved, so the conversation
 // is never split across two profiles.
@@ -59,11 +65,19 @@ func (s Spec) MoveConversation(
 		return err
 	}
 	for _, p := range pairs {
+		if p.Replaces {
+			continue
+		}
 		if _, err := os.Lstat(p.To); err == nil {
 			return fmt.Errorf("profile %q already holds %s", toSlug, p.To)
 		}
 	}
 	for i, p := range pairs {
+		if p.Replaces {
+			if err := os.RemoveAll(p.To); err != nil {
+				return fmt.Errorf("replace %s: %w", p.To, err)
+			}
+		}
 		if err := move(p.From, p.To); err != nil {
 			for _, done := range pairs[:i] {
 				_ = move(done.To, done.From)

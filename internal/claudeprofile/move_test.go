@@ -66,6 +66,33 @@ func TestMoveConversationRoundTrips(t *testing.T) {
 	}
 }
 
+// An async hook can file its entry beside the transcript in the profile the
+// conversation just left, and that leftover must not keep it from moving back.
+func TestMoveConversationReplacesAHookFileLeftBehind(t *testing.T) {
+	personal := machine(t)
+	p, err := Create("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	conversationIn(t, personal)
+	if err := MoveConversation(conversation, p.Slug); err != nil {
+		t.Fatal(err)
+	}
+	leftover := filepath.Join(personal, "projects", "-work", conversation+".jsonl.wakatime")
+	mustWrite(t, leftover, "stale")
+
+	if err := MoveConversation(conversation, Personal); err != nil {
+		t.Fatalf("a hook's leftover kept the conversation from moving back: %v", err)
+	}
+	got, err := os.ReadFile(leftover)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "x" {
+		t.Errorf("the hook file in Personal is %q, want the one that moved with the conversation", got)
+	}
+}
+
 func TestMoveConversationRefusesWhatItCannotDo(t *testing.T) {
 	personal := machine(t)
 	p, err := Create("Work")

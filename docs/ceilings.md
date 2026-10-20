@@ -1266,7 +1266,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the set a throwaway conversation left on 2.1.296, which resumed with its history and checkpoints both ways.
   The prompt history (`history.jsonl`) and the project's `lastSessionId` stay in the profile it left, so
   `claude --continue` there points at a conversation it no longer holds and the arrow-up history does not
-  follow. It refuses while a turn is open, which is read off the session-state hooks: a Claude Code
+  follow. An async hook outlives the Claude Code it ran for (its SessionEnd hook runs in a session of its
+  own, measured on 2.1.304), so lich cannot wait for it: a hook can file its entry again in the profile the
+  conversation just left, and moving back replaces that leftover instead of refusing. It refuses while a turn is open, which is read off the session-state hooks: a Claude Code
   without the lich plugin reports no turn and is moved mid-turn. A move across filesystems copies, Windows
   volumes included. A card that has not had its first prompt has no transcript yet, so it is not moved but
   started afresh in the target profile. A session born in a profile deleted since

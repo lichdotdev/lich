@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/lichdotdev/lich/internal/profilestore"
 )
@@ -35,7 +36,10 @@ var sessionStateDirs = []string{"file-history", "session-env", "tasks"}
 // one profile to another: the transcript, its subagent directory and any file a
 // hook filed beside it under the same name, and the per-conversation state
 // directories. The conversation resumes in the target with its history and its
-// checkpoints (measured round trip on 2.1.296).
+// checkpoints (measured round trip on 2.1.296). A hook's file the target
+// already holds is replaced: an async hook outlives Claude Code (its SessionEnd
+// hook runs in a session of its own, measured on 2.1.304), so one can file
+// again in the profile the conversation just left.
 //
 // What stays behind is what is not keyed by the id: the prompt history
 // (history.jsonl) and the project's lastSessionId, which `claude --continue` in
@@ -55,7 +59,11 @@ func conversationEntries(id, transcript, fromDir, toDir string) ([]profilestore.
 	}
 	var pairs []profilestore.Pair
 	for _, path := range beside {
-		pairs = append(pairs, profilestore.Pair{From: path, To: filepath.Join(toDir, project, filepath.Base(path))})
+		pairs = append(pairs, profilestore.Pair{
+			From:     path,
+			To:       filepath.Join(toDir, project, filepath.Base(path)),
+			Replaces: strings.HasPrefix(filepath.Base(path), filepath.Base(transcript)+"."),
+		})
 	}
 	for _, dir := range sessionStateDirs {
 		path := filepath.Join(fromDir, dir, id)
