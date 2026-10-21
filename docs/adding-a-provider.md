@@ -150,7 +150,8 @@ Not optional, and all in the same PR:
   plus a paragraph for anything that harness does differently.
 - **`docs/hooks/fixtures/session-start.jsonl`** — the accepted-provider line
   above, which is what unblocks the plugin's own suite.
-- **`docs/ceilings.md`** — a bullet per gap, naming the mechanism and the file.
+- **`docs/ceilings.md`** — a bullet per gap, naming the trap, the providers it
+  leaves out and the file; what was measured goes in the provider's page below.
 - **`docs/providers/<id>.md`** — the reference page for the new harness: what it
   is, its binary, its config directory and transcript, then a section per
   subject in the order every other page uses. [`providers/`](providers/) is one

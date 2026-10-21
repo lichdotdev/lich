@@ -56,7 +56,7 @@ type todoReader func(line []byte) (todoList, bool)
 //   - oh-my-pi, Antigravity and Kiro write no task list at all, so there is
 //     nothing to find in transcripts lich already walks.
 //   - opencode and Crush keep their messages in SQLite (sessiondb.go) and
-//     Cursor CLI in a blob store lich cannot order (docs/ceilings.md), so they
+//     Cursor CLI in a blob store lich cannot order (docs/providers/cursor.md), so they
 //     have no line to read either way.
 //
 // A session whose provider is absent here simply draws no progress, which is

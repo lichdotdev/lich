@@ -56,7 +56,9 @@ Cursor keeps its chats per checkout, so a resume asked without the session's own
 "conversation gone" (`internal/terminal/transcript.go`), the same shape as Crush.
 
 lich reads no usage from it: the chat is filed as SQLite lich has no reader for, search and recap included, and a
-reader means one for Cursor's own schema, which is not a contract anybody promised to keep.
+reader means one for Cursor's own schema, which is not a contract anybody promised to keep. That `store.db` is a
+content-addressed blob store whose order lives in a protobuf index, so neither a transcript walk nor a query
+reaches the last turn's words or a task list in it.
 
 ## Plugin install
 
