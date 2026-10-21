@@ -37,9 +37,11 @@ func (p *preview) markdownBody(gtx C, th *ui.Theme) D {
 	case loading:
 		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
 	}
+	inset, viewport := ui.Space(3), gtx.Constraints.Max.Y
 	return th.ScrollArea(&p.md.scroll).Layout(gtx, 1, func(gtx C, _ int) D {
-		return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
-			return p.md.rendered.layout(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) })
+		window := viewportWindow(p.md.scroll.Position.Offset-gtx.Dp(inset), viewport)
+		return layout.UniformInset(inset).Layout(gtx, func(gtx C) D {
+			return p.md.rendered.layoutWindow(gtx, th, p.rel, text, func(url string) { openLink(p.client, p.env.notify, url) }, window)
 		})
 	})
 }

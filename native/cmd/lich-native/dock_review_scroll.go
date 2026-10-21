@@ -76,7 +76,9 @@ func (p *reviewPanel) scrollArea(gtx C, th *ui.Theme, count int, item layout.Lis
 	inner := gtx
 	inner.Constraints.Max.X = max(inner.Constraints.Max.X-barWidth, 0)
 	inner.Constraints.Min.X = max(inner.Constraints.Min.X-barWidth, 0)
+	p.viewport = gtx.Constraints.Max.Y
 	dims := p.list.List.Layout(inner, count, func(gtx C, i int) D {
+		p.laying = i
 		dims := item(gtx, i)
 		p.heights.px[i] = dims.Size.Y
 		return dims
@@ -88,4 +90,18 @@ func (p *reviewPanel) scrollArea(gtx C, th *ui.Theme, count int, item layout.Lis
 	if d := p.list.ScrollDistance(); d != 0 {
 		p.list.Position.Offset += int(d * float32(total))
 	}
+}
+
+// itemTop is where item i's top sits in the viewport, from the list's
+// position and the heights its items last measured.
+func (p *reviewPanel) itemTop(i int) int {
+	pos := p.list.Position
+	y := -pos.Offset
+	for j := pos.First; j < i; j++ {
+		y += p.heights.px[j]
+	}
+	for j := i; j < pos.First; j++ {
+		y -= p.heights.px[j]
+	}
+	return y
 }

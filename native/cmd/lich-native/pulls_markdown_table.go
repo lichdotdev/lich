@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"regexp"
 	"strings"
 
 	"gioui.org/font"
@@ -10,120 +9,47 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"gioui.org/unit"
 	"gioui.org/x/richtext"
+	extast "github.com/yuin/goldmark/extension/ast"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// markdownSegment is a stretch of a Markdown source: prose, or a GFM table's
-// cells, its header first.
-type markdownSegment struct {
-	text  string
-	table [][]string
-}
-
-var (
-	tableDelimiterRow = regexp.MustCompile(`^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$`)
-	codeFence         = regexp.MustCompile("^ {0,3}(```|~~~)")
-)
-
-// splitMarkdownTables cuts src into prose and GFM tables: a header row and a
-// delimiter row, both with a pipe, then every following line that has one.
-// Fenced code is never a table.
-func splitMarkdownTables(src string) []markdownSegment {
-	lines := strings.Split(src, "\n")
-	var out []markdownSegment
-	var prose []string
-	flush := func() {
-		if text := strings.Join(prose, "\n"); strings.TrimSpace(text) != "" {
-			out = append(out, markdownSegment{text: text})
-		}
-		prose = nil
-	}
-	inFence := false
-	for i := 0; i < len(lines); i++ {
-		line := lines[i]
-		if codeFence.MatchString(line) {
-			inFence = !inFence
-		}
-		if inFence || !startsTable(lines, i) {
-			prose = append(prose, line)
-			continue
-		}
-		flush()
-		header := tableCells(line)
-		table := [][]string{header}
-		i += 2
-		for ; i < len(lines) && strings.Contains(lines[i], "|"); i++ {
-			table = append(table, fitRow(tableCells(lines[i]), len(header)))
-		}
-		i--
-		out = append(out, markdownSegment{table: table})
-	}
-	flush()
-	return out
-}
-
-func startsTable(lines []string, i int) bool {
-	return i+1 < len(lines) && strings.Contains(lines[i], "|") &&
-		strings.Contains(lines[i+1], "|") && tableDelimiterRow.MatchString(lines[i+1])
-}
-
-// tableCells splits a row on its unescaped pipes, the outer ones dropped.
-func tableCells(line string) []string {
-	line = strings.TrimSpace(line)
-	line = strings.TrimPrefix(line, "|")
-	if strings.HasSuffix(line, "|") && !strings.HasSuffix(line, `\|`) {
-		line = line[:len(line)-1]
-	}
-	var cells []string
-	var cell strings.Builder
-	for i := 0; i < len(line); i++ {
-		switch {
-		case line[i] == '\\' && i+1 < len(line) && line[i+1] == '|':
-			cell.WriteByte('|')
-			i++
-		case line[i] == '|':
-			cells = append(cells, strings.TrimSpace(cell.String()))
-			cell.Reset()
-		default:
-			cell.WriteByte(line[i])
-		}
-	}
-	return append(cells, strings.TrimSpace(cell.String()))
-}
-
-// fitRow pads or cuts a body row to the header's columns, as GFM does.
-func fitRow(row []string, columns int) []string {
-	if len(row) >= columns {
-		return row[:columns]
-	}
-	return append(row, make([]string, columns-len(row))...)
-}
-
 // markdownTable is a rendered GFM table, its header row first.
 type markdownTable struct {
 	rows [][]*markdownCell
+	// natural and minimum are each column's width on one line and at its
+	// longest word, padding included, measured at metric.
+	natural, minimum []int
+	metric           unit.Metric
 }
 
-// renderTable renders each cell as Markdown; the header is mdProse's th,
-// font-medium in the foreground.
-func renderTable(th *ui.Theme, cells [][]string) *markdownTable {
-	t := &markdownTable{rows: make([][]*markdownCell, len(cells))}
-	for r, row := range cells {
-		for _, text := range row {
-			fg := th.MutedForeground
-			if r == 0 {
-				fg = th.Foreground
-			}
-			spans := renderMarkdown(th, text, fg)
-			if r == 0 {
+// renderTable renders each cell as Markdown, a short row padded to the
+// header's columns; the header is mdProse's th, font-medium in the
+// foreground.
+func renderTable(th *ui.Theme, source []byte, table *extast.Table) *markdownTable {
+	t := &markdownTable{}
+	for row := table.FirstChild(); row != nil; row = row.NextSibling() {
+		_, header := row.(*extast.TableHeader)
+		fg := th.MutedForeground
+		if header {
+			fg = th.Foreground
+		}
+		cells := make([]*markdownCell, 0, len(table.Alignments))
+		for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
+			spans := renderNode(th, source, cell, fg)
+			if header {
 				for i := range spans {
 					spans[i].Font.Weight = font.Medium
 				}
 			}
-			t.rows[r] = append(t.rows[r], &markdownCell{spans: spans})
+			cells = append(cells, &markdownCell{spans: spans})
 		}
+		for len(cells) < len(table.Alignments) {
+			cells = append(cells, &markdownCell{})
+		}
+		t.rows = append(t.rows, cells)
 	}
 	return t
 }
@@ -137,13 +63,8 @@ const markdownUnbounded = 1 << 20
 func (t *markdownTable) layout(gtx C, th *ui.Theme, open func(url string)) D {
 	padX, padY, line := gtx.Dp(ui.Space(2)), gtx.Dp(ui.Space(1)), gtx.Dp(1)
 	columns := len(t.rows[0])
-	natural := make([]int, columns)
-	for _, row := range t.rows {
-		for c, cell := range row {
-			natural[c] = max(natural[c], measureCell(gtx, th, cell)+2*padX)
-		}
-	}
-	widths := fitColumns(natural, gtx.Constraints.Max.X-(columns+1)*line)
+	t.measure(gtx, th, padX)
+	widths := fitColumns(t.natural, t.minimum, gtx.Constraints.Max.X-(columns+1)*line)
 	width := (columns + 1) * line
 	for _, w := range widths {
 		width += w
@@ -185,28 +106,69 @@ func (t *markdownTable) layout(gtx C, th *ui.Theme, open func(url string)) D {
 	return D{Size: image.Pt(width, y)}
 }
 
-// measureCell is the cell's width on one line, laid out where nothing sees it.
+// measure takes the columns' widths again when the metric changed.
+func (t *markdownTable) measure(gtx C, th *ui.Theme, padX int) {
+	if t.natural != nil && t.metric == gtx.Metric {
+		return
+	}
+	columns := len(t.rows[0])
+	t.natural, t.minimum, t.metric = make([]int, columns), make([]int, columns), gtx.Metric
+	for _, row := range t.rows {
+		for c, cell := range row {
+			t.natural[c] = max(t.natural[c], measureCell(gtx, th, cell)+2*padX)
+			t.minimum[c] = max(t.minimum[c], longestWord(gtx, th, cell)+2*padX)
+		}
+	}
+}
+
+// measureCell is the cell's width on one line, laid out where nothing sees
+// it.
 func measureCell(gtx C, th *ui.Theme, cell *markdownCell) int {
+	return measureSpans(gtx, th, &cell.state, cell.spans)
+}
+
+// longestWord is the width of the cell's widest word: laid out narrower
+// than its constraints, a text reports the constraints, not the words.
+func longestWord(gtx C, th *ui.Theme, cell *markdownCell) int {
+	var scratch richtext.InteractiveText
+	widest := 0
+	for _, span := range cell.spans {
+		for _, word := range strings.Fields(span.Content) {
+			alone := span.DeepCopy()
+			alone.Content = word
+			widest = max(widest, measureSpans(gtx, th, &scratch, []richtext.SpanStyle{alone}))
+		}
+	}
+	return widest
+}
+
+func measureSpans(gtx C, th *ui.Theme, state *richtext.InteractiveText, spans []richtext.SpanStyle) int {
 	macro := op.Record(gtx.Ops)
 	defer macro.Stop()
 	g := gtx
 	g.Constraints = layout.Constraints{Max: image.Pt(markdownUnbounded, markdownUnbounded)}
-	return richtext.Text(&cell.state, th.Shaper, cell.spans...).Layout(g).Size.X
+	return richtext.Text(state, th.Shaper, spans...).Layout(g).Size.X
 }
 
-// fitColumns is the columns' natural widths when they fit in room, else room
-// shared out in their proportion.
-func fitColumns(natural []int, room int) []int {
-	total := 0
-	for _, w := range natural {
-		total += w
+// fitColumns is the columns' natural widths when they fit in room. Else each
+// column keeps its longest word and the room left is shared out by how much
+// more each one wants, so a narrow column is never squeezed into broken
+// words; a table whose words alone overflow room is drawn at them.
+func fitColumns(natural, minimum []int, room int) []int {
+	totalNatural, totalMinimum := 0, 0
+	for i := range natural {
+		totalNatural, totalMinimum = totalNatural+natural[i], totalMinimum+minimum[i]
 	}
-	if total <= room || total == 0 {
+	spare := room - totalMinimum
+	if totalNatural <= room {
 		return natural
 	}
+	if spare <= 0 {
+		return minimum
+	}
 	out := make([]int, len(natural))
-	for i, w := range natural {
-		out[i] = max(w*max(room, 0)/total, 1)
+	for i := range natural {
+		out[i] = minimum[i] + (natural[i]-minimum[i])*spare/(totalNatural-totalMinimum)
 	}
 	return out
 }

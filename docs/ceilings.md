@@ -465,7 +465,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   what was added or removed, no line to hang a review comment on and no selection to inject. It reads the
   working tree (`project.ReadFile`, as the Code tab does), so on the Pulls screen only an added file, whose patch is the whole file, has a
   preview; an edited one has no toggle for the same reason an image there has no preview. A relative image
-  shows its alt text (x/markdown fetches nothing) and raw HTML prints as text. A new version of the file puts
+  shows its alt text (the renderer fetches nothing) and raw HTML is left out. A new version of the file puts
   the card back on its diff, as it reopens or folds a card by its size.
 
 ## Persistence and history

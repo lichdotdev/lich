@@ -73,8 +73,11 @@ type reviewPanel struct {
 	order    []string
 	list     widget.List
 	heights  itemHeights
-	batch    commentBatch
-	actions  reviewActions
+	// viewport is the list's height and laying the item it is laying out,
+	// so a Markdown preview draws only the blocks on screen.
+	viewport, laying int
+	batch            commentBatch
+	actions          reviewActions
 
 	pendingDiscard *patchFile
 	discardShown   patchFile

@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `lich mcp` answers MCP clients on protocol revision 2026-07-28, which name the version on each request instead of opening with `initialize`, and serves their `server/discover`. Clients that open with `initialize` are answered exactly as before.
 
+### Fixed
+
+- A long Markdown file, such as lich's own CHANGELOG.md, previews in the Code and Review tabs without freezing the window: the preview draws only the part on screen, where it used to lay out the whole file on every frame.
+- A Markdown preview keeps the words apart where the source wraps a line, where they used to run together, and a table no longer squeezes a narrow column into broken words: each column is at least as wide as its longest word.
+
 ## [0.76.0] - 2026-10-21
 
 ### Added

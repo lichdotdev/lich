@@ -79,8 +79,10 @@ func (c *fileCard) markdownBody(gtx C, p *reviewPanel) D {
 	case loading:
 		return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.loading"))
 	}
-	return layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(3), Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-		return c.md.rendered.layout(gtx, p.th, c.git.path, src, func(url string) { openLink(p.client, p.notify, url) })
+	inset := layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(3), Bottom: ui.Space(4)}
+	window := viewportWindow(-(p.itemTop(p.laying) + c.headerHeight + gtx.Dp(inset.Top)), p.viewport)
+	return inset.Layout(gtx, func(gtx C) D {
+		return c.md.rendered.layoutWindow(gtx, p.th, c.git.path, src, func(url string) { openLink(p.client, p.notify, url) }, window)
 	})
 }
 
