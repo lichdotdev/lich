@@ -395,6 +395,13 @@ func (s *Service) SetDropDir(dir string) {
 // several bursts.
 const readySettle = 600 * time.Millisecond
 
+// turnEndFlushLag is how long after `done` the transcript is read a second
+// time. Claude Code writes a turn's last assistant line 85–110ms after its Stop
+// hook fires (measured on 2.1.306), so the read taken at `done` still finds the
+// previous turn's line, and its model and count stay on the footer until the
+// next hook. Five times the measured lag, still short enough to read as instant.
+const turnEndFlushLag = 500 * time.Millisecond
+
 // The size a session is started at when nothing has ever measured a terminal —
 // no window has opened yet, so there is no real one to copy. A conventional
 // terminal, which every TUI draws itself into.
@@ -534,6 +541,7 @@ func (s *Service) onHookState(req hookRequest) {
 	// a title of its own (title_kiro.go). `done` is the turn end it raises,
 	// and the read is off-thread for the same reason the usage one is.
 	if req.State == statusDone {
+		time.AfterFunc(turnEndFlushLag, func() { s.emitReadouts(req.SessionID) })
 		go s.applyKiroTitle(req.SessionID)
 		// Claude Code ends a turn a usage limit stopped with StopFailure, which
 		// the plugin reports as `done`; whether it was a limit is in the
