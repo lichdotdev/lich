@@ -88,8 +88,8 @@ When a [lich] message carrying a ticket arrives at YOUR prompt, you are the work
 		"nothing was answered. Tell the user to open the %[1]q card and clear what is " +
 		"on it; the task has to be sent again after that.",
 	OutcomeUndelivered: "The task never reached the %[1]q session: it was held back because that terminal " +
-		"was not at a prompt — a worktree setup script still running, a provider that " +
-		"never came up — and the session ended or stayed that way for too long. Nothing " +
+		"was not at a prompt — a provider that never came up — and the session ended " +
+		"or stayed that way for too long. Nothing " +
 		"is queued anymore and nothing was answered. Tell the user to open the %[1]q card " +
 		"to see what happened there; the task has to be sent again after that.",
 	OutcomeUnanswered: "The %[1]q session finished its turn without answering through lich. " +
@@ -122,9 +122,8 @@ When a [lich] message carrying a ticket arrives at YOUR prompt, you are the work
 	OpenedConfined: " It runs confined: an empty home holding only its agent's own state, the " +
 		"machine read-only, and writes only inside its checkout.",
 	OpenedSession: "Opened session %[1]q (%[2]s) in %[3]s.%[4]s\n" +
-		"It answers to %[1]q and to %[5]q. Its agent may still be starting — a fresh " +
-		"worktree runs the project's setup script first — so a task you send it " +
-		"is held until the agent is up rather than lost.\n",
+		"It answers to %[1]q and to %[5]q. Its agent may still be " +
+		"starting, so a task you send it is held until the agent is up rather than lost.\n",
 	ClosedRemoved: "Closed %[1]q and removed its worktree %[2]s.\n",
 	ClosedKept: "Closed %[1]q. Its worktree %[2]s is still there, and the session is parked: opening a " +
 		"session on that branch again picks its conversation back up.\n",

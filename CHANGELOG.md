@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A pull request's checks still running turn a spinner, in its Checks tab and in the status line above the tabs, where a clock stood still.
 
+### Removed
+
+- **Breaking:** lich no longer runs `.lich/setup-worktree.sh` when `lich open --worktree` or an agent's `open_session` starts a session in a new worktree. The file in your repository is left alone. If your worktrees relied on it to install dependencies, run it yourself in the new worktree's terminal (`sh .lich/setup-worktree.sh`), or ask the agent to. Copying your gitignored `.env*` files (or what `.worktreeinclude` names) and the `LICH_WORKTREE_PORT` dev-server port are unchanged.
+
 ### Fixed
 
 - An agent's `git commit`, `rebase` or `stash` no longer fails now and then with "Unable to create '.git/index.lock': File exists" because lich was reading that checkout's status or diff at the same moment. lich's reads leave the index alone.

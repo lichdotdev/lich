@@ -344,7 +344,6 @@ type started struct {
 	cwd       string
 	kind      string
 	name      string
-	setup     bool
 	cols      int
 	rows      int
 }
@@ -384,9 +383,9 @@ func (f *fakeTerminal) CloseBy(id, closerID string) error {
 }
 
 func (f *fakeTerminal) Start(
-	id, projectID, cwd, kind, _, name string, _, setup bool, cols, rows int,
+	id, projectID, cwd, kind, _, name string, _ bool, cols, rows int,
 ) error {
-	f.spawns = append(f.spawns, started{id, projectID, cwd, kind, name, setup, cols, rows})
+	f.spawns = append(f.spawns, started{id, projectID, cwd, kind, name, cols, rows})
 	return f.err
 }
 
@@ -451,9 +450,6 @@ func TestOpenLandsInTheCallersProject(t *testing.T) {
 	spawn := term.spawns[0]
 	if spawn.id != opened.ID || spawn.cwd != "/src/lich" || spawn.kind != "codex" {
 		t.Errorf("spawn = %+v, want the new session in the project directory", spawn)
-	}
-	if spawn.setup {
-		t.Error("ran the worktree setup script for a session that opened no worktree")
 	}
 	// No size of its own — pinned as the literal zero rather than read off the
 	// constants, because the zero is the contract: it is what makes the terminal
@@ -864,9 +860,6 @@ func TestOpenOnAWorktreeBranchesOffTheCurrentBranch(t *testing.T) {
 	if term.spawns[0].cwd != "/wt/auth-fix" {
 		t.Errorf("spawned in %q, want the checkout", term.spawns[0].cwd)
 	}
-	if !term.spawns[0].setup {
-		t.Error("skipped the worktree setup script on a fresh checkout")
-	}
 }
 
 func TestOpenStartsAWorktreeFromTheNewerOfBranchAndUpstream(t *testing.T) {
@@ -1021,7 +1014,7 @@ func TestOpenRefusesADetachedHeadWithoutABase(t *testing.T) {
 // the name lookups around it all fold case (resolveBase, labelTaken), and a
 // second branch beside the one asked for is the worst way to answer.
 func TestOpenReusesACheckoutWhoseNameIsSpeltInAnotherCase(t *testing.T) {
-	svc, sessions, worktrees, term, _ := newService(t)
+	svc, sessions, worktrees, _, _ := newService(t)
 	worktrees.checkouts = []project.Worktree{{Name: "auth-fix", Path: "/wt/auth-fix"}}
 
 	opened, err := svc.Open(OpenOptions{From: "s1", Worktree: "Auth-Fix"})
@@ -1033,9 +1026,6 @@ func TestOpenReusesACheckoutWhoseNameIsSpeltInAnotherCase(t *testing.T) {
 	}
 	if opened.Path != "/wt/auth-fix" || sessions.rows[0].path != "/wt/auth-fix" {
 		t.Errorf("path %q / row %q, want the existing checkout", opened.Path, sessions.rows[0].path)
-	}
-	if term.spawns[0].setup {
-		t.Error("ran the setup script again in a checkout that already ran it")
 	}
 }
 

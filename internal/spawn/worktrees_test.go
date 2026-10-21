@@ -78,11 +78,6 @@ func TestOpenUsesACheckoutThatIsAlreadyThere(t *testing.T) {
 	if opened.Path != "/wt/shared" || term.spawns[0].cwd != "/wt/shared" {
 		t.Errorf("opened = %+v, spawn cwd = %q; want the existing checkout", opened, term.spawns[0].cwd)
 	}
-	// The setup script belongs to a fresh checkout. This one ran it when it was
-	// made, and running it again would reinstall over a working tree.
-	if term.spawns[0].setup {
-		t.Error("ran the setup script again in a checkout that already exists")
-	}
 	// Nothing in the project answers to "shared" — the sessions there are
 	// "shared-a" and "shared-b" — so the card takes the checkout's own name.
 	if opened.Label != "shared" {

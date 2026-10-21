@@ -116,7 +116,7 @@ func TestAnOMPSpawnRunsInItsProfile(t *testing.T) {
 		[]string{"OMP_AUTH_BROKER_URL=https://broker.example"}, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.OMP, "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.OMP, "", "", false, 80, 24); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the spawn")

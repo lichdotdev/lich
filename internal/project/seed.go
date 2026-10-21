@@ -42,11 +42,11 @@ func seedWorktree(projectPath, wtPath string) []string {
 	var copied []string
 	for entry := range strings.SplitSeq(out, "\x00") {
 		// Directory entries carry a trailing slash: whole ignored trees are
-		// deliberately not copied (that is dependency/build output territory —
-		// the setup script's job, not the seed's). copyFile refuses one too,
-		// but as an error the loop logs: skipping here keeps a policy decision
-		// out of the warning log, where a line is supposed to mean the seed
-		// failed at something it meant to do.
+		// deliberately not copied (that is dependency/build output territory,
+		// not the seed's). copyFile refuses one too, but as an error the loop
+		// logs: skipping here keeps a policy decision out of the warning log,
+		// where a line is supposed to mean the seed failed at something it
+		// meant to do.
 		if entry == "" || strings.HasSuffix(entry, "/") {
 			continue
 		}

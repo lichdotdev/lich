@@ -58,8 +58,6 @@ const defaultModAckWait = 10 * time.Second
 
 // takesDelivery is whether a message can go to a session now: its prompt is
 // free, or its mod takes the message without touching what its user is typing.
-// A session whose mod polls is past its setup script, since only the agent the
-// script hands over to runs one.
 func (s *Service) takesDelivery(id string) bool {
 	return s.term.Ready(id) || s.term.ModAttached(id)
 }

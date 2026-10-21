@@ -30,7 +30,7 @@ func TestSpawnRecordsTheMCPServersItCanReach(t *testing.T) {
 	svc := New(stubBins{bin: "sh", mcpServers: recorded}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", cwd, providers.OpenCode, "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", cwd, providers.OpenCode, "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 

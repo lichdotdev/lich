@@ -186,14 +186,6 @@ type session struct {
 	done   chan struct{}
 	replay *replayBuffer
 	outbox *outbox
-	// settingUp is true while the project's worktree setup script still owns
-	// this PTY, before the provider it execs into. Cleared by the marker the
-	// wrapper prints (see setupDone). Guarded by the service's mu.
-	settingUp bool
-	// setupTail is the end of the previous chunk, held only while settingUp so
-	// the marker still matches when a PTY read splits it. Guarded by the
-	// service's mu.
-	setupTail string
 	// lastOut is when this PTY last produced output, and ready records that it
 	// has since gone quiet once — that its program finished drawing itself and
 	// is waiting on input. Both guarded by the service's mu.

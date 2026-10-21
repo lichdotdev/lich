@@ -87,7 +87,7 @@ Quando uma mensagem [lich] com ticket chega ao SEU prompt, você é a sessão de
 		"nada foi respondido. Diga ao usuário para abrir o card %[1]q e resolver o que " +
 		"está nele; depois disso a tarefa precisa ser enviada de novo.",
 	OutcomeUndelivered: "A tarefa nunca chegou à sessão %[1]q: ela foi retida porque aquele terminal " +
-		"não estava em um prompt (um script de setup da worktree ainda rodando, um provider que " +
+		"não estava em um prompt (um provider que " +
 		"nunca subiu) e a sessão terminou ou ficou assim por tempo demais. Nada " +
 		"ficou na fila e nada foi respondido. Diga ao usuário para abrir o card %[1]q " +
 		"para ver o que aconteceu ali; depois disso a tarefa precisa ser enviada de novo.",
@@ -121,8 +121,8 @@ Quando uma mensagem [lich] com ticket chega ao SEU prompt, você é a sessão de
 	OpenedConfined: " Ela roda confinada: um home vazio com só o estado do próprio agente, a " +
 		"máquina somente leitura, e escrita só dentro do checkout dela.",
 	OpenedSession: "Sessão %[1]q (%[2]s) aberta em %[3]s.%[4]s\n" +
-		"Ela atende por %[1]q e por %[5]q. O agente dela pode ainda estar iniciando (uma " +
-		"worktree nova roda antes o script de setup do projeto), então uma tarefa que você " +
+		"Ela atende por %[1]q e por %[5]q. O agente dela pode ainda estar iniciando, " +
+		"então uma tarefa que você " +
 		"enviar fica retida até o agente subir, em vez de se perder.\n",
 	ClosedRemoved: "%[1]q fechada e a worktree %[2]s removida.\n",
 	ClosedKept: "%[1]q fechada. A worktree %[2]s continua lá, e a sessão está estacionada: abrir " +

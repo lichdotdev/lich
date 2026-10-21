@@ -277,6 +277,6 @@ func (s *Service) respawnAfter(cause error, live bool, id string, started spawn,
 	if !live {
 		return cause
 	}
-	err := s.Start(id, started.projectID, started.cwd, kind, conversation, "", false, false, 0, 0)
+	err := s.Start(id, started.projectID, started.cwd, kind, conversation, "", false, 0, 0)
 	return errors.Join(cause, err)
 }

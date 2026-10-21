@@ -151,7 +151,7 @@ func TestStartHoldsAProviderSessionUntilItsReport(t *testing.T) {
 	svc.SetStartReports(func(string) bool { return true })
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 	time.Sleep(readySettle + 100*time.Millisecond)

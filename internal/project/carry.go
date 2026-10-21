@@ -26,8 +26,8 @@ import (
 // What git ignores is not carried either (--exclude-standard), and it is the
 // one part of the checkout a fork does not get from the session it forked:
 // seedWorktree copies the ignored files the project names (`.env*` by default)
-// out of the *main* checkout into every new worktree, and the setup script
-// builds the rest. So an ignored file the forked session edited arrives as the
+// out of the *main* checkout into every new worktree, and nothing builds the
+// rest. So an ignored file the forked session edited arrives as the
 // main checkout's copy of it. When src is the main checkout the two agree,
 // because both copies are read from the same place.
 func (s *Service) CarryUncommitted(src, dst string) error {

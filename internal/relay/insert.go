@@ -25,7 +25,7 @@ const (
 	// defaultInsertWait is how long Insert waits for a session to reach its
 	// prompt. An editor action is answered by a person looking at it, so this is
 	// short against Send's minutes: a session still starting is worth a few
-	// seconds, one stuck behind a setup script is the person's to wait out.
+	// seconds, one stuck past that is the person's to wait out.
 	defaultInsertWait = 10 * time.Second
 )
 
@@ -211,8 +211,8 @@ func (s *Service) awaitPrompt(dest candidate, wait time.Duration) error {
 			return fmt.Errorf("%q stopped before its prompt was ready", dest.Peer.Label)
 		}
 		if s.now().After(deadline) {
-			return fmt.Errorf("%q was not at a prompt after %s: its agent is still starting, "+
-				"or the checkout's setup script holds the terminal", dest.Peer.Label, wait)
+			return fmt.Errorf("%q was not at a prompt after %s: its agent is still starting",
+				dest.Peer.Label, wait)
 		}
 		time.Sleep(readyPoll)
 	}

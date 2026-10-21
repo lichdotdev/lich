@@ -407,9 +407,8 @@ var mcpTools = append([]mcpTool{
 	{
 		Name: "send_to_session",
 		Description: "Give another lich session a task. The task is put at that session's prompt " +
-			"as if typed there, or held and delivered when it gets to one — a session on a " +
-			"fresh worktree runs the project's setup script before its agent, and the task " +
-			"waits that out rather than being lost. Returns the answer when it comes back quickly; for anything " +
+			"as if typed there, or held and delivered when it gets to one rather than " +
+			"being lost. Returns the answer when it comes back quickly; for anything " +
 			"slower you get a ticket and carry on — when the result is ready, a short note " +
 			"arrives at your own prompt and wait_for_answer collects it, so you never poll. " +
 			"Sessions are addressed by the label on their lich card — call list_sessions for " +

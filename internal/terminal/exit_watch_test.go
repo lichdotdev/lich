@@ -26,7 +26,7 @@ func TestAReapedSessionIsReportedToTheExitWatcher(t *testing.T) {
 	})
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	waitFor(t, func() bool {
@@ -38,7 +38,7 @@ func TestAReapedSessionIsReportedToTheExitWatcher(t *testing.T) {
 	svc2 := New(stubBins{bin: echoBin(t)}, nil, hub)
 	closed := false
 	svc2.SetSessionExited(func(string) { closed = true })
-	if err := svc2.Start("s2", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc2.Start("s2", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	if err := svc2.Close("s2"); err != nil {

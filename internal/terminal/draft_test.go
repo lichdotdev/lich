@@ -95,14 +95,8 @@ func TestAtPromptIgnoresTheUsersDraft(t *testing.T) {
 
 func TestAtPromptIsFalseWhereThereIsNoPrompt(t *testing.T) {
 	t.Parallel()
-	svc, sess := settled(t)
+	svc, _ := settled(t)
 
-	svc.mu.Lock()
-	sess.settingUp = true
-	svc.mu.Unlock()
-	if svc.AtPrompt("s1") {
-		t.Error("a session still running its setup script was at a prompt")
-	}
 	if svc.AtPrompt("nobody") {
 		t.Error("a session that does not exist was at a prompt")
 	}

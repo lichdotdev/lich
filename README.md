@@ -58,9 +58,9 @@ lich lets you:
   it in one click. Each wall is named, a project keeps as many as you like, and
   each gets a block in the sidebar you can fold, rename or take apart.
 - **Branch off a worktree without the setup.** Spin one up from any base
-  branch and lich seeds it with your gitignored `.env*` files, hands it a
-  dev-server port no other checkout and no process on the machine is using, and
-  runs your per-project setup script before the agent starts. Start it from the
+  branch and lich seeds it with your gitignored `.env*` files and hands it a
+  dev-server port no other checkout and no process on the machine is using.
+  Start it from the
   checkout's uncommitted work and those changes come along, untracked files
   included.
 - **Run a session confined.** An agent can open inside an OS sandbox: a fresh
@@ -196,10 +196,8 @@ needs `brew uninstall lich` first — [INSTALL.md](INSTALL.md) says why.
   shows is set in Settings › Appearance by dragging its items; the cost
   readout starts hidden, since the figure only means something when you are
   billed per token.
-- **Worktrees** — `.lich/setup-worktree.sh` in the project checkout runs in a
-  new worktree's terminal ahead of the agent; the New worktree dialog shows it
-  and offers a detected suggestion when the repo ships none. A
-  `.worktreeinclude` file tunes which gitignored files get copied over.
+- **Worktrees** — a `.worktreeinclude` file in the project checkout tunes which
+  gitignored files get copied into a new worktree.
 - **Session hooks** — with the
   [lich plugin](https://github.com/lichdotdev/lich-plugin) installed from Settings,
   a session titles its own card and refreshes git the moment it writes a file.

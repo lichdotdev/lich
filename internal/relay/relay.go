@@ -53,10 +53,9 @@ const (
 	defaultReceiptWindow = 30 * time.Second
 	// defaultDeliveryLimit is how long a queued task waits for its target to
 	// reach a free prompt before the errand is reported undelivered (see
-	// queueDelivery and awaitFree). A worktree setup script that installs
-	// dependencies and warms a build runs minutes on a cold cache, so the number
-	// has to be generous; past it the checkout is broken or waiting on a person,
-	// and neither ends by itself. It is well inside ticketTTL on purpose: the
+	// queueDelivery and awaitFree). Generous, because a provider on a loaded
+	// machine can take a while to come up; past it the session is broken or
+	// waiting on a person, and neither ends by itself. It is well inside ticketTTL on purpose: the
 	// sender hears a failure it can act on rather than watching a ticket expire
 	// an hour later with nothing said.
 	defaultDeliveryLimit = 5 * time.Minute
@@ -66,9 +65,8 @@ const (
 	// answerLimit bounds one reply. Generous — an answer is a summary, and the
 	// caller reads it as command output.
 	answerLimit = 64 * 1024
-	// readyPoll is how often awaitReady asks whether a target's agent is up. A
-	// setup script runs for tens of seconds at least, so this only has to be
-	// quick against a human's patience, not against the machine.
+	// readyPoll is how often awaitReady asks whether a target's agent is up. It
+	// only has to be quick against a human's patience, not against the machine.
 	readyPoll = 250 * time.Millisecond
 	// defaultSettleLimit caps how long a delivery waits for the target to finish
 	// taking a paste in before it presses Enter anyway (see awaitSettled). It
@@ -210,8 +208,7 @@ type Events interface {
 }
 
 // Terminal is the PTY side: whether a session has a process running right now,
-// whether what runs in it is the agent rather than the checkout's setup script,
-// and how to type at it. The terminal service implements it.
+// whether its agent is at a prompt, and how to type at it. The terminal service implements it.
 type Terminal interface {
 	Live(id string) bool
 	Ready(id string) bool
@@ -303,7 +300,7 @@ type ticket struct {
 	target   string
 	created  time.Time
 	// delivered is when the message started going into the target's PTY — zero
-	// while the ticket is still waiting out the target's setup script. Turn
+	// while the ticket is still waiting for the target's prompt. Turn
 	// accounting reads it to tell an undelivered message apart from a live one;
 	// which of two live ones came first is deliverySeq's question, never this
 	// timestamp's.
@@ -778,10 +775,9 @@ func (s *Service) markSubmitted(id string, t *ticket) {
 // queueDelivery holds a task back until its target is at a prompt, then hands
 // it over.
 //
-// A session opened on a fresh worktree runs the project's setup script in that
-// PTY first, and the script routinely outlasts the budget of the call that
-// sent the task — that is the main path of a fan-out, where every worker is a
-// checkout that has never been installed. Failing there loses the task
+// A session opened a moment ago may not have its agent up yet, and starting it
+// can outlast the budget of the call that sent the task — that is the main path
+// of a fan-out, where every worker was just opened. Failing there loses the task
 // outright and leaves the sender guessing when to try again, so the wait moved
 // off the caller: it gets its ticket, and the message goes in when there is
 // something there to read it.

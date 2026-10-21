@@ -28,9 +28,6 @@ func TestOpenSubagentOpensInTheCallersWorktree(t *testing.T) {
 	if term.spawns[0].cwd != "/wt/auth-fix" {
 		t.Errorf("spawned in %q, want the caller's checkout", term.spawns[0].cwd)
 	}
-	if term.spawns[0].setup {
-		t.Error("ran the setup script in a checkout that already ran it")
-	}
 	// The caller already answers to the checkout's name.
 	if opened.Label != "Session 4" {
 		t.Errorf("label = %q, want the project's counter", opened.Label)
@@ -60,8 +57,8 @@ func TestOpenSubagentWithAWorktreeOpensItAsOpenDoes(t *testing.T) {
 	if len(worktrees.created) != 1 || opened.Path != "/wt/auth-fix" || term.spawns[0].cwd != "/wt/auth-fix" {
 		t.Errorf("created %+v, path %q; want the worktree asked for", worktrees.created, opened.Path)
 	}
-	if opened.Label != "auth-fix" || !term.spawns[0].setup {
-		t.Errorf("label %q, setup %v; want the fresh worktree's own", opened.Label, term.spawns[0].setup)
+	if opened.Label != "auth-fix" {
+		t.Errorf("label %q, want the fresh worktree's own", opened.Label)
 	}
 }
 

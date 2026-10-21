@@ -68,8 +68,8 @@ func (s *Service) awaitSettled(sessionID string) {
 	}
 }
 
-// awaitFree blocks while a session's prompt belongs to somebody else — the
-// checkout's setup script, or the user mid-sentence at it, both of which
+// awaitFree blocks while a session's prompt belongs to somebody else — a
+// provider still drawing itself, or the user mid-sentence at it, both of which
 // terminal.Ready answers. Every typed write this package makes goes through
 // typeIn, so this one gate covers the task, the nudge and the retry alike; a
 // check at each call site would be three places to forget it in and would
@@ -97,11 +97,9 @@ func (s *Service) awaitFree(sessionID string) error {
 // errors when that will never happen: the session stopped, or it is still not
 // at a prompt by deadline.
 //
-// A session opened on a fresh worktree runs the project's setup script in that
-// PTY first, and the script can take minutes. It is live the whole time, and a
-// message typed into it reaches `pnpm install`, which reads and discards it —
-// so the request never existed, and the sender waits out a ticket nobody was
-// asked to answer. Seen on the first real run of a worktree session.
+// A session is live before its agent has taken the terminal, and a message
+// typed into it then is lost — so the request never existed, and the sender
+// waits out a ticket nobody was asked to answer.
 //
 // What comes back is a cause for a log line and for the status the sender is
 // given, not prose for a person: whoever reads about this reads it in the
@@ -118,8 +116,7 @@ func (s *Service) awaitReady(dest candidate, deadline time.Time) error {
 		if s.now().After(deadline) {
 			return fmt.Errorf(
 				"%q was still not at a prompt after %s: whatever holds that terminal — "+
-					"the project's worktree setup script, a provider that never came up — "+
-					"outlasted the wait",
+					"a provider that never came up, a question on screen — outlasted the wait",
 				dest.Peer.Label, s.deliveryLimit,
 			)
 		}

@@ -22,7 +22,6 @@ import (
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
-	"github.com/lichdotdev/lich/internal/shquote"
 )
 
 // stubBins is a Store returning a fixed binary path and project directory,
@@ -95,21 +94,6 @@ type stubBins struct {
 	// kinds are the providers SessionKind answers per session; a session not
 	// listed has no recorded kind.
 	kinds map[string]string
-}
-
-// projectWithSetup is a project checkout shipping .lich/setup-worktree.sh —
-// the source the spawn reads since the script moved out of the store and into
-// the repository.
-func projectWithSetup(t *testing.T, script string) string {
-	t.Helper()
-	dir := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(dir, ".lich"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, ".lich", "setup-worktree.sh"), []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return dir
 }
 
 // stubLedger mirrors one session_costs row.
@@ -502,7 +486,7 @@ func TestStartIsNoopWhenAlreadyRunning(t *testing.T) {
 	sess := spawnSession(t)
 	svc.sessions["s1"] = sess
 
-	if err := svc.Start("s1", "p1", "", "", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", "", "", "", "", false, 80, 24); err != nil {
 		t.Errorf("Start(running) = %v, want nil", err)
 	}
 	if svc.sessions["s1"] != sess {
@@ -554,7 +538,7 @@ func TestStartPassesResumeToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -577,7 +561,7 @@ func TestStartForksIntoItsOwnConversation(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", "lich-9c1b", true, false, 80, 24)
+	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", "lich-9c1b", true, 80, 24)
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
@@ -602,7 +586,7 @@ func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "crush", "abc-123", "", true, false, 80, 24)
+	err := svc.Start("s1", "p1", t.TempDir(), "crush", "abc-123", "", true, 80, 24)
 	if err == nil {
 		t.Fatal("Start = nil, want a refusal for a kind that cannot fork")
 	}
@@ -622,7 +606,7 @@ func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", true, false, 80, 24); err == nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", true, 80, 24); err == nil {
 		t.Fatal("Start = nil, want a refusal for a fork with no resume id")
 	}
 	if svc.Live("s1") {
@@ -637,7 +621,7 @@ func TestStartWithoutResumeSpawnsBare(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -661,7 +645,7 @@ func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -676,53 +660,6 @@ func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
 	if !strings.Contains(got[flag+1], "subagent") {
 		t.Errorf("briefing = %q, want the line it exists to draw", got[flag+1])
 	}
-}
-
-// TestStartWithSetupWrapsTheSpawn proves the setup flag reroutes the spawn
-// through sh -c with the project's script ahead of the exec'd provider — the
-// wiring wrapSetup's unit test cannot see.
-func TestStartWithSetupWrapsTheSpawn(t *testing.T) {
-	bin := stayAliveBin(t)
-	svc := New(stubBins{bin: bin, projectPath: projectWithSetup(t, "echo setup-ran")}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
-
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, true, 80, 24); err != nil {
-		t.Fatalf("Start = %v, want nil", err)
-	}
-
-	svc.mu.Lock()
-	got := spawnedArgs(t, svc, "s1")
-	svc.mu.Unlock()
-
-	if len(got) != 3 || got[0] != "sh" || got[1] != "-c" {
-		t.Fatalf("spawned argv = %v, want sh -c <cmd>", got)
-	}
-	for _, want := range []string{"echo setup-ran", "exec " + shquote.Quote(bin)} {
-		if !strings.Contains(got[2], want) {
-			t.Errorf("spawned command missing %q:\n%s", want, got[2])
-		}
-	}
-}
-
-// TestStartWithSetupButNoScriptSpawnsBare proves the flag is inert for a
-// project with no setup script configured — no sh indirection sneaks in.
-func TestStartWithSetupButNoScriptSpawnsBare(t *testing.T) {
-	bin := stayAliveBin(t)
-	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
-
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, true, 80, 24); err != nil {
-		t.Fatalf("Start = %v, want nil", err)
-	}
-
-	svc.mu.Lock()
-	got := spawnedArgs(t, svc, "s1")
-	svc.mu.Unlock()
-
-	// As above: the registration is expected, an sh indirection is not — argv
-	// still starts at the provider binary itself.
-	want := []string{bin, "--mcp-config"}
-	spawnPins(t, got, want...)
 }
 
 // TestResolveBin proves an empty custom path falls back to the provider's
@@ -992,7 +929,7 @@ func TestStartPassesSkipPermissionsToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin, skipPerms: true}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -1035,7 +972,7 @@ func TestStartNamesASessionByWhatItAnswersTo(t *testing.T) {
 			svc := New(store, nil, events.New())
 			t.Cleanup(func() { _ = svc.Close("s1") })
 
-			err := svc.Start("s1", "p1", t.TempDir(), "claude", "", tt.asked, false, false, 80, 24)
+			err := svc.Start("s1", "p1", t.TempDir(), "claude", "", tt.asked, false, 80, 24)
 			if err != nil {
 				t.Fatalf("Start = %v, want nil", err)
 			}
@@ -1181,7 +1118,7 @@ func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin, model: "opus", effort: "high"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -1201,7 +1138,7 @@ func TestStartPassesTheStoredModelToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin, model: "opus"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -1737,10 +1674,10 @@ func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 174, 51); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 174, 51); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
-	if err := svc.Start("s2", "p1", t.TempDir(), "claude", "", "", false, false, 0, 0); err != nil {
+	if err := svc.Start("s2", "p1", t.TempDir(), "claude", "", "", false, 0, 0); err != nil {
 		t.Fatalf("Start without a size = %v, want nil", err)
 	}
 
@@ -1750,41 +1687,6 @@ func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
 	if cols != 174 || rows != 51 {
 		t.Errorf("the agent's session moved the window's size to %dx%d", cols, rows)
 	}
-}
-
-// TestReadyWaitsForTheSetupScript drives the whole seam: a session spawned with
-// the project's setup script is live but has nothing on the other end that can
-// read a message, until the wrapper's marker comes through its own output.
-func TestReadyWaitsForTheSetupScript(t *testing.T) {
-	bin := stayAliveBin(t)
-	svc := New(stubBins{bin: bin, projectPath: projectWithSetup(t, "echo installing")}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
-
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, true, 80, 24); err != nil {
-		t.Fatalf("Start = %v, want nil", err)
-	}
-	if !svc.Live("s1") {
-		t.Fatal("the session is not live")
-	}
-	if svc.Ready("s1") {
-		t.Fatal("a session still running its setup script was offered work")
-	}
-
-	svc.mu.Lock()
-	sess := svc.sessions["s1"]
-	svc.mu.Unlock()
-	svc.noteOutput("s1", sess, []byte("Progress: resolved 551"+setupDone))
-
-	// The marker is the exec, not the prompt: the provider draws its opening
-	// screen from here, and a message written into that is the one that landed
-	// on screen as literal paste markers.
-	if svc.Ready("s1") {
-		t.Error("work was offered the instant the setup script exec'd the provider")
-	}
-	// This session has a real PTY behind it, still writing the script's own
-	// output and marker on its own schedule, so the settle runs from whenever
-	// that last byte lands rather than from here.
-	waitFor(t, func() bool { return svc.Ready("s1") }, "the provider to settle")
 }
 
 // TestReadyWaitsForTheProviderToStopDrawing covers the spawn with no setup
@@ -1829,34 +1731,6 @@ func TestReadyStaysTrueThroughABusyTurn(t *testing.T) {
 	}
 }
 
-// The setup script's marker is the exec, and the exec is not instant: the image
-// is replaced, a runtime starts, a splash is composed, and none of that writes a
-// byte. Measured from the script's last line, that silence is long enough to
-// pass for a provider that has finished drawing — so the first byte of the
-// splash would clear the settle, and the message the relay then types lands in a
-// TUI that has not taken the terminal yet.
-func TestTheWaitForTheProviderToStartIsNotItsQuiet(t *testing.T) {
-	t.Parallel()
-	svc := New(stubBins{}, nil, events.New())
-	sess := &session{settingUp: true}
-	svc.mu.Lock()
-	svc.sessions["s1"] = sess
-	svc.mu.Unlock()
-
-	svc.noteOutput("s1", sess, []byte("Progress: resolved 551"+setupDone))
-	time.Sleep(readySettle + 100*time.Millisecond)
-	svc.noteOutput("s1", sess, []byte("Claude Code v2.1.227"))
-	if svc.Ready("s1") {
-		t.Error("the wait for the provider to start was credited as the provider going quiet")
-	}
-
-	// Its own quiet, once it has drawn itself, still counts.
-	time.Sleep(readySettle + 100*time.Millisecond)
-	if !svc.Ready("s1") {
-		t.Error("the session stayed unready after its provider settled")
-	}
-}
-
 // The quiet a session settles into is recorded as it passes, not sampled when
 // somebody finally asks. A session live for hours is at its prompt the whole
 // time, but the first thing ever asked of it is a relayed message — and by then
@@ -1883,19 +1757,18 @@ func TestReadyRemembersAQuietThatAlreadyPassed(t *testing.T) {
 	}
 }
 
-func TestReadyWaitsOnlyTheSettleWithoutASetupScript(t *testing.T) {
+func TestReadyWaitsOnlyTheSettle(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
-	// No setup script to wait out, but the provider still has to take the
-	// terminal: readiness is the quiet after it draws, never the spawn itself.
+	// The provider has to take the terminal first: readiness is the quiet after it draws, never the spawn itself.
 	time.Sleep(readySettle + 100*time.Millisecond)
 	if !svc.Ready("s1") {
-		t.Error("a session with no setup script to wait for was held back")
+		t.Error("a session that settled was held back")
 	}
 }
 
@@ -1954,7 +1827,7 @@ func TestLiveCountCountsTheSessionsWithAProcess(t *testing.T) {
 		t.Fatalf("LiveCount = %d before any spawn, want 0", got)
 	}
 	for _, id := range []string{"s1", "s2"} {
-		if err := svc.Start(id, "p1", t.TempDir(), "claude", "", "", false, false, 80, 24); err != nil {
+		if err := svc.Start(id, "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
 			t.Fatalf("Start(%s) = %v", id, err)
 		}
 	}

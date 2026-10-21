@@ -1,10 +1,10 @@
 // Package shquote quotes a string for a shell command line. lich composes
-// three of those — the worktree setup wrapper that execs a provider
-// (internal/terminal) and the terminal-editor invocation handed to a session
-// (internal/system), on a POSIX shell; and the same editor invocation on
-// Windows, where the session's shell is PowerShell. All of them interpolate a
-// path or a binary name the user or an agent chose. One copy of each rule, so a
-// metacharacter that survives one call site cannot survive the other.
+// several of those — the terminal-editor invocation handed to a session
+// (internal/system), on a POSIX shell and on Windows, where the session's shell
+// is PowerShell; and the hook, MCP and login commands it writes for providers.
+// All of them interpolate a path or a binary name the user or an agent chose.
+// One copy of each rule, so a metacharacter that survives one call site cannot
+// survive the other.
 package shquote
 
 import "strings"

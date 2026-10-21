@@ -117,7 +117,7 @@ type Worktrees interface {
 // first viewed, and the same close it asks for when a card goes away. The
 // terminal service implements it.
 type Terminal interface {
-	Start(id, projectID, cwd, kind, resume, name string, fork, setup bool, cols, rows int) error
+	Start(id, projectID, cwd, kind, resume, name string, fork bool, cols, rows int) error
 	// CloseBy closes the session on behalf of closerID, the session that asked
 	// for it, or empty when none did.
 	CloseBy(id, closerID string) error
@@ -205,9 +205,8 @@ func New(sessions Sessions, worktrees Worktrees, term Terminal, events Events) *
 //
 // Worktree, when given, is the branch name of a new git worktree created off
 // Base (the project's current branch when Base is empty); the session is rooted
-// there, labelled after it, and runs the project's worktree setup script before
-// its provider, exactly as the window's own worktree flow does. A Base without a
-// Worktree has nothing to branch, and is refused rather than ignored.
+// there and labelled after it, exactly as the window's own worktree flow does. A
+// Base without a Worktree has nothing to branch, and is refused rather than ignored.
 //
 // Model, when given, is the model the provider is spawned on, in that provider's
 // own spelling. It is recorded on the row so every later spawn repeats it.
@@ -376,7 +375,7 @@ func (s *Service) openSession(req request) (Session, error) {
 	}
 	callerErr := s.fileCaller(target.ID, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
-	if err := s.term.Start(id, target.ID, cwd, kind, "", opened.Name, false, at.setup, startCols, startRows); err != nil {
+	if err := s.term.Start(id, target.ID, cwd, kind, "", opened.Name, false, startCols, startRows); err != nil {
 		return Session{}, fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
 	}
 	if err := errors.Join(callerErr, overrideErr, markErr); err != nil {
@@ -386,9 +385,8 @@ func (s *Service) openSession(req request) (Session, error) {
 }
 
 // besideCaller is the caller's own checkout as a placement: where it runs,
-// under the project's next label (the checkout's name is already the caller's),
-// with no setup script, which that checkout ran when it was made. A caller
-// missing from target falls back to at, which originOf has already ruled out.
+// under the project's next label (the checkout's name is already the caller's).
+// A caller missing from target falls back to at, which originOf has already ruled out.
 func besideCaller(target store.Project, fromID string, at placement) placement {
 	for _, sess := range target.Sessions {
 		if sess.ID != fromID {
@@ -514,11 +512,9 @@ func overrideNotRecorded(label, what string, err error) error {
 // placement is where an opened session lives. cwd is where the PTY starts;
 // stored is what the row records, which is empty for a session in the
 // project's own directory (the store's spelling, and what the window's grouping
-// reads). setup is whether the checkout is fresh and runs the project's setup
-// script first.
+// reads).
 type placement struct {
 	cwd, stored, label string
-	setup              bool
 }
 
 // place settles where Open roots a session: the project's own directory under
@@ -532,7 +528,7 @@ func (s *Service) place(target store.Project, worktree, base string) (placement,
 	if err != nil {
 		return placement{}, err
 	}
-	at.cwd, at.stored, at.setup = found.path, storedPath(target.Path, found.path), found.fresh
+	at.cwd, at.stored = found.path, storedPath(target.Path, found.path)
 	if found.label != "" {
 		at.label = found.label
 	}
@@ -541,7 +537,6 @@ func (s *Service) place(target store.Project, worktree, base string) (placement,
 
 type checkout struct {
 	path  string
-	fresh bool
 	label string
 }
 
@@ -550,9 +545,7 @@ type checkout struct {
 //
 // An existing checkout is opened, not created: asking for a worktree by the
 // branch it holds is asking to work on that branch, and a caller that cannot
-// see the repository has no way to know which of the two it is asking for. Only
-// a fresh one runs the setup script — the checkout that is already there ran it
-// when it was made.
+// see the repository has no way to know which of the two it is asking for.
 //
 // The card is named after the checkout, as the window names it — unless a
 // session there already took that name. Two live sessions answering to one
@@ -570,7 +563,7 @@ func (s *Service) resolveCheckout(target store.Project, worktree, base string) (
 	if err != nil {
 		return checkout{}, err
 	}
-	return checkout{path: wt.Path, fresh: true, label: label}, nil
+	return checkout{path: wt.Path, label: label}, nil
 }
 
 // addWorktree creates the checkout a worktree session lives in.

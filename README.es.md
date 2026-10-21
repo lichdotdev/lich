@@ -63,10 +63,9 @@ lich te permite:
   proyecto puede tener todos los que quieras, y cada uno aparece como un bloque
   en la barra lateral que puedes plegar, renombrar o deshacer.
 - **Crear un worktree sin preparar nada a mano.** Créalo a partir de cualquier
-  rama base y lich le copia tus archivos `.env*` ignorados por git, le asigna un
+  rama base y lich le copia tus archivos `.env*` ignorados por git y le asigna un
   puerto para el servidor de desarrollo que no usa ningún otro checkout ni
-  ningún proceso de la máquina, y ejecuta el script de preparación del proyecto
-  antes de que arranque el agente. Si partes de los cambios sin commitear del
+  ningún proceso de la máquina. Si partes de los cambios sin commitear del
   checkout, se vienen con él, incluidos los archivos sin seguimiento.
 - **Correr una sesión aislada.** Un agente puede abrirse dentro de un sandbox del
   sistema operativo: un home nuevo y vacío, solo con el estado de ese proveedor,
@@ -211,11 +210,8 @@ por qué.
   cuánto te queda del plan, cuando lich puede leerlo. Lo que aparece en el pie de
   ventana se elige en Ajustes › Apariencia arrastrando sus elementos; el costo
   arranca oculto, porque esa cifra solo tiene sentido si pagas por token.
-- **Worktrees**: el `.lich/setup-worktree.sh` del checkout del proyecto se ejecuta
-  en la terminal de cada worktree nuevo antes que el agente; el diálogo Nueva
-  sesión en worktree lo muestra y, si el repositorio no trae ninguno, sugiere uno
-  a partir de lo que detecta. Con un archivo `.worktreeinclude` eliges qué
-  archivos ignorados por git se copian.
+- **Worktrees**: con un archivo `.worktreeinclude` en el checkout del proyecto
+  eliges qué archivos ignorados por git se copian a cada worktree nuevo.
 - **Hooks de sesión**: con el
   [plugin de lich](https://github.com/lichdotdev/lich-plugin) instalado desde
   Ajustes, cada sesión le pone título a su propia tarjeta y refresca el estado

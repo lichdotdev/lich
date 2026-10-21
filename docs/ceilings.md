@@ -375,9 +375,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   without comparing them — noreply forms, vanity domains and org aliases make a string comparison a
   false-positive farm. The Commits tab of the Pulls screen lists each commit's author and compares it with
   nothing either, so a branch built under the wrong identity says so nowhere in lich.
-- **The worktree setup script answers to the main checkout, never the new branch**
-  (`internal/project/setup.go`): improve `.lich/setup-worktree.sh` on a feature branch and fresh worktrees keep
-  running the old one until the change reaches the checkout the project points at.
 - **A worktree off a local branch waits on a fetch first** (`internal/spawn/spawn.go` `newerOf`,
   `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
   base's upstream to start from the newer of the two, so against a remote that does not answer the session
@@ -392,7 +389,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   ignored files the project names (`.env*`, or `.worktreeinclude`) out of the **main checkout** into every
   new worktree, so an ignored file the forked session had edited arrives as the main checkout's version of
   it, silently disagreeing with the tracked work that came from the fork. `node_modules` and the rest of
-  the build output are the setup script's, as always. Everything arrives
+  the build output are not carried at all. Everything arrives
   unstaged: which changes the source had staged is a fact about the commit *it* is preparing. The row is
   offered only when the base is the forked session's own branch, because the patch is read against that
   checkout's HEAD; picking any other base branches off it at its last commit, the way every fork did before.

@@ -87,7 +87,7 @@ Cuando un mensaje [lich] con ticket llega a TU prompt, eres la sesión de trabaj
 		"no se respondió nada. Dile al usuario que abra la tarjeta %[1]q y resuelva lo que " +
 		"hay en ella; después de eso hay que volver a enviar la tarea.",
 	OutcomeUndelivered: "La tarea nunca llegó a la sesión %[1]q: se retuvo porque esa terminal " +
-		"no estaba en un prompt (un script de preparación de la worktree aún corriendo, un " +
+		"no estaba en un prompt (un " +
 		"proveedor que nunca arrancó) y la sesión terminó o se quedó así demasiado tiempo. Ya no " +
 		"queda nada en cola y no se respondió nada. Dile al usuario que abra la tarjeta %[1]q " +
 		"para ver qué pasó ahí; después de eso hay que volver a enviar la tarea.",
@@ -121,8 +121,8 @@ Cuando un mensaje [lich] con ticket llega a TU prompt, eres la sesión de trabaj
 	OpenedConfined: " Corre confinada: un home vacío que solo contiene el estado propio de su agente, la " +
 		"máquina en solo lectura y escritura únicamente dentro de su checkout.",
 	OpenedSession: "Sesión %[1]q (%[2]s) abierta en %[3]s.%[4]s\n" +
-		"Responde por %[1]q y por %[5]q. Su agente puede estar aún iniciando (una worktree " +
-		"nueva ejecuta primero el script de preparación del proyecto), así que una tarea que le " +
+		"Responde por %[1]q y por %[5]q. Su agente puede estar aún iniciando, " +
+		"así que una tarea que le " +
 		"envíes queda retenida hasta que el agente esté activo en lugar de perderse.\n",
 	ClosedRemoved: "Se cerró %[1]q y se eliminó su worktree %[2]s.\n",
 	ClosedKept: "Se cerró %[1]q. Su worktree %[2]s sigue ahí y la sesión queda aparcada: volver a abrir " +

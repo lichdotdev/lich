@@ -106,8 +106,8 @@ const openCall = 60 * time.Second
 // was opened a moment ago.
 //
 // It is not a wait for an answer, and no longer a wait for the session to come
-// up either: a task sent to a session that is still running its worktree setup
-// script is queued and delivered when its agent is there (relay.queueDelivery).
+// up either: a task sent to a session whose agent is still starting is queued
+// and delivered when its agent is there (relay.queueDelivery).
 // The worker was created seconds ago and its task is minutes of work, so a
 // ticket is the expected outcome and the sender carries on.
 //
@@ -762,11 +762,10 @@ func (c *client) deliver(ctx context.Context, opened spawn.Session, prompt, meth
 // its names, because the caller's next move is to address it and either one
 // reaches it.
 //
-// What it no longer does is tell the caller to wait. A session on a fresh
-// worktree runs the project's setup script before its provider, which can take
-// minutes, and no instruction to "give it a moment" survives that. Sending is
-// what waits now (relay.awaitReady), so the honest thing to say is that the
-// message will be held.
+// What it no longer does is tell the caller to wait. A session's provider can
+// take a while to come up, and no instruction to "give it a moment" survives
+// that. Sending is what waits now (relay.awaitReady), so the honest thing to say
+// is that the message will be held.
 //
 // The confinement clause is only there when the session is confined: it changes
 // what the session can do — an empty home, no credentials it was not granted,

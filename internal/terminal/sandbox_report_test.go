@@ -66,7 +66,7 @@ func TestStartReportsNoLinksForAnUnconfinedSpawn(t *testing.T) {
 	svc := New(stubBins{bin: stayAliveBin(t), sandboxLinks: recorded}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 

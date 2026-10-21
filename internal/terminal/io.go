@@ -3,7 +3,6 @@ package terminal
 import (
 	"encoding/base64"
 	"math"
-	"strings"
 	"time"
 )
 
@@ -169,10 +168,9 @@ func (s *Service) Resize(id string, cols, rows int) error {
 	return p.Resize(cols, rows)
 }
 
-// noteOutput reads one chunk of a session's output for the three things lich
-// has to know about it from outside: whether the worktree setup script is still
-// the program on the other end of this PTY (see setupDone), whether that
-// program has ever stopped drawing (see Ready), and whether the agent is
+// noteOutput reads one chunk of a session's output for the two things lich has
+// to know about it from outside: whether the program on the other end of this
+// PTY has ever stopped drawing (see Ready), and whether the agent is
 // working right now (see handsOn).
 func (s *Service) noteOutput(id string, sess *session, chunk []byte) {
 	s.mu.Lock()
@@ -181,26 +179,10 @@ func (s *Service) noteOutput(id string, sess *session, chunk []byte) {
 	// asks. A session settles seconds after it starts and is asked hours later,
 	// by then mid-turn: sampling there reads a spinner redrawing every few
 	// frames and calls a session that has been at its prompt all day unready.
-	//
-	// A setup script pauses too — between one package and the next — and that
-	// quiet belongs to a program the provider has not replaced yet, so it is
-	// not the provider's and does not count.
-	if !sess.settingUp && !sess.lastOut.IsZero() && time.Since(sess.lastOut) >= readySettle {
+	if !sess.lastOut.IsZero() && time.Since(sess.lastOut) >= readySettle {
 		sess.ready = true
 	}
 	sess.lastOut = time.Now()
-	if sess.settingUp && sess.setupEnded(chunk) {
-		sess.settingUp = false
-		// The provider starts drawing from here, so the quiet this waits for is
-		// measured from the exec, not from the setup script's last line. The
-		// clock goes with the flag: the exec itself takes a second or two — the
-		// image is replaced, a runtime starts, a splash is composed — and that
-		// silence is nobody's quiet. Measured from the script's last line it
-		// would clear the settle on the provider's very first byte, mid-splash,
-		// which is the write that lands on screen as literal paste markers.
-		sess.ready = false
-		sess.lastOut = time.Time{}
-	}
 	// Output is the one beat source that has to be qualified, because a
 	// terminal draws for reasons that are nobody's work: a `tail -f`, a dev
 	// server logging requests, a TUI repainting its own spinner. An open turn
@@ -212,36 +194,16 @@ func (s *Service) noteOutput(id string, sess *session, chunk []byte) {
 	}
 }
 
-// setupEnded reports whether chunk completes the wrapper's end marker, matching
-// across the seam between two reads: the wrapper prints the marker in one write,
-// but a PTY read can cut it anywhere, and neither half matches on its own — a
-// session that missed it waits out every relay it is ever sent.
+// Ready reports whether a session can be given work — whether its provider has
+// finished drawing itself, and whether the prompt is free rather than
+// half-filled by the person sitting at it. False for a session that is not
+// running at all.
 //
-// Called under s.mu.
-func (sess *session) setupEnded(chunk []byte) bool {
-	joined := sess.setupTail + string(chunk)
-	if strings.Contains(joined, setupDone) {
-		sess.setupTail = ""
-		return true
-	}
-	// One byte short of the marker is the most that can still be its beginning.
-	if keep := len(setupDone) - 1; len(joined) > keep {
-		joined = joined[len(joined)-keep:]
-	}
-	sess.setupTail = joined
-	return false
-}
-
-// Ready reports whether a session can be given work — whether what reads this
-// PTY is the provider rather than the project's setup script, and whether the
-// prompt is free rather than half-filled by the person sitting at it. False for
-// a session that is not running at all.
-//
-// Live is not this question. A session whose checkout is still installing its
-// dependencies has a PTY, appears in the roster, and accepts writes that go
-// straight into `pnpm install`'s stdin and are discarded before the provider
-// ever starts. It looked delivered to everyone involved: the sender waited out
-// its ticket on an agent that was never asked anything.
+// Live is not this question. A session whose provider is still drawing its
+// opening screen has a PTY, appears in the roster, and accepts writes that land
+// before the provider has taken the terminal. It looked delivered to everyone
+// involved: the sender waited out its ticket on an agent that was never asked
+// anything.
 func (s *Service) Ready(id string) bool {
 	return s.promptState(id, true)
 }
@@ -261,7 +223,7 @@ func (s *Service) promptState(id string, mindDraft bool) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	sess, ok := s.sessions[id]
-	if !ok || sess.settingUp {
+	if !ok {
 		return false
 	}
 	// Unlike the rest of this, being ready is not a state a session reaches and

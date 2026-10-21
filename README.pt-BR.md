@@ -62,9 +62,9 @@ O que dá para fazer com o lich:
   um projeto guarda quantos você quiser e cada um ganha um bloco na barra
   lateral, que dá para recolher, renomear ou desfazer.
 - **Criar uma worktree sem fazer setup.** Crie uma a partir de qualquer branch
-  base: o lich copia os seus `.env*` ignorados pelo git, reserva uma porta
+  base: o lich copia os seus `.env*` ignorados pelo git e reserva uma porta
   para o servidor de dev que nenhum outro checkout nem processo da máquina
-  está usando e roda o script de setup do projeto antes do agente começar.
+  está usando.
   Tem mudança não commitada no checkout? Ela vai junto, inclusive os arquivos
   não rastreados.
 - **Rodar uma sessão confinada.** O agente pode abrir dentro de uma sandbox
@@ -210,11 +210,8 @@ por quê.
   quando o lich consegue ler essa informação. Os itens do rodapé se definem em
   Configurações › Aparência, arrastando cada um; o custo começa oculto, porque
   esse número só faz sentido se você paga por token.
-- **Worktrees**: o `.lich/setup-worktree.sh` no checkout do projeto roda no
-  terminal de cada worktree nova, antes do agente. O diálogo Nova worktree
-  mostra o script e sugere um com base no que detectou quando o repo não tem
-  nenhum. Um arquivo `.worktreeinclude` ajusta quais arquivos ignorados pelo
-  git são copiados.
+- **Worktrees**: um arquivo `.worktreeinclude` no checkout do projeto ajusta
+  quais arquivos ignorados pelo git são copiados para cada worktree nova.
 - **Hooks de sessão**: com o
   [plugin do lich](https://github.com/lichdotdev/lich-plugin) instalado pelas
   Configurações, a sessão dá título ao próprio card e atualiza o git assim que

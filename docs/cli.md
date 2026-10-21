@@ -294,16 +294,13 @@ A prompt is capped at 8192 bytes and stripped of control characters — the text
 is typed into a terminal, and an escape sequence inside it would stop being
 text.
 
-**A target still running its setup script is queued for, not written to.** The
-ticket comes back at once and the message goes in when that session's agent is
-the program reading its PTY — a fresh worktree installs its dependencies before
-its agent, which routinely outlasts the caller's own `--timeout`, and losing the
-task there is exactly what a fan-out cannot afford. `send` never blocks past
-what was asked. A queue that can never end — the session dies, or 5 minutes
-pass — is reported as a failure the sender can act on, never a ticket left to
-expire. `internal/terminal` tells the setup script and the agent apart by a
-marker the setup wrapper prints between them (`setupDone`): the PTY and the pid
-are the same across the `exec`, so nothing else can.
+**A target whose agent is not at its prompt yet is queued for, not written to.**
+The ticket comes back at once and the message goes in when that session's agent
+is reading its PTY — a session opened a moment ago can outlast the caller's own
+`--timeout` starting up, and losing the task there is exactly what a fan-out
+cannot afford. `send` never blocks past what was asked. A queue that can never
+end — the session dies, or 5 minutes pass — is reported as a failure the sender
+can act on, never a ticket left to expire.
 
 ### `lich insert [--project <name-or-path>] [--session <session>] [--timeout <seconds>] [--json] [<text> | -]`
 
@@ -326,8 +323,8 @@ plugins call.
   worktree. Two candidates are an error naming both, never a guess: list them
   with `sessions --json` (see `path`) and pick one with `--session`.
 - It waits up to `--timeout` seconds (default 10) for the session to be at its
-  prompt, so one that is still starting gets its text; one stuck behind a
-  checkout's setup script is refused with the reason.
+  prompt, so one that is still starting gets its text; one that is still not
+  there after that is refused with the reason.
 - **Unlike `send`, a half-written line is not a reason to wait.** The text is
   added after it, which is where it was meant to go.
 - A session in `waiting` — blocked on a permission prompt — is refused: what is
@@ -421,7 +418,7 @@ Opens a new session, starts it, and prints the two names it is addressed by:
 
 ```
 Opened session "auth-fix" (claude) in project "lich", in worktree /home/you/.local/share/lich/worktrees/1a2b/auth-fix.
-It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting — a fresh worktree runs the project's setup script first — so a task you send it is held until the agent is up rather than lost.
+It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting, so a task you send it is held until the agent is up rather than lost.
 ```
 
 - `--project` names the project it lands in; the default is the caller's own.
@@ -450,9 +447,8 @@ It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting
   is not a session at all gets Claude Code.
 - `--worktree` is the **branch name** of a git worktree, created off `--base`
   (the project's current branch by default) under the app data dir. The session
-  is rooted there and labelled after it, and the project's worktree setup script
-  (Settings › Project) runs in its terminal before the provider, exactly as when
-  the window creates one. Without it the session opens in the project's own
+  is rooted there and labelled after it, exactly as when the window creates
+  one. Without it the session opens in the project's own
   directory, beside the caller's.
   **A branch that already exists is checked out as it stands**, never recreated:
   naming a branch is naming the work on it, and a caller that cannot see the
@@ -1415,13 +1411,11 @@ whoever asked.
   the exception, and only for the session it creates: it starts that PTY itself,
   which is why the card it leaves behind is one you can send to unseen.
 - **A session is addressable before its agent can read.** `open` returns when
-  the PTY exists, not when the provider inside it has finished starting. The one
-  stretch lich *can* see is the project's worktree setup script, which owns that
-  PTY before the provider and can run for minutes: `send` queues the task for it
-  rather than typing into it (see below), because a message handed to a running
-  `pnpm install` is read and discarded, and the sender then waits out a ticket
-  nobody was ever asked to answer. What is left is the second or two the
-  provider's own TUI takes to start reading. lich waits that out as quiet — a
+  the PTY exists, not when the provider inside it has finished starting: the
+  second or two the provider's own TUI takes to start reading. `send` queues the
+  task rather than typing into it (see below), because a message typed before
+  the provider reads is lost, and the sender then waits out a ticket nobody was
+  ever asked to answer. lich waits that out as quiet — a
   PTY that has stopped drawing has taken the terminal — which is a heuristic and
   not a signal: no provider offers one.
 - **`open` starts the PTY at the size the window last reported**, because there

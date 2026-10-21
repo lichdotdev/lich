@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/lichdotdev/lich/internal/agentplugin"
-	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 )
@@ -42,15 +40,8 @@ import (
 // passes, a name already on record for this session wins (AgentName): a restart
 // opens a conversation of its own, and a `/rename` typed in the last one is a
 // decision the user made about this card rather than about that conversation.
-//
-// setup is passed once, by the flow that just created this session's worktree:
-// it runs the project's worktree setup script (.lich/setup-worktree.sh, see
-// project.SetupScript) in the PTY before the provider, so a fresh checkout
-// installs its dependencies in view. A respawn or resume never sets it. The
-// script runs in the session's own environment, so it reads the same
-// LICH_WORKTREE_PORT the provider will.
 func (s *Service) Start(
-	id, projectID, cwd, kind, resume, name string, fork, setup bool, cols, rows int,
+	id, projectID, cwd, kind, resume, name string, fork bool, cols, rows int,
 ) error {
 	// Refused before the spawn rather than dropped in resumeArgs: a fork the
 	// provider cannot spell would reopen the parent's own conversation, and two
@@ -87,7 +78,7 @@ func (s *Service) Start(
 	inheritCursorTrust(kind, cwd)
 	markCrushInitialized(kind, cwd)
 	awaits := s.awaitsStart(kind, profileDir)
-	sess, cwd, err := s.spawnSession(id, projectID, cwd, kind, resume, profileDir, name, fork, setup, cols, rows)
+	sess, cwd, err := s.spawnSession(id, projectID, cwd, kind, resume, profileDir, name, fork, cols, rows)
 	if err != nil || sess == nil {
 		return err
 	}
@@ -113,7 +104,7 @@ func (s *Service) Start(
 // The returned cwd is the effective start directory (the input, or the
 // resolved home when it was empty).
 func (s *Service) spawnSession(
-	id, projectID, cwd, kind, resume, profileDir, name string, fork, setup bool, cols, rows int,
+	id, projectID, cwd, kind, resume, profileDir, name string, fork bool, cols, rows int,
 ) (*session, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -179,15 +170,6 @@ func (s *Service) spawnSession(
 		rows: rows,
 	}
 	spec = withShellIntegration(spec, kind, s.shellIntegrationDir)
-	settingUp := false
-	skipped := ""
-	if setup {
-		script := project.SetupScript(s.store.ProjectPath(projectID))
-		spec, settingUp = wrapSetup(spec, script, runtime.GOOS)
-		skipped = setupSkippedNotice(script, runtime.GOOS)
-	}
-	// Outermost, so the setup script is confined with the session it runs in
-	// front of.
 	creds := s.sandboxCredentials(projectID, cwd, inSandbox)
 	spec, skippedLinks := wrapSandbox(
 		spec, kind, userHome(), sessionDropDir(s.dropDir, id, inSandbox), profileDir, inSandbox, creds,
@@ -205,12 +187,11 @@ func (s *Service) spawnSession(
 	}, outboxDepth)
 	out := newCoalescer(box.push, visibleFlushInterval, hiddenFlushInterval)
 	sess := &session{
-		pty:       p,
-		out:       out,
-		done:      make(chan struct{}),
-		replay:    newReplayBuffer(replayCapBytes),
-		outbox:    box,
-		settingUp: settingUp,
+		pty:    p,
+		out:    out,
+		done:   make(chan struct{}),
+		replay: newReplayBuffer(replayCapBytes),
+		outbox: box,
 		// Timed from the spawn, so a program that never writes anything still
 		// becomes ready once: quiet is the signal, and silence from the start
 		// is quiet too.
@@ -222,26 +203,8 @@ func (s *Service) spawnSession(
 	// Outside mu's protection by design (see Service.spawns), and stored with the
 	// registration so no report can arrive for a session whose kind is unknown.
 	s.spawns.Store(id, spawn{kind: kind, cwd: cwd, projectID: projectID, profile: profileSlug(kind, profileDir)})
-	sess.announce(skipped)
 	go s.stream(id, sess)
 	return sess, cwd, nil
-}
-
-// announce puts a line lich wrote itself into a session, the way stream puts
-// the PTY's own bytes there and before the reader that would race it: into the
-// replay so a window attaching later still finds it, and through the
-// coalescer so an attached window has it now. Nothing to say writes nothing.
-//
-// Its one caller is the setup-skipped notice (setupSkippedNotice), whose
-// composition is a Windows answer and whose delivery is not: kept apart so the
-// delivery is exercised wherever the suite runs, rather than only where the
-// notice is non-empty.
-func (sess *session) announce(line string) {
-	if line == "" {
-		return
-	}
-	sess.replay.append([]byte(line))
-	sess.out.Write([]byte(line))
 }
 
 // providerKind resolves which provider mark a session-start report puts on a

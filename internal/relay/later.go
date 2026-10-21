@@ -58,7 +58,7 @@ func (s *Service) RunSchedules() {
 // A session that is not at a prompt is left for the next pass rather than
 // failed: the row is the only record the prompt exists, and dropping it would
 // take the card's mark away with nothing typed anywhere. That covers the
-// session still running its setup script, the one whose user is mid-sentence,
+// session whose agent is still starting, the one whose user is mid-sentence,
 // and the card whose terminal was never opened — none of which is an error, and
 // all of which end by themselves.
 //

@@ -71,7 +71,7 @@ func TestContinueInRespawnsTheCardInTheTargetProfile(t *testing.T) {
 		[]string{"CLAUDE_CODE_OAUTH_TOKEN=personal-token"}, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "c1", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "c1", "", false, 80, 24); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the first spawn")
@@ -107,7 +107,7 @@ func TestContinueInStartsAfreshACardWithNoTranscriptYet(t *testing.T) {
 	svc := New(stubBins{bin: spawnLogBin(t, log), providerSession: "c1", movedProfiles: moved}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, 80, 24); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the first spawn")
@@ -168,7 +168,7 @@ func TestASessionBornInADeletedProfileSaysSo(t *testing.T) {
 	if _, err := svc.profileDir("s1", providers.Claude, ""); !errors.Is(err, claudeprofile.ErrProfileGone) {
 		t.Errorf("spawn into a deleted profile: %v, want ErrProfileGone", err)
 	}
-	err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, false, 80, 24)
+	err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", "", false, 80, 24)
 	if !errors.Is(err, claudeprofile.ErrProfileGone) {
 		t.Errorf("Start: %v, want ErrProfileGone", err)
 	}
@@ -248,7 +248,7 @@ func TestAResumeThatFollowsItsConversationSaysSoOnceUp(t *testing.T) {
 	svc := New(stubBins{bin: spawnLogBin(t, log), movedProfiles: map[string]string{}}, nil, hub)
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "c1", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "c1", "", false, 80, 24); err != nil {
 		t.Fatal(err)
 	}
 	if !svc.Live("s1") {
@@ -355,7 +355,7 @@ func TestACodexSpawnRunsInItsProfile(t *testing.T) {
 		[]string{"OPENAI_API_KEY=lich-key"}, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Codex, "", "", false, false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Codex, "", "", false, 80, 24); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the spawn")
