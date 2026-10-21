@@ -200,6 +200,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   moving an unrelated item. The editor takes no change until that setting has loaded.
   Hiding a reading hides its warning too. An item without data can occupy an editor slot while drawing
   nothing in the live footer — a PR on a branch without one, or an unsupported provider reading.
+- **The card's tooltip names the running model only where the readout above has one**
+  (`modelRuns`, `native/cmd/lich-native/sessiontooltip.go`): the line comes from the model the session-usage
+  event carries (Claude Code's assistant `message.model`, Codex's `turn_context.model`, Kiro CLI's
+  `model_info.model_id`), so oh-my-pi, opencode, Crush, Antigravity and Cursor CLI get no line at all, never
+  the model the session was born on standing in for one nobody read. oh-my-pi writes a model on every
+  assistant turn, but its arm reads cost only. When that model differs from the birth model (`model` column,
+  `SetSessionModel`) the line reads "Opened on …, running …". The comparison is a heuristic, not a lookup:
+  equal once both are shortened (`formatModel`), or the birth model is the family alias of the running id
+  (`opus` against `claude-opus-5-5`, a `[1m]` suffix dropped). Any other alias the CLI accepts (`default`,
+  `opusplan`) reads as a change, and so does a `/model` the user typed, which is intended.
 - **Hands-on time is read off three signals, and one of them is not universal**
   (`internal/terminal/handson.go`, `noteOutput`): the figure beside the cost
   counts the gap between consecutive signs of life in a session — any hook report naming it, a

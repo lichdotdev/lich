@@ -22,12 +22,14 @@ var (
 	icConflict  = icons.Lucide("triangle-alert")
 	icBranch    = icons.Lucide("git-branch")
 	icPR        = icons.Lucide("git-pull-request-arrow")
+	icModel     = icons.Lucide("cpu")
 )
 
 // sessionTooltip is SessionTooltip: everything the card knows, in words. Cut
 // to the sections this window keeps: the full path, the open request and its
 // ticket, what the shield means, the branch, and the base standing spelled
-// out with the files that would conflict.
+// out with the files that would conflict, and the model the provider says it
+// is running.
 func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	th = th.On(th.Popover)
 	path := sv.shown
@@ -51,6 +53,9 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 		sections = append(sections, branchSection(th, sv))
 	}
 	sections = append(sections, baseSections(th, sv.base)...)
+	if sv.running != "" {
+		sections = append(sections, modelSection(th, sv.Model, sv.running))
+	}
 	return func(gtx C) D { return stack(gtx, 1.5, sections) }
 }
 
@@ -161,6 +166,63 @@ func baseSections(th *ui.Theme, b *lichclient.BaseStatus) []layout.Widget {
 		)
 	}
 	return out
+}
+
+// modelRun is a stretch of the model line; name marks a model name set inside
+// the sentence, drawn in mono to stand apart from its words.
+type modelRun struct {
+	text string
+	name bool
+}
+
+// modelRuns is the model line: the model running, and the one the session
+// opened on when the two differ. requested is "" for a session opened on the
+// provider's default, which nothing can differ from.
+func modelRuns(requested, running string) []modelRun {
+	if requested == "" || sameModel(requested, running) {
+		return []modelRun{{text: formatModel(running)}}
+	}
+	names := map[string]string{"requested": formatModel(requested), "running": formatModel(running)}
+	var runs []modelRun
+	for i, part := range strings.Split(i18n.T("sidebar.sessionTooltip.modelChanged", i18n.Args{
+		"requested": valueMarker + "requested" + valueMarker,
+		"running":   valueMarker + "running" + valueMarker,
+	}), valueMarker) {
+		if i%2 == 1 {
+			runs = append(runs, modelRun{text: names[part], name: true})
+		} else if part != "" {
+			runs = append(runs, modelRun{text: part})
+		}
+	}
+	return runs
+}
+
+func modelSection(th *ui.Theme, requested, running string) layout.Widget {
+	return func(gtx C) D {
+		var children []layout.FlexChild
+		for _, r := range modelRuns(requested, running) {
+			l := th.Text(ui.TextXS, r.text).Muted()
+			if r.name {
+				l = l.Mono()
+			}
+			children = append(children, layout.Rigid(l.Layout))
+		}
+		return iconLine(gtx, icModel, th.Text(ui.TextXS, "").Muted(), children...)
+	}
+}
+
+// sameModel is whether running is the model requested asked for: equal once
+// both are shortened, or requested is the family alias ("opus") of a full id
+// ("claude-opus-5-5", snapshot suffix or not). A context suffix on the alias
+// ("opus[1m]") names the same model.
+func sameModel(requested, running string) bool {
+	requested, _, _ = strings.Cut(requested, "[")
+	short := formatModel(running)
+	if formatModel(requested) == short {
+		return true
+	}
+	family, _, _ := strings.Cut(short, " ")
+	return requested == family
 }
 
 func conflictPaths(th *ui.Theme, paths []string) layout.Widget {

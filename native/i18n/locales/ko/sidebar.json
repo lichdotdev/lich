@@ -123,7 +123,8 @@
     "setAtOpen": "세션을 열 때 정해집니다. 바꾸려면 다시 여세요.",
     "notMounted": "마운트되지 않음(심볼릭 링크): {paths}",
     "morePaths": "+{count}개 더",
-    "forkedFrom": "{label}에서 포크됨"
+    "forkedFrom": "{label}에서 포크됨",
+    "modelChanged": "{requested}(으)로 시작, {running} 실행 중"
   },
   "worktreeDialogView": {
     "title": "새 worktree 세션",

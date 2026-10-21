@@ -384,7 +384,10 @@ type Session struct {
 	Color string `json:"color"`
 	// Profile is the Claude Code profile the session runs in
 	// (internal/claudeprofile), "" for Personal and for every other provider.
-	Profile         string `json:"profile"`
+	Profile string `json:"profile"`
+	// Model is the model the session was born on (SetSessionModel), "" for one
+	// opened on its provider's default.
+	Model           string `json:"model"`
 	OriginSessionID string `json:"originSessionId"`
 	OriginLabel     string `json:"originLabel"`
 	// Forked is whether the session was born branching its origin's
@@ -677,7 +680,7 @@ func (s *Service) ProjectAt(path string) (string, string) {
 func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 	rows, err := s.db.Query(
 		`SELECT id, label, kind, path, provider_session_id, sandbox, pinned,
-		        folder, color, profile, origin_session_id, origin_label, forked, scheduled_at, scheduled_prompt, unread,
+		        folder, color, profile, model, origin_session_id, origin_label, forked, scheduled_at, scheduled_prompt, unread,
 		        mcp_servers, sandbox_links
 		   FROM sessions WHERE project_id = ? AND is_open = 1 ORDER BY position, rowid`,
 		projectID,
@@ -693,7 +696,7 @@ func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 		var servers, links string
 		if err := rows.Scan(
 			&sess.ID, &sess.Label, &sess.Kind, &sess.Path, &sess.ProviderSessionID,
-			&sess.Sandbox, &sess.Pinned, &sess.Folder, &sess.Color, &sess.Profile,
+			&sess.Sandbox, &sess.Pinned, &sess.Folder, &sess.Color, &sess.Profile, &sess.Model,
 			&sess.OriginSessionID, &sess.OriginLabel, &sess.Forked,
 			&sess.ScheduledAt, &sess.ScheduledPrompt, &sess.Unread, &servers, &links,
 		); err != nil {

@@ -124,7 +124,8 @@
     "setAtOpen": "Set when the session opened; reopen it to change.",
     "notMounted": "Not mounted (symlinks): {paths}",
     "morePaths": "+{count} more",
-    "forkedFrom": "Forked from {label}"
+    "forkedFrom": "Forked from {label}",
+    "modelChanged": "Opened on {requested}, running {running}"
   },
   "worktreeDialogView": {
     "title": "New worktree session",

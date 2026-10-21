@@ -529,6 +529,9 @@ type sessionView struct {
 	continueIn  []continueTarget
 	// layout is the name of the layout the session sits in, "" for none.
 	layout string
+	// running is the model the provider's transcript reports, "" for a
+	// provider that reports none.
+	running string
 }
 
 // viewOf is what s's card shows at now. Callers hold m.mu.
@@ -536,6 +539,7 @@ func (m *model) viewOf(p lichclient.Project, s lichclient.Session, now time.Time
 	shown := m.shownPath(p, s)
 	age, aged := m.status.age(s.ID, now)
 	tool, _ := m.status.tool(s.ID)
+	usage, _ := m.usage.get(s.ID)
 	return sessionView{
 		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host,
 		status: m.status.status(s.ID), unread: m.status.unread(s.ID), age: age, aged: aged,
@@ -543,7 +547,7 @@ func (m *model) viewOf(p lichclient.Project, s lichclient.Session, now time.Time
 		base: m.base[shown], pr: m.prs[shown].pr,
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID),
 		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
-		layout: m.layoutNameOfLocked(s.ID),
+		layout: m.layoutNameOfLocked(s.ID), running: usage.Model,
 	}
 }
 
