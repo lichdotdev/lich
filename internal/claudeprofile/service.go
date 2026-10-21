@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/winexec"
 )
@@ -158,8 +159,16 @@ func (s *Service) authStatus(p Profile) (authStatus, error) {
 // logs it in next (Login).
 func (s *Service) CreateProfile(name string) (Profile, error) { return Create(name) }
 
-// RenameProfile changes a profile's display name; its directory never moves.
-func (s *Service) RenameProfile(slug, name string) error { return Rename(slug, name) }
+// UpdateProfile changes a profile's name, color or image and returns it; its
+// directory never moves.
+func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, error) {
+	p, err := Update(slug, u)
+	if err != nil {
+		return p, err
+	}
+	s.emit(profilestore.ChangedEvent, profilestore.Changed{Provider: store.Provider, Profile: p})
+	return p, nil
+}
 
 // DeleteProfile removes a profile and its login, and clears every setting that
 // named it, so a project set to it falls back to the global profile. It refuses

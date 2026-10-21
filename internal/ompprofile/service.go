@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/winexec"
 )
@@ -35,6 +36,7 @@ type BinResolver interface {
 // picker of providers, so a login is only ever offered in a terminal card.
 type Service struct {
 	bins BinResolver
+	emit func(name string, data any)
 
 	// inUse counts the live sessions running in a profile and forget clears the
 	// settings that name a deleted one. Startup wiring.
@@ -42,8 +44,11 @@ type Service struct {
 	forget func(slug string) error
 }
 
-// New returns a Service that runs the omp binary bins resolves.
-func New(bins BinResolver) *Service { return &Service{bins: bins} }
+// New returns a Service that runs the omp binary bins resolves and reports a
+// profile's update through emit.
+func New(bins BinResolver, emit func(name string, data any)) *Service {
+	return &Service{bins: bins, emit: emit}
+}
 
 // SetSessions wires the two questions a delete asks: how many live sessions run
 // in a profile, and how to forget the settings that name it. Startup wiring.
@@ -134,8 +139,16 @@ func emailOf(identityKey string) string {
 // logs it in next, in a terminal card (LoginCommand).
 func (s *Service) CreateProfile(name string) (Profile, error) { return Create(name) }
 
-// RenameProfile changes a profile's display name; its directory never moves.
-func (s *Service) RenameProfile(slug, name string) error { return Rename(slug, name) }
+// UpdateProfile changes a profile's name, color or image and returns it; its
+// directory never moves.
+func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, error) {
+	p, err := Update(slug, u)
+	if err != nil {
+		return p, err
+	}
+	s.emit(profilestore.ChangedEvent, profilestore.Changed{Provider: store.Provider, Profile: p})
+	return p, nil
+}
 
 // DeleteProfile removes a profile and its logins, and clears every setting that
 // named it, so a project set to it falls back to the global profile. It refuses

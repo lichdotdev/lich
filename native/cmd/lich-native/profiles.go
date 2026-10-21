@@ -183,6 +183,7 @@ type profileBook struct {
 
 	mu       sync.Mutex
 	list     []lichclient.Profile
+	images   map[string]*avatarImage
 	loaded   bool
 	loadedAt time.Time
 	reading  bool
@@ -206,6 +207,10 @@ func (b *profileBook) reload(ctx context.Context) error {
 		return slices.ContainsFunc(list, func(p lichclient.Profile) bool { return p.Slug == old.Slug })
 	})
 	b.list, b.loaded, b.loadedAt = list, true, time.Now()
+	b.images = map[string]*avatarImage{}
+	for _, p := range list {
+		b.images[p.Slug] = decodeAvatar(p)
+	}
 	b.followQuoted()
 	b.mu.Unlock()
 	for _, p := range gone {
@@ -213,6 +218,18 @@ func (b *profileBook) reload(ctx context.Context) error {
 	}
 	b.invalidate()
 	return nil
+}
+
+// changed takes a profile-changed event: the profile's name and look, the
+// login state the event does not carry kept from the list.
+func (b *profileBook) changed(p lichclient.Profile) {
+	b.mu.Lock()
+	if i := slices.IndexFunc(b.list, func(old lichclient.Profile) bool { return old.Slug == p.Slug }); i >= 0 {
+		b.list[i].Name, b.list[i].Color, b.list[i].Image = p.Name, p.Color, p.Image
+		b.images[p.Slug] = decodeAvatar(p)
+	}
+	b.mu.Unlock()
+	b.invalidate()
 }
 
 // loginFinished takes the end of a login: who is logged in changed, and with
@@ -311,6 +328,19 @@ func (b *profileBook) nameOf(stored string) string {
 		return slug
 	}
 	return i18n.T("settings.profiles.personal")
+}
+
+// look is how the profile a stored value names is drawn; one the book does not
+// know is its slug's color and initial.
+func (b *profileBook) look(stored string) profileLook {
+	slug := effectiveProfile(stored)
+	p, ok := b.find(stored)
+	if !ok {
+		return profileLook{name: b.nameOf(stored), slug: slug}
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return profileLook{name: p.Name, slug: slug, color: p.Color, image: b.images[slug]}
 }
 
 // loggedIn is every profile with a login, in the book's order.

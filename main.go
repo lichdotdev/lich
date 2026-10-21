@@ -293,14 +293,14 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	codexProfiles.SetSessions(term.CodexProfileSessions, db.ForgetCodexProfile)
 	dispatcher.Register("codexprofile", codexProfiles)
 	// oh-my-pi's login is a terminal card's, so its service runs no login of its
-	// own and has nothing to report on /events; it lists, creates and deletes.
-	ompProfiles := ompprofile.New(db)
+	// own; on /events it reports only a profile's update.
+	ompProfiles := ompprofile.New(db, hub.Emit)
 	ompProfiles.SetSessions(term.OMPProfileSessions, db.ForgetOMPProfile)
 	dispatcher.Register("ompprofile", ompProfiles)
 	// opencode, Cursor CLI and Kiro CLI log in from a terminal card too, and have
 	// profiles only where a variable moves their logins (xdgprofile.Providers).
 	for _, provider := range xdgprofile.Providers() {
-		profiles := xdgprofile.New(provider, db)
+		profiles := xdgprofile.New(provider, db, hub.Emit)
 		profiles.SetSessions(
 			func(slug string) int { return term.XDGProfileSessions(provider.ID, slug) },
 			func(slug string) error { return db.ForgetXDGProfile(provider.ID, slug) },

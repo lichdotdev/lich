@@ -191,8 +191,11 @@ func (p *Provider) List() ([]Profile, error) { return p.store.List() }
 // base directory. It does not log in.
 func (p *Provider) Create(name string) (Profile, error) { return p.store.Create(name) }
 
-// Rename changes a profile's display name. The slug and the directory stay.
-func (p *Provider) Rename(slug, name string) error { return p.store.Rename(slug, name) }
+// Update changes a profile's name, color or image. The slug and the directory
+// stay.
+func (p *Provider) Update(slug string, u profilestore.Update) (Profile, error) {
+	return p.store.Update(slug, u)
+}
 
 // Delete removes a profile's link home and the login in it. The links go and
 // what they point at stays.

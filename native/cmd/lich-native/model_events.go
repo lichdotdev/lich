@@ -84,6 +84,14 @@ func (m *model) sessionFocus(data json.RawMessage) {
 	}
 }
 
+// profileChanged takes a profile's update into its provider's book, whichever
+// window or call made it.
+func (m *model) profileChanged(c lichclient.ProfileChanged) {
+	if book := m.profileBook(c.Provider); book != nil {
+		book.changed(c.Profile)
+	}
+}
+
 // loginStep is one step of a profile login of the provider kind names. The
 // profiles are read again before the screen hears the login ended, so what it
 // draws next is the account that just signed in, whichever window or terminal

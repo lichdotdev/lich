@@ -60,7 +60,7 @@ func fakeService(t *testing.T) *Service {
 	t.Helper()
 	t.Setenv(fakeOmpGuard, "1")
 	t.Setenv("OMP_AUTH_BROKER_URL", "https://broker.example")
-	return New(fakeBins{})
+	return New(fakeBins{}, func(string, any) {})
 }
 
 func TestProfilesReportWhoIsLoggedInWhere(t *testing.T) {
@@ -147,7 +147,7 @@ func TestDeleteProfileWaitsForItsSessions(t *testing.T) {
 
 func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	machine(t)
-	s := New(missingBins{"/opt/my omp"})
+	s := New(missingBins{"/opt/my omp"}, func(string, any) {})
 	p, err := s.CreateProfile("Work")
 	if err != nil {
 		t.Fatal(err)

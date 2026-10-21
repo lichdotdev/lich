@@ -130,13 +130,13 @@ func TestRenameKeepsTheDirectoryAndPersonalHasItsOwnName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Rename(p.Slug, "Day job"); err != nil {
+	if _, err := s.Update(p.Slug, Update{Name: "Day job"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Rename(Personal, "Home"); err != nil {
+	if _, err := s.Update(Personal, Update{Name: "Home"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Rename(p.Slug, " "); err == nil {
+	if _, err := s.Update(p.Slug, Update{Name: " "}); err == nil {
 		t.Error("renamed to a blank name")
 	}
 	list, _ := s.List()

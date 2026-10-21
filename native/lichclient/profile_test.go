@@ -23,8 +23,10 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.ClaudeProfiles().Create(ctx, "Work")
 			return err
 		}},
-		{"Rename", "claudeprofile.RenameProfile", `"work","Day job"`, nil, func(c *Client) error {
-			return c.ClaudeProfiles().Rename(ctx, "work", "Day job")
+		{"Update", "claudeprofile.UpdateProfile", `"work",{"name":"Day job","color":"teal"}`, Profile{Slug: "work"}, func(c *Client) error {
+			teal := "teal"
+			_, err := c.ClaudeProfiles().Update(ctx, "work", ProfileUpdate{Name: "Day job", Color: &teal})
+			return err
 		}},
 		{"Delete", "claudeprofile.DeleteProfile", `"work"`, nil, func(c *Client) error {
 			return c.ClaudeProfiles().Delete(ctx, "work")

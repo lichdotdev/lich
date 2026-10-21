@@ -85,7 +85,7 @@ func (m *model) profileEntries(th *ui.Theme, f profileFocus, act *sidebarAction)
 		out = append(out, ui.MenuEntry{
 			Kind: ui.MenuRadioItem, Label: p.Name, Checked: p.Slug == f.choice.shown,
 			Shortcut: usage, ShortcutDestructive: limited,
-			Lead: func(gtx C, size unit.Dp) D { return profileAvatar(gtx, th, p.Name, p.Slug, size) },
+			Lead: func(gtx C, size unit.Dp) D { return profileAvatar(gtx, th, f.book.look(p.Slug), size) },
 			OnClick: func() {
 				act.profilePick = profilePick{key: key, projectID: f.project.ID, value: profileChoiceValue(p.Slug, f.project.ID)}
 			},
@@ -137,7 +137,7 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, f 
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return providerIcon(f.kind).Layout(gtx, 14, on.MutedForeground) }),
 					ui.Gap(2),
-					layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, name, f.choice.shown, ui.Space(4)) }),
+					layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, f.book.look(f.choice.shown), ui.Space(4)) }),
 					ui.Gap(2),
 					layout.Flexed(1, on.Text(ui.TextSM, name).Layout),
 					layout.Rigid(func(gtx C) D { return icProfileFooter.Layout(gtx, 14, on.MutedForeground) }),

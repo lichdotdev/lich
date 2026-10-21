@@ -215,7 +215,7 @@ func TestServicesReportWhoIsLoggedInWhere(t *testing.T) {
 	t.Setenv("KIRO_API_KEY", "leak")
 	t.Setenv("OPENCODE_DB", "/leak")
 	for _, prov := range Providers() {
-		s := New(prov, fakeBins{})
+		s := New(prov, fakeBins{}, func(string, any) {})
 		p, err := s.CreateProfile("Work")
 		if err != nil {
 			t.Fatal(err)
@@ -236,7 +236,7 @@ func TestServicesReportWhoIsLoggedInWhere(t *testing.T) {
 
 func TestDeleteRefusesARunningProfileAndForgetsIt(t *testing.T) {
 	home := machine(t)
-	s := New(Kiro, fakeBins{})
+	s := New(Kiro, fakeBins{}, func(string, any) {})
 	p, err := s.CreateProfile("Work")
 	if err != nil {
 		t.Fatal(err)
@@ -260,7 +260,7 @@ func TestDeleteRefusesARunningProfileAndForgetsIt(t *testing.T) {
 
 func TestLoginCommandRunsTheLoginInTheProfile(t *testing.T) {
 	machine(t)
-	s := New(Cursor, fakeBins{})
+	s := New(Cursor, fakeBins{}, func(string, any) {})
 	p, err := s.CreateProfile("Work")
 	if err != nil {
 		t.Fatal(err)

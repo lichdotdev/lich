@@ -112,6 +112,7 @@ type PinnedVar struct{ Name, Rel string }
 type metaFile struct {
 	Name    string `json:"name"`
 	Created int64  `json:"created"`
+	Color   string `json:"color,omitempty"`
 	// Copied lists the shared entries this profile holds as copies rather than
 	// links, which Windows does without Developer Mode for files.
 	Copied []string `json:"copied,omitempty"`
@@ -126,6 +127,11 @@ type Profile struct {
 	// Copied names the shared entries (a settings file, say) this profile holds
 	// as a copy, so edits made in one account no longer reach the other.
 	Copied []string `json:"copied,omitempty"`
+	// Color is the card color the profile is shown in, "" for the one the
+	// window derives from the slug.
+	Color string `json:"color,omitempty"`
+	// Image is the profile's picture as a PNG, avatarEdge square.
+	Image []byte `json:"image,omitempty"`
 }
 
 // IsPersonal reports whether slug names the default profile. Empty does too: it
@@ -231,7 +237,7 @@ func (s Spec) List() ([]Profile, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := []Profile{{Slug: Personal, Name: s.personalName(), Dir: personal, Personal: true}}
+	out := []Profile{s.personal(personal)}
 	// Globbed inside root, which may hold metacharacters of its own.
 	metas, _ := fs.Glob(os.DirFS(root), "*.json")
 	type created struct {
@@ -249,7 +255,8 @@ func (s Spec) List() ([]Profile, error) {
 		if err != nil {
 			continue
 		}
-		found = append(found, created{Profile{Slug: slug, Name: m.Name, Dir: dir, Copied: m.Copied}, m.Created})
+		p := Profile{Slug: slug, Name: m.Name, Dir: dir, Copied: m.Copied, Color: m.Color, Image: s.readImage(slug)}
+		found = append(found, created{p, m.Created})
 	}
 	slices.SortStableFunc(found, func(a, b created) int { return cmp.Compare(a.at, b.at) })
 	for _, c := range found {
@@ -348,45 +355,18 @@ func (s Spec) Create(name string) (Profile, error) {
 	return Profile{Slug: slug, Name: name, Dir: dir, Copied: copied}, nil
 }
 
-// Rename changes a profile's display name. The slug and the directory stay.
-func (s Spec) Rename(slug, name string) error {
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return errors.New("a profile needs a name")
+// Personal's display name and color are kept in a sidecar among the other
+// profiles' rather than beside its own directory, whose ".json" neighbour may be
+// the provider's own (~/.claude.json).
+func (s Spec) personal(dir string) Profile {
+	p := Profile{Slug: Personal, Name: "Personal", Dir: dir, Personal: true, Image: s.readImage(Personal)}
+	if m, err := s.readMeta(Personal); err == nil {
+		p.Color = m.Color
+		if m.Name != "" {
+			p.Name = m.Name
+		}
 	}
-	if IsPersonal(slug) {
-		return s.renamePersonal(name)
-	}
-	if _, err := s.ConfigDir(slug); err != nil {
-		return err
-	}
-	m, err := s.readMeta(slug)
-	if err != nil {
-		return err
-	}
-	m.Name = name
-	return s.writeMeta(slug, m)
-}
-
-// Personal's display name is kept in a sidecar among the other profiles' rather
-// than beside its own directory, whose ".json" neighbour may be the provider's
-// own (~/.claude.json).
-func (s Spec) personalName() string {
-	if m, err := s.readMeta(Personal); err == nil && m.Name != "" {
-		return m.Name
-	}
-	return "Personal"
-}
-
-func (s Spec) renamePersonal(name string) error {
-	root, err := s.Root()
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(root, 0o755); err != nil {
-		return err
-	}
-	return s.writeMeta(Personal, metaFile{Name: name})
+	return p
 }
 
 // Delete removes a profile's directory and its login with it. Personal cannot
@@ -405,6 +385,9 @@ func (s Spec) Delete(slug string) error {
 	}
 	if err := os.Remove(meta); err != nil {
 		return fmt.Errorf("delete profile %q: %w", slug, err)
+	}
+	if err := s.writeImage(slug, nil); err != nil {
+		return err
 	}
 	return s.remove(dir)
 }

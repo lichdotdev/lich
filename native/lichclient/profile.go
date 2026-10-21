@@ -15,6 +15,10 @@ const (
 	// SessionProfileEvent is the event a session moving to another profile
 	// emits (terminal profileEventName).
 	SessionProfileEvent = "session-profile"
+
+	// ProfileChangedEvent is the event a profile's update emits once it is
+	// written (profilestore.ChangedEvent).
+	ProfileChangedEvent = "profile-changed"
 )
 
 // profileGoneText is what internal/claudeprofile.ErrProfileGone and
@@ -43,6 +47,19 @@ type Profile struct {
 	// Providers are the providers an oh-my-pi profile holds a login for.
 	Providers   []string `json:"providers,omitempty"`
 	StatusError string   `json:"statusError,omitempty"`
+	// Color is a card color's name, "" for the one the window derives from the
+	// slug; Image is the profile's picture, a square PNG.
+	Color string `json:"color,omitempty"`
+	Image []byte `json:"image,omitempty"`
+}
+
+// ProfileUpdate mirrors profilestore.Update: a nil field keeps what the profile
+// has, and an empty Name keeps its name. Color "" goes back to the slug's own
+// color; Image is a file to read, "" removes the image.
+type ProfileUpdate struct {
+	Name  string  `json:"name,omitempty"`
+	Color *string `json:"color,omitempty"`
+	Image *string `json:"image,omitempty"`
 }
 
 // ProfilePlugin mirrors claudeprofile.Plugin and codexprofile.Plugin.
@@ -74,6 +91,14 @@ type ProfileLogin struct {
 	Cancelled      bool   `json:"cancelled,omitempty"`
 	Error          string `json:"error,omitempty"`
 	PluginError    string `json:"pluginError,omitempty"`
+}
+
+// ProfileChanged mirrors profilestore.Changed: Provider is the provider id
+// ("claude", "kiro"), Profile the profile as it now is, without its login
+// state.
+type ProfileChanged struct {
+	Provider string  `json:"provider"`
+	Profile  Profile `json:"profile"`
 }
 
 // ProfileMoved is the session-profile payload: Profile is the slug the session
@@ -129,9 +154,11 @@ func (a ProfileAPI) Create(ctx context.Context, name string) (Profile, error) {
 	return p, a.c.Call(ctx, a.service+".CreateProfile", &p, name)
 }
 
-// Rename changes a profile's display name.
-func (a ProfileAPI) Rename(ctx context.Context, slug, name string) error {
-	return a.c.Call(ctx, a.service+".RenameProfile", nil, slug, name)
+// Update changes a profile's name, color or image and returns it as the backend
+// now lists it, without its login state.
+func (a ProfileAPI) Update(ctx context.Context, slug string, u ProfileUpdate) (Profile, error) {
+	var p Profile
+	return p, a.c.Call(ctx, a.service+".UpdateProfile", &p, slug, u)
 }
 
 // Delete removes a profile and its login; the backend refuses while a session

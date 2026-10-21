@@ -1,0 +1,31 @@
+package codexprofile
+
+import (
+	"testing"
+
+	"github.com/lichdotdev/lich/internal/profilestore"
+)
+
+func TestUpdateProfileReportsTheProfileOnceWritten(t *testing.T) {
+	machine(t)
+	var got []profilestore.Changed
+	s := New(fakeBins{}, func(name string, data any) {
+		if c, ok := data.(profilestore.Changed); ok && name == profilestore.ChangedEvent {
+			got = append(got, c)
+		}
+	})
+	p, err := Create("Work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	teal := "teal"
+	if _, err := s.UpdateProfile(p.Slug, profilestore.Update{Color: &teal}); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Provider != "codex" || got[0].Profile.Slug != p.Slug || got[0].Profile.Color != "teal" {
+		t.Errorf("events = %+v", got)
+	}
+	if _, err := s.UpdateProfile(p.Slug, profilestore.Update{Name: " "}); err == nil || len(got) != 1 {
+		t.Errorf("a refused update reported anyway: %v, %+v", err, got)
+	}
+}

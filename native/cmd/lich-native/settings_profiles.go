@@ -294,12 +294,12 @@ func (s *settingsScreen) renameProfile(c *profileSettings, slug, name string) {
 		d.step, d.working, d.failure = stepWorking, i18n.T("settings.settingsProfiles.renaming"), ""
 	})
 	go func() {
-		if err := c.provider.api(s.client).Rename(s.ctx, slug, name); err != nil {
+		if _, err := c.provider.api(s.client).Update(s.ctx, slug, lichclient.ProfileUpdate{Name: name}); err != nil {
 			s.failFlow(c, err)
 			return
 		}
 		f.set(func(d *flowData) { d.open = false })
-		s.reloadProfiles(c)
+		s.invalidate()
 	}()
 }
 

@@ -5,7 +5,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -28,17 +27,6 @@ var (
 	icFoldOpen       = icons.Lucide("chevron-down")
 	icFoldShut       = icons.Lucide("chevron-right")
 )
-
-// profileAvatar is a profile's initial on its color: the same hash the scope
-// selector paints a project with, so a profile keeps its color across screens.
-func profileAvatar(gtx C, th *ui.Theme, name, slug string, size unit.Dp) D {
-	px := gtx.Dp(size)
-	gtx.Constraints = layout.Exact(image.Pt(px, px))
-	bg := projectSwatch(slug)
-	ui.Fill(gtx, bg, size/2)
-	label := th.On(bg).Text(ui.TextXS, profileInitial(name)).Weight(font.SemiBold)
-	return layout.Center.Layout(gtx, label.Layout)
-}
 
 // effectiveScopeProfile is the profile the open scope's new sessions are born
 // in: the project's own value when it sets one, else Global's.
@@ -103,7 +91,7 @@ func (s *settingsScreen) profilePicker(gtx C, th *ui.Theme, c *profileSettings, 
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 	})
 	name := c.book.nameOf(shown)
-	lead := func(gtx C) D { return profileAvatar(gtx, th, name, shown, profileAvatarSel) }
+	lead := func(gtx C) D { return profileAvatar(gtx, th, c.book.look(shown), profileAvatarSel) }
 	return pop.Layout(gtx, func(gtx C) D { return selectTriggerWith(gtx, th, lead, name, profilePickerW) })
 }
 
@@ -128,7 +116,7 @@ func (s *settingsScreen) profileOption(gtx C, th *ui.Theme, c *profileSettings, 
 		on := th.On(bg)
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, p.Name, p.Slug, profileAvatarSel) }),
+				layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, c.book.look(p.Slug), profileAvatarSel) }),
 				ui.Gap(2),
 				layout.Flexed(1, on.Text(ui.TextSM, p.Name).Layout),
 				layout.Rigid(func(gtx C) D {
@@ -181,7 +169,7 @@ func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings,
 	row := func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return profileAvatar(gtx, th, p.Name, p.Slug, profileAvatarRow) }),
+			layout.Rigid(func(gtx C) D { return profileAvatar(gtx, th, c.book.look(p.Slug), profileAvatarRow) }),
 			ui.Gap(3),
 			layout.Flexed(1, func(gtx C) D { return profileText(gtx, th, c.provider, p) }),
 			ui.Gap(2),
@@ -237,6 +225,7 @@ func (s *settingsScreen) profileMenu(gtx C, th *ui.Theme, c *profileSettings, p 
 		entries = append(entries, ui.MenuEntry{Label: i18n.T("settings.settingsProfilesView.copyFrom"), Icon: icProfileCopy, Disabled: !p.LoggedIn, OnClick: func() { s.startCopy(c, p) }})
 	}
 	entries = append(entries, ui.MenuEntry{Label: i18n.T("settings.settingsProfilesView.rename"), Icon: icProfileRename, OnClick: func() { s.startRename(c, p) }})
+	entries = append(entries, s.profileLookEntries(c, p)...)
 	if !p.Personal {
 		entries = append(entries, ui.MenuEntry{Kind: ui.MenuSeparator},
 			ui.MenuEntry{Label: i18n.T("settings.settingsProfilesView.delete"), Icon: icProfileDelete, Variant: ui.VariantDestructive, OnClick: func() { s.startDelete(c, p) }})

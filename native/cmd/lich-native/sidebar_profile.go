@@ -20,6 +20,7 @@ var (
 // reading of its five-hour window.
 type continueTarget struct {
 	slug, name string
+	look       profileLook
 	usage      string
 	limited    bool
 }
@@ -60,7 +61,7 @@ func (m *model) continueTargets(kind, profile string) []continueTarget {
 		}
 		plan, ok := planFor(m.quota.plans(profileQuotaKey(book.provider, p.Slug)), kind)
 		usage, limited := profileUsage(plan, ok)
-		out = append(out, continueTarget{slug: p.Slug, name: p.Name, usage: usage, limited: limited})
+		out = append(out, continueTarget{slug: p.Slug, name: p.Name, look: book.look(p.Slug), usage: usage, limited: limited})
 	}
 	return out
 }
@@ -83,7 +84,7 @@ func continueInItem(th *ui.Theme, sv *sessionView, act *sidebarAction) ui.MenuEn
 	for _, t := range sv.continueIn {
 		sub = append(sub, ui.MenuEntry{
 			Label: t.name, Shortcut: t.usage, ShortcutDestructive: t.limited,
-			Lead:    func(gtx C, size unit.Dp) D { return profileAvatar(gtx, th, t.name, t.slug, size) },
+			Lead:    func(gtx C, size unit.Dp) D { return profileAvatar(gtx, th, t.look, size) },
 			OnClick: func() { act.continueIn = continueRequest{id: sv.ID, slug: t.slug} },
 		})
 	}

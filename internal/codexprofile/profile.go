@@ -94,8 +94,9 @@ func ConfigDirs() []Profile { return store.All() }
 // (layout.go), and its sidecar. It does not log in.
 func Create(name string) (Profile, error) { return store.Create(name) }
 
-// Rename changes a profile's display name. The slug and the directory stay.
-func Rename(slug, name string) error { return store.Rename(slug, name) }
+// Update changes a profile's name, color or image. The slug and the
+// directory stay.
+func Update(slug string, u profilestore.Update) (Profile, error) { return store.Update(slug, u) }
 
 // Delete removes a profile's directory and its login with it. Personal cannot
 // be deleted.

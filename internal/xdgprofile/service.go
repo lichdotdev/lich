@@ -36,6 +36,7 @@ type BinResolver interface {
 type Service struct {
 	provider *Provider
 	bins     BinResolver
+	emit     func(name string, data any)
 
 	// inUse counts the live sessions running in a profile and forget clears the
 	// settings that name a deleted one. Startup wiring.
@@ -43,9 +44,10 @@ type Service struct {
 	forget func(slug string) error
 }
 
-// New returns a Service for provider that runs the binary bins resolves.
-func New(provider *Provider, bins BinResolver) *Service {
-	return &Service{provider: provider, bins: bins}
+// New returns a Service for provider that runs the binary bins resolves and
+// reports a profile's update through emit.
+func New(provider *Provider, bins BinResolver, emit func(name string, data any)) *Service {
+	return &Service{provider: provider, bins: bins, emit: emit}
 }
 
 // SetSessions wires the two questions a delete asks: how many live sessions run
@@ -95,8 +97,16 @@ func (s *Service) info(p Profile) Info {
 // in next, in a terminal card (LoginCommand).
 func (s *Service) CreateProfile(name string) (Profile, error) { return s.provider.Create(name) }
 
-// RenameProfile changes a profile's display name; its directory never moves.
-func (s *Service) RenameProfile(slug, name string) error { return s.provider.Rename(slug, name) }
+// UpdateProfile changes a profile's name, color or image and returns it; its
+// directory never moves.
+func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, error) {
+	p, err := s.provider.Update(slug, u)
+	if err != nil {
+		return p, err
+	}
+	s.emit(profilestore.ChangedEvent, profilestore.Changed{Provider: s.provider.ID, Profile: p})
+	return p, nil
+}
 
 // DeleteProfile removes a profile and its login, and clears every setting that
 // named it. It refuses while a session runs in it.

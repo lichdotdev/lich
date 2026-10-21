@@ -315,6 +315,11 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 			if json.Unmarshal(ev.Data, &moved) == nil {
 				m.setProfile(moved.ID, moved.Profile)
 			}
+		case lichclient.ProfileChangedEvent:
+			var c lichclient.ProfileChanged
+			if json.Unmarshal(ev.Data, &c) == nil {
+				m.profileChanged(c)
+			}
 		case lichclient.ClaudeProfileLoginEvent, lichclient.CodexProfileLoginEvent:
 			var step lichclient.ProfileLogin
 			if json.Unmarshal(ev.Data, &step) == nil {

@@ -113,21 +113,21 @@ func TestRenameKeepsTheDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Rename(p.Slug, "Client"); err != nil {
+	if _, err := Update(p.Slug, profilestore.Update{Name: "Client"}); err != nil {
 		t.Fatal(err)
 	}
 	profiles, _ := List()
 	if profiles[1].Name != "Client" || profiles[1].Dir != p.Dir {
 		t.Errorf("after rename %+v, want name Client at %s", profiles[1], p.Dir)
 	}
-	if err := Rename(p.Slug, " "); err == nil {
+	if _, err := Update(p.Slug, profilestore.Update{Name: " "}); err == nil {
 		t.Error("a blank name was accepted")
 	}
 }
 
 func TestRenamingPersonalNeverTouchesItsDirectory(t *testing.T) {
 	personal := machine(t)
-	if err := Rename(Personal, "Mine"); err != nil {
+	if _, err := Update(Personal, profilestore.Update{Name: "Mine"}); err != nil {
 		t.Fatal(err)
 	}
 	profiles, err := List()
@@ -141,7 +141,7 @@ func TestRenamingPersonalNeverTouchesItsDirectory(t *testing.T) {
 	if len(entries) != 0 {
 		t.Errorf("the rename wrote into Personal's directory: %v", entries)
 	}
-	if err := Rename(Personal, " "); err == nil {
+	if _, err := Update(Personal, profilestore.Update{Name: " "}); err == nil {
 		t.Error("a blank name was accepted")
 	}
 }

@@ -184,7 +184,7 @@ func TestRenameKeepsTheAgentDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Rename(p.Slug, "Day job"); err != nil {
+	if _, err := Update(p.Slug, profilestore.Update{Name: "Day job"}); err != nil {
 		t.Fatal(err)
 	}
 	list, _ := List()

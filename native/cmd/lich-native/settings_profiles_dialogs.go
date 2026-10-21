@@ -258,7 +258,7 @@ func (s *settingsScreen) copySource(gtx C, th *ui.Theme, f *profileFlow, d flowD
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 	})
 	name := book.nameOf(d.source)
-	lead := func(gtx C) D { return profileAvatar(gtx, th, name, d.source, profileAvatarSel) }
+	lead := func(gtx C) D { return profileAvatar(gtx, th, book.look(d.source), profileAvatarSel) }
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(th.Label(i18n.T("settings.settingsProfilesDialogs.copyFrom")).Layout),
 		ui.VGap(1.5),
@@ -287,7 +287,7 @@ func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p lic
 		on := th.On(bg)
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, p.Name, p.Slug, profileAvatarSel) }),
+				layout.Rigid(func(gtx C) D { return profileAvatar(gtx, on, f.ps.book.look(p.Slug), profileAvatarSel) }),
 				ui.Gap(2),
 				layout.Flexed(1, on.Text(ui.TextSM, p.Name).Layout),
 				layout.Rigid(func(gtx C) D {

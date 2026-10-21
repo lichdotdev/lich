@@ -103,7 +103,7 @@ func TestAWindowsCursorProfileMovesAppDataAndItsConfigDir(t *testing.T) {
 
 func TestAWindowsCursorLoginRunsInTheProfile(t *testing.T) {
 	windowsMachine(t)
-	s := New(Cursor, fakeBins{})
+	s := New(Cursor, fakeBins{}, func(string, any) {})
 	p, err := s.CreateProfile("Work")
 	if err != nil {
 		t.Fatal(err)
