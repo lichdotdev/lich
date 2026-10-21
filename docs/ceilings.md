@@ -393,6 +393,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   nothing is lost there.
 - **git status is polled**: every shown path is re-read each `gitPoll` (`native/cmd/lich-native/model.go`,
   `pollGit`); the lich plugin's `session-touched` hook nudges an immediate refresh.
+- **A read must not write the index** (`internal/project/git.go`, `readOnlyGit`): git status and git diff refresh a
+  stat-stale index and take `.git/index.lock` to save it, so a poll that does so fails an agent's own `git commit`
+  in the same checkout on "index.lock: File exists" (measured at 5% of commits against a busy poll). `gitQuiet`
+  and `readGit` run every call as `readOnlyGit`. A new call that diffs or stats the work tree goes through one of
+  them, never plain `runGit`; `--no-optional-locks` alone is not enough, because porcelain diff ignores it and
+  only stops refreshing with `diff.autoRefreshIndex=false`.
 - **The status badge has a single source** (`internal/project/status.go`): the branch, the HEAD commit and the
   dirty count all come out of one `git status --porcelain=v2 --branch` parse. A git release that changes those
   records breaks all three together rather than one at a time, and there is no second call left to disagree with
