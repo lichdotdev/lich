@@ -21,7 +21,8 @@
     "noMatch": "No file matches",
     "empty": "No files here",
     "backToTree": "Back to file tree",
-    "readOnly": "read-only"
+    "readOnly": "read-only",
+    "showSource": "Show source"
   },
   "findBar": {
     "placeholder": "Find",

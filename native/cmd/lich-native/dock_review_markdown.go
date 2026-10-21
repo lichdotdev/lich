@@ -80,7 +80,7 @@ func (c *fileCard) markdownBody(gtx C, p *reviewPanel) D {
 		return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.loading"))
 	}
 	return layout.Inset{Left: ui.Space(9), Right: ui.Space(9), Top: ui.Space(3), Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-		return c.md.rendered.layout(gtx, p.th, c.git.path, src, p.openLink)
+		return c.md.rendered.layout(gtx, p.th, c.git.path, src, func(url string) { openLink(p.client, p.notify, url) })
 	})
 }
 
@@ -99,11 +99,11 @@ func (c *fileCard) markdownSource(p *reviewPanel) (src string, loading bool, err
 	return c.md.read.get()
 }
 
-// openLink sends a link clicked in a preview to the browser.
-func (p *reviewPanel) openLink(url string) {
+// openLink sends a link clicked in a Markdown preview to the browser.
+func openLink(client *lichclient.Client, notify func(ui.Toast), url string) {
 	go func() {
-		if err := p.client.OpenExternal(context.Background(), url); err != nil {
-			p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": url}), Description: lichclient.ErrorText(err)})
+		if err := client.OpenExternal(context.Background(), url); err != nil {
+			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": url}), Description: lichclient.ErrorText(err)})
 		}
 	}()
 }

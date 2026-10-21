@@ -47,6 +47,7 @@ type preview struct {
 	blockAt int
 	env     previewEnv
 	blockTh *ui.Theme
+	md      codeMarkdown
 }
 
 // previewEnv is what the preview reads of the dock each frame.
@@ -62,6 +63,8 @@ func newPreview(client *lichclient.Client, view *godemirror.View, family string,
 	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1, image: newBlobView(invalidate), find: newFindBar()}
 	p.file.invalidate = invalidate
 	p.scroll.Axis = layout.Vertical
+	p.md.rendered = markdownCache{}
+	p.md.scroll.Axis = layout.Vertical
 	return p
 }
 
@@ -69,6 +72,7 @@ func (p *preview) isOpen() bool { return p.rel != "" }
 
 func (p *preview) openAt(rel string, line int) {
 	p.rel, p.line, p.shown = rel, line, ""
+	p.md.rendering = false
 	p.composer.close()
 }
 
@@ -97,7 +101,12 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 			return text, p.client.Call(ctx, "project.ReadFile", &text, path, rel)
 		})
 	}
-	p.find.keys(gtx, p.view)
+	if p.md.toggle.click.Clicked(gtx) {
+		p.md.rendering = !p.md.rendering
+	}
+	if !p.md.rendering {
+		p.find.keys(gtx, p.view)
+	}
 	var err error
 	dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.header(gtx, th, root) }),
@@ -111,6 +120,9 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 			case blobPDF:
 				return binaryState(gtx, th, i18n.T("diff.binaryState.pdf"), i18n.T("diff.binaryState.pdfHint"), &p.exits)
 			}
+			if p.md.rendering {
+				return p.markdownBody(gtx, th)
+			}
 			var d D
 			d, err = p.body(gtx, th, root, key)
 			return d
@@ -122,7 +134,7 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 // findRow is the find bar under the header while it is open over a text file,
 // and its Find all list under it.
 func (p *preview) findRow(gtx C, th *ui.Theme, root *ui.Root, kind blobKind) D {
-	if kind != blobNone || !p.find.open {
+	if kind != blobNone || !p.find.open || p.md.rendering {
 		return D{}
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -144,7 +156,7 @@ func (p *preview) header(gtx C, th *ui.Theme, root *ui.Root) D {
 }
 
 func (p *preview) headerRow(gtx C, th *ui.Theme, root *ui.Root) D {
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return p.backButton(gtx, th, root) }),
 		ui.Gap(1.5),
 		layout.Flexed(1, func(gtx C) D {
@@ -153,8 +165,12 @@ func (p *preview) headerRow(gtx C, th *ui.Theme, root *ui.Root) D {
 			return l.Layout(gtx)
 		}),
 		ui.Gap(1.5),
-		layout.Rigid(th.Text(text2XS, strings.ToUpper(i18n.T("dock.filesPanel.readOnly"))).Leading(text2XSLeading).Muted().Layout),
-	)
+	}
+	if isMarkdown(p.rel) {
+		children = append(children, layout.Rigid(func(gtx C) D { return p.markdownToggle(gtx, th, root) }), ui.Gap(1.5))
+	}
+	children = append(children, layout.Rigid(th.Text(text2XS, strings.ToUpper(i18n.T("dock.filesPanel.readOnly"))).Leading(text2XSLeading).Muted().Layout))
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
 // backButton is a rounded button, its chevron muted until hovered.

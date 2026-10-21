@@ -21,7 +21,8 @@
     "noMatch": "일치하는 파일이 없습니다",
     "empty": "파일이 없습니다",
     "backToTree": "파일 트리로 돌아가기",
-    "readOnly": "읽기 전용"
+    "readOnly": "읽기 전용",
+    "showSource": "소스 보기"
   },
   "findBar": {
     "placeholder": "찾기",

@@ -21,7 +21,8 @@
     "noMatch": "Nenhum arquivo corresponde",
     "empty": "Nenhum arquivo aqui",
     "backToTree": "Voltar à árvore de arquivos",
-    "readOnly": "somente leitura"
+    "readOnly": "somente leitura",
+    "showSource": "Mostrar código-fonte"
   },
   "findBar": {
     "placeholder": "Localizar",

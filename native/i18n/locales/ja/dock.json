@@ -21,7 +21,8 @@
     "noMatch": "一致するファイルはありません",
     "empty": "ファイルがありません",
     "backToTree": "ファイルツリーに戻る",
-    "readOnly": "読み取り専用"
+    "readOnly": "読み取り専用",
+    "showSource": "ソースを表示"
   },
   "findBar": {
     "placeholder": "検索",

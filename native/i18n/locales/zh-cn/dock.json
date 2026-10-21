@@ -21,7 +21,8 @@
     "noMatch": "没有匹配的文件",
     "empty": "这里没有文件",
     "backToTree": "返回文件树",
-    "readOnly": "只读"
+    "readOnly": "只读",
+    "showSource": "显示源码"
   },
   "findBar": {
     "placeholder": "查找",
