@@ -77,6 +77,25 @@ func TestPointerAndCursorInputIsNotADraft(t *testing.T) {
 	}
 }
 
+// The window's terminal answers the queries a TUI makes at startup through the
+// same input path as the keyboard. Claude Code asks for the background colour
+// (OSC 11), the terminal's name (XTVERSION) and kitty graphics support, and
+// every answer is a control string full of printable bytes. Read as typing,
+// they held a fresh session's prompt for a minute, and a handoff sent there
+// waited until the user pressed Enter.
+func TestTerminalRepliesAreNotADraft(t *testing.T) {
+	t.Parallel()
+	svc, _ := settled(t)
+
+	svc.noteInput("s1", []byte("\x1b]11;rgb:2e2e/3434/4040\x1b\\"))
+	svc.noteInput("s1", []byte("\x1b]11;rgb:2e2e/3434/4040\a"))
+	svc.noteInput("s1", []byte("\x1bP>|libghostty 1.2.0\x1b\\"))
+	svc.noteInput("s1", []byte("\x1b_Gi=31;OK\x1b\\"))
+	if !svc.Ready("s1") {
+		t.Error("the terminal answering a query took the prompt away")
+	}
+}
+
 // AtPrompt is the question for text that is pasted and not sent: the person's
 // half-written line is where it belongs, so it must not count against the
 // prompt, while a session that is not at one at all still does.
@@ -137,6 +156,9 @@ func TestEscapeSpan(t *testing.T) {
 		{"csi with a tail after it", "\x1b[Bx", 3, true},
 		{"ss3 function key", "\x1bOP", 3, true},
 		{"alt and a letter", "\x1bv", 2, true},
+		{"osc reply ended by st", "\x1b]11;rgb:0/0/0\x1b\\x", 16, true},
+		{"osc reply ended by bel", "\x1b]11;rgb:0/0/0\ax", 15, true},
+		{"alt and a string introducer", "\x1bPx", 2, true},
 		{"truncated csi", "\x1b[<35;10", 8, false},
 		{"escape alone", "\x1b", 1, false},
 	}

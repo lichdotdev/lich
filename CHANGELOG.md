@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Resolve conflicts, Fix CI errors and a worktree started from an issue send their message to a new Claude Code session as soon as it is at its prompt, where it could sit unsent for up to a minute, until you pressed Enter. lich read the terminal's own answers to Claude Code's startup questions as you typing at that prompt, and held the message back for you.
 - A long Markdown file, such as lich's own CHANGELOG.md, previews in the Code and Review tabs without freezing the window: the preview draws only the part on screen, where it used to lay out the whole file on every frame.
 - A Markdown preview keeps the words apart where the source wraps a line, where they used to run together, and a table no longer squeezes a narrow column into broken words: each column is at least as wide as its longest word.
 

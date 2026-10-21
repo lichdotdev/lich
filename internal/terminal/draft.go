@@ -201,9 +201,18 @@ func (sess *session) noteBracket(span []byte) {
 // and with mouse tracking on (?1003h) so does every pointer movement over the
 // terminal. Counting the printable bytes inside those as typing would leave a
 // session whose prompt never looks free again.
+//
+// The terminal's answers to a TUI's queries come in on this path too, as
+// control strings (OSC, DCS, APC) that run to ST or BEL. One arrives in a single
+// write, so a string with no terminator in it is Alt and a key instead.
 func escapeSpan(data []byte) (int, bool) {
 	if len(data) < 2 {
 		return len(data), false
+	}
+	if bytes.IndexByte([]byte("]P_^X"), data[1]) >= 0 {
+		if end := controlStringEnd(data); end > 0 {
+			return end, true
+		}
 	}
 	if data[1] != '[' && data[1] != 'O' {
 		return 2, true // ESC + one key, which is how Alt+<key> arrives.
@@ -215,6 +224,20 @@ func escapeSpan(data []byte) (int, bool) {
 		}
 	}
 	return len(data), false
+}
+
+// controlStringEnd is how many bytes the control string at data[0] takes up,
+// through its ST (ESC \) or BEL, or 0 when data holds no terminator.
+func controlStringEnd(data []byte) int {
+	for i := 2; i < len(data); i++ {
+		if data[i] == '\a' {
+			return i + 1
+		}
+		if data[i] == esc && i+1 < len(data) && data[i+1] == '\\' {
+			return i + 2
+		}
+	}
+	return 0
 }
 
 // drafting is whether the user has unsent input at this prompt as of now.
