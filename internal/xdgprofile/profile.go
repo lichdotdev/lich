@@ -3,7 +3,7 @@
 // of the three has a variable of its own that moves its login: opencode keeps it
 // in $XDG_DATA_HOME/opencode, Cursor CLI in $XDG_CONFIG_HOME/cursor (on Windows
 // %APPDATA%\Cursor) and Kiro CLI in $XDG_DATA_HOME/kiro-cli/data.sqlite3, all
-// measured (docs/ceilings.md). A profile is therefore a base directory of its
+// measured (docs/providers/, Profiles). A profile is therefore a base directory of its
 // own that the session's XDG_DATA_HOME, XDG_CONFIG_HOME or APPDATA points at,
 // made of links to every entry of the real one but the provider's
 // (profilestore's link home), so every other tool in the session (gh, git,

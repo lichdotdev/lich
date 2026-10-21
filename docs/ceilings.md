@@ -35,23 +35,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   render a file that is English;
   and MCP tool descriptions and the `lich` CLI's `--help`, which agents read and which do not follow the prompt
   language either.
-- **"Unfold long pastes" copies three providers' own rules** (`native/cmd/lich-native/paste_unfold.go`, `internal/terminal/paste_unfold.go`), and is off until turned on. For Claude Code lich pastes twice wherever it
-  predicts the fold, because a repeat of the same text unfolds the `[Pasted text #N +M lines]` chip. The prediction
-  is Claude Code's rule copied from its 2.1.296 bundle (more than 800 characters, or more than `min(rows - 10, 2)`
-  newlines, up to 100 000), and nothing tells lich when that rule moves: a paste lich thinks folds and Claude Code
-  does not lands twice, and one it thinks does not stays a chip. It also assumes the paste goes to the prompt; a
-  paste into one of Claude Code's own dialogs that does not fold gets the text twice. For Kiro CLI lich presses Tab
-  behind a paste of more than 10 lines or 500 characters (2.21.0), which expands the newest `N lines ▸` chip; a
-  paste lich thinks folds and Kiro does not gets a Tab, which in the `/` menu picks an entry. For opencode the spawn sets
-  `experimental.disable_paste_summary` through `OPENCODE_CONFIG_CONTENT`, extending one the user exports rather than
-  replacing it; opencode's own "Disable paste summary" command is stored in its state and wins over any config, so
-  once used there the switch changes nothing. Codex, Antigravity, Crush and Cursor CLI fold with a constant, no
-  setting and no key that unfolds, so they have no switch; oh-my-pi was not measured. The window also
-  unfolds what it writes as a paste itself (a batch of review comments, a pull request's or an issue's prompt,
-  dropped and attached file paths), measured against the session's own terminal; one written into a session whose
-  terminal the window never opened has no height to measure and lands folded. No caller does that today: each
-  writes into the session on screen, or waits for a session it just opened to reach its prompt, which only
-  happens after the window started its terminal.
+- **"Unfold long pastes" copies two providers' fold rules, and nothing tells lich when they move**
+  (`native/cmd/lich-native/paste_unfold.go`, `internal/terminal/paste_unfold.go`): the switch is off until turned
+  on, and for Claude Code and Kiro CLI it predicts the fold from a rule copied out of one measured version
+  (`docs/providers/`, Known limits). Codex, Antigravity, Crush and Cursor CLI fold with a constant and no key that
+  unfolds, so they have no switch, and oh-my-pi was not measured. A paste lich thinks folds and Claude
+  Code does not lands twice, one it thinks does not stays a chip, and a paste into one of Claude Code's own
+  dialogs that does not fold gets the text twice; a paste lich misjudges for Kiro CLI gets a Tab, which in the
+  `/` menu picks an entry. The window also unfolds what it writes as a paste itself (a batch of review comments,
+  a pull request's or an issue's prompt, dropped and attached file paths), measured against the session's own
+  terminal; one written into a session whose terminal the window never opened has no height to measure and lands
+  folded. No caller does that today: each writes into the session on screen, or waits for a session it just
+  opened to reach its prompt, which only happens after the window started its terminal.
 - **`LICH_WORKTREE_PORT` is reserved, never held** (`internal/terminal/worktreeport.go`): the number is a name the
   checkout owns, nothing binds it, and anything on the machine can take the port before the dev server starts.
 - **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,
@@ -111,18 +106,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   its block's mark. The active card never counts: when it is the only one waiting, the chord does nothing and
   goes on to the terminal.
 - **A session is ready for work only once its agent reports from its own prompt, where it can**
-  (`internal/terminal/startgate.go`): in a fresh worktree Claude Code, Codex, Cursor CLI and Antigravity ask
-  whether the folder is trusted and Crush asks whether to initialize the project, and a quiet screen is all
-  `terminal.Ready` used to read. Anything typed then (a relayed task, `lich open --prompt`, a scheduled
-  prompt, an issue or pull request handed over) went into the question, and the Enter behind it answered
-  it: Claude Code and Cursor CLI exit, Codex and Antigravity lose the text to a second screen, Crush runs an
-  init turn (measured 2026-10-08). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI now stay unready until
-  their session-start report, which their hooks send only from the agent's prompt. That hold needs
+  (`internal/terminal/startgate.go`): in a fresh worktree several providers ask a question first (trust the
+  folder, initialize the project), and anything typed then (a relayed task, `lich open --prompt`, a scheduled
+  prompt, an issue or pull request handed over) goes into the question, with the Enter behind it answering it
+  (what each provider then does: `docs/providers/`, Spawn). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI stay
+  unready until their session-start report, which their hooks send only from the agent's prompt. That hold needs
   lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
-  old trap is back. Codex (0.161.0), Antigravity, Crush and opencode report nothing before their first turn,
-  Codex not even at its prompt in a trusted folder, so a quiet screen is still all lich has for them, a
-  trust, hooks or init question included; opencode asks nothing, but under load it goes quiet mid-boot and
-  text typed then lands before its TUI does.
+  typed text lands in the question. Codex, Antigravity, Crush and opencode report nothing before their first
+  turn, so a quiet screen is still all lich has for them.
 - **The cost readout bills per `(session, transcript)`** (`internal/pricing`, `internal/terminal/usage_cost.go`): a
   conversation forked inside the PTY bills its copied history twice — lich's own resume continues the same
   transcript and is unaffected — and each sub-agent's own transcript is counted in, so one unreadable or
@@ -131,74 +122,31 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   only when the reason is standing (`costMiss.spoken` in `internal/terminal/usage_cost.go`): a transcript that
   merely could not be read this turn says nothing and keeps the last figure, so a reader cannot tell that
   absence from a session still on its first turn.
-- **The session readout sits on three rungs, and only two providers reach the top one**
-  (`internal/terminal/usage.go`, `usageSourceFor`). Which rung a provider is on is decided by what it writes
-  down, not by what lich chose to read:
-
-  | Provider | Rung | Why |
-  | --- | --- | --- |
-  | Claude Code | full readout | per-turn token counts, and the window its mod reports, else one named from the model (`windowForModel`) |
-  | Codex | full readout | the effective `model_context_window`, and a running `total_token_usage` |
-  | oh-my-pi | cost only | a USD total on every assistant turn; no line carries a context window |
-  | opencode | cost only | `session.cost` per conversation; no window recorded with it |
-  | Crush | cost only | `sessions.cost` per conversation; no window recorded with it |
-  | Kiro CLI | context only | a window and a per-request percentage; spend is metered in credits, not dollars |
-  | Antigravity | nothing | conversation filed as SQLite lich has no reader for |
-  | Cursor CLI | nothing | chat filed as SQLite lich has no reader for, search and recap included |
-
-  **Kiro CLI is the mirror image of the cost-only rung, and the only provider on its own one.** It records
-  `context_usage_percentage` against a `context_window_tokens` (`internal/terminal/usage_kiro.go`), so the ring
-  is real — but it files *every* token count as zero even on a turn that spent them, so the tooltip's
-  "n / window tokens" is **derived from the percentage**, not read. It is Kiro's own percentage against Kiro's
-  own window, and it is what keeps the tooltip agreeing with the ring; it is not a token count anybody measured.
-  Its spend never appears at all: `metering_usage` is denominated in **credits**, whose dollar value depends on
-  the account's plan, and lich's readout is dollars — so a Kiro session shows a context ring and no cost, and the
-  CLI's own footer is the only place that credit figure can be read.
-
-  The cost-only rung's footer shows the figure and nothing else: its usage event carries a zero window, and a
-  zero window is what tells the footer to drop the ring (`contextReadout`,
-  `native/cmd/lich-native/footer_readout.go`). **Those three figures are the providers' own arithmetic, never
-  re-priced here** — they bill models `internal/pricing` has never heard of, so a second opinion would only be a
-  second, disagreeing number — and each therefore inherits what its own accounting leaves out. oh-my-pi's total
-  is the sum of its assistant turns, the same walk its own status line makes, so a `task` sub-agent's spend is
-  missing from lich's figure exactly as it is from omp's. opencode files each sub-agent as a session of its own
-  and does *not* roll it into the parent, so the read walks the `parent_id` chain; Crush does roll it in
-  (`updateParentSessionCost`), so summing its children would bill them twice. **Both of those are measured
-  behaviour of another tool's schema, not a promise it made** — the day either changes its mind about the
-  rollup, the footer is silently wrong in one direction or the other, with nothing on screen saying so. A zero
-  from any of the three is an answer and not a gap: it is what they record for a free model and for a
-  subscription — while an oh-my-pi turn written with no total at all withholds the session's whole number and
-  borrows the `unpriced-model` marker, whose tooltip then blames a network that would not have helped. That
-  branch has never been seen in the wild and gets no reason of its own until it is. The two bottom-rung
-  providers get no bullet beyond their row — a reader for either means a reader for its own SQLite schema, and
-  neither schema is a contract anybody promised to keep.
-  The Codex window in that table is 95% of the rollout's default or configured `model_context_window`, and
-  Codex is the one rung lich prices itself. `internal/pricing/prices.json` bakes a fixed slice of OpenAI rates
-  beside the Claude ones, read from the same LiteLLM table the refresh reads, so an offline Codex
-  session shows a cost at the rate that shipped — **stale by however long it has been since the release**,
-  until the refresh (`internal/pricing/pricing.go`) lands and overrides it. `task pricing:refresh` reprices
-  the slice from that table, and a monthly job (`.github/workflows/pricing.yml`) runs it and opens a pull
-  request when a rate moved — deliberately not a gate, since an upstream price change is nobody's pull
-  request to fix. A hand-copied `cacheWrite1h` sat 12x over Anthropic's rate until the first run of that
-  task found it. What the job cannot notice is a model the floor never carried: that list is hand-picked,
-  so what is left
-  with no price at all is a model newer than the build, or one LiteLLM never priced — and with no network
-  the refresh that would settle it never runs. A Codex conversation that ran `/model` has no cost from that
-  turn on (`codexCostScan.mixed`): the one running total spans both models and the rollout never splits it,
-  so no rate prices it — absent, the way an unpriced line is absent, rather than a number billed at
-  whichever model happened to go last. **Those two absences are spoken; the staleness is not.** A session
-  lich cannot price draws `$—` with a tooltip naming which of the two it is (`usageEvent.CostMiss`,
-  `costMissReasonKeys` in `native/cmd/lich-native/footer_cost.go`), while a cost billed at a rate the
-  release froze reads as an ordinary figure with nothing beside it. The marker also names the reason and
-  never the model or the turn, so a session whose sub-agent alone is unpriced looks like one whose every
-  turn is.
+- **The session readout is each provider's own record, and only Claude Code and Codex fill it**
+  (`internal/terminal/usage.go`, `usageSourceFor`; who shows what is README's provider table, and what each records
+  is `docs/providers/`, Transcript & cost): which reading a provider gets is decided by what it writes down, not by
+  what lich chose to read. The cost-only figures (oh-my-pi, opencode, Crush) are the providers' own arithmetic,
+  never re-priced here, so each inherits what its own accounting leaves out, and how a sub-agent's spend reaches its
+  parent's figure is measured behaviour of another tool's schema, not a promise it made: the day one changes its
+  mind, the footer is silently wrong in one direction or the other, with nothing on screen saying so. Their usage
+  event carries a zero window, which is what tells the footer to drop the ring (`contextReadout`,
+  `native/cmd/lich-native/footer_readout.go`). A zero from any of the three is an answer and not a gap: it is what
+  they record for a free model and for a subscription. Codex is the one provider lich prices itself, from a slice of
+  rates baked into the release (`internal/pricing/prices.json`), so an offline Codex session shows a cost at the
+  rate that shipped — **stale by however long it has been since the release**, until the refresh
+  (`internal/pricing/pricing.go`) lands and overrides it. What is left with no price at all is a model newer than
+  the build, or one LiteLLM never priced — and with no network the refresh that would settle it never runs — and a
+  Codex conversation that ran `/model` has no cost from that turn on. **Those two absences are spoken; the staleness
+  is not.** A session lich cannot price draws `$—` with a tooltip naming which of the two it is
+  (`usageEvent.CostMiss`, `costMissReasonKeys` in `native/cmd/lich-native/footer_cost.go`), while a cost billed at a
+  rate the release froze reads as an ordinary figure with nothing beside it. The marker also names the reason and
+  never the model or the turn, so a session whose sub-agent alone is unpriced looks like one whose every turn is.
 - **Footer choices cannot add readings a provider never reports** (`native/cmd/lich-native/footer_layout.go`):
-  Appearance's global toggles preserve the gaps above — Claude Code and Codex full usage,
-  oh-my-pi/opencode/Crush cost only, Kiro context only, and Antigravity/Cursor no transcript usage.
-  Selecting a missing reading renders nothing, never a zero. Cost still uses the backend setting because it controls whether
+  selecting a reading the session's provider does not record renders nothing, never a zero, and hiding a reading
+  hides its warning too. Cost still uses the backend setting because it controls whether
   transcripts are priced: when another profile disables it, an old layout cannot enable pricing just by
   moving an unrelated item. The editor takes no change until that setting has loaded.
-  Hiding a reading hides its warning too. An item without data can occupy an editor slot while drawing
+  An item without data can occupy an editor slot while drawing
   nothing in the live footer — a PR on a branch without one, or an unsupported provider reading.
 - **The card's tooltip names the running model only where the readout above has one**
   (`modelRuns`, `native/cmd/lich-native/sessiontooltip.go`): the line comes from the model the session-usage
@@ -210,29 +158,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   equal once both are shortened (`formatModel`), or the birth model is the family alias of the running id
   (`opus` against `claude-opus-5-5`, a `[1m]` suffix dropped). Any other alias the CLI accepts (`default`,
   `opusplan`) reads as a change, and so does a `/model` the user typed, which is intended.
-- **Hands-on time is read off three signals, and one of them is not universal**
-  (`internal/terminal/handson.go`, `noteOutput`): the figure beside the cost
-  counts the gap between consecutive signs of life in a session — any hook report naming it, a
-  keystroke at its PTY, or its own output while a turn is open — and drops any gap longer than
-  `handsOnIdleGap`. The output signal is the one that carries an unattended turn, and it is
-  gated on the provider having reported `busy`, because a `tail -f`, a dev server or a TUI
-  repainting would otherwise bill hours nobody worked. **Which turns get counted therefore
-  depends on what a provider's hooks report at all**, and there are two rungs. On the top one —
-  Claude Code, Codex, Antigravity, opencode, oh-my-pi, Cursor CLI, Kiro CLI — the turn opens, so a
-  turn nobody touches is counted from its own output. On the lower one — **Crush** — no turn
-  ever opens (`docs/hooks/session-state.md`), and the turn is counted through the reports its
-  tool calls fire: Crush's `/session-start`, which its only hook
-  event (`PreToolUse`) fires once per tool call — measured 2026-09-03 against Crush 0.88.0, three
-  tool calls in one turn, three POSTs. **What that rung cannot count is a turn that calls no tool
-  at all**: a long answer written straight out, with no keystroke and no report between the
-  prompt and the reply, is worth only the gap the prompt itself closed. A plain shell session is
-  keystrokes-only by design and not a gap: there is no agent in it whose work could be missed.
-  The trap is reading the number as exactly comparable across cards — a toolless turn is time on
-  a Claude Code card and nothing on a Crush one. **The tooltip under the figure says which rung
-  the session is on** (`handsOnDetail`, `native/cmd/lich-native/footer_handson.go`), in the same two
-  sentences on both, by naming what the clock listened to: a turn, or a tool call. What it does
-  not say is how much the rung cost this figure — nothing can know that without inventing the
-  turns it never heard.
+- **Hands-on time on a Crush card misses every turn that calls no tool**
+  (`internal/terminal/handson.go`, `noteOutput`): the figure beside the cost counts the gap between consecutive
+  signs of life in a session — any hook report naming it, a keystroke at its PTY, or its own output while a turn
+  is open — and drops any gap longer than `handsOnIdleGap`. The output signal is gated on the provider having
+  reported `busy`, because a `tail -f`, a dev server or a TUI repainting would otherwise bill hours nobody
+  worked. Crush opens no turn (`docs/hooks/session-state.md`) and is counted only through the reports its tool
+  calls fire (`docs/providers/crush.md`), so a long answer written straight out, with no keystroke and no report
+  between the prompt and the reply, is worth only the gap the prompt itself closed. The trap is reading the
+  number as exactly comparable across cards — a toolless turn is time on a Claude Code card and nothing on a
+  Crush one. The tooltip under the figure says which the session listened to, a turn or a tool call
+  (`handsOnDetail`, `native/cmd/lich-native/footer_handson.go`), and not how much that cost the figure. A plain
+  shell session is keystrokes-only by design and not a gap: there is no agent in it whose work could be missed.
 - **A split stage puts every pane on the visible cadence** (`internal/terminal/coalescer.go`,
   `native/cmd/lich-native/terminals.go`, `setVisible`): the coalescer batches a *visible* session's output
   every 8ms and a hidden one's every 250ms, and until the stage could divide, exactly one session per window
@@ -258,10 +195,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the pane header offers them. Its footer item is not an item of the Footer layout, so Settings can neither
   move nor hide it: it shows only while the session, in no layout, has delegates.
 - **A theme switch reaches only the apps that asked** (`native/gioterm/scheme.go`, `setScheme`): lich answers
-  mode 2031 and sends the light or dark report on a switch, only to a terminal whose app turned the mode on.
-  Of the providers, Claude Code and opencode ask (driven in a PTY), oh-my-pi and
-  Cursor CLI ask in their shipped code (not driven); Codex, Antigravity and Kiro CLI read the background once at
-  boot and never hear of a switch, and Crush reads it not at all.
+  mode 2031 and sends the light or dark report on a switch, only to a terminal whose app turned the mode on. An
+  app that reads the background once at boot keeps the old look until it restarts: Codex, Antigravity and Kiro
+  CLI do, and Crush reads it not at all.
 - **Only zsh, bash and fish get their prompt cleared on a resize** (`internal/shellintegration`,
   `native/gioterm/prompt.go`): a shell session's shell is started with scripts that mark its prompt with
   OSC 133 and ask the terminal to clear it on a resize (`redraw=1`, `redraw=last` for bash, which redraws only
@@ -275,18 +211,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   share the newer one's. bash marks where a command's output starts from `PS0`, which it has since 4.4: the bash 3.2 macOS
   ships marks its prompt but not that, which the resize clearing does not need.
 - **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
-  `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn
-  when the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session
-  it knows is mid-turn. It is also raised with no keystroke, when a Claude Code mod acks an abort sent from
-  lich and when a usage limit ends a Codex turn (`internal/terminal/limit.go`). It is a guess made from bytes, and it has three edges. A provider session running a tool
-  that owns the terminal — an editor opened through a shell command — takes Escape as the interrupt and clears
-  the ring while the turn is still running; the next report from the provider puts it back. opencode does report
-  its own abort, and reports it as the turn *finishing* (`session.status idle`), so an interrupted opencode card
-  wears the same solid ring a completed turn does — nothing in the event says which happened, and the provider's
-  own word outranks the keystroke. Crush reports no state at all, so it has no turn to end and the fallback never
-  fires there. And an errand the relay delivered survives an interrupt on purpose: stopping a turn is not
-  answering the request, so the sender keeps waiting for the target's next turn rather than being told the work
-  is over.
+  `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn when
+  the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session it knows
+  is mid-turn. It is also raised with no keystroke, when a Claude Code mod acks an abort sent from lich and when a
+  usage limit ends a Codex turn (`internal/terminal/limit.go`). It is a guess made from bytes, and it has three
+  edges. A provider session running a tool that owns the terminal — an editor opened through a shell command — takes
+  Escape as the interrupt and clears the ring while the turn is still running; the next report from the provider
+  puts it back. A provider that reports its own abort as the turn finishing wears the solid ring a completed turn
+  does, because the provider's own word outranks the keystroke (opencode, `docs/providers/opencode.md`), and one
+  that reports no state at all has no turn to end (Crush). And an errand the relay delivered survives an interrupt
+  on purpose: stopping a turn is not answering the request, so the sender keeps waiting for the target's next turn
+  rather than being told the work is over.
 - **A diff's context expander reads GitHub, one round-trip per gap** (`internal/project/filelines.go`):
   `FileLines` tries the local object first and asks the contents API when the clone does not have it, which
   on the Pulls screen is the normal case — the branch under review is usually not one this clone ever
@@ -663,29 +598,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   other providers, and on a Claude Code session without the mod, a `/compact` keeps the finished turn's check
   and an auto-compaction is a spinner with no tool line, which reads as a stuck turn. A compaction the mod
   never closes (the mod killed mid-call) holds "Compacting…" until the session's next report.
-- **The plan gauge answers to undocumented routes, and three providers have none** (`internal/quota`): Claude
-  Code's and Codex's usage routes are what their own CLIs poll, Cursor CLI's is the cursor.com dashboard's own
-  (`/api/usage-summary`, sent the CLI's token as the dashboard's session cookie with the dashboard's Origin and
-  Referer, which its CSRF check demands), opencode's is the OpenCode Go console's, and Antigravity's is a slash
-  command of its CLI. None is published API. A field renamed upstream drops the window it fed rather than raising
-  anything, so a new kind of limit is invisible instead of wrong. oh-my-pi, Crush and Kiro CLI report no plan
-  lich can read, and opencode reports one only for an OpenCode Go subscription: its key is read from the
-  `opencode-go` entry of opencode's `auth.json`, so a key given only through `OPENCODE_API_KEY` or
-  `OPENCODE_AUTH_CONTENT` is not read (the first is shared with Zen keys, which have no plan). The 200 shape of
-  that route was ported from the opencode console as the Orca project parses it, never measured here: only its
-  401 and 403 were. A 403 there means the key has no Go subscription, and reads as signed out. Cursor reads only
-  the CLI's own login (`auth.json` where the CLI writes it, `providers.CursorAuthDir`, and on macOS the Keychain
-  item cursor-agent 2026.06+ writes), never the Cursor editor's session, which lives in another app's SQLite database. Cursor accounts still
-  on request-quota billing (the dashboard's older `/api/usage` route) show their plan with no windows.
-  Antigravity keeps its Google login in the OS keyring and mints its own token, so lich runs `agy -p /usage
-  --output-format json` (measured on agy 1.2.5: no turn, no tokens, no conversation) with the session's own
-  environment and the `agy` on lich's PATH, never a configured binary that may be a wrapper. An agy older than
-  1.1.11 answers that as a prompt and spends a turn, so it is never asked; a newer one that answers with a turn
-  anyway stops being asked until lich restarts. A machine with no `agy` shows no Antigravity plan at all. That
-  run takes two to three seconds per reading. lich reads those logins and never writes them: it does not refresh a
-  token, so an expired one reads as signed out until the provider's own CLI rotates it. A reading is cached for
-  five minutes because the endpoints rate-limit hard; the number on screen is up to that old, and nothing on it
-  says so.
+- **The plan gauge answers to undocumented routes, and three providers have none** (`internal/quota`; each route
+  is in `docs/providers/`, Account): every route is what a provider's own CLI or dashboard polls, and none is
+  published API. oh-my-pi, Crush and Kiro CLI report no plan lich can read, and opencode reports one only for an
+  OpenCode Go subscription. A field renamed upstream drops the window it fed rather than
+  raising anything, so a new kind of limit is invisible instead of wrong. lich reads those logins and never
+  writes them: it does not refresh a token, so an expired one reads as signed out until the provider's own CLI
+  rotates it. A reading is cached for five minutes because the endpoints rate-limit hard; the number on screen is
+  up to that old, and nothing on it says so.
 - **A turn a usage limit stopped is picked back up on two providers only** (`internal/terminal/limit.go`,
   `internal/relay/resume.go`): Claude Code and Codex are the two that write the limit down with its reset. On
   Antigravity, Crush, Cursor CLI and Kiro CLI nothing marks a limit at all, so the card keeps spinning until the
@@ -712,31 +632,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   reset and never the start — the start is that time rolled back whole windows — so a provider that stops
   reporting a reset time silently drops the marker rather than the gauge.
 
-- **Two more fields of Claude's usage payload are read no further than measuring them**
-  (`internal/quota/claude.go`, `limits[].severity` and the top-level `extra_usage`/`spend` blocks): every
-  `severity` observed on a live account reads `"normal"`, so its scale — what a non-normal value looks like,
-  whether it maps to a colour — is unknown, and swapping the local usage-based colour ramp (`usageColor`) for
-  it would be a guess dressed as a reading of the source. `extra_usage` and `spend` are the credits that cover
-  spend past a full window; both exist in the payload but come back entirely null/disabled on every account
-  measured, so their filled shape — what a partially-spent credit balance actually contains — cannot be built
-  against here. A gauge built on an unobserved shape is the same failure `is_active`/`locked_reason` fixed
-  around, repeated. The payload's top level is otherwise a graveyard of null codenames — `nimbus_quill`,
-  `tangelo`, `iguana_necktie`, `omelette_promotional`, `cinder_cove`, `amber_ladder`, `juniper_tide`,
-  `seven_day_omelette`, `seven_day_cowork` — every one of them unpopulated on every account measured, which is
-  the standing evidence that reading `limits[]` and silently skipping a kind lich has no name for is the right
-  default, not a gap to close. Codex's `wham` usage route carries no equivalent to any of this — no per-window
-  active flag, no lock reason, no credit block — so this ceiling is Claude-only by the shape of the payload,
-  not a choice.
-- **Measuring a token-only login costs a request against the very plan it measures** (`internal/quota/claude.go`):
-  a long-lived OAuth token (`claude setup-token`) carries `user:inference` alone, so the usage route answers it
-  403 and the account is read the way Claude Code reads it for itself — one `max_tokens: 1` message, for the
-  rate-limit headers on the response. Reading the gauge therefore spends quota (negligibly) and appears in the
-  account's own usage, once per cache window. That request carries Claude Code's system prompt verbatim because
-  the API rejects an OAuth token without it — the same coupling as the user agent, and it fails closed, as a
-  failed reading. Headers carry the two account-wide windows and no plan name, so such a session shows no
-  model-scoped weekly cap and no "Max 5x" badge. A session on that login whose mod reports
-  (docs/hooks/mod-usage.md) stands in for the request until one of its windows resets, so the request is only
-  spent for an account no such session has spoken for since.
+- **Measuring a token-only Claude Code login costs a request against the very plan it measures**
+  (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
+  account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).
+  Reading the gauge therefore spends quota (negligibly) and appears in the account's own usage, once per cache
+  window. A session on that login whose mod reports (docs/hooks/mod-usage.md) stands in for the request until one
+  of its windows resets, so the request is only spent for an account no such session has spoken for since.
 - **The sandbox confines a working agent, not hostile code** (`internal/sandbox`): namespaces and mounts on
   Linux, a path policy on macOS, and nothing else — no seccomp filter, no Landlock ruleset. The network is
   never cut (the agent needs its API and the plugin's hooks report over loopback), so anything readable
@@ -825,22 +726,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **The history's external conversations are told from lich's own by a stone, and stones only start at schema
   version 8** (`internal/store/external.go`, `internal/terminal/conversations.go`): a provider keeps its
   transcript after lich deletes the session row, so the listing leaves out ids a row holds and ids a deleted row
-  held (`provider_session_tombstones`, kept by triggers). A row deleted before that table existed left no stone.
-  Claude Code covers the gap with the name lich spawns it under (`relay.IsRosterName` on the first
-  `custom-title`): measured on a real workspace, it marked 490 of the 539 Claude conversations lich held no row
-  for, and the 49 left had no title at all, which is a plain `claude` run. The other seven providers write no
-  such mark, so their conversations from before the stones list once, as if started outside lich. Kiro CLI
-  writes `session_created_reason: "subagent"` on every conversation (2.21.0, measured on 15), so it is no
-  sub-agent filter and is not read.
+  held (`provider_session_tombstones`, kept by triggers). A row deleted before that table existed left no stone,
+  so its conversation lists once, as if started outside lich, on every provider but Claude Code, which carries
+  the name lich spawned it under (`docs/providers/claude.md`, Transcript & cost).
 - **An external conversation matches a project only in a checkout's own directory** (`store.ExternalSessions`):
   a conversation started in a subdirectory of a project is not offered, because a session lich opens runs in
   the project's directory or a worktree and nowhere below it. Checkouts come from `git worktree list`, run for
   every project with a `.git` on each listing (about 300 ms over 30 projects); a project that is not a
   repository owns only its own directory. Search reaches an external conversation by its title, project and
-  path; what was said in it is indexed only after it is adopted and closed, the same as any session. Crush's
-  project index is read at `$XDG_DATA_HOME/crush/projects.json` (else `~/.local/share`), measured on Linux
-  only; where Crush keeps it on Windows and macOS is not measured, and a miss there lists no Crush
-  conversation.
+  path; what was said in it is indexed only after it is adopted and closed, the same as any session.
 - **The settings screen remembers nothing per project, on purpose** (`native/cmd/lich-native/settings.go`,
   `settingsSectionKey`): the pane that was open is stored under one global key, so opening Settings in project B
   lands on the pane project A was reading. The nav is the same list of panes in every project, so it is not
@@ -886,11 +780,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   shows nothing either. Its words are the window's interface language, so it comes up once a window has
   handed them over (`native/cmd/lich-native/tray.go`); a lich whose window never opened has no tray. `task dev` puts up a second
   icon beside the installed lich's, with the same name.
-- **Restart and update end every running session, now with nobody watching** (`internal/restart.Coordinator`):
-  /restart and an update stop this process and every PTY with it, as they always did. Before, the window
-  closing explained that loss; a windowless lich restarted by `install.sh` from outside loses its sessions
-  with no window to show it. The successor opens a window only when its predecessor had one up
-  (`Coordinator.SetWindowOpen`), and the window that was up reconnects to it.
+- **Restart and update end every running session, even with nobody watching** (`internal/restart.Coordinator`):
+  /restart and an update stop this process and every PTY with it, so a windowless lich restarted by
+  `install.sh` from outside loses its sessions with no window to show it. The successor starts windowless
+  (`successorArgs`): the window that was up reconnects to it, and a lich that had none stays without one.
 - **A window that cannot start is a dialog, never a fallback**: a `lich-native` missing beside `lich` (and not
   pinned by `LICH_NATIVE`), or one that exits at startup, on a missing system library say, ends in the error
   dialog with the reason and the log path. With no session running lich then quits; with one, it keeps serving
@@ -951,35 +844,23 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`native/lichclient`) stay positional, on the promise that `lich-native` ships in the same release as the
   backend it talks to; a window from another build, pinned with `LICH_NATIVE` or replaced on disk by an upgrade
   under a running backend, is the case that promise does not cover.
-- **A reasoning effort reaches five providers, and Cursor only through its model name**
+- **A reasoning effort is refused where the TUI would drop it, and never validated**
   (`internal/terminal/command.go`, `effortFlags`): `lich open --effort` and `open_session`'s `effort` are refused
-  for opencode, whose `--variant` lives on `run` only (1.18.31), and for Crush, which has no such option
-  (0.88.0), because the TUI lich spawns would drop the level and hand back a session on its default. Cursor
-  is refused too: the effort is part of its model id (`claude-opus-4-8-high`), and the
-  `model[effort=high]` override its own `--help` advertises spawns into "Cannot use this model" (2026.08.11),
-  so a caller who wants it passes that id as `--model`. The level is never validated, so a misspelled one
-  is each provider's to handle: Claude Code warns and runs at its default, and Codex, Antigravity, oh-my-pi and
-  Kiro start without a word (measured on the versions above).
-- **Ultracode reaches Claude Code only** (`internal/terminal/command.go`, `ultracodeArgs`): it is a Claude Code
-  mode, standing multi-agent workflow orchestration, and no other provider has one, so `lich open --ultracode` and
-  `open_session`'s `ultracode` are refused for every other kind and Settings offers the switch on Claude Code
-  alone. lich passes it as `--settings '{"ultracode":true}'` rather than `--effort ultracode`, which pins the
-  effort to xhigh. Claude Code drops it on `--resume` (measured on 2.1.288), so unlike the model and effort it is
-  passed on every spawn, and a fork inherits it from the session whose conversation it branches. The cost is that
-  an ultracode turned off inside the session comes back on the next restart, and nothing turns it off for one
-  session while the provider-wide switch is on.
+  for opencode, Crush and Cursor CLI, whose interactive CLI takes no level, rather than handing back a session on
+  its default (why each: `docs/providers/`, Spawn). The level itself is never validated,
+  so a misspelled one is each provider's to handle, and most start without a word.
+- **An ultracode turned off inside a Claude Code session comes back on its next restart**
+  (`internal/terminal/command.go`, `ultracodeArgs`): Claude Code drops ultracode on `--resume`, so lich passes it
+  on every spawn (`docs/providers/claude.md`, Spawn), and nothing turns it off for one session while the
+  provider-wide switch is on.
 - **The two-cards-one-conversation warning reaches only the providers that report an in-app switch**
   (`internal/terminal/terminal.go` `reportDuplicate`, `native/cmd/lich-native/duplicate.go`): lich learns
   which conversation a card runs from its session-start report, so a resume typed inside the agent's own app
-  is warned about only once that report names the new id. Measured on 2026-10-17: Claude Code (`/resume`),
-  Kiro CLI 2.21.0 (`/chat`, `agentSpawn` fires per switch) and oh-my-pi 18.8.9 (`/resume`, whose
-  `session_switch` the plugin reports from 0.20.5 on) report at the switch; Codex 0.162.1 reports it with its
-  next prompt and Crush v0.98.1 with its next tool call, so a turn may already have run in both cards;
-  Antigravity 1.4.0 carries the id on every `PreInvocation`, read in the binary and not run. Cursor CLI skips
-  `sessionStart` on any resume (2026.10.16); opencode 1.18.35 raises nothing on `/sessions`. Those two report
-  nothing at all, so their row keeps the old id and a restart resumes the conversation the card opened with.
-  Reopening from lich itself is not this gap: every door through `store.reopen` focuses the card that holds
-  the conversation.
+  is warned about only once that report names the new id. Some report it only with their next prompt or tool
+  call, so a turn may already have run in both cards, and Cursor CLI and opencode report nothing at all: their
+  row keeps the old id and a restart resumes the conversation the card opened with (each provider's version:
+  `docs/providers/`, Hooks). Reopening from lich itself is not this gap: every door through `store.reopen`
+  focuses the card that holds the conversation.
 - **Start new hands the card to a new conversation** (`native/cmd/lich-native/exit_toast.go`): the toast a
   card raises when its process exits offers Resume, which starts the conversation the card holds again, and
   Start new, which starts without one. Once the new conversation's session-start report arrives, the backend
@@ -987,34 +868,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   it is reachable only through History search. Start new asks no confirmation for that reason, and a card
   that never reported a conversation (a shell, an agent that exited before its first prompt) offers Restart
   alone.
-- **A model or effort is a birth value, and two providers forget it on resume** (`internal/terminal/command.go`,
+- **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
-  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. What a
-  resume then runs on is the provider's call, measured in a real PTY after an in-session change. The model comes
-  back from the conversation on Claude Code 2.1.274, Codex 0.154.0, oh-my-pi 18.0.10, Kiro 2.21.0, Cursor
-  2026.09.15 and opencode 1.18.31, and the effort on Codex and oh-my-pi. **Claude Code's effort and all of
-  Antigravity 1.1.25 do not**: both resume on the saved default, which their own `/effort` and `/model` write
-  (`settings.json`), so a change made inside the session survives while a level or model lich set at birth
-  falls back to that default. Kiro's effort is unmeasured: no model on the measuring account accepts one. Cursor
-  also writes whatever model a spawn or resume runs on into `cli-config.json` as the default for every later
-  `cursor-agent`, so `lich open --kind cursor --model` changes the user's Cursor default too.
-- **A backend holds one window at a time** (`lich native`, `docs/native-window.md`): `/events` and `/ws` hold
-  one client, and a new one replaces the old with no close frame, so two windows cannot share a backend.
-  Whatever opens a window closes the one already up first, through the `window-close` event, a window someone
-  started from a terminal with `LICH_NATIVE` included; one too old to know the event says another window took
-  over. A focus that has to start the window again loses the card it named: the window comes up on the
-  session it last showed.
-  On macOS the window is built and run only on GitHub's runners (`native.yml` draws one frame against a
-  real backend, `.github/scripts/mac-e2e.sh` opens it from the bundle): its keys, Retina scaling, IME and menu
-  bar have never been looked at on a Mac. Option types what it composes there (Option+c is ç), as Ghostty's and
-  Terminal.app's default does, so an agent's Alt/Meta shortcut on a letter (Option+P) never reaches it; Option
-  with Backspace or an arrow still does (`native/gioterm/keys_option_darwin.go`). A restart keeps it: the window tells a backend that went away
-  from one that kept running, and moves onto the successor its runtime file names. A quit (`lich quit`, the
-  tray, SIGINT or SIGTERM) closes it with the same `window-close` event; a backend killed outright or crashed
-  sends nothing, so the window shows "Reconnecting to lich…" for the 15 seconds it waits and then lich as
-  lost. `/events` replays nothing, so the window reads each session's status, usage and working directory
-  from `terminal.TurnStates` on connect. `system.CloseWindow` never quits lich, even
-  with no session running, where a window the user closes does (`quitIfIdle`).
+  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. Claude
+  Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
+  measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
+  lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into
+  `cli-config.json` as the default for every later `cursor-agent`, so `lich open --kind cursor --model` changes
+  the user's Cursor default too.
+- **A backend holds one window at a time** (`lich native`, `docs/native-window.md`): `/events` and `/ws` hold one
+  client, and a new one replaces the old with no close frame, so two windows cannot share a backend: the window
+  already up, its `/events` dropped by a backend that still answers, says another window took over
+  (`backendDropped`, `native/cmd/lich-native/reconnect.go`). A focus that has to start the window again loses the
+  card it named: the window comes up on the session it last showed. On macOS the window is built and run only on
+  GitHub's runners (`native.yml` draws one frame against a real backend, `.github/scripts/mac-e2e.sh` opens it from
+  the bundle): its keys, Retina scaling, IME and menu bar have never been looked at on a Mac. Option types what it
+  composes there (Option+c is ç), as Ghostty's and Terminal.app's default does, so an agent's Alt/Meta shortcut on a
+  letter (Option+P) never reaches it; Option with Backspace or an arrow still does
+  (`native/gioterm/keys_option_darwin.go`). A restart keeps it: the window tells a backend that went away from one
+  that kept running, and moves onto the successor its runtime file names. A quit (`lich quit`, the tray, SIGINT or
+  SIGTERM) closes it with the `window-close` event; a backend killed outright or crashed sends nothing, so the
+  window shows "Reconnecting to lich…" for the 15 seconds it waits and then lich as lost. `/events` replays nothing,
+  so the window reads each session's status, usage and working directory from `terminal.TurnStates` on connect.
 - **Only a native window the backend starts tells lich how it ended** (`restart.StartNative`,
   `restart.WatchNative`): the backend waits on the native window it starts again (the tray's Show lich after the
   window closed) and logs its exit code or the signal that killed it, with its last `VmRSS`/`VmHWM` (Linux only,
@@ -1050,237 +925,58 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   installed a branch name or agent output in Chinese still draws as tofu in the terminal while the cards and
   Settings around it read fine. Installing a Chinese font system-wide covers both. Windows and macOS find the
   terminal's fallback by scanning the system font folders, which leave lich's cache out the same way.
-- **Profiles are Claude Code's, Codex's, oh-my-pi's and opencode's everywhere, Cursor CLI's on Linux and
-  Windows, and Kiro CLI's on Linux only** (`internal/claudeprofile`, `internal/codexprofile`, `internal/ompprofile`,
-  `internal/xdgprofile`, on one store, `internal/profilestore`): one account per profile. The first three are
-  each its own `CLAUDE_CONFIG_DIR`, `CODEX_HOME` or `OMP_PROFILE` with a real `claude auth login`, `codex login`
-  or `omp login`. The other three have no variable of their own that moves their login, which is what makes them
-  link homes (the next bullet). What they were built on, measured on the installed CLIs (2026-10-12, throwaway
-  homes, the bundle read for what a run could not reach):
-  - **opencode** (1.18.35) reads its data from `$XDG_DATA_HOME/opencode` and nothing else moves it:
-    `OPENCODE_CONFIG_DIR` and `OPENCODE_TEST_HOME` leave it where it was. `opencode.db` holds the logins (its
-    `credential` and `account` tables, beside `auth.json`) together with every conversation, so the folder cannot
-    be split and a conversation cannot move between profiles without moving rows between two databases, which
-    lich does not do. Its config, `~/.config/opencode` (plugins, agents, MCP servers, lich's plugin), is not
-    under the data home and is every profile's.
-  - **Cursor CLI** (2026.10.01) keeps its state in three places that three different variables move. The config
-    dir (`cli-config.json`, which names the account, `statsig-cache.json`, `chats/<md5 of the cwd>/<id>/store.db`)
-    is `$CURSOR_CONFIG_DIR`, else `$XDG_CONFIG_HOME/cursor`, else `~/.cursor`. The login, `auth.json`, is not in
-    it: on Linux it is `$XDG_CONFIG_HOME/cursor/auth.json` else `~/.config/cursor/auth.json` (macOS
-    `~/.cursor/auth.json`, Windows `%APPDATA%\Cursor\auth.json`), so `CURSOR_CONFIG_DIR` splits the chats from
-    the account without splitting the account (issue #765). `projects/` (transcripts) answers to
-    `CURSOR_DATA_DIR` else `~/.cursor`, and `mcp.json`, `hooks.json`, `skills/`, `skills-cursor/`,
-    `agent-cli-state.json`, `policy.json` and `sandbox-policies/` hang off `$HOME/.cursor` with no variable, so
-    they are every profile's. A logged-out `status --format json` is
-    `{"status":"unauthenticated","isAuthenticated":false,…}` with exit 0; the logged-in shape (`userInfo.email`)
-    was read in the bundle, not run. A resume finds a chat only under the active config dir. The install
-    directory (`~/.local/share/cursor-agent/versions/<v>/`) and the logs under `$TMPDIR` never move.
-  - **Kiro CLI** (2.21.0) keeps its login in `$XDG_DATA_HOME/kiro-cli/data.sqlite3` (`auth_kv`, beside its
-    history and state tables; issue #766), and the TUI it runs (`bun`, `node`, `tui.js`, a few hundred MB) in the
-    same folder. `KIRO_HOME` moves `~/.kiro` (settings, agents, steering, skills and the conversations,
-    `sessions/cli/<uuid>.json` with the `.jsonl` beside it), which no profile moves, so a conversation is every
-    profile's. A logged-out `whoami --format json` is `{"account":null}` with exit 1; the logged-in shape was not
-    measured, so a profile reads as logged in whenever `account` is not null and its address is `account.email`
-    when there is one. Not measured: the logged-in TUI, an enterprise (IdC) login that may read
-    `~/.aws/sso/cache`, which no profile moves, and a TUI run from a linked bundle.
-  - **Crush** is unmeasured. **Antigravity** cannot: its `~/.gemini` is fixed by the CLI.
-
-  Off Linux, read in the shipped artifacts (2026-10-17) and never run on a Mac or a Windows machine:
-  - **opencode** (1.18.35 bundle) resolves its data as `$XDG_DATA_HOME`, else `<home>/.local/share`, with
-    `opencode` under it, in JavaScript with no branch per platform, and keeps no secret in the Keychain or the
-    Credential Manager. Its profiles are the Linux ones on macOS and Windows too.
-  - **Cursor CLI** (2026.10.01 bundle, `cli-credentials`) keeps its login on macOS in the Keychain by default:
-    services `cursor-access-token`, `cursor-refresh-token` and `cursor-api-key` under the account `cursor-user`,
-    names no variable changes, in the one login keychain every profile's session would read. So it has no
-    profiles on macOS. `AGENT_CLI_CREDENTIAL_STORE=file` moves the login to `$HOME/.cursor/auth.json`, which only
-    `HOME` moves; lich does not set either. On Windows the login is `%APPDATA%\Cursor\auth.json` (`APPDATA`,
-    else `<home>\AppData\Roaming`) and the config dir is `~/.cursor`, so a profile is a link home of
-    `%APPDATA%` whose `Cursor` folder is its own, with `CURSOR_CONFIG_DIR` pinned to that same folder so the chats
-    and `cli-config.json` (which names the account) go with the login (`internal/xdgprofile/cursor_windows.go`).
-  - **Kiro CLI** (2.32.0 macOS `.dmg` and Windows `.msi`): on macOS the `kiro-cli` launcher keeps its tokens in
-    the Keychain through `/usr/bin/security` (`kirocli:odic:token`, `kirocli:odic:device-registration`,
-    `kirocli:external-idp:token`, fixed names), so it has no profiles on macOS. On Windows the login is in
-    `data.sqlite3` under the local AppData folder, found through `SHGetKnownFolderPath`, which no variable moves
-    (the binary reads neither `LOCALAPPDATA` nor `APPDATA`), so it has no profiles on Windows either.
-    `KIRO_DATA_DIR` and `KIRO_HOME` leave `data.sqlite3` where it was (run on the 2.32.0 Linux build in a
-    throwaway home); `KIRO_TEST_DB_PATH` moves it but is a test hook, which lich does not lean on. Kiro's docs
-    announce sign-ins under `KIRO_HOME` "in V3", which would give it profiles on every platform with a variable
-    of its own.
-
-  `internal/xdgprofile` lists the providers each platform has (`supported_linux.go`, `supported_windows.go`,
-  `supported_other.go`), and the native window shows profile rows for the same ones (`profiles_xdg_*.go`). A
-  project's profile setting, the per-session profile and Continue in therefore exist for Claude Code, Codex,
-  oh-my-pi and opencode sessions everywhere, Cursor CLI sessions on Linux and Windows and Kiro CLI sessions on
-  Linux. The profile slug of a session row
-  belongs to that row's provider: a Codex profile named "work" and a Claude Code one named "work" are two
-  profiles.
-- **An opencode, Cursor CLI or Kiro CLI profile is a base directory of links**
-  (`internal/xdgprofile`, `internal/profilestore/linkhome.go`): the profile is
-  `<lich config dir>/profiles/<provider>/<slug>/`, and its sessions run with `XDG_DATA_HOME` (opencode, Kiro CLI),
-  `XDG_CONFIG_HOME` (Cursor CLI) or, on Windows, `APPDATA` (Cursor CLI, with `CURSOR_CONFIG_DIR` at the
-  profile's `Cursor` folder) pointing at it, because moving that variable to an empty directory breaks
-  `gh`, `git`, `mise` and lich's own worktrees in the same session. It mirrors your own base directory entry by
-  entry, each a link, except what is the profile's: `opencode/` whole, `cursor/` whole, and in `kiro-cli/` only
-  `data.sqlite3` (with its `-wal`, `-shm` and `-journal`) and `.refresh.lock`, the rest of that folder linked so
-  the TUI bundle is not downloaded again. A tool writes through a link into your own directory, as it would
-  without a profile; lich itself never writes there. Before every spawn into a profile the mirror is brought
-  up to date: an entry you gained is linked, and a link to an entry you lost is removed so a tool can make it
-  again. An entry a tool creates inside the profile is the profile's own from then on, whether you have one or
-  not: a tool that first writes its config during a profile's session keeps it in that profile, your own
-  directory never sees it, and an entry you make later with the same name is not linked there. So a Kiro update
-  that replaces `tui.js` by a rename inside a profile leaves that profile its own copy, which no later update
-  in yours reaches. `XDG_STATE_HOME` and `XDG_CACHE_HOME` are not moved and are every profile's (opencode's
-  locks, Cursor's compile cache). The entry of your base directory that holds the profiles themselves is never
-  linked: for Cursor CLI the mirror is of `~/.config`, so `~/.config/lich` (lich's config dir, profiles
-  included) is absent from its profiles, and a tool in a Cursor profile session that reads
-  `$XDG_CONFIG_HOME/lich` finds nothing; on Windows the same holds for `%APPDATA%\lich`. On Windows a folder
-  is linked by a junction and a file by a symlink, which Windows refuses without Developer Mode: such a file is
-  then left out of the profile rather than copied, and linked by the first spawn after Developer Mode is on.
-  A Windows Cursor profile owns `%APPDATA%\Cursor` whole, which is also where the Cursor editor keeps its user
-  data, so an editor started from inside a Cursor profile session sees none of yours. Dropped from a profile's
-  spawn, because each would point
-  the CLI at another account or another profile's state: `OPENCODE_DB`, `OPENCODE_AUTH_CONTENT`,
-  `OPENCODE_CONSOLE_TOKEN` and `OPENCODE_API_KEY`; `CURSOR_CONFIG_DIR`, `CURSOR_API_KEY` and
-  `CURSOR_AUTH_TOKEN`; `KIRO_API_KEY`. The provider API-key variables (`ANTHROPIC_API_KEY` and the rest) are not
-  dropped, as for oh-my-pi. A sandboxed session gets the profile bound writable, and its links reach only what
-  the sandbox already exposes at their targets.
-- **opencode, Cursor CLI and Kiro CLI log in from a terminal card, and Continue in differs for each**
-  (`xdgprofile.Service`, `xdgprofile.MoveConversation`): every login is a picker or a browser flow, so the
-  dialog hands `opencode auth login`, `cursor-agent login` or `kiro-cli login` to a shell card and ends, and
-  nothing in lich sees it finish; the list is read again when Settings opens and when the window regains focus
-  after a minute. "Logged in" is a non-zero count at the end of `opencode auth list` (which names no account),
-  `isAuthenticated` from `cursor-agent status --format json`, and a non-null account from `kiro-cli whoami
-  --format json`. There is no plan per profile in Settings and no usage on the Continue in rows; the footer of
-  a session reads the plan of the login its own process sees (Cursor CLI, opencode Go). Continue in moves a
-  Cursor CLI chat's `chats/<md5 of the cwd>/<id>/` directory between config dirs, both ways (Personal's is
-  `~/.cursor` when `XDG_CONFIG_HOME` is unset, a profile's is its own `cursor/`); for Kiro CLI nothing moves and
-  only the session's profile changes, so a Kiro conversation resumes in whichever profile its session is set
-  to; for opencode it is refused before the session is stopped, and the card menu does not offer it. A
-  conversation adopted from History runs in the profile whose directory holds it (opencode, Cursor CLI) or in
-  the project's (Kiro CLI).
-- **An oh-my-pi profile is omp's own, linked against Personal's agent directory, and logged in from a terminal
-  card** (`internal/ompprofile`): `OMP_PROFILE=<slug>` puts everything omp keeps for that profile under
-  `~/.omp/profiles/<slug>/` (`agent/` with `agent.db`, `sessions/`, `blobs/` and its settings; beside it
-  `logs/`, `run/` and `plugins/`), which is omp's location and not lich's: lich's own part is a name in a
-  sidecar under its config dir. A profile made with `omp --profile x` outside lich is not listed, but its slug
-  is taken, and `default` is reserved because omp reads `OMP_PROFILE=default` as the default profile. A
-  profile links Personal's `config.yml`, `models.yml`, `mcp.json`, `ssh.json`, `AGENTS.md`, `SYSTEM.md`,
-  `RULES.md`, `PERSONALITY.md` and the `agents`, `commands`, `extensions`, `hooks`, `modules`, `prompts`,
-  `rules`, `skills`, `themes` and `tools` directories (measured on 18.8.9: a linked `skills/` resolves in the
-  profile and an unlinked profile sees none, and omp writes `config.yml` through the link and leaves it in
-  place). An entry the profile already holds, link or directory, is never replaced, as for the others, so a
-  profile with an `extensions/` of its own does not get lich's extension through it and its sessions report
-  nothing. Not linked: `agent.db` (the logins), `sessions/`, `blobs/`, omp's databases (`models.db` is about
-  7 MB and is built again by each profile) and the plugins `omp plugin install` puts beside `agent/`, so an
-  omp plugin is per profile, as Codex's are. `~/.omp/install-id`, the global daemons and the collab
-  registry are shared by every profile whatever the variable says (read in the source). Personal is read as
-  `omp` reads it with lich's environment: the profile `OMP_PROFILE` names there, else `PI_CODING_AGENT_DIR`,
-  else `~/.omp/agent`; a profile ignores `PI_CODING_AGENT_DIR`. `PI_CONFIG_DIR` and the `XDG_*_HOME/omp` layout
-  `omp config init-xdg` makes are not read, here or by the provider's plugin install and transcript reader,
-  which share the rule. On Windows the file links are copies without Developer Mode, as for Claude Code.
-- **oh-my-pi has no login lich can run, and its account is whatever its CLI lists**
-  (`ompprofile.LoginCommand`, `ompprofile.Service`): `omp login` is an interactive picker of providers
-  (`omp login <provider>` takes an id, and each provider's own OAuth flow follows), so the dialog hands the
-  command to a shell card and ends: nothing in lich sees that login finish, so nothing is emitted for it, and
-  the profile list is read again when Settings opens and when the window regains focus after a minute. A
-  profile is "logged in" when `omp usage accounts --json` lists an OAuth account in it (measured on 18.8.9:
-  local, exit 0 with an empty list when there is none, no network); a login that is only an API key, stored
-  or in the environment, reads as logged out. One profile holds several accounts, one per provider or more,
-  so the row names every address (the `email:` part of each identity key) and each provider rather than one
-  plan: there is no plan gauge for oh-my-pi, so the Continue in rows carry no usage. `OMP_AUTH_BROKER_URL`
-  and `OMP_AUTH_BROKER_TOKEN` are dropped from a profile's spawn, because a broker named there is read before
-  the profile's own `agent.db`; a broker in the shared `config.yml` (`auth.broker.url`) or in
-  `~/.omp/auth-broker.token` is every profile's too, and so is a key a shared `models.yml` sets for a provider,
-  which omp reads before any OAuth login. The provider API-key variables in lich's environment
-  (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` and the dozens more omp lists) are not dropped, because omp's own
-  order puts a stored OAuth login first and the environment key only after it (`KeyCascade.peek`, read in the
-  source): a profile that has no login for a provider spends the key the environment has, as Personal does.
-- **Continue in moves an oh-my-pi session file and its artifacts, and copies its blobs**
-  (`ompprofile.MoveConversation`): resume looks only in the active profile's own `sessions/`, so a
-  conversation outside it is `Session "<id>" not found` (measured), and moving the file is what makes it
-  resumable in the other profile, both ways. What moves is `sessions/<cwd>/<timestamp>_<id>.jsonl` and the
-  directory beside it named after the file (the sub-agents' sessions and tool output), and every
-  `blob:sha256:` image the files refer to is copied into the target's `blobs/`, copied and not moved because
-  other sessions of the source may refer to it. A blob the source no longer has is skipped. The prompt
-  history (`history.db`) stays in the profile it left. Like the others it refuses a turn in progress, which
-  is read off the session-state hooks, so an omp without the lich extension reports no turn and is moved
-  mid-turn.
-- **A profile shares Personal's own content through links, and a link shares writes too**
-  (`internal/claudeprofile/profile.go`, `internal/profilestore/layout.go`): `settings.json`, `CLAUDE.md`,
-  `agents/`, `commands/`, `skills/`, `hooks/` and the marketplace clones (`plugins/marketplaces`) point at
-  Personal's, and
-  Claude Code writes through a link to its target (measured on 2.1.296). So `claude plugin install` run in a
-  profile writes `enabledPlugins` into the one shared `settings.json`, and a plugin a work account installed
-  reads as enabled in Personal, where it is not installed; `/config` changes in any profile change them all.
-  The plugin cache is the next bullet. The plugin set itself
-  (`installed_plugins.json`, `known_marketplaces.json`) is per profile, because an organization account may
-  forbid plugins Personal runs. An entry Personal gains after a profile was made is linked at that profile's
-  next spawn; an entry the profile already holds, link or file, is never replaced: Claude Code may have
-  written a `settings.json` of its own there first, and that one is the profile's from then on. On Windows the
-  directories are junctions, but a file link needs Developer Mode: without it `settings.json` and `CLAUDE.md`
-  are copies, named on the profile (`copied`), and they drift from Personal's on the first edit to either. A
-  hard link was measured and drifts just the same, Claude Code replacing the file on write. The global
-  `.claude.json` is a copy everywhere, minus the account and its caches, since Claude Code replaces it through
-  a rename that would turn a link into a file anyway.
+- **A profile is one provider's** (`internal/profilestore`): which providers have profiles on which OS is
+  README's provider table, and how each is laid out, logged in and moved is `docs/providers/`, Profiles.
+  `internal/xdgprofile` lists the link-home providers each platform has (`supported_linux.go`,
+  `supported_windows.go`, `supported_other.go`), and the native window shows profile rows for the same ones
+  (`profiles_xdg_*.go`). The
+  profile slug of a session row belongs to that row's provider: a Codex profile named "work" and a Claude Code one
+  named "work" are two profiles.
+- **A profile that links to your own directories shares their writes, and keeps what a tool creates inside it**
+  (`internal/profilestore/linkhome.go`, `layout.go`, `internal/claudeprofile/profile.go`, `internal/ompprofile`):
+  Claude Code, oh-my-pi, opencode, Cursor CLI and Kiro CLI profiles link Personal's own content, and a tool writes
+  through a link into its target. So `claude plugin install` run in a profile writes `enabledPlugins` into the
+  one shared `settings.json`, and a plugin a work account installed reads as enabled in Personal, where it is not
+  installed; `/config` changes in any profile change them all. An entry the profile already holds, link or
+  file, is never replaced: whatever a tool creates inside a profile is the profile's from then on, and an entry
+  you make later with the same name is not linked there. A Claude Code `settings.json` written there first stays
+  the profile's, an oh-my-pi profile with an `extensions/` of its own does not get lich's extension through it and
+  its sessions report nothing, and a Kiro update that replaces `tui.js` by a rename inside a profile leaves that
+  profile its own copy, which no later update in yours reaches. On Windows a file link needs Developer Mode:
+  without it Claude Code's, oh-my-pi's and Codex's linked files are copies that drift on the first edit, and an
+  opencode, Cursor CLI or Kiro CLI profile leaves the file out until the first spawn after Developer Mode is on.
+  A sandboxed session gets the profile bound writable, and its links reach only what the sandbox already exposes
+  at their targets.
+- **An oh-my-pi, opencode, Cursor CLI or Kiro CLI profile still sees the provider API keys in lich's
+  environment** (`internal/ompprofile`, `internal/xdgprofile`): each drops the variables that would point it at
+  another account or another profile's state (`docs/providers/`, Profiles), but `ANTHROPIC_API_KEY`,
+  `OPENAI_API_KEY` and the rest are passed through, so a profile that has no login for a provider spends the key
+  the environment has, as Personal does.
+- **Continue in refuses a turn in progress only where the session-state hooks report one**
+  (`terminal.ContinueIn`; what each provider moves and leaves behind is `docs/providers/`, Profiles): a Claude
+  Code without the lich plugin, or an oh-my-pi without the lich extension, reports no turn and is moved mid-turn.
+  On Claude Code the prompt history and the project's `lastSessionId` stay in the profile the conversation left,
+  so `claude --continue` there points at a conversation it no longer holds. A session born in a profile deleted
+  since is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
+  deleted with the profile.
 - **A provider's "trust this folder?" answer is carried only where lich can find the person's own answer,
   and a confined session is told to skip the question** (`internal/claudeprofile/trust.go`,
   `internal/terminal/cursor_trust.go`, `antigravity_trust.go`, `crush_init.go`, `confinedEnv` and
-  `confinedTrustArgs` in `internal/terminal/sandbox.go`).
-  Claude Code: a profile's copied `.claude.json` freezes the trust answers at its birth, so before each spawn
-  into a profile lich writes `hasTrustDialogAccepted` for the checkout's top when Personal trusts it or the
-  main checkout of the worktree it is; Personal itself needs nothing, since Claude Code finds the answer for a
-  worktree in its main checkout and for a folder in its parents (measured on 2.1.302). A folder outside any
-  git checkout is not carried into a profile: lich asks git, not the parents. The write is a read, an edit and
-  a rename beside sessions that rewrite the same file; Claude Code re-reads it before each write of its own (a
-  key written mid-session survived its later writes), so the window left is what either side writes between
-  the other's read and rename. Codex keys trust by the main checkout's top, so its worktrees already count, and
-  its profiles merge Personal's trust (`codexprofile/config.go`). Cursor CLI finds a marker
-  (`~/.cursor/projects/<slug>/.workspace-trusted`) for the folder or a parent below the home, and a worktree
-  sits beside its repository rather than under it, so before each spawn in a worktree lich writes the marker
-  when the main checkout is trusted; its profiles need nothing, the marker following the home (measured on
-  2026.10.16, Windows not). It never trusts a folder nobody trusted. A confined session skips the question:
-  Claude Code with `CLAUDE_CODE_SANDBOXED=1`, Codex with `-c projects={"<main checkout>"={trust_level="trusted"}}`
-  (the dotted spelling still asks; measured on 0.144.5 and 0.162.1) and Cursor CLI with `--trust`, which also
-  writes its marker, so that folder stays trusted outside the sandbox too. The question guards against a
-  folder's own settings running on the machine, which is what the sandbox confines. Whether Codex's trust and
-  Cursor CLI's `--trust` loosen anything beyond the question was not measured. A confined oh-my-pi is spawned
-  with `OMP_SKIP_SETUP=1`: a profile's `config.yml` links into Personal, which the sandbox does not mount, and
-  without it the session opened on the setup wizard. Antigravity trusts only the exact folders in
-  `~/.gemini/antigravity-cli/settings.json` `trustedWorkspaces`, so worktrees and subfolders of a trusted
-  repository asked again (measured on 1.3.5): before each spawn lich adds the folder when its checkout's top or
-  main checkout is listed, and every confined folder whatever the list says, so a folder once opened confined
-  stays trusted outside the sandbox. Crush asks once per checkout whether to initialize the project and keeps
-  the answer as an empty `.crush/init` at the checkout's top (measured on v0.98.1); lich writes it, with
-  Crush's own `*` `.gitignore` beside it, before every Crush spawn, so the offer to write `AGENTS.md` never
-  comes up in a lich session. opencode, oh-my-pi and Kiro CLI ask nothing.
-- **A Claude Code profile's plugin cache is its own, and each version in it links into one store lich never
-  empties** (`internal/claudeprofile/plugincache.go`): before every spawn, and in the startup pass of the lich
-  plugin, each version a profile's `installed_plugins.json` names under its `plugins/cache` is moved into
-  `plugin_cache/` beside the profiles (or gives way to the copy already there) and replaced by a link to it.
-  The link is what keeps a version alive: Claude Code's orphan sweep, run at every session start, marks each
-  cached version its own record does not name (`.orphaned_at`) and deletes it once the mark is 14 days old,
-  but it passes over a version that is a link, marking and deleting nothing through it, and `plugin update`,
-  `uninstall` and a reinstall over a link leave the store's copy alone (all measured on 2.1.299, a plugin
-  running from a linked version included). When the cache was one link to Personal's, a plugin only one
-  profile had, Personal included, was deleted after 14 days without a session of that profile. A version
-  Claude Code downloads stays a plain directory of the profile, which its own record protects, until the next
-  spawn links it. Versions no profile names any more stay in the store, since a session started before an
-  update may still run one; deleting `plugin_cache/` with every Claude Code closed only costs the downloads.
-  Personal's cache is Personal's alone and is left as it is, so a version both use is on disk twice. A
-  profile made when the whole cache was a link to Personal's is moved at its next spawn or lich start: each
-  version it names is copied from Personal's into the store, and one Personal's sweep already deleted stays
-  missing. `.in_use` markers of every profile running a version land in the store's copy, which a confined
-  session reaches because the store is bound read-write beside the profile (`internal/terminal/sandbox.go`). On Windows each
-  version is a junction, which Claude Code's sweep reads as a link too (read in the source, not run on
-  Windows), and a version Windows will not move while a file in it is open stays the profile's own until a
-  later spawn. `CLAUDE_CODE_PLUGIN_CACHE_DIR` moves Claude Code's whole `plugins/` directory, installed set,
-  marketplaces and cache, not only the cache (measured on 2.1.300), so a profile's spawn, login and plugin
-  install drop it and a profile's plugins stay inside its own directory; Personal keeps it, and lich reads
-  Personal's installed set where it points (`claudeprofile.PluginsDir`). A new profile seeds its marketplaces
-  from, and links its clones to, Personal's plugins directory where the variable points. A profile made before
-  the variable was set keeps the `plugins/marketplaces` link it was made with, since an entry a profile holds is
-  never replaced, and clones each marketplace again into a directory Personal no longer reads; removing that
-  link has the next spawn link it where the variable points.
+  `confinedTrustArgs` in `internal/terminal/sandbox.go`; each provider in `docs/providers/`, Spawn and Sandbox):
+  before a spawn into a worktree or a profile lich writes a provider's trust for the folder only when the person
+  already trusted it in Personal or trusted its main checkout, and it never trusts a folder nobody trusted. A
+  confined session skips the question, because what it guards against, a folder's own settings running on the
+  machine, is what the sandbox confines; on Cursor CLI and Antigravity skipping it writes the trust down, so a
+  folder once opened confined stays trusted outside the sandbox too. Whether Codex's trust and Cursor CLI's
+  `--trust` loosen anything beyond the question was not measured.
+- **A Claude Code profile's plugin versions live in a store lich never empties**
+  (`internal/claudeprofile/plugincache.go`; the layout is `docs/providers/claude.md`, Profiles): each version a
+  profile names is moved into `plugin_cache/` beside the profiles and linked back, which is what keeps Claude
+  Code's 14-day orphan sweep from deleting a plugin only one profile has. Versions no profile names any more stay
+  in the store, since a session started before an update may still run one; deleting `plugin_cache/` with every
+  Claude Code closed only costs the downloads. A profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set keeps
+  the marketplace link it was made with and clones each marketplace again into a directory Personal no longer
+  reads, until that link is removed.
 - **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
   login in the Keychain under a service named after a hash of the config directory string
   (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
@@ -1289,20 +985,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   directory is built from `os.UserConfigDir()` on every call, so an `XDG_CONFIG_HOME` (or `APPDATA`) that
   changes between launches points lich at another, empty set of profiles. A `task dev` rig has its own set
   (`profiles-dev`), so its profiles need their own login.
-- **Continue in moves what Claude Code keys by the conversation id, and nothing else**
-  (`claudeprofile.MoveConversation`, `terminal.ContinueIn`): the transcript, its subagent directory, any file a
-  hook filed beside it under the same name, and `file-history/`, `session-env/` and `tasks/` under that id,
-  the set a throwaway conversation left on 2.1.296, which resumed with its history and checkpoints both ways.
-  The prompt history (`history.jsonl`) and the project's `lastSessionId` stay in the profile it left, so
-  `claude --continue` there points at a conversation it no longer holds and the arrow-up history does not
-  follow. An async hook outlives the Claude Code it ran for (its SessionEnd hook runs in a session of its
-  own, measured on 2.1.304), so lich cannot wait for it: a hook can file its entry again in the profile the
-  conversation just left, and moving back replaces that leftover instead of refusing. It refuses while a turn is open, which is read off the session-state hooks: a Claude Code
-  without the lich plugin reports no turn and is moved mid-turn. A move across filesystems copies, Windows
-  volumes included. A card that has not had its first prompt has no transcript yet, so it is not moved but
-  started afresh in the target profile. A session born in a profile deleted since
-  is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
-  deleted with the profile.
 - **The version Settings shows is the one lich's own environment gets** (`internal/providers/version.go`):
   `--version` runs in lich's working directory with lich's environment, not in a session's checkout. A
   version-manager shim that picks its tool per directory (mise, asdf) can answer one version there and start
@@ -1319,23 +1001,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A profile's lich plugin follows Personal's, after it and in the background**
   (`internal/agentplugin/profiles.go`): an install or update of the lich plugin for Claude Code or Codex,
   from Settings or anywhere else, runs in Personal and returns; then the same pinned install runs as each
-  other profile of that provider whose version differs, one at a time, logged in or not (`claude plugin
-  install` and `codex plugin add` both install into a logged-out home, measured on 2.1.296 and 0.162.1). A
-  backend start makes the same pass, which is what reaches a profile logged in before profiles got the
-  plugin at login; it is the start and not the next spawn because a pass clones the marketplace, and a
-  spawn would wait on it. A start asks for the release list only when a provider has a profile besides
-  Personal, and a Codex profile's version costs one `codex plugin list` each. While Personal itself is
-  behind the newest release this lich speaks, a profile that has the plugin keeps its version and one that
-  has none gets the newest, so the two can differ until Personal is updated. A profile whose install failed
-  is named in an error toast of the native window, in the CLI's own words, and is tried again at the next
-  start or update. A Claude Code profile's
-  `plugin marketplace remove` deletes the marketplace clone it links to Personal's (the plugin cache stays,
-  measured on 2.1.296), so a Personal session starting during a pass can find the clone missing for the
-  seconds the pass takes to clone it back. The pass lays each profile out as a spawn would before asking its
-  version (`EnsureShared`): a Codex profile made when `config.toml` was shared still links Personal's, read
-  as holding Personal's plugin, and its next spawn rebuilt it with no plugin and no marketplace. The same
-  layout moves a Claude Code profile's plugin cache off Personal's (the bullet on it above) at a start too.
-  oh-my-pi needs no pass: lich's extension is in the `extensions/` every profile links to Personal's.
+  other profile of that provider whose version differs, one at a time, logged in or not. A backend start makes
+  the same pass, which is what reaches a profile logged in before profiles got the plugin at login; it is the
+  start and not the next spawn because a pass clones the marketplace, and a spawn would wait on it. A start asks
+  for the release list only when a provider has a profile besides Personal. While Personal itself is behind the
+  newest release this lich speaks, a profile that has the plugin keeps its version and one that has none gets the
+  newest, so the two can differ until Personal is updated. A profile whose install failed is named in an error
+  toast of the native window, in the CLI's own words, and is tried again at the next start or update. A Claude
+  Code profile's pass removes the marketplace clone it links to Personal's and clones it back, so a Personal
+  session starting during a pass can find the clone missing for the seconds that takes.
 - **Following the OS's light or dark is polled on macOS**: a theme's `pair` and `lich theme switch` reach the
   window through the backend's `theme-selection` event. Following the OS
   reads the freedesktop appearance portal on Linux and `AppsUseLightTheme` in the registry on Windows, both
@@ -1344,50 +1018,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   could compile or run without a Mac. The BSDs read no scheme and draw dark.
 - **The window asks every profile at start**: the window reads
   `claudeprofile.Profiles` when it opens and when Settings does, which runs one `claude auth status` per
-  profile, and keeps each logged-in profile's plan reading fresh only while there are two to move between. A
-  login the dialog starts is `claude auth login --claudeai`, which opens the browser itself and takes the
-  callback on a localhost port of its own (measured on 2.1.296); the address it prints, which redirects to a
-  page that shows a code, and the field that takes the code are for a browser that cannot reach this machine.
-- **A Codex profile has its own plugins and a config.toml rebuilt from Personal's at every spawn, so a
-  setting changed inside a profile does not last** (`internal/codexprofile/config.go`): Codex keeps the plugin
-  set (`[plugins."<key>"]`, `[marketplaces.<name>]`) in the same `config.toml` as every other setting, and reads
-  no second user file it could be split into: a `managed_config.toml` in `CODEX_HOME` is ignored, the other
-  layers are `/etc/codex` and a project's `.codex/config.toml`, and `-c` would hide the plugin set from Codex's
-  own writes (measured on 0.162.1). So a profile's `config.toml` is a file of its own, and before every spawn
-  lich writes it again as Personal's tables minus Personal's plugin set, then the profile's plugin set, then
-  the project trust (`[projects.*]`), hook trust (`[hooks.state.*]`) and dismissed notices (`[notice]`) the
-  profile was given and Personal was not. Everything else is Personal's: a `/model`, `features enable` or MCP
-  server added inside a profile is gone at its next session, and a setting Personal removes leaves every profile
-  then, while a trust answer only Personal withdrew stays in the profiles that gave it. The cut is by table
-  header and copies tables as they are written; plugin or marketplace keys Personal writes as dotted keys above
-  its first table (Codex never does) are every profile's. The plugin and marketplace downloads (`plugins/cache`,
-  `.tmp/marketplaces`) are the profile's own too, which costs a clone per profile and is what lets `plugin
-  remove` and the lich plugin's pinned reinstall (`plugin marketplace remove` then `add`) run there without
-  deleting Personal's copy; a profile made when they were links has them removed at its next spawn. The lich
-  plugin follows Personal's (the bullet on it below). Plugins are ported with `codex plugin add` run as the profile, after Personal's declaration
-  of the marketplace, ref included, is copied into the profile's file and fetched with `plugin marketplace
-  upgrade`; a marketplace Personal does not declare is left to Codex. Per profile besides: `auth.json`,
-  `sessions/`, `history.jsonl`, `session_index.jsonl`, the SQLite state and `installation_id`.
-  `CODEX_SQLITE_HOME`, `CODEX_API_KEY`, `CODEX_ACCESS_TOKEN` and `OPENAI_API_KEY` are dropped from a profile's
-  spawn: the first would put every profile's thread database in one place and the rest would override the
-  login. A `cli_auth_credentials_store` of `keyring` in Personal's `config.toml` sends the login to the OS
-  keyring, whose entry per `CODEX_HOME` was not measured. On Windows
-  `hooks.json` and `AGENTS.md` are copies without Developer Mode, as for Claude Code.
-- **A Codex login is a browser callback on a fixed port, and the dialog has no code to paste**: `codex login`
-  prints an address and waits for the page's redirect on `localhost:1455` (measured on 0.162.1), so two
-  logins cannot run at once, in lich or beside it, and a browser that cannot reach this machine needs
-  `codex login --device-auth` from a terminal, which is not the command the dialog's "log in from a
-  terminal" runs. The dialog decides whether the login took from `codex login status`'s exit status, and
-  reads "not logged in" in Codex's own words to tell a logged-out profile from a broken `config.toml`. Its
-  account and plan are the plan gauge's reading of that directory (`quota.CodexProfilePlan`, the ChatGPT usage
-  route, five minutes cached, the email claim of an id token that has not expired), so a profile whose usage
-  call fails is "Logged in" with no name.
-- **Continue in moves a Codex rollout and its generated images, and relies on Codex indexing it again**
-  (`codexprofile.MoveConversation`): the rollout under `sessions/<yyyy>/<mm>/<dd>/` and
-  `generated_images/<id>/`. Codex's thread database keeps an absolute `rollout_path` per thread, and a
-  rollout alone in an empty home was found by id and written into that home's database with its path
-  rewritten (measured on 0.162.1, `thread/resume` and `exec resume`); the interactive TUI resume of a moved
-  conversation behind a real login was not exercised. The source's database row and `history.jsonl` stay, so
-  its own picker may list a thread whose rollout is gone. `codex exec resume` and `thread/read` answered
-  "paginated_threads is not supported yet" for a thread of this version in the origin home as well, which is
-  a daemon older than the CLI on the measuring machine and not the move's.
+  profile, and keeps each logged-in profile's plan reading fresh only while there are two to move between.
+- **A setting changed inside a Codex profile does not last** (`internal/codexprofile/config.go`; the layout is
+  `docs/providers/codex.md`, Profiles): the profile's `config.toml` is rebuilt from Personal's before every spawn,
+  so a `/model`, `features enable` or MCP server added inside a profile is gone at its next session, a setting
+  Personal removes leaves every profile then, and a trust answer only Personal withdrew stays in the profiles
+  that gave it.

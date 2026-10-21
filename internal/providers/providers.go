@@ -311,7 +311,7 @@ const (
 // answer both the live readout and `lich cost` rely on. The rung is a fact of
 // the provider — what it writes down decides who can price it — so it is
 // answered from the id alone and never recorded per ledger row.
-// docs/ceilings.md carries what each rung's figure leaves out.
+// docs/providers/ carries what each provider's figure leaves out.
 func CostSourceOf(id string) CostSource {
 	switch id {
 	case Claude, Codex:

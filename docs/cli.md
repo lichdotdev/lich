@@ -878,7 +878,7 @@ reads `mixed`, and a total that mixes them adds the line above the last one,
 splitting the counted sessions between the two. A row with no money to
 attribute — every session in it unpriced, or its spend earned by a provider CLI
 started by hand inside a shell session — reads `—` and claims no rung.
-`docs/ceilings.md` has what each rung's own figure leaves out.
+`docs/providers/` has what each provider's own figure leaves out.
 
 With the cost readout switched off, no transcript is ever summed and every
 session is unpriced, so the total can only be `$0.00`. That case adds a second
