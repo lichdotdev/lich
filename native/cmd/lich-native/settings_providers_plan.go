@@ -94,13 +94,9 @@ func planGauge(gtx C, th *ui.Theme, g quotaGauge) D {
 		}
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}
-	// The pane is drawn on the page's own color, which in the light theme is
-	// the track's: the footer's bar would be a fill with nothing to fill.
-	onPage := *th
-	onPage.Muted = th.Over(th.Border)
 	row := func(gtx C) D {
 		return planRow(gtx, label,
-			func(gtx C) D { return gaugeBar(gtx, &onPage, g.Percent, tone) },
+			func(gtx C) D { return gaugeBar(gtx, th, g.Percent, tone) },
 			th.Text(ui.TextXS, g.Reading).In(tone).Layout,
 			th.Text(ui.TextXS, g.Left).Muted().Layout)
 	}
