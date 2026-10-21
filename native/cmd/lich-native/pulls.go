@@ -43,7 +43,6 @@ var (
 	icPullHide    = icons.Lucide("panel-left-close")
 	icPullShow    = icons.Lucide("panel-left-open")
 	icPullSearch  = icons.Lucide("search")
-	icPullTerm    = icons.Lucide("terminal")
 	icPullTeam    = icons.Lucide("users")
 	icPullTalk    = icons.Lucide("message-square")
 )

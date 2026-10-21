@@ -159,8 +159,10 @@
     "noMatch": "没有符合该筛选条件的内容。",
     "draft": "草稿",
     "fork": "分叉",
-    "checkedOut": "已检出",
-    "searchHint": "按编号、标题、作者或分支筛选"
+    "searchHint": "按编号、标题、作者或分支筛选",
+    "checksFailed": {
+      "other": "{count} 项失败"
+    }
   },
   "pullsFiles": {
     "loadFailed": "无法加载差异：{error}",

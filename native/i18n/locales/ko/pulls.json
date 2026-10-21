@@ -155,8 +155,10 @@
     "noMatch": "그 필터와 일치하는 항목이 없습니다.",
     "draft": "초안",
     "fork": "포크",
-    "checkedOut": "체크아웃됨",
-    "searchHint": "번호, 제목, 작성자, 브랜치로 필터"
+    "searchHint": "번호, 제목, 작성자, 브랜치로 필터",
+    "checksFailed": {
+      "other": "{count}개 실패"
+    }
   },
   "pullsFiles": {
     "loadFailed": "diff를 불러오지 못했습니다: {error}",

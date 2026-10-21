@@ -380,7 +380,7 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d lichclient.PRDetail, act *pu
 			}
 			return panelRow(gtx, th, click, c.URL != "", func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return pullGlyph(gtx, ic, ui.Space(4), fg) }),
+					layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(4), fg) }),
 					ui.Gap(3),
 					layout.Flexed(1, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

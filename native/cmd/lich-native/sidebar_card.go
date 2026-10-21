@@ -334,18 +334,18 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	radius := float32(size)/2 - stroke/2
 	switch sv.status {
 	case "busy", "compacting":
-		strokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
+		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
 		turn := float32(time.Since(s.started).Seconds()) * 2 * math.Pi
-		strokeArc(gtx, center, radius, stroke, turn, math.Pi/2, th.MutedForeground)
+		ui.StrokeArc(gtx, center, radius, stroke, turn, math.Pi/2, th.MutedForeground)
 		gtx.Execute(op.InvalidateCmd{})
 	case "waiting":
-		strokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.ToneWait)
+		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.ToneWait)
 	case "done":
 		ring := th.TonePass
 		if !sv.unread {
 			ring = th.Over(ui.Alpha(ring, 0.3))
 		}
-		strokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, ring)
+		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, ring)
 	}
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	kind := sv.Kind
@@ -355,13 +355,4 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return providerIcon(kind).Layout(gtx, 14, th.MutedForeground)
 	})
-}
-
-func strokeArc(gtx C, center f32.Point, radius, width, start, sweep float32, c color.NRGBA) {
-	var p clip.Path
-	p.Begin(gtx.Ops)
-	from := f32.Pt(center.X+radius*float32(math.Cos(float64(start))), center.Y+radius*float32(math.Sin(float64(start))))
-	p.MoveTo(from)
-	p.ArcTo(center, center, sweep)
-	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: p.End(), Width: width}.Op())
 }

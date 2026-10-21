@@ -159,8 +159,11 @@
     "noMatch": "Nada corresponde a esse filtro.",
     "draft": "Rascunho",
     "fork": "fork",
-    "checkedOut": "em checkout",
-    "searchHint": "Número, título, autor ou branch"
+    "searchHint": "Número, título, autor ou branch",
+    "checksFailed": {
+      "one": "{count} falhou",
+      "other": "{count} falharam"
+    }
   },
   "pullsFiles": {
     "loadFailed": "Não foi possível carregar o diff: {error}",

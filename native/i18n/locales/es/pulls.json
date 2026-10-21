@@ -159,8 +159,11 @@
     "noMatch": "Nada coincide con ese filtro.",
     "draft": "Borrador",
     "fork": "fork",
-    "checkedOut": "en checkout",
-    "searchHint": "Número, título, autor o rama"
+    "searchHint": "Número, título, autor o rama",
+    "checksFailed": {
+      "one": "{count} fallida",
+      "other": "{count} fallidas"
+    }
   },
   "pullsFiles": {
     "loadFailed": "No se pudo cargar el diff: {error}",

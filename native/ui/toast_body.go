@@ -410,6 +410,7 @@ type toastGlyph struct {
 	size  unit.Dp
 	color color.NRGBA
 	spin  bool
+	track color.NRGBA
 }
 
 // toastGlyphOf is the icon option over the variant's, nil for neither.
@@ -418,6 +419,9 @@ func toastGlyphOf(th *Theme, e *toastEntry) *toastGlyph {
 		g := &toastGlyph{icon: e.Icon, size: toastIconBox, color: th.PopoverForeground, spin: e.Spin}
 		if e.IconColor != nil {
 			g.color = e.IconColor(th)
+		}
+		if e.Spin {
+			g.track = th.On(th.Popover).RingTrack(g.color)
 		}
 		return g
 	}
@@ -434,7 +438,7 @@ func (g *toastGlyph) layout(gtx C, top int) {
 	y := top + (gtx.Dp(toastIconBox)-gtx.Dp(g.size))/2
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
 	if g.spin {
-		Spinner(gtx, g.size, g.color)
+		Ring(gtx, g.size, g.color, g.track)
 		return
 	}
 	g.icon.Layout(gtx, g.size, g.color)

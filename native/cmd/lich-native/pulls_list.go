@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"image"
 	"image/color"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -159,8 +157,8 @@ func (p *pullsScreen) rowScroll(gtx C, th *ui.Theme) material.ListStyle {
 	return list
 }
 
-// row is PullRow: the state glyph, "#N title" over two lines at most, then
-// who, when and the facts worth a glance.
+// row is PullRow: "#N title" over two lines at most beside its checks, then
+// who, when, the facts worth a glance and the checkout it sits in.
 func (p *pullsScreen) row(gtx C, th *ui.Theme, pr lichclient.PRSummary, now time.Time) D {
 	click := p.rowClicks[pr.Number]
 	if click == nil {
@@ -170,7 +168,7 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr lichclient.PRSummary, now time
 	if click.Clicked(gtx) {
 		p.selected = pr.Number
 	}
-	_, checkedOut := p.checkedOut(pr.HeadRefName)
+	checkout, _ := p.checkedOut(pr.HeadRefName)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {
 		bg := th.Surface
@@ -185,36 +183,19 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr lichclient.PRSummary, now time
 			func(gtx C) D {
 				on := th.On(bg)
 				return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
-					return layout.Flex{}.Layout(gtx,
-						layout.Rigid(func(gtx C) D { return rowGlyph(gtx, on, pr) }),
-						ui.Gap(2),
-						layout.Flexed(1, func(gtx C) D {
-							return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-								layout.Rigid(func(gtx C) D { return rowTitle(gtx, on, pr) }),
-								ui.VGap(0.5),
-								layout.Rigid(func(gtx C) D { return rowMeta(gtx, on, pr, checkedOut, now) }),
-							)
-						}),
+					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+						layout.Rigid(func(gtx C) D { return rowTitle(gtx, on, pr) }),
+						ui.VGap(0.5),
+						layout.Rigid(func(gtx C) D { return rowMeta(gtx, on, pr, checkoutName(checkout), now) }),
 					)
 				})
 			})
 	})
 }
 
-func rowGlyph(gtx C, th *ui.Theme, pr lichclient.PRSummary) D {
-	ic := icPullRequests
-	switch pr.State {
-	case "MERGED":
-		ic = icPullMerged
-	case "CLOSED":
-		ic = icPullClosed
-	}
-	fg := th.MutedForeground
-	if pr.IsDraft {
-		fg = th.ToneWait
-	}
-	return layout.Inset{Top: ui.Space(0.75)}.Layout(gtx, func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), fg) })
-}
+// chipFirstLineTop centers the text-xs checks chip on the text-sm title's
+// first line.
+var chipFirstLineTop = ui.Space(0.5)
 
 func rowTitle(gtx C, th *ui.Theme, pr lichclient.PRSummary) D {
 	return layout.Flex{}.Layout(gtx,
@@ -225,21 +206,36 @@ func rowTitle(gtx C, th *ui.Theme, pr lichclient.PRSummary) D {
 			l.MaxLines = 2
 			return l.Layout(gtx)
 		}),
+		layout.Rigid(func(gtx C) D {
+			if verdictOf(pr.Checks) == verdictNone {
+				return D{}
+			}
+			return layout.Inset{Left: ui.Space(2), Top: chipFirstLineTop}.Layout(gtx, func(gtx C) D {
+				return checksChip(gtx, th, pr.Checks)
+			})
+		}),
 	)
 }
 
+// checkoutName is the folder a PR's branch is checked out in, the name its
+// block in the sidebar carries; "" when it is checked out nowhere.
+func checkoutName(w lichclient.Worktree) string {
+	if w.Path == "" {
+		return ""
+	}
+	return filepath.Base(w.Path)
+}
+
 // rowMeta is the row's second line; only a review verdict worth acting on
-// shows, REVIEW_REQUIRED being most rows' resting state.
-func rowMeta(gtx C, th *ui.Theme, pr lichclient.PRSummary, checkedOut bool, now time.Time) D {
+// shows, REVIEW_REQUIRED being most rows' resting state. The checkout sits
+// at the far end and is the part that truncates.
+func rowMeta(gtx C, th *ui.Theme, pr lichclient.PRSummary, checkout string, now time.Time) D {
 	items := []layout.FlexChild{
 		layout.Rigid(th.Text(ui.TextXS, pr.Author).Muted().Layout),
 		ui.Gap(2),
 		layout.Rigid(th.Text(ui.TextXS, updatedAgo(pr.UpdatedAt, now)).Mono().Muted().Layout),
 	}
 	add := func(w layout.Widget) { items = append(items, ui.Gap(2), layout.Rigid(w)) }
-	if v := verdictOf(pr.Checks); v != verdictNone {
-		add(func(gtx C) D { return verdictDot(gtx, th, v) })
-	}
 	if pr.IsDraft {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.draft")).In(th.ToneWait).Layout)
 	}
@@ -252,27 +248,29 @@ func rowMeta(gtx C, th *ui.Theme, pr lichclient.PRSummary, checkedOut bool, now 
 	if pr.IsCrossRepository {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)
 	}
-	if checkedOut {
-		add(func(gtx C) D {
-			return metaGlyph(gtx, th, icPullTerm, i18n.T("pulls.pullsList.checkedOut"), th.MutedForeground)
-		})
+	if checkout != "" {
+		items = append(items, ui.Gap(2), layout.Flexed(1, func(gtx C) D {
+			return layout.E.Layout(gtx, func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkout, th.MutedForeground) })
+		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, items...)
 }
 
-// verdictDot is the size-1.5 dot a row's checks read as.
-func verdictDot(gtx C, th *ui.Theme, v checkVerdict) D {
-	col := th.TonePass
-	switch v {
+// checksChip is a row's checks at a glance: how many have finished while
+// any run, how many failed once one has, all of them once they pass.
+func checksChip(gtx C, th *ui.Theme, c lichclient.ChecksRollup) D {
+	ic, fg, text := icPullCheck, th.TonePass, fmt.Sprintf("%d/%d", c.Passed, c.Total)
+	switch verdictOf(c) {
 	case verdictFailed:
-		col = th.Destructive
+		ic, fg, text = icPullX, th.Destructive, i18n.T("pulls.pullsList.checksFailed", i18n.Args{"count": c.Failed})
 	case verdictPending:
-		col = th.MutedForeground
+		ic, fg, text = icPullRunning, th.ToneWait, fmt.Sprintf("%d/%d", c.Total-c.Pending, c.Total)
 	}
-	side := gtx.Dp(ui.Space(1.5))
-	defer clip.Ellipse{Max: image.Pt(side, side)}.Push(gtx.Ops).Pop()
-	paint.Fill(gtx.Ops, col)
-	return D{Size: image.Pt(side, side)}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3), fg) }),
+		ui.Gap(1),
+		layout.Rigid(th.Text(ui.TextXS, text).Mono().In(fg).Layout),
+	)
 }
 
 // metaGlyph is a size-3 glyph and its text-xs words, gap-1.

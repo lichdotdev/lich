@@ -191,10 +191,10 @@ func contextRing(gtx C, th *ui.Theme, percent int, fg color.NRGBA) D {
 	scale := float32(size) / ringViewBox
 	center := f32.Pt(float32(size)/2, float32(size)/2)
 	radius, width := ringRadius*scale, ringStroke*scale
-	strokeArc(gtx, center, radius, width, 0, 2*math.Pi, th.Over(ui.Alpha(fg, ringTrackOpacity)))
+	ui.StrokeArc(gtx, center, radius, width, 0, 2*math.Pi, th.Over(ui.Alpha(fg, ringTrackOpacity)))
 	share := float32(min(max(percent, 0), 100)) / 100
 	if share > 0 {
-		strokeArc(gtx, center, radius, width, -math.Pi/2, share*2*math.Pi, fg)
+		ui.StrokeArc(gtx, center, radius, width, -math.Pi/2, share*2*math.Pi, fg)
 		top := center.Sub(f32.Pt(0, radius))
 		end := arcPoint(center, radius, share)
 		dot(gtx, top, width/2, fg)

@@ -301,16 +301,16 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDeta
 // stat is PullsStats' Stat: a size-3.5 glyph and its words in one tone.
 func stat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, ic, ui.Space(3.5), fg) }),
+		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3.5), fg) }),
 		ui.Gap(1.5),
 		layout.Rigid(th.Text(ui.TextXS, text).In(fg).Weight(font.Medium).Layout),
 	)
 }
 
-// pullGlyph is ic at size, icPullRunning turning as a Spinner.
-func pullGlyph(gtx C, ic *icons.Icon, size unit.Dp, fg color.NRGBA) D {
+// pullGlyph is ic at size, icPullRunning drawn as a ui.Ring.
+func pullGlyph(gtx C, th *ui.Theme, ic *icons.Icon, size unit.Dp, fg color.NRGBA) D {
 	if ic == icPullRunning {
-		return ui.Spinner(gtx, size, fg)
+		return ui.Ring(gtx, size, fg, th.RingTrack(fg))
 	}
 	return ic.Layout(gtx, size, fg)
 }

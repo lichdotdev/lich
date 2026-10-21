@@ -159,8 +159,10 @@
     "noMatch": "このフィルターに一致するものはありません。",
     "draft": "ドラフト",
     "fork": "フォーク",
-    "checkedOut": "チェックアウト済み",
-    "searchHint": "番号、タイトル、作成者、ブランチで絞り込む"
+    "searchHint": "番号、タイトル、作成者、ブランチで絞り込む",
+    "checksFailed": {
+      "other": "{count} 件失敗"
+    }
   },
   "pullsFiles": {
     "loadFailed": "差分を読み込めませんでした: {error}",

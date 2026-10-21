@@ -159,8 +159,11 @@
     "noMatch": "Nothing matches that filter.",
     "draft": "Draft",
     "fork": "fork",
-    "checkedOut": "checked out",
-    "searchHint": "Filter by number, title, author or branch"
+    "searchHint": "Filter by number, title, author or branch",
+    "checksFailed": {
+      "one": "{count} failed",
+      "other": "{count} failed"
+    }
   },
   "pullsFiles": {
     "loadFailed": "Couldn’t load the diff: {error}",
