@@ -1,7 +1,7 @@
 // Renders the changelog from main, so this page never needs editing: each "## [X.Y.Z] - date" section becomes a
 // release, its GitHub alert blocks become the headline and callouts, its "###" groups keep their order. A page in
-// another language reads changelog/<locale>.md too and shows each release it translates in place of the English
-// one; older releases, which only CHANGELOG.md holds, stay in English under a note that says so.
+// another language shows only the releases changelog/<locale>.md translates, then a link to the English page for
+// the older ones, so a page never mixes languages; with no translation to read it falls back to the English list.
 // The file only uses headings, "- " items with indented continuation lines, alert blocks and inline
 // **bold**, `code` and [links](url), which is all this reads.
 (function () {
@@ -13,7 +13,7 @@
   var locale = list.getAttribute("data-locale") || "en";
   var groups = JSON.parse(list.getAttribute("data-groups") || "{}");
   var releaseLink = list.getAttribute("data-release") || "Release on GitHub";
-  var englishNote = list.getAttribute("data-english");
+  var olderInEnglish = list.getAttribute("data-english");
 
   function escape(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -59,8 +59,7 @@
   }
   function render(r) {
     var important = r.alerts.filter(function (a) { return a.kind === "important"; })[0];
-    var note = r.firstEnglish ? '<p class="rel-english">' + escape(englishNote) + "</p>" : "";
-    var html = note + '<article class="rel"' + (r.english ? ' lang="en"' : "") + '><div class="rel-date">' + date(r.date) + "</div>" +
+    var html = '<article class="rel"' + (r.english ? ' lang="en"' : "") + '><div class="rel-date">' + date(r.date) + "</div>" +
       '<a class="rel-ver" href="' + RELEASES + r.version + '">' + r.version + "</a>";
     if (important) html += '<p class="rel-lead">' + inline(important.text.trim()) + "</p>";
     r.alerts.forEach(function (a) {
@@ -73,11 +72,14 @@
     return html + '<a class="rel-more" href="' + RELEASES + r.version + '">' + escape(releaseLink) + " →</a></article>";
   }
 
-  var releases = [], shown = 0;
+  var releases = [], shown = 0, untranslated = false;
   function show() {
     list.insertAdjacentHTML("beforeend", releases.slice(shown, shown + PAGE).map(render).join(""));
     shown += PAGE;
     more.hidden = shown >= releases.length;
+    if (more.hidden && untranslated) {
+      list.insertAdjacentHTML("beforeend", '<p class="rel-english"><a href="changelog.html">' + escape(olderInEnglish) + " →</a></p>");
+    }
   }
   more.addEventListener("click", show);
   function read(path) {
@@ -89,14 +91,13 @@
     .then(function (got) {
       var local = {};
       parse(got[1]).forEach(function (r) { local[r.version] = r; });
-      var shownEnglish = false;
-      releases = parse(got[0]).map(function (r) {
-        if (local[r.version]) return local[r.version];
-        r.english = locale !== "en";
-        r.firstEnglish = r.english && !shownEnglish && Boolean(englishNote);
-        if (r.english) shownEnglish = true;
-        return r;
-      });
+      var english = parse(got[0]);
+      releases = english.filter(function (r) { return local[r.version]; }).map(function (r) { return local[r.version]; });
+      untranslated = releases.length > 0 && releases.length < english.length;
+      if (!releases.length) {
+        releases = english;
+        releases.forEach(function (r) { r.english = locale !== "en"; });
+      }
       list.innerHTML = "";
       show();
     })

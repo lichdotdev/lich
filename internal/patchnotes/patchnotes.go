@@ -20,10 +20,10 @@
 // title, "warning" is something the reader must do or avoid, "note" a detail
 // worth a line. The window decides how each kind looks.
 //
-// A translation of the latest release lives in changelog/<locale>.md, written
+// Translations live in changelog/<locale>.md, newest release first, each added
 // by the lich-changelog-i18n skill when a release is cut: the same section,
 // headings, alert openers and code spans left in English. TestTranslations
-// holds each file to the release it translates.
+// holds each file to the releases it translates.
 package patchnotes
 
 import (

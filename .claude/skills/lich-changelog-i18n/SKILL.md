@@ -1,14 +1,15 @@
 ---
 name: lich-changelog-i18n
-description: Translate the latest release's CHANGELOG.md section into every interface language lich ships, writing changelog/<locale>.md, the files the What's new popup reads. Use when cutting a release (right after its section moves out of [Unreleased]), when TestTranslations in internal/patchnotes fails, or when a language is added.
+description: Translate the latest release's CHANGELOG.md section into every interface language lich ships, adding it to changelog/<locale>.md, the files the What's new popup and the site's changelog pages read. Use when cutting a release (right after its section moves out of [Unreleased]), when TestTranslations in internal/patchnotes fails, or when a language is added.
 ---
 
 # lich changelog translations
 
 The What's new popup shows the running build's `CHANGELOG.md` section (`internal/patchnotes`). A user whose
 interface language is not English reads it from `changelog/<locale>.md` instead, embedded in the binary
-next to `CHANGELOG.md`. Each file holds **only the latest release**: a build only ever reads its own version,
-and git keeps the old translations. `CHANGELOG.md` stays English and canonical; the release page reads it.
+next to `CHANGELOG.md`. Each file holds **every translated release, newest first**: a build only reads its own
+version, but the site's changelog page in that language lists them all and sends the reader to the English page
+where they stop. `CHANGELOG.md` stays English and canonical; the release page reads it.
 
 ## When
 
@@ -23,8 +24,9 @@ means running it again.
 2. **One file per locale, except English.** The locales are `prompt.Langs` (`internal/prompt/prompt.go`),
    file names are their tags as written there: `pt-BR.md`, `es.md`, `zh-CN.md`, `ja.md`, `ko.md`, `ru.md`.
    A language added to lich gets its file in the same PR.
-3. **Overwrite each file** with the translated section and nothing else: no `# Changelog` title, no
-   `[Unreleased]`, no older release, no compare links.
+3. **Add the translated section at the top of each file**, above the previous release, with a blank line
+   between them, and nothing else: no `# Changelog` title, no `[Unreleased]`, no compare links. Running it again
+   for the same release replaces that release's section, never adds a second one.
 4. **Translate from the English**, never from another translation. The locales are independent, so each
    one can go to its own subagent in parallel, on a cheap model (Sonnet); hand each the English section and
    the rules below.
@@ -61,7 +63,8 @@ The parser and both windows read these, so `TestTranslations` fails when one is 
 
 ## If the check fails
 
-- `version headings = …`: the file holds another release, or more than one. Rewrite it from step 1.
+- `version headings = …`: the file does not open with the latest release, skips one, or holds one twice.
+  Put the latest release's section at the top, once, from step 1.
 - `N groups` / `N items`: an item was merged, split or lost, often a blank line inside an item.
 - `group N is "…"`: a `### ` heading was translated.
 - `code spans …` or `bold markers …`: a code span was changed or a `**` was lost; the message prints the

@@ -18,25 +18,31 @@ const repoRoot = "../.."
 
 var codeSpan = regexp.MustCompile("`[^`]+`")
 
-// TestTranslations holds every changelog/<locale>.md to the latest release in
-// CHANGELOG.md: the one section, under the same heading, with the same groups,
-// item counts, alert kinds, code spans and bold lead-ins. A release cut without
-// running the lich-changelog-i18n skill fails here.
+// TestTranslations holds every changelog/<locale>.md to CHANGELOG.md: its
+// releases are the newest ones there, latest first and none skipped, each under
+// the same heading, with the same groups, item counts, alert kinds, code spans
+// and bold lead-ins. A release cut without running the lich-changelog-i18n
+// skill fails here.
 func TestTranslations(t *testing.T) {
 	english := readRepoFile(t, "CHANGELOG.md")
-	heading := latestReleaseHeading(t, english)
-	version := heading[len("## ["):strings.Index(heading, "]")]
+	released := releaseHeadings(t, english)
 	for _, lang := range prompt.Langs {
 		if lang == prompt.English {
 			continue
 		}
 		t.Run(string(lang), func(t *testing.T) {
 			translated := readRepoFile(t, filepath.Join("changelog", string(lang)+".md"))
-			if got := versionHeadings(translated); !reflect.DeepEqual(got, []string{heading}) {
-				t.Fatalf("version headings = %q, want only %q", got, heading)
+			headings := versionHeadings(translated)
+			if len(headings) == 0 || len(headings) > len(released) || !reflect.DeepEqual(headings, released[:len(headings)]) {
+				t.Fatalf("version headings = %q, want the newest releases of CHANGELOG.md in order, starting at %q", headings, released[0])
 			}
-			assertSameShape(t, Section(english, version), Section(translated, version))
-			assertSameHighlights(t, Highlights(english, version), Highlights(translated, version))
+			for _, heading := range headings {
+				version := heading[len("## ["):strings.Index(heading, "]")]
+				t.Run(version, func(t *testing.T) {
+					assertSameShape(t, Section(english, version), Section(translated, version))
+					assertSameHighlights(t, Highlights(english, version), Highlights(translated, version))
+				})
+			}
 		})
 	}
 }
@@ -60,15 +66,18 @@ func versionHeadings(changelog string) []string {
 	return out
 }
 
-func latestReleaseHeading(t *testing.T, changelog string) string {
+func releaseHeadings(t *testing.T, changelog string) []string {
 	t.Helper()
+	var out []string
 	for _, heading := range versionHeadings(changelog) {
 		if !strings.HasPrefix(heading, "## [Unreleased]") {
-			return heading
+			out = append(out, heading)
 		}
 	}
-	t.Fatal("CHANGELOG.md has no released version")
-	return ""
+	if len(out) == 0 {
+		t.Fatal("CHANGELOG.md has no released version")
+	}
+	return out
 }
 
 func assertSameShape(t *testing.T, english, translated []Group) {

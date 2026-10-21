@@ -13,3 +13,337 @@
 - Las teclas muertas componen en el terminal de una sesión: en macOS, ~ y luego a escribe ã, y ' y luego c escribe ç, cuando antes el acento llegaba solo antes de la letra. El texto que un método de entrada aún está componiendo, como el de un IME japonés o chino, tampoco llega ya al programa antes de confirmarse.
 - Tras cambiar de modelo en una sesión de Claude Code con `/model`, el pie y el tooltip de la tarjeta de la sesión nombran el nuevo modelo en cuanto termina su primer turno. Antes conservaban el anterior hasta un turno posterior o una reconexión, porque lich leía el transcript antes de que Claude Code hubiera escrito la última línea de ese turno.
 - En macOS, los botones de cerrar, minimizar y zoom se mantienen centrados en la barra de título. macOS los devolvía a la parte superior de la barra al abrirse la ventana, al cambiar a otra app y volver, y cuando el sistema alternaba entre claro y oscuro, hasta que se redimensionaba la ventana.
+
+## [0.75.0] - 2026-10-21
+
+### Added
+
+- Un archivo Markdown en la pestaña Revisión tiene un botón de vista previa junto a "Añadir archivo como contexto" que muestra el archivo renderizado, con tablas y enlaces, en lugar de su diff. Púlsalo de nuevo para volver al diff. En la pantalla Pull requests, solo los archivos que añade el pull request lo tienen.
+- Ctrl+F (Cmd+F en macOS) en un archivo abierto en la pestaña Código busca texto en él. Una barra bajo el nombre del archivo resalta cada coincidencia, las recorre con Enter y Shift+Enter, y puede distinguir mayúsculas, buscar palabras completas o usar una expresión regular. Su botón de lista muestra bajo la barra cada línea con una coincidencia, y al hacer clic en una el código se desplaza hasta allí. Escape la cierra.
+- El tooltip de la tarjeta de una sesión nombra el modelo que la sesión está ejecutando, en Claude Code, Codex y Kiro CLI. Cuando ya no es el modelo con el que se abrió la sesión, tras un `/model` por ejemplo, la línea dice "Abierta con …, ejecutando …".
+- La pantalla Pull requests edita el título y la descripción de un pull request y los envía a GitHub. El lápiz tras el título lo renombra en el sitio: Enter o hacer clic fuera guarda, Escape cancela. Editar junto a la Descripción del Resumen la abre como Markdown, y se guarda con Guardar o Ctrl+Enter (Cmd+Enter en macOS). Una descripción larga se desplaza dentro del campo, con una barra de desplazamiento, para que Guardar siga en pantalla. Cada una envía solo lo que cambió, así que guardar la descripción nunca deshace un cambio de nombre hecho mientras tanto en GitHub.
+- Un perfil puede tener su propio color e imagen. En Ajustes › Proveedores, el menú ⋯ de un perfil tiene Color, con los mismos ocho colores que una tarjeta de sesión, y Elegir imagen…, que acepta un PNG, JPEG, GIF o WebP de hasta 10 MB y conserva su cuadrado centrado. La imagen o el color se muestra dondequiera que aparezca el perfil: la lista y el selector de perfiles, el pie de la barra lateral y Continuar en. Quitar imagen vuelve a la inicial sobre el color del perfil.
+
+### Changed
+
+- Un bloque de tarjetas en la barra lateral, una worktree, una carpeta o el bloque fijado, ahora crece al abrirse su primera tarjeta y se encoge con la última, cuando antes aparecía y desaparecía de golpe. Los encabezados que se muestran cuando la lista se divide en bloques se despliegan igual, y se pliegan cuando queda uno solo.
+- Las comprobaciones de un pull request que siguen en ejecución ahora muestran un spinner girando, en su pestaña Comprobaciones y en la línea de estado sobre las pestañas, donde antes había un reloj detenido.
+- Los botones ya no se hunden un píxel mientras se pulsan, así que todos los botones de la ventana se comportan igual: los que tenían este movimiento ahora coinciden con los que nunca lo tuvieron.
+
+### Removed
+
+- **Breaking:** lich ya no ejecuta `.lich/setup-worktree.sh` cuando `lich open --worktree` o el `open_session` de un agente inicia una sesión en una worktree nueva. El archivo de tu repositorio no se toca. Si tus worktrees dependían de él para instalar dependencias, ejecútalo tú mismo en la terminal de la nueva worktree (`sh .lich/setup-worktree.sh`), o pídeselo al agente. La copia de tus archivos `.env*` ignorados por git (o de lo que nombre `.worktreeinclude`) y el puerto de servidor de desarrollo `LICH_WORKTREE_PORT` siguen igual.
+
+### Fixed
+
+- El `git commit`, `rebase` o `stash` de un agente ya no falla de vez en cuando con "Unable to create '.git/index.lock': File exists" porque lich estaba leyendo el estado o el diff de ese checkout en el mismo momento. Las lecturas de lich dejan el índice en paz.
+- La tarjeta de una sesión cerrada vuelve a encogerse fuera de la barra lateral, cuando antes desaparecía de golpe.
+- Ctrl+Z en una sesión ya no congela a su agente para siempre. Antes suspendía al agente, y nada en lich podía devolverlo a la vida; ahora lich mantiene la tecla fuera de la sesión.
+- Las barras del tooltip de uso del plan, en el pie, vuelven a mostrar su pista vacía en los temas cuyos colores de popover y muted son iguales, como Everforest, donde solo se dibujaba la parte rellena.
+- Abrir o cerrar la lista de pull requests en la pantalla Pull requests ya no hace que la pestaña del proyecto activo suelte el panel que tiene debajo y lo agarre de nuevo. La pestaña permanece conectada todo el tiempo y pasa a la lista cuando esta se desliza por debajo.
+
+## [0.74.0] - 2026-10-20
+
+### Added
+
+- F11 pone la ventana en pantalla completa y la devuelve a su tamaño, sin los botones de minimizar, maximizar y cerrar mientras está así. El atajo se puede cambiar en Ajustes › Atajos.
+
+### Changed
+
+- Un pull request que tiene conflictos con su base ya no lista los archivos en conflicto bajo su título. El estado "Conflictos con" los cuenta, y al hacer clic en él se abre un panel sobre la pantalla que nombra cada uno.
+- **Resolver conflictos** y **Corregir errores de CI** en un pull request, y una worktree iniciada desde una issue `#123`, ahora envían su mensaje a la sesión que abren, en lugar de dejarlo en el prompt esperando a que pulses Enter. A una tarjeta de terminal de ese checkout nunca se le envía nada.
+
+### Fixed
+
+- La pestaña del proyecto activo ahora se separa de la isla del terminal cuando abrir o redimensionar el panel Código o Revisión hace que se superponga al panel, y vuelve a conectarse cuando cabe de nuevo.
+- En macOS, los botones de cerrar, minimizar y zoom quedan centrados en la barra de título de la ventana nativa, en lugar de pegados a su borde superior, y siguen el zoom de la interfaz.
+- La ventana se puede arrastrar por su barra superior: pasada la última pestaña y en los huecos alrededor de la marca y de los botones. Antes, ninguna parte de la barra la movía.
+- La pantalla Pull requests mantiene al día lo que muestra sin pulsar Actualizar. Vuelve a leer un pull request cada pocos segundos mientras GitHub aún calcula si se puede fusionar, una vez por minuto mientras la pantalla está abierta y cuando vuelves a la ventana, de modo que un push, una fusión o un conflicto hechos fuera de lich aparecen solos.
+
+## [0.73.0] - 2026-10-20
+
+> [!IMPORTANT]
+> **Todos: la ventana nativa es ahora la única ventana de lich.** lich la abre en cada
+> inicio; la ventana web y su Chromium integrado desaparecen.
+
+### Added
+
+- **Notificaciones de escritorio en las que puedes hacer clic, en la ventana nativa de Windows y macOS.** Como en Linux, una sesión que necesita tu intervención o terminó su turno muestra una notificación con Abrir y Descartar: Abrir lleva lich a la tarjeta de esa sesión, y la notificación desaparece cuando respondes o abres la sesión. En macOS requiere ejecutar lich desde Lich.app y pide permiso una sola vez; en Windows, una sesión que te espera mantiene su notificación en pantalla hasta que actúes sobre ella.
+- Ajustes › Proveedores avisa bajo Perfil cuando las sesiones arrancan con un binario personalizado, con su ruta y botones para mostrarlo o volver al predeterminado. Un script que define su propio inicio de sesión o directorio de configuración se impone al perfil, y el ajuste Binario queda plegado al final de la pantalla.
+
+### Changed
+
+- Cuando el proceso de una sesión termina, ahora un aviso en la esquina inferior derecha pregunta qué hacer, en lugar de la banda al pie del terminal. Una tarjeta con una conversación ofrece Retomar, que vuelve a abrir esa misma conversación (en el perfil en que empezó), Empezar otra, que inicia una nueva en la tarjeta como hacía Reiniciar, y Cerrar sesión. Un shell, o un agente que terminó antes de su primer prompt, ofrece Reiniciar y Cerrar sesión. Descartar el aviso deja la tarjeta como está, y enfocar la tarjeta lo trae de vuelta.
+- **El perfil del proyecto vive al pie de la barra lateral, no en cada tarjeta.** Con más de un inicio de sesión para un proveedor, la última línea de la barra lateral indica el perfil en que arrancan las nuevas sesiones de este proyecto: el proveedor de la tarjeta en pantalla, o el predeterminado para un terminal. Haz clic para elegir otro inicio de sesión, con el uso de cinco horas de cada uno, o para volver al de Global; Otros proveedores cambia el resto desde el mismo menú. Las tarjetas ya no llevan la etiqueta del perfil junto a su rama.
+
+### Removed
+
+- La ventana web. lich abre la ventana nativa, y una versión ya no incluye Chromium. La opción Ventana en Ajustes (web o nativa) y el elemento de la bandeja que abría la otra ventana desaparecen, igual que `lich -- <chromium flags>`, `lich --shell` y `LICH_SHELL`. Si la ventana nativa no puede arrancar, lich dice por qué y dónde está su log.
+
+### Fixed
+
+- Iniciar sesión en un perfil de Claude Code o Codex ahora muestra que está autenticando cuando terminas en el navegador, o cuando envías un código pegado, mientras que antes el diálogo seguía esperando el inicio de sesión hasta el final y el campo del código solo se vaciaba.
+- En portugués de Brasil, todos los mensajes llaman ahora a un worktree "a worktree", donde algunos decían "o worktree".
+- En macOS la ventana nativa vuelve a tener sus botones de cerrar, minimizar y zoom; desde 0.72.0 la barra superior dejaba su espacio vacío.
+- En Windows, actualizar lich desde la ventana nativa ya no se revierte con "Setup was unable to automatically close all applications": la ventana seguía abierta sobre `lich-native.exe`, que el instalador debe reemplazar. Ahora se cierra antes de que corra el instalador y se abre de nuevo cuando lich regresa. Actualizar desde 0.72.0 o anterior todavía lo sufre una vez: finaliza `lich-native.exe` en el Administrador de tareas cuando aparezca el mensaje, elige Reintentar y abre lich desde el menú Inicio después.
+- Cerrar la ventana nativa mientras lich no está, tras salir o mientras se reinicia, la cierra, sea cual sea el valor de "Al cerrar la ventana". Con Preguntar o Salir seguía abierta y solo mostraba un error de que no se pudieron contar las sesiones.
+- En una ventana de Ajustes estrecha, un ajuste cuyo control es demasiado ancho para compartir la línea, como el selector de Perfil de un proveedor, ahora coloca el control bajo su título y descripción, donde el texto quedaba apretado en una franja y se partía letra por letra. El enlace de Documentación de un proveedor también pasa bajo su nombre en lugar de chocar con el interruptor Activado.
+- Continuar en puede mover una conversación de Claude Code de vuelta al perfil que acaba de dejar, donde un hook de plugin que siguió corriendo después de terminar la sesión (el de WakaTime, por ejemplo) dejaba un archivo y el traslado se rechazaba con "already holds".
+
+## [0.72.0] - 2026-10-19
+
+### Changed
+
+- La barra superior de la ventana nativa es ahora su barra de título: la barra del sistema desaparece, y minimizar, maximizar y cerrar quedan junto a Ajustes, dibujados como los dibujan Windows, GNOME y KDE y en el lado donde los pone tu escritorio; en macOS los semáforos quedan en la barra superior. Arrastra la parte vacía de la barra superior para mover la ventana y haz doble clic en ella para maximizarla. Los gestores de ventanas en mosaico conservan sus propias decoraciones.
+
+### Fixed
+
+- `lich quit` ya no falla con "EOF" cuando lich se cierra antes de responder: espera a que el puerto se cierre en lugar de tomar la respuesta perdida como un rechazo.
+- En Wayland, la ventana nativa muestra el cursor del propio escritorio, con su tema y su tamaño, donde podía mostrar otro tema. En un monitor con una escala menor que la del más grande, el cursor ya no salta al entrar en la ventana.
+- En Linux, la ventana nativa se agrupa bajo el icono propio de lich en el dock, donde aparecía como una app aparte con un icono genérico.
+- En la Revisión de la ventana nativa y en los Archivos de un pull request, la barra de desplazamiento mantiene su tamaño mientras te desplazas, donde crecía y se encogía según el archivo que llenaba la vista. Arrastrarla ahora recorre el diff de forma uniforme, no archivo por archivo.
+
+## [0.71.2] - 2026-10-19
+
+### Fixed
+
+- La ventana nativa vuelve a abrirse en Windows y macOS, donde se cerraba al
+  instante buscando fontconfig para dibujar las vistas de código y de diff.
+- Los emojis en la terminal de la ventana nativa se dibujan en color en Windows,
+  donde salían solo como contornos.
+- El comando de actualización que se ofrece a una instalación en macOS ahora hace tap de `lichdotdev/tap` antes de actualizar. Una instalación desde el antiguo `omartelo/tap` fallaba con "Cask 'lichdotdev/tap/lich' is unavailable", ya que Homebrew no sigue por sí solo un tap que se movió; haz el tap una vez con `brew tap lichdotdev/tap` para actualizar desde un lich anterior.
+- En la ventana nativa, "Desplegar pegados largos" ahora despliega los pegados de Claude Code y Kiro CLI: el portapapeles, un lote de comentarios de revisión, el prompt con el que un pull request o issue abre una sesión y las rutas de archivo soltadas o adjuntadas.
+
+## [0.71.1] - 2026-10-18
+
+### Fixed
+
+- La ventana nativa en Linux ya no se cierra con una instrucción ilegal al abrir un terminal en una CPU sin AVX-512.
+
+## [0.71.0] - 2026-10-17
+
+### Added
+
+- **Diseños divididos en la ventana nativa (experimental).** Coloca lado a lado
+  sesiones de cualquier proyecto abierto y divídelas como quieras:
+  Ctrl+Shift+G divide la sesión enfocada hacia la derecha, Ctrl+Shift+I hacia
+  abajo, y cada una pregunta qué sesión va ahí; también puedes arrastrar una
+  tarjeta de la barra lateral al borde de un panel. Reorganiza un diseño
+  arrastrando un panel por su cabecera hasta el borde de otro panel, o hasta su
+  centro para intercambiar los dos, y alterna una pareja entre lado a lado y
+  apilada con Ctrl+Shift+R. Cada diseño es una pestaña después de los
+  proyectos, con el estado de sus paneles, y se renombra con doble clic;
+  arrastra el espacio entre dos paneles para redimensionarlos, amplía uno con
+  Ctrl+Shift+M, muévete entre ellos con Ctrl+Shift+F y saca uno con
+  Ctrl+Shift+W; un diseño que se queda en un solo panel se cierra. Si dejas
+  una sesión arrastrada sobre otra pestaña, esa pestaña se abre, como hace un
+  navegador con un archivo arrastrado. La barra lateral y el pie de ventana
+  siguen al panel enfocado.
+- **Muestra al lado los delegados de una sesión.** En la ventana nativa, una
+  sesión que abrió otras, en cualquier proyecto, las ofrece en el pie de
+  ventana: Mostrar al lado la coloca con sus delegados apilados a su derecha,
+  todos los que quepan. En un diseño, la cabecera de su panel cuenta cuántos
+  hay y añade el resto, preguntando antes de sacar uno de otro diseño. Una
+  tarjeta en un diseño lo indica con su nombre.
+- **Las comprobaciones obligatorias están etiquetadas.** En la ventana nativa,
+  la pestaña Comprobaciones de un pull request marca con Obligatorio las
+  comprobaciones que condicionan su merge, como hace GitHub.
+
+### Changed
+
+- **lich vive en `lichdotdev/lich`.** El repositorio se mudó a la organización
+  [lichdotdev](https://github.com/lichdotdev) y el sitio a
+  [lichdotdev.github.io/lich](https://lichdotdev.github.io/lich/). Los enlaces
+  antiguos de GitHub, los clones y las comprobaciones de actualización
+  redirigen; los marcadores del sitio antiguo no.
+
+### Fixed
+
+- **Novedades sigue el idioma al que cambias.** En la ventana nativa, las notas
+  de la versión seguían en el idioma en que se leyeron por primera vez después
+  de cambiar el idioma de la interfaz, bajo nombres de grupo en el nuevo.
+- **Los diffs ya no se quedan colgados con texto CJK ni acumulan memoria por
+  archivo.** En la ventana nativa, una Revisión o los Archivos de un pull
+  request con texto chino, japonés o coreano podían congelarse durante segundos
+  al buscar cada carácter nuevo, y el diff de cada archivo guardaba su propia
+  copia de las fuentes, de modo que un pull request grande ocupaba cientos de
+  megabytes.
+
+## [0.70.0] - 2026-10-17
+
+### Added
+
+- **Novedades habla tu idioma.** El diálogo que se abre tras una actualización
+  muestra las notas de la versión, y los nombres de sus grupos, en el idioma
+  de la interfaz que elegiste, en ambas ventanas. Una versión cuyas notas aún
+  no tienen traducción las muestra en inglés.
+- **Bifurca una sesión en la ventana nativa.** Haz clic derecho en una tarjeta
+  y elige Bifurcar › Aquí para continuar su conversación en una tarjeta nueva
+  justo debajo, en el mismo checkout, o Bifurcar › Worktree… para llevarla a
+  una worktree nueva junto con tus cambios sin confirmar. La copia lleva el
+  nombre del original ("auth-refactor 2") y una marca de bifurcación. Solo
+  Claude Code, Codex y opencode: los demás proveedores solo reanudan.
+- **La ventana nativa avisa cuando dos tarjetas ejecutan una misma
+  conversación.** Reanudar, desde la TUI de un agente, una conversación que
+  otra tarjeta ya tiene abierta muestra un aviso en la esquina inferior
+  derecha; Cambiar cierra la tarjeta que reanudó y trae la que la tenía.
+- **La ventana nativa muestra imágenes.** Un PNG, JPEG, GIF, WebP o BMP se
+  abre en la vista previa de la pestaña Archivos sobre un tablero de ajedrez,
+  con su tamaño y dimensiones, y una imagen modificada en la Revisión se
+  muestra antes y después lado a lado. Un PDF, o cualquier otro archivo sin
+  vista previa, ofrece Abrir en la app predeterminada y Mostrar en la carpeta
+  en lugar de un error; en un pull request, un archivo binario enlaza a sí
+  mismo en GitHub.
+- **La ventana nativa en tu idioma.** Cada pantalla de la ventana nativa se
+  lee en portugués, español y chino, y Ajustes › General tiene el idioma de la
+  interfaz y el idioma de los prompts, como los tiene la ventana web en
+  Apariencia. Antes de que elijas uno, la interfaz sigue el idioma de tu
+  sistema. Elegir chino en un equipo sin fuente china ofrece descargar Noto
+  Sans SC (unos 25 MB) en la propia carpeta de lich.
+- **Japonés.** Ambas ventanas se leen en japonés, y el japonés es un idioma de
+  prompts, así que lich habla con tus agentes en él. La ventana nativa dibuja
+  japonés, chino y coreano cada uno con la fuente de su región cuando hay una
+  instalada (Noto Sans CJK, Yu Gothic, Hiragino, Malgun Gothic y similares),
+  de modo que los kanji ya no toman formas chinas, y ofrece descargar Noto
+  Sans JP o KR cuando no hay ninguna, igual que hace con Noto Sans SC para el
+  chino. El README también está en japonés.
+- **Coreano.** Ambas ventanas se leen en coreano, que se elige en Ajustes ›
+  Apariencia en la web y en Ajustes › General en la ventana nativa, y el
+  coreano es un idioma de prompts: los briefings, los mensajes retransmitidos
+  y los avisos llegan a tus agentes en coreano.
+- **lich habla ruso.** Elige Русский como idioma de la interfaz, en la ventana
+  web en Ajustes › Apariencia o en la ventana nativa en Ajustes › General, y
+  como idioma de los prompts, de modo que el briefing, las notas de relevo y
+  los traspasos que lich escribe en tus agentes también se lean en ruso. Los
+  recuentos siguen las formas singular, paucal y plural del ruso (1 файл,
+  2 файла, 5 файлов).
+- **Perfiles de opencode en macOS y Windows, y perfiles de Cursor CLI en
+  Windows.** Ajustes › Proveedores en la ventana nativa los lista como en
+  Linux. Cursor CLI en macOS y Kiro CLI en macOS y Windows siguen sin ellos:
+  allí guardan el inicio de sesión en el llavero o en una carpeta que ningún
+  ajuste puede mover, así que todos los perfiles compartirían una misma
+  cuenta.
+
+### Changed
+
+- **Cada actualización abre la ventana nativa.** El primer inicio de cada
+  versión cambia lich a la ventana nativa, recurriendo a la web donde no puede
+  arrancar; vuelve a cambiar en Ajustes y lich se queda en la ventana web
+  hasta la siguiente versión. La primera vez que se abre la ventana nativa,
+  avisa de que es experimental y enlaza a un informe de errores.
+- **Un anillo de estado más ligero en la ventana nativa.** El anillo alrededor
+  del icono de una tarjeta de sesión se dibuja más fino, para leerse con el
+  peso que le da la ventana web.
+- **Teclas de atajo más espaciosas en la ventana nativa.** Las teclas de la
+  paleta de comandos, la superposición de atajos y Ajustes › Atajos tienen más
+  espacio alrededor del texto, que queda centrado.
+- **Ajustes en la ventana nativa se abre en Global.** El engranaje de la barra
+  superior siempre abre Ajustes en Global en lugar del ámbito en el que lo
+  dejaste; la pestaña de un proyecto sigue abriendo sus propios ajustes desde
+  Ajustes del proyecto….
+- **Una paleta de comandos más tranquila en la ventana nativa.** Cada sesión,
+  proyecto y mensaje ocupa una línea, con su ruta después del nombre; la ruta
+  de una worktree muestra sus últimas tres partes. Las sesiones que esperan
+  por ti van primero y lo indican, y las pestañas de filtro cambian sus
+  píldoras por un subrayado. Una sesión cerrada en Historial muestra a la
+  derecha su rama y su antigüedad, y una segunda línea solo cuando una
+  búsqueda coincidió con su conversación, con las palabras marcadas.
+
+### Fixed
+
+- **Una sesión reiniciada ya no aparece como ocupada para siempre.** Una
+  sesión cuyo agente murió a mitad de un turno, o que se cerró a mitad de un
+  turno, volvía bajo la misma tarjeta todavía listada como ocupada para las
+  demás sesiones: una tarea enviada a ella esperaba un turno que nunca
+  terminaría. Ahora arranca sin estado, como una nueva.
+- **Codex, Cursor CLI, Antigravity y Crush dejan de preguntar donde ya
+  respondiste.** Una sesión en sandbox de cualquiera de ellos se abre
+  directamente en su prompt. Cursor CLI y Antigravity ya no vuelven a
+  preguntar en una worktree de una carpeta en la que confiaste, ni Antigravity
+  en sus subcarpetas, y Crush ya no pide inicializar cada worktree nueva. Una
+  sesión de oh-my-pi en sandbox ya no se abre en su asistente de
+  configuración.
+- **Claude Code deja de preguntar "¿confiar en esta carpeta?" donde ya
+  respondiste.** Una carpeta en la que confiaste en tu cuenta principal es de
+  confianza en todos los demás perfiles de Claude Code desde su siguiente
+  sesión allí, y una sesión de Claude Code en sandbox se abre sin la pregunta.
+  Una sesión que lich abrió por ti ya no se queda en esa pantalla, donde Enter
+  sale.
+- **Una ventana nativa reabierta sabe adónde fue cada sesión.** Una sesión que
+  se había movido con `cd`, o dentro de tmux o ssh, volvía mostrando la ruta,
+  la rama y los cambios de su checkout hasta su siguiente `cd`; ahora la
+  ventana lee dónde estuvo cada una por última vez al conectarse.
+- **La ventana nativa escribe los prompts de los agentes en tu idioma de
+  prompts.** Los traspasos de pull requests e issues y un lote de comentarios
+  de revisión se escribían siempre en inglés.
+- **Un cambio de tema durante una reconexión ya no cuelga la ventana nativa.**
+  Cambiar el tema, o que el sistema alternara entre claro y oscuro, mientras
+  la ventana se reconectaba a un lich reiniciado podía pintar terminales que
+  la reconexión acababa de liberar y derribar la ventana.
+- **El texto en chino, japonés y coreano ya no congela la ventana nativa en
+  Linux.** Una sesión, una Revisión o un pull request llenos de texto CJK
+  podían colgar la ventana durante segundos, lo bastante para "no responde", y
+  un zoom traía el congelamiento de vuelta.
+- **La ventana nativa usa menos memoria.** El terminal de cada sesión y la
+  Revisión cargaban su propia copia de las fuentes de reserva, decenas de
+  megabytes cada una para una fuente CJK o de emoji: seis sesiones abiertas
+  ahora ocupan cerca de la mitad de la memoria que antes. También arranca más
+  rápido en un equipo con fuentes CJK instaladas.
+- **Reabrir una sesión cuya conversación ya está abierta enfoca esa
+  tarjeta.** Una sesión cerrada desde Historial, un cierre deshecho o una
+  worktree existente podían volver como una segunda tarjeta sobre una
+  conversación que otra tarjeta seguía ejecutando, y las dos escribían en la
+  misma transcripción. Historial lista una conversación así una sola vez, por
+  su último cierre, y Olvidar elimina todas sus copias.
+
+## [0.69.0] - 2026-10-16
+
+### Added
+
+- **La ventana nativa en macOS, experimental.** Lich.app la incluye junto a lich
+  en Apple Silicon e Intel, y Ajustes › Apariencia › Ventana la ofrece igual
+  que en Linux y Windows. Option escribe caracteres en su terminal, como en
+  Terminal.app, así que los atajos Option+letra de un agente no llegan hasta
+  ella. Por ahora solo se ha ejecutado en las máquinas macOS de GitHub: las
+  notificaciones son simples y no se puede hacer clic en ellas, y no hay
+  elemento en la barra de menús.
+- **El árbol de archivos reconoce muchos más tipos de archivo.** Java, Gradle,
+  C y C++, C#, PHP, Ruby, Swift, SQL, Vue, Svelte, Terraform, Dockerfile,
+  .gitignore y unos treinta más ahora muestran su propio icono en el árbol de
+  archivos y en los resultados de búsqueda, donde antes mostraban un glifo de
+  archivo genérico.
+
+### Fixed
+
+- **`lich quit` cierra la ventana nativa.** Se quedaba abierta mostrando lich
+  como perdido una vez que el backend había terminado; Salir de lich en la
+  bandeja y una señal de parada también la cierran, mientras que un reinicio
+  tras una actualización sigue conservándola.
+- **La ventana nativa ofrece eliminar una worktree cuando se cierra su última sesión.** El
+  aviso Se cerró gana Eliminar worktree junto a Deshacer; una worktree que lich no creó,
+  o una con cambios sin confirmar, se nombra en un diálogo antes de eliminarla.
+- **El terminal de la ventana nativa toma la celda bajo el puntero.** Un clic,
+  una selección con arrastre, un enlace y un programa que sigue el ratón leían
+  todos el puntero desplazado por el relleno del terminal, así que la celda
+  que tomaban quedaba por debajo y a la derecha de la señalada, por casi una
+  celda entera en una pantalla escalada.
+- **El terminal de la ventana nativa dibuja emoji.** Una fuente de emoji a
+  color como Noto Color Emoji guarda cada emoji como una imagen y no como un
+  contorno, y el terminal solo dibujaba contornos, así que cada emoji aparecía
+  como un hueco en blanco; ahora se dibujan a color, ocupando dos celdas.
+- **El árbol de archivos de la ventana nativa muestra el icono de lenguaje de cada archivo.**
+  Todos los archivos dibujaban el mismo glifo de archivo genérico; ahora cada
+  uno lleva el icono que le da la ventana del navegador.
+- **Un pull request que abre un agente aparece en su tarjeta al terminar el turno.**
+  La insignia solo volvía a consultarse cuando cambiaba la rama o su último
+  commit, y abrir un pull request no cambia ninguno de los dos, así que
+  esperaba a que la ventana perdiera y recuperara el foco.
+- **La ventana nativa se abre en Windows.** Buscaba las fuentes mediante
+  fontconfig, que Windows no incluye, así que se cerraba al iniciar y lich
+  recurría a la ventana web. Ahora, en Windows, encuentra por sí misma las
+  fuentes instaladas, con Cascadia Mono o Consolas para el terminal por
+  defecto, y los selectores de fuente de Ajustes las listan.
+- **Cambiar entre un tema claro y uno oscuro ya no congela la ventana
+  nativa.** A una sesión que sigue el esquema de color del terminal, como hace
+  Claude Code, se le avisaba del cambio mientras la ventana todavía conservaba
+  sus terminales, así que la ventana se colgaba y se cerraba.

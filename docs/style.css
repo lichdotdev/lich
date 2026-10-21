@@ -724,6 +724,9 @@ footer nav { display: flex; flex-direction: column; gap: .6rem; }
 .rel li code, .rel-note code, .rel-lead code { font-size: .86em; color: var(--fg); }
 .rel a:not(.rel-ver):not(.rel-more) { color: var(--fg); }
 .rel-english { margin: 0 0 2rem; padding: .75rem 1rem; border-radius: .6rem; background: var(--island); color: var(--muted); font-size: .9rem; }
+.rel-english a { color: inherit; text-decoration: none; }
+.rel-english a:hover { color: var(--fg); }
 .rel-more { display: inline-block; margin-top: 1.2rem; color: var(--muted); font: .8rem var(--mono); text-decoration: none; }
 .rel-more:hover { color: var(--fg); }
 .cl-older { display: flex; margin: 0 auto; }
+.cl-older[hidden] { display: none; }
