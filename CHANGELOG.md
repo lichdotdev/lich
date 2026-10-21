@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - An agent's `git commit`, `rebase` or `stash` no longer fails now and then with "Unable to create '.git/index.lock': File exists" because lich was reading that checkout's status or diff at the same moment. lich's reads leave the index alone.
+- Ctrl+Z in a session no longer freezes its agent for good. It used to suspend the agent, and nothing in lich could bring it back; lich now keeps the key from the session.
 - The bars in the plan usage tooltip, in the footer, show their empty track again on themes whose popover and muted colors are the same, such as Everforest, where only the filled part was drawn.
 
 ## [0.74.0] - 2026-10-20

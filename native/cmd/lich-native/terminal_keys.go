@@ -7,13 +7,24 @@ import (
 )
 
 // terminalKeyBytes is what a key press sends to a session: the chords of the
-// "Passed through to the agent" group as the bytes the agent binds, and every
-// other key as the terminal's encoder spells it.
+// "Passed through to the agent" group as the bytes the agent binds, nothing
+// for Ctrl+Z, and every other key as the terminal's encoder spells it.
 func terminalKeyBytes(vt *gioterm.Terminal, e key.Event, goos string) []byte {
+	if isSuspendChord(e) {
+		return nil
+	}
 	if b := passedThroughChord(e, goos); b != "" {
 		return []byte(b)
 	}
 	return vt.HandleKey(e)
+}
+
+// isSuspendChord is Ctrl+Z, which stops the agent (SIGTSTP from the line
+// discipline, or the agent's own suspend under the kitty protocol). The agent
+// is the PTY's only process, with no shell to send the SIGCONT back, so one
+// stray press left the session frozen for good.
+func isSuspendChord(e key.Event) bool {
+	return e.Modifiers == key.ModCtrl && e.Name == "Z"
 }
 
 func passedThroughChord(e key.Event, goos string) string {
