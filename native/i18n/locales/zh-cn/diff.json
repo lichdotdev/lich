@@ -16,7 +16,8 @@
       "other": "{count} 条评论"
     },
     "clear": "清空",
-    "send": "发送"
+    "send": "发送",
+    "sendFailed": "无法发送评论"
   },
   "diffBulk": {
     "collapseAll": "折叠所有文件",

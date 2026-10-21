@@ -57,6 +57,7 @@ type reviewPanel struct {
 	code    godemirror.Theme
 	target  string
 	inject  func(string) bool
+	submit  func(string) bool
 	shown   *diffRead
 	splitOK bool
 
@@ -149,7 +150,7 @@ func (p *reviewPanel) holdsKeys(gtx C) bool {
 // working-tree diff, and the comment batch at its foot.
 func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
 	p.th, p.light, p.code, p.target = th, in.light, in.code, in.checkout
-	p.inject = in.inject
+	p.inject, p.submit = in.inject, in.submit
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())
 	p.takeAnswers()
@@ -164,7 +165,7 @@ func (p *reviewPanel) bodyWithBatch(gtx C, th *ui.Theme) error {
 			p.panelBody(gtx, th)
 			return D{Size: gtx.Constraints.Max}
 		}),
-		layout.Rigid(func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.inject, p.notify) }),
+		layout.Rigid(func(gtx C) D { return p.batch.layout(gtx, th, p.comments, p.target, p.submit, p.notify) }),
 	)
 	return nil
 }

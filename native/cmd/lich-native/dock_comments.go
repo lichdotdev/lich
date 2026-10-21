@@ -17,10 +17,10 @@ package main
 //	c.layout(gtx, th, comments, target)           // the box; files into comments on Add, closes itself
 //
 //	var b commentBatch                            // the strip at a panel's foot
-//	b.layout(gtx, th, comments, target, inject, notify)
+//	b.layout(gtx, th, comments, target, submit, notify)
 //	                                              // nothing at all while the batch is empty
 //
-// inject writes text into the active session's PTY and reports whether a
+// submit sends text as the active session's prompt and reports whether a
 // session took it; the batch is cleared only then. notify raises a toast.
 
 import (
@@ -86,9 +86,8 @@ func (s *commentStore) clear(target string) { delete(s.byTarget, target) }
 // store's: read it, don't keep it across a change.
 func (s *commentStore) list(target string) []reviewComment { return s.byTarget[target] }
 
-// composeReviewComments is the batch as one terminal write: a markdown list,
-// each item anchored the way an inject writes a line reference, wrapped as a
-// paste so its newlines are not sends.
+// composeReviewComments is the batch as one prompt: a markdown list, each item
+// anchored the way an inject writes a line reference.
 func composeReviewComments(list []reviewComment, note string) string {
 	items := make([]string, 0, len(list)+1)
 	for _, c := range list {
@@ -101,7 +100,7 @@ func composeReviewComments(list []reviewComment, note string) string {
 	if note = strings.TrimSpace(note); note != "" {
 		items = append(items, "- "+continuation(note))
 	}
-	return bracketedPaste(i18n.Prompt("prompts.reviewComments.header") + "\n\n" + strings.Join(items, "\n"))
+	return i18n.Prompt("prompts.reviewComments.header") + "\n\n" + strings.Join(items, "\n")
 }
 
 // continuation keeps a multi-line comment one list item.
@@ -275,11 +274,11 @@ type commentBatch struct {
 const batchListMax = unit.Dp(160)
 
 // layout draws the strip for target's batch, or nothing while it is empty.
-// inject writes into the session's PTY and reports whether one took it; the
-// comments are the one thing here the user typed, so a refused send keeps
-// them and says why through notify.
-func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target string, inject func(string) bool, notify func(ui.Toast)) D {
-	b.update(gtx, store, target, inject, notify)
+// submit sends the batch as the session's prompt and reports whether one took
+// it; the comments are the one thing here the user typed, so a refused send
+// keeps them and says why through notify.
+func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target string, submit func(string) bool, notify func(ui.Toast)) D {
+	b.update(gtx, store, target, submit, notify)
 	comments := store.list(target)
 	if len(comments) == 0 {
 		return D{}
@@ -301,7 +300,7 @@ func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target s
 }
 
 // update runs the strip's clicks against the store before it is drawn.
-func (b *commentBatch) update(gtx C, store *commentStore, target string, inject func(string) bool, notify func(ui.Toast)) {
+func (b *commentBatch) update(gtx C, store *commentStore, target string, submit func(string) bool, notify func(ui.Toast)) {
 	b.note.SingleLine, b.note.Submit = true, true
 	for {
 		ev, ok := b.note.Update(gtx)
@@ -323,7 +322,7 @@ func (b *commentBatch) update(gtx C, store *commentStore, target string, inject 
 		b.drop(store, target)
 	}
 	if b.send.Clicked(gtx) {
-		if !inject(composeReviewComments(store.list(target), b.note.Text())) {
+		if !submit(composeReviewComments(store.list(target), b.note.Text())) {
 			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.openSession")})
 			return
 		}

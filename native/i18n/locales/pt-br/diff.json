@@ -16,7 +16,8 @@
       "other": "{count} comentários"
     },
     "clear": "Limpar",
-    "send": "Enviar"
+    "send": "Enviar",
+    "sendFailed": "Não foi possível enviar os comentários"
   },
   "diffBulk": {
     "collapseAll": "Recolher todos os arquivos",

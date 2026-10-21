@@ -15,7 +15,8 @@
       "other": "코멘트 {count}개"
     },
     "clear": "비우기",
-    "send": "보내기"
+    "send": "보내기",
+    "sendFailed": "댓글을 보내지 못했습니다"
   },
   "diffBulk": {
     "collapseAll": "모든 파일 접기",

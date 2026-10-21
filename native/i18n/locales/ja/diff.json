@@ -16,7 +16,8 @@
       "other": "{count} 件のコメント"
     },
     "clear": "クリア",
-    "send": "送信"
+    "send": "送信",
+    "sendFailed": "コメントを送信できませんでした"
   },
   "diffBulk": {
     "collapseAll": "すべてのファイルを折りたたむ",

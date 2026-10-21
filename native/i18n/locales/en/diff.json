@@ -16,7 +16,8 @@
       "other": "{count} comments"
     },
     "clear": "Clear",
-    "send": "Send"
+    "send": "Send",
+    "sendFailed": "Couldn't send the comments"
   },
   "diffBulk": {
     "collapseAll": "Collapse all files",

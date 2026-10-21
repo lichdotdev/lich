@@ -13,7 +13,10 @@ import (
 //
 // Only a provider session takes one: at a shell's prompt the Enter would run
 // the message as a command. A session not running yet is refused, so a caller
-// opening one waits for its prompt first.
+// opening one waits for its prompt first. message is sanitized the way a
+// relayed prompt is: it carries text strangers wrote (an issue body, a
+// comment), and an ESC[201~ in it would close the paste and type the rest as
+// keys.
 func (s *Service) Submit(sessionID, message string) error {
 	sess, ok := s.sessionOf(sessionID)
 	if !ok {
@@ -25,5 +28,5 @@ func (s *Service) Submit(sessionID, message string) error {
 	if !s.term.Live(sessionID) {
 		return fmt.Errorf("%q is not running", sess.Label)
 	}
-	return s.deliver(sessionID, message, nil)
+	return s.deliver(sessionID, sanitize(message), nil)
 }

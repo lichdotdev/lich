@@ -46,7 +46,7 @@ func TestPromptsFollowThePromptLanguage(t *testing.T) {
 	defer i18n.SetCurrent(i18n.EN)
 	defer i18n.SetPromptLanguage(i18n.EN)
 	got := composeReviewComments([]reviewComment{{txt: "x"}}, "")
-	want := bracketedPaste(i18n.In(i18n.PtBR, "prompts.reviewComments.header") + "\n\n- x")
+	want := i18n.In(i18n.PtBR, "prompts.reviewComments.header") + "\n\n- x"
 	if got != want {
 		t.Errorf("composeReviewComments = %q, want %q", got, want)
 	}

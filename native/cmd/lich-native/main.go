@@ -605,7 +605,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.pulls.open && !v.home {
-						u.pulls.files = filesInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), checkout: v.in.path, light: u.light, code: u.code}
+						u.pulls.files = filesInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, light: u.light, code: u.code}
 						u.pulls.squareX = -1
 						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans, islandsSliding: u.pulls.slide.sliding()}); ok {
 							u.pulls.squareX = x
@@ -759,7 +759,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code}
+	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code}
 	save, err := d.layout(gtx, u.theme, &u.root, in)
 	if save {
 		rem := u.dock.widthRem

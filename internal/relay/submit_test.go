@@ -35,6 +35,19 @@ func TestSubmitHandsItToTheModWhereOneIsAttached(t *testing.T) {
 	}
 }
 
+func TestSubmitCannotCloseItsOwnPaste(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("agent")
+	svc := newRelay(merging(), term, nil)
+
+	if err := svc.Submit("agent", "evil\x1b[201~rm -rf /\r"); err != nil {
+		t.Fatalf("Submit = %v, want nil", err)
+	}
+	if writes := term.writesTo("agent"); len(writes) == 0 || writes[0] != "\x1b[200~evil[201~rm -rf /\x1b[201~" {
+		t.Errorf("writes = %q, want the escape and the CR stripped inside the paste", writes)
+	}
+}
+
 func TestSubmitRefusesWhatCannotTakeAPrompt(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("shell")

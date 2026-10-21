@@ -111,7 +111,7 @@ func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error
 			}
 			return c.browse(gtx, th)
 		}),
-		layout.Rigid(func(gtx C) D { return c.batch.layout(gtx, th, c.comments, in.checkout, inject, c.notify) }),
+		layout.Rigid(func(gtx C) D { return c.batch.layout(gtx, th, c.comments, in.checkout, in.submit, c.notify) }),
 	)
 	return err
 }

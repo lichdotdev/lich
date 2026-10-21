@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -38,13 +39,8 @@ const (
 // safeToWrite makes text safe to type into the terminal. Nothing wraps an
 // inject, so every control character goes, newline and tab too: a file committed with a
 // newline or an ESC in its name would otherwise send the prompt, or type keys,
-// on the agent's behalf. A block bracketedPaste built (a batch of comments) is
-// unwrapped and wrapped again, which runs the paste's rule over its inside
-// rather than eating the wrapper's own escapes.
+// on the agent's behalf.
 func safeToWrite(text string) string {
-	if strings.HasPrefix(text, pasteStart) && strings.HasSuffix(text, pasteEnd) && len(text) >= len(pasteStart)+len(pasteEnd) {
-		return bracketedPaste(text[len(pasteStart) : len(text)-len(pasteEnd)])
-	}
 	return strings.Map(func(r rune) rune {
 		if r < 0x20 || r == 0x7f {
 			return -1
@@ -54,28 +50,46 @@ func safeToWrite(text string) string {
 }
 
 // injector is what writes into session id's PTY, false with
-// no session to take it. A batch of comments is a paste, unfolded where the
-// provider would fold it. The write runs off the UI goroutine.
+// no session to take it. The write runs off the UI goroutine.
 func (ts *terminals) injector(id string) func(string) bool {
 	return func(text string) bool {
 		if id == "" {
 			return false
 		}
 		go func() {
-			ctx := context.Background()
-			safe := safeToWrite(text)
-			var err error
-			if strings.HasPrefix(safe, pasteStart) {
-				err = ts.writePaste(ctx, id, safe)
-			} else {
-				err = ts.client.Write(ctx, id, safe)
-			}
-			if err != nil {
+			if err := ts.client.Write(context.Background(), id, safeToWrite(text)); err != nil {
 				log.Printf("inject: %v", err)
 			}
 		}()
 		return true
 	}
+}
+
+// submitter is what sends text as session id's prompt, false with no agent
+// session to take it: a shell's Enter would run the text as a command. The
+// send runs off the UI goroutine, and what the backend refuses after that (a
+// session that stopped) is told in a toast.
+func (ts *terminals) submitter(id string) func(string) bool {
+	return func(text string) bool {
+		if id == "" || ts.kindOf(id) == "shell" {
+			return false
+		}
+		go func() {
+			if err := ts.client.Submit(context.Background(), id, text); err != nil {
+				ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.sendFailed"), Description: lichclient.ErrorText(err)})
+			}
+		}()
+		return true
+	}
+}
+
+func (ts *terminals) kindOf(id string) string {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	if t, ok := ts.byID[id]; ok {
+		return t.kind
+	}
+	return ""
 }
 
 // reviewCommentEntry is InjectMenu's comment on the pull request, offered on

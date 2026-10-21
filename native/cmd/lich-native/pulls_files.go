@@ -68,7 +68,7 @@ type filesTree struct {
 // checkout, whose comment batch the tab shares with the dock.
 type filesInput struct {
 	sessionID, checkout string
-	inject              func(string) bool
+	inject, submit      func(string) bool
 	light               bool
 	code                godemirror.Theme
 }
@@ -118,7 +118,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PR
 	}
 	in := p.files
 	files.th, files.light, files.code, files.target = th, in.light, in.code, in.checkout
-	files.inject = in.inject
+	files.inject, files.submit = in.inject, in.submit
 	read := p.store.diff(p.project.Path, d.Number)
 	switch {
 	case !read.loaded:

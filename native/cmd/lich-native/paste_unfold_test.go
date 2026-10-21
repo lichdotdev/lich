@@ -115,37 +115,30 @@ func claudeTerminals(t *testing.T, b *gateBackend) *terminals {
 	return ts
 }
 
-// A batch of review comments is long enough for Claude Code to fold, and
-// with Unfold long pastes on it lands pasted twice, which unfolds the chip.
-func TestBatchOfCommentsUnfoldsInClaudeCode(t *testing.T) {
+// A batch of review comments is sent as the session's prompt, never left
+// pasted for the user to send.
+func TestBatchOfCommentsIsSubmitted(t *testing.T) {
 	b := newGateBackend(t)
-	b.answer["store.GetSetting"] = "true"
 	ts := claudeTerminals(t, b)
-	batch := composeReviewComments([]reviewComment{
-		{path: "a.go", lines: "1", txt: "one"},
-		{path: "b.go", lines: "2", txt: "two"},
-		{path: "c.go", lines: "3", txt: "three"},
-	}, "")
-	if !ts.injector("s")(batch) {
-		t.Fatal("inject refused")
+	batch := composeReviewComments([]reviewComment{{path: "a.go", lines: "1", txt: "one"}}, "")
+	if !ts.submitter("s")(batch) {
+		t.Fatal("submit refused")
 	}
-	if got := injectedWrite(t, b); got != batch+batch {
-		t.Errorf("wrote %q, want the batch twice", got)
-	}
-}
-
-func TestBatchOfCommentsStaysFoldedWithTheSwitchOff(t *testing.T) {
-	b := newGateBackend(t)
-	b.answer["store.GetSetting"] = ""
-	ts := claudeTerminals(t, b)
-	batch := composeReviewComments([]reviewComment{
-		{path: "a.go", lines: "1", txt: "one"},
-		{path: "b.go", lines: "2", txt: "two"},
-		{path: "c.go", lines: "3", txt: "three"},
-	}, "")
-	ts.injector("s")(batch)
-	if got := injectedWrite(t, b); got != batch {
-		t.Errorf("wrote %q, want the batch once", got)
+	select {
+	case call := <-b.calls:
+		var args []string
+		body, found := strings.CutPrefix(call, "relay.Submit ")
+		if !found {
+			t.Fatalf("called %s, want relay.Submit", call)
+		}
+		if err := json.Unmarshal([]byte(body), &args); err != nil {
+			t.Fatal(err)
+		}
+		if len(args) != 2 || args[0] != "s" || args[1] != batch {
+			t.Errorf("relay.Submit %q, want [s %q]", args, batch)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("no relay.Submit")
 	}
 }
 

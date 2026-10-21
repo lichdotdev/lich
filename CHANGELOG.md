@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A Markdown file open in the Code tab has the same preview button as in the Review tab, beside the read-only mark, and shows the file rendered, tables and links included, in place of its source. Click it again to go back to the source. Another file opens as its source.
 
+### Changed
+
+- Send on a batch of review comments, in the Review and Code tabs and on the Pulls screen, sends them to the session as its prompt, where they used to wait at the prompt for an Enter. A shell session keeps the comments, since there an Enter would run them as a command.
+
 ## [0.75.0] - 2026-10-21
 
 ### Added

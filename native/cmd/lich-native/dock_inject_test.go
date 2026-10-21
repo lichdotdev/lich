@@ -20,17 +20,6 @@ func TestSafeToWriteDropsEveryControlCharacter(t *testing.T) {
 	}
 }
 
-func TestSafeToWriteRewrapsAPasteRatherThanEatingIt(t *testing.T) {
-	got := safeToWrite(bracketedPaste("one\ntwo") + "")
-	if got != "\x1b[200~one\ntwo\x1b[201~" {
-		t.Errorf("paste = %q", got)
-	}
-	evil := "\x1b[200~x\x1b[201~y\x1b[201~"
-	if got := safeToWrite(evil); got != "\x1b[200~x[201~y\x1b[201~" {
-		t.Errorf("an inner close survived: %q", got)
-	}
-}
-
 func TestInjectEntriesNeedASelectionForLinesAndComment(t *testing.T) {
 	var wrote string
 	inject := func(s string) bool { wrote = s; return true }
@@ -56,6 +45,13 @@ func TestInjectEntriesNeedASelectionForLinesAndComment(t *testing.T) {
 func TestDockInjectorRefusesWithoutASession(t *testing.T) {
 	if (&terminals{}).injector("")("x") {
 		t.Error("a session-less inject reported taken")
+	}
+	if (&terminals{}).submitter("")("x") {
+		t.Error("a session-less submit reported taken")
+	}
+	shell := &terminals{byID: map[string]*termView{"s": {id: "s", kind: "shell"}}}
+	if shell.submitter("s")("x") {
+		t.Error("a submit to a shell reported taken")
 	}
 }
 
