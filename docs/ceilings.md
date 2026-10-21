@@ -5,63 +5,53 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 `CHANGELOG.md`; this file is the trap alone. Provider-specific behaviour is reference, not a trap, and lives in
 [`providers/`](providers/).
 
-- **A project's gh account governs gh, not git**: `vcs.account` (`internal/project/ghaccount.go`) puts one
-  account's token in `GH_TOKEN` for every gh call lich makes for that project. A push still rides the remote's
-  ssh key and signs with the global `user.email`, so a PR can be *read* by one account and its commits *land*
-  under another. lich never writes `user.email`, and the Version Control settings still print both identities
-  without comparing them — noreply forms, vanity domains and org aliases make a string comparison a
-  false-positive farm. The Commits tab of the Pulls screen lists each commit's author and compares it with
-  nothing either, so a branch built under the wrong identity says so nowhere in lich.
-- **A closed card outlives its session by 180ms** (`native/cmd/lich-native/sidebar_closing.go`, `exitDuration`):
-  the card animates out, so the closed session is held and drawn for the length of that exit. For those frames
-  the sidebar draws a card for a session the state no longer holds, and anything counting or measuring cards
-  sees one card too many.
-- **The prompt language reaches a running session only through lich itself** (`internal/prompt`): text lich
-  composes in its own process (relay messages, nudges) follows the setting at once, but anything composed
-  inside the session (the `lich` CLI, its MCP results, the plugin's hooks) reads `LICH_PROMPT_LANG`, which is
-  fixed when the session spawns. Change the language and an open session can get relay messages in the new
-  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn,
-  and only Claude Code and oh-my-pi receive one at all: they are the two whose command line can append to the
-  system prompt (`briefingFlags`), so the other six read lich's words only in relayed messages. MCP tool
-  descriptions, `--help` and error returns stay English in every language. A usage-limit continuation parked
-  before the setting changed keeps the language it was parked in: the row stores the text, so
-  `isResumePrompt` matches it in every locale.
-- **Some interface text stays English in every language**: the exit marker written into a terminal's scrollback
-  (`exitMarker`, `native/cmd/lich-native/terminal_exit.go`), because it is data in the replay and not a label;
-  the `Session N` label a session gets when nothing names it (`internal/spawn/spawn.go`), because
-  it is persisted and would otherwise change language on the next launch only for the rows made afterwards;
-  every error and the output of `lichclient.ErrorText`, which show backend and library text as it came; the
-  CHANGELOG group labels in the What's new dialog (`native/cmd/lich-native/settings_updates_notes.go`), which
-  render a file that is English;
-  and MCP tool descriptions and the `lich` CLI's `--help`, which agents read and which do not follow the prompt
-  language either.
-- **"Unfold long pastes" copies two providers' fold rules, and nothing tells lich when they move**
-  (`native/cmd/lich-native/paste_unfold.go`, `internal/terminal/paste_unfold.go`): the switch is off until turned
-  on, and for Claude Code and Kiro CLI it predicts the fold from a rule copied out of one measured version
-  (`docs/providers/`, Known limits). Codex, Antigravity, Crush and Cursor CLI fold with a constant and no key that
-  unfolds, so they have no switch, and oh-my-pi was not measured. A paste lich thinks folds and Claude
-  Code does not lands twice, one it thinks does not stays a chip, and a paste into one of Claude Code's own
-  dialogs that does not fold gets the text twice; a paste lich misjudges for Kiro CLI gets a Tab, which in the
-  `/` menu picks an entry. The window also unfolds what it writes as a paste itself (a batch of review comments,
-  a pull request's or an issue's prompt, dropped and attached file paths), measured against the session's own
-  terminal; one written into a session whose terminal the window never opened has no height to measure and lands
-  folded. No caller does that today: each writes into the session on screen, or waits for a session it just
-  opened to reach its prompt, which only happens after the window started its terminal.
+## Spawn, start and resume
+
 - **`LICH_WORKTREE_PORT` is reserved, never held** (`internal/terminal/worktreeport.go`): the number is a name the
   checkout owns, nothing binds it, and anything on the machine can take the port before the dev server starts.
-- **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,
-  `native/cmd/lich-native/sidebar_groups.go`): the folder a card is filed under is a column on the session
-  row, and the name is the whole identity — there is no folder record to point at. A folder exists only while a
-  session carries its name, so the last card leaving ends it; a rename is a write across every session in it,
-  parked rows included (`RenameFolder`), and the block, keyed by the name, remounts with anything keyed off it
-  but the fold (`moveCollapsed`, `native/cmd/lich-native/sidebar_prefs.go`); renaming onto a name the project
-  already holds merges the two folders with no undo; two names differing only by case or a space are two
-  folders; and a folder belongs to one project, since the name is scoped by `project_id`.
-- **An agent files by the name as written, like the window** (`internal/spawn/folders.go`): `lich file`,
-  `lich rename-folder`, `lich color-folder` and their MCP tools match a folder exactly, so an agent that types `auth` beside `Auth`
-  starts a second folder; the tool descriptions send it to `list_folders` first instead of folding case behind
-  the user's back. A rename from there refuses a name no session carries, because the store would report
-  success over nothing, and answers with every session that moved, which is how a merge shows.
+- **A session is ready for work only once its agent reports from its own prompt, where it can**
+  (`internal/terminal/startgate.go`): in a fresh worktree several providers ask a question first (trust the
+  folder, initialize the project), and anything typed then (a relayed task, `lich open --prompt`, a scheduled
+  prompt, an issue or pull request handed over) goes into the question, with the Enter behind it answering it
+  (what each provider then does: `docs/providers/`, Spawn). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI stay
+  unready until their session-start report, which their hooks send only from the agent's prompt. That hold needs
+  lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
+  typed text lands in the question. Codex, Antigravity, Crush and opencode report nothing before their first
+  turn, so a quiet screen is still all lich has for them.
+- **A reasoning effort is refused where the TUI would drop it, and never validated**
+  (`internal/terminal/command.go`, `effortFlags`): `lich open --effort` and `open_session`'s `effort` are refused
+  for opencode, Crush and Cursor CLI, whose interactive CLI takes no level, rather than handing back a session on
+  its default (why each: `docs/providers/`, Spawn). The level itself is never validated,
+  so a misspelled one is each provider's to handle, and most start without a word.
+- **An ultracode turned off inside a Claude Code session comes back on its next restart**
+  (`internal/terminal/command.go`, `ultracodeArgs`): Claude Code drops ultracode on `--resume`, so lich passes it
+  on every spawn (`docs/providers/claude.md`, Spawn), and nothing turns it off for one session while the
+  provider-wide switch is on.
+- **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
+  `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
+  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. Claude
+  Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
+  measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
+  lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into
+  `cli-config.json` as the default for every later `cursor-agent`, so `lich open --kind cursor --model` changes
+  the user's Cursor default too.
+- **Start new leaves the old conversation reachable only through History search**
+  (`native/cmd/lich-native/exit_toast.go`): once the new conversation's session-start report arrives, the backend
+  writes its id over the card's `provider_session_id`, and nothing on the card points back at the old one. Start
+  new asks no confirmation for that reason.
+- **A provider's "trust this folder?" answer is carried only where lich can find the person's own answer,
+  and a confined session is told to skip the question** (`internal/claudeprofile/trust.go`,
+  `internal/terminal/cursor_trust.go`, `antigravity_trust.go`, `crush_init.go`, `confinedEnv` and
+  `confinedTrustArgs` in `internal/terminal/sandbox.go`; each provider in `docs/providers/`, Spawn and Sandbox):
+  before a spawn into a worktree or a profile lich writes a provider's trust for the folder only when the person
+  already trusted it in Personal or trusted its main checkout, and it never trusts a folder nobody trusted. A
+  confined session skips the question, because what it guards against, a folder's own settings running on the
+  machine, is what the sandbox confines; on Cursor CLI and Antigravity skipping it writes the trust down, so a
+  folder once opened confined stays trusted outside the sandbox too. Whether Codex's trust and Cursor CLI's
+  `--trust` loosen anything beyond the question was not measured.
+
+## Session state and hooks
+
 - **The sidebar's state chips read the ring, nothing more** (`native/cmd/lich-native/sidebar_filter.go`):
   Waiting, Running and Unread are the card's amber, spinning and unread green ring, and Idle is everything
   else, a read turn included. A provider that cannot raise a state cannot be filtered into it: Crush
@@ -77,15 +67,84 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   filter is skipped rather than its block unfolded, so a waiting session folded away is reached only through
   its block's mark. The active card never counts: when it is the only one waiting, the chord does nothing and
   goes on to the terminal.
-- **A session is ready for work only once its agent reports from its own prompt, where it can**
-  (`internal/terminal/startgate.go`): in a fresh worktree several providers ask a question first (trust the
-  folder, initialize the project), and anything typed then (a relayed task, `lich open --prompt`, a scheduled
-  prompt, an issue or pull request handed over) goes into the question, with the Enter behind it answering it
-  (what each provider then does: `docs/providers/`, Spawn). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI stay
-  unready until their session-start report, which their hooks send only from the agent's prompt. That hold needs
-  lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
-  typed text lands in the question. Codex, Antigravity, Crush and opencode report nothing before their first
-  turn, so a quiet screen is still all lich has for them.
+- **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
+  `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn when
+  the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session it knows
+  is mid-turn. It is also raised with no keystroke, when a Claude Code mod acks an abort sent from lich and when a
+  usage limit ends a Codex turn (`internal/terminal/limit.go`). It is a guess made from bytes, and it has three
+  edges. A provider session running a tool that owns the terminal — an editor opened through a shell command — takes
+  Escape as the interrupt and clears the ring while the turn is still running; the next report from the provider
+  puts it back. A provider that reports its own abort as the turn finishing wears the solid ring a completed turn
+  does, because the provider's own word outranks the keystroke (opencode, `docs/providers/opencode.md`), and one
+  that reports no state at all has no turn to end (Crush). And an errand the relay delivered survives an interrupt
+  on purpose: stopping a turn is not answering the request, so the sender keeps waiting for the target's next turn
+  rather than being told the work is over.
+- **A finished turn is unread until its own card is watched** (`native/cmd/lich-native/cardstate.go`,
+  `setFocused`): the solid emerald ring means "back from the agent, not read yet", and it
+  fades only for the session whose terminal is on screen **while the window has focus**. A card left focused in a
+  background window keeps its ring solid until the window is touched again, which is the point, but it also means
+  a desktop that reports focus oddly never fades one.
+- **Crush raises no hook at a turn's end, so nothing that waits for `done` fires there** (its only event is
+  `PreToolUse`, 0.98.1; `docs/hooks/session-state.md`). A task handed to a Crush session that ends its turn
+  without answering waits out its ticket (`internal/relay/observe.go`, `turnCandidates`): its database does mark
+  the end (`finish.reason` other than `tool_use` in `.crush/crush.db`), but the conversation id reaches lich only
+  on the first tool call, so a turn that calls no tool has nothing to read, and the asker hears nothing until the
+  ticket's deadline. A pull request a Crush session opens reaches its card only when the window regains focus
+  (`native/cmd/lich-native/gitstate.go` `recheckMissingPR`, `cardstate.go` `setFocused`): `gh pr create` moves
+  neither branch nor HEAD, so a card showing no pull request asks gh again when its session's turn ends. The day
+  Crush ships `Stop`, the existing `report-state.sh done` closes both.
+- **A CLI run as a tool inside a session is told apart by conversation id, and Kiro has none to tell by**
+  (`internal/terminal/nested.go`, docs/hooks/session-state.md "Nested agent CLIs"): a `claude -p` the agent runs
+  inherits the card's `LICH_*` env and reports as it. A state report naming another conversation is dropped, and a
+  session-start naming one is dropped while the card's turn is open. A scripted Kiro CLI run (`--no-interactive`, how
+  an agent runs one) carries no id in any hook payload (measured on 2.21.0), so a nested `kiro-cli` still reports
+  as its host. The
+  start guard reads lich's own turn, so a host lich never sees open cannot use it: a Crush session reports no turn
+  at all, so a nested CLI's start can still move what its card resumes. A plugin older than 0.20 sends no id on state reports, which are then taken as
+  before.
+- **Keep-awake follows the session-state report, and only that** (`internal/awake`, `turnLog.onOpen`): the
+  machine is held out of idle sleep while a hook says a turn is open, so what a provider reports decides whether
+  the machine stays up at all (`docs/providers/`). Linux holds it through `systemd-inhibit --what=idle`: a distro
+  without systemd logs one warning per burst of work and sleeps, and a desktop that ignores logind idle
+  inhibitors sleeps silently. The hold was measured on Linux only; on Windows and macOS CI proves the request
+  is registered (`powercfg /requests`, `pmset -g assertions`), not that the machine stays up.
+- **The two-cards-one-conversation warning reaches only the providers that report an in-app switch**
+  (`internal/terminal/terminal.go` `reportDuplicate`, `native/cmd/lich-native/duplicate.go`): lich learns
+  which conversation a card runs from its session-start report, so a resume typed inside the agent's own app
+  is warned about only once that report names the new id. Some report it only with their next prompt or tool
+  call, so a turn may already have run in both cards, and Cursor CLI and opencode report nothing at all: their
+  row keeps the old id and a restart resumes the conversation the card opened with (each provider's version:
+  `docs/providers/`, Hooks). Reopening from lich itself is not this gap: every door through `store.reopen`
+  focuses the card that holds the conversation.
+- **Only a Claude Code session whose mod polls can be driven, asked, or report for itself** (`spawn.Control`,
+  `spawn.Ask`, `internal/terminal/modcontrol.go`, `modusage.go`, `modstatus.go`; each contract in `docs/hooks/`,
+  mod-control, mod-usage, mod-status and session-state, has its own Known ceilings): mods are a Claude Code
+  feature, from 2.1.280 and only with the lich-plugin mod loaded, 0.15.0 or newer. The other seven providers, and
+  a Claude Code session without the mod, have nothing that runs inside them and polls. So `lich control` and
+  `lich ask` refuse them by provider before anything is queued (no other CLI exposes a fork of its own
+  conversation to anything running inside it), their readout stays the one lich derives, their errands show only
+  in the card's tooltip and inbox mark, and a compaction keeps the finished turn's check or is a spinner with no
+  tool line, which reads as a stuck turn. The traps a caller walks into:
+  - `/model` and `/effort` are refused as slash commands: run through a mod they write `~/.claude/settings.json`,
+    the default for every new session (2.1.288). The `model` and `effort` actions are the per-session route.
+  - A slash command that opens a dialog (`/cost`) holds that session's later slash commands until someone
+    presses Esc in its terminal; lich cannot tell such a command apart before running it.
+  - A session cannot control or ask itself: an abort would end the asking turn, a prompt or a slash command would
+    only run after it, and a question would ride the request it is waiting on.
+  - An ask knows the conversation only as of the last finished model response, cannot be cancelled (past lich's
+    90 seconds the fork runs on, billed, and its answer is dropped), never reaches the session's cost, and is cut
+    at 16,000 characters (2.1.289).
+  - A reported readout wins over the derived one, so two sessions on the same model can disagree by the requests
+    no transcript records (2.7% and 3.1% of a session's cost on 2.1.289). Its cost replaces the conversation's
+    ledger row and drops its sub-agent rows, so a lich restarted before the session's first report re-scans that
+    conversation from the transcript until the report lands again. Only a long-lived token login's plan gauge
+    uses the reported rate limits: a credentials login keeps its usage route, which names the plan, the account
+    and the model-scoped caps a report does not carry.
+  - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
+    since the session's own collect never reaches it.
+
+## Transcripts, cost and plan usage
+
 - **The cost readout bills per `(session, transcript)`** (`internal/pricing`, `internal/terminal/usage_cost.go`): a
   conversation forked inside the PTY bills its copied history twice — lich's own resume continues the same
   transcript and is unaffected — and each sub-agent's own transcript is counted in, so one unreadable or
@@ -141,205 +200,48 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Crush one. The tooltip under the figure says which the session listened to, a turn or a tool call
   (`handsOnDetail`, `native/cmd/lich-native/footer_handson.go`), and not how much that cost the figure. A plain
   shell session is keystrokes-only by design and not a gap: there is no agent in it whose work could be missed.
-- **A split stage puts every pane on the visible cadence** (`internal/terminal/coalescer.go`,
-  `native/cmd/lich-native/terminals.go`, `setVisible`): the coalescer batches a *visible* session's output
-  every 8ms and a hidden one's every 250ms, and until the stage could divide, exactly one session per window
-  was ever visible — `Service.SetVisible` had one true at a time. A layout of eight makes eight,
-  deliberately: a pane nobody demoted is the entire point of opening it. So the window's hot path carries
-  as many streams as there are panes, and anything reasoning about that cadence from the constants alone
-  will read a number that was true for one terminal.
-- **A layout is a free split tree** (`native/cmd/lich-native/layouts.go`, `model_layouts.go`,
-  `stage_layout.go`): a layout is stored under `lich.native.layouts`. A session sits in one pane of one layout, because its PTY has one
-  size; clicking its card anywhere shows it in that layout, while its project's tab shows it alone. A split
-  is refused, with a toast, when a pane would drop under 480dp (51 columns at the default 13sp, measured with
-  Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
-  takes a dropped file; a file dropped on a pane in the background goes nowhere. A pinned card cannot be dragged onto a pane: the
-  pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
-  not SortCarry targets (`layouts_drag.go`): a new drop target over the stage belongs there, not in the carry.
-  Show beside lays out only the delegates that fit the 180dp pane
-  floor, counted from where the panes were drawn the frame before (`columnRoom`); the rest stay out and
-  the pane header offers them. Its footer item is not an item of the Footer layout, so Settings can neither
-  move nor hide it: it shows only while the session, in no layout, has delegates.
-- **A theme switch reaches only the apps that asked** (`native/gioterm/scheme.go`, `setScheme`): lich answers
-  mode 2031 and sends the light or dark report on a switch, only to a terminal whose app turned the mode on. An
-  app that reads the background once at boot keeps the old look until it restarts: Codex, Antigravity and Kiro
-  CLI do, and Crush reads it not at all.
-- **Only zsh, bash and fish get their prompt cleared on a resize** (`internal/shellintegration`,
-  `native/gioterm/prompt.go`): a shell session's shell is started with scripts that mark its prompt with
-  OSC 133 and ask the terminal to clear it on a resize (`redraw=1`, `redraw=last` for bash, which redraws only
-  the last line). sh, PowerShell and a shell started by hand inside a session are unmarked, and a prompt line
-  as wide as the terminal (a right prompt) leaves its wrapped head on screen after a narrowing, the way any
-  terminal without shell integration does. Agent sessions are untouched: they run no shell rc and draw their
-  own screen. The scripts are rewritten under lich's config dir at every start, so two lich builds running at once
-  share the newer one's. bash marks where a command's output starts from `PS0`, which it has since 4.4: the bash 3.2 macOS
-  ships marks its prompt but not that, which the resize clearing does not need.
-- **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
-  `hookstate.go`, `Service.noteInterrupt`): Claude Code, Codex and oh-my-pi all skip the hook that ends a turn when
-  the user stops one, so lich publishes `interrupted` itself when a lone Ctrl+C or Escape reaches a session it knows
-  is mid-turn. It is also raised with no keystroke, when a Claude Code mod acks an abort sent from lich and when a
-  usage limit ends a Codex turn (`internal/terminal/limit.go`). It is a guess made from bytes, and it has three
-  edges. A provider session running a tool that owns the terminal — an editor opened through a shell command — takes
-  Escape as the interrupt and clears the ring while the turn is still running; the next report from the provider
-  puts it back. A provider that reports its own abort as the turn finishing wears the solid ring a completed turn
-  does, because the provider's own word outranks the keystroke (opencode, `docs/providers/opencode.md`), and one
-  that reports no state at all has no turn to end (Crush). And an errand the relay delivered survives an interrupt
-  on purpose: stopping a turn is not answering the request, so the sender keeps waiting for the target's next turn
-  rather than being told the work is over.
-- **A diff's context expander reads GitHub, one round-trip per gap** (`internal/project/filelines.go`):
-  `FileLines` tries the local object first and asks the contents API when the clone does not have it, which
-  on the Pulls screen is the normal case — the branch under review is usually not one this clone ever
-  fetched. The call site is a promise from an RPC, so nothing there says a click costs a network round-trip
-  and a rate-limit unit against the project's gh token. Anything that multiplies the clicks multiplies
-  that: prefetching a file's gaps on mount, incremental ±20 stepping, or an "expand everything" control
-  would each turn one reader's file into dozens of calls. The per-request line cap is the only bound, and
-  a gap wider than it is several calls already. Two things follow from the same shape. The expander needs
-  the revision the diff's new side stands at, so a source that cannot name one has no expander at all
-  rather than a wrong one — a pull request whose detail carries no commits.
-  And there is no expanding *past the last hunk*: a unified diff carries
-  no file length, so nothing here knows whether anything follows it, and an affordance drawn there would
-  be a no-op on every file whose change reaches the end.
-- **An image preview reads only what this clone holds** (`internal/project/blob.go`): `/blob` serves the
-  working tree, `HEAD` or a tree object, and has no GitHub fallback the way `FileLines` does, so the Pulls
-  screen still prints "Binary file". Adding it there takes two reads this endpoint does not make: the head blob
-  from the contents API, and the old side at the merge base, which gh does not report (`baseRefOid` is the base
-  branch's tip, and an image the base also changed would show the wrong "before"). SVG is refused on purpose:
-  git diffs it as text, and the window has no SVG renderer. One side
-  is capped at `maxPreviewBytes` (20 MiB) and held whole in memory, and a Git LFS file shows the pointer's
-  text diff, never the image. The window decodes in Go (`native/cmd/lich-native/blob_preview.go`) and `/blob` serves only what it
-  decodes: PNG, JPEG, GIF (its first frame only), WebP and BMP, so AVIF, ICO, HEIC, TIFF and PSD show the
-  no-preview state. It refuses an
-  image whose header claims more than 40 MP before decoding it, holds it scaled to 2048 px on its longest
-  side (no zoom), and never draws a PDF: Open in default app (`system.OpenFile`) reaches only a file in the
-  working tree, so the old side of a change and a pull request's file have no way out but GitHub's page.
-- **A Markdown preview shows the file's new version, never the change** (`native/cmd/lich-native/dock_review_markdown.go`):
-  the Review card's preview renders the whole file as the Pulls screen renders a PR body, with nothing marking
-  what was added or removed, no line to hang a review comment on and no selection to inject. It reads the
-  working tree (`project.ReadFile`, as the Code tab does), so on the Pulls screen only an added file, whose patch is the whole file, has a
-  preview; an edited one has no toggle for the same reason an image there has no preview. A relative image
-  shows its alt text (x/markdown fetches nothing) and raw HTML prints as text. A new version of the file puts
-  the card back on its diff, as it reopens or folds a card by its size.
-- **A line revert rebuilds its patch, and some of it cannot be done** (`internal/project/revertlines.go`): the
-  panel sends line numbers and the text it drew, never a patch, so a file that moved since the draw is refused
-  instead of reverting whatever those numbers point at now. The index is reverted with the working tree when it
-  holds the change; when it holds a third version of the same lines (staged, then edited again) the revert is
-  refused whole and Discard is the way out. A renamed file offers no line revert, since its old side lives under
-  a path the one-file diff cannot see. The Undo is the reversed patch the window keeps for as long as the toast
-  is on screen (`revertUndoFor`, `native/cmd/lich-native/dock_review.go`); nothing on disk records it after that. And a revert does exactly the lines it
-  names: reverting part of a block can leave code that no longer compiles, which is the reader's call to make.
-- **A finished turn is unread until its own card is watched** (`native/cmd/lich-native/cardstate.go`,
-  `setFocused`): the solid emerald ring means "back from the agent, not read yet", and it
-  fades only for the session whose terminal is on screen **while the window has focus**. A card left focused in a
-  background window keeps its ring solid until the window is touched again, which is the point, but it also means
-  a desktop that reports focus oddly never fades one.
-- **A session close is a hang-up on Unix and a Ctrl+C on Windows** (`internal/terminal/pty_unix.go`,
-  `pty_windows.go`): closing a card signals the agent and gives it `closeGrace` to leave, so its exit path runs —
-  hooks, transcripts, whatever it writes on the way out. A ConPTY has no signal to deliver, so Windows sends the
-  terminal's own Ctrl+C instead, and that is a weaker ask: an agent whose TUI reads one Ctrl+C as "interrupt the
-  turn" and wants a second one to quit — Claude Code does — is still killed when the grace runs out, and nothing
-  on screen says so. That the byte arrives at all depends on `heedCtrlC`: a lich started by a service passes an
-  inherited "ignore Ctrl+C" to every agent it spawns, and clearing it before the first spawn is what the Windows
-  close rests on.
-- **The shell-env pty read ends on a printed end marker, not on the child's exit, and Windows never gets one**
-  (`internal/terminal/shellenv_unix.go`, `runShellDump`): resolving PATH and friends runs the login shell on a
-  pty rather than a pipe so an rc guarded on `[ -t 0 ]`/`tty -s` (nvm's and fnm's own init, among others) loads —
-  but neither closing that pty from another goroutine nor `SetReadDeadline` interrupts a read already blocked in
-  it (both measured directly against a blocked read: Close returns without error and the read stays parked in
-  the kernel regardless, and the deadline is never enforced on this fd). So the read is driven from a goroutine
-  free to outlive the call, and the dump is `echo <start>; env; echo <end>`: the read returns the moment the end
-  marker arrives, which is what lets an rc that backgrounds a job (an `ssh-agent`/`gpg-agent` eval, a prompt
-  tool) still hand back the dump instead of paying the full `shellEnvTimeout`. Two edges follow. A shell that
-  never prints the end marker (a hung rc, a prompt waiting on input, an
-  unanswered privacy prompt) is bounded only by the 5s ceiling, and a dump cut there is discarded whole rather
-  than merged half-read. A shell still alive after printing it (a slow `.zlogout`, an rc that `exec`s into
-  something holding the pty) also waits out the 5s, dump kept: the read ends on the marker *and* the shell's
-  exit, because the marker alone called a shell milliseconds from exiting parked and refused the next
-  resolution. And the reader goroutine outlives the call for whatever still holds the pty: the fd,
-  the goroutine and the zombie child persist until that holder exits on its own or lich itself does, one leak
-  per resolution that hits this edge, not a recurring one.
-  And **Windows gets none of this**: `SHELL` is normally unset there, so `ResolveShellEnv` returns before
-  `shellenv_windows.go`'s pipe-based `runShellDump` ever runs — but on a machine where the user sets it anyway
-  (Git Bash, a POSIX-ish shell reached through PATH), that path still runs over a pipe, so an rc guarded the
-  same way is skipped there, with no ConPTY wired in to close the gap.
-- **A session's cwd readout names the host it cannot see into, and only Unix has one to name**
-  (`internal/terminal/cwd.go`, `cwd_unix.go`, `cwd_windows.go`): the directory is polled off the terminal's
-  foreground process group, and a foreground job that is itself hosting the shell somewhere else (tmux, ssh, a
-  container) has a directory of its own that is readable and wrong. The unix readers match that job's comm
-  against `shellHosts` and publish the host with no path, so the card, its tooltip and the footer draw
-  `cwd unknown · inside tmux` rather than a real local directory nobody is standing in. Windows has no
-  foreground process group to read a comm from and so has no host to report: a session hosted elsewhere there
-  goes on naming a local path that is not where the user is typing, with nothing on screen saying so. There is
-  no Windows hardware here to build the replacement against.
-- **The worktree setup script answers to the main checkout, never the new branch**
-  (`internal/project/setup.go`): improve `.lich/setup-worktree.sh` on a feature branch and fresh worktrees keep
-  running the old one until the change reaches the checkout the project points at.
-- **A worktree off a local branch waits on a fetch first** (`internal/spawn/spawn.go` `newerOf`,
-  `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
-  base's upstream to start from the newer of the two, so against a remote that does not answer the session
-  appears only once the fetch gives up (`baseFetchBudget`, 60s). A failed fetch starts from the local branch,
-  which may be behind without anything saying so. The create reuses that fetch for `baseRefReuse` (15s,
-  `internal/project/worktree.go`) instead of fetching again, so a commit pushed in between is not in the
-  worktree.
-- **A working-tree row carries what git can name, and nothing else**
-  (`internal/project/carry.go`): the copy is `git diff HEAD --binary` applied to the new checkout plus the
-  untracked files `--exclude-standard` lists. What `.gitignore` covers is not carried from the forked
-  session at all — and the fork is not without it either, which is the trap: `seedWorktree` copies the
-  ignored files the project names (`.env*`, or `.worktreeinclude`) out of the **main checkout** into every
-  new worktree, so an ignored file the forked session had edited arrives as the main checkout's version of
-  it, silently disagreeing with the tracked work that came from the fork. `node_modules` and the rest of
-  the build output are the setup script's, as always. Everything arrives
-  unstaged: which changes the source had staged is a fact about the commit *it* is preparing. The row is
-  offered only when the base is the forked session's own branch, because the patch is read against that
-  checkout's HEAD; picking any other base branches off it at its last commit, the way every fork did before.
-  And it rides on the fork entry itself, so the five providers whose CLI only resumes (README's provider
-  table) cannot reach it either.
-  The **+** dialog offers the same row for the project's own checkout, never preselected. The ignored-file
-  trap does not apply there, because `seedWorktree` reads the same checkout the copy does, and no provider is
-  out, because the worktree exists before any session opens on it. What it adds is a snapshot that is not
-  atomic: a session still writing in that checkout while the diff is read and the untracked files are copied
-  can leave the new worktree with a mix of two moments. The source is only ever read, never cleaned, so
-  nothing is lost there.
-- **git status is polled**: every shown path is re-read each `gitPoll` (`native/cmd/lich-native/model.go`,
-  `pollGit`); the lich plugin's `session-touched` hook nudges an immediate refresh.
-- **A read must not write the index** (`internal/project/git.go`, `readOnlyGit`): git status and git diff refresh a
-  stat-stale index and take `.git/index.lock` to save it, so a poll that does so fails an agent's own `git commit`
-  in the same checkout on "index.lock: File exists" (measured at 5% of commits against a busy poll). `gitQuiet`
-  and `readGit` run every call as `readOnlyGit`. A new call that diffs or stats the work tree goes through one of
-  them, never plain `runGit`; `--no-optional-locks` alone is not enough, because porcelain diff ignores it and
-  only stops refreshing with `diff.autoRefreshIndex=false`.
-- **The status badge has a single source** (`internal/project/status.go`): the branch, the HEAD commit and the
-  dirty count all come out of one `git status --porcelain=v2 --branch` parse. A git release that changes those
-  records breaks all three together rather than one at a time, and there is no second call left to disagree with
-  the first — `Branch` still asks `symbolic-ref`, but nothing on the polled path calls it.
+- **The plan gauge answers to undocumented routes, and three providers have none** (`internal/quota`; each route
+  is in `docs/providers/`, Account): every route is what a provider's own CLI or dashboard polls, and none is
+  published API. oh-my-pi, Crush and Kiro CLI report no plan lich can read, and opencode reports one only for an
+  OpenCode Go subscription. A field renamed upstream drops the window it fed rather than
+  raising anything, so a new kind of limit is invisible instead of wrong. lich reads those logins and never
+  writes them: it does not refresh a token, so an expired one reads as signed out until the provider's own CLI
+  rotates it. A reading is cached for five minutes because the endpoints rate-limit hard; the number on screen is
+  up to that old, and nothing on it says so.
+- **A turn a usage limit stopped is picked back up on two providers only** (`internal/terminal/limit.go`,
+  `internal/relay/resume.go`): Claude Code and Codex are the two that write the limit down with its reset. On
+  Antigravity, Crush, Cursor CLI and Kiro CLI nothing marks a limit at all, so the card keeps spinning until the
+  next prompt; opencode and oh-my-pi retry by themselves and lich adds nothing on top. Claude Code's end arrives
+  only as `StopFailure`, which an older lich-plugin does not report. Codex raises no hook for it, so an open
+  Codex turn is read off its rollout every 30 seconds, and the limit is *inferred*: a turn completing with
+  nothing said right after a window shows 100% spent (measured on `codex exec` 0.144.5, never on the TUI); a
+  change to that shape stops the read without a word. The continuation is a scheduled prompt told apart from a
+  person's by its exact text, so someone parking those same words has them dropped on the session's next turn.
+  Nothing is parked for a reset already past or more than 24 hours out (Claude Code's own auto-continue gives up
+  at the same horizon), nor over a prompt already parked there. Any turn starting before it is due drops it,
+  which is also what keeps it from landing behind Claude Code's own `autoContinueAtUsageLimit`, a setting the
+  server enables per account, which is why the prompt is due two minutes after the reset rather than at it. The
+  window draws neither the limit nor the parked prompt on the card.
+- **The pace marker is borrowed calibration, and it is silent far more often than it is wrong**
+  (`internal/quota/pace.go`): the two numbers that decide when a weekly window is marked as spending ahead —
+  fifteen percentage points past the elapsed share, and no marking at all in the first twenty-four hours after
+  a reset — are the claude-swap project's measurements (`src/claude_swap/pace.py`, its issue #125), not lich's
+  own. Nothing here has been tuned against a lich user's accounts. The consequence to know before debugging a
+  marker that "never appears": a window ninety percent spent on the first day of its cycle is deliberately
+  unmarked, because just after a reset the elapsed share is near zero and almost any use at all would read as
+  far ahead. Only the weekly window is paced, so the five-hour one and Codex's monthly free-tier window carry
+  no marker however they are spent. The verdict is derived from the window's own reset time, which is the next
+  reset and never the start — the start is that time rolled back whole windows — so a provider that stops
+  reporting a reset time silently drops the marker rather than the gauge.
+- **Measuring a token-only Claude Code login costs a request against the very plan it measures**
+  (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
+  account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).
+  Reading the gauge therefore spends quota (negligibly) and appears in the account's own usage, once per cache
+  window. A session on that login whose mod reports (docs/hooks/mod-usage.md) stands in for the request until one
+  of its windows resets, so the request is only spent for an account no such session has spoken for since.
 
-- **A project opened from outside the window is matched by the spelling of its path**
-  (`internal/project/project.go`, `Identify`; `internal/spawn/projects.go`): `lich open --project <dir>` normalizes
-  what it is handed — `~` expanded, cleaned, refused unless absolute — and then matches that string against the
-  open projects and the workspace's history. It stops there. A symlink to a directory, or a bind mount of it, is a
-  different string and opens a second project on the same real directory: two rows, two ids, two tabs, and every
-  path-addressed lookup lich makes (which project a checkout belongs to, which gh account its calls run as)
-  answering with whichever the query reached first. The window's picker has the same hole — it takes the path
-  zenity hands back — so resolving symlinks here would make the two surfaces disagree about which project a
-  directory *is*, which is worse than the duplicate. The trap is a workspace where `/home/you/work` and
-  `/home/you/src/work` are the same checkout: nothing on screen says the two tabs are one directory.
-  Any directory on the machine is one `open_session` away from a tab, with no confirmation on the way. It is not a
-  new privilege — the agent already runs as you, in a shell that can read
-  the same disk — but it is new visibility, and a card it opens there is a card with a PTY in it.
+## Relay, errands and subagents
 
-- **A terminal is rebuilt from a 2MB replay ring** (`internal/terminal/replay.go`,
-  `native/cmd/lich-native/terminals.go`): the window builds a session's terminal from the backend's ring when it
-  is first shown, and again after it reconnects. Scrollback past the ring is gone, not paged, and a mode an app
-  set in bytes that have left the ring is not set on the rebuilt terminal.
-- **One socket carries every session's output** (`internal/terminal/writequeue.go`): the per-session outbox
-  decouples the *producers*, never the wire. A window that stops reading stalls the connection's single writer,
-  so after `wsWriteTimeout` (5s) every session's output switches to the `/events` bridge at once. That is a
-  second socket, and the window reads the two independently: a frame that fell back can land ahead of one still
-  sitting in the stalled connection's buffer, so output is never dropped but its order across that switch is not
-  guaranteed. Until then the queue holds `writeQueueDepth` frames for the whole app, and two things still wait on
-  it across sessions: a push that finds it full, and the flush a session runs before its exit banner so the banner
-  cannot overtake its own last bytes.
-- **Single instance via the pinned port**: the bind is the lock (`internal/singleton`); a duplicate launch asks
-  the running lich to show its window (`singleton.Show`, `system.ShowWindow`) and exits. Raising is
-  best-effort: a Wayland compositor may only mark the window urgent.
 - **A prompt in use is recognised from the bytes going in, never from the line itself**
   (`internal/terminal/draft.go`; typed deliveries only, a Claude Code session with its mod is handed the message, see below): a relayed message pastes at the prompt and sends an Enter behind it, so lich
   holds the delivery back while the user has unsent input there. What it counts is printable input since the last
@@ -398,7 +300,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   at `defaultSettleLimit` regardless, which is the case this cannot tell from a paste still arriving.
 - **A relayed message reaches a Claude Code session through its mod, and every other session by typing**
   (`internal/relay`, `deliver` and `handOff`; `terminal.SubmitPrompt`): the other seven providers have no mod
-  system, so a task, a result note and a scheduled prompt are typed at them with every trap the two bullets above
+  system, so a task, a result note and a scheduled prompt are typed at them with every trap the typed-delivery bullets above
   describe. A Claude Code session is typed at too while no mod polls from it: lich-plugin older than 0.14.0, mods
   off, a folder not trusted yet, or a session so new its mod has not polled. A session whose mod polls is handed
   the message while its user is mid-sentence, since nothing is typed into that line. Delivery through the mod is at
@@ -406,30 +308,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   prompt lost on the way (the mod reloading as the response lands) is reported unread, not sent twice. A hook that
   drops the prompt is reported undelivered with its reason, except at a session that was mid-turn, whose ack lich
   stops waiting for after the receipt window.
-- **Crush raises no hook at a turn's end, so nothing that waits for `done` fires there** (its only event is
-  `PreToolUse`, 0.98.1; `docs/hooks/session-state.md`). A task handed to a Crush session that ends its turn
-  without answering waits out its ticket (`internal/relay/observe.go`, `turnCandidates`): its database does mark
-  the end (`finish.reason` other than `tool_use` in `.crush/crush.db`), but the conversation id reaches lich only
-  on the first tool call, so a turn that calls no tool has nothing to read, and the asker hears nothing until the
-  ticket's deadline. A pull request a Crush session opens reaches its card only when the window regains focus
-  (`native/cmd/lich-native/gitstate.go` `recheckMissingPR`, `cardstate.go` `setFocused`): `gh pr create` moves
-  neither branch nor HEAD, so a card showing no pull request asks gh again when its session's turn ends. The day
-  Crush ships `Stop`, the existing `report-state.sh done` closes both.
 - **Only a merge lich makes is announced, and only to a card running at that moment** (`internal/relay`,
   `AnnounceMerge`; called from the Pulls screen's merge): a pull request merged on github.com, with `gh` in a
   terminal or by an agent leaves every session in its checkout believing it is still open, and so does one merged
   while the card was parked or never opened. The notice also lands as a delivery like any other, so a cleanup
   clicked in the second before it starts a turn finds no session mid-turn, asks nothing, and removes the checkout
   with the notice still on its way.
-- **A CLI run as a tool inside a session is told apart by conversation id, and Kiro has none to tell by**
-  (`internal/terminal/nested.go`, docs/hooks/session-state.md "Nested agent CLIs"): a `claude -p` the agent runs
-  inherits the card's `LICH_*` env and reports as it. A state report naming another conversation is dropped, and a
-  session-start naming one is dropped while the card's turn is open. A scripted Kiro CLI run (`--no-interactive`, how
-  an agent runs one) carries no id in any hook payload (measured on 2.21.0), so a nested `kiro-cli` still reports
-  as its host. The
-  start guard reads lich's own turn, so a host lich never sees open cannot use it: a Crush session reports no turn
-  at all, so a nested CLI's start can still move what its card resumes. A plugin older than 0.20 sends no id on state reports, which are then taken as
-  before.
 - **Only a Claude Code subagent becomes a lich card** (lich-plugin's `hooks/agent-cards.js`, its
   `docs/agent-cards.md`): the plugin's mod takes the model's general-purpose `Agent` call and runs it as a lich
   session with `lich open --subagent --prompt`, in the background. The card opens in the asking session's checkout
@@ -481,16 +365,153 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Claude Code's `SendMessage`. Settings › Providers › Claude Code turns it off with "Subagents as lich sessions"
   (`store.SubagentCards`), which reaches the mod as `LICH_SUBAGENT_CARDS=off` at spawn, so a session already
   running keeps the value it started with.
-- **An install started from `go run` registers the lich on PATH, not itself** (`internal/agentplugin/crush.go`,
-  `resolveLichBinary`): Crush's, oh-my-pi's, Cursor's, Antigravity's and Kiro's registrations name the absolute path of the lich that
-  wrote them, and under `go run` — `task dev` — that path is the binary the toolchain built into its cache and
-  deletes when the run ends, so writing it gives a registration that works for the rest of that session and then
-  fails silently forever. lich writes `lich` from PATH instead, recognising the cache by shape
-  (`go-build*/b*/exe/*`) since the toolchain exports no marker. The trap is that a dev install then points at
-  whatever version is installed on the machine — harmless, because the registration is only the transport and a
-  session reaches the lich its PTY's coordinates name, but not what the file appears to say. With no lich on
-  PATH at all, a dev install registers nothing: Crush, oh-my-pi, Antigravity and Kiro still get their hooks, and Cursor's
-  install refuses outright.
+
+## Git, worktrees and review
+
+- **A project's gh account governs gh, not git**: `vcs.account` (`internal/project/ghaccount.go`) puts one
+  account's token in `GH_TOKEN` for every gh call lich makes for that project. A push still rides the remote's
+  ssh key and signs with the global `user.email`, so a PR can be *read* by one account and its commits *land*
+  under another. lich never writes `user.email`, and the Version Control settings still print both identities
+  without comparing them — noreply forms, vanity domains and org aliases make a string comparison a
+  false-positive farm. The Commits tab of the Pulls screen lists each commit's author and compares it with
+  nothing either, so a branch built under the wrong identity says so nowhere in lich.
+- **The worktree setup script answers to the main checkout, never the new branch**
+  (`internal/project/setup.go`): improve `.lich/setup-worktree.sh` on a feature branch and fresh worktrees keep
+  running the old one until the change reaches the checkout the project points at.
+- **A worktree off a local branch waits on a fetch first** (`internal/spawn/spawn.go` `newerOf`,
+  `internal/project/freshness.go`): `lich open --worktree`, a subagent's worktree and `open_session` fetch the
+  base's upstream to start from the newer of the two, so against a remote that does not answer the session
+  appears only once the fetch gives up (`baseFetchBudget`, 60s). A failed fetch starts from the local branch,
+  which may be behind without anything saying so. The create reuses that fetch for `baseRefReuse` (15s,
+  `internal/project/worktree.go`) instead of fetching again, so a commit pushed in between is not in the
+  worktree.
+- **A working-tree row carries what git can name, and nothing else**
+  (`internal/project/carry.go`): the copy is `git diff HEAD --binary` applied to the new checkout plus the
+  untracked files `--exclude-standard` lists. What `.gitignore` covers is not carried from the forked
+  session at all — and the fork is not without it either, which is the trap: `seedWorktree` copies the
+  ignored files the project names (`.env*`, or `.worktreeinclude`) out of the **main checkout** into every
+  new worktree, so an ignored file the forked session had edited arrives as the main checkout's version of
+  it, silently disagreeing with the tracked work that came from the fork. `node_modules` and the rest of
+  the build output are the setup script's, as always. Everything arrives
+  unstaged: which changes the source had staged is a fact about the commit *it* is preparing. The row is
+  offered only when the base is the forked session's own branch, because the patch is read against that
+  checkout's HEAD; picking any other base branches off it at its last commit, the way every fork did before.
+  And it rides on the fork entry itself, so the five providers whose CLI only resumes (README's provider
+  table) cannot reach it either.
+  The **+** dialog offers the same row for the project's own checkout, never preselected. The ignored-file
+  trap does not apply there, because `seedWorktree` reads the same checkout the copy does, and no provider is
+  out, because the worktree exists before any session opens on it. What it adds is a snapshot that is not
+  atomic: a session still writing in that checkout while the diff is read and the untracked files are copied
+  can leave the new worktree with a mix of two moments. The source is only ever read, never cleaned, so
+  nothing is lost there.
+- **git status is polled**: every shown path is re-read each `gitPoll` (`native/cmd/lich-native/model.go`,
+  `pollGit`); the lich plugin's `session-touched` hook nudges an immediate refresh.
+- **A read must not write the index** (`internal/project/git.go`, `readOnlyGit`): git status and git diff refresh a
+  stat-stale index and take `.git/index.lock` to save it, so a poll that does so fails an agent's own `git commit`
+  in the same checkout on "index.lock: File exists" (measured at 5% of commits against a busy poll). `gitQuiet`
+  and `readGit` run every call as `readOnlyGit`. A new call that diffs or stats the work tree goes through one of
+  them, never plain `runGit`; `--no-optional-locks` alone is not enough, because porcelain diff ignores it and
+  only stops refreshing with `diff.autoRefreshIndex=false`.
+- **The status badge has a single source** (`internal/project/status.go`): the branch, the HEAD commit and the
+  dirty count all come out of one `git status --porcelain=v2 --branch` parse. A git release that changes those
+  records breaks all three together rather than one at a time, and there is no second call left to disagree with
+  the first — `Branch` still asks `symbolic-ref`, but nothing on the polled path calls it.
+- **A project opened from outside the window is matched by the spelling of its path**
+  (`internal/project/project.go`, `Identify`; `internal/spawn/projects.go`): `lich open --project <dir>` normalizes
+  what it is handed — `~` expanded, cleaned, refused unless absolute — and then matches that string against the
+  open projects and the workspace's history. It stops there. A symlink to a directory, or a bind mount of it, is a
+  different string and opens a second project on the same real directory: two rows, two ids, two tabs, and every
+  path-addressed lookup lich makes (which project a checkout belongs to, which gh account its calls run as)
+  answering with whichever the query reached first. The window's picker has the same hole — it takes the path
+  zenity hands back — so resolving symlinks here would make the two surfaces disagree about which project a
+  directory *is*, which is worse than the duplicate. The trap is a workspace where `/home/you/work` and
+  `/home/you/src/work` are the same checkout: nothing on screen says the two tabs are one directory.
+  Any directory on the machine is one `open_session` away from a tab, with no confirmation on the way. It is not a
+  new privilege — the agent already runs as you, in a shell that can read
+  the same disk — but it is new visibility, and a card it opens there is a card with a PTY in it.
+- **A diff's context expander reads GitHub, one round-trip per gap** (`internal/project/filelines.go`):
+  `FileLines` tries the local object first and asks the contents API when the clone does not have it, which
+  on the Pulls screen is the normal case — the branch under review is usually not one this clone ever
+  fetched. The call site is a promise from an RPC, so nothing there says a click costs a network round-trip
+  and a rate-limit unit against the project's gh token. Anything that multiplies the clicks multiplies
+  that: prefetching a file's gaps on mount, incremental ±20 stepping, or an "expand everything" control
+  would each turn one reader's file into dozens of calls. The per-request line cap is the only bound, and
+  a gap wider than it is several calls already. Two things follow from the same shape. The expander needs
+  the revision the diff's new side stands at, so a source that cannot name one has no expander at all
+  rather than a wrong one — a pull request whose detail carries no commits.
+  And there is no expanding *past the last hunk*: a unified diff carries
+  no file length, so nothing here knows whether anything follows it, and an affordance drawn there would
+  be a no-op on every file whose change reaches the end.
+- **An image preview reads only what this clone holds** (`internal/project/blob.go`): `/blob` serves the
+  working tree, `HEAD` or a tree object, and has no GitHub fallback the way `FileLines` does, so the Pulls
+  screen still prints "Binary file". Adding it there takes two reads this endpoint does not make: the head blob
+  from the contents API, and the old side at the merge base, which gh does not report (`baseRefOid` is the base
+  branch's tip, and an image the base also changed would show the wrong "before"). SVG is refused on purpose:
+  git diffs it as text, and the window has no SVG renderer. One side
+  is capped at `maxPreviewBytes` (20 MiB) and held whole in memory, and a Git LFS file shows the pointer's
+  text diff, never the image. The window decodes in Go (`native/cmd/lich-native/blob_preview.go`) and `/blob` serves only what it
+  decodes: PNG, JPEG, GIF (its first frame only), WebP and BMP, so AVIF, ICO, HEIC, TIFF and PSD show the
+  no-preview state. It refuses an
+  image whose header claims more than 40 MP before decoding it, holds it scaled to 2048 px on its longest
+  side (no zoom), and never draws a PDF: Open in default app (`system.OpenFile`) reaches only a file in the
+  working tree, so the old side of a change and a pull request's file have no way out but GitHub's page.
+- **A line revert rebuilds its patch, and some of it cannot be done** (`internal/project/revertlines.go`): the
+  panel sends line numbers and the text it drew, never a patch, so a file that moved since the draw is refused
+  instead of reverting whatever those numbers point at now. The index is reverted with the working tree when it
+  holds the change; when it holds a third version of the same lines (staged, then edited again) the revert is
+  refused whole and Discard is the way out. A renamed file offers no line revert, since its old side lives under
+  a path the one-file diff cannot see. The Undo is the reversed patch the window keeps for as long as the toast
+  is on screen (`revertUndoFor`, `native/cmd/lich-native/dock_review.go`); nothing on disk records it after that. And a revert does exactly the lines it
+  names: reverting part of a block can leave code that no longer compiles, which is the reader's call to make.
+- **A Markdown preview shows the file's new version, never the change** (`native/cmd/lich-native/dock_review_markdown.go`):
+  the Review card's preview renders the whole file as the Pulls screen renders a PR body, with nothing marking
+  what was added or removed, no line to hang a review comment on and no selection to inject. It reads the
+  working tree (`project.ReadFile`, as the Code tab does), so on the Pulls screen only an added file, whose patch is the whole file, has a
+  preview; an edited one has no toggle for the same reason an image there has no preview. A relative image
+  shows its alt text (x/markdown fetches nothing) and raw HTML prints as text. A new version of the file puts
+  the card back on its diff, as it reopens or folds a card by its size.
+
+## Persistence and history
+
+- **A workspace database only moves forward** (`internal/store/migrate.go`): `PRAGMA user_version` counts
+  the migrations applied, and a lich that finds a number above the ones it knows refuses to open the database,
+  in a dialog naming both, rather than write its defaults over columns it has never heard of. There is no
+  migration down: going back to an older lich means installing the newer one again or starting a fresh
+  workspace. The refusal only exists from the release that stamped version 1; a lich before it reads no version
+  and opens anything, which costs nothing until the first migration after version 1 adds a column. The trap for
+  a contributor: `schema` and `legacyAlters` are frozen at the version-1 shape and every change after it is an
+  appended entry in `migrations`, never an edit to the `CREATE TABLE` and never a line in `legacyAlters`: the
+  version-1 step is the one step every database that already exists has long since run, so a column added
+  there reaches none of them and every read of that table fails.
+- **The workspace database is three files while lich runs** (`internal/store/store.go`, `open`): WAL mode
+  appends commits to `lich.db-wal` beside `lich.db`, with `lich.db-shm` as its index, and folds them back into
+  `lich.db` at checkpoints and on a clean close. Copying `lich.db` alone off a running lich, as a backup or a
+  move, leaves the commits since the last checkpoint behind; copy all three, or close lich first. With
+  `synchronous(NORMAL)` a power loss can drop the last commits, never corrupt the file.
+- **The history's branch is read live, so a row whose checkout is gone has none** (`internal/project.BranchesOf`):
+  the branch a row shows is not the one it stores — a worktree keeps the name it was created with while an
+  agent moves the branch inside it, so the stored snapshot dates the close and only git can say what the
+  checkout is on now, which is what the row draws. The batch runs once per settled search, which
+  also means a branch that moved while the palette is up is stale until the query changes or the palette is
+  reopened. A checkout removed behind lich's back has no branch to read and no session to resume: that row
+  says `checkout gone` and offers to forget
+  itself, which is the only way such a row is ever collected — `PurgeWorktreeSessions` never ran for it,
+  because the removal never went through the app.
+- **The history's external conversations are told from lich's own by a stone, and stones only start at schema
+  version 8** (`internal/store/external.go`, `internal/terminal/conversations.go`): a provider keeps its
+  transcript after lich deletes the session row, so the listing leaves out ids a row holds and ids a deleted row
+  held (`provider_session_tombstones`, kept by triggers). A row deleted before that table existed left no stone,
+  so its conversation lists once, as if started outside lich, on every provider but Claude Code, which carries
+  the name lich spawned it under (`docs/providers/claude.md`, Transcript & cost).
+- **An external conversation matches a project only in a checkout's own directory** (`store.ExternalSessions`):
+  a conversation started in a subdirectory of a project is not offered, because a session lich opens runs in
+  the project's directory or a worktree and nowhere below it. Checkouts come from `git worktree list`, run for
+  every project with a `.git` on each listing (about 300 ms over 30 projects); a project that is not a
+  repository owns only its own directory. Search reaches an external conversation by its title, project and
+  path; what was said in it is indexed only after it is adopted and closed, the same as any session.
+
+## Plugin install and upgrades
+
 - **A plugin install is pinned, so the harness never updates it on its own** (`internal/agentplugin/compat.go`,
   `claude.go` `claudePinMarketplace`, `codex.go` `codexPinMarketplace`): lich installs the newest plugin release inside the range it
   speaks and declares Claude Code's and Codex's marketplace at that release's tag, so a plugin release this lich
@@ -502,72 +523,115 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   before the pin or by hand, is caught at startup from its installed version, and again by the `X-Lich-Plugin`
   header its hooks send (docs/hooks/README.md) once a session reports. A report whose payload lich refuses never
   reaches that check, so a plugin old enough to send one only shows up in the startup prompt and the log.
-- **Only a Claude Code session whose mod polls can be driven, asked, or report for itself** (`spawn.Control`,
-  `spawn.Ask`, `internal/terminal/modcontrol.go`, `modusage.go`, `modstatus.go`; each contract in `docs/hooks/`,
-  mod-control, mod-usage, mod-status and session-state, has its own Known ceilings): mods are a Claude Code
-  feature, from 2.1.280 and only with the lich-plugin mod loaded, 0.15.0 or newer. The other seven providers, and
-  a Claude Code session without the mod, have nothing that runs inside them and polls. So `lich control` and
-  `lich ask` refuse them by provider before anything is queued (no other CLI exposes a fork of its own
-  conversation to anything running inside it), their readout stays the one lich derives, their errands show only
-  in the card's tooltip and inbox mark, and a compaction keeps the finished turn's check or is a spinner with no
-  tool line, which reads as a stuck turn. The traps a caller walks into:
-  - `/model` and `/effort` are refused as slash commands: run through a mod they write `~/.claude/settings.json`,
-    the default for every new session (2.1.288). The `model` and `effort` actions are the per-session route.
-  - A slash command that opens a dialog (`/cost`) holds that session's later slash commands until someone
-    presses Esc in its terminal; lich cannot tell such a command apart before running it.
-  - A session cannot control or ask itself: an abort would end the asking turn, a prompt or a slash command would
-    only run after it, and a question would ride the request it is waiting on.
-  - An ask knows the conversation only as of the last finished model response, cannot be cancelled (past lich's
-    90 seconds the fork runs on, billed, and its answer is dropped), never reaches the session's cost, and is cut
-    at 16,000 characters (2.1.289).
-  - A reported readout wins over the derived one, so two sessions on the same model can disagree by the requests
-    no transcript records (2.7% and 3.1% of a session's cost on 2.1.289). Its cost replaces the conversation's
-    ledger row and drops its sub-agent rows, so a lich restarted before the session's first report re-scans that
-    conversation from the transcript until the report lands again. Only a long-lived token login's plan gauge
-    uses the reported rate limits: a credentials login keeps its usage route, which names the plan, the account
-    and the model-scoped caps a report does not carry.
-  - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
-    since the session's own collect never reaches it.
-- **The plan gauge answers to undocumented routes, and three providers have none** (`internal/quota`; each route
-  is in `docs/providers/`, Account): every route is what a provider's own CLI or dashboard polls, and none is
-  published API. oh-my-pi, Crush and Kiro CLI report no plan lich can read, and opencode reports one only for an
-  OpenCode Go subscription. A field renamed upstream drops the window it fed rather than
-  raising anything, so a new kind of limit is invisible instead of wrong. lich reads those logins and never
-  writes them: it does not refresh a token, so an expired one reads as signed out until the provider's own CLI
-  rotates it. A reading is cached for five minutes because the endpoints rate-limit hard; the number on screen is
-  up to that old, and nothing on it says so.
-- **A turn a usage limit stopped is picked back up on two providers only** (`internal/terminal/limit.go`,
-  `internal/relay/resume.go`): Claude Code and Codex are the two that write the limit down with its reset. On
-  Antigravity, Crush, Cursor CLI and Kiro CLI nothing marks a limit at all, so the card keeps spinning until the
-  next prompt; opencode and oh-my-pi retry by themselves and lich adds nothing on top. Claude Code's end arrives
-  only as `StopFailure`, which an older lich-plugin does not report. Codex raises no hook for it, so an open
-  Codex turn is read off its rollout every 30 seconds, and the limit is *inferred*: a turn completing with
-  nothing said right after a window shows 100% spent (measured on `codex exec` 0.144.5, never on the TUI); a
-  change to that shape stops the read without a word. The continuation is a scheduled prompt told apart from a
-  person's by its exact text, so someone parking those same words has them dropped on the session's next turn.
-  Nothing is parked for a reset already past or more than 24 hours out (Claude Code's own auto-continue gives up
-  at the same horizon), nor over a prompt already parked there. Any turn starting before it is due drops it,
-  which is also what keeps it from landing behind Claude Code's own `autoContinueAtUsageLimit`, a setting the
-  server enables per account, which is why the prompt is due two minutes after the reset rather than at it. The
-  window draws neither the limit nor the parked prompt on the card.
-- **The pace marker is borrowed calibration, and it is silent far more often than it is wrong**
-  (`internal/quota/pace.go`): the two numbers that decide when a weekly window is marked as spending ahead —
-  fifteen percentage points past the elapsed share, and no marking at all in the first twenty-four hours after
-  a reset — are the claude-swap project's measurements (`src/claude_swap/pace.py`, its issue #125), not lich's
-  own. Nothing here has been tuned against a lich user's accounts. The consequence to know before debugging a
-  marker that "never appears": a window ninety percent spent on the first day of its cycle is deliberately
-  unmarked, because just after a reset the elapsed share is near zero and almost any use at all would read as
-  far ahead. Only the weekly window is paced, so the five-hour one and Codex's monthly free-tier window carry
-  no marker however they are spent. The verdict is derived from the window's own reset time, which is the next
-  reset and never the start — the start is that time rolled back whole windows — so a provider that stops
-  reporting a reset time silently drops the marker rather than the gauge.
+- **A `lich` upgraded under a running lich is refused by a call the backend does not have**
+  (`internal/rpc/rpc.go`): a package manager replaces the binary without restarting the backend it is serving,
+  so the new CLI, and the `lich mcp` of every session opened after the upgrade, speaks to an older backend until
+  lich is restarted. Every call they make takes one options object (`spawn.OpenOptions`, `relay.SendOptions`,
+  `store.CostTotalsOptions` and their siblings), so an option the backend does not know yet is dropped and one
+  an older client does not send is its zero value; the version probe `system.Diagnostics` takes nothing at all,
+  which has nothing to misalign. What is left: a method newer than the backend is refused as unknown, and the
+  release that moves a call to the object (a parameterless one included, the day it takes one) is refused by a
+  lich from before it, once, with "want 1 arguments, got N" (or the other way round). The RPC itself still
+  matches arguments by position and count, so a call `lich` makes must not go back to positional arguments:
+  `TestEveryCallTheCLIPostsTakesOneOptionsObject` (`internal/cli/rpcshape_test.go`) reads every method name the
+  CLI's source posts and fails on one whose parameters are anything but one struct or none, and
+  `internal/cli/wire_test.go` posts each one as a client of another release. The window's own calls
+  (`native/lichclient`) stay positional, on the promise that `lich-native` ships in the same release as the
+  backend it talks to; a window from another build, pinned with `LICH_NATIVE` or replaced on disk by an upgrade
+  under a running backend, is the case that promise does not cover.
+- **A release's highlight is read from the binary, so fixing it after the tag fixes nothing a user sees**
+  (`internal/patchnotes`): the What's new dialog parses the `CHANGELOG.md` embedded at build time — the alert
+  blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,
+  changes the release page and no dialog anywhere; the users who already updated have recorded the version as
+  seen, and the ones who have not will read the binary they install. A wrong headline is a patch release. The
+  update toast reads nothing from the release but its tag, on purpose: the toast says a release exists, and
+  the dialog is where it speaks.
 
-- **Measuring a token-only Claude Code login costs a request against the very plan it measures**
-  (`internal/quota/claude.go`): the usage route refuses a `claude setup-token` token, so the gauge reads that
-  account the way Claude Code reads it for itself, with one message (`docs/providers/claude.md`, Account).
-  Reading the gauge therefore spends quota (negligibly) and appears in the account's own usage, once per cache
-  window. A session on that login whose mod reports (docs/hooks/mod-usage.md) stands in for the request until one
-  of its windows resets, so the request is only spent for an account no such session has spoken for since.
+## Profiles
+
+- **A profile is one provider's** (`internal/profilestore`): which providers have profiles on which OS is
+  README's provider table, and how each is laid out, logged in and moved is `docs/providers/`, Profiles.
+  `internal/xdgprofile` lists the link-home providers each platform has (`supported_linux.go`,
+  `supported_windows.go`, `supported_other.go`), and the native window shows profile rows for the same ones
+  (`profiles_xdg_*.go`). The
+  profile slug of a session row belongs to that row's provider: a Codex profile named "work" and a Claude Code one
+  named "work" are two profiles.
+- **A profile that links to your own directories shares their writes, and keeps what a tool creates inside it**
+  (`internal/profilestore/linkhome.go`, `layout.go`, `internal/claudeprofile/profile.go`, `internal/ompprofile`):
+  Claude Code, oh-my-pi, opencode, Cursor CLI and Kiro CLI profiles link Personal's own content, and a tool writes
+  through a link into its target. So `claude plugin install` run in a profile writes `enabledPlugins` into the
+  one shared `settings.json`, and a plugin a work account installed reads as enabled in Personal, where it is not
+  installed; `/config` changes in any profile change them all. An entry the profile already holds, link or
+  file, is never replaced: whatever a tool creates inside a profile is the profile's from then on, and an entry
+  you make later with the same name is not linked there. A Claude Code `settings.json` written there first stays
+  the profile's, an oh-my-pi profile with an `extensions/` of its own does not get lich's extension through it and
+  its sessions report nothing, and a Kiro update that replaces `tui.js` by a rename inside a profile leaves that
+  profile its own copy, which no later update in yours reaches. On Windows a file link needs Developer Mode:
+  without it Claude Code's, oh-my-pi's and Codex's linked files are copies that drift on the first edit, and an
+  opencode, Cursor CLI or Kiro CLI profile leaves the file out until the first spawn after Developer Mode is on.
+  A sandboxed session gets the profile bound writable, and its links reach only what the sandbox already exposes
+  at their targets.
+- **An oh-my-pi, opencode, Cursor CLI or Kiro CLI profile still sees the provider API keys in lich's
+  environment** (`internal/ompprofile`, `internal/xdgprofile`): each drops the variables that would point it at
+  another account or another profile's state (`docs/providers/`, Profiles), but `ANTHROPIC_API_KEY`,
+  `OPENAI_API_KEY` and the rest are passed through, so a profile that has no login for a provider spends the key
+  the environment has, as Personal does.
+- **Continue in refuses a turn in progress only where the session-state hooks report one**
+  (`terminal.ContinueIn`; what each provider moves and leaves behind is `docs/providers/`, Profiles): a Claude
+  Code without the lich plugin, or an oh-my-pi without the lich extension, reports no turn and is moved mid-turn.
+  On Claude Code the prompt history and the project's `lastSessionId` stay in the profile the conversation left,
+  so `claude --continue` there points at a conversation it no longer holds. A session born in a profile deleted
+  since is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
+  deleted with the profile.
+- **A Claude Code profile's plugin versions live in a store lich never empties**
+  (`internal/claudeprofile/plugincache.go`; the layout is `docs/providers/claude.md`, Profiles): each version a
+  profile names is moved into `plugin_cache/` beside the profiles and linked back, which is what keeps Claude
+  Code's 14-day orphan sweep from deleting a plugin only one profile has. Versions no profile names any more stay
+  in the store, since a session started before an update may still run one; deleting `plugin_cache/` with every
+  Claude Code closed only costs the downloads. A profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set keeps
+  the marketplace link it was made with and clones each marketplace again into a directory Personal no longer
+  reads, until that link is removed.
+- **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
+  login in the Keychain under a service named after a hash of the config directory string
+  (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
+  name, and a moved one would lose its login. Deleting a profile deletes that Keychain item with
+  `security delete-generic-password` (`quota.ForgetClaudeLogin`), which has not run on a Mac yet. The
+  directory is built from `os.UserConfigDir()` on every call, so an `XDG_CONFIG_HOME` (or `APPDATA`) that
+  changes between launches points lich at another, empty set of profiles. A `task dev` rig has its own set
+  (`profiles-dev`), so its profiles need their own login.
+- **The version Settings shows is the one lich's own environment gets** (`internal/providers/version.go`):
+  `--version` runs in lich's working directory with lich's environment, not in a session's checkout. A
+  version-manager shim that picks its tool per directory (mise, asdf) can answer one version there and start
+  another in a project that pins its own, and the "Also on PATH" list compares those same per-lich answers.
+  All eight providers print a version (measured on Claude Code 2.1.299, Codex 0.162.1, Antigravity 1.3.5,
+  opencode 1.18.35, oh-my-pi 18.8.9, Crush 0.98.1, Cursor CLI 2026.10.01, Kiro CLI 2.21.0); a CLI whose
+  `--version` hangs past 10 s or prints no version shows its path alone.
+- **The binary setting and lich's own plugin checks still answer for Personal**: a profile's session runs the
+  configured Claude Code binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins
+  over the profile, and the same binary answers the profile's `auth status` and installs its plugins. The
+  start gate reads the profile's own plugin state, but the nested-subagent-cards check and the MCP servers a
+  card lists read Personal's, so a profile on an older lich plugin than Personal's can be offered cards its
+  plugin cannot open: one whose follow-up install failed, or one still waiting for it.
+- **A profile's lich plugin follows Personal's, after it and in the background**
+  (`internal/agentplugin/profiles.go`): an install or update of the lich plugin for Claude Code or Codex,
+  from Settings or anywhere else, runs in Personal and returns; then the same pinned install runs as each
+  other profile of that provider whose version differs, one at a time, logged in or not. A backend start makes
+  the same pass, which is what reaches a profile logged in before profiles got the plugin at login; it is the
+  start and not the next spawn because a pass clones the marketplace, and a spawn would wait on it. A start asks
+  for the release list only when a provider has a profile besides Personal. While Personal itself is behind the
+  newest release this lich speaks, a profile that has the plugin keeps its version and one that has none gets the
+  newest, so the two can differ until Personal is updated. A profile whose install failed is named in an error
+  toast of the native window, in the CLI's own words, and is tried again at the next start or update. A Claude
+  Code profile's pass removes the marketplace clone it links to Personal's and clones it back, so a Personal
+  session starting during a pass can find the clone missing for the seconds that takes.
+- **A setting changed inside a Codex profile does not last** (`internal/codexprofile/config.go`; the layout is
+  `docs/providers/codex.md`, Profiles): the profile's `config.toml` is rebuilt from Personal's before every spawn,
+  so a `/model`, `features enable` or MCP server added inside a profile is gone at its next session, a setting
+  Personal removes leaves every profile then, and a trust answer only Personal withdrew stays in the profiles
+  that gave it.
+
+## Sandbox
+
 - **The sandbox confines a working agent, not hostile code** (`internal/sandbox`): namespaces and mounts on
   Linux, a path policy on macOS, and nothing else — no seccomp filter, no Landlock ruleset. The network is
   never cut (the agent needs its API and the plugin's hooks report over loopback), so anything readable
@@ -620,42 +684,126 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   socket and gh's keyring live outside it, so a confined macOS session never lost either and the switches
   change nothing there — they are inert rather than hidden, and there is no macOS hardware here to prove it
   further. Windows has no sandbox backend, so neither switch exists.
-- **A workspace database only moves forward** (`internal/store/migrate.go`): `PRAGMA user_version` counts
-  the migrations applied, and a lich that finds a number above the ones it knows refuses to open the database,
-  in a dialog naming both, rather than write its defaults over columns it has never heard of. There is no
-  migration down: going back to an older lich means installing the newer one again or starting a fresh
-  workspace. The refusal only exists from the release that stamped version 1; a lich before it reads no version
-  and opens anything, which costs nothing until the first migration after version 1 adds a column. The trap for
-  a contributor: `schema` and `legacyAlters` are frozen at the version-1 shape and every change after it is an
-  appended entry in `migrations`, never an edit to the `CREATE TABLE` and never a line in `legacyAlters`: the
-  version-1 step is the one step every database that already exists has long since run, so a column added
-  there reaches none of them and every read of that table fails.
-- **The workspace database is three files while lich runs** (`internal/store/store.go`, `open`): WAL mode
-  appends commits to `lich.db-wal` beside `lich.db`, with `lich.db-shm` as its index, and folds them back into
-  `lich.db` at checkpoints and on a clean close. Copying `lich.db` alone off a running lich, as a backup or a
-  move, leaves the commits since the last checkpoint behind; copy all three, or close lich first. With
-  `synchronous(NORMAL)` a power loss can drop the last commits, never corrupt the file.
-- **The history's branch is read live, so a row whose checkout is gone has none** (`internal/project.BranchesOf`):
-  the branch a row shows is not the one it stores — a worktree keeps the name it was created with while an
-  agent moves the branch inside it, so the stored snapshot dates the close and only git can say what the
-  checkout is on now, which is what the row draws. The batch runs once per settled search, which
-  also means a branch that moved while the palette is up is stale until the query changes or the palette is
-  reopened. A checkout removed behind lich's back has no branch to read and no session to resume: that row
-  says `checkout gone` and offers to forget
-  itself, which is the only way such a row is ever collected — `PurgeWorktreeSessions` never ran for it,
-  because the removal never went through the app.
-- **The history's external conversations are told from lich's own by a stone, and stones only start at schema
-  version 8** (`internal/store/external.go`, `internal/terminal/conversations.go`): a provider keeps its
-  transcript after lich deletes the session row, so the listing leaves out ids a row holds and ids a deleted row
-  held (`provider_session_tombstones`, kept by triggers). A row deleted before that table existed left no stone,
-  so its conversation lists once, as if started outside lich, on every provider but Claude Code, which carries
-  the name lich spawned it under (`docs/providers/claude.md`, Transcript & cost).
-- **An external conversation matches a project only in a checkout's own directory** (`store.ExternalSessions`):
-  a conversation started in a subdirectory of a project is not offered, because a session lich opens runs in
-  the project's directory or a worktree and nowhere below it. Checkouts come from `git worktree list`, run for
-  every project with a `.git` on each listing (about 300 ms over 30 projects); a project that is not a
-  repository owns only its own directory. Search reaches an external conversation by its title, project and
-  path; what was said in it is indexed only after it is adopted and closed, the same as any session.
+
+## Terminal
+
+- **"Unfold long pastes" copies two providers' fold rules, and nothing tells lich when they move**
+  (`native/cmd/lich-native/paste_unfold.go`, `internal/terminal/paste_unfold.go`): the switch is off until turned
+  on, and for Claude Code and Kiro CLI it predicts the fold from a rule copied out of one measured version
+  (`docs/providers/`, Known limits). Codex, Antigravity, Crush and Cursor CLI fold with a constant and no key that
+  unfolds, so they have no switch, and oh-my-pi was not measured. A paste lich thinks folds and Claude
+  Code does not lands twice, one it thinks does not stays a chip, and a paste into one of Claude Code's own
+  dialogs that does not fold gets the text twice; a paste lich misjudges for Kiro CLI gets a Tab, which in the
+  `/` menu picks an entry. The window also unfolds what it writes as a paste itself (a batch of review comments,
+  a pull request's or an issue's prompt, dropped and attached file paths), measured against the session's own
+  terminal; one written into a session whose terminal the window never opened has no height to measure and lands
+  folded. No caller does that today: each writes into the session on screen, or waits for a session it just
+  opened to reach its prompt, which only happens after the window started its terminal.
+- **A split stage puts every pane on the visible cadence** (`internal/terminal/coalescer.go`,
+  `native/cmd/lich-native/terminals.go`, `setVisible`): the coalescer batches a *visible* session's output
+  every 8ms and a hidden one's every 250ms, and until the stage could divide, exactly one session per window
+  was ever visible — `Service.SetVisible` had one true at a time. A layout of eight makes eight,
+  deliberately: a pane nobody demoted is the entire point of opening it. So the window's hot path carries
+  as many streams as there are panes, and anything reasoning about that cadence from the constants alone
+  will read a number that was true for one terminal.
+- **A theme switch reaches only the apps that asked** (`native/gioterm/scheme.go`, `setScheme`): lich answers
+  mode 2031 and sends the light or dark report on a switch, only to a terminal whose app turned the mode on. An
+  app that reads the background once at boot keeps the old look until it restarts: Codex, Antigravity and Kiro
+  CLI do, and Crush reads it not at all.
+- **Only zsh, bash and fish get their prompt cleared on a resize** (`internal/shellintegration`,
+  `native/gioterm/prompt.go`): a shell session's shell is started with scripts that mark its prompt with
+  OSC 133 and ask the terminal to clear it on a resize (`redraw=1`, `redraw=last` for bash, which redraws only
+  the last line). sh, PowerShell and a shell started by hand inside a session are unmarked, and a prompt line
+  as wide as the terminal (a right prompt) leaves its wrapped head on screen after a narrowing, the way any
+  terminal without shell integration does. Agent sessions are untouched: they run no shell rc and draw their
+  own screen. The scripts are rewritten under lich's config dir at every start, so two lich builds running at once
+  share the newer one's. bash marks where a command's output starts from `PS0`, which it has since 4.4: the bash 3.2 macOS
+  ships marks its prompt but not that, which the resize clearing does not need.
+- **A session close is a hang-up on Unix and a Ctrl+C on Windows** (`internal/terminal/pty_unix.go`,
+  `pty_windows.go`): closing a card signals the agent and gives it `closeGrace` to leave, so its exit path runs —
+  hooks, transcripts, whatever it writes on the way out. A ConPTY has no signal to deliver, so Windows sends the
+  terminal's own Ctrl+C instead, and that is a weaker ask: an agent whose TUI reads one Ctrl+C as "interrupt the
+  turn" and wants a second one to quit — Claude Code does — is still killed when the grace runs out, and nothing
+  on screen says so. That the byte arrives at all depends on `heedCtrlC`: a lich started by a service passes an
+  inherited "ignore Ctrl+C" to every agent it spawns, and clearing it before the first spawn is what the Windows
+  close rests on.
+- **The shell-env pty read ends on a printed end marker, not on the child's exit, and Windows never gets one**
+  (`internal/terminal/shellenv_unix.go`, `runShellDump`): resolving PATH and friends runs the login shell on a
+  pty rather than a pipe so an rc guarded on `[ -t 0 ]`/`tty -s` (nvm's and fnm's own init, among others) loads —
+  but neither closing that pty from another goroutine nor `SetReadDeadline` interrupts a read already blocked in
+  it (both measured directly against a blocked read: Close returns without error and the read stays parked in
+  the kernel regardless, and the deadline is never enforced on this fd). So the read is driven from a goroutine
+  free to outlive the call, and the dump is `echo <start>; env; echo <end>`: the read returns the moment the end
+  marker arrives, which is what lets an rc that backgrounds a job (an `ssh-agent`/`gpg-agent` eval, a prompt
+  tool) still hand back the dump instead of paying the full `shellEnvTimeout`. Two edges follow. A shell that
+  never prints the end marker (a hung rc, a prompt waiting on input, an
+  unanswered privacy prompt) is bounded only by the 5s ceiling, and a dump cut there is discarded whole rather
+  than merged half-read. A shell still alive after printing it (a slow `.zlogout`, an rc that `exec`s into
+  something holding the pty) also waits out the 5s, dump kept: the read ends on the marker *and* the shell's
+  exit, because the marker alone called a shell milliseconds from exiting parked and refused the next
+  resolution. And the reader goroutine outlives the call for whatever still holds the pty: the fd,
+  the goroutine and the zombie child persist until that holder exits on its own or lich itself does, one leak
+  per resolution that hits this edge, not a recurring one.
+  And **Windows gets none of this**: `SHELL` is normally unset there, so `ResolveShellEnv` returns before
+  `shellenv_windows.go`'s pipe-based `runShellDump` ever runs — but on a machine where the user sets it anyway
+  (Git Bash, a POSIX-ish shell reached through PATH), that path still runs over a pipe, so an rc guarded the
+  same way is skipped there, with no ConPTY wired in to close the gap.
+- **A session's cwd readout names the host it cannot see into, and only Unix has one to name**
+  (`internal/terminal/cwd.go`, `cwd_unix.go`, `cwd_windows.go`): the directory is polled off the terminal's
+  foreground process group, and a foreground job that is itself hosting the shell somewhere else (tmux, ssh, a
+  container) has a directory of its own that is readable and wrong. The unix readers match that job's comm
+  against `shellHosts` and publish the host with no path, so the card, its tooltip and the footer draw
+  `cwd unknown · inside tmux` rather than a real local directory nobody is standing in. Windows has no
+  foreground process group to read a comm from and so has no host to report: a session hosted elsewhere there
+  goes on naming a local path that is not where the user is typing, with nothing on screen saying so. There is
+  no Windows hardware here to build the replacement against.
+- **A terminal is rebuilt from a 2MB replay ring** (`internal/terminal/replay.go`,
+  `native/cmd/lich-native/terminals.go`): the window builds a session's terminal from the backend's ring when it
+  is first shown, and again after it reconnects. Scrollback past the ring is gone, not paged, and a mode an app
+  set in bytes that have left the ring is not set on the rebuilt terminal.
+- **One socket carries every session's output** (`internal/terminal/writequeue.go`): the per-session outbox
+  decouples the *producers*, never the wire. A window that stops reading stalls the connection's single writer,
+  so after `wsWriteTimeout` (5s) every session's output switches to the `/events` bridge at once. That is a
+  second socket, and the window reads the two independently: a frame that fell back can land ahead of one still
+  sitting in the stalled connection's buffer, so output is never dropped but its order across that switch is not
+  guaranteed. Until then the queue holds `writeQueueDepth` frames for the whole app, and two things still wait on
+  it across sessions: a push that finds it full, and the flush a session runs before its exit banner so the banner
+  cannot overtake its own last bytes.
+
+## Window, sidebar and settings
+
+- **A closed card outlives its session by 180ms** (`native/cmd/lich-native/sidebar_closing.go`, `exitDuration`):
+  the card animates out, so the closed session is held and drawn for the length of that exit. For those frames
+  the sidebar draws a card for a session the state no longer holds, and anything counting or measuring cards
+  sees one card too many.
+- **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,
+  `native/cmd/lich-native/sidebar_groups.go`): the folder a card is filed under is a column on the session
+  row, and the name is the whole identity — there is no folder record to point at. A folder exists only while a
+  session carries its name, so the last card leaving ends it; a rename is a write across every session in it,
+  parked rows included (`RenameFolder`), and the block, keyed by the name, remounts with anything keyed off it
+  but the fold (`moveCollapsed`, `native/cmd/lich-native/sidebar_prefs.go`); renaming onto a name the project
+  already holds merges the two folders with no undo; two names differing only by case or a space are two
+  folders; and a folder belongs to one project, since the name is scoped by `project_id`.
+- **An agent files by the name as written, like the window** (`internal/spawn/folders.go`): `lich file`,
+  `lich rename-folder`, `lich color-folder` and their MCP tools match a folder exactly, so an agent that types `auth` beside `Auth`
+  starts a second folder; the tool descriptions send it to `list_folders` first instead of folding case behind
+  the user's back. A rename from there refuses a name no session carries, because the store would report
+  success over nothing, and answers with every session that moved, which is how a merge shows.
+- **A layout is a free split tree** (`native/cmd/lich-native/layouts.go`, `model_layouts.go`,
+  `stage_layout.go`): a layout is stored under `lich.native.layouts`. A session sits in one pane of one layout, because its PTY has one
+  size; clicking its card anywhere shows it in that layout, while its project's tab shows it alone. A split
+  is refused, with a toast, when a pane would drop under 480dp (51 columns at the default 13sp, measured with
+  Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
+  takes a dropped file; a file dropped on a pane in the background goes nowhere. A pinned card cannot be dragged onto a pane: the
+  pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
+  not SortCarry targets (`layouts_drag.go`): a new drop target over the stage belongs there, not in the carry.
+  Show beside lays out only the delegates that fit the 180dp pane
+  floor, counted from where the panes were drawn the frame before (`columnRoom`); the rest stay out and
+  the pane header offers them. Its footer item is not an item of the Footer layout, so Settings can neither
+  move nor hide it: it shows only while the session, in no layout, has delegates.
+- **Single instance via the pinned port**: the bind is the lock (`internal/singleton`); a duplicate launch asks
+  the running lich to show its window (`singleton.Show`, `system.ShowWindow`) and exits. Raising is
+  best-effort: a Wayland compositor may only mark the window urgent.
 - **Settings remembers its open pane under one global key** (`native/cmd/lich-native/settings.go`,
   `settingsSectionKey`): the nav is the same list of panes in every project, so opening Settings in project B
   lands on the pane project A was reading. Whoever adds a pane about one repository's content keys its
@@ -664,13 +812,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `native/cmd/lich-native/settings_index.go`): the panes draw their rows off that list, with the section and
   group each lives in, and the search matches a row's title, its hand-picked search words and its group, never
   a description, a stored value or a theme's name.
-- **A release's highlight is read from the binary, so fixing it after the tag fixes nothing a user sees**
-  (`internal/patchnotes`): the What's new dialog parses the `CHANGELOG.md` embedded at build time — the alert
-  blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,
-  changes the release page and no dialog anywhere; the users who already updated have recorded the version as
-  seen, and the ones who have not will read the binary they install. A wrong headline is a patch release. The
-  update toast reads nothing from the release but its tag, on purpose: the toast says a release exists, and
-  the dialog is where it speaks.
 - **Closing the window does not quit lich** (`main.go` `serve`, `internal/restart.Window`): with a session
   running, the window asks whether lich keeps running in the background or quits, and the answer can be kept
   (Settings › General › When the window closes, `native/cmd/lich-native/window_close.go`); with none running, closing it quits. Kept running, the
@@ -693,75 +834,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   pinned by `LICH_NATIVE`), or one that exits at startup, on a missing system library say, ends in the error
   dialog with the reason and the log path. With no session running lich then quits; with one, it keeps serving
   it, and the tray, launching again or `lich quit` is the way back.
-- **The gate run inside lich kills lich's window** (measured 2026-10-10): `go vet`, `go test ./...` and the
-  cross-compile loop started together from a session ran the machine out of memory, and the lich window died
-  with SIGBUS; the window took the session that ran the gate down with it. `/tmp` is tmpfs on many distributions, so the Go
-  build's temporaries count as RAM too. Nothing in lich bounds what a session spends. The way around it is
-  in CLAUDE.md › Local Gate: one step at a time, in a `systemd-run --user --scope` with `MemoryMax`, with
-  `GOTMPDIR`/`TMPDIR` on a short path on disk (`/var/tmp/lich-gate`; under `~/.cache` the sandbox suite's
-  Unix sockets outgrew the 108-byte limit); there a step over the limit is the one killed. macOS and Windows have no
-  equivalent here.
-- **A rig needs its own HOME, not just its own config dir** (`internal/agentplugin.RepairRegistrations`): every
-  launch that is not `task dev` (`LICH_DEV`) or a `go run` binary repoints the provider MCP registrations it
-  finds to its own executable, and those live under HOME, not under the config dir: `~/.cursor/mcp.json`,
-  `~/.omp/agent/mcp.json`, `~/.gemini/config/mcp_config.json` and Kiro's agent. A built binary launched
-  with only `XDG_CONFIG_HOME` (or `APPDATA`) moved rewrites the developer's real agents to point at a scratch
-  binary that is deleted later. Give a rig its own `HOME` and `XDG_*` both, and check those files afterwards.
-  Two side effects of that HOME: a `node` reached through a mise shim stops trusting the developer's mise
-  config and exits, so call the real binary (`mise which node`); and a rig given its own D-Bus
-  (`dbus-run-session`, so its tray stays off the developer's bar) activates portals and a notification
-  daemon that outlive it, which are found by their `DBUS_SESSION_BUS_ADDRESS` and stopped by PID.
-- **Keep-awake follows the session-state report, and only that** (`internal/awake`, `turnLog.onOpen`): the
-  machine is held out of idle sleep while a hook says a turn is open, so what a provider reports decides whether
-  the machine stays up at all (`docs/providers/`). Linux holds it through `systemd-inhibit --what=idle`: a distro
-  without systemd logs one warning per burst of work and sleeps, and a desktop that ignores logind idle
-  inhibitors sleeps silently. The hold was measured on Linux only; on Windows and macOS CI proves the request
-  is registered (`powercfg /requests`, `pmset -g assertions`), not that the machine stays up.
-- **A `lich` upgraded under a running lich is refused by a call the backend does not have**
-  (`internal/rpc/rpc.go`): a package manager replaces the binary without restarting the backend it is serving,
-  so the new CLI, and the `lich mcp` of every session opened after the upgrade, speaks to an older backend until
-  lich is restarted. Every call they make takes one options object (`spawn.OpenOptions`, `relay.SendOptions`,
-  `store.CostTotalsOptions` and their siblings), so an option the backend does not know yet is dropped and one
-  an older client does not send is its zero value; the version probe `system.Diagnostics` takes nothing at all,
-  which has nothing to misalign. What is left: a method newer than the backend is refused as unknown, and the
-  release that moves a call to the object (a parameterless one included, the day it takes one) is refused by a
-  lich from before it, once, with "want 1 arguments, got N" (or the other way round). The RPC itself still
-  matches arguments by position and count, so a call `lich` makes must not go back to positional arguments:
-  `TestEveryCallTheCLIPostsTakesOneOptionsObject` (`internal/cli/rpcshape_test.go`) reads every method name the
-  CLI's source posts and fails on one whose parameters are anything but one struct or none, and
-  `internal/cli/wire_test.go` posts each one as a client of another release. The window's own calls
-  (`native/lichclient`) stay positional, on the promise that `lich-native` ships in the same release as the
-  backend it talks to; a window from another build, pinned with `LICH_NATIVE` or replaced on disk by an upgrade
-  under a running backend, is the case that promise does not cover.
-- **A reasoning effort is refused where the TUI would drop it, and never validated**
-  (`internal/terminal/command.go`, `effortFlags`): `lich open --effort` and `open_session`'s `effort` are refused
-  for opencode, Crush and Cursor CLI, whose interactive CLI takes no level, rather than handing back a session on
-  its default (why each: `docs/providers/`, Spawn). The level itself is never validated,
-  so a misspelled one is each provider's to handle, and most start without a word.
-- **An ultracode turned off inside a Claude Code session comes back on its next restart**
-  (`internal/terminal/command.go`, `ultracodeArgs`): Claude Code drops ultracode on `--resume`, so lich passes it
-  on every spawn (`docs/providers/claude.md`, Spawn), and nothing turns it off for one session while the
-  provider-wide switch is on.
-- **The two-cards-one-conversation warning reaches only the providers that report an in-app switch**
-  (`internal/terminal/terminal.go` `reportDuplicate`, `native/cmd/lich-native/duplicate.go`): lich learns
-  which conversation a card runs from its session-start report, so a resume typed inside the agent's own app
-  is warned about only once that report names the new id. Some report it only with their next prompt or tool
-  call, so a turn may already have run in both cards, and Cursor CLI and opencode report nothing at all: their
-  row keeps the old id and a restart resumes the conversation the card opened with (each provider's version:
-  `docs/providers/`, Hooks). Reopening from lich itself is not this gap: every door through `store.reopen`
-  focuses the card that holds the conversation.
-- **Start new leaves the old conversation reachable only through History search**
-  (`native/cmd/lich-native/exit_toast.go`): once the new conversation's session-start report arrives, the backend
-  writes its id over the card's `provider_session_id`, and nothing on the card points back at the old one. Start
-  new asks no confirmation for that reason.
-- **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
-  `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
-  `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. Claude
-  Code's effort and all of Antigravity resume on the saved default rather than on the conversation's (each
-  measurement in `docs/providers/`, Spawn), so a change made inside the session survives while a level or model
-  lich set at birth falls back to that default. Cursor CLI also writes whatever model a spawn or resume runs on into
-  `cli-config.json` as the default for every later `cursor-agent`, so `lich open --kind cursor --model` changes
-  the user's Cursor default too.
 - **A backend holds one window at a time** (`lich native`, `docs/native-window.md`): `/events` and `/ws` hold one
   client, and a new one replaces the old with no close frame, so two windows cannot share a backend: the window
   already up, its `/events` dropped by a backend that still answers, says another window took over
@@ -811,99 +883,42 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   installed a branch name or agent output in Chinese still draws as tofu in the terminal while the cards and
   Settings around it read fine. Installing a Chinese font system-wide covers both. Windows and macOS find the
   terminal's fallback by scanning the system font folders, which leave lich's cache out the same way.
-- **A profile is one provider's** (`internal/profilestore`): which providers have profiles on which OS is
-  README's provider table, and how each is laid out, logged in and moved is `docs/providers/`, Profiles.
-  `internal/xdgprofile` lists the link-home providers each platform has (`supported_linux.go`,
-  `supported_windows.go`, `supported_other.go`), and the native window shows profile rows for the same ones
-  (`profiles_xdg_*.go`). The
-  profile slug of a session row belongs to that row's provider: a Codex profile named "work" and a Claude Code one
-  named "work" are two profiles.
-- **A profile that links to your own directories shares their writes, and keeps what a tool creates inside it**
-  (`internal/profilestore/linkhome.go`, `layout.go`, `internal/claudeprofile/profile.go`, `internal/ompprofile`):
-  Claude Code, oh-my-pi, opencode, Cursor CLI and Kiro CLI profiles link Personal's own content, and a tool writes
-  through a link into its target. So `claude plugin install` run in a profile writes `enabledPlugins` into the
-  one shared `settings.json`, and a plugin a work account installed reads as enabled in Personal, where it is not
-  installed; `/config` changes in any profile change them all. An entry the profile already holds, link or
-  file, is never replaced: whatever a tool creates inside a profile is the profile's from then on, and an entry
-  you make later with the same name is not linked there. A Claude Code `settings.json` written there first stays
-  the profile's, an oh-my-pi profile with an `extensions/` of its own does not get lich's extension through it and
-  its sessions report nothing, and a Kiro update that replaces `tui.js` by a rename inside a profile leaves that
-  profile its own copy, which no later update in yours reaches. On Windows a file link needs Developer Mode:
-  without it Claude Code's, oh-my-pi's and Codex's linked files are copies that drift on the first edit, and an
-  opencode, Cursor CLI or Kiro CLI profile leaves the file out until the first spawn after Developer Mode is on.
-  A sandboxed session gets the profile bound writable, and its links reach only what the sandbox already exposes
-  at their targets.
-- **An oh-my-pi, opencode, Cursor CLI or Kiro CLI profile still sees the provider API keys in lich's
-  environment** (`internal/ompprofile`, `internal/xdgprofile`): each drops the variables that would point it at
-  another account or another profile's state (`docs/providers/`, Profiles), but `ANTHROPIC_API_KEY`,
-  `OPENAI_API_KEY` and the rest are passed through, so a profile that has no login for a provider spends the key
-  the environment has, as Personal does.
-- **Continue in refuses a turn in progress only where the session-state hooks report one**
-  (`terminal.ContinueIn`; what each provider moves and leaves behind is `docs/providers/`, Profiles): a Claude
-  Code without the lich plugin, or an oh-my-pi without the lich extension, reports no turn and is moved mid-turn.
-  On Claude Code the prompt history and the project's `lastSessionId` stay in the profile the conversation left,
-  so `claude --continue` there points at a conversation it no longer holds. A session born in a profile deleted
-  since is refused at spawn with "claude profile no longer exists", including its resume: the conversation was
-  deleted with the profile.
-- **A provider's "trust this folder?" answer is carried only where lich can find the person's own answer,
-  and a confined session is told to skip the question** (`internal/claudeprofile/trust.go`,
-  `internal/terminal/cursor_trust.go`, `antigravity_trust.go`, `crush_init.go`, `confinedEnv` and
-  `confinedTrustArgs` in `internal/terminal/sandbox.go`; each provider in `docs/providers/`, Spawn and Sandbox):
-  before a spawn into a worktree or a profile lich writes a provider's trust for the folder only when the person
-  already trusted it in Personal or trusted its main checkout, and it never trusts a folder nobody trusted. A
-  confined session skips the question, because what it guards against, a folder's own settings running on the
-  machine, is what the sandbox confines; on Cursor CLI and Antigravity skipping it writes the trust down, so a
-  folder once opened confined stays trusted outside the sandbox too. Whether Codex's trust and Cursor CLI's
-  `--trust` loosen anything beyond the question was not measured.
-- **A Claude Code profile's plugin versions live in a store lich never empties**
-  (`internal/claudeprofile/plugincache.go`; the layout is `docs/providers/claude.md`, Profiles): each version a
-  profile names is moved into `plugin_cache/` beside the profiles and linked back, which is what keeps Claude
-  Code's 14-day orphan sweep from deleting a plugin only one profile has. Versions no profile names any more stay
-  in the store, since a session started before an update may still run one; deleting `plugin_cache/` with every
-  Claude Code closed only costs the downloads. A profile made before `CLAUDE_CODE_PLUGIN_CACHE_DIR` was set keeps
-  the marketplace link it was made with and clones each marketplace again into a directory Personal no longer
-  reads, until that link is removed.
-- **A profile's directory never moves, and lich's config dir decides where it is**: on macOS Claude Code keeps a
-  login in the Keychain under a service named after a hash of the config directory string
-  (`internal/quota/claude_storage.go`), so a renamed profile keeps its slug and directory and changes only its
-  name, and a moved one would lose its login. Deleting a profile deletes that Keychain item with
-  `security delete-generic-password` (`quota.ForgetClaudeLogin`), which has not run on a Mac yet. The
-  directory is built from `os.UserConfigDir()` on every call, so an `XDG_CONFIG_HOME` (or `APPDATA`) that
-  changes between launches points lich at another, empty set of profiles. A `task dev` rig has its own set
-  (`profiles-dev`), so its profiles need their own login.
-- **The version Settings shows is the one lich's own environment gets** (`internal/providers/version.go`):
-  `--version` runs in lich's working directory with lich's environment, not in a session's checkout. A
-  version-manager shim that picks its tool per directory (mise, asdf) can answer one version there and start
-  another in a project that pins its own, and the "Also on PATH" list compares those same per-lich answers.
-  All eight providers print a version (measured on Claude Code 2.1.299, Codex 0.162.1, Antigravity 1.3.5,
-  opencode 1.18.35, oh-my-pi 18.8.9, Crush 0.98.1, Cursor CLI 2026.10.01, Kiro CLI 2.21.0); a CLI whose
-  `--version` hangs past 10 s or prints no version shows its path alone.
-- **The binary setting and lich's own plugin checks still answer for Personal**: a profile's session runs the
-  configured Claude Code binary, so a wrapper that exports its own `CLAUDE_CONFIG_DIR` or a token still wins
-  over the profile, and the same binary answers the profile's `auth status` and installs its plugins. The
-  start gate reads the profile's own plugin state, but the nested-subagent-cards check and the MCP servers a
-  card lists read Personal's, so a profile on an older lich plugin than Personal's can be offered cards its
-  plugin cannot open: one whose follow-up install failed, or one still waiting for it.
-- **A profile's lich plugin follows Personal's, after it and in the background**
-  (`internal/agentplugin/profiles.go`): an install or update of the lich plugin for Claude Code or Codex,
-  from Settings or anywhere else, runs in Personal and returns; then the same pinned install runs as each
-  other profile of that provider whose version differs, one at a time, logged in or not. A backend start makes
-  the same pass, which is what reaches a profile logged in before profiles got the plugin at login; it is the
-  start and not the next spawn because a pass clones the marketplace, and a spawn would wait on it. A start asks
-  for the release list only when a provider has a profile besides Personal. While Personal itself is behind the
-  newest release this lich speaks, a profile that has the plugin keeps its version and one that has none gets the
-  newest, so the two can differ until Personal is updated. A profile whose install failed is named in an error
-  toast of the native window, in the CLI's own words, and is tried again at the next start or update. A Claude
-  Code profile's pass removes the marketplace clone it links to Personal's and clones it back, so a Personal
-  session starting during a pass can find the clone missing for the seconds that takes.
 - **Following the OS's light or dark is polled on macOS**: a theme's `pair` and `lich theme switch` reach the
   window through the backend's `theme-selection` event. Following the OS
   reads the freedesktop appearance portal on Linux and `AppsUseLightTheme` in the registry on Windows, both
   watched. macOS polls `defaults read -g AppleInterfaceStyle` every 3 seconds, so a switch reaches the window
   up to that late: observing `AppleInterfaceThemeChangedNotification` needs an Objective-C shim no one
   could compile or run without a Mac. The BSDs read no scheme and draw dark.
-- **A setting changed inside a Codex profile does not last** (`internal/codexprofile/config.go`; the layout is
-  `docs/providers/codex.md`, Profiles): the profile's `config.toml` is rebuilt from Personal's before every spawn,
-  so a `/model`, `features enable` or MCP server added inside a profile is gone at its next session, a setting
-  Personal removes leaves every profile then, and a trust answer only Personal withdrew stays in the profiles
-  that gave it.
+
+## Languages
+
+- **The prompt language reaches a running session only through lich itself** (`internal/prompt`): text lich
+  composes in its own process (relay messages, nudges) follows the setting at once, but anything composed
+  inside the session (the `lich` CLI, its MCP results, the plugin's hooks) reads `LICH_PROMPT_LANG`, which is
+  fixed when the session spawns. Change the language and an open session can get relay messages in the new
+  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn,
+  and only Claude Code and oh-my-pi receive one at all: they are the two whose command line can append to the
+  system prompt (`briefingFlags`), so the other six read lich's words only in relayed messages. MCP tool
+  descriptions, `--help` and error returns stay English in every language. A usage-limit continuation parked
+  before the setting changed keeps the language it was parked in: the row stores the text, so
+  `isResumePrompt` matches it in every locale.
+- **Some interface text stays English in every language**: the exit marker written into a terminal's scrollback
+  (`exitMarker`, `native/cmd/lich-native/terminal_exit.go`), because it is data in the replay and not a label;
+  the `Session N` label a session gets when nothing names it (`internal/spawn/spawn.go`), because
+  it is persisted and would otherwise change language on the next launch only for the rows made afterwards;
+  every error and the output of `lichclient.ErrorText`, which show backend and library text as it came; the
+  CHANGELOG group labels in the What's new dialog (`native/cmd/lich-native/settings_updates_notes.go`), which
+  render a file that is English;
+  and MCP tool descriptions and the `lich` CLI's `--help`, which agents read and which do not follow the prompt
+  language either.
+
+## Developing lich
+
+- **The gate run inside lich kills lich's window** (measured 2026-10-10): `go vet`, `go test ./...` and the
+  cross-compile loop started together from a session ran the machine out of memory, and the lich window died
+  with SIGBUS; the window took the session that ran the gate down with it. `/tmp` is tmpfs on many distributions, so the Go
+  build's temporaries count as RAM too. Nothing in lich bounds what a session spends. The way around it is
+  in CLAUDE.md › Local Gate: one step at a time, in a `systemd-run --user --scope` with `MemoryMax`, with
+  `GOTMPDIR`/`TMPDIR` on a short path on disk (`/var/tmp/lich-gate`; under `~/.cache` the sandbox suite's
+  Unix sockets outgrew the 108-byte limit); there a step over the limit is the one killed. macOS and Windows have no
+  equivalent here.
