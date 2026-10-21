@@ -32,4 +32,4 @@ require (
 // moves, resizes and maximizes on Wayland and X11, app.TrafficLights (macOS's
 // buttons on an undecorated window), and the Editor's scroll offset (the
 // textarea's scrollbar). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261021015051-4409150e2cf9
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261021132818-f0df03d51088
