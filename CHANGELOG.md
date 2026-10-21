@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A Markdown file in the Review tab has a preview button beside "Add file as context" that shows the file rendered, tables and links included, in place of its diff. Click it again to go back to the diff. On the Pulls screen only files the pull request adds have it.
 - Ctrl+F (Cmd+F on macOS) on a file open in the Code tab finds text in it. A bar under the file's name lights every match, steps through them with Enter and Shift+Enter, and can match case, whole words or a regular expression. Its list button shows every line with a match under the bar, and clicking one takes the code there. Escape closes it.
 - A session card's tooltip names the model the session is running, for Claude Code, Codex and Kiro CLI. When it is no longer the model the session was opened on, after a `/model` for instance, the line reads "Opened on …, running …".
+- The Pulls screen edits a pull request's title and description and sends them to GitHub. The pencil after the title renames it in place: Enter or clicking away saves, Escape cancels. Edit beside the Overview's Description opens it as Markdown, saved with Save or Ctrl+Enter (Cmd+Enter on macOS). A long description scrolls inside the field, with a scrollbar, so Save stays on screen. Each one sends only what it changed, so saving the description never undoes a rename made on GitHub meanwhile.
 
 ### Changed
 

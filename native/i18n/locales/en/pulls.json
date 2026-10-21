@@ -111,7 +111,12 @@
     "description": "Description",
     "noDescription": "No description.",
     "reviewers": "Reviewers",
-    "nobodyYet": "Nobody yet"
+    "nobodyYet": "Nobody yet",
+    "editDescription": "Edit",
+    "save": "Save",
+    "saving": "Saving…",
+    "descriptionPlaceholder": "Describe the change. Markdown works.",
+    "editFailed": "Couldn't update the description: {error}"
   },
   "pullsStats": {
     "checksFailing": "{failed} of {total} checks failing",
@@ -218,7 +223,9 @@
       "commits": "Commits",
       "conversation": "Conversation",
       "checks": "Checks"
-    }
+    },
+    "editTitle": "Rename pull request",
+    "renameFailed": "Couldn't rename the pull request: {error}"
   },
   "pullsActions": {
     "runningTitle": "Sessions are still running",

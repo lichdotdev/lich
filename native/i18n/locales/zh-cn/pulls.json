@@ -111,7 +111,12 @@
     "description": "描述",
     "noDescription": "没有描述。",
     "reviewers": "评审者",
-    "nobodyYet": "暂无"
+    "nobodyYet": "暂无",
+    "editDescription": "编辑",
+    "save": "保存",
+    "saving": "正在保存…",
+    "descriptionPlaceholder": "描述这项更改，支持 Markdown。",
+    "editFailed": "无法更新描述：{error}"
   },
   "pullsStats": {
     "checksFailing": "{total} 项检查中有 {failed} 项失败",
@@ -218,7 +223,9 @@
       "commits": "提交",
       "conversation": "对话",
       "checks": "检查"
-    }
+    },
+    "editTitle": "重命名拉取请求",
+    "renameFailed": "无法重命名拉取请求：{error}"
   },
   "pullsActions": {
     "runningTitle": "会话仍在运行",

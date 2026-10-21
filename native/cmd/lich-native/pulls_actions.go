@@ -26,6 +26,7 @@ var (
 	flagPulls     = flag.Int("pulls", -1, "open the Pulls screen at start on this pull request (0 for the checkout's), for -shot")
 	flagPullsTab  = flag.Int("pulls-tab", 0, "the tab -pulls opens on (0 Overview, 1 Conversation, 2 Commits, 3 Files, 4 Checks)")
 	flagMergeEdit = flag.String("pulls-merge-edit", "", "open the merge message dialog for this method (squash, merge) once -pulls loads, for -shot")
+	flagPullsEdit = flag.String("pulls-edit", "", "open the title or description edit (title, description) once -pulls loads, for -shot")
 )
 
 // pullsShot opens the screen at start as -pulls asks.
@@ -34,6 +35,7 @@ func (u *window) pullsShot() {
 		u.showPulls(*flagPulls)
 		u.pulls.view.tabs.Selected = *flagPullsTab
 		u.pulls.view.shotMergeEdit = *flagMergeEdit
+		u.pulls.view.shotEdit = *flagPullsEdit
 	}
 }
 
@@ -99,6 +101,7 @@ func (u *window) applyPulls(act pullsAction) {
 	}
 	if p.selected != 0 {
 		u.applyTalk(path, p.selected, act)
+		u.applyEdit(path, p.selected, act)
 	}
 	if act.approve && p.selected != 0 {
 		go u.approvePR(path, p.selected)

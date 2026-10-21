@@ -7,6 +7,7 @@ import (
 	"gioui.org/font"
 	"gioui.org/io/event"
 	"gioui.org/io/pointer"
+	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -22,13 +23,19 @@ var (
 
 // TextareaStyle draws shadcn's Textarea around a caller-owned Editor. It is
 // field-sizing-content: as tall as its text, at least min-h-16, and at most
-// the maximum height constraint, which is where a max-h-* class goes; past it
+// MaxHeight or the maximum height constraint, whichever is lower; past it
 // the editor scrolls.
 type TextareaStyle struct {
 	Editor *widget.Editor
 	// Resize is resize-y: a grip in the corner that drags the height. nil is
 	// resize-none.
-	Resize      *TextareaResize
+	Resize *TextareaResize
+	// MaxHeight is max-h-*, the frame's ceiling; 0 leaves the constraint as
+	// the only one, which a scrolling list never sets.
+	MaxHeight unit.Dp
+	// Scrollbar is the bar shown while the text overflows, draggable as a
+	// list's; nil scrolls with the wheel and the caret alone.
+	Scrollbar   *widget.Scrollbar
 	Placeholder string
 	Width       unit.Dp // 0 is w-full
 	Disabled    bool
@@ -48,6 +55,9 @@ func (s TextareaStyle) Layout(gtx C) D {
 	s.Editor.SingleLine = false
 	gtx.Constraints.Max.X = inputWidth(gtx, s.Width)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	if s.MaxHeight > 0 {
+		gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(s.MaxHeight))
+	}
 	field := inputText{theme: s.theme, editor: s.Editor, placeholder: s.Placeholder, size: TextSM,
 		font: font.Font{Typeface: s.theme.Sans}, padLeft: inputPadX, padRight: inputPadX, padY: textareaPadY,
 		minHeight: textareaMinHeight}
@@ -61,10 +71,40 @@ func (s TextareaStyle) Layout(gtx C) D {
 	}
 	st := inputState{invalid: s.Invalid, disabled: s.Disabled}
 	d := inputFrame(gtx, s.theme, s.Editor, st, false, func(gtx C) D { return field.layout(gtx, 0) })
+	if s.Scrollbar != nil {
+		s.layoutScrollbar(gtx, d.Size)
+	}
 	if r != nil {
 		r.layout(gtx, s.theme, d.Size)
 	}
 	return d
+}
+
+// layoutScrollbar draws the bar over the right padding of a frame of size,
+// which is as wide as it, and applies its drag to the editor. It stops short
+// of the resize grip.
+func (s TextareaStyle) layoutScrollbar(gtx C, size image.Point) {
+	ed := s.Editor
+	overflow := ed.ScrollBounds().Max.Y
+	if overflow <= 0 {
+		return
+	}
+	view := float32(max(size.Y-2*gtx.Dp(textareaPadY), 1))
+	content := view + float32(overflow)
+	start := float32(ed.ScrollOff().Y) / content
+	bar := s.theme.scrollbar(s.Scrollbar)
+	track := size.Y
+	if s.Resize != nil {
+		track -= gtx.Dp(textareaGrip)
+	}
+	width := gtx.Dp(bar.Width())
+	defer op.Offset(image.Pt(size.X-width, 0)).Push(gtx.Ops).Pop()
+	gtx.Constraints = layout.Exact(image.Pt(width, track))
+	bar.Layout(gtx, layout.Vertical, start, start+view/content)
+	if delta := s.Scrollbar.ScrollDistance(); delta != 0 {
+		ed.ScrollRel(0, int(delta*content))
+		gtx.Execute(op.InvalidateCmd{})
+	}
 }
 
 // textareaGrip is the side of the square in the bottom-right corner that

@@ -115,7 +115,12 @@
     "description": "Описание",
     "noDescription": "Описания нет.",
     "reviewers": "Ревьюеры",
-    "nobodyYet": "Пока никого"
+    "nobodyYet": "Пока никого",
+    "editDescription": "Изменить",
+    "save": "Сохранить",
+    "saving": "Сохранение…",
+    "descriptionPlaceholder": "Опишите изменение. Поддерживается Markdown.",
+    "editFailed": "Не удалось обновить описание: {error}"
   },
   "pullsStats": {
     "checksFailing": "Не пройдено проверок: {failed} из {total}",
@@ -228,7 +233,9 @@
       "commits": "Коммиты",
       "conversation": "Обсуждение",
       "checks": "Проверки"
-    }
+    },
+    "editTitle": "Переименовать pull request",
+    "renameFailed": "Не удалось переименовать pull request: {error}"
   },
   "pullsActions": {
     "runningTitle": "Сессии ещё работают",

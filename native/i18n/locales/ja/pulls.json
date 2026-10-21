@@ -111,7 +111,12 @@
     "description": "説明",
     "noDescription": "説明はありません。",
     "reviewers": "レビュアー",
-    "nobodyYet": "まだいません"
+    "nobodyYet": "まだいません",
+    "editDescription": "編集",
+    "save": "保存",
+    "saving": "保存中…",
+    "descriptionPlaceholder": "変更内容を説明してください。Markdown が使えます。",
+    "editFailed": "説明を更新できませんでした: {error}"
   },
   "pullsStats": {
     "checksFailing": "{total} 件中 {failed} 件のチェックが失敗",
@@ -218,7 +223,9 @@
       "commits": "コミット",
       "conversation": "会話",
       "checks": "チェック"
-    }
+    },
+    "editTitle": "プルリクエストの名前を変更",
+    "renameFailed": "プルリクエストの名前を変更できませんでした: {error}"
   },
   "pullsActions": {
     "runningTitle": "セッションはまだ実行中です",

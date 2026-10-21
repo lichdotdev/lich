@@ -271,3 +271,13 @@ func (c *Client) ResolveReviewThread(ctx context.Context, path, threadID string,
 func (c *Client) CommentOnPullRequest(ctx context.Context, path string, number int, body string) error {
 	return c.Call(ctx, "project.CommentOnPullRequest", nil, path, number, body)
 }
+
+// EditPullRequestTitle renames the pull request.
+func (c *Client) EditPullRequestTitle(ctx context.Context, path string, number int, title string) error {
+	return c.Call(ctx, "project.EditPullRequestTitle", nil, path, number, title)
+}
+
+// EditPullRequestBody rewrites the pull request's description; empty clears it.
+func (c *Client) EditPullRequestBody(ctx context.Context, path string, number int, body string) error {
+	return c.Call(ctx, "project.EditPullRequestBody", nil, path, number, body)
+}

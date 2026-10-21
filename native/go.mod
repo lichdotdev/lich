@@ -25,10 +25,11 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 )
 
-// lichdotdev/gio, branch drop-event, carries what gioui.org lacks: app.DropEvent
+// lichdotdev/gio, branch lich, carries what gioui.org lacks: app.DropEvent
 // (external file drop), Window.Activate (raising the window on Wayland), word
 // deletion with Ctrl off macOS, Wayland fixes for EGL vsync, clipboard reads,
 // pointer.Leave and the cursor (cursor-shape-v1), an undecorated window that
-// moves, resizes and maximizes on Wayland and X11, and app.TrafficLights
-// (macOS's buttons on an undecorated window).
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261020184659-08b70c1175a6
+// moves, resizes and maximizes on Wayland and X11, app.TrafficLights (macOS's
+// buttons on an undecorated window), and the Editor's scroll offset (the
+// textarea's scrollbar). Every patch of ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261021015051-4409150e2cf9

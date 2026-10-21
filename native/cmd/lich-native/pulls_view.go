@@ -45,6 +45,8 @@ type pullsAction struct {
 	comment  string // a comment on the pull request itself
 	reply    *threadReply
 	resolve  *threadResolve
+	title    string  // a new title for the pull request
+	body     *string // a new description; empty clears it
 }
 
 // open sends url to the browser: a link clicked in a Markdown body.
@@ -85,8 +87,11 @@ type pullView struct {
 	pending   map[string]*pendingReview // by PR URL
 	submit    submitState
 	mergeEdit mergeDialog
+	edit      editState
 	// shotMergeEdit is -pulls-merge-edit, opened once the detail is read.
 	shotMergeEdit string
+	// shotEdit is -pulls-edit, opened once the detail is read.
+	shotEdit string
 }
 
 // onFrame queues f to run at the start of the next frame: what a write off
@@ -160,13 +165,17 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	case read.val == nil:
 		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return v.empty(gtx, th, p, act) })
 	}
-	d := *read.val
+	d := v.edit.shown(*read.val, read, p.store.lastStale())
 	if stillSettling(d) && !read.loading {
 		gtx.Execute(op.InvalidateCmd{At: read.at.Add(pendingRecheck)})
 	}
 	if v.shotMergeEdit != "" {
 		v.mergeEdit.show(v.shotMergeEdit, false, d)
 		v.shotMergeEdit = ""
+	}
+	if v.shotEdit != "" {
+		v.edit.openForShot(v.shotEdit, d)
+		v.shotEdit = ""
 	}
 	return v.withToolbar(gtx, th, p, &d, act, func(gtx C) D { return v.body(gtx, th, p, d, act) })
 }
@@ -194,10 +203,10 @@ func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *lichclien
 								return v.actions(gtx, th, p, *d, act)
 							}, nil)
 						}),
-						layout.Rigid(func(gtx C) D { return v.heading(gtx, th, p, *d, false) }),
+						layout.Rigid(func(gtx C) D { return v.heading(gtx, th, p, *d, act, false) }),
 					)
 				}
-				return v.toolbarRow(gtx, th, p, func(gtx C) D { return v.heading(gtx, th, p, *d, p.listHidden) }, func(gtx C) D {
+				return v.toolbarRow(gtx, th, p, func(gtx C) D { return v.heading(gtx, th, p, *d, act, p.listHidden) }, func(gtx C) D {
 					actions.Add(gtx.Ops)
 					return D{Size: size}
 				})
@@ -237,14 +246,14 @@ func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d lichclie
 }
 
 // heading is the title over its stats, its left edge on the body's px-6.
-func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, besideShowList bool) D {
+func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction, besideShowList bool) D {
 	left := pullsPadX - pullsToolbarPad
 	if besideShowList {
 		left = ui.Space(2)
 	}
 	return layout.Inset{Left: left, Right: ui.Space(4), Top: pullsHeadingTop}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return pullTitle(gtx, th, d) }),
+			layout.Rigid(func(gtx C) D { return v.pullTitle(gtx, th, p, d, act) }),
 			ui.VGap(3),
 			layout.Rigid(func(gtx C) D { return v.stats(gtx, th, p, d) }),
 		)
@@ -286,18 +295,6 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDeta
 		}),
 		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D { return v.panelLayout(gtx, th, p, d, act) }),
-	)
-}
-
-func pullTitle(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
-	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(th.Text(pullsTitleSize, fmt.Sprintf("#%d", d.Number)).Muted().Weight(font.SemiBold).Layout),
-		ui.Gap(1.5),
-		layout.Flexed(1, func(gtx C) D {
-			l := th.Text(pullsTitleSize, d.Title).Weight(font.SemiBold)
-			l.MaxLines = 0
-			return l.Layout(gtx)
-		}),
 	)
 }
 

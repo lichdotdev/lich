@@ -59,10 +59,16 @@ const (
 // ScrollArea is shadcn's ScrollArea over a widget.List: the list with a thin
 // scrollbar that shows while its content overflows.
 func (th *Theme) ScrollArea(state *widget.List) material.ListStyle {
-	mt := material.Theme{Shaper: th.Shaper}
-	mt.Fg = th.Foreground
-	list := material.List(&mt, state)
-	list.Indicator.Color = th.Over(Alpha(th.Foreground, scrollThumbOpacity))
-	list.Indicator.HoverColor = th.Over(Alpha(th.Foreground, scrollThumbHoverOpacity))
+	list := material.List(&material.Theme{Shaper: th.Shaper}, state)
+	list.ScrollbarStyle = th.scrollbar(&state.Scrollbar)
 	return list
+}
+
+// scrollbar is ScrollArea's bar alone, over state, for a widget that scrolls
+// itself.
+func (th *Theme) scrollbar(state *widget.Scrollbar) material.ScrollbarStyle {
+	bar := material.Scrollbar(&material.Theme{Shaper: th.Shaper}, state)
+	bar.Indicator.Color = th.Over(Alpha(th.Foreground, scrollThumbOpacity))
+	bar.Indicator.HoverColor = th.Over(Alpha(th.Foreground, scrollThumbHoverOpacity))
+	return bar
 }
