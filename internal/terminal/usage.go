@@ -19,7 +19,7 @@ const usageEventName = "session-usage"
 //
 // All five are zero for a provider that records what a turn spent but not the
 // window it spent it against — oh-my-pi, opencode and Crush, the cost-only rung
-// of docs/ceilings.md. A zero Window is the window's signal to draw the cost
+// of docs/ceilings.md (each in docs/providers/). A zero Window is the window's signal to draw the cost
 // alone rather than a ring around a window nobody reported.
 //
 // CostUSD is what the session has cost so far, and is omitted — not zeroed —

@@ -33,7 +33,7 @@ import (
 func (s *Service) CarryUncommitted(src, dst string) error {
 	// --binary, so an edited image or any other non-text file comes over as
 	// bytes instead of as an unappliable "Binary files differ" line.
-	patch, err := runGit(src, "diff", "HEAD", "--binary")
+	patch, err := readGit(src, "diff", "HEAD", "--binary")
 	if err != nil {
 		return err
 	}

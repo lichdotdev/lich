@@ -48,7 +48,9 @@
     "onlyWhitespaceChanged": "Só o espaço em branco mudou",
     "addAsContext": "Adicionar arquivo como contexto",
     "discard": "Descartar alterações",
-    "viewed": "Visto"
+    "viewed": "Visto",
+    "previewMarkdown": "Pré-visualizar Markdown",
+    "showDiff": "Mostrar diff"
   },
   "reviewPanel": {
     "discardFailed": "Falha ao descartar as alterações: {error}",

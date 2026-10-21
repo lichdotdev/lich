@@ -233,8 +233,11 @@ func (v *pullView) overviewRows(th *ui.Theme, d lichclient.PRDetail, act *pullsA
 		pad(4, th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": d.Author})).Muted().Layout),
 		pad(5, sectionHeading(th, i18n.T("pulls.pullsOverview.reviewers"))),
 		pad(2, func(gtx C) D { return reviewerChips(gtx, th, d.Reviewers) }),
-		pad(5, sectionHeading(th, i18n.T("pulls.pullsOverview.description"))),
+		pad(5, func(gtx C) D { return v.descriptionHeading(gtx, th, d) }),
 		pad(2, func(gtx C) D {
+			if v.edit.bodyURL == d.URL {
+				return v.descriptionField(gtx, th, d, act)
+			}
 			if body == "" {
 				return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.noDescription")).Muted().Layout(gtx)
 			}
@@ -373,11 +376,11 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d lichclient.PRDetail, act *pu
 			case "failed":
 				ic, fg = icPullX, th.Destructive
 			case "pending":
-				ic, fg = icPullClock, th.ToneWait
+				ic, fg = icPullRunning, th.ToneWait
 			}
 			return panelRow(gtx, th, click, c.URL != "", func(gtx C, th *ui.Theme) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(4), fg) }),
+					layout.Rigid(func(gtx C) D { return pullGlyph(gtx, ic, ui.Space(4), fg) }),
 					ui.Gap(3),
 					layout.Flexed(1, func(gtx C) D {
 						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,

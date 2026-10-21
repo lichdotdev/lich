@@ -48,7 +48,9 @@
     "onlyWhitespaceChanged": "Only whitespace changed",
     "addAsContext": "Add file as context",
     "discard": "Discard Changes",
-    "viewed": "Viewed"
+    "viewed": "Viewed",
+    "previewMarkdown": "Preview Markdown",
+    "showDiff": "Show diff"
   },
   "reviewPanel": {
     "discardFailed": "Failed to discard changes: {error}",

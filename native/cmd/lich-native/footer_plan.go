@@ -79,14 +79,16 @@ func gaugeLabel(gtx C, th *ui.Theme, g quotaGauge) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
-// gaugeBar is a rounded track in the muted color, filled to percent in the
-// window's tone.
+// gaugeBar is a rounded track in the border color, filled to percent in the
+// window's tone. The track is not Muted: the popover and, in the light theme,
+// the settings page are drawn in that color, and the bar would be a fill with
+// nothing to fill.
 func gaugeBar(gtx C, th *ui.Theme, percent int, tone color.NRGBA) D {
 	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(ui.Space(1.5)))
 	radius := ui.Space(0.75)
 	track := gtx
 	track.Constraints.Min = size
-	ui.Fill(track, th.Muted, radius)
+	ui.Fill(track, th.Over(th.Border), radius)
 	fill := gtx
 	fill.Constraints.Min = image.Pt(size.X*min(max(percent, 0), 100)/100, size.Y)
 	if fill.Constraints.Min.X > 0 {

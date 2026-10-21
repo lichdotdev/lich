@@ -124,7 +124,8 @@
     "setAtOpen": "会话打开时确定；重新打开以更改。",
     "notMounted": "未挂载（符号链接）：{paths}",
     "morePaths": "另外 {count} 项",
-    "forkedFrom": "分叉自 {label}"
+    "forkedFrom": "分叉自 {label}",
+    "modelChanged": "以 {requested} 打开，正在运行 {running}"
   },
   "worktreeDialogView": {
     "title": "新建工作树会话",

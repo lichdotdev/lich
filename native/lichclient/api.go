@@ -38,6 +38,9 @@ type Session struct {
 	// Profile is the Claude Code profile the session runs in (a slug), "" for
 	// Personal and for every other provider.
 	Profile string `json:"profile"`
+	// Model is the model the session was born on, "" for one opened on its
+	// provider's default.
+	Model string `json:"model"`
 	// OriginSessionID is the session this one came from, in any project, ""
 	// for one nobody opened from another; OriginLabel is what that session
 	// was called when it did.

@@ -60,11 +60,16 @@ const (
 // ToggleStyle draws a shadcn Toggle around a caller-owned widget.Bool: Pressed
 // is aria-pressed, a click flips its Value.
 type ToggleStyle struct {
-	Pressed  *widget.Bool
-	Text     string
-	Icon     *icons.Icon // leading, optional
-	Variant  ToggleVariant
-	Size     ToggleSize
+	Pressed *widget.Bool
+	Text    string
+	Icon    *icons.Icon // leading, optional
+	Variant ToggleVariant
+	Size    ToggleSize
+	// Height, PadX and TextSize are the h-*, px-* and text-* a call site puts
+	// in className; zero keeps the size's own.
+	Height   unit.Dp
+	PadX     unit.Dp
+	TextSize unit.Sp
 	Disabled bool
 	theme    *Theme
 }
@@ -80,6 +85,9 @@ func (t ToggleStyle) Layout(gtx C) D {
 		icon:     t.Icon,
 		variant:  t.Variant,
 		size:     t.Size,
+		height:   t.Height,
+		padX:     t.PadX,
+		textSize: t.TextSize,
 		pressed:  t.Pressed.Value,
 		disabled: t.Disabled,
 	}

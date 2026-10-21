@@ -101,6 +101,7 @@ reads what each CLI writes down and no two of them write down the same things.
 | What you get | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | Context window in the footer | yes | yes | no | no | no | no | no | yes |
+| The card's tooltip names the model running, and the one it opened on if it changed | yes | yes | no | no | no | no | no | yes |
 | Cost in the footer | yes | yes | no | yes | yes | yes | no | credits |
 | How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no |
 | A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no |

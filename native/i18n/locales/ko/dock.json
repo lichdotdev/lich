@@ -22,5 +22,21 @@
     "empty": "파일이 없습니다",
     "backToTree": "파일 트리로 돌아가기",
     "readOnly": "읽기 전용"
+  },
+  "findBar": {
+    "placeholder": "찾기",
+    "matchCase": "대/소문자 구분",
+    "wholeWord": "단어 단위로",
+    "regexp": "정규식 사용",
+    "showAll": "모든 일치 항목 표시",
+    "previous": "이전 일치",
+    "next": "다음 일치",
+    "close": "닫기",
+    "position": "{current}/{total}",
+    "matches": {
+      "other": "{count}개 일치"
+    },
+    "noResults": "결과 없음",
+    "invalidRegexp": "잘못된 정규식"
   }
 }

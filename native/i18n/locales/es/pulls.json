@@ -111,7 +111,12 @@
     "description": "Descripción",
     "noDescription": "Sin descripción.",
     "reviewers": "Revisores",
-    "nobodyYet": "Nadie todavía"
+    "nobodyYet": "Nadie todavía",
+    "editDescription": "Editar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "descriptionPlaceholder": "Describe el cambio. Admite Markdown.",
+    "editFailed": "No se pudo actualizar la descripción: {error}"
   },
   "pullsStats": {
     "checksFailing": "{failed} de {total} comprobaciones fallan",
@@ -218,7 +223,9 @@
       "commits": "Commits",
       "conversation": "Conversación",
       "checks": "Comprobaciones"
-    }
+    },
+    "editTitle": "Renombrar pull request",
+    "renameFailed": "No se pudo renombrar el pull request: {error}"
   },
   "pullsActions": {
     "runningTitle": "Las sesiones siguen en ejecución",

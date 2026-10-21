@@ -64,8 +64,8 @@ A report naming a conversation another open card already runs (a resume typed
 in the provider's own TUI) is stored like any other, and lich also pushes
 `session-duplicate` `{id, heldBy}` to the window, which offers to drop this
 card and switch to `heldBy`. Nothing changes on the client side: the warning
-reaches only the providers whose hook reports the switch, listed in
-`docs/ceilings.md`.
+reaches only the providers whose hook reports the switch, each in
+`docs/providers/`, Hooks.
 
 The others report the same id from the earliest place each one offers it.
 **Antigravity has no session event at all**: its lifecycle is `PreInvocation`,

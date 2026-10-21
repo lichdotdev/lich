@@ -124,7 +124,8 @@
     "setAtOpen": "セッションを開いたときに決まります。変更するには開き直してください。",
     "notMounted": "マウントされていません (シンボリックリンク): {paths}",
     "morePaths": "ほか {count} 件",
-    "forkedFrom": "{label} からフォーク"
+    "forkedFrom": "{label} からフォーク",
+    "modelChanged": "{requested} で開始、{running} で実行中"
   },
   "worktreeDialogView": {
     "title": "新しいワークツリーセッション",

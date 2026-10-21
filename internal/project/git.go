@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -41,6 +42,15 @@ const waitDelay = 2 * time.Second
 // answer, and those are how a machine set up for this answers with nobody at the
 // keyboard.
 var noPromptEnv = []string{"GIT_TERMINAL_PROMPT=0", "GH_PROMPT_DISABLED=1"}
+
+// readOnlyGit keeps a read from writing the index. Left to themselves, status
+// and diff refresh a stat-stale index and take index.lock to save it, and an
+// agent's own commit in the same checkout that lands in that window fails on
+// "index.lock: File exists". status skips the refresh under
+// --no-optional-locks; porcelain diff ignores that flag (measured, git 2.56) and
+// skips it only with diff.autoRefreshIndex off, which leaves its output as it
+// was. Neither touches a lock a write requires. gitQuiet and readGit apply it.
+var readOnlyGit = []string{"--no-optional-locks", "-c", "diff.autoRefreshIndex=false"}
 
 // command builds an exec.Cmd for a child console tool (git, gh). Used across
 // this package instead of exec.Command so no call site can forget what prepare
@@ -88,12 +98,19 @@ func runGit(dir string, args ...string) (string, error) {
 	return string(out), nil
 }
 
+// readGit is runGit for a read that diffs or stats the work tree, run as
+// readOnlyGit so it never takes the index lock an agent's write needs.
+func readGit(dir string, args ...string) (string, error) {
+	return runGit(dir, slices.Concat(readOnlyGit, args)...)
+}
+
 // gitQuiet runs git -C dir args... and reports only whether it succeeded. ok is
 // false for every failure alike — the caller asked a question git may legitimately
 // answer "no" to, so there is nothing to log and nothing to show. See runGit for
-// which calls belong here and which do not.
+// which calls belong here and which do not. Both kinds are reads, so it runs
+// them as readOnlyGit.
 func gitQuiet(dir string, args ...string) (string, bool) {
-	out, err := command("git", append([]string{"-C", dir}, args...)...).Output()
+	out, err := command("git", slices.Concat([]string{"-C", dir}, readOnlyGit, args)...).Output()
 	if err != nil {
 		return "", false
 	}

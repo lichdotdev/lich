@@ -15,7 +15,7 @@ import (
 // the review panel shows them alongside tracked changes.
 func (s *Service) DiffText(path string) (string, error) {
 	status := readWorkTree(path)
-	tracked, err := runGit(path, "diff", status.base)
+	tracked, err := readGit(path, "diff", status.base)
 	if err != nil {
 		return "", err
 	}

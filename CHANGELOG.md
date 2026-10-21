@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A Markdown file in the Review tab has a preview button beside "Add file as context" that shows the file rendered, tables and links included, in place of its diff. Click it again to go back to the diff. On the Pulls screen only files the pull request adds have it.
+- Ctrl+F (Cmd+F on macOS) on a file open in the Code tab finds text in it. A bar under the file's name lights every match, steps through them with Enter and Shift+Enter, and can match case, whole words or a regular expression. Its list button shows every line with a match under the bar, and clicking one takes the code there. Escape closes it.
+- A session card's tooltip names the model the session is running, for Claude Code, Codex and Kiro CLI. When it is no longer the model the session was opened on, after a `/model` for instance, the line reads "Opened on …, running …".
+- The Pulls screen edits a pull request's title and description and sends them to GitHub. The pencil after the title renames it in place: Enter or clicking away saves, Escape cancels. Edit beside the Overview's Description opens it as Markdown, saved with Save or Ctrl+Enter (Cmd+Enter on macOS). A long description scrolls inside the field, with a scrollbar, so Save stays on screen. Each one sends only what it changed, so saving the description never undoes a rename made on GitHub meanwhile.
+
+### Changed
+
+- A pull request's checks still running turn a spinner, in its Checks tab and in the status line above the tabs, where a clock stood still.
+- Buttons no longer sink a pixel while pressed, so every button in the window behaves the same: the ones that had this motion now match the ones that never did.
+
+### Fixed
+
+- An agent's `git commit`, `rebase` or `stash` no longer fails now and then with "Unable to create '.git/index.lock': File exists" because lich was reading that checkout's status or diff at the same moment. lich's reads leave the index alone.
+- Ctrl+Z in a session no longer freezes its agent for good. It used to suspend the agent, and nothing in lich could bring it back; lich now keeps the key from the session.
+- The bars in the plan usage tooltip, in the footer, show their empty track again on themes whose popover and muted colors are the same, such as Everforest, where only the filled part was drawn.
+- Opening or closing the pull request list on the Pulls screen no longer makes the active project tab let go of the panel below it and grab it again. The tab stays attached the whole way and moves onto the list once it slides under it.
+
 ## [0.74.0] - 2026-10-20
 
 ### Added

@@ -113,6 +113,7 @@ type gallery struct {
 	inputs   [6]widget.Editor
 	textarea widget.Editor
 	areaFit  ui.TextareaResize
+	areaBar  widget.Scrollbar
 	groups   [3]widget.Editor
 	copyURL  widget.Clickable
 

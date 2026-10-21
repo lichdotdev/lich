@@ -93,3 +93,21 @@ kill "$(cat "$T/native.pid")"                   # close the window: your PID onl
   checkout. Use `$W` and start a step with `pwd &&` when it matters.
 - **Two Go toolchains.** mise exports `GOROOT`; a stray `/usr/bin/go` obeys it and fails intermittently with
   stdlib mismatches. `which -a go` must list only mise paths.
+- **A rig needs its own HOME, not just its own config dir** (`internal/agentplugin.RepairRegistrations`). Every
+  launch that is not `task dev` (`LICH_DEV`) or a `go run` binary repoints the provider MCP registrations it
+  finds to its own executable, and those live under HOME, not under the config dir: `~/.cursor/mcp.json`,
+  `~/.omp/agent/mcp.json`, `~/.gemini/config/mcp_config.json` and Kiro's agent. A built binary launched with
+  only `XDG_CONFIG_HOME` (or `APPDATA`) moved rewrites the user's real agents to point at a scratch binary that
+  is deleted later. Give a rig its own `HOME` and `XDG_*` both, and check those files afterwards. Two side
+  effects of that HOME: a `node` reached through a mise shim stops trusting the user's mise config and exits,
+  so call the real binary (`mise which node`); and a rig given its own D-Bus (`dbus-run-session`, so its tray
+  stays off the user's bar) activates portals and a notification daemon that outlive it, found by their
+  `DBUS_SESSION_BUS_ADDRESS` and stopped by PID.
+- **A plugin install from `task dev` registers the `lich` on PATH, not itself** (`internal/agentplugin/crush.go`,
+  `resolveLichBinary`). Crush's, oh-my-pi's, Cursor's, Antigravity's and Kiro's registrations name the absolute
+  path of the lich that wrote them, and under `go run` that path is the toolchain's cache binary, deleted when the
+  run ends, so lich writes `lich` from PATH instead, recognising the cache by shape (`go-build*/b*/exe/*`) since
+  the toolchain exports no marker. A dev install therefore points at whatever version is installed on the
+  machine: harmless, because the registration is only the transport and a session reaches the lich its PTY's
+  coordinates name, but not what the file appears to say. With no lich on PATH a dev install registers nothing:
+  Crush, oh-my-pi, Antigravity and Kiro still get their hooks, and Cursor's install refuses outright.

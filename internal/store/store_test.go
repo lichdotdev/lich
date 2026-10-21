@@ -132,6 +132,35 @@ func TestLoadStateRestoresOpenProjectsAndSessions(t *testing.T) {
 	}
 }
 
+// The window reads the model a session was born on from LoadState, to tell
+// it apart from the model its provider reports running.
+func TestLoadStateCarriesTheBirthModel(t *testing.T) {
+	svc := newTestStore(t)
+	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+		t.Fatalf("AddProject: %v", err)
+	}
+	for _, id := range []string{"s1", "s2"} {
+		if err := svc.AddSession("p1", id, id, providers.Claude, "", 2, ""); err != nil {
+			t.Fatalf("AddSession: %v", err)
+		}
+	}
+	if err := svc.SetSessionModel("s1", "opus"); err != nil {
+		t.Fatalf("SetSessionModel: %v", err)
+	}
+
+	projects, err := svc.LoadState()
+	if err != nil {
+		t.Fatalf("LoadState: %v", err)
+	}
+	got := map[string]string{}
+	for _, sess := range projects[0].Sessions {
+		got[sess.ID] = sess.Model
+	}
+	if got["s1"] != "opus" || got["s2"] != "" {
+		t.Errorf("models = %v, want s1 on opus and s2 on the default", got)
+	}
+}
+
 func TestLoadStateHydratesProjectProviderDefaults(t *testing.T) {
 	svc := newTestStore(t)
 	for _, id := range []string{"override", "empty", "missing"} {

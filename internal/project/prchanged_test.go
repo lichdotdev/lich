@@ -23,6 +23,8 @@ func TestPullRequestWritesAnnounceTheChange(t *testing.T) {
 		"reply":          func(s *Service) error { return s.ReplyToReviewThread("/repo", 7, 1, "ok") },
 		"resolve thread": func(s *Service) error { return s.ResolveReviewThread("/repo", "T_1", true) },
 		"comment":        func(s *Service) error { return s.CommentOnPullRequest("/repo", 7, "hi") },
+		"edit title":     func(s *Service) error { return s.EditPullRequestTitle("/repo", 7, "title") },
+		"edit body":      func(s *Service) error { return s.EditPullRequestBody("/repo", 7, "") },
 	}
 	for name, write := range writes {
 		t.Run(name+" emits once it landed", func(t *testing.T) {

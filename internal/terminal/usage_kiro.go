@@ -17,7 +17,7 @@ import (
 // (`metering_usage`, `"unit": "credit"`, measured on 2.21.0), whose price
 // depends on the plan the account is on, and lich's readout is dollars. So Kiro
 // takes no arm in sessionCost and falls to its default — the context ring alone,
-// which is the rung docs/ceilings.md puts it on.
+// which is what docs/providers/kiro.md says it shows.
 
 // kiroSessionState is the slice of the session file the readout needs. Only
 // these fields are decoded; the turn-by-turn metadata beside them is the bulk of

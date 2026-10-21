@@ -493,7 +493,7 @@ func (s *Service) RemoveWorktree(projectPath, wtPath string, force, adoptedAck b
 // WorktreeDirty reports whether the worktree at wtPath has uncommitted changes
 // (modified or untracked files) — the state that makes a plain remove fail.
 func (s *Service) WorktreeDirty(wtPath string) (bool, error) {
-	out, err := runGit(wtPath, "status", "--porcelain")
+	out, err := readGit(wtPath, "status", "--porcelain")
 	if err != nil {
 		return false, err
 	}

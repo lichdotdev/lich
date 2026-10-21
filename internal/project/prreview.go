@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // The three writes a review takes, and why each one is the API it is:
@@ -192,4 +193,20 @@ func (s *Service) CommentOnPullRequest(path string, number int, body string) err
 		return fmt.Errorf("a comment needs something written in it")
 	}
 	return s.writePR(prReviewTimeout, path, number, prArgs("comment", number, "--body", body)...)
+}
+
+// EditPullRequestTitle renames the pull request on GitHub. GitHub refuses a pull
+// request without a title, so an empty one never reaches gh.
+func (s *Service) EditPullRequestTitle(path string, number int, title string) error {
+	if strings.TrimSpace(title) == "" {
+		return fmt.Errorf("a pull request needs a title")
+	}
+	return s.writePR(prReviewTimeout, path, number, prArgs("edit", number, "--title", title)...)
+}
+
+// EditPullRequestBody rewrites the pull request's description on GitHub, and an
+// empty body clears it. The title is left alone on purpose: sending the one the
+// screen read would undo a rename made on GitHub since.
+func (s *Service) EditPullRequestBody(path string, number int, body string) error {
+	return s.writePR(prReviewTimeout, path, number, prArgs("edit", number, "--body", body)...)
 }

@@ -1,11 +1,13 @@
 package project
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // v2 assembles a porcelain v2 -z payload the way git writes it: every record,
@@ -388,4 +390,81 @@ func TestDiffTextFromASubdirectory(t *testing.T) {
 	if strings.Contains(out, "outside.txt") {
 		t.Errorf("diff names a file outside the project path:\n%s", out)
 	}
+}
+
+// TestReadsLeaveTheIndexAlone pins that the reads the window repeats while an
+// agent works never write the index. Left to itself, git refreshes a stat-stale
+// index and takes .git/index.lock to write it back, and an agent's own commit in
+// the same checkout that lands inside that window fails with "index.lock: File
+// exists". The index's mtime is the witness: a refresh rewrites the file.
+func TestReadsLeaveTheIndexAlone(t *testing.T) {
+	t.Parallel()
+	reads := map[string]func(t *testing.T, svc *Service, repo string) error{
+		"Diff": func(_ *testing.T, svc *Service, repo string) error {
+			if got := svc.Diff(repo); got.Files != 2 {
+				return fmt.Errorf("Diff(repo).Files = %d, want 2", got.Files)
+			}
+			return nil
+		},
+		"DiffText": func(_ *testing.T, svc *Service, repo string) error {
+			_, err := svc.DiffText(repo)
+			return err
+		},
+		"WorktreeDirty": func(_ *testing.T, svc *Service, repo string) error {
+			_, err := svc.WorktreeDirty(repo)
+			return err
+		},
+		// The source is only read; the copy lands in a checkout of its own.
+		"CarryUncommitted": func(t *testing.T, svc *Service, repo string) error {
+			dst, _ := initRepo(t)
+			return svc.CarryUncommitted(repo, dst)
+		},
+	}
+	for name, read := range reads {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			repo, index, indexTime := staleIndexRepo(t)
+			if err := read(t, New(nil), repo); err != nil {
+				t.Fatal(err)
+			}
+			info, err := os.Stat(index)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !info.ModTime().Equal(indexTime) {
+				t.Errorf("index rewritten by %s: mtime %v, want %v", name, info.ModTime(), indexTime)
+			}
+		})
+	}
+}
+
+// staleIndexRepo returns a repository with one edited file, one untracked file
+// and one file whose stat no longer matches the index while its content does:
+// the shape git refreshes. Both clocks sit in the past so the file is not racily
+// clean against the index, which would mask the refresh.
+func staleIndexRepo(t *testing.T) (repo, index string, indexTime time.Time) {
+	t.Helper()
+	repo, git := initRepo(t)
+	stale := filepath.Join(repo, "stale.txt")
+	if err := os.WriteFile(stale, []byte("same\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "stale.txt")
+	git("commit", "-m", "stale")
+	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("edited\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "untracked.txt"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	if err := os.Chtimes(stale, now.Add(-2*time.Hour), now.Add(-2*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	index = filepath.Join(repo, ".git", "index")
+	indexTime = now.Add(-time.Hour)
+	if err := os.Chtimes(index, indexTime, indexTime); err != nil {
+		t.Fatal(err)
+	}
+	return repo, index, indexTime
 }

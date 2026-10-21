@@ -223,7 +223,7 @@ jobs:
       run:
         working-directory: native
     env:
-      # The floor Info.plist and the cask promise (docs/ceilings.md); cgo's
+      # The floor Info.plist and the cask promise (INSTALL.md, macOS); cgo's
       # clang otherwise targets the runner's own macOS.
       MACOSX_DEPLOYMENT_TARGET: "13.0"
     steps:

@@ -124,7 +124,8 @@
     "setAtOpen": "Definido quando a sessão abriu; reabra-a para mudar.",
     "notMounted": "Não montados (symlinks): {paths}",
     "morePaths": "+{count} a mais",
-    "forkedFrom": "Fork de {label}"
+    "forkedFrom": "Fork de {label}",
+    "modelChanged": "Aberta com {requested}, rodando {running}"
   },
   "worktreeDialogView": {
     "title": "Nova sessão em worktree",

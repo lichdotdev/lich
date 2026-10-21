@@ -48,7 +48,9 @@
     "onlyWhitespaceChanged": "仅空白字符发生了更改",
     "addAsContext": "将文件添加为上下文",
     "discard": "放弃更改",
-    "viewed": "已查看"
+    "viewed": "已查看",
+    "previewMarkdown": "预览 Markdown",
+    "showDiff": "显示差异"
   },
   "reviewPanel": {
     "discardFailed": "放弃更改失败：{error}",

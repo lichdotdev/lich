@@ -22,5 +22,21 @@
     "empty": "ファイルがありません",
     "backToTree": "ファイルツリーに戻る",
     "readOnly": "読み取り専用"
+  },
+  "findBar": {
+    "placeholder": "検索",
+    "matchCase": "大文字と小文字を区別",
+    "wholeWord": "単語単位で検索",
+    "regexp": "正規表現を使用",
+    "showAll": "すべての一致を表示",
+    "previous": "前の一致",
+    "next": "次の一致",
+    "close": "閉じる",
+    "position": "{current} / {total}",
+    "matches": {
+      "other": "{count} 件"
+    },
+    "noResults": "結果なし",
+    "invalidRegexp": "無効な正規表現"
   }
 }

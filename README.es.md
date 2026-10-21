@@ -110,6 +110,7 @@ porque lee lo que cada CLI deja escrito, y no hay dos que registren lo mismo.
 | Lo que obtienes | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | Ventana de contexto en el pie de ventana | sí | sí | no | no | no | no | no | sí |
+| El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí |
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |

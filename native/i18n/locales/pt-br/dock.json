@@ -22,5 +22,22 @@
     "empty": "Nenhum arquivo aqui",
     "backToTree": "Voltar à árvore de arquivos",
     "readOnly": "somente leitura"
+  },
+  "findBar": {
+    "placeholder": "Localizar",
+    "matchCase": "Diferenciar maiúsculas e minúsculas",
+    "wholeWord": "Palavra inteira",
+    "regexp": "Usar expressão regular",
+    "showAll": "Mostrar todas as ocorrências",
+    "previous": "Ocorrência anterior",
+    "next": "Próxima ocorrência",
+    "close": "Fechar",
+    "position": "{current} de {total}",
+    "matches": {
+      "one": "{count} ocorrência",
+      "other": "{count} ocorrências"
+    },
+    "noResults": "Nenhum resultado",
+    "invalidRegexp": "Expressão regular inválida"
   }
 }

@@ -103,3 +103,68 @@ func TestTextareaWithoutResizeHasNoGrip(t *testing.T) {
 		t.Errorf("a drag on the corner resized a textarea without a grip to %d", got)
 	}
 }
+
+// scrollRig is a textarea with a 120px max-h and a scrollbar, in a column
+// that sets no height of its own, as a scrolling list does.
+type scrollRig struct {
+	motionRig
+	editor widget.Editor
+	bar    widget.Scrollbar
+}
+
+func (r *scrollRig) frame() int {
+	d := r.motionRig.frame(func(gtx C) D {
+		gtx.Constraints = layout.Constraints{Max: image.Pt(300, 1<<24)}
+		ta := testTheme().Textarea(&r.editor, "")
+		ta.MaxHeight, ta.Scrollbar = 120, &r.bar
+		return ta.Layout(gtx)
+	})
+	return d.Size.Y
+}
+
+// Past MaxHeight the box stops growing and the text scrolls inside it.
+func TestTextareaMaxHeightCapsTheBox(t *testing.T) {
+	var r scrollRig
+	r.editor.SetText(strings.Repeat("line\n", 40))
+	r.frame()
+	if got := r.frame(); got != 120 {
+		t.Fatalf("40 lines under max-h 120: height %d, want 120", got)
+	}
+	if r.editor.ScrollBounds().Max.Y <= 0 {
+		t.Error("the text that does not fit has nowhere to scroll to")
+	}
+}
+
+// Dragging the bar's thumb down scrolls the text, as a list's does.
+func TestTextareaScrollbarDragScrollsTheText(t *testing.T) {
+	var r scrollRig
+	r.editor.SetText(strings.Repeat("line\n", 40))
+	r.frame()
+	r.frame()
+	r.router.Queue(
+		pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: pt(image.Pt(295, 8))},
+		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: pt(image.Pt(295, 8))},
+	)
+	r.frame()
+	r.router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: pt(image.Pt(295, 60))})
+	r.frame()
+	r.router.Queue(pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: pt(image.Pt(295, 60))})
+	r.frame()
+	r.frame()
+	if got := r.editor.ScrollOff().Y; got <= 0 {
+		t.Errorf("after dragging the thumb 52px down: scroll %d, want the text scrolled", got)
+	}
+}
+
+// Text that fits shows no bar and never scrolls.
+func TestTextareaScrollbarHiddenWhileTheTextFits(t *testing.T) {
+	var r scrollRig
+	r.editor.SetText("one line")
+	r.frame()
+	if got := r.frame(); got >= 120 {
+		t.Fatalf("one line: height %d, want it under max-h", got)
+	}
+	if got := r.editor.ScrollBounds().Max.Y; got > 0 {
+		t.Errorf("one line: scroll room %d, want none", got)
+	}
+}

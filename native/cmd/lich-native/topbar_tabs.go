@@ -385,6 +385,9 @@ func (t *topbar) mergeSpan(gtx C, f topbarFrame) (islandSpan, bool) {
 	r := gtx.Dp(tabRadius)
 	left := at*t.tabW - t.list.Position.Offset
 	right := left + t.tabW
+	if f.islandsSliding {
+		return mostOverlapped(f.islands, left, right), true
+	}
 	for _, s := range f.islands {
 		from := left - r
 		if left == s.x0 {
@@ -395,6 +398,17 @@ func (t *topbar) mergeSpan(gtx C, f topbarFrame) (islandSpan, bool) {
 		}
 	}
 	return islandSpan{}, false
+}
+
+// mostOverlapped is the island covering most of left..right.
+func mostOverlapped(islands []islandSpan, left, right int) islandSpan {
+	best, most := islands[0], -1
+	for _, s := range islands {
+		if o := min(right, s.x1) - max(left, s.x0); o > most {
+			best, most = s, o
+		}
+	}
+	return best
 }
 
 func (t *topbar) activeIndex(f topbarFrame) int {

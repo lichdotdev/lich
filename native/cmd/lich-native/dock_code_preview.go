@@ -42,6 +42,7 @@ type preview struct {
 	backTip  ui.Tooltip
 	menu     ui.MenuState
 	composer commentComposer
+	find     *findBar
 	// blockAt is the document line the composer hangs under, -1 for none.
 	blockAt int
 	env     previewEnv
@@ -58,7 +59,7 @@ type previewEnv struct {
 }
 
 func newPreview(client *lichclient.Client, view *godemirror.View, family string, size unit.Sp, invalidate func()) *preview {
-	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1, image: newBlobView(invalidate)}
+	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1, image: newBlobView(invalidate), find: newFindBar()}
 	p.file.invalidate = invalidate
 	p.scroll.Axis = layout.Vertical
 	return p
@@ -96,10 +97,12 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 			return text, p.client.Call(ctx, "project.ReadFile", &text, path, rel)
 		})
 	}
+	p.find.keys(gtx, p.view)
 	var err error
 	dims := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.header(gtx, th, root) }),
 		layout.Rigid(th.Separator),
+		layout.Rigid(func(gtx C) D { return p.findRow(gtx, th, root, kind) }),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			switch kind {
@@ -114,6 +117,19 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 		}),
 	)
 	return dims, err
+}
+
+// findRow is the find bar under the header while it is open over a text file,
+// and its Find all list under it.
+func (p *preview) findRow(gtx C, th *ui.Theme, root *ui.Root, kind blobKind) D {
+	if kind != blobNone || !p.find.open {
+		return D{}
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return p.find.layout(gtx, th, root, p.view) }),
+		layout.Rigid(th.Separator),
+		layout.Rigid(func(gtx C) D { return p.find.layoutList(gtx, th, p.view) }),
+	)
 }
 
 // header is the h-8 strip: back, the path in mono, and the read-only mark.

@@ -124,7 +124,8 @@
     "setAtOpen": "Se define al abrir la sesión; vuelve a abrirla para cambiarlo.",
     "notMounted": "No montado (enlaces simbólicos): {paths}",
     "morePaths": "+{count} más",
-    "forkedFrom": "Bifurcada de {label}"
+    "forkedFrom": "Bifurcada de {label}",
+    "modelChanged": "Abierta con {requested}, ejecutando {running}"
   },
   "worktreeDialogView": {
     "title": "Nueva sesión en worktree",

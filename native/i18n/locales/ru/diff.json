@@ -52,7 +52,9 @@
     "onlyWhitespaceChanged": "Изменились только пробелы",
     "addAsContext": "Добавить файл как контекст",
     "discard": "Сбросить изменения",
-    "viewed": "Просмотрено"
+    "viewed": "Просмотрено",
+    "previewMarkdown": "Предпросмотр Markdown",
+    "showDiff": "Показать diff"
   },
   "reviewPanel": {
     "discardFailed": "Не удалось сбросить изменения: {error}",

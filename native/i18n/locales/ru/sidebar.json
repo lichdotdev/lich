@@ -126,7 +126,8 @@
     "setAtOpen": "Задаётся при открытии сессии; чтобы изменить, откройте её заново.",
     "notMounted": "Не смонтировано (симлинки): {paths}",
     "morePaths": "+ещё {count}",
-    "forkedFrom": "Форк от {label}"
+    "forkedFrom": "Форк от {label}",
+    "modelChanged": "Открыта на {requested}, работает на {running}"
   },
   "worktreeDialogView": {
     "title": "Новая сессия в worktree",

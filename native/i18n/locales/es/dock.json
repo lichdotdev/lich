@@ -22,5 +22,22 @@
     "empty": "No hay archivos aquí",
     "backToTree": "Volver al árbol de archivos",
     "readOnly": "solo lectura"
+  },
+  "findBar": {
+    "placeholder": "Buscar",
+    "matchCase": "Coincidir mayúsculas y minúsculas",
+    "wholeWord": "Solo palabras completas",
+    "regexp": "Usar expresión regular",
+    "showAll": "Mostrar todas las coincidencias",
+    "previous": "Coincidencia anterior",
+    "next": "Coincidencia siguiente",
+    "close": "Cerrar",
+    "position": "{current} de {total}",
+    "matches": {
+      "one": "{count} coincidencia",
+      "other": "{count} coincidencias"
+    },
+    "noResults": "Sin resultados",
+    "invalidRegexp": "Expresión regular no válida"
   }
 }

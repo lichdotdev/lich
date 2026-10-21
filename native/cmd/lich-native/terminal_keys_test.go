@@ -39,6 +39,23 @@ func TestTerminalKeyBytesRewritesThePassedThroughChords(t *testing.T) {
 	}
 }
 
+// Ctrl+Z stops the agent with SIGTSTP, and no shell above it in the PTY
+// ever sends the SIGCONT that would bring it back.
+func TestTerminalKeyBytesSwallowsSuspend(t *testing.T) {
+	for _, mode := range []struct{ name, setup string }{{"legacy", ""}, {"kitty", "\x1b[>1u"}} {
+		t.Run(mode.name, func(t *testing.T) {
+			vt, err := gioterm.New(80, 24, 10, 20, func([]byte) {})
+			if err != nil {
+				t.Fatal(err)
+			}
+			vt.Write([]byte(mode.setup))
+			if got := terminalKeyBytes(vt, key.Event{Name: "Z", Modifiers: key.ModCtrl}, "linux"); got != nil {
+				t.Fatalf("sent %q, want nothing", got)
+			}
+		})
+	}
+}
+
 func TestPasteChords(t *testing.T) {
 	cases := []struct {
 		name string

@@ -565,9 +565,10 @@ func TestOpenRecordsTheModelOnTheRow(t *testing.T) {
 	}
 }
 
-// The model is written after the card is announced, and this is why: a row with
-// no card is a session the user cannot reach to see what went wrong, so the one
-// write that can fail after the row exists must not be what hides it. The model
+// The model is written before the card is announced, but its failure is only
+// held, and this is why: a row with no card is a session the user cannot reach
+// to see what went wrong, so the one write that can fail after the row exists
+// must not be what hides it. The model
 // is an override — losing it costs the provider's default and nothing more,
 // which means the terminal still starts: a card with no PTY behind it is
 // invisible to `lich sessions` and unreachable by `lich send`.
@@ -591,6 +592,36 @@ func TestOpenAnnouncesTheCardEvenWhenTheModelCannotBeRecorded(t *testing.T) {
 	if term.spawns[0].id != sessions.rows[0].sessionID {
 		t.Errorf("spawned %q, want the session that was written (%q)",
 			term.spawns[0].id, sessions.rows[0].sessionID)
+	}
+}
+
+// modelAtAnnounce reads the row's model when the card is announced: what the
+// reload the announcement triggers will find.
+type modelAtAnnounce struct {
+	sessions *fakeSessions
+	seen     map[string]string
+}
+
+func (m *modelAtAnnounce) Emit(name string, data any) {
+	if opened, ok := data.(Session); ok && name == OpenedEventName {
+		m.seen[opened.ID] = m.sessions.models[opened.ID]
+	}
+}
+
+// The window learns a new card from the reload session-opened triggers, and
+// the card's tooltip compares the model it was born on with the running one: a
+// model written after the announcement is one that reload misses.
+func TestOpenRecordsTheModelBeforeAnnouncingTheCard(t *testing.T) {
+	sessions := &fakeSessions{projects: workspace()}
+	events := &modelAtAnnounce{sessions: sessions, seen: map[string]string{}}
+	svc := New(sessions, &fakeWorktrees{branch: "main"}, &fakeTerminal{}, events)
+
+	opened, err := svc.Open(OpenOptions{From: "s1", Kind: "claude", Model: "opus"})
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if got := events.seen[opened.ID]; got != "opus" {
+		t.Errorf("model on the row at announce = %q, want opus", got)
 	}
 }
 

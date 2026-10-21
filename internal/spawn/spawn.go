@@ -359,21 +359,22 @@ func (s *Service) openSession(req request) (Session, error) {
 	); err != nil {
 		return Session{}, err
 	}
+	// Before the card is announced, so the reload it triggers reads the model
+	// the session was born on (the card's tooltip compares it with the running
+	// one). A write that fails must not be what hides the session, nor cost it
+	// its terminal: a card with no PTY behind it is invisible to `lich sessions`
+	// and unreachable by `lich send`, which is the state this package exists to
+	// prevent. So the error is only held: the spawn below reads the model back
+	// from the row, the session starts on the provider's own default and the
+	// failure is reported once it is running.
+	overrideErr := s.recordOverrides(id, label, model, effort, req.ultracode)
 	// Announced before the spawn, and regardless of how it goes: the row exists
 	// either way, so the card has to exist either way too — a session only the
 	// database knows about is one the user cannot reach to see what went wrong.
 	if s.events != nil {
 		s.events.Emit(OpenedEventName, opened)
 	}
-	// After the card, for that same reason: the model is an override on a row
-	// that already exists, so a write that fails must not be what hides the
-	// session — and must not cost it its terminal either. A card with no PTY
-	// behind it is invisible to `lich sessions` and unreachable by `lich send`,
-	// which is the state this package exists to prevent; the spawn below reads
-	// the model back from the row, so the session starts on the provider's own
-	// default and the failure is reported once it is running.
 	callerErr := s.fileCaller(target.ID, callerToFile, folder)
-	overrideErr := s.recordOverrides(id, label, model, effort, req.ultracode)
 	markErr := s.markSubagent(id, label, req)
 	if err := s.term.Start(id, target.ID, cwd, kind, "", opened.Name, false, at.setup, startCols, startRows); err != nil {
 		return Session{}, fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)

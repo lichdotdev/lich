@@ -148,7 +148,7 @@ func fileDiff(path, rel, base string, tracked bool) (string, error) {
 	if !tracked {
 		return untrackedDiff(path, rel), nil
 	}
-	return runGit(path, "diff", base, "--", rel)
+	return readGit(path, "diff", base, "--", rel)
 }
 
 // stagedPatch finds the picked lines in the index. Each is looked up in the
@@ -190,7 +190,7 @@ func stagedPatch(path, rel, base string, lines []RevertLine, tracked bool) (stri
 }
 
 func hunksOf(path string, args ...string) ([]patchHunk, error) {
-	out, err := runGit(path, args...)
+	out, err := readGit(path, args...)
 	if err != nil {
 		return nil, err
 	}

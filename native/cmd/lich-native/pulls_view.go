@@ -45,6 +45,8 @@ type pullsAction struct {
 	comment  string // a comment on the pull request itself
 	reply    *threadReply
 	resolve  *threadResolve
+	title    string  // a new title for the pull request
+	body     *string // a new description; empty clears it
 }
 
 // open sends url to the browser: a link clicked in a Markdown body.
@@ -85,8 +87,11 @@ type pullView struct {
 	pending   map[string]*pendingReview // by PR URL
 	submit    submitState
 	mergeEdit mergeDialog
+	edit      editState
 	// shotMergeEdit is -pulls-merge-edit, opened once the detail is read.
 	shotMergeEdit string
+	// shotEdit is -pulls-edit, opened once the detail is read.
+	shotEdit string
 }
 
 // onFrame queues f to run at the start of the next frame: what a write off
@@ -160,13 +165,17 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	case read.val == nil:
 		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return v.empty(gtx, th, p, act) })
 	}
-	d := *read.val
+	d := v.edit.shown(*read.val, read, p.store.lastStale())
 	if stillSettling(d) && !read.loading {
 		gtx.Execute(op.InvalidateCmd{At: read.at.Add(pendingRecheck)})
 	}
 	if v.shotMergeEdit != "" {
 		v.mergeEdit.show(v.shotMergeEdit, false, d)
 		v.shotMergeEdit = ""
+	}
+	if v.shotEdit != "" {
+		v.edit.openForShot(v.shotEdit, d)
+		v.shotEdit = ""
 	}
 	return v.withToolbar(gtx, th, p, &d, act, func(gtx C) D { return v.body(gtx, th, p, d, act) })
 }
@@ -194,10 +203,10 @@ func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *lichclien
 								return v.actions(gtx, th, p, *d, act)
 							}, nil)
 						}),
-						layout.Rigid(func(gtx C) D { return v.heading(gtx, th, p, *d, false) }),
+						layout.Rigid(func(gtx C) D { return v.heading(gtx, th, p, *d, act, false) }),
 					)
 				}
-				return v.toolbarRow(gtx, th, p, func(gtx C) D { return v.heading(gtx, th, p, *d, p.listHidden) }, func(gtx C) D {
+				return v.toolbarRow(gtx, th, p, func(gtx C) D { return v.heading(gtx, th, p, *d, act, p.listHidden) }, func(gtx C) D {
 					actions.Add(gtx.Ops)
 					return D{Size: size}
 				})
@@ -237,14 +246,14 @@ func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d lichclie
 }
 
 // heading is the title over its stats, its left edge on the body's px-6.
-func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, besideShowList bool) D {
+func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction, besideShowList bool) D {
 	left := pullsPadX - pullsToolbarPad
 	if besideShowList {
 		left = ui.Space(2)
 	}
 	return layout.Inset{Left: left, Right: ui.Space(4), Top: pullsHeadingTop}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return pullTitle(gtx, th, d) }),
+			layout.Rigid(func(gtx C) D { return v.pullTitle(gtx, th, p, d, act) }),
 			ui.VGap(3),
 			layout.Rigid(func(gtx C) D { return v.stats(gtx, th, p, d) }),
 		)
@@ -289,28 +298,24 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDeta
 	)
 }
 
-func pullTitle(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
-	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(th.Text(pullsTitleSize, fmt.Sprintf("#%d", d.Number)).Muted().Weight(font.SemiBold).Layout),
-		ui.Gap(1.5),
-		layout.Flexed(1, func(gtx C) D {
-			l := th.Text(pullsTitleSize, d.Title).Weight(font.SemiBold)
-			l.MaxLines = 0
-			return l.Layout(gtx)
-		}),
-	)
-}
-
 // stat is PullsStats' Stat: a size-3.5 glyph and its words in one tone.
 func stat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), fg) }),
+		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, ic, ui.Space(3.5), fg) }),
 		ui.Gap(1.5),
 		layout.Rigid(th.Text(ui.TextXS, text).In(fg).Weight(font.Medium).Layout),
 	)
 }
 
-// stats is the status line: state, branches, checks, mergeability, review.
+// pullGlyph is ic at size, icPullRunning turning as a Spinner.
+func pullGlyph(gtx C, ic *icons.Icon, size unit.Dp, fg color.NRGBA) D {
+	if ic == icPullRunning {
+		return ui.Spinner(gtx, size, fg)
+	}
+	return ic.Layout(gtx, size, fg)
+}
+
+// stats is the status line:state, branches, checks, mergeability, review.
 func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail) D {
 	if v.checksStat.Clicked(gtx) {
 		v.showTab(d, tabChecks)
@@ -364,7 +369,7 @@ func checksStat(th *ui.Theme, c lichclient.ChecksRollup) (*icons.Icon, string, c
 	case verdictFailed:
 		return icPullX, i18n.T("pulls.pullsStats.checksFailing", i18n.Args{"failed": c.Failed, "total": c.Total}), th.Destructive, true
 	case verdictPending:
-		return icPullClock, i18n.T("pulls.pullsStats.checksRunning", i18n.Args{"pending": c.Pending, "total": c.Total}), th.ToneWait, true
+		return icPullRunning, i18n.T("pulls.pullsStats.checksRunning", i18n.Args{"pending": c.Pending, "total": c.Total}), th.ToneWait, true
 	case verdictPassed:
 		return icPullCheck, i18n.T("pulls.pullsStats.checksPassed", i18n.Args{"count": c.Passed}), th.TonePass, true
 	}

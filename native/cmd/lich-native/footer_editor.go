@@ -157,7 +157,11 @@ func (f *footer) zone(th *ui.Theme, zone string, items []string, in footerInput)
 
 // zoneBox is the drop area: wrapping chips from the start, rounded, a side
 // filled with the sidebar color and taller than available, which is bare. It
-// is ringed only while the item in the air would land on it.
+// is ringed only while the item in the air would land on it. The sides wrap,
+// and stop lining up once one does, because the layouts that never wrap are
+// lists, where moving an item stops being a drag between the sides. A chip
+// carries nothing but its reading: a control that grows under the pointer on
+// hover shifts the chips beside it just as a drag is aimed.
 func (f *footer) zoneBox(gtx C, th *ui.Theme, zone string, items []string, in footerInput) D {
 	var bg color.NRGBA
 	minHeight := ui.Space(11)

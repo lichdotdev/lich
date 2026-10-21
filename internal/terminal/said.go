@@ -92,7 +92,7 @@ func (s *Service) LastTurnSaid(id string) (LastSaid, error) {
 // false for the three providers with no JSONL to walk. opencode and Crush keep
 // their messages in SQLite, read by query instead (sessiondb.go); Cursor CLI
 // files a chat as a content-addressed blob store whose order lives in a protobuf
-// index, so neither mechanism reaches it at all (docs/ceilings.md).
+// index, so neither mechanism reaches it at all (docs/providers/cursor.md).
 func transcriptReaderFor(src usageSource) (string, turnReader, bool) {
 	switch src.kind {
 	case providers.Claude:
@@ -125,7 +125,7 @@ type saidCursors struct {
 // query for the two that keep their messages in a database of their own
 // (sessiondb.go), which have no tail to bound and so no cursor to keep. Empty
 // for every miss, and for Cursor CLI, which reaches here with nothing either can
-// read: a chat filed as a content-addressed blob store (docs/ceilings.md).
+// read: a chat filed as a content-addressed blob store (docs/providers/cursor.md).
 func (c *saidCursors) said(id string, src usageSource) string {
 	if path, read, ok := transcriptReaderFor(src); ok {
 		return c.walk(id, path, read)

@@ -233,3 +233,36 @@ func TestCommentOnPullRequestFlow(t *testing.T) {
 		}
 	})
 }
+
+func TestEditPullRequestFlow(t *testing.T) {
+	t.Parallel()
+	t.Run("a rename sends the title alone", func(t *testing.T) {
+		gh := &fakeGH{}
+		if err := withGH(gh).EditPullRequestTitle("/repo", 42, "New title"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if want := []string{"pr", "edit", "42", "--title", "New title"}; !slices.Equal(gh.args, want) {
+			t.Errorf("args = %v, want %v", gh.args, want)
+		}
+	})
+
+	t.Run("a blank title never reaches gh", func(t *testing.T) {
+		gh := &fakeGH{}
+		if err := withGH(gh).EditPullRequestTitle("/repo", 42, "  "); err == nil {
+			t.Error("expected an error for a blank title")
+		}
+		if gh.calls != 0 {
+			t.Errorf("gh was called %d times, want 0", gh.calls)
+		}
+	})
+
+	t.Run("a description edit sends the body alone, empty clearing it", func(t *testing.T) {
+		gh := &fakeGH{}
+		if err := withGH(gh).EditPullRequestBody("/repo", 42, ""); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if want := []string{"pr", "edit", "42", "--body", ""}; !slices.Equal(gh.args, want) {
+			t.Errorf("args = %v, want %v", gh.args, want)
+		}
+	})
+}
