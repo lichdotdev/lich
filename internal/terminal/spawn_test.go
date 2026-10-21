@@ -20,7 +20,7 @@ func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{bin: "/nonexistent/lich-test-provider"}, nil, events.New())
 
-	err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24)
+	err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24)
 
 	if err == nil {
 		t.Fatal("Start = nil, want the spawn failure")

@@ -117,7 +117,7 @@ type Worktrees interface {
 // first viewed, and the same close it asks for when a card goes away. The
 // terminal service implements it.
 type Terminal interface {
-	Start(id, projectID, cwd, kind, resume, name string, fork bool, cols, rows int) error
+	Start(id, projectID, cwd, kind, resume string, fork bool, cols, rows int) error
 	// CloseBy closes the session on behalf of closerID, the session that asked
 	// for it, or empty when none did.
 	CloseBy(id, closerID string) error
@@ -142,8 +142,9 @@ type Events interface {
 // facts — a divergence between them is a card that does not match the session
 // the agent was given.
 //
-// Name is what the session answers to in Claude Code's peer roster; Label is the
-// name on its card. Both address it (see internal/relay). Path is the worktree
+// Name is the second name the session answers to, empty for a Claude Code one,
+// which names itself (relay.RosterNameOf); Label is the name on its card. Both
+// address it (see internal/relay). Path is the worktree
 // the session lives in, empty for a session in the project's own directory —
 // the store's own spelling. NextSeq is the project's label counter after this
 // session took its number. OriginSessionID and OriginLabel name the session that
@@ -344,7 +345,7 @@ func (s *Service) openSession(req request) (Session, error) {
 		ProjectID:       target.ID,
 		Project:         target.Name,
 		Label:           label,
-		Name:            relay.RosterName(cwd, id),
+		Name:            relay.RosterNameOf(kind, "", cwd, id),
 		Kind:            kind,
 		Path:            stored,
 		NextSeq:         target.NextSeq + 1,
@@ -375,7 +376,7 @@ func (s *Service) openSession(req request) (Session, error) {
 	}
 	callerErr := s.fileCaller(target.ID, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
-	if err := s.term.Start(id, target.ID, cwd, kind, "", opened.Name, false, startCols, startRows); err != nil {
+	if err := s.term.Start(id, target.ID, cwd, kind, "", false, startCols, startRows); err != nil {
 		return Session{}, fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
 	}
 	if err := errors.Join(callerErr, overrideErr, markErr); err != nil {

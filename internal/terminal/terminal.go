@@ -536,13 +536,13 @@ func (s *Service) onHookState(req hookRequest) {
 		// the read has to have happened before the turn ends.
 		go s.emitReadouts(req.SessionID)
 	}
-	// A Kiro session's name is read here rather than reported, because Kiro
-	// hands its hooks no transcript path to read one from while it does file
-	// a title of its own (title_kiro.go). `done` is the turn end it raises,
-	// and the read is off-thread for the same reason the usage one is.
+	// A Kiro or Cursor session's name is read here rather than reported,
+	// because neither hands its hooks a file the title is in while each files
+	// one of its own (title_filed.go). `done` is the turn end they raise, and
+	// the read is off-thread for the same reason the usage one is.
 	if req.State == statusDone {
 		time.AfterFunc(turnEndFlushLag, func() { s.emitReadouts(req.SessionID) })
-		go s.applyKiroTitle(req.SessionID)
+		go s.applyFiledTitle(req.SessionID)
 		// Claude Code ends a turn a usage limit stopped with StopFailure, which
 		// the plugin reports as `done`; whether it was a limit is in the
 		// transcript, off-thread like every other read of it.

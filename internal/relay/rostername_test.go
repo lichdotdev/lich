@@ -5,24 +5,27 @@ import "testing"
 // TestRosterNameOf pins the choice between the two names a session can be
 // addressed by: what its agent has on record beats what lich can derive, every
 // time. The derivation is only ever the answer when there is nothing to read —
-// and a name that is only whitespace is nothing to read.
+// and a name that is only whitespace is nothing to read. A Claude Code session
+// with nothing on record named itself, so there is no name to give.
 func TestRosterNameOf(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name     string
+		kind     string
 		recorded string
 		want     string
 	}{
-		{name: "the recorded name wins", recorded: "reviewer", want: "reviewer"},
-		{name: "trimmed on the way through", recorded: "  reviewer\n", want: "reviewer"},
-		{name: "nothing recorded falls back", recorded: "", want: "lich-4f2a"},
-		{name: "whitespace is nothing recorded", recorded: "   ", want: "lich-4f2a"},
+		{name: "the recorded name wins", kind: "claude", recorded: "reviewer", want: "reviewer"},
+		{name: "trimmed on the way through", kind: "claude", recorded: "  reviewer\n", want: "reviewer"},
+		{name: "nothing recorded falls back", kind: "codex", recorded: "", want: "lich-4f2a"},
+		{name: "whitespace is nothing recorded", kind: "codex", recorded: "   ", want: "lich-4f2a"},
+		{name: "claude with nothing recorded has no name", kind: "claude", recorded: "", want: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := RosterNameOf(tt.recorded, "/home/me/code/lich", "4f2a1b3c")
+			got := RosterNameOf(tt.kind, tt.recorded, "/home/me/code/lich", "4f2a1b3c")
 			if got != tt.want {
-				t.Errorf("RosterNameOf(%q, …) = %q, want %q", tt.recorded, got, tt.want)
+				t.Errorf("RosterNameOf(%q, %q, …) = %q, want %q", tt.kind, tt.recorded, got, tt.want)
 			}
 		})
 	}
@@ -127,5 +130,19 @@ func TestIsRosterNameRecognisesEveryBirthName(t *testing.T) {
 		if IsRosterName(name, "/home/u/try/skipo") {
 			t.Errorf("IsRosterName(%q) = true, want false", name)
 		}
+	}
+}
+
+// TestKnownLabelsLeavesOutAMissingName pins the refusal's list of who is
+// reachable: a session with no second name is listed by its label alone, never
+// with an empty pair of brackets an agent could read as a name.
+func TestKnownLabelsLeavesOutAMissingName(t *testing.T) {
+	t.Parallel()
+	got := knownLabels([]candidate{
+		{Peer: Peer{Label: "docs", Name: "lich-4f2a"}},
+		{Peer: Peer{Label: "review"}},
+	})
+	if want := `Live sessions: "docs" (lich-4f2a), "review".`; got != want {
+		t.Errorf("knownLabels = %q, want %q", got, want)
 	}
 }

@@ -73,7 +73,7 @@ func (s *Service) peerOf(p store.Project, sess store.Session) Peer {
 	}
 	return Peer{
 		Label:   sess.Label,
-		Name:    RosterNameOf(s.term.AgentName(sess.ID), cwd, sess.ID),
+		Name:    RosterNameOf(sess.Kind, s.term.AgentName(sess.ID), cwd, sess.ID),
 		Project: p.Name,
 		Kind:    sess.Kind,
 		State:   s.reportedState(sess.ID),
@@ -196,6 +196,10 @@ func knownLabels(found []candidate) string {
 	}
 	names := make([]string, 0, len(found))
 	for _, c := range found {
+		if c.Peer.Name == "" {
+			names = append(names, strconv.Quote(c.Peer.Label))
+			continue
+		}
 		names = append(names, fmt.Sprintf("%s (%s)", strconv.Quote(c.Peer.Label), c.Peer.Name))
 	}
 	return "Live sessions: " + strings.Join(names, ", ") + "."

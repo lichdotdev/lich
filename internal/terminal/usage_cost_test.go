@@ -804,7 +804,7 @@ func TestAForkRecordsWhatItsParentHadCost(t *testing.T) {
 	svc := New(store, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("fork") })
 
-	err := svc.Start("fork", "p1", t.TempDir(), "claude", "abc-123", "", true, 80, 24)
+	err := svc.Start("fork", "p1", t.TempDir(), "claude", "abc-123", true, 80, 24)
 
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
@@ -825,7 +825,7 @@ func TestAForkOfAProviderThatPricesItselfOffsetsNothing(t *testing.T) {
 	svc := New(store, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("fork") })
 
-	err := svc.Start("fork", "p1", t.TempDir(), "opencode", "abc-123", "", true, 80, 24)
+	err := svc.Start("fork", "p1", t.TempDir(), "opencode", "abc-123", true, 80, 24)
 
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
@@ -847,7 +847,7 @@ func TestAResumeIsNotAFork(t *testing.T) {
 	svc := New(store, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", "", false, 80, 24)
+	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", false, 80, 24)
 
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
@@ -869,7 +869,7 @@ func TestAForkWhoseOffsetCannotBeSavedStillStarts(t *testing.T) {
 	svc := New(store, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("fork") })
 
-	err := svc.Start("fork", "p1", t.TempDir(), "claude", "abc-123", "", true, 80, 24)
+	err := svc.Start("fork", "p1", t.TempDir(), "claude", "abc-123", true, 80, 24)
 
 	if err != nil {
 		t.Fatalf("Start = %v, want the spawn to survive a failed offset", err)

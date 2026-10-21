@@ -35,12 +35,12 @@ func TestKiroMetadataTitle(t *testing.T) {
 			if err := os.WriteFile(path, []byte(tt.body), 0o600); err != nil {
 				t.Fatalf("write session file: %v", err)
 			}
-			got, ok := kiroMetadataTitle(path)
+			got, ok := metadataTitle(path)
 			if ok != (tt.want != "") {
-				t.Fatalf("kiroMetadataTitle = %q, %v, want ok=%v", got, ok, tt.want != "")
+				t.Fatalf("metadataTitle = %q, %v, want ok=%v", got, ok, tt.want != "")
 			}
 			if got != tt.want {
-				t.Errorf("kiroMetadataTitle = %q, want %q", got, tt.want)
+				t.Errorf("metadataTitle = %q, want %q", got, tt.want)
 			}
 		})
 	}
@@ -50,7 +50,7 @@ func TestKiroMetadataTitle(t *testing.T) {
 // common absence, and it must not reach the card as an error.
 func TestKiroMetadataTitleAbsentFile(t *testing.T) {
 	t.Parallel()
-	if got, ok := kiroMetadataTitle(filepath.Join(t.TempDir(), "absent.json")); ok {
-		t.Errorf("kiroMetadataTitle(absent) = %q, true, want a miss", got)
+	if got, ok := metadataTitle(filepath.Join(t.TempDir(), "absent.json")); ok {
+		t.Errorf("metadataTitle(absent) = %q, true, want a miss", got)
 	}
 }

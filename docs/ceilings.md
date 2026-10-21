@@ -91,8 +91,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   on the first tool call, so a turn that calls no tool has nothing to read, and the asker hears nothing until the
   ticket's deadline. A pull request a Crush session opens reaches its card only when the window regains focus
   (`native/cmd/lich-native/gitstate.go` `recheckMissingPR`, `cardstate.go` `setFocused`): `gh pr create` moves
-  neither branch nor HEAD, so a card showing no pull request asks gh again when its session's turn ends. The day
-  Crush ships `Stop`, the existing `report-state.sh done` closes both.
+  neither branch nor HEAD, so a card showing no pull request asks gh again when its session's turn ends. A Crush
+  card is never named after its conversation either: Crush files a title in that same database, and nothing tells
+  lich when to read it (`docs/hooks/session-title.md`). The day Crush ships `Stop`, the existing
+  `report-state.sh done` closes the first two, and a read like Kiro's and Cursor's (`internal/terminal`,
+  `title_filed.go`) the third.
 - **A CLI run as a tool inside a session is told apart by conversation id, and Kiro has none to tell by**
   (`internal/terminal/nested.go`, docs/hooks/session-state.md "Nested agent CLIs"): a `claude -p` the agent runs
   inherits the card's `LICH_*` env and reports as it. A state report naming another conversation is dropped, and a
@@ -242,6 +245,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Relay, errands and subagents
 
+- **A new Claude Code session's roster name is its own, and lich does not know it** (`internal/terminal`,
+  `nameArgs`; `internal/relay`, `RosterNameOf`): lich spawns it without `--name`, because a name passed there is
+  the user's to Claude Code and a session holding one never writes the `ai-title` its card is titled from
+  (measured on 2.1.306). It names itself after its directory and a random suffix, which keeps the roster
+  unambiguous, but writes that name only into `~/.claude/sessions/<pid>.json`, keyed by a pid a confined
+  session's namespace hides. So `list_sessions`, `lich sessions` and `lich whoami` show no second name for it,
+  and a name an agent read off Claude Code's own `/list-agents` is not one lich resolves: that agent reaches the
+  session through its own messaging or by the card's label. A `/rename` or a fork puts a name on record, and from
+  then on lich answers to it; a fork pays for it with its `ai-title`.
 - **A prompt in use is recognised from the bytes going in, never from the line itself**
   (`internal/terminal/draft.go`; typed deliveries only, a Claude Code session with its mod is handed the message, see below): a relayed message pastes at the prompt and sends an Enter behind it, so lich
   holds the delivery back while the user has unsent input there. What it counts is printable input since the last

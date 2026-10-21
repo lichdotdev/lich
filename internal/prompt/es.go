@@ -124,6 +124,10 @@ Cuando un mensaje [lich] con ticket llega a TU prompt, eres la sesión de trabaj
 		"Responde por %[1]q y por %[5]q. Su agente puede estar aún iniciando, " +
 		"así que una tarea que le " +
 		"envíes queda retenida hasta que el agente esté activo en lugar de perderse.\n",
+	OpenedSessionLabelOnly: "Sesión %[1]q (%[2]s) abierta en %[3]s.%[4]s\n" +
+		"Responde por %[1]q. Su agente puede estar aún iniciando, " +
+		"así que una tarea que le " +
+		"envíes queda retenida hasta que el agente esté activo en lugar de perderse.\n",
 	ClosedRemoved: "Se cerró %[1]q y se eliminó su worktree %[2]s.\n",
 	ClosedKept: "Se cerró %[1]q. Su worktree %[2]s sigue ahí y la sesión queda aparcada: volver a abrir " +
 		"una sesión en esa rama retoma su conversación.\n",

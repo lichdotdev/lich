@@ -3136,8 +3136,10 @@ func TestSelfIsTheCallersOwnEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Self: %v", err)
 	}
+	// No Name: a Claude Code session with nothing on record named itself
+	// (RosterNameOf).
 	want := Peer{
-		Label: "sender", Name: "lich-s1", Project: "lich", Kind: "claude", ID: "s1",
+		Label: "sender", Project: "lich", Kind: "claude", ID: "s1",
 		Path: "/src/lich", ProjectPath: "/src/lich",
 	}
 	if got != want {

@@ -318,7 +318,7 @@ func (c *client) sessions(args []string) error {
 	// agent treat a single session as two.
 	fmt.Fprintln(c.stdout, "session\tproject\tprovider\tname\tstate")
 	for _, p := range peers {
-		fmt.Fprintf(c.stdout, "%s\t%s\t%s\t%s\t%s\n", p.Label, p.Project, p.Kind, p.Name, sessionState(p.State))
+		fmt.Fprintf(c.stdout, "%s\t%s\t%s\t%s\t%s\n", p.Label, p.Project, p.Kind, orDash(p.Name), sessionState(p.State))
 	}
 	return nil
 }
@@ -780,6 +780,9 @@ func openedText(lang prompt.Lang, opened spawn.Session) string {
 	confined := ""
 	if opened.Confined {
 		confined = text.OpenedConfined
+	}
+	if opened.Name == "" {
+		return fmt.Sprintf(text.OpenedSessionLabelOnly, opened.Label, opened.Kind, where, confined)
 	}
 	return fmt.Sprintf(text.OpenedSession, opened.Label, opened.Kind, where, confined, opened.Name)
 }

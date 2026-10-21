@@ -124,6 +124,9 @@ When a [lich] message carrying a ticket arrives at YOUR prompt, you are the work
 	OpenedSession: "Opened session %[1]q (%[2]s) in %[3]s.%[4]s\n" +
 		"It answers to %[1]q and to %[5]q. Its agent may still be " +
 		"starting, so a task you send it is held until the agent is up rather than lost.\n",
+	OpenedSessionLabelOnly: "Opened session %[1]q (%[2]s) in %[3]s.%[4]s\n" +
+		"It answers to %[1]q. Its agent may still be " +
+		"starting, so a task you send it is held until the agent is up rather than lost.\n",
 	ClosedRemoved: "Closed %[1]q and removed its worktree %[2]s.\n",
 	ClosedKept: "Closed %[1]q. Its worktree %[2]s is still there, and the session is parked: opening a " +
 		"session on that branch again picks its conversation back up.\n",

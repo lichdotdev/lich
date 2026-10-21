@@ -77,6 +77,7 @@ type Catalog struct {
 	OpenedWorktree         string
 	OpenedConfined         string
 	OpenedSession          string
+	OpenedSessionLabelOnly string
 	ClosedRemoved          string
 	ClosedKept             string
 	ClosedPlain            string

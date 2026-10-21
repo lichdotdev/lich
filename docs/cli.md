@@ -205,8 +205,9 @@ prompt is left alone and the task does not wait for them to finish it. A task th
 collected is typed as usual.
 
 - `<session>` is the label on the card, **or** the roster name that session
-  answers to (`myrepo-a1b2`, the one lich passes as `--name` and a mention
-  writes at a prompt). Both name the same session and both are accepted, because
+  answers to (`myrepo-a1b2`, lich's own for most providers; for Claude Code the
+  one a `/rename` or a fork put on record, which a mention writes at a prompt,
+  and none at all for a new session that named itself). Both name the same session and both are accepted, because
   an agent holding one of them should never have to know which door it is
   standing at — offering one name and accepting the other is what once made an
   agent treat a single session as two and use both channels at once. The label
@@ -1366,7 +1367,8 @@ Three things keep that from repeating, and none of them asks the user to choose:
 1. **One address space.** The relay answers to the card label *and* to the peer
    roster name — the one the session's own record carries, read back per lookup
    (`internal/terminal.AgentName`) and falling back to lich's derivation when
-   there is nothing to read (`internal/relay/rostername.go`). A mention that
+   there is nothing to read, except for Claude Code, whose new sessions name
+   themselves where lich cannot read it (`internal/relay/rostername.go`). A mention that
    slips into lich's tool works instead of erroring, and goes on working after a
    `/rename`.
 2. **Both names travel.** `list_sessions` and every miss report the label and

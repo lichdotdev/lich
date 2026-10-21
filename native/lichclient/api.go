@@ -109,14 +109,14 @@ type ConversationReported struct {
 // Start spawns the session's process at cols x rows; a no-op when it already
 // runs. resume is a provider conversation id to reopen, "" to start fresh.
 func (c *Client) Start(ctx context.Context, id, projectID, cwd, kind, resume string, cols, rows int) error {
-	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, resume, "", false, cols, rows)
+	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, resume, false, cols, rows)
 }
 
 // Fork spawns the session's process branching the provider conversation
 // parent: the conversation is copied into one of its own, and the card that
 // runs parent goes on untouched. A no-op when the session already runs.
 func (c *Client) Fork(ctx context.Context, id, projectID, cwd, kind, parent string, cols, rows int) error {
-	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, parent, "", true, cols, rows)
+	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, parent, true, cols, rows)
 }
 
 // Resize sets the session's PTY size.

@@ -71,6 +71,9 @@ func TestEveryTextRendersInEveryLanguage(t *testing.T) {
 				t.Errorf("%s: the opened text lost %q", lang, literal)
 			}
 		}
+		if strings.Contains(texts["opened plain"], `""`) {
+			t.Errorf("%s: a session with no second name was given an empty one:\n%s", lang, texts["opened plain"])
+		}
 		if !strings.Contains(texts["handover"], "send_to_session") || !strings.Contains(texts["handover"], "private") {
 			t.Errorf("%s: the private hand over lost the tool call:\n%s", lang, texts["handover"])
 		}

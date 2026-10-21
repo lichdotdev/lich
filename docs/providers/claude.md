@@ -48,7 +48,9 @@ The full readout: per-turn token counts, and the window its mod reports, else on
 A conversation lich spawned is told from a plain `claude` run by the name lich spawns it under
 (`relay.IsRosterName` on the first `custom-title`), which covers the conversations whose rows were deleted before
 the tombstones of schema version 8: measured on a real workspace, it marked 490 of the 539 Claude conversations
-lich held no row for, and the 49 left had no title at all, which is a plain `claude` run.
+lich held no row for, and the 49 left had no title at all, which is a plain `claude` run. A new session is no
+longer spawned under a name (`nameArgs`), so the name only tells apart the conversations born before that; the
+tombstones cover every row deleted since.
 
 ## Plugin install
 

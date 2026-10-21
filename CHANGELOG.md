@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Pulls screen shows a changed image in a pull request's Files tab, before and after side by side, as the Review tab does, where it used to say only "Binary file". An edited Markdown file there has the preview button too, where only an added one had it. lich reads the file from your clone when it holds the commit and from GitHub otherwise.
 - `lich mcp` answers MCP clients on protocol revision 2026-07-28, which name the version on each request instead of opening with `initialize`, and serves their `server/discover`. Clients that open with `initialize` are answered exactly as before.
+- A Cursor CLI card takes the name Cursor gives the conversation, once the first turn ends, where it kept the name lich gave it.
 
 ### Changed
 
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolve conflicts, Fix CI errors and a worktree started from an issue send their message to a new Claude Code session as soon as it is at its prompt, where it could sit unsent for up to a minute, until you pressed Enter. lich read the terminal's own answers to Claude Code's startup questions as you typing at that prompt, and held the message back for you.
 - A long Markdown file, such as lich's own CHANGELOG.md, previews in the Code and Review tabs without freezing the window: the preview draws only the part on screen, where it used to lay out the whole file on every frame.
 - A Markdown preview keeps the words apart where the source wraps a line, where they used to run together, and a table no longer squeezes a narrow column into broken words: each column is at least as wide as its longest word.
+- A Claude Code card takes the title Claude Code gives the conversation again, where it kept the name lich gave it. lich now starts a new Claude Code session without `--name`, which stopped Claude Code titling it. The session picks its own name in Claude Code's agent list, a different one from the card's, and `lich sessions`, `lich whoami` and `list_sessions` show no second name for it until a `/rename` gives it one.
 
 ## [0.76.0] - 2026-10-21
 

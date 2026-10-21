@@ -34,14 +34,14 @@ import (
 // is the provider's to assign, and reaches lich through this session's
 // session-start report like any other.
 //
-// name is what the caller asks the session to answer to in its provider's peer
-// roster (Claude Code's `/list-agents`), and empty asks lich to name it. Only
-// Claude Code has a roster; every other kind ignores it. Whatever the caller
-// passes, a name already on record for this session wins (AgentName): a restart
-// opens a conversation of its own, and a `/rename` typed in the last one is a
-// decision the user made about this card rather than about that conversation.
+// The name the session answers to in its provider's peer roster (Claude Code's
+// `/list-agents`, the only provider with one) is a name already on record for
+// this session (AgentName): a restart opens a conversation of its own, and a
+// `/rename` typed in the last one is a decision the user made about this card
+// rather than about that conversation. A fork with nothing on record is named by
+// lich (nameArgs); any other session is left to name itself.
 func (s *Service) Start(
-	id, projectID, cwd, kind, resume, name string, fork bool, cols, rows int,
+	id, projectID, cwd, kind, resume string, fork bool, cols, rows int,
 ) error {
 	// Refused before the spawn rather than dropped in resumeArgs: a fork the
 	// provider cannot spell would reopen the parent's own conversation, and two
@@ -59,12 +59,11 @@ func (s *Service) Start(
 	}
 	// Resolved before the lock, because it reads a file: the conversation this
 	// spawn replaces is still on the row until its successor reports, so a name
-	// recorded there is the one this card answers to. Whatever is left is the
-	// caller's own suggestion, and lich's derivation when it had none.
-	if recorded := s.AgentName(id); recorded != "" {
-		name = recorded
+	// recorded there is the one this card answers to.
+	name := s.AgentName(id)
+	if name == "" && fork {
+		name = relay.RosterName(cwd, id)
 	}
-	name = relay.RosterNameOf(name, cwd, id)
 	// Before the lock: it may read the disk for the conversation's profile.
 	bornIn, err := s.store.SessionProfile(id)
 	if err != nil {

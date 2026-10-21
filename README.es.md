@@ -114,6 +114,7 @@ porque lee lo que cada CLI deja escrito, y no hay dos que registren lo mismo.
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
 | Spinner mientras corre un turno, anillo cuando termina | sí | sí | sí | sí | sí | no | sí | sí |
+| La tarjeta toma el nombre de la conversación | sí | por tu primer prompt | por tu primer prompt | sí | sí, desde el segundo turno | no | sí, cuando termina el primer turno | por tu primer prompt, cuando termina el primer turno |
 | Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | no, cuando la ventana recupera el foco | sí | sí |
 | Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no |
 | Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | no | no | no |

@@ -429,7 +429,7 @@ func (s *spawnTerminal) RunModCommand(
 	return terminal.ModOutcome{ID: "m1", State: terminal.ModAcked, OK: true}, nil
 }
 
-func (s *spawnTerminal) Start(_, _, cwd, kind, _, _ string, _ bool, _, _ int) error {
+func (s *spawnTerminal) Start(_, _, cwd, kind, _ string, _ bool, _, _ int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.cwd, s.kind = cwd, kind

@@ -299,7 +299,7 @@ func findSession(
 			switch {
 			case strings.EqualFold(sess.Label, target):
 				byLabel = append(byLabel, located{project: p, session: sess})
-			case strings.EqualFold(relay.RosterNameOf(nameOf(sess.ID), cwd, sess.ID), target):
+			case strings.EqualFold(relay.RosterNameOf(sess.Kind, nameOf(sess.ID), cwd, sess.ID), target):
 				byName = append(byName, located{project: p, session: sess})
 			}
 		}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/internal/project"
+	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
@@ -343,7 +344,6 @@ type started struct {
 	projectID string
 	cwd       string
 	kind      string
-	name      string
 	cols      int
 	rows      int
 }
@@ -383,9 +383,9 @@ func (f *fakeTerminal) CloseBy(id, closerID string) error {
 }
 
 func (f *fakeTerminal) Start(
-	id, projectID, cwd, kind, _, name string, _ bool, cols, rows int,
+	id, projectID, cwd, kind, _ string, _ bool, cols, rows int,
 ) error {
-	f.spawns = append(f.spawns, started{id, projectID, cwd, kind, name, cols, rows})
+	f.spawns = append(f.spawns, started{id, projectID, cwd, kind, cols, rows})
 	return f.err
 }
 
@@ -458,8 +458,8 @@ func TestOpenLandsInTheCallersProject(t *testing.T) {
 	if spawn.cols != 0 || spawn.rows != 0 {
 		t.Errorf("spawn sized %dx%d, want no size of its own", spawn.cols, spawn.rows)
 	}
-	if spawn.name != opened.Name {
-		t.Errorf("spawned as %q but reported %q — the roster name has to be one name", spawn.name, opened.Name)
+	if want := relay.RosterName("/src/lich", opened.ID); opened.Name != want {
+		t.Errorf("reported the name %q, want %q, the one the relay resolves", opened.Name, want)
 	}
 	if len(events.events) != 1 || events.events[0].name != OpenedEventName {
 		t.Fatalf("events = %+v, want one %s", events.events, OpenedEventName)

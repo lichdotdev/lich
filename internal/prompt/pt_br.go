@@ -124,6 +124,10 @@ Quando uma mensagem [lich] com ticket chega ao SEU prompt, você é a sessão de
 		"Ela atende por %[1]q e por %[5]q. O agente dela pode ainda estar iniciando, " +
 		"então uma tarefa que você " +
 		"enviar fica retida até o agente subir, em vez de se perder.\n",
+	OpenedSessionLabelOnly: "Sessão %[1]q (%[2]s) aberta em %[3]s.%[4]s\n" +
+		"Ela atende por %[1]q. O agente dela pode ainda estar iniciando, " +
+		"então uma tarefa que você " +
+		"enviar fica retida até o agente subir, em vez de se perder.\n",
 	ClosedRemoved: "%[1]q fechada e a worktree %[2]s removida.\n",
 	ClosedKept: "%[1]q fechada. A worktree %[2]s continua lá, e a sessão está estacionada: abrir " +
 		"uma sessão nessa branch de novo retoma a conversa dela.\n",

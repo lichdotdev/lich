@@ -51,7 +51,7 @@ func TestAnXDGSpawnRunsInItsLinkHome(t *testing.T) {
 		[]string{"CURSOR_API_KEY=key"}, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Cursor, "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), providers.Cursor, "", false, 80, 24); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the spawn")

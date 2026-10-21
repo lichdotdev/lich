@@ -3,14 +3,16 @@ package relay
 import (
 	"path/filepath"
 	"strings"
+
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // A lich session has two names, and until this file they were two address
 // spaces. The card carries a label the user chose ("docs"); Claude Code's peer
-// roster carries the name lich passes at spawn ("skipo-3939"). Both name the
-// same session, and nothing in an agent's world said so — so an agent handed
-// one of them reached for whichever tool it had and, on the first real run,
-// used both channels at once.
+// roster carries the name lich passes at a fork ("skipo-3939") or the one a
+// `/rename` gave it. Both name the same session, and nothing in an agent's world
+// said so — so an agent handed one of them reached for whichever tool it had
+// and, on the first real run, used both channels at once.
 //
 // The relay therefore answers to either. Deriving the roster name is how lich
 // mints one, and RosterNameOf is how it reads one back: a session that renamed
@@ -26,12 +28,19 @@ const rosterIDChars = 4
 // recorded is what its agent has on record (terminal.AgentName) and wins
 // outright: a `/rename` typed inside a session changes the name the harness
 // answers to, and no derivation can see that. Falling back to the derived one
-// covers everything with nothing recorded — a provider that is never handed a
-// roster name, a conversation lich cannot read, a session whose first turn has
-// not been written yet.
-func RosterNameOf(recorded, cwd, id string) string {
+// covers every provider that is never handed a roster name.
+//
+// Claude Code with nothing recorded answers to no name lich can know: it is born
+// without --name (terminal.nameArgs), names itself after its directory and a
+// random suffix, and writes that name nowhere lich reads. Empty says so, where a
+// derived name would be a second name for one session that its own roster
+// never shows.
+func RosterNameOf(kind, recorded, cwd, id string) string {
 	if recorded = strings.TrimSpace(recorded); recorded != "" {
 		return recorded
+	}
+	if kind == providers.Claude {
+		return ""
 	}
 	return RosterName(cwd, id)
 }
@@ -40,9 +49,8 @@ func RosterNameOf(recorded, cwd, id string) string {
 // its working directory, then four characters of its id. cwd is the session's
 // own directory when it has one (a worktree) and its project's otherwise.
 //
-// Exported for the one caller outside this package that mints a session rather
-// than resolving one: internal/spawn, which reports the name it opened a
-// session under.
+// Exported for the one caller outside this package that mints a name rather
+// than resolving one: internal/terminal, which hands it to a Claude Code fork.
 func RosterName(cwd, id string) string {
 	dir := rosterDir(cwd)
 	tail := make([]rune, 0, rosterIDChars)

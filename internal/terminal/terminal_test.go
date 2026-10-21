@@ -486,7 +486,7 @@ func TestStartIsNoopWhenAlreadyRunning(t *testing.T) {
 	sess := spawnSession(t)
 	svc.sessions["s1"] = sess
 
-	if err := svc.Start("s1", "p1", "", "", "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", "", "", "", false, 80, 24); err != nil {
 		t.Errorf("Start(running) = %v, want nil", err)
 	}
 	if svc.sessions["s1"] != sess {
@@ -538,7 +538,7 @@ func TestStartPassesResumeToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -554,14 +554,14 @@ func TestStartPassesResumeToTheProcess(t *testing.T) {
 }
 
 // TestStartForksIntoItsOwnConversation proves the fork reaches argv with the
-// parent's id — and that the fork is *named*, which is the one place a spawn
-// carrying a resume id still gets --name (nameArgs).
+// parent's id — and that the fork is *named*, under lich's derivation, which is
+// the one place a spawn carrying a resume id still gets --name (nameArgs).
 func TestStartForksIntoItsOwnConversation(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", "lich-9c1b", true, 80, 24)
+	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", true, 80, 24)
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
@@ -570,8 +570,8 @@ func TestStartForksIntoItsOwnConversation(t *testing.T) {
 	got := spawnedArgs(t, svc, "s1")
 	svc.mu.Unlock()
 
-	if name := spawnName(got); name != "lich-9c1b" {
-		t.Errorf("fork spawned under %q, want the name the caller gave it", name)
+	if name := spawnName(got); !strings.HasSuffix(name, "-s1") {
+		t.Errorf("fork spawned under %q, want lich's derivation, ending in its id", name)
 	}
 	want := []string{bin, "--resume", "abc-123", "--fork-session", "--mcp-config"}
 	spawnPins(t, got, want...)
@@ -586,7 +586,7 @@ func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "crush", "abc-123", "", true, 80, 24)
+	err := svc.Start("s1", "p1", t.TempDir(), "crush", "abc-123", true, 80, 24)
 	if err == nil {
 		t.Fatal("Start = nil, want a refusal for a kind that cannot fork")
 	}
@@ -606,7 +606,7 @@ func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", true, 80, 24); err == nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", true, 80, 24); err == nil {
 		t.Fatal("Start = nil, want a refusal for a fork with no resume id")
 	}
 	if svc.Live("s1") {
@@ -621,7 +621,7 @@ func TestStartWithoutResumeSpawnsBare(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -645,7 +645,7 @@ func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -929,7 +929,7 @@ func TestStartPassesSkipPermissionsToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin, skipPerms: true}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -944,22 +944,21 @@ func TestStartPassesSkipPermissionsToTheProcess(t *testing.T) {
 	spawnPins(t, got, want...)
 }
 
-// TestStartNamesASessionByWhatItAnswersTo proves the three rungs Start picks a
-// peer name off, and that the winner reaches the spawned binary's argv in the
-// order claude parses. The recorded name is the one that matters: a card whose
-// conversation was renamed from the inside is respawned under that name rather
-// than back under lich's derivation, which is the whole reason the read exists.
+// TestStartNamesASessionByWhatItAnswersTo proves the rungs Start picks a peer
+// name off, and that the winner reaches the spawned binary's argv in the order
+// claude parses. A new session is not named at all: --name stops Claude Code
+// writing the ai-title its card is titled from. The recorded name is the one
+// that matters: a card whose conversation was renamed from the inside is
+// respawned under that name, which is the whole reason the read exists.
 func TestStartNamesASessionByWhatItAnswersTo(t *testing.T) {
 	const recorded = `{"type":"agent-name","agentName":"reviewer"}` + "\n"
 	tests := []struct {
 		name       string
-		asked      string
 		transcript string
 		want       string
 	}{
-		{name: "the caller's own name", asked: "lich-4f2a", want: "lich-4f2a"},
-		{name: "derived when the caller named none", want: "-s1"},
-		{name: "the recorded name beats both", asked: "lich-4f2a", transcript: recorded, want: "reviewer"},
+		{name: "a new session names itself", want: ""},
+		{name: "the recorded name", transcript: recorded, want: "reviewer"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -972,7 +971,7 @@ func TestStartNamesASessionByWhatItAnswersTo(t *testing.T) {
 			svc := New(store, nil, events.New())
 			t.Cleanup(func() { _ = svc.Close("s1") })
 
-			err := svc.Start("s1", "p1", t.TempDir(), "claude", "", tt.asked, false, 80, 24)
+			err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24)
 			if err != nil {
 				t.Fatalf("Start = %v, want nil", err)
 			}
@@ -981,10 +980,7 @@ func TestStartNamesASessionByWhatItAnswersTo(t *testing.T) {
 			got := spawnedArgs(t, svc, "s1")
 			svc.mu.Unlock()
 
-			// The derived name ends in the session id, and starts with a temporary
-			// directory nothing here can spell — a suffix is the whole of what that
-			// case owns. RosterName's own suite pins the rest.
-			if name := spawnName(got); !strings.HasSuffix(name, tt.want) {
+			if name := spawnName(got); name != tt.want {
 				t.Errorf("spawned under %q, want %q", name, tt.want)
 			}
 			// As above: the registration follows, pinned by its own test.
@@ -1118,7 +1114,7 @@ func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin, model: "opus", effort: "high"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -1138,7 +1134,7 @@ func TestStartPassesTheStoredModelToTheProcess(t *testing.T) {
 	svc := New(stubBins{bin: bin, model: "opus"}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -1674,10 +1670,10 @@ func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 174, 51); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 174, 51); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
-	if err := svc.Start("s2", "p1", t.TempDir(), "claude", "", "", false, 0, 0); err != nil {
+	if err := svc.Start("s2", "p1", t.TempDir(), "claude", "", false, 0, 0); err != nil {
 		t.Fatalf("Start without a size = %v, want nil", err)
 	}
 
@@ -1762,7 +1758,7 @@ func TestReadyWaitsOnlyTheSettle(t *testing.T) {
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s1") })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
+	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 	// The provider has to take the terminal first: readiness is the quiet after it draws, never the spawn itself.
@@ -1827,7 +1823,7 @@ func TestLiveCountCountsTheSessionsWithAProcess(t *testing.T) {
 		t.Fatalf("LiveCount = %d before any spawn, want 0", got)
 	}
 	for _, id := range []string{"s1", "s2"} {
-		if err := svc.Start(id, "p1", t.TempDir(), "claude", "", "", false, 80, 24); err != nil {
+		if err := svc.Start(id, "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
 			t.Fatalf("Start(%s) = %v", id, err)
 		}
 	}

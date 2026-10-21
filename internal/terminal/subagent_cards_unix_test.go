@@ -52,7 +52,7 @@ func TestForkOfASubagentKeepsItsDepth(t *testing.T) {
 	svc := New(store, nil, events.New())
 	t.Cleanup(func() { _ = svc.Close("s2") })
 
-	if err := svc.Start("s2", "p1", t.TempDir(), providers.Claude, "conv-worker", "", true, 80, 24); err != nil {
+	if err := svc.Start("s2", "p1", t.TempDir(), providers.Claude, "conv-worker", true, 80, 24); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 	if got := store.inheritedSubagent["s2"]; got != maxSubagentDepth {
