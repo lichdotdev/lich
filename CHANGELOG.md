@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Dead keys compose in a session's terminal: on macOS, ~ then a types ã and ' then c types ç, where the accent used to arrive on its own before the letter. Text an input method is still composing, such as a Japanese or Chinese IME's, no longer reaches the program before it is committed either.
+- After you switch models in a Claude Code session with `/model`, the footer and the session card's tooltip name the new model as soon as its first turn ends. They used to keep the old one until a later turn or a reconnect, because lich read the transcript before Claude Code had written that turn's last line.
 
 ## [0.75.0] - 2026-10-21
 
