@@ -365,6 +365,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Claude Code's `SendMessage`. Settings › Providers › Claude Code turns it off with "Subagents as lich sessions"
   (`store.SubagentCards`), which reaches the mod as `LICH_SUBAGENT_CARDS=off` at spawn, so a session already
   running keeps the value it started with.
+- **A managed plugin can hide the Stop a worker's answer waits on**: on a machine with managed settings, Claude
+  Code's builtin `cc-plugin-sec-default` sends `classic.Stop` on past the plugins a person installs (measured on
+  2.1.306), and no mod call says so. The worker's mod then answers from `turn.complete` alone, held back only while
+  `$.agent.list()` shows a subagent at work (lich-plugin's `docs/mod-answer.md`). A turn that handed a background
+  shell, monitor or workflow off answers with what it said when it did, and the errand takes that first answer, so
+  the report of the turn that resumes later is lost. A lich-plugin older than the release carrying that fallback
+  never answers such a worker, and its errand stays open until the worker is closed.
 
 ## Git, worktrees and review
 
