@@ -11,6 +11,7 @@
 
 ### Fixed
 
+- La pestaña del proyecto activo ahora se separa de la isla del terminal cuando abrir o redimensionar el panel Código o Revisión hace que se superponga al panel, y vuelve a conectarse cuando cabe de nuevo.
 - En macOS, los botones de cerrar, minimizar y zoom quedan centrados en la barra de título de la ventana nativa, en lugar de pegados a su borde superior, y siguen el zoom de la interfaz.
 - La ventana se puede arrastrar por su barra superior: pasada la última pestaña y en los huecos alrededor de la marca y de los botones. Antes, ninguna parte de la barra la movía.
 - La pantalla Pull requests mantiene al día lo que muestra sin pulsar Actualizar. Vuelve a leer un pull request cada pocos segundos mientras GitHub aún calcula si se puede fusionar, una vez por minuto mientras la pantalla está abierta y cuando vuelves a la ventana, de modo que un push, una fusión o un conflicto hechos fuera de lich aparecen solos.

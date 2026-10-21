@@ -11,6 +11,7 @@
 
 ### Fixed
 
+- A aba do projeto ativo agora se separa da ilha do terminal quando abrir ou redimensionar o painel Código ou Revisão faz com que ela invada o painel, e se reconecta quando volta a caber.
 - No macOS, os botões de fechar, minimizar e zoom ficam centralizados na barra de título da janela nativa, e não colados na borda superior, e acompanham o zoom da interface.
 - A janela pode ser arrastada pela barra superior: depois da última aba e nos espaços ao redor da marca e dos botões. Antes, nenhuma parte da barra a movia.
 - A tela Pull requests mantém o que mostra atualizado sem apertar Atualizar. Ela lê um pull request de novo a cada poucos segundos enquanto o GitHub ainda decide se ele pode ser mergeado, uma vez por minuto enquanto a tela está aberta e quando você volta para a janela, então um push, um merge ou um conflito feito fora do lich aparece sozinho.
