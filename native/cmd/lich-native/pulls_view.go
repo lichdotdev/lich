@@ -304,13 +304,21 @@ func pullTitle(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
 // stat is PullsStats' Stat: a size-3.5 glyph and its words in one tone.
 func stat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), fg) }),
+		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, ic, ui.Space(3.5), fg) }),
 		ui.Gap(1.5),
 		layout.Rigid(th.Text(ui.TextXS, text).In(fg).Weight(font.Medium).Layout),
 	)
 }
 
-// stats is the status line: state, branches, checks, mergeability, review.
+// pullGlyph is ic at size, icPullRunning turning as a Spinner.
+func pullGlyph(gtx C, ic *icons.Icon, size unit.Dp, fg color.NRGBA) D {
+	if ic == icPullRunning {
+		return ui.Spinner(gtx, size, fg)
+	}
+	return ic.Layout(gtx, size, fg)
+}
+
+// stats is the status line:state, branches, checks, mergeability, review.
 func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail) D {
 	if v.checksStat.Clicked(gtx) {
 		v.showTab(d, tabChecks)
@@ -364,7 +372,7 @@ func checksStat(th *ui.Theme, c lichclient.ChecksRollup) (*icons.Icon, string, c
 	case verdictFailed:
 		return icPullX, i18n.T("pulls.pullsStats.checksFailing", i18n.Args{"failed": c.Failed, "total": c.Total}), th.Destructive, true
 	case verdictPending:
-		return icPullClock, i18n.T("pulls.pullsStats.checksRunning", i18n.Args{"pending": c.Pending, "total": c.Total}), th.ToneWait, true
+		return icPullRunning, i18n.T("pulls.pullsStats.checksRunning", i18n.Args{"pending": c.Pending, "total": c.Total}), th.ToneWait, true
 	case verdictPassed:
 		return icPullCheck, i18n.T("pulls.pullsStats.checksPassed", i18n.Args{"count": c.Passed}), th.TonePass, true
 	}

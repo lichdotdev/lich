@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ctrl+F (Cmd+F on macOS) on a file open in the Code tab finds text in it. A bar under the file's name lights every match, steps through them with Enter and Shift+Enter, and can match case, whole words or a regular expression. Its list button shows every line with a match under the bar, and clicking one takes the code there. Escape closes it.
 - A session card's tooltip names the model the session is running, for Claude Code, Codex and Kiro CLI. When it is no longer the model the session was opened on, after a `/model` for instance, the line reads "Opened on …, running …".
 
+### Changed
+
+- A pull request's checks still running turn a spinner, in its Checks tab and in the status line above the tabs, where a clock stood still.
+
 ### Fixed
 
 - An agent's `git commit`, `rebase` or `stash` no longer fails now and then with "Unable to create '.git/index.lock': File exists" because lich was reading that checkout's status or diff at the same moment. lich's reads leave the index alone.

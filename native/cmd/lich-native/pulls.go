@@ -31,7 +31,7 @@ var (
 	icPullBranch  = icons.Lucide("git-branch")
 	icPullCheck   = icons.Lucide("check")
 	icPullX       = icons.Lucide("x")
-	icPullClock   = icons.Lucide("clock")
+	icPullRunning = icons.Lucide("loader-circle")
 	icPullDashed  = icons.Lucide("circle-dashed")
 	icPullCheck2  = icons.Lucide("check-check")
 	icPullRefresh = icons.Lucide("refresh-cw")
