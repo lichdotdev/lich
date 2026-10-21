@@ -71,8 +71,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   There is no error chip: no provider reports one, and a process that exited is known only to its terminal,
   not to a store the sidebar reads. The chips are not persisted, like the query.
 - **Next waiting session reads the same ring** (`waitingTarget`, `native/cmd/lich-native/hotkeys_dispatch.go`):
-  it jumps only to a card whose last report is Waiting, so Antigravity, oh-my-pi, Crush, Cursor CLI and Kiro CLI
-  sessions are never landed on, for the reasons the chips above give. It walks the order next session walks,
+  it jumps only to a card whose last report is Waiting, so it never lands on the five providers the chips above
+  never put under Waiting. It walks the order next session walks,
   the cards the sidebar shows (`hotkeyCards`): a card in a folded block or left out by the search and state
   filter is skipped rather than its block unfolded, so a waiting session folded away is reached only through
   its block's mark. The active card never counts: when it is the only one waiting, the chord does nothing and
@@ -122,10 +122,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   nothing in the live footer — a PR on a branch without one, or an unsupported provider reading.
 - **The card's tooltip names the running model only where the readout above has one**
   (`modelRuns`, `native/cmd/lich-native/sessiontooltip.go`): the line comes from the model the session-usage
-  event carries (Claude Code's assistant `message.model`, Codex's `turn_context.model`, Kiro CLI's
-  `model_info.model_id`), so oh-my-pi, opencode, Crush, Antigravity and Cursor CLI get no line at all, never
-  the model the session was born on standing in for one nobody read. oh-my-pi writes a model on every
-  assistant turn, but its arm reads cost only. When that model differs from the birth model (`model` column,
+  event carries, which only Claude Code, Codex and Kiro CLI record (`docs/providers/`, Transcript & cost), so
+  oh-my-pi, opencode, Crush, Antigravity and Cursor CLI get no line at all, never the model the session was born
+  on standing in for one nobody read. When that model differs from the birth model (`model` column,
   `SetSessionModel`) the line reads "Opened on …, running …". The comparison is a heuristic, not a lookup:
   equal once both are shortened (`formatModel`), or the birth model is the family alias of the running id
   (`opus` against `claude-opus-5-5`, a `[1m]` suffix dropped). Any other alias the CLI accepts (`default`,
@@ -407,16 +406,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   prompt lost on the way (the mod reloading as the response lands) is reported unread, not sent twice. A hook that
   drops the prompt is reported undelivered with its reason, except at a session that was mid-turn, whose ack lich
   stops waiting for after the receipt window.
-- **A task handed to a Crush session waits out its ticket when the agent ends its turn without answering**
-  (`internal/relay/observe.go`, `turnCandidates`): the relay closes an errand as unanswered on the target's
-  `done`, and Crush raises no hook at a turn's end, its only event being `PreToolUse` (0.98.1). Its database
-  does mark the end (`finish.reason` other than `tool_use` in `.crush/crush.db`), but the conversation id
-  reaches lich only on the first tool call, so a turn that calls no tool has nothing to read. The asker hears
-  nothing until the ticket's deadline. The day Crush ships `Stop`, the existing `report-state.sh done` closes it.
-- **A pull request a Crush session opens reaches its card only when the window regains focus**
-  (`native/cmd/lich-native/gitstate.go` `recheckMissingPR`, `cardstate.go` `setFocused`): `gh pr create` moves neither branch nor HEAD, so a card showing no pull request
-  asks gh again when its session's turn ends, and Crush reports no `done` (`docs/hooks/session-state.md`).
-  The day Crush ships `Stop`, the existing `report-state.sh done` closes it.
+- **Crush raises no hook at a turn's end, so nothing that waits for `done` fires there** (its only event is
+  `PreToolUse`, 0.98.1; `docs/hooks/session-state.md`). A task handed to a Crush session that ends its turn
+  without answering waits out its ticket (`internal/relay/observe.go`, `turnCandidates`): its database does mark
+  the end (`finish.reason` other than `tool_use` in `.crush/crush.db`), but the conversation id reaches lich only
+  on the first tool call, so a turn that calls no tool has nothing to read, and the asker hears nothing until the
+  ticket's deadline. A pull request a Crush session opens reaches its card only when the window regains focus
+  (`native/cmd/lich-native/gitstate.go` `recheckMissingPR`, `cardstate.go` `setFocused`): `gh pr create` moves
+  neither branch nor HEAD, so a card showing no pull request asks gh again when its session's turn ends. The day
+  Crush ships `Stop`, the existing `report-state.sh done` closes both.
 - **Only a merge lich makes is announced, and only to a card running at that moment** (`internal/relay`,
   `AnnounceMerge`; called from the Pulls screen's merge): a pull request merged on github.com, with `gh` in a
   terminal or by an agent leaves every session in its checkout believing it is still open, and so does one merged
@@ -504,55 +502,32 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   before the pin or by hand, is caught at startup from its installed version, and again by the `X-Lich-Plugin`
   header its hooks send (docs/hooks/README.md) once a session reports. A report whose payload lich refuses never
   reaches that check, so a plugin old enough to send one only shows up in the startup prompt and the log.
-- **Only a Claude Code session can be driven from lich** (`lich control`, `control_session`, `spawn.Control`,
-  `internal/terminal/modcontrol.go`): the control channel (docs/hooks/mod-control.md) has a mod as its client,
-  and mods are a Claude Code feature, from 2.1.280 on and only with the lich-plugin mod loaded, with lich-plugin
-  0.15.0 or newer. The other seven providers have nothing that runs inside them and polls, so they cannot be
-  prompted, stopped, switched to another model or handed a slash command this way, and `spawn.Control` refuses
-  their sessions by provider before anything is queued. The mod-control contract's Known ceilings has the rest;
-  three are traps a caller walks into:
-  - `/model` and `/effort` are refused as slash commands: measured on Claude Code 2.1.288, run through a mod they
-    write `~/.claude/settings.json` (`model`, `modelSettings.<model>.effortLevel`), the default for every new
-    session. The `model` and `effort` actions are the per-session route.
+- **Only a Claude Code session whose mod polls can be driven, asked, or report for itself** (`spawn.Control`,
+  `spawn.Ask`, `internal/terminal/modcontrol.go`, `modusage.go`, `modstatus.go`; each contract in `docs/hooks/`,
+  mod-control, mod-usage, mod-status and session-state, has its own Known ceilings): mods are a Claude Code
+  feature, from 2.1.280 and only with the lich-plugin mod loaded, 0.15.0 or newer. The other seven providers, and
+  a Claude Code session without the mod, have nothing that runs inside them and polls. So `lich control` and
+  `lich ask` refuse them by provider before anything is queued (no other CLI exposes a fork of its own
+  conversation to anything running inside it), their readout stays the one lich derives, their errands show only
+  in the card's tooltip and inbox mark, and a compaction keeps the finished turn's check or is a spinner with no
+  tool line, which reads as a stuck turn. The traps a caller walks into:
+  - `/model` and `/effort` are refused as slash commands: run through a mod they write `~/.claude/settings.json`,
+    the default for every new session (2.1.288). The `model` and `effort` actions are the per-session route.
   - A slash command that opens a dialog (`/cost`) holds that session's later slash commands until someone
     presses Esc in its terminal; lich cannot tell such a command apart before running it.
-  - A session cannot control itself, for any action: an abort would end the asking turn, and a prompt or a slash
-    command would only run after it.
-- **Only a Claude Code session can be asked a side question** (`lich ask`, `ask_session`, `spawn.Ask`): the
-  answer is a `$.model.fork` the same mod makes, so the seven other providers are refused by provider, as for
-  control. Owner's choice: no other CLI exposes a fork of its own conversation to anything running inside it. The
-  traps, all measured on Claude Code 2.1.289 (the contract's Known ceilings has the detail):
-  - The answer knows the conversation only as of the session's last finished model response: a reply being
-    written, a tool call running, or a prompt whose first reply is still being written is not in it.
-  - An ask cannot be cancelled. Past the 90 seconds lich waits, the fork runs on and is billed until it ends, and
-    its answer is dropped. A mod reload mid-answer loses it, and the caller waits out the 90 seconds.
-  - Its tokens never reach the session's cost: the fork is not in the transcript lich reads cost from. It is
-    cheap only while the prompt cache still holds the session's transcript.
-  - The answer is cut at 16,000 characters.
-  - A session cannot ask itself: the question would ride the request it is waiting on, which the fork never sees.
-- **Only a Claude Code session reports its own readout** (`internal/terminal/modusage.go`,
-  docs/hooks/mod-usage.md): its mod, with lich-plugin 0.15.0, posts the context window, rate limits and cost
-  Claude Code measured, and those win over what lich derives for the conversation they name. Every other
-  provider, and a Claude Code session without the mod, keeps the derived figures, so two sessions on the same
-  model can disagree by the requests no transcript records (measured 2.7% and 3.1% of a session's cost on
-  2.1.289). The report fires at the end of a turn and never on a compaction, so the tokens stay the
-  transcript's and only the window and the money come from the report; and its cost replaces the
-  conversation's ledger row and drops its sub-agent rows, so a lich restarted before the session's first report
-  re-scans that conversation from the transcript until the report lands again. Only a long-lived token login's
-  plan gauge uses the reported rate limits: a credentials login keeps its usage route, which names the plan,
-  the account and the model-scoped caps a report does not carry.
-- **Only a Claude Code session's status line shows its errands** (`internal/terminal/modstatus.go`,
-  docs/hooks/mod-status.md): the requests it owes, the ones it handed out and the answers waiting in its inbox
-  are read by its mod, and mods are a Claude Code feature. On the seven other providers, and on a Claude Code
-  session without the mod, the card's tooltip and inbox mark are the only place they show. The read is polled
-  by the mod, so the status line lags an errand by up to its read interval, and an errand sent privately (a
-  subagent or workflow step inside the session) never shows there, since the session's own collect never
-  reaches it.
-- **Only a Claude Code card says it is compacting** (`compacting`, docs/hooks/session-state.md): the start of a
-  compaction is reported by the mod's `session.compact`, and no other harness has that event wired. On the seven
-  other providers, and on a Claude Code session without the mod, a `/compact` keeps the finished turn's check
-  and an auto-compaction is a spinner with no tool line, which reads as a stuck turn. A compaction the mod
-  never closes (the mod killed mid-call) holds "Compacting…" until the session's next report.
+  - A session cannot control or ask itself: an abort would end the asking turn, a prompt or a slash command would
+    only run after it, and a question would ride the request it is waiting on.
+  - An ask knows the conversation only as of the last finished model response, cannot be cancelled (past lich's
+    90 seconds the fork runs on, billed, and its answer is dropped), never reaches the session's cost, and is cut
+    at 16,000 characters (2.1.289).
+  - A reported readout wins over the derived one, so two sessions on the same model can disagree by the requests
+    no transcript records (2.7% and 3.1% of a session's cost on 2.1.289). Its cost replaces the conversation's
+    ledger row and drops its sub-agent rows, so a lich restarted before the session's first report re-scans that
+    conversation from the transcript until the report lands again. Only a long-lived token login's plan gauge
+    uses the reported rate limits: a credentials login keeps its usage route, which names the plan, the account
+    and the model-scoped caps a report does not carry.
+  - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
+    since the session's own collect never reaches it.
 - **The plan gauge answers to undocumented routes, and three providers have none** (`internal/quota`; each route
   is in `docs/providers/`, Account): every route is what a provider's own CLI or dashboard polls, and none is
   published API. oh-my-pi, Crush and Kiro CLI report no plan lich can read, and opencode reports one only for an

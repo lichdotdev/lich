@@ -66,6 +66,7 @@ Kiro's own percentage against Kiro's own window, and it is what keeps the toolti
 not a token count anybody measured. Its spend never appears at all: `metering_usage` is denominated in
 **credits**, whose dollar value depends on the account's plan, and lich's readout is dollars — so a Kiro session
 shows a context ring and no cost, and the CLI's own footer is the only place that credit figure can be read.
+The running model the card's tooltip names is `model_info.model_id`.
 
 Kiro writes `session_created_reason: "subagent"` on every conversation (2.21.0, measured on 15), so it is no
 sub-agent filter and is not read.

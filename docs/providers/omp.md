@@ -33,7 +33,8 @@ figure and no ring. The figure is omp's own arithmetic, never re-priced here: th
 same walk its own status line makes, so a `task` sub-agent's spend is missing from lich's figure exactly as it is
 from omp's. A turn written with no total at all withholds the session's whole number and borrows the
 `unpriced-model` marker, whose tooltip then blames a network that would not have helped. That branch has never
-been seen in the wild and gets no reason of its own until it is.
+been seen in the wild and gets no reason of its own until it is. omp writes a model on every assistant turn, but
+its arm reads cost only, so the card's tooltip names no running model.
 
 ## Plugin install
 
