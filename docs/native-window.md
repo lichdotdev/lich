@@ -51,7 +51,8 @@ from `main` either drowns in merges or freezes the web app for months.
   is running. Closing the window ends nothing: the backend and its sessions go on, and a window can be
   opened on them again.
 - **`lich gallery`** opens `lich-gallery` (built from `native/cmd/ui-gallery`), the UI kit's gallery, which needs no
-  backend; it is looked up beside `lich` the same way, or at `LICH_GALLERY`.
+  backend; it is looked up beside `lich` the same way, or at `LICH_GALLERY`. The release packages leave it out:
+  `task gallery` builds it into `bin/` and opens it.
 - **`LICH_NATIVE_PPROF=127.0.0.1:6060`**, set where `lich native` starts, has `lich-native` serve Go's
   runtime profiles (`net/http/pprof`) on that address, for a heap or CPU profile of a real window:
   `go tool pprof http://127.0.0.1:6060/debug/pprof/heap`. Only a loopback address is accepted, and any

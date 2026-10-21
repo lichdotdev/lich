@@ -101,6 +101,12 @@ tasks:
       # a release.
       - cmd: LICH_DEV=1 LICH_LISTEN_PORT=47822 LICH_NATIVE="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-native" go run {{if env "VERSION"}}-ldflags "-X main.version={{.VERSION}}" {{end}}.
 
+  gallery:
+    desc: Build the UI kit gallery into bin/lich-gallery and open it (cgo, no libghostty-vt)
+    cmds:
+      - cmd: cd native && CGO_ENABLED=1 go build -trimpath -o ../{{.BIN_DIR}}/lich-gallery ./cmd/ui-gallery
+      - cmd: LICH_GALLERY="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-gallery" go run . gallery
+
   test:
     desc: Run the backend and native window suites (native needs libghostty-vt on PKG_CONFIG_PATH)
     cmds:
