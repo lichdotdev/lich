@@ -48,7 +48,9 @@
     "onlyWhitespaceChanged": "空白のみ変更されました",
     "addAsContext": "ファイルをコンテキストとして追加",
     "discard": "変更を破棄",
-    "viewed": "確認済み"
+    "viewed": "確認済み",
+    "previewMarkdown": "Markdown をプレビュー",
+    "showDiff": "差分を表示"
   },
   "reviewPanel": {
     "discardFailed": "変更を破棄できませんでした: {error}",

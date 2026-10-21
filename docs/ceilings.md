@@ -318,6 +318,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   image whose header claims more than 40 MP before decoding it, holds it scaled to 2048 px on its longest
   side (no zoom), and never draws a PDF: Open in default app (`system.OpenFile`) reaches only a file in the
   working tree, so the old side of a change and a pull request's file have no way out but GitHub's page.
+- **A Markdown preview shows the file's new version, never the change** (`native/cmd/lich-native/dock_review_markdown.go`):
+  the Review card's preview renders the whole file as the Pulls screen renders a PR body, with nothing marking
+  what was added or removed, no line to hang a review comment on and no selection to inject. It reads the
+  working tree (`project.ReadFile`, as the Code tab does), so on the Pulls screen only an added file, whose patch is the whole file, has a
+  preview; an edited one has no toggle for the same reason an image there has no preview. A relative image
+  shows its alt text (x/markdown fetches nothing) and raw HTML prints as text. A new version of the file puts
+  the card back on its diff, as it reopens or folds a card by its size.
 - **A line revert rebuilds its patch, and some of it cannot be done** (`internal/project/revertlines.go`): the
   panel sends line numbers and the text it drew, never a patch, so a file that moved since the draw is refused
   instead of reverting whatever those numbers point at now. The index is reverted with the working tree when it

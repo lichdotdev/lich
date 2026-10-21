@@ -44,6 +44,8 @@ type fileCard struct {
 
 	view         *godemirror.DiffView
 	bin          *binaryPreview
+	md           *markdownPreview
+	previewing   bool
 	viewFail     bool
 	afford       *affordances
 	blocks       cardBlocks
@@ -51,6 +53,7 @@ type fileCard struct {
 
 	toggle          widget.Clickable
 	attach, discard iconActionState
+	preview         iconActionState
 	menu            ui.MenuState
 	composer        commentComposer
 	panel           *reviewPanel
@@ -88,7 +91,7 @@ func (c *fileCard) sync(f patchFile, hiding bool) {
 		c.shownText, c.patch, c.gen, c.filled = shownText, patch, c.gen+1, map[int]int{}
 	}
 	if changed {
-		c.open = c.openByDefault()
+		c.open, c.previewing = c.openByDefault(), false
 	}
 }
 
@@ -112,6 +115,9 @@ func (c *fileCard) layout(gtx C, p *reviewPanel) D {
 	}
 	if c.attach.click.Clicked(gtx) {
 		p.inject(fileReference(c.git.path))
+	}
+	if c.preview.click.Clicked(gtx) {
+		c.previewing, c.open = !c.previewing, true
 	}
 	if c.discard.click.Clicked(gtx) {
 		p.pendingDiscard = &c.git
@@ -162,8 +168,13 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 			return diffStat(gtx, th, c.patch.Added, c.patch.Deleted)
 		}))
 	}
+	attachGap := ui.Gap(2)
+	if c.previewsMarkdown() {
+		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.previewToggle(gtx, th, p) }))
+		attachGap = ui.Gap(1)
+	}
 	children = append(children,
-		ui.Gap(2), layout.Rigid(func(gtx C) D {
+		attachGap, layout.Rigid(func(gtx C) D {
 			return iconAction(gtx, th, p.root, &c.attach, icAttach, i18n.T("diff.fileDiff.addAsContext"), false)
 		}))
 	if p.pr != nil {
@@ -218,13 +229,15 @@ func badge(gtx C, th *ui.Theme, b langBadge, light bool) D {
 	return layout.Center.Layout(gtx, th.On(bg).Text(badgeText, b.abbr).In(fg).Weight(font.Bold).Layout)
 }
 
-// body is what opening the file reveals: the binary line, the whitespace
-// line, or the diff with its right-click menu.
+// body is what opening the file reveals: the binary line, the Markdown
+// preview, the whitespace line, or the diff with its right-click menu.
 func (c *fileCard) body(gtx C, p *reviewPanel) D {
 	th := p.th
 	switch {
 	case c.git.binary:
 		return c.binaryBody(gtx, p)
+	case c.previewing:
+		return c.markdownBody(gtx, p)
 	case c.onlyWhitespace():
 		return bodyLine(gtx, th, i18n.T("diff.fileDiff.onlyWhitespaceChanged"))
 	}
