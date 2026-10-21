@@ -1533,7 +1533,7 @@ func TestSessionEnvWithoutCwd(t *testing.T) {
 
 // TestSessionEnvWithoutProject proves a session whose project the store cannot
 // resolve is left without LICH_PROJECT_DIR rather than handed an empty one: a
-// setup script reading it would `cd` to the filesystem root.
+// script reading it would `cd` to the filesystem root.
 func TestSessionEnvWithoutProject(t *testing.T) {
 	t.Parallel()
 	s := &Service{env: []string{"A=1"}, store: stubBins{}}

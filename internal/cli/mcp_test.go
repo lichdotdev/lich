@@ -691,7 +691,7 @@ func TestMCPOpenSessionKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
 	f := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"auth-fix",
 		"name":"auth-fix-9f8e","kind":"claude","path":"/wt/auth-fix","nextSeq":5}`)
 	f.answers = map[string]answer{
-		"relay.Send": {status: 500, body: `{"error":"the setup script is still running"}`},
+		"relay.Send": {status: 500, body: `{"error":"the agent is still starting"}`},
 	}
 
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
@@ -701,7 +701,7 @@ func TestMCPOpenSessionKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
 	if failed {
 		t.Fatalf("the open was reported as a failure, but the session exists: %s", text)
 	}
-	for _, phrase := range []string{"auth-fix", "the setup script is still running", "send_to_session"} {
+	for _, phrase := range []string{"auth-fix", "the agent is still starting", "send_to_session"} {
 		if !strings.Contains(text, phrase) {
 			t.Errorf("result is missing %q:\n%s", phrase, text)
 		}

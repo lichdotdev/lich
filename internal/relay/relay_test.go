@@ -41,10 +41,10 @@ func (f fakeSessions) SetSessionSchedule(sessionID string, at int64, prompt stri
 // an explicit set so a test can park a session without a PTY.
 type fakeTerminal struct {
 	mu sync.Mutex
-	// live is whether a PTY exists; settingUp is whether what reads it is still
-	// the worktree setup script rather than the agent.
-	live      map[string]bool
-	settingUp map[string]bool
+	// live is whether a PTY exists; starting is whether its agent has yet to
+	// take it over.
+	live     map[string]bool
+	starting map[string]bool
 	// typing is whether the person at that session has a half-written line at its
 	// prompt, which the terminal service reports through the same Ready.
 	typing map[string]bool
@@ -79,7 +79,7 @@ type fakeTerminal struct {
 func newFakeTerminal(live ...string) *fakeTerminal {
 	t := &fakeTerminal{
 		live: map[string]bool{}, writes: map[string][]string{},
-		settingUp: map[string]bool{}, typing: map[string]bool{},
+		starting: map[string]bool{}, typing: map[string]bool{},
 		noisy: map[string]int{}, drained: map[string]int{},
 		names:   map[string]string{},
 		holding: map[string]bool{}, inHold: map[string][]string{},
@@ -112,20 +112,19 @@ func (f *fakeTerminal) Live(id string) bool {
 }
 
 // Ready defaults to "as ready as it is live": most tests are about delivery and
-// answers, not about a checkout that is still installing its dependencies, nor
-// about a prompt its own user is typing at. The ones that are set settingUp or
-// typing.
+// answers, not about an agent that is still starting, nor about a prompt its
+// own user is typing at. The ones that are set starting or typing.
 func (f *fakeTerminal) Ready(id string) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.live[id] && !f.settingUp[id] && !f.typing[id]
+	return f.live[id] && !f.starting[id] && !f.typing[id]
 }
 
 // AtPrompt is Ready that does not mind the person's unsent line.
 func (f *fakeTerminal) AtPrompt(id string) bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.live[id] && !f.settingUp[id]
+	return f.live[id] && !f.starting[id]
 }
 
 // typeAt marks a session as having the user's own unsent line at its prompt.
@@ -135,12 +134,12 @@ func (f *fakeTerminal) typeAt(id string, drafting bool) {
 	f.typing[id] = drafting
 }
 
-// setUp marks a session as still running its worktree setup script: live, and
-// with nothing on the other end that could read a message.
-func (f *fakeTerminal) setUp(id string, running bool) {
+// setStarting marks a session whose agent is still starting: live, and with
+// nothing on the other end that could read a message yet.
+func (f *fakeTerminal) setStarting(id string, starting bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.settingUp[id] = running
+	f.starting[id] = starting
 }
 
 // QuietFor reports the terminal as settled unless a test says otherwise: the
@@ -1293,7 +1292,7 @@ func TestASecondErrandQueuedMidTurnSurvivesTheFirstsEnd(t *testing.T) {
 }
 
 // TestAnUndeliveredTicketIgnoresTheTargetsTurns proves turn accounting starts
-// at delivery: a ticket still waiting out the target's setup script has no
+// at delivery: a ticket still waiting for the target's prompt has no
 // message in that PTY, so nothing that happens there can close it.
 func TestAnUndeliveredTicketIgnoresTheTargetsTurns(t *testing.T) {
 	t.Parallel()
@@ -1871,7 +1870,7 @@ func TestReplyWithoutATicketNeedsAnErrandItCanName(t *testing.T) {
 		t.Error("want an error answering a session with no open request")
 	}
 
-	term.setUp("s2", true)
+	term.setStarting("s2", true)
 	go func() {
 		_, _ = svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1})
 	}()
@@ -2083,26 +2082,23 @@ func waitForTicket(svc *Service) string {
 	return ""
 }
 
-// A session running its worktree setup script is live and has nothing that can
-// read a message: the script owns the PTY until it execs the provider. Writing
-// into it loses the request outright — `pnpm install` reads the bytes and drops
-// them — and the sender then waits out a ticket nobody was ever asked to
-// answer, which is how this was found. So the task is queued instead: the
-// sender gets its ticket now, and the message goes in when there is something
-// there to read it.
-
-func TestSendDeliversOnceTheSetupScriptFinishes(t *testing.T) {
+// A session whose agent is still starting is live and has nothing that can
+// read a message yet. Writing into it loses the request outright, and the
+// sender then waits out a ticket nobody was ever asked to answer. So the task
+// is queued instead: the sender gets its ticket now, and the message goes in
+// when there is something there to read it.
+func TestSendDeliversOnceTheAgentIsUp(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.setUp("s2", true)
+	term.setStarting("s2", true)
 	svc := newRelay(workspace(), term, nil)
 
 	go func() {
 		time.Sleep(20 * time.Millisecond)
-		term.setUp("s2", false)
+		term.setStarting("s2", false)
 	}()
 
-	// One second is long enough for the setup to finish and the delivery to
+	// One second is long enough for the agent to come up and the delivery to
 	// land inside the call; nobody answers, so the errand ends pending.
 	result, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1})
 	if err != nil {
@@ -2117,14 +2113,14 @@ func TestSendDeliversOnceTheSetupScriptFinishes(t *testing.T) {
 }
 
 // TestSendQueuesForASessionThatIsNotAtAPromptYet is the case the whole feature
-// exists for: a fan-out hands a task to a worktree that has never been
-// installed, and the setup script outlasts the caller's own budget. What used
+// exists for: a fan-out hands a task to a session opened a moment ago, and its
+// agent's start outlasts the caller's own budget. What used
 // to happen was a failed Send with the task gone; what has to happen is a
 // ticket now and a delivery later, on an errand that still answers.
 func TestSendQueuesForASessionThatIsNotAtAPromptYet(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.setUp("s2", true)
+	term.setStarting("s2", true)
 	svc := newRelay(workspace(), term, nil)
 
 	result, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 1})
@@ -2135,10 +2131,10 @@ func TestSendQueuesForASessionThatIsNotAtAPromptYet(t *testing.T) {
 		t.Errorf("status = %q, want the errand open", result.Status)
 	}
 	if len(term.writesTo("s2")) != 0 {
-		t.Errorf("typed %v into the setup script", term.writesTo("s2"))
+		t.Errorf("typed %v before the agent was up", term.writesTo("s2"))
 	}
 
-	term.setUp("s2", false)
+	term.setStarting("s2", false)
 	if !awaitWritten(term, "s2", "run the tests") {
 		t.Fatal("the queued task never reached the target once its agent was up")
 	}
@@ -2164,7 +2160,7 @@ func TestSendQueuesForASessionThatIsNotAtAPromptYet(t *testing.T) {
 func TestSendDoesNotBlockOnASessionThatIsNotReady(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.setUp("s2", true)
+	term.setStarting("s2", true)
 	svc := newRelay(workspace(), term, nil)
 
 	start := time.Now()
@@ -2188,7 +2184,7 @@ func TestSendDoesNotBlockOnASessionThatIsNotReady(t *testing.T) {
 func TestQueuedTaskGivesUpWhenTheTargetNeverReachesAPrompt(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.setUp("s2", true)
+	term.setStarting("s2", true)
 	svc := newRelay(workspace(), term, nil)
 	// A tenth of the caller's own wait, so the give-up lands while it is still
 	// holding the line and is what it hears.
@@ -2202,7 +2198,7 @@ func TestQueuedTaskGivesUpWhenTheTargetNeverReachesAPrompt(t *testing.T) {
 		t.Errorf("status = %q, want the sender told the task never reached a prompt", result.Status)
 	}
 	if len(term.writesTo("s2")) != 0 {
-		t.Errorf("typed %v into the setup script", term.writesTo("s2"))
+		t.Errorf("typed %v before the agent was up", term.writesTo("s2"))
 	}
 	svc.mu.Lock()
 	open := len(svc.tickets)
@@ -2215,7 +2211,7 @@ func TestQueuedTaskGivesUpWhenTheTargetNeverReachesAPrompt(t *testing.T) {
 func TestQueuedTaskReportsTheTargetDyingToTheInbox(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s1", "s2")
-	term.setUp("s2", true)
+	term.setStarting("s2", true)
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), term, events)
 
@@ -2337,7 +2333,7 @@ func TestATaskNobodyReadIsTypedInAgain(t *testing.T) {
 }
 
 // The retry is only worth typing at a terminal whose agent is there to read it;
-// one that is no longer ready — the provider died back to a setup script, the
+// one that is no longer ready — the provider died back to a shell, the
 // session ended — gets the unread verdict without a second write into whatever
 // holds it now.
 func TestNoRetryIntoATerminalThatIsNotReady(t *testing.T) {
@@ -2346,7 +2342,7 @@ func TestNoRetryIntoATerminalThatIsNotReady(t *testing.T) {
 	svc := withReceipts(term)
 	term.onWrite = func(id, data string) {
 		if id == "s2" && data == submit {
-			term.setUp("s2", true)
+			term.setStarting("s2", true)
 		}
 	}
 

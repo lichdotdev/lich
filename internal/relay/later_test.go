@@ -191,7 +191,7 @@ func TestDeliverDueKeepsThePromptWhileTheSessionIsNotReady(t *testing.T) {
 	t.Parallel()
 	cases := map[string]func(*fakeTerminal){
 		"no PTY":         func(term *fakeTerminal) { term.live["s1"] = false },
-		"setting up":     func(term *fakeTerminal) { term.settingUp["s1"] = true },
+		"starting":       func(term *fakeTerminal) { term.starting["s1"] = true },
 		"user is typing": func(term *fakeTerminal) { term.typing["s1"] = true },
 	}
 	for name, park := range cases {

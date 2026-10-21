@@ -1008,7 +1008,7 @@ func TestOpenKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
 	t.Parallel()
 	f := newFakeLich(t, openedBody)
 	f.answers = map[string]answer{
-		"relay.Send": {status: 500, body: `{"error":"the setup script is still running"}`},
+		"relay.Send": {status: 500, body: `{"error":"the agent is still starting"}`},
 	}
 
 	code, stdout, stderr := run(t, f, "open", "--worktree", "auth-fix", "--prompt", "port the parser")
@@ -1018,7 +1018,7 @@ func TestOpenKeepsTheSessionWhenTheTaskDoesNotLand(t *testing.T) {
 	if !strings.Contains(stdout, `"auth-fix"`) {
 		t.Errorf("the session that was opened is not reported:\n%s", stdout)
 	}
-	for _, phrase := range []string{"the setup script is still running", `lich send "auth-fix"`} {
+	for _, phrase := range []string{"the agent is still starting", `lich send "auth-fix"`} {
 		if !strings.Contains(stderr, phrase) {
 			t.Errorf("stderr is missing %q:\n%s", phrase, stderr)
 		}

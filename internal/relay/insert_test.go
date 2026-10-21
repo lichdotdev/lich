@@ -182,7 +182,7 @@ func TestInsertRefusesASessionBlockedOnAPermission(t *testing.T) {
 func TestInsertGivesUpOnASessionThatNeverReachesItsPrompt(t *testing.T) {
 	t.Parallel()
 	term := newFakeTerminal("s3")
-	term.setUp("s3", true)
+	term.setStarting("s3", true)
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
 
 	_, err := svc.insert("", "solo", "", "x", time.Millisecond)
@@ -190,7 +190,7 @@ func TestInsertGivesUpOnASessionThatNeverReachesItsPrompt(t *testing.T) {
 		t.Errorf("insert = %v, want the wait to run out", err)
 	}
 	if got := term.written("s3"); got != "" {
-		t.Errorf("written = %q, want nothing typed into the setup script", got)
+		t.Errorf("written = %q, want nothing typed before the agent was up", got)
 	}
 }
 
