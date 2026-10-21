@@ -311,7 +311,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Only a merge lich makes is announced, and only to a card running at that moment** (`internal/relay`,
   `AnnounceMerge`; called from the Pulls screen's merge): a pull request merged on github.com, with `gh` in a
   terminal or by an agent leaves every session in its checkout believing it is still open, and so does one merged
-  while the card was parked or never opened. The notice also lands as a delivery like any other, so a cleanup
+  while the card was parked or never opened. The session that opened one of the checkout's sessions hears it
+  too, wherever it runs, but only that one: the session that opened the opener does not. The notice also lands as a delivery like any other, so a cleanup
   clicked in the second before it starts a turn finds no session mid-turn, asks nothing, and removes the checkout
   with the notice still on its way.
 - **Only a Claude Code subagent becomes a lich card** (lich-plugin's `hooks/agent-cards.js`, its

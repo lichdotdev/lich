@@ -6,13 +6,16 @@ import (
 
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/store"
 )
 
 // AnnounceMerge tells every agent running in checkout that the pull request on
 // its branch was merged from lich's own screen. An agent keeps notes on the work
 // it did there, and without this the last thing they say about it is that it is
 // waiting on a merge, which a later session reads back as true long after the
-// checkout is gone.
+// checkout is gone. The session that opened one of those agents hears it too,
+// wherever it runs: it handed the work out and keeps the same kind of notes on
+// it.
 //
 // Only provider sessions hear it: a terminal card in the same checkout is a
 // shell, where a typed notice would run as a command. A card with no process
@@ -31,25 +34,53 @@ func (s *Service) AnnounceMerge(checkout string, number int, title, branch, base
 	message := mergeNotice(lang, number, title, branch, base)
 	summary := fmt.Sprintf(prompt.For(lang).MergeSummary, number, base)
 	note := &Notification{Status: NotifyCompleted, Summary: summary}
-	for _, p := range projects {
-		for _, sess := range p.Sessions {
-			if !s.runsAgentIn(sess.ID, sess.Kind, sessionCwd(sess.Path, p.Path), checkout) {
-				continue
+	for _, sess := range s.mergeAudience(projects, checkout) {
+		go func(id, label string) {
+			if err := s.deliver(id, message, note); err != nil {
+				slog.Warn("relay: merge notice not delivered", "session", label, "err", err)
 			}
-			go func(id, label string) {
-				if err := s.deliver(id, message, note); err != nil {
-					slog.Warn("relay: merge notice not delivered", "session", label, "err", err)
-				}
-			}(sess.ID, sess.Label)
-		}
+		}(sess.ID, sess.Label)
 	}
 	return nil
 }
 
-// runsAgentIn is whether a session is a live provider session whose checkout is
-// the one given.
-func (s *Service) runsAgentIn(id, kind, cwd, checkout string) bool {
-	return cwd == checkout && providers.Known(kind) && s.term.Live(id)
+// mergeAudience is the live provider sessions running in checkout, and the live
+// provider sessions that opened any session there, each once. An opener hears
+// it even when the session it opened is parked: the work it handed out is
+// done either way.
+func (s *Service) mergeAudience(projects []store.Project, checkout string) []store.Session {
+	byID := map[string]store.Session{}
+	var inCheckout []store.Session
+	for _, p := range projects {
+		for _, sess := range p.Sessions {
+			byID[sess.ID] = sess
+			if sessionCwd(sess.Path, p.Path) == checkout {
+				inCheckout = append(inCheckout, sess)
+			}
+		}
+	}
+	told := map[string]bool{}
+	var audience []store.Session
+	add := func(sess store.Session) {
+		if !told[sess.ID] && s.runsAgent(sess.ID, sess.Kind) {
+			told[sess.ID] = true
+			audience = append(audience, sess)
+		}
+	}
+	for _, sess := range inCheckout {
+		add(sess)
+	}
+	for _, sess := range inCheckout {
+		if origin, ok := byID[sess.OriginSessionID]; ok {
+			add(origin)
+		}
+	}
+	return audience
+}
+
+// runsAgent is whether a session is a live provider session.
+func (s *Service) runsAgent(id, kind string) bool {
+	return providers.Known(kind) && s.term.Live(id)
 }
 
 // sessionCwd is the directory a session runs in: its worktree, or the project's

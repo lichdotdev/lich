@@ -73,6 +73,42 @@ func TestAnnounceMergeReachesSessionsInTheProjectsOwnDirectory(t *testing.T) {
 	}
 }
 
+func TestAnnounceMergeTellsTheSessionThatOpenedOneThere(t *testing.T) {
+	t.Parallel()
+	sessions := fakeSessions{projects: []store.Project{
+		{ID: "p1", Name: "lich", Path: "/src/lich", Sessions: []store.Session{
+			{ID: "lead", Label: "main", Kind: "claude"},
+			{ID: "bystander", Label: "other", Kind: "codex", Path: "/wt/other"},
+		}},
+		{ID: "p2", Name: "site", Path: "/src/site", Sessions: []store.Session{
+			{ID: "worker", Label: "feat", Kind: "codex", Path: "/wt/feat", OriginSessionID: "lead"},
+			{ID: "parked", Label: "feat-2", Kind: "codex", Path: "/wt/feat", OriginSessionID: "lead"},
+			{ID: "nested", Label: "feat-3", Kind: "codex", Path: "/wt/feat", OriginSessionID: "worker"},
+		}},
+	}}
+	term := newFakeTerminal("lead", "bystander", "worker", "nested")
+	svc := newRelay(sessions, term, nil)
+
+	if err := svc.AnnounceMerge("/wt/feat", 42, "Add merge notice", "feat/merge", "main"); err != nil {
+		t.Fatalf("AnnounceMerge: %v", err)
+	}
+
+	for _, id := range []string{"lead", "worker", "nested"} {
+		if !awaitWritten(term, id, "#42") {
+			t.Fatalf("typed at %s = %q, want the merge notice", id, term.written(id))
+		}
+	}
+	if got := strings.Count(term.written("lead"), "#42"); got != 1 {
+		t.Fatalf("lead heard the notice %d times, want once for its two sessions there", got)
+	}
+	if got := strings.Count(term.written("worker"), "#42"); got != 1 {
+		t.Fatalf("worker heard the notice %d times, want once: it runs there and opened nested", got)
+	}
+	if got := term.written("bystander"); got != "" {
+		t.Fatalf("typed at bystander = %q, want nothing", got)
+	}
+}
+
 func TestAnnounceMergeReportsAStoreFailure(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(fakeSessions{err: errors.New("disk gone")}, newFakeTerminal(), nil)
