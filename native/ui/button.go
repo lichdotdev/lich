@@ -1,12 +1,10 @@
 package ui
 
 import (
-	"image"
 	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -138,13 +136,7 @@ func (b ButtonStyle) Layout(gtx C) D {
 	if b.Disabled {
 		return b.draw(gtx, false)
 	}
-	return b.Click.Layout(gtx, func(gtx C) D {
-		if b.Click.Pressed() {
-			// active:translate-y-px
-			defer op.Offset(image.Pt(0, gtx.Dp(1))).Push(gtx.Ops).Pop()
-		}
-		return b.draw(gtx, b.Click.Hovered())
-	})
+	return b.Click.Layout(gtx, func(gtx C) D { return b.draw(gtx, b.Click.Hovered()) })
 }
 
 func (b ButtonStyle) draw(gtx C, hovered bool) D {

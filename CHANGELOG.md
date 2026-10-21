@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A pull request's checks still running turn a spinner, in its Checks tab and in the status line above the tabs, where a clock stood still.
+- Buttons no longer sink a pixel while pressed, so every button in the window behaves the same: the ones that had this motion now match the ones that never did.
 
 ### Fixed
 
