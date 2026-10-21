@@ -129,6 +129,12 @@ the Finder list it under its own icon — and symlinks the same binary onto
 --cask lichdotdev/tap/lich` tracks new versions, and lich's own update button
 steps aside on a Homebrew install.
 
+It needs macOS 13 (Ventura) or newer. Nothing in lich needs 13: Go 1.27 dropped
+every release before it, so the cask's `depends_on`, the bundle's
+`LSMinimumSystemVersion` and the CI's `MACOSX_DEPLOYMENT_TARGET` say 13.0
+because the compiler does, and all three move with the next Go bump. A Mac
+below the floor is refused by Homebrew rather than by a crash.
+
 The app carries its own window on Apple Silicon and Intel alike, the same
 native window the Linux packages ship, and the Dock shows the lich icon while
 it runs. The Intel build is exercised on a CI runner only — nobody on the

@@ -20,7 +20,10 @@ import (
 
 // Rearranging a layout by dragging: a pane by its header, or a card from the
 // sidebar, onto a pane's edge or middle. Both ride the sidebar's SortCarry,
-// whose targets here are each pane's five drop zones.
+// but each pane's five drop zones are not carry targets: Gio's transfer
+// delivered Enter to targets laid out mid-drag only some of the time, so the
+// zone is worked out from the pointer, read by a handler over the whole
+// window, against where the panes were drawn.
 
 // paneTargetPrefix starts a drop zone's carry target id: pane|<session>|<edge>.
 const paneTargetPrefix = "pane|"
@@ -124,6 +127,9 @@ func (u *window) readDragPointer(gtx C) {
 	d.rects, d.whole = map[string]image.Rectangle{}, map[string]bool{}
 	m := st.metric
 	d.paneW, d.paneH, d.gap = m.Dp(paneMinWidth), m.Dp(paneMinHeight), m.Dp(gutter)
+	// Resting a drag on a strip tab can take the drag's own list off screen,
+	// and Gio dereferences a source nobody asked about in a frame on the next
+	// move.
 	u.sidebar.carry.Hold(gtx)
 	carried := u.sidebar.carry.Carrying()
 	d.released = false

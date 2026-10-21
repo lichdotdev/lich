@@ -51,45 +51,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   checkout owns, nothing binds it, and anything on the machine can take the port before the dev server starts.
 - **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,
   `native/cmd/lich-native/sidebar_groups.go`): the folder a card is filed under is a column on the session
-  row, and the name is the whole identity — there is no folder record to point at. What follows is deliberate:
-  a folder exists only while a session carries its name, so the last card leaving ends it and an empty folder
-  cannot be kept on screen waiting for a card; a rename is a write across every session in it, parked rows
-  included (`RenameFolder`); two names differing only by case or a space are two folders, because nothing folds
-  them and the user can see and rename both; and a folder belongs to one project, since the name is scoped by
-  `project_id`. A session is in at most one folder, and where it could be in two blocks the order is pin, then
-  folder, then its checkout: a pinned card that is also filed is drawn at the top, not in its folder.
-- **A card is filed by dropping it on a block's header, never between another block's cards**
-  (`native/cmd/lich-native/sidebar_block.go` `dropCards`, `sidebar_block_menu.go` `takesCard`): each block
-  sorts its own cards, which is what keeps a reorder inside a worktree from rewriting the list around it, so
-  another block's list has no slot for the card to land in. A card carried onto a header lands where the
-  stored order puts it, exactly as filing it from its menu does. A folder's
-  header takes any card not already in it; a checkout's header takes back only a filed card of its own
-  checkout, since filing never moves a session between checkouts. So a checkout whose every session is filed
-  has no header left to drag a card back to, and the card's menu is the way out. A card in the pinned block
-  is never carried out, because the pin outranks the folder and the drop would land with nothing moving on
-  screen, and nothing is dragged under a filter. A filtered block
-  offers no "Move group to folder", because the cards it drew are the ones that survived the filter and filing
-  "the group" would file part of it.
-- **A folder's + opens only where its cards already live**
-  (`native/cmd/lich-native/sidebar_block_menu.go` `blockLaunch`): a folder has no directory of its own, so its
-  + lists the checkouts of the cards it holds and opens the session in the one picked. A worktree none of its
-  cards is in is not offered: open the session there and drag it in. Under a filter the list is read off the
-  cards the filter (query or state chips) left, so it can name fewer checkouts than the folder holds.
-- **Renaming a folder remounts its block** (`native/cmd/lich-native/sidebar_prefs.go`): the block is keyed by
-  the folder's name, so a rename is a new key to the window and to the fold preference: `moveCollapsed`
-  carries the fold across and drops the old entry, and anything else keyed off that block starts again. A
-  folder cannot keep one id across its renames, because the name *is* the folder.
-  Renaming onto a name the project already holds merges the two folders into one set of sessions; the
-  field says so under it before the rename lands, as the New folder dialog does, and the merge has no undo.
+  row, and the name is the whole identity — there is no folder record to point at. A folder exists only while a
+  session carries its name, so the last card leaving ends it; a rename is a write across every session in it,
+  parked rows included (`RenameFolder`), and the block, keyed by the name, remounts with anything keyed off it
+  but the fold (`moveCollapsed`, `native/cmd/lich-native/sidebar_prefs.go`); renaming onto a name the project
+  already holds merges the two folders with no undo; two names differing only by case or a space are two
+  folders; and a folder belongs to one project, since the name is scoped by `project_id`.
 - **An agent files by the name as written, like the window** (`internal/spawn/folders.go`): `lich file`,
   `lich rename-folder`, `lich color-folder` and their MCP tools match a folder exactly, so an agent that types `auth` beside `Auth`
   starts a second folder; the tool descriptions send it to `list_folders` first instead of folding case behind
   the user's back. A rename from there refuses a name no session carries, because the store would report
   success over nothing, and answers with every session that moved, which is how a merge shows.
-- **The header of a folded block reports at most one thing** (`collapsedMark`): a waiting session, else an
-  unread finished turn, else nothing. It is a dot rather than a count, so a folder hiding four unread turns and
-  one hiding one read the same, and it speaks only for the cards in that block — a folder whose members are all
-  busy says nothing, exactly like a block whose cards have never reported.
 - **The sidebar's state chips read the ring, nothing more** (`native/cmd/lich-native/sidebar_filter.go`):
   Waiting, Running and Unread are the card's amber, spinning and unread green ring, and Idle is everything
   else, a read turn included. A provider that cannot raise a state cannot be filtered into it: Crush
@@ -184,13 +156,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Claude Code and Codex): a larger terminal font fits fewer columns in the same floor. Only the focused pane
   takes a dropped file; a file dropped on a pane in the background goes nowhere. A pinned card cannot be dragged onto a pane: the
   pinned block shares no carry with the panes, so its card never leaves the sidebar. The panes' drop zones are
-  not SortCarry targets: Gio's transfer delivered Enter to targets laid out mid-drag only some of the time, so
-  the window reads the pointer from a handler over the whole window and works the zone out from where the
-  panes were drawn (`layouts_drag.go`). A new drop target over the stage belongs there, not in the carry.
-  Resting a drag on a strip tab switches to it, which can take the drag's own list off screen; Gio drops a
-  handler nobody asked about in a frame and then dereferences the forgotten source on the next move, so the
-  window calls `SortCarry.Hold` every frame to keep the source asked about, and lets a drag whose list never
-  heard the release go (`endStrandedDrag`). Show beside lays out only the delegates that fit the 180dp pane
+  not SortCarry targets (`layouts_drag.go`): a new drop target over the stage belongs there, not in the carry.
+  Show beside lays out only the delegates that fit the 180dp pane
   floor, counted from where the panes were drawn the frame before (`columnRoom`); the rest stay out and
   the pane header offers them. Its footer item is not an item of the Footer layout, so Settings can neither
   move nor hide it: it shows only while the session, in no layout, has delegates.
@@ -204,10 +171,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the last line). sh, PowerShell and a shell started by hand inside a session are unmarked, and a prompt line
   as wide as the terminal (a right prompt) leaves its wrapped head on screen after a narrowing, the way any
   terminal without shell integration does. Agent sessions are untouched: they run no shell rc and draw their
-  own screen. The clearing works
-  around a libghostty-vt resize that clears a wrapped prompt only from its last wrapped row: it erases the rows
-  above once the terminal has cleared that one, which is also how it tells a shell that asked from one that
-  did not. The scripts are rewritten under lich's config dir at every start, so two lich builds running at once
+  own screen. The scripts are rewritten under lich's config dir at every start, so two lich builds running at once
   share the newer one's. bash marks where a command's output starts from `PS0`, which it has since 4.4: the bash 3.2 macOS
   ships marks its prompt but not that, which the resize clearing does not need.
 - **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
@@ -235,11 +199,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   And there is no expanding *past the last hunk*: a unified diff carries
   no file length, so nothing here knows whether anything follows it, and an affordance drawn there would
   be a no-op on every file whose change reaches the end.
-- **A side-by-side diff never wraps** (`hunkRows`, `native/cmd/lich-native/dock_review_patch.go`;
-  `fileCard.diff`, `dock_review_file.go`): the card is laid out exactly as tall as its rows, every row one
-  line, so a long line never wraps to keep the two sides level. A run of changes takes as many rows as its
-  longer side and pairs deletions with additions by position, so the rows beside each other in a block that
-  rewrites one thing and inserts another are unrelated lines.
 - **An image preview reads only what this clone holds** (`internal/project/blob.go`): `/blob` serves the
   working tree, `HEAD` or a tree object, and has no GitHub fallback the way `FileLines` does, so the Pulls
   screen still prints "Binary file". Adding it there takes two reads this endpoint does not make: the head blob
@@ -289,10 +248,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the kernel regardless, and the deadline is never enforced on this fd). So the read is driven from a goroutine
   free to outlive the call, and the dump is `echo <start>; env; echo <end>`: the read returns the moment the end
   marker arrives, which is what lets an rc that backgrounds a job (an `ssh-agent`/`gpg-agent` eval, a prompt
-  tool) still hand back the dump instead of paying the full `shellEnvTimeout`. It replaced a 300ms silence
-  window that cut the dump whenever `env` itself was slow to start: on macOS the PATH search for it blocks on
-  a privacy-protected folder like `~/Documents` until the user answers the prompt, so a Dock launch resolved
-  nothing. Two edges follow. A shell that never prints the end marker (a hung rc, a prompt waiting on input, an
+  tool) still hand back the dump instead of paying the full `shellEnvTimeout`. Two edges follow. A shell that
+  never prints the end marker (a hung rc, a prompt waiting on input, an
   unanswered privacy prompt) is bounded only by the 5s ceiling, and a dump cut there is discarded whole rather
   than merged half-read. A shell still alive after printing it (a slow `.zlogout`, an rc that `exec`s into
   something holding the pty) also waits out the 5s, dump kept: the read ends on the marker *and* the shell's
@@ -303,8 +260,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   And **Windows gets none of this**: `SHELL` is normally unset there, so `ResolveShellEnv` returns before
   `shellenv_windows.go`'s pipe-based `runShellDump` ever runs — but on a machine where the user sets it anyway
   (Git Bash, a POSIX-ish shell reached through PATH), that path still runs over a pipe, so an rc guarded the
-  same way is skipped there exactly as it was everywhere before this fix, with no ConPTY wired in to close the
-  gap.
+  same way is skipped there, with no ConPTY wired in to close the gap.
 - **A session's cwd readout names the host it cannot see into, and only Unix has one to name**
   (`internal/terminal/cwd.go`, `cwd_unix.go`, `cwd_windows.go`): the directory is polled off the terminal's
   foreground process group, and a foreground job that is itself hosting the shell somewhere else (tmux, ssh, a
@@ -366,9 +322,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   zenity hands back — so resolving symlinks here would make the two surfaces disagree about which project a
   directory *is*, which is worse than the duplicate. The trap is a workspace where `/home/you/work` and
   `/home/you/src/work` are the same checkout: nothing on screen says the two tabs are one directory.
-  It also moves a boundary that used to be the window's: until this, an agent could reach only the projects
-  somebody had opened in front of it. Any directory on the machine is now one `open_session` away from a tab, with
-  no confirmation on the way. It is not a new privilege — the agent already runs as you, in a shell that can read
+  Any directory on the machine is one `open_session` away from a tab, with no confirmation on the way. It is not a
+  new privilege — the agent already runs as you, in a shell that can read
   the same disk — but it is new visibility, and a card it opens there is a card with a PTY in it.
 
 - **A terminal is rebuilt from a 2MB replay ring** (`internal/terminal/replay.go`,
@@ -690,12 +645,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   socket and gh's keyring live outside it, so a confined macOS session never lost either and the switches
   change nothing there — they are inert rather than hidden, and there is no macOS hardware here to prove it
   further. Windows has no sandbox backend, so neither switch exists.
-- **The macOS floor is the toolchain's, not lich's** (`build/darwin/Info.plist.tpl`,
-  `build/darwin/homebrew/lich.rb.tpl`): nothing in lich needs macOS 13, but Go 1.27 dropped every
-  release before Ventura, so a binary built from this module cannot run on Big Sur or Monterey. The
-  cask's `depends_on` and the bundle's `LSMinimumSystemVersion` say 13.0 because the compiler does —
-  both move with the next Go bump, and a machine below the floor is refused by Homebrew rather than
-  by a crash.
 - **A workspace database only moves forward** (`internal/store/migrate.go`): `PRAGMA user_version` counts
   the migrations applied, and a lich that finds a number above the ones it knows refuses to open the database,
   in a dialog naming both, rather than write its defaults over columns it has never heard of. There is no
@@ -705,15 +654,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a contributor: `schema` and `legacyAlters` are frozen at the version-1 shape and every change after it is an
   appended entry in `migrations`, never an edit to the `CREATE TABLE` and never a line in `legacyAlters`: the
   version-1 step is the one step every database that already exists has long since run, so a column added
-  there reaches none of them and every read of that table fails. 0.53.0 shipped a column that way and loaded
-  no projects at all.
+  there reaches none of them and every read of that table fails.
 - **The workspace database is three files while lich runs** (`internal/store/store.go`, `open`): WAL mode
   appends commits to `lich.db-wal` beside `lich.db`, with `lich.db-shm` as its index, and folds them back into
   `lich.db` at checkpoints and on a clean close. Copying `lich.db` alone off a running lich, as a backup or a
   move, leaves the commits since the last checkpoint behind; copy all three, or close lich first. With
-  `synchronous(NORMAL)` a power loss can drop the last commits, never corrupt the file. The rollback journal it
-  replaced created, synced and deleted a file on every commit, tens of milliseconds each on Windows, which
-  was most of the backend suite's time there.
+  `synchronous(NORMAL)` a power loss can drop the last commits, never corrupt the file.
 - **The history's branch is read live, so a row whose checkout is gone has none** (`internal/project.BranchesOf`):
   the branch a row shows is not the one it stores — a worktree keeps the name it was created with while an
   agent moves the branch inside it, so the stored snapshot dates the close and only git can say what the
@@ -735,30 +681,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   every project with a `.git` on each listing (about 300 ms over 30 projects); a project that is not a
   repository owns only its own directory. Search reaches an external conversation by its title, project and
   path; what was said in it is indexed only after it is adopted and closed, the same as any session.
-- **The settings screen remembers nothing per project, on purpose** (`native/cmd/lich-native/settings.go`,
-  `settingsSectionKey`): the pane that was open is stored under one global key, so opening Settings in project B
-  lands on the pane project A was reading. The nav is the same list of panes in every project, so it is not
-  about a repository, and it is a decision
-  rather than an oversight: the *values* those panes read and write are project-scoped already, in the
-  workspace database under the project's own id. The trap is for whoever adds a pane that is genuinely about
-  one repository's content. Its remembered state belongs on the per-project side, which means a new key with
-  the project id in it, not another global one beside this one.
-- **The settings search reads names, and its index is written by hand** (`settingsSections`,
-  `native/cmd/lich-native/settings_index.go`): every row is listed there with the section and group it lives
-  in, and the panes draw their rows off that list, so a control exists only once it has an entry. The search
-  matches a row's title, its hand-picked search words and its group, never a description, a stored value or
-  a theme's name: a user hunting for `emerald` or a port number finds nothing, and the empty state says as
-  much rather than pretending the setting is absent.
-- **The footer editor's sides wrap, and stop lining up when they do**
-  (`native/cmd/lich-native/footer_editor.go`, `zoneBox`): each side is a tray of chips that wraps, so a user who turns on
-  most of the twelve items gets two rows in one column and one in the other, and the two stop reading as the
-  two ends of the footer. Chosen with the drag: the alternatives that never wrap are lists, one item per
-  line, and moving an item then stops being a drag between the sides. Both sides stretch to the taller of the
-  two so the block still reads as one thing. Whoever adds a thirteenth footer item is making that worse, and
-  the answer is not a narrower chip: it is deciding the drag is worth less than the alignment. The chip also
-  carries nothing but its own reading: a menu and a remove button that appeared on hover were tried and taken
-  back out, because a control that grows under the pointer shifts the chips beside it at the exact moment a
-  drag is being aimed.
+- **Settings remembers its open pane under one global key** (`native/cmd/lich-native/settings.go`,
+  `settingsSectionKey`): the nav is the same list of panes in every project, so opening Settings in project B
+  lands on the pane project A was reading. Whoever adds a pane about one repository's content keys its
+  remembered state with the project id, not with another global key beside this one.
+- **A Settings control exists only once it has an entry in the hand-written index** (`settingsSections`,
+  `native/cmd/lich-native/settings_index.go`): the panes draw their rows off that list, with the section and
+  group each lives in, and the search matches a row's title, its hand-picked search words and its group, never
+  a description, a stored value or a theme's name.
 - **A release's highlight is read from the binary, so fixing it after the tag fixes nothing a user sees**
   (`internal/patchnotes`): the What's new dialog parses the `CHANGELOG.md` embedded at build time — the alert
   blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,
@@ -788,22 +718,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   pinned by `LICH_NATIVE`), or one that exits at startup, on a missing system library say, ends in the error
   dialog with the reason and the log path. With no session running lich then quits; with one, it keeps serving
   it, and the tray, launching again or `lich quit` is the way back.
-- **Logout and session end, per OS** (unverified on every OS; nothing here is measured): on Linux a lich
-  launched from the desktop lives in the graphical session's scope, so logind or the user manager stopping
-  it sends SIGTERM and lich quits cleanly; with `KillUserProcesses=no` and lingering it can outlive the logout,
-  windowless with no display, and the next login's launch opens a window on it. A lich started from a
-  terminal dies on that terminal's SIGHUP without its clean exit, so the next launch reports an unclean exit.
-  On Windows a GUI-subsystem process with no window receives no console close event: logoff ends it without
-  the clean exit, which the next launch reports as unclean. On macOS logout quits user processes; whether
-  the backend gets SIGTERM first is not known. Whether the window holding its close for the question (above) can stall a
-  logout is not measured on any OS.
-- **Reopening from the Dock or Finder is unverified on macOS, and Windows reopen is unmeasured**: a second
-  launch reaches the running lich over `system.ShowWindow` on every OS (`singleton.Show`), which the macOS
-  e2e exercises by running the binary in `Lich.app` directly. LaunchServices may instead activate the
-  running Lich.app without starting a second process, and lich answers no reopen Apple Event, so a Dock click
-  on a windowless lich may do nothing. On Windows the Start-menu launch is a new process and takes the same
-  path, and quitting closes the window with WM_CLOSE as restart did, but neither has run on Windows
-  hardware with the window closed first.
 - **The gate run inside lich kills lich's window** (measured 2026-10-10): `go vet`, `go test ./...` and the
   cross-compile loop started together from a session ran the machine out of memory, and the lich window died
   with SIGBUS; the window took the session that ran the gate down with it. `/tmp` is tmpfs on many distributions, so the Go
@@ -861,13 +775,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   row keeps the old id and a restart resumes the conversation the card opened with (each provider's version:
   `docs/providers/`, Hooks). Reopening from lich itself is not this gap: every door through `store.reopen`
   focuses the card that holds the conversation.
-- **Start new hands the card to a new conversation** (`native/cmd/lich-native/exit_toast.go`): the toast a
-  card raises when its process exits offers Resume, which starts the conversation the card holds again, and
-  Start new, which starts without one. Once the new conversation's session-start report arrives, the backend
-  writes its id over the card's `provider_session_id`, and nothing on the card points back at the old one:
-  it is reachable only through History search. Start new asks no confirmation for that reason, and a card
-  that never reported a conversation (a shell, an agent that exited before its first prompt) offers Restart
-  alone.
+- **Start new leaves the old conversation reachable only through History search**
+  (`native/cmd/lich-native/exit_toast.go`): once the new conversation's session-start report arrives, the backend
+  writes its id over the card's `provider_session_id`, and nothing on the card points back at the old one. Start
+  new asks no confirmation for that reason.
 - **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
   `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. Claude
@@ -1016,9 +927,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   watched. macOS polls `defaults read -g AppleInterfaceStyle` every 3 seconds, so a switch reaches the window
   up to that late: observing `AppleInterfaceThemeChangedNotification` needs an Objective-C shim no one
   could compile or run without a Mac. The BSDs read no scheme and draw dark.
-- **The window asks every profile at start**: the window reads
-  `claudeprofile.Profiles` when it opens and when Settings does, which runs one `claude auth status` per
-  profile, and keeps each logged-in profile's plan reading fresh only while there are two to move between.
 - **A setting changed inside a Codex profile does not last** (`internal/codexprofile/config.go`; the layout is
   `docs/providers/codex.md`, Profiles): the profile's `config.toml` is rebuilt from Personal's before every spawn,
   so a `/model`, `features enable` or MCP server added inside a profile is gone at its next session, a setting
