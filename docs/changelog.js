@@ -1,13 +1,19 @@
-// Renders CHANGELOG.md from main, so this page never needs editing: each "## [X.Y.Z] - date" section becomes a
-// release, its GitHub alert blocks become the headline and callouts, its "###" groups keep their order.
+// Renders the changelog from main, so this page never needs editing: each "## [X.Y.Z] - date" section becomes a
+// release, its GitHub alert blocks become the headline and callouts, its "###" groups keep their order. A page in
+// another language reads changelog/<locale>.md too and shows each release it translates in place of the English
+// one; older releases, which only CHANGELOG.md holds, stay in English under a note that says so.
 // The file only uses headings, "- " items with indented continuation lines, alert blocks and inline
 // **bold**, `code` and [links](url), which is all this reads.
 (function () {
-  var SOURCE = "https://raw.githubusercontent.com/lichdotdev/lich/main/CHANGELOG.md";
+  var RAW = "https://raw.githubusercontent.com/lichdotdev/lich/main/";
   var RELEASES = "https://github.com/lichdotdev/lich/releases/tag/v";
   var PAGE = 8;
   var list = document.getElementById("releases");
   var more = document.getElementById("older");
+  var locale = list.getAttribute("data-locale") || "en";
+  var groups = JSON.parse(list.getAttribute("data-groups") || "{}");
+  var releaseLink = list.getAttribute("data-release") || "Release on GitHub";
+  var englishNote = list.getAttribute("data-english");
 
   function escape(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -49,21 +55,22 @@
 
   function date(iso) {
     if (!iso) return "";
-    return new Date(iso + "T12:00:00Z").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+    return new Date(iso + "T12:00:00Z").toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
   }
   function render(r) {
     var important = r.alerts.filter(function (a) { return a.kind === "important"; })[0];
-    var html = '<article class="rel"><div class="rel-date">' + date(r.date) + "</div>" +
+    var note = r.firstEnglish ? '<p class="rel-english">' + escape(englishNote) + "</p>" : "";
+    var html = note + '<article class="rel"' + (r.english ? ' lang="en"' : "") + '><div class="rel-date">' + date(r.date) + "</div>" +
       '<a class="rel-ver" href="' + RELEASES + r.version + '">' + r.version + "</a>";
     if (important) html += '<p class="rel-lead">' + inline(important.text.trim()) + "</p>";
     r.alerts.forEach(function (a) {
       if (a !== important) html += '<p class="rel-note ' + a.kind + '">' + inline(a.text.trim()) + "</p>";
     });
     r.groups.forEach(function (g) {
-      html += '<h3 class="rel-group">' + escape(g.name) + "</h3><ul>" +
+      html += '<h3 class="rel-group">' + escape(groups[g.name] || g.name) + "</h3><ul>" +
         g.items.map(function (i) { return "<li>" + inline(i) + "</li>"; }).join("") + "</ul>";
     });
-    return html + '<a class="rel-more" href="' + RELEASES + r.version + '">Release on GitHub →</a></article>';
+    return html + '<a class="rel-more" href="' + RELEASES + r.version + '">' + escape(releaseLink) + " →</a></article>";
   }
 
   var releases = [], shown = 0;
@@ -73,8 +80,25 @@
     more.hidden = shown >= releases.length;
   }
   more.addEventListener("click", show);
-  fetch(SOURCE)
-    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
-    .then(function (md) { releases = parse(md); list.innerHTML = ""; show(); })
+  function read(path) {
+    return fetch(RAW + path).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); });
+  }
+  // A missing translation file only costs the translations: the English changelog still renders.
+  var translated = locale === "en" ? Promise.resolve("") : read("changelog/" + locale + ".md").catch(function () { return ""; });
+  Promise.all([read("CHANGELOG.md"), translated])
+    .then(function (got) {
+      var local = {};
+      parse(got[1]).forEach(function (r) { local[r.version] = r; });
+      var shownEnglish = false;
+      releases = parse(got[0]).map(function (r) {
+        if (local[r.version]) return local[r.version];
+        r.english = locale !== "en";
+        r.firstEnglish = r.english && !shownEnglish && Boolean(englishNote);
+        if (r.english) shownEnglish = true;
+        return r;
+      });
+      list.innerHTML = "";
+      show();
+    })
     .catch(function () { document.getElementById("fallback").hidden = false; list.innerHTML = ""; });
 })();

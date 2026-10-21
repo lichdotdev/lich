@@ -313,16 +313,6 @@
 <script>
 var latest = fetch("https://api.github.com/repos/lichdotdev/lich/releases/latest")
   .then(function (r) { return r.ok ? r.json() : null; });
-fetch("https://api.github.com/repos/lichdotdev/lich")
-  .then(function (r) { return r.ok ? r.json() : null; })
-  .then(function (repo) {
-    if (!repo) return;
-    var n = repo.stargazers_count;
-    var label = n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k" : String(n);
-    var el = document.getElementById("nav-stars");
-    el.textContent = label;
-    el.hidden = false;
-  });
 latest.then(function (release) {
   if (!release) return;
   document.getElementById("version").textContent = release.tag_name;
@@ -395,5 +385,6 @@ document.querySelectorAll(".copy").forEach(function (b) {
   });
 });
 </script>
+<script src="site.js"></script>
 </body>
 </html>
