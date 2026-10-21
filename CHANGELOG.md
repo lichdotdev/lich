@@ -15,11 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A block of cards in the sidebar, a worktree, a folder or the pinned block, now grows in when its first card opens and shrinks out with its last one, where it used to appear and vanish at once. The headers that show once the list splits into blocks unfold the same way, and fold away when it is down to one.
 - A pull request's checks still running turn a spinner, in its Checks tab and in the status line above the tabs, where a clock stood still.
 
 ### Fixed
 
 - An agent's `git commit`, `rebase` or `stash` no longer fails now and then with "Unable to create '.git/index.lock': File exists" because lich was reading that checkout's status or diff at the same moment. lich's reads leave the index alone.
+- A closed session's card shrinks out of the sidebar again, where it used to vanish at once.
 - Ctrl+Z in a session no longer freezes its agent for good. It used to suspend the agent, and nothing in lich could bring it back; lich now keeps the key from the session.
 - The bars in the plan usage tooltip, in the footer, show their empty track again on themes whose popover and muted colors are the same, such as Everforest, where only the filled part was drawn.
 - Opening or closing the pull request list on the Pulls screen no longer makes the active project tab let go of the panel below it and grab it again. The tab stays attached the whole way and moves onto the list once it slides under it.

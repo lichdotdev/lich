@@ -128,9 +128,11 @@ func (p *Presence) Layout(gtx C, key string, w layout.Widget) D {
 	target, duration, curve := float32(1), presenceEnter, easeOut
 	if it.leaving {
 		target, duration, curve = 0, PresenceExit, easeIn
-		gtx = gtx.Disabled()
 	}
 	v := it.motion.at(gtx, target, duration, curve)
+	if it.leaving {
+		gtx = gtx.Disabled()
+	}
 	return reveal(gtx, v, presenceScale+(1-presenceScale)*v, v, w)
 }
 

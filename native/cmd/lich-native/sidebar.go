@@ -45,6 +45,7 @@ type sidebar struct {
 	sort     ui.Sortable // the blocks, by their headers
 	carry    ui.SortCarry
 	blocks   map[string]*blockState
+	motion   blockPresence
 	naming   folderNaming
 	rail     sidebarRail
 	morph    sidebarMorph

@@ -12,6 +12,7 @@ import (
 // blockState is one block's widget state, kept per project and block.
 type blockState struct {
 	toggle   widget.Clickable
+	header   ui.Collapse // shown while the list splits into blocks
 	fold     ui.Collapse
 	cards    ui.Sortable
 	presence ui.Presence
@@ -48,57 +49,72 @@ type blockFrame struct {
 
 // blockList is the sidebar's scrolling list: the no-match Notice, the pinned
 // block, fixed first, then every other block in one sortable list dragged by
-// their headers.
+// their headers. Each block opens and closes in its own motion, which holds
+// the gap below it, so a block closing takes its gap along.
 func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string, act *sidebarAction) D {
 	f := blockFrame{view: view, active: active, filtering: s.header.filter().narrows(), act: act}
 	var pinned *blockView
 	var movable []blockView
-	for i := range view.blocks {
-		if view.blocks[i].kind == blockPinned {
-			pinned = &view.blocks[i]
+	shown := s.motion.shown(gtx.Now, view.project, view.blocks)
+	for i := range shown {
+		if shown[i].kind == blockPinned {
+			pinned = &shown[i]
 			continue
 		}
-		movable = append(movable, view.blocks[i])
+		movable = append(movable, shown[i])
 	}
 	keys := make([]string, len(movable))
 	for i, b := range movable {
 		keys[i] = b.key
 	}
-	s.sort.Disabled = f.filtering || !view.showHeader
-	before := s.sort.Dragging()
-	if d, ok := s.sort.Update(gtx); ok && d.ID != d.Over {
-		act.blockOrder = arrayMove(keys, d.ID, d.Over)
-	}
-	f.headerDragEnded = before != "" && s.sort.Dragging() == ""
+	f.headerDragEnded = s.dropBlocks(gtx, f, keys)
 	for _, st := range s.blocks {
 		st.drawn = false
 	}
-	var children []layout.FlexChild
-	add := func(w layout.Widget) {
-		if len(children) > 0 {
-			children = append(children, ui.VGap(1.5))
-		}
-		children = append(children, layout.Rigid(w))
+	item := func(gtx C, b blockView) D {
+		return s.motion.motion.Layout(gtx, b.key, func(gtx C) D {
+			return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D { return s.block(gtx, th, b, f) })
+		})
 	}
+	var children []layout.FlexChild
 	if view.notice != "" {
-		add(func(gtx C) D { return noticeText(gtx, th, view.notice) })
+		children = append(children, layout.Rigid(func(gtx C) D { return noticeText(gtx, th, view.notice) }), ui.VGap(1.5))
 	}
 	if pinned != nil {
-		add(func(gtx C) D { return s.block(gtx, th, *pinned, f) })
+		children = append(children, layout.Rigid(func(gtx C) D { return item(gtx, *pinned) }))
 	}
-	add(func(gtx C) D {
-		return s.sort.List(gtx, ui.SortList{Gap: ui.Space(1.5), Within: true}, keys, func(gtx C, i int) D {
-			return s.block(gtx, th, movable[i], f)
-		})
-	})
+	children = append(children, layout.Rigid(func(gtx C) D {
+		return s.sort.List(gtx, ui.SortList{Within: true}, keys, func(gtx C, i int) D { return item(gtx, movable[i]) })
+	}))
 	d := s.scrollColumn(gtx, th).Layout(gtx, 1, func(gtx C, _ int) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Inset{Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+			d := layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+			if len(shown) > 0 {
+				d.Size.Y = max(d.Size.Y-gtx.Dp(ui.Space(1.5)), 0)
+			}
+			return d
 		})
 	})
 	s.pruneBlocks()
 	return d
+}
+
+// dropBlocks reads the block drag, a reorder by their headers, which only
+// the live blocks take part in. It reports a drag that ended this frame.
+func (s *sidebar) dropBlocks(gtx C, f blockFrame, keys []string) bool {
+	s.sort.Disabled = f.filtering || !f.view.showHeader
+	before := s.sort.Dragging()
+	if d, ok := s.sort.Update(gtx); ok && d.ID != d.Over && !s.motion.motion.Leaving(d.Over) {
+		f.act.blockOrder = arrayMove(liveKeys(keys, &s.motion.motion), d.ID, d.Over)
+	}
+	return before != "" && s.sort.Dragging() == ""
+}
+
+// liveKeys is keys without the blocks drawn only for their exit, what a drag
+// commits.
+func liveKeys(keys []string, motion *ui.Presence) []string {
+	return slices.DeleteFunc(slices.Clone(keys), motion.Leaving)
 }
 
 // scrollColumn is the block list's scroll area: an 8px thumb on a transparent
@@ -135,21 +151,24 @@ func arrayMove(ids []string, id, over string) []string {
 	return slices.Insert(moved, to, id)
 }
 
-// block draws one block: the header, then the cards in the fold. A block
+// block draws one block: the header, which folds in and out as the list
+// starts and stops splitting into blocks, then the cards in the fold. A block
 // dragged by its header wears the sidebar's fill, so it covers the blocks it
 // passes over.
 func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 	st := s.blockState(b)
 	dragEnded := s.dropCards(gtx, st, b, f)
 	body := func(gtx C) D {
-		var children []layout.FlexChild
-		if f.view.showHeader {
-			children = append(children, layout.Rigid(func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) }), ui.VGap(1.5))
-		}
-		children = append(children, layout.Rigid(func(gtx C) D {
-			return st.fold.Layout(gtx, !b.folded, func(gtx C) D { return s.blockCards(gtx, th, b, st, f, dragEnded) })
-		}))
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return st.header.Layout(gtx, f.view.showHeader, func(gtx C) D {
+					return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
+				})
+			}),
+			layout.Rigid(func(gtx C) D {
+				return st.fold.Layout(gtx, !b.folded, func(gtx C) D { return s.blockCards(gtx, th, b, st, f, dragEnded) })
+			}),
+		)
 	}
 	if s.sort.Dragging() != b.key {
 		return body(gtx)

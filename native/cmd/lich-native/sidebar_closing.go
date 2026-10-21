@@ -1,8 +1,11 @@
 package main
 
 import (
+	"maps"
 	"slices"
 	"time"
+
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // exitDuration is how long a closed card stays drawn, animating out. The card's
@@ -108,4 +111,33 @@ func (c *closingCards) expiry() time.Time {
 
 func holds(list []sessionView, id string) bool {
 	return slices.ContainsFunc(list, func(s sessionView) bool { return s.ID == id })
+}
+
+// blockPresence is the block list's motion: a block that arrives after its
+// project's list first drew grows in, and one that leaves is drawn as it last
+// was while it shrinks out. Another project starts it over: its blocks are
+// not news.
+type blockPresence struct {
+	project string
+	motion  ui.Presence
+	last    map[string]blockView
+}
+
+// shown is live with the blocks still leaving put back in their slots.
+func (p *blockPresence) shown(now time.Time, project string, live []blockView) []blockView {
+	if p.last == nil || project != p.project {
+		*p = blockPresence{project: project, last: map[string]blockView{}}
+	}
+	keys := make([]string, len(live))
+	for i, b := range live {
+		keys[i] = b.key
+		p.last[b.key] = b
+	}
+	shownKeys := p.motion.Update(now, keys)
+	maps.DeleteFunc(p.last, func(key string, _ blockView) bool { return !slices.Contains(shownKeys, key) })
+	shown := make([]blockView, len(shownKeys))
+	for i, key := range shownKeys {
+		shown[i] = p.last[key]
+	}
+	return shown
 }

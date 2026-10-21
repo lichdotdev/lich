@@ -41,7 +41,8 @@ type blockView struct {
 
 // sidebarView is the shown project's sidebar under a filter.
 type sidebarView struct {
-	blocks []blockView
+	project string // the shown project's id
+	blocks  []blockView
 	// showHeader is whether blocks draw their headers: once more than one
 	// block splits the list, while a filter makes the checkout the answer, or
 	// when the lone block is a worktree, whose + is the only way to open
@@ -70,6 +71,7 @@ func (m *model) sidebarBlocks(f sidebarFilter) sidebarView {
 	visible, matched := filterSessions(p.Sessions, f.query, p.Path, m.active, f.phases, m.phaseOfSession)
 	blocks := sessionBlocks(visible)
 	v := sidebarView{
+		project:    p.ID,
 		showHeader: len(blocks) > 1 || f.narrows() || isLoneWorktree(blocks),
 		matched:    matched,
 		counts:     phaseCounts(p.Sessions, f.query, p.Path, m.phaseOfSession),

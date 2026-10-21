@@ -142,6 +142,28 @@ func TestPresenceGrowsInOnlyWhatArrives(t *testing.T) {
 	}
 }
 
+// A moving item asks for the next frame itself: nothing else redraws the
+// window while a card grows in or plays its exit.
+func TestPresenceAsksForTheNextFrameWhileItMoves(t *testing.T) {
+	var r motionRig
+	var p Presence
+	var b clickBox
+	item := func(gtx C) D { return p.Layout(gtx, "b", b.Layout) }
+	p.Update(r.now, nil)
+	p.Update(r.now, []string{"b"})
+	r.frame(item)
+	if _, ok := r.router.WakeupTime(); !ok {
+		t.Error("an arriving item did not ask for the next frame")
+	}
+	r.at(presenceEnter, item)
+	p.Update(r.now, nil)
+	r.frame(item)
+	r.at(PresenceExit/2, item)
+	if _, ok := r.router.WakeupTime(); !ok {
+		t.Error("a leaving item did not ask for the next frame")
+	}
+}
+
 func TestPresenceLeavingItemShrinksAndTakesNoInput(t *testing.T) {
 	var r motionRig
 	var p Presence
