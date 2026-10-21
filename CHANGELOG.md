@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - An agent's `git commit`, `rebase` or `stash` no longer fails now and then with "Unable to create '.git/index.lock': File exists" because lich was reading that checkout's status or diff at the same moment. lich's reads leave the index alone.
 - The bars in the plan usage tooltip, in the footer, show their empty track again on themes whose popover and muted colors are the same, such as Everforest, where only the filled part was drawn.
+- Opening or closing the pull request list on the Pulls screen no longer makes the active project tab let go of the panel below it and grab it again. The tab stays attached the whole way and moves onto the list once it slides under it.
 
 ## [0.74.0] - 2026-10-20
 

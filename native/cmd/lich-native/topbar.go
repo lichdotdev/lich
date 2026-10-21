@@ -113,14 +113,18 @@ type topbarFrame struct {
 	// islands are the islands under the strip, in strip pixels, when the
 	// screen has more than one (Pulls); none is one island of island's color
 	// under the whole strip.
-	islands  []islandSpan
-	tabs     []projectTab
-	active   string
-	pending  []notification
-	settings bool // the Settings screen is open
-	pulls    bool // the Pulls screen is open
-	caption  captionLayout
-	chrome   windowChrome
+	islands []islandSpan
+	// islandsSliding is whether the islands are mid-slide: the active tab
+	// then grows out of the one it overlaps most rather than detaching while
+	// it fits wholly over none.
+	islandsSliding bool
+	tabs           []projectTab
+	active         string
+	pending        []notification
+	settings       bool // the Settings screen is open
+	pulls          bool // the Pulls screen is open
+	caption        captionLayout
+	chrome         windowChrome
 }
 
 // islandSpan is one island under the tab strip: its left and right edges in

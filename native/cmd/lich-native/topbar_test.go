@@ -93,6 +93,32 @@ func TestActiveTabMergesOnlyIntoTheIslandUnderIt(t *testing.T) {
 	}
 }
 
+// While the Pulls list slides in, the first tab stays merged the whole way
+// and swaps from the pull request island to the list's once, instead of
+// detaching while it fits wholly over neither.
+func TestActiveTabStaysMergedWhileTheListSlides(t *testing.T) {
+	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	const listW, gap, width = 320, 6, 1400
+	list := color.NRGBA{R: 1, A: 255}
+	view := color.NRGBA{R: 2, A: 255}
+	bar := &topbar{tabW: 160}
+	tabs := []projectTab{{ID: "a"}, {ID: "b"}}
+	swaps, last := 0, view
+	for slot := 1; slot < listW+gap; slot++ {
+		spans := []islandSpan{{x0: slot - listW - gap, x1: slot - gap, color: list}, {x0: slot, x1: width, color: view}}
+		s, ok := bar.mergeSpan(gtx, topbarFrame{tabs: tabs, active: "a", islands: spans, islandsSliding: true})
+		if !ok {
+			t.Fatalf("slot %d: the active tab detached mid-slide", slot)
+		}
+		if s.color != last {
+			swaps, last = swaps+1, s.color
+		}
+	}
+	if swaps != 1 || last != list {
+		t.Errorf("the tab swapped islands %d times and landed on %v, want once onto the list", swaps, last)
+	}
+}
+
 func TestSettingsButtonOpensOnGlobalAfterAProjectScope(t *testing.T) {
 	u, _ := newGateWindow(t)
 	u.applySettingsAction(topbarAction{projectSettings: "p"})
