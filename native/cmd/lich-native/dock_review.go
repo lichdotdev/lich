@@ -96,8 +96,11 @@ type reviewPanel struct {
 // checkout's working tree: nothing to revert or discard, its gaps read at the
 // PR's head, and each file tickable as viewed.
 type prFiles struct {
-	head string
-	url  string // the pull request's page
+	number int
+	head   string
+	// mergeBase is the old side every image card reads, asked once per head.
+	mergeBase mergeBaseMemo
+	url       string // the pull request's page
 	// viewed is each ticked file's diff text when it was ticked: a commit
 	// that changes the file unticks it, one that does not leaves it.
 	viewed map[string]string

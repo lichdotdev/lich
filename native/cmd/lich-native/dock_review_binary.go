@@ -1,9 +1,8 @@
 package main
 
 // A binary file's card body (BinaryDiffBody): the image on each side of the
-// working tree's change, or the line saying it is binary with the way out to
-// the desktop's application, or to the file on GitHub in a pull request,
-// whose blobs this clone does not hold (docs/ceilings.md).
+// change, or the line saying it is binary with the way out to the desktop's
+// application, or to the file on GitHub in a pull request.
 
 import (
 	"context"
@@ -28,10 +27,10 @@ type binaryPreview struct {
 	github        widget.Clickable
 }
 
-// previewsImage reports whether the card draws its file's image: a working
-// tree change in a format this window decodes.
+// previewsImage reports whether the card draws its file's image: a format
+// this window decodes.
 func (c *fileCard) previewsImage() bool {
-	return c.git.binary && c.panel.pr == nil && previewKindOf(c.git.path) == blobImage
+	return c.git.binary && previewKindOf(c.git.path) == blobImage
 }
 
 func (c *fileCard) binaryBody(gtx C, p *reviewPanel) D {
@@ -39,10 +38,10 @@ func (c *fileCard) binaryBody(gtx C, p *reviewPanel) D {
 		c.bin = &binaryPreview{before: newBlobView(p.invalidate), after: newBlobView(p.invalidate)}
 	}
 	switch {
-	case p.pr != nil:
-		return c.prBinary(gtx, p)
 	case c.previewsImage():
 		return c.imageSides(gtx, p)
+	case p.pr != nil:
+		return c.prBinary(gtx, p)
 	}
 	c.bin.exits.update(gtx, p.client, p.notify, p.target, c.git.path)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -82,11 +81,18 @@ func prFileURL(prURL, path string) string {
 }
 
 // imageSides is the grid of BinaryDiffBody, px-3 pt-2.5 pb-3.5 gap-2.5: both
-// sides of a change, or the one an added or deleted file has.
+// sides of a change, or the one an added or deleted file has. A working tree
+// change stands on HEAD; a pull request's on its merge base and its head.
 func (c *fileCard) imageSides(gtx C, p *reviewPanel) D {
 	old := c.git.oldPath
 	if old == "" {
 		old = c.git.path
+	}
+	wantBefore := func() { c.bin.before.want(p.client, p.target, old, "HEAD", c.git.blobs) }
+	afterRef := ""
+	if f := p.pr; f != nil {
+		wantBefore = func() { c.bin.before.wantMergeBase(p.client, p.target, old, f, c.git.blobs) }
+		afterRef = f.head
 	}
 	var sides []layout.FlexChild
 	side := func(v *blobView, label string, tone color.NRGBA) layout.FlexChild {
@@ -94,14 +100,14 @@ func (c *fileCard) imageSides(gtx C, p *reviewPanel) D {
 	}
 	switch c.git.status {
 	case statusAdded:
-		c.bin.after.want(p.client, p.target, c.git.path, "", c.git.blobs)
+		c.bin.after.want(p.client, p.target, c.git.path, afterRef, c.git.blobs)
 		sides = append(sides, side(c.bin.after, i18n.T("diff.binaryPreview.added"), p.th.TonePass))
 	case statusDeleted:
-		c.bin.before.want(p.client, p.target, old, "HEAD", c.git.blobs)
+		wantBefore()
 		sides = append(sides, side(c.bin.before, i18n.T("diff.binaryPreview.deleted"), p.th.Destructive))
 	default:
-		c.bin.before.want(p.client, p.target, old, "HEAD", c.git.blobs)
-		c.bin.after.want(p.client, p.target, c.git.path, "", c.git.blobs)
+		wantBefore()
+		c.bin.after.want(p.client, p.target, c.git.path, afterRef, c.git.blobs)
 		sides = append(sides, side(c.bin.before, i18n.T("diff.binaryPreview.before"), p.th.Destructive), ui.Gap(2.5), side(c.bin.after, i18n.T("diff.binaryPreview.after"), p.th.TonePass))
 	}
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2.5), Bottom: ui.Space(3.5)}.Layout(gtx, func(gtx C) D {

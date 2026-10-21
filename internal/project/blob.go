@@ -46,10 +46,15 @@ type Blob struct {
 	ContentType string
 }
 
+// githubBlobTimeout bounds one image read from the contents API: up to
+// maxPreviewBytes over the network, well past what prReadTimeout allows a
+// JSON answer.
+const githubBlobTimeout = 30 * time.Second
+
 // Blob reads rel at ref for an image preview. ref is "" for the working tree,
 // "HEAD" for the commit a checkout's uncommitted diff stands on, or an object
-// this clone holds. A pull request's head is
-// not reached: unlike FileLines there is no GitHub fallback.
+// id. An object this clone does not hold, a pull request's head or merge base,
+// is read from GitHub, the way FileLines reads it.
 //
 // A path absent at ref is fs.ErrNotExist: the side of an added or deleted file
 // that has nothing to show.
@@ -66,10 +71,13 @@ func (s *Service) Blob(dir, rel, ref string) (Blob, error) {
 	}
 	var data []byte
 	var err error
-	if ref == "" {
+	switch {
+	case ref == "":
 		data, err = workTreeBlob(dir, rel)
-	} else {
+	case ref == "HEAD" || holdsObject(dir, ref):
 		data, err = objectBlob(dir, rel, ref)
+	default:
+		data, err = s.githubBlob(dir, rel, ref)
 	}
 	if err != nil {
 		return Blob{}, err
@@ -130,6 +138,56 @@ func objectBlob(dir, rel, ref string) ([]byte, error) {
 		return nil, err
 	}
 	return []byte(out), nil
+}
+
+// holdsObject reports whether this clone has the object ref names.
+func holdsObject(dir, ref string) bool {
+	_, ok := gitQuiet(dir, "cat-file", "-e", ref)
+	return ok
+}
+
+// githubBlob reads rel at a commit this clone does not hold. The size is only
+// known once the bytes are here: the raw contents answer carries no length
+// worth trusting ahead of the body.
+func (s *Service) githubBlob(dir, rel, ref string) ([]byte, error) {
+	out, err := s.gh(githubBlobTimeout, dir, "api", "-H", ghRawAccept, contentsPath(rel, ref))
+	if err != nil {
+		return nil, err
+	}
+	if err := checkPreviewSize(int64(len(out))); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PullRequestMergeBase is the commit pull request number's diff is taken
+// from, the old side of every file GitHub shows. The base branch's tip is not
+// it once the base moved past where the branch left it. The tips come from
+// GitHub; their merge base is computed here when the clone holds both, and
+// asked of GitHub otherwise.
+func (s *Service) PullRequestMergeBase(path string, number int) (string, error) {
+	out, err := s.gh(prReadTimeout, path, "api", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", number),
+		"--jq", `.base.sha + " " + .head.sha`)
+	if err != nil {
+		return "", err
+	}
+	base, head, _ := strings.Cut(strings.TrimSpace(string(out)), " ")
+	if !isOID(base) || !isOID(head) {
+		return "", errUnreadableAnswer(fmt.Errorf("pull request tips %q", out))
+	}
+	if local, ok := gitQuiet(path, "merge-base", base, head); ok {
+		return strings.TrimSpace(local), nil
+	}
+	out, err = s.gh(prReadTimeout, path, "api", "repos/{owner}/{repo}/compare/"+base+"..."+head,
+		"--jq", ".merge_base_commit.sha")
+	if err != nil {
+		return "", err
+	}
+	mergeBase := strings.TrimSpace(string(out))
+	if !isOID(mergeBase) {
+		return "", errUnreadableAnswer(fmt.Errorf("merge base %q", out))
+	}
+	return mergeBase, nil
 }
 
 func checkPreviewSize(size int64) error {

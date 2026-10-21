@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -64,6 +65,133 @@ func TestBlobMissingSideIsNotExist(t *testing.T) {
 	for _, ref := range []string{"", "HEAD"} {
 		if _, err := svc.Blob(repo, "new.png", ref); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("absent at %q: err = %v, want fs.ErrNotExist", ref, err)
+		}
+	}
+}
+
+// A pull request's commits need not be in the clone; GitHub answers for them.
+func TestBlobMissingObjectAsksGitHub(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	missing := strings.Repeat("b", 40)
+
+	gh := &fakeGH{out: []byte(pngBytes)}
+	blob, err := withGH(gh).Blob(repo, "img/logo.png", missing)
+	if err != nil {
+		t.Fatalf("Blob: %v", err)
+	}
+	if string(blob.Data) != pngBytes || blob.ContentType != "image/png" {
+		t.Errorf("got %q as %q, want GitHub's image", blob.Data, blob.ContentType)
+	}
+	want := []string{"api", "-H", ghRawAccept, contentsPath("img/logo.png", missing)}
+	if !slices.Equal(gh.args, want) {
+		t.Errorf("gh args = %v, want %v", gh.args, want)
+	}
+}
+
+// A commit the clone holds is read locally, even when the path is absent at
+// it: that answer is the clone's to give, not GitHub's.
+func TestBlobLocalObjectNeverAsksGitHub(t *testing.T) {
+	t.Parallel()
+	repo, git := initRepo(t)
+	write(t, repo, "logo.png", pngBytes)
+	git("add", ".")
+	git("commit", "-m", "logo")
+	head := strings.TrimSpace(git("rev-parse", "HEAD"))
+
+	gh := &fakeGH{err: errors.New("gh must not run")}
+	svc := withGH(gh)
+	if blob, err := svc.Blob(repo, "logo.png", head); err != nil || string(blob.Data) != pngBytes {
+		t.Errorf("present: %q, %v; want the committed image", blob.Data, err)
+	}
+	if _, err := svc.Blob(repo, "gone.png", head); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("absent: err = %v, want fs.ErrNotExist", err)
+	}
+	if gh.calls != 0 {
+		t.Errorf("gh ran %d times, want 0", gh.calls)
+	}
+}
+
+func TestBlobGitHubSizeLimit(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	gh := &fakeGH{out: make([]byte, maxPreviewBytes+1)}
+	if _, err := withGH(gh).Blob(repo, "big.png", strings.Repeat("c", 40)); !errors.Is(err, errPreviewTooLarge) {
+		t.Errorf("err = %v, want errPreviewTooLarge", err)
+	}
+}
+
+func TestBlobGitHubFailureSurfaces(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	gh := &fakeGH{err: errors.New("gh: Not Found (HTTP 404)")}
+	if _, err := withGH(gh).Blob(repo, "x.png", strings.Repeat("c", 40)); err == nil || errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("err = %v, want gh's failure, not a missing side", err)
+	}
+}
+
+// Both tips in the clone: git computes the merge base, GitHub is asked only
+// for the tips.
+func TestPullRequestMergeBaseLocal(t *testing.T) {
+	t.Parallel()
+	repo, git := initRepo(t)
+	write(t, repo, "fork.txt", "fork\n")
+	git("add", ".")
+	git("commit", "-m", "fork point")
+	fork := strings.TrimSpace(git("rev-parse", "HEAD"))
+	git("checkout", "-q", "-b", "topic")
+	write(t, repo, "b.txt", "topic\n")
+	git("add", ".")
+	git("commit", "-m", "topic")
+	head := strings.TrimSpace(git("rev-parse", "HEAD"))
+	git("checkout", "-q", "-")
+	write(t, repo, "c.txt", "base moved\n")
+	git("add", ".")
+	git("commit", "-m", "base")
+	base := strings.TrimSpace(git("rev-parse", "HEAD"))
+
+	gh := &fakeGH{out: []byte(base + " " + head + "\n")}
+	got, err := withGH(gh).PullRequestMergeBase(repo, 7)
+	if err != nil {
+		t.Fatalf("PullRequestMergeBase: %v", err)
+	}
+	if got != fork {
+		t.Errorf("merge base = %s, want the fork point %s", got, fork)
+	}
+	if want := []string{"api", "repos/{owner}/{repo}/pulls/7", "--jq", `.base.sha + " " + .head.sha`}; gh.calls != 1 || !slices.Equal(gh.args, want) {
+		t.Errorf("gh calls = %v, want one: %v", gh.history, want)
+	}
+}
+
+func TestPullRequestMergeBaseAsksGitHub(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	base, head, mergeBase := strings.Repeat("a", 40), strings.Repeat("b", 40), strings.Repeat("c", 40)
+
+	gh := &fakeGH{outs: [][]byte{[]byte(base + " " + head + "\n"), []byte(mergeBase + "\n")}}
+	got, err := withGH(gh).PullRequestMergeBase(repo, 7)
+	if err != nil {
+		t.Fatalf("PullRequestMergeBase: %v", err)
+	}
+	if got != mergeBase {
+		t.Errorf("merge base = %s, want %s", got, mergeBase)
+	}
+	want := []string{"api", "repos/{owner}/{repo}/compare/" + base + "..." + head, "--jq", ".merge_base_commit.sha"}
+	if !slices.Equal(gh.args, want) {
+		t.Errorf("gh args = %v, want %v", gh.args, want)
+	}
+}
+
+func TestPullRequestMergeBaseRejectsAnUnreadableAnswer(t *testing.T) {
+	t.Parallel()
+	repo, _ := initRepo(t)
+	tips := []byte(strings.Repeat("a", 40) + " " + strings.Repeat("b", 40))
+	for name, outs := range map[string][][]byte{
+		"tips":       {[]byte("null null")},
+		"merge base": {tips, []byte("null")},
+	} {
+		if _, err := withGH(&fakeGH{outs: outs}).PullRequestMergeBase(repo, 7); err == nil {
+			t.Errorf("%s: want an error, got nil", name)
 		}
 	}
 }

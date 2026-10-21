@@ -14,6 +14,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"path"
+	"strconv"
 	"strings"
 
 	"gioui.org/layout"
@@ -148,6 +149,27 @@ func (v *blobView) want(client *lichclient.Client, checkout, rel, ref, version s
 	key := strings.Join([]string{checkout, rel, ref, version}, "\x00")
 	v.read.want(key, checkout, func(ctx context.Context) (*previewImage, error) {
 		data, err := client.Blob(ctx, checkout, rel, ref)
+		if err != nil {
+			return nil, err
+		}
+		return decodePreview(data)
+	})
+}
+
+// wantMergeBase reads rel at pull request pr's merge base, the commit its
+// old side stands on.
+func (v *blobView) wantMergeBase(client *lichclient.Client, checkout, rel string, pr *prFiles, version string) {
+	number := pr.number
+	key := strings.Join([]string{checkout, rel, strconv.Itoa(number), version}, "\x00")
+	baseKey := strings.Join([]string{checkout, strconv.Itoa(number), pr.head}, "\x00")
+	v.read.want(key, checkout, func(ctx context.Context) (*previewImage, error) {
+		base, err := pr.mergeBase.get(ctx, baseKey, func() (string, error) {
+			return client.PullRequestMergeBase(context.Background(), checkout, number)
+		})
+		if err != nil {
+			return nil, err
+		}
+		data, err := client.Blob(ctx, checkout, rel, base)
 		if err != nil {
 			return nil, err
 		}

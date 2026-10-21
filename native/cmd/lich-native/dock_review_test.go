@@ -111,8 +111,11 @@ func TestBinaryFilesOpenWhenTheyHaveAPreview(t *testing.T) {
 		t.Error("a binary with no preview starts open, want collapsed")
 	}
 	p.pr = &prFiles{}
-	if c := newFileCard(p, img, false, 0); c.open {
-		t.Error("an image in a pull request starts open, want collapsed: this clone holds neither side")
+	if c := newFileCard(p, img, false, 0); !c.open {
+		t.Error("an image in a pull request starts collapsed, want open: its sides are read from the clone or GitHub")
+	}
+	if c := newFileCard(p, zip, false, 0); c.open {
+		t.Error("a binary with no preview in a pull request starts open, want collapsed")
 	}
 }
 

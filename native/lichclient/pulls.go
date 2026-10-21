@@ -207,6 +207,13 @@ func (c *Client) PullRequestDiff(ctx context.Context, path string, number int) (
 	return diff, c.Call(ctx, "project.PullRequestDiff", &diff, path, number)
 }
 
+// PullRequestMergeBase is the commit pull request number's diff is taken
+// from: the old side of every file in it.
+func (c *Client) PullRequestMergeBase(ctx context.Context, path string, number int) (string, error) {
+	var oid string
+	return oid, c.Call(ctx, "project.PullRequestMergeBase", &oid, path, number)
+}
+
 // PRConversation mirrors project.PRConversation.
 type PRConversation struct {
 	HeadRefOID string           `json:"headRefOid"`

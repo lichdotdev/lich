@@ -439,11 +439,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   And there is no expanding *past the last hunk*: a unified diff carries
   no file length, so nothing here knows whether anything follows it, and an affordance drawn there would
   be a no-op on every file whose change reaches the end.
-- **An image preview reads only what this clone holds** (`internal/project/blob.go`): `/blob` serves the
-  working tree, `HEAD` or a tree object, and has no GitHub fallback the way `FileLines` does, so the Pulls
-  screen still prints "Binary file". Adding it there takes two reads this endpoint does not make: the head blob
-  from the contents API, and the old side at the merge base, which gh does not report (`baseRefOid` is the base
-  branch's tip, and an image the base also changed would show the wrong "before"). SVG is refused on purpose:
+- **A pull request's image costs GitHub calls the clone could not answer** (`internal/project/blob.go`): `/blob`
+  reads an object this clone lacks from the contents API, the way `FileLines` does, and the old side stands on
+  the merge base, which gh does not report (`baseRefOid` is the base branch's tip, wrong once the base moved).
+  `PullRequestMergeBase` asks GitHub for both tips, and computes the merge base locally only when the clone
+  holds both, else asks the compare API too. The window asks it once per pull request head, shared by every
+  image card, and again only after a failure; each image side the clone lacks is still one contents call, and
+  a GitHub read is checked against the size cap only after the whole body arrived. SVG is refused on purpose:
   git diffs it as text, and the window has no SVG renderer. One side
   is capped at `maxPreviewBytes` (20 MiB) and held whole in memory, and a Git LFS file shows the pointer's
   text diff, never the image. The window decodes in Go (`native/cmd/lich-native/blob_preview.go`) and `/blob` serves only what it
@@ -463,8 +465,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A Markdown preview shows the file's new version, never the change** (`native/cmd/lich-native/dock_review_markdown.go`):
   the Review card's preview renders the whole file as the Pulls screen renders a PR body, with nothing marking
   what was added or removed, no line to hang a review comment on and no selection to inject. It reads the
-  working tree (`project.ReadFile`, as the Code tab does), so on the Pulls screen only an added file, whose patch is the whole file, has a
-  preview; an edited one has no toggle for the same reason an image there has no preview. A relative image
+  working tree (`project.ReadFile`, as the Code tab does); on the Pulls screen an added file renders its patch,
+  and an edited one is read at the pull request's head (`project.ReadFileAt`), from GitHub when the clone does
+  not hold it, under ReadFile's size cap. A relative image
   shows its alt text (the renderer fetches nothing) and raw HTML is left out. A new version of the file puts
   the card back on its diff, as it reopens or folds a card by its size.
 

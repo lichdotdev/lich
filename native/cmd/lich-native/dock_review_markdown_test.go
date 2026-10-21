@@ -22,7 +22,7 @@ func TestMarkdownPreviewIsOfferedWhereTheNewVersionIsReadable(t *testing.T) {
 		{"an edited file in the working tree", tree, editedReadme, true},
 		{"an added file in the working tree", tree, addedReadme, true},
 		{"an added file in a pull request", pr, addedReadme, true},
-		{"an edited file in a pull request, whose blobs the clone lacks", pr, editedReadme, false},
+		{"an edited file in a pull request, read at its head", pr, editedReadme, true},
 		{"a deleted file", tree, gonePage, false},
 		{"a file that is not Markdown", tree, twoHunks, false},
 	} {

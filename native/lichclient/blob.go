@@ -16,7 +16,8 @@ var ErrNoBlob = errors.New("not in this revision")
 
 // Blob reads rel, a file of the checkout at path, through /blob for an image
 // or PDF preview. ref is "" for the working tree, "HEAD" for the commit under
-// it, or an object id. A side with no file is ErrNoBlob; a file the backend
+// it, or an object id, which the backend reads from GitHub when the clone
+// does not hold it. A side with no file is ErrNoBlob; a file the backend
 // refuses (a type with no preview, one above its size limit) is a
 // RemoteError whose Message is the backend's own sentence.
 func (c *Client) Blob(ctx context.Context, path, rel, ref string) ([]byte, error) {

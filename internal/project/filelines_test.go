@@ -205,6 +205,32 @@ func TestFileLinesMissingObjectAsksGitHub(t *testing.T) {
 	}
 }
 
+func TestReadFileAt(t *testing.T) {
+	t.Parallel()
+	repo, git := initRepo(t)
+	write(t, repo, "notes.md", "# old\n")
+	git("add", ".")
+	git("commit", "-m", "notes")
+	head := strings.TrimSpace(git("rev-parse", "HEAD"))
+	write(t, repo, "notes.md", "# new\n")
+
+	gh := &fakeGH{out: []byte("# from GitHub\n")}
+	svc := withGH(gh)
+	if text, err := svc.ReadFileAt(repo, "notes.md", head); err != nil || text != "# old\n" {
+		t.Errorf("local commit: %q, %v; want the committed text", text, err)
+	}
+	if gh.calls != 0 {
+		t.Errorf("gh ran %d times for a local commit, want 0", gh.calls)
+	}
+	missing := strings.Repeat("e", 40)
+	if text, err := svc.ReadFileAt(repo, "notes.md", missing); err != nil || text != "# from GitHub\n" {
+		t.Errorf("absent commit: %q, %v; want GitHub's text", text, err)
+	}
+	if _, err := svc.ReadFileAt(repo, "../x.md", head); err == nil {
+		t.Error("traversal: want an error, got nil")
+	}
+}
+
 func TestFileLinesGitHubRejectsOversize(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)

@@ -25,14 +25,9 @@ type markdownPreview struct {
 }
 
 // previewsMarkdown reports whether the card offers its file rendered: a
-// Markdown file whose new version this window can read. A pull request's
-// clone holds none of its blobs (docs/ceilings.md), so there only an added
-// file, whose patch is the whole file, has one.
+// Markdown file with a new version.
 func (c *fileCard) previewsMarkdown() bool {
-	if c.git.binary || c.git.status == statusDeleted || !isMarkdown(c.git.path) {
-		return false
-	}
-	return c.panel.pr == nil || c.git.status == statusAdded
+	return !c.git.binary && c.git.status != statusDeleted && isMarkdown(c.git.path)
 }
 
 func isMarkdown(path string) bool {
@@ -86,17 +81,25 @@ func (c *fileCard) markdownBody(gtx C, p *reviewPanel) D {
 	})
 }
 
-// markdownSource is the file's new version: an added file's patch, or the
-// working tree's file, read again when the index line names a new blob.
+// markdownSource is the file's new version: an added file's patch, the
+// working tree's file, or a pull request's at its head, read again when the
+// index line names a new blob.
 func (c *fileCard) markdownSource(p *reviewPanel) (src string, loading bool, err error) {
 	if c.git.status == statusAdded {
 		return addedText(c.git), false, nil
 	}
 	client, checkout, rel := p.client, p.target, c.git.path
-	key := strings.Join([]string{checkout, rel, c.git.blobs}, "\x00")
+	ref := ""
+	if p.pr != nil {
+		ref = p.pr.head
+	}
+	key := strings.Join([]string{checkout, rel, ref, c.git.blobs}, "\x00")
 	c.md.read.want(key, checkout, func(ctx context.Context) (string, error) {
 		var text string
-		return text, client.Call(ctx, "project.ReadFile", &text, checkout, rel)
+		if ref == "" {
+			return text, client.Call(ctx, "project.ReadFile", &text, checkout, rel)
+		}
+		return text, client.Call(ctx, "project.ReadFileAt", &text, checkout, rel, ref)
 	})
 	return c.md.read.get()
 }

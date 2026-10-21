@@ -47,6 +47,16 @@ func (s *Service) FileLines(path, rel, ref string, from, to int) ([]string, erro
 	return sliceLines(text, from, to), nil
 }
 
+// ReadFileAt is ReadFile at ref, for a preview of a file's new version that
+// the working tree does not hold: a pull request's head. See FileLines for
+// what a ref can be and where it is read from.
+func (s *Service) ReadFileAt(path, rel, ref string) (string, error) {
+	if err := relpath.Validate(rel); err != nil {
+		return "", err
+	}
+	return s.fileAt(path, rel, ref)
+}
+
 // fileAt reads one file whole at ref. See FileLines for what a ref can be.
 func (s *Service) fileAt(path, rel, ref string) (string, error) {
 	if ref == "" {
