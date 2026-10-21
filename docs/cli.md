@@ -930,8 +930,15 @@ have to be a second accounting path, not a filter on this one.
 
 Serves the session commands above as MCP tools over stdio — `cost` is not one
 of them: one JSON-RPC 2.0 message per
-line, `initialize` / `tools/list` / `tools/call` / `ping`. stdout carries
-protocol and nothing else.
+line, `initialize` / `server/discover` / `tools/list` / `tools/call` / `ping`.
+stdout carries protocol and nothing else. It speaks both eras of the protocol: a
+client that opens with `initialize` gets the session it negotiated, and a
+request that names its version in `_meta` (revision `2026-07-28`) is answered
+on its own, with `resultType` and the server's identity in each result, and
+`ttlMs` and `cacheScope` on `server/discover` and `tools/list`. A `_meta`
+version lich does not serve is refused with `-32022`, listing the ones it does.
+An `initialize` that names a modern version is an unknown method (`-32601`):
+that era has no handshake.
 
 You rarely run this by hand — lich registers it for the providers that can be
 told at spawn (see below). Run it yourself only to point some other MCP client

@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -32,12 +34,25 @@ import (
 // would put ?token= in argv. A stdio one carries no secret at all — the server
 // inherits the coordinates from the PTY's environment, where they already were.
 
-// mcpProtocolVersion is what this server advertises when a client asks for
+// mcpProtocolVersion is what initialize advertises when a client asks for
 // nothing. A client that names its own version gets that version back: this
-// implements the tools subset, which every revision of the protocol carries
-// unchanged, so agreeing with the client costs nothing and refusing it would
-// only lose a working session over a date.
+// implements the tools subset, which every legacy revision of the protocol
+// carries unchanged, so agreeing with the client costs nothing and refusing it
+// would only lose a working session over a date.
+//
+// That echo covers the initialize era only. From 2026-07-28 there is no
+// handshake: each request names its version in _meta, and a version outside
+// mcpModernVersions is refused, since the client retries with one listed there.
 const mcpProtocolVersion = "2025-06-18"
+
+// mcpModernVersions are the per-request protocol versions this server serves.
+var mcpModernVersions = []string{"2026-07-28"}
+
+// mcpCacheTTL is how long a client may hold server/discover and tools/list.
+// Both are compiled into the binary, and lich spawns a new `lich mcp` for every
+// session, so they only change across a lich upgrade. An hour bounds how long a
+// client that keeps its cache past a restart can show the old list.
+const mcpCacheTTL = time.Hour
 
 // mcpMaxWait caps how long any tool here blocks, whatever the caller asks for.
 //
@@ -66,12 +81,14 @@ type jsonRPC struct {
 type jsonRPCError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 // JSON-RPC error codes this server can emit.
 const (
-	codeMethodNotFound = -32601
-	codeInvalidParams  = -32602
+	codeMethodNotFound             = -32601
+	codeInvalidParams              = -32602
+	codeUnsupportedProtocolVersion = -32022
 )
 
 // mcpTool is one entry in the tool list. run returns the text the agent sees;
@@ -219,25 +236,98 @@ func cancels(message jsonRPC, id json.RawMessage) bool {
 // handleMCP answers one message. The second return is false for a notification,
 // which the protocol says gets no reply — answering one is a protocol error on
 // this side, not a courtesy.
+//
+// A request whose _meta names a protocol version is modern and its result says
+// so; one without is legacy and gets the bytes an initialize-era client has
+// always got, since nobody has measured what a strict legacy client does with
+// fields its revision never defined.
 func (c *client) handleMCP(ctx context.Context, request jsonRPC) (jsonRPC, bool) {
 	if len(request.ID) == 0 {
 		return jsonRPC{}, false
 	}
 	response := jsonRPC{Version: "2.0", ID: request.ID}
+	requested, modern := requestedProtocol(request.Params)
+	if modern && !slices.Contains(mcpModernVersions, requested) {
+		response.Error = &jsonRPCError{
+			Code:    codeUnsupportedProtocolVersion,
+			Message: "Unsupported protocol version",
+			Data:    map[string]any{"supported": mcpModernVersions, "requested": requested},
+		}
+		return response, true
+	}
+	if modern && request.Method == "initialize" {
+		response.Error = &jsonRPCError{Code: codeMethodNotFound, Message: "initialize has no modern counterpart; use server/discover"}
+		return response, true
+	}
 
+	var result map[string]any
 	switch request.Method {
 	case "initialize":
-		response.Result = mcpHandshake(request.Params, c.version, c.lang())
+		result = mcpHandshake(request.Params, c.version, c.lang())
+	case "server/discover":
+		result = mcpDiscovery(c.lang())
 	case "tools/list":
-		response.Result = map[string]any{"tools": mcpToolList()}
+		result = map[string]any{"tools": mcpToolList()}
 	case "tools/call":
-		response.Result, response.Error = c.callMCPTool(ctx, request.Params)
+		result, response.Error = c.callMCPTool(ctx, request.Params)
 	case "ping":
-		response.Result = map[string]any{}
+		result = map[string]any{}
 	default:
 		response.Error = &jsonRPCError{Code: codeMethodNotFound, Message: "unknown method " + request.Method}
 	}
+	if result == nil {
+		return response, true
+	}
+	if modern || request.Method == "server/discover" {
+		markModern(request.Method, result, c.version)
+	}
+	response.Result = result
 	return response, true
+}
+
+// requestedProtocol reads the version a modern request names in its _meta. The
+// second return is false for a legacy request, which names none.
+func requestedProtocol(params json.RawMessage) (string, bool) {
+	var envelope struct {
+		Meta struct {
+			ProtocolVersion *string `json:"io.modelcontextprotocol/protocolVersion"`
+		} `json:"_meta"`
+	}
+	if err := json.Unmarshal(params, &envelope); err != nil || envelope.Meta.ProtocolVersion == nil {
+		return "", false
+	}
+	return *envelope.Meta.ProtocolVersion, true
+}
+
+// mcpDiscovery answers server/discover, the modern era's counterpart of
+// initialize: the same capabilities and briefing, without a session.
+func mcpDiscovery(lang prompt.Lang) map[string]any {
+	return map[string]any{
+		"supportedVersions": mcpModernVersions,
+		"capabilities":      map[string]any{"tools": map[string]any{}},
+		"instructions":      mcpInstructions(lang),
+	}
+}
+
+// markModern adds what a modern result carries over a legacy one. Discovery is
+// cached privately because its briefing is written in the calling session's
+// language, so one session's copy is not another's; the tool list is the same
+// English for every session.
+func markModern(method string, result map[string]any, version string) {
+	result["resultType"] = "complete"
+	result["_meta"] = map[string]any{"io.modelcontextprotocol/serverInfo": mcpServerInfo(version)}
+	switch method {
+	case "server/discover":
+		result["ttlMs"] = mcpCacheTTL.Milliseconds()
+		result["cacheScope"] = "private"
+	case "tools/list":
+		result["ttlMs"] = mcpCacheTTL.Milliseconds()
+		result["cacheScope"] = "public"
+	}
+}
+
+func mcpServerInfo(version string) map[string]any {
+	return map[string]any{"name": relay.MCPServerName, "version": version}
 }
 
 // mcpHandshake answers initialize, echoing the client's protocol version when
@@ -254,7 +344,7 @@ func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang) map[
 	return map[string]any{
 		"protocolVersion": protocol,
 		"capabilities":    map[string]any{"tools": map[string]any{}},
-		"serverInfo":      map[string]any{"name": relay.MCPServerName, "version": version},
+		"serverInfo":      mcpServerInfo(version),
 		"instructions":    mcpInstructions(lang),
 	}
 }
@@ -262,7 +352,7 @@ func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang) map[
 // callMCPTool runs one tool. A tool that fails answers with isError so the
 // agent sees the reason; only an unknown tool or unreadable arguments are
 // protocol errors.
-func (c *client) callMCPTool(ctx context.Context, params json.RawMessage) (any, *jsonRPCError) {
+func (c *client) callMCPTool(ctx context.Context, params json.RawMessage) (map[string]any, *jsonRPCError) {
 	var call struct {
 		Name      string  `json:"name"`
 		Arguments mcpArgs `json:"arguments"`

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `lich mcp` answers MCP clients on protocol revision 2026-07-28, which name the version on each request instead of opening with `initialize`, and serves their `server/discover`. Clients that open with `initialize` are answered exactly as before.
+
 ## [0.76.0] - 2026-10-21
 
 ### Added
