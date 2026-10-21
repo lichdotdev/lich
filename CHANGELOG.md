@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.77.0] - 2026-10-21
+
 ### Added
 
 - The Pulls screen shows a changed image in a pull request's Files tab, before and after side by side, as the Review tab does, where it used to say only "Binary file". An edited Markdown file there has the preview button too, where only an added one had it. lich reads the file from your clone when it holds the commit and from GitHub otherwise.
@@ -6302,7 +6304,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.76.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.77.0...HEAD
+[0.77.0]: https://github.com/lichdotdev/lich/compare/v0.76.0...v0.77.0
 [0.76.0]: https://github.com/lichdotdev/lich/compare/v0.75.0...v0.76.0
 [0.75.0]: https://github.com/lichdotdev/lich/compare/v0.74.0...v0.75.0
 [0.74.0]: https://github.com/lichdotdev/lich/compare/v0.73.0...v0.74.0

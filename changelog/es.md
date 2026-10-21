@@ -1,3 +1,22 @@
+## [0.77.0] - 2026-10-21
+
+### Added
+
+- La pantalla Pull requests muestra una imagen modificada en la pestaña Archivos de un pull request, con el antes y el después lado a lado, como hace la pestaña Revisión, cuando antes decía solo "Archivo binario". Un archivo Markdown editado ahí también tiene el botón de vista previa, cuando antes solo lo tenía uno añadido. lich lee el archivo de tu clon cuando contiene el commit y de GitHub en caso contrario.
+- `lich mcp` responde a los clientes MCP en la revisión de protocolo 2026-07-28, que indican la versión en cada petición en lugar de abrir con `initialize`, y atiende su `server/discover`. Los clientes que abren con `initialize` reciben la misma respuesta de antes.
+- La tarjeta de Cursor CLI toma el nombre que Cursor da a la conversación, una vez que termina el primer turno, cuando antes conservaba el nombre que le dio lich.
+
+### Changed
+
+- Un merge en la pantalla Pull requests avisa también a la sesión que abrió la sesión de la rama fusionada, se ejecute donde se ejecute, como ya avisaba a las sesiones del checkout fusionado. Una sesión que reparte trabajo se entera de que su pull request se fusionó sin que tú se lo digas.
+
+### Fixed
+
+- Resolver conflictos, Corregir errores de CI y una worktree iniciada desde un issue envían su mensaje a una nueva sesión de Claude Code en cuanto está en su prompt, cuando antes podía quedarse sin enviar hasta un minuto, hasta que pulsabas Enter. lich leía las respuestas del propio terminal a las preguntas de inicio de Claude Code como si fueras tú escribiendo en ese prompt, y retenía el mensaje por ti.
+- Un archivo Markdown largo, como el CHANGELOG.md de lich, se previsualiza en las pestañas Código y Revisión sin congelar la ventana: la vista previa dibuja solo la parte en pantalla, cuando antes maquetaba el archivo entero en cada fotograma.
+- Una vista previa de Markdown mantiene separadas las palabras donde el origen parte una línea, cuando antes quedaban pegadas, y una tabla ya no estrecha una columna angosta hasta romper las palabras: cada columna es al menos tan ancha como su palabra más larga.
+- La tarjeta de Claude Code vuelve a tomar el título que Claude Code da a la conversación, cuando antes conservaba el nombre que le dio lich. lich ahora inicia una nueva sesión de Claude Code sin `--name`, lo que impedía a Claude Code ponerle título. La sesión elige su propio nombre en la lista de agentes de Claude Code, distinto del de la tarjeta, y `lich sessions`, `lich whoami` y `list_sessions` no muestran un segundo nombre para ella hasta que un `/rename` le da uno.
+
 ## [0.76.0] - 2026-10-21
 
 ### Added
