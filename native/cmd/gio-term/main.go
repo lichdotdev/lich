@@ -75,13 +75,14 @@ func main() {
 }
 
 type session struct {
-	win     *app.Window
-	vt      *gioterm.Terminal
-	ptmx    *os.File
-	exited  atomic.Bool
-	bytesIn atomic.Int64
-	lastIn  atomic.Int64 // unix nanos of the latest PTY read
-	keyAt   int64        // unix nanos of the oldest key not yet seen on screen
+	win         *app.Window
+	vt          *gioterm.Terminal
+	ptmx        *os.File
+	exited      atomic.Bool
+	bytesIn     atomic.Int64
+	lastIn      atomic.Int64 // unix nanos of the latest PTY read
+	keyAt       int64        // unix nanos of the oldest key not yet seen on screen
+	composition gioterm.Composition
 }
 
 func run(w *app.Window, argv []string) error {
@@ -231,8 +232,8 @@ func (s *session) handleInput(gtx layout.Context, tag *int) {
 			break
 		}
 		switch e := ev.(type) {
-		case key.EditEvent:
-			s.send([]byte(e.Text))
+		case key.EditEvent, key.CompositionEvent, key.SelectionEvent, key.FocusEvent:
+			s.send([]byte(s.composition.Update(e, tag, gtx.Execute)))
 		case key.Event:
 			if e.State == key.Press {
 				s.send(s.vt.HandleKey(e))

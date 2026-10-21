@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A Markdown file open in the Code tab has the same preview button as in the Review tab, beside the read-only mark, and shows the file rendered, tables and links included, in place of its source. Click it again to go back to the source. Another file opens as its source.
 
+### Fixed
+
+- Dead keys compose in a session's terminal: on macOS, ~ then a types ã and ' then c types ç, where the accent used to arrive on its own before the letter. Text an input method is still composing, such as a Japanese or Chinese IME's, no longer reaches the program before it is committed either.
+
 ## [0.75.0] - 2026-10-21
 
 ### Added

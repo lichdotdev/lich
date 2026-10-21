@@ -37,6 +37,8 @@ type termView struct {
 	vt   *gioterm.Terminal
 	r    gioterm.Renderer
 	tag  *int
+	// composition holds what an input method has not committed yet.
+	composition gioterm.Composition
 	// The area size waiting to be fitted, and since when it has held.
 	fitFor   image.Point
 	fitSince time.Time
@@ -465,8 +467,8 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			return
 		}
 		switch e := ev.(type) {
-		case key.EditEvent:
-			ts.send(t.id, []byte(e.Text))
+		case key.EditEvent, key.CompositionEvent, key.SelectionEvent, key.FocusEvent:
+			ts.send(t.id, []byte(t.composition.Update(e, t.tag, gtx.Execute)))
 		case key.Event:
 			if e.State != key.Press {
 				break
