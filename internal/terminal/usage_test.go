@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lichdotdev/lich/internal/events"
@@ -157,4 +158,41 @@ func TestSessionUsageCarriesTheReasoningEffort(t *testing.T) {
 	if got.Effort != "high" || got.Window != 200_000 {
 		t.Errorf("sessionUsage = %+v, want effort high and a 200k window", got)
 	}
+}
+
+// Claude Code writes a turn's last assistant line about 100ms after its Stop
+// hook fires (measured on 2.1.306), so the read `done` takes still finds the
+// previous turn's line: after a /model switch the footer kept the old model
+// until some later hook read the transcript again.
+func TestADoneReadsTheTranscriptAgainOnceItsLastLineLands(t *testing.T) {
+	writeTranscript(t, "uuid-late", assistantLine(modelOpus, 2, 64798, 0)+"\n")
+	hub, rec := newProbeHub(t)
+	svc := New(stubBins{providerSession: "uuid-late"}, nil, hub)
+	modelOf := func() string {
+		payload, _ := rec.payloadOf(usageEventName)
+		fields, _ := payload.(map[string]any)
+		model, _ := fields["model"].(string)
+		return model
+	}
+
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+	reads := func() int { return strings.Count(strings.Join(rec.snapshot(), "\n"), usageEventName) }
+	waitFor(t, func() bool { return reads() == 2 }, "the reads the busy and the done took")
+	if got := modelOf(); got != modelOpus {
+		t.Fatalf("model as the turn ended = %q, want the previous line's %q", got, modelOpus)
+	}
+
+	path := filepath.Join(os.Getenv("CLAUDE_CONFIG_DIR"), "projects", "-home-user-repo", "uuid-late.jsonl")
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString(assistantLine(modelHaiku, 2, 1000, 0) + "\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool { return modelOf() == modelHaiku }, "the turn's own model to reach the window")
 }
