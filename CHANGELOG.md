@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.75.0] - 2026-10-21
+
 ### Added
 
 - A Markdown file in the Review tab has a preview button beside "Add file as context" that shows the file rendered, tables and links included, in place of its diff. Click it again to go back to the diff. On the Pulls screen only files the pull request adds have it.
@@ -6267,7 +6269,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.74.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.75.0...HEAD
+[0.75.0]: https://github.com/lichdotdev/lich/compare/v0.74.0...v0.75.0
 [0.74.0]: https://github.com/lichdotdev/lich/compare/v0.73.0...v0.74.0
 [0.73.0]: https://github.com/lichdotdev/lich/compare/v0.72.0...v0.73.0
 [0.72.0]: https://github.com/lichdotdev/lich/compare/v0.71.2...v0.72.0
