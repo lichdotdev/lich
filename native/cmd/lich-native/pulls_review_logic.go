@@ -82,11 +82,10 @@ func lineSpan(lines string) (start, line int) {
 	return first, last
 }
 
-// pendingReview holds, in memory, a review's summary and its line comments,
-// sent together when the review is submitted.
+// pendingReview holds, in memory, a review's line comments, sent together
+// when the review is submitted.
 type pendingReview struct {
 	mu       sync.Mutex
-	body     string
 	comments []lichclient.ReviewComment
 }
 
@@ -107,8 +106,19 @@ func (r *pendingReview) remove(i int) {
 
 func (r *pendingReview) clear() {
 	r.mu.Lock()
-	r.body, r.comments = "", nil
+	r.comments = nil
 	r.mu.Unlock()
+}
+
+// drop removes the comments sent, one for each, and keeps any added since.
+func (r *pendingReview) drop(sent []lichclient.ReviewComment) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, c := range sent {
+		if i := slices.Index(r.comments, c); i >= 0 {
+			r.comments = slices.Delete(r.comments, i, i+1)
+		}
+	}
 }
 
 func (r *pendingReview) snapshot() []lichclient.ReviewComment {

@@ -21,7 +21,8 @@ package main
 //	                                              // nothing at all while the batch is empty
 //
 // submit sends text as the active session's prompt and reports whether a
-// session took it; the batch is cleared only then. notify raises a toast.
+// session can take it; done reports, from any goroutine, whether it did. The
+// sent comments leave the batch only on a nil done. notify raises a toast.
 
 import (
 	"fmt"
@@ -268,6 +269,17 @@ type commentBatch struct {
 	removes     map[int]*widget.Clickable
 	note        widget.Editor
 	clear, send widget.Clickable
+	// sending is the batch on its way to the session, still in the store:
+	// the session can refuse it after the send left.
+	sending *batchSend
+}
+
+// batchSend is one send in flight: what to drop once the session took it.
+type batchSend struct {
+	target string
+	ids    []int
+	note   string
+	result chan error
 }
 
 // batchListMax is the list's max-h-40.
@@ -275,9 +287,9 @@ const batchListMax = unit.Dp(160)
 
 // layout draws the strip for target's batch, or nothing while it is empty.
 // submit sends the batch as the session's prompt and reports whether one took
-// it; the comments are the one thing here the user typed, so a refused send
-// keeps them and says why through notify.
-func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target string, submit func(string) bool, notify func(ui.Toast)) D {
+// it; the comments are the one thing here the user typed, so they stay until
+// the session has taken them.
+func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) D {
 	b.update(gtx, store, target, submit, notify)
 	comments := store.list(target)
 	if len(comments) == 0 {
@@ -300,7 +312,7 @@ func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target s
 }
 
 // update runs the strip's clicks against the store before it is drawn.
-func (b *commentBatch) update(gtx C, store *commentStore, target string, submit func(string) bool, notify func(ui.Toast)) {
+func (b *commentBatch) update(gtx C, store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) {
 	b.note.SingleLine, b.note.Submit = true, true
 	for {
 		ev, ok := b.note.Update(gtx)
@@ -321,12 +333,49 @@ func (b *commentBatch) update(gtx C, store *commentStore, target string, submit 
 	if b.clear.Clicked(gtx) {
 		b.drop(store, target)
 	}
-	if b.send.Clicked(gtx) {
-		if !submit(composeReviewComments(store.list(target), b.note.Text())) {
-			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.openSession")})
-			return
-		}
-		b.drop(store, target)
+	b.settle(store)
+	if b.send.Clicked(gtx) && b.sending == nil {
+		b.sendBatch(store, target, submit, notify)
+	}
+}
+
+// sendBatch hands target's batch to submit and keeps it in the store until
+// settle learns the session took it.
+func (b *commentBatch) sendBatch(store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) {
+	comments := store.list(target)
+	send := &batchSend{target: target, note: b.note.Text(), result: make(chan error, 1)}
+	for _, c := range comments {
+		send.ids = append(send.ids, c.id)
+	}
+	if !submit(composeReviewComments(comments, send.note), func(err error) { send.result <- err }) {
+		notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.openSession")})
+		return
+	}
+	b.sending = send
+}
+
+// settle drops the sent comments once the session took them, and leaves
+// them all in place when it refused.
+func (b *commentBatch) settle(store *commentStore) {
+	if b.sending == nil {
+		return
+	}
+	var err error
+	select {
+	case err = <-b.sending.result:
+	default:
+		return
+	}
+	send := b.sending
+	b.sending = nil
+	if err != nil {
+		return
+	}
+	for _, id := range send.ids {
+		store.remove(send.target, id)
+	}
+	if b.note.Text() == send.note {
+		b.note.SetText("")
 	}
 }
 

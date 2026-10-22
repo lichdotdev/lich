@@ -67,17 +67,20 @@ func (ts *terminals) injector(id string) func(string) bool {
 
 // submitter is what sends text as session id's prompt, false with no agent
 // session to take it: a shell's Enter would run the text as a command. The
-// send runs off the UI goroutine, and what the backend refuses after that (a
-// session that stopped) is told in a toast.
-func (ts *terminals) submitter(id string) func(string) bool {
-	return func(text string) bool {
+// send runs off the UI goroutine; done gets its outcome, and what the backend
+// refuses (a session that stopped) is also told in a toast.
+func (ts *terminals) submitter(id string) func(string, func(error)) bool {
+	return func(text string, done func(error)) bool {
 		if id == "" || ts.kindOf(id) == "shell" {
 			return false
 		}
 		go func() {
-			if err := ts.client.Submit(context.Background(), id, text); err != nil {
+			err := ts.client.Submit(context.Background(), id, text)
+			if err != nil {
 				ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.sendFailed"), Description: lichclient.ErrorText(err)})
 			}
+			done(err)
+			ts.invalidate()
 		}()
 		return true
 	}

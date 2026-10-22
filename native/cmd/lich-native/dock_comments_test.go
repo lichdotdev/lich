@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"errors"
+	"testing"
+
+	"github.com/lichdotdev/lich/native/ui"
+)
 
 func TestCommentBatchesAreKeptPerCheckout(t *testing.T) {
 	var s commentStore
@@ -55,5 +60,44 @@ func TestComposerSitsUnderTheSelectionsLastLine(t *testing.T) {
 	c.close()
 	if c.isOpen() {
 		t.Fatal("composer still open after close")
+	}
+}
+
+// The session can refuse a batch after the send left (it stopped, its mod
+// said no): the comments stay until the session has taken them.
+func TestRefusedBatchKeepsTheComments(t *testing.T) {
+	var s commentStore
+	s.add("/repo", "main.go", "12", "rename this")
+	var b commentBatch
+	b.sendBatch(&s, "/repo", func(_ string, done func(error)) bool {
+		done(errors.New("the session was stopped"))
+		return true
+	}, func(ui.Toast) {})
+	b.settle(&s)
+	if got := s.list("/repo"); len(got) != 1 {
+		t.Fatalf("batch after a refused send = %+v, want the comment kept", got)
+	}
+}
+
+// A taken batch drops what was sent, and only that: a comment written while
+// the send was on its way stays for the next one.
+func TestTakenBatchDropsOnlyWhatWasSent(t *testing.T) {
+	var s commentStore
+	s.add("/repo", "main.go", "12", "rename this")
+	var b commentBatch
+	var done func(error)
+	b.sendBatch(&s, "/repo", func(_ string, d func(error)) bool {
+		done = d
+		return true
+	}, func(ui.Toast) {})
+	b.settle(&s)
+	if got := s.list("/repo"); len(got) != 1 {
+		t.Fatalf("batch while the send is on its way = %+v, want the comment kept", got)
+	}
+	s.add("/repo", "x.go", "4", "written meanwhile")
+	done(nil)
+	b.settle(&s)
+	if got := s.list("/repo"); len(got) != 1 || got[0].txt != "written meanwhile" {
+		t.Fatalf("batch after the send was taken = %+v, want only the later comment", got)
 	}
 }

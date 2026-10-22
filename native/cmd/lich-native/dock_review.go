@@ -57,7 +57,7 @@ type reviewPanel struct {
 	code    godemirror.Theme
 	target  string
 	inject  func(string) bool
-	submit  func(string) bool
+	submit  func(string, func(error)) bool
 	shown   *diffRead
 	splitOK bool
 

@@ -46,11 +46,11 @@ func TestDockInjectorRefusesWithoutASession(t *testing.T) {
 	if (&terminals{}).injector("")("x") {
 		t.Error("a session-less inject reported taken")
 	}
-	if (&terminals{}).submitter("")("x") {
+	if (&terminals{}).submitter("")("x", func(error) {}) {
 		t.Error("a session-less submit reported taken")
 	}
 	shell := &terminals{byID: map[string]*termView{"s": {id: "s", kind: "shell"}}}
-	if shell.submitter("s")("x") {
+	if shell.submitter("s")("x", func(error) {}) {
 		t.Error("a submit to a shell reported taken")
 	}
 }
