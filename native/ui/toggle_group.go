@@ -48,6 +48,10 @@ func (th *Theme) ToggleGroup(value *widget.Enum, items ...ToggleItem) ToggleGrou
 }
 
 func (g ToggleGroupStyle) Layout(gtx C) D {
+	// Every item reads the value before it is drawn, and Enum.Layout takes
+	// the click only as it draws the clicked item: the items before it would
+	// draw the old choice.
+	g.Value.Update(gtx)
 	gtx.Constraints.Min = image.Point{}
 	pad := unit.Dp(toggleBorderWidth) + toggleTrackPad
 	return layout.Background{}.Layout(gtx,

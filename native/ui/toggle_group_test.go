@@ -1,11 +1,14 @@
 package ui
 
 import (
+	"crypto/sha256"
 	"image"
 	"image/color"
+	"reflect"
 	"testing"
 	"time"
 
+	"gioui.org/op"
 	"gioui.org/widget"
 )
 
@@ -85,4 +88,25 @@ func TestToggleGroupItemOverrides(t *testing.T) {
 	if d := layoutAt(group.Layout, 0, 500); d.Size != image.Pt(32+2*4, 24+2*4) {
 		t.Errorf("got %v, want a 32 wide, 24 tall item inside the track", d.Size)
 	}
+}
+
+// Gio draws one frame per event and none after a click, so the frame that
+// takes the click must already draw the item it chose pressed and the one
+// it left not: the next frame waits for the next mouse move.
+func TestToggleGroupDrawsAClickInTheFrameThatTookIt(t *testing.T) {
+	th, enum := testTheme(), &widget.Enum{Value: "worktree"}
+	rig := newToggleRig(image.Pt(20, 20), th.ToggleGroup(enum, toggleGroupItems...).Layout)
+	d := rig.frame()
+	rig.click(image.Pt(d.Size.X-12, d.Size.Y/2))
+	took := paintDigest(&rig.ops)
+	rig.frame()
+	if took != paintDigest(&rig.ops) {
+		t.Error("the frame that took the click drew another selection than the frame after it")
+	}
+}
+
+// paintDigest is a digest of what ops paint, equal for two frames that draw
+// the same.
+func paintDigest(ops *op.Ops) [sha256.Size]byte {
+	return sha256.Sum256(reflect.ValueOf(&ops.Internal).Elem().FieldByName("data").Bytes())
 }

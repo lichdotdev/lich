@@ -190,6 +190,11 @@ func (f *findBar) status(view *godemirror.View) (text string, failed bool) {
 // layout is the h-9 row: the field, the status, the three toggles, then
 // previous, next and close.
 func (f *findBar) layout(gtx C, th *ui.Theme, root *ui.Root, view *godemirror.View) D {
+	// The toggles take their clicks as they are drawn, after the search is
+	// applied.
+	for _, toggle := range []*widget.Bool{&f.matchCase, &f.wholeWord, &f.regexp} {
+		toggle.Update(gtx)
+	}
 	f.apply(view)
 	if f.focusField {
 		f.focusField = false

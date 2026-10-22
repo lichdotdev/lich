@@ -96,6 +96,29 @@ func (r *frameRig) settle(t *testing.T) string {
 	return ""
 }
 
+// waitFor frames the screen until something is drawn with label, for a
+// screen that reads its backend off the frame, then lets it settle.
+func (r *frameRig) waitFor(t *testing.T, label string) {
+	t.Helper()
+	for deadline := time.Now().Add(5 * time.Second); !r.shows(label); time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatalf("nothing drawn as %q:\n%s", label, r.drawn())
+		}
+		r.now = r.now.Add(time.Second)
+		r.frame()
+	}
+	r.settle(t)
+}
+
+func (r *frameRig) shows(label string) bool {
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			return true
+		}
+	}
+	return false
+}
+
 // nodes is the semantic tree of the last frame, flattened.
 func (r *frameRig) nodes() []input.SemanticNode { return r.router.AppendSemantics(nil) }
 

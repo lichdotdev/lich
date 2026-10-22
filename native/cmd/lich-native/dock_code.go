@@ -100,11 +100,12 @@ func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error
 	c.follow(in.checkout)
 	c.fetchTree(gtx, in)
 	inject := in.inject
+	open := c.preview.isOpen()
 	var err error
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
-			if c.preview.isOpen() {
+			if open {
 				var d D
 				d, err = c.preview.layout(gtx, th, root, previewEnv{checkout: in.checkout, code: in.code, inject: inject, comments: c.comments, notify: c.notify})
 				return d
@@ -113,6 +114,11 @@ func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error
 		}),
 		layout.Rigid(func(gtx C) D { return c.batch.layout(gtx, th, c.comments, in.checkout, in.submit, c.notify) }),
 	)
+	if c.preview.isOpen() != open {
+		// A file picked in the tree or the hits opens the preview while the
+		// browse it replaces is drawn.
+		gtx.Execute(op.InvalidateCmd{})
+	}
 	return err
 }
 
@@ -197,6 +203,7 @@ func (c *codeTab) browseBox(gtx C, th *ui.Theme) D {
 		gtx.Execute(key.FocusCmd{Tag: &c.query})
 		c.query.SetCaret(0, c.query.Len())
 	}
+	c.mode.Update(gtx)
 	text := c.mode.Value == browseByText
 	placeholder := i18n.T("dock.filesPanel.filterPlaceholder")
 	if text {
