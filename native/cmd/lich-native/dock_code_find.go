@@ -87,6 +87,19 @@ func (f *findBar) keys(gtx C, view *godemirror.View) {
 	f.clicks(gtx, view)
 }
 
+// holdsKeys is whether the bar's field or a Find all row has the keyboard.
+func (f *findBar) holdsKeys(gtx C) bool {
+	if gtx.Focused(&f.query) {
+		return true
+	}
+	for i := range f.list.clicks {
+		if gtx.Focused(&f.list.clicks[i]) {
+			return true
+		}
+	}
+	return false
+}
+
 func (f *findBar) clicks(gtx C, view *godemirror.View) {
 	if f.previous.Clicked(gtx) {
 		view.FindPrevious()

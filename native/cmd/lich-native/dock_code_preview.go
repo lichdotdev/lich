@@ -131,6 +131,16 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 	return dims, err
 }
 
+// holdsKeys is whether the code, its find bar, the comment box or the menu
+// has the keyboard. The composer counts from the moment it opens, before its
+// field takes the focus it asks for on its first layout.
+func (p *preview) holdsKeys(gtx C) bool {
+	if p.composer.isOpen() || p.menu.Opened() {
+		return true
+	}
+	return gtx.Focused(p.view) || p.find.holdsKeys(gtx)
+}
+
 // findRow is the find bar under the header while it is open over a text file,
 // and its Find all list under it.
 func (p *preview) findRow(gtx C, th *ui.Theme, root *ui.Root, kind blobKind) D {

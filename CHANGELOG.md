@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Restarting lich after an update opens the new version's window, where the old window stayed open on the new lich and a session could fail to start with "want 8 arguments, got 9" until lich was closed and opened again. The window closes and comes back with the restart; a lich running without a window stays without one. This takes effect from the next update after this release.
+- Ctrl+F on a file open in the Code tab opens the find bar, and the keys typed there land in it, where both went to the session's terminal behind the tab: the terminal took the keyboard back from the code, the find bar and the Find all list on every frame. A click on the terminal now hands it the keyboard, so selecting code to copy no longer leaves you typing nowhere.
 
 ## [0.77.0] - 2026-10-21
 

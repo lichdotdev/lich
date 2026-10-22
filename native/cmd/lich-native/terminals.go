@@ -367,8 +367,8 @@ func (ts *terminals) backgroundOf(id string) color.NRGBA {
 
 // layout draws t into the whole of gtx.Constraints.Max, following the area's
 // size with the grid and the backend PTY, and routes keys typed into it.
-// layout draws t and types into it. focus says nothing else in the window
-// wants the keyboard (a rename, an open menu), so the terminal takes it.
+// focus says nothing else in the window wants the keyboard (a rename, an open
+// menu), so the terminal takes it.
 func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	gtx.Metric = ts.unzoomed
 	defer clip.Rect(image.Rectangle{Max: gtx.Constraints.Max}).Push(gtx.Ops).Pop()
@@ -473,6 +473,9 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			}
 			go ts.pasteClipboard(t, text, runtime.GOOS)
 		case pointer.Event:
+			if e.Kind == pointer.Press {
+				gtx.Execute(key.FocusCmd{Tag: t.tag})
+			}
 			t.track(e)
 			if url, took := t.linkClick(e); took {
 				if url != "" {

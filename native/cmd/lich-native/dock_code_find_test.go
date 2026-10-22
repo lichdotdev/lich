@@ -226,3 +226,25 @@ func TestMatchSegmentsCutAtRuneColumnsAndDropTheIndent(t *testing.T) {
 		t.Errorf("segments = %+v, want %+v", got, want)
 	}
 }
+
+// The terminal takes the keyboard every frame the Code tab says it does not
+// hold it, so the code and the find bar have to count.
+func TestCodeTabHoldsTheKeysWhileTheCodeOrTheFindBarHasThem(t *testing.T) {
+	r := newFindRig(t, "shown\nnone\nshown")
+	c := &codeTab{preview: &preview{view: r.view, find: r.bar}}
+	holds := func() bool { return c.focused(layout.Context{Source: r.router.Source()}) }
+	if !holds() {
+		t.Error("the focused code leaves the keys to the terminal")
+	}
+	r.press(keyFind, key.ModShortcut)
+	if !holds() {
+		t.Error("the find bar's field leaves the keys to the terminal")
+	}
+	r.bar.query.SetText("shown")
+	r.bar.listing.Value = true
+	r.frame(nil)
+	r.frame(func(gtx C) { gtx.Execute(key.FocusCmd{Tag: &r.bar.list.clicks[0]}) })
+	if !holds() {
+		t.Error("a Find all row leaves the keys to the terminal")
+	}
+}

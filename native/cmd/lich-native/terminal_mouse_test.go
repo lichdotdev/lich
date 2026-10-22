@@ -1,12 +1,18 @@
 package main
 
 import (
+	"image"
 	"testing"
 	"time"
 
 	"gioui.org/f32"
+	"gioui.org/io/event"
+	"gioui.org/io/input"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
 
 	"github.com/lichdotdev/lich/native/gioterm"
 )
@@ -168,5 +174,37 @@ func TestTheLinkUnderThePointerIsHoveredUntilItLeaves(t *testing.T) {
 	v.track(ptr(pointer.Leave, at(20, 0), 0, 0))
 	if _, ok := v.hoveredLink(); ok {
 		t.Fatal("a link stayed hovered after the pointer left the grid")
+	}
+}
+
+// A field elsewhere keeps the keyboard until something takes it: a press on
+// the terminal is what hands it back.
+func TestPressOnTheTerminalTakesTheKeyboard(t *testing.T) {
+	v := newMouseTestView(t, "hello")
+	v.tag = new(int)
+	field := new(int)
+	ts := &terminals{}
+	var router input.Router
+	frame := func(before func(C)) {
+		ops := new(op.Ops)
+		gtx := layout.Context{Ops: ops, Source: router.Source(), Constraints: layout.Exact(image.Pt(800, 480))}
+		if before != nil {
+			before(gtx)
+		}
+		gtx.Event(key.FocusFilter{Target: field})
+		event.Op(ops, field)
+		ts.input(gtx, v, false)
+		area := clip.Rect{Max: image.Pt(800, 480)}.Push(ops)
+		event.Op(ops, v.tag)
+		area.Pop()
+		router.Frame(ops)
+	}
+	frame(nil)
+	frame(func(gtx C) { gtx.Execute(key.FocusCmd{Tag: field}) })
+	router.Queue(ptr(pointer.Press, at(1, 0), pointer.ButtonPrimary, 0), ptr(pointer.Release, at(1, 0), 0, 0))
+	frame(nil)
+	frame(nil)
+	if !router.Source().Focused(v.tag) {
+		t.Error("a press on the terminal left the keyboard on the field")
 	}
 }

@@ -117,9 +117,7 @@ func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error
 }
 
 func (c *codeTab) focused(gtx C) bool {
-	// The composer counts from the moment it opens, before its field takes the
-	// focus it asks for on its first layout.
-	if gtx.Focused(&c.query) || gtx.Focused(&c.batch.note) || c.preview.composer.isOpen() || c.preview.menu.Opened() {
+	if gtx.Focused(&c.query) || gtx.Focused(&c.batch.note) || c.preview.holdsKeys(gtx) {
 		return true
 	}
 	for i := range c.hits.hits {
