@@ -59,6 +59,20 @@ func (s *talkState) fieldOf(id string) *replyField {
 
 func (s *talkState) editorOf(id string) *widget.Editor { return &s.fieldOf(id).editor }
 
+// talkClicks carries out the clicks that add or drop rows, before the rows
+// are built.
+func (v *pullView) talkClicks(gtx C, pending *pendingReview) {
+	s := &v.talk
+	if s.resolvedTap.Clicked(gtx) {
+		s.showResolved.Value = !s.showResolved.Value
+	}
+	for i := range pending.snapshot() {
+		if discard := s.discards[i]; discard != nil && discard.Clicked(gtx) {
+			pending.remove(i)
+		}
+	}
+}
+
 // conversationRows is PullsConversation: the pending review, the timeline,
 // the resolved threads behind their count, and the box for a comment on the
 // pull request itself.
@@ -74,6 +88,7 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d lichc
 	}
 	items, resolved := conversationTimeline(read.val)
 	now := gtx.Now
+	v.talkClicks(gtx, v.pendingOf(d.URL))
 	rows := v.pendingRows(th, v.pendingOf(d.URL))
 	if len(items) == 0 && len(resolved) == 0 {
 		rows = append(rows, func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.nothingYet")) })
@@ -276,6 +291,9 @@ func (v *pullView) threadActions(gtx C, th *ui.Theme, d lichclient.PRDetail, t l
 	if resolve.Clicked(gtx) {
 		act.resolve = &threadResolve{id: t.ID, resolved: !t.IsResolved}
 	}
+	if clickableOf(s.cancelClicks, t.ID).Clicked(gtx) {
+		s.replying[t.ID] = false
+	}
 	if s.replying[t.ID] {
 		return v.replyBox(gtx, th, d, t, act)
 	}
@@ -297,9 +315,6 @@ func (v *pullView) replyBox(gtx C, th *ui.Theme, d lichclient.PRDetail, t lichcl
 	ed := s.editorOf(t.ID)
 	send, cancel := clickableOf(s.sendClicks, t.ID), clickableOf(s.cancelClicks, t.ID)
 	submit := send.Clicked(gtx) || ctrlEnter(gtx, ed)
-	if cancel.Clicked(gtx) {
-		s.replying[t.ID] = false
-	}
 	body := strings.TrimSpace(ed.Text())
 	if submit && body != "" && len(t.Comments) > 0 {
 		act.reply = &threadReply{commentID: t.Comments[len(t.Comments)-1].ID, body: body, thread: t.ID}
@@ -328,9 +343,6 @@ func (v *pullView) replyBox(gtx C, th *ui.Theme, d lichclient.PRDetail, t lichcl
 
 func (v *pullView) resolvedToggle(gtx C, th *ui.Theme, n int) D {
 	s := &v.talk
-	if s.resolvedTap.Clicked(gtx) {
-		s.showResolved.Value = !s.showResolved.Value
-	}
 	label := i18n.T("pulls.pullsConversation.resolved", i18n.Args{"count": n})
 	chevron := icPullRight
 	if s.showResolved.Value {
@@ -399,9 +411,6 @@ func (v *pullView) pendingRows(th *ui.Theme, r *pendingReview) []layout.Widget {
 			v.talk.discards[i] = discard
 		}
 		rows = append(rows, func(gtx C) D {
-			if discard.Clicked(gtx) {
-				r.remove(i)
-			}
 			anchor := lineAnchor(c.StartLine, c.Line)
 			b := th.Button(discard, i18n.T("pulls.pullsConversation.discard"))
 			b.Size, b.Variant = ui.SizeXS, ui.VariantGhost

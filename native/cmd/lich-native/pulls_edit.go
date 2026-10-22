@@ -125,6 +125,11 @@ func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.P
 // description into a field while it is not one already.
 func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
 	s := &v.edit
+	// Cancel is the field's, drawn under the heading: taken here, the
+	// heading and the field both read it.
+	if s.bodyCancel.Clicked(gtx) && v.busyNow() != "body" {
+		s.bodyURL = ""
+	}
 	if s.bodyOpen.Clicked(gtx) {
 		s.bodyURL = d.URL
 		s.body.SetText(d.Body)
@@ -150,9 +155,6 @@ func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, d lichclient.PRDetail
 func (v *pullView) descriptionField(gtx C, th *ui.Theme, d lichclient.PRDetail, act *pullsAction) D {
 	s := &v.edit
 	busy := v.busyNow() == "body"
-	if s.bodyCancel.Clicked(gtx) && !busy {
-		s.bodyURL = ""
-	}
 	if (s.bodySave.Clicked(gtx) || ctrlEnter(gtx, &s.body)) && !busy {
 		body := s.body.Text()
 		act.body = &body

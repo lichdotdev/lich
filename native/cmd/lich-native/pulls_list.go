@@ -48,12 +48,15 @@ func (s pullsState) none() string {
 func (p *pullsScreen) listLayout(gtx C, th *ui.Theme, list pullsRead[[]lichclient.PRSummary]) D {
 	text := p.query.Text()
 	counts := filterCounts(list.val, text)
-	rows := filterPulls(list.val, pullsFilter(p.filter.Selected), text)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.listHeader(gtx, th) }),
 		layout.Rigid(func(gtx C) D { return p.filterTrack(gtx, th, counts) }),
 		layout.Rigid(func(gtx C) D { return p.stateRow(gtx, th) }),
-		layout.Flexed(1, func(gtx C) D { return p.rowList(gtx, th, list, rows) }),
+		layout.Flexed(1, func(gtx C) D {
+			// Read after the filter tabs took their click.
+			rows := filterPulls(list.val, pullsFilter(p.filter.Selected), text)
+			return p.rowList(gtx, th, list, rows)
+		}),
 	)
 }
 

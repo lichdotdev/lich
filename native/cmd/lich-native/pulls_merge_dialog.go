@@ -91,14 +91,14 @@ func (u *window) layoutMergeDialog(gtx C, th *ui.Theme) {
 	v := &u.pulls.view
 	m := &v.mergeEdit
 	p := u.pulls
+	if m.cancel.Clicked(gtx) {
+		m.open = false
+	}
 	var d *lichclient.PRDetail
 	if m.open && p.open && p.selected != 0 {
 		d = p.store.detail(p.project.Path, p.selected).val
 	}
 	open := m.open && d != nil
-	if m.cancel.Clicked(gtx) {
-		m.open = false
-	}
 	subject := strings.TrimSpace(strings.ReplaceAll(m.subject.Text(), "\n", " "))
 	busy := v.busyNow() == "merge"
 	submit := m.merge.Clicked(gtx) || editorSubmitted(gtx, &m.subject)

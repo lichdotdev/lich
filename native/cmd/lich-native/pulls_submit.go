@@ -88,14 +88,14 @@ func (u *window) layoutSubmitDialog(gtx C, th *ui.Theme) {
 	v := &u.pulls.view
 	s := &v.submit
 	p := u.pulls
+	if s.cancel.Clicked(gtx) {
+		s.verdict = ""
+	}
 	open := s.verdict != "" && p.open && p.selected != 0
 	var d *lichclient.PRDetail
 	if open {
 		d = p.store.detail(p.project.Path, p.selected).val
 		open = d != nil
-	}
-	if s.cancel.Clicked(gtx) {
-		s.verdict = ""
 	}
 	busy := v.busyNow() == "submit"
 	if (s.send.Clicked(gtx) || ctrlEnter(gtx, &s.summary)) && open && !busy {

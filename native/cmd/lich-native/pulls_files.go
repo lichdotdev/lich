@@ -82,18 +82,32 @@ func (c *fileCard) viewedTick(gtx C, th *ui.Theme, p *reviewPanel) D {
 		f.ticks[c.git.path] = tick
 	}
 	tick.Value = f.isViewed(c)
-	if tick.Update(gtx) {
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(th.Checkbox(tick).Layout),
+		ui.Gap(1.5),
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("diff.fileDiff.viewed")).Muted().Layout),
+	)
+}
+
+// takeTicks carries out the cards' Viewed ticks before the toolbar counts
+// them and the cards are drawn.
+func (p *reviewPanel) takeTicks(gtx C) {
+	f := p.pr
+	for _, path := range p.order {
+		c, tick := p.cards[path], f.ticks[path]
+		if tick == nil {
+			continue
+		}
+		tick.Value = f.isViewed(c)
+		if !tick.Update(gtx) {
+			continue
+		}
 		if tick.Value {
 			p.markViewed(c)
 		} else {
 			delete(f.viewed, c.git.path)
 		}
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(th.Checkbox(tick).Layout),
-		ui.Gap(1.5),
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("diff.fileDiff.viewed")).Muted().Layout),
-	)
 }
 
 // filesTab is PullsFiles: the toolbar over the PR's diff, one card per file
@@ -128,6 +142,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PR
 	}
 	files.takeRead(d.URL, &diffRead{text: read.val})
 	files.takeAnswers()
+	files.takeTicks(gtx)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return v.filesToolbar(gtx, th) }),
 		layout.Rigid(th.Separator),
