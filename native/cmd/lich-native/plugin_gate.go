@@ -208,6 +208,7 @@ func (u *window) layoutPluginGate(gtx C, th *ui.Theme) {
 		g.mu.Lock()
 		g.offer = nil
 		g.mu.Unlock()
+		offer = nil
 	}
 	if g.picked == nil {
 		g.picked, g.rows = map[string]*widget.Bool{}, map[string]*widget.Clickable{}
@@ -220,6 +221,7 @@ func (u *window) layoutPluginGate(gtx C, th *ui.Theme) {
 		if g.rows[p.Provider].Clicked(gtx) && !installing {
 			g.picked[p.Provider].Value = !g.picked[p.Provider].Value
 		}
+		g.picked[p.Provider].Update(gtx)
 		if g.picked[p.Provider].Value {
 			picked = append(picked, p.Provider)
 		}

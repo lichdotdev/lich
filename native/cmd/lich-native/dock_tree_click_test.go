@@ -6,48 +6,32 @@ import (
 	"time"
 
 	"gioui.org/f32"
-	"gioui.org/font/gofont"
-	"gioui.org/io/input"
-	"gioui.org/io/pointer"
 	"gioui.org/layout"
-	"gioui.org/op"
-	"gioui.org/text"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// clickFrames lays a tree out through draw, waits for its first frame to show
-// rows, clicks the top row and reports the rows the frame that took the click
-// drew, and those of the frame after it. Gio draws one frame per event, so
-// the two differ only when the click landed after the rows were read.
+// clickFrames lays a tree out through a frameRig, waits for its first frame
+// to show rows, clicks the top row and reports the rows the frame that took
+// the click drew, and those of the frame after it.
 func clickFrames(t *testing.T, list *widget.List, draw func(C, *ui.Theme)) (took, next int) {
 	t.Helper()
-	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Background}
-	var router input.Router
-	var ops op.Ops
-	frame := func() int {
-		ops.Reset()
-		gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(200, 300)), Source: router.Source(), Now: time.Now()}
-		draw(gtx, th)
-		router.Frame(&ops)
-		return list.List.Position.Count
-	}
+	r := newFrameRig(image.Pt(200, 300), draw)
 	deadline := time.Now().Add(2 * time.Second)
-	for frame() == 0 {
+	for r.frame(); list.List.Position.Count == 0; r.frame() {
 		if time.Now().After(deadline) {
 			t.Fatal("the tree never drew a row")
 		}
 		time.Sleep(time.Millisecond)
 	}
-	at := f32.Pt(20, 8)
-	router.Queue(
-		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: at},
-		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: at},
-	)
-	took = frame()
-	return took, frame()
+	var rows []int
+	r.draw = func(gtx C, th *ui.Theme) {
+		draw(gtx, th)
+		rows = append(rows, list.List.Position.Count)
+	}
+	r.click(t, f32.Pt(20, 8))
+	return rows[len(rows)-2], rows[len(rows)-1]
 }
 
 func TestCodeTreeOpensAFolderInTheFrameThatTookItsClick(t *testing.T) {

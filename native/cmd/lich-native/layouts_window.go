@@ -94,6 +94,8 @@ func (u *window) askMove(r besideRequest, id, from string) {
 func (u *window) askMoveDelegates(orchestrator string, ids []string, away int) {
 	c := &u.layoutStage.move
 	c.open, c.orchestrator, c.delegates, c.away = true, orchestrator, ids, away
+	// The question was laid out at the top of this frame, closed.
+	u.model.invalidate()
 }
 
 // layoutMoveConfirm draws the question and makes the move it is answered

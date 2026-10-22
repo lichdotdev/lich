@@ -112,6 +112,7 @@ func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r setti
 		notes := u.patchNotes()
 		if u.viewNotes.Clicked(gtx) && hasPatchNotes(notes) {
 			u.patch.show()
+			s.invalidate() // the dialog is laid out before the pane, a frame behind the click
 		}
 		r.description = i18n.T("settings.updatesSettings.noPatchNotes")
 		if hasPatchNotes(notes) {

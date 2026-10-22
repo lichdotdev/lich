@@ -182,6 +182,8 @@ func (u *window) requestClose(id string) {
 		if tab.ID == id {
 			c := &u.topbar.confirm
 			c.open, c.id, c.name, c.running = true, id, tab.Name, running
+			// The dialog was laid out at the top of this frame, closed.
+			u.model.invalidate()
 		}
 	}
 }
