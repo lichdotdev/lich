@@ -1,3 +1,29 @@
+## [0.78.0] - 2026-10-22
+
+### Added
+
+- Comentários podem ser editados e excluídos na tela Pull requests. O … ao lado do comentário de uma thread de revisão (na aba Conversa e no diff) ou de um comentário do pull request oferece Editar, que o reescreve ali mesmo no GitHub, e Excluir, que pergunta antes. O resumo de uma revisão enviada também pode ser editado; o veredito dela continua como está. O … aparece só no que o GitHub permite que a sua conta altere.
+- Escolher uma fonte monoespaçada para a interface em Configurações › Aparência pergunta se o terminal e o editor também devem usá-la. Usar em tudo define as duas; Só a interface as mantém como estavam. Uma fonte proporcional ou Sistema não pergunta nada.
+- Um comentário que espera no lote de revisão pode ser reescrito antes de ser enviado: o lápis dele o abre em uma caixa de diálogo, salvo com Salvar ou Ctrl+Enter. Um comentário de linha na revisão pendente de um pull request tem um botão Editar ao lado de Descartar que o abre em uma caixa, salvo com Salvar ou Ctrl+Enter.
+
+### Removed
+
+- O aviso de que a janela nativa é experimental, mostrado na primeira vez que ela abria, saiu: a janela nativa é a única janela do lich.
+
+### Fixed
+
+- Os comentários para a sessão escritos na aba Arquivos de um pull request na tela Pull requests vão para uma sessão no checkout da branch desse pull request, onde Enviar os digitava na sessão que estivesse aberta antes da tela Pull requests, revisando outra branch. Sem uma sessão ali, Enviar diz para abrir uma e mantém os comentários; Abrir em sessão a inicia. Uma referência de linha enviada dessa aba segue o mesmo caminho.
+- Ir para a sessão em um pull request na tela Pull requests abre a sessão em que você está quando ela fica no checkout do pull request, onde sempre abria a primeira sessão ali.
+- No Windows com escala de tela acima de 100%, o arrastar volta a acompanhar o ponteiro: um item arrastado em Configurações › Rodapé ou uma seleção arrastada no terminal ficavam longe do cursor, escalados como se a tela estivesse em 100%.
+- Os comentários de revisão enviados a uma sessão são mantidos até a sessão recebê-los. Uma sessão que recusou o lote (uma que tinha parado, por exemplo) mostrava "Não foi possível enviar os comentários" enquanto os comentários já tinham sumido; agora eles continuam no lote para serem enviados de novo. Da mesma forma, enviar a revisão de um pull request na tela Pull requests descarta só os comentários que ela levou, onde um comentário escrito enquanto a revisão estava a caminho se perdia com eles.
+- No Windows, a janela usa o ícone do lich e abre sob o botão do lich na barra de tarefas, onde mostrava um ícone genérico e, aberta a partir de um lich fixado na barra de tarefas, abria como um botão separado ao lado do fixado.
+- Cliques em toda a janela mostram o resultado na hora, onde muitos esperavam o mouse se mover: caixas de diálogo abrindo e fechando, os botões de fechar do dock e das Configurações, a abertura de um arquivo a partir da aba Código, as opções da barra de busca, os filtros e a conversa da tela Pull requests, o filtro da barra lateral e as seções, os switches, as escadas e os seletores das Configurações. Um controle segmentado não mostra mais duas opções pressionadas logo após um clique.
+- Um clique em uma pasta na árvore de arquivos da aba Código, ou na árvore de arquivos de um pull request, a abre ou a recolhe na hora, onde esperava o mouse se mover. A aba Código também monta em milissegundos a árvore de um checkout com dezenas de milhares de arquivos, onde levava segundos, e o hover de uma linha acompanha o ponteiro sem ficar um evento atrasado.
+- Reiniciar o lich após uma atualização abre a janela da nova versão, onde a janela antiga continuava aberta sobre o novo lich e uma sessão podia falhar ao iniciar com "want 8 arguments, got 9" até o lich ser fechado e aberto de novo. A janela fecha e volta com a reinicialização; um lich rodando sem janela continua sem uma. Isso vale a partir da próxima atualização depois desta versão.
+- Ctrl+F em um arquivo aberto na aba Código abre a barra de busca, e as teclas digitadas ali chegam a ela, onde ambos iam para o terminal da sessão atrás da aba: o terminal tomava o teclado de volta do código, da barra de busca e da lista Mostrar todas as ocorrências a cada quadro. Um clique no terminal agora lhe entrega o teclado, então selecionar código para copiar não deixa mais você digitando no nada.
+- Um pull request na lista da tela Pull requests não corta mais o veredito da revisão quando o nome do autor é longo: o nome encurta, e a pasta do checkout no fim da linha aparece só quando cabe inteira, em vez de meio ícone.
+- Um pull request na lista da tela Pull requests cujas threads de revisão estão todas resolvidas mostra "Alterações solicitadas" em âmbar com uma marca de resolvido, como o título dele já fazia, em vez do vermelho de quem ainda espera o autor. O GitHub mantém o veredito até o revisor aprovar ou a revisão ser descartada. O "Rascunho" de um rascunho agora é um selo cinza com contorno, para não parecer parte de um veredito âmbar ao lado.
+
 ## [0.77.0] - 2026-10-21
 
 ### Added

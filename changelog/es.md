@@ -1,3 +1,29 @@
+## [0.78.0] - 2026-10-22
+
+### Added
+
+- Los comentarios se pueden editar y eliminar desde la pantalla Pull requests. El … junto a un comentario de un hilo de revisión (en la pestaña Conversación y en el diff) o a un comentario del pull request ofrece Editar, que lo reescribe en el sitio en GitHub, y Eliminar, que pregunta antes. El resumen de una revisión enviada también se puede editar; su veredicto se mantiene. El … solo aparece en lo que GitHub deja cambiar a tu cuenta.
+- Al elegir una fuente monoespaciada para la interfaz en Ajustes › Apariencia, lich pregunta si la terminal y el editor también deben usarla. Usar en todo aplica ambas; Solo la interfaz las deja como estaban. Una fuente proporcional o Sistema no pregunta nada.
+- Un comentario en espera en el lote de revisión se puede reformular antes de enviarlo: su lápiz lo abre en un diálogo, y se guarda con Guardar o Ctrl+Enter. Un comentario de línea en la revisión pendiente de un pull request tiene un botón Editar junto a Descartar que lo abre en un cuadro, y se guarda con Guardar o Ctrl+Enter.
+
+### Removed
+
+- Se eliminó el aviso de que la ventana nativa es experimental, que se mostraba la primera vez que se abría: la ventana nativa es la única ventana de lich.
+
+### Fixed
+
+- Los comentarios para la sesión escritos en la pestaña Archivos de un pull request en la pantalla Pull requests van a una sesión en el checkout de la rama de ese pull request, cuando antes Enviar los escribía en la sesión que estuviera abierta antes de entrar a Pull requests, revisando otra rama. Si no hay ninguna sesión allí, Enviar avisa que abras una y conserva los comentarios; Abrir en una sesión la inicia. Una referencia de línea enviada desde esa pestaña sigue el mismo camino.
+- Ir a la sesión en un pull request de la pantalla Pull requests abre la sesión en la que estás cuando está en el checkout del pull request, cuando antes siempre abría la primera sesión de allí.
+- En Windows con un escalado de pantalla superior al 100 %, un arrastre vuelve a seguir al puntero: un elemento arrastrado en Ajustes › Pie de ventana o una selección arrastrada en la terminal quedaban lejos del cursor, escalados como si la pantalla estuviera al 100 %.
+- Los comentarios de revisión enviados a una sesión se conservan hasta que la sesión los recibe. Una sesión que rechazó el lote (por ejemplo, una que se había detenido) mostraba "No se pudieron enviar los comentarios" cuando los comentarios ya habían desaparecido; ahora siguen en el lote para volver a enviarlos. Del mismo modo, enviar la revisión de un pull request en la pantalla Pull requests descarta solo los comentarios que incluía, cuando antes un comentario escrito mientras la revisión estaba en camino se perdía con ellos.
+- En Windows, la ventana lleva el icono de lich y se abre bajo el botón de la barra de tareas de lich, cuando antes mostraba un icono genérico y, lanzada desde un lich anclado a la barra de tareas, se abría como un botón aparte junto al anclado.
+- Los clics en toda la ventana muestran su resultado al instante, cuando antes muchos esperaban a que se moviera el ratón: diálogos que se abren y se cierran, los botones de cierre del dock y de Ajustes, abrir un archivo desde la pestaña Código, los interruptores de la barra de búsqueda, los filtros y la conversación de la pantalla Pull requests, el filtro de la barra lateral, y las secciones, interruptores, escaleras y selectores de Ajustes. Un control segmentado ya no muestra dos opciones pulsadas justo después de un clic.
+- Un clic en una carpeta del árbol de archivos de la pestaña Código, o del árbol de archivos de un pull request, la abre o la pliega al instante, cuando antes esperaba a que se moviera el ratón. La pestaña Código también construye en milisegundos el árbol de un checkout con decenas de miles de archivos, cuando antes tardaba segundos, y el resaltado de una fila sigue al puntero sin quedarse un evento atrás.
+- Reiniciar lich tras una actualización abre la ventana de la nueva versión, cuando antes la ventana antigua seguía abierta sobre el nuevo lich y una sesión podía fallar al iniciarse con "want 8 arguments, got 9" hasta que se cerraba y volvía a abrir lich. La ventana se cierra y vuelve con el reinicio; un lich que se ejecuta sin ventana sigue sin ella. Esto surte efecto desde la siguiente actualización tras esta versión.
+- Ctrl+F en un archivo abierto en la pestaña Código abre la barra de búsqueda, y las teclas escritas allí llegan a ella, cuando antes ambas iban a la terminal de la sesión detrás de la pestaña: la terminal le quitaba el teclado al código, a la barra de búsqueda y a la lista de todas las coincidencias en cada fotograma. Un clic en la terminal ahora le entrega el teclado, así que seleccionar código para copiarlo ya no te deja escribiendo en ninguna parte.
+- Un pull request en la lista de Pull requests ya no recorta su veredicto de revisión cuando el nombre del autor es largo: el nombre se acorta, y la carpeta del checkout al final de la línea solo aparece cuando cabe entera, en lugar de como medio icono.
+- Un pull request en la lista de Pull requests cuyos hilos de revisión están todos resueltos muestra su "Cambios solicitados" en ámbar con una marca de resuelto, como ya hacía su encabezado, en lugar del rojo de uno que sigue esperando a su autor. GitHub mantiene el veredicto hasta que el revisor aprueba o la revisión se descarta. El "Borrador" de un borrador ahora es una insignia gris con borde, así que ya no se lee como parte de un veredicto ámbar a su lado.
+
 ## [0.77.0] - 2026-10-21
 
 ### Added

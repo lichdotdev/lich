@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.78.0] - 2026-10-22
+
 ### Added
 
 - Comments can be edited and deleted from Pulls. The … beside a review thread comment (in the Conversation tab and in the diff) or a comment on the pull request offers Edit, which rewrites it in place on GitHub, and Delete, which asks first. A submitted review's summary can be edited too; its verdict stays as it is. The … shows only on what GitHub lets your account change.
@@ -6328,7 +6330,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.77.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.78.0...HEAD
+[0.78.0]: https://github.com/lichdotdev/lich/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/lichdotdev/lich/compare/v0.76.0...v0.77.0
 [0.76.0]: https://github.com/lichdotdev/lich/compare/v0.75.0...v0.76.0
 [0.75.0]: https://github.com/lichdotdev/lich/compare/v0.74.0...v0.75.0
