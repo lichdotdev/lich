@@ -7,6 +7,10 @@
   macOS reads a process's bundle off its executable's path, so the window in
   Contents/MacOS is Lich.app to the Dock, to Cmd-Tab and to the menu bar: its
   icon is CFBundleIconFile and its name CFBundleName.
+
+  CFBundleIdentifier predates the lichdotdev org and stays: macOS keys the
+  notification permission a user granted on it, so a new one would ask again
+  and drop whatever they set in System Settings › Notifications.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

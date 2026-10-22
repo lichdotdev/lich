@@ -11,10 +11,15 @@ import (
 // `lich focus` does. lich focus reads the same prefix (internal/cli).
 const (
 	toastSessionScheme = "lich-session"
+	// appUserModelIDPrefix predates the lichdotdev org and stays: Windows
+	// keys taskbar pins and the notification settings a user chose on the
+	// id, so a new one would split every pinned lich from its window and
+	// reset those settings.
+	appUserModelIDPrefix = "omartelo."
 	// toastAppID is the AppUserModelID lich's Start Menu shortcut carries
-	// (build/windows/lich.iss) and lich-shell claims: toasts under it are
-	// lich's in Settings › Notifications.
-	toastAppID = "omartelo.lich"
+	// (build/windows/lich.iss) and the window claims (taskbar_windows.go):
+	// toasts under it are lich's in Settings › Notifications.
+	toastAppID = appUserModelIDPrefix + "lich"
 	// toastGroup holds every lich toast; the session id is each one's tag,
 	// so a newer one replaces it and History.Remove takes it down.
 	toastGroup = "lich"

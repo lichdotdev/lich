@@ -43,7 +43,7 @@ tasks:
       - cmd: sh native/build-windows.sh ../{{.BIN_DIR}}/lich-native.exe
 
   icons:windows:
-    desc: Regenerate rsrc_windows_amd64.syso from build/windows/lich.ico
+    desc: Regenerate the rsrc_windows_amd64.syso of lich.exe and lich-native.exe from build/windows/lich.ico
     cmds:
       # The .syso is the resource the Windows executable links, and it is the
       # only source of the exe's icon: the Start Menu shortcut and the native
@@ -52,6 +52,9 @@ tasks:
       # executable still wearing the previous mark. lich.ico itself comes out
       # of build/appicon.py, with appicon.png and appicon-256.png.
       - cmd: go run github.com/akavel/rsrc@v0.10.2 -ico build/windows/lich.ico -arch amd64 -o rsrc_windows_amd64.syso
+      # The window's class icon, its title bar and taskbar button: Gio loads
+      # the first icon group, which rsrc writes at resource ID 1.
+      - cmd: go run github.com/akavel/rsrc@v0.10.2 -ico build/windows/lich.ico -arch amd64 -o native/cmd/lich-native/rsrc_windows_amd64.syso
 
   build:windows:
     desc: Cross-compile the Windows binary

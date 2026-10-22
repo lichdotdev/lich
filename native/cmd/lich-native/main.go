@@ -56,6 +56,9 @@ var (
 func main() {
 	flag.Parse()
 	app.ID = windowClass(os.Getenv)
+	if err := claimTaskbarIdentity(app.ID); err != nil {
+		log.Printf("taskbar: the window groups apart from lich's shortcut: %v", err)
+	}
 	rt, err := backendRuntime()
 	if err != nil {
 		log.Fatal(err)
