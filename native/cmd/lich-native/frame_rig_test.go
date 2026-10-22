@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"image"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -32,8 +34,9 @@ const (
 )
 
 // frameRig lays a screen out through a real input router, one frame per
-// call, and reads back what each frame drew from its semantic tree: the
-// labels, their bounds, and the selected and disabled states.
+// call, and reads back what each frame drew: a digest of its paint, then its
+// semantic tree, the labels, their bounds, and the selected and disabled
+// states.
 type frameRig struct {
 	router input.Router
 	ops    op.Ops
@@ -68,6 +71,7 @@ func (r *frameRig) invalidate() { r.asked.Store(true) }
 
 func (r *frameRig) drawn() string {
 	var b strings.Builder
+	fmt.Fprintf(&b, "paint %x\n", sha256.Sum256(reflect.ValueOf(&r.ops.Internal).Elem().FieldByName("data").Bytes()))
 	for _, n := range r.nodes() {
 		d := n.Desc
 		fmt.Fprintf(&b, "%q %q %v sel=%v dis=%v\n", d.Label, d.Description, d.Bounds, d.Selected, d.Disabled)

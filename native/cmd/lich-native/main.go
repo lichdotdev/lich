@@ -711,6 +711,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 // screen has no checkout to show.
 func (u *window) stageRow(gtx C, v stageView) error {
 	d := u.dock
+	d.act(gtx)
 	open := d.tab != dockClosed && !v.home
 	if open {
 		d.shown = d.tab

@@ -214,7 +214,9 @@ func (s *settingsScreen) layout(gtx C, th *ui.Theme, projects []settingsProject)
 	s.scope = resolveScope(s.scope, projects)
 	if s.close.Clicked(gtx) {
 		s.open = false
+		s.invalidate() // the window read open before laying Settings out
 	}
+	s.navClicks(gtx)
 	if s.revealing != nil {
 		s.choose(gtx, *s.revealing)
 		s.revealing = nil

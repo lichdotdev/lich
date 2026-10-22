@@ -188,7 +188,7 @@ func (d *dock) body(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error {
 // header is the h-10 strip: the ghost tabs, then at its right the Review
 // tab's actions, full screen and close.
 func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
-	d.act(gtx)
+	d.tabs.Selected = int(d.tab) - 1
 	changed := in.isGit && in.git.Files > 0
 	review := ui.TabsTrigger{Text: i18n.T("dock.rightDock.tabReview"), Icon: icDockReview}
 	if changed {
@@ -225,10 +225,9 @@ func (d *dock) header(gtx C, th *ui.Theme, root *ui.Root, in dockInput) D {
 	})
 }
 
-// act runs the header's clicks before it is drawn, so the frame shows their
-// outcome.
+// act runs the header's clicks before the stage row reads whether the dock
+// is open and how wide, so the frame shows their outcome.
 func (d *dock) act(gtx C) {
-	d.tabs.Selected = int(d.tab) - 1
 	for d.full.click.Clicked(gtx) {
 		d.fullscreen = !d.fullscreen
 	}

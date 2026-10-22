@@ -171,16 +171,24 @@ func (s *settingsScreen) navFooter(gtx C, th *ui.Theme, values scopedValues) D {
 	)
 }
 
-// sectionRow is one nav row: the icon, the label and the override count,
-// dimmed in a project's scope when the section has nothing a project sets.
-func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, values scopedValues) D {
-	click := clickableOf(s.nav.rows, sec.id)
-	if click.Clicked(gtx) {
+// navClicks opens the section whose row was clicked before any row is
+// drawn: a row handling its own click would leave the rows above it lit.
+func (s *settingsScreen) navClicks(gtx C) {
+	for _, sec := range settingsSections {
+		if !clickableOf(s.nav.rows, sec.id).Clicked(gtx) {
+			continue
+		}
 		s.openSection(sec.id)
 		if sec.id == sectionProviders {
 			s.providers.open = ""
 		}
 	}
+}
+
+// sectionRow is one nav row: the icon, the label and the override count,
+// dimmed in a project's scope when the section has nothing a project sets.
+func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, values scopedValues) D {
+	click := clickableOf(s.nav.rows, sec.id)
 	where := ""
 	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders && sec.id == s.section {
 		where = p.name

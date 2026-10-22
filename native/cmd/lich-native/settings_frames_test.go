@@ -16,6 +16,7 @@ func settingsFrames(t *testing.T, section string) (*settingsScreen, *frameRig) {
 	root := new(ui.Root)
 	s := newSettingsScreen(t.Context(), client, root, r.invalidate)
 	s.theme = &themePicker{toaster: new(ui.Toaster)}
+	s.notify = newNotifier(t.Context(), client, nil, r.invalidate)
 	s.open, s.section = true, section
 	r.draw = func(gtx C, th *ui.Theme) {
 		root.Layout(gtx, func(gtx C) D {
