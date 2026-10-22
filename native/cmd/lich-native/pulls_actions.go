@@ -175,9 +175,9 @@ func (u *window) prSession(project lichclient.Project, d lichclient.PRDetail) (s
 		return u.addWorktreeSession(worktreeRequest{project: project, kind: u.model.newSessionKind()}, wt, "")
 	}
 	existing := checkouts[i]
-	if ids, _, _ := u.model.sessionsAt(project.ID, existing.Path); len(ids) > 0 {
-		u.openSession(project.ID, ids[0])
-		return ids[0], nil
+	if id, ok := u.model.sessionToOpenAt(project.ID, existing.Path); ok {
+		u.openSession(project.ID, id)
+		return id, nil
 	}
 	if existing.Path == project.Path {
 		return u.newSessionAt(project, existing.Path)
@@ -312,6 +312,22 @@ func (m *model) sessionsAt(projectID, path string) (ids []string, pinned bool, r
 		}
 	}
 	return ids, pinned, len(m.status.running(ids))
+}
+
+// sessionToOpenAt is the session the window brings up for path: the one on
+// screen when it sits there, else the first; false when none does.
+func (m *model) sessionToOpenAt(projectID, path string) (string, bool) {
+	ids, _, _ := m.sessionsAt(projectID, path)
+	if len(ids) == 0 {
+		return "", false
+	}
+	m.mu.Lock()
+	active := m.active
+	m.mu.Unlock()
+	if slices.Contains(ids, active) {
+		return active, true
+	}
+	return ids[0], true
 }
 
 // removeConfirm asks before removing a worktree whose sessions are mid-turn,

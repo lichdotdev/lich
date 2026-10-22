@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Comments for the session written on a pull request's Files tab in Pulls go to a session in the checkout of that pull request's branch, where Send typed them into whichever session was open before Pulls, reviewing another branch. With no session there, Send says to open one and keeps the comments; Open in Session starts it. A line reference sent from that tab goes the same way.
+- Go to session on a pull request in Pulls opens the session you are in when it sits in the pull request's checkout, where it always opened the first session there.
 - On Windows with display scaling above 100%, a drag follows the pointer again: an item dragged in Settings › Footer or a selection dragged in the terminal landed away from the cursor, scaled as if the screen were at 100%.
 - Review comments sent to a session are kept until the session takes them. A session that refused the batch (one that had stopped, say) showed "Couldn't send the comments" while the comments were already gone; they now stay in the batch to send again. Likewise, submitting a pull request review in Pulls drops only the comments it carried, where a comment written while the review was on its way was lost with them.
 - On Windows, the window wears lich's icon and opens under lich's taskbar button, where it showed a generic icon and, launched from a lich pinned to the taskbar, opened as a separate button beside the pin.
