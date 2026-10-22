@@ -19,6 +19,10 @@
     "send": "Enviar",
     "sendFailed": "Não foi possível enviar os comentários"
   },
+  "commentEdit": {
+    "title": "Editar comentário",
+    "save": "Salvar"
+  },
   "diffBulk": {
     "collapseAll": "Recolher todos os arquivos",
     "expandAll": "Expandir todos os arquivos"

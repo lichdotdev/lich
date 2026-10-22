@@ -19,6 +19,10 @@
     "send": "送信",
     "sendFailed": "コメントを送信できませんでした"
   },
+  "commentEdit": {
+    "title": "コメントを編集",
+    "save": "保存"
+  },
   "diffBulk": {
     "collapseAll": "すべてのファイルを折りたたむ",
     "expandAll": "すべてのファイルを展開"

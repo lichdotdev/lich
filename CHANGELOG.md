@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Choosing a monospace font for the interface in Settings › Appearance asks whether the terminal and the editor should use it too. Use everywhere sets both; Interface only leaves them as they were. A proportional font or System asks nothing.
-- A comment waiting in the review batch can be reworded before it is sent: click its text, edit it, and Enter keeps the change while Escape leaves it as it was. A line comment in a pull request's pending review has an Edit button beside Discard that opens it in a box, saved with Save or Ctrl+Enter.
+- A comment waiting in the review batch can be reworded before it is sent: its pencil opens it in a dialog, saved with Save or Ctrl+Enter. A line comment in a pull request's pending review has an Edit button beside Discard that opens it in a box, saved with Save or Ctrl+Enter.
 
 ### Removed
 

@@ -9,6 +9,7 @@ package main
 //	comments := new(commentStore)                 // one per window
 //	comments.add(target, path, lines, text)       // target is the checkout path
 //	comments.list(target)                         // what the strip shows
+//	comments.beginEdit(target, id)                // a row's pencil; the window's commentEditDialog opens on it
 //
 //	var c commentComposer                         // one per surface
 //	c.open(path, lines)                           // "Comment for the session" chosen on lines "12-30"
@@ -32,7 +33,6 @@ import (
 	"strings"
 
 	"gioui.org/io/key"
-	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
@@ -44,6 +44,7 @@ import (
 
 var (
 	icBatchRemove = icons.Lucide("x")
+	icBatchEdit   = icons.Lucide("pencil")
 	icBatchSend   = icons.Lucide("send")
 )
 
@@ -60,6 +61,14 @@ type reviewComment struct {
 type commentStore struct {
 	byTarget map[string][]reviewComment
 	next     int
+	// editing is the comment the window's commentEditDialog is open on.
+	editing commentRef
+}
+
+// commentRef names one comment of one checkout's batch; id 0 is none.
+type commentRef struct {
+	target string
+	id     int
 }
 
 // add appends a comment; blank text is not a comment and is dropped.
@@ -92,6 +101,22 @@ func (s *commentStore) edit(target string, id int, text string) {
 }
 
 func (s *commentStore) clear(target string) { delete(s.byTarget, target) }
+
+func (s *commentStore) beginEdit(target string, id int) { s.editing = commentRef{target, id} }
+
+func (s *commentStore) endEdit() { s.editing = commentRef{} }
+
+func (s *commentStore) isEditing() bool { return s.editing.id != 0 }
+
+// edited is the comment being edited, if it is still in its batch.
+func (s *commentStore) edited() (reviewComment, bool) {
+	for _, c := range s.byTarget[s.editing.target] {
+		if c.id == s.editing.id {
+			return c, true
+		}
+	}
+	return reviewComment{}, false
+}
 
 // list is target's batch in the order it was written. The slice is the
 // store's: read it, don't keep it across a change.
@@ -273,13 +298,12 @@ func (c *commentComposer) box(th *ui.Theme) layout.Widget {
 
 // commentBatch is the strip at the foot of a review panel: the comments so
 // far, a note about the whole change, and the one action that hands them all
-// to the session as one prompt. Clicking a comment's text rewords it in place.
+// to the session as one prompt. A comment's pencil opens the window's
+// commentEditDialog on it.
 type commentBatch struct {
 	list        widget.List
 	removes     map[int]*widget.Clickable
 	edits       map[int]*widget.Clickable
-	editing     int
-	edit        ui.InlineEdit
 	note        widget.Editor
 	clear, send widget.Clickable
 	// sending is the batch on its way to the session, still in the store:
@@ -293,12 +317,6 @@ type batchSend struct {
 	ids    []int
 	note   string
 	result chan error
-}
-
-// holdsKeys keeps the terminal off the note field and a comment being
-// reworded.
-func (b *commentBatch) holdsKeys(gtx C) bool {
-	return gtx.Focused(&b.note) || b.edit.Active()
 }
 
 // batchListMax is the list's max-h-40.
@@ -319,7 +337,7 @@ func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target s
 		layout.Rigid(th.Separator),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Max.Y = gtx.Dp(batchListMax)
-			return layout.UniformInset(ui.Space(1)).Layout(gtx, func(gtx C) D { return b.rows(gtx, th, store, target, comments) })
+			return layout.UniformInset(ui.Space(1)).Layout(gtx, func(gtx C) D { return b.rows(gtx, th, comments) })
 		}),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1)}.Layout(gtx, b.noteField(th))
@@ -353,7 +371,11 @@ func (b *commentBatch) update(gtx C, store *commentStore, target string, submit 
 			delete(b.edits, id)
 		}
 	}
-	b.startEdit(gtx, store.list(target))
+	for id, c := range b.edits {
+		if c.Clicked(gtx) {
+			store.beginEdit(target, id)
+		}
+	}
 	if b.clear.Clicked(gtx) {
 		b.drop(store, target)
 	}
@@ -403,37 +425,24 @@ func (b *commentBatch) settle(store *commentStore) {
 	}
 }
 
-// startEdit opens the field on the comment whose text was clicked. The field
-// starts on the text as the row shows it, so a multi-line comment is joined
-// only once it is actually reworded.
-func (b *commentBatch) startEdit(gtx C, comments []reviewComment) {
-	for _, c := range comments {
-		if click, ok := b.edits[c.id]; ok && click.Clicked(gtx) {
-			b.editing = c.id
-			b.edit.Start(oneLine(c.txt))
-		}
-	}
-}
-
-// oneLine is a comment as its row shows it.
-func oneLine(text string) string { return strings.ReplaceAll(text, "\n", " ") }
-
 func (b *commentBatch) drop(store *commentStore, target string) {
 	store.clear(target)
 	b.note.SetText("")
 }
 
-func (b *commentBatch) rows(gtx C, th *ui.Theme, store *commentStore, target string, comments []reviewComment) D {
+func (b *commentBatch) rows(gtx C, th *ui.Theme, comments []reviewComment) D {
 	b.list.Axis = layout.Vertical
 	return th.ScrollArea(&b.list).Layout(gtx, len(comments), func(gtx C, i int) D {
-		return b.row(gtx, th, comments[i], func(text string) { store.edit(target, comments[i].id, text) })
+		return b.row(gtx, th, comments[i])
 	})
 }
 
-// row is one comment: where (mono, muted), what (truncated, or the field
-// rewording it), and its ×. reword files an edit of the text.
-func (b *commentBatch) row(gtx C, th *ui.Theme, c reviewComment, reword func(string)) D {
+// row is one comment: where (mono, muted), what (truncated), its pencil and
+// its ×.
+func (b *commentBatch) row(gtx C, th *ui.Theme, c reviewComment) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	edit := th.Button(clickableAt(b.edits, c.id), "")
+	edit.Icon, edit.Variant, edit.Size = icBatchEdit, ui.VariantGhost, ui.SizeIconXS
 	remove := th.Button(clickableAt(b.removes, c.id), "")
 	remove.Icon, remove.Variant, remove.Size = icBatchRemove, ui.VariantGhost, ui.SizeIconXS
 	return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
@@ -445,28 +454,15 @@ func (b *commentBatch) row(gtx C, th *ui.Theme, c reviewComment, reword func(str
 				return layout.Inset{Right: ui.Space(2)}.Layout(gtx,
 					th.Text(ui.TextXS, path.Base(c.path)+":"+c.lines).Mono().Muted().Layout)
 			}),
-			layout.Flexed(1, func(gtx C) D { return b.text(gtx, th, c, reword) }),
+			layout.Flexed(1, func(gtx C) D {
+				l := th.Text(ui.TextXS, strings.ReplaceAll(c.txt, "\n", " "))
+				l.MaxLines = 1
+				return l.Layout(gtx)
+			}),
 			ui.Gap(2),
+			layout.Rigid(edit.Layout),
 			layout.Rigid(remove.Layout),
 		)
-	})
-}
-
-// text is the comment's text, a click away from rewording it.
-func (b *commentBatch) text(gtx C, th *ui.Theme, c reviewComment, reword func(string)) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	if b.editing == c.id && b.edit.Active() {
-		d, res := th.InlineEdit(&b.edit, ui.TextXS).Layout(gtx)
-		if res.Outcome == ui.InlineEditCommitted {
-			reword(res.Value)
-		}
-		return d
-	}
-	return clickableAt(b.edits, c.id).Layout(gtx, func(gtx C) D {
-		pointer.CursorText.Add(gtx.Ops)
-		l := th.Text(ui.TextXS, oneLine(c.txt))
-		l.MaxLines = 1
-		return l.Layout(gtx)
 	})
 }
 

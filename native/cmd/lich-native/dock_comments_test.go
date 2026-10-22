@@ -112,3 +112,22 @@ func TestCommentBatchEditsOneInPlace(t *testing.T) {
 		t.Fatalf("after edit = %+v, want the first reworded and trimmed, in place, the second untouched", got)
 	}
 }
+
+func TestCommentEditFollowsTheCommentItWasOpenedOn(t *testing.T) {
+	var s commentStore
+	s.add("/repo", "a.go", "1", "first")
+	s.add("/repo", "b.go", "2", "second")
+	second := s.list("/repo")[1].id
+	s.beginEdit("/repo", second)
+	if c, ok := s.edited(); !ok || c.txt != "second" || !s.isEditing() {
+		t.Fatalf("edited() = %+v, %v; want the second comment", c, ok)
+	}
+	s.remove("/repo", second)
+	if _, ok := s.edited(); ok {
+		t.Fatal("edited() still finds a removed comment")
+	}
+	s.endEdit()
+	if s.isEditing() {
+		t.Fatal("still editing after endEdit")
+	}
+}

@@ -137,11 +137,11 @@ func newReviewPanel(client *lichclient.Client, root *ui.Root, comments *commentS
 // hidden stops the polling while the tab is off screen.
 func (p *reviewPanel) hidden() { p.feed.close() }
 
-// holdsKeys keeps the terminal off the comment batch and any open composer. The
+// holdsKeys keeps the terminal off the note field and any open composer. The
 // terminal asks before the dock is laid out, so it is read off the focus as
 // it stands, never a flag the last layout left.
 func (p *reviewPanel) holdsKeys(gtx C) bool {
-	if p.batch.holdsKeys(gtx) {
+	if gtx.Focused(&p.batch.note) {
 		return true
 	}
 	for _, c := range p.cards {

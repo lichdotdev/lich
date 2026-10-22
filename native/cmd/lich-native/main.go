@@ -104,10 +104,13 @@ type window struct {
 	model   *model
 	terms   *terminals
 	review  *reviewPanel
-	dock    *dock
-	sidebar *sidebar
-	footer  *footer
-	topbar  *topbar
+	// comments is the review batch every surface shares.
+	comments    commentStore
+	commentEdit commentEditDialog
+	dock        *dock
+	sidebar     *sidebar
+	footer      *footer
+	topbar      *topbar
 	// settings is the Settings screen, drawn over the stage while open.
 	settings *settingsScreen
 	gate     *spawnGate
@@ -251,7 +254,7 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, w.Invalidate)
 	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}
 	u.footer.toaster = &u.toaster
-	comments, notify := new(commentStore), func(t ui.Toast) { u.toaster.Show(t) }
+	comments, notify := &u.comments, func(t ui.Toast) { u.toaster.Show(t) }
 	if u.review, err = newReviewPanel(client, &u.root, comments, *flagFont, unit.Sp(*flagSize), w.Invalidate, notify); err != nil {
 		return err
 	}
@@ -490,6 +493,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutSubmitDialog(gtx, u.theme)
 		u.layoutMergeDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
+		u.commentEdit.layout(gtx, u.theme, &u.comments)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
 		u.settings.layoutFontReplication(gtx, u.theme)
 		u.layoutProviderSetup(gtx, u.theme)
@@ -806,7 +810,7 @@ func (u *window) lostNotice(gtx C) D {
 // this frame: not while a field or a dialog over it is typing.
 func (u *window) terminalTakesKeys(gtx C) bool {
 	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx) || u.topbar.holdsKeys()
-	return !typing && !u.palette.open && !u.worktree.open
+	return !typing && !u.palette.open && !u.worktree.open && !u.comments.isEditing()
 }
 
 func (u *window) apply(act sidebarAction) {

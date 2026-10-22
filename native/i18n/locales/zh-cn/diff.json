@@ -19,6 +19,10 @@
     "send": "发送",
     "sendFailed": "无法发送评论"
   },
+  "commentEdit": {
+    "title": "编辑评论",
+    "save": "保存"
+  },
   "diffBulk": {
     "collapseAll": "折叠所有文件",
     "expandAll": "展开所有文件"
