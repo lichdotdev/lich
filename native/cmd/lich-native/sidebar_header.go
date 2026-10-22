@@ -5,8 +5,12 @@ import (
 	"image/color"
 
 	"gioui.org/font"
+	"gioui.org/io/event"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -46,8 +50,11 @@ type sidebarHeader struct {
 	// that opened it is the request for it (autoFocus).
 	focusQuery    bool
 	searchFocused bool
-	chips         [5]widget.Clickable // All, then sessionPhases
-	phases        map[sessionPhase]bool
+	// panelPress and fieldPress see every press on the panel and on the
+	// field, past whatever takes it.
+	panelPress, fieldPress int
+	chips                  [5]widget.Clickable // All, then sessionPhases
+	phases                 map[sessionPhase]bool
 }
 
 func (h *sidebarHeader) filter() sidebarFilter {
@@ -99,6 +106,37 @@ func (h *sidebarHeader) clicks(gtx C) {
 	}
 }
 
+// leaveField hands the keyboard back to the session when a press lands in
+// the panel off the filter field: Gio moves focus only to what takes it, so a
+// press on a chip or a header would leave the field holding it.
+func (h *sidebarHeader) leaveField(gtx C) {
+	panel, field := pressed(gtx, &h.panelPress), pressed(gtx, &h.fieldPress)
+	if panel && !field && gtx.Focused(&h.query) {
+		gtx.Execute(key.FocusCmd{})
+		// The terminal takes the keyboard on the frame the field is seen
+		// without it.
+		gtx.Execute(op.InvalidateCmd{})
+	}
+}
+
+// watchPresses lays tag over size, letting every press through to what is
+// under it.
+func watchPresses(gtx C, tag event.Tag, size image.Point) {
+	defer pointer.PassOp{}.Push(gtx.Ops).Pop()
+	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
+	event.Op(gtx.Ops, tag)
+}
+
+func pressed(gtx C, tag event.Tag) bool {
+	pressed := false
+	for {
+		if _, ok := gtx.Event(pointer.Filter{Target: tag, Kinds: pointer.Press}); !ok {
+			return pressed
+		}
+		pressed = true
+	}
+}
+
 // headerRow is New Session, the filter toggle and the collapse button.
 func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D {
 	h := &s.header
@@ -145,14 +183,22 @@ func (s *sidebar) filterRow(gtx C, th *ui.Theme, view sidebarView) D {
 		gtx.Execute(key.FocusCmd{Tag: &h.query})
 		h.focusQuery = false
 	}
-	h.searchFocused = gtx.Focused(&h.query)
 	field := th.Input(&h.query, i18n.T("sidebar.sessionSidebar.filter"))
 	field.Leading, field.Height, field.TextSize, field.Clear = icSearch, ui.Space(7), ui.TextXS, &h.clearQuery
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(field.Layout),
+	d := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(func(gtx C) D {
+			d := field.Layout(gtx)
+			watchPresses(gtx, &h.fieldPress, d.Size)
+			return d
+		}),
 		ui.VGap(1.5),
 		layout.Rigid(func(gtx C) D { return s.phaseChips(gtx, th, view.counts) }),
 	)
+	// Read once the field took its press: the terminal, laid out after the
+	// sidebar, takes the keyboard back in this frame unless the sidebar holds
+	// it.
+	h.searchFocused = gtx.Focused(&h.query)
+	return d
 }
 
 // phaseChips is SessionPhaseChips: All is on while no phase is, and clears

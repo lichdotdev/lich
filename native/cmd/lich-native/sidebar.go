@@ -242,6 +242,7 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 	gtx.Constraints = layout.Exact(size)
 	ui.Fill(gtx, th.Sidebar, ui.RadiusLG)
 	on := th.On(th.Sidebar)
+	s.header.leaveField(gtx)
 	s.header.clicks(gtx)
 	view := m.sidebarBlocks(s.header.filter())
 	s.launchProviders = m.launchProviders()
@@ -265,6 +266,7 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	})
 	s.resizeHandle(gtx, on, size)
+	watchPresses(gtx, &s.header.panelPress, size)
 	return D{Size: size}, act
 }
 

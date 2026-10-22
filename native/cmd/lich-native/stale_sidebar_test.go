@@ -4,6 +4,11 @@ import (
 	"image"
 	"testing"
 
+	"gioui.org/io/event"
+	"gioui.org/io/key"
+	"gioui.org/op/clip"
+
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -44,5 +49,59 @@ func TestSidebarPhaseChipFiltersInTheFrameThatTookTheClick(t *testing.T) {
 	r.clickLabel(t, phaseChipLabel(phaseWaiting))
 	if !s.header.phases[phaseWaiting] {
 		t.Fatal("the click missed the chip")
+	}
+}
+
+// withTerminal lays a session's terminal out right of the sidebar after it,
+// taking the keyboard on every frame the sidebar does not hold it, as the
+// window does. typing gives the terminal the keyboard first, as when you
+// were typing in the session.
+func withTerminal(s *sidebar, r *frameRig, typing *bool) (terminal *int) {
+	sidebar, terminal := r.draw, new(int)
+	r.draw = func(gtx C, th *ui.Theme) {
+		sidebar(gtx, th)
+		area := clip.Rect{Min: image.Pt(260, 0), Max: gtx.Constraints.Max}.Push(gtx.Ops)
+		event.Op(gtx.Ops, terminal)
+		area.Pop()
+		for {
+			if _, ok := gtx.Event(key.FocusFilter{Target: terminal}); !ok {
+				break
+			}
+		}
+		if *typing || !s.holdsKeys() {
+			gtx.Execute(key.FocusCmd{Tag: terminal})
+		}
+	}
+	return terminal
+}
+
+func TestSidebarFilterFieldKeepsTheKeyboardFromTheTerminal(t *testing.T) {
+	s, r := sidebarFrames(t)
+	s.header.toggle()
+	typing := true
+	withTerminal(s, r, &typing)
+	r.settle(t)
+	typing = false
+	r.click(t, r.at(t, i18n.T("sidebar.sessionSidebar.filter")))
+	r.settle(t)
+	if !r.router.Source().Focused(&s.header.query) {
+		t.Error("the terminal took the keyboard back from the filter field")
+	}
+}
+
+// A press anywhere else in the sidebar leaves the field, as a page's click
+// outside a field does, and the session takes the keyboard back.
+func TestSidebarPressOutsideTheFilterFieldLeavesIt(t *testing.T) {
+	s, r := sidebarFrames(t)
+	s.header.toggle()
+	typing := false
+	terminal := withTerminal(s, r, &typing)
+	r.settle(t)
+	if !r.router.Source().Focused(&s.header.query) {
+		t.Fatal("the filter opened without its field focused")
+	}
+	r.click(t, r.at(t, phaseChipLabel(phaseWaiting)))
+	if !r.router.Source().Focused(terminal) {
+		t.Error("the field kept the keyboard after a press on a phase chip")
 	}
 }
