@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- The notice that the native window is experimental, shown the first time it opened, is gone: the native window is lich's only window.
+
 ### Fixed
 
 - Restarting lich after an update opens the new version's window, where the old window stayed open on the new lich and a session could fail to start with "want 8 arguments, got 9" until lich was closed and opened again. The window closes and comes back with the restart; a lich running without a window stays without one. This takes effect from the next update after this release.
