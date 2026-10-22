@@ -42,23 +42,11 @@ type fileListing struct {
 	Hidden []string `json:"hidden"`
 }
 
-// treeData is one file listing of a checkout.
+// treeData is one read of the checkout: its files and each changed file's
+// counts.
 type treeData struct {
 	listing fileListing
-}
-
-type treeStats struct{ files map[string]lineDelta }
-
-type directoryStats struct {
-	tree   []*treeNode
-	source *treeStats
-	byPath map[string]lineDelta
-}
-
-type preparedTree struct {
-	data  *treeData
-	query string
-	tree  []*treeNode
+	stats   map[string]lineDelta
 }
 
 type codeTab struct {
@@ -77,14 +65,10 @@ type codeTab struct {
 	// focusQuery asks the next browse box to take the keyboard.
 	focusQuery bool
 
-	tree           remote[*treeData]
-	stats          remote[*treeStats]
-	prepared       remote[*preparedTree]
-	directoryStats remote[*directoryStats]
-	treeBuild      chan struct{}
-	treeKey        string
-	search         remote[searchResult]
-	settle         settler
+	tree    remote[*treeData]
+	treeKey string
+	search  remote[searchResult]
+	settle  settler
 
 	rows    treeRows
 	hits    hitList
@@ -97,9 +81,9 @@ func newCodeTab(client *lichclient.Client, invalidate func(), family string, siz
 	if err != nil {
 		return nil, err
 	}
-	c := &codeTab{client: client, comments: comments, notify: notify, toggled: map[string]bool{}, treeBuild: make(chan struct{}, 1)}
+	c := &codeTab{client: client, comments: comments, notify: notify, toggled: map[string]bool{}}
 	c.mode.Value = browseByName
-	c.tree.invalidate, c.stats.invalidate, c.prepared.invalidate, c.directoryStats.invalidate, c.search.invalidate = invalidate, invalidate, invalidate, invalidate, invalidate
+	c.tree.invalidate, c.search.invalidate = invalidate, invalidate
 	c.preview = newPreview(client, view, family, size, invalidate)
 	c.rows.list.Axis, c.hits.list.Axis = layout.Vertical, layout.Vertical
 	return c, nil
@@ -108,6 +92,7 @@ func newCodeTab(client *lichclient.Client, invalidate func(), family string, siz
 // hidden stops the reads while the tab is off screen; what they answered
 // stays, so coming back draws it at once.
 func (c *codeTab) hidden() {
+	c.tree.stop()
 	c.search.stop()
 }
 
@@ -152,7 +137,6 @@ func (c *codeTab) follow(checkout string) {
 	c.checkout, c.selected = checkout, ""
 	c.query.SetText("")
 	clear(c.toggled)
-	c.rows.reset()
 	c.preview.close()
 }
 
@@ -160,26 +144,19 @@ func (c *codeTab) follow(checkout string) {
 // in a repository, so a new or removed file shows without a watcher, and on a
 // plainFolderTick outside one.
 func (c *codeTab) fetchTree(gtx C, in dockInput) {
-	tick := gtx.Now.Truncate(plainFolderTick)
-	if in.checkout != "" && !in.isGit {
-		gtx.Execute(op.InvalidateCmd{At: tick.Add(plainFolderTick)})
-	}
-	c.prefetch(in, gtx.Now)
-}
-
-func (c *codeTab) prefetch(in dockInput, now time.Time) {
 	path := in.checkout
 	key := ""
 	switch {
 	case path == "":
 	case in.isGit:
-		key = fmt.Sprintf("%s %d %d %d %d", path, in.gitRevision, in.git.Files, in.git.Added, in.git.Deleted)
+		key = fmt.Sprintf("%s %d %d %d", path, in.git.Files, in.git.Added, in.git.Deleted)
 	default:
-		key = path + " " + strconv.FormatInt(now.Truncate(plainFolderTick).Unix(), 10)
+		tick := gtx.Now.Truncate(plainFolderTick)
+		key = path + " " + strconv.FormatInt(tick.Unix(), 10)
+		gtx.Execute(op.InvalidateCmd{At: tick.Add(plainFolderTick)})
 	}
 	c.treeKey = key
 	c.tree.want(key, path, func(ctx context.Context) (*treeData, error) { return readTree(ctx, c.client, path) })
-	c.stats.want(key, path, func(ctx context.Context) (*treeStats, error) { return readTreeStats(ctx, c.client, path) })
 }
 
 func readTree(ctx context.Context, client *lichclient.Client, path string) (*treeData, error) {
@@ -187,65 +164,15 @@ func readTree(ctx context.Context, client *lichclient.Client, path string) (*tre
 	if err := client.Call(ctx, "project.Tree", &l, path); err != nil {
 		return nil, err
 	}
-	return &treeData{listing: l}, nil
-}
-
-func readTreeStats(ctx context.Context, client *lichclient.Client, path string) (*treeStats, error) {
-	text, err := client.DiffText(ctx, path)
-	if err != nil {
-		return &treeStats{files: map[string]lineDelta{}}, nil
-	}
-	files, err := godemirror.ParsePatch(text)
-	if err != nil {
-		return &treeStats{files: map[string]lineDelta{}}, nil
-	}
-	return &treeStats{files: diffStatsByPath(files)}, nil
-}
-
-func (c *codeTab) prepareTree(data *treeData, query, checkout string) *preparedTree {
-	key := fmt.Sprintf("%p\x00%s", data, query)
-	c.prepared.want(key, checkout, func(ctx context.Context) (*preparedTree, error) {
-		select {
-		case c.treeBuild <- struct{}{}:
-			defer func() { <-c.treeBuild }()
-		case <-ctx.Done():
-			return nil, ctx.Err()
+	// The diff only feeds the rows' +/- badges: a checkout with nothing to
+	// diff answers an error here, and that means no badges, never no tree.
+	stats := map[string]lineDelta{}
+	if text, err := client.DiffText(ctx, path); err == nil {
+		if files, err := godemirror.ParsePatch(text); err == nil {
+			stats = diffStatsByPath(files)
 		}
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		tree := buildTree(filterPaths(data.listing.Files, query))
-		return &preparedTree{data: data, query: query, tree: tree}, nil
-	})
-	prepared, _, _ := c.prepared.get()
-	if prepared != nil && prepared.data == data && prepared.query == query {
-		return prepared
 	}
-	return nil
-}
-
-func (c *codeTab) prepareDirectoryStats(tree []*treeNode, stats *treeStats, checkout string) *directoryStats {
-	if tree == nil || stats == nil {
-		return nil
-	}
-	key := fmt.Sprintf("%p\x00%p", tree, stats)
-	c.directoryStats.want(key, checkout, func(ctx context.Context) (*directoryStats, error) {
-		select {
-		case c.treeBuild <- struct{}{}:
-			defer func() { <-c.treeBuild }()
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		return &directoryStats{tree: tree, source: stats, byPath: withDirStats(tree, stats.files)}, nil
-	})
-	prepared, _, _ := c.directoryStats.get()
-	if prepared != nil && sameTree(prepared.tree, tree) && prepared.source == stats {
-		return prepared
-	}
-	return nil
+	return &treeData{listing: l, stats: stats}, nil
 }
 
 func (c *codeTab) browse(gtx C, th *ui.Theme) D {

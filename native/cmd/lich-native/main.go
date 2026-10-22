@@ -713,9 +713,6 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 // screen has no checkout to show.
 func (u *window) stageRow(gtx C, v stageView) error {
 	d := u.dock
-	if !v.home {
-		d.code.prefetch(dockInput{checkout: v.in.path, git: v.in.git, gitRevision: v.in.gitRevision, isGit: v.in.isGit}, gtx.Now)
-	}
 	open := d.tab != dockClosed && !v.home
 	if open {
 		d.shown = d.tab
@@ -755,7 +752,7 @@ func (u *window) stageRow(gtx C, v stageView) error {
 	}
 	defer op.Offset(image.Pt(at, 0)).Push(gtx.Ops).Pop()
 	gtx.Constraints = layout.Exact(image.Pt(w, size.Y))
-	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, gitRevision: v.in.gitRevision, isGit: v.in.isGit, light: u.light, code: u.code}
+	in := dockInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, git: v.in.git, isGit: v.in.isGit, light: u.light, code: u.code}
 	save, err := d.layout(gtx, u.theme, &u.root, in)
 	if save {
 		rem := u.dock.widthRem

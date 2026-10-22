@@ -58,13 +58,6 @@ type treeChildKey struct {
 	dir  bool
 }
 
-func sameTree(a, b []*treeNode) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	return len(a) == 0 || &a[0] == &b[0]
-}
-
 func sortTree(nodes []*treeNode) {
 	slices.SortStableFunc(nodes, func(a, b *treeNode) int {
 		if a.dir != b.dir {
@@ -160,8 +153,10 @@ type treeRow struct {
 	open  bool
 }
 
-func visibleRowsInto(rows []treeRow, tree []*treeNode, isOpen func(path string) bool) []treeRow {
-	rows = rows[:0]
+// visibleRows flattens the tree to the rows on screen: a folder's children
+// only while it is open.
+func visibleRows(tree []*treeNode, isOpen func(path string) bool) []treeRow {
+	var rows []treeRow
 	var walk func(nodes []*treeNode, depth int)
 	walk = func(nodes []*treeNode, depth int) {
 		for _, n := range nodes {
@@ -174,12 +169,6 @@ func visibleRowsInto(rows []treeRow, tree []*treeNode, isOpen func(path string) 
 	}
 	walk(tree, 0)
 	return rows
-}
-
-// visibleRows flattens the tree to the rows on screen: a folder's children
-// only while it is open.
-func visibleRows(tree []*treeNode, isOpen func(path string) bool) []treeRow {
-	return visibleRowsInto(nil, tree, isOpen)
 }
 
 // treeFootnote is what a listing that is not the whole folder owes the

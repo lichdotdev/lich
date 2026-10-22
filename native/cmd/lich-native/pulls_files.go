@@ -209,18 +209,15 @@ func (v *pullView) treeLayout(gtx C, th *ui.Theme) D {
 		}
 		t.rows.stats = withDirStats(t.rows.tree, stats)
 	}
-	rows := visibleRows(t.rows.tree, func(path string) bool { return !t.closed[path] })
-	for _, r := range rows {
-		if !t.rows.click(r.node).Clicked(gtx) {
+	for _, node := range t.rows.clicked(gtx) {
+		if node.dir {
+			t.closed[node.path] = !t.closed[node.path]
 			continue
 		}
-		if r.node.dir {
-			t.closed[r.node.path] = !t.closed[r.node.path]
-			continue
-		}
-		t.active = r.node.path
-		files.scrollToFile(r.node.path)
+		t.active = node.path
+		files.scrollToFile(node.path)
 	}
+	rows := visibleRows(t.rows.tree, func(path string) bool { return !t.closed[path] })
 	return t.rows.layout(gtx, th, rows, t.active)
 }
 

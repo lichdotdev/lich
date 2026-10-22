@@ -43,7 +43,6 @@ type model struct {
 	sandbox       map[string]sandboxEvent           // session id -> how its spawn was confined
 	relay         map[string]sessionRelay           // session id -> request open with another
 	git           map[string]lichclient.DiffStats   // shown path -> its branch and changes
-	gitRevision   map[string]uint64                 // path -> successful status refreshes
 	base          map[string]*lichclient.BaseStatus // shown path -> where it stands against its base
 	prs           map[string]prLookup               // shown path -> its open pull request
 	activeProject string                            // project id on screen
@@ -123,7 +122,7 @@ func newModel(client *lichclient.Client, invalidate func()) *model {
 	quota := newPlanQuota(quotaReader(client), invalidate)
 	return &model{client: client, invalidate: invalidate, status: newStatusStore(), usage: newFooterUsage(), quota: quota, cwd: map[string]sessionCwd{},
 		agent: map[string]string{}, sandbox: map[string]sandboxEvent{}, relay: map[string]sessionRelay{}, git: map[string]lichclient.DiffStats{},
-		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{}, gitRevision: map[string]uint64{},
+		base: map[string]*lichclient.BaseStatus{}, prs: map[string]prLookup{}, folds: map[string]bool{},
 		profiles:      newProfileBook(claudeProfileProvider, client, invalidate, quota),
 		codexProfiles: newProfileBook(codexProfileProvider, client, invalidate, quota),
 		ompProfiles:   newProfileBook(ompProfileProvider, client, invalidate, quota),
@@ -505,23 +504,22 @@ func sessionPath(p lichclient.Project, s lichclient.Session) string {
 // and git describes shown.
 type sessionView struct {
 	lichclient.Session
-	projectID   string
-	path        string
-	shown       string
-	host        string
-	status      string
-	unread      bool          // a done turn nobody has read
-	age         time.Duration // how long status has lasted, while aged
-	aged        bool          // status has a clock (busy, compacting, waiting)
-	agent       string        // provider CLI live in the PTY, "" for none
-	sandbox     sandboxEvent
-	relay       sessionRelay // Direction "" for none
-	tool        sessionTool  // Name "" outside a tool call
-	reason      string       // what a waiting session is blocked on, "" for unsaid
-	git         lichclient.DiffStats
-	gitRevision uint64
-	base        *lichclient.BaseStatus  // nil without a base to stand against
-	pr          *lichclient.PullRequest // open PR of the shown path's branch, nil for none
+	projectID string
+	path      string
+	shown     string
+	host      string
+	status    string
+	unread    bool          // a done turn nobody has read
+	age       time.Duration // how long status has lasted, while aged
+	aged      bool          // status has a clock (busy, compacting, waiting)
+	agent     string        // provider CLI live in the PTY, "" for none
+	sandbox   sandboxEvent
+	relay     sessionRelay // Direction "" for none
+	tool      sessionTool  // Name "" outside a tool call
+	reason    string       // what a waiting session is blocked on, "" for unsaid
+	git       lichclient.DiffStats
+	base      *lichclient.BaseStatus  // nil without a base to stand against
+	pr        *lichclient.PullRequest // open PR of the shown path's branch, nil for none
 	// profileName is the profile the session runs in, "" for Personal;
 	// continueIn are the other logins its conversation could move to.
 	profileName string
@@ -542,7 +540,7 @@ func (m *model) viewOf(p lichclient.Project, s lichclient.Session, now time.Time
 	return sessionView{
 		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host,
 		status: m.status.status(s.ID), unread: m.status.unread(s.ID), age: age, aged: aged,
-		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown], gitRevision: m.gitRevision[shown],
+		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
 		base: m.base[shown], pr: m.prs[shown].pr,
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID),
 		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
@@ -557,12 +555,6 @@ func (m *model) gitStatus(path string) (lichclient.DiffStats, bool) {
 	defer m.mu.Unlock()
 	g, ok := m.git[path]
 	return g, ok
-}
-
-func (m *model) gitStatusRevision(path string) uint64 {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.gitRevision[path]
 }
 
 // setConversation records the provider conversation session id runs, which
