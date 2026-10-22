@@ -102,7 +102,9 @@
     "outdated": "오래됨",
     "pendingHead": "대기 중인 리뷰",
     "pendingNote": "리뷰를 제출할 때 보내집니다.",
-    "discard": "버리기"
+    "discard": "버리기",
+    "edit": "편집",
+    "save": "저장"
   },
   "pullsOverview": {
     "openedBy": "{author}이(가) 엶",

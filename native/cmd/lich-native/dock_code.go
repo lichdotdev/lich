@@ -123,7 +123,7 @@ func (c *codeTab) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) error
 }
 
 func (c *codeTab) focused(gtx C) bool {
-	if gtx.Focused(&c.query) || gtx.Focused(&c.batch.note) || c.preview.holdsKeys(gtx) {
+	if gtx.Focused(&c.query) || c.batch.holdsKeys(gtx) || c.preview.holdsKeys(gtx) {
 		return true
 	}
 	for i := range c.hits.hits {

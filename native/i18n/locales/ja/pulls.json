@@ -104,7 +104,9 @@
     "outdated": "古い",
     "pendingHead": "保留中のレビュー",
     "pendingNote": "レビューを送信すると送られます。",
-    "discard": "破棄"
+    "discard": "破棄",
+    "edit": "編集",
+    "save": "保存"
   },
   "pullsOverview": {
     "openedBy": "{author} が作成",

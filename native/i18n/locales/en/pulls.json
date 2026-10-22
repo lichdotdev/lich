@@ -104,7 +104,9 @@
     "outdated": "outdated",
     "pendingHead": "Pending review",
     "pendingNote": "Sent when you submit the review.",
-    "discard": "Discard"
+    "discard": "Discard",
+    "edit": "Edit",
+    "save": "Save"
   },
   "pullsOverview": {
     "openedBy": "Opened by {author}",

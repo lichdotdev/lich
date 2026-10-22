@@ -108,7 +108,9 @@
     "outdated": "устарело",
     "pendingHead": "Черновик ревью",
     "pendingNote": "Отправится вместе с ревью.",
-    "discard": "Отбросить"
+    "discard": "Отбросить",
+    "edit": "Изменить",
+    "save": "Сохранить"
   },
   "pullsOverview": {
     "openedBy": "Открыл(а) {author}",

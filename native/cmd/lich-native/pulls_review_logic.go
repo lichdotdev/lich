@@ -104,6 +104,15 @@ func (r *pendingReview) remove(i int) {
 	r.mu.Unlock()
 }
 
+// edit rewords comment i, keeping where it points.
+func (r *pendingReview) edit(i int, body string) {
+	r.mu.Lock()
+	if i >= 0 && i < len(r.comments) {
+		r.comments[i].Body = body
+	}
+	r.mu.Unlock()
+}
+
 func (r *pendingReview) clear() {
 	r.mu.Lock()
 	r.comments = nil

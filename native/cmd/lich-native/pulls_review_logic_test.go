@@ -74,3 +74,14 @@ func TestSubmittedReviewDropsOnlyWhatWasSent(t *testing.T) {
 		t.Fatalf("pending after the submit = %+v, want only the later comment", got)
 	}
 }
+
+func TestPendingReviewEditsOneComment(t *testing.T) {
+	var r pendingReview
+	r.add("a.go", "3-5", "first")
+	r.add("b.go", "9", "second")
+	r.edit(0, "first, reworded\non two lines")
+	got := r.snapshot()
+	if len(got) != 2 || got[0].Body != "first, reworded\non two lines" || got[0].Path != "a.go" || got[0].StartLine != 3 || got[0].Line != 5 || got[1].Body != "second" {
+		t.Fatalf("after edit = %+v, want the first reworded in place, the second untouched", got)
+	}
+}

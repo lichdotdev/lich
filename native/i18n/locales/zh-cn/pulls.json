@@ -104,7 +104,9 @@
     "outdated": "已过时",
     "pendingHead": "待提交的评审",
     "pendingNote": "提交评审时发送。",
-    "discard": "丢弃"
+    "discard": "丢弃",
+    "edit": "编辑",
+    "save": "保存"
   },
   "pullsOverview": {
     "openedBy": "由 {author} 打开",

@@ -31,6 +31,18 @@ type talkState struct {
 	commentSize  ui.TextareaResize
 	commentSend  widget.Clickable
 	discards     map[int]*widget.Clickable
+	edits        map[int]*widget.Clickable
+	pendingEdit  pendingEdit
+}
+
+// pendingEdit is the box rewording one comment of the pending review, by its
+// index there.
+type pendingEdit struct {
+	open         bool
+	index        int
+	editor       widget.Editor
+	resize       ui.TextareaResize
+	save, cancel widget.Clickable
 }
 
 func (s *talkState) init() {
@@ -38,7 +50,7 @@ func (s *talkState) init() {
 	s.replying, s.replyFields = map[string]bool{}, map[string]*replyField{}
 	s.replyClicks, s.sendClicks = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
 	s.cancelClicks, s.resolveClick = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
-	s.discards = map[int]*widget.Clickable{}
+	s.discards, s.edits = map[int]*widget.Clickable{}, map[int]*widget.Clickable{}
 }
 
 // replyField is one thread's reply box: its text and the height it was
@@ -66,10 +78,30 @@ func (v *pullView) talkClicks(gtx C, pending *pendingReview) {
 	if s.resolvedTap.Clicked(gtx) {
 		s.showResolved.Value = !s.showResolved.Value
 	}
-	for i := range pending.snapshot() {
+	for i, c := range pending.snapshot() {
 		if discard := s.discards[i]; discard != nil && discard.Clicked(gtx) {
 			pending.remove(i)
+			// Discarding shifts the indices the edit box was opened by.
+			s.pendingEdit.open = false
 		}
+		if edit := s.edits[i]; edit != nil && edit.Clicked(gtx) {
+			s.pendingEdit.open, s.pendingEdit.index = true, i
+			s.pendingEdit.editor.SetText(c.Body)
+			gtx.Execute(keyFocus(&s.pendingEdit.editor))
+		}
+	}
+	s.pendingEdit.clicks(gtx, pending)
+}
+
+// clicks files the box's text on Save or Ctrl+Enter, or closes it on Cancel.
+func (e *pendingEdit) clicks(gtx C, pending *pendingReview) {
+	text := strings.TrimSpace(e.editor.Text())
+	if (e.save.Clicked(gtx) || ctrlEnter(gtx, &e.editor)) && e.open && text != "" {
+		pending.edit(e.index, text)
+		e.open = false
+	}
+	if e.cancel.Clicked(gtx) {
+		e.open = false
 	}
 }
 
@@ -405,29 +437,65 @@ func (v *pullView) pendingRows(th *ui.Theme, r *pendingReview) []layout.Widget {
 		})
 	}}
 	for i, c := range comments {
-		discard := v.talk.discards[i]
-		if discard == nil {
-			discard = new(widget.Clickable)
-			v.talk.discards[i] = discard
-		}
-		rows = append(rows, func(gtx C) D {
-			anchor := lineAnchor(c.StartLine, c.Line)
-			b := th.Button(discard, i18n.T("pulls.pullsConversation.discard"))
-			b.Size, b.Variant = ui.SizeXS, ui.VariantGhost
-			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{}.Layout(gtx,
-					layout.Flexed(1, func(gtx C) D {
-						return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-							layout.Rigid(th.Text(ui.TextXS, c.Path+" · "+anchor).Mono().Muted().Layout),
-							layout.Rigid(func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, c.Body)) }),
-						)
-					}),
-					layout.Rigid(b.Layout),
-				)
-			})
-		})
+		rows = append(rows, func(gtx C) D { return v.pendingRow(gtx, th, i, c) })
 	}
 	return rows
+}
+
+// pendingRow is one line comment of the review being written, with Edit and
+// Discard, or the box rewording it.
+func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c lichclient.ReviewComment) D {
+	s := &v.talk
+	discard, edit := clickableAt(s.discards, i), clickableAt(s.edits, i)
+	editing := s.pendingEdit.open && s.pendingEdit.index == i
+	body := func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, c.Body)) }
+	if editing {
+		body = func(gtx C) D { return v.pendingEditBox(gtx, th) }
+	}
+	editB := th.Button(edit, i18n.T("pulls.pullsConversation.edit"))
+	editB.Size, editB.Variant = ui.SizeXS, ui.VariantGhost
+	discardB := th.Button(discard, i18n.T("pulls.pullsConversation.discard"))
+	discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantGhost
+	anchor := lineAnchor(c.StartLine, c.Line)
+	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(th.Text(ui.TextXS, c.Path+" · "+anchor).Mono().Muted().Layout),
+					layout.Rigid(body),
+				)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if editing {
+					return D{}
+				}
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(editB.Layout), ui.Gap(1), layout.Rigid(discardB.Layout))
+			}),
+		)
+	})
+}
+
+// pendingEditBox is the reply box's shape over the comment being reworded;
+// pendingEdit.clicks carries out its buttons.
+func (v *pullView) pendingEditBox(gtx C, th *ui.Theme) D {
+	e := &v.talk.pendingEdit
+	saveB := th.Button(&e.save, i18n.T("pulls.pullsConversation.save"))
+	saveB.Size, saveB.Disabled = ui.SizeXS, strings.TrimSpace(e.editor.Text()) == ""
+	cancelB := th.Button(&e.cancel, i18n.T("common.action.cancel"))
+	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
+	return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				ta := th.Textarea(&e.editor, "")
+				ta.Resize = &e.resize
+				return ta.Layout(gtx)
+			}),
+			ui.VGap(2),
+			layout.Rigid(func(gtx C) D {
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(saveB.Layout), ui.Gap(2), layout.Rigid(cancelB.Layout))
+			}),
+		)
+	})
 }
 
 func (v *pullView) pendingOf(url string) *pendingReview {

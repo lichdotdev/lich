@@ -104,7 +104,9 @@
     "outdated": "desactualizado",
     "pendingHead": "Revisión pendiente",
     "pendingNote": "Se envía cuando envías la revisión.",
-    "discard": "Descartar"
+    "discard": "Descartar",
+    "edit": "Editar",
+    "save": "Guardar"
   },
   "pullsOverview": {
     "openedBy": "Abierto por {author}",
