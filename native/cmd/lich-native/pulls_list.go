@@ -2,12 +2,17 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"image/color"
+	"math"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -227,33 +232,89 @@ func checkoutName(w lichclient.Worktree) string {
 }
 
 // rowMeta is the row's second line; only a review verdict worth acting on
-// shows, REVIEW_REQUIRED being most rows' resting state. The checkout sits
-// at the far end and is the part that truncates.
+// shows, REVIEW_REQUIRED being most rows' resting state. The facts take the
+// room first: the author truncates once they don't fit, and the checkout at
+// the far end shows only where it fits whole.
 func rowMeta(gtx C, th *ui.Theme, pr lichclient.PRSummary, checkout string, now time.Time) D {
-	items := []layout.FlexChild{
-		layout.Rigid(th.Text(ui.TextXS, pr.Author).Muted().Layout),
+	facts := []layout.FlexChild{
+		layout.Flexed(1, func(gtx C) D {
+			gtx.Constraints.Min.X = 0
+			return th.Text(ui.TextXS, pr.Author).Muted().Layout(gtx)
+		}),
 		ui.Gap(2),
 		layout.Rigid(th.Text(ui.TextXS, updatedAgo(pr.UpdatedAt, now)).Mono().Muted().Layout),
 	}
-	add := func(w layout.Widget) { items = append(items, ui.Gap(2), layout.Rigid(w)) }
+	add := func(w layout.Widget) { facts = append(facts, ui.Gap(2), layout.Rigid(w)) }
 	if pr.IsDraft {
-		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.draft")).In(th.ToneWait).Layout)
+		add(func(gtx C) D { return draftBadge(gtx, th) })
 	}
-	switch pr.ReviewDecision {
-	case "APPROVED":
+	switch {
+	case pr.ReviewDecision == "APPROVED":
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsStats.approved")).In(th.TonePass).Layout)
-	case "CHANGES_REQUESTED":
+	case waitsOnReviewer(pr):
+		add(func(gtx C) D {
+			return metaGlyph(gtx, th, icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait)
+		})
+	case pr.ReviewDecision == "CHANGES_REQUESTED":
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout)
 	}
 	if pr.IsCrossRepository {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)
 	}
+	items := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, facts...)
+	})}
 	if checkout != "" {
 		items = append(items, ui.Gap(2), layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkout, th.MutedForeground) })
+			return layout.E.Layout(gtx, func(gtx C) D {
+				return wholeOrNothing(gtx, func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkout, th.MutedForeground) })
+			})
 		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, items...)
+}
+
+// draftBorderAlpha keeps the badge's outline visible on a selected row,
+// where the Border token sits on the Accent fill at nearly its own shade.
+const draftBorderAlpha = 0.5
+
+// draftBadge is the outlined, muted "Draft": the pull request's state, set
+// apart from the amber the verdict beside it can take.
+func draftBadge(gtx C, th *ui.Theme) D {
+	gtx.Constraints.Min = image.Point{}
+	return layout.Stack{}.Layout(gtx,
+		layout.Expanded(func(gtx C) D {
+			rr := clip.UniformRRect(image.Rectangle{Max: gtx.Constraints.Min}, gtx.Dp(ui.RadiusSM))
+			border := th.Over(ui.Alpha(th.MutedForeground, draftBorderAlpha))
+			paint.FillShape(gtx.Ops, border, clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+			return D{Size: gtx.Constraints.Min}
+		}),
+		layout.Stacked(func(gtx C) D {
+			return layout.Inset{Left: ui.Space(1), Right: ui.Space(1)}.Layout(gtx,
+				th.Text(ui.TextXS, i18n.T("pulls.pullsList.draft")).Muted().Layout)
+		}),
+	)
+}
+
+// waitsOnReviewer is a CHANGES_REQUESTED verdict whose every thread is
+// resolved: GitHub keeps the verdict until the reviewer moves.
+func waitsOnReviewer(pr lichclient.PRSummary) bool {
+	return pr.ReviewDecision == "CHANGES_REQUESTED" && pr.Threads.Total > 0 && pr.Threads.Open == 0
+}
+
+// wholeOrNothing draws w only when its natural width fits: a glyph cut in
+// half reads as a broken row.
+func wholeOrNothing(gtx C, w layout.Widget) D {
+	macro := op.Record(gtx.Ops)
+	natural := gtx
+	natural.Constraints.Max.X = math.MaxInt32
+	d := w(natural)
+	call := macro.Stop()
+	if d.Size.X > gtx.Constraints.Max.X {
+		return D{}
+	}
+	call.Add(gtx.Ops)
+	return d
 }
 
 // checksChip is a row's checks at a glance: how many have finished while

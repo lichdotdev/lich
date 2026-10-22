@@ -31,6 +31,12 @@ type CheckItem struct {
 	Required    bool   `json:"required"`
 }
 
+// ThreadTally mirrors project.ThreadTally.
+type ThreadTally struct {
+	Open  int `json:"open"`
+	Total int `json:"total"`
+}
+
 // PRSummary mirrors project.PRSummary: one row of the list.
 type PRSummary struct {
 	Number            int          `json:"number"`
@@ -43,6 +49,7 @@ type PRSummary struct {
 	IsCrossRepository bool         `json:"isCrossRepository"`
 	UpdatedAt         string       `json:"updatedAt"`
 	Checks            ChecksRollup `json:"checks"`
+	Threads           ThreadTally  `json:"threads"`
 }
 
 // PRReviewer mirrors project.PRReviewer.

@@ -411,6 +411,9 @@ type PRSummary struct {
 	IsCrossRepository bool         `json:"isCrossRepository"`
 	UpdatedAt         string       `json:"updatedAt"` // gh's ISO timestamp
 	Checks            ChecksRollup `json:"checks"`
+	// Threads is counted only on a CHANGES_REQUESTED row (prlistthreads.go);
+	// every other row carries a zero tally.
+	Threads ThreadTally `json:"threads"`
 }
 
 // ghPRListItem mirrors one gh `pr list --json` entry; the rollup is reduced to
@@ -453,7 +456,14 @@ func (s *Service) ListPullRequests(path, state string) ([]PRSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	return parsePRList(out)
+	list, err := parsePRList(out)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.tallyRequestedThreads(path, list); err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 // parsePRList decodes gh's list payload into the column's rows.
