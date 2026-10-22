@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"slices"
 	"time"
 
 	"github.com/lichdotdev/lich/native/lichclient"
@@ -15,13 +14,6 @@ import (
 type baseStanding struct {
 	conflict bool
 	count    int
-}
-
-func sameBase(a, b *lichclient.BaseStatus) bool {
-	if a == nil || b == nil {
-		return a == b
-	}
-	return a.Base == b.Base && a.Behind == b.Behind && slices.Equal(a.Conflicts, b.Conflicts)
 }
 
 func standingOf(b *lichclient.BaseStatus) baseStanding {
@@ -64,7 +56,8 @@ func (m *model) refreshPath(ctx context.Context, path string) {
 		return
 	}
 	m.mu.Lock()
-	changed := m.git[path] != d || !sameBase(m.base[path], b)
+	m.gitRevision[path]++
+	changed := true
 	m.git[path], m.base[path] = d, b
 	prev, looked := m.prs[path]
 	now := time.Now()
@@ -182,6 +175,7 @@ func (m *model) forgetUntracked() {
 // dropPath forgets everything the store holds for path. Callers hold m.mu.
 func (m *model) dropPath(path string) {
 	delete(m.git, path)
+	delete(m.gitRevision, path)
 	delete(m.base, path)
 	delete(m.prs, path)
 }

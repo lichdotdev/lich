@@ -423,6 +423,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   nothing is lost there.
 - **git status is polled**: every shown path is re-read each `gitPoll` (`native/cmd/lich-native/model.go`,
   `pollGit`); the lich plugin's `session-touched` hook nudges an immediate refresh.
+- **The Code tab keeps the active checkout's latest file listing, not a cache of recent worktrees**
+  (`native/cmd/lich-native/dock_code.go`): it prefetches while the dock is closed and keeps the last good
+  listing during a refresh of that same checkout. Switching checkouts drops the previous listing; the new
+  checkout is read on its own, and a failed read has no older snapshot to fall back to.
 - **A read must not write the index** (`internal/project/git.go`, `readOnlyGit`): git status and git diff refresh a
   stat-stale index and take `.git/index.lock` to save it, so a poll that does so fails an agent's own `git commit`
   in the same checkout on "index.lock: File exists" (measured at 5% of commits against a busy poll). `gitQuiet`

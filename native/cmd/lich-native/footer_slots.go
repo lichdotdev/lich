@@ -9,19 +9,20 @@ import (
 // footerInput is everything FooterBar reads about what is on screen: the
 // active session, or with none the project's own checkout.
 type footerInput struct {
-	sessionID string // "" with no active session
-	provider  string // the agent live in the PTY, else the session's kind
-	path      string // the session's live cwd, else its checkout
-	checkout  string // where the session was spawned, which a cd does not move
-	sandboxed bool
-	host      string // where the shell went that the backend cannot see into
-	git       lichclient.DiffStats
-	isGit     bool // path is a git checkout git answered for
-	pr        *lichclient.PullRequest
-	usage     sessionUsage
-	hasUsage  bool
-	plans     []lichclient.QuotaPlan
-	handsOn   int64
+	sessionID   string // "" with no active session
+	provider    string // the agent live in the PTY, else the session's kind
+	path        string // the session's live cwd, else its checkout
+	checkout    string // where the session was spawned, which a cd does not move
+	sandboxed   bool
+	host        string // where the shell went that the backend cannot see into
+	git         lichclient.DiffStats
+	gitRevision uint64
+	isGit       bool // path is a git checkout git answered for
+	pr          *lichclient.PullRequest
+	usage       sessionUsage
+	hasUsage    bool
+	plans       []lichclient.QuotaPlan
+	handsOn     int64
 	// handsOnErr is why the hands-on figure could not be read.
 	handsOnErr error
 	cost       bool    // the cost readout is turned on

@@ -85,14 +85,15 @@ func (t dockTab) toggled(to dockTab) dockTab {
 // tabs browse and review; git is its status, isGit false outside a repository.
 // light is the palette on screen, for what draws with its own theme.
 type dockInput struct {
-	sessionID string
-	inject    func(string) bool
-	submit    func(string) bool
-	checkout  string
-	git       lichclient.DiffStats
-	isGit     bool
-	light     bool
-	code      godemirror.Theme
+	sessionID   string
+	inject      func(string) bool
+	submit      func(string) bool
+	checkout    string
+	git         lichclient.DiffStats
+	gitRevision uint64
+	isGit       bool
+	light       bool
+	code        godemirror.Theme
 }
 
 type reviewTab interface {

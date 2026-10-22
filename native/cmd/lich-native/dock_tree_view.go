@@ -37,7 +37,8 @@ var (
 // tree built from the last listing and filter, kept until either moves.
 type treeRows struct {
 	list   widget.List
-	clicks map[string]*widget.Clickable
+	clicks map[string]*treeClickable
+	active map[string]struct{}
 
 	// The tree scrolls sideways once a row is wider than the column: widest
 	// is the widest row the last frame laid out, offsetX how far it scrolled.
@@ -50,31 +51,71 @@ type treeRows struct {
 
 	builtFrom *treeData
 	builtFor  string
+	statsFrom *directoryStats
 	tree      []*treeNode
 	stats     map[string]lineDelta
+	visible   []treeRow
+	rowsEpoch uint64
+	rowsBuilt uint64
 }
 
-func (t *treeRows) click(path string) *widget.Clickable {
+type treeClickable struct {
+	click *widget.Clickable
+	node  *treeNode
+}
+
+func (t *treeRows) reset() {
+	t.list = widget.List{Axis: layout.Vertical}
+	t.clicks = nil
+	t.active = nil
+	t.hscroll, t.hbar, t.vbar = gesture.Scroll{}, widget.Scrollbar{}, widget.Scrollbar{}
+	t.widest, t.measure, t.offsetX = 0, 0, 0
+	t.builtFrom, t.statsFrom = nil, nil
+	t.builtFor = ""
+	t.tree, t.stats, t.visible = nil, nil, nil
+	t.rowsEpoch, t.rowsBuilt = 0, 0
+}
+
+func (t *treeRows) click(node *treeNode) *widget.Clickable {
 	if t.clicks == nil {
-		t.clicks = map[string]*widget.Clickable{}
+		t.clicks = map[string]*treeClickable{}
 	}
-	c, ok := t.clicks[path]
+	c, ok := t.clicks[node.path]
 	if !ok {
-		c = new(widget.Clickable)
-		t.clicks[path] = c
+		c = &treeClickable{click: new(widget.Clickable), node: node}
+		t.clicks[node.path] = c
+	} else {
+		c.node = node
 	}
-	return c
+	return c.click
 }
 
-// build is the tree for data narrowed by query, rebuilt only when either
-// changed: a big checkout is thousands of paths to nest every frame.
-func (t *treeRows) build(data *treeData, query string) {
+// install replaces the tree only after its listing and filter were prepared.
+func (t *treeRows) install(data *treeData, query string, tree []*treeNode) {
 	if data == t.builtFrom && query == t.builtFor {
 		return
 	}
 	t.builtFrom, t.builtFor = data, query
-	t.tree = buildTree(filterPaths(data.listing.Files, query))
-	t.stats = withDirStats(t.tree, data.stats)
+	t.tree = tree
+	t.stats = nil
+	t.statsFrom = nil
+	t.rowsEpoch++
+	t.visible = t.visible[:0]
+}
+
+func (t *treeRows) setStats(stats *directoryStats) {
+	if stats == nil || stats == t.statsFrom || !sameTree(stats.tree, t.tree) {
+		return
+	}
+	t.statsFrom, t.stats = stats, stats.byPath
+}
+
+func (t *treeRows) rows(isOpen func(string) bool) []treeRow {
+	if t.visible == nil || t.rowsBuilt != t.rowsEpoch {
+		t.visible = visibleRowsInto(t.visible, t.tree, isOpen)
+		t.rowsBuilt = t.rowsEpoch
+	}
+	return t.visible
 }
 
 // treeBody is TreeBody: the states the tree reads as, the rows, and the
@@ -82,16 +123,23 @@ func (t *treeRows) build(data *treeData, query string) {
 func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 	data, loading, err := c.tree.get()
 	switch {
-	case err != nil:
+	case err != nil && data == nil:
 		return notice(gtx, th, i18n.T("dock.filesPanel.readFailed"))
 	case loading || data == nil:
 		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
 	}
 	query := c.query.Text()
 	filtering := strings.TrimSpace(query) != ""
-	c.rows.build(data, query)
-	rows := visibleRows(c.rows.tree, func(path string) bool { return filtering || c.toggled[path] })
-	c.treeClicks(gtx, rows)
+	prepared := c.prepareTree(data, query, c.checkout)
+	if prepared != nil {
+		c.rows.install(data, query, prepared.tree)
+	} else if c.rows.tree == nil {
+		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
+	}
+	stats, _, _ := c.stats.get()
+	c.rows.setStats(c.prepareDirectoryStats(c.rows.tree, stats, c.checkout))
+	c.treeClicks(gtx)
+	rows := c.rows.rows(func(path string) bool { return filtering || c.toggled[path] })
 	note := treeFootnote(data.listing.Cut, data.listing.Hidden)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Flexed(1, func(gtx C) D {
@@ -115,16 +163,20 @@ func (c *codeTab) treeBody(gtx C, th *ui.Theme) D {
 }
 
 // treeClicks folds a folder or opens a file, before the rows are drawn.
-func (c *codeTab) treeClicks(gtx C, rows []treeRow) {
-	for _, r := range rows {
-		if !c.rows.click(r.node.path).Clicked(gtx) {
-			continue
+func (c *codeTab) treeClicks(gtx C) {
+	for _, state := range c.rows.clicks {
+		for state.click.Clicked(gtx) {
+			node := state.node
+			if node == nil {
+				continue
+			}
+			if node.dir {
+				c.toggled[node.path] = !c.toggled[node.path]
+				c.rows.rowsEpoch++
+				continue
+			}
+			c.open(node.path, 0)
 		}
-		if r.node.dir {
-			c.toggled[r.node.path] = !c.toggled[r.node.path]
-			continue
-		}
-		c.open(r.node.path, 0)
 	}
 }
 
@@ -157,17 +209,29 @@ func (t *treeRows) layout(gtx C, th *ui.Theme, rows []treeRow, selected string) 
 	defer clip.Rect{Max: view}.Push(gtx.Ops).Pop()
 	t.hscroll.Add(gtx.Ops)
 	t.measure = 0
+	if t.active == nil {
+		t.active = make(map[string]struct{}, 64)
+	}
+	clear(t.active)
 	rowsClip := clip.Rect{Max: content}.Push(gtx.Ops)
 	stack := op.Offset(image.Pt(-t.offsetX, 0)).Push(gtx.Ops)
 	inner := gtx
 	inner.Constraints = layout.Exact(image.Pt(width, view.Y))
 	layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(inner, func(gtx C) D {
 		return t.list.List.Layout(gtx, len(rows), func(gtx C, i int) D {
+			t.active[rows[i].node.path] = struct{}{}
 			return t.row(gtx, th, rows[i], selected)
 		})
 	})
 	stack.Pop()
 	rowsClip.Pop()
+	for path := range t.clicks {
+		if _, ok := t.active[path]; !ok {
+			if !t.clicks[path].click.Pressed() {
+				delete(t.clicks, path)
+			}
+		}
+	}
 	t.widest = t.measure
 	bar := func(gtx C, state *widget.Scrollbar, axis layout.Axis, start, end float32) D {
 		style.Scrollbar = state
@@ -210,7 +274,7 @@ const treeUnbounded = 1 << 20
 // row is one TreeRow: a file muted until hovered or current (selected), a
 // folder in font-medium foreground, each with its +/- at the right.
 func (t *treeRows) row(gtx C, th *ui.Theme, r treeRow, selected string) D {
-	click := t.click(r.node.path)
+	click := t.click(r.node)
 	lit := click.Hovered() || (!r.node.dir && r.node.path == selected)
 	return click.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X

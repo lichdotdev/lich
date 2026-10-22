@@ -23,23 +23,46 @@ type treeNode struct {
 // sorted case-insensitively, then collapses the chains of single folders.
 func buildTree(paths []string) []*treeNode {
 	var root []*treeNode
+	indexes := map[*treeNode]map[treeChildKey]*treeNode{}
+	rootIndex := make(map[treeChildKey]*treeNode)
 	for _, p := range paths {
 		level := &root
+		index := rootIndex
 		prefix := ""
 		parts := strings.FieldsFunc(p, func(r rune) bool { return r == '/' })
 		for i, name := range parts {
 			prefix = strings.TrimPrefix(prefix+"/"+name, "/")
 			dir := i < len(parts)-1
-			at := slices.IndexFunc(*level, func(n *treeNode) bool { return n.name == name && n.dir == dir })
-			if at < 0 {
-				*level = append(*level, &treeNode{name: name, path: prefix, dir: dir})
-				at = len(*level) - 1
+			key := treeChildKey{name: name, dir: dir}
+			node := index[key]
+			if node == nil {
+				node = &treeNode{name: name, path: prefix, dir: dir}
+				*level = append(*level, node)
+				index[key] = node
 			}
-			level = &(*level)[at].children
+			level = &node.children
+			if i+1 < len(parts) {
+				if indexes[node] == nil {
+					indexes[node] = make(map[treeChildKey]*treeNode)
+				}
+				index = indexes[node]
+			}
 		}
 	}
 	sortTree(root)
 	return collapseChains(root)
+}
+
+type treeChildKey struct {
+	name string
+	dir  bool
+}
+
+func sameTree(a, b []*treeNode) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	return len(a) == 0 || &a[0] == &b[0]
 }
 
 func sortTree(nodes []*treeNode) {
@@ -137,10 +160,8 @@ type treeRow struct {
 	open  bool
 }
 
-// visibleRows flattens the tree to the rows on screen: a folder's children
-// only while it is open.
-func visibleRows(tree []*treeNode, isOpen func(path string) bool) []treeRow {
-	var rows []treeRow
+func visibleRowsInto(rows []treeRow, tree []*treeNode, isOpen func(path string) bool) []treeRow {
+	rows = rows[:0]
 	var walk func(nodes []*treeNode, depth int)
 	walk = func(nodes []*treeNode, depth int) {
 		for _, n := range nodes {
@@ -153,6 +174,12 @@ func visibleRows(tree []*treeNode, isOpen func(path string) bool) []treeRow {
 	}
 	walk(tree, 0)
 	return rows
+}
+
+// visibleRows flattens the tree to the rows on screen: a folder's children
+// only while it is open.
+func visibleRows(tree []*treeNode, isOpen func(path string) bool) []treeRow {
+	return visibleRowsInto(nil, tree, isOpen)
 }
 
 // treeFootnote is what a listing that is not the whole folder owes the

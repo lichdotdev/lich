@@ -117,6 +117,7 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 	if sv, ok := m.activeSession(); ok {
 		in.sessionID, in.provider, in.path, in.host, in.pr = sv.ID, sv.agent, sv.shown, sv.host, sv.pr
 		in.checkout, in.sandboxed = sv.path, sv.sandbox.Confined
+		in.gitRevision = sv.gitRevision
 		if in.provider == "" {
 			in.provider = sv.Kind
 		}
@@ -127,6 +128,9 @@ func (f *footer) input(m *model, now time.Time) footerInput {
 		in.path = p.Path
 	}
 	in.git, in.isGit = m.gitStatus(in.path)
+	if in.gitRevision == 0 {
+		in.gitRevision = m.gitStatusRevision(in.path)
+	}
 	in.usage, in.hasUsage = f.usage.get(in.sessionID)
 	f.follow(in)
 	in.plans = f.quota.plans(in.sessionID)

@@ -211,7 +211,7 @@ func (v *pullView) treeLayout(gtx C, th *ui.Theme) D {
 	}
 	rows := visibleRows(t.rows.tree, func(path string) bool { return !t.closed[path] })
 	for _, r := range rows {
-		if !t.rows.click(r.node.path).Clicked(gtx) {
+		if !t.rows.click(r.node).Clicked(gtx) {
 			continue
 		}
 		if r.node.dir {
