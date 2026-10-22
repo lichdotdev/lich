@@ -42,8 +42,8 @@ type sidebarHeader struct {
 	open       bool
 	query      widget.Editor
 	clearQuery widget.Clickable
-	// focusQuery asks for the field's focus on the frame after it opens: the
-	// press that opened it is the request for it (autoFocus).
+	// focusQuery asks for the field's focus once it is laid out: the press
+	// that opened it is the request for it (autoFocus).
 	focusQuery    bool
 	searchFocused bool
 	chips         [5]widget.Clickable // All, then sessionPhases
@@ -78,12 +78,30 @@ func (h *sidebarHeader) escape() {
 	h.open = false
 }
 
-// headerRow is New Session, the filter toggle and the collapse button.
-func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D {
-	h := &s.header
+// clicks carries out the filter button and the phase chips before the panel
+// reads the filter.
+func (h *sidebarHeader) clicks(gtx C) {
 	if h.search.Clicked(gtx) {
 		h.toggle()
 	}
+	if h.chips[0].Clicked(gtx) {
+		clear(h.phases)
+	}
+	for i, p := range sessionPhases {
+		if !h.chips[i+1].Clicked(gtx) {
+			continue
+		}
+		if h.phases[p] {
+			delete(h.phases, p)
+		} else {
+			h.phases[p] = true
+		}
+	}
+}
+
+// headerRow is New Session, the filter toggle and the collapse button.
+func (s *sidebar) headerRow(gtx C, th *ui.Theme, m *model, act *sidebarAction) D {
+	h := &s.header
 	if h.collapse.Clicked(gtx) {
 		s.setOpen(gtx, false, act)
 	}
@@ -141,20 +159,9 @@ func (s *sidebar) filterRow(gtx C, th *ui.Theme, view sidebarView) D {
 // them; every other chip toggles its phase.
 func (s *sidebar) phaseChips(gtx C, th *ui.Theme, counts map[sessionPhase]int) D {
 	h := &s.header
-	if h.chips[0].Clicked(gtx) {
-		clear(h.phases)
-	}
 	total := 0
-	for i, p := range sessionPhases {
+	for _, p := range sessionPhases {
 		total += counts[p]
-		if !h.chips[i+1].Clicked(gtx) {
-			continue
-		}
-		if h.phases[p] {
-			delete(h.phases, p)
-		} else {
-			h.phases[p] = true
-		}
 	}
 	kids := []ui.WrapChild{ui.WrapItem(th.Chip(&h.chips[0], i18n.T("sidebar.sessionPhaseChips.all"), total, len(h.phases) == 0).Layout)}
 	for i, p := range sessionPhases {
