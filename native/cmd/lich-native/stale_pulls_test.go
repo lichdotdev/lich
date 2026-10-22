@@ -94,7 +94,7 @@ func TestPullsFilterTabsFilterInTheFrameThatTookTheClick(t *testing.T) {
 // openPullsTab opens the detail's tab named label and waits for want.
 func openPullsTab(t *testing.T, r *frameRig, label, want string) {
 	t.Helper()
-	r.clickLabel(t, label)
+	r.pressLabel(t, label)
 	r.waitFor(t, want)
 }
 

@@ -216,17 +216,31 @@ func (r *frameRig) hover(p f32.Point) {
 // next one, or the change waits for the next mouse move.
 func (r *frameRig) click(t *testing.T, p f32.Point) (took, next string) {
 	t.Helper()
-	r.hover(p)
-	r.router.Queue(
-		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: p},
-		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: p},
-	)
+	r.queueClick(p)
 	took, redraw := r.frame()
 	next, _ = r.frame()
 	if took != next && !redraw {
 		t.Errorf("the frame that took the click drew the old state and asked for no next frame:\ntook:\n%s\nnext:\n%s", took, next)
 	}
 	return took, next
+}
+
+func (r *frameRig) queueClick(p f32.Point) {
+	r.hover(p)
+	r.router.Queue(
+		pointer.Event{Kind: pointer.Press, Source: pointer.Mouse, Buttons: pointer.ButtonPrimary, Position: p},
+		pointer.Event{Kind: pointer.Release, Source: pointer.Mouse, Position: p},
+	)
+}
+
+// pressLabel clicks the first thing drawn with label as a step on the way
+// to the click under test, judging none of its frames: a click that starts
+// a read can see it land between the frame that took it and the next.
+func (r *frameRig) pressLabel(t *testing.T, label string) {
+	t.Helper()
+	r.settle(t)
+	r.queueClick(r.at(t, label))
+	r.frame()
 }
 
 // clickLabel clicks the first thing drawn with label.
