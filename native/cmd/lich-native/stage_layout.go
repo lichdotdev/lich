@@ -457,7 +457,7 @@ func (u *window) content(gtx C, s sessionView, keys bool) error {
 		return err
 	}
 	err = u.terms.layout(gtx, t, keys)
-	// A reconnect frees every terminal off the frame goroutine; one shown
+	// A closed session frees its terminal off the frame goroutine; one shown
 	// since is replaced on the next frame, which the window must survive.
 	if errors.Is(err, gioterm.ErrClosed) {
 		gtx.Execute(op.InvalidateCmd{})

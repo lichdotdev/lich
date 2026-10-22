@@ -41,15 +41,14 @@ func (u *window) onClosing(e *app.ClosingEvent) {
 
 // closeIsHeld reports whether a close waits on lich counting its sessions,
 // which Ask and Quit do. Keep running lets it through, and so does a window
-// lich dropped or is restarting under: nobody is there to count, and holding
+// lich dropped: nobody is there to count, and holding
 // the close kept the window open for good, Windows' installer included.
 func (u *window) closeIsHeld() bool {
 	c := &u.closer
 	c.mu.Lock()
 	leaving := c.leaving
 	c.mu.Unlock()
-	lichAway := u.model.connectionLost() || u.reconnecting.Load()
-	return !leaving && !lichAway && u.settings.look.prefs.closeAction != closeBackground
+	return !leaving && !u.model.connectionLost() && u.settings.look.prefs.closeAction != closeBackground
 }
 
 // askOrQuit is CloseDialog's close request: quit outright with nothing

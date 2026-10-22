@@ -59,7 +59,7 @@ func TestEncodeSpecialKeysUnderKitty(t *testing.T) {
 }
 
 // A window frees a terminal on one goroutine while another may still hold it:
-// a reconnect closes every terminal as a theme switch paints them.
+// a closed session's terminal is freed as a theme switch paints it.
 func TestClosedTerminalIgnoresCalls(t *testing.T) {
 	v, err := New(80, 24, testCellW, testCellH, func([]byte) {})
 	if err != nil {

@@ -190,9 +190,6 @@
     "restore": "Restore",
     "close": "Close"
   },
-  "reconnect": {
-    "reconnecting": "Reconnecting to lich…"
-  },
   "main": {
     "lostTitle": "Another lich window took over, or lich quit.",
     "lostHint": "Run `lich native` to reopen here.",

@@ -123,43 +123,6 @@ func TestQuit(t *testing.T) {
 	})
 }
 
-// The native window is not lich's child: it closes on a quit and stays for a
-// restart, and WindowMovesToSuccessor is how main tells the two apart once
-// stopped.
-func TestWindowMovesOnlyAfterASuccessorStarted(t *testing.T) {
-	spawnOK := func(string, []string, []string) error { return nil }
-
-	quit := &Coordinator{exePath: "/usr/local/bin/lich", spawn: spawnOK}
-	quit.SetStop(func() {})
-	if err := quit.Quit(); err != nil {
-		t.Fatalf("Quit() = %v", err)
-	}
-	if quit.WindowMovesToSuccessor() {
-		t.Fatal("WindowMovesToSuccessor() = true after Quit, want false")
-	}
-
-	restarted := &Coordinator{exePath: "/usr/local/bin/lich", spawn: spawnOK}
-	restarted.SetStop(func() {})
-	if err := restarted.Do(); err != nil {
-		t.Fatalf("Do() = %v", err)
-	}
-	if !restarted.WindowMovesToSuccessor() {
-		t.Fatal("WindowMovesToSuccessor() = false after Do, want true")
-	}
-
-	failed := &Coordinator{
-		exePath: "/usr/local/bin/lich",
-		spawn:   func(string, []string, []string) error { return errors.New("boom") },
-	}
-	failed.SetStop(func() {})
-	if err := failed.Do(); err == nil {
-		t.Fatal("Do() = nil, want the spawn error")
-	}
-	if failed.WindowMovesToSuccessor() {
-		t.Fatal("WindowMovesToSuccessor() = true after a failed spawn, want false")
-	}
-}
-
 // Inno Setup replaces lich-native.exe beside lich.exe, and Windows will not
 // overwrite the executable of a running process: a window left open to
 // reconnect held its own exe, Restart Manager could not close it, and the
@@ -175,9 +138,6 @@ func TestInstallClosesTheWindow(t *testing.T) {
 	c.SetStop(func() {})
 	if err := c.Install("setup.exe"); err != nil {
 		t.Fatalf("Install() = %v", err)
-	}
-	if c.WindowMovesToSuccessor() {
-		t.Fatal("WindowMovesToSuccessor() = true after Install: the window stays open on the files the installer replaces")
 	}
 	for _, kv := range installerEnv {
 		if strings.Contains(kv, NoWindowArg) {
@@ -283,19 +243,32 @@ func TestWithoutMarkerKeepsTheRestartMarkerOutOfChildren(t *testing.T) {
 	}
 }
 
-// The native window open on a restarting lich reconnects to its successor, so
-// a successor never opens one of its own.
-func TestSuccessorStartsWithoutAWindow(t *testing.T) {
-	var spawnedArgs []string
-	c := New("lich.exe", nil)
-	c.spawn = func(_ string, _ []string, args []string) error {
-		spawnedArgs = args
-		return nil
-	}
-	if err := c.Do(); err != nil {
-		t.Fatal(err)
-	}
-	if want := []string{"--no-window"}; !slices.Equal(spawnedArgs, want) {
-		t.Fatalf("successor args = %v, want %v", spawnedArgs, want)
+// A restart follows an update, and a window left open would be the old
+// lich-native talking to the new backend: the open one closes with this lich
+// and the successor opens its own, from the binary now on disk.
+func TestSuccessorOpensTheWindowThatWasOpen(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		windowOpen bool
+		want       []string
+	}{
+		{"window open", true, nil},
+		{"windowless", false, []string{NoWindowArg}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var spawnedArgs []string
+			c := New("lich.exe", nil)
+			c.spawn = func(_ string, _ []string, args []string) error {
+				spawnedArgs = args
+				return nil
+			}
+			c.SetWindowOpen(func() bool { return tc.windowOpen })
+			if err := c.Do(); err != nil {
+				t.Fatal(err)
+			}
+			if !slices.Equal(spawnedArgs, tc.want) {
+				t.Fatalf("successor args = %v, want %v", spawnedArgs, tc.want)
+			}
+		})
 	}
 }

@@ -554,7 +554,7 @@ func (s *Service) onHookState(req hookRequest) {
 // nobody has read, so the mark survives the window reopening (docs/ceilings.md).
 // It is written from here rather than from the window because a turn can end
 // with no window attached at all: closed, or between a restart and its
-// reconnect.
+// successor's window.
 //
 // Only the clear is deduped, and it is the whole hot path: `busy` is reported
 // once per tool call, and without this every one of them would take the

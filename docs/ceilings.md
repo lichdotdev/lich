@@ -848,25 +848,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   icon beside the installed lich's, with the same name.
 - **Restart and update end every running session, even with nobody watching** (`internal/restart.Coordinator`):
   /restart and an update stop this process and every PTY with it, so a windowless lich restarted by
-  `install.sh` from outside loses its sessions with no window to show it. The successor starts windowless
-  (`successorArgs`): the window that was up reconnects to it, and a lich that had none stays without one.
+  `install.sh` from outside loses its sessions with no window to show it. The window that was up closes with
+  the old lich and the successor opens one of its own, so a lich that had none stays without one: the old
+  `lich-native` never outlives its backend, since the calls it makes may be ones the new backend no longer takes
+  (`Coordinator.Do`).
 - **A window that cannot start is a dialog, never a fallback**: a `lich-native` missing beside `lich` (and not
   pinned by `LICH_NATIVE`), or one that exits at startup, on a missing system library say, ends in the error
   dialog with the reason and the log path. With no session running lich then quits; with one, it keeps serving
   it, and the tray, launching again or `lich quit` is the way back.
 - **A backend holds one window at a time** (`lich native`, `docs/native-window.md`): `/events` and `/ws` hold one
   client, and a new one replaces the old with no close frame, so two windows cannot share a backend: the window
-  already up, its `/events` dropped by a backend that still answers, says another window took over
-  (`backendDropped`, `native/cmd/lich-native/reconnect.go`). A focus that has to start the window again loses the
+  already up, its `/events` dropped, says lich lost it (`native/cmd/lich-native/model.go`, `follow`). A focus that has to start the window again loses the
   card it named: the window comes up on the session it last showed. On macOS the window is built and run only on
   GitHub's runners (`native.yml` draws one frame against a real backend, `.github/scripts/mac-e2e.sh` opens it from
   the bundle): its keys, Retina scaling, IME and menu bar have never been looked at on a Mac. Option types what it
   composes there (Option+c is ç), as Ghostty's and Terminal.app's default does, so an agent's Alt/Meta shortcut on a
   letter (Option+P) never reaches it; Option with Backspace or an arrow still does
-  (`native/gioterm/keys_option_darwin.go`). A restart keeps it: the window tells a backend that went away from one
-  that kept running, and moves onto the successor its runtime file names. A quit (`lich quit`, the tray, SIGINT or
+  (`native/gioterm/keys_option_darwin.go`). A quit or a restart (`lich quit`, the tray, an update, SIGINT or
   SIGTERM) closes it with the `window-close` event; a backend killed outright or crashed sends nothing, so the
-  window shows "Reconnecting to lich…" for the 15 seconds it waits and then lich as lost. `/events` replays nothing,
+  window shows lich as lost. `/events` replays nothing,
   so the window reads each session's status, usage and working directory from `terminal.TurnStates` on connect.
 - **Only a native window the backend starts tells lich how it ended** (`restart.StartNative`,
   `restart.WatchNative`): the backend waits on the native window it starts again (the tray's Show lich after the

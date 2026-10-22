@@ -160,8 +160,6 @@ type window struct {
 	plugin     pluginGate
 	appUpdate  appUpdateGate
 	drop       terminalDrop
-	// reconnecting is set while the window waits for a restarted lich.
-	reconnecting atomic.Bool
 	// islandAt is the island's top-left in window pixels, where body put it.
 	islandAt image.Point
 	// layoutStage is the panes' state while a layout is on screen.
@@ -227,7 +225,6 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.model.duplicate = u.warnDuplicate
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
-	u.model.dropped = u.backendDropped
 	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
 	u.topbar.open.closed = u.model.closed
@@ -462,10 +459,6 @@ func (u *window) layout(gtx C) error {
 		u.settings.hide()
 	}
 	paint.Fill(gtx.Ops, u.theme.Canvas)
-	if u.reconnecting.Load() {
-		u.reconnectingNotice(gtx)
-		return nil
-	}
 	if u.model.connectionLost() {
 		u.lostNotice(gtx)
 		return nil

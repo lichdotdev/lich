@@ -145,6 +145,7 @@ func main() {
 	coord := newCoordinator()
 	sys := registerServices(db, term, hub, configDir, logPath, env, launchEnv, coord)
 
+	coord.SetWindowOpen(hub.Attached)
 	term.SetRestart(coord.Do)
 
 	run(term, configDir, coord, startWindow(sys, noWindow), closeWindow(hub))
@@ -329,7 +330,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// the only copy of what the user wrote. Both channels are used, and neither
 	// is the other's fallback: the toast is what the user reading the card sees,
 	// and the desktop notification is what reaches a forfeit nobody was at the
-	// window for — an agent closing a session while the window reconnects, where
+	// window for — an agent closing a session while a restart reopens the window, where
 	// an event with no client connected is dropped.
 	db.SetScheduleForfeited(func(lost store.ForfeitedSchedule) {
 		hub.Emit(store.ScheduleForfeitEventName, lost)
@@ -618,8 +619,8 @@ func run(term *terminal.Service, configDir string, coord *restart.Coordinator, s
 
 // serve opens the window and returns when lich is told to quit (`lich quit`,
 // a restart, SIGINT or SIGTERM), so the caller's defers still run. The native
-// window is told to close unless it moves onto a successor, which only a
-// restart in place has: an update on Windows closes it too.
+// window is told to close, a restart's included: its successor opens a window
+// of its own.
 func serve(coord *restart.Coordinator, open, closeNative func()) {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
@@ -634,9 +635,7 @@ func serve(coord *restart.Coordinator, open, closeNative func()) {
 	open()
 	<-stop
 	slog.Info("quitting")
-	if !coord.WindowMovesToSuccessor() {
-		closeNative()
-	}
+	closeNative()
 }
 
 // newCoordinator is the in-place restart: the update flow (install.sh) POSTs

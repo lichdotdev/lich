@@ -190,9 +190,6 @@
     "restore": "Restaurar",
     "close": "Fechar"
   },
-  "reconnect": {
-    "reconnecting": "Reconectando ao lich…"
-  },
   "main": {
     "lostTitle": "Outra janela do lich assumiu o lugar, ou o lich foi encerrado.",
     "lostHint": "Execute `lich native` para reabrir aqui.",

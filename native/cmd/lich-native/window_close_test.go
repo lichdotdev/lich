@@ -6,38 +6,30 @@ import "testing"
 // dropped has nobody to count them: holding the close there only raised a
 // toast, and the window never closed, not even for the Windows installer.
 func TestCloseIsHeldOnlyWhileLichCanCountTheSessions(t *testing.T) {
-	prev := reconnectWait
-	reconnectWait = 3 * reconnectPoll
-	t.Cleanup(func() { reconnectWait = prev })
-
-	r := newReconnectRig(t)
+	u, b := newGateWindow(t)
 	for _, action := range []string{closeAsk, closeQuit} {
-		r.u.settings.look.prefs.closeAction = action
-		if !r.u.closeIsHeld() {
+		u.settings.look.prefs.closeAction = action
+		if !u.closeIsHeld() {
 			t.Errorf("%s: a close is let through with lich attached, want it held to count the sessions", action)
 		}
 	}
-	r.u.settings.look.prefs.closeAction = closeBackground
-	if r.u.closeIsHeld() {
+	u.settings.look.prefs.closeAction = closeBackground
+	if u.closeIsHeld() {
 		t.Error("background: a close is held, want it let through")
 	}
 
-	r.name(t, r.old)
-	r.old.goAway()
-	waitFor(t, "the window lost", r.lost)
+	events, err := u.client.Events(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	go u.model.follow(t.Context(), events)
+	waitFor(t, "the window attached to /events", func() bool { return b.eventsOpened.Load() == 1 })
+	b.goAway()
+	waitFor(t, "the window lost", u.model.connectionLost)
 	for _, action := range []string{closeAsk, closeQuit} {
-		r.u.settings.look.prefs.closeAction = action
-		if r.u.closeIsHeld() {
+		u.settings.look.prefs.closeAction = action
+		if u.closeIsHeld() {
 			t.Errorf("%s: a close is held on a window lich dropped, want it let through", action)
 		}
-	}
-}
-
-func TestCloseIsLetThroughWhileTheWindowReconnects(t *testing.T) {
-	u, _ := newGateWindow(t)
-	u.settings.look.prefs.closeAction = closeAsk
-	u.reconnecting.Store(true)
-	if u.closeIsHeld() {
-		t.Error("a close is held while the window waits for a restarted lich, want it let through")
 	}
 }

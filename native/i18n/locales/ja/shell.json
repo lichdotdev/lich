@@ -190,9 +190,6 @@
     "restore": "元に戻す",
     "close": "閉じる"
   },
-  "reconnect": {
-    "reconnecting": "lich に再接続しています…"
-  },
   "main": {
     "lostTitle": "別の lich ウィンドウに切り替わったか、lich が終了しました。",
     "lostHint": "ここで開き直すには `lich native` を実行してください。",

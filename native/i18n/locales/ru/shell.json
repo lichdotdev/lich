@@ -204,9 +204,6 @@
     "restore": "Восстановить",
     "close": "Закрыть"
   },
-  "reconnect": {
-    "reconnecting": "Переподключение к lich…"
-  },
   "main": {
     "lostTitle": "Другое окно lich заняло управление, или lich завершился.",
     "lostHint": "Выполните `lich native`, чтобы открыть окно здесь снова.",

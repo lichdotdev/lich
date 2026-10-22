@@ -23,22 +23,17 @@ const WaitEnv = "LICH_RESTART_WAIT"
 // NoWindowArg starts lich without its window.
 const NoWindowArg = "--no-window"
 
-// successorArgs start a successor without a window: the native window open on
-// this backend reconnects to the successor, and a second one opening there
-// would take its sockets.
-var successorArgs = []string{NoWindowArg}
-
 // Coordinator ends this lich: on its own (Quit), or after launching a detached
 // successor (Do, Install), so this process unwinds, exits, and frees the port.
 type Coordinator struct {
 	mu      sync.Mutex
 	stop    func()
 	started bool
-	// windowMoves is whether the open window reconnects to the successor
-	// rather than closing with this lich.
-	windowMoves bool
-	exePath     string
-	env         []string
+	// windowOpen reports whether a native window is attached; nil reads as
+	// none.
+	windowOpen func() bool
+	exePath    string
+	env        []string
 	// spawn is the seam for tests; it defaults to the build-tagged primitive.
 	spawn func(exe string, env, args []string) error
 }
@@ -63,6 +58,14 @@ func (c *Coordinator) SetStop(stop func()) {
 	c.mu.Unlock()
 }
 
+// SetWindowOpen supplies whether a native window is attached, which decides
+// whether a successor opens one.
+func (c *Coordinator) SetWindowOpen(open func() bool) {
+	c.mu.Lock()
+	c.windowOpen = open
+	c.mu.Unlock()
+}
+
 // Quit ends this lich: every session goes with it, and nothing is launched in
 // its place.
 func (c *Coordinator) Quit() error {
@@ -76,24 +79,22 @@ func (c *Coordinator) Quit() error {
 	return nil
 }
 
-// WindowMovesToSuccessor reports whether the open window stays to reconnect
-// to a successor once lich is stopping, rather than closing with it: true only
-// after a restart in place (Do) launched one.
-func (c *Coordinator) WindowMovesToSuccessor() bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.started && c.windowMoves
-}
-
 // Do launches the successor and stops this lich. Order matters: the successor
 // starts first and blocks retrying the pinned port; then this process exits,
-// and the freed port lets the successor bind, where the native window reconnects.
+// and the freed port lets the successor bind. The open window closes with this
+// lich rather than moving onto the successor: a restart follows an update, and
+// the window still running is the old lich-native, whose calls the new backend
+// may no longer take. The successor opens a window from the binary now on
+// disk, and only where one was open.
 func (c *Coordinator) Do() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	spawned, err := c.spawnOnce(c.exePath, successorArgs, successorEnv(c.env))
+	var args []string
+	if c.windowOpen == nil || !c.windowOpen() {
+		args = []string{NoWindowArg}
+	}
+	spawned, err := c.spawnOnce(c.exePath, args, successorEnv(c.env))
 	if spawned {
-		c.windowMoves = true
 		c.stopLocked()
 	}
 	return err
@@ -101,9 +102,9 @@ func (c *Coordinator) Do() error {
 
 // Install hands replacement and relaunch to Inno Setup. It waits for this PID
 // to exit before touching files, so main's defers finish first. The window
-// closes with this lich instead of reconnecting: the installer replaces
-// lich-native.exe too, which Windows will not overwrite while it runs, and the
-// lich it launches again opens a window of its own.
+// closes with this lich: the installer replaces lich-native.exe too, which
+// Windows will not overwrite while it runs, and the lich it launches again
+// opens a window of its own.
 func (c *Coordinator) Install(installer string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()

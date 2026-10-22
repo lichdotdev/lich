@@ -189,9 +189,6 @@
     "restore": "이전 크기로 복원",
     "close": "닫기"
   },
-  "reconnect": {
-    "reconnecting": "lich에 다시 연결하는 중…"
-  },
   "main": {
     "lostTitle": "다른 lich 창이 넘겨받았거나 lich가 종료되었습니다.",
     "lostHint": "여기서 다시 열려면 `lich native`를 실행하세요.",

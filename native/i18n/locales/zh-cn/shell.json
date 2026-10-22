@@ -190,9 +190,6 @@
     "restore": "还原",
     "close": "关闭"
   },
-  "reconnect": {
-    "reconnecting": "正在重新连接 lich…"
-  },
   "main": {
     "lostTitle": "另一个 lich 窗口已接管，或 lich 已退出。",
     "lostHint": "运行 `lich native` 即可在此重新打开。",

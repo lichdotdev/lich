@@ -101,9 +101,6 @@ type model struct {
 	pluginIncompatible func()
 	// appUpdateProgress hears a step of an update being applied.
 	appUpdateProgress func(lichclient.AppUpdateProgress)
-	// dropped hears /events end under an open window; nil marks the model
-	// lost there and then.
-	dropped func()
 	// closed is the closed projects, which the menu and the palette read.
 	closed *closedProjects
 
@@ -263,8 +260,7 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 
 // follow applies /events until ctx ends. The backend replays nothing beyond
 // what hydrateTurnStates read. When the stream ends first, the backend dropped this window: /events
-// serves one client and a newer one replaces it, or lich quit or restarted.
-// dropped tells those apart.
+// serves one client and a newer one replaces it, or lich is gone.
 func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 	for ev := range events {
 		if id, exited := strings.CutPrefix(ev.Name, exitEventPrefix); exited {
@@ -408,10 +404,6 @@ func (m *model) follow(ctx context.Context, events <-chan lichclient.Event) {
 		m.invalidate()
 	}
 	if ctx.Err() != nil {
-		return
-	}
-	if m.dropped != nil {
-		m.dropped()
 		return
 	}
 	m.markLost()

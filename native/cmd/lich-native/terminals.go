@@ -302,19 +302,6 @@ func (ts *terminals) setFont(family string, size unit.Sp) error {
 	return nil
 }
 
-// reattach types into stream from now on and frees every terminal: the
-// sessions they showed belong to a backend that is gone, and each attaches
-// again, replay first, when it is next shown.
-func (ts *terminals) reattach(stream *lichclient.Stream) {
-	ts.mu.Lock()
-	views := ts.byID
-	ts.stream, ts.byID, ts.shown = stream, map[string]*termView{}, nil
-	ts.mu.Unlock()
-	for _, t := range views {
-		t.vt.Close()
-	}
-}
-
 // drop frees a closed session's terminal. Output still in flight for it finds
 // no view and is discarded.
 func (ts *terminals) drop(id string) {
