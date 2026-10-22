@@ -68,7 +68,7 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRD
 // sits in the branch's checkout.
 func (v *pullView) sessionButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, busy, blocked string) D {
 	label := i18n.T("pulls.pulls.openInSession")
-	if wt, ok := p.checkedOut(d.HeadRefName); ok && p.hasSessionAt(wt.Path) {
+	if id, _ := p.reviewSession(d); id != "" {
 		label = i18n.T("pulls.pulls.goToSession")
 	}
 	if busy == "session" {

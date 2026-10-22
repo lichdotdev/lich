@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"slices"
 	"time"
 
 	"gioui.org/layout"
@@ -98,14 +99,29 @@ type pullsScreen struct {
 
 	view    pullView
 	confirm removeConfirm
-	// files is the window's active session and checkout, for the Files tab.
+	// files is what the Files tab draws with and sends through.
 	files filesInput
-	// sessionAt is whether a session of the project sits in a checkout.
-	sessionAt func(projectID, path string) bool
+	// sessionsIn is the project's sessions sitting in a checkout.
+	sessionsIn func(projectID, path string) []string
 }
 
-func (p *pullsScreen) hasSessionAt(path string) bool {
-	return p.sessionAt != nil && p.sessionAt(p.project.ID, path)
+// reviewSession is where the pull request's comments go: a session in the
+// checkout of its head branch, the window's active one when it sits there and
+// the first otherwise, "" when none does. target keys its comment batch: that checkout, shared with its
+// dock, or the PR's page while the branch has none.
+func (p *pullsScreen) reviewSession(d lichclient.PRDetail) (id, target string) {
+	wt, ok := p.checkedOut(d.HeadRefName)
+	if !ok {
+		return "", d.URL
+	}
+	ids := p.sessionsIn(p.project.ID, wt.Path)
+	switch {
+	case slices.Contains(ids, p.files.activeID):
+		return p.files.activeID, wt.Path
+	case len(ids) > 0:
+		return ids[0], wt.Path
+	}
+	return "", wt.Path
 }
 
 func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {

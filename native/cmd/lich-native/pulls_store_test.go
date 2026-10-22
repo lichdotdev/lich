@@ -109,3 +109,36 @@ func TestPullsScreenRereadsWhatItShowsEveryRecheck(t *testing.T) {
 	p.store.list("/repo", pullsOpen)
 	waitFor(t, "the recheck", func() bool { return stub.calls("project.ListPullRequests") == 2 })
 }
+
+func TestPullRequestCommentsGoOnlyToASessionInItsBranchCheckout(t *testing.T) {
+	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
+		if method == "project.ListCheckouts" {
+			return []lichclient.Worktree{{Name: "main", Path: "/repo"}, {Name: "feat/x", Path: "/wt/feat-x"}}, http.StatusOK
+		}
+		return []lichclient.PRSummary{}, http.StatusOK
+	}}
+	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
+	p.show(lichclient.Project{ID: "p", Path: "/repo"}, "main", 0)
+	p.sessionsIn = func(projectID, path string) []string {
+		if projectID == "p" && path == "/wt/feat-x" {
+			return []string{"in-branch", "second"}
+		}
+		return []string{"elsewhere"}
+	}
+	waitFor(t, "the checkouts", func() bool { return len(p.store.checkoutsOf("/repo")) == 2 })
+
+	if id, target := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/x", URL: "https://pr/1"}); id != "in-branch" || target != "/wt/feat-x" {
+		t.Errorf("checked-out branch: session %q, target %q; want in-branch, /wt/feat-x", id, target)
+	}
+	p.files.activeID = "second"
+	if id, _ := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/x"}); id != "second" {
+		t.Errorf("active session in the checkout: session %q, want second", id)
+	}
+	p.files.activeID = "elsewhere"
+	if id, _ := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/x"}); id != "in-branch" {
+		t.Errorf("active session in another checkout: session %q, want in-branch", id)
+	}
+	if id, target := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/y", URL: "https://pr/2"}); id != "" || target != "https://pr/2" {
+		t.Errorf("branch with no checkout: session %q, target %q; want none, the PR's page", id, target)
+	}
+}

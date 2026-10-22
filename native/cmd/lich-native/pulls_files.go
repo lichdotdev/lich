@@ -64,14 +64,14 @@ type filesTree struct {
 }
 
 // filesInput is what the Files tab needs from the window this frame: the
-// active session, whose terminal takes injected references, and its
-// checkout, whose comment batch the tab shares with the dock.
+// active session, and how to inject into and submit to a session, bound to
+// the PR's own (reviewSession).
 type filesInput struct {
-	sessionID, checkout string
-	inject              func(string) bool
-	submit              func(string, func(error)) bool
-	light               bool
-	code                godemirror.Theme
+	activeID  string
+	injector  func(id string) func(string) bool
+	submitter func(id string) func(string, func(error)) bool
+	light     bool
+	code      godemirror.Theme
 }
 
 // viewedTick is the card's Viewed checkbox; ticking folds the file away.
@@ -132,8 +132,12 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PR
 		files.pr.head = d.Commits[len(d.Commits)-1].OID
 	}
 	in := p.files
-	files.th, files.light, files.code, files.target = th, in.light, in.code, in.checkout
-	files.inject, files.submit = in.inject, in.submit
+	session, target := p.reviewSession(d)
+	if target != d.URL {
+		files.comments.move(d.URL, target)
+	}
+	files.th, files.light, files.code, files.target = th, in.light, in.code, target
+	files.inject, files.submit = in.injector(session), in.submitter(session)
 	read := p.store.diff(p.project.Path, d.Number)
 	switch {
 	case !read.loaded:

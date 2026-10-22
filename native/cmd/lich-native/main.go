@@ -220,9 +220,9 @@ func run(w *app.Window, rt lichclient.Runtime) error {
 	u.palette = newCommandPalette(w.Invalidate)
 	u.worktree = newWorktreeDialog(client, &u.root, w.Invalidate)
 	u.pulls = newPullsScreen(newPullsStore(ctx, client, w.Invalidate), &u.root)
-	u.pulls.sessionAt = func(projectID, path string) bool {
+	u.pulls.sessionsIn = func(projectID, path string) []string {
 		ids, _, _ := u.model.sessionsAt(projectID, path)
-		return len(ids) > 0
+		return ids
 	}
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
@@ -600,7 +600,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 						return D{Size: gtx.Constraints.Max}
 					}
 					if u.pulls.open && !v.home {
-						u.pulls.files = filesInput{sessionID: v.in.sessionID, inject: u.terms.injector(v.in.sessionID), submit: u.terms.submitter(v.in.sessionID), checkout: v.in.path, light: u.light, code: u.code}
+						u.pulls.files = filesInput{activeID: v.in.sessionID, injector: u.terms.injector, submitter: u.terms.submitter, light: u.light, code: u.code}
 						u.pulls.squareX = -1
 						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans, islandsSliding: u.pulls.slide.sliding()}); ok {
 							u.pulls.squareX = x

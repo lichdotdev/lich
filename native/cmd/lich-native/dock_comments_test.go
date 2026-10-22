@@ -131,3 +131,21 @@ func TestCommentEditFollowsTheCommentItWasOpenedOn(t *testing.T) {
 		t.Fatal("still editing after endEdit")
 	}
 }
+
+func TestCommentBatchMovesWholeAfterWhatItJoins(t *testing.T) {
+	var s commentStore
+	s.add("/wt", "a.go", "1", "already here")
+	s.add("https://pr/1", "b.go", "2", "written before the checkout")
+	s.beginEdit("https://pr/1", s.list("https://pr/1")[0].id)
+	s.move("https://pr/1", "/wt")
+	got := s.list("/wt")
+	if len(got) != 2 || got[0].txt != "already here" || got[1].txt != "written before the checkout" {
+		t.Fatalf("batch of /wt = %+v, want its own comment then the moved one", got)
+	}
+	if len(s.list("https://pr/1")) != 0 {
+		t.Fatalf("batch left behind = %+v, want none", s.list("https://pr/1"))
+	}
+	if c, ok := s.edited(); !ok || c.txt != "written before the checkout" {
+		t.Fatalf("edited = %+v, %v; want the moved comment still open", c, ok)
+	}
+}

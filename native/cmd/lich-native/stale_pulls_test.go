@@ -38,6 +38,11 @@ func pullsFrames(t *testing.T) (*window, *frameRig) {
 	client := stub.client(t)
 	u := &window{ctx: t.Context(), client: client, model: newModel(client, r.invalidate)}
 	u.pulls = newPullsScreen(newPullsStore(t.Context(), client, r.invalidate), &u.root)
+	u.pulls.sessionsIn = func(string, string) []string { return nil }
+	u.pulls.files = filesInput{
+		injector:  func(string) func(string) bool { return func(string) bool { return false } },
+		submitter: func(string) func(string, func(error)) bool { return func(string, func(error)) bool { return false } },
+	}
 	files, err := newReviewPanel(client, &u.root, new(commentStore), "monospace", 12, r.invalidate, func(ui.Toast) {})
 	if err != nil {
 		t.Fatal(err)

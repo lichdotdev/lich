@@ -102,6 +102,21 @@ func (s *commentStore) edit(target string, id int, text string) {
 
 func (s *commentStore) clear(target string) { delete(s.byTarget, target) }
 
+// move hands from's batch to to, after what to already holds: a pull
+// request's comments, kept under its page while no checkout held its branch,
+// follow it into the one that now does.
+func (s *commentStore) move(from, to string) {
+	moved, ok := s.byTarget[from]
+	if !ok {
+		return
+	}
+	s.byTarget[to] = append(s.byTarget[to], moved...)
+	delete(s.byTarget, from)
+	if s.editing.target == from {
+		s.editing.target = to
+	}
+}
+
 func (s *commentStore) beginEdit(target string, id int) { s.editing = commentRef{target, id} }
 
 func (s *commentStore) endEdit() { s.editing = commentRef{} }
