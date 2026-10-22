@@ -145,11 +145,12 @@ func (u *window) submitPR(path string, d lichclient.PRDetail, verdict, summary s
 	if conv := u.pulls.store.conversation(path, d.Number).val; conv != nil {
 		head = conv.HeadRefOID
 	}
-	if err := u.client.SubmitReview(u.ctx, path, d.Number, verdict, summary, head, review.snapshot()); err != nil {
+	sent := review.snapshot()
+	if err := u.client.SubmitReview(u.ctx, path, d.Number, verdict, summary, head, sent); err != nil {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.reviewFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
 		return
 	}
-	review.clear()
+	review.drop(sent)
 	v.onFrame(func() {
 		v.submit.verdict = ""
 		v.submit.summary.SetText("")

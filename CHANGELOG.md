@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Review comments sent to a session are kept until the session takes them. A session that refused the batch (one that had stopped, say) showed "Couldn't send the comments" while the comments were already gone; they now stay in the batch to send again. Likewise, submitting a pull request review in Pulls drops only the comments it carried, where a comment written while the review was on its way was lost with them.
 - On Windows, the window wears lich's icon and opens under lich's taskbar button, where it showed a generic icon and, launched from a lich pinned to the taskbar, opened as a separate button beside the pin.
 - A click on a folder in the Code tab's file tree, or in a pull request's file tree, opens or folds it at once, where it waited for the mouse to move. The Code tab also builds the tree of a checkout with tens of thousands of files in milliseconds where it took seconds, and a row's hover follows the pointer without lagging an event behind.
 - Restarting lich after an update opens the new version's window, where the old window stayed open on the new lich and a session could fail to start with "want 8 arguments, got 9" until lich was closed and opened again. The window closes and comes back with the restart; a lich running without a window stays without one. This takes effect from the next update after this release.

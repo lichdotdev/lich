@@ -61,3 +61,16 @@ func TestPendingReviewCollectsComments(t *testing.T) {
 		t.Error("clear left comments")
 	}
 }
+
+// A review taken by GitHub drops what it carried, and only that: a comment
+// written while the submit was on its way stays pending.
+func TestSubmittedReviewDropsOnlyWhatWasSent(t *testing.T) {
+	var r pendingReview
+	r.add("a.go", "3", "sent")
+	sent := r.snapshot()
+	r.add("b.go", "9", "written meanwhile")
+	r.drop(sent)
+	if got := r.snapshot(); len(got) != 1 || got[0].Body != "written meanwhile" {
+		t.Fatalf("pending after the submit = %+v, want only the later comment", got)
+	}
+}

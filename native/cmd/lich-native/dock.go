@@ -87,7 +87,7 @@ func (t dockTab) toggled(to dockTab) dockTab {
 type dockInput struct {
 	sessionID string
 	inject    func(string) bool
-	submit    func(string) bool
+	submit    func(string, func(error)) bool
 	checkout  string
 	git       lichclient.DiffStats
 	isGit     bool

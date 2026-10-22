@@ -68,7 +68,8 @@ type filesTree struct {
 // checkout, whose comment batch the tab shares with the dock.
 type filesInput struct {
 	sessionID, checkout string
-	inject, submit      func(string) bool
+	inject              func(string) bool
+	submit              func(string, func(error)) bool
 	light               bool
 	code                godemirror.Theme
 }

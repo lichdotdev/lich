@@ -105,7 +105,7 @@ func injectedWrite(t *testing.T, b *gateBackend) string {
 
 func claudeTerminals(t *testing.T, b *gateBackend) *terminals {
 	t.Helper()
-	ts := &terminals{client: clientOf(b.srv), byID: map[string]*termView{}}
+	ts := &terminals{client: clientOf(b.srv), invalidate: func() {}, byID: map[string]*termView{}}
 	vt, err := gioterm.New(80, unfoldRows, 10, 20, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +121,7 @@ func TestBatchOfCommentsIsSubmitted(t *testing.T) {
 	b := newGateBackend(t)
 	ts := claudeTerminals(t, b)
 	batch := composeReviewComments([]reviewComment{{path: "a.go", lines: "1", txt: "one"}}, "")
-	if !ts.submitter("s")(batch) {
+	if !ts.submitter("s")(batch, func(error) {}) {
 		t.Fatal("submit refused")
 	}
 	select {
