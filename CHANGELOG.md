@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On Windows with display scaling above 100%, a drag follows the pointer again: an item dragged in Settings › Footer or a selection dragged in the terminal landed away from the cursor, scaled as if the screen were at 100%.
 - On Windows, the window wears lich's icon and opens under lich's taskbar button, where it showed a generic icon and, launched from a lich pinned to the taskbar, opened as a separate button beside the pin.
 - Clicks across the window show their result at once, where many waited for the mouse to move: dialogs opening and closing, the dock's and Settings' close buttons, opening a file from the Code tab, the find bar's toggles, the Pulls filters and conversation, the sidebar's filter, and Settings' sections, switches, ladders and pickers. A segmented control no longer shows two options pressed right after a click.
 - A click on a folder in the Code tab's file tree, or in a pull request's file tree, opens or folds it at once, where it waited for the mouse to move. The Code tab also builds the tree of a checkout with tens of thousands of files in milliseconds where it took seconds, and a row's hover follows the pointer without lagging an event behind.
