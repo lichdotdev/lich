@@ -101,6 +101,10 @@ func (p DropdownPanelStyle) overlay(gtx C) {
 	on := p.theme.On(p.theme.Popover)
 	macro := op.Record(gtx.Ops)
 	size := p.panel(gtx, core, on)
+	if !s.open {
+		// A row closed the panel while it was drawn, open, in this frame.
+		gtx.Execute(op.InvalidateCmd{})
+	}
 	call := macro.Stop()
 	anchor := s.anchor
 	if p.AlignEnd {

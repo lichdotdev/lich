@@ -123,6 +123,7 @@ func (u *window) layoutProviderSetup(gtx C, th *ui.Theme) {
 // providers is the Settings › Providers pane verbatim, so the first screen a
 // user meets is the one they find again.
 func (g *providerSetup) providers(gtx C, th *ui.Theme, s *settingsScreen) D {
+	s.providerPaneClicks(gtx)
 	rows := s.providerPaneRows(th, s.snapshot(), 0)
 	g.list.Axis = layout.Vertical
 	gtx.Constraints.Max.Y = gtx.Constraints.Max.Y * setupBodyHeight / 100

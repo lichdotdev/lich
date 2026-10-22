@@ -27,7 +27,11 @@ type generalSwitches struct {
 // false for any other key. The needs-input switch reads on only once the
 // opt-in is answered yes, and turning it either way is itself the answer.
 func (s *settingsScreen) notifyRow(gtx C, key string) (string, func(gtx C, th *ui.Theme) D, bool) {
-	prefs, _ := s.notify.snapshot()
+	// Read after the click is written, so the switch draws where it went.
+	prefs := func() notifyPrefs {
+		p, _ := s.notify.snapshot()
+		return p
+	}
 	var sw *ui.SwitchState
 	var desc string
 	switch key {
@@ -36,13 +40,13 @@ func (s *settingsScreen) notifyRow(gtx C, key string) (string, func(gtx C, th *u
 		if sw.Update(gtx) {
 			s.notify.setAttention(sw.Value)
 		}
-		sw.Value = prefs.attention == optInYes
+		sw.Value = prefs().attention == optInYes
 	case finishedNotifyKey:
 		sw, desc = &s.general.finished, i18n.T("settings.notificationsSettings.finishedDescription")
 		if sw.Update(gtx) {
 			s.notify.setFinishedTurn(sw.Value)
 		}
-		sw.Value = prefs.finishedTurn
+		sw.Value = prefs().finishedTurn
 	default:
 		return "", nil, false
 	}

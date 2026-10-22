@@ -3,10 +3,14 @@ package ui
 import (
 	"image"
 	"testing"
+	"time"
 
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/unit"
+	"gioui.org/widget"
 )
 
 // Dropdown geometry at 1px per dp: the panel opens 4px below the trigger,
@@ -135,4 +139,43 @@ func TestDropdownSubmenuOpensOnHover(t *testing.T) {
 	g.click(pointer.ButtonPrimary, trigger)
 	frame()
 	c.only(t, "Terminal")
+}
+
+// A row that closes the panel does so as the panel is drawn, so the frame
+// that took its click still draws it open; Gio draws no other until the next
+// event, so that frame must ask for one.
+func TestDropdownPanelRowClosingItAsksForTheNextFrame(t *testing.T) {
+	g, th := &menuRig{size: image.Pt(400, 400)}, testTheme()
+	var s DropdownPanelState
+	var row widget.Clickable
+	now := time.Unix(0, 0)
+	frame := func() (redraw bool) {
+		g.ops.Reset()
+		gtx := layout.Context{Ops: &g.ops, Source: g.router.Source(), Now: now, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(g.size)}
+		g.root.Layout(gtx, func(gtx C) D {
+			defer op.Offset(triggerAt).Push(gtx.Ops).Pop()
+			return th.DropdownPanel(&g.root, &s, dropdownWidth, func(gtx C, th *Theme) D {
+				if row.Clicked(gtx) {
+					s.Close()
+				}
+				return row.Layout(gtx, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, dropdownRow)} })
+			}).Layout(gtx, func(gtx C) D { return D{Size: triggerSize} })
+		})
+		g.router.Frame(&g.ops)
+		at, wake := g.router.WakeupTime()
+		return wake && !at.After(now)
+	}
+	frame()
+	g.click(pointer.ButtonPrimary, triggerAt.Add(image.Pt(10, 10)))
+	for frame() {
+		now = now.Add(time.Second)
+	}
+	g.click(pointer.ButtonPrimary, dropdownRowCenter(0))
+	redraw := frame()
+	if s.Opened() {
+		t.Fatal("the row did not close the panel")
+	}
+	if !redraw {
+		t.Error("the frame that closed the panel asked for no next frame")
+	}
 }

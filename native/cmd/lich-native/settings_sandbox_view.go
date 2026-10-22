@@ -63,6 +63,8 @@ func (s *settingsScreen) rungRow(gtx C, th *ui.Theme, m sandboxMachine, p launch
 	enum := s.sandbox.rungEnum(p.id)
 	if enum.Update(gtx) {
 		s.chooseRung(p, level, enum.Value)
+		// Read again: a tightening is written straight through.
+		level = sandboxLevel(effectiveValue(s.snapshot(), s.sandbox.snapshot().globals, e.key, s.scope))
 	}
 	enum.Value = level
 	items := make([]ui.ToggleItem, len(sandboxRungs))
@@ -101,14 +103,19 @@ func (s *settingsScreen) chooseRung(p launchProvider, current, next string) {
 // grantRow is Grant: one credential handed back to a confined session, with
 // the line naming what exactly it hands over.
 func (s *settingsScreen) grantRow(gtx C, th *ui.Theme, e settingEntry, r settingRow, first bool) D {
-	m, values := s.sandbox.snapshot(), s.snapshot()
-	sw, desc, detail := &s.sandbox.ssh, i18n.T("settings.sandboxSettings.sshDescription"), agentKeysLine(m.agentKeys)
+	sw := &s.sandbox.ssh
 	if e.key == ghTokenKey {
-		account, _ := values.set(vcsAccountKey, s.scope)
-		sw, desc, detail = &s.sandbox.gh, i18n.T("settings.sandboxSettings.ghDescription"), ghAccountLine(account)
+		sw = &s.sandbox.gh
 	}
 	if sw.Update(gtx) {
 		s.writeSandbox(e.key, strconv.FormatBool(sw.Value))
+	}
+	// Read after the click is written, so the switch draws where it went.
+	m, values := s.sandbox.snapshot(), s.snapshot()
+	desc, detail := i18n.T("settings.sandboxSettings.sshDescription"), agentKeysLine(m.agentKeys)
+	if e.key == ghTokenKey {
+		account, _ := values.set(vcsAccountKey, s.scope)
+		desc, detail = i18n.T("settings.sandboxSettings.ghDescription"), ghAccountLine(account)
 	}
 	sw.Value = effectiveValue(values, m.globals, e.key, s.scope) == "true"
 	r.globalValue = grantLabel(m.globals[e.key])

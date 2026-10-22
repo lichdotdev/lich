@@ -139,6 +139,26 @@ func (r *frameRig) smallestClickIn(t *testing.T, within image.Rectangle) f32.Poi
 	return centre(best)
 }
 
+// controlOf is the centre of the smallest clickable on the same line as the
+// first thing drawn with label and right of it: a settings row's control
+// beside its title.
+func (r *frameRig) controlOf(t *testing.T, label string) f32.Point {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label != label {
+			continue
+		}
+		at := n.Desc.Bounds.Min
+		return r.smallestClickIn(t, image.Rect(at.X+1, at.Y-rowReach, r.size.X, at.Y+3*rowReach))
+	}
+	t.Fatalf("nothing drawn as %q:\n%s", label, r.drawn())
+	return f32.Point{}
+}
+
+// rowReach is how far above a row's title its control may start: a control
+// is centred on a row that is taller than the title's line.
+const rowReach = 20
+
 func centre(b image.Rectangle) f32.Point {
 	c := b.Min.Add(b.Max).Div(2)
 	return f32.Pt(float32(c.X), float32(c.Y))

@@ -78,6 +78,24 @@ func (s *settingsScreen) scrollToBlock(title string, at int) {
 	}
 }
 
+// providerPaneClicks carries out the clicks that change what the Providers
+// pane lists, a provider's row, the way back and the fold, before its rows
+// are built.
+func (s *settingsScreen) providerPaneClicks(gtx C) {
+	pr := &s.providers
+	if pr.back.Clicked(gtx) {
+		pr.open = ""
+	}
+	if pr.addToggle.Clicked(gtx) {
+		pr.adding = !pr.adding
+	}
+	for id, st := range pr.rows {
+		if st.open.Clicked(gtx) {
+			pr.open = id
+		}
+	}
+}
+
 // providerListRows are the list: the default provider, the enabled providers
 // each a row that opens its screen, and the fold of the ones that are off.
 func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m providersMachine, base int) []layout.Widget {
@@ -186,9 +204,6 @@ func (s *settingsScreen) providerOption(gtx C, th *ui.Theme, p providerInfo, cho
 // click that turns the provider off does not also walk into it.
 func (s *settingsScreen) providerListRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo) D {
 	st := s.providers.state(p.id)
-	if st.open.Clicked(gtx) {
-		s.providers.open = p.id
-	}
 	if st.toggle.Update(gtx) {
 		s.setProviderEnabled(p.id, st.toggle.Value)
 	}
@@ -255,9 +270,6 @@ func (s *settingsScreen) providerListRow(gtx C, th *ui.Theme, values scopedValue
 // providerAddToggle is the fold that holds the providers that are off.
 func (s *settingsScreen) providerAddToggle(gtx C, th *ui.Theme, count int) D {
 	pr := &s.providers
-	if pr.addToggle.Clicked(gtx) {
-		pr.adding = !pr.adding
-	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return pr.addToggle.Layout(gtx, func(gtx C) D {
 		bg := th.Surface
@@ -382,9 +394,6 @@ func docsLink(gtx C, th *ui.Theme, click *widget.Clickable, label string) D {
 func (s *settingsScreen) providerHeader(th *ui.Theme, p providerInfo) []layout.Widget {
 	back := func(gtx C) D {
 		pr := &s.providers
-		if pr.back.Clicked(gtx) {
-			pr.open = ""
-		}
 		return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 			return pr.back.Layout(gtx, func(gtx C) D {
 				ink := th.MutedForeground
@@ -489,16 +498,16 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 		add(i18n.T("settings.providerBinSettings.skipTitle"), func(gtx C, first bool) D { return s.skipBlock(gtx, th, values, m, p, first) })
 	}
 	if supportsUltracode(p.id) {
-		add(i18n.T("settings.ultracodeSetting.title"), func(gtx C, first bool) D { return s.ultracodeRow(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.ultracodeSetting.title"), func(gtx C, first bool) D { return s.ultracodeRow(gtx, th, values, p, first) })
 	}
 	if supportsSubagentCards(p.id) {
-		add(i18n.T("settings.subagentCardsSetting.title"), func(gtx C, first bool) D { return s.subagentRow(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.subagentCardsSetting.title"), func(gtx C, first bool) D { return s.subagentRow(gtx, th, values, p, first) })
 	}
 	if hasPasteUnfold(p.id) {
-		add(i18n.T("settings.pasteUnfoldSetting.title"), func(gtx C, first bool) D { return s.pasteRow(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.pasteUnfoldSetting.title"), func(gtx C, first bool) D { return s.pasteRow(gtx, th, values, p, first) })
 	}
 	if canResume(p.id) {
-		add(i18n.T("settings.restoreSetting.title"), func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, m, p, first) })
+		add(i18n.T("settings.restoreSetting.title"), func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, p, first) })
 	}
 	if profiles != nil {
 		add(i18n.T("settings.providerBinary.title"), func(gtx C, first bool) D { return s.advancedBinaryFold(gtx, th, profiles, values, m, p, first) })
@@ -507,8 +516,9 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 }
 
 // switchRow is a global-only switch under a provider's screen: seen from a
-// project it is dimmed with no control, as every global row is.
-func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, first bool, titleKey, key, desc string, sw *ui.SwitchState, on bool) D {
+// project it is dimmed with no control, as every global row is. on reads the
+// switch's value after its click is written, so it draws where it went.
+func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, first bool, titleKey, key, desc string, sw *ui.SwitchState, on func(providersMachine) bool) D {
 	r := s.providerRow(gtx, settingEntry{titleKey: titleKey, key: key}, values)
 	r.description = desc
 	if r.kind == rowGlobalOnly {
@@ -517,28 +527,28 @@ func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, fir
 	if sw.Update(gtx) {
 		s.writeProviderKey(key, "", strconv.FormatBool(sw.Value), nil)
 	}
-	sw.Value = on
+	sw.Value = on(s.providers.snapshot())
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return th.Switch(sw).Layout(gtx) })
 }
 
-func (s *settingsScreen) ultracodeRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
+func (s *settingsScreen) ultracodeRow(gtx C, th *ui.Theme, values scopedValues, p providerInfo, first bool) D {
 	key := providerUltracodeKey(p.id)
-	return s.switchRow(gtx, th, values, first, "settings.ultracodeSetting.title", key, i18n.T("settings.ultracodeSetting.description", i18n.Args{"provider": p.name}), &s.providers.ultra, m.globals[key] == "true")
+	return s.switchRow(gtx, th, values, first, "settings.ultracodeSetting.title", key, i18n.T("settings.ultracodeSetting.description", i18n.Args{"provider": p.name}), &s.providers.ultra, func(m providersMachine) bool { return m.globals[key] == "true" })
 }
 
 // subagentRow is on until turned off, so only a stored "false" reads as off.
-func (s *settingsScreen) subagentRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
+func (s *settingsScreen) subagentRow(gtx C, th *ui.Theme, values scopedValues, p providerInfo, first bool) D {
 	key := providerSubagentKey(p.id)
-	return s.switchRow(gtx, th, values, first, "settings.subagentCardsSetting.title", key, i18n.T("settings.subagentCardsSetting.description", i18n.Args{"provider": p.name}), &s.providers.agents, m.globals[key] != "false")
+	return s.switchRow(gtx, th, values, first, "settings.subagentCardsSetting.title", key, i18n.T("settings.subagentCardsSetting.description", i18n.Args{"provider": p.name}), &s.providers.agents, func(m providersMachine) bool { return m.globals[key] != "false" })
 }
 
-func (s *settingsScreen) pasteRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
+func (s *settingsScreen) pasteRow(gtx C, th *ui.Theme, values scopedValues, p providerInfo, first bool) D {
 	key := providerPasteKey(p.id)
 	desc := i18n.T("settings.pasteUnfoldSetting.descriptionNextSession", i18n.Args{"provider": p.name})
 	if pasteUnfoldTiming(p.id) == pasteNextPaste {
 		desc = i18n.T("settings.pasteUnfoldSetting.descriptionNextPaste", i18n.Args{"provider": p.name})
 	}
-	return s.switchRow(gtx, th, values, first, "settings.pasteUnfoldSetting.title", key, desc, &s.providers.unfold, m.globals[key] == "true")
+	return s.switchRow(gtx, th, values, first, "settings.pasteUnfoldSetting.title", key, desc, &s.providers.unfold, func(m providersMachine) bool { return m.globals[key] == "true" })
 }
 
 // skipBlock is the skip ladder. The pair of keys is the storage and the rung
@@ -548,31 +558,33 @@ func (s *settingsScreen) skipBlock(gtx C, th *ui.Theme, values scopedValues, m p
 	r := s.providerRow(gtx, e, values)
 	r.description = i18n.T("settings.providerBinSettings.skipDescription", i18n.Args{"provider": p.name, "flag": skipFlags[p.id]})
 	level := m.skipLevel(p.id)
-	return s.ladderBlock(gtx, th, r, first, &s.providers.skip, skipRungs, level, func(next string) { s.chooseSkip(p, level, next) })
+	return s.ladderBlock(gtx, th, r, first, &s.providers.skip, skipRungs, func(m providersMachine) string { return m.skipLevel(p.id) },
+		func(next string) { s.chooseSkip(p, level, next) })
 }
 
 // restoreBlock answers the resume prompt ahead of time. It stores the key the
 // spawn gate reads (restoreKey), which is the same one the prompt's "always"
 // writes, so the gate's next decision is this block's choice.
-func (s *settingsScreen) restoreBlock(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, first bool) D {
+func (s *settingsScreen) restoreBlock(gtx C, th *ui.Theme, values scopedValues, p providerInfo, first bool) D {
 	key := restoreKey(p.id)
 	r := s.providerRow(gtx, settingEntry{titleKey: "settings.restoreSetting.title", key: key}, values)
 	r.description = i18n.T("settings.restoreSetting.description", i18n.Args{"provider": p.name})
-	choice := restoreChoice(m.globals[key])
-	return s.ladderBlock(gtx, th, r, first, &s.providers.restore, restoreRungs, choice,
+	return s.ladderBlock(gtx, th, r, first, &s.providers.restore, restoreRungs, func(m providersMachine) string { return restoreChoice(m.globals[key]) },
 		func(next string) { s.writeProviderKey(key, "", next, nil) })
 }
 
 // ladderBlock is a global-only choice of one rung: the segmented control, and
-// under it what the chosen rung means.
+// under it what the chosen rung means. read answers the chosen rung after the
+// click is chosen, so a rung written straight through draws where it went.
 func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bool, enum *widget.Enum,
-	rungs []ladderRung, current string, choose func(next string)) D {
+	rungs []ladderRung, read func(providersMachine) string, choose func(next string)) D {
 	if r.kind == rowGlobalOnly {
 		return r.layout(gtx, th, first, nil)
 	}
 	if enum.Update(gtx) {
 		choose(enum.Value)
 	}
+	current := read(s.providers.snapshot())
 	enum.Value = current
 	items := make([]ui.ToggleItem, len(rungs))
 	consequence := ""
