@@ -440,7 +440,11 @@
   "appearancePrefs": {
     "terminalFontFailed": "{family} でターミナルを描画できませんでした：{error}",
     "editorFontFailed": "{family} でコードを描画できませんでした：{error}",
-    "uiFontFailed": "{family} でインターフェースを描画できませんでした：{error}"
+    "uiFontFailed": "{family} でインターフェースを描画できませんでした：{error}",
+    "replicateFontTitle": "ターミナルとエディターでも {family} を使いますか？",
+    "replicateFontDescription": "インターフェースではすでに使用中です。各フォントはこの「外観」でそれぞれ個別に変更できます。",
+    "replicateFontKeep": "インターフェースのみ",
+    "replicateFontApply": "すべてに使用"
   },
   "settingsSandbox": {
     "grantOn": "オン",

@@ -440,7 +440,11 @@
   "appearancePrefs": {
     "terminalFontFailed": "无法用 {family} 绘制终端：{error}",
     "editorFontFailed": "无法用 {family} 绘制代码：{error}",
-    "uiFontFailed": "无法用 {family} 绘制界面：{error}"
+    "uiFontFailed": "无法用 {family} 绘制界面：{error}",
+    "replicateFontTitle": "在终端和编辑器中也使用 {family}？",
+    "replicateFontDescription": "界面已在使用该字体。你仍可以在“外观”中分别更改每种字体。",
+    "replicateFontKeep": "仅界面",
+    "replicateFontApply": "全部使用"
   },
   "settingsSandbox": {
     "grantOn": "开启",

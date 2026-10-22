@@ -440,7 +440,11 @@
   "appearancePrefs": {
     "terminalFontFailed": "No se pudo dibujar la terminal en {family}: {error}",
     "editorFontFailed": "No se pudo dibujar el código en {family}: {error}",
-    "uiFontFailed": "No se pudo dibujar la interfaz en {family}: {error}"
+    "uiFontFailed": "No se pudo dibujar la interfaz en {family}: {error}",
+    "replicateFontTitle": "¿Usar {family} también en la terminal y el editor?",
+    "replicateFontDescription": "La interfaz ya la usa. Puedes seguir cambiando cada fuente por separado aquí en Apariencia.",
+    "replicateFontKeep": "Solo la interfaz",
+    "replicateFontApply": "Usar en todo"
   },
   "settingsSandbox": {
     "grantOn": "Activado",

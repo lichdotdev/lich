@@ -488,6 +488,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutMergeDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.settings.theme.layoutDialogs(gtx, u.theme)
+		u.settings.layoutFontReplication(gtx, u.theme)
 		u.layoutProviderSetup(gtx, u.theme)
 		u.layoutPluginGate(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)

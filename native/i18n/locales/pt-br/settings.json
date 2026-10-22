@@ -440,7 +440,11 @@
   "appearancePrefs": {
     "terminalFontFailed": "Não foi possível desenhar o terminal em {family}: {error}",
     "editorFontFailed": "Não foi possível desenhar o código em {family}: {error}",
-    "uiFontFailed": "Não foi possível desenhar a interface em {family}: {error}"
+    "uiFontFailed": "Não foi possível desenhar a interface em {family}: {error}",
+    "replicateFontTitle": "Usar {family} também no terminal e no editor?",
+    "replicateFontDescription": "A interface já usa essa fonte. Você ainda pode mudar cada fonte separadamente aqui em Aparência.",
+    "replicateFontKeep": "Só a interface",
+    "replicateFontApply": "Usar em tudo"
   },
   "settingsSandbox": {
     "grantOn": "Ligado",

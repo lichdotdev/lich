@@ -440,7 +440,11 @@
   "appearancePrefs": {
     "terminalFontFailed": "Couldn't draw the terminal in {family}: {error}",
     "editorFontFailed": "Couldn't draw the code in {family}: {error}",
-    "uiFontFailed": "Couldn't draw the interface in {family}: {error}"
+    "uiFontFailed": "Couldn't draw the interface in {family}: {error}",
+    "replicateFontTitle": "Use {family} in the terminal and editor too?",
+    "replicateFontDescription": "The interface already uses it. You can still change each font on its own here in Appearance.",
+    "replicateFontKeep": "Interface only",
+    "replicateFontApply": "Use everywhere"
   },
   "settingsSandbox": {
     "grantOn": "On",

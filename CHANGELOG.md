@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Choosing a monospace font for the interface in Settings › Appearance asks whether the terminal and the editor should use it too. Use everywhere sets both; Interface only leaves them as they were. A proportional font or System asks nothing.
+
 ### Removed
 
 - The notice that the native window is experimental, shown the first time it opened, is gone: the native window is lich's only window.

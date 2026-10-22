@@ -450,7 +450,11 @@
   "appearancePrefs": {
     "terminalFontFailed": "Не удалось отрисовать терминал шрифтом {family}: {error}",
     "editorFontFailed": "Не удалось отрисовать код шрифтом {family}: {error}",
-    "uiFontFailed": "Не удалось отрисовать интерфейс шрифтом {family}: {error}"
+    "uiFontFailed": "Не удалось отрисовать интерфейс шрифтом {family}: {error}",
+    "replicateFontTitle": "Использовать {family} также в терминале и редакторе?",
+    "replicateFontDescription": "Интерфейс уже использует этот шрифт. Каждый шрифт по-прежнему можно изменить отдельно здесь, в разделе «Внешний вид».",
+    "replicateFontKeep": "Только интерфейс",
+    "replicateFontApply": "Использовать везде"
   },
   "settingsSandbox": {
     "grantOn": "Вкл.",

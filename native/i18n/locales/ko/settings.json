@@ -435,7 +435,11 @@
   "appearancePrefs": {
     "terminalFontFailed": "{family}(으)로 터미널을 그리지 못했습니다: {error}",
     "editorFontFailed": "{family}(으)로 코드를 그리지 못했습니다: {error}",
-    "uiFontFailed": "{family}(으)로 인터페이스를 그리지 못했습니다: {error}"
+    "uiFontFailed": "{family}(으)로 인터페이스를 그리지 못했습니다: {error}",
+    "replicateFontTitle": "터미널과 편집기에서도 {family}을(를) 사용할까요?",
+    "replicateFontDescription": "인터페이스는 이미 이 글꼴을 사용합니다. 각 글꼴은 여기 모양에서 따로 바꿀 수 있습니다.",
+    "replicateFontKeep": "인터페이스만",
+    "replicateFontApply": "모두에 사용"
   },
   "settingsSandbox": {
     "grantOn": "켬",

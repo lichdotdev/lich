@@ -96,6 +96,27 @@ func TestFontOptions(t *testing.T) {
 	}
 }
 
+func TestFontReplicationIsOfferedForAMonospaceFamilyOnly(t *testing.T) {
+	mono := []string{"Fira Code", "JetBrains Mono"}
+	cases := []struct {
+		name   string
+		family string
+		prefs  appearancePrefs
+		want   bool
+	}{
+		{"monospace, terminal and editor elsewhere", "JetBrains Mono", appearancePrefs{font: "", editorFont: "Fira Code"}, true},
+		{"monospace, only the editor elsewhere", "JetBrains Mono", appearancePrefs{font: "JetBrains Mono", editorFont: ""}, true},
+		{"monospace, both already on it", "JetBrains Mono", appearancePrefs{font: "JetBrains Mono", editorFont: "JetBrains Mono"}, false},
+		{"proportional", "Onest", appearancePrefs{}, false},
+		{"System", "", appearancePrefs{font: "Fira Code"}, false},
+	}
+	for _, c := range cases {
+		if got := offersFontReplication(c.family, mono, c.prefs); got != c.want {
+			t.Errorf("%s: offered %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
 func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
 	for q, title := range map[string]string{"zoom": "Zoom", "text size": "Terminal text size", "typeface": "Terminal font",
 		"budget": "Spend ceiling"} {

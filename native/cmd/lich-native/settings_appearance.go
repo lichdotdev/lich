@@ -42,6 +42,7 @@ type appearanceControls struct {
 	editorSize stepperState
 	editorFont fontPicker
 	uiFont     fontPicker
+	replicate  fontReplication
 	budget     widget.Editor
 	typed      bool // the ceiling field holds the user's text, not the stored value
 	closeTo    widget.Enum
@@ -85,6 +86,7 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 				p := s.look.prefs
 				p.uiFont = family
 				s.commitAppearance(p, uiFontKey, family)
+				s.offerFontReplication(family, p)
 			})
 		}
 	case editorFontSizeKey:
