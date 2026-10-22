@@ -231,18 +231,23 @@ type PRConversation struct {
 
 // PRReview mirrors project.PRReview.
 type PRReview struct {
-	ID     string `json:"id"`
-	Author string `json:"author"`
-	State  string `json:"state"`
-	Body   string `json:"body"`
-	Date   string `json:"date"`
+	ID         string `json:"id"`
+	DatabaseID int64  `json:"databaseId"`
+	Author     string `json:"author"`
+	State      string `json:"state"`
+	Body       string `json:"body"`
+	Date       string `json:"date"`
+	CanEdit    bool   `json:"canEdit"`
 }
 
 // PRComment mirrors project.PRComment.
 type PRComment struct {
-	Author string `json:"author"`
-	Body   string `json:"body"`
-	Date   string `json:"date"`
+	ID        int64  `json:"id"`
+	Author    string `json:"author"`
+	Body      string `json:"body"`
+	Date      string `json:"date"`
+	CanEdit   bool   `json:"canEdit"`
+	CanDelete bool   `json:"canDelete"`
 }
 
 // PRReviewThread mirrors project.PRReviewThread.
@@ -259,11 +264,13 @@ type PRReviewThread struct {
 
 // PRThreadComment mirrors project.PRThreadComment.
 type PRThreadComment struct {
-	ID       int64  `json:"id"`
-	Author   string `json:"author"`
-	Body     string `json:"body"`
-	Date     string `json:"date"`
-	DiffHunk string `json:"diffHunk"`
+	ID        int64  `json:"id"`
+	Author    string `json:"author"`
+	Body      string `json:"body"`
+	Date      string `json:"date"`
+	DiffHunk  string `json:"diffHunk"`
+	CanEdit   bool   `json:"canEdit"`
+	CanDelete bool   `json:"canDelete"`
 }
 
 func (c *Client) PullRequestConversation(ctx context.Context, path string, number int) (*PRConversation, error) {
@@ -276,6 +283,21 @@ func (c *Client) ReplyToReviewThread(ctx context.Context, path string, number in
 	return c.Call(ctx, "project.ReplyToReviewThread", nil, path, number, commentID, body)
 }
 
+// EditReviewComment rewrites thread comment commentID.
+func (c *Client) EditReviewComment(ctx context.Context, path string, number int, commentID int64, body string) error {
+	return c.Call(ctx, "project.EditReviewComment", nil, path, number, commentID, body)
+}
+
+// DeleteReviewComment removes thread comment commentID.
+func (c *Client) DeleteReviewComment(ctx context.Context, path string, number int, commentID int64) error {
+	return c.Call(ctx, "project.DeleteReviewComment", nil, path, number, commentID)
+}
+
+// EditReviewBody rewrites the summary of review reviewID (its database id).
+func (c *Client) EditReviewBody(ctx context.Context, path string, number int, reviewID int64, body string) error {
+	return c.Call(ctx, "project.EditReviewBody", nil, path, number, reviewID, body)
+}
+
 // ResolveReviewThread resolves thread threadID, or reopens it.
 func (c *Client) ResolveReviewThread(ctx context.Context, path, threadID string, resolved bool) error {
 	return c.Call(ctx, "project.ResolveReviewThread", nil, path, threadID, resolved)
@@ -284,6 +306,16 @@ func (c *Client) ResolveReviewThread(ctx context.Context, path, threadID string,
 // CommentOnPullRequest comments on the pull request itself.
 func (c *Client) CommentOnPullRequest(ctx context.Context, path string, number int, body string) error {
 	return c.Call(ctx, "project.CommentOnPullRequest", nil, path, number, body)
+}
+
+// EditPullRequestComment rewrites pull request comment commentID.
+func (c *Client) EditPullRequestComment(ctx context.Context, path string, number int, commentID int64, body string) error {
+	return c.Call(ctx, "project.EditPullRequestComment", nil, path, number, commentID, body)
+}
+
+// DeletePullRequestComment removes pull request comment commentID.
+func (c *Client) DeletePullRequestComment(ctx context.Context, path string, number int, commentID int64) error {
+	return c.Call(ctx, "project.DeletePullRequestComment", nil, path, number, commentID)
 }
 
 // EditPullRequestTitle renames the pull request.

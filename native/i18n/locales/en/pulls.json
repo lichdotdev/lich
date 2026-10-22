@@ -182,7 +182,18 @@
     "reopen": "Reopen",
     "resolve": "Resolve",
     "reply": "Reply",
-    "replyPlaceholder": "Reply to this thread"
+    "replyPlaceholder": "Reply to this thread",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving…",
+    "editFailed": "Couldn't update the comment: {error}",
+    "delete": "Delete",
+    "deleteFailed": "Couldn't delete the comment: {error}",
+    "deleteTitle": "Delete this comment?",
+    "deleteGone": "GitHub can't bring it back.",
+    "deleteLast": "It's the only comment in this thread, so the thread goes too. GitHub can't bring it back.",
+    "verdictStays": "The verdict stays as it is.",
+    "more": "Comment options"
   },
   "pulls": {
     "alreadyRemoved": "{name} was already removed",

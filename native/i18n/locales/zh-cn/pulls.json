@@ -181,7 +181,18 @@
     "reopen": "重新打开",
     "resolve": "标记为已解决",
     "reply": "回复",
-    "replyPlaceholder": "回复此讨论串"
+    "replyPlaceholder": "回复此讨论串",
+    "edit": "编辑",
+    "save": "保存",
+    "saving": "正在保存…",
+    "editFailed": "无法更新评论：{error}",
+    "delete": "删除",
+    "deleteFailed": "无法删除评论：{error}",
+    "deleteTitle": "删除这条评论？",
+    "deleteGone": "GitHub 无法恢复它。",
+    "deleteLast": "这是该讨论串中唯一的评论，因此讨论串也会一并删除。GitHub 无法恢复它。",
+    "verdictStays": "结论保持不变。",
+    "more": "评论选项"
   },
   "pulls": {
     "alreadyRemoved": "{name} 已被移除",

@@ -25,6 +25,15 @@ type talkState struct {
 	sendClicks   map[string]*widget.Clickable
 	cancelClicks map[string]*widget.Clickable
 	resolveClick map[string]*widget.Clickable
+	editing      map[string]bool
+	focusEdit    string
+	menus        map[string]*ui.MenuState
+	moreClicks   map[string]*widget.Clickable
+	deleting     *commentTarget
+	deleteShown  commentTarget
+	deleteDialog ui.DialogState
+	deleteYes    widget.Clickable
+	deleteNo     widget.Clickable
 	showResolved widget.Bool
 	resolvedTap  widget.Clickable
 	comment      widget.Editor
@@ -50,6 +59,7 @@ func (s *talkState) init() {
 	s.replying, s.replyFields = map[string]bool{}, map[string]*replyField{}
 	s.replyClicks, s.sendClicks = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
 	s.cancelClicks, s.resolveClick = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
+	s.editing, s.menus, s.moreClicks = map[string]bool{}, map[string]*ui.MenuState{}, map[string]*widget.Clickable{}
 	s.discards, s.edits = map[int]*widget.Clickable{}, map[int]*widget.Clickable{}
 }
 
@@ -128,9 +138,13 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d lichc
 	for _, it := range items {
 		switch {
 		case it.review != nil:
-			rows = append(rows, v.talkEntry(th, "review:"+it.review.ID, it.review.Author, verdictLine(*it.review), it.review.Body, it.review.Date, now, act))
+			r := *it.review
+			target := commentTarget{kind: reviewSummary, id: r.DatabaseID, body: r.Body, canEdit: r.CanEdit}
+			rows = append(rows, v.talkEntry(th, p, "review:"+r.ID, r.Author, verdictLine(r), target, r.Date, now, act))
 		case it.comment != nil:
-			rows = append(rows, v.talkEntry(th, "comment:"+it.comment.Date+it.comment.Author, it.comment.Author, "", it.comment.Body, it.comment.Date, now, act))
+			c := *it.comment
+			target := commentTarget{kind: prComment, id: c.ID, body: c.Body, canEdit: c.CanEdit, canDelete: c.CanDelete}
+			rows = append(rows, v.talkEntry(th, p, "comment:"+c.Date+c.Author, c.Author, "", target, c.Date, now, act))
 		default:
 			t := *it.thread
 			rows = append(rows, func(gtx C) D { return v.threadCard(gtx, th, p, d, t, act, now) })
@@ -155,18 +169,26 @@ func verdictLine(r lichclient.PRReview) string {
 }
 
 // talkEntry is a review or a comment: who, what they decided, when, and what
-// they wrote.
-func (v *pullView) talkEntry(th *ui.Theme, key, author, verdict, body, date string, now time.Time, act *pullsAction) layout.Widget {
-	body = strings.TrimSpace(body)
+// they wrote, with the ⋯ of what the viewer may do to it.
+func (v *pullView) talkEntry(th *ui.Theme, p *pullsScreen, key, author, verdict string, target commentTarget, date string, now time.Time, act *pullsAction) layout.Widget {
+	body := strings.TrimSpace(target.body)
 	return func(gtx C) D {
+		editing := v.talk.isEditing(gtx, target)
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return byline(gtx, th, author, verdict, date, now) }),
 				layout.Rigid(func(gtx C) D {
-					if body == "" {
+					return v.commentHead(gtx, th, p, target, func(gtx C) D { return byline(gtx, th, author, verdict, date, now) })
+				}),
+				layout.Rigid(func(gtx C) D {
+					if !editing && body == "" {
 						return D{}
 					}
-					return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D { return v.md.layout(gtx, th, key, body, act.open) })
+					return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+						if editing {
+							return v.editBox(gtx, th, target, act)
+						}
+						return v.md.layout(gtx, th, key, body, act.open)
+					})
 				}),
 			)
 		})
@@ -264,21 +286,19 @@ func (v *pullView) threadBody(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.
 			return layout.Inset{Top: ui.Space(2)}.Layout(gtx, func(gtx C) D { return hunkTail(gtx, th, t.Comments[0].DiffHunk) })
 		}))
 	}
+	editing := false
 	for _, c := range t.Comments {
+		target := threadTarget(t, c)
+		editing = v.talk.isEditing(gtx, target) || editing
 		rows = append(rows, layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return byline(gtx, th, c.Author, "", c.Date, now) }),
-					layout.Rigid(func(gtx C) D {
-						return layout.Inset{Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D { return wrapped(gtx, th.Text(ui.TextSM, c.Body)) })
-					}),
-				)
-			})
+			return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return v.threadComment(gtx, th, p, target, c, act, now) })
 		}))
 	}
-	rows = append(rows, layout.Rigid(func(gtx C) D {
-		return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return v.threadActions(gtx, th, d, t, act) })
-	}))
+	if !editing {
+		rows = append(rows, layout.Rigid(func(gtx C) D {
+			return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return v.threadActions(gtx, th, d, t, act) })
+		}))
+	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 }
 

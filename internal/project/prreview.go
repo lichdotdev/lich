@@ -2,6 +2,7 @@ package project
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -165,11 +166,40 @@ func writeTempJSON(payload any) (string, error) {
 // it is an answer to something already said, which is the same split GitHub
 // draws between "add single comment" and "start a review".
 func (s *Service) ReplyToReviewThread(path string, number int, commentID int64, body string) error {
-	if body == "" {
-		return fmt.Errorf("a reply needs something written in it")
-	}
 	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/comments/%d/replies", number, commentID)
-	return s.writePR(prReviewTimeout, path, number, "api", "--method", "POST", endpoint, "-f", "body="+body)
+	return s.writeBody(path, number, "POST", endpoint, body, "a reply needs something written in it")
+}
+
+// writeBody sends body to a REST endpoint that takes a text and nothing else,
+// refusing an empty one with emptyErr before it reaches gh: GitHub would
+// refuse it too, a round-trip later.
+func (s *Service) writeBody(path string, number int, method, endpoint, body, emptyErr string) error {
+	if body == "" {
+		return errors.New(emptyErr)
+	}
+	return s.writePR(prReviewTimeout, path, number, "api", "--method", method, endpoint, "-f", "body="+body)
+}
+
+// EditReviewComment rewrites one comment of a review thread. commentID is its
+// database id, the same address a reply takes; GitHub refuses the edit unless
+// the account gh runs as may update that comment.
+func (s *Service) EditReviewComment(path string, number int, commentID int64, body string) error {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/comments/%d", commentID)
+	return s.writeBody(path, number, "PATCH", endpoint, body, "a review comment needs something written in it")
+}
+
+// DeleteReviewComment removes one comment of a review thread; the last one
+// gone takes the thread with it. There is no undo on GitHub's side.
+func (s *Service) DeleteReviewComment(path string, number int, commentID int64) error {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/comments/%d", commentID)
+	return s.writePR(prReviewTimeout, path, number, "api", "--method", "DELETE", endpoint)
+}
+
+// EditReviewBody rewrites the summary of a submitted review. reviewID is its
+// database id; the verdict stays what it was, GitHub has no way to change it.
+func (s *Service) EditReviewBody(path string, number int, reviewID int64, body string) error {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/reviews/%d", number, reviewID)
+	return s.writeBody(path, number, "PUT", endpoint, body, "a review summary needs something written in it")
 }
 
 // ResolveReviewThread marks a thread resolved, or reopens it. threadID is the
@@ -193,6 +223,20 @@ func (s *Service) CommentOnPullRequest(path string, number int, body string) err
 		return fmt.Errorf("a comment needs something written in it")
 	}
 	return s.writePR(prReviewTimeout, path, number, prArgs("comment", number, "--body", body)...)
+}
+
+// EditPullRequestComment rewrites a comment on the pull request itself.
+// GitHub files those as issue comments, which is the endpoint they live at.
+func (s *Service) EditPullRequestComment(path string, number int, commentID int64, body string) error {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", commentID)
+	return s.writeBody(path, number, "PATCH", endpoint, body, "a comment needs something written in it")
+}
+
+// DeletePullRequestComment removes a comment on the pull request itself, for
+// good.
+func (s *Service) DeletePullRequestComment(path string, number int, commentID int64) error {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", commentID)
+	return s.writePR(prReviewTimeout, path, number, "api", "--method", "DELETE", endpoint)
 }
 
 // EditPullRequestTitle renames the pull request on GitHub. GitHub refuses a pull

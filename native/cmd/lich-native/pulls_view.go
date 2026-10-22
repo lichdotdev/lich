@@ -45,6 +45,7 @@ type pullsAction struct {
 	comment  string // a comment on the pull request itself
 	reply    *threadReply
 	resolve  *threadResolve
+	edit     *commentEdit
 	title    string  // a new title for the pull request
 	body     *string // a new description; empty clears it
 }

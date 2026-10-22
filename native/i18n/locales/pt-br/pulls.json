@@ -182,7 +182,18 @@
     "reopen": "Reabrir",
     "resolve": "Resolver",
     "reply": "Responder",
-    "replyPlaceholder": "Responder a esta thread"
+    "replyPlaceholder": "Responder a esta thread",
+    "edit": "Editar",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "editFailed": "Não foi possível atualizar o comentário: {error}",
+    "delete": "Excluir",
+    "deleteFailed": "Não foi possível excluir o comentário: {error}",
+    "deleteTitle": "Excluir este comentário?",
+    "deleteGone": "O GitHub não tem como recuperá-lo.",
+    "deleteLast": "É o único comentário desta thread, então a thread some junto. O GitHub não tem como recuperá-lo.",
+    "verdictStays": "O veredito continua o mesmo.",
+    "more": "Opções do comentário"
   },
   "pulls": {
     "alreadyRemoved": "{name} já foi removido",

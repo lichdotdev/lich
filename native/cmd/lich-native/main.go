@@ -492,6 +492,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutCloseWorktreeConfirm(gtx, u.theme)
 		u.layoutSubmitDialog(gtx, u.theme)
 		u.layoutMergeDialog(gtx, u.theme)
+		u.layoutDeleteCommentDialog(gtx, u.theme)
 		u.review.layoutDialogs(gtx, u.theme)
 		u.commentEdit.layout(gtx, u.theme, &u.comments)
 		u.settings.theme.layoutDialogs(gtx, u.theme)

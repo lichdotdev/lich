@@ -177,7 +177,18 @@
     "reopen": "다시 열기",
     "resolve": "해결",
     "reply": "답글",
-    "replyPlaceholder": "이 스레드에 답글"
+    "replyPlaceholder": "이 스레드에 답글",
+    "edit": "편집",
+    "save": "저장",
+    "saving": "저장 중…",
+    "editFailed": "댓글을 업데이트하지 못했습니다: {error}",
+    "delete": "삭제",
+    "deleteFailed": "댓글을 삭제하지 못했습니다: {error}",
+    "deleteTitle": "이 댓글을 삭제할까요?",
+    "deleteGone": "GitHub에서 되돌릴 수 없습니다.",
+    "deleteLast": "이 스레드의 유일한 댓글이라 스레드도 함께 사라집니다. GitHub에서 되돌릴 수 없습니다.",
+    "verdictStays": "판정은 그대로 유지됩니다.",
+    "more": "댓글 옵션"
   },
   "pulls": {
     "alreadyRemoved": "{name}은(는) 이미 삭제되었습니다",

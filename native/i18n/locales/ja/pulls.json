@@ -181,7 +181,18 @@
     "reopen": "再オープン",
     "resolve": "解決",
     "reply": "返信",
-    "replyPlaceholder": "このスレッドに返信"
+    "replyPlaceholder": "このスレッドに返信",
+    "edit": "編集",
+    "save": "保存",
+    "saving": "保存中…",
+    "editFailed": "コメントを更新できませんでした: {error}",
+    "delete": "削除",
+    "deleteFailed": "コメントを削除できませんでした: {error}",
+    "deleteTitle": "このコメントを削除しますか？",
+    "deleteGone": "GitHub では元に戻せません。",
+    "deleteLast": "このスレッドの唯一のコメントなので、スレッドも削除されます。GitHub では元に戻せません。",
+    "verdictStays": "判定は変わりません。",
+    "more": "コメントのオプション"
   },
   "pulls": {
     "alreadyRemoved": "{name} はすでに削除されています",

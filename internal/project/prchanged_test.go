@@ -18,13 +18,18 @@ func (l *changeLog) emit(name string, data any) {
 func TestPullRequestWritesAnnounceTheChange(t *testing.T) {
 	t.Parallel()
 	writes := map[string]func(s *Service) error{
-		"merge":          func(s *Service) error { return s.MergePullRequest("/repo", 7, "squash", "", "", false) },
-		"submit review":  func(s *Service) error { return s.SubmitReview("/repo", 7, "approve", "", "", nil) },
-		"reply":          func(s *Service) error { return s.ReplyToReviewThread("/repo", 7, 1, "ok") },
-		"resolve thread": func(s *Service) error { return s.ResolveReviewThread("/repo", "T_1", true) },
-		"comment":        func(s *Service) error { return s.CommentOnPullRequest("/repo", 7, "hi") },
-		"edit title":     func(s *Service) error { return s.EditPullRequestTitle("/repo", 7, "title") },
-		"edit body":      func(s *Service) error { return s.EditPullRequestBody("/repo", 7, "") },
+		"merge":             func(s *Service) error { return s.MergePullRequest("/repo", 7, "squash", "", "", false) },
+		"submit review":     func(s *Service) error { return s.SubmitReview("/repo", 7, "approve", "", "", nil) },
+		"reply":             func(s *Service) error { return s.ReplyToReviewThread("/repo", 7, 1, "ok") },
+		"edit comment":      func(s *Service) error { return s.EditReviewComment("/repo", 7, 1, "ok") },
+		"delete comment":    func(s *Service) error { return s.DeleteReviewComment("/repo", 7, 1) },
+		"edit pr comment":   func(s *Service) error { return s.EditPullRequestComment("/repo", 7, 1, "ok") },
+		"delete pr comment": func(s *Service) error { return s.DeletePullRequestComment("/repo", 7, 1) },
+		"edit review body":  func(s *Service) error { return s.EditReviewBody("/repo", 7, 1, "ok") },
+		"resolve thread":    func(s *Service) error { return s.ResolveReviewThread("/repo", "T_1", true) },
+		"comment":           func(s *Service) error { return s.CommentOnPullRequest("/repo", 7, "hi") },
+		"edit title":        func(s *Service) error { return s.EditPullRequestTitle("/repo", 7, "title") },
+		"edit body":         func(s *Service) error { return s.EditPullRequestBody("/repo", 7, "") },
 	}
 	for name, write := range writes {
 		t.Run(name+" emits once it landed", func(t *testing.T) {

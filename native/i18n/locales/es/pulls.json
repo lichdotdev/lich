@@ -182,7 +182,18 @@
     "reopen": "Reabrir",
     "resolve": "Resolver",
     "reply": "Responder",
-    "replyPlaceholder": "Responde a este hilo"
+    "replyPlaceholder": "Responde a este hilo",
+    "edit": "Editar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "editFailed": "No se pudo actualizar el comentario: {error}",
+    "delete": "Eliminar",
+    "deleteFailed": "No se pudo eliminar el comentario: {error}",
+    "deleteTitle": "¿Eliminar este comentario?",
+    "deleteGone": "GitHub no puede recuperarlo.",
+    "deleteLast": "Es el único comentario de este hilo, así que el hilo también desaparece. GitHub no puede recuperarlo.",
+    "verdictStays": "El veredicto no cambia.",
+    "more": "Opciones del comentario"
   },
   "pulls": {
     "alreadyRemoved": "{name} ya se había eliminado",

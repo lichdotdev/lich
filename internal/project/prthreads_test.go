@@ -9,20 +9,20 @@ import (
 const conversationPayload = `{"data":{"repository":{"pullRequest":{
   "headRefOid": "21e6cdc4336e8f5db46724d82fecf0423bc41a0a",
   "reviews": {"nodes": [
-    {"id":"PRR_kw1","author":{"login":"omartelo"},"state":"CHANGES_REQUESTED","body":"two things first","submittedAt":"2026-07-30T10:00:00Z"},
+    {"id":"PRR_kw1","databaseId":700001,"author":{"login":"omartelo"},"state":"CHANGES_REQUESTED","body":"two things first","submittedAt":"2026-07-30T10:00:00Z","viewerCanUpdate":true},
     {"author":{"login":"bot"},"state":"COMMENTED","body":"","submittedAt":"2026-07-30T10:05:00Z"},
     {"author":{"login":"drafting"},"state":"PENDING","body":"not submitted","submittedAt":null},
     {"id":"PRR_kw2","author":{"login":"reviewer"},"state":"APPROVED","body":"","submittedAt":"2026-07-30T11:00:00Z"}
   ]},
   "comments": {"nodes": [
-    {"author":{"login":"omartelo"},"body":"rebased on main","createdAt":"2026-07-30T09:00:00Z"}
+    {"databaseId":800001,"author":{"login":"omartelo"},"body":"rebased on main","createdAt":"2026-07-30T09:00:00Z","viewerCanUpdate":true,"viewerCanDelete":true}
   ]},
   "reviewThreads": {"nodes": [
     {"id":"PRRT_kw1","isResolved":false,"isOutdated":false,"path":"internal/project/prthreads.go",
      "line":61,"originalLine":58,"startLine":59,"diffSide":"RIGHT",
      "comments":{"nodes":[
-       {"databaseId":900001,"author":{"login":"omartelo"},"body":"this buffers every hunk","createdAt":"2026-07-30T10:01:00Z","diffHunk":"@@ -57,6 +57,10 @@"},
-       {"databaseId":900002,"author":{"login":"claude"},"body":"dropped it","createdAt":"2026-07-30T10:30:00Z","diffHunk":"@@ -57,6 +57,10 @@"}
+       {"databaseId":900001,"author":{"login":"omartelo"},"body":"this buffers every hunk","createdAt":"2026-07-30T10:01:00Z","diffHunk":"@@ -57,6 +57,10 @@","viewerCanUpdate":true,"viewerCanDelete":true},
+       {"databaseId":900002,"author":{"login":"claude"},"body":"dropped it","createdAt":"2026-07-30T10:30:00Z","diffHunk":"@@ -57,6 +57,10 @@","viewerCanUpdate":false}
      ]}},
     {"id":"PRRT_kw2","isResolved":true,"isOutdated":true,"path":"frontend/src/lib/pulls/hook.ts",
      "line":null,"originalLine":18,"startLine":null,"diffSide":"RIGHT",
@@ -95,6 +95,32 @@ func TestParseConversation(t *testing.T) {
 		}
 		if anchored.Comments[0].DiffHunk == "" {
 			t.Error("expected the hunk to travel with the comment")
+		}
+	})
+
+	t.Run("only a comment GitHub lets the viewer update is editable", func(t *testing.T) {
+		comments := convo.Threads[0].Comments
+		if !comments[0].CanEdit || comments[1].CanEdit {
+			t.Errorf("canEdit = %v, %v, want true, false", comments[0].CanEdit, comments[1].CanEdit)
+		}
+		if !comments[0].CanDelete || comments[1].CanDelete {
+			t.Errorf("canDelete = %v, %v, want true, false", comments[0].CanDelete, comments[1].CanDelete)
+		}
+	})
+
+	t.Run("a pull request comment carries its database id and what the viewer may do", func(t *testing.T) {
+		c := convo.Comments[0]
+		if c.ID != 800001 || !c.CanEdit || !c.CanDelete {
+			t.Errorf("comment = %+v, want id 800001, editable and deletable", c)
+		}
+	})
+
+	t.Run("a review carries the database id its body is rewritten by", func(t *testing.T) {
+		if r := convo.Reviews[0]; r.DatabaseID != 700001 || !r.CanEdit {
+			t.Errorf("review = %+v, want database id 700001 and editable", r)
+		}
+		if convo.Reviews[1].CanEdit {
+			t.Error("a review GitHub did not mark updatable came through editable")
 		}
 	})
 

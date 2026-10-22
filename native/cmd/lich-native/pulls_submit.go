@@ -190,6 +190,9 @@ func (u *window) applyTalk(path string, number int, act pullsAction) {
 			return nil
 		})
 	}
+	if e := act.edit; e != nil {
+		go u.editComment(path, number, *e)
+	}
 	if r := act.resolve; r != nil {
 		resolve := *r
 		go u.prWrite("resolve:"+resolve.id, func(err error) string {

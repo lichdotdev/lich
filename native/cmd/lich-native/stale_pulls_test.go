@@ -55,6 +55,7 @@ func pullsFrames(t *testing.T) (*window, *frameRig) {
 		u.root.Layout(gtx, func(gtx C) D {
 			u.layoutSubmitDialog(gtx, th)
 			u.layoutMergeDialog(gtx, th)
+			u.layoutDeleteCommentDialog(gtx, th)
 			u.applyPulls(u.pulls.layout(gtx, th))
 			return D{Size: gtx.Constraints.Max}
 		})
@@ -132,6 +133,39 @@ func TestPullsReplyCancelClosesTheBoxInTheFrameThatTookTheClick(t *testing.T) {
 	r.clickLabel(t, reply)
 	r.clickLabel(t, i18n.T("common.action.cancel"))
 	if u.pulls.view.talk.replying["T1"] {
+		t.Fatal("the click missed Cancel")
+	}
+}
+
+func TestPullsCommentEditTakesTheThreadsButtonsUntilCancel(t *testing.T) {
+	u, r := pullsDetailShown(t)
+	reply := i18n.T("pulls.reviewThread.reply")
+	openPullsTab(t, r, tabConversation.label(), reply)
+	conv := talkFixture()
+	target := threadTarget(conv.Threads[0], conv.Threads[0].Comments[0])
+	u.pulls.view.talk.startEdit(target)
+	r.waitFor(t, i18n.T("pulls.reviewThread.save"))
+	if got := u.pulls.view.talk.editorOf(target.key()).Text(); got != "Why not cap this?" {
+		t.Errorf("edit box = %q, want the comment as it stands", got)
+	}
+	if r.shows(reply) {
+		t.Error("Reply stayed under the comment being edited")
+	}
+	r.clickLabel(t, i18n.T("common.action.cancel"))
+	if u.pulls.view.talk.editing[target.key()] {
+		t.Fatal("the click missed Cancel")
+	}
+	r.waitFor(t, reply)
+}
+
+func TestPullsDeleteDialogWarnsTheThreadGoesAndCancelCloses(t *testing.T) {
+	u, r := pullsDetailShown(t)
+	conv := talkFixture()
+	target := threadTarget(conv.Threads[0], conv.Threads[0].Comments[0])
+	u.pulls.view.talk.deleting = &target
+	r.waitFor(t, i18n.T("pulls.reviewThread.deleteLast"))
+	r.clickLabel(t, i18n.T("common.action.cancel"))
+	if u.pulls.view.talk.deleting != nil {
 		t.Fatal("the click missed Cancel")
 	}
 }

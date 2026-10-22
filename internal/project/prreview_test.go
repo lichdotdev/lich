@@ -180,6 +180,89 @@ func TestReplyToReviewThreadFlow(t *testing.T) {
 	})
 }
 
+func TestEditReviewCommentFlow(t *testing.T) {
+	t.Parallel()
+	t.Run("an edit patches the comment by its database id", func(t *testing.T) {
+		gh := &fakeGH{}
+		if err := withGH(gh).EditReviewComment("/repo", 42, 900001, "reworded"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := []string{
+			"api", "--method", "PATCH",
+			"repos/{owner}/{repo}/pulls/comments/900001",
+			"-f", "body=reworded",
+		}
+		if !slices.Equal(gh.args, want) {
+			t.Errorf("args = %v, want %v", gh.args, want)
+		}
+	})
+
+	t.Run("an empty edit never reaches gh", func(t *testing.T) {
+		gh := &fakeGH{}
+		if err := withGH(gh).EditReviewComment("/repo", 42, 1, ""); err == nil {
+			t.Error("expected an error for an empty comment")
+		}
+		if gh.calls != 0 {
+			t.Errorf("gh was called %d times, want 0", gh.calls)
+		}
+	})
+}
+
+func TestConversationWritesAddressGitHub(t *testing.T) {
+	t.Parallel()
+	cases := map[string]struct {
+		write func(s *Service) error
+		want  []string
+	}{
+		"deleting a thread comment": {
+			func(s *Service) error { return s.DeleteReviewComment("/repo", 42, 900001) },
+			[]string{"api", "--method", "DELETE", "repos/{owner}/{repo}/pulls/comments/900001"},
+		},
+		"editing a pull request comment": {
+			func(s *Service) error { return s.EditPullRequestComment("/repo", 42, 800001, "reworded") },
+			[]string{"api", "--method", "PATCH", "repos/{owner}/{repo}/issues/comments/800001", "-f", "body=reworded"},
+		},
+		"deleting a pull request comment": {
+			func(s *Service) error { return s.DeletePullRequestComment("/repo", 42, 800001) },
+			[]string{"api", "--method", "DELETE", "repos/{owner}/{repo}/issues/comments/800001"},
+		},
+		"editing a review's summary": {
+			func(s *Service) error { return s.EditReviewBody("/repo", 42, 700001, "reworded") },
+			[]string{"api", "--method", "PUT", "repos/{owner}/{repo}/pulls/42/reviews/700001", "-f", "body=reworded"},
+		},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			gh := &fakeGH{}
+			if err := c.write(withGH(gh)); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !slices.Equal(gh.args, c.want) {
+				t.Errorf("args = %v, want %v", gh.args, c.want)
+			}
+		})
+	}
+}
+
+func TestConversationEditsRefuseAnEmptyBody(t *testing.T) {
+	t.Parallel()
+	edits := map[string]func(s *Service) error{
+		"pull request comment": func(s *Service) error { return s.EditPullRequestComment("/repo", 42, 1, "") },
+		"review summary":       func(s *Service) error { return s.EditReviewBody("/repo", 42, 1, "") },
+	}
+	for name, edit := range edits {
+		t.Run(name, func(t *testing.T) {
+			gh := &fakeGH{}
+			if err := edit(withGH(gh)); err == nil {
+				t.Error("expected an error for an empty body")
+			}
+			if gh.calls != 0 {
+				t.Errorf("gh was called %d times, want 0", gh.calls)
+			}
+		})
+	}
+}
+
 func TestResolveReviewThreadFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("resolving and reopening are two mutations, one node id", func(t *testing.T) {

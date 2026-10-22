@@ -23,11 +23,11 @@ const prConversationQuery = `query($owner:String!,$repo:String!,$number:Int!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$number){
       headRefOid
-      reviews(last:50){nodes{id author{login} state body submittedAt}}
-      comments(last:50){nodes{author{login} body createdAt}}
+      reviews(last:50){nodes{id databaseId author{login} state body submittedAt viewerCanUpdate}}
+      comments(last:50){nodes{databaseId author{login} body createdAt viewerCanUpdate viewerCanDelete}}
       reviewThreads(last:100){nodes{
         id isResolved isOutdated path line originalLine startLine originalStartLine diffSide
-        comments(last:50){nodes{databaseId author{login} body createdAt diffHunk}}
+        comments(last:50){nodes{databaseId author{login} body createdAt diffHunk viewerCanUpdate viewerCanDelete}}
       }}
     }
   }
@@ -53,19 +53,26 @@ type PRConversation struct {
 // summary box above the line comments.
 type PRReview struct {
 	// ID is the GraphQL node id, which is what dismissing the review takes.
-	ID     string `json:"id"`
-	Author string `json:"author"`
+	ID string `json:"id"`
+	// DatabaseID is the REST id, the address its summary is rewritten at.
+	DatabaseID int64  `json:"databaseId"`
+	Author     string `json:"author"`
 	// State is gh's APPROVED | CHANGES_REQUESTED | COMMENTED | DISMISSED.
-	State string `json:"state"`
-	Body  string `json:"body"`
-	Date  string `json:"date"`
+	State   string `json:"state"`
+	Body    string `json:"body"`
+	Date    string `json:"date"`
+	CanEdit bool   `json:"canEdit"`
 }
 
 // PRComment is one comment on the pull request itself.
 type PRComment struct {
-	Author string `json:"author"`
-	Body   string `json:"body"`
-	Date   string `json:"date"`
+	// ID is the REST database id, the address an edit or a delete takes.
+	ID        int64  `json:"id"`
+	Author    string `json:"author"`
+	Body      string `json:"body"`
+	Date      string `json:"date"`
+	CanEdit   bool   `json:"canEdit"`
+	CanDelete bool   `json:"canDelete"`
 }
 
 // PRReviewThread is one conversation anchored to a line of the diff.
@@ -100,6 +107,10 @@ type PRThreadComment struct {
 	// diff already has them where the thread is anchored; this is what an
 	// outdated thread has left.
 	DiffHunk string `json:"diffHunk"`
+	// CanEdit is GitHub's own answer to whether the account reading may
+	// rewrite the comment, which is what the Edit button stands on.
+	CanEdit   bool `json:"canEdit"`
+	CanDelete bool `json:"canDelete"`
 }
 
 // ghConversation mirrors the GraphQL payload; nothing below leaves this package
@@ -130,17 +141,22 @@ type ghActor struct {
 }
 
 type ghReview struct {
-	ID          string  `json:"id"`
-	Author      ghActor `json:"author"`
-	State       string  `json:"state"`
-	Body        string  `json:"body"`
-	SubmittedAt string  `json:"submittedAt"`
+	ID              string  `json:"id"`
+	DatabaseID      int64   `json:"databaseId"`
+	Author          ghActor `json:"author"`
+	State           string  `json:"state"`
+	Body            string  `json:"body"`
+	SubmittedAt     string  `json:"submittedAt"`
+	ViewerCanUpdate bool    `json:"viewerCanUpdate"`
 }
 
 type ghIssueComment struct {
-	Author    ghActor `json:"author"`
-	Body      string  `json:"body"`
-	CreatedAt string  `json:"createdAt"`
+	DatabaseID      int64   `json:"databaseId"`
+	Author          ghActor `json:"author"`
+	Body            string  `json:"body"`
+	CreatedAt       string  `json:"createdAt"`
+	ViewerCanUpdate bool    `json:"viewerCanUpdate"`
+	ViewerCanDelete bool    `json:"viewerCanDelete"`
 }
 
 type ghReviewThread struct {
@@ -164,6 +180,9 @@ type ghThreadComment struct {
 	Body       string  `json:"body"`
 	CreatedAt  string  `json:"createdAt"`
 	DiffHunk   string  `json:"diffHunk"`
+	// ViewerCanUpdate answers for the account gh ran as.
+	ViewerCanUpdate bool `json:"viewerCanUpdate"`
+	ViewerCanDelete bool `json:"viewerCanDelete"`
 }
 
 // PullRequestConversation reads one pull request's reviews, comments and review
@@ -211,11 +230,13 @@ func toReviews(nodes []ghReview) []PRReview {
 			continue
 		}
 		out = append(out, PRReview{
-			ID:     r.ID,
-			Author: r.Author.Login,
-			State:  r.State,
-			Body:   r.Body,
-			Date:   r.SubmittedAt,
+			ID:         r.ID,
+			DatabaseID: r.DatabaseID,
+			Author:     r.Author.Login,
+			State:      r.State,
+			Body:       r.Body,
+			Date:       r.SubmittedAt,
+			CanEdit:    r.ViewerCanUpdate,
 		})
 	}
 	if len(out) == 0 {
@@ -230,7 +251,14 @@ func toComments(nodes []ghIssueComment) []PRComment {
 	}
 	out := make([]PRComment, 0, len(nodes))
 	for _, c := range nodes {
-		out = append(out, PRComment{Author: c.Author.Login, Body: c.Body, Date: c.CreatedAt})
+		out = append(out, PRComment{
+			ID:        c.DatabaseID,
+			Author:    c.Author.Login,
+			Body:      c.Body,
+			Date:      c.CreatedAt,
+			CanEdit:   c.ViewerCanUpdate,
+			CanDelete: c.ViewerCanDelete,
+		})
 	}
 	return out
 }
@@ -289,11 +317,13 @@ func toThreadComments(nodes []ghThreadComment) []PRThreadComment {
 	out := make([]PRThreadComment, 0, len(nodes))
 	for _, c := range nodes {
 		out = append(out, PRThreadComment{
-			ID:       c.DatabaseID,
-			Author:   c.Author.Login,
-			Body:     c.Body,
-			Date:     c.CreatedAt,
-			DiffHunk: c.DiffHunk,
+			ID:        c.DatabaseID,
+			Author:    c.Author.Login,
+			Body:      c.Body,
+			Date:      c.CreatedAt,
+			DiffHunk:  c.DiffHunk,
+			CanEdit:   c.ViewerCanUpdate,
+			CanDelete: c.ViewerCanDelete,
 		})
 	}
 	return out
