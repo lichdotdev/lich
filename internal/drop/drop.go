@@ -35,6 +35,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 
 	"github.com/lichdotdev/lich/internal/sandbox"
@@ -171,14 +172,7 @@ func copyNotice(lang prompt.Lang, name string) string {
 // about why it opened.
 const attachTitle = "Attach File"
 
-// Attachment is what the picker produced: the path to write at the prompt, and
-// the line that goes under it when that path is a copy's (copyNotice), empty
-// when the session opens the file where it lies. Both empty for a cancelled
-// dialog.
-type Attachment struct {
-	Path   string `json:"path"`
-	Notice string `json:"notice"`
-}
+type Attachment = api.DropAttachment
 
 // Attach opens the file chooser and answers with a path the session can
 // actually open: the file's own where the session reaches it, a copy's inside

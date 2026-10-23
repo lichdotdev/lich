@@ -214,7 +214,7 @@ func TestGitMissingCheckAgainRereadsThePathThenVerifies(t *testing.T) {
 	d.open()
 	d.press(t, &u.gitMissing.again)
 	b.await(t, "providers.RefreshPath")
-	if args := b.await(t, "providers.Verify"); args != `["git"]` {
+	if args := b.await(t, "providers.Verify"); args != `[{"bin":"git"}]` {
 		t.Errorf("verified %s, want git", args)
 	}
 	for u.gitMissing.checking.Load() {
@@ -283,7 +283,7 @@ func TestPluginGateInstallInstallsEveryTickedCLI(t *testing.T) {
 	d := pluginDialog(u)
 	d.open()
 	d.press(t, &u.plugin.install)
-	for _, want := range []string{`["claude"]`, `["codex"]`} {
+	for _, want := range []string{`[{"provider":"claude"}]`, `[{"provider":"codex"}]`} {
 		if args := b.await(t, "agentplugin.Install"); args != want {
 			t.Errorf("installed %s, want %s", args, want)
 		}
@@ -340,7 +340,7 @@ func TestPluginUpdateToastButtons(t *testing.T) {
 	toast := u.pluginUpdateToast(pluginGateAction{kind: pluginActionUpdate, version: "0.9.0",
 		providers: []backend.PluginStatus{{Provider: "claude"}}})
 	toast.Action.OnClick()
-	if args := b.await(t, "agentplugin.Update"); args != `["claude"]` {
+	if args := b.await(t, "agentplugin.Update"); args != `[{"provider":"claude"}]` {
 		t.Errorf("updated %s, want claude", args)
 	}
 	toast.Cancel.OnClick()
@@ -365,7 +365,7 @@ func TestPluginGateUntickedCLIIsLeftOut(t *testing.T) {
 	d.open()
 	d.press(t, u.plugin.rows["claude"])
 	d.press(t, &u.plugin.install)
-	if args := b.await(t, "agentplugin.Install"); args != `["codex"]` {
+	if args := b.await(t, "agentplugin.Install"); args != `[{"provider":"codex"}]` {
 		t.Errorf("installed %s, want only the CLI still ticked", args)
 	}
 }

@@ -16,6 +16,8 @@ import (
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 func TestFormatCost(t *testing.T) {
@@ -328,7 +330,8 @@ func attachBackend(t *testing.T, picked backend.Attachment, writes *[][]string) 
 		_ = json.Unmarshal(body, &args)
 		switch r.URL.Path {
 		case "/rpc/drop.Attach":
-			if string(args[1]) != `"/repo"` || string(args[2]) != "true" {
+			var opts api.AttachDropOptions
+			if json.Unmarshal(args[0], &opts) != nil || opts.Root != "/repo" || !opts.Confined {
 				t.Errorf("drop.Attach args %s", body)
 			}
 			_ = json.NewEncoder(w).Encode(picked)

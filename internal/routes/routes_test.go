@@ -43,6 +43,20 @@ func TestHandleStoreCoversEveryStoreMethod(t *testing.T) {
 	assertHandled(t, d, "store.")
 }
 
+func TestHandleAppServicesCoverEveryMethod(t *testing.T) {
+	for prefix, route := range map[string]func(*rpc.Handler){
+		"drop.":        func(d *rpc.Handler) { Drop(d, nil) },
+		"patchnotes.":  func(d *rpc.Handler) { PatchNotes(d, nil) },
+		"appupdate.":   func(d *rpc.Handler) { AppUpdate(d, nil) },
+		"agentplugin.": func(d *rpc.Handler) { AgentPlugin(d, nil) },
+		"providers.":   func(d *rpc.Handler) { Providers(d, nil) },
+	} {
+		d := rpc.New()
+		route(d)
+		assertHandled(t, d, prefix)
+	}
+}
+
 // assertHandled fails on a method under prefix that api declares and no route
 // of d answers, which a client would only meet as a 404. A body that is no
 // options object stops a handled call at its decoding (400), before the

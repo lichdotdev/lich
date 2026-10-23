@@ -1,19 +1,12 @@
 package backend
 
-import "context"
+import (
+	"context"
 
-// DetectedProvider mirrors providers.Detected (internal/providers), trimmed to
-// what the launch menu and Settings › Providers read. Binary is the executable
-// a spawn asks $PATH for, Source where it was found ("path", "setting", or ""
-// for none) and Docs the page that documents installing it.
-type DetectedProvider struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Binary    string `json:"binary"`
-	Installed bool   `json:"installed"`
-	Source    string `json:"source"`
-	Docs      string `json:"docs"`
-}
+	"github.com/lichdotdev/lich/api"
+)
+
+type DetectedProvider = api.DetectedProvider
 
 // ReorderSessions stores a project's full card order. The backend writes a
 // position per id, so ids must name every session of the project.
@@ -56,6 +49,5 @@ func (c *Client) AddSessionInFolder(ctx context.Context, projectID, sessionID, l
 // DetectProviders probes which provider CLIs this machine has, nil when the
 // backend answers none.
 func (c *Client) DetectProviders(ctx context.Context) ([]DetectedProvider, error) {
-	var found []DetectedProvider
-	return found, c.Call(ctx, "providers.Detect", &found)
+	return callMethod(ctx, c, api.ProvidersDetect, api.None{})
 }

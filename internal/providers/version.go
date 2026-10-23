@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/winexec"
 )
 
@@ -25,12 +26,7 @@ const versionTimeout = 10 * time.Second
 // "crush version v0.98.1", "2026.10.01-e373342".
 var versionPattern = regexp.MustCompile(`\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.]+)?`)
 
-// Binary is one executable a provider could be started from, and the version it
-// reports, empty when it printed none lich could read.
-type Binary struct {
-	Path    string `json:"path"`
-	Version string `json:"version"`
-}
+type Binary = api.ProviderBinary
 
 // Version runs bin (resolved as Verify resolves it) with `--version` and
 // returns the version it printed. It is the slow half of what Detect answers,

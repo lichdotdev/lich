@@ -74,7 +74,9 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 		f.settings["appearance.theme@"] = opts.ID
 		return nil
 	case "patchnotes.Current":
-		return backend.PatchNotes{Version: "1.0.0", Groups: []backend.PatchNotesGroup{{Label: "Added", Items: []string{str(0)}}}}
+		var opts api.PatchNotesOptions
+		_ = json.Unmarshal(args[0], &opts)
+		return backend.PatchNotes{Version: "1.0.0", Groups: []backend.PatchNotesGroup{{Label: "Added", Items: []string{opts.Locale}}}}
 	case "themes.SetFollowSystem":
 		var opts api.FollowSystemOptions
 		_ = json.Unmarshal(args[0], &opts)

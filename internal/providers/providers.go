@@ -12,6 +12,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // Provider ids. Each id is also the session kind (store column + terminal.Start)
@@ -154,23 +156,7 @@ const (
 	SourceSetting = "setting"
 )
 
-// Detected reports a provider and whether a binary a session could spawn was
-// found — on PATH, or at the path the user configured.
-// Binary is the executable name a session spawns (DefaultBinary), which the
-// settings screen needs even when nothing was found: a provider id is not its
-// command — Antigravity's is `agy`.
-// Docs is carried on every entry, installed or not: the row that has somewhere
-// to send the user is exactly the one that found nothing.
-// Source is SourcePath or SourceSetting, empty when nothing was found.
-type Detected struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Binary    string `json:"binary"`
-	Installed bool   `json:"installed"`
-	Path      string `json:"path"`
-	Source    string `json:"source"`
-	Docs      string `json:"docs"`
-}
+type Detected = api.DetectedProvider
 
 // Service detects installed providers. lookPath is injected so tests drive
 // detection without touching the machine.

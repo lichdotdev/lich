@@ -5,6 +5,8 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // A Check's Status. Each failing value names a distinct mistake, because each
@@ -12,9 +14,9 @@ import (
 // screen that accepted the value says nothing.
 const (
 	// CheckOK: the binary resolves and can be executed.
-	CheckOK = "ok"
+	CheckOK = api.CheckOK
 	// CheckEmpty: nothing is configured at this layer, so the next one answers.
-	CheckEmpty    = "empty"
+	CheckEmpty    = api.CheckEmpty
 	CheckNotFound = "not-found"
 	// CheckNotExecutable covers a file without the execute bit and a directory
 	// — both are "found, cannot be run".
@@ -30,12 +32,7 @@ const (
 	CheckRelative = "relative"
 )
 
-// Check is what a configured binary resolves to. Path is the absolute
-// executable a session would spawn, empty for every status but CheckOK.
-type Check struct {
-	Path   string `json:"path"`
-	Status string `json:"status"`
-}
+type Check = api.BinaryCheck
 
 // Verify resolves bin exactly as the spawn does — a bare name through $PATH, a
 // path taken as written — and reports whether it can be run. It is what turns

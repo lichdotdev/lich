@@ -1,6 +1,10 @@
 package backend
 
-import "context"
+import (
+	"context"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 // QuotaWindow mirrors quota.Window (internal/quota/quota.go).
 type QuotaWindow struct {
@@ -25,12 +29,7 @@ type QuotaPlan struct {
 	Status    string        `json:"status"`
 }
 
-// Attachment mirrors drop.Attachment: Path is "" when the dialog was
-// cancelled, and Notice is the line to paste under a path that is a copy's.
-type Attachment struct {
-	Path   string `json:"path"`
-	Notice string `json:"notice"`
-}
+type Attachment = api.DropAttachment
 
 // QuotaPlans reads every metered plan for the account sessionID spends; ""
 // reads the machine's own login. The backend serves it from a five-minute
@@ -50,8 +49,7 @@ func (c *Client) HandsOn(ctx context.Context, id string) (int64, error) {
 // session's checkout and confined whether it runs in the sandbox: a file
 // outside what the session can read comes back as a copy's path.
 func (c *Client) Attach(ctx context.Context, sessionID, root string, confined bool) (Attachment, error) {
-	var a Attachment
-	return a, c.Call(ctx, "drop.Attach", &a, sessionID, root, confined)
+	return callMethod(ctx, c, api.DropAttach, api.AttachDropOptions{SessionID: sessionID, Root: root, Confined: confined})
 }
 
 // Write types data into session id's PTY.

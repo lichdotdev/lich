@@ -30,29 +30,15 @@ import (
 	"errors"
 	"io/fs"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// Group is one "### Added / Changed / Fixed" block of a release's notes.
-type Group struct {
-	Label string `json:"label"`
-	// Items keep their markdown bold/code markers; the window renders them.
-	Items []string `json:"items"`
-}
+type Group = api.PatchNotesGroup
 
-// Highlight is one GitHub alert block ("> [!IMPORTANT]") written between a
-// release's heading and its first group. Kind is the alert type, lowercased.
-type Highlight struct {
-	Kind string `json:"kind"`
-	// Text keeps its markdown bold/code markers; the window renders them.
-	Text string `json:"text"`
-}
+type Highlight = api.PatchNotesHighlight
 
-// Notes is a release's changelog section, ready for the window to render.
-type Notes struct {
-	Version    string      `json:"version"`
-	Highlights []Highlight `json:"highlights"`
-	Groups     []Group     `json:"groups"`
-}
+type Notes = api.PatchNotes
 
 // Service serves the notes for one fixed version — the running build.
 type Service struct {

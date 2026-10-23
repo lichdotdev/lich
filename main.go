@@ -264,10 +264,10 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// (drop.Attach says why that matters).
 	drops.SetPicker(proj.PickFile)
 	dispatcher.Register("terminal", term)
-	dispatcher.Register("drop", drops)
+	routes.Drop(dispatcher, drops)
 	dispatcher.Register("project", proj)
 	plugins := agentplugin.New(db)
-	dispatcher.Register("agentplugin", plugins)
+	routes.AgentPlugin(dispatcher, plugins)
 	go plugins.RepairRegistrations()
 	// A profile follows Personal's lich plugin: an install or update there
 	// reaches every Claude Code and Codex profile, and a start brings in the
@@ -309,8 +309,8 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		)
 		dispatcher.Register(provider.ID+"profile", profiles)
 	}
-	dispatcher.Register("appupdate", appupdate.New(version, coord.Install, hub.Emit))
-	dispatcher.Register("patchnotes", patchnotes.New(version, changelog, changelogTranslations))
+	routes.AppUpdate(dispatcher, appupdate.New(version, coord.Install, hub.Emit))
+	routes.PatchNotes(dispatcher, patchnotes.New(version, changelog, changelogTranslations))
 	dispatcher.Register("store", db)
 	routes.Store(dispatcher, db)
 	// Read before run writes this run's runtime file over the previous
@@ -365,7 +365,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// with one configured agent and nothing on PATH reads as bare, and every
 	// implicit new session opens a terminal instead.
 	providerSvc.SetConfiguredBin(func(id string) string { return db.ProviderBin(id, "") })
-	dispatcher.Register("providers", providerSvc)
+	routes.Providers(dispatcher, providerSvc)
 	// The quota reading is per session, not per machine: a session spawned from
 	// a binary the user configured can spend another account entirely, and the
 	// terminal is what knows the environment that binary set up.

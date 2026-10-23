@@ -32,11 +32,11 @@ func TestStoreCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.DetectProviders(ctx)
 			return err
 		}},
-		{"ProviderVersion", "providers.Version", `"codex"`, "0.162.1", func(c *Client) error {
+		{"ProviderVersion", "providers.Version", `{"bin":"codex"}`, "0.162.1", func(c *Client) error {
 			_, err := c.ProviderVersion(ctx, "codex")
 			return err
 		}},
-		{"ProviderBinaries", "providers.OnPath", `"codex"`, []ProviderBinary{{Path: "/usr/bin/codex", Version: "0.147.0"}}, func(c *Client) error {
+		{"ProviderBinaries", "providers.OnPath", `{"id":"codex"}`, []ProviderBinary{{Path: "/usr/bin/codex", Version: "0.147.0"}}, func(c *Client) error {
 			_, err := c.ProviderBinaries(ctx, "codex")
 			return err
 		}},
@@ -112,7 +112,7 @@ func TestDetectedProviderReadsBinarySourceAndDocs(t *testing.T) {
 	if err := json.Unmarshal([]byte(wire), &d); err != nil {
 		t.Fatal(err)
 	}
-	want := DetectedProvider{ID: "codex", Name: "Codex", Binary: "codex", Installed: true, Source: "setting", Docs: "https://example.com/codex"}
+	want := DetectedProvider{ID: "codex", Name: "Codex", Binary: "codex", Installed: true, Path: "/opt/codex", Source: "setting", Docs: "https://example.com/codex"}
 	if d != want {
 		t.Errorf("decoded %+v, want %+v", d, want)
 	}

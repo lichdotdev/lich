@@ -34,7 +34,7 @@ func TestFooterCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.HandsOn(ctx, "s1")
 			return err
 		}},
-		{"Attach", "drop.Attach", `"s1","/repo",true`, Attachment{}, func(c *Client) error {
+		{"Attach", "drop.Attach", `{"sessionId":"s1","root":"/repo","confined":true}`, Attachment{}, func(c *Client) error {
 			_, err := c.Attach(ctx, "s1", "/repo", true)
 			return err
 		}},

@@ -1,3 +1,15 @@
+agentplugin.Install(PluginProviderOptions) None
+agentplugin.Status(None) []PluginStatus
+agentplugin.Update(PluginProviderOptions) None
+appupdate.Apply(None) None
+appupdate.Status(None) AppUpdateStatus
+drop.Attach(AttachDropOptions) DropAttachment
+patchnotes.Current(PatchNotesOptions) PatchNotes
+providers.Detect(None) []DetectedProvider
+providers.OnPath(ProviderIDOptions) []ProviderBinary
+providers.RefreshPath(None) None
+providers.Verify(BinaryOptions) BinaryCheck
+providers.Version(BinaryOptions) string
 relay.AnnounceMerge(AnnounceMergeOptions) None
 relay.Collect(CollectOptions) CollectedResults
 relay.CollectNow(CollectNowOptions) CollectedResults
@@ -48,15 +60,88 @@ themes.SetFollowSystem(FollowSystemOptions) None
 themes.UpdateFromGit(UpdateThemeOptions) ThemeGitResult
 tray.SetLabels(TrayLabels) None
 
+PluginProviderOptions {
+	provider string
+}
+
+None {
+}
+
+PluginStatus {
+	provider string
+	name string
+	available bool
+	installed bool
+	installedVersion string
+	latestVersion string
+	updateAvailable bool
+	compatible bool
+}
+
+AppUpdateStatus {
+	currentVersion string
+	latestVersion string
+	updateAvailable bool
+	canSelfApply bool
+	releaseUrl string
+	installCommand string
+}
+
+AttachDropOptions {
+	sessionId string
+	root string
+	confined bool
+}
+
+DropAttachment {
+	path string
+	notice string
+}
+
+PatchNotesOptions {
+	locale string
+}
+
+PatchNotes {
+	version string
+	highlights []PatchNotesHighlight
+	groups []PatchNotesGroup
+}
+
+DetectedProvider {
+	id string
+	name string
+	binary string
+	installed bool
+	path string
+	source string
+	docs string
+}
+
+ProviderIDOptions {
+	id string
+}
+
+ProviderBinary {
+	path string
+	version string
+}
+
+BinaryOptions {
+	bin string
+}
+
+BinaryCheck {
+	path string
+	status string
+}
+
 AnnounceMergeOptions {
 	checkout string
 	number int
 	title string
 	branch string
 	base string
-}
-
-None {
 }
 
 CollectOptions {
@@ -440,6 +525,16 @@ TrayLabels {
 	show string
 	running string
 	quit string
+}
+
+PatchNotesHighlight {
+	kind string
+	text string
+}
+
+PatchNotesGroup {
+	label string
+	items []string
 }
 
 CostTotal {

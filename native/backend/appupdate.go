@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // AppUpdateProgressEvent is appupdate.ProgressEventName: one step of
@@ -28,7 +30,8 @@ type AppUpdateProgress struct {
 // Windows installer, which closes and reopens lich. Only valid where
 // AppUpdateStatus answered CanSelfApply; it returns once the installer runs.
 func (c *Client) ApplyUpdate(ctx context.Context) error {
-	return c.Call(ctx, "appupdate.Apply", nil)
+	_, err := callMethod(ctx, c, api.AppUpdateApply, api.None{})
+	return err
 }
 
 // Restart relaunches lich in place: the backend answers 204, then spawns its
