@@ -626,6 +626,9 @@ func (s *settingsScreen) writeSkip(kind, level string) {
 // with its own constraints, as every dialog.
 func (s *settingsScreen) layoutProviderDialog(gtx C, th *ui.Theme) {
 	pr := &s.providers
+	if !(pr.asking && s.open) && !pr.dialog.Animating(gtx) {
+		return
+	}
 	if pr.confirm.Clicked(gtx) && pr.asking {
 		s.writeSkip(pr.change.provider.id, pr.change.level)
 		pr.asking = false

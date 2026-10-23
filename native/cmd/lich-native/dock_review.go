@@ -344,6 +344,9 @@ func revertStat(lines []backend.RevertLine) (added, deleted int) {
 // layoutDialogs is the discard confirmation, laid out by the window before
 // its content so it takes Escape first.
 func (p *reviewPanel) layoutDialogs(gtx C, th *ui.Theme) {
+	if p.pendingDiscard == nil && !p.dialog.Animating(gtx) {
+		return
+	}
 	if p.pendingDiscard != nil {
 		p.discardShown = *p.pendingDiscard
 	}

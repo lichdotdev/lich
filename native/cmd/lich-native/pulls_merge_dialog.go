@@ -91,6 +91,9 @@ func (u *window) layoutMergeDialog(gtx C, th *ui.Theme) {
 	v := &u.pulls.view
 	m := &v.mergeEdit
 	p := u.pulls
+	if !m.open && !m.dialog.Animating(gtx) {
+		return
+	}
 	if m.cancel.Clicked(gtx) {
 		m.open = false
 	}

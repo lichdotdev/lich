@@ -84,11 +84,15 @@ func (s *settingsScreen) layoutProfileDialogs(gtx C, th *ui.Theme) {
 // s.invalidate.
 func (s *settingsScreen) layoutProfileDialog(gtx C, th *ui.Theme, c *profileSettings) {
 	f := &c.flow
+	if !(f.view().open && s.open) && !f.dialog.Animating(gtx) {
+		return
+	}
 	s.flowInput(gtx, f, f.view())
 	d := f.view()
+	open := d.open && s.open
 	on := th.On(th.Popover)
 	title, desc := flowHeading(c.provider, d)
-	dlg := th.Dialog(&f.dialog, d.open && s.open, title, desc)
+	dlg := th.Dialog(&f.dialog, open, title, desc)
 	dlg.MaxWidth, dlg.Root = ui.DialogWidthXL, s.root
 	dlg.Body = func(gtx C) D { return s.flowBody(gtx, on, f, d) }
 	dlg.Actions = s.flowActions(on, f, d)

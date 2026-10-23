@@ -30,6 +30,9 @@ type commentEditDialog struct {
 // layout is laid out by the window before its content, as every dialog is.
 func (d *commentEditDialog) layout(gtx C, th *ui.Theme, store *commentStore) {
 	c, open := store.edited()
+	if !open && !d.dialog.Animating(gtx) {
+		return
+	}
 	if open && d.shown != c.id {
 		d.fill(gtx, c)
 	}

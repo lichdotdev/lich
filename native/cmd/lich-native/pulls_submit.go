@@ -88,6 +88,9 @@ func (u *window) layoutSubmitDialog(gtx C, th *ui.Theme) {
 	v := &u.pulls.view
 	s := &v.submit
 	p := u.pulls
+	if s.verdict == "" && !s.dialog.Animating(gtx) {
+		return
+	}
 	if s.cancel.Clicked(gtx) {
 		s.verdict = ""
 	}

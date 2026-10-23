@@ -100,6 +100,9 @@ func (u *window) layoutClosePrompt(gtx C, th *ui.Theme) {
 	c.mu.Lock()
 	running := c.running
 	c.mu.Unlock()
+	if running == 0 && !c.dialog.Animating(gtx) {
+		return
+	}
 	answer := func(choice string, act func()) {
 		if c.remember.Value {
 			p := u.settings.look.prefs

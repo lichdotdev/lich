@@ -45,6 +45,9 @@ func folderCommit(typed string, existing []string) (name string, ok, known bool)
 // claims Escape ahead of anything under it; it reports the filing it commits.
 func (s *sidebar) layoutFolderDialog(gtx C, th *ui.Theme, existing []string) fileRequest {
 	n := &s.naming
+	if !n.open && !n.dialog.Animating(gtx) {
+		return fileRequest{}
+	}
 	name, ok, known := folderCommit(n.name.Text(), existing)
 	submitted := false
 	for {

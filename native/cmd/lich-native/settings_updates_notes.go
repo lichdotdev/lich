@@ -239,16 +239,21 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 	if notes == nil {
 		return
 	}
+	open := v.open && (s.open || v.startup)
+	if !open && !v.dialog.Animating(gtx) {
+		return
+	}
 	if v.gotIt.Clicked(gtx) {
 		s.closePatchNotes(notes.Version)
 	}
 	if v.changelog.Clicked(gtx) {
 		s.openExternal(helpRepoURL + updatesReleaseTagAt + notes.Version)
 	}
+	open = v.open && (s.open || v.startup)
 	on := th.On(th.Popover)
 	got := on.Button(&v.gotIt, i18n.T("shell.patchNotesDialog.gotIt"))
 	got.Size = ui.SizeSM
-	dlg := th.Dialog(&v.dialog, v.open && (s.open || v.startup), i18n.T("shell.patchNotesDialog.title", i18n.Args{"version": "v" + notes.Version}), notesCounts(notes.Groups))
+	dlg := th.Dialog(&v.dialog, open, i18n.T("shell.patchNotesDialog.title", i18n.Args{"version": "v" + notes.Version}), notesCounts(notes.Groups))
 	dlg.MaxWidth, dlg.HideClose = ui.DialogWidthXL, true
 	dlg.Body = func(gtx C) D { return v.body(gtx, on, notes) }
 	dlg.Actions = []layout.Widget{func(gtx C) D {

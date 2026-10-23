@@ -57,6 +57,9 @@ func (s *settingsScreen) layoutFontReplication(gtx C, th *ui.Theme) {
 	family := r.family
 	s.mu.Unlock()
 	open := family != "" && family == s.look.prefs.uiFont
+	if !open && !r.state.Animating(gtx) {
+		return
+	}
 	closed := r.keep.Clicked(gtx)
 	if r.apply.Clicked(gtx) && open {
 		p := s.look.prefs

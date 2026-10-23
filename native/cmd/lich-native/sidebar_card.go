@@ -64,12 +64,13 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		rename = new(ui.InlineEdit)
 		s.renames[sv.ID] = rename
 	}
-	var extra []ui.MenuEntry
-	if len(sv.continueIn) > 0 {
-		extra = append(extra, continueInItem(th, sv, &act))
-	}
-	entries := cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
-	d := th.ContextMenu(s.root, menu, entries).Layout(gtx, func(gtx C) D {
+	d := th.ContextMenuLazy(s.root, menu, func() []ui.MenuEntry {
+		var extra []ui.MenuEntry
+		if len(sv.continueIn) > 0 {
+			extra = append(extra, continueInItem(th, sv, &act))
+		}
+		return cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
+	}).Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, pinClick, closeClick, prChip, fill) })
 	})
 	if s.renamed.id == sv.ID {
@@ -327,6 +328,11 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 	return s.morph.glyph(gtx, glyphSession+sv.ID, func(gtx C) D { return s.statusGlyph(gtx, th, sv) })
 }
 
+// spinnerFrame is how often a busy session's ring redraws. The ring shares
+// the window's frame, so its rate is the whole window's repaint rate: 30fps
+// reads as smooth on a 22px ring and costs half of a display's.
+const spinnerFrame = 33 * time.Millisecond
+
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	size := gtx.Dp(22)
 	stroke := float32(gtx.Dp(1.25))
@@ -337,7 +343,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
 		turn := float32(time.Since(s.started).Seconds()) * 2 * math.Pi
 		ui.StrokeArc(gtx, center, radius, stroke, turn, math.Pi/2, th.MutedForeground)
-		gtx.Execute(op.InvalidateCmd{})
+		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(spinnerFrame)})
 	case "waiting":
 		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.ToneWait)
 	case "done":

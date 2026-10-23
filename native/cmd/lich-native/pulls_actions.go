@@ -355,6 +355,9 @@ func (u *window) layoutRemoveConfirm(gtx C, th *ui.Theme) {
 	c := &u.pulls.confirm
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if !c.open && !c.dialog.Animating(gtx) {
+		return
+	}
 	if c.confirm.Clicked(gtx) && c.open {
 		c.open = false
 		project, path := c.project, c.path

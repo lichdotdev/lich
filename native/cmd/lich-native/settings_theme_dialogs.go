@@ -83,6 +83,9 @@ type confirmSpec struct {
 // confirmDialog is ConfirmDialog: Cancel and one destructive action at
 // sm:max-w-xl. It reports whether the action was pressed.
 func (p *themePicker) confirmDialog(gtx C, th *ui.Theme, c confirmSpec) bool {
+	if !c.open && !c.state.Animating(gtx) {
+		return false
+	}
 	d := &p.dialogs
 	pressed := d.confirm[c.slot].Clicked(gtx) && c.open && !c.busy
 	if d.cancel[c.slot].Clicked(gtx) {
@@ -106,6 +109,9 @@ func (p *themePicker) confirmDialog(gtx C, th *ui.Theme, c confirmSpec) bool {
 // file through the backend's picker, and the template to start one from.
 func (p *themePicker) importDialog(gtx C, th *ui.Theme, t themeTasks) {
 	d := &p.dialogs
+	if !t.importOpen && !d.imp.Animating(gtx) {
+		return
+	}
 	url := strings.TrimSpace(d.url.Text())
 	submitted := false
 	for {

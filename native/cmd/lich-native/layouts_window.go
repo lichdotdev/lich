@@ -102,6 +102,9 @@ func (u *window) askMoveDelegates(orchestrator string, ids []string, away int) {
 // with.
 func (u *window) layoutMoveConfirm(gtx C, th *ui.Theme) {
 	c := &u.layoutStage.move
+	if !c.open && !c.dialog.Animating(gtx) {
+		return
+	}
 	if c.confirm.Clicked(gtx) && c.open {
 		c.open = false
 		if c.delegates != nil {

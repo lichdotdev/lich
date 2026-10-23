@@ -79,6 +79,9 @@ func (u *window) paletteAvailable(id hotkeyID) bool {
 // there.
 func (u *window) layoutPalette(gtx C, th *ui.Theme) {
 	p := u.palette
+	if !p.open && !p.dialog.Animating(gtx) {
+		return
+	}
 	on := th.On(th.Popover)
 	// The list fades out as the frame it closed on, rather than as a query
 	// that found nothing.

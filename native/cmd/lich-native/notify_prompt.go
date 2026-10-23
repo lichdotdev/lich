@@ -27,6 +27,9 @@ type notifyOptIn struct {
 // button is an answer, stored; Escape or the backdrop closes it unanswered.
 func (u *window) layoutNotifyOptIn(gtx C, th *ui.Theme) {
 	o := &u.optIn
+	if _, asking := u.notifier.snapshot(); !asking && !o.dialog.Animating(gtx) {
+		return
+	}
 	if o.no.Clicked(gtx) {
 		u.notifier.setAttention(false)
 	}

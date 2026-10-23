@@ -192,10 +192,10 @@ func (t *transition) set(gtx C, open bool) bool {
 // progress is how far in the popup is, 0..1, after running for duration, and
 // whether to draw it at all.
 func (t *transition) progress(gtx C, duration time.Duration) (float32, bool) {
-	elapsed := gtx.Now.Sub(t.at)
-	if t.at.IsZero() || (!t.open && elapsed >= duration) {
+	if !t.drawing(gtx, duration) {
 		return 0, false
 	}
+	elapsed := gtx.Now.Sub(t.at)
 	p := float32(1)
 	if elapsed < duration {
 		gtx.Execute(op.InvalidateCmd{})
@@ -205,6 +205,12 @@ func (t *transition) progress(gtx C, duration time.Duration) (float32, bool) {
 		p = 1 - p
 	}
 	return p, true
+}
+
+// drawing is progress' "whether to draw it at all", without the invalidation
+// it schedules.
+func (t *transition) drawing(gtx C, duration time.Duration) bool {
+	return !t.at.IsZero() && (t.open || gtx.Now.Sub(t.at) < duration)
 }
 
 // ease is CSS's "ease", cubic-bezier(0.25, 0.1, 0.25, 1), solved for x by

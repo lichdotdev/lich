@@ -33,15 +33,19 @@ type dialogRig struct {
 
 // frame lays the window out once, dialog first as Layout asks, and reports
 // whether the dialog was dismissed and the content under it clicked.
-func (r *dialogRig) frame() (dismissed, underClicked bool) {
-	r.ops.Reset()
-	gtx := layout.Context{
+func (r *dialogRig) gtx() layout.Context {
+	return layout.Context{
 		Ops:         &r.ops,
 		Now:         r.now,
 		Metric:      unit.Metric{PxPerDp: 1, PxPerSp: 1},
 		Constraints: layout.Exact(dialogTestWindow),
 		Source:      r.router.Source(),
 	}
+}
+
+func (r *dialogRig) frame() (dismissed, underClicked bool) {
+	r.ops.Reset()
+	gtx := r.gtx()
 	d := r.th.Dialog(&r.state, r.open, "Discard changes?", "The worktree keeps uncommitted work.")
 	d.Actions = []layout.Widget{r.th.Button(&r.confirm, "Discard").Layout}
 	dismissed = d.Layout(gtx)
@@ -248,5 +252,25 @@ func TestDialogRawPanelHangsFromTopOverItsOwnScrim(t *testing.T) {
 	// black/50 over 0xff blue, scaled in linear light as scrimAlpha does.
 	if got, want := img.NRGBAAt(5, 5).B, uint8(121); got > want+2 || got+2 < want {
 		t.Errorf("content under the scrim: blue %d, want %d", got, want)
+	}
+}
+
+func TestDialogAnimatingCoversTheCloseTransition(t *testing.T) {
+	r := newDialogRig()
+	if r.state.Animating(r.gtx()) {
+		t.Fatal("a dialog that never opened is animating")
+	}
+	r.settle()
+	if !r.state.Animating(r.gtx()) {
+		t.Fatal("an open dialog is not animating")
+	}
+	r.open = false
+	r.frame()
+	if !r.state.Animating(r.gtx()) {
+		t.Fatal("a dialog still fading out is not animating")
+	}
+	r.now = r.now.Add(dialogTransition)
+	if r.state.Animating(r.gtx()) {
+		t.Fatal("a dialog done fading out is animating")
 	}
 }

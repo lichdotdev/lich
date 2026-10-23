@@ -114,6 +114,13 @@ func (d DialogStyle) Layout(gtx C) (dismissed bool) {
 	return dismissed
 }
 
+// Animating reports whether the dialog is on screen or still fading out: a
+// caller that skips a shut dialog must keep laying it out while this is true,
+// or its close transition is cut. It is false for one that never opened.
+func (s *DialogState) Animating(gtx C) bool {
+	return s.shown.drawing(gtx, dialogTransition)
+}
+
 func (s *DialogState) dismissed(gtx C) bool {
 	dismissed := s.close.Clicked(gtx)
 	// The press only: the release of an Escape that closed a popup inside

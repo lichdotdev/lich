@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- While a session works, the window redraws its busy spinner at 30 frames a second rather than at the display's rate, a card builds its right-click menu only while that menu is open, and a dialog that is shut builds nothing at all. A window that is only spinning costs about half the redraws it did, and cards stop building menus the window never shows.
+
 ### Fixed
 
 - Branch, changes and pull request on the cards and the footer catch up within a second of a commit, checkout or edit made outside a turn, where they could lag up to three seconds, and selecting a card reads its checkout at once instead of showing what the last read found.

@@ -210,6 +210,9 @@ func (u *window) deleteComment(path string, number int, t commentTarget) {
 func (u *window) layoutDeleteCommentDialog(gtx C, th *ui.Theme) {
 	p := u.pulls
 	s := &p.view.talk
+	if s.deleting == nil && !s.deleteDialog.Animating(gtx) {
+		return
+	}
 	if s.deleting != nil {
 		s.deleteShown = *s.deleting
 	}

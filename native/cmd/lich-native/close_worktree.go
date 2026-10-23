@@ -90,6 +90,9 @@ func (u *window) layoutCloseWorktreeConfirm(gtx C, th *ui.Theme) {
 	c := &u.closeWorktree
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if !c.open && !c.dialog.Animating(gtx) {
+		return
+	}
 	if c.confirm.Clicked(gtx) && c.open {
 		c.open = false
 		project, path, force := c.project, c.path, c.dirty

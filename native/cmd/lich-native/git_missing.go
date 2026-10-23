@@ -48,6 +48,9 @@ func (u *window) checkGit(refresh bool) {
 
 func (u *window) layoutGitMissing(gtx C, th *ui.Theme) {
 	g := &u.gitMissing
+	if !g.missing.Load() && !g.dialog.Animating(gtx) {
+		return
+	}
 	if g.notNow.Clicked(gtx) {
 		g.missing.Store(false)
 	}

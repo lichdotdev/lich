@@ -246,7 +246,7 @@ func (c *fileCard) body(gtx C, p *reviewPanel) D {
 		return bodyLine(gtx, th, i18n.T("diff.fileDiff.readFailed", i18n.Args{"path": c.git.path}))
 	}
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		return th.ContextMenu(p.root, &c.menu, c.menuEntries(p)).Layout(gtx, func(gtx C) D {
+		return th.ContextMenuLazy(p.root, &c.menu, func() []ui.MenuEntry { return c.menuEntries(p) }).Layout(gtx, func(gtx C) D {
 			return c.diff(gtx, p, view)
 		})
 	})

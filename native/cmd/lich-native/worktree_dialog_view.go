@@ -105,6 +105,9 @@ func baseLabel(base string) string {
 // it.
 func (u *window) layoutWorktreeDialog(gtx C, th *ui.Theme) {
 	d := u.worktree
+	if !d.open && !d.dialog.Animating(gtx) {
+		return
+	}
 	if d.view().done {
 		d.open = false
 	}

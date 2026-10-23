@@ -51,3 +51,35 @@ func TestContextMenuFlipsAndClampsInsideTheWindow(t *testing.T) {
 	frame()
 	c.only(t, "Pin")
 }
+
+// TestContextMenuLazyBuildsOnlyWhileOpen pins the point of the lazy
+// constructor: a trigger drawn every frame builds its entries only on the
+// frames the menu shows, and the press that opens it gets them that frame.
+func TestContextMenuLazyBuildsOnlyWhileOpen(t *testing.T) {
+	var c chosen
+	entries := []MenuEntry{c.item("Rename"), c.item("Pin")}
+	builds := 0
+	g, s, th := &menuRig{size: image.Pt(400, 300)}, new(MenuState), testTheme()
+	frame := func() {
+		g.frame(func(gtx C, trigger layout.Widget) D {
+			return th.ContextMenuLazy(&g.root, s, func() []MenuEntry {
+				builds++
+				return entries
+			}).Layout(gtx, trigger)
+		})
+	}
+	frame()
+	frame()
+	if builds != 0 {
+		t.Fatalf("closed menu built its entries %d times", builds)
+	}
+	at := triggerAt.Add(image.Pt(30, 10))
+	g.click(pointer.ButtonSecondary, at)
+	frame()
+	if !s.Opened() || builds != 1 {
+		t.Fatalf("opening press: open %v, builds %d; want true, 1", s.Opened(), builds)
+	}
+	g.click(pointer.ButtonPrimary, image.Pt(at.X+10, at.Y+4+4+contextRow+contextRow/2))
+	frame()
+	c.only(t, "Pin")
+}

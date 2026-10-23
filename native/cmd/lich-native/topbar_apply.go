@@ -27,6 +27,9 @@ type closeConfirm struct {
 // "" for none.
 func (t *topbar) layoutConfirm(gtx C, th *ui.Theme) string {
 	c := &t.confirm
+	if !c.open && !c.dialog.Animating(gtx) {
+		return ""
+	}
 	closed := ""
 	if c.confirm.Clicked(gtx) && c.open {
 		closed, c.open = c.id, false

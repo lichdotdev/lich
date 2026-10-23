@@ -57,6 +57,9 @@ type shortcutsOverlay struct {
 // layout draws the overlay over the window. Call it before the content under
 // it, so it takes Escape ahead of any key filter there.
 func (o *shortcutsOverlay) layout(gtx C, th *ui.Theme, bound hotkeyBindings) {
+	if !o.open && !o.dialog.Animating(gtx) {
+		return
+	}
 	on := th.On(th.Popover)
 	dlg := th.Dialog(&o.dialog, o.open, i18n.T("shell.shortcutsOverlay.title"), i18n.T("shell.shortcutsOverlay.rebind"))
 	dlg.MaxWidth, dlg.HideClose, dlg.Scrim = shortcutsWidth, true, shortcutsScrim

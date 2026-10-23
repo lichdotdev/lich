@@ -288,6 +288,9 @@ func wholeMegabytes(n int64) int64 { return (n + bytesPerMB/2) / bytesPerMB }
 // at launch it asks before Settings ever opens.
 func (s *settingsScreen) layoutHanFontDialog(gtx C, th *ui.Theme) {
 	o := &s.languages.offer
+	if !o.open && !o.dialog.Animating(gtx) {
+		return
+	}
 	if r := o.outcome(); r != nil {
 		s.finishHanFontDownload(r)
 	}

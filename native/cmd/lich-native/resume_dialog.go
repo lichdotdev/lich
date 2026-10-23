@@ -34,6 +34,9 @@ type resumeDialog struct {
 func (r *resumeDialog) layout(ctx context.Context, gtx C, th *ui.Theme, g *spawnGate, m *model) {
 	s := g.prompt()
 	open := s != nil
+	if !open && !r.dialog.Animating(gtx) {
+		return
+	}
 	if open && r.shown.ID != s.ID {
 		r.shown, r.provider, r.remember.Value = *s, m.providerName(s.Kind), false
 	}

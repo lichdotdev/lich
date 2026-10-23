@@ -179,6 +179,9 @@ func proseLine(th *ui.Theme, text string) layout.Widget {
 // with its own constraints, as every dialog.
 func (s *settingsScreen) layoutSandboxDialog(gtx C, th *ui.Theme) {
 	sb := &s.sandbox
+	if !(sb.asking && s.open) && !sb.dialog.Animating(gtx) {
+		return
+	}
 	if sb.confirm.Clicked(gtx) && sb.asking {
 		s.writeSandbox(sandboxKey(sb.change.providerID), sb.change.level)
 		sb.asking = false
