@@ -62,9 +62,6 @@ func (p *pullsScreen) listLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.P
 
 // listHeader is the h-11 strip: the field, the hide button beside it.
 func (p *pullsScreen) listHeader(gtx C, th *ui.Theme) D {
-	if p.toggleList.click.Clicked(gtx) {
-		p.listHidden = true
-	}
 	field := th.Input(&p.query, i18n.T("pulls.pullsList.searchHint"))
 	field.Leading, field.Height, field.TextSize, field.Clear = icPullSearch, ui.Space(7), ui.TextXS, &p.clearQuery
 	return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {

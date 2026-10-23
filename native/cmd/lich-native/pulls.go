@@ -180,6 +180,14 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	if p.selected == 0 && p.branchPR == 0 && len(rows.val) > 0 {
 		p.selected = filterPulls(rows.val, filterAll, "")[0].Number
 	}
+	// Before the slide reads listHidden, so it starts in the frame that
+	// took the click.
+	for p.toggleList.click.Clicked(gtx) {
+		p.listHidden = true
+	}
+	for p.view.showList.click.Clicked(gtx) {
+		p.listHidden = false
+	}
 	share := p.slide.at(gtx, !p.listHidden)
 	size := gtx.Constraints.Max
 	w := p.listWidth(gtx, th, filterCounts(rows.val, p.query.Text()))

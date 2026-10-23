@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"gioui.org/f32"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -193,5 +194,30 @@ func TestPullsViewedTickCountsInTheFrameThatTookTheClick(t *testing.T) {
 	r.click(t, r.smallestClickIn(t, image.Rect(label.X-40, label.Y-12, label.X+8, label.Y+30)))
 	if len(u.pulls.view.files.pr.viewed) != 1 {
 		t.Fatal("the click missed the tick")
+	}
+}
+
+// The list's slide draws its first frame where it stood, so a click on hide
+// or show changes nothing the frame that took it drew: that frame must ask
+// for the next one, or the slide waits for the next mouse move.
+func TestPullsListSlidesFromTheFrameThatTookTheClick(t *testing.T) {
+	u, r := pullsDetailShown(t)
+	listEnd := u.pulls.spans[0].x1
+	slideFromClick(t, r, r.smallestClickIn(t, image.Rect(listEnd-40, 0, listEnd, 48)))
+	if !u.pulls.listHidden {
+		t.Fatal("the click missed hide")
+	}
+	r.settle(t)
+	slideFromClick(t, r, r.smallestClickIn(t, image.Rect(0, 0, 48, 48)))
+	if u.pulls.listHidden {
+		t.Fatal("the click missed show")
+	}
+}
+
+func slideFromClick(t *testing.T, r *frameRig, p f32.Point) {
+	t.Helper()
+	r.queueClick(p)
+	if _, redraw := r.frame(); !redraw {
+		t.Error("the frame that took the click asked for no next frame")
 	}
 }

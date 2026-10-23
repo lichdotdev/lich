@@ -151,9 +151,6 @@ func (v *pullView) tip(key string) *ui.Tooltip {
 
 func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction) D {
 	v.runQueued()
-	if v.showList.click.Clicked(gtx) {
-		p.listHidden = false
-	}
 	if p.selected == 0 {
 		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return v.empty(gtx, th, p, act) })
 	}
