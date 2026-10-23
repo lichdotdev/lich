@@ -13,6 +13,8 @@ import (
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 const twoHunks = `diff --git a/a.go b/a.go
@@ -220,9 +222,9 @@ func TestARevertsUndoPutsTheLinesBack(t *testing.T) {
 	toast.Action.OnClick()
 	select {
 	case args := <-restored:
-		var gotUndo backend.RevertResult
-		_ = json.Unmarshal(args[2], &gotUndo)
-		if string(args[0]) != `"/repo"` || string(args[1]) != `"internal/a.go"` || gotUndo != undo {
+		var got api.RestoreLinesOptions
+		_ = json.Unmarshal(args[0], &got)
+		if got.Path != "/repo" || got.Rel != "internal/a.go" || got.Undo != undo {
 			t.Fatalf("RestoreLines(%s) — want the checkout, the file and the revert's own undo", args)
 		}
 	case <-time.After(5 * time.Second):

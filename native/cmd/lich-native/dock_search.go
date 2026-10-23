@@ -11,6 +11,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/lichdotdev/lich/native/i18n"
+
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // searchSettle is how long typing has to pause before the checkout is read:
@@ -18,19 +20,10 @@ import (
 // not five searches.
 const searchSettle = 250 * time.Millisecond
 
-// searchMatch and searchResult mirror internal/project's SearchMatch and
-// SearchResult.
-type searchMatch struct {
-	Path string `json:"path"`
-	Line int    `json:"line"`
-	Text string `json:"text"`
-}
-
-type searchResult struct {
-	Matches  []searchMatch `json:"matches"`
-	Cut      bool          `json:"cut"`
-	TooLarge int           `json:"tooLarge"`
-}
+type (
+	searchMatch  = backend.SearchMatch
+	searchResult = backend.SearchResult
+)
 
 type searchGroup struct {
 	path string

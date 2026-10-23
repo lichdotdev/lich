@@ -15,14 +15,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// Project identifies an opened project directory.
-type Project struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Path string `json:"path"`
-}
+type Project = api.OpenedProject
 
 // Picker shows native file/directory choosers — zenity in production
 // (picker.go), fakes in tests. Returns "" on user cancel.
@@ -140,14 +137,7 @@ func (s *Service) Branch(path string) string {
 	return strings.TrimSpace(out)
 }
 
-// PullRequest identifies the open GitHub pull request for a work tree's current
-// branch, as reported by the gh CLI. State is one of gh's OPEN, CLOSED, MERGED;
-// only OPEN reaches the window (see parsePullRequest).
-type PullRequest struct {
-	Number int    `json:"number"`
-	URL    string `json:"url"`
-	State  string `json:"state"`
-}
+type PullRequest = api.PullRequest
 
 // prLookupTimeout caps the gh network call so a slow forge or hung auth prompt
 // never stalls the footer poll.
@@ -239,18 +229,7 @@ func (s *Service) PickSaveFile(title, defaultName string) (string, error) {
 	return path, nil
 }
 
-// DiffStats is what one status read says about a work tree: its uncommitted
-// changes, and the two things they sit on. Head is the commit — the window
-// watches it to notice a commit the way it watches Files/Added/Deleted to
-// notice an edit — and Branch is the branch, carried here because git answers
-// both in the same call the counts come out of.
-type DiffStats struct {
-	Files   int    `json:"files"`
-	Added   int    `json:"added"`
-	Deleted int    `json:"deleted"`
-	Head    string `json:"head"`
-	Branch  string `json:"branch"`
-}
+type DiffStats = api.DiffStats
 
 // Diff returns the dirty-file count (modified + untracked), the added/deleted
 // line totals against HEAD, the HEAD commit itself and the branch it is on. A

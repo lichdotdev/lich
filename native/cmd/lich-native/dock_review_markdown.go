@@ -95,11 +95,10 @@ func (c *fileCard) markdownSource(p *reviewPanel) (src string, loading bool, err
 	}
 	key := strings.Join([]string{checkout, rel, ref, c.git.blobs}, "\x00")
 	c.md.read.want(key, checkout, func(ctx context.Context) (string, error) {
-		var text string
 		if ref == "" {
-			return text, client.Call(ctx, "project.ReadFile", &text, checkout, rel)
+			return client.ReadFile(ctx, checkout, rel)
 		}
-		return text, client.Call(ctx, "project.ReadFileAt", &text, checkout, rel, ref)
+		return client.ReadFileAt(ctx, checkout, rel, ref)
 	})
 	return c.md.read.get()
 }

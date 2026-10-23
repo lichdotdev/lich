@@ -35,12 +35,7 @@ const (
 	browseByText = "text"
 )
 
-// fileListing mirrors internal/project.FileListing.
-type fileListing struct {
-	Files  []string `json:"files"`
-	Cut    bool     `json:"cut"`
-	Hidden []string `json:"hidden"`
-}
+type fileListing = backend.FileListing
 
 // treeData is one read of the checkout: its files and each changed file's
 // counts.
@@ -166,8 +161,8 @@ func (c *codeTab) fetchTree(gtx C, in dockInput) {
 }
 
 func readTree(ctx context.Context, client *backend.Client, path string) (*treeData, error) {
-	var l fileListing
-	if err := client.Call(ctx, "project.Tree", &l, path); err != nil {
+	l, err := client.Tree(ctx, path)
+	if err != nil {
 		return nil, err
 	}
 	// The diff only feeds the rows' +/- badges: a checkout with nothing to

@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // gh network calls are capped so a slow forge or a hung auth prompt never
@@ -82,73 +84,9 @@ func prArgs(verb string, number int, rest ...string) []string {
 	return append(args, rest...)
 }
 
-// PRDetail is the full view of a branch's open pull request — richer than the
-// footer badge's PullRequest — driving the dock's Pulls panel: the title, body,
-// CI rollup and mergeability gate the merge affordance. gh's state does not
-// travel with it: a detail exists only when the PR is open (parsePRDetail).
-type PRDetail struct {
-	Number int    `json:"number"`
-	URL    string `json:"url"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
-	// Author is the login of whoever opened it, or their display name when gh
-	// reports no login. GitHub refuses a review request addressed to them, which
-	// is what keeps them out of the picker.
-	Author string `json:"author"`
-	// AuthorLogin is the same account as Author, minus the fallback to a display
-	// name — the value a commit's login is compared against. Author cannot serve:
-	// a name matches no login, so a PR whose author gh reports without one would
-	// read as every commit landing under the wrong account.
-	AuthorLogin string `json:"authorLogin"`
-	// State is gh's OPEN | CLOSED | MERGED. Only a number-addressed lookup can
-	// return a non-OPEN one; the branch lookup still gates them out.
-	State     string `json:"state"`
-	IsDraft   bool   `json:"isDraft"`
-	Mergeable string `json:"mergeable"` // gh: MERGEABLE | CONFLICTING | UNKNOWN
-	// MergeStateStatus is GitHub's own answer to "can this merge right now" —
-	// CLEAN | UNSTABLE | BLOCKED | BEHIND | DIRTY | DRAFT | HAS_HOOKS | UNKNOWN.
-	// Mergeable alone cannot gate the button: it says nothing about a required
-	// review or a required check, and it reads UNKNOWN while GitHub recomputes
-	// after a push.
-	MergeStateStatus string `json:"mergeStateStatus"`
-	// ReviewDecision is gh's aggregate verdict — APPROVED | CHANGES_REQUESTED |
-	// REVIEW_REQUIRED — and "" where the repository requires no review. Who
-	// reviewed is a different field (latestReviews) this does not carry.
-	ReviewDecision string `json:"reviewDecision"`
-	// Reviewers is who was asked and who answered, in one list (prreviewers.go).
-	Reviewers    []PRReviewer `json:"reviewers"`
-	BaseRefName  string       `json:"baseRefName"`
-	HeadRefName  string       `json:"headRefName"`
-	ChangedFiles int          `json:"changedFiles"`
-	Checks       ChecksRollup `json:"checks"`
-	CheckRuns    []CheckItem  `json:"checkRuns"`
-	Commits      []PRCommit   `json:"commits"`
-	// IsCrossRepository marks a head branch that lives on a fork.
-	IsCrossRepository bool `json:"isCrossRepository"`
-	// MaintainerCanModify is GitHub's "allow edits by maintainers" on a fork PR,
-	// and the whole of what decides whether a session can be opened on one: with
-	// it a push back to the fork's branch is authorised, without it there is
-	// nowhere for an agent's commits to go (CreateWorktreeFromPR). It is false on
-	// a same-repository PR, where nothing needs the permission.
-	MaintainerCanModify bool `json:"maintainerCanModify"`
-}
+type PRDetail = api.PRDetail
 
-// PRCommit is one commit the pull request would land, split the way git itself
-// splits a message: the subject line, then the body (empty for a one-liner).
-//
-// Login and Name are kept apart because only one of them is evidence: Name is
-// free text, Login is the account GitHub resolved the author's email to against
-// every account's verified addresses — an answer lich cannot compute, and one
-// whose "" means the email belongs to nobody rather than "unknown".
-type PRCommit struct {
-	OID      string `json:"oid"`
-	Headline string `json:"headline"`
-	Body     string `json:"body"`
-	Login    string `json:"login"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Date     string `json:"date"` // gh's ISO committedDate
-}
+type PRCommit = api.PRCommit
 
 // ghPRView mirrors the requested gh payload; statusCheckRollup is reduced to
 // ChecksRollup inside parsePRDetail and never leaves this package raw.
@@ -391,30 +329,7 @@ const (
 // the window can never widen into an arbitrary flag.
 var prListStates = map[string]bool{"open": true, "closed": true, "merged": true, "all": true}
 
-// PRSummary is one row of the repository's open pull requests — what the list
-// column needs to render and rank a PR before anything is selected. The full
-// view behind a row is PRDetail, fetched per PR.
-type PRSummary struct {
-	Number  int    `json:"number"`
-	Title   string `json:"title"`
-	Author  string `json:"author"` // login, or the display name when gh reports no login
-	State   string `json:"state"`  // gh: OPEN | CLOSED | MERGED
-	IsDraft bool   `json:"isDraft"`
-	// ReviewDecision is gh's APPROVED | CHANGES_REQUESTED | REVIEW_REQUIRED,
-	// and "" for a repository that requires no review.
-	ReviewDecision string `json:"reviewDecision"`
-	HeadRefName    string `json:"headRefName"`
-	// IsCrossRepository marks a PR whose head branch lives on a fork. lich can
-	// check such a branch out, but the commits would have nowhere to push, so
-	// the session flow refuses it (CreateWorktreeFromPR) and the button reads
-	// as blocked rather than failing on click.
-	IsCrossRepository bool         `json:"isCrossRepository"`
-	UpdatedAt         string       `json:"updatedAt"` // gh's ISO timestamp
-	Checks            ChecksRollup `json:"checks"`
-	// Threads is counted only on a CHANGES_REQUESTED row (prlistthreads.go);
-	// every other row carries a zero tally.
-	Threads ThreadTally `json:"threads"`
-}
+type PRSummary = api.PRSummary
 
 // ghPRListItem mirrors one gh `pr list --json` entry; the rollup is reduced to
 // ChecksRollup and the author object flattened before either leaves this package.

@@ -58,15 +58,15 @@ func TestStoreCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.PickProject(ctx)
 			return err
 		}},
-		{"RelocateProject", "project.Relocate", `"p"`, nil, func(c *Client) error {
+		{"RelocateProject", "project.Relocate", `{"id":"p"}`, nil, func(c *Client) error {
 			_, err := c.RelocateProject(ctx, "p")
 			return err
 		}},
-		{"PathExists", "project.Exists", `"/a"`, true, func(c *Client) error {
+		{"PathExists", "project.Exists", `{"path":"/a"}`, true, func(c *Client) error {
 			_, err := c.PathExists(ctx, "/a")
 			return err
 		}},
-		{"MissingPaths", "project.Missing", `["/a","/b"]`, []string{"/b"}, func(c *Client) error {
+		{"MissingPaths", "project.Missing", `{"paths":["/a","/b"]}`, []string{"/b"}, func(c *Client) error {
 			_, err := c.MissingPaths(ctx, []string{"/a", "/b"})
 			return err
 		}},

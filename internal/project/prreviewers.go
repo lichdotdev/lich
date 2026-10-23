@@ -1,16 +1,8 @@
 package project
 
-// PRReviewer is one entry of a pull request's review roster: somebody who was
-// asked and has not answered yet, or somebody who has.
-type PRReviewer struct {
-	// Login is the account's login, or a team's slug — which is not what gh takes
-	// to add or remove one (that is org/slug), so a team is shown and not edited.
-	Login  string `json:"login"`
-	IsTeam bool   `json:"isTeam"`
-	// State is "" while the review is still owed, else gh's APPROVED |
-	// CHANGES_REQUESTED | COMMENTED | DISMISSED.
-	State string `json:"state"`
-}
+import "github.com/lichdotdev/lich/api"
+
+type PRReviewer = api.PRReviewer
 
 // ghReviewRequest is one entry of gh's reviewRequests: a User carries a login, a
 // Team a slug, and __typename is the only thing that says which.

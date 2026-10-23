@@ -4,20 +4,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// BaseFreshness is where a local branch stands against its upstream, read
-// right after fetching it: what the new-worktree dialog needs to start a
-// worktree from the newer of the two. Upstream is "" for a branch that tracks
-// nothing on a remote, and every other field is then zero.
-type BaseFreshness struct {
-	Upstream string `json:"upstream"` // "origin/main" form
-	Ahead    int    `json:"ahead"`
-	Behind   int    `json:"behind"`
-	// FetchError is why the fetch failed, "" when it did not. The counts are
-	// then against whatever an earlier fetch left.
-	FetchError string `json:"fetchError,omitempty"`
-}
+type BaseFreshness = api.BaseFreshness
 
 // BaseFreshness fetches branch's upstream and counts the commits each side
 // has that the other lacks. A fetch that fails is part of the answer, never an

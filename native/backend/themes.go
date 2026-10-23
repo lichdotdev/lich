@@ -79,13 +79,11 @@ func (c *Client) SaveThemeTemplate(ctx context.Context, path string) error {
 
 // PickFile opens the backend's file picker; "" is a cancelled one.
 func (c *Client) PickFile(ctx context.Context, title string) (string, error) {
-	var path string
-	return path, c.Call(ctx, "project.PickFile", &path, title)
+	return callMethod(ctx, c, api.ProjectPickFile, api.PickFileOptions{Title: title})
 }
 
 // PickSaveFile opens the backend's save picker on defaultName; "" is a
 // cancelled one.
 func (c *Client) PickSaveFile(ctx context.Context, title, defaultName string) (string, error) {
-	var path string
-	return path, c.Call(ctx, "project.PickSaveFile", &path, title, defaultName)
+	return callMethod(ctx, c, api.ProjectPickSaveFile, api.PickSaveFileOptions{Title: title, DefaultName: defaultName})
 }

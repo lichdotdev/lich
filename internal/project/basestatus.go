@@ -9,17 +9,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// BaseStatus is where a checkout stands against the branch it will merge into:
-// how far that branch has moved underneath it, and which files a merge would
-// collide on right now. It is what turns "the merge button refused" into
-// something a parallel worktree knows before anyone clicks it.
-type BaseStatus struct {
-	Base      string   `json:"base"`   // the branch merged into, "origin/main" form
-	Behind    int      `json:"behind"` // commits the base has that this checkout does not
-	Conflicts []string `json:"conflicts"`
-}
+type BaseStatus = api.BaseStatus
 
 // baseFetchInterval throttles the background fetch behind the readout. Nothing
 // else in lich fetches after a worktree is created, and a branch lands on the

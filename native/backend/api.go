@@ -12,14 +12,7 @@ type Project = api.Project
 
 type Session = api.Session
 
-// DiffStats mirrors project.DiffStats.
-type DiffStats struct {
-	Files   int    `json:"files"`
-	Added   int    `json:"added"`
-	Deleted int    `json:"deleted"`
-	Head    string `json:"head"`
-	Branch  string `json:"branch"`
-}
+type DiffStats = api.DiffStats
 
 // LoadState returns every open project with its sessions.
 func (c *Client) LoadState(ctx context.Context) ([]Project, error) {
@@ -103,47 +96,31 @@ func (c *Client) SetVisible(ctx context.Context, id string, visible bool) error 
 
 // Diff returns a checkout's branch and change counts.
 func (c *Client) Diff(ctx context.Context, path string) (DiffStats, error) {
-	var d DiffStats
-	return d, c.Call(ctx, "project.Diff", &d, path)
+	return callMethod(ctx, c, api.ProjectDiff, api.PathOptions{Path: path})
 }
 
 // DiffText returns one unified diff of a checkout's staged, unstaged and
 // untracked changes against HEAD.
 func (c *Client) DiffText(ctx context.Context, path string) (string, error) {
-	var s string
-	return s, c.Call(ctx, "project.DiffText", &s, path)
+	return callMethod(ctx, c, api.ProjectDiffText, api.PathOptions{Path: path})
 }
 
 // FileLines returns lines from..to (1-based, inclusive) of rel at ref, "" for
 // the working tree. The backend caps one answer at 500 lines, so a caller
 // wanting more asks again from where the answer ended.
 func (c *Client) FileLines(ctx context.Context, path, rel, ref string, from, to int) ([]string, error) {
-	var lines []string
-	return lines, c.Call(ctx, "project.FileLines", &lines, path, rel, ref, from, to)
+	return callMethod(ctx, c, api.ProjectFileLines, api.FileLinesOptions{Path: path, Rel: rel, Ref: ref, From: from, To: to})
 }
 
-// RevertLine mirrors project.RevertLine: one changed line of a drawn diff,
-// "old" for a deletion numbered in HEAD and "new" for an addition numbered in
-// the working tree. Text proves the number still means the same line.
-type RevertLine struct {
-	Side string `json:"side"`
-	Line int    `json:"line"`
-	Text string `json:"text"`
-}
+type RevertLine = api.RevertLine
 
-// RevertResult mirrors project.RevertResult, what undoing a revert needs. Both
-// patches are base64, opaque here: handed back to RestoreLines as they came.
-type RevertResult struct {
-	Patch      string `json:"patch"`
-	IndexPatch string `json:"indexPatch"`
-}
+type RevertResult = api.RevertResult
 
 // RevertLines puts these changed lines of rel back to HEAD, in the index too
 // when it holds them. It fails when the file moved on since the diff was
 // drawn.
 func (c *Client) RevertLines(ctx context.Context, path, rel string, lines []RevertLine) (RevertResult, error) {
-	var r RevertResult
-	return r, c.Call(ctx, "project.RevertLines", &r, path, rel, lines)
+	return callMethod(ctx, c, api.ProjectRevertLines, api.RevertLinesOptions{Path: path, Rel: rel, Lines: lines})
 }
 
 // GetSetting returns a setting's value, "" when unset. scope is a project id,
@@ -155,6 +132,9 @@ func (c *Client) GetSetting(ctx context.Context, key, scope string) (string, err
 // HomeProject is the project rooted at the user's home directory, the one the
 // windows pin as Home. It is not opened by asking.
 func (c *Client) HomeProject(ctx context.Context) (Project, error) {
-	var p Project
-	return p, c.Call(ctx, "project.Home", &p)
+	p, err := callMethod(ctx, c, api.ProjectHome, api.None{})
+	if err != nil || p == nil {
+		return Project{}, err
+	}
+	return Project{ID: p.ID, Name: p.Name, Path: p.Path}, nil
 }

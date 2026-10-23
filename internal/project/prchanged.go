@@ -1,5 +1,7 @@
 package project
 
+import "github.com/lichdotdev/lich/api"
+
 import "time"
 
 // PRChangedEvent is what a pull request write through lich reports once GitHub
@@ -7,13 +9,7 @@ import "time"
 // screen that made the change telling the others.
 const PRChangedEvent = "pull-request-changed"
 
-// PRChanged names the checkout the write ran in and the pull request it
-// addressed; Number is 0 where the write addresses a thread or a review rather
-// than a number (the checkout's repository is then all that is known).
-type PRChanged struct {
-	Path   string `json:"path"`
-	Number int    `json:"number"`
-}
+type PRChanged = api.PRChanged
 
 // SetEmit wires where pull request writes report (PRChangedEvent).
 func (s *Service) SetEmit(emit func(name string, data any)) { s.emit = emit }

@@ -326,7 +326,7 @@ func (p *reviewPanel) revert(rel string, lines []backend.RevertLine) {
 
 func (p *reviewPanel) restore(path, rel, name string, undo backend.RevertResult) {
 	defer p.written(path)
-	if err := p.client.Call(context.Background(), "project.RestoreLines", nil, path, rel, undo); err != nil {
+	if err := p.client.RestoreLines(context.Background(), path, rel, undo); err != nil {
 		p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.undoFailed", i18n.Args{"name": name}), Description: backend.ErrorText(err)})
 	}
 }
@@ -378,7 +378,7 @@ func (p *reviewPanel) discard(f patchFile) {
 	go func() {
 		defer p.written(path)
 		for _, rel := range discardTargets(f) {
-			if err := p.client.Call(context.Background(), "project.DiscardFile", nil, path, rel); err != nil {
+			if err := p.client.DiscardFile(context.Background(), path, rel); err != nil {
 				p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.discardFailed", i18n.Args{"error": backend.ErrorText(err)})})
 				return
 			}

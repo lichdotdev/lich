@@ -44,6 +44,58 @@ opencodeprofile.LoginCommand(ProfileSlugOptions) string
 opencodeprofile.Profiles(None) []ProfileInfo
 opencodeprofile.UpdateProfile(UpdateProfileOptions) Profile
 patchnotes.Current(PatchNotesOptions) PatchNotes
+project.BaseFreshness(PathBranchOptions) BaseFreshness
+project.BaseStatus(PathOptions) *BaseStatus
+project.BranchRules(PathBranchOptions) *BranchRules
+project.BranchesOf(PathsOptions) map[string]string
+project.CarryUncommitted(CarryUncommittedOptions) None
+project.CommentOnPullRequest(PRBodyOptions) None
+project.CommitIdentity(PathOptions) CommitIdentity
+project.CreatePullRequest(PathOptions) None
+project.CreateWorktree(CreateWorktreeOptions) *Worktree
+project.CreateWorktreeFromPR(CreateWorktreeFromPROptions) *Worktree
+project.DeletePullRequestComment(PRCommentOptions) None
+project.DeleteReviewComment(PRCommentOptions) None
+project.Diff(PathOptions) DiffStats
+project.DiffText(PathOptions) string
+project.DiscardFile(CheckoutFileOptions) None
+project.EditPullRequestBody(PRBodyOptions) None
+project.EditPullRequestComment(PRCommentBodyOptions) None
+project.EditPullRequestTitle(PRTitleOptions) None
+project.EditReviewBody(PRReviewBodyOptions) None
+project.EditReviewComment(PRCommentBodyOptions) None
+project.Exists(PathOptions) bool
+project.FileLines(FileLinesOptions) []string
+project.GitHubAccounts(None) []string
+project.Home(None) *OpenedProject
+project.Issue(NumberOptions) Issue
+project.ListBranches(PathOptions) Branches
+project.ListCheckouts(PathOptions) []Worktree
+project.ListPullRequests(ListPullRequestsOptions) []PRSummary
+project.MergePullRequest(MergePullRequestOptions) None
+project.Missing(PathsOptions) []string
+project.Open(None) *OpenedProject
+project.PickFile(PickFileOptions) string
+project.PickSaveFile(PickSaveFileOptions) string
+project.PullRequest(PathOptions) *PullRequest
+project.PullRequestConflicts(PRConflictsOptions) []string
+project.PullRequestConversation(NumberOptions) *PRConversation
+project.PullRequestDetail(NumberOptions) *PRDetail
+project.PullRequestDiff(NumberOptions) string
+project.PullRequestMergeBase(NumberOptions) string
+project.ReadFile(CheckoutFileOptions) string
+project.ReadFileAt(ReadFileAtOptions) string
+project.Relocate(ProjectIDOptions) *OpenedProject
+project.RemoveWorktree(RemoveWorktreeOptions) None
+project.ReplyToReviewThread(PRCommentBodyOptions) None
+project.ResolveReviewThread(ResolveThreadOptions) None
+project.RestoreLines(RestoreLinesOptions) None
+project.RevertLines(RevertLinesOptions) RevertResult
+project.Search(SearchOptions) SearchResult
+project.SubmitReview(SubmitReviewOptions) None
+project.Tree(PathOptions) FileListing
+project.WorktreeAdopted(PathOptions) bool
+project.WorktreeDirty(PathOptions) bool
 providers.Detect(None) []DetectedProvider
 providers.OnPath(ProviderIDOptions) []ProviderBinary
 providers.RefreshPath(None) None
@@ -250,6 +302,292 @@ PatchNotes {
 	version string
 	highlights []PatchNotesHighlight
 	groups []PatchNotesGroup
+}
+
+PathBranchOptions {
+	path string
+	branch string
+}
+
+BaseFreshness {
+	upstream string
+	ahead int
+	behind int
+	fetchError,omitempty string
+}
+
+PathOptions {
+	path string
+}
+
+BaseStatus {
+	base string
+	behind int
+	conflicts []string
+}
+
+BranchRules {
+	allowedMergeMethods []string
+	commitPatterns []CommitPattern
+	viewerCanBypass bool
+}
+
+PathsOptions {
+	paths []string
+}
+
+CarryUncommittedOptions {
+	src string
+	dst string
+}
+
+PRBodyOptions {
+	path string
+	number int
+	body string
+}
+
+CommitIdentity {
+	name string
+	email string
+	local bool
+}
+
+CreateWorktreeOptions {
+	projectPath string
+	projectId string
+	name string
+	base string
+	baseIsRemote bool
+}
+
+Worktree {
+	name string
+	path string
+	reused,omitempty bool
+}
+
+CreateWorktreeFromPROptions {
+	projectPath string
+	projectId string
+	number int
+}
+
+PRCommentOptions {
+	path string
+	number int
+	commentId int64
+}
+
+DiffStats {
+	files int
+	added int
+	deleted int
+	head string
+	branch string
+}
+
+CheckoutFileOptions {
+	path string
+	rel string
+}
+
+PRCommentBodyOptions {
+	path string
+	number int
+	commentId int64
+	body string
+}
+
+PRTitleOptions {
+	path string
+	number int
+	title string
+}
+
+PRReviewBodyOptions {
+	path string
+	number int
+	reviewId int64
+	body string
+}
+
+FileLinesOptions {
+	path string
+	rel string
+	ref string
+	from int
+	to int
+}
+
+OpenedProject {
+	id string
+	name string
+	path string
+}
+
+NumberOptions {
+	path string
+	number int
+}
+
+Issue {
+	number int
+	title string
+	body string
+	url string
+}
+
+Branches {
+	local []string
+	remote []string
+	worktrees []Worktree
+}
+
+ListPullRequestsOptions {
+	path string
+	state string
+}
+
+PRSummary {
+	number int
+	title string
+	author string
+	state string
+	isDraft bool
+	reviewDecision string
+	headRefName string
+	isCrossRepository bool
+	updatedAt string
+	checks ChecksRollup
+	threads ThreadTally
+}
+
+MergePullRequestOptions {
+	path string
+	number int
+	method string
+	subject string
+	body string
+	admin bool
+}
+
+PickFileOptions {
+	title string
+}
+
+PickSaveFileOptions {
+	title string
+	defaultName string
+}
+
+PullRequest {
+	number int
+	url string
+	state string
+}
+
+PRConflictsOptions {
+	path string
+	number int
+	base string
+	prUrl string
+}
+
+PRConversation {
+	headRefOid string
+	reviews []PRReview
+	comments []PRComment
+	threads []PRReviewThread
+}
+
+PRDetail {
+	number int
+	url string
+	title string
+	body string
+	author string
+	authorLogin string
+	state string
+	isDraft bool
+	mergeable string
+	mergeStateStatus string
+	reviewDecision string
+	reviewers []PRReviewer
+	baseRefName string
+	headRefName string
+	changedFiles int
+	checks ChecksRollup
+	checkRuns []CheckItem
+	commits []PRCommit
+	isCrossRepository bool
+	maintainerCanModify bool
+}
+
+ReadFileAtOptions {
+	path string
+	rel string
+	ref string
+}
+
+ProjectIDOptions {
+	id string
+}
+
+RemoveWorktreeOptions {
+	projectPath string
+	worktreePath string
+	force bool
+	adoptedAck bool
+}
+
+ResolveThreadOptions {
+	path string
+	threadId string
+	resolved bool
+}
+
+RestoreLinesOptions {
+	path string
+	rel string
+	undo RevertResult
+}
+
+RevertLinesOptions {
+	path string
+	rel string
+	lines []RevertLine
+}
+
+RevertResult {
+	Patch string
+	IndexPatch string
+}
+
+SearchOptions {
+	path string
+	query string
+}
+
+SearchResult {
+	matches []SearchMatch
+	cut bool
+	tooLarge int
+}
+
+SubmitReviewOptions {
+	path string
+	number int
+	event string
+	body string
+	head string
+	comments []ReviewComment
+}
+
+FileListing {
+	files []string
+	cut bool
+	hidden []string
 }
 
 DetectedProvider {
@@ -608,10 +946,6 @@ AdoptExternalSessionOptions {
 	label string
 }
 
-ProjectIDOptions {
-	id string
-}
-
 ParkSessionOptions {
 	projectId string
 	sessionId string
@@ -962,6 +1296,101 @@ PatchNotesGroup {
 	items []string
 }
 
+CommitPattern {
+	target string
+	operator string
+	pattern string
+	negate bool
+}
+
+ChecksRollup {
+	passed int
+	failed int
+	pending int
+	total int
+}
+
+ThreadTally {
+	open int
+	total int
+}
+
+PRReview {
+	id string
+	databaseId int64
+	author string
+	state string
+	body string
+	date string
+	canEdit bool
+}
+
+PRComment {
+	id int64
+	author string
+	body string
+	date string
+	canEdit bool
+	canDelete bool
+}
+
+PRReviewThread {
+	id string
+	path string
+	line int
+	startLine int
+	side string
+	isResolved bool
+	isOutdated bool
+	comments []PRThreadComment
+}
+
+PRReviewer {
+	login string
+	isTeam bool
+	state string
+}
+
+CheckItem {
+	name string
+	state string
+	description string
+	url string
+	startedAt string
+	completedAt string
+	required bool
+}
+
+PRCommit {
+	oid string
+	headline string
+	body string
+	login string
+	name string
+	email string
+	date string
+}
+
+RevertLine {
+	side string
+	line int
+	text string
+}
+
+SearchMatch {
+	path string
+	line int
+	text string
+}
+
+ReviewComment {
+	path string
+	line int
+	startLine int
+	side string
+	body string
+}
+
 QuotaWindow {
 	label string
 	seconds int
@@ -1012,6 +1441,16 @@ ThemeSource {
 }
 
 Syntax = map[string]SyntaxStyle
+
+PRThreadComment {
+	id int64
+	author string
+	body string
+	date string
+	diffHunk string
+	canEdit bool
+	canDelete bool
+}
 
 SyntaxStyle {
 	color,omitempty string

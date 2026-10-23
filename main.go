@@ -267,7 +267,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	drops.SetPicker(proj.PickFile)
 	routes.Terminal(dispatcher, term)
 	routes.Drop(dispatcher, drops)
-	dispatcher.Register("project", proj)
+	routes.Project(dispatcher, proj)
 	plugins := agentplugin.New(db)
 	routes.AgentPlugin(dispatcher, plugins)
 	go plugins.RepairRegistrations()

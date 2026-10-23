@@ -52,6 +52,7 @@ func TestHandleAppServicesCoverEveryMethod(t *testing.T) {
 		"agentplugin.": func(d *rpc.Handler) { AgentPlugin(d, nil) },
 		"providers.":   func(d *rpc.Handler) { Providers(d, nil) },
 		"terminal.":    func(d *rpc.Handler) { Terminal(d, nil) },
+		"project.":     func(d *rpc.Handler) { Project(d, nil) },
 	} {
 		d := rpc.New()
 		route(d)

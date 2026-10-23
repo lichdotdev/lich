@@ -4,47 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// BranchRules is what a repository's rulesets say about merging into one branch. GitHub's
-// pull request fields do not carry it: `mergeStateStatus` answers whether this
-// merge can happen, never which methods the branch would accept, so a Merge
-// menu built without this offers buttons the ruleset refuses — and gh's
-// refusal arrives after the click, as one flat sentence (gherror.go).
-//
-// The endpoint answers for a branch, not a pull request, which is why this is
-// its own read: every pull request onto the same base shares one answer.
-type BranchRules struct {
-	// AllowedMergeMethods is squash|merge|rebase, in GitHub's own spelling.
-	// Empty means the branch has no rule about it and all three stand — which
-	// is also what a repository with no rulesets at all reports.
-	AllowedMergeMethods []string `json:"allowedMergeMethods"`
-	// CommitPatterns are the rules that read a commit's own text. Empty is the
-	// common case and means only "no rule of this kind", never "nothing blocks".
-	CommitPatterns []CommitPattern `json:"commitPatterns"`
-	// ViewerCanBypass is whether this account administers the repository, and so
-	// may merge past the rules above. It is the one answer here that must fail
-	// *closed*: an unreadable one hides an action rather than offering one that
-	// cannot work, because a bypass offered to an account that has none reads as
-	// a broken button, not as a permission it never had.
-	ViewerCanBypass bool `json:"viewerCanBypass"`
-}
+type BranchRules = api.BranchRules
 
-// CommitPattern is one ruleset rule that tests the text of a commit rather than
-// the state of a pull request. It earns its own field because it is the one
-// class of rule nothing on a pull request hints at: the checks pass, the review
-// lands, no conflict exists, and GitHub still answers BLOCKED — because the
-// message the merge *would* write breaks a pattern nobody can see from here.
-type CommitPattern struct {
-	// Target is the part the rule reads, already in the words the screen uses:
-	// "message", "author email", "committer email".
-	Target string `json:"target"`
-	// Operator is GitHub's own: regex | starts_with | ends_with | contains.
-	Operator string `json:"operator"`
-	Pattern  string `json:"pattern"`
-	// Negate flips the test — the pattern is then what the text must *not* be.
-	Negate bool `json:"negate"`
-}
+type CommitPattern = api.CommitPattern
 
 // commitPatternTargets maps the rule types that test commit text onto the word
 // the screen puts in the sentence. GitHub has pattern rules for branch and tag

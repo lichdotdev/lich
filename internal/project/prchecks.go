@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // gh reports a pull request's CI as a mixed array of two unrelated shapes. This
@@ -11,30 +13,9 @@ import (
 // wants — a header count and a ranked list — and nothing else in the package
 // needs to know either shape exists.
 
-// ChecksRollup collapses gh's statusCheckRollup array into the counts the panel
-// shows. Total is every check, so "all green" is Passed == Total && Total > 0.
-type ChecksRollup struct {
-	Passed  int `json:"passed"`
-	Failed  int `json:"failed"`
-	Pending int `json:"pending"`
-	Total   int `json:"total"`
-}
+type ChecksRollup = api.ChecksRollup
 
-// CheckItem is one check, flattened from gh's two rollup shapes into what the
-// Checks tab lists. State is this package's own passed|failed|pending, the same
-// verdict ChecksRollup counts. The timestamps are gh's ISO strings, left for the
-// window to turn into a duration.
-type CheckItem struct {
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	Description string `json:"description"` // workflow name, or the status context's own line
-	URL         string `json:"url"`         // where to read the run; "" when gh reports none
-	StartedAt   string `json:"startedAt"`
-	CompletedAt string `json:"completedAt"`
-	// Required is GitHub's own answer to "does this check gate the merge", the
-	// same verdict its checks list labels Required.
-	Required bool `json:"required"`
-}
+type CheckItem = api.CheckItem
 
 // checkItem is one statusCheckRollup entry. gh emits two shapes: a CheckRun
 // (Actions/apps) carries name/status/conclusion/detailsUrl; a StatusContext

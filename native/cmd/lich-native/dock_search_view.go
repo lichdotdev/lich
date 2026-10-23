@@ -87,8 +87,7 @@ func (c *codeTab) fetchSearch(query string) {
 		key = c.treeKey + " " + query
 	}
 	c.search.want(key, path, func(ctx context.Context) (searchResult, error) {
-		var r searchResult
-		return r, c.client.Call(ctx, "project.Search", &r, path, query)
+		return c.client.Search(ctx, path, query)
 	})
 }
 

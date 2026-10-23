@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // GitHub keeps a CHANGES_REQUESTED verdict until the reviewer approves or the
@@ -16,11 +18,7 @@ import (
 // Ceiling: the last 100 threads of each pull request, the conversation's own
 // cap (prthreads.go).
 
-// ThreadTally is how many of a pull request's review threads are still open.
-type ThreadTally struct {
-	Open  int `json:"open"`
-	Total int `json:"total"`
-}
+type ThreadTally = api.ThreadTally
 
 // ghThreadTallies mirrors the aliased payload: one key per pull request asked.
 type ghThreadTallies struct {

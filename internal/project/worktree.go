@@ -13,28 +13,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/gitutil"
 	"github.com/lichdotdev/lich/internal/relpath"
 )
 
-// Worktree is a git worktree checkout: the branch it holds and its path.
-type Worktree struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-	// Whether CreateWorktree checked out a branch that already existed instead
-	// of starting one at the base it was given — the one case where the base
-	// the caller picked decided nothing. Always false on a listed worktree.
-	Reused bool `json:"reused,omitempty"`
-}
+type Worktree = api.Worktree
 
-// Branches groups everything the base-branch picker offers: local and remote
-// branch names plus already-existing worktrees, so a closed-but-kept worktree
-// can be resumed instead of recreated.
-type Branches struct {
-	Local     []string   `json:"local"`
-	Remote    []string   `json:"remote"` // "origin/main" form
-	Worktrees []Worktree `json:"worktrees"`
-}
+type Branches = api.Branches
 
 // ListBranches returns the repository's local and remote branches and its
 // existing worktrees. A path that is not a git repository yields an error.

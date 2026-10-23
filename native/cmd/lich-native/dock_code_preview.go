@@ -97,8 +97,7 @@ func (p *preview) layout(gtx C, th *ui.Theme, root *ui.Root, env previewEnv) (D,
 		p.image.want(p.client, path, rel, "", "")
 	case blobNone:
 		p.file.want(key, key, func(ctx context.Context) (string, error) {
-			var text string
-			return text, p.client.Call(ctx, "project.ReadFile", &text, path, rel)
+			return p.client.ReadFile(ctx, path, rel)
 		})
 	}
 	if p.md.toggle.click.Clicked(gtx) {

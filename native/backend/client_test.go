@@ -41,7 +41,7 @@ func fakeBackend(t *testing.T, handle func(method string, args []json.RawMessage
 
 func TestCallSendsPositionalArgsAndDecodes(t *testing.T) {
 	c := fakeBackend(t, func(method string, args []json.RawMessage) (any, int) {
-		if method != "project.Diff" || len(args) != 1 || string(args[0]) != `"/repo"` {
+		if method != "project.Diff" || len(args) != 1 || string(args[0]) != `{"path":"/repo"}` {
 			t.Errorf("got %s %s", method, args)
 		}
 		return DiffStats{Files: 2, Branch: "main"}, http.StatusOK
@@ -124,13 +124,13 @@ func TestFrameRoundTrip(t *testing.T) {
 
 func TestRevertLinesSendsTheLinesAsTheBackendNamesThem(t *testing.T) {
 	c := fakeBackend(t, func(method string, args []json.RawMessage) (any, int) {
-		want := `[{"side":"old","line":4,"text":"b"},{"side":"new","line":4,"text":"B"}]`
-		if method != "project.RevertLines" || len(args) != 3 || string(args[1]) != `"main.go"` || string(args[2]) != want {
+		want := `{"path":"/repo","rel":"main.go","lines":[{"side":"old","line":4,"text":"b"},{"side":"new","line":4,"text":"B"}]}`
+		if method != "project.RevertLines" || len(args) != 1 || string(args[0]) != want {
 			t.Errorf("got %s %s", method, args)
 		}
 		return RevertResult{Patch: "p"}, http.StatusOK
 	})
-	r, err := c.RevertLines(context.Background(), "/repo", "main.go", []RevertLine{{"old", 4, "b"}, {"new", 4, "B"}})
+	r, err := c.RevertLines(context.Background(), "/repo", "main.go", []RevertLine{{Side: "old", Line: 4, Text: "b"}, {Side: "new", Line: 4, Text: "B"}})
 	if err != nil || r.Patch != "p" {
 		t.Fatalf("got %+v, %v", r, err)
 	}
@@ -138,7 +138,7 @@ func TestRevertLinesSendsTheLinesAsTheBackendNamesThem(t *testing.T) {
 
 func TestFileLinesSendsRefAndRange(t *testing.T) {
 	c := fakeBackend(t, func(method string, args []json.RawMessage) (any, int) {
-		if method != "project.FileLines" || len(args) != 5 || string(args[2]) != `""` || string(args[3]) != "3" || string(args[4]) != "4" {
+		if method != "project.FileLines" || len(args) != 1 || string(args[0]) != `{"path":"/repo","rel":"main.go","ref":"","from":3,"to":4}` {
 			t.Errorf("got %s %s", method, args)
 		}
 		return []string{"x", "y"}, http.StatusOK

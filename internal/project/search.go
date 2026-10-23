@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // maxSearchMatches caps one search's answer. The list is read by a person in a
@@ -24,26 +26,9 @@ const (
 	excerptLeadBytes = 40
 )
 
-// SearchMatch is one line of one file that contains the query.
-type SearchMatch struct {
-	Path string `json:"path"`
-	// Line is 1-based, the same numbering the preview's gutter shows.
-	Line int `json:"line"`
-	// Text is the line with its indentation dropped, cut to an excerpt around
-	// the first occurrence when the line is long.
-	Text string `json:"text"`
-}
+type SearchMatch = api.SearchMatch
 
-// SearchResult is one search over a checkout's files.
-type SearchResult struct {
-	Matches []SearchMatch `json:"matches"`
-	// Cut reports a search that stopped at maxSearchMatches.
-	Cut bool `json:"cut"`
-	// TooLarge counts the listed files skipped for being above maxReadFileSize.
-	// The tree shows them, so an answer that left them out says so; a binary
-	// is skipped without a count, since nobody searches one for text.
-	TooLarge int `json:"tooLarge"`
-}
+type SearchResult = api.SearchResult
 
 // errTooLarge marks a listed file readSearchable skipped for its size, the one
 // skip SearchResult counts.

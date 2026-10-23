@@ -6,33 +6,20 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-// BaseStatus mirrors project.BaseStatus: where a checkout stands against the
-// branch it merges into.
-type BaseStatus struct {
-	Base      string   `json:"base"`
-	Behind    int      `json:"behind"`
-	Conflicts []string `json:"conflicts"`
-}
+type BaseStatus = api.BaseStatus
 
-// PullRequest mirrors project.PullRequest.
-type PullRequest struct {
-	Number int    `json:"number"`
-	URL    string `json:"url"`
-	State  string `json:"state"`
-}
+type PullRequest = api.PullRequest
 
 // BaseStatus returns where path stands against its base, nil when it has no
 // base to stand against (the base branch itself, no remote).
 func (c *Client) BaseStatus(ctx context.Context, path string) (*BaseStatus, error) {
-	var b *BaseStatus
-	return b, c.Call(ctx, "project.BaseStatus", &b, path)
+	return callMethod(ctx, c, api.ProjectBaseStatus, api.PathOptions{Path: path})
 }
 
 // PullRequest returns the open pull request of path's branch through gh, nil
 // when there is none or gh cannot answer. Each call is a network round trip.
 func (c *Client) PullRequest(ctx context.Context, path string) (*PullRequest, error) {
-	var pr *PullRequest
-	return pr, c.Call(ctx, "project.PullRequest", &pr, path)
+	return callMethod(ctx, c, api.ProjectPullRequest, api.PathOptions{Path: path})
 }
 
 // OpenExternal opens url in the user's browser.
@@ -91,4 +78,45 @@ func (c *Client) SandboxBackend(ctx context.Context) (string, error) {
 // session that may use them.
 func (c *Client) SSHAgentKeys(ctx context.Context) ([]string, error) {
 	return callMethod(ctx, c, api.SystemSSHAgentKeys, api.None{})
+}
+
+// FileListing is a checkout's files as the code tab lists them.
+type FileListing = api.FileListing
+
+// Tree lists the files of the checkout at path.
+func (c *Client) Tree(ctx context.Context, path string) (FileListing, error) {
+	return callMethod(ctx, c, api.ProjectTree, api.PathOptions{Path: path})
+}
+
+// SearchResult is a search of a checkout's files.
+type SearchResult = api.SearchResult
+
+// SearchMatch is one line a search matched.
+type SearchMatch = api.SearchMatch
+
+// Search finds query in the files of the checkout at path.
+func (c *Client) Search(ctx context.Context, path, query string) (SearchResult, error) {
+	return callMethod(ctx, c, api.ProjectSearch, api.SearchOptions{Path: path, Query: query})
+}
+
+// ReadFile reads file rel of the checkout at path from the working tree.
+func (c *Client) ReadFile(ctx context.Context, path, rel string) (string, error) {
+	return callMethod(ctx, c, api.ProjectReadFile, api.CheckoutFileOptions{Path: path, Rel: rel})
+}
+
+// ReadFileAt reads file rel of the checkout at path as it was at ref.
+func (c *Client) ReadFileAt(ctx context.Context, path, rel, ref string) (string, error) {
+	return callMethod(ctx, c, api.ProjectReadFileAt, api.ReadFileAtOptions{Path: path, Rel: rel, Ref: ref})
+}
+
+// DiscardFile throws away every uncommitted change to file rel.
+func (c *Client) DiscardFile(ctx context.Context, path, rel string) error {
+	_, err := callMethod(ctx, c, api.ProjectDiscardFile, api.CheckoutFileOptions{Path: path, Rel: rel})
+	return err
+}
+
+// RestoreLines undoes the revert undo describes, the result RevertLines gave.
+func (c *Client) RestoreLines(ctx context.Context, path, rel string, undo RevertResult) error {
+	_, err := callMethod(ctx, c, api.ProjectRestoreLines, api.RestoreLinesOptions{Path: path, Rel: rel, Undo: undo})
+	return err
 }

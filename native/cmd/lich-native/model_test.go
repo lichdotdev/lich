@@ -27,7 +27,7 @@ const (
 func fakeDiff(t *testing.T, notGit string) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var args []string
+		var args []api.PathOptions
 		body, _ := io.ReadAll(r.Body)
 		if r.URL.Path == "/rpc/project.BaseStatus" || r.URL.Path == "/rpc/project.PullRequest" {
 			_ = json.NewEncoder(w).Encode(nil)
@@ -36,12 +36,12 @@ func fakeDiff(t *testing.T, notGit string) *backend.Client {
 		if err := json.Unmarshal(body, &args); err != nil || r.URL.Path != "/rpc/project.Diff" {
 			t.Errorf("unexpected call %s %s", r.URL.Path, body)
 		}
-		if args[0] == notGit {
+		if args[0].Path == notGit {
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": "not a git repository"})
 			return
 		}
-		_ = json.NewEncoder(w).Encode(backend.DiffStats{Files: 1, Added: 3, Deleted: 2, Branch: "b:" + args[0]})
+		_ = json.NewEncoder(w).Encode(backend.DiffStats{Files: 1, Added: 3, Deleted: 2, Branch: "b:" + args[0].Path})
 	}))
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)

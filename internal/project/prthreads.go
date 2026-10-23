@@ -3,6 +3,8 @@ package project
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // A pull request's conversation is the one part of it gh's own `pr view` cannot
@@ -33,85 +35,15 @@ const prConversationQuery = `query($owner:String!,$repo:String!,$number:Int!){
   }
 }`
 
-// PRConversation is everything said about a pull request: the reviews and their
-// verdicts, the comments left on the pull request itself, and the threads
-// anchored to a file and line. The Pulls screen renders the anchored ones inside
-// the diff and the rest in its Conversation tab.
-type PRConversation struct {
-	// HeadRefOID is the commit a new review comment is filed against. GitHub
-	// defaults to the latest commit, but naming it means a review submitted
-	// seconds after a push cannot silently land on lines nobody read.
-	HeadRefOID string     `json:"headRefOid"`
-	Reviews    []PRReview `json:"reviews"`
-	// Comments are the pull request's own comments — the ones with no file and
-	// no line, which GitHub files as issue comments.
-	Comments []PRComment      `json:"comments"`
-	Threads  []PRReviewThread `json:"threads"`
-}
+type PRConversation = api.PRConversation
 
-// PRReview is one submitted review: its verdict, and whatever was written in the
-// summary box above the line comments.
-type PRReview struct {
-	// ID is the GraphQL node id, which is what dismissing the review takes.
-	ID string `json:"id"`
-	// DatabaseID is the REST id, the address its summary is rewritten at.
-	DatabaseID int64  `json:"databaseId"`
-	Author     string `json:"author"`
-	// State is gh's APPROVED | CHANGES_REQUESTED | COMMENTED | DISMISSED.
-	State   string `json:"state"`
-	Body    string `json:"body"`
-	Date    string `json:"date"`
-	CanEdit bool   `json:"canEdit"`
-}
+type PRReview = api.PRReview
 
-// PRComment is one comment on the pull request itself.
-type PRComment struct {
-	// ID is the REST database id, the address an edit or a delete takes.
-	ID        int64  `json:"id"`
-	Author    string `json:"author"`
-	Body      string `json:"body"`
-	Date      string `json:"date"`
-	CanEdit   bool   `json:"canEdit"`
-	CanDelete bool   `json:"canDelete"`
-}
+type PRComment = api.PRComment
 
-// PRReviewThread is one conversation anchored to a line of the diff.
-type PRReviewThread struct {
-	// ID is the GraphQL node id, which is what resolving a thread takes. It is
-	// not the number a reply is addressed to — that is a comment's own ID.
-	ID   string `json:"id"`
-	Path string `json:"path"`
-	// Line is the anchor in the file the thread's side names, and StartLine the
-	// first line of a multi-line thread (0 when it covers one line). A thread
-	// GitHub could not re-anchor keeps its original line and is marked outdated,
-	// which is what sends it to the Conversation tab instead of the diff.
-	Line      int `json:"line"`
-	StartLine int `json:"startLine"`
-	// Side is RIGHT for a thread on the new file, LEFT for one on a deleted
-	// line — the two sides the diff renders in one document.
-	Side       string            `json:"side"`
-	IsResolved bool              `json:"isResolved"`
-	IsOutdated bool              `json:"isOutdated"`
-	Comments   []PRThreadComment `json:"comments"`
-}
+type PRReviewThread = api.PRReviewThread
 
-// PRThreadComment is one message inside a thread.
-type PRThreadComment struct {
-	// ID is the REST database id — the address a reply is posted to. GraphQL
-	// node ids do not work there, which is why both identifiers travel.
-	ID     int64  `json:"id"`
-	Author string `json:"author"`
-	Body   string `json:"body"`
-	Date   string `json:"date"`
-	// DiffHunk is GitHub's own snippet of the lines the thread is about. The
-	// diff already has them where the thread is anchored; this is what an
-	// outdated thread has left.
-	DiffHunk string `json:"diffHunk"`
-	// CanEdit is GitHub's own answer to whether the account reading may
-	// rewrite the comment, which is what the Edit button stands on.
-	CanEdit   bool `json:"canEdit"`
-	CanDelete bool `json:"canDelete"`
-}
+type PRThreadComment = api.PRThreadComment
 
 // ghConversation mirrors the GraphQL payload; nothing below leaves this package
 // in this shape.

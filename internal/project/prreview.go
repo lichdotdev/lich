@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // The three writes a review takes, and why each one is the API it is:
@@ -37,18 +39,7 @@ var reviewEvents = map[string]string{
 // value sent by the window can never reach GitHub as something else.
 var reviewSides = map[string]bool{"RIGHT": true, "LEFT": true}
 
-// ReviewComment is one line comment of a review being submitted. Line is the
-// last line it covers and StartLine the first (0 for a single-line comment) —
-// GitHub's own convention, kept here so a selection crosses unchanged.
-type ReviewComment struct {
-	Path      string `json:"path"`
-	Line      int    `json:"line"`
-	StartLine int    `json:"startLine"`
-	// Side is RIGHT (the new file) or LEFT (a deleted line). Empty means RIGHT,
-	// which is where all but a deletion comment goes.
-	Side string `json:"side"`
-	Body string `json:"body"`
-}
+type ReviewComment = api.ReviewComment
 
 // ghReviewPayload is GitHub's REST body for a submitted review. Its field names
 // are snake_case and its comment shape is not lich's, which is the whole reason

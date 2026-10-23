@@ -13,13 +13,7 @@ const (
 
 type BinaryCheck = api.BinaryCheck
 
-// CommitIdentity mirrors project.CommitIdentity: who the next commit in a
-// checkout would be authored as. Every field empty means none is configured.
-type CommitIdentity struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Local bool   `json:"local"`
-}
+type CommitIdentity = api.CommitIdentity
 
 // Verify resolves bin as a session's spawn would, through the pinned $PATH.
 func (c *Client) Verify(ctx context.Context, bin string) (BinaryCheck, error) {
@@ -50,8 +44,7 @@ func (c *Client) RefreshPath(ctx context.Context) error {
 // GitHubAccounts lists gh's signed-in accounts as "<host>/<login>"; empty
 // when gh is signed in to none. A round trip to every host gh knows.
 func (c *Client) GitHubAccounts(ctx context.Context) ([]string, error) {
-	var accounts []string
-	err := c.Call(ctx, "project.GitHubAccounts", &accounts)
+	accounts, err := callMethod(ctx, c, api.ProjectGitHubAccounts, api.None{})
 	if accounts == nil {
 		accounts = []string{}
 	}
@@ -60,6 +53,5 @@ func (c *Client) GitHubAccounts(ctx context.Context) ([]string, error) {
 
 // CommitIdentity returns who commits in the checkout at path land as.
 func (c *Client) CommitIdentity(ctx context.Context, path string) (CommitIdentity, error) {
-	var id CommitIdentity
-	return id, c.Call(ctx, "project.CommitIdentity", &id, path)
+	return callMethod(ctx, c, api.ProjectCommitIdentity, api.PathOptions{Path: path})
 }

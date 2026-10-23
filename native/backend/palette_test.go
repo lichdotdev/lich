@@ -40,7 +40,7 @@ func TestPaletteCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.SearchTranscripts(ctx, []string{"s1", "s2"}, "flaky")
 			return err
 		}},
-		{"BranchesOf", "project.BranchesOf", `["/a"]`, map[string]string{}, func(c *Client) error {
+		{"BranchesOf", "project.BranchesOf", `{"paths":["/a"]}`, map[string]string{}, func(c *Client) error {
 			_, err := c.BranchesOf(ctx, []string{"/a"})
 			return err
 		}},

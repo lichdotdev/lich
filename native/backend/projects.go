@@ -32,25 +32,23 @@ func (c *Client) ClosedProjectCount(ctx context.Context) (int, error) {
 
 // PickProject shows the backend's directory picker, nil when it is cancelled.
 func (c *Client) PickProject(ctx context.Context) (*RecentProject, error) {
-	var p *RecentProject
-	return p, c.Call(ctx, "project.Open", &p)
+	p, err := callMethod(ctx, c, api.ProjectOpen, api.None{})
+	return (*RecentProject)(p), err
 }
 
 // RelocateProject asks the picker where project id went, keeping its id; nil
 // when cancelled. A directory another project holds is an error.
 func (c *Client) RelocateProject(ctx context.Context, id string) (*RecentProject, error) {
-	var p *RecentProject
-	return p, c.Call(ctx, "project.Relocate", &p, id)
+	p, err := callMethod(ctx, c, api.ProjectRelocate, api.ProjectIDOptions{ID: id})
+	return (*RecentProject)(p), err
 }
 
 // PathExists reports whether a project directory is still there.
 func (c *Client) PathExists(ctx context.Context, path string) (bool, error) {
-	var ok bool
-	return ok, c.Call(ctx, "project.Exists", &ok, path)
+	return callMethod(ctx, c, api.ProjectExists, api.PathOptions{Path: path})
 }
 
 // MissingPaths returns the paths among paths that are gone.
 func (c *Client) MissingPaths(ctx context.Context, paths []string) ([]string, error) {
-	var gone []string
-	return gone, c.Call(ctx, "project.Missing", &gone, paths)
+	return callMethod(ctx, c, api.ProjectMissing, api.PathsOptions{Paths: paths})
 }

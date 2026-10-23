@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/text/encoding/charmap"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relpath"
 )
 
@@ -51,20 +52,7 @@ func displayText(data []byte) string {
 	return string(decoded)
 }
 
-// FileListing is one listing of a directory's files: the paths, plus the two
-// things the Files panel has to say out loud about how they were gathered. A
-// tree that silently stops short, or silently leaves a directory out, reads as
-// a folder with fewer files in it than it has.
-type FileListing struct {
-	Files []string `json:"files"`
-	// Cut reports a listing that stopped at walkLimit. Only a plain-folder walk
-	// can set it; git's own listing is never capped.
-	Cut bool `json:"cut"`
-	// Hidden names the walkIgnore directories this folder actually had, sorted
-	// and deduped: the panel names them, so somebody keeping source under a
-	// build/ or vendor/ reads why it is missing instead of guessing.
-	Hidden []string `json:"hidden"`
-}
+type FileListing = api.FileListing
 
 // Tree lists a directory's files as root-relative, slash-separated paths,
 // sorted. Inside a repository it merges tracked files with

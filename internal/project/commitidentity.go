@@ -1,19 +1,10 @@
 package project
 
+import "github.com/lichdotdev/lich/api"
+
 import "strings"
 
-// CommitIdentity is the name and email the next commit in a checkout would be
-// authored with — the fact the project's gh account (ghaccount.go) does not
-// carry, since that one only governs what lich asks gh. Local says the value
-// comes from the checkout's own config rather than the global one.
-//
-// The zero value is a legitimate answer, not a failure: a checkout with no
-// identity configured is one of the states worth showing.
-type CommitIdentity struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Local bool   `json:"local"`
-}
+type CommitIdentity = api.CommitIdentity
 
 // CommitIdentity reads the identity git itself resolves in the checkout at
 // path, so a repository-local override wins over the global config exactly as

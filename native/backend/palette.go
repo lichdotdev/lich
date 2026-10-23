@@ -64,6 +64,5 @@ func (c *Client) SearchTranscripts(ctx context.Context, ids []string, query stri
 // BranchesOf names the branch each checkout path is on now; a path that is no
 // repository is absent from the answer.
 func (c *Client) BranchesOf(ctx context.Context, paths []string) (map[string]string, error) {
-	var named map[string]string
-	return named, c.Call(ctx, "project.BranchesOf", &named, paths)
+	return callMethod(ctx, c, api.ProjectBranchesOf, api.PathsOptions{Paths: paths})
 }

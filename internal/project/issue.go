@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // An issue read is one round-trip like a pull request read, and shares its
@@ -17,14 +19,7 @@ const issueReadTimeout = prReadTimeout
 // issue's URL travels with it, so the cut costs nothing but a click.
 const maxIssueBody = 4000
 
-// Issue is the little of a GitHub issue the New worktree dialog needs: what to
-// name the branch after, and what to tell the session it opens.
-type Issue struct {
-	Number int    `json:"number"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
-	URL    string `json:"url"`
-}
+type Issue = api.Issue
 
 // Issue resolves one GitHub issue through gh, as the account the project
 // selected. The title names the branch the dialog is about to create, and the
