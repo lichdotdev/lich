@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -19,7 +20,7 @@ func conversationHome(t *testing.T) string {
 	t.Setenv("USERPROFILE", home)
 	for _, v := range []string{
 		"CLAUDE_CONFIG_DIR", "CODEX_HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME",
-		"CURSOR_CONFIG_DIR", "OMP_PROFILE", "PI_CODING_AGENT_DIR",
+		"CURSOR_CONFIG_DIR", "OMP_PROFILE", "PI_CODING_AGENT_DIR", "KIRO_HOME",
 	} {
 		t.Setenv(v, "")
 	}
@@ -295,5 +296,27 @@ func TestHeadLinesDropsTheLineTheBoundCuts(t *testing.T) {
 	lines := headLines(path)
 	if len(lines) != 1 || string(lines[0]) != first {
 		t.Errorf("headLines = %d lines, want only the complete first one", len(lines))
+	}
+}
+
+// KIRO_HOME moves the conversations with the rest of Kiro's root, and the list
+// and the resume check both follow it (issue #766): read off the home alone, a
+// user who set it saw no Kiro conversation, transcript or cost at all.
+func TestKiroConversationsFollowKiroHome(t *testing.T) {
+	home := conversationHome(t)
+	moved := t.TempDir()
+	t.Setenv(providers.KiroHomeVar, moved)
+	plant(t, filepath.Join(home, ".kiro", "sessions", "cli", "stale.json"),
+		`{"session_id":"stale","cwd":"/work/alpha"}`)
+	path := filepath.Join(moved, "sessions", "cli", "k1.json")
+	plant(t, path, `{"session_id":"k1","cwd":"/work/alpha"}`)
+
+	assertConversations(t, kiroConversations(),
+		store.Conversation{Kind: "kiro", ID: "k1", Cwd: "/work/alpha"})
+	if got, ok := kiroSessionPath("k1"); !ok || got != path {
+		t.Errorf("kiroSessionPath(k1) = %q, %v, want %q under KIRO_HOME", got, ok, path)
+	}
+	if _, ok := kiroSessionPath("stale"); ok {
+		t.Error("kiroSessionPath found a conversation under ~/.kiro while KIRO_HOME points elsewhere")
 	}
 }

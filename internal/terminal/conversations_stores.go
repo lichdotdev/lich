@@ -17,8 +17,8 @@ import (
 // The conversation lists of the five providers that describe a conversation in
 // a metadata file or a database row rather than in the transcript's own head.
 
-// kiroConversations reads ~/.kiro/sessions/cli/<id>.json, the interactive
-// store, which is the one kiroSessionPath resumes from. Its
+// kiroConversations reads sessions/cli/<id>.json under providers.KiroHome, the
+// interactive store, which is the one kiroSessionPath resumes from. Its
 // session_created_reason is no sub-agent mark: 2.21.0 wrote "subagent" on every
 // conversation measured, the ones a user opened by hand included.
 func kiroConversations() []store.Conversation {
@@ -26,7 +26,7 @@ func kiroConversations() []store.Conversation {
 	if err != nil {
 		return nil
 	}
-	paths, _ := filepath.Glob(filepath.Join(home, ".kiro", "sessions", "cli", "*.json"))
+	paths, _ := filepath.Glob(filepath.Join(providers.KiroHome(home), "sessions", "cli", "*.json"))
 	var out []store.Conversation
 	for _, path := range paths {
 		var meta struct {

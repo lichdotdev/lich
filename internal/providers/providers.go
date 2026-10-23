@@ -71,8 +71,7 @@ var Registry = []Provider{
 const KiroAgentName = "lich"
 
 // KiroAgentPath is the file that agent lives in, inside Kiro's global agents
-// directory. That root hangs off the home alone — 2.21.0 honours no environment
-// variable for it. Resolved here rather than in either caller so the install
+// directory under KiroHome. Resolved here rather than in either caller so the install
 // that writes the file (internal/agentplugin) and the spawn that decides whether
 // to name it (internal/terminal) cannot drift to different paths.
 func KiroAgentPath() (string, error) {
@@ -80,7 +79,7 @@ func KiroAgentPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve home directory: %w", err)
 	}
-	return filepath.Join(home, ".kiro", "agents", KiroAgentName+".json"), nil
+	return filepath.Join(KiroHome(home), "agents", KiroAgentName+".json"), nil
 }
 
 // Known reports whether id names a registered provider. It guards a provider id

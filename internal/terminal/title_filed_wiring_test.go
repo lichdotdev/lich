@@ -36,6 +36,7 @@ func plantKiroSession(t *testing.T, providerSessionID, body string) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv(providers.KiroHomeVar, "")
 	dir := filepath.Join(home, ".kiro", "sessions", "cli")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)

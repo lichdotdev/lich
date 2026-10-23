@@ -28,6 +28,7 @@ func repairHome(t *testing.T) (*Service, string, func() []string) {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("OMP_PROFILE", "")
 	t.Setenv("PI_CODING_AGENT_DIR", "")
+	t.Setenv(providers.KiroHomeVar, "")
 	t.Setenv(devEnv, "")
 	if dir, err := os.UserHomeDir(); err != nil || dir != home {
 		t.Fatalf("home redirect missed: %q (err %v)", dir, err)

@@ -14,8 +14,8 @@ import (
 // The Kiro CLI side of a spawn: which agent it is told to run, and the shape of
 // the command line that carries it. The readout tests are in usage_kiro_test.go.
 
-// kiroHome redirects the home Kiro's directories hang off — it answers to no
-// environment variable of its own — and returns it. The resolved path is
+// kiroHome redirects the home Kiro's directories hang off, with KIRO_HOME
+// cleared so they hang off it, and returns it. The resolved path is
 // asserted to be under the redirect before anything is written: a variable this
 // misses on some platform would leave the test writing an agent into the real
 // user's ~/.kiro and passing while it did.
@@ -24,6 +24,7 @@ func kiroHome(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv(providers.KiroHomeVar, "")
 	got, err := os.UserHomeDir()
 	if err != nil {
 		t.Fatalf("resolve home directory: %v", err)

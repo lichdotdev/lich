@@ -133,12 +133,12 @@ func stateDirs(providerID, home string) []string {
 		// first half is xdg-basedir: the login token lives in the SQLite store
 		// under the data home (`kiro-cli/data.sqlite3`, key
 		// `kirocli:social:token`, and XDG_DATA_HOME is honoured — both measured
-		// on 2.21.0), while `~/.kiro` holds the agents lich installs into, the
-		// settings and the conversations usage.go reads. A session with only the
-		// second opens at the login prompt.
+		// on 2.21.0), while `~/.kiro` ($KIRO_HOME when set) holds the agents
+		// lich installs into, the settings and the conversations usage.go reads.
+		// A session with only the second opens at the login prompt.
 		return []string{
 			filepath.Join(dataHome(home), "kiro-cli"),
-			filepath.Join(home, ".kiro"),
+			providers.KiroHome(home),
 		}
 	}
 	return nil

@@ -175,7 +175,7 @@ func kiroAgentFile(version, scriptDir string) ([]byte, error) {
 			"file://AGENTS.md",
 			"file://README.md",
 			"skill://.kiro/skills/*/SKILL.md",
-			"skill://" + filepath.ToSlash(filepath.Join(home, ".kiro", "skills", "*", "SKILL.md")),
+			"skill://" + filepath.ToSlash(filepath.Join(providers.KiroHome(home), "skills", "*", "SKILL.md")),
 		},
 		IncludeMCPJSON: true,
 		Hooks:          hooks,

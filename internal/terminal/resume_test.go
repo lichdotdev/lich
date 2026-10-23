@@ -68,6 +68,7 @@ func TestResumeAvailable(t *testing.T) {
 	agyHome := t.TempDir()
 	t.Setenv("HOME", agyHome)
 	t.Setenv("USERPROFILE", agyHome)
+	t.Setenv(providers.KiroHomeVar, "")
 	agyDir := filepath.Join(agyHome, ".gemini", "antigravity-cli", "conversations")
 	if err := os.MkdirAll(agyDir, 0o755); err != nil {
 		t.Fatal(err)

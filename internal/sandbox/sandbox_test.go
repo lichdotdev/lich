@@ -20,7 +20,7 @@ func clearHarnessEnv(t *testing.T) {
 	t.Helper()
 	for _, name := range []string{
 		"CLAUDE_CONFIG_DIR", "CLAUDE_CODE_PLUGIN_CACHE_DIR", "CODEX_HOME", "OMP_PROFILE", "PI_CODING_AGENT_DIR",
-		"CURSOR_CONFIG_DIR", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "APPDATA",
+		"CURSOR_CONFIG_DIR", "KIRO_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "APPDATA",
 	} {
 		t.Setenv(name, "")
 	}
@@ -109,6 +109,11 @@ func TestStateDirsFollowsHarnessEnvironment(t *testing.T) {
 	}
 	if got := stateDirs(providers.Crush, home); got[0] != filepath.Join(config, "crush") {
 		t.Errorf("XDG_CONFIG_HOME ignored: got %v", got)
+	}
+	kiro := filepath.Join(root, "kiro")
+	t.Setenv("KIRO_HOME", kiro)
+	if got := stateDirs(providers.Kiro, home); got[1] != kiro {
+		t.Errorf("KIRO_HOME ignored: got %v", got)
 	}
 	// Cursor reads the XDG variable but not the XDG fallback, so it is asserted
 	// under both: set, it follows; cleared, it goes back to ~/.cursor rather

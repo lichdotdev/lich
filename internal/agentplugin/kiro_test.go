@@ -266,6 +266,7 @@ func kiroTestHome(t *testing.T) (configDir, home string) {
 	configDir = lichConfigHome(t)
 	root := os.Getenv("HOME")
 	t.Setenv("USERPROFILE", root)
+	t.Setenv(providers.KiroHomeVar, "")
 	home, err := os.UserHomeDir()
 	if err != nil {
 		t.Fatalf("resolve home directory: %v", err)

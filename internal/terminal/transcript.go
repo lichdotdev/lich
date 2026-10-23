@@ -196,8 +196,7 @@ func ompAgentDir() (string, bool) {
 }
 
 // kiroSessionPath is the file Kiro CLI keeps one conversation's metadata in,
-// under ~/.kiro — the CLI's root is $KIRO_HOME else `$HOME/.kiro` (2.21.0,
-// measured against a throwaway home); this reads the home one alone.
+// under the CLI's root (providers.KiroHome: $KIRO_HOME else `$HOME/.kiro`).
 //
 // It is not a transcript: Kiro writes the turns into the `.jsonl` beside it and
 // the metadata — model, context window, per-request context usage — into this
@@ -213,7 +212,7 @@ func kiroSessionPath(providerSessionID string) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	path := filepath.Join(home, ".kiro", "sessions", "cli", providerSessionID+".json")
+	path := filepath.Join(providers.KiroHome(home), "sessions", "cli", providerSessionID+".json")
 	if _, err := os.Stat(path); err != nil {
 		return "", false
 	}
