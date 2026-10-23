@@ -41,7 +41,7 @@ func TestFooterCallsSendPositionalArgs(t *testing.T) {
 		{"Write", "terminal.Write", `{"id":"s1","data":"hi"}`, nil, func(c *Client) error {
 			return c.Write(ctx, "s1", "hi")
 		}},
-		{"SetSetting", "store.SetSetting", `"footer.layout","","{}"`, nil, func(c *Client) error {
+		{"SetSetting", "store.SetSetting", `{"key":"footer.layout","projectId":"","value":"{}"}`, nil, func(c *Client) error {
 			return c.SetSetting(ctx, "footer.layout", "", "{}")
 		}},
 	}

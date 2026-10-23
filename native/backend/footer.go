@@ -39,5 +39,6 @@ func (c *Client) Write(ctx context.Context, id, data string) error {
 
 // SetSetting writes a setting; scope is a project id, "" for a global one.
 func (c *Client) SetSetting(ctx context.Context, key, scope, value string) error {
-	return c.Call(ctx, "store.SetSetting", nil, key, scope, value)
+	_, err := callMethod(ctx, c, api.StoreSetSetting, api.SetSettingOptions{Key: key, ProjectID: scope, Value: value})
+	return err
 }

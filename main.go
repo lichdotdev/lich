@@ -318,7 +318,6 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	}
 	routes.AppUpdate(dispatcher, appupdate.New(version, coord.Install, hub.Emit))
 	routes.PatchNotes(dispatcher, patchnotes.New(version, changelog, changelogTranslations))
-	dispatcher.Register("store", db)
 	routes.Store(dispatcher, db)
 	// Read before run writes this run's runtime file over the previous
 	// run's: a file still there is the only trace a bad exit leaves, and the

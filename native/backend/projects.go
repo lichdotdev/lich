@@ -1,35 +1,33 @@
 package backend
 
-import "context"
+import (
+	"context"
 
-// RecentProject mirrors store.Recent: a closed project the reopen menu
-// offers, and project.Project, what the picker and Relocate answer.
-type RecentProject struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Path string `json:"path"`
-}
+	"github.com/lichdotdev/lich/api"
+)
+
+type RecentProject = api.RecentProject
 
 // CloseProject marks a project closed, keeping its sessions for a reopen.
 func (c *Client) CloseProject(ctx context.Context, id string) error {
-	return c.Call(ctx, "store.CloseProject", nil, id)
+	_, err := callMethod(ctx, c, api.StoreCloseProject, api.ProjectIDOptions{ID: id})
+	return err
 }
 
 // ReorderProjects stores the open projects' order; ids names every one.
 func (c *Client) ReorderProjects(ctx context.Context, ids []string) error {
-	return c.Call(ctx, "store.ReorderProjects", nil, ids)
+	_, err := callMethod(ctx, c, api.StoreReorderProjects, api.ReorderProjectsOptions{IDs: ids})
+	return err
 }
 
 // RecentProjects returns the closed projects, the last one closed first.
 func (c *Client) RecentProjects(ctx context.Context) ([]RecentProject, error) {
-	var rows []RecentProject
-	return rows, c.Call(ctx, "store.RecentProjects", &rows, "")
+	return callMethod(ctx, c, api.StoreRecentProjects, api.SearchTermOptions{})
 }
 
 // ClosedProjectCount counts every closed project, past RecentProjects' page.
 func (c *Client) ClosedProjectCount(ctx context.Context) (int, error) {
-	var n int
-	return n, c.Call(ctx, "store.ClosedProjectCount", &n, "")
+	return callMethod(ctx, c, api.StoreClosedProjectCount, api.SearchTermOptions{})
 }
 
 // PickProject shows the backend's directory picker, nil when it is cancelled.

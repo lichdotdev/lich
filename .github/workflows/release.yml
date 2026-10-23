@@ -243,7 +243,7 @@ jobs:
           for _ in $(seq 1 60); do sleep 1; grep -q 'native window attached' "$config/lich.log" && break; done
           grep -q 'native window attached' "$config/lich.log" || fail "lich did not open its first window"
           token=$(sed -n 's/.*"token":"\([^"]*\)".*/\1/p' "$config/runtime.json")
-          curl -fsS -X POST -H 'Content-Type: application/json' -d '["window.closeAction","","background"]' \
+          curl -fsS -X POST -H 'Content-Type: application/json' -d '[{"key":"window.closeAction","projectId":"","value":"background"}]' \
             "http://127.0.0.1:$LICH_LISTEN_PORT/rpc/store.SetSetting?token=$token" > /dev/null || fail "storing Keep running failed"
           "$app/lich.exe" quit || fail "the first lich quit exited $?"
           for _ in $(seq 1 10); do tasklist | grep -q -e '^lich.exe' -e lich-native.exe || break; sleep 1; done

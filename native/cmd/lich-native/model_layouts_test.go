@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/backend"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // layoutsBackend answers every call with null and keeps the last value
@@ -43,14 +45,12 @@ func newLayoutsModel(t *testing.T) (*model, *layoutsBackend) {
 	t.Helper()
 	b := new(layoutsBackend)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var args []json.RawMessage
+		var args []api.SetSettingOptions
 		body, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(body, &args)
-		if r.URL.Path == "/rpc/store.SetSetting" && len(args) == 3 && string(args[0]) == strconv.Quote(layoutsKey) {
-			var v string
-			_ = json.Unmarshal(args[2], &v)
+		if r.URL.Path == "/rpc/store.SetSetting" && len(args) == 1 && args[0].Key == layoutsKey {
 			b.mu.Lock()
-			b.stored, b.saves = v, b.saves+1
+			b.stored, b.saves = args[0].Value, b.saves+1
 			b.mu.Unlock()
 		}
 		_ = json.NewEncoder(w).Encode(nil)

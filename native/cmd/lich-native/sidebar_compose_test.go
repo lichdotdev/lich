@@ -211,7 +211,7 @@ func TestWriteSidebarStoresFoldsFilesAndLayout(t *testing.T) {
 	if f.get(sidebarWidthKey+"@") != "20" || f.get(sidebarOpenKey+"@") != "false" {
 		t.Errorf("layout stored as width %q open %q", f.get(sidebarWidthKey+"@"), f.get(sidebarOpenKey+"@"))
 	}
-	if want := []string{`store.SetSessionFolder("r1","Apps")`}; !slices.Equal(f.calls, want) {
+	if want := []string{`store.SetSessionFolder({"sessionId":"r1","folder":"Apps"})`}; !slices.Equal(f.calls, want) {
 		t.Errorf("calls %v, want %v", f.calls, want)
 	}
 	if v := m.sidebarBlocks(sidebarFilter{}); !slices.Equal(blockKeys(v), []string{folderKey("Apps"), feat}) || !blockFolded(v, feat) {
@@ -222,7 +222,7 @@ func TestWriteSidebarStoresFoldsFilesAndLayout(t *testing.T) {
 	if err := writeSidebar(ctx, m, sidebarWrites{paint: paintRequest{ids: []string{"r1", "f1"}, color: "red"}}, sidebarLayout{}); err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{`store.SetSessionColor("r1","red")`, `store.SetSessionColor("f1","red")`}; !slices.Equal(f.calls, want) {
+	if want := []string{`store.SetSessionColor({"sessionId":"r1","color":"red"})`, `store.SetSessionColor({"sessionId":"f1","color":"red"})`}; !slices.Equal(f.calls, want) {
 		t.Errorf("paint calls %v, want %v", f.calls, want)
 	}
 	if v := m.sidebarBlocks(sidebarFilter{}); v.blocks[0].color != "red" {

@@ -3,63 +3,13 @@ package store
 import (
 	"fmt"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// ClosedSession is one parked session offered for resuming — what identifies it
-// in a list somebody is browsing rather than one they are already looking at.
-// The project rides along because history spans every project at once, closed
-// ones included, and the project name is what tells two sessions of the same
-// name apart.
-//
-// Two answers about the branch, and they are different questions: ParkedBranch
-// is the snapshot this row was closed on, which is what the search matches, and
-// what the window draws is read live off the checkout, because a worktree's
-// directory stops agreeing with its branch the moment an agent branches inside
-// it (native/cmd/lich-native/model.go, checkoutLabel). A row whose checkout is gone has
-// nothing live to show — which is the same row that cannot be resumed anyway.
-type ClosedSession struct {
-	ID          string `json:"id"`
-	ProjectID   string `json:"projectId"`
-	ProjectName string `json:"projectName"`
-	// The project's own directory, so resuming a session of a closed project can
-	// reopen that project first without a second lookup — and can ask where it
-	// went when the directory has moved.
-	ProjectPath string `json:"projectPath"`
-	Label       string `json:"label"`
-	Kind        string `json:"kind"`
-	Path        string `json:"path"`
-	// The branch the checkout was on at the close, empty for a row parked before
-	// lich recorded one. Searchable, not drawn.
-	ParkedBranch string `json:"parkedBranch"`
-	// Unix seconds, 0 for a row parked before closed_at existed — which sorts
-	// last and is drawn as no date rather than as 1970.
-	ClosedAt int64 `json:"closedAt"`
-	// Whether the search reached this row through its conversation. It is what
-	// the window keeps the row on, apart from the snippet: a hit the index found
-	// by a fold the plain text does not have ("cion" against "ción"), or a term
-	// the index split on punctuation, has a snippet of nothing to show.
-	MatchedConversation bool `json:"matchedConversation"`
-	// The stretch of conversation that matched the search, empty for a row the
-	// search matched by name, for one matched by a fold (see above), and for
-	// every row of an empty query, which matched nothing in particular.
-	Snippet string `json:"snippet"`
-	// Whether the cap on one session's index dropped the oldest of this
-	// conversation. The row says so on screen: a search that reaches only part
-	// of a session has to be readable as that rather than as an absence.
-	Truncated bool `json:"truncated"`
-}
+type ClosedSession = api.ParkedSession
 
-// ClosedHistory is one page of the parked-session history and the size of the
-// match it was cut from. Total is what lets the list say it was cut instead of
-// presenting closedSessionLimit rows as the whole answer.
-type ClosedHistory struct {
-	Sessions []ClosedSession `json:"sessions"`
-	Total    int             `json:"total"`
-	// Parked sessions whose conversation has not been indexed yet, which is what
-	// the list reports while the backfill catches up on a workspace that predates
-	// the index. 0 once every row has one, which is the steady state.
-	Indexing int `json:"indexing"`
-}
+type ClosedHistory = api.ClosedHistory
 
 // closedSessionLimit caps the history handed to the window — how many rows one
 // call answers with, not how far back it looks: the search runs in the query,

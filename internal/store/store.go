@@ -24,6 +24,8 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // schema is the version-1 shape, applied once by the first migration
@@ -349,85 +351,9 @@ func (s *Service) SetBranchOf(fn func(path string) string) {
 	s.branchOf = fn
 }
 
-// Session is a persisted terminal session (metadata only). Kind selects what
-// the PTY runs: a provider id (see internal/providers) or "shell" (the user's
-// shell). Path is the session's working directory when it lives in a git
-// worktree; empty means the project's own path. ProviderSessionID is the id the
-// provider CLI assigns the conversation running in the PTY, reported by that
-// provider's session-start hook; empty until a hook fires (or for shell
-// sessions), it is the key for features that need to reach a session's
-// transcript or resume it. Pinned keeps a
-// session at the head of its project's list and withholds its close affordances
-// until it is unpinned. OriginSessionID and OriginLabel record the session that
-// asked for this one, empty for a session nobody delegated: the id names the
-// parent while it is still in the workspace, the label is what that parent was
-// called at the time and is all that is left once it is closed.
-type Session struct {
-	ID                string `json:"id"`
-	Label             string `json:"label"`
-	Kind              string `json:"kind"`
-	Path              string `json:"path"`
-	ProviderSessionID string `json:"providerSessionId"`
-	// Sandbox is whether this session runs confined: "on", "off", or empty for a
-	// row nothing has spawned yet. The spawn writes its own verdict here, so the
-	// window can mark a confined card without re-deriving a decision that took
-	// the provider's rung, the checkout and a per-session override to reach.
-	Sandbox string `json:"sandbox"`
-	Pinned  bool   `json:"pinned"`
-	// Folder is the sidebar block this session was filed under, "" for one the
-	// user has not filed. It rides the row rather than a preference because it
-	// is what the list is organised by — a workspace of forty sessions that
-	// came back ungrouped after a restart would be a workspace nobody files.
-	Folder string `json:"folder"`
-	// Color is the palette colour the user painted the card with, "" for one
-	// that follows the theme.
-	Color string `json:"color"`
-	// Profile is the Claude Code profile the session runs in
-	// (internal/claudeprofile), "" for Personal and for every other provider.
-	Profile string `json:"profile"`
-	// Model is the model the session was born on (SetSessionModel), "" for one
-	// opened on its provider's default.
-	Model           string `json:"model"`
-	OriginSessionID string `json:"originSessionId"`
-	OriginLabel     string `json:"originLabel"`
-	// Forked is whether the session was born branching its origin's
-	// conversation, rather than delegated or opened as a subagent.
-	Forked bool `json:"forked"`
-	// ScheduledAt is when the prompt below is due, in unix seconds, 0 for a
-	// session with nothing waiting. It rides the session row so the card that
-	// draws the countdown and the relay that delivers it read the same hydration
-	// call, and neither needs a channel of its own.
-	ScheduledAt     int64  `json:"scheduledAt"`
-	ScheduledPrompt string `json:"scheduledPrompt"`
-	// Unread is whether this session's last finished turn is still waiting to be
-	// read. It rides the hydration call because the mark has to survive a window
-	// restart: the window holds it while it is up, and this row is what it comes
-	// back to (see SetSessionUnread).
-	Unread bool `json:"unread"`
-	// MCPServers names the MCP servers this session's provider could reach when
-	// it was spawned. It rides the row for the reason Sandbox does: the spawn is
-	// what resolved it — from the provider's own config documents and this
-	// session's directory — and a window restart has to come back to the same
-	// answer without re-deriving it. Nil for a row nothing has spawned yet.
-	MCPServers []string `json:"mcpServers"`
-	// SandboxSkippedLinks names the paths under the user's home this session's
-	// sandbox left out for being symlinks, relative to that home. It rides the
-	// row for the reason MCPServers does — the spawn is what resolved it, and a
-	// window restart has to come back to the same answer. Nil for an unconfined
-	// session and for one whose sandbox skipped nothing.
-	SandboxSkippedLinks []string `json:"sandboxSkippedLinks"`
-}
+type Session = api.Session
 
-// Project is a persisted project together with its restorable session state.
-type Project struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	Path            string    `json:"path"`
-	NextSeq         int       `json:"nextSeq"`
-	ActiveSessionID string    `json:"activeSessionId"`
-	DefaultProvider string    `json:"defaultProvider"`
-	Sessions        []Session `json:"sessions"`
-}
+type Project = api.Project
 
 // New opens (creating if absent) the SQLite database under the user's config
 // directory and applies the schema.
@@ -561,13 +487,7 @@ func (s *Service) loadProjectDefaults(projects []Project) {
 	}
 }
 
-// Recent is a closed project offered for reopening — identity only, since the
-// menu that lists them shows a name and a path and nothing else.
-type Recent struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Path string `json:"path"`
-}
+type Recent = api.RecentProject
 
 // recentLimit caps how many closed projects one call answers with, not how far
 // back it looks: the search runs in the query, so a project closed long before

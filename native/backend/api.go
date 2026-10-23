@@ -8,50 +8,9 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-// Project mirrors store.Project (internal/store/store.go), trimmed to what the
-// native client reads.
-type Project struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	Path            string    `json:"path"`
-	NextSeq         int       `json:"nextSeq"`
-	ActiveSessionID string    `json:"activeSessionId"`
-	DefaultProvider string    `json:"defaultProvider"`
-	Sessions        []Session `json:"sessions"`
-}
+type Project = api.Project
 
-// Session mirrors store.Session, trimmed. Path is the checkout the session
-// runs in; Kind is the provider (claude, codex, ...) or "shell".
-type Session struct {
-	ID     string `json:"id"`
-	Label  string `json:"label"`
-	Kind   string `json:"kind"`
-	Path   string `json:"path"`
-	Folder string `json:"folder"`
-	Pinned bool   `json:"pinned"`
-	Unread bool   `json:"unread"`
-	Color  string `json:"color"`
-	// ProviderSessionID is the provider conversation the session last ran,
-	// "" for none: what a restored card offers to resume.
-	ProviderSessionID string `json:"providerSessionId"`
-	// MCPServers are the servers the session's spawn found registered with
-	// its provider, which divide an MCP tool's name into server and tool.
-	MCPServers []string `json:"mcpServers"`
-	// Profile is the Claude Code profile the session runs in (a slug), "" for
-	// Personal and for every other provider.
-	Profile string `json:"profile"`
-	// Model is the model the session was born on, "" for one opened on its
-	// provider's default.
-	Model string `json:"model"`
-	// OriginSessionID is the session this one came from, in any project, ""
-	// for one nobody opened from another; OriginLabel is what that session
-	// was called when it did.
-	OriginSessionID string `json:"originSessionId"`
-	OriginLabel     string `json:"originLabel"`
-	// Forked is whether the session was born branching that session's
-	// conversation, rather than delegated or opened as a subagent.
-	Forked bool `json:"forked"`
-}
+type Session = api.Session
 
 // DiffStats mirrors project.DiffStats.
 type DiffStats struct {
@@ -64,23 +23,25 @@ type DiffStats struct {
 
 // LoadState returns every open project with its sessions.
 func (c *Client) LoadState(ctx context.Context) ([]Project, error) {
-	var ps []Project
-	return ps, c.Call(ctx, "store.LoadState", &ps)
+	return callMethod(ctx, c, api.StoreLoadState, api.None{})
 }
 
 // AddProject opens path as a project under id.
 func (c *Client) AddProject(ctx context.Context, id, name, path string) error {
-	return c.Call(ctx, "store.AddProject", nil, id, name, path)
+	_, err := callMethod(ctx, c, api.StoreAddProject, api.AddProjectOptions{ID: id, Name: name, Path: path})
+	return err
 }
 
 // AddSession records a new session row; Start then spawns its process.
 func (c *Client) AddSession(ctx context.Context, projectID, sessionID, label, kind, path string, nextSeq int) error {
-	return c.Call(ctx, "store.AddSession", nil, projectID, sessionID, label, kind, path, nextSeq, "")
+	_, err := callMethod(ctx, c, api.StoreAddSession, api.AddSessionOptions{ProjectID: projectID, SessionID: sessionID, Label: label, Kind: kind, Path: path, NextSeq: nextSeq})
+	return err
 }
 
 // SetActiveSession records which session a project shows.
 func (c *Client) SetActiveSession(ctx context.Context, projectID, sessionID string) error {
-	return c.Call(ctx, "store.SetActiveSession", nil, projectID, sessionID)
+	_, err := callMethod(ctx, c, api.StoreSetActiveSession, api.ActiveSessionOptions{ProjectID: projectID, SessionID: sessionID})
+	return err
 }
 
 // Replay returns the tail of a session's output, to write into a fresh
@@ -188,8 +149,7 @@ func (c *Client) RevertLines(ctx context.Context, path, rel string, lines []Reve
 // GetSetting returns a setting's value, "" when unset. scope is a project id,
 // "" for a global setting.
 func (c *Client) GetSetting(ctx context.Context, key, scope string) (string, error) {
-	var v string
-	return v, c.Call(ctx, "store.GetSetting", &v, key, scope)
+	return callMethod(ctx, c, api.StoreGetSetting, api.GetSettingOptions{Key: key, ProjectID: scope})
 }
 
 // HomeProject is the project rooted at the user's home directory, the one the

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/backend"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 func TestCardWearsTheLiveAgentUntilItLeaves(t *testing.T) {
@@ -75,10 +77,10 @@ func fakeUnread(t *testing.T, calls chan<- []any) *backend.Client {
 		case "/rpc/store.AddProject", "/rpc/store.AddSession":
 			_ = json.NewEncoder(w).Encode(nil)
 		case "/rpc/store.SetSessionUnread":
-			var args []any
+			var args []api.SessionUnreadOptions
 			body, _ := io.ReadAll(r.Body)
 			_ = json.Unmarshal(body, &args)
-			calls <- args
+			calls <- []any{args[0].SessionID, args[0].Unread}
 			_ = json.NewEncoder(w).Encode(nil)
 		default:
 			t.Errorf("unexpected call %s", r.URL.Path)

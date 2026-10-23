@@ -142,7 +142,7 @@ func TestDismissReadsAFinishedTurn(t *testing.T) {
 	}
 	select {
 	case got := <-reads:
-		if got != `/rpc/store.SetSessionUnread ["b1",false]` {
+		if got != `/rpc/store.SetSessionUnread [{"sessionId":"b1","unread":false}]` {
 			t.Errorf("called %q, want b1 marked read", got)
 		}
 	case <-time.After(5 * time.Second):
@@ -164,8 +164,8 @@ func TestSaveLastScreenWritesTheWebsRoute(t *testing.T) {
 		}
 	}
 	want := []string{
-		`/rpc/store.SetSetting ["window.lastScreen","","/projects/b"]`,
-		`/rpc/store.SetSetting ["window.lastScreen","","/"]`,
+		`/rpc/store.SetSetting [{"key":"window.lastScreen","projectId":"","value":"/projects/b"}]`,
+		`/rpc/store.SetSetting [{"key":"window.lastScreen","projectId":"","value":"/"}]`,
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("wrote %q, want %q", got, want)

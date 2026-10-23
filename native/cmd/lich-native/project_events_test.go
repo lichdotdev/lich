@@ -87,7 +87,7 @@ func TestAskCloseTakesNoTabItself(t *testing.T) {
 	if !slices.Equal(sessions, []string{"a1", "a2"}) {
 		t.Errorf("sessions %v, want the project's two", sessions)
 	}
-	if got := rpc.seen(); !slices.Equal(got, []string{`/rpc/store.CloseProject ["a"]`}) {
+	if got := rpc.seen(); !slices.Equal(got, []string{`/rpc/store.CloseProject [{"id":"a"}]`}) {
 		t.Errorf("calls %q, want one CloseProject", got)
 	}
 	if got := tabIDs(m); !slices.Equal(got, []string{"a", "b", "c"}) {

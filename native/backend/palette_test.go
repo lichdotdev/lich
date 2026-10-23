@@ -14,15 +14,15 @@ func TestPaletteCallsSendPositionalArgs(t *testing.T) {
 		result             any
 		call               func(c *Client) error
 	}{
-		{"RecentProjectsMatching", "store.RecentProjects", `"plug"`, []RecentProject{}, func(c *Client) error {
+		{"RecentProjectsMatching", "store.RecentProjects", `{"term":"plug"}`, []RecentProject{}, func(c *Client) error {
 			_, err := c.RecentProjectsMatching(ctx, "plug")
 			return err
 		}},
-		{"ClosedProjectCountMatching", "store.ClosedProjectCount", `"plug"`, 2, func(c *Client) error {
+		{"ClosedProjectCountMatching", "store.ClosedProjectCount", `{"term":"plug"}`, 2, func(c *Client) error {
 			_, err := c.ClosedProjectCountMatching(ctx, "plug")
 			return err
 		}},
-		{"ClosedSessions", "store.ClosedSessions", `"relay"`, ClosedHistory{}, func(c *Client) error {
+		{"ClosedSessions", "store.ClosedSessions", `{"term":"relay"}`, ClosedHistory{}, func(c *Client) error {
 			_, err := c.ClosedSessions(ctx, "relay")
 			return err
 		}},
@@ -30,10 +30,10 @@ func TestPaletteCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.ExternalSessions(ctx)
 			return err
 		}},
-		{"AdoptExternalSession", "store.AdoptExternalSession", `"p","s1","codex","/wt","c1","Port"`, nil, func(c *Client) error {
+		{"AdoptExternalSession", "store.AdoptExternalSession", `{"projectId":"p","sessionId":"s1","kind":"codex","path":"/wt","providerSessionId":"c1","label":"Port"}`, nil, func(c *Client) error {
 			return c.AdoptExternalSession(ctx, "p", "s1", "codex", "/wt", "c1", "Port")
 		}},
-		{"ForgetSession", "store.ForgetSession", `"h1"`, nil, func(c *Client) error {
+		{"ForgetSession", "store.ForgetSession", `{"id":"h1"}`, nil, func(c *Client) error {
 			return c.ForgetSession(ctx, "h1")
 		}},
 		{"SearchTranscripts", "terminal.SearchTranscripts", `{"ids":["s1","s2"],"query":"flaky"}`, []TranscriptMatch{}, func(c *Client) error {

@@ -14,6 +14,8 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/native/backend"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // fakeSettings serves store.GetSetting and store.SetSetting from an in-memory
@@ -27,7 +29,7 @@ type fakeSettings struct {
 func (f *fakeSettings) client(t *testing.T) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var args []string
+		var args []api.SetSettingOptions
 		body, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(body, &args)
 		f.mu.Lock()
@@ -38,9 +40,9 @@ func (f *fakeSettings) client(t *testing.T) *backend.Client {
 		}
 		switch r.URL.Path {
 		case "/rpc/store.GetSetting":
-			_ = json.NewEncoder(w).Encode(f.values[args[1]+"/"+args[0]])
+			_ = json.NewEncoder(w).Encode(f.values[args[0].ProjectID+"/"+args[0].Key])
 		case "/rpc/store.SetSetting":
-			f.values[args[1]+"/"+args[0]] = args[2]
+			f.values[args[0].ProjectID+"/"+args[0].Key] = args[0].Value
 			_ = json.NewEncoder(w).Encode(nil)
 		default:
 			t.Errorf("unexpected call %s", r.URL.Path)

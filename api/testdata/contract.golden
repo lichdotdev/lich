@@ -76,7 +76,35 @@ spawn.OpenSubagent(OpenSubagentOptions) OpenedSession
 spawn.Rename(RenameSessionOptions) RenamedSession
 spawn.RenameFolder(RenameFolderOptions) RenamedFolder
 spawn.Worktrees(WorktreesOptions) []WorktreeCheckout
+store.AddProject(AddProjectOptions) None
+store.AddSession(AddSessionOptions) None
+store.AddSessionFrom(AddSessionFromOptions) None
+store.AddSessionInFolder(AddSessionInFolderOptions) None
+store.AdoptExternalSession(AdoptExternalSessionOptions) None
+store.CloseProject(ProjectIDOptions) None
+store.CloseSession(ParkSessionOptions) None
+store.ClosedProjectCount(SearchTermOptions) int
+store.ClosedSessions(SearchTermOptions) ClosedHistory
 store.CostTotals(CostTotalsOptions) CostReport
+store.ExternalSessions(None) []ExternalSession
+store.ForgetSession(SessionIDOptions) None
+store.GetSetting(GetSettingOptions) string
+store.LoadState(None) []Project
+store.MarkForked(SessionIDOptions) None
+store.PurgeWorktreeSessions(WorktreeSessionsOptions) None
+store.RecentProjects(SearchTermOptions) []RecentProject
+store.RenameFolder(RenameProjectFolderOptions) []string
+store.RenameSession(LabelSessionOptions) None
+store.ReopenSession(ReopenSessionOptions) *Session
+store.ReopenWorktreeSession(ReopenWorktreeSessionOptions) *Session
+store.ReorderProjects(ReorderProjectsOptions) None
+store.ReorderSessions(ReorderSessionsOptions) None
+store.SetActiveSession(ActiveSessionOptions) None
+store.SetSessionColor(SessionColorOptions) None
+store.SetSessionFolder(SessionFolderOptions) None
+store.SetSessionPinned(SessionPinnedOptions) None
+store.SetSessionUnread(SessionUnreadOptions) None
+store.SetSetting(SetSettingOptions) None
 system.AttachNative(AttachNativeOptions) None
 system.Diagnostics(None) Diagnostics
 system.Notify(NotifyOptions) None
@@ -538,6 +566,68 @@ WorktreeCheckout {
 	sessions []string
 }
 
+AddProjectOptions {
+	id string
+	name string
+	path string
+}
+
+AddSessionOptions {
+	projectId string
+	sessionId string
+	label string
+	kind string
+	path string
+	nextSeq int
+	sandbox string
+}
+
+AddSessionFromOptions {
+	projectId string
+	sessionId string
+	label string
+	kind string
+	path string
+	nextSeq int
+	originId string
+	originLabel string
+	folder string
+}
+
+AddSessionInFolderOptions {
+	...AddSessionOptions
+	folder string
+}
+
+AdoptExternalSessionOptions {
+	projectId string
+	sessionId string
+	kind string
+	path string
+	providerSessionId string
+	label string
+}
+
+ProjectIDOptions {
+	id string
+}
+
+ParkSessionOptions {
+	projectId string
+	sessionId string
+	activeId string
+}
+
+SearchTermOptions {
+	term string
+}
+
+ClosedHistory {
+	sessions []ParkedSession
+	total int
+	indexing int
+}
+
 CostTotalsOptions {
 	project string
 	provider string
@@ -553,6 +643,132 @@ CostReport {
 	source string
 	costUsd float64
 	readout bool
+}
+
+ExternalSession {
+	kind string
+	providerSessionId string
+	title string
+	path string
+	projectId string
+	projectName string
+	projectPath string
+	updatedAt int64
+	profile,omitempty string
+}
+
+SessionIDOptions {
+	id string
+}
+
+GetSettingOptions {
+	key string
+	projectId string
+}
+
+Project {
+	id string
+	name string
+	path string
+	nextSeq int
+	activeSessionId string
+	defaultProvider string
+	sessions []Session
+}
+
+WorktreeSessionsOptions {
+	projectId string
+	path string
+}
+
+RecentProject {
+	id string
+	name string
+	path string
+}
+
+RenameProjectFolderOptions {
+	projectId string
+	from string
+	to string
+}
+
+LabelSessionOptions {
+	sessionId string
+	label string
+}
+
+ReopenSessionOptions {
+	sessionId string
+	newSessionId string
+}
+
+Session {
+	id string
+	label string
+	kind string
+	path string
+	providerSessionId string
+	sandbox string
+	pinned bool
+	folder string
+	color string
+	profile string
+	model string
+	originSessionId string
+	originLabel string
+	forked bool
+	scheduledAt int64
+	scheduledPrompt string
+	unread bool
+	mcpServers []string
+	sandboxSkippedLinks []string
+}
+
+ReopenWorktreeSessionOptions {
+	projectId string
+	path string
+	newSessionId string
+}
+
+ReorderProjectsOptions {
+	ids []string
+}
+
+ReorderSessionsOptions {
+	projectId string
+	ids []string
+}
+
+ActiveSessionOptions {
+	projectId string
+	sessionId string
+}
+
+SessionColorOptions {
+	sessionId string
+	color string
+}
+
+SessionFolderOptions {
+	sessionId string
+	folder string
+}
+
+SessionPinnedOptions {
+	sessionId string
+	pinned bool
+}
+
+SessionUnreadOptions {
+	sessionId string
+	unread bool
+}
+
+SetSettingOptions {
+	key string
+	projectId string
+	value string
 }
 
 AttachNativeOptions {
@@ -587,10 +803,6 @@ QuitOptions {
 }
 
 ShowWindowOptions {
-}
-
-SessionIDOptions {
-	id string
 }
 
 ContinueInOptions {
@@ -758,6 +970,21 @@ QuotaWindow {
 	active,omitempty bool
 	lockedReason,omitempty string
 	ahead,omitempty bool
+}
+
+ParkedSession {
+	id string
+	projectId string
+	projectName string
+	projectPath string
+	label string
+	kind string
+	path string
+	parkedBranch string
+	closedAt int64
+	matchedConversation bool
+	snippet string
+	truncated bool
 }
 
 CostTotal {

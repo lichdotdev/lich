@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/native/backend"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 const (
@@ -226,10 +228,10 @@ func fakeState(t *testing.T, projects *[]backend.Project, lastScreen string) *ba
 			*projects = append(*projects, fakeHome)
 			_ = json.NewEncoder(w).Encode(nil)
 		case "/rpc/store.AddSession":
-			var args []any
+			var args []api.AddSessionOptions
 			_ = json.NewDecoder(r.Body).Decode(&args)
 			last := &(*projects)[len(*projects)-1]
-			last.Sessions = append(last.Sessions, backend.Session{ID: args[1].(string), Kind: "shell"})
+			last.Sessions = append(last.Sessions, backend.Session{ID: args[0].SessionID, Kind: "shell"})
 			_ = json.NewEncoder(w).Encode(nil)
 		default:
 			t.Errorf("unexpected call %s", r.URL.Path)

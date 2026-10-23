@@ -10,7 +10,8 @@ import (
 // later reopen, and activeID becomes the project's active session ("" for
 // none). It does not stop the session's process; CloseTerminal does.
 func (c *Client) CloseSession(ctx context.Context, projectID, sessionID, activeID string) error {
-	return c.Call(ctx, "store.CloseSession", nil, projectID, sessionID, activeID)
+	_, err := callMethod(ctx, c, api.StoreCloseSession, api.ParkSessionOptions{ProjectID: projectID, SessionID: sessionID, ActiveID: activeID})
+	return err
 }
 
 // CloseTerminal stops a session's process and drops its PTY.
@@ -21,23 +22,27 @@ func (c *Client) CloseTerminal(ctx context.Context, id string) error {
 
 // SetSessionPinned pins a session to the head of the sidebar, or unpins it.
 func (c *Client) SetSessionPinned(ctx context.Context, sessionID string, pinned bool) error {
-	return c.Call(ctx, "store.SetSessionPinned", nil, sessionID, pinned)
+	_, err := callMethod(ctx, c, api.StoreSetSessionPinned, api.SessionPinnedOptions{SessionID: sessionID, Pinned: pinned})
+	return err
 }
 
 // SetSessionUnread records whether a session's finished turn is still unread,
 // the one mark a window restart brings back (Session.Unread).
 func (c *Client) SetSessionUnread(ctx context.Context, sessionID string, unread bool) error {
-	return c.Call(ctx, "store.SetSessionUnread", nil, sessionID, unread)
+	_, err := callMethod(ctx, c, api.StoreSetSessionUnread, api.SessionUnreadOptions{SessionID: sessionID, Unread: unread})
+	return err
 }
 
 // RenameSession gives a session the label the user typed.
 func (c *Client) RenameSession(ctx context.Context, sessionID, label string) error {
-	return c.Call(ctx, "store.RenameSession", nil, sessionID, label)
+	_, err := callMethod(ctx, c, api.StoreRenameSession, api.LabelSessionOptions{SessionID: sessionID, Label: label})
+	return err
 }
 
 // SetSessionColor tints a session's card, "" for the theme's.
 func (c *Client) SetSessionColor(ctx context.Context, sessionID, color string) error {
-	return c.Call(ctx, "store.SetSessionColor", nil, sessionID, color)
+	_, err := callMethod(ctx, c, api.StoreSetSessionColor, api.SessionColorOptions{SessionID: sessionID, Color: color})
+	return err
 }
 
 // Live reports whether a session has a process running right now.
@@ -62,6 +67,5 @@ func (c *Client) ResumeAvailable(ctx context.Context, kind, providerSessionID, c
 // prompt follows. It returns nil when no parked session has sessionID: another
 // window reopened it, or its worktree was removed.
 func (c *Client) ReopenSession(ctx context.Context, sessionID, newSessionID string) (*Session, error) {
-	var s *Session
-	return s, c.Call(ctx, "store.ReopenSession", &s, sessionID, newSessionID)
+	return callMethod(ctx, c, api.StoreReopenSession, api.ReopenSessionOptions{SessionID: sessionID, NewSessionID: newSessionID})
 }

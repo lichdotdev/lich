@@ -45,16 +45,14 @@ func newSidebarBackend(t *testing.T) (*sidebarBackend, *backend.Client) {
 func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	str := func(i int) string {
-		var s string
-		_ = json.Unmarshal(args[i], &s)
-		return s
-	}
 	switch method {
-	case "store.GetSetting":
-		return f.settings[str(0)+"@"+str(1)]
-	case "store.SetSetting":
-		f.settings[str(0)+"@"+str(1)] = str(2)
+	case "store.GetSetting", "store.SetSetting":
+		var opts api.SetSettingOptions
+		_ = json.Unmarshal(args[0], &opts)
+		if method == "store.GetSetting" {
+			return f.settings[opts.Key+"@"+opts.ProjectID]
+		}
+		f.settings[opts.Key+"@"+opts.ProjectID] = opts.Value
 		return nil
 	case "providers.Detect":
 		return f.detected

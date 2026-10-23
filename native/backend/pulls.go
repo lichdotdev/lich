@@ -181,7 +181,8 @@ func (c *Client) RemoveWorktree(ctx context.Context, projectPath, path string, f
 
 // PurgeWorktreeSessions drops every stored session rooted in path.
 func (c *Client) PurgeWorktreeSessions(ctx context.Context, projectID, path string) error {
-	return c.Call(ctx, "store.PurgeWorktreeSessions", nil, projectID, path)
+	_, err := callMethod(ctx, c, api.StorePurgeWorktreeSessions, api.WorktreeSessionsOptions{ProjectID: projectID, Path: path})
+	return err
 }
 
 // AnnounceMerge tells the agents in checkout that its pull request merged.

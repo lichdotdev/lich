@@ -122,7 +122,7 @@ func TestCommitDragOrderStoresTheWholeList(t *testing.T) {
 		t.Fatal(err)
 	}
 	p, _ := m.project()
-	if idList(p.Sessions) != "p1,a1,r1" || !slices.Equal(f.calls, []string{`store.ReorderSessions("p",["p1","a1","r1"])`}) {
+	if idList(p.Sessions) != "p1,a1,r1" || !slices.Equal(f.calls, []string{`store.ReorderSessions({"projectId":"p","ids":["p1","a1","r1"]})`}) {
 		t.Fatalf("order %s, calls %v", idList(p.Sessions), f.calls)
 	}
 }
@@ -149,7 +149,7 @@ func TestFileSessionsChangesTheModelThenTheStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	p, _ := m.project()
-	want := []string{`store.SetSessionFolder("s1","Apps")`, `store.SetSessionFolder("ghost","Apps")`}
+	want := []string{`store.SetSessionFolder({"sessionId":"s1","folder":"Apps"})`, `store.SetSessionFolder({"sessionId":"ghost","folder":"Apps"})`}
 	if folderList(p.Sessions) != "Apps," || !slices.Equal(f.calls, want) {
 		t.Fatalf("folders %s, calls %v", folderList(p.Sessions), f.calls)
 	}
@@ -172,7 +172,7 @@ func TestRenameFolderMovesTheFoldAndUngroupDropsIt(t *testing.T) {
 	if err := m.ungroupFolder(ctx, "Ops"); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{`store.RenameFolder("p","Apps","Ops")`, `store.RenameFolder("p","Ops","")`}
+	want := []string{`store.RenameFolder({"projectId":"p","from":"Apps","to":"Ops"})`, `store.RenameFolder({"projectId":"p","from":"Ops","to":""})`}
 	if got := m.sidebarBlocks(sidebarFilter{}); !slices.Equal(blockKeys(got), []string{rootBlockKey}) || !slices.Equal(f.calls, want) {
 		t.Fatalf("after ungroup: %v, calls %v", blockKeys(got), f.calls)
 	}

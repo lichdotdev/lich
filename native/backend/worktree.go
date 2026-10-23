@@ -69,14 +69,14 @@ func (c *Client) Issue(ctx context.Context, path string, number int) (Issue, err
 // ReopenWorktreeSession brings back the session parked on path under
 // newSessionID, nil when none is parked there.
 func (c *Client) ReopenWorktreeSession(ctx context.Context, projectID, path, newSessionID string) (*Session, error) {
-	var s *Session
-	return s, c.Call(ctx, "store.ReopenWorktreeSession", &s, projectID, path, newSessionID)
+	return callMethod(ctx, c, api.StoreReopenWorktreeSession, api.ReopenWorktreeSessionOptions{ProjectID: projectID, Path: path, NewSessionID: newSessionID})
 }
 
 // AddSessionWithSandbox is AddSession with the sandbox answer the session was
 // opened with: "on", "off", or "" to leave it to the provider's rung.
 func (c *Client) AddSessionWithSandbox(ctx context.Context, projectID, sessionID, label, kind, path string, nextSeq int, sandbox string) error {
-	return c.Call(ctx, "store.AddSession", nil, projectID, sessionID, label, kind, path, nextSeq, sandbox)
+	_, err := callMethod(ctx, c, api.StoreAddSession, api.AddSessionOptions{ProjectID: projectID, SessionID: sessionID, Label: label, Kind: kind, Path: path, NextSeq: nextSeq, Sandbox: sandbox})
+	return err
 }
 
 // Ready reports whether session id sits at a prompt that can take input.

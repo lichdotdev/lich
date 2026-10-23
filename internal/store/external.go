@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -26,23 +27,7 @@ type Conversation struct {
 	Profile string
 }
 
-// ExternalSession is a conversation started outside lich that one of its
-// projects can adopt: it ran in that project's directory or in one of its
-// checkouts. Path is what the adopted row carries, "" for the project's own
-// directory, the same as a session lich opened there.
-type ExternalSession struct {
-	Kind              string `json:"kind"`
-	ProviderSessionID string `json:"providerSessionId"`
-	Title             string `json:"title"`
-	Path              string `json:"path"`
-	ProjectID         string `json:"projectId"`
-	ProjectName       string `json:"projectName"`
-	ProjectPath       string `json:"projectPath"`
-	UpdatedAt         int64  `json:"updatedAt"`
-	// Profile is the Claude Code or Codex profile the conversation lives in,
-	// the one a resume of it runs in whatever the project's own profile is.
-	Profile string `json:"profile,omitempty"`
-}
+type ExternalSession = api.ExternalSession
 
 // SetConversationsOf registers how to list the conversations on disk
 // (terminal.Conversations). Startup wiring; without it there are no external

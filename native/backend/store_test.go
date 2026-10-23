@@ -15,17 +15,17 @@ func TestStoreCallsSendPositionalArgs(t *testing.T) {
 		result             any
 		call               func(c *Client) error
 	}{
-		{"ReorderSessions", "store.ReorderSessions", `"p",["b","a"]`, nil, func(c *Client) error {
+		{"ReorderSessions", "store.ReorderSessions", `{"projectId":"p","ids":["b","a"]}`, nil, func(c *Client) error {
 			return c.ReorderSessions(ctx, "p", []string{"b", "a"})
 		}},
-		{"SetSessionFolder", "store.SetSessionFolder", `"s1","Apps"`, nil, func(c *Client) error {
+		{"SetSessionFolder", "store.SetSessionFolder", `{"sessionId":"s1","folder":"Apps"}`, nil, func(c *Client) error {
 			return c.SetSessionFolder(ctx, "s1", "Apps")
 		}},
-		{"RenameFolder", "store.RenameFolder", `"p","Apps","Ops"`, []string{"s1"}, func(c *Client) error {
+		{"RenameFolder", "store.RenameFolder", `{"projectId":"p","from":"Apps","to":"Ops"}`, []string{"s1"}, func(c *Client) error {
 			_, err := c.RenameFolder(ctx, "p", "Apps", "Ops")
 			return err
 		}},
-		{"AddSessionInFolder", "store.AddSessionInFolder", `"p","s9","Claude 9","claude","/wt/a",9,"","Apps"`, nil, func(c *Client) error {
+		{"AddSessionInFolder", "store.AddSessionInFolder", `{"projectId":"p","sessionId":"s9","label":"Claude 9","kind":"claude","path":"/wt/a","nextSeq":9,"sandbox":"","folder":"Apps"}`, nil, func(c *Client) error {
 			return c.AddSessionInFolder(ctx, "p", "s9", "Claude 9", "claude", "/wt/a", 9, "Apps")
 		}},
 		{"DetectProviders", "providers.Detect", ``, []DetectedProvider{}, func(c *Client) error {
@@ -40,17 +40,17 @@ func TestStoreCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.ProviderBinaries(ctx, "codex")
 			return err
 		}},
-		{"CloseProject", "store.CloseProject", `"p"`, nil, func(c *Client) error {
+		{"CloseProject", "store.CloseProject", `{"id":"p"}`, nil, func(c *Client) error {
 			return c.CloseProject(ctx, "p")
 		}},
-		{"ReorderProjects", "store.ReorderProjects", `["b","a"]`, nil, func(c *Client) error {
+		{"ReorderProjects", "store.ReorderProjects", `{"ids":["b","a"]}`, nil, func(c *Client) error {
 			return c.ReorderProjects(ctx, []string{"b", "a"})
 		}},
-		{"RecentProjects", "store.RecentProjects", `""`, []RecentProject{}, func(c *Client) error {
+		{"RecentProjects", "store.RecentProjects", `{"term":""}`, []RecentProject{}, func(c *Client) error {
 			_, err := c.RecentProjects(ctx)
 			return err
 		}},
-		{"ClosedProjectCount", "store.ClosedProjectCount", `""`, 3, func(c *Client) error {
+		{"ClosedProjectCount", "store.ClosedProjectCount", `{"term":""}`, 3, func(c *Client) error {
 			_, err := c.ClosedProjectCount(ctx)
 			return err
 		}},

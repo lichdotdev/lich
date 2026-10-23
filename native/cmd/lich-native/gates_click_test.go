@@ -25,6 +25,8 @@ import (
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // gateBackend answers every RPC the startup gates make and reports each one
@@ -255,7 +257,7 @@ func TestPluginGateDontAskRemembersAndCloses(t *testing.T) {
 	d := pluginDialog(u)
 	d.open()
 	d.press(t, &u.plugin.dontAsk)
-	if args := b.await(t, "store.SetSetting"); args != `["`+pluginInstallDismissedKey+`","","1"]` {
+	if args := b.await(t, "store.SetSetting"); args != `[{"key":"`+pluginInstallDismissedKey+`","projectId":"","value":"1"}]` {
 		t.Errorf("wrote %s, want the install dismissed", args)
 	}
 	if pluginOffered(u) {
@@ -297,7 +299,7 @@ func TestUpdateToastLaterRemembersTheRelease(t *testing.T) {
 	u, b := newGateWindow(t)
 	toast := u.appUpdateToast(backend.AppUpdateStatus{UpdateAvailable: true, LatestVersion: "1.4.0", ReleaseURL: "https://r"})
 	toast.Cancel.OnClick()
-	if args := b.await(t, "store.SetSetting"); args != `["`+appUpdateDismissedKey+`","","1.4.0"]` {
+	if args := b.await(t, "store.SetSetting"); args != `[{"key":"`+appUpdateDismissedKey+`","projectId":"","value":"1.4.0"}]` {
 		t.Errorf("wrote %s, want 1.4.0 dismissed", args)
 	}
 }
@@ -316,14 +318,14 @@ func TestUpdateToastInstallTypesTheCommandIntoANewShell(t *testing.T) {
 	toast := u.appUpdateToast(backend.AppUpdateStatus{LatestVersion: "1.4.0", ReleaseURL: "https://r", InstallCommand: "yay -S lich"})
 	toast.Action.OnClick()
 	args := b.await(t, "store.AddSessionInFolder")
-	var call []any
-	if err := json.Unmarshal([]byte(args), &call); err != nil || call[0] != "p" || call[3] != "shell" {
+	var call []api.AddSessionInFolderOptions
+	if err := json.Unmarshal([]byte(args), &call); err != nil || call[0].ProjectID != "p" || call[0].Kind != "shell" {
 		t.Fatalf("added %s, want a shell in the project in view", args)
 	}
 	b.await(t, "store.SetActiveSession")
 	u.terms.mu.Lock()
 	defer u.terms.mu.Unlock()
-	if typed := u.terms.typeahead[call[1].(string)]; typed != "yay -S lich" {
+	if typed := u.terms.typeahead[call[0].SessionID]; typed != "yay -S lich" {
 		t.Errorf("queued %q for the shell, want the install command", typed)
 	}
 }
@@ -344,7 +346,7 @@ func TestPluginUpdateToastButtons(t *testing.T) {
 		t.Errorf("updated %s, want claude", args)
 	}
 	toast.Cancel.OnClick()
-	if args := b.await(t, "store.SetSetting"); args != `["`+pluginUpdateDismissedKey+`","","0.9.0"]` {
+	if args := b.await(t, "store.SetSetting"); args != `[{"key":"`+pluginUpdateDismissedKey+`","projectId":"","value":"0.9.0"}]` {
 		t.Errorf("wrote %s, want 0.9.0 dismissed", args)
 	}
 }
