@@ -73,7 +73,8 @@ func fakeUnread(t *testing.T, calls chan<- []any) *backend.Client {
 			_ = json.NewEncoder(w).Encode("")
 		case "/rpc/project.Home":
 			_ = json.NewEncoder(w).Encode(backend.Project{ID: "home", Path: "/home/me"})
-		case "/rpc/store.AddProject", "/rpc/store.AddSession":
+		case "/rpc/store.AddProject", "/rpc/store.AddSession",
+			"/rpc/project.Diff", "/rpc/project.BaseStatus", "/rpc/project.PullRequest":
 			_ = json.NewEncoder(w).Encode(nil)
 		case "/rpc/store.SetSessionUnread":
 			var args []api.SessionUnreadOptions

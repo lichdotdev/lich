@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Branch, changes and pull request on the cards and the footer catch up within a second of a commit, checkout or edit made outside a turn, where they could lag up to three seconds, and selecting a card reads its checkout at once instead of showing what the last read found.
 - Kiro CLI sessions follow `KIRO_HOME`. With it set, lich read Kiro's conversations, cost and context from `~/.kiro` while Kiro kept them under `KIRO_HOME`, so they showed nothing and History listed none; the agent that carries lich's hooks was installed where Kiro never looked, and a sandboxed session was not given the directory it writes into.
 
 ## [0.78.0] - 2026-10-22

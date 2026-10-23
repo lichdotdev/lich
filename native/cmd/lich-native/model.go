@@ -15,8 +15,10 @@ import (
 )
 
 // gitPoll is how often each shown path's branch and changes are re-read. The
-// backend pushes no git events.
-const gitPoll = 3 * time.Second
+// backend pushes no git events. One second because a read is a few
+// milliseconds per checkout (measured 3-35ms), while 3s left a commit made in a
+// terminal off the card for long enough to read as lag.
+const gitPoll = time.Second
 
 // lastScreenKey is the global setting the last route is saved under, the one
 // record of which project the user was on.
@@ -591,7 +593,14 @@ func (m *model) setActive(ctx context.Context, id string) {
 	}
 	readLeft := left != id && m.status.markSeen(left)
 	readNew := m.focused && m.status.markSeen(id)
+	shown := ""
+	if p, i := m.sessionAt(id); p != nil {
+		shown = m.shownPath(*p, p.Sessions[i])
+	}
 	m.mu.Unlock()
+	if shown != "" {
+		go m.refreshPath(ctx, shown)
+	}
 	if refocused {
 		m.saveLayouts()
 	}

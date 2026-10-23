@@ -93,6 +93,33 @@ func TestSessionTouchedReadsGitNowAndNudgesTheDiff(t *testing.T) {
 	}
 }
 
+func TestSelectingACardReadsItsGitWithoutATick(t *testing.T) {
+	var mu sync.Mutex
+	head := "h1"
+	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
+		mu.Lock()
+		defer mu.Unlock()
+		switch method {
+		case "project.Diff":
+			return backend.DiffStats{Branch: "main", Head: head}, http.StatusOK
+		case "project.BaseStatus", "project.PullRequest":
+			return nil, http.StatusOK
+		}
+		return failing("unexpected " + method)
+	}}
+	m := newTestModel(stub.client(t))
+	m.refreshGit(context.Background())
+
+	mu.Lock()
+	head = "h2"
+	mu.Unlock()
+	m.setActive(context.Background(), "s1")
+
+	eventually(t, "the selected card reads the new head without a tick", func() bool {
+		return cardOf(t, m).git.Head == "h2"
+	})
+}
+
 func TestSessionTouchedOfAnotherProjectWaitsForItsScreen(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) { return failing("unexpected") }}
 	m := newModel(stub.client(t), func() {})
