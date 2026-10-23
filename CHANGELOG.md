@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Kiro CLI sessions follow `KIRO_HOME`. With it set, lich read Kiro's conversations, cost and context from `~/.kiro` while Kiro kept them under `KIRO_HOME`, so they showed nothing and History listed none; the agent that carries lich's hooks was installed where Kiro never looked, and a sandboxed session was not given the directory it writes into.
+- Opening or closing the dock no longer leaves the session's terminal cut off at its edge for a beat once the dock stops. The terminal takes its new width as the dock starts moving, so the agent redraws while the dock slides in, where the terminal waited until a tenth of a second after the dock stopped and then jumped. A split layout's terminals fit the moment the dock stops.
 
 ## [0.78.0] - 2026-10-22
 

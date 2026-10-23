@@ -99,6 +99,10 @@ type terminals struct {
 	// unzoomed is the window's own scale, which terminals draw at whatever
 	// the interface zoom: a zoom step never changes a grid's cols×rows.
 	unzoomed unit.Metric
+	// refitNow is a frame a dock slide began or ended in: the area just took
+	// the size it will hold, so the grid follows it at once rather than after
+	// refitSettle more of a clipped grid.
+	refitNow bool
 
 	mu   sync.Mutex
 	byID map[string]*termView
@@ -423,7 +427,7 @@ func sameCell(vt *gioterm.Terminal, w, h int) bool {
 // refit follows the area with the grid and the PTY once size has settled,
 // and until then asks for the frame that will.
 func (ts *terminals) refit(gtx layout.Context, t *termView, size image.Point, cols, rows int) error {
-	if due, at := t.refitDue(size, gtx.Now); !due {
+	if due, at := t.refitDue(size, gtx.Now); !due && !ts.refitNow {
 		gtx.Execute(op.InvalidateCmd{At: at})
 		return nil
 	}

@@ -33,3 +33,20 @@ func TestDockSlideEasesInAndTurnsBackFromWhereItIs(t *testing.T) {
 		t.Fatalf("a new opening starts closed: got %v, want 0", got)
 	}
 }
+
+func TestDockSlideMarksTheFramesItBeginsAndEnds(t *testing.T) {
+	var s dockSlide
+	t0 := time.Unix(100, 0)
+	if slideAt(&s, t0, true); !s.began {
+		t.Fatal("first frame of an opening: not began, want began")
+	}
+	if slideAt(&s, t0.Add(sidebarMorphDuration/2), true); s.began || s.landed {
+		t.Fatalf("halfway: began %v landed %v, want neither", s.began, s.landed)
+	}
+	if slideAt(&s, t0.Add(sidebarMorphDuration), true); !s.landed {
+		t.Fatal("first frame at the end: not landed, want landed")
+	}
+	if slideAt(&s, t0.Add(2*sidebarMorphDuration), true); s.landed {
+		t.Fatal("a frame after the end: landed again, want once")
+	}
+}
