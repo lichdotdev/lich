@@ -6,9 +6,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // Start spawns the binary for session id under project projectID — the user's
@@ -90,7 +93,7 @@ func (s *Service) Start(
 	// would freeze every session's I/O. Both are unconditional so a respawn
 	// overwrites whatever the previous PTY left in the window's stores.
 	s.publishCwd(cwdEvent{ID: id, Cwd: cwd})
-	s.hub.Emit(agentEventName, agentEvent{ID: id, Agent: ""})
+	events.Send(s.hub.Emit, api.SessionAgentEvent, agentEvent{ID: id, Agent: ""})
 	s.reportProfileMove(id, bornIn)
 	s.reportSandbox(id, sess.confined, sess.sandboxLinks)
 	s.reportMCPServers(id, kind, cwd)
@@ -272,7 +275,7 @@ func (s *Service) reportSandbox(id string, confined bool, links []string) {
 	if err := s.store.SetSessionSandboxLinks(id, links); err != nil {
 		slog.Warn("record sandbox skipped links", "session", id, "error", err)
 	}
-	s.hub.Emit(sandboxEventName, sandboxEvent{ID: id, Confined: confined, SkippedLinks: links})
+	events.Send(s.hub.Emit, api.SessionSandboxEvent, sandboxEvent{ID: id, Confined: confined, SkippedLinks: links})
 }
 
 // reportMCPServers records and announces the MCP servers this spawn's provider
@@ -289,5 +292,5 @@ func (s *Service) reportMCPServers(id, kind, cwd string) {
 	if err := s.store.SetSessionMCPServers(id, servers); err != nil {
 		slog.Warn("record MCP servers", "session", id, "error", err)
 	}
-	s.hub.Emit(mcpEventName, mcpEvent{ID: id, Servers: servers})
+	events.Send(s.hub.Emit, api.SessionMCPEvent, mcpEvent{ID: id, Servers: servers})
 }

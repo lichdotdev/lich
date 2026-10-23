@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
+)
 
 func TestSessionExitWording(t *testing.T) {
 	cases := []struct {
@@ -12,7 +17,7 @@ func TestSessionExitWording(t *testing.T) {
 		{`null`, "Shell 78 ended", "\r\n[process exited]\r\n"},
 	}
 	for _, c := range cases {
-		e := readSessionExit([]byte(c.payload))
+		e := readSessionExit(backend.Event{Name: api.TerminalExitEvents.Of("s78").Name, Data: []byte(c.payload)})
 		if got := exitTitle("Shell 78", e); got != c.title {
 			t.Errorf("%s: title %q, want %q", c.payload, got, c.title)
 		}

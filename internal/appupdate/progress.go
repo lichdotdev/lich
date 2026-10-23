@@ -3,20 +3,12 @@ package appupdate
 import (
 	"io"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
-// ProgressEventName is the hub event Apply's phases ride on, for the toast.
-const ProgressEventName = "appupdate-progress"
-
-// Progress is one step of Apply: bytes received of total during the download
-// (total is -1 when the asset came without a Content-Length), then the phase
-// that has no percentage: "installer", where lich hands over to the Windows
-// installer and closes.
-type Progress struct {
-	Phase    string `json:"phase"`
-	Received int64  `json:"received"`
-	Total    int64  `json:"total"`
-}
+type Progress = api.AppUpdateProgress
 
 const (
 	phaseDownload  = "download"
@@ -76,6 +68,6 @@ func (p *progressReader) report() {
 // updates in silence.
 func (s *Service) emitProgress(p Progress) {
 	if s.emit != nil {
-		s.emit(ProgressEventName, p)
+		events.Send(s.emit, api.AppUpdateProgressEvent, p)
 	}
 }

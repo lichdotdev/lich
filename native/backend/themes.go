@@ -17,10 +17,6 @@ type (
 	ThemeGitResult    = api.ThemeGitResult
 )
 
-// ThemeSelectionEvent is themes.SelectionEventName: the stored selection
-// changed, from this window, another, or `lich theme switch`.
-const ThemeSelectionEvent = "theme-selection"
-
 // ThemeSelection reads the stored selection; a theme never chosen reads
 // "system".
 func (c *Client) ThemeSelection(ctx context.Context) (ThemeSelection, error) {

@@ -19,15 +19,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-// ChangedEvent is the event a profile's update emits once it is written: its
-// name, color or image changed.
-const ChangedEvent = "profile-changed"
-
-// Changed is ChangedEvent's payload. Provider is the Spec's.
-type Changed struct {
-	Provider string  `json:"provider"`
-	Profile  Profile `json:"profile"`
-}
+type Changed = api.ProfileChanged
 
 type Update = api.ProfileUpdate
 

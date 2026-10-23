@@ -5,8 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/store"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // ensureProject resolves the project a session is being opened in, and is the
@@ -76,7 +79,7 @@ func (s *Service) adoptProject(identity *project.Project) ([]store.Project, stor
 		// in that order: a card is dropped when its project is not on screen
 		// yet, so the tab has to land first.
 		if s.events != nil {
-			s.events.Emit(ProjectOpenedEventName, p)
+			events.Send(s.events.Emit, api.ProjectOpenedEvent, p)
 		}
 		return reloaded, p, nil
 	}

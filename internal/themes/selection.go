@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // The settings the windows read the selection from, global ones. A theme
@@ -16,10 +17,6 @@ const (
 	// SystemID selects the bundled theme of the scheme the OS asks for.
 	SystemID = "system"
 )
-
-// SelectionEventName is pushed on /events with a Selection once a change to
-// it is stored.
-const SelectionEventName = "theme-selection"
 
 type Selection = api.ThemeSelection
 
@@ -76,6 +73,6 @@ func (s *Service) store(key, value string) error {
 	if err != nil {
 		return err
 	}
-	s.emit(SelectionEventName, selection)
+	events.Send(s.emit, api.ThemeSelectionEvent, selection)
 	return nil
 }

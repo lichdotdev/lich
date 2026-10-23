@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -533,7 +534,7 @@ func TestEachProvidersProfileReadingHasItsOwnKey(t *testing.T) {
 	if profileQuotaKey(codexProfileProvider, personalProfile) != "" || profileQuotaKey(codexProfileProvider, "") != "" {
 		t.Error("Codex's Personal reading is not the machine's")
 	}
-	if loginEventKind(backend.CodexProfileLoginEvent) != codexKind || loginEventKind(backend.ClaudeProfileLoginEvent) != claudeKind {
+	if loginEventKind(api.CodexProfileLoginEvent.Name) != codexKind || loginEventKind(api.ClaudeProfileLoginEvent.Name) != claudeKind {
 		t.Error("a login event was routed to the wrong provider")
 	}
 }

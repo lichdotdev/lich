@@ -177,6 +177,19 @@ type Event struct {
 	Data json.RawMessage `json:"data"`
 }
 
+// Decode reads ev's payload as the one api declares for e. It fails for an
+// event of another name, so a payload is never read as the wrong type.
+func Decode[T any](ev Event, e api.Event[T]) (T, error) {
+	var payload T
+	if ev.Name != e.Name {
+		return payload, fmt.Errorf("decode %s as %s", ev.Name, e.Name)
+	}
+	if err := json.Unmarshal(ev.Data, &payload); err != nil {
+		return payload, fmt.Errorf("%s: %w", ev.Name, err)
+	}
+	return payload, nil
+}
+
 // Events connects to /events and delivers its messages until ctx ends or the
 // connection drops, then closes the channel. Events sent while no client is
 // connected are lost: the backend does not replay them.

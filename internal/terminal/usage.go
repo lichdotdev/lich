@@ -6,11 +6,9 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
-)
 
-// usageEventName carries a session's context-window usage ({id, percent, tokens}),
-// emitted after a turn ends. Global like the other session events.
-const usageEventName = "session-usage"
+	"github.com/lichdotdev/lich/internal/events"
+)
 
 type usageEvent = api.SessionUsage
 
@@ -29,7 +27,7 @@ func (s *Service) emitUsage(id string) {
 // emitUsageFrom is emitUsage once the transcript behind it is known.
 func (s *Service) emitUsageFrom(id string, src usageSource) {
 	if event, ok := s.usageFrom(id, src); ok {
-		s.hub.Emit(usageEventName, event)
+		events.Send(s.hub.Emit, api.SessionUsageEvent, event)
 	}
 }
 

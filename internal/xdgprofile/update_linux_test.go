@@ -3,6 +3,7 @@ package xdgprofile
 import (
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -11,7 +12,7 @@ func TestUpdateProfileReportsTheProfileOnceWritten(t *testing.T) {
 	machine(t)
 	var got []profilestore.Changed
 	s := New(Kiro, fakeBins{}, func(name string, data any) {
-		if c, ok := data.(profilestore.Changed); ok && name == profilestore.ChangedEvent {
+		if c, ok := data.(profilestore.Changed); ok && name == api.ProfileChangedEvent.Name {
 			got = append(got, c)
 		}
 	})

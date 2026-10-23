@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"math"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // readBufSize is the chunk size read from a session's PTY per iteration.
@@ -84,7 +87,7 @@ func (s *Service) stream(id string, sess *session) {
 		if exited != nil {
 			exited(id)
 		}
-		s.hub.Emit(exitEventPrefix+id, exitPayload(code))
+		events.Send(s.hub.Emit, api.TerminalExitEvents.Of(id), exitPayload(code))
 	}
 }
 

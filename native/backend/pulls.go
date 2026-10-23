@@ -6,10 +6,6 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-// PRChangedEvent is project.PRChangedEvent: a pull request write through lich
-// landed on GitHub.
-const PRChangedEvent = "pull-request-changed"
-
 type PRChanged = api.PRChanged
 
 type ChecksRollup = api.ChecksRollup

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // The inbox: where an errand's outcome waits when nobody was holding the line
@@ -19,17 +20,7 @@ import (
 // of itself would otherwise cost one nudge, and one restarted turn, per worker.
 const defaultNudgeDelay = 2 * time.Second
 
-// InboxEventName carries how many uncollected results a session has waiting,
-// so its card can say so — the nudge tells the agent, and this tells the
-// person. Emitted whenever a sender's inbox changes size; zero clears the
-// mark. Global for the same reason the relay event is.
-const InboxEventName = "session-inbox"
-
-// InboxEvent is the payload of InboxEventName.
-type InboxEvent struct {
-	ID    string `json:"id"`
-	Count int    `json:"count"`
-}
+type InboxEvent = api.SessionInbox
 
 type Collected = api.CollectedResults
 
@@ -280,7 +271,7 @@ func (s *Service) announceInbox(fromID string) {
 	s.mu.Lock()
 	count := s.countLocked(fromID)
 	s.mu.Unlock()
-	s.events.Emit(InboxEventName, InboxEvent{ID: fromID, Count: count})
+	events.Send(s.events.Emit, api.SessionInboxEvent, InboxEvent{ID: fromID, Count: count})
 }
 
 func (s *Service) announceInboxAll(senders []string) {

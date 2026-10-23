@@ -13,9 +13,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/backend"
-
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // fakeSettings serves store.GetSetting and store.SetSetting from an in-memory

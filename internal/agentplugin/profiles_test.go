@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -91,7 +92,7 @@ func ranAs(lines []string, dir string) int {
 func recordEvents(svc *Service) <-chan ProfilesEvent {
 	events := make(chan ProfilesEvent, 4)
 	svc.SetEmit(func(name string, data any) {
-		if name == ProfilesEventName {
+		if name == api.PluginProfilesEvent.Name {
 			events <- data.(ProfilesEvent)
 		}
 	})

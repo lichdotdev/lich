@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
@@ -33,7 +34,7 @@ func modelOn(active string) *model {
 func report(t *testing.T, m *model, id, state string) {
 	t.Helper()
 	data, _ := json.Marshal(statusEvent{ID: id, State: state})
-	if _, err := m.status.apply(backend.Event{Name: statusEventName, Data: data}, time.Now()); err != nil {
+	if _, err := m.status.apply(backend.Event{Name: api.SessionStatusEvent.Name, Data: data}, time.Now()); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -10,11 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/winexec"
 
-	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 const (
@@ -98,7 +99,7 @@ func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, er
 	if err != nil {
 		return p, err
 	}
-	s.emit(profilestore.ChangedEvent, profilestore.Changed{Provider: s.provider.ID, Profile: p})
+	events.Send(s.emit, api.ProfileChangedEvent, profilestore.Changed{Provider: s.provider.ID, Profile: p})
 	return p, nil
 }
 

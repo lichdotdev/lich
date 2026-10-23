@@ -6,10 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/rpc"
-
-	"github.com/lichdotdev/lich/api"
 
 	"context"
 )

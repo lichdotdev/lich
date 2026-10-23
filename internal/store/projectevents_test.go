@@ -3,6 +3,8 @@ package store
 import (
 	"reflect"
 	"testing"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 type projectEvent struct {
@@ -54,9 +56,9 @@ func TestAddProjectEventCarriesTheStoredIdentity(t *testing.T) {
 	_ = svc.AddProject("p1", "moved", "/tmp/moved")
 
 	want := []projectEvent{
-		{ProjectAddedEventName, ProjectAdded{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}},
-		{ProjectClosedEventName, ProjectClosed{ID: "p1"}},
-		{ProjectAddedEventName, ProjectAdded{ID: "p1", Name: "moved", Path: "/tmp/moved"}},
+		{api.ProjectAddedEvent.Name, ProjectAdded{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}},
+		{api.ProjectClosedEvent.Name, ProjectClosed{ID: "p1"}},
+		{api.ProjectAddedEvent.Name, ProjectAdded{ID: "p1", Name: "moved", Path: "/tmp/moved"}},
 	}
 	if !reflect.DeepEqual(*got, want) {
 		t.Errorf("events = %+v, want %+v", *got, want)
@@ -84,7 +86,7 @@ func TestReorderProjectsAnnouncesTheStoredOrder(t *testing.T) {
 	if err := svc.ReorderProjects([]string{"p2", "p1"}); err != nil {
 		t.Fatalf("ReorderProjects: %v", err)
 	}
-	want := []projectEvent{{ProjectsReorderedEventName, ProjectsReordered{IDs: []string{"p2", "p1"}}}}
+	want := []projectEvent{{api.ProjectsReorderedEvent.Name, ProjectsReordered{IDs: []string{"p2", "p1"}}}}
 	if !reflect.DeepEqual(*got, want) {
 		t.Errorf("events = %+v, want %+v", *got, want)
 	}

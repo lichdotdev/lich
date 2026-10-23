@@ -6,22 +6,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
-// cwdEventName carries a session's live working directory ({id, cwd, host}),
-// emitted once with the directory the PTY starts in and again whenever the
-// child process moves (the user runs `cd`). A non-empty host names a
-// foreground process the directory cannot be read through (see shellHosts) and
-// comes with an empty cwd: the session is somewhere, but not somewhere this
-// machine can name. Global like the other session events.
-const cwdEventName = "session-cwd"
-
-// cwdEvent is the payload of cwdEventName.
-type cwdEvent struct {
-	ID   string `json:"id"`
-	Cwd  string `json:"cwd"`
-	Host string `json:"host"`
-}
+type cwdEvent = api.SessionCwd
 
 // cwdBook is the last session-cwd payload published for each session, which
 // TurnStates hands a window that attached after it: /events replays nothing,
@@ -59,7 +49,7 @@ func (b *cwdBook) forget(id string) {
 // the reason publishStatus is.
 func (s *Service) publishCwd(ev cwdEvent) {
 	s.cwds.note(ev)
-	s.hub.Emit(cwdEventName, ev)
+	events.Send(s.hub.Emit, api.SessionCwdEvent, ev)
 }
 
 // cwdPollInterval is how often a session's child working directory is read.

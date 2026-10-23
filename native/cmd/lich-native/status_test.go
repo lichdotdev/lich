@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
@@ -17,7 +18,7 @@ func statusEv(t *testing.T, p statusEvent) backend.Event {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return backend.Event{Name: statusEventName, Data: data}
+	return backend.Event{Name: api.SessionStatusEvent.Name, Data: data}
 }
 
 // step is one report, landing secs seconds after t0.
@@ -212,10 +213,10 @@ func TestStatusStoreApplyErrors(t *testing.T) {
 	if changed, err := s.apply(backend.Event{Name: "session-cwd", Data: []byte(`{"id":"a"}`)}, t0); changed || err != nil {
 		t.Errorf("other event = %v %v, want ignored", changed, err)
 	}
-	if _, err := s.apply(backend.Event{Name: statusEventName, Data: []byte(`{"id":"a","state":1}`)}, t0); err == nil {
+	if _, err := s.apply(backend.Event{Name: api.SessionStatusEvent.Name, Data: []byte(`{"id":"a","state":1}`)}, t0); err == nil {
 		t.Error("a non-string state decoded")
 	}
-	if _, err := s.apply(backend.Event{Name: statusEventName, Data: []byte(`{"state":"busy"}`)}, t0); err == nil {
+	if _, err := s.apply(backend.Event{Name: api.SessionStatusEvent.Name, Data: []byte(`{"state":"busy"}`)}, t0); err == nil {
 		t.Error("a payload with no id was accepted")
 	}
 	if s.reported("") {

@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/appupdate"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
@@ -41,8 +42,6 @@ import (
 	"github.com/lichdotdev/lich/internal/tray"
 	"github.com/lichdotdev/lich/internal/xdgprofile"
 	"github.com/ncruces/zenity"
-
-	"github.com/lichdotdev/lich/api"
 )
 
 // changelog is embedded so the app can show a "what's new" popup after an
@@ -341,14 +340,14 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// window for — an agent closing a session while a restart reopens the window, where
 	// an event with no client connected is dropped.
 	db.SetScheduleForfeited(func(lost store.ForfeitedSchedule) {
-		hub.Emit(store.ScheduleForfeitEventName, lost)
+		events.Send(hub.Emit, api.ScheduleForfeitedEvent, api.ScheduleForfeited(lost))
 		summary, detail := lost.Notice()
 		if err := sys.Notify(summary, detail); err != nil {
 			slog.Warn("notify forfeited schedule", "session", lost.Label, "err", err)
 		}
 	})
 	db.SetSessionRenamed(func(id, label string) {
-		hub.Emit(spawn.RenamedEventName, spawn.RenamedEvent{ID: id, Label: label})
+		events.Send(hub.Emit, api.SessionTitleEvent, spawn.RenamedEvent{ID: id, Label: label})
 	})
 	db.SetProjectChanged(hub.Emit)
 	providerSvc := providers.New()
@@ -577,13 +576,6 @@ func handleBindFailure(configDir string, cause error, openRunning func(string, *
 	os.Exit(1)
 }
 
-// windowRaiseEvent asks the native window on /events to come forward, and
-// windowCloseEvent to close, lich quitting.
-const (
-	windowRaiseEvent = "window-raise"
-	windowCloseEvent = "window-close"
-)
-
 // windowLeaveWait bounds waiting for the native window to end once told to
 // close. It ends at once (os.Exit on the event); the bound is for a window
 // that never reads it, which must not keep lich from quitting.
@@ -595,7 +587,7 @@ const windowLeaveWait = 5 * time.Second
 func closeWindow(hub *events.Hub) func() {
 	return func() {
 		gone := hub.Gone()
-		hub.Emit(windowCloseEvent, nil)
+		events.Send(hub.Emit, api.WindowCloseEvent, api.None{})
 		select {
 		case <-gone:
 		case <-time.After(windowLeaveWait):
@@ -611,7 +603,7 @@ func raiseNative(hub *events.Hub) func() bool {
 		if !hub.Attached() {
 			return false
 		}
-		hub.Emit(windowRaiseEvent, nil)
+		events.Send(hub.Emit, api.WindowRaiseEvent, api.None{})
 		return true
 	}
 }

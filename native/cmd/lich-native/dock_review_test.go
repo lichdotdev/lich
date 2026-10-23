@@ -11,10 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
-
-	"github.com/lichdotdev/lich/api"
 )
 
 const twoHunks = `diff --git a/a.go b/a.go

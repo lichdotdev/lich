@@ -14,10 +14,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-
-	"github.com/lichdotdev/lich/api"
 )
 
 func TestFormatCost(t *testing.T) {

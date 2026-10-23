@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/events"
@@ -254,8 +255,8 @@ func TestAResumeThatFollowsItsConversationSaysSoOnceUp(t *testing.T) {
 	if !svc.Live("s1") {
 		t.Fatal("the session is not running after Start")
 	}
-	waitFor(t, func() bool { _, ok := rec.payloadOf(profileEventName); return ok }, "the session-profile event")
-	payload, _ := rec.payloadOf(profileEventName)
+	waitFor(t, func() bool { _, ok := rec.payloadOf(api.SessionProfileEvent.Name); return ok }, "the session-profile event")
+	payload, _ := rec.payloadOf(api.SessionProfileEvent.Name)
 	if fields, _ := payload.(map[string]any); fields["id"] != "s1" || fields["profile"] != "work" {
 		t.Errorf("session-profile = %v, want s1 moved to work", payload)
 	}

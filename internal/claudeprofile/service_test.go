@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // fakeClaudeGuard turns the test binary into a stand-in for the Claude Code CLI
@@ -78,7 +80,7 @@ func newRecorder() *recorder { return &recorder{done: make(chan LoginEvent, 1)} 
 
 func (r *recorder) emit(name string, data any) {
 	e, ok := data.(LoginEvent)
-	if name != LoginEventName || !ok {
+	if name != api.ClaudeProfileLoginEvent.Name || !ok {
 		return
 	}
 	r.mu.Lock()

@@ -2,33 +2,18 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"slices"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
-)
-
-const (
-	// touchedEventName is terminal.touchedEventName: a session likely changed
-	// files on disk.
-	touchedEventName = "session-touched"
-	// focusEventName is relay.FocusEventName: `lich focus` asked for a card.
-	focusEventName = "session-focus"
-	// raiseEventName is main.windowRaiseEvent: the tray or a second launch
-	// asked for lich's window.
-	raiseEventName = "window-raise"
-	// closeEventName is main.windowCloseEvent: lich is quitting.
-	closeEventName = "window-close"
 )
 
 // sessionTouched reads a session's git state now rather than at the next
 // tick, and tells the Review tab's diff. A session of a project that is not on
 // screen has nothing drawn from git, so it waits for its project to be shown.
-func (m *model) sessionTouched(ctx context.Context, data json.RawMessage) {
-	var e struct {
-		ID string `json:"id"`
-	}
-	if json.Unmarshal(data, &e) != nil {
+func (m *model) sessionTouched(ctx context.Context, ev backend.Event) {
+	e, err := backend.Decode(ev, api.SessionTouchedEvent)
+	if err != nil {
 		return
 	}
 	m.mu.Lock()
@@ -65,11 +50,9 @@ func (m *model) checkoutWritten(ctx context.Context, checkout string) {
 
 // sessionFocus brings the card `lich focus` named up. One whose project is not
 // open here has nowhere to be shown, so it is left alone.
-func (m *model) sessionFocus(data json.RawMessage) {
-	var e struct {
-		ID string `json:"id"`
-	}
-	if json.Unmarshal(data, &e) != nil || m.focusSession == nil {
+func (m *model) sessionFocus(ev backend.Event) {
+	e, err := backend.Decode(ev, api.SessionFocusEvent)
+	if err != nil || m.focusSession == nil {
 		return
 	}
 	m.mu.Lock()
@@ -88,7 +71,7 @@ func (m *model) sessionFocus(data json.RawMessage) {
 // window or call made it.
 func (m *model) profileChanged(c backend.ProfileChanged) {
 	if book := m.profileBook(c.Provider); book != nil {
-		book.changed(c.Profile)
+		book.changed(backend.Profile{Profile: c.Profile})
 	}
 }
 
@@ -111,7 +94,7 @@ func (m *model) loginStep(ctx context.Context, kind string, step backend.Profile
 
 // loginEventKind is the provider a login event name belongs to.
 func loginEventKind(event string) string {
-	if event == backend.CodexProfileLoginEvent {
+	if event == api.CodexProfileLoginEvent.Name {
 		return codexKind
 	}
 	return claudeKind

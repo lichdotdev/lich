@@ -1,6 +1,11 @@
 package relay
 
-import "log/slog"
+import (
+	"log/slog"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
+)
 
 // A subagent worker whose mod answers for it (docs/hooks/mod-answer.md) and a
 // worker its caller closed: the two ways a subagent errand ends that a native
@@ -103,7 +108,7 @@ func (s *Service) WorkerUnanswered(workerID, reason string) {
 
 	s.clear(t)
 	if s.events != nil {
-		s.events.Emit(StalledEventName, StalledEvent{ID: t.fromID, TargetID: t.targetID, Target: t.target})
+		events.Send(s.events.Emit, api.RelayStalledEvent, StalledEvent{ID: t.fromID, TargetID: t.targetID, Target: t.target})
 	}
 	if unattended {
 		s.announceInbox(t.fromID)

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -50,7 +51,7 @@ func TestAProfileChangedEventRedrawsTheProfileKeepingItsLogin(t *testing.T) {
 	m := newModel(nil, func() {})
 	m.profiles.list = []backend.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work", LoggedIn: true, Email: "w@x.y"}}
 	m.profiles.images = map[string]*avatarImage{}
-	m.profileChanged(backend.ProfileChanged{Provider: claudeKind, Profile: backend.Profile{Slug: "work", Name: "Client", Color: "teal", Image: tinyPNG(t)}})
+	m.profileChanged(backend.ProfileChanged{Provider: claudeKind, Profile: api.Profile{Slug: "work", Name: "Client", Color: "teal", Image: tinyPNG(t)}})
 	look := m.profiles.look("work")
 	if look.name != "Client" || look.color != "teal" || look.image == nil {
 		t.Errorf("look = %+v", look)
@@ -58,7 +59,7 @@ func TestAProfileChangedEventRedrawsTheProfileKeepingItsLogin(t *testing.T) {
 	if work, _ := m.profiles.find("work"); !work.LoggedIn || work.Email != "w@x.y" {
 		t.Errorf("the event dropped the login state: %+v", work)
 	}
-	m.profileChanged(backend.ProfileChanged{Provider: "gemini", Profile: backend.Profile{Slug: "work"}})
+	m.profileChanged(backend.ProfileChanged{Provider: "gemini", Profile: api.Profile{Slug: "work"}})
 }
 
 func TestTheProfileMenuOffersRemoveImageOnlyWithAnImage(t *testing.T) {

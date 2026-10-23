@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/store"
@@ -461,8 +462,8 @@ func TestOpenLandsInTheCallersProject(t *testing.T) {
 	if want := relay.RosterName("/src/lich", opened.ID); opened.Name != want {
 		t.Errorf("reported the name %q, want %q, the one the relay resolves", opened.Name, want)
 	}
-	if len(events.events) != 1 || events.events[0].name != OpenedEventName {
-		t.Fatalf("events = %+v, want one %s", events.events, OpenedEventName)
+	if len(events.events) != 1 || events.events[0].name != api.SessionOpenedEvent.Name {
+		t.Fatalf("events = %+v, want one %s", events.events, api.SessionOpenedEvent.Name)
 	}
 	if events.events[0].data != any(opened) {
 		t.Errorf("the window was told %+v, the caller %+v", events.events[0].data, opened)
@@ -578,7 +579,7 @@ func TestOpenAnnouncesTheCardEvenWhenTheModelCannotBeRecorded(t *testing.T) {
 	if len(sessions.rows) != 1 {
 		t.Fatalf("wrote %d rows, want the session's own", len(sessions.rows))
 	}
-	if len(events.events) != 1 || events.events[0].name != OpenedEventName {
+	if len(events.events) != 1 || events.events[0].name != api.SessionOpenedEvent.Name {
 		t.Errorf("events = %+v, want the card announced for the row that exists", events.events)
 	}
 	if len(term.spawns) != 1 {
@@ -599,7 +600,7 @@ type modelAtAnnounce struct {
 }
 
 func (m *modelAtAnnounce) Emit(name string, data any) {
-	if opened, ok := data.(Session); ok && name == OpenedEventName {
+	if opened, ok := data.(Session); ok && name == api.SessionOpenedEvent.Name {
 		m.seen[opened.ID] = m.sessions.models[opened.ID]
 	}
 }

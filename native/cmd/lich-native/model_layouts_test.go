@@ -12,9 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/backend"
-
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // layoutsBackend answers every call with null and keeps the last value

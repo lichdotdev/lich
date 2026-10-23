@@ -143,11 +143,6 @@ const (
 	stateInterrupted = "interrupted"
 )
 
-// RelayEventName carries which session is waiting on which, so the sidebar can
-// say it. Global rather than per-session because its consumer — one store keyed
-// by id — outlives any one card, exactly as the status event's does.
-const RelayEventName = "session-relay"
-
 // Directions a RelayEvent carries. An empty direction clears the mark: the
 // request it named is over, answered or expired.
 const (
@@ -155,37 +150,9 @@ const (
 	DirectionIn  = "in"
 )
 
-// StalledEventName carries a request whose target ended its turn without
-// answering through lich. The window turns it into a toast that opens the
-// target's card, because the answer — if there is one — is on that screen and
-// the person who asked has no other way to know where it went.
-const StalledEventName = "session-relay-stalled"
+type StalledEvent = api.RelayStalled
 
-// StalledEvent is the payload of StalledEventName: who asked ("" when the
-// request came from the command line rather than a session), and the session
-// that has whatever was produced.
-type StalledEvent struct {
-	ID       string `json:"id"`
-	TargetID string `json:"targetId"`
-	Target   string `json:"target"`
-}
-
-// RelayEvent is the payload of RelayEventName: the session whose mark changed,
-// the label at the other end, which way the request runs, and the ticket the
-// two ends share. Peer is empty when the other end is not a session at all —
-// the CLI run from a script or a shell — which the card words its own way.
-//
-// The ticket rides along because it is otherwise written down in exactly one
-// place: the message typed at the target's prompt. An agent whose context was
-// compacted past that message has no way back to it, and neither had the person
-// watching — the window knew a request was open and could not say which one.
-// Empty when the mark is being cleared, along with the direction.
-type RelayEvent struct {
-	ID        string `json:"id"`
-	Peer      string `json:"peer"`
-	Direction string `json:"direction"`
-	Ticket    string `json:"ticket"`
-}
+type RelayEvent = api.SessionRelay
 
 // Sessions is the persistence the relay reads: every open session, so a label
 // can be resolved to the session it names and the caller can be told what it

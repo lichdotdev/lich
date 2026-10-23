@@ -4,10 +4,13 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // Claude Code and Codex keep a plugin set per profile, so the lich plugin
@@ -21,26 +24,9 @@ import (
 // add` both install into a logged-out home (measured on Claude Code 2.1.296 and
 // codex-cli 0.162.1), and the install after a login runs again anyway.
 
-// ProfilesEventName is the event a pass over a provider's profiles reports on,
-// once it has installed into at least one.
-const ProfilesEventName = "lich-plugin-profiles"
+type ProfilesEvent = api.PluginProfiles
 
-// ProfilesEvent is what one pass did: the release it installed and the
-// profiles where the install failed, in the CLI's own words. Name is the
-// provider's display name.
-type ProfilesEvent struct {
-	Provider string           `json:"provider"`
-	Name     string           `json:"name"`
-	Version  string           `json:"version"`
-	Failures []ProfileFailure `json:"failures"`
-}
-
-// ProfileFailure is one profile the plugin could not be installed into.
-type ProfileFailure struct {
-	Profile string `json:"profile"`
-	Name    string `json:"name"`
-	Error   string `json:"error"`
-}
+type ProfileFailure = api.PluginProfileFailure
 
 // profileProvider is what a provider with profiles brings to the pass.
 // ensureShared brings a profile to the layout a spawn would before its plugins
@@ -80,7 +66,7 @@ var profileProviders = map[string]profileProvider{
 	},
 }
 
-// SetEmit wires where a pass over the profiles reports (ProfilesEventName).
+// SetEmit wires where a pass over the profiles reports (api.PluginProfilesEvent).
 // Startup wiring; without it Install reaches Personal alone.
 func (s *Service) SetEmit(emit func(name string, data any)) { s.emit = emit }
 
@@ -129,7 +115,7 @@ func (s *Service) followPersonal(provider string) {
 		}
 	}
 	if installed > 0 && s.emit != nil {
-		s.emit(ProfilesEventName, ev)
+		events.Send(s.emit, api.PluginProfilesEvent, ev)
 	}
 }
 

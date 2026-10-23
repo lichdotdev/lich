@@ -7,13 +7,11 @@ import (
 	"slices"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
-)
 
-// limitEventName carries a turn a plan's usage limit ended ({id, window,
-// resetsAt}). Nothing clears it; the window reads plan quota again when it
-// arrives (planQuota, native/cmd/lich-native/footer_quota.go).
-const limitEventName = "session-limit"
+	"github.com/lichdotdev/lich/internal/events"
+)
 
 // limitWatchTick is how often an open Codex turn is checked for having ended on
 // a usage limit. Codex raises no hook when that happens (docs/hooks/session-state.md),
@@ -37,12 +35,7 @@ type usageLimit struct {
 	resetsAt int64
 }
 
-// limitEvent is the payload of limitEventName.
-type limitEvent struct {
-	ID       string `json:"id"`
-	Window   string `json:"window"`
-	ResetsAt int64  `json:"resetsAt"`
-}
+type limitEvent = api.SessionLimit
 
 // usageLimitFor reads whether a conversation's last turn ended on a usage limit.
 // Only Claude Code and Codex record one together with its reset; every other
@@ -200,7 +193,7 @@ func (s *Service) noteLimit(id string) bool {
 	if !ok {
 		return false
 	}
-	s.hub.Emit(limitEventName, limitEvent{ID: id, Window: limit.window, ResetsAt: limit.resetsAt})
+	events.Send(s.hub.Emit, api.SessionLimitEvent, limitEvent{ID: id, Window: limit.window, ResetsAt: limit.resetsAt})
 	if park := s.limitWatcher(); park != nil && limit.resetsAt > 0 {
 		park(id, limit.resetsAt)
 	}

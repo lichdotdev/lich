@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/store"
@@ -87,7 +88,7 @@ func TestCloseTakesDownASessionWithNothingAtStake(t *testing.T) {
 	if len(term.closed) == 0 {
 		t.Error("left the PTY running for a session that is gone from the workspace")
 	}
-	if len(events.events) != 1 || events.events[0].name != ClosedEventName {
+	if len(events.events) != 1 || events.events[0].name != api.SessionClosedEvent.Name {
 		t.Errorf("events = %+v, want the card taken down", events.events)
 	}
 }
@@ -364,7 +365,7 @@ func TestCloseTakesTheCardDownEvenWhenThePTYRefuses(t *testing.T) {
 	if len(sessions.parked) != 1 {
 		t.Fatalf("parked = %+v, want the row taken out of the workspace", sessions.parked)
 	}
-	if len(events.events) != 1 || events.events[0].name != ClosedEventName {
+	if len(events.events) != 1 || events.events[0].name != api.SessionClosedEvent.Name {
 		t.Errorf("events = %+v, want the card taken down anyway", events.events)
 	}
 }

@@ -198,6 +198,46 @@ themes.SetFollowSystem(FollowSystemOptions) None
 themes.UpdateFromGit(UpdateThemeOptions) ThemeGitResult
 tray.SetLabels(TrayLabels) None
 
+event appupdate-progress AppUpdateProgress
+event claude-profile-login ProfileLogin
+event codex-profile-login ProfileLogin
+event lich-plugin-profiles PluginProfiles
+event plugin-incompatible PluginIncompatible
+event profile-changed ProfileChanged
+event project-added ProjectAdded
+event project-closed ProjectClosed
+event project-opened Project
+event projects-reordered ProjectsReordered
+event pull-request-changed PRChanged
+event session-agent SessionAgent
+event session-closed SessionClosed
+event session-conversation SessionConversation
+event session-cwd SessionCwd
+event session-duplicate SessionDuplicate
+event session-focus SessionFocus
+event session-inbox SessionInbox
+event session-limit SessionLimit
+event session-mcp SessionMCP
+event session-opened OpenedSession
+event session-profile SessionProfile
+event session-relay SessionRelay
+event session-relay-stalled RelayStalled
+event session-sandbox SessionSandbox
+event session-schedule SessionSchedule
+event session-schedule-forfeited ScheduleForfeited
+event session-status SessionStatus
+event session-title SessionTitle
+event session-todo SessionTodo
+event session-touched SessionTouched
+event session-usage SessionUsage
+event sessions-colored SessionsColored
+event sessions-filed SessionsFiled
+event terminal:data:<id> string
+event terminal:exit:<id> SessionExit
+event theme-selection ThemeSelection
+event window-close None
+event window-raise None
+
 PluginProviderOptions {
 	provider string
 }
@@ -240,7 +280,7 @@ Profile {
 	personal bool
 	copied,omitempty []string
 	color,omitempty string
-	image,omitempty []uint8
+	image,omitempty base64
 }
 
 InstallPluginsOptions {
@@ -559,7 +599,10 @@ RevertLinesOptions {
 	lines []RevertLine
 }
 
-RevertResult = its own MarshalJSON
+RevertResult (MarshalJSON) {
+	patch base64
+	indexPatch base64
+}
 
 SearchOptions {
 	path string
@@ -1277,6 +1320,193 @@ TrayLabels {
 	quit string
 }
 
+AppUpdateProgress {
+	phase string
+	received int64
+	total int64
+}
+
+ProfileLogin {
+	profile string
+	output,omitempty string
+	url,omitempty string
+	authenticating,omitempty bool
+	done,omitempty bool
+	loggedIn,omitempty bool
+	cancelled,omitempty bool
+	error,omitempty string
+	pluginError,omitempty string
+}
+
+PluginProfiles {
+	provider string
+	name string
+	version string
+	failures []PluginProfileFailure
+}
+
+PluginIncompatible {
+	id string
+	version string
+}
+
+ProfileChanged {
+	provider string
+	profile Profile
+}
+
+ProjectAdded {
+	id string
+	name string
+	path string
+}
+
+ProjectClosed {
+	id string
+}
+
+ProjectsReordered {
+	ids []string
+}
+
+PRChanged {
+	path string
+	number int
+}
+
+SessionAgent {
+	id string
+	agent string
+}
+
+SessionClosed {
+	id string
+	projectId string
+	activeId string
+}
+
+SessionConversation {
+	id string
+	providerSessionId string
+}
+
+SessionCwd {
+	id string
+	cwd string
+	host string
+}
+
+SessionDuplicate {
+	id string
+	heldBy string
+}
+
+SessionFocus {
+	id string
+}
+
+SessionInbox {
+	id string
+	count int
+}
+
+SessionLimit {
+	id string
+	window string
+	resetsAt int64
+}
+
+SessionMCP {
+	id string
+	servers []string
+}
+
+SessionProfile {
+	id string
+	profile string
+}
+
+SessionRelay {
+	id string
+	peer string
+	direction string
+	ticket string
+}
+
+RelayStalled {
+	id string
+	targetId string
+	target string
+}
+
+SessionSandbox {
+	id string
+	confined bool
+	skippedLinks []string
+}
+
+SessionSchedule {
+	id string
+	at int64
+	prompt,omitempty string
+}
+
+ScheduleForfeited {
+	label string
+	at int64
+	prompt string
+}
+
+SessionStatus {
+	id string
+	state string
+	tool,omitempty string
+	detail,omitempty string
+	reason,omitempty string
+}
+
+SessionTitle {
+	id string
+	label string
+}
+
+SessionTodo {
+	id string
+	done int
+	total int
+}
+
+SessionTouched {
+	id string
+}
+
+SessionUsage {
+	id string
+	percent int
+	tokens int
+	window int
+	model string
+	effort string
+	costUsd,omitempty *float64
+	costMiss,omitempty string
+}
+
+SessionsColored {
+	projectId string
+	ids []string
+	color string
+}
+
+SessionsFiled {
+	projectId string
+	ids []string
+	folder string
+}
+
+SessionExit {
+	code,omitempty *int
+}
+
 ProfileUpdate {
 	name,omitempty string
 	color,omitempty *string
@@ -1421,23 +1651,18 @@ CostTotal {
 	costUsd float64
 }
 
-SessionUsage {
-	id string
-	percent int
-	tokens int
-	window int
-	model string
-	effort string
-	costUsd,omitempty *float64
-	costMiss,omitempty string
-}
-
 ThemeSource {
 	url string
 	version string
 }
 
 Syntax = map[string]SyntaxStyle
+
+PluginProfileFailure {
+	profile string
+	name string
+	error string
+}
 
 PRThreadComment {
 	id int64

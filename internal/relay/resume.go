@@ -5,8 +5,11 @@ import (
 	"slices"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/store"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // A turn a plan's usage limit ended is picked up again once the limit resets:
@@ -61,7 +64,7 @@ func (s *Service) ParkResume(id string, resetsAt int64) {
 	}
 	s.markResume(id)
 	if s.events != nil {
-		s.events.Emit(ScheduleEventName, ScheduleEvent{ID: id, At: due, Prompt: resumePrompt})
+		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: id, At: due, Prompt: resumePrompt})
 	}
 }
 
@@ -79,7 +82,7 @@ func (s *Service) dropResume(id string) {
 		return
 	}
 	if s.events != nil {
-		s.events.Emit(ScheduleEventName, ScheduleEvent{ID: id})
+		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: id})
 	}
 }
 

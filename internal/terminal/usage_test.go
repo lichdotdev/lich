@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -169,7 +170,7 @@ func TestADoneReadsTheTranscriptAgainOnceItsLastLineLands(t *testing.T) {
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{providerSession: "uuid-late"}, nil, hub)
 	modelOf := func() string {
-		payload, _ := rec.payloadOf(usageEventName)
+		payload, _ := rec.payloadOf(api.SessionUsageEvent.Name)
 		fields, _ := payload.(map[string]any)
 		model, _ := fields["model"].(string)
 		return model
@@ -177,7 +178,7 @@ func TestADoneReadsTheTranscriptAgainOnceItsLastLineLands(t *testing.T) {
 
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
-	reads := func() int { return strings.Count(strings.Join(rec.snapshot(), "\n"), usageEventName) }
+	reads := func() int { return strings.Count(strings.Join(rec.snapshot(), "\n"), api.SessionUsageEvent.Name) }
 	waitFor(t, func() bool { return reads() == 2 }, "the reads the busy and the done took")
 	if got := modelOf(); got != modelOpus {
 		t.Fatalf("model as the turn ended = %q, want the previous line's %q", got, modelOpus)

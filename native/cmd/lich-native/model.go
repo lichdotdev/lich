@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
@@ -94,7 +95,7 @@ type model struct {
 	// exited hears a session's process end.
 	exited func(id string, e sessionExit)
 	// duplicate hears a session report a conversation another open card
-	// runs (duplicateEventName).
+	// runs (api.SessionDuplicateEvent).
 	duplicate func(sessionDuplicate)
 	// pluginIncompatible hears a session report from a lich plugin outside
 	// the range this lich speaks (PluginIncompatibleEvent).
@@ -110,13 +111,7 @@ type model struct {
 	shownLayout string
 }
 
-// sessionCwd is a session-cwd payload: where the session's shell is, or the
-// host (tmux, ssh, ...) it went into that the backend cannot see through.
-type sessionCwd struct {
-	ID   string `json:"id"`
-	Cwd  string `json:"cwd"`
-	Host string `json:"host"`
-}
+type sessionCwd = api.SessionCwd
 
 func newModel(client *backend.Client, invalidate func()) *model {
 	quota := newPlanQuota(quotaReader(client), invalidate)
@@ -269,12 +264,12 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 // serves one client and a newer one replaces it, or lich is gone.
 func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 	for ev := range events {
-		if id, exited := strings.CutPrefix(ev.Name, exitEventPrefix); exited {
+		if id, exited := api.TerminalExitEvents.ID(ev.Name); exited {
 			m.mu.Lock()
 			m.status.exited(id)
 			m.mu.Unlock()
 			if m.exited != nil {
-				m.exited(id, readSessionExit(ev.Data))
+				m.exited(id, readSessionExit(ev))
 			}
 			m.invalidate()
 			continue
@@ -286,113 +281,95 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		}
 		m.quota.apply(ev)
 		switch ev.Name {
-		case "session-usage":
+		case api.SessionUsageEvent.Name:
 			// Taken by the usage store above; only the redraw is left.
-		case statusEventName:
+		case api.SessionStatusEvent.Name:
 			if err := m.applyStatus(ctx, ev); err != nil {
 				log.Printf("%s: %v", ev.Name, err)
 			}
-		case "session-cwd":
-			var c sessionCwd
-			if json.Unmarshal(ev.Data, &c) == nil {
+		case api.SessionCwdEvent.Name:
+			if c, err := backend.Decode(ev, api.SessionCwdEvent); err == nil {
 				m.mu.Lock()
 				m.cwd[c.ID] = c
 				m.mu.Unlock()
 			}
-		case "session-title":
-			var s struct {
-				ID    string `json:"id"`
-				Label string `json:"label"`
-			}
-			if json.Unmarshal(ev.Data, &s) == nil {
+		case api.SessionTitleEvent.Name:
+			if s, err := backend.Decode(ev, api.SessionTitleEvent); err == nil {
 				m.rename(s.ID, s.Label)
 			}
-		case backend.SessionConversationEvent:
-			var c backend.ConversationReported
-			if json.Unmarshal(ev.Data, &c) == nil {
+		case api.SessionConversationEvent.Name:
+			if c, err := backend.Decode(ev, api.SessionConversationEvent); err == nil {
 				m.setConversation(c.ID, c.ProviderSessionID)
 			}
-		case backend.SessionProfileEvent:
-			var moved backend.ProfileMoved
-			if json.Unmarshal(ev.Data, &moved) == nil {
+		case api.SessionProfileEvent.Name:
+			if moved, err := backend.Decode(ev, api.SessionProfileEvent); err == nil {
 				m.setProfile(moved.ID, moved.Profile)
 			}
-		case backend.ProfileChangedEvent:
-			var c backend.ProfileChanged
-			if json.Unmarshal(ev.Data, &c) == nil {
+		case api.ProfileChangedEvent.Name:
+			if c, err := backend.Decode(ev, api.ProfileChangedEvent); err == nil {
 				m.profileChanged(c)
 			}
-		case backend.ClaudeProfileLoginEvent, backend.CodexProfileLoginEvent:
+		case api.ClaudeProfileLoginEvent.Name, api.CodexProfileLoginEvent.Name:
 			var step backend.ProfileLogin
 			if json.Unmarshal(ev.Data, &step) == nil {
 				m.loginStep(ctx, loginEventKind(ev.Name), step)
 			}
-		case backend.PluginProfilesEvent:
-			var pass backend.PluginProfiles
-			if json.Unmarshal(ev.Data, &pass) == nil && m.pluginProfiles != nil {
+		case api.PluginProfilesEvent.Name:
+			if pass, err := backend.Decode(ev, api.PluginProfilesEvent); err == nil && m.pluginProfiles != nil {
 				m.pluginProfiles(pass)
 			}
-		case backend.ThemeSelectionEvent:
-			var sel backend.ThemeSelection
-			if json.Unmarshal(ev.Data, &sel) == nil && m.themeSelection != nil {
+		case api.ThemeSelectionEvent.Name:
+			if sel, err := backend.Decode(ev, api.ThemeSelectionEvent); err == nil && m.themeSelection != nil {
 				m.themeSelection(sel)
 			}
-		case backend.PRChangedEvent:
+		case api.PullRequestChangedEvent.Name:
 			if m.prChanged != nil {
 				m.prChanged()
 			}
-		case backend.AppUpdateProgressEvent:
-			var p backend.AppUpdateProgress
-			if json.Unmarshal(ev.Data, &p) == nil && m.appUpdateProgress != nil {
+		case api.AppUpdateProgressEvent.Name:
+			if p, err := backend.Decode(ev, api.AppUpdateProgressEvent); err == nil && m.appUpdateProgress != nil {
 				m.appUpdateProgress(p)
 			}
-		case duplicateEventName:
-			var d sessionDuplicate
-			if json.Unmarshal(ev.Data, &d) == nil && m.duplicate != nil {
+		case api.SessionDuplicateEvent.Name:
+			if d, err := backend.Decode(ev, api.SessionDuplicateEvent); err == nil && m.duplicate != nil {
 				m.duplicate(d)
 			}
-		case backend.PluginIncompatibleEvent:
+		case api.PluginIncompatibleEvent.Name:
 			if m.pluginIncompatible != nil {
 				m.pluginIncompatible()
 			}
-		case touchedEventName:
-			m.sessionTouched(ctx, ev.Data)
-		case focusEventName:
-			m.sessionFocus(ev.Data)
-		case raiseEventName:
+		case api.SessionTouchedEvent.Name:
+			m.sessionTouched(ctx, ev)
+		case api.SessionFocusEvent.Name:
+			m.sessionFocus(ev)
+		case api.WindowRaiseEvent.Name:
 			if m.raise != nil {
 				m.raise()
 			}
-		case closeEventName:
+		case api.WindowCloseEvent.Name:
 			log.Print("lich asked this window to close")
 			if m.leave != nil {
 				m.leave()
 			}
-		case "project-closed":
-			var gone struct {
-				ID string `json:"id"`
-			}
-			if json.Unmarshal(ev.Data, &gone) == nil {
+		case api.ProjectClosedEvent.Name:
+			if gone, err := backend.Decode(ev, api.ProjectClosedEvent); err == nil {
 				m.closed.stale()
 				if out, ok := m.closeProject(gone.ID); ok && m.projectClosed != nil {
 					m.projectClosed(out)
 				}
 			}
-		case "projects-reordered":
-			var order struct {
-				IDs []string `json:"ids"`
-			}
-			if json.Unmarshal(ev.Data, &order) == nil {
+		case api.ProjectsReorderedEvent.Name:
+			if order, err := backend.Decode(ev, api.ProjectsReorderedEvent); err == nil {
 				m.applyOrder(order.IDs)
 			}
-		case "project-added", "project-opened":
+		case api.ProjectAddedEvent.Name, api.ProjectOpenedEvent.Name:
 			m.closed.stale()
 			if err := m.reload(ctx); err != nil {
 				log.Printf("reload after %s: %v", ev.Name, err)
 			} else if err := m.loadFolds(ctx); err != nil {
 				log.Printf("load folds after %s: %v", ev.Name, err)
 			}
-		case "session-opened", "session-closed", "sessions-filed", "sessions-colored":
+		case api.SessionOpenedEvent.Name, api.SessionClosedEvent.Name, api.SessionsFiledEvent.Name, api.SessionsColoredEvent.Name:
 			if err := m.reload(ctx); err != nil {
 				log.Printf("reload after %s: %v", ev.Name, err)
 			} else if err := m.loadFolds(ctx); err != nil {

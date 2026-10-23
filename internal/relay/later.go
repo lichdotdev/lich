@@ -5,7 +5,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // A scheduled prompt is the user's own words parked on a session to be typed at
@@ -26,19 +29,7 @@ import (
 // that can be asked for, and it costs one read of the open sessions.
 const scheduleTick = 30 * time.Second
 
-// ScheduleEventName is emitted when a session's scheduled prompt changes
-// without the window having written it: delivered, or parked and dropped by
-// lich itself around a usage limit (resume.go). Payload: ScheduleEvent.
-const ScheduleEventName = "session-schedule"
-
-// ScheduleEvent is the payload of ScheduleEventName: the session whose mark
-// changed, when its prompt is now due, and the prompt. At is 0 and Prompt empty
-// when nothing is waiting anymore.
-type ScheduleEvent struct {
-	ID     string `json:"id"`
-	At     int64  `json:"at"`
-	Prompt string `json:"prompt,omitempty"`
-}
+type ScheduleEvent = api.SessionSchedule
 
 // RunSchedules types due prompts at their sessions until the process ends,
 // and ages out errands on the same tick (expireTickets). Started once at
@@ -99,7 +90,7 @@ func (s *Service) deliverDue() {
 				continue
 			}
 			if s.events != nil {
-				s.events.Emit(ScheduleEventName, ScheduleEvent{ID: sess.ID})
+				events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: sess.ID})
 			}
 			text := lateNotice(s.lang(), sess.ScheduledAt, now) + sess.ScheduledPrompt
 			if err := s.deliver(sess.ID, text, nil); err != nil {

@@ -35,33 +35,11 @@ import (
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
-// OpenedEventName carries a session opened outside the window, so the card
-// appears without a reload. Global, like every other session event: its consumer
-// is the workspace state, which outlives any one card.
-const OpenedEventName = "session-opened"
-
-// ProjectOpenedEventName carries a project opened outside the window — an agent
-// naming a directory rather than a project already on screen — so its tab
-// appears without a reload. Its payload is the whole store.Project, sessions
-// included: a reopened project brings back the cards it was closed with, and the
-// session this open is about to announce lands in a tab the window has to be
-// holding already.
-const ProjectOpenedEventName = "project-opened"
-
-// ClosedEventName carries a session closed outside the window, so the card goes
-// away without a reload. Its payload is ClosedEvent.
-const ClosedEventName = "session-closed"
-
-// ClosedEvent is the payload of ClosedEventName: which session left, the project
-// it left, and which of that project's sessions is active now — the window has
-// no say in the choice, because the row that records it is already written.
-type ClosedEvent struct {
-	ID        string `json:"id"`
-	ProjectID string `json:"projectId"`
-	ActiveID  string `json:"activeId"`
-}
+type ClosedEvent = api.SessionClosed
 
 // The size a session opened here starts at: none of its own, which the terminal
 // service reads as "whatever size the window last reported" (terminal.sizeFor).
@@ -290,7 +268,7 @@ func (s *Service) openSession(req request) (Session, error) {
 	// either way, so the card has to exist either way too — a session only the
 	// database knows about is one the user cannot reach to see what went wrong.
 	if s.events != nil {
-		s.events.Emit(OpenedEventName, opened)
+		events.Send(s.events.Emit, api.SessionOpenedEvent, opened)
 	}
 	callerErr := s.fileCaller(target.ID, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
@@ -345,7 +323,7 @@ func (s *Service) fileCaller(projectID, callerID, folder string) error {
 		return fmt.Errorf("the subagent is open, but its caller could not be filed under %q: %w", folder, err)
 	}
 	if s.events != nil {
-		s.events.Emit(FiledEventName, FiledEvent{ProjectID: projectID, IDs: []string{callerID}, Folder: folder})
+		events.Send(s.events.Emit, api.SessionsFiledEvent, FiledEvent{ProjectID: projectID, IDs: []string{callerID}, Folder: folder})
 	}
 	return nil
 }

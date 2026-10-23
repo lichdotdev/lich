@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -35,8 +36,8 @@ func filer(t *testing.T) (*Service, *fakeSessions, *fakeEvents) {
 // filedEvent reads the one sessions-filed announcement a call made.
 func filedEvent(t *testing.T, events *fakeEvents) FiledEvent {
 	t.Helper()
-	if len(events.events) != 1 || events.events[0].name != FiledEventName {
-		t.Fatalf("events = %+v, want one %s", events.events, FiledEventName)
+	if len(events.events) != 1 || events.events[0].name != api.SessionsFiledEvent.Name {
+		t.Fatalf("events = %+v, want one %s", events.events, api.SessionsFiledEvent.Name)
 	}
 	return events.events[0].data.(FiledEvent)
 }
@@ -358,8 +359,8 @@ func TestColorFolderPaintsEverySessionInIt(t *testing.T) {
 	if !slices.Equal(colored.Sessions, []string{"shared-a", "alone"}) || colored.Color != "teal" {
 		t.Errorf("colored = %+v, want every painted card named", colored)
 	}
-	if len(events.events) != 1 || events.events[0].name != ColoredEventName {
-		t.Fatalf("events = %+v, want one %s", events.events, ColoredEventName)
+	if len(events.events) != 1 || events.events[0].name != api.SessionsColoredEvent.Name {
+		t.Fatalf("events = %+v, want one %s", events.events, api.SessionsColoredEvent.Name)
 	}
 	got := events.events[0].data.(ColoredEvent)
 	if got.ProjectID != "p1" || !slices.Equal(got.IDs, []string{"s2", "s4"}) || got.Color != "teal" {

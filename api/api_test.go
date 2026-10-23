@@ -18,13 +18,20 @@ const goldenPath = "testdata/contract.golden"
 
 var marshalerType = reflect.TypeFor[json.Marshaler]()
 
+// wireShapes are the types that encode themselves, each with the struct its
+// MarshalJSON writes, which the golden shows in its place.
+var wireShapes = map[reflect.Type]reflect.Type{
+	reflect.TypeFor[RevertResult](): reflect.TypeFor[revertWire](),
+}
+
 // TestContractMatchesGolden makes every change to a method's name, options or
-// result show up as a diff of testdata/contract.golden. A renamed JSON field
+// result, and to an event's name or payload, show up as a diff of
+// testdata/contract.golden. A renamed JSON field
 // compiles on both sides and still breaks a client of another release; the
 // golden is where review sees it. Run `go test ./api -update` after a change
 // meant to move the contract.
 func TestContractMatchesGolden(t *testing.T) {
-	got := render(Methods())
+	got := render(Methods(), Events())
 	if *update {
 		if err := os.WriteFile(goldenPath, []byte(got), 0o644); err != nil {
 			t.Fatal(err)
@@ -39,7 +46,7 @@ func TestContractMatchesGolden(t *testing.T) {
 	// back CRLF for the golden committed with LF: the checkout's spelling, not
 	// drift.
 	if got != strings.ReplaceAll(string(want), "\r\n", "\n") {
-		t.Errorf("the contract moved; if that is meant, run `go test ./api -update` and review the diff.\ngot:\n%s", got)
+		t.Error("the contract moved; if that is meant, run `go test ./api -update` and review the diff of " + goldenPath)
 	}
 }
 
@@ -50,6 +57,30 @@ func TestEveryRequestIsOneObject(t *testing.T) {
 	for name, m := range Methods() {
 		if m.Request.Kind() != reflect.Struct {
 			t.Errorf("%s takes %s; a request is one struct, or None", name, m.Request)
+		}
+	}
+}
+
+// TestWireShapesAreWhatMarshalJSONWrites keeps wireShapes honest: the golden
+// shows the wire struct, so it has to be the keys MarshalJSON writes.
+func TestWireShapesAreWhatMarshalJSONWrites(t *testing.T) {
+	for typ, wire := range wireShapes {
+		data, err := json.Marshal(reflect.New(typ).Elem().Interface())
+		if err != nil {
+			t.Fatal(err)
+		}
+		var written map[string]json.RawMessage
+		if err := json.Unmarshal(data, &written); err != nil {
+			t.Fatal(err)
+		}
+		var keys []string
+		for field := range wire.Fields() {
+			if name, _, wired := jsonName(field); wired {
+				keys = append(keys, name)
+			}
+		}
+		if got := slices.Sorted(maps.Keys(written)); !slices.Equal(got, slices.Sorted(slices.Values(keys))) {
+			t.Errorf("%s writes %v, its wire shape %s names %v", typ, got, wire, keys)
 		}
 	}
 }
@@ -72,14 +103,40 @@ func TestDefineRefusesADuplicateName(t *testing.T) {
 	define[None, None]("themes.List")
 }
 
-// render prints each method as `name(Request) Response`, sorted, followed by
-// every named type they reach, each once.
-func render(methods map[string]Declared) string {
+func TestDefineEventRefusesADuplicateName(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Error("a second declaration of session-status did not panic")
+		}
+	}()
+	defineEvent[None]("session-status")
+}
+
+func TestEventFamilyNamesOneEventPerSession(t *testing.T) {
+	if got := TerminalExitEvents.Of("s1").Name; got != "terminal:exit:s1" {
+		t.Errorf("Of(s1) = %q", got)
+	}
+	if id, ok := TerminalExitEvents.ID("terminal:exit:s1"); !ok || id != "s1" {
+		t.Errorf("ID = %q, %v; want s1", id, ok)
+	}
+	if _, ok := TerminalExitEvents.ID("terminal:data:s1"); ok {
+		t.Error("another family's event read as this one's")
+	}
+}
+
+// render prints each method as `name(Request) Response` and each event as
+// `event name Payload`, sorted, followed by every named type they reach, each
+// once.
+func render(methods map[string]Declared, events map[string]DeclaredEvent) string {
 	r := &renderer{seen: map[reflect.Type]bool{}}
 	var b strings.Builder
 	for _, name := range slices.Sorted(maps.Keys(methods)) {
 		m := methods[name]
 		fmt.Fprintf(&b, "%s(%s) %s\n", name, r.ref(m.Request), r.ref(m.Response))
+	}
+	b.WriteString("\n")
+	for _, name := range slices.Sorted(maps.Keys(events)) {
+		fmt.Fprintf(&b, "event %s %s\n", name, r.ref(events[name].Payload))
 	}
 	for len(r.queue) > 0 {
 		next := r.queue[0]
@@ -105,6 +162,9 @@ func (r *renderer) ref(t reflect.Type) string {
 		}
 		return t.Name()
 	}
+	if t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Uint8 {
+		return "base64"
+	}
 	switch t.Kind() {
 	case reflect.Pointer:
 		return "*" + r.ref(t.Elem())
@@ -118,13 +178,21 @@ func (r *renderer) ref(t reflect.Type) string {
 
 func (r *renderer) define(t reflect.Type) string {
 	if t.Implements(marshalerType) {
-		return fmt.Sprintf("%s = its own MarshalJSON\n", t.Name())
+		wire, ok := wireShapes[t]
+		if !ok {
+			panic(fmt.Sprintf("api: %s encodes itself; add the struct its MarshalJSON writes to wireShapes", t.Name()))
+		}
+		return r.defineStruct(t.Name()+" (MarshalJSON)", wire)
 	}
 	if t.Kind() != reflect.Struct {
 		return fmt.Sprintf("%s = %s\n", t.Name(), r.ref(reflectUnderlying(t)))
 	}
+	return r.defineStruct(t.Name(), t)
+}
+
+func (r *renderer) defineStruct(name string, t reflect.Type) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s {\n", t.Name())
+	fmt.Fprintf(&b, "%s {\n", name)
 	for field := range t.Fields() {
 		name, omitempty, wired := jsonName(field)
 		if !wired {

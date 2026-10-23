@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -90,7 +91,7 @@ func TestOpenSubagentFilesTheCallerBesideItsWorkers(t *testing.T) {
 	}
 	last := events.events[len(events.events)-1]
 	filed, ok := last.data.(FiledEvent)
-	if last.name != FiledEventName || !ok || filed.Folder != "Session 3" ||
+	if last.name != api.SessionsFiledEvent.Name || !ok || filed.Folder != "Session 3" ||
 		len(filed.IDs) != 1 || filed.IDs[0] != "s1" || filed.ProjectID != "p1" {
 		t.Errorf("last event %+v, want the caller announced into its folder", last)
 	}
@@ -113,7 +114,7 @@ func TestOpenSubagentFilesTheWorkerUnderTheCallersFolder(t *testing.T) {
 		t.Errorf("caller was refiled: %v", sessions.folders)
 	}
 	for _, e := range events.events {
-		if e.name == FiledEventName {
+		if e.name == api.SessionsFiledEvent.Name {
 			t.Errorf("caller announced as moved: %+v", e)
 		}
 	}
@@ -222,7 +223,7 @@ func TestCloseFinishedWorkerClosesOneSharingItsCallersCheckout(t *testing.T) {
 		if len(term.closed) != 1 || term.closed[0] != id {
 			t.Errorf("%s: closed PTYs = %v, want the worker's", id, term.closed)
 		}
-		if len(events.events) != 1 || events.events[0].name != ClosedEventName {
+		if len(events.events) != 1 || events.events[0].name != api.SessionClosedEvent.Name {
 			t.Errorf("%s: events = %+v, want its card taken down", id, events.events)
 		}
 	}

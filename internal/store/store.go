@@ -288,11 +288,6 @@ func (s *Service) sessionIsGone(sessionIDs ...string) {
 	}
 }
 
-// ScheduleForfeitEventName is emitted when a scheduled prompt was lost with the
-// session it was parked on, so the person who parked it is told rather than left
-// to find out at a time that never comes. Payload: ForfeitedSchedule.
-const ScheduleForfeitEventName = "session-schedule-forfeited"
-
 // ForfeitedSchedule is one scheduled prompt that went with a deleted session:
 // what that session was called, when the prompt was due, and the prompt itself.
 // It carries no session id — the row is gone, so there is nothing left to route

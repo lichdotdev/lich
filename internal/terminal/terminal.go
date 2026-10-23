@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/awake"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/pricing"
@@ -22,109 +23,15 @@ import (
 	"github.com/lichdotdev/lich/internal/quota"
 )
 
-// Event names. A terminal I/O event carries the session ID as a suffix (e.g.
-// "terminal:data:home") so each terminal subscribes only to its own
-// stream instead of filtering a global broadcast. The session events below are
-// global and carry the id in their payload: their consumers outlive any one
-// card, and a per-session name can only reach a subscriber that exists when it
-// is emitted.
-const (
-	// dataEventPrefix carries base64-encoded PTY output. Output is base64-encoded
-	// because raw PTY bytes may split a multi-byte UTF-8 sequence mid-read, which
-	// the JSON event bridge would otherwise corrupt.
-	dataEventPrefix = "terminal:data:"
-	// exitEventPrefix is emitted once when a session's shell process exits,
-	// carrying the status it exited with (see exitEvent).
-	exitEventPrefix = "terminal:exit:"
-	// statusEventName carries a session's processing state ({id, state, tool,
-	// detail, reason} — "busy"/"done"/"waiting"/"idle"/"compacting", plus the
-	// tool a pre-tool report names and what a waiting one is blocked on),
-	// reported by the lich hooks running inside the PTY (see transport.hook and
-	// docs/hooks/session-state.md). "interrupted" is the one value lich raises
-	// itself, for a turn the user stopped at the PTY. The window keeps it in a
-	// store keyed by id (statusStore, native/cmd/lich-native/status.go).
-	statusEventName = "session-status"
-	// titleEventName carries an auto-applied session label ({id, label}).
-	titleEventName = "session-title"
-	// touchedEventName carries the id of a session that likely changed files on
-	// disk, nudging an immediate git-status refresh ahead of the steady poll.
-	touchedEventName = "session-touched"
-	// agentEventName carries which provider CLI is live inside a session's PTY
-	// ({id, agent}) — reported through the session-start hook by whichever
-	// provider ships it, so a shell card shows that provider's mark while its
-	// CLI runs in it. An empty agent clears the mark; every PTY spawn emits that
-	// clear so a respawned session never wears a dead agent's icon.
-	agentEventName = "session-agent"
-	// conversationEventName carries the provider conversation a session's
-	// row now names ({id, providerSessionId}, "" once it names none), emitted
-	// after the row is written: the window offers that conversation back when
-	// the session's process exits.
-	conversationEventName = "session-conversation"
-	// sandboxEventName carries whether a session's PTY runs confined ({id,
-	// confined, skippedLinks}), emitted by every spawn. The card marks a confined
-	// session, and the answer is the spawn's own — it takes the provider's rung,
-	// the checkout and a per-session override to reach, so the window is told
-	// rather than asked to work it out again. skippedLinks is what that sandbox
-	// left out of the private home for being a symlink, which is the one absence
-	// a session has no other way of learning about. Both persisted with the row
-	// (store.Session's Sandbox and SandboxSkippedLinks), which is what a
-	// reopened window hydrates from.
-	sandboxEventName = "session-sandbox"
-	// mcpEventName carries the MCP servers a session's provider could reach at
-	// its spawn ({id, servers}), emitted by every spawn. The card divides a tool
-	// name against them — two harnesses spell an MCP tool with a single
-	// underscore between the server and the tool, which nothing in the string
-	// divides (docs/hooks/session-state.md). Persisted with the row too
-	// (store.Session's MCPServers), which is what a reopened window hydrates
-	// from: the PTY outlives the window, so there is no second spawn to report
-	// it again.
-	mcpEventName = "session-mcp"
-	// duplicateEventName carries a session that just reported a conversation
-	// another open card already runs ({id, heldBy}): a resume typed in the
-	// provider's own TUI, which lich cannot stop, only point out. Emitted once
-	// the report is stored, so the window can offer to switch to heldBy.
-	duplicateEventName = "session-duplicate"
-)
+type duplicateEvent = api.SessionDuplicate
 
-// duplicateEvent is the payload of duplicateEventName.
-type duplicateEvent struct {
-	ID     string `json:"id"`
-	HeldBy string `json:"heldBy"`
-}
+type statusEvent = api.SessionStatus
 
-// statusEvent is the payload of statusEventName: the session whose processing
-// state changed, the new state, and — on a pre-tool report alone — the tool it
-// is about to run and what that tool acts on, or — on a waiting one alone — what
-// it is blocked on. All three are the provider's own words, never translated
-// here (docs/hooks/session-state.md tables them).
-type statusEvent struct {
-	ID     string `json:"id"`
-	State  string `json:"state"`
-	Tool   string `json:"tool,omitempty"`
-	Detail string `json:"detail,omitempty"`
-	Reason string `json:"reason,omitempty"`
-}
+type titleEvent = api.SessionTitle
 
-// titleEvent is the payload of titleEventName: the session whose label changed
-// and its new label.
-type titleEvent struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-}
+type touchedEvent = api.SessionTouched
 
-// touchedEvent is the payload of touchedEventName: the session whose files
-// likely changed.
-type touchedEvent struct {
-	ID string `json:"id"`
-}
-
-// exitEvent is the payload of exitEventPrefix: the status the session's PTY
-// child exited with. Code is absent when the child left none — killed by a
-// signal, or a wait that failed — so the window can say the session ended
-// without reporting a clean exit nobody observed.
-type exitEvent struct {
-	Code *int `json:"code,omitempty"`
-}
+type exitEvent = api.SessionExit
 
 // exitPayload turns what Wait reaped into that payload. Every negative code is
 // noExitStatus, not only the constant: a process cannot exit negative, so a
@@ -136,17 +43,9 @@ func exitPayload(code int) exitEvent {
 	return exitEvent{Code: &code}
 }
 
-// agentEvent is the payload of agentEventName: the session and the provider
-// CLI now live in its PTY ("" when none is).
-type agentEvent struct {
-	ID    string `json:"id"`
-	Agent string `json:"agent"`
-}
+type agentEvent = api.SessionAgent
 
-type conversationEvent struct {
-	ID                string `json:"id"`
-	ProviderSessionID string `json:"providerSessionId"`
-}
+type conversationEvent = api.SessionConversation
 
 // setConversation writes the conversation session id's row names, then tells
 // the window.
@@ -154,26 +53,13 @@ func (s *Service) setConversation(id, providerSessionID string) error {
 	if err := s.store.SetProviderSession(id, providerSessionID); err != nil {
 		return err
 	}
-	s.hub.Emit(conversationEventName, conversationEvent{ID: id, ProviderSessionID: providerSessionID})
+	events.Send(s.hub.Emit, api.SessionConversationEvent, conversationEvent{ID: id, ProviderSessionID: providerSessionID})
 	return nil
 }
 
-// sandboxEvent is the payload of sandboxEventName: the session, whether its PTY
-// is confined, and the home paths that sandbox skipped for being symlinks,
-// relative to the home (nil for an unconfined spawn and for one that skipped
-// none).
-type sandboxEvent struct {
-	ID           string   `json:"id"`
-	Confined     bool     `json:"confined"`
-	SkippedLinks []string `json:"skippedLinks"`
-}
+type sandboxEvent = api.SessionSandbox
 
-// mcpEvent is the payload of mcpEventName: the session and the MCP servers its
-// provider could reach when it was spawned.
-type mcpEvent struct {
-	ID      string   `json:"id"`
-	Servers []string `json:"servers"`
-}
+type mcpEvent = api.SessionMCP
 
 // session is a single running PTY-backed shell. done closes when the session
 // is reaped (by stream or Close — whichever removes it from the map), stopping
@@ -459,7 +345,7 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 		// path output takes when the socket cannot carry it is wired here.
 		ws.setFallback(s.emitData)
 		ws.plugins.setOnIncompatible(func(id, version string) {
-			s.hub.Emit(pluginEventName, pluginEvent{ID: id, Version: version})
+			events.Send(s.hub.Emit, api.PluginIncompatibleEvent, pluginEvent{ID: id, Version: version})
 		})
 		ws.setModAborted(s.noteInterrupt)
 		ws.setUsageReported(s.onUsageReport)
@@ -608,7 +494,7 @@ func (s *Service) onSessionStart(sessionID, providerSessionID, provider string) 
 	// reports `claude` from inside a Cursor session and the card wore
 	// Claude's mark one turn in. What a hook says is a claim; what lich
 	// spawned is a fact.
-	s.hub.Emit(agentEventName, agentEvent{ID: sessionID, Agent: s.providerKind(sessionID, provider)})
+	events.Send(s.hub.Emit, api.SessionAgentEvent, agentEvent{ID: sessionID, Agent: s.providerKind(sessionID, provider)})
 	return nil
 }
 
@@ -622,7 +508,7 @@ func (s *Service) reportDuplicate(sessionID, providerSessionID string) {
 		return
 	}
 	if holder != "" {
-		s.hub.Emit(duplicateEventName, duplicateEvent{ID: sessionID, HeldBy: holder})
+		events.Send(s.hub.Emit, api.SessionDuplicateEvent, duplicateEvent{ID: sessionID, HeldBy: holder})
 	}
 }
 
@@ -634,7 +520,7 @@ func (s *Service) onTitle(id, title string) error {
 		return err
 	}
 	if applied {
-		s.hub.Emit(titleEventName, titleEvent{ID: id, Label: title})
+		events.Send(s.hub.Emit, api.SessionTitleEvent, titleEvent{ID: id, Label: title})
 	}
 	return nil
 }
@@ -643,14 +529,14 @@ func (s *Service) onTitle(id, title string) error {
 // reports nothing else.
 func (s *Service) onTouched(id string) {
 	s.beatHandsOn(id, 0)
-	s.hub.Emit(touchedEventName, touchedEvent{ID: id})
+	events.Send(s.hub.Emit, api.SessionTouchedEvent, touchedEvent{ID: id})
 }
 
 // emitData puts one session's output on the /events bridge — where terminal
 // output goes whenever the /ws transport cannot carry it, whether because no
 // client is connected or because the socket refused the frame.
 func (s *Service) emitData(id string, data []byte) {
-	s.hub.Emit(dataEventPrefix+id, base64.StdEncoding.EncodeToString(data))
+	events.Send(s.hub.Emit, api.TerminalDataEvents.Of(id), base64.StdEncoding.EncodeToString(data))
 }
 
 // Mount exposes an extra handler (the RPC dispatcher, the events push socket)

@@ -10,9 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/backend"
-
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func turnState(id, state string) backend.TurnState {
@@ -181,7 +180,7 @@ func TestModelHydratesStatusAndUsageThenFollowsNewerEvents(t *testing.T) {
 		t.Errorf("hydration notified %d times: nothing happened, the window only learned of it", toasts)
 	}
 
-	send(m, statusEventName, statusEvent{ID: "s1", State: "done"})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: "done"})
 	m.mu.Lock()
 	status = m.status.status("s1")
 	m.mu.Unlock()
@@ -201,7 +200,7 @@ func statusOf(m *model, id string) (status string, hasTool bool) {
 // publishes only the exit.
 func TestExitEndsTheTurnTheProcessDiedIn(t *testing.T) {
 	m := newTestModel(nil)
-	send(m, statusEventName, statusEvent{ID: "s1", State: "busy", Tool: "Bash"})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: "busy", Tool: "Bash"})
 	if status, _ := statusOf(m, "s1"); status != statusBusy {
 		t.Fatalf("status = %q, want busy before the exit", status)
 	}
@@ -217,8 +216,8 @@ func TestExitEndsTheTurnTheProcessDiedIn(t *testing.T) {
 func TestExitKeepsAFinishedTurnUnreadAndOtherSessionsBusy(t *testing.T) {
 	m := newTestModel(nil)
 	m.projects[0].Sessions = append(m.projects[0].Sessions, backend.Session{ID: "s2"})
-	send(m, statusEventName, statusEvent{ID: "s1", State: "done"})
-	send(m, statusEventName, statusEvent{ID: "s2", State: "busy"})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: "done"})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s2", State: "busy"})
 
 	send(m, "terminal:exit:s1", map[string]any{})
 

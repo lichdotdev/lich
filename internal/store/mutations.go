@@ -7,7 +7,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // now is time.Now, replaced in tests: a close stamps the row with it, and a
@@ -49,7 +52,7 @@ func (s *Service) AddProject(id, name, path string) error {
 	if err != nil {
 		return fmt.Errorf("add project %q: %w", id, err)
 	}
-	s.projectHasChanged(ProjectAddedEventName, ProjectAdded{ID: id, Name: name, Path: path})
+	events.Send(s.projectHasChanged, api.ProjectAddedEvent, ProjectAdded{ID: id, Name: name, Path: path})
 	return nil
 }
 
@@ -69,7 +72,7 @@ func (s *Service) CloseProject(id string) error {
 		return fmt.Errorf("close project %q: %w", id, err)
 	}
 	if n, err := res.RowsAffected(); err == nil && n > 0 {
-		s.projectHasChanged(ProjectClosedEventName, ProjectClosed{ID: id})
+		events.Send(s.projectHasChanged, api.ProjectClosedEvent, ProjectClosed{ID: id})
 	}
 	return nil
 }
@@ -975,7 +978,7 @@ func (s *Service) ReorderProjects(ids []string) error {
 	if err != nil {
 		return err
 	}
-	s.projectHasChanged(ProjectsReorderedEventName, ProjectsReordered{IDs: ids})
+	events.Send(s.projectHasChanged, api.ProjectsReorderedEvent, ProjectsReordered{IDs: ids})
 	return nil
 }
 

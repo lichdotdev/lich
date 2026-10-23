@@ -10,30 +10,9 @@ type AppUpdateStatus = api.AppUpdateStatus
 
 type PluginStatus = api.PluginStatus
 
-// PluginIncompatibleEvent is raised when a session's hooks report from a
-// lich plugin release outside the range this lich speaks.
-const PluginIncompatibleEvent = "plugin-incompatible"
+type PluginProfiles = api.PluginProfiles
 
-// PluginProfilesEvent is the event a pass over a provider's profiles reports
-// on once Personal's lich plugin moved (agentplugin.ProfilesEventName).
-const PluginProfilesEvent = "lich-plugin-profiles"
-
-// PluginProfiles mirrors agentplugin.ProfilesEvent: the release a pass put
-// into a provider's profiles and the ones it could not. Name is the provider's
-// display name.
-type PluginProfiles struct {
-	Provider string                 `json:"provider"`
-	Name     string                 `json:"name"`
-	Version  string                 `json:"version"`
-	Failures []PluginProfileFailure `json:"failures"`
-}
-
-// PluginProfileFailure mirrors agentplugin.ProfileFailure.
-type PluginProfileFailure struct {
-	Profile string `json:"profile"`
-	Name    string `json:"name"`
-	Error   string `json:"error"`
-}
+type PluginProfileFailure = api.PluginProfileFailure
 
 type PatchNotesGroup = api.PatchNotesGroup
 

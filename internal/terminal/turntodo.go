@@ -5,26 +5,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
-// todoEventName carries how far a session got through the task list its agent
-// wrote for itself ({id, done, total}), emitted whenever that pair changes.
-// Global like the other session events.
-//
-// The pair is what the agent last wrote, not what is true: an agent that
-// abandons a list without closing its items leaves the card reporting the
-// count it was abandoned at, until it writes another one.
-const todoEventName = "session-todo"
-
-// todoEvent is the payload of todoEventName. Both counts are the whole list the
-// agent last wrote, so a card can decide for itself whether a list is worth
-// drawing (a finished one is not, and neither is a list of one).
-type todoEvent struct {
-	ID    string `json:"id"`
-	Done  int    `json:"done"`
-	Total int    `json:"total"`
-}
+type todoEvent = api.SessionTodo
 
 // todoList is one task list as the sidebar reads it: how many of its items are
 // finished, and how many there are. The items themselves stay in the terminal,
@@ -236,6 +223,6 @@ func (s *Service) emitTodo(id string, src usageSource) {
 	s.todoEmit.Lock()
 	defer s.todoEmit.Unlock()
 	if event, ok := s.sessionTodo(id, src); ok {
-		s.hub.Emit(todoEventName, event)
+		events.Send(s.hub.Emit, api.SessionTodoEvent, event)
 	}
 }

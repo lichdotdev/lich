@@ -8,23 +8,13 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-// AppUpdateProgressEvent is appupdate.ProgressEventName: one step of
-// ApplyUpdate, an AppUpdateProgress.
-const AppUpdateProgressEvent = "appupdate-progress"
-
 // The phases of AppUpdateProgress.
 const (
 	UpdatePhaseDownload  = "download"
 	UpdatePhaseInstaller = "installer"
 )
 
-// AppUpdateProgress mirrors appupdate.Progress: Total is -1 when the asset
-// came without a Content-Length.
-type AppUpdateProgress struct {
-	Phase    string `json:"phase"`
-	Received int64  `json:"received"`
-	Total    int64  `json:"total"`
-}
+type AppUpdateProgress = api.AppUpdateProgress
 
 // ApplyUpdate downloads, verifies and hands the latest release to the
 // Windows installer, which closes and reopens lich. Only valid where

@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/store"
 )
@@ -265,23 +266,23 @@ func (f *fakeEvents) Emit(name string, data any) {
 	defer f.mu.Unlock()
 	switch event := data.(type) {
 	case RelayEvent:
-		if name == RelayEventName {
+		if name == api.SessionRelayEvent.Name {
 			f.sent = append(f.sent, event)
 		}
 	case StalledEvent:
-		if name == StalledEventName {
+		if name == api.RelayStalledEvent.Name {
 			f.halts = append(f.halts, event)
 		}
 	case ScheduleEvent:
-		if name == ScheduleEventName {
+		if name == api.SessionScheduleEvent.Name {
 			f.marks = append(f.marks, event)
 		}
 	case InboxEvent:
-		if name == InboxEventName {
+		if name == api.SessionInboxEvent.Name {
 			f.inbox = append(f.inbox, event)
 		}
 	case FocusEvent:
-		if name == FocusEventName {
+		if name == api.SessionFocusEvent.Name {
 			f.focus = append(f.focus, event)
 		}
 	}

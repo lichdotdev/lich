@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // statusBook is the last session-status payload published for each session.
@@ -98,7 +99,7 @@ func (s *Service) TurnStates() []TurnState {
 // window has already been sent.
 func (s *Service) publishStatus(ev statusEvent) {
 	s.statuses.note(ev)
-	s.hub.Emit(statusEventName, ev)
+	events.Send(s.hub.Emit, api.SessionStatusEvent, ev)
 }
 
 // forgetTurn drops what a session's process left behind: the open turn, the

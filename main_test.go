@@ -9,6 +9,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -48,8 +49,8 @@ func TestCloseWindowWaitsForTheWindowToLeave(t *testing.T) {
 	closeWindow(hub)()
 	waited := time.Since(start)
 
-	if got := <-read; !strings.Contains(got, windowCloseEvent) {
-		t.Fatalf("window read %q, want the %s event", got, windowCloseEvent)
+	if got := <-read; !strings.Contains(got, api.WindowCloseEvent.Name) {
+		t.Fatalf("window read %q, want the %s event", got, api.WindowCloseEvent.Name)
 	}
 	if waited < leaveDelay || waited >= windowLeaveWait {
 		t.Fatalf("closeWindow returned after %v, want once the window left (%v)", waited, leaveDelay)

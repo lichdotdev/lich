@@ -23,10 +23,9 @@ import (
 	"gioui.org/widget"
 	"github.com/coder/websocket"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
-
-	"github.com/lichdotdev/lich/api"
 )
 
 // gateBackend answers every RPC the startup gates make and reports each one

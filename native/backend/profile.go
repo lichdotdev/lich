@@ -8,22 +8,6 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-const (
-	// ClaudeProfileLoginEvent and CodexProfileLoginEvent are the events a
-	// profile login reports its progress on (claudeprofile.LoginEventName,
-	// codexprofile.LoginEventName).
-	ClaudeProfileLoginEvent = "claude-profile-login"
-	CodexProfileLoginEvent  = "codex-profile-login"
-
-	// SessionProfileEvent is the event a session moving to another profile
-	// emits (terminal profileEventName).
-	SessionProfileEvent = "session-profile"
-
-	// ProfileChangedEvent is the event a profile's update emits once it is
-	// written (profilestore.ChangedEvent).
-	ProfileChangedEvent = "profile-changed"
-)
-
 // profileGoneText is what internal/claudeprofile.ErrProfileGone and
 // internal/codexprofile.ErrProfileGone both end in, which a spawn in a profile
 // deleted since answers.
@@ -37,36 +21,11 @@ type ProfilePlugin = api.ProfilePlugin
 
 type ProfilePluginResult = api.ProfilePluginResult
 
-// ProfileLogin mirrors claudeprofile.LoginEvent and codexprofile.LoginEvent:
-// Output (and URL, when that text holds the sign-in address) while the CLI
-// talks, Authenticating once it is through with the browser, then one event
-// with Done set.
-type ProfileLogin struct {
-	Profile        string `json:"profile"`
-	Output         string `json:"output,omitempty"`
-	URL            string `json:"url,omitempty"`
-	Authenticating bool   `json:"authenticating,omitempty"`
-	Done           bool   `json:"done,omitempty"`
-	LoggedIn       bool   `json:"loggedIn,omitempty"`
-	Cancelled      bool   `json:"cancelled,omitempty"`
-	Error          string `json:"error,omitempty"`
-	PluginError    string `json:"pluginError,omitempty"`
-}
+type ProfileLogin = api.ProfileLogin
 
-// ProfileChanged mirrors profilestore.Changed: Provider is the provider id
-// ("claude", "kiro"), Profile the profile as it now is, without its login
-// state.
-type ProfileChanged struct {
-	Provider string  `json:"provider"`
-	Profile  Profile `json:"profile"`
-}
+type ProfileChanged = api.ProfileChanged
 
-// ProfileMoved is the session-profile payload: Profile is the slug the session
-// now runs in, "" for Personal.
-type ProfileMoved struct {
-	ID      string `json:"id"`
-	Profile string `json:"profile"`
-}
+type ProfileMoved = api.SessionProfile
 
 // ProfileAPI is one provider's profile service: the claudeprofile, codexprofile
 // or ompprofile one, which answer the same calls. A Codex login has no sign-in

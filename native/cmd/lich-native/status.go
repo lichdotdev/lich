@@ -1,11 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
@@ -20,24 +19,11 @@ const (
 	statusCompacting = "compacting"
 )
 
-const statusEventName = "session-status"
-
-// exitEventPrefix is internal/terminal's terminal:exit:<id>, published once
-// when a session's process is gone.
-const exitEventPrefix = "terminal:exit:"
-
 // badgePriority picks a project's one badge: "waiting" blocks the user, "busy"
 // and "compacting" are still running, "done" is the leftover.
 var badgePriority = []string{statusWaiting, statusBusy, statusCompacting, statusDone}
 
-// statusEvent is the session-status payload (internal/terminal statusEvent).
-type statusEvent struct {
-	ID     string `json:"id"`
-	State  string `json:"state"`
-	Tool   string `json:"tool,omitempty"`
-	Detail string `json:"detail,omitempty"`
-	Reason string `json:"reason,omitempty"`
-}
+type statusEvent = api.SessionStatus
 
 // sessionTool is the tool a session's turn is running, in its harness's words.
 type sessionTool struct {
@@ -99,15 +85,15 @@ func (s *statusStore) entryOf(id string) *statusEntry {
 // session-status are ignored. changed reports whether anything a card draws
 // moved; a payload that does not decode or names no session is an error.
 func (s *statusStore) apply(ev backend.Event, now time.Time) (changed bool, err error) {
-	if ev.Name != statusEventName {
+	if ev.Name != api.SessionStatusEvent.Name {
 		return false, nil
 	}
-	var p statusEvent
-	if err := json.Unmarshal(ev.Data, &p); err != nil {
-		return false, fmt.Errorf("%s: decode: %w", statusEventName, err)
+	p, err := backend.Decode(ev, api.SessionStatusEvent)
+	if err != nil {
+		return false, err
 	}
 	if p.ID == "" {
-		return false, errors.New(statusEventName + ": payload has no session id")
+		return false, errors.New(ev.Name + ": payload has no session id")
 	}
 	e := s.entryOf(p.ID)
 	e.heard = true

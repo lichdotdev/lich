@@ -3,6 +3,8 @@ package themes
 import (
 	"strings"
 	"testing"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 type memorySettings map[string]string
@@ -52,7 +54,7 @@ func TestSelectStoresAndReportsTheSelection(t *testing.T) {
 	if got := settings["/appearance.theme"]; got != "forest" {
 		t.Fatalf("appearance.theme = %q, want forest", got)
 	}
-	want := emitted{SelectionEventName, Selection{Theme: "forest"}}
+	want := emitted{api.ThemeSelectionEvent.Name, Selection{Theme: "forest"}}
 	if len(*events) != 1 || (*events)[0] != want {
 		t.Fatalf("events = %+v, want [%+v]", *events, want)
 	}
@@ -89,7 +91,7 @@ func TestSetFollowSystemStoresAndReportsIt(t *testing.T) {
 	if got := settings["/appearance.followSystem"]; got != "true" {
 		t.Fatalf("appearance.followSystem = %q, want true", got)
 	}
-	want := emitted{SelectionEventName, Selection{Theme: "dark", FollowSystem: true}}
+	want := emitted{api.ThemeSelectionEvent.Name, Selection{Theme: "dark", FollowSystem: true}}
 	if last := (*events)[len(*events)-1]; last != want {
 		t.Fatalf("last event = %+v, want %+v", last, want)
 	}

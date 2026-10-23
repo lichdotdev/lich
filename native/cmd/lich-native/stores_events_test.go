@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -295,7 +296,7 @@ func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {
 		}
 		heard <- slugs
 	}
-	send(m, backend.ClaudeProfileLoginEvent, backend.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
+	send(m, api.ClaudeProfileLoginEvent.Name, backend.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
 
 	select {
 	case slugs := <-heard:

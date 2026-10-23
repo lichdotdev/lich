@@ -11,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -134,7 +135,7 @@ func (u *window) checkPlugin() {
 	a := decidePluginAction(statuses, installDismissed == pluginDismissedFlag, updateDismissed)
 	switch a.kind {
 	case pluginActionIncompatible:
-		t := ui.Toast{ID: backend.PluginIncompatibleEvent, Variant: ui.ToastWarning,
+		t := ui.Toast{ID: api.PluginIncompatibleEvent.Name, Variant: ui.ToastWarning,
 			Title: incompatibleMessage(a.version, a.providers), Duration: ui.ToastForever}
 		if a.version != "" {
 			t.Action = &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.installVersion", i18n.Args{"version": a.version}), OnClick: func() { go u.updatePlugins(a.providers) }}

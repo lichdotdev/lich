@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/store"
 )
@@ -52,7 +53,7 @@ func TestOpenAdoptsADirectoryNotOnScreen(t *testing.T) {
 	// The tab has to land before the card: a session-opened whose project is
 	// not on screen yet is dropped by the window (adoptSession).
 	if names := emittedNames(events); len(names) != 2 ||
-		names[0] != ProjectOpenedEventName || names[1] != OpenedEventName {
+		names[0] != api.ProjectOpenedEvent.Name || names[1] != api.SessionOpenedEvent.Name {
 		t.Fatalf("emitted %v, want the project before the session", names)
 	}
 	announced, ok := events.events[0].data.(store.Project)
@@ -109,7 +110,7 @@ func TestOpenFindsAnOpenProjectByPath(t *testing.T) {
 	if opened.ProjectID != "p2" {
 		t.Errorf("opened in %q, want the project already holding that directory", opened.ProjectID)
 	}
-	if names := emittedNames(events); len(names) != 1 || names[0] != OpenedEventName {
+	if names := emittedNames(events); len(names) != 1 || names[0] != api.SessionOpenedEvent.Name {
 		t.Errorf("emitted %v, want only the session", names)
 	}
 }

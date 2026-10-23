@@ -9,33 +9,13 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/store"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
-// FiledEventName carries sessions whose folder changed outside the window, so
-// their cards move into or out of the folder's block without a reload. One
-// event for a card filed and for a folder renamed, because the window's answer
-// to both is the same: set these cards' folder.
-const FiledEventName = "sessions-filed"
+type FiledEvent = api.SessionsFiled
 
-// FiledEvent is FiledEventName's payload. Folder is "" when the cards were taken
-// out of the one they were in.
-type FiledEvent struct {
-	ProjectID string   `json:"projectId"`
-	IDs       []string `json:"ids"`
-	Folder    string   `json:"folder"`
-}
-
-// ColoredEventName carries sessions painted outside the window, so their cards
-// take the colour without a reload.
-const ColoredEventName = "sessions-colored"
-
-// ColoredEvent is ColoredEventName's payload. Color is "" when the cards went
-// back to the theme.
-type ColoredEvent struct {
-	ProjectID string   `json:"projectId"`
-	IDs       []string `json:"ids"`
-	Color     string   `json:"color"`
-}
+type ColoredEvent = api.SessionsColored
 
 // cardColors are the names a card can be painted with, in the order the
 // window's menu offers them: cardColorNames in native/cmd/lich-native/cardcolor.go,
@@ -112,7 +92,7 @@ func (s *Service) File(opts FileOptions) (Filed, error) {
 		return Filed{}, err
 	}
 	if s.events != nil {
-		s.events.Emit(FiledEventName, FiledEvent{
+		events.Send(s.events.Emit, api.SessionsFiledEvent, FiledEvent{
 			ProjectID: found.project.ID, IDs: []string{found.session.ID}, Folder: folder,
 		})
 	}
@@ -157,7 +137,7 @@ func (s *Service) RenameFolder(opts RenameFolderOptions) (Refiled, error) {
 		return Refiled{}, err
 	}
 	if s.events != nil {
-		s.events.Emit(FiledEventName, FiledEvent{ProjectID: target.ID, IDs: moved, Folder: to})
+		events.Send(s.events.Emit, api.SessionsFiledEvent, FiledEvent{ProjectID: target.ID, IDs: moved, Folder: to})
 	}
 	return Refiled{Project: target.Name, From: from, To: to, Sessions: labelsOf(target, moved)}, nil
 }
@@ -197,7 +177,7 @@ func (s *Service) ColorFolder(opts ColorFolderOptions) (Colored, error) {
 		return Colored{}, err
 	}
 	if s.events != nil {
-		s.events.Emit(ColoredEventName, ColoredEvent{ProjectID: target.ID, IDs: painted, Color: color})
+		events.Send(s.events.Emit, api.SessionsColoredEvent, ColoredEvent{ProjectID: target.ID, IDs: painted, Color: color})
 	}
 	return Colored{Project: target.Name, Folder: folder, Color: color, Sessions: labelsOf(target, painted)}, nil
 }

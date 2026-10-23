@@ -2,23 +2,20 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// sessionExit is internal/terminal's exitEvent: the status the PTY child left,
-// nil when it left none (killed by a signal), which is not a clean exit.
-type sessionExit struct {
-	Code *int `json:"code,omitempty"`
-}
+type sessionExit = api.SessionExit
 
-func readSessionExit(data json.RawMessage) sessionExit {
-	var e sessionExit
-	if json.Unmarshal(data, &e) != nil {
+func readSessionExit(ev backend.Event) sessionExit {
+	id, _ := api.TerminalExitEvents.ID(ev.Name)
+	e, err := backend.Decode(ev, api.TerminalExitEvents.Of(id))
+	if err != nil {
 		return sessionExit{}
 	}
 	return e

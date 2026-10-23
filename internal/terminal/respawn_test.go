@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -67,7 +68,7 @@ func TestRespawnedSessionIsNotToldItExited(t *testing.T) {
 
 	deadline := time.Now().Add(reapSettle)
 	for time.Now().Before(deadline) {
-		if slices.Contains(rec.snapshot(), exitEventPrefix+"s1") {
+		if slices.Contains(rec.snapshot(), api.TerminalExitEvents.Prefix+"s1") {
 			t.Fatal("the dead PTY's reap emitted an exit event for the respawned session")
 		}
 		time.Sleep(time.Millisecond)
@@ -113,7 +114,7 @@ func TestExitEventCarriesTheExitCode(t *testing.T) {
 		t.Fatalf("start: %v", err)
 	}
 
-	name := exitEventPrefix + "s1"
+	name := api.TerminalExitEvents.Prefix + "s1"
 	waitFor(t, func() bool {
 		_, ok := rec.payloadOf(name)
 		return ok
@@ -148,7 +149,7 @@ func TestExitEventOmitsAnUnobservedStatus(t *testing.T) {
 		t.Fatalf("kill child: %v", err)
 	}
 
-	name := exitEventPrefix + "s1"
+	name := api.TerminalExitEvents.Prefix + "s1"
 	waitFor(t, func() bool {
 		_, ok := rec.payloadOf(name)
 		return ok

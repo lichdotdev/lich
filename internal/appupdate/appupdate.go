@@ -74,7 +74,7 @@ const (
 type Service struct {
 	mu      sync.Mutex
 	install func(string) error
-	// emit publishes Apply's progress to the app's event hub (ProgressEventName);
+	// emit publishes Apply's progress to the app's event hub (api.AppUpdateProgressEvent);
 	// nil leaves the update working and silent.
 	emit func(name string, data any)
 

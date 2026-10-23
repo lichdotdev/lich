@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // collectProgress returns a Service whose emit appends every step to the
@@ -12,7 +14,7 @@ import (
 func collectProgress() (*Service, *[]Progress) {
 	steps := &[]Progress{}
 	s := &Service{emit: func(name string, data any) {
-		if name != ProgressEventName {
+		if name != api.AppUpdateProgressEvent.Name {
 			panic("unexpected event " + name)
 		}
 		*steps = append(*steps, data.(Progress))

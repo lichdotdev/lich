@@ -557,8 +557,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   one way the CLI posts), whose request `api`'s `TestEveryRequestIsOneObject` holds to one struct, and
   `internal/cli/wire_test.go` posts each one as a client of another release. The window's calls go through the
   same declarations (`native/backend`), so a window from another build, pinned with `LICH_NATIVE` or replaced
-  on disk by an upgrade under a running backend, is answered the way a `lich` of another release is. What the
-  declarations do not cover is the `/events` stream: its payloads are mirrored by hand in `native/backend`.
+  on disk by an upgrade under a running backend, is answered the way a `lich` of another release is, and reads
+  the `/events` stream through the same declarations.
 - **A release's highlight is read from the binary, so fixing it after the tag fixes nothing a user sees**
   (`internal/patchnotes`): the What's new dialog parses the `CHANGELOG.md` embedded at build time — the alert
   blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,

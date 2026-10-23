@@ -3,6 +3,9 @@ package relay
 import (
 	"log/slog"
 	"sort"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // Observe takes one session-state report from the hooks the provider already
@@ -50,7 +53,7 @@ func (s *Service) Observe(sessionID, state string) {
 	for _, e := range ended {
 		s.clear(e.t)
 		if s.events != nil {
-			s.events.Emit(StalledEventName, StalledEvent{
+			events.Send(s.events.Emit, api.RelayStalledEvent, StalledEvent{
 				ID: e.t.fromID, TargetID: e.t.targetID, Target: e.t.target,
 			})
 		}
@@ -292,7 +295,7 @@ func (s *Service) announce(sessionID, peer, direction, ticketID string) {
 	if s.events == nil || sessionID == "" {
 		return
 	}
-	s.events.Emit(RelayEventName, RelayEvent{
+	events.Send(s.events.Emit, api.SessionRelayEvent, RelayEvent{
 		ID: sessionID, Peer: peer, Direction: direction, Ticket: ticketID,
 	})
 }

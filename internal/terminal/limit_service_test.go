@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // parkRecorder stands in for the relay's ParkResume.
@@ -49,8 +51,8 @@ func TestADoneOnAClaudeLimitTellsTheWindowAndParksTheResume(t *testing.T) {
 	if at, _ := parks.of("s1"); at != 1788653400 {
 		t.Errorf("parked for %d, want the transcript's reset 1788653400", at)
 	}
-	waitFor(t, func() bool { _, ok := rec.payloadOf(limitEventName); return ok }, "the limit event")
-	payload, _ := rec.payloadOf(limitEventName)
+	waitFor(t, func() bool { _, ok := rec.payloadOf(api.SessionLimitEvent.Name); return ok }, "the limit event")
+	payload, _ := rec.payloadOf(api.SessionLimitEvent.Name)
 	got, _ := payload.(map[string]any)
 	if got["id"] != "s1" || got["window"] != limitWindowSession || got["resetsAt"] != float64(1788653400) {
 		t.Errorf("limit event = %v", payload)

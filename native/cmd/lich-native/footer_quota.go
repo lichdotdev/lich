@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -11,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 )
@@ -21,9 +21,6 @@ import (
 // serves a five-minute cache, so this only decides how quickly a fresh reading
 // reaches the screen, never how often a provider is asked.
 const planQuotaRefresh = time.Minute
-
-// sessionLimitEvent is terminal limitEventName: a turn a usage limit ended.
-const sessionLimitEvent = "session-limit"
 
 // planQuota shares one poll loop per key across its watchers and is the
 // window's only reader of plan quota. The key is the session the reading is
@@ -141,22 +138,30 @@ func (q *planQuota) reread(key string) {
 // turn that ended, a usage limit it hit, or a switch of login. It is the
 // store listening to /events, so the code that made the change names no one.
 func (q *planQuota) apply(ev backend.Event) {
+	var id string
 	switch ev.Name {
-	case sessionLimitEvent, backend.SessionProfileEvent, statusEventName:
-	default:
-		return
+	case api.SessionLimitEvent.Name:
+		e, err := backend.Decode(ev, api.SessionLimitEvent)
+		if err != nil {
+			return
+		}
+		id = e.ID
+	case api.SessionProfileEvent.Name:
+		e, err := backend.Decode(ev, api.SessionProfileEvent)
+		if err != nil {
+			return
+		}
+		id = e.ID
+	case api.SessionStatusEvent.Name:
+		e, err := backend.Decode(ev, api.SessionStatusEvent)
+		if err != nil || e.State != statusDone {
+			return
+		}
+		id = e.ID
 	}
-	var e struct {
-		ID    string `json:"id"`
-		State string `json:"state"`
+	if id != "" {
+		q.reread(id)
 	}
-	if json.Unmarshal(ev.Data, &e) != nil || e.ID == "" {
-		return
-	}
-	if ev.Name == statusEventName && e.State != statusDone {
-		return
-	}
-	q.reread(e.ID)
 }
 
 // invalidate drops key's reading and reads it again when something watches it:

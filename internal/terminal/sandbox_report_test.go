@@ -9,6 +9,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -30,7 +31,7 @@ func TestReportSandboxRecordsAndAnnouncesTheSkippedLinks(t *testing.T) {
 		t.Errorf("recorded %v, want %v", got, want)
 	}
 	waitFor(t, func() bool {
-		payload, ok := rec.payloadOf(sandboxEventName)
+		payload, ok := rec.payloadOf(api.SessionSandboxEvent.Name)
 		if !ok {
 			return false
 		}
@@ -52,7 +53,7 @@ func TestReportSandboxSurvivesARowThatRefusesTheWrite(t *testing.T) {
 	svc.reportSandbox("s1", true, []string{".gitconfig"})
 
 	waitFor(t, func() bool {
-		_, ok := rec.payloadOf(sandboxEventName)
+		_, ok := rec.payloadOf(api.SessionSandboxEvent.Name)
 		return ok
 	}, "the sandbox event despite the failed write")
 }

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 )
 
@@ -11,16 +12,7 @@ import (
 // (docs/hooks/README.md, Shared transport).
 const pluginVersionHeader = "X-Lich-Plugin"
 
-// pluginEventName carries a session whose hooks report from a plugin release
-// outside the range this lich speaks ({id, version}). The window answers it by
-// asking for the plugin status again, which is where the fix is offered: an
-// install moved by the harness's own marketplace shows up here first.
-const pluginEventName = "plugin-incompatible"
-
-type pluginEvent struct {
-	ID      string `json:"id"`
-	Version string `json:"version"`
-}
+type pluginEvent = api.PluginIncompatible
 
 // hookBody is what every hook request carries: the session it reports on.
 type hookBody interface {

@@ -3,6 +3,8 @@ package project
 import (
 	"errors"
 	"testing"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 type changeLog struct {
@@ -39,8 +41,8 @@ func TestPullRequestWritesAnnounceTheChange(t *testing.T) {
 			if err := write(s); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if len(log.names) != 1 || log.names[0] != PRChangedEvent {
-				t.Fatalf("events = %v, want one %q", log.names, PRChangedEvent)
+			if len(log.names) != 1 || log.names[0] != api.PullRequestChangedEvent.Name {
+				t.Fatalf("events = %v, want one %q", log.names, api.PullRequestChangedEvent.Name)
 			}
 			if log.data[0].Path != "/repo" {
 				t.Errorf("path = %q, want /repo", log.data[0].Path)

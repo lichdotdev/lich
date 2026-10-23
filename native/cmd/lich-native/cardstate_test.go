@@ -11,9 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/backend"
-
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestCardWearsTheLiveAgentUntilItLeaves(t *testing.T) {
@@ -23,13 +22,13 @@ func TestCardWearsTheLiveAgentUntilItLeaves(t *testing.T) {
 		data any
 		want string
 	}{
-		{"session-agent", agentEvent{ID: "s1", Agent: "claude"}, "claude"},
-		{"session-agent", agentEvent{ID: "s1", Agent: ""}, ""},
-		{"session-agent", agentEvent{ID: "s1", Agent: "codex"}, "codex"},
-		{"session-agent", agentEvent{ID: "s1", Agent: "from-a-newer-lich"}, ""},
-		{"session-agent", agentEvent{ID: "s1", Agent: "claude"}, "claude"},
-		{statusEventName, map[string]string{"id": "s1", "state": "busy"}, "claude"},
-		{statusEventName, map[string]string{"id": "s1", "state": "idle"}, ""},
+		{"session-agent", api.SessionAgent{ID: "s1", Agent: "claude"}, "claude"},
+		{"session-agent", api.SessionAgent{ID: "s1", Agent: ""}, ""},
+		{"session-agent", api.SessionAgent{ID: "s1", Agent: "codex"}, "codex"},
+		{"session-agent", api.SessionAgent{ID: "s1", Agent: "from-a-newer-lich"}, ""},
+		{"session-agent", api.SessionAgent{ID: "s1", Agent: "claude"}, "claude"},
+		{api.SessionStatusEvent.Name, map[string]string{"id": "s1", "state": "busy"}, "claude"},
+		{api.SessionStatusEvent.Name, map[string]string{"id": "s1", "state": "idle"}, ""},
 	}
 	for i, s := range steps {
 		send(m, s.name, s.data)
@@ -140,7 +139,7 @@ func TestRelayMarkFollowsTheRequest(t *testing.T) {
 		{"session-relay", sessionRelay{ID: "s1", Direction: relayIn}, sessionRelay{ID: "s1", Direction: relayIn}},
 		{"session-relay", sessionRelay{ID: "s1", Direction: "sideways"}, sessionRelay{}},
 		{"session-relay", sessionRelay{ID: "s1", Direction: relayIn}, sessionRelay{ID: "s1", Direction: relayIn}},
-		{statusEventName, map[string]string{"id": "s1", "state": "idle"}, sessionRelay{}},
+		{api.SessionStatusEvent.Name, map[string]string{"id": "s1", "state": "idle"}, sessionRelay{}},
 	}
 	for i, s := range steps {
 		send(m, s.name, s.data)

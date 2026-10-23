@@ -40,9 +40,9 @@ from `main` either drowns in merges or freezes the web app for months.
   window is a client of that backend.
 - **`native/` is its own Go module**, built into its own binary, `lich-native`. It talks to the backend only
   through the backend's loopback contract (RPC, `/events`, `/ws`, and `/blob` for an image's bytes), never by
-  importing `internal/`; the RPC's methods and types are the public `api` package both modules compile
-  against. That keeps the window honest against one contract, and keeps the backend's own build free of
-  cgo.
+  importing `internal/`; the RPC's methods, the `/events` payloads and their types are the public `api`
+  package both modules compile against. That keeps the window honest against one contract, and keeps the
+  backend's own build free of cgo.
 - **`lich`** starts the backend and launches `lich-native` found beside the `lich` binary (or the one
   `LICH_NATIVE` pins) with the backend's port and token in its environment. A window that cannot start
   shows an error dialog with the reason and the log path; lich then quits when no session is running, and

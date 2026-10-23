@@ -2,38 +2,21 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// agentEvent and sandboxEvent are internal/terminal's session-agent and
-// session-sandbox payloads.
-type agentEvent struct {
-	ID    string `json:"id"`
-	Agent string `json:"agent"`
-}
-
-// sessionRelay is a session-relay payload (internal/relay RelayEvent): the
-// request a session has open with another. Peer is "" when the other end is
-// the lich command line; an empty direction clears the mark.
-type sessionRelay struct {
-	ID        string `json:"id"`
-	Peer      string `json:"peer"`
-	Direction string `json:"direction"`
-	Ticket    string `json:"ticket"`
-}
+// sessionRelay is the request a session has open with another; an empty
+// direction clears the mark.
+type sessionRelay = api.SessionRelay
 
 // sandboxEvent is whether a spawn ran confined, and what that sandbox left
 // out of the private home for being a symlink.
-type sandboxEvent struct {
-	ID           string   `json:"id"`
-	Confined     bool     `json:"confined"`
-	SkippedLinks []string `json:"skippedLinks"`
-}
+type sandboxEvent = api.SessionSandbox
 
 // Directions a relay mark runs (internal/relay DirectionOut, DirectionIn).
 const (
@@ -45,16 +28,13 @@ const (
 // report is the provider CLI leaving the PTY, so the card drops its agent
 // mark, and a report on the session being watched is read on arrival.
 func (m *model) applyStatus(ctx context.Context, ev backend.Event) error {
-	var s struct {
-		ID    string `json:"id"`
-		State string `json:"state"`
-	}
-	if err := json.Unmarshal(ev.Data, &s); err != nil {
+	s, err := backend.Decode(ev, api.SessionStatusEvent)
+	if err != nil {
 		return err
 	}
 	m.mu.Lock()
 	previous := m.status.status(s.ID)
-	_, err := m.status.apply(ev, time.Now())
+	_, err = m.status.apply(ev, time.Now())
 	report, routed := m.statusReport(s.ID, previous)
 	var recheck string
 	if previous != statusDone && m.status.status(s.ID) == statusDone {
@@ -102,9 +82,9 @@ func (m *model) statusReport(id, previous string) (statusReport, bool) {
 // reports whether ev was one of them.
 func (m *model) applyLive(ev backend.Event) (bool, error) {
 	switch ev.Name {
-	case "session-agent":
-		var a agentEvent
-		if err := json.Unmarshal(ev.Data, &a); err != nil {
+	case api.SessionAgentEvent.Name:
+		a, err := backend.Decode(ev, api.SessionAgentEvent)
+		if err != nil {
 			return true, err
 		}
 		m.mu.Lock()
@@ -116,9 +96,9 @@ func (m *model) applyLive(ev backend.Event) (bool, error) {
 		} else {
 			delete(m.agent, a.ID)
 		}
-	case "session-relay":
-		var r sessionRelay
-		if err := json.Unmarshal(ev.Data, &r); err != nil {
+	case api.SessionRelayEvent.Name:
+		r, err := backend.Decode(ev, api.SessionRelayEvent)
+		if err != nil {
 			return true, err
 		}
 		m.mu.Lock()
@@ -128,9 +108,9 @@ func (m *model) applyLive(ev backend.Event) (bool, error) {
 		} else {
 			delete(m.relay, r.ID)
 		}
-	case "session-sandbox":
-		var s sandboxEvent
-		if err := json.Unmarshal(ev.Data, &s); err != nil {
+	case api.SessionSandboxEvent.Name:
+		s, err := backend.Decode(ev, api.SessionSandboxEvent)
+		if err != nil {
 			return true, err
 		}
 		m.mu.Lock()

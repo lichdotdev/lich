@@ -65,11 +65,10 @@ Then:
   ```bash
   for os in linux darwin windows; do GOOS=$os go build ./... && GOOS=$os go vet ./...; done
   ```
-- **Touched an RPC method's options or result?** Every method is declared in
-  `api`, shared by the backend, `lich` and the window; run `go test ./api
-  -update` and review the diff of `api/testdata/contract.golden`. An `/events`
-  payload is still mirrored by hand in `native/backend`, so the mirror moves in
-  the same change. There is no codegen.
+- **Touched an RPC method or an `/events` payload?** Every method and event is
+  declared in `api`, shared by the backend, `lich` and the window; run `go test
+  ./api -update` and review the diff of `api/testdata/contract.golden`. There is
+  no codegen.
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org)
 (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`).

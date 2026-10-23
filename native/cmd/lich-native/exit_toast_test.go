@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/ui"
@@ -163,7 +164,7 @@ func TestRestartStartsTheConversationAsked(t *testing.T) {
 func TestAReportedConversationReachesTheCard(t *testing.T) {
 	m := newModel(nil, func() {})
 	m.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "s1", Kind: "claude"}}}}
-	send(m, backend.SessionConversationEvent, backend.ConversationReported{ID: "s1", ProviderSessionID: conversation})
+	send(m, api.SessionConversationEvent.Name, backend.ConversationReported{ID: "s1", ProviderSessionID: conversation})
 	if sv, ok := m.sessionViewOf("s1"); !ok || sv.ProviderSessionID != conversation {
 		t.Fatalf("card names %q, want the reported conversation", sv.ProviderSessionID)
 	}

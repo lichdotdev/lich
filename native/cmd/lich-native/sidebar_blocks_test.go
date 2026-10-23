@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
@@ -23,7 +24,7 @@ func sidebarModel(t *testing.T, stored []backend.Session) (*model, *sidebarBacke
 }
 
 func reportStatus(m *model, id, state string) {
-	send(m, statusEventName, statusEvent{ID: id, State: state})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: id, State: state})
 }
 
 func blockKeys(v sidebarView) []string {

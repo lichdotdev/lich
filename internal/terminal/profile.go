@@ -6,22 +6,17 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/ompprofile"
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
-// profileEventName carries the profile a session moved to: Continue in, or a
-// resume that found its conversation in another profile.
-const profileEventName = "session-profile"
-
-type profileEvent struct {
-	ID string `json:"id"`
-	// Profile is the slug, "" for Personal.
-	Profile string `json:"profile"`
-}
+type profileEvent = api.SessionProfile
 
 // profileOps is what the service asks of one provider's profiles: the packages
 // that keep them (internal/claudeprofile, internal/codexprofile,
@@ -144,7 +139,7 @@ func (s *Service) reportProfileMove(id, bornIn string) {
 	if err != nil || now == bornIn {
 		return
 	}
-	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: now})
+	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: id, Profile: now})
 }
 
 // profileSlug is the profile a state directory of kind's provider belongs to,
@@ -253,7 +248,7 @@ func (s *Service) ContinueIn(id, profile string) error {
 	err = s.respawnAfter(nil, live, id, started, kind, conversation)
 	// After the respawn: a reader that re-reads on this event (the quota of
 	// the session's account) must find the process already under the profile.
-	s.hub.Emit(profileEventName, profileEvent{ID: id, Profile: profile})
+	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: id, Profile: profile})
 	return err
 }
 

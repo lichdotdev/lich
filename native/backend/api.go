@@ -51,16 +51,7 @@ func (c *Client) Replay(ctx context.Context, id string) ([]byte, error) {
 	return data, nil
 }
 
-// SessionConversationEvent is the event a session's row naming another
-// provider conversation emits (terminal conversationEventName).
-const SessionConversationEvent = "session-conversation"
-
-// ConversationReported is the session-conversation payload: ProviderSessionID
-// is the conversation the session now names, "" for none.
-type ConversationReported struct {
-	ID                string `json:"id"`
-	ProviderSessionID string `json:"providerSessionId"`
-}
+type ConversationReported = api.SessionConversation
 
 // Start spawns the session's process at cols x rows; a no-op when it already
 // runs. resume is a provider conversation id to reopen, "" to start fresh.

@@ -1,16 +1,11 @@
 package relay
 
-import "github.com/lichdotdev/lich/api"
+import (
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
+)
 
-// FocusEventName asks the window to open a session's card, the way a click on
-// it does. Global like the other session events: the card it names may live in
-// a project whose tab is not the one on screen.
-const FocusEventName = "session-focus"
-
-// FocusEvent is the payload of FocusEventName.
-type FocusEvent struct {
-	ID string `json:"id"`
-}
+type FocusEvent = api.SessionFocus
 
 type Focused = api.FocusedSession
 
@@ -33,7 +28,7 @@ func (s *Service) Focus(opts FocusOptions) (Focused, error) {
 		return Focused{}, err
 	}
 	if s.events != nil {
-		s.events.Emit(FocusEventName, FocusEvent{ID: dest.ID})
+		events.Send(s.events.Emit, api.SessionFocusEvent, FocusEvent{ID: dest.ID})
 	}
 	if s.raiseWindow != nil {
 		s.raiseWindow(dest.ID)

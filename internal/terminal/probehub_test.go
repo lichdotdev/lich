@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -44,7 +45,7 @@ func (r *eventRecorder) add(name string, data any) {
 		r.payloads = make(map[string]any)
 	}
 	r.payloads[name] = data
-	if name == statusEventName {
+	if name == api.SessionStatusEvent.Name {
 		r.states = append(r.states, decodeStatus(data))
 	}
 }

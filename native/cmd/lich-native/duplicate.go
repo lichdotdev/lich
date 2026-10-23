@@ -1,20 +1,12 @@
 package main
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// duplicateEventName is internal/terminal's duplicateEventName.
-const duplicateEventName = "session-duplicate"
-
-// sessionDuplicate is internal/terminal's duplicateEvent: session ID just
-// reported a conversation the open session HeldBy already runs, which a
-// resume typed in the provider's own TUI does.
-type sessionDuplicate struct {
-	ID     string `json:"id"`
-	HeldBy string `json:"heldBy"`
-}
+type sessionDuplicate = api.SessionDuplicate
 
 // duplicateWarning is what the warning names and where switching lands.
 type duplicateWarning struct {

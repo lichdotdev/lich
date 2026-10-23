@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
@@ -174,7 +175,7 @@ func TestCardFindsThePullRequestItsTurnOpened(t *testing.T) {
 	forge.mu.Lock()
 	forge.prs["c1"] = &backend.PullRequest{Number: 5}
 	forge.mu.Unlock()
-	send(m, statusEventName, statusEvent{ID: "s1", State: statusBusy})
-	send(m, statusEventName, statusEvent{ID: "s1", State: statusDone})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: statusBusy})
+	send(m, api.SessionStatusEvent.Name, statusEvent{ID: "s1", State: statusDone})
 	awaitPROnCard(t, m, 5)
 }

@@ -9,9 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/gioterm"
-
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/gioterm"
 )
 
 const unfoldRows = 40

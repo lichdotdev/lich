@@ -8,6 +8,8 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/store"
+
+	"github.com/lichdotdev/lich/internal/events"
 )
 
 // What a caller may do with the checkout a session was the last one in. The
@@ -211,7 +213,7 @@ func (s *Service) finish(found located, active, closerID string) {
 		slog.Warn("spawn: close the session's terminal", "session", found.session.ID, "err", err)
 	}
 	if s.events != nil {
-		s.events.Emit(ClosedEventName, ClosedEvent{
+		events.Send(s.events.Emit, api.SessionClosedEvent, ClosedEvent{
 			ID: found.session.ID, ProjectID: found.project.ID, ActiveID: active,
 		})
 	}

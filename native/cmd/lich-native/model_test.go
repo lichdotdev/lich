@@ -11,9 +11,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/backend"
-
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 const (
@@ -365,7 +364,7 @@ func TestASessionMovingProfileMakesItsQuotaReadAgain(t *testing.T) {
 	work.Account = "me@work.example"
 	r.set([]backend.QuotaPlan{work}, nil)
 	events := make(chan backend.Event, 1)
-	events <- backend.Event{Name: backend.SessionProfileEvent, Data: []byte(`{"id":"s1","profile":"work"}`)}
+	events <- backend.Event{Name: api.SessionProfileEvent.Name, Data: []byte(`{"id":"s1","profile":"work"}`)}
 	close(events)
 	m.follow(context.Background(), events)
 	waitChanged(t, r.changed)

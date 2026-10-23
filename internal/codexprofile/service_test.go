@@ -10,6 +10,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // fakeCodexGuard turns the test binary into a stand-in for the Codex CLI
@@ -100,7 +102,7 @@ func newRecorder() *recorder { return &recorder{done: make(chan LoginEvent, 1)} 
 
 func (r *recorder) emit(name string, data any) {
 	e, ok := data.(LoginEvent)
-	if name != LoginEventName || !ok {
+	if name != api.CodexProfileLoginEvent.Name || !ok {
 		return
 	}
 	r.mu.Lock()
