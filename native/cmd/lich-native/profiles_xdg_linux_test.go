@@ -51,7 +51,7 @@ func TestAnXDGProfileLogsInFromATerminal(t *testing.T) {
 	eventually(t, "the terminal card was opened and the dialog closed", func() bool {
 		return !ps.flow.view().open && len(ran) == 1
 	})
-	want := []string{`kiroprofile.CreateProfile["Work"]`, `kiroprofile.LoginCommand["work"]`}
+	want := []string{`kiroprofile.CreateProfile[{"name":"Work"}]`, `kiroprofile.LoginCommand[{"slug":"work"}]`}
 	if got := b.log(); !slices.Equal(got, want) {
 		t.Errorf("calls = %v, want %v", got, want)
 	}

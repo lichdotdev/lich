@@ -41,6 +41,8 @@ import (
 	"github.com/lichdotdev/lich/internal/tray"
 	"github.com/lichdotdev/lich/internal/xdgprofile"
 	"github.com/ncruces/zenity"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // changelog is embedded so the app can show a "what's new" popup after an
@@ -287,18 +289,23 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		}
 		return errors.Join(quota.ForgetClaudeLogin(dir), db.ForgetClaudeProfile(slug))
 	})
-	dispatcher.Register("claudeprofile", profiles)
+	routes.Profiles(dispatcher, api.ClaudeProfiles, profiles)
+	routes.ProfileLogin(dispatcher, api.ClaudeProfileLogin, profiles)
+	routes.ProfilePluginCalls(dispatcher, api.ClaudeProfilePlugins, profiles)
+	routes.ClaudeLoginCode(dispatcher, profiles.LoginCode)
 	// Codex profiles have plugin sets of their own too, and get the lich plugin
 	// the same way.
 	codexProfiles := codexprofile.New(db, hub.Emit)
 	codexProfiles.SetLichPlugin(plugins.InstallInCodexProfile, agentplugin.PluginKey)
 	codexProfiles.SetSessions(term.CodexProfileSessions, db.ForgetCodexProfile)
-	dispatcher.Register("codexprofile", codexProfiles)
+	routes.Profiles(dispatcher, api.CodexProfiles, codexProfiles)
+	routes.ProfileLogin(dispatcher, api.CodexProfileLogin, codexProfiles)
+	routes.ProfilePluginCalls(dispatcher, api.CodexProfilePlugins, codexProfiles)
 	// oh-my-pi's login is a terminal card's, so its service runs no login of its
 	// own; on /events it reports only a profile's update.
 	ompProfiles := ompprofile.New(db, hub.Emit)
 	ompProfiles.SetSessions(term.OMPProfileSessions, db.ForgetOMPProfile)
-	dispatcher.Register("ompprofile", ompProfiles)
+	routes.Profiles(dispatcher, api.OMPProfiles, ompProfiles)
 	// opencode, Cursor CLI and Kiro CLI log in from a terminal card too, and have
 	// profiles only where a variable moves their logins (xdgprofile.Providers).
 	for _, provider := range xdgprofile.Providers() {
@@ -307,7 +314,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 			func(slug string) int { return term.XDGProfileSessions(provider.ID, slug) },
 			func(slug string) error { return db.ForgetXDGProfile(provider.ID, slug) },
 		)
-		dispatcher.Register(provider.ID+"profile", profiles)
+		routes.Profiles(dispatcher, api.XDGProfiles[provider.ID], profiles)
 	}
 	routes.AppUpdate(dispatcher, appupdate.New(version, coord.Install, hub.Emit))
 	routes.PatchNotes(dispatcher, patchnotes.New(version, changelog, changelogTranslations))
@@ -382,7 +389,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		return on
 	})
 	term.SetRateLimitReports(plans.ReportClaude)
-	dispatcher.Register("quota", plans)
+	routes.Quota(dispatcher, plans)
 	codexProfiles.SetAccount(func(slug string) (string, string) {
 		plan, err := plans.CodexProfilePlan(slug)
 		if err != nil || plan.Status != quota.StatusOK {

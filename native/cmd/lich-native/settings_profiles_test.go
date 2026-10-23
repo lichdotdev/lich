@@ -135,7 +135,7 @@ func TestNewProfileBringsItsPluginsOnlyOnceTheLoginIsThrough(t *testing.T) {
 	if d.account != "Logged in as w@x.y · Max" || len(d.results) != 2 || d.failure != "" {
 		t.Errorf("result = %+v", d)
 	}
-	want := []string{`claudeprofile.CreateProfile["Work"]`, `claudeprofile.Login["work"]`, `claudeprofile.InstallPlugins["work",["a@m","b@m"]]`}
+	want := []string{`claudeprofile.CreateProfile[{"name":"Work"}]`, `claudeprofile.Login[{"slug":"work"}]`, `claudeprofile.InstallPlugins[{"slug":"work","keys":["a@m","b@m"]}]`}
 	if got := b.log(); !slices.Equal(got, want) {
 		t.Errorf("calls = %v, want %v", got, want)
 	}
@@ -152,7 +152,7 @@ func TestCancellingAWaitingLoginEndsItAndClosesTheDialog(t *testing.T) {
 		t.Error("the dialog stayed open")
 	}
 	eventually(t, "the backend was told", func() bool {
-		return slices.Contains(b.log(), `claudeprofile.CancelLogin["work"]`)
+		return slices.Contains(b.log(), `claudeprofile.CancelLogin[{"slug":"work"}]`)
 	})
 	s.loginProgress(claudeKind, backend.ProfileLogin{Profile: "work", Done: true, Cancelled: true, Error: "login cancelled"})
 	if f.view().open {
@@ -193,7 +193,7 @@ func TestASubmittedCodeShowsItIsBeingChecked(t *testing.T) {
 		t.Error("the dialog did not show the code was sent")
 	}
 	eventually(t, "the code reached the login", func() bool {
-		return slices.Contains(b.log(), `claudeprofile.LoginCode["work","abc"]`)
+		return slices.Contains(b.log(), `claudeprofile.LoginCode[{"slug":"work","code":"abc"}]`)
 	})
 	if !f.view().authenticating {
 		t.Error("a code the login took stopped being checked")
@@ -382,7 +382,7 @@ func TestADeletedProfileClosesTheDialogAndHasSettingsReadAgain(t *testing.T) {
 	if !f.view().refresh {
 		t.Error("a project set to the deleted profile would keep showing it: Settings was not asked to read again")
 	}
-	if !slices.Contains(b.log(), `claudeprofile.DeleteProfile["work"]`) {
+	if !slices.Contains(b.log(), `claudeprofile.DeleteProfile[{"slug":"work"}]`) {
 		t.Errorf("calls = %v", b.log())
 	}
 }
@@ -477,7 +477,7 @@ func TestACodexProfileBringsPluginsAndHasNoCodeToPaste(t *testing.T) {
 	s.loginProgress(codexKind, backend.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
 	eventually(t, "the result", func() bool { return f.view().step == stepResult })
 
-	want := []string{`codexprofile.CreateProfile["Work"]`, `codexprofile.Login["work"]`, `codexprofile.InstallPlugins["work",["a@m","b@m"]]`}
+	want := []string{`codexprofile.CreateProfile[{"name":"Work"}]`, `codexprofile.Login[{"slug":"work"}]`, `codexprofile.InstallPlugins[{"slug":"work","keys":["a@m","b@m"]}]`}
 	if got := b.log(); !slices.Equal(got, want) {
 		t.Errorf("calls = %v, want %v", got, want)
 	}
@@ -567,7 +567,7 @@ func TestAnOMPProfileLogsInFromATerminalAndNeverRunsALogin(t *testing.T) {
 	if want := "env OMP_PROFILE='work' omp login"; ran[0] != want {
 		t.Errorf("command = %q, want %q", ran[0], want)
 	}
-	want := []string{`ompprofile.CreateProfile["Work"]`, `ompprofile.LoginCommand["work"]`}
+	want := []string{`ompprofile.CreateProfile[{"name":"Work"}]`, `ompprofile.LoginCommand[{"slug":"work"}]`}
 	if got := b.log(); !slices.Equal(got, want) {
 		t.Errorf("calls = %v, want %v", got, want)
 	}

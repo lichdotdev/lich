@@ -45,6 +45,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -117,49 +118,9 @@ const (
 	dataHomeVar   = "XDG_DATA_HOME"
 )
 
-// Window is one metered window of a plan: how much of it is spent, how long it
-// runs, and when it starts over.
-//
-// Label is the window's name as the provider frames it ("Session", "Weekly"), or
-// the display name of the model a scoped window belongs to. Seconds is its
-// length, so the window can print the metered window it is looking at; 0 when the
-// provider does not report one. ResetsAt is RFC 3339, empty when unreported.
-// Active is the provider's own verdict on which window is the binding one, when
-// it reports one at all. LockedReason is non-empty only when the provider says
-// this window cannot be spent past regardless of its percentage. Ahead is
-// lich's own reading of the rate rather than the provider's — see pace.go.
-type Window struct {
-	Label        string `json:"label"`
-	Seconds      int    `json:"seconds"`
-	Percent      int    `json:"percent"`
-	ResetsAt     string `json:"resetsAt,omitempty"`
-	Active       bool   `json:"active,omitempty"`
-	LockedReason string `json:"lockedReason,omitempty"`
-	Ahead        bool   `json:"ahead,omitempty"`
-}
+type Window = api.QuotaWindow
 
-// Plan is one provider's quota reading. Provider is a providers.Registry id, so
-// the window resolves the icon and the login command it already knows.
-//
-// Account names the login the windows were read against — the whole point of
-// the custom-binary path being that a session can spend an account lich's own
-// environment does not name. It is empty whenever the provider will not say
-// which, which is a reading without a name and never an error: a gauge that
-// cannot name its account is exactly what lich drew before this field existed.
-//
-// NoAccount carries why it is empty, for the one absence a reader can act on.
-// Left empty, an unnamed account is drawn the same whether the provider names
-// nobody or the session's own login is one lich may not ask about, and nothing
-// on the gauge told the two apart.
-type Plan struct {
-	Provider  string   `json:"provider"`
-	Name      string   `json:"name"`
-	Plan      string   `json:"plan,omitempty"`
-	Account   string   `json:"account,omitempty"`
-	NoAccount string   `json:"noAccount,omitempty"`
-	Windows   []Window `json:"windows,omitempty"`
-	Status    string   `json:"status"`
-}
+type Plan = api.QuotaPlan
 
 // NoAccountTokenLogin is the one reason an empty Account has a name: the
 // session's login is a long-lived OAuth token, whose scope keeps the profile

@@ -26,7 +26,7 @@ func TestFooterCallsSendPositionalArgs(t *testing.T) {
 		result             any
 		call               func(c *Client) error
 	}{
-		{"QuotaPlans", "quota.Plans", `"s1"`, []QuotaPlan{}, func(c *Client) error {
+		{"QuotaPlans", "quota.Plans", `{"sessionId":"s1"}`, []QuotaPlan{}, func(c *Client) error {
 			_, err := c.QuotaPlans(ctx, "s1")
 			return err
 		}},

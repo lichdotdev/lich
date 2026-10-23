@@ -121,8 +121,9 @@ func (r *renderer) define(t reflect.Type) string {
 		if !wired {
 			continue
 		}
-		if field.Anonymous {
-			panic(fmt.Sprintf("api: %s embeds %s; the golden does not render embedded fields", t.Name(), field.Type))
+		if field.Anonymous && field.Tag.Get("json") == "" {
+			fmt.Fprintf(&b, "\t...%s\n", r.ref(field.Type))
+			continue
 		}
 		mark := ""
 		if omitempty {

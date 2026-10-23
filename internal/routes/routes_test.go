@@ -10,6 +10,7 @@ import (
 	"github.com/lichdotdev/lich/internal/rpc"
 	"github.com/lichdotdev/lich/internal/spawn"
 	"github.com/lichdotdev/lich/internal/themes"
+	"github.com/lichdotdev/lich/internal/xdgprofile"
 )
 
 func TestHandleThemesCoversEveryThemesMethod(t *testing.T) {
@@ -54,6 +55,44 @@ func TestHandleAppServicesCoverEveryMethod(t *testing.T) {
 		d := rpc.New()
 		route(d)
 		assertHandled(t, d, prefix)
+	}
+}
+
+func TestHandleProfilesCoverEveryProfileMethod(t *testing.T) {
+	claude := rpc.New()
+	Profiles(claude, api.ClaudeProfiles, nil)
+	ProfileLogin(claude, api.ClaudeProfileLogin, nil)
+	ProfilePluginCalls(claude, api.ClaudeProfilePlugins, nil)
+	ClaudeLoginCode(claude, nil)
+	assertHandled(t, claude, "claudeprofile.")
+
+	codex := rpc.New()
+	Profiles(codex, api.CodexProfiles, nil)
+	ProfileLogin(codex, api.CodexProfileLogin, nil)
+	ProfilePluginCalls(codex, api.CodexProfilePlugins, nil)
+	assertHandled(t, codex, "codexprofile.")
+
+	omp := rpc.New()
+	Profiles(omp, api.OMPProfiles, nil)
+	assertHandled(t, omp, "ompprofile.")
+
+	quotas := rpc.New()
+	Quota(quotas, nil)
+	assertHandled(t, quotas, "quota.")
+}
+
+// main.go routes each xdgprofile provider through api.XDGProfiles by its id;
+// a provider api has no entry for would be routed under no name at all.
+func TestEveryXDGProfileProviderIsDeclared(t *testing.T) {
+	for _, provider := range xdgprofile.Providers() {
+		m, ok := api.XDGProfiles[provider.ID]
+		if !ok {
+			t.Errorf("api.XDGProfiles has no %q", provider.ID)
+			continue
+		}
+		d := rpc.New()
+		Profiles(d, m, nil)
+		assertHandled(t, d, provider.ID+"profile.")
 	}
 }
 

@@ -26,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // Personal is the slug of the default profile. It is reserved: no profile lich
@@ -118,21 +120,7 @@ type metaFile struct {
 	Copied []string `json:"copied,omitempty"`
 }
 
-// Profile is one login lich knows about.
-type Profile struct {
-	Slug     string `json:"slug"`
-	Name     string `json:"name"`
-	Dir      string `json:"dir"`
-	Personal bool   `json:"personal"`
-	// Copied names the shared entries (a settings file, say) this profile holds
-	// as a copy, so edits made in one account no longer reach the other.
-	Copied []string `json:"copied,omitempty"`
-	// Color is the card color the profile is shown in, "" for the one the
-	// window derives from the slug.
-	Color string `json:"color,omitempty"`
-	// Image is the profile's picture as a PNG, avatarEdge square.
-	Image []byte `json:"image,omitempty"`
-}
+type Profile = api.Profile
 
 // IsPersonal reports whether slug names the default profile. Empty does too: it
 // is what every session row born before profiles carries.

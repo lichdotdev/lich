@@ -6,28 +6,9 @@ import (
 	"github.com/lichdotdev/lich/api"
 )
 
-// QuotaWindow mirrors quota.Window (internal/quota/quota.go).
-type QuotaWindow struct {
-	Label        string `json:"label"`
-	Seconds      int    `json:"seconds"`
-	Percent      int    `json:"percent"`
-	ResetsAt     string `json:"resetsAt,omitempty"`
-	Active       bool   `json:"active,omitempty"`
-	LockedReason string `json:"lockedReason,omitempty"`
-	Ahead        bool   `json:"ahead,omitempty"`
-}
+type QuotaWindow = api.QuotaWindow
 
-// QuotaPlan mirrors quota.Plan. Status is "ok", "signed-out", "error" or
-// "unknown"; NoAccount is "token-login" or "".
-type QuotaPlan struct {
-	Provider  string        `json:"provider"`
-	Name      string        `json:"name"`
-	Plan      string        `json:"plan,omitempty"`
-	Account   string        `json:"account,omitempty"`
-	NoAccount string        `json:"noAccount,omitempty"`
-	Windows   []QuotaWindow `json:"windows,omitempty"`
-	Status    string        `json:"status"`
-}
+type QuotaPlan = api.QuotaPlan
 
 type Attachment = api.DropAttachment
 
@@ -35,8 +16,7 @@ type Attachment = api.DropAttachment
 // reads the machine's own login. The backend serves it from a five-minute
 // cache.
 func (c *Client) QuotaPlans(ctx context.Context, sessionID string) ([]QuotaPlan, error) {
-	var plans []QuotaPlan
-	return plans, c.Call(ctx, "quota.Plans", &plans, sessionID)
+	return callMethod(ctx, c, api.QuotaPlans, api.QuotaPlansOptions{SessionID: sessionID})
 }
 
 // HandsOn is how long session id has been worked on, in whole seconds.

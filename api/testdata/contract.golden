@@ -3,13 +3,55 @@ agentplugin.Status(None) []PluginStatus
 agentplugin.Update(PluginProviderOptions) None
 appupdate.Apply(None) None
 appupdate.Status(None) AppUpdateStatus
+claudeprofile.CancelLogin(ProfileSlugOptions) None
+claudeprofile.CreateProfile(CreateProfileOptions) Profile
+claudeprofile.DeleteProfile(ProfileSlugOptions) None
+claudeprofile.InstallPlugins(InstallPluginsOptions) []ProfilePluginResult
+claudeprofile.Login(ProfileSlugOptions) None
+claudeprofile.LoginCode(LoginCodeOptions) None
+claudeprofile.LoginCommand(ProfileSlugOptions) string
+claudeprofile.Plugins(ProfileSlugOptions) []ProfilePlugin
+claudeprofile.Profiles(None) []ProfileInfo
+claudeprofile.UpdateProfile(UpdateProfileOptions) Profile
+codexprofile.CancelLogin(ProfileSlugOptions) None
+codexprofile.CreateProfile(CreateProfileOptions) Profile
+codexprofile.DeleteProfile(ProfileSlugOptions) None
+codexprofile.InstallPlugins(InstallPluginsOptions) []ProfilePluginResult
+codexprofile.Login(ProfileSlugOptions) None
+codexprofile.LoginCommand(ProfileSlugOptions) string
+codexprofile.Plugins(ProfileSlugOptions) []ProfilePlugin
+codexprofile.Profiles(None) []ProfileInfo
+codexprofile.UpdateProfile(UpdateProfileOptions) Profile
+cursorprofile.CreateProfile(CreateProfileOptions) Profile
+cursorprofile.DeleteProfile(ProfileSlugOptions) None
+cursorprofile.LoginCommand(ProfileSlugOptions) string
+cursorprofile.Profiles(None) []ProfileInfo
+cursorprofile.UpdateProfile(UpdateProfileOptions) Profile
 drop.Attach(AttachDropOptions) DropAttachment
+kiroprofile.CreateProfile(CreateProfileOptions) Profile
+kiroprofile.DeleteProfile(ProfileSlugOptions) None
+kiroprofile.LoginCommand(ProfileSlugOptions) string
+kiroprofile.Profiles(None) []ProfileInfo
+kiroprofile.UpdateProfile(UpdateProfileOptions) Profile
+ompprofile.CreateProfile(CreateProfileOptions) Profile
+ompprofile.DeleteProfile(ProfileSlugOptions) None
+ompprofile.LoginCommand(ProfileSlugOptions) string
+ompprofile.Profiles(None) []ProfileInfo
+ompprofile.UpdateProfile(UpdateProfileOptions) Profile
+opencodeprofile.CreateProfile(CreateProfileOptions) Profile
+opencodeprofile.DeleteProfile(ProfileSlugOptions) None
+opencodeprofile.LoginCommand(ProfileSlugOptions) string
+opencodeprofile.Profiles(None) []ProfileInfo
+opencodeprofile.UpdateProfile(UpdateProfileOptions) Profile
 patchnotes.Current(PatchNotesOptions) PatchNotes
 providers.Detect(None) []DetectedProvider
 providers.OnPath(ProviderIDOptions) []ProviderBinary
 providers.RefreshPath(None) None
 providers.Verify(BinaryOptions) BinaryCheck
 providers.Version(BinaryOptions) string
+quota.CodexProfilePlan(ProfilePlanOptions) QuotaPlan
+quota.Plans(QuotaPlansOptions) []QuotaPlan
+quota.ProfilePlan(ProfilePlanOptions) QuotaPlan
 relay.AnnounceMerge(AnnounceMergeOptions) None
 relay.Collect(CollectOptions) CollectedResults
 relay.CollectNow(CollectNowOptions) CollectedResults
@@ -87,6 +129,64 @@ AppUpdateStatus {
 	installCommand string
 }
 
+ProfileSlugOptions {
+	slug string
+}
+
+CreateProfileOptions {
+	name string
+}
+
+Profile {
+	slug string
+	name string
+	dir string
+	personal bool
+	copied,omitempty []string
+	color,omitempty string
+	image,omitempty []uint8
+}
+
+InstallPluginsOptions {
+	slug string
+	keys []string
+}
+
+ProfilePluginResult {
+	key string
+	ok bool
+	message,omitempty string
+}
+
+LoginCodeOptions {
+	slug string
+	code string
+}
+
+ProfilePlugin {
+	key string
+	name string
+	marketplace string
+	version,omitempty string
+}
+
+ProfileInfo {
+	...Profile
+	loggedIn bool
+	email,omitempty string
+	orgName,omitempty string
+	plan,omitempty string
+	authMethod,omitempty string
+	plugins int
+	providers,omitempty []string
+	statusError,omitempty string
+}
+
+UpdateProfileOptions {
+	slug string
+	update ProfileUpdate
+}
+
 AttachDropOptions {
 	sessionId string
 	root string
@@ -134,6 +234,24 @@ BinaryOptions {
 BinaryCheck {
 	path string
 	status string
+}
+
+ProfilePlanOptions {
+	profile string
+}
+
+QuotaPlan {
+	provider string
+	name string
+	plan,omitempty string
+	account,omitempty string
+	noAccount,omitempty string
+	windows,omitempty []QuotaWindow
+	status string
+}
+
+QuotaPlansOptions {
+	sessionId string
 }
 
 AnnounceMergeOptions {
@@ -527,6 +645,12 @@ TrayLabels {
 	quit string
 }
 
+ProfileUpdate {
+	name,omitempty string
+	color,omitempty *string
+	image,omitempty *string
+}
+
 PatchNotesHighlight {
 	kind string
 	text string
@@ -535,6 +659,16 @@ PatchNotesHighlight {
 PatchNotesGroup {
 	label string
 	items []string
+}
+
+QuotaWindow {
+	label string
+	seconds int
+	percent int
+	resetsAt,omitempty string
+	active,omitempty bool
+	lockedReason,omitempty string
+	ahead,omitempty bool
 }
 
 CostTotal {

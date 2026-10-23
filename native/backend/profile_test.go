@@ -19,40 +19,40 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.ClaudeProfiles().List(ctx)
 			return err
 		}},
-		{"Create", "claudeprofile.CreateProfile", `"Work"`, Profile{Slug: "work"}, func(c *Client) error {
+		{"Create", "claudeprofile.CreateProfile", `{"name":"Work"}`, Profile{Slug: "work"}, func(c *Client) error {
 			_, err := c.ClaudeProfiles().Create(ctx, "Work")
 			return err
 		}},
-		{"Update", "claudeprofile.UpdateProfile", `"work",{"name":"Day job","color":"teal"}`, Profile{Slug: "work"}, func(c *Client) error {
+		{"Update", "claudeprofile.UpdateProfile", `{"slug":"work","update":{"name":"Day job","color":"teal"}}`, Profile{Slug: "work"}, func(c *Client) error {
 			teal := "teal"
 			_, err := c.ClaudeProfiles().Update(ctx, "work", ProfileUpdate{Name: "Day job", Color: &teal})
 			return err
 		}},
-		{"Delete", "claudeprofile.DeleteProfile", `"work"`, nil, func(c *Client) error {
+		{"Delete", "claudeprofile.DeleteProfile", `{"slug":"work"}`, nil, func(c *Client) error {
 			return c.ClaudeProfiles().Delete(ctx, "work")
 		}},
-		{"Plugins", "claudeprofile.Plugins", `"personal"`, []ProfilePlugin{}, func(c *Client) error {
+		{"Plugins", "claudeprofile.Plugins", `{"slug":"personal"}`, []ProfilePlugin{}, func(c *Client) error {
 			_, err := c.ClaudeProfiles().Plugins(ctx, "personal")
 			return err
 		}},
-		{"InstallPlugins", "claudeprofile.InstallPlugins", `"work",["a@m","b@m"]`, []ProfilePluginResult{}, func(c *Client) error {
+		{"InstallPlugins", "claudeprofile.InstallPlugins", `{"slug":"work","keys":["a@m","b@m"]}`, []ProfilePluginResult{}, func(c *Client) error {
 			_, err := c.ClaudeProfiles().InstallPlugins(ctx, "work", []string{"a@m", "b@m"})
 			return err
 		}},
-		{"Login", "claudeprofile.Login", `"work"`, nil, func(c *Client) error {
+		{"Login", "claudeprofile.Login", `{"slug":"work"}`, nil, func(c *Client) error {
 			return c.ClaudeProfiles().Login(ctx, "work")
 		}},
-		{"LoginCode", "claudeprofile.LoginCode", `"work","abc"`, nil, func(c *Client) error {
+		{"LoginCode", "claudeprofile.LoginCode", `{"slug":"work","code":"abc"}`, nil, func(c *Client) error {
 			return c.ClaudeProfiles().LoginCode(ctx, "work", "abc")
 		}},
-		{"CancelLogin", "claudeprofile.CancelLogin", `"work"`, nil, func(c *Client) error {
+		{"CancelLogin", "claudeprofile.CancelLogin", `{"slug":"work"}`, nil, func(c *Client) error {
 			return c.ClaudeProfiles().CancelLogin(ctx, "work")
 		}},
-		{"LoginCommand", "claudeprofile.LoginCommand", `"work"`, "claude auth login", func(c *Client) error {
+		{"LoginCommand", "claudeprofile.LoginCommand", `{"slug":"work"}`, "claude auth login", func(c *Client) error {
 			_, err := c.ClaudeProfiles().LoginCommand(ctx, "work")
 			return err
 		}},
-		{"ProfilePlan", "quota.ProfilePlan", `"work"`, QuotaPlan{}, func(c *Client) error {
+		{"ProfilePlan", "quota.ProfilePlan", `{"profile":"work"}`, QuotaPlan{}, func(c *Client) error {
 			_, err := c.ClaudeProfiles().Plan(ctx, "work")
 			return err
 		}},
@@ -60,10 +60,10 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.CodexProfiles().List(ctx)
 			return err
 		}},
-		{"CodexLogin", "codexprofile.Login", `"work"`, nil, func(c *Client) error {
+		{"CodexLogin", "codexprofile.Login", `{"slug":"work"}`, nil, func(c *Client) error {
 			return c.CodexProfiles().Login(ctx, "work")
 		}},
-		{"CodexProfilePlan", "quota.CodexProfilePlan", `"work"`, QuotaPlan{}, func(c *Client) error {
+		{"CodexProfilePlan", "quota.CodexProfilePlan", `{"profile":"work"}`, QuotaPlan{}, func(c *Client) error {
 			_, err := c.CodexProfiles().Plan(ctx, "work")
 			return err
 		}},
@@ -71,7 +71,7 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.OMPProfiles().List(ctx)
 			return err
 		}},
-		{"OMPLoginCommand", "ompprofile.LoginCommand", `"work"`, "env OMP_PROFILE='work' omp login", func(c *Client) error {
+		{"OMPLoginCommand", "ompprofile.LoginCommand", `{"slug":"work"}`, "env OMP_PROFILE='work' omp login", func(c *Client) error {
 			_, err := c.OMPProfiles().LoginCommand(ctx, "work")
 			return err
 		}},
@@ -79,7 +79,7 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.XDGProfiles("kiro").List(ctx)
 			return err
 		}},
-		{"XDGLoginCommand", "cursorprofile.LoginCommand", `"work"`, "cursor-agent login", func(c *Client) error {
+		{"XDGLoginCommand", "cursorprofile.LoginCommand", `{"slug":"work"}`, "cursor-agent login", func(c *Client) error {
 			_, err := c.XDGProfiles("cursor").LoginCommand(ctx, "work")
 			return err
 		}},

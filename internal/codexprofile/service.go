@@ -16,6 +16,8 @@ import (
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/winexec"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 const (
@@ -92,19 +94,7 @@ func (s *Service) SetAccount(account func(slug string) (email, plan string)) {
 	s.account = account
 }
 
-// Info is a profile as the Settings screen shows it: whether anybody is logged
-// in there, the account and plan when they could be read, and how many plugins
-// it has.
-type Info struct {
-	Profile
-	LoggedIn bool   `json:"loggedIn"`
-	Email    string `json:"email,omitempty"`
-	Plan     string `json:"plan,omitempty"`
-	Plugins  int    `json:"plugins"`
-	// StatusError is why `codex login status` gave no answer, in its own words;
-	// LoggedIn is then false for want of one.
-	StatusError string `json:"statusError,omitempty"`
-}
+type Info = api.ProfileInfo
 
 // Profiles lists every profile with its login state. The statuses are asked for
 // at once, one CLI each.
@@ -189,12 +179,7 @@ func (s *Service) DeleteProfile(slug string) error {
 	return nil
 }
 
-// Plugin is one plugin a profile has installed.
-type Plugin struct {
-	Key         string `json:"key"`
-	Name        string `json:"name"`
-	Marketplace string `json:"marketplace"`
-}
+type Plugin = api.ProfilePlugin
 
 // Plugins lists the plugins a profile has installed, the ones a port can carry
 // to another profile, in its config.toml's order. The lich plugin is not among
@@ -219,13 +204,7 @@ func (s *Service) Plugins(slug string) ([]Plugin, error) {
 	return out, nil
 }
 
-// PluginResult is one plugin's install, with Codex's own words when it failed:
-// a marketplace the profile cannot reach, a plugin it no longer lists.
-type PluginResult struct {
-	Key     string `json:"key"`
-	OK      bool   `json:"ok"`
-	Message string `json:"message,omitempty"`
-}
+type PluginResult = api.ProfilePluginResult
 
 // InstallPlugins installs each plugin@marketplace into a profile through
 // Codex's own `plugin add`, run as that profile so Codex writes its own paths.

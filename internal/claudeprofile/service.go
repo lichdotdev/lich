@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/winexec"
@@ -80,23 +81,7 @@ func (s *Service) SetSessions(inUse func(slug string) int, forget func(slug stri
 	s.inUse, s.forget = inUse, forget
 }
 
-// Info is a profile as the Settings screen shows it: who is logged in there and
-// on which plan, and how many plugins it has.
-type Info struct {
-	Profile
-	LoggedIn bool   `json:"loggedIn"`
-	Email    string `json:"email,omitempty"`
-	OrgName  string `json:"orgName,omitempty"`
-	// Plan is Claude Code's own subscription name: "pro", "max", "team", ….
-	Plan string `json:"plan,omitempty"`
-	// AuthMethod is how the profile authenticates: "claude.ai", "console", or
-	// "none" when nobody is logged in.
-	AuthMethod string `json:"authMethod,omitempty"`
-	Plugins    int    `json:"plugins"`
-	// StatusError is why `claude auth status` gave no answer, in its own words;
-	// LoggedIn is then false for want of one.
-	StatusError string `json:"statusError,omitempty"`
-}
+type Info = api.ProfileInfo
 
 // authStatus is the JSON `claude auth status` prints on stdout (measured on
 // 2.1.296), on a logged-out profile too, exiting 1.
@@ -190,13 +175,7 @@ func (s *Service) DeleteProfile(slug string) error {
 	return nil
 }
 
-// Plugin is one plugin a profile has installed at user scope.
-type Plugin struct {
-	Key         string `json:"key"`
-	Name        string `json:"name"`
-	Marketplace string `json:"marketplace"`
-	Version     string `json:"version,omitempty"`
-}
+type Plugin = api.ProfilePlugin
 
 // Plugins lists the plugins a profile has installed at user scope, the ones a
 // port can carry to another profile. The lich plugin is not among them.
@@ -246,13 +225,7 @@ func installedPlugins(plugins string) []Plugin {
 	return out
 }
 
-// PluginResult is one plugin's install, with Claude Code's own words when it
-// refused: an organization's policy, a marketplace the profile cannot reach.
-type PluginResult struct {
-	Key     string `json:"key"`
-	OK      bool   `json:"ok"`
-	Message string `json:"message,omitempty"`
-}
+type PluginResult = api.ProfilePluginResult
 
 // InstallPlugins installs each plugin@marketplace into a profile through Claude
 // Code's own `plugin install`, run as that profile so its account's policy
