@@ -2,8 +2,6 @@ package backend
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -37,18 +35,12 @@ func (c *Client) SetActiveSession(ctx context.Context, projectID, sessionID stri
 	return err
 }
 
-// Replay returns the tail of a session's output, to write into a fresh
-// terminal before live output is applied.
-func (c *Client) Replay(ctx context.Context, id string) ([]byte, error) {
-	b64, err := callMethod(ctx, c, api.TerminalReplay, api.SessionIDOptions{ID: id})
-	if err != nil {
-		return nil, err
-	}
-	data, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		return nil, fmt.Errorf("terminal.Replay: %w", err)
-	}
-	return data, nil
+// Replay asks for the tail of a session's output, which arrives on the
+// Terminal stream as a replay frame: the output frames before it are in the
+// tail and the ones after it are not. It reports whether one is coming, false
+// for a session not running, which has no output yet.
+func (c *Client) Replay(ctx context.Context, id string) (bool, error) {
+	return callMethod(ctx, c, api.TerminalReplay, api.SessionIDOptions{ID: id})
 }
 
 type ConversationReported = api.SessionConversation

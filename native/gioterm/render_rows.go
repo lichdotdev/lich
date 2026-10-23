@@ -31,6 +31,8 @@ func newRowRenderer(r *glyphs.Rasterizer, size unit.Sp) *rowRenderer {
 
 func (rr *rowRenderer) Cell() (w, h int) { return rr.r.CellW(), rr.r.CellH() }
 
+func (rr *rowRenderer) SetSize(size unit.Sp) { rr.size = size }
+
 func (rr *rowRenderer) Measure(gtx layout.Context) error {
 	changed, err := rr.r.SetSize(float64(gtx.Sp(rr.size)))
 	if changed {

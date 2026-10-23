@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/f32"
@@ -37,6 +38,9 @@ type termView struct {
 	vt   *gioterm.Terminal
 	r    gioterm.Renderer
 	tag  *int
+	// seeded is set once vt holds the session's replayed tail: the stream
+	// writes output into it from then on, and its replies reach the session.
+	seeded atomic.Bool
 	// composition holds what an input method has not committed yet.
 	composition gioterm.Composition
 	// The area size waiting to be fitted, and since when it has held.
@@ -170,10 +174,25 @@ func (ts *terminals) onOutput(id string, data []byte) {
 	ts.mu.Lock()
 	t, shown := ts.byID[id], ts.shown[id]
 	ts.mu.Unlock()
-	if t == nil {
+	if t == nil || !t.seeded.Load() {
 		return
 	}
 	t.vt.Write(data)
+	if shown {
+		ts.invalidate()
+	}
+}
+
+// onReplay seeds a terminal attach left waiting with its session's tail.
+func (ts *terminals) onReplay(id string, tail []byte) {
+	ts.mu.Lock()
+	t, shown := ts.byID[id], ts.shown[id]
+	ts.mu.Unlock()
+	if t == nil || t.seeded.Load() {
+		return
+	}
+	t.vt.Write(tail)
+	t.seeded.Store(true)
 	if shown {
 		ts.invalidate()
 	}
@@ -209,9 +228,7 @@ func (ts *terminals) has(id string) bool {
 
 // show returns s's terminal, attaching it on first use: the replayed tail
 // first, then Start (a no-op for a running session) resuming the conversation
-// resume names, "" for none, then the size. ponytail: output that lands between
-// Replay and registering the view is dropped; subscribing before replaying
-// would keep it.
+// resume names, "" for none, then the size.
 func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView, resume string) (*termView, error) {
 	ts.mu.Lock()
 	t := ts.byID[s.ID]
@@ -231,28 +248,10 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 		return nil, err
 	}
 	cols, rows := gioterm.Fit(gridArea(gtx), r)
-	cellW, cellH := r.Cell()
-	vt, err := gioterm.New(cols, rows, cellW, cellH, func(b []byte) { ts.send(s.ID, b) })
-	if err != nil {
+	t = &termView{id: s.ID, kind: s.Kind, r: r, tag: new(int)}
+	if err := ts.attach(ctx, t, cols, rows); err != nil {
 		return nil, err
 	}
-	ts.mu.Lock()
-	colors := ts.colors
-	ts.mu.Unlock()
-	if err := vt.SetColors(colors); err != nil {
-		return nil, err
-	}
-	replay, err := ts.client.Replay(ctx, s.ID)
-	if err != nil {
-		return nil, err
-	}
-	if len(replay) > 0 {
-		vt.Write(replay)
-	}
-	t = &termView{id: s.ID, kind: s.Kind, vt: vt, r: r, tag: new(int)}
-	ts.mu.Lock()
-	ts.byID[s.ID] = t
-	ts.mu.Unlock()
 	// A failed start leaves the terminal in place, empty.
 	if err := ts.start(ctx, s, resume, cols, rows); err != nil {
 		if backend.ProfileGone(err) && ts.profileGone != nil {
@@ -268,6 +267,43 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Unlock()
 	ts.send(s.ID, []byte(pending))
 	return t, ts.client.Resize(ctx, s.ID, cols, rows)
+}
+
+// attach gives t a cols x rows terminal, registers it and asks for the
+// session's replayed tail. Until the tail arrives (onReplay) the terminal
+// takes no output, which the tail already holds, and sends no replies: what
+// it answers while it replays are replies to queries the program already had
+// answered, and sent now they would land on its input as typed text.
+func (ts *terminals) attach(ctx context.Context, t *termView, cols, rows int) error {
+	cellW, cellH := t.r.Cell()
+	vt, err := gioterm.New(cols, rows, cellW, cellH, func(b []byte) {
+		if t.seeded.Load() {
+			ts.send(t.id, b)
+		}
+	})
+	if err != nil {
+		return err
+	}
+	ts.mu.Lock()
+	colors := ts.colors
+	ts.mu.Unlock()
+	if err := vt.SetColors(colors); err != nil {
+		vt.Close()
+		return err
+	}
+	t.vt = vt
+	ts.mu.Lock()
+	ts.byID[t.id] = t
+	ts.mu.Unlock()
+	coming, err := ts.client.Replay(ctx, t.id)
+	if err != nil {
+		ts.drop(t.id)
+		return err
+	}
+	if !coming {
+		t.seeded.Store(true)
+	}
+	return nil
 }
 
 // setColors gives every terminal, and every one opened after, a theme's
@@ -286,8 +322,9 @@ func (ts *terminals) setColors(c gioterm.Colors) {
 }
 
 // setFont draws every terminal, and every one opened after, in family at
-// size. Each gets a renderer of the new face; its next frame measures the
-// cells and refits the grid and the PTY to them.
+// size. A new family gives each a renderer of the new face, a new size only
+// resizes the one it has; its next frame measures the cells and refits the
+// grid and the PTY to them.
 func (ts *terminals) setFont(family string, size unit.Sp) error {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
@@ -295,6 +332,10 @@ func (ts *terminals) setFont(family string, size unit.Sp) error {
 		return nil
 	}
 	for _, t := range ts.byID {
+		if family == ts.family {
+			t.r.SetSize(size)
+			continue
+		}
 		r, err := gioterm.NewRenderer(ts.renderer, family, size)
 		if err != nil {
 			return err

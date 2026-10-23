@@ -59,6 +59,8 @@ func newAtlasRenderer(r *glyphs.Rasterizer, size unit.Sp) *atlasRenderer {
 
 func (a *atlasRenderer) Cell() (w, h int) { return a.r.CellW(), a.r.CellH() }
 
+func (a *atlasRenderer) SetSize(size unit.Sp) { a.size = size }
+
 func (a *atlasRenderer) Measure(gtx layout.Context) error {
 	changed, err := a.r.SetSize(float64(gtx.Sp(a.size)))
 	if changed {

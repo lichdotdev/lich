@@ -173,16 +173,26 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (
 	spec, skippedLinks := wrapSandbox(
 		spec, opts.Kind, userHome(), sessionDropDir(s.dropDir, opts.ID, inSandbox), profileDir, inSandbox, creds,
 	)
+	header, err := encodeFrame(opts.ID, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("start %q: %w", opts.ID, err)
+	}
 	p, err := startPTY(spec)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to start pty for %q: %w", opts.ID, err)
 	}
 
-	box := newOutbox(func(data []byte) {
-		if s.ws != nil && s.ws.send(opts.ID, data) {
+	box := newOutbox(header, func(frame []byte) {
+		if s.ws != nil && s.ws.send(frame) {
 			return
 		}
-		s.emitData(opts.ID, data)
+		s.emitData(opts.ID, frame[len(header):])
+	}, func(tail []byte) {
+		// The /events bridge has no replay: the window that asked for this
+		// one reads /ws, and without /ws it reads no output at all.
+		if s.ws != nil {
+			s.ws.sendReplay(opts.ID, tail)
+		}
 	}, outboxDepth)
 	out := newCoalescer(box.push, visibleFlushInterval, hiddenFlushInterval)
 	sess := &session{

@@ -38,7 +38,7 @@ func TestLiveShellSession(t *testing.T) {
 			out.Write(data)
 			mu.Unlock()
 		}
-	})
+	}, func(string, []byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}

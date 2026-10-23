@@ -33,6 +33,9 @@ import (
 // degraded but unbroken.
 //
 // Frame format, both directions: [1 byte id length][session id][payload].
+// A replay frame, backend to window only, is a zero byte and then the same:
+// [0][1 byte id length][session id][the session's replayed tail]
+// (Service.Replay).
 
 const (
 	// wsWriteTimeout bounds a send to the local client; a stalled write drops
@@ -90,6 +93,15 @@ func encodeFrame(id string, payload []byte) ([]byte, error) {
 	copy(buf[1:], id)
 	copy(buf[1+len(id):], payload)
 	return buf, nil
+}
+
+// encodeReplayFrame is encodeFrame marked as a replay frame.
+func encodeReplayFrame(id string, tail []byte) ([]byte, error) {
+	frame, err := encodeFrame(id, tail)
+	if err != nil {
+		return nil, err
+	}
+	return append([]byte{0}, frame...), nil
 }
 
 // decodeFrame splits a frame into session id and payload. The payload aliases
@@ -759,7 +771,7 @@ func (t *transport) drop(conn *websocket.Conn) {
 
 // send hands one session's output frame to the connected client's writer. It
 // returns false when the caller should fall back to the event bridge itself:
-// there is no client, or the frame cannot be addressed to one. A frame the
+// there is no client. A frame the
 // writer accepts and the socket then refuses is not the caller's problem — the
 // writer takes it to the same bridge, in order (see writequeue.go).
 //
@@ -767,11 +779,7 @@ func (t *transport) drop(conn *websocket.Conn) {
 // by wsWriteTimeout, and every session's outbox goroutine comes through here;
 // holding a lock across it would recouple the sessions the outbox queues exist
 // to keep apart.
-func (t *transport) send(id string, data []byte) bool {
-	frame, err := encodeFrame(id, data)
-	if err != nil {
-		return false
-	}
+func (t *transport) send(frame []byte) bool {
 	t.mu.Lock()
 	out := t.out
 	t.mu.Unlock()
@@ -779,6 +787,23 @@ func (t *transport) send(id string, data []byte) bool {
 		return false
 	}
 	return out.push(frame)
+}
+
+// sendReplay queues session id's replay frame to the connected client. With
+// no client, or one whose socket refuses it, the replay is dropped rather
+// than handed to the /events bridge: decodeFrame does not read it, and the
+// bridge carries none.
+func (t *transport) sendReplay(id string, tail []byte) {
+	frame, err := encodeReplayFrame(id, tail)
+	if err != nil {
+		return
+	}
+	t.mu.Lock()
+	out := t.out
+	t.mu.Unlock()
+	if out != nil {
+		out.push(frame)
+	}
 }
 
 // flush waits for the queued output of every session to reach the socket. A

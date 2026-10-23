@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"gioui.org/font"
 )
 
 func TestParseFcListFiles(t *testing.T) {
@@ -52,6 +54,31 @@ func TestCoveringRanksAgainstMonospaceOnce(t *testing.T) {
 	}
 	if got := calls(); got != 0 {
 		t.Fatalf("a second Covering ran fc-match %d times, want 0", got)
+	}
+}
+
+// A face fontconfig already named is the same answer the next time a
+// terminal's renderer is built, and asking again is another subprocess
+// inside a frame.
+func TestLocateAsksFontconfigOncePerFont(t *testing.T) {
+	bold := font.Font{Typeface: SystemMono, Weight: font.Bold}
+	first, err := Locate(bold)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := countCalls(t, "fc-match")
+	again, err := Locate(bold)
+	if err != nil || again != first {
+		t.Fatalf("Locate again = %+v, %v; want %+v", again, err, first)
+	}
+	if got := calls(); got != 0 {
+		t.Fatalf("a second Locate ran fc-match %d times, want 0", got)
+	}
+	if _, err := Locate(font.Font{Typeface: SystemMono, Weight: font.Bold, Style: font.Italic}); err != nil {
+		t.Fatal(err)
+	}
+	if got := calls(); got != 1 {
+		t.Fatalf("Locate of another style ran fc-match %d times, want 1", got)
 	}
 }
 

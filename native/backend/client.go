@@ -233,10 +233,11 @@ type Stream struct {
 	mu   sync.Mutex
 }
 
-// Terminal connects to /ws and calls onOutput, from its own goroutine, with
-// every output frame until ctx ends or the connection drops; done is closed
+// Terminal connects to /ws and calls onOutput with every output frame and
+// onReplay with every replay frame (Replay), from its own goroutine and in the
+// order they arrive, until ctx ends or the connection drops; done is closed
 // then.
-func (c *Client) Terminal(ctx context.Context, onOutput func(id string, data []byte)) (s *Stream, done <-chan struct{}, err error) {
+func (c *Client) Terminal(ctx context.Context, onOutput, onReplay func(id string, data []byte)) (s *Stream, done <-chan struct{}, err error) {
 	conn, _, err := websocket.Dial(ctx, c.url("ws", "/ws"), nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("terminal stream: %w", err)
@@ -254,11 +255,15 @@ func (c *Client) Terminal(ctx context.Context, onOutput func(id string, data []b
 			if typ != websocket.MessageBinary {
 				continue
 			}
+			handle := onOutput
+			if len(data) > 1 && data[0] == 0 {
+				handle, data = onReplay, data[1:]
+			}
 			id, payload, err := decodeFrame(data)
 			if err != nil {
 				continue
 			}
-			onOutput(id, payload)
+			handle(id, payload)
 		}
 	}()
 	return &Stream{conn: conn}, finished, nil
@@ -275,7 +280,8 @@ func (s *Stream) Send(ctx context.Context, id string, data []byte) error {
 	return s.conn.Write(ctx, websocket.MessageBinary, frame)
 }
 
-// A /ws frame is [id length: 1 byte][id][payload] (internal/terminal/transport.go).
+// A /ws frame is [id length: 1 byte][id][payload], and a replay frame the same
+// behind a zero byte (internal/terminal/transport.go).
 func encodeFrame(id string, payload []byte) ([]byte, error) {
 	if len(id) == 0 || len(id) > 255 {
 		return nil, fmt.Errorf("session id %q: want 1 to 255 bytes", id)

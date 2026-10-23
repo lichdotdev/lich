@@ -163,7 +163,7 @@ func sendWhenRegistered(t *testing.T, tr *transport, id string, data []byte) boo
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
-		if tr.send(id, data) {
+		if tr.send(frameFor(t, id, string(data))) {
 			return true
 		}
 		time.Sleep(time.Millisecond)
@@ -177,7 +177,7 @@ func TestTransportSendAndFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
 	}
-	if tr.send("sess", []byte("x")) {
+	if tr.send(frameFor(t, "sess", "x")) {
 		t.Fatal("send must report false with no client connected")
 	}
 

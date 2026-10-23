@@ -23,6 +23,8 @@ type Renderer interface {
 	Measure(gtx layout.Context) error
 	// Cell is the size of one cell in pixels.
 	Cell() (w, h int)
+	// SetSize changes the font size, which the next Measure takes in.
+	SetSize(size unit.Sp)
 	// Draw paints the snapshot at the current offset and returns how many rows
 	// it had to redraw.
 	Draw(gtx layout.Context, s Snapshot) (int, error)

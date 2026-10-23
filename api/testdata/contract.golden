@@ -177,7 +177,7 @@ terminal.LastTurnSaid(SessionIDOptions) LastSaid
 terminal.Live(SessionIDOptions) bool
 terminal.LiveCount(None) int
 terminal.Ready(SessionIDOptions) bool
-terminal.Replay(SessionIDOptions) string
+terminal.Replay(SessionIDOptions) bool
 terminal.Resize(ResizeOptions) None
 terminal.ResumeAvailable(ResumeAvailableOptions) bool
 terminal.SearchTranscripts(SearchTranscriptsOptions) []TranscriptMatch

@@ -15,13 +15,13 @@ func TestOutboxQueuesWhileDeliveryIsStuck(t *testing.T) {
 	t.Parallel()
 	release := make(chan struct{})
 	entered := make(chan struct{}, 1)
-	box := newOutbox(func([]byte) {
+	box := newOutbox(nil, func([]byte) {
 		select {
 		case entered <- struct{}{}:
 		default:
 		}
 		<-release
-	}, 2)
+	}, nil, 2)
 
 	// The first frame is taken by the (stuck) delivery goroutine; two more fit
 	// the queue.
@@ -64,11 +64,11 @@ func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
 	t.Parallel()
 	var mu sync.Mutex
 	var got []string
-	box := newOutbox(func(data []byte) {
+	box := newOutbox(nil, func(data []byte) {
 		mu.Lock()
 		got = append(got, string(data))
 		mu.Unlock()
-	}, 4)
+	}, nil, 4)
 
 	for _, frame := range []string{"a", "b", "c", "d", "e"} {
 		box.push([]byte(frame))
@@ -87,7 +87,7 @@ func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
 func TestOutboxCopiesTheFrame(t *testing.T) {
 	t.Parallel()
 	delivered := make(chan []byte, 1)
-	box := newOutbox(func(data []byte) { delivered <- data }, 1)
+	box := newOutbox(nil, func(data []byte) { delivered <- data }, nil, 1)
 
 	buf := []byte("live")
 	box.push(buf)

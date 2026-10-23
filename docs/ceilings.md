@@ -897,6 +897,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   and macOS leave out the dual-width Nerd Font families (the ones not named "Mono", whose icons take two cells)
   that fontconfig's `spacing=dual` lists on Linux; the "Mono" variant of each is offered. Its family names come
   from parsing one file per family, a few hundred on a stock Windows, the first time a font picker opens.
+  On Linux each face fontconfig names is kept for the rest of the run (`fonts.Locate`), since every lookup is an
+  `fc-match` subprocess inside a frame: a family installed while lich runs, after a terminal or the editor
+  already asked for it, keeps drawing in the substitute fontconfig gave until lich restarts. Choosing it in a
+  font picker for the first time is not affected.
 - **The Chinese font the native window downloads reaches its interface, not its terminal on Linux**
   (`native/fonts/download.go`, `native/glyphs/raster.go`): the terminal finds a glyph its family lacks through
   fontconfig (`fonts.Covering`), which never sees `<user cache dir>/lich/fonts`, so with no Chinese font

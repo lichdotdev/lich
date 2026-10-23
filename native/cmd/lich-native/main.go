@@ -348,7 +348,7 @@ func (u *window) connect() error {
 	if err != nil {
 		return err
 	}
-	stream, _, err := u.client.Terminal(u.ctx, func(id string, data []byte) { u.terms.onOutput(id, data) })
+	stream, _, err := u.client.Terminal(u.ctx, u.terms.onOutput, u.terms.onReplay)
 	if err != nil {
 		return err
 	}

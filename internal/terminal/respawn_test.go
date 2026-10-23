@@ -5,7 +5,6 @@
 package terminal
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -174,18 +173,17 @@ func exitBin(t *testing.T, code int) string {
 	return path
 }
 
-// replayOf returns a session's replay buffer decoded back to raw output.
+// replayOf returns a session's replay buffer as raw output, "" for a session
+// not running.
 func replayOf(t *testing.T, svc *Service, id string) string {
 	t.Helper()
-	encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: id})
-	if err != nil {
-		t.Fatalf("replay: %v", err)
+	svc.mu.Lock()
+	sess, ok := svc.sessions[id]
+	svc.mu.Unlock()
+	if !ok {
+		return ""
 	}
-	raw, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		t.Fatalf("decode replay: %v", err)
-	}
-	return string(raw)
+	return string(sess.replay.snapshot())
 }
 
 // A PTY that dies with its turn open, the agent crashing or the shell exiting
@@ -210,4 +208,18 @@ func TestReapForgetsOpenTurn(t *testing.T) {
 		t.Fatalf("kill pty: %v", err)
 	}
 	waitFor(t, func() bool { return open.Load() == 0 }, "the reap to close the turn")
+}
+
+// A session's output reaches the window in /ws frames that carry its id in
+// at most 255 bytes, so an id longer than that is refused before its PTY
+// spawns rather than spawning a session whose output cannot be addressed.
+func TestStartRefusesAnIDNoFrameCanCarry(t *testing.T) {
+	svc := New(stubBins{bin: echoBin(t)}, nil, events.New())
+	id := strings.Repeat("x", 256)
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: id, ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err == nil {
+		t.Fatal("Start accepted a 256-byte session id")
+	}
+	if replayOf(t, svc, id) != "" || svc.ptyOf(id) != nil {
+		t.Fatal("a refused start left a session behind")
+	}
 }

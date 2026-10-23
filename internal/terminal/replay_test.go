@@ -1,11 +1,11 @@
 package terminal
 
 import (
-	"bytes"
-	"encoding/base64"
 	"github.com/lichdotdev/lich/api"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestReplayBufferKeepsOutputInOrder(t *testing.T) {
@@ -54,45 +54,76 @@ func TestReplayBufferDropsOldestOnOverflow(t *testing.T) {
 	}
 }
 
-func TestReplayBufferKeepsOneChunkLargerThanCap(t *testing.T) {
+// The tail is the last capBytes of output, however the reads that brought it
+// were cut: a read the cap splits keeps the part that is still in the tail.
+func TestReplayBufferKeepsTheLastCapBytesAcrossReads(t *testing.T) {
+	t.Parallel()
+	b := newReplayBuffer(10)
+	for _, read := range []string{"0123456", "789ab", "cdefg"} {
+		b.append([]byte(read))
+	}
+	if got := string(b.snapshot()); got != "789abcdefg" {
+		t.Fatalf("snapshot = %q, want %q", got, "789abcdefg")
+	}
+	b.append([]byte("h"))
+	if got := string(b.snapshot()); got != "89abcdefgh" {
+		t.Fatalf("snapshot after one more byte = %q, want %q", got, "89abcdefgh")
+	}
+}
+
+// A single write larger than the cap keeps its last capBytes. The PTY's read
+// buffer is far below the cap, so a read never is one.
+func TestReplayBufferKeepsTheEndOfAWriteLargerThanCap(t *testing.T) {
 	t.Parallel()
 	b := newReplayBuffer(4)
-	big := bytes.Repeat([]byte("x"), 100)
-	b.append(big)
-	if got := b.snapshot(); len(got) != 100 {
-		t.Fatalf("snapshot len = %d, want 100 — a lone oversized chunk must survive", len(got))
+	b.append([]byte("ab"))
+	b.append([]byte("wxyz12"))
+	if got := string(b.snapshot()); got != "yz12" {
+		t.Fatalf("snapshot = %q, want %q", got, "yz12")
 	}
 }
 
 // A bare Service with a hand-built session exercises Replay without a PTY, so
-// this stays OS-agnostic (no !windows build tag): Replay only reads the tail.
-func TestServiceReplayEncodesTheTail(t *testing.T) {
+// this stays OS-agnostic (no !windows build tag). The replay frame lands
+// between the output already emitted and the output after it, and what the
+// coalescer was holding goes out once, inside the tail, never again after it.
+func TestServiceReplayQueuesTheTailBetweenOutputFrames(t *testing.T) {
 	t.Parallel()
-	b := newReplayBuffer(replayCapBytes)
-	b.append([]byte("scrollback"))
-	svc := &Service{sessions: map[string]*session{"s1": {replay: b}}}
+	var got []string
+	box := newOutbox(nil,
+		func(data []byte) { got = append(got, "out:"+string(data)) },
+		func(tail []byte) { got = append(got, "replay:"+string(tail)) },
+		outboxDepth)
+	sess := &session{replay: newReplayBuffer(replayCapBytes), outbox: box, out: newCoalescer(box.push, time.Hour, time.Hour)}
+	read := func(data string) {
+		sess.replay.append([]byte(data))
+		sess.out.Write([]byte(data))
+	}
+	svc := &Service{sessions: map[string]*session{"s1": sess}}
 
-	encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "s1"})
-	if err != nil {
-		t.Fatalf("Replay = %v, want nil", err)
+	read("a")
+	read("b")
+	queued, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "s1"})
+	if err != nil || !queued {
+		t.Fatalf("Replay = %v, %v; want a replay queued", queued, err)
 	}
-	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	if string(decoded) != "scrollback" {
-		t.Fatalf("Replay tail = %q, want %q", decoded, "scrollback")
+	read("c")
+	sess.out.Close()
+	box.close()
+
+	if want := []string{"out:a", "replay:ab", "out:c"}; !slices.Equal(got, want) {
+		t.Fatalf("delivered %q, want %q", got, want)
 	}
 }
 
-func TestServiceReplayUnknownSessionIsEmpty(t *testing.T) {
+func TestServiceReplayUnknownSessionQueuesNothing(t *testing.T) {
 	t.Parallel()
 	svc := &Service{sessions: map[string]*session{}}
-	got, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "nope"})
+	queued, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "nope"})
 	if err != nil {
 		t.Fatalf("Replay = %v, want nil", err)
 	}
-	if got != "" {
-		t.Fatalf("Replay unknown = %q, want empty", got)
+	if queued {
+		t.Fatal("Replay of an unknown session reported a replay coming")
 	}
 }
