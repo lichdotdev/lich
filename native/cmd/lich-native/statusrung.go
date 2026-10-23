@@ -41,7 +41,7 @@ const minDetail = 24
 // statusRung is SessionStatusRung, cut to the rungs this window keeps: an
 // open request with another session, a block on the user, a compaction, and
 // the tool the turn is running, the first that holds. It reports false when
-// none does, and the card stays its usual size.
+// none does, and the card shows its path on that line.
 func statusRung(th *ui.Theme, sv *sessionView) (layout.Widget, bool) {
 	switch {
 	case sv.relay.Direction != "":

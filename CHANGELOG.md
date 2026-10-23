@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A session card no longer grows and shrinks as its agent starts and stops a tool, waits on you or compacts, pushing every card below it up and down. That line now takes the place of the card's path while it shows, and the path comes back when it goes.
 - The native window holds less memory for its fonts. A font file asked for more than once, such as the interface and the terminal set in the same family or the bold face that also stands in for semibold, was parsed again each time, about 30MB for a Nerd Font face; it is now parsed once and shared while in use. An interface in a language other than Chinese, Japanese or Korean no longer loads a CJK font at start, tens of megabytes: it does on the first CJK text on screen, drawn meanwhile with a system font. With one Nerd Font for the interface, the terminal and the editor and no CJK on screen, the fonts take 119MB where they took 246MB.
 
 ## [0.78.1] - 2026-10-23

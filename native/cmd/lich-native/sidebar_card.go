@@ -158,10 +158,12 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, s.titleRow(th, sv)...)
 		}),
 	}
+	// The rung takes the path's line so the card keeps its height through a turn.
+	second := func(gtx C) D { return pathRow(gtx, th, sv.layout, path) }
 	if rung, ok := statusRung(th, sv); ok {
-		rows = append(rows, ui.VGap(2), layout.Rigid(rung))
+		second = rung
 	}
-	rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return pathRow(gtx, th, sv.layout, path) }))
+	rows = append(rows, ui.VGap(2), layout.Rigid(second))
 	if sv.git.Branch != "" {
 		rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.branchRow(gtx, th, sv, prChip) }))
 	}
