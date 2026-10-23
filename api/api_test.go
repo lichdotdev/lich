@@ -35,7 +35,10 @@ func TestContractMatchesGolden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != string(want) {
+	// The repository carries no .gitattributes, so a Windows checkout may hand
+	// back CRLF for the golden committed with LF: the checkout's spelling, not
+	// drift.
+	if got != strings.ReplaceAll(string(want), "\r\n", "\n") {
 		t.Errorf("the contract moved; if that is meant, run `go test ./api -update` and review the diff.\ngot:\n%s", got)
 	}
 }
