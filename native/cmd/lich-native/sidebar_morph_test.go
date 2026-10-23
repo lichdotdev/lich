@@ -152,3 +152,47 @@ func TestSidebarMorphResizesTheStageOnce(t *testing.T) {
 		}
 	}
 }
+
+// The terminal fits the width the morph ends at from its first frame, so the
+// agent redraws while the sidebar is still moving: either way the terminal's
+// width changes once, as the morph starts, to the final one, and the frames
+// from there to the one the morph lands in refit it at once.
+func TestSidebarMorphFitsTheTerminalToWhereItEndsAsItStarts(t *testing.T) {
+	const window = 1400
+	for _, opening := range []bool{true, false} {
+		s := newSidebar(new(ui.Root))
+		s.open = !opening
+		gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1}, Now: time.Unix(0, 0)}
+		var widths []int
+		landings := 0
+		frame := func() {
+			s.morph.advance(gtx)
+			widths = append(widths, window-s.stageReserve(gtx)-s.stageOverhang(gtx))
+			if s.morph.landed {
+				landings++
+			}
+			if s.morph.active() && !s.morph.holdsStage() {
+				t.Fatalf("opening=%v: a morph frame does not hold the stage", opening)
+			}
+			s.morph.capture(gtx.Ops)
+			gtx.Now = gtx.Now.Add(testFrame)
+		}
+		frame()
+		s.setOpen(gtx, opening, new(sidebarAction))
+		for range 2 + int(sidebarMorphDuration/testFrame) + 2 {
+			frame()
+		}
+		after := window - s.boxWidth(gtx, opening)
+		for i, w := range widths[1:] {
+			if w != after {
+				t.Fatalf("opening=%v: frame %d terminal width %d, want %d from the morph's first frame", opening, i+1, w, after)
+			}
+		}
+		if landings != 1 {
+			t.Fatalf("opening=%v: landed in %d frames, want 1", opening, landings)
+		}
+		if s.morph.holdsStage() {
+			t.Fatalf("opening=%v: still holds the stage a frame after landing", opening)
+		}
+	}
+}

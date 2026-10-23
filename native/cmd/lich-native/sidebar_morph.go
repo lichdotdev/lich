@@ -63,6 +63,9 @@ type sidebarMorph struct {
 	p         float32 // this frame's eased progress
 	side      morphSide
 	boxes     [2]map[string]image.Rectangle // by side, in window coordinates
+
+	// landed is whether this frame ended the morph.
+	landed bool
 }
 
 // begin starts a morph to the shape the sidebar was just switched to.
@@ -73,10 +76,15 @@ func (m *sidebarMorph) begin(gtx C) {
 
 func (m *sidebarMorph) active() bool { return m.phase != morphIdle }
 
+// holdsStage is whether the stage's size this frame holds until the morph
+// lands, or is the size it landed on.
+func (m *sidebarMorph) holdsStage() bool { return m.active() || m.landed }
+
 // advance sets the frame's progress. It runs once, before the frame is laid
 // out, so every part of the frame reads the same one.
 func (m *sidebarMorph) advance(gtx C) {
 	m.capturing = m.phase == morphCapture
+	m.landed = false
 	switch m.phase {
 	case morphIdle:
 		return
@@ -87,7 +95,7 @@ func (m *sidebarMorph) advance(gtx C) {
 			m.start = gtx.Now
 		}
 		if m.p = morphProgress(gtx.Now.Sub(m.start)); m.p >= 1 {
-			m.phase = morphIdle
+			m.phase, m.landed = morphIdle, true
 			return
 		}
 	}
@@ -181,6 +189,12 @@ func (s *sidebar) stageReserve(gtx C) int {
 		return s.boxWidth(gtx, s.open)
 	}
 	return min(s.boxWidth(gtx, true), s.boxWidth(gtx, false))
+}
+
+// stageOverhang is how much wider the stage is this frame than where the
+// morph leaves it: the shapes' difference through an expand, else 0.
+func (s *sidebar) stageOverhang(gtx C) int {
+	return s.boxWidth(gtx, s.open) - s.stageReserve(gtx)
 }
 
 // morphing is the sidebar mid-morph: its box eases between the two shapes'

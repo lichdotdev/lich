@@ -14,6 +14,7 @@ func stageFrames(t *testing.T, tab dockTab) (*window, *frameRig) {
 	r := newFrameRig(rigWindow, nil)
 	u := &window{model: newModel(nil, r.invalidate), terms: &terminals{byID: map[string]*termView{}, invalidate: r.invalidate}}
 	u.topbar = newTopbar(&u.root)
+	u.sidebar = newSidebar(&u.root)
 	_, client := newSidebarBackend(t)
 	comments := new(commentStore)
 	code, err := newCodeTab(client, r.invalidate, "monospace", 12, comments, func(ui.Toast) {})

@@ -99,9 +99,9 @@ type terminals struct {
 	// unzoomed is the window's own scale, which terminals draw at whatever
 	// the interface zoom: a zoom step never changes a grid's cols×rows.
 	unzoomed unit.Metric
-	// refitNow is a frame a dock slide began or ended in: the area just took
-	// the size it will hold, so the grid follows it at once rather than after
-	// refitSettle more of a clipped grid.
+	// refitNow is a frame whose area holds its size until a dock slide or a
+	// sidebar morph lands, or the frame one landed in, so the grid follows it
+	// at once rather than after refitSettle more of a clipped grid.
 	refitNow bool
 
 	mu   sync.Mutex

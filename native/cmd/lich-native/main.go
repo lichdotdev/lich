@@ -622,8 +622,8 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 // island is the stage's rounded box: Home, the empty notice, the diff or
 // the terminal, in the color the active tab merges with. Its top-left corner
 // is square while that tab sits on it. A lone session's terminal is laid out
-// termWidth wide, which a dock slide sets to where the box is going: wider,
-// the box clips it; narrower, its fill shows past it.
+// termWidth wide, which a dock slide or a sidebar morph sets to where the box
+// is going: wider, the box clips it; narrower, its fill shows past it.
 func (u *window) island(gtx C, v stageView, termWidth int) error {
 	size := gtx.Constraints.Max
 	gtx.Constraints.Min = size
@@ -729,15 +729,17 @@ func (u *window) stageRow(gtx C, v stageView) error {
 		d.slide.snap(open)
 	}
 	share := d.slide.at(gtx, open)
-	u.terms.refitNow = d.slide.began || d.slide.landed
+	u.terms.refitNow = d.slide.began || d.slide.landed || u.sidebar.morph.holdsStage()
 	defer func() { u.terms.refitNow = false }()
 	size := gtx.Constraints.Max
-	// The session's terminal takes the width the slide ends at from its first
-	// frame, so the agent redraws for it while the dock is still moving.
-	termWidth := size.X
+	// The session's terminal takes the width the dock's slide and the
+	// sidebar's morph end at from their first frame, so the agent redraws for
+	// it while they are still moving.
+	termWidth := size.X - u.sidebar.stageOverhang(gtx)
 	if open && !d.fullscreen {
-		termWidth = max(size.X-d.width(gtx)-gtx.Dp(gutter), 0)
+		termWidth -= d.width(gtx) + gtx.Dp(gutter)
 	}
+	termWidth = max(termWidth, 0)
 	if share == 0 {
 		d.islands = nil
 		return u.island(gtx, v, termWidth)
