@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/backend"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 func turnState(id, state string) backend.TurnState {
@@ -149,8 +151,12 @@ func fakeTurnStates(t *testing.T, states []backend.TurnState) *backend.Client {
 }
 
 func TestModelHydratesStatusAndUsageThenFollowsNewerEvents(t *testing.T) {
+	var usage api.SessionUsage
+	if err := json.Unmarshal([]byte(opusReport), &usage); err != nil {
+		t.Fatal(err)
+	}
 	busy := backend.TurnState{ID: "s1", State: "busy", Tool: "Bash", Since: time.Now().UnixMilli(),
-		Usage: json.RawMessage(opusReport), Cwd: "/elsewhere"}
+		Usage: &usage, Cwd: "/elsewhere"}
 	m := newTestModel(fakeTurnStates(t, []backend.TurnState{busy}))
 	toasts := 0
 	m.notify = func(statusReport) { toasts++ }

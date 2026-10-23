@@ -265,7 +265,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// the file it copies for a confined session is one a human chose in a dialog
 	// (drop.Attach says why that matters).
 	drops.SetPicker(proj.PickFile)
-	dispatcher.Register("terminal", term)
+	routes.Terminal(dispatcher, term)
 	routes.Drop(dispatcher, drops)
 	dispatcher.Register("project", proj)
 	plugins := agentplugin.New(db)

@@ -1,6 +1,10 @@
 package backend
 
-import "context"
+import (
+	"context"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 // ClosedSession mirrors store.ClosedSession: a parked session as the command
 // palette's History tab lists it. ParkedBranch is the branch recorded at the
@@ -50,13 +54,7 @@ type ExternalSession struct {
 	Profile           string `json:"profile,omitempty"`
 }
 
-// TranscriptMatch mirrors terminal.TranscriptMatch: a session whose
-// conversation mentions a query, with its newest matching message.
-type TranscriptMatch struct {
-	ID      string `json:"id"`
-	Snippet string `json:"snippet"`
-	Count   int    `json:"count"`
-}
+type TranscriptMatch = api.TranscriptMatch
 
 // RecentProjectsMatching is RecentProjects narrowed to the closed projects
 // whose name or path hold every word of term.
@@ -104,8 +102,7 @@ func (c *Client) ForgetSession(ctx context.Context, sessionID string) error {
 // and what they said, in the order the sessions were given. A query under
 // three characters is refused and answers none.
 func (c *Client) SearchTranscripts(ctx context.Context, ids []string, query string) ([]TranscriptMatch, error) {
-	var matches []TranscriptMatch
-	return matches, c.Call(ctx, "terminal.SearchTranscripts", &matches, ids, query)
+	return callMethod(ctx, c, api.TerminalSearchTranscripts, api.SearchTranscriptsOptions{IDs: ids, Query: query})
 }
 
 // BranchesOf names the branch each checkout path is on now; a path that is no

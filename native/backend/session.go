@@ -1,6 +1,10 @@
 package backend
 
-import "context"
+import (
+	"context"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 // CloseSession parks a session: its row leaves the open list but stays for a
 // later reopen, and activeID becomes the project's active session ("" for
@@ -11,7 +15,8 @@ func (c *Client) CloseSession(ctx context.Context, projectID, sessionID, activeI
 
 // CloseTerminal stops a session's process and drops its PTY.
 func (c *Client) CloseTerminal(ctx context.Context, id string) error {
-	return c.Call(ctx, "terminal.Close", nil, id)
+	_, err := callMethod(ctx, c, api.TerminalClose, api.SessionIDOptions{ID: id})
+	return err
 }
 
 // SetSessionPinned pins a session to the head of the sidebar, or unpins it.
@@ -37,22 +42,19 @@ func (c *Client) SetSessionColor(ctx context.Context, sessionID, color string) e
 
 // Live reports whether a session has a process running right now.
 func (c *Client) Live(ctx context.Context, id string) (bool, error) {
-	var live bool
-	return live, c.Call(ctx, "terminal.Live", &live, id)
+	return callMethod(ctx, c, api.TerminalLive, api.SessionIDOptions{ID: id})
 }
 
 // WorkdirMissing reports whether a session cannot start in cwd because the
 // directory is provably gone; false for every uncertainty.
 func (c *Client) WorkdirMissing(ctx context.Context, cwd string) (bool, error) {
-	var missing bool
-	return missing, c.Call(ctx, "terminal.WorkdirMissing", &missing, cwd)
+	return callMethod(ctx, c, api.TerminalWorkdirMissing, api.WorkdirOptions{Cwd: cwd})
 }
 
 // ResumeAvailable reports whether the provider conversation providerSessionID
 // can still be reopened from cwd.
 func (c *Client) ResumeAvailable(ctx context.Context, kind, providerSessionID, cwd string) (bool, error) {
-	var available bool
-	return available, c.Call(ctx, "terminal.ResumeAvailable", &available, kind, providerSessionID, cwd)
+	return callMethod(ctx, c, api.TerminalResumeAvailable, api.ResumeAvailableOptions{Kind: kind, ProviderSessionID: providerSessionID, Cwd: cwd})
 }
 
 // ReopenSession brings a parked session back to its project's open list

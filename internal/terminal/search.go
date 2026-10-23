@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/snippet"
 )
 
@@ -23,14 +24,7 @@ const minSearchQuery = 3
 // Indexing is the fix if that ever bites — not a bigger number.
 const searchTailBytes = 4 << 20
 
-// TranscriptMatch is one session whose conversation mentions the query: the
-// session id to jump to, the newest matching message trimmed to a line, and how
-// many of its messages matched.
-type TranscriptMatch struct {
-	ID      string `json:"id"`
-	Snippet string `json:"snippet"`
-	Count   int    `json:"count"`
-}
+type TranscriptMatch = api.TranscriptMatch
 
 // SearchTranscripts finds which of the given sessions have talked about query,
 // and what they said. The caller passes the sessions it can route to (the

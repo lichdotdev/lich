@@ -94,11 +94,11 @@ func injectedWrite(t *testing.T, b *gateBackend) string {
 			if !found {
 				continue
 			}
-			var args []string
+			var args []api.WriteOptions
 			if err := json.Unmarshal([]byte(body), &args); err != nil {
 				t.Fatal(err)
 			}
-			return args[1]
+			return args[0].Data
 		case <-time.After(5 * time.Second):
 			t.Fatal("no terminal.Write")
 		}

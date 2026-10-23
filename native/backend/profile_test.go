@@ -83,7 +83,7 @@ func TestProfileCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.XDGProfiles("cursor").LoginCommand(ctx, "work")
 			return err
 		}},
-		{"ContinueIn", "terminal.ContinueIn", `"s1","work"`, nil, func(c *Client) error {
+		{"ContinueIn", "terminal.ContinueIn", `{"id":"s1","profile":"work"}`, nil, func(c *Client) error {
 			return c.ContinueIn(ctx, "s1", "work")
 		}},
 	}

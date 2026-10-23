@@ -8,8 +8,7 @@ import (
 
 // LiveCount is how many sessions have a process running right now.
 func (c *Client) LiveCount(ctx context.Context) (int, error) {
-	var n int
-	return n, c.Call(ctx, "terminal.LiveCount", &n)
+	return callMethod(ctx, c, api.TerminalLiveCount, api.None{})
 }
 
 // Quit ends lich: every session's process ends with it. The reply can be
@@ -44,8 +43,6 @@ func (c *Client) Notify(ctx context.Context, summary, detail string) error {
 // LastTurnSaid is the last thing the agent said in session id's conversation,
 // "" when its transcript has none to read.
 func (c *Client) LastTurnSaid(ctx context.Context, id string) (string, error) {
-	var said struct {
-		Text string `json:"text"`
-	}
-	return said.Text, c.Call(ctx, "terminal.LastTurnSaid", &said, id)
+	said, err := callMethod(ctx, c, api.TerminalLastTurnSaid, api.SessionIDOptions{ID: id})
+	return said.Text, err
 }

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -11,37 +12,7 @@ import (
 // emitted after a turn ends. Global like the other session events.
 const usageEventName = "session-usage"
 
-// usageEvent is the payload of usageEventName. Percent is the share of the
-// context window the turn left occupied (0–100); Tokens is the provider's active
-// context count behind it, Window the model's effective context window, Model
-// the model id, and Effort the reasoning effort level ("" when the line records
-// none).
-//
-// All five are zero for a provider that records what a turn spent but not the
-// window it spent it against — oh-my-pi, opencode and Crush, the cost-only rung
-// of docs/ceilings.md (each in docs/providers/). A zero Window is the window's signal to draw the cost
-// alone rather than a ring around a window nobody reported.
-//
-// CostUSD is what the session has cost so far, and is omitted — not zeroed —
-// whenever there is no number worth showing: the setting is off, or a model in
-// the transcript has no known price. The readout is for API billing, so on a
-// subscription the field never appears at all and the footer shows nothing.
-//
-// CostMiss says why, and only when the answer is "lich cannot price this
-// conversation" — a costMiss.spoken() one. It stays empty for the readout being
-// off, which is not a failure but the design above, and for a miss the next turn
-// heals. Without it a session that cannot be priced and a session that is not
-// being priced look identical, and an empty footer reads as zero spend.
-type usageEvent struct {
-	ID       string   `json:"id"`
-	Percent  int      `json:"percent"`
-	Tokens   int      `json:"tokens"`
-	Window   int      `json:"window"`
-	Model    string   `json:"model"`
-	Effort   string   `json:"effort"`
-	CostUSD  *float64 `json:"costUsd,omitempty"`
-	CostMiss string   `json:"costMiss,omitempty"`
-}
+type usageEvent = api.SessionUsage
 
 // emitUsage reads the context-window usage of the provider conversation running
 // in session id and pushes it to the window. Called off the status hook on

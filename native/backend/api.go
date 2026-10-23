@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // Project mirrors store.Project (internal/store/store.go), trimmed to what the
@@ -84,8 +86,8 @@ func (c *Client) SetActiveSession(ctx context.Context, projectID, sessionID stri
 // Replay returns the tail of a session's output, to write into a fresh
 // terminal before live output is applied.
 func (c *Client) Replay(ctx context.Context, id string) ([]byte, error) {
-	var b64 string
-	if err := c.Call(ctx, "terminal.Replay", &b64, id); err != nil {
+	b64, err := callMethod(ctx, c, api.TerminalReplay, api.SessionIDOptions{ID: id})
+	if err != nil {
 		return nil, err
 	}
 	data, err := base64.StdEncoding.DecodeString(b64)
@@ -109,25 +111,33 @@ type ConversationReported struct {
 // Start spawns the session's process at cols x rows; a no-op when it already
 // runs. resume is a provider conversation id to reopen, "" to start fresh.
 func (c *Client) Start(ctx context.Context, id, projectID, cwd, kind, resume string, cols, rows int) error {
-	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, resume, false, cols, rows)
+	_, err := callMethod(ctx, c, api.TerminalStart, api.StartOptions{
+		ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Resume: resume, Cols: cols, Rows: rows,
+	})
+	return err
 }
 
 // Fork spawns the session's process branching the provider conversation
 // parent: the conversation is copied into one of its own, and the card that
 // runs parent goes on untouched. A no-op when the session already runs.
 func (c *Client) Fork(ctx context.Context, id, projectID, cwd, kind, parent string, cols, rows int) error {
-	return c.Call(ctx, "terminal.Start", nil, id, projectID, cwd, kind, parent, true, cols, rows)
+	_, err := callMethod(ctx, c, api.TerminalStart, api.StartOptions{
+		ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Resume: parent, Fork: true, Cols: cols, Rows: rows,
+	})
+	return err
 }
 
 // Resize sets the session's PTY size.
 func (c *Client) Resize(ctx context.Context, id string, cols, rows int) error {
-	return c.Call(ctx, "terminal.Resize", nil, id, cols, rows)
+	_, err := callMethod(ctx, c, api.TerminalResize, api.ResizeOptions{ID: id, Cols: cols, Rows: rows})
+	return err
 }
 
 // SetVisible tells the backend whether the session is on screen, which sets
 // how long it batches output before sending.
 func (c *Client) SetVisible(ctx context.Context, id string, visible bool) error {
-	return c.Call(ctx, "terminal.SetVisible", nil, id, visible)
+	_, err := callMethod(ctx, c, api.TerminalSetVisible, api.SetVisibleOptions{ID: id, Visible: visible})
+	return err
 }
 
 // Diff returns a checkout's branch and change counts.

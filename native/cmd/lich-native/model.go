@@ -247,10 +247,16 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 	}
 	m.mu.Unlock()
 	for _, ts := range states {
-		if len(ts.Usage) == 0 {
+		if ts.Usage == nil {
 			continue
 		}
-		if err := m.usage.seed(ts.Usage); err != nil {
+		// seed reads the session-usage event's own bytes, the one decoding the
+		// /events stream goes through too.
+		raw, err := json.Marshal(ts.Usage)
+		if err == nil {
+			err = m.usage.seed(raw)
+		}
+		if err != nil {
 			log.Printf("terminal.TurnStates: usage of %s: %v", ts.ID, err)
 		}
 	}

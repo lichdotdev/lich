@@ -205,7 +205,8 @@ func (a ProfileAPI) Plan(ctx context.Context, slug string) (QuotaPlan, error) {
 // and carries on there. The backend refuses a turn in progress, and a provider
 // whose conversations cannot move (opencode).
 func (c *Client) ContinueIn(ctx context.Context, id, slug string) error {
-	return c.Call(ctx, "terminal.ContinueIn", nil, id, slug)
+	_, err := callMethod(ctx, c, api.TerminalContinueIn, api.ContinueInOptions{ID: id, Profile: slug})
+	return err
 }
 
 // ProfileGone reports whether err is a spawn refused for a profile deleted

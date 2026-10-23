@@ -24,13 +24,13 @@ func TestTurnStatesDecodesTheSnapshot(t *testing.T) {
 	if len(got) != 3 {
 		t.Fatalf("got %+v, want 3 sessions", got)
 	}
-	if s := got[0]; s.ID != "s1" || s.State != "busy" || s.Tool != "Bash" || s.Detail != "go test" || s.Since != 1000 || len(s.Usage) == 0 {
+	if s := got[0]; s.ID != "s1" || s.State != "busy" || s.Tool != "Bash" || s.Detail != "go test" || s.Since != 1000 || s.Usage == nil || s.Usage.Percent != 42 {
 		t.Errorf("s1 = %+v", s)
 	}
 	if s := got[1]; s.State != "waiting" || s.Reason != "permission" || s.Usage != nil {
 		t.Errorf("s2 = %+v", s)
 	}
-	if s := got[2]; s.State != "" || len(s.Usage) == 0 || s.Cwd != "/elsewhere" || s.Host != "tmux" {
+	if s := got[2]; s.State != "" || s.Usage == nil || s.Usage.Percent != 7 || s.Cwd != "/elsewhere" || s.Host != "tmux" {
 		t.Errorf("s3 = %+v", s)
 	}
 }

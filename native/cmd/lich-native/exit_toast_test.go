@@ -151,7 +151,7 @@ func TestRestartStartsTheConversationAsked(t *testing.T) {
 		if !u.terms.restart(u.ctx, sv, resume) {
 			t.Fatal("restart reported a failure")
 		}
-		if args := b.await(t, "terminal.Start"); !strings.HasPrefix(args, `["s1","p","/repo","claude","`+resume+`",`) {
+		if args := b.await(t, "terminal.Start"); !strings.HasPrefix(args, `[{"id":"s1","projectId":"p","cwd":"/repo","kind":"claude","resume":"`+resume+`",`) {
 			t.Errorf("Start %s, want resume %q", args, resume)
 		}
 		if _, exited := u.terms.exitOf("s1"); exited {

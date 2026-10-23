@@ -21,8 +21,7 @@ func (c *Client) QuotaPlans(ctx context.Context, sessionID string) ([]QuotaPlan,
 
 // HandsOn is how long session id has been worked on, in whole seconds.
 func (c *Client) HandsOn(ctx context.Context, id string) (int64, error) {
-	var seconds int64
-	return seconds, c.Call(ctx, "terminal.HandsOn", &seconds, id)
+	return callMethod(ctx, c, api.TerminalHandsOn, api.SessionIDOptions{ID: id})
 }
 
 // Attach opens the backend's file chooser for session sessionID. root is the
@@ -34,7 +33,8 @@ func (c *Client) Attach(ctx context.Context, sessionID, root string, confined bo
 
 // Write types data into session id's PTY.
 func (c *Client) Write(ctx context.Context, id, data string) error {
-	return c.Call(ctx, "terminal.Write", nil, id, data)
+	_, err := callMethod(ctx, c, api.TerminalWrite, api.WriteOptions{ID: id, Data: data})
+	return err
 }
 
 // SetSetting writes a setting; scope is a project id, "" for a global one.

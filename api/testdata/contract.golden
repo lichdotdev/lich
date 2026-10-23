@@ -90,6 +90,22 @@ system.SSHAgentKeys(None) []string
 system.SandboxBackend(None) string
 system.ShowWindow(ShowWindowOptions) None
 system.TakeUncleanExit(None) bool
+terminal.Close(SessionIDOptions) None
+terminal.ContinueIn(ContinueInOptions) None
+terminal.HandsOn(SessionIDOptions) int64
+terminal.LastTurnSaid(SessionIDOptions) LastSaid
+terminal.Live(SessionIDOptions) bool
+terminal.LiveCount(None) int
+terminal.Ready(SessionIDOptions) bool
+terminal.Replay(SessionIDOptions) string
+terminal.Resize(ResizeOptions) None
+terminal.ResumeAvailable(ResumeAvailableOptions) bool
+terminal.SearchTranscripts(SearchTranscriptsOptions) []TranscriptMatch
+terminal.SetVisible(SetVisibleOptions) None
+terminal.Start(StartOptions) None
+terminal.TurnStates(None) []TurnState
+terminal.WorkdirMissing(WorkdirOptions) bool
+terminal.Write(WriteOptions) None
 themes.Import(ImportThemeOptions) ThemeImportResult
 themes.InstallFromGit(InstallThemesOptions) ThemeGitResult
 themes.List(None) []Theme
@@ -573,6 +589,79 @@ QuitOptions {
 ShowWindowOptions {
 }
 
+SessionIDOptions {
+	id string
+}
+
+ContinueInOptions {
+	id string
+	profile string
+}
+
+LastSaid {
+	text,omitempty string
+}
+
+ResizeOptions {
+	id string
+	cols int
+	rows int
+}
+
+ResumeAvailableOptions {
+	kind string
+	providerSessionId string
+	cwd string
+}
+
+SearchTranscriptsOptions {
+	ids []string
+	query string
+}
+
+TranscriptMatch {
+	id string
+	snippet string
+	count int
+}
+
+SetVisibleOptions {
+	id string
+	visible bool
+}
+
+StartOptions {
+	id string
+	projectId string
+	cwd string
+	kind string
+	resume string
+	fork bool
+	cols int
+	rows int
+}
+
+TurnState {
+	id string
+	state,omitempty string
+	tool,omitempty string
+	detail,omitempty string
+	reason,omitempty string
+	since,omitempty int64
+	usage,omitempty *SessionUsage
+	cwd,omitempty string
+	host,omitempty string
+}
+
+WorkdirOptions {
+	cwd string
+}
+
+WriteOptions {
+	id string
+	data string
+}
+
 ImportThemeOptions {
 	path string
 	overwrite bool
@@ -677,6 +766,17 @@ CostTotal {
 	unpriced int
 	source string
 	costUsd float64
+}
+
+SessionUsage {
+	id string
+	percent int
+	tokens int
+	window int
+	model string
+	effort string
+	costUsd,omitempty *float64
+	costMiss,omitempty string
 }
 
 ThemeSource {

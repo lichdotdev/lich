@@ -1,6 +1,10 @@
 package backend
 
-import "context"
+import (
+	"context"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 // Worktree mirrors project.Worktree.
 type Worktree struct {
@@ -77,6 +81,5 @@ func (c *Client) AddSessionWithSandbox(ctx context.Context, projectID, sessionID
 
 // Ready reports whether session id sits at a prompt that can take input.
 func (c *Client) Ready(ctx context.Context, id string) (bool, error) {
-	var ok bool
-	return ok, c.Call(ctx, "terminal.Ready", &ok, id)
+	return callMethod(ctx, c, api.TerminalReady, api.SessionIDOptions{ID: id})
 }

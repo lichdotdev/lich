@@ -30,7 +30,7 @@ func TestFooterCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.QuotaPlans(ctx, "s1")
 			return err
 		}},
-		{"HandsOn", "terminal.HandsOn", `"s1"`, 0, func(c *Client) error {
+		{"HandsOn", "terminal.HandsOn", `{"id":"s1"}`, 0, func(c *Client) error {
 			_, err := c.HandsOn(ctx, "s1")
 			return err
 		}},
@@ -38,7 +38,7 @@ func TestFooterCallsSendPositionalArgs(t *testing.T) {
 			_, err := c.Attach(ctx, "s1", "/repo", true)
 			return err
 		}},
-		{"Write", "terminal.Write", `"s1","hi"`, nil, func(c *Client) error {
+		{"Write", "terminal.Write", `{"id":"s1","data":"hi"}`, nil, func(c *Client) error {
 			return c.Write(ctx, "s1", "hi")
 		}},
 		{"SetSetting", "store.SetSetting", `"footer.layout","","{}"`, nil, func(c *Client) error {

@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -18,15 +19,7 @@ import (
 // the start — the first paragraph is the recap.
 const saidRuneCap = 4000
 
-// LastSaid is the prose the agent ended its last turn with, the body of the
-// window's finished-turn notification. Text is empty for every absence there is
-// — a provider whose conversation lich cannot read, a turn that ended in a tool
-// call, a transcript still being written — because the notification goes out
-// without a body either way and a reason it cannot act on is a reason not worth
-// wiring.
-type LastSaid struct {
-	Text string `json:"text,omitempty"`
-}
+type LastSaid = api.LastSaid
 
 // The two sides of a conversation, spelled the way Claude Code's transcript
 // spells them. Every other provider's spelling is mapped onto these by its own

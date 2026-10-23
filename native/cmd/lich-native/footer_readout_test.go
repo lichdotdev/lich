@@ -336,10 +336,9 @@ func attachBackend(t *testing.T, picked backend.Attachment, writes *[][]string) 
 			}
 			_ = json.NewEncoder(w).Encode(picked)
 		case "/rpc/terminal.Write":
-			var id, data string
-			_ = json.Unmarshal(args[0], &id)
-			_ = json.Unmarshal(args[1], &data)
-			*writes = append(*writes, []string{id, data})
+			var opts api.WriteOptions
+			_ = json.Unmarshal(args[0], &opts)
+			*writes = append(*writes, []string{opts.ID, opts.Data})
 			_ = json.NewEncoder(w).Encode(nil)
 		default:
 			t.Errorf("unexpected call %s", r.URL.Path)

@@ -36,7 +36,7 @@ func TestPaletteCallsSendPositionalArgs(t *testing.T) {
 		{"ForgetSession", "store.ForgetSession", `"h1"`, nil, func(c *Client) error {
 			return c.ForgetSession(ctx, "h1")
 		}},
-		{"SearchTranscripts", "terminal.SearchTranscripts", `["s1","s2"],"flaky"`, []TranscriptMatch{}, func(c *Client) error {
+		{"SearchTranscripts", "terminal.SearchTranscripts", `{"ids":["s1","s2"],"query":"flaky"}`, []TranscriptMatch{}, func(c *Client) error {
 			_, err := c.SearchTranscripts(ctx, []string{"s1", "s2"}, "flaky")
 			return err
 		}},

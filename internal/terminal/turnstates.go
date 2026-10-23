@@ -4,6 +4,8 @@ import (
 	"slices"
 	"sync"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // statusBook is the last session-status payload published for each session.
@@ -56,22 +58,7 @@ func (b *statusBook) forget(id string) {
 	b.mu.Unlock()
 }
 
-// TurnState is what the window missed about one live session while it was not
-// attached to /events: the last session-status report (State is empty for a
-// session that never reported) and the readout the last session-usage event
-// carried (nil when there is none to read). Since is when the session entered
-// State, in Unix milliseconds. Cwd and Host are its last session-cwd report.
-type TurnState struct {
-	ID     string      `json:"id"`
-	State  string      `json:"state,omitempty"`
-	Tool   string      `json:"tool,omitempty"`
-	Detail string      `json:"detail,omitempty"`
-	Reason string      `json:"reason,omitempty"`
-	Since  int64       `json:"since,omitempty"`
-	Usage  *usageEvent `json:"usage,omitempty"`
-	Cwd    string      `json:"cwd,omitempty"`
-	Host   string      `json:"host,omitempty"`
-}
+type TurnState = api.TurnState
 
 // TurnStates is the catch-up a window takes right after attaching to /events:
 // what each live session last reported, taken from the same reports the event
