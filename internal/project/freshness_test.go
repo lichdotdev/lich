@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +32,7 @@ func TestBaseFreshnessWithoutUpstream(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 
-	got, err := New(nil).BaseFreshness(repo, "main")
+	got, err := New(nil).BaseFreshness(t.Context(), api.PathBranchOptions{Path: repo, Branch: "main"})
 	if err != nil {
 		t.Fatalf("BaseFreshness: %v", err)
 	}
@@ -48,7 +49,7 @@ func TestBaseFreshnessBehindFetchesFirst(t *testing.T) {
 	origin, originGit := originWithMain(t, git)
 	commitIn(t, origin, originGit, "merged\n")
 
-	got, err := New(nil).BaseFreshness(repo, "main")
+	got, err := New(nil).BaseFreshness(t.Context(), api.PathBranchOptions{Path: repo, Branch: "main"})
 	if err != nil {
 		t.Fatalf("BaseFreshness: %v", err)
 	}
@@ -64,7 +65,7 @@ func TestBaseFreshnessAhead(t *testing.T) {
 	originWithMain(t, git)
 	commitIn(t, repo, git, "local\n")
 
-	got, err := New(nil).BaseFreshness(repo, "main")
+	got, err := New(nil).BaseFreshness(t.Context(), api.PathBranchOptions{Path: repo, Branch: "main"})
 	if err != nil {
 		t.Fatalf("BaseFreshness: %v", err)
 	}
@@ -83,7 +84,7 @@ func TestBaseFreshnessFetchFailure(t *testing.T) {
 	originWithMain(t, git)
 	git("remote", "set-url", "origin", filepath.Join(t.TempDir(), "unreachable"))
 
-	got, err := New(nil).BaseFreshness(repo, "main")
+	got, err := New(nil).BaseFreshness(t.Context(), api.PathBranchOptions{Path: repo, Branch: "main"})
 	if err != nil {
 		t.Fatalf("BaseFreshness: %v", err)
 	}
@@ -96,7 +97,7 @@ func TestBaseFreshnessNotABranch(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 
-	if _, err := New(nil).BaseFreshness(repo, "nope"); err == nil {
+	if _, err := New(nil).BaseFreshness(t.Context(), api.PathBranchOptions{Path: repo, Branch: "nope"}); err == nil {
 		t.Error("BaseFreshness(unknown branch) = nil error, want a refusal")
 	}
 }
@@ -111,13 +112,13 @@ func TestCreateWorktreeReusesTheFetchBaseFreshnessJustMade(t *testing.T) {
 	commitIn(t, origin, originGit, "seen\n")
 
 	svc := New(nil)
-	if _, err := svc.BaseFreshness(repo, "main"); err != nil {
+	if _, err := svc.BaseFreshness(t.Context(), api.PathBranchOptions{Path: repo, Branch: "main"}); err != nil {
 		t.Fatalf("BaseFreshness: %v", err)
 	}
 	seen := strings.TrimSpace(git("rev-parse", "refs/remotes/origin/main"))
 	commitIn(t, origin, originGit, "pushed after\n")
 
-	wt, err := svc.CreateWorktree(repo, "pid", "from-fresh", "origin/main", true)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "from-fresh", Base: "origin/main", BaseIsRemote: true})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}

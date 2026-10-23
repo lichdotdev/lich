@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -42,39 +43,39 @@ func setActiveSession(tx *sql.Tx, projectID, sessionID string) error {
 // previously closed project keeps its stored sessions, name, path and tab
 // position intact — only is_open flips back to 1. A brand-new project takes the
 // position after the last one, so it opens as the rightmost tab.
-func (s *Service) AddProject(id, name, path string) error {
+func (s *Service) AddProject(_ context.Context, opts api.AddProjectOptions) (api.None, error) {
 	_, err := s.db.Exec(
 		`INSERT INTO projects (id, name, path, is_open, position)
 		 VALUES (?, ?, ?, 1, (SELECT COALESCE(MAX(position), -1) + 1 FROM projects))
 		 ON CONFLICT(id) DO UPDATE SET is_open = 1, name = excluded.name, path = excluded.path`,
-		id, name, path,
+		opts.ID, opts.Name, opts.Path,
 	)
 	if err != nil {
-		return fmt.Errorf("add project %q: %w", id, err)
+		return api.None{}, fmt.Errorf("add project %q: %w", opts.ID, err)
 	}
-	events.Send(s.projectHasChanged, api.ProjectAddedEvent, ProjectAdded{ID: id, Name: name, Path: path})
-	return nil
+	events.Send(s.projectHasChanged, api.ProjectAddedEvent, ProjectAdded{ID: opts.ID, Name: opts.Name, Path: opts.Path})
+	return api.None{}, nil
 }
 
 // CloseProject marks a project closed without deleting it or its sessions, so it
 // can be reopened later with its session state restored. closed_seq is what
 // orders the reopen menu; a counter rather than a timestamp, so two closes in
 // the same second still order.
-func (s *Service) CloseProject(id string) error {
+func (s *Service) CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error) {
 	res, err := s.db.Exec(
 		`UPDATE projects
 		    SET is_open = 0,
 		        closed_seq = (SELECT COALESCE(MAX(closed_seq), 0) + 1 FROM projects)
 		  WHERE id = ?`,
-		id,
+		opts.ID,
 	)
 	if err != nil {
-		return fmt.Errorf("close project %q: %w", id, err)
+		return api.None{}, fmt.Errorf("close project %q: %w", opts.ID, err)
 	}
 	if n, err := res.RowsAffected(); err == nil && n > 0 {
-		events.Send(s.projectHasChanged, api.ProjectClosedEvent, ProjectClosed{ID: id})
+		events.Send(s.projectHasChanged, api.ProjectClosedEvent, ProjectClosed{ID: opts.ID})
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // DeleteProject removes a project and, through ON DELETE CASCADE, its sessions.
@@ -115,43 +116,37 @@ func (s *Service) DeleteProject(id string) error {
 // directory when it lives in a git worktree; empty means the project's.
 // The session takes the position after the project's last one, so it appends to
 // the card list even once the user has dragged the others around.
-// sandbox is whether this session runs confined ("on"/"off", empty to follow the
+// opts.Sandbox is whether this session runs confined ("on"/"off", empty to follow the
 // provider's rung). It is written with the row rather than after it because the
 // PTY reads it on the very first spawn: a second call would race the card the
 // insert is about to put on screen, and lose that race silently — the session
 // would open unconfined and stay that way until something respawned it.
-func (s *Service) AddSession(
-	projectID, sessionID, label, kind, path string, nextSeq int, sandbox string,
-) error {
-	return s.addSession(projectID, sessionID, label, kind, path, nextSeq, "", "", sandbox, "")
+func (s *Service) AddSession(_ context.Context, opts api.AddSessionOptions) (api.None, error) {
+	return api.None{}, s.addSession(opts.ProjectID, opts.SessionID, opts.Label, opts.Kind, opts.Path, opts.NextSeq, "", "", opts.Sandbox, "")
 }
 
 // AddSessionInFolder is AddSession for a session opened into a folder (a
 // folder's +). The folder is written with the row rather than after it: filing
 // is an UPDATE, and a lich that died between the two would bring the session
 // back unfiled.
-func (s *Service) AddSessionInFolder(
-	projectID, sessionID, label, kind, path string, nextSeq int, sandbox, folder string,
-) error {
-	return s.addSession(projectID, sessionID, label, kind, path, nextSeq, "", "", sandbox, folder)
+func (s *Service) AddSessionInFolder(_ context.Context, opts api.AddSessionInFolderOptions) (api.None, error) {
+	return api.None{}, s.addSession(opts.ProjectID, opts.SessionID, opts.Label, opts.Kind, opts.Path, opts.NextSeq, "", "", opts.Sandbox, opts.Folder)
 }
 
-// AddSessionFrom is AddSession for a session opened by delegation: originID is
-// the session that asked for it and originLabel what that session was called at
+// AddSessionFrom is AddSession for a session opened by delegation: opts.OriginID is
+// the session that asked for it and opts.OriginLabel what that session was called at
 // the time. Both are written with the row rather than after it, so a card can
-// never exist without the origin it was created with; folder, "" for none, is
+// never exist without the origin it was created with; opts.Folder, "" for none, is
 // written with it for AddSessionInFolder's reason.
 //
 // It is a second entry point rather than two more arguments on AddSession
 // because the window — the only caller reaching this over RPC — never has an
 // origin to pass. Only internal/spawn does.
-func (s *Service) AddSessionFrom(
-	projectID, sessionID, label, kind, path string, nextSeq int, originID, originLabel, folder string,
-) error {
+func (s *Service) AddSessionFrom(_ context.Context, opts api.AddSessionFromOptions) (api.None, error) {
 	// No sandbox answer: a delegated session is opened by another session, which
 	// has nobody to ask, so it follows the provider's rung like every other
 	// caller that cannot put the question on screen.
-	return s.addSession(projectID, sessionID, label, kind, path, nextSeq, originID, originLabel, "", folder)
+	return api.None{}, s.addSession(opts.ProjectID, opts.SessionID, opts.Label, opts.Kind, opts.Path, opts.NextSeq, opts.OriginID, opts.OriginLabel, "", opts.Folder)
 }
 
 // addSession is the one insert behind every entry point.
@@ -205,7 +200,7 @@ func (s *Service) DeleteSession(projectID, sessionID, activeID string) error {
 
 // CloseSession parks a session instead of deleting it: is_open flips to 0, which
 // hides it from LoadState while keeping its row — and its provider session id —
-// intact for a later resume. The project's active session moves to activeID (the
+// intact for a later resume. The project's active session moves to opts.ActiveID (the
 // neighbor the window picked).
 //
 // Every close lands here. DeleteSession is what the checkout's own removal uses,
@@ -227,17 +222,17 @@ func (s *Service) DeleteSession(projectID, sessionID, activeID string) error {
 // git and the transcript are both asked before the transaction opens: the store
 // holds a single connection, and a subprocess or a 32 MB read under the write
 // lock stalls every other caller for as long as it takes.
-func (s *Service) CloseSession(projectID, sessionID, activeID string) error {
-	branch := s.SessionBranch(sessionID)
-	s.indexTranscript(sessionID)
-	return s.tx(func(tx *sql.Tx) error {
+func (s *Service) CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error) {
+	branch := s.SessionBranch(opts.SessionID)
+	s.indexTranscript(opts.SessionID)
+	return api.None{}, s.tx(func(tx *sql.Tx) error {
 		if _, err := tx.Exec(
 			`UPDATE sessions SET is_open = 0, closed_at = ?, parked_branch = ? WHERE id = ?`,
-			now().Unix(), branch, sessionID,
+			now().Unix(), branch, opts.SessionID,
 		); err != nil {
-			return fmt.Errorf("close session %q: %w", sessionID, err)
+			return fmt.Errorf("close session %q: %w", opts.SessionID, err)
 		}
-		return setActiveSession(tx, projectID, activeID)
+		return setActiveSession(tx, opts.ProjectID, opts.ActiveID)
 	})
 }
 
@@ -277,33 +272,33 @@ func (s *Service) SessionBranch(sessionID string) string {
 // forgotten, so an id belonging to a live card matches nothing here. A row that
 // was already gone is not an error, and only the rows a delete actually removed
 // are reported gone.
-func (s *Service) ForgetSession(sessionID string) error {
+func (s *Service) ForgetSession(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
 	const parkedCopies = `is_open = 0 AND (id = ? OR (provider_session_id <> '' AND provider_session_id =
 		(SELECT provider_session_id FROM sessions WHERE id = ? AND is_open = 0)))`
-	s.noteForfeitedSchedules(parkedCopies, sessionID, sessionID)
-	gone := s.sessionIDsWhere(parkedCopies, sessionID, sessionID)
-	if _, err := s.db.Exec(`DELETE FROM sessions WHERE `+parkedCopies, sessionID, sessionID); err != nil {
-		return fmt.Errorf("forget session %q: %w", sessionID, err)
+	s.noteForfeitedSchedules(parkedCopies, opts.ID, opts.ID)
+	gone := s.sessionIDsWhere(parkedCopies, opts.ID, opts.ID)
+	if _, err := s.db.Exec(`DELETE FROM sessions WHERE `+parkedCopies, opts.ID, opts.ID); err != nil {
+		return api.None{}, fmt.Errorf("forget session %q: %w", opts.ID, err)
 	}
 	s.sessionIsGone(gone...)
-	return nil
+	return api.None{}, nil
 }
 
-// ReopenWorktreeSession resumes the session parked for the worktree at path,
-// the last one closed there. Returns nil when nothing is parked at path — the
+// ReopenWorktreeSession resumes the session parked for the worktree at opts.Path,
+// the last one closed there. Returns nil when nothing is parked at opts.Path — the
 // caller then opens a brand-new session.
 //
-// The empty path is refused, and that guard is load-bearing for the same reason
+// An empty opts.Path is refused, and that guard is load-bearing for the same reason
 // PurgeWorktreeSessions carries one: a project's own sessions are stored with no
 // path, so an unguarded lookup would answer the worktree picker with a parked
 // session that never lived in a worktree at all.
-func (s *Service) ReopenWorktreeSession(projectID, path, newSessionID string) (*Session, error) {
-	if path == "" {
+func (s *Service) ReopenWorktreeSession(_ context.Context, opts api.ReopenWorktreeSessionOptions) (*Session, error) {
+	if opts.Path == "" {
 		return nil, nil
 	}
-	return s.reopen(newSessionID,
+	return s.reopen(opts.NewSessionID,
 		`WHERE project_id = ? AND path = ? AND is_open = 0 ORDER BY rowid DESC LIMIT 1`,
-		projectID, path)
+		opts.ProjectID, opts.Path)
 }
 
 // ReopenSession resumes one parked session by its own id — the history list's
@@ -314,8 +309,8 @@ func (s *Service) ReopenWorktreeSession(projectID, path, newSessionID string) (*
 // Deliberately not scoped to a project: the row names its own, and that is the
 // only answer that stays right for a session parked in a project the caller is
 // not looking at — which is most of the history.
-func (s *Service) ReopenSession(sessionID, newSessionID string) (*Session, error) {
-	return s.reopen(newSessionID, `WHERE id = ? AND is_open = 0`, sessionID)
+func (s *Service) ReopenSession(_ context.Context, opts api.ReopenSessionOptions) (*Session, error) {
+	return s.reopen(opts.NewSessionID, `WHERE id = ? AND is_open = 0`, opts.SessionID)
 }
 
 // reopen is the resume behind both doors: it finds one parked session with the
@@ -481,27 +476,27 @@ func (s *Service) openSession(projectID, id string) (*Session, error) {
 	return nil, fmt.Errorf("session %q is no longer open", id)
 }
 
-// PurgeWorktreeSessions deletes every session row for the worktree at path in a
+// PurgeWorktreeSessions deletes every session row for the worktree at opts.Path in a
 // project — the live one and any parked leftovers alike — so removing a worktree
 // never strands a hidden row that a later resume could resurrect against a
 // checkout that no longer exists. The empty-path guard is load-bearing: a
 // project's own sessions carry no path, so an unguarded delete would wipe them
 // all. Idempotent — no matching rows is not an error.
-func (s *Service) PurgeWorktreeSessions(projectID, path string) error {
-	if path == "" {
-		return nil
+func (s *Service) PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error) {
+	if opts.Path == "" {
+		return api.None{}, nil
 	}
-	s.noteForfeitedSchedules(`project_id = ? AND path = ?`, projectID, path)
+	s.noteForfeitedSchedules(`project_id = ? AND path = ?`, opts.ProjectID, opts.Path)
 	// Read before the delete, because what hangs off a session outside the
 	// database is keyed by id and the rows are about to be gone.
-	gone := s.sessionIDsWhere(`project_id = ? AND path = ?`, projectID, path)
+	gone := s.sessionIDsWhere(`project_id = ? AND path = ?`, opts.ProjectID, opts.Path)
 	if _, err := s.db.Exec(
-		`DELETE FROM sessions WHERE project_id = ? AND path = ?`, projectID, path,
+		`DELETE FROM sessions WHERE project_id = ? AND path = ?`, opts.ProjectID, opts.Path,
 	); err != nil {
-		return fmt.Errorf("purge worktree sessions for %q: %w", path, err)
+		return api.None{}, fmt.Errorf("purge worktree sessions for %q: %w", opts.Path, err)
 	}
 	s.sessionIsGone(gone...)
-	return nil
+	return api.None{}, nil
 }
 
 // sessionIDsWhere lists the sessions a delete with the same WHERE is about to
@@ -533,30 +528,30 @@ func (s *Service) sessionIDsWhere(where string, args ...any) []string {
 // RenameSession updates a session's display label from an explicit user rename.
 // It clears label_auto so the automatic ai-title (SetSessionTitle) never stomps
 // a name the user chose.
-func (s *Service) RenameSession(sessionID, label string) error {
+func (s *Service) RenameSession(_ context.Context, opts api.LabelSessionOptions) (api.None, error) {
 	if _, err := s.db.Exec(
 		`UPDATE sessions SET label = ?, label_auto = 0 WHERE id = ?`,
-		label, sessionID,
+		opts.Label, opts.SessionID,
 	); err != nil {
-		return fmt.Errorf("rename session %q: %w", sessionID, err)
+		return api.None{}, fmt.Errorf("rename session %q: %w", opts.SessionID, err)
 	}
 	if s.sessionRenamed != nil {
-		s.sessionRenamed(sessionID, label)
+		s.sessionRenamed(opts.SessionID, opts.Label)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // SetSessionPinned pins or unpins a session — the flag the sidebar reads to
 // hoist a card to the head of the list, and to withhold its close affordances.
 // It leaves position untouched, so an unpinned session falls back to the slot
 // the last drag gave it rather than landing wherever the pinned block ended.
-func (s *Service) SetSessionPinned(sessionID string, pinned bool) error {
+func (s *Service) SetSessionPinned(_ context.Context, opts api.SessionPinnedOptions) (api.None, error) {
 	if _, err := s.db.Exec(
-		`UPDATE sessions SET pinned = ? WHERE id = ?`, pinned, sessionID,
+		`UPDATE sessions SET pinned = ? WHERE id = ?`, opts.Pinned, opts.SessionID,
 	); err != nil {
-		return fmt.Errorf("set session %q pinned: %w", sessionID, err)
+		return api.None{}, fmt.Errorf("set session %q pinned: %w", opts.SessionID, err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // SetSessionFolder files a session under a folder, or takes it out of one with
@@ -569,26 +564,26 @@ func (s *Service) SetSessionPinned(sessionID string, pinned bool) error {
 // taking the last one out is what ends it. Nothing here trims or folds case —
 // the window hands over a name the user picked from its own list of them, and a
 // second name differing by a space is a second folder they can see and rename.
-func (s *Service) SetSessionFolder(sessionID, folder string) error {
+func (s *Service) SetSessionFolder(_ context.Context, opts api.SessionFolderOptions) (api.None, error) {
 	if _, err := s.db.Exec(
-		`UPDATE sessions SET folder = ? WHERE id = ?`, folder, sessionID,
+		`UPDATE sessions SET folder = ? WHERE id = ?`, opts.Folder, opts.SessionID,
 	); err != nil {
-		return fmt.Errorf("set session %q folder: %w", sessionID, err)
+		return api.None{}, fmt.Errorf("set session %q folder: %w", opts.SessionID, err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // SetSessionColor paints a session's card with a palette colour, or hands it
 // back to the theme with an empty name. The name is stored as given: the
 // palette lives in the window, which draws a name it does not know as no colour
 // at all.
-func (s *Service) SetSessionColor(sessionID, color string) error {
+func (s *Service) SetSessionColor(_ context.Context, opts api.SessionColorOptions) (api.None, error) {
 	if _, err := s.db.Exec(
-		`UPDATE sessions SET color = ? WHERE id = ?`, color, sessionID,
+		`UPDATE sessions SET color = ? WHERE id = ?`, opts.Color, opts.SessionID,
 	); err != nil {
-		return fmt.Errorf("set session %q color: %w", sessionID, err)
+		return api.None{}, fmt.Errorf("set session %q color: %w", opts.SessionID, err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // ColorFolder paints every session filed under one project's folder, as the
@@ -608,7 +603,7 @@ func (s *Service) ColorFolder(projectID, folder, color string) ([]string, error)
 	return painted, nil
 }
 
-// RenameFolder renames one project's folder, and takes it apart when `to` is
+// RenameFolder renames one project's folder, and takes it apart when `opts.To` is
 // empty — ungrouping every session filed under it in one write.
 //
 // Scoped to a project because the name is the identity: two projects can both
@@ -617,23 +612,23 @@ func (s *Service) ColorFolder(projectID, folder, color string) ([]string, error)
 // resumed session comes back into the folder it was filed under, which has to
 // be the folder's name now rather than the one it wore at the close.
 //
-// An empty `from` is refused, or the call would sweep every unfiled session in
+// An empty `opts.From` is refused, or the call would sweep every unfiled session in
 // the project into a folder nobody asked for.
 //
 // It returns the ids of every row it rewrote, parked ones included. They come
 // from the write itself rather than a read before it: a session filed under
-// `from` in between is moved too, and a caller announcing the move from its own
+// `opts.From` in between is moved too, and a caller announcing the move from its own
 // earlier read would leave that card behind.
-func (s *Service) RenameFolder(projectID, from, to string) ([]string, error) {
-	if from == "" {
+func (s *Service) RenameFolder(_ context.Context, opts api.RenameProjectFolderOptions) ([]string, error) {
+	if opts.From == "" {
 		return nil, fmt.Errorf("rename folder: no folder named")
 	}
 	moved, err := s.updatedIDs(
 		`UPDATE sessions SET folder = ? WHERE project_id = ? AND folder = ? RETURNING id`,
-		to, projectID, from,
+		opts.To, opts.ProjectID, opts.From,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("rename folder %q in %q: %w", from, projectID, err)
+		return nil, fmt.Errorf("rename folder %q in %q: %w", opts.From, opts.ProjectID, err)
 	}
 	return moved, nil
 }
@@ -667,13 +662,13 @@ func (s *Service) updatedIDs(query string, args ...any) ([]string, error) {
 //
 // A session whose row is gone matches nothing, which is not an error: a card
 // closed between a turn ending and this write has no mark left to carry.
-func (s *Service) SetSessionUnread(sessionID string, unread bool) error {
+func (s *Service) SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error) {
 	if _, err := s.db.Exec(
-		`UPDATE sessions SET unread = ? WHERE id = ?`, unread, sessionID,
+		`UPDATE sessions SET unread = ? WHERE id = ?`, opts.Unread, opts.SessionID,
 	); err != nil {
-		return fmt.Errorf("set session %q unread: %w", sessionID, err)
+		return api.None{}, fmt.Errorf("set session %q unread: %w", opts.SessionID, err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // SetSessionTitle sets a session's label from the provider's ai-title reported
@@ -821,13 +816,13 @@ func (s *Service) InheritSubagent(sessionID, forkedFrom string) error {
 	return nil
 }
 
-// MarkForked records that sessionID was born branching its origin's
+// MarkForked records that opts.ID was born branching its origin's
 // conversation, written by the window that opens the fork along with the row.
-func (s *Service) MarkForked(sessionID string) error {
-	if _, err := s.db.Exec(`UPDATE sessions SET forked = 1 WHERE id = ?`, sessionID); err != nil {
-		return fmt.Errorf("mark %q forked: %w", sessionID, err)
+func (s *Service) MarkForked(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	if _, err := s.db.Exec(`UPDATE sessions SET forked = 1 WHERE id = ?`, opts.ID); err != nil {
+		return api.None{}, fmt.Errorf("mark %q forked: %w", opts.ID, err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // InheritUltracode turns ultracode on for a fork when the session that ran the
@@ -964,9 +959,9 @@ func (s *Service) ProviderSession(sessionID string) (string, error) {
 // ReorderProjects records the tab order after a drag. It writes every project's
 // position from the full list the window rendered, so the stored order is
 // rewritten as a whole rather than patched around the moved tab.
-func (s *Service) ReorderProjects(ids []string) error {
+func (s *Service) ReorderProjects(_ context.Context, opts api.ReorderProjectsOptions) (api.None, error) {
 	err := s.tx(func(tx *sql.Tx) error {
-		for position, id := range ids {
+		for position, id := range opts.IDs {
 			if _, err := tx.Exec(
 				`UPDATE projects SET position = ? WHERE id = ?`, position, id,
 			); err != nil {
@@ -976,21 +971,21 @@ func (s *Service) ReorderProjects(ids []string) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
-	events.Send(s.projectHasChanged, api.ProjectsReorderedEvent, ProjectsReordered{IDs: ids})
-	return nil
+	events.Send(s.projectHasChanged, api.ProjectsReorderedEvent, ProjectsReordered{IDs: opts.IDs})
+	return api.None{}, nil
 }
 
 // ReorderSessions records a project's card order after a drag, writing every
 // position from the full list. Scoped to the project so an id belonging to
 // another project's list can never take a position in this one.
-func (s *Service) ReorderSessions(projectID string, ids []string) error {
-	return s.tx(func(tx *sql.Tx) error {
-		for position, id := range ids {
+func (s *Service) ReorderSessions(_ context.Context, opts api.ReorderSessionsOptions) (api.None, error) {
+	return api.None{}, s.tx(func(tx *sql.Tx) error {
+		for position, id := range opts.IDs {
 			if _, err := tx.Exec(
 				`UPDATE sessions SET position = ? WHERE id = ? AND project_id = ?`,
-				position, id, projectID,
+				position, id, opts.ProjectID,
 			); err != nil {
 				return fmt.Errorf("reorder sessions: %w", err)
 			}
@@ -1000,11 +995,11 @@ func (s *Service) ReorderSessions(projectID string, ids []string) error {
 }
 
 // SetActiveSession records which session is focused within a project.
-func (s *Service) SetActiveSession(projectID, sessionID string) error {
-	if _, err := s.db.Exec(setActiveSessionSQL, sessionID, projectID); err != nil {
-		return fmt.Errorf("set active session %q on %q: %w", sessionID, projectID, err)
+func (s *Service) SetActiveSession(_ context.Context, opts api.ActiveSessionOptions) (api.None, error) {
+	if _, err := s.db.Exec(setActiveSessionSQL, opts.SessionID, opts.ProjectID); err != nil {
+		return api.None{}, fmt.Errorf("set active session %q on %q: %w", opts.SessionID, opts.ProjectID, err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // tx runs fn inside a transaction, committing on success and rolling back on any

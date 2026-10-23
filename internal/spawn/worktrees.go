@@ -1,6 +1,7 @@
 package spawn
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -18,9 +19,9 @@ type WorktreesOptions = api.WorktreesOptions
 // The project's own directory is not one of them: it is the checkout every
 // project has, it cannot be removed, and offering it in a list whose point is
 // "what can be opened or closed" would invite exactly that.
-func (s *Service) Worktrees(opts WorktreesOptions) ([]Checkout, error) {
+func (s *Service) Worktrees(ctx context.Context, opts WorktreesOptions) ([]Checkout, error) {
 	fromID, projectName := opts.From, opts.Project
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(ctx, api.None{})
 	if err != nil {
 		return nil, fmt.Errorf("read the workspace: %w", err)
 	}
@@ -29,7 +30,7 @@ func (s *Service) Worktrees(opts WorktreesOptions) ([]Checkout, error) {
 		return nil, err
 	}
 
-	found, err := s.worktrees.ListCheckouts(target.Path)
+	found, err := s.worktrees.ListCheckouts(ctx, api.PathOptions{Path: target.Path})
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (s *Service) Worktrees(opts WorktreesOptions) ([]Checkout, error) {
 		}
 		// A failed read reports clean rather than refusing the whole list: the
 		// answer is advisory here, and removing a checkout asks git again.
-		dirty, _ := s.worktrees.WorktreeDirty(wt.Path)
+		dirty, _ := s.worktrees.WorktreeDirty(ctx, api.PathOptions{Path: wt.Path})
 		out = append(out, Checkout{
 			Name:     wt.Name,
 			Path:     wt.Path,
@@ -70,7 +71,7 @@ func sessionsIn(p store.Project, path string) []string {
 // checkoutAt finds an existing worktree by branch name, so opening a session in
 // one is not the same operation as creating it.
 func (s *Service) checkoutAt(target store.Project, name string) (string, bool) {
-	found, err := s.worktrees.ListCheckouts(target.Path)
+	found, err := s.worktrees.ListCheckouts(context.Background(), api.PathOptions{Path: target.Path})
 	if err != nil {
 		return "", false
 	}

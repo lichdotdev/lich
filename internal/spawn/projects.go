@@ -1,6 +1,7 @@
 package spawn
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -54,7 +55,7 @@ func (s *Service) ensureProject(
 // answers with whichever of the two rows the query reached first.
 func (s *Service) adoptProject(identity *project.Project) ([]store.Project, store.Project, error) {
 	id, name := identity.ID, identity.Name
-	recents, err := s.sessions.RecentProjects("")
+	recents, err := s.sessions.RecentProjects(context.Background(), api.SearchTermOptions{})
 	if err != nil {
 		return nil, store.Project{}, fmt.Errorf("read the closed projects: %w", err)
 	}
@@ -64,10 +65,10 @@ func (s *Service) adoptProject(identity *project.Project) ([]store.Project, stor
 			break
 		}
 	}
-	if err := s.sessions.AddProject(id, name, identity.Path); err != nil {
+	if _, err := s.sessions.AddProject(context.Background(), api.AddProjectOptions{ID: id, Name: name, Path: identity.Path}); err != nil {
 		return nil, store.Project{}, err
 	}
-	reloaded, err := s.sessions.LoadState()
+	reloaded, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		return nil, store.Project{}, fmt.Errorf("read the workspace: %w", err)
 	}

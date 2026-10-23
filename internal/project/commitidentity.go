@@ -1,16 +1,23 @@
 package project
 
-import "github.com/lichdotdev/lich/api"
-
-import "strings"
+import (
+	"context"
+	"github.com/lichdotdev/lich/api"
+	"strings"
+)
 
 type CommitIdentity = api.CommitIdentity
 
-// CommitIdentity reads the identity git itself resolves in the checkout at
+// CommitIdentity answers commitIdentity over RPC.
+func (s *Service) CommitIdentity(_ context.Context, opts api.PathOptions) (CommitIdentity, error) {
+	return s.commitIdentity(opts.Path), nil
+}
+
+// commitIdentity reads the identity git itself resolves in the checkout at
 // path, so a repository-local override wins over the global config exactly as
 // it would for a commit. A non-repository, an unreadable config or no identity
 // at all answer the zero value — hence the quiet probes (see runGit for why).
-func (s *Service) CommitIdentity(path string) CommitIdentity {
+func (s *Service) commitIdentity(path string) CommitIdentity {
 	identity := CommitIdentity{
 		Name:  gitConfig(path, "user.name"),
 		Email: gitConfig(path, "user.email"),

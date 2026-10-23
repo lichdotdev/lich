@@ -3,36 +3,37 @@ package store
 import (
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
 func TestSettingGlobalAndProjectScope(t *testing.T) {
 	svc := newTestStore(t)
 
-	if got, err := svc.GetSetting(claudeBinKey, globalScope); err != nil || got != "" {
+	if got, err := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: claudeBinKey, ProjectID: globalScope}); err != nil || got != "" {
 		t.Fatalf("missing setting = (%q, %v), want (\"\", nil)", got, err)
 	}
 
-	if err := svc.SetSetting(claudeBinKey, globalScope, "/usr/bin/claude"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey, ProjectID: globalScope, Value: "/usr/bin/claude"}); err != nil {
 		t.Fatalf("SetSetting global: %v", err)
 	}
-	if err := svc.SetSetting(claudeBinKey, "p1", "/opt/claude-dev"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey, ProjectID: "p1", Value: "/opt/claude-dev"}); err != nil {
 		t.Fatalf("SetSetting project: %v", err)
 	}
 
 	// Global and project rows coexist under the same key.
-	if got, _ := svc.GetSetting(claudeBinKey, globalScope); got != "/usr/bin/claude" {
+	if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: claudeBinKey, ProjectID: globalScope}); got != "/usr/bin/claude" {
 		t.Errorf("global = %q", got)
 	}
-	if got, _ := svc.GetSetting(claudeBinKey, "p1"); got != "/opt/claude-dev" {
+	if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: claudeBinKey, ProjectID: "p1"}); got != "/opt/claude-dev" {
 		t.Errorf("project = %q", got)
 	}
 
 	// Upsert overwrites in place rather than duplicating.
-	if err := svc.SetSetting(claudeBinKey, globalScope, "/usr/local/bin/claude"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey, ProjectID: globalScope, Value: "/usr/local/bin/claude"}); err != nil {
 		t.Fatalf("SetSetting overwrite: %v", err)
 	}
-	if got, _ := svc.GetSetting(claudeBinKey, globalScope); got != "/usr/local/bin/claude" {
+	if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: claudeBinKey, ProjectID: globalScope}); got != "/usr/local/bin/claude" {
 		t.Errorf("overwritten global = %q", got)
 	}
 }
@@ -48,10 +49,10 @@ func TestSettingRoundTripsAJSONDocument(t *testing.T) {
 	const bindings = `{"newSession":{"mod":true,"shift":true,"alt":false,"key":"j"},` +
 		`"closeSession":{"mod":false,"shift":false,"alt":false,"key":""}}`
 
-	if err := svc.SetSetting(key, globalScope, bindings); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, ProjectID: globalScope, Value: bindings}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
-	got, err := svc.GetSetting(key, globalScope)
+	got, err := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: key, ProjectID: globalScope})
 	if err != nil {
 		t.Fatalf("GetSetting: %v", err)
 	}
@@ -61,10 +62,10 @@ func TestSettingRoundTripsAJSONDocument(t *testing.T) {
 
 	// A rebind replaces the whole document; nothing of the old one survives.
 	const rebound = `{"newSession":{"mod":true,"shift":true,"alt":false,"key":"y"}}`
-	if err := svc.SetSetting(key, globalScope, rebound); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, ProjectID: globalScope, Value: rebound}); err != nil {
 		t.Fatalf("SetSetting rebind: %v", err)
 	}
-	if got, _ := svc.GetSetting(key, globalScope); got != rebound {
+	if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: key, ProjectID: globalScope}); got != rebound {
 		t.Errorf("rebound = %q, want %q", got, rebound)
 	}
 }
@@ -78,13 +79,13 @@ func TestClaudeProviderBinResolution(t *testing.T) {
 	}
 
 	// Global only: every project resolves to it.
-	_ = svc.SetSetting(claudeBinKey, globalScope, "global-claude")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey, ProjectID: globalScope, Value: "global-claude"})
 	if got := svc.ProviderBin(providers.Claude, "p1"); got != "global-claude" {
 		t.Errorf("global fallback = %q, want global-claude", got)
 	}
 
 	// Project override wins over global for that project only.
-	_ = svc.SetSetting(claudeBinKey, "p1", "p1-claude")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey, ProjectID: "p1", Value: "p1-claude"})
 	if got := svc.ProviderBin(providers.Claude, "p1"); got != "p1-claude" {
 		t.Errorf("p1 override = %q, want p1-claude", got)
 	}
@@ -95,15 +96,15 @@ func TestClaudeProviderBinResolution(t *testing.T) {
 
 func TestGHAccountForPath(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "lich", "/repo/lich"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "lich", Path: "/repo/lich"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	// A worktree lives outside the project directory; only its session row ties
 	// the path back to the project.
-	if err := svc.AddSession("p1", "s1", "fix", "claude", "/data/worktrees/p1/fix", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "fix", Kind: "claude", Path: "/data/worktrees/p1/fix", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
-	if err := svc.SetSetting(ghAccountKey, "p1", "octocat"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: ghAccountKey, ProjectID: "p1", Value: "octocat"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 
@@ -127,7 +128,7 @@ func TestGHAccountForPath(t *testing.T) {
 
 	// A project with no account configured resolves to "", which runs gh as its
 	// own active account.
-	if err := svc.AddProject("p2", "other", "/repo/other"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "other", Path: "/repo/other"}); err != nil {
 		t.Fatalf("AddProject p2: %v", err)
 	}
 	if got := svc.GHAccountForPath("/repo/other"); got != "" {
@@ -143,17 +144,17 @@ func TestProviderBinResolution(t *testing.T) {
 	if got := svc.ProviderBin("codex", "p1"); got != "" {
 		t.Errorf("unconfigured codex = %q, want \"\"", got)
 	}
-	_ = svc.SetSetting("provider.codex.bin", globalScope, "global-codex")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin", ProjectID: globalScope, Value: "global-codex"})
 	if got := svc.ProviderBin("codex", "p1"); got != "global-codex" {
 		t.Errorf("global codex = %q, want global-codex", got)
 	}
-	_ = svc.SetSetting("provider.codex.bin", "p1", "p1-codex")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin", ProjectID: "p1", Value: "p1-codex"})
 	if got := svc.ProviderBin("codex", "p1"); got != "p1-codex" {
 		t.Errorf("p1 codex override = %q, want p1-codex", got)
 	}
 
 	// Claude routes through the legacy key, so both scopes read the same value.
-	_ = svc.SetSetting(claudeBinKey, globalScope, "global-claude")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey, ProjectID: globalScope, Value: "global-claude"})
 	if got := svc.ProviderBin("claude", "p2"); got != "global-claude" {
 		t.Errorf("ProviderBin claude = %q, want global-claude", got)
 	}
@@ -164,38 +165,38 @@ func TestProviderBinResolution(t *testing.T) {
 // whole point of the switch, since deleting the path was the old way to do this.
 func TestProviderBinParkedLayer(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.SetSetting("provider.codex.bin", globalScope, "global-codex")
-	_ = svc.SetSetting("provider.codex.bin", "p1", "p1-codex")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin", ProjectID: globalScope, Value: "global-codex"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin", ProjectID: "p1", Value: "p1-codex"})
 
-	_ = svc.SetSetting("provider.codex.bin.off", "p1", "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin.off", ProjectID: "p1", Value: "true"})
 	if got := svc.ProviderBin("codex", "p1"); got != "global-codex" {
 		t.Errorf("parked project layer = %q, want global-codex", got)
 	}
-	if got, _ := svc.GetSetting("provider.codex.bin", "p1"); got != "p1-codex" {
+	if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: "provider.codex.bin", ProjectID: "p1"}); got != "p1-codex" {
 		t.Errorf("parked path = %q, want it kept as p1-codex", got)
 	}
 
 	// Parking the global layer too leaves the provider's own default.
-	_ = svc.SetSetting("provider.codex.bin.off", globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin.off", ProjectID: globalScope, Value: "true"})
 	if got := svc.ProviderBin("codex", "p1"); got != "" {
 		t.Errorf("both layers parked = %q, want \"\"", got)
 	}
 	// A project scope parked while global runs still reads the global value.
-	_ = svc.SetSetting("provider.codex.bin.off", globalScope, "false")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin.off", ProjectID: globalScope, Value: "false"})
 	if got := svc.ProviderBin("codex", "p2"); got != "global-codex" {
 		t.Errorf("unparked global = %q, want global-codex", got)
 	}
 
 	// Anything but the literal "true" is a layer nobody switched off — the key
 	// is absent for every override configured before it existed.
-	_ = svc.SetSetting("provider.codex.bin.off", "p1", "1")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.codex.bin.off", ProjectID: "p1", Value: "1"})
 	if got := svc.ProviderBin("codex", "p1"); got != "p1-codex" {
 		t.Errorf("non-\"true\" off value = %q, want p1-codex", got)
 	}
 
 	// Claude parks through the legacy key's own suffix.
-	_ = svc.SetSetting(claudeBinKey, globalScope, "global-claude")
-	_ = svc.SetSetting(claudeBinKey+".off", globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey, ProjectID: globalScope, Value: "global-claude"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeBinKey + ".off", ProjectID: globalScope, Value: "true"})
 	if got := svc.ProviderBin("claude", "p1"); got != "" {
 		t.Errorf("parked claude = %q, want \"\"", got)
 	}
@@ -207,7 +208,7 @@ func TestProviderBinParkedLayer(t *testing.T) {
 // working tree prompting.
 func TestSkipPermissionsIsScopedByCheckout(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/repo/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/repo/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 
@@ -219,7 +220,7 @@ func TestSkipPermissionsIsScopedByCheckout(t *testing.T) {
 		t.Error("unconfigured worktree skips permissions, want prompts")
 	}
 
-	_ = svc.SetSetting("provider.claude.skip-permissions.worktree", globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.skip-permissions.worktree", ProjectID: globalScope, Value: "true"})
 	if !svc.SkipPermissions(providers.Claude, "p1", "/repo/alpha-feature/") {
 		t.Error("worktree does not skip permissions, want it on")
 	}
@@ -233,13 +234,13 @@ func TestSkipPermissionsIsScopedByCheckout(t *testing.T) {
 		t.Error("unknown project reads the worktree flag, want the main-checkout one")
 	}
 
-	_ = svc.SetSetting("provider.claude.skip-permissions", globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.skip-permissions", ProjectID: globalScope, Value: "true"})
 	if !svc.SkipPermissions(providers.Claude, "p1", "/repo/alpha") {
 		t.Error("project directory does not skip permissions, want it on")
 	}
 
 	// Only the literal "true" arms it — any other stored value prompts.
-	_ = svc.SetSetting("provider.claude.skip-permissions", globalScope, "1")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.skip-permissions", ProjectID: globalScope, Value: "1"})
 	if svc.SkipPermissions(providers.Claude, "p1", "/repo/alpha") {
 		t.Error("value \"1\" skips permissions, want only \"true\" to")
 	}
@@ -258,7 +259,7 @@ func TestProviderEnabledReadsTheSwitchLikeTheWindows(t *testing.T) {
 		{"codex", "0", false},
 	}
 	for _, c := range cases {
-		if err := svc.SetSetting("provider."+c.provider+".enabled", globalScope, c.stored); err != nil {
+		if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider." + c.provider + ".enabled", ProjectID: globalScope, Value: c.stored}); err != nil {
 			t.Fatal(err)
 		}
 		if got, err := svc.ProviderEnabled(c.provider); err != nil || got != c.want {

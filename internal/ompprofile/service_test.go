@@ -2,6 +2,7 @@ package ompprofile
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,7 +67,7 @@ func fakeService(t *testing.T) *Service {
 func TestProfilesReportWhoIsLoggedInWhere(t *testing.T) {
 	machine(t)
 	s := fakeService(t)
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +76,7 @@ func TestProfilesReportWhoIsLoggedInWhere(t *testing.T) {
 			`{"provider":"openai-codex","identityKey":"email:me@work.example"},`+
 			`{"provider":"github-copilot","identityKey":null}]`)
 
-	list, err := s.Profiles()
+	list, err := s.Profiles(t.Context(), api.None{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +96,7 @@ func TestAProfileTheCLICannotReadIsAnErrorNotALoggedOutProfile(t *testing.T) {
 	machine(t)
 	s := fakeService(t)
 	t.Setenv("LICH_TEST_FAKE_BROKEN", "1")
-	list, err := s.Profiles()
+	list, err := s.Profiles(t.Context(), api.None{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +109,7 @@ func TestProfilesReadPastAWarningOnStderr(t *testing.T) {
 	machine(t)
 	s := fakeService(t)
 	t.Setenv("LICH_TEST_FAKE_WARNS", "1")
-	list, err := s.Profiles()
+	list, err := s.Profiles(t.Context(), api.None{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +121,7 @@ func TestProfilesReadPastAWarningOnStderr(t *testing.T) {
 func TestDeleteProfileWaitsForItsSessions(t *testing.T) {
 	machine(t)
 	s := fakeService(t)
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,14 +131,14 @@ func TestDeleteProfileWaitsForItsSessions(t *testing.T) {
 		forgotten = append(forgotten, slug)
 		return nil
 	})
-	if err := s.DeleteProfile(p.Slug); err == nil {
+	if _, err := s.DeleteProfile(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err == nil {
 		t.Fatal("deleted a profile with a session running in it")
 	}
 	if _, err := ConfigDir(p.Slug); err != nil {
 		t.Errorf("a refused delete still removed it: %v", err)
 	}
 	live = 0
-	if err := s.DeleteProfile(p.Slug); err != nil {
+	if _, err := s.DeleteProfile(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err != nil {
 		t.Fatal(err)
 	}
 	if len(forgotten) != 1 || forgotten[0] != p.Slug {
@@ -148,11 +149,11 @@ func TestDeleteProfileWaitsForItsSessions(t *testing.T) {
 func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	machine(t)
 	s := New(missingBins{"/opt/my omp"}, func(string, any) {})
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := s.LoginCommand(p.Slug)
+	got, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: p.Slug})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,10 +167,10 @@ func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	if got != want {
 		t.Errorf("LoginCommand =\n%s\nwant\n%s", got, want)
 	}
-	if got, _ := s.LoginCommand(Personal); !strings.HasSuffix(got, "'/opt/my omp' login") || strings.Contains(got, "OMP_PROFILE") {
+	if got, _ := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: Personal}); !strings.HasSuffix(got, "'/opt/my omp' login") || strings.Contains(got, "OMP_PROFILE") {
 		t.Errorf("Personal: %s", got)
 	}
-	if _, err := s.LoginCommand("gone"); err == nil {
+	if _, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: "gone"}); err == nil {
 		t.Error("a command for a profile that does not exist")
 	}
 }

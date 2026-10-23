@@ -1,10 +1,12 @@
 package project
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relpath"
 )
 
@@ -18,11 +20,11 @@ const maxExpandLines = 500
 // envelope, whose base64 body is refused above 1MB.
 const ghRawAccept = "Accept: application/vnd.github.raw"
 
-// FileLines returns lines from..to of one repo-relative file — 1-based and
+// FileLines returns lines opts.From..opts.To of one repo-relative file — 1-based and
 // inclusive, the numbering a diff's gutter shows — for the review panel's
 // context expander: the unchanged text around a hunk, which git never printed.
 //
-// ref names the revision the diff's new side stands at, and the panels differ
+// opts.Ref names the revision the diff's new side stands at, and the panels differ
 // in which one they have: "" is the working tree, an oid is a git object this
 // checkout holds (a turn's snapshot tree), and a pull request's head is an oid
 // this clone need not hold at all — measured, the head oids `gh pr list`
@@ -30,37 +32,37 @@ const ghRawAccept = "Accept: application/vnd.github.raw"
 // local read alone would leave the Pulls screen's expander dead. The object is
 // tried first because it costs nothing; GitHub answers for the rest.
 //
-// rel is validated against traversal like every other file-by-path surface, and
+// opts.Rel is validated against traversal like every other file-by-path surface, and
 // binaries and oversize files are refused the way ReadFile refuses them: this
 // is a source viewer, and a blob has no lines to show.
-func (s *Service) FileLines(path, rel, ref string, from, to int) ([]string, error) {
-	if err := relpath.Validate(rel); err != nil {
+func (s *Service) FileLines(_ context.Context, opts api.FileLinesOptions) ([]string, error) {
+	if err := relpath.Validate(opts.Rel); err != nil {
 		return nil, err
 	}
-	if from < 1 || to < from {
-		return nil, fmt.Errorf("invalid line range %d..%d", from, to)
+	if opts.From < 1 || opts.To < opts.From {
+		return nil, fmt.Errorf("invalid line range %d..%d", opts.From, opts.To)
 	}
-	text, err := s.fileAt(path, rel, ref)
+	text, err := s.fileAt(opts.Path, opts.Rel, opts.Ref)
 	if err != nil {
 		return nil, err
 	}
-	return sliceLines(text, from, to), nil
+	return sliceLines(text, opts.From, opts.To), nil
 }
 
-// ReadFileAt is ReadFile at ref, for a preview of a file's new version that
+// ReadFileAt is ReadFile at opts.Ref, for a preview of a file's new version that
 // the working tree does not hold: a pull request's head. See FileLines for
 // what a ref can be and where it is read from.
-func (s *Service) ReadFileAt(path, rel, ref string) (string, error) {
-	if err := relpath.Validate(rel); err != nil {
+func (s *Service) ReadFileAt(_ context.Context, opts api.ReadFileAtOptions) (string, error) {
+	if err := relpath.Validate(opts.Rel); err != nil {
 		return "", err
 	}
-	return s.fileAt(path, rel, ref)
+	return s.fileAt(opts.Path, opts.Rel, opts.Ref)
 }
 
 // fileAt reads one file whole at ref. See FileLines for what a ref can be.
 func (s *Service) fileAt(path, rel, ref string) (string, error) {
 	if ref == "" {
-		return s.ReadFile(path, rel)
+		return s.ReadFile(context.Background(), api.CheckoutFileOptions{Path: path, Rel: rel})
 	}
 	if !isOID(ref) {
 		return "", fmt.Errorf("invalid revision %q", ref)

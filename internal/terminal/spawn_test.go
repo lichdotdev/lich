@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -20,7 +21,7 @@ func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{bin: "/nonexistent/lich-test-provider"}, nil, events.New())
 
-	err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24})
 
 	if err == nil {
 		t.Fatal("Start = nil, want the spawn failure")
@@ -28,7 +29,7 @@ func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
 	if !strings.Contains(err.Error(), `failed to start pty for "s1"`) {
 		t.Errorf("Start = %v, want it to name the session it could not spawn", err)
 	}
-	if svc.Live("s1") {
+	if svc.live("s1") {
 		t.Error("a session that never spawned was registered as live")
 	}
 }
@@ -38,9 +39,9 @@ func TestStartReportsAPtyThatCannotSpawn(t *testing.T) {
 // degrades back to.
 func TestASpawnWithNoDirectoryStartsAtHome(t *testing.T) {
 	svc := New(stubBins{bin: stayAliveBin(t)}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	_, cwd, err := svc.spawnSession("s1", "p1", "", "claude", "", "", "", false, 80, 24)
+	_, cwd, err := svc.spawnSession(api.StartOptions{ID: "s1", ProjectID: "p1", Kind: "claude", Cols: 80, Rows: 24}, "", "")
 	if err != nil {
 		t.Fatalf("spawnSession = %v, want nil", err)
 	}

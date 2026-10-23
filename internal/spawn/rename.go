@@ -1,6 +1,7 @@
 package spawn
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -27,14 +28,14 @@ type RenameOptions = api.RenameSessionOptions
 // written, because two sessions under one label is the one thing `lich send`
 // cannot resolve. The window has no such rule: it renames what the user is
 // pointing at, and the user can see which card they meant.
-func (s *Service) Rename(opts RenameOptions) (Renamed, error) {
+func (s *Service) Rename(ctx context.Context, opts RenameOptions) (Renamed, error) {
 	fromID, target, projectName := opts.From, opts.Target, opts.Project
 	label := strings.TrimSpace(opts.Label)
 	if label == "" {
 		return Renamed{}, errors.New("a rename needs a name, and none was given")
 	}
 
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(ctx, api.None{})
 	if err != nil {
 		return Renamed{}, fmt.Errorf("read the workspace: %w", err)
 	}
@@ -50,7 +51,7 @@ func (s *Service) Rename(opts RenameOptions) (Renamed, error) {
 		)
 	}
 
-	if err := s.sessions.RenameSession(found.session.ID, label); err != nil {
+	if _, err := s.sessions.RenameSession(ctx, api.LabelSessionOptions{SessionID: found.session.ID, Label: label}); err != nil {
 		return Renamed{}, err
 	}
 	return Renamed{

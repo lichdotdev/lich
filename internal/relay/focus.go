@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
@@ -21,7 +22,7 @@ type FocusOptions = api.FocusSessionOptions
 // Focus opens the card of the session Target names and brings the window to
 // the front, for an editor that just pointed the person at that session.
 // Target resolves the way Send's does.
-func (s *Service) Focus(opts FocusOptions) (Focused, error) {
+func (s *Service) Focus(_ context.Context, opts FocusOptions) (Focused, error) {
 	fromID, target, project := opts.From, opts.Target, opts.Project
 	dest, err := s.resolve(fromID, target, project)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -18,7 +19,7 @@ import (
 func parked(t *testing.T) (*Service, *store.Service, *fakeWorktrees) {
 	t.Helper()
 	rows := realStore(t)
-	if err := rows.AddProject("p1", "lich", "/src/lich"); err != nil {
+	if _, err := rows.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "lich", Path: "/src/lich"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	for _, s := range []struct{ id, label, path string }{
@@ -27,7 +28,7 @@ func parked(t *testing.T) (*Service, *store.Service, *fakeWorktrees) {
 		{"s3", "shared-b", "/wt/shared"},
 		{"s4", "alone", "/wt/alone"},
 	} {
-		if err := rows.AddSession("p1", s.id, s.label, "claude", s.path, 9, ""); err != nil {
+		if _, err := rows.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: s.id, Label: s.label, Kind: "claude", Path: s.path, NextSeq: 9}); err != nil {
 			t.Fatalf("AddSession %q: %v", s.id, err)
 		}
 	}
@@ -71,7 +72,7 @@ func realStore(t *testing.T) *store.Service {
 // is in neither.
 func listed(t *testing.T, rows *store.Service, id string) (open, history bool) {
 	t.Helper()
-	projects, err := rows.LoadState()
+	projects, err := rows.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -82,7 +83,7 @@ func listed(t *testing.T, rows *store.Service, id string) (open, history bool) {
 			}
 		}
 	}
-	parked, err := rows.ClosedSessions("")
+	parked, err := rows.ClosedSessions(t.Context(), api.SearchTermOptions{})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
@@ -101,7 +102,7 @@ func listed(t *testing.T, rows *store.Service, id string) (open, history bool) {
 func TestClosingASharedCheckoutParksTheSession(t *testing.T) {
 	svc, rows, worktrees := parked(t)
 
-	if _, err := svc.Close(CloseOptions{From: "s1", Target: "shared-a"}); err != nil {
+	if _, err := svc.Close(t.Context(), CloseOptions{From: "s1", Target: "shared-a"}); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 	open, history := listed(t, rows, "s2")
@@ -125,7 +126,7 @@ func TestClosingASharedCheckoutParksTheSession(t *testing.T) {
 func TestClosingASessionInTheProjectDirectoryParksIt(t *testing.T) {
 	svc, rows, _ := parked(t)
 
-	if _, err := svc.Close(CloseOptions{From: "s2", Target: "Session 1"}); err != nil {
+	if _, err := svc.Close(t.Context(), CloseOptions{From: "s2", Target: "Session 1"}); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 	open, history := listed(t, rows, "s1")
@@ -143,7 +144,7 @@ func TestClosingASessionInTheProjectDirectoryParksIt(t *testing.T) {
 func TestClosingTheLastSessionAndRemovingItsWorktreeDeletesTheRow(t *testing.T) {
 	svc, rows, worktrees := parked(t)
 
-	if _, err := svc.Close(CloseOptions{From: "s1", Target: "alone", Worktree: "remove"}); err != nil {
+	if _, err := svc.Close(t.Context(), CloseOptions{From: "s1", Target: "alone", Worktree: "remove"}); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 	open, history := listed(t, rows, "s4")
@@ -164,14 +165,14 @@ func TestClosingTheLastSessionAndRemovingItsWorktreeDeletesTheRow(t *testing.T) 
 func TestAParkedSessionIsFoundInTheHistoryWithItsName(t *testing.T) {
 	svc, rows, _ := parked(t)
 
-	if _, err := svc.Close(CloseOptions{From: "s1", Target: "shared-a"}); err != nil {
+	if _, err := svc.Close(t.Context(), CloseOptions{From: "s1", Target: "shared-a"}); err != nil {
 		t.Fatalf("Close shared-a: %v", err)
 	}
-	if _, err := svc.Close(CloseOptions{From: "s1", Target: "alone", Worktree: "keep"}); err != nil {
+	if _, err := svc.Close(t.Context(), CloseOptions{From: "s1", Target: "alone", Worktree: "keep"}); err != nil {
 		t.Fatalf("Close alone: %v", err)
 	}
 
-	history, err := rows.ClosedSessions("")
+	history, err := rows.ClosedSessions(t.Context(), api.SearchTermOptions{})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}

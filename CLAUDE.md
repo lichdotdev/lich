@@ -43,7 +43,9 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
 - An RPC method is declared once in `api` and exposed with `rpc.Handle` in `internal/routes`: the backend,
   `lich` and `native/backend` compile against that one declaration, and `api/testdata/contract.golden` records
   its shape (`go test ./api -update` after a change meant to move it). Its options are one struct, never
-  positional arguments. An `/events` event is declared there too, emitted with `events.Send` and read with
+  positional arguments. The service method it routes has the method's own shape,
+  `func(context.Context, Options) (Result, error)`, and the route hands it over as `s.Method`, no closure; one
+  that cannot fail keeps its body in an unexported method its own package calls. An `/events` event is declared there too, emitted with `events.Send` and read with
   `backend.Decode`. There is no codegen.
 - A fact more than one place shows (git status, a pull request, plan quota, a session's profile or status) has
   one store per window, fed by one reader, and every screen reads that store. A change to the fact reaches the

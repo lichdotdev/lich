@@ -28,7 +28,7 @@ func TestSendPrivateMarksItsResult(t *testing.T) {
 	wg.Go(func() {
 		got, err = svc.SendPrivate(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 30})
 	})
-	if replyErr := svc.Reply(ReplyOptions{Ticket: waitForTicket(svc), Answer: "green"}); replyErr != nil {
+	if _, replyErr := svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "green"}); replyErr != nil {
 		t.Fatalf("Reply: %v", replyErr)
 	}
 	wg.Wait()
@@ -48,11 +48,11 @@ func TestANoTicketCollectNeverTakesAPrivateResult(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 
-	collected, err := svc.CollectNow(CollectNowOptions{From: "s1"})
+	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("CollectNow: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestAPrivateResultIsNeverAnnounced(t *testing.T) {
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), term, events)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	svc.Observe("s1", stateDone)
@@ -119,8 +119,8 @@ func TestAnOrdinaryResultIsStillNudgedBesideAPrivateOne(t *testing.T) {
 	svc := newRelay(workspace(), term, nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
 	plant(svc, "t2", "s1", "s3", "api")
-	_ = svc.Reply(ReplyOptions{Ticket: "t1", Answer: "private"})
-	_ = svc.Reply(ReplyOptions{Ticket: "t2", Answer: "ordinary"})
+	_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "private"})
+	_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: "t2", Answer: "ordinary"})
 
 	if !awaitWritten(term, "s1", "[lich]") {
 		t.Fatalf("the ordinary result was never announced: %q", term.written("s1"))
@@ -128,7 +128,7 @@ func TestAnOrdinaryResultIsStillNudgedBesideAPrivateOne(t *testing.T) {
 	if typed := term.written("s1"); strings.Contains(typed, `"docs"`) || !strings.Contains(typed, `"api"`) {
 		t.Errorf("nudge = %q, want it to name api and not the private docs", typed)
 	}
-	collected, _ := svc.CollectNow(CollectNowOptions{From: "s1"})
+	collected, _ := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
 	if len(collected.Results) != 1 || collected.Results[0].Answer != "ordinary" {
 		t.Errorf("CollectNow = %+v, want the ordinary result only", collected)
 	}
@@ -141,7 +141,7 @@ func TestAPrivateResultAgesOutSilently(t *testing.T) {
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
-	_ = svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"})
+	_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "done"})
 
 	later := time.Now().Add(2 * ticketTTL)
 	svc.now = func() time.Time { return later }
@@ -164,7 +164,7 @@ func TestAWaitOnAnExpiredPrivateResultSaysItExpired(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 	plantPrivate(svc, "t1", "s1", "s2", "docs")
-	_ = svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"})
+	_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "done"})
 
 	later := time.Now().Add(2 * ticketTTL)
 	svc.now = func() time.Time { return later }

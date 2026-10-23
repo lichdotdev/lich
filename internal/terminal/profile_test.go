@@ -62,7 +62,7 @@ func TestTranscriptsAreFoundInWhicheverProfileHoldsThem(t *testing.T) {
 	if got := claudeSubagentPaths("c1"); len(got) != 1 || got[0] != sub {
 		t.Errorf("claudeSubagentPaths = %v, want [%s]", got, sub)
 	}
-	if !(&Service{}).ResumeAvailable(providers.Claude, "c1", "") {
+	if !(&Service{}).resumeAvailable(providers.Claude, "c1", "") {
 		t.Error("a conversation in a profile is not offered for resume")
 	}
 }

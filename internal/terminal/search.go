@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
 	"strings"
 	"unicode/utf8"
@@ -26,7 +27,12 @@ const searchTailBytes = 4 << 20
 
 type TranscriptMatch = api.TranscriptMatch
 
-// SearchTranscripts finds which of the given sessions have talked about query,
+// SearchTranscripts answers searchTranscripts over RPC.
+func (s *Service) SearchTranscripts(_ context.Context, opts api.SearchTranscriptsOptions) ([]TranscriptMatch, error) {
+	return s.searchTranscripts(opts.IDs, opts.Query), nil
+}
+
+// searchTranscripts finds which of the given sessions have talked about query,
 // and what they said. The caller passes the sessions it can route to (the
 // palette's own list), so nothing is searched that the user could not be sent
 // to.
@@ -39,7 +45,7 @@ type TranscriptMatch = api.TranscriptMatch
 // provider id yet (a shell, or a provider that reports none), a provider whose
 // conversation lich can read by neither mechanism (searchSource), a transcript
 // that is gone, a half-written line.
-func (s *Service) SearchTranscripts(ids []string, query string) []TranscriptMatch {
+func (s *Service) searchTranscripts(ids []string, query string) []TranscriptMatch {
 	q := strings.ToLower(strings.TrimSpace(query))
 	if utf8.RuneCountInString(q) < minSearchQuery {
 		return nil

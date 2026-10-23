@@ -27,6 +27,7 @@
 package patchnotes
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"strings"
@@ -53,13 +54,13 @@ func New(version, changelog string, translations fs.FS) *Service {
 	return &Service{version: version, changelog: changelog, translations: translations}
 }
 
-// Current returns the running build's changelog section in locale, the
+// Current returns the running build's changelog section in opts.Locale, the
 // interface language's BCP 47 tag. A locale with no translation of this
 // version (English, a dev build, a release cut without the skill) gets the
 // English section. Groups is empty when no section matches (a dev build, or a
 // version not yet in the changelog), and the window then shows nothing.
-func (s *Service) Current(locale string) (Notes, error) {
-	changelog, err := s.changelogIn(locale)
+func (s *Service) Current(_ context.Context, opts api.PatchNotesOptions) (Notes, error) {
+	changelog, err := s.changelogIn(opts.Locale)
 	if err != nil {
 		return Notes{}, err
 	}

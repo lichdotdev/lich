@@ -1,12 +1,15 @@
 package store
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 func TestSessionSubagentDepthRoundTripsAndSurvivesAResume(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 
 	if err := svc.SetSessionSubagentDepth("wt1", 2); err != nil {
 		t.Fatalf("SetSessionSubagentDepth: %v", err)
@@ -17,8 +20,8 @@ func TestSessionSubagentDepthRoundTripsAndSurvivesAResume(t *testing.T) {
 	if svc.SessionSubagentDepth("base") != 0 || svc.SessionSubagentDepth("ghost") != 0 {
 		t.Fatal("want only the marked session read as a subagent")
 	}
-	_ = svc.CloseSession("p1", "wt1", "base")
-	if _, err := svc.ReopenWorktreeSession("p1", "/wt/foo", "wt2"); err != nil {
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
+	if _, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "wt2"}); err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
 	if got := svc.SessionSubagentDepth("wt2"); got != 2 {
@@ -28,9 +31,9 @@ func TestSessionSubagentDepthRoundTripsAndSurvivesAResume(t *testing.T) {
 
 func TestSessionBranchReadsTheSessionsCheckout(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 	if got := svc.SessionBranch("s1"); got != "" {
 		t.Errorf("unwired SessionBranch = %q, want empty", got)
 	}
@@ -49,11 +52,11 @@ func TestSessionBranchReadsTheSessionsCheckout(t *testing.T) {
 // cards exactly as the worker it was copied from would.
 func TestInheritSubagentFollowsTheForkedConversation(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "worker", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "plain", "Session 2", "claude", "", 3, "")
-	_ = svc.AddSession("p1", "fork1", "Session 3", "claude", "", 4, "")
-	_ = svc.AddSession("p1", "fork2", "Session 4", "claude", "", 5, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "worker", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "plain", Label: "Session 2", Kind: "claude", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "fork1", Label: "Session 3", Kind: "claude", NextSeq: 4})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "fork2", Label: "Session 4", Kind: "claude", NextSeq: 5})
 	_ = svc.SetProviderSession("worker", "conv-worker")
 	_ = svc.SetProviderSession("plain", "conv-plain")
 	_ = svc.SetSessionSubagentDepth("worker", 2)

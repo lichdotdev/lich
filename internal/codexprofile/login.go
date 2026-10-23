@@ -35,31 +35,31 @@ type login struct {
 //
 // The callback port is fixed, so two logins cannot run at once, in lich or
 // outside it: the second CLI says the port is taken, in its own words.
-func (s *Service) Login(slug string) error {
-	dir, err := ConfigDir(slug)
+func (s *Service) Login(_ context.Context, opts api.ProfileSlugOptions) (api.None, error) {
+	dir, err := ConfigDir(opts.Slug)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
-	p := Profile{Slug: slug, Dir: dir, Personal: IsPersonal(slug)}
+	p := Profile{Slug: opts.Slug, Dir: dir, Personal: IsPersonal(opts.Slug)}
 	ctx, cancel := context.WithTimeout(context.Background(), loginTimeout)
 	cmd := s.command(ctx, p, "login")
 	out, w := io.Pipe()
 	cmd.Stdout, cmd.Stderr = w, w
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, running := s.logins[slug]; running {
+	if _, running := s.logins[opts.Slug]; running {
 		cancel()
-		return fmt.Errorf("profile %q is already logging in", slug)
+		return api.None{}, fmt.Errorf("profile %q is already logging in", opts.Slug)
 	}
 	if err := cmd.Start(); err != nil {
 		cancel()
-		return fmt.Errorf("start %s login: %w", s.bin(), err)
+		return api.None{}, fmt.Errorf("start %s login: %w", s.bin(), err)
 	}
 	run := &login{cancel: cancel}
-	s.logins[slug] = run
+	s.logins[opts.Slug] = run
 	relayed := make(chan struct{})
 	go func() {
-		s.relayOutput(slug, out)
+		s.relayOutput(opts.Slug, out)
 		close(relayed)
 	}()
 	go func() {
@@ -68,7 +68,7 @@ func (s *Service) Login(slug string) error {
 		<-relayed
 		s.finishLogin(ctx, p, run, err)
 	}()
-	return nil
+	return api.None{}, nil
 }
 
 func (s *Service) relayOutput(slug string, out io.Reader) {
@@ -122,9 +122,15 @@ func (s *Service) finishLogin(ctx context.Context, p Profile, run *login, waitEr
 	events.Send(s.emit, api.CodexProfileLoginEvent, done)
 }
 
-// CancelLogin ends a login lich started; its last event says it was cancelled.
+// CancelLogin answers cancelLogin over RPC.
+func (s *Service) CancelLogin(_ context.Context, opts api.ProfileSlugOptions) (api.None, error) {
+	s.cancelLogin(opts.Slug)
+	return api.None{}, nil
+}
+
+// cancelLogin ends a login lich started; its last event says it was cancelled.
 // Nothing running for that profile is nothing to do.
-func (s *Service) CancelLogin(slug string) {
+func (s *Service) cancelLogin(slug string) {
 	s.mu.Lock()
 	run, ok := s.logins[slug]
 	s.mu.Unlock()
@@ -135,12 +141,12 @@ func (s *Service) CancelLogin(slug string) {
 
 // LoginCommand is the command line that logs a profile in from a terminal, for
 // a user who would rather run it in a shell card than through Login.
-func (s *Service) LoginCommand(slug string) (string, error) {
-	dir, err := ConfigDir(slug)
+func (s *Service) LoginCommand(_ context.Context, opts api.ProfileSlugOptions) (string, error) {
+	dir, err := ConfigDir(opts.Slug)
 	if err != nil {
 		return "", err
 	}
-	if IsPersonal(slug) {
+	if IsPersonal(opts.Slug) {
 		dir = ""
 	}
 	return store.LoginLine(s.bin(), "login", dir), nil

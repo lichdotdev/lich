@@ -3,14 +3,15 @@ package store
 import (
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
 func TestSessionUltracodeRoundTrips(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "claude", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", Kind: "claude", NextSeq: 3})
 
 	if err := svc.SetSessionUltracode("s1"); err != nil {
 		t.Fatalf("SetSessionUltracode: %v", err)
@@ -31,13 +32,13 @@ func TestSessionUltracodeRoundTrips(t *testing.T) {
 // respawn the session without ultracode and nothing on screen would say so.
 func TestReopenWorktreeSessionCarriesUltracode(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 	_ = svc.SetSessionUltracode("wt1")
-	_ = svc.CloseSession("p1", "wt1", "base")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
 
-	if _, err := svc.ReopenWorktreeSession("p1", "/wt/foo", "wt2"); err != nil {
+	if _, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "wt2"}); err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
 	if !svc.SessionUltracode("wt2") {
@@ -50,18 +51,18 @@ func TestUltracodeIsOnOnlyForTheLiteralTrue(t *testing.T) {
 	if svc.Ultracode(providers.Claude) {
 		t.Error("unconfigured provider runs ultracode, want off")
 	}
-	_ = svc.SetSetting("provider.claude.ultracode", globalScope, "yes")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.ultracode", ProjectID: globalScope, Value: "yes"})
 	if svc.Ultracode(providers.Claude) {
 		t.Error(`"yes" turns ultracode on, want only "true" to`)
 	}
-	_ = svc.SetSetting("provider.claude.ultracode", globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.ultracode", ProjectID: globalScope, Value: "true"})
 	if !svc.Ultracode(providers.Claude) {
 		t.Error("configured provider does not run ultracode, want on")
 	}
 	if svc.Ultracode(providers.Codex) {
 		t.Error("another provider follows Claude's setting, want its own")
 	}
-	_ = svc.SetSetting("provider.claude.ultracode", "p1", "false")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.ultracode", ProjectID: "p1", Value: "false"})
 	if !svc.Ultracode(providers.Claude) {
 		t.Error("a project-scoped value overrides the global one, want global only")
 	}
@@ -72,11 +73,11 @@ func TestUltracodeIsOnOnlyForTheLiteralTrue(t *testing.T) {
 // row carries.
 func TestInheritUltracodeFollowsTheForkedConversation(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "parent", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "plain", "Session 2", "claude", "", 3, "")
-	_ = svc.AddSession("p1", "fork1", "Session 3", "claude", "/wt/a", 4, "")
-	_ = svc.AddSession("p1", "fork2", "Session 4", "claude", "/wt/b", 5, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parent", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "plain", Label: "Session 2", Kind: "claude", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "fork1", Label: "Session 3", Kind: "claude", Path: "/wt/a", NextSeq: 4})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "fork2", Label: "Session 4", Kind: "claude", Path: "/wt/b", NextSeq: 5})
 	_ = svc.SetProviderSession("parent", "conv-on")
 	_ = svc.SetProviderSession("plain", "conv-off")
 	_ = svc.SetSessionUltracode("parent")

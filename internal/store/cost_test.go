@@ -1,15 +1,18 @@
 package store
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 // newCostSession opens a store with one project and one session to bill.
 func newCostSession(t *testing.T) *Service {
 	t.Helper()
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "s1", "Session 1", "", "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	return svc
@@ -136,20 +139,20 @@ func TestALedgerForAMissingSessionIsDropped(t *testing.T) {
 // total must too.
 func TestAResumedSessionKeepsWhatItSpent(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "s1", "Session 1", "claude", "/tmp/alpha-wt", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", Path: "/tmp/alpha-wt", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.SaveCostLedger("s1", "uuid-a", 100, "m1", 0.4); err != nil {
 		t.Fatalf("SaveCostLedger: %v", err)
 	}
-	if err := svc.CloseSession("p1", "s1", ""); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 
-	restored, err := svc.ReopenWorktreeSession("p1", "/tmp/alpha-wt", "s2")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/tmp/alpha-wt", NewSessionID: "s2"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -177,7 +180,7 @@ func TestCostReadoutIsOffUntilAskedFor(t *testing.T) {
 	}
 
 	for _, value := range []string{"1", "yes", "", "TRUE"} {
-		if err := svc.SetSetting("usage.cost", "", value); err != nil {
+		if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "usage.cost", Value: value}); err != nil {
 			t.Fatalf("SetSetting: %v", err)
 		}
 		if svc.CostReadout() {
@@ -185,7 +188,7 @@ func TestCostReadoutIsOffUntilAskedFor(t *testing.T) {
 		}
 	}
 
-	if err := svc.SetSetting("usage.cost", "", "true"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "usage.cost", Value: "true"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if !svc.CostReadout() {
@@ -202,7 +205,7 @@ func TestAForkIsNotBilledForTheHistoryItInherits(t *testing.T) {
 	if err := svc.SaveCostLedger("s1", "uuid-a", 100, "m1", 1.25); err != nil {
 		t.Fatalf("SaveCostLedger: %v", err)
 	}
-	if err := svc.AddSession("p1", "s2", "Session 2", "", "", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.SaveForkCostOffset("s2", "uuid-a"); err != nil {
@@ -241,7 +244,7 @@ func TestAForkOfAForkOffsetsItsOwnParent(t *testing.T) {
 		t.Fatalf("SaveCostLedger: %v", err)
 	}
 	for _, id := range []string{"s2", "s3"} {
-		if err := svc.AddSession("p1", id, id, "", "", 3, ""); err != nil {
+		if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, NextSeq: 3}); err != nil {
 			t.Fatalf("AddSession: %v", err)
 		}
 	}
@@ -278,7 +281,7 @@ func TestAForkNeverReportsMoneyBack(t *testing.T) {
 	if err := svc.SaveCostLedger("s1", "uuid-a", 100, "m1", 1.25); err != nil {
 		t.Fatalf("SaveCostLedger: %v", err)
 	}
-	if err := svc.AddSession("p1", "s2", "Session 2", "", "", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.SaveForkCostOffset("s2", "uuid-a"); err != nil {

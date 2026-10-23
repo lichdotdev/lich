@@ -59,44 +59,42 @@ const (
 // in, and the writes that add a session to one, take one away, and park one for
 // a later resume. The store implements it.
 type Sessions interface {
-	LoadState() ([]store.Project, error)
-	RecentProjects(term string) ([]store.Recent, error)
-	AddProject(id, name, path string) error
-	AddSessionFrom(
-		projectID, sessionID, label, kind, path string, nextSeq int, originID, originLabel, folder string,
-	) error
+	LoadState(_ context.Context, _ api.None) ([]store.Project, error)
+	RecentProjects(_ context.Context, opts api.SearchTermOptions) ([]store.Recent, error)
+	AddProject(_ context.Context, opts api.AddProjectOptions) (api.None, error)
+	AddSessionFrom(_ context.Context, opts api.AddSessionFromOptions) (api.None, error)
 	SandboxDefault(providerID, projectID, cwd string) bool
 	SetSessionModel(sessionID, model string) error
 	SetSessionEffort(sessionID, effort string) error
 	SetSessionUltracode(sessionID string) error
 	SetSessionSubagentDepth(sessionID string, depth int) error
 	SessionSubagentDepth(sessionID string) int
-	RenameSession(sessionID, label string) error
-	SetSessionFolder(sessionID, folder string) error
-	RenameFolder(projectID, from, to string) ([]string, error)
+	RenameSession(_ context.Context, opts api.LabelSessionOptions) (api.None, error)
+	SetSessionFolder(_ context.Context, opts api.SessionFolderOptions) (api.None, error)
+	RenameFolder(_ context.Context, opts api.RenameProjectFolderOptions) ([]string, error)
 	ColorFolder(projectID, folder, color string) ([]string, error)
 	DeleteSession(projectID, sessionID, activeID string) error
-	CloseSession(projectID, sessionID, activeID string) error
-	PurgeWorktreeSessions(projectID, path string) error
+	CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error)
+	PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error)
 }
 
 // Worktrees is the git side. The project service implements it.
 type Worktrees interface {
 	Branch(path string) string
-	ListBranches(path string) (project.Branches, error)
-	ListCheckouts(path string) ([]project.Worktree, error)
-	CreateWorktree(projectPath, projectID, name, base string, baseIsRemote bool) (*project.Worktree, error)
-	BaseFreshness(path, branch string) (project.BaseFreshness, error)
-	RemoveWorktree(projectPath, wtPath string, force, adoptedAck bool) error
-	WorktreeDirty(wtPath string) (bool, error)
-	WorktreeAdopted(wtPath string) bool
+	ListBranches(_ context.Context, opts api.PathOptions) (project.Branches, error)
+	ListCheckouts(_ context.Context, opts api.PathOptions) ([]project.Worktree, error)
+	CreateWorktree(_ context.Context, opts api.CreateWorktreeOptions) (*project.Worktree, error)
+	BaseFreshness(_ context.Context, opts api.PathBranchOptions) (project.BaseFreshness, error)
+	RemoveWorktree(_ context.Context, opts api.RemoveWorktreeOptions) (api.None, error)
+	WorktreeDirty(_ context.Context, opts api.PathOptions) (bool, error)
+	WorktreeAdopted(_ context.Context, opts api.PathOptions) (bool, error)
 }
 
 // Terminal is the PTY side: the same spawn the window asks for when a card is
 // first viewed, and the same close it asks for when a card goes away. The
 // terminal service implements it.
 type Terminal interface {
-	Start(id, projectID, cwd, kind, resume string, fork bool, cols, rows int) error
+	Start(_ context.Context, opts api.StartOptions) (api.None, error)
 	// CloseBy closes the session on behalf of closerID, the session that asked
 	// for it, or empty when none did.
 	CloseBy(id, closerID string) error
@@ -138,7 +136,7 @@ func New(sessions Sessions, worktrees Worktrees, term Terminal, events Events) *
 type OpenOptions = api.OpenSessionOptions
 
 // Open creates a session and starts its PTY.
-func (s *Service) Open(opts OpenOptions) (Session, error) {
+func (s *Service) Open(_ context.Context, opts OpenOptions) (Session, error) {
 	return s.openSession(request{
 		fromID: opts.From, projectName: opts.Project, kind: opts.Kind, worktree: opts.Worktree,
 		base: opts.Base, model: opts.Model, effort: opts.Effort, folder: opts.Folder,
@@ -166,7 +164,7 @@ type OpenSubagentOptions = api.OpenSubagentOptions
 // The project is always the caller's. A caller that is not a session lich holds
 // is refused before anything is opened: there is no checkout to share and no
 // one to report to.
-func (s *Service) OpenSubagent(opts OpenSubagentOptions) (Session, error) {
+func (s *Service) OpenSubagent(_ context.Context, opts OpenSubagentOptions) (Session, error) {
 	return s.openSession(request{
 		fromID: opts.From, kind: opts.Kind, worktree: opts.Worktree, base: opts.Base,
 		model: opts.Model, effort: opts.Effort, ultracode: opts.Ultracode, subagent: true,
@@ -195,7 +193,7 @@ func (s *Service) openSession(req request) (Session, error) {
 	s.open.Lock()
 	defer s.open.Unlock()
 
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		return Session{}, fmt.Errorf("read the workspace: %w", err)
 	}
@@ -250,9 +248,7 @@ func (s *Service) openSession(req request) (Session, error) {
 		Folder:          folder,
 		Confined:        s.sessions.SandboxDefault(kind, target.ID, cwd),
 	}
-	if err := s.sessions.AddSessionFrom(
-		target.ID, id, label, kind, stored, opened.NextSeq, originID, originLabel, folder,
-	); err != nil {
+	if _, err := s.sessions.AddSessionFrom(context.Background(), api.AddSessionFromOptions{ProjectID: target.ID, SessionID: id, Label: label, Kind: kind, Path: stored, NextSeq: opened.NextSeq, OriginID: originID, OriginLabel: originLabel, Folder: folder}); err != nil {
 		return Session{}, err
 	}
 	// Before the card is announced, so the reload it triggers reads the model
@@ -272,7 +268,7 @@ func (s *Service) openSession(req request) (Session, error) {
 	}
 	callerErr := s.fileCaller(target.ID, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
-	if err := s.term.Start(id, target.ID, cwd, kind, "", false, startCols, startRows); err != nil {
+	if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: target.ID, Cwd: cwd, Kind: kind, Cols: startCols, Rows: startRows}); err != nil {
 		return Session{}, fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
 	}
 	if err := errors.Join(callerErr, overrideErr, markErr); err != nil {
@@ -319,7 +315,7 @@ func (s *Service) fileCaller(projectID, callerID, folder string) error {
 	if callerID == "" {
 		return nil
 	}
-	if err := s.sessions.SetSessionFolder(callerID, folder); err != nil {
+	if _, err := s.sessions.SetSessionFolder(context.Background(), api.SessionFolderOptions{SessionID: callerID, Folder: folder}); err != nil {
 		return fmt.Errorf("the subagent is open, but its caller could not be filed under %q: %w", folder, err)
 	}
 	if s.events != nil {
@@ -469,7 +465,7 @@ func (s *Service) addWorktree(target store.Project, name, base string) (*project
 	if err != nil {
 		return nil, err
 	}
-	wt, err := s.worktrees.CreateWorktree(target.Path, target.ID, name, base, remote)
+	wt, err := s.worktrees.CreateWorktree(context.Background(), api.CreateWorktreeOptions{ProjectPath: target.Path, ProjectID: target.ID, Name: name, Base: base, BaseIsRemote: remote})
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +491,7 @@ func (s *Service) resolveBase(target store.Project, base string) (string, bool, 
 		return s.newerOf(target, current)
 	}
 
-	branches, err := s.worktrees.ListBranches(target.Path)
+	branches, err := s.worktrees.ListBranches(context.Background(), api.PathOptions{Path: target.Path})
 	if err != nil {
 		return "", false, err
 	}
@@ -524,7 +520,7 @@ func (s *Service) resolveBase(target store.Project, base string) (string, bool, 
 // branch otherwise. A fetch that failed keeps the branch, the base the caller
 // asked for; the native dialog decides the same way and passes the result in.
 func (s *Service) newerOf(target store.Project, branch string) (string, bool, error) {
-	f, err := s.worktrees.BaseFreshness(target.Path, branch)
+	f, err := s.worktrees.BaseFreshness(context.Background(), api.PathBranchOptions{Path: target.Path, Branch: branch})
 	if err != nil {
 		return "", false, err
 	}

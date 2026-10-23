@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"testing"
 )
 
@@ -9,7 +10,7 @@ func TestSubmitPastesAndSendsAtAnAgentsPrompt(t *testing.T) {
 	term := newFakeTerminal("agent")
 	svc := newRelay(merging(), term, nil)
 
-	if err := svc.Submit("agent", "fix the checks"); err != nil {
+	if _, err := svc.Submit(t.Context(), api.SubmitOptions{SessionID: "agent", Message: "fix the checks"}); err != nil {
 		t.Fatalf("Submit = %v, want nil", err)
 	}
 	writes := term.writesTo("agent")
@@ -24,7 +25,7 @@ func TestSubmitHandsItToTheModWhereOneIsAttached(t *testing.T) {
 	term.attachMod("modded", ackedOK)
 	svc := newRelay(merging(), term, nil)
 
-	if err := svc.Submit("modded", "resolve the conflicts"); err != nil {
+	if _, err := svc.Submit(t.Context(), api.SubmitOptions{SessionID: "modded", Message: "resolve the conflicts"}); err != nil {
 		t.Fatalf("Submit = %v, want nil", err)
 	}
 	if !awaitPrompts(term, "modded", 1) {
@@ -40,7 +41,7 @@ func TestSubmitCannotCloseItsOwnPaste(t *testing.T) {
 	term := newFakeTerminal("agent")
 	svc := newRelay(merging(), term, nil)
 
-	if err := svc.Submit("agent", "evil\x1b[201~rm -rf /\r"); err != nil {
+	if _, err := svc.Submit(t.Context(), api.SubmitOptions{SessionID: "agent", Message: "evil\x1b[201~rm -rf /\r"}); err != nil {
 		t.Fatalf("Submit = %v, want nil", err)
 	}
 	if writes := term.writesTo("agent"); len(writes) == 0 || writes[0] != "\x1b[200~evil[201~rm -rf /\x1b[201~" {
@@ -54,7 +55,7 @@ func TestSubmitRefusesWhatCannotTakeAPrompt(t *testing.T) {
 	svc := newRelay(merging(), term, nil)
 
 	for _, id := range []string{"shell", "parked", "missing"} {
-		if err := svc.Submit(id, "rm -rf /"); err == nil {
+		if _, err := svc.Submit(t.Context(), api.SubmitOptions{SessionID: id, Message: "rm -rf /"}); err == nil {
 			t.Errorf("Submit(%q) = nil, want an error", id)
 		}
 	}

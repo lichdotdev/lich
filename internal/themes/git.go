@@ -47,30 +47,30 @@ type pack struct {
 // pack is validated as a whole before anything is written, so one unreadable or
 // invalid theme fails the whole repository. The writing is per file, though: a
 // disk error partway through leaves the themes already written in place.
-func (s *Service) InstallFromGit(url string, overwrite bool) (GitInstallResult, error) {
+func (s *Service) InstallFromGit(_ context.Context, opts api.InstallThemesOptions) (GitInstallResult, error) {
 	if s.initErr != nil {
 		return GitInstallResult{}, s.initErr
 	}
-	installed, err := fetchPack(url, s.lichVersion)
+	installed, err := fetchPack(opts.URL, s.lichVersion)
 	if err != nil {
 		return GitInstallResult{}, err
 	}
-	return s.installPack(installed, overwrite)
+	return s.installPack(installed, opts.Overwrite)
 }
 
 // UpdateFromGit re-clones the repository a theme came from and installs it
 // again when the manifest carries a newer version. The whole pack moves
 // together — the repository, not the single theme, is what is versioned.
-func (s *Service) UpdateFromGit(id string) (GitInstallResult, error) {
+func (s *Service) UpdateFromGit(_ context.Context, opts api.UpdateThemeOptions) (GitInstallResult, error) {
 	if s.initErr != nil {
 		return GitInstallResult{}, s.initErr
 	}
-	theme, err := s.read(id)
+	theme, err := s.read(opts.ID)
 	if err != nil {
 		return GitInstallResult{}, err
 	}
 	if theme.Source == nil {
-		return GitInstallResult{}, fmt.Errorf("theme %q was imported as a single file and has no repository to update from", id)
+		return GitInstallResult{}, fmt.Errorf("theme %q was imported as a single file and has no repository to update from", opts.ID)
 	}
 	latest, err := fetchPack(theme.Source.URL, s.lichVersion)
 	if err != nil {
@@ -90,8 +90,8 @@ func (s *Service) UpdateFromGit(id string) (GitInstallResult, error) {
 	// later check finds a newer manifest and offers the same update forever;
 	// adopting the pack's version converges it without deleting a theme the user
 	// may be wearing right now.
-	if err := s.adoptPackVersion(id, result.Version); err != nil {
-		slog.Warn("themes: stamp theme the pack no longer carries", "id", id, "err", err)
+	if err := s.adoptPackVersion(opts.ID, result.Version); err != nil {
+		slog.Warn("themes: stamp theme the pack no longer carries", "id", opts.ID, "err", err)
 	}
 	return result, nil
 }

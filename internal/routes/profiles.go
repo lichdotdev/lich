@@ -11,79 +11,54 @@ import (
 // ProfileService is what every provider's profile service answers
 // (claudeprofile, codexprofile, ompprofile, xdgprofile).
 type ProfileService interface {
-	Profiles() ([]api.ProfileInfo, error)
-	CreateProfile(name string) (api.Profile, error)
-	UpdateProfile(slug string, u api.ProfileUpdate) (api.Profile, error)
-	DeleteProfile(slug string) error
-	LoginCommand(slug string) (string, error)
+	Profiles(_ context.Context, _ api.None) ([]api.ProfileInfo, error)
+	CreateProfile(_ context.Context, opts api.CreateProfileOptions) (api.Profile, error)
+	UpdateProfile(_ context.Context, opts api.UpdateProfileOptions) (api.Profile, error)
+	DeleteProfile(_ context.Context, opts api.ProfileSlugOptions) (api.None, error)
+	LoginCommand(_ context.Context, opts api.ProfileSlugOptions) (string, error)
 }
 
 // ProfileLogins is a profile service that runs its provider's login itself.
 type ProfileLogins interface {
-	Login(slug string) error
-	CancelLogin(slug string)
+	Login(_ context.Context, opts api.ProfileSlugOptions) (api.None, error)
+	CancelLogin(_ context.Context, opts api.ProfileSlugOptions) (api.None, error)
 }
 
 // ProfilePlugins is a profile service that carries plugins between profiles.
 type ProfilePlugins interface {
-	Plugins(slug string) ([]api.ProfilePlugin, error)
-	InstallPlugins(slug string, keys []string) ([]api.ProfilePluginResult, error)
+	Plugins(_ context.Context, opts api.ProfileSlugOptions) ([]api.ProfilePlugin, error)
+	InstallPlugins(_ context.Context, opts api.InstallPluginsOptions) ([]api.ProfilePluginResult, error)
 }
 
 // Profiles exposes s as the profile methods m.
 func Profiles(d *rpc.Handler, m api.ProfileMethods, s ProfileService) {
-	rpc.Handle(d, m.Profiles, func(context.Context, api.None) ([]api.ProfileInfo, error) { return s.Profiles() })
-	rpc.Handle(d, m.CreateProfile, func(_ context.Context, o api.CreateProfileOptions) (api.Profile, error) {
-		return s.CreateProfile(o.Name)
-	})
-	rpc.Handle(d, m.UpdateProfile, func(_ context.Context, o api.UpdateProfileOptions) (api.Profile, error) {
-		return s.UpdateProfile(o.Slug, o.Update)
-	})
-	rpc.Handle(d, m.DeleteProfile, func(_ context.Context, o api.ProfileSlugOptions) (api.None, error) {
-		return api.None{}, s.DeleteProfile(o.Slug)
-	})
-	rpc.Handle(d, m.LoginCommand, func(_ context.Context, o api.ProfileSlugOptions) (string, error) {
-		return s.LoginCommand(o.Slug)
-	})
+	rpc.Handle(d, m.Profiles, s.Profiles)
+	rpc.Handle(d, m.CreateProfile, s.CreateProfile)
+	rpc.Handle(d, m.UpdateProfile, s.UpdateProfile)
+	rpc.Handle(d, m.DeleteProfile, s.DeleteProfile)
+	rpc.Handle(d, m.LoginCommand, s.LoginCommand)
 }
 
 // ProfileLogin exposes s's login as the methods m.
 func ProfileLogin(d *rpc.Handler, m api.ProfileLoginMethods, s ProfileLogins) {
-	rpc.Handle(d, m.Login, func(_ context.Context, o api.ProfileSlugOptions) (api.None, error) {
-		return api.None{}, s.Login(o.Slug)
-	})
-	rpc.Handle(d, m.CancelLogin, func(_ context.Context, o api.ProfileSlugOptions) (api.None, error) {
-		s.CancelLogin(o.Slug)
-		return api.None{}, nil
-	})
+	rpc.Handle(d, m.Login, s.Login)
+	rpc.Handle(d, m.CancelLogin, s.CancelLogin)
 }
 
 // ProfilePluginCalls exposes s's plugin calls as the methods m.
 func ProfilePluginCalls(d *rpc.Handler, m api.ProfilePluginMethods, s ProfilePlugins) {
-	rpc.Handle(d, m.Plugins, func(_ context.Context, o api.ProfileSlugOptions) ([]api.ProfilePlugin, error) {
-		return s.Plugins(o.Slug)
-	})
-	rpc.Handle(d, m.InstallPlugins, func(_ context.Context, o api.InstallPluginsOptions) ([]api.ProfilePluginResult, error) {
-		return s.InstallPlugins(o.Slug, o.Keys)
-	})
+	rpc.Handle(d, m.Plugins, s.Plugins)
+	rpc.Handle(d, m.InstallPlugins, s.InstallPlugins)
 }
 
 // ClaudeLoginCode hands a running Claude Code login the code its page showed.
-func ClaudeLoginCode(d *rpc.Handler, loginCode func(slug, code string) error) {
-	rpc.Handle(d, api.ClaudeProfileLoginCode, func(_ context.Context, o api.LoginCodeOptions) (api.None, error) {
-		return api.None{}, loginCode(o.Slug, o.Code)
-	})
+func ClaudeLoginCode(d *rpc.Handler, loginCode func(context.Context, api.LoginCodeOptions) (api.None, error)) {
+	rpc.Handle(d, api.ClaudeProfileLoginCode, loginCode)
 }
 
 // Quota exposes the plan readings as api declares them.
 func Quota(d *rpc.Handler, s *quota.Service) {
-	rpc.Handle(d, api.QuotaPlans, func(_ context.Context, o api.QuotaPlansOptions) ([]api.QuotaPlan, error) {
-		return s.Plans(o.SessionID), nil
-	})
-	rpc.Handle(d, api.QuotaProfilePlan, func(_ context.Context, o api.ProfilePlanOptions) (api.QuotaPlan, error) {
-		return s.ProfilePlan(o.Profile)
-	})
-	rpc.Handle(d, api.QuotaCodexProfilePlan, func(_ context.Context, o api.ProfilePlanOptions) (api.QuotaPlan, error) {
-		return s.CodexProfilePlan(o.Profile)
-	})
+	rpc.Handle(d, api.QuotaPlans, s.Plans)
+	rpc.Handle(d, api.QuotaProfilePlan, s.ProfilePlan)
+	rpc.Handle(d, api.QuotaCodexProfilePlan, s.CodexProfilePlan)
 }

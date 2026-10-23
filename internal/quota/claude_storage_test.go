@@ -126,7 +126,7 @@ func TestUnreadableDefaultSessionIsAlsoUnknown(t *testing.T) {
 	writeCreds(t, claudeCredsJSON, codexCredsJSON)
 	s := newService("", "", time.Now())
 	s.SetSessions(func(string) Account { return Account{} })
-	for _, p := range s.Plans("unreadable") {
+	for _, p := range s.plans("unreadable") {
 		if p.Status != StatusUnknown || len(p.Windows) != 0 {
 			t.Fatal("unreadable default session borrowed the machine login")
 		}

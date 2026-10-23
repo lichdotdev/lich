@@ -1,6 +1,9 @@
 package store
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 // TestReopenWorktreeSessionTakesTheNewestParkedRow pins which row a resume
 // consumes when a worktree has been parked more than once — a keep-the-worktree
@@ -9,17 +12,17 @@ import "testing"
 // transcript they left turns ago, and it is the one row the query orders for.
 func TestReopenWorktreeSessionTakesTheNewestParkedRow(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
 
-	_ = svc.AddSession("p1", "wt1", "older", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "older", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 	_ = svc.SetProviderSession("wt1", "conv-older")
-	_ = svc.CloseSession("p1", "wt1", "base")
-	_ = svc.AddSession("p1", "wt2", "newer", "claude", "/wt/foo", 4, "")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt2", Label: "newer", Kind: "claude", Path: "/wt/foo", NextSeq: 4})
 	_ = svc.SetProviderSession("wt2", "conv-newer")
-	_ = svc.CloseSession("p1", "wt2", "base")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt2", ActiveID: "base"})
 
-	restored, err := svc.ReopenWorktreeSession("p1", "/wt/foo", "wt3")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "wt3"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -50,18 +53,22 @@ func TestReopenWorktreeSessionTakesTheNewestParkedRow(t *testing.T) {
 // window focuses it, and leave the parked copy where it was.
 func TestReopenHandsBackTheCardThatHoldsTheConversation(t *testing.T) {
 	doors := map[string]func(svc *Service) (*Session, error){
-		"by id":       func(svc *Service) (*Session, error) { return svc.ReopenSession("copy", "fresh") },
-		"by worktree": func(svc *Service) (*Session, error) { return svc.ReopenWorktreeSession("p1", "/wt/foo", "fresh") },
+		"by id": func(svc *Service) (*Session, error) {
+			return svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "copy", NewSessionID: "fresh"})
+		},
+		"by worktree": func(svc *Service) (*Session, error) {
+			return svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "fresh"})
+		},
 	}
 	for name, reopen := range doors {
 		t.Run(name, func(t *testing.T) {
 			svc := newTestStore(t)
-			_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-			_ = svc.AddSession("p1", "holder", "auth-refactor", "claude", "/wt/foo", 2, "")
+			_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "holder", Label: "auth-refactor", Kind: "claude", Path: "/wt/foo", NextSeq: 2})
 			_ = svc.SetProviderSession("holder", "conv-shared")
-			_ = svc.AddSession("p1", "copy", "Session 3", "claude", "/wt/foo", 3, "")
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "copy", Label: "Session 3", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 			_ = svc.SetProviderSession("copy", "conv-shared")
-			_ = svc.CloseSession("p1", "copy", "holder")
+			_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "copy", ActiveID: "holder"})
 
 			restored, err := reopen(svc)
 			if err != nil {
@@ -89,15 +96,15 @@ func TestReopenHandsBackTheCardThatHoldsTheConversation(t *testing.T) {
 // never a parked row, which runs nothing.
 func TestConversationHolderNamesAnotherOpenCard(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "holder", "auth-refactor", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "resumer", "Claude 4", "claude", "", 3, "")
-	_ = svc.AddSession("p1", "parked", "old", "claude", "", 4, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "holder", Label: "auth-refactor", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "resumer", Label: "Claude 4", Kind: "claude", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parked", Label: "old", Kind: "claude", NextSeq: 4})
 	_ = svc.SetProviderSession("holder", "conv-shared")
 	_ = svc.SetProviderSession("resumer", "conv-shared")
 	_ = svc.SetProviderSession("parked", "conv-parked")
-	_ = svc.CloseSession("p1", "parked", "holder")
-	_ = svc.AddSession("p1", "fresh", "Claude 5", "claude", "", 5, "")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "parked", ActiveID: "holder"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "fresh", Label: "Claude 5", Kind: "claude", NextSeq: 5})
 	_ = svc.SetProviderSession("fresh", "conv-parked")
 
 	cases := []struct{ conversation, asking, want string }{

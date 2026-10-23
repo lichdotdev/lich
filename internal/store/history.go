@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -30,8 +31,8 @@ func escapeLike(term string) string {
 	return strings.ReplaceAll(term, "_", likeEscape+"_")
 }
 
-// ClosedSessions returns the parked sessions (is_open = 0) matching term, the
-// last one closed first, up to closedSessionLimit of them. An empty term is the
+// ClosedSessions returns the parked sessions (is_open = 0) matching opts.Term, the
+// last one closed first, up to closedSessionLimit of them. An empty opts.Term is the
 // plain history: the most recently closed, whatever they are named. Sessions of
 // closed projects answer too: a project hidden from the tab strip still owns the
 // work done in it, and resuming one of its sessions is what reopens it.
@@ -49,11 +50,11 @@ func escapeLike(term string) string {
 // be unfindable. LIKE is case-insensitive for ASCII in SQLite, which is what
 // makes the name half a search and not a prefix test.
 //
-// Total counts the whole match, not the page: without it a term matching more
+// Total counts the whole match, not the page: without it an opts.Term matching more
 // parked sessions than fit would answer with closedSessionLimit rows and no way
 // for the list to say so. Indexing counts the parked sessions the backfill has
 // not reached yet, which is the other way this answer can be short; asking for
-// one with a term is what starts that backfill.
+// one with an opts.Term is what starts that backfill.
 //
 // A conversation is listed once, by its newest park, and not at all while a
 // card has it open (newestOfItsConversation): its copies, left by a `/resume`
@@ -62,15 +63,15 @@ func escapeLike(term string) string {
 // rowid is the tiebreak, not the order, for RecentProjects' reason twice over:
 // it dates the insert, and a resumed session is reinserted — so rows parked
 // before closed_at existed all carry 0 and fall back to it together.
-func (s *Service) ClosedSessions(term string) (ClosedHistory, error) {
-	if strings.TrimSpace(term) != "" {
+func (s *Service) ClosedSessions(_ context.Context, opts api.SearchTermOptions) (ClosedHistory, error) {
+	if strings.TrimSpace(opts.Term) != "" {
 		// Started on any term, not only one the index can be asked about: the
 		// count of what is still unindexed goes back with every answer, and a
 		// term made of punctuation alone would otherwise leave the list
 		// reporting a backfill nothing had started.
 		s.backfill()
 	}
-	match := closedSessionsMatch(term)
+	match := closedSessionsMatch(opts.Term)
 
 	// Counted before the rows are asked for, never while they are being walked:
 	// the store holds a single connection, and a second query opened inside the
@@ -120,7 +121,7 @@ func (s *Service) ClosedSessions(term string) (ClosedHistory, error) {
 	// After the rows are drained, for the single connection's reason above, and
 	// only for the page: cutting a snippet costs the conversation it is cut out
 	// of, and the match can be wider than the list.
-	s.attachSnippets(history.Sessions, said, term)
+	s.attachSnippets(history.Sessions, said, opts.Term)
 	return history, nil
 }
 

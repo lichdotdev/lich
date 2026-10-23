@@ -20,13 +20,13 @@ func TestUpdateProfileReportsTheProfileOnceWritten(t *testing.T) {
 		t.Fatal(err)
 	}
 	teal := "teal"
-	if _, err := s.UpdateProfile(p.Slug, profilestore.Update{Color: &teal}); err != nil {
+	if _, err := s.UpdateProfile(t.Context(), api.UpdateProfileOptions{Slug: p.Slug, Update: profilestore.Update{Color: &teal}}); err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 1 || got[0].Provider != "claude" || got[0].Profile.Slug != p.Slug || got[0].Profile.Color != "teal" {
 		t.Errorf("events = %+v", got)
 	}
-	if _, err := s.UpdateProfile(p.Slug, profilestore.Update{Name: " "}); err == nil || len(got) != 1 {
+	if _, err := s.UpdateProfile(t.Context(), api.UpdateProfileOptions{Slug: p.Slug, Update: profilestore.Update{Name: " "}}); err == nil || len(got) != 1 {
 		t.Errorf("a refused update reported anyway: %v, %+v", err, got)
 	}
 }

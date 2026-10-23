@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	themeassets "github.com/lichdotdev/lich/themes"
 )
 
@@ -41,12 +42,12 @@ func rawThemeFile(t *testing.T, raw string) string {
 
 func importTheme(t *testing.T, s *Service, theme Theme) (ImportResult, error) {
 	t.Helper()
-	return s.Import(rawThemeFile(t, rawTheme(t, theme)), false)
+	return s.Import(t.Context(), api.ImportThemeOptions{Path: rawThemeFile(t, rawTheme(t, theme))})
 }
 
 func TestListIncludesBundledThemes(t *testing.T) {
 	s := NewInDir(t.TempDir())
-	themes, err := s.List()
+	themes, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -74,7 +75,7 @@ func TestImportPersistsCustomTheme(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "solar.json")); err != nil {
 		t.Fatalf("stat saved theme: %v", err)
 	}
-	listed, err := s.List()
+	listed, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -93,7 +94,7 @@ func TestImportRejectsReservedID(t *testing.T) {
 
 func TestImportRejectsMalformedJSON(t *testing.T) {
 	s := NewInDir(t.TempDir())
-	if _, err := s.Import(rawThemeFile(t, "{"), false); err == nil {
+	if _, err := s.Import(t.Context(), api.ImportThemeOptions{Path: rawThemeFile(t, "{")}); err == nil {
 		t.Fatal("Import malformed JSON succeeded")
 	}
 }
@@ -283,23 +284,23 @@ func TestImportRequiresOverwriteConfirmation(t *testing.T) {
 	replacement := customTheme("replace-me")
 	replacement.Name = "Replacement"
 	source := rawThemeFile(t, rawTheme(t, replacement))
-	result, err := s.Import(source, false)
+	result, err := s.Import(t.Context(), api.ImportThemeOptions{Path: source})
 	if err != nil {
 		t.Fatalf("probe replacement: %v", err)
 	}
 	if !result.NeedsOverwrite || result.Theme.Name != "Replacement" {
 		t.Fatalf("probe result = %#v", result)
 	}
-	listed, _ := s.List()
+	listed, _ := s.List(t.Context(), api.None{})
 	if listed[2].Name != "Original" {
 		t.Fatalf("probe overwrote original: %#v", listed[2])
 	}
 
-	result, err = s.Import(source, true)
+	result, err = s.Import(t.Context(), api.ImportThemeOptions{Path: source, Overwrite: true})
 	if err != nil || result.NeedsOverwrite {
 		t.Fatalf("confirmed replacement = %#v, %v", result, err)
 	}
-	listed, _ = s.List()
+	listed, _ = s.List(t.Context(), api.None{})
 	if listed[2].Name != "Replacement" {
 		t.Fatalf("confirmed replacement not installed: %#v", listed[2])
 	}
@@ -307,11 +308,11 @@ func TestImportRequiresOverwriteConfirmation(t *testing.T) {
 
 func TestImportRejectsInvalidSourceFiles(t *testing.T) {
 	s := NewInDir(t.TempDir())
-	if _, err := s.Import(t.TempDir(), false); err == nil {
+	if _, err := s.Import(t.Context(), api.ImportThemeOptions{Path: t.TempDir()}); err == nil {
 		t.Fatal("Import directory succeeded")
 	}
 	large := rawThemeFile(t, strings.Repeat("x", maxThemeFileSize+1))
-	if _, err := s.Import(large, false); err == nil {
+	if _, err := s.Import(t.Context(), api.ImportThemeOptions{Path: large}); err == nil {
 		t.Fatal("Import oversized file succeeded")
 	}
 }
@@ -319,13 +320,13 @@ func TestImportRejectsInvalidSourceFiles(t *testing.T) {
 func TestServiceInitErrorPropagates(t *testing.T) {
 	want := os.ErrPermission
 	s := &Service{initErr: want}
-	if _, err := s.List(); err != want {
+	if _, err := s.List(t.Context(), api.None{}); err != want {
 		t.Fatalf("List init error = %v", err)
 	}
-	if _, err := s.Import("ignored", false); err != want {
+	if _, err := s.Import(t.Context(), api.ImportThemeOptions{Path: "ignored"}); err != want {
 		t.Fatalf("Import init error = %v", err)
 	}
-	if err := s.Remove("custom"); err != want {
+	if _, err := s.Remove(t.Context(), api.RemoveThemeOptions{ID: "custom"}); err != want {
 		t.Fatalf("Remove init error = %v", err)
 	}
 }
@@ -359,19 +360,19 @@ func TestRemoveDeletesOnlyCustomTheme(t *testing.T) {
 	if _, err := importTheme(t, s, customTheme("removable")); err != nil {
 		t.Fatalf("Import: %v", err)
 	}
-	if err := s.Remove("removable"); err != nil {
+	if _, err := s.Remove(t.Context(), api.RemoveThemeOptions{ID: "removable"}); err != nil {
 		t.Fatalf("Remove custom: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "removable.json")); !os.IsNotExist(err) {
 		t.Fatalf("saved theme still exists: %v", err)
 	}
-	if err := s.Remove("light"); err == nil {
+	if _, err := s.Remove(t.Context(), api.RemoveThemeOptions{ID: "light"}); err == nil {
 		t.Fatal("Remove bundled theme succeeded")
 	}
-	if err := s.Remove("Bad ID"); err == nil {
+	if _, err := s.Remove(t.Context(), api.RemoveThemeOptions{ID: "Bad ID"}); err == nil {
 		t.Fatal("Remove invalid id succeeded")
 	}
-	if err := s.Remove("not-there"); err != nil {
+	if _, err := s.Remove(t.Context(), api.RemoveThemeOptions{ID: "not-there"}); err != nil {
 		t.Fatalf("Remove missing theme: %v", err)
 	}
 }
@@ -389,7 +390,7 @@ func TestListSortsCustomThemesByName(t *testing.T) {
 	if _, err := importTheme(t, s, alpha); err != nil {
 		t.Fatalf("Import alpha: %v", err)
 	}
-	themes, err := s.List()
+	themes, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -423,7 +424,7 @@ func TestListDefaultsATokenAStoredThemePredates(t *testing.T) {
 				want = bundledThemes[1].App["ring"]
 			}
 
-			listed, err := s.List()
+			listed, err := s.List(t.Context(), api.None{})
 			if err != nil {
 				t.Fatalf("List: %v", err)
 			}
@@ -450,7 +451,7 @@ func TestListSkipsInvalidCustomTheme(t *testing.T) {
 		t.Fatalf("write bad theme: %v", err)
 	}
 	s := NewInDir(dir)
-	themes, err := s.List()
+	themes, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -462,7 +463,7 @@ func TestListSkipsInvalidCustomTheme(t *testing.T) {
 
 func assertBroken(t *testing.T, s *Service, id, reason string) {
 	t.Helper()
-	broken, err := s.ListBroken()
+	broken, err := s.ListBroken(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("ListBroken: %v", err)
 	}
@@ -480,10 +481,10 @@ func TestListBrokenNamesANewerFormatAndRemoveClearsIt(t *testing.T) {
 	}
 	s := NewInDir(dir)
 	assertBroken(t, s, "future", "theme format 2 is newer")
-	if err := s.Remove("future"); err != nil {
+	if _, err := s.Remove(t.Context(), api.RemoveThemeOptions{ID: "future"}); err != nil {
 		t.Fatalf("Remove: %v", err)
 	}
-	broken, err := s.ListBroken()
+	broken, err := s.ListBroken(t.Context(), api.None{})
 	if err != nil || len(broken) != 0 {
 		t.Fatalf("ListBroken after Remove = %#v, %v", broken, err)
 	}
@@ -496,18 +497,18 @@ func TestListBrokenIgnoresNamesLichNeverWrites(t *testing.T) {
 			t.Fatalf("write %s: %v", name, err)
 		}
 	}
-	broken, err := NewInDir(dir).ListBroken()
+	broken, err := NewInDir(dir).ListBroken(t.Context(), api.None{})
 	if err != nil || len(broken) != 0 {
 		t.Fatalf("ListBroken = %#v, %v; want nothing", broken, err)
 	}
 }
 
 func TestListBrokenPropagatesErrors(t *testing.T) {
-	if broken, err := NewInDir(filepath.Join(t.TempDir(), "absent")).ListBroken(); err != nil || broken != nil {
+	if broken, err := NewInDir(filepath.Join(t.TempDir(), "absent")).ListBroken(t.Context(), api.None{}); err != nil || broken != nil {
 		t.Fatalf("ListBroken on a missing dir = %#v, %v", broken, err)
 	}
 	s := &Service{initErr: os.ErrPermission}
-	if _, err := s.ListBroken(); err == nil {
+	if _, err := s.ListBroken(t.Context(), api.None{}); err == nil {
 		t.Fatal("ListBroken ignored the init error")
 	}
 }
@@ -570,7 +571,7 @@ func TestListSkipsMissingTerminalAndNonThemeEntries(t *testing.T) {
 		t.Fatalf("make directory entry: %v", err)
 	}
 	s := NewInDir(dir)
-	themes, err := s.List()
+	themes, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -586,7 +587,7 @@ func TestListSkipsFilenameMismatch(t *testing.T) {
 		t.Fatalf("write mismatched theme: %v", err)
 	}
 	s := NewInDir(dir)
-	themes, err := s.List()
+	themes, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -603,21 +604,21 @@ func TestListReturnsDirectoryError(t *testing.T) {
 		t.Fatalf("write dir blocker: %v", err)
 	}
 	s := NewInDir(path)
-	if _, err := s.List(); err == nil {
+	if _, err := s.List(t.Context(), api.None{}); err == nil {
 		t.Fatal("List with file as themes dir succeeded")
 	}
 }
 
 func TestBundledThemesAreCloned(t *testing.T) {
 	s := NewInDir(t.TempDir())
-	first, err := s.List()
+	first, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	first[0].App["background"] = "changed"
 	first[0].Terminal["foreground"] = "changed"
 
-	second, err := s.List()
+	second, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List again: %v", err)
 	}
@@ -681,7 +682,7 @@ func TestBundledTemplateIsImportable(t *testing.T) {
 
 func TestSaveTemplateWritesEveryColor(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "template.json")
-	if err := NewInDir(t.TempDir()).SaveTemplate(path); err != nil {
+	if _, err := NewInDir(t.TempDir()).SaveTemplate(t.Context(), api.SaveThemeTemplateOptions{Path: path}); err != nil {
 		t.Fatalf("SaveTemplate: %v", err)
 	}
 	written, err := os.ReadFile(path)
@@ -694,14 +695,14 @@ func TestSaveTemplateWritesEveryColor(t *testing.T) {
 }
 
 func TestSaveTemplateRejectsEmptyDestination(t *testing.T) {
-	if err := NewInDir(t.TempDir()).SaveTemplate("  "); err == nil {
+	if _, err := NewInDir(t.TempDir()).SaveTemplate(t.Context(), api.SaveThemeTemplateOptions{Path: "  "}); err == nil {
 		t.Fatal("SaveTemplate with no destination succeeded")
 	}
 }
 
 func TestSaveTemplateReportsWriteFailure(t *testing.T) {
 	dir := t.TempDir()
-	if err := NewInDir(dir).SaveTemplate(filepath.Join(dir, "missing", "template.json")); err == nil {
+	if _, err := NewInDir(dir).SaveTemplate(t.Context(), api.SaveThemeTemplateOptions{Path: filepath.Join(dir, "missing", "template.json")}); err == nil {
 		t.Fatal("SaveTemplate into a missing directory succeeded")
 	}
 }

@@ -126,7 +126,7 @@ func TestSearchTranscriptsRejectsAShortQuery(t *testing.T) {
 	// never reaches one.
 	s := &Service{}
 	for _, query := range []string{"", "  ", "wo", " w "} {
-		if got := s.SearchTranscripts([]string{"session"}, query); got != nil {
+		if got := s.searchTranscripts([]string{"session"}, query); got != nil {
 			t.Errorf("query %q returned %v, want nil", query, got)
 		}
 	}

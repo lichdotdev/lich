@@ -1,6 +1,7 @@
 package spawn
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -39,7 +40,7 @@ type CloseOptions = api.CloseSessionOptions
 //
 // A session that shares its checkout with another, or lives in the project's own
 // directory, has nothing at stake and closes on the spot.
-func (s *Service) Close(opts CloseOptions) (Closed, error) {
+func (s *Service) Close(ctx context.Context, opts CloseOptions) (Closed, error) {
 	fromID, target, projectName, worktree, force := opts.From, opts.Target, opts.Project, opts.Worktree, opts.Force
 	if worktree != "" && worktree != KeepWorktree && worktree != RemoveWorktree {
 		return Closed{}, fmt.Errorf(
@@ -48,7 +49,7 @@ func (s *Service) Close(opts CloseOptions) (Closed, error) {
 		)
 	}
 
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(ctx, api.None{})
 	if err != nil {
 		return Closed{}, fmt.Errorf("read the workspace: %w", err)
 	}
@@ -95,7 +96,7 @@ func (s *Service) Close(opts CloseOptions) (Closed, error) {
 	// reads back — the same close the window performs
 	// (native/cmd/lich-native/main.go, closeSession). Only a checkout's removal takes a row with it. For the
 	// last session of a worktree this is the keep answer, and the row says so.
-	if err := s.sessions.CloseSession(found.project.ID, found.session.ID, active); err != nil {
+	if _, err := s.sessions.CloseSession(ctx, api.ParkSessionOptions{ProjectID: found.project.ID, SessionID: found.session.ID, ActiveID: active}); err != nil {
 		return Closed{}, err
 	}
 	closed.Kept = last
@@ -114,7 +115,7 @@ func (s *Service) Close(opts CloseOptions) (Closed, error) {
 // no longer in the workspace, which leaves no checkout to call shared. A worker
 // already gone is not an error. The relay calls this (relay.SetWorkerFinished).
 func (s *Service) CloseFinishedWorker(id string) error {
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		return fmt.Errorf("read the workspace: %w", err)
 	}
@@ -123,7 +124,7 @@ func (s *Service) CloseFinishedWorker(id string) error {
 		return nil
 	}
 	active := neighborOf(found.project, id)
-	if err := s.sessions.CloseSession(found.project.ID, id, active); err != nil {
+	if _, err := s.sessions.CloseSession(context.Background(), api.ParkSessionOptions{ProjectID: found.project.ID, SessionID: id, ActiveID: active}); err != nil {
 		return err
 	}
 	s.finish(found, active, "")
@@ -167,7 +168,11 @@ func (s *Service) removeCheckout(found located, active, closerID string, force b
 	// refused too (project.RemoveWorktree), but by then the terminal is closed
 	// and the rows are gone, and the session would be lost to keep a directory
 	// that was never at risk.
-	if s.worktrees.WorktreeAdopted(found.session.Path) {
+	adopted, err := s.worktrees.WorktreeAdopted(context.Background(), api.PathOptions{Path: found.session.Path})
+	if err != nil {
+		return err
+	}
+	if adopted {
 		return fmt.Errorf(
 			"the worktree %s was not created by lich, so closing this session cannot delete it: "+
 				"say %q instead, which parks the session and leaves the checkout where it is, "+
@@ -179,7 +184,7 @@ func (s *Service) removeCheckout(found located, active, closerID string, force b
 	// remove` without --force refuses a dirty checkout on its own
 	// (project.RemoveWorktree), so an unreadable status ends in git's own refusal
 	// instead of the sentence written for this case.
-	dirty, err := s.worktrees.WorktreeDirty(found.session.Path)
+	dirty, err := s.worktrees.WorktreeDirty(context.Background(), api.PathOptions{Path: found.session.Path})
 	if err == nil && dirty && !force {
 		return fmt.Errorf(
 			"the worktree %s has uncommitted work, and removing it discards what is in no "+
@@ -193,10 +198,13 @@ func (s *Service) removeCheckout(found located, active, closerID string, force b
 	if err := s.sessions.DeleteSession(found.project.ID, found.session.ID, active); err != nil {
 		return err
 	}
-	if err := s.sessions.PurgeWorktreeSessions(found.project.ID, found.session.Path); err != nil {
+	if _, err := s.sessions.PurgeWorktreeSessions(context.Background(), api.WorktreeSessionsOptions{ProjectID: found.project.ID, Path: found.session.Path}); err != nil {
 		return err
 	}
-	return s.worktrees.RemoveWorktree(found.project.Path, found.session.Path, force, false)
+	if _, err := s.worktrees.RemoveWorktree(context.Background(), api.RemoveWorktreeOptions{ProjectPath: found.project.Path, WorktreePath: found.session.Path, Force: force}); err != nil {
+		return err
+	}
+	return nil
 }
 
 // finish takes down the PTY and the card. The terminal close is repeated for

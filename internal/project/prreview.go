@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,25 +62,25 @@ type ghReviewComment struct {
 }
 
 // SubmitReview files one review on GitHub: the verdict, the summary body, and
-// every line comment the window has been holding, in a single call. head is the
+// every line comment the window has been holding, in a single call. opts.Head is the
 // commit the comments were written against — empty lets GitHub assume its own
 // latest, which is wrong the moment a push landed while the review was open.
 //
-// This is also the plain Approve: no comments, no body, event "approve". GitHub
+// This is also the plain Approve: no comments, no body, opts.Event "approve". GitHub
 // refuses an approval of one's own pull request, which the message table turns
 // into a sentence (gherror.go).
-func (s *Service) SubmitReview(path string, number int, event, body, head string, comments []ReviewComment) error {
-	payload, err := reviewPayload(event, body, head, comments)
+func (s *Service) SubmitReview(_ context.Context, opts api.SubmitReviewOptions) (api.None, error) {
+	payload, err := reviewPayload(opts.Event, opts.Body, opts.Head, opts.Comments)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
 	file, err := writeTempJSON(payload)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
 	defer os.Remove(file)
-	return s.writePR(prReviewTimeout, path, number, "api", "--method", "POST",
-		"repos/{owner}/{repo}/pulls/"+strconv.Itoa(number)+"/reviews", "--input", file)
+	return api.None{}, s.writePR(prReviewTimeout, opts.Path, opts.Number, "api", "--method", "POST",
+		"repos/{owner}/{repo}/pulls/"+strconv.Itoa(opts.Number)+"/reviews", "--input", file)
 }
 
 // reviewPayload validates the review and renders GitHub's body for it. The
@@ -151,14 +152,14 @@ func writeTempJSON(payload any) (string, error) {
 	return file.Name(), nil
 }
 
-// ReplyToReviewThread answers an existing thread. commentID is the database id
+// ReplyToReviewThread answers an existing thread. opts.CommentID is the database id
 // of any comment in it — GitHub files the reply against the thread that comment
 // belongs to. A reply posts immediately and is never part of the pending review:
 // it is an answer to something already said, which is the same split GitHub
 // draws between "add single comment" and "start a review".
-func (s *Service) ReplyToReviewThread(path string, number int, commentID int64, body string) error {
-	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/comments/%d/replies", number, commentID)
-	return s.writeBody(path, number, "POST", endpoint, body, "a reply needs something written in it")
+func (s *Service) ReplyToReviewThread(_ context.Context, opts api.PRCommentBodyOptions) (api.None, error) {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/comments/%d/replies", opts.Number, opts.CommentID)
+	return api.None{}, s.writeBody(opts.Path, opts.Number, "POST", endpoint, opts.Body, "a reply needs something written in it")
 }
 
 // writeBody sends body to a REST endpoint that takes a text and nothing else,
@@ -171,77 +172,77 @@ func (s *Service) writeBody(path string, number int, method, endpoint, body, emp
 	return s.writePR(prReviewTimeout, path, number, "api", "--method", method, endpoint, "-f", "body="+body)
 }
 
-// EditReviewComment rewrites one comment of a review thread. commentID is its
+// EditReviewComment rewrites one comment of a review thread. opts.CommentID is its
 // database id, the same address a reply takes; GitHub refuses the edit unless
 // the account gh runs as may update that comment.
-func (s *Service) EditReviewComment(path string, number int, commentID int64, body string) error {
-	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/comments/%d", commentID)
-	return s.writeBody(path, number, "PATCH", endpoint, body, "a review comment needs something written in it")
+func (s *Service) EditReviewComment(_ context.Context, opts api.PRCommentBodyOptions) (api.None, error) {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/comments/%d", opts.CommentID)
+	return api.None{}, s.writeBody(opts.Path, opts.Number, "PATCH", endpoint, opts.Body, "a review comment needs something written in it")
 }
 
 // DeleteReviewComment removes one comment of a review thread; the last one
 // gone takes the thread with it. There is no undo on GitHub's side.
-func (s *Service) DeleteReviewComment(path string, number int, commentID int64) error {
-	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/comments/%d", commentID)
-	return s.writePR(prReviewTimeout, path, number, "api", "--method", "DELETE", endpoint)
+func (s *Service) DeleteReviewComment(_ context.Context, opts api.PRCommentOptions) (api.None, error) {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/comments/%d", opts.CommentID)
+	return api.None{}, s.writePR(prReviewTimeout, opts.Path, opts.Number, "api", "--method", "DELETE", endpoint)
 }
 
-// EditReviewBody rewrites the summary of a submitted review. reviewID is its
+// EditReviewBody rewrites the summary of a submitted review. opts.ReviewID is its
 // database id; the verdict stays what it was, GitHub has no way to change it.
-func (s *Service) EditReviewBody(path string, number int, reviewID int64, body string) error {
-	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/reviews/%d", number, reviewID)
-	return s.writeBody(path, number, "PUT", endpoint, body, "a review summary needs something written in it")
+func (s *Service) EditReviewBody(_ context.Context, opts api.PRReviewBodyOptions) (api.None, error) {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/pulls/%d/reviews/%d", opts.Number, opts.ReviewID)
+	return api.None{}, s.writeBody(opts.Path, opts.Number, "PUT", endpoint, opts.Body, "a review summary needs something written in it")
 }
 
-// ResolveReviewThread marks a thread resolved, or reopens it. threadID is the
+// ResolveReviewThread marks a thread resolved, or reopens it. opts.ThreadID is the
 // GraphQL node id the conversation read carries — the database id a reply uses
 // does not address a thread here.
-func (s *Service) ResolveReviewThread(path, threadID string, resolved bool) error {
-	if threadID == "" {
-		return fmt.Errorf("a thread is required")
+func (s *Service) ResolveReviewThread(_ context.Context, opts api.ResolveThreadOptions) (api.None, error) {
+	if opts.ThreadID == "" {
+		return api.None{}, fmt.Errorf("a thread is required")
 	}
 	mutation := unresolveThreadMutation
-	if resolved {
+	if opts.Resolved {
 		mutation = resolveThreadMutation
 	}
-	return s.writePR(prReviewTimeout, path, 0, "api", "graphql", "-f", "query="+mutation, "-f", "id="+threadID)
+	return api.None{}, s.writePR(prReviewTimeout, opts.Path, 0, "api", "graphql", "-f", "query="+mutation, "-f", "id="+opts.ThreadID)
 }
 
 // CommentOnPullRequest leaves a comment on the pull request itself — the
 // conversation with no file and no line behind it.
-func (s *Service) CommentOnPullRequest(path string, number int, body string) error {
-	if body == "" {
-		return fmt.Errorf("a comment needs something written in it")
+func (s *Service) CommentOnPullRequest(_ context.Context, opts api.PRBodyOptions) (api.None, error) {
+	if opts.Body == "" {
+		return api.None{}, fmt.Errorf("a comment needs something written in it")
 	}
-	return s.writePR(prReviewTimeout, path, number, prArgs("comment", number, "--body", body)...)
+	return api.None{}, s.writePR(prReviewTimeout, opts.Path, opts.Number, prArgs("comment", opts.Number, "--body", opts.Body)...)
 }
 
 // EditPullRequestComment rewrites a comment on the pull request itself.
 // GitHub files those as issue comments, which is the endpoint they live at.
-func (s *Service) EditPullRequestComment(path string, number int, commentID int64, body string) error {
-	endpoint := fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", commentID)
-	return s.writeBody(path, number, "PATCH", endpoint, body, "a comment needs something written in it")
+func (s *Service) EditPullRequestComment(_ context.Context, opts api.PRCommentBodyOptions) (api.None, error) {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", opts.CommentID)
+	return api.None{}, s.writeBody(opts.Path, opts.Number, "PATCH", endpoint, opts.Body, "a comment needs something written in it")
 }
 
 // DeletePullRequestComment removes a comment on the pull request itself, for
 // good.
-func (s *Service) DeletePullRequestComment(path string, number int, commentID int64) error {
-	endpoint := fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", commentID)
-	return s.writePR(prReviewTimeout, path, number, "api", "--method", "DELETE", endpoint)
+func (s *Service) DeletePullRequestComment(_ context.Context, opts api.PRCommentOptions) (api.None, error) {
+	endpoint := fmt.Sprintf("repos/{owner}/{repo}/issues/comments/%d", opts.CommentID)
+	return api.None{}, s.writePR(prReviewTimeout, opts.Path, opts.Number, "api", "--method", "DELETE", endpoint)
 }
 
 // EditPullRequestTitle renames the pull request on GitHub. GitHub refuses a pull
 // request without a title, so an empty one never reaches gh.
-func (s *Service) EditPullRequestTitle(path string, number int, title string) error {
-	if strings.TrimSpace(title) == "" {
-		return fmt.Errorf("a pull request needs a title")
+func (s *Service) EditPullRequestTitle(_ context.Context, opts api.PRTitleOptions) (api.None, error) {
+	if strings.TrimSpace(opts.Title) == "" {
+		return api.None{}, fmt.Errorf("a pull request needs a title")
 	}
-	return s.writePR(prReviewTimeout, path, number, prArgs("edit", number, "--title", title)...)
+	return api.None{}, s.writePR(prReviewTimeout, opts.Path, opts.Number, prArgs("edit", opts.Number, "--title", opts.Title)...)
 }
 
 // EditPullRequestBody rewrites the pull request's description on GitHub, and an
 // empty body clears it. The title is left alone on purpose: sending the one the
 // screen read would undo a rename made on GitHub since.
-func (s *Service) EditPullRequestBody(path string, number int, body string) error {
-	return s.writePR(prReviewTimeout, path, number, prArgs("edit", number, "--body", body)...)
+func (s *Service) EditPullRequestBody(_ context.Context, opts api.PRBodyOptions) (api.None, error) {
+	return api.None{}, s.writePR(prReviewTimeout, opts.Path, opts.Number, prArgs("edit", opts.Number, "--body", opts.Body)...)
 }

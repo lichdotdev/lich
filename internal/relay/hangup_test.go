@@ -53,7 +53,7 @@ func assertStashedAndNudged(t *testing.T, svc *Service, term *fakeTerminal, answ
 	if !awaitWritten(term, "s1", "[lich]") {
 		t.Errorf("the sender was never nudged: %q", term.written("s1"))
 	}
-	collected, err := svc.CollectNow(CollectNowOptions{From: "s1"})
+	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("CollectNow: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestACollectWhoseCallerHungUpLeavesTheNextResultToTheNudge(t *testing.T) {
 	}
 	awaitHolding(t, svc, "s1", 0)
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	assertStashedAndNudged(t, svc, term, "all green")
@@ -133,7 +133,7 @@ func TestCollectNowReturnsAtOnceWithWhoStillOwes(t *testing.T) {
 	plant(svc, "t1", "s1", "s2", "docs")
 
 	start := time.Now()
-	collected, err := svc.CollectNow(CollectNowOptions{From: "s1"})
+	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("CollectNow: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestCollectNowReturnsAtOnceWithWhoStillOwes(t *testing.T) {
 
 	// Having looked is not holding the line: the next result is announced the
 	// usual way instead of waking a collector that already returned.
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	assertStashedAndNudged(t, svc, term, "all green")
@@ -156,7 +156,7 @@ func TestCollectNowRefusesACallerWithNoSession(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal(), nil)
 
-	if _, err := svc.CollectNow(CollectNowOptions{}); err == nil {
+	if _, err := svc.CollectNow(t.Context(), CollectNowOptions{}); err == nil {
 		t.Fatal("collected for a caller that has no inbox")
 	}
 }
@@ -180,7 +180,7 @@ func TestAWaitWhoseCallerHungUpLeavesTheAnswerToTheInbox(t *testing.T) {
 	}
 	awaitAttended(t, svc, "t1", 0)
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	assertStashedAndNudged(t, svc, term, "all green")
@@ -242,7 +242,7 @@ func TestAnAbandonedWaitStashesTheOutcomeItWasHolding(t *testing.T) {
 	if !awaitWritten(term, "s1", "[lich]") {
 		t.Errorf("the sender was never nudged: %q", term.written("s1"))
 	}
-	collected, err := svc.CollectNow(CollectNowOptions{From: "s1"})
+	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("CollectNow: %v", err)
 	}
@@ -267,7 +267,7 @@ func TestAnAbandonedWaitLeavesTheOutcomeToAnotherWaiter(t *testing.T) {
 
 	svc.abandon("t1", tk)
 
-	collected, err := svc.CollectNow(CollectNowOptions{From: "s1"})
+	collected, err := svc.CollectNow(t.Context(), CollectNowOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("CollectNow: %v", err)
 	}
@@ -286,7 +286,7 @@ func TestAnInterruptedSenderIsNudged(t *testing.T) {
 	svc.Observe("s1", stateBusy)
 	plant(svc, "t1", "s1", "s2", "docs")
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	time.Sleep(20 * time.Millisecond)

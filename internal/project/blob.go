@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relpath"
 )
 
@@ -160,13 +162,13 @@ func (s *Service) githubBlob(dir, rel, ref string) ([]byte, error) {
 	return out, nil
 }
 
-// PullRequestMergeBase is the commit pull request number's diff is taken
+// PullRequestMergeBase is the commit pull request opts.Number's diff is taken
 // from, the old side of every file GitHub shows. The base branch's tip is not
 // it once the base moved past where the branch left it. The tips come from
 // GitHub; their merge base is computed here when the clone holds both, and
 // asked of GitHub otherwise.
-func (s *Service) PullRequestMergeBase(path string, number int) (string, error) {
-	out, err := s.gh(prReadTimeout, path, "api", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", number),
+func (s *Service) PullRequestMergeBase(_ context.Context, opts api.NumberOptions) (string, error) {
+	out, err := s.gh(prReadTimeout, opts.Path, "api", fmt.Sprintf("repos/{owner}/{repo}/pulls/%d", opts.Number),
 		"--jq", `.base.sha + " " + .head.sha`)
 	if err != nil {
 		return "", err
@@ -175,10 +177,10 @@ func (s *Service) PullRequestMergeBase(path string, number int) (string, error) 
 	if !isOID(base) || !isOID(head) {
 		return "", errUnreadableAnswer(fmt.Errorf("pull request tips %q", out))
 	}
-	if local, ok := gitQuiet(path, "merge-base", base, head); ok {
+	if local, ok := gitQuiet(opts.Path, "merge-base", base, head); ok {
 		return strings.TrimSpace(local), nil
 	}
-	out, err = s.gh(prReadTimeout, path, "api", "repos/{owner}/{repo}/compare/"+base+"..."+head,
+	out, err = s.gh(prReadTimeout, opts.Path, "api", "repos/{owner}/{repo}/compare/"+base+"..."+head,
 		"--jq", ".merge_base_commit.sha")
 	if err != nil {
 		return "", err

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"strings"
 	"testing"
@@ -181,7 +182,7 @@ func TestPullRequestConversationFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("the query is addressed by number and scoped to the path", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(conversationPayload)}
-		convo, err := withGH(gh).PullRequestConversation("/repo", 104)
+		convo, err := withGH(gh).PullRequestConversation(t.Context(), api.NumberOptions{Path: "/repo", Number: 104})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -204,7 +205,7 @@ func TestPullRequestConversationFlow(t *testing.T) {
 
 	t.Run("no number never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if _, err := withGH(gh).PullRequestConversation("/repo", 0); err == nil {
+		if _, err := withGH(gh).PullRequestConversation(t.Context(), api.NumberOptions{Path: "/repo"}); err == nil {
 			t.Error("expected an error without a pull request number")
 		}
 		if gh.calls != 0 {
@@ -214,7 +215,7 @@ func TestPullRequestConversationFlow(t *testing.T) {
 
 	t.Run("a gh failure reaches the caller as written", func(t *testing.T) {
 		gh := &fakeGH{err: testError("GitHub is rate-limiting this account. Try again in a few minutes.")}
-		_, err := withGH(gh).PullRequestConversation("/repo", 7)
+		_, err := withGH(gh).PullRequestConversation(t.Context(), api.NumberOptions{Path: "/repo", Number: 7})
 		if err == nil || err.Error() != "GitHub is rate-limiting this account. Try again in a few minutes." {
 			t.Errorf("error = %v, want the runner's message unchanged", err)
 		}

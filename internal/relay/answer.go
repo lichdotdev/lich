@@ -77,7 +77,7 @@ type ReplyOptions = api.ReplyOptions
 // prompt — so an agent whose context no longer reaches that message would
 // otherwise be holding an answer with no route home, and the sender blocked on
 // a ticket nobody can name. With two open it is refused: see errandOfLocked.
-func (s *Service) Reply(opts ReplyOptions) error {
+func (s *Service) Reply(_ context.Context, opts ReplyOptions) (api.None, error) {
 	replierID, ticketID, answer := opts.From, opts.Ticket, opts.Answer
 	answer = sanitize(answer)
 	if len(answer) > answerLimit {
@@ -91,7 +91,7 @@ func (s *Service) Reply(opts ReplyOptions) error {
 		id, err := s.errandOfLocked(replierID)
 		if err != nil {
 			s.mu.Unlock()
-			return err
+			return api.None{}, err
 		}
 		ticketID = id
 	}
@@ -107,15 +107,15 @@ func (s *Service) Reply(opts ReplyOptions) error {
 			s.stashLocked(ticketID, late, StatusAnswered, answer)
 			s.mu.Unlock()
 			s.announceInbox(late.fromID)
-			return nil
+			return api.None{}, nil
 		}
 		s.mu.Unlock()
-		return fmt.Errorf("unknown ticket %q — it was answered already, or expired", ticketID)
+		return api.None{}, fmt.Errorf("unknown ticket %q — it was answered already, or expired", ticketID)
 	}
 	select {
 	case <-t.done:
 		s.mu.Unlock()
-		return fmt.Errorf("ticket %q was already answered", ticketID)
+		return api.None{}, fmt.Errorf("ticket %q was already answered", ticketID)
 	default:
 	}
 	t.answer = answer
@@ -136,7 +136,7 @@ func (s *Service) Reply(opts ReplyOptions) error {
 	if unattended {
 		s.announceInbox(t.fromID)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // errandOfLocked is the errand an answer that named no ticket belongs to: the

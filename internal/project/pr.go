@@ -132,13 +132,13 @@ type ghCommitAuthor struct {
 }
 
 // PullRequestDetail returns one open pull request in full: the given number, or
-// the PR of the branch checked out at path when number is zero. It yields nil
+// the PR of the branch checked out at opts.Path when opts.Number is zero. It yields nil
 // when there is no open PR — gh reports none, or the PR is merged/closed, which
 // the OPEN-only gate treats the same as the badge does. A real failure (gh
 // missing, not a GitHub repo) yields an error so the panel can tell "no PR"
 // apart from "could not look up".
-func (s *Service) PullRequestDetail(path string, number int) (*PRDetail, error) {
-	out, err := s.gh(prReadTimeout, path, prArgs("view", number, "--json", prViewFields)...)
+func (s *Service) PullRequestDetail(_ context.Context, opts api.NumberOptions) (*PRDetail, error) {
+	out, err := s.gh(prReadTimeout, opts.Path, prArgs("view", opts.Number, "--json", prViewFields)...)
 	if errors.Is(err, errNoPullRequest) {
 		return nil, nil
 	}
@@ -148,11 +148,11 @@ func (s *Service) PullRequestDetail(path string, number int) (*PRDetail, error) 
 	// The OPEN-only gate belongs to the branch lookup alone. Naming a number is
 	// asking for that pull request, whatever became of it — the list can show
 	// merged and closed ones, and a row that cannot be opened is not a row.
-	detail, err := parsePRDetail(out, number == 0)
+	detail, err := parsePRDetail(out, opts.Number == 0)
 	if err != nil || detail == nil || len(detail.CheckRuns) == 0 {
 		return detail, err
 	}
-	if err := s.markRequiredChecks(path, detail.Number, detail.CheckRuns); err != nil {
+	if err := s.markRequiredChecks(opts.Path, detail.Number, detail.CheckRuns); err != nil {
 		return nil, err
 	}
 	return detail, nil
@@ -242,19 +242,19 @@ var mergeMethods = map[string]string{
 
 // MergePullRequest merges a pull request on GitHub with the given method
 // (squash|merge|rebase) — the given number, or the PR of the branch checked out
-// at path when number is zero. A non-empty subject overrides the commit message
-// (the dock's "edit message" flow); an empty subject leaves gh's default, the
-// quick merge. admin merges with administrator privileges, GitHub's own bypass
+// at opts.Path when opts.Number is zero. A non-empty opts.Subject overrides the commit message
+// (the dock's "edit message" flow); an empty opts.Subject leaves gh's default, the
+// quick merge. opts.Admin merges with administrator privileges, GitHub's own bypass
 // of the rules on the base branch. It does not pass --delete-branch: lich's
 // worktree removal owns that cleanup, and deleting a checked-out worktree's
 // branch is trouble. gh's stderr is surfaced on failure (not mergeable, branch
 // protection, gh missing).
-func (s *Service) MergePullRequest(path string, number int, method, subject, body string, admin bool) error {
-	args, err := mergeArgs(number, method, subject, body, admin)
+func (s *Service) MergePullRequest(_ context.Context, opts api.MergePullRequestOptions) (api.None, error) {
+	args, err := mergeArgs(opts.Number, opts.Method, opts.Subject, opts.Body, opts.Admin)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
-	return s.writePR(prMergeTimeout, path, number, args...)
+	return api.None{}, s.writePR(prMergeTimeout, opts.Path, opts.Number, args...)
 }
 
 // mergeArgs builds the gh argument list for a merge, rejecting an unknown method
@@ -283,17 +283,17 @@ func mergeArgs(number int, method, subject, body string, admin bool) ([]string, 
 }
 
 // CreatePullRequest opens GitHub's "new pull request" page in the browser for
-// the path's branch (gh pushes the branch first when it has no upstream).
+// opts.Path's branch (gh pushes the branch first when it has no upstream).
 // Deliberately the web flow, not an in-app form — GitHub's page already owns the
 // title, body, reviewers and template. Returns once the browser is launched.
-func (s *Service) CreatePullRequest(path string) error {
-	if _, err := s.gh(prCreateTimeout, path, "pr", "create", "--web"); err != nil {
-		return err
+func (s *Service) CreatePullRequest(_ context.Context, opts api.PathOptions) (api.None, error) {
+	if _, err := s.gh(prCreateTimeout, opts.Path, "pr", "create", "--web"); err != nil {
+		return api.None{}, err
 	}
-	return nil
+	return api.None{}, nil
 }
 
-// PullRequestDiff returns the unified diff of the path's branch pull request —
+// PullRequestDiff returns the unified diff of opts.Path's branch pull request —
 // every change the PR would merge into its base, as GitHub computes it — for the
 // Pulls screen's "Files changed" tab. --color never keeps the output plain so
 // the window's parsePatchFiles reads it. An empty string with no error means the
@@ -303,8 +303,8 @@ func (s *Service) CreatePullRequest(path string) error {
 // monster PR costs its own size in memory on both sides. Reviewing a diff that
 // large in a panel is not the workflow; stream it (or cap and mark it
 // truncated) if that ever stops being true.
-func (s *Service) PullRequestDiff(path string, number int) (string, error) {
-	out, err := s.gh(prReadTimeout, path, prArgs("diff", number, "--color", "never")...)
+func (s *Service) PullRequestDiff(_ context.Context, opts api.NumberOptions) (string, error) {
+	out, err := s.gh(prReadTimeout, opts.Path, prArgs("diff", opts.Number, "--color", "never")...)
 	if errors.Is(err, errNoPullRequest) {
 		return "", nil
 	}
@@ -356,18 +356,18 @@ type ghPRAuthor struct {
 // order, which the window re-sorts. It returns nil for a repository with none;
 // a real failure (gh missing, unauthenticated, not a GitHub repo) yields an
 // error so the column can say why it is empty.
-func (s *Service) ListPullRequests(path, state string) ([]PRSummary, error) {
-	if state == "" {
-		state = "open"
+func (s *Service) ListPullRequests(_ context.Context, opts api.ListPullRequestsOptions) ([]PRSummary, error) {
+	if opts.State == "" {
+		opts.State = "open"
 	}
-	if !prListStates[state] {
-		return nil, fmt.Errorf("unknown pull request state %q", state)
+	if !prListStates[opts.State] {
+		return nil, fmt.Errorf("unknown pull request state %q", opts.State)
 	}
 	// No errNoPullRequest branch here: asked for --json, gh answers a repository
 	// with no matching pull request as an empty array and exits 0. Its "no pull
 	// requests found" message belongs to view and diff, which address one.
-	out, err := s.gh(prReadTimeout, path,
-		"pr", "list", "--state", state, "--limit", strconv.Itoa(prListLimit), "--json", prListFields)
+	out, err := s.gh(prReadTimeout, opts.Path,
+		"pr", "list", "--state", opts.State, "--limit", strconv.Itoa(prListLimit), "--json", prListFields)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (s *Service) ListPullRequests(path, state string) ([]PRSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := s.tallyRequestedThreads(path, list); err != nil {
+	if err := s.tallyRequestedThreads(opts.Path, list); err != nil {
 		return nil, err
 	}
 	return list, nil

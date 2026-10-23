@@ -196,7 +196,7 @@ func TestPlansNeverReadsADisabledProvider(t *testing.T) {
 	run, runs := fakeAgy("1.2.5", agyUsageReply, nil)
 	s := agyService(run)
 	s.SetEnabled(func(string) bool { return false })
-	if got := s.Plans(""); len(got) != 0 {
+	if got := s.plans(""); len(got) != 0 {
 		t.Errorf("plans = %+v, want none with every provider off", got)
 	}
 	if len(*runs) != 0 {
@@ -206,7 +206,7 @@ func TestPlansNeverReadsADisabledProvider(t *testing.T) {
 	run, runs = fakeAgy("1.2.5", agyUsageReply, nil)
 	s = agyService(run)
 	s.SetEnabled(func(id string) bool { return id == "antigravity" })
-	if got := s.Plans(""); len(got) != 1 || got[0].Provider != "antigravity" {
+	if got := s.plans(""); len(got) != 1 || got[0].Provider != "antigravity" {
 		t.Errorf("plans = %+v, want Antigravity's alone", got)
 	}
 	if len(*runs) == 0 {

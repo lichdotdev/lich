@@ -7,6 +7,7 @@
 package terminal
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -204,7 +206,9 @@ func (s stubBins) SetSessionProfile(id, profile string) error {
 	return nil
 }
 func (s stubBins) SetSessionTitle(_, _ string) (bool, error) { return false, nil }
-func (s stubBins) SetSessionUnread(_ string, _ bool) error   { return nil }
+func (s stubBins) SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error) {
+	return api.None{}, nil
+}
 
 func (s stubBins) CostReadout() bool { return s.costOn }
 
@@ -403,16 +407,16 @@ func TestNewSessionEnv(t *testing.T) {
 func TestOperationsOnUnknownSessionAreNoops(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
-	if err := svc.Write("ghost", "hi"); err != nil {
+	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "ghost", Data: "hi"}); err != nil {
 		t.Errorf("Write unknown = %v, want nil", err)
 	}
-	if err := svc.Resize("ghost", 80, 24); err != nil {
+	if _, err := svc.Resize(t.Context(), api.ResizeOptions{ID: "ghost", Cols: 80, Rows: 24}); err != nil {
 		t.Errorf("Resize unknown = %v, want nil", err)
 	}
-	if err := svc.Close("ghost"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "ghost"}); err != nil {
 		t.Errorf("Close unknown = %v, want nil", err)
 	}
-	if err := svc.SetVisible("ghost", true); err != nil {
+	if _, err := svc.SetVisible(t.Context(), api.SetVisibleOptions{ID: "ghost", Visible: true}); err != nil {
 		t.Errorf("SetVisible unknown = %v, want nil", err)
 	}
 }
@@ -432,7 +436,7 @@ func TestSetVisibleReachesCoalescer(t *testing.T) {
 	sess.out = out
 	svc.sessions["s1"] = sess
 
-	if err := svc.SetVisible("s1", true); err != nil {
+	if _, err := svc.SetVisible(t.Context(), api.SetVisibleOptions{ID: "s1", Visible: true}); err != nil {
 		t.Fatalf("SetVisible = %v, want nil", err)
 	}
 	select {
@@ -464,13 +468,13 @@ func TestWriteResizeCloseOnLiveSession(t *testing.T) {
 	svc := New(stubBins{}, nil, events.New())
 	svc.sessions["s1"] = spawnSession(t)
 
-	if err := svc.Write("s1", "hello"); err != nil {
+	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "s1", Data: "hello"}); err != nil {
 		t.Errorf("Write = %v, want nil", err)
 	}
-	if err := svc.Resize("s1", 100, 40); err != nil {
+	if _, err := svc.Resize(t.Context(), api.ResizeOptions{ID: "s1", Cols: 100, Rows: 40}); err != nil {
 		t.Errorf("Resize = %v, want nil", err)
 	}
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Errorf("Close = %v, want nil", err)
 	}
 	if svc.ptyOf("s1") != nil {
@@ -486,7 +490,7 @@ func TestStartIsNoopWhenAlreadyRunning(t *testing.T) {
 	sess := spawnSession(t)
 	svc.sessions["s1"] = sess
 
-	if err := svc.Start("s1", "p1", "", "", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cols: 80, Rows: 24}); err != nil {
 		t.Errorf("Start(running) = %v, want nil", err)
 	}
 	if svc.sessions["s1"] != sess {
@@ -536,9 +540,9 @@ func spawnedArgs(t *testing.T, svc *Service, id string) []string {
 func TestStartPassesResumeToTheProcess(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Resume: "abc-123", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -559,9 +563,9 @@ func TestStartPassesResumeToTheProcess(t *testing.T) {
 func TestStartForksIntoItsOwnConversation(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", true, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Resume: "abc-123", Fork: true, Cols: 80, Rows: 24})
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
@@ -584,16 +588,16 @@ func TestStartForksIntoItsOwnConversation(t *testing.T) {
 func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "crush", "abc-123", true, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "crush", Resume: "abc-123", Fork: true, Cols: 80, Rows: 24})
 	if err == nil {
 		t.Fatal("Start = nil, want a refusal for a kind that cannot fork")
 	}
 	if !strings.Contains(err.Error(), "crush") {
 		t.Errorf("Start error = %q, want it to name the kind", err)
 	}
-	if svc.Live("s1") {
+	if svc.live("s1") {
 		t.Error("session spawned despite the refusal")
 	}
 }
@@ -604,12 +608,12 @@ func TestStartRefusesAForkTheProviderCannotSpell(t *testing.T) {
 func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", true, 80, 24); err == nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Fork: true, Cols: 80, Rows: 24}); err == nil {
 		t.Fatal("Start = nil, want a refusal for a fork with no resume id")
 	}
-	if svc.Live("s1") {
+	if svc.live("s1") {
 		t.Error("session spawned despite the refusal")
 	}
 }
@@ -619,9 +623,9 @@ func TestStartRefusesAForkWithNothingToBranch(t *testing.T) {
 func TestStartWithoutResumeSpawnsBare(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -643,9 +647,9 @@ func TestStartWithoutResumeSpawnsBare(t *testing.T) {
 func TestStartCarriesTheBriefingIntoTheSpawn(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -768,7 +772,7 @@ func TestClosingASessionDropsItsKind(t *testing.T) {
 	t.Parallel()
 	svc := &Service{sessions: map[string]*session{}}
 	svc.spawns.Store("s1", spawn{kind: providers.Cursor})
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 	if got := svc.kindOf("s1"); got != "" {
@@ -927,9 +931,9 @@ func TestSkipPermissionArgs(t *testing.T) {
 func TestStartPassesSkipPermissionsToTheProcess(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, skipPerms: true}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -969,9 +973,9 @@ func TestStartNamesASessionByWhatItAnswersTo(t *testing.T) {
 				store.providerSession = "uuid-abc"
 			}
 			svc := New(store, nil, events.New())
-			t.Cleanup(func() { _ = svc.Close("s1") })
+			t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-			err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24)
+			_, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24})
 			if err != nil {
 				t.Fatalf("Start = %v, want nil", err)
 			}
@@ -1112,9 +1116,9 @@ func TestSupportsEffort(t *testing.T) {
 func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, model: "opus", effort: "high"}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -1132,9 +1136,9 @@ func TestStartPassesTheStoredEffortToTheProcess(t *testing.T) {
 func TestStartPassesTheStoredModelToTheProcess(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin, model: "opus"}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -1651,7 +1655,7 @@ func TestResizeRecordsTheWindowsSize(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 
-	if err := svc.Resize("ghost", 174, 51); err != nil {
+	if _, err := svc.Resize(t.Context(), api.ResizeOptions{ID: "ghost", Cols: 174, Rows: 51}); err != nil {
 		t.Fatalf("Resize = %v, want nil", err)
 	}
 
@@ -1668,12 +1672,15 @@ func TestResizeRecordsTheWindowsSize(t *testing.T) {
 func TestStartWithoutASizeCopiesTheWindow(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })
+	t.Cleanup(func() {
+		_, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"})
+		_, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s2"})
+	})
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 174, 51); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 174, Rows: 51}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
-	if err := svc.Start("s2", "p1", t.TempDir(), "claude", "", false, 0, 0); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s2", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude"}); err != nil {
 		t.Fatalf("Start without a size = %v, want nil", err)
 	}
 
@@ -1698,11 +1705,11 @@ func TestReadyWaitsForTheProviderToStopDrawing(t *testing.T) {
 	svc.sessions["s1"] = sess
 	svc.mu.Unlock()
 
-	if svc.Ready("s1") {
+	if svc.ready("s1") {
 		t.Error("a session still drawing its opening screen was offered work")
 	}
 	time.Sleep(readySettle + 100*time.Millisecond)
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("a session that went quiet was not offered work")
 	}
 }
@@ -1718,11 +1725,11 @@ func TestReadyStaysTrueThroughABusyTurn(t *testing.T) {
 	svc.sessions["s1"] = sess
 	svc.mu.Unlock()
 
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Fatal("a settled session was not ready")
 	}
 	svc.noteOutput("s1", sess, []byte("...thinking..."))
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("a session that started working again stopped accepting work")
 	}
 }
@@ -1748,7 +1755,7 @@ func TestReadyRemembersAQuietThatAlreadyPassed(t *testing.T) {
 	svc.noteOutput("s1", sess, []byte("...thinking..."))
 	svc.noteOutput("s1", sess, []byte("...thinking..."))
 
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("a session that sat at its prompt for a whole turn was refused work")
 	}
 }
@@ -1756,14 +1763,14 @@ func TestReadyRemembersAQuietThatAlreadyPassed(t *testing.T) {
 func TestReadyWaitsOnlyTheSettle(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 	// The provider has to take the terminal first: readiness is the quiet after it draws, never the spawn itself.
 	time.Sleep(readySettle + 100*time.Millisecond)
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("a session that settled was held back")
 	}
 }
@@ -1772,7 +1779,7 @@ func TestReadyIsFalseForASessionThatIsNotRunning(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{}, nil, events.New())
 
-	if svc.Ready("ghost") {
+	if svc.ready("ghost") {
 		t.Error("a session with no PTY was reported ready for work")
 	}
 }
@@ -1817,23 +1824,26 @@ func TestSetEnvMovesTheSpawnBase(t *testing.T) {
 func TestLiveCountCountsTheSessionsWithAProcess(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1"); _ = svc.Close("s2") })
+	t.Cleanup(func() {
+		_, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"})
+		_, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s2"})
+	})
 
-	if got := svc.LiveCount(); got != 0 {
+	if got := svc.liveCount(); got != 0 {
 		t.Fatalf("LiveCount = %d before any spawn, want 0", got)
 	}
 	for _, id := range []string{"s1", "s2"} {
-		if err := svc.Start(id, "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+		if _, err := svc.Start(t.Context(), api.StartOptions{ID: id, ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 			t.Fatalf("Start(%s) = %v", id, err)
 		}
 	}
-	if got := svc.LiveCount(); got != 2 {
+	if got := svc.liveCount(); got != 2 {
 		t.Fatalf("LiveCount = %d with two running, want 2", got)
 	}
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatal(err)
 	}
-	if got := svc.LiveCount(); got != 1 {
+	if got := svc.liveCount(); got != 1 {
 		t.Fatalf("LiveCount = %d after closing one, want 1", got)
 	}
 }

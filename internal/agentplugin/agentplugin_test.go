@@ -1,6 +1,7 @@
 package agentplugin
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -315,7 +317,7 @@ func TestStatus(t *testing.T) {
 		Installed: true, InstalledVersion: "0.13.1-rc.3", LatestVersion: "0.13.1", UpdateAvailable: true,
 		Compatible: true,
 	}
-	if got := statusOf(t, s.Status(), providers.Claude); got != want {
+	if got := statusOf(t, s.status(), providers.Claude); got != want {
 		t.Fatalf("Status() = %+v, want %+v", got, want)
 	}
 }
@@ -329,7 +331,7 @@ func TestStatusListsEveryHarness(t *testing.T) {
 	s.lookPath = func(string) (string, error) { return "", errors.New("not found") }
 
 	var got []string
-	for _, entry := range s.Status() {
+	for _, entry := range s.status() {
 		got = append(got, entry.Provider)
 	}
 	want := []string{
@@ -350,7 +352,7 @@ func TestStatusWithoutTheCLI(t *testing.T) {
 	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.5.0"}]`)
 	s.lookPath = func(string) (string, error) { return "", errors.New("not found") }
 
-	got := statusOf(t, s.Status(), providers.Claude)
+	got := statusOf(t, s.status(), providers.Claude)
 	if got.Available || got.Installed || got.InstalledVersion != "" {
 		t.Fatalf("Status() = %+v, want an unavailable provider with no install", got)
 	}
@@ -360,7 +362,7 @@ func TestStatusNotInstalled(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.13.1"}]`)
 
-	got := statusOf(t, s.Status(), providers.Claude)
+	got := statusOf(t, s.status(), providers.Claude)
 	if got.Installed || got.UpdateAvailable {
 		t.Fatalf("Status() = %+v, want not installed and no update", got)
 	}
@@ -374,8 +376,8 @@ func TestStatusNotInstalled(t *testing.T) {
 // to write into, so spawning it with the plugin's arguments would be nonsense.
 func TestUnknownProviderIsRefused(t *testing.T) {
 	s, calls := fakeCLI(t, "")
-	for _, run := range []func(string) error{s.Install, s.Update} {
-		if err := run("shell"); err == nil {
+	for _, run := range []func(context.Context, api.PluginProviderOptions) (api.None, error){s.Install, s.Update} {
+		if _, err := run(t.Context(), api.PluginProviderOptions{Provider: "shell"}); err == nil {
 			t.Error("want an error for a kind with no plugin, got nil")
 		}
 	}
@@ -515,13 +517,13 @@ var pinnedCalls = map[string][]string{
 // harness's own refresh can move past the contract this lich speaks.
 func TestInstallPinsTheMarketplace(t *testing.T) {
 	for provider, want := range pinnedCalls {
-		for name, call := range map[string]func(*Service, string) error{
+		for name, call := range map[string]func(*Service, context.Context, api.PluginProviderOptions) (api.None, error){
 			"install": (*Service).Install,
 			"update":  (*Service).Update,
 		} {
 			t.Run(provider+" "+name, func(t *testing.T) {
 				s, calls := fakeCLI(t, "")
-				if err := call(s, provider); err != nil {
+				if _, err := call(s, t.Context(), api.PluginProviderOptions{Provider: provider}); err != nil {
 					t.Fatalf("%s: %v", name, err)
 				}
 				if got := calls(); !slices.Equal(got, want) {
@@ -538,7 +540,7 @@ func TestInstallSurvivesANothingToRemove(t *testing.T) {
 	for provider, want := range pinnedCalls {
 		t.Run(provider, func(t *testing.T) {
 			s, calls := fakeCLI(t, "marketplace remove")
-			if err := s.Install(provider); err != nil {
+			if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: provider}); err != nil {
 				t.Fatalf("Install with nothing to remove: %v", err)
 			}
 			if got := calls(); !slices.Equal(got, want) {
@@ -554,7 +556,7 @@ func TestInstallSurvivesANothingToRemove(t *testing.T) {
 func TestInstallReportsTheInstallFailure(t *testing.T) {
 	s, _ := fakeCLI(t, "plugin install")
 
-	err := s.Install(providers.Claude)
+	_, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Claude})
 	if err == nil {
 		t.Fatal("Install: want an error, got nil")
 	}
@@ -574,7 +576,7 @@ func TestMarketplaceAddFailureStopsTheRun(t *testing.T) {
 		t.Run(provider, func(t *testing.T) {
 			s, calls := fakeCLI(t, "marketplace add")
 
-			err := s.Install(provider)
+			_, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: provider})
 			if err == nil || !strings.Contains(err.Error(), "plugin marketplace add") {
 				t.Fatalf("Install = %v, want the error to name the marketplace add", err)
 			}
@@ -595,7 +597,7 @@ func TestPinnedInstallNeedsARelease(t *testing.T) {
 		t.Run(provider, func(t *testing.T) {
 			s, calls := fakeCLI(t, "")
 			s.releasesURL = "http://127.0.0.1:0/unreachable"
-			if err := s.Install(provider); err == nil {
+			if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: provider}); err == nil {
 				t.Fatal("Install: want an error without a release, got nil")
 			}
 			if got := calls(); len(got) != 0 {

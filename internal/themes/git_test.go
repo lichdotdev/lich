@@ -2,6 +2,7 @@ package themes
 
 import (
 	"encoding/json"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -87,7 +88,7 @@ func TestInstallFromGitInstallsEveryThemeInThePack(t *testing.T) {
 		"gruvbox.json":     rawTheme(t, customTheme("gruvbox")),
 	})
 
-	result, err := s.InstallFromGit(repo, false)
+	result, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo})
 	if err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
@@ -102,7 +103,7 @@ func TestInstallFromGitInstallsEveryThemeInThePack(t *testing.T) {
 			t.Fatalf("theme %q source = %#v", theme.ID, theme.Source)
 		}
 	}
-	listed, err := s.List()
+	listed, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -130,7 +131,7 @@ func TestInstallFromGitRejectsPackWithAnInvalidTheme(t *testing.T) {
 		"broken.json": rawTheme(t, broken),
 	})
 
-	_, err := s.InstallFromGit(repo, false)
+	_, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo})
 	if err == nil {
 		t.Fatal("InstallFromGit accepted a pack holding an invalid theme")
 	}
@@ -156,7 +157,7 @@ func TestInstallFromGitReportsConflictsBeforeWriting(t *testing.T) {
 		"tokyo-night.json": rawTheme(t, customTheme("tokyo-night")),
 	})
 
-	result, err := s.InstallFromGit(repo, false)
+	result, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo})
 	if err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
@@ -174,7 +175,7 @@ func TestInstallFromGitReportsConflictsBeforeWriting(t *testing.T) {
 		t.Fatalf("existing theme was replaced: %#v", kept)
 	}
 
-	replaced, err := s.InstallFromGit(repo, true)
+	replaced, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo, Overwrite: true})
 	if err != nil {
 		t.Fatalf("InstallFromGit overwrite: %v", err)
 	}
@@ -196,7 +197,7 @@ func TestUpdateFromGitInstallsANewerManifest(t *testing.T) {
 		manifestName:       manifestJSON(t, "Sample pack", "1.0.0"),
 		"tokyo-night.json": rawTheme(t, customTheme("tokyo-night")),
 	})
-	if _, err := s.InstallFromGit(repo, false); err != nil {
+	if _, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo}); err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
 
@@ -206,7 +207,7 @@ func TestUpdateFromGitInstallsANewerManifest(t *testing.T) {
 	writeFile(t, repo, "tokyo-night.json", rawTheme(t, renamed))
 	commitAll(t, repo, "bump")
 
-	result, err := s.UpdateFromGit("tokyo-night")
+	result, err := s.UpdateFromGit(t.Context(), api.UpdateThemeOptions{ID: "tokyo-night"})
 	if err != nil {
 		t.Fatalf("UpdateFromGit: %v", err)
 	}
@@ -232,7 +233,7 @@ func TestUpdateFromGitConvergesAThemeThePackDropped(t *testing.T) {
 		"tokyo-night.json": rawTheme(t, customTheme("tokyo-night")),
 		"gruvbox.json":     rawTheme(t, customTheme("gruvbox")),
 	})
-	if _, err := s.InstallFromGit(repo, false); err != nil {
+	if _, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo}); err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
 
@@ -242,7 +243,7 @@ func TestUpdateFromGitConvergesAThemeThePackDropped(t *testing.T) {
 	writeFile(t, repo, manifestName, manifestJSON(t, "Sample pack", "1.1.0"))
 	commitAll(t, repo, "drop gruvbox")
 
-	result, err := s.UpdateFromGit("gruvbox")
+	result, err := s.UpdateFromGit(t.Context(), api.UpdateThemeOptions{ID: "gruvbox"})
 	if err != nil {
 		t.Fatalf("UpdateFromGit: %v", err)
 	}
@@ -256,7 +257,7 @@ func TestUpdateFromGitConvergesAThemeThePackDropped(t *testing.T) {
 	if stored.Source == nil || stored.Source.Version != "1.1.0" {
 		t.Fatalf("dropped theme source = %#v", stored.Source)
 	}
-	again, err := s.UpdateFromGit("gruvbox")
+	again, err := s.UpdateFromGit(t.Context(), api.UpdateThemeOptions{ID: "gruvbox"})
 	if err != nil {
 		t.Fatalf("UpdateFromGit again: %v", err)
 	}
@@ -271,11 +272,11 @@ func TestUpdateFromGitKeepsAnUpToDatePack(t *testing.T) {
 		manifestName:       manifestJSON(t, "Sample pack", "1.0.0"),
 		"tokyo-night.json": rawTheme(t, customTheme("tokyo-night")),
 	})
-	if _, err := s.InstallFromGit(repo, false); err != nil {
+	if _, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo}); err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
 
-	result, err := s.UpdateFromGit("tokyo-night")
+	result, err := s.UpdateFromGit(t.Context(), api.UpdateThemeOptions{ID: "tokyo-night"})
 	if err != nil {
 		t.Fatalf("UpdateFromGit: %v", err)
 	}
@@ -289,7 +290,7 @@ func TestUpdateFromGitRejectsAFileImportedTheme(t *testing.T) {
 	if _, err := importTheme(t, s, customTheme("standalone")); err != nil {
 		t.Fatalf("seed import: %v", err)
 	}
-	_, err := s.UpdateFromGit("standalone")
+	_, err := s.UpdateFromGit(t.Context(), api.UpdateThemeOptions{ID: "standalone"})
 	if err == nil {
 		t.Fatal("UpdateFromGit accepted a theme with no repository")
 	}
@@ -353,7 +354,7 @@ func TestValidateRemoteAllowsOnlyKnownTransports(t *testing.T) {
 
 func TestInstallFromGitRejectsAnUnsupportedRemote(t *testing.T) {
 	s := NewInDir(t.TempDir())
-	if _, err := s.InstallFromGit("ext::sh -c 'touch /tmp/pwned'", false); err == nil {
+	if _, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: "ext::sh -c 'touch /tmp/pwned'"}); err == nil {
 		t.Fatal("InstallFromGit accepted a remote-helper URL")
 	}
 }
@@ -375,7 +376,7 @@ func TestInstallFromGitDoesNotClobberWhatTheScanMissed(t *testing.T) {
 		"tokyo-night.json": rawTheme(t, customTheme("tokyo-night")),
 	})
 
-	result, err := s.InstallFromGit(repo, false)
+	result, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo})
 	if err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
@@ -398,7 +399,7 @@ func TestInstallFromGitDoesNotClobberWhatTheScanMissed(t *testing.T) {
 func TestInstallFromGitReportsWhatGitSaid(t *testing.T) {
 	requireGit(t)
 	missing := filepath.Join(t.TempDir(), "no-such-repo")
-	_, err := NewInDir(t.TempDir()).InstallFromGit(missing, false)
+	_, err := NewInDir(t.TempDir()).InstallFromGit(t.Context(), api.InstallThemesOptions{URL: missing})
 	if err == nil {
 		t.Fatal("InstallFromGit cloned a path that does not exist")
 	}
@@ -527,13 +528,13 @@ func TestUpdateFromGitRefusesAPackNeedingANewerLich(t *testing.T) {
 		manifestName:       manifestJSON(t, "Sample pack", "1.0.0"),
 		"tokyo-night.json": rawTheme(t, customTheme("tokyo-night")),
 	})
-	if _, err := s.InstallFromGit(repo, false); err != nil {
+	if _, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo}); err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
 	writeFile(t, repo, manifestName, rawManifest(t, Manifest{Name: "Sample pack", Version: "1.1.0", MinLichVersion: "0.51.0"}))
 	commitAll(t, repo, "needs a newer lich")
 
-	if _, err := s.UpdateFromGit("tokyo-night"); err == nil || !strings.Contains(err.Error(), "needs lich 0.51.0") {
+	if _, err := s.UpdateFromGit(t.Context(), api.UpdateThemeOptions{ID: "tokyo-night"}); err == nil || !strings.Contains(err.Error(), "needs lich 0.51.0") {
 		t.Fatalf("UpdateFromGit error = %v, want the minimum named", err)
 	}
 	stored, err := s.read("tokyo-night")
@@ -569,11 +570,11 @@ func TestListKeepsTheSourceOfAnInstalledTheme(t *testing.T) {
 		manifestName: manifestJSON(t, "Sample pack", "3.1.4"),
 		"one.json":   rawTheme(t, customTheme("one")),
 	})
-	if _, err := s.InstallFromGit(repo, false); err != nil {
+	if _, err := s.InstallFromGit(t.Context(), api.InstallThemesOptions{URL: repo}); err != nil {
 		t.Fatalf("InstallFromGit: %v", err)
 	}
 
-	listed, err := s.List()
+	listed, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}

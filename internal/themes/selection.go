@@ -1,6 +1,7 @@
 package themes
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -22,20 +23,20 @@ type Selection = api.ThemeSelection
 
 // Settings is where the selection is stored: the store's global settings.
 type Settings interface {
-	GetSetting(key, projectID string) (string, error)
-	SetSetting(key, projectID, value string) error
+	GetSetting(_ context.Context, opts api.GetSettingOptions) (string, error)
+	SetSetting(_ context.Context, opts api.SetSettingOptions) (api.None, error)
 }
 
 // Selection reads the stored selection.
-func (s *Service) Selection() (Selection, error) {
-	theme, err := s.settings.GetSetting(ThemeSettingKey, "")
+func (s *Service) Selection(ctx context.Context, _ api.None) (Selection, error) {
+	theme, err := s.settings.GetSetting(ctx, api.GetSettingOptions{Key: ThemeSettingKey})
 	if err != nil {
 		return Selection{}, err
 	}
 	if theme == "" {
 		theme = SystemID
 	}
-	follow, err := s.settings.GetSetting(FollowSystemSettingKey, "")
+	follow, err := s.settings.GetSetting(ctx, api.GetSettingOptions{Key: FollowSystemSettingKey})
 	if err != nil {
 		return Selection{}, err
 	}
@@ -45,31 +46,31 @@ func (s *Service) Selection() (Selection, error) {
 type SelectOptions = api.SelectThemeOptions
 
 // Select stores opts.ID, System or a theme List returns, as the selection.
-func (s *Service) Select(opts SelectOptions) error {
+func (s *Service) Select(ctx context.Context, opts SelectOptions) (api.None, error) {
 	id := opts.ID
 	if id != SystemID {
-		themes, err := s.List()
+		themes, err := s.List(ctx, api.None{})
 		if err != nil {
-			return err
+			return api.None{}, err
 		}
 		if !slices.ContainsFunc(themes, func(t Theme) bool { return t.ID == id }) {
-			return fmt.Errorf("no theme %q; `lich theme list` shows the installed ones", id)
+			return api.None{}, fmt.Errorf("no theme %q; `lich theme list` shows the installed ones", id)
 		}
 	}
-	return s.store(ThemeSettingKey, id)
+	return api.None{}, s.store(ThemeSettingKey, id)
 }
 
 // SetFollowSystem stores whether the window follows the OS to the selected
 // theme's pair.
-func (s *Service) SetFollowSystem(on bool) error {
-	return s.store(FollowSystemSettingKey, strconv.FormatBool(on))
+func (s *Service) SetFollowSystem(_ context.Context, opts api.FollowSystemOptions) (api.None, error) {
+	return api.None{}, s.store(FollowSystemSettingKey, strconv.FormatBool(opts.On))
 }
 
 func (s *Service) store(key, value string) error {
-	if err := s.settings.SetSetting(key, "", value); err != nil {
+	if _, err := s.settings.SetSetting(context.Background(), api.SetSettingOptions{Key: key, Value: value}); err != nil {
 		return err
 	}
-	selection, err := s.Selection()
+	selection, err := s.Selection(context.Background(), api.None{})
 	if err != nil {
 		return err
 	}

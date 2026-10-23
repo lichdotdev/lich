@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -37,7 +38,7 @@ func TestWriteBytesSurvivesShortWrites(t *testing.T) {
 	s.sessions["s1"] = &session{pty: fake}
 
 	payload := "\x1b[200~a message longer than the fake pipe's chunk size\x1b[201~\r"
-	if err := s.Write("s1", payload); err != nil {
+	if _, err := s.Write(t.Context(), api.WriteOptions{ID: "s1", Data: payload}); err != nil {
 		t.Fatalf("Write = %v, want nil", err)
 	}
 	if got := fake.received.String(); got != payload {

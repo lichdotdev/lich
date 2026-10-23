@@ -160,7 +160,7 @@ func TestResumeAvailable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := svc.ResumeAvailable(tt.kind, tt.providerSessionID, tt.cwd); got != tt.want {
+			if got := svc.resumeAvailable(tt.kind, tt.providerSessionID, tt.cwd); got != tt.want {
 				t.Errorf("ResumeAvailable(%q, %q, %q) = %v, want %v",
 					tt.kind, tt.providerSessionID, tt.cwd, got, tt.want)
 			}

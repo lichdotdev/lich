@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -118,17 +119,17 @@ type ghThreadComment struct {
 }
 
 // PullRequestConversation reads one pull request's reviews, comments and review
-// threads. The number is required: the query addresses a pull request by number,
+// threads. opts.Number is required: the query addresses a pull request by number,
 // and the screen always knows it by the time there is a conversation to show —
 // resolving "the branch's PR" here would cost a second gh round-trip on every
 // read.
-func (s *Service) PullRequestConversation(path string, number int) (*PRConversation, error) {
-	if number <= 0 {
+func (s *Service) PullRequestConversation(_ context.Context, opts api.NumberOptions) (*PRConversation, error) {
+	if opts.Number <= 0 {
 		return nil, fmt.Errorf("a pull request number is required")
 	}
-	out, err := s.gh(prReadTimeout, path, "api", "graphql",
+	out, err := s.gh(prReadTimeout, opts.Path, "api", "graphql",
 		"-F", "owner={owner}", "-F", "repo={repo}",
-		"-F", fmt.Sprintf("number=%d", number),
+		"-F", fmt.Sprintf("number=%d", opts.Number),
 		"-f", "query="+prConversationQuery)
 	if err != nil {
 		return nil, err

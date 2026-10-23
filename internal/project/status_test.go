@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"slices"
@@ -360,7 +361,7 @@ func TestDiffFromASubdirectory(t *testing.T) {
 	t.Parallel()
 	_, sub := subRepo(t)
 
-	got := New(nil).Diff(sub)
+	got := New(nil).diff(sub)
 	// 3 lines in sub/new.txt and 1 in sub/nested/deep.txt. Counting the root's
 	// outside.txt as well would read 11.
 	if got.Added != 4 {
@@ -378,7 +379,7 @@ func TestDiffTextFromASubdirectory(t *testing.T) {
 	t.Parallel()
 	_, sub := subRepo(t)
 
-	out, err := New(nil).DiffText(sub)
+	out, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: sub})
 	if err != nil {
 		t.Fatalf("DiffText: %v", err)
 	}
@@ -401,23 +402,26 @@ func TestReadsLeaveTheIndexAlone(t *testing.T) {
 	t.Parallel()
 	reads := map[string]func(t *testing.T, svc *Service, repo string) error{
 		"Diff": func(_ *testing.T, svc *Service, repo string) error {
-			if got := svc.Diff(repo); got.Files != 2 {
+			if got := svc.diff(repo); got.Files != 2 {
 				return fmt.Errorf("Diff(repo).Files = %d, want 2", got.Files)
 			}
 			return nil
 		},
 		"DiffText": func(_ *testing.T, svc *Service, repo string) error {
-			_, err := svc.DiffText(repo)
+			_, err := svc.DiffText(t.Context(), api.PathOptions{Path: repo})
 			return err
 		},
 		"WorktreeDirty": func(_ *testing.T, svc *Service, repo string) error {
-			_, err := svc.WorktreeDirty(repo)
+			_, err := svc.WorktreeDirty(t.Context(), api.PathOptions{Path: repo})
 			return err
 		},
 		// The source is only read; the copy lands in a checkout of its own.
 		"CarryUncommitted": func(t *testing.T, svc *Service, repo string) error {
 			dst, _ := initRepo(t)
-			return svc.CarryUncommitted(repo, dst)
+			if _, err := svc.CarryUncommitted(t.Context(), api.CarryUncommittedOptions{Src: repo, Dst: dst}); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 	for name, read := range reads {

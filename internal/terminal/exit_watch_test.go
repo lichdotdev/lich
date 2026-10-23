@@ -5,6 +5,7 @@
 package terminal
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"sync"
 	"testing"
@@ -24,9 +25,9 @@ func TestAReapedSessionIsReportedToTheExitWatcher(t *testing.T) {
 		defer mu.Unlock()
 		exited = append(exited, id)
 	})
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	waitFor(t, func() bool {
@@ -38,10 +39,10 @@ func TestAReapedSessionIsReportedToTheExitWatcher(t *testing.T) {
 	svc2 := New(stubBins{bin: echoBin(t)}, nil, hub)
 	closed := false
 	svc2.SetSessionExited(func(string) { closed = true })
-	if err := svc2.Start("s2", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc2.Start(t.Context(), api.StartOptions{ID: "s2", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	if err := svc2.Close("s2"); err != nil {
+	if _, err := svc2.Close(t.Context(), api.SessionIDOptions{ID: "s2"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	if closed {

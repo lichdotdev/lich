@@ -15,6 +15,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 )
 
@@ -559,7 +560,7 @@ func TestAttachKeepsAPathTheSessionCanOpen(t *testing.T) {
 	pick, _ := pickerAt(want, nil)
 	service.SetPicker(pick)
 
-	got, err := service.Attach("s1", root, true)
+	got, err := service.Attach(t.Context(), api.AttachDropOptions{SessionID: "s1", Root: root, Confined: true})
 
 	if err != nil {
 		t.Fatalf("Attach: %v", err)
@@ -582,7 +583,7 @@ func TestAttachCopiesForAConfinedSession(t *testing.T) {
 	pick, _ := pickerAt(elsewhere, nil)
 	service.SetPicker(pick)
 
-	got, err := service.Attach("s1", t.TempDir(), true)
+	got, err := service.Attach(t.Context(), api.AttachDropOptions{SessionID: "s1", Root: t.TempDir(), Confined: true})
 
 	if err != nil {
 		t.Fatalf("Attach: %v", err)
@@ -622,7 +623,7 @@ func TestAttachLeavesAnUnconfinedSessionAlone(t *testing.T) {
 			pick, _ := pickerAt(elsewhere, nil)
 			service.SetPicker(pick)
 
-			got, err := service.Attach("s1", t.TempDir(), tt.confined)
+			got, err := service.Attach(t.Context(), api.AttachDropOptions{SessionID: "s1", Root: t.TempDir(), Confined: tt.confined})
 
 			if err != nil {
 				t.Fatalf("Attach: %v", err)
@@ -641,7 +642,7 @@ func TestAttachAnswersACancelledDialog(t *testing.T) {
 	pick, _ := pickerAt("", nil)
 	service.SetPicker(pick)
 
-	got, err := service.Attach("s1", t.TempDir(), true)
+	got, err := service.Attach(t.Context(), api.AttachDropOptions{SessionID: "s1", Root: t.TempDir(), Confined: true})
 
 	if err != nil || got.Path != "" || got.Notice != "" {
 		t.Fatalf("Attach = %+v (%v), want an empty answer", got, err)
@@ -673,7 +674,7 @@ func TestAttachRefusesWhatItCannotCopy(t *testing.T) {
 			pick, _ := pickerAt(tt.path, nil)
 			service.SetPicker(pick)
 
-			if got, err := service.Attach(tt.session, t.TempDir(), true); err == nil {
+			if got, err := service.Attach(t.Context(), api.AttachDropOptions{SessionID: tt.session, Root: t.TempDir(), Confined: true}); err == nil {
 				t.Fatalf("Attach = %+v, want an error", got)
 			}
 		})
@@ -683,7 +684,7 @@ func TestAttachRefusesWhatItCannotCopy(t *testing.T) {
 // TestAttachWithoutAPicker: the wiring is startup's, and a service without it
 // has no dialog to open — which must not read as a cancelled one.
 func TestAttachWithoutAPicker(t *testing.T) {
-	if _, err := New(t.TempDir(), nil).Attach("s1", t.TempDir(), true); err == nil {
+	if _, err := New(t.TempDir(), nil).Attach(t.Context(), api.AttachDropOptions{SessionID: "s1", Root: t.TempDir(), Confined: true}); err == nil {
 		t.Fatal("Attach reported success with no picker wired")
 	}
 }
@@ -695,7 +696,7 @@ func TestAttachReportsAFailedDialog(t *testing.T) {
 	pick, calls := pickerAt("/some/file", errors.New("no display"))
 	service.SetPicker(pick)
 
-	if _, err := service.Attach("s1", t.TempDir(), true); err == nil {
+	if _, err := service.Attach(t.Context(), api.AttachDropOptions{SessionID: "s1", Root: t.TempDir(), Confined: true}); err == nil {
 		t.Fatal("Attach reported success on a dialog that failed")
 	}
 	if *calls != 1 {

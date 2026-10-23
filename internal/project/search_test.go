@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,7 +30,7 @@ func TestSearchCoversWhatTheTreeLists(t *testing.T) {
 	write(t, repo, "ignored.txt", "needle\n")
 	write(t, repo, "untracked.txt", "a NEEDLE here\r\nnone\r\nneedle again\r\n")
 
-	got, err := New(nil).Search(repo, "needle")
+	got, err := New(nil).Search(t.Context(), api.SearchOptions{Path: repo, Query: "needle"})
 	if err != nil {
 		t.Fatalf("Search: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestSearchIsLiteral(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "a.txt", "a.b\naxb\n")
-	got, err := New(nil).Search(repo, "a.b")
+	got, err := New(nil).Search(t.Context(), api.SearchOptions{Path: repo, Query: "a.b"})
 	if err != nil {
 		t.Fatalf("Search: %v", err)
 	}
@@ -68,7 +69,7 @@ func TestSearchWalksPlainFolder(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "notes.md", "find me\n")
 	write(t, dir, "node_modules/dep.js", "find me\n")
-	got, err := New(nil).Search(dir, "find")
+	got, err := New(nil).Search(t.Context(), api.SearchOptions{Path: dir, Query: "find"})
 	if err != nil {
 		t.Fatalf("Search: %v", err)
 	}
@@ -88,7 +89,7 @@ func TestSearchSkipsWhatThePreviewRefuses(t *testing.T) {
 	if err := os.Symlink(filepath.Join(repo, "ok.txt"), filepath.Join(repo, "link.txt")); err != nil {
 		t.Logf("symlinks unavailable, skipping that case: %v", err)
 	}
-	got, err := New(nil).Search(repo, "needle")
+	got, err := New(nil).Search(t.Context(), api.SearchOptions{Path: repo, Query: "needle"})
 	if err != nil {
 		t.Fatalf("Search: %v", err)
 	}
@@ -107,7 +108,7 @@ func TestSearchStopsAtTheCap(t *testing.T) {
 	repo, _ := initRepo(t)
 	write(t, repo, "many.txt", strings.Repeat("hit\n", maxSearchMatches+10))
 	write(t, repo, "zz.txt", "hit\n")
-	got, err := New(nil).Search(repo, "hit")
+	got, err := New(nil).Search(t.Context(), api.SearchOptions{Path: repo, Query: "hit"})
 	if err != nil {
 		t.Fatalf("Search: %v", err)
 	}
@@ -120,7 +121,7 @@ func TestSearchStopsAtTheCap(t *testing.T) {
 func TestSearchRefusesEmptyQuery(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
-	if _, err := New(nil).Search(repo, "  "); err == nil {
+	if _, err := New(nil).Search(t.Context(), api.SearchOptions{Path: repo, Query: "  "}); err == nil {
 		t.Error("Search(blank): want error, got nil")
 	}
 }
@@ -129,7 +130,7 @@ func TestSearchRefusesEmptyQuery(t *testing.T) {
 // "no matches".
 func TestSearchReportsMissingDir(t *testing.T) {
 	t.Parallel()
-	if _, err := New(nil).Search(filepath.Join(t.TempDir(), "gone"), "x"); err == nil {
+	if _, err := New(nil).Search(t.Context(), api.SearchOptions{Path: filepath.Join(t.TempDir(), "gone"), Query: "x"}); err == nil {
 		t.Error("Search(missing dir): want error, got nil")
 	}
 }

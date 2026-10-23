@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"path/filepath"
@@ -34,10 +35,15 @@ const (
 
 type Check = api.BinaryCheck
 
-// Verify resolves bin exactly as the spawn does — a bare name through $PATH, a
+// Verify answers verify over RPC.
+func (s *Service) Verify(_ context.Context, opts api.BinaryOptions) (Check, error) {
+	return s.verify(opts.Bin), nil
+}
+
+// verify resolves bin exactly as the spawn does — a bare name through $PATH, a
 // path taken as written — and reports whether it can be run. It is what turns
 // the binary setting from a field that accepts anything into one that answers.
-func (s *Service) Verify(bin string) Check {
+func (s *Service) verify(bin string) Check {
 	bin = strings.TrimSpace(bin)
 	switch {
 	case bin == "":

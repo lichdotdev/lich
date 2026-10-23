@@ -1,26 +1,29 @@
 package store
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 // TestClaudeProfileResolvesLikeTheSandboxRung: a project's own value wins over
 // the global one, "" in a project inherits, and "personal" is how a project
 // names Personal over a global profile.
 func TestClaudeProfileResolvesLikeTheSandboxRung(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
 	if got := svc.ClaudeProfile("p1"); got != "" {
 		t.Errorf("nothing set: %q, want Personal", got)
 	}
-	_ = svc.SetSetting(claudeProfileKey, "", "work")
-	_ = svc.SetSetting(claudeProfileKey, "p2", "personal")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, Value: "work"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, ProjectID: "p2", Value: "personal"})
 	if got := svc.ClaudeProfile("p1"); got != "work" {
 		t.Errorf("inherited: %q, want work", got)
 	}
 	if got := svc.ClaudeProfile("p2"); got != "" {
 		t.Errorf("project naming Personal: %q, want Personal", got)
 	}
-	_ = svc.SetSetting(claudeProfileKey, "p1", "client")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, ProjectID: "p1", Value: "client"})
 	if got := svc.ClaudeProfile("p1"); got != "client" {
 		t.Errorf("project override: %q, want client", got)
 	}
@@ -31,12 +34,12 @@ func TestClaudeProfileResolvesLikeTheSandboxRung(t *testing.T) {
 // that already exists where it is, through a park and resume too.
 func TestASessionKeepsTheProfileItWasBornIn(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.SetSetting(claudeProfileKey, "p1", "work")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
-	_ = svc.AddSession("p1", "cx", "Codex", "codex", "", 4, "")
-	_ = svc.SetSetting(claudeProfileKey, "p1", "client")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, ProjectID: "p1", Value: "work"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "cx", Label: "Codex", Kind: "codex", NextSeq: 4})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, ProjectID: "p1", Value: "client"})
 
 	for id, want := range map[string]string{"base": "work", "wt1": "work", "cx": ""} {
 		if got, err := svc.SessionProfile(id); err != nil || got != want {
@@ -48,8 +51,8 @@ func TestASessionKeepsTheProfileItWasBornIn(t *testing.T) {
 		t.Errorf("hydrated profile %q, want work", sessions[0].Profile)
 	}
 
-	_ = svc.CloseSession("p1", "wt1", "base")
-	restored, err := svc.ReopenWorktreeSession("p1", "/wt/foo", "wt2")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "wt2"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,8 +63,8 @@ func TestASessionKeepsTheProfileItWasBornIn(t *testing.T) {
 
 func TestSetSessionProfileMovesOneSession(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
 	if err := svc.SetSessionProfile("s1", "work"); err != nil {
 		t.Fatal(err)
 	}
@@ -95,11 +98,11 @@ func TestSessionProfileOnAClosedStoreIsAnError(t *testing.T) {
 
 func TestForgetClaudeProfileClearsOnlyItsSettings(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
-	_ = svc.SetSetting(claudeProfileKey, "", "work")
-	_ = svc.SetSetting(claudeProfileKey, "p1", "work")
-	_ = svc.SetSetting(claudeProfileKey, "p2", "client")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, Value: "work"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, ProjectID: "p1", Value: "work"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, ProjectID: "p2", Value: "client"})
 	if err := svc.ForgetClaudeProfile("work"); err != nil {
 		t.Fatal(err)
 	}
@@ -116,9 +119,9 @@ func TestForgetClaudeProfileClearsOnlyItsSettings(t *testing.T) {
 // set for one provider never reaches the other.
 func TestCodexProfilesAreTheirOwnSet(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.SetSetting(claudeProfileKey, "p1", "claude-work")
-	_ = svc.SetSetting(codexProfileKey, "p1", "codex-work")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: claudeProfileKey, ProjectID: "p1", Value: "claude-work"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: codexProfileKey, ProjectID: "p1", Value: "codex-work"})
 	if got := svc.CodexProfile("p1"); got != "codex-work" {
 		t.Errorf("CodexProfile = %q, want codex-work", got)
 	}
@@ -126,9 +129,9 @@ func TestCodexProfilesAreTheirOwnSet(t *testing.T) {
 		t.Errorf("ClaudeProfile = %q, want claude-work", got)
 	}
 
-	_ = svc.AddSession("p1", "cc", "Claude", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "cx", "Codex", "codex", "", 3, "")
-	_ = svc.AddSession("p1", "cr", "Crush", "crush", "", 4, "")
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "cc", Label: "Claude", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "cx", Label: "Codex", Kind: "codex", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "cr", Label: "Crush", Kind: "crush", NextSeq: 4})
 	for id, want := range map[string]string{"cc": "claude-work", "cx": "codex-work", "cr": ""} {
 		if got, err := svc.SessionProfile(id); err != nil || got != want {
 			t.Errorf("SessionProfile(%s) = %q, %v, want %q", id, got, err, want)
@@ -155,14 +158,14 @@ func TestCodexProfilesAreTheirOwnSet(t *testing.T) {
 // follow the same rules under a key of its own.
 func TestOMPProfilesAreTheirOwnSet(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.SetSetting(codexProfileKey, "p1", "codex-work")
-	_ = svc.SetSetting(ompProfileKey, "p1", "omp-work")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: codexProfileKey, ProjectID: "p1", Value: "codex-work"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: ompProfileKey, ProjectID: "p1", Value: "omp-work"})
 	if got := svc.OMPProfile("p1"); got != "omp-work" {
 		t.Errorf("OMPProfile = %q, want omp-work", got)
 	}
-	_ = svc.AddSession("p1", "cx", "Codex", "codex", "", 2, "")
-	_ = svc.AddSession("p1", "om", "omp", "omp", "", 3, "")
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "cx", Label: "Codex", Kind: "codex", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "om", Label: "omp", Kind: "omp", NextSeq: 3})
 	for id, want := range map[string]string{"cx": "codex-work", "om": "omp-work"} {
 		if got, err := svc.SessionProfile(id); err != nil || got != want {
 			t.Errorf("SessionProfile(%s) = %q, %v, want %q", id, got, err, want)
@@ -185,12 +188,12 @@ func TestOMPProfilesAreTheirOwnSet(t *testing.T) {
 // provider's setting alone.
 func TestXDGProfilesAreEachProvidersOwnSetting(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.SetSetting("provider.opencode.profile", "p1", "work")
-	_ = svc.SetSetting("provider.kiro.profile", "", "work")
-	_ = svc.AddSession("p1", "oc", "opencode", "opencode", "", 2, "")
-	_ = svc.AddSession("p1", "ki", "Kiro", "kiro", "", 3, "")
-	_ = svc.AddSession("p1", "cu", "Cursor", "cursor", "", 4, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.opencode.profile", ProjectID: "p1", Value: "work"})
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.kiro.profile", Value: "work"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "oc", Label: "opencode", Kind: "opencode", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "ki", Label: "Kiro", Kind: "kiro", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "cu", Label: "Cursor", Kind: "cursor", NextSeq: 4})
 	for id, want := range map[string]string{"oc": "work", "ki": "work", "cu": ""} {
 		if got, err := svc.SessionProfile(id); err != nil || got != want {
 			t.Errorf("SessionProfile(%s) = %q, %v, want %q", id, got, err, want)

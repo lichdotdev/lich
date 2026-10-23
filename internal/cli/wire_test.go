@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/routes"
@@ -29,7 +30,7 @@ import (
 
 type wiredSessions struct{}
 
-func (wiredSessions) LoadState() ([]store.Project, error) {
+func (wiredSessions) LoadState(_ context.Context, _ api.None) ([]store.Project, error) {
 	return []store.Project{{ID: "p1", Name: "lich", Sessions: []store.Session{
 		{ID: "s1", Label: "sender", Kind: "claude"},
 		{ID: "s2", Label: "docs", Kind: "codex"},
@@ -49,9 +50,13 @@ type wiredTerminal struct {
 
 // Pointer receiver like Write's: a value receiver would copy the mutex beside
 // it on every call, which is a race the moment the two are used together.
-func (*wiredTerminal) Live(string) bool { return true }
+func (*wiredTerminal) Live(_ context.Context, opts api.SessionIDOptions) (bool, error) {
+	return true, nil
+}
 
-func (*wiredTerminal) Ready(string) bool { return true }
+func (*wiredTerminal) Ready(_ context.Context, opts api.SessionIDOptions) (bool, error) {
+	return true, nil
+}
 
 func (*wiredTerminal) AtPrompt(string) bool { return true }
 
@@ -73,11 +78,11 @@ func (*wiredTerminal) ModAttached(string) bool { return false }
 
 func (*wiredTerminal) ModAnswers(string) bool { return false }
 
-func (w *wiredTerminal) Write(_, data string) error {
+func (w *wiredTerminal) Write(_ context.Context, opts api.WriteOptions) (api.None, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	w.typed += data
-	return nil
+	w.typed += opts.Data
+	return api.None{}, nil
 }
 
 func (w *wiredTerminal) message() string {
@@ -276,19 +281,19 @@ type spawnStore struct {
 	confines bool
 }
 
-func (*spawnStore) LoadState() ([]store.Project, error) {
+func (*spawnStore) LoadState(_ context.Context, _ api.None) ([]store.Project, error) {
 	return []store.Project{{ID: "p1", Name: "lich", Path: "/src/lich", NextSeq: 4, Sessions: []store.Session{
 		{ID: "s1", Label: "sender", Kind: "claude"},
 		{ID: "s2", Label: "auth-fix", Kind: "claude", Path: "/wt/auth-fix", Folder: "Apps"},
 	}}}, nil
 }
 
-func (s *spawnStore) AddSessionFrom(_, _, _, _, _ string, _ int, _, _, folder string) error {
+func (s *spawnStore) AddSessionFrom(_ context.Context, opts api.AddSessionFromOptions) (api.None, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.rows++
-	s.insertFolder = folder
-	return nil
+	s.insertFolder = opts.Folder
+	return api.None{}, nil
 }
 
 func (s *spawnStore) SetSessionSubagentDepth(string, int) error {
@@ -338,24 +343,24 @@ func (s *spawnStore) DeleteSession(_, _, _ string) error {
 	return nil
 }
 
-func (s *spawnStore) RenameSession(sessionID, label string) error {
+func (s *spawnStore) RenameSession(_ context.Context, opts api.LabelSessionOptions) (api.None, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.renamed = [2]string{sessionID, label}
-	return nil
+	s.renamed = [2]string{opts.SessionID, opts.Label}
+	return api.None{}, nil
 }
 
-func (s *spawnStore) SetSessionFolder(sessionID, folder string) error {
+func (s *spawnStore) SetSessionFolder(_ context.Context, opts api.SessionFolderOptions) (api.None, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.filed = [2]string{sessionID, folder}
-	return nil
+	s.filed = [2]string{opts.SessionID, opts.Folder}
+	return api.None{}, nil
 }
 
-func (s *spawnStore) RenameFolder(projectID, from, to string) ([]string, error) {
+func (s *spawnStore) RenameFolder(_ context.Context, opts api.RenameProjectFolderOptions) ([]string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.refolded = [3]string{projectID, from, to}
+	s.refolded = [3]string{opts.ProjectID, opts.From, opts.To}
 	return []string{"s2"}, nil
 }
 
@@ -366,15 +371,23 @@ func (s *spawnStore) ColorFolder(projectID, folder, color string) ([]string, err
 	return []string{"s2"}, nil
 }
 
-func (*spawnStore) CloseSession(_, _, _ string) error { return nil }
+func (*spawnStore) CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error) {
+	return api.None{}, nil
+}
 
-func (*spawnStore) RecentProjects(string) ([]store.Recent, error) { return nil, nil }
+func (*spawnStore) RecentProjects(_ context.Context, opts api.SearchTermOptions) ([]store.Recent, error) {
+	return nil, nil
+}
 
 // The wire tests never open a project: what they prove is the arguments a
 // command posts, and the workspace this fixture answers with is already open.
-func (*spawnStore) AddProject(_, _, _ string) error { return nil }
+func (*spawnStore) AddProject(_ context.Context, opts api.AddProjectOptions) (api.None, error) {
+	return api.None{}, nil
+}
 
-func (*spawnStore) PurgeWorktreeSessions(_, _ string) error { return nil }
+func (*spawnStore) PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error) {
+	return api.None{}, nil
+}
 
 // spawnGit stands in for the repository: creating a checkout is refused because
 // the wire is what these tests prove, and running git would prove something else
@@ -389,26 +402,34 @@ type spawnGit struct {
 
 func (*spawnGit) Branch(string) string { return "main" }
 
-func (*spawnGit) BaseFreshness(string, string) (project.BaseFreshness, error) {
+func (*spawnGit) BaseFreshness(_ context.Context, opts api.PathBranchOptions) (project.BaseFreshness, error) {
 	return project.BaseFreshness{}, nil
 }
 
-func (*spawnGit) ListBranches(string) (project.Branches, error) { return project.Branches{}, nil }
+func (*spawnGit) ListBranches(_ context.Context, opts api.PathOptions) (project.Branches, error) {
+	return project.Branches{}, nil
+}
 
-func (*spawnGit) CreateWorktree(_, _, _, _ string, _ bool) (*project.Worktree, error) {
+func (*spawnGit) CreateWorktree(_ context.Context, opts api.CreateWorktreeOptions) (*project.Worktree, error) {
 	return nil, errors.New("no git here")
 }
 
-func (g *spawnGit) ListCheckouts(string) ([]project.Worktree, error) { return g.checkouts, nil }
-
-func (g *spawnGit) RemoveWorktree(_, path string, force, _ bool) error {
-	g.removed, g.forced = path, force
-	return nil
+func (g *spawnGit) ListCheckouts(_ context.Context, opts api.PathOptions) ([]project.Worktree, error) {
+	return g.checkouts, nil
 }
 
-func (g *spawnGit) WorktreeDirty(string) (bool, error) { return g.dirty, nil }
+func (g *spawnGit) RemoveWorktree(_ context.Context, opts api.RemoveWorktreeOptions) (api.None, error) {
+	g.removed, g.forced = opts.WorktreePath, opts.Force
+	return api.None{}, nil
+}
 
-func (*spawnGit) WorktreeAdopted(string) bool { return false }
+func (g *spawnGit) WorktreeDirty(_ context.Context, opts api.PathOptions) (bool, error) {
+	return g.dirty, nil
+}
+
+func (*spawnGit) WorktreeAdopted(_ context.Context, opts api.PathOptions) (bool, error) {
+	return false, nil
+}
 
 type spawnTerminal struct {
 	mu     sync.Mutex
@@ -430,11 +451,11 @@ func (s *spawnTerminal) RunModCommand(
 	return terminal.ModOutcome{ID: "m1", State: terminal.ModAcked, OK: true}, nil
 }
 
-func (s *spawnTerminal) Start(_, _, cwd, kind, _ string, _ bool, _, _ int) error {
+func (s *spawnTerminal) Start(_ context.Context, opts api.StartOptions) (api.None, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.cwd, s.kind = cwd, kind
-	return nil
+	s.cwd, s.kind = opts.Cwd, opts.Kind
+	return api.None{}, nil
 }
 
 // Nothing renamed itself here either, so a session is addressed by the name

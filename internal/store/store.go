@@ -14,6 +14,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -419,7 +420,7 @@ func (s *Service) Close() error {
 //
 // Rows that predate the position column all carry the default 0, so the rowid
 // tiebreak keeps them in insertion order until a first drag assigns positions.
-func (s *Service) LoadState() ([]Project, error) {
+func (s *Service) LoadState(_ context.Context, _ api.None) ([]Project, error) {
 	rows, err := s.db.Query(
 		`SELECT id, name, path, next_seq, active_session_id
 		   FROM projects WHERE is_open = 1 ORDER BY position, rowid`,
@@ -506,11 +507,11 @@ func closedProjectMatch(term string) (string, []any) {
 	return where, args
 }
 
-// RecentProjects returns the closed projects matching term, the last one closed
-// first, up to recentLimit of them. An empty term is the plain reopen list: the
+// RecentProjects returns the closed projects matching opts.Term, the last one closed
+// first, up to recentLimit of them. An empty opts.Term is the plain reopen list: the
 // most recently closed, whatever they are named.
 //
-// The term is matched here rather than in the window for the reason
+// opts.Term is matched here rather than in the window for the reason
 // ClosedSessions matches its own: the window only ever sees one page of rows, so
 // a project closed further back than that page would be unreachable by name.
 //
@@ -518,8 +519,8 @@ func closedProjectMatch(term string) (string, []any) {
 // on its own it hid a long-standing project behind newer ones the moment it was
 // closed. Rows closed before closed_seq existed carry 0 and keep falling back
 // to it.
-func (s *Service) RecentProjects(term string) ([]Recent, error) {
-	where, args := closedProjectMatch(term)
+func (s *Service) RecentProjects(_ context.Context, opts api.SearchTermOptions) ([]Recent, error) {
+	where, args := closedProjectMatch(opts.Term)
 	args = append(args, recentLimit)
 	rows, err := s.db.Query(
 		`SELECT id, name, path FROM projects `+where+`
@@ -545,13 +546,13 @@ func (s *Service) RecentProjects(term string) ([]Recent, error) {
 	return recents, nil
 }
 
-// ClosedProjectCount counts the closed projects matching term, which is how a
+// ClosedProjectCount counts the closed projects matching opts.Term, which is how a
 // list capped at recentLimit says what it is leaving out: the reopen menu points
 // at the palette when there are more, and the palette's own group header reports
 // the matches it could not fit. A COUNT over one indexed flag is cheap enough to
 // ask for beside the list itself.
-func (s *Service) ClosedProjectCount(term string) (int, error) {
-	where, args := closedProjectMatch(term)
+func (s *Service) ClosedProjectCount(_ context.Context, opts api.SearchTermOptions) (int, error) {
+	where, args := closedProjectMatch(opts.Term)
 	var count int
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM projects `+where, args...).Scan(&count); err != nil {
 		return 0, fmt.Errorf("count closed projects: %w", err)

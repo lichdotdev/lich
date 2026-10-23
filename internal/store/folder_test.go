@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"testing"
 )
@@ -27,16 +28,16 @@ func folderOf(t *testing.T, svc *Service, projectID, sessionID string) string {
 // name — never a second concept the sidebar would have to tell apart.
 func TestSetSessionFolderFilesAndUnfiles(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
 
-	if err := svc.SetSessionFolder("s1", "Design system"); err != nil {
+	if _, err := svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Design system"}); err != nil {
 		t.Fatalf("SetSessionFolder: %v", err)
 	}
 	if got := folderOf(t, svc, "p1", "s1"); got != "Design system" {
 		t.Errorf("folder = %q, want %q", got, "Design system")
 	}
-	if err := svc.SetSessionFolder("s1", ""); err != nil {
+	if _, err := svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1"}); err != nil {
 		t.Fatalf("SetSessionFolder(unfile): %v", err)
 	}
 	if got := folderOf(t, svc, "p1", "s1"); got != "" {
@@ -49,13 +50,13 @@ func TestSetSessionFolderFilesAndUnfiles(t *testing.T) {
 // a pinned one, so the stored order is what an unfiled card falls back into.
 func TestSetSessionFolderLeavesTheDragOrder(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.AddSession("p1", "s3", "Session 3", "", "", 4, "")
-	_ = svc.ReorderSessions("p1", []string{"s3", "s1", "s2"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s3", Label: "Session 3", NextSeq: 4})
+	_, _ = svc.ReorderSessions(t.Context(), api.ReorderSessionsOptions{ProjectID: "p1", IDs: []string{"s3", "s1", "s2"}})
 
-	if err := svc.SetSessionFolder("s1", "Apps"); err != nil {
+	if _, err := svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Apps"}); err != nil {
 		t.Fatalf("SetSessionFolder: %v", err)
 	}
 	if got := sessionIDs(t, svc, "p1"); !equalIDs(got, []string{"s3", "s1", "s2"}) {
@@ -68,16 +69,16 @@ func TestSetSessionFolderLeavesTheDragOrder(t *testing.T) {
 // project, because two projects can hold folders of the same name.
 func TestRenameFolderRewritesItsSessionsOnly(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.AddSession("p2", "o1", "Other 1", "", "", 2, "")
-	_ = svc.SetSessionFolder("s1", "Apps")
-	_ = svc.SetSessionFolder("s2", "Infra")
-	_ = svc.SetSessionFolder("o1", "Apps")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p2", SessionID: "o1", Label: "Other 1", NextSeq: 2})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Apps"})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s2", Folder: "Infra"})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "o1", Folder: "Apps"})
 
-	if _, err := svc.RenameFolder("p1", "Apps", "Applications"); err != nil {
+	if _, err := svc.RenameFolder(t.Context(), api.RenameProjectFolderOptions{ProjectID: "p1", From: "Apps", To: "Applications"}); err != nil {
 		t.Fatalf("RenameFolder: %v", err)
 	}
 	if got := folderOf(t, svc, "p1", "s1"); got != "Applications" {
@@ -95,13 +96,13 @@ func TestRenameFolderRewritesItsSessionsOnly(t *testing.T) {
 // empty target — one write, and every card falls back to its checkout's block.
 func TestRenameFolderToNothingUngroups(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.SetSessionFolder("s1", "Apps")
-	_ = svc.SetSessionFolder("s2", "Apps")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Apps"})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s2", Folder: "Apps"})
 
-	if _, err := svc.RenameFolder("p1", "Apps", ""); err != nil {
+	if _, err := svc.RenameFolder(t.Context(), api.RenameProjectFolderOptions{ProjectID: "p1", From: "Apps"}); err != nil {
 		t.Fatalf("RenameFolder: %v", err)
 	}
 	for _, id := range []string{"s1", "s2"} {
@@ -115,10 +116,10 @@ func TestRenameFolderToNothingUngroups(t *testing.T) {
 // sweep every unfiled session in the project into a folder nobody asked for.
 func TestRenameFolderRefusesTheEmptyName(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
 
-	if _, err := svc.RenameFolder("p1", "", "Apps"); err == nil {
+	if _, err := svc.RenameFolder(t.Context(), api.RenameProjectFolderOptions{ProjectID: "p1", To: "Apps"}); err == nil {
 		t.Fatal("RenameFolder with no source folder = nil, want an error")
 	}
 	if got := folderOf(t, svc, "p1", "s1"); got != "" {
@@ -131,14 +132,14 @@ func TestRenameFolderRefusesTheEmptyName(t *testing.T) {
 // checkout's own — the pile the folder was made to break up.
 func TestResumeKeepsTheFolder(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.SetSessionFolder("s1", "Design system")
-	if err := svc.CloseSession("p1", "s1", ""); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Design system"})
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 
-	restored, err := svc.ReopenSession("s1", "s1-new")
+	restored, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "s1", NewSessionID: "s1-new"})
 	if err != nil {
 		t.Fatalf("ReopenSession: %v", err)
 	}
@@ -158,15 +159,15 @@ func TestResumeKeepsTheFolder(t *testing.T) {
 // session comes back into a folder the user renamed out of existence.
 func TestRenameFolderReachesParkedSessions(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.SetSessionFolder("s1", "Apps")
-	_ = svc.CloseSession("p1", "s1", "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Apps"})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"})
 
-	if _, err := svc.RenameFolder("p1", "Apps", "Applications"); err != nil {
+	if _, err := svc.RenameFolder(t.Context(), api.RenameProjectFolderOptions{ProjectID: "p1", From: "Apps", To: "Applications"}); err != nil {
 		t.Fatalf("RenameFolder: %v", err)
 	}
-	restored, err := svc.ReopenSession("s1", "s1-new")
+	restored, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "s1", NewSessionID: "s1-new"})
 	if err != nil {
 		t.Fatalf("ReopenSession: %v", err)
 	}
@@ -183,16 +184,16 @@ func TestRenameFolderReachesParkedSessions(t *testing.T) {
 // and never a card it read as filed a moment earlier.
 func TestRenameFolderReturnsEveryRowItMoved(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.AddSession("p1", "s3", "Session 3", "", "", 4, "")
-	_ = svc.SetSessionFolder("s1", "Apps")
-	_ = svc.SetSessionFolder("s2", "Apps")
-	_ = svc.SetSessionFolder("s3", "Infra")
-	_ = svc.CloseSession("p1", "s2", "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s3", Label: "Session 3", NextSeq: 4})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Apps"})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s2", Folder: "Apps"})
+	_, _ = svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s3", Folder: "Infra"})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s2"})
 
-	moved, err := svc.RenameFolder("p1", "Apps", "Applications")
+	moved, err := svc.RenameFolder(t.Context(), api.RenameProjectFolderOptions{ProjectID: "p1", From: "Apps", To: "Applications"})
 	if err != nil {
 		t.Fatalf("RenameFolder: %v", err)
 	}
@@ -206,9 +207,9 @@ func TestRenameFolderReturnsEveryRowItMoved(t *testing.T) {
 // and the answer is an empty list rather than an error.
 func TestRenameFolderOfNothingMovesNothing(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 
-	moved, err := svc.RenameFolder("p1", "Apps", "Applications")
+	moved, err := svc.RenameFolder(t.Context(), api.RenameProjectFolderOptions{ProjectID: "p1", From: "Apps", To: "Applications"})
 	if err != nil {
 		t.Fatalf("RenameFolder: %v", err)
 	}
@@ -222,12 +223,12 @@ func TestRenameFolderOfNothingMovesNothing(t *testing.T) {
 // the row and its folder and bring the session back unfiled.
 func TestAddSessionFilesTheRowItInserts(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 
-	if err := svc.AddSessionInFolder("p1", "s1", "Session 1", "", "", 2, "", "Apps"); err != nil {
+	if _, err := svc.AddSessionInFolder(t.Context(), api.AddSessionInFolderOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2, Folder: "Apps"}); err != nil {
 		t.Fatalf("AddSessionInFolder: %v", err)
 	}
-	if err := svc.AddSessionFrom("p1", "s2", "worker", "", "", 3, "s1", "Session 1", "Apps"); err != nil {
+	if _, err := svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "s2", Label: "worker", NextSeq: 3, OriginID: "s1", OriginLabel: "Session 1", Folder: "Apps"}); err != nil {
 		t.Fatalf("AddSessionFrom: %v", err)
 	}
 	for _, id := range []string{"s1", "s2"} {

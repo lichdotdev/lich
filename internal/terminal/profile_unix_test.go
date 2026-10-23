@@ -70,9 +70,9 @@ func TestContinueInRespawnsTheCardInTheTargetProfile(t *testing.T) {
 	moved := map[string]string{}
 	svc := New(stubBins{bin: spawnLogBin(t, log), providerSession: "c1", movedProfiles: moved},
 		[]string{"CLAUDE_CODE_OAUTH_TOKEN=personal-token"}, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "c1", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Resume: "c1", Cols: 80, Rows: 24}); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the first spawn")
@@ -83,7 +83,7 @@ func TestContinueInRespawnsTheCardInTheTargetProfile(t *testing.T) {
 		t.Errorf("work counts %d sessions before the move", got)
 	}
 
-	if err := svc.ContinueIn("s1", "work"); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 2 }, "the respawn")
@@ -91,7 +91,7 @@ func TestContinueInRespawnsTheCardInTheTargetProfile(t *testing.T) {
 	if !strings.HasPrefix(got, work+"||") || !strings.Contains(got, "--resume c1") {
 		t.Errorf("respawn %q, want the work profile, no token, resuming c1", got)
 	}
-	if !svc.Live("s1") {
+	if !svc.live("s1") {
 		t.Error("the card is not running after the move")
 	}
 	if got := svc.ProfileSessions("work"); got != 1 {
@@ -106,14 +106,14 @@ func TestContinueInStartsAfreshACardWithNoTranscriptYet(t *testing.T) {
 	log := filepath.Join(t.TempDir(), "spawns")
 	moved := map[string]string{}
 	svc := New(stubBins{bin: spawnLogBin(t, log), providerSession: "c1", movedProfiles: moved}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Cols: 80, Rows: 24}); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the first spawn")
 
-	if err := svc.ContinueIn("s1", "work"); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err != nil {
 		t.Fatalf("ContinueIn of a card with no transcript yet: %v", err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 2 }, "the respawn")
@@ -169,11 +169,11 @@ func TestASessionBornInADeletedProfileSaysSo(t *testing.T) {
 	if _, err := svc.profileDir("s1", providers.Claude, ""); !errors.Is(err, claudeprofile.ErrProfileGone) {
 		t.Errorf("spawn into a deleted profile: %v, want ErrProfileGone", err)
 	}
-	err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", false, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Cols: 80, Rows: 24})
 	if !errors.Is(err, claudeprofile.ErrProfileGone) {
 		t.Errorf("Start: %v, want ErrProfileGone", err)
 	}
-	if svc.Live("s1") {
+	if svc.live("s1") {
 		t.Error("a session spawned anyway")
 	}
 }
@@ -192,7 +192,7 @@ func TestContinueInMovesAParkedConversation(t *testing.T) {
 	moved := map[string]string{}
 	svc := New(stubBins{providerSession: "c1", movedProfiles: moved}, nil, events.New())
 
-	if err := svc.ContinueIn("s1", "work"); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err != nil {
 		t.Fatal(err)
 	}
 	if moved["s1"] != "work" {
@@ -201,13 +201,13 @@ func TestContinueInMovesAParkedConversation(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(work, "projects", "-work", "c1.jsonl")); err != nil {
 		t.Errorf("transcript did not move: %v", err)
 	}
-	if err := svc.ContinueIn("s1", claudeprofile.Personal); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: claudeprofile.Personal}); err != nil {
 		t.Fatal(err)
 	}
 	if moved["s1"] != "" {
 		t.Errorf("moving back left the row on %q", moved["s1"])
 	}
-	if svc.Live("s1") {
+	if svc.live("s1") {
 		t.Error("a parked session was spawned by the move")
 	}
 }
@@ -217,23 +217,23 @@ func TestContinueInRefusesWhatItCannotCarry(t *testing.T) {
 	conversationAt(t, personal, "c1")
 
 	empty := New(stubBins{}, nil, events.New())
-	if err := empty.ContinueIn("s1", "work"); err == nil {
+	if _, err := empty.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err == nil {
 		t.Error("moved a session with no conversation")
 	}
 
 	svc := New(stubBins{providerSession: "c1"}, nil, events.New())
 	svc.turns.report("s1", statusBusy)
-	if err := svc.ContinueIn("s1", "work"); err == nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err == nil {
 		t.Error("moved a session mid-turn")
 	}
 	svc.turns.report("s1", statusDone)
-	if err := svc.ContinueIn("s1", "gone"); err == nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "gone"}); err == nil {
 		t.Error("moved into a profile that does not exist")
 	}
 	if _, err := os.Stat(filepath.Join(personal, "projects", "-work", "c1.jsonl")); err != nil {
 		t.Errorf("a refused move took the transcript: %v", err)
 	}
-	if err := svc.ContinueIn("s1", "work"); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err != nil {
 		t.Errorf("a turn a limit ended, or any finished one, must move: %v", err)
 	}
 }
@@ -247,12 +247,12 @@ func TestAResumeThatFollowsItsConversationSaysSoOnceUp(t *testing.T) {
 	hub, rec := newProbeHub(t)
 	log := filepath.Join(t.TempDir(), "spawns")
 	svc := New(stubBins{bin: spawnLogBin(t, log), movedProfiles: map[string]string{}}, nil, hub)
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "c1", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Resume: "c1", Cols: 80, Rows: 24}); err != nil {
 		t.Fatal(err)
 	}
-	if !svc.Live("s1") {
+	if !svc.live("s1") {
 		t.Fatal("the session is not running after Start")
 	}
 	waitFor(t, func() bool { _, ok := rec.payloadOf(api.SessionProfileEvent.Name); return ok }, "the session-profile event")
@@ -319,7 +319,7 @@ func TestContinueInMovesACodexRollout(t *testing.T) {
 	moved := map[string]string{}
 	svc := New(stubBins{providerSession: "c9", movedProfiles: moved, kinds: map[string]string{"s1": providers.Codex}}, nil, events.New())
 
-	if err := svc.ContinueIn("s1", cw.Slug); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: cw.Slug}); err != nil {
 		t.Fatal(err)
 	}
 	if moved["s1"] != cw.Slug {
@@ -333,7 +333,7 @@ func TestContinueInMovesACodexRollout(t *testing.T) {
 	}
 
 	other := New(stubBins{providerSession: "c9", kinds: map[string]string{"s1": providers.Crush}}, nil, events.New())
-	if err := other.ContinueIn("s1", cw.Slug); err == nil {
+	if _, err := other.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: cw.Slug}); err == nil {
 		t.Error("moved a session of a provider with no profiles")
 	}
 }
@@ -354,9 +354,9 @@ func TestACodexSpawnRunsInItsProfile(t *testing.T) {
 	}
 	svc := New(stubBins{bin: bin, profile: cw.Slug, movedProfiles: map[string]string{}},
 		[]string{"OPENAI_API_KEY=lich-key"}, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Codex, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Codex, Cols: 80, Rows: 24}); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the spawn")

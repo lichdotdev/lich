@@ -28,7 +28,7 @@ var versionPattern = regexp.MustCompile(`\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.]+)?`)
 
 type Binary = api.ProviderBinary
 
-// Version runs bin (resolved as Verify resolves it) with `--version` and
+// Version runs opts.Bin (resolved as Verify resolves it) with `--version` and
 // returns the version it printed. It is the slow half of what Detect answers,
 // kept out of it: a probe boots the whole CLI, and Detect runs on every launch
 // menu.
@@ -36,10 +36,10 @@ type Binary = api.ProviderBinary
 // The probe inherits lich's own environment, PATH pinned from the login shell,
 // so a shim that picks its version from the user's config answers as it would
 // inside a session.
-func (s *Service) Version(ctx context.Context, bin string) (string, error) {
-	check := s.Verify(bin)
+func (s *Service) Version(ctx context.Context, opts api.BinaryOptions) (string, error) {
+	check := s.verify(opts.Bin)
 	if check.Status != CheckOK {
-		return "", fmt.Errorf("resolve %q: %s", bin, check.Status)
+		return "", fmt.Errorf("resolve %q: %s", opts.Bin, check.Status)
 	}
 	return s.probe(ctx, check.Path)
 }
@@ -51,10 +51,10 @@ func (s *Service) Version(ctx context.Context, bin string) (string, error) {
 //
 // A probe that fails leaves that entry's version empty rather than dropping
 // it: the binary is still there for the spawn to find.
-func (s *Service) OnPath(ctx context.Context, id string) ([]Binary, error) {
-	names := binariesOf(id)
+func (s *Service) OnPath(ctx context.Context, opts api.ProviderIDOptions) ([]Binary, error) {
+	names := binariesOf(opts.ID)
 	if names == nil {
-		return nil, fmt.Errorf("unknown provider %q", id)
+		return nil, fmt.Errorf("unknown provider %q", opts.ID)
 	}
 	out := []Binary{}
 	seen := map[string]bool{}

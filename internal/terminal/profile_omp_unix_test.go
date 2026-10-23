@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/ompprofile"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -83,7 +84,7 @@ func TestContinueInMovesAnOMPSession(t *testing.T) {
 	moved := map[string]string{}
 	svc := New(stubBins{providerSession: "c9", movedProfiles: moved, kinds: map[string]string{"s1": providers.OMP}}, nil, events.New())
 
-	if err := svc.ContinueIn("s1", ow.Slug); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: ow.Slug}); err != nil {
 		t.Fatal(err)
 	}
 	if moved["s1"] != ow.Slug {
@@ -114,9 +115,9 @@ func TestAnOMPSpawnRunsInItsProfile(t *testing.T) {
 	}
 	svc := New(stubBins{bin: bin, profile: ow.Slug, movedProfiles: map[string]string{}},
 		[]string{"OMP_AUTH_BROKER_URL=https://broker.example"}, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.OMP, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.OMP, Cols: 80, Rows: 24}); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the spawn")

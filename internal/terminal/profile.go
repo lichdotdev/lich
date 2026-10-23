@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -200,56 +201,56 @@ func (s *Service) profileSessions(kind, slug string) int {
 // It refuses a turn in progress: a provider-reported turn still open, which a
 // permission prompt is part of. A turn a usage limit stopped has ended, so a
 // session waiting out its limit moves like an idle one.
-func (s *Service) ContinueIn(id, profile string) error {
-	conversation, err := s.store.ProviderSession(id)
+func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (api.None, error) {
+	conversation, err := s.store.ProviderSession(opts.ID)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
 	if conversation == "" {
-		return errors.New("this session has no conversation to continue yet")
+		return api.None{}, errors.New("this session has no conversation to continue yet")
 	}
-	started := s.spawnOf(id)
-	kind := sessionKind(started.kind, s.store.SessionKind(id))
+	started := s.spawnOf(opts.ID)
+	kind := sessionKind(started.kind, s.store.SessionKind(opts.ID))
 	if !hasProfiles(kind) {
-		return fmt.Errorf("a %s session has no profiles to continue in", kind)
+		return api.None{}, fmt.Errorf("a %s session has no profiles to continue in", kind)
 	}
 	if profilestores[kind].noMove {
-		return fmt.Errorf("a %s conversation cannot move to another profile; start a new session there", kind)
+		return api.None{}, fmt.Errorf("a %s conversation cannot move to another profile; start a new session there", kind)
 	}
-	if s.turns.busy(id) {
-		return errors.New("the session is mid-turn; continue it in another profile once the turn ends")
+	if s.turns.busy(opts.ID) {
+		return api.None{}, errors.New("the session is mid-turn; continue it in another profile once the turn ends")
 	}
-	if _, err := profilestores[kind].configDir(profile); err != nil {
-		return err
+	if _, err := profilestores[kind].configDir(opts.Profile); err != nil {
+		return api.None{}, err
 	}
-	live := s.Live(id)
+	live := s.live(opts.ID)
 	if live {
-		if err := s.Close(id); err != nil {
-			return fmt.Errorf("end the session before moving it: %w", err)
+		if _, err := s.Close(ctx, api.SessionIDOptions{ID: opts.ID}); err != nil {
+			return api.None{}, fmt.Errorf("end the session before moving it: %w", err)
 		}
 	}
-	err = profilestores[kind].moveTo(conversation, profile)
+	err = profilestores[kind].moveTo(conversation, opts.Profile)
 	if errors.Is(err, profilestore.ErrNoConversation) {
 		// Nothing written yet to carry over: the card starts afresh there.
-		if err := s.setConversation(id, ""); err != nil {
-			return err
+		if err := s.setConversation(opts.ID, ""); err != nil {
+			return api.None{}, err
 		}
 		conversation, err = "", nil
 	}
 	if err != nil {
-		return s.respawnAfter(err, live, id, started, kind, conversation)
+		return api.None{}, s.respawnAfter(err, live, opts.ID, started, kind, conversation)
 	}
-	if profilestore.IsPersonal(profile) {
-		profile = ""
+	if profilestore.IsPersonal(opts.Profile) {
+		opts.Profile = ""
 	}
-	if err := s.store.SetSessionProfile(id, profile); err != nil {
-		return err
+	if err := s.store.SetSessionProfile(opts.ID, opts.Profile); err != nil {
+		return api.None{}, err
 	}
-	err = s.respawnAfter(nil, live, id, started, kind, conversation)
+	err = s.respawnAfter(nil, live, opts.ID, started, kind, conversation)
 	// After the respawn: a reader that re-reads on this event (the quota of
 	// the session's account) must find the process already under the profile.
-	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: id, Profile: profile})
-	return err
+	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: opts.ID, Profile: opts.Profile})
+	return api.None{}, err
 }
 
 // sessionKind is the provider of a session being moved: its running spawn's,
@@ -272,6 +273,6 @@ func (s *Service) respawnAfter(cause error, live bool, id string, started spawn,
 	if !live {
 		return cause
 	}
-	err := s.Start(id, started.projectID, started.cwd, kind, conversation, false, 0, 0)
+	_, err := s.Start(context.Background(), api.StartOptions{ID: id, ProjectID: started.projectID, Cwd: started.cwd, Kind: kind, Resume: conversation})
 	return errors.Join(cause, err)
 }

@@ -3,6 +3,7 @@ package project
 import (
 	"errors"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"strings"
 	"testing"
@@ -99,7 +100,7 @@ func TestFileLinesWorkTree(t *testing.T) {
 	write(t, repo, "src/app.ts", "one\ntwo\nthree\nfour\n")
 
 	svc := New(nil)
-	lines, err := svc.FileLines(repo, "src/app.ts", "", 2, 3)
+	lines, err := svc.FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "src/app.ts", From: 2, To: 3})
 	if err != nil {
 		t.Fatalf("FileLines: %v", err)
 	}
@@ -107,17 +108,17 @@ func TestFileLinesWorkTree(t *testing.T) {
 		t.Errorf("lines = %q, want %q", lines, want)
 	}
 
-	if _, err := svc.FileLines(repo, "../escape.ts", "", 1, 2); err == nil {
+	if _, err := svc.FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "../escape.ts", From: 1, To: 2}); err == nil {
 		t.Error("traversal: want error, got nil")
 	}
-	if _, err := svc.FileLines(repo, "src/app.ts", "", 0, 3); err == nil {
+	if _, err := svc.FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "src/app.ts", To: 3}); err == nil {
 		t.Error("zero start: want error, got nil")
 	}
-	if _, err := svc.FileLines(repo, "src/app.ts", "", 4, 2); err == nil {
+	if _, err := svc.FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "src/app.ts", From: 4, To: 2}); err == nil {
 		t.Error("reversed range: want error, got nil")
 	}
 	write(t, repo, "blob.bin", "text\x00more\n")
-	if _, err := svc.FileLines(repo, "blob.bin", "", 1, 2); err == nil {
+	if _, err := svc.FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "blob.bin", From: 1, To: 2}); err == nil {
 		t.Error("binary: want error, got nil")
 	}
 }
@@ -136,7 +137,7 @@ func TestFileLinesLocalObject(t *testing.T) {
 
 	gh := &fakeGH{out: []byte("should not be asked\n")}
 	svc := withGH(gh)
-	lines, err := svc.FileLines(repo, "a.txt", tree, 2, 3)
+	lines, err := svc.FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "a.txt", Ref: tree, From: 2, To: 3})
 	if err != nil {
 		t.Fatalf("FileLines: %v", err)
 	}
@@ -146,7 +147,7 @@ func TestFileLinesLocalObject(t *testing.T) {
 	if gh.calls != 0 {
 		t.Errorf("gh called %d times for a local object, want 0", gh.calls)
 	}
-	if _, err := svc.FileLines(repo, "a.txt", "HEAD", 1, 2); err == nil {
+	if _, err := svc.FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "a.txt", Ref: "HEAD", From: 1, To: 2}); err == nil {
 		t.Error("non-oid revision: want error, got nil")
 	}
 }
@@ -160,7 +161,7 @@ func TestFileLinesLocalObjectRejectsADirectory(t *testing.T) {
 	tree := strings.TrimSpace(git("rev-parse", "HEAD^{tree}"))
 	gh := &fakeGH{out: []byte("should not be asked\n")}
 
-	if _, err := withGH(gh).FileLines(repo, "src", tree, 1, 2); err == nil {
+	if _, err := withGH(gh).FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "src", Ref: tree, From: 1, To: 2}); err == nil {
 		t.Fatal("directory at object: want error, got nil")
 	}
 	if gh.calls != 0 {
@@ -176,7 +177,7 @@ func TestFileLinesLocalObjectRejectsBinary(t *testing.T) {
 	git("commit", "-m", "binary")
 	tree := strings.TrimSpace(git("rev-parse", "HEAD^{tree}"))
 
-	if _, err := New(nil).FileLines(repo, "blob.bin", tree, 1, 2); err == nil {
+	if _, err := New(nil).FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "blob.bin", Ref: tree, From: 1, To: 2}); err == nil {
 		t.Fatal("binary object: want error, got nil")
 	}
 }
@@ -189,7 +190,7 @@ func TestFileLinesMissingObjectAsksGitHub(t *testing.T) {
 	missing := strings.Repeat("b", 40)
 
 	gh := &fakeGH{out: []byte("alpha\nbeta\ngamma\n")}
-	lines, err := withGH(gh).FileLines(repo, "a.txt", missing, 2, 9)
+	lines, err := withGH(gh).FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "a.txt", Ref: missing, From: 2, To: 9})
 	if err != nil {
 		t.Fatalf("FileLines: %v", err)
 	}
@@ -216,17 +217,17 @@ func TestReadFileAt(t *testing.T) {
 
 	gh := &fakeGH{out: []byte("# from GitHub\n")}
 	svc := withGH(gh)
-	if text, err := svc.ReadFileAt(repo, "notes.md", head); err != nil || text != "# old\n" {
+	if text, err := svc.ReadFileAt(t.Context(), api.ReadFileAtOptions{Path: repo, Rel: "notes.md", Ref: head}); err != nil || text != "# old\n" {
 		t.Errorf("local commit: %q, %v; want the committed text", text, err)
 	}
 	if gh.calls != 0 {
 		t.Errorf("gh ran %d times for a local commit, want 0", gh.calls)
 	}
 	missing := strings.Repeat("e", 40)
-	if text, err := svc.ReadFileAt(repo, "notes.md", missing); err != nil || text != "# from GitHub\n" {
+	if text, err := svc.ReadFileAt(t.Context(), api.ReadFileAtOptions{Path: repo, Rel: "notes.md", Ref: missing}); err != nil || text != "# from GitHub\n" {
 		t.Errorf("absent commit: %q, %v; want GitHub's text", text, err)
 	}
-	if _, err := svc.ReadFileAt(repo, "../x.md", head); err == nil {
+	if _, err := svc.ReadFileAt(t.Context(), api.ReadFileAtOptions{Path: repo, Rel: "../x.md", Ref: head}); err == nil {
 		t.Error("traversal: want an error, got nil")
 	}
 }
@@ -236,7 +237,7 @@ func TestFileLinesGitHubRejectsOversize(t *testing.T) {
 	repo, _ := initRepo(t)
 	gh := &fakeGH{out: []byte(strings.Repeat("x", maxReadFileSize+1))}
 
-	if _, err := withGH(gh).FileLines(repo, "a.txt", strings.Repeat("d", 40), 1, 2); err == nil {
+	if _, err := withGH(gh).FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "a.txt", Ref: strings.Repeat("d", 40), From: 1, To: 2}); err == nil {
 		t.Fatal("oversize GitHub payload: want error, got nil")
 	}
 }
@@ -245,7 +246,7 @@ func TestFileLinesGitHubFailureSurfaces(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 	gh := &fakeGH{err: errors.New("gh: not found")}
-	if _, err := withGH(gh).FileLines(repo, "a.txt", strings.Repeat("c", 40), 1, 5); err == nil {
+	if _, err := withGH(gh).FileLines(t.Context(), api.FileLinesOptions{Path: repo, Rel: "a.txt", Ref: strings.Repeat("c", 40), From: 1, To: 5}); err == nil {
 		t.Error("gh failure: want error, got nil")
 	}
 }

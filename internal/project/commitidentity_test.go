@@ -68,7 +68,7 @@ func TestCommitIdentity(t *testing.T) {
 					t.Fatalf("git config %s: %v (%s)", key, err, out)
 				}
 			}
-			if got := New(nil).CommitIdentity(repo); got != tt.want {
+			if got := New(nil).commitIdentity(repo); got != tt.want {
 				t.Errorf("CommitIdentity() = %+v, want %+v", got, tt.want)
 			}
 		})
@@ -84,7 +84,7 @@ func TestCommitIdentityOutsideARepositoryStaysSilent(t *testing.T) {
 	logged := captureLog(t)
 
 	want := CommitIdentity{Name: "Jane Doe", Email: "jane@example.com"}
-	if got := New(nil).CommitIdentity(t.TempDir()); got != want {
+	if got := New(nil).commitIdentity(t.TempDir()); got != want {
 		t.Errorf("CommitIdentity(non-repo) = %+v, want %+v", got, want)
 	}
 	if out := logged(); out != "" {

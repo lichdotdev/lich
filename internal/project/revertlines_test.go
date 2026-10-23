@@ -3,6 +3,7 @@ package project
 import (
 	"encoding/json"
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,7 +44,7 @@ func TestRevertLinesAddition(t *testing.T) {
 	t.Parallel()
 	repo, git := revertRepo(t, strings.Replace(revertBase, "bravo\n", "bravo\nNEW1\n", 1)+"TAIL\n")
 
-	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 3, Text: "NEW1"}})
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "new", Line: 3, Text: "NEW1"}}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -64,7 +65,7 @@ func TestRevertLinesLatin1(t *testing.T) {
 		if staged {
 			git("add", "code.txt")
 		}
-		_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 3, Text: "servi\u00e7os"}})
+		_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "new", Line: 3, Text: "servi\u00e7os"}}})
 		if err != nil {
 			t.Fatalf("staged %v: RevertLines: %v", staged, err)
 		}
@@ -83,7 +84,7 @@ func TestRestoreLinesLatin1AfterTheWire(t *testing.T) {
 	repo, git := revertRepo(t, changed)
 	git("add", "code.txt")
 	s := New(nil)
-	result, err := s.RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 3, Text: "servi\u00e7os"}})
+	result, err := s.RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "new", Line: 3, Text: "servi\u00e7os"}}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestRestoreLinesLatin1AfterTheWire(t *testing.T) {
 	if err := json.Unmarshal(wire, &undo); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.RestoreLines(repo, "code.txt", undo); err != nil {
+	if _, err := s.RestoreLines(t.Context(), api.RestoreLinesOptions{Path: repo, Rel: "code.txt", Undo: undo}); err != nil {
 		t.Fatalf("RestoreLines: %v", err)
 	}
 	if got := readFile(t, repo, "code.txt"); got != changed {
@@ -110,7 +111,7 @@ func TestRevertLinesDeletion(t *testing.T) {
 	t.Parallel()
 	repo, _ := revertRepo(t, strings.Replace(revertBase, "delta\n", "", 1))
 
-	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "old", Line: 4, Text: "delta"}})
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "old", Line: 4, Text: "delta"}}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -126,10 +127,10 @@ func TestRevertLinesPartOfABlock(t *testing.T) {
 	edited := strings.Replace(revertBase, "charlie\n", "CHARLIE\nextra1\nextra2\n", 1)
 	repo, _ := revertRepo(t, edited)
 
-	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{
 		{Side: "new", Line: 4, Text: "extra1"},
 		{Side: "new", Line: 5, Text: "extra2"},
-	})
+	}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -146,10 +147,10 @@ func TestRevertLinesStagedChange(t *testing.T) {
 	repo, git := revertRepo(t, strings.Replace(revertBase, "echo\n", "ECHO\n", 1))
 	git("add", "code.txt")
 
-	result, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{
+	result, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{
 		{Side: "old", Line: 5, Text: "echo"},
 		{Side: "new", Line: 5, Text: "ECHO"},
-	})
+	}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -169,10 +170,10 @@ func TestRevertLinesOtherHunkStaged(t *testing.T) {
 	git("add", "code.txt")
 	writeFile(t, repo, "code.txt", strings.Replace(readFile(t, repo, "code.txt"), "hotel\n", "HOTEL\n", 1))
 
-	result, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{
+	result, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{
 		{Side: "old", Line: 8, Text: "hotel"},
 		{Side: "new", Line: 8, Text: "HOTEL"},
-	})
+	}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -191,10 +192,10 @@ func TestRevertLinesStagedDiverged(t *testing.T) {
 	edited := strings.Replace(revertBase, "golf\n", "GOLF-edited\n", 1)
 	writeFile(t, repo, "code.txt", edited)
 
-	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{
 		{Side: "old", Line: 7, Text: "golf"},
 		{Side: "new", Line: 7, Text: "GOLF-edited"},
-	})
+	}})
 	if !errors.Is(err, ErrStagedDiverged) {
 		t.Fatalf("err = %v, want ErrStagedDiverged", err)
 	}
@@ -212,7 +213,7 @@ func TestRevertLinesStale(t *testing.T) {
 	}
 	for name, line := range cases {
 		t.Run(name, func(t *testing.T) {
-			_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{line})
+			_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{line}})
 			if !errors.Is(err, ErrLinesMoved) {
 				t.Fatalf("err = %v, want ErrLinesMoved", err)
 			}
@@ -224,13 +225,13 @@ func TestRevertLinesRejectsBadInput(t *testing.T) {
 	t.Parallel()
 	repo, _ := revertRepo(t, revertBase+"TAIL\n")
 	s := New(nil)
-	if _, err := s.RevertLines(repo, "../escape.txt", []RevertLine{{Side: "new", Line: 9, Text: "TAIL"}}); err == nil {
+	if _, err := s.RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "../escape.txt", Lines: []RevertLine{{Side: "new", Line: 9, Text: "TAIL"}}}); err == nil {
 		t.Error("escaping path accepted")
 	}
-	if _, err := s.RevertLines(repo, "code.txt", nil); err == nil {
+	if _, err := s.RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt"}); err == nil {
 		t.Error("empty selection accepted")
 	}
-	if _, err := s.RevertLines(repo, "code.txt", []RevertLine{{Side: "left", Line: 9, Text: "TAIL"}}); err == nil {
+	if _, err := s.RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "left", Line: 9, Text: "TAIL"}}}); err == nil {
 		t.Error("unknown side accepted")
 	}
 }
@@ -240,7 +241,7 @@ func TestRevertLinesUntracked(t *testing.T) {
 	repo, git := initRepo(t)
 	writeFile(t, repo, "new file.txt", "one\ntwo\nthree\n")
 
-	_, err := New(nil).RevertLines(repo, "new file.txt", []RevertLine{{Side: "new", Line: 2, Text: "two"}})
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "new file.txt", Lines: []RevertLine{{Side: "new", Line: 2, Text: "two"}}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -256,7 +257,7 @@ func TestRevertLinesNoNewlineAtEOF(t *testing.T) {
 	t.Parallel()
 	repo, _ := revertRepo(t, strings.TrimSuffix(revertBase, "\n")+"\nindia")
 
-	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 9, Text: "india"}})
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "new", Line: 9, Text: "india"}}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -277,14 +278,14 @@ func TestRestoreLinesUndoesRevert(t *testing.T) {
 		}
 		before := git("status", "--porcelain")
 		s := New(nil)
-		result, err := s.RevertLines(repo, "code.txt", []RevertLine{
+		result, err := s.RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{
 			{Side: "old", Line: 6, Text: "foxtrot"},
 			{Side: "new", Line: 6, Text: "FOXTROT"},
-		})
+		}})
 		if err != nil {
 			t.Fatalf("staged=%v RevertLines: %v", staged, err)
 		}
-		if err := s.RestoreLines(repo, "code.txt", result); err != nil {
+		if _, err := s.RestoreLines(t.Context(), api.RestoreLinesOptions{Path: repo, Rel: "code.txt", Undo: result}); err != nil {
 			t.Fatalf("staged=%v RestoreLines: %v", staged, err)
 		}
 		if got := readFile(t, repo, "code.txt"); got != edited {
@@ -301,14 +302,14 @@ func TestRestoreLinesRefusesForeignPatch(t *testing.T) {
 	repo, _ := revertRepo(t, revertBase)
 	s := New(nil)
 	foreign := RevertResult{Patch: patchFileHeader("a.txt") + "@@ -1 +1 @@\n-one\n+two\n"}
-	if err := s.RestoreLines(repo, "code.txt", foreign); err == nil {
+	if _, err := s.RestoreLines(t.Context(), api.RestoreLinesOptions{Path: repo, Rel: "code.txt", Undo: foreign}); err == nil {
 		t.Error("patch for another file accepted")
 	}
 	smuggled := RevertResult{Patch: patchFileHeader("code.txt") + "@@ -1 +1 @@\n-alpha\n+ALPHA\n--- a/a.txt\n+++ b/a.txt\n"}
-	if err := s.RestoreLines(repo, "code.txt", smuggled); err == nil {
+	if _, err := s.RestoreLines(t.Context(), api.RestoreLinesOptions{Path: repo, Rel: "code.txt", Undo: smuggled}); err == nil {
 		t.Error("second file header accepted")
 	}
-	if err := s.RestoreLines(repo, "code.txt", RevertResult{Patch: patchFileHeader("code.txt") + "@@ -1 +1 @@\n-nope\n+NOPE\n"}); !errors.Is(err, ErrLinesMoved) {
+	if _, err := s.RestoreLines(t.Context(), api.RestoreLinesOptions{Path: repo, Rel: "code.txt", Undo: RevertResult{Patch: patchFileHeader("code.txt") + "@@ -1 +1 @@\n-nope\n+NOPE\n"}}); !errors.Is(err, ErrLinesMoved) {
 		t.Errorf("err = %v, want ErrLinesMoved for a patch that no longer applies", err)
 	}
 }
@@ -321,10 +322,10 @@ func TestRevertLinesStagedWithUnstagedNeighbour(t *testing.T) {
 	git("add", "code.txt")
 	writeFile(t, repo, "code.txt", strings.Replace(readFile(t, repo, "code.txt"), "delta\n", "delta\nextra\n", 1))
 
-	result, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{
+	result, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{
 		{Side: "old", Line: 2, Text: "bravo"},
 		{Side: "new", Line: 2, Text: "BRAVO"},
-	})
+	}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -347,7 +348,7 @@ func TestRevertLinesStagedNewFile(t *testing.T) {
 	writeFile(t, repo, "fresh.txt", "one\ntwo\n")
 	git("add", "fresh.txt")
 
-	result, err := New(nil).RevertLines(repo, "fresh.txt", []RevertLine{{Side: "new", Line: 2, Text: "two"}})
+	result, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "fresh.txt", Lines: []RevertLine{{Side: "new", Line: 2, Text: "two"}}})
 	if err != nil {
 		t.Fatalf("RevertLines: %v", err)
 	}
@@ -366,7 +367,7 @@ func TestRevertLinesCleanTrackedFile(t *testing.T) {
 	t.Parallel()
 	repo, _ := revertRepo(t, revertBase)
 
-	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 2, Text: "bravo"}})
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "new", Line: 2, Text: "bravo"}}})
 	if !errors.Is(err, ErrLinesMoved) {
 		t.Fatalf("err = %v, want ErrLinesMoved", err)
 	}
@@ -384,7 +385,7 @@ func TestRevertLinesGitFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := New(nil).RevertLines(repo, "code.txt", []RevertLine{{Side: "new", Line: 3, Text: "NEW1"}})
+	_, err := New(nil).RevertLines(t.Context(), api.RevertLinesOptions{Path: repo, Rel: "code.txt", Lines: []RevertLine{{Side: "new", Line: 3, Text: "NEW1"}}})
 	if err == nil {
 		t.Fatal("revert succeeded against an unreadable index")
 	}

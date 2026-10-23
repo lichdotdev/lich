@@ -3,6 +3,7 @@ package project
 import (
 	"bytes"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"maps"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ func TestTree(t *testing.T) {
 	git("add", ".gitignore")
 	git("commit", "-m", "gitignore")
 
-	tree, err := New(nil).Tree(repo)
+	tree, err := New(nil).Tree(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("Tree: %v", err)
 	}
@@ -49,7 +50,7 @@ func TestTreeDropsDeleted(t *testing.T) {
 	if err := os.Remove(filepath.Join(repo, "a.txt")); err != nil {
 		t.Fatal(err)
 	}
-	tree, err := New(nil).Tree(repo)
+	tree, err := New(nil).Tree(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("Tree: %v", err)
 	}
@@ -68,7 +69,7 @@ func TestTreeWalksNonRepo(t *testing.T) {
 	write(t, dir, "b.txt", "b\n")
 	write(t, dir, "src/main.go", "package main\n")
 	write(t, dir, ".git/config", "[core]\n")
-	tree, err := New(nil).Tree(dir)
+	tree, err := New(nil).Tree(t.Context(), api.PathOptions{Path: dir})
 	if err != nil {
 		t.Fatalf("Tree: %v", err)
 	}
@@ -91,7 +92,7 @@ func TestTreeReportsBrokenRepo(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, ".git/index", "not an index")
-	tree, err := New(nil).Tree(repo)
+	tree, err := New(nil).Tree(t.Context(), api.PathOptions{Path: repo})
 	if err == nil {
 		t.Fatalf("Tree on a corrupt index = %v, want an error", tree.Files)
 	}
@@ -101,7 +102,7 @@ func TestTreeReportsBrokenRepo(t *testing.T) {
 // says so instead of drawing an empty tree over a folder that is gone.
 func TestTreeMissingDir(t *testing.T) {
 	t.Parallel()
-	if _, err := New(nil).Tree(filepath.Join(t.TempDir(), "nope")); err == nil {
+	if _, err := New(nil).Tree(t.Context(), api.PathOptions{Path: filepath.Join(t.TempDir(), "nope")}); err == nil {
 		t.Error("Tree on missing dir: want error, got nil")
 	}
 }
@@ -218,7 +219,7 @@ func TestWalkIgnoreNames(t *testing.T) {
 func TestReadFile(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
-	got, err := New(nil).ReadFile(repo, "a.txt")
+	got, err := New(nil).ReadFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: "a.txt"})
 	if err != nil {
 		t.Fatalf("ReadFile: %v", err)
 	}
@@ -233,7 +234,7 @@ func TestReadFileDecodesLatin1(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "menu.xml", "Log\xedstica Servi\xe7os Requisi\xe7\xe3o\n")
-	got, err := New(nil).ReadFile(repo, "menu.xml")
+	got, err := New(nil).ReadFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: "menu.xml"})
 	if err != nil {
 		t.Fatalf("ReadFile: %v", err)
 	}
@@ -248,7 +249,7 @@ func TestReadFileRejectsEscape(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 	for _, rel := range []string{"../outside.txt", "/etc/passwd", "a/../../b"} {
-		if _, err := New(nil).ReadFile(repo, rel); err == nil {
+		if _, err := New(nil).ReadFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: rel}); err == nil {
 			t.Errorf("ReadFile(%q): want error, got nil", rel)
 		}
 	}
@@ -271,7 +272,7 @@ func TestReadFileRejectsALinkOutOfTheCheckout(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(repo, "escape.txt")); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
-	if got, err := New(nil).ReadFile(repo, "escape.txt"); err == nil {
+	if got, err := New(nil).ReadFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: "escape.txt"}); err == nil {
 		t.Errorf("ReadFile(escape.txt) = %q, want an error", got)
 	}
 }
@@ -282,7 +283,7 @@ func TestReadFileRejectsBinary(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "bin", "abc\x00def")
-	if _, err := New(nil).ReadFile(repo, "bin"); err == nil {
+	if _, err := New(nil).ReadFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: "bin"}); err == nil {
 		t.Error("ReadFile(binary): want error, got nil")
 	}
 }
@@ -292,7 +293,7 @@ func TestReadFileRejectsLarge(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
 	write(t, repo, "big", strings.Repeat("x", maxReadFileSize+1))
-	if _, err := New(nil).ReadFile(repo, "big"); err == nil {
+	if _, err := New(nil).ReadFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: "big"}); err == nil {
 		t.Error("ReadFile(oversize): want error, got nil")
 	}
 }
@@ -333,7 +334,7 @@ func TestIsBinaryWindow(t *testing.T) {
 func TestReadFileMissing(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
-	if _, err := New(nil).ReadFile(repo, "nope.txt"); err == nil {
+	if _, err := New(nil).ReadFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: "nope.txt"}); err == nil {
 		t.Error("ReadFile(missing): want error, got nil")
 	} else if got := err.Error(); strings.Contains(got, repo) || !strings.HasPrefix(got, "stat nope.txt:") {
 		t.Errorf("ReadFile(missing) error = %q, want only the relative path", got)

@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -76,7 +77,7 @@ func TestOpenUpgradesTheOldestWorkspace(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = svc.Close() })
 
-	got, err := svc.LoadState()
+	got, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -93,10 +94,10 @@ func TestOpenUpgradesTheOldestWorkspace(t *testing.T) {
 	if s := p.Sessions[0]; s.Kind != "claude" || s.ProviderSessionID != "" {
 		t.Errorf("upgraded session = %+v, want the column defaults", s)
 	}
-	if recent, _ := svc.RecentProjects(""); len(recent) != 1 || recent[0].ID != "p2" {
+	if recent, _ := svc.RecentProjects(t.Context(), api.SearchTermOptions{}); len(recent) != 1 || recent[0].ID != "p2" {
 		t.Errorf("closed projects = %+v, want beta", recent)
 	}
-	if bin, _ := svc.GetSetting("claude.bin", ""); bin != "/opt/claude" {
+	if bin, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: "claude.bin"}); bin != "/opt/claude" {
 		t.Errorf("claude.bin = %q, want /opt/claude", bin)
 	}
 	if v := userVersion(t, path); v != len(migrations) {
@@ -115,8 +116,8 @@ func TestOpenAddsTheEffortColumnToAVersionOneWorkspace(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	defer svc.Close()
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
 	if err := svc.SetSessionEffort("s1", "high"); err != nil {
 		t.Fatalf("SetSessionEffort on a version-1 workspace: %v", err)
 	}
@@ -134,7 +135,7 @@ func TestOpenRefusesANewerWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	if err := svc.SetSetting("appearance.terminalTheme", "", "kept"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.terminalTheme", Value: "kept"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	_ = svc.Close()
@@ -165,7 +166,7 @@ func TestOpenRefusesANewerWorkspace(t *testing.T) {
 		t.Fatalf("reopen: %v", err)
 	}
 	defer after.Close()
-	if got, _ := after.GetSetting("appearance.terminalTheme", ""); got != "kept" {
+	if got, _ := after.GetSetting(t.Context(), api.GetSettingOptions{Key: "appearance.terminalTheme"}); got != "kept" {
 		t.Errorf("setting = %q, want the refused open to have written nothing", got)
 	}
 }
@@ -225,14 +226,14 @@ PRAGMA user_version = 2;`)
 		t.Fatalf("open store: %v", err)
 	}
 	defer svc.Close()
-	got, err := svc.LoadState()
+	got, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState on a version-2 workspace: %v", err)
 	}
 	if len(got) != 1 || len(got[0].Sessions) != 1 {
 		t.Fatalf("state = %+v, want alpha and its session", got)
 	}
-	if err := svc.SetSessionFolder("s1", "Design system"); err != nil {
+	if _, err := svc.SetSessionFolder(t.Context(), api.SessionFolderOptions{SessionID: "s1", Folder: "Design system"}); err != nil {
 		t.Fatalf("SetSessionFolder: %v", err)
 	}
 	if v := userVersion(t, path); v != len(migrations) {
@@ -257,7 +258,7 @@ PRAGMA user_version = 2;`)
 		t.Fatalf("open a 0.53.0 workspace: %v", err)
 	}
 	defer svc.Close()
-	got, err := svc.LoadState()
+	got, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}

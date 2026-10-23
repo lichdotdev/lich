@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"net/url"
 	"strings"
 	"time"
@@ -14,7 +15,7 @@ import (
 // of this answer that reaches the network.
 const prConflictBudget = 60 * time.Second
 
-// PullRequestConflicts lists the files a merge of pull request number into base
+// PullRequestConflicts lists the files a merge of pull request opts.Number into opts.Base
 // would collide on. GitHub publishes that a pull request conflicts and never
 // where: its answer is one word (mergeable: CONFLICTING), which left the reader
 // opening github.com or a session to find out which files it meant. This
@@ -25,24 +26,24 @@ const prConflictBudget = 60 * time.Second
 // nil means the merge is clean, so this is asked only once GitHub has said it
 // is not: the fetch is a network round trip, not something to poll.
 //
-// prURL is the pull request's own URL, which names the repository it lives on —
+// opts.PRURL is the pull request's own URL, which names the repository it lives on —
 // see prRemote. refs/pull/<n>/head is GitHub's own ref, a fork's pull request
 // included, since GitHub keeps that ref on the base repository.
-func (s *Service) PullRequestConflicts(path string, number int, base, prURL string) ([]string, error) {
-	if number <= 0 || base == "" {
+func (s *Service) PullRequestConflicts(_ context.Context, opts api.PRConflictsOptions) ([]string, error) {
+	if opts.Number <= 0 || opts.Base == "" {
 		return nil, errors.New("Listing the conflicting files needs a pull request number and its base branch.")
 	}
-	head := fmt.Sprintf("refs/lich/pr/%d/head", number)
-	baseRef := fmt.Sprintf("refs/lich/pr/%d/base", number)
+	head := fmt.Sprintf("refs/lich/pr/%d/head", opts.Number)
+	baseRef := fmt.Sprintf("refs/lich/pr/%d/base", opts.Number)
 	// Deferred past the fetch's own failure too: two refspecs update
 	// independently, so a fetch that fails may still have written one of them.
-	defer dropPRRefs(path, head, baseRef)
-	if err := fetchPRPair(path, number, base, head, baseRef, prRemote(path, prURL)); err != nil {
+	defer dropPRRefs(opts.Path, head, baseRef)
+	if err := fetchPRPair(opts.Path, opts.Number, opts.Base, head, baseRef, prRemote(opts.Path, opts.PRURL)); err != nil {
 		return nil, err
 	}
-	files, ok := mergeConflicts(path, baseRef, head)
+	files, ok := mergeConflicts(opts.Path, baseRef, head)
 	if !ok {
-		return nil, fmt.Errorf("This git could not merge pull request #%d to see where it collides; naming the files needs git 2.38 or newer.", number)
+		return nil, fmt.Errorf("This git could not merge pull request #%d to see where it collides; naming the files needs git 2.38 or newer.", opts.Number)
 	}
 	return files, nil
 }

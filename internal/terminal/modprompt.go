@@ -41,7 +41,7 @@ func (s *Service) SubmitPrompt(id, text string, note *relay.Notification) (relay
 // ModAttached is whether a Claude Code mod polled from running session id
 // within the attach window, which is what SubmitPrompt queues for.
 func (s *Service) ModAttached(id string) bool {
-	return s.ws != nil && s.Live(id) && s.ws.mods.attached(id)
+	return s.ws != nil && s.live(id) && s.ws.mods.attached(id)
 }
 
 func (q *modQueue) collected(w *modWaiter) bool {

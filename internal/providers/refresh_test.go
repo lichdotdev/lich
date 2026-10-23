@@ -2,6 +2,7 @@ package providers
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,14 +32,14 @@ func TestRefreshPathLetsDetectSeeANewDirectory(t *testing.T) {
 		t.Fatal("claude found before the PATH was re-read")
 	}
 
-	if err := svc.RefreshPath(); err != nil {
+	if _, err := svc.RefreshPath(t.Context(), api.None{}); err != nil {
 		t.Fatalf("RefreshPath: %v", err)
 	}
 
 	if !installed(t, svc, Claude) {
 		t.Fatal("claude still missing after the PATH was re-read")
 	}
-	if check := svc.Verify("claude"); check.Status != CheckOK {
+	if check := svc.verify("claude"); check.Status != CheckOK {
 		t.Fatalf("Verify after the re-read = %q, want %q", check.Status, CheckOK)
 	}
 }
@@ -56,7 +57,7 @@ func TestRefreshPathFailureKeepsThePin(t *testing.T) {
 	svc := New()
 	svc.SetPathRefresh(func() error { return errors.New("shell never answered") })
 
-	if err := svc.RefreshPath(); err == nil {
+	if _, err := svc.RefreshPath(t.Context(), api.None{}); err == nil {
 		t.Fatal("RefreshPath: want the resolution's failure")
 	}
 	if os.Getenv("PATH") != boot {
@@ -71,14 +72,14 @@ func TestRefreshPathFailureKeepsThePin(t *testing.T) {
 // reads the machine rather than changing it, so nothing is wired and the call
 // is the scan of the same PATH it always was.
 func TestRefreshPathWithoutRefresher(t *testing.T) {
-	if err := New().RefreshPath(); err != nil {
+	if _, err := New().RefreshPath(t.Context(), api.None{}); err != nil {
 		t.Fatalf("RefreshPath with nothing wired = %v, want nil", err)
 	}
 }
 
 func installed(t *testing.T, svc *Service, id string) bool {
 	t.Helper()
-	found, err := svc.Detect()
+	found, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}

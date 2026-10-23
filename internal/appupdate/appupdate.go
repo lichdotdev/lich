@@ -7,6 +7,7 @@
 package appupdate
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -123,10 +124,15 @@ func New(version string, install func(string) error, emit func(name string, data
 
 type Status = api.AppUpdateStatus
 
-// Status reports whether a newer release exists and whether this install can
+// Status answers status over RPC.
+func (s *Service) Status(_ context.Context, _ api.None) (Status, error) {
+	return s.status(), nil
+}
+
+// status reports whether a newer release exists and whether this install can
 // update itself through the installer. A failed network lookup leaves everything empty and
 // reports no update — it must not block or break app startup.
-func (s *Service) Status() Status {
+func (s *Service) status() Status {
 	latest := s.latestVersion()
 	st := Status{
 		CurrentVersion:  s.version,
@@ -144,32 +150,32 @@ func (s *Service) Status() Status {
 // Apply verifies the latest release's Windows installer against its SHA-256
 // checksum and hands the install over to it; the installer closes and
 // relaunches lich. Only valid where CanSelfApply is true.
-func (s *Service) Apply() error {
+func (s *Service) Apply(_ context.Context, _ api.None) (api.None, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !canSelfApply(s.goos, s.goarch, s.exePath) {
-		return fmt.Errorf("self-apply not supported on this install")
+		return api.None{}, fmt.Errorf("self-apply not supported on this install")
 	}
 	latest := s.latestVersion()
 	if latest == "" {
-		return fmt.Errorf("could not resolve the latest release")
+		return api.None{}, fmt.Errorf("could not resolve the latest release")
 	}
 	asset := "lich-v" + latest + "-windows-amd64-setup.exe"
 	base := s.downloadBase + "v" + latest + "/"
 
 	sum, err := s.fetchChecksum(base+"checksums.txt", asset)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
 	resp, err := s.getAsset(base + asset)
 	if err != nil {
-		return fmt.Errorf("download %s: %w", asset, err)
+		return api.None{}, fmt.Errorf("download %s: %w", asset, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download %s: status %d", asset, resp.StatusCode)
+		return api.None{}, fmt.Errorf("download %s: status %d", asset, resp.StatusCode)
 	}
-	return s.applyInstaller(s.progressReader(resp.Body, resp.ContentLength, phaseInstaller), sum)
+	return api.None{}, s.applyInstaller(s.progressReader(resp.Body, resp.ContentLength, phaseInstaller), sum)
 }
 
 // canSelfApply reports whether this install updates through the button: a

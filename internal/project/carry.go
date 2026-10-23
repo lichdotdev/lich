@@ -1,26 +1,28 @@
 package project
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// CarryUncommitted copies the work src has not committed onto dst, so a new
+// CarryUncommitted copies the work opts.Src has not committed onto opts.Dst, so a new
 // worktree starts from a checkout as it stands rather than from its last
-// commit. src is a forked session's checkout, or the project's own checkout
-// when the + dialog's working-tree row was picked. Either way src is only read:
+// commit. opts.Src is a forked session's checkout, or the project's own checkout
+// when the + dialog's working-tree row was picked. Either way opts.Src is only read:
 // the work stays where it was.
 //
 // Both checkouts must sit on the same commit, which is what the caller picking
-// src's own branch as the base guarantees: the patch is read against src's HEAD
-// and applied to dst's, and git refuses it outright if they differ.
+// opts.Src's own branch as the base guarantees: the patch is read against opts.Src's HEAD
+// and applied to opts.Dst's, and git refuses it outright if they differ.
 //
-// Everything lands unstaged in dst. Which of src's changes were staged is not
-// carried: it is a fact about the commit src is preparing, and dst is a
+// Everything lands unstaged in opts.Dst. Which of opts.Src's changes were staged is not
+// carried: it is a fact about the commit opts.Src is preparing, and opts.Dst is a
 // different piece of work from here on.
 //
 // What git ignores is not carried either (--exclude-standard), and it is the
@@ -28,21 +30,21 @@ import (
 // seedWorktree copies the ignored files the project names (`.env*` by default)
 // out of the *main* checkout into every new worktree, and nothing builds the
 // rest. So an ignored file the forked session edited arrives as the
-// main checkout's copy of it. When src is the main checkout the two agree,
+// main checkout's copy of it. When opts.Src is the main checkout the two agree,
 // because both copies are read from the same place.
-func (s *Service) CarryUncommitted(src, dst string) error {
+func (s *Service) CarryUncommitted(_ context.Context, opts api.CarryUncommittedOptions) (api.None, error) {
 	// --binary, so an edited image or any other non-text file comes over as
 	// bytes instead of as an unappliable "Binary files differ" line.
-	patch, err := readGit(src, "diff", "HEAD", "--binary")
+	patch, err := readGit(opts.Src, "diff", "HEAD", "--binary")
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
 	if strings.TrimSpace(patch) != "" {
-		if err := applyPatch(dst, patch); err != nil {
-			return err
+		if err := applyPatch(opts.Dst, patch); err != nil {
+			return api.None{}, err
 		}
 	}
-	return copyUntracked(src, dst)
+	return api.None{}, copyUntracked(opts.Src, opts.Dst)
 }
 
 // copyUntracked copies src's untracked, non-ignored files into dst. They are

@@ -3,6 +3,7 @@ package store
 import (
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -11,7 +12,7 @@ import (
 func sandboxProject(t *testing.T, path string) *Service {
 	t.Helper()
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", path); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: path}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	return svc
@@ -24,13 +25,13 @@ func TestSandboxLevelPrefersTheProjectOverTheGlobal(t *testing.T) {
 	if got := svc.SandboxLevel(providers.Claude, "p1"); got != SandboxOff {
 		t.Errorf("unset level = %q, want %q", got, SandboxOff)
 	}
-	if err := svc.SetSetting(key, "", SandboxEverywhere); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, Value: SandboxEverywhere}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.SandboxLevel(providers.Claude, "p1"); got != SandboxEverywhere {
 		t.Errorf("global level = %q, want %q", got, SandboxEverywhere)
 	}
-	if err := svc.SetSetting(key, "p1", SandboxWorktrees); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, ProjectID: "p1", Value: SandboxWorktrees}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.SandboxLevel(providers.Claude, "p1"); got != SandboxWorktrees {
@@ -47,7 +48,7 @@ func TestSandboxLevelPrefersTheProjectOverTheGlobal(t *testing.T) {
 func TestSandboxLevelRejectsUnknownValues(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
 	for _, value := range []string{"true", "on", "ON", "Everywhere", "always", " worktrees"} {
-		if err := svc.SetSetting(sandboxKey(providers.Codex), "", value); err != nil {
+		if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: sandboxKey(providers.Codex), Value: value}); err != nil {
 			t.Fatalf("SetSetting: %v", err)
 		}
 		if got := svc.SandboxLevel(providers.Codex, "p1"); got != SandboxOff {
@@ -80,7 +81,7 @@ func TestSandboxDefaultPerRungAndCheckout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		svc := sandboxProject(t, root)
-		if err := svc.SetSetting(sandboxKey(providers.Claude), "", tt.level); err != nil {
+		if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: sandboxKey(providers.Claude), Value: tt.level}); err != nil {
 			t.Fatalf("SetSetting: %v", err)
 		}
 		if got := svc.SandboxDefault(providers.Claude, "p1", tt.cwd); got != tt.confined {
@@ -93,7 +94,7 @@ func TestSandboxDefaultPerRungAndCheckout(t *testing.T) {
 // and the worktree rung is the one that would confine on that guess.
 func TestSandboxDefaultWithoutAProjectPath(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.SetSetting(sandboxKey(providers.Claude), "", SandboxWorktrees); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: sandboxKey(providers.Claude), Value: SandboxWorktrees}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if svc.SandboxDefault(providers.Claude, "missing", "/work/wt") {
@@ -103,7 +104,7 @@ func TestSandboxDefaultWithoutAProjectPath(t *testing.T) {
 
 func TestSessionSandboxRoundTrip(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
-	if err := svc.AddSession("p1", "s1", "one", providers.Claude, "", 0, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.Claude}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if got := svc.SessionSandbox("s1"); got != "" {
@@ -131,7 +132,7 @@ func TestSessionSandboxRoundTrip(t *testing.T) {
 // spawn: written afterwards it would race the card the insert puts on screen.
 func TestAddSessionCarriesTheSandboxAnswer(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
-	if err := svc.AddSession("p1", "s1", "one", providers.Claude, "", 0, SessionConfined); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.Claude, Sandbox: SessionConfined}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if got := svc.SessionSandbox("s1"); got != SessionConfined {
@@ -139,7 +140,7 @@ func TestAddSessionCarriesTheSandboxAnswer(t *testing.T) {
 	}
 	// An unusable answer is stored as no answer, so the rung decides rather than
 	// a value no reader understands.
-	if err := svc.AddSession("p1", "s2", "two", providers.Claude, "", 1, "yes please"); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "two", Kind: providers.Claude, NextSeq: 1, Sandbox: "yes please"}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if got := svc.SessionSandbox("s2"); got != "" {
@@ -150,7 +151,7 @@ func TestAddSessionCarriesTheSandboxAnswer(t *testing.T) {
 // A delegated session is opened by another session, which has nobody to ask.
 func TestAddSessionFromLeavesTheAnswerToTheRung(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
-	if err := svc.AddSessionFrom("p1", "s1", "one", providers.Claude, "", 0, "parent", "Parent", ""); err != nil {
+	if _, err := svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.Claude, OriginID: "parent", OriginLabel: "Parent"}); err != nil {
 		t.Fatalf("AddSessionFrom: %v", err)
 	}
 	if got := svc.SessionSandbox("s1"); got != "" {
@@ -174,8 +175,8 @@ func TestSessionSandboxOfAMissingRowIsNotAnError(t *testing.T) {
 func TestSandboxCredentialsAreOnlyTheLiteralTrue(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
 	for _, value := range []string{"", "yes", "1", "TRUE", "on"} {
-		_ = svc.SetSetting(sshAgentKey, globalScope, value)
-		_ = svc.SetSetting(ghTokenKey, globalScope, value)
+		_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: sshAgentKey, ProjectID: globalScope, Value: value})
+		_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: ghTokenKey, ProjectID: globalScope, Value: value})
 		if svc.SandboxSSHAgent("p1") {
 			t.Errorf("ssh agent handed over for %q, want off", value)
 		}
@@ -183,7 +184,7 @@ func TestSandboxCredentialsAreOnlyTheLiteralTrue(t *testing.T) {
 			t.Errorf("gh token handed over for %q, want off", value)
 		}
 	}
-	_ = svc.SetSetting(sshAgentKey, globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: sshAgentKey, ProjectID: globalScope, Value: "true"})
 	if !svc.SandboxSSHAgent("p1") {
 		t.Error("ssh agent off for \"true\", want on")
 	}
@@ -198,11 +199,11 @@ func TestSandboxCredentialsAreOnlyTheLiteralTrue(t *testing.T) {
 func TestSandboxCredentialsPreferTheProjectOverTheGlobal(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
 	key := ghTokenKey
-	_ = svc.SetSetting(key, globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, ProjectID: globalScope, Value: "true"})
 	if !svc.SandboxGHToken("p1") {
 		t.Error("the global flag does not reach the project, want it inherited")
 	}
-	_ = svc.SetSetting(key, "p1", "false")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, ProjectID: "p1", Value: "false"})
 	if svc.SandboxGHToken("p1") {
 		t.Error("the project's own \"false\" lost to the global \"true\"")
 	}

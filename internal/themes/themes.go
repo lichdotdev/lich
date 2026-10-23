@@ -2,6 +2,7 @@
 package themes
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -104,7 +105,7 @@ func defaultDir() (string, error) {
 }
 
 // List returns bundled themes followed by custom themes sorted by name.
-func (s *Service) List() ([]Theme, error) {
+func (s *Service) List(_ context.Context, _ api.None) ([]Theme, error) {
 	if s.initErr != nil {
 		return nil, s.initErr
 	}
@@ -121,7 +122,7 @@ func (s *Service) List() ([]Theme, error) {
 }
 
 // ListBroken returns the stored custom themes List leaves out, sorted by id.
-func (s *Service) ListBroken() ([]BrokenTheme, error) {
+func (s *Service) ListBroken(_ context.Context, _ api.None) ([]BrokenTheme, error) {
 	if s.initErr != nil {
 		return nil, s.initErr
 	}
@@ -130,12 +131,12 @@ func (s *Service) ListBroken() ([]BrokenTheme, error) {
 }
 
 // Import reads a picked JSON file and installs it as a custom theme. An
-// existing id is reported without changing it unless overwrite is true.
-func (s *Service) Import(path string, overwrite bool) (ImportResult, error) {
+// existing id is reported without changing it unless opts.Overwrite is true.
+func (s *Service) Import(_ context.Context, opts api.ImportThemeOptions) (ImportResult, error) {
 	if s.initErr != nil {
 		return ImportResult{}, s.initErr
 	}
-	raw, err := readThemeFile(path)
+	raw, err := readThemeFile(opts.Path)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -153,7 +154,7 @@ func (s *Service) Import(path string, overwrite bool) (ImportResult, error) {
 	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		return ImportResult{}, fmt.Errorf("create themes dir: %w", err)
 	}
-	installed, err := s.install(theme, overwrite)
+	installed, err := s.install(theme, opts.Overwrite)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -240,14 +241,14 @@ func fillMissingAppTokens(theme *Theme) {
 
 // SaveTemplate writes the bundled starter theme to a destination the user
 // picked. The save dialog already confirmed replacing an existing file.
-func (s *Service) SaveTemplate(path string) error {
-	if strings.TrimSpace(path) == "" {
-		return fmt.Errorf("no destination was chosen")
+func (s *Service) SaveTemplate(_ context.Context, opts api.SaveThemeTemplateOptions) (api.None, error) {
+	if strings.TrimSpace(opts.Path) == "" {
+		return api.None{}, fmt.Errorf("no destination was chosen")
 	}
-	if err := os.WriteFile(path, themeassets.Template, 0o600); err != nil {
-		return fmt.Errorf("write theme template: %w", err)
+	if err := os.WriteFile(opts.Path, themeassets.Template, 0o600); err != nil {
+		return api.None{}, fmt.Errorf("write theme template: %w", err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 func readThemeFile(path string) ([]byte, error) {
@@ -294,20 +295,20 @@ func writeNewTheme(path string, data []byte) (bool, error) {
 }
 
 // Remove deletes a custom theme. Bundled and reserved ids cannot be removed.
-func (s *Service) Remove(id string) error {
+func (s *Service) Remove(_ context.Context, opts api.RemoveThemeOptions) (api.None, error) {
 	if s.initErr != nil {
-		return s.initErr
+		return api.None{}, s.initErr
 	}
-	if err := validateID(id); err != nil {
-		return err
+	if err := validateID(opts.ID); err != nil {
+		return api.None{}, err
 	}
-	if _, ok := reserved[id]; ok {
-		return fmt.Errorf("theme %q is bundled or reserved", id)
+	if _, ok := reserved[opts.ID]; ok {
+		return api.None{}, fmt.Errorf("theme %q is bundled or reserved", opts.ID)
 	}
-	if err := os.Remove(s.path(id)); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove theme: %w", err)
+	if err := os.Remove(s.path(opts.ID)); err != nil && !os.IsNotExist(err) {
+		return api.None{}, fmt.Errorf("remove theme: %w", err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 func (s *Service) customThemes() ([]Theme, []BrokenTheme, error) {

@@ -115,11 +115,11 @@ func TestLoginLogsTheProfileInAndInstallsLich(t *testing.T) {
 	s, rec := fakeService(t)
 	var installedIn []string
 	s.SetLichPlugin(func(slug string) error { installedIn = append(installedIn, slug); return nil }, "lich@lich-plugin")
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Login(p.Slug); err != nil {
+	if _, err := s.Login(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err != nil {
 		t.Fatal(err)
 	}
 	done := rec.wait(t)
@@ -137,7 +137,7 @@ func TestLoginLogsTheProfileInAndInstallsLich(t *testing.T) {
 		t.Errorf("no event carried the sign-in address: %+v", rec.events)
 	}
 
-	infos, err := s.Profiles()
+	infos, err := s.Profiles(t.Context(), api.None{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,11 +159,11 @@ func TestLoginReportsAllOutputBeforeItIsDone(t *testing.T) {
 		rec.emit(name, data)
 	}
 	s := New(fakeBins{}, slowEmit)
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Login(p.Slug); err != nil {
+	if _, err := s.Login(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err != nil {
 		t.Fatal(err)
 	}
 	rec.wait(t)
@@ -181,11 +181,11 @@ func TestLoginReportsAllOutputBeforeItIsDone(t *testing.T) {
 func TestLoginSaysItIsAuthenticatingOnceTheCLIIsThrough(t *testing.T) {
 	machine(t)
 	s, rec := fakeService(t)
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Login(p.Slug); err != nil {
+	if _, err := s.Login(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err != nil {
 		t.Fatal(err)
 	}
 	rec.wait(t)
@@ -201,20 +201,20 @@ func TestCancelledLoginSaysSo(t *testing.T) {
 	machine(t)
 	s, rec := fakeService(t)
 	t.Setenv("LICH_TEST_FAKE_LOGIN_WAITS", "1")
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Login(p.Slug); err != nil {
+	if _, err := s.Login(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Login(p.Slug); err == nil {
+	if _, err := s.Login(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err == nil {
 		t.Error("a second login of the same profile started")
 	}
-	if err := s.LoginCode(p.Slug, "abc"); err != nil {
+	if _, err := s.LoginCode(t.Context(), api.LoginCodeOptions{Slug: p.Slug, Code: "abc"}); err != nil {
 		t.Errorf("hand the code over: %v", err)
 	}
-	s.CancelLogin(p.Slug)
+	s.cancelLogin(p.Slug)
 	done := rec.wait(t)
 	if !done.Cancelled || done.LoggedIn {
 		t.Errorf("finished with %+v", done)
@@ -226,7 +226,7 @@ func TestCancelledLoginSaysSo(t *testing.T) {
 			t.Errorf("a cancelled login said it was authenticating: %+v", rec.events)
 		}
 	}
-	if err := s.LoginCode(p.Slug, "abc"); err == nil {
+	if _, err := s.LoginCode(t.Context(), api.LoginCodeOptions{Slug: p.Slug, Code: "abc"}); err == nil {
 		t.Error("a code was accepted with no login running")
 	}
 }
@@ -234,11 +234,11 @@ func TestCancelledLoginSaysSo(t *testing.T) {
 func TestInstallPluginsReportsEachInClaudesWords(t *testing.T) {
 	machine(t)
 	s, _ := fakeService(t)
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := s.InstallPlugins(p.Slug, []string{"good@market", "blocked@market", "--flag"})
+	got, err := s.InstallPlugins(t.Context(), api.InstallPluginsOptions{Slug: p.Slug, Keys: []string{"good@market", "blocked@market", "--flag"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestInstallPluginsReportsEachInClaudesWords(t *testing.T) {
 	if !strings.Contains(got[1].Message, "blocked by your organization") {
 		t.Errorf("refusal carried %q, want Claude's own sentence", got[1].Message)
 	}
-	if _, err := s.InstallPlugins("gone", []string{"good@market"}); err == nil {
+	if _, err := s.InstallPlugins(t.Context(), api.InstallPluginsOptions{Slug: "gone", Keys: []string{"good@market"}}); err == nil {
 		t.Error("installed into a profile that does not exist")
 	}
 }
@@ -265,7 +265,7 @@ func TestPluginsListsAPortableSet(t *testing.T) {
 	}}
 	data, _ := json.Marshal(doc)
 	mustWrite(t, filepath.Join(personal, "plugins", "installed_plugins.json"), string(data))
-	got, err := s.Plugins(Personal)
+	got, err := s.Plugins(t.Context(), api.ProfileSlugOptions{Slug: Personal})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +283,7 @@ func TestPersonalPluginsAreReadWhereClaudeKeepsThem(t *testing.T) {
 		`{"version":2,"plugins":{"stale@m":[{"scope":"user"}]}}`)
 	mustWrite(t, filepath.Join(moved, "installed_plugins.json"),
 		`{"version":2,"plugins":{"live@m":[{"scope":"user"}]}}`)
-	got, err := s.Plugins(Personal)
+	got, err := s.Plugins(t.Context(), api.ProfileSlugOptions{Slug: Personal})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,15 +301,15 @@ func TestDeleteProfileWaitsForItsSessions(t *testing.T) {
 		forgotten = append(forgotten, slug)
 		return nil
 	})
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.DeleteProfile(p.Slug); err == nil {
+	if _, err := s.DeleteProfile(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err == nil {
 		t.Fatal("deleted a profile with a session running in it")
 	}
 	running = 0
-	if err := s.DeleteProfile(p.Slug); err != nil {
+	if _, err := s.DeleteProfile(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err != nil {
 		t.Fatal(err)
 	}
 	if len(forgotten) != 1 || forgotten[0] != p.Slug {
@@ -321,14 +321,14 @@ func TestStatusReadsPastAWarningOnStderr(t *testing.T) {
 	machine(t)
 	s, _ := fakeService(t)
 	t.Setenv("LICH_TEST_FAKE_STATUS_WARNS", "1")
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(p.Dir, ".credentials.json"), []byte("{}"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	infos, err := s.Profiles()
+	infos, err := s.Profiles(t.Context(), api.None{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,7 +340,7 @@ func TestStatusReadsPastAWarningOnStderr(t *testing.T) {
 func TestStatusErrorIsKeptInTheCLIsWords(t *testing.T) {
 	machine(t)
 	s := New(missingBins{filepath.Join(t.TempDir(), "claude")}, func(string, any) {})
-	infos, err := s.Profiles()
+	infos, err := s.Profiles(t.Context(), api.None{})
 	if err != nil {
 		t.Fatal(err)
 	}

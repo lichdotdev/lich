@@ -73,7 +73,7 @@ type accounts struct {
 
 // Profiles lists every profile with its logins. The statuses are asked for at
 // once, one CLI each.
-func (s *Service) Profiles() ([]Info, error) {
+func (s *Service) Profiles(_ context.Context, _ api.None) ([]Info, error) {
 	profiles, err := List()
 	if err != nil {
 		return nil, err
@@ -126,12 +126,14 @@ func emailOf(identityKey string) string {
 
 // CreateProfile makes a profile and lays it out against Personal. The window
 // logs it in next, in a terminal card (LoginCommand).
-func (s *Service) CreateProfile(name string) (Profile, error) { return Create(name) }
+func (s *Service) CreateProfile(_ context.Context, opts api.CreateProfileOptions) (Profile, error) {
+	return Create(opts.Name)
+}
 
 // UpdateProfile changes a profile's name, color or image and returns it; its
 // directory never moves.
-func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, error) {
-	p, err := Update(slug, u)
+func (s *Service) UpdateProfile(_ context.Context, opts api.UpdateProfileOptions) (Profile, error) {
+	p, err := Update(opts.Slug, opts.Update)
 	if err != nil {
 		return p, err
 	}
@@ -143,30 +145,30 @@ func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, er
 // named it, so a project set to it falls back to the global profile. It refuses
 // while a session runs in it. A parked session born in it fails to resume with
 // ErrProfileGone.
-func (s *Service) DeleteProfile(slug string) error {
+func (s *Service) DeleteProfile(_ context.Context, opts api.ProfileSlugOptions) (api.None, error) {
 	if s.inUse != nil {
-		if n := s.inUse(slug); n > 0 {
-			return fmt.Errorf("profile %q has %d running session(s); close them before deleting it", slug, n)
+		if n := s.inUse(opts.Slug); n > 0 {
+			return api.None{}, fmt.Errorf("profile %q has %d running session(s); close them before deleting it", opts.Slug, n)
 		}
 	}
-	if err := Delete(slug); err != nil {
-		return err
+	if err := Delete(opts.Slug); err != nil {
+		return api.None{}, err
 	}
 	if s.forget != nil {
-		return s.forget(slug)
+		return api.None{}, s.forget(opts.Slug)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // LoginCommand is the command line that logs a profile in from a terminal: it
 // opens omp's own picker of providers.
-func (s *Service) LoginCommand(slug string) (string, error) {
-	dir, err := ConfigDir(slug)
+func (s *Service) LoginCommand(_ context.Context, opts api.ProfileSlugOptions) (string, error) {
+	dir, err := ConfigDir(opts.Slug)
 	if err != nil {
 		return "", err
 	}
 	value := ""
-	if !IsPersonal(slug) {
+	if !IsPersonal(opts.Slug) {
 		value = slugOf(dir)
 	}
 	return store.LoginLine(s.bin(), "login", value), nil

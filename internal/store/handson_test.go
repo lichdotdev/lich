@@ -1,6 +1,9 @@
 package store
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 // TestAnUnworkedSessionReadsZero pins the starting point: a session nothing has
 // been counted for yet has no row, and that has to read as zero rather than as
@@ -99,15 +102,15 @@ func TestDeletingASessionTakesItsHandsOnRow(t *testing.T) {
 // id is lich's own bookkeeping.
 func TestResumingAWorktreeSessionKeepsItsHandsOnTime(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worktree", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worktree", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 	if err := svc.AddHandsOn("wt1", 4200); err != nil {
 		t.Fatalf("AddHandsOn: %v", err)
 	}
-	_ = svc.CloseSession("p1", "wt1", "base")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
 
-	if _, err := svc.ReopenWorktreeSession("p1", "/wt/foo", "wt2"); err != nil {
+	if _, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "wt2"}); err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
 

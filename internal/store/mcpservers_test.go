@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -11,7 +12,7 @@ import (
 // is the only route these names take to the card.
 func sessionOf(t *testing.T, svc *Service, sessionID string) Session {
 	t.Helper()
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -30,7 +31,7 @@ func sessionOf(t *testing.T, svc *Service, sessionID string) Session {
 // restart finds the PTY already running, so there is no second spawn to report them.
 func TestSessionMCPServersRoundTrip(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
-	if err := svc.AddSession("p1", "s1", "one", providers.OMP, "", 0, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.OMP}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if got := sessionOf(t, svc, "s1").MCPServers; got != nil {
@@ -50,7 +51,7 @@ func TestSessionMCPServersRoundTrip(t *testing.T) {
 // way, because the card does the same thing with both: shows the name whole.
 func TestSessionMCPServersClearsOnAnEmptyList(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
-	if err := svc.AddSession("p1", "s1", "one", providers.OMP, "", 0, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.OMP}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.SetSessionMCPServers("s1", []string{"lich"}); err != nil {
@@ -80,7 +81,7 @@ func TestDecodeStringsRefusesWhatItCannotRead(t *testing.T) {
 // tooltip that names them is redrawn on every reload.
 func TestSessionSandboxLinksRoundTrip(t *testing.T) {
 	svc := sandboxProject(t, "/work/alpha")
-	if err := svc.AddSession("p1", "s1", "one", providers.Claude, "", 0, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.Claude}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if got := sessionOf(t, svc, "s1").SandboxSkippedLinks; got != nil {

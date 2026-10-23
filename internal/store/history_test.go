@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"reflect"
 	"slices"
 	"strings"
@@ -24,15 +25,19 @@ func atClock(t *testing.T, at time.Time, fn func()) {
 // would sort to the bottom of a list that claims to be "most recently closed".
 func TestClosedSessionsOrdersByCloseNotByInsert(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "first", "opened first", "claude", "/wt/a", 3, "")
-	_ = svc.AddSession("p1", "second", "opened second", "claude", "/wt/b", 4, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "first", Label: "opened first", Kind: "claude", Path: "/wt/a", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "second", Label: "opened second", Kind: "claude", Path: "/wt/b", NextSeq: 4})
 
 	// The one inserted first is closed last, so insert order and close order
 	// disagree on every row.
-	atClock(t, time.Unix(1_700_000_100, 0), func() { _ = svc.CloseSession("p1", "second", "keep") })
-	atClock(t, time.Unix(1_700_000_200, 0), func() { _ = svc.CloseSession("p1", "first", "keep") })
+	atClock(t, time.Unix(1_700_000_100, 0), func() {
+		_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "second", ActiveID: "keep"})
+	})
+	atClock(t, time.Unix(1_700_000_200, 0), func() {
+		_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "first", ActiveID: "keep"})
+	})
 
 	closed := mustClosed(t, svc, "")
 	if len(closed) != 2 {
@@ -51,10 +56,12 @@ func TestClosedSessionsOrdersByCloseNotByInsert(t *testing.T) {
 // from the session id the row is keyed by.
 func TestClosedSessionsIdentifiesEachRow(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "gone", "Wire the relay inbox", "shell", "/wt/relay", 3, "")
-	atClock(t, time.Unix(1_700_000_000, 0), func() { _ = svc.CloseSession("p1", "gone", "keep") })
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "gone", Label: "Wire the relay inbox", Kind: "shell", Path: "/wt/relay", NextSeq: 3})
+	atClock(t, time.Unix(1_700_000_000, 0), func() {
+		_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "gone", ActiveID: "keep"})
+	})
 
 	closed := mustClosed(t, svc, "")
 	if len(closed) != 1 {
@@ -76,8 +83,8 @@ func TestClosedSessionsIdentifiesEachRow(t *testing.T) {
 // against a PTY already running.
 func TestClosedSessionsSkipsOpenOnes(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "live", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "live", Label: "Session 1", Kind: "claude", NextSeq: 2})
 
 	closed := mustClosed(t, svc, "")
 	if len(closed) != 0 {
@@ -90,11 +97,11 @@ func TestClosedSessionsSkipsOpenOnes(t *testing.T) {
 // tab is long gone, and resuming one of its sessions is what reopens it.
 func TestClosedSessionsIncludesClosedProjects(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "old", "old work", "claude", "/wt/old", 3, "")
-	_ = svc.CloseSession("p1", "old", "keep")
-	_ = svc.CloseProject("p1")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "old", Label: "old work", Kind: "claude", Path: "/wt/old", NextSeq: 3})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "old", ActiveID: "keep"})
+	_, _ = svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"})
 
 	closed := mustClosed(t, svc, "")
 	if len(closed) != 1 || closed[0].ProjectName != "alpha" {
@@ -107,13 +114,13 @@ func TestClosedSessionsIncludesClosedProjects(t *testing.T) {
 // has to be a deliberate edit here too.
 func TestClosedSessionsCapsTheList(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
 	for i := range 101 {
 		id := "s" + string(rune('a'+i%26)) + string(rune('a'+i/26))
-		_ = svc.AddSession("p1", id, "work", "claude", "/wt/"+id, i+3, "")
+		_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: "work", Kind: "claude", Path: "/wt/" + id, NextSeq: i + 3})
 		atClock(t, time.Unix(int64(1_700_000_000+i), 0), func() {
-			_ = svc.CloseSession("p1", id, "keep")
+			_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: id, ActiveID: "keep"})
 		})
 	}
 
@@ -132,14 +139,14 @@ func TestClosedSessionsCapsTheList(t *testing.T) {
 // it up by in the first place.
 func TestReopenSessionRestoresByID(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "root", "root work", "claude", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "root", Label: "root work", Kind: "claude", NextSeq: 3})
 	_ = svc.SetProviderSession("root", "conv-root")
-	_ = svc.RenameSession("root", "named by hand")
-	_ = svc.CloseSession("p1", "root", "keep")
+	_, _ = svc.RenameSession(t.Context(), api.LabelSessionOptions{SessionID: "root", Label: "named by hand"})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "root", ActiveID: "keep"})
 
-	restored, err := svc.ReopenSession("root", "fresh")
+	restored, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "root", NewSessionID: "fresh"})
 	if err != nil {
 		t.Fatalf("ReopenSession: %v", err)
 	}
@@ -154,7 +161,7 @@ func TestReopenSessionRestoresByID(t *testing.T) {
 	}
 
 	// It comes back open, in its project, and stops being history.
-	projects, _ := svc.LoadState()
+	projects, _ := svc.LoadState(t.Context(), api.None{})
 	if len(projects) != 1 || len(projects[0].Sessions) != 2 {
 		t.Fatalf("sessions after resume = %+v, want the kept one and the resumed one", projects)
 	}
@@ -170,22 +177,22 @@ func TestReopenSessionRestoresByID(t *testing.T) {
 // drag order with its close affordances restored, unasked.
 func TestReopenSessionKeepsThePin(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "root", "root work", "claude", "", 3, "")
-	if err := svc.SetSessionPinned("root", true); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "root", Label: "root work", Kind: "claude", NextSeq: 3})
+	if _, err := svc.SetSessionPinned(t.Context(), api.SessionPinnedOptions{SessionID: "root", Pinned: true}); err != nil {
 		t.Fatalf("SetSessionPinned: %v", err)
 	}
-	_ = svc.CloseSession("p1", "root", "keep")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "root", ActiveID: "keep"})
 
-	restored, err := svc.ReopenSession("root", "fresh")
+	restored, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "root", NewSessionID: "fresh"})
 	if err != nil {
 		t.Fatalf("ReopenSession: %v", err)
 	}
 	if restored == nil || !restored.Pinned {
 		t.Fatalf("restored = %+v, want the pin carried over", restored)
 	}
-	projects, _ := svc.LoadState()
+	projects, _ := svc.LoadState(t.Context(), api.None{})
 	for _, s := range projects[0].Sessions {
 		if s.ID == "fresh" && !s.Pinned {
 			t.Errorf("reloaded session = %+v, want pinned", s)
@@ -198,12 +205,14 @@ func TestReopenSessionKeepsThePin(t *testing.T) {
 // carrying it over would sort the row by a close it no longer had.
 func TestReopenSessionClearsTheCloseStamp(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "s1", "work", "claude", "/wt/a", 3, "")
-	atClock(t, time.Unix(1_700_000_000, 0), func() { _ = svc.CloseSession("p1", "s1", "keep") })
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "work", Kind: "claude", Path: "/wt/a", NextSeq: 3})
+	atClock(t, time.Unix(1_700_000_000, 0), func() {
+		_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1", ActiveID: "keep"})
+	})
 
-	if _, err := svc.ReopenSession("s1", "s2"); err != nil {
+	if _, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "s1", NewSessionID: "s2"}); err != nil {
 		t.Fatalf("ReopenSession: %v", err)
 	}
 	var stamp int64
@@ -220,10 +229,10 @@ func TestReopenSessionClearsTheCloseStamp(t *testing.T) {
 // its PTY is still running against the old one.
 func TestReopenSessionRefusesALiveOne(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "live", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "live", Label: "Session 1", Kind: "claude", NextSeq: 2})
 
-	restored, err := svc.ReopenSession("live", "fresh")
+	restored, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "live", NewSessionID: "fresh"})
 	if err != nil {
 		t.Fatalf("ReopenSession: %v", err)
 	}
@@ -238,12 +247,12 @@ func TestReopenSessionRefusesALiveOne(t *testing.T) {
 // worktree picker that asked for a checkout.
 func TestReopenWorktreeSessionRefusesTheEmptyPath(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "root", "root work", "claude", "", 3, "")
-	_ = svc.CloseSession("p1", "root", "keep")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "root", Label: "root work", Kind: "claude", NextSeq: 3})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "root", ActiveID: "keep"})
 
-	restored, err := svc.ReopenWorktreeSession("p1", "", "fresh")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", NewSessionID: "fresh"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -263,12 +272,12 @@ func TestForgetSessionRemovesOneParkedRow(t *testing.T) {
 	svc := newTestStore(t)
 	var gone []string
 	svc.SetSessionGone(func(id string) { gone = append(gone, id) })
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "dead", "work", "claude", "/wt/dead", 3, "")
-	_ = svc.CloseSession("p1", "dead", "keep")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "dead", Label: "work", Kind: "claude", Path: "/wt/dead", NextSeq: 3})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "dead", ActiveID: "keep"})
 
-	if err := svc.ForgetSession("dead"); err != nil {
+	if _, err := svc.ForgetSession(t.Context(), api.SessionIDOptions{ID: "dead"}); err != nil {
 		t.Fatalf("ForgetSession: %v", err)
 	}
 	closed := mustClosed(t, svc, "")
@@ -287,13 +296,13 @@ func TestForgetSessionRefusesALiveOne(t *testing.T) {
 	svc := newTestStore(t)
 	var gone []string
 	svc.SetSessionGone(func(id string) { gone = append(gone, id) })
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "live", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "live", Label: "Session 1", Kind: "claude", NextSeq: 2})
 
-	if err := svc.ForgetSession("live"); err != nil {
+	if _, err := svc.ForgetSession(t.Context(), api.SessionIDOptions{ID: "live"}); err != nil {
 		t.Fatalf("ForgetSession: %v", err)
 	}
-	projects, _ := svc.LoadState()
+	projects, _ := svc.LoadState(t.Context(), api.None{})
 	if len(projects) != 1 || len(projects[0].Sessions) != 1 {
 		t.Errorf("sessions = %+v, want the live one untouched", projects)
 	}
@@ -306,7 +315,7 @@ func TestForgetSessionRefusesALiveOne(t *testing.T) {
 // windows can forget the same row, and the second must not raise.
 func TestForgetSessionOnAMissingRowIsNotAnError(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.ForgetSession("never-existed"); err != nil {
+	if _, err := svc.ForgetSession(t.Context(), api.SessionIDOptions{ID: "never-existed"}); err != nil {
 		t.Errorf("ForgetSession on a missing row = %v, want nil", err)
 	}
 }
@@ -315,8 +324,10 @@ func TestForgetSessionOnAMissingRowIsNotAnError(t *testing.T) {
 // name what it is looking for and when it was parked in one line.
 func park(t *testing.T, svc *Service, id, label string, at int64) {
 	t.Helper()
-	_ = svc.AddSession("p1", id, label, "claude", "/wt/"+id, 0, "")
-	atClock(t, time.Unix(at, 0), func() { _ = svc.CloseSession("p1", id, "keep") })
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: label, Kind: "claude", Path: "/wt/" + id})
+	atClock(t, time.Unix(at, 0), func() {
+		_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: id, ActiveID: "keep"})
+	})
 }
 
 // searchStore is a store with a keep-open session and three parked ones, closed
@@ -324,8 +335,8 @@ func park(t *testing.T, svc *Service, id, label string, at int64) {
 func searchStore(t *testing.T) *Service {
 	t.Helper()
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
 	park(t, svc, "s1", "Wire the relay inbox", 1_700_000_100)
 	park(t, svc, "s2", "relay ticket lifecycle", 1_700_000_200)
 	park(t, svc, "s3", "Split groups design", 1_700_000_300)
@@ -376,8 +387,8 @@ func TestClosedSessionsSearchesEveryWord(t *testing.T) {
 // rows that have nothing to do with it.
 func TestClosedSessionsSearchEscapesWildcards(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
 	park(t, svc, "pct", "100% done", 1_700_000_100)
 	park(t, svc, "und", "hand_off", 1_700_000_200)
 	park(t, svc, "esc", `back\slash`, 1_700_000_300)
@@ -408,8 +419,8 @@ func TestClosedSessionsSearchEscapesWildcards(t *testing.T) {
 // name, which is the whole point of matching in the query.
 func TestClosedSessionsSearchReachesPastTheCap(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
 	park(t, svc, "needle", "the oldest work", 1_700_000_000)
 	for i := range closedSessionLimit + 5 {
 		park(t, svc, fmt.Sprintf("s%d", i), "newer work", int64(1_700_001_000+i))
@@ -429,8 +440,8 @@ func TestClosedSessionsSearchReachesPastTheCap(t *testing.T) {
 // term matching everything is still one page of rows.
 func TestClosedSessionsSearchCapsMatches(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
 	for i := range closedSessionLimit + 5 {
 		park(t, svc, fmt.Sprintf("s%d", i), "work", int64(1_700_000_000+i))
 	}
@@ -466,7 +477,7 @@ func TestEscapeLike(t *testing.T) {
 // and not about the count beside them.
 func mustClosed(t *testing.T, svc *Service, term string) []ClosedSession {
 	t.Helper()
-	history, err := svc.ClosedSessions(term)
+	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: term})
 	if err != nil {
 		t.Fatalf("ClosedSessions(%q): %v", term, err)
 	}
@@ -484,14 +495,14 @@ func TestCloseSessionRecordsTheBranch(t *testing.T) {
 			"/tmp/alpha": "main",
 		}[path]
 	})
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
-	_ = svc.AddSession("p1", "wt", "worktree work", "claude", "/wt/relay", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt", Label: "worktree work", Kind: "claude", Path: "/wt/relay", NextSeq: 2})
 	// No path of its own: this one runs in the project's directory, which is the
 	// checkout whose branch it is parked on.
-	_ = svc.AddSession("p1", "root", "root work", "claude", "", 3, "")
-	_ = svc.CloseSession("p1", "wt", "keep")
-	_ = svc.CloseSession("p1", "root", "keep")
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "root", Label: "root work", Kind: "claude", NextSeq: 3})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt", ActiveID: "keep"})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "root", ActiveID: "keep"})
 
 	branches := map[string]string{}
 	for _, row := range mustClosed(t, svc, "") {
@@ -511,10 +522,10 @@ func TestCloseSessionRecordsTheBranch(t *testing.T) {
 // parks the row with an empty branch and loses nothing else.
 func TestCloseSessionWithoutBranchWiringStillParks(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
-	_ = svc.AddSession("p1", "wt", "work", "claude", "/wt/relay", 2, "")
-	if err := svc.CloseSession("p1", "wt", "keep"); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt", Label: "work", Kind: "claude", Path: "/wt/relay", NextSeq: 2})
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt", ActiveID: "keep"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 
@@ -531,8 +542,8 @@ func TestClosedSessionsSearchesByBranch(t *testing.T) {
 	svc.SetBranchOf(func(path string) string {
 		return map[string]string{"/wt/s1": "feat/relay-inbox", "/wt/s2": "fix/split-groups"}[path]
 	})
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
 	park(t, svc, "s1", "one", 1_700_000_100)
 	park(t, svc, "s2", "two", 1_700_000_200)
 
@@ -551,14 +562,14 @@ func TestClosedSessionsSearchesByBranch(t *testing.T) {
 // that happened to be exactly that big.
 func TestClosedSessionsCountsTheWholeMatch(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 1, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 1})
 	for i := range closedSessionLimit + 5 {
 		park(t, svc, fmt.Sprintf("s%d", i), "work", int64(1_700_000_000+i))
 	}
 	park(t, svc, "odd", "something else", 1_700_100_000)
 
-	history, err := svc.ClosedSessions("work")
+	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "work"})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
@@ -570,12 +581,12 @@ func TestClosedSessionsCountsTheWholeMatch(t *testing.T) {
 	}
 
 	// A match that fits reports itself, so the list has nothing to say was cut.
-	fits, _ := svc.ClosedSessions("something")
+	fits, _ := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "something"})
 	if len(fits.Sessions) != 1 || fits.Total != 1 {
 		t.Errorf("small match = %d rows, Total %d; want 1 and 1", len(fits.Sessions), fits.Total)
 	}
 	// And an empty history counts nothing rather than the page it did not fill.
-	none, _ := svc.ClosedSessions("nothing-matches-this")
+	none, _ := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "nothing-matches-this"})
 	if len(none.Sessions) != 0 || none.Total != 0 {
 		t.Errorf("empty match = %d rows, Total %d; want 0 and 0", len(none.Sessions), none.Total)
 	}
@@ -628,8 +639,8 @@ func TestClosedSessionsMatch(t *testing.T) {
 // conversation is listed on its own, as it always was.
 func TestClosedSessionsListsAConversationOnce(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
 	park(t, svc, "older", "older copy", 100)
 	park(t, svc, "newer", "newer copy", 200)
 	park(t, svc, "shell", "a shell", 300)
@@ -655,8 +666,8 @@ func TestForgetSessionForgetsEveryCopyOfItsConversation(t *testing.T) {
 	svc := newTestStore(t)
 	var gone []string
 	svc.SetSessionGone(func(id string) { gone = append(gone, id) })
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "Session 1", Kind: "claude", NextSeq: 2})
 	park(t, svc, "older", "older copy", 100)
 	park(t, svc, "newer", "newer copy", 200)
 	park(t, svc, "other", "another conversation", 300)
@@ -664,7 +675,7 @@ func TestForgetSessionForgetsEveryCopyOfItsConversation(t *testing.T) {
 	_ = svc.SetProviderSession("newer", "conv-parked")
 	_ = svc.SetProviderSession("other", "conv-other")
 
-	if err := svc.ForgetSession("newer"); err != nil {
+	if _, err := svc.ForgetSession(t.Context(), api.SessionIDOptions{ID: "newer"}); err != nil {
 		t.Fatalf("ForgetSession: %v", err)
 	}
 	closed := mustClosed(t, svc, "")

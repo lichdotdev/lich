@@ -6,6 +6,7 @@
 package system
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -76,18 +77,28 @@ func (s *Service) SetEnv(env []string) {
 	s.env = env
 }
 
-// TakeUncleanExit reports whether the run before this one ended without
+// TakeUncleanExit answers takeUncleanExit over RPC.
+func (s *Service) TakeUncleanExit(_ context.Context, _ api.None) (bool, error) {
+	return s.takeUncleanExit(), nil
+}
+
+// takeUncleanExit reports whether the run before this one ended without
 // quitting cleanly, and clears the flag. It is consumed rather than read because the
 // notice belongs to the launch that followed the bad exit, not to every window
 // that opens on it: each window runs its gate again, the process does not
 // start again with it.
-func (s *Service) TakeUncleanExit() bool {
+func (s *Service) takeUncleanExit() bool {
 	return s.uncleanExit.Swap(false)
 }
 
 type Diagnostics = api.Diagnostics
 
-func (s *Service) Diagnostics() Diagnostics {
+// Diagnostics answers diagnostics over RPC.
+func (s *Service) Diagnostics(_ context.Context, _ api.None) (Diagnostics, error) {
+	return s.diagnostics(), nil
+}
+
+func (s *Service) diagnostics() Diagnostics {
 	return Diagnostics{
 		Version:  s.version,
 		Platform: runtime.GOOS + "/" + runtime.GOARCH,
@@ -95,7 +106,12 @@ func (s *Service) Diagnostics() Diagnostics {
 	}
 }
 
-// SandboxBackend names what confines a session on this machine — "bubblewrap",
+// SandboxBackend answers sandboxBackend over RPC.
+func (s *Service) SandboxBackend(_ context.Context, _ api.None) (string, error) {
+	return s.sandboxBackend(), nil
+}
+
+// sandboxBackend names what confines a session on this machine — "bubblewrap",
 // "sandbox-exec" — or "" when nothing can (internal/sandbox). It answers here
 // rather than beside the provider list because it is a fact about the machine,
 // and the same answer for every provider on it.
@@ -104,7 +120,7 @@ func (s *Service) Diagnostics() Diagnostics {
 // Sandbox pane says which one is in play so a report about a confined session
 // starts a round ahead. "" is what the pane draws its "cannot confine" state
 // from, and what the new-session dialog reads as "do not offer the choice".
-func (s *Service) SandboxBackend() string {
+func (s *Service) sandboxBackend() string {
 	return sandbox.Backend()
 }
 
@@ -112,11 +128,11 @@ func (s *Service) SandboxBackend() string {
 // file itself: the rotated generation (*.old) is often the one holding the bug,
 // and a log file handed to its default handler opens in an editor, not beside
 // the sibling the reporter also needs.
-func (s *Service) RevealLog() error {
+func (s *Service) RevealLog(_ context.Context, _ api.None) (api.None, error) {
 	if s.logPath == "" {
-		return fmt.Errorf("no log file: lich is logging to stderr only")
+		return api.None{}, fmt.Errorf("no log file: lich is logging to stderr only")
 	}
-	return s.openFolder(filepath.Dir(s.logPath))
+	return api.None{}, s.openFolder(filepath.Dir(s.logPath))
 }
 
 // notifyTitle is the app name carried by every notification lich raises. macOS
@@ -138,15 +154,15 @@ const notifyLimit = 120
 // Delivery only: the window decides when a notification is warranted, because it
 // is the side that knows whether the window has focus and which session the
 // user is looking at.
-func (s *Service) Notify(summary, detail string) error {
-	text := truncate(summary, notifyLimit)
-	if detail != "" {
-		text += "\n" + truncate(detail, notifyLimit)
+func (s *Service) Notify(_ context.Context, opts api.NotifyOptions) (api.None, error) {
+	text := truncate(opts.Summary, notifyLimit)
+	if opts.Detail != "" {
+		text += "\n" + truncate(opts.Detail, notifyLimit)
 	}
 	if strings.TrimSpace(text) == "" {
-		return errors.New("refusing to raise an empty notification")
+		return api.None{}, errors.New("refusing to raise an empty notification")
 	}
-	return s.notify(text, notifyTitle)
+	return api.None{}, s.notify(text, notifyTitle)
 }
 
 // truncate caps s at limit runes — never bytes, which would cut a multi-byte
@@ -162,12 +178,12 @@ func truncate(s string, limit int) string {
 // OpenExternal opens an http(s) URL in the default browser. Scheme-gated so a
 // crafted terminal escape can never turn a click into a file:// or custom
 // scheme launch. The launcher itself is per-OS (see the open_* files).
-func (s *Service) OpenExternal(rawURL string) error {
-	if err := ValidateExternalURL(rawURL); err != nil {
-		return err
+func (s *Service) OpenExternal(_ context.Context, opts api.OpenExternalOptions) (api.None, error) {
+	if err := ValidateExternalURL(opts.URL); err != nil {
+		return api.None{}, err
 	}
-	argv := urlOpenArgv(rawURL)
-	return s.run(argv[0], argv[1:]...)
+	argv := urlOpenArgv(opts.URL)
+	return api.None{}, s.run(argv[0], argv[1:]...)
 }
 
 // OpenFolderInEditor opens a session's checkout in the user's editor. It prefers
@@ -177,42 +193,42 @@ func (s *Service) OpenExternal(rawURL string) error {
 // since a detached launch would give it no controlling terminal. A GUI editor,
 // or the file manager when none is set, is launched detached, and "" comes
 // back.
-func (s *Service) OpenFolderInEditor(dir string) (string, error) {
-	if err := requireDir(dir); err != nil {
+func (s *Service) OpenFolderInEditor(_ context.Context, opts api.OpenFolderOptions) (string, error) {
+	if err := requireDir(opts.Dir); err != nil {
 		return "", err
 	}
-	return s.openInEditor(dir)
+	return s.openInEditor(opts.Dir)
 }
 
 // OpenFolder shows a checkout in the platform's file manager. It never consults
 // $VISUAL/$EDITOR: this is the way out of lich to the OS's own view of the
 // folder, which is the one thing opening it in an editor does not give.
-func (s *Service) OpenFolder(dir string) error {
-	if err := requireDir(dir); err != nil {
-		return err
+func (s *Service) OpenFolder(_ context.Context, opts api.OpenFolderOptions) (api.None, error) {
+	if err := requireDir(opts.Dir); err != nil {
+		return api.None{}, err
 	}
-	return s.openFolder(dir)
+	return api.None{}, s.openFolder(opts.Dir)
 }
 
 // OpenFile hands one work-tree file to the application the desktop opens its
 // type with: an image viewer, a PDF reader. Unlike OpenFolderInEditor it never
-// consults $VISUAL/$EDITOR, which would open a PNG in vim. rel goes through
+// consults $VISUAL/$EDITOR, which would open a PNG in vim. opts.Rel goes through
 // relpath.Resolve, as project.ReadFile does, so a symlink out of the checkout
 // is refused rather than opened. The launcher is openFolder's: xdg-open, open
 // and explorer each hand any path, file or folder, to its default handler.
-func (s *Service) OpenFile(dir, rel string) error {
-	full, err := relpath.Resolve(dir, rel)
+func (s *Service) OpenFile(_ context.Context, opts api.OpenFileOptions) (api.None, error) {
+	full, err := relpath.Resolve(opts.Dir, opts.Rel)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
 	info, err := os.Stat(full)
 	if err != nil {
-		return fmt.Errorf("stat %s: %w", rel, err)
+		return api.None{}, fmt.Errorf("stat %s: %w", opts.Rel, err)
 	}
 	if !info.Mode().IsRegular() {
-		return fmt.Errorf("%s is not a regular file", rel)
+		return api.None{}, fmt.Errorf("%s is not a regular file", opts.Rel)
 	}
-	return s.openFolder(full)
+	return api.None{}, s.openFolder(full)
 }
 
 // requireDir refuses a path that is not a directory any more, naming it. lich

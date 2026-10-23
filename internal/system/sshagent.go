@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/sandbox"
 )
 
@@ -15,7 +16,12 @@ import (
 // settings pane on.
 const agentListTimeout = time.Second
 
-// SSHAgentKeys lists the identities loaded in the user's ssh agent, one line
+// SSHAgentKeys answers sSHAgentKeys over RPC.
+func (s *Service) SSHAgentKeys(_ context.Context, _ api.None) ([]string, error) {
+	return s.sSHAgentKeys(), nil
+}
+
+// sSHAgentKeys lists the identities loaded in the user's ssh agent, one line
 // each ("me@example.com (ED25519 256)"), in the order the agent holds them.
 //
 // It exists for one sentence in the UI. The setting that hands a confined
@@ -28,7 +34,7 @@ const agentListTimeout = time.Second
 // no ssh-add on the machine, an agent holding nothing, output this cannot read.
 // The caller draws "nothing loaded", which is the truthful reading of all of
 // them — the flag hands over whatever is there, and nothing is a real answer.
-func (s *Service) SSHAgentKeys() []string {
+func (s *Service) sSHAgentKeys() []string {
 	if sandbox.AgentSocket() == "" {
 		return nil
 	}

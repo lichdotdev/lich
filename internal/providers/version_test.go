@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -62,7 +63,7 @@ func TestOnPathListsEveryCodexInPathOrderWithItsVersion(t *testing.T) {
 		filepath.Join(usr, "codex"):   "",
 	})
 
-	got, err := svc.OnPath(context.Background(), Codex)
+	got, err := svc.OnPath(context.Background(), api.ProviderIDOptions{ID: Codex})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +85,7 @@ func TestOnPathListsEveryCodexInPathOrderWithItsVersion(t *testing.T) {
 
 func TestOnPathRefusesAnUnknownProvider(t *testing.T) {
 	svc := pathMachine(t, []string{absolute("bin")}, nil)
-	if _, err := svc.OnPath(context.Background(), "vim"); err == nil {
+	if _, err := svc.OnPath(context.Background(), api.ProviderIDOptions{ID: "vim"}); err == nil {
 		t.Error("OnPath(unknown) = nil error")
 	}
 }
@@ -93,10 +94,10 @@ func TestVersionProbesWhatTheSpawnWouldRun(t *testing.T) {
 	bin := absolute("opt", "codex")
 	svc := pathMachine(t, []string{absolute("bin")}, map[string]string{bin: "0.150.0"})
 
-	if v, err := svc.Version(context.Background(), bin); err != nil || v != "0.150.0" {
+	if v, err := svc.Version(context.Background(), api.BinaryOptions{Bin: bin}); err != nil || v != "0.150.0" {
 		t.Errorf("Version(%s) = %q, %v", bin, v, err)
 	}
-	if _, err := svc.Version(context.Background(), "~/codex"); err == nil {
+	if _, err := svc.Version(context.Background(), api.BinaryOptions{Bin: "~/codex"}); err == nil {
 		t.Error("Version of a binary the spawn cannot resolve answered")
 	}
 }
@@ -107,7 +108,7 @@ func TestVersionReadsStderrWhenStdoutHasNone(t *testing.T) {
 	svc.runVersion = func(context.Context, string) ([]byte, []byte, error) {
 		return nil, []byte("codex-cli 0.150.0\n"), nil
 	}
-	if v, err := svc.Version(context.Background(), bin); err != nil || v != "0.150.0" {
+	if v, err := svc.Version(context.Background(), api.BinaryOptions{Bin: bin}); err != nil || v != "0.150.0" {
 		t.Errorf("Version = %q, %v", v, err)
 	}
 }
@@ -118,7 +119,7 @@ func TestVersionSaysWhenNothingVersionShapedCameBack(t *testing.T) {
 	svc.runVersion = func(context.Context, string) ([]byte, []byte, error) {
 		return []byte("usage: codex\n"), []byte("try --help\n"), nil
 	}
-	if _, err := svc.Version(context.Background(), bin); err == nil {
+	if _, err := svc.Version(context.Background(), api.BinaryOptions{Bin: bin}); err == nil {
 		t.Error("Version = nil error for output with no version in it")
 	}
 }

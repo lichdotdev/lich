@@ -45,15 +45,15 @@ func TestVerifyResolvesLikeTheSpawn(t *testing.T) {
 	}, nil)
 
 	// A bare name is a $PATH lookup, and the answer is the resolved path.
-	if got := svc.Verify("claude"); got.Status != CheckOK || got.Path != onPath {
+	if got := svc.verify("claude"); got.Status != CheckOK || got.Path != onPath {
 		t.Errorf("Verify(bare name) = %+v, want ok at %s", got, onPath)
 	}
 	// An absolute path is taken as written.
-	if got := svc.Verify(installed); got.Status != CheckOK || got.Path != installed {
+	if got := svc.verify(installed); got.Status != CheckOK || got.Path != installed {
 		t.Errorf("Verify(absolute) = %+v, want ok", got)
 	}
 	// Surrounding whitespace is a paste artefact, not part of the path.
-	if got := svc.Verify("  claude \n"); got.Status != CheckOK {
+	if got := svc.verify("  claude \n"); got.Status != CheckOK {
 		t.Errorf("Verify(padded) = %+v, want ok", got)
 	}
 }
@@ -87,7 +87,7 @@ func TestVerifyNamesEachSilentMistake(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := svc.Verify(tt.bin)
+			got := svc.verify(tt.bin)
 			if got.Status != tt.want {
 				t.Errorf("Verify(%q) = %q, want %q", tt.bin, got.Status, tt.want)
 			}

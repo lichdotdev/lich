@@ -3,6 +3,7 @@ package store
 import (
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 )
 
@@ -12,13 +13,13 @@ func TestPromptLanguageIsEnglishUntilSetAndPersists(t *testing.T) {
 	if got := svc.PromptLanguage(); got != prompt.English {
 		t.Errorf("PromptLanguage = %q on a fresh workspace, want en", got)
 	}
-	if err := svc.SetSetting("prompt.language", "", "pt-BR"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "prompt.language", Value: "pt-BR"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.PromptLanguage(); got != prompt.PortugueseBR {
 		t.Errorf("PromptLanguage = %q after choosing pt-BR", got)
 	}
-	if err := svc.SetSetting("prompt.language", "", "klingon"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "prompt.language", Value: "klingon"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.PromptLanguage(); got != prompt.English {
@@ -28,7 +29,7 @@ func TestPromptLanguageIsEnglishUntilSetAndPersists(t *testing.T) {
 
 func TestPromptLanguageAcceptsSpanish(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.SetSetting("prompt.language", "", "es"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "prompt.language", Value: "es"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.PromptLanguage(); got != prompt.Spanish {
@@ -38,7 +39,7 @@ func TestPromptLanguageAcceptsSpanish(t *testing.T) {
 
 func TestPromptLanguageAcceptsJapanese(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.SetSetting("prompt.language", "", "ja"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "prompt.language", Value: "ja"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.PromptLanguage(); got != prompt.Japanese {
@@ -48,7 +49,7 @@ func TestPromptLanguageAcceptsJapanese(t *testing.T) {
 
 func TestPromptLanguageAcceptsKorean(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.SetSetting("prompt.language", "", "ko"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "prompt.language", Value: "ko"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.PromptLanguage(); got != prompt.Korean {
@@ -58,7 +59,7 @@ func TestPromptLanguageAcceptsKorean(t *testing.T) {
 
 func TestPromptLanguageAcceptsRussian(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.SetSetting("prompt.language", "", "ru"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "prompt.language", Value: "ru"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	if got := svc.PromptLanguage(); got != prompt.Russian {

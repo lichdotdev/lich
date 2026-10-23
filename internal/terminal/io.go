@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"context"
 	"encoding/base64"
 	"math"
 	"time"
@@ -92,8 +93,8 @@ func (s *Service) stream(id string, sess *session) {
 }
 
 // Write forwards keyboard input from the window to a session's PTY.
-func (s *Service) Write(id, data string) error {
-	return s.writeBytes(id, []byte(data))
+func (s *Service) Write(_ context.Context, opts api.WriteOptions) (api.None, error) {
+	return api.None{}, s.writeBytes(opts.ID, []byte(opts.Data))
 }
 
 // writeBytes delivers input bytes to a session's PTY; unknown sessions are a
@@ -126,15 +127,15 @@ func (s *Service) writeBytes(id string, data []byte) error {
 // SetVisible tells the session's output coalescer whether its terminal is on
 // screen. Hidden sessions batch output (~250ms per event); flipping to visible
 // flushes pending output immediately. Unknown sessions are a no-op.
-func (s *Service) SetVisible(id string, visible bool) error {
+func (s *Service) SetVisible(_ context.Context, opts api.SetVisibleOptions) (api.None, error) {
 	s.mu.Lock()
-	sess, ok := s.sessions[id]
+	sess, ok := s.sessions[opts.ID]
 	s.mu.Unlock()
 	if !ok {
-		return nil
+		return api.None{}, nil
 	}
-	sess.out.SetVisible(visible)
-	return nil
+	sess.out.SetVisible(opts.Visible)
+	return api.None{}, nil
 }
 
 // Replay returns the capped tail of a session's PTY output, base64-encoded, so a
@@ -142,9 +143,9 @@ func (s *Service) SetVisible(id string, visible bool) error {
 // scrollback. Empty for an unknown session — a brand-new one has no
 // history yet. Base64 for the same reason the data event is: raw PTY bytes may
 // split a multi-byte UTF-8 sequence across the JSON envelope.
-func (s *Service) Replay(id string) (string, error) {
+func (s *Service) Replay(_ context.Context, opts api.SessionIDOptions) (string, error) {
 	s.mu.Lock()
-	sess, ok := s.sessions[id]
+	sess, ok := s.sessions[opts.ID]
 	s.mu.Unlock()
 	if !ok {
 		return "", nil
@@ -155,20 +156,20 @@ func (s *Service) Replay(id string) (string, error) {
 // Resize updates a session's PTY window size. The window only calls this for
 // the visible terminal; a hidden terminal is resized on the next time it is
 // shown.
-func (s *Service) Resize(id string, cols, rows int) error {
+func (s *Service) Resize(_ context.Context, opts api.ResizeOptions) (api.None, error) {
 	// Recorded even when the session it names is gone: it is the window's own
 	// terminal being measured, and the next session spawned without one starts
 	// at that size (see sizeFor).
-	if cols > 0 && rows > 0 {
+	if opts.Cols > 0 && opts.Rows > 0 {
 		s.mu.Lock()
-		s.lastCols, s.lastRows = cols, rows
+		s.lastCols, s.lastRows = opts.Cols, opts.Rows
 		s.mu.Unlock()
 	}
-	p := s.ptyOf(id)
+	p := s.ptyOf(opts.ID)
 	if p == nil {
-		return nil
+		return api.None{}, nil
 	}
-	return p.Resize(cols, rows)
+	return api.None{}, p.Resize(opts.Cols, opts.Rows)
 }
 
 // noteOutput reads one chunk of a session's output for the two things lich has
@@ -197,7 +198,12 @@ func (s *Service) noteOutput(id string, sess *session, chunk []byte) {
 	}
 }
 
-// Ready reports whether a session can be given work — whether its provider has
+// Ready answers ready over RPC.
+func (s *Service) Ready(_ context.Context, opts api.SessionIDOptions) (bool, error) {
+	return s.ready(opts.ID), nil
+}
+
+// ready reports whether a session can be given work — whether its provider has
 // finished drawing itself, and whether the prompt is free rather than
 // half-filled by the person sitting at it. False for a session that is not
 // running at all.
@@ -207,7 +213,7 @@ func (s *Service) noteOutput(id string, sess *session, chunk []byte) {
 // before the provider has taken the terminal. It looked delivered to everyone
 // involved: the sender waited out its ticket on an agent that was never asked
 // anything.
-func (s *Service) Ready(id string) bool {
+func (s *Service) ready(id string) bool {
 	return s.promptState(id, true)
 }
 

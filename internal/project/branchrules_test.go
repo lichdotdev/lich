@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"testing"
 )
@@ -77,7 +78,7 @@ func TestBranchRulesFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("the branch is addressed in the path, escaped", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`[]`)}
-		if _, err := withGH(gh).BranchRules("/repo", "feat/IMPEX-728"); err != nil {
+		if _, err := withGH(gh).BranchRules(t.Context(), api.PathBranchOptions{Path: "/repo", Branch: "feat/IMPEX-728"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		want := []string{"api", "repos/{owner}/{repo}/rules/branches/feat%2FIMPEX-728"}
@@ -88,7 +89,7 @@ func TestBranchRulesFlow(t *testing.T) {
 
 	t.Run("administering the repository is what opens the bypass", func(t *testing.T) {
 		gh := &fakeGH{outs: [][]byte{[]byte(`[]`), []byte(`{"viewerPermission":"ADMIN"}`)}}
-		rules, err := withGH(gh).BranchRules("/repo", "develop")
+		rules, err := withGH(gh).BranchRules(t.Context(), api.PathBranchOptions{Path: "/repo", Branch: "develop"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -113,7 +114,7 @@ func TestBranchRulesFlow(t *testing.T) {
 			``,
 		} {
 			gh := &fakeGH{outs: [][]byte{[]byte(`[]`), []byte(second)}}
-			rules, err := withGH(gh).BranchRules("/repo", "develop")
+			rules, err := withGH(gh).BranchRules(t.Context(), api.PathBranchOptions{Path: "/repo", Branch: "develop"})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -130,7 +131,7 @@ func TestBranchRulesFlow(t *testing.T) {
 			outs: [][]byte{[]byte(`[{"type":"pull_request","parameters":{"allowed_merge_methods":["squash"]}}]`)},
 			errs: []error{nil, testError("gh could not complete the request.")},
 		}
-		rules, err := withGH(gh).BranchRules("/repo", "develop")
+		rules, err := withGH(gh).BranchRules(t.Context(), api.PathBranchOptions{Path: "/repo", Branch: "develop"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -144,7 +145,7 @@ func TestBranchRulesFlow(t *testing.T) {
 
 	t.Run("no branch never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if _, err := withGH(gh).BranchRules("/repo", ""); err == nil {
+		if _, err := withGH(gh).BranchRules(t.Context(), api.PathBranchOptions{Path: "/repo"}); err == nil {
 			t.Error("expected an error without a branch")
 		}
 		if gh.calls != 0 {
@@ -154,7 +155,7 @@ func TestBranchRulesFlow(t *testing.T) {
 
 	t.Run("a gh failure reaches the caller as written", func(t *testing.T) {
 		gh := &fakeGH{err: testError("GitHub is rate-limiting this account. Try again in a few minutes.")}
-		if _, err := withGH(gh).BranchRules("/repo", "main"); err == nil {
+		if _, err := withGH(gh).BranchRules(t.Context(), api.PathBranchOptions{Path: "/repo", Branch: "main"}); err == nil {
 			t.Error("expected the runner's error")
 		}
 	})

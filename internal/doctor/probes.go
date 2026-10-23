@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/restart"
 	"github.com/lichdotdev/lich/internal/singleton"
@@ -24,7 +25,7 @@ func Window() (string, error) {
 // reported as none found: both callers treat "no provider" as their finding,
 // and neither has anywhere to put the error.
 func Providers() []providers.Detected {
-	found, err := providers.New().Detect()
+	found, err := providers.New().Detect(context.Background(), api.None{})
 	if err != nil {
 		return nil
 	}
@@ -35,7 +36,7 @@ func Providers() []providers.Detected {
 // The id comes from Detect, so the one error OnPath has (an unknown id) cannot
 // happen here.
 func OnPath(id string) []providers.Binary {
-	found, err := providers.New().OnPath(context.Background(), id)
+	found, err := providers.New().OnPath(context.Background(), api.ProviderIDOptions{ID: id})
 	if err != nil {
 		panic(err)
 	}

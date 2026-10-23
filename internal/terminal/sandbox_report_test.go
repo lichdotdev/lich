@@ -65,9 +65,9 @@ func TestStartReportsNoLinksForAnUnconfinedSpawn(t *testing.T) {
 	t.Setenv("SHELL", "sh")
 	recorded := map[string][]string{}
 	svc := New(stubBins{bin: stayAliveBin(t), sandboxLinks: recorded}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Claude, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 

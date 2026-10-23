@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -225,7 +226,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		if _, err := os.Stat(filepath.Join(path, ".git")); err != nil {
 			return nil, err
 		}
-		checkouts, err := proj.ListCheckouts(path)
+		checkouts, err := proj.ListCheckouts(context.Background(), api.PathOptions{Path: path})
 		if err != nil {
 			return nil, err
 		}
@@ -263,7 +264,9 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// The footer's attach button opens the picker through the drop service, so
 	// the file it copies for a confined session is one a human chose in a dialog
 	// (drop.Attach says why that matters).
-	drops.SetPicker(proj.PickFile)
+	drops.SetPicker(func(title string) (string, error) {
+		return proj.PickFile(context.Background(), api.PickFileOptions{Title: title})
+	})
 	routes.Terminal(dispatcher, term)
 	routes.Drop(dispatcher, drops)
 	routes.Project(dispatcher, proj)
@@ -326,11 +329,12 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// A second launch of lich asks for the window here, and `lich quit` is the
 	// one way to end a lich whose window is closed.
 	sys.SetQuit(coord.Quit)
+	liveCount := func() (int, error) { return term.LiveCount(context.Background(), api.None{}) }
 	sys.SetNativeWindow(system.NativeHooks{
 		Raise:  raiseNative(hub),
 		Launch: launchNative(term, filepath.Join(configDir, "lich")),
 		Locate: func() (string, error) { return restart.NativeExecutable(os.Getenv) },
-		Failed: windowFailed(configDir, term.LiveCount, coord.Quit),
+		Failed: windowFailed(configDir, liveCount, coord.Quit),
 	})
 	routes.System(dispatcher, sys)
 	// Deleting a session for good takes any prompt parked on it, and the row is
@@ -342,7 +346,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	db.SetScheduleForfeited(func(lost store.ForfeitedSchedule) {
 		events.Send(hub.Emit, api.ScheduleForfeitedEvent, api.ScheduleForfeited(lost))
 		summary, detail := lost.Notice()
-		if err := sys.Notify(summary, detail); err != nil {
+		if _, err := sys.Notify(context.Background(), api.NotifyOptions{Summary: summary, Detail: detail}); err != nil {
 			slog.Warn("notify forfeited schedule", "session", lost.Label, "err", err)
 		}
 	})
@@ -389,7 +393,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	term.SetRateLimitReports(plans.ReportClaude)
 	routes.Quota(dispatcher, plans)
 	codexProfiles.SetAccount(func(slug string) (string, string) {
-		plan, err := plans.CodexProfilePlan(slug)
+		plan, err := plans.CodexProfilePlan(context.Background(), api.ProfilePlanOptions{Profile: slug})
 		if err != nil || plan.Status != quota.StatusOK {
 			return "", ""
 		}
@@ -444,7 +448,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	routes.Themes(dispatcher, themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
-	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, term.LiveCount)
+	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, liveCount)
 	routes.Tray(dispatcher, trayIcon)
 	term.Mount("/rpc/", dispatcher)
 	term.Mount("/drop", http.HandlerFunc(drops.Upload))
@@ -516,10 +520,17 @@ func newCoordinator() *restart.Coordinator {
 // lich doing nothing (#409). With no session running there is nothing left to
 // keep lich for, and it quits. The dialog waits on its button off the caller's
 // goroutine: a second launch asking for the window is waiting on the reply.
-func windowFailed(configDir string, live func() int, quit func() error) func(string) {
+//
+// A session count it cannot read counts as sessions running: quitting would end
+// them, and staying up costs only a lich the user quits by hand.
+func windowFailed(configDir string, live func() (int, error), quit func() error) func(string) {
 	return func(reason string) {
 		slog.Error("native window", "reason", reason)
-		running := live() > 0
+		count, err := live()
+		if err != nil {
+			slog.Warn("count the running sessions", "err", err)
+		}
+		running := err != nil || count > 0
 		text := fmt.Sprintf("lich could not open its window.\n\n%s\n\n", reason)
 		if running {
 			text += "lich is still running with its sessions: launch it again to reopen the window, " +
@@ -630,7 +641,7 @@ func launchNative(term *terminal.Service, logDir string) func(string, func(strin
 // showWindow opens the window where nobody waits on the answer but the log:
 // the launch and the tray.
 func showWindow(sys *system.Service, from string) {
-	if err := sys.ShowWindow(system.ShowWindowOptions{}); err != nil {
+	if _, err := sys.ShowWindow(context.Background(), system.ShowWindowOptions{}); err != nil {
 		slog.Warn("show the window "+from, "err", err)
 	}
 }

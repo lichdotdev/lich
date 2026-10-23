@@ -1,6 +1,8 @@
 package project
 
 import (
+	"context"
+	"github.com/lichdotdev/lich/api"
 	"regexp"
 	"strings"
 	"time"
@@ -130,7 +132,7 @@ var ghAccountLine = regexp.MustCompile(`Logged in to (\S+) account (\S+)`)
 // in gh's own order (each host's active account first). It backs the account
 // picker in the project's Version Control settings; an unauthenticated gh
 // yields an error, which the picker shows instead of an empty list.
-func (s *Service) GitHubAccounts() ([]string, error) {
+func (s *Service) GitHubAccounts(_ context.Context, _ api.None) ([]string, error) {
 	out, err := s.runner(ghAccountTimeout, "", "", "auth", "status")
 	if err != nil {
 		return nil, err

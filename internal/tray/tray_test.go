@@ -1,6 +1,10 @@
 package tray
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 func TestRunningFillsTheCount(t *testing.T) {
 	l := Labels{Running: "Sessions running: {count}"}
@@ -12,7 +16,7 @@ func TestRunningFillsTheCount(t *testing.T) {
 func TestSetLabelsStartsOnceThenRelabels(t *testing.T) {
 	starts := 0
 	var relabeled []Labels
-	tr := New(Icons{}, func() {}, func() error { return nil }, func() int { return 0 })
+	tr := New(Icons{}, func() {}, func() error { return nil }, func() (int, error) { return 0, nil })
 	tr.start = func(t *Tray) {
 		starts++
 		t.setRelabel(func(l Labels) { relabeled = append(relabeled, l) })
@@ -20,14 +24,18 @@ func TestSetLabelsStartsOnceThenRelabels(t *testing.T) {
 
 	en := Labels{Show: "Show lich", Running: "Sessions running: {count}", Quit: "Quit lich"}
 	pt := Labels{Show: "Mostrar o lich", Running: "Sessões rodando: {count}", Quit: "Encerrar o lich"}
-	tr.SetLabels(en)
+	if _, err := tr.SetLabels(t.Context(), api.TrayLabels(en)); err != nil {
+		t.Fatal(err)
+	}
 	if starts != 1 || len(relabeled) != 0 {
 		t.Fatalf("first SetLabels: starts=%d relabeled=%v, want the tray put up once", starts, relabeled)
 	}
 	if tr.currentLabels() != en {
 		t.Fatalf("labels = %+v, want %+v", tr.currentLabels(), en)
 	}
-	tr.SetLabels(pt)
+	if _, err := tr.SetLabels(t.Context(), api.TrayLabels(pt)); err != nil {
+		t.Fatal(err)
+	}
 	if starts != 1 || len(relabeled) != 1 || relabeled[0] != pt {
 		t.Fatalf("second SetLabels: starts=%d relabeled=%v, want the menu rewritten in place", starts, relabeled)
 	}

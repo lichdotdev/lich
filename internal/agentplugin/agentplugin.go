@@ -137,12 +137,17 @@ func New(bins BinResolver) *Service {
 
 type Status = api.PluginStatus
 
-// Status reports, for every provider that can run the plugin, whether its CLI
+// Status answers status over RPC.
+func (s *Service) Status(_ context.Context, _ api.None) ([]Status, error) {
+	return s.status(), nil
+}
+
+// status reports, for every provider that can run the plugin, whether its CLI
 // is present, whether the plugin is installed there and whether a newer release
 // exists. The release lookup is one call for the whole list — both harnesses
 // install the same repository — and a failed one leaves LatestVersion empty and
 // never reports an update: this runs at startup and must not block it.
-func (s *Service) Status() []Status {
+func (s *Service) status() []Status {
 	latest := s.latestVersion()
 	out := make([]Status, 0, len(supported))
 	for _, id := range supported {
@@ -246,24 +251,24 @@ func computeStatus(id string, available, installed bool, installedVer, latestVer
 
 // Install puts the plugin into a provider: through its plugin CLI where there
 // is one, by writing the released files where there is not.
-func (s *Service) Install(provider string) error {
-	switch provider {
+func (s *Service) Install(_ context.Context, opts api.PluginProviderOptions) (api.None, error) {
+	switch opts.Provider {
 	case providers.Claude, providers.Codex:
-		return s.installAndFollow(provider)
+		return api.None{}, s.installAndFollow(opts.Provider)
 	case providers.Antigravity:
-		return s.antigravityInstall()
+		return api.None{}, s.antigravityInstall()
 	case providers.OpenCode:
-		return s.opencodeInstall()
+		return api.None{}, s.opencodeInstall()
 	case providers.OMP:
-		return s.ompInstall()
+		return api.None{}, s.ompInstall()
 	case providers.Crush:
-		return s.crushInstall()
+		return api.None{}, s.crushInstall()
 	case providers.Cursor:
-		return s.cursorInstall()
+		return api.None{}, s.cursorInstall()
 	case providers.Kiro:
-		return s.kiroInstall()
+		return api.None{}, s.kiroInstall()
 	}
-	return fmt.Errorf("no lich plugin for provider %q", provider)
+	return api.None{}, fmt.Errorf("no lich plugin for provider %q", opts.Provider)
 }
 
 // installAndFollow installs into Personal, then into every other profile of
@@ -287,8 +292,8 @@ func (s *Service) installAndFollow(provider string) error {
 // their files wholesale, and Claude Code and Codex re-pin the marketplace
 // (claudePinMarketplace). Every one applies it on the next session (a restart
 // is required, which the UI signals).
-func (s *Service) Update(provider string) error {
-	return s.Install(provider)
+func (s *Service) Update(ctx context.Context, opts api.PluginProviderOptions) (api.None, error) {
+	return s.Install(ctx, opts)
 }
 
 // installedVersion reads the plugin's installed version from a provider's own

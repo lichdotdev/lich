@@ -25,8 +25,9 @@ func (t *Tray) ready() {
 	systray.SetTooltip("lich")
 	labels := t.currentLabels()
 	m := menu{show: systray.AddMenuItem(labels.Show, "")}
-	m.running = systray.AddMenuItem(labels.running(t.live()), "")
+	m.running = systray.AddMenuItem("", "")
 	m.running.Disable()
+	t.refresh(m, labels)
 	systray.AddSeparator()
 	m.quit = systray.AddMenuItem(labels.Quit, "")
 	t.setRelabel(func(l Labels) {
@@ -43,8 +44,14 @@ type menu struct {
 }
 
 // refresh rewrites what changes without a new language: the session count.
+// A count it cannot read leaves the title as it was rather than show a wrong one.
 func (t *Tray) refresh(m menu, l Labels) {
-	m.running.SetTitle(l.running(t.live()))
+	live, err := t.live()
+	if err != nil {
+		slog.Warn("tray: count the running sessions", "err", err)
+		return
+	}
+	m.running.SetTitle(l.running(live))
 }
 
 func (t *Tray) serve(m menu) {

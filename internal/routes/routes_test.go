@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/claudeprofile"
+	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/ompprofile"
 	"github.com/lichdotdev/lich/internal/rpc"
 	"github.com/lichdotdev/lich/internal/spawn"
 	"github.com/lichdotdev/lich/internal/themes"
@@ -60,22 +63,26 @@ func TestHandleAppServicesCoverEveryMethod(t *testing.T) {
 	}
 }
 
+// A route reads its service's method value as it is registered, so each takes
+// a nil of the service main.go hands it: a nil interface has no methods to read.
 func TestHandleProfilesCoverEveryProfileMethod(t *testing.T) {
 	claude := rpc.New()
-	Profiles(claude, api.ClaudeProfiles, nil)
-	ProfileLogin(claude, api.ClaudeProfileLogin, nil)
-	ProfilePluginCalls(claude, api.ClaudeProfilePlugins, nil)
+	var claudeService *claudeprofile.Service
+	Profiles(claude, api.ClaudeProfiles, claudeService)
+	ProfileLogin(claude, api.ClaudeProfileLogin, claudeService)
+	ProfilePluginCalls(claude, api.ClaudeProfilePlugins, claudeService)
 	ClaudeLoginCode(claude, nil)
 	assertHandled(t, claude, "claudeprofile.")
 
 	codex := rpc.New()
-	Profiles(codex, api.CodexProfiles, nil)
-	ProfileLogin(codex, api.CodexProfileLogin, nil)
-	ProfilePluginCalls(codex, api.CodexProfilePlugins, nil)
+	var codexService *codexprofile.Service
+	Profiles(codex, api.CodexProfiles, codexService)
+	ProfileLogin(codex, api.CodexProfileLogin, codexService)
+	ProfilePluginCalls(codex, api.CodexProfilePlugins, codexService)
 	assertHandled(t, codex, "codexprofile.")
 
 	omp := rpc.New()
-	Profiles(omp, api.OMPProfiles, nil)
+	Profiles(omp, api.OMPProfiles, (*ompprofile.Service)(nil))
 	assertHandled(t, omp, "ompprofile.")
 
 	quotas := rpc.New()
@@ -93,7 +100,7 @@ func TestEveryXDGProfileProviderIsDeclared(t *testing.T) {
 			continue
 		}
 		d := rpc.New()
-		Profiles(d, m, nil)
+		Profiles(d, m, (*xdgprofile.Service)(nil))
 		assertHandled(t, d, provider.ID+"profile.")
 	}
 }

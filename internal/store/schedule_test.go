@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"github.com/lichdotdev/lich/api"
 	"log/slog"
 	"strings"
 	"testing"
@@ -13,8 +14,8 @@ import (
 // same hydration call every other session field arrives on.
 func TestSetSessionScheduleParksOnePromptPerSession(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
 
 	if err := svc.SetSessionSchedule("s1", 1700000000, "  run the release checklist\n"); err != nil {
 		t.Fatalf("SetSessionSchedule: %v", err)
@@ -44,8 +45,8 @@ func TestSetSessionScheduleClears(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			svc := newTestStore(t)
-			_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-			_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
+			_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
 			_ = svc.SetSessionSchedule("s1", 1700000000, "run it")
 
 			if err := clear(svc); err != nil {
@@ -64,8 +65,8 @@ func TestSetSessionScheduleClears(t *testing.T) {
 // constant wherever it moved.
 func TestSetSessionScheduleRefusesAnOversizedPrompt(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
 
 	if err := svc.SetSessionSchedule("s1", 1700000000, strings.Repeat("x", 8192)); err != nil {
 		t.Fatalf("8192 bytes refused: %v", err)
@@ -81,7 +82,7 @@ func TestSetSessionScheduleRefusesAnOversizedPrompt(t *testing.T) {
 
 func onlySession(t *testing.T, svc *Service) Session {
 	t.Helper()
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -97,13 +98,13 @@ func onlySession(t *testing.T, svc *Service) Session {
 // card from.
 func TestReopenSessionCarriesTheSchedule(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 	_ = svc.SetSessionSchedule("wt1", 1700000000, "run the release checklist")
-	_ = svc.CloseSession("p1", "wt1", "base")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
 
-	restored, err := svc.ReopenWorktreeSession("p1", "/wt/foo", "wt2")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "wt2"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -123,16 +124,27 @@ func TestReopenSessionCarriesTheSchedule(t *testing.T) {
 // wrote — every door that removes a row has to leave one.
 func TestDeletingASessionLogsTheForfeitedSchedule(t *testing.T) {
 	for name, remove := range map[string]func(*Service) error{
-		"delete":  func(svc *Service) error { return svc.DeleteSession("p1", "wt1", "base") },
-		"forget":  func(svc *Service) error { _ = svc.CloseSession("p1", "wt1", "base"); return svc.ForgetSession("wt1") },
-		"purge":   func(svc *Service) error { return svc.PurgeWorktreeSessions("p1", "/wt/foo") },
+		"delete": func(svc *Service) error { return svc.DeleteSession("p1", "wt1", "base") },
+		"forget": func(svc *Service) error {
+			_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
+			if _, err := svc.ForgetSession(t.Context(), api.SessionIDOptions{ID: "wt1"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"purge": func(svc *Service) error {
+			if _, err := svc.PurgeWorktreeSessions(t.Context(), api.WorktreeSessionsOptions{ProjectID: "p1", Path: "/wt/foo"}); err != nil {
+				return err
+			}
+			return nil
+		},
 		"project": func(svc *Service) error { return svc.DeleteProject("p1") },
 	} {
 		t.Run(name, func(t *testing.T) {
 			svc := newTestStore(t)
-			_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-			_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-			_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+			_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 			_ = svc.SetSessionSchedule("wt1", 1700000000, "run the release checklist")
 			logged := captureLogs(t)
 
@@ -153,18 +165,29 @@ func TestDeletingASessionLogsTheForfeitedSchedule(t *testing.T) {
 // the row was the only copy of it.
 func TestDeletingASessionReportsTheForfeitedSchedule(t *testing.T) {
 	for name, remove := range map[string]func(*Service) error{
-		"delete":  func(svc *Service) error { return svc.DeleteSession("p1", "wt1", "base") },
-		"forget":  func(svc *Service) error { _ = svc.CloseSession("p1", "wt1", "base"); return svc.ForgetSession("wt1") },
-		"purge":   func(svc *Service) error { return svc.PurgeWorktreeSessions("p1", "/wt/foo") },
+		"delete": func(svc *Service) error { return svc.DeleteSession("p1", "wt1", "base") },
+		"forget": func(svc *Service) error {
+			_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"})
+			if _, err := svc.ForgetSession(t.Context(), api.SessionIDOptions{ID: "wt1"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"purge": func(svc *Service) error {
+			if _, err := svc.PurgeWorktreeSessions(t.Context(), api.WorktreeSessionsOptions{ProjectID: "p1", Path: "/wt/foo"}); err != nil {
+				return err
+			}
+			return nil
+		},
 		"project": func(svc *Service) error { return svc.DeleteProject("p1") },
 	} {
 		t.Run(name, func(t *testing.T) {
 			svc := newTestStore(t)
 			var lost []ForfeitedSchedule
 			svc.SetScheduleForfeited(func(f ForfeitedSchedule) { lost = append(lost, f) })
-			_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-			_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-			_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+			_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 			_ = svc.SetSessionSchedule("wt1", 1700000000, "run the release checklist")
 
 			if err := remove(svc); err != nil {
@@ -188,9 +211,9 @@ func TestDeletingASessionReportsTheForfeitedSchedule(t *testing.T) {
 // the delete if the cursor were still open.
 func TestForfeitIsReportedAfterTheReadIsDone(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 	_ = svc.SetSessionSchedule("wt1", 1700000000, "run the release checklist")
 
 	read := make(chan bool, 1)
@@ -237,16 +260,19 @@ func TestClosingOrDeletingWithoutAScheduleReportsNothing(t *testing.T) {
 		},
 		"parked, not deleted": func(svc *Service) error {
 			_ = svc.SetSessionSchedule("wt1", 1700000000, "run the release checklist")
-			return svc.CloseSession("p1", "wt1", "base")
+			if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"}); err != nil {
+				return err
+			}
+			return nil
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			svc := newTestStore(t)
 			reported := 0
 			svc.SetScheduleForfeited(func(ForfeitedSchedule) { reported++ })
-			_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-			_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-			_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+			_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+			_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 
 			if err := remove(svc); err != nil {
 				t.Fatalf("remove: %v", err)
@@ -262,9 +288,9 @@ func TestClosingOrDeletingWithoutAScheduleReportsNothing(t *testing.T) {
 // deleted card would bury the one that means something.
 func TestDeletingAnUnscheduledSessionLogsNothing(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "worker", "claude", "/wt/foo", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "worker", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
 	logged := captureLogs(t)
 
 	if err := svc.DeleteSession("p1", "wt1", "base"); err != nil {
@@ -288,7 +314,7 @@ func captureLogs(t *testing.T) *bytes.Buffer {
 
 func sessionByID(t *testing.T, svc *Service, id string) Session {
 	t.Helper()
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}

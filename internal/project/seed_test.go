@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -128,7 +129,7 @@ func TestCreateWorktreeSeedsIgnored(t *testing.T) {
 	repo, _ := seedRepo(t)
 
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", "seeded", "main", false)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "seeded", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}
@@ -189,7 +190,7 @@ func TestCreateWorktreeSkipsACollapsedIgnoredTreeSilently(t *testing.T) {
 	git("commit", "-m", "ignore secrets")
 
 	logged := captureLog(t)
-	wt, err := New(nil).CreateWorktree(repo, "pid", "collapsed", "main", false)
+	wt, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "collapsed", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}
@@ -223,7 +224,7 @@ func TestCreateWorktreeSeedsFromIncludeFile(t *testing.T) {
 	git("commit", "-m", "include file")
 
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", "included", "main", false)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "included", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}

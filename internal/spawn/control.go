@@ -127,7 +127,7 @@ func (s *Service) claudeTarget(target, projectName, verb, participle string) (lo
 	if strings.TrimSpace(target) == "" {
 		return located{}, fmt.Errorf("name the session to %s", verb)
 	}
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		return located{}, fmt.Errorf("read the workspace: %w", err)
 	}

@@ -70,7 +70,7 @@ type CollectNowOptions = api.CollectNowOptions
 // CollectNow is Collect without the wait: what is ready and who still owes one,
 // at once. It is how a sender deep in a turn of its own checks in at a decision
 // point, where holding the line would stall the work it is doing.
-func (s *Service) CollectNow(opts CollectNowOptions) (Collected, error) {
+func (s *Service) CollectNow(_ context.Context, opts CollectNowOptions) (Collected, error) {
 	return s.collect(context.Background(), opts.From, 0)
 }
 

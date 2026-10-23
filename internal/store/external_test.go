@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,7 +29,7 @@ func newExternalRig(t *testing.T) externalRig {
 			t.Fatal(err)
 		}
 	}
-	if err := r.svc.AddProject("p1", "alpha", r.project); err != nil {
+	if _, err := r.svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: r.project}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	r.svc.SetCheckoutsOf(func(path string) ([]string, error) {
@@ -42,7 +43,7 @@ func newExternalRig(t *testing.T) externalRig {
 
 func (r externalRig) list(t *testing.T) []ExternalSession {
 	t.Helper()
-	got, err := r.svc.ExternalSessions()
+	got, err := r.svc.ExternalSessions(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("ExternalSessions: %v", err)
 	}
@@ -113,7 +114,7 @@ func TestExternalSessionsLeavesOutWhatLichCannotResume(t *testing.T) {
 func TestExternalSessionsMatchesAProjectGitCannotList(t *testing.T) {
 	r := newExternalRig(t)
 	plain := t.TempDir()
-	if err := r.svc.AddProject("p2", "plain", plain); err != nil {
+	if _, err := r.svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "plain", Path: plain}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	r.svc.SetConversationsOf(func() []Conversation {
@@ -143,7 +144,7 @@ func TestExternalSessionsMatchesThroughASymlink(t *testing.T) {
 
 func TestExternalSessionsWithoutWiringIsEmpty(t *testing.T) {
 	svc := newTestStore(t)
-	got, err := svc.ExternalSessions()
+	got, err := svc.ExternalSessions(t.Context(), api.None{})
 	if err != nil || len(got) != 0 {
 		t.Errorf("ExternalSessions = %v, %v; want empty", got, err)
 	}
@@ -157,13 +158,13 @@ func TestAdoptingAConversationParksItForTheHistoryResume(t *testing.T) {
 	r.svc.SetConversationsOf(func() []Conversation {
 		return []Conversation{{Kind: "codex", ID: "c1", Title: "port theme", Cwd: r.worktree}}
 	})
-	if err := r.svc.AdoptExternalSession("p1", "s1", "codex", r.worktree, "c1", "port theme"); err != nil {
+	if _, err := r.svc.AdoptExternalSession(t.Context(), api.AdoptExternalSessionOptions{ProjectID: "p1", SessionID: "s1", Kind: "codex", Path: r.worktree, ProviderSessionID: "c1", Label: "port theme"}); err != nil {
 		t.Fatalf("AdoptExternalSession: %v", err)
 	}
 	if got := r.list(t); len(got) != 0 {
 		t.Errorf("ExternalSessions after adoption = %+v, want none", got)
 	}
-	restored, err := r.svc.ReopenSession("s1", "s2")
+	restored, err := r.svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "s1", NewSessionID: "s2"})
 	if err != nil || restored == nil {
 		t.Fatalf("ReopenSession = %v, %v; want the adopted row", restored, err)
 	}
@@ -186,7 +187,7 @@ func TestAdoptingRefusesWhatItCannotFile(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := r.svc.AdoptExternalSession("p1", "new", tc.kind, "", tc.id, "x")
+			_, err := r.svc.AdoptExternalSession(t.Context(), api.AdoptExternalSessionOptions{ProjectID: "p1", SessionID: "new", Kind: tc.kind, ProviderSessionID: tc.id, Label: "x"})
 			if err == nil {
 				t.Fatal("AdoptExternalSession = nil, want a refusal")
 			}

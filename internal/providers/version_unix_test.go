@@ -4,6 +4,7 @@ package providers
 
 import (
 	"context"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,7 +23,7 @@ func TestOnPathCountsOneFileOnce(t *testing.T) {
 	}
 	t.Setenv("PATH", install+string(os.PathListSeparator)+link+string(os.PathListSeparator)+install)
 
-	got, err := New().OnPath(context.Background(), Codex)
+	got, err := New().OnPath(context.Background(), api.ProviderIDOptions{ID: Codex})
 	if err != nil {
 		t.Fatal(err)
 	}

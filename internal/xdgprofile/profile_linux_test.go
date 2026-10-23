@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
@@ -216,12 +217,12 @@ func TestServicesReportWhoIsLoggedInWhere(t *testing.T) {
 	t.Setenv("OPENCODE_DB", "/leak")
 	for _, prov := range Providers() {
 		s := New(prov, fakeBins{}, func(string, any) {})
-		p, err := s.CreateProfile("Work")
+		p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 		if err != nil {
 			t.Fatal(err)
 		}
 		mustWrite(t, filepath.Join(p.Dir, prov.folder, "logged-in"), "")
-		list, err := s.Profiles()
+		list, err := s.Profiles(t.Context(), api.None{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -237,18 +238,18 @@ func TestServicesReportWhoIsLoggedInWhere(t *testing.T) {
 func TestDeleteRefusesARunningProfileAndForgetsIt(t *testing.T) {
 	home := machine(t)
 	s := New(Kiro, fakeBins{}, func(string, any) {})
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	running := 1
 	var forgot string
 	s.SetSessions(func(string) int { return running }, func(slug string) error { forgot = slug; return nil })
-	if err := s.DeleteProfile(p.Slug); err == nil {
+	if _, err := s.DeleteProfile(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err == nil {
 		t.Fatal("deleted a profile with a session running in it")
 	}
 	running = 0
-	if err := s.DeleteProfile(p.Slug); err != nil || forgot != p.Slug {
+	if _, err := s.DeleteProfile(t.Context(), api.ProfileSlugOptions{Slug: p.Slug}); err != nil || forgot != p.Slug {
 		t.Fatalf("delete = %v, forgot %q", err, forgot)
 	}
 	for _, f := range []string{".local/share/kiro-cli/tui.js", ".local/share/kiro-cli/data.sqlite3", ".local/share/mise/installs"} {
@@ -261,11 +262,11 @@ func TestDeleteRefusesARunningProfileAndForgetsIt(t *testing.T) {
 func TestLoginCommandRunsTheLoginInTheProfile(t *testing.T) {
 	machine(t)
 	s := New(Cursor, fakeBins{}, func(string, any) {})
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	line, err := s.LoginCommand(p.Slug)
+	line, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: p.Slug})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,10 +275,10 @@ func TestLoginCommandRunsTheLoginInTheProfile(t *testing.T) {
 			t.Errorf("login line %q lacks %q", line, part)
 		}
 	}
-	if line, _ := s.LoginCommand(Personal); strings.Contains(line, "env") {
+	if line, _ := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: Personal}); strings.Contains(line, "env") {
 		t.Errorf("Personal's login line = %q", line)
 	}
-	if _, err := s.LoginCommand("gone"); !errors.Is(err, ErrProfileGone) {
+	if _, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: "gone"}); !errors.Is(err, ErrProfileGone) {
 		t.Errorf("login of a profile that does not exist: %v", err)
 	}
 }

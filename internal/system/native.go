@@ -1,6 +1,7 @@
 package system
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -43,8 +44,14 @@ func (s *Service) SetNativeWindow(hooks NativeHooks) {
 
 type AttachNativeOptions = api.AttachNativeOptions
 
-// AttachNative records the native window that started as lich's window.
-func (s *Service) AttachNative(opts AttachNativeOptions) {
+// AttachNative answers attachNative over RPC.
+func (s *Service) AttachNative(_ context.Context, opts AttachNativeOptions) (api.None, error) {
+	s.attachNative(opts)
+	return api.None{}, nil
+}
+
+// attachNative records the native window that started as lich's window.
+func (s *Service) attachNative(opts AttachNativeOptions) {
 	s.native.mu.Lock()
 	defer s.native.mu.Unlock()
 	s.native.executable = opts.Executable

@@ -1,7 +1,9 @@
 package relay
 
 import (
+	"context"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"log/slog"
 	"time"
 )
@@ -30,11 +32,14 @@ func (s *Service) typeIn(sessionID, message string) error {
 	// in between would be submitted as part of the message, so it is held and
 	// handed back at the prompt the Enter leaves behind (terminal.HoldInput).
 	defer s.term.HoldInput(sessionID)()
-	if err := s.term.Write(sessionID, paste(message)); err != nil {
+	if _, err := s.term.Write(context.Background(), api.WriteOptions{ID: sessionID, Data: paste(message)}); err != nil {
 		return err
 	}
 	s.awaitSettled(sessionID)
-	return s.term.Write(sessionID, submit)
+	if _, err := s.term.Write(context.Background(), api.WriteOptions{ID: sessionID, Data: submit}); err != nil {
+		return err
+	}
+	return nil
 }
 
 // awaitSettled holds the Enter back until the target has finished taking the
@@ -81,8 +86,16 @@ func (s *Service) awaitSettled(sessionID string) {
 // its delay, never its outcome.
 func (s *Service) awaitFree(sessionID string) error {
 	deadline := s.now().Add(s.deliveryLimit)
-	for !s.term.Ready(sessionID) {
-		if !s.term.Live(sessionID) {
+	for {
+		ready, err := s.term.Ready(context.Background(), api.SessionIDOptions{ID: sessionID})
+		if err != nil || ready {
+			return err
+		}
+		live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: sessionID})
+		if err != nil {
+			return err
+		}
+		if !live {
 			return fmt.Errorf("session stopped before its prompt was free")
 		}
 		if s.now().After(deadline) {
@@ -90,7 +103,6 @@ func (s *Service) awaitFree(sessionID string) error {
 		}
 		time.Sleep(readyPoll)
 	}
-	return nil
 }
 
 // awaitReady blocks until a target's agent is the program reading its PTY, and
@@ -107,10 +119,15 @@ func (s *Service) awaitFree(sessionID string) error {
 func (s *Service) awaitReady(dest candidate, deadline time.Time) error {
 	for {
 		time.Sleep(readyPoll)
-		if s.takesDelivery(dest.ID) {
-			return nil
+		takes, err := s.takesDelivery(dest.ID)
+		if err != nil || takes {
+			return err
 		}
-		if !s.term.Live(dest.ID) {
+		live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: dest.ID})
+		if err != nil {
+			return err
+		}
+		if !live {
 			return fmt.Errorf("%q stopped before its agent started", dest.Peer.Label)
 		}
 		if s.now().After(deadline) {
@@ -177,7 +194,11 @@ func (s *Service) watchReceipt(id string, t *ticket, kind string) {
 		s.mu.Unlock()
 		return
 	}
-	if !t.redelivered && s.term.Ready(t.targetID) {
+	ready, err := s.term.Ready(context.Background(), api.SessionIDOptions{ID: t.targetID})
+	if err != nil {
+		slog.Warn("relay: read whether the target is at its prompt", "target", t.target, "err", err)
+	}
+	if !t.redelivered && ready {
 		t.redelivered = true
 		s.mu.Unlock()
 		slog.Warn("relay: task was typed and nothing read it, typing it again", "target", t.target)

@@ -2,6 +2,7 @@ package providers
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -43,7 +44,7 @@ func TestDetect(t *testing.T) {
 		},
 	}
 
-	got, err := svc.Detect()
+	got, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}
@@ -67,7 +68,7 @@ func TestDetect(t *testing.T) {
 // falling back to the id verifies a binary nobody ships.
 func TestDetectCarriesTheBinary(t *testing.T) {
 	svc := &Service{lookPath: func(string) (string, error) { return "", exec.ErrNotFound }}
-	got, err := svc.Detect()
+	got, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}
@@ -83,7 +84,7 @@ func TestDetectCarriesTheBinary(t *testing.T) {
 
 func TestDetectAllMissing(t *testing.T) {
 	svc := &Service{lookPath: func(string) (string, error) { return "", errors.New("nope") }}
-	got, err := svc.Detect()
+	got, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}
@@ -126,7 +127,7 @@ func TestEveryProviderDocumentsItsInstall(t *testing.T) {
 // or not — the row with somewhere to send the user is the one that found nothing.
 func TestDetectCarriesTheDocs(t *testing.T) {
 	svc := &Service{lookPath: func(string) (string, error) { return "", exec.ErrNotFound }}
-	got, err := svc.Detect()
+	got, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}
@@ -221,7 +222,7 @@ func TestDetectCountsAConfiguredBinary(t *testing.T) {
 		configuredBin: func(id string) string { return configured[id] },
 	}
 
-	got, err := svc.Detect()
+	got, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}
@@ -263,7 +264,7 @@ func TestDetectPrefersTheConfiguredBinary(t *testing.T) {
 		},
 	}
 
-	got, err := svc.Detect()
+	got, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}
@@ -285,7 +286,7 @@ func TestDetectSourceIsPathWhenNothingIsConfigured(t *testing.T) {
 		},
 	}
 
-	got, err := svc.Detect()
+	got, err := svc.Detect(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Detect: %v", err)
 	}
@@ -303,7 +304,7 @@ func TestDetectSourceIsPathWhenNothingIsConfigured(t *testing.T) {
 // pass every test above and ship the bug back.
 func TestSetConfiguredBinIsWhatDetectReads(t *testing.T) {
 	svc := &Service{lookPath: func(string) (string, error) { return "", exec.ErrNotFound }}
-	if got, _ := svc.Detect(); got[0].Installed {
+	if got, _ := svc.Detect(t.Context(), api.None{}); got[0].Installed {
 		t.Fatal("claude installed before any binary was configured")
 	}
 
@@ -316,7 +317,7 @@ func TestSetConfiguredBinIsWhatDetectReads(t *testing.T) {
 	})
 	svc.lookPath = func(name string) (string, error) { return name, nil }
 
-	got, _ := svc.Detect()
+	got, _ := svc.Detect(t.Context(), api.None{})
 	if !got[0].Installed || got[0].Source != SourceSetting {
 		t.Errorf("claude = %+v, want installed from the setting", got[0])
 	}

@@ -2,6 +2,7 @@ package store
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -49,7 +50,7 @@ func (s *Service) SetCheckoutsOf(fn func(projectPath string) ([]string, error)) 
 //
 // A conversation whose directory is gone is left out: there is nowhere to
 // resume it, the same reason a history row without its checkout cannot be.
-func (s *Service) ExternalSessions() ([]ExternalSession, error) {
+func (s *Service) ExternalSessions(_ context.Context, _ api.None) ([]ExternalSession, error) {
 	external := []ExternalSession{}
 	if s.conversationsOf == nil {
 		return external, nil
@@ -194,29 +195,29 @@ func (s *Service) heldProviderSessions() (map[string]bool, error) {
 var ErrConversationHeld = errors.New("this conversation already has a session in lich")
 
 // AdoptExternalSession files a conversation started outside lich as a parked
-// session of projectID under sessionID, so the history's own resume
-// (ReopenSession) brings it back like any session lich closed. path is the
+// session of opts.ProjectID under opts.SessionID, so the history's own resume
+// (ReopenSession) brings it back like any session lich closed. opts.Path is the
 // ExternalSession's, "" for the project's own directory.
-func (s *Service) AdoptExternalSession(projectID, sessionID, kind, path, providerSessionID, label string) error {
-	if !providers.Known(kind) {
-		return fmt.Errorf("adopt session: unknown provider %q", kind)
+func (s *Service) AdoptExternalSession(_ context.Context, opts api.AdoptExternalSessionOptions) (api.None, error) {
+	if !providers.Known(opts.Kind) {
+		return api.None{}, fmt.Errorf("adopt session: unknown provider %q", opts.Kind)
 	}
-	if providerSessionID == "" {
-		return errors.New("adopt session: no provider conversation id")
+	if opts.ProviderSessionID == "" {
+		return api.None{}, errors.New("adopt session: no provider conversation id")
 	}
 	held, err := s.heldProviderSessions()
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
-	if held[providerSessionID] {
-		return ErrConversationHeld
+	if held[opts.ProviderSessionID] {
+		return api.None{}, ErrConversationHeld
 	}
 	if _, err := s.db.Exec(
 		`INSERT INTO sessions (id, project_id, label, kind, path, provider_session_id, is_open, closed_at, position)
 		 VALUES (?, ?, ?, ?, ?, ?, 0, ?, `+nextSessionPosition+`)`,
-		sessionID, projectID, label, kind, path, providerSessionID, now().Unix(), projectID,
+		opts.SessionID, opts.ProjectID, opts.Label, opts.Kind, opts.Path, opts.ProviderSessionID, now().Unix(), opts.ProjectID,
 	); err != nil {
-		return fmt.Errorf("adopt session %q: %w", providerSessionID, err)
+		return api.None{}, fmt.Errorf("adopt session %q: %w", opts.ProviderSessionID, err)
 	}
-	return nil
+	return api.None{}, nil
 }

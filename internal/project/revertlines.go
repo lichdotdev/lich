@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -28,7 +29,7 @@ type RevertLine = api.RevertLine
 
 type RevertResult = api.RevertResult
 
-// RevertLines puts the chosen changed lines of rel back to HEAD, leaving every
+// RevertLines puts the chosen changed lines of opts.Rel back to HEAD, leaving every
 // other change in the file alone. The patch is rebuilt here from git's own diff
 // rather than taken from the caller, so a stale screen fails instead of
 // reverting whatever those line numbers point at now.
@@ -36,19 +37,19 @@ type RevertResult = api.RevertResult
 // The index is reverted with the working tree whenever it holds the change:
 // the panel draws staged and unstaged as one diff, so reverting only the file
 // would leave the line in the next commit with nothing on screen showing it.
-func (s *Service) RevertLines(path, rel string, lines []RevertLine) (RevertResult, error) {
-	if err := relpath.Validate(rel); err != nil {
+func (s *Service) RevertLines(_ context.Context, opts api.RevertLinesOptions) (RevertResult, error) {
+	if err := relpath.Validate(opts.Rel); err != nil {
 		return RevertResult{}, err
 	}
-	if len(lines) == 0 {
+	if len(opts.Lines) == 0 {
 		return RevertResult{}, errors.New("no changed lines to revert")
 	}
-	base := readWorkTree(path).base
-	tracked, err := isTracked(path, rel)
+	base := readWorkTree(opts.Path).base
+	tracked, err := isTracked(opts.Path, opts.Rel)
 	if err != nil {
 		return RevertResult{}, err
 	}
-	diff, err := fileDiff(path, rel, base, tracked)
+	diff, err := fileDiff(opts.Path, opts.Rel, base, tracked)
 	if err != nil {
 		return RevertResult{}, err
 	}
@@ -56,41 +57,41 @@ func (s *Service) RevertLines(path, rel string, lines []RevertLine) (RevertResul
 	if err != nil {
 		return RevertResult{}, err
 	}
-	patch, err := partialPatch(rel, hunks, lines)
+	patch, err := partialPatch(opts.Rel, hunks, opts.Lines)
 	if err != nil {
 		return RevertResult{}, err
 	}
-	if !applies(path, patch, "-R", "--check") {
+	if !applies(opts.Path, patch, "-R", "--check") {
 		return RevertResult{}, ErrLinesMoved
 	}
-	indexPatch, err := stagedPatch(path, rel, base, lines, tracked)
+	indexPatch, err := stagedPatch(opts.Path, opts.Rel, base, opts.Lines, tracked)
 	if err != nil {
 		return RevertResult{}, err
 	}
 	result := RevertResult{Patch: patch, IndexPatch: indexPatch}
-	return result, applyBoth(path, result, true)
+	return result, applyBoth(opts.Path, result, true)
 }
 
 // RestoreLines undoes RevertLines: the same patches applied forwards, to the
 // same targets. They come back from the caller, so each is held to the one file
 // it was built for before git sees it.
-func (s *Service) RestoreLines(path, rel string, undo RevertResult) error {
-	if err := relpath.Validate(rel); err != nil {
-		return err
+func (s *Service) RestoreLines(_ context.Context, opts api.RestoreLinesOptions) (api.None, error) {
+	if err := relpath.Validate(opts.Rel); err != nil {
+		return api.None{}, err
 	}
-	if err := checkPatchFile(undo.Patch, rel); err != nil {
-		return err
+	if err := checkPatchFile(opts.Undo.Patch, opts.Rel); err != nil {
+		return api.None{}, err
 	}
-	if undo.IndexPatch != "" {
-		if err := checkPatchFile(undo.IndexPatch, rel); err != nil {
-			return err
+	if opts.Undo.IndexPatch != "" {
+		if err := checkPatchFile(opts.Undo.IndexPatch, opts.Rel); err != nil {
+			return api.None{}, err
 		}
 	}
-	if !applies(path, undo.Patch, "--check") ||
-		(undo.IndexPatch != "" && !applies(path, undo.IndexPatch, "--cached", "--check")) {
-		return ErrLinesMoved
+	if !applies(opts.Path, opts.Undo.Patch, "--check") ||
+		(opts.Undo.IndexPatch != "" && !applies(opts.Path, opts.Undo.IndexPatch, "--cached", "--check")) {
+		return api.None{}, ErrLinesMoved
 	}
-	return applyBoth(path, undo, false)
+	return api.None{}, applyBoth(opts.Path, opts.Undo, false)
 }
 
 // isTracked asks the index about rel. An empty answer is untracked; a git that

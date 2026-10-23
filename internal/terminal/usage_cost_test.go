@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/pricing"
 )
@@ -802,9 +803,9 @@ func TestAForkRecordsWhatItsParentHadCost(t *testing.T) {
 	store.forkOffsets = map[string]float64{}
 	store.ledgers["parent\x00abc-123"] = stubLedger{cost: 1.25}
 	svc := New(store, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("fork") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "fork"}) })
 
-	err := svc.Start("fork", "p1", t.TempDir(), "claude", "abc-123", true, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "fork", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Resume: "abc-123", Fork: true, Cols: 80, Rows: 24})
 
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
@@ -823,9 +824,9 @@ func TestAForkOfAProviderThatPricesItselfOffsetsNothing(t *testing.T) {
 	store.forkOffsets = map[string]float64{}
 	store.ledgers["parent\x00abc-123"] = stubLedger{cost: 1.25}
 	svc := New(store, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("fork") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "fork"}) })
 
-	err := svc.Start("fork", "p1", t.TempDir(), "opencode", "abc-123", true, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "fork", ProjectID: "p1", Cwd: t.TempDir(), Kind: "opencode", Resume: "abc-123", Fork: true, Cols: 80, Rows: 24})
 
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
@@ -845,9 +846,9 @@ func TestAResumeIsNotAFork(t *testing.T) {
 	store.forkOffsets = map[string]float64{}
 	store.ledgers["parent\x00abc-123"] = stubLedger{cost: 1.25}
 	svc := New(store, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	err := svc.Start("s1", "p1", t.TempDir(), "claude", "abc-123", false, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Resume: "abc-123", Cols: 80, Rows: 24})
 
 	if err != nil {
 		t.Fatalf("Start = %v, want nil", err)
@@ -867,9 +868,9 @@ func TestAForkWhoseOffsetCannotBeSavedStillStarts(t *testing.T) {
 	store.forkOffsetErr = errors.New("disk full")
 	store.ledgers["parent\x00abc-123"] = stubLedger{cost: 1.25}
 	svc := New(store, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("fork") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "fork"}) })
 
-	err := svc.Start("fork", "p1", t.TempDir(), "claude", "abc-123", true, 80, 24)
+	_, err := svc.Start(t.Context(), api.StartOptions{ID: "fork", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Resume: "abc-123", Fork: true, Cols: 80, Rows: 24})
 
 	if err != nil {
 		t.Fatalf("Start = %v, want the spawn to survive a failed offset", err)

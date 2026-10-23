@@ -33,6 +33,7 @@
 package quota
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -253,7 +254,12 @@ func (s *Service) SetEnabled(fn func(provider string) bool) { s.enabled = fn }
 // Startup wiring, called once before the service serves.
 func (s *Service) SetSessions(fn Sessions) { s.sessions = fn }
 
-// Plans is every provider that meters a subscription, in Registry order, read
+// Plans answers plans over RPC.
+func (s *Service) Plans(_ context.Context, opts api.QuotaPlansOptions) ([]Plan, error) {
+	return s.plans(opts.SessionID), nil
+}
+
+// plans is every provider that meters a subscription, in Registry order, read
 // for the account sessionID spends. A failed reading is a Status, not an
 // omission, so the UI can say which provider it could not read. A provider is
 // left out only when this account has no plan with it at all: no Antigravity
@@ -261,7 +267,7 @@ func (s *Service) SetSessions(fn Sessions) { s.sessions = fn }
 //
 // An empty sessionID reads lich's own environment: the Settings screen asks
 // about the machine, not about a card.
-func (s *Service) Plans(sessionID string) []Plan {
+func (s *Service) plans(sessionID string) []Plan {
 	account := Account{Read: true}
 	if sessionID != "" && s.sessions != nil {
 		account = s.sessions(sessionID)

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -31,14 +32,14 @@ type Issue = api.Issue
 // branch off the base under its title instead of checking its head branch out,
 // which is a different flow entirely (CreateWorktreeFromPR). The URL is the
 // only field in the answer that tells the two apart.
-func (s *Service) Issue(path string, number int) (Issue, error) {
-	if number <= 0 {
-		return Issue{}, fmt.Errorf("%d is not an issue number.", number)
+func (s *Service) Issue(_ context.Context, opts api.NumberOptions) (Issue, error) {
+	if opts.Number <= 0 {
+		return Issue{}, fmt.Errorf("%d is not an issue number.", opts.Number)
 	}
 	// The selector is an int, so it can never reach gh's argument slot as a
 	// "-"-prefixed value that would parse as a flag — prSelector's reasoning.
-	out, err := s.gh(issueReadTimeout, path,
-		"issue", "view", strconv.Itoa(number), "--json", "number,title,body,url")
+	out, err := s.gh(issueReadTimeout, opts.Path,
+		"issue", "view", strconv.Itoa(opts.Number), "--json", "number,title,body,url")
 	if err != nil {
 		return Issue{}, err
 	}
@@ -47,7 +48,7 @@ func (s *Service) Issue(path string, number int) (Issue, error) {
 		return Issue{}, errUnreadableAnswer(err)
 	}
 	if strings.Contains(issue.URL, "/pull/") {
-		return Issue{}, fmt.Errorf("#%d is a pull request, not an issue — open it from the Pulls screen.", number)
+		return Issue{}, fmt.Errorf("#%d is a pull request, not an issue — open it from the Pulls screen.", opts.Number)
 	}
 	issue.Body = truncateRunes(issue.Body, maxIssueBody)
 	return issue, nil

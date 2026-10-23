@@ -3,6 +3,7 @@ package project
 import (
 	"bytes"
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -151,7 +152,7 @@ func TestPullRequestMergeBaseLocal(t *testing.T) {
 	base := strings.TrimSpace(git("rev-parse", "HEAD"))
 
 	gh := &fakeGH{out: []byte(base + " " + head + "\n")}
-	got, err := withGH(gh).PullRequestMergeBase(repo, 7)
+	got, err := withGH(gh).PullRequestMergeBase(t.Context(), api.NumberOptions{Path: repo, Number: 7})
 	if err != nil {
 		t.Fatalf("PullRequestMergeBase: %v", err)
 	}
@@ -169,7 +170,7 @@ func TestPullRequestMergeBaseAsksGitHub(t *testing.T) {
 	base, head, mergeBase := strings.Repeat("a", 40), strings.Repeat("b", 40), strings.Repeat("c", 40)
 
 	gh := &fakeGH{outs: [][]byte{[]byte(base + " " + head + "\n"), []byte(mergeBase + "\n")}}
-	got, err := withGH(gh).PullRequestMergeBase(repo, 7)
+	got, err := withGH(gh).PullRequestMergeBase(t.Context(), api.NumberOptions{Path: repo, Number: 7})
 	if err != nil {
 		t.Fatalf("PullRequestMergeBase: %v", err)
 	}
@@ -190,7 +191,7 @@ func TestPullRequestMergeBaseRejectsAnUnreadableAnswer(t *testing.T) {
 		"tips":       {[]byte("null null")},
 		"merge base": {tips, []byte("null")},
 	} {
-		if _, err := withGH(&fakeGH{outs: outs}).PullRequestMergeBase(repo, 7); err == nil {
+		if _, err := withGH(&fakeGH{outs: outs}).PullRequestMergeBase(t.Context(), api.NumberOptions{Path: repo, Number: 7}); err == nil {
 			t.Errorf("%s: want an error, got nil", name)
 		}
 	}

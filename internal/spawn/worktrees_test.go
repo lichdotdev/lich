@@ -15,7 +15,7 @@ func TestWorktreesReportsWhatIsInEachCheckout(t *testing.T) {
 		[]project.Worktree{{Name: "main", Path: "/src/lich"}}, worktrees.checkouts...,
 	)
 
-	found, err := svc.Worktrees(WorktreesOptions{From: "s1"})
+	found, err := svc.Worktrees(t.Context(), WorktreesOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Worktrees: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestWorktreesNamesAnEmptyCheckoutAsEmpty(t *testing.T) {
 	svc, _, worktrees, _, _ := closer(t)
 	worktrees.checkouts = []project.Worktree{{Name: "parked", Path: "/wt/parked"}}
 
-	found, err := svc.Worktrees(WorktreesOptions{From: "s1"})
+	found, err := svc.Worktrees(t.Context(), WorktreesOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Worktrees: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestWorktreesNamesAnEmptyCheckoutAsEmpty(t *testing.T) {
 func TestWorktreesRefusesAProjectItCannotResolve(t *testing.T) {
 	svc, _, _, _, _ := closer(t)
 
-	if _, err := svc.Worktrees(WorktreesOptions{}); err == nil {
+	if _, err := svc.Worktrees(t.Context(), WorktreesOptions{}); err == nil {
 		t.Fatal("listed the worktrees of no project in particular")
 	}
 }
@@ -68,7 +68,7 @@ func TestWorktreesRefusesAProjectItCannotResolve(t *testing.T) {
 func TestOpenUsesACheckoutThatIsAlreadyThere(t *testing.T) {
 	svc, sessions, worktrees, term, _ := closer(t)
 
-	opened, err := svc.Open(OpenOptions{From: "s1", Worktree: "shared"})
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1", Worktree: "shared"})
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestOpenStoresTheProjectsOwnCheckoutAsTheRoot(t *testing.T) {
 	svc, sessions, worktrees, term, _ := closer(t)
 	worktrees.checkouts = append(worktrees.checkouts, project.Worktree{Name: "main", Path: "/src/lich"})
 
-	opened, err := svc.Open(OpenOptions{From: "s1", Worktree: "main"})
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1", Worktree: "main"})
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestOpenStoresTheProjectsOwnCheckoutAsTheRoot(t *testing.T) {
 func TestOpenFallsBackWhenTheBranchNameIsAlreadyACard(t *testing.T) {
 	svc, _, _, _, _ := closer(t)
 
-	opened, err := svc.Open(OpenOptions{From: "s1", Worktree: "alone"})
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1", Worktree: "alone"})
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}

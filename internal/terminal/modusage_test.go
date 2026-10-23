@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/quota"
 )
@@ -163,7 +164,7 @@ func TestAClosedSessionDropsItsReport(t *testing.T) {
 	svc := New(stubBins{}, nil, events.New())
 	svc.usageReports.set(reportOf("c1", 200_000))
 
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatal(err)
 	}
 

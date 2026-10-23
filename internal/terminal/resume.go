@@ -1,8 +1,18 @@
 package terminal
 
-import "github.com/lichdotdev/lich/internal/providers"
+import (
+	"context"
 
-// ResumeAvailable reports whether the conversation providerSessionID names can
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/providers"
+)
+
+// ResumeAvailable answers resumeAvailable over RPC.
+func (s *Service) ResumeAvailable(_ context.Context, opts api.ResumeAvailableOptions) (bool, error) {
+	return s.resumeAvailable(opts.Kind, opts.ProviderSessionID, opts.Cwd), nil
+}
+
+// resumeAvailable reports whether the conversation providerSessionID names can
 // still be reopened, so the window only offers a resume it can honour.
 //
 // The session row keeps its provider session id for good, but a provider prunes
@@ -20,7 +30,7 @@ import "github.com/lichdotdev/lich/internal/providers"
 //
 // False for a provider with no resume wired (resumeArgs): there is nothing to
 // offer where the CLI cannot reopen a conversation by id.
-func (*Service) ResumeAvailable(kind, providerSessionID, cwd string) bool {
+func (*Service) resumeAvailable(kind, providerSessionID, cwd string) bool {
 	if providerSessionID == "" {
 		return false
 	}

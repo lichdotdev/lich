@@ -1,6 +1,7 @@
 package themes
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -9,13 +10,13 @@ import (
 
 type memorySettings map[string]string
 
-func (m memorySettings) GetSetting(key, projectID string) (string, error) {
-	return m[projectID+"/"+key], nil
+func (m memorySettings) GetSetting(_ context.Context, opts api.GetSettingOptions) (string, error) {
+	return m[opts.ProjectID+"/"+opts.Key], nil
 }
 
-func (m memorySettings) SetSetting(key, projectID, value string) error {
-	m[projectID+"/"+key] = value
-	return nil
+func (m memorySettings) SetSetting(_ context.Context, opts api.SetSettingOptions) (api.None, error) {
+	m[opts.ProjectID+"/"+opts.Key] = opts.Value
+	return api.None{}, nil
 }
 
 type emitted struct {
@@ -35,7 +36,7 @@ func selectionService(t *testing.T) (*Service, memorySettings, *[]emitted) {
 
 func TestSelectionDefaultsToSystem(t *testing.T) {
 	s, _, _ := selectionService(t)
-	got, err := s.Selection()
+	got, err := s.Selection(t.Context(), api.None{})
 	if err != nil || got != (Selection{Theme: SystemID}) {
 		t.Fatalf("Selection = %+v, %v; want System without following", got, err)
 	}
@@ -48,7 +49,7 @@ func TestSelectStoresAndReportsTheSelection(t *testing.T) {
 	if _, err := importTheme(t, s, customTheme("forest")); err != nil {
 		t.Fatalf("Import: %v", err)
 	}
-	if err := s.Select(SelectOptions{ID: "forest"}); err != nil {
+	if _, err := s.Select(t.Context(), SelectOptions{ID: "forest"}); err != nil {
 		t.Fatalf("Select: %v", err)
 	}
 	if got := settings["/appearance.theme"]; got != "forest" {
@@ -63,7 +64,7 @@ func TestSelectStoresAndReportsTheSelection(t *testing.T) {
 func TestSelectTakesSystemAndBundledThemes(t *testing.T) {
 	s, _, _ := selectionService(t)
 	for _, id := range []string{SystemID, "light", "dark"} {
-		if err := s.Select(SelectOptions{ID: id}); err != nil {
+		if _, err := s.Select(t.Context(), SelectOptions{ID: id}); err != nil {
 			t.Errorf("Select(%q): %v", id, err)
 		}
 	}
@@ -71,7 +72,7 @@ func TestSelectTakesSystemAndBundledThemes(t *testing.T) {
 
 func TestSelectRefusesAThemeNotInstalled(t *testing.T) {
 	s, settings, events := selectionService(t)
-	err := s.Select(SelectOptions{ID: "nord"})
+	_, err := s.Select(t.Context(), SelectOptions{ID: "nord"})
 	if err == nil || !strings.Contains(err.Error(), `no theme "nord"`) {
 		t.Fatalf("Select(nord) = %v, want an error naming it", err)
 	}
@@ -82,10 +83,10 @@ func TestSelectRefusesAThemeNotInstalled(t *testing.T) {
 
 func TestSetFollowSystemStoresAndReportsIt(t *testing.T) {
 	s, settings, events := selectionService(t)
-	if err := s.Select(SelectOptions{ID: "dark"}); err != nil {
+	if _, err := s.Select(t.Context(), SelectOptions{ID: "dark"}); err != nil {
 		t.Fatalf("Select: %v", err)
 	}
-	if err := s.SetFollowSystem(true); err != nil {
+	if _, err := s.SetFollowSystem(t.Context(), api.FollowSystemOptions{On: true}); err != nil {
 		t.Fatalf("SetFollowSystem: %v", err)
 	}
 	if got := settings["/appearance.followSystem"]; got != "true" {

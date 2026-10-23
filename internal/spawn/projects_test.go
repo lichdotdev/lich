@@ -27,7 +27,7 @@ func TestOpenAdoptsADirectoryNotOnScreen(t *testing.T) {
 	dir := t.TempDir()
 	svc, sessions, _, term, events := newService(t)
 
-	opened, err := svc.Open(OpenOptions{From: "s1", Project: dir})
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1", Project: dir})
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestOpenReopensAProjectFromTheHistory(t *testing.T) {
 		Sessions: []store.Session{{ID: "parked", Label: "Session 6", Kind: "claude"}},
 	}}
 
-	opened, err := svc.Open(OpenOptions{From: "s1", Project: dir})
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1", Project: dir})
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestOpenFindsAnOpenProjectByPath(t *testing.T) {
 	svc, sessions, _, _, events := newService(t)
 	sessions.projects[1].Path = dir
 
-	opened, err := svc.Open(OpenOptions{From: "s1", Project: dir + string(filepath.Separator)})
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1", Project: dir + string(filepath.Separator)})
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestOpenRefusesAPathItCannotTrust(t *testing.T) {
 		{"missing", filepath.Join(t.TempDir(), "nope"), "no directory at"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := svc.Open(OpenOptions{From: "s1", Project: tc.path}); err == nil ||
+			if _, err := svc.Open(t.Context(), OpenOptions{From: "s1", Project: tc.path}); err == nil ||
 				!strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("Open(%q) = %v, want it to name %q", tc.path, err, tc.want)
 			}
@@ -147,7 +147,7 @@ func TestNarrowingTakesAPathToo(t *testing.T) {
 	sessions.projects[1].Sessions = []store.Session{{ID: "s2", Label: "Session 3"}}
 
 	// "Session 3" is a label both projects hold, which is what --project is for.
-	renamed, err := svc.Rename(RenameOptions{From: "s1", Target: "Session 3", Project: dir, Label: "review"})
+	renamed, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "Session 3", Project: dir, Label: "review"})
 	if err != nil {
 		t.Fatalf("Rename: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestWorktreesTakeAPathToo(t *testing.T) {
 	sessions.projects[1].Path = dir
 	worktrees.checkouts = []project.Worktree{{Name: "feature", Path: "/wt/feature"}}
 
-	found, err := svc.Worktrees(WorktreesOptions{From: "s1", Project: dir})
+	found, err := svc.Worktrees(t.Context(), WorktreesOptions{From: "s1", Project: dir})
 	if err != nil {
 		t.Fatalf("Worktrees: %v", err)
 	}
@@ -174,7 +174,7 @@ func TestWorktreesTakeAPathToo(t *testing.T) {
 	}
 
 	elsewhere := t.TempDir()
-	if _, err := svc.Worktrees(WorktreesOptions{From: "s1", Project: elsewhere}); err == nil ||
+	if _, err := svc.Worktrees(t.Context(), WorktreesOptions{From: "s1", Project: elsewhere}); err == nil ||
 		!strings.Contains(err.Error(), "no open project at") {
 		t.Errorf("Worktrees(%q) = %v, want it to say no project is open there", elsewhere, err)
 	}

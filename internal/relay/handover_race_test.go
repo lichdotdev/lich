@@ -40,7 +40,10 @@ func TestAWaitAsTheAnswerLandsNeverSeesAnUnknownTicket(t *testing.T) {
 	plant(svc, "t1", "s1", "s2", "docs")
 
 	replied := make(chan error, 1)
-	go func() { replied <- svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"}) }()
+	go func() {
+		_, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "done"})
+		replied <- err
+	}()
 	<-events.reached
 
 	got, err := svc.Wait(context.Background(), WaitOptions{Ticket: "t1", WaitSeconds: 1})
@@ -83,7 +86,7 @@ func TestAnAnswerAWaitCarriedOutIsNotAlsoFiled(t *testing.T) {
 		waited <- got
 	}()
 	<-events.reached
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "done"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	close(events.release)

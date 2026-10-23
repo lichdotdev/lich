@@ -3,6 +3,7 @@ package appupdate
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -30,7 +31,7 @@ func TestWindowsApplyRunsTheInstaller(t *testing.T) {
 		installed = true
 		return nil
 	}
-	if err := s.Apply(); err != nil {
+	if _, err := s.Apply(t.Context(), api.None{}); err != nil {
 		t.Fatal(err)
 	}
 	if !installed {

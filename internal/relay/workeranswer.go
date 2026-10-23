@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/lichdotdev/lich/api"
@@ -48,7 +49,7 @@ func (s *Service) WorkerAnswered(workerID, text string) {
 		slog.Debug("relay: a worker reported while an errand of its own is unread", "session", workerID)
 		return
 	}
-	if err := s.Reply(ReplyOptions{From: workerID, Ticket: id, Answer: text}); err != nil {
+	if _, err := s.Reply(context.Background(), ReplyOptions{From: workerID, Ticket: id, Answer: text}); err != nil {
 		slog.Debug("relay: a worker's answer was not taken", "session", workerID, "err", err)
 		return
 	}

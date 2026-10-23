@@ -1,12 +1,20 @@
 package terminal
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"os"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// WorkdirMissing reports whether a session cannot spawn in cwd because the
+// WorkdirMissing answers workdirMissing over RPC.
+func (s *Service) WorkdirMissing(_ context.Context, opts api.WorkdirOptions) (bool, error) {
+	return s.workdirMissing(opts.Cwd), nil
+}
+
+// workdirMissing reports whether a session cannot spawn in cwd because the
 // directory is not there — what a worktree removed outside lich leaves behind,
 // where the checkout is gone but the session row pointing at it is not. The PTY
 // would fail to chdir, and startPTY reports that the same way it reports a
@@ -20,7 +28,7 @@ import (
 // mount answering badly — fall through to the spawn, which reports its own
 // failure. True is only a directory provably absent, or a path that exists and
 // is not a directory.
-func (*Service) WorkdirMissing(cwd string) bool {
+func (*Service) workdirMissing(cwd string) bool {
 	if cwd == "" {
 		return false
 	}

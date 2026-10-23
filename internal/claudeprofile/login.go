@@ -33,36 +33,36 @@ type login struct {
 // LoginCode. When the CLI exits, `claude auth status` decides whether the login
 // took, and a logged-in profile gets the lich plugin. It returns once the CLI
 // is started.
-func (s *Service) Login(slug string) error {
-	dir, err := ConfigDir(slug)
+func (s *Service) Login(_ context.Context, opts api.ProfileSlugOptions) (api.None, error) {
+	dir, err := ConfigDir(opts.Slug)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
-	p := Profile{Slug: slug, Dir: dir, Personal: IsPersonal(slug)}
+	p := Profile{Slug: opts.Slug, Dir: dir, Personal: IsPersonal(opts.Slug)}
 	ctx, cancel := context.WithTimeout(context.Background(), loginTimeout)
 	cmd := s.command(ctx, p, "auth", "login", "--claudeai")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		cancel()
-		return err
+		return api.None{}, err
 	}
 	out, w := io.Pipe()
 	cmd.Stdout, cmd.Stderr = w, w
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, running := s.logins[slug]; running {
+	if _, running := s.logins[opts.Slug]; running {
 		cancel()
-		return fmt.Errorf("profile %q is already logging in", slug)
+		return api.None{}, fmt.Errorf("profile %q is already logging in", opts.Slug)
 	}
 	if err := cmd.Start(); err != nil {
 		cancel()
-		return fmt.Errorf("start %s auth login: %w", s.bin(), err)
+		return api.None{}, fmt.Errorf("start %s auth login: %w", s.bin(), err)
 	}
 	run := &login{cancel: cancel, stdin: stdin}
-	s.logins[slug] = run
+	s.logins[opts.Slug] = run
 	relayed := make(chan struct{})
 	go func() {
-		s.relayOutput(slug, out)
+		s.relayOutput(opts.Slug, out)
 		close(relayed)
 	}()
 	go func() {
@@ -71,7 +71,7 @@ func (s *Service) Login(slug string) error {
 		<-relayed
 		s.finishLogin(ctx, p, run, err)
 	}()
-	return nil
+	return api.None{}, nil
 }
 
 func (s *Service) relayOutput(slug string, out io.Reader) {
@@ -127,22 +127,28 @@ func (s *Service) finishLogin(ctx context.Context, p Profile, run *login, waitEr
 
 // LoginCode hands a running login the code the sign-in page showed, for a
 // browser that could not reach the CLI on its own.
-func (s *Service) LoginCode(slug, code string) error {
+func (s *Service) LoginCode(_ context.Context, opts api.LoginCodeOptions) (api.None, error) {
 	s.mu.Lock()
-	run, ok := s.logins[slug]
+	run, ok := s.logins[opts.Slug]
 	s.mu.Unlock()
 	if !ok {
-		return fmt.Errorf("profile %q is not logging in", slug)
+		return api.None{}, fmt.Errorf("profile %q is not logging in", opts.Slug)
 	}
-	if _, err := io.WriteString(run.stdin, code+"\n"); err != nil {
-		return fmt.Errorf("hand the code to the login: %w", err)
+	if _, err := io.WriteString(run.stdin, opts.Code+"\n"); err != nil {
+		return api.None{}, fmt.Errorf("hand the code to the login: %w", err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
-// CancelLogin ends a login lich started; its last event says it was cancelled.
+// CancelLogin answers cancelLogin over RPC.
+func (s *Service) CancelLogin(_ context.Context, opts api.ProfileSlugOptions) (api.None, error) {
+	s.cancelLogin(opts.Slug)
+	return api.None{}, nil
+}
+
+// cancelLogin ends a login lich started; its last event says it was cancelled.
 // Nothing running for that profile is nothing to do.
-func (s *Service) CancelLogin(slug string) {
+func (s *Service) cancelLogin(slug string) {
 	s.mu.Lock()
 	run, ok := s.logins[slug]
 	s.mu.Unlock()
@@ -153,12 +159,12 @@ func (s *Service) CancelLogin(slug string) {
 
 // LoginCommand is the command line that logs a profile in from a terminal, for
 // a user who would rather run it in a shell card than through Login.
-func (s *Service) LoginCommand(slug string) (string, error) {
-	dir, err := ConfigDir(slug)
+func (s *Service) LoginCommand(_ context.Context, opts api.ProfileSlugOptions) (string, error) {
+	dir, err := ConfigDir(opts.Slug)
 	if err != nil {
 		return "", err
 	}
-	if IsPersonal(slug) {
+	if IsPersonal(opts.Slug) {
 		dir = ""
 	}
 	return store.LoginLine(s.bin(), "auth login --claudeai", dir), nil

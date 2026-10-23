@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -47,7 +48,7 @@ type InsertOptions = api.InsertTextOptions
 // permission prompt is refused: what is typed there is read by the dialog, not
 // the prompt. A person's half-written line is not a reason to refuse; the text
 // is added to the end of it, which is where it was meant to go.
-func (s *Service) Insert(opts InsertOptions) (Inserted, error) {
+func (s *Service) Insert(_ context.Context, opts InsertOptions) (Inserted, error) {
 	fromID, target, project, text, waitSeconds := opts.From, opts.Target, opts.Project, opts.Text, opts.WaitSeconds
 	wait := defaultInsertWait
 	if waitSeconds > 0 {
@@ -77,7 +78,7 @@ func (s *Service) insert(fromID, target, project, text string, wait time.Duratio
 	if err := s.awaitPrompt(dest, wait); err != nil {
 		return Inserted{}, err
 	}
-	if err := s.term.Write(dest.ID, paste(text)); err != nil {
+	if _, err := s.term.Write(context.Background(), api.WriteOptions{ID: dest.ID, Data: paste(text)}); err != nil {
 		return Inserted{}, fmt.Errorf("insert into %q: %w", dest.Peer.Label, err)
 	}
 	return Inserted{
@@ -192,7 +193,11 @@ func labelsOf(matches []candidate) string {
 func (s *Service) awaitPrompt(dest candidate, wait time.Duration) error {
 	deadline := s.now().Add(wait)
 	for !s.term.AtPrompt(dest.ID) {
-		if !s.term.Live(dest.ID) {
+		live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: dest.ID})
+		if err != nil {
+			return err
+		}
+		if !live {
 			return fmt.Errorf("%q stopped before its prompt was ready", dest.Peer.Label)
 		}
 		if s.now().After(deadline) {

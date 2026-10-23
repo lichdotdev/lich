@@ -20,18 +20,78 @@ func (l *changeLog) emit(name string, data any) {
 func TestPullRequestWritesAnnounceTheChange(t *testing.T) {
 	t.Parallel()
 	writes := map[string]func(s *Service) error{
-		"merge":             func(s *Service) error { return s.MergePullRequest("/repo", 7, "squash", "", "", false) },
-		"submit review":     func(s *Service) error { return s.SubmitReview("/repo", 7, "approve", "", "", nil) },
-		"reply":             func(s *Service) error { return s.ReplyToReviewThread("/repo", 7, 1, "ok") },
-		"edit comment":      func(s *Service) error { return s.EditReviewComment("/repo", 7, 1, "ok") },
-		"delete comment":    func(s *Service) error { return s.DeleteReviewComment("/repo", 7, 1) },
-		"edit pr comment":   func(s *Service) error { return s.EditPullRequestComment("/repo", 7, 1, "ok") },
-		"delete pr comment": func(s *Service) error { return s.DeletePullRequestComment("/repo", 7, 1) },
-		"edit review body":  func(s *Service) error { return s.EditReviewBody("/repo", 7, 1, "ok") },
-		"resolve thread":    func(s *Service) error { return s.ResolveReviewThread("/repo", "T_1", true) },
-		"comment":           func(s *Service) error { return s.CommentOnPullRequest("/repo", 7, "hi") },
-		"edit title":        func(s *Service) error { return s.EditPullRequestTitle("/repo", 7, "title") },
-		"edit body":         func(s *Service) error { return s.EditPullRequestBody("/repo", 7, "") },
+		"merge": func(s *Service) error {
+			if _, err := s.MergePullRequest(t.Context(), api.MergePullRequestOptions{Path: "/repo", Number: 7, Method: "squash"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"submit review": func(s *Service) error {
+			if _, err := s.SubmitReview(t.Context(), api.SubmitReviewOptions{Path: "/repo", Number: 7, Event: "approve"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"reply": func(s *Service) error {
+			if _, err := s.ReplyToReviewThread(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 7, CommentID: 1, Body: "ok"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"edit comment": func(s *Service) error {
+			if _, err := s.EditReviewComment(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 7, CommentID: 1, Body: "ok"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"delete comment": func(s *Service) error {
+			if _, err := s.DeleteReviewComment(t.Context(), api.PRCommentOptions{Path: "/repo", Number: 7, CommentID: 1}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"edit pr comment": func(s *Service) error {
+			if _, err := s.EditPullRequestComment(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 7, CommentID: 1, Body: "ok"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"delete pr comment": func(s *Service) error {
+			if _, err := s.DeletePullRequestComment(t.Context(), api.PRCommentOptions{Path: "/repo", Number: 7, CommentID: 1}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"edit review body": func(s *Service) error {
+			if _, err := s.EditReviewBody(t.Context(), api.PRReviewBodyOptions{Path: "/repo", Number: 7, ReviewID: 1, Body: "ok"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"resolve thread": func(s *Service) error {
+			if _, err := s.ResolveReviewThread(t.Context(), api.ResolveThreadOptions{Path: "/repo", ThreadID: "T_1", Resolved: true}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"comment": func(s *Service) error {
+			if _, err := s.CommentOnPullRequest(t.Context(), api.PRBodyOptions{Path: "/repo", Number: 7, Body: "hi"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"edit title": func(s *Service) error {
+			if _, err := s.EditPullRequestTitle(t.Context(), api.PRTitleOptions{Path: "/repo", Number: 7, Title: "title"}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"edit body": func(s *Service) error {
+			if _, err := s.EditPullRequestBody(t.Context(), api.PRBodyOptions{Path: "/repo", Number: 7}); err != nil {
+				return err
+			}
+			return nil
+		},
 	}
 	for name, write := range writes {
 		t.Run(name+" emits once it landed", func(t *testing.T) {
@@ -67,7 +127,7 @@ func TestPullRequestChangeNamesTheNumber(t *testing.T) {
 	log := &changeLog{}
 	s := withGH(&fakeGH{})
 	s.SetEmit(log.emit)
-	if err := s.MergePullRequest("/repo", 42, "merge", "", "", false); err != nil {
+	if _, err := s.MergePullRequest(t.Context(), api.MergePullRequestOptions{Path: "/repo", Number: 42, Method: "merge"}); err != nil {
 		t.Fatal(err)
 	}
 	if got := log.data[0].Number; got != 42 {
@@ -77,7 +137,7 @@ func TestPullRequestChangeNamesTheNumber(t *testing.T) {
 
 func TestPullRequestWriteWithoutEmitter(t *testing.T) {
 	t.Parallel()
-	if err := withGH(&fakeGH{}).CommentOnPullRequest("/repo", 7, "hi"); err != nil {
+	if _, err := withGH(&fakeGH{}).CommentOnPullRequest(t.Context(), api.PRBodyOptions{Path: "/repo", Number: 7, Body: "hi"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

@@ -16,7 +16,7 @@ func TestOpenSubagentOpensInTheCallersWorktree(t *testing.T) {
 	svc, sessions, worktrees, term, _ := newService(t)
 	sessions.projects[0].Sessions[0].Path = "/wt/auth-fix"
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
@@ -38,7 +38,7 @@ func TestOpenSubagentOpensInTheCallersWorktree(t *testing.T) {
 func TestOpenSubagentOpensInTheCallersProjectDirectory(t *testing.T) {
 	svc, sessions, _, term, _ := newService(t)
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestOpenSubagentWithAWorktreeOpensItAsOpenDoes(t *testing.T) {
 	svc, sessions, worktrees, term, _ := newService(t)
 	sessions.projects[0].Sessions[0].Path = "/wt/elsewhere"
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1", Worktree: "auth-fix"})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1", Worktree: "auth-fix"})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestOpenSubagentWithAWorktreeOpensItAsOpenDoes(t *testing.T) {
 func TestOpenSubagentFilesTheWorkerUnderTheCallersLabel(t *testing.T) {
 	svc, sessions, _, _, events := newService(t)
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestOpenSubagentFilesTheWorkerUnderTheCallersLabel(t *testing.T) {
 func TestOpenSubagentFilesTheCallerBesideItsWorkers(t *testing.T) {
 	svc, sessions, _, _, events := newService(t)
 
-	if _, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"}); err != nil {
+	if _, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"}); err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
 	if sessions.folders["s1"] != "Session 3" {
@@ -103,7 +103,7 @@ func TestOpenSubagentFilesTheWorkerUnderTheCallersFolder(t *testing.T) {
 	svc, sessions, _, _, events := newService(t)
 	sessions.projects[0].Sessions[0].Folder = "Auth"
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestOpenSubagentFilesTheWorkerUnderTheCallersFolder(t *testing.T) {
 func TestOpenSubagentPassesTheOverridesThrough(t *testing.T) {
 	svc, sessions, _, term, _ := newService(t)
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1", Kind: "claude", Model: "opus", Effort: "high", Ultracode: true})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1", Kind: "claude", Model: "opus", Effort: "high", Ultracode: true})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
@@ -139,14 +139,14 @@ func TestOpenSubagentPassesTheOverridesThrough(t *testing.T) {
 func TestOpenSubagentMarksTheRow(t *testing.T) {
 	svc, sessions, _, _, _ := newService(t)
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
 	if sessions.subagents[opened.ID] != 1 {
 		t.Errorf("subagents = %v, want the worker one level deep", sessions.subagents)
 	}
-	if plain, _ := svc.Open(OpenOptions{From: "s1"}); sessions.subagents[plain.ID] != 0 {
+	if plain, _ := svc.Open(t.Context(), OpenOptions{From: "s1"}); sessions.subagents[plain.ID] != 0 {
 		t.Error("a plain Open was marked as a subagent")
 	}
 }
@@ -156,7 +156,7 @@ func TestOpenSubagentFromAWorkerGoesOneLevelDeeper(t *testing.T) {
 	svc, sessions, _, _, _ := newService(t)
 	sessions.subagents = map[string]int{"s1": 1}
 
-	opened, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"})
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("OpenSubagent: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestOpenSubagentStartsEvenWhenTheMarkCannotBeWritten(t *testing.T) {
 	svc, sessions, _, term, _ := newService(t)
 	sessions.subagentErr = errors.New("disk full")
 
-	_, err := svc.OpenSubagent(OpenSubagentOptions{From: "s1"})
+	_, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
 	if err == nil || !strings.Contains(err.Error(), "subagent") {
 		t.Errorf("err = %v, want the mark's failure reported", err)
 	}
@@ -183,7 +183,7 @@ func TestOpenSubagentNeedsACallingSession(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			svc, sessions, _, _, _ := newService(t)
 
-			_, err := svc.OpenSubagent(OpenSubagentOptions{From: fromID})
+			_, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: fromID})
 			if err == nil || !strings.Contains(err.Error(), "subagent") {
 				t.Fatalf("err = %v, want a refusal naming the subagent", err)
 			}

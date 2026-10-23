@@ -25,8 +25,8 @@ func recordProjectEvents(t *testing.T, svc *Service) *[]projectEvent {
 // has to be the committed row, not the one before it.
 func TestProjectEventsFollowTheCommit(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
 	var seen [][]string
 	svc.SetProjectChanged(func(string, any) {
 		var ids []string
@@ -36,9 +36,9 @@ func TestProjectEventsFollowTheCommit(t *testing.T) {
 		seen = append(seen, ids)
 	})
 
-	_ = svc.ReorderProjects([]string{"p2", "p1"})
-	_ = svc.CloseProject("p2")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
+	_, _ = svc.ReorderProjects(t.Context(), api.ReorderProjectsOptions{IDs: []string{"p2", "p1"}})
+	_, _ = svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p2"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
 
 	want := [][]string{{"p2", "p1"}, {"p1"}, {"p2", "p1"}}
 	if !reflect.DeepEqual(seen, want) {
@@ -50,10 +50,10 @@ func TestAddProjectEventCarriesTheStoredIdentity(t *testing.T) {
 	svc := newTestStore(t)
 	got := recordProjectEvents(t, svc)
 
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.CloseProject("p1")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"})
 	// A relocated checkout comes back under the same id at another path.
-	_ = svc.AddProject("p1", "moved", "/tmp/moved")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "moved", Path: "/tmp/moved"})
 
 	want := []projectEvent{
 		{api.ProjectAddedEvent.Name, ProjectAdded{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}},
@@ -69,7 +69,7 @@ func TestCloseProjectAnnouncesOnlyARowThatWasThere(t *testing.T) {
 	svc := newTestStore(t)
 	got := recordProjectEvents(t, svc)
 
-	if err := svc.CloseProject("never-opened"); err != nil {
+	if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "never-opened"}); err != nil {
 		t.Fatalf("CloseProject: %v", err)
 	}
 	if len(*got) != 0 {
@@ -79,11 +79,11 @@ func TestCloseProjectAnnouncesOnlyARowThatWasThere(t *testing.T) {
 
 func TestReorderProjectsAnnouncesTheStoredOrder(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
 	got := recordProjectEvents(t, svc)
 
-	if err := svc.ReorderProjects([]string{"p2", "p1"}); err != nil {
+	if _, err := svc.ReorderProjects(t.Context(), api.ReorderProjectsOptions{IDs: []string{"p2", "p1"}}); err != nil {
 		t.Fatalf("ReorderProjects: %v", err)
 	}
 	want := []projectEvent{{api.ProjectsReorderedEvent.Name, ProjectsReordered{IDs: []string{"p2", "p1"}}}}
@@ -94,18 +94,18 @@ func TestReorderProjectsAnnouncesTheStoredOrder(t *testing.T) {
 
 func TestAProjectMutationWithoutAListenerStillWrites(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	if err := svc.CloseProject("p1"); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"}); err != nil {
 		t.Fatalf("CloseProject: %v", err)
 	}
-	if err := svc.ReorderProjects([]string{"p1"}); err != nil {
+	if _, err := svc.ReorderProjects(t.Context(), api.ReorderProjectsOptions{IDs: []string{"p1"}}); err != nil {
 		t.Fatalf("ReorderProjects: %v", err)
 	}
 }
 
 func mustLoad(t *testing.T, svc *Service) []Project {
 	t.Helper()
-	ps, err := svc.LoadState()
+	ps, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}

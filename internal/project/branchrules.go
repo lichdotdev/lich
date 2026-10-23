@@ -1,6 +1,7 @@
 package project
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -42,17 +43,17 @@ type ghBranchRule struct {
 // exists to *narrow* what the merge menu offers, so failing to answer must
 // leave the menu as wide as it was, never empty. The bypass is the exception
 // and runs the other way; see ViewerCanBypass and viewerAdministers.
-func (s *Service) BranchRules(path, branch string) (*BranchRules, error) {
-	if branch == "" {
+func (s *Service) BranchRules(_ context.Context, opts api.PathBranchOptions) (*BranchRules, error) {
+	if opts.Branch == "" {
 		return nil, fmt.Errorf("a branch is required")
 	}
-	out, err := s.gh(prReadTimeout, path, "api",
-		"repos/{owner}/{repo}/rules/branches/"+url.PathEscape(branch))
+	out, err := s.gh(prReadTimeout, opts.Path, "api",
+		"repos/{owner}/{repo}/rules/branches/"+url.PathEscape(opts.Branch))
 	if err != nil {
 		return nil, err
 	}
 	rules := parseBranchRules(out)
-	rules.ViewerCanBypass = s.viewerAdministers(path)
+	rules.ViewerCanBypass = s.viewerAdministers(opts.Path)
 	return rules, nil
 }
 

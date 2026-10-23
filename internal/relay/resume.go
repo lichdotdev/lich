@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"log/slog"
 	"slices"
 	"time"
@@ -107,7 +108,7 @@ func (s *Service) takeResumeLocked(id, state string) bool {
 
 // sessionRow finds session id in the workspace.
 func (s *Service) sessionRow(id string) (store.Session, bool) {
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		slog.Warn("relay: read session", "session", id, "err", err)
 		return store.Session{}, false

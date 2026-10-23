@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -124,7 +125,7 @@ func TestListBranches(t *testing.T) {
 	addLocalOrigin(t, git)
 
 	svc := New(nil)
-	got, err := svc.ListBranches(repo)
+	got, err := svc.ListBranches(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("ListBranches: %v", err)
 	}
@@ -138,11 +139,11 @@ func TestListBranches(t *testing.T) {
 		t.Errorf("Worktrees = %v, want empty (main worktree is skipped)", got.Worktrees)
 	}
 
-	wt, err := svc.CreateWorktree(repo, "pid", "resume-me", "main", false)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "resume-me", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}
-	got, err = svc.ListBranches(repo)
+	got, err = svc.ListBranches(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("ListBranches after create: %v", err)
 	}
@@ -160,7 +161,7 @@ func TestListBranches(t *testing.T) {
 		t.Errorf("Local after create = %v, want [extra main] (resume-me is a worktree, not a plain base)", got.Local)
 	}
 
-	if _, err := svc.ListBranches(t.TempDir()); err == nil {
+	if _, err := svc.ListBranches(t.Context(), api.PathOptions{Path: t.TempDir()}); err == nil {
 		t.Error("ListBranches(non-repo) = nil error, want error")
 	}
 }
@@ -208,7 +209,7 @@ func TestCreateWorktree(t *testing.T) {
 	repo, _ := initRepo(t)
 
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", "feat/x", "main", false)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "feat/x", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}
@@ -222,7 +223,7 @@ func TestCreateWorktree(t *testing.T) {
 		t.Errorf("Branch(worktree) = %q, want feat/x", got)
 	}
 
-	random, err := svc.CreateWorktree(repo, "pid", "", "main", false)
+	random, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree(random name): %v", err)
 	}
@@ -262,7 +263,7 @@ func TestCreateWorktreeErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateWorktree(repo, "pid", tt.wtName, "main", false)
+			_, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: tt.wtName, Base: "main"})
 			if err == nil || !strings.Contains(err.Error(), tt.wantSub) {
 				t.Errorf("CreateWorktree(%q) error = %v, want containing %q", tt.wtName, err, tt.wantSub)
 			}
@@ -275,7 +276,7 @@ func TestCreateWorktreeErrors(t *testing.T) {
 	if err := os.MkdirAll(leftover, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	_, err := svc.CreateWorktree(repo, "pid", "occupied", "main", false)
+	_, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "occupied", Base: "main"})
 	if err == nil || !strings.Contains(err.Error(), "already exists") {
 		t.Errorf("CreateWorktree(existing path) error = %v, want 'already exists'", err)
 	}
@@ -307,7 +308,7 @@ func TestCreateWorktreeExistingBranch(t *testing.T) {
 	// The reporter's call, verbatim: the prepared branch as the name, the remote
 	// it was cut from as the base.
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", branch, "origin/main", true)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: branch, Base: "origin/main", BaseIsRemote: true})
 	if err != nil {
 		t.Fatalf("CreateWorktree(existing branch): %v", err)
 	}
@@ -350,7 +351,7 @@ func TestCreateWorktreeRemoteBase(t *testing.T) {
 	addLocalOrigin(t, git)
 
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", "from-remote", "origin/feature", true)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "from-remote", Base: "origin/feature", BaseIsRemote: true})
 	if err != nil {
 		t.Fatalf("CreateWorktree(remote base): %v", err)
 	}
@@ -389,7 +390,7 @@ func TestCreateWorktreeRemoteBaseAmbiguousName(t *testing.T) {
 	git("branch", "origin/feature", "HEAD")
 
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", "from-remote", "origin/feature", true)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "from-remote", Base: "origin/feature", BaseIsRemote: true})
 	if err != nil {
 		t.Fatalf("CreateWorktree(remote base): %v", err)
 	}
@@ -426,7 +427,7 @@ func TestCreateWorktreeRemoteBaseRefusesAStaleRefOffline(t *testing.T) {
 	git("remote", "set-url", "origin", filepath.Join(t.TempDir(), "unreachable"))
 
 	svc := New(nil)
-	_, err := svc.CreateWorktree(repo, "pid", "from-remote", "origin/feature", true)
+	_, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "from-remote", Base: "origin/feature", BaseIsRemote: true})
 
 	if err == nil {
 		t.Fatal("CreateWorktree(failed fetch, stale ref) = nil error, want a refusal")
@@ -451,7 +452,7 @@ func TestCreateWorktreeRemoteBaseNotFetched(t *testing.T) {
 	git("fetch", "origin")
 
 	svc := New(nil)
-	_, err := svc.CreateWorktree(repo, "pid", "from-remote", "origin/feature", true)
+	_, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "from-remote", Base: "origin/feature", BaseIsRemote: true})
 	if err == nil {
 		t.Fatal("CreateWorktree(unfetchable remote base) = nil error, want a refusal")
 	}
@@ -470,31 +471,31 @@ func TestRemoveWorktree(t *testing.T) {
 	repo, _ := initRepo(t)
 
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", "gone", "main", false)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "gone", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}
-	if err := svc.RemoveWorktree(repo, wt.Path, false, false); err != nil {
+	if _, err := svc.RemoveWorktree(t.Context(), api.RemoveWorktreeOptions{ProjectPath: repo, WorktreePath: wt.Path}); err != nil {
 		t.Fatalf("RemoveWorktree(clean): %v", err)
 	}
 	if _, err := os.Stat(wt.Path); !os.IsNotExist(err) {
 		t.Errorf("worktree dir still exists after remove")
 	}
 
-	dirty, err := svc.CreateWorktree(repo, "pid", "dirty", "main", false)
+	dirty, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "dirty", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(dirty.Path, "a.txt"), []byte("changed\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.RemoveWorktree(repo, dirty.Path, false, false); err == nil {
+	if _, err := svc.RemoveWorktree(t.Context(), api.RemoveWorktreeOptions{ProjectPath: repo, WorktreePath: dirty.Path}); err == nil {
 		t.Error("RemoveWorktree(dirty) = nil error, want refusal")
 	}
 	if _, err := os.Stat(dirty.Path); err != nil {
 		t.Errorf("dirty worktree should remain on disk: %v", err)
 	}
-	if err := svc.RemoveWorktree(repo, dirty.Path, true, false); err != nil {
+	if _, err := svc.RemoveWorktree(t.Context(), api.RemoveWorktreeOptions{ProjectPath: repo, WorktreePath: dirty.Path, Force: true}); err != nil {
 		t.Fatalf("RemoveWorktree(dirty, force): %v", err)
 	}
 	if _, err := os.Stat(dirty.Path); !os.IsNotExist(err) {
@@ -523,7 +524,7 @@ func TestWorktreeAdopted(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := svc.WorktreeAdopted(c.path); got != c.adopted {
+			if got := svc.worktreeAdopted(c.path); got != c.adopted {
 				t.Errorf("WorktreeAdopted(%q) = %v, want %v", c.path, got, c.adopted)
 			}
 		})
@@ -543,7 +544,7 @@ func TestRemoveWorktreeRefusesAnAdoptedCheckoutUnacknowledged(t *testing.T) {
 
 	svc := New(nil)
 	for _, force := range []bool{false, true} {
-		if err := svc.RemoveWorktree(repo, adopted, force, false); err == nil {
+		if _, err := svc.RemoveWorktree(t.Context(), api.RemoveWorktreeOptions{ProjectPath: repo, WorktreePath: adopted, Force: force}); err == nil {
 			t.Fatalf("RemoveWorktree(force=%v) = nil, want a refusal", force)
 		}
 	}
@@ -552,7 +553,7 @@ func TestRemoveWorktreeRefusesAnAdoptedCheckoutUnacknowledged(t *testing.T) {
 	}
 	// Still registered: no `git worktree remove` ran, so the picker keeps
 	// offering it — the refusal costs the removal, never the session.
-	branches, err := svc.ListBranches(repo)
+	branches, err := svc.ListBranches(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("ListBranches: %v", err)
 	}
@@ -575,13 +576,13 @@ func TestRemoveWorktreeAcknowledgedAdoptedCheckout(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dirty, "a.txt"), []byte("changed\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.RemoveWorktree(repo, dirty, false, true); err == nil {
+	if _, err := svc.RemoveWorktree(t.Context(), api.RemoveWorktreeOptions{ProjectPath: repo, WorktreePath: dirty, AdoptedAck: true}); err == nil {
 		t.Error("RemoveWorktree(adopted, dirty) = nil error, want git's refusal")
 	}
 	if _, err := os.Stat(dirty); err != nil {
 		t.Errorf("dirty checkout should remain on disk: %v", err)
 	}
-	if err := svc.RemoveWorktree(repo, dirty, true, true); err != nil {
+	if _, err := svc.RemoveWorktree(t.Context(), api.RemoveWorktreeOptions{ProjectPath: repo, WorktreePath: dirty, Force: true, AdoptedAck: true}); err != nil {
 		t.Fatalf("RemoveWorktree(adopted, dirty, force): %v", err)
 	}
 	if _, err := os.Stat(dirty); !os.IsNotExist(err) {
@@ -590,7 +591,7 @@ func TestRemoveWorktreeAcknowledgedAdoptedCheckout(t *testing.T) {
 
 	clean := filepath.Join(t.TempDir(), "by-hand")
 	git("worktree", "add", "-b", "by-hand", clean, "main")
-	if err := svc.RemoveWorktree(repo, clean, false, true); err != nil {
+	if _, err := svc.RemoveWorktree(t.Context(), api.RemoveWorktreeOptions{ProjectPath: repo, WorktreePath: clean, AdoptedAck: true}); err != nil {
 		t.Fatalf("RemoveWorktree(adopted, clean): %v", err)
 	}
 	if _, err := os.Stat(clean); !os.IsNotExist(err) {
@@ -598,7 +599,7 @@ func TestRemoveWorktreeAcknowledgedAdoptedCheckout(t *testing.T) {
 	}
 	// Collected, not just deleted: the picker stops offering a checkout that is
 	// gone, which is the point of removing it through lich at all.
-	branches, err := svc.ListBranches(repo)
+	branches, err := svc.ListBranches(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("ListBranches: %v", err)
 	}
@@ -614,18 +615,18 @@ func TestWorktreeDirty(t *testing.T) {
 	repo, _ := initRepo(t)
 
 	svc := New(nil)
-	wt, err := svc.CreateWorktree(repo, "pid", "wt", "main", false)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "wt", Base: "main"})
 	if err != nil {
 		t.Fatalf("CreateWorktree: %v", err)
 	}
-	if dirty, err := svc.WorktreeDirty(wt.Path); err != nil || dirty {
+	if dirty, err := svc.WorktreeDirty(t.Context(), api.PathOptions{Path: wt.Path}); err != nil || dirty {
 		t.Errorf("WorktreeDirty(clean) = %v, %v; want false, nil", dirty, err)
 	}
 
 	if err := os.WriteFile(filepath.Join(wt.Path, "new.txt"), []byte("x\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if dirty, err := svc.WorktreeDirty(wt.Path); err != nil || !dirty {
+	if dirty, err := svc.WorktreeDirty(t.Context(), api.PathOptions{Path: wt.Path}); err != nil || !dirty {
 		t.Errorf("WorktreeDirty(untracked file) = %v, %v; want true, nil", dirty, err)
 	}
 
@@ -635,11 +636,11 @@ func TestWorktreeDirty(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(wt.Path, "a.txt"), []byte("changed\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if dirty, err := svc.WorktreeDirty(wt.Path); err != nil || !dirty {
+	if dirty, err := svc.WorktreeDirty(t.Context(), api.PathOptions{Path: wt.Path}); err != nil || !dirty {
 		t.Errorf("WorktreeDirty(modified file) = %v, %v; want true, nil", dirty, err)
 	}
 
-	if _, err := svc.WorktreeDirty(t.TempDir()); err == nil {
+	if _, err := svc.WorktreeDirty(t.Context(), api.PathOptions{Path: t.TempDir()}); err == nil {
 		t.Error("WorktreeDirty(non-repo) = nil error, want error")
 	}
 }
@@ -701,7 +702,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 		gh := &scriptedGH{headJSON: `{"headRefName":"fix/poll","isCrossRepository":false}`}
 		svc := &Service{runner: gh.run}
 
-		wt, err := svc.CreateWorktreeFromPR(repo, "proj", 105)
+		wt, err := svc.CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 105})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -753,7 +754,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 			return ""
 		})
 
-		if _, err := svc.CreateWorktreeFromPR(repo, "proj", 105); err != nil {
+		if _, err := svc.CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 105}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if gh.checkoutToken != "gho_project" {
@@ -769,7 +770,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 		repo, _ := initRepo(t)
 		gh := &scriptedGH{headJSON: `{"headRefName":"patch-1","isCrossRepository":true,"maintainerCanModify":false}`}
 
-		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(repo, "proj", 103)
+		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 103})
 		if err == nil || !strings.Contains(err.Error(), "fork") {
 			t.Fatalf("want a fork refusal, got %v", err)
 		}
@@ -786,7 +787,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 		repo, _ := initRepo(t)
 		gh := &scriptedGH{headJSON: `{"headRefName":"patch-1","isCrossRepository":true,"maintainerCanModify":true}`}
 
-		wt, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(repo, "proj", 103)
+		wt, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 103})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -804,7 +805,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 			checkoutErr: errors.New("fatal: 'fix/poll' is already checked out"),
 		}
 
-		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(repo, "proj", 105)
+		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 105})
 		if err == nil || !strings.Contains(err.Error(), "already checked out") {
 			t.Fatalf("want gh's own refusal, got %v", err)
 		}
@@ -829,7 +830,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 			lockOnFail:  true,
 		}
 
-		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(repo, "proj", 105)
+		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 105})
 		if err == nil {
 			t.Fatal("expected an error")
 		}
@@ -843,7 +844,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 
 	t.Run("a number that cannot name a pull request never reaches gh", func(t *testing.T) {
 		gh := &scriptedGH{}
-		if _, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.TempDir(), "proj", 0); err == nil {
+		if _, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: t.TempDir(), ProjectID: "proj"}); err == nil {
 			t.Error("expected an error for pull request 0")
 		}
 		if len(gh.calls) != 0 {
@@ -861,7 +862,7 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 		}
 		gh := &scriptedGH{headJSON: `{"headRefName":"fix/poll","isCrossRepository":false}`}
 
-		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(repo, "proj", 105)
+		_, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 105})
 		if err == nil || !strings.Contains(err.Error(), "already exists") {
 			t.Fatalf("want an already-exists refusal, got %v", err)
 		}
@@ -901,7 +902,7 @@ func TestCreateWorktreeFromPRRejectsRefName(t *testing.T) {
 	repo, _ := initRepo(t)
 	gh := &scriptedGH{headJSON: `{"headRefName":"../../escaped","isCrossRepository":false}`}
 
-	if _, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(repo, "proj", 105); err == nil {
+	if _, err := (&Service{runner: gh.run}).CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 105}); err == nil {
 		t.Fatal("expected check-ref-format to refuse the head branch")
 	}
 	if gh.checkoutDir != "" {
@@ -927,11 +928,11 @@ func TestCheckoutPathsSurviveASymlink(t *testing.T) {
 	repo, _ := initRepo(t)
 	svc := &Service{}
 
-	wt, err := svc.CreateWorktree(repo, "proj", "feature", "main", false)
+	wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "proj", Name: "feature", Base: "main"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	checkouts, err := svc.ListCheckouts(repo)
+	checkouts, err := svc.ListCheckouts(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -948,7 +949,7 @@ func TestListCheckouts(t *testing.T) {
 	svc := &Service{}
 
 	t.Run("the project's own checkout counts", func(t *testing.T) {
-		checkouts, err := svc.ListCheckouts(repo)
+		checkouts, err := svc.ListCheckouts(t.Context(), api.PathOptions{Path: repo})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -956,7 +957,7 @@ func TestListCheckouts(t *testing.T) {
 			t.Fatalf("want the main checkout on main, got %+v", checkouts)
 		}
 		// ListBranches drops it on purpose; the two must not be confused again.
-		branches, err := svc.ListBranches(repo)
+		branches, err := svc.ListBranches(t.Context(), api.PathOptions{Path: repo})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -966,11 +967,11 @@ func TestListCheckouts(t *testing.T) {
 	})
 
 	t.Run("linked worktrees come along", func(t *testing.T) {
-		wt, err := svc.CreateWorktree(repo, "proj", "feature", "main", false)
+		wt, err := svc.CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "proj", Name: "feature", Base: "main"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		checkouts, err := svc.ListCheckouts(repo)
+		checkouts, err := svc.ListCheckouts(t.Context(), api.PathOptions{Path: repo})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -992,7 +993,7 @@ func TestListCheckouts(t *testing.T) {
 	// different string for the same directory — and the caller compares what it
 	// gets against the project path it already holds.
 	t.Run("the caller's own path is handed back unchanged", func(t *testing.T) {
-		checkouts, err := svc.ListCheckouts(repo)
+		checkouts, err := svc.ListCheckouts(t.Context(), api.PathOptions{Path: repo})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1003,7 +1004,7 @@ func TestListCheckouts(t *testing.T) {
 
 	t.Run("a detached checkout holds no branch", func(t *testing.T) {
 		git("worktree", "add", "--detach", filepath.Join(t.TempDir(), "loose"))
-		checkouts, err := svc.ListCheckouts(repo)
+		checkouts, err := svc.ListCheckouts(t.Context(), api.PathOptions{Path: repo})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

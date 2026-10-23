@@ -99,7 +99,7 @@ type Info = api.ProfileInfo
 
 // Profiles lists every profile with its login state. The statuses are asked for
 // at once, one CLI each.
-func (s *Service) Profiles() ([]Info, error) {
+func (s *Service) Profiles(_ context.Context, _ api.None) ([]Info, error) {
 	profiles, err := List()
 	if err != nil {
 		return nil, err
@@ -147,12 +147,14 @@ func (s *Service) loggedIn(p Profile) (bool, error) {
 
 // CreateProfile makes a profile and lays it out against Personal. The window
 // logs it in next (Login).
-func (s *Service) CreateProfile(name string) (Profile, error) { return Create(name) }
+func (s *Service) CreateProfile(_ context.Context, opts api.CreateProfileOptions) (Profile, error) {
+	return Create(opts.Name)
+}
 
 // UpdateProfile changes a profile's name, color or image and returns it; its
 // directory never moves.
-func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, error) {
-	p, err := Update(slug, u)
+func (s *Service) UpdateProfile(_ context.Context, opts api.UpdateProfileOptions) (Profile, error) {
+	p, err := Update(opts.Slug, opts.Update)
 	if err != nil {
 		return p, err
 	}
@@ -164,20 +166,20 @@ func (s *Service) UpdateProfile(slug string, u profilestore.Update) (Profile, er
 // named it, so a project set to it falls back to the global profile. It refuses
 // while a session runs in it. A parked session born in it fails to resume with
 // ErrProfileGone.
-func (s *Service) DeleteProfile(slug string) error {
+func (s *Service) DeleteProfile(ctx context.Context, opts api.ProfileSlugOptions) (api.None, error) {
 	if s.inUse != nil {
-		if n := s.inUse(slug); n > 0 {
-			return fmt.Errorf("profile %q has %d running session(s); close them before deleting it", slug, n)
+		if n := s.inUse(opts.Slug); n > 0 {
+			return api.None{}, fmt.Errorf("profile %q has %d running session(s); close them before deleting it", opts.Slug, n)
 		}
 	}
-	s.CancelLogin(slug)
-	if err := Delete(slug); err != nil {
-		return err
+	s.cancelLogin(opts.Slug)
+	if err := Delete(opts.Slug); err != nil {
+		return api.None{}, err
 	}
 	if s.forget != nil {
-		return s.forget(slug)
+		return api.None{}, s.forget(opts.Slug)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 type Plugin = api.ProfilePlugin
@@ -185,8 +187,8 @@ type Plugin = api.ProfilePlugin
 // Plugins lists the plugins a profile has installed, the ones a port can carry
 // to another profile, in its config.toml's order. The lich plugin is not among
 // them.
-func (s *Service) Plugins(slug string) ([]Plugin, error) {
-	dir, err := ConfigDir(slug)
+func (s *Service) Plugins(_ context.Context, opts api.ProfileSlugOptions) ([]Plugin, error) {
+	dir, err := ConfigDir(opts.Slug)
 	if err != nil {
 		return nil, err
 	}
@@ -212,8 +214,8 @@ type PluginResult = api.ProfilePluginResult
 // A marketplace the profile has not declared is declared as Personal declares
 // it, its ref included, and fetched first. One result per key, in order; one
 // failure does not stop the rest.
-func (s *Service) InstallPlugins(slug string, keys []string) ([]PluginResult, error) {
-	dir, err := ConfigDir(slug)
+func (s *Service) InstallPlugins(_ context.Context, opts api.InstallPluginsOptions) ([]PluginResult, error) {
+	dir, err := ConfigDir(opts.Slug)
 	if err != nil {
 		return nil, err
 	}
@@ -221,9 +223,9 @@ func (s *Service) InstallPlugins(slug string, keys []string) ([]PluginResult, er
 	if err != nil {
 		return nil, err
 	}
-	p := Profile{Slug: slug, Dir: dir, Personal: IsPersonal(slug)}
-	results := make([]PluginResult, 0, len(keys))
-	for _, key := range keys {
+	p := Profile{Slug: opts.Slug, Dir: dir, Personal: IsPersonal(opts.Slug)}
+	results := make([]PluginResult, 0, len(opts.Keys))
+	for _, key := range opts.Keys {
 		if !pluginKeyPattern.MatchString(key) {
 			results = append(results, PluginResult{Key: key, Message: "not a plugin@marketplace name"})
 			continue

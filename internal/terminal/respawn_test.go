@@ -33,7 +33,7 @@ const reapSettle = 250 * time.Millisecond
 // is all that goroutine has left to do.
 func respawn(t *testing.T, svc *Service, id string) *session {
 	t.Helper()
-	if err := svc.Start(id, "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: id, ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("first start: %v", err)
 	}
 	svc.mu.Lock()
@@ -43,10 +43,10 @@ func respawn(t *testing.T, svc *Service, id string) *session {
 		t.Fatal("the first start registered no session")
 	}
 
-	if err := svc.Close(id); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: id}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
-	if err := svc.Start(id, "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: id, ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("second start: %v", err)
 	}
 
@@ -62,7 +62,7 @@ func respawn(t *testing.T, svc *Service, id string) *session {
 func TestRespawnedSessionIsNotToldItExited(t *testing.T) {
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{bin: echoBin(t)}, nil, hub)
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
 	respawn(t, svc, "s1")
 
@@ -80,7 +80,7 @@ func TestRespawnedSessionIsNotToldItExited(t *testing.T) {
 // resolves to the new PTY and input still reaches it.
 func TestRespawnedSessionKeepsItsPTY(t *testing.T) {
 	svc := New(stubBins{bin: echoBin(t)}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
 	respawn(t, svc, "s1")
 
@@ -93,7 +93,7 @@ func TestRespawnedSessionKeepsItsPTY(t *testing.T) {
 	}
 
 	const marker = "lich-respawn-marker"
-	if err := svc.Write("s1", marker+"\n"); err != nil {
+	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "s1", Data: marker + "\n"}); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	waitFor(t, func() bool {
@@ -108,9 +108,9 @@ func TestRespawnedSessionKeepsItsPTY(t *testing.T) {
 func TestExitEventCarriesTheExitCode(t *testing.T) {
 	hub, rec := newProbeHub(t)
 	svc := New(stubBins{bin: exitBin(t, 3)}, nil, hub)
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 
@@ -138,9 +138,9 @@ func TestExitEventOmitsAnUnobservedStatus(t *testing.T) {
 	// echoBin execs cat, so the pid below is the process holding the PTY —
 	// a script that forked one would leave the slave open and never reach EOF.
 	svc := New(stubBins{bin: echoBin(t)}, nil, hub)
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	// Killed behind the service's back: Close would evict the session first and
@@ -177,7 +177,7 @@ func exitBin(t *testing.T, code int) string {
 // replayOf returns a session's replay buffer decoded back to raw output.
 func replayOf(t *testing.T, svc *Service, id string) string {
 	t.Helper()
-	encoded, err := svc.Replay(id)
+	encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: id})
 	if err != nil {
 		t.Fatalf("replay: %v", err)
 	}
@@ -196,7 +196,7 @@ func TestReapForgetsOpenTurn(t *testing.T) {
 	var open atomic.Int64
 	svc.turns.onOpen = func(n int) { open.Store(int64(n)) }
 	id := "reaped"
-	if err := svc.Start(id, "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: id, ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	svc.turns.report(id, statusBusy)

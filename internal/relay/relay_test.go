@@ -27,7 +27,9 @@ type fakeSessions struct {
 	branches map[string]string
 }
 
-func (f fakeSessions) LoadState() ([]store.Project, error) { return f.projects, f.err }
+func (f fakeSessions) LoadState(_ context.Context, _ api.None) ([]store.Project, error) {
+	return f.projects, f.err
+}
 
 func (f fakeSessions) SessionBranch(sessionID string) string { return f.branches[sessionID] }
 
@@ -106,19 +108,19 @@ func (f *fakeTerminal) renamed(id, name string) {
 	f.names[id] = name
 }
 
-func (f *fakeTerminal) Live(id string) bool {
+func (f *fakeTerminal) Live(_ context.Context, opts api.SessionIDOptions) (bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.live[id]
+	return f.live[opts.ID], nil
 }
 
 // Ready defaults to "as ready as it is live": most tests are about delivery and
 // answers, not about an agent that is still starting, nor about a prompt its
 // own user is typing at. The ones that are set starting or typing.
-func (f *fakeTerminal) Ready(id string) bool {
+func (f *fakeTerminal) Ready(_ context.Context, opts api.SessionIDOptions) (bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.live[id] && !f.starting[id] && !f.typing[id]
+	return f.live[opts.ID] && !f.starting[opts.ID] && !f.typing[opts.ID], nil
 }
 
 // AtPrompt is Ready that does not mind the person's unsent line.
@@ -173,26 +175,26 @@ func (f *fakeTerminal) drains(id string) int {
 	return f.drained[id]
 }
 
-func (f *fakeTerminal) Write(id, data string) error {
+func (f *fakeTerminal) Write(_ context.Context, opts api.WriteOptions) (api.None, error) {
 	f.mu.Lock()
 	err := f.writeErr
 	if err != nil {
 		f.refused++
 	} else {
-		f.writes[id] = append(f.writes[id], data)
-		if f.holding[id] {
-			f.inHold[id] = append(f.inHold[id], data)
+		f.writes[opts.ID] = append(f.writes[opts.ID], opts.Data)
+		if f.holding[opts.ID] {
+			f.inHold[opts.ID] = append(f.inHold[opts.ID], opts.Data)
 		}
 	}
 	hook := f.onWrite
 	f.mu.Unlock()
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
 	if hook != nil {
-		hook(id, data)
+		hook(opts.ID, opts.Data)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // failWrites makes every write fail from here on, and refusals counts what was
@@ -405,7 +407,7 @@ func TestPeersListsLiveSessionsWithoutTheCaller(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2", "s3", "s5"), nil)
 
-	peers, err := svc.Peers(PeersOptions{From: "s1"})
+	peers, err := svc.Peers(t.Context(), PeersOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Peers: %v", err)
 	}
@@ -442,7 +444,7 @@ func TestPeersCarryTheStateEachSessionReported(t *testing.T) {
 	svc.Observe("s2", "waiting")
 	svc.Observe("s3", "done")
 
-	peers, err := svc.Peers(PeersOptions{From: "s1"})
+	peers, err := svc.Peers(t.Context(), PeersOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Peers: %v", err)
 	}
@@ -479,7 +481,7 @@ func TestACompactionMovesNoState(t *testing.T) {
 	svc.Observe("s3", "done")
 	svc.Observe("s3", "compacting")
 
-	peers, err := svc.Peers(PeersOptions{From: "s1"})
+	peers, err := svc.Peers(t.Context(), PeersOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Peers: %v", err)
 	}
@@ -511,7 +513,7 @@ func TestPeersDoNotCallAnIdlePromptWaiting(t *testing.T) {
 	// One that never reported a turn at all: its first word is the notification.
 	svc.Observe("s3", "waiting")
 
-	peers, err := svc.Peers(PeersOptions{From: "s1"})
+	peers, err := svc.Peers(t.Context(), PeersOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Peers: %v", err)
 	}
@@ -528,7 +530,7 @@ func TestPeersReportsAStoreFailure(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(fakeSessions{err: errors.New("database is locked")}, newFakeTerminal(), nil)
 
-	if _, err := svc.Peers(PeersOptions{From: "s1"}); err == nil {
+	if _, err := svc.Peers(t.Context(), PeersOptions{From: "s1"}); err == nil {
 		t.Fatal("want an error when the workspace cannot be read")
 	}
 }
@@ -622,7 +624,7 @@ func TestSendDeliversAndReplyAnswers(t *testing.T) {
 	})
 
 	ticketID := waitForTicket(svc)
-	if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "3 failures in foo_test"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "3 failures in foo_test"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	wg.Wait()
@@ -673,7 +675,7 @@ func TestAMessageFromOutsideLichIsAttributedToTheCommandLine(t *testing.T) {
 	term := newFakeTerminal("s2")
 	svc := newRelay(workspace(), term, nil)
 
-	go func() { _ = svc.Reply(ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
+	go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
 	if _, err := svc.Send(context.Background(), SendOptions{Target: "docs", Prompt: "hello", WaitSeconds: 30}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
@@ -737,7 +739,7 @@ func TestARosterNameReachesTheSameSession(t *testing.T) {
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
-	go func() { _ = svc.Reply(ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
+	go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
 	got, err := svc.Send(context.Background(), SendOptions{
 		From: "s1", Target: RosterName("/src/lich", "s2"), Prompt: "hello", WaitSeconds: 30,
 	})
@@ -762,7 +764,7 @@ func TestARenamedSessionAnswersToItsNewName(t *testing.T) {
 	term.renamed("s2", "reviewer")
 	svc := newRelay(workspace(), term, nil)
 
-	go func() { _ = svc.Reply(ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
+	go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
 	got, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "reviewer", Prompt: "hello", WaitSeconds: 30})
 	if err != nil {
 		t.Fatalf("Send by the renamed roster name: %v", err)
@@ -813,7 +815,7 @@ func TestTheLabelWinsARosterCollision(t *testing.T) {
 	term := newFakeTerminal("s1", "s2", "s3")
 	svc := newRelay(collide, term, nil)
 
-	go func() { _ = svc.Reply(ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
+	go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
 	if _, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "lich-s3", Prompt: "hello", WaitSeconds: 30}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
@@ -893,7 +895,7 @@ func TestBothCardsAreMarkedAndCleared(t *testing.T) {
 		}
 	}
 
-	if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "3 failures"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "3 failures"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	<-done
@@ -918,7 +920,7 @@ func TestAnExternalSenderMarksOnlyTheTarget(t *testing.T) {
 		if !events.awaitMark("s2", DirectionIn) {
 			return
 		}
-		_ = svc.Reply(ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"})
+		_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"})
 	}()
 	if _, err := svc.Send(context.Background(), SendOptions{Target: "docs", Prompt: "hello", WaitSeconds: 30}); err != nil {
 		t.Fatalf("Send: %v", err)
@@ -1120,7 +1122,7 @@ func TestAQueuedRequestIgnoresTheTurnAlreadyRunning(t *testing.T) {
 	}
 	// Contract change: an errand closed this way still takes a late answer on
 	// its ticket (Service.lapsed), for a worker whose work outlived its turn.
-	if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "late"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "late"}); err != nil {
 		t.Errorf("a late answer = %v, want it filed for the sender", err)
 	}
 }
@@ -1347,7 +1349,7 @@ func TestABusyReportInsideTheDeliveryWindowCountsForTheTicket(t *testing.T) {
 	if result.Status != StatusPending {
 		t.Fatalf("status = %q, want the errand still open", result.Status)
 	}
-	if err := svc.Reply(ReplyOptions{Ticket: result.Ticket, Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: result.Ticket, Answer: "all green"}); err != nil {
 		t.Errorf("the target's own answer was refused: %v", err)
 	}
 }
@@ -1400,7 +1402,7 @@ func TestAnAnsweredTicketIsNotAlsoStalled(t *testing.T) {
 	ticketID := waitForTicket(svc)
 
 	svc.Observe("s2", "busy")
-	if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "3 failures"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "3 failures"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	svc.Observe("s2", "done")
@@ -1484,7 +1486,7 @@ func TestAnAnswerNobodyWaitedForIsStashedAndNudged(t *testing.T) {
 		t.Fatalf("the sender was typed at before any answer existed: %q", term.written("s1"))
 	}
 
-	if err := svc.Reply(ReplyOptions{Ticket: got.Ticket, Answer: "3 failures in foo_test"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: got.Ticket, Answer: "3 failures in foo_test"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 
@@ -1536,7 +1538,7 @@ func TestAnAnswerSomeoneIsWaitingForIsNotAlsoTyped(t *testing.T) {
 		done <- got
 	}()
 	ticketID := waitForTicket(svc)
-	if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 
@@ -1560,7 +1562,7 @@ func TestAnExternalSenderHasNoPromptToAnswerAt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Send: %v", err)
 	}
-	if err := svc.Reply(ReplyOptions{Ticket: got.Ticket, Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: got.Ticket, Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 
@@ -1593,7 +1595,7 @@ func TestSendNarrowsAnAmbiguousLabelByProject(t *testing.T) {
 
 	go func() {
 		ticketID := waitForTicket(svc)
-		_ = svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "ok"})
+		_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "ok"})
 	}()
 	got, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "api", Project: "revu", Prompt: "hello", WaitSeconds: 30})
 	if err != nil {
@@ -1668,7 +1670,7 @@ func TestSendPendsWhenTheWaitRunsOutAndWaitPicksItUp(t *testing.T) {
 
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		_ = svc.Reply(ReplyOptions{Ticket: got.Ticket, Answer: "late but here"})
+		_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: got.Ticket, Answer: "late but here"})
 	}()
 	again, err := svc.Wait(context.Background(), WaitOptions{Ticket: got.Ticket, WaitSeconds: 30})
 	if err != nil {
@@ -1684,7 +1686,7 @@ func TestReplyRefusesUnknownAndRepeatedTickets(t *testing.T) {
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 
-	if err := svc.Reply(ReplyOptions{Ticket: "deadbeef", Answer: "hello"}); err == nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "deadbeef", Answer: "hello"}); err == nil {
 		t.Error("want an error replying to a ticket that never existed")
 	}
 
@@ -1694,14 +1696,14 @@ func TestReplyRefusesUnknownAndRepeatedTickets(t *testing.T) {
 		done <- got
 	}()
 	ticketID := waitForTicket(svc)
-	if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "first"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "first"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	got := <-done
 	if got.Answer != "first" {
 		t.Fatalf("answer = %q", got.Answer)
 	}
-	if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "second"}); err == nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "second"}); err == nil {
 		t.Error("want an error replying to an answered ticket")
 	}
 }
@@ -1728,7 +1730,7 @@ func TestReplyWithoutATicketAnswersTheOneOpenErrand(t *testing.T) {
 		t.Fatal("the message was never delivered")
 	}
 
-	if err := svc.Reply(ReplyOptions{From: "s2", Answer: "3 failures in foo_test"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{From: "s2", Answer: "3 failures in foo_test"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	select {
@@ -1771,7 +1773,7 @@ func TestReplyWithoutATicketIsRefusedWithTwoErrandsOpen(t *testing.T) {
 		t.Fatal("the second message was never delivered")
 	}
 
-	err := svc.Reply(ReplyOptions{From: "s2", Answer: "docs are built"})
+	_, err := svc.Reply(t.Context(), ReplyOptions{From: "s2", Answer: "docs are built"})
 	if err == nil {
 		t.Fatal("a ticketless answer was accepted with two errands open")
 	}
@@ -1799,7 +1801,7 @@ func TestReplyWithoutATicketIsRefusedWithTwoErrandsOpen(t *testing.T) {
 		t.Fatalf("the refused answer closed an errand anyway: %+v", got)
 	default:
 	}
-	if err := svc.Reply(ReplyOptions{From: "s2", Ticket: ids[0], Answer: "answered by name"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{From: "s2", Ticket: ids[0], Answer: "answered by name"}); err != nil {
 		t.Fatalf("Reply with a ticket: %v", err)
 	}
 }
@@ -1864,10 +1866,10 @@ func TestReplyWithoutATicketNeedsAnErrandItCanName(t *testing.T) {
 	svc := newRelay(workspace(), term, nil)
 	svc.deliveryLimit = 50 * time.Millisecond
 
-	if err := svc.Reply(ReplyOptions{Answer: "from a script"}); err == nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Answer: "from a script"}); err == nil {
 		t.Error("want an error answering with no ticket and no session")
 	}
-	if err := svc.Reply(ReplyOptions{From: "s2", Answer: "nobody asked"}); err == nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{From: "s2", Answer: "nobody asked"}); err == nil {
 		t.Error("want an error answering a session with no open request")
 	}
 
@@ -1878,7 +1880,7 @@ func TestReplyWithoutATicketNeedsAnErrandItCanName(t *testing.T) {
 	if waitForTicket(svc) == "" {
 		t.Fatal("the queued errand never registered")
 	}
-	if err := svc.Reply(ReplyOptions{From: "s2", Answer: "answered before it was asked"}); err == nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{From: "s2", Answer: "answered before it was asked"}); err == nil {
 		t.Error("a task still queued for its prompt was answered")
 	}
 }
@@ -1931,7 +1933,7 @@ func TestSendBoundsThePrompt(t *testing.T) {
 
 	go func() {
 		ticketID := waitForTicket(svc)
-		_ = svc.Reply(ReplyOptions{Ticket: ticketID, Answer: "ok"})
+		_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: "ok"})
 	}()
 	if _, err := svc.Send(context.Background(), SendOptions{
 		From: "s1", Target: "docs", Prompt: strings.Repeat("a", 8192), WaitSeconds: 30,
@@ -1962,7 +1964,7 @@ func TestReplyTruncatesAnOversizedAnswer(t *testing.T) {
 				done <- got
 			}()
 			ticketID := waitForTicket(svc)
-			if err := svc.Reply(ReplyOptions{Ticket: ticketID, Answer: tt.answer}); err != nil {
+			if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: ticketID, Answer: tt.answer}); err != nil {
 				t.Fatalf("Reply: %v", err)
 			}
 
@@ -2142,7 +2144,7 @@ func TestSendQueuesForASessionThatIsNotAtAPromptYet(t *testing.T) {
 
 	// The ticket the caller left with is the one that answers: an errand
 	// delivered late is not a different errand.
-	if err := svc.Reply(ReplyOptions{Ticket: result.Ticket, Answer: "green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: result.Ticket, Answer: "green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	answered, err := svc.Wait(context.Background(), WaitOptions{Ticket: result.Ticket, WaitSeconds: 1})
@@ -2630,10 +2632,10 @@ func TestABurstOfAnswersCoalescesIntoOneNudge(t *testing.T) {
 	plant(svc, "t1", "s1", "s2", "docs")
 	plant(svc, "t2", "s1", "s3", "api")
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "done here"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "done here"}); err != nil {
 		t.Fatalf("Reply t1: %v", err)
 	}
-	if err := svc.Reply(ReplyOptions{Ticket: "t2", Answer: "done there"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t2", Answer: "done there"}); err != nil {
 		t.Fatalf("Reply t2: %v", err)
 	}
 
@@ -2663,7 +2665,7 @@ func TestABusySenderIsNudgedOnlyWhenItsTurnEnds(t *testing.T) {
 	svc.Observe("s1", stateBusy)
 	plant(svc, "t1", "s1", "s2", "docs")
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	time.Sleep(20 * time.Millisecond)
@@ -2685,7 +2687,7 @@ func TestANudgeIsNotRepeatedOnLaterTurnEnds(t *testing.T) {
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	if !awaitWritten(term, "s1", "[lich]") {
@@ -2711,7 +2713,7 @@ func TestANudgeThatNeverLandedIsSentAgain(t *testing.T) {
 	term.failWrites(errors.New("pty closed"))
 	plant(svc, "t1", "s1", "s2", "docs")
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	deadline := time.Now().Add(2 * time.Second)
@@ -2741,7 +2743,7 @@ func TestNothingIsTypedIntoAPromptItsUserIsHolding(t *testing.T) {
 	term.typeAt("s1", true)
 	plant(svc, "t1", "s1", "s2", "docs")
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 	// Long enough for the nudge's debounce to have fired and typed.
@@ -2764,7 +2766,7 @@ func TestCollectHoldsTheLineForTheNextResult(t *testing.T) {
 
 	go func() {
 		time.Sleep(20 * time.Millisecond)
-		_ = svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"})
+		_, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"})
 	}()
 	collected, err := svc.Collect(context.Background(), CollectOptions{From: "s1", WaitSeconds: 2})
 	if err != nil {
@@ -2787,7 +2789,7 @@ func TestCollectReportsWhoStillOwes(t *testing.T) {
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
 	plant(svc, "t2", "s1", "s3", "api")
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 
@@ -2834,7 +2836,7 @@ func TestWaitPicksAStashedOutcomeUp(t *testing.T) {
 	term := newFakeTerminal("s1", "s2")
 	svc := newRelay(workspace(), term, nil)
 	plant(svc, "t1", "s1", "s2", "docs")
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 
@@ -2880,10 +2882,10 @@ func TestTheInboxSizeIsAnnouncedAsItGrowsAndDrains(t *testing.T) {
 	plant(svc, "t1", "s1", "s2", "docs")
 	plant(svc, "t2", "s1", "s3", "api")
 
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "one"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "one"}); err != nil {
 		t.Fatalf("Reply t1: %v", err)
 	}
-	if err := svc.Reply(ReplyOptions{Ticket: "t2", Answer: "two"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t2", Answer: "two"}); err != nil {
 		t.Fatalf("Reply t2: %v", err)
 	}
 	if got := events.inboxCounts("s1"); len(got) != 2 || got[0] != 1 || got[1] != 2 {
@@ -2904,7 +2906,7 @@ func TestASingleTicketPickupAnnouncesTheSmallerInbox(t *testing.T) {
 	events := &fakeEvents{}
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), events)
 	plant(svc, "t1", "s1", "s2", "docs")
-	if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "one"}); err != nil {
+	if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "one"}); err != nil {
 		t.Fatalf("Reply: %v", err)
 	}
 
@@ -2952,7 +2954,7 @@ func TestTheNudgeNamesTheToolOnlyWhereItExists(t *testing.T) {
 			svc := newRelay(workspace(), term, nil)
 			svc.SetPlugins(fakePlugins{installed: true, tools: tt.tools})
 			plant(svc, "t1", "s1", "s2", "docs")
-			if err := svc.Reply(ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
+			if _, err := svc.Reply(t.Context(), ReplyOptions{Ticket: "t1", Answer: "all green"}); err != nil {
 				t.Fatalf("Reply: %v", err)
 			}
 
@@ -3103,7 +3105,7 @@ func TestSendReachesASessionByItsID(t *testing.T) {
 	term := newFakeTerminal("s1", "s5")
 	svc := newRelay(workspace(), term, nil)
 
-	go func() { _ = svc.Reply(ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
+	go func() { _, _ = svc.Reply(t.Context(), ReplyOptions{Ticket: waitForTicket(svc), Answer: "ok"}) }()
 	got, err := svc.Send(context.Background(), SendOptions{From: "s1", Target: "s5", Prompt: "hello", WaitSeconds: 30})
 	if err != nil {
 		t.Fatalf("Send by id: %v", err)
@@ -3133,7 +3135,7 @@ func TestSelfIsTheCallersOwnEntry(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(workspace(), newFakeTerminal("s1", "s2"), nil)
 
-	got, err := svc.Self(SelfOptions{From: "s1"})
+	got, err := svc.Self(t.Context(), SelfOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Self: %v", err)
 	}
@@ -3153,7 +3155,7 @@ func TestSelfRefusesACallerWithoutASession(t *testing.T) {
 	svc := newRelay(workspace(), newFakeTerminal("s1"), nil)
 
 	for id, want := range map[string]string{"": "LICH_SESSION_ID is unset", "gone": `no session with id "gone"`} {
-		if _, err := svc.Self(SelfOptions{From: id}); err == nil || !strings.Contains(err.Error(), want) {
+		if _, err := svc.Self(t.Context(), SelfOptions{From: id}); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("Self(%q) err = %v, want one saying %q", id, err, want)
 		}
 	}
@@ -3172,7 +3174,7 @@ func TestAReapedOrClosedSessionForgetsItsState(t *testing.T) {
 	svc.SessionExited("s2")
 	svc.SessionClosed("s3", "")
 
-	peers, err := svc.Peers(PeersOptions{From: "s1"})
+	peers, err := svc.Peers(t.Context(), PeersOptions{From: "s1"})
 	if err != nil {
 		t.Fatalf("Peers: %v", err)
 	}

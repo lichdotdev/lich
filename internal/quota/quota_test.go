@@ -407,7 +407,7 @@ func TestPlansServesEveryMeteredProviderFromOneReading(t *testing.T) {
 
 	// Cursor has no login here and still answers, signed out; opencode has no
 	// Go key and Antigravity no CLI, so neither has a plan to answer with.
-	plans := s.Plans("")
+	plans := s.plans("")
 	if len(plans) != 3 {
 		t.Fatalf("plans = %+v, want one per metered provider", plans)
 	}
@@ -421,14 +421,14 @@ func TestPlansServesEveryMeteredProviderFromOneReading(t *testing.T) {
 
 	// Inside the TTL the endpoints are not asked again.
 	s.now = func() time.Time { return now.Add(4*time.Minute + 59*time.Second) }
-	s.Plans("")
+	s.plans("")
 	if *claudeCalls != 1 || *codexCalls != 1 {
 		t.Fatalf("calls = %d/%d after a cached read, want 1/1", *claudeCalls, *codexCalls)
 	}
 
 	// Past it they are.
 	s.now = func() time.Time { return now.Add(5*time.Minute + time.Second) }
-	s.Plans("")
+	s.plans("")
 	if *claudeCalls != 2 || *codexCalls != 2 {
 		t.Errorf("calls = %d/%d after the TTL, want 2/2", *claudeCalls, *codexCalls)
 	}

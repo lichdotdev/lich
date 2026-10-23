@@ -1,6 +1,7 @@
 package spawn
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -32,9 +33,9 @@ type FoldersOptions = api.FoldersOptions
 
 // Folders lists a project's folders. Project names it; empty takes the caller's
 // own, exactly as Worktrees does.
-func (s *Service) Folders(opts FoldersOptions) ([]Folder, error) {
+func (s *Service) Folders(ctx context.Context, opts FoldersOptions) ([]Folder, error) {
 	fromID, projectName := opts.From, opts.Project
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(ctx, api.None{})
 	if err != nil {
 		return nil, fmt.Errorf("read the workspace: %w", err)
 	}
@@ -75,11 +76,11 @@ type FileOptions = api.FileSessionOptions
 //
 // target is the session to file, by either of the names it answers to; empty
 // files the caller's own, as a rename does.
-func (s *Service) File(opts FileOptions) (Filed, error) {
+func (s *Service) File(ctx context.Context, opts FileOptions) (Filed, error) {
 	fromID, target, projectName := opts.From, opts.Target, opts.Project
 	folder := strings.TrimSpace(opts.Folder)
 
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(ctx, api.None{})
 	if err != nil {
 		return Filed{}, fmt.Errorf("read the workspace: %w", err)
 	}
@@ -88,7 +89,7 @@ func (s *Service) File(opts FileOptions) (Filed, error) {
 		return Filed{}, err
 	}
 
-	if err := s.sessions.SetSessionFolder(found.session.ID, folder); err != nil {
+	if _, err := s.sessions.SetSessionFolder(ctx, api.SessionFolderOptions{SessionID: found.session.ID, Folder: folder}); err != nil {
 		return Filed{}, err
 	}
 	if s.events != nil {
@@ -120,7 +121,7 @@ type RenameFolderOptions = api.RenameFolderOptions
 // not this call's own read: a card filed under the old name in between is
 // rewritten too. Parked sessions move with the rest but have no card, so the
 // answer names the open ones.
-func (s *Service) RenameFolder(opts RenameFolderOptions) (Refiled, error) {
+func (s *Service) RenameFolder(ctx context.Context, opts RenameFolderOptions) (Refiled, error) {
 	fromID, projectName := opts.From, opts.Project
 	from, to := strings.TrimSpace(opts.Folder), strings.TrimSpace(opts.To)
 	if from == "" {
@@ -132,7 +133,7 @@ func (s *Service) RenameFolder(opts RenameFolderOptions) (Refiled, error) {
 		return Refiled{}, err
 	}
 
-	moved, err := s.sessions.RenameFolder(target.ID, from, to)
+	moved, err := s.sessions.RenameFolder(ctx, api.RenameProjectFolderOptions{ProjectID: target.ID, From: from, To: to})
 	if err != nil {
 		return Refiled{}, err
 	}
@@ -154,7 +155,7 @@ type ColorFolderOptions = api.ColorFolderOptions
 // reason RenameFolder gives. The colour is one of the window's palette names,
 // in any case; a name outside it is refused, since the window would draw it as
 // no colour and the caller would be told otherwise.
-func (s *Service) ColorFolder(opts ColorFolderOptions) (Colored, error) {
+func (s *Service) ColorFolder(_ context.Context, opts ColorFolderOptions) (Colored, error) {
 	fromID, projectName := opts.From, opts.Project
 	folder, color := strings.TrimSpace(opts.Folder), strings.ToLower(strings.TrimSpace(opts.Color))
 	if folder == "" {
@@ -186,7 +187,7 @@ func (s *Service) ColorFolder(opts ColorFolderOptions) (Colored, error) {
 // names it; empty takes the caller's own) and refuses a folder no session in it
 // carries: the store would match no row and answer success.
 func (s *Service) projectHolding(fromID, projectName, folder string) (store.Project, error) {
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		return store.Project{}, fmt.Errorf("read the workspace: %w", err)
 	}

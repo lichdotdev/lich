@@ -3,6 +3,7 @@ package store
 import (
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -13,14 +14,14 @@ func TestSubagentCardsAreOffOnlyForTheLiteralFalse(t *testing.T) {
 	if !svc.SubagentCards(providers.Claude) {
 		t.Error("unconfigured provider has subagent cards off, want on")
 	}
-	_ = svc.SetSetting("provider.claude.subagentCards", globalScope, "false")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.subagentCards", ProjectID: globalScope, Value: "false"})
 	if svc.SubagentCards(providers.Claude) {
 		t.Error(`"false" leaves subagent cards on, want off`)
 	}
 	if !svc.SubagentCards(providers.Codex) {
 		t.Error("another provider follows Claude's setting, want its own")
 	}
-	_ = svc.SetSetting("provider.claude.subagentCards", globalScope, "true")
+	_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider.claude.subagentCards", ProjectID: globalScope, Value: "true"})
 	if !svc.SubagentCards(providers.Claude) {
 		t.Error(`"true" leaves subagent cards off, want on`)
 	}

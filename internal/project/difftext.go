@@ -1,7 +1,9 @@
 package project
 
 import (
+	"context"
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,9 +15,9 @@ import (
 // unstaged + untracked) against HEAD. A repository without commits diffs
 // against git's empty tree. Untracked files are rendered as new-file hunks so
 // the review panel shows them alongside tracked changes.
-func (s *Service) DiffText(path string) (string, error) {
-	status := readWorkTree(path)
-	tracked, err := readGit(path, "diff", status.base)
+func (s *Service) DiffText(_ context.Context, opts api.PathOptions) (string, error) {
+	status := readWorkTree(opts.Path)
+	tracked, err := readGit(opts.Path, "diff", status.base)
 	if err != nil {
 		return "", err
 	}
@@ -23,7 +25,7 @@ func (s *Service) DiffText(path string) (string, error) {
 	var out strings.Builder
 	out.WriteString(tracked)
 	for _, rel := range status.untracked {
-		out.WriteString(untrackedDiff(path, rel))
+		out.WriteString(untrackedDiff(opts.Path, rel))
 	}
 	return displayDiff(out.String()), nil
 }

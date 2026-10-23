@@ -2,6 +2,7 @@ package project
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"maps"
 	"slices"
 	"testing"
@@ -53,7 +54,7 @@ func TestPullRequestDetailMarksRequiredChecks(t *testing.T) {
 		{"name":"deploy","detailsUrl":"https://x/deploy","isRequired":true}
 	]}}}}]}}}}}`)
 	gh := &fakeGH{outs: [][]byte{view, required}}
-	pr, err := withGH(gh).PullRequestDetail("/repo", 0)
+	pr, err := withGH(gh).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -74,7 +75,7 @@ func TestPullRequestDetailRequiredLookupFailure(t *testing.T) {
 	t.Parallel()
 	view := []byte(`{"number":7,"state":"OPEN","statusCheckRollup":[{"name":"test","status":"IN_PROGRESS"}]}`)
 	gh := &fakeGH{outs: [][]byte{view, nil}, errs: []error{nil, errors.New("gh is not signed in to GitHub.")}}
-	if _, err := withGH(gh).PullRequestDetail("/repo", 0); err == nil {
+	if _, err := withGH(gh).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"}); err == nil {
 		t.Fatal("expected the lookup's error")
 	}
 }
@@ -82,7 +83,7 @@ func TestPullRequestDetailRequiredLookupFailure(t *testing.T) {
 func TestPullRequestDetailWithoutChecksSkipsTheLookup(t *testing.T) {
 	t.Parallel()
 	gh := &fakeGH{out: []byte(`{"number":7,"state":"OPEN"}`)}
-	if _, err := withGH(gh).PullRequestDetail("/repo", 0); err != nil {
+	if _, err := withGH(gh).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if gh.calls != 1 {

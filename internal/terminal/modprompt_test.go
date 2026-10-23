@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/relay"
 )
@@ -15,7 +16,7 @@ func TestSubmitPromptFindsNoModToHandItTo(t *testing.T) {
 	unpolled := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(unpolled, "s1")
 	stopped := attachedModService(t)
-	if err := stopped.Close("s1"); err != nil {
+	if _, err := stopped.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	tests := []struct {
@@ -110,7 +111,7 @@ func TestSubmitPromptEndsWithTheSession(t *testing.T) {
 	svc := attachedModService(t)
 	done := submitInBackground(t, context.Background(), svc)
 	collectMod(t, svc.ws, "s1")
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	if got := receiptOf(t, done); got.State != relay.PromptEnded {
@@ -139,7 +140,7 @@ func TestModAttachedOnlyWhileAModPollsFromARunningSession(t *testing.T) {
 	unpolled := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(unpolled, "s1")
 	stopped := attachedModService(t)
-	if err := stopped.Close("s1"); err != nil {
+	if _, err := stopped.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	tests := []struct {

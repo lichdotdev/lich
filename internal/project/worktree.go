@@ -24,10 +24,10 @@ type Branches = api.Branches
 
 // ListBranches returns the repository's local and remote branches and its
 // existing worktrees. A path that is not a git repository yields an error.
-func (s *Service) ListBranches(path string) (Branches, error) {
+func (s *Service) ListBranches(_ context.Context, opts api.PathOptions) (Branches, error) {
 	branches := Branches{Local: []string{}, Remote: []string{}, Worktrees: []Worktree{}}
 
-	list, err := runGit(path, "worktree", "list", "--porcelain")
+	list, err := runGit(opts.Path, "worktree", "list", "--porcelain")
 	if err != nil {
 		return branches, err
 	}
@@ -42,7 +42,7 @@ func (s *Service) ListBranches(path string) (Branches, error) {
 		occupied[wt.Name] = true
 	}
 
-	local, err := runGit(path, "for-each-ref", "--format=%(refname:short)", "refs/heads")
+	local, err := runGit(opts.Path, "for-each-ref", "--format=%(refname:short)", "refs/heads")
 	if err != nil {
 		return branches, err
 	}
@@ -54,7 +54,7 @@ func (s *Service) ListBranches(path string) (Branches, error) {
 
 	// Full refnames, not :short — the short form of refs/remotes/origin/HEAD is
 	// just "origin", which would dodge a suffix filter.
-	remote, err := runGit(path, "for-each-ref", "--format=%(refname)", "refs/remotes")
+	remote, err := runGit(opts.Path, "for-each-ref", "--format=%(refname)", "refs/remotes")
 	if err != nil {
 		return branches, err
 	}
@@ -93,8 +93,8 @@ func parseWorktrees(out string) []Worktree {
 // It answers a different question: which branches are spoken for. git refuses to
 // check one branch out twice, so a caller about to check a branch out has to
 // know about the main checkout as much as about the linked ones.
-func (s *Service) ListCheckouts(path string) ([]Worktree, error) {
-	out, err := runGit(path, "worktree", "list", "--porcelain")
+func (s *Service) ListCheckouts(_ context.Context, opts api.PathOptions) ([]Worktree, error) {
+	out, err := runGit(opts.Path, "worktree", "list", "--porcelain")
 	if err != nil {
 		return nil, err
 	}
@@ -104,10 +104,10 @@ func (s *Service) ListCheckouts(path string) ([]Worktree, error) {
 	// projectID hashes and what every stored session carries — so a checkout
 	// the caller cannot recognise as "the project itself" sends it down the
 	// worktree flows, which is precisely what this call exists to prevent.
-	own := canonicalPath(path)
+	own := canonicalPath(opts.Path)
 	for i, c := range checkouts {
 		if c.Path == own {
-			checkouts[i].Path = filepath.Clean(path)
+			checkouts[i].Path = filepath.Clean(opts.Path)
 		}
 	}
 	return checkouts, nil
@@ -293,16 +293,16 @@ func (s *Service) fetchBaseRef(projectPath, remote, branch string) error {
 	return nil
 }
 
-// CreateWorktree creates a git worktree named name (random when empty) under
-// the app data dir, branching off base. A remote base is fetched first, and the
+// CreateWorktree creates a git worktree named opts.Name (random when empty) under
+// the app data dir, branching off opts.Base. A remote base is fetched first, and the
 // new branch is left with no upstream. A branch that already exists is checked
-// out as it stands, and base is ignored. The worktree is verified usable before
+// out as it stands, and opts.Base is ignored. The worktree is verified usable before
 // returning, so a success here means a session can be opened at Path right away.
-func (s *Service) CreateWorktree(projectPath, projectID, name, base string, baseIsRemote bool) (*Worktree, error) {
-	if name == "" {
-		name = randomWorktreeName(func(n string) bool { return branchExists(projectPath, n) })
+func (s *Service) CreateWorktree(_ context.Context, opts api.CreateWorktreeOptions) (*Worktree, error) {
+	if opts.Name == "" {
+		opts.Name = randomWorktreeName(func(n string) bool { return branchExists(opts.ProjectPath, n) })
 	}
-	wtPath, err := reserveWorktreePath(projectPath, projectID, name)
+	wtPath, err := reserveWorktreePath(opts.ProjectPath, opts.ProjectID, opts.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -314,17 +314,17 @@ func (s *Service) CreateWorktree(projectPath, projectID, name, base string, base
 	// branch prepared in advance used to be deleting it first. base drops out
 	// with it — it decides where a branch starts, and this one already started.
 	args := []string{"worktree", "add"}
-	source := base
-	reused := branchExists(projectPath, name)
+	source := opts.Base
+	reused := branchExists(opts.ProjectPath, opts.Name)
 	if reused {
-		source = name
+		source = opts.Name
 	} else {
-		if baseIsRemote {
-			remote, branch, ok := strings.Cut(base, "/")
+		if opts.BaseIsRemote {
+			remote, branch, ok := strings.Cut(opts.Base, "/")
 			if !ok {
-				return nil, fmt.Errorf("%q is not a remote branch lich can track.", base)
+				return nil, fmt.Errorf("%q is not a remote branch lich can track.", opts.Base)
 			}
-			if err := s.fetchBaseRef(projectPath, remote, branch); err != nil {
+			if err := s.fetchBaseRef(opts.ProjectPath, remote, branch); err != nil {
 				return nil, err
 			}
 			// The full refname, never the "origin/main" shorthand: a repository
@@ -332,7 +332,7 @@ func (s *Service) CreateWorktree(projectPath, projectID, name, base string, base
 			// two refs answering to that shorthand, and git refuses the pair
 			// outright ("ambiguous object name") — a refusal the person reading
 			// it cannot connect to a branch name they may not know exists.
-			source = "refs/remotes/" + base
+			source = "refs/remotes/" + opts.Base
 			// --no-track, because autoSetupMerge would otherwise make the base
 			// this branch's upstream: a `git pull` in the session's terminal
 			// would merge the base into the work, and `git status` would report
@@ -340,11 +340,11 @@ func (s *Service) CreateWorktree(projectPath, projectID, name, base string, base
 			// is the first push's question, and the user's to answer.
 			args = append(args, "--no-track")
 		}
-		args = append(args, "-b", name)
+		args = append(args, "-b", opts.Name)
 	}
 	// "--": source is unvalidated, and "-"-prefixed it would parse as a flag.
 	args = append(args, "--", wtPath, source)
-	if _, err := runGit(projectPath, args...); err != nil {
+	if _, err := runGit(opts.ProjectPath, args...); err != nil {
 		return nil, err
 	}
 
@@ -353,8 +353,8 @@ func (s *Service) CreateWorktree(projectPath, projectID, name, base string, base
 	if _, err := runGit(wtPath, "rev-parse", "--is-inside-work-tree"); err != nil {
 		return nil, errors.New("The worktree was created but git does not read it as a checkout.")
 	}
-	seedWorktree(projectPath, wtPath)
-	return &Worktree{Name: name, Path: canonicalPath(wtPath), Reused: reused}, nil
+	seedWorktree(opts.ProjectPath, wtPath)
+	return &Worktree{Name: opts.Name, Path: canonicalPath(wtPath), Reused: reused}, nil
 }
 
 // prHead is the little of a pull request CreateWorktreeFromPR needs: which
@@ -394,39 +394,44 @@ func (s *Service) pullRequestHead(path string, number int) (prHead, error) {
 // other and the pull request opens. A failed checkout takes the worktree with it
 // — a detached husk would sit in the picker offering a resume of nothing, and
 // would hold the path against a second attempt.
-func (s *Service) CreateWorktreeFromPR(projectPath, projectID string, number int) (*Worktree, error) {
-	if number <= 0 {
-		return nil, fmt.Errorf("%d is not a pull request number.", number)
+func (s *Service) CreateWorktreeFromPR(_ context.Context, opts api.CreateWorktreeFromPROptions) (*Worktree, error) {
+	if opts.Number <= 0 {
+		return nil, fmt.Errorf("%d is not a pull request number.", opts.Number)
 	}
-	head, err := s.pullRequestHead(projectPath, number)
+	head, err := s.pullRequestHead(opts.ProjectPath, opts.Number)
 	if err != nil {
 		return nil, err
 	}
 	if head.CrossRepo && !head.CanModify {
-		return nil, fmt.Errorf("Pull request #%d comes from a fork that does not allow edits by maintainers: its branch could not be pushed back.", number)
+		return nil, fmt.Errorf("Pull request #%d comes from a fork that does not allow edits by maintainers: its branch could not be pushed back.", opts.Number)
 	}
-	wtPath, err := reserveWorktreePath(projectPath, projectID, head.RefName)
+	wtPath, err := reserveWorktreePath(opts.ProjectPath, opts.ProjectID, head.RefName)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := runGit(projectPath, "worktree", "add", "--detach", wtPath); err != nil {
+	if _, err := runGit(opts.ProjectPath, "worktree", "add", "--detach", wtPath); err != nil {
 		return nil, err
 	}
 	// The checkout runs inside the new worktree but answers to the project's
 	// account: the worktree has no session row yet, so it can name no account
 	// of its own.
-	if _, err := s.ghFor(projectPath, prCheckoutTimeout, wtPath, "pr", "checkout", strconv.Itoa(number)); err != nil {
-		if _, rmErr := runGit(projectPath, "worktree", "remove", "--force", wtPath); rmErr != nil {
+	if _, err := s.ghFor(opts.ProjectPath, prCheckoutTimeout, wtPath, "pr", "checkout", strconv.Itoa(opts.Number)); err != nil {
+		if _, rmErr := runGit(opts.ProjectPath, "worktree", "remove", "--force", wtPath); rmErr != nil {
 			slog.Warn("worktree left behind by a failed PR checkout", "path", wtPath, "err", rmErr)
 			return nil, fmt.Errorf("%w Its half-made worktree could not be removed either.", err)
 		}
 		return nil, err
 	}
-	seedWorktree(projectPath, wtPath)
+	seedWorktree(opts.ProjectPath, wtPath)
 	return &Worktree{Name: head.RefName, Path: canonicalPath(wtPath)}, nil
 }
 
-// WorktreeAdopted reports whether the checkout at wtPath is one lich adopted
+// WorktreeAdopted answers worktreeAdopted over RPC.
+func (s *Service) WorktreeAdopted(_ context.Context, opts api.PathOptions) (bool, error) {
+	return s.worktreeAdopted(opts.Path), nil
+}
+
+// worktreeAdopted reports whether the checkout at wtPath is one lich adopted
 // rather than created: `git worktree list` hands back every worktree of a
 // repository, so one the user made by hand appears in the picker and hosts a
 // session like any other, and nothing but its path tells the two apart.
@@ -437,7 +442,7 @@ func (s *Service) CreateWorktreeFromPR(projectPath, projectID string, number int
 // Both sides go through canonicalPath, and an unresolvable root reads as
 // adopted: the answer gates a deletion, so the unknown case has to be the one
 // that asks first.
-func (s *Service) WorktreeAdopted(wtPath string) bool {
+func (s *Service) worktreeAdopted(wtPath string) bool {
 	root, err := worktreesRoot()
 	if err != nil {
 		return true
@@ -451,35 +456,35 @@ func (s *Service) WorktreeAdopted(wtPath string) bool {
 	return relpath.Escapes(rel)
 }
 
-// RemoveWorktree removes a worktree checkout. Without force git refuses to
+// RemoveWorktree removes a worktree checkout. Without opts.Force git refuses to
 // delete a dirty worktree, which is the safety net the close-session flow
-// relies on; force discards uncommitted changes after the user has confirmed.
+// relies on; opts.Force discards uncommitted changes after the user has confirmed.
 // The branch is never deleted either way.
 //
 // An adopted checkout is the user's own directory, made outside lich and only
-// listed by it, so deleting one needs adoptedAck on top of the usual answers:
+// listed by it, so deleting one needs opts.AdoptedAck on top of the usual answers:
 // the caller has put the absolute path in front of the user and been told to go
-// ahead. Without it the removal is refused, force or not — which is the answer
+// ahead. Without it the removal is refused, opts.Force or not — which is the answer
 // for a caller that has nobody to ask (the MCP close_session tool) and the one
 // that holds when a caller forgets.
-func (s *Service) RemoveWorktree(projectPath, wtPath string, force, adoptedAck bool) error {
-	if !adoptedAck && s.WorktreeAdopted(wtPath) {
-		return fmt.Errorf("The worktree at %s was not created by lich, so lich will not delete it.", wtPath)
+func (s *Service) RemoveWorktree(ctx context.Context, opts api.RemoveWorktreeOptions) (api.None, error) {
+	if !opts.AdoptedAck && s.worktreeAdopted(opts.WorktreePath) {
+		return api.None{}, fmt.Errorf("The worktree at %s was not created by lich, so lich will not delete it.", opts.WorktreePath)
 	}
 	args := []string{"worktree", "remove"}
-	if force {
+	if opts.Force {
 		args = append(args, "--force")
 	}
 	// "--": same guard CreateWorktree uses — the path is unvalidated here too.
-	args = append(args, "--", wtPath)
-	_, err := runGit(projectPath, args...)
-	return err
+	args = append(args, "--", opts.WorktreePath)
+	_, err := runGit(opts.ProjectPath, args...)
+	return api.None{}, err
 }
 
-// WorktreeDirty reports whether the worktree at wtPath has uncommitted changes
+// WorktreeDirty reports whether the worktree at opts.Path has uncommitted changes
 // (modified or untracked files) — the state that makes a plain remove fail.
-func (s *Service) WorktreeDirty(wtPath string) (bool, error) {
-	out, err := readGit(wtPath, "status", "--porcelain")
+func (s *Service) WorktreeDirty(_ context.Context, opts api.PathOptions) (bool, error) {
+	out, err := readGit(opts.Path, "status", "--porcelain")
 	if err != nil {
 		return false, err
 	}

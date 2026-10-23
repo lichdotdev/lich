@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -24,14 +25,21 @@ type candidate struct {
 
 // roster returns every live session except the caller's own.
 func (s *Service) roster(fromID string) ([]candidate, error) {
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		return nil, fmt.Errorf("read sessions: %w", err)
 	}
 	var found []candidate
 	for _, p := range projects {
 		for _, sess := range p.Sessions {
-			if sess.ID == fromID || !s.term.Live(sess.ID) {
+			if sess.ID == fromID {
+				continue
+			}
+			live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: sess.ID})
+			if err != nil {
+				return nil, err
+			}
+			if !live {
 				continue
 			}
 			found = append(found, candidate{ID: sess.ID, Peer: s.peerOf(p, sess)})
@@ -45,12 +53,12 @@ type SelfOptions = api.SelfOptions
 // Self is the caller's own entry, in the shape Peers lists everybody else's: the
 // one session the roster never shows it. It does not ask whether a process is
 // running there, since the caller asking is that process.
-func (s *Service) Self(opts SelfOptions) (Peer, error) {
+func (s *Service) Self(ctx context.Context, opts SelfOptions) (Peer, error) {
 	id := opts.From
 	if id == "" {
 		return Peer{}, errors.New("not running in a lich session (LICH_SESSION_ID is unset)")
 	}
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(ctx, api.None{})
 	if err != nil {
 		return Peer{}, fmt.Errorf("read sessions: %w", err)
 	}
@@ -141,7 +149,7 @@ func (s *Service) sessionOf(id string) (store.Session, bool) {
 	if id == "" {
 		return store.Session{}, false
 	}
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		return store.Session{}, false
 	}

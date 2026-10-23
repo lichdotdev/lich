@@ -16,12 +16,12 @@ func TestUpdateProfileReportsTheProfileOnceWritten(t *testing.T) {
 			got = append(got, c)
 		}
 	})
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	teal := "teal"
-	if _, err := s.UpdateProfile(p.Slug, profilestore.Update{Color: &teal}); err != nil {
+	if _, err := s.UpdateProfile(t.Context(), api.UpdateProfileOptions{Slug: p.Slug, Update: profilestore.Update{Color: &teal}}); err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 1 || got[0].Provider != providers.Kiro || got[0].Profile.Color != "teal" {

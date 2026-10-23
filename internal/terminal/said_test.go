@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -28,7 +29,7 @@ func TestLastTurnSaidReadsTheClaudeTranscript(t *testing.T) {
 	writeTranscript(t, "uuid-abc", body)
 	svc := New(stubBins{providerSession: "uuid-abc"}, nil, events.New())
 
-	got, err := svc.LastTurnSaid("s1")
+	got, err := svc.LastTurnSaid(t.Context(), api.SessionIDOptions{ID: "s1"})
 	if err != nil {
 		t.Fatalf("LastTurnSaid: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestLastTurnSaidMissesAreSilent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := New(tc.store, nil, events.New())
-			got, err := svc.LastTurnSaid("s1")
+			got, err := svc.LastTurnSaid(t.Context(), api.SessionIDOptions{ID: "s1"})
 			if err != nil {
 				t.Fatalf("LastTurnSaid: %v", err)
 			}

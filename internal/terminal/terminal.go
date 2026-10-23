@@ -6,6 +6,7 @@
 package terminal
 
 import (
+	"context"
 	"encoding/base64"
 	"log/slog"
 	"net/http"
@@ -144,7 +145,7 @@ type Store interface {
 	SandboxGHToken(projectID string) bool
 	GHAccountForPath(path string) string
 	SetSessionTitle(sessionID, title string) (bool, error)
-	SetSessionUnread(sessionID string, unread bool) error
+	SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error)
 	CostReadout() bool
 	CostLedger(sessionID, transcriptID string) (int64, string, float64, error)
 	SaveCostLedger(sessionID, transcriptID string, offset int64, lastMessage string, cost float64) error
@@ -454,7 +455,7 @@ func (s *Service) noteUnread(id string, unread bool) {
 		return
 	}
 	s.unread.Store(id, unread)
-	if err := s.store.SetSessionUnread(id, unread); err != nil {
+	if _, err := s.store.SetSessionUnread(context.Background(), api.SessionUnreadOptions{SessionID: id, Unread: unread}); err != nil {
 		slog.Warn("terminal: record unread", "session", id, "err", err)
 	}
 }
@@ -714,8 +715,8 @@ var lichBin = sync.OnceValue(func() string {
 
 // Close terminates a session's shell, if any. It is the window's close, so no
 // session is named as the one that asked for it.
-func (s *Service) Close(id string) error {
-	return s.CloseBy(id, "")
+func (s *Service) Close(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	return api.None{}, s.CloseBy(opts.ID, "")
 }
 
 // CloseBy is Close on behalf of closerID, the session that asked for it.
@@ -758,14 +759,14 @@ func (s *Service) CloseBy(id, closerID string) error {
 	return err
 }
 
-// HandsOn is how long session id has been worked on, in whole seconds: the time
+// HandsOn is how long session opts.ID has been worked on, in whole seconds: the time
 // it was reporting, being typed at or producing output for an open turn, minus
 // every silence longer than handsOnIdleGap (see handsOn). Zero for a session
 // nothing has been counted for yet, and up to handsOnFlush behind what has
 // actually been measured — the readout is in minutes, so the debounce never
 // shows.
-func (s *Service) HandsOn(id string) (int64, error) {
-	return s.store.HandsOn(id)
+func (s *Service) HandsOn(_ context.Context, opts api.SessionIDOptions) (int64, error) {
+	return s.store.HandsOn(opts.ID)
 }
 
 // FlushHandsOn writes what every session has been worked since the last write.
@@ -789,17 +790,27 @@ func (s *Service) beatHandsOn(id string, minGap time.Duration) {
 	}
 }
 
-// Live reports whether a session has a process running right now. It is the
+// Live answers live over RPC.
+func (s *Service) Live(_ context.Context, opts api.SessionIDOptions) (bool, error) {
+	return s.live(opts.ID), nil
+}
+
+// live reports whether a session has a process running right now. It is the
 // difference between a card and a PTY: a session the user has not opened since
 // lich started has a row in the store and nothing behind it to type at, so it can
 // be listed but never addressed (internal/relay).
-func (s *Service) Live(id string) bool {
+func (s *Service) live(id string) bool {
 	return s.ptyOf(id) != nil
 }
 
-// LiveCount is how many sessions have a process running right now, what the
+// LiveCount answers liveCount over RPC.
+func (s *Service) LiveCount(_ context.Context, _ api.None) (int, error) {
+	return s.liveCount(), nil
+}
+
+// liveCount is how many sessions have a process running right now, what the
 // tray says a windowless lich is keeping alive.
-func (s *Service) LiveCount() int {
+func (s *Service) liveCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	live := 0

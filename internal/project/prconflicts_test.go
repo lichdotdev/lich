@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -29,7 +30,7 @@ func TestPullRequestConflictsNamesTheFiles(t *testing.T) {
 	clone, origin, originGit := pullRequestOrigin(t, 7)
 	commitFile(t, origin, originGit, "a.txt", "the base branch's line\n", "base edits a")
 
-	got, err := New(nil).PullRequestConflicts(clone, 7, "main", "")
+	got, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Number: 7, Base: "main"})
 	if err != nil {
 		t.Fatalf("PullRequestConflicts: %v", err)
 	}
@@ -43,7 +44,7 @@ func TestPullRequestConflictsNoneWhenTheMergeIsClean(t *testing.T) {
 	clone, origin, originGit := pullRequestOrigin(t, 7)
 	commitFile(t, origin, originGit, "b.txt", "elsewhere\n", "base adds b")
 
-	got, err := New(nil).PullRequestConflicts(clone, 7, "main", "")
+	got, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Number: 7, Base: "main"})
 	if err != nil {
 		t.Fatalf("PullRequestConflicts: %v", err)
 	}
@@ -56,10 +57,10 @@ func TestPullRequestConflictsRefusesAnUnaddressedPullRequest(t *testing.T) {
 	t.Parallel()
 	clone, _, _ := pullRequestOrigin(t, 7)
 
-	if _, err := New(nil).PullRequestConflicts(clone, 0, "main", ""); err == nil {
+	if _, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Base: "main"}); err == nil {
 		t.Error("want an error for pull request 0 — this has no branch fallback")
 	}
-	if _, err := New(nil).PullRequestConflicts(clone, 7, "", ""); err == nil {
+	if _, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Number: 7}); err == nil {
 		t.Error("want an error with no base branch")
 	}
 }
@@ -68,7 +69,7 @@ func TestPullRequestConflictsReportsAFetchItCannotMake(t *testing.T) {
 	t.Parallel()
 	clone, _, _ := pullRequestOrigin(t, 7)
 
-	if _, err := New(nil).PullRequestConflicts(clone, 404, "main", ""); err == nil {
+	if _, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Number: 404, Base: "main"}); err == nil {
 		t.Error("want an error for a pull request origin does not have")
 	}
 }
@@ -95,7 +96,7 @@ func TestPullRequestConflictsFetchesTheRemoteTheURLNames(t *testing.T) {
 	parts := strings.Split(filepath.ToSlash(origin), "/")
 	prURL := fmt.Sprintf("https://github.com/%s/%s/pull/7", parts[len(parts)-2], parts[len(parts)-1])
 
-	got, err := New(nil).PullRequestConflicts(clone, 7, "main", prURL)
+	got, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Number: 7, Base: "main", PRURL: prURL})
 	if err != nil {
 		t.Fatalf("PullRequestConflicts: %v", err)
 	}
@@ -154,14 +155,14 @@ func TestPullRequestConflictsLeavesNoRefsBehind(t *testing.T) {
 		return gitIn(t, clone)("for-each-ref", "--format=%(refname)", "refs/lich/")
 	}
 
-	if _, err := New(nil).PullRequestConflicts(clone, 7, "main", ""); err != nil {
+	if _, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Number: 7, Base: "main"}); err != nil {
 		t.Fatalf("PullRequestConflicts: %v", err)
 	}
 	if got := lichRefs(); got != "" {
 		t.Errorf("refs left behind by the answer: %q", got)
 	}
 
-	if _, err := New(nil).PullRequestConflicts(clone, 404, "main", ""); err == nil {
+	if _, err := New(nil).PullRequestConflicts(t.Context(), api.PRConflictsOptions{Path: clone, Number: 404, Base: "main"}); err == nil {
 		t.Fatal("want an error for a pull request origin does not have")
 	}
 	if got := lichRefs(); got != "" {

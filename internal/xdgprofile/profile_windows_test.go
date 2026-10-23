@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
@@ -104,11 +105,11 @@ func TestAWindowsCursorProfileMovesAppDataAndItsConfigDir(t *testing.T) {
 func TestAWindowsCursorLoginRunsInTheProfile(t *testing.T) {
 	windowsMachine(t)
 	s := New(Cursor, fakeBins{}, func(string, any) {})
-	p, err := s.CreateProfile("Work")
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	line, err := s.LoginCommand(p.Slug)
+	line, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: p.Slug})
 	if err != nil {
 		t.Fatal(err)
 	}

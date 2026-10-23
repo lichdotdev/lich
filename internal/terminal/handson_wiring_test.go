@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -129,7 +130,7 @@ func TestFlushWritesThroughToTheStore(t *testing.T) {
 	svc.beatHandsOn("s1", 0)
 	svc.FlushHandsOn()
 
-	total, err := svc.HandsOn("s1")
+	total, err := svc.HandsOn(t.Context(), api.SessionIDOptions{ID: "s1"})
 	if err != nil {
 		t.Fatalf("HandsOn: %v", err)
 	}
@@ -171,7 +172,7 @@ func TestClosingASessionWritesWhatItWasWorked(t *testing.T) {
 	svc.beatHandsOn("s1", 0)
 	clock.advance(20 * time.Second)
 	svc.beatHandsOn("s1", 0)
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 

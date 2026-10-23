@@ -69,7 +69,7 @@ func TestSearchTranscriptsWalksEverySession(t *testing.T) {
 
 	// Mixed case and padding: the query is normalised once, before any
 	// transcript is opened.
-	got := svc.SearchTranscripts([]string{"s-a", "s-broken", "s-shell", "s-c", "s-gone", "s-b"}, "  WorkTree ")
+	got := svc.searchTranscripts([]string{"s-a", "s-broken", "s-shell", "s-c", "s-gone", "s-b"}, "  WorkTree ")
 	want := []TranscriptMatch{
 		{ID: "s-a", Snippet: "port the worktree port hash", Count: 1},
 		{ID: "s-b", Snippet: "The worktree port is a hash, not a reservation.", Count: 1},
@@ -96,7 +96,7 @@ func TestSearchTranscriptsFindsANonClaudeSession(t *testing.T) {
 	}}
 	svc := New(store, nil, events.New())
 
-	got := svc.SearchTranscripts([]string{"s-claude", "s-codex"}, "worktree")
+	got := svc.searchTranscripts([]string{"s-claude", "s-codex"}, "worktree")
 	want := []TranscriptMatch{
 		{ID: "s-claude", Snippet: "a claude worktree turn", Count: 1},
 		{ID: "s-codex", Snippet: "The worktree port is a hash.", Count: 1},

@@ -2,7 +2,10 @@
 
 package claudeprofile
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	machine(t)
@@ -11,7 +14,7 @@ func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := s.LoginCommand(p.Slug)
+	got, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: p.Slug})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,10 +24,10 @@ func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	if got != want {
 		t.Errorf("LoginCommand =\n%s\nwant\n%s", got, want)
 	}
-	if got, _ := s.LoginCommand(Personal); got != "'/opt/my claude' auth login --claudeai" {
+	if got, _ := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: Personal}); got != "'/opt/my claude' auth login --claudeai" {
 		t.Errorf("Personal: %s", got)
 	}
-	if _, err := s.LoginCommand("gone"); err == nil {
+	if _, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: "gone"}); err == nil {
 		t.Error("a command for a profile that does not exist")
 	}
 }

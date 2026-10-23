@@ -158,7 +158,7 @@ type RelayEvent = api.SessionRelay
 // can be resolved to the session it names and the caller can be told what it
 // may address. The store implements it.
 type Sessions interface {
-	LoadState() ([]store.Project, error)
+	LoadState(_ context.Context, _ api.None) ([]store.Project, error)
 	// SetSessionSchedule clears a scheduled prompt once it has been typed at its
 	// session (see deliverDue), and parks or drops the continuation of a turn a
 	// usage limit ended (resume.go). Every other prompt is parked by the window.
@@ -178,12 +178,12 @@ type Events interface {
 // Terminal is the PTY side: whether a session has a process running right now,
 // whether its agent is at a prompt, and how to type at it. The terminal service implements it.
 type Terminal interface {
-	Live(id string) bool
-	Ready(id string) bool
+	Live(_ context.Context, opts api.SessionIDOptions) (bool, error)
+	Ready(_ context.Context, opts api.SessionIDOptions) (bool, error)
 	// AtPrompt is Ready without minding what the person has typed there: the
 	// question for a write that does not send (Insert).
 	AtPrompt(id string) bool
-	Write(id, data string) error
+	Write(_ context.Context, opts api.WriteOptions) (api.None, error)
 	// QuietFor is how long that session's PTY has produced nothing, which is
 	// how a delivery knows the target has finished taking the paste in before
 	// it presses Enter behind it (see awaitSettled).
@@ -492,7 +492,7 @@ type PeersOptions = api.PeersOptions
 // Peers lists the live sessions From may address, in the order the sidebar
 // shows them. A session with no PTY running is left out: there is nothing there
 // to type at, and offering it would only produce a message nobody ever reads.
-func (s *Service) Peers(opts PeersOptions) ([]Peer, error) {
+func (s *Service) Peers(_ context.Context, opts PeersOptions) ([]Peer, error) {
 	fromID := opts.From
 	found, err := s.roster(fromID)
 	if err != nil {
@@ -600,7 +600,14 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	s.clearAll(expired)
 	s.announceInboxAll(senders)
 
-	if s.takesDelivery(dest.ID) {
+	takes, err := s.takesDelivery(dest.ID)
+	if err != nil {
+		s.mu.Lock()
+		delete(s.tickets, id)
+		s.mu.Unlock()
+		return Result{}, err
+	}
+	if takes {
 		// A target that takes the message now is written to on the caller's own
 		// goroutine, so a PTY that refuses the write is the error this call
 		// returns rather than an outcome mailed to the sender later.
@@ -852,8 +859,19 @@ func (s *Service) expireTickets() {
 // subagent exists for, and its report has to find its way home. Closing the
 // worker ends the errand (SessionClosed), and the TTL runs from there. Called
 // under s.mu.
+//
+// A liveness it cannot read holds the errand: dropping a report that is still
+// on its way cannot be undone, keeping one an hour longer can.
 func (s *Service) workerHolds(subagent bool, targetID string) bool {
-	return subagent && s.term.Live(targetID)
+	if !subagent {
+		return false
+	}
+	live, err := s.term.Live(context.Background(), api.SessionIDOptions{ID: targetID})
+	if err != nil {
+		slog.Warn("relay: read whether a worker still runs", "session", targetID, "err", err)
+		return true
+	}
+	return live
 }
 
 // ticketIDBytes is the length of a ticket id before hex encoding. Short enough

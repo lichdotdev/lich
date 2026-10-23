@@ -27,7 +27,12 @@ const baseFetchInterval = 30 * time.Second
 // an ssh key prompt with nowhere to prompt would sit there for the app's life.
 const baseFetchTimeout = 30 * time.Second
 
-// BaseStatus reports the path's standing against its base branch, or nil when
+// BaseStatus answers baseStatus over RPC.
+func (s *Service) BaseStatus(_ context.Context, opts api.PathOptions) (*BaseStatus, error) {
+	return s.baseStatus(opts.Path), nil
+}
+
+// baseStatus reports the path's standing against its base branch, or nil when
 // there is nothing to answer from: not a repository, no origin, no
 // origin/HEAD. Nil is the "hide the segment" contract Branch and PullRequest
 // share — this is polled, and a checkout without a remote is an ordinary state.
@@ -35,7 +40,7 @@ const baseFetchTimeout = 30 * time.Second
 // The answer is memoised on the two commits it was computed from, because the
 // poll runs every few seconds and merge-tree writes tree objects into the object
 // database on every call. Only a moved HEAD or a moved base recomputes.
-func (s *Service) BaseStatus(path string) *BaseStatus {
+func (s *Service) baseStatus(path string) *BaseStatus {
 	// One subprocess for all three, because this runs every few seconds per
 	// checkout and the poller it rides was already the window's git-subprocess
 	// budget.

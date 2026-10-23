@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -24,12 +25,12 @@ func serviceWithSessions(t *testing.T, store Store, ids ...string) *Service {
 
 func turnStateOf(t *testing.T, svc *Service, id string) TurnState {
 	t.Helper()
-	for _, ts := range svc.TurnStates() {
+	for _, ts := range svc.turnStates() {
 		if ts.ID == id {
 			return ts
 		}
 	}
-	t.Fatalf("TurnStates has no entry for %q: %+v", id, svc.TurnStates())
+	t.Fatalf("TurnStates has no entry for %q: %+v", id, svc.turnStates())
 	return TurnState{}
 }
 
@@ -105,12 +106,12 @@ func TestTurnStatesForgetASessionThatLeft(t *testing.T) {
 	svc.onHookState(hookRequest{SessionID: "closed", State: statusBusy})
 	svc.onHookState(hookRequest{SessionID: "respawned", State: statusBusy})
 
-	if err := svc.Close("closed"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "closed"}); err != nil {
 		t.Fatal(err)
 	}
 	svc.forgetTurn("respawned")
 
-	if got := svc.TurnStates(); len(got) != 0 {
+	if got := svc.turnStates(); len(got) != 0 {
 		t.Errorf("TurnStates = %+v, want none", got)
 	}
 }

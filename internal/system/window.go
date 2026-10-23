@@ -1,6 +1,9 @@
 package system
 
-import "github.com/lichdotdev/lich/api"
+import (
+	"context"
+	"github.com/lichdotdev/lich/api"
+)
 
 // The backend outlives its window: closing the window leaves every session
 // running, and these two calls are how anyone else gets the window back or
@@ -18,9 +21,9 @@ type ShowWindowOptions = api.ShowWindowOptions
 // forward when it is open. It returns as soon as the window is asked for, not
 // when it is on screen; a window that cannot open is reported to
 // NativeHooks.Failed, not here.
-func (s *Service) ShowWindow(ShowWindowOptions) error {
+func (s *Service) ShowWindow(_ context.Context, opts ShowWindowOptions) (api.None, error) {
 	s.openNative()
-	return nil
+	return api.None{}, nil
 }
 
 type QuitOptions = api.QuitOptions
@@ -28,6 +31,6 @@ type QuitOptions = api.QuitOptions
 // Quit ends lich: the window closes, every session's process ends with it, and
 // the process exits. It returns once the exit is under way, so the reply can be
 // lost to the exit it announces.
-func (s *Service) Quit(QuitOptions) error {
-	return s.quit()
+func (s *Service) Quit(_ context.Context, opts QuitOptions) (api.None, error) {
+	return api.None{}, s.quit()
 }

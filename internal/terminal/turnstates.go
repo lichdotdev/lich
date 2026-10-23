@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"context"
 	"slices"
 	"sync"
 	"time"
@@ -61,11 +62,16 @@ func (b *statusBook) forget(id string) {
 
 type TurnState = api.TurnState
 
-// TurnStates is the catch-up a window takes right after attaching to /events:
+// TurnStates answers turnStates over RPC.
+func (s *Service) TurnStates(_ context.Context, _ api.None) ([]TurnState, error) {
+	return s.turnStates(), nil
+}
+
+// turnStates is the catch-up a window takes right after attaching to /events:
 // what each live session last reported, taken from the same reports the event
 // stream carries, so an event emitted from here on is newer than the snapshot
 // and a window applying both in that order ends on the latest.
-func (s *Service) TurnStates() []TurnState {
+func (s *Service) turnStates() []TurnState {
 	s.mu.Lock()
 	ids := make([]string, 0, len(s.sessions))
 	for id := range s.sessions {

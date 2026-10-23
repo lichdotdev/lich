@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -50,17 +51,17 @@ func TestOpenCommitsWithoutAJournalFilePerWrite(t *testing.T) {
 // must not read as gone. Only the delete does.
 func TestSessionExistsSpansParkedRows(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "s1", "one", providers.Claude, "", 0, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.Claude}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 
 	if !svc.SessionExists("s1") {
 		t.Error("an open session reads as gone")
 	}
-	if err := svc.CloseSession("p1", "s1", ""); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 	if !svc.SessionExists("s1") {
@@ -82,10 +83,10 @@ func TestSessionExistsSpansParkedRows(t *testing.T) {
 // take a live session's dropped files with it.
 func TestSessionExistsFailsOpenOnAnUnreadableStore(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "s1", "one", providers.Claude, "", 0, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "one", Kind: providers.Claude}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.Close(); err != nil {
@@ -100,17 +101,17 @@ func TestSessionExistsFailsOpenOnAnUnreadableStore(t *testing.T) {
 func TestLoadStateRestoresOpenProjectsAndSessions(t *testing.T) {
 	svc := newTestStore(t)
 
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "s1", "Session 1", "", "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
-	if err := svc.AddSession("p1", "s2", "Session 2", "", "", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -136,11 +137,11 @@ func TestLoadStateRestoresOpenProjectsAndSessions(t *testing.T) {
 // it apart from the model its provider reports running.
 func TestLoadStateCarriesTheBirthModel(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	for _, id := range []string{"s1", "s2"} {
-		if err := svc.AddSession("p1", id, id, providers.Claude, "", 2, ""); err != nil {
+		if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, Kind: providers.Claude, NextSeq: 2}); err != nil {
 			t.Fatalf("AddSession: %v", err)
 		}
 	}
@@ -148,7 +149,7 @@ func TestLoadStateCarriesTheBirthModel(t *testing.T) {
 		t.Fatalf("SetSessionModel: %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -164,21 +165,21 @@ func TestLoadStateCarriesTheBirthModel(t *testing.T) {
 func TestLoadStateHydratesProjectProviderDefaults(t *testing.T) {
 	svc := newTestStore(t)
 	for _, id := range []string{"override", "empty", "missing"} {
-		if err := svc.AddProject(id, id, "/tmp/"+id); err != nil {
+		if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: id, Name: id, Path: "/tmp/" + id}); err != nil {
 			t.Fatalf("AddProject(%q): %v", id, err)
 		}
 	}
-	if err := svc.SetSetting(providerDefaultKey, globalScope, providers.Claude); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: providerDefaultKey, ProjectID: globalScope, Value: providers.Claude}); err != nil {
 		t.Fatalf("SetSetting(global): %v", err)
 	}
-	if err := svc.SetSetting(providerDefaultKey, "override", providers.Codex); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: providerDefaultKey, ProjectID: "override", Value: providers.Codex}); err != nil {
 		t.Fatalf("SetSetting(override): %v", err)
 	}
-	if err := svc.SetSetting(providerDefaultKey, "empty", ""); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: providerDefaultKey, ProjectID: "empty"}); err != nil {
 		t.Fatalf("SetSetting(empty): %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -192,14 +193,14 @@ func TestLoadStateHydratesProjectProviderDefaults(t *testing.T) {
 
 func TestLoadStateIgnoresProjectProviderDefaultReadFailure(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	if _, err := svc.db.Exec(`DROP TABLE settings`); err != nil {
 		t.Fatalf("drop settings: %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -212,8 +213,8 @@ func TestLoadStateIgnoresProjectProviderDefaultReadFailure(t *testing.T) {
 // a reload and that rows written before the column existed load as "".
 func TestSessionPathPersistsAndDefaults(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	if err := svc.AddSession("p1", "s1", "mellow-otter", "claude", "/data/wt/mellow-otter", 2, ""); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "mellow-otter", Kind: "claude", Path: "/data/wt/mellow-otter", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	// Row without the path column, as written before the migration.
@@ -223,7 +224,7 @@ func TestSessionPathPersistsAndDefaults(t *testing.T) {
 		t.Fatalf("insert legacy row: %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -237,15 +238,15 @@ func TestSessionPathPersistsAndDefaults(t *testing.T) {
 // empty kind falls back to "claude" (rows written before the column existed).
 func TestSessionKindPersistsAndDefaults(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	if err := svc.AddSession("p1", "s1", "Session 1", "shell", "", 2, ""); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "shell", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
-	if err := svc.AddSession("p1", "s2", "Session 2", "", "", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -260,9 +261,9 @@ func TestSessionKindPersistsAndDefaults(t *testing.T) {
 // re-report overwrites with the latest id.
 func TestSetProviderSessionPersistsAndDefaults(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
 
 	if err := svc.SetProviderSession("s1", "uuid-abc"); err != nil {
 		t.Fatalf("SetProviderSession: %v", err)
@@ -288,9 +289,9 @@ func TestSetProviderSessionPersistsAndDefaults(t *testing.T) {
 // default is what "" means.
 func TestSessionModelRoundTrips(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "claude", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", Kind: "claude", NextSeq: 3})
 
 	if err := svc.SetSessionModel("s1", "opus"); err != nil {
 		t.Fatalf("SetSessionModel: %v", err)
@@ -310,9 +311,9 @@ func TestSessionModelRoundTrips(t *testing.T) {
 // what a spawn reads back, and no effort or no row reads "".
 func TestSessionEffortRoundTrips(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "claude", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", Kind: "claude", NextSeq: 3})
 
 	if err := svc.SetSessionEffort("s1", "xhigh"); err != nil {
 		t.Fatalf("SetSessionEffort: %v", err)
@@ -370,9 +371,9 @@ func TestSetProviderSessionUnknownSessionNoop(t *testing.T) {
 // yet": no row, no report, and a session that never had one.
 func TestProviderSessionReadsBackWhatWasReported(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "shell", "Shell", "shell", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "shell", Label: "Shell", Kind: "shell", NextSeq: 3})
 
 	_ = svc.SetProviderSession("s1", "uuid-abc")
 	_ = svc.SetProviderSession("s1", "uuid-def")
@@ -395,7 +396,7 @@ func TestProviderSessionReadsBackWhatWasReported(t *testing.T) {
 // mustLoadSessions loads the single test project's sessions or fails.
 func mustLoadSessions(t *testing.T, svc *Service) []Session {
 	t.Helper()
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -407,14 +408,14 @@ func mustLoadSessions(t *testing.T, svc *Service) []Session {
 
 func TestCloseProjectHidesButKeepsSessions(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
 
-	if err := svc.CloseProject("p1"); err != nil {
+	if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"}); err != nil {
 		t.Fatalf("CloseProject: %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -423,8 +424,8 @@ func TestCloseProjectHidesButKeepsSessions(t *testing.T) {
 	}
 
 	// Reopening restores the stored session, proving close did not cascade.
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	projects, _ = svc.LoadState()
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	projects, _ = svc.LoadState(t.Context(), api.None{})
 	if len(projects) != 1 || len(projects[0].Sessions) != 1 {
 		t.Fatalf("reopened project lost its sessions: %+v", projects)
 	}
@@ -432,15 +433,15 @@ func TestCloseProjectHidesButKeepsSessions(t *testing.T) {
 
 func TestDeleteSessionRemovesRowAndUpdatesActive(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
 
 	if err := svc.DeleteSession("p1", "s2", "s1"); err != nil {
 		t.Fatalf("DeleteSession: %v", err)
 	}
 
-	projects, _ := svc.LoadState()
+	projects, _ := svc.LoadState(t.Context(), api.None{})
 	p := projects[0]
 	if len(p.Sessions) != 1 || p.Sessions[0].ID != "s1" {
 		t.Errorf("sessions after delete = %+v", p.Sessions)
@@ -452,18 +453,18 @@ func TestDeleteSessionRemovesRowAndUpdatesActive(t *testing.T) {
 
 func TestRenameAndActivateSession(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
 
-	if err := svc.RenameSession("s1", "build"); err != nil {
+	if _, err := svc.RenameSession(t.Context(), api.LabelSessionOptions{SessionID: "s1", Label: "build"}); err != nil {
 		t.Fatalf("RenameSession: %v", err)
 	}
-	if err := svc.SetActiveSession("p1", "s1"); err != nil {
+	if _, err := svc.SetActiveSession(t.Context(), api.ActiveSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 		t.Fatalf("SetActiveSession: %v", err)
 	}
 
-	projects, _ := svc.LoadState()
+	projects, _ := svc.LoadState(t.Context(), api.None{})
 	p := projects[0]
 	if p.Sessions[0].Label != "build" {
 		t.Errorf("label = %q, want build", p.Sessions[0].Label)
@@ -478,8 +479,8 @@ func TestRenameAndActivateSession(t *testing.T) {
 // that it changed, and no-ops (reporting false) once the user has renamed.
 func TestSetSessionTitleRespectsManualRename(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
 
 	applied, err := svc.SetSessionTitle("s1", "Fixing the auth bug")
 	if err != nil {
@@ -493,7 +494,7 @@ func TestSetSessionTitleRespectsManualRename(t *testing.T) {
 	}
 
 	// A user rename clears the auto flag; the next title must not stomp it.
-	if err := svc.RenameSession("s1", "my build"); err != nil {
+	if _, err := svc.RenameSession(t.Context(), api.LabelSessionOptions{SessionID: "s1", Label: "my build"}); err != nil {
 		t.Fatalf("RenameSession: %v", err)
 	}
 	applied, err = svc.SetSessionTitle("s1", "A different title")
@@ -513,8 +514,8 @@ func TestSetSessionTitleRespectsManualRename(t *testing.T) {
 // not take the write lock and push a UI update per turn.
 func TestSetSessionTitleReportsAnUnchangedLabelUnapplied(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
 
 	applied, err := svc.SetSessionTitle("s1", "Fixing the auth bug")
 	if err != nil {
@@ -606,15 +607,15 @@ func TestOpenFailsWhenParentIsAFile(t *testing.T) {
 // insert inside the transaction leaves the project's counters untouched.
 func TestAddSessionRollsBackOnDuplicate(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	if err := svc.AddSession("p1", "s1", "Session 1", "", "", 2, ""); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 
-	if err := svc.AddSession("p1", "s1", "dup", "", "", 9, ""); err == nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "dup", NextSeq: 9}); err == nil {
 		t.Fatal("duplicate session id = nil error, want error")
 	}
-	projects, _ := svc.LoadState()
+	projects, _ := svc.LoadState(t.Context(), api.None{})
 	if projects[0].NextSeq != 2 || projects[0].ActiveSessionID != "s1" {
 		t.Errorf("counters changed after rollback: next_seq=%d active=%q",
 			projects[0].NextSeq, projects[0].ActiveSessionID)
@@ -628,7 +629,7 @@ func TestOperationsOnClosedStoreReturnErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open: %v", err)
 	}
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	if err := svc.Close(); err != nil {
 		t.Fatalf("close: %v", err)
 	}
@@ -639,17 +640,23 @@ func TestOperationsOnClosedStoreReturnErrors(t *testing.T) {
 			t.Errorf("%s on closed store = nil error, want error", name)
 		}
 	}
-	assertErr("AddProject", svc.AddProject("p2", "b", "/b"))
-	assertErr("CloseProject", svc.CloseProject("p1"))
-	assertErr("AddSession", svc.AddSession("p1", "s1", "Session 1", "", "", 2, ""))
+	_, err = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "b", Path: "/b"})
+	assertErr("AddProject", err)
+	_, err = svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"})
+	assertErr("CloseProject", err)
+	_, err = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	assertErr("AddSession", err)
 	assertErr("DeleteSession", svc.DeleteSession("p1", "s1", ""))
-	assertErr("RenameSession", svc.RenameSession("s1", "x"))
+	_, err = svc.RenameSession(t.Context(), api.LabelSessionOptions{SessionID: "s1", Label: "x"})
+	assertErr("RenameSession", err)
 	assertErr("SetProviderSession", svc.SetProviderSession("s1", "uuid"))
-	assertErr("SetActiveSession", svc.SetActiveSession("p1", "s1"))
+	_, err = svc.SetActiveSession(t.Context(), api.ActiveSessionOptions{ProjectID: "p1", SessionID: "s1"})
+	assertErr("SetActiveSession", err)
 	if _, err := svc.SetSessionTitle("s1", "x"); err == nil {
 		t.Error("SetSessionTitle on closed store = nil error, want error")
 	}
-	assertErr("SetSetting", svc.SetSetting("k", "", "v"))
+	_, err = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: "k", Value: "v"})
+	assertErr("SetSetting", err)
 	assertErr("SetWorktreePort", svc.SetWorktreePort("/wt/foo", 5173))
 	assertErr("SaveCostLedger", svc.SaveCostLedger("s1", "t1", 10, "m1", 0.5))
 	if _, _, _, err := svc.CostLedger("s1", "t1"); err == nil {
@@ -661,10 +668,10 @@ func TestOperationsOnClosedStoreReturnErrors(t *testing.T) {
 		t.Errorf("WorktreePorts on closed store = %v, want empty", got)
 	}
 
-	if _, err := svc.GetSetting("k", ""); err == nil {
+	if _, err := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: "k"}); err == nil {
 		t.Error("GetSetting on closed store = nil error, want error")
 	}
-	if _, err := svc.LoadState(); err == nil {
+	if _, err := svc.LoadState(t.Context(), api.None{}); err == nil {
 		t.Error("LoadState on closed store = nil error, want error")
 	}
 	if got := svc.ProviderBin(providers.Claude, "p1"); got != "" {
@@ -674,8 +681,8 @@ func TestOperationsOnClosedStoreReturnErrors(t *testing.T) {
 
 func TestDeleteProjectCascadesSessions(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
 
 	// Direct row delete exercises the ON DELETE CASCADE foreign key (the
 	// future "forget project" path); close does not delete, so it is not used
@@ -697,13 +704,13 @@ func TestDeleteProjectCascadesSessions(t *testing.T) {
 // the path, so the settings rows have to go with the project row.
 func TestDeleteProjectRemovesItsSettings(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.SetSetting(providerDefaultKey, "p1", providers.Codex); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: providerDefaultKey, ProjectID: "p1", Value: providers.Codex}); err != nil {
 		t.Fatalf("SetSetting(project): %v", err)
 	}
-	if err := svc.SetSetting(providerDefaultKey, globalScope, providers.Claude); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: providerDefaultKey, ProjectID: globalScope, Value: providers.Claude}); err != nil {
 		t.Fatalf("SetSetting(global): %v", err)
 	}
 
@@ -711,10 +718,10 @@ func TestDeleteProjectRemovesItsSettings(t *testing.T) {
 		t.Fatalf("DeleteProject: %v", err)
 	}
 
-	if got, err := svc.GetSetting(providerDefaultKey, "p1"); err != nil || got != "" {
+	if got, err := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: providerDefaultKey, ProjectID: "p1"}); err != nil || got != "" {
 		t.Errorf("project setting after delete = %q (err %v), want empty", got, err)
 	}
-	if got, err := svc.GetSetting(providerDefaultKey, globalScope); err != nil || got != providers.Claude {
+	if got, err := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: providerDefaultKey, ProjectID: globalScope}); err != nil || got != providers.Claude {
 		t.Errorf("global setting after delete = %q (err %v), want %q", got, err, providers.Claude)
 	}
 }
@@ -724,7 +731,7 @@ func TestDeleteProjectRemovesItsSettings(t *testing.T) {
 // wipe the workspace's global configuration.
 func TestDeleteProjectRefusesTheGlobalScope(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.SetSetting(providerDefaultKey, globalScope, providers.Claude); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: providerDefaultKey, ProjectID: globalScope, Value: providers.Claude}); err != nil {
 		t.Fatalf("SetSetting(global): %v", err)
 	}
 
@@ -732,7 +739,7 @@ func TestDeleteProjectRefusesTheGlobalScope(t *testing.T) {
 		t.Fatal("DeleteProject(\"\") = nil, want an error")
 	}
 
-	if got, err := svc.GetSetting(providerDefaultKey, globalScope); err != nil || got != providers.Claude {
+	if got, err := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: providerDefaultKey, ProjectID: globalScope}); err != nil || got != providers.Claude {
 		t.Errorf("global setting = %q (err %v), want %q", got, err, providers.Claude)
 	}
 }
@@ -754,7 +761,7 @@ func sessionIDs(t *testing.T, svc *Service, projectID string) []string {
 // openProjectIDs returns the open project ids in stored order.
 func openProjectIDs(t *testing.T, svc *Service) []string {
 	t.Helper()
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -779,12 +786,12 @@ func equalIDs(got, want []string) bool {
 
 func TestReorderSessionsPersistsOrder(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.AddSession("p1", "s3", "Session 3", "", "", 4, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s3", Label: "Session 3", NextSeq: 4})
 
-	if err := svc.ReorderSessions("p1", []string{"s3", "s1", "s2"}); err != nil {
+	if _, err := svc.ReorderSessions(t.Context(), api.ReorderSessionsOptions{ProjectID: "p1", IDs: []string{"s3", "s1", "s2"}}); err != nil {
 		t.Fatalf("ReorderSessions: %v", err)
 	}
 	if got := sessionIDs(t, svc, "p1"); !equalIDs(got, []string{"s3", "s1", "s2"}) {
@@ -796,12 +803,12 @@ func TestReorderSessionsPersistsOrder(t *testing.T) {
 // the top where the default position would put it.
 func TestAddSessionAppendsAfterReorder(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.ReorderSessions("p1", []string{"s2", "s1"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.ReorderSessions(t.Context(), api.ReorderSessionsOptions{ProjectID: "p1", IDs: []string{"s2", "s1"}})
 
-	_ = svc.AddSession("p1", "s3", "Session 3", "", "", 4, "")
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s3", Label: "Session 3", NextSeq: 4})
 
 	if got := sessionIDs(t, svc, "p1"); !equalIDs(got, []string{"s2", "s1", "s3"}) {
 		t.Errorf("session order = %v, want [s2 s1 s3]", got)
@@ -811,13 +818,13 @@ func TestAddSessionAppendsAfterReorder(t *testing.T) {
 // A session id from another project must not take a position in this one.
 func TestReorderSessionsIgnoresForeignSession(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.AddSession("p2", "other", "Session 1", "", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p2", SessionID: "other", Label: "Session 1", NextSeq: 2})
 
-	if err := svc.ReorderSessions("p1", []string{"other", "s2", "s1"}); err != nil {
+	if _, err := svc.ReorderSessions(t.Context(), api.ReorderSessionsOptions{ProjectID: "p1", IDs: []string{"other", "s2", "s1"}}); err != nil {
 		t.Fatalf("ReorderSessions: %v", err)
 	}
 	if got := sessionIDs(t, svc, "p2"); !equalIDs(got, []string{"other"}) {
@@ -833,19 +840,19 @@ func TestReorderSessionsIgnoresForeignSession(t *testing.T) {
 // here as well would erase that slot on every reload.
 func TestSetSessionPinnedPersistsWithoutMovingTheRow(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.AddSession("p1", "s2", "Session 2", "", "", 3, "")
-	_ = svc.AddSession("p1", "s3", "Session 3", "", "", 4, "")
-	_ = svc.ReorderSessions("p1", []string{"s2", "s3", "s1"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "Session 2", NextSeq: 3})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s3", Label: "Session 3", NextSeq: 4})
+	_, _ = svc.ReorderSessions(t.Context(), api.ReorderSessionsOptions{ProjectID: "p1", IDs: []string{"s2", "s3", "s1"}})
 
-	if err := svc.SetSessionPinned("s1", true); err != nil {
+	if _, err := svc.SetSessionPinned(t.Context(), api.SessionPinnedOptions{SessionID: "s1", Pinned: true}); err != nil {
 		t.Fatalf("SetSessionPinned: %v", err)
 	}
 	if got := sessionIDs(t, svc, "p1"); !equalIDs(got, []string{"s2", "s3", "s1"}) {
 		t.Errorf("order after pin = %v, want [s2 s3 s1]", got)
 	}
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -855,10 +862,10 @@ func TestSetSessionPinnedPersistsWithoutMovingTheRow(t *testing.T) {
 		}
 	}
 
-	if err := svc.SetSessionPinned("s1", false); err != nil {
+	if _, err := svc.SetSessionPinned(t.Context(), api.SessionPinnedOptions{SessionID: "s1"}); err != nil {
 		t.Fatalf("unpin: %v", err)
 	}
-	projects, err = svc.LoadState()
+	projects, err = svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -871,11 +878,11 @@ func TestSetSessionPinnedPersistsWithoutMovingTheRow(t *testing.T) {
 
 func TestReorderProjectsPersistsOrder(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
-	_ = svc.AddProject("p3", "gamma", "/tmp/gamma")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p3", Name: "gamma", Path: "/tmp/gamma"})
 
-	if err := svc.ReorderProjects([]string{"p3", "p1", "p2"}); err != nil {
+	if _, err := svc.ReorderProjects(t.Context(), api.ReorderProjectsOptions{IDs: []string{"p3", "p1", "p2"}}); err != nil {
 		t.Fatalf("ReorderProjects: %v", err)
 	}
 	if got := openProjectIDs(t, svc); !equalIDs(got, []string{"p3", "p1", "p2"}) {
@@ -886,11 +893,11 @@ func TestReorderProjectsPersistsOrder(t *testing.T) {
 // A project opened after a drag becomes the rightmost tab.
 func TestAddProjectAppendsAfterReorder(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
-	_ = svc.ReorderProjects([]string{"p2", "p1"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
+	_, _ = svc.ReorderProjects(t.Context(), api.ReorderProjectsOptions{IDs: []string{"p2", "p1"}})
 
-	_ = svc.AddProject("p3", "gamma", "/tmp/gamma")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p3", Name: "gamma", Path: "/tmp/gamma"})
 
 	if got := openProjectIDs(t, svc); !equalIDs(got, []string{"p2", "p1", "p3"}) {
 		t.Errorf("project order = %v, want [p2 p1 p3]", got)
@@ -901,13 +908,13 @@ func TestAddProjectAppendsAfterReorder(t *testing.T) {
 // rather than moving it to the end.
 func TestReopenProjectKeepsDraggedPosition(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddProject("p2", "beta", "/tmp/beta")
-	_ = svc.AddProject("p3", "gamma", "/tmp/gamma")
-	_ = svc.ReorderProjects([]string{"p3", "p1", "p2"})
-	_ = svc.CloseProject("p1")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "beta", Path: "/tmp/beta"})
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p3", Name: "gamma", Path: "/tmp/gamma"})
+	_, _ = svc.ReorderProjects(t.Context(), api.ReorderProjectsOptions{IDs: []string{"p3", "p1", "p2"}})
+	_, _ = svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"})
 
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 
 	if got := openProjectIDs(t, svc); !equalIDs(got, []string{"p3", "p1", "p2"}) {
 		t.Errorf("project order = %v, want [p3 p1 p2]", got)
@@ -957,13 +964,13 @@ CREATE TABLE sessions (
 	t.Cleanup(func() { _ = svc.Close() })
 
 	// The columns the migrations added must now be usable end to end.
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "s1", "mellow-otter", "shell", "/data/wt", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "mellow-otter", Kind: "shell", Path: "/data/wt", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
-	got, err := svc.LoadState()
+	got, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -986,10 +993,10 @@ CREATE TABLE sessions (
 	if s := got[0].Sessions[0]; s.OriginSessionID != "" || s.OriginLabel != "" {
 		t.Errorf("migrated session origin = %+v, want none", s)
 	}
-	if err := svc.AddSessionFrom("p1", "s2", "worker", "shell", "", 3, "s1", "mellow-otter", ""); err != nil {
+	if _, err := svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "s2", Label: "worker", Kind: "shell", NextSeq: 3, OriginID: "s1", OriginLabel: "mellow-otter"}); err != nil {
 		t.Fatalf("AddSessionFrom on a migrated database: %v", err)
 	}
-	after, err := svc.LoadState()
+	after, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -1012,12 +1019,12 @@ func TestOpenDropsTheTerminalThemeSetting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	if err := before.SetSetting("appearance.terminalTheme", "", "emerald"); err != nil {
+	if _, err := before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.terminalTheme", Value: "emerald"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
 	// The same leftover under a project scope, and the live selection beside it.
-	_ = before.SetSetting("appearance.terminalTheme", "p1", "emerald")
-	_ = before.SetSetting("appearance.theme", "", "rose-pine")
+	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.terminalTheme", ProjectID: "p1", Value: "emerald"})
+	_, _ = before.SetSetting(t.Context(), api.SetSettingOptions{Key: "appearance.theme", Value: "rose-pine"})
 	_ = before.Close()
 	seedDB(t, path, `ALTER TABLE sessions DROP COLUMN effort; ALTER TABLE sessions DROP COLUMN ultracode; ALTER TABLE sessions DROP COLUMN subagent; ALTER TABLE session_costs DROP COLUMN reported; ALTER TABLE sessions DROP COLUMN color; ALTER TABLE sessions DROP COLUMN profile; ALTER TABLE sessions DROP COLUMN forked; DROP TABLE provider_session_tombstones; DROP TRIGGER sessions_tombstone_ad; DROP TRIGGER sessions_tombstone_ai; DROP TRIGGER sessions_tombstone_au; PRAGMA user_version = 0`)
 
@@ -1028,7 +1035,7 @@ func TestOpenDropsTheTerminalThemeSetting(t *testing.T) {
 	defer after.Close()
 
 	for _, scope := range []string{"", "p1"} {
-		got, err := after.GetSetting("appearance.terminalTheme", scope)
+		got, err := after.GetSetting(t.Context(), api.GetSettingOptions{Key: "appearance.terminalTheme", ProjectID: scope})
 		if err != nil {
 			t.Fatalf("GetSetting(scope %q): %v", scope, err)
 		}
@@ -1036,7 +1043,7 @@ func TestOpenDropsTheTerminalThemeSetting(t *testing.T) {
 			t.Errorf("terminal theme in scope %q = %q, want it gone", scope, got)
 		}
 	}
-	if got, _ := after.GetSetting("appearance.theme", ""); got != "rose-pine" {
+	if got, _ := after.GetSetting(t.Context(), api.GetSettingOptions{Key: "appearance.theme"}); got != "rose-pine" {
 		t.Errorf("app theme = %q, want it untouched", got)
 	}
 }
@@ -1089,7 +1096,7 @@ INSERT INTO sessions (id, project_id, label, claude_session_id)
 	}
 	t.Cleanup(func() { _ = svc.Close() })
 
-	got, err := svc.LoadState()
+	got, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -1106,11 +1113,11 @@ INSERT INTO sessions (id, project_id, label, claude_session_id)
 // Claude session id intact — when its worktree is resumed.
 func TestCloseSessionParksAndReopenRestores(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	if err := svc.AddSession("p1", "base", "Session 1", "claude", "", 2, ""); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession base: %v", err)
 	}
-	if err := svc.AddSession("p1", "wt", "swift-rabbit", "claude", "/data/wt/swift-rabbit", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt", Label: "swift-rabbit", Kind: "claude", Path: "/data/wt/swift-rabbit", NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession worktree: %v", err)
 	}
 	if err := svc.SetProviderSession("wt", "claude-uuid-1"); err != nil {
@@ -1118,10 +1125,10 @@ func TestCloseSessionParksAndReopenRestores(t *testing.T) {
 	}
 
 	// Keep-close parks the worktree session: gone from the workspace, base active.
-	if err := svc.CloseSession("p1", "wt", "base"); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt", ActiveID: "base"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState after close: %v", err)
 	}
@@ -1134,7 +1141,7 @@ func TestCloseSessionParksAndReopenRestores(t *testing.T) {
 
 	// Resuming the worktree brings the session back under a new id, preserving
 	// its label and Claude session id so the conversation can be continued.
-	restored, err := svc.ReopenWorktreeSession("p1", "/data/wt/swift-rabbit", "wt2")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/data/wt/swift-rabbit", NewSessionID: "wt2"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -1146,7 +1153,7 @@ func TestCloseSessionParksAndReopenRestores(t *testing.T) {
 		t.Errorf("restored = %+v, want {wt2 swift-rabbit /data/wt/swift-rabbit claude-uuid-1}", restored)
 	}
 
-	projects, err = svc.LoadState()
+	projects, err = svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState after reopen: %v", err)
 	}
@@ -1168,17 +1175,17 @@ func TestCloseSessionParksAndReopenRestores(t *testing.T) {
 // still cannot stomp the chosen name (SetSessionTitle's contract).
 func TestReopenWorktreeSessionKeepsManualRename(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wt1", "auto name", "claude", "/wt/foo", 3, "")
-	if err := svc.RenameSession("wt1", "my name"); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wt1", Label: "auto name", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
+	if _, err := svc.RenameSession(t.Context(), api.LabelSessionOptions{SessionID: "wt1", Label: "my name"}); err != nil {
 		t.Fatalf("RenameSession: %v", err)
 	}
-	if err := svc.CloseSession("p1", "wt1", "base"); err != nil { // park it
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wt1", ActiveID: "base"}); err != nil { // park it
 		t.Fatalf("CloseSession: %v", err)
 	}
 
-	restored, err := svc.ReopenWorktreeSession("p1", "/wt/foo", "wt2")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/foo", NewSessionID: "wt2"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -1199,10 +1206,10 @@ func TestReopenWorktreeSessionKeepsManualRename(t *testing.T) {
 // has no parked session, so the caller opens a fresh one instead.
 func TestReopenWorktreeSessionNoParked(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
 
-	restored, err := svc.ReopenWorktreeSession("p1", "/data/wt/never-parked", "wt2")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/data/wt/never-parked", NewSessionID: "wt2"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -1229,16 +1236,16 @@ func countSessions(t *testing.T, svc *Service, projectID, path string) int {
 // sessions alone, and that the empty-path guard never wipes pathless sessions.
 func TestPurgeWorktreeSessions(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "") // project's own, no path
-	_ = svc.AddSession("p1", "wtA", "foo", "claude", "/wt/foo", 3, "") // worktree foo
-	_ = svc.AddSession("p1", "wtB", "bar", "claude", "/wt/bar", 4, "") // worktree bar
-	if err := svc.CloseSession("p1", "wtA", "base"); err != nil {      // park foo (stale leftover)
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})           // project's own, no path
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wtA", Label: "foo", Kind: "claude", Path: "/wt/foo", NextSeq: 3}) // worktree foo
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wtB", Label: "bar", Kind: "claude", Path: "/wt/bar", NextSeq: 4}) // worktree bar
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wtA", ActiveID: "base"}); err != nil {                   // park foo (stale leftover)
 		t.Fatalf("CloseSession: %v", err)
 	}
-	_ = svc.AddSession("p1", "wtA2", "foo", "claude", "/wt/foo", 5, "") // live foo again, same path
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wtA2", Label: "foo", Kind: "claude", Path: "/wt/foo", NextSeq: 5}) // live foo again, same path
 
-	if err := svc.PurgeWorktreeSessions("p1", "/wt/foo"); err != nil {
+	if _, err := svc.PurgeWorktreeSessions(t.Context(), api.WorktreeSessionsOptions{ProjectID: "p1", Path: "/wt/foo"}); err != nil {
 		t.Fatalf("PurgeWorktreeSessions: %v", err)
 	}
 	if n := countSessions(t, svc, "p1", "/wt/foo"); n != 0 {
@@ -1252,7 +1259,7 @@ func TestPurgeWorktreeSessions(t *testing.T) {
 	}
 
 	// The empty-path guard must never sweep a project's own (pathless) sessions.
-	if err := svc.PurgeWorktreeSessions("p1", ""); err != nil {
+	if _, err := svc.PurgeWorktreeSessions(t.Context(), api.WorktreeSessionsOptions{ProjectID: "p1"}); err != nil {
 		t.Fatalf("PurgeWorktreeSessions(empty): %v", err)
 	}
 	if n := countSessions(t, svc, "p1", ""); n != 1 {
@@ -1264,7 +1271,7 @@ func TestPurgeWorktreeSessions(t *testing.T) {
 // makes to tell a worktree session where its project lives.
 func TestProjectPathAnswersWithTheMainCheckout(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 
@@ -1289,10 +1296,10 @@ func TestProjectPathOfAnUnknownProjectIsEmpty(t *testing.T) {
 // row the query happened to read.
 func TestProjectAtNamesTheHolderOfADirectory(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.CloseProject("p1"); err != nil {
+	if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"}); err != nil {
 		t.Fatalf("CloseProject: %v", err)
 	}
 
@@ -1311,17 +1318,17 @@ func TestProjectAtNamesTheHolderOfADirectory(t *testing.T) {
 func TestRecentProjectsListsClosedOnesNewestFirst(t *testing.T) {
 	svc := newTestStore(t)
 	for _, id := range []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7"} {
-		if err := svc.AddProject(id, id, "/tmp/"+id); err != nil {
+		if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: id, Name: id, Path: "/tmp/" + id}); err != nil {
 			t.Fatalf("AddProject(%s): %v", id, err)
 		}
 	}
 	for _, id := range []string{"p1", "p2", "p3", "p4", "p5", "p6"} {
-		if err := svc.CloseProject(id); err != nil {
+		if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: id}); err != nil {
 			t.Fatalf("CloseProject(%s): %v", id, err)
 		}
 	}
 
-	recents, err := svc.RecentProjects("")
+	recents, err := svc.RecentProjects(t.Context(), api.SearchTermOptions{})
 	if err != nil {
 		t.Fatalf("RecentProjects: %v", err)
 	}
@@ -1353,12 +1360,12 @@ func TestRecentProjectsStopAtTwentyFive(t *testing.T) {
 	for i := 1; i <= 26; i++ {
 		id := "p" + strconv.Itoa(i)
 		ids = append(ids, id)
-		if err := svc.AddProject(id, id, "/tmp/"+id); err != nil {
+		if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: id, Name: id, Path: "/tmp/" + id}); err != nil {
 			t.Fatalf("AddProject(%s): %v", id, err)
 		}
 	}
 	for _, id := range ids {
-		if err := svc.CloseProject(id); err != nil {
+		if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: id}); err != nil {
 			t.Fatalf("CloseProject(%s): %v", id, err)
 		}
 	}
@@ -1381,7 +1388,7 @@ func TestRecentProjectsStopAtTwentyFive(t *testing.T) {
 // recentIDs is the reopen menu's list reduced to what its order is asserted on.
 func recentIDs(t *testing.T, svc *Service) []string {
 	t.Helper()
-	recents, err := svc.RecentProjects("")
+	recents, err := svc.RecentProjects(t.Context(), api.SearchTermOptions{})
 	if err != nil {
 		t.Fatalf("RecentProjects: %v", err)
 	}
@@ -1398,12 +1405,12 @@ func recentIDs(t *testing.T, svc *Service) []string {
 func TestRecentProjectsOrderByWhenTheyWereClosed(t *testing.T) {
 	svc := newTestStore(t)
 	for _, id := range []string{"p1", "p2", "p3"} {
-		if err := svc.AddProject(id, id, "/tmp/"+id); err != nil {
+		if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: id, Name: id, Path: "/tmp/" + id}); err != nil {
 			t.Fatalf("AddProject(%s): %v", id, err)
 		}
 	}
 	for _, id := range []string{"p3", "p2", "p1"} {
-		if err := svc.CloseProject(id); err != nil {
+		if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: id}); err != nil {
 			t.Fatalf("CloseProject(%s): %v", id, err)
 		}
 	}
@@ -1411,10 +1418,10 @@ func TestRecentProjectsOrderByWhenTheyWereClosed(t *testing.T) {
 		t.Fatalf("recent ids = %v, want [p1 p2 p3]", got)
 	}
 
-	if err := svc.AddProject("p3", "p3", "/tmp/p3"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p3", Name: "p3", Path: "/tmp/p3"}); err != nil {
 		t.Fatalf("AddProject (reopen): %v", err)
 	}
-	if err := svc.CloseProject("p3"); err != nil {
+	if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p3"}); err != nil {
 		t.Fatalf("CloseProject (reclose): %v", err)
 	}
 	if got := recentIDs(t, svc); !slices.Equal(got, []string{"p3", "p1", "p2"}) {
@@ -1463,7 +1470,7 @@ INSERT INTO projects (id, name, path, is_open) VALUES ('open', 'open', '/tmp/ope
 	if got := recentIDs(t, svc); !slices.Equal(got, []string{"newer", "old"}) {
 		t.Fatalf("migrated recent ids = %v, want [newer old]", got)
 	}
-	if err := svc.CloseProject("open"); err != nil {
+	if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "open"}); err != nil {
 		t.Fatalf("CloseProject: %v", err)
 	}
 	if got := recentIDs(t, svc); !slices.Equal(got, []string{"open", "newer", "old"}) {
@@ -1476,21 +1483,21 @@ INSERT INTO projects (id, name, path, is_open) VALUES ('open', 'open', '/tmp/ope
 // sessions, and the project leaves the recent list once it is open again.
 func TestReopeningARecentProjectRestoresItsSessions(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.CloseProject("p1")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"})
 
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject (reopen): %v", err)
 	}
-	recents, err := svc.RecentProjects("")
+	recents, err := svc.RecentProjects(t.Context(), api.SearchTermOptions{})
 	if err != nil {
 		t.Fatalf("RecentProjects: %v", err)
 	}
 	if len(recents) != 0 {
 		t.Errorf("recents after reopen = %+v, want none", recents)
 	}
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -1503,14 +1510,14 @@ func TestReopeningARecentProjectRestoresItsSessions(t *testing.T) {
 // row is dropped for good, and the cascade takes its sessions with it.
 func TestDeleteProjectRemovesItsSessions(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "s1", "Session 1", "", "", 2, "")
-	_ = svc.CloseProject("p1")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2})
+	_, _ = svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: "p1"})
 
 	if err := svc.DeleteProject("p1"); err != nil {
 		t.Fatalf("DeleteProject: %v", err)
 	}
-	recents, err := svc.RecentProjects("")
+	recents, err := svc.RecentProjects(t.Context(), api.SearchTermOptions{})
 	if err != nil {
 		t.Fatalf("RecentProjects: %v", err)
 	}
@@ -1535,11 +1542,11 @@ func TestSessionGoneReportsDeletedSessions(t *testing.T) {
 	svc := newTestStore(t)
 	var gone []string
 	svc.SetSessionGone(func(id string) { gone = append(gone, id) })
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "parked", "Session 2", "claude", "", 3, "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parked", Label: "Session 2", Kind: "claude", NextSeq: 3})
 
-	if err := svc.CloseSession("p1", "parked", "base"); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "parked", ActiveID: "base"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 	if len(gone) != 0 {
@@ -1561,15 +1568,15 @@ func TestSessionGoneReportsEveryRowOfARemovedWorktree(t *testing.T) {
 	svc := newTestStore(t)
 	var gone []string
 	svc.SetSessionGone(func(id string) { gone = append(gone, id) })
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "base", "Session 1", "claude", "", 2, "")
-	_ = svc.AddSession("p1", "wtA", "foo", "claude", "/wt/foo", 3, "")
-	if err := svc.CloseSession("p1", "wtA", "base"); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "base", Label: "Session 1", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wtA", Label: "foo", Kind: "claude", Path: "/wt/foo", NextSeq: 3})
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "wtA", ActiveID: "base"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
-	_ = svc.AddSession("p1", "wtA2", "foo", "claude", "/wt/foo", 4, "")
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "wtA2", Label: "foo", Kind: "claude", Path: "/wt/foo", NextSeq: 4})
 
-	if err := svc.PurgeWorktreeSessions("p1", "/wt/foo"); err != nil {
+	if _, err := svc.PurgeWorktreeSessions(t.Context(), api.WorktreeSessionsOptions{ProjectID: "p1", Path: "/wt/foo"}); err != nil {
 		t.Fatalf("PurgeWorktreeSessions: %v", err)
 	}
 
@@ -1584,16 +1591,16 @@ func TestSessionGoneReportsEveryRowOfARemovedWorktree(t *testing.T) {
 // user already read has to come back read.
 func TestSessionUnreadSurvivesHydration(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "s1", "Session 1", "", "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 
 	unreadOf := func(t *testing.T) bool {
 		t.Helper()
-		projects, err := svc.LoadState()
+		projects, err := svc.LoadState(t.Context(), api.None{})
 		if err != nil {
 			t.Fatalf("LoadState: %v", err)
 		}
@@ -1606,13 +1613,13 @@ func TestSessionUnreadSurvivesHydration(t *testing.T) {
 	if unreadOf(t) {
 		t.Error("a session that has never finished a turn hydrated unread")
 	}
-	if err := svc.SetSessionUnread("s1", true); err != nil {
+	if _, err := svc.SetSessionUnread(t.Context(), api.SessionUnreadOptions{SessionID: "s1", Unread: true}); err != nil {
 		t.Fatalf("SetSessionUnread(true): %v", err)
 	}
 	if !unreadOf(t) {
 		t.Error("a finished turn nobody read hydrated read")
 	}
-	if err := svc.SetSessionUnread("s1", false); err != nil {
+	if _, err := svc.SetSessionUnread(t.Context(), api.SessionUnreadOptions{SessionID: "s1"}); err != nil {
 		t.Fatalf("SetSessionUnread(false): %v", err)
 	}
 	if unreadOf(t) {
@@ -1624,7 +1631,7 @@ func TestSessionUnreadSurvivesHydration(t *testing.T) {
 // carry, and the writer must not turn that into an error the caller logs.
 func TestSetSessionUnreadIgnoresAMissingSession(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.SetSessionUnread("ghost", true); err != nil {
+	if _, err := svc.SetSessionUnread(t.Context(), api.SessionUnreadOptions{SessionID: "ghost", Unread: true}); err != nil {
 		t.Fatalf("SetSessionUnread on a missing session: %v", err)
 	}
 }

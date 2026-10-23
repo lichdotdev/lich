@@ -210,7 +210,7 @@ func TestASessionWithNoReadableEnvironmentIsUnknown(t *testing.T) {
 	s := newService(claudeURL, codexURL, time.Now())
 	s.SetSessions(func(string) Account { return Account{} })
 
-	for _, got := range s.Plans("session-1") {
+	for _, got := range s.plans("session-1") {
 		if got.Status != StatusUnknown {
 			t.Errorf("%s status = %q, want %q", got.Provider, got.Status, StatusUnknown)
 		}
@@ -234,7 +234,7 @@ func TestAReadableSessionWithoutOverridesReadsTheDefaultLogin(t *testing.T) {
 		return Account{Env: map[string]string{"PATH": "/opt/bin", claudeDirVar: os.Getenv(claudeDirVar)}, Read: true}
 	})
 
-	got := s.Plans("session-1")[0]
+	got := s.plans("session-1")[0]
 
 	if got.Status != StatusOK || *calls != 1 {
 		t.Errorf("plan = %+v after %d calls, want the default login read", got, *calls)
@@ -270,14 +270,14 @@ func TestEachAccountGetsItsOwnCachedReading(t *testing.T) {
 		return Account{Env: map[string]string{claudeTokenVar: "token-" + sessionID}, Read: true}
 	})
 
-	s.Plans("a")
-	s.Plans("b")
+	s.plans("a")
+	s.plans("b")
 	if *calls != 2 {
 		t.Fatalf("calls = %d, want one per account: a cached reading is not another login's", *calls)
 	}
 
 	// The same account is served from the one reading, inside the TTL.
-	s.Plans("a")
+	s.plans("a")
 	if *calls != 2 {
 		t.Errorf("calls = %d, want the second session's reading reused", *calls)
 	}
@@ -294,7 +294,7 @@ func TestPlansWithoutASessionReadsLichOwnEnvironment(t *testing.T) {
 
 	// The plan name is the pin: whatever withholds a reading from an account
 	// lich does not bill must not reach the machine that has nothing to hide.
-	if got := s.Plans("")[0]; got.Status != "ok" || got.Plan != "Max 5x" || *calls != 1 {
+	if got := s.plans("")[0]; got.Status != "ok" || got.Plan != "Max 5x" || *calls != 1 {
 		t.Errorf("plan = %+v after %d calls, want the default login read", got, *calls)
 	}
 }
@@ -306,7 +306,7 @@ func TestAnApiKeyInLichOwnEnvironmentWithholdsTheReading(t *testing.T) {
 			t.Setenv(name, "sk-ant-whatever")
 			url, calls := serve(t, http.StatusOK, claudeLimitsBody)
 
-			got := newService(url, "", time.Now()).Plans("")[0]
+			got := newService(url, "", time.Now()).plans("")[0]
 
 			if got.Status != "unknown" {
 				t.Errorf("status = %q, want %q", got.Status, "unknown")
@@ -330,8 +330,8 @@ func TestASessionOnTheSameLoginSharesTheMachineReading(t *testing.T) {
 	s := newService(url, "", time.Now())
 	s.SetSessions(func(string) Account { return Account{Read: true, Env: inheritedEnv()} })
 
-	machine := s.Plans("")[0]
-	session := s.Plans("session-1")[0]
+	machine := s.plans("")[0]
+	session := s.plans("session-1")[0]
 
 	if machine.Status != StatusOK {
 		t.Fatalf("machine reading = %+v, want an ok one to share", machine)

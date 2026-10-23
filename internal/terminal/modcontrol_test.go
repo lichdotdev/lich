@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/relay"
 )
@@ -289,7 +290,7 @@ func TestModCloseReleasesTheParkedPoll(t *testing.T) {
 	runModSession(svc, "s1")
 	got := pollInBackground(t, svc.ws, "s1")
 
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	select {
@@ -424,7 +425,7 @@ func TestModPollWhileClosingDoesNotReattach(t *testing.T) {
 	pollMod(t, svc.ws, "s1")
 	p.onClose = func() { pollMod(t, svc.ws, "s1") }
 
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	if _, err := svc.EnqueueModCommand("s1", ModCommand{Kind: ModAbort}); !errors.Is(err, errModNotRunning) {
@@ -442,7 +443,7 @@ func TestModPollLandingAfterCloseTakesNoCommands(t *testing.T) {
 	svc := newModService(t, events.New(), 10*time.Millisecond)
 	runModSession(svc, "s1")
 	pollMod(t, svc.ws, "s1")
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	pollMod(t, svc.ws, "s1")

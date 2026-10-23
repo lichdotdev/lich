@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 )
@@ -38,17 +39,17 @@ func TestProfilePlanReadsTheProfilesOwnLogin(t *testing.T) {
 	url, calls := serve(t, http.StatusOK, claudeLimitsBody)
 	svc := newService(url, "", time.Now())
 
-	got, err := svc.ProfilePlan(p.Slug)
+	got, err := svc.ProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: p.Slug})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got.Status != StatusOK || got.Plan != "Max 5x" {
 		t.Errorf("profile plan %+v, want the profile's own Max 5x login", got)
 	}
-	if _, err := svc.ProfilePlan(p.Slug); err != nil || *calls != 1 {
+	if _, err := svc.ProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: p.Slug}); err != nil || *calls != 1 {
 		t.Errorf("second reading made %d requests, %v; want the cached one", *calls, err)
 	}
-	if _, err := svc.ProfilePlan("gone"); err == nil {
+	if _, err := svc.ProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: "gone"}); err == nil {
 		t.Error("a plan for a profile that does not exist")
 	}
 }
@@ -61,8 +62,8 @@ func TestPersonalProfilePlanSharesTheMachineReading(t *testing.T) {
 	url, calls := serve(t, http.StatusOK, claudeLimitsBody)
 	svc := newService(url, "", time.Now())
 
-	machine := svc.Plans("")[0]
-	got, err := svc.ProfilePlan(claudeprofile.Personal)
+	machine := svc.plans("")[0]
+	got, err := svc.ProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: claudeprofile.Personal})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,20 +102,20 @@ func TestCodexProfilePlanReadsTheProfilesOwnLogin(t *testing.T) {
 	url, calls := serve(t, http.StatusOK, codexUsageBody)
 	svc := newService("", url, now)
 
-	got, err := svc.CodexProfilePlan(p.Slug)
+	got, err := svc.CodexProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: p.Slug})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got.Status != StatusOK || got.Account != "work@example.com" {
 		t.Errorf("profile plan %+v, want the profile's own login", got)
 	}
-	if _, err := svc.CodexProfilePlan(p.Slug); err != nil || *calls != 1 {
+	if _, err := svc.CodexProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: p.Slug}); err != nil || *calls != 1 {
 		t.Errorf("second reading made %d requests, %v; want the cached one", *calls, err)
 	}
-	if _, err := svc.CodexProfilePlan("gone"); err == nil {
+	if _, err := svc.CodexProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: "gone"}); err == nil {
 		t.Error("a plan for a profile that does not exist")
 	}
-	machine, err := svc.CodexProfilePlan(codexprofile.Personal)
+	machine, err := svc.CodexProfilePlan(t.Context(), api.ProfilePlanOptions{Profile: codexprofile.Personal})
 	if err != nil || machine.Provider != "codex" || machine.Account == "work@example.com" {
 		t.Errorf("personal plan %+v, %v, want the machine's own reading", machine, err)
 	}

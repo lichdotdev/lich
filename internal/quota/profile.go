@@ -1,10 +1,12 @@
 package quota
 
 import (
+	"context"
 	"errors"
 	"os"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -16,11 +18,11 @@ import (
 // profile from its own directory with no token in front of it. Settings shows
 // one per profile. It is cached like a session's reading, under the account it
 // reads, for the reason Plans gives.
-func (s *Service) ProfilePlan(profile string) (Plan, error) {
-	if claudeprofile.IsPersonal(profile) {
+func (s *Service) ProfilePlan(_ context.Context, opts api.ProfilePlanOptions) (Plan, error) {
+	if claudeprofile.IsPersonal(opts.Profile) {
 		return s.machinePlan(providers.Claude)
 	}
-	dir, err := claudeprofile.ConfigDir(profile)
+	dir, err := claudeprofile.ConfigDir(opts.Profile)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -32,11 +34,11 @@ func (s *Service) ProfilePlan(profile string) (Plan, error) {
 // Personal is the machine's own reading, any other profile is read from its own
 // CODEX_HOME with nothing in front of its login. Plan.Account names the login's
 // email, which is how Settings tells two Codex profiles apart.
-func (s *Service) CodexProfilePlan(profile string) (Plan, error) {
-	if codexprofile.IsPersonal(profile) {
+func (s *Service) CodexProfilePlan(_ context.Context, opts api.ProfilePlanOptions) (Plan, error) {
+	if codexprofile.IsPersonal(opts.Profile) {
 		return s.machinePlan(providers.Codex)
 	}
-	dir, err := codexprofile.ConfigDir(profile)
+	dir, err := codexprofile.ConfigDir(opts.Profile)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -48,7 +50,7 @@ func (s *Service) CodexProfilePlan(profile string) (Plan, error) {
 // Plans("")'s cache entry instead of asking upstream a second time under a key
 // of its own.
 func (s *Service) machinePlan(provider string) (Plan, error) {
-	for _, p := range s.Plans("") {
+	for _, p := range s.plans("") {
 		if p.Provider == provider {
 			return p, nil
 		}

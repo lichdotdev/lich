@@ -475,7 +475,7 @@ func (s *Service) queueModCommand(id string, cmd ModCommand) (*modWaiter, error)
 	}
 	// A poll from a process that is already gone can still land after Close
 	// and look like an attached mod for the length of the attach window.
-	if !s.Live(id) {
+	if !s.live(id) {
 		return nil, errModNotRunning
 	}
 	return s.ws.mods.enqueue(id, cmd)

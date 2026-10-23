@@ -2,6 +2,7 @@ package project
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,13 +39,13 @@ func (p *pickerStub) PickSaveFile(title, defaultName string) (string, error) {
 func TestPickFileUsesRequestedTitle(t *testing.T) {
 	t.Parallel()
 	picker := &pickerStub{filePath: "/tmp/theme.json"}
-	path, err := New(picker).PickFile("Import Theme")
+	path, err := New(picker).PickFile(t.Context(), api.PickFileOptions{Title: "Import Theme"})
 	if err != nil || path != picker.filePath || picker.fileTitle != "Import Theme" {
 		t.Fatalf("PickFile = %q, %v; title = %q", path, err, picker.fileTitle)
 	}
 
 	picker.fileError = errors.New("picker failed")
-	if _, err := New(picker).PickFile("Import Theme"); err == nil {
+	if _, err := New(picker).PickFile(t.Context(), api.PickFileOptions{Title: "Import Theme"}); err == nil {
 		t.Fatal("PickFile error was swallowed")
 	}
 }
@@ -52,7 +53,7 @@ func TestPickFileUsesRequestedTitle(t *testing.T) {
 func TestPickSaveFileSeedsTheDefaultName(t *testing.T) {
 	t.Parallel()
 	picker := &pickerStub{filePath: "/tmp/lich-theme-template.json"}
-	path, err := New(picker).PickSaveFile("Save Theme Template", "lich-theme-template.json")
+	path, err := New(picker).PickSaveFile(t.Context(), api.PickSaveFileOptions{Title: "Save Theme Template", DefaultName: "lich-theme-template.json"})
 	if err != nil || path != picker.filePath {
 		t.Fatalf("PickSaveFile = %q, %v", path, err)
 	}
@@ -61,7 +62,7 @@ func TestPickSaveFileSeedsTheDefaultName(t *testing.T) {
 	}
 
 	picker.fileError = errors.New("picker failed")
-	if _, err := New(picker).PickSaveFile("Save Theme Template", "x.json"); err == nil {
+	if _, err := New(picker).PickSaveFile(t.Context(), api.PickSaveFileOptions{Title: "Save Theme Template", DefaultName: "x.json"}); err == nil {
 		t.Fatal("PickSaveFile error was swallowed")
 	}
 }
@@ -74,7 +75,7 @@ func TestOpen(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	picker := &pickerStub{dirPath: dir}
-	p, err := New(picker).Open()
+	p, err := New(picker).Open(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Open() error: %v", err)
 	}
@@ -86,12 +87,12 @@ func TestOpen(t *testing.T) {
 	}
 
 	cancelled := &pickerStub{dirPath: ""}
-	if p, err := New(cancelled).Open(); p != nil || err != nil {
+	if p, err := New(cancelled).Open(t.Context(), api.None{}); p != nil || err != nil {
 		t.Errorf("Open(cancelled) = %+v, %v; want nil, nil", p, err)
 	}
 
 	failed := &pickerStub{dirError: errors.New("zenity missing")}
-	p, err = New(failed).Open()
+	p, err = New(failed).Open(t.Context(), api.None{})
 	if err == nil {
 		t.Fatal("Open() swallowed the picker error")
 	}
@@ -141,7 +142,7 @@ func TestHome(t *testing.T) {
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
 
-	p, err := New(nil).Home()
+	p, err := New(nil).Home(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("Home() error: %v", err)
 	}
@@ -184,7 +185,7 @@ func TestBranchesOf(t *testing.T) {
 	notARepo := t.TempDir()
 	gone := filepath.Join(t.TempDir(), "removed-behind-our-back")
 
-	got := New(nil).BranchesOf([]string{repo, notARepo, gone})
+	got := New(nil).branchesOf([]string{repo, notARepo, gone})
 	if len(got) != 1 || got[repo] != "trunk" {
 		t.Errorf("BranchesOf = %v, want only the real checkout, on trunk", got)
 	}
@@ -195,7 +196,7 @@ func TestBranchesOf(t *testing.T) {
 // closed.
 func TestBranchesOfNothing(t *testing.T) {
 	t.Parallel()
-	if got := New(nil).BranchesOf(nil); got == nil || len(got) != 0 {
+	if got := New(nil).branchesOf(nil); got == nil || len(got) != 0 {
 		t.Errorf("BranchesOf(nil) = %v, want an empty map", got)
 	}
 }
@@ -261,7 +262,7 @@ func TestDiff(t *testing.T) {
 	git("add", "a.txt")
 	git("commit", "-m", "init")
 
-	clean := svc.Diff(repo)
+	clean := svc.diff(repo)
 	if clean.Files != 0 || clean.Added != 0 || clean.Deleted != 0 {
 		t.Errorf("Diff(clean repo) = %+v, want no changes", clean)
 	}
@@ -274,7 +275,7 @@ func TestDiff(t *testing.T) {
 	if err := os.WriteFile(file, []byte("one\nchanged\nadded\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got := svc.Diff(repo)
+	got := svc.diff(repo)
 	if got.Files != 1 || got.Added != 2 || got.Deleted != 1 {
 		t.Errorf("Diff(edited file) = %+v, want {Files:1 Added:2 Deleted:1}", got)
 	}
@@ -284,7 +285,7 @@ func TestDiff(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, "new.txt"), []byte("x\ny\nz"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	got = svc.Diff(repo)
+	got = svc.diff(repo)
 	if got.Files != 2 || got.Added != 5 {
 		t.Errorf("Diff(untracked added) = %+v, want {Files:2 Added:5 Deleted:1}", got)
 	}
@@ -293,7 +294,7 @@ func TestDiff(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, "bin.dat"), []byte("a\x00b\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := svc.Diff(repo); got.Added != 5 {
+	if got := svc.diff(repo); got.Added != 5 {
 		t.Errorf("Diff(untracked binary).Added = %d, want 5", got.Added)
 	}
 
@@ -308,11 +309,11 @@ func TestDiff(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if got := svc.Diff(repo); got.Files != 5 || got.Added != 7 {
+	if got := svc.diff(repo); got.Files != 5 || got.Added != 7 {
 		t.Errorf("Diff(new directory) = %+v, want {Files:5 Added:7 Deleted:1}", got)
 	}
 
-	if got := svc.Diff(t.TempDir()); got != (DiffStats{}) {
+	if got := svc.diff(t.TempDir()); got != (DiffStats{}) {
 		t.Errorf("Diff(non-repo) = %+v, want zero", got)
 	}
 }
@@ -325,11 +326,11 @@ func TestDiffCarriesTheBranch(t *testing.T) {
 	t.Parallel()
 	repo, git := initRepo(t)
 
-	if got := New(nil).Diff(repo); got.Branch != "main" {
+	if got := New(nil).diff(repo); got.Branch != "main" {
 		t.Errorf("Diff(repo).Branch = %q, want main", got.Branch)
 	}
 	git("checkout", "--detach", "HEAD")
-	if got := New(nil).Diff(repo); got.Branch != "" {
+	if got := New(nil).diff(repo); got.Branch != "" {
 		t.Errorf("Diff(detached).Branch = %q, want empty", got.Branch)
 	}
 }
@@ -347,7 +348,7 @@ func TestDiffNoCommits(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := New(nil).Diff(repo)
+	got := New(nil).diff(repo)
 	if got.Files != 1 || got.Added != 3 || got.Deleted != 0 {
 		t.Errorf("Diff(no-commit repo) = %+v, want {Files:1 Added:3 Deleted:0}", got)
 	}
@@ -385,7 +386,7 @@ func TestDiffSpendsNoNumstatOnACleanTree(t *testing.T) {
 	}
 
 	svc := New(nil)
-	if got := svc.Diff(repo); got.Added != 0 || got.Deleted != 0 {
+	if got := svc.diff(repo); got.Added != 0 || got.Deleted != 0 {
 		t.Errorf("Diff(clean) = %+v, want no lines", got)
 	}
 	if spent := numstats(); spent != 0 {
@@ -395,7 +396,7 @@ func TestDiffSpendsNoNumstatOnACleanTree(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("one\ntwo\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := svc.Diff(repo); got.Files != 1 || got.Added != 1 || got.Deleted != 0 {
+	if got := svc.diff(repo); got.Files != 1 || got.Added != 1 || got.Deleted != 0 {
 		t.Errorf("Diff(edited) = %+v, want {Files:1 Added:1 Deleted:0}", got)
 	}
 	if spent := numstats(); spent != 1 {
@@ -409,7 +410,7 @@ func TestDiffSpendsNoNumstatOnACleanTree(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, "new.txt"), []byte("x\ny\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := svc.Diff(repo); got.Files != 1 || got.Added != 2 || got.Deleted != 0 {
+	if got := svc.diff(repo); got.Files != 1 || got.Added != 2 || got.Deleted != 0 {
 		t.Errorf("Diff(untracked only) = %+v, want {Files:1 Added:2 Deleted:0}", got)
 	}
 	if spent := numstats(); spent != 2 {
@@ -469,13 +470,13 @@ func TestExistsAcceptsOnlyDirectories(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	if !svc.Exists(dir) {
+	if !svc.exists(dir) {
 		t.Errorf("Exists(%q) = false, want true", dir)
 	}
-	if svc.Exists(file) {
+	if svc.exists(file) {
 		t.Errorf("Exists(file) = true, want false")
 	}
-	if svc.Exists(filepath.Join(dir, "gone")) {
+	if svc.exists(filepath.Join(dir, "gone")) {
 		t.Errorf("Exists(missing) = true, want false")
 	}
 }
@@ -488,11 +489,11 @@ func TestMissingNamesOnlyTheGoneDirectories(t *testing.T) {
 	dir := t.TempDir()
 	gone := filepath.Join(dir, "gone")
 
-	missing := svc.Missing([]string{dir, gone})
+	missing := svc.missing([]string{dir, gone})
 	if len(missing) != 1 || missing[0] != gone {
 		t.Fatalf("Missing = %v, want [%q]", missing, gone)
 	}
-	if got := svc.Missing(nil); len(got) != 0 {
+	if got := svc.missing(nil); len(got) != 0 {
 		t.Errorf("Missing(nil) = %v, want empty", got)
 	}
 }
@@ -507,7 +508,7 @@ func TestRelocateKeepsTheProjectIdentity(t *testing.T) {
 	picker := &pickerStub{dirPath: moved}
 	svc := New(picker)
 
-	project, err := svc.Relocate("stored-id")
+	project, err := svc.Relocate(t.Context(), api.ProjectIDOptions{ID: "stored-id"})
 	if err != nil {
 		t.Fatalf("Relocate: %v", err)
 	}
@@ -540,7 +541,7 @@ func TestRelocateRefusesADirectoryAnotherProjectHolds(t *testing.T) {
 		return "", ""
 	})
 
-	project, err := svc.Relocate("stored-id")
+	project, err := svc.Relocate(t.Context(), api.ProjectIDOptions{ID: "stored-id"})
 	if project != nil {
 		t.Fatalf("Relocate = %+v, want nothing relocated", project)
 	}
@@ -559,7 +560,7 @@ func TestRelocateAcceptsTheProjectsOwnDirectory(t *testing.T) {
 	svc := New(&pickerStub{dirPath: own})
 	svc.SetProjects(func(string) (string, string) { return "stored-id", "own" })
 
-	project, err := svc.Relocate("stored-id")
+	project, err := svc.Relocate(t.Context(), api.ProjectIDOptions{ID: "stored-id"})
 	if err != nil || project == nil || project.Path != own {
 		t.Fatalf("Relocate = %+v, %v; want the project repointed at %q", project, err, own)
 	}
@@ -569,12 +570,12 @@ func TestRelocateAcceptsTheProjectsOwnDirectory(t *testing.T) {
 // chosen directory — the caller writes whatever comes back over the stored row.
 func TestRelocateCancelledChangesNothing(t *testing.T) {
 	t.Parallel()
-	project, err := New(&pickerStub{}).Relocate("stored-id")
+	project, err := New(&pickerStub{}).Relocate(t.Context(), api.ProjectIDOptions{ID: "stored-id"})
 	if err != nil || project != nil {
 		t.Fatalf("Relocate(cancelled) = %+v, %v; want nil, nil", project, err)
 	}
 
-	if _, err := New(&pickerStub{dirError: errors.New("picker failed")}).Relocate("stored-id"); err == nil {
+	if _, err := New(&pickerStub{dirError: errors.New("picker failed")}).Relocate(t.Context(), api.ProjectIDOptions{ID: "stored-id"}); err == nil {
 		t.Fatal("Relocate error was swallowed")
 	}
 }

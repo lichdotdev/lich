@@ -11,6 +11,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -28,9 +29,9 @@ func TestSpawnRecordsTheMCPServersItCanReach(t *testing.T) {
 	}
 	recorded := map[string][]string{}
 	svc := New(stubBins{bin: "sh", mcpServers: recorded}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", cwd, providers.OpenCode, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: cwd, Kind: providers.OpenCode, Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 

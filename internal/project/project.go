@@ -6,6 +6,7 @@ package project
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -63,7 +64,7 @@ func New(picker Picker) *Service {
 
 // Open shows the native directory picker and returns the chosen project, or nil
 // if the user cancels the dialog.
-func (s *Service) Open() (*Project, error) {
+func (s *Service) Open(_ context.Context, _ api.None) (*Project, error) {
 	path, err := s.picker.PickDirectory("Open Project")
 	if err != nil {
 		return nil, fmt.Errorf("open dialog failed: %w", err)
@@ -85,7 +86,7 @@ func (s *Service) SetProjects(lookup projectLookup) {
 }
 
 // Relocate points a stored project at a directory chosen from the picker,
-// keeping id rather than deriving a new one from the path. The id is the
+// keeping opts.ID rather than deriving a new one from the path. The id is the
 // project's identity in the store — what its sessions hang off and what names
 // its worktree directory — so a checkout that was moved or renamed keeps both.
 // The name follows the new directory. nil when the user cancels.
@@ -94,7 +95,7 @@ func (s *Service) SetProjects(lookup projectLookup) {
 // hold the same path under different ids, and every path-addressed lookup the
 // app makes — which project a checkout belongs to, which account its gh calls
 // run as — answers with whichever row the query reached first.
-func (s *Service) Relocate(id string) (*Project, error) {
+func (s *Service) Relocate(_ context.Context, opts api.ProjectIDOptions) (*Project, error) {
 	path, err := s.picker.PickDirectory("Relocate Project")
 	if err != nil {
 		return nil, fmt.Errorf("open dialog failed: %w", err)
@@ -103,19 +104,19 @@ func (s *Service) Relocate(id string) (*Project, error) {
 		return nil, nil // cancelled
 	}
 	if s.projects != nil {
-		if owner, name := s.projects(path); owner != "" && owner != id {
+		if owner, name := s.projects(path); owner != "" && owner != opts.ID {
 			return nil, fmt.Errorf("That directory is already the project %q. Open that one instead.", name)
 		}
 	}
 	project := newProject(path)
-	project.ID = id
+	project.ID = opts.ID
 	return project, nil
 }
 
 // Home returns a project rooted at the user's home directory, without a picker.
 // The update flow opens an install terminal there when no project is in view, so
 // clicking Install never dead-ends on the Home screen.
-func (s *Service) Home() (*Project, error) {
+func (s *Service) Home(_ context.Context, _ api.None) (*Project, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("resolve home dir: %w", err)
@@ -143,11 +144,16 @@ type PullRequest = api.PullRequest
 // never stalls the footer poll.
 const prLookupTimeout = 5 * time.Second
 
-// PullRequest returns the open pull request for the path's current branch, or nil
+// PullRequest answers pullRequest over RPC.
+func (s *Service) PullRequest(_ context.Context, opts api.PathOptions) (*PullRequest, error) {
+	return s.pullRequest(opts.Path), nil
+}
+
+// pullRequest returns the open pull request for the path's current branch, or nil
 // when there is none, gh is missing/unauthenticated, or the path is not a GitHub
 // repo. It shells out to `gh pr view`, which resolves the PR from the checked-out
 // branch. Any failure yields nil, matching Branch's "hide the segment" contract.
-func (s *Service) PullRequest(path string) *PullRequest {
+func (s *Service) pullRequest(path string) *PullRequest {
 	out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,state")
 	if err != nil {
 		return nil
@@ -170,28 +176,43 @@ func parsePullRequest(out []byte) *PullRequest {
 	return &pr
 }
 
-// Exists reports whether path is still a directory on disk. A stored project
+// Exists answers exists over RPC.
+func (s *Service) Exists(_ context.Context, opts api.PathOptions) (bool, error) {
+	return s.exists(opts.Path), nil
+}
+
+// exists reports whether path is still a directory on disk. A stored project
 // outlives the folder it points at — the picker guarantees the directory exists
 // when a project is first opened, nothing does when one is reopened from a row.
-func (s *Service) Exists(path string) bool {
+func (s *Service) exists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
 }
 
-// Missing returns the subset of paths whose directory is no longer there. The
+// Missing answers missing over RPC.
+func (s *Service) Missing(_ context.Context, opts api.PathsOptions) ([]string, error) {
+	return s.missing(opts.Paths), nil
+}
+
+// missing returns the subset of paths whose directory is no longer there. The
 // lists that offer closed projects ask about all their rows at once, so a row
 // that cannot be opened as it stands says so before it is clicked.
-func (s *Service) Missing(paths []string) []string {
+func (s *Service) missing(paths []string) []string {
 	gone := []string{}
 	for _, path := range paths {
-		if !s.Exists(path) {
+		if !s.exists(path) {
 			gone = append(gone, path)
 		}
 	}
 	return gone
 }
 
-// BranchesOf answers Branch for several checkouts at once, keyed by path; a path
+// BranchesOf answers branchesOf over RPC.
+func (s *Service) BranchesOf(_ context.Context, opts api.PathsOptions) (map[string]string, error) {
+	return s.branchesOf(opts.Paths), nil
+}
+
+// branchesOf answers Branch for several checkouts at once, keyed by path; a path
 // that names no branch — gone, not a repository, a detached HEAD — is left out
 // rather than mapped to "", so a caller reads "no branch" from the absence.
 //
@@ -199,7 +220,7 @@ func (s *Service) Missing(paths []string) []string {
 // wants each row's branch once, when it is drawn, not the per-path poll a live
 // card rides (native/cmd/lich-native/model.go, pollGit). Two RPCs per row every
 // few seconds is what that poll costs, and a history list is long.
-func (s *Service) BranchesOf(paths []string) map[string]string {
+func (s *Service) branchesOf(paths []string) map[string]string {
 	branches := map[string]string{}
 	for _, path := range paths {
 		if branch := s.Branch(path); branch != "" {
@@ -211,18 +232,18 @@ func (s *Service) BranchesOf(paths []string) map[string]string {
 
 // PickFile shows the native file picker and returns the chosen file path, or ""
 // if the user cancels the dialog.
-func (s *Service) PickFile(title string) (string, error) {
-	path, err := s.picker.PickFile(title)
+func (s *Service) PickFile(_ context.Context, opts api.PickFileOptions) (string, error) {
+	path, err := s.picker.PickFile(opts.Title)
 	if err != nil {
 		return "", fmt.Errorf("open dialog failed: %w", err)
 	}
 	return path, nil
 }
 
-// PickSaveFile shows the native save dialog seeded with defaultName and returns
+// PickSaveFile shows the native save dialog seeded with opts.DefaultName and returns
 // the chosen destination, or "" if the user cancels.
-func (s *Service) PickSaveFile(title, defaultName string) (string, error) {
-	path, err := s.picker.PickSaveFile(title, defaultName)
+func (s *Service) PickSaveFile(_ context.Context, opts api.PickSaveFileOptions) (string, error) {
+	path, err := s.picker.PickSaveFile(opts.Title, opts.DefaultName)
 	if err != nil {
 		return "", fmt.Errorf("save dialog failed: %w", err)
 	}
@@ -231,14 +252,19 @@ func (s *Service) PickSaveFile(title, defaultName string) (string, error) {
 
 type DiffStats = api.DiffStats
 
-// Diff returns the dirty-file count (modified + untracked), the added/deleted
+// Diff answers diff over RPC.
+func (s *Service) Diff(_ context.Context, opts api.PathOptions) (DiffStats, error) {
+	return s.diff(opts.Path), nil
+}
+
+// diff returns the dirty-file count (modified + untracked), the added/deleted
 // line totals against HEAD, the HEAD commit itself and the branch it is on. A
 // non-repository path yields the zero value, matching Branch's contract.
 //
 // One git child on a clean checkout, two on a dirty one: the status read
 // answers the branch, the head and everything dirty (status.go), and the line
 // totals are asked for only when there is something to total.
-func (s *Service) Diff(path string) DiffStats {
+func (s *Service) diff(path string) DiffStats {
 	status := readWorkTree(path)
 	stats := DiffStats{Files: status.files, Head: status.head, Branch: status.branch}
 	// A tree the status read found nothing dirty in has nothing to total, so the

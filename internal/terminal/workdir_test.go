@@ -30,7 +30,7 @@ func TestWorkdirMissing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := svc.WorkdirMissing(tt.cwd); got != tt.want {
+			if got := svc.workdirMissing(tt.cwd); got != tt.want {
 				t.Errorf("WorkdirMissing(%q) = %v, want %v", tt.cwd, got, tt.want)
 			}
 		})

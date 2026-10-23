@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/store"
 )
@@ -30,7 +31,7 @@ func TestAnnounceMergeTellsTheAgentsInTheMergedCheckout(t *testing.T) {
 	term.attachMod("modded", ackedOK)
 	svc := newRelay(merging(), term, nil)
 
-	if err := svc.AnnounceMerge("/wt/feat", 42, "Add merge notice", "feat/merge", "main"); err != nil {
+	if _, err := svc.AnnounceMerge(t.Context(), api.AnnounceMergeOptions{Checkout: "/wt/feat", Number: 42, Title: "Add merge notice", Branch: "feat/merge", Base: "main"}); err != nil {
 		t.Fatalf("AnnounceMerge: %v", err)
 	}
 
@@ -61,7 +62,7 @@ func TestAnnounceMergeReachesSessionsInTheProjectsOwnDirectory(t *testing.T) {
 	term := newFakeTerminal("root", "agent")
 	svc := newRelay(merging(), term, nil)
 
-	if err := svc.AnnounceMerge("/src/lich", 7, "Fix", "fix/x", "main"); err != nil {
+	if _, err := svc.AnnounceMerge(t.Context(), api.AnnounceMergeOptions{Checkout: "/src/lich", Number: 7, Title: "Fix", Branch: "fix/x", Base: "main"}); err != nil {
 		t.Fatalf("AnnounceMerge: %v", err)
 	}
 
@@ -89,7 +90,7 @@ func TestAnnounceMergeTellsTheSessionThatOpenedOneThere(t *testing.T) {
 	term := newFakeTerminal("lead", "bystander", "worker", "nested")
 	svc := newRelay(sessions, term, nil)
 
-	if err := svc.AnnounceMerge("/wt/feat", 42, "Add merge notice", "feat/merge", "main"); err != nil {
+	if _, err := svc.AnnounceMerge(t.Context(), api.AnnounceMergeOptions{Checkout: "/wt/feat", Number: 42, Title: "Add merge notice", Branch: "feat/merge", Base: "main"}); err != nil {
 		t.Fatalf("AnnounceMerge: %v", err)
 	}
 
@@ -113,7 +114,7 @@ func TestAnnounceMergeReportsAStoreFailure(t *testing.T) {
 	t.Parallel()
 	svc := newRelay(fakeSessions{err: errors.New("disk gone")}, newFakeTerminal(), nil)
 
-	if err := svc.AnnounceMerge("/wt/feat", 1, "x", "b", "main"); err == nil {
+	if _, err := svc.AnnounceMerge(t.Context(), api.AnnounceMergeOptions{Checkout: "/wt/feat", Number: 1, Title: "x", Branch: "b", Base: "main"}); err == nil {
 		t.Fatal("AnnounceMerge = nil, want the store failure")
 	}
 }

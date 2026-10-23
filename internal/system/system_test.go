@@ -2,6 +2,7 @@ package system
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -43,10 +44,10 @@ func TestOpenExternalGatesBeforeLaunching(t *testing.T) {
 		}
 		return nil
 	}}
-	if err := s.OpenExternal("file:///etc/passwd"); err == nil || launched != "" {
+	if _, err := s.OpenExternal(t.Context(), api.OpenExternalOptions{URL: "file:///etc/passwd"}); err == nil || launched != "" {
 		t.Fatalf("invalid url launched: %q (%v)", launched, err)
 	}
-	if err := s.OpenExternal("https://example.com"); err != nil || launched != "https://example.com" {
+	if _, err := s.OpenExternal(t.Context(), api.OpenExternalOptions{URL: "https://example.com"}); err != nil || launched != "https://example.com" {
 		t.Fatalf("valid url not launched: %q (%v)", launched, err)
 	}
 }
@@ -61,7 +62,7 @@ func TestOpenExternalPassesURLAsOneArgument(t *testing.T) {
 	var args []string
 	s := &Service{run: captureRun(&name, &args)}
 
-	if err := s.OpenExternal(raw); err != nil {
+	if _, err := s.OpenExternal(t.Context(), api.OpenExternalOptions{URL: raw}); err != nil {
 		t.Fatalf("OpenExternal: %v", err)
 	}
 	if name == "cmd" {
@@ -88,7 +89,7 @@ func TestRevealLogOpensTheDirectory(t *testing.T) {
 	dir := filepath.Join("/config", "lich")
 	s := &Service{logPath: filepath.Join(dir, "lich.log"), run: captureRun(&name, &args)}
 
-	if err := s.RevealLog(); err != nil {
+	if _, err := s.RevealLog(t.Context(), api.None{}); err != nil {
 		t.Fatalf("RevealLog: %v", err)
 	}
 	if name == "cmd" || name == "sh" || name == "bash" {
@@ -108,7 +109,7 @@ func TestRevealLogWithoutAFileLaunchesNothing(t *testing.T) {
 		launched = true
 		return nil
 	}}
-	if err := s.RevealLog(); err == nil {
+	if _, err := s.RevealLog(t.Context(), api.None{}); err == nil {
 		t.Error("want an error when there is no log file")
 	}
 	if launched {
@@ -118,7 +119,7 @@ func TestRevealLogWithoutAFileLaunchesNothing(t *testing.T) {
 
 func TestDiagnosticsReportsTheRunningBuild(t *testing.T) {
 	s := New(nil, "/config/lich/lich.log", "0.23.0", false)
-	got := s.Diagnostics()
+	got := s.diagnostics()
 	if got.Version != "0.23.0" || got.LogPath != "/config/lich/lich.log" {
 		t.Errorf("Diagnostics() = %+v, want the version and log path it was built with", got)
 	}
@@ -132,17 +133,17 @@ func TestDiagnosticsReportsTheRunningBuild(t *testing.T) {
 // already been told about reads as a second crash.
 func TestTakeUncleanExitIsConsumed(t *testing.T) {
 	s := New(nil, "", "0.23.0", true)
-	if !s.TakeUncleanExit() {
+	if !s.takeUncleanExit() {
 		t.Fatal("first TakeUncleanExit() = false, want true")
 	}
-	if s.TakeUncleanExit() {
+	if s.takeUncleanExit() {
 		t.Error("second TakeUncleanExit() = true, want false — the flag was not consumed")
 	}
 }
 
 func TestTakeUncleanExitAfterACleanExit(t *testing.T) {
 	s := New(nil, "", "0.23.0", false)
-	if s.TakeUncleanExit() {
+	if s.takeUncleanExit() {
 		t.Error("TakeUncleanExit() = true after a clean exit, want false")
 	}
 }
@@ -154,7 +155,7 @@ func TestOpenFolderInEditorPrefersVisual(t *testing.T) {
 	dir := t.TempDir()
 	s := &Service{env: []string{"EDITOR=nvim", "VISUAL=zed"}, run: captureRun(&name, &args)}
 
-	cmd, err := s.OpenFolderInEditor(dir)
+	cmd, err := s.OpenFolderInEditor(t.Context(), api.OpenFolderOptions{Dir: dir})
 	if err != nil {
 		t.Fatalf("OpenFolderInEditor: %v", err)
 	}
@@ -181,7 +182,7 @@ func TestNotifyBuildsTwoLineText(t *testing.T) {
 	var text, title string
 	s := &Service{notify: captureNotify(&text, &title)}
 
-	if err := s.Notify("api needs your input", "lich"); err != nil {
+	if _, err := s.Notify(t.Context(), api.NotifyOptions{Summary: "api needs your input", Detail: "lich"}); err != nil {
 		t.Fatalf("Notify: %v", err)
 	}
 	if want := "api needs your input\nlich"; text != want {
@@ -191,7 +192,7 @@ func TestNotifyBuildsTwoLineText(t *testing.T) {
 		t.Errorf("title = %q, want lich", title)
 	}
 
-	if err := s.Notify("api needs your input", ""); err != nil {
+	if _, err := s.Notify(t.Context(), api.NotifyOptions{Summary: "api needs your input"}); err != nil {
 		t.Fatalf("Notify without detail: %v", err)
 	}
 	if strings.Contains(text, "\n") {
@@ -207,7 +208,7 @@ func TestNotifyTruncatesEachLine(t *testing.T) {
 	s := &Service{notify: captureNotify(&text, &title)}
 
 	exact := strings.Repeat("é", 120)
-	if err := s.Notify(exact, exact); err != nil {
+	if _, err := s.Notify(t.Context(), api.NotifyOptions{Summary: exact, Detail: exact}); err != nil {
 		t.Fatalf("Notify: %v", err)
 	}
 	if text != exact+"\n"+exact {
@@ -215,7 +216,7 @@ func TestNotifyTruncatesEachLine(t *testing.T) {
 	}
 
 	over := strings.Repeat("é", 121)
-	if err := s.Notify(over, over); err != nil {
+	if _, err := s.Notify(t.Context(), api.NotifyOptions{Summary: over, Detail: over}); err != nil {
 		t.Fatalf("Notify: %v", err)
 	}
 	want := exact + "…\n" + exact + "…"
@@ -233,7 +234,7 @@ func TestNotifyRejectsEmpty(t *testing.T) {
 		return nil
 	}}
 	for _, summary := range []string{"", "   ", "\n"} {
-		if err := s.Notify(summary, ""); err == nil {
+		if _, err := s.Notify(t.Context(), api.NotifyOptions{Summary: summary}); err == nil {
 			t.Errorf("summary %q: want error", summary)
 		}
 	}
@@ -250,7 +251,7 @@ func TestOpenFolderLaunchesTheFileManager(t *testing.T) {
 	dir := t.TempDir()
 	s := &Service{run: captureRun(&name, &args)}
 
-	if err := s.OpenFolder(dir); err != nil {
+	if _, err := s.OpenFolder(t.Context(), api.OpenFolderOptions{Dir: dir}); err != nil {
 		t.Fatalf("OpenFolder: %v", err)
 	}
 	if name == "cmd" || name == "sh" || name == "bash" {
@@ -276,13 +277,13 @@ func TestOpenFolderRefusesAPathThatIsGone(t *testing.T) {
 			launched = true
 			return nil
 		}}
-		if err := s.OpenFolder(path); err == nil {
+		if _, err := s.OpenFolder(t.Context(), api.OpenFolderOptions{Dir: path}); err == nil {
 			t.Errorf("want %q refused", path)
 		}
 		if launched {
 			t.Errorf("%q was opened anyway", path)
 		}
-		if _, err := s.OpenFolderInEditor(path); err == nil || launched {
+		if _, err := s.OpenFolderInEditor(t.Context(), api.OpenFolderOptions{Dir: path}); err == nil || launched {
 			t.Errorf("want %q refused by the editor path too", path)
 		}
 	}
@@ -297,7 +298,7 @@ func TestOpenFolderInEditorOpensTheCheckout(t *testing.T) {
 	dir := t.TempDir()
 	s := &Service{env: []string{"EDITOR=code --wait"}, run: captureRun(&name, &args)}
 
-	cmd, err := s.OpenFolderInEditor(dir)
+	cmd, err := s.OpenFolderInEditor(t.Context(), api.OpenFolderOptions{Dir: dir})
 	if err != nil {
 		t.Fatalf("OpenFolderInEditor: %v", err)
 	}
@@ -312,7 +313,7 @@ func TestOpenFolderInEditorOpensTheCheckout(t *testing.T) {
 		t.Error("a terminal editor must not be launched detached")
 		return nil
 	}}
-	cmd, err = terminal.OpenFolderInEditor(dir)
+	cmd, err = terminal.OpenFolderInEditor(t.Context(), api.OpenFolderOptions{Dir: dir})
 	if err != nil {
 		t.Fatalf("OpenFolderInEditor: %v", err)
 	}
@@ -330,7 +331,7 @@ func TestOpenFolderInEditorWithoutAnEditorShowsTheFolder(t *testing.T) {
 	dir := t.TempDir()
 	s := &Service{run: captureRun(&name, &args)}
 
-	cmd, err := s.OpenFolderInEditor(dir)
+	cmd, err := s.OpenFolderInEditor(t.Context(), api.OpenFolderOptions{Dir: dir})
 	if err != nil {
 		t.Fatalf("OpenFolderInEditor: %v", err)
 	}
@@ -355,7 +356,7 @@ func TestSetEnvMovesTheEditorLookup(t *testing.T) {
 
 	s.SetEnv([]string{"EDITOR=zed"})
 
-	if _, err := s.OpenFolderInEditor(t.TempDir()); err != nil {
+	if _, err := s.OpenFolderInEditor(t.Context(), api.OpenFolderOptions{Dir: t.TempDir()}); err != nil {
 		t.Fatalf("OpenFolderInEditor: %v", err)
 	}
 	if name != "zed" {
@@ -367,7 +368,7 @@ func TestQuitReachesWhatMainWired(t *testing.T) {
 	s := New(nil, "", "0.23.0", false)
 	refused := errors.New("quit: lich is still starting")
 	s.SetQuit(func() error { return refused })
-	if err := s.Quit(QuitOptions{}); !errors.Is(err, refused) {
+	if _, err := s.Quit(t.Context(), QuitOptions{}); !errors.Is(err, refused) {
 		t.Fatalf("Quit = %v, want the wired quit's error", err)
 	}
 }
@@ -416,16 +417,16 @@ func newNativeRig(t *testing.T) *nativeRig {
 
 func TestShowWindowStartsOrRaisesTheNativeWindow(t *testing.T) {
 	r := newNativeRig(t)
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 || r.launched[0] != "/opt/lich/lich-native" {
+	if _, err := r.s.ShowWindow(t.Context(), ShowWindowOptions{}); err != nil || len(r.launched) != 1 || r.launched[0] != "/opt/lich/lich-native" {
 		t.Fatalf("none open: err %v, launched %v; want the located binary started", err, r.launched)
 	}
-	r.s.AttachNative(AttachNativeOptions{Executable: "/home/me/lich-native"})
+	r.s.attachNative(AttachNativeOptions{Executable: "/home/me/lich-native"})
 	r.connected = true
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || r.raised != 1 || len(r.launched) != 1 {
+	if _, err := r.s.ShowWindow(t.Context(), ShowWindowOptions{}); err != nil || r.raised != 1 || len(r.launched) != 1 {
 		t.Fatalf("native open: err %v, raised %d, launched %v; want one raise only", err, r.raised, r.launched)
 	}
 	r.connected = false
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 2 || r.launched[1] != "/home/me/lich-native" {
+	if _, err := r.s.ShowWindow(t.Context(), ShowWindowOptions{}); err != nil || len(r.launched) != 2 || r.launched[1] != "/home/me/lich-native" {
 		t.Fatalf("native closed: err %v, launched %v; want the attached binary started again", err, r.launched)
 	}
 	if len(r.failures) != 0 {
@@ -437,12 +438,12 @@ func TestNativeWindowThatCannotStartIsReported(t *testing.T) {
 	r := newNativeRig(t)
 
 	r.locateErr = errors.New("no lich-native beside /usr/bin/lich")
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.failures) != 1 || !strings.Contains(r.failures[0], "no lich-native") {
+	if _, err := r.s.ShowWindow(t.Context(), ShowWindowOptions{}); err != nil || len(r.failures) != 1 || !strings.Contains(r.failures[0], "no lich-native") {
 		t.Fatalf("missing binary: err %v, failures %v; want the missing binary reported", err, r.failures)
 	}
 
 	r.locateErr = nil
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 1 {
+	if _, err := r.s.ShowWindow(t.Context(), ShowWindowOptions{}); err != nil || len(r.launched) != 1 {
 		t.Fatalf("relaunch: err %v, launched %v", err, r.launched)
 	}
 	r.exited("exit status 1")
@@ -450,17 +451,17 @@ func TestNativeWindowThatCannotStartIsReported(t *testing.T) {
 		t.Fatalf("died before attaching: failures %v; want the exit as the reason", r.failures)
 	}
 
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.launched) != 2 {
+	if _, err := r.s.ShowWindow(t.Context(), ShowWindowOptions{}); err != nil || len(r.launched) != 2 {
 		t.Fatalf("third: err %v, launched %v", err, r.launched)
 	}
-	r.s.AttachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
+	r.s.attachNative(AttachNativeOptions{Executable: "/opt/lich/lich-native"})
 	r.exited("exit status 0")
 	if len(r.failures) != 2 {
 		t.Fatalf("closed after attaching: failures %v; want nothing reported", r.failures)
 	}
 
 	r.launchErr = errors.New("exec format error")
-	if err := r.s.ShowWindow(ShowWindowOptions{}); err != nil || len(r.failures) != 3 || !strings.Contains(r.failures[2], "exec format error") {
+	if _, err := r.s.ShowWindow(t.Context(), ShowWindowOptions{}); err != nil || len(r.failures) != 3 || !strings.Contains(r.failures[2], "exec format error") {
 		t.Fatalf("launch failing: err %v, failures %v; want the launch error reported", err, r.failures)
 	}
 }

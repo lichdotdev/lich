@@ -1,6 +1,7 @@
 package patchnotes
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"reflect"
 	"testing"
 	"testing/fstest"
@@ -82,7 +83,7 @@ func TestSectionMissingVersionIsNil(t *testing.T) {
 
 func TestCurrentReportsNormalizedVersion(t *testing.T) {
 	svc := New("v0.11.0", sample, fstest.MapFS{})
-	got, err := svc.Current("en")
+	got, err := svc.Current(t.Context(), api.PatchNotesOptions{Locale: "en"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +188,7 @@ func TestHighlightsAreNilWithoutBlocksOrSection(t *testing.T) {
 }
 
 func TestCurrentCarriesHighlights(t *testing.T) {
-	got, err := New("v0.45.0", withHighlights, fstest.MapFS{}).Current("en")
+	got, err := New("v0.45.0", withHighlights, fstest.MapFS{}).Current(t.Context(), api.PatchNotesOptions{Locale: "en"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +214,7 @@ const ptBR = `## [0.11.0] - 2026-07-21
 
 func TestCurrentReadsTheLocalesTranslation(t *testing.T) {
 	svc := New("v0.11.0", sample, fstest.MapFS{"changelog/pt-BR.md": {Data: []byte(ptBR)}})
-	got, err := svc.Current("pt-BR")
+	got, err := svc.Current(t.Context(), api.PatchNotesOptions{Locale: "pt-BR"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +236,7 @@ func TestCurrentReadsTheLocalesTranslation(t *testing.T) {
 
 func TestCurrentWithoutATranslationIsEnglish(t *testing.T) {
 	svc := New("v0.11.0", sample, fstest.MapFS{"changelog/pt-BR.md": {Data: []byte(ptBR)}})
-	got, err := svc.Current("ja")
+	got, err := svc.Current(t.Context(), api.PatchNotesOptions{Locale: "ja"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +249,7 @@ func TestCurrentWithoutATranslationIsEnglish(t *testing.T) {
 // than a section that is not about it.
 func TestCurrentIgnoresATranslationOfAnotherRelease(t *testing.T) {
 	svc := New("v0.10.0", sample, fstest.MapFS{"changelog/pt-BR.md": {Data: []byte(ptBR)}})
-	got, err := svc.Current("pt-BR")
+	got, err := svc.Current(t.Context(), api.PatchNotesOptions{Locale: "pt-BR"})
 	if err != nil {
 		t.Fatal(err)
 	}

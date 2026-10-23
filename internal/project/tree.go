@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -63,20 +64,20 @@ type FileListing = api.FileListing
 // build output leak in. Anywhere else — a plain folder, a machine without git —
 // it falls back to walking the directory: browsing a project's files is not a
 // git feature, and only the diff panel beside it is.
-func (s *Service) Tree(path string) (FileListing, error) {
+func (s *Service) Tree(_ context.Context, opts api.PathOptions) (FileListing, error) {
 	// Asked before anything is listed, and quietly: a plain directory is not a
 	// failure to report, and routing its refreshes through runGit would file a
 	// warning per poll for a folder that is behaving exactly as it should. A
 	// work tree still goes through git, so a repository that *is* broken keeps
 	// reporting its error instead of being walked as if it were a plain folder.
-	if _, ok := gitQuiet(path, "rev-parse", "--is-inside-work-tree"); !ok {
-		return walkFiles(path, walkLimit)
+	if _, ok := gitQuiet(opts.Path, "rev-parse", "--is-inside-work-tree"); !ok {
+		return walkFiles(opts.Path, walkLimit)
 	}
-	present, err := lsFiles(path, "--cached", "--others", "--exclude-standard")
+	present, err := lsFiles(opts.Path, "--cached", "--others", "--exclude-standard")
 	if err != nil {
 		return FileListing{}, err
 	}
-	deleted, err := lsFiles(path, "--deleted")
+	deleted, err := lsFiles(opts.Path, "--deleted")
 	if err != nil {
 		return FileListing{}, err
 	}
@@ -180,37 +181,37 @@ func lsFiles(path string, args ...string) ([]string, error) {
 }
 
 // ReadFile returns the text content of one repo-relative file for the read-only
-// preview. rel goes through relpath.Resolve rather than the lexical Validate
+// preview. opts.Rel goes through relpath.Resolve rather than the lexical Validate
 // its neighbours use, because this is the surface that reads bytes: a checkout
 // can ship a symlink out of the tree, and a preview that followed one would
 // print a file the diff beside it describes as the link's target text.
 // Binaries, irregular files, and files above maxReadFileSize are refused —
 // the preview is for source, not blobs.
-func (s *Service) ReadFile(path, rel string) (string, error) {
-	full, err := relpath.Resolve(path, rel)
+func (s *Service) ReadFile(_ context.Context, opts api.CheckoutFileOptions) (string, error) {
+	full, err := relpath.Resolve(opts.Path, opts.Rel)
 	if err != nil {
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			return "", err
 		}
-		return "", fmt.Errorf("stat %s: %w", rel, pathErr.Err)
+		return "", fmt.Errorf("stat %s: %w", opts.Rel, pathErr.Err)
 	}
 	info, err := os.Stat(full)
 	if err != nil {
-		return "", fmt.Errorf("stat %s: %w", rel, err)
+		return "", fmt.Errorf("stat %s: %w", opts.Rel, err)
 	}
 	if !info.Mode().IsRegular() {
-		return "", fmt.Errorf("%s is not a regular file", rel)
+		return "", fmt.Errorf("%s is not a regular file", opts.Rel)
 	}
 	if info.Size() > maxReadFileSize {
-		return "", fmt.Errorf("%s is too large to preview (%d bytes)", rel, info.Size())
+		return "", fmt.Errorf("%s is too large to preview (%d bytes)", opts.Rel, info.Size())
 	}
 	data, err := os.ReadFile(full)
 	if err != nil {
-		return "", fmt.Errorf("read %s: %w", rel, err)
+		return "", fmt.Errorf("read %s: %w", opts.Rel, err)
 	}
 	if isBinary(data) {
-		return "", fmt.Errorf("%s is a binary file", rel)
+		return "", fmt.Errorf("%s is a binary file", opts.Rel)
 	}
 	return displayText(data), nil
 }

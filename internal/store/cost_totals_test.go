@@ -19,7 +19,7 @@ func costWorkspace(t *testing.T) *Service {
 	t.Helper()
 	svc := newTestStore(t)
 	for _, p := range []struct{ id, name string }{{"p1", "alpha"}, {"p2", "beta"}} {
-		if err := svc.AddProject(p.id, p.name, "/tmp/"+p.name); err != nil {
+		if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: p.id, Name: p.name, Path: "/tmp/" + p.name}); err != nil {
 			t.Fatalf("AddProject: %v", err)
 		}
 	}
@@ -29,7 +29,7 @@ func costWorkspace(t *testing.T) *Service {
 // bill adds a session of the given kind to a project and charges it.
 func bill(t *testing.T, svc *Service, projectID, sessionID, kind string, cost float64) {
 	t.Helper()
-	if err := svc.AddSession(projectID, sessionID, sessionID, kind, "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: projectID, SessionID: sessionID, Label: sessionID, Kind: kind, NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.SaveCostLedger(sessionID, "uuid-"+sessionID, 10, "m1", cost); err != nil {
@@ -49,7 +49,7 @@ func TestCostTotalsSumsPerProject(t *testing.T) {
 		t.Fatalf("SaveCostLedger: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -74,11 +74,11 @@ func TestCostTotalsSumsPerProject(t *testing.T) {
 func TestCostTotalsCountsWhatItCannotPrice(t *testing.T) {
 	svc := costWorkspace(t)
 	bill(t, svc, "p1", "s1", "claude", 2.00)
-	if err := svc.AddSession("p1", "s2", "unpriced", "crush", "", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "unpriced", Kind: "crush", NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestCostTotalsNarrowsByProjectAndProvider(t *testing.T) {
 	bill(t, svc, "p1", "s2", "codex", 2.00)
 	bill(t, svc, "p2", "s3", "claude", 4.00)
 
-	byProject, err := svc.CostTotals(CostTotalsOptions{Project: "ALPHA"})
+	byProject, err := svc.CostTotals(t.Context(), CostTotalsOptions{Project: "ALPHA"})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestCostTotalsNarrowsByProjectAndProvider(t *testing.T) {
 		t.Errorf("by project = %+v at %v, want alpha alone at 3.00", byProject.Projects, byProject.CostUSD)
 	}
 
-	byProvider, err := svc.CostTotals(CostTotalsOptions{Provider: "claude"})
+	byProvider, err := svc.CostTotals(t.Context(), CostTotalsOptions{Provider: "claude"})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -124,12 +124,12 @@ func TestCostTotalsRefusesAProjectItCannotFind(t *testing.T) {
 	svc := costWorkspace(t)
 	bill(t, svc, "p1", "s1", "claude", 1.00)
 
-	if _, err := svc.CostTotals(CostTotalsOptions{Project: "alfa"}); err == nil {
+	if _, err := svc.CostTotals(t.Context(), CostTotalsOptions{Project: "alfa"}); err == nil {
 		t.Fatal("CostTotals accepted a project name nothing matches")
 	}
 	// An unfiltered report over an empty workspace is not a failure — it is a
 	// machine that has run nothing yet.
-	empty, err := newTestStore(t).CostTotals(CostTotalsOptions{})
+	empty, err := newTestStore(t).CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals on an empty workspace: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestCostTotalsWindowsOnTheLastCountedTurn(t *testing.T) {
 	}
 
 	week := time.Now().Add(-7 * 24 * time.Hour).Unix()
-	report, err := svc.CostTotals(CostTotalsOptions{Since: week})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{Since: week})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestCostTotalsWindowsOnTheLastCountedTurn(t *testing.T) {
 		t.Errorf("window = %d sessions at %v, want the recent one alone at 1.00", report.Sessions, report.CostUSD)
 	}
 
-	all, err := svc.CostTotals(CostTotalsOptions{})
+	all, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -177,10 +177,10 @@ func TestCostTotalsWindowsOnTheLastCountedTurn(t *testing.T) {
 func TestAnUnpricedSessionIsDatedByItsOwnLife(t *testing.T) {
 	svc := costWorkspace(t)
 	bill(t, svc, "p1", "s1", "claude", 1.00)
-	if err := svc.AddSession("p1", "live", "live", "crush", "", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "live", Label: "live", Kind: "crush", NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
-	if err := svc.AddSession("p1", "parked", "parked", "crush", "", 4, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parked", Label: "parked", Kind: "crush", NextSeq: 4}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	stale := time.Now().Add(-30 * 24 * time.Hour).Unix()
@@ -190,7 +190,7 @@ func TestAnUnpricedSessionIsDatedByItsOwnLife(t *testing.T) {
 		t.Fatalf("park the session: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{Since: time.Now().Add(-7 * 24 * time.Hour).Unix()})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{Since: time.Now().Add(-7 * 24 * time.Hour).Unix()})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -206,17 +206,17 @@ func TestCostTotalsCarriesTheReadoutFlag(t *testing.T) {
 	svc := costWorkspace(t)
 	bill(t, svc, "p1", "s1", "claude", 1.00)
 
-	off, err := svc.CostTotals(CostTotalsOptions{})
+	off, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
 	if off.Readout {
 		t.Error("readout reported on with the setting unset")
 	}
-	if err := svc.SetSetting(costReadoutKey, globalScope, "true"); err != nil {
+	if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: costReadoutKey, ProjectID: globalScope, Value: "true"}); err != nil {
 		t.Fatalf("SetSetting: %v", err)
 	}
-	on, err := svc.CostTotals(CostTotalsOptions{})
+	on, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -255,7 +255,7 @@ func TestCostTotalsNamesWhoseArithmeticEachRowIs(t *testing.T) {
 	bill(t, svc, "p1", "s2", providers.Crush, 1.00)
 	bill(t, svc, "p2", "s3", providers.OpenCode, 0.50)
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestCostTotalsNamesASingleRungPlainly(t *testing.T) {
 	bill(t, svc, "p1", "s1", providers.Claude, 1.00)
 	bill(t, svc, "p1", "s2", providers.Codex, 1.00)
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -298,12 +298,12 @@ func TestCostTotalsNamesASingleRungPlainly(t *testing.T) {
 // must not do.
 func TestCostTotalsAttributesNoRungItCannotName(t *testing.T) {
 	svc := costWorkspace(t)
-	if err := svc.AddSession("p1", "s1", "unpriced", providers.Antigravity, "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "unpriced", Kind: providers.Antigravity, NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	bill(t, svc, "p2", "s2", "shell", 3.00)
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestCostTotalsNetsAForksInheritedHistory(t *testing.T) {
 		t.Fatalf("SaveForkCostOffset: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
@@ -359,7 +359,7 @@ func TestAForkedSessionUnderItsOffsetCountsAsZero(t *testing.T) {
 		t.Fatalf("SaveForkCostOffset: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
@@ -376,14 +376,14 @@ func TestAForkedSessionUnderItsOffsetCountsAsZero(t *testing.T) {
 func TestCostTotalsCountsAReportedClaudeCostAsReported(t *testing.T) {
 	svc := costWorkspace(t)
 	bill(t, svc, "p1", "s1", providers.Claude, 1.00)
-	if err := svc.AddSession("p1", "s2", "s2", providers.Claude, "", 3, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s2", Label: "s2", Kind: providers.Claude, NextSeq: 3}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.ReplaceConversationCost("s2", "uuid-s2", 2.00); err != nil {
 		t.Fatalf("ReplaceConversationCost: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -400,7 +400,7 @@ func TestCostTotalsCountsAReportedClaudeCostAsReported(t *testing.T) {
 // lich's arithmetic again, so the row returns to the priced rung.
 func TestARescannedConversationIsPricedAgain(t *testing.T) {
 	svc := costWorkspace(t)
-	if err := svc.AddSession("p1", "s1", "s1", providers.Claude, "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "s1", Kind: providers.Claude, NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.ReplaceConversationCost("s1", "uuid-s1", 2.00); err != nil {
@@ -410,7 +410,7 @@ func TestARescannedConversationIsPricedAgain(t *testing.T) {
 		t.Fatalf("SaveCostLedger: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -423,20 +423,20 @@ func TestARescannedConversationIsPricedAgain(t *testing.T) {
 // to stay reported across it.
 func TestAResumedSessionKeepsItsReportedRung(t *testing.T) {
 	svc := costWorkspace(t)
-	if err := svc.AddSession("p1", "s1", "Session 1", providers.Claude, "/tmp/alpha-wt", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Session 1", Kind: providers.Claude, Path: "/tmp/alpha-wt", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.ReplaceConversationCost("s1", "uuid-a", 0.4); err != nil {
 		t.Fatalf("ReplaceConversationCost: %v", err)
 	}
-	if err := svc.CloseSession("p1", "s1", ""); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
-	if _, err := svc.ReopenWorktreeSession("p1", "/tmp/alpha-wt", "s2"); err != nil {
+	if _, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/tmp/alpha-wt", NewSessionID: "s2"}); err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
 
-	report, err := svc.CostTotals(CostTotalsOptions{})
+	report, err := svc.CostTotals(t.Context(), CostTotalsOptions{})
 	if err != nil {
 		t.Fatalf("CostTotals: %v", err)
 	}
@@ -454,7 +454,7 @@ func TestCostTotalsAcrossVersions(t *testing.T) {
 	bill(t, svc, "p2", "s2", "codex", 0.75)
 	dispatcher := rpc.New()
 	rpc.Handle(dispatcher, api.StoreCostTotals, func(_ context.Context, o api.CostTotalsOptions) (api.CostReport, error) {
-		return svc.CostTotals(o)
+		return svc.CostTotals(t.Context(), o)
 	})
 
 	recorder := httptest.NewRecorder()

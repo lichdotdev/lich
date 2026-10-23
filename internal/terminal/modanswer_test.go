@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -54,7 +55,7 @@ func TestCloseTellsTheWatcherWhoClosedTheSession(t *testing.T) {
 	if err := svc.CloseBy("s1", "s9"); err != nil {
 		t.Fatalf("close: %v", err)
 	}
-	if err := svc.Close("s2"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s2"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 
@@ -73,7 +74,7 @@ func TestCloseTellsTheWatcherBeforeTheProcessDies(t *testing.T) {
 	svc.SetSessionClosed(func(id, _ string) { order = append(order, "closed "+id) })
 	p.onClose = func() { order = append(order, "killed") }
 
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 

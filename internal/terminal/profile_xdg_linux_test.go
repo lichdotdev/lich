@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/xdgprofile"
@@ -49,9 +50,9 @@ func TestAnXDGSpawnRunsInItsLinkHome(t *testing.T) {
 	}
 	svc := New(stubBins{bin: bin, profile: work.Slug, movedProfiles: map[string]string{}},
 		[]string{"CURSOR_API_KEY=key"}, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), providers.Cursor, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Cursor, Cols: 80, Rows: 24}); err != nil {
 		t.Fatal(err)
 	}
 	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the spawn")
@@ -95,14 +96,14 @@ func TestXDGConversationsAreMarkedWithTheirProfile(t *testing.T) {
 	}
 	svc := New(stubBins{}, nil, events.New())
 	for kind, id := range map[string]string{providers.OpenCode: "ses_w", providers.Cursor: "chat_w"} {
-		if !svc.ResumeAvailable(kind, id, cwd) {
+		if !svc.resumeAvailable(kind, id, cwd) {
 			t.Errorf("%s: %s in a profile cannot be resumed", kind, id)
 		}
 	}
 
 	moved := map[string]string{}
 	svc = New(stubBins{providerSession: "chat_w", movedProfiles: moved, kinds: map[string]string{"s1": providers.Cursor}}, nil, events.New())
-	if err := svc.ContinueIn("s1", "personal"); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "personal"}); err != nil {
 		t.Fatal(err)
 	}
 	// With no XDG_CONFIG_HOME, Personal's chats are in ~/.cursor.
@@ -114,7 +115,7 @@ func TestXDGConversationsAreMarkedWithTheirProfile(t *testing.T) {
 	}
 
 	svc = New(stubBins{providerSession: "ses_w", kinds: map[string]string{"s2": providers.OpenCode}}, nil, events.New())
-	if err := svc.ContinueIn("s2", "personal"); err == nil || !strings.Contains(err.Error(), "cannot move") {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s2", Profile: "personal"}); err == nil || !strings.Contains(err.Error(), "cannot move") {
 		t.Errorf("an opencode conversation continued in another profile: %v", err)
 	}
 }
@@ -136,7 +137,7 @@ func TestAKiroResumeStaysInTheRowsProfile(t *testing.T) {
 	if dir, err := svc.profileDir("s1", providers.Kiro, "k1"); err != nil || dir != work.Dir {
 		t.Errorf("resume: %q, %v, want %q", dir, err, work.Dir)
 	}
-	if err := svc.ContinueIn("s1", "personal"); err != nil {
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "personal"}); err != nil {
 		t.Fatal(err)
 	}
 	if got, ok := moved["s1"]; !ok || got != "" {

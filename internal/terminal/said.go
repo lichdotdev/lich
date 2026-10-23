@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -62,19 +63,19 @@ type textBlock struct {
 // It is the last message on record, not the last message of the current turn:
 // the two agree once a turn has finished, and mid-turn this is still the
 // previous turn's words.
-func (s *Service) LastTurnSaid(id string) (LastSaid, error) {
-	providerSessionID, err := s.store.ProviderSession(id)
+func (s *Service) LastTurnSaid(_ context.Context, opts api.SessionIDOptions) (LastSaid, error) {
+	providerSessionID, err := s.store.ProviderSession(opts.ID)
 	if err != nil {
 		return LastSaid{}, fmt.Errorf("read provider session: %w", err)
 	}
 	if providerSessionID == "" {
 		return LastSaid{}, nil
 	}
-	src, ok := usageSourceFor(providerSessionID, s.spawnOf(id).cwd)
+	src, ok := usageSourceFor(providerSessionID, s.spawnOf(opts.ID).cwd)
 	if !ok {
 		return LastSaid{}, nil
 	}
-	return LastSaid{Text: capRunes(s.recap.said(id, src), saidRuneCap)}, nil
+	return LastSaid{Text: capRunes(s.recap.said(opts.ID, src), saidRuneCap)}, nil
 }
 
 // transcriptReaderFor pairs a conversation's JSONL transcript with the reader

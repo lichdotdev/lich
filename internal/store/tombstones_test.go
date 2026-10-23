@@ -1,10 +1,13 @@
 package store
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 func seedConversation(t *testing.T, svc *Service, sessionID, path, conversation string) {
 	t.Helper()
-	if err := svc.AddSession("p1", sessionID, sessionID, "claude", path, 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: sessionID, Label: sessionID, Kind: "claude", Path: path, NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession %q: %v", sessionID, err)
 	}
 	if err := svc.SetProviderSession(sessionID, conversation); err != nil {
@@ -24,7 +27,7 @@ func forgotten(t *testing.T, svc *Service) map[string]bool {
 func newTombstoneStore(t *testing.T) *Service {
 	t.Helper()
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 	return svc
@@ -41,12 +44,20 @@ func TestDeletingASessionRemembersItsConversation(t *testing.T) {
 	}{
 		{"DeleteSession", "", func(s *Service) error { return s.DeleteSession("p1", "s1", "") }},
 		{"ForgetSession", "", func(s *Service) error {
-			if err := s.CloseSession("p1", "s1", ""); err != nil {
+			if _, err := s.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 				return err
 			}
-			return s.ForgetSession("s1")
+			if _, err := s.ForgetSession(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+				return err
+			}
+			return nil
 		}},
-		{"PurgeWorktreeSessions", "/wt/a", func(s *Service) error { return s.PurgeWorktreeSessions("p1", "/wt/a") }},
+		{"PurgeWorktreeSessions", "/wt/a", func(s *Service) error {
+			if _, err := s.PurgeWorktreeSessions(t.Context(), api.WorktreeSessionsOptions{ProjectID: "p1", Path: "/wt/a"}); err != nil {
+				return err
+			}
+			return nil
+		}},
 		{"DeleteProject", "", func(s *Service) error { return s.DeleteProject("p1") }},
 	}
 	for _, tc := range cases {
@@ -69,10 +80,10 @@ func TestDeletingASessionRemembersItsConversation(t *testing.T) {
 func TestResumingKeepsTheConversationLive(t *testing.T) {
 	svc := newTombstoneStore(t)
 	seedConversation(t, svc, "s1", "", "conv-1")
-	if err := svc.CloseSession("p1", "s1", ""); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s1"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
-	restored, err := svc.ReopenSession("s1", "s2")
+	restored, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "s1", NewSessionID: "s2"})
 	if err != nil || restored == nil {
 		t.Fatalf("ReopenSession = %v, %v; want the parked row", restored, err)
 	}
@@ -101,7 +112,7 @@ func TestASessionTakingBackAConversationClearsItsStone(t *testing.T) {
 // such row and say nothing about any conversation.
 func TestDeletingASessionWithNoConversationLeavesNoStone(t *testing.T) {
 	svc := newTombstoneStore(t)
-	if err := svc.AddSession("p1", "s1", "Shell", "shell", "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s1", Label: "Shell", Kind: "shell", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
 	if err := svc.DeleteSession("p1", "s1", ""); err != nil {

@@ -1,11 +1,13 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"path/filepath"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -24,35 +26,35 @@ const globalScope = ""
 // the global default dynamically.
 const providerDefaultKey = "provider.default"
 
-// GetSetting returns a setting's value for the given scope. An empty projectID
+// GetSetting returns a setting's value for the given scope. An empty opts.ProjectID
 // reads the global value. A missing setting returns "" and no error.
-func (s *Service) GetSetting(key, projectID string) (string, error) {
+func (s *Service) GetSetting(_ context.Context, opts api.GetSettingOptions) (string, error) {
 	var value string
 	err := s.db.QueryRow(
 		`SELECT value FROM settings WHERE key = ? AND project_id = ?`,
-		key, projectID,
+		opts.Key, opts.ProjectID,
 	).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
 	if err != nil {
-		return "", fmt.Errorf("get setting %q: %w", key, err)
+		return "", fmt.Errorf("get setting %q: %w", opts.Key, err)
 	}
 	return value, nil
 }
 
-// SetSetting writes a setting's value for the given scope. An empty projectID
+// SetSetting writes a setting's value for the given scope. An empty opts.ProjectID
 // sets the global value.
-func (s *Service) SetSetting(key, projectID, value string) error {
+func (s *Service) SetSetting(_ context.Context, opts api.SetSettingOptions) (api.None, error) {
 	_, err := s.db.Exec(
 		`INSERT INTO settings (key, project_id, value) VALUES (?, ?, ?)
 		 ON CONFLICT(key, project_id) DO UPDATE SET value = excluded.value`,
-		key, projectID, value,
+		opts.Key, opts.ProjectID, opts.Value,
 	)
 	if err != nil {
-		return fmt.Errorf("set setting %q: %w", key, err)
+		return api.None{}, fmt.Errorf("set setting %q: %w", opts.Key, err)
 	}
-	return nil
+	return api.None{}, nil
 }
 
 // ProviderEnabled reports whether the user turned providerID on, read the way
@@ -60,7 +62,7 @@ func (s *Service) SetSetting(key, projectID, value string) error {
 // since it was always offered before providers could be chosen, and every
 // other provider is opt-in.
 func (s *Service) ProviderEnabled(providerID string) (bool, error) {
-	value, err := s.GetSetting("provider."+providerID+".enabled", "")
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: "provider." + providerID + ".enabled"})
 	if err != nil {
 		return false, err
 	}
@@ -97,14 +99,14 @@ func binOffKey(providerID string) string {
 func (s *Service) ProviderBin(providerID, projectID string) string {
 	key, offKey := binKey(providerID), binOffKey(providerID)
 	if projectID != globalScope && !s.binParked(offKey, projectID) {
-		if bin, err := s.GetSetting(key, projectID); err == nil && bin != "" {
+		if bin, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: key, ProjectID: projectID}); err == nil && bin != "" {
 			return bin
 		}
 	}
 	if s.binParked(offKey, globalScope) {
 		return ""
 	}
-	bin, err := s.GetSetting(key, globalScope)
+	bin, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: key, ProjectID: globalScope})
 	if err != nil {
 		return ""
 	}
@@ -115,7 +117,7 @@ func (s *Service) ProviderBin(providerID, projectID string) string {
 // not one: a layer the user configured keeps resolving rather than silently
 // falling through to a different binary.
 func (s *Service) binParked(offKey, projectID string) bool {
-	value, err := s.GetSetting(offKey, projectID)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: offKey, ProjectID: projectID})
 	return err == nil && value == "true"
 }
 
@@ -144,7 +146,7 @@ func skipPermissionsKey(providerID string, worktree bool) string {
 func (s *Service) SkipPermissions(providerID, projectID, cwd string) bool {
 	root := s.ProjectPath(projectID)
 	worktree := root != "" && filepath.Clean(cwd) != filepath.Clean(root)
-	value, err := s.GetSetting(skipPermissionsKey(providerID, worktree), globalScope)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: skipPermissionsKey(providerID, worktree), ProjectID: globalScope})
 	if err != nil {
 		return false
 	}
@@ -160,7 +162,7 @@ func ultracodeKey(providerID string) string {
 // Ultracode reports whether every session of this provider spawns with
 // ultracode on.
 func (s *Service) Ultracode(providerID string) bool {
-	value, err := s.GetSetting(ultracodeKey(providerID), globalScope)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: ultracodeKey(providerID), ProjectID: globalScope})
 	return err == nil && value == "true"
 }
 
@@ -174,7 +176,7 @@ func subagentCardsKey(providerID string) string {
 // SubagentCards reports whether this provider's general-purpose subagents run
 // as lich sessions.
 func (s *Service) SubagentCards(providerID string) bool {
-	value, err := s.GetSetting(subagentCardsKey(providerID), globalScope)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: subagentCardsKey(providerID), ProjectID: globalScope})
 	return err != nil || value != "false"
 }
 
@@ -187,7 +189,7 @@ func pasteUnfoldKey(providerID string) string {
 
 // PasteUnfold reports whether a long paste into this provider lands unfolded.
 func (s *Service) PasteUnfold(providerID string) bool {
-	value, err := s.GetSetting(pasteUnfoldKey(providerID), globalScope)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: pasteUnfoldKey(providerID), ProjectID: globalScope})
 	return err == nil && value == "true"
 }
 
@@ -238,11 +240,11 @@ func (s *Service) SandboxLevel(providerID, projectID string) string {
 // state as the restrictive answer.
 func (s *Service) projectSetting(key, projectID string) string {
 	if projectID != globalScope {
-		if value, err := s.GetSetting(key, projectID); err == nil && value != "" {
+		if value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: key, ProjectID: projectID}); err == nil && value != "" {
 			return value
 		}
 	}
-	value, err := s.GetSetting(key, globalScope)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: key, ProjectID: globalScope})
 	if err != nil {
 		return ""
 	}
@@ -322,7 +324,7 @@ func (s *Service) GHAccountForPath(path string) string {
 	if projectID == "" {
 		return ""
 	}
-	login, err := s.GetSetting(ghAccountKey, projectID)
+	login, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: ghAccountKey, ProjectID: projectID})
 	if err != nil {
 		return ""
 	}
@@ -360,7 +362,7 @@ const costReadoutKey = "usage.cost"
 // CostReadout reports whether the session cost readout is on. Any read failure
 // answers off, which is the safe default for a number most users must not see.
 func (s *Service) CostReadout() bool {
-	value, err := s.GetSetting(costReadoutKey, globalScope)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: costReadoutKey, ProjectID: globalScope})
 	if err != nil {
 		return false
 	}
@@ -377,7 +379,7 @@ const promptLanguageKey = "prompt.language"
 // unknown value, or a failed read, is English, the default every session got
 // before the setting existed.
 func (s *Service) PromptLanguage() prompt.Lang {
-	value, err := s.GetSetting(promptLanguageKey, globalScope)
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: promptLanguageKey, ProjectID: globalScope})
 	if err != nil {
 		return prompt.English
 	}

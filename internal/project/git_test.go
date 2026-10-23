@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"github.com/lichdotdev/lich/api"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -46,7 +47,7 @@ func TestDiffOnARepositoryWithoutCommitsStaysSilent(t *testing.T) {
 	}
 	logged := captureLog(t)
 
-	stats := New(nil).Diff(repo)
+	stats := New(nil).diff(repo)
 	if stats.Files != 1 || stats.Added != 2 || stats.Deleted != 0 {
 		t.Errorf("Diff = %+v, want 1 file and 2 added lines", stats)
 	}
@@ -82,7 +83,7 @@ func TestDiscardNewFileStaysSilent(t *testing.T) {
 	}
 	logged := captureLog(t)
 
-	if err := New(nil).DiscardFile(repo, "loose.txt"); err != nil {
+	if _, err := New(nil).DiscardFile(t.Context(), api.CheckoutFileOptions{Path: repo, Rel: "loose.txt"}); err != nil {
 		t.Fatalf("DiscardFile: %v", err)
 	}
 	if out := logged(); out != "" {
@@ -99,7 +100,7 @@ func TestDiscardNewFileStaysSilent(t *testing.T) {
 func TestRunGitStillReportsRealFailures(t *testing.T) {
 	logged := captureLog(t)
 
-	_, err := New(nil).DiffText(t.TempDir())
+	_, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: t.TempDir()})
 	if err == nil {
 		t.Fatal("DiffText outside a repository: want an error, got nil")
 	}

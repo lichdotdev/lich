@@ -1,12 +1,13 @@
 package themes
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"strings"
 	"testing"
 )
 
 func TestBundledThemesPairEachOther(t *testing.T) {
-	themes, err := NewInDir(t.TempDir()).List()
+	themes, err := NewInDir(t.TempDir()).List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -22,7 +23,7 @@ func TestImportKeepsAPair(t *testing.T) {
 	if _, err := importTheme(t, s, day); err != nil {
 		t.Fatalf("Import: %v", err)
 	}
-	themes, err := s.List()
+	themes, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -66,7 +67,7 @@ func TestListLoadsAThemeWhosePairIsMissing(t *testing.T) {
 	if _, err := importTheme(t, s, theme); err != nil {
 		t.Fatalf("Import: %v", err)
 	}
-	themes, err := s.List()
+	themes, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}

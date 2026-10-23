@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"testing"
 )
@@ -10,10 +11,10 @@ import (
 // reaches the reopen list: closed_seq is stamped by the close.
 func closeProject(t *testing.T, svc *Service, id, name, path string) {
 	t.Helper()
-	if err := svc.AddProject(id, name, path); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: id, Name: name, Path: path}); err != nil {
 		t.Fatalf("AddProject(%s): %v", id, err)
 	}
-	if err := svc.CloseProject(id); err != nil {
+	if _, err := svc.CloseProject(t.Context(), api.ProjectIDOptions{ID: id}); err != nil {
 		t.Fatalf("CloseProject(%s): %v", id, err)
 	}
 }
@@ -22,7 +23,7 @@ func closeProject(t *testing.T, svc *Service, id, name, path string) {
 // asserted on.
 func searchIDs(t *testing.T, svc *Service, term string) []string {
 	t.Helper()
-	recents, err := svc.RecentProjects(term)
+	recents, err := svc.RecentProjects(t.Context(), api.SearchTermOptions{Term: term})
 	if err != nil {
 		t.Fatalf("RecentProjects(%q): %v", term, err)
 	}
@@ -67,7 +68,7 @@ func TestRecentProjectsSearchesNameAndPath(t *testing.T) {
 func TestRecentProjectsSearchSkipsOpenOnes(t *testing.T) {
 	svc := newTestStore(t)
 	closeProject(t, svc, "p1", "relay inbox", "/src/relay")
-	if err := svc.AddProject("p2", "relay tickets", "/src/relay-tickets"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p2", Name: "relay tickets", Path: "/src/relay-tickets"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 
@@ -153,7 +154,7 @@ func TestClosedProjectCountAnswersPastTheCap(t *testing.T) {
 		closeProject(t, svc, id, "project work", "/src/"+id)
 	}
 	closeProject(t, svc, "other", "unrelated", "/src/other")
-	if err := svc.AddProject("open", "project work open", "/src/open"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "open", Name: "project work open", Path: "/src/open"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
 
@@ -164,7 +165,7 @@ func TestClosedProjectCountAnswersPastTheCap(t *testing.T) {
 		"nothing":  0,
 	}
 	for term, want := range cases {
-		got, err := svc.ClosedProjectCount(term)
+		got, err := svc.ClosedProjectCount(t.Context(), api.SearchTermOptions{Term: term})
 		if err != nil {
 			t.Fatalf("ClosedProjectCount(%q): %v", term, err)
 		}
@@ -182,7 +183,7 @@ func TestClosedProjectCountEscapesWildcards(t *testing.T) {
 	closeProject(t, svc, "pct", "100% done", "/src/pct")
 	closeProject(t, svc, "wide", "1000 lines", "/src/wide")
 
-	got, err := svc.ClosedProjectCount("100%")
+	got, err := svc.ClosedProjectCount(t.Context(), api.SearchTermOptions{Term: "100%"})
 	if err != nil {
 		t.Fatalf("ClosedProjectCount: %v", err)
 	}

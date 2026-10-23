@@ -1,6 +1,7 @@
 package themes
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"strings"
 	"testing"
 )
@@ -24,10 +25,10 @@ func TestImportKeepsTheSyntaxSection(t *testing.T) {
 		"function(variableName)": "oklch(0.8 0.1 20)",
 		"heading": {"bold": true}
 	}`)
-	if _, err := s.Import(rawThemeFile(t, raw), false); err != nil {
+	if _, err := s.Import(t.Context(), api.ImportThemeOptions{Path: rawThemeFile(t, raw)}); err != nil {
 		t.Fatalf("Import: %v", err)
 	}
-	listed, err := s.List()
+	listed, err := s.List(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -58,7 +59,7 @@ func TestImportRejectsABadSyntaxEntry(t *testing.T) {
 	}
 	for name, tc := range cases {
 		s := NewInDir(t.TempDir())
-		_, err := s.Import(rawThemeFile(t, withSyntax(t, "pine", tc.syntax)), false)
+		_, err := s.Import(t.Context(), api.ImportThemeOptions{Path: rawThemeFile(t, withSyntax(t, "pine", tc.syntax))})
 		if err == nil || !strings.Contains(err.Error(), tc.reason) {
 			t.Errorf("%s: Import error = %v, want one naming %s", name, err, tc.reason)
 		}

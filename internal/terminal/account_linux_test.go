@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -24,8 +25,8 @@ func TestSessionAccountReadsWhatTheWrapperExecsInto(t *testing.T) {
 		t.Fatalf("write wrapper: %v", err)
 	}
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,7 +25,7 @@ func TestDiffText(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := New(nil).DiffText(repo)
+	out, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("DiffText: %v", err)
 	}
@@ -57,7 +58,7 @@ func TestDiffTextNoHead(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := New(nil).DiffText(repo)
+	out, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("DiffText: %v", err)
 	}
@@ -73,7 +74,7 @@ func TestDiffTextNoHead(t *testing.T) {
 func TestDiffTextClean(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
-	out, err := New(nil).DiffText(repo)
+	out, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("DiffText: %v", err)
 	}
@@ -81,7 +82,7 @@ func TestDiffTextClean(t *testing.T) {
 		t.Errorf("clean repo diff = %q, want empty", out)
 	}
 
-	if _, err := New(nil).DiffText(t.TempDir()); err == nil {
+	if _, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: t.TempDir()}); err == nil {
 		t.Error("non-repo path: want error, got nil")
 	}
 }
@@ -129,7 +130,7 @@ func TestDiffTextBinaryUntracked(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := New(nil).DiffText(repo)
+	out, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("DiffText: %v", err)
 	}
@@ -150,7 +151,7 @@ func TestDiffTextDecodesLatin1(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, err := New(nil).DiffText(repo)
+	out, err := New(nil).DiffText(t.Context(), api.PathOptions{Path: repo})
 	if err != nil {
 		t.Fatalf("DiffText: %v", err)
 	}

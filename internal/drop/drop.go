@@ -22,6 +22,7 @@
 package drop
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -188,12 +189,12 @@ type Attachment = api.DropAttachment
 // undone by its own harness. Here the path can only come from a dialog a human
 // answers on screen.
 //
-// root is the session's checkout, the one tree a confined session sees; a file
+// opts.Root is the session's checkout, the one tree a confined session sees; a file
 // under it keeps its own path. Anything else is copied, including files under
 // directories the sandbox happens to bind (a toolchain, ~/.config): copying one
 // of those costs a few bytes, and deciding it does not need copying means
 // reproducing the mount list here, where it would go stale in silence.
-func (s *Service) Attach(sessionID, root string, confined bool) (Attachment, error) {
+func (s *Service) Attach(_ context.Context, opts api.AttachDropOptions) (Attachment, error) {
 	if s.pick == nil {
 		return Attachment{}, errors.New("no file picker wired")
 	}
@@ -203,10 +204,10 @@ func (s *Service) Attach(sessionID, root string, confined bool) (Attachment, err
 	}
 	// A cancelled dialog is not a failure, and neither is a session that reaches
 	// the file where it is.
-	if path == "" || !confined || !sandboxAvailable() || under(root, path) {
+	if path == "" || !opts.Confined || !sandboxAvailable() || under(opts.Root, path) {
 		return Attachment{Path: path}, nil
 	}
-	copied, err := s.copyIn(sessionID, path)
+	copied, err := s.copyIn(opts.SessionID, path)
 	if err != nil {
 		return Attachment{}, err
 	}

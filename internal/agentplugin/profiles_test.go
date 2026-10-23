@@ -123,7 +123,7 @@ func TestPersonalUpdateReachesEveryClaudeProfile(t *testing.T) {
 	t.Setenv(fakeCLIEnvLog, envLog)
 	events := recordEvents(svc)
 
-	if err := svc.Update(providers.Claude); err != nil {
+	if _, err := svc.Update(t.Context(), api.PluginProviderOptions{Provider: providers.Claude}); err != nil {
 		t.Fatal(err)
 	}
 	ev := nextEvent(t, events)
@@ -225,7 +225,7 @@ func TestPersonalUpdateReachesEveryCodexProfile(t *testing.T) {
 	t.Setenv(fakeCLICodexEnvLog, envLog)
 	events := recordEvents(svc)
 
-	if err := svc.Update(providers.Codex); err != nil {
+	if _, err := svc.Update(t.Context(), api.PluginProviderOptions{Provider: providers.Codex}); err != nil {
 		t.Fatal(err)
 	}
 	if ev := nextEvent(t, events); ev.Provider != providers.Codex || len(ev.Failures) != 0 {

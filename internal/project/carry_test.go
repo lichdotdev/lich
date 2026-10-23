@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,7 +34,7 @@ func TestCarryUncommitted(t *testing.T) {
 	dst := filepath.Join(t.TempDir(), "fork")
 	git("worktree", "add", "-b", "fork", dst, "main")
 
-	if err := New(nil).CarryUncommitted(repo, dst); err != nil {
+	if _, err := New(nil).CarryUncommitted(t.Context(), api.CarryUncommittedOptions{Src: repo, Dst: dst}); err != nil {
 		t.Fatalf("CarryUncommitted: %v", err)
 	}
 
@@ -66,7 +67,7 @@ func TestCarryUncommittedClean(t *testing.T) {
 	dst := filepath.Join(t.TempDir(), "fork")
 	git("worktree", "add", "-b", "fork", dst, "main")
 
-	if err := New(nil).CarryUncommitted(repo, dst); err != nil {
+	if _, err := New(nil).CarryUncommitted(t.Context(), api.CarryUncommittedOptions{Src: repo, Dst: dst}); err != nil {
 		t.Fatalf("CarryUncommitted: %v", err)
 	}
 	if status := gitIn(t, dst)("status", "--porcelain"); status != "" {
@@ -78,7 +79,7 @@ func TestCarryUncommittedClean(t *testing.T) {
 // rather than silently carrying nothing.
 func TestCarryUncommittedNotRepo(t *testing.T) {
 	t.Parallel()
-	if err := New(nil).CarryUncommitted(t.TempDir(), t.TempDir()); err == nil {
+	if _, err := New(nil).CarryUncommitted(t.Context(), api.CarryUncommittedOptions{Src: t.TempDir(), Dst: t.TempDir()}); err == nil {
 		t.Fatal("CarryUncommitted accepted a directory that is not a checkout")
 	}
 }
@@ -106,7 +107,7 @@ func TestCarryUncommittedSkipsNonRegular(t *testing.T) {
 	dst := filepath.Join(t.TempDir(), "fork")
 	git("worktree", "add", "-b", "fork", dst, "main")
 
-	if err := New(nil).CarryUncommitted(repo, dst); err != nil {
+	if _, err := New(nil).CarryUncommitted(t.Context(), api.CarryUncommittedOptions{Src: repo, Dst: dst}); err != nil {
 		t.Fatalf("CarryUncommitted: %v", err)
 	}
 	if got := read(t, dst, "real.txt"); got != "carried\n" {

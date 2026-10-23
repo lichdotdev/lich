@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -14,14 +15,14 @@ import (
 	"github.com/lichdotdev/lich/internal/events"
 )
 
-// Start spawns the binary for session id under project projectID — the user's
-// shell when kind is "shell", otherwise the provider binary for that kind
+// Start spawns the binary for session opts.ID under project opts.ProjectID — the user's
+// shell when opts.Kind is "shell", otherwise the provider binary for that kind
 // resolved from the project's settings (falling back to the provider's default
-// on $PATH) — attached to a new PTY sized to cols x rows and rooted at cwd, then
-// streams its output to the window. An empty cwd defaults to the user's home
-// directory. Starting a session that is already running is a no-op.
+// on $PATH) — attached to a new PTY sized to opts.Cols x opts.Rows and rooted at
+// opts.Cwd, then streams its output to the window. An empty opts.Cwd defaults to
+// the user's home directory. Starting a session that is already running is a no-op.
 //
-// A non-empty resume is a provider conversation id to reopen, spelled for the
+// A non-empty opts.Resume is a provider conversation id to reopen, spelled for the
 // session's kind by resumeArgs, which the window passes after the user
 // accepted the prompt to continue the session this card ran before the last
 // restart. The prompt is only raised for a conversation ResumeAvailable still
@@ -29,7 +30,7 @@ import (
 // that slips through (pruned between the check and the spawn) fails in the PTY
 // like any other bad invocation — the user sees the provider's own error.
 //
-// fork turns that resume into a branch: the provider copies the conversation
+// opts.Fork turns that resume into a branch: the provider copies the conversation
 // into a new one of its own and leaves the original alone, so the card that ran
 // it stays where it is with its history intact. Only the three kinds
 // providers.SupportsFork names can do it, and only alongside a resume id — the
@@ -43,88 +44,84 @@ import (
 // `/rename` typed in the last one is a decision the user made about this card
 // rather than about that conversation. A fork with nothing on record is named by
 // lich (nameArgs); any other session is left to name itself.
-func (s *Service) Start(
-	id, projectID, cwd, kind, resume string, fork bool, cols, rows int,
-) error {
+func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, error) {
 	// Refused before the spawn rather than dropped in resumeArgs: a fork the
 	// provider cannot spell would reopen the parent's own conversation, and two
 	// cards on one conversation is exactly what a fork promises not to do.
-	if fork && !providers.SupportsFork(kind) {
-		return fmt.Errorf("%s cannot fork a conversation — it only resumes one", kind)
+	if opts.Fork && !providers.SupportsFork(opts.Kind) {
+		return api.None{}, fmt.Errorf("%s cannot fork a conversation — it only resumes one", opts.Kind)
 	}
-	if fork && resume == "" {
-		return fmt.Errorf("a fork needs the conversation to branch, and no resume id was given")
+	if opts.Fork && opts.Resume == "" {
+		return api.None{}, fmt.Errorf("a fork needs the conversation to branch, and no resume id was given")
 	}
-	if fork {
-		s.recordForkCost(id, kind, resume)
-		s.inheritUltracode(id, resume)
-		s.inheritSubagent(id, resume)
+	if opts.Fork {
+		s.recordForkCost(opts.ID, opts.Kind, opts.Resume)
+		s.inheritUltracode(opts.ID, opts.Resume)
+		s.inheritSubagent(opts.ID, opts.Resume)
 	}
 	// Resolved before the lock, because it reads a file: the conversation this
 	// spawn replaces is still on the row until its successor reports, so a name
 	// recorded there is the one this card answers to.
-	name := s.AgentName(id)
-	if name == "" && fork {
-		name = relay.RosterName(cwd, id)
+	name := s.AgentName(opts.ID)
+	if name == "" && opts.Fork {
+		name = relay.RosterName(opts.Cwd, opts.ID)
 	}
 	// Before the lock: it may read the disk for the conversation's profile.
-	bornIn, err := s.store.SessionProfile(id)
+	bornIn, err := s.store.SessionProfile(opts.ID)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
-	profileDir, err := s.profileDir(id, kind, resume)
+	profileDir, err := s.profileDir(opts.ID, opts.Kind, opts.Resume)
 	if err != nil {
-		return err
+		return api.None{}, err
 	}
-	inheritClaudeTrust(kind, cwd, profileDir)
-	inheritCursorTrust(kind, cwd)
-	markCrushInitialized(kind, cwd)
-	awaits := s.awaitsStart(kind, profileDir)
-	sess, cwd, err := s.spawnSession(id, projectID, cwd, kind, resume, profileDir, name, fork, cols, rows)
+	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
+	inheritCursorTrust(opts.Kind, opts.Cwd)
+	markCrushInitialized(opts.Kind, opts.Cwd)
+	awaits := s.awaitsStart(opts.Kind, profileDir)
+	sess, cwd, err := s.spawnSession(opts, profileDir, name)
 	if err != nil || sess == nil {
-		return err
+		return api.None{}, err
 	}
 	// Set a moment after the spawn rather than inside it, since awaitsStart
 	// may run the provider's CLI and the spawn holds s.mu. The gap is far
 	// shorter than readySettle, and Ready asks for the report before it
 	// trusts a quiet it latched, so nothing gets through it.
-	s.holdForStart(id, sess, awaits)
+	s.holdForStart(opts.ID, sess, awaits)
 	// Emitted outside s.mu: Emit blocks on a stalled /events client, which
 	// would freeze every session's I/O. Both are unconditional so a respawn
 	// overwrites whatever the previous PTY left in the window's stores.
-	s.publishCwd(cwdEvent{ID: id, Cwd: cwd})
-	events.Send(s.hub.Emit, api.SessionAgentEvent, agentEvent{ID: id, Agent: ""})
-	s.reportProfileMove(id, bornIn)
-	s.reportSandbox(id, sess.confined, sess.sandboxLinks)
-	s.reportMCPServers(id, kind, cwd)
-	go watchCwd(id, sess.pty.Pid(), cwd, sess.done, s.publishCwd)
-	return nil
+	s.publishCwd(cwdEvent{ID: opts.ID, Cwd: cwd})
+	events.Send(s.hub.Emit, api.SessionAgentEvent, agentEvent{ID: opts.ID, Agent: ""})
+	s.reportProfileMove(opts.ID, bornIn)
+	s.reportSandbox(opts.ID, sess.confined, sess.sandboxLinks)
+	s.reportMCPServers(opts.ID, opts.Kind, cwd)
+	go watchCwd(opts.ID, sess.pty.Pid(), cwd, sess.done, s.publishCwd)
+	return api.None{}, nil
 }
 
 // spawnSession is the locked half of Start: dedupe, PTY spawn and session-map
-// registration. A nil session with a nil error means id was already running.
-// The returned cwd is the effective start directory (the input, or the
+// registration. A nil session with a nil error means opts.ID was already running.
+// The returned cwd is the effective start directory (opts.Cwd, or the
 // resolved home when it was empty).
-func (s *Service) spawnSession(
-	id, projectID, cwd, kind, resume, profileDir, name string, fork bool, cols, rows int,
-) (*session, string, error) {
+func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (*session, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, running := s.sessions[id]; running {
+	if _, running := s.sessions[opts.ID]; running {
 		return nil, "", nil
 	}
 	// Whatever the previous provider left open under this id died with its PTY,
 	// and the first report of the new one has to be read against its own turn.
-	s.forgetTurn(id)
-	cols, rows = s.sizeFor(cols, rows)
+	s.forgetTurn(opts.ID)
+	opts.Cols, opts.Rows = s.sizeFor(opts.Cols, opts.Rows)
 
-	if cwd == "" {
+	if opts.Cwd == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to resolve home directory: %w", err)
 		}
-		cwd = home
+		opts.Cwd = home
 	}
 
 	// The MCP registration is withheld without a transport for the same reason
@@ -134,15 +131,15 @@ func (s *Service) spawnSession(
 	if s.ws != nil {
 		mcpBin = lichBin()
 	}
-	skipPermissions := s.store.SkipPermissions(kind, projectID, cwd)
-	ultracode := s.store.Ultracode(kind) || s.store.SessionUltracode(id)
-	depth := s.store.SessionSubagentDepth(id)
-	cardsOn := s.subagentCardsOn(kind, depth)
+	skipPermissions := s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)
+	ultracode := s.store.Ultracode(opts.Kind) || s.store.SessionUltracode(opts.ID)
+	depth := s.store.SessionSubagentDepth(opts.ID)
+	cardsOn := s.subagentCardsOn(opts.Kind, depth)
 	// The model and effort are read from the row rather than passed in, so every
 	// spawn that starts a conversation of its own gets them: the window's first
 	// view and a restart. A resume leaves them to the provider (modelArgs).
 	env, err := pasteUnfoldEnv(
-		subagentEnv(s.sessionEnv(id, projectID, cwd), kind, depth, cardsOn), kind, s.store.PasteUnfold(kind),
+		subagentEnv(s.sessionEnv(opts.ID, opts.ProjectID, opts.Cwd), opts.Kind, depth, cardsOn), opts.Kind, s.store.PasteUnfold(opts.Kind),
 	)
 	if err != nil {
 		return nil, "", err
@@ -150,42 +147,42 @@ func (s *Service) spawnSession(
 	// The configured binary still runs, so a wrapper exporting a
 	// CLAUDE_CONFIG_DIR (or CODEX_HOME) of its own wins over the profile.
 	if profileDir != "" {
-		env = profileEnv(kind, env, profileDir)
+		env = profileEnv(opts.Kind, env, profileDir)
 	}
 	// Decided before the argv, which carries the trust flags a confined spawn
 	// is given (confinedTrustArgs).
-	inSandbox := confined(s.store, id, kind, projectID, cwd)
+	inSandbox := confined(s.store, opts.ID, opts.Kind, opts.ProjectID, opts.Cwd)
 	// Here rather than beside the other trust writes in Start, before the lock,
 	// because it depends on the sandbox verdict; it reads one small file and
 	// asks git once, and only for an Antigravity spawn.
-	inheritAntigravityTrust(kind, cwd, inSandbox)
+	inheritAntigravityTrust(opts.Kind, opts.Cwd, inSandbox)
 	spec := ptySpec{
-		bin: resolveCommand(kind, s.store.ProviderBin(kind, projectID), userShell()),
-		args: append(confinedTrustArgs(kind, cwd, inSandbox), providerArgs(
-			kind, name, resume, s.store.SessionModel(id), s.store.SessionEffort(id), mcpBin,
-			kiroPluginAgent(kind), fork, skipPermissions, ultracode, subagentRoute(kind, depth, cardsOn),
+		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
+		args: append(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), providerArgs(
+			opts.Kind, name, opts.Resume, s.store.SessionModel(opts.ID), s.store.SessionEffort(opts.ID), mcpBin,
+			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, subagentRoute(opts.Kind, depth, cardsOn),
 			s.promptLanguage(),
 		)...),
-		dir:  cwd,
+		dir:  opts.Cwd,
 		env:  env,
-		cols: cols,
-		rows: rows,
+		cols: opts.Cols,
+		rows: opts.Rows,
 	}
-	spec = withShellIntegration(spec, kind, s.shellIntegrationDir)
-	creds := s.sandboxCredentials(projectID, cwd, inSandbox)
+	spec = withShellIntegration(spec, opts.Kind, s.shellIntegrationDir)
+	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
 	spec, skippedLinks := wrapSandbox(
-		spec, kind, userHome(), sessionDropDir(s.dropDir, id, inSandbox), profileDir, inSandbox, creds,
+		spec, opts.Kind, userHome(), sessionDropDir(s.dropDir, opts.ID, inSandbox), profileDir, inSandbox, creds,
 	)
 	p, err := startPTY(spec)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to start pty for %q: %w", id, err)
+		return nil, "", fmt.Errorf("failed to start pty for %q: %w", opts.ID, err)
 	}
 
 	box := newOutbox(func(data []byte) {
-		if s.ws != nil && s.ws.send(id, data) {
+		if s.ws != nil && s.ws.send(opts.ID, data) {
 			return
 		}
-		s.emitData(id, data)
+		s.emitData(opts.ID, data)
 	}, outboxDepth)
 	out := newCoalescer(box.push, visibleFlushInterval, hiddenFlushInterval)
 	sess := &session{
@@ -201,12 +198,12 @@ func (s *Service) spawnSession(
 		confined:     inSandbox,
 		sandboxLinks: skippedLinks,
 	}
-	s.sessions[id] = sess
+	s.sessions[opts.ID] = sess
 	// Outside mu's protection by design (see Service.spawns), and stored with the
 	// registration so no report can arrive for a session whose kind is unknown.
-	s.spawns.Store(id, spawn{kind: kind, cwd: cwd, projectID: projectID, profile: profileSlug(kind, profileDir)})
-	go s.stream(id, sess)
-	return sess, cwd, nil
+	s.spawns.Store(opts.ID, spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir)})
+	go s.stream(opts.ID, sess)
+	return sess, opts.Cwd, nil
 }
 
 // providerKind resolves which provider mark a session-start report puts on a

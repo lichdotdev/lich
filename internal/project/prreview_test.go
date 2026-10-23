@@ -2,6 +2,7 @@ package project
 
 import (
 	"encoding/json"
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"slices"
 	"strings"
@@ -84,7 +85,7 @@ func TestSubmitReviewFlow(t *testing.T) {
 	t.Run("the review reaches gh as a JSON body, and the file does not outlive it", func(t *testing.T) {
 		gh := &fakeGH{}
 		comments := []ReviewComment{{Path: "a.go", Line: 4, Body: "why"}}
-		if err := withGH(gh).SubmitReview("/repo", 42, "request_changes", "two things", "abc", comments); err != nil {
+		if _, err := withGH(gh).SubmitReview(t.Context(), api.SubmitReviewOptions{Path: "/repo", Number: 42, Event: "request_changes", Body: "two things", Head: "abc", Comments: comments}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if len(gh.args) != 6 {
@@ -110,9 +111,9 @@ func TestSubmitReviewFlow(t *testing.T) {
 			staged, _ = os.ReadFile(args[len(args)-1])
 			return nil, nil
 		}}
-		err := svc.SubmitReview("/repo", 7, "approve", "", "deadbeef", []ReviewComment{
+		_, err := svc.SubmitReview(t.Context(), api.SubmitReviewOptions{Path: "/repo", Number: 7, Event: "approve", Head: "deadbeef", Comments: []ReviewComment{
 			{Path: "a.go", Line: 9, StartLine: 7, Body: "here"},
-		})
+		}})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -135,7 +136,7 @@ func TestSubmitReviewFlow(t *testing.T) {
 
 	t.Run("an invalid review never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).SubmitReview("/repo", 1, "nope", "", "", nil); err == nil {
+		if _, err := withGH(gh).SubmitReview(t.Context(), api.SubmitReviewOptions{Path: "/repo", Number: 1, Event: "nope"}); err == nil {
 			t.Error("expected an error for an unknown verdict")
 		}
 		if gh.calls != 0 {
@@ -145,7 +146,7 @@ func TestSubmitReviewFlow(t *testing.T) {
 
 	t.Run("GitHub's refusal reaches the caller as written", func(t *testing.T) {
 		gh := &fakeGH{err: testError("GitHub does not let an account approve its own pull request.")}
-		err := withGH(gh).SubmitReview("/repo", 7, "approve", "", "", nil)
+		_, err := withGH(gh).SubmitReview(t.Context(), api.SubmitReviewOptions{Path: "/repo", Number: 7, Event: "approve"})
 		if err == nil || !strings.Contains(err.Error(), "approve its own") {
 			t.Errorf("error = %v, want the runner's message unchanged", err)
 		}
@@ -156,7 +157,7 @@ func TestReplyToReviewThreadFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("a reply is addressed to the comment's database id", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).ReplyToReviewThread("/repo", 42, 900001, "dropped it"); err != nil {
+		if _, err := withGH(gh).ReplyToReviewThread(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 42, CommentID: 900001, Body: "dropped it"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		want := []string{
@@ -171,7 +172,7 @@ func TestReplyToReviewThreadFlow(t *testing.T) {
 
 	t.Run("an empty reply never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).ReplyToReviewThread("/repo", 42, 1, ""); err == nil {
+		if _, err := withGH(gh).ReplyToReviewThread(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 42, CommentID: 1}); err == nil {
 			t.Error("expected an error for an empty reply")
 		}
 		if gh.calls != 0 {
@@ -184,7 +185,7 @@ func TestEditReviewCommentFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("an edit patches the comment by its database id", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).EditReviewComment("/repo", 42, 900001, "reworded"); err != nil {
+		if _, err := withGH(gh).EditReviewComment(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 42, CommentID: 900001, Body: "reworded"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		want := []string{
@@ -199,7 +200,7 @@ func TestEditReviewCommentFlow(t *testing.T) {
 
 	t.Run("an empty edit never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).EditReviewComment("/repo", 42, 1, ""); err == nil {
+		if _, err := withGH(gh).EditReviewComment(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 42, CommentID: 1}); err == nil {
 			t.Error("expected an error for an empty comment")
 		}
 		if gh.calls != 0 {
@@ -215,19 +216,39 @@ func TestConversationWritesAddressGitHub(t *testing.T) {
 		want  []string
 	}{
 		"deleting a thread comment": {
-			func(s *Service) error { return s.DeleteReviewComment("/repo", 42, 900001) },
+			func(s *Service) error {
+				if _, err := s.DeleteReviewComment(t.Context(), api.PRCommentOptions{Path: "/repo", Number: 42, CommentID: 900001}); err != nil {
+					return err
+				}
+				return nil
+			},
 			[]string{"api", "--method", "DELETE", "repos/{owner}/{repo}/pulls/comments/900001"},
 		},
 		"editing a pull request comment": {
-			func(s *Service) error { return s.EditPullRequestComment("/repo", 42, 800001, "reworded") },
+			func(s *Service) error {
+				if _, err := s.EditPullRequestComment(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 42, CommentID: 800001, Body: "reworded"}); err != nil {
+					return err
+				}
+				return nil
+			},
 			[]string{"api", "--method", "PATCH", "repos/{owner}/{repo}/issues/comments/800001", "-f", "body=reworded"},
 		},
 		"deleting a pull request comment": {
-			func(s *Service) error { return s.DeletePullRequestComment("/repo", 42, 800001) },
+			func(s *Service) error {
+				if _, err := s.DeletePullRequestComment(t.Context(), api.PRCommentOptions{Path: "/repo", Number: 42, CommentID: 800001}); err != nil {
+					return err
+				}
+				return nil
+			},
 			[]string{"api", "--method", "DELETE", "repos/{owner}/{repo}/issues/comments/800001"},
 		},
 		"editing a review's summary": {
-			func(s *Service) error { return s.EditReviewBody("/repo", 42, 700001, "reworded") },
+			func(s *Service) error {
+				if _, err := s.EditReviewBody(t.Context(), api.PRReviewBodyOptions{Path: "/repo", Number: 42, ReviewID: 700001, Body: "reworded"}); err != nil {
+					return err
+				}
+				return nil
+			},
 			[]string{"api", "--method", "PUT", "repos/{owner}/{repo}/pulls/42/reviews/700001", "-f", "body=reworded"},
 		},
 	}
@@ -247,8 +268,18 @@ func TestConversationWritesAddressGitHub(t *testing.T) {
 func TestConversationEditsRefuseAnEmptyBody(t *testing.T) {
 	t.Parallel()
 	edits := map[string]func(s *Service) error{
-		"pull request comment": func(s *Service) error { return s.EditPullRequestComment("/repo", 42, 1, "") },
-		"review summary":       func(s *Service) error { return s.EditReviewBody("/repo", 42, 1, "") },
+		"pull request comment": func(s *Service) error {
+			if _, err := s.EditPullRequestComment(t.Context(), api.PRCommentBodyOptions{Path: "/repo", Number: 42, CommentID: 1}); err != nil {
+				return err
+			}
+			return nil
+		},
+		"review summary": func(s *Service) error {
+			if _, err := s.EditReviewBody(t.Context(), api.PRReviewBodyOptions{Path: "/repo", Number: 42, ReviewID: 1}); err != nil {
+				return err
+			}
+			return nil
+		},
 	}
 	for name, edit := range edits {
 		t.Run(name, func(t *testing.T) {
@@ -267,7 +298,7 @@ func TestResolveReviewThreadFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("resolving and reopening are two mutations, one node id", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).ResolveReviewThread("/repo", "PRRT_kw1", true); err != nil {
+		if _, err := withGH(gh).ResolveReviewThread(t.Context(), api.ResolveThreadOptions{Path: "/repo", ThreadID: "PRRT_kw1", Resolved: true}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		want := []string{"api", "graphql", "-f", "query=" + resolveThreadMutation, "-f", "id=PRRT_kw1"}
@@ -275,7 +306,7 @@ func TestResolveReviewThreadFlow(t *testing.T) {
 			t.Errorf("args = %v, want %v", gh.args, want)
 		}
 
-		if err := withGH(gh).ResolveReviewThread("/repo", "PRRT_kw1", false); err != nil {
+		if _, err := withGH(gh).ResolveReviewThread(t.Context(), api.ResolveThreadOptions{Path: "/repo", ThreadID: "PRRT_kw1"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if !strings.Contains(gh.args[3], "unresolveReviewThread") {
@@ -285,7 +316,7 @@ func TestResolveReviewThreadFlow(t *testing.T) {
 
 	t.Run("no thread never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).ResolveReviewThread("/repo", "", true); err == nil {
+		if _, err := withGH(gh).ResolveReviewThread(t.Context(), api.ResolveThreadOptions{Path: "/repo", Resolved: true}); err == nil {
 			t.Error("expected an error without a thread")
 		}
 		if gh.calls != 0 {
@@ -298,7 +329,7 @@ func TestCommentOnPullRequestFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("a numbered pull request is addressed by number", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).CommentOnPullRequest("/repo", 42, "rebased"); err != nil {
+		if _, err := withGH(gh).CommentOnPullRequest(t.Context(), api.PRBodyOptions{Path: "/repo", Number: 42, Body: "rebased"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if want := []string{"pr", "comment", "42", "--body", "rebased"}; !slices.Equal(gh.args, want) {
@@ -308,7 +339,7 @@ func TestCommentOnPullRequestFlow(t *testing.T) {
 
 	t.Run("an empty comment never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).CommentOnPullRequest("/repo", 42, ""); err == nil {
+		if _, err := withGH(gh).CommentOnPullRequest(t.Context(), api.PRBodyOptions{Path: "/repo", Number: 42}); err == nil {
 			t.Error("expected an error for an empty comment")
 		}
 		if gh.calls != 0 {
@@ -321,7 +352,7 @@ func TestEditPullRequestFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("a rename sends the title alone", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).EditPullRequestTitle("/repo", 42, "New title"); err != nil {
+		if _, err := withGH(gh).EditPullRequestTitle(t.Context(), api.PRTitleOptions{Path: "/repo", Number: 42, Title: "New title"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if want := []string{"pr", "edit", "42", "--title", "New title"}; !slices.Equal(gh.args, want) {
@@ -331,7 +362,7 @@ func TestEditPullRequestFlow(t *testing.T) {
 
 	t.Run("a blank title never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).EditPullRequestTitle("/repo", 42, "  "); err == nil {
+		if _, err := withGH(gh).EditPullRequestTitle(t.Context(), api.PRTitleOptions{Path: "/repo", Number: 42, Title: "  "}); err == nil {
 			t.Error("expected an error for a blank title")
 		}
 		if gh.calls != 0 {
@@ -341,7 +372,7 @@ func TestEditPullRequestFlow(t *testing.T) {
 
 	t.Run("a description edit sends the body alone, empty clearing it", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).EditPullRequestBody("/repo", 42, ""); err != nil {
+		if _, err := withGH(gh).EditPullRequestBody(t.Context(), api.PRBodyOptions{Path: "/repo", Number: 42}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if want := []string{"pr", "edit", "42", "--body", ""}; !slices.Equal(gh.args, want) {

@@ -2,6 +2,7 @@ package project
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -34,26 +35,26 @@ type SearchResult = api.SearchResult
 // skip SearchResult counts.
 var errTooLarge = errors.New("file too large to search")
 
-// Search finds the lines that contain query, case-insensitively and as a
-// literal, across the files Tree lists for path. It reads Tree's listing rather
+// Search finds the lines that contain opts.Query, case-insensitively and as a
+// literal, across the files Tree lists for opts.Path. It reads Tree's listing rather
 // than running git grep so that every hit is a file the tree beside it shows,
 // in a repository and in a plain folder alike. A file the preview would refuse
 // (binary, irregular, above maxReadFileSize) is skipped, so every hit opens.
 // Matches come in Tree's order, file by file, line by line.
-func (s *Service) Search(path, query string) (SearchResult, error) {
-	if strings.TrimSpace(query) == "" {
+func (s *Service) Search(ctx context.Context, opts api.SearchOptions) (SearchResult, error) {
+	if strings.TrimSpace(opts.Query) == "" {
 		return SearchResult{}, errors.New("search query is empty")
 	}
 	// Lowercasing both sides instead of a (?i) regexp: measured over a 25MB
 	// checkout, the regexp spent 660ms where this spends 60ms.
-	needle := bytes.ToLower([]byte(query))
-	listing, err := s.Tree(path)
+	needle := bytes.ToLower([]byte(opts.Query))
+	listing, err := s.Tree(ctx, api.PathOptions{Path: opts.Path})
 	if err != nil {
 		return SearchResult{}, err
 	}
 	result := SearchResult{Matches: []SearchMatch{}}
 	for _, rel := range listing.Files {
-		data, err := readSearchable(path, rel)
+		data, err := readSearchable(opts.Path, rel)
 		if errors.Is(err, errTooLarge) {
 			result.TooLarge++
 			continue

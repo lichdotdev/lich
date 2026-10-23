@@ -45,7 +45,7 @@ func TestAReportStandsInForTheProbe(t *testing.T) {
 	svc, calls := reportingService(t, tokenAccount())
 
 	svc.ReportClaude("s1", reportedLimits)
-	got := claudeOf(svc.Plans("s1"))
+	got := claudeOf(svc.plans("s1"))
 
 	want := []Window{
 		{Label: "Session", Seconds: sessionWindow, Percent: 14, ResetsAt: "2026-10-05T00:30:00.000Z"},
@@ -66,12 +66,12 @@ func TestAReportStandsInForTheProbe(t *testing.T) {
 // for a figure it already has.
 func TestAReportUpdatesTheCachedReading(t *testing.T) {
 	svc, calls := reportingService(t, tokenAccount())
-	if got := claudeOf(svc.Plans("s1")); got.Status != StatusError {
+	if got := claudeOf(svc.plans("s1")); got.Status != StatusError {
 		t.Fatalf("first reading = %q, want the failed probe", got.Status)
 	}
 
 	svc.ReportClaude("s1", reportedLimits)
-	got := claudeOf(svc.Plans("s1"))
+	got := claudeOf(svc.plans("s1"))
 
 	if got.Status != StatusOK || len(got.Windows) != 2 {
 		t.Errorf("plan = %+v, want the reported windows", got)
@@ -87,7 +87,7 @@ func TestAReportPastItsResetIsMeasuredAgain(t *testing.T) {
 	svc, calls := reportingService(t, tokenAccount())
 	svc.ReportClaude("s1", []ReportedLimit{{Kind: "five_hour", PercentUsed: 90, ResetsAt: "2026-10-04T19:00:00Z"}})
 
-	got := claudeOf(svc.Plans("s1"))
+	got := claudeOf(svc.plans("s1"))
 
 	if got.Status != StatusError || *calls != 1 {
 		t.Errorf("plan = %q after %d requests, want the probe's failure: the report is stale", got.Status, *calls)
@@ -114,7 +114,7 @@ func TestACredentialsLoginKeepsItsUsageRoute(t *testing.T) {
 	svc, calls := reportingService(t, lichEnv())
 
 	svc.ReportClaude("s1", reportedLimits)
-	got := claudeOf(svc.Plans("s1"))
+	got := claudeOf(svc.plans("s1"))
 
 	if got.Status != StatusError || *calls != 1 {
 		t.Errorf("plan = %q after %d requests, want the usage route asked as before", got.Status, *calls)
@@ -127,7 +127,7 @@ func TestAReportWithNoDrawableWindowIsIgnored(t *testing.T) {
 	svc, calls := reportingService(t, tokenAccount())
 
 	svc.ReportClaude("s1", []ReportedLimit{{Kind: "spend_limit", PercentUsed: 104.5}})
-	got := claudeOf(svc.Plans("s1"))
+	got := claudeOf(svc.plans("s1"))
 
 	if got.Status != StatusError || *calls != 1 {
 		t.Errorf("plan = %q after %d requests, want the probe", got.Status, *calls)

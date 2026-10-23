@@ -11,7 +11,7 @@ import (
 func TestRenameGivesTheCardTheName(t *testing.T) {
 	svc, sessions, _, _, events := closer(t)
 
-	renamed, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Label: "the login bug"})
+	renamed, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "alone", Label: "the login bug"})
 	if err != nil {
 		t.Fatalf("Rename: %v", err)
 	}
@@ -33,7 +33,7 @@ func TestRenameGivesTheCardTheName(t *testing.T) {
 func TestRenameWithoutATargetRenamesTheCaller(t *testing.T) {
 	svc, sessions, _, _, _ := closer(t)
 
-	renamed, err := svc.Rename(RenameOptions{From: "s2", Label: "shared-worker"})
+	renamed, err := svc.Rename(t.Context(), RenameOptions{From: "s2", Label: "shared-worker"})
 	if err != nil {
 		t.Fatalf("Rename: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestRenameWithoutATargetRenamesTheCaller(t *testing.T) {
 func TestRenameRefusesALabelAnotherSessionHolds(t *testing.T) {
 	svc, sessions, _, _, events := closer(t)
 
-	_, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Label: "Shared-A"})
+	_, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "alone", Label: "Shared-A"})
 	if err == nil {
 		t.Fatal("renamed a session onto a label another one already answers to")
 	}
@@ -64,7 +64,7 @@ func TestRenameRefusesALabelAnotherSessionHolds(t *testing.T) {
 func TestRenameAcceptsTheSessionsOwnLabelBack(t *testing.T) {
 	svc, sessions, _, _, _ := closer(t)
 
-	if _, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Label: "Alone"}); err != nil {
+	if _, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "alone", Label: "Alone"}); err != nil {
 		t.Fatalf("Rename: %v", err)
 	}
 	if sessions.renamed["s4"] != "Alone" {
@@ -75,7 +75,7 @@ func TestRenameAcceptsTheSessionsOwnLabelBack(t *testing.T) {
 func TestRenameRefusesAnEmptyName(t *testing.T) {
 	svc, sessions, _, _, _ := closer(t)
 
-	if _, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Label: "   "}); err == nil {
+	if _, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "alone", Label: "   "}); err == nil {
 		t.Fatal("accepted a name that is nothing but whitespace")
 	}
 	if len(sessions.renamed) != 0 {
@@ -88,7 +88,7 @@ func TestRenameRefusesAnEmptyName(t *testing.T) {
 func TestRenameOutsideASessionNeedsATarget(t *testing.T) {
 	svc, _, _, _, _ := closer(t)
 
-	_, err := svc.Rename(RenameOptions{Label: "planner"})
+	_, err := svc.Rename(t.Context(), RenameOptions{Label: "planner"})
 	if err == nil {
 		t.Fatal("renamed something for a caller that is in no session")
 	}
@@ -104,7 +104,7 @@ func TestRenameThatCannotBeWrittenAnnouncesNothing(t *testing.T) {
 	svc, sessions, _, _, events := closer(t)
 	sessions.renameErr = errors.New("disk is gone")
 
-	if _, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Label: "planner"}); err == nil {
+	if _, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "alone", Label: "planner"}); err == nil {
 		t.Fatal("reported a rename the store refused")
 	}
 	if len(events.events) != 0 {
@@ -120,10 +120,10 @@ func TestRenameNarrowsAnAmbiguousLabelWithTheProject(t *testing.T) {
 	twin.Sessions = []store.Session{{ID: "s9", Label: "alone", Kind: "claude", Path: "/wt/alone"}}
 	sessions.projects = append(sessions.projects, twin)
 
-	if _, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Label: "planner"}); err == nil {
+	if _, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "alone", Label: "planner"}); err == nil {
 		t.Fatal("picked one of two sessions answering to the same label")
 	}
-	renamed, err := svc.Rename(RenameOptions{From: "s1", Target: "alone", Project: "other", Label: "planner"})
+	renamed, err := svc.Rename(t.Context(), RenameOptions{From: "s1", Target: "alone", Project: "other", Label: "planner"})
 	if err != nil {
 		t.Fatalf("Rename: %v", err)
 	}

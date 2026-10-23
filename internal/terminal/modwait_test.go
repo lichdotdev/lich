@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -186,7 +187,7 @@ func TestRunModCommandEndsWithTheSession(t *testing.T) {
 	svc := attachedModService(t)
 	done := runInBackground(context.Background(), svc, ModCommand{Kind: ModAbort})
 	cmd := collectMod(t, svc.ws, "s1")
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 
@@ -201,7 +202,7 @@ func TestRunModCommandEndsWithTheSession(t *testing.T) {
 func TestRunModCommandRefusesASessionThatIsNotRunning(t *testing.T) {
 	t.Parallel()
 	svc := attachedModService(t)
-	if err := svc.Close("s1"); err != nil {
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("close: %v", err)
 	}
 	for _, id := range []string{"s1", "never-started"} {

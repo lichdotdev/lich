@@ -1,6 +1,7 @@
 package system
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,7 +20,7 @@ func TestOpenFileHandsTheFileToTheDefaultOpener(t *testing.T) {
 	var args []string
 	s := &Service{env: []string{"EDITOR=zed"}, run: captureRun(&name, &args)}
 
-	if err := s.OpenFile(dir, "shot.png"); err != nil {
+	if _, err := s.OpenFile(t.Context(), api.OpenFileOptions{Dir: dir, Rel: "shot.png"}); err != nil {
 		t.Fatalf("OpenFile: %v", err)
 	}
 	want, err := filepath.EvalSymlinks(filepath.Join(dir, "shot.png"))
@@ -42,7 +43,7 @@ func TestOpenFileRefusesWhatIsNotACheckoutFile(t *testing.T) {
 		return nil
 	}}
 	for _, rel := range []string{"../escape", "/etc/passwd", "missing.png", "sub"} {
-		if err := s.OpenFile(dir, rel); err == nil {
+		if _, err := s.OpenFile(t.Context(), api.OpenFileOptions{Dir: dir, Rel: rel}); err == nil {
 			t.Errorf("rel %q: want an error", rel)
 		}
 	}

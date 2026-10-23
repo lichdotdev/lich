@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"time"
 )
 
@@ -58,8 +59,12 @@ const defaultModAckWait = 10 * time.Second
 
 // takesDelivery is whether a message can go to a session now: its prompt is
 // free, or its mod takes the message without touching what its user is typing.
-func (s *Service) takesDelivery(id string) bool {
-	return s.term.Ready(id) || s.term.ModAttached(id)
+func (s *Service) takesDelivery(id string) (bool, error) {
+	ready, err := s.term.Ready(context.Background(), api.SessionIDOptions{ID: id})
+	if err != nil {
+		return false, err
+	}
+	return ready || s.term.ModAttached(id), nil
 }
 
 // handToMod hands a message to the session's mod, as a notification when note

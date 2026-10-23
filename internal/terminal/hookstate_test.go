@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -253,11 +254,11 @@ type unreadStore struct {
 	marks []bool
 }
 
-func (s *unreadStore) SetSessionUnread(_ string, unread bool) error {
+func (s *unreadStore) SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.marks = append(s.marks, unread)
-	return nil
+	s.marks = append(s.marks, opts.Unread)
+	return api.None{}, nil
 }
 
 func (s *unreadStore) written() []bool {
@@ -275,7 +276,9 @@ func (s *unreadStore) written() []bool {
 type hookStore struct{ Store }
 
 func (hookStore) ProviderSession(string) (string, error) { return "", nil }
-func (hookStore) SetSessionUnread(string, bool) error    { return nil }
+func (hookStore) SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error) {
+	return api.None{}, nil
+}
 
 func (hookStore) ConversationHolder(string, string) (string, error) { return "", nil }
 
@@ -467,7 +470,7 @@ func TestCloseForgetsOpenTurn(t *testing.T) {
 	if last != 1 {
 		t.Fatalf("open=%d before close, want 1", last)
 	}
-	if err := s.Close("gone"); err != nil {
+	if _, err := s.Close(t.Context(), api.SessionIDOptions{ID: "gone"}); err != nil {
 		t.Fatal(err)
 	}
 	if last != 0 {

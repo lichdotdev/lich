@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"time"
@@ -58,7 +59,7 @@ func (s *Service) RunSchedules() {
 // only copy of what the user wrote is not — and one that lands late says so at
 // the prompt it lands on (lateNotice).
 func (s *Service) deliverDue() {
-	projects, err := s.sessions.LoadState()
+	projects, err := s.sessions.LoadState(context.Background(), api.None{})
 	if err != nil {
 		slog.Warn("relay: read scheduled prompts", "err", err)
 		return
@@ -77,7 +78,12 @@ func (s *Service) deliverDue() {
 			if sess.ScheduledAt > now {
 				continue
 			}
-			if !s.takesDelivery(sess.ID) {
+			takes, err := s.takesDelivery(sess.ID)
+			if err != nil {
+				slog.Warn("relay: read whether a scheduled prompt can be delivered", "session", sess.Label, "err", err)
+				continue
+			}
+			if !takes {
 				continue
 			}
 			// Cleared before the write, not after: deliver blocks while the paste

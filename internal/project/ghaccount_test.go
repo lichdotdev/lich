@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"strings"
 	"testing"
@@ -47,7 +48,7 @@ func TestParseGHAccounts(t *testing.T) {
 func TestGitHubAccounts(t *testing.T) {
 	t.Parallel()
 	gh := &fakeGH{out: []byte("  ✓ Logged in to github.com account omartelo (keyring)\n")}
-	got, err := withGH(gh).GitHubAccounts()
+	got, err := withGH(gh).GitHubAccounts(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +60,7 @@ func TestGitHubAccounts(t *testing.T) {
 	}
 
 	gh = &fakeGH{err: errTest}
-	if _, err := withGH(gh).GitHubAccounts(); err == nil {
+	if _, err := withGH(gh).GitHubAccounts(t.Context(), api.None{}); err == nil {
 		t.Error("unauthenticated gh = nil error, want the failure surfaced")
 	}
 }
@@ -73,7 +74,7 @@ func TestAccountTokenReachesGH(t *testing.T) {
 	svc := &Service{runner: gh.run}
 	svc.SetAccounts(func(string) string { return "github.com/marcelo-filho_snk" })
 
-	pr, err := svc.PullRequestDetail("/repo", 0)
+	pr, err := svc.PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"})
 	if err != nil || pr == nil {
 		t.Fatalf("PullRequestDetail = (%v, %v), want the PR", pr, err)
 	}
@@ -101,7 +102,7 @@ func TestNoAccountRunsAsActive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gh := &fakeGH{out: []byte(`{"number":7,"state":"OPEN"}`)}
 			svc := &Service{runner: gh.run, accounts: tt.lookup}
-			if _, err := svc.PullRequestDetail("/repo", 0); err != nil {
+			if _, err := svc.PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"}); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			if gh.token != "" {
@@ -123,7 +124,7 @@ func TestAccountTokenFailureFallsBack(t *testing.T) {
 	svc := &Service{runner: gh.run}
 	svc.SetAccounts(func(string) string { return "github.com/gone" })
 
-	pr, err := svc.PullRequestDetail("/repo", 0)
+	pr, err := svc.PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"})
 	if err != nil || pr == nil {
 		t.Fatalf("PullRequestDetail = (%v, %v), want the PR", pr, err)
 	}

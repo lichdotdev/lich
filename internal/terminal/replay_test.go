@@ -3,6 +3,7 @@ package terminal
 import (
 	"bytes"
 	"encoding/base64"
+	"github.com/lichdotdev/lich/api"
 	"strings"
 	"testing"
 )
@@ -71,7 +72,7 @@ func TestServiceReplayEncodesTheTail(t *testing.T) {
 	b.append([]byte("scrollback"))
 	svc := &Service{sessions: map[string]*session{"s1": {replay: b}}}
 
-	encoded, err := svc.Replay("s1")
+	encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "s1"})
 	if err != nil {
 		t.Fatalf("Replay = %v, want nil", err)
 	}
@@ -87,7 +88,7 @@ func TestServiceReplayEncodesTheTail(t *testing.T) {
 func TestServiceReplayUnknownSessionIsEmpty(t *testing.T) {
 	t.Parallel()
 	svc := &Service{sessions: map[string]*session{}}
-	got, err := svc.Replay("nope")
+	got, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "nope"})
 	if err != nil {
 		t.Fatalf("Replay = %v, want nil", err)
 	}

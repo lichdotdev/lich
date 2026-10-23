@@ -2,6 +2,7 @@ package project
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"strings"
 	"testing"
@@ -21,7 +22,7 @@ func TestListPullRequestsTalliesRequestedThreads(t *testing.T) {
 
 	t.Run("each row with changes requested carries its threads", func(t *testing.T) {
 		gh := &fakeGH{outs: [][]byte{list, threads}}
-		got, err := withGH(gh).ListPullRequests("/repo", "")
+		got, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -42,7 +43,7 @@ func TestListPullRequestsTalliesRequestedThreads(t *testing.T) {
 
 	t.Run("no changes requested asks nothing more", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`[{"number":37,"title":"c","reviewDecision":"APPROVED"}]`)}
-		if _, err := withGH(gh).ListPullRequests("/repo", ""); err != nil {
+		if _, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if gh.calls != 1 {
@@ -52,21 +53,21 @@ func TestListPullRequestsTalliesRequestedThreads(t *testing.T) {
 
 	t.Run("a failed thread query fails the list", func(t *testing.T) {
 		gh := &fakeGH{outs: [][]byte{list, nil}, errs: []error{nil, errors.New("graphql: rate limited")}}
-		if _, err := withGH(gh).ListPullRequests("/repo", ""); err == nil || err.Error() != "graphql: rate limited" {
+		if _, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo"}); err == nil || err.Error() != "graphql: rate limited" {
 			t.Errorf("error = %v, want the runner's message", err)
 		}
 	})
 
 	t.Run("an unreadable answer is an error", func(t *testing.T) {
 		gh := &fakeGH{outs: [][]byte{list, []byte(`{not json`)}}
-		if _, err := withGH(gh).ListPullRequests("/repo", ""); err == nil {
+		if _, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo"}); err == nil {
 			t.Error("expected a decode error")
 		}
 	})
 
 	t.Run("the query is read-only graphql in the checkout's repository", func(t *testing.T) {
 		gh := &fakeGH{outs: [][]byte{list, threads}}
-		if _, err := withGH(gh).ListPullRequests("/repo", ""); err != nil {
+		if _, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		head := gh.history[1][:6]

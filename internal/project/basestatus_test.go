@@ -70,14 +70,14 @@ func commitFile(t *testing.T, dir string, git func(args ...string) string, name,
 func TestBaseStatusNoRemote(t *testing.T) {
 	t.Parallel()
 	repo, _ := initRepo(t)
-	if got := New(nil).BaseStatus(repo); got != nil {
+	if got := New(nil).baseStatus(repo); got != nil {
 		t.Fatalf("want nil for a repository with no origin, got %+v", got)
 	}
 }
 
 func TestBaseStatusNotARepository(t *testing.T) {
 	t.Parallel()
-	if got := New(nil).BaseStatus(t.TempDir()); got != nil {
+	if got := New(nil).baseStatus(t.TempDir()); got != nil {
 		t.Fatalf("want nil outside a repository, got %+v", got)
 	}
 }
@@ -90,7 +90,7 @@ func TestBaseStatusUpToDate(t *testing.T) {
 
 	svc := New(nil)
 	noFetch(t, svc, cloneGit)
-	got := svc.BaseStatus(clone)
+	got := svc.baseStatus(clone)
 	if got == nil {
 		t.Fatal("want a readout for a clone on a feature branch, got nil")
 	}
@@ -116,7 +116,7 @@ func TestBaseStatusBehindWithoutConflict(t *testing.T) {
 
 	svc := New(nil)
 	noFetch(t, svc, cloneGit)
-	got := svc.BaseStatus(clone)
+	got := svc.baseStatus(clone)
 	if got == nil {
 		t.Fatal("want a readout, got nil")
 	}
@@ -139,7 +139,7 @@ func TestBaseStatusConflict(t *testing.T) {
 
 	svc := New(nil)
 	noFetch(t, svc, cloneGit)
-	got := svc.BaseStatus(clone)
+	got := svc.baseStatus(clone)
 	if got == nil {
 		t.Fatal("want a readout, got nil")
 	}
@@ -159,19 +159,19 @@ func TestBaseStatusRecomputes(t *testing.T) {
 
 	svc := New(nil)
 	noFetch(t, svc, cloneGit)
-	if got := svc.BaseStatus(clone); got == nil || got.Behind != 0 {
+	if got := svc.baseStatus(clone); got == nil || got.Behind != 0 {
 		t.Fatalf("first read = %+v, want behind 0", got)
 	}
 
 	origin := originGit("rev-parse", "--show-toplevel")
 	commitFile(t, origin, originGit, "a.txt", "theirs\n", "edit a")
 	cloneGit("fetch", "origin")
-	if got := svc.BaseStatus(clone); got == nil || got.Behind != 1 {
+	if got := svc.baseStatus(clone); got == nil || got.Behind != 1 {
 		t.Fatalf("read after the base moved = %+v, want behind 1", got)
 	}
 
 	commitFile(t, clone, cloneGit, "a.txt", "mine\n", "edit a")
-	got := svc.BaseStatus(clone)
+	got := svc.baseStatus(clone)
 	if got == nil || !slices.Equal(got.Conflicts, []string{"a.txt"}) {
 		t.Fatalf("read after HEAD moved = %+v, want a conflict on a.txt", got)
 	}

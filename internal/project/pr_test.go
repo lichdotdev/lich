@@ -2,6 +2,7 @@ package project
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"slices"
 	"strings"
 	"testing"
@@ -475,7 +476,7 @@ func TestPullRequestDetailFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("open PR decodes, scoped to the path", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`{"number":7,"state":"OPEN","title":"t"}`)}
-		pr, err := withGH(gh).PullRequestDetail("/repo", 0)
+		pr, err := withGH(gh).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -494,7 +495,7 @@ func TestPullRequestDetailFlow(t *testing.T) {
 	})
 
 	t.Run("no pull request is an empty panel, not an error", func(t *testing.T) {
-		pr, err := withGH(&fakeGH{err: errNoPullRequest}).PullRequestDetail("/repo", 0)
+		pr, err := withGH(&fakeGH{err: errNoPullRequest}).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -508,7 +509,7 @@ func TestPullRequestDetailFlow(t *testing.T) {
 		// (gherror.go); the flow must pass it through rather than prefix it
 		// with the command it ran.
 		gh := &fakeGH{err: errors.New("gh is not signed in to GitHub.")}
-		_, err := withGH(gh).PullRequestDetail("/repo", 0)
+		_, err := withGH(gh).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"})
 		if err == nil {
 			t.Fatal("expected an error")
 		}
@@ -518,7 +519,7 @@ func TestPullRequestDetailFlow(t *testing.T) {
 	})
 
 	t.Run("malformed gh output errors", func(t *testing.T) {
-		if _, err := withGH(&fakeGH{out: []byte(`{not json`)}).PullRequestDetail("/repo", 0); err == nil {
+		if _, err := withGH(&fakeGH{out: []byte(`{not json`)}).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"}); err == nil {
 			t.Error("expected a decode error")
 		}
 	})
@@ -530,7 +531,7 @@ func TestPullRequestDetailFlow(t *testing.T) {
 func TestPullRequestBadgeRunsThroughTheRunner(t *testing.T) {
 	t.Parallel()
 	gh := &fakeGH{out: []byte(`{"number":7,"url":"https://github.com/o/r/pull/7","state":"OPEN"}`)}
-	pr := withGH(gh).PullRequest("/repo")
+	pr := withGH(gh).pullRequest("/repo")
 	if pr == nil || pr.Number != 7 {
 		t.Fatalf("PullRequest() = %+v, want the open PR", pr)
 	}
@@ -542,7 +543,7 @@ func TestPullRequestBadgeRunsThroughTheRunner(t *testing.T) {
 	}
 
 	// A failure still hides the badge rather than surfacing anything.
-	if pr := withGH(&fakeGH{err: errTest}).PullRequest("/repo"); pr != nil {
+	if pr := withGH(&fakeGH{err: errTest}).pullRequest("/repo"); pr != nil {
 		t.Errorf("failed lookup = %+v, want nil", pr)
 	}
 
@@ -550,7 +551,7 @@ func TestPullRequestBadgeRunsThroughTheRunner(t *testing.T) {
 	account := &accountGH{token: "gho_secret", pr: `{"number":7,"url":"u","state":"OPEN"}`}
 	svc := &Service{runner: account.run}
 	svc.SetAccounts(func(string) string { return "octocat" })
-	if pr := svc.PullRequest("/repo"); pr == nil {
+	if pr := svc.pullRequest("/repo"); pr == nil {
 		t.Fatal("PullRequest() = nil, want the open PR")
 	}
 	if account.viewToken != "gho_secret" {
@@ -562,7 +563,7 @@ func TestMergePullRequestFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("the built args reach gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).MergePullRequest("/repo", 0, "squash", "", "", false); err != nil {
+		if _, err := withGH(gh).MergePullRequest(t.Context(), api.MergePullRequestOptions{Path: "/repo", Method: "squash"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if want := []string{"pr", "merge", "--squash"}; !slices.Equal(gh.args, want) {
@@ -575,7 +576,7 @@ func TestMergePullRequestFlow(t *testing.T) {
 
 	t.Run("an unknown method never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).MergePullRequest("/repo", 0, "force", "", "", false); err == nil {
+		if _, err := withGH(gh).MergePullRequest(t.Context(), api.MergePullRequestOptions{Path: "/repo", Method: "force"}); err == nil {
 			t.Error("expected an error for an unknown merge method")
 		}
 		if gh.calls != 0 {
@@ -585,7 +586,7 @@ func TestMergePullRequestFlow(t *testing.T) {
 
 	t.Run("gh's refusal surfaces", func(t *testing.T) {
 		gh := &fakeGH{err: errors.New("Pull request is not mergeable")}
-		err := withGH(gh).MergePullRequest("/repo", 0, "merge", "", "", false)
+		_, err := withGH(gh).MergePullRequest(t.Context(), api.MergePullRequestOptions{Path: "/repo", Method: "merge"})
 		if err == nil {
 			t.Fatal("expected an error")
 		}
@@ -599,7 +600,7 @@ func TestCreatePullRequestFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("opens the web flow in the path", func(t *testing.T) {
 		gh := &fakeGH{}
-		if err := withGH(gh).CreatePullRequest("/repo"); err != nil {
+		if _, err := withGH(gh).CreatePullRequest(t.Context(), api.PathOptions{Path: "/repo"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if want := []string{"pr", "create", "--web"}; !slices.Equal(gh.args, want) {
@@ -612,7 +613,7 @@ func TestCreatePullRequestFlow(t *testing.T) {
 
 	t.Run("gh's failure surfaces", func(t *testing.T) {
 		gh := &fakeGH{err: errors.New("no git remote found")}
-		err := withGH(gh).CreatePullRequest("/repo")
+		_, err := withGH(gh).CreatePullRequest(t.Context(), api.PathOptions{Path: "/repo"})
 		if err == nil {
 			t.Fatal("expected an error")
 		}
@@ -626,7 +627,7 @@ func TestPullRequestDiffFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("plain diff text is returned verbatim", func(t *testing.T) {
 		gh := &fakeGH{out: []byte("diff --git a/a.txt b/a.txt\n")}
-		text, err := withGH(gh).PullRequestDiff("/repo", 0)
+		text, err := withGH(gh).PullRequestDiff(t.Context(), api.NumberOptions{Path: "/repo"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -643,7 +644,7 @@ func TestPullRequestDiffFlow(t *testing.T) {
 
 	t.Run("a Latin-1 file's lines arrive as UTF-8", func(t *testing.T) {
 		gh := &fakeGH{out: []byte("+++ b/a.java\n+// servi\xe7os\n+// a\u00e7\u00e3o\n")}
-		text, err := withGH(gh).PullRequestDiff("/repo", 0)
+		text, err := withGH(gh).PullRequestDiff(t.Context(), api.NumberOptions{Path: "/repo"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -653,7 +654,7 @@ func TestPullRequestDiffFlow(t *testing.T) {
 	})
 
 	t.Run("no pull request yields an empty diff, not an error", func(t *testing.T) {
-		text, err := withGH(&fakeGH{err: errNoPullRequest}).PullRequestDiff("/repo", 0)
+		text, err := withGH(&fakeGH{err: errNoPullRequest}).PullRequestDiff(t.Context(), api.NumberOptions{Path: "/repo"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -664,7 +665,7 @@ func TestPullRequestDiffFlow(t *testing.T) {
 
 	t.Run("a real gh failure surfaces", func(t *testing.T) {
 		gh := &fakeGH{err: errors.New("could not resolve to a Repository")}
-		if _, err := withGH(gh).PullRequestDiff("/repo", 0); err == nil {
+		if _, err := withGH(gh).PullRequestDiff(t.Context(), api.NumberOptions{Path: "/repo"}); err == nil {
 			t.Fatal("expected an error")
 		} else if err.Error() != "could not resolve to a Repository" {
 			t.Errorf("error = %q, want the runner's message unchanged", err)
@@ -697,7 +698,7 @@ func TestPRArgs(t *testing.T) {
 func TestPullRequestDetailByNumber(t *testing.T) {
 	t.Parallel()
 	gh := &fakeGH{out: []byte(`{"number":42,"state":"OPEN","title":"t"}`)}
-	pr, err := withGH(gh).PullRequestDetail("/repo", 42)
+	pr, err := withGH(gh).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo", Number: 42})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -784,7 +785,7 @@ func TestListPullRequestsFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("the call is scoped and bounded", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`[{"number":1,"title":"t"}]`)}
-		list, err := withGH(gh).ListPullRequests("/repo", "")
+		list, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -802,7 +803,7 @@ func TestListPullRequestsFlow(t *testing.T) {
 
 	t.Run("a real gh failure surfaces its cause", func(t *testing.T) {
 		gh := &fakeGH{err: errors.New("gh auth login required")}
-		_, err := withGH(gh).ListPullRequests("/repo", "")
+		_, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo"})
 		if err == nil {
 			t.Fatal("expected an error")
 		}
@@ -813,7 +814,7 @@ func TestListPullRequestsFlow(t *testing.T) {
 
 	t.Run("a known state reaches gh", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`[]`)}
-		if _, err := withGH(gh).ListPullRequests("/repo", "merged"); err != nil {
+		if _, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo", State: "merged"}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if !slices.Contains(gh.args, "merged") {
@@ -825,7 +826,7 @@ func TestListPullRequestsFlow(t *testing.T) {
 	// allow-list has to stop here rather than reach gh's flags.
 	t.Run("an unknown state never reaches gh", func(t *testing.T) {
 		gh := &fakeGH{}
-		if _, err := withGH(gh).ListPullRequests("/repo", "--limit=99999"); err == nil {
+		if _, err := withGH(gh).ListPullRequests(t.Context(), api.ListPullRequestsOptions{Path: "/repo", State: "--limit=99999"}); err == nil {
 			t.Error("expected an error for an unknown state")
 		}
 		if gh.calls != 0 {
@@ -874,7 +875,7 @@ func TestPullRequestDetailByNumberIgnoresState(t *testing.T) {
 	t.Parallel()
 	merged := []byte(`{"number":13960,"state":"MERGED","title":"Add macos keyring security doc"}`)
 
-	pr, err := withGH(&fakeGH{out: merged}).PullRequestDetail("/repo", 13960)
+	pr, err := withGH(&fakeGH{out: merged}).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo", Number: 13960})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -882,7 +883,7 @@ func TestPullRequestDetailByNumberIgnoresState(t *testing.T) {
 		t.Fatalf("a numbered merged pull request should open: %+v", pr)
 	}
 
-	branch, err := withGH(&fakeGH{out: merged}).PullRequestDetail("/repo", 0)
+	branch, err := withGH(&fakeGH{out: merged}).PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

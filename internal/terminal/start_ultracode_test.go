@@ -8,6 +8,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -31,9 +32,9 @@ func TestStartPassesUltracodeToTheProcess(t *testing.T) {
 			bin := stayAliveBin(t)
 			tt.store.bin = bin
 			svc := New(tt.store, nil, events.New())
-			t.Cleanup(func() { _ = svc.Close("s1") })
+			t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-			if err := svc.Start("s1", "p1", t.TempDir(), "claude", tt.resume, false, 80, 24); err != nil {
+			if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Resume: tt.resume, Cols: 80, Rows: 24}); err != nil {
 				t.Fatalf("Start = %v, want nil", err)
 			}
 
@@ -59,9 +60,9 @@ func TestStartCarriesUltracodeOntoAFork(t *testing.T) {
 		inherited:        map[string]bool{},
 	}
 	svc := New(store, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s2") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s2"}) })
 
-	if err := svc.Start("s2", "p1", t.TempDir(), "claude", "conv-1", true, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s2", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Resume: "conv-1", Fork: true, Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 
@@ -80,9 +81,9 @@ func TestStartCarriesUltracodeOntoAFork(t *testing.T) {
 func TestStartLeavesUltracodeOffByDefault(t *testing.T) {
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", t.TempDir(), "claude", "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: "claude", Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 

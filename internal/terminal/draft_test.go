@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 )
 
@@ -17,7 +18,7 @@ func settled(t *testing.T) (*Service, *session) {
 	svc.mu.Lock()
 	svc.sessions["s1"] = sess
 	svc.mu.Unlock()
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Fatal("a settled session was not ready to begin with")
 	}
 	return svc, sess
@@ -31,12 +32,12 @@ func TestTypingTakesThePromptBackFromTheRelay(t *testing.T) {
 	svc, _ := settled(t)
 
 	svc.noteInput("s1", []byte("what about the"))
-	if svc.Ready("s1") {
+	if svc.ready("s1") {
 		t.Error("a prompt with the user's own half-written line was offered work")
 	}
 
 	svc.noteInput("s1", []byte("\r"))
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("the line was sent and the prompt stayed held")
 	}
 }
@@ -50,7 +51,7 @@ func TestAnAbandonedLineReleasesThePrompt(t *testing.T) {
 
 	svc.noteInput("s1", []byte("half a thought"))
 	svc.noteInput("s1", []byte{ctrlC})
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("a line thrown away with Ctrl+C still held the prompt")
 	}
 }
@@ -64,7 +65,7 @@ func TestPointerAndCursorInputIsNotADraft(t *testing.T) {
 
 	svc.noteInput("s1", []byte("\x1b[<35;42;7M\x1b[<35;43;7M"))
 	svc.noteInput("s1", []byte("\x1b[A\x1b[B\x1bOP"))
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("moving the mouse over a terminal took its prompt away")
 	}
 
@@ -72,7 +73,7 @@ func TestPointerAndCursorInputIsNotADraft(t *testing.T) {
 	// arrives: neither half may be counted as typing.
 	svc.noteInput("s1", []byte("\x1b[<35;10"))
 	svc.noteInput("s1", []byte(";5M"))
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("a mouse report split across two writes was read as typing")
 	}
 }
@@ -91,7 +92,7 @@ func TestTerminalRepliesAreNotADraft(t *testing.T) {
 	svc.noteInput("s1", []byte("\x1b]11;rgb:2e2e/3434/4040\a"))
 	svc.noteInput("s1", []byte("\x1bP>|libghostty 1.2.0\x1b\\"))
 	svc.noteInput("s1", []byte("\x1b_Gi=31;OK\x1b\\"))
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("the terminal answering a query took the prompt away")
 	}
 }
@@ -104,7 +105,7 @@ func TestAtPromptIgnoresTheUsersDraft(t *testing.T) {
 	svc, _ := settled(t)
 
 	svc.noteInput("s1", []byte("explain this: "))
-	if svc.Ready("s1") {
+	if svc.ready("s1") {
 		t.Fatal("a drafted prompt was offered work")
 	}
 	if !svc.AtPrompt("s1") {
@@ -131,14 +132,14 @@ func TestAStaleDraftGivesThePromptBack(t *testing.T) {
 	svc.mu.Lock()
 	sess.draftAt = time.Now().Add(-59 * time.Second)
 	svc.mu.Unlock()
-	if svc.Ready("s1") {
+	if svc.ready("s1") {
 		t.Error("a draft under a minute old was already treated as abandoned")
 	}
 
 	svc.mu.Lock()
 	sess.draftAt = time.Now().Add(-61 * time.Second)
 	svc.mu.Unlock()
-	if !svc.Ready("s1") {
+	if !svc.ready("s1") {
 		t.Error("a draft nobody touched for over a minute still held the prompt")
 	}
 }
@@ -181,7 +182,7 @@ func TestAnEscapeThatNeverEndsDoesNotSwallowTyping(t *testing.T) {
 
 	svc.noteInput("s1", []byte("\x1b[0123456789012345678901234567890123456789"))
 	svc.noteInput("s1", []byte("and then a real sentence"))
-	if svc.Ready("s1") {
+	if svc.ready("s1") {
 		t.Error("typing after an unterminated escape was discarded")
 	}
 }
@@ -247,14 +248,14 @@ func TestKeystrokesDuringADeliveryLandAfterIt(t *testing.T) {
 	svc.mu.Unlock()
 
 	release := svc.HoldInput("s1")
-	if err := svc.Write("s1", "\x1b[200~relayed\x1b[201~"); err != nil {
+	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "s1", Data: "\x1b[200~relayed\x1b[201~"}); err != nil {
 		t.Fatalf("the paste was refused: %v", err)
 	}
 	svc.onInput("s1", []byte("mine"))
 	if strings.Contains(pty.received.String(), "mine") {
 		t.Fatal("what the user typed went in with the relayed message")
 	}
-	if err := svc.Write("s1", "\r"); err != nil {
+	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "s1", Data: "\r"}); err != nil {
 		t.Fatalf("the Enter was refused: %v", err)
 	}
 	release()
@@ -265,7 +266,7 @@ func TestKeystrokesDuringADeliveryLandAfterIt(t *testing.T) {
 	}
 	// Handed back through the ordinary input path, so it is a draft at the new
 	// prompt like anything else typed there: the next delivery waits for it.
-	if svc.Ready("s1") {
+	if svc.ready("s1") {
 		t.Error("the handed-back keystrokes left the prompt free")
 	}
 }

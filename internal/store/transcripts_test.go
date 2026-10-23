@@ -1,7 +1,9 @@
 package store
 
 import (
+	"context"
 	"fmt"
+	"github.com/lichdotdev/lich/api"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -32,13 +34,13 @@ func indexedAndCut(t testing.TB, svc *Service, texts map[string]string) {
 // is filed under and closes it, which is what writes the index.
 func parkWithConversation(t testing.TB, svc *Service, sessionID, label, providerSessionID string) {
 	t.Helper()
-	if err := svc.AddSession("p1", sessionID, label, "claude", "", 2, ""); err != nil {
+	if _, err := svc.AddSession(context.Background(), api.AddSessionOptions{ProjectID: "p1", SessionID: sessionID, Label: label, Kind: "claude", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession(%q): %v", sessionID, err)
 	}
 	if err := svc.SetProviderSession(sessionID, providerSessionID); err != nil {
 		t.Fatalf("SetProviderSession(%q): %v", sessionID, err)
 	}
-	if err := svc.CloseSession("p1", sessionID, ""); err != nil {
+	if _, err := svc.CloseSession(context.Background(), api.ParkSessionOptions{ProjectID: "p1", SessionID: sessionID}); err != nil {
 		t.Fatalf("CloseSession(%q): %v", sessionID, err)
 	}
 }
@@ -48,7 +50,7 @@ func parkWithConversation(t testing.TB, svc *Service, sessionID, label, provider
 // conversation, and the row carries the words that made it a hit.
 func TestClosedSessionsFindsWhatWasSaid(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{
 		"uuid-a": "we traced the worktree adoption guard and shipped it",
 		"uuid-b": "unrelated chatter about the release notes",
@@ -70,7 +72,7 @@ func TestClosedSessionsFindsWhatWasSaid(t *testing.T) {
 // behind that hit, and inventing one would say the conversation matched.
 func TestClosedSessionsMatchesNameOrConversation(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{
 		"uuid-a": "nothing in here about the label",
 		"uuid-b": "we traced the worktree adoption guard",
@@ -98,7 +100,7 @@ func TestClosedSessionsMatchesNameOrConversation(t *testing.T) {
 // opens with: nothing was searched for, so no row has a sentence to show.
 func TestClosedSessionsCarriesNoSnippetWithoutATerm(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
@@ -116,11 +118,11 @@ func TestClosedSessionsCarriesNoSnippetWithoutATerm(t *testing.T) {
 // keeps answering searches with an id nothing can route to.
 func TestForgettingASessionForgetsItsConversation(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
-	if err := svc.ForgetSession("s-a"); err != nil {
+	if _, err := svc.ForgetSession(t.Context(), api.SessionIDOptions{ID: "s-a"}); err != nil {
 		t.Fatalf("ForgetSession: %v", err)
 	}
 	if closed := mustClosed(t, svc, "adoption"); len(closed) != 0 {
@@ -136,13 +138,13 @@ func TestForgettingASessionForgetsItsConversation(t *testing.T) {
 // replacing would leave the search matching a conversation that has moved on.
 func TestClosingASessionAgainReplacesItsConversation(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	texts := map[string]string{"uuid-a": "the first close talked about adoption"}
 	indexed(t, svc, texts)
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
 	texts["uuid-a"] = "the second close talked about ceilings"
-	if err := svc.CloseSession("p1", "s-a", ""); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s-a"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 	if closed := mustClosed(t, svc, "adoption"); len(closed) != 0 {
@@ -163,12 +165,12 @@ func TestClosingASessionAgainReplacesItsConversation(t *testing.T) {
 // instead of answering short in silence.
 func TestBackfillIndexesSessionsParkedBeforeTheIndex(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	// Parked with nothing wired, which is what a row closed by an older lich
 	// looks like: a session with a conversation on disk and no index row.
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
-	history, err := svc.ClosedSessions("adoption")
+	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "adoption"})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
@@ -179,7 +181,7 @@ func TestBackfillIndexesSessionsParkedBeforeTheIndex(t *testing.T) {
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	deadline := time.Now().Add(10 * time.Second)
 	for {
-		history, err = svc.ClosedSessions("adoption")
+		history, err = svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "adoption"})
 		if err != nil {
 			t.Fatalf("ClosedSessions: %v", err)
 		}
@@ -201,16 +203,16 @@ func TestBackfillIndexesSessionsParkedBeforeTheIndex(t *testing.T) {
 // so the next search does not go back to the same disk for the same nothing.
 func TestBackfillMarksASessionItCannotRead(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{})
-	if err := svc.AddSession("p1", "s-shell", "Home", "shell", "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "s-shell", Label: "Home", Kind: "shell", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
-	if err := svc.CloseSession("p1", "s-shell", ""); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s-shell"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 
-	history, err := svc.ClosedSessions("anything")
+	history, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "anything"})
 	if err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
@@ -253,12 +255,12 @@ func TestFTSQuery(t *testing.T) {
 // syntax error that costs the list every row.
 func TestClosedSessionsSurvivesATermOfPunctuation(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
 	for _, term := range []string{`"`, `*`, `(worktree`, `NOT`, `adoption OR ceilings`} {
-		if _, err := svc.ClosedSessions(term); err != nil {
+		if _, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: term}); err != nil {
 			t.Errorf("ClosedSessions(%q): %v", term, err)
 		}
 	}
@@ -280,7 +282,7 @@ func indexRows(t *testing.T, svc *Service) int {
 func windowOf(t *testing.T, body, word string) (string, bool) {
 	t.Helper()
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": body})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
@@ -356,7 +358,7 @@ func TestConversationWindowsCutsAroundTheMention(t *testing.T) {
 func TestConversationWindowsBoundThePage(t *testing.T) {
 	const rows, size = 20, 512 * 1024
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	parkConversations(t, svc, rows, conversationOfSize(size))
 
 	ids := make([]string, rows)
@@ -384,7 +386,7 @@ func TestConversationWindowsBoundThePage(t *testing.T) {
 // can tell a session searched whole from one searched in part.
 func TestTheCapCuttingReachesTheRow(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexedAndCut(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	parkWithConversation(t, svc, "s-cut", "Session 4", "uuid-a")
 	indexed(t, svc, map[string]string{"uuid-b": "a short conversation about ceilings"})
@@ -425,7 +427,7 @@ func mustClosedRow(t *testing.T, svc *Service, term, sessionID string) ClosedSes
 // carries the line the index matched like any other hit.
 func TestClosedSessionsSnippetsARowMatchedByAFold(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": "una decisión importante"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
@@ -447,7 +449,7 @@ func TestClosedSessionsSnippetsARowMatchedByAFold(t *testing.T) {
 // folds it and lists the row. The row has to carry its line all the same.
 func TestClosedSessionsSnippetsAShoutedAccentedWord(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": strings.Repeat("filler ", 2000) + "ÍNDICE de la conversación"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
@@ -465,7 +467,7 @@ func TestClosedSessionsSnippetsAShoutedAccentedWord(t *testing.T) {
 // the hit the index found shows nothing under it.
 func TestClosedSessionsSnippetsATermSplitOnPunctuation(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree port hash"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
@@ -482,11 +484,11 @@ func TestClosedSessionsSnippetsATermSplitOnPunctuation(t *testing.T) {
 // grows by one on every resume, and a search still walks it.
 func TestResumingASessionDropsItsIndexRow(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
-	if _, err := svc.ReopenSession("s-a", "s-a2"); err != nil {
+	if _, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "s-a", NewSessionID: "s-a2"}); err != nil {
 		t.Fatalf("ReopenSession: %v", err)
 	}
 
@@ -496,7 +498,7 @@ func TestResumingASessionDropsItsIndexRow(t *testing.T) {
 	if n := ftsHits(t, svc, "adoption"); n != 0 {
 		t.Errorf("the index still answers %d hits for a conversation whose row is gone", n)
 	}
-	if err := svc.CloseSession("p1", "s-a2", ""); err != nil {
+	if _, err := svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "s-a2"}); err != nil {
 		t.Fatalf("CloseSession: %v", err)
 	}
 	if n := indexRows(t, svc); n != 1 {
@@ -509,7 +511,7 @@ func TestResumingASessionDropsItsIndexRow(t *testing.T) {
 // conversations have to ride the same clause.
 func TestForgettingAProjectForgetsItsConversations(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	indexed(t, svc, map[string]string{"uuid-a": "we traced the worktree adoption guard"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 
@@ -536,7 +538,7 @@ func TestCloseWaitsOutTheBackfill(t *testing.T) {
 		t.Fatalf("open test store: %v", err)
 	}
 	t.Cleanup(func() { _ = svc.Close() })
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	parkWithConversation(t, svc, "s-a", "Session 4", "uuid-a")
 	reading, release := make(chan struct{}), make(chan struct{})
 	svc.SetTranscriptOf(func(string, string) (string, bool) {
@@ -544,7 +546,7 @@ func TestCloseWaitsOutTheBackfill(t *testing.T) {
 		<-release
 		return "we traced the worktree adoption guard", false
 	})
-	if _, err := svc.ClosedSessions("adoption"); err != nil {
+	if _, err := svc.ClosedSessions(t.Context(), api.SearchTermOptions{Term: "adoption"}); err != nil {
 		t.Fatalf("ClosedSessions: %v", err)
 	}
 	<-reading
@@ -632,11 +634,11 @@ func parkConversations(t testing.TB, svc *Service, n int, body string) {
 // the page reads, which the allocation per search says better than the clock.
 func BenchmarkClosedSessionsSnippets(b *testing.B) {
 	svc := newTestStore(b)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
+	_, _ = svc.AddProject(b.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
 	parkConversations(b, svc, 200, conversationOfSize(434*1024))
 
 	for b.Loop() {
-		if _, err := svc.ClosedSessions("session"); err != nil {
+		if _, err := svc.ClosedSessions(b.Context(), api.SearchTermOptions{Term: "session"}); err != nil {
 			b.Fatalf("ClosedSessions: %v", err)
 		}
 	}

@@ -5,6 +5,8 @@ package claudeprofile
 import (
 	"strings"
 	"testing"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 func TestLoginCommandRunsAsTheProfile(t *testing.T) {
@@ -14,7 +16,7 @@ func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got, err := s.LoginCommand(p.Slug)
+	got, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: p.Slug})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +26,7 @@ func TestLoginCommandRunsAsTheProfile(t *testing.T) {
 	if got != want {
 		t.Errorf("LoginCommand =\n%s\nwant\n%s", got, want)
 	}
-	if got, _ := s.LoginCommand(Personal); !strings.HasPrefix(got, "& ") {
+	if got, _ := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: Personal}); !strings.HasPrefix(got, "& ") {
 		t.Errorf("Personal: %s", got)
 	}
 }

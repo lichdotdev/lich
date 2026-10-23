@@ -2,6 +2,7 @@ package project
 
 import (
 	"errors"
+	"github.com/lichdotdev/lich/api"
 	"strings"
 	"testing"
 )
@@ -10,7 +11,7 @@ func TestIssue(t *testing.T) {
 	t.Parallel()
 	t.Run("decodes and asks gh for the number", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`{"number":381,"title":"Sandbox backend","body":"why","url":"https://github.com/o/l/issues/381"}`)}
-		issue, err := withGH(gh).Issue("/repo", 381)
+		issue, err := withGH(gh).Issue(t.Context(), api.NumberOptions{Path: "/repo", Number: 381})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -31,7 +32,7 @@ func TestIssue(t *testing.T) {
 		// `issue view` with a pull request. Taking it would branch off the base
 		// under its title instead of checking out its head.
 		gh := &fakeGH{out: []byte(`{"number":453,"title":"feat: open a project","url":"https://github.com/o/l/pull/453"}`)}
-		_, err := withGH(gh).Issue("/repo", 453)
+		_, err := withGH(gh).Issue(t.Context(), api.NumberOptions{Path: "/repo", Number: 453})
 		if err == nil {
 			t.Fatal("a pull request was accepted as an issue")
 		}
@@ -42,7 +43,7 @@ func TestIssue(t *testing.T) {
 
 	t.Run("a number gh cannot be asked for is refused before the call", func(t *testing.T) {
 		gh := &fakeGH{}
-		if _, err := withGH(gh).Issue("/repo", 0); err == nil {
+		if _, err := withGH(gh).Issue(t.Context(), api.NumberOptions{Path: "/repo"}); err == nil {
 			t.Fatal("zero was accepted as an issue number")
 		}
 		if gh.calls != 0 {
@@ -52,14 +53,14 @@ func TestIssue(t *testing.T) {
 
 	t.Run("gh's failure travels", func(t *testing.T) {
 		gh := &fakeGH{err: errors.New("gh said no")}
-		if _, err := withGH(gh).Issue("/repo", 7); err == nil {
+		if _, err := withGH(gh).Issue(t.Context(), api.NumberOptions{Path: "/repo", Number: 7}); err == nil {
 			t.Fatal("a failed gh call answered an issue")
 		}
 	})
 
 	t.Run("an answer that cannot be decoded is not an issue", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`{"number":`)}
-		if _, err := withGH(gh).Issue("/repo", 7); err == nil {
+		if _, err := withGH(gh).Issue(t.Context(), api.NumberOptions{Path: "/repo", Number: 7}); err == nil {
 			t.Fatal("half a JSON object decoded")
 		}
 	})
@@ -67,7 +68,7 @@ func TestIssue(t *testing.T) {
 	t.Run("a long body is cut", func(t *testing.T) {
 		gh := &fakeGH{out: []byte(`{"number":7,"url":"https://github.com/o/l/issues/7","body":"` +
 			strings.Repeat("a", maxIssueBody+50) + `"}`)}
-		issue, err := withGH(gh).Issue("/repo", 7)
+		issue, err := withGH(gh).Issue(t.Context(), api.NumberOptions{Path: "/repo", Number: 7})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

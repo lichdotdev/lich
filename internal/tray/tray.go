@@ -9,10 +9,13 @@
 package tray
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // refreshEvery is how often the menu's session count is read again. The count
@@ -42,7 +45,7 @@ type Tray struct {
 	icons   Icons
 	show    func()
 	quit    func() error
-	live    func() int
+	live    func() (int, error)
 	// start puts the icon up; the build-tagged native one, or a test's.
 	start func(t *Tray)
 }
@@ -56,13 +59,14 @@ type Icons struct {
 
 // New returns a tray that is not up yet. show brings the window up, quit ends
 // lich, live counts the sessions with a process running.
-func New(icons Icons, show func(), quit func() error, live func() int) *Tray {
+func New(icons Icons, show func(), quit func() error, live func() (int, error)) *Tray {
 	return &Tray{icons: icons, show: show, quit: quit, live: live, start: startNative}
 }
 
 // SetLabels gives the menu its words. The first call puts the tray up; a later
 // one, after the language changed, rewrites the menu in place.
-func (t *Tray) SetLabels(labels Labels) {
+func (t *Tray) SetLabels(_ context.Context, opts api.TrayLabels) (api.None, error) {
+	labels := Labels(opts)
 	t.mu.Lock()
 	t.labels = labels
 	first := !t.started
@@ -71,11 +75,12 @@ func (t *Tray) SetLabels(labels Labels) {
 	t.mu.Unlock()
 	if first {
 		t.start(t)
-		return
+		return api.None{}, nil
 	}
 	if relabel != nil {
 		relabel(labels)
 	}
+	return api.None{}, nil
 }
 
 func (t *Tray) currentLabels() Labels {

@@ -1,6 +1,7 @@
 package appupdate
 
 import (
+	"github.com/lichdotdev/lich/api"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -128,7 +129,7 @@ func TestStatus(t *testing.T) {
 
 	t.Run("update available", func(t *testing.T) {
 		s.version = "0.7.0"
-		got := s.Status()
+		got := s.status()
 		if !got.UpdateAvailable {
 			t.Fatalf("UpdateAvailable = false, want true (%+v)", got)
 		}
@@ -147,14 +148,14 @@ func TestStatus(t *testing.T) {
 
 	t.Run("already latest", func(t *testing.T) {
 		s.version = "0.8.0"
-		if s.Status().UpdateAvailable {
+		if s.status().UpdateAvailable {
 			t.Fatal("UpdateAvailable = true, want false when on the latest")
 		}
 	})
 
 	t.Run("dev build never updates", func(t *testing.T) {
 		s.version = "dev"
-		got := s.Status()
+		got := s.status()
 		if got.UpdateAvailable {
 			t.Fatal("UpdateAvailable = true, want false for a dev build")
 		}
@@ -169,7 +170,7 @@ func TestStatus(t *testing.T) {
 		failing := serveBody(t, http.StatusInternalServerError, "upstream is down")
 		failing.version = "0.7.0"
 
-		got := failing.Status()
+		got := failing.status()
 
 		if got.UpdateAvailable {
 			t.Error("UpdateAvailable = true, want false when the lookup failed")
@@ -230,7 +231,7 @@ func TestInstallCommand(t *testing.T) {
 func TestApplyRejectedWhenNotSelfApply(t *testing.T) {
 	s := New("0.7.0", nil, nil)
 	s.exePath = "" // forces canSelfApply false regardless of platform
-	if err := s.Apply(); err == nil {
+	if _, err := s.Apply(t.Context(), api.None{}); err == nil {
 		t.Fatal("Apply() = nil, want an error when self-apply is unsupported")
 	}
 }
@@ -267,7 +268,7 @@ func TestApplyReportsProgress(t *testing.T) {
 	s.downloadBase = srv.URL + "/"
 	var steps []Progress
 	s.emit = func(_ string, data any) { steps = append(steps, data.(Progress)) }
-	if err := s.Apply(); err != nil {
+	if _, err := s.Apply(t.Context(), api.None{}); err != nil {
 		t.Fatal(err)
 	}
 	if len(steps) < 3 {
@@ -304,7 +305,7 @@ func TestApplyFailsWhenTheAssetIsNotPublishedYet(t *testing.T) {
 	s := applyService(t, srv)
 	s.install = func(string) error { installed = true; return nil }
 
-	err := s.Apply()
+	_, err := s.Apply(t.Context(), api.None{})
 
 	if err == nil {
 		t.Fatal("Apply() = nil, want an error when the asset download 404s")

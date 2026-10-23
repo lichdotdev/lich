@@ -1,6 +1,9 @@
 package store
 
-import "testing"
+import (
+	"github.com/lichdotdev/lich/api"
+	"testing"
+)
 
 // TestSessionOriginPersistsAndDefaults pins the two halves of the origin: the id
 // of the session that asked for this one, and the label it was called at the
@@ -8,17 +11,17 @@ import "testing"
 // neither — absent is the normal case.
 func TestSessionOriginPersistsAndDefaults(t *testing.T) {
 	svc := newTestStore(t)
-	if err := svc.AddProject("p1", "alpha", "/tmp/alpha"); err != nil {
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"}); err != nil {
 		t.Fatalf("AddProject: %v", err)
 	}
-	if err := svc.AddSession("p1", "parent", "planner", "claude", "", 2, ""); err != nil {
+	if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parent", Label: "planner", Kind: "claude", NextSeq: 2}); err != nil {
 		t.Fatalf("AddSession: %v", err)
 	}
-	if err := svc.AddSessionFrom("p1", "child", "worker", "claude", "/wt/a", 3, "parent", "planner", ""); err != nil {
+	if _, err := svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "child", Label: "worker", Kind: "claude", Path: "/wt/a", NextSeq: 3, OriginID: "parent", OriginLabel: "planner"}); err != nil {
 		t.Fatalf("AddSessionFrom: %v", err)
 	}
 
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -41,14 +44,14 @@ func TestSessionOriginPersistsAndDefaults(t *testing.T) {
 // the name the delegation happened under.
 func TestSessionOriginSurvivesARenameOfTheParent(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "parent", "planner", "claude", "", 2, "")
-	_ = svc.AddSessionFrom("p1", "child", "worker", "claude", "", 3, "parent", "planner", "")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parent", Label: "planner", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "child", Label: "worker", Kind: "claude", NextSeq: 3, OriginID: "parent", OriginLabel: "planner"})
 
-	if err := svc.RenameSession("parent", "the boss"); err != nil {
+	if _, err := svc.RenameSession(t.Context(), api.LabelSessionOptions{SessionID: "parent", Label: "the boss"}); err != nil {
 		t.Fatalf("RenameSession: %v", err)
 	}
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -67,12 +70,12 @@ func TestSessionOriginSurvivesARenameOfTheParent(t *testing.T) {
 // which must outlive a park exactly as the label and the conversation id do.
 func TestReopenWorktreeSessionCarriesTheOrigin(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "parent", "planner", "claude", "", 2, "")
-	_ = svc.AddSessionFrom("p1", "child", "worker", "claude", "/wt/a", 3, "parent", "planner", "")
-	_ = svc.CloseSession("p1", "child", "parent")
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "parent", Label: "planner", Kind: "claude", NextSeq: 2})
+	_, _ = svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "child", Label: "worker", Kind: "claude", Path: "/wt/a", NextSeq: 3, OriginID: "parent", OriginLabel: "planner"})
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "child", ActiveID: "parent"})
 
-	restored, err := svc.ReopenWorktreeSession("p1", "/wt/a", "child2")
+	restored, err := svc.ReopenWorktreeSession(t.Context(), api.ReopenWorktreeSessionOptions{ProjectID: "p1", Path: "/wt/a", NewSessionID: "child2"})
 	if err != nil {
 		t.Fatalf("ReopenWorktreeSession: %v", err)
 	}
@@ -83,7 +86,7 @@ func TestReopenWorktreeSessionCarriesTheOrigin(t *testing.T) {
 		t.Errorf("restored origin = (%q, %q), want (parent, planner)",
 			restored.OriginSessionID, restored.OriginLabel)
 	}
-	projects, err := svc.LoadState()
+	projects, err := svc.LoadState(t.Context(), api.None{})
 	if err != nil {
 		t.Fatalf("LoadState: %v", err)
 	}
@@ -103,16 +106,16 @@ func TestReopenWorktreeSessionCarriesTheOrigin(t *testing.T) {
 // park and resume is not what makes a card stop being a fork.
 func TestMarkForkedRidesTheRowThroughAReopen(t *testing.T) {
 	svc := newTestStore(t)
-	_ = svc.AddProject("p1", "alpha", "/tmp/alpha")
-	_ = svc.AddSession("p1", "keep", "auth-refactor", "claude", "", 1, "")
-	_ = svc.AddSessionFrom("p1", "fork", "auth-refactor 2", "claude", "", 2, "keep", "auth-refactor", "")
-	_ = svc.AddSessionFrom("p1", "worker", "worker", "claude", "", 3, "keep", "auth-refactor", "")
-	if err := svc.MarkForked("fork"); err != nil {
+	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
+	_, _ = svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: "keep", Label: "auth-refactor", Kind: "claude", NextSeq: 1})
+	_, _ = svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "fork", Label: "auth-refactor 2", Kind: "claude", NextSeq: 2, OriginID: "keep", OriginLabel: "auth-refactor"})
+	_, _ = svc.AddSessionFrom(t.Context(), api.AddSessionFromOptions{ProjectID: "p1", SessionID: "worker", Label: "worker", Kind: "claude", NextSeq: 3, OriginID: "keep", OriginLabel: "auth-refactor"})
+	if _, err := svc.MarkForked(t.Context(), api.SessionIDOptions{ID: "fork"}); err != nil {
 		t.Fatalf("MarkForked: %v", err)
 	}
 
 	forked := func() map[string]bool {
-		projects, _ := svc.LoadState()
+		projects, _ := svc.LoadState(t.Context(), api.None{})
 		got := map[string]bool{}
 		for _, s := range projects[0].Sessions {
 			got[s.ID] = s.Forked
@@ -122,8 +125,8 @@ func TestMarkForkedRidesTheRowThroughAReopen(t *testing.T) {
 	if got := forked(); !got["fork"] || got["worker"] || got["keep"] {
 		t.Fatalf("forked = %v, want only the fork marked", got)
 	}
-	_ = svc.CloseSession("p1", "fork", "keep")
-	restored, err := svc.ReopenSession("fork", "fork-again")
+	_, _ = svc.CloseSession(t.Context(), api.ParkSessionOptions{ProjectID: "p1", SessionID: "fork", ActiveID: "keep"})
+	restored, err := svc.ReopenSession(t.Context(), api.ReopenSessionOptions{SessionID: "fork", NewSessionID: "fork-again"})
 	if err != nil || restored == nil || !restored.Forked {
 		t.Fatalf("reopen = %+v, %v; want the mark carried", restored, err)
 	}

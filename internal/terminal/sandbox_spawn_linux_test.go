@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/sandbox"
 )
@@ -35,9 +36,9 @@ func TestAConfinedSessionRunsInItsPTY(t *testing.T) {
 	}
 
 	svc := New(stubBins{sandboxOn: true}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", cwd, KindShell, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: cwd, Kind: KindShell, Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 	// Both markers are assembled from two shell variables, so the PTY's echo of
@@ -45,13 +46,13 @@ func TestAConfinedSessionRunsInItsPTY(t *testing.T) {
 	// and "END". Matching the echo would pass this test on a sandbox that never
 	// ran, and the trailing marker is what says the answer is complete — the
 	// listing has no newline of its own.
-	if err := svc.Write("s1", `A=HO; B=ME; ls -A "$HOME" | tr '\n' ' ' | sed "s/^/$A$B: /;s/$/$B$A/"`+"\n"); err != nil {
+	if _, err := svc.Write(t.Context(), api.WriteOptions{ID: "s1", Data: `A=HO; B=ME; ls -A "$HOME" | tr '\n' ' ' | sed "s/^/$A$B: /;s/$/$B$A/"` + "\n"}); err != nil {
 		t.Fatalf("Write = %v, want nil", err)
 	}
 
 	var answer string
 	waitFor(t, func() bool {
-		encoded, err := svc.Replay("s1")
+		encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "s1"})
 		if err != nil {
 			return false
 		}
@@ -103,9 +104,9 @@ func TestAConfinedSpawnRecordsWhatItsSandboxSkipped(t *testing.T) {
 
 	recorded := map[string][]string{}
 	svc := New(stubBins{sandboxOn: true, sandboxLinks: recorded}, nil, events.New())
-	t.Cleanup(func() { _ = svc.Close("s1") })
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
 
-	if err := svc.Start("s1", "p1", cwd, KindShell, "", false, 80, 24); err != nil {
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: cwd, Kind: KindShell, Cols: 80, Rows: 24}); err != nil {
 		t.Fatalf("Start = %v, want nil", err)
 	}
 

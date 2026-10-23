@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -283,7 +284,7 @@ type CostTotalsOptions = api.CostTotalsOptions
 // Only sessions lich still holds a row for are in reach at all: a deleted
 // session took its ledger with it (ON DELETE CASCADE) and is in no total,
 // neither counted nor excluded.
-func (s *Service) CostTotals(opts CostTotalsOptions) (CostReport, error) {
+func (s *Service) CostTotals(_ context.Context, opts CostTotalsOptions) (CostReport, error) {
 	project, provider, since := opts.Project, opts.Provider, opts.Since
 	// Read before the rows are open: the store holds a single connection, and a
 	// second query while one is being walked waits on a connection its own

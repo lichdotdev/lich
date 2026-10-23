@@ -226,14 +226,14 @@ func (s *Service) binSetting(id string) string {
 // shell that does not answer inside it leaves the pin exactly as it is and says
 // so: re-scanning the old PATH would report the same absence as though it were
 // news.
-func (s *Service) RefreshPath() error {
+func (s *Service) RefreshPath(_ context.Context, _ api.None) (api.None, error) {
 	s.mu.Lock()
 	refresh := s.refreshPath
 	s.mu.Unlock()
 	if refresh == nil {
-		return nil
+		return api.None{}, nil
 	}
-	return refresh()
+	return api.None{}, refresh()
 }
 
 // Detect returns every known provider with its install state, resolving the
@@ -243,7 +243,7 @@ func (s *Service) RefreshPath() error {
 // Reading the setting is what keeps a machine whose only agent lives at a path
 // the user typed from reading as a bare machine — the state the empty screen
 // answers with a terminal.
-func (s *Service) Detect() ([]Detected, error) {
+func (s *Service) Detect(_ context.Context, _ api.None) ([]Detected, error) {
 	out := make([]Detected, 0, len(Registry))
 	for _, p := range Registry {
 		d := Detected{ID: p.ID, Name: p.Name, Binary: DefaultBinary(p.ID), Docs: p.Docs}
@@ -258,7 +258,7 @@ func (s *Service) Detect() ([]Detected, error) {
 // would ever start.
 func (s *Service) resolve(d Detected, binaries []string) Detected {
 	if bin := s.binSetting(d.ID); bin != "" {
-		if check := s.Verify(bin); check.Status == CheckOK {
+		if check := s.verify(bin); check.Status == CheckOK {
 			d.Installed, d.Path, d.Source = true, check.Path, SourceSetting
 		}
 		return d

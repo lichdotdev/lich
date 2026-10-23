@@ -12,6 +12,7 @@ package rage
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/doctor"
 	"github.com/lichdotdev/lich/internal/logging"
@@ -96,9 +98,16 @@ func New(configDir, version string, environ []string) *Collector {
 		window:    doctor.Window,
 		detect:    doctor.Providers,
 		confine:   sandbox.Probe,
-		plugin:    func() []agentplugin.Status { return agentplugin.New(pathBins{}).Status() },
-		probe:     func() (*singleton.Info, bool) { return doctor.Instance(configDir) },
-		dump:      fetchGoroutines,
+		plugin: func() []agentplugin.Status {
+			statuses, err := agentplugin.New(pathBins{}).Status(context.Background(), api.None{})
+			if err != nil {
+				// The report's plugin table already reads "—" for a state it has none of.
+				return nil
+			}
+			return statuses
+		},
+		probe: func() (*singleton.Info, bool) { return doctor.Instance(configDir) },
+		dump:  fetchGoroutines,
 	}
 }
 
