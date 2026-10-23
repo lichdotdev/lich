@@ -22,10 +22,29 @@ var fontconfigWeights = map[font.Weight]int{
 	font.Bold:     200,
 }
 
+// located is every face Locate found, by the font it was asked for: each
+// ask is an fc-match subprocess, and a terminal asks for its family's four
+// styles whenever its renderer is rebuilt, a font size step included. A
+// family installed after it was asked for keeps its substitute until lich
+// restarts.
+var located sync.Map
+
 // Locate asks fontconfig for the face that draws f's family in its weight
-// and style. fontconfig answers a weight or style the family lacks, or a
-// family not installed, with its nearest.
+// and style, once per process for each f. fontconfig answers a weight or
+// style the family lacks, or a family not installed, with its nearest.
 func Locate(f font.Font) (Location, error) {
+	if loc, ok := located.Load(f); ok {
+		return loc.(Location), nil
+	}
+	loc, err := match(f)
+	if err != nil {
+		return Location{}, err
+	}
+	located.Store(f, loc)
+	return loc, nil
+}
+
+func match(f font.Font) (Location, error) {
 	weight, ok := fontconfigWeights[f.Weight]
 	if !ok {
 		return Location{}, fmt.Errorf("locate %s: no fontconfig weight for %v", f.Typeface, f.Weight)
