@@ -43,7 +43,8 @@ func (u *window) attachTray() {
 // followLanguage runs each frame: what a table built once holds in the
 // interface language (the hotkeys' labels, the CJK faces) or hands the
 // backend (the tray's words) is renewed when Settings changed the language
-// since the last frame.
+// since the last frame, and the CJK faces join the interface's shaper on the
+// frame after CJK text first came up.
 // Settings only sets the language, so the window notices rather than being
 // told. A send that fails is not retried until the language changes again.
 func (u *window) followLanguage() {
@@ -52,7 +53,8 @@ func (u *window) followLanguage() {
 		u.hotkeyLanguage = lang
 		localizeHotkeys()
 	}
-	if u.uiFonts != nil && lang != u.fontsLanguage {
+	cjkCame := u.uiFonts != nil && u.cjkSeen.Load() && !u.uiFonts.han
+	if u.uiFonts != nil && (lang != u.fontsLanguage || cjkCame) {
 		u.fontsLanguage = lang
 		if err := u.setInterfaceFonts(*u.uiFonts); err != nil {
 			u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(u.uiFonts.sans, fonts.SystemSans), "error": backend.ErrorText(err)})))

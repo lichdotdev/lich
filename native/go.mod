@@ -31,8 +31,10 @@ require (
 // deletion with Ctrl off macOS, Wayland fixes for EGL vsync, clipboard reads,
 // pointer.Leave and the cursor (cursor-shape-v1), an undecorated window that
 // moves, resizes and maximizes on Wayland and X11, app.TrafficLights (macOS's
-// buttons on an undecorated window), and the Editor's scroll offset (the
-// textarea's scrollbar). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261022192911-12496229bb5d
+// buttons on an undecorated window), the Editor's scroll offset (the
+// textarea's scrollbar), and text.WithOutsideCollection (the runes a shaper's
+// faces lack, which loads the CJK faces when CJK text first comes up). Every
+// patch of ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261023212558-16fb17377a9b
 
 replace github.com/lichdotdev/lich => ../

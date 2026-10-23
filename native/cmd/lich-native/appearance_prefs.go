@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"strconv"
+	"unicode"
 
 	"gioui.org/app"
 	"gioui.org/font"
@@ -200,11 +201,14 @@ func (u *window) setCodeFont(family string, size unit.Sp) error {
 const onestFamily = "Onest"
 
 // interfaceFonts are the interface's two faces as stored, its sans ("" for
-// System) and its monospace, the code's family, and the language its CJK
-// faces are picked for.
+// System) and its monospace, the code's family, the language its CJK faces
+// are picked for, and whether the shaper holds them: from the start for a
+// CJK language, and for any other once Han, kana or Hangul has come up on
+// screen (noteOutsideFaces), since a CJK face is tens of megabytes.
 type interfaceFonts struct {
 	sans, mono string
 	language   i18n.Locale
+	han        bool
 }
 
 // setInterfaceFonts builds the interface's shaper again when its sans or its
@@ -214,6 +218,7 @@ type interfaceFonts struct {
 // other two cannot draw, in the current interface language's own shapes.
 func (u *window) setInterfaceFonts(want interfaceFonts) error {
 	want.language = i18n.Current()
+	want.han = u.cjkSeen.Load() || isCJKLanguage(want.language)
 	if u.uiFonts != nil && *u.uiFonts == want {
 		return nil
 	}
@@ -225,16 +230,40 @@ func (u *window) setInterfaceFonts(want interfaceFonts) error {
 	if err != nil {
 		return err
 	}
-	han, err := hanFaces(want.language)
-	if err != nil {
-		return err
+	var han []font.FontFace
+	if want.han {
+		if han, err = hanFaces(want.language); err != nil {
+			return err
+		}
 	}
 	collection := append(append(append(gofont.Collection(), sans...), mono...), han...)
-	shaper := text.NewShaper(text.WithCollection(collection))
+	shaper := text.NewShaper(text.WithCollection(collection), text.WithOutsideCollection(u.noteOutsideFaces))
 	u.th.Shaper, u.theme.Shaper = shaper, shaper
 	u.theme.Sans, u.theme.Mono = sansTypeface, mono[0].Font.Typeface
 	u.uiFonts = &want
 	return nil
+}
+
+// noteOutsideFaces hears of a rune the interface's faces lack, which the
+// shaper meanwhile draws with a system font if one has it. The first Han,
+// kana or Hangul has followLanguage build the shaper again with the CJK
+// faces; it runs inside a layout, which a new shaper must not replace, so it
+// only marks it and asks for a frame.
+func (u *window) noteOutsideFaces(r rune) {
+	if !unicode.In(r, unicode.Han, unicode.Hiragana, unicode.Katakana, unicode.Hangul) {
+		return
+	}
+	if u.cjkSeen.CompareAndSwap(false, true) {
+		u.win.Invalidate()
+	}
+}
+
+func isCJKLanguage(l i18n.Locale) bool {
+	switch l {
+	case i18n.ZhCN, i18n.JA, i18n.KO:
+		return true
+	}
+	return false
 }
 
 // reloadInterfaceFonts builds the interface's shaper again from the same

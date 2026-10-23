@@ -174,6 +174,8 @@ type window struct {
 	// fontsLanguage is the language the interface's CJK faces were last
 	// picked for.
 	fontsLanguage i18n.Locale
+	// cjkSeen is set once the interface has had CJK to draw (noteOutsideFaces).
+	cjkSeen atomic.Bool
 	// trayLanguage is the language the tray's words were last sent in, unset
 	// until the tray is up.
 	trayLanguage atomic.Value
