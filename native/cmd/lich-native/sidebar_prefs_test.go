@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 )
 
@@ -75,7 +76,9 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 	case "patchnotes.Current":
 		return backend.PatchNotes{Version: "1.0.0", Groups: []backend.PatchNotesGroup{{Label: "Added", Items: []string{str(0)}}}}
 	case "themes.SetFollowSystem":
-		f.settings["appearance.followSystem@"] = string(args[0])
+		var opts api.FollowSystemOptions
+		_ = json.Unmarshal(args[0], &opts)
+		f.settings["appearance.followSystem@"] = strconv.FormatBool(opts.On)
 		return nil
 	}
 	raw := make([]string, len(args))

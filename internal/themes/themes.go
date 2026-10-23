@@ -14,6 +14,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/lichdotdev/lich/api"
 	themeassets "github.com/lichdotdev/lich/themes"
 )
 
@@ -59,48 +60,14 @@ var (
 	)
 )
 
-// Theme describes every color value the window needs to paint the app and
-// the terminal.
-type Theme struct {
-	FormatVersion int               `json:"formatVersion,omitempty"`
-	ID            string            `json:"id"`
-	Name          string            `json:"name"`
-	Scheme        string            `json:"scheme"`
-	Origin        string            `json:"origin"`
-	Source        *Source           `json:"source,omitempty"`
-	App           map[string]string `json:"app"`
-	Terminal      map[string]string `json:"terminal"`
-	// Syntax is optional: a theme without it is highlighted in the window's
-	// default palette for its scheme.
-	Syntax Syntax `json:"syntax,omitempty"`
-	// Pair is optional: the id of this theme's variant for the other scheme,
-	// which the window draws while the OS asks for that scheme and the user
-	// turned on following it.
-	Pair string `json:"pair,omitempty"`
-}
-
-// BrokenTheme is a stored custom theme this lich cannot load. It is listed
-// rather than dropped, so the user sees why and can remove it by id.
-type BrokenTheme struct {
-	ID     string `json:"id"`
-	Reason string `json:"reason"`
-}
-
-// Source records the repository a theme was installed from and the manifest
-// version it came in at, so lich can clone it again to look for a newer one. It
-// is written by lich, never by a picked file: a standalone import has no
-// source and stays unversioned.
-type Source struct {
-	URL     string `json:"url"`
-	Version string `json:"version"`
-}
-
-// ImportResult either reports the installed theme or asks the UI to confirm
-// replacing the existing custom theme with the same id.
-type ImportResult struct {
-	Theme          Theme `json:"theme"`
-	NeedsOverwrite bool  `json:"needsOverwrite"`
-}
+// The wire shapes live in api, the one definition the window and the CLI
+// read too.
+type (
+	Theme        = api.Theme
+	BrokenTheme  = api.BrokenTheme
+	Source       = api.ThemeSource
+	ImportResult = api.ThemeImportResult
+)
 
 // Service reads bundled themes plus user-imported themes.
 type Service struct {

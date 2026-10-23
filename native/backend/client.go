@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/coder/websocket"
+	"github.com/lichdotdev/lich/api"
 )
 
 // Runtime is what a running lich writes to <config>/lich/runtime.json (or
@@ -152,6 +153,12 @@ func (c *Client) Call(ctx context.Context, method string, out any, args ...any) 
 		return fmt.Errorf("%s: decode result: %w", method, err)
 	}
 	return nil
+}
+
+// callMethod is Call held to the types api declares for m.
+func callMethod[Req, Resp any](ctx context.Context, c *Client, m api.Method[Req, Resp], req Req) (Resp, error) {
+	var out Resp
+	return out, c.Call(ctx, m.Name, &out, m.Args(req)...)
 }
 
 // RemoteError is a call the backend refused. Message is the backend's own

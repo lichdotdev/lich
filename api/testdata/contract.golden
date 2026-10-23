@@ -1,0 +1,94 @@
+themes.Import(ImportThemeOptions) ThemeImportResult
+themes.InstallFromGit(InstallThemesOptions) ThemeGitResult
+themes.List(None) []Theme
+themes.ListBroken(None) []BrokenTheme
+themes.Remove(RemoveThemeOptions) None
+themes.SaveTemplate(SaveThemeTemplateOptions) None
+themes.Select(SelectThemeOptions) None
+themes.Selection(None) ThemeSelection
+themes.SetFollowSystem(FollowSystemOptions) None
+themes.UpdateFromGit(UpdateThemeOptions) ThemeGitResult
+
+ImportThemeOptions {
+	path string
+	overwrite bool
+}
+
+ThemeImportResult {
+	theme Theme
+	needsOverwrite bool
+}
+
+InstallThemesOptions {
+	url string
+	overwrite bool
+}
+
+ThemeGitResult {
+	pack string
+	version string
+	themes []Theme
+	conflicts []string
+	upToDate bool
+}
+
+None {
+}
+
+Theme {
+	formatVersion,omitempty int
+	id string
+	name string
+	scheme string
+	origin string
+	source,omitempty *ThemeSource
+	app map[string]string
+	terminal map[string]string
+	syntax,omitempty Syntax
+	pair,omitempty string
+}
+
+BrokenTheme {
+	id string
+	reason string
+}
+
+RemoveThemeOptions {
+	id string
+}
+
+SaveThemeTemplateOptions {
+	path string
+}
+
+SelectThemeOptions {
+	id string
+}
+
+ThemeSelection {
+	theme string
+	followSystem bool
+}
+
+FollowSystemOptions {
+	on bool
+}
+
+UpdateThemeOptions {
+	id string
+}
+
+ThemeSource {
+	url string
+	version string
+}
+
+Syntax = map[string]SyntaxStyle
+
+SyntaxStyle {
+	color,omitempty string
+	bold,omitempty bool
+	italic,omitempty bool
+	underline,omitempty bool
+	strikethrough,omitempty bool
+}

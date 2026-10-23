@@ -10,6 +10,7 @@ require (
 	github.com/go-text/typesetting v0.3.5
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/lichdotdev/godemirror v0.8.0
+	github.com/lichdotdev/lich v0.0.0
 	github.com/yuin/goldmark v1.4.13
 	golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607
 	golang.org/x/image v0.47.0
@@ -33,3 +34,5 @@ require (
 // buttons on an undecorated window), and the Editor's scroll offset (the
 // textarea's scrollbar). Every patch of ours lands on that branch.
 replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261022192911-12496229bb5d
+
+replace github.com/lichdotdev/lich => ../

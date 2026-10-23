@@ -434,7 +434,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// its turn ended, the way a native subagent ends with its result.
 	rl.SetWorkerFinished(spawner.CloseFinishedWorker)
 	dispatcher.Register("spawn", spawner)
-	dispatcher.Register("themes", themes.New(version, db, hub.Emit))
+	handleThemes(dispatcher, themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
 	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, term.LiveCount)

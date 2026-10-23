@@ -65,8 +65,11 @@ Then:
   ```bash
   for os in linux darwin windows; do GOOS=$os go build ./... && GOOS=$os go vet ./...; done
   ```
-- **Touched a Go struct's JSON tags?** `native/backend` mirrors them by
-  hand. There is no codegen, so it moves in the same change.
+- **Touched an RPC method's options or result?** Methods declared in `api` are
+  shared by the backend and the window; run `go test ./api -update` and review
+  the diff of `api/testdata/contract.golden`. The services not moved there yet
+  are mirrored by hand in `native/backend`, so the mirror moves in the same
+  change. There is no codegen.
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org)
 (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`).

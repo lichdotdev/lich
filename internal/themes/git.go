@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/gitutil"
 	"github.com/lichdotdev/lich/internal/semver"
 	"github.com/lichdotdev/lich/internal/winexec"
@@ -33,18 +34,7 @@ const (
 // remote is usually copied in.
 var scpLike = regexp.MustCompile(`^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+:[^\s]+$`)
 
-// GitInstallResult reports what installing a repository produced. Conflicts
-// names the theme ids that already exist locally: found by the scan that runs
-// before any write, nothing was installed at all; found by the write itself — a
-// theme that appeared in between — that one id was left alone and Themes says
-// what did go in.
-type GitInstallResult struct {
-	Pack      string   `json:"pack"`
-	Version   string   `json:"version"`
-	Themes    []Theme  `json:"themes"`
-	Conflicts []string `json:"conflicts"`
-	UpToDate  bool     `json:"upToDate"`
-}
+type GitInstallResult = api.ThemeGitResult
 
 // pack is a validated theme repository: its manifest plus every theme the
 // clone carried, already stamped with their source.

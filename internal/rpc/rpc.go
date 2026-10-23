@@ -6,22 +6,27 @@
 //	→ 200 with the method's JSON result (null when it only returns error)
 //	→ 4xx/5xx with {"error": "..."} otherwise
 //
-// Dispatch is reflection over explicitly registered services — the net/rpc
-// pattern — so a new service method is exposed by registration alone. A method
-// whose first parameter is a context.Context gets the request's, which is done
-// when the caller hangs up; the JSON array carries the arguments after it. Token
-// auth is applied by the transport mount, not here.
+// A method declared in api is exposed with Handle, which the compiler holds to
+// the method's options and result types: the array carries that one options
+// object, or nothing. The rest is reflection over registered services — the
+// net/rpc pattern — matching the array to the method's parameters by
+// position; a method whose first parameter is a context.Context gets the
+// request's. Both hand over a context that is done when the caller hangs up.
+// Token auth is applied by the transport mount, not here.
 package rpc
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // bodyLimit bounds one RPC request body; arguments are ids, paths and small
@@ -34,15 +39,70 @@ var (
 )
 
 type Handler struct {
+	routes   map[string]route
 	services map[string]reflect.Value
 	denied   map[string]bool
 }
 
+// route answers one api method: the call's result, or badArguments when the
+// body does not decode into its options.
+type route func(ctx context.Context, body []byte) (any, error)
+
+type badArguments struct{ err error }
+
+func (b badArguments) Error() string { return b.err.Error() }
+
 func New() *Handler {
 	return &Handler{
+		routes:   make(map[string]route),
 		services: make(map[string]reflect.Value),
 		denied:   make(map[string]bool),
 	}
+}
+
+// Handle exposes fn as m. It answers before a Register of the same service,
+// so a service moves to api one method at a time.
+func Handle[Req, Resp any](h *Handler, m api.Method[Req, Resp], fn func(context.Context, Req) (Resp, error)) {
+	if _, dup := h.routes[m.Name]; dup {
+		panic(fmt.Sprintf("rpc: %s handled twice", m.Name))
+	}
+	h.routes[m.Name] = func(ctx context.Context, body []byte) (any, error) {
+		req, err := decodeOptions[Req](body)
+		if err != nil {
+			return nil, badArguments{err}
+		}
+		resp, err := fn(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		if _, empty := any(resp).(api.None); empty {
+			return nil, nil
+		}
+		return resp, nil
+	}
+}
+
+// decodeOptions reads the envelope api.Method.Args writes. An empty one is
+// the zero options, which is also what a client from before the method took
+// any sends.
+func decodeOptions[Req any](body []byte) (Req, error) {
+	var req Req
+	var raw []json.RawMessage
+	if len(body) > 0 {
+		if err := json.Unmarshal(body, &raw); err != nil {
+			return req, fmt.Errorf("arguments must be a JSON array: %w", err)
+		}
+	}
+	switch len(raw) {
+	case 0:
+		return req, nil
+	case 1:
+		if err := json.Unmarshal(raw[0], &req); err != nil {
+			return req, fmt.Errorf("options: %w", err)
+		}
+		return req, nil
+	}
+	return req, fmt.Errorf("want one options object, got %d arguments", len(raw))
 }
 
 // Register exposes every exported method of svc under name.<Method>.
@@ -64,6 +124,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := strings.TrimPrefix(r.URL.Path, "/rpc/")
+	if route, ok := h.routes[name]; ok && !h.denied[name] {
+		h.serveRoute(w, r, name, route)
+		return
+	}
 	method, err := h.lookup(name)
 	if err != nil {
 		slog.Warn("rpc: unknown method", "method", name, "err", err)
@@ -71,10 +135,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, bodyLimit))
-	if err != nil {
-		slog.Warn("rpc: unreadable body", "method", name, "err", err)
-		writeError(w, http.StatusBadRequest, "unreadable body")
+	body, ok := readBody(w, r, name)
+	if !ok {
 		return
 	}
 	args, err := decodeArgs(r.Context(), method.Type(), body)
@@ -85,6 +147,31 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResult(w, name, method.Call(args))
+}
+
+func (h *Handler) serveRoute(w http.ResponseWriter, r *http.Request, name string, route route) {
+	body, ok := readBody(w, r, name)
+	if !ok {
+		return
+	}
+	result, err := route(r.Context(), body)
+	var bad badArguments
+	if errors.As(err, &bad) {
+		slog.Warn("rpc: bad arguments", "method", name, "err", err)
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeReply(w, name, result, err)
+}
+
+func readBody(w http.ResponseWriter, r *http.Request, name string) ([]byte, bool) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, bodyLimit))
+	if err != nil {
+		slog.Warn("rpc: unreadable body", "method", name, "err", err)
+		writeError(w, http.StatusBadRequest, "unreadable body")
+		return nil, false
+	}
+	return body, true
 }
 
 func (h *Handler) lookup(name string) (reflect.Value, error) {
@@ -143,8 +230,7 @@ func writeResult(w http.ResponseWriter, method string, results []reflect.Value) 
 	for _, result := range results {
 		if result.Type().Implements(errType) {
 			if err, _ := result.Interface().(error); err != nil {
-				slog.Warn("rpc: call failed", "method", method, "err", err)
-				writeError(w, http.StatusInternalServerError, err.Error())
+				writeReply(w, method, nil, err)
 				return
 			}
 			continue
@@ -152,6 +238,15 @@ func writeResult(w http.ResponseWriter, method string, results []reflect.Value) 
 		if payload == nil {
 			payload = result.Interface()
 		}
+	}
+	writeReply(w, method, payload, nil)
+}
+
+func writeReply(w http.ResponseWriter, method string, payload any, err error) {
+	if err != nil {
+		slog.Warn("rpc: call failed", "method", method, "err", err)
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(payload); err != nil {

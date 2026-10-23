@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/themes"
 )
 
@@ -36,12 +37,12 @@ func (c *client) theme(args []string) error {
 
 func (c *client) listThemes(asJSON bool) error {
 	ctx := context.Background()
-	var installed []themes.Theme
-	if err := c.call(ctx, "themes.List", nil, shortCall, &installed); err != nil {
+	installed, err := callMethod(ctx, c, api.ThemesList, api.None{}, shortCall)
+	if err != nil {
 		return err
 	}
-	var selection themes.Selection
-	if err := c.call(ctx, "themes.Selection", nil, shortCall, &selection); err != nil {
+	selection, err := callMethod(ctx, c, api.ThemesSelection, api.None{}, shortCall)
+	if err != nil {
 		return err
 	}
 	rows := []themeRow{{ID: themes.SystemID, Name: "System, the bundled theme the OS asks for", InUse: selection.Theme == themes.SystemID}}
@@ -63,12 +64,12 @@ func (c *client) listThemes(asJSON bool) error {
 }
 
 func (c *client) switchTheme(id string, asJSON bool) error {
-	call := []any{themes.SelectOptions{ID: id}}
-	if err := c.call(context.Background(), "themes.Select", call, shortCall, nil); err != nil {
+	opts := api.SelectThemeOptions{ID: id}
+	if _, err := callMethod(context.Background(), c, api.ThemesSelect, opts, shortCall); err != nil {
 		return err
 	}
 	if asJSON {
-		return c.emit(themes.SelectOptions{ID: id})
+		return c.emit(opts)
 	}
 	fmt.Fprintf(c.stdout, "Switched to %q.\n", id)
 	return nil

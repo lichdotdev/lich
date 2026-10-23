@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/singleton"
 )
@@ -55,6 +56,12 @@ func (c *client) call(ctx context.Context, method string, args []any, timeout ti
 		return fmt.Errorf("decode the reply: %w", err)
 	}
 	return nil
+}
+
+// callMethod is call held to the types api declares for m.
+func callMethod[Req, Resp any](ctx context.Context, c *client, m api.Method[Req, Resp], req Req, timeout time.Duration) (Resp, error) {
+	var out Resp
+	return out, c.call(ctx, m.Name, m.Args(req), timeout, &out)
 }
 
 // post sends one RPC and reads the whole reply. The body is read here rather
