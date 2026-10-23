@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -72,7 +72,7 @@ func (ts *terminals) restart(ctx context.Context, s sessionView, resume string) 
 	}
 	cols, rows := t.vt.Size()
 	if err := ts.start(ctx, s, resume, cols, rows); err != nil {
-		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.restartFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.restartFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return false
 	}
 	ts.running(s.ID)

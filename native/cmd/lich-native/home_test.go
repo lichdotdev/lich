@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func homeModel() *model {
 	m := newModel(nil, func() {})
 	m.homeID = "home"
-	m.projects = []lichclient.Project{
-		{ID: "home", Name: "me", Path: "/home/me", ActiveSessionID: "h1", Sessions: []lichclient.Session{{ID: "h1"}}},
-		{ID: "a", Name: "lich", Path: "/src/lich", ActiveSessionID: "a1", Sessions: []lichclient.Session{{ID: "a1"}}},
+	m.projects = []backend.Project{
+		{ID: "home", Name: "me", Path: "/home/me", ActiveSessionID: "h1", Sessions: []backend.Session{{ID: "h1"}}},
+		{ID: "a", Name: "lich", Path: "/src/lich", ActiveSessionID: "a1", Sessions: []backend.Session{{ID: "a1"}}},
 	}
 	m.activeProject, m.active = "a", "a1"
 	return m
@@ -48,7 +48,7 @@ func TestHomeCannotBeClosed(t *testing.T) {
 }
 
 func TestAFreshWorkspaceOpensOnHomeWithAShell(t *testing.T) {
-	var ps []lichclient.Project
+	var ps []backend.Project
 	m := newModel(fakeState(t, &ps, ""), func() {})
 	if err := m.reload(context.Background()); err != nil {
 		t.Fatal(err)

@@ -10,8 +10,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -74,8 +74,8 @@ func (s *settingsScreen) scopeName() string {
 
 // identity is path's commit identity, read once per visit; ok false until
 // git answered.
-func (v *vcsSettings) identity(s *settingsScreen, path string) (lichclient.CommitIdentity, bool) {
-	return v.identities.get(&v.mu, path, s.invalidate, func() (lichclient.CommitIdentity, bool) {
+func (v *vcsSettings) identity(s *settingsScreen, path string) (backend.CommitIdentity, bool) {
+	return v.identities.get(&v.mu, path, s.invalidate, func() (backend.CommitIdentity, bool) {
 		id, err := s.client.CommitIdentity(s.ctx, path)
 		if err != nil {
 			log.Printf("settings: commit identity of %s: %v", path, err)

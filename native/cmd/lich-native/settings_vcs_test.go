@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestUpgradeAccountOnlyWithoutGuessing(t *testing.T) {
@@ -58,12 +58,12 @@ func TestAccountOptionsKeepAStaleStoredAccount(t *testing.T) {
 
 func TestIdentityLineSaysWhereTheEmailComesFrom(t *testing.T) {
 	cases := []struct {
-		id   lichclient.CommitIdentity
+		id   backend.CommitIdentity
 		want identityLine
 	}{
-		{lichclient.CommitIdentity{}, identityLine{"No git identity in this checkout.", "", "Commits will be refused until user.email is set."}},
-		{lichclient.CommitIdentity{Name: "Ana", Email: "a@x.io"}, identityLine{"Commits land as Ana", "<a@x.io>", "— git user.email, not this account."}},
-		{lichclient.CommitIdentity{Email: "a@x.io", Local: true}, identityLine{"Commits land as", "<a@x.io>", "— set in this repository, overriding your global one."}},
+		{backend.CommitIdentity{}, identityLine{"No git identity in this checkout.", "", "Commits will be refused until user.email is set."}},
+		{backend.CommitIdentity{Name: "Ana", Email: "a@x.io"}, identityLine{"Commits land as Ana", "<a@x.io>", "— git user.email, not this account."}},
+		{backend.CommitIdentity{Email: "a@x.io", Local: true}, identityLine{"Commits land as", "<a@x.io>", "— set in this repository, overriding your global one."}},
 	}
 	for _, c := range cases {
 		if got := identityLineOf(c.id); got != c.want {

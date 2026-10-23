@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestToBranchName(t *testing.T) {
@@ -36,7 +36,7 @@ func TestParseIssueRef(t *testing.T) {
 	}
 }
 
-func doneCheck(f lichclient.BaseFreshness, err string) *baseCheck {
+func doneCheck(f backend.BaseFreshness, err string) *baseCheck {
 	c := &baseCheck{done: make(chan struct{}), freshness: f, err: err}
 	close(c.done)
 	return c
@@ -46,7 +46,7 @@ func doneCheck(f lichclient.BaseFreshness, err string) *baseCheck {
 // upstream, with nothing of its own, starts from the upstream; every other
 // case keeps the local branch.
 func TestStartPoint(t *testing.T) {
-	behind := lichclient.BaseFreshness{Upstream: "origin/main", Behind: 4}
+	behind := backend.BaseFreshness{Upstream: "origin/main", Behind: 4}
 	cases := []struct {
 		name   string
 		base   string
@@ -57,11 +57,11 @@ func TestStartPoint(t *testing.T) {
 	}{
 		{"behind", "local:main", doneCheck(behind, ""), false, "origin/main", true},
 		{"behind but carrying", "local:main", doneCheck(behind, ""), true, "main", false},
-		{"diverged", "local:main", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", Behind: 4, Ahead: 1}, ""), false, "main", false},
-		{"up to date", "local:main", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main"}, ""), false, "main", false},
-		{"no upstream", "local:main", doneCheck(lichclient.BaseFreshness{}, ""), false, "main", false},
-		{"fetch failed", "local:main", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", Behind: 4, FetchError: "offline"}, ""), false, "main", false},
-		{"call failed", "local:main", doneCheck(lichclient.BaseFreshness{}, "boom"), false, "main", false},
+		{"diverged", "local:main", doneCheck(backend.BaseFreshness{Upstream: "origin/main", Behind: 4, Ahead: 1}, ""), false, "main", false},
+		{"up to date", "local:main", doneCheck(backend.BaseFreshness{Upstream: "origin/main"}, ""), false, "main", false},
+		{"no upstream", "local:main", doneCheck(backend.BaseFreshness{}, ""), false, "main", false},
+		{"fetch failed", "local:main", doneCheck(backend.BaseFreshness{Upstream: "origin/main", Behind: 4, FetchError: "offline"}, ""), false, "main", false},
+		{"call failed", "local:main", doneCheck(backend.BaseFreshness{}, "boom"), false, "main", false},
 		{"remote", "remote:origin/feat", nil, false, "origin/feat", true},
 	}
 	for _, c := range cases {
@@ -82,11 +82,11 @@ func TestFreshnessLine(t *testing.T) {
 		warn  bool
 	}{
 		{"pending", pending, false, "Checking the remote…", false},
-		{"behind", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", Behind: 4}, ""), false, "4 behind origin/main · starts from origin/main", false},
-		{"carry", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", Behind: 4}, ""), true, "Starts from local main to keep your changes", false},
-		{"ahead", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", Ahead: 2}, ""), false, "2 commits not pushed · starts from local main", false},
-		{"offline", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", FetchError: "x"}, ""), false, "Couldn't reach origin · starts from local main", true},
-		{"up to date", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main"}, ""), false, "", false},
+		{"behind", doneCheck(backend.BaseFreshness{Upstream: "origin/main", Behind: 4}, ""), false, "4 behind origin/main · starts from origin/main", false},
+		{"carry", doneCheck(backend.BaseFreshness{Upstream: "origin/main", Behind: 4}, ""), true, "Starts from local main to keep your changes", false},
+		{"ahead", doneCheck(backend.BaseFreshness{Upstream: "origin/main", Ahead: 2}, ""), false, "2 commits not pushed · starts from local main", false},
+		{"offline", doneCheck(backend.BaseFreshness{Upstream: "origin/main", FetchError: "x"}, ""), false, "Couldn't reach origin · starts from local main", true},
+		{"up to date", doneCheck(backend.BaseFreshness{Upstream: "origin/main"}, ""), false, "", false},
 	}
 	for _, c := range cases {
 		text, warn := freshnessLine("main", c.check, c.carry)

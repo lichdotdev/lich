@@ -17,8 +17,8 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -45,7 +45,7 @@ func (s pullsState) none() string {
 
 // listLayout is PullsList: the filter field and the counted quick filters,
 // the state menu, then the rows.
-func (p *pullsScreen) listLayout(gtx C, th *ui.Theme, list pullsRead[[]lichclient.PRSummary]) D {
+func (p *pullsScreen) listLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSummary]) D {
 	text := p.query.Text()
 	counts := filterCounts(list.val, text)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -131,7 +131,7 @@ func (p *pullsScreen) stateRow(gtx C, th *ui.Theme) D {
 	})
 }
 
-func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]lichclient.PRSummary], rows []lichclient.PRSummary) D {
+func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSummary], rows []backend.PRSummary) D {
 	switch {
 	case !list.loaded:
 		return listSkeleton(gtx, th)
@@ -167,7 +167,7 @@ func (p *pullsScreen) rowScroll(gtx C, th *ui.Theme) material.ListStyle {
 
 // row is PullRow: "#N title" over two lines at most beside its checks, then
 // who, when, the facts worth a glance and the checkout it sits in.
-func (p *pullsScreen) row(gtx C, th *ui.Theme, pr lichclient.PRSummary, now time.Time) D {
+func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	click := p.rowClicks[pr.Number]
 	if click == nil {
 		click = new(widget.Clickable)
@@ -205,7 +205,7 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr lichclient.PRSummary, now time
 // first line.
 var chipFirstLineTop = ui.Space(0.5)
 
-func rowTitle(gtx C, th *ui.Theme, pr lichclient.PRSummary) D {
+func rowTitle(gtx C, th *ui.Theme, pr backend.PRSummary) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(th.Text(ui.TextSM, fmt.Sprintf("#%d", pr.Number)).Mono().Muted().Layout),
 		ui.Gap(1),
@@ -227,7 +227,7 @@ func rowTitle(gtx C, th *ui.Theme, pr lichclient.PRSummary) D {
 
 // checkoutName is the folder a PR's branch is checked out in, the name its
 // block in the sidebar carries; "" when it is checked out nowhere.
-func checkoutName(w lichclient.Worktree) string {
+func checkoutName(w backend.Worktree) string {
 	if w.Path == "" {
 		return ""
 	}
@@ -238,7 +238,7 @@ func checkoutName(w lichclient.Worktree) string {
 // shows, REVIEW_REQUIRED being most rows' resting state. The facts take the
 // room first: the author truncates once they don't fit, and the checkout at
 // the far end shows only where it fits whole.
-func rowMeta(gtx C, th *ui.Theme, pr lichclient.PRSummary, checkout string, now time.Time) D {
+func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string, now time.Time) D {
 	facts := []layout.FlexChild{
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min.X = 0
@@ -301,7 +301,7 @@ func draftBadge(gtx C, th *ui.Theme) D {
 
 // waitsOnReviewer is a CHANGES_REQUESTED verdict whose every thread is
 // resolved: GitHub keeps the verdict until the reviewer moves.
-func waitsOnReviewer(pr lichclient.PRSummary) bool {
+func waitsOnReviewer(pr backend.PRSummary) bool {
 	return pr.ReviewDecision == "CHANGES_REQUESTED" && pr.Threads.Total > 0 && pr.Threads.Open == 0
 }
 
@@ -322,7 +322,7 @@ func wholeOrNothing(gtx C, w layout.Widget) D {
 
 // checksChip is a row's checks at a glance: how many have finished while
 // any run, how many failed once one has, all of them once they pass.
-func checksChip(gtx C, th *ui.Theme, c lichclient.ChecksRollup) D {
+func checksChip(gtx C, th *ui.Theme, c backend.ChecksRollup) D {
 	ic, fg, text := icPullCheck, th.TonePass, fmt.Sprintf("%d/%d", c.Passed, c.Total)
 	switch verdictOf(c) {
 	case verdictFailed:

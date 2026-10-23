@@ -7,8 +7,8 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -36,7 +36,7 @@ func parseDiffLayout(raw string) string {
 	return diffUnified
 }
 
-func loadEditorPrefs(ctx context.Context, c *lichclient.Client) (editorPrefs, error) {
+func loadEditorPrefs(ctx context.Context, c *backend.Client) (editorPrefs, error) {
 	hide, err := loadHideWhitespace(ctx, c)
 	if err != nil {
 		return editorPrefs{}, err

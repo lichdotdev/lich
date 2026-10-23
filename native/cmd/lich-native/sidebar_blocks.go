@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // sidebarFilter is the lens over the shown project's cards. It is never
@@ -93,7 +93,7 @@ func isLoneWorktree(blocks []sessionBlock) bool {
 }
 
 // dressBlock reads one block into its view. Callers hold m.mu.
-func (m *model) dressBlock(p lichclient.Project, b sessionBlock, header bool, pending []pendingStatus, now time.Time) blockView {
+func (m *model) dressBlock(p backend.Project, b sessionBlock, header bool, pending []pendingStatus, now time.Time) blockView {
 	collapsed := m.folds[foldKey(p.ID, b.key)]
 	v := blockView{key: b.key, kind: b.kind, folder: b.folder, path: b.path, collapsed: collapsed, folded: header && collapsed}
 	ids := make([]string, 0, len(b.sessions))

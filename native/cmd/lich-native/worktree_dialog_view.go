@@ -13,8 +13,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -35,7 +35,7 @@ type wtRow struct {
 
 // branchRows is the list the picker shows for query: worktrees to reopen,
 // then local and remote branches, each group headed and counted.
-func branchRows(b *lichclient.Branches, query string) []wtRow {
+func branchRows(b *backend.Branches, query string) []wtRow {
 	if b == nil {
 		return nil
 	}

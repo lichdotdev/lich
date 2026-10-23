@@ -9,14 +9,14 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // actions is the header's buttons, left to right: the session, the hand-off,
 // Approve, Merge, Refresh and Open.
-func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) D {
+func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	busy := v.busyNow()
 	handLabel, handPrompt, handOK := pullHandoff(d)
 	blocked := ""
@@ -66,7 +66,7 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRD
 
 // sessionButton is Open in Session, or Go to session when a session already
 // sits in the branch's checkout.
-func (v *pullView) sessionButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, busy, blocked string) D {
+func (v *pullView) sessionButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, blocked string) D {
 	label := i18n.T("pulls.pulls.openInSession")
 	if id, _ := p.reviewSession(d); id != "" {
 		label = i18n.T("pulls.pulls.goToSession")
@@ -81,7 +81,7 @@ func (v *pullView) sessionButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclie
 
 // mergeReasonForReview is why a review cannot be left: only a pull request
 // that is over refuses one, so a draft or a conflict still takes it.
-func mergeReasonForReview(d lichclient.PRDetail) string {
+func mergeReasonForReview(d backend.PRDetail) string {
 	switch d.State {
 	case "OPEN":
 		return ""
@@ -101,7 +101,7 @@ func (v *pullView) withTip(gtx C, th *ui.Theme, p *pullsScreen, key, text string
 
 // mergeButton is the Merge menu: the methods the base's rules allow, every
 // one a bypass or none, enabled past a block only where a bypass is offered.
-func (v *pullView) mergeButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, busy string, act *pullsAction) D {
+func (v *pullView) mergeButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy string, act *pullsAction) D {
 	rules := p.store.branchRules(p.project.Path, d.BaseRefName)
 	bypass := canAdminOverride(d, rules)
 	blocked := mergeBlockedReason(d) != "" && !bypass
@@ -139,7 +139,7 @@ const (
 
 // conflictsStat is the "Conflicts with" stat, face: once the files are known
 // it opens a panel naming them, and until then its tooltip says why not.
-func (v *pullView) conflictsStat(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, face layout.Widget) D {
+func (v *pullView) conflictsStat(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, face layout.Widget) D {
 	read := p.store.conflictFiles(p.project.Path, &d)
 	if hint := conflictsHint(read); hint != "" {
 		return v.withTip(gtx, th, p, "conflicts", hint, face)
@@ -201,7 +201,7 @@ func conflictRow(gtx C, th *ui.Theme, file string) D {
 	})
 }
 
-func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) D {
+func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	var rows []layout.Widget
 	switch v.openTab(d) {
 	case tabFiles:
@@ -222,7 +222,7 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d lichclient
 
 // overviewRows is PullsOverview: who opened it, who reviews it, and its
 // description.
-func (v *pullView) overviewRows(th *ui.Theme, d lichclient.PRDetail, act *pullsAction) []layout.Widget {
+func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	pad := func(top float32, w layout.Widget) layout.Widget {
 		return func(gtx C) D {
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(top)}.Layout(gtx, w)
@@ -267,7 +267,7 @@ func reviewVerdict(state string) (text string, ok bool) {
 }
 
 // reviewerChips is the reviewers row: each login and what they said.
-func reviewerChips(gtx C, th *ui.Theme, reviewers []lichclient.PRReviewer) D {
+func reviewerChips(gtx C, th *ui.Theme, reviewers []backend.PRReviewer) D {
 	if len(reviewers) == 0 {
 		return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.nobodyYet")).Muted().Layout(gtx)
 	}
@@ -302,7 +302,7 @@ func reviewerChips(gtx C, th *ui.Theme, reviewers []lichclient.PRReviewer) D {
 }
 
 // commitRows is PullsCommits: each commit, its body behind a click.
-func (v *pullView) commitRows(gtx C, th *ui.Theme, d lichclient.PRDetail) []layout.Widget {
+func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.Widget {
 	if len(d.Commits) == 0 {
 		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsCommits.none")) }}
 	}
@@ -334,7 +334,7 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d lichclient.PRDetail) []layo
 
 // commitRow is a commit's headline, who and when, the chevron when it has a
 // body to open, and its short oid.
-func commitRow(gtx C, th *ui.Theme, c lichclient.PRCommit, click *widget.Clickable, hasBody, open bool, now time.Time) D {
+func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *widget.Clickable, hasBody, open bool, now time.Time) D {
 	return panelRow(gtx, th, click, hasBody, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
@@ -359,7 +359,7 @@ func commitRow(gtx C, th *ui.Theme, c lichclient.PRCommit, click *widget.Clickab
 }
 
 // checkRows is PullsChecks: each check, its run opened in the browser.
-func (v *pullView) checkRows(gtx C, th *ui.Theme, d lichclient.PRDetail, act *pullsAction) []layout.Widget {
+func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	if len(d.CheckRuns) == 0 {
 		return []layout.Widget{func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsChecks.none")) }}
 	}

@@ -10,8 +10,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -55,7 +55,7 @@ func (c *codeTab) searchBody(gtx C, th *ui.Theme) D {
 	data, loading, err := c.search.get()
 	switch {
 	case err != nil:
-		return notice(gtx, th, lichclient.ErrorText(err))
+		return notice(gtx, th, backend.ErrorText(err))
 	case loading:
 		return notice(gtx, th, i18n.T("dock.searchResults.searching"))
 	}

@@ -13,7 +13,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -76,7 +76,7 @@ type pullsScreen struct {
 	// spans are the islands as the last layout placed them, for the tab
 	// strip to merge the active tab into the one it sits over.
 	spans    []islandSpan
-	project  lichclient.Project
+	project  backend.Project
 	selected int // the PR in view, 0 for none yet
 	// branchPR is the PR of the checkout's branch, which the screen opens on
 	// until a row is chosen.
@@ -109,7 +109,7 @@ type pullsScreen struct {
 // checkout of its head branch, the window's active one when it sits there and
 // the first otherwise, "" when none does. target keys its comment batch: that checkout, shared with its
 // dock, or the PR's page while the branch has none.
-func (p *pullsScreen) reviewSession(d lichclient.PRDetail) (id, target string) {
+func (p *pullsScreen) reviewSession(d backend.PRDetail) (id, target string) {
 	wt, ok := p.checkedOut(d.HeadRefName)
 	if !ok {
 		return "", d.URL
@@ -134,7 +134,7 @@ func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {
 }
 
 // show opens the screen on project, at its checkout's PR when it has one.
-func (p *pullsScreen) show(project lichclient.Project, branch string, branchPR int) {
+func (p *pullsScreen) show(project backend.Project, branch string, branchPR int) {
 	if p.project.ID != project.ID {
 		p.selected = 0
 	}
@@ -219,11 +219,11 @@ func pullsIsland(gtx C, th *ui.Theme, bg color.NRGBA, squareNW bool, w func(gtx 
 }
 
 // checkedOut is the checkout holding branch, ok false when none does.
-func (p *pullsScreen) checkedOut(branch string) (lichclient.Worktree, bool) {
+func (p *pullsScreen) checkedOut(branch string) (backend.Worktree, bool) {
 	for _, c := range p.store.checkoutsOf(p.project.Path) {
 		if c.Name == branch {
 			return c, true
 		}
 	}
-	return lichclient.Worktree{}, false
+	return backend.Worktree{}, false
 }

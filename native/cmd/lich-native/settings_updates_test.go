@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -23,14 +23,14 @@ func TestSplitLeadInTakesTheBoldSentence(t *testing.T) {
 }
 
 func TestLayoutHighlightsDemotesASecondImportant(t *testing.T) {
-	first := lichclient.PatchNotesHighlight{Kind: "important", Text: "one"}
-	note := lichclient.PatchNotesHighlight{Kind: "note", Text: "n"}
-	second := lichclient.PatchNotesHighlight{Kind: "important", Text: "two"}
-	lead, callouts := layoutHighlights([]lichclient.PatchNotesHighlight{note, first, second})
+	first := backend.PatchNotesHighlight{Kind: "important", Text: "one"}
+	note := backend.PatchNotesHighlight{Kind: "note", Text: "n"}
+	second := backend.PatchNotesHighlight{Kind: "important", Text: "two"}
+	lead, callouts := layoutHighlights([]backend.PatchNotesHighlight{note, first, second})
 	if lead == nil || lead.Text != "one" {
 		t.Fatalf("lead = %v, want the first important", lead)
 	}
-	if want := []lichclient.PatchNotesHighlight{note, second}; !reflect.DeepEqual(callouts, want) {
+	if want := []backend.PatchNotesHighlight{note, second}; !reflect.DeepEqual(callouts, want) {
 		t.Fatalf("callouts = %v, want %v", callouts, want)
 	}
 	if lead, callouts := layoutHighlights(nil); lead != nil || callouts != nil {
@@ -54,18 +54,18 @@ func TestInlineWordsKeepsPunctuationWithItsCodeSpan(t *testing.T) {
 }
 
 func TestPluginRowsSayWhatTheMachineHas(t *testing.T) {
-	base := lichclient.PluginStatus{Provider: "claude", Name: "Claude Code", Available: true, Compatible: true, LatestVersion: "0.9.0"}
+	base := backend.PluginStatus{Provider: "claude", Name: "Claude Code", Available: true, Compatible: true, LatestVersion: "0.9.0"}
 	installed := base
 	installed.Installed, installed.InstalledVersion = true, "0.9.0"
 	outdated := installed
 	outdated.InstalledVersion, outdated.UpdateAvailable = "0.8.0", true
 	unsupported := outdated
 	unsupported.InstalledVersion, unsupported.Compatible = "0.14.0", false
-	missing := lichclient.PluginStatus{Provider: "codex"}
+	missing := backend.PluginStatus{Provider: "codex"}
 
 	for _, tc := range []struct {
 		name    string
-		st      lichclient.PluginStatus
+		st      backend.PluginStatus
 		text    string
 		action  string
 		variant ui.Variant
@@ -87,7 +87,7 @@ func TestPluginRowsSayWhatTheMachineHas(t *testing.T) {
 }
 
 func TestOutdatedPluginsSkipsWhatIsNotInstalled(t *testing.T) {
-	statuses := []lichclient.PluginStatus{
+	statuses := []backend.PluginStatus{
 		{Provider: "claude", Installed: true, UpdateAvailable: true},
 		{Provider: "codex", Installed: true, UpdateAvailable: true, Compatible: false},
 		{Provider: "cursor", Installed: true},

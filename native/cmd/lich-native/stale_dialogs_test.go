@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -68,14 +68,14 @@ func TestLayingOutDelegatesFromOtherLayoutsAsksInTheFrameAfterTheClick(t *testin
 func TestViewPatchNotesOpensThemInTheFrameAfterTheClick(t *testing.T) {
 	s, r := settingsFrames(t, sectionUpdates)
 	s.updates.loaded = true
-	s.updates.notes = &lichclient.PatchNotes{Version: "1.4.0", Groups: []lichclient.PatchNotesGroup{}}
+	s.updates.notes = &backend.PatchNotes{Version: "1.4.0", Groups: []backend.PatchNotesGroup{}}
 	_, next := r.clickLabel(t, i18n.T("settings.updatesSettings.viewPatchNotes"))
 	if !strings.Contains(next, i18n.T("shell.patchNotesDialog.gotIt")) {
 		t.Errorf("the patch notes never came up:\n%s", next)
 	}
 }
 
-func pluginGateFrames(t *testing.T, offer ...lichclient.PluginStatus) (*window, *frameRig) {
+func pluginGateFrames(t *testing.T, offer ...backend.PluginStatus) (*window, *frameRig) {
 	t.Helper()
 	u, _ := newGateWindow(t)
 	u.plugin.started, u.plugin.offer = true, offer
@@ -91,7 +91,7 @@ func pluginGateFrames(t *testing.T, offer ...lichclient.PluginStatus) (*window, 
 func TestPluginGateClosesInTheFrameAfterTheClick(t *testing.T) {
 	for _, button := range []string{"shell.agentPluginGate.notNow", "shell.agentPluginGate.dontAskAgain"} {
 		t.Run(button, func(t *testing.T) {
-			_, r := pluginGateFrames(t, lichclient.PluginStatus{Provider: "claude", Name: "Claude Code"})
+			_, r := pluginGateFrames(t, backend.PluginStatus{Provider: "claude", Name: "Claude Code"})
 			_, next := r.clickLabel(t, i18n.T(button))
 			if strings.Contains(r.settle(t), i18n.T(button)) {
 				t.Errorf("the gate stayed up:\n%s", next)
@@ -101,7 +101,7 @@ func TestPluginGateClosesInTheFrameAfterTheClick(t *testing.T) {
 }
 
 func TestPluginGateDisablesInstallInTheFrameThatUntickedTheLastCLI(t *testing.T) {
-	_, r := pluginGateFrames(t, lichclient.PluginStatus{Provider: "claude", Name: "Claude Code"})
+	_, r := pluginGateFrames(t, backend.PluginStatus{Provider: "claude", Name: "Claude Code"})
 	r.settle(t)
 	label := r.at(t, "Claude Code")
 	box := r.smallestClickIn(t, image.Rect(0, int(label.Y)-20, int(label.X), int(label.Y)+20))

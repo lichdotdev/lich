@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -33,7 +33,7 @@ func (p *preview) markdownBody(gtx C, th *ui.Theme) D {
 	text, loading, err := p.file.get()
 	switch {
 	case err != nil:
-		return binaryState(gtx, th, lichclient.ErrorText(err), "", &p.exits)
+		return binaryState(gtx, th, backend.ErrorText(err), "", &p.exits)
 	case loading:
 		return notice(gtx, th, i18n.T("dock.filesPanel.loading"))
 	}

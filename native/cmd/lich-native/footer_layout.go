@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // footerItem is one control of the footer strip.
@@ -173,7 +173,7 @@ func insertAt(items []string, index int, id string) []string {
 // loadFooterLayout reads the saved layout and resolves it against the cost
 // flag. The native window has no visibility switches or context toggle of its
 // own, so an unsaved layout seeds from defaultFooterVisibility.
-func loadFooterLayout(ctx context.Context, c *lichclient.Client, cost bool) (footerLayout, error) {
+func loadFooterLayout(ctx context.Context, c *backend.Client, cost bool) (footerLayout, error) {
 	raw, err := c.GetSetting(ctx, footerLayoutKey, "")
 	if err != nil {
 		return footerLayout{}, err
@@ -185,7 +185,7 @@ func loadFooterLayout(ctx context.Context, c *lichclient.Client, cost bool) (foo
 	return resolveFooterLayout(stored, defaultFooterVisibility, true, cost), nil
 }
 
-func saveFooterLayout(ctx context.Context, c *lichclient.Client, l footerLayout) error {
+func saveFooterLayout(ctx context.Context, c *backend.Client, l footerLayout) error {
 	data, err := json.Marshal(footerLayout{Left: nonNil(l.Left), Right: nonNil(l.Right)})
 	if err != nil {
 		return err

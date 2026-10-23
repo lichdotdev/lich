@@ -7,8 +7,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -78,8 +78,8 @@ func (p *providerSettings) projectOffOf(s *settingsScreen, scope, kind string) b
 // check is what bin resolves to as a spawn would, ok false until the backend
 // answered. One question per distinct string, so a path typed one letter at a
 // time is asked once per letter and never twice.
-func (p *providerSettings) check(s *settingsScreen, bin string) (lichclient.BinaryCheck, bool) {
-	return p.checks.get(&p.mu, bin, s.invalidate, func() (lichclient.BinaryCheck, bool) {
+func (p *providerSettings) check(s *settingsScreen, bin string) (backend.BinaryCheck, bool) {
+	return p.checks.get(&p.mu, bin, s.invalidate, func() (backend.BinaryCheck, bool) {
 		c, err := s.client.Verify(s.ctx, bin)
 		if err != nil {
 			log.Printf("settings: verify %s: %v", bin, err)
@@ -114,7 +114,7 @@ func (s *settingsScreen) pickBin(m providersMachine, p providerInfo, scope strin
 	file, err := s.client.PickFile(s.ctx, i18n.T("settings.providerBinary.pickTitle", i18n.Args{"provider": p.name}))
 	if err != nil {
 		log.Printf("settings: pick %s binary: %v", p.id, err)
-		title := i18n.T("settings.settingsProvidersBin.pickFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+		title := i18n.T("settings.settingsProvidersBin.pickFailed", i18n.Args{"error": backend.ErrorText(err)})
 		s.theme.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: title})
 		return
 	}
@@ -200,7 +200,7 @@ func spawnedBin(project, global binLayer, binary string) (scope, configured, ask
 
 // binAlsoOnPathLine is the muted sentence naming the other versions $PATH
 // holds, nothing when it holds none.
-func binAlsoOnPathLine(gtx C, th *ui.Theme, others []lichclient.ProviderBinary) D {
+func binAlsoOnPathLine(gtx C, th *ui.Theme, others []backend.ProviderBinary) D {
 	line := alsoOnPathLine(others)
 	if line == "" {
 		return D{}
@@ -241,7 +241,7 @@ func binSource(scope, projectName string) string {
 // binVerdict is the glyph of what the path resolves to, the executable it
 // resolved to, the version it reports and where it came from. Nothing is drawn for the glyph while a
 // check is in flight, so a field being typed into does not blink.
-func binVerdict(gtx C, th *ui.Theme, check lichclient.BinaryCheck, known bool, asked, configured, version, source string) D {
+func binVerdict(gtx C, th *ui.Theme, check backend.BinaryCheck, known bool, asked, configured, version, source string) D {
 	path := check.Path
 	if path == "" {
 		path = configured
@@ -253,13 +253,13 @@ func binVerdict(gtx C, th *ui.Theme, check lichclient.BinaryCheck, known bool, a
 	switch {
 	case known && check.Failed():
 		children = append(children, layout.Rigid(func(gtx C) D { return icBinFailed.Layout(gtx, binGlyphSize, th.Destructive) }), ui.Gap(1.5))
-	case known && check.Status == lichclient.CheckOK:
+	case known && check.Status == backend.CheckOK:
 		children = append(children, layout.Rigid(func(gtx C) D { return icBinOK.Layout(gtx, binGlyphSize, th.TonePass) }), ui.Gap(1.5))
 	}
 	children = append(children,
 		layout.Rigid(th.Text(ui.TextXS, path).Mono().Layout),
 	)
-	if version != "" && known && check.Status == lichclient.CheckOK {
+	if version != "" && known && check.Status == backend.CheckOK {
 		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, version).Mono().Muted().Layout))
 	}
 	children = append(children,
@@ -271,7 +271,7 @@ func binVerdict(gtx C, th *ui.Theme, check lichclient.BinaryCheck, known bool, a
 
 // binProblem is the sentence under a binary a session cannot start from: what
 // is wrong and what will happen.
-func binProblem(gtx C, th *ui.Theme, check lichclient.BinaryCheck, known bool, asked string) D {
+func binProblem(gtx C, th *ui.Theme, check backend.BinaryCheck, known bool, asked string) D {
 	if !known || !check.Failed() {
 		return D{}
 	}

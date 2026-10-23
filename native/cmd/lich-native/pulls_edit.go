@@ -8,8 +8,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -59,7 +59,7 @@ func (h *heldEdit) release() { h.on = false }
 // url as read. The read catches up once it equals the value sent, or once one
 // has come back from a fetch begun after a stale that followed the send: a
 // value GitHub normalised never equals what was sent, and must not stay held.
-func (h *heldEdit) over(url, current string, read pullsRead[*lichclient.PRDetail], staledAt time.Time) string {
+func (h *heldEdit) over(url, current string, read pullsRead[*backend.PRDetail], staledAt time.Time) string {
 	if !h.on || h.url != url {
 		return current
 	}
@@ -73,21 +73,21 @@ func (h *heldEdit) over(url, current string, read pullsRead[*lichclient.PRDetail
 
 // shown is d with the title and description being sent in place of the ones
 // read.
-func (s *editState) shown(d lichclient.PRDetail, read pullsRead[*lichclient.PRDetail], staledAt time.Time) lichclient.PRDetail {
+func (s *editState) shown(d backend.PRDetail, read pullsRead[*backend.PRDetail], staledAt time.Time) backend.PRDetail {
 	d.Title = s.heldTitle.over(d.URL, d.Title, read, staledAt)
 	d.Body = s.heldBody.over(d.URL, d.Body, read, staledAt)
 	return d
 }
 
 // titleEditing reports whether the title field is open on d.
-func (s *editState) titleEditing(d lichclient.PRDetail) bool {
+func (s *editState) titleEditing(d backend.PRDetail) bool {
 	return s.title.Active() && s.titleURL == d.URL
 }
 
 // pullTitle is the number and the title, or the field renaming it, with the
 // pencil that opens the field right after the title's last word. Enter or
 // leaving the field saves, Escape cancels, as a session card's rename.
-func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) D {
+func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	s := &v.edit
 	if s.titleOpen.click.Clicked(gtx) {
 		s.titleURL = d.URL
@@ -123,7 +123,7 @@ func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.P
 
 // descriptionHeading is the Description heading, with the Edit that turns the
 // description into a field while it is not one already.
-func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
+func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, d backend.PRDetail) D {
 	s := &v.edit
 	// Cancel is the field's, drawn under the heading: taken here, the
 	// heading and the field both read it.
@@ -152,7 +152,7 @@ func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, d lichclient.PRDetail
 
 // descriptionField is the description being edited, raw Markdown, saved with
 // Save or Ctrl+Enter. It stays open, saying so, until GitHub took it.
-func (v *pullView) descriptionField(gtx C, th *ui.Theme, d lichclient.PRDetail, act *pullsAction) D {
+func (v *pullView) descriptionField(gtx C, th *ui.Theme, d backend.PRDetail, act *pullsAction) D {
 	s := &v.edit
 	busy := v.busyNow() == "body"
 	if (s.bodySave.Clicked(gtx) || ctrlEnter(gtx, &s.body)) && !busy {
@@ -189,7 +189,7 @@ func (u *window) applyEdit(path string, number int, act pullsAction) {
 	if act.title != "" {
 		title := act.title
 		go u.prWrite("title", func(err error) string {
-			return i18n.T("pulls.pullRequestView.renameFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+			return i18n.T("pulls.pullRequestView.renameFailed", i18n.Args{"error": backend.ErrorText(err)})
 		}, func() error {
 			if err := u.client.EditPullRequestTitle(u.ctx, path, number, title); err != nil {
 				v.onFrame(v.edit.heldTitle.release)
@@ -201,7 +201,7 @@ func (u *window) applyEdit(path string, number int, act pullsAction) {
 	if act.body != nil {
 		body := *act.body
 		go u.prWrite("body", func(err error) string {
-			return i18n.T("pulls.pullsOverview.editFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+			return i18n.T("pulls.pullsOverview.editFailed", i18n.Args{"error": backend.ErrorText(err)})
 		}, func() error {
 			if err := u.client.EditPullRequestBody(u.ctx, path, number, body); err != nil {
 				v.onFrame(v.edit.heldBody.release)
@@ -214,7 +214,7 @@ func (u *window) applyEdit(path string, number int, act pullsAction) {
 }
 
 // openForShot opens the edit -pulls-edit names (title, description) on d.
-func (s *editState) openForShot(what string, d lichclient.PRDetail) {
+func (s *editState) openForShot(what string, d backend.PRDetail) {
 	switch what {
 	case "title":
 		s.titleURL = d.URL

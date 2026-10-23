@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
-func footerEvent(name, data string) lichclient.Event {
-	return lichclient.Event{Name: name, Data: json.RawMessage(data)}
+func footerEvent(name, data string) backend.Event {
+	return backend.Event{Name: name, Data: json.RawMessage(data)}
 }
 
 const opusReport = `{"id":"s1","percent":42,"tokens":84000,"window":200000,"model":"claude-opus-4-8","effort":"high"}`
@@ -44,7 +44,7 @@ func TestFooterUsageKeepsTheLastReportPerSession(t *testing.T) {
 }
 
 func TestFooterUsageClearsWhenTheProviderChangesOrLeaves(t *testing.T) {
-	clears := []lichclient.Event{
+	clears := []backend.Event{
 		footerEvent("session-agent", `{"id":"s1","agent":"codex"}`),
 		footerEvent("session-agent", `{"id":"s1","agent":""}`), // a respawn
 		footerEvent("session-status", `{"id":"s1","state":"idle"}`),
@@ -114,13 +114,13 @@ type quotaRig struct {
 	changed chan struct{}
 	mu      sync.Mutex
 	reads   int
-	reply   []lichclient.QuotaPlan
+	reply   []backend.QuotaPlan
 	fail    error
 }
 
 func newQuotaRig() *quotaRig {
 	r := &quotaRig{tick: make(chan time.Time), changed: make(chan struct{}, 8)}
-	r.q = newPlanQuota(func(string) ([]lichclient.QuotaPlan, error) {
+	r.q = newPlanQuota(func(string) ([]backend.QuotaPlan, error) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
 		r.reads++
@@ -135,7 +135,7 @@ func newQuotaRig() *quotaRig {
 	return r
 }
 
-func (r *quotaRig) set(plans []lichclient.QuotaPlan, err error) {
+func (r *quotaRig) set(plans []backend.QuotaPlan, err error) {
 	r.mu.Lock()
 	r.reply, r.fail = plans, err
 	r.mu.Unlock()
@@ -158,7 +158,7 @@ func waitChanged(t *testing.T, ch chan struct{}) {
 
 func TestPlanQuotaReadsOnFirstWatchAndShares(t *testing.T) {
 	r := newQuotaRig()
-	r.set([]lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})}, nil)
+	r.set([]backend.QuotaPlan{quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 10})}, nil)
 	off1 := r.q.watch("s1")
 	off2 := r.q.watch("s1")
 	waitChanged(t, r.changed)
@@ -177,7 +177,7 @@ func TestPlanQuotaReadsOnFirstWatchAndShares(t *testing.T) {
 
 func TestPlanQuotaPublishesOnlyAChangedReading(t *testing.T) {
 	r := newQuotaRig()
-	reading := []lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})}
+	reading := []backend.QuotaPlan{quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 10})}
 	r.set(reading, nil)
 	defer r.q.watch("")()
 	waitChanged(t, r.changed)
@@ -189,7 +189,7 @@ func TestPlanQuotaPublishesOnlyAChangedReading(t *testing.T) {
 	if len(r.changed) != 0 {
 		t.Error("an unchanged reading was published")
 	}
-	r.set([]lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 11})}, nil)
+	r.set([]backend.QuotaPlan{quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 11})}, nil)
 	r.tick <- time.Time{}
 	waitChanged(t, r.changed)
 	if got := r.q.plans(""); got[0].Windows[0].Percent != 11 {
@@ -199,15 +199,15 @@ func TestPlanQuotaPublishesOnlyAChangedReading(t *testing.T) {
 
 func TestPlanQuotaRereadsAtOnceWhenTheAccountChanges(t *testing.T) {
 	r := newQuotaRig()
-	personal := quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})
+	personal := quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 10})
 	personal.Account = "me@example.com"
-	r.set([]lichclient.QuotaPlan{personal}, nil)
+	r.set([]backend.QuotaPlan{personal}, nil)
 	defer r.q.watch("s1")()
 	waitChanged(t, r.changed)
 
 	work := personal
 	work.Account = "me@work.example"
-	r.set([]lichclient.QuotaPlan{work}, nil)
+	r.set([]backend.QuotaPlan{work}, nil)
 	r.q.reread("s1")
 	waitChanged(t, r.changed)
 	if got := r.q.plans("s1"); got[0].Account != "me@work.example" {
@@ -217,7 +217,7 @@ func TestPlanQuotaRereadsAtOnceWhenTheAccountChanges(t *testing.T) {
 
 func TestPlanQuotaKeepsTheLastReadingWhenAReadFails(t *testing.T) {
 	r := newQuotaRig()
-	r.set([]lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})}, nil)
+	r.set([]backend.QuotaPlan{quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 10})}, nil)
 	defer r.q.watch("s1")()
 	waitChanged(t, r.changed)
 	r.set(nil, errors.New("down"))
@@ -230,7 +230,7 @@ func TestPlanQuotaKeepsTheLastReadingWhenAReadFails(t *testing.T) {
 
 func TestPlanQuotaStopsPollingWithNoWatcherAndKeepsTheReading(t *testing.T) {
 	r := newQuotaRig()
-	r.set([]lichclient.QuotaPlan{quotaPlan()}, nil)
+	r.set([]backend.QuotaPlan{quotaPlan()}, nil)
 	off := r.q.watch("s1")
 	waitChanged(t, r.changed)
 	off()
@@ -252,8 +252,8 @@ func TestPlanQuotaStopsPollingWithNoWatcherAndKeepsTheReading(t *testing.T) {
 
 func TestPlanQuotaRereadsASessionWhoseSpendMoved(t *testing.T) {
 	r := newQuotaRig()
-	reading := func(percent int) []lichclient.QuotaPlan {
-		return []lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: percent})}
+	reading := func(percent int) []backend.QuotaPlan {
+		return []backend.QuotaPlan{quotaPlan(backend.QuotaWindow{Label: "Session", Percent: percent})}
 	}
 	r.set(reading(10), nil)
 	defer r.q.watch("s1")()
@@ -270,7 +270,7 @@ func TestPlanQuotaRereadsASessionWhoseSpendMoved(t *testing.T) {
 	if r.readCount() != 1 {
 		t.Fatalf("read %d times for events that spend nothing", r.readCount())
 	}
-	for _, ev := range []lichclient.Event{
+	for _, ev := range []backend.Event{
 		footerEvent("session-status", `{"id":"s1","state":"done"}`),
 		footerEvent("session-limit", `{"id":"s1","window":"session","resetsAt":0}`),
 	} {
@@ -289,9 +289,9 @@ func TestPlanQuotaRereadsASessionWhoseSpendMoved(t *testing.T) {
 
 func TestPlanQuotaInvalidateDropsTheReadingAndReadsAgain(t *testing.T) {
 	r := newQuotaRig()
-	personal := quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10})
+	personal := quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 10})
 	personal.Account = "me@example.com"
-	r.set([]lichclient.QuotaPlan{personal}, nil)
+	r.set([]backend.QuotaPlan{personal}, nil)
 	defer r.q.watch(profileQuotaKey(claudeProfileProvider, "work"))()
 	waitChanged(t, r.changed)
 
@@ -327,15 +327,15 @@ func TestQuotaReaderRoutesAProfileKeyToItsOwnPlan(t *testing.T) {
 		body, _ := io.ReadAll(r.Body)
 		calls = append(calls, strings.TrimPrefix(r.URL.Path, "/rpc/")+string(body))
 		if strings.HasSuffix(r.URL.Path, "quota.ProfilePlan") {
-			_ = json.NewEncoder(w).Encode(quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 7}))
+			_ = json.NewEncoder(w).Encode(quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 7}))
 			return
 		}
-		_ = json.NewEncoder(w).Encode([]lichclient.QuotaPlan{quotaPlan()})
+		_ = json.NewEncoder(w).Encode([]backend.QuotaPlan{quotaPlan()})
 	}))
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	read := quotaReader(lichclient.New(lichclient.Runtime{Port: port, Token: "tok"}))
+	read := quotaReader(backend.New(backend.Runtime{Port: port, Token: "tok"}))
 
 	plans, err := read(profileQuotaKey(claudeProfileProvider, "work"))
 	if err != nil || len(plans) != 1 || plans[0].Windows[0].Percent != 7 {
@@ -352,8 +352,8 @@ func TestQuotaReaderRoutesAProfileKeyToItsOwnPlan(t *testing.T) {
 func TestProfileBookWatchesTheQuotedPlansOnlyWhileThereIsAChoice(t *testing.T) {
 	r := newQuotaRig()
 	b := newProfileBook(claudeProfileProvider, nil, func() {}, r.q)
-	one := []lichclient.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work"}}
-	two := []lichclient.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
+	one := []backend.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work"}}
+	two := []backend.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
 	watched := func() int {
 		r.q.mu.Lock()
 		defer r.q.mu.Unlock()

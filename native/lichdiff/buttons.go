@@ -18,7 +18,7 @@ import (
 	"golang.org/x/exp/shiny/materialdesign/icons"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // The buttons lich draws inside its diff, to expand and to revert, in its dark
@@ -42,7 +42,7 @@ const (
 // Options builds the DiffOptions of lich's diff: its buttons, drawn with th,
 // expand asking the backend for a gap's lines and revert putting a chunk's
 // lines back through it.
-func Options(th *material.Theme, expand func(godemirror.Gap), revert func([]lichclient.RevertLine)) (godemirror.DiffOptions, error) {
+func Options(th *material.Theme, expand func(godemirror.Gap), revert func([]backend.RevertLine)) (godemirror.DiffOptions, error) {
 	b, err := newButtons(th)
 	if err != nil {
 		return godemirror.DiffOptions{}, err
@@ -58,14 +58,14 @@ func Options(th *material.Theme, expand func(godemirror.Gap), revert func([]lich
 
 // RevertLines names a chunk's changed lines the way project.RevertLines takes
 // them: "old" for a deletion, numbered in HEAD, "new" for an addition.
-func RevertLines(c godemirror.Chunk) []lichclient.RevertLine {
-	lines := make([]lichclient.RevertLine, len(c.Lines))
+func RevertLines(c godemirror.Chunk) []backend.RevertLine {
+	lines := make([]backend.RevertLine, len(c.Lines))
 	for i, l := range c.Lines {
 		side := "new"
 		if l.Side == godemirror.OldSide {
 			side = "old"
 		}
-		lines[i] = lichclient.RevertLine{Side: side, Line: l.Line, Text: l.Text}
+		lines[i] = backend.RevertLine{Side: side, Line: l.Line, Text: l.Text}
 	}
 	return lines
 }

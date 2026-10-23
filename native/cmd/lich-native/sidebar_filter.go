@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // sessionPhase is the filter chip a session sits under .
@@ -67,8 +67,8 @@ func matchesQuery(haystack, query string) bool {
 // queryHit matches a session's label and checkout, which is what makes typing
 // a worktree name narrow to that checkout. The branch is left out on purpose:
 // the checkout path already gives most of it.
-func queryHit(query, projectPath string) func(lichclient.Session) bool {
-	return func(s lichclient.Session) bool {
+func queryHit(query, projectPath string) func(backend.Session) bool {
+	return func(s backend.Session) bool {
 		path := s.Path
 		if path == "" {
 			path = projectPath
@@ -82,18 +82,18 @@ func queryHit(query, projectPath string) func(lichclient.Session) bool {
 // survives whatever the filter says: it is the identity of the terminal
 // beside it, and the card being answered must not vanish as it turns running.
 // matched says whether anything matched, which the kept active card hides.
-func filterSessions(sessions []lichclient.Session, query, projectPath, activeID string,
+func filterSessions(sessions []backend.Session, query, projectPath, activeID string,
 	phases map[sessionPhase]bool, phaseOfSession func(id string) sessionPhase,
-) (kept []lichclient.Session, matched bool) {
+) (kept []backend.Session, matched bool) {
 	blank := strings.TrimSpace(query) == ""
 	if blank && len(phases) == 0 {
 		return sessions, true
 	}
 	text := queryHit(query, projectPath)
-	hit := func(s lichclient.Session) bool {
+	hit := func(s backend.Session) bool {
 		return (blank || text(s)) && (len(phases) == 0 || phases[phaseOfSession(s.ID)])
 	}
-	kept = []lichclient.Session{}
+	kept = []backend.Session{}
 	for _, s := range sessions {
 		h := hit(s)
 		matched = matched || h
@@ -106,7 +106,7 @@ func filterSessions(sessions []lichclient.Session, query, projectPath, activeID 
 
 // phaseCounts is the number beside each chip, counted against the query
 // alone so a count says what picking that chip would add.
-func phaseCounts(sessions []lichclient.Session, query, projectPath string,
+func phaseCounts(sessions []backend.Session, query, projectPath string,
 	phaseOfSession func(id string) sessionPhase,
 ) map[sessionPhase]int {
 	counts := map[sessionPhase]int{phaseWaiting: 0, phaseRunning: 0, phaseUnread: 0, phaseIdle: 0}

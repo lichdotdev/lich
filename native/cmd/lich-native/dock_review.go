@@ -21,9 +21,9 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/glyphs"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -38,7 +38,7 @@ const splitMinWidth = unit.Dp(560)
 // reviewPanel is the Review tab. Every field is the UI goroutine's but the
 // gap answers, which arrive from the backend.
 type reviewPanel struct {
-	client     *lichclient.Client
+	client     *backend.Client
 	root       *ui.Root
 	comments   *commentStore
 	notify     func(ui.Toast)
@@ -121,7 +121,7 @@ type gapAnswer struct {
 	lines []string
 }
 
-func newReviewPanel(client *lichclient.Client, root *ui.Root, comments *commentStore,
+func newReviewPanel(client *backend.Client, root *ui.Root, comments *commentStore,
 	family string, size unit.Sp, invalidate func(), notify func(ui.Toast)) (*reviewPanel, error) {
 	cells, err := glyphs.New(family)
 	if err != nil {
@@ -308,14 +308,14 @@ func (p *reviewPanel) written(checkout string) {
 
 // revert puts changed lines of rel back to HEAD, with no confirmation: the
 // toast carries the undo for as long as it stays up.
-func (p *reviewPanel) revert(rel string, lines []lichclient.RevertLine) {
+func (p *reviewPanel) revert(rel string, lines []backend.RevertLine) {
 	path := p.target
 	_, name := splitPath(rel)
 	go func() {
 		defer p.written(path)
 		undo, err := p.client.RevertLines(context.Background(), path, rel, lines)
 		if err != nil {
-			p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.revertFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
+			p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.revertFailed", i18n.Args{"name": name}), Description: backend.ErrorText(err)})
 			return
 		}
 		added, deleted := revertStat(lines)
@@ -324,15 +324,15 @@ func (p *reviewPanel) revert(rel string, lines []lichclient.RevertLine) {
 	}()
 }
 
-func (p *reviewPanel) restore(path, rel, name string, undo lichclient.RevertResult) {
+func (p *reviewPanel) restore(path, rel, name string, undo backend.RevertResult) {
 	defer p.written(path)
 	if err := p.client.Call(context.Background(), "project.RestoreLines", nil, path, rel, undo); err != nil {
-		p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.undoFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
+		p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.undoFailed", i18n.Args{"name": name}), Description: backend.ErrorText(err)})
 	}
 }
 
 // revertStat counts a revert the way DiffStat draws a diff.
-func revertStat(lines []lichclient.RevertLine) (added, deleted int) {
+func revertStat(lines []backend.RevertLine) (added, deleted int) {
 	for _, l := range lines {
 		if l.Side == "new" {
 			added++
@@ -379,7 +379,7 @@ func (p *reviewPanel) discard(f patchFile) {
 		defer p.written(path)
 		for _, rel := range discardTargets(f) {
 			if err := p.client.Call(context.Background(), "project.DiscardFile", nil, path, rel); err != nil {
-				p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.discardFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+				p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.reviewPanel.discardFailed", i18n.Args{"error": backend.ErrorText(err)})})
 				return
 			}
 		}

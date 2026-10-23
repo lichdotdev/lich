@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // inPortuguese puts the interface in pt-BR for the test and puts English, and
@@ -132,7 +132,7 @@ func TestShellMessagesWithPlaceholdersAndPluralsInPortuguese(t *testing.T) {
 	if got := notifySummary(statusWaiting, "Claude 3"); got != "Claude 3 precisa da sua atenção" {
 		t.Errorf("needs input: %q", got)
 	}
-	if got := updateFailureText(&lichclient.AppUpdateProgress{Phase: lichclient.UpdatePhaseDownload, Received: 5, Total: 10}, "offline"); got != "Falha no download em 50%: offline" {
+	if got := updateFailureText(&backend.AppUpdateProgress{Phase: backend.UpdatePhaseDownload, Received: 5, Total: 10}, "offline"); got != "Falha no download em 50%: offline" {
 		t.Errorf("download failure: %q", got)
 	}
 	if got := skippedDrop("a.txt", "sem permissão"); got != "a.txt (sem permissão)" {
@@ -150,7 +150,7 @@ func TestShellMessagesWithPlaceholdersAndPluralsInPortuguese(t *testing.T) {
 }
 
 func TestPatchNotesGroupsAreNamedInTheInterfaceLanguage(t *testing.T) {
-	groups := []lichclient.PatchNotesGroup{{Label: "Added", Items: []string{"a"}}, {Label: "Fixed", Items: []string{"a", "b"}}}
+	groups := []backend.PatchNotesGroup{{Label: "Added", Items: []string{"a"}}, {Label: "Fixed", Items: []string{"a", "b"}}}
 	if got := notesCounts(groups); got != "1 added"+notesCountSep+"2 fixed" {
 		t.Errorf("English counts %q", got)
 	}

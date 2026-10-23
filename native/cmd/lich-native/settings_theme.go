@@ -16,8 +16,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -59,7 +59,7 @@ const themeStripRows = 2
 // and the import card open.
 type themePicker struct {
 	ctx     context.Context
-	client  *lichclient.Client
+	client  *backend.Client
 	look    *appearance
 	toaster *ui.Toaster
 	root    *ui.Root
@@ -78,7 +78,7 @@ type themePicker struct {
 	tasks themeTasks
 }
 
-func newThemePicker(ctx context.Context, c *lichclient.Client, look *appearance, toaster *ui.Toaster, root *ui.Root) *themePicker {
+func newThemePicker(ctx context.Context, c *backend.Client, look *appearance, toaster *ui.Toaster, root *ui.Root) *themePicker {
 	p := &themePicker{ctx: ctx, client: c, look: look, toaster: toaster, root: root,
 		cards: map[string]*themeCard{}, brokenRemove: map[string]*brokenRowState{}}
 	p.strip.Axis = layout.Horizontal
@@ -284,7 +284,7 @@ func pairCaption(scheme string) string {
 
 // brokenList is BrokenThemeList: a theme with no colors to preview is a row
 // under the strip, its reason written out.
-func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []lichclient.BrokenTheme) D {
+func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []backend.BrokenTheme) D {
 	if len(broken) == 0 {
 		return D{}
 	}
@@ -311,7 +311,7 @@ func (p *themePicker) brokenList(gtx C, th *ui.Theme, broken []lichclient.Broken
 
 // brokenRow is one grid row: the id, the reason, and Remove, the row's
 // hover fill reaching px-2 past the list on both sides (-mx-2 px-2).
-func (p *themePicker) brokenRow(gtx C, th *ui.Theme, b lichclient.BrokenTheme, row *brokenRowState) D {
+func (p *themePicker) brokenRow(gtx C, th *ui.Theme, b backend.BrokenTheme, row *brokenRowState) D {
 	if row.remove.Clicked(gtx) {
 		p.askRemove(b.ID, b.ID)
 	}

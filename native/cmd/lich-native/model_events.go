@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 const (
@@ -86,7 +86,7 @@ func (m *model) sessionFocus(data json.RawMessage) {
 
 // profileChanged takes a profile's update into its provider's book, whichever
 // window or call made it.
-func (m *model) profileChanged(c lichclient.ProfileChanged) {
+func (m *model) profileChanged(c backend.ProfileChanged) {
 	if book := m.profileBook(c.Provider); book != nil {
 		book.changed(c.Profile)
 	}
@@ -96,7 +96,7 @@ func (m *model) profileChanged(c lichclient.ProfileChanged) {
 // profiles are read again before the screen hears the login ended, so what it
 // draws next is the account that just signed in, whichever window or terminal
 // ran the login.
-func (m *model) loginStep(ctx context.Context, kind string, step lichclient.ProfileLogin) {
+func (m *model) loginStep(ctx context.Context, kind string, step backend.ProfileLogin) {
 	if !step.Done {
 		m.forwardLogin(kind, step)
 		return
@@ -111,13 +111,13 @@ func (m *model) loginStep(ctx context.Context, kind string, step lichclient.Prof
 
 // loginEventKind is the provider a login event name belongs to.
 func loginEventKind(event string) string {
-	if event == lichclient.CodexProfileLoginEvent {
+	if event == backend.CodexProfileLoginEvent {
 		return codexKind
 	}
 	return claudeKind
 }
 
-func (m *model) forwardLogin(kind string, step lichclient.ProfileLogin) {
+func (m *model) forwardLogin(kind string, step backend.ProfileLogin) {
 	if m.loginProgress != nil {
 		m.loginProgress(kind, step)
 	}

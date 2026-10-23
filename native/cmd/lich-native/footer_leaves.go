@@ -14,7 +14,7 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -233,7 +233,7 @@ func iconOnly(ic *icons.Icon) footerContent {
 
 // changesContent is the Review changes button: "0" beside the diff glyph on
 // a clean checkout, else the file count, a dot and the line counts.
-func changesContent(git lichclient.DiffStats) footerContent {
+func changesContent(git backend.DiffStats) footerContent {
 	if git.Files == 0 {
 		return glyphText(icDiff, "0")
 	}

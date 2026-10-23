@@ -13,8 +13,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -88,7 +88,7 @@ type topbarAction struct {
 	notify  *notification
 	dismiss string // session id
 	pick    bool   // the directory picker
-	reopen  *lichclient.RecentProject
+	reopen  *backend.RecentProject
 	// settings is the Settings button; projectSettings a tab's "Project
 	// settings…", by project id.
 	settings        bool

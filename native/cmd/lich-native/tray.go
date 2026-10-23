@@ -4,15 +4,15 @@ import (
 	"log"
 	"os"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // trayLabels are the tray menu's words in the interface language. The
 // backend fills Running's {count} placeholder itself.
-func trayLabels() lichclient.TrayLabels {
-	return lichclient.TrayLabels{
+func trayLabels() backend.TrayLabels {
+	return backend.TrayLabels{
 		Show:    i18n.T("shell.tray.show"),
 		Running: i18n.T("shell.tray.running", i18n.Args{"count": "{count}"}),
 		Quit:    i18n.T("shell.tray.quit"),
@@ -55,7 +55,7 @@ func (u *window) followLanguage() {
 	if u.uiFonts != nil && lang != u.fontsLanguage {
 		u.fontsLanguage = lang
 		if err := u.setInterfaceFonts(*u.uiFonts); err != nil {
-			u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(u.uiFonts.sans, fonts.SystemSans), "error": lichclient.ErrorText(err)})))
+			u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(u.uiFonts.sans, fonts.SystemSans), "error": backend.ErrorText(err)})))
 		}
 	}
 	sent, attached := u.trayLanguage.Load().(i18n.Locale)

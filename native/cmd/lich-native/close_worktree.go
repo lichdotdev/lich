@@ -8,24 +8,24 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // worktreeLeftBy is the project and the worktree whose last open session is
 // id, the close that decides that checkout's fate. path is empty when the
 // session shares its checkout or runs in the project's own directory.
-func (m *model) worktreeLeftBy(id string) (project lichclient.Project, path string) {
+func (m *model) worktreeLeftBy(id string) (project backend.Project, path string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	p, i := m.sessionAt(id)
 	if p == nil || p.Sessions[i].Path == "" {
-		return lichclient.Project{}, ""
+		return backend.Project{}, ""
 	}
 	path = p.Sessions[i].Path
-	if slices.ContainsFunc(p.Sessions, func(s lichclient.Session) bool { return s.ID != id && s.Path == path }) {
-		return lichclient.Project{}, ""
+	if slices.ContainsFunc(p.Sessions, func(s backend.Session) bool { return s.ID != id && s.Path == path }) {
+		return backend.Project{}, ""
 	}
 	return *p, path
 }
@@ -34,7 +34,7 @@ func (m *model) worktreeLeftBy(id string) (project lichclient.Project, path stri
 // already parked the session, so what is left is the checkout. One lich did
 // not create, or one holding uncommitted work, is named in a dialog before it
 // goes, as useWorktreeClose does; a failed check reads as the half that asks.
-func (u *window) removeClosedWorktree(project lichclient.Project, path string, parked <-chan error) {
+func (u *window) removeClosedWorktree(project backend.Project, path string, parked <-chan error) {
 	if err := <-parked; err != nil {
 		return // closeSession logged it; the session still holds the checkout
 	}
@@ -57,13 +57,13 @@ type closeWorktreeConfirm struct {
 	// mu guards the question, which the removal asks off the frame.
 	mu              sync.Mutex
 	open            bool
-	project         lichclient.Project
+	project         backend.Project
 	path            string
 	adopted, dirty  bool
 	cancel, confirm widget.Clickable
 }
 
-func (c *closeWorktreeConfirm) ask(project lichclient.Project, path string, adopted, dirty bool) {
+func (c *closeWorktreeConfirm) ask(project backend.Project, path string, adopted, dirty bool) {
 	c.mu.Lock()
 	c.open, c.project, c.path, c.adopted, c.dirty = true, project, path, adopted, dirty
 	c.mu.Unlock()

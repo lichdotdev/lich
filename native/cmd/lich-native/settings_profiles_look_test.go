@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -33,7 +33,7 @@ func TestPickingAProfileColorSendsIt(t *testing.T) {
 	b := &profileBackend{}
 	s := flowScreen(t, b)
 	c := &s.providers.claude
-	color, ok := lookEntry(s.profileLookEntries(c, lichclient.Profile{Slug: "work", Name: "Work"}), "Color")
+	color, ok := lookEntry(s.profileLookEntries(c, backend.Profile{Slug: "work", Name: "Work"}), "Color")
 	if !ok {
 		t.Fatal("the menu has no Color")
 	}
@@ -48,9 +48,9 @@ func TestPickingAProfileColorSendsIt(t *testing.T) {
 
 func TestAProfileChangedEventRedrawsTheProfileKeepingItsLogin(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.profiles.list = []lichclient.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work", LoggedIn: true, Email: "w@x.y"}}
+	m.profiles.list = []backend.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work", LoggedIn: true, Email: "w@x.y"}}
 	m.profiles.images = map[string]*avatarImage{}
-	m.profileChanged(lichclient.ProfileChanged{Provider: claudeKind, Profile: lichclient.Profile{Slug: "work", Name: "Client", Color: "teal", Image: tinyPNG(t)}})
+	m.profileChanged(backend.ProfileChanged{Provider: claudeKind, Profile: backend.Profile{Slug: "work", Name: "Client", Color: "teal", Image: tinyPNG(t)}})
 	look := m.profiles.look("work")
 	if look.name != "Client" || look.color != "teal" || look.image == nil {
 		t.Errorf("look = %+v", look)
@@ -58,13 +58,13 @@ func TestAProfileChangedEventRedrawsTheProfileKeepingItsLogin(t *testing.T) {
 	if work, _ := m.profiles.find("work"); !work.LoggedIn || work.Email != "w@x.y" {
 		t.Errorf("the event dropped the login state: %+v", work)
 	}
-	m.profileChanged(lichclient.ProfileChanged{Provider: "gemini", Profile: lichclient.Profile{Slug: "work"}})
+	m.profileChanged(backend.ProfileChanged{Provider: "gemini", Profile: backend.Profile{Slug: "work"}})
 }
 
 func TestTheProfileMenuOffersRemoveImageOnlyWithAnImage(t *testing.T) {
 	s := flowScreen(t, &profileBackend{})
 	c := &s.providers.claude
-	plain := lichclient.Profile{Slug: "work", Name: "Work"}
+	plain := backend.Profile{Slug: "work", Name: "Work"}
 	if _, ok := lookEntry(s.profileLookEntries(c, plain), "Remove image"); ok {
 		t.Error("Remove image offered on a profile without one")
 	}
@@ -81,7 +81,7 @@ func TestTheProfileMenuOffersRemoveImageOnlyWithAnImage(t *testing.T) {
 }
 
 func TestAnImageTheWindowCannotDecodeShowsTheInitial(t *testing.T) {
-	if decodeAvatar(lichclient.Profile{Slug: "work", Image: []byte("not a png")}) != nil {
+	if decodeAvatar(backend.Profile{Slug: "work", Image: []byte("not a png")}) != nil {
 		t.Error("garbage decoded as an image")
 	}
 	if profileColor("work", "chartreuse") != projectSwatch("work") {

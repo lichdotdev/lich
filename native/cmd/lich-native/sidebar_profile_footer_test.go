@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // profileFooterRig is a window with Claude and Codex installed, two Claude logins,
@@ -16,12 +16,12 @@ func profileFooterRig(t *testing.T) (*sidebarBackend, *model, *settingsScreen) {
 	twoInstalled(f)
 	m, s := launchRig(t, f, c)
 	s.providers.claude.bind(m.profiles, nil)
-	m.profiles.list = []lichclient.Profile{
+	m.profiles.list = []backend.Profile{
 		{Slug: personalProfile, Name: "Personal", LoggedIn: true},
 		{Slug: "work", Name: "Work", LoggedIn: true},
 	}
 	m.mu.Lock()
-	m.projects = []lichclient.Project{{ID: "p", Name: "lich", Sessions: []lichclient.Session{
+	m.projects = []backend.Project{{ID: "p", Name: "lich", Sessions: []backend.Session{
 		{ID: "c", Kind: claudeKind}, {ID: "x", Kind: codexKind}, {ID: "sh", Kind: "shell"},
 	}}}
 	m.activeProject, m.active = "p", "c"
@@ -91,7 +91,7 @@ func TestAProjectOpenedAfterTheReadBringsItsProfile(t *testing.T) {
 	f.settings["provider.claude.profile@late"] = "work"
 	f.mu.Unlock()
 	m.mu.Lock()
-	m.projects = append(m.projects, lichclient.Project{ID: "late", Name: "late"})
+	m.projects = append(m.projects, backend.Project{ID: "late", Name: "late"})
 	m.activeProject, m.active = "late", ""
 	fresh := m.providers.noteProjects(m.projects)
 	m.mu.Unlock()

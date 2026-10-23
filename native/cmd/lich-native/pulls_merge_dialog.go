@@ -9,8 +9,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -34,7 +34,7 @@ type mergeEdit struct {
 	method, title, subject, body string
 }
 
-func mergeEditFor(method string, d lichclient.PRDetail) mergeEdit {
+func mergeEditFor(method string, d backend.PRDetail) mergeEdit {
 	if method == "squash" {
 		return mergeEdit{method: method, title: i18n.T("pulls.mergeMessageDialog.squashAndMerge"), subject: fmt.Sprintf(mergeEditSquashSubj, d.Title, d.Number), body: d.Body}
 	}
@@ -57,7 +57,7 @@ type mergeDialog struct {
 }
 
 // show opens the dialog on method's message for d.
-func (m *mergeDialog) show(method string, admin bool, d lichclient.PRDetail) {
+func (m *mergeDialog) show(method string, admin bool, d backend.PRDetail) {
 	m.open, m.admin, m.focus = true, admin, true
 	m.edit = mergeEditFor(method, d)
 	m.subject.SingleLine, m.subject.Submit = false, true
@@ -67,7 +67,7 @@ func (m *mergeDialog) show(method string, admin bool, d lichclient.PRDetail) {
 
 // editEntries are the Merge menu's "edit message…" items, below a separator,
 // for the allowed methods that take a message.
-func (v *pullView) editEntries(methods []string, bypass bool, d lichclient.PRDetail) []ui.MenuEntry {
+func (v *pullView) editEntries(methods []string, bypass bool, d backend.PRDetail) []ui.MenuEntry {
 	var out []ui.MenuEntry
 	for _, m := range methods {
 		if m == "rebase" {
@@ -94,7 +94,7 @@ func (u *window) layoutMergeDialog(gtx C, th *ui.Theme) {
 	if m.cancel.Clicked(gtx) {
 		m.open = false
 	}
-	var d *lichclient.PRDetail
+	var d *backend.PRDetail
 	if m.open && p.open && p.selected != 0 {
 		d = p.store.detail(p.project.Path, p.selected).val
 	}

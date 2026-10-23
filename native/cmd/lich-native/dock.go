@@ -37,8 +37,8 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -89,7 +89,7 @@ type dockInput struct {
 	inject    func(string) bool
 	submit    func(string, func(error)) bool
 	checkout  string
-	git       lichclient.DiffStats
+	git       backend.DiffStats
 	isGit     bool
 	light     bool
 	code      godemirror.Theme
@@ -302,11 +302,11 @@ func parseDockWidth(raw string) float64 {
 	return min(dockMaxRem, max(dockMinRem, rem))
 }
 
-func loadDockWidth(ctx context.Context, c *lichclient.Client) (float64, error) {
+func loadDockWidth(ctx context.Context, c *backend.Client) (float64, error) {
 	raw, err := c.GetSetting(ctx, dockWidthKey, "")
 	return parseDockWidth(raw), err
 }
 
-func saveDockWidth(ctx context.Context, c *lichclient.Client, rem float64) error {
+func saveDockWidth(ctx context.Context, c *backend.Client, rem float64) error {
 	return c.SetSetting(ctx, dockWidthKey, "", strconv.FormatFloat(rem, 'f', -1, 64))
 }

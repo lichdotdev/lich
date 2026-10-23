@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -29,12 +29,12 @@ type appUpdateGate struct {
 	// applying is the version ApplyUpdate is installing, "" when idle; last
 	// is its latest step, nil before the first.
 	applying string
-	last     *lichclient.AppUpdateProgress
+	last     *backend.AppUpdateProgress
 }
 
 // shouldPromptUpdate is decideUpdateAction: a newer release Later was not
 // clicked for.
-func shouldPromptUpdate(st lichclient.AppUpdateStatus, dismissed string) bool {
+func shouldPromptUpdate(st backend.AppUpdateStatus, dismissed string) bool {
 	return st.UpdateAvailable && dismissed != st.LatestVersion
 }
 
@@ -75,7 +75,7 @@ func (u *window) checkAppUpdate() {
 }
 
 // promptAppUpdate raises st's prompt, once per release this run.
-func (u *window) promptAppUpdate(st lichclient.AppUpdateStatus) {
+func (u *window) promptAppUpdate(st backend.AppUpdateStatus) {
 	g := &u.appUpdate
 	g.mu.Lock()
 	g.prompted = st.LatestVersion
@@ -85,7 +85,7 @@ func (u *window) promptAppUpdate(st lichclient.AppUpdateStatus) {
 
 // appUpdateToast offers the installer where lich may write its own install,
 // and otherwise the command to paste and the release page.
-func (u *window) appUpdateToast(st lichclient.AppUpdateStatus) ui.Toast {
+func (u *window) appUpdateToast(st backend.AppUpdateStatus) ui.Toast {
 	version := st.LatestVersion
 	later := &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later"), OnClick: func() { u.writePref(appUpdateDismissedKey, version) }}
 	t := ui.Toast{ID: appUpdateToastID, Title: i18n.T("shell.appUpdateGate.available", i18n.Args{"version": version}), Duration: ui.ToastForever, Cancel: later}
@@ -134,7 +134,7 @@ func (u *window) applyUpdate(version string) {
 	g.mu.Unlock()
 	if err != nil {
 		u.toaster.Show(ui.Toast{ID: appUpdateToastID, Variant: ui.ToastError, Duration: ui.ToastForever,
-			Title:  updateFailureText(last, lichclient.ErrorText(err)),
+			Title:  updateFailureText(last, backend.ErrorText(err)),
 			Action: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.retry"), OnClick: func() { go u.applyUpdate(version) }}})
 		return
 	}
@@ -143,7 +143,7 @@ func (u *window) applyUpdate(version string) {
 		Action: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.restart"), OnClick: func() {
 			go func() {
 				if err := u.client.Restart(u.ctx); err != nil {
-					u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.appUpdateGate.restartFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+					u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.appUpdateGate.restartFailed", i18n.Args{"error": backend.ErrorText(err)})})
 				}
 			}()
 		}}})
@@ -151,7 +151,7 @@ func (u *window) applyUpdate(version string) {
 
 // updateProgressed is the progress event: it redraws the toast while an
 // apply runs, and is dropped otherwise.
-func (u *window) updateProgressed(p lichclient.AppUpdateProgress) {
+func (u *window) updateProgressed(p backend.AppUpdateProgress) {
 	g := &u.appUpdate
 	g.mu.Lock()
 	version := g.applying
@@ -166,12 +166,12 @@ func (u *window) updateProgressed(p lichclient.AppUpdateProgress) {
 
 // updateProgressToast is UpdateProgressToast: the download's bar, with its
 // percent and bytes under it, then the installer's step behind a spinner.
-func updateProgressToast(version string, p *lichclient.AppUpdateProgress) ui.Toast {
+func updateProgressToast(version string, p *backend.AppUpdateProgress) ui.Toast {
 	t := ui.Toast{ID: appUpdateToastID, Duration: ui.ToastForever, Title: i18n.T("shell.updateProgressToast.downloading", i18n.Args{"version": version}),
 		Progress: &ui.ToastProgress{Percent: -1}}
 	switch {
 	case p == nil:
-	case p.Phase == lichclient.UpdatePhaseInstaller:
+	case p.Phase == backend.UpdatePhaseInstaller:
 		t.Title, t.Description, t.Progress = i18n.T("shell.updateProgressToast.installing", i18n.Args{"version": version}), i18n.T("shell.updateProgressToast.reopens"), nil
 		t.Spin = true
 	default:
@@ -186,7 +186,7 @@ func updateProgressToast(version string, p *lichclient.AppUpdateProgress) ui.Toa
 
 // downloadReading reads a download's progress: percent is -1 while the total is
 // unknown.
-func downloadReading(p lichclient.AppUpdateProgress) (percent int, bytes string) {
+func downloadReading(p backend.AppUpdateProgress) (percent int, bytes string) {
 	if p.Total <= 0 {
 		return -1, megabytes(p.Received)
 	}
@@ -197,11 +197,11 @@ func megabytes(n int64) string { return fmt.Sprintf("%.1f MB", float64(n)/bytesP
 
 // updateFailureText names the phase the update died in and, for a download,
 // how far it got.
-func updateFailureText(last *lichclient.AppUpdateProgress, err string) string {
+func updateFailureText(last *backend.AppUpdateProgress, err string) string {
 	switch {
 	case last == nil:
 		return i18n.T("update.progress.updateFailed", i18n.Args{"error": err})
-	case last.Phase != lichclient.UpdatePhaseDownload:
+	case last.Phase != backend.UpdatePhaseDownload:
 		return i18n.T("update.progress.installFailed", i18n.Args{"error": err})
 	}
 	if percent, _ := downloadReading(*last); percent >= 0 {

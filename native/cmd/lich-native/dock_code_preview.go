@@ -14,8 +14,8 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -23,7 +23,7 @@ import (
 var icPreviewBack = icons.Lucide("chevron-left")
 
 type preview struct {
-	client *lichclient.Client
+	client *backend.Client
 	view   *godemirror.View
 	family string
 	size   unit.Sp
@@ -59,7 +59,7 @@ type previewEnv struct {
 	notify   func(ui.Toast)
 }
 
-func newPreview(client *lichclient.Client, view *godemirror.View, family string, size unit.Sp, invalidate func()) *preview {
+func newPreview(client *backend.Client, view *godemirror.View, family string, size unit.Sp, invalidate func()) *preview {
 	p := &preview{client: client, view: view, family: family, size: size, blockAt: -1, image: newBlobView(invalidate), find: newFindBar()}
 	p.file.invalidate = invalidate
 	p.scroll.Axis = layout.Vertical
@@ -204,7 +204,7 @@ func (p *preview) body(gtx C, th *ui.Theme, root *ui.Root, key string) (D, error
 	text, loading, err := p.file.get()
 	switch {
 	case err != nil:
-		return binaryState(gtx, th, lichclient.ErrorText(err), "", &p.exits), nil
+		return binaryState(gtx, th, backend.ErrorText(err), "", &p.exits), nil
 	case loading:
 		return notice(gtx, th, i18n.T("dock.filesPanel.loading")), nil
 	}

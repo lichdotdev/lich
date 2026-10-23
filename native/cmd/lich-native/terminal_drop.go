@@ -12,8 +12,8 @@ import (
 
 	"gioui.org/app"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // Files dropped on the terminal land at its prompt as paths. The window gets the files' own
@@ -75,7 +75,7 @@ type dropResult struct {
 }
 
 // resolveDrop turns dropped paths into what the session can open.
-func resolveDrop(ctx context.Context, up *lichclient.Client, target dropTarget, dropped []string) dropResult {
+func resolveDrop(ctx context.Context, up *backend.Client, target dropTarget, dropped []string) dropResult {
 	var r dropResult
 	for _, path := range dropped {
 		name := filepath.Base(path)
@@ -108,10 +108,10 @@ func skippedDrop(name, reason string) string {
 	return i18n.T("terminal.terminalDrop.skipped", i18n.Args{"name": name, "reason": reason})
 }
 
-func uploadDropped(ctx context.Context, up *lichclient.Client, sessionID, path string) (lichclient.Attachment, error) {
+func uploadDropped(ctx context.Context, up *backend.Client, sessionID, path string) (backend.Attachment, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return lichclient.Attachment{}, err
+		return backend.Attachment{}, err
 	}
 	defer f.Close()
 	return up.UploadDrop(ctx, sessionID, filepath.Base(path), f)

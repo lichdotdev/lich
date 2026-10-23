@@ -16,10 +16,10 @@ import (
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -51,14 +51,14 @@ var (
 // reads and writes, as the footer does.
 type settingsScreen struct {
 	ctx        context.Context
-	client     *lichclient.Client
+	client     *backend.Client
 	root       *ui.Root
 	invalidate func()
 	// applyEditor hands the review panel the Editor preference at key that
 	// just changed.
 	applyEditor func(key string, prefs editorPrefs)
 	// promptUpdate is the update gate's prompt, for the manual check.
-	promptUpdate func(lichclient.AppUpdateStatus)
+	promptUpdate func(backend.AppUpdateStatus)
 
 	open     bool
 	section  string
@@ -95,7 +95,7 @@ type settingsScreen struct {
 	providers providerSettings
 }
 
-func newSettingsScreen(ctx context.Context, c *lichclient.Client, root *ui.Root, invalidate func()) *settingsScreen {
+func newSettingsScreen(ctx context.Context, c *backend.Client, root *ui.Root, invalidate func()) *settingsScreen {
 	s := &settingsScreen{ctx: ctx, client: c, root: root, invalidate: invalidate, section: defaultSection,
 		resets: map[string]*widget.Clickable{}, scrollTo: -1}
 	s.providers.book = newProviderBook(c, invalidate)

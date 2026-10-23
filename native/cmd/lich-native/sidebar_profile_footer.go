@@ -7,8 +7,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -28,7 +28,7 @@ type profileFooter struct {
 type profileFocus struct {
 	kind    string
 	book    *profileBook
-	project lichclient.Project
+	project backend.Project
 	choice  projectProfile
 }
 
@@ -51,7 +51,7 @@ func (m *model) focusedProfile() (profileFocus, bool) {
 	return m.profileFocusOf(kind, p)
 }
 
-func (m *model) profileFocusOf(kind string, p lichclient.Project) (profileFocus, bool) {
+func (m *model) profileFocusOf(kind string, p backend.Project) (profileFocus, bool) {
 	book := m.profileBook(kind)
 	if book == nil || len(book.loggedIn()) < 2 {
 		return profileFocus{}, false

@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -28,7 +28,7 @@ func entry(t *testing.T, entries []ui.MenuEntry, label string) ui.MenuEntry {
 func TestCardMenu(t *testing.T) {
 	var act sidebarAction
 	renamed := false
-	sv := &sessionView{Session: lichclient.Session{ID: "s1", Kind: "claude", Color: "teal"}, shown: "/repo"}
+	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude", Color: "teal"}, shown: "/repo"}
 	menu := cardMenu(sv, nil, &act, func() { renamed = true }, func() {})
 
 	if want := []string{"Rename", "Pin", "Color", "Move to folder", "Open in", "Pull request", "", "Close session"}; !slices.Equal(labels(menu), want) {
@@ -62,7 +62,7 @@ func TestCardMenu(t *testing.T) {
 func TestCardMenuFilesIntoAnotherFolderOrOutOfItsOwn(t *testing.T) {
 	var act sidebarAction
 	asked := false
-	sv := &sessionView{Session: lichclient.Session{ID: "s1", Folder: "Apps"}}
+	sv := &sessionView{Session: backend.Session{ID: "s1", Folder: "Apps"}}
 	sub := entry(t, cardMenu(sv, []string{"Docs"}, &act, func() {}, func() { asked = true }), "Move to folder").Sub
 	if want := []string{"Docs", "Take out of Apps", "", "New folder…"}; !slices.Equal(labels(sub), want) {
 		t.Fatalf("submenu %v, want %v", labels(sub), want)
@@ -89,7 +89,7 @@ func TestCardMenuFilesIntoAnotherFolderOrOutOfItsOwn(t *testing.T) {
 
 func TestCardMenuForkEntry(t *testing.T) {
 	var act sidebarAction
-	sv := &sessionView{Session: lichclient.Session{ID: "s1", Kind: "claude", ProviderSessionID: "conv-1"}}
+	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude", ProviderSessionID: "conv-1"}}
 	fork := entry(t, cardMenu(sv, nil, &act, func() {}, func() {}), "Fork")
 	if fork.Kind != ui.MenuSubTrigger || !slices.Equal(labels(fork.Sub), []string{"Here", "Worktree…"}) {
 		t.Fatalf("fork entry %+v, want a submenu of Here and Worktree…", labels(fork.Sub))
@@ -106,7 +106,7 @@ func TestCardMenuForkEntry(t *testing.T) {
 		t.Errorf("crush fork entry %+v, want it disabled, saying why, with no submenu", dead)
 	}
 
-	for _, s := range []lichclient.Session{
+	for _, s := range []backend.Session{
 		{ID: "s1", Kind: "claude"},                             // no conversation to branch yet
 		{ID: "s1", Kind: "shell", ProviderSessionID: "conv-1"}, // nothing a shell could fork
 	} {

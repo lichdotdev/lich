@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // These two live in the backend. Renaming one would orphan what is already
@@ -202,7 +202,7 @@ func parseNotifyPrefs(attention, finished string) notifyPrefs {
 	return p
 }
 
-func loadNotifyPrefs(ctx context.Context, c *lichclient.Client) (notifyPrefs, error) {
+func loadNotifyPrefs(ctx context.Context, c *backend.Client) (notifyPrefs, error) {
 	attention, err := c.GetSetting(ctx, desktopNotifyKey, "")
 	if err != nil {
 		return notifyPrefs{}, err
@@ -212,7 +212,7 @@ func loadNotifyPrefs(ctx context.Context, c *lichclient.Client) (notifyPrefs, er
 }
 
 // newNotifier is the window's desktop channel; sink raises what it decides.
-func newNotifier(ctx context.Context, c *lichclient.Client, sink noteSink, invalidate func()) *notifier {
+func newNotifier(ctx context.Context, c *backend.Client, sink noteSink, invalidate func()) *notifier {
 	return &notifier{
 		invalidate: invalidate,
 		sink:       sink,

@@ -8,8 +8,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // Base options carry their group so one string names the selection:
@@ -51,10 +51,10 @@ func parseIssueRef(typed string) int {
 	return n
 }
 
-func issueName(i lichclient.Issue) string { return fmt.Sprintf("%d %s", i.Number, i.Title) }
+func issueName(i backend.Issue) string { return fmt.Sprintf("%d %s", i.Number, i.Title) }
 
 // issueBrief is the message the issue's session is sent as its first prompt.
-func issueBrief(i lichclient.Issue) string {
+func issueBrief(i backend.Issue) string {
 	head := i18n.Prompt("prompts.issue.head", i18n.Args{"number": i.Number, "title": i.Title, "url": i.URL})
 	if body := strings.TrimSpace(i.Body); body != "" {
 		return head + "\n\n" + body
@@ -128,7 +128,7 @@ func toBranchName(typed string) string {
 // closed, then the backend's answer or why it could not give one.
 type baseCheck struct {
 	done      chan struct{}
-	freshness lichclient.BaseFreshness
+	freshness backend.BaseFreshness
 	err       string
 }
 

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // homeScreen is the route saved for Home.
@@ -23,7 +23,7 @@ func screenPath(projectID string) string {
 }
 
 // saveLastScreen saves the screen the next window opens on, a global setting.
-func saveLastScreen(ctx context.Context, c *lichclient.Client, projectID string) error {
+func saveLastScreen(ctx context.Context, c *backend.Client, projectID string) error {
 	return c.SetSetting(ctx, lastScreenKey, "", screenPath(projectID))
 }
 
@@ -58,7 +58,7 @@ func (m *model) projectTabs() (tabs []projectTab, active string) {
 	return tabs, active
 }
 
-func sessionIDs(p lichclient.Project) []string {
+func sessionIDs(p backend.Project) []string {
 	ids := make([]string, len(p.Sessions))
 	for i, s := range p.Sessions {
 		ids[i] = s.ID
@@ -85,8 +85,8 @@ func (m *model) onHome() bool {
 }
 
 // projectByID is the open project with id, nil when none is. Callers hold m.mu.
-func (m *model) projectByID(id string) *lichclient.Project {
-	if i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id }); i >= 0 {
+func (m *model) projectByID(id string) *backend.Project {
+	if i := slices.IndexFunc(m.projects, func(p backend.Project) bool { return p.ID == id }); i >= 0 {
 		return &m.projects[i]
 	}
 	return nil
@@ -101,7 +101,7 @@ const (
 
 // ensureHome opens the home directory's project with a shell in it when the
 // workspace does not hold it, and returns the workspace as it stands after.
-func (m *model) ensureHome(ctx context.Context, ps []lichclient.Project) ([]lichclient.Project, error) {
+func (m *model) ensureHome(ctx context.Context, ps []backend.Project) ([]backend.Project, error) {
 	home, added, err := m.addHome(ctx, ps)
 	if err != nil || !added {
 		return ps, err
@@ -114,7 +114,7 @@ func (m *model) ensureHome(ctx context.Context, ps []lichclient.Project) ([]lich
 
 // addHome opens the home directory's project, with no session, when ps does
 // not hold it, and reports whether it did.
-func (m *model) addHome(ctx context.Context, ps []lichclient.Project) (lichclient.Project, bool, error) {
+func (m *model) addHome(ctx context.Context, ps []backend.Project) (backend.Project, bool, error) {
 	home, err := m.client.HomeProject(ctx)
 	if err != nil {
 		return home, false, err
@@ -122,7 +122,7 @@ func (m *model) addHome(ctx context.Context, ps []lichclient.Project) (lichclien
 	m.mu.Lock()
 	m.homeID = home.ID
 	m.mu.Unlock()
-	if slices.ContainsFunc(ps, func(p lichclient.Project) bool { return p.ID == home.ID }) {
+	if slices.ContainsFunc(ps, func(p backend.Project) bool { return p.ID == home.ID }) {
 		return home, false, nil
 	}
 	return home, true, m.client.AddProject(ctx, home.ID, home.Name, home.Path)
@@ -150,7 +150,7 @@ func (m *model) openHome(ctx context.Context) error {
 func (m *model) runningIn(projectID string) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == projectID })
+	i := slices.IndexFunc(m.projects, func(p backend.Project) bool { return p.ID == projectID })
 	if i < 0 {
 		return 0
 	}
@@ -171,7 +171,7 @@ type closedProject struct {
 func (m *model) closeProject(id string) (closedProject, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id })
+	i := slices.IndexFunc(m.projects, func(p backend.Project) bool { return p.ID == id })
 	if i < 0 {
 		return closedProject{}, false
 	}
@@ -191,7 +191,7 @@ func (m *model) closeProject(id string) (closedProject, bool) {
 
 // shownOrder is the open projects as the strip draws them: the drag the
 // backend has not confirmed yet, else the stored order. Callers hold m.mu.
-func (m *model) shownOrder() []lichclient.Project {
+func (m *model) shownOrder() []backend.Project {
 	if m.pendingOrder == nil {
 		return m.projects
 	}
@@ -199,15 +199,15 @@ func (m *model) shownOrder() []lichclient.Project {
 }
 
 // orderedBy is ps in the order of ids, a project ids does not name last.
-func orderedBy(ps []lichclient.Project, ids []string) []lichclient.Project {
+func orderedBy(ps []backend.Project, ids []string) []backend.Project {
 	out := slices.Clone(ps)
-	rank := func(p lichclient.Project) int {
+	rank := func(p backend.Project) int {
 		if i := slices.Index(ids, p.ID); i >= 0 {
 			return i
 		}
 		return len(ids)
 	}
-	slices.SortStableFunc(out, func(a, b lichclient.Project) int { return rank(a) - rank(b) })
+	slices.SortStableFunc(out, func(a, b backend.Project) int { return rank(a) - rank(b) })
 	return out
 }
 
@@ -267,7 +267,7 @@ func (m *model) askClose(ctx context.Context, id string) ([]string, error) {
 		m.mu.Unlock()
 		return nil, errHomeIsPermanent
 	}
-	i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id })
+	i := slices.IndexFunc(m.projects, func(p backend.Project) bool { return p.ID == id })
 	var sessions []string
 	if i >= 0 {
 		sessions = sessionIDs(m.projects[i])

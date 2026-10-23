@@ -6,8 +6,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -91,7 +91,7 @@ func (u *window) applyTopbar(act topbarAction) {
 			u.model.invalidate()
 			go func() {
 				if err := u.model.storeOrder(u.ctx, ids); err != nil {
-					u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("tabs.topbarApply.reorderFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+					u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("tabs.topbarApply.reorderFailed", i18n.Args{"error": backend.ErrorText(err)})})
 					u.model.invalidate()
 				}
 			}()
@@ -195,7 +195,7 @@ func (u *window) closeProject(id string) {
 	go func() {
 		sessions, err := u.model.askClose(u.ctx, id)
 		if err != nil {
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("tabs.topbarApply.closeProjectFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("tabs.topbarApply.closeProjectFailed", i18n.Args{"error": backend.ErrorText(err)})})
 			return
 		}
 		for _, s := range sessions {
@@ -251,7 +251,7 @@ func (u *window) pickProject() {
 
 // reopenProject opens a recent project; one whose directory is gone asks the
 // picker where it went, keeping its id.
-func (u *window) reopenProject(r lichclient.RecentProject) {
+func (u *window) reopenProject(r backend.RecentProject) {
 	there, err := u.client.PathExists(u.ctx, r.Path)
 	if err != nil {
 		u.logErr("reopen project", err)
@@ -263,21 +263,21 @@ func (u *window) reopenProject(r lichclient.RecentProject) {
 	}
 	moved, err := u.client.RelocateProject(u.ctx, r.ID)
 	if err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.projects.relocateFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.projects.relocateFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	if moved == nil {
 		return
 	}
 	if err := u.adopt(*moved); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.projects.relocateFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.projects.relocateFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("shell.projects.relocated", i18n.Args{"name": moved.Name, "path": displayPath(moved.Path)})})
 }
 
 // adopt adds (or reopens) the project, reloads, and puts it on screen.
-func (u *window) adopt(p lichclient.RecentProject) error {
+func (u *window) adopt(p backend.RecentProject) error {
 	if err := u.client.AddProject(u.ctx, p.ID, p.Name, p.Path); err != nil {
 		return fmt.Errorf("add project: %w", err)
 	}

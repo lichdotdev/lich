@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestPullsStoreReadsOnceUntilAChangeIsAnnounced(t *testing.T) {
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
-		return []lichclient.PRSummary{{Number: 7}}, http.StatusOK
+		return []backend.PRSummary{{Number: 7}}, http.StatusOK
 	}}
 	s := newPullsStore(context.Background(), stub.client(t), func() {})
 	s.list("/repo", pullsOpen)
@@ -41,7 +41,7 @@ func TestPullsStoreKeepsGhsRefusalAsText(t *testing.T) {
 
 func TestPullsStoreRereadsADetailWhileAChecksRuns(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
-		return lichclient.PRDetail{Number: 7, Checks: lichclient.ChecksRollup{Pending: 1, Total: 1}}, http.StatusOK
+		return backend.PRDetail{Number: 7, Checks: backend.ChecksRollup{Pending: 1, Total: 1}}, http.StatusOK
 	}}
 	s := newPullsStore(context.Background(), stub.client(t), func() {})
 	s.detail("/repo", 7)
@@ -57,7 +57,7 @@ func TestPullsStoreRereadsADetailWhileAChecksRuns(t *testing.T) {
 
 func TestPullsStoreRereadsADetailWhileGitHubWorksOutMergeability(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
-		return lichclient.PRDetail{Number: 7, State: "OPEN", Mergeable: "UNKNOWN", MergeStateStatus: "UNKNOWN"}, http.StatusOK
+		return backend.PRDetail{Number: 7, State: "OPEN", Mergeable: "UNKNOWN", MergeStateStatus: "UNKNOWN"}, http.StatusOK
 	}}
 	s := newPullsStore(context.Background(), stub.client(t), func() {})
 	s.detail("/repo", 7)
@@ -74,10 +74,10 @@ func TestPullsStoreRereadsADetailWhileGitHubWorksOutMergeability(t *testing.T) {
 func pullsScreenOnAList(t *testing.T) (*pullsScreen, *rpcStub) {
 	t.Helper()
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
-		return []lichclient.PRSummary{{Number: 7}}, http.StatusOK
+		return []backend.PRSummary{{Number: 7}}, http.StatusOK
 	}}
 	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
-	p.show(lichclient.Project{ID: "p", Path: "/repo"}, "main", 0)
+	p.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
 	waitFor(t, "the first read", func() bool { return p.store.list("/repo", pullsOpen).loaded })
 	return p, stub
 }
@@ -113,12 +113,12 @@ func TestPullsScreenRereadsWhatItShowsEveryRecheck(t *testing.T) {
 func TestPullRequestCommentsGoOnlyToASessionInItsBranchCheckout(t *testing.T) {
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
 		if method == "project.ListCheckouts" {
-			return []lichclient.Worktree{{Name: "main", Path: "/repo"}, {Name: "feat/x", Path: "/wt/feat-x"}}, http.StatusOK
+			return []backend.Worktree{{Name: "main", Path: "/repo"}, {Name: "feat/x", Path: "/wt/feat-x"}}, http.StatusOK
 		}
-		return []lichclient.PRSummary{}, http.StatusOK
+		return []backend.PRSummary{}, http.StatusOK
 	}}
 	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
-	p.show(lichclient.Project{ID: "p", Path: "/repo"}, "main", 0)
+	p.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
 	p.sessionsIn = func(projectID, path string) []string {
 		if projectID == "p" && path == "/wt/feat-x" {
 			return []string{"in-branch", "second"}
@@ -127,18 +127,18 @@ func TestPullRequestCommentsGoOnlyToASessionInItsBranchCheckout(t *testing.T) {
 	}
 	waitFor(t, "the checkouts", func() bool { return len(p.store.checkoutsOf("/repo")) == 2 })
 
-	if id, target := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/x", URL: "https://pr/1"}); id != "in-branch" || target != "/wt/feat-x" {
+	if id, target := p.reviewSession(backend.PRDetail{HeadRefName: "feat/x", URL: "https://pr/1"}); id != "in-branch" || target != "/wt/feat-x" {
 		t.Errorf("checked-out branch: session %q, target %q; want in-branch, /wt/feat-x", id, target)
 	}
 	p.files.activeID = "second"
-	if id, _ := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/x"}); id != "second" {
+	if id, _ := p.reviewSession(backend.PRDetail{HeadRefName: "feat/x"}); id != "second" {
 		t.Errorf("active session in the checkout: session %q, want second", id)
 	}
 	p.files.activeID = "elsewhere"
-	if id, _ := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/x"}); id != "in-branch" {
+	if id, _ := p.reviewSession(backend.PRDetail{HeadRefName: "feat/x"}); id != "in-branch" {
 		t.Errorf("active session in another checkout: session %q, want in-branch", id)
 	}
-	if id, target := p.reviewSession(lichclient.PRDetail{HeadRefName: "feat/y", URL: "https://pr/2"}); id != "" || target != "https://pr/2" {
+	if id, target := p.reviewSession(backend.PRDetail{HeadRefName: "feat/y", URL: "https://pr/2"}); id != "" || target != "https://pr/2" {
 		t.Errorf("branch with no checkout: session %q, target %q; want none, the PR's page", id, target)
 	}
 }

@@ -6,8 +6,8 @@ import (
 
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -147,7 +147,7 @@ func (u *window) openLoginTerminal(command string) bool {
 
 // resumeProfileLine tells a restored card which profile its conversation lives
 // in, "" for Personal, the one nothing needs saying about.
-func (m *model) resumeProfileLine(s lichclient.Session) string {
+func (m *model) resumeProfileLine(s backend.Session) string {
 	book := m.profileBook(s.Kind)
 	if book == nil || effectiveProfile(s.Profile) == personalProfile {
 		return ""

@@ -6,8 +6,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -109,7 +109,7 @@ func (f *footer) change(next footerLayout) {
 	f.mu.Unlock()
 	go func() {
 		if err := f.commit(next); err != nil {
-			f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.footerSettings.saveFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+			f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.footerSettings.saveFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		}
 	}()
 }

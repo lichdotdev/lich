@@ -14,8 +14,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -127,7 +127,7 @@ func splitLeadIn(item string) (headline, body string) {
 
 // layoutHighlights makes the first important block the headline and every
 // other block a callout under it.
-func layoutHighlights(highlights []lichclient.PatchNotesHighlight) (lead *lichclient.PatchNotesHighlight, callouts []lichclient.PatchNotesHighlight) {
+func layoutHighlights(highlights []backend.PatchNotesHighlight) (lead *backend.PatchNotesHighlight, callouts []backend.PatchNotesHighlight) {
 	for i := range highlights {
 		if lead == nil && highlights[i].Kind == "important" {
 			lead = &highlights[i]
@@ -301,7 +301,7 @@ func (v *patchNotesView) changelogLink(gtx C, th *ui.Theme) D {
 
 // body is the release: the counts, the headline, the callouts and the groups,
 // in a scroll area capped at a share of the panel.
-func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *lichclient.PatchNotes) D {
+func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *backend.PatchNotes) D {
 	var rows []layout.Widget
 	lead, callouts := layoutHighlights(notes.Highlights)
 	if lead != nil {
@@ -322,7 +322,7 @@ func (v *patchNotesView) body(gtx C, th *ui.Theme, notes *lichclient.PatchNotes)
 }
 
 // notesCounts is the line of "3 added" counts the header ends on.
-func notesCounts(groups []lichclient.PatchNotesGroup) string {
+func notesCounts(groups []backend.PatchNotesGroup) string {
 	parts := make([]string, len(groups))
 	for i, g := range groups {
 		parts[i] = notesGroupCount(g.Label, len(g.Items))
@@ -337,7 +337,7 @@ func notesDotOf(gtx C, c color.NRGBA, size unit.Dp) D {
 }
 
 // notesLead is the headline: the largest type the app uses and nothing else.
-func notesLead(th *ui.Theme, h lichclient.PatchNotesHighlight) layout.Widget {
+func notesLead(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 	headline, body := splitLeadIn(h.Text)
 	head := richText(th, headline, richStyle{size: notesLeadSize, leading: notesLeadSize * 5 / 4, ink: th.Foreground, weight: font.SemiBold})
 	children := []layout.FlexChild{layout.Rigid(cappedBy(head, notesLeadSize, notesLeadCh))}
@@ -357,7 +357,7 @@ func notesLead(th *ui.Theme, h lichclient.PatchNotesHighlight) layout.Widget {
 
 // notesCallout is a block under the headline: a warning paints in the
 // destructive tint, a note sits on the accent fill.
-func notesCallout(th *ui.Theme, h lichclient.PatchNotesHighlight) layout.Widget {
+func notesCallout(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 	warning := h.Kind == "warning"
 	icon, iconInk, fill := icNotesNote, th.MutedForeground, th.Over(ui.Alpha(th.Accent, 0.6))
 	if warning {

@@ -32,11 +32,11 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/internal/shot"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -98,7 +98,7 @@ func windowClass(getenv func(string) string) string {
 
 type window struct {
 	ctx    context.Context
-	client *lichclient.Client
+	client *backend.Client
 	// uiFonts is what the interface's shaper was last built from.
 	uiFonts *interfaceFonts
 	model   *model
@@ -181,17 +181,17 @@ type window struct {
 
 // backendRuntime is the backend to talk to: the -runtime file when given,
 // else the one a launching `lich native` put in the environment.
-func backendRuntime() (lichclient.Runtime, error) {
+func backendRuntime() (backend.Runtime, error) {
 	if *flagRuntime != "" {
-		return lichclient.ReadRuntime(*flagRuntime)
+		return backend.ReadRuntime(*flagRuntime)
 	}
-	return lichclient.RuntimeFromEnv(os.Getenv)
+	return backend.RuntimeFromEnv(os.Getenv)
 }
 
-func run(w *app.Window, rt lichclient.Runtime) error {
+func run(w *app.Window, rt backend.Runtime) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	client := lichclient.New(rt)
+	client := backend.New(rt)
 	faces, err := gioterm.Faces(*flagFont)
 	if err != nil {
 		return err
@@ -363,7 +363,7 @@ func (u *window) connect() error {
 	// layouts and says so; the next split stores over it.
 	if err := u.model.loadLayouts(u.ctx); err != nil {
 		u.logErr("load layouts", err)
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("layouts.load.failed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("layouts.load.failed", i18n.Args{"error": backend.ErrorText(err)})})
 	}
 	if _, ok := u.model.project(); !ok && *flagProject != "" {
 		path, err := filepath.Abs(*flagProject)
@@ -867,9 +867,9 @@ func (u *window) apply(act sidebarAction) {
 // renameSession asks the backend for a new label. The card takes it from the
 // session-title event the backend emits once the row is written, so a rename
 // that fails changes nothing on screen and says why.
-func renameSession(ctx context.Context, c *lichclient.Client, show func(ui.Toast) string, id, label string) {
+func renameSession(ctx context.Context, c *backend.Client, show func(ui.Toast) string, id, label string) {
 	if err := c.RenameSession(ctx, id, label); err != nil {
-		show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.main.renameFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.main.renameFailed", i18n.Args{"error": backend.ErrorText(err)})})
 	}
 }
 
@@ -883,7 +883,7 @@ func (u *window) applyOpenIn(act sidebarAction) {
 		go func() {
 			command, err := u.client.OpenFolderInEditor(u.ctx, dir)
 			if err != nil {
-				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openCheckoutFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openCheckoutFailed", i18n.Args{"error": backend.ErrorText(err)})})
 				return
 			}
 			// A terminal editor runs in a shell at the directory.
@@ -895,7 +895,7 @@ func (u *window) applyOpenIn(act sidebarAction) {
 	if dir := act.folderAt; dir != "" {
 		go func() {
 			if err := u.client.OpenFolder(u.ctx, dir); err != nil {
-				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openFolderFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openFolderFailed", i18n.Args{"error": backend.ErrorText(err)})})
 			}
 		}()
 	}

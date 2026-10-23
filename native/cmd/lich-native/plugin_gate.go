@@ -11,8 +11,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -38,14 +38,14 @@ const (
 type pluginGateAction struct {
 	kind      pluginActionKind
 	version   string
-	providers []lichclient.PluginStatus
+	providers []backend.PluginStatus
 }
 
 // decidePluginAction picks what to offer: an incompatible install wins and
 // ignores every dismissal; a CLI missing the plugin comes before an update.
-func decidePluginAction(statuses []lichclient.PluginStatus, installDismissed bool, updateDismissed string) pluginGateAction {
-	available := slices.DeleteFunc(slices.Clone(statuses), func(s lichclient.PluginStatus) bool { return !s.Available })
-	var incompatible, missing, outdated []lichclient.PluginStatus
+func decidePluginAction(statuses []backend.PluginStatus, installDismissed bool, updateDismissed string) pluginGateAction {
+	available := slices.DeleteFunc(slices.Clone(statuses), func(s backend.PluginStatus) bool { return !s.Available })
+	var incompatible, missing, outdated []backend.PluginStatus
 	for _, s := range available {
 		switch {
 		case s.Installed && !s.Compatible && s.Provider != pluginNoReportProvider:
@@ -69,7 +69,7 @@ func decidePluginAction(statuses []lichclient.PluginStatus, installDismissed boo
 	return pluginGateAction{}
 }
 
-func incompatibleMessage(version string, providers []lichclient.PluginStatus) string {
+func incompatibleMessage(version string, providers []backend.PluginStatus) string {
 	installs := make([]string, len(providers))
 	for i, p := range providers {
 		installs[i] = fmt.Sprintf("%s (v%s)", p.Name, p.InstalledVersion)
@@ -87,7 +87,7 @@ type pluginGate struct {
 	started bool
 
 	mu         sync.Mutex
-	offer      []lichclient.PluginStatus
+	offer      []backend.PluginStatus
 	installing bool
 
 	picked                   map[string]*widget.Bool
@@ -120,7 +120,7 @@ func (u *window) checkPlugin() {
 		log.Printf("plugin gate: %v", err)
 		return
 	}
-	statuses = slices.DeleteFunc(statuses, func(s lichclient.PluginStatus) bool { return !slices.Contains(enabled, s.Provider) })
+	statuses = slices.DeleteFunc(statuses, func(s backend.PluginStatus) bool { return !slices.Contains(enabled, s.Provider) })
 	installDismissed, err := u.client.GetSetting(u.ctx, pluginInstallDismissedKey, "")
 	if err != nil {
 		log.Printf("plugin gate: %v", err)
@@ -134,7 +134,7 @@ func (u *window) checkPlugin() {
 	a := decidePluginAction(statuses, installDismissed == pluginDismissedFlag, updateDismissed)
 	switch a.kind {
 	case pluginActionIncompatible:
-		t := ui.Toast{ID: lichclient.PluginIncompatibleEvent, Variant: ui.ToastWarning,
+		t := ui.Toast{ID: backend.PluginIncompatibleEvent, Variant: ui.ToastWarning,
 			Title: incompatibleMessage(a.version, a.providers), Duration: ui.ToastForever}
 		if a.version != "" {
 			t.Action = &ui.ToastButton{Label: i18n.T("shell.agentPluginGate.installVersion", i18n.Args{"version": a.version}), OnClick: func() { go u.updatePlugins(a.providers) }}
@@ -160,10 +160,10 @@ func (u *window) pluginUpdateToast(a pluginGateAction) ui.Toast {
 
 // updatePlugins runs one update per provider in order, stopping at the first
 // that fails so the error names the CLI that refused.
-func (u *window) updatePlugins(providers []lichclient.PluginStatus) {
+func (u *window) updatePlugins(providers []backend.PluginStatus) {
 	for _, p := range providers {
 		if err := u.client.UpdatePlugin(u.ctx, p.Provider); err != nil {
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("update.progress.updateFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("update.progress.updateFailed", i18n.Args{"error": backend.ErrorText(err)})})
 			return
 		}
 	}
@@ -180,7 +180,7 @@ func (u *window) installPlugins(providers []string) {
 	}()
 	for _, p := range providers {
 		if err := u.client.InstallPlugin(u.ctx, p); err != nil {
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.agentPluginGate.installFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.agentPluginGate.installFailed", i18n.Args{"error": backend.ErrorText(err)})})
 			return
 		}
 	}
@@ -264,7 +264,7 @@ func (u *window) layoutPluginGate(gtx C, th *ui.Theme) {
 	}
 }
 
-func (g *pluginGate) offerRow(gtx C, th *ui.Theme, p lichclient.PluginStatus, installing bool) D {
+func (g *pluginGate) offerRow(gtx C, th *ui.Theme, p backend.PluginStatus, installing bool) D {
 	click := g.rows[p.Provider]
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {

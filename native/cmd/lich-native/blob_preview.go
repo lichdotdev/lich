@@ -27,8 +27,8 @@ import (
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -145,7 +145,7 @@ func newBlobView(invalidate func()) *blobView {
 
 // want reads rel at ref in checkout; version tells a new state of the file
 // from the one held.
-func (v *blobView) want(client *lichclient.Client, checkout, rel, ref, version string) {
+func (v *blobView) want(client *backend.Client, checkout, rel, ref, version string) {
 	key := strings.Join([]string{checkout, rel, ref, version}, "\x00")
 	v.read.want(key, checkout, func(ctx context.Context) (*previewImage, error) {
 		data, err := client.Blob(ctx, checkout, rel, ref)
@@ -158,7 +158,7 @@ func (v *blobView) want(client *lichclient.Client, checkout, rel, ref, version s
 
 // wantMergeBase reads rel at pull request pr's merge base, the commit its
 // old side stands on.
-func (v *blobView) wantMergeBase(client *lichclient.Client, checkout, rel string, pr *prFiles, version string) {
+func (v *blobView) wantMergeBase(client *backend.Client, checkout, rel string, pr *prFiles, version string) {
 	number := pr.number
 	key := strings.Join([]string{checkout, rel, strconv.Itoa(number), version}, "\x00")
 	baseKey := strings.Join([]string{checkout, strconv.Itoa(number), pr.head}, "\x00")
@@ -181,10 +181,10 @@ func (v *blobView) wantMergeBase(client *lichclient.Client, checkout, rel string
 func (v *blobView) layout(gtx C, th *ui.Theme) D {
 	img, loading, err := v.read.get()
 	switch {
-	case errors.Is(err, lichclient.ErrNoBlob):
+	case errors.Is(err, backend.ErrNoBlob):
 		return th.Text(ui.TextXS, i18n.T("diff.binaryPreview.missing")).Muted().Layout(gtx)
 	case err != nil:
-		l := th.Text(ui.TextXS, lichclient.ErrorText(err)).Muted()
+		l := th.Text(ui.TextXS, backend.ErrorText(err)).Muted()
 		l.MaxLines = 0
 		return l.Layout(gtx)
 	case loading || img == nil:

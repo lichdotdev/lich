@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // baseStanding is what a card draws of a base status: how many files would
@@ -17,14 +17,14 @@ type baseStanding struct {
 	count    int
 }
 
-func sameBase(a, b *lichclient.BaseStatus) bool {
+func sameBase(a, b *backend.BaseStatus) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
 	return a.Base == b.Base && a.Behind == b.Behind && slices.Equal(a.Conflicts, b.Conflicts)
 }
 
-func standingOf(b *lichclient.BaseStatus) baseStanding {
+func standingOf(b *backend.BaseStatus) baseStanding {
 	if b == nil {
 		return baseStanding{}
 	}
@@ -44,7 +44,7 @@ const prRecheck = time.Minute
 // and is dropped with a new branch.
 type prLookup struct {
 	branch, head string
-	pr           *lichclient.PullRequest
+	pr           *backend.PullRequest
 	asked        time.Time
 }
 

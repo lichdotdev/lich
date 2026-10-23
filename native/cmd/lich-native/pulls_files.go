@@ -19,8 +19,8 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -42,7 +42,7 @@ func parseTreeWidth(raw string) float64 {
 	return min(treeMaxRem, max(treeMinRem, rem))
 }
 
-func loadTreeWidth(ctx context.Context, c *lichclient.Client) (float64, error) {
+func loadTreeWidth(ctx context.Context, c *backend.Client) (float64, error) {
 	raw, err := c.GetSetting(ctx, treeWidthKey, "")
 	return parseTreeWidth(raw), err
 }
@@ -113,7 +113,7 @@ func (p *reviewPanel) takeTicks(gtx C) {
 
 // filesTab is PullsFiles: the toolbar over the PR's diff, one card per file
 // with the comment batch at the foot, the dock's Review cards read-only.
-func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) D {
+func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	files := v.files
 	if files == nil {
 		return D{}
@@ -285,7 +285,7 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 type inlineFrame struct {
 	th  *ui.Theme
 	p   *pullsScreen
-	d   lichclient.PRDetail
+	d   backend.PRDetail
 	act *pullsAction
 	now time.Time
 }
@@ -347,7 +347,7 @@ func (v *pullView) inlineThread(gtx C, id string) D {
 }
 
 // inlinePending is a comment waiting for the review to be submitted.
-func (v *pullView) inlinePending(gtx C, c lichclient.ReviewComment) D {
+func (v *pullView) inlinePending(gtx C, c backend.ReviewComment) D {
 	th := v.inline.th
 	return composerSlot.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,

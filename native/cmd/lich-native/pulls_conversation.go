@@ -9,8 +9,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -118,7 +118,7 @@ func (e *pendingEdit) clicks(gtx C, pending *pendingReview) {
 // conversationRows is PullsConversation: the pending review, the timeline,
 // the resolved threads behind their count, and the box for a comment on the
 // pull request itself.
-func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) []layout.Widget {
+func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	read := p.store.conversation(p.project.Path, d.Number)
 	switch {
 	case read.val == nil && read.err != "":
@@ -161,7 +161,7 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d lichc
 	return append(rows, func(gtx C) D { return v.commentBox(gtx, th, act) })
 }
 
-func verdictLine(r lichclient.PRReview) string {
+func verdictLine(r backend.PRReview) string {
 	if v, ok := reviewVerdict(r.State); ok {
 		return v
 	}
@@ -212,7 +212,7 @@ func byline(gtx C, th *ui.Theme, author, verdict, date string, now time.Time) D 
 
 // threadCard is ReviewThread: the anchor and its badges over GitHub's hunk,
 // the comments, then Reply and Resolve; a resolved thread starts folded.
-func (v *pullView) threadCard(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, t lichclient.PRReviewThread, act *pullsAction, now time.Time) D {
+func (v *pullView) threadCard(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction, now time.Time) D {
 	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3)}.Layout(gtx, func(gtx C) D {
 		return v.threadBox(gtx, th, p, d, t, act, now)
 	})
@@ -220,7 +220,7 @@ func (v *pullView) threadCard(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.
 
 // threadBox is the thread's card itself, folded to its header or open; the
 // Conversation tab and the diff share its fold.
-func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, t lichclient.PRReviewThread, act *pullsAction, now time.Time) D {
+func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction, now time.Time) D {
 	s := &v.talk
 	fold := boolOf(s.folds, t.ID)
 	if _, seen := s.foldClicks[t.ID]; !seen {
@@ -250,7 +250,7 @@ func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.P
 		})
 }
 
-func threadHeader(gtx C, th *ui.Theme, t lichclient.PRReviewThread, open bool) D {
+func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open bool) D {
 	chevron := icPullRight
 	if open {
 		chevron = icPullDown
@@ -279,7 +279,7 @@ func threadHeader(gtx C, th *ui.Theme, t lichclient.PRReviewThread, open bool) D
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
-func (v *pullView) threadBody(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, t lichclient.PRReviewThread, act *pullsAction, now time.Time) D {
+func (v *pullView) threadBody(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction, now time.Time) D {
 	var rows []layout.FlexChild
 	if len(t.Comments) > 0 && t.Comments[0].DiffHunk != "" {
 		rows = append(rows, layout.Rigid(func(gtx C) D {
@@ -333,7 +333,7 @@ func hunkTail(gtx C, th *ui.Theme, hunk string) D {
 }
 
 // threadActions is Reply and Resolve, or the reply box while one is written.
-func (v *pullView) threadActions(gtx C, th *ui.Theme, d lichclient.PRDetail, t lichclient.PRReviewThread, act *pullsAction) D {
+func (v *pullView) threadActions(gtx C, th *ui.Theme, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction) D {
 	s := &v.talk
 	reply, resolve := clickableOf(s.replyClicks, t.ID), clickableOf(s.resolveClick, t.ID)
 	if reply.Clicked(gtx) {
@@ -362,7 +362,7 @@ func (v *pullView) threadActions(gtx C, th *ui.Theme, d lichclient.PRDetail, t l
 		layout.Rigid(replyB.Layout), ui.Gap(2), layout.Rigid(resolveB.Layout))
 }
 
-func (v *pullView) replyBox(gtx C, th *ui.Theme, d lichclient.PRDetail, t lichclient.PRReviewThread, act *pullsAction) D {
+func (v *pullView) replyBox(gtx C, th *ui.Theme, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction) D {
 	s := &v.talk
 	ed := s.editorOf(t.ID)
 	send, cancel := clickableOf(s.sendClicks, t.ID), clickableOf(s.cancelClicks, t.ID)
@@ -464,7 +464,7 @@ func (v *pullView) pendingRows(th *ui.Theme, r *pendingReview) []layout.Widget {
 
 // pendingRow is one line comment of the review being written, with Edit and
 // Discard, or the box rewording it.
-func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c lichclient.ReviewComment) D {
+func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c backend.ReviewComment) D {
 	s := &v.talk
 	discard, edit := clickableAt(s.discards, i), clickableAt(s.edits, i)
 	editing := s.pendingEdit.open && s.pendingEdit.index == i

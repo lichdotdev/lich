@@ -3,14 +3,14 @@ package main
 import (
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func duplicateModel() *model {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{
-		{ID: "p", Sessions: []lichclient.Session{{ID: "resumer", Label: "Claude 4"}}},
-		{ID: "q", Sessions: []lichclient.Session{{ID: "holder", Label: "auth-refactor"}}},
+	m.projects = []backend.Project{
+		{ID: "p", Sessions: []backend.Session{{ID: "resumer", Label: "Claude 4"}}},
+		{ID: "q", Sessions: []backend.Session{{ID: "holder", Label: "auth-refactor"}}},
 	}
 	return m
 }

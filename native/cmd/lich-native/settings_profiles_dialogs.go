@@ -12,8 +12,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -58,7 +58,7 @@ func flowHeading(prov profileProvider, d flowData) (title, desc string) {
 }
 
 // loggedInAs is the line a finished login opens its result with.
-func loggedInAs(p lichclient.Profile) string {
+func loggedInAs(p backend.Profile) string {
 	if p.Email == "" {
 		return i18n.T("settings.profiles.loggedIn")
 	}
@@ -168,7 +168,7 @@ func (s *settingsScreen) submitLoginCode(c *profileSettings, slug, code string) 
 	c.flow.set(func(d *flowData) { d.authenticating, d.failure = true, "" })
 	go func() {
 		if err := c.provider.api(s.client).LoginCode(s.ctx, slug, code); err != nil {
-			c.flow.set(func(d *flowData) { d.authenticating, d.failure = false, lichclient.ErrorText(err) })
+			c.flow.set(func(d *flowData) { d.authenticating, d.failure = false, backend.ErrorText(err) })
 			s.invalidate()
 		}
 	}()
@@ -268,7 +268,7 @@ func (s *settingsScreen) copySource(gtx C, th *ui.Theme, f *profileFlow, d flowD
 	)
 }
 
-func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p lichclient.Profile, chosen bool) D {
+func (s *settingsScreen) sourceOption(gtx C, th *ui.Theme, f *profileFlow, p backend.Profile, chosen bool) D {
 	if f.options == nil {
 		f.options = map[string]*widget.Clickable{}
 	}
@@ -345,7 +345,7 @@ func lockedPlugin(gtx C, th *ui.Theme) D {
 	})
 }
 
-func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins []lichclient.ProfilePlugin) D {
+func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins []backend.ProfilePlugin) D {
 	if f.checks == nil {
 		f.checks = map[string]*widget.Bool{}
 	}
@@ -362,7 +362,7 @@ func (s *settingsScreen) pluginList(gtx C, th *ui.Theme, f *profileFlow, plugins
 	})
 }
 
-func pluginRow(gtx C, th *ui.Theme, p lichclient.ProfilePlugin, box *widget.Bool) D {
+func pluginRow(gtx C, th *ui.Theme, p backend.ProfilePlugin, box *widget.Bool) D {
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(th.Checkbox(box).Layout),
@@ -460,7 +460,7 @@ func (s *settingsScreen) resultBody(gtx C, th *ui.Theme, d flowData) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-func pluginResult(gtx C, th *ui.Theme, r lichclient.ProfilePluginResult) D {
+func pluginResult(gtx C, th *ui.Theme, r backend.ProfilePluginResult) D {
 	mark, ink := icDlgOK, th.TonePass
 	if !r.OK {
 		mark, ink = icDlgBan, th.Destructive

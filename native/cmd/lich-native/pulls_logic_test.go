@@ -6,18 +6,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-func summary(n int, title string, draft bool, failed int, updated string) lichclient.PRSummary {
-	return lichclient.PRSummary{
+func summary(n int, title string, draft bool, failed int, updated string) backend.PRSummary {
+	return backend.PRSummary{
 		Number: n, Title: title, Author: "octo", HeadRefName: "feat/" + title, IsDraft: draft, UpdatedAt: updated,
-		Checks: lichclient.ChecksRollup{Failed: failed, Total: max(failed, 1)},
+		Checks: backend.ChecksRollup{Failed: failed, Total: max(failed, 1)},
 	}
 }
 
-func numbers(rows []lichclient.PRSummary) []int {
+func numbers(rows []backend.PRSummary) []int {
 	out := make([]int, len(rows))
 	for i, r := range rows {
 		out[i] = r.Number
@@ -26,7 +26,7 @@ func numbers(rows []lichclient.PRSummary) []int {
 }
 
 func TestFilterPullsKeepsWhatTheFilterAndTextAgreeOnNewestFirst(t *testing.T) {
-	list := []lichclient.PRSummary{
+	list := []backend.PRSummary{
 		summary(1, "old", false, 0, "2026-01-01T00:00:00Z"),
 		summary(2, "draft", true, 0, "2026-03-01T00:00:00Z"),
 		summary(3, "red", false, 2, "2026-02-01T00:00:00Z"),
@@ -59,15 +59,15 @@ func TestFilterPullsKeepsWhatTheFilterAndTextAgreeOnNewestFirst(t *testing.T) {
 	}
 }
 
-func detail(state, mergeable, status, review string) lichclient.PRDetail {
-	return lichclient.PRDetail{State: state, Mergeable: mergeable, MergeStateStatus: status, ReviewDecision: review, BaseRefName: "main"}
+func detail(state, mergeable, status, review string) backend.PRDetail {
+	return backend.PRDetail{State: state, Mergeable: mergeable, MergeStateStatus: status, ReviewDecision: review, BaseRefName: "main"}
 }
 
 func TestMergeBlockedReasonFollowsTheWebOrder(t *testing.T) {
 	draft := detail("OPEN", "MERGEABLE", "DRAFT", "")
 	draft.IsDraft = true
 	cases := map[string]struct {
-		d    lichclient.PRDetail
+		d    backend.PRDetail
 		want string
 	}{
 		"merged":            {detail("MERGED", "", "", ""), "Pull request is merged"},
@@ -89,7 +89,7 @@ func TestMergeBlockedReasonFollowsTheWebOrder(t *testing.T) {
 }
 
 func TestAdminOverrideNeedsThePrivilegeAndNoConflict(t *testing.T) {
-	admin := &lichclient.BranchRules{ViewerCanBypass: true}
+	admin := &backend.BranchRules{ViewerCanBypass: true}
 	if !canAdminOverride(detail("OPEN", "MERGEABLE", "BLOCKED", ""), admin) {
 		t.Error("an administrator should merge past BLOCKED")
 	}
@@ -102,7 +102,7 @@ func TestAdminOverrideNeedsThePrivilegeAndNoConflict(t *testing.T) {
 	if canAdminOverride(detail("OPEN", "MERGEABLE", "CLEAN", ""), admin) {
 		t.Error("a clean PR has nothing to bypass")
 	}
-	if canAdminOverride(detail("OPEN", "MERGEABLE", "BLOCKED", ""), &lichclient.BranchRules{}) {
+	if canAdminOverride(detail("OPEN", "MERGEABLE", "BLOCKED", ""), &backend.BranchRules{}) {
 		t.Error("no privilege, no bypass")
 	}
 	if canAdminOverride(detail("OPEN", "MERGEABLE", "BLOCKED", ""), nil) {
@@ -114,14 +114,14 @@ func TestAllowedMergeMethods(t *testing.T) {
 	if got := allowedMergeMethods(nil); !slices.Equal(got, everyMergeMethod) {
 		t.Errorf("no rules = %v, want every method", got)
 	}
-	r := &lichclient.BranchRules{AllowedMergeMethods: []string{"rebase", "squash"}}
+	r := &backend.BranchRules{AllowedMergeMethods: []string{"rebase", "squash"}}
 	if got := allowedMergeMethods(r); !slices.Equal(got, []string{"squash", "rebase"}) {
 		t.Errorf("named = %v, want [squash rebase] in the menu's order", got)
 	}
 }
 
 func TestMergeHintFallsFromBlockToRuleToChecks(t *testing.T) {
-	rules := &lichclient.BranchRules{CommitPatterns: []lichclient.CommitPattern{{Target: "message", Operator: "starts_with", Pattern: "feat"}}}
+	rules := &backend.BranchRules{CommitPatterns: []backend.CommitPattern{{Target: "message", Operator: "starts_with", Pattern: "feat"}}}
 	blocked := detail("OPEN", "MERGEABLE", "BLOCKED", "APPROVED")
 	if got := mergeHint(blocked, rules); got != `A ruleset governs main: every commit message must start with "feat".` {
 		t.Errorf("rule note = %q", got)
@@ -145,9 +145,9 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 		t.Fatalf("conflict handoff = %q %q %v", label, prompt, ok)
 	}
 	d.Mergeable, d.MergeStateStatus = "MERGEABLE", "UNSTABLE"
-	runs := make([]lichclient.CheckItem, handoffNamedChecks+2)
+	runs := make([]backend.CheckItem, handoffNamedChecks+2)
 	for i := range runs {
-		runs[i] = lichclient.CheckItem{Name: "job", State: "failed", URL: "https://ci"}
+		runs[i] = backend.CheckItem{Name: "job", State: "failed", URL: "https://ci"}
 	}
 	d.CheckRuns = runs
 	label, prompt, _ = pullHandoff(d)
@@ -188,7 +188,7 @@ func TestCheckDuration(t *testing.T) {
 }
 
 func TestMergeEditStartsFromGitHubsOwnMessage(t *testing.T) {
-	d := lichclient.PRDetail{Number: 7, Title: "feat: x", Body: "why", HeadRefName: "feat/x"}
+	d := backend.PRDetail{Number: 7, Title: "feat: x", Body: "why", HeadRefName: "feat/x"}
 	if got := mergeEditFor("squash", d); got.subject != "feat: x (#7)" || got.body != "why" || got.title != "Squash and merge" {
 		t.Errorf("squash edit = %+v", got)
 	}

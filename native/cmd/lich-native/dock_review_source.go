@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // diffPoll is ReviewPanel's DIFF_POLL_MS: how often the diff is read again,
@@ -23,7 +23,7 @@ type diffRead struct {
 // diffFeed reads a checkout's diff off the UI goroutine, again every
 // diffPoll and at once on refresh, and keeps the newest read for the frame.
 type diffFeed struct {
-	client     *lichclient.Client
+	client     *backend.Client
 	invalidate func()
 
 	mu   sync.Mutex

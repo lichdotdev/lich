@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -77,7 +77,7 @@ func (ts *terminals) submitter(id string) func(string, func(error)) bool {
 		go func() {
 			err := ts.client.Submit(context.Background(), id, text)
 			if err != nil {
-				ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.sendFailed"), Description: lichclient.ErrorText(err)})
+				ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.commentBatch.sendFailed"), Description: backend.ErrorText(err)})
 			}
 			done(err)
 			ts.invalidate()

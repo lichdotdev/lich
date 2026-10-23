@@ -13,8 +13,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -57,7 +57,7 @@ func (u *window) showPulls(number int) {
 
 // checkoutPR is the active session's branch and its open PR, the project's
 // own checkout's without a session.
-func (u *window) checkoutPR(p lichclient.Project) (string, int) {
+func (u *window) checkoutPR(p backend.Project) (string, int) {
 	if sv, ok := u.model.activeSession(); ok {
 		if sv.pr != nil {
 			return sv.git.Branch, sv.pr.Number
@@ -91,7 +91,7 @@ func (u *window) applyPulls(act pullsAction) {
 	if act.create {
 		go func() {
 			if err := u.client.CreatePullRequest(u.ctx, u.checkoutPath(path)); err != nil {
-				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullsEmptyState.openFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullsEmptyState.openFailed", i18n.Args{"error": backend.ErrorText(err)})})
 			}
 		}()
 	}
@@ -136,7 +136,7 @@ func (u *window) approvePR(path string, number int) {
 	u.pulls.view.setBusy("approve")
 	defer u.pulls.view.setBusy("")
 	if err := u.client.SubmitReview(u.ctx, path, number, "approve", "", "", nil); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.reviewFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.reviewFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pullRequestView.approvedToast", i18n.Args{"number": number})})
@@ -146,12 +146,12 @@ func (u *window) approvePR(path string, number int) {
 // the session's prompt: a checkout already holding the branch is reused, its live
 // session brought up or a new one opened; else the PR is checked out into a
 // new worktree. The checkouts are read fresh, never from what drew the button.
-func (u *window) openPRSession(project lichclient.Project, d lichclient.PRDetail, prompt string) {
+func (u *window) openPRSession(project backend.Project, d backend.PRDetail, prompt string) {
 	u.pulls.view.setBusy("session")
 	defer u.pulls.view.setBusy("")
 	id, err := u.prSession(project, d)
 	if err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.openSessionFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.openSessionFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	u.pulls.hide()
@@ -161,12 +161,12 @@ func (u *window) openPRSession(project lichclient.Project, d lichclient.PRDetail
 	}
 }
 
-func (u *window) prSession(project lichclient.Project, d lichclient.PRDetail) (string, error) {
+func (u *window) prSession(project backend.Project, d backend.PRDetail) (string, error) {
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
 	if err != nil {
 		return "", err
 	}
-	i := slices.IndexFunc(checkouts, func(c lichclient.Worktree) bool { return c.Name == d.HeadRefName })
+	i := slices.IndexFunc(checkouts, func(c backend.Worktree) bool { return c.Name == d.HeadRefName })
 	if i < 0 {
 		wt, err := u.client.CreateWorktreeFromPR(u.ctx, project.Path, project.ID, d.Number)
 		if err != nil {
@@ -188,14 +188,14 @@ func (u *window) prSession(project lichclient.Project, d lichclient.PRDetail) (s
 	}
 	if restored == nil {
 		return u.addWorktreeSession(worktreeRequest{project: project, kind: u.model.newSessionKind()},
-			&lichclient.Worktree{Name: filepath.Base(existing.Path), Path: existing.Path}, "")
+			&backend.Worktree{Name: filepath.Base(existing.Path), Path: existing.Path}, "")
 	}
 	return restored.ID, u.showNewSession(project.ID, restored.ID)
 }
 
 // newSessionAt opens a session of the kind a new one spawns in the project's
 // own checkout and puts it on screen.
-func (u *window) newSessionAt(project lichclient.Project, path string) (string, error) {
+func (u *window) newSessionAt(project backend.Project, path string) (string, error) {
 	kind := u.model.newSessionKind()
 	id := strings.ToLower(rand.Text())
 	label := fmt.Sprintf("%s %d", strings.ToUpper(kind[:1])+kind[1:], project.NextSeq+1)
@@ -209,11 +209,11 @@ func (u *window) newSessionAt(project lichclient.Project, path string) (string, 
 // empty subject), tells the agents in the merged branch's checkout, and
 // offers to remove that checkout when it is a worktree. It reports whether
 // the merge went through.
-func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, method string, admin bool, subject, body string) bool {
+func (u *window) mergePR(project backend.Project, d backend.PRDetail, method string, admin bool, subject, body string) bool {
 	u.pulls.view.setBusy("merge")
 	defer u.pulls.view.setBusy("")
 	if err := u.client.MergePullRequest(u.ctx, project.Path, d.Number, method, subject, body, admin); err != nil {
-		text := lichclient.ErrorText(err)
+		text := backend.ErrorText(err)
 		if note := mergeRuleNote(d, u.pulls.store.branchRules(project.Path, d.BaseRefName)); note != "" {
 			text += " " + note
 		}
@@ -223,14 +223,14 @@ func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, meth
 	merged := ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.merged", i18n.Args{"number": d.Number, "base": d.BaseRefName})}
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
 	u.logErr("list checkouts", err)
-	i := slices.IndexFunc(checkouts, func(c lichclient.Worktree) bool { return c.Name == d.HeadRefName })
+	i := slices.IndexFunc(checkouts, func(c backend.Worktree) bool { return c.Name == d.HeadRefName })
 	if i < 0 {
 		u.toaster.Show(merged)
 		return true
 	}
 	wt := checkouts[i]
 	if err := u.client.AnnounceMerge(u.ctx, wt.Path, d.Number, d.Title, d.HeadRefName, d.BaseRefName); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.announceFailed", i18n.Args{"name": filepath.Base(wt.Path), "error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.announceFailed", i18n.Args{"name": filepath.Base(wt.Path), "error": backend.ErrorText(err)})})
 	}
 	if wt.Path != project.Path {
 		merged.Duration = cleanupToastFor
@@ -242,14 +242,14 @@ func (u *window) mergePR(project lichclient.Project, d lichclient.PRDetail, meth
 
 // removePRWorktree removes a PR's worktree: the refusals first, the
 // question about running sessions last, a click the refusals would make moot.
-func (u *window) removePRWorktree(project lichclient.Project, path string) {
+func (u *window) removePRWorktree(project backend.Project, path string) {
 	name := filepath.Base(path)
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
 	if err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.removeFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.removeFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
-	if !slices.ContainsFunc(checkouts, func(c lichclient.Worktree) bool { return c.Path == path }) {
+	if !slices.ContainsFunc(checkouts, func(c backend.Worktree) bool { return c.Path == path }) {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.alreadyRemoved", i18n.Args{"name": name})})
 		return
 	}
@@ -277,7 +277,7 @@ func (u *window) removePRWorktree(project lichclient.Project, path string) {
 // removeCheckout discards the sessions rooted in path, so none survives to
 // offer a resume in a directory that is gone, then removes the worktree.
 // force and adoptedAck are RemoveWorktree's.
-func (u *window) removeCheckout(project lichclient.Project, path string, force, adoptedAck bool) {
+func (u *window) removeCheckout(project backend.Project, path string, force, adoptedAck bool) {
 	ids, _, _ := u.model.sessionsAt(project.ID, path)
 	for _, id := range ids {
 		u.parkSession(id)
@@ -286,7 +286,7 @@ func (u *window) removeCheckout(project lichclient.Project, path string, force, 
 	}
 	u.logErr("purge worktree sessions", u.client.PurgeWorktreeSessions(u.ctx, project.ID, path))
 	if err := u.client.RemoveWorktree(u.ctx, project.Path, path, force, adoptedAck); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.removeFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.removeFailed", i18n.Args{"error": backend.ErrorText(err)})})
 	} else {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.removed", i18n.Args{"name": filepath.Base(path)})})
 	}
@@ -300,7 +300,7 @@ func (u *window) removeCheckout(project lichclient.Project, path string, force, 
 func (m *model) sessionsAt(projectID, path string) (ids []string, pinned bool, running int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	i := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == projectID })
+	i := slices.IndexFunc(m.projects, func(p backend.Project) bool { return p.ID == projectID })
 	if i < 0 {
 		return nil, false, 0
 	}
@@ -337,14 +337,14 @@ type removeConfirm struct {
 	// mu guards the question, which the removal asks off the frame.
 	mu      sync.Mutex
 	open    bool
-	project lichclient.Project
+	project backend.Project
 	path    string
 	running int
 	cancel  widget.Clickable
 	confirm widget.Clickable
 }
 
-func (c *removeConfirm) ask(project lichclient.Project, path string, running int) {
+func (c *removeConfirm) ask(project backend.Project, path string, running int) {
 	c.mu.Lock()
 	c.open, c.project, c.path, c.running = true, project, path, running
 	c.mu.Unlock()

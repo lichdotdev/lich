@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -25,7 +25,7 @@ var (
 // the state of the provider above everything that configures it. It is a
 // reading, not a setting, so it has no scope of its own. heading is the title
 // it is drawn under, "settings.planUsageSetting.title" when "".
-func (s *settingsScreen) planBlock(gtx C, th *ui.Theme, values scopedValues, plan lichclient.QuotaPlan, first bool, heading string) D {
+func (s *settingsScreen) planBlock(gtx C, th *ui.Theme, values scopedValues, plan backend.QuotaPlan, first bool, heading string) D {
 	r := s.providerRow(gtx, settingEntry{titleKey: "settings.planUsageSetting.title"}, values)
 	r.kind, r.overriddenIn = rowPlain, nil
 	r.description = i18n.T("settings.planUsageSetting.description")
@@ -35,7 +35,7 @@ func (s *settingsScreen) planBlock(gtx C, th *ui.Theme, values scopedValues, pla
 	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D { return planBody(gtx, th, plan) })
 }
 
-func planBody(gtx C, th *ui.Theme, plan lichclient.QuotaPlan) D {
+func planBody(gtx C, th *ui.Theme, plan backend.QuotaPlan) D {
 	switch plan.Status {
 	case "signed-out":
 		return planSignedOutLine(gtx, th, loginCommands[plan.Provider])

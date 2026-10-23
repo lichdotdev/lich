@@ -8,8 +8,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -25,7 +25,7 @@ const (
 // bugReportURL is the new-issue link prefilled from the diagnostics. The query
 // keys are the ids in .github/ISSUE_TEMPLATE/bug.yml; GitHub ignores a key that
 // matches no field.
-func bugReportURL(d lichclient.Diagnostics) string {
+func bugReportURL(d backend.Diagnostics) string {
 	q := url.Values{"template": {helpIssueTemplate}, "version": {d.Version}, "platform": {d.Platform}}
 	return helpRepoURL + "/issues/new?" + q.Encode()
 }
@@ -34,13 +34,13 @@ func bugReportURL(d lichclient.Diagnostics) string {
 // answers, read once per window, and its buttons.
 type helpSettings struct {
 	mu          sync.Mutex
-	diagnostics *lichclient.Diagnostics
+	diagnostics *backend.Diagnostics
 	asked       bool
 
 	bug, reveal, repo widget.Clickable
 }
 
-func (h *helpSettings) read(s *settingsScreen) *lichclient.Diagnostics {
+func (h *helpSettings) read(s *settingsScreen) *backend.Diagnostics {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if !h.asked {
@@ -99,7 +99,7 @@ func (s *settingsScreen) helpRow(gtx C, th *ui.Theme, e settingEntry, r settingR
 }
 
 // logLine is the Open log folder button and the log's path beside it.
-func (h *helpSettings) logLine(gtx C, th *ui.Theme, d *lichclient.Diagnostics) D {
+func (h *helpSettings) logLine(gtx C, th *ui.Theme, d *backend.Diagnostics) D {
 	path := i18n.T("settings.helpSettings.noLogFile")
 	if d != nil && d.LogPath != "" {
 		path = d.LogPath
@@ -124,7 +124,7 @@ func (s *settingsScreen) revealLog() {
 func revealLogOutcome(id string, err error) ui.Toast {
 	t := ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("settings.helpSettings.logFolderOpened")}
 	if err != nil {
-		t = ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.settingsHelp.logFailed", i18n.Args{"error": lichclient.ErrorText(err)})}
+		t = ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.settingsHelp.logFailed", i18n.Args{"error": backend.ErrorText(err)})}
 	}
 	t.ID = id
 	return t

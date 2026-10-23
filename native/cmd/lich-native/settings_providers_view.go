@@ -10,8 +10,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -209,7 +209,7 @@ func (s *settingsScreen) providerListRow(gtx C, th *ui.Theme, values scopedValue
 	}
 	st.toggle.Value = p.enabled
 	var versions binVersions
-	var spawned lichclient.BinaryCheck
+	var spawned backend.BinaryCheck
 	if p.installed {
 		project, global := s.binLayers(values, m, p.id)
 		_, _, asked := spawnedBin(project, global, p.binary)

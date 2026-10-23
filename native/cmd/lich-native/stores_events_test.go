@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -30,7 +30,7 @@ func (s *rpcStub) calls(method string) int {
 	return s.counts[method]
 }
 
-func (s *rpcStub) client(t *testing.T) *lichclient.Client {
+func (s *rpcStub) client(t *testing.T) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -50,7 +50,7 @@ func (s *rpcStub) client(t *testing.T) *lichclient.Client {
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 func failing(message string) (any, int) {
@@ -65,7 +65,7 @@ func TestSessionTouchedReadsGitNowAndNudgesTheDiff(t *testing.T) {
 		defer mu.Unlock()
 		switch method {
 		case "project.Diff":
-			return lichclient.DiffStats{Branch: "main", Head: head}, http.StatusOK
+			return backend.DiffStats{Branch: "main", Head: head}, http.StatusOK
 		case "project.BaseStatus", "project.PullRequest":
 			return nil, http.StatusOK
 		}
@@ -147,7 +147,7 @@ func TestReloadAdoptsTheBackendsActiveCardWhenTheOnScreenOneWasClosed(t *testing
 
 func TestShownPathsHoldsAnEmptyProjectsOwn(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{{ID: "p", Path: checkout}}
+	m.projects = []backend.Project{{ID: "p", Path: checkout}}
 	m.activeProject = "p"
 	if paths := m.shownPaths(); len(paths) != 1 || paths[0] != checkout {
 		t.Errorf("polls %q, want the project's own path for the footer", paths)
@@ -189,7 +189,7 @@ func TestGitStoreKeepsTheLastReadingThroughATransientFailure(t *testing.T) {
 			if broken {
 				return failing("index.lock exists")
 			}
-			return lichclient.DiffStats{Branch: "main", Head: "h"}, http.StatusOK
+			return backend.DiffStats{Branch: "main", Head: "h"}, http.StatusOK
 		case "project.Exists":
 			return exists, http.StatusOK
 		case "project.BaseStatus", "project.PullRequest":
@@ -218,7 +218,7 @@ func TestGitStoreKeepsTheLastReadingThroughATransientFailure(t *testing.T) {
 }
 
 func TestAnOpenPullRequestIsAskedAgainOnASlowCadence(t *testing.T) {
-	forge := &fakeForge{prs: map[string]*lichclient.PullRequest{"c1": {Number: 7}}}
+	forge := &fakeForge{prs: map[string]*backend.PullRequest{"c1": {Number: 7}}}
 	forge.set("feat", "c1")
 	m := newTestModel(forge.client(t))
 	prOnCard(t, m, 7)
@@ -244,7 +244,7 @@ func TestAPathWithNoPullRequestIsNotAskedAgainByTheCadence(t *testing.T) {
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
 		switch method {
 		case "project.Diff":
-			return lichclient.DiffStats{Branch: "main", Head: "h"}, http.StatusOK
+			return backend.DiffStats{Branch: "main", Head: "h"}, http.StatusOK
 		case "project.BaseStatus", "project.PullRequest":
 			return nil, http.StatusOK
 		}
@@ -275,27 +275,27 @@ func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {
 		if method != "claudeprofile.Profiles" {
 			return failing("unexpected " + method)
 		}
-		return []lichclient.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true},
+		return []backend.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true},
 			{Slug: "work", Name: "Work", LoggedIn: loggedIn}}, http.StatusOK
 	}}
 	m := newModel(stub.client(t), func() {})
 	if err := m.profiles.reload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	m.quota.seed(profileQuotaKey(claudeProfileProvider, "work"), []lichclient.QuotaPlan{{Provider: claudeKind}})
+	m.quota.seed(profileQuotaKey(claudeProfileProvider, "work"), []backend.QuotaPlan{{Provider: claudeKind}})
 
 	mu.Lock()
 	loggedIn = true
 	mu.Unlock()
 	heard := make(chan []string, 1)
-	m.loginProgress = func(string, lichclient.ProfileLogin) {
+	m.loginProgress = func(string, backend.ProfileLogin) {
 		var slugs []string
 		for _, p := range m.profiles.loggedIn() {
 			slugs = append(slugs, p.Slug)
 		}
 		heard <- slugs
 	}
-	send(m, lichclient.ClaudeProfileLoginEvent, lichclient.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
+	send(m, backend.ClaudeProfileLoginEvent, backend.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
 
 	select {
 	case slugs := <-heard:
@@ -312,7 +312,7 @@ func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {
 
 func TestAWindowFocusReadsTheProfilesAgainOnlyOnceTheyAreOld(t *testing.T) {
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
-		return []lichclient.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}}, http.StatusOK
+		return []backend.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}}, http.StatusOK
 	}}
 	m := newModel(stub.client(t), func() {})
 	ctx := context.Background()

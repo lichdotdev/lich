@@ -22,9 +22,9 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -90,8 +90,8 @@ func (t *termView) refitDue(size image.Point, now time.Time) (bool, time.Time) {
 // stream carries every session's output; a session gets a termView, and from
 // then on all its output, the first time it is shown.
 type terminals struct {
-	client     *lichclient.Client
-	stream     *lichclient.Stream
+	client     *backend.Client
+	stream     *backend.Stream
 	invalidate func()
 	renderer   string
 	family     string
@@ -251,11 +251,11 @@ func (ts *terminals) show(ctx context.Context, gtx layout.Context, s sessionView
 	ts.mu.Unlock()
 	// A failed start leaves the terminal in place, empty.
 	if err := ts.start(ctx, s, resume, cols, rows); err != nil {
-		if lichclient.ProfileGone(err) && ts.profileGone != nil {
+		if backend.ProfileGone(err) && ts.profileGone != nil {
 			ts.profileGone(s)
 			return t, nil
 		}
-		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.startFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.startFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return t, nil
 	}
 	ts.mu.Lock()

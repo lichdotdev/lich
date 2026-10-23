@@ -12,8 +12,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -34,9 +34,9 @@ var pullsTitleMinWidth = unit.Dp(320)
 
 // pullsAction is what the screen asks of the window this frame.
 type pullsAction struct {
-	session  *lichclient.PRDetail // open (or go to) a session on its branch
-	handoff  string               // ... and write this at its prompt
-	merge    string               // a method to merge with
+	session  *backend.PRDetail // open (or go to) a session on its branch
+	handoff  string            // ... and write this at its prompt
+	merge    string            // a method to merge with
 	admin    bool
 	approve  bool
 	refresh  bool
@@ -185,7 +185,7 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 // hidden, then the pull request's title and stats with its actions at the
 // right on the title's line. An island too narrow for both on one line puts
 // the actions on their own line above the title.
-func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *lichclient.PRDetail, act *pullsAction, w layout.Widget) D {
+func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *backend.PRDetail, act *pullsAction, w layout.Widget) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.UniformInset(pullsToolbarPad).Layout(gtx, func(gtx C) D {
@@ -239,7 +239,7 @@ func (v *pullView) toolbarRow(gtx C, th *ui.Theme, p *pullsScreen, fill, right l
 
 // recordActions lays the actions at the width they want on one line, for
 // withToolbar to place or to drop for the stacked layout.
-func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) (op.CallOp, image.Point) {
+func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) (op.CallOp, image.Point) {
 	macro := op.Record(gtx.Ops)
 	gtx.Constraints.Min = image.Point{}
 	size := v.actions(gtx, th, p, d, act).Size
@@ -247,7 +247,7 @@ func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d lichclie
 }
 
 // heading is the title over its stats, its left edge on the body's px-6.
-func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction, besideShowList bool) D {
+func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction, besideShowList bool) D {
 	left := pullsPadX - pullsToolbarPad
 	if besideShowList {
 		left = ui.Space(2)
@@ -284,7 +284,7 @@ func (v *pullView) empty(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction) 
 	})
 }
 
-func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, act *pullsAction) D {
+func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX}.Layout(gtx, func(gtx C) D {
@@ -317,7 +317,7 @@ func pullGlyph(gtx C, th *ui.Theme, ic *icons.Icon, size unit.Dp, fg color.NRGBA
 }
 
 // stats is the status line:state, branches, checks, mergeability, review.
-func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail) D {
+func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
 	if v.checksStat.Clicked(gtx) {
 		v.showTab(d, tabChecks)
 	}
@@ -353,7 +353,7 @@ func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDet
 	return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1.5)}.Layout(gtx, items...)
 }
 
-func stateStat(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
+func stateStat(gtx C, th *ui.Theme, d backend.PRDetail) D {
 	switch {
 	case d.State == "MERGED":
 		return stat(gtx, th, icPullMerged, i18n.T("pulls.pullsStats.merged"), th.MutedForeground)
@@ -365,7 +365,7 @@ func stateStat(gtx C, th *ui.Theme, d lichclient.PRDetail) D {
 	return stat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.open"), th.TonePass)
 }
 
-func checksStat(th *ui.Theme, c lichclient.ChecksRollup) (*icons.Icon, string, color.NRGBA, bool) {
+func checksStat(th *ui.Theme, c backend.ChecksRollup) (*icons.Icon, string, color.NRGBA, bool) {
 	switch verdictOf(c) {
 	case verdictFailed:
 		return icPullX, i18n.T("pulls.pullsStats.checksFailing", i18n.Args{"failed": c.Failed, "total": c.Total}), th.Destructive, true
@@ -377,7 +377,7 @@ func checksStat(th *ui.Theme, c lichclient.ChecksRollup) (*icons.Icon, string, c
 	return nil, "", color.NRGBA{}, false
 }
 
-func mergeableStat(th *ui.Theme, d lichclient.PRDetail) (*icons.Icon, string, color.NRGBA, bool) {
+func mergeableStat(th *ui.Theme, d backend.PRDetail) (*icons.Icon, string, color.NRGBA, bool) {
 	switch {
 	case d.State != "OPEN":
 		return nil, "", color.NRGBA{}, false
@@ -411,7 +411,7 @@ func reviewStat(th *ui.Theme, decision string, open, total int) (*icons.Icon, st
 
 // tabsOf is the tabs a pull request shows, in order: Checks only when it has
 // any.
-func tabsOf(d lichclient.PRDetail) []pullsTab {
+func tabsOf(d backend.PRDetail) []pullsTab {
 	tabs := []pullsTab{tabOverview, tabConversation, tabCommits, tabFiles}
 	if d.Checks.Total > 0 {
 		tabs = append(tabs, tabChecks)
@@ -421,7 +421,7 @@ func tabsOf(d lichclient.PRDetail) []pullsTab {
 
 // openTab is the tab on screen; one the PR does not show falls back to
 // Overview.
-func (v *pullView) openTab(d lichclient.PRDetail) pullsTab {
+func (v *pullView) openTab(d backend.PRDetail) pullsTab {
 	tabs := tabsOf(d)
 	if v.tabs.Selected < 0 || v.tabs.Selected >= len(tabs) {
 		return tabOverview
@@ -429,7 +429,7 @@ func (v *pullView) openTab(d lichclient.PRDetail) pullsTab {
 	return tabs[v.tabs.Selected]
 }
 
-func (v *pullView) showTab(d lichclient.PRDetail, tab pullsTab) {
+func (v *pullView) showTab(d backend.PRDetail, tab pullsTab) {
 	for i, t := range tabsOf(d) {
 		if t == tab {
 			v.tabs.Selected = i
@@ -451,7 +451,7 @@ func (t pullsTab) label() string {
 	return i18n.T("pulls.pullRequestView.tab.overview")
 }
 
-func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail) D {
+func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
 	items, resolved := conversationTimeline(p.store.conversation(p.project.Path, d.Number).val)
 	counts := map[pullsTab]int{tabConversation: len(items) + len(resolved), tabCommits: len(d.Commits), tabFiles: d.ChangedFiles, tabChecks: d.Checks.Total}
 	var triggers []ui.TabsTrigger

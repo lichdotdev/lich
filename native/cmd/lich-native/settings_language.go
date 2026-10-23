@@ -12,9 +12,9 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -73,7 +73,7 @@ func launchLanguage(l i18n.Locale, draws func(i18n.Locale) bool) (shown i18n.Loc
 // loadLanguages reads both languages: the interface's is the stored choice,
 // or system's before anyone made one; the prompt language is English when
 // absent, as the backend reads it.
-func loadLanguages(ctx context.Context, c *lichclient.Client, system func() i18n.Locale) (iface, prompt i18n.Locale, err error) {
+func loadLanguages(ctx context.Context, c *backend.Client, system func() i18n.Locale) (iface, prompt i18n.Locale, err error) {
 	stored, err := c.GetSetting(ctx, uiLanguageKey, "")
 	if err != nil {
 		return "", "", err
@@ -165,7 +165,7 @@ func (s *settingsScreen) choosePromptLanguage(l i18n.Locale) {
 		if i18n.PromptLanguage() == l {
 			i18n.SetPromptLanguage(previous)
 		}
-		title := i18n.T("settings.language.promptSaveFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+		title := i18n.T("settings.language.promptSaveFailed", i18n.Args{"error": backend.ErrorText(err)})
 		s.theme.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: title})
 		s.invalidate()
 	}()

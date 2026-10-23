@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/godemirror"
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestRevertLinesNamesSidesAsTheBackendTakesThem(t *testing.T) {
@@ -13,7 +13,7 @@ func TestRevertLinesNamesSidesAsTheBackendTakesThem(t *testing.T) {
 		{Side: godemirror.OldSide, Line: 4, Text: "b"},
 		{Side: godemirror.NewSide, Line: 4, Text: "B"},
 	}}
-	want := []lichclient.RevertLine{{Side: "old", Line: 4, Text: "b"}, {Side: "new", Line: 4, Text: "B"}}
+	want := []backend.RevertLine{{Side: "old", Line: 4, Text: "b"}, {Side: "new", Line: 4, Text: "B"}}
 	if got := RevertLines(c); !slices.Equal(got, want) {
 		t.Fatalf("got %+v, want %+v", got, want)
 	}

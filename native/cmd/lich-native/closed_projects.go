@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // closedProjects is the projects closed earlier, as the window knows them: one
@@ -18,7 +18,7 @@ import (
 // Only the plain list and the palette's current term are kept: the palette
 // types its way through terms and an answer for each would only pile up.
 type closedProjects struct {
-	client     *lichclient.Client
+	client     *backend.Client
 	invalidate func()
 
 	mu      sync.Mutex
@@ -36,7 +36,7 @@ type closedEntry struct {
 	answer   closedAnswer
 }
 
-func newClosedProjects(c *lichclient.Client, invalidate func()) *closedProjects {
+func newClosedProjects(c *backend.Client, invalidate func()) *closedProjects {
 	return &closedProjects{client: c, invalidate: invalidate, entries: map[string]*closedEntry{}}
 }
 
@@ -85,7 +85,7 @@ func (b *closedProjects) fetch(term string, e *closedEntry) {
 	b.invalidate()
 }
 
-func fetchClosed(ctx context.Context, c *lichclient.Client, term string) (closedAnswer, error) {
+func fetchClosed(ctx context.Context, c *backend.Client, term string) (closedAnswer, error) {
 	rows, err := c.RecentProjectsMatching(ctx, term)
 	if err != nil {
 		return closedAnswer{}, err

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 const (
@@ -12,7 +12,7 @@ const (
 	filterWorktree = "/home/u/.local/share/lich/worktrees/lich/feat/auth-relay"
 )
 
-var filterFixture = []lichclient.Session{
+var filterFixture = []backend.Session{
 	{ID: "s1", Label: "Relay inbox nudge", Pinned: true},
 	{ID: "s2", Label: "Patch notes", Pinned: true},
 	{ID: "s3", Label: "Relay ticket lifecycle"},

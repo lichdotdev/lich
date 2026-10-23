@@ -7,8 +7,8 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -150,7 +150,7 @@ func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
 
 // baseSections spell out the base readout: commits behind the
 // named base, then the conflict, then the first files it is in.
-func baseSections(th *ui.Theme, b *lichclient.BaseStatus) []layout.Widget {
+func baseSections(th *ui.Theme, b *backend.BaseStatus) []layout.Widget {
 	if b == nil {
 		return nil
 	}

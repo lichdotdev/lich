@@ -8,8 +8,8 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -25,9 +25,9 @@ func pullsFrames(t *testing.T) (*window, *frameRig) {
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
 		switch method {
 		case "project.ListPullRequests":
-			return []lichclient.PRSummary{{Number: 7, Title: "Fix the thing", State: "OPEN"}, {Number: 8, Title: "Draft work", State: "OPEN", IsDraft: true}}, http.StatusOK
+			return []backend.PRSummary{{Number: 7, Title: "Fix the thing", State: "OPEN"}, {Number: 8, Title: "Draft work", State: "OPEN", IsDraft: true}}, http.StatusOK
 		case "project.PullRequestDetail":
-			return lichclient.PRDetail{Number: 7, URL: "https://github.com/o/r/pull/7", Title: "Fix the thing", Body: "The body.", State: "OPEN", HeadRefName: "fix", BaseRefName: "main"}, http.StatusOK
+			return backend.PRDetail{Number: 7, URL: "https://github.com/o/r/pull/7", Title: "Fix the thing", Body: "The body.", State: "OPEN", HeadRefName: "fix", BaseRefName: "main"}, http.StatusOK
 		case "project.PullRequestConversation":
 			return conv, http.StatusOK
 		case "project.PullRequestDiff":
@@ -49,7 +49,7 @@ func pullsFrames(t *testing.T) (*window, *frameRig) {
 	}
 	u.pulls.view.files = files
 	u.pulls.view.files.pr = &prFiles{ticks: map[string]*widget.Bool{}}
-	u.pulls.show(lichclient.Project{ID: "p", Path: "/repo"}, "main", 0)
+	u.pulls.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
 	r.draw = func(gtx C, th *ui.Theme) {
 		u.theme = th
 		u.root.Layout(gtx, func(gtx C) D {

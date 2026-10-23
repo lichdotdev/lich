@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 type providerInfo struct {
@@ -67,7 +67,7 @@ func (m providersMachine) skipLevel(kind string) string {
 	return skipLevelOf(m.globals[providerSkipKey(kind, false)] == "true", m.globals[providerSkipKey(kind, true)] == "true")
 }
 
-func providerFrom(d lichclient.DetectedProvider, enabled bool) providerInfo {
+func providerFrom(d backend.DetectedProvider, enabled bool) providerInfo {
 	return providerInfo{
 		launchProvider: launchProvider{id: d.ID, name: d.Name, installed: d.Installed, enabled: enabled},
 		binary:         d.Binary, source: d.Source, docs: d.Docs,
@@ -77,7 +77,7 @@ func providerFrom(d lichclient.DetectedProvider, enabled bool) providerInfo {
 // readProvidersMachine is the one read of the providers: detection, each
 // provider's enabled flag and the global values of the keys its screen reads,
 // and the default and profiles of each project in projectIDs.
-func readProvidersMachine(ctx context.Context, c *lichclient.Client, projectIDs []string) (providersMachine, error) {
+func readProvidersMachine(ctx context.Context, c *backend.Client, projectIDs []string) (providersMachine, error) {
 	detected, err := c.DetectProviders(ctx)
 	if err != nil {
 		return providersMachine{}, err
@@ -113,7 +113,7 @@ func readProvidersMachine(ctx context.Context, c *lichclient.Client, projectIDs 
 
 // readProfiles reads each project's profile of every detected provider with
 // profiles.
-func (m *providersMachine) readProfiles(ctx context.Context, c *lichclient.Client, projectIDs []string) error {
+func (m *providersMachine) readProfiles(ctx context.Context, c *backend.Client, projectIDs []string) error {
 	var profileKeys []string
 	for _, p := range m.list {
 		if prov, ok := profileProviderOf(p.id); ok {
@@ -158,7 +158,7 @@ func (m providersMachine) projectProfile(kind, projectID string) projectProfile 
 // Settings › Providers and Sandbox's rows all read it. Whoever writes
 // something it reads says so with changed, once the backend has the write.
 type providerBook struct {
-	client     *lichclient.Client
+	client     *backend.Client
 	invalidate func()
 
 	mu      sync.Mutex
@@ -171,7 +171,7 @@ type providerBook struct {
 	reading, again bool
 }
 
-func newProviderBook(c *lichclient.Client, invalidate func()) *providerBook {
+func newProviderBook(c *backend.Client, invalidate func()) *providerBook {
 	return &providerBook{client: c, invalidate: invalidate}
 }
 
@@ -265,7 +265,7 @@ func (b *providerBook) readUntilQuiet(ctx context.Context) {
 // default of one it has not read yet is what the state it came in with says,
 // until the next read. Its profiles are not in the state: it returns the
 // projects it had not seen, for readProfiles.
-func (b *providerBook) noteProjects(projects []lichclient.Project) (fresh []string) {
+func (b *providerBook) noteProjects(projects []backend.Project) (fresh []string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.ids = b.ids[:0]

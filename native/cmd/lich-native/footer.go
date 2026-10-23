@@ -10,8 +10,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -29,7 +29,7 @@ var (
 // laid out as the user arranged it.
 type footer struct {
 	ctx        context.Context
-	client     *lichclient.Client
+	client     *backend.Client
 	root       *ui.Root
 	invalidate func()
 	// openPullRequest opens the Pulls screen on a pull request.
@@ -63,7 +63,7 @@ type footer struct {
 	toaster *ui.Toaster
 }
 
-func newFooter(ctx context.Context, client *lichclient.Client, root *ui.Root, usage *footerUsage, quota *planQuota, invalidate func()) *footer {
+func newFooter(ctx context.Context, client *backend.Client, root *ui.Root, usage *footerUsage, quota *planQuota, invalidate func()) *footer {
 	return &footer{
 		ctx: ctx, client: client, root: root, invalidate: invalidate, usage: usage,
 		quota:   quota,
@@ -233,7 +233,7 @@ func (f *footer) act(gtx C, in footerInput) {
 // file was refused for.
 func (f *footer) attach(in footerInput) {
 	if err := attachFile(f.ctx, f.client, f.writePaste, in.sessionID, in.checkout, in.sandboxed, runtime.GOOS == "windows"); err != nil {
-		f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: lichclient.ErrorText(err)})
+		f.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})
 	}
 }
 

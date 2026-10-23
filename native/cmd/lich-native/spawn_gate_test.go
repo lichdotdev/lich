@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -43,19 +43,19 @@ func (f *fakeProbe) SetSetting(_ context.Context, key, _, value string) error {
 	return nil
 }
 
-var restored = lichclient.Session{ID: "s1", Kind: "claude", Label: "Claude 1", ProviderSessionID: "conv-1"}
+var restored = backend.Session{ID: "s1", Kind: "claude", Label: "Claude 1", ProviderSessionID: "conv-1"}
 
 func TestSpawnDecision(t *testing.T) {
 	cases := []struct {
 		name    string
 		probe   fakeProbe
-		session lichclient.Session
+		session backend.Session
 		want    spawnVerdict
 	}{
 		{"missing workdir parks", fakeProbe{missing: true, available: true}, restored, spawnPark},
 		{"workdir check error spawns on", fakeProbe{missing: true, missingErr: errProbe, available: true, choice: "resume"}, restored, spawnResume},
-		{"no conversation spawns", fakeProbe{available: true}, lichclient.Session{Kind: "claude"}, spawnPlain},
-		{"shell never resumes", fakeProbe{available: true}, lichclient.Session{Kind: "shell", ProviderSessionID: "x"}, spawnPlain},
+		{"no conversation spawns", fakeProbe{available: true}, backend.Session{Kind: "claude"}, spawnPlain},
+		{"shell never resumes", fakeProbe{available: true}, backend.Session{Kind: "shell", ProviderSessionID: "x"}, spawnPlain},
 		{"gone conversation spawns fresh", fakeProbe{}, restored, spawnFresh},
 		{"resume check error asks", fakeProbe{availErr: errProbe}, restored, spawnAsk},
 		{"choice resume", fakeProbe{available: true, choice: "resume"}, restored, spawnResume},

@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // themeSettingKey is a global setting: "system" (the default), "light", "dark",
@@ -22,12 +22,12 @@ const (
 // takes the theme it resolves to whenever it changed and repaints.
 type appearance struct {
 	ctx        context.Context
-	client     *lichclient.Client
+	client     *backend.Client
 	invalidate func()
 
 	mu           sync.Mutex
 	themes       []themeEntry
-	broken       []lichclient.BrokenTheme
+	broken       []backend.BrokenTheme
 	selected     string
 	followSystem bool
 	systemDark   bool
@@ -37,7 +37,7 @@ type appearance struct {
 // appearanceView is what the picker draws from.
 type appearanceView struct {
 	themes       []themeEntry
-	broken       []lichclient.BrokenTheme
+	broken       []backend.BrokenTheme
 	selected     string
 	followSystem bool
 	resolved     themeEntry
@@ -93,7 +93,7 @@ func (a *appearance) setFollowSystem(on bool) {
 
 // applySelection takes a selection the backend stored, from this window,
 // another, or `lich theme switch`.
-func (a *appearance) applySelection(s lichclient.ThemeSelection) {
+func (a *appearance) applySelection(s backend.ThemeSelection) {
 	a.update(func() { a.selected, a.followSystem = s.Theme, s.FollowSystem })
 }
 

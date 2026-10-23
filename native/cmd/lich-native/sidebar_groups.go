@@ -3,7 +3,7 @@ package main
 import (
 	"slices"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // The block keys. The pinned and root blocks have no path
@@ -39,13 +39,13 @@ type sessionBlock struct {
 	kind     blockKind
 	folder   string
 	path     string
-	sessions []lichclient.Session
+	sessions []backend.Session
 }
 
 // blockOf orders the checks by precedence: pin, then folder, then the
 // session's own checkout. A wall (split group) outranks the pin
 // and would be the first check here once the native window has panes.
-func blockOf(s lichclient.Session) blockKind {
+func blockOf(s backend.Session) blockKind {
 	switch {
 	case s.Pinned:
 		return blockPinned
@@ -64,7 +64,7 @@ func checkoutKey(path string) string {
 	return path
 }
 
-func blockKeyOf(s lichclient.Session) string {
+func blockKeyOf(s backend.Session) string {
 	if blockOf(s) == blockFolder {
 		return folderKey(s.Folder)
 	}
@@ -76,9 +76,9 @@ func blockKeyOf(s lichclient.Session) string {
 // first card sits in the stored list and keeping that order inside. Block
 // order lives nowhere else, which is what lets a drag move a folder past a
 // checkout by moving its cards in the flat list.
-func sessionBlocks(sessions []lichclient.Session) []sessionBlock {
+func sessionBlocks(sessions []backend.Session) []sessionBlock {
 	var blocks []sessionBlock
-	var pinned []lichclient.Session
+	var pinned []backend.Session
 	at := map[string]int{}
 	for _, s := range sessions {
 		kind := blockOf(s)
@@ -128,7 +128,7 @@ func collapsedMark(pending []pendingStatus, ids []string) string {
 
 // checkoutsOf names the checkouts ("" for the project root) a block's cards
 // belong to, once each in card order: where a folder's + can open a session.
-func checkoutsOf(sessions []lichclient.Session) []string {
+func checkoutsOf(sessions []backend.Session) []string {
 	var paths []string
 	for _, s := range sessions {
 		if !slices.Contains(paths, s.Path) {
@@ -141,7 +141,7 @@ func checkoutsOf(sessions []lichclient.Session) []string {
 // foldersOf names a project's folders in the order their first card sits,
 // the order their blocks are drawn in. Read off the unfiltered list: a folder
 // hidden by a filter is still one the user can file into.
-func foldersOf(sessions []lichclient.Session) []string {
+func foldersOf(sessions []backend.Session) []string {
 	var names []string
 	for _, s := range sessions {
 		if s.Folder != "" && !slices.Contains(names, s.Folder) {
@@ -153,7 +153,7 @@ func foldersOf(sessions []lichclient.Session) []string {
 
 // sharedColor is the palette color every card of a folder wears, "" when they
 // differ or are untinted.
-func sharedColor(sessions []lichclient.Session) string {
+func sharedColor(sessions []backend.Session) string {
 	if len(sessions) == 0 {
 		return ""
 	}
@@ -173,7 +173,7 @@ func sharedColor(sessions []lichclient.Session) string {
 // leaves every other session where it is. ids not naming that subset exactly
 // yields a repeat rather than a gap, which applyOrder (and the backend's
 // caller) rejects whole: that is how a drag raced by a close is dropped.
-func reorderSubset(stored []lichclient.Session, ids []string, member func(lichclient.Session) bool) []string {
+func reorderSubset(stored []backend.Session, ids []string, member func(backend.Session) bool) []string {
 	queue := slices.Clone(ids)
 	out := make([]string, len(stored))
 	for i, s := range stored {
@@ -204,7 +204,7 @@ func orderBlocks(blocks []sessionBlock, keys []string) []string {
 // pinned one) out in keys. The slots it may fill are the cards those blocks
 // drew, so a pinned card keeps its slot and lands back among its neighbors
 // once unpinned.
-func dragOrder(stored []lichclient.Session, blocks []sessionBlock, keys []string) []string {
+func dragOrder(stored []backend.Session, blocks []sessionBlock, keys []string) []string {
 	moved := map[string]bool{}
 	var movable []sessionBlock
 	for _, b := range blocks {
@@ -216,30 +216,30 @@ func dragOrder(stored []lichclient.Session, blocks []sessionBlock, keys []string
 			moved[s.ID] = true
 		}
 	}
-	return reorderSubset(stored, orderBlocks(movable, keys), func(s lichclient.Session) bool { return moved[s.ID] })
+	return reorderSubset(stored, orderBlocks(movable, keys), func(s backend.Session) bool { return moved[s.ID] })
 }
 
 // blockOrder is the order a drag inside block commits: ids fill the slots of
 // the cards that block drew, asked of the block rather than restated as a rule
 // about pins and paths.
-func blockOrder(stored []lichclient.Session, block sessionBlock, ids []string) []string {
+func blockOrder(stored []backend.Session, block sessionBlock, ids []string) []string {
 	drawn := map[string]bool{}
 	for _, s := range block.sessions {
 		drawn[s.ID] = true
 	}
-	return reorderSubset(stored, ids, func(s lichclient.Session) bool { return drawn[s.ID] })
+	return reorderSubset(stored, ids, func(s backend.Session) bool { return drawn[s.ID] })
 }
 
 // applyOrder returns sessions in ids order, false when
 // ids does not name exactly that set (a close raced the drag).
-func applyOrder(sessions []lichclient.Session, ids []string) ([]lichclient.Session, bool) {
+func applyOrder(sessions []backend.Session, ids []string) ([]backend.Session, bool) {
 	if len(ids) != len(sessions) {
 		return nil, false
 	}
-	next := make([]lichclient.Session, 0, len(ids))
+	next := make([]backend.Session, 0, len(ids))
 	for _, id := range ids {
-		i := slices.IndexFunc(sessions, func(s lichclient.Session) bool { return s.ID == id })
-		if i < 0 || slices.ContainsFunc(next, func(s lichclient.Session) bool { return s.ID == id }) {
+		i := slices.IndexFunc(sessions, func(s backend.Session) bool { return s.ID == id })
+		if i < 0 || slices.ContainsFunc(next, func(s backend.Session) bool { return s.ID == id }) {
 			return nil, false
 		}
 		next = append(next, sessions[i])
@@ -249,21 +249,21 @@ func applyOrder(sessions []lichclient.Session, ids []string) ([]lichclient.Sessi
 
 // fileSessions files the sessions ids names under folder, or unfiled for "",
 // the stored order untouched. false when ids names none of them.
-func fileSessions(sessions []lichclient.Session, ids []string, folder string) ([]lichclient.Session, bool) {
-	return refile(sessions, func(s lichclient.Session) bool { return slices.Contains(ids, s.ID) }, folder)
+func fileSessions(sessions []backend.Session, ids []string, folder string) ([]backend.Session, bool) {
+	return refile(sessions, func(s backend.Session) bool { return slices.Contains(ids, s.ID) }, folder)
 }
 
 // renameFolder moves every session filed under from to to, or out of any folder
 // for "". An empty from is refused, or it would sweep every unfiled session
 // into a folder nobody asked for.
-func renameFolder(sessions []lichclient.Session, from, to string) ([]lichclient.Session, bool) {
+func renameFolder(sessions []backend.Session, from, to string) ([]backend.Session, bool) {
 	if from == "" {
 		return sessions, false
 	}
-	return refile(sessions, func(s lichclient.Session) bool { return s.Folder == from }, to)
+	return refile(sessions, func(s backend.Session) bool { return s.Folder == from }, to)
 }
 
-func refile(sessions []lichclient.Session, picked func(lichclient.Session) bool, folder string) ([]lichclient.Session, bool) {
+func refile(sessions []backend.Session, picked func(backend.Session) bool, folder string) ([]backend.Session, bool) {
 	if !slices.ContainsFunc(sessions, picked) {
 		return sessions, false
 	}

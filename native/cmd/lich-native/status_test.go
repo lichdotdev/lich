@@ -6,18 +6,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 var t0 = time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
 
-func statusEv(t *testing.T, p statusEvent) lichclient.Event {
+func statusEv(t *testing.T, p statusEvent) backend.Event {
 	t.Helper()
 	data, err := json.Marshal(p)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return lichclient.Event{Name: statusEventName, Data: data}
+	return backend.Event{Name: statusEventName, Data: data}
 }
 
 // step is one report, landing secs seconds after t0.
@@ -209,13 +209,13 @@ func TestStatusStoreAgeClampsBackwardsClock(t *testing.T) {
 
 func TestStatusStoreApplyErrors(t *testing.T) {
 	s := newStatusStore()
-	if changed, err := s.apply(lichclient.Event{Name: "session-cwd", Data: []byte(`{"id":"a"}`)}, t0); changed || err != nil {
+	if changed, err := s.apply(backend.Event{Name: "session-cwd", Data: []byte(`{"id":"a"}`)}, t0); changed || err != nil {
 		t.Errorf("other event = %v %v, want ignored", changed, err)
 	}
-	if _, err := s.apply(lichclient.Event{Name: statusEventName, Data: []byte(`{"id":"a","state":1}`)}, t0); err == nil {
+	if _, err := s.apply(backend.Event{Name: statusEventName, Data: []byte(`{"id":"a","state":1}`)}, t0); err == nil {
 		t.Error("a non-string state decoded")
 	}
-	if _, err := s.apply(lichclient.Event{Name: statusEventName, Data: []byte(`{"state":"busy"}`)}, t0); err == nil {
+	if _, err := s.apply(backend.Event{Name: statusEventName, Data: []byte(`{"state":"busy"}`)}, t0); err == nil {
 		t.Error("a payload with no id was accepted")
 	}
 	if s.reported("") {

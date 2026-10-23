@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // attachFile is the footer's attach button. The
@@ -15,7 +15,7 @@ import (
 // built around the spawn directory. A cancelled dialog is no error; a failure
 // carries the backend's sentence, which names why a file was refused. write
 // puts the paste at the prompt.
-func attachFile(ctx context.Context, c *lichclient.Client, write func(ctx context.Context, id, block string) error, sessionID, checkout string, sandboxed, windows bool) error {
+func attachFile(ctx context.Context, c *backend.Client, write func(ctx context.Context, id, block string) error, sessionID, checkout string, sandboxed, windows bool) error {
 	a, err := c.Attach(ctx, sessionID, checkout, sandboxed)
 	if err != nil || a.Path == "" {
 		return err

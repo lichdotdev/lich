@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // fakeSettings serves store.GetSetting and store.SetSetting from an in-memory
@@ -24,7 +24,7 @@ type fakeSettings struct {
 	failing bool
 }
 
-func (f *fakeSettings) client(t *testing.T) *lichclient.Client {
+func (f *fakeSettings) client(t *testing.T) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var args []string
@@ -49,7 +49,7 @@ func (f *fakeSettings) client(t *testing.T) *lichclient.Client {
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 func (f *fakeSettings) get(key string) string {

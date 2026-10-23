@@ -4,8 +4,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 const defaultGitHubHost = "github.com"
@@ -70,7 +70,7 @@ func accountOptions(accounts []string, stored string) []string {
 // identityLine is the lead, the email in angle brackets ("" with no identity), and the note.
 type identityLine struct{ lead, email, note string }
 
-func identityLineOf(id lichclient.CommitIdentity) identityLine {
+func identityLineOf(id backend.CommitIdentity) identityLine {
 	if id.Email == "" {
 		return identityLine{lead: i18n.T("env.commitIdentity.noneLead"), note: i18n.T("env.commitIdentity.noneNote")}
 	}

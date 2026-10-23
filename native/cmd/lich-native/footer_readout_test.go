@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 func TestFormatCost(t *testing.T) {
@@ -171,21 +171,21 @@ func TestHandsOnDetailByRung(t *testing.T) {
 	}
 }
 
-func quotaPlan(windows ...lichclient.QuotaWindow) lichclient.QuotaPlan {
-	return lichclient.QuotaPlan{Provider: "claude", Name: "Claude", Status: "ok", Windows: windows}
+func quotaPlan(windows ...backend.QuotaWindow) backend.QuotaPlan {
+	return backend.QuotaPlan{Provider: "claude", Name: "Claude", Status: "ok", Windows: windows}
 }
 
 func TestHottestWindow(t *testing.T) {
-	session := lichclient.QuotaWindow{Label: "Session", Percent: 40}
-	weekly := lichclient.QuotaWindow{Label: "Weekly", Percent: 80}
+	session := backend.QuotaWindow{Label: "Session", Percent: 40}
+	weekly := backend.QuotaWindow{Label: "Weekly", Percent: 80}
 	cases := []struct {
 		name string
-		plan lichclient.QuotaPlan
+		plan backend.QuotaPlan
 		want string
 	}{
 		{"closest to spent, whatever its position", quotaPlan(session, weekly), "Weekly"},
-		{"provider's order on a tie", quotaPlan(session, lichclient.QuotaWindow{Label: "Weekly", Percent: 40}), "Session"},
-		{"the active verdict wins", quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 10, Active: true}, weekly), "Session"},
+		{"provider's order on a tie", quotaPlan(session, backend.QuotaWindow{Label: "Weekly", Percent: 40}), "Session"},
+		{"the active verdict wins", quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 10, Active: true}, weekly), "Session"},
 	}
 	for _, c := range cases {
 		if got, _ := hottestWindow(c.plan); got.Label != c.want {
@@ -199,19 +199,19 @@ func TestHottestWindow(t *testing.T) {
 
 func TestPlanReadout(t *testing.T) {
 	plan := quotaPlan(
-		lichclient.QuotaWindow{Label: "Session", Seconds: 18000, Percent: 96},
-		lichclient.QuotaWindow{Label: "Weekly", Seconds: 604800, Percent: 20, LockedReason: "Out of credits"},
+		backend.QuotaWindow{Label: "Session", Seconds: 18000, Percent: 96},
+		backend.QuotaWindow{Label: "Weekly", Seconds: 604800, Percent: 20, LockedReason: "Out of credits"},
 	)
 	plan.Plan = "Max"
 	r, ok := planReadout(plan)
 	if !ok || r.Text != "wk Locked" || r.Tone != toneDestructive || r.Title != "Claude · Max" {
 		t.Errorf("a locked window must stay visible: %+v", r)
 	}
-	r, _ = planReadout(quotaPlan(lichclient.QuotaWindow{Label: "Session", Seconds: 18000, Percent: 82}))
+	r, _ = planReadout(quotaPlan(backend.QuotaWindow{Label: "Session", Seconds: 18000, Percent: 82}))
 	if r.Text != "5h 82%" || r.Tone != toneWait || r.Title != "Claude" {
 		t.Errorf("got %+v", r)
 	}
-	signedOut := quotaPlan(lichclient.QuotaWindow{Label: "Session", Percent: 1})
+	signedOut := quotaPlan(backend.QuotaWindow{Label: "Session", Percent: 1})
 	signedOut.Status = "signed-out"
 	if _, ok := planReadout(signedOut); ok {
 		t.Error("a reading that is not ok drew a readout")
@@ -219,7 +219,7 @@ func TestPlanReadout(t *testing.T) {
 }
 
 func TestPlanFor(t *testing.T) {
-	plans := []lichclient.QuotaPlan{{Provider: "codex"}, {Provider: "claude"}}
+	plans := []backend.QuotaPlan{{Provider: "codex"}, {Provider: "claude"}}
 	if p, ok := planFor(plans, "claude"); !ok || p.Provider != "claude" {
 		t.Errorf("got %+v, %v", p, ok)
 	}
@@ -233,8 +233,8 @@ func TestPlanFor(t *testing.T) {
 func TestQuotaGauges(t *testing.T) {
 	now := time.Date(2026, 8, 17, 12, 0, 0, 0, time.UTC)
 	plan := quotaPlan(
-		lichclient.QuotaWindow{Label: "Session", Seconds: 18000, Percent: 42, ResetsAt: "2026-08-17T16:12:00Z"},
-		lichclient.QuotaWindow{Label: "Weekly", Seconds: 604800, Percent: 85, Ahead: true, LockedReason: "x"},
+		backend.QuotaWindow{Label: "Session", Seconds: 18000, Percent: 42, ResetsAt: "2026-08-17T16:12:00Z"},
+		backend.QuotaWindow{Label: "Weekly", Seconds: 604800, Percent: 85, Ahead: true, LockedReason: "x"},
 	)
 	want := []quotaGauge{
 		{Label: "Session · 5h", Reading: "42%", Left: "4h 12m", Percent: 42},
@@ -247,12 +247,12 @@ func TestQuotaGauges(t *testing.T) {
 
 func TestAccountLine(t *testing.T) {
 	cases := []struct {
-		plan lichclient.QuotaPlan
+		plan backend.QuotaPlan
 		want string
 	}{
-		{lichclient.QuotaPlan{Account: "dev@example.com"}, "dev@example.com"},
-		{lichclient.QuotaPlan{NoAccount: "token-login"}, "Token login"},
-		{lichclient.QuotaPlan{}, ""},
+		{backend.QuotaPlan{Account: "dev@example.com"}, "dev@example.com"},
+		{backend.QuotaPlan{NoAccount: "token-login"}, "Token login"},
+		{backend.QuotaPlan{}, ""},
 	}
 	for _, c := range cases {
 		if got := accountLine(c.plan); got != c.want {
@@ -320,7 +320,7 @@ func TestComposeDroppedPaths(t *testing.T) {
 }
 
 // attachBackend answers drop.Attach with picked and records terminal.Write.
-func attachBackend(t *testing.T, picked lichclient.Attachment, writes *[][]string) *lichclient.Client {
+func attachBackend(t *testing.T, picked backend.Attachment, writes *[][]string) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var args []json.RawMessage
@@ -345,12 +345,12 @@ func attachBackend(t *testing.T, picked lichclient.Attachment, writes *[][]strin
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 func TestAttachFilePastesThePickedPathUnsent(t *testing.T) {
 	var writes [][]string
-	c := attachBackend(t, lichclient.Attachment{Path: "/cfg/dropped/b.png", Notice: "copy of b"}, &writes)
+	c := attachBackend(t, backend.Attachment{Path: "/cfg/dropped/b.png", Notice: "copy of b"}, &writes)
 	if err := attachFile(context.Background(), c, c.Write, "s1", "/repo", true, false); err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +362,7 @@ func TestAttachFilePastesThePickedPathUnsent(t *testing.T) {
 
 func TestAttachFileCancelledWritesNothing(t *testing.T) {
 	var writes [][]string
-	c := attachBackend(t, lichclient.Attachment{}, &writes)
+	c := attachBackend(t, backend.Attachment{}, &writes)
 	if err := attachFile(context.Background(), c, c.Write, "s1", "/repo", true, false); err != nil || len(writes) != 0 {
 		t.Errorf("cancelled dialog: err %v, writes %q", err, writes)
 	}

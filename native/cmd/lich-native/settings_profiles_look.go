@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -17,9 +17,9 @@ var (
 // profileLookEntries are a profile row's Color grid, Choose image… and, while
 // it has one, Remove image. The grid is the card's, but its first swatch is the
 // profile's own derived color rather than the theme.
-func (s *settingsScreen) profileLookEntries(c *profileSettings, p lichclient.Profile) []ui.MenuEntry {
+func (s *settingsScreen) profileLookEntries(c *profileSettings, p backend.Profile) []ui.MenuEntry {
 	swatches := colorSwatches(p.Color, func(name string) {
-		go s.updateLook(c, p.Slug, lichclient.ProfileUpdate{Color: &name})
+		go s.updateLook(c, p.Slug, backend.ProfileUpdate{Color: &name})
 	})
 	swatches[0].Swatch, swatches[0].Label = profileColor(p.Slug, ""), i18n.T("settings.settingsProfilesView.automaticColor")
 	entries := []ui.MenuEntry{
@@ -30,7 +30,7 @@ func (s *settingsScreen) profileLookEntries(c *profileSettings, p lichclient.Pro
 		none := ""
 		entries = append(entries, ui.MenuEntry{
 			Label: i18n.T("settings.settingsProfilesView.removeImage"), Icon: icProfileNoImage,
-			OnClick: func() { go s.updateLook(c, p.Slug, lichclient.ProfileUpdate{Image: &none}) },
+			OnClick: func() { go s.updateLook(c, p.Slug, backend.ProfileUpdate{Image: &none}) },
 		})
 	}
 	return entries
@@ -43,11 +43,11 @@ func (s *settingsScreen) chooseProfileImage(c *profileSettings, slug string) {
 		return
 	}
 	if path != "" {
-		s.updateLook(c, slug, lichclient.ProfileUpdate{Image: &path})
+		s.updateLook(c, slug, backend.ProfileUpdate{Image: &path})
 	}
 }
 
-func (s *settingsScreen) updateLook(c *profileSettings, slug string, u lichclient.ProfileUpdate) {
+func (s *settingsScreen) updateLook(c *profileSettings, slug string, u backend.ProfileUpdate) {
 	if _, err := c.provider.api(s.client).Update(s.ctx, slug, u); err != nil {
 		s.lookFailed(slug, err)
 	}

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 type sentNotice struct{ summary, detail string }
@@ -39,7 +39,7 @@ func newNotifyRig(prefs notifyPrefs) *notifyRig {
 		sink:  fakeNotes{sent: &r.sent, withdrawn: &r.withdrawn},
 		store: func(key, value string) { r.stored[key] = value }}
 	r.m = newModel(nil, func() {})
-	r.m.projects = []lichclient.Project{{ID: "p", Name: "lich", Sessions: []lichclient.Session{
+	r.m.projects = []backend.Project{{ID: "p", Name: "lich", Sessions: []backend.Session{
 		{ID: "a", Label: "fix the build"}, {ID: "b"},
 	}}}
 	r.m.notify = r.n.report

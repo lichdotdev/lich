@@ -15,8 +15,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -61,7 +61,7 @@ func (c *fileCard) prBinary(gtx C, p *reviewPanel) D {
 		_, name := splitPath(c.git.path)
 		go func() {
 			if err := p.client.OpenExternal(context.Background(), url); err != nil {
-				p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
+				p.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": name}), Description: backend.ErrorText(err)})
 			}
 		}()
 	}

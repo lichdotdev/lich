@@ -12,8 +12,8 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -46,7 +46,7 @@ type openMenu struct {
 
 // snapshot is the menu's page of the closed projects and which of their
 // directories are gone.
-func (o *openMenu) snapshot() ([]lichclient.RecentProject, map[string]bool) {
+func (o *openMenu) snapshot() ([]backend.RecentProject, map[string]bool) {
 	if o.closed == nil {
 		return nil, nil
 	}
@@ -86,7 +86,7 @@ func (t *topbar) openButton(gtx C, th *ui.Theme, act *topbarAction) D {
 	})
 }
 
-func (o *openMenu) content(gtx C, th *ui.Theme, recents []lichclient.RecentProject, missing map[string]bool) D {
+func (o *openMenu) content(gtx C, th *ui.Theme, recents []backend.RecentProject, missing map[string]bool) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return menuHeader(gtx, th, i18n.T("tabs.openProjectMenu.recent"), "") }),
 		layout.Rigid(menuSeparator(th)),
@@ -109,7 +109,7 @@ func (o *openMenu) content(gtx C, th *ui.Theme, recents []lichclient.RecentProje
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r lichclient.RecentProject, gone bool) D {
+func recentRow(gtx C, th *ui.Theme, click *widget.Clickable, r backend.RecentProject, gone bool) D {
 	return popoverRow(gtx, th, click, func(gtx C, th *ui.Theme) D {
 		ic := icFolderPlain
 		if gone {

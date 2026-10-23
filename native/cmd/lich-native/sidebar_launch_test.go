@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestReadEnabledLeavesOnlyClaudeOnByDefault(t *testing.T) {
@@ -71,7 +71,7 @@ func TestFolderLaunchHeading(t *testing.T) {
 
 func TestModelLaunchMenuReadsDetectionFlagsAndDefaults(t *testing.T) {
 	f, c := newSidebarBackend(t)
-	f.detected = []lichclient.DetectedProvider{
+	f.detected = []backend.DetectedProvider{
 		{ID: "claude", Name: "Claude Code", Installed: true},
 		{ID: "codex", Name: "Codex", Installed: true},
 		{ID: "crush", Name: "Crush"},
@@ -81,7 +81,7 @@ func TestModelLaunchMenuReadsDetectionFlagsAndDefaults(t *testing.T) {
 	f.settings["provider.default@"] = "crush"
 	f.settings["provider.default@p"] = "codex"
 	m := newModel(c, func() {})
-	m.projects = []lichclient.Project{{ID: "p"}}
+	m.projects = []backend.Project{{ID: "p"}}
 	m.providers.noteProjects(m.projects)
 	if err := m.providers.reload(context.Background()); err != nil {
 		t.Fatal(err)

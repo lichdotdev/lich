@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // forkableKinds are providers.SupportsFork: the providers whose own CLI
@@ -55,12 +55,12 @@ type forkSource struct {
 	path string
 }
 
-func forkSourceOf(s lichclient.Session) forkSource {
+func forkSourceOf(s backend.Session) forkSource {
 	return forkSource{id: s.ID, label: s.Label, kind: s.Kind, conversation: s.ProviderSessionID, folder: s.Folder, path: s.Path}
 }
 
 // labelsOf are the names a project's open sessions go by.
-func labelsOf(p lichclient.Project) []string {
+func labelsOf(p backend.Project) []string {
 	labels := make([]string, len(p.Sessions))
 	for i, s := range p.Sessions {
 		labels[i] = s.Label

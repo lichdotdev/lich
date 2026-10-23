@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // pendingRecheck is how often a pull request still settling is read again
@@ -30,31 +30,31 @@ type pullsRead[T any] struct {
 // stale, one read per key at a time.
 type pullsStore struct {
 	ctx        context.Context
-	client     *lichclient.Client
+	client     *backend.Client
 	invalidate func()
 
 	mu sync.Mutex
 	// staledAt is when every read was last owed a newer answer.
 	staledAt  time.Time
-	lists     map[string]*pullsRead[[]lichclient.PRSummary]
-	details   map[string]*pullsRead[*lichclient.PRDetail]
-	rules     map[string]*pullsRead[*lichclient.BranchRules]
+	lists     map[string]*pullsRead[[]backend.PRSummary]
+	details   map[string]*pullsRead[*backend.PRDetail]
+	rules     map[string]*pullsRead[*backend.BranchRules]
 	conflicts map[string]*pullsRead[[]string]
-	checkouts map[string]*pullsRead[[]lichclient.Worktree]
+	checkouts map[string]*pullsRead[[]backend.Worktree]
 	diffs     map[string]*pullsRead[string]
-	talks     map[string]*pullsRead[*lichclient.PRConversation]
+	talks     map[string]*pullsRead[*backend.PRConversation]
 }
 
-func newPullsStore(ctx context.Context, c *lichclient.Client, invalidate func()) *pullsStore {
+func newPullsStore(ctx context.Context, c *backend.Client, invalidate func()) *pullsStore {
 	return &pullsStore{
 		ctx: ctx, client: c, invalidate: invalidate,
-		lists:     map[string]*pullsRead[[]lichclient.PRSummary]{},
-		details:   map[string]*pullsRead[*lichclient.PRDetail]{},
-		rules:     map[string]*pullsRead[*lichclient.BranchRules]{},
+		lists:     map[string]*pullsRead[[]backend.PRSummary]{},
+		details:   map[string]*pullsRead[*backend.PRDetail]{},
+		rules:     map[string]*pullsRead[*backend.BranchRules]{},
 		conflicts: map[string]*pullsRead[[]string]{},
-		checkouts: map[string]*pullsRead[[]lichclient.Worktree]{},
+		checkouts: map[string]*pullsRead[[]backend.Worktree]{},
 		diffs:     map[string]*pullsRead[string]{},
-		talks:     map[string]*pullsRead[*lichclient.PRConversation]{},
+		talks:     map[string]*pullsRead[*backend.PRConversation]{},
 	}
 }
 
@@ -76,7 +76,7 @@ func read[T any](s *pullsStore, entries map[string]*pullsRead[T], key string, lo
 			e.loading, e.loaded, e.at = false, true, time.Now()
 			e.val, e.err = val, ""
 			if err != nil {
-				e.err = lichclient.ErrorText(err)
+				e.err = backend.ErrorText(err)
 			}
 			s.mu.Unlock()
 			s.invalidate()
@@ -113,22 +113,22 @@ func (s *pullsStore) stale() {
 	s.invalidate()
 }
 
-func (s *pullsStore) list(path string, state pullsState) pullsRead[[]lichclient.PRSummary] {
-	return read(s, s.lists, path+"\x00"+string(state), func() ([]lichclient.PRSummary, error) {
+func (s *pullsStore) list(path string, state pullsState) pullsRead[[]backend.PRSummary] {
+	return read(s, s.lists, path+"\x00"+string(state), func() ([]backend.PRSummary, error) {
 		return s.client.ListPullRequests(s.ctx, path, string(state))
 	})
 }
 
 // detail reads pull request number, again every pendingRecheck while it is
 // still settling (stillSettling).
-func (s *pullsStore) detail(path string, number int) pullsRead[*lichclient.PRDetail] {
+func (s *pullsStore) detail(path string, number int) pullsRead[*backend.PRDetail] {
 	key := fmt.Sprint(path, "\x00", number)
 	s.mu.Lock()
 	if e, ok := s.details[key]; ok && e.val != nil && stillSettling(*e.val) && time.Since(e.at) >= pendingRecheck {
 		e.stale = true
 	}
 	s.mu.Unlock()
-	return read(s, s.details, key, func() (*lichclient.PRDetail, error) {
+	return read(s, s.details, key, func() (*backend.PRDetail, error) {
 		return s.client.PullRequestDetail(s.ctx, path, number)
 	})
 }
@@ -136,20 +136,20 @@ func (s *pullsStore) detail(path string, number int) pullsRead[*lichclient.PRDet
 // stillSettling is a pull request whose answer GitHub has not finished: a check
 // still running, or mergeability it reads UNKNOWN while it recomputes after a
 // push to the branch or its base. Nothing announces the end of either.
-func stillSettling(d lichclient.PRDetail) bool {
+func stillSettling(d backend.PRDetail) bool {
 	if d.Checks.Pending > 0 {
 		return true
 	}
 	return d.State == "OPEN" && (d.Mergeable == "UNKNOWN" || d.MergeStateStatus == "UNKNOWN")
 }
 
-func (s *pullsStore) branchRules(path, base string) *lichclient.BranchRules {
-	return read(s, s.rules, path+"\x00"+base, func() (*lichclient.BranchRules, error) {
+func (s *pullsStore) branchRules(path, base string) *backend.BranchRules {
+	return read(s, s.rules, path+"\x00"+base, func() (*backend.BranchRules, error) {
 		return s.client.BranchRules(s.ctx, path, base)
 	}).val
 }
 
-func (s *pullsStore) conflictFiles(path string, d *lichclient.PRDetail) pullsRead[[]string] {
+func (s *pullsStore) conflictFiles(path string, d *backend.PRDetail) pullsRead[[]string] {
 	return read(s, s.conflicts, d.URL, func() ([]string, error) {
 		return s.client.PullRequestConflicts(s.ctx, path, d.Number, d.BaseRefName, d.URL)
 	})
@@ -161,27 +161,27 @@ func (s *pullsStore) diff(path string, number int) pullsRead[string] {
 	})
 }
 
-func (s *pullsStore) conversation(path string, number int) pullsRead[*lichclient.PRConversation] {
-	return read(s, s.talks, fmt.Sprint(path, "\x00", number), func() (*lichclient.PRConversation, error) {
+func (s *pullsStore) conversation(path string, number int) pullsRead[*backend.PRConversation] {
+	return read(s, s.talks, fmt.Sprint(path, "\x00", number), func() (*backend.PRConversation, error) {
 		return s.client.PullRequestConversation(s.ctx, path, number)
 	})
 }
 
-func (s *pullsStore) checkoutsOf(path string) []lichclient.Worktree {
-	return read(s, s.checkouts, path, func() ([]lichclient.Worktree, error) {
+func (s *pullsStore) checkoutsOf(path string) []backend.Worktree {
+	return read(s, s.checkouts, path, func() ([]backend.Worktree, error) {
 		return s.client.ListCheckouts(s.ctx, path)
 	}).val
 }
 
 // freshCheckouts reads path's checkouts now, for an action that must not act
 // on a directory removed since the screen was drawn.
-func (s *pullsStore) freshCheckouts(path string) ([]lichclient.Worktree, error) {
+func (s *pullsStore) freshCheckouts(path string) ([]backend.Worktree, error) {
 	list, err := s.client.ListCheckouts(s.ctx, path)
 	if err != nil {
 		return nil, err
 	}
 	s.mu.Lock()
-	s.checkouts[path] = &pullsRead[[]lichclient.Worktree]{val: list, loaded: true, at: time.Now()}
+	s.checkouts[path] = &pullsRead[[]backend.Worktree]{val: list, loaded: true, at: time.Now()}
 	s.mu.Unlock()
 	return list, nil
 }

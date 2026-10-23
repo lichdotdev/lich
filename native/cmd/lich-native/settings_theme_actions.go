@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -57,7 +57,7 @@ func (p *themePicker) fail(title string) {
 
 // failedWith is the {error} argument of a failure message, in the backend's
 // own words.
-func failedWith(err error) i18n.Args { return i18n.Args{"error": lichclient.ErrorText(err)} }
+func failedWith(err error) i18n.Args { return i18n.Args{"error": backend.ErrorText(err)} }
 
 // reloadThemes rereads the list after a change, so the strip and the window
 // follow it at once.
@@ -213,7 +213,7 @@ func (u *window) showThemePicker(mode string) error {
 	u.settings.show("", nil)
 	p := u.settings.theme
 	p.open = true
-	var custom []lichclient.Theme
+	var custom []backend.Theme
 	for _, e := range u.appearance.view().themes {
 		if e.def.Origin == themeOriginCustom {
 			custom = append(custom, e.def)

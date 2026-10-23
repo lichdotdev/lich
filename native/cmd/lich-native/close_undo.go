@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -15,7 +15,7 @@ const undoToastDuration = 10 * time.Second
 
 // closedToast is closeSession's toast: Undo puts s back at index of its
 // project once parked reports the park done.
-func (u *window) closedToast(projectID string, s lichclient.Session, index int, parked <-chan error) ui.Toast {
+func (u *window) closedToast(projectID string, s backend.Session, index int, parked <-chan error) ui.Toast {
 	return ui.Toast{Title: i18n.T("shell.projects.closed", i18n.Args{"label": s.Label}), Duration: undoToastDuration,
 		Action: &ui.ToastButton{Label: i18n.T("shell.projects.undo"), OnClick: func() {
 			go u.undoClose(projectID, s, index, parked)
@@ -28,7 +28,7 @@ func (u *window) closedToast(projectID string, s lichclient.Session, index int, 
 // id, unspawned, so the spawn gate offers the conversation's resume as for
 // any restored card; when another open card already runs that conversation,
 // the store hands that card back instead and the undo only focuses it.
-func (u *window) undoClose(projectID string, s lichclient.Session, index int, parked <-chan error) {
+func (u *window) undoClose(projectID string, s backend.Session, index int, parked <-chan error) {
 	if err := <-parked; err != nil {
 		return // closeSession logged it; there is no parked row to bring back
 	}
@@ -48,12 +48,12 @@ func (u *window) undoClose(projectID string, s lichclient.Session, index int, pa
 }
 
 // slotOf is the open session with id and its place in its project.
-func (m *model) slotOf(id string) (lichclient.Session, int, bool) {
+func (m *model) slotOf(id string) (backend.Session, int, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	p, i := m.sessionAt(id)
 	if p == nil {
-		return lichclient.Session{}, -1, false
+		return backend.Session{}, -1, false
 	}
 	return p.Sessions[i], i, true
 }
@@ -61,15 +61,15 @@ func (m *model) slotOf(id string) (lichclient.Session, int, bool) {
 // restoreSession puts s back into its project at index, or the end when the
 // project has fewer, and makes it the project's active session. It returns
 // the project's card order, and false when the project is no longer open.
-func (m *model) restoreSession(projectID string, s lichclient.Session, index int) ([]string, bool) {
+func (m *model) restoreSession(projectID string, s backend.Session, index int) ([]string, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	pi := slices.IndexFunc(m.projects, func(p lichclient.Project) bool { return p.ID == projectID })
+	pi := slices.IndexFunc(m.projects, func(p backend.Project) bool { return p.ID == projectID })
 	if pi < 0 {
 		return nil, false
 	}
 	p := &m.projects[pi]
-	if !slices.ContainsFunc(p.Sessions, func(o lichclient.Session) bool { return o.ID == s.ID }) {
+	if !slices.ContainsFunc(p.Sessions, func(o backend.Session) bool { return o.ID == s.ID }) {
 		s.Path = checkoutPath(s.Path, p.Path)
 		p.Sessions = slices.Insert(p.Sessions, min(index, len(p.Sessions)), s)
 	}

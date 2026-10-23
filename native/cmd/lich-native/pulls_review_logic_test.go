@@ -3,18 +3,18 @@ package main
 import (
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
-func thread(id, at string, resolved bool) lichclient.PRReviewThread {
-	return lichclient.PRReviewThread{ID: id, IsResolved: resolved, Comments: []lichclient.PRThreadComment{{Date: at}}}
+func thread(id, at string, resolved bool) backend.PRReviewThread {
+	return backend.PRReviewThread{ID: id, IsResolved: resolved, Comments: []backend.PRThreadComment{{Date: at}}}
 }
 
 func TestConversationTimelineOrdersOldestFirstAndSetsResolvedApart(t *testing.T) {
-	c := &lichclient.PRConversation{
-		Reviews:  []lichclient.PRReview{{ID: "r", Date: "2026-01-03T00:00:00Z"}},
-		Comments: []lichclient.PRComment{{Author: "c", Date: "2026-01-01T00:00:00Z"}},
-		Threads: []lichclient.PRReviewThread{
+	c := &backend.PRConversation{
+		Reviews:  []backend.PRReview{{ID: "r", Date: "2026-01-03T00:00:00Z"}},
+		Comments: []backend.PRComment{{Author: "c", Date: "2026-01-01T00:00:00Z"}},
+		Threads: []backend.PRReviewThread{
 			thread("open", "2026-01-02T00:00:00Z", false),
 			thread("old", "2026-01-01T00:00:00Z", true),
 			thread("new", "2026-01-05T00:00:00Z", true),

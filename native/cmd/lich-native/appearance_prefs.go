@@ -14,10 +14,10 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -125,7 +125,7 @@ func parseNumber(raw string, fallback float64) float64 {
 }
 
 // loadAppearancePrefs reads the stored values.
-func loadAppearancePrefs(ctx context.Context, c *lichclient.Client) (appearancePrefs, error) {
+func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
 	for _, key := range []string{zoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey} {
 		v, err := c.GetSetting(ctx, key, "")
@@ -172,13 +172,13 @@ func (u *window) applyAppearance(p appearancePrefs) {
 		u.win.Option(app.TrafficLights(topbarHeight * unit.Dp(p.zoom)))
 	}
 	if err := u.terms.setFont(p.terminalFamily(), unit.Sp(p.fontSize)); err != nil {
-		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.terminalFontFailed", i18n.Args{"family": p.terminalFamily(), "error": lichclient.ErrorText(err)})))
+		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.terminalFontFailed", i18n.Args{"family": p.terminalFamily(), "error": backend.ErrorText(err)})))
 	}
 	if err := u.setCodeFont(p.codeFamily(), unit.Sp(p.editorFontSize)); err != nil {
-		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.editorFontFailed", i18n.Args{"family": p.codeFamily(), "error": lichclient.ErrorText(err)})))
+		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.editorFontFailed", i18n.Args{"family": p.codeFamily(), "error": backend.ErrorText(err)})))
 	}
 	if err := u.setInterfaceFonts(interfaceFonts{sans: p.uiFont, mono: p.codeFamily()}); err != nil {
-		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(p.uiFont, fonts.SystemSans), "error": lichclient.ErrorText(err)})))
+		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(p.uiFont, fonts.SystemSans), "error": backend.ErrorText(err)})))
 	}
 	u.footer.setBudget(p.budget)
 	u.win.Invalidate()

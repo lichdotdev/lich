@@ -6,7 +6,7 @@ import (
 	"image/color"
 	"maps"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // settingsProject is an open project as the scope selector lists it.
@@ -159,7 +159,7 @@ func scopedKeys() []string {
 // provider default and profiles, which the provider book reads. There is no
 // RPC that lists a project's settings, so it is one GetSetting per pair; the
 // keys are a handful and the projects are the open tabs.
-func loadScopedValues(ctx context.Context, c *lichclient.Client, projects []settingsProject) (scopedValues, error) {
+func loadScopedValues(ctx context.Context, c *backend.Client, projects []settingsProject) (scopedValues, error) {
 	values := scopedValues{}
 	for _, key := range scopedKeys() {
 		if key == providerDefaultKey || isProfileKey(key) {

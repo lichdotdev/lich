@@ -3,19 +3,19 @@ package main
 import (
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestShouldPromptUpdate(t *testing.T) {
-	newer := lichclient.AppUpdateStatus{UpdateAvailable: true, LatestVersion: "1.4.0"}
+	newer := backend.AppUpdateStatus{UpdateAvailable: true, LatestVersion: "1.4.0"}
 	if !shouldPromptUpdate(newer, "") || !shouldPromptUpdate(newer, "1.3.0") {
 		t.Error("a newer release Later was not clicked for did not prompt")
 	}
 	if shouldPromptUpdate(newer, "1.4.0") {
 		t.Error("a release Later was clicked for prompted again")
 	}
-	if shouldPromptUpdate(lichclient.AppUpdateStatus{LatestVersion: "1.4.0"}, "") {
+	if shouldPromptUpdate(backend.AppUpdateStatus{LatestVersion: "1.4.0"}, "") {
 		t.Error("an up-to-date lich prompted")
 	}
 }
@@ -23,14 +23,14 @@ func TestShouldPromptUpdate(t *testing.T) {
 func TestUpdateProgressToast(t *testing.T) {
 	cases := []struct {
 		name        string
-		p           *lichclient.AppUpdateProgress
+		p           *backend.AppUpdateProgress
 		title, desc string
 		bar         *ui.ToastProgress
 	}{
 		{"before the first step", nil, "Downloading lich 1.4.0", "", &ui.ToastProgress{Percent: -1}},
-		{"known total", &lichclient.AppUpdateProgress{Phase: "download", Received: 12_300_000, Total: 41_000_000}, "Downloading lich 1.4.0", "30% · 12.3 MB of 41.0 MB", &ui.ToastProgress{Percent: 30}},
-		{"no Content-Length", &lichclient.AppUpdateProgress{Phase: "download", Received: 5_000_000, Total: -1}, "Downloading lich 1.4.0", "5.0 MB", &ui.ToastProgress{Percent: -1}},
-		{"installer", &lichclient.AppUpdateProgress{Phase: "installer"}, "Installing lich 1.4.0…", "lich closes and reopens on its own.", nil},
+		{"known total", &backend.AppUpdateProgress{Phase: "download", Received: 12_300_000, Total: 41_000_000}, "Downloading lich 1.4.0", "30% · 12.3 MB of 41.0 MB", &ui.ToastProgress{Percent: 30}},
+		{"no Content-Length", &backend.AppUpdateProgress{Phase: "download", Received: 5_000_000, Total: -1}, "Downloading lich 1.4.0", "5.0 MB", &ui.ToastProgress{Percent: -1}},
+		{"installer", &backend.AppUpdateProgress{Phase: "installer"}, "Installing lich 1.4.0…", "lich closes and reopens on its own.", nil},
 	}
 	for _, c := range cases {
 		got := updateProgressToast("1.4.0", c.p)
@@ -44,10 +44,10 @@ func TestUpdateProgressToast(t *testing.T) {
 }
 
 func TestUpdateProgressToastSpinsOnlyThroughTheInstaller(t *testing.T) {
-	if got := updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: "installer"}); !got.Spin {
+	if got := updateProgressToast("1.4.0", &backend.AppUpdateProgress{Phase: "installer"}); !got.Spin {
 		t.Error("installer: no spinner")
 	}
-	for _, p := range []*lichclient.AppUpdateProgress{nil, {Phase: "download", Received: 1, Total: 2}} {
+	for _, p := range []*backend.AppUpdateProgress{nil, {Phase: "download", Received: 1, Total: 2}} {
 		if got := updateProgressToast("1.4.0", p); got.Icon != nil || got.Spin {
 			t.Errorf("%+v: icon %v spin %v, want no glyph while downloading", p, got.Icon, got.Spin)
 		}
@@ -56,13 +56,13 @@ func TestUpdateProgressToastSpinsOnlyThroughTheInstaller(t *testing.T) {
 
 func TestUpdateFailureTextNamesThePhase(t *testing.T) {
 	cases := []struct {
-		last *lichclient.AppUpdateProgress
+		last *backend.AppUpdateProgress
 		want string
 	}{
 		{nil, "Update failed: boom"},
-		{&lichclient.AppUpdateProgress{Phase: "installer"}, "Install failed: boom"},
-		{&lichclient.AppUpdateProgress{Phase: "download", Received: 50, Total: 100}, "Download failed at 50%: boom"},
-		{&lichclient.AppUpdateProgress{Phase: "download", Received: 50, Total: -1}, "Download failed: boom"},
+		{&backend.AppUpdateProgress{Phase: "installer"}, "Install failed: boom"},
+		{&backend.AppUpdateProgress{Phase: "download", Received: 50, Total: 100}, "Download failed at 50%: boom"},
+		{&backend.AppUpdateProgress{Phase: "download", Received: 50, Total: -1}, "Download failed: boom"},
 	}
 	for _, c := range cases {
 		if got := updateFailureText(c.last, "boom"); got != c.want {

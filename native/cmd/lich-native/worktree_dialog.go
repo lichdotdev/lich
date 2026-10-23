@@ -12,8 +12,8 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -34,7 +34,7 @@ const (
 // uncommitted changes come along, and whether the session runs confined.
 // Fields under mu are written by the reads it starts.
 type worktreeDialog struct {
-	client     *lichclient.Client
+	client     *backend.Client
 	root       *ui.Root
 	invalidate func()
 
@@ -51,21 +51,21 @@ type worktreeDialog struct {
 	cancel      widget.Clickable
 	create      widget.Clickable
 
-	project  lichclient.Project
+	project  backend.Project
 	kind     string
-	source   string               // the checkout the carry copies from
-	checkout lichclient.DiffStats // that checkout's git status
+	source   string            // the checkout the carry copies from
+	checkout backend.DiffStats // that checkout's git status
 	// fork is the session a fork-to-worktree branches, nil for the + menu's
 	// new worktree.
 	fork *forkSource
 
 	mu         sync.Mutex
-	branches   *lichclient.Branches
+	branches   *backend.Branches
 	loadErr    string
 	base       string
 	checks     map[string]*baseCheck
 	issueRef   int
-	issue      *lichclient.Issue
+	issue      *backend.Issue
 	issueErr   string
 	canConfine bool
 	// rungConfined is the box's starting value, applied by the frame once
@@ -76,7 +76,7 @@ type worktreeDialog struct {
 	done                   bool
 }
 
-func newWorktreeDialog(c *lichclient.Client, root *ui.Root, invalidate func()) *worktreeDialog {
+func newWorktreeDialog(c *backend.Client, root *ui.Root, invalidate func()) *worktreeDialog {
 	return &worktreeDialog{client: c, root: root, invalidate: invalidate}
 }
 
@@ -84,7 +84,7 @@ func newWorktreeDialog(c *lichclient.Client, root *ui.Root, invalidate func()) *
 // of p) and fork (nil for a new session), and starts the reads it draws:
 // branches, the sandbox rung, the base's freshness. A fork opens with its
 // checkout's uncommitted work coming along, the moment a fork is usually made.
-func (d *worktreeDialog) show(ctx context.Context, p lichclient.Project, kind, source string, checkout lichclient.DiffStats, fork *forkSource) {
+func (d *worktreeDialog) show(ctx context.Context, p backend.Project, kind, source string, checkout backend.DiffStats, fork *forkSource) {
 	d.open, d.focus, d.pickerOpen = true, true, false
 	d.picker.Close()
 	d.project, d.kind, d.source, d.checkout, d.fork = p, kind, source, checkout, fork
@@ -105,7 +105,7 @@ func (d *worktreeDialog) loadBranches(ctx context.Context) {
 	b, err := d.client.ListBranches(ctx, d.project.Path)
 	d.mu.Lock()
 	if err != nil {
-		d.loadErr = lichclient.ErrorText(err)
+		d.loadErr = backend.ErrorText(err)
 	} else {
 		// Picking a worktree opens its session, which forks nothing.
 		if d.fork != nil {
@@ -124,7 +124,7 @@ func (d *worktreeDialog) loadBranches(ctx context.Context) {
 
 // preferredBase is the row the dialog opens on: the checkout's own branch,
 // else the first local one.
-func preferredBase(b lichclient.Branches, current string) string {
+func preferredBase(b backend.Branches, current string) string {
 	for _, name := range b.Local {
 		if name == current {
 			return baseValue(baseLocal, name)
@@ -184,7 +184,7 @@ func (d *worktreeDialog) checkBase(ctx context.Context, base string) {
 		d.mu.Lock()
 		check.freshness = f
 		if err != nil {
-			check.err = lichclient.ErrorText(err)
+			check.err = backend.ErrorText(err)
 		}
 		d.mu.Unlock()
 		close(check.done)
@@ -227,7 +227,7 @@ func (d *worktreeDialog) lookUpIssue(ctx context.Context, typed string) {
 		d.mu.Lock()
 		if d.issueRef == ref {
 			if err != nil {
-				d.issueErr = lichclient.ErrorText(err)
+				d.issueErr = backend.ErrorText(err)
 			} else {
 				d.issue = &issue
 			}
@@ -239,12 +239,12 @@ func (d *worktreeDialog) lookUpIssue(ctx context.Context, typed string) {
 
 // worktreeView is one frame's read of the dialog's state.
 type worktreeView struct {
-	branches   *lichclient.Branches
+	branches   *backend.Branches
 	loadErr    string
 	base       string
 	check      *baseCheck
 	issueRef   int
-	issue      *lichclient.Issue
+	issue      *backend.Issue
 	issueErr   string
 	canConfine bool
 	submitting bool
@@ -294,7 +294,7 @@ func (d *worktreeDialog) canCarry(base string) bool {
 
 // worktreeRequest is what Create hands the window, read off the frame.
 type worktreeRequest struct {
-	project lichclient.Project
+	project backend.Project
 	kind    string
 	name    string
 	base    string
@@ -349,7 +349,7 @@ func (u *window) openWorktree(r worktreeRequest) {
 	start, remote := startPoint(r.base, r.check, r.carry)
 	wt, err := u.client.CreateWorktree(u.ctx, r.project.Path, r.project.ID, r.name, start, remote)
 	if err != nil {
-		d.setSubmitting(lichclient.ErrorText(err))
+		d.setSubmitting(backend.ErrorText(err))
 		return
 	}
 	if r.carry {
@@ -357,7 +357,7 @@ func (u *window) openWorktree(r worktreeRequest) {
 	}
 	id, err := u.worktreeSession(r, wt)
 	if err != nil {
-		d.setSubmitting(lichclient.ErrorText(err))
+		d.setSubmitting(backend.ErrorText(err))
 		return
 	}
 	if r.brief != "" {
@@ -376,19 +376,19 @@ func (d *worktreeDialog) closeAfter() {
 
 // carryInto copies the checkout's uncommitted work into the new worktree,
 // and says so when it cannot: the worktree is worth opening either way.
-func (u *window) carryInto(from string, wt *lichclient.Worktree) {
+func (u *window) carryInto(from string, wt *backend.Worktree) {
 	if wt.Reused {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastWarning, Title: i18n.T("sidebar.worktreeDialog.carryReused", i18n.Args{"name": wt.Name})})
 		return
 	}
 	if err := u.client.CarryUncommitted(u.ctx, from, wt.Path); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.carryFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.carryFailed", i18n.Args{"error": backend.ErrorText(err)})})
 	}
 }
 
 // worktreeSession is the new worktree's session: a fork of the dialog's
 // source, or a fresh one.
-func (u *window) worktreeSession(r worktreeRequest, wt *lichclient.Worktree) (string, error) {
+func (u *window) worktreeSession(r worktreeRequest, wt *backend.Worktree) (string, error) {
 	if r.fork != nil {
 		return u.addForkSession(r.project, *r.fork, wt.Path)
 	}
@@ -397,7 +397,7 @@ func (u *window) worktreeSession(r worktreeRequest, wt *lichclient.Worktree) (st
 
 // addWorktreeSession records the worktree's session, named after it, and
 // puts it on screen.
-func (u *window) addWorktreeSession(r worktreeRequest, wt *lichclient.Worktree, sandbox string) (string, error) {
+func (u *window) addWorktreeSession(r worktreeRequest, wt *backend.Worktree, sandbox string) (string, error) {
 	id := strings.ToLower(rand.Text())
 	if err := u.client.AddSessionWithSandbox(u.ctx, r.project.ID, id, wt.Name, r.kind, wt.Path, r.project.NextSeq+1, sandbox); err != nil {
 		return "", err
@@ -411,20 +411,20 @@ func (u *window) reopenWorktree(r worktreeRequest, path string) {
 	d := u.worktree
 	restored, err := u.client.ReopenWorktreeSession(u.ctx, r.project.ID, path, strings.ToLower(rand.Text()))
 	if err != nil {
-		d.setSubmitting(lichclient.ErrorText(err))
+		d.setSubmitting(backend.ErrorText(err))
 		return
 	}
 	if restored == nil {
 		name := path[strings.LastIndexAny(path, `/\`)+1:]
-		if _, err := u.addWorktreeSession(r, &lichclient.Worktree{Name: name, Path: path}, ""); err != nil {
-			d.setSubmitting(lichclient.ErrorText(err))
+		if _, err := u.addWorktreeSession(r, &backend.Worktree{Name: name, Path: path}, ""); err != nil {
+			d.setSubmitting(backend.ErrorText(err))
 			return
 		}
 		d.closeAfter()
 		return
 	}
 	if err := u.showNewSession(r.project.ID, restored.ID); err != nil {
-		d.setSubmitting(lichclient.ErrorText(err))
+		d.setSubmitting(backend.ErrorText(err))
 		return
 	}
 	d.closeAfter()
@@ -448,7 +448,7 @@ func (u *window) submitAtPrompt(id, message string) {
 		return
 	}
 	if err := u.client.Submit(u.ctx, id, message); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": backend.ErrorText(err)})})
 	}
 }
 

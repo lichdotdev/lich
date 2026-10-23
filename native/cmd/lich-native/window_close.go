@@ -10,8 +10,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -57,7 +57,7 @@ func (u *window) closeIsHeld() bool {
 func (u *window) askOrQuit(action string) {
 	live, err := u.client.LiveCount(u.ctx)
 	if err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.windowClose.countFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.windowClose.countFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	if closeQuits(action, live) {
@@ -74,7 +74,7 @@ func (u *window) askOrQuit(action string) {
 
 func (u *window) quitLich() {
 	if err := u.client.Quit(u.ctx); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.windowClose.quitFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.windowClose.quitFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	u.leave()

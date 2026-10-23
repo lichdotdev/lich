@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // footerInput is everything FooterBar reads about what is on screen: the
@@ -15,12 +15,12 @@ type footerInput struct {
 	checkout  string // where the session was spawned, which a cd does not move
 	sandboxed bool
 	host      string // where the shell went that the backend cannot see into
-	git       lichclient.DiffStats
+	git       backend.DiffStats
 	isGit     bool // path is a git checkout git answered for
-	pr        *lichclient.PullRequest
+	pr        *backend.PullRequest
 	usage     sessionUsage
 	hasUsage  bool
-	plans     []lichclient.QuotaPlan
+	plans     []backend.QuotaPlan
 	handsOn   int64
 	// handsOnErr is why the hands-on figure could not be read.
 	handsOnErr error
@@ -40,7 +40,7 @@ type footerSlot struct {
 	// Hint is the tooltip of checkout, path and model.
 	Hint    string
 	Readout footerReadout // context, plan, cost, handsOn
-	Plan    lichclient.QuotaPlan
+	Plan    backend.QuotaPlan
 }
 
 // footerSlots is the side's items that have something to show, in order.

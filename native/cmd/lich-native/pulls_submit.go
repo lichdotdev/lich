@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -48,7 +48,7 @@ type submitState struct {
 
 // reviewButton is Approve while nothing is pending, else the "Submit review
 // N" menu of verdicts, which opens the dialog.
-func (v *pullView) reviewButton(gtx C, th *ui.Theme, p *pullsScreen, d lichclient.PRDetail, busy, blocked string, act *pullsAction) D {
+func (v *pullView) reviewButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, blocked string, act *pullsAction) D {
 	pending := len(v.pendingOf(d.URL).snapshot())
 	if pending == 0 {
 		label := i18n.T("pulls.pullRequestView.approve")
@@ -92,7 +92,7 @@ func (u *window) layoutSubmitDialog(gtx C, th *ui.Theme) {
 		s.verdict = ""
 	}
 	open := s.verdict != "" && p.open && p.selected != 0
-	var d *lichclient.PRDetail
+	var d *backend.PRDetail
 	if open {
 		d = p.store.detail(p.project.Path, p.selected).val
 		open = d != nil
@@ -137,7 +137,7 @@ func ctrlEnter(gtx C, ed *widget.Editor) bool {
 
 func keyFocus(ed *widget.Editor) key.FocusCmd { return key.FocusCmd{Tag: ed} }
 
-func (u *window) submitPR(path string, d lichclient.PRDetail, verdict, summary string, review *pendingReview) {
+func (u *window) submitPR(path string, d backend.PRDetail, verdict, summary string, review *pendingReview) {
 	v := &u.pulls.view
 	v.setBusy("submit")
 	defer v.setBusy("")
@@ -147,7 +147,7 @@ func (u *window) submitPR(path string, d lichclient.PRDetail, verdict, summary s
 	}
 	sent := review.snapshot()
 	if err := u.client.SubmitReview(u.ctx, path, d.Number, verdict, summary, head, sent); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.reviewFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pullRequestView.reviewFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	review.drop(sent)
@@ -166,7 +166,7 @@ func (u *window) applyTalk(path string, number int, act pullsAction) {
 	if act.comment != "" {
 		body := act.comment
 		go u.prWrite("comment", func(err error) string {
-			return i18n.T("pulls.pullsConversation.commentFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+			return i18n.T("pulls.pullsConversation.commentFailed", i18n.Args{"error": backend.ErrorText(err)})
 		}, func() error {
 			if err := u.client.CommentOnPullRequest(u.ctx, path, number, body); err != nil {
 				return err
@@ -178,7 +178,7 @@ func (u *window) applyTalk(path string, number int, act pullsAction) {
 	if r := act.reply; r != nil {
 		reply := *r
 		go u.prWrite("reply:"+reply.thread, func(err error) string {
-			return i18n.T("pulls.reviewThread.replyFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+			return i18n.T("pulls.reviewThread.replyFailed", i18n.Args{"error": backend.ErrorText(err)})
 		}, func() error {
 			if err := u.client.ReplyToReviewThread(u.ctx, path, number, reply.commentID, reply.body); err != nil {
 				return err
@@ -196,7 +196,7 @@ func (u *window) applyTalk(path string, number int, act pullsAction) {
 	if r := act.resolve; r != nil {
 		resolve := *r
 		go u.prWrite("resolve:"+resolve.id, func(err error) string {
-			args := i18n.Args{"error": lichclient.ErrorText(err)}
+			args := i18n.Args{"error": backend.ErrorText(err)}
 			if resolve.resolved {
 				return i18n.T("pulls.reviewThread.resolveFailed", args)
 			}

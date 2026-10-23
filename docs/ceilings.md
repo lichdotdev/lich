@@ -556,7 +556,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `TestEveryCallTheCLIPostsTakesOneOptionsObject` (`internal/cli/rpcshape_test.go`) reads every method name the
   CLI's source posts and fails on one whose parameters are anything but one struct or none, and
   `internal/cli/wire_test.go` posts each one as a client of another release. The window's own calls
-  (`native/lichclient`) stay positional, on the promise that `lich-native` ships in the same release as the
+  (`native/backend`) stay positional, on the promise that `lich-native` ships in the same release as the
   backend it talks to; a window from another build, pinned with `LICH_NATIVE` or replaced on disk by an upgrade
   under a running backend, is the case that promise does not cover.
 - **A release's highlight is read from the binary, so fixing it after the tag fixes nothing a user sees**
@@ -926,7 +926,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`exitMarker`, `native/cmd/lich-native/terminal_exit.go`), because it is data in the replay and not a label;
   the `Session N` label a session gets when nothing names it (`internal/spawn/spawn.go`), because
   it is persisted and would otherwise change language on the next launch only for the rows made afterwards;
-  every error and the output of `lichclient.ErrorText`, which show backend and library text as it came; the
+  every error and the output of `backend.ErrorText`, which show backend and library text as it came; the
   CHANGELOG group labels in the What's new dialog (`native/cmd/lich-native/settings_updates_notes.go`), which
   render a file that is English;
   and MCP tool descriptions and the `lich` CLI's `--help`, which agents read and which do not follow the prompt

@@ -6,8 +6,8 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -32,7 +32,7 @@ const (
 // resumableKinds are the providers whose resume lich wires.
 var resumableKinds = []string{"claude", "codex", "antigravity", "omp", "opencode", "crush", "cursor", "kiro"}
 
-// spawnProbe is the backend reads the gate asks, *lichclient.Client in the
+// spawnProbe is the backend reads the gate asks, *backend.Client in the
 // window and a fake in tests.
 type spawnProbe interface {
 	Live(ctx context.Context, id string) (bool, error)
@@ -56,7 +56,7 @@ func restoreChoice(value string) string {
 
 // resumable reports whether s carries a conversation its spawn should ask
 // about. Shell sessions never do, whatever id a hand-run CLI left on the row.
-func resumable(s lichclient.Session) bool {
+func resumable(s backend.Session) bool {
 	return s.ProviderSessionID != "" && slices.Contains(resumableKinds, s.Kind)
 }
 
@@ -65,7 +65,7 @@ func resumable(s lichclient.Session) bool {
 // workdir check that errors spawns (the PTY reports its own failure), a resume
 // or choice read that errors asks (losing a live conversation to an answer
 // nobody gave costs more).
-func spawnDecision(ctx context.Context, probe spawnProbe, cwd string, s lichclient.Session) spawnVerdict {
+func spawnDecision(ctx context.Context, probe spawnProbe, cwd string, s backend.Session) spawnVerdict {
 	missing, err := probe.WorkdirMissing(ctx, cwd)
 	logGateErr("workdir check", err)
 	if missing && err == nil {
@@ -113,7 +113,7 @@ type spawnGate struct {
 
 	mu       sync.Mutex
 	deciding string
-	asking   *lichclient.Session
+	asking   *backend.Session
 	released map[string]string
 }
 
@@ -174,7 +174,7 @@ func (g *spawnGate) releaseLocked(id, resume string) {
 }
 
 // prompt is the session whose resume prompt is up, nil for none.
-func (g *spawnGate) prompt() *lichclient.Session {
+func (g *spawnGate) prompt() *backend.Session {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return g.asking
@@ -201,7 +201,7 @@ func (g *spawnGate) answer(ctx context.Context, choice string, remember bool) {
 		return
 	}
 	if err := g.probe.SetSetting(ctx, restoreKey(s.Kind), "", choice); err != nil {
-		g.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.host.rememberFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		g.notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.host.rememberFailed", i18n.Args{"error": backend.ErrorText(err)})})
 	}
 }
 

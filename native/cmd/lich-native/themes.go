@@ -10,9 +10,9 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/godemirror/tags"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/gioterm"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -47,7 +47,7 @@ var ansiTokens = [16]string{
 // themeEntry is a theme this window can draw: its definition, and the
 // palette and terminal colors read out of it.
 type themeEntry struct {
-	def      lichclient.Theme
+	def      backend.Theme
 	palette  ui.Palette
 	terminal gioterm.Colors
 	code     godemirror.Theme
@@ -58,7 +58,7 @@ func (e themeEntry) light() bool { return e.def.Scheme == themeSchemeLight }
 // readThemes reads the backend's list in mergeThemes' order. A theme whose
 // colors this window cannot parse joins broken with the reason, rather than
 // drawing in colors it does not have.
-func readThemes(defs []lichclient.Theme, broken []lichclient.BrokenTheme) ([]themeEntry, []lichclient.BrokenTheme) {
+func readThemes(defs []backend.Theme, broken []backend.BrokenTheme) ([]themeEntry, []backend.BrokenTheme) {
 	sorted := slices.Clone(defs)
 	slices.SortStableFunc(sorted, compareThemes)
 	entries := make([]themeEntry, 0, len(sorted))
@@ -66,7 +66,7 @@ func readThemes(defs []lichclient.Theme, broken []lichclient.BrokenTheme) ([]the
 	for _, def := range sorted {
 		e, err := readTheme(def)
 		if err != nil {
-			broken = append(broken, lichclient.BrokenTheme{ID: def.ID, Reason: err.Error()})
+			broken = append(broken, backend.BrokenTheme{ID: def.ID, Reason: err.Error()})
 			continue
 		}
 		entries = append(entries, e)
@@ -76,7 +76,7 @@ func readThemes(defs []lichclient.Theme, broken []lichclient.BrokenTheme) ([]the
 
 // compareThemes is mergeThemes' sort: the bundled pair first in its own
 // order, then the imported ones by name.
-func compareThemes(a, b lichclient.Theme) int {
+func compareThemes(a, b backend.Theme) int {
 	aBundled, bBundled := a.Origin == themeOriginBundled, b.Origin == themeOriginBundled
 	switch {
 	case aBundled != bBundled && aBundled:
@@ -89,7 +89,7 @@ func compareThemes(a, b lichclient.Theme) int {
 	return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 }
 
-func readTheme(def lichclient.Theme) (themeEntry, error) {
+func readTheme(def backend.Theme) (themeEntry, error) {
 	p, err := paletteOf(def)
 	if err != nil {
 		return themeEntry{}, err
@@ -109,7 +109,7 @@ func readTheme(def lichclient.Theme) (themeEntry, error) {
 // text and the gutter in the theme's foreground and muted foreground, and the
 // theme's syntax highlighting when it has one. Each view lays its own ground
 // over Background.
-func codeThemeOf(def lichclient.Theme, p ui.Palette) (godemirror.Theme, error) {
+func codeThemeOf(def backend.Theme, p ui.Palette) (godemirror.Theme, error) {
 	t := godemirror.DarkTheme
 	if def.Scheme == themeSchemeLight {
 		t = godemirror.LightTheme
@@ -129,7 +129,7 @@ func codeThemeOf(def lichclient.Theme, p ui.Palette) (godemirror.Theme, error) {
 // highlightOf builds the HighlightStyle of a theme's syntax section. Two keys
 // can name one tag ("function(definition(x))" and "definition(function(x))");
 // specs go in key order, so which one wins does not change between runs.
-func highlightOf(syntax map[string]lichclient.SyntaxStyle) (*godemirror.HighlightStyle, error) {
+func highlightOf(syntax map[string]backend.SyntaxStyle) (*godemirror.HighlightStyle, error) {
 	specs := make([]godemirror.TagStyle, 0, len(syntax))
 	for _, key := range slices.Sorted(maps.Keys(syntax)) {
 		tag, err := tags.Parse(key)
@@ -151,7 +151,7 @@ func highlightOf(syntax map[string]lichclient.SyntaxStyle) (*godemirror.Highligh
 }
 
 // paletteOf reads the app tokens the native window draws with.
-func paletteOf(def lichclient.Theme) (ui.Palette, error) {
+func paletteOf(def backend.Theme) (ui.Palette, error) {
 	var p ui.Palette
 	fields := map[string]*color.NRGBA{
 		"background": &p.Background, "foreground": &p.Foreground,
@@ -188,7 +188,7 @@ func paletteOf(def lichclient.Theme) (ui.Palette, error) {
 
 // terminalOf reads the terminal's defaults. Only the foreground and the
 // background are required; a missing cursor or ANSI color stays libghostty's.
-func terminalOf(def lichclient.Theme) (gioterm.Colors, error) {
+func terminalOf(def backend.Theme) (gioterm.Colors, error) {
 	var c gioterm.Colors
 	read := func(token string, into *color.NRGBA, required bool) error {
 		css, ok := def.Terminal[token]
@@ -284,7 +284,7 @@ func themeAfterRemoval(removedID, selected string) string {
 
 // themeCaption is the line beside a card's name: "in use" on the selected
 // one, else where it came from.
-func themeCaption(def lichclient.Theme, selected string) string {
+func themeCaption(def backend.Theme, selected string) string {
 	switch {
 	case def.ID == selected:
 		return i18n.T("settings.themePicker.inUse")

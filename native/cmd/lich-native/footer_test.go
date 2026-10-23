@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -30,10 +30,10 @@ func allItems() []string {
 func busySession() footerInput {
 	return footerInput{
 		sessionID: "s1", provider: "claude", path: "/home/me/repo", checkout: "/home/me/repo",
-		git: lichclient.DiffStats{Branch: "main", Files: 2}, isGit: true,
-		pr:    &lichclient.PullRequest{Number: 7, URL: "https://example.com/pr/7"},
+		git: backend.DiffStats{Branch: "main", Files: 2}, isGit: true,
+		pr:    &backend.PullRequest{Number: 7, URL: "https://example.com/pr/7"},
 		usage: sessionUsage{Percent: 42, Tokens: 1000, Window: 200000, Model: "claude-opus-4-8", CostUSD: cost(0.5)}, hasUsage: true,
-		plans:   []lichclient.QuotaPlan{quotaPlan(lichclient.QuotaWindow{Label: "Session", Seconds: 5 * hour, Percent: 28})},
+		plans:   []backend.QuotaPlan{quotaPlan(backend.QuotaWindow{Label: "Session", Seconds: 5 * hour, Percent: 28})},
 		handsOn: 600, cost: true, now: time.Date(2026, 10, 11, 14, 30, 0, 0, time.UTC),
 	}
 }

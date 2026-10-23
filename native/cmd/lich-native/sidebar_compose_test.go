@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -96,7 +96,7 @@ func TestBlockOptionsByKindAndFilter(t *testing.T) {
 
 func TestTakesCard(t *testing.T) {
 	card := func(folder, path string) sessionView {
-		return sessionView{Session: lichclient.Session{ID: "c", Folder: folder, Path: path}}
+		return sessionView{Session: backend.Session{ID: "c", Folder: folder, Path: path}}
 	}
 	apps := blockView{kind: blockFolder, folder: "Apps"}
 	root := blockView{kind: blockCheckout}

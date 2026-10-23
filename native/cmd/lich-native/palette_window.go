@@ -10,8 +10,8 @@ import (
 	"gioui.org/io/key"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -43,7 +43,7 @@ func (m *model) paletteWorld() paletteWorld {
 func (m *model) projectOpen(id string) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return slices.ContainsFunc(m.projects, func(p lichclient.Project) bool { return p.ID == id })
+	return slices.ContainsFunc(m.projects, func(p backend.Project) bool { return p.ID == id })
 }
 
 // turnsAmong is the status of each session that holds a turn.
@@ -195,7 +195,7 @@ func (u *window) forgetParked(h paletteHistory) {
 	go func() {
 		if err := u.client.ForgetSession(u.ctx, h.ID); err != nil {
 			u.logErr("forget session", err)
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.forgetFailed", i18n.Args{"label": h.Label, "error": lichclient.ErrorText(err)})})
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.forgetFailed", i18n.Args{"label": h.Label, "error": backend.ErrorText(err)})})
 		}
 	}()
 }
@@ -205,9 +205,9 @@ func (u *window) forgetParked(h paletteHistory) {
 // relocate stops the resume rather than reopening the session into nowhere. The
 // backend's own resume runs it afterwards, in the profile that holds the
 // conversation.
-func (u *window) resumeParked(c lichclient.ClosedSession) {
+func (u *window) resumeParked(c backend.ClosedSession) {
 	if !u.model.projectOpen(c.ProjectID) {
-		u.reopenProject(lichclient.RecentProject{ID: c.ProjectID, Name: c.ProjectName, Path: c.ProjectPath})
+		u.reopenProject(backend.RecentProject{ID: c.ProjectID, Name: c.ProjectName, Path: c.ProjectPath})
 		if !u.model.projectOpen(c.ProjectID) {
 			return
 		}
@@ -216,7 +216,7 @@ func (u *window) resumeParked(c lichclient.ClosedSession) {
 	switch {
 	case err != nil:
 		u.logErr("reopen session", err)
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.resumeFailed", i18n.Args{"label": c.Label, "error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.resumeFailed", i18n.Args{"label": c.Label, "error": backend.ErrorText(err)})})
 		return
 	case restored == nil:
 		// Another window resumed it, or its worktree was removed since the
@@ -234,12 +234,12 @@ func (u *window) resumeParked(c lichclient.ClosedSession) {
 // adoptExternal files a conversation started outside lich as a parked session
 // and resumes it through the history's own door, which reopens a closed
 // project first.
-func (u *window) adoptExternal(e lichclient.ExternalSession) {
+func (u *window) adoptExternal(e backend.ExternalSession) {
 	id := strings.ToLower(rand.Text())
 	label := externalLabel(e)
 	if err := u.client.AdoptExternalSession(u.ctx, e.ProjectID, id, e.Kind, e.Path, e.ProviderSessionID, label); err != nil {
 		u.logErr("adopt external session", err)
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.resumeFailed", i18n.Args{"label": label, "error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("palette.commandPalette.resumeFailed", i18n.Args{"label": label, "error": backend.ErrorText(err)})})
 		return
 	}
 	u.resumeParked(adoptedSession(e, id))

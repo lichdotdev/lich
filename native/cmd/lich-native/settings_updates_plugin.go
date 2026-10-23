@@ -8,8 +8,8 @@ import (
 	"gioui.org/unit"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -34,7 +34,7 @@ type pluginControls struct {
 }
 
 // pluginVersionText is what a row says about the plugin in that CLI.
-func pluginVersionText(st lichclient.PluginStatus) string {
+func pluginVersionText(st backend.PluginStatus) string {
 	switch {
 	case !st.Available:
 		return i18n.T("settings.pluginSetting.cliMissing")
@@ -48,7 +48,7 @@ func pluginVersionText(st lichclient.PluginStatus) string {
 
 // pluginAction is the button a row offers, none when there is nothing to
 // close. An update is an outline button; an install is the surface's primary.
-func pluginAction(st lichclient.PluginStatus) (label string, variant ui.Variant, ok bool) {
+func pluginAction(st backend.PluginStatus) (label string, variant ui.Variant, ok bool) {
 	switch {
 	case st.Available && !st.Installed:
 		return i18n.T("settings.pluginSetting.install"), ui.VariantDefault, true
@@ -60,15 +60,15 @@ func pluginAction(st lichclient.PluginStatus) (label string, variant ui.Variant,
 	return "", ui.VariantDefault, false
 }
 
-func outdatedPlugins(statuses []lichclient.PluginStatus) []lichclient.PluginStatus {
-	return slices.DeleteFunc(slices.Clone(statuses), func(st lichclient.PluginStatus) bool {
+func outdatedPlugins(statuses []backend.PluginStatus) []backend.PluginStatus {
+	return slices.DeleteFunc(slices.Clone(statuses), func(st backend.PluginStatus) bool {
 		return !st.Installed || !st.UpdateAvailable
 	})
 }
 
 // readPlugins asks for the rows again and files the answer, nil when the read
 // failed; the last good rows stay on screen beside the failure.
-func (u *updatesSettings) readPlugins(s *settingsScreen) []lichclient.PluginStatus {
+func (u *updatesSettings) readPlugins(s *settingsScreen) []backend.PluginStatus {
 	statuses, err := s.client.PluginStatuses(s.ctx)
 	u.mu.Lock()
 	u.pluginsFailed = err != nil
@@ -97,7 +97,7 @@ func (u *updatesSettings) act(s *settingsScreen, provider string) {
 	u.setBusy(s, true)
 	defer u.setBusy(s, false)
 	fresh := u.readPlugins(s)
-	i := slices.IndexFunc(fresh, func(st lichclient.PluginStatus) bool { return st.Provider == provider })
+	i := slices.IndexFunc(fresh, func(st backend.PluginStatus) bool { return st.Provider == provider })
 	if i < 0 {
 		return
 	}
@@ -142,7 +142,7 @@ func (u *updatesSettings) check(s *settingsScreen) {
 // success so the next visit shows what it changed.
 func (u *updatesSettings) run(s *settingsScreen, call func() error, done, failed string) {
 	if err := call(); err != nil {
-		s.theme.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T(failed, i18n.Args{"error": lichclient.ErrorText(err)})})
+		s.theme.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T(failed, i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
 	s.theme.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T(done)})
@@ -198,7 +198,7 @@ func pluginOutcome(checked, failed bool) string {
 
 // row is one provider CLI: its mark and name, what it has installed, and the
 // action that closes the gap.
-func (c *pluginControls) row(gtx C, th *ui.Theme, st lichclient.PluginStatus, busy bool) D {
+func (c *pluginControls) row(gtx C, th *ui.Theme, st backend.PluginStatus, busy bool) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D {
 			return providerIcon(st.Provider).Layout(gtx, unit.Dp(pluginProviderIcon), th.Foreground)
@@ -256,7 +256,7 @@ func (c *pluginControls) footer(gtx C, th *ui.Theme, offerAll, busy bool, outcom
 // pluginProfilesFailed raises a toast per profile a pass could not bring to
 // Personal's lich plugin; a pass with none says nothing, as Personal's own
 // update already did.
-func (u *window) pluginProfilesFailed(pass lichclient.PluginProfiles) {
+func (u *window) pluginProfilesFailed(pass backend.PluginProfiles) {
 	for _, f := range pass.Failures {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("settings.settingsUpdatesPlugin.profileFailed", i18n.Args{"pass": pass.Name, "profile": f.Name, "error": f.Error})})
 	}

@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -62,7 +62,7 @@ func TestAnXDGProfileLogsInFromATerminal(t *testing.T) {
 // database that holds the login, offers none.
 func TestContinueInIsOfferedWhereTheConversationCanMove(t *testing.T) {
 	m := newModel(nil, func() {})
-	logged := []lichclient.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}, {Slug: "work", Name: "Work", LoggedIn: true}}
+	logged := []backend.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}, {Slug: "work", Name: "Work", LoggedIn: true}}
 	for _, kind := range []string{opencodeKind, cursorKind, kiroKind} {
 		m.xdgProfiles[kind].list = logged
 	}

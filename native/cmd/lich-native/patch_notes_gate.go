@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // patchNotesSeenKey is the version whose notes were last shown, a global
@@ -23,7 +23,7 @@ const (
 
 // decidePatchNotes says what to do with a build's notes: a build the changelog
 // has no section for shows nothing, and a version is shown once.
-func decidePatchNotes(notes lichclient.PatchNotes, lastSeen string) patchNotesAction {
+func decidePatchNotes(notes backend.PatchNotes, lastSeen string) patchNotesAction {
 	switch {
 	case notes.Version == "" || len(notes.Groups) == 0:
 		return patchNotesNone

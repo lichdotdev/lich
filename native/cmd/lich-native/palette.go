@@ -15,8 +15,8 @@ import (
 	"gioui.org/op"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -99,8 +99,8 @@ type commandPalette struct {
 	closedOff  bool
 
 	history  remote[historyAnswer]
-	external remote[[]lichclient.ExternalSession]
-	said     remote[[]lichclient.TranscriptMatch]
+	external remote[[]backend.ExternalSession]
+	said     remote[[]backend.TranscriptMatch]
 }
 
 func newCommandPalette(invalidate func()) *commandPalette {
@@ -212,7 +212,7 @@ func (p *commandPalette) keys(gtx C) (enter bool) {
 // hand: the store answers with one page, so a session parked or a project
 // closed further back than that page is only reachable if the match happens
 // there.
-func (p *commandPalette) ask(gtx C, c *lichclient.Client, typed string, searching, onHistory bool, sessions []paletteSession) {
+func (p *commandPalette) ask(gtx C, c *backend.Client, typed string, searching, onHistory bool, sessions []paletteSession) {
 	reset := strconv.Itoa(p.opened)
 	if !searching {
 		p.pollAt = time.Time{}
@@ -244,7 +244,7 @@ func (p *commandPalette) ask(gtx C, c *lichclient.Client, typed string, searchin
 	for i, s := range sessions {
 		ids[i] = s.sessionID
 	}
-	p.said.want(term+"\x00"+strings.Join(ids, ","), reset, func(ctx context.Context) ([]lichclient.TranscriptMatch, error) {
+	p.said.want(term+"\x00"+strings.Join(ids, ","), reset, func(ctx context.Context) ([]backend.TranscriptMatch, error) {
 		matches, err := c.SearchTranscripts(ctx, ids, term)
 		if err != nil {
 			// A search that only ever adds: a failed one reads as no rows and
@@ -283,7 +283,7 @@ func (p *commandPalette) wake(gtx C) {
 	}
 }
 
-func fetchHistory(ctx context.Context, c *lichclient.Client, term string) (historyAnswer, error) {
+func fetchHistory(ctx context.Context, c *backend.Client, term string) (historyAnswer, error) {
 	h, err := c.ClosedSessions(ctx, term)
 	if err != nil {
 		return historyAnswer{}, err
@@ -376,7 +376,7 @@ func (p *commandPalette) view(w paletteWorld, bound hotkeyBindings, isMac bool, 
 }
 
 // answers are the searches' latest answers, empty while an opening has none.
-func (p *commandPalette) answers() (closedAnswer, historyAnswer, []lichclient.ExternalSession, []lichclient.TranscriptMatch) {
+func (p *commandPalette) answers() (closedAnswer, historyAnswer, []backend.ExternalSession, []backend.TranscriptMatch) {
 	var closed closedAnswer
 	if p.closed != nil && !p.closedOff {
 		closed = p.closed.read(p.closedTerm)

@@ -12,27 +12,27 @@ import (
 
 	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/godemirror/tags"
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // bundledTheme reads themes/<id>.json, the file the backend serves the
 // bundled themes from.
-func bundledTheme(t *testing.T, id string) lichclient.Theme {
+func bundledTheme(t *testing.T, id string) backend.Theme {
 	t.Helper()
 	data, err := os.ReadFile("../../../themes/" + id + ".json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	var th lichclient.Theme
+	var th backend.Theme
 	if err := json.Unmarshal(data, &th); err != nil {
 		t.Fatal(err)
 	}
 	return th
 }
 
-func customTheme(id, name string) lichclient.Theme {
-	th := lichclient.Theme{ID: id, Name: name, Scheme: themeDark, Origin: themeOriginCustom,
+func customTheme(id, name string) backend.Theme {
+	th := backend.Theme{ID: id, Name: name, Scheme: themeDark, Origin: themeOriginCustom,
 		App: map[string]string{}, Terminal: map[string]string{"background": "#191724", "foreground": "#e0def4"}}
 	for _, token := range []string{"background", "foreground", "card", "card-foreground", "popover", "popover-foreground",
 		"primary", "primary-foreground", "secondary", "secondary-foreground", "muted", "muted-foreground", "accent",
@@ -78,9 +78,9 @@ func rgb(v uint32) color.NRGBA {
 func TestReadThemesSortsAndSetsAsideWhatItCannotDraw(t *testing.T) {
 	unreadable := customTheme("labbed", "Labbed")
 	unreadable.App["background"] = "lab(50 20 30)"
-	defs := []lichclient.Theme{customTheme("zeta", "zeta"), bundledTheme(t, themeDark), unreadable,
+	defs := []backend.Theme{customTheme("zeta", "zeta"), bundledTheme(t, themeDark), unreadable,
 		customTheme("alpha", "Alpha"), bundledTheme(t, themeLight)}
-	themes, broken := readThemes(defs, []lichclient.BrokenTheme{{ID: "old", Reason: "bad json"}})
+	themes, broken := readThemes(defs, []backend.BrokenTheme{{ID: "old", Reason: "bad json"}})
 	var ids []string
 	for _, e := range themes {
 		ids = append(ids, e.def.ID)
@@ -97,7 +97,7 @@ func TestReadThemesSortsAndSetsAsideWhatItCannotDraw(t *testing.T) {
 }
 
 func TestResolveTheme(t *testing.T) {
-	themes, _ := readThemes([]lichclient.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), customTheme("rose-pine", "Rosé Pine")}, nil)
+	themes, _ := readThemes([]backend.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), customTheme("rose-pine", "Rosé Pine")}, nil)
 	cases := []struct {
 		selected   string
 		systemDark bool
@@ -125,7 +125,7 @@ func TestResolveThemeFollowsTheSystemToThePair(t *testing.T) {
 	day.Scheme, day.Pair = "light", "forest-night"
 	lone := customTheme("lone", "Lone")
 	lone.Scheme = "dark"
-	themes, _ := readThemes([]lichclient.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), night, day, lone}, nil)
+	themes, _ := readThemes([]backend.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), night, day, lone}, nil)
 	cases := []struct {
 		selected             string
 		systemDark, followOS bool
@@ -153,14 +153,14 @@ func TestAppearanceTakesASelectionStoredElsewhere(t *testing.T) {
 	night.Scheme, night.Pair = "dark", "forest-day"
 	day := customTheme("forest-day", "Forest Day")
 	day.Scheme, day.Pair = "light", "forest-night"
-	f.themes = []lichclient.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), night, day}
+	f.themes = []backend.Theme{bundledTheme(t, themeLight), bundledTheme(t, themeDark), night, day}
 	a := &appearance{ctx: context.Background(), client: client, invalidate: func() {}}
 	if err := a.load(); err != nil {
 		t.Fatal(err)
 	}
 	a.setSystemDark(false)
 	a.take()
-	a.applySelection(lichclient.ThemeSelection{Theme: "forest-night", FollowSystem: true})
+	a.applySelection(backend.ThemeSelection{Theme: "forest-night", FollowSystem: true})
 	if e, ok := a.take(); !ok || e.def.ID != "forest-day" {
 		t.Errorf("following a light desktop from forest-night took %q, %v", e.def.ID, ok)
 	}
@@ -173,9 +173,9 @@ func TestAppearanceTakesASelectionStoredElsewhere(t *testing.T) {
 
 func TestThemeCaption(t *testing.T) {
 	repo := customTheme("rose-pine", "Rosé Pine")
-	repo.Source = &lichclient.ThemeSource{URL: "https://github.com/lichdotdev/rose-pine-lich.git", Version: "1.2.0"}
+	repo.Source = &backend.ThemeSource{URL: "https://github.com/lichdotdev/rose-pine-lich.git", Version: "1.2.0"}
 	cases := []struct {
-		def      lichclient.Theme
+		def      backend.Theme
 		selected string
 		want     string
 	}{
@@ -232,7 +232,7 @@ func TestThemeIsFoundBySearch(t *testing.T) {
 // choice resolves to once, and stores the choice.
 func TestAppearanceChoosesAndStores(t *testing.T) {
 	f, client := newSidebarBackend(t)
-	f.themes = []lichclient.Theme{bundledTheme(t, themeDark), bundledTheme(t, themeLight), customTheme("rose-pine", "Rosé Pine")}
+	f.themes = []backend.Theme{bundledTheme(t, themeDark), bundledTheme(t, themeLight), customTheme("rose-pine", "Rosé Pine")}
 	a := &appearance{ctx: context.Background(), client: client, invalidate: func() {}}
 	if err := a.load(); err != nil {
 		t.Fatal(err)
@@ -290,7 +290,7 @@ func TestBundledThemesHighlightAsGodemirrorsDefaults(t *testing.T) {
 
 func TestThemeSyntaxReachesTheCodeViews(t *testing.T) {
 	th := customTheme("pine", "Pine")
-	th.Syntax = map[string]lichclient.SyntaxStyle{
+	th.Syntax = map[string]backend.SyntaxStyle{
 		"keyword":                {Color: "#c4a7e7"},
 		"function(variableName)": {Color: "#ebbcba", Bold: true},
 	}
@@ -314,7 +314,7 @@ func TestThemeSyntaxReachesTheCodeViews(t *testing.T) {
 // rather than drawing code in colors the author did not write.
 func TestABadSyntaxEntryBreaksTheTheme(t *testing.T) {
 	th := customTheme("pine", "Pine")
-	th.Syntax = map[string]lichclient.SyntaxStyle{"keywords": {Color: "#fff"}}
+	th.Syntax = map[string]backend.SyntaxStyle{"keywords": {Color: "#fff"}}
 	if _, err := readTheme(th); err == nil || !strings.Contains(err.Error(), `"keywords" is not a highlighting tag`) {
 		t.Fatalf("readTheme error = %v", err)
 	}

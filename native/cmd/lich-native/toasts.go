@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -19,7 +19,7 @@ var (
 func failure(format string, args ...any) ui.Toast {
 	for i, arg := range args {
 		if err, ok := arg.(error); ok {
-			args[i] = lichclient.ErrorText(err)
+			args[i] = backend.ErrorText(err)
 		}
 	}
 	return ui.Toast{Variant: ui.ToastError, Title: fmt.Sprintf(format, args...)}
@@ -43,7 +43,7 @@ func demoToasts() map[string]ui.Toast {
 		"undo": {Title: "Closed Claude 3", Action: &ui.ToastButton{Label: "Undo"}},
 		"update": {Title: i18n.T("shell.appUpdateGate.available", i18n.Args{"version": "1.4.0"}), Cancel: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later")},
 			Secondary: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.viewRelease")}, Action: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.updateAndInstall")}},
-		"progress": updateProgressToast("1.4.0", &lichclient.AppUpdateProgress{Phase: lichclient.UpdatePhaseDownload, Received: 12_300_000, Total: 41_000_000}),
+		"progress": updateProgressToast("1.4.0", &backend.AppUpdateProgress{Phase: backend.UpdatePhaseDownload, Received: 12_300_000, Total: 41_000_000}),
 	}
 }
 

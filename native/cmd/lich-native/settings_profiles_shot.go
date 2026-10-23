@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -28,7 +28,7 @@ const (
 // showProfileDialog puts the dialog in the state a -shot asks for, with
 // nothing sent to the backend beyond what opening it reads.
 func (s *settingsScreen) showProfileDialog(name string) error {
-	target := lichclient.Profile{Slug: "work", Name: "Work", LoggedIn: true}
+	target := backend.Profile{Slug: "work", Name: "Work", LoggedIn: true}
 	c := s.providers.profiles(*flagSettingsProvider)
 	if c == nil {
 		c = &s.providers.claude
@@ -55,9 +55,9 @@ func (s *settingsScreen) showProfileDialog(name string) error {
 			*d = flowData{kind: flowLogin, open: true, step: stepWaiting, target: target, url: url}
 		})
 	case "result":
-		var results []lichclient.ProfilePluginResult
+		var results []backend.ProfilePluginResult
 		if c.provider.plugins {
-			results = []lichclient.ProfilePluginResult{
+			results = []backend.ProfilePluginResult{
 				{Key: "frontend-design@claude-plugins-official", OK: true},
 				{Key: "security-guidance@acme-internal", Message: "Plugin installation is blocked by your organization's policy."},
 			}
@@ -80,9 +80,9 @@ func (b *profileBook) seedProfilePlans(spec string) error {
 		if !ok || err != nil {
 			return fmt.Errorf("-profile-usage: want slug=percent, got %q", pair)
 		}
-		plan := lichclient.QuotaPlan{Provider: b.provider.kind, Status: "ok",
-			Windows: []lichclient.QuotaWindow{{Label: "5h", Seconds: sessionWindowSeconds, Percent: percent}}}
-		b.quota.seed(profileQuotaKey(b.provider, slug), []lichclient.QuotaPlan{plan})
+		plan := backend.QuotaPlan{Provider: b.provider.kind, Status: "ok",
+			Windows: []backend.QuotaWindow{{Label: "5h", Seconds: sessionWindowSeconds, Percent: percent}}}
+		b.quota.seed(profileQuotaKey(b.provider, slug), []backend.QuotaPlan{plan})
 	}
 	return nil
 }
@@ -119,7 +119,7 @@ func (u *window) openShotMenu() {
 
 // seed puts a reading under key as if a read had landed, for the rigs that
 // draw a window without a backend answering.
-func (q *planQuota) seed(key string, plans []lichclient.QuotaPlan) {
+func (q *planQuota) seed(key string, plans []backend.QuotaPlan) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	e := q.entries[key]

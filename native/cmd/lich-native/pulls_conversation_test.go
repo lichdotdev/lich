@@ -14,32 +14,32 @@ import (
 	"gioui.org/op"
 	"gioui.org/text"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-func talkFixture() *lichclient.PRConversation {
-	return &lichclient.PRConversation{
-		Reviews:  []lichclient.PRReview{{DatabaseID: 30, Author: "rev", State: "CHANGES_REQUESTED", Body: "A couple of things.", Date: "2026-01-02T00:00:00Z", CanEdit: true}},
-		Comments: []lichclient.PRComment{{ID: 20, Author: "octo", Body: "Thanks!", Date: "2026-01-01T00:00:00Z", CanEdit: true, CanDelete: true}},
-		Threads: []lichclient.PRReviewThread{
-			{ID: "T1", Path: "internal/project/pr.go", Line: 61, StartLine: 58, IsOutdated: true, Comments: []lichclient.PRThreadComment{
+func talkFixture() *backend.PRConversation {
+	return &backend.PRConversation{
+		Reviews:  []backend.PRReview{{DatabaseID: 30, Author: "rev", State: "CHANGES_REQUESTED", Body: "A couple of things.", Date: "2026-01-02T00:00:00Z", CanEdit: true}},
+		Comments: []backend.PRComment{{ID: 20, Author: "octo", Body: "Thanks!", Date: "2026-01-01T00:00:00Z", CanEdit: true, CanDelete: true}},
+		Threads: []backend.PRReviewThread{
+			{ID: "T1", Path: "internal/project/pr.go", Line: 61, StartLine: 58, IsOutdated: true, Comments: []backend.PRThreadComment{
 				{ID: 1, Author: "rev", Body: "Why not cap this?", Date: "2026-01-02T00:00:00Z", DiffHunk: "@@ -1,3 +1,4 @@\n ctx\n-old\n+new", CanEdit: true, CanDelete: true},
 			}},
-			{ID: "T2", Path: "a.go", Line: 3, IsResolved: true, Comments: []lichclient.PRThreadComment{{ID: 2, Author: "rev", Body: "ok", Date: "2026-01-01T00:00:00Z"}}},
+			{ID: "T2", Path: "a.go", Line: 3, IsResolved: true, Comments: []backend.PRThreadComment{{ID: 2, Author: "rev", Body: "ok", Date: "2026-01-01T00:00:00Z"}}},
 		},
 	}
 }
 
 // layoutTalk lays the Conversation tab out once and answers the frame;
 // prepare, when set, puts the tab's widgets in a state first.
-func layoutTalk(t *testing.T, conv *lichclient.PRConversation, prepare func(*talkState)) (*op.Ops, image.Point) {
+func layoutTalk(t *testing.T, conv *backend.PRConversation, prepare func(*talkState)) (*op.Ops, image.Point) {
 	t.Helper()
 	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) { return conv, http.StatusOK }}
 	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
-	p.project, p.selected = lichclient.Project{Path: "/repo"}, 7
-	d := lichclient.PRDetail{Number: 7, URL: "https://github.com/o/r/pull/7"}
+	p.project, p.selected = backend.Project{Path: "/repo"}, 7
+	d := backend.PRDetail{Number: 7, URL: "https://github.com/o/r/pull/7"}
 	p.view.pendingOf(d.URL).add("a.go", "3-5", "Rename this.")
 	if prepare != nil {
 		prepare(&p.view.talk)

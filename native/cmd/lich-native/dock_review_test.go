@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -185,7 +185,7 @@ func TestStickyHeaderIsPushedUpByTheNextCard(t *testing.T) {
 }
 
 // fakeRevert serves RevertLines with undo and records every RestoreLines.
-func fakeRevert(t *testing.T, undo lichclient.RevertResult, restored chan<- []json.RawMessage) *lichclient.Client {
+func fakeRevert(t *testing.T, undo backend.RevertResult, restored chan<- []json.RawMessage) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -204,15 +204,15 @@ func fakeRevert(t *testing.T, undo lichclient.RevertResult, restored chan<- []js
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 func TestARevertsUndoPutsTheLinesBack(t *testing.T) {
-	undo := lichclient.RevertResult{Patch: "the patch", IndexPatch: "the index"}
+	undo := backend.RevertResult{Patch: "the patch", IndexPatch: "the index"}
 	restored := make(chan []json.RawMessage, 1)
 	toasts := make(chan ui.Toast, 1)
 	p := &reviewPanel{client: fakeRevert(t, undo, restored), target: "/repo", notify: func(t ui.Toast) { toasts <- t }}
-	p.revert("internal/a.go", []lichclient.RevertLine{{Side: "new", Line: 3, Text: "x"}, {Side: "old", Line: 3, Text: "y"}})
+	p.revert("internal/a.go", []backend.RevertLine{{Side: "new", Line: 3, Text: "x"}, {Side: "old", Line: 3, Text: "y"}})
 	toast := <-toasts
 	if toast.Title != "Reverted +1 -1 in a.go" || toast.Duration != revertUndoFor || toast.Action == nil {
 		t.Fatalf("toast = %+v, want the revert's stat and a long-lived Undo", toast)
@@ -220,7 +220,7 @@ func TestARevertsUndoPutsTheLinesBack(t *testing.T) {
 	toast.Action.OnClick()
 	select {
 	case args := <-restored:
-		var gotUndo lichclient.RevertResult
+		var gotUndo backend.RevertResult
 		_ = json.Unmarshal(args[2], &gotUndo)
 		if string(args[0]) != `"/repo"` || string(args[1]) != `"internal/a.go"` || gotUndo != undo {
 			t.Fatalf("RestoreLines(%s) — want the checkout, the file and the revert's own undo", args)

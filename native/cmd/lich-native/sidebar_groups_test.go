@@ -5,15 +5,15 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // ss builds a stored session list: "id" for the project root, "id@path" for
 // a worktree; filed and pinned are set by the caller.
-func ss(specs ...string) []lichclient.Session {
-	out := make([]lichclient.Session, 0, len(specs))
+func ss(specs ...string) []backend.Session {
+	out := make([]backend.Session, 0, len(specs))
 	for _, spec := range specs {
-		s := lichclient.Session{ID: spec, Label: spec}
+		s := backend.Session{ID: spec, Label: spec}
 		for i := range spec {
 			if spec[i] == '@' {
 				s.ID, s.Label, s.Path = spec[:i], spec[:i], spec[i+1:]
@@ -24,7 +24,7 @@ func ss(specs ...string) []lichclient.Session {
 	return out
 }
 
-func with(sessions []lichclient.Session, id string, edit func(*lichclient.Session)) []lichclient.Session {
+func with(sessions []backend.Session, id string, edit func(*backend.Session)) []backend.Session {
 	out := slices.Clone(sessions)
 	for i := range out {
 		if out[i].ID == id {
@@ -34,13 +34,13 @@ func with(sessions []lichclient.Session, id string, edit func(*lichclient.Sessio
 	return out
 }
 
-func filed(sessions []lichclient.Session, folder string, ids ...string) []lichclient.Session {
+func filed(sessions []backend.Session, folder string, ids ...string) []backend.Session {
 	next, _ := fileSessions(sessions, ids, folder)
 	return next
 }
 
-func pin(sessions []lichclient.Session, id string) []lichclient.Session {
-	return with(sessions, id, func(s *lichclient.Session) { s.Pinned = true })
+func pin(sessions []backend.Session, id string) []backend.Session {
+	return with(sessions, id, func(s *backend.Session) { s.Pinned = true })
 }
 
 // blockLayout is each block's key with its session ids.
@@ -180,32 +180,32 @@ func TestCollapsedMark(t *testing.T) {
 }
 
 func TestSharedColor(t *testing.T) {
-	stored := with(with(ss("a", "b"), "a", func(s *lichclient.Session) { s.Color = "teal" }), "b", func(s *lichclient.Session) { s.Color = "teal" })
+	stored := with(with(ss("a", "b"), "a", func(s *backend.Session) { s.Color = "teal" }), "b", func(s *backend.Session) { s.Color = "teal" })
 	if got := sharedColor(stored); got != "teal" {
 		t.Fatalf("shared = %q, want teal", got)
 	}
-	if got := sharedColor(with(stored, "b", func(s *lichclient.Session) { s.Color = "red" })); got != "" {
+	if got := sharedColor(with(stored, "b", func(s *backend.Session) { s.Color = "red" })); got != "" {
 		t.Fatalf("mixed colors shared %q", got)
 	}
-	if got := sharedColor(with(stored, "a", func(s *lichclient.Session) { s.Color = "mauve" })); got != "" {
+	if got := sharedColor(with(stored, "a", func(s *backend.Session) { s.Color = "mauve" })); got != "" {
 		t.Fatalf("a color off the palette shared %q", got)
 	}
 }
 
 func TestReorderSubset(t *testing.T) {
 	stored := pin(pin(ss("a", "p1", "b", "c", "p2"), "p1"), "p2")
-	unpinned := func(s lichclient.Session) bool { return !s.Pinned }
+	unpinned := func(s backend.Session) bool { return !s.Pinned }
 	cases := []struct {
 		name   string
 		ids    []string
-		member func(lichclient.Session) bool
+		member func(backend.Session) bool
 		want   []string
 	}{
 		{"the subset moves, the rest stays", []string{"c", "a", "b"}, unpinned, []string{"c", "p1", "a", "b", "p2"}},
-		{"the pinned cards swap in place", []string{"p2", "p1"}, func(s lichclient.Session) bool { return s.Pinned }, []string{"a", "p2", "b", "c", "p1"}},
+		{"the pinned cards swap in place", []string{"p2", "p1"}, func(s backend.Session) bool { return s.Pinned }, []string{"a", "p2", "b", "c", "p1"}},
 		// A repeat, not a gap: applyOrder rejects it, dropping a stale drag.
 		{"short ids repeat", []string{"c"}, unpinned, []string{"c", "p1", "b", "c", "p2"}},
-		{"no member", nil, func(lichclient.Session) bool { return false }, []string{"a", "p1", "b", "c", "p2"}},
+		{"no member", nil, func(backend.Session) bool { return false }, []string{"a", "p1", "b", "c", "p2"}},
 	}
 	for _, tc := range cases {
 		if got := reorderSubset(stored, tc.ids, tc.member); !slices.Equal(got, tc.want) {
@@ -264,15 +264,15 @@ func TestApplyOrderRejectsAnythingButTheExactSet(t *testing.T) {
 	}
 }
 
-func idList(sessions []lichclient.Session) string {
-	return joinBy(sessions, func(s lichclient.Session) string { return s.ID })
+func idList(sessions []backend.Session) string {
+	return joinBy(sessions, func(s backend.Session) string { return s.ID })
 }
 
-func folderList(sessions []lichclient.Session) string {
-	return joinBy(sessions, func(s lichclient.Session) string { return s.Folder })
+func folderList(sessions []backend.Session) string {
+	return joinBy(sessions, func(s backend.Session) string { return s.Folder })
 }
 
-func joinBy(sessions []lichclient.Session, of func(lichclient.Session) string) string {
+func joinBy(sessions []backend.Session, of func(backend.Session) string) string {
 	out := ""
 	for i, s := range sessions {
 		if i > 0 {

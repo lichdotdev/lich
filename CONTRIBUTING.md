@@ -65,7 +65,7 @@ Then:
   ```bash
   for os in linux darwin windows; do GOOS=$os go build ./... && GOOS=$os go vet ./...; done
   ```
-- **Touched a Go struct's JSON tags?** `native/lichclient` mirrors them by
+- **Touched a Go struct's JSON tags?** `native/backend` mirrors them by
   hand. There is no codegen, so it moves in the same change.
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org)

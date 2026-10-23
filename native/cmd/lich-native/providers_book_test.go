@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // launchRig is the window's providers wiring: a model, and the Settings
 // screen whose writes have to reach it.
-func launchRig(t *testing.T, f *sidebarBackend, c *lichclient.Client) (*model, *settingsScreen) {
+func launchRig(t *testing.T, f *sidebarBackend, c *backend.Client) (*model, *settingsScreen) {
 	t.Helper()
 	ctx := context.Background()
 	m := newModel(c, func() {})
@@ -22,11 +22,11 @@ func launchRig(t *testing.T, f *sidebarBackend, c *lichclient.Client) (*model, *
 	return m, s
 }
 
-func claudeDetected(installed bool) []lichclient.DetectedProvider {
-	return []lichclient.DetectedProvider{{ID: "claude", Name: "Claude Code", Installed: installed}}
+func claudeDetected(installed bool) []backend.DetectedProvider {
+	return []backend.DetectedProvider{{ID: "claude", Name: "Claude Code", Installed: installed}}
 }
 
-func setDetected(f *sidebarBackend, list []lichclient.DetectedProvider) {
+func setDetected(f *sidebarBackend, list []backend.DetectedProvider) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.detected = list
@@ -57,7 +57,7 @@ func TestCheckingThePathAgainMovesTheImplicitSessionKind(t *testing.T) {
 }
 
 func twoInstalled(f *sidebarBackend) {
-	setDetected(f, []lichclient.DetectedProvider{
+	setDetected(f, []backend.DetectedProvider{
 		{ID: "claude", Name: "Claude Code", Installed: true},
 		{ID: "codex", Name: "Codex", Installed: true},
 	})
@@ -71,7 +71,7 @@ func TestAProjectDefaultIsOneValueEveryReaderSees(t *testing.T) {
 	twoInstalled(f)
 	m, s := launchRig(t, f, c)
 	m.mu.Lock()
-	m.projects = []lichclient.Project{{ID: "p", Name: "p"}}
+	m.projects = []backend.Project{{ID: "p", Name: "p"}}
 	m.providers.noteProjects(m.projects)
 	m.mu.Unlock()
 	s.scope = "p"
@@ -117,7 +117,7 @@ func TestAProjectOpenedAfterTheReadBringsItsDefault(t *testing.T) {
 	twoInstalled(f)
 	m, _ := launchRig(t, f, c)
 	m.mu.Lock()
-	m.projects = []lichclient.Project{{ID: "late", DefaultProvider: "codex"}}
+	m.projects = []backend.Project{{ID: "late", DefaultProvider: "codex"}}
 	m.activeProject = "late"
 	m.providers.noteProjects(m.projects)
 	m.mu.Unlock()

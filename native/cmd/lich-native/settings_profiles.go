@@ -7,8 +7,8 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -40,7 +40,7 @@ type flowData struct {
 	kind   flowKind
 	open   bool
 	step   flowStep
-	target lichclient.Profile
+	target backend.Profile
 	// fresh asks the frame to empty the inputs, which only it may touch;
 	// refresh asks it to read Settings again, which a delete made stale.
 	fresh   bool
@@ -54,11 +54,11 @@ type flowData struct {
 	authenticating bool
 	failure        string
 	account        string
-	results        []lichclient.ProfilePluginResult
+	results        []backend.ProfilePluginResult
 	// pluginNote is why the lich plugin did not install, in the backend's
 	// words.
 	pluginNote string
-	plugins    []lichclient.ProfilePlugin
+	plugins    []backend.ProfilePlugin
 	source     string
 }
 
@@ -97,7 +97,7 @@ func (f *profileFlow) set(change func(d *flowData)) {
 
 // checkedKeys are the plugins the checklist has ticked, in the list's order.
 // A plugin is ticked until the user unticks it.
-func (f *profileFlow) checkedKeys(plugins []lichclient.ProfilePlugin) []string {
+func (f *profileFlow) checkedKeys(plugins []backend.ProfilePlugin) []string {
 	var keys []string
 	for _, p := range plugins {
 		if c := f.checks[p.Key]; c == nil || c.Value {
@@ -188,7 +188,7 @@ func (s *settingsScreen) startNewProfile(c *profileSettings) {
 }
 
 // startRename, startDelete and startCopy open the dialog of their name on p.
-func (s *settingsScreen) startRename(c *profileSettings, p lichclient.Profile) {
+func (s *settingsScreen) startRename(c *profileSettings, p backend.Profile) {
 	f := &c.flow
 	f.set(func(d *flowData) { *d = flowData{kind: flowRename, open: true, fresh: true, target: p} })
 	f.name.SetText(p.Name)
@@ -196,13 +196,13 @@ func (s *settingsScreen) startRename(c *profileSettings, p lichclient.Profile) {
 	s.invalidate()
 }
 
-func (s *settingsScreen) startDelete(c *profileSettings, p lichclient.Profile) {
+func (s *settingsScreen) startDelete(c *profileSettings, p backend.Profile) {
 	f := &c.flow
 	f.set(func(d *flowData) { *d = flowData{kind: flowDelete, open: true, target: p} })
 	s.invalidate()
 }
 
-func (s *settingsScreen) startCopy(c *profileSettings, p lichclient.Profile) {
+func (s *settingsScreen) startCopy(c *profileSettings, p backend.Profile) {
 	f := &c.flow
 	list, _ := c.book.snapshot()
 	source := defaultCopySource(list, p.Slug)
@@ -213,7 +213,7 @@ func (s *settingsScreen) startCopy(c *profileSettings, p lichclient.Profile) {
 
 // defaultCopySource is where a copy reads from unless asked otherwise:
 // Personal, or the first other profile when Personal is the target.
-func defaultCopySource(list []lichclient.Profile, target string) string {
+func defaultCopySource(list []backend.Profile, target string) string {
 	if target != personalProfile {
 		return personalProfile
 	}
@@ -264,7 +264,7 @@ func (s *settingsScreen) confirmFlow(c *profileSettings, d flowData) {
 
 // failFlow puts the dialog back on its form with the backend's sentence.
 func (s *settingsScreen) failFlow(c *profileSettings, err error) {
-	text := lichclient.ErrorText(err)
+	text := backend.ErrorText(err)
 	c.flow.set(func(d *flowData) { d.step, d.failure = stepForm, text })
 	s.invalidate()
 }
@@ -284,7 +284,7 @@ func (s *settingsScreen) createProfile(c *profileSettings, name string, keys []s
 		if view := f.view(); !view.open || view.kind != flowNew {
 			return
 		}
-		s.startLogin(c, lichclient.Profile{Slug: p.Slug, Name: p.Name}, keys)
+		s.startLogin(c, backend.Profile{Slug: p.Slug, Name: p.Name}, keys)
 	}()
 }
 
@@ -294,7 +294,7 @@ func (s *settingsScreen) renameProfile(c *profileSettings, slug, name string) {
 		d.step, d.working, d.failure = stepWorking, i18n.T("settings.settingsProfiles.renaming"), ""
 	})
 	go func() {
-		if _, err := c.provider.api(s.client).Update(s.ctx, slug, lichclient.ProfileUpdate{Name: name}); err != nil {
+		if _, err := c.provider.api(s.client).Update(s.ctx, slug, backend.ProfileUpdate{Name: name}); err != nil {
 			s.failFlow(c, err)
 			return
 		}
@@ -318,7 +318,7 @@ func (s *settingsScreen) deleteProfile(c *profileSettings, slug string) {
 	}()
 }
 
-func (s *settingsScreen) copyPlugins(c *profileSettings, target lichclient.Profile, keys []string) {
+func (s *settingsScreen) copyPlugins(c *profileSettings, target backend.Profile, keys []string) {
 	f := &c.flow
 	f.set(func(d *flowData) {
 		d.step, d.working, d.failure = stepWorking, i18n.T("settings.settingsProfiles.installing"), ""
@@ -336,7 +336,7 @@ func (s *settingsScreen) copyPlugins(c *profileSettings, target lichclient.Profi
 
 // startLogin runs the login of p in the dialog and installs keys into it once
 // it is through. It is called from any goroutine.
-func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, keys []string) {
+func (s *settingsScreen) startLogin(c *profileSettings, p backend.Profile, keys []string) {
 	f := &c.flow
 	if c.provider.terminalLogin {
 		s.startTerminalLogin(c, p)
@@ -351,7 +351,7 @@ func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, ke
 		f.set(func(d *flowData) {
 			switch {
 			case err != nil:
-				d.step, d.failure = stepResult, lichclient.ErrorText(err)
+				d.step, d.failure = stepResult, backend.ErrorText(err)
 			case d.step == stepWorking:
 				d.step = stepWaiting
 			}
@@ -363,7 +363,7 @@ func (s *settingsScreen) startLogin(c *profileSettings, p lichclient.Profile, ke
 // startTerminalLogin hands the login of p to a shell card, the only place a
 // provider with terminalLogin runs one, and closes the dialog. Where there is no
 // card to open it in, the dialog ends on the failure.
-func (s *settingsScreen) startTerminalLogin(c *profileSettings, p lichclient.Profile) {
+func (s *settingsScreen) startTerminalLogin(c *profileSettings, p backend.Profile) {
 	f := &c.flow
 	f.set(func(d *flowData) {
 		*d = flowData{kind: flowLogin, open: true, fresh: true, step: stepWorking, working: i18n.T("settings.settingsProfiles.startingLogin"), target: p}
@@ -373,7 +373,7 @@ func (s *settingsScreen) startTerminalLogin(c *profileSettings, p lichclient.Pro
 		command, err := c.provider.api(s.client).LoginCommand(s.ctx, p.Slug)
 		switch {
 		case err != nil:
-			f.set(func(d *flowData) { d.step, d.failure = stepResult, lichclient.ErrorText(err) })
+			f.set(func(d *flowData) { d.step, d.failure = stepResult, backend.ErrorText(err) })
 		case c.openTerminal == nil || !c.openTerminal(command):
 			f.set(func(d *flowData) { d.step, d.failure = stepResult, i18n.T("settings.settingsProfiles.noTerminal") })
 		default:
@@ -386,7 +386,7 @@ func (s *settingsScreen) startTerminalLogin(c *profileSettings, p lichclient.Pro
 // loginProgress takes one step of a login of the provider kind names, as the
 // backend reports it: the sign-in address while the CLI waits, then how it
 // ended.
-func (s *settingsScreen) loginProgress(kind string, ev lichclient.ProfileLogin) {
+func (s *settingsScreen) loginProgress(kind string, ev backend.ProfileLogin) {
 	c := s.providers.profiles(kind)
 	if c == nil {
 		return
@@ -419,20 +419,20 @@ func (s *settingsScreen) loginProgress(kind string, ev lichclient.ProfileLogin) 
 
 // finishLogin reads who is logged in now, then brings the plugins that were
 // asked for: they need the login, so they come last.
-func (s *settingsScreen) finishLogin(c *profileSettings, d flowData, ev lichclient.ProfileLogin) {
+func (s *settingsScreen) finishLogin(c *profileSettings, d flowData, ev backend.ProfileLogin) {
 	c.book.planChanged(d.target.Slug)
 	s.reloadProfiles(c)
 	account := ""
 	if p, ok := c.book.find(d.target.Slug); ok {
 		account = loggedInAs(p)
 	}
-	var results []lichclient.ProfilePluginResult
+	var results []backend.ProfilePluginResult
 	if len(d.keys) > 0 {
 		c.flow.set(func(d *flowData) { d.step, d.working = stepWorking, i18n.T("settings.settingsProfiles.installing") })
 		s.invalidate()
 		var err error
 		if results, err = c.provider.api(s.client).InstallPlugins(s.ctx, d.target.Slug, d.keys); err != nil {
-			ev.PluginError = lichclient.ErrorText(err)
+			ev.PluginError = backend.ErrorText(err)
 		}
 	}
 	c.flow.set(func(d *flowData) {

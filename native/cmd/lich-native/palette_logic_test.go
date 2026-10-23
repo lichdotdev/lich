@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 var paletteOpen = []paletteProject{
@@ -20,13 +20,13 @@ var paletteClosed = []paletteProject{
 	{ID: "c4", Name: "policy-engine", Path: "/home/u/hycastle/policy-engine"},
 }
 
-func paletteWorkspace() []lichclient.Project {
-	return []lichclient.Project{
-		{ID: "p1", Name: "lich", Path: "/home/u/try/skipo", Sessions: []lichclient.Session{
+func paletteWorkspace() []backend.Project {
+	return []backend.Project{
+		{ID: "p1", Name: "lich", Path: "/home/u/try/skipo", Sessions: []backend.Session{
 			{ID: "s1", Label: "Fix flaky test", Kind: "claude"},
 			{ID: "s2", Label: "build watch", Kind: "shell", Path: "/home/u/try/skipo/frontend"},
 		}},
-		{ID: "p2", Name: "revu", Path: "/home/u/try/revu", Sessions: []lichclient.Session{
+		{ID: "p2", Name: "revu", Path: "/home/u/try/revu", Sessions: []backend.Session{
 			{ID: "s3", Label: "Wire revu auth middleware", Kind: "claude"},
 		}},
 	}
@@ -104,7 +104,7 @@ func TestFilterPaletteNarrowsEachKind(t *testing.T) {
 func TestPaletteGroupsByTab(t *testing.T) {
 	all := paletteSessionsOf(paletteWorkspace())
 	results := filterPalette("", all, paletteOpen, paletteClosed, nil, 0, nil)
-	messages := paletteMessagesOf([]lichclient.TranscriptMatch{{ID: "s1", Snippet: "flaky again", Count: 1}}, all)
+	messages := paletteMessagesOf([]backend.TranscriptMatch{{ID: "s1", Snippet: "flaky again", Count: 1}}, all)
 
 	groups := paletteGroupsOf(tabAll, results, messages, 0, 0)
 	equal(t, "All", groupLabels(groups), []string{"Sessions", "Projects", "Messages"})
@@ -177,7 +177,7 @@ func TestRankSessionsPutsWaitingThenTurnsFirstAndShellsLast(t *testing.T) {
 func TestRowKeysNameWhatARowOpens(t *testing.T) {
 	all := paletteSessionsOf(paletteWorkspace())
 	results := filterPalette("", all, paletteOpen, paletteClosed, nil, 0, nil)
-	messages := paletteMessagesOf([]lichclient.TranscriptMatch{{ID: "s1", Snippet: "x", Count: 1}}, all)
+	messages := paletteMessagesOf([]backend.TranscriptMatch{{ID: "s1", Snippet: "x", Count: 1}}, all)
 	equal(t, "keys", rowKeys(paletteGroupsOf(tabAll, results, messages, 0, 0)), []string{"s1", "s2", "s3", "p1", "p2", "s1"})
 }
 
@@ -205,17 +205,17 @@ func TestPaletteTabCountsAndWraps(t *testing.T) {
 
 func TestPaletteMessagesCarryTheirSessionAndSurviveAClose(t *testing.T) {
 	all := paletteSessionsOf(paletteWorkspace())
-	rows := paletteMessagesOf([]lichclient.TranscriptMatch{{ID: "s3", Snippet: "wire the auth middleware", Count: 2}}, all)
+	rows := paletteMessagesOf([]backend.TranscriptMatch{{ID: "s3", Snippet: "wire the auth middleware", Count: 2}}, all)
 	want := paletteMessage{paletteSession: paletteSession{sessionID: "s3", projectID: "p2", projectName: "revu",
 		label: "Wire revu auth middleware", kind: "claude", path: "/home/u/try/revu"}, snippet: "wire the auth middleware", count: 2}
 	if len(rows) != 1 || rows[0] != want {
 		t.Errorf("rows = %+v, want %+v", rows, want)
 	}
-	ordered := paletteMessagesOf([]lichclient.TranscriptMatch{{ID: "s3"}, {ID: "s1"}}, all)
+	ordered := paletteMessagesOf([]backend.TranscriptMatch{{ID: "s3"}, {ID: "s1"}}, all)
 	if ordered[0].sessionID != "s3" || ordered[1].sessionID != "s1" {
 		t.Errorf("the order the search returned is kept, got %+v", ordered)
 	}
-	dropped := paletteMessagesOf([]lichclient.TranscriptMatch{{ID: "s9"}, {ID: "s1"}}, all)
+	dropped := paletteMessagesOf([]backend.TranscriptMatch{{ID: "s9"}, {ID: "s1"}}, all)
 	if len(dropped) != 1 || dropped[0].sessionID != "s1" {
 		t.Errorf("a match whose session is gone is dropped, got %+v", dropped)
 	}
@@ -224,7 +224,7 @@ func TestPaletteMessagesCarryTheirSessionAndSurviveAClose(t *testing.T) {
 	}
 }
 
-var paletteParked = []lichclient.ClosedSession{
+var paletteParked = []backend.ClosedSession{
 	{ID: "h1", ProjectID: "p1", ProjectName: "lich", ProjectPath: "/home/u/try/skipo", Label: "Wire the relay inbox", Kind: "claude",
 		Path: "/home/u/wt/lich/relay-inbox", ParkedBranch: "feat/relay-inbox", ClosedAt: 1_700_000_200},
 	{ID: "h2", ProjectID: "p1", ProjectName: "lich", ProjectPath: "/home/u/try/skipo", Label: "Conpty handle recycling", Kind: "claude",
@@ -282,10 +282,10 @@ func TestHistorySearchKeepsWhatTheStoreMatched(t *testing.T) {
 
 	said := paletteParked[1]
 	said.MatchedConversation, said.Snippet = true, "…the ConPTY handle was recycled…"
-	kept := historyRows([]lichclient.ClosedSession{said}, paletteBranches, nil)
+	kept := historyRows([]backend.ClosedSession{said}, paletteBranches, nil)
 	equal(t, "matched on its conversation", by("recycled zombie", kept), []string{"h2"})
 	said.Snippet = ""
-	folded := historyRows([]lichclient.ClosedSession{said}, paletteBranches, nil)
+	folded := historyRows([]backend.ClosedSession{said}, paletteBranches, nil)
 	equal(t, "matched with no snippet to show", by("decision", folded), []string{"h2"})
 }
 
@@ -338,7 +338,7 @@ func TestHistoryIndexNoteAndAction(t *testing.T) {
 	}
 }
 
-var paletteOutside = []lichclient.ExternalSession{
+var paletteOutside = []backend.ExternalSession{
 	{Kind: "codex", ProviderSessionID: "c1", Title: "Port the theme loader", Path: "/wt/theme-port", ProjectID: "p1", ProjectName: "lich", ProjectPath: "/src/lich", UpdatedAt: 1788532932},
 	{Kind: "kiro", ProviderSessionID: "k1", ProjectID: "p2", ProjectName: "sop", ProjectPath: "/src/sop", UpdatedAt: 1788000000},
 }
@@ -373,7 +373,7 @@ func TestConversationsStartedOutsideLich(t *testing.T) {
 	if externalLabel(blank) != "Untitled conversation" {
 		t.Error("a blank title is untitled")
 	}
-	want := lichclient.ClosedSession{ID: "s1", ProjectID: "p1", ProjectName: "lich", ProjectPath: "/src/lich",
+	want := backend.ClosedSession{ID: "s1", ProjectID: "p1", ProjectName: "lich", ProjectPath: "/src/lich",
 		Label: "Port the theme loader", Kind: "codex", Path: "/wt/theme-port"}
 	if got := adoptedSession(paletteOutside[0], "s1"); got != want {
 		t.Errorf("adopted = %+v, want %+v", got, want)

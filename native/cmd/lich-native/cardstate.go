@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // agentEvent and sandboxEvent are internal/terminal's session-agent and
@@ -44,7 +44,7 @@ const (
 // applyStatus feeds a session-status report to the status store. An idle
 // report is the provider CLI leaving the PTY, so the card drops its agent
 // mark, and a report on the session being watched is read on arrival.
-func (m *model) applyStatus(ctx context.Context, ev lichclient.Event) error {
+func (m *model) applyStatus(ctx context.Context, ev backend.Event) error {
 	var s struct {
 		ID    string `json:"id"`
 		State string `json:"state"`
@@ -100,7 +100,7 @@ func (m *model) statusReport(id, previous string) (statusReport, bool) {
 // applyLive takes the live PTY reports the backend never replays: the
 // provider CLI running in a session, and whether its spawn ran confined. It
 // reports whether ev was one of them.
-func (m *model) applyLive(ev lichclient.Event) (bool, error) {
+func (m *model) applyLive(ev backend.Event) (bool, error) {
 	switch ev.Name {
 	case "session-agent":
 		var a agentEvent

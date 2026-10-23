@@ -9,8 +9,8 @@ import (
 
 	"gioui.org/layout"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -70,7 +70,7 @@ func (c *fileCard) markdownBody(gtx C, p *reviewPanel) D {
 	src, loading, err := c.markdownSource(p)
 	switch {
 	case err != nil:
-		return bodyLine(gtx, p.th, lichclient.ErrorText(err))
+		return bodyLine(gtx, p.th, backend.ErrorText(err))
 	case loading:
 		return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.loading"))
 	}
@@ -105,10 +105,10 @@ func (c *fileCard) markdownSource(p *reviewPanel) (src string, loading bool, err
 }
 
 // openLink sends a link clicked in a Markdown preview to the browser.
-func openLink(client *lichclient.Client, notify func(ui.Toast), url string) {
+func openLink(client *backend.Client, notify func(ui.Toast), url string) {
 	go func() {
 		if err := client.OpenExternal(context.Background(), url); err != nil {
-			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": url}), Description: lichclient.ErrorText(err)})
+			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": url}), Description: backend.ErrorText(err)})
 		}
 	}()
 }

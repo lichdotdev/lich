@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -28,7 +28,7 @@ func TestPatternClauseNamesEveryOperatorAndNegation(t *testing.T) {
 		{"never_seen", false, `message must match "x"`},
 	}
 	for _, c := range cases {
-		p := lichclient.CommitPattern{Target: "message", Operator: c.operator, Pattern: "x", Negate: c.negate}
+		p := backend.CommitPattern{Target: "message", Operator: c.operator, Pattern: "x", Negate: c.negate}
 		if got := patternClause(p); got != c.want {
 			t.Errorf("%s negate=%v: %q, want %q", c.operator, c.negate, got, c.want)
 		}
@@ -47,7 +47,7 @@ func TestPatternTargetKeepsAWordTheBackendAddsLater(t *testing.T) {
 func TestMergeGateSpeaksTheInterfaceLanguage(t *testing.T) {
 	i18n.SetCurrent(i18n.PtBR)
 	defer i18n.SetCurrent(i18n.EN)
-	rules := &lichclient.BranchRules{CommitPatterns: []lichclient.CommitPattern{{Target: "author email", Operator: "ends_with", Pattern: "@x.dev", Negate: true}}}
+	rules := &backend.BranchRules{CommitPatterns: []backend.CommitPattern{{Target: "author email", Operator: "ends_with", Pattern: "@x.dev", Negate: true}}}
 	blocked := detail("OPEN", "MERGEABLE", "BLOCKED", "APPROVED")
 	want := `Um ruleset governa main: em todo commit, o e-mail do autor não deve terminar com "@x.dev".`
 	if got := mergeHint(blocked, rules); got != want {
@@ -76,8 +76,8 @@ func TestMergeHintCountsTheRedChecksInTheInterfaceLanguage(t *testing.T) {
 }
 
 func TestChecksStatPicksThePluralOfTheInterfaceLanguage(t *testing.T) {
-	one := lichclient.ChecksRollup{Total: 1, Passed: 1}
-	many := lichclient.ChecksRollup{Total: 4, Passed: 4}
+	one := backend.ChecksRollup{Total: 1, Passed: 1}
+	many := backend.ChecksRollup{Total: 4, Passed: 4}
 	if _, text, _, _ := checksStat(testTheme(), one); text != "1 check passed" {
 		t.Errorf("one = %q", text)
 	}

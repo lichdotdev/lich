@@ -12,7 +12,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -158,7 +158,7 @@ func TestPaletteViewJoinsTheWorkspaceToTheAnswers(t *testing.T) {
 	p.show(map[string]string{"s3": statusBusy})
 	p.closed = closedHolding(closedAnswer{rows: paletteClosed, total: 63, missing: map[string]bool{"/home/u/snk/gh-turnkey": true}})
 	p.history.data = historyAnswer{rows: historyRows(paletteParked, paletteBranches, nil), total: 143, indexing: 12}
-	p.said.data = []lichclient.TranscriptMatch{{ID: "s1", Snippet: "flaky again", Count: 2}}
+	p.said.data = []backend.TranscriptMatch{{ID: "s1", Snippet: "flaky again", Count: 2}}
 
 	v := p.view(workspaceForView(), defaultHotkeys(), false, func(hotkeyID) bool { return true })
 	equal(t, "All", groupLabels(v.groups), []string{"Sessions", "Projects", "Messages"})

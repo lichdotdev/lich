@@ -5,8 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -129,17 +129,17 @@ func TestBinaryVerdictWordsFollowWhatWasAskedFor(t *testing.T) {
 	cases := []struct {
 		status, bin, label, detail string
 	}{
-		{lichclient.CheckOK, "claude", "executable", ""},
+		{backend.CheckOK, "claude", "executable", ""},
 		{"not-found", "claude", "not on $PATH", i18n.T("env.binary.detailBroken")},
 		{"not-found", "/opt/claude", "no such file", i18n.T("env.binary.detailBroken")},
 		{"not-found", `C:\bin\claude.exe`, "no such file", i18n.T("env.binary.detailBroken")},
 		{"not-executable", "/opt/claude", "not executable", i18n.T("env.binary.detailBroken")},
 		{"home-shortcut", "~/claude", "~ is not expanded", i18n.T("env.binary.detailHomeShortcut")},
 		{"relative", "./claude", "relative path", i18n.T("env.binary.detailRelative")},
-		{lichclient.CheckEmpty, "", "", ""},
+		{backend.CheckEmpty, "", "", ""},
 	}
 	for _, c := range cases {
-		check := lichclient.BinaryCheck{Status: c.status}
+		check := backend.BinaryCheck{Status: c.status}
 		if got := binCheckLabel(check, c.bin); got != c.label {
 			t.Errorf("%s %q label = %q, want %q", c.status, c.bin, got, c.label)
 		}
@@ -150,22 +150,22 @@ func TestBinaryVerdictWordsFollowWhatWasAskedFor(t *testing.T) {
 }
 
 func TestPlanSummaryFitsAListRow(t *testing.T) {
-	ok := lichclient.QuotaPlan{Status: "ok", Windows: []lichclient.QuotaWindow{
+	ok := backend.QuotaPlan{Status: "ok", Windows: []backend.QuotaWindow{
 		{Label: "Weekly", Seconds: 7 * day, Percent: 20},
 		{Label: "Session", Seconds: 5 * hour, Percent: 62},
 	}}
 	cases := []struct {
 		name  string
-		plan  lichclient.QuotaPlan
+		plan  backend.QuotaPlan
 		found bool
 		want  string
 	}{
-		{"no reading", lichclient.QuotaPlan{}, false, ""},
+		{"no reading", backend.QuotaPlan{}, false, ""},
 		{"the hottest window", ok, true, "62% of the 5h window"},
-		{"a window with no length", lichclient.QuotaPlan{Status: "ok", Windows: []lichclient.QuotaWindow{{Percent: 7}}}, true, "7% used"},
-		{"signed out is words", lichclient.QuotaPlan{Status: "signed-out"}, true, "Signed out"},
-		{"an error says nothing", lichclient.QuotaPlan{Status: "error"}, true, ""},
-		{"no windows says nothing", lichclient.QuotaPlan{Status: "ok"}, true, ""},
+		{"a window with no length", backend.QuotaPlan{Status: "ok", Windows: []backend.QuotaWindow{{Percent: 7}}}, true, "7% used"},
+		{"signed out is words", backend.QuotaPlan{Status: "signed-out"}, true, "Signed out"},
+		{"an error says nothing", backend.QuotaPlan{Status: "error"}, true, ""},
+		{"no windows says nothing", backend.QuotaPlan{Status: "ok"}, true, ""},
 	}
 	for _, c := range cases {
 		if got := planSummary(c.plan, c.found); got != c.want {
@@ -209,7 +209,7 @@ func TestRestoreChoiceIsWhatTheGateUsesNext(t *testing.T) {
 	if len(restoreRungs) != len(want) {
 		t.Fatalf("%d rungs for %d answers the gate has", len(restoreRungs), len(want))
 	}
-	session := lichclient.Session{ID: "s", Kind: "codex", ProviderSessionID: "thread"}
+	session := backend.Session{ID: "s", Kind: "codex", ProviderSessionID: "thread"}
 	for _, rung := range restoreRungs {
 		if restoreChoice(rung.value) != rung.value {
 			t.Errorf("%q is not a value the gate reads back as itself", rung.value)
@@ -224,7 +224,7 @@ func TestRestoreChoiceIsWhatTheGateUsesNext(t *testing.T) {
 func TestThePromptsAlwaysIsASettingsChoice(t *testing.T) {
 	probe := &storeProbe{store: map[string]string{}}
 	g := &spawnGate{probe: probe, invalidate: func() {}, notify: func(ui.Toast) {}}
-	g.asking = &lichclient.Session{ID: "s", Kind: "codex", ProviderSessionID: "thread"}
+	g.asking = &backend.Session{ID: "s", Kind: "codex", ProviderSessionID: "thread"}
 	g.answer(context.Background(), restoreResume, true)
 	stored := probe.store[restoreKey("codex")]
 	if !slices.ContainsFunc(restoreRungs, func(r ladderRung) bool { return r.value == stored }) {
@@ -357,7 +357,7 @@ func TestOnlyTheLastOfABurstOfWritesIsSent(t *testing.T) {
 // The machine this was built for: three codex installs on $PATH, the first of
 // them the one a session spawns.
 func TestOthersNamesTheVersionsASessionDoesNotRun(t *testing.T) {
-	v := binVersions{version: "0.162.1", onPath: []lichclient.ProviderBinary{
+	v := binVersions{version: "0.162.1", onPath: []backend.ProviderBinary{
 		{Path: "/home/u/.local/bin/codex", Version: "0.162.1"},
 		{Path: "/home/u/.local/share/mise/shims/codex", Version: "0.144.5"},
 		{Path: "/opt/codex-copy", Version: "0.162.1"},
@@ -374,7 +374,7 @@ func TestOthersNamesTheVersionsASessionDoesNotRun(t *testing.T) {
 }
 
 func TestOneBinaryOnPathSaysNothing(t *testing.T) {
-	v := binVersions{version: "2.1.299", onPath: []lichclient.ProviderBinary{{Path: "/usr/bin/claude", Version: "2.1.299"}}}
+	v := binVersions{version: "2.1.299", onPath: []backend.ProviderBinary{{Path: "/usr/bin/claude", Version: "2.1.299"}}}
 	if got := alsoOnPathLine(v.others("/usr/bin/claude")); got != "" {
 		t.Errorf("line = %q, want none", got)
 	}
@@ -386,7 +386,7 @@ func TestAConfiguredBinaryIsComparedWithEveryoneOnPath(t *testing.T) {
 	if scope != binScopeGlobal || configured != "/opt/codex" || asked != "/opt/codex" {
 		t.Fatalf("spawnedBin = %q %q %q", scope, configured, asked)
 	}
-	v := binVersions{version: "0.150.0", onPath: []lichclient.ProviderBinary{{Path: "/usr/bin/codex", Version: "0.147.0"}}}
+	v := binVersions{version: "0.150.0", onPath: []backend.ProviderBinary{{Path: "/usr/bin/codex", Version: "0.147.0"}}}
 	if got := v.others("/opt/codex"); len(got) != 1 {
 		t.Errorf("others = %+v, want /usr/bin/codex", got)
 	}

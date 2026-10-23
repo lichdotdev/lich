@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // English until the native window has i18n.
@@ -33,7 +33,7 @@ const sessionLimitEvent = "session-limit"
 // its watchers: coming back to a card draws the numbers it had while the fresh
 // read is in flight.
 type planQuota struct {
-	fetch    func(sessionID string) ([]lichclient.QuotaPlan, error)
+	fetch    func(sessionID string) ([]backend.QuotaPlan, error)
 	after    func(time.Duration) <-chan time.Time
 	onChange func()
 
@@ -42,7 +42,7 @@ type planQuota struct {
 }
 
 type quotaEntry struct {
-	plans    []lichclient.QuotaPlan
+	plans    []backend.QuotaPlan
 	watchers int
 	stop     chan struct{}
 	// seq numbers the reads, so one started before the last watcher left
@@ -63,8 +63,8 @@ func profileQuotaKey(prov profileProvider, slug string) string {
 
 // quotaReader reads the plan a planQuota key stands for. A profile's reading
 // is the one plan its own login has, so it comes back as a list of one.
-func quotaReader(c *lichclient.Client) func(key string) ([]lichclient.QuotaPlan, error) {
-	return func(key string) ([]lichclient.QuotaPlan, error) {
+func quotaReader(c *backend.Client) func(key string) ([]backend.QuotaPlan, error) {
+	return func(key string) ([]backend.QuotaPlan, error) {
 		ctx := context.Background()
 		for _, prov := range []profileProvider{claudeProfileProvider, codexProfileProvider} {
 			slug, isProfile := strings.CutPrefix(key, prov.quotaPrefix)
@@ -75,7 +75,7 @@ func quotaReader(c *lichclient.Client) func(key string) ([]lichclient.QuotaPlan,
 			if err != nil {
 				return nil, err
 			}
-			return []lichclient.QuotaPlan{plan}, nil
+			return []backend.QuotaPlan{plan}, nil
 		}
 		return c.QuotaPlans(ctx, key)
 	}
@@ -83,12 +83,12 @@ func quotaReader(c *lichclient.Client) func(key string) ([]lichclient.QuotaPlan,
 
 // newPlanQuota polls with fetch every planQuotaRefresh; onChange runs, from
 // the poll goroutine, whenever a key's reading changed.
-func newPlanQuota(fetch func(string) ([]lichclient.QuotaPlan, error), onChange func()) *planQuota {
+func newPlanQuota(fetch func(string) ([]backend.QuotaPlan, error), onChange func()) *planQuota {
 	return &planQuota{fetch: fetch, after: time.After, onChange: onChange, entries: map[string]*quotaEntry{}}
 }
 
 // plans is the last reading for key; nil until one lands.
-func (q *planQuota) plans(key string) []lichclient.QuotaPlan {
+func (q *planQuota) plans(key string) []backend.QuotaPlan {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	if e := q.entries[key]; e != nil {
@@ -140,9 +140,9 @@ func (q *planQuota) reread(key string) {
 // apply reads a session's quota again when its events say the spend moved: a
 // turn that ended, a usage limit it hit, or a switch of login. It is the
 // store listening to /events, so the code that made the change names no one.
-func (q *planQuota) apply(ev lichclient.Event) {
+func (q *planQuota) apply(ev backend.Event) {
 	switch ev.Name {
-	case sessionLimitEvent, lichclient.SessionProfileEvent, statusEventName:
+	case sessionLimitEvent, backend.SessionProfileEvent, statusEventName:
 	default:
 		return
 	}
@@ -222,10 +222,10 @@ func (q *planQuota) refresh(key string, e *quotaEntry) {
 // sameQuota keeps a reading nobody is spending from redrawing every minute. It
 // compares the plans and their windows, the account included: a session moved
 // to another login can read the same numbers under another name.
-func sameQuota(a, b []lichclient.QuotaPlan) bool {
-	return slices.EqualFunc(a, b, func(p, o lichclient.QuotaPlan) bool {
+func sameQuota(a, b []backend.QuotaPlan) bool {
+	return slices.EqualFunc(a, b, func(p, o backend.QuotaPlan) bool {
 		return p.Provider == o.Provider && p.Status == o.Status && p.Plan == o.Plan && p.Account == o.Account &&
-			slices.EqualFunc(p.Windows, o.Windows, func(w, v lichclient.QuotaWindow) bool {
+			slices.EqualFunc(p.Windows, o.Windows, func(w, v backend.QuotaWindow) bool {
 				return w.Label == v.Label && w.Percent == v.Percent && w.Seconds == v.Seconds && w.ResetsAt == v.ResetsAt
 			})
 	})
@@ -233,10 +233,10 @@ func sameQuota(a, b []lichclient.QuotaPlan) bool {
 
 // planFor is usePlanQuotaFor: provider's reading, false for a provider lich
 // reads no plan from and while the first reading is in flight.
-func planFor(plans []lichclient.QuotaPlan, provider string) (lichclient.QuotaPlan, bool) {
-	i := slices.IndexFunc(plans, func(p lichclient.QuotaPlan) bool { return p.Provider == provider })
+func planFor(plans []backend.QuotaPlan, provider string) (backend.QuotaPlan, bool) {
+	i := slices.IndexFunc(plans, func(p backend.QuotaPlan) bool { return p.Provider == provider })
 	if provider == "" || i < 0 {
-		return lichclient.QuotaPlan{}, false
+		return backend.QuotaPlan{}, false
 	}
 	return plans[i], true
 }
@@ -244,12 +244,12 @@ func planFor(plans []lichclient.QuotaPlan, provider string) (lichclient.QuotaPla
 // hottestWindow is the window a single readout shows: the provider's own
 // active verdict when it names one, else the window closest to spent, the
 // first on a tie.
-func hottestWindow(plan lichclient.QuotaPlan) (lichclient.QuotaWindow, bool) {
-	if i := slices.IndexFunc(plan.Windows, func(w lichclient.QuotaWindow) bool { return w.Active }); i >= 0 {
+func hottestWindow(plan backend.QuotaPlan) (backend.QuotaWindow, bool) {
+	if i := slices.IndexFunc(plan.Windows, func(w backend.QuotaWindow) bool { return w.Active }); i >= 0 {
 		return plan.Windows[i], true
 	}
 	if len(plan.Windows) == 0 {
-		return lichclient.QuotaWindow{}, false
+		return backend.QuotaWindow{}, false
 	}
 	hottest := plan.Windows[0]
 	for _, w := range plan.Windows[1:] {
@@ -262,11 +262,11 @@ func hottestWindow(plan lichclient.QuotaPlan) (lichclient.QuotaWindow, bool) {
 
 // footerWindow picks the window the strip shows: a locked window stays visible
 // even when another is fuller. False unless the reading is ok.
-func footerWindow(plan lichclient.QuotaPlan) (lichclient.QuotaWindow, bool) {
+func footerWindow(plan backend.QuotaPlan) (backend.QuotaWindow, bool) {
 	if plan.Status != "ok" {
-		return lichclient.QuotaWindow{}, false
+		return backend.QuotaWindow{}, false
 	}
-	if i := slices.IndexFunc(plan.Windows, func(w lichclient.QuotaWindow) bool { return w.LockedReason != "" }); i >= 0 {
+	if i := slices.IndexFunc(plan.Windows, func(w backend.QuotaWindow) bool { return w.LockedReason != "" }); i >= 0 {
 		return plan.Windows[i], true
 	}
 	return hottestWindow(plan)
@@ -274,7 +274,7 @@ func footerWindow(plan lichclient.QuotaPlan) (lichclient.QuotaWindow, bool) {
 
 // planReadout is the plan quota's strip text and tooltip title; the tooltip
 // body is quotaGauges and accountLine.
-func planReadout(plan lichclient.QuotaPlan) (footerReadout, bool) {
+func planReadout(plan backend.QuotaPlan) (footerReadout, bool) {
 	w, ok := footerWindow(plan)
 	if !ok {
 		return footerReadout{}, false
@@ -302,7 +302,7 @@ type quotaGauge struct {
 	Tone    usageTone
 }
 
-func quotaGauges(plan lichclient.QuotaPlan, now time.Time) []quotaGauge {
+func quotaGauges(plan backend.QuotaPlan, now time.Time) []quotaGauge {
 	rows := make([]quotaGauge, 0, len(plan.Windows))
 	for _, w := range plan.Windows {
 		g := quotaGauge{
@@ -320,7 +320,7 @@ func quotaGauges(plan lichclient.QuotaPlan, now time.Time) []quotaGauge {
 
 // accountLine is the account a gauge was read against. A token login has a
 // name lich may not ask for, which is worth a word rather than a gap.
-func accountLine(plan lichclient.QuotaPlan) string {
+func accountLine(plan backend.QuotaPlan) string {
 	if plan.Account != "" {
 		return plan.Account
 	}

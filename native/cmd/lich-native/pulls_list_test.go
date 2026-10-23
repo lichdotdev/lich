@@ -13,9 +13,9 @@ import (
 	"gioui.org/text"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -66,8 +66,8 @@ func inkWidth(t *testing.T, w layout.Widget, fg color.NRGBA) int {
 	return ink.Dx()
 }
 
-func requested(author string, threads lichclient.ThreadTally) lichclient.PRSummary {
-	return lichclient.PRSummary{Author: author, ReviewDecision: "CHANGES_REQUESTED", Threads: threads,
+func requested(author string, threads backend.ThreadTally) backend.PRSummary {
+	return backend.PRSummary{Author: author, ReviewDecision: "CHANGES_REQUESTED", Threads: threads,
 		UpdatedAt: rowMetaNow.Add(-59 * time.Minute).Format(time.RFC3339)}
 }
 
@@ -76,7 +76,7 @@ func requested(author string, threads lichclient.ThreadTally) lichclient.PRSumma
 func TestRowMetaKeepsTheVerdictWhole(t *testing.T) {
 	th := rowMetaTheme(t)
 	whole := inkWidth(t, th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout, th.Destructive)
-	pr := requested("joao-vitorino-dos-santos_snk", lichclient.ThreadTally{Open: 1, Total: 1})
+	pr := requested("joao-vitorino-dos-santos_snk", backend.ThreadTally{Open: 1, Total: 1})
 	got := inkWidth(t, func(gtx C) D { return rowMeta(gtx, th, pr, "rapid-quartz", rowMetaNow) }, th.Destructive)
 	if got < whole {
 		t.Errorf("verdict drew %dpx of its %dpx", got, whole)
@@ -89,12 +89,12 @@ func TestRowMetaVerdictFollowsTheThreads(t *testing.T) {
 	th := rowMetaTheme(t)
 	cases := []struct {
 		name    string
-		threads lichclient.ThreadTally
+		threads backend.ThreadTally
 		red     bool
 	}{
-		{"an open thread is the author's move", lichclient.ThreadTally{Open: 1, Total: 3}, true},
-		{"no threads leaves only the verdict", lichclient.ThreadTally{}, true},
-		{"every thread resolved is the reviewer's move", lichclient.ThreadTally{Open: 0, Total: 3}, false},
+		{"an open thread is the author's move", backend.ThreadTally{Open: 1, Total: 3}, true},
+		{"no threads leaves only the verdict", backend.ThreadTally{}, true},
+		{"every thread resolved is the reviewer's move", backend.ThreadTally{Open: 0, Total: 3}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -124,7 +124,7 @@ func TestWholeOrNothingDropsWhatWouldBeCut(t *testing.T) {
 // the pull request's state, drawn muted so the two never read as one.
 func TestRowMetaDraftLeavesAmberToTheVerdict(t *testing.T) {
 	th := rowMetaTheme(t)
-	pr := lichclient.PRSummary{Author: "ana", IsDraft: true, UpdatedAt: rowMetaNow.Add(-5 * time.Hour).Format(time.RFC3339)}
+	pr := backend.PRSummary{Author: "ana", IsDraft: true, UpdatedAt: rowMetaNow.Add(-5 * time.Hour).Format(time.RFC3339)}
 	meta := func(gtx C) D { return rowMeta(gtx, th, pr, "", rowMetaNow) }
 	if amber := inkWidth(t, meta, th.ToneWait); amber > 0 {
 		t.Errorf("a draft with no verdict drew %dpx of amber", amber)

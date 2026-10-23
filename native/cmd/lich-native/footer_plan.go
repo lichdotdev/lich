@@ -8,7 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -28,7 +28,7 @@ var (
 // ponytail: the pace mark and the Locked reading carry no tooltip of their
 // own here: a tooltip's content takes no hover in this window. The lock
 // reason is spelled out under its gauge either way.
-func planDetails(th *ui.Theme, plan lichclient.QuotaPlan, now time.Time) layout.Widget {
+func planDetails(th *ui.Theme, plan backend.QuotaPlan, now time.Time) layout.Widget {
 	var rows []layout.Widget
 	for _, g := range quotaGauges(plan, now) {
 		rows = append(rows, quotaGaugeRow(th, g))

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // costMisses are the named absences of a cost figure this build has a
@@ -67,7 +67,7 @@ func (f *footerUsage) get(id string) (sessionUsage, bool) {
 // session-status events that void the prior provider's report. It reports
 // whether ev was one of the three; session-agent and session-status are not
 // consumed, so the caller still hands them to the card stores.
-func (f *footerUsage) apply(ev lichclient.Event) (bool, error) {
+func (f *footerUsage) apply(ev backend.Event) (bool, error) {
 	var e struct {
 		ID    string  `json:"id"`
 		Agent *string `json:"agent"`

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // claudeProfileKey is store.claudeProfileKey: the profile new Claude Code
@@ -54,7 +54,7 @@ type profileProvider struct {
 	kind  string
 	key   string
 	label string
-	api   func(c *lichclient.Client) lichclient.ProfileAPI
+	api   func(c *backend.Client) backend.ProfileAPI
 	// quotaPrefix starts the planQuota key of one profile's reading; "" for a
 	// provider with no plan to read.
 	quotaPrefix string
@@ -91,7 +91,7 @@ func profileSentence(prov profileProvider, key string) string {
 
 var claudeProfileProvider = profileProvider{
 	kind: claudeKind, key: claudeProfileKey, label: "Claude Code", quotaPrefix: "profile:",
-	api:     func(c *lichclient.Client) lichclient.ProfileAPI { return c.ClaudeProfiles() },
+	api:     func(c *backend.Client) backend.ProfileAPI { return c.ClaudeProfiles() },
 	plugins: true, loginCode: true,
 	words: profileWords{
 		profileDescKey:  "settings.profiles.profileDesc",
@@ -109,7 +109,7 @@ var claudeProfileProvider = profileProvider{
 
 var codexProfileProvider = profileProvider{
 	kind: codexKind, key: codexProfileKey, label: "Codex", quotaPrefix: "codex-profile:",
-	api:     func(c *lichclient.Client) lichclient.ProfileAPI { return c.CodexProfiles() },
+	api:     func(c *backend.Client) backend.ProfileAPI { return c.CodexProfiles() },
 	plugins: true,
 	words: profileWords{
 		profileDescKey:  "settings.profiles.profileDesc",
@@ -127,7 +127,7 @@ var codexProfileProvider = profileProvider{
 
 var ompProfileProvider = profileProvider{
 	kind: ompKind, key: ompProfileKey, label: "oh-my-pi",
-	api:           func(c *lichclient.Client) lichclient.ProfileAPI { return c.OMPProfiles() },
+	api:           func(c *backend.Client) backend.ProfileAPI { return c.OMPProfiles() },
 	terminalLogin: true,
 	words: profileWords{
 		profileDescKey:  "settings.profiles.profileDesc",
@@ -177,12 +177,12 @@ func profileProviderOf(kind string) (profileProvider, bool) {
 // from any goroutine.
 type profileBook struct {
 	provider   profileProvider
-	client     *lichclient.Client
+	client     *backend.Client
 	invalidate func()
 	quota      *planQuota
 
 	mu       sync.Mutex
-	list     []lichclient.Profile
+	list     []backend.Profile
 	images   map[string]*avatarImage
 	loaded   bool
 	loadedAt time.Time
@@ -191,7 +191,7 @@ type profileBook struct {
 	quoted map[string]func()
 }
 
-func newProfileBook(prov profileProvider, c *lichclient.Client, invalidate func(), quota *planQuota) *profileBook {
+func newProfileBook(prov profileProvider, c *backend.Client, invalidate func(), quota *planQuota) *profileBook {
 	return &profileBook{provider: prov, client: c, invalidate: invalidate, quota: quota, quoted: map[string]func(){}}
 }
 
@@ -203,8 +203,8 @@ func (b *profileBook) reload(ctx context.Context) error {
 		return err
 	}
 	b.mu.Lock()
-	gone := slices.DeleteFunc(slices.Clone(b.list), func(old lichclient.Profile) bool {
-		return slices.ContainsFunc(list, func(p lichclient.Profile) bool { return p.Slug == old.Slug })
+	gone := slices.DeleteFunc(slices.Clone(b.list), func(old backend.Profile) bool {
+		return slices.ContainsFunc(list, func(p backend.Profile) bool { return p.Slug == old.Slug })
 	})
 	b.list, b.loaded, b.loadedAt = list, true, time.Now()
 	b.images = map[string]*avatarImage{}
@@ -222,9 +222,9 @@ func (b *profileBook) reload(ctx context.Context) error {
 
 // changed takes a profile-changed event: the profile's name and look, the
 // login state the event does not carry kept from the list.
-func (b *profileBook) changed(p lichclient.Profile) {
+func (b *profileBook) changed(p backend.Profile) {
 	b.mu.Lock()
-	if i := slices.IndexFunc(b.list, func(old lichclient.Profile) bool { return old.Slug == p.Slug }); i >= 0 {
+	if i := slices.IndexFunc(b.list, func(old backend.Profile) bool { return old.Slug == p.Slug }); i >= 0 {
 		b.list[i].Name, b.list[i].Color, b.list[i].Image = p.Name, p.Color, p.Image
 		b.images[p.Slug] = decodeAvatar(p)
 	}
@@ -271,7 +271,7 @@ func (b *profileBook) refreshIfStale(ctx context.Context) {
 // is quoted outside Settings. The caller holds b.mu.
 func (b *profileBook) followQuoted() {
 	want := map[string]bool{}
-	logged := slices.DeleteFunc(slices.Clone(b.list), func(p lichclient.Profile) bool { return !p.LoggedIn })
+	logged := slices.DeleteFunc(slices.Clone(b.list), func(p backend.Profile) bool { return !p.LoggedIn })
 	if b.provider.quotaPrefix != "" && len(logged) > 1 {
 		for _, p := range logged {
 			want[profileQuotaKey(b.provider, p.Slug)] = true
@@ -299,20 +299,20 @@ func (b *profileBook) planChanged(slug string) {
 	b.quota.invalidate(profileQuotaKey(b.provider, slug))
 }
 
-func (b *profileBook) snapshot() ([]lichclient.Profile, bool) {
+func (b *profileBook) snapshot() ([]backend.Profile, bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return slices.Clone(b.list), b.loaded
 }
 
 // find is the profile a stored value names; "" is Personal.
-func (b *profileBook) find(stored string) (lichclient.Profile, bool) {
+func (b *profileBook) find(stored string) (backend.Profile, bool) {
 	slug := effectiveProfile(stored)
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	i := slices.IndexFunc(b.list, func(p lichclient.Profile) bool { return p.Slug == slug })
+	i := slices.IndexFunc(b.list, func(p backend.Profile) bool { return p.Slug == slug })
 	if i < 0 {
-		return lichclient.Profile{}, false
+		return backend.Profile{}, false
 	}
 	return b.list[i], true
 }
@@ -344,9 +344,9 @@ func (b *profileBook) look(stored string) profileLook {
 }
 
 // loggedIn is every profile with a login, in the book's order.
-func (b *profileBook) loggedIn() []lichclient.Profile {
+func (b *profileBook) loggedIn() []backend.Profile {
 	list, _ := b.snapshot()
-	return slices.DeleteFunc(list, func(p lichclient.Profile) bool { return !p.LoggedIn })
+	return slices.DeleteFunc(list, func(p backend.Profile) bool { return !p.LoggedIn })
 }
 
 // effectiveProfile is the slug a stored value stands for: an unset value is
@@ -371,7 +371,7 @@ func profileChoiceValue(slug, scope string) string {
 // the providers it holds logins for and, for a provider whose profiles have a
 // plugin set, how many plugins it carries. "" for a profile nobody is logged in
 // to.
-func profileAccountLine(prov profileProvider, p lichclient.Profile) string {
+func profileAccountLine(prov profileProvider, p backend.Profile) string {
 	if !p.LoggedIn {
 		return ""
 	}
@@ -408,12 +408,12 @@ func profileInitial(name string) string {
 
 // profileUsage is the five-hour reading a Continue in row shows: its text, and
 // whether the window is spent. "" for a plan that gave no reading.
-func profileUsage(plan lichclient.QuotaPlan, ok bool) (text string, limited bool) {
+func profileUsage(plan backend.QuotaPlan, ok bool) (text string, limited bool) {
 	if !ok || plan.Status != "ok" {
 		return "", false
 	}
-	i := slices.IndexFunc(plan.Windows, func(w lichclient.QuotaWindow) bool { return w.Seconds == sessionWindowSeconds })
-	w, found := lichclient.QuotaWindow{}, i >= 0
+	i := slices.IndexFunc(plan.Windows, func(w backend.QuotaWindow) bool { return w.Seconds == sessionWindowSeconds })
+	w, found := backend.QuotaWindow{}, i >= 0
 	if found {
 		w = plan.Windows[i]
 	} else if w, found = hottestWindow(plan); !found {

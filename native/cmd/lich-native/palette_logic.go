@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // The command palette's data join: open projects and their sessions, the closed
@@ -43,7 +43,7 @@ type paletteSession struct {
 }
 
 // paletteProject is an open or a closed project: the same three fields.
-type paletteProject = lichclient.RecentProject
+type paletteProject = backend.RecentProject
 
 // paletteHistory is one parked session as the History tab lists it: the
 // store's row plus the branch its checkout is on now, read from git. That is
@@ -51,7 +51,7 @@ type paletteProject = lichclient.RecentProject
 // branch is "" for a checkout that is gone, which is also the row that cannot
 // be resumed.
 type paletteHistory struct {
-	lichclient.ClosedSession
+	backend.ClosedSession
 	branch string
 	// gone is the checkout no longer on disk: the row forgets rather than
 	// resumes.
@@ -118,7 +118,7 @@ type paletteRow struct {
 	project  paletteProject
 	message  paletteMessage
 	history  paletteHistory
-	external lichclient.ExternalSession
+	external backend.ExternalSession
 	action   hotkeyID
 	keys     string
 }
@@ -143,11 +143,11 @@ type paletteResults struct {
 	closed      []paletteProject
 	closedTotal int
 	history     []paletteHistory
-	external    []lichclient.ExternalSession
+	external    []backend.ExternalSession
 }
 
 // paletteSessionsOf flattens every session of the open projects.
-func paletteSessionsOf(projects []lichclient.Project) []paletteSession {
+func paletteSessionsOf(projects []backend.Project) []paletteSession {
 	var rows []paletteSession
 	for _, p := range projects {
 		for _, s := range p.Sessions {
@@ -162,7 +162,7 @@ func paletteSessionsOf(projects []lichclient.Project) []paletteSession {
 // historyRows joins the parked rows to what git says about their checkouts. A
 // path with no branch and a path in missing are different failures, not a
 // repository versus not there at all, but the row only acts on the second.
-func historyRows(closed []lichclient.ClosedSession, branches map[string]string, missing map[string]bool) []paletteHistory {
+func historyRows(closed []backend.ClosedSession, branches map[string]string, missing map[string]bool) []paletteHistory {
 	rows := make([]paletteHistory, len(closed))
 	for i, s := range closed {
 		rows[i] = paletteHistory{ClosedSession: s, branch: branches[s.Path], gone: missing[s.Path]}
@@ -176,7 +176,7 @@ func historyRows(closed []lichclient.ClosedSession, branches map[string]string, 
 // found by folding an accent. Both branches are in the history haystack
 // because they can disagree: the store matched the one recorded at the close,
 // and the row shows the one git reads now.
-func filterPalette(query string, all []paletteSession, projects, closed []paletteProject, history []paletteHistory, closedTotal int, external []lichclient.ExternalSession) paletteResults {
+func filterPalette(query string, all []paletteSession, projects, closed []paletteProject, history []paletteHistory, closedTotal int, external []backend.ExternalSession) paletteResults {
 	r := paletteResults{closedTotal: closedTotal}
 	for _, s := range all {
 		if matchesQuery(s.label+" "+s.projectName+" "+s.path, query) {
@@ -213,7 +213,7 @@ func filterPalette(query string, all []paletteSession, projects, closed []palett
 // paletteMessagesOf joins transcript matches back onto the sessions they were
 // searched for, in the order the search returned. A match whose session closed
 // since the query went out has nowhere to jump to and is dropped.
-func paletteMessagesOf(matches []lichclient.TranscriptMatch, sessions []paletteSession) []paletteMessage {
+func paletteMessagesOf(matches []backend.TranscriptMatch, sessions []paletteSession) []paletteMessage {
 	var rows []paletteMessage
 	for _, m := range matches {
 		i := slices.IndexFunc(sessions, func(s paletteSession) bool { return s.sessionID == m.ID })
@@ -314,7 +314,7 @@ func historyAction(h paletteHistory) historyDoor {
 
 // externalLabel is what an external conversation is called on its row and on
 // the card it becomes: a provider that never titled it still needs a name.
-func externalLabel(e lichclient.ExternalSession) string {
+func externalLabel(e backend.ExternalSession) string {
 	if title := strings.TrimSpace(e.Title); title != "" {
 		return title
 	}
@@ -323,8 +323,8 @@ func externalLabel(e lichclient.ExternalSession) string {
 
 // adoptedSession is the parked row AdoptExternalSession files, as the
 // history's resume takes it: the same door a closed session goes back through.
-func adoptedSession(e lichclient.ExternalSession, id string) lichclient.ClosedSession {
-	return lichclient.ClosedSession{
+func adoptedSession(e backend.ExternalSession, id string) backend.ClosedSession {
+	return backend.ClosedSession{
 		ID: id, ProjectID: e.ProjectID, ProjectName: e.ProjectName, ProjectPath: e.ProjectPath,
 		Label: externalLabel(e), Kind: e.Kind, Path: e.Path,
 	}
@@ -359,7 +359,7 @@ func paletteGroupsOf(tab paletteTab, r paletteResults, messages []paletteMessage
 	closed := rowsOf(r.closed, func(p paletteProject) paletteRow { return paletteRow{kind: rowClosed, project: p} })
 	said := rowsOf(messages, func(m paletteMessage) paletteRow { return paletteRow{kind: rowMessage, message: m} })
 	history := rowsOf(r.history, func(h paletteHistory) paletteRow { return paletteRow{kind: rowHistory, history: h} })
-	external := rowsOf(r.external, func(e lichclient.ExternalSession) paletteRow { return paletteRow{kind: rowExternal, external: e} })
+	external := rowsOf(r.external, func(e backend.ExternalSession) paletteRow { return paletteRow{kind: rowExternal, external: e} })
 
 	var groups []paletteGroup
 	switch tab {

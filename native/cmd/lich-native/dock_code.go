@@ -20,8 +20,8 @@ import (
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -50,7 +50,7 @@ type treeData struct {
 }
 
 type codeTab struct {
-	client   *lichclient.Client
+	client   *backend.Client
 	comments *commentStore
 	notify   func(ui.Toast)
 
@@ -76,7 +76,7 @@ type codeTab struct {
 	batch   commentBatch
 }
 
-func newCodeTab(client *lichclient.Client, invalidate func(), family string, size unit.Sp, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
+func newCodeTab(client *backend.Client, invalidate func(), family string, size unit.Sp, comments *commentStore, notify func(ui.Toast)) (*codeTab, error) {
 	view, err := newCodeView(family, size)
 	if err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (c *codeTab) fetchTree(gtx C, in dockInput) {
 	c.tree.want(key, path, func(ctx context.Context) (*treeData, error) { return readTree(ctx, c.client, path) })
 }
 
-func readTree(ctx context.Context, client *lichclient.Client, path string) (*treeData, error) {
+func readTree(ctx context.Context, client *backend.Client, path string) (*treeData, error) {
 	var l fileListing
 	if err := client.Call(ctx, "project.Tree", &l, path); err != nil {
 		return nil, err

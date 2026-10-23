@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // rpcLog serves every call with answer (nil for none), failing the ones whose
@@ -23,7 +23,7 @@ type rpcLog struct {
 	answer map[string]any
 }
 
-func (l *rpcLog) client(t *testing.T) *lichclient.Client {
+func (l *rpcLog) client(t *testing.T) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -181,8 +181,8 @@ func TestADragOverAnOlderOneKeepsItsOwnPendingOrder(t *testing.T) {
 	}
 }
 
-func closedRows() []lichclient.RecentProject {
-	return []lichclient.RecentProject{{ID: "x", Name: "ex", Path: "/p/ex"}, {ID: "y", Name: "why", Path: "/p/why"}}
+func closedRows() []backend.RecentProject {
+	return []backend.RecentProject{{ID: "x", Name: "ex", Path: "/p/ex"}, {ID: "y", Name: "why", Path: "/p/why"}}
 }
 
 func waitFor(t *testing.T, what string, ok func() bool) {

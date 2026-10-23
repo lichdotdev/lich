@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -97,7 +97,7 @@ func (s *settingsScreen) profilePicker(gtx C, th *ui.Theme, c *profileSettings, 
 
 // profileOption is one SelectItem of the picker: the avatar and the name,
 // checked when chosen.
-func (s *settingsScreen) profileOption(gtx C, th *ui.Theme, c *profileSettings, p lichclient.Profile, chosen bool) D {
+func (s *settingsScreen) profileOption(gtx C, th *ui.Theme, c *profileSettings, p backend.Profile, chosen bool) D {
 	if c.options == nil {
 		c.options = map[string]*widget.Clickable{}
 	}
@@ -161,7 +161,7 @@ func (s *settingsScreen) profileRows(gtx C, th *ui.Theme, c *profileSettings) D 
 
 // profileListRow is one profile: its mark and name, the account it is logged
 // in to or the amber word that it is not, and its menu.
-func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings, p lichclient.Profile, first bool) D {
+func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings, p backend.Profile, first bool) D {
 	st := c.row(p.Slug)
 	if st.login.Clicked(gtx) {
 		s.startLogin(c, p, nil)
@@ -190,7 +190,7 @@ func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings,
 }
 
 // profileText is a row's name and the line under it.
-func profileText(gtx C, th *ui.Theme, prov profileProvider, p lichclient.Profile) D {
+func profileText(gtx C, th *ui.Theme, prov profileProvider, p backend.Profile) D {
 	name := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, p.Name).Weight(font.Medium).Layout)}
 	if p.Personal {
 		name = append(name, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.settingsProfilesView.defaultTag")).Muted().Layout))
@@ -207,7 +207,7 @@ func profileText(gtx C, th *ui.Theme, prov profileProvider, p lichclient.Profile
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-func profileStatusLine(gtx C, th *ui.Theme, prov profileProvider, p lichclient.Profile) D {
+func profileStatusLine(gtx C, th *ui.Theme, prov profileProvider, p backend.Profile) D {
 	switch {
 	case p.LoggedIn:
 		return th.Text(ui.TextXS, profileAccountLine(prov, p)).Muted().Layout(gtx)
@@ -219,7 +219,7 @@ func profileStatusLine(gtx C, th *ui.Theme, prov profileProvider, p lichclient.P
 
 // profileMenu is a row's ⋯: logging in again, bringing plugins over and
 // renaming for every profile, deleting for every one but Personal.
-func (s *settingsScreen) profileMenu(gtx C, th *ui.Theme, c *profileSettings, p lichclient.Profile, st *profileRowState) D {
+func (s *settingsScreen) profileMenu(gtx C, th *ui.Theme, c *profileSettings, p backend.Profile, st *profileRowState) D {
 	entries := []ui.MenuEntry{{Label: i18n.T("settings.settingsProfilesView.logInAgain"), Icon: icProfileLogIn, OnClick: func() { s.startLogin(c, p, nil) }}}
 	if c.provider.plugins {
 		entries = append(entries, ui.MenuEntry{Label: i18n.T("settings.settingsProfilesView.copyFrom"), Icon: icProfileCopy, Disabled: !p.LoggedIn, OnClick: func() { s.startCopy(c, p) }})
@@ -242,15 +242,15 @@ func (s *settingsScreen) profileMenu(gtx C, th *ui.Theme, c *profileSettings, p 
 
 // profilePlanBlock is Plan usage for the profile the open scope uses: Personal
 // is the machine's own reading, any other profile is asked for by itself.
-func (s *settingsScreen) profilePlanBlock(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, slug string, plan lichclient.QuotaPlan, first bool) D {
+func (s *settingsScreen) profilePlanBlock(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, slug string, plan backend.QuotaPlan, first bool) D {
 	title := i18n.T("settings.planUsageSetting.title") + profileAccountSplit + c.book.nameOf(slug)
 	return s.planBlock(gtx, th, values, plan, first, title)
 }
 
 // profilePlan is the reading of the profile slug, the one the pane watches.
-func (s *settingsScreen) profilePlan(c *profileSettings, slug string) (lichclient.QuotaPlan, bool) {
+func (s *settingsScreen) profilePlan(c *profileSettings, slug string) (backend.QuotaPlan, bool) {
 	if s.footer == nil {
-		return lichclient.QuotaPlan{}, false
+		return backend.QuotaPlan{}, false
 	}
 	return planFor(s.footer.quota.plans(profileQuotaKey(c.provider, slug)), c.provider.kind)
 }

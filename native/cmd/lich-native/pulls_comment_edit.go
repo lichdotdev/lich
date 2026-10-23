@@ -7,8 +7,8 @@ import (
 
 	"gioui.org/layout"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -47,7 +47,7 @@ type commentEdit struct {
 	body   string
 }
 
-func threadTarget(t lichclient.PRReviewThread, c lichclient.PRThreadComment) commentTarget {
+func threadTarget(t backend.PRReviewThread, c backend.PRThreadComment) commentTarget {
 	return commentTarget{
 		kind: threadComment, id: c.ID, body: c.Body,
 		canEdit: c.CanEdit, canDelete: c.CanDelete, lastInThread: len(t.Comments) == 1,
@@ -111,7 +111,7 @@ func (v *pullView) commentHead(gtx C, th *ui.Theme, p *pullsScreen, t commentTar
 
 // threadComment is one comment of a thread: its byline over its body, or over
 // the box editing it.
-func (v *pullView) threadComment(gtx C, th *ui.Theme, p *pullsScreen, t commentTarget, c lichclient.PRThreadComment, act *pullsAction, now time.Time) D {
+func (v *pullView) threadComment(gtx C, th *ui.Theme, p *pullsScreen, t commentTarget, c backend.PRThreadComment, act *pullsAction, now time.Time) D {
 	editing := v.talk.editing[t.key()]
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
@@ -173,7 +173,7 @@ func (u *window) editComment(path string, number int, e commentEdit) {
 	v := &u.pulls.view
 	key := e.target.key()
 	u.prWrite("edit:"+key, func(err error) string {
-		return i18n.T("pulls.reviewThread.editFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+		return i18n.T("pulls.reviewThread.editFailed", i18n.Args{"error": backend.ErrorText(err)})
 	}, func() error {
 		var err error
 		switch e.target.kind {
@@ -196,7 +196,7 @@ func (u *window) editComment(path string, number int, e commentEdit) {
 // has no delete.
 func (u *window) deleteComment(path string, number int, t commentTarget) {
 	u.prWrite("delete:"+t.key(), func(err error) string {
-		return i18n.T("pulls.reviewThread.deleteFailed", i18n.Args{"error": lichclient.ErrorText(err)})
+		return i18n.T("pulls.reviewThread.deleteFailed", i18n.Args{"error": backend.ErrorText(err)})
 	}, func() error {
 		if t.kind == prComment {
 			return u.client.DeletePullRequestComment(u.ctx, path, number, t.id)

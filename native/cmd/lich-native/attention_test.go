@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -18,9 +18,9 @@ type attentionRig struct {
 
 func newAttentionRig() *attentionRig {
 	r := &attentionRig{m: newModel(nil, func() {})}
-	r.m.projects = []lichclient.Project{
-		{ID: "p", Name: "lich", Sessions: []lichclient.Session{{ID: "a", Label: "fix the build"}, {ID: "b", Label: "Shell 2"}}},
-		{ID: "q", Name: "skipo", Sessions: []lichclient.Session{{ID: "c", Label: "Claude 1"}}},
+	r.m.projects = []backend.Project{
+		{ID: "p", Name: "lich", Sessions: []backend.Session{{ID: "a", Label: "fix the build"}, {ID: "b", Label: "Shell 2"}}},
+		{ID: "q", Name: "skipo", Sessions: []backend.Session{{ID: "c", Label: "Claude 1"}}},
 	}
 	r.m.activeProject, r.m.active = "p", "a"
 	a := attentionToast{show: func(t ui.Toast) { r.toasts = append(r.toasts, t) },

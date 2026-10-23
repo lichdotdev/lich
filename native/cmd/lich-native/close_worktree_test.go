@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestWorktreeLeftByOnlyTheLastSessionOfAWorktree(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{{ID: "p", Path: "/repo", Sessions: []lichclient.Session{
+	m.projects = []backend.Project{{ID: "p", Path: "/repo", Sessions: []backend.Session{
 		{ID: "root"}, {ID: "a", Path: "/wt/a"}, {ID: "b1", Path: "/wt/b"}, {ID: "b2", Path: "/wt/b"},
 	}}}
 	for id, want := range map[string]string{"root": "", "a": "/wt/a", "b1": "", "gone": ""} {

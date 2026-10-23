@@ -6,8 +6,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -18,7 +18,7 @@ var (
 	icSplit       = icons.Lucide("columns-2")
 )
 
-func loadHideWhitespace(ctx context.Context, c *lichclient.Client) (bool, error) {
+func loadHideWhitespace(ctx context.Context, c *backend.Client) (bool, error) {
 	raw, err := c.GetSetting(ctx, hideWhitespaceKey, "")
 	return raw == "true", err
 }

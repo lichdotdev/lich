@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // binVersions is what one binary reports and every binary $PATH holds for its
@@ -13,7 +13,7 @@ import (
 // CLI that prints no version.
 type binVersions struct {
 	version string
-	onPath  []lichclient.ProviderBinary
+	onPath  []backend.ProviderBinary
 }
 
 // versionsOf is what asked reports and what else $PATH holds for kind, ok
@@ -37,8 +37,8 @@ func (p *providerSettings) versionsOf(s *settingsScreen, kind, asked string) (bi
 // report a different version from it: the ones a user who meant one of them
 // would be surprised by. A copy of the same version is no surprise, and one
 // that printed no version cannot be said to differ.
-func (v binVersions) others(spawned string) []lichclient.ProviderBinary {
-	var out []lichclient.ProviderBinary
+func (v binVersions) others(spawned string) []backend.ProviderBinary {
+	var out []backend.ProviderBinary
 	for _, b := range v.onPath {
 		if b.Path == spawned || b.Version == "" || b.Version == v.version {
 			continue
@@ -49,7 +49,7 @@ func (v binVersions) others(spawned string) []lichclient.ProviderBinary {
 }
 
 // alsoOnPathLine is the sentence naming others, "" when there are none.
-func alsoOnPathLine(others []lichclient.ProviderBinary) string {
+func alsoOnPathLine(others []backend.ProviderBinary) string {
 	if len(others) == 0 {
 		return ""
 	}

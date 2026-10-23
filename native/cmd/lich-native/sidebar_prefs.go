@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // The sidebar's backend settings. Width and open state are global; a fold is
@@ -58,7 +58,7 @@ func parseBoolSetting(raw string, fallback bool) bool {
 	return fallback
 }
 
-func loadSidebarLayout(ctx context.Context, c *lichclient.Client) (sidebarLayout, error) {
+func loadSidebarLayout(ctx context.Context, c *backend.Client) (sidebarLayout, error) {
 	width, err := c.GetSetting(ctx, sidebarWidthKey, "")
 	if err != nil {
 		return sidebarLayout{}, err
@@ -70,22 +70,22 @@ func loadSidebarLayout(ctx context.Context, c *lichclient.Client) (sidebarLayout
 	return sidebarLayout{widthRem: parseSidebarWidth(width), open: parseBoolSetting(open, true)}, nil
 }
 
-func saveSidebarWidth(ctx context.Context, c *lichclient.Client, rem float64) error {
+func saveSidebarWidth(ctx context.Context, c *backend.Client, rem float64) error {
 	return c.SetSetting(ctx, sidebarWidthKey, "", strconv.FormatFloat(clampSidebarWidth(rem), 'f', -1, 64))
 }
 
-func saveSidebarOpen(ctx context.Context, c *lichclient.Client, open bool) error {
+func saveSidebarOpen(ctx context.Context, c *backend.Client, open bool) error {
 	return c.SetSetting(ctx, sidebarOpenKey, "", strconv.FormatBool(open))
 }
 
-func loadCollapsed(ctx context.Context, c *lichclient.Client, projectID, blockKey string) (bool, error) {
+func loadCollapsed(ctx context.Context, c *backend.Client, projectID, blockKey string) (bool, error) {
 	raw, err := c.GetSetting(ctx, sidebarCollapsedKey+blockKey, projectID)
 	return parseBoolSetting(raw, false), err
 }
 
 // saveCollapsed writes unfolded as "": the store has no delete, and GetSetting
 // answers "" for an unset key, so unfolded stays stored by not being stored.
-func saveCollapsed(ctx context.Context, c *lichclient.Client, projectID, blockKey string, collapsed bool) error {
+func saveCollapsed(ctx context.Context, c *backend.Client, projectID, blockKey string, collapsed bool) error {
 	value := ""
 	if collapsed {
 		value = "true"
@@ -96,7 +96,7 @@ func saveCollapsed(ctx context.Context, c *lichclient.Client, projectID, blockKe
 // moveCollapsed carries a fold from one block key to another, dropping it for
 // an empty to. A folder is keyed by its name, so without this a rename would
 // unfold the block under the user and strand the old entry.
-func moveCollapsed(ctx context.Context, c *lichclient.Client, projectID, from, to string) (bool, error) {
+func moveCollapsed(ctx context.Context, c *backend.Client, projectID, from, to string) (bool, error) {
 	collapsed, err := loadCollapsed(ctx, c, projectID, from)
 	if err != nil {
 		return false, err

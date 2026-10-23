@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 func TestProfileChoiceValueNamesPersonalOnlyInAProject(t *testing.T) {
@@ -23,13 +23,13 @@ func TestProfileChoiceValueNamesPersonalOnlyInAProject(t *testing.T) {
 
 func TestProfileAccountLine(t *testing.T) {
 	cases := []struct {
-		p    lichclient.Profile
+		p    backend.Profile
 		want string
 	}{
-		{lichclient.Profile{LoggedIn: true, Email: "a@b.c", Plan: "max", Plugins: 3}, "a@b.c · Max · 3 plugins"},
-		{lichclient.Profile{LoggedIn: true, Email: "a@b.c", Plugins: 1}, "a@b.c · 1 plugin"},
-		{lichclient.Profile{LoggedIn: true, Email: "a@b.c"}, "a@b.c · no plugins"},
-		{lichclient.Profile{Email: "left@over"}, ""},
+		{backend.Profile{LoggedIn: true, Email: "a@b.c", Plan: "max", Plugins: 3}, "a@b.c · Max · 3 plugins"},
+		{backend.Profile{LoggedIn: true, Email: "a@b.c", Plugins: 1}, "a@b.c · 1 plugin"},
+		{backend.Profile{LoggedIn: true, Email: "a@b.c"}, "a@b.c · no plugins"},
+		{backend.Profile{Email: "left@over"}, ""},
 	}
 	for _, c := range cases {
 		if got := profileAccountLine(claudeProfileProvider, c.p); got != c.want {
@@ -39,7 +39,7 @@ func TestProfileAccountLine(t *testing.T) {
 }
 
 func TestProfileUsageQuotesTheFiveHourWindow(t *testing.T) {
-	plan := lichclient.QuotaPlan{Status: "ok", Windows: []lichclient.QuotaWindow{
+	plan := backend.QuotaPlan{Status: "ok", Windows: []backend.QuotaWindow{
 		{Seconds: 7 * day, Percent: 90},
 		{Seconds: 5 * hour, Percent: 12},
 	}}
@@ -50,7 +50,7 @@ func TestProfileUsageQuotesTheFiveHourWindow(t *testing.T) {
 	if text, limited := profileUsage(plan, true); text != "limit" || !limited {
 		t.Errorf("a spent window = %q, %v; want \"limit\", limited", text, limited)
 	}
-	if text, _ := profileUsage(lichclient.QuotaPlan{Status: "signed-out"}, true); text != "" {
+	if text, _ := profileUsage(backend.QuotaPlan{Status: "signed-out"}, true); text != "" {
 		t.Errorf("a signed-out plan quoted %q", text)
 	}
 	if text, _ := profileUsage(plan, false); text != "" {
@@ -60,7 +60,7 @@ func TestProfileUsageQuotesTheFiveHourWindow(t *testing.T) {
 
 func TestProfileBookNamesWhatItDoesNotKnow(t *testing.T) {
 	b := newProfileBook(claudeProfileProvider, nil, func() {}, newPlanQuota(quotaReader(nil), func() {}))
-	b.list = []lichclient.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work"}}
+	b.list = []backend.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work"}}
 	for stored, want := range map[string]string{"": "Personal", personalProfile: "Personal", "work": "Work", "gone": "gone"} {
 		if got := b.nameOf(stored); got != want {
 			t.Errorf("nameOf(%q) = %q, want %q", stored, got, want)

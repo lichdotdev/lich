@@ -4,19 +4,19 @@ import (
 	"crypto/rand"
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 // forkSource reads the open session id as a fork's source, with a copy of
 // its project.
-func (m *model) forkSource(id string) (lichclient.Project, forkSource, bool) {
+func (m *model) forkSource(id string) (backend.Project, forkSource, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	p, i := m.sessionAt(id)
 	if p == nil {
-		return lichclient.Project{}, forkSource{}, false
+		return backend.Project{}, forkSource{}, false
 	}
 	return *p, forkSourceOf(p.Sessions[i]), true
 }
@@ -33,7 +33,7 @@ func (u *window) forkHere(id string) {
 		return
 	}
 	if _, err := u.addForkSession(p, src, src.path); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.fork.failed", i18n.Args{"name": src.label, "error": lichclient.ErrorText(err)})})
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.fork.failed", i18n.Args{"name": src.label, "error": backend.ErrorText(err)})})
 	}
 }
 
@@ -46,7 +46,7 @@ func (e forkPruned) Error() string { return e.text }
 // conversationLeft asks the provider for src's conversation before a fork
 // is made of it: one it pruned would die in the new card with the
 // provider's own error, after the card and any worktree already exist.
-func (u *window) conversationLeft(p lichclient.Project, src forkSource) error {
+func (u *window) conversationLeft(p backend.Project, src forkSource) error {
 	cwd := src.path
 	if cwd == "" {
 		cwd = p.Path
@@ -64,7 +64,7 @@ func (u *window) conversationLeft(p lichclient.Project, src forkSource) error {
 // addForkSession files a fork of src at path (stored as checkoutPath
 // stores it), named after src, right under it in the drag order, and puts it
 // on screen; its first start branches src's conversation.
-func (u *window) addForkSession(p lichclient.Project, src forkSource, path string) (string, error) {
+func (u *window) addForkSession(p backend.Project, src forkSource, path string) (string, error) {
 	id := strings.ToLower(rand.Text())
 	label := forkLabel(src.label, labelsOf(p))
 	if err := u.client.AddSessionFrom(u.ctx, p.ID, id, label, src.kind, checkoutPath(path, p.Path), p.NextSeq+1, src.id, src.label, src.folder); err != nil {

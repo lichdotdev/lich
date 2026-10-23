@@ -12,8 +12,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -24,12 +24,12 @@ type fileExits struct {
 
 // update runs this frame's clicks against rel in checkout, off the UI
 // goroutine; a failure comes back as a toast.
-func (e *fileExits) update(gtx C, client *lichclient.Client, notify func(ui.Toast), checkout, rel string) {
+func (e *fileExits) update(gtx C, client *backend.Client, notify func(ui.Toast), checkout, rel string) {
 	_, name := splitPath(rel)
 	if e.open.Clicked(gtx) {
 		go func() {
 			if err := client.OpenFile(context.Background(), checkout, rel); err != nil {
-				notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
+				notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": name}), Description: backend.ErrorText(err)})
 			}
 		}()
 	}
@@ -37,7 +37,7 @@ func (e *fileExits) update(gtx C, client *lichclient.Client, notify func(ui.Toas
 		dir := filepath.Join(checkout, filepath.Dir(filepath.FromSlash(rel)))
 		go func() {
 			if err := client.OpenFolder(context.Background(), dir); err != nil {
-				notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.revealFailed", i18n.Args{"name": name}), Description: lichclient.ErrorText(err)})
+				notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.revealFailed", i18n.Args{"name": name}), Description: backend.ErrorText(err)})
 			}
 		}()
 	}

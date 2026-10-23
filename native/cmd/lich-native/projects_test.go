@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
-func threeProjects() []lichclient.Project {
-	return []lichclient.Project{
-		{ID: "a", Name: "alpha", ActiveSessionID: "a1", Sessions: []lichclient.Session{{ID: "a1", Label: "A one"}, {ID: "a2", Label: "A two"}}},
-		{ID: "b", Name: "beta", ActiveSessionID: "b1", Sessions: []lichclient.Session{{ID: "b1", Label: "B one"}}},
-		{ID: "c", Name: "gamma", ActiveSessionID: "c1", Sessions: []lichclient.Session{{ID: "c1", Label: "C one"}}},
+func threeProjects() []backend.Project {
+	return []backend.Project{
+		{ID: "a", Name: "alpha", ActiveSessionID: "a1", Sessions: []backend.Session{{ID: "a1", Label: "A one"}, {ID: "a2", Label: "A two"}}},
+		{ID: "b", Name: "beta", ActiveSessionID: "b1", Sessions: []backend.Session{{ID: "b1", Label: "B one"}}},
+		{ID: "c", Name: "gamma", ActiveSessionID: "c1", Sessions: []backend.Session{{ID: "c1", Label: "C one"}}},
 	}
 }
 
@@ -33,7 +33,7 @@ func modelOn(active string) *model {
 func report(t *testing.T, m *model, id, state string) {
 	t.Helper()
 	data, _ := json.Marshal(statusEvent{ID: id, State: state})
-	if _, err := m.status.apply(lichclient.Event{Name: statusEventName, Data: data}, time.Now()); err != nil {
+	if _, err := m.status.apply(backend.Event{Name: statusEventName, Data: data}, time.Now()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -172,14 +172,14 @@ func TestSaveLastScreenWritesTheWebsRoute(t *testing.T) {
 	}
 }
 
-func clientOf(srv *httptest.Server) *lichclient.Client {
+func clientOf(srv *httptest.Server) *backend.Client {
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 func TestOpenHomeBringsTheHomeProjectBack(t *testing.T) {
-	home := lichclient.Project{ID: "home", Name: "~", Path: "/home/me"}
+	home := backend.Project{ID: "home", Name: "~", Path: "/home/me"}
 	state := threeProjects()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var result any
@@ -206,7 +206,7 @@ func TestOpenHomeBringsTheHomeProjectBack(t *testing.T) {
 }
 
 func TestOpenHomeSeedsNoSession(t *testing.T) {
-	home := lichclient.Project{ID: "home", Name: "~", Path: "/home/me"}
+	home := backend.Project{ID: "home", Name: "~", Path: "/home/me"}
 	state := threeProjects()
 	seeded := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

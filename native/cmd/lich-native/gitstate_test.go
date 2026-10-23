@@ -11,18 +11,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestStandingOf(t *testing.T) {
 	cases := []struct {
-		in   *lichclient.BaseStatus
+		in   *backend.BaseStatus
 		want baseStanding
 	}{
 		{nil, baseStanding{}},
-		{&lichclient.BaseStatus{Behind: 0}, baseStanding{}},
-		{&lichclient.BaseStatus{Behind: 3}, baseStanding{count: 3}},
-		{&lichclient.BaseStatus{Behind: 3, Conflicts: []string{"a", "b"}}, baseStanding{conflict: true, count: 2}},
+		{&backend.BaseStatus{Behind: 0}, baseStanding{}},
+		{&backend.BaseStatus{Behind: 3}, baseStanding{count: 3}},
+		{&backend.BaseStatus{Behind: 3, Conflicts: []string{"a", "b"}}, baseStanding{conflict: true, count: 2}},
 	}
 	for _, c := range cases {
 		if got := standingOf(c.in); got != c.want {
@@ -37,9 +37,9 @@ func TestStandingOf(t *testing.T) {
 type fakeForge struct {
 	mu           sync.Mutex
 	branch, head string
-	prs          map[string]*lichclient.PullRequest // head -> open PR
-	hold         chan struct{}                      // while set, gh does not answer
-	answered     int                                // pull request lookups served
+	prs          map[string]*backend.PullRequest // head -> open PR
+	hold         chan struct{}                   // while set, gh does not answer
+	answered     int                             // pull request lookups served
 }
 
 func (f *fakeForge) set(branch, head string) {
@@ -48,7 +48,7 @@ func (f *fakeForge) set(branch, head string) {
 	f.branch, f.head = branch, head
 }
 
-func (f *fakeForge) client(t *testing.T) *lichclient.Client {
+func (f *fakeForge) client(t *testing.T) *backend.Client {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		f.mu.Lock()
 		hold := f.hold
@@ -60,9 +60,9 @@ func (f *fakeForge) client(t *testing.T) *lichclient.Client {
 		defer f.mu.Unlock()
 		switch r.URL.Path {
 		case "/rpc/project.Diff":
-			_ = json.NewEncoder(w).Encode(lichclient.DiffStats{Branch: f.branch, Head: f.head})
+			_ = json.NewEncoder(w).Encode(backend.DiffStats{Branch: f.branch, Head: f.head})
 		case "/rpc/project.BaseStatus":
-			_ = json.NewEncoder(w).Encode(lichclient.BaseStatus{Behind: 2})
+			_ = json.NewEncoder(w).Encode(backend.BaseStatus{Behind: 2})
 		case "/rpc/project.PullRequest":
 			_ = json.NewEncoder(w).Encode(f.prs[f.head])
 			f.answered++
@@ -73,7 +73,7 @@ func (f *fakeForge) client(t *testing.T) *lichclient.Client {
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 // prOnCard refreshes git and waits for the card's PR badge to read want.
@@ -103,7 +103,7 @@ func awaitPROnCard(t *testing.T, m *model, want int) {
 }
 
 func TestCardFollowsThePullRequestOfItsBranch(t *testing.T) {
-	forge := &fakeForge{prs: map[string]*lichclient.PullRequest{
+	forge := &fakeForge{prs: map[string]*backend.PullRequest{
 		"c2": {Number: 7},
 		"c4": {Number: 9},
 	}}
@@ -131,7 +131,7 @@ func TestCardFollowsThePullRequestOfItsBranch(t *testing.T) {
 	forge.mu.Unlock()
 	prOnCard(t, m, 0) // c3 has no open PR: merged
 
-	forge.prs["c3"] = &lichclient.PullRequest{Number: 8}
+	forge.prs["c3"] = &backend.PullRequest{Number: 8}
 	m.mu.Lock()
 	m.stalePullRequests() // the window came back: opened in the browser
 	m.mu.Unlock()
@@ -155,7 +155,7 @@ func TestCardFollowsThePullRequestOfItsBranch(t *testing.T) {
 // gh pr create moves neither branch nor head, so the turn that ran it ending is
 // what makes the card ask again.
 func TestCardFindsThePullRequestItsTurnOpened(t *testing.T) {
-	forge := &fakeForge{prs: map[string]*lichclient.PullRequest{}}
+	forge := &fakeForge{prs: map[string]*backend.PullRequest{}}
 	forge.set("feat", "c1")
 	m := newTestModel(forge.client(t))
 	prOnCard(t, m, 0)
@@ -172,7 +172,7 @@ func TestCardFindsThePullRequestItsTurnOpened(t *testing.T) {
 	}
 
 	forge.mu.Lock()
-	forge.prs["c1"] = &lichclient.PullRequest{Number: 5}
+	forge.prs["c1"] = &backend.PullRequest{Number: 5}
 	forge.mu.Unlock()
 	send(m, statusEventName, statusEvent{ID: "s1", State: statusBusy})
 	send(m, statusEventName, statusEvent{ID: "s1", State: statusDone})

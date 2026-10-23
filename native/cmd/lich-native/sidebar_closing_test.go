@@ -12,14 +12,14 @@ import (
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/unit"
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 func views(list ...string) []sessionView {
 	out := make([]sessionView, 0, len(list))
 	for _, id := range list {
-		out = append(out, sessionView{Session: lichclient.Session{ID: id}})
+		out = append(out, sessionView{Session: backend.Session{ID: id}})
 	}
 	return out
 }
@@ -185,7 +185,7 @@ func blocksOf(project string, blocks [][]string) sidebarView {
 	for i, ids := range blocks {
 		b := blockView{key: string(rune('A' + i)), kind: blockCheckout}
 		for _, id := range ids {
-			b.sessions = append(b.sessions, sessionView{Session: lichclient.Session{ID: id}, projectID: project})
+			b.sessions = append(b.sessions, sessionView{Session: backend.Session{ID: id}, projectID: project})
 		}
 		v.blocks = append(v.blocks, b)
 	}

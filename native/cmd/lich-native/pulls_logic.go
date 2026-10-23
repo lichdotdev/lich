@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 // pullsState is which pull requests gh is asked for.
@@ -53,7 +53,7 @@ const (
 	verdictFailed
 )
 
-func verdictOf(c lichclient.ChecksRollup) checkVerdict {
+func verdictOf(c backend.ChecksRollup) checkVerdict {
 	switch {
 	case c.Total == 0:
 		return verdictNone
@@ -65,7 +65,7 @@ func verdictOf(c lichclient.ChecksRollup) checkVerdict {
 	return verdictPassed
 }
 
-func (f pullsFilter) matches(pr lichclient.PRSummary) bool {
+func (f pullsFilter) matches(pr backend.PRSummary) bool {
 	switch f {
 	case filterReady:
 		return !pr.IsDraft
@@ -79,7 +79,7 @@ func (f pullsFilter) matches(pr lichclient.PRSummary) bool {
 
 // matchesText matches text against the number with or without its "#", the
 // title, the author and the branch.
-func matchesText(pr lichclient.PRSummary, text string) bool {
+func matchesText(pr backend.PRSummary, text string) bool {
 	needle := strings.ToLower(strings.TrimSpace(text))
 	if needle == "" {
 		return true
@@ -94,19 +94,19 @@ func matchesText(pr lichclient.PRSummary, text string) bool {
 }
 
 // filterPulls is the rows the filter and the text keep, newest update first.
-func filterPulls(list []lichclient.PRSummary, f pullsFilter, text string) []lichclient.PRSummary {
-	var rows []lichclient.PRSummary
+func filterPulls(list []backend.PRSummary, f pullsFilter, text string) []backend.PRSummary {
+	var rows []backend.PRSummary
 	for _, pr := range list {
 		if f.matches(pr) && matchesText(pr, text) {
 			rows = append(rows, pr)
 		}
 	}
-	slices.SortStableFunc(rows, func(a, b lichclient.PRSummary) int { return strings.Compare(b.UpdatedAt, a.UpdatedAt) })
+	slices.SortStableFunc(rows, func(a, b backend.PRSummary) int { return strings.Compare(b.UpdatedAt, a.UpdatedAt) })
 	return rows
 }
 
 // filterCounts is how many rows each quick filter would keep under text.
-func filterCounts(list []lichclient.PRSummary, text string) [pullsFilterCount]int {
+func filterCounts(list []backend.PRSummary, text string) [pullsFilterCount]int {
 	var counts [pullsFilterCount]int
 	for _, pr := range list {
 		if !matchesText(pr, text) {
@@ -144,7 +144,7 @@ func mergeMethodLabel(method string) string {
 
 // allowedMergeMethods is what the base's rules name, all three
 // when they name none.
-func allowedMergeMethods(rules *lichclient.BranchRules) []string {
+func allowedMergeMethods(rules *backend.BranchRules) []string {
 	var allowed []string
 	for _, m := range everyMergeMethod {
 		if rules != nil && slices.Contains(rules.AllowedMergeMethods, m) {
@@ -157,14 +157,14 @@ func allowedMergeMethods(rules *lichclient.BranchRules) []string {
 	return allowed
 }
 
-func conflictsWithBase(d lichclient.PRDetail) bool {
+func conflictsWithBase(d backend.PRDetail) bool {
 	return d.MergeStateStatus == "DIRTY" || d.Mergeable == "CONFLICTING"
 }
 
 // mergeBlockedReason is why the merge cannot go, "" when GitHub
 // would take it (or a BLOCKED it gives no reason for, which only the merge
 // attempt can explain).
-func mergeBlockedReason(d lichclient.PRDetail) string {
+func mergeBlockedReason(d backend.PRDetail) string {
 	switch {
 	case d.State == "MERGED":
 		return i18n.T("pulls.mergeGate.merged")
@@ -188,7 +188,7 @@ func mergeBlockedReason(d lichclient.PRDetail) string {
 
 // canAdminOverride says whether an administrator may merge past BLOCKED or
 // BEHIND, never past a conflict.
-func canAdminOverride(d lichclient.PRDetail, rules *lichclient.BranchRules) bool {
+func canAdminOverride(d backend.PRDetail, rules *backend.BranchRules) bool {
 	if rules == nil || !rules.ViewerCanBypass || d.State != "OPEN" || d.IsDraft || d.Mergeable == "CONFLICTING" {
 		return false
 	}
@@ -198,7 +198,7 @@ func canAdminOverride(d lichclient.PRDetail, rules *lichclient.BranchRules) bool
 // patternClause is "<target> must <verb> <pattern>" in the interface
 // language. An operator this build has never seen reads as a match, the
 // pattern beside it still saying what is asked.
-func patternClause(p lichclient.CommitPattern) string {
+func patternClause(p backend.CommitPattern) string {
 	args := i18n.Args{"target": patternTarget(p.Target), "pattern": strconv.Quote(p.Pattern)}
 	switch {
 	case p.Operator == "starts_with" && p.Negate:
@@ -235,7 +235,7 @@ func patternTarget(target string) string {
 
 // mergeRuleNote is, on BLOCKED, the commit patterns the base's
 // rules hold every commit to, the one rule nothing else on the PR shows.
-func mergeRuleNote(d lichclient.PRDetail, rules *lichclient.BranchRules) string {
+func mergeRuleNote(d backend.PRDetail, rules *backend.BranchRules) string {
 	if d.MergeStateStatus != "BLOCKED" || rules == nil || len(rules.CommitPatterns) == 0 {
 		return ""
 	}
@@ -248,7 +248,7 @@ func mergeRuleNote(d lichclient.PRDetail, rules *lichclient.BranchRules) string 
 
 // mergeHint is what the Merge button's tooltip says: the block, else the rule
 // note, else the red checks GitHub would merge over.
-func mergeHint(d lichclient.PRDetail, rules *lichclient.BranchRules) string {
+func mergeHint(d backend.PRDetail, rules *backend.BranchRules) string {
 	if r := mergeBlockedReason(d); r != "" {
 		return r
 	}
@@ -268,7 +268,7 @@ const handoffNamedChecks = 8
 // pullHandoff finds what is wrong with an open PR, conflicts
 // first, as a button label and the prompt that hands it over; ok false when
 // nothing is.
-func pullHandoff(d lichclient.PRDetail) (label, prompt string, ok bool) {
+func pullHandoff(d backend.PRDetail) (label, prompt string, ok bool) {
 	if d.State != "OPEN" {
 		return "", "", false
 	}
@@ -282,8 +282,8 @@ func pullHandoff(d lichclient.PRDetail) (label, prompt string, ok bool) {
 	return "", "", false
 }
 
-func checksPrompt(d lichclient.PRDetail) string {
-	var failed []lichclient.CheckItem
+func checksPrompt(d backend.PRDetail) string {
+	var failed []backend.CheckItem
 	for _, c := range d.CheckRuns {
 		if c.State == "failed" {
 			failed = append(failed, c)
@@ -357,7 +357,7 @@ func durationUnit(unit string, value int) string {
 }
 
 // commitMeta is the commit's second line: who and when.
-func commitMeta(c lichclient.PRCommit, now time.Time) string {
+func commitMeta(c backend.PRCommit, now time.Time) string {
 	who := c.Login
 	if who == "" {
 		who = c.Name

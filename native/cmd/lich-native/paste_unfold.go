@@ -11,8 +11,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -97,7 +97,7 @@ func (ts *terminals) unfolded(ctx context.Context, id, text, paste string) strin
 	}
 	on, err := ts.client.GetSetting(ctx, providerPasteKey(t.kind), "")
 	if err != nil {
-		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.pasteSettingFailed", i18n.Args{"error": lichclient.ErrorText(err)})})
+		ts.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("terminal.view.pasteSettingFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return paste
 	}
 	if on != "true" {

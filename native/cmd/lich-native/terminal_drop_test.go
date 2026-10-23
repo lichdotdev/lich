@@ -18,7 +18,7 @@ import (
 	"gioui.org/app"
 	"gioui.org/f32"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestParseURIListKeepsLocalFilesOnly(t *testing.T) {
@@ -97,7 +97,7 @@ func TestTerminalDropLandsOnlyOnTheTerminal(t *testing.T) {
 
 // dropBackend is /drop as internal/drop serves it: the copy's path under the
 // session, and its notice. It records what it was sent.
-func dropBackend(t *testing.T, uploads *[]string) *lichclient.Client {
+func dropBackend(t *testing.T, uploads *[]string) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/drop" || r.URL.Query().Get("token") != "tok" {
@@ -112,7 +112,7 @@ func dropBackend(t *testing.T, uploads *[]string) *lichclient.Client {
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 func writeFile(t *testing.T, path, body string) string {
@@ -180,7 +180,7 @@ func TestResolveDropSkipsAFailedUpload(t *testing.T) {
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	c := lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	c := backend.New(backend.Runtime{Port: port, Token: "tok"})
 	away := writeFile(t, filepath.Join(t.TempDir(), "out.txt"), "out")
 	r := resolveDrop(context.Background(), c, dropTarget{sessionID: "s1", checkout: t.TempDir(), confined: true}, []string{away})
 	if r.paths != nil || len(r.skipped) != 1 || !strings.Contains(r.skipped[0], "disk full (HTTP 500)") {

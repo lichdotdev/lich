@@ -1,6 +1,6 @@
 package main
 
-import "github.com/lichdotdev/lich/native/lichclient"
+import "github.com/lichdotdev/lich/native/backend"
 
 // opencode, Cursor CLI and Kiro CLI have profiles only where the backend keeps
 // them (internal/xdgprofile.Providers): xdgProfileProviders lists the same ones.
@@ -16,7 +16,7 @@ const (
 func xdgProfileProvider(kind, label string, words profileWords) profileProvider {
 	return profileProvider{
 		kind: kind, key: "provider." + kind + ".profile", label: label,
-		api:           func(c *lichclient.Client) lichclient.ProfileAPI { return c.XDGProfiles(kind) },
+		api:           func(c *backend.Client) backend.ProfileAPI { return c.XDGProfiles(kind) },
 		terminalLogin: true, words: words,
 	}
 }
@@ -66,7 +66,7 @@ func xdgProfileProviderOf(kind string) (profileProvider, bool) {
 	return profileProvider{}, false
 }
 
-func xdgProfileBooks(c *lichclient.Client, invalidate func(), quota *planQuota) map[string]*profileBook {
+func xdgProfileBooks(c *backend.Client, invalidate func(), quota *planQuota) map[string]*profileBook {
 	books := map[string]*profileBook{}
 	for _, p := range xdgProfileProviders {
 		books[p.kind] = newProfileBook(p, c, invalidate, quota)

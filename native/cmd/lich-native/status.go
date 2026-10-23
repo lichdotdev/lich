@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // The states a card draws an indicator for. Every other reported state (the
@@ -98,7 +98,7 @@ func (s *statusStore) entryOf(id string) *statusEntry {
 // apply folds one /events message into the store at now. Events other than
 // session-status are ignored. changed reports whether anything a card draws
 // moved; a payload that does not decode or names no session is an error.
-func (s *statusStore) apply(ev lichclient.Event, now time.Time) (changed bool, err error) {
+func (s *statusStore) apply(ev backend.Event, now time.Time) (changed bool, err error) {
 	if ev.Name != statusEventName {
 		return false, nil
 	}
@@ -259,7 +259,7 @@ func (s *statusStore) restoreUnread(ids []string) {
 // session the stream already spoke for is left alone: that report is newer. A
 // finished turn is not seeded: whether it was read is the database's
 // (restoreUnread), which the snapshot does not know.
-func (s *statusStore) hydrate(states []lichclient.TurnState) {
+func (s *statusStore) hydrate(states []backend.TurnState) {
 	for _, ts := range states {
 		if ts.State == "" {
 			continue

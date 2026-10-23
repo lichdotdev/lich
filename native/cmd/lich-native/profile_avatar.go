@@ -14,7 +14,7 @@ import (
 	"gioui.org/unit"
 	xdraw "golang.org/x/image/draw"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -36,7 +36,7 @@ type avatarImage struct {
 
 // decodeAvatar is a profile's image ready to draw; nil when it has none, or one
 // the window cannot decode, which then shows its initial.
-func decodeAvatar(p lichclient.Profile) *avatarImage {
+func decodeAvatar(p backend.Profile) *avatarImage {
 	if len(p.Image) == 0 {
 		return nil
 	}

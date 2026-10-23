@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -54,10 +54,10 @@ type vcsSettings struct {
 	onAccount func()
 
 	mu          sync.Mutex
-	checks      map[string]lichclient.BinaryCheck
+	checks      map[string]backend.BinaryCheck
 	accounts    []string // nil until gh answers; empty is signed in to none
 	accountsErr string
-	identities  askOnce[lichclient.CommitIdentity] // by path
+	identities  askOnce[backend.CommitIdentity] // by path
 	loaded      bool
 	checking    bool
 	recheckErr  string
@@ -101,7 +101,7 @@ func (v *vcsSettings) verifyTools(s *settingsScreen) {
 		}
 		v.mu.Lock()
 		if v.checks == nil {
-			v.checks = map[string]lichclient.BinaryCheck{}
+			v.checks = map[string]backend.BinaryCheck{}
 		}
 		v.checks[t.bin] = c
 		v.mu.Unlock()
@@ -114,7 +114,7 @@ func (v *vcsSettings) listAccounts(s *settingsScreen) {
 	v.mu.Lock()
 	v.accountsErr = ""
 	if err != nil {
-		v.accountsErr = lichclient.ErrorText(err)
+		v.accountsErr = backend.ErrorText(err)
 	} else {
 		v.accounts = accounts
 	}
@@ -123,7 +123,7 @@ func (v *vcsSettings) listAccounts(s *settingsScreen) {
 }
 
 // check is bin's verdict, ok false until it answered.
-func (v *vcsSettings) check(bin string) (lichclient.BinaryCheck, bool) {
+func (v *vcsSettings) check(bin string) (backend.BinaryCheck, bool) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	c, ok := v.checks[bin]

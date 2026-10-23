@@ -4,12 +4,12 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func TestUndoPutsTheReopenedRowBackAtItsSlotAndOnScreen(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{{ID: "p", Path: "/repo", Sessions: []lichclient.Session{{ID: "a"}, {ID: "b"}, {ID: "c"}}}}
+	m.projects = []backend.Project{{ID: "p", Path: "/repo", Sessions: []backend.Session{{ID: "a"}, {ID: "b"}, {ID: "c"}}}}
 	m.activeProject, m.active = "p", "b"
 
 	closed, index, _ := m.slotOf("b")
@@ -32,12 +32,12 @@ func TestUndoPutsTheReopenedRowBackAtItsSlotAndOnScreen(t *testing.T) {
 
 func TestUndoPastTheEndAppendsAndABackgroundProjectKeepsTheScreen(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{
-		{ID: "p", Sessions: []lichclient.Session{{ID: "a"}}},
-		{ID: "q", Sessions: []lichclient.Session{{ID: "x"}}},
+	m.projects = []backend.Project{
+		{ID: "p", Sessions: []backend.Session{{ID: "a"}}},
+		{ID: "q", Sessions: []backend.Session{{ID: "x"}}},
 	}
 	m.activeProject, m.active = "p", "a"
-	ids, ok := m.restoreSession("q", lichclient.Session{ID: "y"}, 5)
+	ids, ok := m.restoreSession("q", backend.Session{ID: "y"}, 5)
 	if !ok || !slices.Equal(ids, []string{"x", "y"}) {
 		t.Fatalf("order %v, want y at the end", ids)
 	}
@@ -48,16 +48,16 @@ func TestUndoPastTheEndAppendsAndABackgroundProjectKeepsTheScreen(t *testing.T) 
 
 func TestUndoIntoAClosedProjectIsDropped(t *testing.T) {
 	m := newModel(nil, func() {})
-	if _, ok := m.restoreSession("gone", lichclient.Session{ID: "y"}, 0); ok {
+	if _, ok := m.restoreSession("gone", backend.Session{ID: "y"}, 0); ok {
 		t.Fatal("restored into a project that is no longer open")
 	}
 }
 
 func TestUndoOfARowAlreadyBackOnlyActivatesIt(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{{ID: "p", Sessions: []lichclient.Session{{ID: "a"}, {ID: "b"}}}}
+	m.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "a"}, {ID: "b"}}}}
 	m.activeProject, m.active = "p", "a"
-	ids, _ := m.restoreSession("p", lichclient.Session{ID: "b"}, 0)
+	ids, _ := m.restoreSession("p", backend.Session{ID: "b"}, 0)
 	if !slices.Equal(ids, []string{"a", "b"}) || m.active != "b" {
 		t.Fatalf("order %v, active %q: want no duplicate, b active", ids, m.active)
 	}

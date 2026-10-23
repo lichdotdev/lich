@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 )
 
 func inLocale(t *testing.T, l i18n.Locale) {
@@ -77,8 +77,8 @@ func TestNoMatchNoticeJoinsThePhasesInTheLocale(t *testing.T) {
 
 func TestFreshnessLinePluralisesInTheLocale(t *testing.T) {
 	inLocale(t, i18n.PtBR)
-	one, _ := freshnessLine("main", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", Ahead: 1}, ""), false)
-	many, _ := freshnessLine("main", doneCheck(lichclient.BaseFreshness{Upstream: "origin/main", Ahead: 2}, ""), false)
+	one, _ := freshnessLine("main", doneCheck(backend.BaseFreshness{Upstream: "origin/main", Ahead: 1}, ""), false)
+	many, _ := freshnessLine("main", doneCheck(backend.BaseFreshness{Upstream: "origin/main", Ahead: 2}, ""), false)
 	if one != "1 commit não enviado · começa da main local" {
 		t.Errorf("one = %q", one)
 	}

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // errNoProject is an action on the sidebar with no project on screen.
@@ -65,7 +65,7 @@ func (m *model) commitBlockOrder(ctx context.Context, blockKey string, ids []str
 // fileSessions files sessions under folder, "" to take them out. Every id is
 // written: one the project does not hold fails nothing.
 func (m *model) fileSessions(ctx context.Context, ids []string, folder string) error {
-	if !m.refileShown(func(s []lichclient.Session) ([]lichclient.Session, bool) { return fileSessions(s, ids, folder) }) {
+	if !m.refileShown(func(s []backend.Session) ([]backend.Session, bool) { return fileSessions(s, ids, folder) }) {
 		return nil
 	}
 	for _, id := range ids {
@@ -83,7 +83,7 @@ func (m *model) renameFolder(ctx context.Context, from, to string) error {
 	if !ok {
 		return errNoProject
 	}
-	if !m.refileShown(func(s []lichclient.Session) ([]lichclient.Session, bool) { return renameFolder(s, from, to) }) {
+	if !m.refileShown(func(s []backend.Session) ([]backend.Session, bool) { return renameFolder(s, from, to) }) {
 		return nil
 	}
 	if err := m.moveFold(ctx, p.ID, folderKey(from), to); err != nil {
@@ -115,7 +115,7 @@ func (m *model) moveFold(ctx context.Context, projectID, fromKey, to string) err
 
 // refileShown applies a folder reducer to the shown project's sessions,
 // false when it changed nothing.
-func (m *model) refileShown(refile func([]lichclient.Session) ([]lichclient.Session, bool)) bool {
+func (m *model) refileShown(refile func([]backend.Session) ([]backend.Session, bool)) bool {
 	m.mu.Lock()
 	p := m.shownProject()
 	changed := false
@@ -129,7 +129,7 @@ func (m *model) refileShown(refile func([]lichclient.Session) ([]lichclient.Sess
 	return changed
 }
 
-func (m *model) storedSessions() ([]lichclient.Session, bool) {
+func (m *model) storedSessions() ([]backend.Session, bool) {
 	p, ok := m.project()
 	return slices.Clone(p.Sessions), ok
 }

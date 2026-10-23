@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -26,9 +26,9 @@ type updatesSettings struct {
 	mu     sync.Mutex
 	loaded bool
 
-	notes         *lichclient.PatchNotes
+	notes         *backend.PatchNotes
 	startupNotes  bool // startupPatchNotes found a release to show
-	plugins       []lichclient.PluginStatus
+	plugins       []backend.PluginStatus
 	pluginsFailed bool
 	busy          bool // a plugin action or check is in flight
 	checked       bool // the user asked for a plugin check since Settings opened
@@ -86,7 +86,7 @@ func (u *updatesSettings) version() string {
 	return "v" + u.notes.Version
 }
 
-func (u *updatesSettings) patchNotes() *lichclient.PatchNotes {
+func (u *updatesSettings) patchNotes() *backend.PatchNotes {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	return u.notes
@@ -94,7 +94,7 @@ func (u *updatesSettings) patchNotes() *lichclient.PatchNotes {
 
 // hasPatchNotes is `notes?.groups`: a section the changelog does not have is null,
 // and an empty one still opens.
-func hasPatchNotes(n *lichclient.PatchNotes) bool { return n != nil && n.Groups != nil }
+func hasPatchNotes(n *backend.PatchNotes) bool { return n != nil && n.Groups != nil }
 
 // updatesRow draws the Updates rows, false for any other key.
 func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r settingRow, first bool) (D, bool) {

@@ -40,7 +40,7 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   into a session, goes through the catalogs and lands in **every** locale in the same PR (`lich-i18n` skill).
   English is the source; tests stay English. Error text, `CHANGELOG.md`, MCP tool descriptions and CLI help
   stay English by design; the What's new dialog reads a release's translations from `changelog/<locale>.md`.
-- Service shapes are hand-owned in `native/lichclient`: touch a Go struct's JSON tags and its mirror there moves
+- Service shapes are hand-owned in `native/backend`: touch a Go struct's JSON tags and its mirror there moves
   in the same change. There is no codegen.
 - A fact more than one place shows (git status, a pull request, plan quota, a session's profile or status) has
   one store per window, fed by one reader, and every screen reads that store. A change to the fact reaches the

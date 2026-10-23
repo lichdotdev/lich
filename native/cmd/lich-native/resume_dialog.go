@@ -7,8 +7,8 @@ import (
 	"gioui.org/layout"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -21,7 +21,7 @@ type resumeDialog struct {
 	remember widget.Bool
 	// shown is the session last asked about, kept so the closing fade still
 	// reads it; a new one unticks the box.
-	shown         lichclient.Session
+	shown         backend.Session
 	provider      string
 	rememberLabel widget.Clickable
 	startNew      widget.Clickable

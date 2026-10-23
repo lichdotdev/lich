@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 // desktopNote is one session's desktop notification. A session has at most
@@ -83,7 +83,7 @@ func (r recapping) withdraw(id string) { r.next.withdraw(id) }
 // RPC: no click, no replacing, nothing to take down.
 type backendNotes struct {
 	ctx    context.Context
-	client *lichclient.Client
+	client *backend.Client
 }
 
 func (b backendNotes) show(n desktopNote) {

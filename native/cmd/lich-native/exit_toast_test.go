@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/gioterm"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -34,7 +34,7 @@ func exitToastOf(sv sessionView, e sessionExit) (ui.Toast, *[]string) {
 }
 
 func TestExitToastOffersTheCardsConversationBack(t *testing.T) {
-	sv := sessionView{Session: lichclient.Session{ID: "s1", Label: "eager-pine", Kind: "claude", ProviderSessionID: conversation}, profileName: "Sankhya"}
+	sv := sessionView{Session: backend.Session{ID: "s1", Label: "eager-pine", Kind: "claude", ProviderSessionID: conversation}, profileName: "Sankhya"}
 	toast, asked := exitToastOf(sv, code(1))
 	if toast.ID != "exit:s1" || toast.Variant != ui.ToastError || toast.Duration != ui.ToastForever {
 		t.Fatalf("toast %q variant %v duration %v, want exit:s1, error, forever", toast.ID, toast.Variant, toast.Duration)
@@ -55,7 +55,7 @@ func TestExitToastOffersTheCardsConversationBack(t *testing.T) {
 }
 
 func TestExitToastOnTheDefaultProfileNamesNoProfile(t *testing.T) {
-	sv := sessionView{Session: lichclient.Session{ID: "s1", Label: "Erro Cassul", Kind: "codex", ProviderSessionID: conversation}}
+	sv := sessionView{Session: backend.Session{ID: "s1", Label: "Erro Cassul", Kind: "codex", ProviderSessionID: conversation}}
 	toast, _ := exitToastOf(sv, code(0))
 	if toast.Variant != ui.ToastInfo || toast.Title != "Erro Cassul ended" || toast.Description != "Resume opens ba9884b8… again." {
 		t.Fatalf("variant %v title %q description %q", toast.Variant, toast.Title, toast.Description)
@@ -63,7 +63,7 @@ func TestExitToastOnTheDefaultProfileNamesNoProfile(t *testing.T) {
 }
 
 func TestExitToastWithoutAConversationOffersRestart(t *testing.T) {
-	for _, s := range []lichclient.Session{
+	for _, s := range []backend.Session{
 		{ID: "s1", Label: "Shell 78", Kind: "shell", ProviderSessionID: conversation},
 		{ID: "s1", Label: "Shell 78", Kind: "claude"},
 	} {
@@ -83,7 +83,7 @@ func TestExitToastWithoutAConversationOffersRestart(t *testing.T) {
 
 func TestEveryResumableProviderOffersResume(t *testing.T) {
 	for _, kind := range resumableKinds {
-		sv := sessionView{Session: lichclient.Session{ID: "s1", Kind: kind, ProviderSessionID: conversation}}
+		sv := sessionView{Session: backend.Session{ID: "s1", Kind: kind, ProviderSessionID: conversation}}
 		if _, _, a := toastButtons(exitToast(sv, code(0), func(string) {}, func() {})); a != "Resume" {
 			t.Errorf("%s: action %q, want Resume", kind, a)
 		}
@@ -93,7 +93,7 @@ func TestEveryResumableProviderOffersResume(t *testing.T) {
 func exitedWindow(t *testing.T) *window {
 	t.Helper()
 	u := &window{model: newModel(nil, func() {}), terms: &terminals{byID: map[string]*termView{}, invalidate: func() {}}}
-	u.model.projects = []lichclient.Project{{ID: "p", Sessions: []lichclient.Session{{ID: "s1", Label: "Shell 78", Kind: "shell"}}}}
+	u.model.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "s1", Label: "Shell 78", Kind: "shell"}}}}
 	vt, err := gioterm.New(80, 24, 10, 20, func([]byte) {})
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +147,7 @@ func TestRestartStartsTheConversationAsked(t *testing.T) {
 		u.terms.invalidate = func() {}
 		u.terms.byID["s1"] = &termView{id: "s1", vt: vt}
 		u.terms.exited("s1", code(1))
-		sv := sessionView{Session: lichclient.Session{ID: "s1", Kind: "claude", ProviderSessionID: conversation}, projectID: "p", path: "/repo"}
+		sv := sessionView{Session: backend.Session{ID: "s1", Kind: "claude", ProviderSessionID: conversation}, projectID: "p", path: "/repo"}
 		if !u.terms.restart(u.ctx, sv, resume) {
 			t.Fatal("restart reported a failure")
 		}
@@ -162,8 +162,8 @@ func TestRestartStartsTheConversationAsked(t *testing.T) {
 
 func TestAReportedConversationReachesTheCard(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{{ID: "p", Sessions: []lichclient.Session{{ID: "s1", Kind: "claude"}}}}
-	send(m, lichclient.SessionConversationEvent, lichclient.ConversationReported{ID: "s1", ProviderSessionID: conversation})
+	m.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "s1", Kind: "claude"}}}}
+	send(m, backend.SessionConversationEvent, backend.ConversationReported{ID: "s1", ProviderSessionID: conversation})
 	if sv, ok := m.sessionViewOf("s1"); !ok || sv.ProviderSessionID != conversation {
 		t.Fatalf("card names %q, want the reported conversation", sv.ProviderSessionID)
 	}

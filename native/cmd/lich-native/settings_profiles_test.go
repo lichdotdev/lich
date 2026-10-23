@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lichdotdev/lich/native/lichclient"
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -39,7 +39,7 @@ func (b *profileBackend) log() []string {
 	return slices.Clone(b.calls)
 }
 
-func (b *profileBackend) client(t *testing.T) *lichclient.Client {
+func (b *profileBackend) client(t *testing.T) *backend.Client {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -47,9 +47,9 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 		var out any
 		switch method {
 		case "claudeprofile.CreateProfile", "codexprofile.CreateProfile", "ompprofile.CreateProfile", "kiroprofile.CreateProfile":
-			out = lichclient.Profile{Slug: "work", Name: "Work"}
+			out = backend.Profile{Slug: "work", Name: "Work"}
 		case "claudeprofile.Plugins", "codexprofile.Plugins":
-			out = []lichclient.ProfilePlugin{{Key: "a@m", Name: "a", Marketplace: "m"}, {Key: "b@m", Name: "b", Marketplace: "m"}}
+			out = []backend.ProfilePlugin{{Key: "a@m", Name: "a", Marketplace: "m"}, {Key: "b@m", Name: "b", Marketplace: "m"}}
 		case "ompprofile.LoginCommand":
 			out = "env OMP_PROFILE='work' omp login"
 		case "kiroprofile.LoginCommand":
@@ -58,10 +58,10 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 			b.mu.Lock()
 			in := b.loggedIn
 			b.mu.Unlock()
-			out = []lichclient.Profile{{Slug: personalProfile, Name: "Personal", Personal: true, LoggedIn: true},
+			out = []backend.Profile{{Slug: personalProfile, Name: "Personal", Personal: true, LoggedIn: true},
 				{Slug: "work", Name: "Work", LoggedIn: in, Email: "w@x.y", Plan: "max"}}
 		case "claudeprofile.InstallPlugins", "codexprofile.InstallPlugins":
-			out = []lichclient.ProfilePluginResult{{Key: "a@m", OK: true}, {Key: "b@m", Message: "blocked by your organization"}}
+			out = []backend.ProfilePluginResult{{Key: "a@m", OK: true}, {Key: "b@m", Message: "blocked by your organization"}}
 		case "claudeprofile.DeleteProfile":
 			if b.deleteErr != "" {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -85,7 +85,7 @@ func (b *profileBackend) client(t *testing.T) *lichclient.Client {
 	t.Cleanup(srv.Close)
 	u, _ := url.Parse(srv.URL)
 	port, _ := strconv.Atoi(u.Port())
-	return lichclient.New(lichclient.Runtime{Port: port, Token: "tok"})
+	return backend.New(backend.Runtime{Port: port, Token: "tok"})
 }
 
 func flowScreen(t *testing.T, b *profileBackend) *settingsScreen {
@@ -117,7 +117,7 @@ func TestNewProfileBringsItsPluginsOnlyOnceTheLoginIsThrough(t *testing.T) {
 	s.confirmFlow(&s.providers.claude, f.view())
 	eventually(t, "the login is waiting", func() bool { return f.view().step == stepWaiting })
 
-	s.loginProgress(claudeKind, lichclient.ProfileLogin{Profile: "work", Output: "visit", URL: "https://claude.com/oauth"})
+	s.loginProgress(claudeKind, backend.ProfileLogin{Profile: "work", Output: "visit", URL: "https://claude.com/oauth"})
 	if got := f.view().url; got != "https://claude.com/oauth" {
 		t.Errorf("address = %q", got)
 	}
@@ -128,7 +128,7 @@ func TestNewProfileBringsItsPluginsOnlyOnceTheLoginIsThrough(t *testing.T) {
 	b.mu.Lock()
 	b.loggedIn = true
 	b.mu.Unlock()
-	s.loginProgress(claudeKind, lichclient.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
+	s.loginProgress(claudeKind, backend.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
 	eventually(t, "the result", func() bool { return f.view().step == stepResult })
 
 	d := f.view()
@@ -145,7 +145,7 @@ func TestCancellingAWaitingLoginEndsItAndClosesTheDialog(t *testing.T) {
 	b := &profileBackend{}
 	s := flowScreen(t, b)
 	f := &s.providers.claude.flow
-	s.startLogin(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	s.startLogin(&s.providers.claude, backend.Profile{Slug: "work", Name: "Work"}, nil)
 	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
 	s.dismissFlow(&s.providers.claude, f.view())
 	if f.view().open {
@@ -154,7 +154,7 @@ func TestCancellingAWaitingLoginEndsItAndClosesTheDialog(t *testing.T) {
 	eventually(t, "the backend was told", func() bool {
 		return slices.Contains(b.log(), `claudeprofile.CancelLogin["work"]`)
 	})
-	s.loginProgress(claudeKind, lichclient.ProfileLogin{Profile: "work", Done: true, Cancelled: true, Error: "login cancelled"})
+	s.loginProgress(claudeKind, backend.ProfileLogin{Profile: "work", Done: true, Cancelled: true, Error: "login cancelled"})
 	if f.view().open {
 		t.Error("the cancelled event reopened it")
 	}
@@ -164,9 +164,9 @@ func TestALoginThatDidNotTakeShowsItsReason(t *testing.T) {
 	b := &profileBackend{}
 	s := flowScreen(t, b)
 	f := &s.providers.claude.flow
-	s.startLogin(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"}, []string{"a@m"})
+	s.startLogin(&s.providers.claude, backend.Profile{Slug: "work", Name: "Work"}, []string{"a@m"})
 	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
-	s.loginProgress(claudeKind, lichclient.ProfileLogin{Profile: "work", Done: true, Error: "claude auth login: exit status 1"})
+	s.loginProgress(claudeKind, backend.ProfileLogin{Profile: "work", Done: true, Error: "claude auth login: exit status 1"})
 	d := f.view()
 	if d.step != stepResult || d.failure != "claude auth login: exit status 1" {
 		t.Errorf("flow = %+v", d)
@@ -186,7 +186,7 @@ func TestASubmittedCodeShowsItIsBeingChecked(t *testing.T) {
 	b := &profileBackend{}
 	s := flowScreen(t, b)
 	f := &s.providers.claude.flow
-	s.startLogin(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	s.startLogin(&s.providers.claude, backend.Profile{Slug: "work", Name: "Work"}, nil)
 	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
 	s.submitLoginCode(&s.providers.claude, "work", " abc ")
 	if !f.view().authenticating {
@@ -205,17 +205,17 @@ func TestALoginPastTheBrowserShowsItIsAuthenticating(t *testing.T) {
 	s := codexFlowScreen(t, b)
 	c := &s.providers.codex
 	f := &c.flow
-	s.startLogin(c, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	s.startLogin(c, backend.Profile{Slug: "work", Name: "Work"}, nil)
 	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
-	s.loginProgress(claudeKind, lichclient.ProfileLogin{Profile: "work", Authenticating: true})
+	s.loginProgress(claudeKind, backend.ProfileLogin{Profile: "work", Authenticating: true})
 	if f.view().authenticating {
 		t.Error("a Claude login step reached the Codex dialog")
 	}
-	s.loginProgress(codexKind, lichclient.ProfileLogin{Profile: "other", Authenticating: true})
+	s.loginProgress(codexKind, backend.ProfileLogin{Profile: "other", Authenticating: true})
 	if f.view().authenticating {
 		t.Error("another profile's login reached this dialog")
 	}
-	s.loginProgress(codexKind, lichclient.ProfileLogin{Profile: "work", Authenticating: true})
+	s.loginProgress(codexKind, backend.ProfileLogin{Profile: "work", Authenticating: true})
 	if !f.view().authenticating {
 		t.Error("the dialog did not show the login is authenticating")
 	}
@@ -225,7 +225,7 @@ func TestACodeTheLoginRefusesBringsTheFieldBack(t *testing.T) {
 	b := &profileBackend{loginCodeErr: "profile \"work\" is not logging in"}
 	s := flowScreen(t, b)
 	f := &s.providers.claude.flow
-	s.startLogin(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	s.startLogin(&s.providers.claude, backend.Profile{Slug: "work", Name: "Work"}, nil)
 	eventually(t, "waiting", func() bool { return f.view().step == stepWaiting })
 	s.submitLoginCode(&s.providers.claude, "work", "abc")
 	eventually(t, "the refusal", func() bool { return f.view().failure != "" })
@@ -238,7 +238,7 @@ func TestADeleteTheBackendRefusesStaysOnTheForm(t *testing.T) {
 	b := &profileBackend{deleteErr: `profile "work" has 1 running session(s); close them before deleting it`}
 	s := flowScreen(t, b)
 	f := &s.providers.claude.flow
-	s.startDelete(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"})
+	s.startDelete(&s.providers.claude, backend.Profile{Slug: "work", Name: "Work"})
 	s.confirmFlow(&s.providers.claude, f.view())
 	eventually(t, "the refusal", func() bool { return f.view().failure != "" })
 	d := f.view()
@@ -248,7 +248,7 @@ func TestADeleteTheBackendRefusesStaysOnTheForm(t *testing.T) {
 }
 
 func TestCopySourceIsPersonalUnlessPersonalIsTheTarget(t *testing.T) {
-	list := []lichclient.Profile{{Slug: personalProfile}, {Slug: "work"}, {Slug: "side"}}
+	list := []backend.Profile{{Slug: personalProfile}, {Slug: "work"}, {Slug: "side"}}
 	if got := defaultCopySource(list, "work"); got != personalProfile {
 		t.Errorf("into work: %q", got)
 	}
@@ -316,18 +316,18 @@ func TestTheProfileKeysAreReadPerProjectAndSearchable(t *testing.T) {
 
 func TestResumeNamesTheProfileTheConversationLivesIn(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.profiles.list = []lichclient.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work", Email: "w@x.y"}}
-	if got := m.resumeProfileLine(lichclient.Session{Kind: claudeKind}); got != "" {
+	m.profiles.list = []backend.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Work", Email: "w@x.y"}}
+	if got := m.resumeProfileLine(backend.Session{Kind: claudeKind}); got != "" {
 		t.Errorf("Personal said %q", got)
 	}
-	if got := m.resumeProfileLine(lichclient.Session{Kind: "crush", Profile: "work"}); got != "" {
+	if got := m.resumeProfileLine(backend.Session{Kind: "crush", Profile: "work"}); got != "" {
 		t.Errorf("a provider with no profiles said %q", got)
 	}
-	m.codexProfiles.list = []lichclient.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Codex Work"}}
-	if got := m.resumeProfileLine(lichclient.Session{Kind: codexKind, Profile: "work"}); got != "It resumes in Codex Work, the profile it started in." {
+	m.codexProfiles.list = []backend.Profile{{Slug: personalProfile, Name: "Personal"}, {Slug: "work", Name: "Codex Work"}}
+	if got := m.resumeProfileLine(backend.Session{Kind: codexKind, Profile: "work"}); got != "It resumes in Codex Work, the profile it started in." {
 		t.Errorf("a Codex card said %q", got)
 	}
-	got := m.resumeProfileLine(lichclient.Session{Kind: claudeKind, Profile: "work"})
+	got := m.resumeProfileLine(backend.Session{Kind: claudeKind, Profile: "work"})
 	if got != "It resumes in Work · w@x.y, the profile it started in." {
 		t.Errorf("line = %q", got)
 	}
@@ -335,12 +335,12 @@ func TestResumeNamesTheProfileTheConversationLivesIn(t *testing.T) {
 
 func TestContinueInOffersOnlyOtherLoggedInProfiles(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.profiles.list = []lichclient.Profile{
+	m.profiles.list = []backend.Profile{
 		{Slug: personalProfile, Name: "Personal", LoggedIn: true},
 		{Slug: "work", Name: "Work", LoggedIn: true},
 		{Slug: "side", Name: "Side"},
 	}
-	m.quota.seed(profileQuotaKey(claudeProfileProvider, "work"), []lichclient.QuotaPlan{{Provider: claudeKind, Status: "ok", Windows: []lichclient.QuotaWindow{{Seconds: 5 * hour, Percent: 100}}}})
+	m.quota.seed(profileQuotaKey(claudeProfileProvider, "work"), []backend.QuotaPlan{{Provider: claudeKind, Status: "ok", Windows: []backend.QuotaWindow{{Seconds: 5 * hour, Percent: 100}}}})
 	got := m.continueTargets(claudeKind, "")
 	if len(got) != 1 || got[0].slug != "work" || got[0].usage != "limit" || !got[0].limited {
 		t.Errorf("from Personal = %+v", got)
@@ -359,7 +359,7 @@ func TestContinueInOffersOnlyOtherLoggedInProfiles(t *testing.T) {
 
 func TestSessionProfileEventMovesTheCard(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.projects = []lichclient.Project{{ID: "p", Sessions: []lichclient.Session{{ID: "s1", Kind: claudeKind}}}}
+	m.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "s1", Kind: claudeKind}}}}
 	m.setProfile("s1", "work")
 	if got := m.projects[0].Sessions[0].Profile; got != "work" {
 		t.Errorf("profile = %q", got)
@@ -376,7 +376,7 @@ func TestADeletedProfileClosesTheDialogAndHasSettingsReadAgain(t *testing.T) {
 	b := &profileBackend{}
 	s := flowScreen(t, b)
 	f := &s.providers.claude.flow
-	s.startDelete(&s.providers.claude, lichclient.Profile{Slug: "work", Name: "Work"})
+	s.startDelete(&s.providers.claude, backend.Profile{Slug: "work", Name: "Work"})
 	s.confirmFlow(&s.providers.claude, f.view())
 	eventually(t, "the delete reached the backend", func() bool { return !f.view().open })
 	if !f.view().refresh {
@@ -403,7 +403,7 @@ func TestANewProfileDialogOpensOnAnEmptyName(t *testing.T) {
 
 func TestSettingsFollowsThePlanReadingsItDraws(t *testing.T) {
 	r := newQuotaRig()
-	r.set([]lichclient.QuotaPlan{quotaPlan()}, nil)
+	r.set([]backend.QuotaPlan{quotaPlan()}, nil)
 	s := flowScreen(t, &profileBackend{})
 	s.footer = &footer{quota: r.q}
 	s.open, s.section = true, sectionProviders
@@ -466,15 +466,15 @@ func TestACodexProfileBringsPluginsAndHasNoCodeToPaste(t *testing.T) {
 	s.confirmFlow(c, f.view())
 	eventually(t, "the login is waiting", func() bool { return f.view().step == stepWaiting })
 
-	s.loginProgress(claudeKind, lichclient.ProfileLogin{Profile: "work", Output: "x", URL: "https://claude.com/oauth"})
+	s.loginProgress(claudeKind, backend.ProfileLogin{Profile: "work", Output: "x", URL: "https://claude.com/oauth"})
 	if got := f.view().url; got != "" {
 		t.Errorf("a Claude login step reached the Codex dialog: %q", got)
 	}
-	s.loginProgress(codexKind, lichclient.ProfileLogin{Profile: "work", Output: "visit", URL: "https://auth.openai.com/oauth/authorize"})
+	s.loginProgress(codexKind, backend.ProfileLogin{Profile: "work", Output: "visit", URL: "https://auth.openai.com/oauth/authorize"})
 	if got := f.view().url; got != "https://auth.openai.com/oauth/authorize" {
 		t.Errorf("address = %q", got)
 	}
-	s.loginProgress(codexKind, lichclient.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
+	s.loginProgress(codexKind, backend.ProfileLogin{Profile: "work", Done: true, LoggedIn: true})
 	eventually(t, "the result", func() bool { return f.view().step == stepResult })
 
 	want := []string{`codexprofile.CreateProfile["Work"]`, `codexprofile.Login["work"]`, `codexprofile.InstallPlugins["work",["a@m","b@m"]]`}
@@ -494,22 +494,22 @@ func TestCodexProfilesCarryAPluginSetAndNameTheirAccount(t *testing.T) {
 	if !codexProfileProvider.plugins || codexProfileProvider.loginCode {
 		t.Error("Codex profiles are supposed to have a plugin set of their own and no code to paste")
 	}
-	if got := profileAccountLine(codexProfileProvider, lichclient.Profile{LoggedIn: true}); got != "no plugins" {
+	if got := profileAccountLine(codexProfileProvider, backend.Profile{LoggedIn: true}); got != "no plugins" {
 		t.Errorf("a login whose account could not be read: %q", got)
 	}
-	if got := profileAccountLine(codexProfileProvider, lichclient.Profile{LoggedIn: true, Email: "a@b.c", Plan: "plus", Plugins: 2}); got != "a@b.c · Plus · 2 plugins" {
+	if got := profileAccountLine(codexProfileProvider, backend.Profile{LoggedIn: true, Email: "a@b.c", Plan: "plus", Plugins: 2}); got != "a@b.c · Plus · 2 plugins" {
 		t.Errorf("account line = %q", got)
 	}
 }
 
 func TestContinueInOffersCodexProfilesOfCodexCards(t *testing.T) {
 	m := newModel(nil, func() {})
-	m.codexProfiles.list = []lichclient.Profile{
+	m.codexProfiles.list = []backend.Profile{
 		{Slug: personalProfile, Name: "Personal", LoggedIn: true},
 		{Slug: "work", Name: "Work", LoggedIn: true},
 	}
-	m.profiles.list = []lichclient.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}}
-	m.quota.seed(profileQuotaKey(codexProfileProvider, "work"), []lichclient.QuotaPlan{{Provider: codexKind, Status: "ok", Windows: []lichclient.QuotaWindow{{Seconds: 5 * hour, Percent: 40}}}})
+	m.profiles.list = []backend.Profile{{Slug: personalProfile, Name: "Personal", LoggedIn: true}}
+	m.quota.seed(profileQuotaKey(codexProfileProvider, "work"), []backend.QuotaPlan{{Provider: codexKind, Status: "ok", Windows: []backend.QuotaWindow{{Seconds: 5 * hour, Percent: 40}}}})
 
 	got := m.continueTargets(codexKind, "")
 	if len(got) != 1 || got[0].slug != "work" || got[0].usage != "40% used" {
@@ -533,7 +533,7 @@ func TestEachProvidersProfileReadingHasItsOwnKey(t *testing.T) {
 	if profileQuotaKey(codexProfileProvider, personalProfile) != "" || profileQuotaKey(codexProfileProvider, "") != "" {
 		t.Error("Codex's Personal reading is not the machine's")
 	}
-	if loginEventKind(lichclient.CodexProfileLoginEvent) != codexKind || loginEventKind(lichclient.ClaudeProfileLoginEvent) != claudeKind {
+	if loginEventKind(backend.CodexProfileLoginEvent) != codexKind || loginEventKind(backend.ClaudeProfileLoginEvent) != claudeKind {
 		t.Error("a login event was routed to the wrong provider")
 	}
 }
@@ -578,7 +578,7 @@ func TestAnOMPLoginWithNoCardToOpenEndsOnTheFailure(t *testing.T) {
 	s := ompFlowScreen(t, b, func(string) bool { return false })
 	c := &s.providers.omp
 	f := &c.flow
-	s.startLogin(c, lichclient.Profile{Slug: "work", Name: "Work"}, nil)
+	s.startLogin(c, backend.Profile{Slug: "work", Name: "Work"}, nil)
 	eventually(t, "the failure", func() bool { return f.view().step == stepResult })
 	if d := f.view(); !d.open || d.failure != "Open a project to log in from a terminal." {
 		t.Errorf("dialog = %+v, want it open on %q", d, "Open a project to log in from a terminal.")
@@ -592,17 +592,17 @@ func TestOMPProfilesHaveNoPlanAndNameTheirAccounts(t *testing.T) {
 	if got := profileQuotaKey(ompProfileProvider, "work"); got != "" {
 		t.Errorf("an omp profile has a plan reading %q", got)
 	}
-	line := profileAccountLine(ompProfileProvider, lichclient.Profile{
+	line := profileAccountLine(ompProfileProvider, backend.Profile{
 		LoggedIn: true, Email: "a@b.c, d@e.f", Providers: []string{"anthropic", "openai-codex"},
 	})
 	if line != "a@b.c, d@e.f · anthropic, openai-codex" {
 		t.Errorf("account line = %q", line)
 	}
-	book := newProfileBook(ompProfileProvider, nil, func() {}, newPlanQuota(func(string) ([]lichclient.QuotaPlan, error) {
+	book := newProfileBook(ompProfileProvider, nil, func() {}, newPlanQuota(func(string) ([]backend.QuotaPlan, error) {
 		t.Error("a plan was read for oh-my-pi")
 		return nil, nil
 	}, func() {}))
-	book.list = []lichclient.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
+	book.list = []backend.Profile{{Slug: personalProfile, LoggedIn: true}, {Slug: "work", LoggedIn: true}}
 	book.followQuoted()
 	if len(book.quoted) != 0 {
 		t.Errorf("readings followed for a provider with no plan: %v", book.quoted)

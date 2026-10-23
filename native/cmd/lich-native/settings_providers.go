@@ -8,8 +8,8 @@ import (
 
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/lichclient"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -308,9 +308,9 @@ func parkedLabel(scope string, project, global binLayer, projectName string) str
 // binCheckLabel is the verdict beside a path. A missing binary reads
 // differently by what was asked for: a bare name was looked up on $PATH and a
 // path was looked for where it was written.
-func binCheckLabel(c lichclient.BinaryCheck, bin string) string {
+func binCheckLabel(c backend.BinaryCheck, bin string) string {
 	switch c.Status {
-	case lichclient.CheckOK:
+	case backend.CheckOK:
 		return i18n.T("env.binary.executable")
 	case "not-found":
 		if strings.ContainsAny(bin, `/\`) {
@@ -329,7 +329,7 @@ func binCheckLabel(c lichclient.BinaryCheck, bin string) string {
 
 // binCheckDetail is the sentence under a failing binary: what will happen and
 // what to do about it.
-func binCheckDetail(c lichclient.BinaryCheck) string {
+func binCheckDetail(c backend.BinaryCheck) string {
 	switch c.Status {
 	case "home-shortcut":
 		return i18n.T("env.binary.detailHomeShortcut")
@@ -354,7 +354,7 @@ func installSummary(p providerInfo) string {
 // planSummary is the plan reading in the width a list row has, "" for a
 // provider lich reads no plan from and while the first reading is in flight.
 // A signed-out reading is words: the row is where a lapsed login shows.
-func planSummary(plan lichclient.QuotaPlan, ok bool) string {
+func planSummary(plan backend.QuotaPlan, ok bool) string {
 	if !ok {
 		return ""
 	}
@@ -404,7 +404,7 @@ type providerSettings struct {
 	// projectOff are the bin-off flags of the project being looked at,
 	// "<project>\x00<provider>" to the stored value.
 	projectOff askOnce[string]
-	checks     askOnce[lichclient.BinaryCheck] // a binary's verdict, by what was asked
+	checks     askOnce[backend.BinaryCheck] // a binary's verdict, by what was asked
 	// versions is what a binary reports and what else $PATH holds for its
 	// provider, by "<provider>\x00<what was asked>".
 	versions   askOnce[binVersions]
@@ -622,9 +622,9 @@ func (s *settingsScreen) planKeys(values scopedValues) []string {
 
 // planOf is the machine's reading for kind, false for a provider lich reads no
 // plan from and until the first reading lands.
-func (s *settingsScreen) planOf(kind string) (lichclient.QuotaPlan, bool) {
+func (s *settingsScreen) planOf(kind string) (backend.QuotaPlan, bool) {
 	if s.footer == nil {
-		return lichclient.QuotaPlan{}, false
+		return backend.QuotaPlan{}, false
 	}
 	return planFor(s.footer.quota.plans(""), kind)
 }
