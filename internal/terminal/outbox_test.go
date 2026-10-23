@@ -21,7 +21,7 @@ func TestOutboxQueuesWhileDeliveryIsStuck(t *testing.T) {
 		default:
 		}
 		<-release
-	}, 2)
+	}, nil, 2)
 
 	// The first frame is taken by the (stuck) delivery goroutine; two more fit
 	// the queue.
@@ -68,7 +68,7 @@ func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
 		mu.Lock()
 		got = append(got, string(data))
 		mu.Unlock()
-	}, 4)
+	}, nil, 4)
 
 	for _, frame := range []string{"a", "b", "c", "d", "e"} {
 		box.push([]byte(frame))
@@ -87,7 +87,7 @@ func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
 func TestOutboxCopiesTheFrame(t *testing.T) {
 	t.Parallel()
 	delivered := make(chan []byte, 1)
-	box := newOutbox(func(data []byte) { delivered <- data }, 1)
+	box := newOutbox(func(data []byte) { delivered <- data }, nil, 1)
 
 	buf := []byte("live")
 	box.push(buf)

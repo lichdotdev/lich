@@ -2,7 +2,6 @@ package terminal
 
 import (
 	"context"
-	"encoding/base64"
 	"math"
 	"time"
 
@@ -25,8 +24,10 @@ func (s *Service) stream(id string, sess *session) {
 		n, err := p.Read(buf)
 		if n > 0 {
 			s.noteOutput(id, sess, buf[:n])
+			sess.feed.Lock()
 			sess.replay.append(buf[:n])
 			sess.out.Write(buf[:n])
+			sess.feed.Unlock()
 		}
 		if err != nil {
 			break
@@ -138,19 +139,26 @@ func (s *Service) SetVisible(_ context.Context, opts api.SetVisibleOptions) (api
 	return api.None{}, nil
 }
 
-// Replay returns the capped tail of a session's PTY output, base64-encoded, so a
-// window attaching to a running session can reseed a fresh terminal's
-// scrollback. Empty for an unknown session — a brand-new one has no
-// history yet. Base64 for the same reason the data event is: raw PTY bytes may
-// split a multi-byte UTF-8 sequence across the JSON envelope.
-func (s *Service) Replay(_ context.Context, opts api.SessionIDOptions) (string, error) {
+// Replay queues the capped tail of a session's PTY output on /ws as a replay
+// frame, so a window attaching to a running session can reseed a fresh
+// terminal's scrollback: the output frames before it are in the tail, and the
+// ones after it are not. It reports whether a replay frame is coming, false
+// for an unknown session, which a brand-new one is: it has no history yet.
+func (s *Service) Replay(_ context.Context, opts api.SessionIDOptions) (bool, error) {
 	s.mu.Lock()
 	sess, ok := s.sessions[opts.ID]
 	s.mu.Unlock()
 	if !ok {
-		return "", nil
+		return false, nil
 	}
-	return base64.StdEncoding.EncodeToString(sess.replay.snapshot()), nil
+	queued := false
+	sess.feed.Lock()
+	defer sess.feed.Unlock()
+	sess.out.cut(func() {
+		sess.outbox.pushReplay(sess.replay.snapshot())
+		queued = true
+	})
+	return queued, nil
 }
 
 // Resize updates a session's PTY window size. The window only calls this for

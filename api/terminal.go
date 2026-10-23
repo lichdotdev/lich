@@ -6,7 +6,7 @@ var (
 	TerminalWrite             = define[WriteOptions, None]("terminal.Write")
 	TerminalResize            = define[ResizeOptions, None]("terminal.Resize")
 	TerminalSetVisible        = define[SetVisibleOptions, None]("terminal.SetVisible")
-	TerminalReplay            = define[SessionIDOptions, string]("terminal.Replay")
+	TerminalReplay            = define[SessionIDOptions, bool]("terminal.Replay")
 	TerminalLive              = define[SessionIDOptions, bool]("terminal.Live")
 	TerminalLiveCount         = define[None, int]("terminal.LiveCount")
 	TerminalReady             = define[SessionIDOptions, bool]("terminal.Ready")

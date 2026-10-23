@@ -32,7 +32,7 @@ func TestSchemeFlippingThemeReportsToTheSession(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	client := clientOf(srv)
-	stream, _, err := client.Terminal(t.Context(), func(string, []byte) {})
+	stream, _, err := client.Terminal(t.Context(), func(string, []byte) {}, func(string, []byte) {})
 	if err != nil {
 		t.Fatal(err)
 	}

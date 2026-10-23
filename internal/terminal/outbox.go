@@ -18,18 +18,28 @@ const outboxDepth = 32
 // once the queue is full, that session's PTY. The backpressure that remains is
 // honest — it reaches the session that is producing, never its neighbours.
 type outbox struct {
-	frames chan []byte
+	frames chan outFrame
 	done   chan struct{}
 }
 
-// newOutbox starts the delivery goroutine. deliver is called with one frame at
-// a time, in order, and owns the slice it is handed.
-func newOutbox(deliver func(data []byte), depth int) *outbox {
-	o := &outbox{frames: make(chan []byte, depth), done: make(chan struct{})}
+type outFrame struct {
+	data   []byte
+	replay bool
+}
+
+// newOutbox starts the delivery goroutine. deliver is called with each output
+// frame and replay with each replay frame, one at a time and in the order they
+// were queued; both own the slice they are handed.
+func newOutbox(deliver, replay func(data []byte), depth int) *outbox {
+	o := &outbox{frames: make(chan outFrame, depth), done: make(chan struct{})}
 	go func() {
 		defer close(o.done)
 		for frame := range o.frames {
-			deliver(frame)
+			if frame.replay {
+				replay(frame.data)
+				continue
+			}
+			deliver(frame.data)
 		}
 	}()
 	return o
@@ -38,7 +48,13 @@ func newOutbox(deliver func(data []byte), depth int) *outbox {
 // push queues one frame for delivery, blocking only while this session's queue
 // is full. The frame is copied: the coalescer reuses the buffer it passes.
 func (o *outbox) push(data []byte) {
-	o.frames <- append([]byte(nil), data...)
+	o.frames <- outFrame{data: append([]byte(nil), data...)}
+}
+
+// pushReplay queues the session's replayed tail behind every frame already
+// queued, so whoever reads it knows what came before the tail and what after.
+func (o *outbox) pushReplay(tail []byte) {
+	o.frames <- outFrame{data: tail, replay: true}
 }
 
 // close stops the queue and waits for the frames still in it to be delivered,

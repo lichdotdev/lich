@@ -3,7 +3,6 @@
 package terminal
 
 import (
-	"encoding/base64"
 	"os"
 	"path/filepath"
 	"slices"
@@ -52,19 +51,12 @@ func TestAConfinedSessionRunsInItsPTY(t *testing.T) {
 
 	var answer string
 	waitFor(t, func() bool {
-		encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "s1"})
-		if err != nil {
-			return false
-		}
-		decoded, err := base64.StdEncoding.DecodeString(encoded)
-		if err != nil {
-			return false
-		}
-		at := strings.LastIndex(string(decoded), "HOME: ")
+		decoded := replayOf(t, svc, "s1")
+		at := strings.LastIndex(decoded, "HOME: ")
 		if at < 0 {
 			return false
 		}
-		answer = string(decoded)[at:]
+		answer = decoded[at:]
 		return strings.Contains(answer, "MEHO")
 	}, "a confined session to answer at its prompt")
 

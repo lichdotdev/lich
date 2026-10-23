@@ -2,10 +2,11 @@ package terminal
 
 import (
 	"bytes"
-	"encoding/base64"
 	"github.com/lichdotdev/lich/api"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestReplayBufferKeepsOutputInOrder(t *testing.T) {
@@ -65,34 +66,46 @@ func TestReplayBufferKeepsOneChunkLargerThanCap(t *testing.T) {
 }
 
 // A bare Service with a hand-built session exercises Replay without a PTY, so
-// this stays OS-agnostic (no !windows build tag): Replay only reads the tail.
-func TestServiceReplayEncodesTheTail(t *testing.T) {
+// this stays OS-agnostic (no !windows build tag). The replay frame lands
+// between the output already emitted and the output after it, and what the
+// coalescer was holding goes out once, inside the tail, never again after it.
+func TestServiceReplayQueuesTheTailBetweenOutputFrames(t *testing.T) {
 	t.Parallel()
-	b := newReplayBuffer(replayCapBytes)
-	b.append([]byte("scrollback"))
-	svc := &Service{sessions: map[string]*session{"s1": {replay: b}}}
+	var got []string
+	box := newOutbox(
+		func(data []byte) { got = append(got, "out:"+string(data)) },
+		func(tail []byte) { got = append(got, "replay:"+string(tail)) },
+		outboxDepth)
+	sess := &session{replay: newReplayBuffer(replayCapBytes), outbox: box, out: newCoalescer(box.push, time.Hour, time.Hour)}
+	read := func(data string) {
+		sess.replay.append([]byte(data))
+		sess.out.Write([]byte(data))
+	}
+	svc := &Service{sessions: map[string]*session{"s1": sess}}
 
-	encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "s1"})
-	if err != nil {
-		t.Fatalf("Replay = %v, want nil", err)
+	read("a")
+	read("b")
+	queued, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "s1"})
+	if err != nil || !queued {
+		t.Fatalf("Replay = %v, %v; want a replay queued", queued, err)
 	}
-	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	if string(decoded) != "scrollback" {
-		t.Fatalf("Replay tail = %q, want %q", decoded, "scrollback")
+	read("c")
+	sess.out.Close()
+	box.close()
+
+	if want := []string{"out:a", "replay:ab", "out:c"}; !slices.Equal(got, want) {
+		t.Fatalf("delivered %q, want %q", got, want)
 	}
 }
 
-func TestServiceReplayUnknownSessionIsEmpty(t *testing.T) {
+func TestServiceReplayUnknownSessionQueuesNothing(t *testing.T) {
 	t.Parallel()
 	svc := &Service{sessions: map[string]*session{}}
-	got, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "nope"})
+	queued, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: "nope"})
 	if err != nil {
 		t.Fatalf("Replay = %v, want nil", err)
 	}
-	if got != "" {
-		t.Fatalf("Replay unknown = %q, want empty", got)
+	if queued {
+		t.Fatal("Replay of an unknown session reported a replay coming")
 	}
 }

@@ -183,6 +183,12 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (
 			return
 		}
 		s.emitData(opts.ID, data)
+	}, func(tail []byte) {
+		// The /events bridge has no replay: the window that asked for this
+		// one reads /ws, and without /ws it reads no output at all.
+		if s.ws != nil {
+			s.ws.sendReplay(opts.ID, tail)
+		}
 	}, outboxDepth)
 	out := newCoalescer(box.push, visibleFlushInterval, hiddenFlushInterval)
 	sess := &session{

@@ -73,6 +73,10 @@ type session struct {
 	done   chan struct{}
 	replay *replayBuffer
 	outbox *outbox
+	// feed holds a PTY read between its append to replay and its write to
+	// out, so a Replay never takes a tail that holds a read out has yet to
+	// emit.
+	feed sync.Mutex
 	// lastOut is when this PTY last produced output, and ready records that it
 	// has since gone quiet once — that its program finished drawing itself and
 	// is waiting on input. Both guarded by the service's mu.

@@ -106,6 +106,23 @@ func (c *coalescer) Close() {
 	c.flushLocked()
 }
 
+// cut drops the pending output and runs then with the coalescer held, so no
+// output is emitted between the two: the replay a cut queues already holds
+// what was pending. A closed coalescer runs nothing.
+func (c *coalescer) cut(then func()) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		return
+	}
+	if c.timer != nil {
+		c.timer.Stop()
+		c.timer = nil
+	}
+	c.pending = nil
+	then()
+}
+
 // flushLocked emits pending output and disarms the timer. Caller holds mu.
 func (c *coalescer) flushLocked() {
 	if c.timer != nil {

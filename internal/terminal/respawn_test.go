@@ -5,7 +5,6 @@
 package terminal
 
 import (
-	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -174,18 +173,17 @@ func exitBin(t *testing.T, code int) string {
 	return path
 }
 
-// replayOf returns a session's replay buffer decoded back to raw output.
+// replayOf returns a session's replay buffer as raw output, "" for a session
+// not running.
 func replayOf(t *testing.T, svc *Service, id string) string {
 	t.Helper()
-	encoded, err := svc.Replay(t.Context(), api.SessionIDOptions{ID: id})
-	if err != nil {
-		t.Fatalf("replay: %v", err)
+	svc.mu.Lock()
+	sess, ok := svc.sessions[id]
+	svc.mu.Unlock()
+	if !ok {
+		return ""
 	}
-	raw, err := base64.StdEncoding.DecodeString(encoded)
-	if err != nil {
-		t.Fatalf("decode replay: %v", err)
-	}
-	return string(raw)
+	return string(sess.replay.snapshot())
 }
 
 // A PTY that dies with its turn open, the agent crashing or the shell exiting
