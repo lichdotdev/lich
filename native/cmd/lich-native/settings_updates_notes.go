@@ -239,8 +239,7 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 	if notes == nil {
 		return
 	}
-	open := v.open && (s.open || v.startup)
-	if !open && !v.dialog.Animating(gtx) {
+	if !(v.open && (s.open || v.startup)) && !v.dialog.Animating(gtx) {
 		return
 	}
 	if v.gotIt.Clicked(gtx) {
@@ -249,7 +248,7 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 	if v.changelog.Clicked(gtx) {
 		s.openExternal(helpRepoURL + updatesReleaseTagAt + notes.Version)
 	}
-	open = v.open && (s.open || v.startup)
+	open := v.open && (s.open || v.startup)
 	on := th.On(th.Popover)
 	got := on.Button(&v.gotIt, i18n.T("shell.patchNotesDialog.gotIt"))
 	got.Size = ui.SizeSM

@@ -205,6 +205,9 @@ func (u *window) layoutPluginGate(gtx C, th *ui.Theme) {
 	g.mu.Lock()
 	offer, installing := g.offer, g.installing
 	g.mu.Unlock()
+	if len(offer) == 0 && !g.dialog.Animating(gtx) {
+		return
+	}
 	closeOffer := func() {
 		g.mu.Lock()
 		g.offer = nil

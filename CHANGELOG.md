@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- While a session works, the window redraws its busy spinner at 30 frames a second rather than at the display's rate, a card builds its right-click menu only while that menu is open, and a dialog that is shut builds nothing at all. A window that is only spinning costs about half the redraws it did, and cards stop building menus the window never shows.
+- While a session works, the window redraws its busy spinner at 30 frames a second rather than at the display's rate, a card builds its right-click menu only while that menu is open, and a dialog that is shut builds nothing at all.
 
 ### Fixed
 
