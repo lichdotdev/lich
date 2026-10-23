@@ -1,6 +1,7 @@
 package fonts
 
 import (
+	"runtime"
 	"testing"
 
 	"gioui.org/font"
@@ -63,5 +64,35 @@ func TestParseFaceReadsTheFaceLocated(t *testing.T) {
 	loc.Index = 64
 	if _, err := ParseFace(loc); err == nil {
 		t.Errorf("face index 64 of %s was read", loc.Path)
+	}
+}
+
+// The bold face fontconfig answers for both semibold and bold, and the
+// interface and the terminal sharing a family, ask for one file several times:
+// each ask while a face of it is held gets that face, not a parse of its own,
+// and a face nobody holds any more is freed rather than kept for a next ask.
+func TestParseFaceSharesAFaceWhileItIsHeld(t *testing.T) {
+	loc, err := Locate(font.Font{Typeface: SystemMono})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := ParseFace(loc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := ParseFace(loc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Face.(collectionFace).font != again.Face.(collectionFace).font {
+		t.Fatal("a second ParseFace of a held face parsed the file again")
+	}
+	first, again = font.FontFace{}, font.FontFace{}
+	runtime.GC()
+	parsedFaces.Lock()
+	held := parsedFaces.byLocation[loc].Value()
+	parsedFaces.Unlock()
+	if held != nil {
+		t.Fatal("a face nobody holds was kept")
 	}
 }

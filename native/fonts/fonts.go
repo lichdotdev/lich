@@ -10,6 +10,8 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"sync"
+	"weak"
 
 	"gioui.org/font"
 	"gioui.org/font/opentype"
@@ -90,24 +92,51 @@ func Load(family string) ([]font.FontFace, error) {
 // ParseFace parses the one face loc names, under the family and style the face
 // gives itself. Only that face: a collection holds several (a CJK one about
 // ten), and opentype.ParseCollection parses them all, hundreds of megabytes
-// allocated to keep one.
+// allocated to keep one. A face still held from an earlier call is shared
+// rather than parsed again (parsedFaces).
 func ParseFace(loc Location) (font.FontFace, error) {
-	data, err := os.ReadFile(loc.Path)
+	parsed, err := parseFont(loc)
 	if err != nil {
 		return font.FontFace{}, err
 	}
+	return font.FontFace{Font: opentype.DescriptionToFont(parsed.Describe()), Face: collectionFace{parsed}}, nil
+}
+
+// parsedFaces are the faces ParseFace parsed, kept only while something holds
+// them. A parse is the file's tables and every glyph outline, about 30 MB for a
+// Nerd Font face, and the window asks for the same files several times: the
+// interface and the terminal family when they are one family, and the bold
+// face fontconfig answers for both semibold and bold. Held weakly so a family
+// that is let go, a font picker's sample or the interface font before a
+// change, is freed with its last face.
+var parsedFaces = struct {
+	sync.Mutex
+	byLocation map[Location]weak.Pointer[gotext.Font]
+}{byLocation: map[Location]weak.Pointer[gotext.Font]{}}
+
+func parseFont(loc Location) (*gotext.Font, error) {
+	parsedFaces.Lock()
+	defer parsedFaces.Unlock()
+	if parsed := parsedFaces.byLocation[loc].Value(); parsed != nil {
+		return parsed, nil
+	}
+	data, err := os.ReadFile(loc.Path)
+	if err != nil {
+		return nil, err
+	}
 	loaders, err := ot.NewLoaders(bytes.NewReader(data))
 	if err != nil {
-		return font.FontFace{}, fmt.Errorf("parse %s: %w", loc.Path, err)
+		return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
 	}
 	if loc.Index < 0 || loc.Index >= len(loaders) {
-		return font.FontFace{}, fmt.Errorf("face index %d is not one of the %d in %s", loc.Index, len(loaders), loc.Path)
+		return nil, fmt.Errorf("face index %d is not one of the %d in %s", loc.Index, len(loaders), loc.Path)
 	}
 	parsed, err := gotext.NewFont(loaders[loc.Index])
 	if err != nil {
-		return font.FontFace{}, fmt.Errorf("parse %s: %w", loc.Path, err)
+		return nil, fmt.Errorf("parse %s: %w", loc.Path, err)
 	}
-	return font.FontFace{Font: opentype.DescriptionToFont(parsed.Describe()), Face: collectionFace{parsed}}, nil
+	parsedFaces.byLocation[loc] = weak.Make(parsed)
+	return parsed, nil
 }
 
 // collectionFace is a font.Face over one parsed face of a collection; like
