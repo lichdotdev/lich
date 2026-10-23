@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.78.1] - 2026-10-23
+
 ### Changed
 
 - While a session works, the window redraws its busy spinner at 30 frames a second rather than at the display's rate, a card builds its right-click menu only while that menu is open, and a dialog that is shut builds nothing at all.
@@ -6348,7 +6350,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.78.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.78.1...HEAD
+[0.78.1]: https://github.com/lichdotdev/lich/compare/v0.78.0...v0.78.1
 [0.78.0]: https://github.com/lichdotdev/lich/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/lichdotdev/lich/compare/v0.76.0...v0.77.0
 [0.76.0]: https://github.com/lichdotdev/lich/compare/v0.75.0...v0.76.0

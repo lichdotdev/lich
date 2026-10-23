@@ -1,3 +1,23 @@
+## [0.78.1] - 2026-10-23
+
+### Changed
+
+- Enquanto uma sessão trabalha, a janela redesenha o spinner de ocupado a 30 quadros por segundo, e não na taxa da tela; o card monta o menu de clique direito só enquanto ele está aberto, e uma caixa de diálogo fechada não monta nada.
+
+### Fixed
+
+- Branch, alterações e pull request nos cards e no rodapé se atualizam em até um segundo depois de um commit, checkout ou edição feitos fora de um turno, onde antes podiam atrasar até três segundos, e selecionar um card lê o checkout dele na hora, em vez de mostrar o que a última leitura encontrou.
+- Ocultar a lista de pull requests na tela Pull requests a recolhe na hora, onde a lista ficava na tela até o mouse se mover ou a tela Pull requests consultar o GitHub de novo. Mostrá-la outra vez também não espera mais um quadro.
+- As sessões do Kiro CLI seguem `KIRO_HOME`. Com ela definida, o lich lia as conversas, o custo e o contexto do Kiro em `~/.kiro`, enquanto o Kiro os mantinha em `KIRO_HOME`, então nada aparecia e o Histórico não listava nenhuma; o agente que carrega os hooks do lich era instalado onde o Kiro nunca olhava, e uma sessão em sandbox não recebia o diretório em que ele escreve.
+- Abrir ou fechar o dock não deixa mais o terminal da sessão cortado na borda por um instante depois que o dock para. O terminal assume a nova largura assim que o dock começa a se mover, então o agente redesenha enquanto o dock desliza, onde o terminal esperava um décimo de segundo depois que o dock parava e então dava um salto. Os terminais de um layout dividido se ajustam no instante em que o dock para.
+- Expandir a barra lateral não deixa mais o terminal da sessão na largura antiga por um instante depois que a barra se abre. O terminal assume a nova largura assim que a barra começa a se mover, como no dock, onde esperava um décimo de segundo depois que a barra parava e então dava um salto; recolhê-la também reajusta na hora. Os terminais de um layout dividido se ajustam no instante em que a barra lateral para.
+- Reabrir a janela não digita mais texto solto em uma sessão. Reconstruir um terminal a partir da saída recente respondia de novo às consultas do terminal nela, como as que o nvim envia ao iniciar, e as respostas caíam na entrada da sessão: em um shell como um `command not found`, em um agente como texto no prompt dele.
+- O terminal de uma sessão aberto enquanto ela imprime não perde mais o que foi impresso nesse momento. O backend agora entrega à janela a saída recente da sessão em linha com a saída ao vivo, então nada entre as duas se perde nem aparece duas vezes.
+- No Linux, mudar o tamanho da fonte do terminal e abrir um card pela primeira vez travam menos. Cada terminal consultava a fonte de novo pelo fontconfig a cada vez, quatro consultas de cerca de 10 ms cada uma dentro de um quadro; o lich agora lembra a resposta pelo resto da execução.
+- Mudar o tamanho da fonte do terminal não recarrega mais a fonte de todos os terminais abertos: cada um mantém a fonte que tem e só a desenha no novo tamanho.
+- Uma sessão que imprime muita saída custa menos ao backend. Cada byte a caminho da janela era copiado cerca de sete vezes para uma memória que o coletor de lixo depois precisava recuperar; agora é copiado uma vez.
+- Um comentário de bloco que abre acima de um trecho recolhido de um diff, na Revisão e na tela Pull requests, não pinta mais de comentário o código depois desse trecho. O `*/` que o fechava ficava nas linhas ocultas, então todo hunk abaixo aparecia como comentário até algum `*/` mais adiante, e só expandir o trecho resolvia. As linhas de um comentário cortado por um trecho recolhido, acima dele, ainda podem aparecer como código até que o trecho seja expandido.
+
 ## [0.78.0] - 2026-10-22
 
 ### Added

@@ -1,3 +1,23 @@
+## [0.78.1] - 2026-10-23
+
+### Changed
+
+- Mientras una sesión trabaja, la ventana redibuja su spinner de ocupado a 30 fotogramas por segundo en vez de a la tasa de la pantalla, una tarjeta construye su menú de clic derecho solo mientras ese menú está abierto, y un diálogo cerrado no construye nada.
+
+### Fixed
+
+- La rama, los cambios y el pull request en las tarjetas y en el pie de ventana se ponen al día en menos de un segundo tras un commit, checkout o edición hechos fuera de un turno, cuando antes podían tardar hasta tres segundos, y al seleccionar una tarjeta se lee su checkout al instante en lugar de mostrar lo que encontró la última lectura.
+- Ocultar la lista de pull requests en la pantalla Pull requests la quita al instante, cuando antes la lista seguía en pantalla hasta que se movía el ratón o Pull requests volvía a consultar GitHub. Mostrarla otra vez tampoco espera ya un fotograma.
+- Las sesiones de Kiro CLI siguen `KIRO_HOME`. Con ella definida, lich leía las conversaciones, el coste y el contexto de Kiro en `~/.kiro` mientras Kiro los guardaba en `KIRO_HOME`, así que no mostraban nada e Historial no listaba ninguna; el agente que lleva los hooks de lich se instalaba donde Kiro nunca miraba, y una sesión en sandbox no recibía el directorio en el que escribe.
+- Abrir o cerrar el dock ya no deja la terminal de la sesión cortada en su borde por un instante cuando el dock se detiene. La terminal toma su nuevo ancho en cuanto el dock empieza a moverse, así que el agente redibuja mientras el dock se desliza, cuando antes la terminal esperaba una décima de segundo tras detenerse el dock y luego daba un salto. Las terminales de un diseño dividido se ajustan en el momento en que el dock se detiene.
+- Expandir la barra lateral ya no deja la terminal de la sesión con su ancho anterior por un instante cuando la barra ya está abierta. La terminal toma su nuevo ancho en cuanto la barra empieza a moverse, como con el dock, cuando antes esperaba una décima de segundo tras detenerse la barra y luego daba un salto; al contraerla también se reajusta al instante. Las terminales de un diseño dividido se ajustan en el momento en que la barra lateral se detiene.
+- Reabrir la ventana ya no escribe texto suelto en una sesión. Reconstruir una terminal a partir de su salida reciente volvía a responder las consultas de terminal que contenía, como las que envía nvim al arrancar, y las respuestas caían en la entrada de la sesión: en un shell como un `command not found`, en un agente como texto en su prompt.
+- La terminal de una sesión abierta mientras la sesión imprime ya no pierde lo que imprimió en ese momento. El backend ahora entrega a la ventana la salida reciente de la sesión en línea con su salida en vivo, así que nada entre ambas se pierde ni se muestra dos veces.
+- En Linux, cambiar el tamaño de fuente de la terminal y abrir una tarjeta por primera vez se traban menos. Cada terminal volvía a buscar su fuente en fontconfig cada vez, cuatro búsquedas de unos 10 ms cada una dentro de un mismo fotograma; lich ahora recuerda la respuesta durante el resto de su ejecución.
+- Cambiar el tamaño de fuente de la terminal ya no recarga la fuente de cada terminal abierta: cada una conserva la fuente que tiene y solo la dibuja al nuevo tamaño.
+- Una sesión que imprime mucha salida cuesta menos al backend. Cada byte de camino a la ventana se copiaba unas siete veces a memoria que el recolector de basura tenía que reclamar después; ahora se copia una vez.
+- Un comentario de bloque que se abre por encima de un tramo plegado de un diff, en Revisión y en la pantalla Pull requests, ya no colorea como comentario el código posterior a ese tramo. Su `*/` de cierre caía en las líneas ocultas, así que cada hunk de abajo se veía como comentario hasta algún `*/` posterior, y solo expandir el tramo lo arreglaba. Las líneas de un comentario cortado por un tramo plegado, por encima de él, aún pueden verse como código hasta que se expande.
+
 ## [0.78.0] - 2026-10-22
 
 ### Added
