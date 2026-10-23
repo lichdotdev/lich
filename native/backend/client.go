@@ -1,4 +1,4 @@
-// Package backend talks to a lich backend: positional-argument RPC over
+// Package backend talks to a lich backend: the RPC methods api declares, over
 // HTTP, the /events WebSocket for state changes, the /ws WebSocket for
 // terminal bytes, and /blob for a preview's raw bytes.
 //
@@ -113,29 +113,27 @@ func (c *Client) url(scheme, path string) string {
 	return u.String()
 }
 
-// Call invokes service.Method with positional args and decodes the result
-// into out, which may be nil for methods that return nothing.
-func (c *Client) Call(ctx context.Context, method string, out any, args ...any) error {
-	if args == nil {
-		args = []any{}
-	}
-	body, err := json.Marshal(args)
+// callMethod posts m and decodes its result: the one way this client reaches
+// the backend, so every call is held to the types api declares.
+func callMethod[Req, Resp any](ctx context.Context, c *Client, m api.Method[Req, Resp], req Req) (Resp, error) {
+	var out Resp
+	body, err := json.Marshal(m.Args(req))
 	if err != nil {
-		return fmt.Errorf("%s: %w", method, err)
+		return out, fmt.Errorf("%s: %w", m.Name, err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url("http", "/rpc/"+method), bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url("http", "/rpc/"+m.Name), bytes.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("%s: %w", method, err)
+		return out, fmt.Errorf("%s: %w", m.Name, err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.http.Do(req)
+	httpReq.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(httpReq)
 	if err != nil {
-		return fmt.Errorf("%s: %w", method, err)
+		return out, fmt.Errorf("%s: %w", m.Name, err)
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("%s: %w", method, err)
+		return out, fmt.Errorf("%s: %w", m.Name, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		var failure struct {
@@ -144,21 +142,12 @@ func (c *Client) Call(ctx context.Context, method string, out any, args ...any) 
 		if json.Unmarshal(data, &failure) != nil || failure.Error == "" {
 			failure.Error = string(data)
 		}
-		return &RemoteError{Method: method, Message: failure.Error, Status: resp.StatusCode}
+		return out, &RemoteError{Method: m.Name, Message: failure.Error, Status: resp.StatusCode}
 	}
-	if out == nil {
-		return nil
+	if err := json.Unmarshal(data, &out); err != nil {
+		return out, fmt.Errorf("%s: decode result: %w", m.Name, err)
 	}
-	if err := json.Unmarshal(data, out); err != nil {
-		return fmt.Errorf("%s: decode result: %w", method, err)
-	}
-	return nil
-}
-
-// callMethod is Call held to the types api declares for m.
-func callMethod[Req, Resp any](ctx context.Context, c *Client, m api.Method[Req, Resp], req Req) (Resp, error) {
-	var out Resp
-	return out, c.Call(ctx, m.Name, &out, m.Args(req)...)
+	return out, nil
 }
 
 // RemoteError is a call the backend refused. Message is the backend's own

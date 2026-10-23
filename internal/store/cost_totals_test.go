@@ -8,6 +8,10 @@ import (
 
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/rpc"
+
+	"github.com/lichdotdev/lich/api"
+
+	"context"
 )
 
 // costWorkspace opens a store with two projects and the sessions named, so a
@@ -450,7 +454,9 @@ func TestCostTotalsAcrossVersions(t *testing.T) {
 	bill(t, svc, "p1", "s1", "claude", 1.25)
 	bill(t, svc, "p2", "s2", "codex", 0.75)
 	dispatcher := rpc.New()
-	dispatcher.Register("store", svc)
+	rpc.Handle(dispatcher, api.StoreCostTotals, func(_ context.Context, o api.CostTotalsOptions) (api.CostReport, error) {
+		return svc.CostTotals(o)
+	})
 
 	recorder := httptest.NewRecorder()
 	body := `[{"provider":"codex","optionFromTheFuture":true}]`

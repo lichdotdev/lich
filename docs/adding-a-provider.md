@@ -87,7 +87,7 @@ everything on the id (`provider.<id>.bin`, `.enabled`, `.sandbox`,
 | `native/cmd/lich-native/settings_providers.go` | its `skipFlags` spelling (the switch in Settings is hidden for a provider absent here, which is what stops the UI promising a flag the spawn has none for), and a `loginCommands` entry only if `internal/quota` reads a plan for it |
 | `native/cmd/lich-native/toolline.go` | a rule only if it spells MCP tool names in a shape not already handled |
 | `native/cmd/lich-native/footer_handson.go` | a rung in `handsOnRung`: whether the hands-on clock hears that provider through a turn its hooks open, or only through its tool calls. No compiler checks it, and a provider missing from it reads as a turn one |
-| `native/backend/store.go` | nothing, unless the change moves a JSON tag: the `DetectedProvider` mirror is hand-owned and moves in the same commit |
+| `native/backend/store.go` | nothing: `DetectedProvider` is `api`'s, so a JSON tag moves in `api/providers.go` and in `api/testdata/contract.golden` |
 
 `Registry.Docs` is the one field with a check outside the compiler: it is what the
 "Not found on PATH" row and the no-agents dialog link to, so a blank or dead one

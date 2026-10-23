@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// rawArgs joins the positional args as the backend received them.
+// rawArgs joins the argument list as the backend received it.
 func rawArgs(args []json.RawMessage) string {
 	s := ""
 	for i, a := range args {
@@ -19,7 +19,7 @@ func rawArgs(args []json.RawMessage) string {
 	return s
 }
 
-func TestFooterCallsSendPositionalArgs(t *testing.T) {
+func TestFooterCallsSendTheirOptions(t *testing.T) {
 	ctx := context.Background()
 	cases := []struct {
 		name, method, args string

@@ -83,28 +83,6 @@ func TestHandleHandsOverTheRequestContext(t *testing.T) {
 	}
 }
 
-// A service moves to api one method at a time: the handled method answers,
-// the ones still registered by reflection keep answering beside it.
-func TestHandleAnswersBeforeARegisteredServiceOfTheSameName(t *testing.T) {
-	h := New()
-	h.Register("fake", fakeService{})
-	Handle(h, api.Method[api.None, string]{Name: "fake.Fail"}, func(context.Context, api.None) (string, error) { return "typed", nil })
-	if rec := call(t, h, "fake.Fail", `[]`); strings.TrimSpace(rec.Body.String()) != `"typed"` {
-		t.Errorf("handled method: got %d %q", rec.Code, rec.Body.String())
-	}
-	if rec := call(t, h, "fake.Add", `[2, 3]`); strings.TrimSpace(rec.Body.String()) != "5" {
-		t.Errorf("registered method beside it: got %d %q", rec.Code, rec.Body.String())
-	}
-}
-
-func TestHandleHonorsDeny(t *testing.T) {
-	h := newTypedHandler()
-	h.Deny("typed.Echo")
-	if rec := call(t, h, "typed.Echo", `[{"a":"x"}]`); rec.Code != http.StatusNotFound {
-		t.Fatalf("denied handled method: want 404, got %d", rec.Code)
-	}
-}
-
 func TestHandleRefusesASecondHandlerForOneMethod(t *testing.T) {
 	h := newTypedHandler()
 	defer func() {

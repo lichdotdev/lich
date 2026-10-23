@@ -15,7 +15,7 @@ import (
 	"testing"
 )
 
-// fakeBackend answers /rpc/ the way internal/rpc does: positional JSON args
+// fakeBackend answers /rpc/ the way internal/rpc does: the JSON argument list
 // in, the result or {"error"} out.
 func fakeBackend(t *testing.T, handle func(method string, args []json.RawMessage) (any, int)) *Client {
 	t.Helper()
@@ -39,7 +39,7 @@ func fakeBackend(t *testing.T, handle func(method string, args []json.RawMessage
 	return New(Runtime{Port: port, Token: "tok"})
 }
 
-func TestCallSendsPositionalArgsAndDecodes(t *testing.T) {
+func TestCallSendsItsOptionsAndDecodes(t *testing.T) {
 	c := fakeBackend(t, func(method string, args []json.RawMessage) (any, int) {
 		if method != "project.Diff" || len(args) != 1 || string(args[0]) != `{"path":"/repo"}` {
 			t.Errorf("got %s %s", method, args)
@@ -81,7 +81,7 @@ func TestCallReturnsBackendError(t *testing.T) {
 	c := fakeBackend(t, func(string, []json.RawMessage) (any, int) {
 		return map[string]string{"error": "want 2 arguments, got 1"}, http.StatusBadRequest
 	})
-	err := c.Call(context.Background(), "store.RenameSession", nil, "id")
+	err := c.RenameSession(context.Background(), "id", "label")
 	if err == nil || !strings.Contains(err.Error(), "want 2 arguments, got 1") {
 		t.Fatalf("got %v", err)
 	}
@@ -91,7 +91,7 @@ func TestErrorTextIsTheBackendSentence(t *testing.T) {
 	c := fakeBackend(t, func(string, []json.RawMessage) (any, int) {
 		return map[string]string{"error": "no file manager found"}, http.StatusInternalServerError
 	})
-	err := c.Call(context.Background(), "system.OpenFolder", nil, "/tmp")
+	err := c.OpenFolder(context.Background(), "/tmp")
 	if got := ErrorText(err); got != "no file manager found" {
 		t.Fatalf("ErrorText = %q, want the backend's sentence alone", got)
 	}

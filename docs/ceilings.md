@@ -555,10 +555,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   contract on reads an empty argument list as the zero options, so only the older one refuses. Every call `lich`
   and `lich mcp` make goes through a method `api` declares (`callMethod` in `internal/cli/transport.go` is the
   one way the CLI posts), whose request `api`'s `TestEveryRequestIsOneObject` holds to one struct, and
-  `internal/cli/wire_test.go` posts each one as a client of another release. The window's calls not yet declared
-  in `api` (`native/backend`) stay positional, on the promise that `lich-native` ships in the same release as
-  the backend it talks to; a window from another build, pinned with `LICH_NATIVE` or replaced on disk by an
-  upgrade under a running backend, is the case that promise does not cover.
+  `internal/cli/wire_test.go` posts each one as a client of another release. The window's calls go through the
+  same declarations (`native/backend`), so a window from another build, pinned with `LICH_NATIVE` or replaced
+  on disk by an upgrade under a running backend, is answered the way a `lich` of another release is. What the
+  declarations do not cover is the `/events` stream: its payloads are mirrored by hand in `native/backend`.
 - **A release's highlight is read from the binary, so fixing it after the tag fixes nothing a user sees**
   (`internal/patchnotes`): the What's new dialog parses the `CHANGELOG.md` embedded at build time — the alert
   blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,

@@ -10,8 +10,8 @@ package terminal
 // (env_other.go), and a reading is withheld rather than taken against the
 // machine-wide login lich happens to see.
 //
-// Denied to the window (denyInternal in main.go): the environment it returns
-// carries that session's own credentials.
+// Not routed over /rpc/ (internal/routes): the environment it returns carries
+// that session's own credentials.
 func (s *Service) SessionAccount(id string) (env map[string]string, read bool) {
 	if !envReadable {
 		return nil, false

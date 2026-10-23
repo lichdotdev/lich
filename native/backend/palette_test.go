@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestPaletteCallsSendPositionalArgs(t *testing.T) {
+func TestPaletteCallsSendTheirOptions(t *testing.T) {
 	ctx := context.Background()
 	cases := []struct {
 		name, method, args string

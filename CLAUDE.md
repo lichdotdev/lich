@@ -42,9 +42,9 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
   stay English by design; the What's new dialog reads a release's translations from `changelog/<locale>.md`.
 - An RPC method is declared once in `api` and exposed with `rpc.Handle` in `internal/routes`: the backend,
   `lich` and `native/backend` compile against that one declaration, and `api/testdata/contract.golden` records
-  its shape (`go test ./api -update` after a change meant to move it). A service not moved there yet keeps its
-  shapes hand-owned in `native/backend`: touch a Go struct's JSON tags and its mirror there moves in the same
-  change. There is no codegen.
+  its shape (`go test ./api -update` after a change meant to move it). Its options are one struct, never
+  positional arguments. The `/events` payloads are still hand-owned in `native/backend`: touch one's JSON tags
+  and its mirror there moves in the same change. There is no codegen.
 - A fact more than one place shows (git status, a pull request, plan quota, a session's profile or status) has
   one store per window, fed by one reader, and every screen reads that store. A change to the fact reaches the
   store as an event on `/events`, emitted by the backend once the change is true (after the respawn, not before),

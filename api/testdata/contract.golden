@@ -559,10 +559,7 @@ RevertLinesOptions {
 	lines []RevertLine
 }
 
-RevertResult {
-	Patch string
-	IndexPatch string
-}
+RevertResult = its own MarshalJSON
 
 SearchOptions {
 	path string

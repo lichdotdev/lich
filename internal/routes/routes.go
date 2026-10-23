@@ -2,6 +2,16 @@
 // function per service. It is its own package so the tests that post as a
 // client of another release (internal/cli) answer through the same routes the
 // app does.
+//
+// A service method nothing here routes cannot be reached over /rpc/, and the
+// ones kept out are kept out on purpose: they exist for Go callers inside the
+// process. Startup wiring (the Set* setters, store.Close) would rewire or end
+// what the app runs on; the hooks' state stream and a worker's answer arrive
+// over /hook and /mod/*, and called here would act for another session;
+// terminal.CloseBy, the mod's command queue and terminal.SubmitPrompt skip the
+// checks spawn.Close, spawn.Control and the relay make; terminal.SessionAccount
+// returns a session's credentials; and a dropped file's bytes go to /drop,
+// outside the JSON envelope.
 package routes
 
 import (

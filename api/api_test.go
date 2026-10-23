@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"maps"
@@ -14,6 +15,8 @@ import (
 var update = flag.Bool("update", false, "rewrite testdata/contract.golden from the declared methods")
 
 const goldenPath = "testdata/contract.golden"
+
+var marshalerType = reflect.TypeFor[json.Marshaler]()
 
 // TestContractMatchesGolden makes every change to a method's name, options or
 // result show up as a diff of testdata/contract.golden. A renamed JSON field
@@ -111,6 +114,9 @@ func (r *renderer) ref(t reflect.Type) string {
 }
 
 func (r *renderer) define(t reflect.Type) string {
+	if t.Implements(marshalerType) {
+		return fmt.Sprintf("%s = its own MarshalJSON\n", t.Name())
+	}
 	if t.Kind() != reflect.Struct {
 		return fmt.Sprintf("%s = %s\n", t.Name(), r.ref(reflectUnderlying(t)))
 	}
