@@ -59,6 +59,8 @@ func loadFamily(family string) ([]font.FontFace, error) {
 
 func (g *grid) Cell() (w, h int) { return g.cellW, g.cellH }
 
+func (g *grid) SetSize(size unit.Sp) { g.size = size }
+
 func (g *grid) Measure(gtx layout.Context) error {
 	px := fixed.I(gtx.Sp(g.size))
 	if px == g.pxPerEm {

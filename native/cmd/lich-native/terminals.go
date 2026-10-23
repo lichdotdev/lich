@@ -322,8 +322,9 @@ func (ts *terminals) setColors(c gioterm.Colors) {
 }
 
 // setFont draws every terminal, and every one opened after, in family at
-// size. Each gets a renderer of the new face; its next frame measures the
-// cells and refits the grid and the PTY to them.
+// size. A new family gives each a renderer of the new face, a new size only
+// resizes the one it has; its next frame measures the cells and refits the
+// grid and the PTY to them.
 func (ts *terminals) setFont(family string, size unit.Sp) error {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
@@ -331,6 +332,10 @@ func (ts *terminals) setFont(family string, size unit.Sp) error {
 		return nil
 	}
 	for _, t := range ts.byID {
+		if family == ts.family {
+			t.r.SetSize(size)
+			continue
+		}
 		r, err := gioterm.NewRenderer(ts.renderer, family, size)
 		if err != nil {
 			return err

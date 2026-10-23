@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reopening the window no longer types stray text into a session. Rebuilding a terminal from its recent output answered the terminal queries in it again, such as the ones nvim sends at start, and the answers landed on the session's input: in a shell as a `command not found`, in an agent as text in its prompt.
 - A session's terminal opened while the session is printing no longer misses what it printed in that moment. The backend now hands the window the session's recent output in line with its live output, so nothing between the two is lost or shown twice.
 - On Linux, stepping the terminal font size and opening a card for the first time hitch less. Every terminal looked its font up again through fontconfig each time, four lookups of about 10ms apiece inside one frame; lich now remembers the answer for the rest of its run.
+- Stepping the terminal font size no longer reloads the font of every open terminal: each one keeps the font it has and only draws it at the new size.
 
 ## [0.78.0] - 2026-10-22
 

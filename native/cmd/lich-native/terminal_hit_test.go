@@ -23,6 +23,7 @@ func (fixedCells) Cell() (int, int)             { return mouseTestCellW, mouseTe
 func (fixedCells) Draw(layout.Context, gioterm.Snapshot) (int, error) {
 	return 0, nil
 }
+func (fixedCells) SetSize(unit.Sp) {}
 
 // A pointer over a cell of the laid-out terminal selects that cell, wherever
 // the padding puts the grid in the window.
