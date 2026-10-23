@@ -119,7 +119,7 @@ func (c *coalescer) cut(then func()) {
 		c.timer.Stop()
 		c.timer = nil
 	}
-	c.pending = nil
+	c.pending = c.pending[:0]
 	then()
 }
 
@@ -133,7 +133,7 @@ func (c *coalescer) flushLocked() {
 		return
 	}
 	c.emit(c.pending)
-	c.pending = nil
+	c.pending = c.pending[:0]
 	c.lastEmit = time.Now()
 }
 

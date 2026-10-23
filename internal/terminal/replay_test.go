@@ -1,7 +1,6 @@
 package terminal
 
 import (
-	"bytes"
 	"github.com/lichdotdev/lich/api"
 	"slices"
 	"strings"
@@ -55,13 +54,32 @@ func TestReplayBufferDropsOldestOnOverflow(t *testing.T) {
 	}
 }
 
-func TestReplayBufferKeepsOneChunkLargerThanCap(t *testing.T) {
+// The tail is the last capBytes of output, however the reads that brought it
+// were cut: a read the cap splits keeps the part that is still in the tail.
+func TestReplayBufferKeepsTheLastCapBytesAcrossReads(t *testing.T) {
+	t.Parallel()
+	b := newReplayBuffer(10)
+	for _, read := range []string{"0123456", "789ab", "cdefg"} {
+		b.append([]byte(read))
+	}
+	if got := string(b.snapshot()); got != "789abcdefg" {
+		t.Fatalf("snapshot = %q, want %q", got, "789abcdefg")
+	}
+	b.append([]byte("h"))
+	if got := string(b.snapshot()); got != "89abcdefgh" {
+		t.Fatalf("snapshot after one more byte = %q, want %q", got, "89abcdefgh")
+	}
+}
+
+// A single write larger than the cap keeps its last capBytes. The PTY's read
+// buffer is far below the cap, so a read never is one.
+func TestReplayBufferKeepsTheEndOfAWriteLargerThanCap(t *testing.T) {
 	t.Parallel()
 	b := newReplayBuffer(4)
-	big := bytes.Repeat([]byte("x"), 100)
-	b.append(big)
-	if got := b.snapshot(); len(got) != 100 {
-		t.Fatalf("snapshot len = %d, want 100 — a lone oversized chunk must survive", len(got))
+	b.append([]byte("ab"))
+	b.append([]byte("wxyz12"))
+	if got := string(b.snapshot()); got != "yz12" {
+		t.Fatalf("snapshot = %q, want %q", got, "yz12")
 	}
 }
 
@@ -72,7 +90,7 @@ func TestReplayBufferKeepsOneChunkLargerThanCap(t *testing.T) {
 func TestServiceReplayQueuesTheTailBetweenOutputFrames(t *testing.T) {
 	t.Parallel()
 	var got []string
-	box := newOutbox(
+	box := newOutbox(nil,
 		func(data []byte) { got = append(got, "out:"+string(data)) },
 		func(tail []byte) { got = append(got, "replay:"+string(tail)) },
 		outboxDepth)

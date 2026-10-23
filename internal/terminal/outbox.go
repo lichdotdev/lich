@@ -20,6 +20,8 @@ const outboxDepth = 32
 type outbox struct {
 	frames chan outFrame
 	done   chan struct{}
+	// prefix heads every output frame: the /ws frame header of its session.
+	prefix []byte
 }
 
 type outFrame struct {
@@ -28,10 +30,11 @@ type outFrame struct {
 }
 
 // newOutbox starts the delivery goroutine. deliver is called with each output
-// frame and replay with each replay frame, one at a time and in the order they
-// were queued; both own the slice they are handed.
-func newOutbox(deliver, replay func(data []byte), depth int) *outbox {
-	o := &outbox{frames: make(chan outFrame, depth), done: make(chan struct{})}
+// frame, the pushed output behind prefix, and replay with each replay frame's
+// tail, one at a time and in the order they were queued; both own the slice
+// they are handed.
+func newOutbox(prefix []byte, deliver, replay func(data []byte), depth int) *outbox {
+	o := &outbox{frames: make(chan outFrame, depth), done: make(chan struct{}), prefix: prefix}
 	go func() {
 		defer close(o.done)
 		for frame := range o.frames {
@@ -45,10 +48,15 @@ func newOutbox(deliver, replay func(data []byte), depth int) *outbox {
 	return o
 }
 
-// push queues one frame for delivery, blocking only while this session's queue
-// is full. The frame is copied: the coalescer reuses the buffer it passes.
+// push queues data behind the prefix for delivery, blocking only while this
+// session's queue is full. data is copied into the frame, which is the one
+// copy output takes on its way to the socket: the coalescer reuses the buffer
+// it passes.
 func (o *outbox) push(data []byte) {
-	o.frames <- outFrame{data: append([]byte(nil), data...)}
+	frame := make([]byte, len(o.prefix)+len(data))
+	copy(frame, o.prefix)
+	copy(frame[len(o.prefix):], data)
+	o.frames <- outFrame{data: frame}
 }
 
 // pushReplay queues the session's replayed tail behind every frame already

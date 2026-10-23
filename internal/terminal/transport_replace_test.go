@@ -52,7 +52,7 @@ func TestReplacedClientDoesNotSilenceTransport(t *testing.T) {
 	// second call is the no-op the first one already was.
 	tr.drop(replaced)
 
-	if !tr.send("sess", []byte("output")) {
+	if !tr.send(frameFor(t, "sess", "output")) {
 		t.Fatal("send reported no client after the replaced one was dropped")
 	}
 	// Its own deadline: sharing the one above would let a slow swap eat this

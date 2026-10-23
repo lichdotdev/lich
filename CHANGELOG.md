@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A session's terminal opened while the session is printing no longer misses what it printed in that moment. The backend now hands the window the session's recent output in line with its live output, so nothing between the two is lost or shown twice.
 - On Linux, stepping the terminal font size and opening a card for the first time hitch less. Every terminal looked its font up again through fontconfig each time, four lookups of about 10ms apiece inside one frame; lich now remembers the answer for the rest of its run.
 - Stepping the terminal font size no longer reloads the font of every open terminal: each one keeps the font it has and only draws it at the new size.
+- A session printing a lot of output costs the backend less. Each byte on its way to the window was copied about seven times into memory the garbage collector then had to reclaim; it is now copied once.
 
 ## [0.78.0] - 2026-10-22
 

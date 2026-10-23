@@ -54,9 +54,9 @@ func TestStalledSessionDoesNotBlockAnother(t *testing.T) {
 	loud := make(chan struct{})
 	go func() {
 		defer close(loud)
-		payload := make([]byte, stallFrameBytes)
+		frame := frameFor(t, "loud", string(make([]byte, stallFrameBytes)))
 		for i := 0; i < stallFrames; i++ {
-			tr.send("loud", payload)
+			tr.send(frame)
 			accepted.Add(1)
 		}
 	}()
@@ -64,7 +64,7 @@ func TestStalledSessionDoesNotBlockAnother(t *testing.T) {
 	waitForStall(t, &accepted, loud)
 
 	start := time.Now()
-	tr.send("quiet", []byte("still here"))
+	tr.send(frameFor(t, "quiet", "still here"))
 	blocked := time.Since(start)
 	t.Logf("a send for an idle session waited %v on a stalled one", blocked.Round(time.Millisecond))
 	if blocked > stallBudget {

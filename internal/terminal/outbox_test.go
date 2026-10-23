@@ -15,7 +15,7 @@ func TestOutboxQueuesWhileDeliveryIsStuck(t *testing.T) {
 	t.Parallel()
 	release := make(chan struct{})
 	entered := make(chan struct{}, 1)
-	box := newOutbox(func([]byte) {
+	box := newOutbox(nil, func([]byte) {
 		select {
 		case entered <- struct{}{}:
 		default:
@@ -64,7 +64,7 @@ func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
 	t.Parallel()
 	var mu sync.Mutex
 	var got []string
-	box := newOutbox(func(data []byte) {
+	box := newOutbox(nil, func(data []byte) {
 		mu.Lock()
 		got = append(got, string(data))
 		mu.Unlock()
@@ -87,7 +87,7 @@ func TestOutboxDeliversInOrderAndDrainsOnClose(t *testing.T) {
 func TestOutboxCopiesTheFrame(t *testing.T) {
 	t.Parallel()
 	delivered := make(chan []byte, 1)
-	box := newOutbox(func(data []byte) { delivered <- data }, nil, 1)
+	box := newOutbox(nil, func(data []byte) { delivered <- data }, nil, 1)
 
 	buf := []byte("live")
 	box.push(buf)

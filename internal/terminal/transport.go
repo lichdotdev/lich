@@ -771,7 +771,7 @@ func (t *transport) drop(conn *websocket.Conn) {
 
 // send hands one session's output frame to the connected client's writer. It
 // returns false when the caller should fall back to the event bridge itself:
-// there is no client, or the frame cannot be addressed to one. A frame the
+// there is no client. A frame the
 // writer accepts and the socket then refuses is not the caller's problem — the
 // writer takes it to the same bridge, in order (see writequeue.go).
 //
@@ -779,11 +779,7 @@ func (t *transport) drop(conn *websocket.Conn) {
 // by wsWriteTimeout, and every session's outbox goroutine comes through here;
 // holding a lock across it would recouple the sessions the outbox queues exist
 // to keep apart.
-func (t *transport) send(id string, data []byte) bool {
-	frame, err := encodeFrame(id, data)
-	if err != nil {
-		return false
-	}
+func (t *transport) send(frame []byte) bool {
 	t.mu.Lock()
 	out := t.out
 	t.mu.Unlock()

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// frameFor encodes one session frame the way send does.
+// frameFor encodes one session frame the way an outbox does.
 func frameFor(t *testing.T, id, payload string) []byte {
 	t.Helper()
 	frame, err := encodeFrame(id, []byte(payload))
