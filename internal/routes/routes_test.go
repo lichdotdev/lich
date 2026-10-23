@@ -1,0 +1,48 @@
+package routes
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/rpc"
+	"github.com/lichdotdev/lich/internal/spawn"
+	"github.com/lichdotdev/lich/internal/themes"
+)
+
+func TestHandleThemesCoversEveryThemesMethod(t *testing.T) {
+	d := rpc.New()
+	Themes(d, themes.NewInDir(t.TempDir()))
+	assertHandled(t, d, "themes.")
+}
+
+// assertHandled fails on a method under prefix that api declares and no route
+// of d answers, which a client would only meet as a 404. A body that is no
+// options object stops a handled call at its decoding (400), before the
+// service runs; an unhandled one is unknown (404).
+func assertHandled(t *testing.T, d *rpc.Handler, prefix string) {
+	t.Helper()
+	seen := 0
+	for name := range api.Methods() {
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
+		seen++
+		rec := httptest.NewRecorder()
+		d.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/rpc/"+name, strings.NewReader(`["not options"]`)))
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: want 400 from its route, got %d %q", name, rec.Code, rec.Body.String())
+		}
+	}
+	if seen == 0 {
+		t.Fatalf("api declares no %s method: the scan no longer sees them", prefix)
+	}
+}
+
+func TestHandleSpawnCoversEverySpawnMethod(t *testing.T) {
+	d := rpc.New()
+	Spawn(d, spawn.New(nil, nil, nil, nil))
+	assertHandled(t, d, "spawn.")
+}

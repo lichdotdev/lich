@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/doctor"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/rage"
@@ -642,24 +643,24 @@ func (c *client) open(args []string) error {
 		return fmt.Errorf("--private applies to the task handed over with --prompt: add a prompt, or drop --private")
 	}
 	method := sendMethod(*private)
-	spawnMethod := "spawn.Open"
-	call := []any{spawn.OpenOptions{
-		From: c.sessionID(), Project: *project, Kind: *kind, Worktree: *worktree, Base: *base,
-		Model: *model, Effort: *effort, Folder: *folder, Ultracode: *ultracode,
-	}}
+	var opened spawn.Session
+	var err error
 	if *subagent {
 		if err := c.checkSubagent(*prompt, *project, *folder, *private); err != nil {
 			return err
 		}
-		method, spawnMethod = relaySendSubagent, "spawn.OpenSubagent"
-		call = []any{spawn.OpenSubagentOptions{
+		method = relaySendSubagent
+		opened, err = callMethod(context.Background(), c, api.SpawnOpenSubagent, spawn.OpenSubagentOptions{
 			From: c.sessionID(), Kind: *kind, Worktree: *worktree, Base: *base,
 			Model: *model, Effort: *effort, Ultracode: *ultracode,
-		}}
+		}, openCall)
+	} else {
+		opened, err = callMethod(context.Background(), c, api.SpawnOpen, spawn.OpenOptions{
+			From: c.sessionID(), Project: *project, Kind: *kind, Worktree: *worktree, Base: *base,
+			Model: *model, Effort: *effort, Folder: *folder, Ultracode: *ultracode,
+		}, openCall)
 	}
-
-	var opened spawn.Session
-	if err := c.call(context.Background(), spawnMethod, call, openCall, &opened); err != nil {
+	if err != nil {
 		return err
 	}
 	delivered, failure := c.handOff(opened, *prompt, method)
@@ -905,11 +906,10 @@ func (c *client) close(args []string) error {
 		return usageError("close")
 	}
 
-	var closed spawn.Closed
-	call := []any{spawn.CloseOptions{
+	closed, err := callMethod(context.Background(), c, api.SpawnClose, spawn.CloseOptions{
 		From: c.sessionID(), Target: flags.Arg(0), Project: *project, Worktree: *worktree, Force: *force,
-	}}
-	if err := c.call(context.Background(), "spawn.Close", call, openCall, &closed); err != nil {
+	}, openCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -956,9 +956,9 @@ func (c *client) rename(args []string) error {
 		return usageError("rename")
 	}
 
-	var renamed spawn.Renamed
-	call := []any{spawn.RenameOptions{From: c.sessionID(), Target: target, Project: *project, Label: label}}
-	if err := c.call(context.Background(), "spawn.Rename", call, shortCall, &renamed); err != nil {
+	opts := spawn.RenameOptions{From: c.sessionID(), Target: target, Project: *project, Label: label}
+	renamed, err := callMethod(context.Background(), c, api.SpawnRename, opts, shortCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -988,9 +988,9 @@ func (c *client) worktrees(args []string) error {
 		return usageError("worktrees")
 	}
 
-	var checkouts []spawn.Checkout
-	call := []any{spawn.WorktreesOptions{From: c.sessionID(), Project: *project}}
-	if err := c.call(context.Background(), "spawn.Worktrees", call, shortCall, &checkouts); err != nil {
+	opts := spawn.WorktreesOptions{From: c.sessionID(), Project: *project}
+	checkouts, err := callMethod(context.Background(), c, api.SpawnWorktrees, opts, shortCall)
+	if err != nil {
 		return err
 	}
 	checkouts = asList(checkouts)

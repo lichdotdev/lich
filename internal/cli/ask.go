@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/spawn"
 )
 
@@ -27,10 +28,10 @@ func (c *client) ask(args []string) error {
 		return usageError("ask")
 	}
 
-	var out spawn.Answered
 	question := strings.Join(flags.Args()[1:], " ")
-	call := []any{spawn.AskOptions{From: c.sessionID(), Target: flags.Arg(0), Project: *project, Question: question}}
-	if err := c.call(context.Background(), "spawn.Ask", call, askCall, &out); err != nil {
+	opts := spawn.AskOptions{From: c.sessionID(), Target: flags.Arg(0), Project: *project, Question: question}
+	out, err := callMethod(context.Background(), c, api.SpawnAsk, opts, askCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -60,12 +61,11 @@ var askTools = []mcpTool{
 					"exists in more than one."),
 		}, "session", "question"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
-			var out spawn.Answered
-			call := []any{spawn.AskOptions{
+			out, err := callMethod(ctx, c, api.SpawnAsk, spawn.AskOptions{
 				From: c.sessionID(), Target: args.text("session"), Project: args.text("project"),
 				Question: args.text("question"),
-			}}
-			if err := c.call(ctx, "spawn.Ask", call, askCall, &out); err != nil {
+			}, askCall)
+			if err != nil {
 				return "", err
 			}
 			return out.Answer, nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
 
@@ -17,21 +18,9 @@ const AskWaitLimit = 90 * time.Second
 // no conversation yet (docs/hooks/mod-control.md).
 const modNothingToFork = "nothing-to-fork"
 
-// Answered is a session's answer to a side question.
-type Answered struct {
-	ID      string `json:"id"`
-	Project string `json:"project"`
-	Label   string `json:"label"`
-	Answer  string `json:"answer"`
-}
+type Answered = api.SessionAnswer
 
-// AskOptions is one Ask call, an object for the reason CloseOptions is one.
-type AskOptions struct {
-	From     string `json:"from"`
-	Target   string `json:"target"`
-	Project  string `json:"project"`
-	Question string `json:"question"`
-}
+type AskOptions = api.AskSessionOptions
 
 // Ask puts a side question to a running Claude Code session and waits for its
 // answer. The session's mod answers it with a tool-less fork of the session's

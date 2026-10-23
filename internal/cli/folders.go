@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/spawn"
 )
@@ -31,9 +32,9 @@ func (c *client) folders(args []string) error {
 		return usageError("folders")
 	}
 
-	var folders []spawn.Folder
-	call := []any{spawn.FoldersOptions{From: c.sessionID(), Project: *project}}
-	if err := c.call(context.Background(), "spawn.Folders", call, shortCall, &folders); err != nil {
+	opts := spawn.FoldersOptions{From: c.sessionID(), Project: *project}
+	folders, err := callMethod(context.Background(), c, api.SpawnFolders, opts, shortCall)
+	if err != nil {
 		return err
 	}
 	folders = asList(folders)
@@ -73,9 +74,9 @@ func (c *client) file(args []string) error {
 		return usageError("file")
 	}
 
-	var filed spawn.Filed
-	call := []any{spawn.FileOptions{From: c.sessionID(), Target: target, Project: *project, Folder: folder}}
-	if err := c.call(context.Background(), "spawn.File", call, shortCall, &filed); err != nil {
+	opts := spawn.FileOptions{From: c.sessionID(), Target: target, Project: *project, Folder: folder}
+	filed, err := callMethod(context.Background(), c, api.SpawnFile, opts, shortCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -98,11 +99,10 @@ func (c *client) renameFolder(args []string) error {
 		return usageError("rename-folder")
 	}
 
-	var refiled spawn.Refiled
-	call := []any{spawn.RenameFolderOptions{
+	refiled, err := callMethod(context.Background(), c, api.SpawnRenameFolder, spawn.RenameFolderOptions{
 		From: c.sessionID(), Project: *project, Folder: flags.Arg(0), To: flags.Arg(1),
-	}}
-	if err := c.call(context.Background(), "spawn.RenameFolder", call, shortCall, &refiled); err != nil {
+	}, shortCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -125,11 +125,10 @@ func (c *client) colorFolder(args []string) error {
 		return usageError("color-folder")
 	}
 
-	var colored spawn.Colored
-	call := []any{spawn.ColorFolderOptions{
+	colored, err := callMethod(context.Background(), c, api.SpawnColorFolder, spawn.ColorFolderOptions{
 		From: c.sessionID(), Project: *project, Folder: flags.Arg(0), Color: flags.Arg(1),
-	}}
-	if err := c.call(context.Background(), "spawn.ColorFolder", call, shortCall, &colored); err != nil {
+	}, shortCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -187,9 +186,9 @@ var folderTools = []mcpTool{
 		}),
 		ReadOnly: true,
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
-			var folders []spawn.Folder
-			call := []any{spawn.FoldersOptions{From: c.sessionID(), Project: args.text("project")}}
-			if err := c.call(ctx, "spawn.Folders", call, shortCall, &folders); err != nil {
+			opts := spawn.FoldersOptions{From: c.sessionID(), Project: args.text("project")}
+			folders, err := callMethod(ctx, c, api.SpawnFolders, opts, shortCall)
+			if err != nil {
 				return "", err
 			}
 			out, err := json.Marshal(asList(folders))
@@ -223,12 +222,11 @@ var folderTools = []mcpTool{
 				return "", errors.New("name the folder to file the session under; " +
 					"an empty one takes the session out of the folder it is in")
 			}
-			var filed spawn.Filed
-			call := []any{spawn.FileOptions{
+			filed, err := callMethod(ctx, c, api.SpawnFile, spawn.FileOptions{
 				From: c.sessionID(), Target: args.text("session"), Project: args.text("project"),
 				Folder: args.text("folder"),
-			}}
-			if err := c.call(ctx, "spawn.File", call, shortCall, &filed); err != nil {
+			}, shortCall)
+			if err != nil {
 				return "", err
 			}
 			return filedText(filed), nil
@@ -251,12 +249,11 @@ var folderTools = []mcpTool{
 			if _, named := args["to"]; !named {
 				return "", errors.New("name the folder's new name; an empty one takes the folder apart")
 			}
-			var refiled spawn.Refiled
-			call := []any{spawn.RenameFolderOptions{
+			refiled, err := callMethod(ctx, c, api.SpawnRenameFolder, spawn.RenameFolderOptions{
 				From: c.sessionID(), Project: args.text("project"), Folder: args.text("folder"),
 				To: args.text("to"),
-			}}
-			if err := c.call(ctx, "spawn.RenameFolder", call, shortCall, &refiled); err != nil {
+			}, shortCall)
+			if err != nil {
 				return "", err
 			}
 			return refiledText(refiled), nil
@@ -281,12 +278,11 @@ var folderTools = []mcpTool{
 			if _, named := args["color"]; !named {
 				return "", errors.New("name the color to paint the folder; an empty one clears it")
 			}
-			var colored spawn.Colored
-			call := []any{spawn.ColorFolderOptions{
+			colored, err := callMethod(ctx, c, api.SpawnColorFolder, spawn.ColorFolderOptions{
 				From: c.sessionID(), Project: args.text("project"), Folder: args.text("folder"),
 				Color: args.text("color"),
-			}}
-			if err := c.call(ctx, "spawn.ColorFolder", call, shortCall, &colored); err != nil {
+			}, shortCall)
+			if err != nil {
 				return "", err
 			}
 			return coloredText(colored), nil

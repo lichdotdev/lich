@@ -39,12 +39,14 @@ var cliServices = map[string]reflect.Type{
 // (docs/ceilings.md). One JSON object, after an optional context, is what lets
 // a newer and an older lich understand each other. A call with no input yet,
 // like the version probe, has nothing to misalign and may take nothing; the day
-// it takes something, that something is the object.
+// it takes something, that something is the object. A call made through a
+// method api declares is not posted by name and so not seen here; api's
+// TestEveryRequestIsOneObject holds it to the same rule.
 func TestEveryCallTheCLIPostsTakesOneOptionsObject(t *testing.T) {
 	t.Parallel()
 	methods := postedMethods(t)
-	if !methods["spawn.Open"] {
-		t.Fatalf("found %v, want spawn.Open among them: the scan no longer sees the CLI's calls", methods)
+	if !methods["relay.Peers"] {
+		t.Fatalf("found %v, want relay.Peers among them: the scan no longer sees the CLI's calls", methods)
 	}
 	for name := range methods {
 		service, method, _ := strings.Cut(name, ".")

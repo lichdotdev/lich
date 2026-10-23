@@ -556,8 +556,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `TestEveryCallTheCLIPostsTakesOneOptionsObject` (`internal/cli/rpcshape_test.go`) reads every method name the
   CLI's source posts and fails on one whose parameters are anything but one struct or none, and
   `internal/cli/wire_test.go` posts each one as a client of another release. A method declared in `api` (the
-  themes service, so far) takes one options object from the window as well, and its route reads an empty
-  argument list as the zero options, so moving a parameterless method there breaks no older caller. The
+  themes and spawn services, so far) takes one options object from every client, the window included, and its
+  route reads an empty argument list as the zero options, so moving a parameterless method there breaks no older
+  caller. The
   window's calls not yet declared there (`native/backend`) stay positional, on the promise that `lich-native`
   ships in the same release as the backend it talks to; a window from another build, pinned with `LICH_NATIVE`
   or replaced on disk by an upgrade under a running backend, is the case that promise does not cover.

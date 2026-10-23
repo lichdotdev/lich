@@ -15,6 +15,7 @@ import (
 
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/routes"
 	"github.com/lichdotdev/lich/internal/rpc"
 	"github.com/lichdotdev/lich/internal/spawn"
 	"github.com/lichdotdev/lich/internal/store"
@@ -454,7 +455,7 @@ func wiredSpawn(t *testing.T, git *spawnGit) (func(string) string, *spawnStore, 
 	rows := &spawnStore{}
 	term := &spawnTerminal{}
 	dispatcher := rpc.New()
-	dispatcher.Register("spawn", spawn.New(rows, git, term, nil))
+	routes.Spawn(dispatcher, spawn.New(rows, git, term, nil))
 
 	server := httptest.NewServer(dispatcher)
 	t.Cleanup(server.Close)
@@ -770,7 +771,7 @@ func TestOpenAcrossVersions(t *testing.T) {
 			method, _, _ := strings.Cut(name, " ")
 			term := &spawnTerminal{}
 			dispatcher := rpc.New()
-			dispatcher.Register("spawn", spawn.New(&spawnStore{}, &spawnGit{}, term, nil))
+			routes.Spawn(dispatcher, spawn.New(&spawnStore{}, &spawnGit{}, term, nil))
 
 			recorder := httptest.NewRecorder()
 			dispatcher.ServeHTTP(recorder, httptest.NewRequest("POST", "/rpc/"+method, strings.NewReader(body)))
@@ -865,7 +866,7 @@ func TestSpawnCallsAcrossVersions(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			rows, term := &spawnStore{}, &spawnTerminal{}
 			dispatcher := rpc.New()
-			dispatcher.Register("spawn", spawn.New(rows, &spawnGit{}, term, nil))
+			routes.Spawn(dispatcher, spawn.New(rows, &spawnGit{}, term, nil))
 
 			answer := postRaw(t, dispatcher, tc.method, tc.body)
 			if !tc.landed(rows, term, answer) {

@@ -29,6 +29,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -137,37 +138,7 @@ type Events interface {
 	Emit(name string, data any)
 }
 
-// Session is one opened session: what the caller is told, and what the window is
-// handed to draw the card. Both read the same struct because both need the same
-// facts — a divergence between them is a card that does not match the session
-// the agent was given.
-//
-// Name is the second name the session answers to, empty for a Claude Code one,
-// which names itself (relay.RosterNameOf); Label is the name on its card. Both
-// address it (see internal/relay). Path is the worktree
-// the session lives in, empty for a session in the project's own directory —
-// the store's own spelling. NextSeq is the project's label counter after this
-// session took its number. OriginSessionID and OriginLabel name the session that
-// asked for this one — empty when the caller was not a session at all.
-// Confined is whether the session opened inside the sandbox. Nobody is at this
-// end to be asked, so it is the rung's own answer (store.SandboxDefault), and
-// saying it is what keeps a caller from discovering the empty home and the
-// read-only machine by running into them. Folder is the folder it was filed
-// under, "" for none.
-type Session struct {
-	ID              string `json:"id"`
-	ProjectID       string `json:"projectId"`
-	Project         string `json:"project"`
-	Label           string `json:"label"`
-	Name            string `json:"name"`
-	Kind            string `json:"kind"`
-	Path            string `json:"path"`
-	NextSeq         int    `json:"nextSeq"`
-	OriginSessionID string `json:"originSessionId"`
-	OriginLabel     string `json:"originLabel"`
-	Confined        bool   `json:"confined"`
-	Folder          string `json:"folder"`
-}
+type Session = api.OpenedSession
 
 // Service opens sessions on behalf of a caller outside the window.
 type Service struct {
@@ -186,49 +157,7 @@ func New(sessions Sessions, worktrees Worktrees, term Terminal, events Events) *
 	return &Service{sessions: sessions, worktrees: worktrees, term: term, events: events}
 }
 
-// OpenOptions is one Open call. It travels as a single JSON object rather than
-// as positional arguments because a package manager replaces the lich binary
-// under a running backend: a newer CLI's option the backend does not know is
-// dropped, and one an older CLI does not send is its zero value, where a
-// positional list refuses both on its count.
-//
-// From is the session the caller runs in, empty for the command line run
-// outside one. It decides two defaults: the project the session lands in and the
-// provider it runs, both taken from the caller unless named. A caller with no
-// session of its own must name the project — there is nothing to inherit. It is
-// also recorded on the row as the new session's origin, which outlives the
-// request that created it: the card says where it came from for as long as it
-// exists.
-//
-// Project is a project already on screen, by name, or a directory path — and
-// a path is the only way to reach a project the window is not holding, which is
-// what opening one from the command line means. See ensureProject.
-//
-// Worktree, when given, is the branch name of a new git worktree created off
-// Base (the project's current branch when Base is empty); the session is rooted
-// there and labelled after it, exactly as the window's own worktree flow does. A
-// Base without a Worktree has nothing to branch, and is refused rather than ignored.
-//
-// Model, when given, is the model the provider is spawned on, in that provider's
-// own spelling. It is recorded on the row so every later spawn repeats it.
-// Effort, when given, is the reasoning effort, passed and recorded the same way.
-// Ultracode turns Claude Code's ultracode on, at whatever effort the session
-// runs; it is recorded the same way, and refused for every other provider.
-//
-// Folder, when given, is the folder the session is filed under from its first
-// frame: it is written with the row, so the card arrives in the folder's block
-// rather than among its checkout's cards and then jumps.
-type OpenOptions struct {
-	From      string `json:"from"`
-	Project   string `json:"project"`
-	Kind      string `json:"kind"`
-	Worktree  string `json:"worktree"`
-	Base      string `json:"base"`
-	Model     string `json:"model"`
-	Effort    string `json:"effort"`
-	Folder    string `json:"folder"`
-	Ultracode bool   `json:"ultracode"`
-}
+type OpenOptions = api.OpenSessionOptions
 
 // Open creates a session and starts its PTY.
 func (s *Service) Open(opts OpenOptions) (Session, error) {
@@ -239,18 +168,7 @@ func (s *Service) Open(opts OpenOptions) (Session, error) {
 	})
 }
 
-// OpenSubagentOptions is one OpenSubagent call, an object for the reason
-// OpenOptions is one. Its fields mean what Open's do; there is no project or
-// folder, both of which are the caller's.
-type OpenSubagentOptions struct {
-	From      string `json:"from"`
-	Kind      string `json:"kind"`
-	Worktree  string `json:"worktree"`
-	Base      string `json:"base"`
-	Model     string `json:"model"`
-	Effort    string `json:"effort"`
-	Ultracode bool   `json:"ultracode"`
-}
+type OpenSubagentOptions = api.OpenSubagentOptions
 
 // OpenSubagent opens a session as the subagent of the session From runs in
 // (`lich open --subagent`), the way lich-plugin's mod turns Claude Code's own

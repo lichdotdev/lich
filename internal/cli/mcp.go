@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/spawn"
@@ -634,13 +635,12 @@ var mcpTools = append([]mcpTool{
 				return "", fmt.Errorf("private applies to the task handed over with prompt: add a prompt, or drop private")
 			}
 			method := sendMethod(args.flag("private"))
-			var opened spawn.Session
-			call := []any{spawn.OpenOptions{
+			opened, err := callMethod(ctx, c, api.SpawnOpen, spawn.OpenOptions{
 				From: c.sessionID(), Project: args.text("project"), Kind: args.text("kind"),
 				Worktree: args.text("worktree"), Base: args.text("base"), Model: args.text("model"),
 				Effort: args.text("effort"), Folder: args.text("folder"), Ultracode: args.flag("ultracode"),
-			}}
-			if err := c.call(ctx, "spawn.Open", call, openCall, &opened); err != nil {
+			}, openCall)
+			if err != nil {
 				return "", err
 			}
 			if prompt == "" {
@@ -672,12 +672,11 @@ var mcpTools = append([]mcpTool{
 				"Remove a checkout that still has uncommitted work. Ask the user first."),
 		}, "session"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
-			var closed spawn.Closed
-			call := []any{spawn.CloseOptions{
+			closed, err := callMethod(ctx, c, api.SpawnClose, spawn.CloseOptions{
 				From: c.sessionID(), Target: args.text("session"), Project: args.text("project"),
 				Worktree: args.text("worktree"), Force: args.flag("force"),
-			}}
-			if err := c.call(ctx, "spawn.Close", call, openCall, &closed); err != nil {
+			}, openCall)
+			if err != nil {
 				return "", err
 			}
 			return closedText(c.lang(), closed), nil
@@ -701,12 +700,11 @@ var mcpTools = append([]mcpTool{
 					"exists in more than one."),
 		}, "label"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
-			var renamed spawn.Renamed
-			call := []any{spawn.RenameOptions{
+			renamed, err := callMethod(ctx, c, api.SpawnRename, spawn.RenameOptions{
 				From: c.sessionID(), Target: args.text("session"), Project: args.text("project"),
 				Label: args.text("label"),
-			}}
-			if err := c.call(ctx, "spawn.Rename", call, shortCall, &renamed); err != nil {
+			}, shortCall)
+			if err != nil {
 				return "", err
 			}
 			return renamedText(renamed), nil
@@ -724,9 +722,9 @@ var mcpTools = append([]mcpTool{
 		}),
 		ReadOnly: true,
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
-			var checkouts []spawn.Checkout
-			call := []any{spawn.WorktreesOptions{From: c.sessionID(), Project: args.text("project")}}
-			if err := c.call(ctx, "spawn.Worktrees", call, shortCall, &checkouts); err != nil {
+			opts := spawn.WorktreesOptions{From: c.sessionID(), Project: args.text("project")}
+			checkouts, err := callMethod(ctx, c, api.SpawnWorktrees, opts, shortCall)
+			if err != nil {
 				return "", err
 			}
 			out, err := json.Marshal(asList(checkouts))

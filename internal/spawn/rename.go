@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -25,23 +26,9 @@ type RenamedEvent struct {
 	Label string `json:"label"`
 }
 
-// Renamed is what a caller is told about the session it renamed. Previous is
-// the name that is gone, which is the half the caller cannot look up afterwards.
-type Renamed struct {
-	ID       string `json:"id"`
-	Project  string `json:"project"`
-	Label    string `json:"label"`
-	Previous string `json:"previous"`
-}
+type Renamed = api.RenamedSession
 
-// RenameOptions is one Rename call, an object for the reason CloseOptions is
-// one.
-type RenameOptions struct {
-	From    string `json:"from"`
-	Target  string `json:"target"`
-	Project string `json:"project"`
-	Label   string `json:"label"`
-}
+type RenameOptions = api.RenameSessionOptions
 
 // Rename gives a session the name on its card, the window's rename from outside
 // the window. Like the window's, it makes the name the user's: the provider's

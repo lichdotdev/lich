@@ -1,3 +1,14 @@
+spawn.Ask(AskSessionOptions) SessionAnswer
+spawn.Close(CloseSessionOptions) ClosedSession
+spawn.ColorFolder(ColorFolderOptions) ColoredFolder
+spawn.Control(ControlSessionOptions) ControlledSession
+spawn.File(FileSessionOptions) FiledSession
+spawn.Folders(FoldersOptions) []SessionFolder
+spawn.Open(OpenSessionOptions) OpenedSession
+spawn.OpenSubagent(OpenSubagentOptions) OpenedSession
+spawn.Rename(RenameSessionOptions) RenamedSession
+spawn.RenameFolder(RenameFolderOptions) RenamedFolder
+spawn.Worktrees(WorktreesOptions) []WorktreeCheckout
 themes.Import(ImportThemeOptions) ThemeImportResult
 themes.InstallFromGit(InstallThemesOptions) ThemeGitResult
 themes.List(None) []Theme
@@ -8,6 +19,173 @@ themes.Select(SelectThemeOptions) None
 themes.Selection(None) ThemeSelection
 themes.SetFollowSystem(FollowSystemOptions) None
 themes.UpdateFromGit(UpdateThemeOptions) ThemeGitResult
+
+AskSessionOptions {
+	from string
+	target string
+	project string
+	question string
+}
+
+SessionAnswer {
+	id string
+	project string
+	label string
+	answer string
+}
+
+CloseSessionOptions {
+	from string
+	target string
+	project string
+	worktree string
+	force bool
+}
+
+ClosedSession {
+	id string
+	projectId string
+	project string
+	label string
+	worktree string
+	kept bool
+	removed bool
+}
+
+ColorFolderOptions {
+	from string
+	project string
+	folder string
+	color string
+}
+
+ColoredFolder {
+	project string
+	folder string
+	color string
+	sessions []string
+}
+
+ControlSessionOptions {
+	from string
+	target string
+	project string
+	action string
+	value string
+	args string
+}
+
+ControlledSession {
+	id string
+	project string
+	label string
+	action string
+	value,omitempty string
+	command_id string
+	state string
+}
+
+FileSessionOptions {
+	from string
+	target string
+	project string
+	folder string
+}
+
+FiledSession {
+	id string
+	project string
+	label string
+	folder string
+	previous string
+}
+
+FoldersOptions {
+	from string
+	project string
+}
+
+SessionFolder {
+	name string
+	sessions []string
+}
+
+OpenSessionOptions {
+	from string
+	project string
+	kind string
+	worktree string
+	base string
+	model string
+	effort string
+	folder string
+	ultracode bool
+}
+
+OpenedSession {
+	id string
+	projectId string
+	project string
+	label string
+	name string
+	kind string
+	path string
+	nextSeq int
+	originSessionId string
+	originLabel string
+	confined bool
+	folder string
+}
+
+OpenSubagentOptions {
+	from string
+	kind string
+	worktree string
+	base string
+	model string
+	effort string
+	ultracode bool
+}
+
+RenameSessionOptions {
+	from string
+	target string
+	project string
+	label string
+}
+
+RenamedSession {
+	id string
+	project string
+	label string
+	previous string
+}
+
+RenameFolderOptions {
+	from string
+	project string
+	folder string
+	to string
+}
+
+RenamedFolder {
+	project string
+	from string
+	to string
+	sessions []string
+}
+
+WorktreesOptions {
+	from string
+	project string
+}
+
+WorktreeCheckout {
+	name string
+	path string
+	dirty bool
+	sessions []string
+}
 
 ImportThemeOptions {
 	path string

@@ -29,6 +29,7 @@ import (
 	"github.com/lichdotdev/lich/internal/quota"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/restart"
+	"github.com/lichdotdev/lich/internal/routes"
 	"github.com/lichdotdev/lich/internal/rpc"
 	"github.com/lichdotdev/lich/internal/shellintegration"
 	"github.com/lichdotdev/lich/internal/singleton"
@@ -433,8 +434,8 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// A subagent worker in its caller's checkout closes once it reported and
 	// its turn ended, the way a native subagent ends with its result.
 	rl.SetWorkerFinished(spawner.CloseFinishedWorker)
-	dispatcher.Register("spawn", spawner)
-	handleThemes(dispatcher, themes.New(version, db, hub.Emit))
+	routes.Spawn(dispatcher, spawner)
+	routes.Themes(dispatcher, themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
 	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, term.LiveCount)
@@ -486,8 +487,6 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 //     Codex turns a usage limit ended.
 //   - relay.ParkResume parks a prompt that types itself at a session; the
 //     terminal calls it for a turn a usage limit ended, with the reset it read.
-//   - spawn.CloseFinishedWorker closes a session with none of spawn.Close's
-//     checks; the relay calls it for a worker that reported back.
 //   - relay.SetPlugins, relay.SetWorkerFinished, relay.SetPromptLanguage, drop.SetPromptLanguage, project.SetAccounts, project.SetProjects,
 //     system.SetQuit, system.SetNativeWindow,
 //     quota.SetSessions, store.SetSessionGone, store.SetScheduleForfeited,
@@ -555,7 +554,6 @@ func denyInternal(d *rpc.Handler) {
 		"relay.SetPlugins",
 		"relay.SetWorkerFinished",
 		"relay.SetPromptLanguage",
-		"spawn.CloseFinishedWorker",
 		"project.SetAccounts",
 		"project.SetProjects",
 		"quota.SetSessions",

@@ -4,29 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
-// Checkout is one of a project's git worktrees, as a caller outside the window
-// needs to see it: what it is called, where it is, whether anything in it is
-// uncommitted, and which sessions are open in it.
-//
-// Sessions is what makes the list actionable rather than informational. A
-// checkout with none is one nobody is working in; the last session in one is the
-// thing whose closing decides whether the checkout stays (see Close).
-type Checkout struct {
-	Name     string   `json:"name"`
-	Path     string   `json:"path"`
-	Dirty    bool     `json:"dirty"`
-	Sessions []string `json:"sessions"`
-}
+type Checkout = api.WorktreeCheckout
 
-// WorktreesOptions is one Worktrees call, an object for the reason CloseOptions
-// is one.
-type WorktreesOptions struct {
-	From    string `json:"from"`
-	Project string `json:"project"`
-}
+type WorktreesOptions = api.WorktreesOptions
 
 // Worktrees lists a project's checkouts. Project names it; empty takes the
 // caller's own, exactly as Open does.

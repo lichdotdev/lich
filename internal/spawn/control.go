@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
@@ -31,29 +32,9 @@ const (
 	ControlEnded     = terminal.ModEnded
 )
 
-// Controlled is what a caller is told about a command it gave a session. Value
-// is the prompt, model, effort or slash command's name the action carried, and
-// CommandID the id the session's mod acks it under.
-type Controlled struct {
-	ID        string `json:"id"`
-	Project   string `json:"project"`
-	Label     string `json:"label"`
-	Action    string `json:"action"`
-	Value     string `json:"value,omitempty"`
-	CommandID string `json:"command_id"`
-	State     string `json:"state"`
-}
+type Controlled = api.ControlledSession
 
-// ControlOptions is one Control call, an object for the reason CloseOptions
-// is one.
-type ControlOptions struct {
-	From    string `json:"from"`
-	Target  string `json:"target"`
-	Project string `json:"project"`
-	Action  string `json:"action"`
-	Value   string `json:"value"`
-	Args    string `json:"args"`
-}
+type ControlOptions = api.ControlSessionOptions
 
 // Control gives a running Claude Code session one command through its mod
 // (docs/hooks/mod-control.md) and waits a bounded time for the mod to confirm

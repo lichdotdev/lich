@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/spawn"
 )
 
@@ -28,12 +29,11 @@ func (c *client) control(args []string) error {
 		return usageError("control")
 	}
 
-	var out spawn.Controlled
-	call := []any{spawn.ControlOptions{
+	out, err := callMethod(context.Background(), c, api.SpawnControl, spawn.ControlOptions{
 		From: c.sessionID(), Target: flags.Arg(0), Project: *project,
 		Action: flags.Arg(1), Value: flags.Arg(2), Args: flags.Arg(3),
-	}}
-	if err := c.call(context.Background(), "spawn.Control", call, controlCall, &out); err != nil {
+	}, controlCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -121,12 +121,11 @@ var controlTools = []mcpTool{
 					"exists in more than one."),
 		}, "session", "action"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
-			var out spawn.Controlled
-			call := []any{spawn.ControlOptions{
+			out, err := callMethod(ctx, c, api.SpawnControl, spawn.ControlOptions{
 				From: c.sessionID(), Target: args.text("session"), Project: args.text("project"),
 				Action: args.text("action"), Value: args.text("value"), Args: args.text("args"),
-			}}
-			if err := c.call(ctx, "spawn.Control", call, controlCall, &out); err != nil {
+			}, controlCall)
+			if err != nil {
 				return "", err
 			}
 			return controlledText(out), nil
