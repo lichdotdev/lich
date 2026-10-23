@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -31,9 +32,8 @@ func (c *client) cost(args []string) error {
 		return err
 	}
 
-	var report store.CostReport
-	call := []any{store.CostTotalsOptions{Project: *project, Provider: *provider, Since: from}}
-	if err := c.call(context.Background(), "store.CostTotals", call, shortCall, &report); err != nil {
+	report, err := callMethod(context.Background(), c, api.StoreCostTotals, store.CostTotalsOptions{Project: *project, Provider: *provider, Since: from}, shortCall)
+	if err != nil {
 		return err
 	}
 	report.Projects = asList(report.Projects)

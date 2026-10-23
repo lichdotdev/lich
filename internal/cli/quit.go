@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/system"
 )
 
@@ -34,7 +35,7 @@ func (c *client) quit(args []string) error {
 	if err != nil {
 		return err
 	}
-	asked := c.call(context.Background(), "system.Quit", []any{system.QuitOptions{}}, shortCall, nil)
+	_, asked := callMethod(context.Background(), c, api.SystemQuit, system.QuitOptions{}, shortCall)
 	// A lich that exits fast enough takes the reply down with it, and its port
 	// can outlive that connection by a moment, so only a call lich answered is
 	// a refusal; one that got no reply is settled by waiting for the port.

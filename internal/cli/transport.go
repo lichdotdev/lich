@@ -17,22 +17,25 @@ import (
 	"github.com/lichdotdev/lich/internal/singleton"
 )
 
-// call posts one RPC to the lich this session belongs to. Cancelling ctx drops
-// the connection, which is how the backend learns its caller stopped waiting.
-func (c *client) call(ctx context.Context, method string, args []any, timeout time.Duration, out any) error {
+// callMethod posts m to the lich this session belongs to, the one way the CLI
+// reaches it, so every call is held to the types api declares. Cancelling ctx
+// drops the connection, which is how the backend learns its caller stopped
+// waiting.
+func callMethod[Req, Resp any](ctx context.Context, c *client, m api.Method[Req, Resp], req Req, timeout time.Duration) (Resp, error) {
+	var out Resp
 	port, token, err := c.coordinates()
 	if err != nil {
-		return err
+		return out, err
 	}
-	body, err := json.Marshal(args)
+	body, err := json.Marshal(m.Args(req))
 	if err != nil {
-		return fmt.Errorf("encode arguments: %w", err)
+		return out, fmt.Errorf("encode arguments: %w", err)
 	}
 
 	httpClient := &http.Client{Timeout: timeout}
-	status, payload, err := post(ctx, httpClient, endpoint(port, token, method), body)
+	status, payload, err := post(ctx, httpClient, endpoint(port, token, m.Name), body)
 	if err != nil {
-		return err
+		return out, err
 	}
 	// A refused token is not this caller's mistake — the coordinates it was given
 	// can have gone stale under it (see reissued). Retried once, on the same port,
@@ -40,28 +43,19 @@ func (c *client) call(ctx context.Context, method string, args []any, timeout ti
 	if status == http.StatusForbidden || status == http.StatusUnauthorized {
 		token, err = c.reissued(port, token)
 		if err != nil {
-			return err
+			return out, err
 		}
-		if status, payload, err = post(ctx, httpClient, endpoint(port, token, method), body); err != nil {
-			return err
+		if status, payload, err = post(ctx, httpClient, endpoint(port, token, m.Name), body); err != nil {
+			return out, err
 		}
 	}
 	if status != http.StatusOK {
-		return fmt.Errorf("%s", failureOf(payload, status))
+		return out, fmt.Errorf("%s", failureOf(payload, status))
 	}
-	if out == nil {
-		return nil
+	if err := json.Unmarshal(payload, &out); err != nil {
+		return out, fmt.Errorf("decode the reply: %w", err)
 	}
-	if err := json.Unmarshal(payload, out); err != nil {
-		return fmt.Errorf("decode the reply: %w", err)
-	}
-	return nil
-}
-
-// callMethod is call held to the types api declares for m.
-func callMethod[Req, Resp any](ctx context.Context, c *client, m api.Method[Req, Resp], req Req, timeout time.Duration) (Resp, error) {
-	var out Resp
-	return out, c.call(ctx, m.Name, m.Args(req), timeout, &out)
+	return out, nil
 }
 
 // post sends one RPC and reads the whole reply. The body is read here rather

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // NativeHooks are how lich drives its window, the native one (`lich native`),
@@ -39,12 +41,7 @@ func (s *Service) SetNativeWindow(hooks NativeHooks) {
 	s.native.mu.Unlock()
 }
 
-// AttachNativeOptions is the native window announcing itself.
-type AttachNativeOptions struct {
-	// Executable is the native window's own binary, the one started again when
-	// lich is asked for its window after that window closed.
-	Executable string `json:"executable"`
-}
+type AttachNativeOptions = api.AttachNativeOptions
 
 // AttachNative records the native window that started as lich's window.
 func (s *Service) AttachNative(opts AttachNativeOptions) {

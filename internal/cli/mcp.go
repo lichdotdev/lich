@@ -481,8 +481,8 @@ var mcpTools = append([]mcpTool{
 		Schema:   schema(map[string]any{}),
 		ReadOnly: true,
 		Run: func(ctx context.Context, c *client, _ mcpArgs) (string, error) {
-			var peers []relay.Peer
-			if err := c.call(ctx, "relay.Peers", []any{relay.PeersOptions{From: c.sessionID()}}, shortCall, &peers); err != nil {
+			peers, err := callMethod(ctx, c, api.RelayPeers, relay.PeersOptions{From: c.sessionID()}, shortCall)
+			if err != nil {
 				return "", err
 			}
 			if len(peers) == 0 {
@@ -522,13 +522,12 @@ var mcpTools = append([]mcpTool{
 		}, "session", "prompt"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
 			method := sendMethod(args.flag("private"))
-			var result relay.Result
 			timeout := args.seconds("timeout_seconds")
-			call := []any{relay.SendOptions{
+			result, err := callMethod(ctx, c, method, relay.SendOptions{
 				From: c.sessionID(), Target: args.text("session"), Project: args.text("project"),
 				Prompt: args.text("prompt"), WaitSeconds: timeout,
-			}}
-			if err := c.call(ctx, method, call, waitBudget(timeout), &result); err != nil {
+			}, waitBudget(timeout))
+			if err != nil {
 				return "", err
 			}
 			return mcpOutcome(c.lang(), result), nil
@@ -562,9 +561,8 @@ var mcpTools = append([]mcpTool{
 					return "", fmt.Errorf("no_wait collects everything that is ready and takes no ticket: " +
 						"drop the ticket to look without waiting, or drop no_wait to wait on it")
 				}
-				var result relay.Result
-				call := []any{relay.WaitOptions{Ticket: ticket, WaitSeconds: timeout}}
-				if err := c.call(ctx, "relay.Wait", call, waitBudget(timeout), &result); err != nil {
+				result, err := callMethod(ctx, c, api.RelayWait, relay.WaitOptions{Ticket: ticket, WaitSeconds: timeout}, waitBudget(timeout))
+				if err != nil {
 					return "", err
 				}
 				return mcpOutcome(c.lang(), result), nil
@@ -749,8 +747,8 @@ var mcpTools = append([]mcpTool{
 			"answer": property("string", "Your answer, in full — nothing else is sent back."),
 		}, "answer"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
-			call := []any{relay.ReplyOptions{From: c.sessionID(), Ticket: args.text("ticket"), Answer: args.text("answer")}}
-			if err := c.call(ctx, "relay.Reply", call, shortCall, nil); err != nil {
+			opts := relay.ReplyOptions{From: c.sessionID(), Ticket: args.text("ticket"), Answer: args.text("answer")}
+			if _, err := callMethod(ctx, c, api.RelayReply, opts, shortCall); err != nil {
 				return "", err
 			}
 			return "Answer sent.", nil
@@ -766,7 +764,7 @@ var mcpTools = append([]mcpTool{
 // failed call. The session exists either way, and a failed call would read as if
 // nothing had happened — leaving an agent that opens three workers convinced it
 // has none.
-func (c *client) handOver(ctx context.Context, opened spawn.Session, task, method string) string {
+func (c *client) handOver(ctx context.Context, opened spawn.Session, task string, method sendCall) string {
 	result, err := c.deliver(ctx, opened, task, method)
 	if err != nil {
 		return handOverFailure(c.lang(), err, method)
@@ -776,7 +774,7 @@ func (c *client) handOver(ctx context.Context, opened spawn.Session, task, metho
 
 // handOverFailure words a first task that did not reach a session that is open
 // all the same, naming the call that sends it again.
-func handOverFailure(lang prompt.Lang, err error, method string) string {
+func handOverFailure(lang prompt.Lang, err error, method sendCall) string {
 	text := prompt.For(lang)
 	send := "send_to_session"
 	if method == relaySendPrivate {

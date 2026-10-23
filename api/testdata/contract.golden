@@ -1,3 +1,16 @@
+relay.AnnounceMerge(AnnounceMergeOptions) None
+relay.Collect(CollectOptions) CollectedResults
+relay.CollectNow(CollectNowOptions) CollectedResults
+relay.Focus(FocusSessionOptions) FocusedSession
+relay.Insert(InsertTextOptions) InsertedText
+relay.Peers(PeersOptions) []Peer
+relay.Reply(ReplyOptions) None
+relay.Self(SelfOptions) Peer
+relay.Send(SendOptions) SendResult
+relay.SendPrivate(SendOptions) SendResult
+relay.SendSubagent(SendOptions) SendResult
+relay.Submit(SubmitOptions) None
+relay.Wait(WaitOptions) SendResult
 spawn.Ask(AskSessionOptions) SessionAnswer
 spawn.Close(CloseSessionOptions) ClosedSession
 spawn.ColorFolder(ColorFolderOptions) ColoredFolder
@@ -9,6 +22,20 @@ spawn.OpenSubagent(OpenSubagentOptions) OpenedSession
 spawn.Rename(RenameSessionOptions) RenamedSession
 spawn.RenameFolder(RenameFolderOptions) RenamedFolder
 spawn.Worktrees(WorktreesOptions) []WorktreeCheckout
+store.CostTotals(CostTotalsOptions) CostReport
+system.AttachNative(AttachNativeOptions) None
+system.Diagnostics(None) Diagnostics
+system.Notify(NotifyOptions) None
+system.OpenExternal(OpenExternalOptions) None
+system.OpenFile(OpenFileOptions) None
+system.OpenFolder(OpenFolderOptions) None
+system.OpenFolderInEditor(OpenFolderOptions) string
+system.Quit(QuitOptions) None
+system.RevealLog(None) None
+system.SSHAgentKeys(None) []string
+system.SandboxBackend(None) string
+system.ShowWindow(ShowWindowOptions) None
+system.TakeUncleanExit(None) bool
 themes.Import(ImportThemeOptions) ThemeImportResult
 themes.InstallFromGit(InstallThemesOptions) ThemeGitResult
 themes.List(None) []Theme
@@ -19,6 +46,111 @@ themes.Select(SelectThemeOptions) None
 themes.Selection(None) ThemeSelection
 themes.SetFollowSystem(FollowSystemOptions) None
 themes.UpdateFromGit(UpdateThemeOptions) ThemeGitResult
+tray.SetLabels(TrayLabels) None
+
+AnnounceMergeOptions {
+	checkout string
+	number int
+	title string
+	branch string
+	base string
+}
+
+None {
+}
+
+CollectOptions {
+	from string
+	waitSeconds int
+}
+
+CollectedResults {
+	results []SendResult
+	open []string
+}
+
+CollectNowOptions {
+	from string
+}
+
+FocusSessionOptions {
+	from string
+	target string
+	project string
+}
+
+FocusedSession {
+	id string
+	label string
+	project string
+}
+
+InsertTextOptions {
+	from string
+	target string
+	project string
+	text string
+	waitSeconds int
+}
+
+InsertedText {
+	id string
+	label string
+	project string
+	kind string
+	bytes int
+}
+
+PeersOptions {
+	from string
+}
+
+Peer {
+	label string
+	name string
+	project string
+	kind string
+	state string
+	id string
+	path string
+	projectPath string
+}
+
+ReplyOptions {
+	from string
+	ticket string
+	answer string
+}
+
+SelfOptions {
+	from string
+}
+
+SendOptions {
+	from string
+	target string
+	project string
+	prompt string
+	waitSeconds int
+}
+
+SendResult {
+	ticket string
+	target string
+	status string
+	answer string
+	private,omitempty bool
+}
+
+SubmitOptions {
+	sessionId string
+	message string
+}
+
+WaitOptions {
+	ticket string
+	waitSeconds int
+}
 
 AskSessionOptions {
 	from string
@@ -187,6 +319,57 @@ WorktreeCheckout {
 	sessions []string
 }
 
+CostTotalsOptions {
+	project string
+	provider string
+	since int64
+}
+
+CostReport {
+	projects []CostTotal
+	sessions int
+	unpriced int
+	priced int
+	reported int
+	source string
+	costUsd float64
+	readout bool
+}
+
+AttachNativeOptions {
+	executable string
+}
+
+Diagnostics {
+	version string
+	platform string
+	logPath string
+}
+
+NotifyOptions {
+	summary string
+	detail string
+}
+
+OpenExternalOptions {
+	url string
+}
+
+OpenFileOptions {
+	dir string
+	rel string
+}
+
+OpenFolderOptions {
+	dir string
+}
+
+QuitOptions {
+}
+
+ShowWindowOptions {
+}
+
 ImportThemeOptions {
 	path string
 	overwrite bool
@@ -208,9 +391,6 @@ ThemeGitResult {
 	themes []Theme
 	conflicts []string
 	upToDate bool
-}
-
-None {
 }
 
 Theme {
@@ -254,6 +434,20 @@ FollowSystemOptions {
 
 UpdateThemeOptions {
 	id string
+}
+
+TrayLabels {
+	show string
+	running string
+	quit string
+}
+
+CostTotal {
+	project string
+	sessions int
+	unpriced int
+	source string
+	costUsd float64
 }
 
 ThemeSource {

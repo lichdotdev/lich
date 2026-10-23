@@ -1,5 +1,7 @@
 package system
 
+import "github.com/lichdotdev/lich/api"
+
 // The backend outlives its window: closing the window leaves every session
 // running, and these two calls are how anyone else gets the window back or
 // ends lich for good. A second launch of lich asks for ShowWindow, and
@@ -10,10 +12,7 @@ func (s *Service) SetQuit(quit func() error) {
 	s.quit = quit
 }
 
-// ShowWindowOptions is one ShowWindow call. It carries nothing yet; it is an
-// object so a newer launch can still reach an older running lich the day it
-// does (the CLI's options-object rule).
-type ShowWindowOptions struct{}
+type ShowWindowOptions = api.ShowWindowOptions
 
 // ShowWindow starts the native window on the running backend, or brings it
 // forward when it is open. It returns as soon as the window is asked for, not
@@ -24,8 +23,7 @@ func (s *Service) ShowWindow(ShowWindowOptions) error {
 	return nil
 }
 
-// QuitOptions is one Quit call, an object for the reason ShowWindowOptions is.
-type QuitOptions struct{}
+type QuitOptions = api.QuitOptions
 
 // Quit ends lich: the window closes, every session's process ends with it, and
 // the process exits. It returns once the exit is under way, so the reply can be

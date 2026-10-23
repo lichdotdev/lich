@@ -18,6 +18,31 @@ func TestHandleThemesCoversEveryThemesMethod(t *testing.T) {
 	assertHandled(t, d, "themes.")
 }
 
+// The services below are never reached: a handled call stops at its decoding.
+func TestHandleRelayCoversEveryRelayMethod(t *testing.T) {
+	d := rpc.New()
+	Relay(d, nil)
+	assertHandled(t, d, "relay.")
+}
+
+func TestHandleSystemCoversEverySystemMethod(t *testing.T) {
+	d := rpc.New()
+	System(d, nil)
+	assertHandled(t, d, "system.")
+}
+
+func TestHandleTrayCoversEveryTrayMethod(t *testing.T) {
+	d := rpc.New()
+	Tray(d, nil)
+	assertHandled(t, d, "tray.")
+}
+
+func TestHandleStoreCoversEveryStoreMethod(t *testing.T) {
+	d := rpc.New()
+	Store(d, nil)
+	assertHandled(t, d, "store.")
+}
+
 // assertHandled fails on a method under prefix that api declares and no route
 // of d answers, which a client would only meet as a 404. A body that is no
 // options object stops a handled call at its decoding (400), before the

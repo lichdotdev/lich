@@ -230,7 +230,7 @@ func TestGitMissingInstallOpensTheDownloadPage(t *testing.T) {
 	d := gitDialog(u)
 	d.open()
 	d.press(t, &u.gitMissing.install)
-	if args := b.await(t, "system.OpenExternal"); args != `["`+vcsGitURL+`"]` {
+	if args := b.await(t, "system.OpenExternal"); args != `[{"url":"`+vcsGitURL+`"}]` {
 		t.Errorf("opened %s, want %s", args, vcsGitURL)
 	}
 	if u.gitMissing.missing.Load() {
@@ -306,7 +306,7 @@ func TestUpdateToastViewReleaseOpensItsPage(t *testing.T) {
 	u, b := newGateWindow(t)
 	toast := u.appUpdateToast(backend.AppUpdateStatus{LatestVersion: "1.4.0", ReleaseURL: "https://r", InstallCommand: "yay -S lich"})
 	toast.Secondary.OnClick()
-	if args := b.await(t, "system.OpenExternal"); args != `["https://r"]` {
+	if args := b.await(t, "system.OpenExternal"); args != `[{"url":"https://r"}]` {
 		t.Errorf("opened %s, want the release page", args)
 	}
 }

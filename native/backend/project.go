@@ -1,6 +1,10 @@
 package backend
 
-import "context"
+import (
+	"context"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 // BaseStatus mirrors project.BaseStatus: where a checkout stands against the
 // branch it merges into.
@@ -33,50 +37,58 @@ func (c *Client) PullRequest(ctx context.Context, path string) (*PullRequest, er
 
 // OpenExternal opens url in the user's browser.
 func (c *Client) OpenExternal(ctx context.Context, url string) error {
-	return c.Call(ctx, "system.OpenExternal", nil, url)
+	_, err := callMethod(ctx, c, api.SystemOpenExternal, api.OpenExternalOptions{URL: url})
+	return err
 }
 
 // OpenFolderInEditor opens dir in the user's editor. A GUI editor is launched
 // detached and the reply is ""; a terminal editor comes back as the command
 // line to run in a shell at dir.
 func (c *Client) OpenFolderInEditor(ctx context.Context, dir string) (string, error) {
-	var command string
-	return command, c.Call(ctx, "system.OpenFolderInEditor", &command, dir)
+	return callMethod(ctx, c, api.SystemOpenFolderInEditor, api.OpenFolderOptions{Dir: dir})
 }
 
 // OpenFolder opens dir in the file manager.
 func (c *Client) OpenFolder(ctx context.Context, dir string) error {
-	return c.Call(ctx, "system.OpenFolder", nil, dir)
+	_, err := callMethod(ctx, c, api.SystemOpenFolder, api.OpenFolderOptions{Dir: dir})
+	return err
 }
 
-// Diagnostics mirrors system.Diagnostics: what a bug report needs.
-type Diagnostics struct {
-	Version  string `json:"version"`
-	Platform string `json:"platform"`
-	LogPath  string `json:"logPath"` // "" when lich logs to stderr only
-}
+type Diagnostics = api.Diagnostics
 
 func (c *Client) Diagnostics(ctx context.Context) (Diagnostics, error) {
-	var d Diagnostics
-	return d, c.Call(ctx, "system.Diagnostics", &d)
+	return callMethod(ctx, c, api.SystemDiagnostics, api.None{})
 }
 
 // RevealLog opens the log's directory in the file manager; it fails when
 // there is no log file.
 func (c *Client) RevealLog(ctx context.Context) error {
-	return c.Call(ctx, "system.RevealLog", nil)
+	_, err := callMethod(ctx, c, api.SystemRevealLog, api.None{})
+	return err
 }
 
 // TakeUncleanExit reports whether lich's run before this one ended without
 // quitting cleanly. The backend clears the flag on the first ask, so only
 // the first window to ask is told.
 func (c *Client) TakeUncleanExit(ctx context.Context) (bool, error) {
-	var unclean bool
-	return unclean, c.Call(ctx, "system.TakeUncleanExit", &unclean)
+	return callMethod(ctx, c, api.SystemTakeUncleanExit, api.None{})
 }
 
 // OpenFile opens rel, a file of the checkout at dir, in the application the
 // desktop opens its type with, never in the user's editor.
 func (c *Client) OpenFile(ctx context.Context, dir, rel string) error {
-	return c.Call(ctx, "system.OpenFile", nil, dir, rel)
+	_, err := callMethod(ctx, c, api.SystemOpenFile, api.OpenFileOptions{Dir: dir, Rel: rel})
+	return err
+}
+
+// SandboxBackend names what confines a sandboxed session on this machine, ""
+// when nothing can.
+func (c *Client) SandboxBackend(ctx context.Context) (string, error) {
+	return callMethod(ctx, c, api.SystemSandboxBackend, api.None{})
+}
+
+// SSHAgentKeys lists the keys the user's ssh-agent holds, for a sandboxed
+// session that may use them.
+func (c *Client) SSHAgentKeys(ctx context.Context) ([]string, error) {
+	return callMethod(ctx, c, api.SystemSSHAgentKeys, api.None{})
 }

@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/store"
 )
@@ -241,50 +242,9 @@ type Terminal interface {
 	ModAnswers(id string) bool
 }
 
-// Peer is one session a caller may address: the label it is addressed by, the
-// name it answers to in Claude Code's peer roster, the project it belongs to
-// (labels are unique within a project, not across them), what is running in it,
-// and what that session last reported it was doing.
-//
-// Both names are published because both reach this session and an agent sees
-// them in different places — the label on the card, the roster name in
-// `/list-agents` and in what a mention writes at a prompt. Showing one and
-// accepting the other is what made an agent treat a single session as two.
-//
-// State is stateBusy, stateWaiting or stateDone, and empty when the session has
-// reported nothing — which is a provider whose plugin does not report state as
-// much as a session that has not had a turn yet. Empty is "not known", never
-// "idle": guessing the second is how a caller ends up sending work into a
-// session that cannot take it.
-type Peer struct {
-	Label   string `json:"label"`
-	Name    string `json:"name"`
-	Project string `json:"project"`
-	Kind    string `json:"kind"`
-	State   string `json:"state"`
-	// ID is the session's lich id, the LICH_SESSION_ID its process carries,
-	// so a reader holding a recorded id can find its card. Last, because
-	// fields are appended to this shape, never inserted.
-	ID string `json:"id"`
-	// Path is the directory the session runs in, the worktree's for a worktree
-	// session, and ProjectPath the root of the project it belongs to. They are
-	// what an editor matches its open folder against to find the session beside
-	// it; the name of a project says nothing about where it is.
-	Path        string `json:"path"`
-	ProjectPath string `json:"projectPath"`
-}
+type Peer = api.Peer
 
-// Result is what a caller gets back from Send or Wait. Answer is empty unless
-// Status is StatusAnswered.
-type Result struct {
-	Ticket string `json:"ticket"`
-	Target string `json:"target"`
-	Status string `json:"status"`
-	Answer string `json:"answer"`
-	// Private is set on the outcome of a ticket sent with SendPrivate, which
-	// only that ticket collects: no note will announce it.
-	Private bool `json:"private,omitempty"`
-}
+type Result = api.SendResult
 
 // ticket is one outstanding errand. answer is written once, before done is
 // closed, so every waiter reads it safely after the close.
@@ -560,10 +520,7 @@ func (s *Service) lang() prompt.Lang {
 	return s.promptLang()
 }
 
-// PeersOptions is one Peers call, an object for the reason SendOptions is one.
-type PeersOptions struct {
-	From string `json:"from"`
-}
+type PeersOptions = api.PeersOptions
 
 // Peers lists the live sessions From may address, in the order the sidebar
 // shows them. A session with no PTY running is left out: there is nothing there
@@ -581,18 +538,7 @@ func (s *Service) Peers(opts PeersOptions) ([]Peer, error) {
 	return peers, nil
 }
 
-// SendOptions is one Send, SendPrivate or SendSubagent call. It travels as a
-// single JSON object rather than as positional arguments because a package
-// manager replaces the lich binary under a running backend: a field a newer
-// lich adds is dropped by an older backend, and one an older lich does not send
-// is its zero value, where a positional list refuses both on its count.
-type SendOptions struct {
-	From        string `json:"from"`
-	Target      string `json:"target"`
-	Project     string `json:"project"`
-	Prompt      string `json:"prompt"`
-	WaitSeconds int    `json:"waitSeconds"`
-}
+type SendOptions = api.SendOptions
 
 // Send types Prompt at the prompt of the session labelled Target and waits for
 // its agent to answer. Project narrows the search when the same label exists in

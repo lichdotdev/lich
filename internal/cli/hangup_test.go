@@ -16,6 +16,8 @@ import (
 
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/rpc"
+
+	"github.com/lichdotdev/lich/internal/routes"
 )
 
 // These prove that a caller who stops waiting for results stops taking them. A
@@ -36,7 +38,7 @@ func wiredRelay(t *testing.T) (func(string) string, *wiredTerminal, *relay.Servi
 	term := &wiredTerminal{}
 	svc := relay.New(wiredSessions{}, term, nil)
 	dispatcher := rpc.New()
-	dispatcher.Register("relay", svc)
+	routes.Relay(dispatcher, svc)
 	gate := collectGate{entered: make(chan struct{}, 8), left: make(chan struct{}, 8)}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		collecting := strings.HasSuffix(r.URL.Path, "relay.Collect")

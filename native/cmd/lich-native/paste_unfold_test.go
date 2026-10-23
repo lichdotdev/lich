@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/native/gioterm"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 const unfoldRows = 40
@@ -126,7 +128,7 @@ func TestBatchOfCommentsIsSubmitted(t *testing.T) {
 	}
 	select {
 	case call := <-b.calls:
-		var args []string
+		var args []api.SubmitOptions
 		body, found := strings.CutPrefix(call, "relay.Submit ")
 		if !found {
 			t.Fatalf("called %s, want relay.Submit", call)
@@ -134,8 +136,8 @@ func TestBatchOfCommentsIsSubmitted(t *testing.T) {
 		if err := json.Unmarshal([]byte(body), &args); err != nil {
 			t.Fatal(err)
 		}
-		if len(args) != 2 || args[0] != "s" || args[1] != batch {
-			t.Errorf("relay.Submit %q, want [s %q]", args, batch)
+		if want := (api.SubmitOptions{SessionID: "s", Message: batch}); len(args) != 1 || args[0] != want {
+			t.Errorf("relay.Submit %+v, want [%+v]", args, want)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("no relay.Submit")

@@ -7,6 +7,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // The inbox: where an errand's outcome waits when nobody was holding the line
@@ -29,12 +31,7 @@ type InboxEvent struct {
 	Count int    `json:"count"`
 }
 
-// Collected is what a drain returns: every outcome that was waiting for the
-// caller, oldest first, and the labels of the sessions still owing one.
-type Collected struct {
-	Results []Result `json:"results"`
-	Open    []string `json:"open"`
-}
+type Collected = api.CollectedResults
 
 // inboxEntry is one finished errand whose outcome nobody was holding the line
 // for. The result is kept here until the sender collects it instead of being
@@ -62,12 +59,7 @@ type inboxEntry struct {
 	seen bool
 }
 
-// CollectOptions is one Collect call, an object for the reason SendOptions is
-// one.
-type CollectOptions struct {
-	From        string `json:"from"`
-	WaitSeconds int    `json:"waitSeconds"`
-}
+type CollectOptions = api.CollectOptions
 
 // Collect drains every outcome waiting for From, oldest first. With nothing
 // ready and errands still open it holds the line for the next one; with
@@ -82,11 +74,7 @@ func (s *Service) Collect(ctx context.Context, opts CollectOptions) (Collected, 
 	return s.collect(ctx, opts.From, waitFor(opts.WaitSeconds))
 }
 
-// CollectNowOptions is one CollectNow call, an object for the reason
-// SendOptions is one.
-type CollectNowOptions struct {
-	From string `json:"from"`
-}
+type CollectNowOptions = api.CollectNowOptions
 
 // CollectNow is Collect without the wait: what is ready and who still owes one,
 // at once. It is how a sender deep in a turn of its own checks in at a decision

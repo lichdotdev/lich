@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // Insert is the other half of what an editor needs from lich: put text at a
@@ -29,26 +31,9 @@ const (
 	defaultInsertWait = 10 * time.Second
 )
 
-// Inserted says where the text went, so an editor can tell the person which
-// session took it when the target was chosen for them.
-type Inserted struct {
-	ID      string `json:"id"`
-	Label   string `json:"label"`
-	Project string `json:"project"`
-	Kind    string `json:"kind"`
-	// Bytes is what was pasted, after control characters were stripped (sanitize).
-	Bytes int `json:"bytes"`
-}
+type Inserted = api.InsertedText
 
-// InsertOptions is one Insert call, an object for the reason SendOptions is
-// one.
-type InsertOptions struct {
-	From        string `json:"from"`
-	Target      string `json:"target"`
-	Project     string `json:"project"`
-	Text        string `json:"text"`
-	WaitSeconds int    `json:"waitSeconds"`
-}
+type InsertOptions = api.InsertTextOptions
 
 // Insert pastes Text at the prompt of the session Target names, without
 // sending it. Target resolves the way Send's does. Left empty, Project must

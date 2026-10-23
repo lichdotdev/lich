@@ -17,6 +17,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/relpath"
 	"github.com/lichdotdev/lich/internal/sandbox"
 	"github.com/ncruces/zenity"
@@ -84,13 +85,7 @@ func (s *Service) TakeUncleanExit() bool {
 	return s.uncleanExit.Swap(false)
 }
 
-// Diagnostics is what a bug report opens with: the three facts that decide
-// whether a report is actionable, and the log path the user attaches.
-type Diagnostics struct {
-	Version  string `json:"version"`
-	Platform string `json:"platform"`
-	LogPath  string `json:"logPath"`
-}
+type Diagnostics = api.Diagnostics
 
 func (s *Service) Diagnostics() Diagnostics {
 	return Diagnostics{

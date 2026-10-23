@@ -312,6 +312,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	dispatcher.Register("appupdate", appupdate.New(version, coord.Install, hub.Emit))
 	dispatcher.Register("patchnotes", patchnotes.New(version, changelog, changelogTranslations))
 	dispatcher.Register("store", db)
+	routes.Store(dispatcher, db)
 	// Read before run writes this run's runtime file over the previous
 	// run's: a file still there is the only trace a bad exit leaves, and the
 	// restored workspace looks exactly like one closed on purpose.
@@ -326,7 +327,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		Locate: func() (string, error) { return restart.NativeExecutable(os.Getenv) },
 		Failed: windowFailed(configDir, term.LiveCount, coord.Quit),
 	})
-	dispatcher.Register("system", sys)
+	routes.System(dispatcher, sys)
 	// Deleting a session for good takes any prompt parked on it, and the row is
 	// the only copy of what the user wrote. Both channels are used, and neither
 	// is the other's fallback: the toast is what the user reading the card sees,
@@ -427,7 +428,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// terminal watches its open turns for one.
 	term.SetUsageLimit(rl.ParkResume)
 	go term.RunLimitWatch()
-	dispatcher.Register("relay", rl)
+	routes.Relay(dispatcher, rl)
 	// Its caller is not the window either: opening a session for an agent starts
 	// the PTY here rather than waiting for someone to click the card.
 	spawner := spawn.New(db, proj, term, hub)
@@ -439,7 +440,7 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
 	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, term.LiveCount)
-	dispatcher.Register("tray", trayIcon)
+	routes.Tray(dispatcher, trayIcon)
 	denyInternal(dispatcher)
 	term.Mount("/rpc/", dispatcher)
 	term.Mount("/drop", http.HandlerFunc(drops.Upload))

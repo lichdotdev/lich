@@ -140,8 +140,8 @@ func preferredBase(b backend.Branches, current string) string {
 // session's provider is on, which the box starts on (store.SandboxDefault: a
 // worktree is confined from "worktrees" up, and "ask" opens ticked).
 func (d *worktreeDialog) loadSandbox(ctx context.Context) {
-	var backend string
-	if err := d.client.Call(ctx, "system.SandboxBackend", &backend); err != nil {
+	backend, err := d.client.SandboxBackend(ctx)
+	if err != nil {
 		log.Printf("worktree dialog: sandbox backend: %v", err)
 		return
 	}

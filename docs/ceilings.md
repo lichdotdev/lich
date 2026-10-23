@@ -551,17 +551,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   an older client does not send is its zero value; the version probe `system.Diagnostics` takes nothing at all,
   which has nothing to misalign. What is left: a method newer than the backend is refused as unknown, and the
   release that moves a call to the object (a parameterless one included, the day it takes one) is refused by a
-  lich from before it, once, with "want 1 arguments, got N" (or the other way round). The RPC itself still
-  matches arguments by position and count, so a call `lich` makes must not go back to positional arguments:
-  `TestEveryCallTheCLIPostsTakesOneOptionsObject` (`internal/cli/rpcshape_test.go`) reads every method name the
-  CLI's source posts and fails on one whose parameters are anything but one struct or none, and
-  `internal/cli/wire_test.go` posts each one as a client of another release. A method declared in `api` (the
-  themes and spawn services, so far) takes one options object from every client, the window included, and its
-  route reads an empty argument list as the zero options, so moving a parameterless method there breaks no older
-  caller. The
-  window's calls not yet declared there (`native/backend`) stay positional, on the promise that `lich-native`
-  ships in the same release as the backend it talks to; a window from another build, pinned with `LICH_NATIVE`
-  or replaced on disk by an upgrade under a running backend, is the case that promise does not cover.
+  lich from before it, once, with "want 1 arguments, got N" (or the other way round); a backend from the typed
+  contract on reads an empty argument list as the zero options, so only the older one refuses. Every call `lich`
+  and `lich mcp` make goes through a method `api` declares (`callMethod` in `internal/cli/transport.go` is the
+  one way the CLI posts), whose request `api`'s `TestEveryRequestIsOneObject` holds to one struct, and
+  `internal/cli/wire_test.go` posts each one as a client of another release. The window's calls not yet declared
+  in `api` (`native/backend`) stay positional, on the promise that `lich-native` ships in the same release as
+  the backend it talks to; a window from another build, pinned with `LICH_NATIVE` or replaced on disk by an
+  upgrade under a running backend, is the case that promise does not cover.
 - **A release's highlight is read from the binary, so fixing it after the tag fixes nothing a user sees**
   (`internal/patchnotes`): the What's new dialog parses the `CHANGELOG.md` embedded at build time — the alert
   blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,

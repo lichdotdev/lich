@@ -73,17 +73,20 @@ const callSlack = 30 * time.Second
 // shortCall bounds the commands that do not wait on another session.
 const shortCall = 10 * time.Second
 
+// sendCall is an RPC method that hands a session a task.
+type sendCall = api.Method[relay.SendOptions, relay.Result]
+
 // The two RPC methods that hand a session a task: an ordinary send, and one
 // whose result is kept to its ticket (relay.SendPrivate).
-const (
-	relaySend        = "relay.Send"
-	relaySendPrivate = "relay.SendPrivate"
+var (
+	relaySend        = api.RelaySend
+	relaySendPrivate = api.RelaySendPrivate
 	// relaySendSubagent hands the task to a worker opened with --subagent
 	// (relay.SendSubagent).
-	relaySendSubagent = "relay.SendSubagent"
+	relaySendSubagent = api.RelaySendSubagent
 )
 
-func sendMethod(private bool) string {
+func sendMethod(private bool) sendCall {
 	if private {
 		return relaySendPrivate
 	}
@@ -301,8 +304,8 @@ func (c *client) sessions(args []string) error {
 		return usageError("sessions")
 	}
 
-	var peers []relay.Peer
-	if err := c.call(context.Background(), "relay.Peers", []any{relay.PeersOptions{From: c.sessionID()}}, shortCall, &peers); err != nil {
+	peers, err := callMethod(context.Background(), c, api.RelayPeers, relay.PeersOptions{From: c.sessionID()}, shortCall)
+	if err != nil {
 		return err
 	}
 	peers = asList(peers)
@@ -334,8 +337,8 @@ func (c *client) whoami(args []string) error {
 		return usageError("whoami")
 	}
 
-	var self relay.Peer
-	if err := c.call(context.Background(), "relay.Self", []any{relay.SelfOptions{From: c.sessionID()}}, shortCall, &self); err != nil {
+	self, err := callMethod(context.Background(), c, api.RelaySelf, relay.SelfOptions{From: c.sessionID()}, shortCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -375,11 +378,10 @@ func (c *client) send(args []string) error {
 	}
 
 	method := sendMethod(*private)
-	var result relay.Result
-	call := []any{relay.SendOptions{
+	result, err := callMethod(context.Background(), c, method, relay.SendOptions{
 		From: c.sessionID(), Target: flags.Arg(0), Project: *project, Prompt: flags.Arg(1), WaitSeconds: *timeout,
-	}}
-	if err := c.call(context.Background(), method, call, waitBudget(*timeout), &result); err != nil {
+	}, waitBudget(*timeout))
+	if err != nil {
 		return err
 	}
 	if err := c.report(result, *asJSON); err != nil {
@@ -418,11 +420,10 @@ func (c *client) insert(args []string) error {
 		return err
 	}
 
-	var inserted relay.Inserted
-	call := []any{relay.InsertOptions{
+	inserted, err := callMethod(context.Background(), c, api.RelayInsert, relay.InsertOptions{
 		From: c.sessionID(), Target: *session, Project: *project, Text: text, WaitSeconds: *timeout,
-	}}
-	if err := c.call(context.Background(), "relay.Insert", call, waitBudget(*timeout), &inserted); err != nil {
+	}, waitBudget(*timeout))
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -455,9 +456,8 @@ func (c *client) focus(args []string) error {
 
 	allowWindowForeground()
 	target := strings.TrimSuffix(strings.TrimPrefix(flags.Arg(0), sessionLinkScheme+":"), "/")
-	var focused relay.Focused
-	call := []any{relay.FocusOptions{From: c.sessionID(), Target: target, Project: *project}}
-	if err := c.call(context.Background(), "relay.Focus", call, shortCall, &focused); err != nil {
+	focused, err := callMethod(context.Background(), c, api.RelayFocus, relay.FocusOptions{From: c.sessionID(), Target: target, Project: *project}, shortCall)
+	if err != nil {
 		return err
 	}
 	if *asJSON {
@@ -527,10 +527,7 @@ func (c *client) showVersion(args []string) error {
 		return usageError("version")
 	}
 	report := versionReport{CLI: c.version}
-	var diagnostics struct {
-		Version string `json:"version"`
-	}
-	if c.call(context.Background(), "system.Diagnostics", []any{}, versionCall, &diagnostics) == nil {
+	if diagnostics, err := callMethod(context.Background(), c, api.SystemDiagnostics, api.None{}, versionCall); err == nil {
 		report.Server = diagnostics.Version
 	}
 	if *asJSON {
@@ -570,9 +567,8 @@ func (c *client) wait(args []string) error {
 		return collectedOutcome(collected)
 	}
 
-	var result relay.Result
-	call := []any{relay.WaitOptions{Ticket: flags.Arg(0), WaitSeconds: *timeout}}
-	if err := c.call(context.Background(), "relay.Wait", call, waitBudget(*timeout), &result); err != nil {
+	result, err := callMethod(context.Background(), c, api.RelayWait, relay.WaitOptions{Ticket: flags.Arg(0), WaitSeconds: *timeout}, waitBudget(*timeout))
+	if err != nil {
 		return err
 	}
 	if err := c.report(result, *asJSON); err != nil {
@@ -584,10 +580,13 @@ func (c *client) wait(args []string) error {
 // collect drains this session's inbox, holding the line for the next result
 // unless noWait asks for only what is ready.
 func (c *client) collect(ctx context.Context, noWait bool, timeout int, out *relay.Collected) error {
+	var err error
 	if noWait {
-		return c.call(ctx, "relay.CollectNow", []any{relay.CollectNowOptions{From: c.sessionID()}}, shortCall, out)
+		*out, err = callMethod(ctx, c, api.RelayCollectNow, relay.CollectNowOptions{From: c.sessionID()}, shortCall)
+		return err
 	}
-	return c.call(ctx, "relay.Collect", []any{relay.CollectOptions{From: c.sessionID(), WaitSeconds: timeout}}, waitBudget(timeout), out)
+	*out, err = callMethod(ctx, c, api.RelayCollect, relay.CollectOptions{From: c.sessionID(), WaitSeconds: timeout}, waitBudget(timeout))
+	return err
 }
 
 func (c *client) reply(args []string) error {
@@ -605,8 +604,8 @@ func (c *client) reply(args []string) error {
 	if flags.NArg() == 2 {
 		ticket, answer = flags.Arg(0), flags.Arg(1)
 	}
-	call := []any{relay.ReplyOptions{From: c.sessionID(), Ticket: ticket, Answer: answer}}
-	if err := c.call(context.Background(), "relay.Reply", call, shortCall, nil); err != nil {
+	opts := relay.ReplyOptions{From: c.sessionID(), Ticket: ticket, Answer: answer}
+	if _, err := callMethod(context.Background(), c, api.RelayReply, opts, shortCall); err != nil {
 		return err
 	}
 	fmt.Fprintln(c.stdout, "Answer sent.")
@@ -725,7 +724,7 @@ type opening struct {
 // handOff gives a just-opened session its first task, and nothing at all when
 // no task came with it. The failure it returns names the session, because the
 // session outlives it: what went wrong is one send, not the open.
-func (c *client) handOff(opened spawn.Session, prompt, method string) (*relay.Result, error) {
+func (c *client) handOff(opened spawn.Session, prompt string, method sendCall) (*relay.Result, error) {
 	if prompt == "" {
 		return nil, nil
 	}
@@ -750,13 +749,10 @@ func (c *client) handOff(opened spawn.Session, prompt, method string) (*relay.Re
 // command line's --prompt and the open_session tool's, which differ in how they
 // word the outcome and in nothing else. method is relay.Send or
 // relay.SendPrivate, as the caller asked.
-func (c *client) deliver(ctx context.Context, opened spawn.Session, prompt, method string) (relay.Result, error) {
-	var result relay.Result
-	call := []any{relay.SendOptions{
+func (c *client) deliver(ctx context.Context, opened spawn.Session, prompt string, method sendCall) (relay.Result, error) {
+	return callMethod(ctx, c, method, relay.SendOptions{
 		From: c.sessionID(), Target: opened.Label, Project: opened.Project, Prompt: prompt, WaitSeconds: deliverWait,
-	}}
-	err := c.call(ctx, method, call, waitBudget(deliverWait), &result)
-	return result, err
+	}, waitBudget(deliverWait))
 }
 
 // openedText words a new session for whoever asked for one. It names both of

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -39,10 +40,7 @@ func (s *Service) roster(fromID string) ([]candidate, error) {
 	return found, nil
 }
 
-// SelfOptions is one Self call, an object for the reason SendOptions is one.
-type SelfOptions struct {
-	From string `json:"from"`
-}
+type SelfOptions = api.SelfOptions
 
 // Self is the caller's own entry, in the shape Peers lists everybody else's: the
 // one session the roster never shows it. It does not ask whether a process is

@@ -94,7 +94,7 @@ func wiredLich(t *testing.T) (func(string) string, *wiredTerminal) {
 	dispatcher := rpc.New()
 	// No events sink: these tests are about the wire between the CLI and the
 	// dispatcher, and the window is not on this side of it.
-	dispatcher.Register("relay", relay.New(wiredSessions{}, term, nil))
+	routes.Relay(dispatcher, relay.New(wiredSessions{}, term, nil))
 
 	server := httptest.NewServer(dispatcher)
 	t.Cleanup(server.Close)
@@ -884,7 +884,7 @@ func TestSendsAcrossVersions(t *testing.T) {
 		t.Run(method, func(t *testing.T) {
 			term := &wiredTerminal{}
 			dispatcher := rpc.New()
-			dispatcher.Register("relay", relay.New(wiredSessions{}, term, nil))
+			routes.Relay(dispatcher, relay.New(wiredSessions{}, term, nil))
 
 			postRaw(t, dispatcher, method,
 				`[{"from":"s1","target":"docs","prompt":"run the tests","waitSeconds":1,"optionFromTheFuture":true}]`)
@@ -920,7 +920,7 @@ func TestRelayCallsAcrossVersions(t *testing.T) {
 		t.Run(tc.method, func(t *testing.T) {
 			term := &wiredTerminal{}
 			dispatcher := rpc.New()
-			dispatcher.Register("relay", relay.New(wiredSessions{}, term, nil))
+			routes.Relay(dispatcher, relay.New(wiredSessions{}, term, nil))
 
 			if answer := postRaw(t, dispatcher, tc.method, tc.body); !tc.landed(term, answer) {
 				t.Errorf("the call did not land: typed %q, answer %q", term.message(), answer)
@@ -935,7 +935,7 @@ func TestRelayCallsAcrossVersions(t *testing.T) {
 func TestErrandAcrossVersions(t *testing.T) {
 	t.Parallel()
 	dispatcher := rpc.New()
-	dispatcher.Register("relay", relay.New(wiredSessions{}, &wiredTerminal{}, nil))
+	routes.Relay(dispatcher, relay.New(wiredSessions{}, &wiredTerminal{}, nil))
 
 	var sent relay.Result
 	answer := postRaw(t, dispatcher, "relay.Send", `[{"from":"s1","target":"docs","prompt":"run the tests","waitSeconds":1}]`)

@@ -20,6 +20,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // Info is the running lich recorded in runtime.json. It lets install.sh reach a
@@ -177,19 +179,16 @@ func Ping(port int, token string) bool {
 	return resp.StatusCode == http.StatusNoContent
 }
 
-// showWindowMethod is the running lich's system.ShowWindow, posted with its
-// options object.
-const (
-	showWindowMethod = "system.ShowWindow"
-	showWindowBody   = "[{}]"
-)
+// showWindowBody is api.SystemShowWindow's empty options object, written out:
+// an older running lich reads it by position and wants exactly one.
+const showWindowBody = "[{}]"
 
 // Show asks the running lich to open its window, or to bring the open one to
 // the front. An older lich answers it with an error: it has no such call, and
 // always has a window open, which the caller then focuses the old way.
 func Show(running *Info) error {
 	client := http.Client{Timeout: pingTimeout}
-	url := fmt.Sprintf("http://127.0.0.1:%d/rpc/%s?token=%s", running.Port, showWindowMethod, running.Token)
+	url := fmt.Sprintf("http://127.0.0.1:%d/rpc/%s?token=%s", running.Port, api.SystemShowWindow.Name, running.Token)
 	resp, err := client.Post(url, "application/json", strings.NewReader(showWindowBody))
 	if err != nil {
 		return fmt.Errorf("ask the running lich for its window: %w", err)

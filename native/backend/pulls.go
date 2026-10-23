@@ -1,6 +1,10 @@
 package backend
 
-import "context"
+import (
+	"context"
+
+	"github.com/lichdotdev/lich/api"
+)
 
 // PRChangedEvent is project.PRChangedEvent: a pull request write through lich
 // landed on GitHub.
@@ -182,13 +186,17 @@ func (c *Client) PurgeWorktreeSessions(ctx context.Context, projectID, path stri
 
 // AnnounceMerge tells the agents in checkout that its pull request merged.
 func (c *Client) AnnounceMerge(ctx context.Context, checkout string, number int, title, branch, base string) error {
-	return c.Call(ctx, "relay.AnnounceMerge", nil, checkout, number, title, branch, base)
+	_, err := callMethod(ctx, c, api.RelayAnnounceMerge, api.AnnounceMergeOptions{
+		Checkout: checkout, Number: number, Title: title, Branch: branch, Base: base,
+	})
+	return err
 }
 
 // Submit types message at session id's prompt and sends it; the session has to
 // be a running agent.
 func (c *Client) Submit(ctx context.Context, id, message string) error {
-	return c.Call(ctx, "relay.Submit", nil, id, message)
+	_, err := callMethod(ctx, c, api.RelaySubmit, api.SubmitOptions{SessionID: id, Message: message})
+	return err
 }
 
 // ReviewComment mirrors project.ReviewComment: one line comment of a review.

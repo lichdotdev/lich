@@ -6,13 +6,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
-// WaitOptions is one Wait call, an object for the reason SendOptions is one.
-type WaitOptions struct {
-	Ticket      string `json:"ticket"`
-	WaitSeconds int    `json:"waitSeconds"`
-}
+type WaitOptions = api.WaitOptions
 
 // Wait blocks on an already-delivered ticket for another round, so a caller
 // whose first wait ran out can come back without sending the message twice.
@@ -68,13 +66,7 @@ func (s *Service) Wait(ctx context.Context, opts WaitOptions) (Result, error) {
 	return result, nil
 }
 
-// ReplyOptions is one Reply call, an object for the reason SendOptions is one.
-// From is the session replying.
-type ReplyOptions struct {
-	From   string `json:"from"`
-	Ticket string `json:"ticket"`
-	Answer string `json:"answer"`
-}
+type ReplyOptions = api.ReplyOptions
 
 // Reply hands an answer back to whoever is waiting on Ticket. It is what the
 // message composed by Send asks the receiving agent to run.
