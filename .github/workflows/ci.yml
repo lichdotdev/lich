@@ -48,6 +48,19 @@ jobs:
             CGO_ENABLED=0 GOOS=$os go vet ./...
           done
 
+      # The RPC and /events contract is api/, recorded in
+      # api/testdata/contract.golden. Its own step so a PR that moves it without
+      # the golden fails by name and shows what moved, rather than as one red
+      # test among the suite's.
+      - name: API contract
+        run: |
+          if ! go test -run '^(TestContractMatchesGolden|TestEveryRequestIsOneObject|TestWireShapesAreWhatMarshalJSONWrites)$' ./api; then
+            go test -run '^TestContractMatchesGolden$' ./api -update > /dev/null
+            echo "::error::the api contract moved without api/testdata/contract.golden: run go test ./api -update and commit the diff below"
+            git diff -- api/testdata/contract.golden
+            exit 1
+          fi
+
       - name: Backend tests
         run: bash .github/scripts/go-test-summary.sh linux
 
