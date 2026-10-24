@@ -82,6 +82,11 @@ type sortTarget struct {
 // what the button did, so a move and a release queued together drop where the
 // move went.
 func (s *Sortable) Update(gtx C) (SortDrop, bool) {
+	// Disabled items register no handler, so the release that would end a
+	// drag already in the air never arrives.
+	if s.Disabled && s.active != "" {
+		s.end()
+	}
 	if s.Carry != nil {
 		s.Carry.hover(gtx)
 		if s.active != "" && !s.keyboard && s.Carry.carrying == "" {
@@ -285,6 +290,11 @@ func (s *Sortable) handle(gtx C, t *sortTarget) {
 				s.focused = t.id
 			} else if s.focused == t.id {
 				s.focused = ""
+			}
+			// Only the focused item hears Space and Escape, so a keyboard
+			// drag that loses focus could never end.
+			if !e.Focus && s.keyboard && s.active == t.id {
+				s.end()
 			}
 		case key.Event:
 			s.key(t, e)

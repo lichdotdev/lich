@@ -211,6 +211,38 @@ func TestSortableKeyboardEscapeDropsNothing(t *testing.T) {
 	r.want(t)
 }
 
+// The keyboard drops only into a focused item, so focus moving elsewhere (a
+// click on the terminal) cancels the drag, or nothing could ever end it.
+func TestSortableKeyboardDragEndsWhenFocusLeaves(t *testing.T) {
+	r := newSortRig()
+	r.press(onA)
+	r.release(onA)
+	r.keys(key.NameSpace)
+	r.router.Source().Execute(key.FocusCmd{})
+	r.frame()
+	if r.s.Dragging() != "" {
+		t.Errorf("dragging %q after the item lost focus, want none", r.s.Dragging())
+	}
+	r.want(t)
+}
+
+// A tab that starts a rename mid-drag disables its Sortable, whose items then
+// never hear the release: the drag ends there, and the next one lifts.
+func TestSortableDisabledMidDragEndsIt(t *testing.T) {
+	r := newSortRig()
+	r.press(onA)
+	r.move(onA.Add(image.Pt(10, 0)))
+	r.s.Disabled = true
+	r.release(onB)
+	r.s.Disabled = false
+	r.frame()
+	if r.s.Dragging() != "" {
+		t.Fatalf("dragging %q after a drag was disabled, want none", r.s.Dragging())
+	}
+	r.drag(onA, onA.Add(image.Pt(10, 0)), onB)
+	r.want(t, SortDrop{ID: "a", Over: "b"})
+}
+
 func TestSortableDisabledLiftsNothing(t *testing.T) {
 	r := newSortRig()
 	r.s.Disabled = true
