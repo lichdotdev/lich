@@ -116,3 +116,30 @@ func TestCardMenuForkEntry(t *testing.T) {
 		}
 	}
 }
+
+// A shell that cd'd into another repository has that repository's pull request
+// on its card; its number means nothing on the Pulls screen, which lists the
+// project's, so the click opens it in the browser.
+func TestTheCardsPullRequestOpensWhereItBelongs(t *testing.T) {
+	pr := &backend.PullRequest{Number: 7, URL: "https://github.com/o/r/pull/7"}
+	cases := []struct {
+		name, shown string
+		number      int
+		url         string
+	}{
+		{"in its checkout", "/wt/feat", 7, ""},
+		{"in a folder of its checkout", "/wt/feat/internal", 7, ""},
+		{"in another repository", "/src/other", 0, pr.URL},
+		{"in a sibling with the same prefix", "/wt/feat-2", 0, pr.URL},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			sv := &sessionView{Session: backend.Session{ID: "s1"}, path: "/wt/feat", shown: c.shown, pr: pr}
+			var act sidebarAction
+			pullRequestItem(sv, &act).OnClick()
+			if act.activate != "s1" || act.openPR != c.number || act.openPRURL != c.url {
+				t.Fatalf("click asked activate %q, Pulls #%d, browser %q; want s1, #%d, %q", act.activate, act.openPR, act.openPRURL, c.number, c.url)
+			}
+		})
+	}
+}

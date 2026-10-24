@@ -295,7 +295,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.dock.tab = map[string]dockTab{"code": dockCode, "review": dockReview}[*flagTab]
 	u.footer.dock = u.dock
-	u.footer.openPullRequest = u.showPulls
+	u.footer.openPullRequest = u.openPR
 	u.footer.writePaste = u.terms.writePaste
 	u.footer.showDelegates = func(id string) { u.layoutStage.delegates = id }
 	u.settings.footer = u.footer
@@ -894,9 +894,7 @@ func (u *window) apply(act sidebarAction) {
 	if act.close != "" {
 		u.closeSession(act.close)
 	}
-	if act.openPR != 0 {
-		u.showPulls(act.openPR)
-	}
+	u.openPR(act.openPR, act.openPRURL)
 	if act.pin != "" && u.model.setPinned(act.pin, act.pinTo) {
 		u.model.invalidate()
 		id, pinned := act.pin, act.pinTo

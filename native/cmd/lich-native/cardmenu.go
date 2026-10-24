@@ -149,8 +149,9 @@ func forkItem(sv *sessionView, act *sidebarAction) (ui.MenuEntry, bool) {
 func pullRequestItem(sv *sessionView, act *sidebarAction) ui.MenuEntry {
 	item := ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.pullRequest"), Icon: icMenuPR, Disabled: sv.pr == nil}
 	if sv.pr != nil {
-		id, number := sv.ID, sv.pr.Number
-		item.OnClick = func() { act.activate, act.openPR = id, number }
+		id := sv.ID
+		number, url := prTarget(sv.pr, sv.shown, sv.path)
+		item.OnClick = func() { act.activate, act.openPR, act.openPRURL = id, number, url }
 	}
 	return item
 }

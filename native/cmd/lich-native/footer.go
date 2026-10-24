@@ -32,8 +32,8 @@ type footer struct {
 	client     *backend.Client
 	root       *ui.Root
 	invalidate func()
-	// openPullRequest opens the Pulls screen on a pull request.
-	openPullRequest func(number int)
+	// openPullRequest opens a pull request where prTarget says.
+	openPullRequest func(number int, url string)
 	// showDelegates lays a session's delegates out beside it.
 	showDelegates func(id string)
 	usage         *footerUsage
@@ -221,7 +221,7 @@ func (f *footer) act(gtx C, in footerInput) {
 	f.w("files").pressed = f.dock.tab == dockCode
 	f.w("changes").pressed = f.dock.tab == dockReview
 	if f.w("pr").click.Clicked(gtx) && in.pr != nil && f.openPullRequest != nil {
-		f.openPullRequest(in.pr.Number)
+		f.openPullRequest(prTarget(in.pr, in.path, in.checkout))
 	}
 	if f.w("delegates").click.Clicked(gtx) && in.delegates > 0 {
 		f.showDelegates(in.sessionID)

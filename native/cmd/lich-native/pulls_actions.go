@@ -55,6 +55,30 @@ func (u *window) showPulls(number int) {
 	u.model.invalidate()
 }
 
+// openPR opens a card's pull request where prTarget sent it: number on the
+// Pulls screen, else url in the browser; neither set opens nothing.
+func (u *window) openPR(number int, url string) {
+	switch {
+	case number != 0:
+		u.showPulls(number)
+	case url != "":
+		go func() { u.logErr("open pull request", u.client.OpenExternal(u.ctx, url)) }()
+	}
+}
+
+// prTarget is where a click on a card's pull request goes. The badge reads the
+// pull request where the shell is (shown); the Pulls screen lists the
+// project's, so a shell that left the session's checkout for another
+// repository has one whose number names something else there, and it opens
+// in the browser instead. Another worktree of the same project goes there too:
+// a cleaned path cannot tell it from another repository.
+func prTarget(pr *backend.PullRequest, shown, checkout string) (number int, url string) {
+	if under(checkout, shown) {
+		return pr.Number, ""
+	}
+	return 0, pr.URL
+}
+
 // checkoutPR is the active session's branch and its open PR, the project's
 // own checkout's without a session.
 func (u *window) checkoutPR(p backend.Project) (string, int) {

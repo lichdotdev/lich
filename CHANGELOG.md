@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A pull request badge on a session card, its Pull request menu item and the footer's pull request button no longer open the wrong pull request after the session's shell moved into another repository. The badge shows that repository's pull request, and the click used to look its number up among the project's own on Pulls; it now opens the pull request on GitHub instead.
 - The collapsed sidebar shows the profile new sessions are born in, at the bottom of the rail, and opens the same menu the open sidebar's footer does. It used to show no profile at all.
 - A tab in the top bar can no longer get stuck lifted, drawn in the accent color as if it were being dragged, with no tab moving again until lich restarted. A tab focused by a click and then given Space or Enter was picked up to reorder from the keyboard, and once a click elsewhere took the keyboard it could neither be dropped nor cancelled; it now goes back to its place when it loses focus. A layout tab renamed in the middle of a drag no longer gets stuck the same way.
 - A session card no longer grows and shrinks as its agent starts and stops a tool, waits on you or compacts, pushing every card below it up and down. That line now takes the place of the card's path while it shows, and the path comes back when it goes.

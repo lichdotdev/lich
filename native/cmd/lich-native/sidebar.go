@@ -122,7 +122,9 @@ type sidebarAction struct {
 	pin      string // session id
 	pinTo    bool   // the pin the click asked for
 	openPR   int    // a pull request to show on the Pulls screen
-	launch   launchRequest
+	// openPRURL is a pull request to open in the browser instead (prTarget).
+	openPRURL string
+	launch    launchRequest
 	// Open in, from the card menu: a directory for a shell session, the
 	// editor or the file manager.
 	terminalAt, editorAt, folderAt string
@@ -192,6 +194,7 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	if c.openPR != 0 {
 		a.openPR = c.openPR
 	}
+	pick(&a.openPRURL, c.openPRURL)
 	pick(&a.terminalAt, c.terminalAt)
 	pick(&a.editorAt, c.editorAt)
 	pick(&a.folderAt, c.folderAt)
