@@ -66,3 +66,20 @@ func TestOpenSessionBringsTheSessionUp(t *testing.T) {
 		t.Fatalf("active session %q, want s1", active.ID)
 	}
 }
+
+func TestSendThreadsLeavesThePullsScreenUp(t *testing.T) {
+	u, b := prWindow(t)
+	thread := backend.PRReviewThread{ID: "T1", Path: "main.go", Line: 3, Comments: []backend.PRThreadComment{{ID: 9, Author: "rev", Body: "nit"}}}
+	u.sendThreads(u.model.projects[0], backend.PRDetail{Number: 7, HeadRefName: "feat", State: "OPEN"}, []backend.PRReviewThread{thread})
+	b.await(t, "terminal.Start")
+	b.await(t, "relay.Submit")
+	if args := b.await(t, "project.AwaitThreadFix"); !strings.Contains(args, `"T1"`) {
+		t.Fatalf("awaited %s, want thread T1", args)
+	}
+	if !u.pulls.open {
+		t.Fatal("sending threads took the Pulls screen down")
+	}
+	if active, ok := u.model.activeSession(); ok && active.ID == "s1" {
+		t.Fatal("sending threads brought its session up")
+	}
+}

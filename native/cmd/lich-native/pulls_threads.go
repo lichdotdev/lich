@@ -82,9 +82,10 @@ func threadLines(t backend.PRReviewThread) string {
 	return fmt.Sprint(t.Line)
 }
 
-// sendThreads hands threads to the PR's session, opening one when its checkout
-// has none, and, once the session took the prompt, has each answered on
-// GitHub and waiting for the push that resolves it.
+// sendThreads hands threads to the PR's session, opening one off screen when
+// its checkout has none, as the PR handoffs do, and, once the session took the
+// prompt, has each answered on GitHub and waiting for the push that resolves
+// it.
 func (u *window) sendThreads(project backend.Project, d backend.PRDetail, threads []backend.PRReviewThread) {
 	u.pulls.view.setBusy("threads")
 	defer u.pulls.view.setBusy("")
@@ -93,11 +94,8 @@ func (u *window) sendThreads(project backend.Project, d backend.PRDetail, thread
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.openSessionFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
-	if !u.awaitPrompt(id) {
-		return
-	}
-	if err := u.client.Submit(u.ctx, id, threadsPrompt(d, threads)); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": backend.ErrorText(err)})})
+	u.model.invalidate()
+	if !u.handOffPR(project.ID, id, threadsPrompt(d, threads)) {
 		return
 	}
 	for _, t := range threads {
@@ -107,5 +105,6 @@ func (u *window) sendThreads(project backend.Project, d backend.PRDetail, thread
 			return
 		}
 	}
-	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.threadSend.sent", i18n.Args{"count": len(threads), "name": u.model.sessionLabel(id)})})
+	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.threadSend.sent", i18n.Args{"count": len(threads), "name": u.model.sessionLabel(id)}),
+		Action: u.openPRButton(project.ID, id)})
 }

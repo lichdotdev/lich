@@ -162,19 +162,40 @@ func (u *window) openPRSession(project backend.Project, d backend.PRDetail, prom
 		return
 	}
 	u.model.invalidate()
-	if prompt != "" && u.startUnseen(id) {
-		u.handOffUnseen(project.ID, id, d.Number, prompt)
+	if prompt == "" {
+		u.showPRSession(project.ID, id)
 		return
 	}
-	u.showPRSession(project.ID, id)
-	if prompt != "" {
-		u.submitAtPrompt(id, prompt)
+	if u.handOffPR(project.ID, id, prompt) {
+		u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.handedOff", i18n.Args{"number": d.Number, "session": u.model.sessionLabel(id)}),
+			Action: u.openPRButton(project.ID, id)})
 	}
 }
 
 func (u *window) showPRSession(projectID, id string) {
 	u.pulls.hide()
 	u.openSession(projectID, id)
+}
+
+// openPRButton is a toast's Open, bringing session id up over Pulls.
+func (u *window) openPRButton(projectID, id string) *ui.ToastButton {
+	return &ui.ToastButton{Label: i18n.T("shell.projectEvents.open"), OnClick: func() { u.showPRSession(projectID, id) }}
+}
+
+// handOffPR sends prompt to session id, spawned off screen unless its spawn
+// needs the user, and reports whether it landed; a toast with Open says why
+// not.
+func (u *window) handOffPR(projectID, id, prompt string) bool {
+	if !u.startUnseen(id) {
+		u.showPRSession(projectID, id)
+	}
+	if err := u.handOff(id, prompt); err != nil {
+		t := handoffLostToast(err)
+		t.Action = u.openPRButton(projectID, id)
+		u.toaster.Show(t)
+		return false
+	}
+	return true
 }
 
 // startUnseen spawns session id as its first view would, false when it cannot
@@ -194,23 +215,6 @@ func (u *window) startUnseen(id string) bool {
 		return false
 	}
 	return true
-}
-
-// handOffUnseen sends prompt to session id, off screen, and says how it went
-// with a toast that can bring the session up.
-func (u *window) handOffUnseen(projectID, id string, number int, prompt string) {
-	open := &ui.ToastButton{Label: i18n.T("shell.projectEvents.open"), OnClick: func() { u.showPRSession(projectID, id) }}
-	if err := u.handOff(id, prompt); err != nil {
-		t := handoffLostToast(err)
-		t.Action = open
-		u.toaster.Show(t)
-		return
-	}
-	label := ""
-	if s, ok := u.model.sessionViewOf(id); ok {
-		label = s.Label
-	}
-	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.handedOff", i18n.Args{"number": number, "session": label}), Action: open})
 }
 
 // prSession is the session the PR opens in, its card loaded but not on
