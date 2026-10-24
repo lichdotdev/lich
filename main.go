@@ -458,6 +458,9 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// The scheduled prompts are the relay's other clock: nobody calls in for
 	// them, they come due.
 	go rl.RunSchedules()
+	// A merge made outside lich reaches its agents through the relay's own
+	// read of their checkouts' pull requests.
+	go rl.RunMergeWatch(proj.BranchPullRequest)
 	// A turn a usage limit ended is picked up again once it resets, through
 	// the same scheduled prompt. Codex reports no end for that turn, so the
 	// terminal watches its open turns for one.

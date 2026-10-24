@@ -525,6 +525,28 @@ func TestPullRequestDetailFlow(t *testing.T) {
 	})
 }
 
+func TestBranchPullRequestKeepsAMergedOne(t *testing.T) {
+	t.Parallel()
+	gh := &fakeGH{out: []byte(`{"number":7,"title":"t","state":"MERGED","headRefName":"feat","baseRefName":"main"}`)}
+	pr, err := withGH(gh).BranchPullRequest("/repo")
+	if err != nil {
+		t.Fatalf("BranchPullRequest: %v", err)
+	}
+	if pr == nil || pr.Number != 7 || pr.State != "MERGED" || pr.HeadRefName != "feat" || pr.BaseRefName != "main" {
+		t.Fatalf("BranchPullRequest = %+v, want the merged PR", pr)
+	}
+	if gh.dir != "/repo" || gh.timeout != prLookupTimeout {
+		t.Errorf("wrong scope: dir %q timeout %v", gh.dir, gh.timeout)
+	}
+
+	if pr, err := withGH(&fakeGH{err: errNoPullRequest}).BranchPullRequest("/repo"); err != nil || pr != nil {
+		t.Errorf("no PR = %+v, %v, want nil, nil", pr, err)
+	}
+	if _, err := withGH(&fakeGH{err: errTest}).BranchPullRequest("/repo"); !errors.Is(err, errTest) {
+		t.Errorf("failed lookup err = %v, want %v", err, errTest)
+	}
+}
+
 // TestPullRequestBadgeRunsThroughTheRunner pins the badge to the same runner as
 // the rest: it used to shell out to gh on its own, which left it running as
 // whatever account gh had active while the screen beside it used the project's.

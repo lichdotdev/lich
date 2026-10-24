@@ -55,7 +55,7 @@ var zhCN = Catalog{
 		Other: "lich 会话 %s 已完成",
 	},
 	BlockedSummary: "lich 会话 %q 正在等待权限确认",
-	MergeNotice: "[lich] 拉取请求 #%[1]d %[2]q（分支 %[3]s）已通过 lich 合并到 %[4]s。" +
+	MergeNotice: "[lich] 拉取请求 #%[1]d %[2]q（分支 %[3]s）已合并到 %[4]s。" +
 		"这是一条通知，不是任务：请更新你所记录的这项工作的状态，不要做其他任何事。",
 	MergeSummary: "拉取请求 #%[1]d 已合并到 %[2]s",
 	LateNotice:   "[lich] 原定于 %[1]s 发送，延迟 %[2]s 送达。\n\n",

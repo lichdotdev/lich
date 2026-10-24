@@ -320,11 +320,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   prompt lost on the way (the mod reloading as the response lands) is reported unread, not sent twice. A hook that
   drops the prompt is reported undelivered with its reason, except at a session that was mid-turn, whose ack lich
   stops waiting for after the receipt window.
-- **Only a merge lich makes is announced, and only to a card running at that moment** (`internal/relay`,
-  `AnnounceMerge`; called from the Pulls screen's merge): a pull request merged on github.com, with `gh` in a
-  terminal or by an agent leaves every session in its checkout believing it is still open, and so does one merged
-  while the card was parked or never opened. The session that opened one of the checkout's sessions hears it
-  too, wherever it runs, but only that one: the session that opened the opener does not. The notice also lands as a delivery like any other, so a cleanup
+- **A merge is announced only to a card running at that moment, and one made outside lich up to a minute late**
+  (`internal/relay`, `AnnounceMerge`; called from the Pulls screen's merge and by `RunMergeWatch`): a merge on
+  github.com, with `gh` in a terminal or by an agent is found by reading, each minute, the pull request of every
+  checkout a live agent runs in, one `gh pr view` per checkout. It is announced only when one read saw the pull
+  request open and a later one sees it merged, so a pull request that merged while lich was closed, or while every
+  agent in its checkout was parked, is never announced; a card parked while the merge is seen, or never opened,
+  stays believing it is open. What was read open and what was announced live in memory, so a restart forgets both:
+  a merge already announced is not repeated, because the next read finds it merged without having seen it open.
+  The session that opened one of the checkout's sessions hears it too, wherever it runs, but only that one: the
+  session that opened the opener does not. The notice also lands as a delivery like any other, so a cleanup
   clicked in the second before it starts a turn finds no session mid-turn, asks nothing, and removes the checkout
   with the notice still on its way.
 - **Only a Claude Code subagent becomes a lich card** (lich-plugin's `hooks/agent-cards.js`, its

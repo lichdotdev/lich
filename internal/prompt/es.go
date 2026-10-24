@@ -60,7 +60,7 @@ var es = Catalog{
 		Other: "las sesiones de lich %s terminaron",
 	},
 	BlockedSummary: "la sesión de lich %q está esperando una confirmación de permiso",
-	MergeNotice: "[lich] El pull request #%[1]d %[2]q (rama %[3]s) se fusionó en %[4]s desde lich. " +
+	MergeNotice: "[lich] El pull request #%[1]d %[2]q (rama %[3]s) se fusionó en %[4]s. " +
 		"Esto es un aviso, no una tarea: actualiza lo que guardes sobre el estado de este trabajo y no hagas nada más.",
 	MergeSummary: "Pull request #%[1]d fusionado en %[2]s",
 	LateNotice:   "[lich] Programado para %[1]s, entregado con %[2]s de retraso.\n\n",

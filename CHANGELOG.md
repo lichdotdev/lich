@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A pull request merged outside lich, on github.com, with `gh` in a terminal or by an agent, is now announced to the agents in its branch's checkout as one merged from Pulls is, within a minute of the merge. They used to keep believing it was still open. The agents running there when lich sees it open and then merged hear it; one parked at that moment, or a pull request that merged before lich last started, does not.
 - Resolve conflicts and Fix CI errors in Pulls no longer take you to the session they hand the pull request to. Pulls stays on screen so you can move to the next pull request, the session starts in the sidebar, and a toast says when the agent got the task, with Open to go to it. A session whose start needs your answer first, such as whether to resume its last conversation, still comes up. Open in Session still goes to the session.
 - The quick filters over the pull request list in Pulls (All, Ready, Drafts, Failing) are lighter: small text with the selected one shaded, as in the dock's tabs, sharing the list's width. A filter with nothing in it is faded and Failing's count turns red when a check fails. They no longer run past the list's edge with a monospace interface font.
 

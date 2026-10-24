@@ -158,6 +158,21 @@ func (s *Service) PullRequestDetail(_ context.Context, opts api.NumberOptions) (
 	return detail, nil
 }
 
+// BranchPullRequest returns the pull request of the branch checked out at path
+// whatever its state, nil when the branch has none: the merge watch
+// (internal/relay) needs to see it go from open to merged, which the badge's
+// OPEN-only read hides.
+func (s *Service) BranchPullRequest(path string) (*PRDetail, error) {
+	out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,title,state,headRefName,baseRefName")
+	if errors.Is(err, errNoPullRequest) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return parsePRDetail(out, false)
+}
+
 // parsePRDetail decodes gh's JSON and reduces the check rollup. With openOnly it
 // returns nil for a non-OPEN PR — gh still reports a merged/closed branch PR,
 // but the badge wants only an actionable one — matching parsePullRequest's

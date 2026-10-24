@@ -69,7 +69,7 @@ var ru = Catalog{
 		Other: "Работа завершена в lich: %s",
 	},
 	BlockedSummary: "Сессия lich %q ждёт подтверждения разрешения",
-	MergeNotice: "[lich] Pull request #%[1]d %[2]q (ветка %[3]s) слит в %[4]s из lich. " +
+	MergeNotice: "[lich] Pull request #%[1]d %[2]q (ветка %[3]s) слит в %[4]s. " +
 		"Это уведомление, а не задача: обновите то, что вы храните о состоянии этой работы, и больше ничего не делайте.",
 	MergeSummary: "Pull request #%[1]d слит в %[2]s",
 	LateNotice:   "[lich] Запланировано на %[1]s, доставлено с опозданием на %[2]s.\n\n",

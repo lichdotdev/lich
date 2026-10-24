@@ -56,7 +56,7 @@ var ko = Catalog{
 		Other: "lich 세션 %s 완료",
 	},
 	BlockedSummary: "lich 세션 %q이(가) 권한 확인을 기다리는 중",
-	MergeNotice: "[lich] 풀 리퀘스트 #%[1]d %[2]q(브랜치 %[3]s)이(가) lich에서 %[4]s에 병합되었습니다. " +
+	MergeNotice: "[lich] 풀 리퀘스트 #%[1]d %[2]q(브랜치 %[3]s)이(가) %[4]s에 병합되었습니다. " +
 		"이것은 작업이 아니라 알림입니다. 이 작업의 상태에 대해 기록해 둔 내용을 갱신하고, 그 밖에는 아무것도 하지 마세요.",
 	MergeSummary: "풀 리퀘스트 #%[1]d이(가) %[2]s에 병합됨",
 	LateNotice:   "[lich] %[1]s에 예약되었고, %[2]s 늦게 전달되었습니다.\n\n",

@@ -12,7 +12,9 @@ import (
 )
 
 // AnnounceMerge tells every agent running in opts.Checkout that the pull request on
-// its branch was merged from lich's own screen. An agent keeps notes on the work
+// its branch was merged, from lich's own screen or, as the merge watch finds,
+// anywhere else (mergewatch.go). A merge already announced is not announced
+// again. An agent keeps notes on the work
 // it did there, and without this the last thing they say about it is that it is
 // waiting on a merge, which a later session reads back as true long after the
 // checkout is gone. The session that opened one of those agents hears it too,
@@ -32,6 +34,9 @@ func (s *Service) AnnounceMerge(ctx context.Context, opts api.AnnounceMergeOptio
 	if err != nil {
 		return api.None{}, fmt.Errorf("read sessions: %w", err)
 	}
+	if !s.firstToldOf(opts.Checkout, opts.Number) {
+		return api.None{}, nil
+	}
 	lang := s.lang()
 	message := mergeNotice(lang, opts.Number, opts.Title, opts.Branch, opts.Base)
 	summary := fmt.Sprintf(prompt.For(lang).MergeSummary, opts.Number, opts.Base)
@@ -44,6 +49,20 @@ func (s *Service) AnnounceMerge(ctx context.Context, opts api.AnnounceMergeOptio
 		}(sess.ID, sess.Label)
 	}
 	return api.None{}, nil
+}
+
+// firstToldOf records the merge of pull request number at checkout as
+// announced and answers whether it was not yet: the Pulls screen announces its
+// own merge and the merge watch reads it a moment later, in either order.
+func (s *Service) firstToldOf(checkout string, number int) bool {
+	key := fmt.Sprint(checkout, "\x00", number)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.mergesTold[key] {
+		return false
+	}
+	s.mergesTold[key] = true
+	return true
 }
 
 // mergeAudience is the live provider sessions running in checkout, and the live

@@ -61,7 +61,7 @@ var en = Catalog{
 		Other: "lich sessions %s finished",
 	},
 	BlockedSummary: "lich session %q is waiting on a permission prompt",
-	MergeNotice: "[lich] Pull request #%[1]d %[2]q (branch %[3]s) was merged into %[4]s from lich. " +
+	MergeNotice: "[lich] Pull request #%[1]d %[2]q (branch %[3]s) was merged into %[4]s. " +
 		"This is a notice, not a task: update whatever you keep about this work's state, and do nothing else.",
 	MergeSummary: "Pull request #%[1]d merged into %[2]s",
 	LateNotice:   "[lich] Scheduled for %[1]s, delivered %[2]s late.\n\n",

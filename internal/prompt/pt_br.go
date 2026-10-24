@@ -60,7 +60,7 @@ var ptBR = Catalog{
 		Other: "as sessões do lich %s terminaram",
 	},
 	BlockedSummary: "a sessão do lich %q está esperando uma confirmação de permissão",
-	MergeNotice: "[lich] O pull request #%[1]d %[2]q (branch %[3]s) foi mergeado em %[4]s pelo lich. " +
+	MergeNotice: "[lich] O pull request #%[1]d %[2]q (branch %[3]s) foi mergeado em %[4]s. " +
 		"Isto é um aviso, não uma tarefa: atualize o que você guarda sobre o estado deste trabalho e não faça mais nada.",
 	MergeSummary: "Pull request #%[1]d mergeado em %[2]s",
 	LateNotice:   "[lich] Agendado para %[1]s, entregue com %[2]s de atraso.\n\n",
