@@ -1,12 +1,12 @@
 #!/bin/bash
 # Runs a freshly bundled Lich.app end to end on the macOS runner, the Windows
 # job's check on the bundle: the seal verifies, lich finds the window beside
-# itself in Contents/MacOS and opens it, macOS counts exactly one application
-# in Lich.app (lsappinfo, which is what the Dock reads: a second entry is a
-# process with a Dock tile of its own), the window closes on SIGTERM, a close
-# request like the user's, lich keeps running without it, a launch opens a new
-# window on it, and `lich quit` ends both. Its config lives under a HOME of its
-# own.
+# itself in Contents/MacOS and opens it, Lich.app has exactly one Dock tile
+# (lsappinfo, which is what the Dock reads: the window is its one Foreground
+# application, the backend a UIElement behind its menu-bar item), the window
+# closes on SIGTERM, a close request like the user's, lich keeps running
+# without it, a launch opens a new window on it, and `lich quit` ends both. Its
+# config lives under a HOME of its own.
 # What a failure leaves behind goes to $RUNNER_TEMP/diag for the artifact the
 # workflow uploads.
 #
@@ -38,11 +38,14 @@ fail() {
   exit 1
 }
 
-# One application in Lich.app however many of its processes run.
+# One Dock tile in Lich.app however many of its processes run: the window is
+# the one Foreground application, and the backend stays a UIElement.
 one_app() {
   lsappinfo list > "$RUNNER_TEMP/apps.txt"
-  apps=$(grep -c 'bundle path=.*Lich.app' "$RUNNER_TEMP/apps.txt" || true)
-  [ "$apps" = 1 ] || { grep -B1 -A3 'Lich.app' "$RUNNER_TEMP/apps.txt"; fail "macOS counts $apps applications in Lich.app, expected the window alone"; }
+  apps=$(awk '/^ *[0-9]+\) /{own=0} /bundle path=.*Lich.app/{own=1} own && /type="Foreground"/{n++} END{print n+0}' "$RUNNER_TEMP/apps.txt")
+  [ "$apps" = 1 ] || { grep -B1 -A3 'Lich.app' "$RUNNER_TEMP/apps.txt"; fail "macOS counts $apps Dock applications in Lich.app, expected the window alone"; }
+  grep -A1 'executable path=.*Lich.app/Contents/MacOS/lich"' "$RUNNER_TEMP/apps.txt" | grep -q 'type="UIElement"' \
+    || { grep -B1 -A3 'Lich.app' "$RUNNER_TEMP/apps.txt"; fail "the backend is not a UIElement: it would take a Dock tile of its own"; }
 }
 
 codesign --verify --deep --strict --verbose=2 "$app"
