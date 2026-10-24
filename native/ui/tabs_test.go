@@ -276,6 +276,27 @@ func TestTabsGhostTriggersTakeTheirOwnWidth(t *testing.T) {
 	}
 }
 
+// A ghost list given a minimum width, the Pulls filter's w-full track, splits
+// it into equal triggers.
+func TestTabsGhostFillsAMinimumWidthEqually(t *testing.T) {
+	th := testTheme()
+	s := th.Tabs(new(TabsState), tabsNames("a", "a much longer trigger")...)
+	s.Variant = TabsVariantGhost
+	const width = 600
+	if d := layoutAt(func(gtx C) D { return s.Layout(gtx) }, width, width); d.Size.X != width {
+		t.Errorf("got list width %d, want the %d it was given", d.Size.X, width)
+	}
+	var sizes []image.Point
+	layoutAt(func(gtx C) D {
+		s.State.tabsUpdate(gtx, 2)
+		sizes = s.tabsTriggerSizes(gtx, tabsGeometries[TabsVariantGhost])
+		return D{}
+	}, width, width)
+	if sizes[0].X != sizes[1].X {
+		t.Errorf("trigger widths %d and %d, want them equal", sizes[0].X, sizes[1].X)
+	}
+}
+
 // NaturalWidth is the narrowest list in which no trigger overflows: laid out
 // at it the list takes exactly that width, one pixel less and it spills.
 func TestTabsNaturalWidthFitsEveryTriggerAtItsContent(t *testing.T) {

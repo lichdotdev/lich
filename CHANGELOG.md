@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The quick filters over the pull request list in Pulls (All, Ready, Drafts, Failing) are lighter: small text with the selected one shaded, as in the dock's tabs, sharing the list's width. A filter with nothing in it is faded and Failing's count turns red when a check fails. They no longer run past the list's edge with a monospace interface font.
+
 ### Fixed
 
 - A session card no longer grows and shrinks as its agent starts and stops a tool, waits on you or compacts, pushing every card below it up and down. That line now takes the place of the card's path while it shows, and the path comes back when it goes.

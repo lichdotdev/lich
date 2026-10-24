@@ -33,3 +33,18 @@ func TestPullsListGrowsForLongerFilterLabels(t *testing.T) {
 		t.Errorf("Portuguese: %d, want the %d the tabs need (bounded by %v)", w, need, pullsListMaxWidth)
 	}
 }
+
+// The counts carry the filter's state: a failing pull request reads in the
+// destructive color, an empty filter fades, the rest stay muted.
+func TestFilterCountColorReadsTheState(t *testing.T) {
+	th := &ui.Theme{Palette: ui.Dark}
+	if got := filterCountColor(th, filterFailing, 1); got != th.Destructive {
+		t.Errorf("failing: %v, want destructive", got)
+	}
+	if got := filterCountColor(th, filterFailing, 0); got != ui.Alpha(th.MutedForeground, emptyFilterOpacity) {
+		t.Errorf("failing with none: %v, want faded", got)
+	}
+	if got := filterCountColor(th, filterReady, 3); got != th.MutedForeground {
+		t.Errorf("ready: %v, want muted", got)
+	}
+}

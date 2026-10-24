@@ -199,7 +199,8 @@ func (t TabsStyle) tabsList(gtx C) D {
 // every trigger as wide as the widest while that fits the width given; a vertical list is w-full over the
 // same. The ghost list's triggers keep their own width: in the dock's
 // w-fit list the browser sizes the list to the sum of its triggers'
-// contents, so flex-1 has no free space to share.
+// contents, so flex-1 has no free space to share. A ghost list given a
+// minimum width is w-full instead, and flex-1 shares that.
 func (t TabsStyle) tabsTriggerSizes(gtx C, geo tabsGeometry) []image.Point {
 	sizes := make([]image.Point, len(t.Triggers))
 	var widest image.Point
@@ -215,6 +216,13 @@ func (t TabsStyle) tabsTriggerSizes(gtx C, geo tabsGeometry) []image.Point {
 		sizes[i].Y = widest.Y
 	}
 	if t.Variant == TabsVariantGhost {
+		inner := gtx.Constraints.Min.X - (len(sizes)-1)*gtx.Dp(geo.listGap)
+		if len(sizes)*widest.X <= inner {
+			for i := range sizes {
+				sizes[i].X = widest.X
+			}
+		}
+		tabsShareSpare(sizes, inner)
 		return sizes
 	}
 	inner := gtx.Constraints.Max.X - 2*gtx.Dp(geo.listPad) - (len(sizes)-1)*gtx.Dp(geo.listGap)

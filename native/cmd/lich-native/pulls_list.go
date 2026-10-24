@@ -79,11 +79,29 @@ func (p *pullsScreen) filterTabs(th *ui.Theme, counts [pullsFilterCount]int) ui.
 	triggers := make([]ui.TabsTrigger, pullsFilterCount)
 	for i := range triggers {
 		n := counts[i]
+		count := filterCountColor(th, pullsFilter(i), n)
 		triggers[i] = ui.TabsTrigger{Text: pullsFilter(i).label(), Trailing: func(gtx C) D {
-			return th.Text(ui.TextXS, fmt.Sprint(n)).Muted().Layout(gtx)
+			return th.Text(ui.TextXS, fmt.Sprint(n)).In(count).Layout(gtx)
 		}}
 	}
-	return th.Tabs(&p.filter, triggers...)
+	tabs := th.Tabs(&p.filter, triggers...)
+	tabs.Variant = ui.TabsVariantGhost
+	return tabs
+}
+
+// emptyFilterOpacity fades a filter with nothing in it, the chip's opacity-40.
+const emptyFilterOpacity = 0.4
+
+// filterCountColor reads a filter's state off its count: a failing pull
+// request in the destructive color, an empty filter faded.
+func filterCountColor(th *ui.Theme, f pullsFilter, n int) color.NRGBA {
+	switch {
+	case n == 0:
+		return ui.Alpha(th.MutedForeground, emptyFilterOpacity)
+	case f == filterFailing:
+		return th.Destructive
+	}
+	return th.MutedForeground
 }
 
 // listWidth is the list island's width: w-80, or what the filter tabs need
