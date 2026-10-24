@@ -1150,6 +1150,30 @@ func awaitDelivered(t *testing.T, svc *Service, n int) {
 	t.Fatalf("never saw %d delivered tickets", n)
 }
 
+// awaitSubmitted blocks until n tickets are submitted at their target: both
+// writes of a typed delivery are in. A ticket is stamped delivered before the
+// paste is written (stampDelivery), so a test that counts the target's writes
+// to tell the delivery from what came after has to wait for this instead.
+func awaitSubmitted(t *testing.T, svc *Service, n int) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		svc.mu.Lock()
+		count := 0
+		for _, tk := range svc.tickets {
+			if tk.submitted {
+				count++
+			}
+		}
+		svc.mu.Unlock()
+		if count == n {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("never saw %d submitted tickets", n)
+}
+
 // TestADoneWithTwoErrandsOpenStallsBothAndAsksForTheTicket proves what a turn
 // ending says, and what it does not. Two messages delivered back to back —
 // inside the second or two before the target's busy report lands — queue as two
@@ -1178,7 +1202,7 @@ func TestADoneWithTwoErrandsOpenStallsBothAndAsksForTheTicket(t *testing.T) {
 		got, _ := svc.Send(context.Background(), SendOptions{From: "s3", Target: "docs", Prompt: "build the docs", WaitSeconds: 5})
 		second <- got
 	}()
-	awaitDelivered(t, svc, 2)
+	awaitSubmitted(t, svc, 2)
 	delivery := len(term.writesTo("s2"))
 	tickets := openTickets(svc)
 
@@ -1234,7 +1258,7 @@ func TestADoneWithOneErrandOpenStallsItWithoutANotice(t *testing.T) {
 		got, _ := svc.Send(context.Background(), SendOptions{From: "s1", Target: "docs", Prompt: "run the tests", WaitSeconds: 5})
 		only <- got
 	}()
-	awaitDelivered(t, svc, 1)
+	awaitSubmitted(t, svc, 1)
 	delivery := len(term.writesTo("s2"))
 
 	svc.Observe("s2", "busy")
