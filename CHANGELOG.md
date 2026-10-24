@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.79.0] - 2026-10-24
+
 ### Added
 
 - On macOS, lich has a menu-bar item: a lich whose window is closed shows it is still running its sessions there, with Show lich, the count of running sessions and Quit, as the tray does on Linux and Windows.
@@ -6372,7 +6374,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.78.1...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.79.0...HEAD
+[0.79.0]: https://github.com/lichdotdev/lich/compare/v0.78.1...v0.79.0
 [0.78.1]: https://github.com/lichdotdev/lich/compare/v0.78.0...v0.78.1
 [0.78.0]: https://github.com/lichdotdev/lich/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/lichdotdev/lich/compare/v0.76.0...v0.77.0
