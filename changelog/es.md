@@ -1,5 +1,9 @@
 ## [0.79.0] - 2026-10-24
 
+> [!IMPORTANT]
+> **Quien deja un servidor de desarrollo, un contenedor o un túnel abierto junto a sus agentes: ahora lich los
+> ejecuta.** Guárdalos una vez en Ajustes › Servicios del proyecto e inícialos, detenlos y léelos al final de la barra lateral.
+
 ### Added
 
 - En macOS, lich tiene un elemento en la barra de menús: un lich con la ventana cerrada muestra allí que sigue ejecutando sus sesiones, con Mostrar lich, el número de sesiones en marcha y Salir de lich, como hace la bandeja en Linux y Windows.

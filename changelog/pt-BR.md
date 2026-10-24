@@ -1,5 +1,9 @@
 ## [0.79.0] - 2026-10-24
 
+> [!IMPORTANT]
+> **Quem deixa um servidor de desenvolvimento, um container ou um túnel aberto ao lado dos agentes: agora o lich
+> roda isso.** Salve uma vez em Configurações › Serviços do projeto e inicie, pare e leia cada um no fim da barra lateral.
+
 ### Added
 
 - No macOS, o lich ganha um item na barra de menus: um lich com a janela fechada mostra ali que ainda está rodando as sessões, com Mostrar o lich, a contagem de sessões em execução e Encerrar o lich, como a bandeja faz no Linux e no Windows.

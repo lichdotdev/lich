@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.79.0] - 2026-10-24
 
+> [!IMPORTANT]
+> **Anyone who keeps a dev server, a container or a tunnel open beside their agents: lich now runs them.** Save
+> them once in Settings › Services of a project, then start, stop and read them from the bottom of the sidebar.
+
 ### Added
 
 - On macOS, lich has a menu-bar item: a lich whose window is closed shows it is still running its sessions there, with Show lich, the count of running sessions and Quit, as the tray does on Linux and Windows.
