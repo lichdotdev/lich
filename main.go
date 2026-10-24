@@ -17,6 +17,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
+	"github.com/lichdotdev/lich/internal/appkit"
 	"github.com/lichdotdev/lich/internal/appupdate"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/cli"
@@ -99,7 +100,13 @@ func main() {
 	if code := cli.Run(os.Args[1:], version, os.Getenv, os.Stdout, os.Stderr); code != cli.NotACommand {
 		os.Exit(code)
 	}
+	// On macOS AppKit's loop takes the main thread, and the app runs beside it
+	// (internal/appkit).
+	appkit.Run(app)
+}
 
+// app is lich itself: the backend, its listener and its window.
+func app() {
 	noWindow := slices.Contains(os.Args[1:], restart.NoWindowArg)
 
 	configDir, err := os.UserConfigDir()
@@ -337,6 +344,13 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 		Failed: windowFailed(configDir, liveCount, coord.Quit),
 	})
 	routes.System(dispatcher, sys)
+	// macOS opens lich again by telling the running one, and ends it at logout
+	// the same way.
+	appkit.Handle(func() { showWindow(sys, "on reopen") }, func() {
+		if err := coord.Quit(); err != nil {
+			slog.Warn("quit at logout", "err", err)
+		}
+	})
 	// Deleting a session for good takes any prompt parked on it, and the row is
 	// the only copy of what the user wrote. Both channels are used, and neither
 	// is the other's fallback: the toast is what the user reading the card sees,

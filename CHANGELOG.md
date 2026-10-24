@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- On macOS, lich has a menu-bar item: a lich whose window is closed shows it is still running its sessions there, with Show lich, the count of running sessions and Quit, as the tray does on Linux and Windows.
+
 ### Changed
 
 - The quick filters over the pull request list in Pulls (All, Ready, Drafts, Failing) are lighter: small text with the selected one shaded, as in the dock's tabs, sharing the list's width. A filter with nothing in it is faded and Failing's count turns red when a check fails. They no longer run past the list's edge with a monospace interface font.
@@ -15,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A session card no longer grows and shrinks as its agent starts and stops a tool, waits on you or compacts, pushing every card below it up and down. That line now takes the place of the card's path while it shows, and the path comes back when it goes.
 - The native window holds less memory for its fonts. A font file asked for more than once, such as the interface and the terminal set in the same family or the bold face that also stands in for semibold, was parsed again each time, about 30MB for a Nerd Font face; it is now parsed once and shared while in use. An interface in a language other than Chinese, Japanese or Korean no longer loads a CJK font at start, tens of megabytes: it does on the first CJK text on screen, drawn meanwhile with a system font. With one Nerd Font for the interface, the terminal and the editor and no CJK on screen, the fonts take 119MB where they took 246MB.
+- On macOS, opening lich from the Dock, Launchpad, Spotlight or Finder while it runs with its window closed opens the window again. lich started at login with `--no-window` included, where the click did nothing. Logging out now quits lich the way `lich quit` does, so the next launch does not read it as a crash.
 
 ## [0.78.1] - 2026-10-23
 

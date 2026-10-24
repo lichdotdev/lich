@@ -840,8 +840,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   icon (below) is all that says it runs. Launching lich again opens a window on it; `lich quit` (or SIGINT /
   SIGTERM) ends it. `task dev` behaves the same: kept running, the dev backend stays on 47822 until Ctrl+C or
   `LICH_DEV=1 go run . quit`.
-- **The tray icon is Linux and Windows only, and late** (`internal/tray`): macOS's menu-bar item needs cgo
-  and lich is built without it, so a windowless lich on a Mac shows nothing. On Linux it is a
+- **The tray icon is late, and on macOS it rides AppKit through purego** (`internal/tray`, `internal/appkit`):
+  lich is built without cgo, so on a Mac the backend runs AppKit's loop on its main thread through purego, as
+  an accessory app (no Dock tile, no Cmd-Tab), and the menu-bar item and LaunchServices' reopen and terminate
+  live on that loop. A Mac where AppKit does not load runs lich without either, and opening lich again from
+  Finder then depends on LaunchServices launching a second copy. On Linux it is a
   StatusNotifierItem: GNOME draws none without the AppIndicator extension, and a desktop with no tray host
   shows nothing either. Its words are the window's interface language, so it comes up once a window has
   handed them over (`native/cmd/lich-native/tray.go`); a lich whose window never opened has no tray. `task dev` puts up a second

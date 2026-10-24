@@ -3,7 +3,8 @@
   Rendered by build/darwin/bundle.sh (@VERSION@ -> the release version).
 
   Two executables share this plist: lich, the pure-Go binary LaunchServices
-  starts, which never touches AppKit, and lich-native, the window, which does.
+  starts, which reaches AppKit through purego for the menu-bar item and the
+  reopen (internal/appkit), and lich-native, the window.
   macOS reads a process's bundle off its executable's path, so the window in
   Contents/MacOS is Lich.app to the Dock, to Cmd-Tab and to the menu bar: its
   icon is CFBundleIconFile and its name CFBundleName.

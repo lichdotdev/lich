@@ -51,7 +51,8 @@ type Tray struct {
 }
 
 // Icons are the two encodings the platforms take: PNG for the Linux
-// StatusNotifierItem, ICO for the Windows notification area.
+// StatusNotifierItem and the macOS menu bar, ICO for the Windows notification
+// area.
 type Icons struct {
 	PNG []byte
 	ICO []byte
