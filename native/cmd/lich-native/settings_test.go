@@ -80,7 +80,7 @@ func TestOnlyProjectScopedSectionsStayLitInAProject(t *testing.T) {
 			lit = append(lit, s.id)
 		}
 	}
-	if !slices.Equal(lit, []string{sectionProviders, sectionSandbox, sectionVersionControl}) {
+	if !slices.Equal(lit, []string{sectionProviders, sectionSandbox, sectionVersionControl, sectionServices}) {
 		t.Fatalf("lit in a project: %v", lit)
 	}
 }

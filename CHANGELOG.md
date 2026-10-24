@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - On macOS, lich has a menu-bar item: a lich whose window is closed shows it is still running its sessions there, with Show lich, the count of running sessions and Quit, as the tray does on Linux and Windows.
+- **Services: commands a project keeps running, started by lich.** Save a container, a tunnel or a dev server once in Settings › Services of a project, and start it from the Services row at the bottom of the sidebar, above the profile. Closed, the row says how many run (2/3); opened, it lists each service with how long it has run or how it ended, and Start, Stop and Restart on hover. A click opens its console, where it takes input and Ctrl+C stops it. A service is not a terminal: when its command exits, it has stopped, its last output stays readable, and Start runs it again. Tick Start with lich and it starts every time lich does. Services keep running with the window closed or the project's tab shut, and the tray lists them with Show output, Restart and Stop; quitting lich stops them, and the close dialog counts them. With the sidebar collapsed, the rail's Services button opens the same list.
 
 ### Changed
 
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The collapsed sidebar shows the profile new sessions are born in, at the bottom of the rail, and opens the same menu the open sidebar's footer does. It used to show no profile at all.
 - A tab in the top bar can no longer get stuck lifted, drawn in the accent color as if it were being dragged, with no tab moving again until lich restarted. A tab focused by a click and then given Space or Enter was picked up to reorder from the keyboard, and once a click elsewhere took the keyboard it could neither be dropped nor cancelled; it now goes back to its place when it loses focus. A layout tab renamed in the middle of a drag no longer gets stuck the same way.
 - A session card no longer grows and shrinks as its agent starts and stops a tool, waits on you or compacts, pushing every card below it up and down. That line now takes the place of the card's path while it shows, and the path comes back when it goes.
 - The native window holds less memory for its fonts. A font file asked for more than once, such as the interface and the terminal set in the same family or the bold face that also stands in for semibold, was parsed again each time, about 30MB for a Nerd Font face; it is now parsed once and shared while in use. An interface in a language other than Chinese, Japanese or Korean no longer loads a CJK font at start, tens of megabytes: it does on the first CJK text on screen, drawn meanwhile with a system font. With one Nerd Font for the interface, the terminal and the editor and no CJK on screen, the fonts take 119MB where they took 246MB.

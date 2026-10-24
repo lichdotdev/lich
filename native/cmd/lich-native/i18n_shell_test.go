@@ -123,10 +123,10 @@ func TestEveryKeyTheTablesNameResolvesInEveryLocale(t *testing.T) {
 
 func TestShellMessagesWithPlaceholdersAndPluralsInPortuguese(t *testing.T) {
 	inPortuguese(t)
-	if got := closeRunning(1); !strings.HasPrefix(got, "1 sessão está rodando.") {
+	if got := closeRunning(1, 0); !strings.HasPrefix(got, "1 sessão está rodando.") {
 		t.Errorf("one session: %q", got)
 	}
-	if got := closeRunning(3); !strings.HasPrefix(got, "3 sessões estão rodando.") {
+	if got := closeRunning(3, 0); !strings.HasPrefix(got, "3 sessões estão rodando.") {
 		t.Errorf("three sessions: %q", got)
 	}
 	if got := notifySummary(statusWaiting, "Claude 3"); got != "Claude 3 precisa da sua atenção" {

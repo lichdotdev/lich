@@ -29,7 +29,8 @@
       "sandbox": "Sandbox",
       "versionControl": "Version Control",
       "updates": "Updates",
-      "help": "Help"
+      "help": "Help",
+      "services": "Services"
     },
     "notYet": "Not here yet",
     "projectDesc": "What this project changes from Global. A row without a change follows Global."
@@ -593,5 +594,20 @@
       "renameDesc": "Only its name changes: its login stays as it is.",
       "deleteDesc": "Its login is removed and sessions started in it can no longer be resumed. Conversations stay: every profile shares them."
     }
+  },
+  "servicesSettings": {
+    "title": "Services",
+    "searchWords": "services commands docker container tunnel dev server start with lich",
+    "description": "Commands lich keeps running for this project, each in a console of its own: a container, a tunnel, a dev server. When a command exits, its service has stopped.",
+    "globalDescription": "Services belong to a project. Pick one in the scope menu to add or change its services.",
+    "add": "Add service",
+    "startsWithLich": "Starts with lich",
+    "name": "Name",
+    "namePlaceholder": "tailscale",
+    "command": "Command",
+    "commandPlaceholder": "docker compose up",
+    "commandHint": "Runs in the project's directory, without your shell's rc files. Keep it in the foreground: a command that detaches (-d, &) exits at once and shows as stopped.",
+    "startWithLich": "Start with lich",
+    "save": "Save"
   }
 }

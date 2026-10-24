@@ -42,7 +42,13 @@ func (ts *terminals) exited(id string, e sessionExit) {
 	if t == nil {
 		return
 	}
-	t.vt.Write([]byte(exitMarker(e)))
+	if t.kind == serviceTermKind {
+		// A service's bar already says how it ended; its console only stops
+		// looking like it waits for input.
+		t.vt.Write([]byte(hideCursor))
+	} else {
+		t.vt.Write([]byte(exitMarker(e)))
+	}
 	ts.invalidate()
 }
 

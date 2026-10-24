@@ -106,6 +106,9 @@ var settingsSections = []settingsSection{
 		{titleKey: "settings.vcsToolsSetting.title", alsoKey: "settings.vcsToolsSetting.searchWords", key: vcsToolsKey},
 		{titleKey: "settings.versionControlSettings.account", alsoKey: "settings.versionControlSettings.accountSearchWords", key: vcsAccountKey, scope: scopeProjectOnly},
 	}},
+	{id: sectionServices, labelKey: "settings.settings.section.services", icon: icons.Lucide("server"), rows: []settingEntry{
+		{titleKey: "settings.servicesSettings.title", alsoKey: "settings.servicesSettings.searchWords", key: servicesKey, scope: scopeProjectOnly},
+	}},
 	{id: sectionEditor, labelKey: "settings.settingsIndex.sectionEditor", icon: icons.Lucide("code"), rows: []settingEntry{
 		{titleKey: "settings.settingsAppearance.editorFontTitle", alsoKey: "settings.settingsAppearance.editorFontSearchWords", key: editorFontKey},
 		{titleKey: "settings.settingsAppearance.editorSizeTitle", alsoKey: "settings.settingsAppearance.editorSizeSearchWords", key: editorFontSizeKey},

@@ -29,7 +29,8 @@
       "sandbox": "サンドボックス",
       "versionControl": "バージョン管理",
       "updates": "アップデート",
-      "help": "ヘルプ"
+      "help": "ヘルプ",
+      "services": "サービス"
     },
     "notYet": "まだありません",
     "projectDesc": "このプロジェクトでグローバルから変更している項目です。変更のない行はグローバルに従います。"
@@ -593,5 +594,20 @@
       "renameDesc": "変わるのは名前だけです。ログインはそのまま残ります。",
       "deleteDesc": "ログインが削除され、このプロファイルで開始したセッションは再開できなくなります。会話は残ります。すべてのプロファイルで共有されているためです。"
     }
+  },
+  "servicesSettings": {
+    "title": "サービス",
+    "searchWords": "サービス コマンド docker コンテナ トンネル 開発サーバー lich と一緒に開始 services",
+    "description": "lich がこのプロジェクトのために動かし続けるコマンドです。コンテナ、トンネル、開発サーバーなどが、それぞれ専用のコンソールで動きます。コマンドが終了すると、そのサービスは停止します。",
+    "globalDescription": "サービスはプロジェクトごとのものです。スコープメニューでプロジェクトを選ぶと、そのサービスを追加・変更できます。",
+    "add": "サービスを追加",
+    "startsWithLich": "lich と一緒に開始",
+    "name": "名前",
+    "namePlaceholder": "tailscale",
+    "command": "コマンド",
+    "commandPlaceholder": "docker compose up",
+    "commandHint": "プロジェクトのディレクトリで、シェルの rc ファイルを読まずに実行します。フォアグラウンドのままにしてください。切り離されるコマンド (-d、&) はすぐに終了し、停止として表示されます。",
+    "startWithLich": "lich と一緒に開始",
+    "save": "保存"
   }
 }

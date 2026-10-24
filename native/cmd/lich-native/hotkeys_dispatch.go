@@ -47,6 +47,7 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyToggleFullscreen:   {nil, func(u *window, _ C) { u.toggleFullscreen() }},
 	hotkeySearchInFiles:      {(*window).hasProject, (*window).hotkeySearch},
 	hotkeySettings:           {(*window).hasProject, (*window).hotkeyOpenSettings},
+	hotkeyStartServices:      {(*window).hasProject, (*window).hotkeyStartServices},
 	hotkeyPulls:              {(*window).hasProject, func(u *window, _ C) { u.togglePulls() }},
 	hotkeyShortcuts:          {nil, (*window).hotkeyShortcuts},
 	hotkeyCommandPalette:     {nil, (*window).hotkeyPalette},
@@ -305,4 +306,10 @@ func (u *window) hotkeyOpenSettings(C) {
 	}
 	tabs, _ := u.model.projectTabs()
 	u.settings.show(p.ID, settingsProjectsOf(tabs))
+}
+
+func (u *window) hotkeyStartServices(C) {
+	if p, ok := u.model.project(); ok {
+		u.applyService(serviceRequest{op: serviceStartAll, project: p.ID})
+	}
 }

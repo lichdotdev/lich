@@ -25,6 +25,7 @@ type sidebarRail struct {
 	list   widget.List
 	cards  map[string]*widget.Clickable
 	tips   map[string]*ui.Tooltip
+	foot   railFooter
 }
 
 // layout is `flex w-8 flex-col items-center gap-1 pb-1.5`: expand, a new
@@ -55,6 +56,7 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 		button(&r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), glyphNew),
 		ui.VGap(1),
 		layout.Flexed(1, func(gtx C) D { return r.sessions(gtx, th, s, blocks, active, &act) }),
+		layout.Rigid(func(gtx C) D { return r.footer(gtx, th, s, m, &act) }),
 	)
 	return d, act
 }

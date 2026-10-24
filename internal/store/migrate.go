@@ -23,6 +23,7 @@ var migrations = []func(*sql.Tx) error{
 	addProviderSessionTombstones,
 	addSessionProfile,
 	addSessionForked,
+	addProjectServices,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -129,6 +130,24 @@ func addSessionProfile(tx *sql.Tx) error {
 // delegate and a subagent card carry an origin too.
 func addSessionForked(tx *sql.Tx) error {
 	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN forked INTEGER NOT NULL DEFAULT 0`)
+	return err
+}
+
+// addProjectServices is version 11: the commands a project runs as services
+// (internal/services), each on a PTY of its own and outside the session list.
+// A name is unique within its project because the tray and the footer tell
+// services apart by it.
+func addProjectServices(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+CREATE TABLE project_services (
+    id              TEXT    NOT NULL PRIMARY KEY,
+    project_id      TEXT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name            TEXT    NOT NULL,
+    command         TEXT    NOT NULL,
+    start_with_lich INTEGER NOT NULL DEFAULT 0,
+    position        INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (project_id, name)
+)`)
 	return err
 }
 

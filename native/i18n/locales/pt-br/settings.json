@@ -29,7 +29,8 @@
       "sandbox": "Sandbox",
       "versionControl": "Controle de versão",
       "updates": "Atualizações",
-      "help": "Ajuda"
+      "help": "Ajuda",
+      "services": "Serviços"
     },
     "notYet": "Ainda não está aqui",
     "projectDesc": "O que este projeto muda em relação ao Global. Uma linha sem mudança segue o Global."
@@ -593,5 +594,20 @@
       "renameDesc": "Só o nome muda: o login continua como está.",
       "deleteDesc": "O login é removido e as sessões iniciadas nele não podem mais ser retomadas. As conversas ficam: todos os perfis as compartilham."
     }
+  },
+  "servicesSettings": {
+    "title": "Serviços",
+    "searchWords": "serviços comandos docker container túnel servidor de desenvolvimento iniciar com o lich services",
+    "description": "Comandos que o lich mantém rodando para este projeto, cada um no seu próprio console: um container, um túnel, um servidor de desenvolvimento. Quando o comando sai, o serviço parou.",
+    "globalDescription": "Serviços pertencem a um projeto. Escolha um no menu de escopo para adicionar ou mudar os serviços dele.",
+    "add": "Adicionar serviço",
+    "startsWithLich": "Inicia com o lich",
+    "name": "Nome",
+    "namePlaceholder": "tailscale",
+    "command": "Comando",
+    "commandPlaceholder": "docker compose up",
+    "commandHint": "Roda na pasta do projeto, sem os arquivos rc do seu shell. Mantenha-o em primeiro plano: um comando que se desprende (-d, &) sai na hora e aparece como parado.",
+    "startWithLich": "Iniciar com o lich",
+    "save": "Salvar"
   }
 }

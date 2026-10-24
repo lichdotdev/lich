@@ -136,7 +136,12 @@
   "tray": {
     "show": "lich 보기",
     "running": "실행 중인 세션: {count}",
-    "quit": "lich 종료"
+    "quit": "lich 종료",
+    "servicesRunning": "실행 중인 서비스: {count}",
+    "showOutput": "출력 보기",
+    "restart": "다시 시작",
+    "stop": "중지",
+    "stopAll": "모든 서비스 중지"
   },
   "closeDialog": {
     "title": "lich를 계속 실행할까요?",
@@ -145,7 +150,13 @@
     },
     "dontAsk": "다시 묻지 않기",
     "keep": "계속 실행",
-    "quit": "lich 종료"
+    "quit": "lich 종료",
+    "services": {
+      "other": "서비스 {count}개가 실행 중입니다. 백그라운드에서 계속 실행되고, lich를 종료하면 중지됩니다."
+    },
+    "servicesToo": {
+      "other": "서비스도 {count}개 실행 중이며, lich를 종료하면 중지됩니다."
+    }
   },
   "uncleanExitGate": {
     "title": "lich의 이전 실행이 예기치 않게 종료되었습니다",

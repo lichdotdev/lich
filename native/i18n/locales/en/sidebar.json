@@ -182,5 +182,33 @@
   "fork": {
     "pruned": "{name} has no conversation left to fork: {provider} pruned it.",
     "failed": "Couldn't fork {name}: {error}"
+  },
+  "services": {
+    "title": "Services",
+    "add": "Add",
+    "startAll": "Start all",
+    "stopAll": "Stop all",
+    "stopping": "stopping…",
+    "exitCode": "exit {code}",
+    "failed": "failed",
+    "stopped": "stopped",
+    "start": "Start",
+    "stop": "Stop",
+    "restart": "Restart",
+    "forceStop": "Force stop",
+    "showOutput": "Show output",
+    "edit": "Edit service…",
+    "editShort": "Edit",
+    "delete": "Delete service",
+    "newService": "New service…",
+    "failedOp": "The service did not take that: {error}",
+    "railHint": "Services · {up}/{total} running",
+    "console": {
+      "ctrlC": "Ctrl+C stops the service",
+      "running": "Running · {age}",
+      "failedCode": "Failed · exit {code}",
+      "never": "Not started yet",
+      "stoppedAt": "Stopped · {time}"
+    }
   }
 }

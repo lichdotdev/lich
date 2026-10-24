@@ -28,7 +28,8 @@
       "sandbox": "샌드박스",
       "versionControl": "버전 관리",
       "updates": "업데이트",
-      "help": "도움말"
+      "help": "도움말",
+      "services": "서비스"
     },
     "notYet": "아직 여기에 없습니다",
     "projectDesc": "이 프로젝트가 전역 설정에서 바꾼 항목입니다. 바꾸지 않은 항목은 전역 설정을 따릅니다."
@@ -587,5 +588,20 @@
       "renameDesc": "이름만 바뀝니다. 로그인은 그대로입니다.",
       "deleteDesc": "로그인이 삭제되며, 이 프로필에서 시작한 세션은 더 이상 재개할 수 없습니다. 대화는 모든 프로필이 공유하므로 남습니다."
     }
+  },
+  "servicesSettings": {
+    "title": "서비스",
+    "searchWords": "서비스 명령 docker 컨테이너 터널 개발 서버 lich와 함께 시작 services",
+    "description": "lich가 이 프로젝트를 위해 계속 실행하는 명령입니다. 컨테이너, 터널, 개발 서버가 각자 자기 콘솔에서 실행됩니다. 명령이 끝나면 그 서비스는 중지된 것입니다.",
+    "globalDescription": "서비스는 프로젝트에 속합니다. 범위 메뉴에서 프로젝트를 골라 서비스를 추가하거나 바꾸세요.",
+    "add": "서비스 추가",
+    "startsWithLich": "lich와 함께 시작",
+    "name": "이름",
+    "namePlaceholder": "tailscale",
+    "command": "명령",
+    "commandPlaceholder": "docker compose up",
+    "commandHint": "프로젝트 폴더에서 셸의 rc 파일 없이 실행됩니다. 포그라운드로 두세요. 분리되는 명령(-d, &)은 바로 끝나고 중지됨으로 표시됩니다.",
+    "startWithLich": "lich와 함께 시작",
+    "save": "저장"
   }
 }

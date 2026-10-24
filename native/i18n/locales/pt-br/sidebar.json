@@ -182,5 +182,33 @@
   "fork": {
     "pruned": "{name} não tem mais conversa para fazer fork: o {provider} a apagou.",
     "failed": "Não foi possível fazer fork de {name}: {error}"
+  },
+  "services": {
+    "title": "Serviços",
+    "add": "Adicionar",
+    "startAll": "Iniciar todos",
+    "stopAll": "Parar todos",
+    "stopping": "parando…",
+    "exitCode": "saída {code}",
+    "failed": "falhou",
+    "stopped": "parado",
+    "start": "Iniciar",
+    "stop": "Parar",
+    "restart": "Reiniciar",
+    "forceStop": "Forçar parada",
+    "showOutput": "Mostrar saída",
+    "edit": "Editar serviço…",
+    "editShort": "Editar",
+    "delete": "Excluir serviço",
+    "newService": "Novo serviço…",
+    "failedOp": "O serviço não aceitou: {error}",
+    "railHint": "Serviços · {up}/{total} rodando",
+    "console": {
+      "ctrlC": "Ctrl+C para o serviço",
+      "running": "Rodando · {age}",
+      "failedCode": "Falhou · saída {code}",
+      "never": "Ainda não iniciado",
+      "stoppedAt": "Parado · {time}"
+    }
   }
 }

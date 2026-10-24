@@ -182,5 +182,33 @@
   "fork": {
     "pruned": "{name} 已没有可分叉的对话：{provider} 已将其删除。",
     "failed": "无法分叉 {name}：{error}"
+  },
+  "services": {
+    "title": "服务",
+    "add": "添加",
+    "startAll": "全部启动",
+    "stopAll": "全部停止",
+    "stopping": "正在停止…",
+    "exitCode": "退出码 {code}",
+    "failed": "失败",
+    "stopped": "已停止",
+    "start": "启动",
+    "stop": "停止",
+    "restart": "重启",
+    "forceStop": "强制停止",
+    "showOutput": "显示输出",
+    "edit": "编辑服务…",
+    "editShort": "编辑",
+    "delete": "删除服务",
+    "newService": "新建服务…",
+    "failedOp": "服务没有接受这个操作：{error}",
+    "railHint": "服务 · {up}/{total} 运行中",
+    "console": {
+      "ctrlC": "Ctrl+C 停止服务",
+      "running": "运行中 · {age}",
+      "failedCode": "失败 · 退出码 {code}",
+      "never": "尚未启动",
+      "stoppedAt": "已停止 · {time}"
+    }
   }
 }

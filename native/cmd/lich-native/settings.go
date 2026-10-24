@@ -93,6 +93,7 @@ type settingsScreen struct {
 	hotkeys   hotkeyEditor
 	updates   updatesSettings
 	providers providerSettings
+	services  servicesSettings
 }
 
 func newSettingsScreen(ctx context.Context, c *backend.Client, root *ui.Root, invalidate func()) *settingsScreen {
@@ -288,6 +289,9 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 		rows = append(rows, func(gtx C) D {
 			return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, th.Text(settingsTitle, sec.label()).Weight(font.SemiBold).Leading(32).Layout)
 		})
+	}
+	if sec.id == sectionServices {
+		return append(rows, s.servicesPaneRows(th)...)
 	}
 	if desc := s.paneDescription(sec); desc != "" {
 		rows = append(rows, func(gtx C) D {

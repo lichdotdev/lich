@@ -10,12 +10,18 @@ import (
 )
 
 // trayLabels are the tray menu's words in the interface language. The
-// backend fills Running's {count} placeholder itself.
+// backend fills the {count} placeholders itself.
 func trayLabels() backend.TrayLabels {
 	return backend.TrayLabels{
 		Show:    i18n.T("shell.tray.show"),
 		Running: i18n.T("shell.tray.running", i18n.Args{"count": "{count}"}),
 		Quit:    i18n.T("shell.tray.quit"),
+
+		ServicesRunning: i18n.T("shell.tray.servicesRunning", i18n.Args{"count": "{count}"}),
+		ShowOutput:      i18n.T("shell.tray.showOutput"),
+		Restart:         i18n.T("shell.tray.restart"),
+		Stop:            i18n.T("shell.tray.stop"),
+		StopAll:         i18n.T("shell.tray.stopAll"),
 	}
 }
 

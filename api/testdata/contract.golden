@@ -117,6 +117,16 @@ relay.SendPrivate(SendOptions) SendResult
 relay.SendSubagent(SendOptions) SendResult
 relay.Submit(SubmitOptions) None
 relay.Wait(WaitOptions) SendResult
+services.Delete(ServiceIDOptions) None
+services.ForceStop(ServiceIDOptions) None
+services.List(None) []Service
+services.Output(ServiceIDOptions) base64
+services.Restart(ServiceIDOptions) None
+services.Save(SaveServiceOptions) Service
+services.Start(ServiceIDOptions) None
+services.StartAll(ProjectIDOptions) None
+services.Stop(ServiceIDOptions) None
+services.StopAll(ProjectIDOptions) None
 spawn.Ask(AskSessionOptions) SessionAnswer
 spawn.Close(CloseSessionOptions) ClosedSession
 spawn.ColorFolder(ColorFolderOptions) ColoredFolder
@@ -209,6 +219,8 @@ event project-closed ProjectClosed
 event project-opened Project
 event projects-reordered ProjectsReordered
 event pull-request-changed PRChanged
+event service-reveal ServiceIDOptions
+event services []Service
 event session-agent SessionAgent
 event session-closed SessionClosed
 event session-conversation SessionConversation
@@ -777,6 +789,28 @@ WaitOptions {
 	waitSeconds int
 }
 
+ServiceIDOptions {
+	id string
+}
+
+Service {
+	...ServiceConfig
+	projectName string
+	terminal string
+	state string
+	exitCode,omitempty *int
+	startedAt int64
+	stoppedAt int64
+}
+
+SaveServiceOptions {
+	id string
+	projectId string
+	name string
+	command string
+	startWithLich bool
+}
+
 AskSessionOptions {
 	from string
 	target string
@@ -1318,6 +1352,11 @@ TrayLabels {
 	show string
 	running string
 	quit string
+	servicesRunning string
+	showOutput string
+	restart string
+	stop string
+	stopAll string
 }
 
 AppUpdateProgress {
@@ -1626,6 +1665,14 @@ QuotaWindow {
 	active,omitempty bool
 	lockedReason,omitempty string
 	ahead,omitempty bool
+}
+
+ServiceConfig {
+	id string
+	projectId string
+	name string
+	command string
+	startWithLich bool
 }
 
 ParkedSession {

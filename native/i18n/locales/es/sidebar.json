@@ -182,5 +182,33 @@
   "fork": {
     "pruned": "{name} ya no tiene una conversación que bifurcar: {provider} la borró.",
     "failed": "No se pudo bifurcar {name}: {error}"
+  },
+  "services": {
+    "title": "Servicios",
+    "add": "Añadir",
+    "startAll": "Iniciar todos",
+    "stopAll": "Detener todos",
+    "stopping": "deteniendo…",
+    "exitCode": "salida {code}",
+    "failed": "falló",
+    "stopped": "detenido",
+    "start": "Iniciar",
+    "stop": "Detener",
+    "restart": "Reiniciar",
+    "forceStop": "Forzar detención",
+    "showOutput": "Mostrar salida",
+    "edit": "Editar servicio…",
+    "editShort": "Editar",
+    "delete": "Eliminar servicio",
+    "newService": "Nuevo servicio…",
+    "failedOp": "El servicio no lo aceptó: {error}",
+    "railHint": "Servicios · {up}/{total} en marcha",
+    "console": {
+      "ctrlC": "Ctrl+C detiene el servicio",
+      "running": "En marcha · {age}",
+      "failedCode": "Falló · salida {code}",
+      "never": "Aún sin iniciar",
+      "stoppedAt": "Detenido · {time}"
+    }
   }
 }

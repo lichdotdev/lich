@@ -32,7 +32,8 @@
     "settings": "Configurações",
     "pulls": "Pull requests",
     "shortcuts": "Atalhos de teclado",
-    "quit": "Encerrar o lich"
+    "quit": "Encerrar o lich",
+    "startServices": "Iniciar os serviços do projeto"
   },
   "terminalCost": {
     "a": "Ctrl+{key} é o atalho do shell para ir ao início da linha; as sessões não o receberão mais.",

@@ -19,9 +19,10 @@ import (
 // sessions, asked when no answer is kept. The window closing on its own is
 // lich running on in the background, since the backend outlives it.
 type closePrompt struct {
-	mu      sync.Mutex
-	running int  // the sessions the open dialog counts, 0 while closed
-	leaving bool // the window is on its way out: a close request passes
+	mu       sync.Mutex
+	running  int  // the sessions the open dialog counts, 0 while closed
+	services int  // the running services it counts beside them
+	leaving  bool // the window is on its way out: a close request passes
 
 	remember widget.Bool
 	dialog   ui.DialogState
@@ -60,13 +61,14 @@ func (u *window) askOrQuit(action string) {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("shell.windowClose.countFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
-	if closeQuits(action, live) {
+	services := u.model.services.running()
+	if closeQuits(action, live+services) {
 		u.quitLich()
 		return
 	}
 	c := &u.closer
 	c.mu.Lock()
-	c.running = live
+	c.running, c.services = live, services
 	c.mu.Unlock()
 	c.remember.Value = false
 	u.win.Invalidate()
@@ -87,7 +89,7 @@ func (u *window) quitLich() {
 func (u *window) leave() {
 	c := &u.closer
 	c.mu.Lock()
-	c.leaving, c.running = true, 0
+	c.leaving, c.running, c.services = true, 0, 0
 	c.mu.Unlock()
 	log.Print("closing the window")
 	u.win.Perform(system.ActionClose)
@@ -98,8 +100,9 @@ func (u *window) leave() {
 func (u *window) layoutClosePrompt(gtx C, th *ui.Theme) {
 	c := &u.closer
 	c.mu.Lock()
-	running := c.running
+	sessions, services := c.running, c.services
 	c.mu.Unlock()
+	running := sessions + services
 	if running == 0 && !c.dialog.Animating(gtx) {
 		return
 	}
@@ -121,19 +124,28 @@ func (u *window) layoutClosePrompt(gtx C, th *ui.Theme) {
 	quit := on.Button(&c.quit, i18n.T("shell.closeDialog.quit"))
 	quit.Variant = ui.VariantGhost
 	keep := on.Button(&c.keep, i18n.T("shell.closeDialog.keep"))
-	d := th.Dialog(&c.dialog, running > 0, i18n.T("shell.closeDialog.title"), closeRunning(running))
+	d := th.Dialog(&c.dialog, running > 0, i18n.T("shell.closeDialog.title"), closeRunning(sessions, services))
 	d.MaxWidth = ui.DialogWidthXL
 	d.Body = func(gtx C) D { return closeRemember(gtx, on, &c.remember) }
 	d.Actions = []layout.Widget{quit.Layout, keep.Layout}
 	if d.Layout(gtx) {
 		c.mu.Lock()
-		c.running = 0
+		c.running, c.services = 0, 0
 		c.mu.Unlock()
 	}
 }
 
-func closeRunning(n int) string {
-	return i18n.T("shell.closeDialog.running", i18n.Args{"count": n})
+// closeRunning is the dialog's sentence for what quitting would end: the
+// sessions, the services, or both.
+func closeRunning(sessions, services int) string {
+	switch {
+	case services == 0:
+		return i18n.T("shell.closeDialog.running", i18n.Args{"count": sessions})
+	case sessions == 0:
+		return i18n.T("shell.closeDialog.services", i18n.Args{"count": services})
+	}
+	return i18n.T("shell.closeDialog.running", i18n.Args{"count": sessions}) + " " +
+		i18n.T("shell.closeDialog.servicesToo", i18n.Args{"count": services})
 }
 
 // closeRemember is the checkbox and its label, the hint of where the

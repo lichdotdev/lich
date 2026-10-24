@@ -182,5 +182,33 @@
   "fork": {
     "pruned": "{name} にはフォークできる会話がもうありません: {provider} が削除しました。",
     "failed": "{name} をフォークできませんでした: {error}"
+  },
+  "services": {
+    "title": "サービス",
+    "add": "追加",
+    "startAll": "すべて開始",
+    "stopAll": "すべて停止",
+    "stopping": "停止中…",
+    "exitCode": "終了コード {code}",
+    "failed": "失敗",
+    "stopped": "停止",
+    "start": "開始",
+    "stop": "停止",
+    "restart": "再起動",
+    "forceStop": "強制停止",
+    "showOutput": "出力を表示",
+    "edit": "サービスを編集…",
+    "editShort": "編集",
+    "delete": "サービスを削除",
+    "newService": "新しいサービス…",
+    "failedOp": "サービスが応じませんでした: {error}",
+    "railHint": "サービス · {up}/{total} 実行中",
+    "console": {
+      "ctrlC": "Ctrl+C でサービスを停止",
+      "running": "実行中 · {age}",
+      "failedCode": "失敗 · 終了コード {code}",
+      "never": "まだ開始していません",
+      "stoppedAt": "停止 · {time}"
+    }
   }
 }

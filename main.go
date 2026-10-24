@@ -34,6 +34,7 @@ import (
 	"github.com/lichdotdev/lich/internal/restart"
 	"github.com/lichdotdev/lich/internal/routes"
 	"github.com/lichdotdev/lich/internal/rpc"
+	"github.com/lichdotdev/lich/internal/services"
 	"github.com/lichdotdev/lich/internal/shellintegration"
 	"github.com/lichdotdev/lich/internal/singleton"
 	"github.com/lichdotdev/lich/internal/spawn"
@@ -153,12 +154,16 @@ func app() {
 	// it (internal/terminal.handsOn).
 	defer term.FlushHandsOn()
 	coord := newCoordinator()
-	sys := registerServices(db, term, hub, configDir, logPath, env, launchEnv, coord)
+	svcs := services.New(db, term, hub.Emit)
+	// Deferred after the hands-on flush, so it runs first: a service's process
+	// is lich's child, and quitting lich is what stops it.
+	defer svcs.Shutdown(serviceQuitGrace)
+	sys := registerServices(db, term, svcs, hub, configDir, logPath, env, launchEnv, coord)
 
 	coord.SetWindowOpen(hub.Attached)
 	term.SetRestart(coord.Do)
 
-	run(term, configDir, coord, startWindow(sys, noWindow), closeWindow(hub))
+	run(term, configDir, coord, svcs.Boot, startWindow(sys, noWindow), closeWindow(hub))
 }
 
 // windowStart is what a launch does about lich's window: open it, its own or
@@ -208,7 +213,7 @@ func resolveEnv() (launchEnv, env []string) {
 // in the order main built them: a service that hands another one a callback has
 // to exist first. It is lifted out of main only for its length; nothing here
 // runs anywhere else.
-func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub,
+func registerServices(db *store.Service, term *terminal.Service, svcs *services.Service, hub *events.Hub,
 	configDir, logPath string, env, launchEnv []string, coord *restart.Coordinator) *system.Service {
 	proj := project.New(project.ZenityPicker{})
 	// gh has one active account per host; a project can name a different one.
@@ -463,7 +468,15 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
 	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, liveCount)
+	trayIcon.SetServices(tray.Services{
+		Running: svcs.Running,
+		Reveal:  svcs.Reveal,
+		Stop:    func(id string) { logServiceError(svcs.Stop(context.Background(), api.ServiceIDOptions{ID: id})) },
+		Restart: func(id string) { logServiceError(svcs.Restart(context.Background(), api.ServiceIDOptions{ID: id})) },
+		StopAll: svcs.StopRunning,
+	})
 	routes.Tray(dispatcher, trayIcon)
+	routes.Services(dispatcher, svcs)
 	term.Mount("/rpc/", dispatcher)
 	term.Mount("/drop", http.HandlerFunc(drops.Upload))
 	term.Mount("/blob", http.HandlerFunc(proj.ServeBlob))
@@ -475,11 +488,14 @@ func registerServices(db *store.Service, term *terminal.Service, hub *events.Hub
 // a process of its own) and serves until lich is told to quit. The window is
 // not the app's lifecycle: closing it leaves every session running, and a
 // second launch opens a new one on them (handleBindFailure).
-func run(term *terminal.Service, configDir string, coord *restart.Coordinator, start windowStart, closeNative func()) {
+func run(term *terminal.Service, configDir string, coord *restart.Coordinator, boot func(), start windowStart, closeNative func()) {
 	info := term.Transport()
 	if info.Port == 0 {
 		handleBindFailure(configDir, term.TransportError(), start.openRunning) // never returns
 	}
+	// Past the bind check: a lich that lost the port to one already running
+	// would otherwise start a second copy of every service before it exits.
+	boot()
 
 	// The runtime file lets install.sh reach a running lich for /restart when it
 	// runs outside a lich terminal (no LICH_PORT/LICH_TOKEN in the env), and lets
@@ -605,6 +621,17 @@ func handleBindFailure(configDir string, cause error, openRunning func(string, *
 // close. It ends at once (os.Exit on the event); the bound is for a window
 // that never reads it, which must not keep lich from quitting.
 const windowLeaveWait = 5 * time.Second
+
+// serviceQuitGrace is how long quitting waits for the services to stop on
+// their own before killing them. Docker's own stop timeout is 10 seconds, and
+// `docker compose up` is the service this is most often.
+const serviceQuitGrace = 10 * time.Second
+
+func logServiceError(_ api.None, err error) {
+	if err != nil {
+		slog.Warn("tray: service action", "err", err)
+	}
+}
 
 // closeWindow tells the native window to close and waits for its process to
 // end, so a Windows update that runs once lich has exited finds lich-native.exe

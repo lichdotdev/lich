@@ -83,6 +83,13 @@ func (s *Service) stream(id string, sess *session) {
 	// into that terminal. Emitted outside s.mu for the reason Start gives —
 	// Emit blocks on a stalled /events client, and holding s.mu across it would
 	// freeze every session's I/O.
+	if reaped && sess.service != nil {
+		if sess.service.Exited != nil {
+			sess.service.Exited(code, sess.replay.snapshot())
+		}
+		events.Send(s.hub.Emit, api.TerminalExitEvents.Of(id), exitPayload(code))
+		return
+	}
 	if reaped {
 		// Outside mu: the relay takes its own lock, and it calls into this
 		// service under it.

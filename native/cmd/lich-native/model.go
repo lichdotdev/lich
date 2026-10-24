@@ -106,6 +106,13 @@ type model struct {
 	appUpdateProgress func(backend.AppUpdateProgress)
 	// closed is the closed projects, which the menu and the palette read.
 	closed *closedProjects
+	// services is every project service and its state.
+	services servicesStore
+	// console is the service whose console is on screen in place of the
+	// active session, "" for none.
+	console string
+	// serviceReveal hears the tray ask for a service's console.
+	serviceReveal func(id string)
 
 	// layouts are the window's split layouts; shownLayout is the one on
 	// screen, "" for a project's session alone.
@@ -221,7 +228,24 @@ func (m *model) setActiveProject(id string) bool {
 	m.activeProject, m.home = id, id == m.homeID
 	m.active = m.projects[i].ActiveSessionID
 	m.shownLayout = ""
+	m.console = ""
 	return true
+}
+
+// openConsole puts service id's console on screen in place of the active
+// session, which comes back when a card is picked again.
+func (m *model) openConsole(id string) {
+	m.mu.Lock()
+	m.console = id
+	m.shownLayout = ""
+	m.mu.Unlock()
+}
+
+// consoleShown is the service whose console is on screen, "" for none.
+func (m *model) consoleShown() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.console
 }
 
 // hydrateTurnStates seeds the status, usage and cwd stores from the backend's
@@ -288,6 +312,14 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.SessionStatusEvent.Name:
 			if err := m.applyStatus(ctx, ev); err != nil {
 				log.Printf("%s: %v", ev.Name, err)
+			}
+		case api.ServicesEvent.Name:
+			if list, err := backend.Decode(ev, api.ServicesEvent); err == nil {
+				m.services.set(list)
+			}
+		case api.ServiceRevealEvent.Name:
+			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {
+				m.serviceReveal(r.ID)
 			}
 		case api.SessionCwdEvent.Name:
 			if c, err := backend.Decode(ev, api.SessionCwdEvent); err == nil {
@@ -588,6 +620,7 @@ func (m *model) setActive(ctx context.Context, id string) {
 	refocused := m.routeLocked(id)
 	left := m.active
 	m.active = id
+	m.console = ""
 	if p := m.shownProject(); p != nil {
 		p.ActiveSessionID = id
 	}

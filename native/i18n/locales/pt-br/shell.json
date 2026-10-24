@@ -136,7 +136,12 @@
   "tray": {
     "show": "Mostrar o lich",
     "running": "Sessões rodando: {count}",
-    "quit": "Encerrar o lich"
+    "quit": "Encerrar o lich",
+    "servicesRunning": "Serviços rodando: {count}",
+    "showOutput": "Mostrar saída",
+    "restart": "Reiniciar",
+    "stop": "Parar",
+    "stopAll": "Parar todos os serviços"
   },
   "closeDialog": {
     "title": "Manter o lich rodando?",
@@ -146,7 +151,15 @@
     },
     "dontAsk": "Não perguntar de novo",
     "keep": "Manter rodando",
-    "quit": "Encerrar o lich"
+    "quit": "Encerrar o lich",
+    "services": {
+      "one": "{count} serviço está rodando. Em segundo plano ele continua rodando, e encerrar o lich o para.",
+      "other": "{count} serviços estão rodando. Em segundo plano eles continuam rodando, e encerrar o lich os para."
+    },
+    "servicesToo": {
+      "one": "{count} serviço também está rodando, e encerrar o lich o para.",
+      "other": "{count} serviços também estão rodando, e encerrar o lich os para."
+    }
   },
   "uncleanExitGate": {
     "title": "A execução anterior do lich terminou de forma inesperada",

@@ -48,6 +48,7 @@ const (
 	hotkeySettings           hotkeyID = "settings"
 	hotkeyPulls              hotkeyID = "pulls"
 	hotkeyShortcuts          hotkeyID = "shortcuts"
+	hotkeyStartServices      hotkeyID = "startServices"
 )
 
 // hotkeyGroup is which part of the app an action acts on.
@@ -129,6 +130,7 @@ var hotkeyActions = labelActions([]hotkeyAction{
 	{id: hotkeySettings, labelKey: "hotkeys.action.settings", group: hotkeyGroupApp, combo: combo{Mod: true, Key: ","}},
 	{id: hotkeyPulls, labelKey: "hotkeys.action.pulls", group: hotkeyGroupApp, combo: shiftChord("p")},
 	{id: hotkeyShortcuts, labelKey: "hotkeys.action.shortcuts", group: hotkeyGroupApp, combo: combo{Mod: true, Key: "/"}},
+	{id: hotkeyStartServices, labelKey: "hotkeys.action.startServices", group: hotkeyGroupApp, combo: comboUnassigned},
 	{id: hotkeyQuit, labelKey: "hotkeys.action.quit", group: hotkeyGroupApp, combo: comboUnassigned},
 })
 

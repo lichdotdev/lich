@@ -179,5 +179,33 @@
   "fork": {
     "pruned": "{name}에는 포크할 대화가 더 이상 없습니다: {provider}이(가) 삭제했습니다.",
     "failed": "{name}을(를) 포크하지 못했습니다: {error}"
+  },
+  "services": {
+    "title": "서비스",
+    "add": "추가",
+    "startAll": "모두 시작",
+    "stopAll": "모두 중지",
+    "stopping": "중지하는 중…",
+    "exitCode": "종료 코드 {code}",
+    "failed": "실패",
+    "stopped": "중지됨",
+    "start": "시작",
+    "stop": "중지",
+    "restart": "다시 시작",
+    "forceStop": "강제 중지",
+    "showOutput": "출력 보기",
+    "edit": "서비스 편집…",
+    "editShort": "편집",
+    "delete": "서비스 삭제",
+    "newService": "새 서비스…",
+    "failedOp": "서비스가 요청을 받지 않았습니다: {error}",
+    "railHint": "서비스 · {up}/{total} 실행 중",
+    "console": {
+      "ctrlC": "Ctrl+C로 서비스 중지",
+      "running": "실행 중 · {age}",
+      "failedCode": "실패 · 종료 코드 {code}",
+      "never": "아직 시작하지 않음",
+      "stoppedAt": "중지됨 · {time}"
+    }
   }
 }

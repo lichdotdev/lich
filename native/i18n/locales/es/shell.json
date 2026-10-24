@@ -136,7 +136,12 @@
   "tray": {
     "show": "Mostrar lich",
     "running": "Sesiones en ejecución: {count}",
-    "quit": "Salir de lich"
+    "quit": "Salir de lich",
+    "servicesRunning": "Servicios en marcha: {count}",
+    "showOutput": "Mostrar salida",
+    "restart": "Reiniciar",
+    "stop": "Detener",
+    "stopAll": "Detener todos los servicios"
   },
   "closeDialog": {
     "title": "¿Mantener lich en ejecución?",
@@ -146,7 +151,15 @@
     },
     "dontAsk": "No volver a preguntar",
     "keep": "Mantener en ejecución",
-    "quit": "Salir de lich"
+    "quit": "Salir de lich",
+    "services": {
+      "one": "{count} servicio está en marcha. En segundo plano sigue funcionando, y salir de lich lo detiene.",
+      "other": "{count} servicios están en marcha. En segundo plano siguen funcionando, y salir de lich los detiene."
+    },
+    "servicesToo": {
+      "one": "También hay {count} servicio en marcha, y salir de lich lo detiene.",
+      "other": "También hay {count} servicios en marcha, y salir de lich los detiene."
+    }
   },
   "uncleanExitGate": {
     "title": "La ejecución anterior de lich terminó de forma inesperada",

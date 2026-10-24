@@ -61,6 +61,9 @@ type termView struct {
 	// background is the default background the grid last drew, under
 	// terminals.mu.
 	background color.NRGBA
+	// readOnly drops what is typed at the grid: a service's console once its
+	// process is gone, when nothing is there to read it.
+	readOnly atomic.Bool
 }
 
 // terminalPadding is the margin kept in the terminal's own background: the
@@ -212,8 +215,11 @@ func (ts *terminals) send(id string, b []byte) {
 		return
 	}
 	ts.mu.Lock()
-	stream := ts.stream
+	stream, t := ts.stream, ts.byID[id]
 	ts.mu.Unlock()
+	if t != nil && t.readOnly.Load() {
+		return
+	}
 	if err := stream.Send(context.Background(), id, b); err != nil {
 		log.Printf("send to %s: %v", id, err)
 	}

@@ -32,7 +32,8 @@
     "settings": "設定",
     "pulls": "プルリクエスト",
     "shortcuts": "キーボードショートカット",
-    "quit": "lich を終了"
+    "quit": "lich を終了",
+    "startServices": "プロジェクトのサービスを開始"
   },
   "terminalCost": {
     "a": "Ctrl+{key} はシェルの「行頭へ移動」です。セッションはこのキーを受け取れなくなります。",

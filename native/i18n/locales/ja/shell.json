@@ -136,7 +136,12 @@
   "tray": {
     "show": "lich を表示",
     "running": "実行中のセッション: {count}",
-    "quit": "lich を終了"
+    "quit": "lich を終了",
+    "servicesRunning": "実行中のサービス: {count}",
+    "showOutput": "出力を表示",
+    "restart": "再起動",
+    "stop": "停止",
+    "stopAll": "すべてのサービスを停止"
   },
   "closeDialog": {
     "title": "lich を実行したままにしますか？",
@@ -146,7 +151,15 @@
     },
     "dontAsk": "今後表示しない",
     "keep": "実行したままにする",
-    "quit": "lich を終了"
+    "quit": "lich を終了",
+    "services": {
+      "one": "{count} 件のサービスが実行中です。バックグラウンドで動き続け、lich を終了すると停止します。",
+      "other": "{count} 件のサービスが実行中です。バックグラウンドで動き続け、lich を終了すると停止します。"
+    },
+    "servicesToo": {
+      "one": "サービスも {count} 件実行中で、lich を終了すると停止します。",
+      "other": "サービスも {count} 件実行中で、lich を終了すると停止します。"
+    }
   },
   "uncleanExitGate": {
     "title": "前回の lich は予期せず終了しました",

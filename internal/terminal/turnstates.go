@@ -74,8 +74,10 @@ func (s *Service) TurnStates(_ context.Context, _ api.None) ([]TurnState, error)
 func (s *Service) turnStates() []TurnState {
 	s.mu.Lock()
 	ids := make([]string, 0, len(s.sessions))
-	for id := range s.sessions {
-		ids = append(ids, id)
+	for id, sess := range s.sessions {
+		if sess.service == nil {
+			ids = append(ids, id)
+		}
 	}
 	s.mu.Unlock()
 	slices.Sort(ids)

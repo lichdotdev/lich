@@ -109,6 +109,8 @@ type session struct {
 	// service's mu. See startgate.go.
 	awaitsStart bool
 	started     bool
+	// service is set on a PTY StartService spawned, nil on a session's.
+	service *ServiceCommand
 }
 
 // Store is the persistence the terminal service depends on: the binary to spawn
@@ -363,6 +365,9 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 // frames, which is a person at the keyboard. A relayed message another session
 // pasted through Write is that session's work, not this one's.
 func (s *Service) onInput(id string, data []byte) {
+	if s.serviceInput(id, data) {
+		return
+	}
 	s.beatHandsOn(id, 0)
 	// Held first, and before the beat is spent on nothing: a delivery in flight
 	// owns this prompt until its Enter is through, and what was typed at it
@@ -819,7 +824,7 @@ func (s *Service) liveCount() int {
 	defer s.mu.Unlock()
 	live := 0
 	for _, sess := range s.sessions {
-		if sess.pty != nil {
+		if sess.pty != nil && sess.service == nil {
 			live++
 		}
 	}

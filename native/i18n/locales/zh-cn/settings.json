@@ -29,7 +29,8 @@
       "sandbox": "沙箱",
       "versionControl": "版本控制",
       "updates": "更新",
-      "help": "帮助"
+      "help": "帮助",
+      "services": "服务"
     },
     "notYet": "这里还没有",
     "projectDesc": "此项目相对全局所做的更改。没有更改的行沿用全局。"
@@ -592,5 +593,20 @@
       "renameDesc": "只会更改名称：其登录保持不变。",
       "deleteDesc": "其登录将被删除，在其中启动的会话将无法再恢复。对话会保留：所有配置文件共享它们。"
     }
+  },
+  "servicesSettings": {
+    "title": "服务",
+    "searchWords": "服务 命令 docker 容器 隧道 开发服务器 随 lich 启动 services",
+    "description": "lich 为这个项目持续运行的命令，每个都在自己的控制台里：容器、隧道、开发服务器。命令退出时，服务就停止了。",
+    "globalDescription": "服务属于某个项目。在范围菜单里选一个项目，就能添加或修改它的服务。",
+    "add": "添加服务",
+    "startsWithLich": "随 lich 启动",
+    "name": "名称",
+    "namePlaceholder": "tailscale",
+    "command": "命令",
+    "commandPlaceholder": "docker compose up",
+    "commandHint": "在项目目录中运行，不加载 shell 的 rc 文件。请保持在前台运行：会脱离的命令（-d、&）会立即退出并显示为已停止。",
+    "startWithLich": "随 lich 启动",
+    "save": "保存"
   }
 }

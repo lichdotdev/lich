@@ -50,6 +50,7 @@ type sidebar struct {
 	rail     sidebarRail
 	morph    sidebarMorph
 	profile  profileFooter
+	services servicesFooter
 	// launchProviders is this frame's m.launchProviders(), what every launch
 	// menu lists.
 	launchProviders []launchProvider
@@ -78,6 +79,7 @@ func newSidebar(root *ui.Root) *sidebar {
 		hints:    map[string]*ui.Tooltip{},
 		blocks:   map[string]*blockState{},
 		rail:     sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}},
+		services: newServicesFooter(),
 	}
 	s.header.phases = map[sessionPhase]bool{}
 	s.list.Axis = layout.Vertical
@@ -102,7 +104,7 @@ func (s *sidebar) holdsKeys() bool {
 			return true
 		}
 	}
-	if s.header.newMenu.Opened() || s.profile.menu.Opened() {
+	if s.header.newMenu.Opened() || s.profile.menu.Opened() || s.services.holdsKeys() || s.rail.holdsKeys() {
 		return true
 	}
 	for _, b := range s.blocks {
@@ -131,6 +133,7 @@ type sidebarAction struct {
 	worktree                       bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
+	service                serviceRequest
 	sidebarWrites
 }
 
@@ -260,6 +263,12 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 			gtx.Constraints.Max.X += gtx.Dp(ui.Space(2))
 			return s.blockList(gtx, on, view, active, &act)
 		}))
+		if p, ok := m.project(); ok {
+			list, console := m.services.of(p.ID), m.consoleShown()
+			children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D {
+				return s.services.layout(gtx, on, s.root, p.ID, list, console, &act)
+			}))
+		}
 		if f, ok := m.focusedProfile(); ok {
 			children = append(children, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.profile.layout(gtx, on, s.root, m, f, &act) }))
 		}

@@ -136,7 +136,12 @@
   "tray": {
     "show": "显示 lich",
     "running": "运行中的会话：{count}",
-    "quit": "退出 lich"
+    "quit": "退出 lich",
+    "servicesRunning": "运行中的服务：{count}",
+    "showOutput": "显示输出",
+    "restart": "重启",
+    "stop": "停止",
+    "stopAll": "停止所有服务"
   },
   "closeDialog": {
     "title": "让 lich 继续运行？",
@@ -146,7 +151,15 @@
     },
     "dontAsk": "不再询问",
     "keep": "继续运行",
-    "quit": "退出 lich"
+    "quit": "退出 lich",
+    "services": {
+      "one": "{count} 个服务正在运行。它会在后台继续运行，退出 lich 会停止它。",
+      "other": "{count} 个服务正在运行。它们会在后台继续运行，退出 lich 会停止它们。"
+    },
+    "servicesToo": {
+      "one": "另有 {count} 个服务正在运行，退出 lich 会停止它。",
+      "other": "另有 {count} 个服务正在运行，退出 lich 会停止它们。"
+    }
   },
   "uncleanExitGate": {
     "title": "lich 上次运行意外结束",

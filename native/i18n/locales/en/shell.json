@@ -136,7 +136,12 @@
   "tray": {
     "show": "Show lich",
     "running": "Sessions running: {count}",
-    "quit": "Quit lich"
+    "quit": "Quit lich",
+    "servicesRunning": "Services running: {count}",
+    "showOutput": "Show output",
+    "restart": "Restart",
+    "stop": "Stop",
+    "stopAll": "Stop all services"
   },
   "closeDialog": {
     "title": "Keep lich running?",
@@ -146,7 +151,15 @@
     },
     "dontAsk": "Don't ask again",
     "keep": "Keep running",
-    "quit": "Quit lich"
+    "quit": "Quit lich",
+    "services": {
+      "one": "{count} service is running. In the background it keeps running, and quitting lich stops it.",
+      "other": "{count} services are running. In the background they keep running, and quitting lich stops them."
+    },
+    "servicesToo": {
+      "one": "{count} service is running too, and quitting lich stops it.",
+      "other": "{count} services are running too, and quitting lich stops them."
+    }
   },
   "uncleanExitGate": {
     "title": "lich's previous run ended unexpectedly",
