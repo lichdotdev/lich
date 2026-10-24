@@ -220,6 +220,7 @@
     "announceFailed": "Couldn’t tell the sessions in {name}: {error}",
     "removeWorktree": "Remove worktree",
     "openSessionFailed": "Couldn’t open a session: {error}",
+    "handedOff": "Handed #{number} to {session}",
     "goToSession": "Go to session",
     "openInSession": "Open in Session",
     "forkBlocked": "The head branch lives on a fork that does not allow edits by maintainers — its commits could not be pushed back",

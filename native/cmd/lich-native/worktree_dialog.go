@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"flag"
 	"log"
 	"strconv"
@@ -398,11 +399,18 @@ func (u *window) worktreeSession(r worktreeRequest, wt *backend.Worktree) (strin
 // addWorktreeSession records the worktree's session, named after it, and
 // puts it on screen.
 func (u *window) addWorktreeSession(r worktreeRequest, wt *backend.Worktree, sandbox string) (string, error) {
-	id := strings.ToLower(rand.Text())
-	if err := u.client.AddSessionWithSandbox(u.ctx, r.project.ID, id, wt.Name, r.kind, wt.Path, r.project.NextSeq+1, sandbox); err != nil {
+	id, err := u.recordWorktreeSession(r, wt, sandbox)
+	if err != nil {
 		return "", err
 	}
 	return id, u.showNewSession(r.project.ID, id)
+}
+
+// recordWorktreeSession records the worktree's session, named after it,
+// without reloading the projects.
+func (u *window) recordWorktreeSession(r worktreeRequest, wt *backend.Worktree, sandbox string) (string, error) {
+	id := strings.ToLower(rand.Text())
+	return id, u.client.AddSessionWithSandbox(u.ctx, r.project.ID, id, wt.Name, r.kind, wt.Path, r.project.NextSeq+1, sandbox)
 }
 
 // reopenWorktree brings back the session parked on an existing worktree, or
@@ -432,29 +440,46 @@ func (u *window) reopenWorktree(r worktreeRequest, path string) {
 
 // showNewSession reloads the project and puts session id on screen.
 func (u *window) showNewSession(projectID, id string) error {
-	if err := u.model.reload(u.ctx); err != nil {
+	if err := u.loadSessions(); err != nil {
 		return err
 	}
-	u.logErr("load folds", u.model.loadFolds(u.ctx))
 	u.model.setActive(u.ctx, id)
 	u.logErr("set active session", u.client.SetActiveSession(u.ctx, projectID, id))
 	u.model.invalidate()
 	return nil
 }
 
+// loadSessions reloads the projects, so a session just recorded has its card.
+func (u *window) loadSessions() error {
+	if err := u.model.reload(u.ctx); err != nil {
+		return err
+	}
+	u.logErr("load folds", u.model.loadFolds(u.ctx))
+	return nil
+}
+
 // submitAtPrompt sends message as the session's prompt once it sits at one.
 func (u *window) submitAtPrompt(id, message string) {
-	if !u.awaitPrompt(id) {
-		return
-	}
-	if err := u.client.Submit(u.ctx, id, message); err != nil {
-		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": backend.ErrorText(err)})})
+	if err := u.handOff(id, message); err != nil {
+		u.toaster.Show(handoffLostToast(err))
 	}
 }
 
-// awaitPrompt waits for the session to sit at a prompt, and says so with a
-// toast when it never does: text written before lands in the boot and is
-// thrown away.
+func handoffLostToast(err error) ui.Toast {
+	return ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": backend.ErrorText(err)})}
+}
+
+// handOff is submitAtPrompt without the toast: why message never landed, nil
+// once it did.
+func (u *window) handOff(id, message string) error {
+	if !u.awaitPrompt(id) {
+		return errors.New(i18n.T("sidebar.worktreeDialog.neverPrompted"))
+	}
+	return u.client.Submit(u.ctx, id, message)
+}
+
+// awaitPrompt waits for the session to sit at a prompt, false when it never
+// does: text written before lands in the boot and is thrown away.
 func (u *window) awaitPrompt(id string) bool {
 	deadline := time.Now().Add(promptLimit)
 	for {
@@ -463,7 +488,6 @@ func (u *window) awaitPrompt(id string) bool {
 			return true
 		}
 		if time.Now().After(deadline) {
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.worktreeDialog.handoffLost", i18n.Args{"error": i18n.T("sidebar.worktreeDialog.neverPrompted")})})
 			return false
 		}
 		time.Sleep(promptPoll)

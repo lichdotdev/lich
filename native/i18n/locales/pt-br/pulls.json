@@ -220,6 +220,7 @@
     "announceFailed": "Não foi possível avisar as sessões em {name}: {error}",
     "removeWorktree": "Remover worktree",
     "openSessionFailed": "Não foi possível abrir uma sessão: {error}",
+    "handedOff": "#{number} entregue a {session}",
     "goToSession": "Ir para a sessão",
     "openInSession": "Abrir em sessão",
     "forkBlocked": "A branch de origem está em um fork que não permite edições dos mantenedores, então os commits não poderiam ser enviados de volta",

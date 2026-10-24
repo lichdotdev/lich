@@ -147,67 +147,124 @@ func (u *window) approvePR(path string, number int) {
 	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pullRequestView.approvedToast", i18n.Args{"number": number})})
 }
 
-// openPRSession opens the PR in a session, then sends prompt (when any) as
-// the session's prompt: a checkout already holding the branch is reused, its live
-// session brought up or a new one opened; else the PR is checked out into a
-// new worktree. The checkouts are read fresh, never from what drew the button.
+// openPRSession opens the PR in a session: a checkout already holding the
+// branch is reused, its live session or a new one; else the PR is checked out
+// into a new worktree. The checkouts are read fresh, never from what drew the
+// button. A handoff (prompt not "") leaves the Pulls screen up, the session
+// spawned off screen and an Open on the toast that says the prompt landed;
+// only a spawn waiting on the user brings the session up.
 func (u *window) openPRSession(project backend.Project, d backend.PRDetail, prompt string) {
 	u.pulls.view.setBusy("session")
-	defer u.pulls.view.setBusy("")
 	id, err := u.prSession(project, d)
+	u.pulls.view.setBusy("")
 	if err != nil {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("pulls.pulls.openSessionFailed", i18n.Args{"error": backend.ErrorText(err)})})
 		return
 	}
-	u.pulls.hide()
 	u.model.invalidate()
+	if prompt != "" && u.startUnseen(id) {
+		u.handOffUnseen(project.ID, id, d.Number, prompt)
+		return
+	}
+	u.showPRSession(project.ID, id)
 	if prompt != "" {
 		u.submitAtPrompt(id, prompt)
 	}
 }
 
+func (u *window) showPRSession(projectID, id string) {
+	u.pulls.hide()
+	u.openSession(projectID, id)
+}
+
+// startUnseen spawns session id as its first view would, false when it cannot
+// start without the user and has to come up on screen; a failed Start is
+// left for that view to report.
+func (u *window) startUnseen(id string) bool {
+	s, ok := u.model.sessionViewOf(id)
+	if !ok {
+		return false
+	}
+	resume, ok := u.gate.unseen(u.ctx, s)
+	if !ok {
+		return false
+	}
+	if err := u.terms.start(u.ctx, s, resume, 0, 0); err != nil {
+		u.logErr("start session off screen", err)
+		return false
+	}
+	return true
+}
+
+// handOffUnseen sends prompt to session id, off screen, and says how it went
+// with a toast that can bring the session up.
+func (u *window) handOffUnseen(projectID, id string, number int, prompt string) {
+	open := &ui.ToastButton{Label: i18n.T("shell.projectEvents.open"), OnClick: func() { u.showPRSession(projectID, id) }}
+	if err := u.handOff(id, prompt); err != nil {
+		t := handoffLostToast(err)
+		t.Action = open
+		u.toaster.Show(t)
+		return
+	}
+	label := ""
+	if s, ok := u.model.sessionViewOf(id); ok {
+		label = s.Label
+	}
+	u.toaster.Show(ui.Toast{Variant: ui.ToastSuccess, Title: i18n.T("pulls.pulls.handedOff", i18n.Args{"number": number, "session": label}), Action: open})
+}
+
+// prSession is the session the PR opens in, its card loaded but not on
+// screen.
 func (u *window) prSession(project backend.Project, d backend.PRDetail) (string, error) {
 	checkouts, err := u.pulls.store.freshCheckouts(project.Path)
 	if err != nil {
 		return "", err
 	}
-	i := slices.IndexFunc(checkouts, func(c backend.Worktree) bool { return c.Name == d.HeadRefName })
-	if i < 0 {
+	var existing *backend.Worktree
+	if i := slices.IndexFunc(checkouts, func(c backend.Worktree) bool { return c.Name == d.HeadRefName }); i >= 0 {
+		existing = &checkouts[i]
+		if id, ok := u.model.sessionToOpenAt(project.ID, existing.Path); ok {
+			return id, nil
+		}
+	}
+	id, err := u.recordPRSession(project, d, existing)
+	if err != nil {
+		return "", err
+	}
+	return id, u.loadSessions()
+}
+
+// recordPRSession records a session for the PR at existing, a checkout with
+// no session in it, or in a new worktree for nil.
+func (u *window) recordPRSession(project backend.Project, d backend.PRDetail, existing *backend.Worktree) (string, error) {
+	r := worktreeRequest{project: project, kind: u.model.newSessionKind()}
+	if existing == nil {
 		wt, err := u.client.CreateWorktreeFromPR(u.ctx, project.Path, project.ID, d.Number)
 		if err != nil {
 			return "", err
 		}
-		return u.addWorktreeSession(worktreeRequest{project: project, kind: u.model.newSessionKind()}, wt, "")
-	}
-	existing := checkouts[i]
-	if id, ok := u.model.sessionToOpenAt(project.ID, existing.Path); ok {
-		u.openSession(project.ID, id)
-		return id, nil
+		return u.recordWorktreeSession(r, wt, "")
 	}
 	if existing.Path == project.Path {
-		return u.newSessionAt(project, existing.Path)
+		return u.recordSessionAt(project, existing.Path)
 	}
 	restored, err := u.client.ReopenWorktreeSession(u.ctx, project.ID, existing.Path, strings.ToLower(rand.Text()))
 	if err != nil {
 		return "", err
 	}
 	if restored == nil {
-		return u.addWorktreeSession(worktreeRequest{project: project, kind: u.model.newSessionKind()},
-			&backend.Worktree{Name: filepath.Base(existing.Path), Path: existing.Path}, "")
+		return u.recordWorktreeSession(r, &backend.Worktree{Name: filepath.Base(existing.Path), Path: existing.Path}, "")
 	}
-	return restored.ID, u.showNewSession(project.ID, restored.ID)
+	return restored.ID, nil
 }
 
-// newSessionAt opens a session of the kind a new one spawns in the project's
-// own checkout and puts it on screen.
-func (u *window) newSessionAt(project backend.Project, path string) (string, error) {
+// recordSessionAt records a session of the kind a new one spawns in the
+// project's own checkout.
+func (u *window) recordSessionAt(project backend.Project, path string) (string, error) {
 	kind := u.model.newSessionKind()
 	id := strings.ToLower(rand.Text())
 	label := fmt.Sprintf("%s %d", strings.ToUpper(kind[:1])+kind[1:], project.NextSeq+1)
-	if err := u.client.AddSessionInFolder(u.ctx, project.ID, id, label, kind, path, project.NextSeq+1, ""); err != nil {
-		return "", err
-	}
-	return id, u.showNewSession(project.ID, id)
+	return id, u.client.AddSessionInFolder(u.ctx, project.ID, id, label, kind, path, project.NextSeq+1, "")
 }
 
 // mergePR merges with subject and body as the commit message (gh's own for an

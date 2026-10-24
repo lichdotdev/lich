@@ -166,6 +166,27 @@ func (g *spawnGate) decide(ctx context.Context, s sessionView) {
 	g.invalidate()
 }
 
+// unseen is release for a spawn nobody is looking at: the resume id s starts
+// with, false when the decision needs the user (the resume prompt, a checkout
+// gone) and only s's first view may take it.
+func (g *spawnGate) unseen(ctx context.Context, s sessionView) (resume string, ok bool) {
+	live, err := g.probe.Live(ctx, s.ID)
+	logGateErr("live check", err)
+	if live {
+		return "", true
+	}
+	switch spawnDecision(ctx, g.probe, s.path, s.Session) {
+	case spawnPlain:
+		return "", true
+	case spawnResume:
+		return s.ProviderSessionID, true
+	case spawnFresh:
+		g.notify(ui.Toast{Title: i18n.T("session.spawnGate.conversationGone")})
+		return "", true
+	}
+	return "", false
+}
+
 func (g *spawnGate) releaseLocked(id, resume string) {
 	if g.released == nil {
 		g.released = map[string]string{}

@@ -234,6 +234,7 @@
     "announceFailed": "Не удалось сообщить сессиям в {name}: {error}",
     "removeWorktree": "Удалить worktree",
     "openSessionFailed": "Не удалось открыть сессию: {error}",
+    "handedOff": "#{number} передан в {session}",
     "goToSession": "Перейти к сессии",
     "openInSession": "Открыть в сессии",
     "forkBlocked": "Головная ветка находится в форке, который не разрешает правки от мейнтейнеров: коммиты нельзя отправить обратно",

@@ -219,6 +219,7 @@
     "announceFailed": "无法通知 {name} 中的会话：{error}",
     "removeWorktree": "移除工作树",
     "openSessionFailed": "无法打开会话：{error}",
+    "handedOff": "已将 #{number} 交给 {session}",
     "goToSession": "前往会话",
     "openInSession": "在会话中打开",
     "forkBlocked": "头部分支位于不允许维护者编辑的分叉上，无法把提交推回去",

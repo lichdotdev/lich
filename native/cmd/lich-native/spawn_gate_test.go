@@ -194,3 +194,35 @@ func TestForgetSendsReturningIDThroughGate(t *testing.T) {
 		t.Error("forgotten session still released")
 	}
 }
+
+func TestUnseenSpawnsWhatTheFirstViewWould(t *testing.T) {
+	cases := []struct {
+		name   string
+		probe  fakeProbe
+		resume string
+		ok     bool
+	}{
+		{"live", fakeProbe{live: true, available: true}, "", true},
+		{"plain", fakeProbe{}, "", true},
+		{"resume", fakeProbe{available: true, choice: restoreResume}, "conv-1", true},
+		{"fresh", fakeProbe{available: false}, "", true},
+		{"ask", fakeProbe{available: true}, "", false},
+		{"park", fakeProbe{missing: true}, "", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := sessionView{Session: restored, path: "/repo"}
+			if c.name == "plain" {
+				s.ProviderSessionID = ""
+			}
+			g := &spawnGate{probe: &c.probe, notify: func(ui.Toast) {}}
+			resume, ok := g.unseen(context.Background(), s)
+			if resume != c.resume || ok != c.ok {
+				t.Errorf("unseen = %q, %v; want %q, %v", resume, ok, c.resume, c.ok)
+			}
+			if g.prompt() != nil {
+				t.Error("an unseen spawn raised the resume prompt")
+			}
+		})
+	}
+}

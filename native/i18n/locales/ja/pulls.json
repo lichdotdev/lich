@@ -219,6 +219,7 @@
     "announceFailed": "{name} のセッションに通知できませんでした: {error}",
     "removeWorktree": "ワークツリーを削除",
     "openSessionFailed": "セッションを開けませんでした: {error}",
+    "handedOff": "#{number} を {session} に渡しました",
     "goToSession": "セッションへ移動",
     "openInSession": "セッションで開く",
     "forkBlocked": "head ブランチはメンテナーによる編集を許可していないフォークにあるため、コミットをプッシュし返せません",
