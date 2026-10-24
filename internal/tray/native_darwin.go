@@ -33,7 +33,23 @@ func (t *Tray) icon() []byte { return t.icons.PNG }
 // menu is the item's menu entries.
 type menu struct {
 	show, running, quit objc.ID
+	services, stopAll   objc.ID
+	slots               [serviceSlots]slot
 }
+
+// slot is one running service's entry and its submenu.
+type slot struct {
+	item, show, restart, stop objc.ID
+}
+
+// The actions of a slot's submenu, told apart by the entry's tag:
+// slot*slotActions + action.
+const (
+	slotShow = iota
+	slotRestart
+	slotStop
+	slotActions
+)
 
 func (t *Tray) ready() {
 	target, err := t.target()
@@ -58,6 +74,14 @@ func (t *Tray) ready() {
 	nsMenu := objc.ID(objc.GetClass("NSMenu")).Send(sel("new"))
 	nsMenu.Send(sel("addItem:"), m.show)
 	nsMenu.Send(sel("addItem:"), m.running)
+	m.services = menuItem("", 0, 0)
+	nsMenu.Send(sel("addItem:"), m.services)
+	for i := range m.slots {
+		m.slots[i] = serviceSlot(i, labels, target)
+		nsMenu.Send(sel("addItem:"), m.slots[i].item)
+	}
+	m.stopAll = menuItem(labels.StopAll, sel("stopAllServices:"), target)
+	nsMenu.Send(sel("addItem:"), m.stopAll)
 	nsMenu.Send(sel("addItem:"), objc.ID(objc.GetClass("NSMenuItem")).Send(sel("separatorItem")))
 	nsMenu.Send(sel("addItem:"), m.quit)
 	item.Send(sel("setMenu:"), nsMenu)
@@ -66,6 +90,12 @@ func (t *Tray) ready() {
 		appkit.Do(func() {
 			m.show.Send(sel("setTitle:"), nsString(l.Show))
 			m.quit.Send(sel("setTitle:"), nsString(l.Quit))
+			m.stopAll.Send(sel("setTitle:"), nsString(l.StopAll))
+			for _, sl := range m.slots {
+				sl.show.Send(sel("setTitle:"), nsString(l.ShowOutput))
+				sl.restart.Send(sel("setTitle:"), nsString(l.Restart))
+				sl.stop.Send(sel("setTitle:"), nsString(l.Stop))
+			}
 		})
 		t.refresh(m, l)
 	})
@@ -78,6 +108,10 @@ func (t *Tray) ready() {
 func (t *Tray) target() (objc.ID, error) {
 	class, err := objc.RegisterClass("LichTrayTarget", objc.GetClass("NSObject"), nil, nil, []objc.MethodDef{
 		{Cmd: sel("show:"), Fn: func(_ objc.ID, _ objc.SEL, _ objc.ID) { go t.show() }},
+		{Cmd: sel("serviceAction:"), Fn: func(_ objc.ID, _ objc.SEL, sender objc.ID) {
+			go t.serviceAction(objc.Send[int](sender, sel("tag")))
+		}},
+		{Cmd: sel("stopAllServices:"), Fn: func(_ objc.ID, _ objc.SEL, _ objc.ID) { go t.stopAllServices() }},
 		{Cmd: sel("quit:"), Fn: func(_ objc.ID, _ objc.SEL, _ objc.ID) {
 			go func() {
 				if err := t.quit(); err != nil {
@@ -92,9 +126,21 @@ func (t *Tray) target() (objc.ID, error) {
 	return objc.ID(class).Send(sel("new")), nil
 }
 
-// refresh rewrites the session count. A count it cannot read leaves the title
-// as it was rather than show a wrong one.
+// refresh rewrites the session count and the running services. A count it
+// cannot read leaves the title as it was rather than show a wrong one.
 func (t *Tray) refresh(m menu, l Labels) {
+	shown, total := t.runningServices()
+	appkit.Do(func() {
+		m.services.Send(sel("setTitle:"), nsString(l.servicesRunning(total)))
+		m.services.Send(sel("setHidden:"), total == 0)
+		m.stopAll.Send(sel("setHidden:"), total == 0)
+		for i, sl := range m.slots {
+			sl.item.Send(sel("setHidden:"), i >= len(shown))
+			if i < len(shown) {
+				sl.item.Send(sel("setTitle:"), nsString(serviceTitle(shown[i])))
+			}
+		}
+	})
 	live, err := t.live()
 	if err != nil {
 		slog.Warn("tray: count the running sessions", "err", err)
@@ -109,6 +155,39 @@ func (t *Tray) serve(m menu) {
 	defer ticker.Stop()
 	for range ticker.C {
 		t.refresh(m, t.currentLabels())
+	}
+}
+
+// serviceSlot is slot i's entry, hidden until a running service fills it, and
+// its submenu of Show output, Restart and Stop.
+func serviceSlot(i int, l Labels, target objc.ID) slot {
+	sl := slot{
+		item:    menuItem("", 0, 0),
+		show:    menuItem(l.ShowOutput, sel("serviceAction:"), target),
+		restart: menuItem(l.Restart, sel("serviceAction:"), target),
+		stop:    menuItem(l.Stop, sel("serviceAction:"), target),
+	}
+	sub := objc.ID(objc.GetClass("NSMenu")).Send(sel("new"))
+	for action, entry := range []objc.ID{slotShow: sl.show, slotRestart: sl.restart, slotStop: sl.stop} {
+		entry.Send(sel("setTag:"), i*slotActions+action)
+		sub.Send(sel("addItem:"), entry)
+	}
+	sl.item.Send(sel("setSubmenu:"), sub)
+	sl.item.Send(sel("setHidden:"), true)
+	return sl
+}
+
+// serviceAction runs the submenu entry tagged tag on the service its slot
+// showed.
+func (t *Tray) serviceAction(tag int) {
+	switch tag % slotActions {
+	case slotShow:
+		t.show()
+		t.slotAction(tag/slotActions, func(s Services, id string) { s.Reveal(id) })
+	case slotRestart:
+		t.slotAction(tag/slotActions, func(s Services, id string) { s.Restart(id) })
+	case slotStop:
+		t.slotAction(tag/slotActions, func(s Services, id string) { s.Stop(id) })
 	}
 }
 

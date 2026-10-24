@@ -45,8 +45,8 @@ func (l Labels) servicesRunning(n int) string {
 }
 
 // serviceSlots is how many running services the menu names one by one. The
-// menu is built once and its items are shown and hidden, since the tray
-// library cannot remove one; past this many, the count line still says how
+// menu is built once and its items are shown and hidden, since the Linux and
+// Windows tray library cannot remove one; past this many, the count line still says how
 // many run and the window lists them all.
 const serviceSlots = 8
 

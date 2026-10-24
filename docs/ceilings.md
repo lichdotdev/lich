@@ -812,9 +812,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **What a stopped service printed is kept in memory only** (`services.Output`): the tail of its last run, as
   long as a session's replay, until it starts again or lich exits. After a restart of lich a service that has
   not run yet has no output to show.
-- **The tray lists the running services on Linux and Windows only** (`internal/tray`): macOS has no tray icon
-  (it needs cgo), so there a service running behind a closed window is seen only by opening the window. The
-  menu names at most eight; the count above them says how many run.
+- **The tray names at most eight running services** (`internal/tray`, `serviceSlots`): the menu is built once
+  and its entries shown and hidden, so past eight the count above them says how many run and the window lists
+  them all. The macOS menu-bar entries were never run on a Mac: they compile, and the logic they share with
+  Linux and Windows is tested.
 - **On Windows, Stop is Ctrl+C through ConPTY** (`InterruptService`): it reaches the console's processes as
   `CTRL_C_EVENT`, which a process that left the console or turned the event off never sees. Not measured: the
   service tests spawn real PTYs and run on Linux and macOS only.
