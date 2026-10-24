@@ -24,6 +24,7 @@ var migrations = []func(*sql.Tx) error{
 	addSessionProfile,
 	addSessionForked,
 	addProjectServices,
+	addThreadFixes,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -147,6 +148,22 @@ CREATE TABLE project_services (
     start_with_lich INTEGER NOT NULL DEFAULT 0,
     position        INTEGER NOT NULL DEFAULT 0,
     UNIQUE (project_id, name)
+)`)
+	return err
+}
+
+// addThreadFixes is version 12: the review threads handed to a session and
+// waiting for the pull request's next push, which resolves them
+// (project.WatchThreadFixes). It outlives the window, because the push comes
+// whenever the agent gets there.
+func addThreadFixes(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+CREATE TABLE thread_fixes (
+    thread_id  TEXT    NOT NULL PRIMARY KEY,
+    path       TEXT    NOT NULL,
+    number     INTEGER NOT NULL,
+    comment_id INTEGER NOT NULL,
+    head       TEXT    NOT NULL
 )`)
 	return err
 }

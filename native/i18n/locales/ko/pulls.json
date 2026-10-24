@@ -190,6 +190,20 @@
     "verdictStays": "판정은 그대로 유지됩니다.",
     "more": "댓글 옵션"
   },
+  "threadSend": {
+    "send": "세션으로 보내기",
+    "sendTip": "이 스레드를 {name}(으)로 보냅니다",
+    "sendAll": {
+      "one": "열린 스레드 {count}개를 세션으로 보내기",
+      "other": "열린 스레드 {count}개를 세션으로 보내기"
+    },
+    "waiting": "보냄 · push 대기 중",
+    "sent": {
+      "one": "스레드를 {name}(으)로 보냈습니다",
+      "other": "스레드 {count}개를 {name}(으)로 보냈습니다"
+    },
+    "awaitFailed": "세션은 스레드를 받았지만 GitHub를 업데이트하지 못했습니다: {error}"
+  },
   "pulls": {
     "alreadyRemoved": "{name}은(는) 이미 삭제되었습니다",
     "pinnedSession": "worktree에 고정된 세션이 있습니다. 먼저 고정을 해제하세요.",

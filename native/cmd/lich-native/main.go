@@ -229,6 +229,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 		ids, _, _ := u.model.sessionsAt(projectID, path)
 		return ids
 	}
+	u.pulls.sessionLabel = u.model.sessionLabel
+	u.pulls.waiting = u.model.threadFixes.has
 	u.model.prChanged = u.prChanged
 	u.model.themeSelection = u.appearance.applySelection
 	u.model.exited = u.sessionExited
@@ -370,6 +372,9 @@ func (u *window) connect() error {
 	// After /events attached, like the turn states: a change from here on
 	// lands on top of what this read.
 	if err := u.model.services.load(u.ctx, u.client); err != nil {
+		return err
+	}
+	if err := u.model.threadFixes.load(u.ctx, u.client); err != nil {
 		return err
 	}
 	// A stored value this build cannot read starts the window with no

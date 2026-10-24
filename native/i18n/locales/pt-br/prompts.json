@@ -14,6 +14,14 @@
   "reviewComments": {
     "header": "Comentários de revisão:"
   },
+  "reviewThread": {
+    "head": "Thread de revisão no pull request #{number} ({branch}), {path}:{lines}:",
+    "headOutdated": "Thread de revisão no pull request #{number} ({branch}), {path}:{lines} (desatualizada, confira o código atual):",
+    "ask": {
+      "one": "Resolva e faça commit da correção. O lich responde e resolve a thread no GitHub quando a correção chegar por push, então não faça isso.",
+      "other": "Resolva todas e faça commit das correções. O lich responde e resolve as threads no GitHub quando as correções chegarem por push, então não faça isso."
+    }
+  },
   "issue": {
     "head": "Issue do GitHub #{number}: {title}\n{url}"
   }

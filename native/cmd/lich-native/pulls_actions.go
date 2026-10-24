@@ -103,6 +103,11 @@ func (u *window) applyPulls(act pullsAction) {
 		u.applyTalk(path, p.selected, act)
 		u.applyEdit(path, p.selected, act)
 	}
+	if len(act.threads) > 0 && p.selected != 0 {
+		if d := p.store.detail(path, p.selected).val; d != nil {
+			go u.sendThreads(p.project, *d, act.threads)
+		}
+	}
 	if act.approve && p.selected != 0 {
 		go u.approvePR(path, p.selected)
 	}

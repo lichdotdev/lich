@@ -108,6 +108,8 @@ type model struct {
 	closed *closedProjects
 	// services is every project service and its state.
 	services servicesStore
+	// threadFixes is the review threads waiting for a push.
+	threadFixes threadFixStore
 	// console is the service whose console is on screen in place of the
 	// active session, "" for none.
 	console string
@@ -323,6 +325,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.ServicesEvent.Name:
 			if list, err := backend.Decode(ev, api.ServicesEvent); err == nil {
 				m.services.set(list)
+			}
+		case api.ThreadFixesEvent.Name:
+			if list, err := backend.Decode(ev, api.ThreadFixesEvent); err == nil {
+				m.threadFixes.set(list)
 			}
 		case api.ServiceRevealEvent.Name:
 			if r, err := backend.Decode(ev, api.ServiceRevealEvent); err == nil && m.serviceReveal != nil {

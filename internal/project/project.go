@@ -55,6 +55,9 @@ type Service struct {
 	baseRefs refetchGuard
 	// emit reports a pull request write (prchanged.go); nil reports nothing.
 	emit func(name string, data any)
+	// fixes keeps the review threads waiting for a push (threadfix.go); nil
+	// keeps nothing.
+	fixes threadFixStore
 }
 
 // New returns a project service using the given picker.

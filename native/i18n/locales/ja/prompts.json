@@ -14,6 +14,14 @@
   "reviewComments": {
     "header": "レビューコメント:"
   },
+  "reviewThread": {
+    "head": "pull request #{number} ({branch}) のレビュースレッド、{path}:{lines}:",
+    "headOutdated": "pull request #{number} ({branch}) のレビュースレッド、{path}:{lines}（古いコメントです。現在のコードを確認してください）:",
+    "ask": {
+      "one": "対応して修正をコミットしてください。修正が push されると lich が GitHub でスレッドに返信して解決済みにするので、自分では行わないでください。",
+      "other": "すべてに対応して修正をコミットしてください。修正が push されると lich が GitHub で各スレッドに返信して解決済みにするので、自分では行わないでください。"
+    }
+  },
   "issue": {
     "head": "GitHub issue #{number}: {title}\n{url}"
   }

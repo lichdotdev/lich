@@ -222,6 +222,10 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// directory, so it validates the picked one against the workspace.
 	proj.SetProjects(db.ProjectAt)
 	proj.SetEmit(hub.Emit)
+	// A review thread handed to a session waits for the pull request's next
+	// push across restarts, since the push comes whenever the agent gets there.
+	proj.SetThreadFixes(db)
+	go proj.RunThreadFixWatch()
 	// Parking a session records the branch its checkout was on, so the history
 	// search can match a branch the row is showing (store.SetBranchOf), and a
 	// copy of what was said in it, capped, so the same search reaches the

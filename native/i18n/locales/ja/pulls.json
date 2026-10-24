@@ -194,6 +194,20 @@
     "verdictStays": "判定は変わりません。",
     "more": "コメントのオプション"
   },
+  "threadSend": {
+    "send": "セッションに送る",
+    "sendTip": "このスレッドを {name} に送ります",
+    "sendAll": {
+      "one": "未解決のスレッド {count} 件をセッションに送る",
+      "other": "未解決のスレッド {count} 件をセッションに送る"
+    },
+    "waiting": "送信済み · push 待ち",
+    "sent": {
+      "one": "スレッドを {name} に送りました",
+      "other": "スレッド {count} 件を {name} に送りました"
+    },
+    "awaitFailed": "スレッドはセッションに届きましたが、GitHub を更新できませんでした: {error}"
+  },
   "pulls": {
     "alreadyRemoved": "{name} はすでに削除されています",
     "pinnedSession": "ワークツリーにピン留めされたセッションがあります。先にピン留めを外してください。",

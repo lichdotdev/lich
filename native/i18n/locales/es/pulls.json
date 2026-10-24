@@ -195,6 +195,20 @@
     "verdictStays": "El veredicto no cambia.",
     "more": "Opciones del comentario"
   },
+  "threadSend": {
+    "send": "Enviar a la sesión",
+    "sendTip": "Envía este hilo a {name}",
+    "sendAll": {
+      "one": "Enviar {count} hilo abierto a la sesión",
+      "other": "Enviar {count} hilos abiertos a la sesión"
+    },
+    "waiting": "Enviado · esperando un push",
+    "sent": {
+      "one": "Hilo enviado a {name}",
+      "other": "{count} hilos enviados a {name}"
+    },
+    "awaitFailed": "La sesión recibió los hilos, pero GitHub no se actualizó: {error}"
+  },
   "pulls": {
     "alreadyRemoved": "{name} ya se había eliminado",
     "pinnedSession": "La worktree tiene una sesión fijada: desfíjala primero.",

@@ -195,6 +195,20 @@
     "verdictStays": "O veredito continua o mesmo.",
     "more": "Opções do comentário"
   },
+  "threadSend": {
+    "send": "Enviar para a sessão",
+    "sendTip": "Envia esta thread para {name}",
+    "sendAll": {
+      "one": "Enviar {count} thread aberta para a sessão",
+      "other": "Enviar {count} threads abertas para a sessão"
+    },
+    "waiting": "Enviada · aguardando um push",
+    "sent": {
+      "one": "Thread enviada para {name}",
+      "other": "{count} threads enviadas para {name}"
+    },
+    "awaitFailed": "A sessão recebeu as threads, mas o GitHub não foi atualizado: {error}"
+  },
   "pulls": {
     "alreadyRemoved": "{name} já foi removido",
     "pinnedSession": "A worktree tem uma sessão fixada. Desafixe-a primeiro.",

@@ -14,6 +14,14 @@
   "reviewComments": {
     "header": "Review comments:"
   },
+  "reviewThread": {
+    "head": "Review thread on pull request #{number} ({branch}), {path}:{lines}:",
+    "headOutdated": "Review thread on pull request #{number} ({branch}), {path}:{lines} (outdated, check the current code):",
+    "ask": {
+      "one": "Address it and commit the fix. lich replies to and resolves the thread on GitHub once the fix is pushed, so don't.",
+      "other": "Address them and commit the fixes. lich replies to and resolves the threads on GitHub once the fixes are pushed, so don't."
+    }
+  },
   "issue": {
     "head": "GitHub issue #{number} — {title}\n{url}"
   }

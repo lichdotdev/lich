@@ -194,6 +194,20 @@
     "verdictStays": "结论保持不变。",
     "more": "评论选项"
   },
+  "threadSend": {
+    "send": "发送到会话",
+    "sendTip": "将此讨论发送到 {name}",
+    "sendAll": {
+      "one": "将 {count} 个未解决的讨论发送到会话",
+      "other": "将 {count} 个未解决的讨论发送到会话"
+    },
+    "waiting": "已发送 · 等待 push",
+    "sent": {
+      "one": "已将讨论发送到 {name}",
+      "other": "已将 {count} 个讨论发送到 {name}"
+    },
+    "awaitFailed": "会话已收到讨论，但未能更新 GitHub：{error}"
+  },
   "pulls": {
     "alreadyRemoved": "{name} 已被移除",
     "pinnedSession": "该工作树有已固定的会话，请先取消固定。",

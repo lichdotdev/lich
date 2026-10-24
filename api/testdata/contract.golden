@@ -44,6 +44,7 @@ opencodeprofile.LoginCommand(ProfileSlugOptions) string
 opencodeprofile.Profiles(None) []ProfileInfo
 opencodeprofile.UpdateProfile(UpdateProfileOptions) Profile
 patchnotes.Current(PatchNotesOptions) PatchNotes
+project.AwaitThreadFix(ThreadFixOptions) None
 project.BaseFreshness(PathBranchOptions) BaseFreshness
 project.BaseStatus(PathOptions) *BaseStatus
 project.BranchRules(PathBranchOptions) *BranchRules
@@ -93,6 +94,7 @@ project.RestoreLines(RestoreLinesOptions) None
 project.RevertLines(RevertLinesOptions) RevertResult
 project.Search(SearchOptions) SearchResult
 project.SubmitReview(SubmitReviewOptions) None
+project.ThreadFixes(None) []ThreadFix
 project.Tree(PathOptions) FileListing
 project.WorktreeAdopted(PathOptions) bool
 project.WorktreeDirty(PathOptions) bool
@@ -247,6 +249,7 @@ event sessions-filed SessionsFiled
 event terminal:data:<id> string
 event terminal:exit:<id> SessionExit
 event theme-selection ThemeSelection
+event thread-fixes []ThreadFix
 event window-close None
 event window-raise None
 
@@ -354,6 +357,13 @@ PatchNotes {
 	version string
 	highlights []PatchNotesHighlight
 	groups []PatchNotesGroup
+}
+
+ThreadFixOptions {
+	path string
+	number int
+	threadId string
+	commentId int64
 }
 
 PathBranchOptions {
@@ -634,6 +644,14 @@ SubmitReviewOptions {
 	body string
 	head string
 	comments []ReviewComment
+}
+
+ThreadFix {
+	threadId string
+	path string
+	number int
+	commentId int64
+	head string
 }
 
 FileListing {

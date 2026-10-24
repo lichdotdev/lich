@@ -103,6 +103,10 @@ type pullsScreen struct {
 	files filesInput
 	// sessionsIn is the project's sessions sitting in a checkout.
 	sessionsIn func(projectID, path string) []string
+	// sessionLabel names a session.
+	sessionLabel func(id string) string
+	// waiting is whether a review thread waits for the push that resolves it.
+	waiting func(threadID string) bool
 }
 
 // reviewSession is where the pull request's comments go: a session in the

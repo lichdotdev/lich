@@ -12,6 +12,14 @@
   "reviewComments": {
     "header": "리뷰 코멘트:"
   },
+  "reviewThread": {
+    "head": "pull request #{number} ({branch})의 리뷰 스레드, {path}:{lines}:",
+    "headOutdated": "pull request #{number} ({branch})의 리뷰 스레드, {path}:{lines} (오래된 코멘트이니 현재 코드를 확인하세요):",
+    "ask": {
+      "one": "처리하고 수정 사항을 커밋하세요. 수정이 push되면 lich가 GitHub에서 스레드에 답글을 달고 해결 처리하므로 직접 하지 마세요.",
+      "other": "모두 처리하고 수정 사항을 커밋하세요. 수정이 push되면 lich가 GitHub에서 각 스레드에 답글을 달고 해결 처리하므로 직접 하지 마세요."
+    }
+  },
   "issue": {
     "head": "GitHub 이슈 #{number}: {title}\n{url}"
   }

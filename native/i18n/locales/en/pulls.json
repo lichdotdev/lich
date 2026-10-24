@@ -195,6 +195,20 @@
     "verdictStays": "The verdict stays as it is.",
     "more": "Comment options"
   },
+  "threadSend": {
+    "send": "Send to session",
+    "sendTip": "Sends this thread to {name}",
+    "sendAll": {
+      "one": "Send {count} open thread to session",
+      "other": "Send {count} open threads to session"
+    },
+    "waiting": "Sent · waiting for a push",
+    "sent": {
+      "one": "Sent the thread to {name}",
+      "other": "Sent {count} threads to {name}"
+    },
+    "awaitFailed": "The session has the threads, but GitHub wasn't updated: {error}"
+  },
   "pulls": {
     "alreadyRemoved": "{name} was already removed",
     "pinnedSession": "Worktree has a pinned session — unpin it first.",

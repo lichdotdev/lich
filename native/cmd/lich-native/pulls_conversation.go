@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"strings"
 	"time"
 
@@ -25,6 +26,8 @@ type talkState struct {
 	sendClicks   map[string]*widget.Clickable
 	cancelClicks map[string]*widget.Clickable
 	resolveClick map[string]*widget.Clickable
+	toSession    map[string]*widget.Clickable
+	allToSession widget.Clickable
 	editing      map[string]bool
 	focusEdit    string
 	menus        map[string]*ui.MenuState
@@ -59,6 +62,7 @@ func (s *talkState) init() {
 	s.replying, s.replyFields = map[string]bool{}, map[string]*replyField{}
 	s.replyClicks, s.sendClicks = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
 	s.cancelClicks, s.resolveClick = map[string]*widget.Clickable{}, map[string]*widget.Clickable{}
+	s.toSession = map[string]*widget.Clickable{}
 	s.editing, s.menus, s.moreClicks = map[string]bool{}, map[string]*ui.MenuState{}, map[string]*widget.Clickable{}
 	s.discards, s.edits = map[int]*widget.Clickable{}, map[int]*widget.Clickable{}
 }
@@ -132,6 +136,9 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d backe
 	now := gtx.Now
 	v.talkClicks(gtx, v.pendingOf(d.URL))
 	rows := v.pendingRows(th, v.pendingOf(d.URL))
+	if open := p.sendableThreads(read.val); canSendThreads(d) && len(open) > 0 {
+		rows = append(rows, v.sendOpenThreads(th, p, d, open, act))
+	}
 	if len(items) == 0 && len(resolved) == 0 {
 		rows = append(rows, func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.nothingYet")) })
 	}
@@ -237,7 +244,7 @@ func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 			return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D {
-						return foldClick.Layout(gtx, func(gtx C) D { return threadHeader(gtx, on, t, fold.Value) })
+						return foldClick.Layout(gtx, func(gtx C) D { return threadHeader(gtx, on, t, fold.Value, p.threadWaiting(t.ID)) })
 					}),
 					layout.Rigid(func(gtx C) D {
 						if !fold.Value {
@@ -250,7 +257,7 @@ func (v *pullView) threadBox(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 		})
 }
 
-func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open bool) D {
+func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open, waiting bool) D {
 	chevron := icPullRight
 	if open {
 		chevron = icPullDown
@@ -269,6 +276,9 @@ func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open bool) D {
 	}
 	if t.IsOutdated {
 		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsConversation.outdated")).In(th.ToneWait).Layout))
+	}
+	if waiting && !t.IsResolved {
+		children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.threadSend.waiting")).Muted().Layout))
 	}
 	if t.IsResolved {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
@@ -296,7 +306,7 @@ func (v *pullView) threadBody(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRD
 	}
 	if !editing {
 		rows = append(rows, layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return v.threadActions(gtx, th, d, t, act) })
+			return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return v.threadActions(gtx, th, p, d, t, act) })
 		}))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
@@ -332,8 +342,9 @@ func hunkTail(gtx C, th *ui.Theme, hunk string) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
-// threadActions is Reply and Resolve, or the reply box while one is written.
-func (v *pullView) threadActions(gtx C, th *ui.Theme, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction) D {
+// threadActions is Reply and Resolve, with Send to session at the end, or
+// the reply box while one is written.
+func (v *pullView) threadActions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction) D {
 	s := &v.talk
 	reply, resolve := clickableOf(s.replyClicks, t.ID), clickableOf(s.resolveClick, t.ID)
 	if reply.Clicked(gtx) {
@@ -359,7 +370,47 @@ func (v *pullView) threadActions(gtx C, th *ui.Theme, d backend.PRDetail, t back
 	resolveB := th.Button(resolve, label)
 	resolveB.Variant, resolveB.Size, resolveB.Disabled = ui.VariantGhost, ui.SizeXS, busy == "resolve:"+t.ID
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(replyB.Layout), ui.Gap(2), layout.Rigid(resolveB.Layout))
+		layout.Rigid(replyB.Layout), ui.Gap(2), layout.Rigid(resolveB.Layout),
+		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+		layout.Rigid(func(gtx C) D { return v.toSessionButton(gtx, th, p, d, t, act) }))
+}
+
+// toSessionButton is Send to session, Open in session while the branch's
+// checkout has no session; nothing on a thread that cannot go.
+func (v *pullView) toSessionButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction) D {
+	if !canSendThreads(d) || !p.threadSendable(t) {
+		return D{}
+	}
+	click := clickableOf(v.talk.toSession, t.ID)
+	busy := v.busyNow() == "threads"
+	if click.Clicked(gtx) && !busy {
+		act.threads = []backend.PRReviewThread{t}
+	}
+	label, tip := i18n.T("pulls.pulls.openInSession"), ""
+	if id, _ := p.reviewSession(d); id != "" {
+		label, tip = i18n.T("pulls.threadSend.send"), i18n.T("pulls.threadSend.sendTip", i18n.Args{"name": p.sessionLabel(id)})
+	}
+	b := th.Button(click, label)
+	b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantGhost, ui.SizeXS, busy
+	return v.withTip(gtx, th, p, "toSession:"+t.ID, tip, b.Layout)
+}
+
+// sendOpenThreads is Send open threads, above the timeline: every open thread
+// not yet waiting, in one prompt.
+func (v *pullView) sendOpenThreads(th *ui.Theme, p *pullsScreen, d backend.PRDetail, threads []backend.PRReviewThread, act *pullsAction) layout.Widget {
+	return func(gtx C) D {
+		busy := v.busyNow() == "threads"
+		if v.talk.allToSession.Clicked(gtx) && !busy {
+			act.threads = threads
+		}
+		b := th.Button(&v.talk.allToSession, i18n.T("pulls.threadSend.sendAll", i18n.Args{"count": len(threads)}))
+		b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantOutline, ui.SizeXS, busy
+		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+				layout.Rigid(b.Layout))
+		})
+	}
 }
 
 func (v *pullView) replyBox(gtx C, th *ui.Theme, d backend.PRDetail, t backend.PRReviewThread, act *pullsAction) D {
