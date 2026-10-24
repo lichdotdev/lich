@@ -136,3 +136,16 @@ func TestTrayLabelsCarryTheServices(t *testing.T) {
 		t.Errorf("pt-BR: %+v", got)
 	}
 }
+
+func TestGlobalServicesAreHomes(t *testing.T) {
+	p := servicesSettings{home: func() string { return "home-id" }}
+	if got := p.projectOf(""); got != "home-id" {
+		t.Errorf("Global edits %q, want Home's project", got)
+	}
+	if got := p.projectOf("p1"); got != "p1" {
+		t.Errorf("a project's scope edits %q", got)
+	}
+	if got := (&servicesSettings{}).projectOf(""); got != "" {
+		t.Errorf("before Home is known Global edits %q", got)
+	}
+}

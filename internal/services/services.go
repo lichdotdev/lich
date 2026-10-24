@@ -1,8 +1,10 @@
 // Package services runs a project's services: commands the user saved once
 // (a container, a tunnel, a dev server) that lich starts on a PTY of their own
 // and shows as up or down, outside the session list. A service lives as long
-// as the lich backend does: closing the window or the project's tab leaves it
-// running, and quitting lich stops it (Shutdown).
+// as its project's tab: closing the tab stops it, reopening the project starts
+// the ones saved to start with lich, and so does lich starting with the tab
+// open. Closing the window leaves them all running; quitting lich stops them
+// (Shutdown).
 //
 // A service is not a shell. When its command exits, the service has stopped:
 // nothing is respawned and no prompt is left behind, and what it printed last
@@ -32,6 +34,7 @@ type Store interface {
 	DeleteService(id string) error
 	ProjectName(projectID string) string
 	ProjectPath(projectID string) string
+	ProjectOpen(projectID string) bool
 }
 
 // terminalPrefix keeps a service's PTY id apart from every session id, which

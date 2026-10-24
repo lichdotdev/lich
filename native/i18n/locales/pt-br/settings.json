@@ -599,7 +599,7 @@
     "title": "Serviços",
     "searchWords": "serviços comandos docker container túnel servidor de desenvolvimento iniciar com o lich services",
     "description": "Comandos que o lich mantém rodando para este projeto, cada um no seu próprio console: um container, um túnel, um servidor de desenvolvimento. Quando o comando sai, o serviço parou.",
-    "globalDescription": "Serviços pertencem a um projeto. Escolha um no menu de escopo para adicionar ou mudar os serviços dele.",
+    "globalDescription": "Serviços que rodam na sua pasta home, listados na tela inicial do lich. Os serviços de um projeto ficam no escopo dele.",
     "add": "Adicionar serviço",
     "startsWithLich": "Inicia com o lich",
     "name": "Nome",

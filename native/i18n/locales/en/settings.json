@@ -599,7 +599,7 @@
     "title": "Services",
     "searchWords": "services commands docker container tunnel dev server start with lich",
     "description": "Commands lich keeps running for this project, each in a console of its own: a container, a tunnel, a dev server. When a command exits, its service has stopped.",
-    "globalDescription": "Services belong to a project. Pick one in the scope menu to add or change its services.",
+    "globalDescription": "Services that run in your home directory, listed on lich's home screen. A project's own services are in its scope.",
     "add": "Add service",
     "startsWithLich": "Starts with lich",
     "name": "Name",

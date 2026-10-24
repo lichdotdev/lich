@@ -593,7 +593,7 @@
     "title": "서비스",
     "searchWords": "서비스 명령 docker 컨테이너 터널 개발 서버 lich와 함께 시작 services",
     "description": "lich가 이 프로젝트를 위해 계속 실행하는 명령입니다. 컨테이너, 터널, 개발 서버가 각자 자기 콘솔에서 실행됩니다. 명령이 끝나면 그 서비스는 중지된 것입니다.",
-    "globalDescription": "서비스는 프로젝트에 속합니다. 범위 메뉴에서 프로젝트를 골라 서비스를 추가하거나 바꾸세요.",
+    "globalDescription": "홈 디렉터리에서 실행되고 lich 시작 화면에 표시되는 서비스입니다. 프로젝트의 서비스는 해당 범위에 있습니다.",
     "add": "서비스 추가",
     "startsWithLich": "lich와 함께 시작",
     "name": "이름",

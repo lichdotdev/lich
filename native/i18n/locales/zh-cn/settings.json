@@ -598,7 +598,7 @@
     "title": "服务",
     "searchWords": "服务 命令 docker 容器 隧道 开发服务器 随 lich 启动 services",
     "description": "lich 为这个项目持续运行的命令，每个都在自己的控制台里：容器、隧道、开发服务器。命令退出时，服务就停止了。",
-    "globalDescription": "服务属于某个项目。在范围菜单里选一个项目，就能添加或修改它的服务。",
+    "globalDescription": "在你的主目录中运行、显示在 lich 首页上的服务。项目自己的服务在它的范围里。",
     "add": "添加服务",
     "startsWithLich": "随 lich 启动",
     "name": "名称",

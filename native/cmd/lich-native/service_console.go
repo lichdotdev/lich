@@ -296,7 +296,12 @@ func consolePill(gtx C, th *ui.Theme, v backend.Service) D {
 		l.Color = th.Destructive
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return stateDot(gtx, th, v.State) }),
+		layout.Rigid(func(gtx C) D {
+			if v.State == api.ServiceRunning {
+				return beatingDot(gtx, th)
+			}
+			return stateDot(gtx, th, v.State)
+		}),
 		ui.Gap(1),
 		layout.Rigid(l.Layout),
 	)

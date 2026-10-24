@@ -257,6 +257,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings = newSettingsScreen(ctx, client, &u.root, w.Invalidate)
 	u.settings.notify = u.notifier
 	u.settings.services.store = &u.model.services
+	u.settings.services.home = u.model.homeProject
 	u.settings.promptUpdate = u.promptAppUpdate
 	u.footer = newFooter(ctx, client, &u.root, u.model.usage, u.model.quota, w.Invalidate)
 	u.gate = &spawnGate{probe: client, invalidate: w.Invalidate, park: u.parkSession, notify: func(t ui.Toast) { u.toaster.Show(t) }}

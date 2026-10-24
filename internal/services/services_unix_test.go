@@ -20,6 +20,7 @@ import (
 type memStore struct {
 	mu       sync.Mutex
 	projects map[string]string
+	closed   map[string]bool
 	configs  []api.ServiceConfig
 }
 
@@ -58,6 +59,18 @@ func (m *memStore) ProjectName(id string) string {
 
 func (m *memStore) ProjectPath(id string) string { return m.projects[id] }
 
+func (m *memStore) ProjectOpen(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.projects[id] != "" && !m.closed[id]
+}
+
+func (m *memStore) setClosed(id string, closed bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.closed[id] = closed
+}
+
 // termStore is the terminal's store for a PTY that only runs services: the
 // project path is all StartService reads, and any other call panics on the
 // nil interface, which is the test failing loudly.
@@ -84,7 +97,7 @@ func (e *emitted) emit(name string, data any) {
 func newTestServices(t *testing.T) (*Service, *memStore, *emitted) {
 	t.Helper()
 	t.Setenv("SHELL", "/bin/sh")
-	st := &memStore{projects: map[string]string{"p1": t.TempDir(), "p2": t.TempDir()}}
+	st := &memStore{projects: map[string]string{"p1": t.TempDir(), "p2": t.TempDir()}, closed: map[string]bool{}}
 	em := &emitted{}
 	svc := New(st, terminal.New(termStore{}, nil, events.New()), em.emit)
 	t.Cleanup(func() { svc.Shutdown(time.Second) })
@@ -319,5 +332,57 @@ func TestAStartThatCannotSpawnFailsWithTheReason(t *testing.T) {
 	}
 	if out, _ := svc.Output(context.Background(), api.ServiceIDOptions{ID: v.ID}); len(out) == 0 {
 		t.Error("the failed start left nothing on the console")
+	}
+}
+
+func TestBootLeavesClosedProjectsDown(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	open := save(t, svc, "p1", "open", "sleep 30", true)
+	shut := save(t, svc, "p2", "shut", "sleep 30", true)
+	st.setClosed("p2", true)
+	svc.Boot()
+	waitState(t, svc, open.ID, api.ServiceRunning)
+	if got := stateOf(t, svc, shut.ID).State; got != api.ServiceStopped {
+		t.Errorf("a closed project's service is %s after boot", got)
+	}
+}
+
+func TestAServiceLivesAsLongAsItsProjectsTab(t *testing.T) {
+	svc, st, _ := newTestServices(t)
+	auto := save(t, svc, "p1", "auto", "sleep 30", true)
+	manual := save(t, svc, "p1", "manual", "sleep 30", false)
+	other := save(t, svc, "p2", "other", "sleep 30", false)
+	for _, id := range []string{auto.ID, manual.ID, other.ID} {
+		if _, err := svc.Start(context.Background(), api.ServiceIDOptions{ID: id}); err != nil {
+			t.Fatal(err)
+		}
+		waitState(t, svc, id, api.ServiceRunning)
+	}
+	time.Sleep(200 * time.Millisecond)
+	st.setClosed("p1", true)
+	svc.ProjectChanged(api.ProjectClosedEvent.Name, api.ProjectClosed{ID: "p1"})
+	waitState(t, svc, auto.ID, api.ServiceStopped)
+	waitState(t, svc, manual.ID, api.ServiceStopped)
+	if got := stateOf(t, svc, other.ID).State; got != api.ServiceRunning {
+		t.Errorf("another project's service is %s", got)
+	}
+	st.setClosed("p1", false)
+	svc.ProjectChanged(api.ProjectAddedEvent.Name, api.ProjectAdded{ID: "p1"})
+	waitState(t, svc, auto.ID, api.ServiceRunning)
+	if got := stateOf(t, svc, manual.ID).State; got != api.ServiceStopped {
+		t.Errorf("a service started by hand came back with its project: %s", got)
+	}
+}
+
+func TestClosingAProjectKillsWhatOutstaysTheGrace(t *testing.T) {
+	svc, _, _ := newTestServices(t)
+	v := save(t, svc, "p1", "stubborn", "trap '' INT TERM; while :; do sleep 1; done", false)
+	if _, err := svc.Start(context.Background(), api.ServiceIDOptions{ID: v.ID}); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(200 * time.Millisecond)
+	svc.stopProject("p1", 300*time.Millisecond)
+	if got := stateOf(t, svc, v.ID).State; got != api.ServiceStopped {
+		t.Errorf("after closing its project the service is %s", got)
 	}
 }

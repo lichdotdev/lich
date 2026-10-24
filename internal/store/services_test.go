@@ -116,3 +116,20 @@ func TestDeleteServiceAndProjectName(t *testing.T) {
 		t.Errorf("ProjectName of a missing project = %q", got)
 	}
 }
+
+func TestProjectOpenFollowsTheTab(t *testing.T) {
+	svc := newTestStore(t)
+	addTestProject(t, svc, "p1")
+	if !svc.ProjectOpen("p1") {
+		t.Error("a project just added is not open")
+	}
+	if _, err := svc.CloseProject(context.Background(), api.ProjectIDOptions{ID: "p1"}); err != nil {
+		t.Fatal(err)
+	}
+	if svc.ProjectOpen("p1") {
+		t.Error("a closed project is open")
+	}
+	if svc.ProjectOpen("nope") {
+		t.Error("a missing project is open")
+	}
+}

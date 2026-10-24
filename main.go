@@ -372,7 +372,10 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	db.SetSessionRenamed(func(id, label string) {
 		events.Send(hub.Emit, api.SessionTitleEvent, spawn.RenamedEvent{ID: id, Label: label})
 	})
-	db.SetProjectChanged(hub.Emit)
+	db.SetProjectChanged(func(name string, data any) {
+		hub.Emit(name, data)
+		svcs.ProjectChanged(name, data)
+	})
 	providerSvc := providers.New()
 	// One resolution, three readers: the process PATH exec.LookPath resolves a
 	// binary through, what a new session inherits, and the editor lookup. They

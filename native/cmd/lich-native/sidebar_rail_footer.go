@@ -102,6 +102,9 @@ func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
 	}
 	r := float32(gtx.Dp(3))
 	center := f32.Pt(float32(size.X)-r, r)
+	if !t.failed {
+		pulseRing(gtx, center, r, float32(gtx.Dp(3)), c)
+	}
 	ui.StrokeArc(gtx, center, r+float32(gtx.Dp(1)), float32(gtx.Dp(2)), 0, 2*math.Pi, th.Surface)
 	ui.StrokeArc(gtx, center, r/2, r, 0, 2*math.Pi, c)
 	return D{Size: size}
@@ -146,13 +149,13 @@ func (f *servicesFooter) panelContent(gtx C, th *ui.Theme, root *ui.Root, projec
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return f.panelHeader(gtx, th, t) }),
+		layout.Rigid(func(gtx C) D { return f.panelHeader(gtx, th, root, t) }),
 		layout.Rigid(func(gtx C) D { return f.rowList(gtx, th, root, list, console, act) }),
 		layout.Rigid(func(gtx C) D { return f.addRow(gtx, th) }),
 	)
 }
 
-func (f *servicesFooter) panelHeader(gtx C, th *ui.Theme, t servicesTally) D {
+func (f *servicesFooter) panelHeader(gtx C, th *ui.Theme, root *ui.Root, t servicesTally) D {
 	h := gtx.Dp(ui.Space(8))
 	gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
 	children := []layout.FlexChild{
@@ -162,13 +165,7 @@ func (f *servicesFooter) panelHeader(gtx C, th *ui.Theme, t servicesTally) D {
 		layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 	}
 	if t.total > 0 {
-		text := i18n.T("sidebar.services.startAll")
-		if allServicesOp(t) == serviceStopAll {
-			text = i18n.T("sidebar.services.stopAll")
-		}
-		b := th.Button(&f.all, text)
-		b.Variant, b.Size = ui.VariantGhost, ui.SizeXS
-		children = append(children, layout.Rigid(b.Layout))
+		children = append(children, layout.Rigid(func(gtx C) D { return f.allButton(gtx, th, root, t) }))
 	}
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = h

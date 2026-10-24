@@ -241,6 +241,13 @@ func (m *model) openConsole(id string) {
 	m.mu.Unlock()
 }
 
+// homeProject is the id of the project Home shows, "" before the first load.
+func (m *model) homeProject() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.homeID
+}
+
 // consoleShown is the service whose console is on screen, "" for none.
 func (m *model) consoleShown() string {
 	m.mu.Lock()

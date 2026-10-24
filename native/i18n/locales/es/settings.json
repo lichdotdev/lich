@@ -599,7 +599,7 @@
     "title": "Servicios",
     "searchWords": "servicios comandos docker contenedor túnel servidor de desarrollo iniciar con lich services",
     "description": "Comandos que lich mantiene en marcha para este proyecto, cada uno en su propia consola: un contenedor, un túnel, un servidor de desarrollo. Cuando el comando termina, el servicio se ha detenido.",
-    "globalDescription": "Los servicios pertenecen a un proyecto. Elige uno en el menú de ámbito para añadir o cambiar sus servicios.",
+    "globalDescription": "Servicios que se ejecutan en tu carpeta personal y aparecen en la pantalla de inicio de lich. Los servicios de un proyecto están en su ámbito.",
     "add": "Añadir servicio",
     "startsWithLich": "Se inicia con lich",
     "name": "Nombre",

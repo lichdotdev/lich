@@ -63,3 +63,13 @@ func (s *Service) ProjectName(projectID string) string {
 	}
 	return name
 }
+
+// ProjectOpen is whether project id has a tab: open, not closed to the
+// history. A project that does not exist is not open.
+func (s *Service) ProjectOpen(projectID string) bool {
+	var open bool
+	if err := s.db.QueryRow(`SELECT is_open FROM projects WHERE id = ?`, projectID).Scan(&open); err != nil {
+		return false
+	}
+	return open
+}

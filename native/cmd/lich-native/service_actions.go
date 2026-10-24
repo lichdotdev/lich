@@ -63,14 +63,11 @@ func (u *window) runServiceOp(r serviceRequest) {
 }
 
 // revealService is the tray's Show output: the service's project comes on
-// screen with its console, its tab reopened when it was closed, since a
-// service keeps running past its project's tab.
+// screen with its console. A running service's project has a tab open, since
+// closing the tab stops it.
 func (u *window) revealService(id string) {
 	v, ok := u.model.services.byID(id)
-	if !ok {
-		return
-	}
-	if !u.model.setActiveProject(v.ProjectID) && !u.reopenServiceProject(v.ProjectID) {
+	if !ok || !u.model.setActiveProject(v.ProjectID) {
 		return
 	}
 	u.hideSettings.Store(true)
@@ -85,30 +82,14 @@ func (u *window) openServiceSettings(projectID, id string) {
 	u.pulls.hide()
 	u.settings.openSection(sectionServices)
 	tabs, _ := u.model.projectTabs()
-	u.settings.show(projectID, settingsProjectsOf(tabs))
+	scope := projectID
+	if projectID == u.model.homeProject() {
+		scope = ""
+	}
+	u.settings.show(scope, settingsProjectsOf(tabs))
 	if id == "" {
 		id = newServiceRow
 	}
 	u.settings.services.begin(id)
 	u.model.invalidate()
-}
-
-// reopenServiceProject opens the closed project projectID again, and reports
-// whether it is on screen.
-func (u *window) reopenServiceProject(projectID string) bool {
-	recent, err := u.client.RecentProjects(u.ctx)
-	if err != nil {
-		u.logErr("reopen a service's project", err)
-		return false
-	}
-	for _, r := range recent {
-		if r.ID == projectID {
-			if err := u.adopt(r); err != nil {
-				u.logErr("reopen a service's project", err)
-				return false
-			}
-			return u.model.setActiveProject(projectID)
-		}
-	}
-	return false
 }

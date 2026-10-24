@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 	"strconv"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -65,6 +67,7 @@ type servicesFooter struct {
 	open     bool
 	header   widget.Clickable
 	all      widget.Clickable
+	allTip   ui.Tooltip
 	add      widget.Clickable
 	list     widget.List
 	rows     map[string]*widget.Clickable
@@ -129,7 +132,7 @@ func (f *servicesFooter) layout(gtx C, th *ui.Theme, root *ui.Root, projectID st
 			layout.Rigid(func(gtx C) D { return f.addRow(gtx, th) }),
 		)
 	}
-	children = append(children, layout.Rigid(func(gtx C) D { return f.headerRow(gtx, th, tally) }))
+	children = append(children, layout.Rigid(func(gtx C) D { return f.headerRow(gtx, th, root, tally) }))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
@@ -142,7 +145,7 @@ func allServicesOp(t servicesTally) serviceOp {
 	return serviceStartAll
 }
 
-func (f *servicesFooter) headerRow(gtx C, th *ui.Theme, t servicesTally) D {
+func (f *servicesFooter) headerRow(gtx C, th *ui.Theme, root *ui.Root, t servicesTally) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return f.header.Layout(gtx, func(gtx C) D {
 		h := gtx.Dp(ui.Space(8))
@@ -170,13 +173,7 @@ func (f *servicesFooter) headerRow(gtx C, th *ui.Theme, t servicesTally) D {
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 		}
 		if f.open && t.total > 0 {
-			text := i18n.T("sidebar.services.startAll")
-			if allServicesOp(t) == serviceStopAll {
-				text = i18n.T("sidebar.services.stopAll")
-			}
-			b := on.Button(&f.all, text)
-			b.Variant, b.Size = ui.VariantGhost, ui.SizeXS
-			children = append(children, layout.Rigid(b.Layout), ui.Gap(1))
+			children = append(children, layout.Rigid(func(gtx C) D { return f.allButton(gtx, on, root, t) }), ui.Gap(1.5))
 		}
 		children = append(children, layout.Rigid(func(gtx C) D { return chevron.Layout(gtx, 14, on.MutedForeground) }))
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
@@ -184,6 +181,17 @@ func (f *servicesFooter) headerRow(gtx C, th *ui.Theme, t servicesTally) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 		})
 	})
+}
+
+// allButton starts every service that is down, or stops them all once all
+// of them run: the icon of what it does, the words in its tooltip.
+func (f *servicesFooter) allButton(gtx C, th *ui.Theme, root *ui.Root, t servicesTally) D {
+	ic, hint := icServiceStart, i18n.T("sidebar.services.startAll")
+	if allServicesOp(t) == serviceStopAll {
+		ic, hint = icServiceStop, i18n.T("sidebar.services.stopAll")
+	}
+	tip := th.Tooltip(root, &f.allTip, hint)
+	return tip.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &f.all, ic, false) })
 }
 
 // servicesCount is the closed row's readout: up/total, in the running tone
@@ -202,17 +210,50 @@ func servicesCount(gtx C, th *ui.Theme, t servicesTally) D {
 }
 
 // servicesGlyph is the dot that says how a project's services stand: red when
-// one failed, solid with a halo while one runs, hollow otherwise. Still on
-// purpose: a pulse would keep the window redrawing for as long as a service
-// runs, which is for hours.
+// one failed, pulsing while one runs, hollow otherwise.
 func servicesGlyph(gtx C, th *ui.Theme, t servicesTally) D {
 	switch {
 	case t.failed:
 		return stateDot(gtx, th, api.ServiceFailed)
 	case t.up > 0:
-		return stateDot(gtx, th, api.ServiceRunning)
+		return beatingDot(gtx, th)
 	}
 	return stateDot(gtx, th, api.ServiceStopped)
+}
+
+// beatingDot is the running dot with its beat, for the places that say a
+// service is up rather than list it: the footer's row and the console's bar.
+func beatingDot(gtx C, th *ui.Theme) D {
+	size := gtx.Dp(14)
+	center := f32.Pt(float32(size)/2, float32(size)/2)
+	dot := float32(gtx.Dp(3.5))
+	pulseRing(gtx, center, dot, float32(gtx.Dp(3.5)), th.TonePass)
+	ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.TonePass)
+	return D{Size: image.Pt(size, size)}
+}
+
+// The running dot beats: a ring grows out of it for pulseLength, drawn at the
+// busy spinner's rate, then rests until pulseEvery comes round. It beats for
+// as long as a service runs, hours, so the rest is what keeps it cheap: no
+// frame is asked for in it. Measured with one service up, a continuous pulse
+// at a tenth of that rate already held the window at 6% of a core.
+const (
+	pulseEvery  = 2400 * time.Millisecond
+	pulseLength = 800 * time.Millisecond
+)
+
+// pulseRing is that beat around center: a ring from radius to radius+reach
+// that fades as it grows, and the next frame it needs.
+func pulseRing(gtx C, center f32.Point, radius, reach float32, c color.NRGBA) {
+	at := time.Duration(gtx.Now.UnixMilli()%pulseEvery.Milliseconds()) * time.Millisecond
+	if at >= pulseLength {
+		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(pulseEvery - at)})
+		return
+	}
+	phase := float32(at) / float32(pulseLength)
+	eased := 1 - (1-phase)*(1-phase)
+	ui.StrokeArc(gtx, center, radius+reach*eased, float32(gtx.Dp(1.5)), 0, 2*math.Pi, ui.Alpha(c, 0.7*(1-phase)))
+	gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(spinnerFrame)})
 }
 
 // stateDot is a service state as a 14dp glyph.
@@ -222,7 +263,6 @@ func stateDot(gtx C, th *ui.Theme, state string) D {
 	dot := float32(gtx.Dp(3.5))
 	switch state {
 	case api.ServiceRunning:
-		ui.StrokeArc(gtx, center, dot+float32(gtx.Dp(2)), float32(gtx.Dp(1.5)), 0, 2*math.Pi, th.Over(ui.Alpha(th.TonePass, 0.35)))
 		ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.TonePass)
 	case api.ServiceStopping:
 		ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.ToneWait)
@@ -237,7 +277,11 @@ func stateDot(gtx C, th *ui.Theme, state string) D {
 func (f *servicesFooter) rowList(gtx C, th *ui.Theme, root *ui.Root, list []backend.Service, console string, act *sidebarAction) D {
 	rowH := gtx.Dp(ui.Space(6.5))
 	gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, rowH*serviceRowsShown)
-	return th.ScrollArea(&f.list).Layout(gtx, len(list), func(gtx C, i int) D {
+	// The thumb floats over the rows, as the rail's does: a reserved gutter
+	// would end every row short of the cards above it.
+	rows := th.ScrollArea(&f.list)
+	rows.AnchorStrategy = material.Overlay
+	return rows.Layout(gtx, len(list), func(gtx C, i int) D {
 		return f.row(gtx, th, root, list[i], list[i].ID == console, act)
 	})
 }

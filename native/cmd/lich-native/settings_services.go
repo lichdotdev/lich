@@ -30,6 +30,10 @@ var icServiceEdit = icons.Lucide("pencil")
 // one of them, or a new one, open in a form.
 type servicesSettings struct {
 	store *servicesStore
+	// home is the id of the project Home shows, whose services Global edits:
+	// Home has no scope of its own, and its services run in the home
+	// directory, which is as global as a service gets.
+	home func() string
 
 	editing  string // a service id, newServiceRow, or "" for none
 	name     widget.Editor
@@ -57,6 +61,15 @@ func (p *servicesSettings) begin(id string) {
 	p.withLich.Value = v.StartWithLich
 }
 
+// projectOf is the project whose services scope edits: the scope's own, or
+// Home's in Global; "" while Home is not known.
+func (p *servicesSettings) projectOf(scope string) string {
+	if scope != "" || p.home == nil {
+		return scope
+	}
+	return p.home()
+}
+
 func (p *servicesSettings) setErr(text string) {
 	p.mu.Lock()
 	p.err = text
@@ -74,6 +87,7 @@ func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 	if s.scope == "" {
 		desc = i18n.T("settings.servicesSettings.globalDescription")
 	}
+	projectID := p.projectOf(s.scope)
 	rows := []layout.Widget{func(gtx C) D {
 		return layout.Inset{Top: -ui.Space(2), Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(settingsDescSize)*settingsDescCh*6/10)
@@ -82,14 +96,16 @@ func (s *settingsScreen) servicesPaneRows(th *ui.Theme) []layout.Widget {
 			return l.Layout(gtx)
 		})
 	}}
-	if s.scope == "" || p.store == nil {
+	if projectID == "" || p.store == nil {
 		return rows
 	}
-	for _, v := range p.store.of(s.scope) {
+	for _, v := range p.store.of(projectID) {
 		rows = append(rows, func(gtx C) D { return s.serviceRow(gtx, th, v) })
 	}
 	if p.editing == newServiceRow {
-		rows = append(rows, func(gtx C) D { return s.serviceForm(gtx, th, backend.Service{}) })
+		rows = append(rows, func(gtx C) D {
+			return s.serviceForm(gtx, th, backend.Service{ServiceConfig: api.ServiceConfig{ProjectID: projectID}})
+		})
 		return rows
 	}
 	rows = append(rows, func(gtx C) D {
@@ -150,7 +166,7 @@ func (s *settingsScreen) serviceForm(gtx C, th *ui.Theme, v backend.Service) D {
 		p.editing = ""
 	}
 	if p.save.Clicked(gtx) {
-		opts := api.SaveServiceOptions{ID: v.ID, ProjectID: s.scope, Name: p.name.Text(), Command: p.command.Text(), StartWithLich: p.withLich.Value}
+		opts := api.SaveServiceOptions{ID: v.ID, ProjectID: v.ProjectID, Name: p.name.Text(), Command: p.command.Text(), StartWithLich: p.withLich.Value}
 		go s.saveService(opts)
 	}
 	p.mu.Lock()

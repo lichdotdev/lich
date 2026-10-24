@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -203,8 +204,9 @@ func (s *Service) signal() {
 	s.changed = make(chan struct{})
 }
 
-// Boot starts every service saved to start with lich. One that fails to start
-// is logged and shown failed; it does not hold up the others.
+// Boot starts the services saved to start with lich whose project has a tab
+// open. One that fails to start is logged and shown failed; it does not hold
+// up the others.
 func (s *Service) Boot() {
 	configs, err := s.store.Services()
 	if err != nil {
@@ -212,11 +214,122 @@ func (s *Service) Boot() {
 		return
 	}
 	for _, c := range configs {
-		if !c.StartWithLich {
-			continue
+		if c.StartWithLich && s.store.ProjectOpen(c.ProjectID) {
+			s.startWithLich(c)
 		}
-		if err := s.start(c.ID); err != nil {
-			slog.Warn("services: start with lich", "service", c.Name, "err", err)
+	}
+}
+
+func (s *Service) startWithLich(c api.ServiceConfig) {
+	if err := s.start(c.ID); err != nil {
+		slog.Warn("services: start with lich", "service", c.Name, "err", err)
+	}
+}
+
+// ProjectChanged follows the project list (store.SetProjectChanged): a project
+// opened, or reopened, starts its services saved to start with lich, and one
+// closed stops all of its services, off the caller's goroutine either way,
+// since a stop can take grace to finish.
+func (s *Service) ProjectChanged(name string, data any) {
+	switch name {
+	case api.ProjectAddedEvent.Name:
+		if p, ok := data.(api.ProjectAdded); ok {
+			go s.startProject(p.ID)
+		}
+	case api.ProjectClosedEvent.Name:
+		if p, ok := data.(api.ProjectClosed); ok {
+			go s.stopProject(p.ID, ProjectCloseGrace)
+		}
+	}
+}
+
+// ProjectCloseGrace is how long closing a project's tab waits for its
+// services to stop on their own before killing them: Docker's own stop
+// timeout, `docker compose up` being the service this is most often.
+const ProjectCloseGrace = 10 * time.Second
+
+func (s *Service) startProject(projectID string) {
+	configs, err := s.store.Services()
+	if err != nil {
+		slog.Warn("services: read for an opened project", "err", err)
+		return
+	}
+	for _, c := range configs {
+		if c.ProjectID == projectID && c.StartWithLich {
+			s.startWithLich(c)
+		}
+	}
+}
+
+func (s *Service) stopProject(projectID string, grace time.Duration) {
+	var ids []string
+	for _, v := range s.Running() {
+		if v.ProjectID == projectID {
+			ids = append(ids, v.ID)
+		}
+	}
+	s.stopAndKill(ids, grace)
+}
+
+// Shutdown stops every running service on lich's way out: asked first, then
+// killed once grace is up, and waited for at most a few seconds more so no
+// process outlives the backend that started it.
+func (s *Service) Shutdown(grace time.Duration) {
+	var ids []string
+	for _, v := range s.Running() {
+		ids = append(ids, v.ID)
+	}
+	s.stopAndKill(ids, grace)
+}
+
+// stopAndKill asks services ids to stop, kills the ones still up once grace
+// is over, and waits killWait more for those.
+func (s *Service) stopAndKill(ids []string, grace time.Duration) {
+	for _, id := range ids {
+		if err := s.stop(id); err != nil {
+			slog.Warn("services: stop", "service", id, "err", err)
+		}
+	}
+	if s.waitDown(ids, grace) {
+		return
+	}
+	for _, id := range ids {
+		if s.up(id) {
+			slog.Warn("services: killed after the grace", "service", id, "grace", grace)
+			_ = s.forceStop(id)
+		}
+	}
+	if !s.waitDown(ids, killWait) {
+		slog.Warn("services: still running after the kill", "count", len(ids))
+	}
+}
+
+// killWait bounds the wait for a killed service: ptyHandle.Close sends SIGTERM,
+// then SIGKILL after its own grace, and that is all it takes.
+const killWait = 5 * time.Second
+
+func (s *Service) up(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r := s.runs[id]
+	return r != nil && (r.state == api.ServiceRunning || r.state == api.ServiceStopping)
+}
+
+// waitDown waits until none of ids is up, at most limit, and reports whether
+// they all went down.
+func (s *Service) waitDown(ids []string, limit time.Duration) bool {
+	deadline := time.After(limit)
+	for {
+		s.mu.Lock()
+		changed := s.changed
+		s.mu.Unlock()
+		if !slices.ContainsFunc(ids, s.up) {
+			return true
+		}
+		select {
+		case <-changed:
+		case <-deadline:
+			return false
 		}
 	}
 }
@@ -226,51 +339,6 @@ func (s *Service) StopRunning() {
 	for _, v := range s.Running() {
 		if err := s.stop(v.ID); err != nil {
 			slog.Warn("services: stop", "service", v.Name, "err", err)
-		}
-	}
-}
-
-// Shutdown stops every running service on lich's way out: asked first, then
-// killed once grace is up, and waited for at most a few seconds more so no
-// process outlives the backend that started it.
-func (s *Service) Shutdown(grace time.Duration) {
-	s.StopRunning()
-	if s.waitIdle(grace) {
-		return
-	}
-	for _, v := range s.Running() {
-		slog.Warn("services: killed on quit", "service", v.Name, "grace", grace)
-		_ = s.forceStop(v.ID)
-	}
-	if !s.waitIdle(killWait) {
-		slog.Warn("services: still running after the kill", "count", len(s.Running()))
-	}
-}
-
-// killWait bounds the wait for a killed service: ptyHandle.Close sends SIGTERM,
-// then SIGKILL after its own grace, and that is all it takes.
-const killWait = 5 * time.Second
-
-func (s *Service) waitIdle(limit time.Duration) bool {
-	deadline := time.After(limit)
-	for {
-		s.mu.Lock()
-		busy := false
-		for _, r := range s.runs {
-			if r.state == api.ServiceRunning || r.state == api.ServiceStopping {
-				busy = true
-				break
-			}
-		}
-		changed := s.changed
-		s.mu.Unlock()
-		if !busy {
-			return true
-		}
-		select {
-		case <-changed:
-		case <-deadline:
-			return false
 		}
 	}
 }
