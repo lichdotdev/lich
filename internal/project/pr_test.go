@@ -525,62 +525,6 @@ func TestPullRequestDetailFlow(t *testing.T) {
 	})
 }
 
-func TestBranchPullRequestKeepsAMergedOne(t *testing.T) {
-	t.Parallel()
-	gh := &fakeGH{out: []byte(`{"number":7,"title":"t","state":"MERGED","headRefName":"feat","baseRefName":"main"}`)}
-	pr, err := withGH(gh).BranchPullRequest("/repo")
-	if err != nil {
-		t.Fatalf("BranchPullRequest: %v", err)
-	}
-	if pr == nil || pr.Number != 7 || pr.State != "MERGED" || pr.HeadRefName != "feat" || pr.BaseRefName != "main" {
-		t.Fatalf("BranchPullRequest = %+v, want the merged PR", pr)
-	}
-	if gh.dir != "/repo" || gh.timeout != prLookupTimeout {
-		t.Errorf("wrong scope: dir %q timeout %v", gh.dir, gh.timeout)
-	}
-
-	if pr, err := withGH(&fakeGH{err: errNoPullRequest}).BranchPullRequest("/repo"); err != nil || pr != nil {
-		t.Errorf("no PR = %+v, %v, want nil, nil", pr, err)
-	}
-	if _, err := withGH(&fakeGH{err: errTest}).BranchPullRequest("/repo"); !errors.Is(err, errTest) {
-		t.Errorf("failed lookup err = %v, want %v", err, errTest)
-	}
-}
-
-// TestPullRequestBadgeRunsThroughTheRunner pins the badge to the same runner as
-// the rest: it used to shell out to gh on its own, which left it running as
-// whatever account gh had active while the screen beside it used the project's.
-func TestPullRequestBadgeRunsThroughTheRunner(t *testing.T) {
-	t.Parallel()
-	gh := &fakeGH{out: []byte(`{"number":7,"url":"https://github.com/o/r/pull/7","state":"OPEN"}`)}
-	pr := withGH(gh).pullRequest("/repo")
-	if pr == nil || pr.Number != 7 {
-		t.Fatalf("PullRequest() = %+v, want the open PR", pr)
-	}
-	if want := []string{"pr", "view", "--json", "number,url,state"}; !slices.Equal(gh.args, want) {
-		t.Errorf("args = %v, want %v", gh.args, want)
-	}
-	if gh.dir != "/repo" || gh.timeout != prLookupTimeout {
-		t.Errorf("wrong scope: dir %q timeout %v", gh.dir, gh.timeout)
-	}
-
-	// A failure still hides the badge rather than surfacing anything.
-	if pr := withGH(&fakeGH{err: errTest}).pullRequest("/repo"); pr != nil {
-		t.Errorf("failed lookup = %+v, want nil", pr)
-	}
-
-	// And it runs as the project's account, like every other GitHub call.
-	account := &accountGH{token: "gho_secret", pr: `{"number":7,"url":"u","state":"OPEN"}`}
-	svc := &Service{runner: account.run}
-	svc.SetAccounts(func(string) string { return "octocat" })
-	if pr := svc.pullRequest("/repo"); pr == nil {
-		t.Fatal("PullRequest() = nil, want the open PR")
-	}
-	if account.viewToken != "gho_secret" {
-		t.Errorf("badge ran with token %q, want the configured account's", account.viewToken)
-	}
-}
-
 func TestMergePullRequestFlow(t *testing.T) {
 	t.Parallel()
 	t.Run("the built args reach gh", func(t *testing.T) {

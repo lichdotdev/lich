@@ -28,7 +28,7 @@ func fakeDiff(t *testing.T, notGit string) *backend.Client {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var args []api.PathOptions
 		body, _ := io.ReadAll(r.Body)
-		if r.URL.Path == "/rpc/project.BaseStatus" || r.URL.Path == "/rpc/project.PullRequest" {
+		if r.URL.Path == "/rpc/project.BaseStatus" || r.URL.Path == "/rpc/project.RecheckPullRequest" {
 			_ = json.NewEncoder(w).Encode(nil)
 			return
 		}

@@ -9,7 +9,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -58,6 +57,13 @@ type Service struct {
 	// fixes keeps the review threads waiting for a push (threadfix.go); nil
 	// keeps nothing.
 	fixes threadFixStore
+	// prs is the pull request watch's last reads (branchpr.go). Zero value
+	// ready.
+	prs branchPRs
+	// agentCheckouts and announceMerge wire the watch to the sessions
+	// (branchpr.go); nil follows no checkout and announces nothing.
+	agentCheckouts func() []string
+	announceMerge  func(context.Context, api.AnnounceMergeOptions) (api.None, error)
 }
 
 // New returns a project service using the given picker.
@@ -144,40 +150,8 @@ func (s *Service) Branch(path string) string {
 type PullRequest = api.PullRequest
 
 // prLookupTimeout caps the gh network call so a slow forge or hung auth prompt
-// never stalls the footer poll.
+// never stalls the pull request watch (branchpr.go).
 const prLookupTimeout = 5 * time.Second
-
-// PullRequest answers pullRequest over RPC.
-func (s *Service) PullRequest(_ context.Context, opts api.PathOptions) (*PullRequest, error) {
-	return s.pullRequest(opts.Path), nil
-}
-
-// pullRequest returns the open pull request for the path's current branch, or nil
-// when there is none, gh is missing/unauthenticated, or the path is not a GitHub
-// repo. It shells out to `gh pr view`, which resolves the PR from the checked-out
-// branch. Any failure yields nil, matching Branch's "hide the segment" contract.
-func (s *Service) pullRequest(path string) *PullRequest {
-	out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,state")
-	if err != nil {
-		return nil
-	}
-	return parsePullRequest(out)
-}
-
-// parsePullRequest decodes gh's `pr view --json` output. It returns nil for
-// malformed JSON, a zero PR number (gh emits `{}` in some no-PR states), or a
-// non-OPEN state — gh reports the branch's PR even after it is merged or closed,
-// so without the state gate a merged PR would keep showing the badge.
-func parsePullRequest(out []byte) *PullRequest {
-	var pr PullRequest
-	if err := json.Unmarshal(out, &pr); err != nil {
-		return nil
-	}
-	if pr.Number == 0 || pr.URL == "" || pr.State != "OPEN" {
-		return nil
-	}
-	return &pr
-}
 
 // Exists answers exists over RPC.
 func (s *Service) Exists(_ context.Context, opts api.PathOptions) (bool, error) {

@@ -373,6 +373,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if m.prChanged != nil {
 				m.prChanged()
 			}
+		case api.BranchPullRequestEvent.Name:
+			if b, err := backend.Decode(ev, api.BranchPullRequestEvent); err == nil {
+				m.setBranchPR(b)
+			}
 		case api.AppUpdateProgressEvent.Name:
 			if p, err := backend.Decode(ev, api.AppUpdateProgressEvent); err == nil && m.appUpdateProgress != nil {
 				m.appUpdateProgress(p)

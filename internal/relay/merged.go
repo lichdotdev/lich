@@ -12,8 +12,8 @@ import (
 )
 
 // AnnounceMerge tells every agent running in opts.Checkout that the pull request on
-// its branch was merged, from lich's own screen or, as the merge watch finds,
-// anywhere else (mergewatch.go). A merge already announced is not announced
+// its branch was merged, from lich's own screen or, as the pull request watch
+// finds, anywhere else (internal/project, branchpr.go). A merge already announced is not announced
 // again. An agent keeps notes on the work
 // it did there, and without this the last thing they say about it is that it is
 // waiting on a merge, which a later session reads back as true long after the
@@ -53,7 +53,7 @@ func (s *Service) AnnounceMerge(ctx context.Context, opts api.AnnounceMergeOptio
 
 // firstToldOf records the merge of pull request number at checkout as
 // announced and answers whether it was not yet: the Pulls screen announces its
-// own merge and the merge watch reads it a moment later, in either order.
+// own merge and the pull request watch reads it a moment later, in either order.
 func (s *Service) firstToldOf(checkout string, number int) bool {
 	key := fmt.Sprint(checkout, "\x00", number)
 	s.mu.Lock()

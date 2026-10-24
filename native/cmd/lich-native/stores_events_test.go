@@ -67,7 +67,7 @@ func TestSessionTouchedReadsGitNowAndNudgesTheDiff(t *testing.T) {
 		switch method {
 		case "project.Diff":
 			return backend.DiffStats{Branch: "main", Head: head}, http.StatusOK
-		case "project.BaseStatus", "project.PullRequest":
+		case "project.BaseStatus", "project.RecheckPullRequest":
 			return nil, http.StatusOK
 		}
 		return failing("unexpected " + method)
@@ -102,7 +102,7 @@ func TestSelectingACardReadsItsGitWithoutATick(t *testing.T) {
 		switch method {
 		case "project.Diff":
 			return backend.DiffStats{Branch: "main", Head: head}, http.StatusOK
-		case "project.BaseStatus", "project.PullRequest":
+		case "project.BaseStatus", "project.RecheckPullRequest":
 			return nil, http.StatusOK
 		}
 		return failing("unexpected " + method)
@@ -220,7 +220,7 @@ func TestGitStoreKeepsTheLastReadingThroughATransientFailure(t *testing.T) {
 			return backend.DiffStats{Branch: "main", Head: "h"}, http.StatusOK
 		case "project.Exists":
 			return exists, http.StatusOK
-		case "project.BaseStatus", "project.PullRequest":
+		case "project.BaseStatus", "project.RecheckPullRequest":
 			return nil, http.StatusOK
 		}
 		return failing("unexpected " + method)
@@ -245,53 +245,55 @@ func TestGitStoreKeepsTheLastReadingThroughATransientFailure(t *testing.T) {
 	}
 }
 
-func TestAnOpenPullRequestIsAskedAgainOnASlowCadence(t *testing.T) {
-	forge := &fakeForge{prs: map[string]*backend.PullRequest{"c1": {Number: 7}}}
+// A merge on GitHub moves neither branch nor head: the backend's own read of
+// the open pull request is what takes the badge down.
+func TestAMergeTheBackendReadsTakesTheBadgeDown(t *testing.T) {
+	forge := &fakeForge{prs: map[string]*backend.PullRequest{"c1": {Number: 7, State: "OPEN"}}}
 	forge.set("feat", "c1")
-	m := newTestModel(forge.client(t))
+	m := forge.watch(newTestModel(forge.client(t)))
 	prOnCard(t, m, 7)
 
-	forge.mu.Lock()
-	forge.prs["c1"] = nil // merged on GitHub: branch and head did not move
-	forge.mu.Unlock()
-	m.refreshGit(context.Background())
-	time.Sleep(50 * time.Millisecond)
-	if pr := cardOf(t, m).pr; pr == nil || pr.Number != 7 {
-		t.Fatalf("PR %+v before the cadence elapsed, want #7 kept", pr)
-	}
+	send(m, api.BranchPullRequestEvent.Name, api.BranchPullRequest{Path: checkout, PR: &backend.PullRequest{Number: 7, State: "MERGED"}})
+	awaitPROnCard(t, m, 0)
 
+	send(m, api.BranchPullRequestEvent.Name, api.BranchPullRequest{Path: elsewhere, PR: &backend.PullRequest{Number: 9, State: "OPEN"}})
 	m.mu.Lock()
-	l := m.prs[checkout]
-	l.asked = l.asked.Add(-2 * prRecheck)
-	m.prs[checkout] = l
+	_, kept := m.prs[elsewhere]
 	m.mu.Unlock()
-	prOnCard(t, m, 0)
+	if kept {
+		t.Error("a read of a path no card shows was kept")
+	}
 }
 
-func TestAPathWithNoPullRequestIsNotAskedAgainByTheCadence(t *testing.T) {
+func TestAPathIsRecheckedOnlyWhenItsBranchOrHeadMoves(t *testing.T) {
+	var mu sync.Mutex
+	head := "h1"
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
+		mu.Lock()
+		defer mu.Unlock()
 		switch method {
 		case "project.Diff":
-			return backend.DiffStats{Branch: "main", Head: "h"}, http.StatusOK
-		case "project.BaseStatus", "project.PullRequest":
+			return backend.DiffStats{Branch: "main", Head: head}, http.StatusOK
+		case "project.BaseStatus", "project.RecheckPullRequest":
 			return nil, http.StatusOK
 		}
 		return failing("unexpected " + method)
 	}}
 	m := newTestModel(stub.client(t))
 	m.refreshGit(context.Background())
-	eventually(t, "the first lookup", func() bool { return stub.calls("project.PullRequest") == 1 })
+	eventually(t, "the first recheck", func() bool { return stub.calls("project.RecheckPullRequest") == 1 })
 
-	m.mu.Lock()
-	l := m.prs[checkout]
-	l.asked = l.asked.Add(-2 * prRecheck)
-	m.prs[checkout] = l
-	m.mu.Unlock()
 	m.refreshGit(context.Background())
 	time.Sleep(50 * time.Millisecond)
-	if n := stub.calls("project.PullRequest"); n != 1 {
-		t.Errorf("gh asked %d times for a branch with no PR, want 1", n)
+	if n := stub.calls("project.RecheckPullRequest"); n != 1 {
+		t.Errorf("rechecked %d times with nothing moved, want 1", n)
 	}
+
+	mu.Lock()
+	head = "h2"
+	mu.Unlock()
+	m.refreshGit(context.Background())
+	eventually(t, "the recheck the new head owes", func() bool { return stub.calls("project.RecheckPullRequest") == 2 })
 }
 
 func TestALoginEndingReloadsTheProfilesBeforeTheScreenHearsIt(t *testing.T) {

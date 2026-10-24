@@ -78,7 +78,6 @@ project.Missing(PathsOptions) []string
 project.Open(None) *OpenedProject
 project.PickFile(PickFileOptions) string
 project.PickSaveFile(PickSaveFileOptions) string
-project.PullRequest(PathOptions) *PullRequest
 project.PullRequestConflicts(PRConflictsOptions) []string
 project.PullRequestConversation(NumberOptions) *PRConversation
 project.PullRequestDetail(NumberOptions) *PRDetail
@@ -86,6 +85,7 @@ project.PullRequestDiff(NumberOptions) string
 project.PullRequestMergeBase(NumberOptions) string
 project.ReadFile(CheckoutFileOptions) string
 project.ReadFileAt(ReadFileAtOptions) string
+project.RecheckPullRequest(PathOptions) None
 project.Relocate(ProjectIDOptions) *OpenedProject
 project.RemoveWorktree(RemoveWorktreeOptions) None
 project.ReplyToReviewThread(PRCommentBodyOptions) None
@@ -211,6 +211,7 @@ themes.UpdateFromGit(UpdateThemeOptions) ThemeGitResult
 tray.SetLabels(TrayLabels) None
 
 event appupdate-progress AppUpdateProgress
+event branch-pull-request BranchPullRequest
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
 event lich-plugin-profiles PluginProfiles
@@ -541,12 +542,6 @@ PickFileOptions {
 PickSaveFileOptions {
 	title string
 	defaultName string
-}
-
-PullRequest {
-	number int
-	url string
-	state string
 }
 
 PRConflictsOptions {
@@ -1383,6 +1378,11 @@ AppUpdateProgress {
 	total int64
 }
 
+BranchPullRequest {
+	path string
+	pr *PullRequest
+}
+
 ProfileLogin {
 	profile string
 	output,omitempty string
@@ -1722,6 +1722,15 @@ ThemeSource {
 }
 
 Syntax = map[string]SyntaxStyle
+
+PullRequest {
+	number int
+	url string
+	title string
+	state string
+	headRefName string
+	baseRefName string
+}
 
 PluginProfileFailure {
 	profile string

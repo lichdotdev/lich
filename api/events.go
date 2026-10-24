@@ -274,6 +274,11 @@ var (
 	// instead of the screen that made the change telling the others.
 	PullRequestChangedEvent = defineEvent[PRChanged]("pull-request-changed")
 
+	// BranchPullRequestEvent is every read of a checkout's branch pull request,
+	// changed or not: the backend is the one reader of it, and a window that
+	// asked for a recheck hears its answer here.
+	BranchPullRequestEvent = defineEvent[BranchPullRequest]("branch-pull-request")
+
 	// ServicesEvent carries every project service and its state, emitted once a
 	// change to either is true: a save, a delete, a start, an exit.
 	ServicesEvent = defineEvent[[]Service]("services")

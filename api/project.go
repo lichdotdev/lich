@@ -35,7 +35,7 @@ var (
 	ProjectWorktreeAdopted          = define[PathOptions, bool]("project.WorktreeAdopted")
 	ProjectGitHubAccounts           = define[None, []string]("project.GitHubAccounts")
 	ProjectIssue                    = define[NumberOptions, Issue]("project.Issue")
-	ProjectPullRequest              = define[PathOptions, *PullRequest]("project.PullRequest")
+	ProjectRecheckPullRequest       = define[PathOptions, None]("project.RecheckPullRequest")
 	ProjectListPullRequests         = define[ListPullRequestsOptions, []PRSummary]("project.ListPullRequests")
 	ProjectPullRequestDetail        = define[NumberOptions, *PRDetail]("project.PullRequestDetail")
 	ProjectPullRequestConversation  = define[NumberOptions, *PRConversation]("project.PullRequestConversation")
@@ -353,13 +353,22 @@ type OpenedProject struct {
 	Path string `json:"path"`
 }
 
-// PullRequest identifies the open GitHub pull request for a work tree's current
-// branch, as reported by the gh CLI. State is one of gh's OPEN, CLOSED, MERGED;
-// only OPEN reaches the window (see parsePullRequest).
+// PullRequest is the GitHub pull request of a work tree's current branch, as
+// reported by the gh CLI, whatever its state: one of gh's OPEN, CLOSED, MERGED.
 type PullRequest struct {
-	Number int    `json:"number"`
-	URL    string `json:"url"`
-	State  string `json:"state"`
+	Number      int    `json:"number"`
+	URL         string `json:"url"`
+	Title       string `json:"title"`
+	State       string `json:"state"`
+	HeadRefName string `json:"headRefName"`
+	BaseRefName string `json:"baseRefName"`
+}
+
+// BranchPullRequest is one read of the pull request of the branch checked out
+// at Path; PR is nil when the branch has none.
+type BranchPullRequest struct {
+	Path string       `json:"path"`
+	PR   *PullRequest `json:"pr"`
 }
 
 // DiffStats is what one status read says about a work tree: its uncommitted

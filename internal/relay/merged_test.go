@@ -132,3 +132,32 @@ func TestMergeNoticeNamesThePullRequestAndAsksForNoWork(t *testing.T) {
 		t.Errorf("notice %q carries an escape out of the title", got)
 	}
 }
+
+// The Pulls screen announces its own merge and the pull request watch reads it
+// merged a moment later: the agents hear it once.
+func TestAnnounceMergeTellsAMergeOnce(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("agent")
+	svc := newRelay(merging(), term, nil)
+	opts := api.AnnounceMergeOptions{Checkout: "/wt/feat", Number: 42, Title: "Add merge notice", Branch: "feat/merge", Base: "main"}
+
+	for range 2 {
+		if _, err := svc.AnnounceMerge(t.Context(), opts); err != nil {
+			t.Fatalf("AnnounceMerge: %v", err)
+		}
+	}
+
+	if !awaitWritten(term, "agent", "#42") {
+		t.Fatalf("typed at agent = %q, want the merge notice", term.written("agent"))
+	}
+	opts.Number = 43
+	if _, err := svc.AnnounceMerge(t.Context(), opts); err != nil {
+		t.Fatalf("AnnounceMerge: %v", err)
+	}
+	if !awaitWritten(term, "agent", "#43") {
+		t.Fatalf("typed at agent = %q, want the second pull request's notice", term.written("agent"))
+	}
+	if got := strings.Count(term.written("agent"), "#42"); got != 1 {
+		t.Fatalf("agent heard #42 %d times, want once", got)
+	}
+}

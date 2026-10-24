@@ -160,6 +160,10 @@ func (p *pullsScreen) setFocused(focused bool) {
 	p.focused = focused
 }
 
+// prRecheck is how long the Pulls screen believes what it shows before reading
+// it again.
+const prRecheck = time.Minute
+
 // recheck owes what the screen shows a newer answer once prRecheck has passed
 // since the last one: a push or a merge made outside lich announces nothing.
 // It answers when the next one is due.

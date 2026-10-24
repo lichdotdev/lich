@@ -10,16 +10,19 @@ type BaseStatus = api.BaseStatus
 
 type PullRequest = api.PullRequest
 
+type BranchPullRequest = api.BranchPullRequest
+
 // BaseStatus returns where path stands against its base, nil when it has no
 // base to stand against (the base branch itself, no remote).
 func (c *Client) BaseStatus(ctx context.Context, path string) (*BaseStatus, error) {
 	return callMethod(ctx, c, api.ProjectBaseStatus, api.PathOptions{Path: path})
 }
 
-// PullRequest returns the open pull request of path's branch through gh, nil
-// when there is none or gh cannot answer. Each call is a network round trip.
-func (c *Client) PullRequest(ctx context.Context, path string) (*PullRequest, error) {
-	return callMethod(ctx, c, api.ProjectPullRequest, api.PathOptions{Path: path})
+// RecheckPullRequest asks the backend to read the pull request of path's
+// branch again; the answer arrives as api.BranchPullRequestEvent.
+func (c *Client) RecheckPullRequest(ctx context.Context, path string) error {
+	_, err := callMethod(ctx, c, api.ProjectRecheckPullRequest, api.PathOptions{Path: path})
+	return err
 }
 
 // OpenExternal opens url in the user's browser.

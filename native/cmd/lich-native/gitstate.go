@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"slices"
-	"time"
 
 	"github.com/lichdotdev/lich/native/backend"
 )
@@ -34,25 +33,19 @@ func standingOf(b *backend.BaseStatus) baseStanding {
 	return baseStanding{count: b.Behind}
 }
 
-// prRecheck is how long an open pull request is believed before gh is asked
-// again: a merge or close on GitHub moves neither branch nor head, so nothing
-// else would ever make the badge go.
-const prRecheck = time.Minute
-
-// prLookup is a path's pull request as asked for at a branch and head. The
-// pr survives a new commit on the same branch, so the badge does not blink,
+// prLookup is a path's pull request as last asked for at a branch and head.
+// The pr survives a new commit on the same branch, so the badge does not blink,
 // and is dropped with a new branch.
 type prLookup struct {
 	branch, head string
 	pr           *backend.PullRequest
-	asked        time.Time
 }
 
-// refreshPath re-reads a shown path's changes and base standing, and asks gh
-// for its pull request again when the branch or head moved: a merge that
-// closed one shows without waiting. An open one is asked about again every
-// prRecheck; one the session just opened, at the end of its turn
-// (recheckMissingPR).
+// refreshPath re-reads a shown path's changes and base standing, and asks the
+// backend to read its pull request again when the branch or head moved: a
+// merge that closed one shows without waiting. The backend reads an open one
+// again on its own (internal/project branchpr.go); one the session just opened,
+// the window asks for at the end of its turn (recheckMissingPR).
 func (m *model) refreshPath(ctx context.Context, path string) {
 	d, err := m.client.Diff(ctx, path)
 	if err != nil {
@@ -67,11 +60,9 @@ func (m *model) refreshPath(ctx context.Context, path string) {
 	changed := m.git[path] != d || !sameBase(m.base[path], b)
 	m.git[path], m.base[path] = d, b
 	prev, looked := m.prs[path]
-	now := time.Now()
-	ask := !looked || prev.branch != d.Branch || prev.head != d.Head ||
-		(prev.pr != nil && now.Sub(prev.asked) >= prRecheck)
+	ask := !looked || prev.branch != d.Branch || prev.head != d.Head
 	if ask {
-		next := prLookup{branch: d.Branch, head: d.Head, asked: now}
+		next := prLookup{branch: d.Branch, head: d.Head}
 		if prev.branch == d.Branch {
 			next.pr = prev.pr
 		}
@@ -80,35 +71,40 @@ func (m *model) refreshPath(ctx context.Context, path string) {
 	}
 	m.mu.Unlock()
 	if ask {
-		go m.lookupPR(ctx, path, d.Branch, d.Head)
+		go m.recheckPR(ctx, path)
 	}
 	if changed {
 		m.invalidate()
 	}
 }
 
-// lookupPR stores gh's answer unless the checkout moved on while it was
-// asked. A failed lookup (no gh, not a GitHub repo) reads as no PR.
-func (m *model) lookupPR(ctx context.Context, path, branch, head string) {
-	pr, err := m.client.PullRequest(ctx, path)
-	if err != nil {
-		log.Printf("pull request of %s: %v", path, err)
+func (m *model) recheckPR(ctx context.Context, path string) {
+	if err := m.client.RecheckPullRequest(ctx, path); err != nil {
+		log.Printf("recheck the pull request of %s: %v", path, err)
+	}
+}
+
+// setBranchPR keeps a read of a shown path's pull request; the badge shows only
+// an open one. A read of a path no card shows is dropped: the window asks for
+// one when it first shows it.
+func (m *model) setBranchPR(b backend.BranchPullRequest) {
+	pr := b.PR
+	if pr != nil && pr.State != "OPEN" {
 		pr = nil
 	}
 	m.mu.Lock()
-	cur := m.prs[path]
-	current := cur.branch == branch && cur.head == head
-	if current {
-		cur.pr = pr
-		m.prs[path] = cur
+	l, shown := m.prs[b.Path]
+	if shown {
+		l.pr = pr
+		m.prs[b.Path] = l
 	}
 	m.mu.Unlock()
-	if current {
+	if shown {
 		m.invalidate()
 	}
 }
 
-// stalePullRequests makes the next git tick ask gh again for every path,
+// stalePullRequests makes the next git tick ask for a new read of every path,
 // keeping the badges up meanwhile: a PR opened or merged in the browser
 // shows when the user comes back. Callers hold m.mu.
 func (m *model) stalePullRequests() {
@@ -118,7 +114,7 @@ func (m *model) stalePullRequests() {
 	}
 }
 
-// recheckMissingPR forgets what gh answered for the card of a session whose
+// recheckMissingPR forgets what was read for the card of a session whose
 // turn just finished, when it shows no pull request: `gh pr create` moves
 // neither branch nor head, so nothing else would bring up the PR the turn
 // opened. It answers the path to refresh, "" when there is none to ask about
