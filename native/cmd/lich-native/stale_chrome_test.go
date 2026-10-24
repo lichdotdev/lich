@@ -41,7 +41,7 @@ func stageFrames(t *testing.T, tab dockTab) (*window, *frameRig) {
 
 func TestDockCloseHidesItInTheFrameAfterTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockReview)
-	r.settle(t)
+	r.waitFor(t, "No uncommitted changes")
 	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-36, 0, rigWindow.X, 48)))
 	if u.dock.tab != dockClosed {
 		t.Fatalf("the click missed the ×: dock on %v", u.dock.tab)
@@ -50,7 +50,7 @@ func TestDockCloseHidesItInTheFrameAfterTheClick(t *testing.T) {
 
 func TestDockFullScreenFillsTheRowInTheFrameAfterTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockReview)
-	r.settle(t)
+	r.waitFor(t, "No uncommitted changes")
 	r.click(t, r.smallestClickIn(t, image.Rect(rigWindow.X-64, 0, rigWindow.X-36, 48)))
 	if !u.dock.fullscreen {
 		t.Fatal("the click missed full screen")
