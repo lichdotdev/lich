@@ -52,6 +52,11 @@ type termView struct {
 	held gioterm.MouseButton
 	// linkHeld is a press that opened a link, whose release is kept too.
 	linkHeld bool
+	// wheelPending is the rows the wheel scrolled that the coming frames
+	// still owe, negative is up; wheelAt is the wheel event they came from,
+	// where a tracking program is told they happened.
+	wheelPending int
+	wheelAt      pointer.Event
 	// pointerAt is where the pointer is over the grid, pointerIn false once
 	// it left: the link under it is underlined and takes a hand cursor.
 	pointerAt f32.Point
@@ -448,6 +453,11 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 		}
 	}
 	ts.input(gtx, t, focus)
+	send, more := t.scrollStep()
+	ts.send(t.id, send)
+	if more {
+		gtx.Execute(op.InvalidateCmd{})
+	}
 	snap, err := t.vt.Update()
 	if err != nil {
 		return err

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The mouse wheel in a terminal scrolls smoothly and as far as in other terminals. A notch moves three lines of the shell's history, or a full-screen program such as `less`, eased over a few frames instead of jumping some eight lines at once. A program that takes the mouse, such as nvim, Claude Code or Codex, gets one wheel step a notch and scrolls its own distance, where it used to get about eight and race through the conversation.
+
 ## [0.79.0] - 2026-10-24
 
 > [!IMPORTANT]

@@ -100,11 +100,64 @@ func (t *termView) report(e pointer.Event) []byte {
 	return nil
 }
 
-// wheel scrolls a row per cell height scrolled: as wheel steps for a program
+// wheel owes the rows e scrolled, for the coming frames to scroll
+// (scrollStep). A turn of the wheel the other way drops what was still owed.
+func (t *termView) wheel(e pointer.Event) []byte {
+	rows := t.wheelRows(e.Scroll.Y)
+	if rows*t.wheelPending < 0 {
+		t.wheelPending = 0
+	}
+	t.wheelPending += rows
+	t.wheelAt = e
+	return nil
+}
+
+// wheelRows is the rows a scroll of dy pixels moves, negative is up. Gio
+// reports a wheel and a touchpad alike, so the size tells them apart: a wheel
+// scrolls whole notches, one wheel step a notch to a program tracking the
+// mouse, which scrolls what it likes, wheelNotchRows otherwise. A touchpad
+// scrolls a few pixels at a time, a row per cell height.
+func (t *termView) wheelRows(dy float32) int {
+	notches := dy / wheelNotch
+	if notches != float32(int(notches)) {
+		return t.vt.WheelRows(dy)
+	}
+	if t.vt.MouseTracking() {
+		return int(notches)
+	}
+	return int(notches) * wheelNotchRows
+}
+
+// wheelNotchRows is the rows a notch scrolls through scrollback or as arrow
+// keys, as Ghostty and xterm scroll.
+const wheelNotchRows = 3
+
+// wheelEase is the share of the rows still owed that a frame scrolls, one
+// over it: the rows of a few notches ease out over a few frames instead of
+// jumping in one.
+const wheelEase = 3
+
+// scrollStep scrolls the frame's share of wheelPending, and says whether rows
+// are still owed for the next frame. send is what goes to the program.
+func (t *termView) scrollStep() (send []byte, more bool) {
+	if t.wheelPending == 0 {
+		return nil, false
+	}
+	step := t.wheelPending / wheelEase
+	if step == 0 {
+		step = 1
+		if t.wheelPending < 0 {
+			step = -1
+		}
+	}
+	t.wheelPending -= step
+	return t.scrollRows(step), t.wheelPending != 0
+}
+
+// scrollRows scrolls rows, negative is up: as wheel steps for a program
 // tracking the mouse, as arrow keys for a full-screen one that does not,
 // through scrollback otherwise.
-func (t *termView) wheel(e pointer.Event) []byte {
-	rows := t.vt.WheelRows(e.Scroll.Y)
+func (t *termView) scrollRows(rows int) []byte {
 	tracking := t.vt.MouseTracking()
 	if !tracking && !t.vt.AlternateScroll() {
 		t.vt.Scroll(rows)
@@ -114,6 +167,7 @@ func (t *termView) wheel(e pointer.Event) []byte {
 	if rows < 0 {
 		button, arrow, rows = gioterm.MouseWheelUp, key.NameUpArrow, -rows
 	}
+	e := t.wheelAt
 	var out []byte
 	for range rows {
 		if tracking {
