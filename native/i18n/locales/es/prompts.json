@@ -24,5 +24,14 @@
   },
   "issue": {
     "head": "Issue de GitHub #{number}: {title}\n{url}"
+  },
+  "browserNotes": {
+    "head": {
+      "one": "[lich] La persona dejó una nota en la página de tu pestaña del navegador:",
+      "other": "[lich] La persona dejó {count} notas en la página de tu pestaña del navegador:"
+    },
+    "item": "{index}. {label} en {url}",
+    "note": "Nota: {note}",
+    "selectors": "Cada selector de arriba sirve como el selector de browser_click y browser_type."
   }
 }

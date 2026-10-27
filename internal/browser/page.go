@@ -109,6 +109,10 @@ type Page interface {
 	InsertText(ctx context.Context, text string) error
 	// Selection is the text selected in the page, "" in a password field.
 	Selection(ctx context.Context) (string, error)
+	// ElementAt is the element under x,y, zero when the point holds none;
+	// Locate is the box of the element each selector finds, zero for none.
+	ElementAt(ctx context.Context, x, y float64) (api.BrowserElement, error)
+	Locate(ctx context.Context, selectors []string) ([]api.BrowserRect, error)
 	Alive() bool
 	Close() error
 }

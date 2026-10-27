@@ -33,4 +33,6 @@ func Browser(d *rpc.Handler, s *browser.Service) {
 	rpc.Handle(d, api.BrowserText, s.TextInput)
 	rpc.Handle(d, api.BrowserNav, s.NavView)
 	rpc.Handle(d, api.BrowserSelection, s.SelectedText)
+	rpc.Handle(d, api.BrowserElementAt, s.ElementAtPoint)
+	rpc.Handle(d, api.BrowserLocate, s.LocateElements)
 }

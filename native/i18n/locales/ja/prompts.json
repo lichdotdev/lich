@@ -24,5 +24,13 @@
   },
   "issue": {
     "head": "GitHub issue #{number}: {title}\n{url}"
+  },
+  "browserNotes": {
+    "head": {
+      "other": "[lich] ブラウザタブのページに {count} 件のメモが残されました:"
+    },
+    "item": "{index}. {url} の {label}",
+    "note": "メモ: {note}",
+    "selectors": "上の各セレクタは browser_click と browser_type の selector としてそのまま使えます。"
   }
 }

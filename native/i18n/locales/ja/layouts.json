@@ -25,7 +25,21 @@
     "opened": "{label} がブラウザを開きました",
     "dismiss": "閉じる",
     "open": "開く",
-    "moveBody": "「{layout}」から外れます。ブラウザのタブには {label} とそのブラウザしか置けません。"
+    "moveBody": "「{layout}」から外れます。ブラウザのタブには {label} とそのブラウザしか置けません。",
+    "pick": "ページにメモを残す",
+    "pickHint": "要素をクリックしてメモを残す",
+    "notePlaceholder": "ここをどう変えますか？",
+    "addNote": "メモを追加",
+    "saveNote": "保存",
+    "deleteNote": "削除",
+    "notes": {
+      "other": "メモ {count} 件"
+    },
+    "notesFor": "{label} へ",
+    "clearNotes": "クリア",
+    "sendNotes": "送信",
+    "noNote": "メモなし",
+    "notesFailed": "{label} にメモを送れませんでした: {error}"
   },
   "split": {
     "noRoom": "ここには別のペインを置く余裕がありません。ウィンドウを広げるか、先にペインを外してください。"

@@ -25,7 +25,21 @@
     "opened": "{label}이(가) 브라우저를 열었습니다",
     "dismiss": "닫기",
     "open": "열기",
-    "moveBody": "\"{layout}\"에서 빠집니다. 브라우저 탭에는 {label}와(과) 그 브라우저만 둘 수 있습니다."
+    "moveBody": "\"{layout}\"에서 빠집니다. 브라우저 탭에는 {label}와(과) 그 브라우저만 둘 수 있습니다.",
+    "pick": "페이지에 메모 남기기",
+    "pickHint": "요소를 클릭해 메모를 남기세요",
+    "notePlaceholder": "여기서 무엇을 바꿔야 하나요?",
+    "addNote": "메모 추가",
+    "saveNote": "저장",
+    "deleteNote": "삭제",
+    "notes": {
+      "other": "메모 {count}개"
+    },
+    "notesFor": "{label}에게",
+    "clearNotes": "지우기",
+    "sendNotes": "보내기",
+    "noNote": "메모 없음",
+    "notesFailed": "{label}에 메모를 보내지 못했습니다: {error}"
   },
   "split": {
     "noRoom": "여기에는 창을 하나 더 놓을 공간이 없습니다. 창을 넓히거나 먼저 창 하나를 빼세요."

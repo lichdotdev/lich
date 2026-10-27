@@ -27,7 +27,22 @@
     "opened": "{label} abriu um navegador",
     "dismiss": "Dispensar",
     "open": "Abrir",
-    "moveBody": "Ela sai de \"{layout}\". A aba do navegador só comporta {label} e o navegador dela."
+    "moveBody": "Ela sai de \"{layout}\". A aba do navegador só comporta {label} e o navegador dela.",
+    "pick": "Deixar notas na página",
+    "pickHint": "Clique num elemento para deixar uma nota",
+    "notePlaceholder": "O que deve mudar aqui?",
+    "addNote": "Adicionar nota",
+    "saveNote": "Salvar",
+    "deleteNote": "Excluir",
+    "notes": {
+      "one": "{count} nota",
+      "other": "{count} notas"
+    },
+    "notesFor": "para {label}",
+    "clearNotes": "Limpar",
+    "sendNotes": "Enviar",
+    "noNote": "Sem nota",
+    "notesFailed": "Não foi possível enviar as notas para {label}: {error}"
   },
   "split": {
     "noRoom": "Não há espaço para outro painel aqui. Alargue a janela ou tire um painel antes."

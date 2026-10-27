@@ -79,6 +79,7 @@ type browserPaneUI struct {
 	// typing is the address it types into the field, from when.
 	flash  agentPress
 	typing agentPress
+	notes  browserNotes
 }
 
 // agentPress is what the agent's cursor does on the toolbar, from at: the
@@ -94,7 +95,7 @@ func (u *window) browserPane(session string) *browserPaneUI {
 	}
 	p, ok := u.browserPanes[session]
 	if !ok {
-		p = &browserPaneUI{queue: newBrowserQueue(), copied: make(chan string, 1)}
+		p = &browserPaneUI{queue: newBrowserQueue(), copied: make(chan string, 1), notes: newBrowserNotes()}
 		go p.queue.run(u.ctx, func(err error) { log.Printf("browser of %s: %v", session, err) })
 		u.browserPanes[session] = p
 	}
@@ -146,6 +147,8 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	// Unlike a terminal, the page is not dimmed out of focus: the person keeps
 	// the session's prompt in focus nearly always, and watches the page.
 	u.browserPage(page, p, session, frame, focused)
+	u.notesOverlay(page, p, session, st.URL)
+	u.notesTray(page, p, session)
 	off.Pop()
 	u.paintAgentCursor(gtx, p, session)
 	u.paneFocusTarget(gtx, pane)
@@ -206,6 +209,9 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 	if p.reload.click.Clicked(gtx) {
 		nav("reload")
 	}
+	if p.notes.pick.click.Clicked(gtx) {
+		p.notes.setPicking(!p.notes.picking)
+	}
 	if p.window.click.Clicked(gtx) {
 		u.sendBrowser(session, "show", func(ctx context.Context) error { return u.client.ShowBrowser(ctx, session) })
 	}
@@ -244,6 +250,15 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 			ui.Gap(1.5),
 			layout.Flexed(1, field.Layout),
 			ui.Gap(1.5),
+			layout.Rigid(func(gtx C) D {
+				if !p.notes.picking {
+					return D{}
+				}
+				return layout.Inset{Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, i18n.T("layouts.browser.pickHint")).In(notePick).Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
+				return iconAction(gtx, th, &u.root, &p.notes.pick, icBrowserPick, i18n.T("layouts.browser.pick"), p.notes.picking)
+			}),
 			layout.Rigid(func(gtx C) D {
 				return iconAction(gtx, th, &u.root, &p.window, icBrowserWindow, i18n.T("layouts.browser.openInWindow"), false)
 			}),
@@ -285,13 +300,13 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session string, frame brow
 // browserInput passes the pane's pointer and keys to the page.
 func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale float32, focused bool) {
 	filters := append(gioterm.KeyFilters(&p.tag),
-		pointer.Filter{Target: &p.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move,
+		pointer.Filter{Target: &p.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move | pointer.Leave,
 			ScrollX: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}, ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
 		key.Filter{Focus: &p.tag, Name: "V", Required: key.ModCommand},
 		key.Filter{Focus: &p.tag, Name: "C", Required: key.ModCommand},
 		key.Filter{Focus: &p.tag, Name: "X", Required: key.ModCommand},
 		transfer.TargetFilter{Target: &p.tag, Type: "application/text"})
-	if focused && !gtx.Focused(&p.url) && !gtx.Focused(&p.tag) {
+	if focused && !gtx.Focused(&p.url) && !gtx.Focused(&p.tag) && !gtx.Focused(&p.notes.editor) {
 		gtx.Execute(key.FocusCmd{Tag: &p.tag})
 	}
 	writeCopied(gtx, p)
@@ -306,6 +321,9 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 				u.sendBrowser(session, "text", func(ctx context.Context) error { return u.client.BrowserText(ctx, session, text) })
 			}
 		case key.Event:
+			if u.notesKey(p, session, e) {
+				continue
+			}
 			switch browserClipboardChord(e, runtime.GOOS) {
 			case "paste":
 				gtx.Execute(clipboard.ReadCmd{Tag: &p.tag})
@@ -333,6 +351,18 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 
 func (u *window) browserPointer(gtx C, p *browserPaneUI, session string, scale float32, e pointer.Event) {
 	m := api.BrowserMouseOptions{ID: session, X: float64(e.Position.X / scale), Y: float64(e.Position.Y / scale), Modifiers: cdpModifiers(e.Modifiers)}
+	if p.notes.picking && e.Kind != pointer.Scroll {
+		u.notesPointer(gtx, p, session, m.X, m.Y, e)
+		return
+	}
+	if e.Kind == pointer.Scroll && (len(p.notes.list) > 0 || p.notes.open) {
+		p.notes.nextLocate, p.notes.followUntil = time.Time{}, gtx.Now.Add(noteFollowFor)
+	}
+	if e.Kind == pointer.Scroll && p.notes.picking {
+		// What the pointer outlined moved with the page: look again under it.
+		p.notes.hover = api.BrowserElement{}
+		defer u.probeElement(p, session, m.X, m.Y, false)
+	}
 	switch e.Kind {
 	case pointer.Press:
 		gtx.Execute(key.FocusCmd{Tag: &p.tag})

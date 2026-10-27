@@ -979,6 +979,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   closed; one a pane shows, or a window, never is. It loads only http, https and about:blank. Page info never
   includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
   not a sandbox: the page runs as the user, in an ephemeral profile.
+- **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
+  `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
+  element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a
+  selector picked inside an open shadow root finds it again only from that root, where `browser_click` does
+  not look. The React component comes from the page's fiber, there only in a development build, and its file
+  and line from `_debugSource`, which React 19 dropped. Pins follow their elements by looking them up again
+  every 400 ms while notes wait, and every 30 ms for a moment after the wheel turns, so an element the page
+  moves on its own is outlined late. Notes not sent yet
+  live in the window: closing it, or the browser, loses them.
 
 ## Languages
 
