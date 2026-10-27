@@ -9,7 +9,7 @@
   var shown = false;
 
   var span = function (cls) { return function (t) { return '<span class="' + cls + '">' + t + "</span>"; }; };
-  var ok = span("ok"), bad = span("bad"), dim = span("dim"), blue = span("blue"), amber = span("amber"), mut = span("mut");
+  var ok = span("ok"), bad = span("bad"), dim = span("dim"), blue = span("blue"), amber = span("amber"), mut = span("mut"), pink = span("pink");
   var jitter = function (lo, hi) { return lo + Math.random() * (hi - lo); };
 
   function active() { return radios.findIndex(function (r) { return r.checked; }); }
@@ -35,9 +35,9 @@
 
   // A story awaits wait(ms) between its beats. The wait holds while its tab is closed or the window is off screen,
   // and throws once the tab is opened again so the story starts over.
-  var generation = [0, 0, 0, 0, 0];
+  var generation = [0, 0, 0, 0, 0, 0];
   // wait.end() marks the story told once; the tab moves on only after that, whatever its bar says.
-  var told = [false, false, false, false, false], barDone = false;
+  var told = [false, false, false, false, false, false], barDone = false;
   function waiter(v) {
     var mine = generation[v];
     var wait = function (ms) {
@@ -54,10 +54,19 @@
         })();
       });
     };
+    // end marks the story told and then holds it on its last frame until its tab opens again or another does,
+    // so a tab whose bar outlasts its story never shows the story start over and get cut off.
     wait.end = function () {
-      if (generation[v] !== mine) return;
-      told[v] = true;
-      advance();
+      if (generation[v] === mine) {
+        told[v] = true;
+        advance();
+      }
+      return new Promise(function (done, restart) {
+        (function hold() {
+          if (generation[v] !== mine) return restart();
+          setTimeout(hold, 200);
+        })();
+      });
     };
     return wait;
   }
@@ -67,8 +76,9 @@
     claude: {
       asked: function (p) { return mut("❯ " + p); },
       bottom: function (input, t) {
-        return ['<span class="rule">' + (t.rule || "docs-mcp-matrix-68c5") + ' ─</span>', mut("❯") + " " + input,
-          amber("⏵⏵ auto mode on") + " " + dim("(shift+tab to cycle)")];
+        // Claude Code's input box: a rule naming the worktree, the prompt, a closing rule, then its mode, indented.
+        return ['<span class="rule">' + (t.rule || "docs-mcp-matrix-68c5") + ' ─</span>', mut("❯") + " " + input, '<span class="rule"></span>',
+          "  " + amber("⏵⏵ auto mode on") + " " + dim("(shift+tab to cycle)")];
       }
     },
     codex: {
@@ -78,16 +88,23 @@
           amber("gpt-5-codex medium") + " · " + blue("Workspace") + " · Ask for approval"];
       }
     },
+    // opencode: the message in a box with a pink left bar, a blank row above and below it; the input box holds
+    // the prompt row and the agent's status row, with the path and the token count under it.
     opencode: {
-      asked: function (p) { return '<span class="box">' + p + "</span>"; },
+      asked: function (p) { return '<span class="box">\n' + p + "\n</span>"; },
       bottom: function (input) {
-        return ['<span class="box">' + (input || dim("Ask anything…")) + "</span>",
-          '<span class="box">' + blue("Build") + " · claude-sonnet-4.5 " + dim("Anthropic") + "</span>", dim("ctrl+p commands")];
+        return ['<span class="box">\n' + input + "\n\n" + pink("Build") + " " + mut("auto") + " · claude-sonnet-4.5 " + dim("Anthropic") +
+            " · " + '<b class="amber">high</b></span>',
+          '<span class="oc-foot">' + mut("~/…/fix-relay-deadline") + "<span>" + mut("12.8K (6%)") + "  <b>ctrl+p</b> " + mut("commands") + "</span></span>"];
       }
     },
     crush: {
-      asked: function (p) { return mut("&gt; " + p); },
-      bottom: function (input) { return ["&gt; " + (input || dim("Ready for instructions")), "", dim("ctrl+p commands · ctrl+j newline")]; }
+      asked: function (p) { return '<span class="cbar">' + p + "</span>"; },
+      bottom: function (input, t) {
+        var keys = [["tab", "focus chat"], ["shift+tab", "mode"], ["/ or ctrl+p", "commands"], ["ctrl+m", "models"]];
+        return ['<span class="yb">!</span> ' + input + (t.input ? "" : dim("Go crazy")), '<span class="yl">:::</span>', '<span class="yl">:::</span>', "",
+          '<span class="clip"><span class="yb">YOLO MODE</span>  ' + keys.map(function (k) { return k[0] + " " + dim(k[1]); }).join(dim(" • ")) + "</span>"];
+      }
     }
   };
   function terminal(pre, provider, lines) {
@@ -129,19 +146,22 @@
         "• Ran go test ./internal/auth -run Expires", "  └ ok  internal/auth  0.38s", dim("Worked for 22s • 8:33 PM")] }] },
     { provider: "opencode", model: "claude-sonnet-4.5", runs: [
       { prompt: "the relay deadline outlives its context", tool: "Edit · ticket.go", add: 9, del: 3, out: [
-        blue("▣") + " Build " + dim("· claude-sonnet-4.5 · 17.6s"), "  → Read internal/relay/ticket.go",
+        "", "  " + span("thought")("+ Thought: 1.8s"), "", "  → Read internal/relay/ticket.go",
         "  ← Edit internal/relay/ticket.go", "    " + ok("+ ctx, cancel := context.WithTimeout(ctx, d)"),
-        "    " + ok("+ defer cancel()"), "  The deadline comes from the caller now;", "  all 31 tests pass."] },
+        "    " + ok("+ defer cancel()"), "", "  The deadline comes from the caller now;", "  all 31 tests pass.", "",
+        "  " + pink("▣") + " Build " + dim("· claude-sonnet-4.5 · 17.6s")] },
       { prompt: "why did the old one never fire?", tool: "Read · relay.go", add: 9, del: 3, out: [
-        blue("▣") + " Build " + dim("· claude-sonnet-4.5 · 6.2s"), "  → Read internal/relay/relay.go",
-        "  The timer was armed with context.Background(),", "  so cancelling the request never reached it."] }] },
+        "", "  " + span("thought")("+ Thought: 0.9s"), "", "  → Read internal/relay/relay.go", "",
+        "  The timer was armed with context.Background(),", "  so cancelling the request never reached it.", "",
+        "  " + pink("▣") + " Build " + dim("· claude-sonnet-4.5 · 6.2s")] }] },
     { provider: "crush", model: "glm-4.6", runs: [
       { prompt: "document what a broken theme does", tool: "Write · docs/themes.md", add: 24, del: 0, out: [
-        blue("◇") + " View docs/themes.md", blue("◇") + " Edit docs/themes.md",
-        "  " + ok("+ A theme that fails the schema stays listed"), "  " + ok("+ in Settings › Appearance, marked unloadable."),
-        "Documented the rule and the error it shows."] },
+        "", "Thought for " + dim("2s"), "", ok("✓") + " View " + dim("docs/themes.md"), ok("✓") + " Edit " + dim("docs/themes.md"),
+        "  " + ok("+ A theme that fails the schema stays listed in Settings › Appearance, marked unloadable."), "",
+        "Documented the rule and the error it shows.", "", '<span class="cmeta"><span>' + dim("◇") + "GLM 4.6 " + dim("via Z.ai in 12s") + "</span></span>"] },
       { prompt: "link the schema from the README", tool: "Edit · README.md", add: 26, del: 0, out: [
-        blue("◇") + " Edit README.md", "  " + ok("+ [theme schema](themes/lich-theme.schema.json)"), "Linked it under Themes."] }] }
+        "", "Thought for " + dim("1s"), "", ok("✓") + " Edit " + dim("README.md"), "  " + ok("+ [theme schema](themes/lich-theme.schema.json)"), "",
+        "Linked it under Themes.", "", '<span class="cmeta"><span>' + dim("◇") + "GLM 4.6 " + dim("via Z.ai in 6s") + "</span></span>"] }] }
   ];
   var wallTiles = wall.querySelectorAll(".v2 .tile");
   var wallTerms = wallSessions.map(function (s, k) {
@@ -169,9 +189,10 @@
       setFooter(cards[k].querySelector(".t b").textContent, s.provider, s.model, run.add, run.del);
       await t.stream(wait, run.out);
       setRing(k, "done");
+      cards[k].querySelector(".rung").innerHTML = "";
       await wait(1600);
       setRing(k, "read");
-      if (k === 1) wait.end();
+      if (k === 1) await wait.end();
     }
   }
 
@@ -197,7 +218,16 @@
     cmts.innerHTML = ""; batch.classList.remove("has"); send.classList.remove("press");
     menu.classList.remove("show");
   }
-  async function press(wait, el) { el.classList.add("press"); await wait(220); el.classList.remove("press"); }
+  // tap draws a ring where the tour clicks, so a viewer sees what was pressed; every simulated click goes through it.
+  function tap(el) {
+    var w = wall.getBoundingClientRect(), r = el.getBoundingClientRect(), ring = document.createElement("span");
+    ring.className = "tap";
+    ring.style.left = r.left - w.left + r.width / 2 + "px";
+    ring.style.top = r.top - w.top + r.height / 2 + "px";
+    wall.appendChild(ring);
+    setTimeout(function () { ring.remove(); }, 400);
+  }
+  async function press(wait, el) { tap(el); el.classList.add("press"); await wait(220); el.classList.remove("press"); }
   async function reviewDiff(wait) {
     for (;;) {
       resetReview();
@@ -206,7 +236,7 @@
       reviewTerm.draw(true);
       setCard(0); setFooter("docs/mcp-matrix", "claude", "opus 5.5 · medium", 7, 3);
       await wait(1200);
-      chip.classList.add("on"); rv.classList.add("open");
+      tap(chip); chip.classList.add("on"); rv.classList.add("open");
       await wait(1100);
       await press(wait, full); setFull(true);
       for (var n = 0; n < comments.length; n++) {
@@ -222,6 +252,7 @@
         await wait(450);
         menu.querySelector(".m-cmt").classList.add("hover");
         await wait(300);
+        tap(menu.querySelector(".m-cmt"));
         menu.querySelector(".m-cmt").classList.remove("hover");
         menu.classList.remove("show");
         var box = document.createElement("div");
@@ -239,25 +270,25 @@
         box.remove();
         c.rows.forEach(function (i) { diffRows[i].classList.remove("sel"); });
         cmts.insertAdjacentHTML("beforeend", '<div class="c"><span class="at">README.md:' + c.lines + "</span><span>" + c.text +
-          '</span><svg class="ic"><use href="#i-x"/></svg></div>');
+          '</span><svg class="ic"><use href="#i-pencil"/></svg><svg class="ic"><use href="#i-x"/></svg></div>');
         batch.classList.add("has");
         count.textContent = (n + 1) + (n ? " comments" : " comment");
       }
       await wait(1200);
+      // Send submits the batch as the session's prompt; the strip stays until the session has taken it.
       await press(wait, send);
+      reviewTerm.submit("[Pasted text #1 +4 lines]");
+      await wait(700);
       resetReview();
-      reviewTerm.input = '<span class="dim">[Pasted text #1 +3 lines]</span>';
-      reviewTerm.draw(true);
-      await wait(800);
+      await wait(700);
       await press(wait, full); setFull(false);
       await wait(900);
       await press(wait, close); rv.classList.remove("open"); chip.classList.remove("on");
-      await wait(900);
-      reviewTerm.submit("[Pasted text #1 +3 lines]");
+      await wait(500);
       await reviewTerm.stream(wait, ["● Update(README.md)", "  ⎿  " + ok("+ Run Claude Code, Codex and six more agent CLIs"),
         "  ⎿  " + ok("+ | [MCP server](docs/cli.md#mcp) | yes | yes | yes |"), "● Both review comments are in.", dim("✻ Crunched for 26s · done 20:41")]);
       await wait(2200);
-      wait.end();
+      await wait.end();
     }
   }
 
@@ -271,9 +302,15 @@
     tabOv.classList.toggle("on", !checksTab); tabCk.classList.toggle("on", checksTab);
     bodyOv.classList.toggle("show", !checksTab); bodyCk.classList.toggle("show", checksTab);
   }
+  // The list row's checks chip follows the open pull request's checks.
+  function rowChip(k, done) {
+    var c = prRows[k].querySelector(".pchk"), total = checks.length;
+    c.className = done < total ? "pchk run" : "pchk ok";
+    c.innerHTML = (done < total ? '<span class="sring"></span>' : icon("check")) + done + "/" + total;
+  }
   function running(done) {
     cks.className = "cks running";
-    cks.innerHTML = '<svg class="ic spin"><use href="#i-loader-circle"/></svg>' + (checks.length - done) + " of " + checks.length + " checks running";
+    cks.innerHTML = '<span class="sring"></span>' + (checks.length - done) + " of " + checks.length + " checks running";
   }
   function openPr(k) {
     var row = prRows[k];
@@ -285,19 +322,21 @@
     checks.forEach(function (c) { c.classList.remove("passed"); c.querySelector(".dur").textContent = ""; });
     state.className = "state"; state.innerHTML = icon("git-pull-request-arrow") + "Open";
     merge.classList.add("off"); mmenu.classList.remove("show");
-    running(0); showTab(false);
+    running(0); rowChip(k, 0); showTab(false);
   }
   async function pullRequests(wait) {
     for (var k = 0; ; k = (k + 1) % prRows.length) {
+      if (prRows[k].querySelector(".pchk.bad")) continue;
       setCard(-1);
       openPr(k);
       await wait(1600);
-      showTab(true);
+      tap(tabCk); showTab(true);
       for (var i = 0; i < checks.length; i++) {
         await wait(jitter(350, 700));
         checks[i].classList.add("passed");
         checks[i].querySelector(".dur").textContent = Math.round(jitter(40, 240)) + "s";
         running(i + 1);
+        rowChip(k, i + 1);
       }
       cks.className = "cks passed";
       cks.innerHTML = icon("check") + checks.length + " checks passed";
@@ -308,12 +347,12 @@
       await wait(600);
       mmenu.querySelector(".m-sq").classList.add("hover");
       await wait(450);
+      tap(mmenu.querySelector(".m-sq"));
       mmenu.querySelector(".m-sq").classList.remove("hover");
       mmenu.classList.remove("show");
       state.className = "state merged"; state.innerHTML = icon("git-merge") + "Merged";
-      prRows[k].querySelector(".ic use").setAttribute("href", "#i-git-merge");
       await wait(2200);
-      wait.end();
+      await wait.end();
     }
   }
 
@@ -356,7 +395,7 @@
       await asker.stream(wait, ["● Update(docs/auth.md)", "  ⎿  " + ok("+ A token is expired at its exp instant."),
         dim("✻ Crunched for 1m 2s · done 20:35")]);
       await wait(2600);
-      wait.end();
+      await wait.end();
     }
   }
 
@@ -406,10 +445,11 @@
       resetTask();
       setCard(0); setFooter("docs/mcp-matrix", "claude", "opus 5.5 · medium", 12, 1);
       await wait(1000);
-      ns.classList.add("open"); nmenu.classList.add("show");
+      tap(ns); ns.classList.add("open"); nmenu.classList.add("show");
       await wait(700);
       nmenu.querySelector(".m-wt").classList.add("hover");
       await wait(350);
+      tap(nmenu.querySelector(".m-wt"));
       ns.classList.remove("open"); nmenu.classList.remove("show");
       dlg.classList.add("show"); nameIn.classList.add("focus");
       await wait(700);
@@ -452,16 +492,138 @@
       card.querySelector(".ring-st").className = "ring-st done";
       setFooter(issue.branch, "claude", "opus 5.5 · medium", 9, 1);
       await wait(2600);
-      wait.end();
+      await wait.end();
     }
   }
 
-  var stories = [startTask, mixAgents, reviewDiff, pullRequests, handOff];
+    // 5. Drive a browser: the agent's browser_open raises a toast whose Open gives the session a tab, its terminal
+  // beside the browser pane; lich's arrow then glides to each action the agent sends, the toolbar's included.
+  // The story's session is a signup-form fix, so the first card wears that name while it plays.
+  var brw = wall.querySelector(".v6"), bpane = brw.querySelector(".bpane"), page = brw.querySelector(".pg");
+  var acur = brw.querySelector(".acur"), aring = brw.querySelector(".aring"), url = brw.querySelector(".b-url");
+  var btoast = wall.querySelector(".btoast"), tabs = wall.querySelector(".tabs");
+  var email = page.querySelector(".pg-email"), pass = page.querySelector(".pg-pass"), err = page.querySelector(".pg-err");
+  var signup = page.querySelector(".pg-btn");
+  var browserTerm = terminal(brw.querySelector(".tile pre"), "claude", [dim("✻ Crunched for 12s · done 20:58")]);
+  var BRANCH = "fix/signup-email";
+  var first = { title: cards[0].querySelector(".t b").textContent, path: cards[0].querySelector(".path span").textContent,
+    ds: cards[0].querySelector(".ds").innerHTML };
+  // nameCard dresses the first card as the given session: its title, path, branch and diffstat.
+  function nameCard(title, path, ds) {
+    cards[0].querySelector(".t b").textContent = title;
+    cards[0].querySelector(".brn").textContent = title;
+    cards[0].querySelector(".path span").textContent = path;
+    cards[0].querySelector(".ds").innerHTML = ds;
+  }
+  var signupPath = "\u200e~/.local/share/lich/worktrees/e48f04f46a4a/fix-signup-email\u200e";
+  function resetBrowser() {
+    brw.classList.remove("split"); btoast.classList.remove("show"); acur.classList.remove("on");
+    page.className = "pg"; url.textContent = "localhost:5173/signup";
+    [email, pass].forEach(function (i) { i.classList.remove("focus", "bad"); i.querySelector(".pg-tx").textContent = ""; });
+    err.classList.remove("show"); signup.classList.remove("hit");
+    var tab = tabs.querySelector(".btab"), web = cards[0].querySelector(".web");
+    if (tab) tab.remove();
+    if (web) web.remove();
+    tabs.querySelector(".tab").classList.add("on");
+    nameCard(first.title, first.path, first.ds);
+    browserTerm.lines = [dim("✻ Crunched for 12s · done 20:58")];
+    browserTerm.input = ""; browserTerm.rule = "fix-signup-email-2b7e";
+    browserTerm.draw(true);
+  }
+  // glide moves the arrow to a point inside el (its center by default), in the pane's coordinates.
+  function glide(el, fx, fy) {
+    var p = bpane.getBoundingClientRect(), r = el.getBoundingClientRect();
+    var x = r.left - p.left + r.width * (fx === undefined ? .5 : fx), y = r.top - p.top + r.height * (fy === undefined ? .5 : fy);
+    acur.style.transform = "translate(" + x + "px," + y + "px)";
+    return [x, y];
+  }
+  async function land(wait, at) {
+    acur.classList.add("dip");
+    aring.style.left = at[0] + "px"; aring.style.top = at[1] + "px";
+    aring.classList.remove("go"); void aring.offsetWidth; aring.classList.add("go");
+    await wait(90);
+    acur.classList.remove("dip");
+  }
+  async function flash(wait, btn) { btn.classList.add("flash"); await wait(220); btn.classList.remove("flash"); }
+  // fill clicks into a field and types text into it, as browser_type does.
+  async function fill(wait, field, text) {
+    var at = glide(field, .15);
+    await wait(320);
+    await land(wait, at);
+    [email, pass].forEach(function (i) { i.classList.toggle("focus", i === field); });
+    for (var ch of text) { field.querySelector(".pg-tx").textContent += ch; await wait(jitter(35, 70)); }
+  }
+  async function clickSignup(wait) {
+    [email, pass].forEach(function (i) { i.classList.remove("focus"); });
+    var at = glide(signup);
+    await wait(380);
+    await land(wait, at);
+    signup.classList.add("hit");
+    await wait(250);
+    signup.classList.remove("hit");
+  }
+  async function driveBrowser(wait) {
+    for (;;) {
+      resetBrowser();
+      setCard(0); nameCard(BRANCH, signupPath, ""); setFooter(BRANCH, "claude", "opus 5.5 · medium", 0, 0);
+      await wait(900);
+      var ask = 'the signup form says "invalid email" for a valid one';
+      await browserTerm.type(wait, ask, 25, 55);
+      await wait(350);
+      browserTerm.submit(ask);
+      setRing(0, "busy");
+      await browserTerm.stream(wait, ['● lich - browser_open (MCP)(url: "http://localhost:5173/signup")', "  ⎿  Opened · Create your account"]);
+      btoast.classList.add("show");
+      await wait(1500);
+      await press(wait, btoast.querySelector(".bt-open"));
+      btoast.classList.remove("show");
+      tabs.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("on"); });
+      tabs.querySelector(".tab").insertAdjacentHTML("afterend", '<span class="tab on btab"><span class="tg"><svg class="ic"><use href="#i-columns-2"/></svg>' + BRANCH + "</span>" +
+        '<span class="tx"><svg class="ic"><use href="#i-x"/></svg></span></span>');
+      cards[0].querySelector(".ring-st").insertAdjacentHTML("afterend", '<svg class="ic web"><use href="#i-globe"/></svg>');
+      brw.classList.add("split");
+      await wait(600);
+      glide(page, .5, .2); acur.classList.add("on");
+      await wait(500);
+      browserTerm.lines.push('● lich - browser_type (MCP)(field: "Email", text: "ana@shop.dev")'); browserTerm.draw(true);
+      await fill(wait, email, "ana@shop.dev");
+      browserTerm.lines.push('● lich - browser_type (MCP)(field: "Password", text: "••••••••")'); browserTerm.draw(true);
+      await fill(wait, pass, "••••••••");
+      browserTerm.lines.push('● lich - browser_click (MCP)(text: "Sign up")'); browserTerm.draw(true);
+      await clickSignup(wait);
+      email.classList.add("bad"); err.classList.add("show");
+      await browserTerm.stream(wait, ['  ⎿  "Invalid email" under Email', "● Read(src/validate.ts)", "● Update(src/validate.ts)",
+        "  ⎿  " + bad("- /^[a-z]+@[a-z]+\\.com$/"), "  ⎿  " + ok("+ /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/")]);
+      setFooter(BRANCH, "claude", "opus 5.5 · medium", 1, 1);
+      nameCard(BRANCH, signupPath, '<span class="add">+1</span><span class="del">-1</span>');
+      browserTerm.lines.push("● lich - browser_reload (MCP)"); browserTerm.draw(true);
+      var reload = brw.querySelector(".b-rel");
+      await land(wait, glide(reload));
+      await flash(wait, reload);
+      [email, pass].forEach(function (i) { i.classList.remove("focus", "bad"); i.querySelector(".pg-tx").textContent = ""; });
+      err.classList.remove("show");
+      await wait(500);
+      browserTerm.lines.push("● lich - browser_type (MCP)(Email, Password)"); browserTerm.draw(true);
+      await fill(wait, email, "ana@shop.dev");
+      await fill(wait, pass, "••••••••");
+      browserTerm.lines.push('● lich - browser_click (MCP)(text: "Sign up")'); browserTerm.draw(true);
+      await clickSignup(wait);
+      page.classList.add("done");
+      await browserTerm.stream(wait, ["  ⎿  Welcome, ana", "● The email check only took .com addresses; it now takes", "  any domain. Signed up as ana@shop.dev to confirm.",
+        dim("✻ Crunched for 41s · done 21:03")]);
+      setRing(0, "done");
+      await wait(2600);
+      await wait.end();
+    }
+  }
+
+  var stories = [startTask, mixAgents, reviewDiff, pullRequests, handOff, driveBrowser];
   function start(v) {
     generation[v]++;
     told[v] = false; barDone = false;
     chip.classList.remove("on");
     resetTask();
+    resetBrowser();
     wall.setAttribute("aria-label", labels[v]);
     stories[v](waiter(v)).catch(function () {});
   }
@@ -474,7 +636,7 @@
 
   // The open tab fills a bar under its label; the next tab opens once the bar is full and the story told.
   // Measured story lengths, rounded up; a story that runs longer still holds its tab until it is told.
-  var durations = [16000, 15000, 21000, 10000, 16000];
+  var durations = [17000, 16000, 22000, 10000, 16000, 21000];
   function runBar() {
     radios.forEach(function (r, i) {
       var label = seg.querySelector('[for="' + r.id + '"]');
