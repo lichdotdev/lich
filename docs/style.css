@@ -264,7 +264,10 @@ h1.busy:not(.done) .caret { animation: none; }
 .gt .ic { width: 12px; height: 12px; color: inherit; transform: rotate(90deg); }
 .gt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .grp > i { flex: 1; height: 1px; margin-left: 2px; background: var(--seam); }
-.scard { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 8px 10px; border-radius: 6px; transition: background-color .2s; }
+.scard { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 10px; border-radius: 6px; transition: background-color .2s; }
+/* The second row is the path, or the status line in its place while a tool runs or the agent waits. */
+.scard .rung:empty { display: none; }
+.scard .rung:not(:empty) + .path { display: none; }
 .scard.on { background: var(--raised); }
 .scard .t { display: flex; align-items: center; gap: 6px; padding-right: 44px; }
 .scard .t b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
@@ -289,7 +292,17 @@ h1.busy:not(.done) .caret { animation: none; }
 .beh { display: inline-flex; align-items: center; gap: 2px; margin-left: 4px; }
 .scard .ds { margin-left: 4px; }
 /* The profile row sits under a 1px rule with 6 between them, as lich draws it. */
-.prof { display: flex; align-items: center; gap: 8px; height: 39px; padding: 6px 8px 0; border-top: 1px solid var(--seam); }
+/* Services sit between the session list and the profile, under their own hairline. */
+.svc { display: flex; align-items: center; gap: 8px; height: 39px; padding: 6px 8px 0; border-top: 1px solid var(--seam); }
+.svc b { font-weight: 400; }
+.svc .mono { font-size: 12px; }
+.svc .ic { width: 14px; height: 14px; }
+.sdot { position: relative; width: 14px; height: 14px; flex: none; }
+.sdot::before { content: ""; position: absolute; inset: 5.25px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+.sdot.up::before { background: var(--pass); box-shadow: none; }
+.sdot.up::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; box-shadow: 0 0 0 1px var(--pass); opacity: 0; animation: sdot-pulse 2s ease-out infinite; }
+@keyframes sdot-pulse { 0% { opacity: .6; transform: scale(.5); } 100% { opacity: 0; transform: scale(1.1); } }
+.prof { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; }
 .prof b { flex: 1; font-weight: 400; }
 .prof .ic { width: 14px; height: 14px; }
 .av { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: oklch(0.62 0.17 255); color: #fff; font-size: 12px; font-weight: 600; }
@@ -310,7 +323,8 @@ h1.busy:not(.done) .caret { animation: none; }
   flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-end; margin: 0; padding: 6px 6px 6px 10px;
   overflow: hidden; font: 14px/1.2 var(--w-mono); color: var(--fg);
 }
-.tile pre .l, .rv-term pre .l, .solo pre .l { flex: none; min-height: 1.2em; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+/* A long line wraps at the pane's edge, as the terminal does. */
+.tile pre .l, .rv-term pre .l, .solo pre .l { flex: none; min-height: 1.2em; white-space: pre-wrap; overflow-wrap: anywhere; }
 .app .dim { color: var(--faint); }
 .app .mut { color: var(--muted); }
 .app .amber { color: var(--wait); }
@@ -319,7 +333,19 @@ h1.busy:not(.done) .caret { animation: none; }
 .app .bad { color: var(--del); }
 .app .rule { display: flex; gap: .5em; color: var(--faint); }
 .app .rule::before { content: ""; flex: 1; height: 0; margin-top: .6em; border-top: 1px solid var(--faint); opacity: .6; }
-.app .box { padding: 0 .5em; border-left: 2px solid oklch(0.72 0.12 250); background: var(--raised); }
+.app .rule:empty { gap: 0; }
+.app .box { display: block; padding: 0 1.2em; border-left: 2px solid oklch(0.72 0.14 350); background: var(--raised); white-space: pre-wrap; }
+.app .pink { color: oklch(0.72 0.14 350); }
+.app .thought { color: color-mix(in oklab, var(--wait) 70%, var(--muted)); }
+.app .oc-foot { display: flex; justify-content: space-between; padding: 0 .3em; }
+/* Crush: the message under a violet bar, the reply's model line closing on a rule, the YOLO prompt and its keys. */
+.app .cbar { display: block; padding-left: .6em; border-left: 2px solid oklch(0.62 0.2 285); }
+.app .cmeta { display: flex; gap: .5em; }
+.app .cmeta::after { content: ""; flex: 1; height: 0; margin-top: .6em; border-top: 1px solid var(--faint); opacity: .6; }
+.app .yb { padding: 0 .4em; background: oklch(0.9 0.19 115); color: #18181b; font-weight: 600; }
+.app .yl { color: oklch(0.9 0.19 115); }
+/* Crush cuts its key help at the pane's width instead of wrapping it. */
+.app .clip { display: block; white-space: nowrap; overflow: hidden; }
 .app .cur { display: inline-block; width: .6em; height: 1.1em; vertical-align: text-bottom; background: var(--fg); }
 
 /* Footer: no padding of its own, its items line up with the island; each item is 32 tall with 8 of padding. */
@@ -376,12 +402,83 @@ h1.busy:not(.done) .caret { animation: none; }
 .dft { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
 .dft span { height: 36px; }
 
+/* Drive a browser: the session's tab splits its terminal and the browser pane (a 32 header, a 36 toolbar with
+   back, forward, reload, the address and Open in a window, then the page). lich's own arrow, in the theme's
+   primary with a badge naming the provider, glides to what the agent acts on. */
+.brw { flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 6px; }
+.brw.split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.brw .bpane { display: none; }
+.brw.split .bpane { display: flex; }
+.bpane { position: relative; flex-direction: column; min-width: 0; overflow: hidden; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--seam); }
+.bp-h { display: flex; align-items: center; gap: 8px; height: 32px; flex: none; padding: 0 8px 0 10px; box-shadow: 0 1px 0 var(--seam); font-size: 12px; }
+.bp-h > .ic { width: 14px; height: 14px; }
+.bp-h b { font-weight: 500; }
+.bp-t { display: flex; align-items: center; height: 36px; flex: none; padding: 0 6px; box-shadow: 0 1px 0 var(--seam); }
+.bp-t .ia.flash { background: var(--raised); }
+.bp-t .ia.flash .ic { color: var(--fg); }
+.b-url { flex: 1; min-width: 0; display: flex; align-items: center; height: 24px; margin: 0 6px; padding: 0 8px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--input); background: color-mix(in oklab, var(--input) 30%, transparent); font-size: 12px; white-space: nowrap; overflow: hidden; }
+.bp-page { flex: 1; min-height: 0; overflow: hidden; background: #fff; color: #18181b; }
+.pg { padding: 0 28px 28px; font-family: var(--sans); transition: transform .56s cubic-bezier(.2, 0, 0, 1); }
+.pg-nav { display: flex; gap: 18px; align-items: center; height: 48px; margin: 0 -28px 24px; padding: 0 28px; border-bottom: 1px solid #e4e4e7; font-size: 13px; color: #52525b; }
+.pg-nav b { margin-right: auto; color: #18181b; }
+.pg h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+.pg p { margin: 8px 0 0; color: #52525b; font-size: 14px; }
+.pg-form { max-width: 320px; margin: 0 auto; }
+.pg-form label { display: block; margin-top: 16px; font-size: 13px; font-weight: 500; }
+.pg-in { display: flex; align-items: center; height: 36px; margin-top: 6px; padding: 0 10px; border: 1px solid #d4d4d8; border-radius: 6px; font-size: 14px; }
+.pg-in.focus { border-color: #18181b; box-shadow: 0 0 0 3px rgb(24 24 27 / .08); }
+.pg-in.focus .pg-tx::after { content: ""; display: inline-block; width: 1px; height: 1em; margin-left: 1px; vertical-align: text-bottom; background: #18181b; }
+.pg-in.bad { border-color: #dc2626; }
+.pg-err { display: none; margin-top: 6px; color: #dc2626; font-size: 12px; }
+.pg-err.show { display: block; }
+.pg-btn { display: block; margin-top: 22px; padding: 10px 14px; border-radius: 6px; background: #18181b; color: #fff; font-size: 14px; font-weight: 500; text-align: center; }
+.pg-btn.hit { background: #3f3f46; }
+.pg-done { display: none; max-width: 320px; margin: 40px auto 0; text-align: center; }
+.pg.done .pg-form { display: none; }
+.pg.done .pg-done { display: block; }
+.acur { position: absolute; left: 0; top: 0; z-index: 3; pointer-events: none; opacity: 0; transition: transform .28s cubic-bezier(.2, 0, 0, 1), opacity .3s; }
+.acur.on { opacity: 1; }
+.acur svg { width: 22px; height: 22px; margin: -2px 0 0 -2px; overflow: visible; filter: drop-shadow(0 1px 1px rgb(0 0 0 / .35)); }
+.acur path { fill: var(--primary); stroke: var(--background); stroke-width: 1.6; stroke-linejoin: round; }
+.acur.dip svg { transform: scale(.88); transform-origin: 0 0; transition: transform .085s; }
+.abadge { position: absolute; left: 12px; top: 15px; display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px 0 5px; border-radius: 10px; background: var(--primary); box-shadow: 0 0 0 1.5px var(--background); color: var(--primary-fg); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.abadge .glyph { width: 12px; height: 12px; color: inherit; }
+.aring { position: absolute; z-index: 2; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; box-shadow: 0 0 0 2px var(--primary); opacity: 0; pointer-events: none; }
+.aring.go { animation: aring .52s ease-out; }
+@keyframes aring { from { opacity: .95; transform: scale(.2); } to { opacity: 0; transform: scale(1); } }
+.btoast {
+  position: absolute; right: 16px; bottom: 48px; z-index: 5; display: none; align-items: center; gap: 12px; width: 356px; padding: 14px 16px;
+  border-radius: 8px; background: var(--island); box-shadow: 0 0 0 1px var(--seam), 0 10px 30px -10px rgb(0 0 0 / .6); font-size: 13px; animation: rise .25s ease-out;
+}
+.btoast.show { display: flex; }
+.btoast > div { flex: 1; min-width: 0; }
+.btoast b { display: block; font-weight: 500; }
+.btoast small { color: var(--muted); font: 12px var(--w-mono); }
+.bt-ic .ic { width: 16px; height: 16px; color: var(--fg); }
+.bt-btn { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 4px; background: var(--raised); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.bt-open { background: var(--fg); color: var(--island); }
+.bt-open.press { background: color-mix(in oklab, var(--fg) 80%, var(--background)); }
+.scard .t > .web { width: 12px; height: 12px; }
+.app .tab .tg { display: inline-flex; align-items: center; gap: 8px; overflow: hidden; }
+.app .tab .tg .ic { width: 14px; height: 14px; }
+
+/* The tour's own clicks: a ring that grows and fades where it pressed, the text color edged in the background so
+   it reads on a light button as on a dark one. */
+.tap {
+  position: absolute; z-index: 6; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 0 2px var(--fg), 0 0 0 4px color-mix(in oklab, var(--background) 70%, transparent); animation: tap .36s ease-out forwards;
+}
+@keyframes tap { from { opacity: 1; transform: scale(.3); } to { opacity: 0; transform: scale(1); } }
+
 /* Buttons, as the kit sizes them: SM is 32 tall with 10 of padding, text 14 medium, radius 6. */
-.btn-g, .btn-s, .btn-p { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 6px; font-weight: 500; white-space: nowrap; transition: transform .1s, background-color .15s; }
+.btn-g, .btn-s, .btn-p { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 6px; font-weight: 500; white-space: nowrap; transition: background-color .15s; }
 .btn-g .ic, .btn-s .ic, .btn-p .ic { color: inherit; }
 .btn-s { background: var(--raised); }
 .btn-p { background: var(--primary); color: var(--primary-fg); }
-.btn-g.press, .btn-s.press, .btn-p.press { transform: scale(.96); }
+/* A pressed button changes color and does not move, as lich's do (#877). */
+.btn-g.press { background: var(--raised); }
+.btn-s.press { background: color-mix(in oklab, var(--raised) 70%, var(--fg)); }
+.btn-p.press { background: color-mix(in oklab, var(--primary) 80%, var(--background)); }
 .btn-p.off { opacity: .5; }
 
 /* Review: the terminal and the dock are two islands. The dock slides in from the right at its own width, on the
@@ -438,9 +535,9 @@ h1.busy:not(.done) .caret { animation: none; }
 .composer.typing .ph { display: none; }
 .composer.typing .tx::after { content: ""; display: inline-block; width: 1px; height: 1em; margin-left: 1px; vertical-align: text-bottom; background: var(--fg); }
 .composer .bt { display: flex; gap: 8px; margin-top: 8px; }
-.composer .add-b { display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 6px; background: var(--primary); color: var(--primary-fg); font-weight: 500; opacity: .5; transition: transform .1s; }
+.composer .add-b { display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 6px; background: var(--primary); color: var(--primary-fg); font-weight: 500; opacity: .5; transition: background-color .15s; }
 .composer.typing .add-b { opacity: 1; }
-.composer .add-b.press { transform: scale(.96); }
+.composer .add-b.press { background: color-mix(in oklab, var(--primary) 80%, var(--background)); }
 .batch { display: none; flex: none; box-shadow: 0 -1px 0 var(--seam); }
 .batch.has { display: block; }
 .cmts { padding: 4px; }
@@ -448,6 +545,7 @@ h1.busy:not(.done) .caret { animation: none; }
 .cmts .at { color: var(--muted); font-family: var(--w-mono); white-space: nowrap; }
 .cmts .c > span:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmts .c .ic { width: 12px; height: 12px; margin: 0 6px; }
+.cmts .c .ic + .ic { margin-left: 0; }
 .note { display: flex; align-items: center; height: 28px; margin: 4px 8px 0; padding: 0 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--input); background: color-mix(in oklab, var(--input) 30%, transparent); color: var(--muted); font-size: 12px; }
 .dk-send { display: flex; align-items: center; gap: 4px; padding: 4px 8px 8px; color: var(--muted); font-size: 12px; }
 .dk-send .btn-g { color: var(--fg); font-size: 14px; }
@@ -460,21 +558,33 @@ h1.busy:not(.done) .caret { animation: none; }
 .pl-h { display: flex; align-items: center; gap: 6px; padding: 8px; }
 .flt { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--input); background: color-mix(in oklab, var(--input) 30%, transparent); color: var(--muted); font-size: 12px; }
 .flt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.segm { display: flex; gap: 0; height: 36px; margin: 0 8px; padding: 3px; border-radius: 8px; background: var(--raised); }
-.segm span { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 29px; padding: 0 8px; border-radius: 6px; color: var(--muted); font-weight: 500; white-space: nowrap; }
-.segm span.on { background: color-mix(in oklab, var(--input) 30%, transparent); box-shadow: inset 0 0 0 1px var(--input); color: var(--fg); }
-.segm i { color: var(--muted); font-size: 12px; font-weight: 400; }
 .pstate { display: flex; align-items: center; gap: 4px; padding: 8px 12px; color: var(--muted); font-size: 12px; line-height: 16px; }
 .pstate .ic { width: 12px; height: 12px; }
 .prs { display: flex; flex-direction: column; gap: 2px; padding: 0 6px 12px; }
-.pr { display: flex; gap: 8px; padding: 8px; border-radius: 6px; transition: background-color .2s; }
+/* Pulls quick filters: ghost tabs sharing the list's width. */
+.ftabs { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 4px; margin: 0 8px; }
+.ftabs span { display: flex; align-items: center; justify-content: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 6px; color: var(--muted); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.ftabs span.on { background: var(--raised); color: var(--fg); }
+.ftabs i { color: var(--muted); font-weight: 400; }
+.ftabs .failing i { color: var(--del); }
+.pr { display: block; padding: 8px; border-radius: 6px; transition: background-color .2s; }
 .pr.on { background: var(--raised); }
-.pr > .ic { width: 14px; height: 14px; margin-top: 3px; }
 .pr div { min-width: 0; }
-.pr p { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pr p { margin: 0; line-height: 20px; }
+.pr .tl { display: inline; }
 .pr .num-l { color: var(--muted); }
-.pr small { display: flex; align-items: center; gap: 8px; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 16px; }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pass); }
+.pr small { display: flex; align-items: center; gap: 8px; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.pchk { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font: 12px/16px var(--w-mono); vertical-align: 1px; }
+.pchk .ic { width: 12px; height: 12px; color: inherit; }
+.pchk.ok { color: var(--pass); }
+.pchk.bad { color: var(--del); }
+.pchk.run { color: var(--wait); }
+.pchk .sring { width: 12px; height: 12px; }
+.pfold { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; overflow: hidden; }
+.pfold .ic { width: 12px; height: 12px; }
+/* A running check: a faint track under a quarter arc that turns once a second. */
+.sring { position: relative; display: inline-block; flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, currentColor 25%, transparent); }
+.sring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid transparent; border-top-color: currentColor; animation: spin 1s linear infinite; }
 .pd { position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border-radius: 8px; background: var(--background); }
 .pd-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px; }
 .pd-ttl { padding: 2px 16px 0; }
@@ -502,6 +612,7 @@ h1.busy:not(.done) .caret { animation: none; }
 .ck { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
 .ck .ic { width: 16px; height: 16px; }
 .ck .run { color: var(--wait); }
+.cks .sring { width: 14px; height: 14px; }
 .ck .done { display: none; color: var(--pass); }
 .ck.passed .run { display: none; }
 .ck.passed .done { display: block; }
@@ -554,14 +665,14 @@ h1.busy:not(.done) .caret { animation: none; }
 .cap { display: none; }
 .cap p { margin: 1.1rem auto 0; max-width: 46rem; text-align: center; color: var(--muted); }
 .cap p b { color: var(--fg); font-weight: 500; }
-#t1:checked ~ .seg [for="t1"], #t2:checked ~ .seg [for="t2"], #t3:checked ~ .seg [for="t3"], #t4:checked ~ .seg [for="t4"], #t5:checked ~ .seg [for="t5"] {
+#t1:checked ~ .seg [for="t1"], #t2:checked ~ .seg [for="t2"], #t3:checked ~ .seg [for="t3"], #t4:checked ~ .seg [for="t4"], #t5:checked ~ .seg [for="t5"], #t6:checked ~ .seg [for="t6"] {
   background: var(--raised); color: var(--fg);
 }
-#t1:checked ~ .c1, #t2:checked ~ .c2, #t3:checked ~ .c3, #t4:checked ~ .c4, #t5:checked ~ .c5 { display: block; }
+#t1:checked ~ .c1, #t2:checked ~ .c2, #t3:checked ~ .c3, #t4:checked ~ .c4, #t5:checked ~ .c5, #t6:checked ~ .c6 { display: block; }
 .view { display: none; }
-#t1:checked ~ #wall .v1, #t2:checked ~ #wall .v2, #t3:checked ~ #wall .v3, #t4:checked ~ #wall .v4, #t5:checked ~ #wall .v5 { display: grid; }
+#t1:checked ~ #wall .v1, #t2:checked ~ #wall .v2, #t3:checked ~ #wall .v3, #t4:checked ~ #wall .v4, #t5:checked ~ #wall .v5, #t6:checked ~ #wall .v6 { display: grid; }
 #t1:checked ~ #wall .v1, #t3:checked ~ #wall .v3 { display: flex; }
-#t1:focus-visible ~ .seg [for="t1"], #t2:focus-visible ~ .seg [for="t2"], #t3:focus-visible ~ .seg [for="t3"], #t4:focus-visible ~ .seg [for="t4"], #t5:focus-visible ~ .seg [for="t5"] {
+#t1:focus-visible ~ .seg [for="t1"], #t2:focus-visible ~ .seg [for="t2"], #t3:focus-visible ~ .seg [for="t3"], #t4:focus-visible ~ .seg [for="t4"], #t5:focus-visible ~ .seg [for="t5"], #t6:focus-visible ~ .seg [for="t6"] {
   outline: 2px solid var(--fg); outline-offset: 2px;
 }
 
