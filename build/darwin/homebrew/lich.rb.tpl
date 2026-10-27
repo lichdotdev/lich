@@ -13,7 +13,7 @@ cask "lich" do
 
   url "https://github.com/lichdotdev/lich/releases/download/v#{version}/lich-v#{version}-darwin-#{arch}.zip"
   name "lich"
-  desc "Terminal-first ADE for the coding agents you already use"
+  desc "Run coding agents side by side, each on its own branch"
   homepage "https://github.com/lichdotdev/lich"
 
   depends_on macos: ">= :ventura"

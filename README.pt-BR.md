@@ -2,108 +2,127 @@
   <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <strong>Português (Brasil)</strong> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
-  <p><strong>Um ADE para quem trabalha no terminal, com os agentes de código que você já usa.</strong></p>
-  <p>
-    Abra seus projetos, rode agentes como Claude Code, Codex e opencode em
-    terminais de verdade e acompanhe o git (worktrees, diffs e pull requests)
-    sem sair da janela. Sem Electron e sem navegador: o lich desenha a própria
-    janela nativa com Gio, no Linux, no Windows e no macOS.
-  </p>
-  <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
-    <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
+  <p>
+    <strong>Seus agentes de código lado a lado, cada um na própria branch.</strong><br/>
+    Claude Code, Codex, opencode ou o agente que você já usa, cada um na própria worktree, todos na mesma janela.
+  </p>
+  <h3><a href="#instalação">Baixar o lich</a> · <a href="https://lichdotdev.github.io/lich/index.pt-BR.html">lichdotdev.github.io/lich</a></h3>
   <img src="docs/media/session.png" alt="Quatro sessões do Claude Code lado a lado num split, cada uma na sua git worktree. A barra lateral lista as sessões com a branch e o selo de diff e, no pé, os serviços rodando no projeto e o profile; o rodapé mostra a branch, o modelo e o plano" width="1000" />
-  <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
+  <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 
-## Por que o lich
+## Recursos
 
-O que dá para fazer com o lich:
+<table>
+<tr>
+<td width="50%" valign="middle">
 
-- **Rodar o agente que você já tem.** [Claude Code](https://www.anthropic.com/claude-code),
-  [Codex](https://github.com/openai/codex), Antigravity,
-  [opencode](https://github.com/sst/opencode), oh-my-pi,
-  [Crush](https://github.com/charmbracelet/crush),
-  [Cursor CLI](https://cursor.com/docs/cli) e
-  [Kiro CLI](https://kiro.dev/docs/cli/) rodam aqui do mesmo jeito. Aponte o
-  lich para cada binário uma vez e escolha um padrão ou um agente por sessão.
-  O que o lich consegue ler *de volta* de cada sessão muda de provedor para
-  provedor, e está tudo na tabela de
-  [Suporte por provedor](#suporte-por-provedor).
-- **Usar um terminal de verdade.** Shells com PTY, vários por projeto,
-  renderizados na GPU, com scrollback pesquisável que sobrevive a fechar e
-  reabrir a janela. O que um projeto mantém rodando (um servidor de dev, um
-  túnel, um `lazydocker`) fica salvo como serviço, que você inicia, para e lê
-  no pé da barra lateral, e que pode subir junto com o lich. O rodapé acompanha o `cd` e mostra a branch. Numa sessão de Claude
-  Code, Codex ou Kiro CLI, mostra também o modelo e a janela de contexto em
-  uso; no Claude Code, Codex, Antigravity, Cursor CLI e numa assinatura do
-  OpenCode Go, quanto ainda resta da janela móvel do seu plano; e, se você
-  pedir, quanto a sessão já gastou, nos provedores que registram isso.
-- **Pôr uma sessão para trabalhar para outra.** Passe uma tarefa para outro
-  card e o agente de lá escreve a resposta de volta, seja qual for o agente em
-  cada ponta. Ele chega às outras sessões por ferramentas entregues na criação
-  da sessão (MCP no Claude Code e no Codex) ou trazidas pelo plugin. Tudo isso
-  também existe como o comando `lich` em qualquer shell, com `--json`, então
-  um script consegue conduzir uma sessão sem nenhum agente no meio
-  ([`docs/cli.md`](docs/cli.md)).
-- **Acompanhar várias ao mesmo tempo.** Coloque qualquer sessão num split ao
-  lado da atual e o lich organiza os painéis sozinho, pela quantidade de
-  sessões e pelo espaço da janela: oito ficam quatro por linha num monitor
-  ultrawide e duas por linha num notebook. Uma sessão que delegou trabalho
-  monta o split com as outras em volta dela num clique. Cada split tem nome,
-  um projeto guarda quantos você quiser e cada um ganha um bloco na barra
-  lateral, que dá para recolher, renomear ou desfazer.
-- **Criar uma worktree sem fazer setup.** Crie uma a partir de qualquer branch
-  base: o lich copia os seus `.env*` ignorados pelo git e reserva uma porta
-  para o servidor de dev que nenhum outro checkout nem processo da máquina
-  está usando.
-  Tem mudança não commitada no checkout? Ela vai junto, inclusive os arquivos
-  não rastreados.
-- **Rodar uma sessão confinada.** O agente pode abrir dentro de uma sandbox
-  do sistema operacional: um home novo e vazio, só com o estado do próprio
-  provedor, o resto da máquina só para leitura e acesso de escrita ao checkout
-  em que ele foi aberto. Suas chaves ssh, suas credenciais de nuvem e todos os
-  outros repositórios do disco simplesmente não estão lá. É o contrapeso de
-  deixar um agente pular os pedidos de permissão. No Linux roda com
-  bubblewrap e no macOS com `sandbox-exec`. Não protege contra código
-  malicioso, e o [`docs/ceilings.md`](docs/ceilings.md) diz o que ela não
-  impede.
-- **Revisar o diff no mesmo lugar em que você lê.** Um dock de diff
-  mostra as mudanças em andamento ao lado de uma árvore de arquivos ao vivo,
-  recolhe as que só mexeram em espaço em branco quando você pede e mostra o
-  antes e depois de uma imagem ou PDF alterado. Clique com o botão direito
-  numa seleção para comentar aquelas linhas; os comentários vão juntos para a
-  sessão num prompt só, colado e não enviado. A aba Código navega pelo
-  checkout e busca no texto dos arquivos.
-- **Levar o pull request até o merge daqui.** Liste os pull requests abertos
-  do repositório, faça checkout de um numa worktree própria, leia o diff,
-  revise inline e faça o merge com os métodos que a branch base aceita de
-  fato. Numa branch que ainda não tem pull request, **Criar com agente** pede
-  para a sessão dessa branch abrir um, e nada é enviado até você apertar
-  Enter.
+### Agentes lado a lado
 
-Tem mais: [temas](docs/themes.md) que você importa como JSON ou instala de um
-repositório git, uma paleta no `Ctrl`/`Cmd`+`K` que acha uma sessão pelo nome
-ou pelo que foi dito na conversa, notificação no desktop quando uma sessão está
-esperando por você e `lich rage` / `lich doctor` para quando ele nem abre.
+Coloque as sessões num split e o lich arruma os painéis sozinho. Veja de relance quem está trabalhando, quem está esperando por você e quanto contexto ainda resta.
 
-O projeto está em desenvolvimento ativo: bugs e pedidos de funcionalidade vão
-nas [Issues](https://github.com/lichdotdev/lich/issues), e o que mudou em cada
-versão está no [CHANGELOG.md](CHANGELOG.md).
+</td>
+<td width="50%"><img src="docs/media/wall-mixed.png" alt="Sessões do Claude Code e do Codex no mesmo split, cada uma na sua branch" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Uma worktree por tarefa, sem configurar nada
+
+Crie uma sessão a partir de qualquer branch e o lich copia seus arquivos `.env` e reserva uma porta livre para o servidor de desenvolvimento. O que você ainda não commitou pode ir junto.
+
+</td>
+<td width="50%"><img src="docs/media/worktrees.png" alt="Sessões na barra lateral, cada uma com a sua branch e o selo de diff" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Revise o diff e comente as linhas
+
+Leia o que o agente mudou ao lado da sessão dele, comente as linhas que precisam de ajuste e mande todas as notas de volta num único prompt.
+
+</td>
+<td width="50%"><img src="docs/media/review-comments.png" alt="Um diff com dois comentários de linha esperando para ir para a sessão" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Pull requests sem abrir o navegador
+
+Peça ao agente da branch para abrir o pull request, revise linha a linha e faça o merge, tudo na mesma janela.
+
+</td>
+<td width="50%"><img src="docs/media/pull-request-review.png" alt="Um pull request aberto no lich com a árvore de arquivos, o diff e um comentário de review pendente" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Do seu jeito
+
+Importe um tema em JSON ou instale um direto de um repositório git.
+
+[Docs →](docs/themes.md)
+
+</td>
+<td width="50%"><img src="docs/media/themes.png" alt="As configurações de Aparência com o seletor de tema, as fontes e o layout do rodapé" width="100%" /></td>
+</tr>
+</table>
+
+E mais:
+
+- **Sessões que delegam.** Um agente passa uma tarefa para outra sessão e recebe a resposta de volta. O mesmo funciona do seu shell com o comando `lich` ([docs](docs/cli.md)).
+- **Agentes em sandbox.** Deixe um agente pular os pedidos de permissão dentro de uma sandbox que não enxerga suas chaves, suas credenciais nem seus outros repositórios ([limites](docs/ceilings.md)).
+- **Seus servidores de desenvolvimento na barra lateral.** Salve o que o projeto mantém rodando e ligue ou desligue com um clique.
+- **Ache qualquer coisa.** `Ctrl`/`Cmd`+`K` pula para uma sessão pelo nome ou por algo que foi dito nela.
+- **Saiba quando precisam de você.** Notificação no desktop quando uma sessão está esperando por você.
+
+## Instalação
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
+```
+
+Um comando só: ele detecta a sua distro, confere o download e instala o lich pelo gerenciador de pacotes.
+
+| Plataforma | Como instalar |
+| --- | --- |
+| **Linux** | O `install.sh` acima, ou o AUR [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`). Precisa do `zenity` e da glibc 2.34 ou mais nova (Debian 12, Ubuntu 22.04, RHEL 9 em diante). |
+| **macOS** | `brew install --cask lichdotdev/tap/lich` |
+| **Windows** | Instalador ou zip portátil em [Releases](https://github.com/lichdotdev/lich/releases), ou `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` |
+
+Os builds de macOS e Windows ainda não são assinados, então o Gatekeeper e o
+SmartScreen avisam num download pela página de Releases; pelo Homebrew, o aviso
+do Gatekeeper não aparece. Pacotes por distro, o tarball para Linux, como tirar
+a flag de quarentena e como atualizar a partir da fórmula antiga do Homebrew
+estão no [INSTALL.md](INSTALL.md).
+
+## Primeiros passos
+
+1. **Abra um projeto.** O `+` na barra de abas lista o que você fechou
+   recentemente e abre o seletor de pastas. Escolha um repositório git.
+2. **Escolha o seu agente.** Na primeira execução, o lich lista os agentes que
+   encontrou na máquina. Em Configurações › Provedores você define o padrão e o
+   caminho de cada binário.
+3. **Inicie uma sessão.** *Nova sessão* abre o seu agente no projeto. O `+` no
+   cabeçalho de um checkout abre qualquer agente, ou um terminal comum,
+   naquele checkout.
+4. **Dê uma worktree para ela** *(opcional)*. Crie uma a partir de qualquer
+   branch base e o lich abre uma sessão nova nela.
 
 ## Suporte por provedor
 
-Todo provedor roda num terminal de verdade, é retomado pelo id da conversa,
-fica confinado pela mesma sandbox e recebe o mesmo jeito de falar com as suas
-outras sessões. O que muda é o que o lich consegue *ler* de cada sessão,
-porque ele lê o que cada CLI registra, e não existem duas que registrem as
-mesmas coisas.
+Todo agente roda num terminal de verdade, retoma a conversa, funciona na
+sandbox e fala com as suas outras sessões. O que muda de um para outro é o que
+o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
+
+<details>
+<summary>Veja o que cada agente suporta</summary>
 
 | Recurso | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -149,130 +168,70 @@ mesmas coisas.
 | Instruído na criação, no idioma de prompt, a distribuir o trabalho em sessões do lich em vez de subagentes ocultos | sim | não | não | não | sim | não | não | não |
 | O card da sessão abre um navegador que o agente dirige, numa aba ao lado da sessão | sim | sim | sim | o card abre; o agente usa `lich browser`, não as tools `browser_*` | sim | sim | sim | sim |
 
-Toda lacuna é proposital: nenhuma é o lich escondendo algo que a CLI informa,
-e o [`docs/ceilings.md`](docs/ceilings.md) diz o que foi medido em cada uma.
+</details>
 
-## Instalação
-
-Um comando só: detecta a sua distro, confere o checksum e instala o pacote
-nativo e as dependências pelo gerenciador de pacotes:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
-```
-
-| Plataforma | Como instalar | Dependências em runtime |
-| --- | --- | --- |
-| **Linux** | o `install.sh` acima ou o AUR [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`) | `zenity` e glibc 2.34 ou mais nova para a janela que vem no pacote (Debian 12, Ubuntu 22.04, RHEL 9 em diante) |
-| **macOS** | `brew install --cask lichdotdev/tap/lich` | nada, a janela já vem no app, em Apple Silicon e Intel |
-| **Windows** | instalador ou zip portátil em [Releases](https://github.com/lichdotdev/lich/releases), ou Scoop: `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | nada, a janela já vem nos dois |
-
-Pacotes manuais por distro, o tarball para Linux e o zip portátil para Windows:
-[INSTALL.md](INSTALL.md). Os binários de macOS e Windows não são assinados,
-então o Gatekeeper e o SmartScreen avisam até a notarização/assinatura sair.
-Instalando pelo Homebrew, o aviso do Gatekeeper não aparece; num download pela
-página de Releases, você precisa remover a flag de quarentena na mão.
-No macOS o cask instala o `Lich.app`, então o lich tem ícone próprio em
-`/Applications` e no Dock enquanto roda. Para atualizar a partir da fórmula
-antiga, rode `brew uninstall lich` antes; o [INSTALL.md](INSTALL.md) explica
-por quê.
-
-## Primeiros passos
-
-1. **Instale** e abra o `lich`.
-2. **Abra um projeto**: o `+` na barra de abas lista o que você fechou
-   recentemente e abre o seletor de pastas do sistema. Escolha um repositório
-   git.
-3. **Aponte o lich para o seu agente**: na primeira execução, ele lista os
-   agentes que encontrou na máquina. Em Configurações › Provedores você define
-   o caminho de cada binário e escolhe o padrão. Na mesma tela, um projeto pode
-   seguir esse padrão ou usar outro provedor.
-4. **Inicie uma sessão**: *Nova sessão* abre um terminal com o seu agente
-   rodando no projeto. O cabeçalho de cada checkout também tem um menu `+`
-   para abrir qualquer provedor ativado, ou um terminal comum, exatamente
-   naquele checkout. Clique no cabeçalho para recolher ou expandir as sessões
-   dele.
-5. **Crie uma worktree** *(opcional)*: a partir de qualquer branch base. O lich
-   prepara a worktree e já abre uma sessão nova nela.
+Toda lacuna é proposital, e o [`docs/ceilings.md`](docs/ceilings.md) diz o que
+foi medido em cada uma.
 
 ## Configuração
 
-- **Provedores**: em Configurações › Provedores você define o caminho do
-  binário de cada provedor e o padrão para todos os projetos. A linha do
-  projeto aberto pode sobrescrever essa escolha; **Limpar** remove a
-  sobrescrita, e as mudanças futuras no padrão passam a valer
-  automaticamente. Sem caminho definido, a sessão roda o primeiro binário do
-  provedor que aparece no `PATH` do seu shell de login. O
-  bloco Binário mostra esse arquivo e a versão dele e lista outras versões que
-  estejam no `PATH`, o que o `lich doctor` também avisa. Para escolher uma,
-  defina o caminho em Binário (a configuração `provider.<id>.bin`, por
-  exemplo `provider.codex.bin`).
-  A seção de cada provedor começa mostrando quanto ainda resta do seu plano,
-  quando o lich consegue ler essa informação. Os itens do rodapé se definem em
-  Configurações › Aparência, arrastando cada um; o custo começa oculto, porque
-  esse número só faz sentido se você paga por token.
-- **Worktrees**: um arquivo `.worktreeinclude` no checkout do projeto ajusta
-  quais arquivos ignorados pelo git são copiados para cada worktree nova.
-- **Hooks de sessão**: com o
-  [plugin do lich](https://github.com/lichdotdev/lich-plugin) instalado pelas
-  Configurações, a sessão dá título ao próprio card e atualiza o git assim que
-  grava um arquivo.
-- **Estabilidade**: o que no lich é seguro usar em scripts, e o que pode mudar
-  em qualquer versão, está em [docs/stability.md](docs/stability.md).
+- **Provedores.** Em Configurações › Provedores você define o binário de cada
+  agente e o padrão de todos os projetos; um projeto pode escolher o dele. Sem
+  caminho definido, o lich roda o primeiro binário do `PATH` do seu shell de
+  login, e o `lich doctor` avisa quando há mais de uma versão.
+- **Rodapé.** Em Configurações › Aparência, arraste os itens para escolher o que
+  ele mostra. O custo começa oculto, porque só faz sentido se você paga por
+  token.
+- **Worktrees.** Um arquivo `.worktreeinclude` no projeto escolhe quais arquivos
+  ignorados pelo git vão para cada worktree nova.
+- **Hooks de sessão.** Instale o [plugin do lich](https://github.com/lichdotdev/lich-plugin)
+  pelas Configurações e a sessão dá nome ao próprio card e atualiza o git assim
+  que grava um arquivo.
+- **Scripts.** O [docs/stability.md](docs/stability.md) diz quais partes do lich
+  são seguras para usar em scripts.
 
 ## Privacidade e atualizações
 
-Tudo roda na sua máquina. Sem conta, sem login, sem telemetria: o backend é um
-listener em loopback autenticado por token. Por conta própria, o lich só acessa
-a rede para isto:
+Tudo roda na sua máquina: sem conta, sem login, sem telemetria. O lich só acessa
+a rede para:
 
 - **Atualizações**: verificação de versão no GitHub Releases ao iniciar e a
-  cada hora, e a lista de releases do plugin do lich no GitHub ao iniciar.
+  cada hora, e a lista de releases do plugin do lich ao iniciar.
 - **Uso do plano**: o endpoint de uso de cada provedor (Anthropic, OpenAI,
-  Cursor, OpenCode Go), com o login que a CLI da sessão já usa, no máximo a
-  cada cinco minutos. O plano do Antigravity é lido do próprio `agy`.
+  Cursor, OpenCode Go), com o login que o agente já usa, no máximo a cada cinco
+  minutos. O plano do Antigravity é lido do próprio `agy`.
 - **Preços**: a tabela pública de preços do LiteLLM no GitHub, uma vez, quando
   a tabela embutida não conhece o modelo.
 
-A versão do instalador do Windows se atualiza sozinha; instalações por
-Homebrew, Scoop, AUR ou pacote Linux atualizam pelo gerenciador de pacotes, e o
-lich mostra o comando.
-Configurações › Ajuda mostra o que vai no arquivo de log (caminhos, nomes de
-projeto e de branch, seu login do gh, nunca um token de sessão) antes de você
-anexar o log num bug report, e o `lich rage` junta esse relatório num único
-arquivo, sem enviar nada.
+O instalador do Windows se atualiza sozinho; Homebrew, Scoop, AUR e os pacotes
+Linux atualizam pelo gerenciador de pacotes, e o lich mostra o comando.
+Algo quebrou? O `lich doctor` confere a sua instalação e o `lich rage` junta um
+bug report num único arquivo, sem enviar nada. Configurações › Ajuda mostra o
+que vai no log (caminhos, nomes de projeto e de branch, seu login do gh, nunca
+um token de sessão) antes de você anexá-lo. Bugs e pedidos vão nas
+[Issues](https://github.com/lichdotdev/lich/issues); o que mudou em cada versão
+está no [CHANGELOG.md](CHANGELOG.md).
 
 ## Compilar a partir do código-fonte
 
-O lich são dois binários. O backend, `lich`, é Go puro (Go 1.27, `CGO_ENABLED=0`,
-um único binário estático) e serve as sessões por um listener em loopback
-autenticado por token (RPC HTTP + WebSockets). A janela, `lich-native`, é um
-módulo Go próprio em `native/`, compilado com cgo: o [Gio](https://gioui.org)
-desenha a janela, a `libghostty-vt` roda os terminais e o
-[godemirror](https://github.com/lichdotdev/godemirror) as telas de código e diff.
-Pré-requisitos: **Go 1.27.0+** e **[Task](https://taskfile.dev)**; a janela pede
-também um toolchain C, os pacotes de sistema do Gio e uma `libghostty-vt`
-compilada com Zig 0.16 a partir do commit do Ghostty em `native/GHOSTTY_COMMIT`.
-O [`native/slice.sh`](native/slice.sh) explica como compilá-la, e o
-[`docs/native-window.md`](docs/native-window.md) descreve a janela.
+O lich são dois binários: o `lich`, um backend estático em Go puro, e o
+`lich-native`, a janela, compilada com cgo a partir de `native/`. Você precisa
+de **Go 1.27.0+** e do **[Task](https://taskfile.dev)**; a janela pede também um
+toolchain C, os pacotes de sistema do Gio e uma `libghostty-vt` compilada a
+partir do commit em `native/GHOSTTY_COMMIT`. O [`native/slice.sh`](native/slice.sh)
+explica como, e o [`docs/native-window.md`](docs/native-window.md) descreve a
+janela.
 
 ```bash
 task build          # binário do backend -> bin/lich
 task build:native   # janela -> bin/lich-native
 task run            # compila + roda
 task test           # suítes Go
+task package        # .deb + .rpm + Arch .pkg.tar.zst em bin/ (precisa do nfpm)
 ```
 
-Para empacotar um release Linux localmente (precisa do
-[nfpm](https://nfpm.goreleaser.com/)):
-
-```bash
-task package   # .deb + .rpm + Arch .pkg.tar.zst in bin/
-```
-
-Adicionar mais uma CLI de agente às oito que o lich roda é a mudança que mexe
-em uma dúzia de arquivos de dois repositórios, e o mapa está em
-[`docs/adding-a-provider.md`](docs/adding-a-provider.md).
+Adicionar outro agente mexe em uma dúzia de arquivos de dois repositórios, e o
+mapa está em [`docs/adding-a-provider.md`](docs/adding-a-provider.md).
 
 ## Patrocinadores
 

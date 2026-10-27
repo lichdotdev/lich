@@ -12,7 +12,7 @@
         "That is the layout build/windows/lich.iss installs too."
     ],
     "version": "@VERSION@",
-    "description": "A terminal-first ADE for the coding agents you already use",
+    "description": "Run your coding agents side by side, each on its own branch",
     "homepage": "https://github.com/lichdotdev/lich",
     "license": "AGPL-3.0-only",
     "url": "https://github.com/lichdotdev/lich/releases/download/v@VERSION@/lich-v@VERSION@-windows-amd64.zip",

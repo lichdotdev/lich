@@ -4,7 +4,7 @@
 pkgname=lich-bin
 pkgver=@VERSION@
 pkgrel=1
-pkgdesc="A terminal-first ADE for the coding agents you already use"
+pkgdesc="Run your coding agents side by side, each on its own branch"
 arch=('x86_64')
 url="https://github.com/lichdotdev/lich"
 license=('AGPL-3.0-only')

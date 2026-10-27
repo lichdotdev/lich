@@ -2,7 +2,7 @@
 Type=Application
 Name=lich
 GenericName=Agentic Development Environment
-Comment=Run and watch AI coding agents side by side
+Comment=Run your coding agents side by side, each on its own branch
 Exec=lich
 Icon=lich
 Categories=Development;

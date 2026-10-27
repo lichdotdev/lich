@@ -2,97 +2,124 @@
   <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <strong>한국어</strong> · <a href="README.ru.md">Русский</a></p>
-  <p><strong>이미 쓰고 있는 코딩 에이전트를 위한 터미널 중심 ADE.</strong></p>
-  <p>
-    프로젝트를 열고, Claude Code, Codex, opencode 같은 에이전트를 실제 터미널에서
-    실행하고, worktree와 diff, 풀 리퀘스트까지 git 작업을 창을 벗어나지 않고 한눈에
-    볼 수 있습니다. Electron도 브라우저도 쓰지 않습니다. Linux, Windows, macOS 모두에서
-    lich는 Gio로 직접 그리는 네이티브 창으로 열립니다.
-  </p>
-  <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
-    <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
+  <p>
+    <strong>코딩 에이전트를 나란히, 각자 자기 브랜치에서.</strong><br/>
+    Claude Code, Codex, opencode 등 이미 쓰고 있는 에이전트를 각자 자기 worktree에서, 모두 한 창에서 실행하세요.
+  </p>
+  <h3><a href="#설치">lich 다운로드</a> · <a href="https://lichdotdev.github.io/lich/index.ko.html">lichdotdev.github.io/lich</a></h3>
   <img src="docs/media/session.png" alt="분할 화면 하나에 나란히 띄운 Claude Code 세션 4개와 각 세션의 git worktree. 사이드바에는 세션별 브랜치와 diff 배지, 맨 아래에 프로젝트에서 실행 중인 서비스와 프로필이 있고, 하단 바에는 브랜치와 모델, 플랜이 보입니다" width="1000" />
-  <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
+  <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 
-> 이 문서는 영문 [README.md](README.md)를 번역한 것입니다. 기준은 영문판이며, 두 문서의 내용이 다르면 영문판을 따릅니다.
+## 주요 기능
 
-## 왜 lich인가
+<table>
+<tr>
+<td width="50%" valign="middle">
 
-lich로 할 수 있는 일:
+### 에이전트를 나란히
 
-- **이미 쓰고 있는 에이전트를 그대로 실행합니다.** [Claude Code](https://www.anthropic.com/claude-code),
-  [Codex](https://github.com/openai/codex), Antigravity,
-  [opencode](https://github.com/sst/opencode), oh-my-pi,
-  [Crush](https://github.com/charmbracelet/crush),
-  [Cursor CLI](https://cursor.com/docs/cli),
-  [Kiro CLI](https://kiro.dev/docs/cli/) 모두 같은 방식으로 실행됩니다. 바이너리 경로를
-  한 번씩만 지정해 두면 기본값을 쓰거나 세션마다 골라 쓸 수 있습니다. 세션에서 lich가
-  *읽어 올* 수 있는 정보는 프로바이더마다 다르며,
-  [프로바이더 지원](#프로바이더-지원) 표에 정리해 두었습니다.
-- **실제 터미널을 그대로 씁니다.** 프로젝트마다 PTY 기반 셸을 여러 개 띄울 수 있고,
-  렌더링은 GPU가 맡습니다. 스크롤백은 검색할 수 있고 창을 닫았다가 다시 열어도
-  사라지지 않습니다. 개발 서버, 터널, `lazydocker`처럼 프로젝트에서 계속 띄워 두는
-  것은 한 번 서비스로 저장해 두면 사이드바 아래에서 시작하고 멈추고 출력을 볼 수
-  있으며, lich와 함께 시작되게 할 수도 있습니다. 하단 바는 `cd`를 따라가며 브랜치를 보여 줍니다.
-  Claude Code, Codex, Kiro CLI 세션이라면 사용 중인 모델과 컨텍스트 윈도우를, Claude
-  Code, Codex, Antigravity, Cursor CLI와 OpenCode Go 구독이라면 플랜의 롤링 윈도우가
-  얼마나 남았는지를 보여 주고, 원하면 세션에서 쓴 비용도 표시합니다(비용을 기록하는
-  프로바이더만 해당).
-- **한 세션에 다른 세션의 일을 맡깁니다.** 다른 카드에 작업을 넘기면 양쪽에서 무엇이
-  돌고 있든 그 카드의 에이전트가 직접 답을 써서 돌려줍니다. 에이전트는 세션을 시작할 때
-  받은 도구(Claude Code와 Codex는 MCP)나 플러그인이 제공하는 도구로 다른 세션에
-  접근합니다. 이 기능은 전부 어느 셸에서나 `lich` 명령으로도 쓸 수 있고 `--json`도
-  지원하므로, 에이전트 없이 스크립트만으로 세션을 조작할 수 있습니다([`docs/cli.md`](docs/cli.md)).
-- **여러 세션을 한꺼번에 지켜봅니다.** 지금 보고 있는 세션 옆 분할 화면에 어떤 세션이든
-  올려 두면 패널 수와 창 크기에 맞춰 lich가 알아서 배치합니다. 세션 8개라면 울트라와이드
-  모니터에서는 한 줄에 4개씩, 노트북에서는 2개씩 놓입니다. 다른 세션에 일을 넘긴 세션은
-  클릭 한 번으로 자신을 중심으로 분할 화면을 구성합니다. 분할 화면마다 이름이 붙고,
-  프로젝트 하나에 원하는 만큼 둘 수 있으며, 사이드바에 생기는 블록에서 접거나 이름을
-  바꾸거나 해체할 수 있습니다.
-- **번거로운 설정 없이 worktree를 만듭니다.** 원하는 베이스 브랜치에서 worktree를 만들면
-  lich가 gitignore된 `.env*` 파일을 채워 넣고, 다른 체크아웃도 머신의 다른 프로세스도
-  쓰지 않는 개발 서버 포트를 배정합니다. 체크아웃의 커밋하지 않은 작업에서 시작하면 untracked 파일을
-  포함한 변경 사항도 함께 옮겨 갑니다.
-- **세션을 격리해서 실행합니다.** 에이전트를 OS 샌드박스 안에서 열 수 있습니다. 해당
-  프로바이더의 상태만 담긴 빈 홈 디렉터리가 새로 주어지고, 머신의 나머지 부분은 읽기
-  전용이며, 쓰기는 세션을 연 체크아웃에만 허용됩니다. ssh 키, 클라우드 자격 증명,
-  디스크에 있는 다른 저장소는 샌드박스 안에서 아예 보이지 않습니다. 에이전트가 권한
-  확인을 건너뛰도록 허용할 때 위험을 상쇄해 주는 장치입니다. Linux에서는 bubblewrap,
-  macOS에서는 `sandbox-exec`를 씁니다. 악성 코드를 막아 주는 보안 경계는 아니며, 무엇을
-  막지 못하는지는 [`docs/ceilings.md`](docs/ceilings.md)에 정리되어 있습니다.
-- **diff를 읽는 바로 그 자리에서 리뷰합니다.** diff 독이 작업 중인 변경 사항을
-  실시간 파일 트리 옆에 보여 줍니다. 원하면 공백만 바뀐 변경은 접어 두고, 바뀐 이미지나
-  PDF는 변경 전후를 함께 보여 줍니다. 선택 영역을 우클릭하면 해당 줄에 코멘트를 달 수
-  있고, 모아 둔 코멘트는 프롬프트 하나로 묶여 세션에 붙여 넣어지며 전송되지는 않습니다.
-  코드 탭에서는 체크아웃을 둘러보고 파일 내용을 검색할 수 있습니다.
-- **풀 리퀘스트까지 여기서 끝냅니다.** 저장소의 열린 풀 리퀘스트 목록을 보고, 그중 하나를
-  별도의 worktree에 체크아웃해 diff를 읽고, 인라인으로 리뷰하고, 베이스 브랜치가 실제로
-  허용하는 방식으로 병합합니다. 아직 풀 리퀘스트가 없는 브랜치에서는 **에이전트로
-  만들기**를 누르면 그 브랜치의 세션에 PR을 열어 달라고 요청하며, Enter를 누르기 전에는
-  아무것도 전송되지 않습니다.
+세션을 분할 화면에 올려 두면 lich가 패널을 알아서 배치합니다. 어느 세션이 작업 중인지, 어느 세션이 내 응답을 기다리는지, 컨텍스트가 얼마나 남았는지 한눈에 보입니다.
 
-그 밖에도 JSON으로 가져오거나 git 저장소에서 설치하는 [테마](docs/themes.md), 세션 이름이나
-대화 내용으로 바로 이동하는 `Ctrl`/`Cmd`+`K` 팔레트, 세션이 내 응답을 기다릴 때 뜨는 데스크톱
-알림, lich가 아예 시작되지 않을 때 쓰는 `lich rage` / `lich doctor`가 있습니다.
+</td>
+<td width="50%"><img src="docs/media/wall-mixed.png" alt="분할 화면 하나에 각자 자기 브랜치에서 실행 중인 Claude Code와 Codex 세션" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
 
-현재 활발하게 개발하고 있습니다. 버그와 기능 요청은
-[이슈](https://github.com/lichdotdev/lich/issues)에 남겨 주세요. 버전별 변경 사항은
-[CHANGELOG.md](CHANGELOG.md)에서 볼 수 있습니다.
+### 설정 없이 작업마다 worktree
+
+원하는 베이스에서 세션을 분기하면 lich가 `.env` 파일을 복사하고 비어 있는 개발 서버 포트를 배정합니다. 커밋하지 않은 작업도 함께 가져갈 수 있습니다.
+
+</td>
+<td width="50%"><img src="docs/media/worktrees.png" alt="사이드바의 세션들, 각각 자기 브랜치와 diff 배지가 붙어 있습니다" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### diff를 읽고, 줄마다 코멘트
+
+에이전트가 바꾼 내용을 세션 옆에서 읽고, 손볼 줄에 코멘트를 달고, 모아 둔 코멘트를 프롬프트 하나로 세션에 돌려보냅니다.
+
+</td>
+<td width="50%"><img src="docs/media/review-comments.png" alt="세션으로 보내려고 줄 코멘트 2개를 모아 둔 diff" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### 브라우저 없이 풀 리퀘스트
+
+풀 리퀘스트를 열고, 그 브랜치의 에이전트에게 작성을 맡기고, 인라인으로 리뷰하고, 병합까지 한 창에서 끝냅니다.
+
+</td>
+<td width="50%"><img src="docs/media/pull-request-review.png" alt="lich에서 열린 풀 리퀘스트. 파일 트리와 diff, 보류 중인 리뷰 코멘트가 보입니다" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### 내 취향대로
+
+JSON으로 테마를 가져오거나 git 저장소에서 설치합니다.
+
+[문서 →](docs/themes.md)
+
+</td>
+<td width="50%"><img src="docs/media/themes.png" alt="테마 선택기와 글꼴, 하단 바 구성이 있는 모양 설정" width="100%" /></td>
+</tr>
+</table>
+
+그 밖에도:
+
+- **일을 넘기는 세션.** 한 에이전트가 다른 세션에 작업을 넘기고 답을 돌려받습니다. 셸에서도 `lich` 명령으로 똑같이 쓸 수 있습니다([문서](docs/cli.md)).
+- **샌드박스 에이전트.** 키, 자격 증명, 다른 저장소가 보이지 않는 샌드박스 안에서 에이전트가 권한 확인을 건너뛰도록 허용할 수 있습니다([한계](docs/ceilings.md)).
+- **개발 서버를 사이드바에.** 프로젝트에서 계속 띄워 두는 것을 저장해 두면 클릭 한 번으로 시작하고 멈출 수 있습니다.
+- **뭐든 바로 찾기.** `Ctrl`/`Cmd`+`K`로 세션 이름이나 세션에서 오간 내용으로 바로 이동합니다.
+- **내가 필요할 때 알림.** 세션이 내 응답을 기다리면 데스크톱 알림이 뜹니다.
+
+## 설치
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
+```
+
+한 줄이면 됩니다. 배포판을 감지하고 다운로드를 검증한 다음, 패키지 매니저로 lich를 설치합니다.
+
+| 플랫폼 | 설치 방법 |
+| --- | --- |
+| **Linux** | 위의 `install.sh` 또는 AUR [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`). `zenity`와 glibc 2.34 이상(Debian 12, Ubuntu 22.04, RHEL 9 이상)이 필요합니다. |
+| **macOS** | `brew install --cask lichdotdev/tap/lich` |
+| **Windows** | [Releases](https://github.com/lichdotdev/lich/releases)의 설치 프로그램이나 포터블 zip, 또는 `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` |
+
+macOS와 Windows 빌드는 아직 서명되지 않아, Releases에서 받은 파일에는 Gatekeeper와
+SmartScreen이 경고를 띄웁니다. Homebrew로 설치하면 Gatekeeper 경고는 뜨지 않습니다.
+배포판별 패키지, Linux tarball, quarantine 플래그 지우기, 예전 Homebrew formula에서
+업그레이드하는 방법은 [INSTALL.md](INSTALL.md)에 있습니다.
+
+## 시작하기
+
+1. **프로젝트를 엽니다.** 탭 줄의 `+`를 누르면 최근에 닫은 항목이 나오고 폴더 선택기가
+   열립니다. 여기서 git 저장소를 고르세요.
+2. **에이전트를 고릅니다.** 처음 실행하면 머신에서 찾은 에이전트 목록이 나옵니다.
+   설정 › 프로바이더에서 기본값과 바이너리 경로를 지정할 수 있습니다.
+3. **세션을 시작합니다.** *새 세션*을 누르면 프로젝트에서 에이전트가 열립니다. 체크아웃
+   헤더의 `+`로는 원하는 에이전트나 일반 터미널을 바로 그 체크아웃에서 열 수 있습니다.
+4. **worktree를 만듭니다** *(선택)*. 원하는 베이스 브랜치에서 하나 만들면 lich가 그 안에
+   새 세션을 열어 줍니다.
 
 ## 프로바이더 지원
 
-모든 프로바이더는 실제 터미널에서 실행되고, 대화 id로 재개되며, 같은 샌드박스로 격리되고,
-다른 세션에 접근하는 방법도 똑같이 제공받습니다. 차이는 lich가 세션에서 *읽어 올* 수 있는
-정보에 있습니다. lich는 각 CLI가 기록하는 내용을 읽는데, 기록하는 내용이 똑같은 CLI는 하나도
-없기 때문입니다.
+모든 에이전트는 실제 터미널에서 실행되고, 대화를 재개할 수 있으며, 샌드박스 안에서 동작하고,
+다른 세션에 접근할 수 있습니다. 에이전트마다 다른 것은 lich가 세션에서 *읽어 올* 수 있는
+정보입니다. CLI마다 기록하는 내용이 다르기 때문입니다.
+
+<details>
+<summary>에이전트별 지원 기능 보기</summary>
 
 | 기능 | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -138,95 +165,54 @@ lich로 할 수 있는 일:
 | 세션을 시작할 때 숨은 서브에이전트 대신 lich 세션으로 작업을 나누라는 안내를 프롬프트 언어로 받음 | 예 | 아니요 | 아니요 | 아니요 | 예 | 아니요 | 아니요 | 아니요 |
 | 세션 카드가 에이전트가 조작하는 브라우저를 세션 옆 탭에 연다 | 예 | 예 | 예 | 카드는 연다. 에이전트는 `browser_*`가 아니라 `lich browser`를 쓴다 | 예 | 예 | 예 | 예 |
 
-빈칸은 모두 의도된 것이며, CLI가 보고하는 정보를 lich가 숨기는 경우는 없습니다. 빈칸마다
-무엇을 측정했는지는 [`docs/ceilings.md`](docs/ceilings.md)에 정리되어 있습니다.
+</details>
 
-## 설치
-
-한 줄이면 됩니다. 배포판을 감지하고 체크섬을 검증한 다음, 패키지 매니저로 네이티브 패키지와
-의존성을 설치합니다.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
-```
-
-| 플랫폼 | 설치 방법 | 실행에 필요한 것 |
-| --- | --- | --- |
-| **Linux** | 위의 `install.sh` 또는 AUR [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`) | `zenity`, 그리고 패키지에 포함된 창을 실행하려면 glibc 2.34 이상(Debian 12, Ubuntu 22.04, RHEL 9 이상) |
-| **macOS** | `brew install --cask lichdotdev/tap/lich` | 없음. Apple Silicon과 Intel 모두 창이 앱에 포함되어 있음 |
-| **Windows** | [Releases](https://github.com/lichdotdev/lich/releases)의 설치 프로그램이나 포터블 zip, 또는 Scoop: `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | 없음. 어느 쪽이든 창이 포함되어 있음 |
-
-배포판별 수동 설치 패키지, Linux tarball, Windows 포터블 zip은 [INSTALL.md](INSTALL.md)를
-참고하세요. macOS와 Windows 바이너리는 서명되지 않았기 때문에, 공증과 서명이 적용될 때까지
-Gatekeeper와 SmartScreen이 경고를 띄웁니다. Homebrew로 설치하면 Gatekeeper 경고가 뜨지
-않지만, Releases 페이지에서 받은 파일은 quarantine 플래그를 직접 지워야 합니다.
-macOS에서는 cask가 `Lich.app`을 설치하므로 `/Applications`에 lich 아이콘이 생기고, 실행
-중에는 Dock에도 표시됩니다. 예전 formula에서 업그레이드하려면 먼저 `brew uninstall lich`를
-실행해야 하며, 그 이유는 [INSTALL.md](INSTALL.md)에 있습니다.
-
-## 시작하기
-
-1. **설치**한 다음 `lich`를 실행합니다.
-2. **프로젝트를 엽니다.** 탭 줄의 `+`를 누르면 최근에 닫은 항목이 나오고 OS 폴더 선택기가
-   열립니다. 여기서 git 저장소를 고르세요.
-3. **에이전트를 지정합니다.** 처음 실행하면 머신에서 찾은 에이전트 목록이 나옵니다.
-   설정 › 프로바이더에서 바이너리 경로를 각각 지정하고 기본값을 고를 수 있습니다.
-   프로젝트마다 같은 화면에서 기본값을 따를지, 다른 프로바이더를 쓸지 정할 수 있습니다.
-4. **세션을 시작합니다.** *새 세션*을 누르면 프로젝트에서 에이전트를 실행하는 터미널이
-   열립니다. 체크아웃 헤더마다 `+` 메뉴도 있어서, 활성화된 프로바이더나 일반 터미널을 바로
-   그 체크아웃에서 열 수 있습니다. 헤더 자체를 클릭하면 그 체크아웃의 세션을 접거나 펼칩니다.
-5. **worktree를 만듭니다** *(선택)*. 원하는 베이스 브랜치에서 하나 만들면 lich가 필요한
-   파일을 채워 넣고 새 세션으로 바로 연결해 줍니다.
+빈칸은 모두 의도된 것이며, 각각 무엇을 측정했는지는
+[`docs/ceilings.md`](docs/ceilings.md)에 정리되어 있습니다.
 
 ## 설정
 
-- **프로바이더**: 설정 › 프로바이더에서 프로바이더별 바이너리 경로와 모든 프로젝트에 적용할
-  기본값을 지정합니다. 같은 화면의 현재 프로젝트 행에서 이 선택을 덮어쓸 수 있고, **지우기**를
-  누르면 덮어쓴 값이 사라져 이후 기본값을 바꾸면 자동으로 반영됩니다. 경로를 지정하지 않으면
-  세션은 로그인 셸의 `PATH`에서 가장 먼저 찾은 프로바이더 바이너리를 실행합니다.
-  바이너리 블록에 그 파일과 버전이 표시되고 `PATH`에 있는 다른 버전도 함께
-  나열되며, `lich doctor`도 이를 경고합니다. 특정 바이너리를 쓰려면 바이너리 블록에서 경로를
-  지정하세요(설정 키는 `provider.<id>.bin`, 예: `provider.codex.bin`).
-  lich가 플랜 정보를 읽을 수 있으면 프로바이더 섹션 맨 위에 남은 플랜 사용량이 표시됩니다.
-  하단 바에 표시할 항목은 설정 › 모양에서 끌어다 놓아 정합니다. 비용은 토큰당 과금될 때만
-  의미가 있으므로 처음에는 숨겨져 있습니다.
-- **worktree**: 어떤 gitignore된 파일을 새 worktree에 복사할지는 프로젝트 체크아웃의
-  `.worktreeinclude` 파일로 조정합니다.
-- **세션 훅**: 설정에서
-  [lich 플러그인](https://github.com/lichdotdev/lich-plugin)을 설치하면 세션이 자기 카드의
-  제목을 직접 정하고, 파일을 쓰는 즉시 git 상태를 새로 고칩니다.
-- **안정성**: lich에서 스크립트로 안심하고 다뤄도 되는 부분과 릴리스마다 바뀔 수 있는 부분은
+- **프로바이더.** 설정 › 프로바이더에서 에이전트별 바이너리 경로와 모든 프로젝트에 적용할
+  기본값을 지정하며, 프로젝트마다 따로 고를 수도 있습니다. 경로를 지정하지 않으면 lich는
+  로그인 셸의 `PATH`에서 가장 먼저 찾은 바이너리를 실행하고, 버전이 둘 이상이면
+  `lich doctor`가 경고합니다.
+- **하단 바.** 설정 › 모양에서 항목을 끌어다 놓아 무엇을 표시할지 정합니다. 비용은 토큰당
+  과금될 때만 의미가 있으므로 처음에는 숨겨져 있습니다.
+- **worktree.** 프로젝트의 `.worktreeinclude` 파일로 gitignore된 파일 중 어느 것을 새
+  worktree에 복사할지 정합니다.
+- **세션 훅.** 설정에서 [lich 플러그인](https://github.com/lichdotdev/lich-plugin)을
+  설치하면 세션이 자기 카드의 제목을 직접 정하고, 파일을 쓰는 즉시 git 상태를 새로 고칩니다.
+- **스크립팅.** lich에서 스크립트로 안심하고 다뤄도 되는 부분은
   [docs/stability.md](docs/stability.md)에 정리되어 있습니다.
 
 ## 개인 정보와 업데이트
 
-모든 것이 내 머신에서 실행됩니다. 계정도, 로그인도, 텔레메트리도 없으며, 백엔드는 토큰으로
-인증하는 loopback 리스너입니다. lich가 스스로 네트워크에 접속하는 경우는 아래가 전부입니다.
+모든 것이 내 머신에서 실행됩니다. 계정도, 로그인도, 텔레메트리도 없습니다. lich가 네트워크에
+접속하는 경우는 아래가 전부입니다.
 
-- **업데이트**: 시작할 때와 매시간 GitHub Releases에서 새 버전을 확인하고, 시작할 때 GitHub에서
-  lich 플러그인 릴리스 목록을 확인합니다.
+- **업데이트**: 시작할 때와 매시간 GitHub Releases에서 새 버전을 확인하고, 시작할 때 lich
+  플러그인의 릴리스 목록을 확인합니다.
 - **플랜 사용량**: 각 프로바이더의 사용량 엔드포인트(Anthropic, OpenAI, Cursor, OpenCode Go)에
-  세션의 CLI가 이미 쓰고 있는 로그인 정보로 접속하며, 최대 5분에 한 번입니다. Antigravity의
+  에이전트가 이미 쓰고 있는 로그인 정보로 접속하며, 최대 5분에 한 번입니다. Antigravity의
   플랜은 `agy`에서 직접 읽습니다.
 - **가격**: 번들된 가격표에 없는 모델이 있을 때 한 번, GitHub에 공개된 LiteLLM 가격표를
   받아 옵니다.
 
 Windows 설치 프로그램으로 설치한 빌드는 lich가 직접 업데이트합니다. Homebrew, Scoop, AUR,
 Linux 패키지로 설치했다면 해당 패키지 매니저로 업데이트하며, 실행할 명령은 lich가 알려 줍니다.
-버그 리포트에 로그 파일을 첨부하기 전에 설정 › 도움말에서 로그에 무엇이 담기는지(경로,
-프로젝트와 브랜치 이름, gh 로그인 계정이며 세션 토큰은 절대 담기지 않음) 확인할 수 있고,
-`lich rage`는 아무것도 업로드하지 않고 리포트를 아카이브 하나로 모아 줍니다.
+문제가 생겼다면 `lich doctor`가 설정을 점검하고, `lich rage`는 아무것도 업로드하지 않고
+버그 리포트를 아카이브 하나로 모아 줍니다. 로그 파일을 첨부하기 전에 설정 › 도움말에서 로그에
+무엇이 담기는지(경로, 프로젝트와 브랜치 이름, gh 로그인 계정이며 세션 토큰은 절대 담기지 않음)
+확인할 수 있습니다. 버그와 기능 요청은 [이슈](https://github.com/lichdotdev/lich/issues)에
+남겨 주세요. 버전별 변경 사항은 [CHANGELOG.md](CHANGELOG.md)에서 볼 수 있습니다.
 
 ## 소스에서 빌드
 
-lich는 바이너리 두 개로 이루어집니다. 백엔드 `lich`는 순수 Go(Go 1.27, `CGO_ENABLED=0`,
-정적 바이너리 하나)이며, 토큰으로 인증하는 loopback 리스너(HTTP RPC + WebSockets)로 세션을
-서빙합니다. 창 `lich-native`는 `native/`에 있는 별도의 Go 모듈로, cgo로 빌드합니다. 창은
-[Gio](https://gioui.org)가 그리고, 터미널은 `libghostty-vt`가, 코드와 diff 화면은
-[godemirror](https://github.com/lichdotdev/godemirror)가 맡습니다. 필요한 것은 **Go 1.27.0+**와
+lich는 바이너리 두 개로 이루어집니다. 백엔드 `lich`는 정적 순수 Go 바이너리이고, 창
+`lich-native`는 `native/`에서 cgo로 빌드합니다. 필요한 것은 **Go 1.27.0+**와
 **[Task](https://taskfile.dev)**이며, 창을 빌드하려면 C 툴체인과 Gio의 시스템 패키지, 그리고
-`native/GHOSTTY_COMMIT`에 적힌 Ghostty 커밋에서 Zig 0.16으로 빌드한 `libghostty-vt`가 추가로
-필요합니다. 빌드 방법은 [`native/slice.sh`](native/slice.sh)에, 창에 대한 설명은
+`native/GHOSTTY_COMMIT`에 적힌 커밋에서 빌드한 `libghostty-vt`가 추가로 필요합니다.
+빌드 방법은 [`native/slice.sh`](native/slice.sh)에, 창에 대한 설명은
 [`docs/native-window.md`](docs/native-window.md)에 있습니다.
 
 ```bash
@@ -234,18 +220,11 @@ task build          # 백엔드 바이너리 -> bin/lich
 task build:native   # 창 -> bin/lich-native
 task run            # 빌드 + 실행
 task test           # Go 테스트 스위트
+task package        # bin/에 .deb + .rpm + Arch .pkg.tar.zst (nfpm 필요)
 ```
 
-Linux 릴리스를 로컬에서 패키징하려면
-[nfpm](https://nfpm.goreleaser.com/)이 필요합니다.
-
-```bash
-task package   # bin/에 .deb + .rpm + Arch .pkg.tar.zst
-```
-
-lich가 실행하는 에이전트 CLI 8종에 하나를 더 추가하려면 두 저장소에 걸쳐 파일 십여 개를
-고쳐야 하며, 이만큼 손이 가는 변경은 이것 하나뿐입니다. 어디를 고쳐야 하는지는
-[`docs/adding-a-provider.md`](docs/adding-a-provider.md)에 정리되어 있습니다.
+에이전트를 하나 더 추가하려면 두 저장소에 걸쳐 파일 십여 개를 고쳐야 합니다.
+어디를 고쳐야 하는지는 [`docs/adding-a-provider.md`](docs/adding-a-provider.md)에 정리되어 있습니다.
 
 ## 후원
 
