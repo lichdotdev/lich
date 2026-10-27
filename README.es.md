@@ -18,7 +18,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="Cuatro sesiones de Claude Code una al lado de la otra en un mismo grupo, cada una en su propio git worktree; la barra lateral muestra cada una con su rama y su indicador de diff, y en el pie de ventana se ven el modelo, el plan y la rama" width="1000" />
+  <img src="docs/media/session.png" alt="Cuatro sesiones de Claude Code una al lado de la otra en un mismo grupo, cada una en su propio git worktree; la barra lateral muestra cada una con su rama y su indicador de diff, y al pie los servicios del proyecto en marcha y el perfil; en el pie de ventana se ven la rama, el modelo y el plan" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -38,11 +38,10 @@ lich te permite:
   [Compatibilidad por proveedor](#compatibilidad-por-proveedor).
 - **Tener una terminal de verdad.** Shells sobre PTY, varios por proyecto,
   renderizados en la GPU, con un historial en el que puedes buscar y que
-  sobrevive a cerrar y volver a abrir la ventana. Si a una le pones un punto de
-  entrada (`lazygit`, `k9s`, `pnpm dev`), se abre siempre directo en esa
-  herramienta, igual en Linux, macOS y Windows: no se carga antes ningún rc del
-  shell ni perfil de PowerShell, así que el punto de entrada que te funciona a
-  ti también le funciona a cualquiera con quien lo compartas. El pie de ventana
+  sobrevive a cerrar y volver a abrir la ventana. Lo que un proyecto mantiene en
+  marcha (un servidor de desarrollo, un túnel, un `lazydocker`) se guarda una
+  vez como servicio, que arrancas, detienes y lees desde el pie de la barra
+  lateral, y que puede arrancar junto con lich. El pie de ventana
   sigue cada `cd` y muestra la rama. En una sesión de Claude Code, Codex o Kiro
   CLI muestra además el modelo y la ventana de contexto en uso; con Claude Code,
   Codex, Antigravity, Cursor CLI y una suscripción de OpenCode Go, cuánto te

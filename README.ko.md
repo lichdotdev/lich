@@ -18,7 +18,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="분할 화면 하나에 나란히 띄운 Claude Code 세션 4개와 각 세션의 git worktree. 세션별 브랜치와 diff 배지를 보여 주는 사이드바, 모델과 플랜, 브랜치를 보여 주는 하단 바" width="1000" />
+  <img src="docs/media/session.png" alt="분할 화면 하나에 나란히 띄운 Claude Code 세션 4개와 각 세션의 git worktree. 사이드바에는 세션별 브랜치와 diff 배지, 맨 아래에 프로젝트에서 실행 중인 서비스와 프로필이 있고, 하단 바에는 브랜치와 모델, 플랜이 보입니다" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -39,10 +39,9 @@ lich로 할 수 있는 일:
   [프로바이더 지원](#프로바이더-지원) 표에 정리해 두었습니다.
 - **실제 터미널을 그대로 씁니다.** 프로젝트마다 PTY 기반 셸을 여러 개 띄울 수 있고,
   렌더링은 GPU가 맡습니다. 스크롤백은 검색할 수 있고 창을 닫았다가 다시 열어도
-  사라지지 않습니다. 셸에 `lazygit`, `k9s`, `pnpm dev` 같은 엔트리포인트를 지정하면
-  Linux, macOS, Windows 어디서든 매번 그 도구가 바로 열립니다. 셸 rc나 PowerShell
-  프로필을 먼저 불러오지 않기 때문에, 내 환경에서 동작하는 엔트리포인트는 공유받은
-  사람의 환경에서도 똑같이 동작합니다. 하단 바는 `cd`를 따라가며 브랜치를 보여 줍니다.
+  사라지지 않습니다. 개발 서버, 터널, `lazydocker`처럼 프로젝트에서 계속 띄워 두는
+  것은 한 번 서비스로 저장해 두면 사이드바 아래에서 시작하고 멈추고 출력을 볼 수
+  있으며, lich와 함께 시작되게 할 수도 있습니다. 하단 바는 `cd`를 따라가며 브랜치를 보여 줍니다.
   Claude Code, Codex, Kiro CLI 세션이라면 사용 중인 모델과 컨텍스트 윈도우를, Claude
   Code, Codex, Antigravity, Cursor CLI와 OpenCode Go 구독이라면 플랜의 롤링 윈도우가
   얼마나 남았는지를 보여 주고, 원하면 세션에서 쓴 비용도 표시합니다(비용을 기록하는

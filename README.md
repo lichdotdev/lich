@@ -18,7 +18,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="Four Claude Code sessions side by side on one wall, each in its own git worktree — the sidebar lists them with their branch and diff badge, and the footer shows the model, the plan and the branch" width="1000" />
+  <img src="docs/media/session.png" alt="Four Claude Code sessions side by side on one wall, each in its own git worktree. The sidebar lists them with their branch and diff badge, with the project's running services and the profile at its foot, and the footer shows the branch, the model and the plan" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -37,10 +37,9 @@ lich lets you:
   [Provider support](#provider-support) is the table.
 - **Keep a real terminal.** PTY-backed shells, several per project, rendered on
   the GPU, with searchable scrollback that survives closing and reopening the
-  window. Give one an entrypoint — `lazygit`, `k9s`, `pnpm dev` — and it opens straight into that
-  tool every time, on Linux, macOS and Windows alike: no shell rc or PowerShell
-  profile is loaded first, so an entrypoint that works for you works for whoever
-  you share it with. The footer follows `cd` and names the branch — and, for a
+  window. What a project keeps running, a dev server, a tunnel, a `lazydocker`,
+  is saved once as a service and started, stopped and read from the bottom of
+  the sidebar, and it can start with lich. The footer follows `cd` and names the branch — and, for a
   Claude Code, Codex or Kiro CLI session, the model and the context window in
   use; for Claude Code, Codex, Antigravity, Cursor CLI and an OpenCode Go
   subscription, how much of your plan's rolling window is left; if you ask, what

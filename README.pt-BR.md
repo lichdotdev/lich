@@ -18,7 +18,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="Quatro sessões do Claude Code lado a lado num split, cada uma no seu git worktree. A barra lateral lista as sessões com a branch e o selo de diff, e o rodapé mostra o modelo, o plano e a branch" width="1000" />
+  <img src="docs/media/session.png" alt="Quatro sessões do Claude Code lado a lado num split, cada uma na sua git worktree. A barra lateral lista as sessões com a branch e o selo de diff e, no pé, os serviços rodando no projeto e o profile; o rodapé mostra a branch, o modelo e o plano" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -38,11 +38,9 @@ O que dá para fazer com o lich:
   [Suporte por provedor](#suporte-por-provedor).
 - **Usar um terminal de verdade.** Shells com PTY, vários por projeto,
   renderizados na GPU, com scrollback pesquisável que sobrevive a fechar e
-  reabrir a janela. Defina um entrypoint (`lazygit`, `k9s`, `pnpm dev`) e o
-  terminal abre direto nessa ferramenta, sempre, no Linux, no macOS e no
-  Windows. Nenhum rc do shell nem perfil do PowerShell é carregado antes, então
-  o entrypoint que funciona para você funciona para qualquer pessoa com quem
-  você compartilhar. O rodapé acompanha o `cd` e mostra a branch. Numa sessão de Claude
+  reabrir a janela. O que um projeto mantém rodando (um servidor de dev, um
+  túnel, um `lazydocker`) fica salvo como serviço, que você inicia, para e lê
+  no pé da barra lateral, e que pode subir junto com o lich. O rodapé acompanha o `cd` e mostra a branch. Numa sessão de Claude
   Code, Codex ou Kiro CLI, mostra também o modelo e a janela de contexto em
   uso; no Claude Code, Codex, Antigravity, Cursor CLI e numa assinatura do
   OpenCode Go, quanto ainda resta da janela móvel do seu plano; e, se você
