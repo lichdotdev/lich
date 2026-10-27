@@ -55,13 +55,10 @@ reads it as not installed.
 
 ## MCP
 
-A new MCP tool reaches opencode a release later than everyone else (`internal/cli/mcp.go`, `mcpTools`; the
-registration table in [`../cli.md`](../cli.md)). Every other harness is handed lich's own server, so a tool added
-there is in that session's list on the next spawn. opencode cannot register an MCP server from a plugin, so its
-plugin defines each tool itself in the companion repo (`lichdotdev/lich-plugin`, `opencode/lich.js`), which means a
-tool arrives there only once that repo cuts a release and the user reinstalls the plugin. Until they do it is
-missing from that session's list while it is in every other. `lich rename` works there like anywhere else; it is
-discovery that lags, which is the whole reason the tools exist.
+The session is handed lich's own MCP server at spawn, as a `lich` entry under `mcp` in `OPENCODE_CONFIG_CONTENT`
+(`internal/terminal`, `mcpEnv`; measured on 1.19.4): opencode merges that inline config over every file it reads,
+so the user's own servers stay and nothing is written to disk. A tool added to `internal/cli/mcp.go` is in that
+session's list on the next spawn, as `lich_<tool>`.
 
 ## Account
 

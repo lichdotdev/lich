@@ -12,6 +12,9 @@ import (
 // file it reads as the last local-scope layer (measured in opencode 1.18.35).
 const opencodeConfigContentVar = "OPENCODE_CONFIG_CONTENT"
 
+// opencodeMCPKey is the key opencode holds its MCP servers under.
+const opencodeMCPKey = "mcp"
+
 // pasteUnfoldEnv turns off opencode's paste summary, the "[Pasted ~N lines]"
 // placeholder, when the user asked for long pastes to land unfolded. Claude Code
 // and Kiro CLI are answered in the window instead

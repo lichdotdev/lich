@@ -1165,8 +1165,8 @@ exists, and the person who would have to be told is the one who does not read
 release notes.
 
 So lich registers the server itself, per session, at spawn
-(`internal/terminal`, `mcpArgs`), for the providers that can be told on their
-own command line (`providers.AcceptsMCPServer`):
+(`internal/terminal`, `mcpArgs` and `mcpEnv`), for the providers that can be
+told without a file (`providers.AcceptsMCPServer`):
 
 | Provider | How | Registered |
 |---|---|---|
@@ -1174,13 +1174,13 @@ own command line (`providers.AcceptsMCPServer`):
 | Codex | `-c mcp_servers.lich.command=…` and `…args=["mcp"]` | at spawn |
 | Antigravity | an `agy mcp add` the plugin install runs — its own supported interface, so lich never formats that document | with the plugin |
 | Crush | an `mcp add` line in the block the plugin install writes into `crushrc` | with the plugin |
-| opencode | its plugin defines all fourteen as tools of its own (lich-plugin 0.18.4 or later; earlier releases define eight, without the folder tools, `control_session` and `ask_session`), since a plugin there cannot register an MCP server | with the plugin |
+| opencode | a `lich` entry under `mcp` in `OPENCODE_CONFIG_CONTENT`, the inline config opencode merges over its files; one the user already exports is extended | at spawn |
 | oh-my-pi | a `lich` entry merged into `mcp.json` beside the extension the plugin install writes | with the plugin |
 | Cursor CLI | a `lich` entry merged into `~/.cursor/mcp.json` by the install — its `mcp` subcommand only lists, enables and disables what is already there | with the plugin |
 | Kiro CLI | a `kiro-cli mcp add --agent lich` the plugin install runs, so the entry lands in the agent lich owns rather than in the user's global `mcp.json` | with the plugin |
 
-Only the first two can be told on their own command line, which is what makes
-their registration per-session and secret-free. The rest arrive with the plugin
+Only the first three can be told without a file, which is what makes their
+registration per-session and secret-free. The rest arrive with the plugin
 instead (Settings › lich plugin), because that install already writes into
 those harnesses' own directories — so the server is registered where the hooks
 are, removed by the same uninstall, and absent for anyone who never installed
@@ -1297,8 +1297,8 @@ shell — opens with `Message relayed by the lich command line` instead. The
 distinction is the point: the receiving agent must not read either as its user
 speaking, and the two are not the same kind of "not your user".
 
-A target that **has** lich's tools is offered one first — Claude Code and Codex
-always, Antigravity, opencode, oh-my-pi, Crush and Kiro once the installed plugin is
+A target that **has** lich's tools is offered one first — Claude Code, Codex and
+opencode always, Antigravity, oh-my-pi, Crush and Kiro once the installed plugin is
 new enough to carry them
 (`agentplugin.HasTools`) — Cursor among them, whose tools come from the document
 its install writes rather than from the plugin it borrows from Claude Code. A session pointed at a tool it does not have loses the
@@ -1371,7 +1371,7 @@ receiving agent only because this text describes it.
   and the handshake. Adding a tool is one entry in `mcpTools`, which is what
   registering once buys — every tool lich grows later reaches every provider
   that took the registration, with no further per-provider work.
-- **Registration** — `internal/terminal`, `providerArgs` / `mcpArgs`, beside
+- **Registration** — `internal/terminal`, `providerArgs` / `mcpArgs` and `mcpEnv`, beside
   `nameArgs` and `resumeArgs`; which providers accept one is
   `providers.AcceptsMCPServer`. The names it registers under
   (`relay.MCPServerName`, `relay.MCPSubcommand`, `relay.ToolReply`) live in the

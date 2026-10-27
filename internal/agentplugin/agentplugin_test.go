@@ -621,15 +621,15 @@ func TestRunFallsBackToPath(t *testing.T) {
 	}
 }
 
-// Whether a session can answer with a tool is two different facts. Claude Code
-// and Codex are told about lich's server on their own command line at spawn, so
-// they always can; opencode and Crush only get the operations with the plugin,
-// and only from the release that carries them.
+// Whether a session can answer with a tool is two different facts. Claude Code,
+// Codex and opencode are told about lich's server at spawn, so they always can;
+// Crush only gets the operations with the plugin, and only from the release
+// that carries them.
 
 func TestHasToolsIsAlwaysTrueForTheHarnessesToldAtSpawn(t *testing.T) {
 	svc := New(stubBins{})
 
-	for _, id := range []string{providers.Claude, providers.Codex} {
+	for _, id := range []string{providers.Claude, providers.Codex, providers.OpenCode} {
 		if !svc.HasTools(id) {
 			t.Errorf("%s cannot answer with a tool, but lich registers its server at spawn", id)
 		}
@@ -676,21 +676,6 @@ func TestHasToolsIsFalseWhenTheServerCouldNotBeRegistered(t *testing.T) {
 	}
 }
 
-// opencode is the other side of that rule: its plugin defines the tools itself,
-// so there is no binary to name and an unresolvable one changes nothing.
-func TestHasToolsIgnoresTheBinaryForOpencode(t *testing.T) {
-	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
-	writeMarkedModule(t, filepath.Join(config, "opencode", "plugin", opencodeFile), toolsMinVersion)
-	s := New(stubBins{})
-	s.lookPath = func(string) (string, error) { return "/usr/bin/opencode", nil }
-	s.lichBin = func() string { return "" }
-
-	if !s.HasTools(providers.OpenCode) {
-		t.Error("HasTools(opencode) = false, but its tools come from the plugin, not from a server")
-	}
-}
-
 // writeMarkedModule lays down what an install of that version leaves behind: the
 // module with lich's marker line, which is where the version is read back from.
 func writeMarkedModule(t *testing.T, path, version string) {
@@ -719,24 +704,14 @@ func TestHasToolsFollowsThePluginVersionElsewhere(t *testing.T) {
 		{name: "nothing installed"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			config := t.TempDir()
-			t.Setenv("XDG_CONFIG_HOME", config)
+			agent := ompHome(t)
 			if tt.installed != "" {
-				// What an install of that version leaves behind: the module with
-				// lich's marker line, which is where the version is read from.
-				dir := filepath.Join(config, "opencode", "plugin")
-				if err := os.MkdirAll(dir, 0o755); err != nil {
-					t.Fatal(err)
-				}
-				marker := jsComment + " " + markerName + " v" + tt.installed + " — installed by lich\n"
-				if err := os.WriteFile(filepath.Join(dir, opencodeFile), []byte(marker), 0o644); err != nil {
-					t.Fatal(err)
-				}
+				writeMarkedModule(t, filepath.Join(agent, ompExtensionsDir, ompFile), tt.installed)
 			}
 			svc := New(stubBins{})
-			svc.lookPath = func(string) (string, error) { return "/usr/bin/opencode", nil }
+			svc.lookPath = func(string) (string, error) { return "/usr/bin/omp", nil }
 
-			if got := svc.HasTools(providers.OpenCode); got != tt.want {
+			if got := svc.HasTools(providers.OMP); got != tt.want {
 				t.Errorf("HasTools with %q installed = %v, want %v", tt.installed, got, tt.want)
 			}
 		})

@@ -300,9 +300,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   no-ticket collect can take its result and the note lands at the session's prompt, both measured on 2026-10-03.
   A private result is announced nowhere, so only its ticket recovers it, and when the ticket's hour runs out only a
   wait on that ticket hears it expired: one that comes back after another hour, or never, is told nothing. It covers tickets, not ownership: the sessions and worktrees a step opens still come from the session, their
-  marks and stalled toasts land on its card, and closing them is the workflow's own job. opencode's
-  `send_to_session` takes `private` from lich-plugin 0.13.2; its `open_session` takes no task at all, so a private
-  hand-off at open is `lich open --prompt --private` there.
+  marks and stalled toasts land on its card, and closing them is the workflow's own job.
 - **A relayed Enter is timed against silence, not against the target** (`internal/relay`, `awaitSettled`; typed deliveries only, a Claude Code session with its mod is handed the message, see below): lich
   presses Enter once the target's PTY has been quiet for `defaultSubmitDelay`, because nothing here can read a TUI's
   screen to know it has taken the paste in. The window that opens on the target's own keyboard is closed rather
@@ -981,14 +979,6 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   closed; one a pane shows, or a window, never is. It loads only http, https and about:blank. Page info never
   includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
   not a sandbox: the page runs as the user, in an ephemeral profile.
-- **opencode does not list `browser_*`** (`internal/agentplugin`,
-  `internal/cli/mcp_browser.go`): Claude Code and Codex are handed lich's MCP
-  server at spawn, and Antigravity, oh-my-pi, Crush, Cursor CLI and Kiro get
-  that same server from the plugin install, so they list the browser tools with
-  the rest. opencode's plugin defines its own tool list and does not ask `lich
-  mcp` for one, so a tool added here does not appear there until lich-plugin
-  ships it. The card still opens the window, and `lich browser` still drives it
-  from that session.
 
 ## Languages
 

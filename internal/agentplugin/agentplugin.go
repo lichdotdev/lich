@@ -163,10 +163,9 @@ func (s *Service) status() []Status {
 }
 
 // toolsMinVersion is the first plugin release that carries lich's own
-// operations into a session — as tools of opencode's own, and as the MCP server
-// registered in Crush's config. Claude Code and Codex never ask: they are told
-// about the server on their own command line at spawn, whatever the plugin's
-// version. oh-my-pi clears it by arriving later: its module only exists in
+// operations into a session — as the MCP server registered in Crush's config.
+// Claude Code, Codex and opencode never ask: they are told about the server at
+// spawn, whatever the plugin's version. oh-my-pi clears it by arriving later: its module only exists in
 // releases well past this one, and its MCP registration is written by the same
 // install.
 //
@@ -178,7 +177,7 @@ const toolsMinVersion = "0.9.0"
 // HasTools reports whether a provider's sessions can call lich's own operations
 // — whether a relayed message may name a tool rather than the command line.
 //
-// True for the two lich registers at spawn, and for the three that get them
+// True for the three lich registers at spawn, and for the ones that get them
 // with the plugin, once the installed one is new enough.
 func (s *Service) HasTools(provider string) bool {
 	if providers.AcceptsMCPServer(provider) {
@@ -201,8 +200,7 @@ func (s *Service) HasTools(provider string) bool {
 // three write the lich binary's own path, and all three leave the registration
 // out when it cannot be resolved (crushrcBlock, mcpDocument,
 // antigravityRegisterMCP) — so a session there has the plugin's reports and no
-// tool list, and must be told the command line instead. opencode is absent
-// because its plugin defines the tools itself, with no binary to name.
+// tool list, and must be told the command line instead.
 func registersServerAtInstall(provider string) bool {
 	return provider == providers.Crush || provider == providers.OMP ||
 		provider == providers.Antigravity || provider == providers.Cursor ||
