@@ -139,6 +139,7 @@ reads what each CLI writes down and no two of them write down the same things.
 | A task you hand another session reports back "unanswered" as soon as that agent ends its turn without replying | yes | yes | yes | yes | yes | no, waits for the deadline | yes | yes |
 | lich's own messages to the agent (handed tasks, results ready, notices) in the prompt language you pick | yes | yes | yes | yes | yes | yes | yes | yes |
 | Told at spawn, in the prompt language, to fan work out as lich sessions rather than hidden subagents | yes | no | no | no | yes | no | no | no |
+| The session card opens a browser its agent drives, in a tab beside the session | yes | yes | yes | the card opens it; the agent uses `lich browser`, not `browser_*` | yes | yes | yes | yes |
 
 Every gap is deliberate, none of them is lich withholding something the CLI
 reports, and [`docs/ceilings.md`](docs/ceilings.md) says what was measured behind

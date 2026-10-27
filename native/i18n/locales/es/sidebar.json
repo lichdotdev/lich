@@ -33,6 +33,8 @@
     "moveToFolder": "Mover a una carpeta",
     "takeOutOf": "Sacar de {folder}",
     "newFolder": "Nueva carpeta…",
+    "browser": "Navegador",
+    "browserFailed": "No se pudo abrir el navegador: {error}",
     "openIn": "Abrir en",
     "terminal": "Terminal",
     "editor": "Editor",

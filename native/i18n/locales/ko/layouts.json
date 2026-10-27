@@ -13,6 +13,20 @@
       "other": "{count}개 더 · {waiting}개 대기 중"
     }
   },
+  "browser": {
+    "title": "브라우저",
+    "close": "브라우저 닫기",
+    "address": "URL 입력",
+    "back": "뒤로",
+    "forward": "앞으로",
+    "reload": "새로고침",
+    "openInWindow": "창에서 열기",
+    "locked": "이 탭에는 {label}와(과) 그 브라우저만 둘 수 있습니다",
+    "opened": "{label}이(가) 브라우저를 열었습니다",
+    "dismiss": "닫기",
+    "open": "열기",
+    "moveBody": "\"{layout}\"에서 빠집니다. 브라우저 탭에는 {label}와(과) 그 브라우저만 둘 수 있습니다."
+  },
   "split": {
     "noRoom": "여기에는 창을 하나 더 놓을 공간이 없습니다. 창을 넓히거나 먼저 창 하나를 빼세요."
   },

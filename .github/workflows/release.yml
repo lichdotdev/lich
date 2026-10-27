@@ -139,6 +139,12 @@ jobs:
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      # Ubuntu 24.04 refuses unprivileged user namespaces to binaries without an
+      # AppArmor profile, the runner's Chromium among them, and Chromium will not
+      # start without its sandbox: the internal/browser live tests need it.
+      - name: Allow Chromium's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       # The suite emits pass/fail counts + coverage into the job summary and
       # still fails the job on a red test (shared with ci.yml).
       - name: Backend tests

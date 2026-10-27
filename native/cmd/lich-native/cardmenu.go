@@ -14,6 +14,7 @@ var (
 	icMenuPin    = icons.Lucide("pin")
 	icMenuUnpin  = icons.Lucide("pin-off")
 	icOpenIn     = icons.Lucide("folder-open")
+	icBrowser    = icons.Lucide("globe")
 	icInTerminal = icons.Lucide("terminal")
 	icInEditor   = icons.Lucide("folder-code")
 	icMenuPR     = icons.Lucide("git-pull-request-arrow")
@@ -41,6 +42,7 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 			act.color, act.colorTo = sv.ID, name
 		})},
 		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
+		{Label: i18n.T("sidebar.sessionCard.browser"), Icon: icBrowser, OnClick: func() { act.browser = sv.ID }},
 		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
 	}

@@ -189,6 +189,8 @@ func dispatch(args []string, c *client) int {
 		return c.run(c.quit, args[1:])
 	case "rage":
 		return c.run(c.rage, args[1:])
+	case "browser":
+		return c.run(c.browser, args[1:])
 	case "doctor":
 		// Not through run: this command's failure is the report it just
 		// printed, and a second "lich: …" line on stderr would only say it

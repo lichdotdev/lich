@@ -113,14 +113,13 @@ func (u *window) layoutIsland(gtx C, v stageView) error {
 	// pointer; the Sortable only carries the pane.
 	st.sort.Update(gtx)
 	lt := v.layout
-	ids := lt.sessions()
 	root := lt.Root
 	if lt.Zoomed {
 		root = &paneNode{Session: lt.Focus}
 	}
 	u.terms.onScreen(onScreenOf(root)...)
 	in := image.Rectangle{Max: gtx.Constraints.Max}.Inset(gtx.Dp(gutter))
-	return u.paneTree(gtx, v, root, "", in, len(ids) > 1)
+	return u.paneTree(gtx, v, root, "", in, len(lt.panes()) > 1)
 }
 
 func onScreenOf(n *paneNode) []string {
@@ -132,6 +131,10 @@ func onScreenOf(n *paneNode) []string {
 // root, then one digit per step, 0 first and 1 second.
 func (u *window) paneTree(gtx C, v stageView, n *paneNode, path string, r image.Rectangle, several bool) error {
 	if n.leaf() {
+		if owner, page := browserOwner(n.Session); page {
+			u.browserPaneAt(gtx, v, owner, r, several)
+			return nil
+		}
 		return u.paneAt(gtx, v, n.Session, r, several)
 	}
 	first, second, gap := u.splitRects(gtx, v, n, path, r)
@@ -427,9 +430,7 @@ func (u *window) applyLayoutStage() {
 		u.layDelegatesOut(id)
 	}
 	if focus != "" {
-		if active, ok := u.model.activeSession(); !ok || active.ID != focus {
-			u.model.setActive(u.ctx, focus)
-		}
+		u.model.focusPane(u.ctx, focus)
 	}
 	if zoom {
 		u.model.toggleZoom()

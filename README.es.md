@@ -147,6 +147,7 @@ porque lee lo que cada CLI deja escrito, y no hay dos que registren lo mismo.
 | Una tarea que entregas a otra sesión informa "sin respuesta" en cuanto ese agente termina su turno sin responder | sí | sí | sí | sí | sí | no, espera al plazo | sí | sí |
 | Los mensajes propios de lich al agente (tareas entregadas, resultados listos, avisos) en el idioma de prompt que elijas | sí | sí | sí | sí | sí | sí | sí | sí |
 | Se le indica al iniciarse, en el idioma de prompt, que reparta el trabajo como sesiones de lich en vez de subagentes ocultos | sí | no | no | no | sí | no | no | no |
+| La tarjeta de la sesión abre un navegador que el agente conduce, en una pestaña junto a la sesión | sí | sí | sí | la tarjeta lo abre; el agente usa `lich browser`, no las tools `browser_*` | sí | sí | sí | sí |
 
 Ninguna de estas diferencias es un descuido, y en ningún caso lich se guarda
 algo que el CLI informe; [`docs/ceilings.md`](docs/ceilings.md) cuenta qué se

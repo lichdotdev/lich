@@ -1,0 +1,51 @@
+package cli
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/lichdotdev/lich/api"
+)
+
+func TestPageTextIsOneLinePerElement(t *testing.T) {
+	yes := true
+	info := api.BrowserPageInfo{
+		URL: "https://app.notacil.com.br/invoices", Title: "Notacil", Text: "Notas fiscais",
+		Interactive: []api.BrowserInteractive{
+			{Index: 0, Tag: "button", Type: "button", Text: "Toggle Sidebar", Rect: api.BrowserRect{X: 207, Y: 21, W: 28, H: 28}},
+			{Index: 1, Tag: "a", Role: "link", Text: "Dashboard", Href: "https://app.notacil.com.br/dashboard"},
+			{Index: 2, Tag: "a", Text: "Docs", Href: "https://docs.example.com/x"},
+			{Index: 3, Tag: "input", Type: "email", Text: "E-mail", Filled: &yes},
+			{Index: 4, Tag: "div", Role: "button", Text: "Emitir nota \"já\""},
+			{Index: 5, Tag: "input", Type: "checkbox", Text: "Lembrar", Checked: &yes},
+		},
+		Truncated: true,
+	}
+	want := strings.Join([]string{
+		"url: https://app.notacil.com.br/invoices",
+		"title: Notacil",
+		"text: Notas fiscais",
+		`interactive (index tag "label" -> link):`,
+		`0 button "Toggle Sidebar"`,
+		`1 a "Dashboard" -> /dashboard`,
+		`2 a "Docs" -> https://docs.example.com/x`,
+		`3 input:email "E-mail" (filled)`,
+		`4 div[button] "Emitir nota \"já\""`,
+		`5 input:checkbox "Lembrar" (checked)`,
+		"(more elements below, scroll to reach them)",
+	}, "\n")
+	if got := pageText(info); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+	raw, _ := json.Marshal(info)
+	if len(pageText(info)) >= len(raw)*2/3 {
+		t.Fatalf("text %d chars against %d for the JSON: not smaller enough", len(pageText(info)), len(raw))
+	}
+}
+
+func TestPageTextOfAnEmptyPage(t *testing.T) {
+	if got := pageText(api.BrowserPageInfo{URL: "about:blank"}); got != "url: about:blank\ntitle: " {
+		t.Fatalf("got %q", got)
+	}
+}

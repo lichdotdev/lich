@@ -148,6 +148,7 @@ mesmas coisas.
 | Uma tarefa passada para outra sessão volta como "sem resposta" assim que aquele agente encerra o turno sem responder | sim | sim | sim | sim | sim | não, espera o prazo | sim | sim |
 | As mensagens do próprio lich para o agente (tarefas delegadas, resultados prontos, avisos) no idioma de prompt que você escolher | sim | sim | sim | sim | sim | sim | sim | sim |
 | Instruído na criação, no idioma de prompt, a distribuir o trabalho em sessões do lich em vez de subagentes ocultos | sim | não | não | não | sim | não | não | não |
+| O card da sessão abre um navegador que o agente dirige, numa aba ao lado da sessão | sim | sim | sim | o card abre; o agente usa `lich browser`, não as tools `browser_*` | sim | sim | sim | sim |
 
 Toda lacuna é proposital: nenhuma é o lich escondendo algo que a CLI informa,
 e o [`docs/ceilings.md`](docs/ceilings.md) diz o que foi medido em cada uma.

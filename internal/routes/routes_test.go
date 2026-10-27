@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/browser"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/ompprofile"
@@ -27,6 +28,12 @@ func TestHandleRelayCoversEveryRelayMethod(t *testing.T) {
 	d := rpc.New()
 	Relay(d, nil)
 	assertHandled(t, d, "relay.")
+}
+
+func TestHandleBrowserCoversEveryBrowserMethod(t *testing.T) {
+	d := rpc.New()
+	Browser(d, (*browser.Service)(nil))
+	assertHandled(t, d, "browser.")
 }
 
 func TestHandleSystemCoversEverySystemMethod(t *testing.T) {

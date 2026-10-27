@@ -15,6 +15,20 @@
       "other": "mais {count} · {waiting} esperando"
     }
   },
+  "browser": {
+    "title": "Navegador",
+    "close": "Fechar o navegador",
+    "address": "Digite uma URL",
+    "back": "Voltar",
+    "forward": "Avançar",
+    "reload": "Recarregar",
+    "openInWindow": "Abrir em janela",
+    "locked": "Esta aba é só de {label} e do navegador dela",
+    "opened": "{label} abriu um navegador",
+    "dismiss": "Dispensar",
+    "open": "Abrir",
+    "moveBody": "Ela sai de \"{layout}\". A aba do navegador só comporta {label} e o navegador dela."
+  },
   "split": {
     "noRoom": "Não há espaço para outro painel aqui. Alargue a janela ou tire um painel antes."
   },

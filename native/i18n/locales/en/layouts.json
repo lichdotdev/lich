@@ -15,6 +15,20 @@
       "other": "{count} more · {waiting} waiting"
     }
   },
+  "browser": {
+    "title": "Browser",
+    "close": "Close the browser",
+    "address": "Type a URL",
+    "back": "Back",
+    "forward": "Forward",
+    "reload": "Reload",
+    "openInWindow": "Open in a window",
+    "locked": "This tab holds only {label} and its browser",
+    "opened": "{label} opened a browser",
+    "dismiss": "Dismiss",
+    "open": "Open",
+    "moveBody": "It leaves \"{layout}\". A browser tab holds only {label} and its browser."
+  },
   "split": {
     "noRoom": "No room for another pane here. Make the window wider or take a pane out first."
   },

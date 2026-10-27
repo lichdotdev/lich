@@ -15,6 +15,20 @@
       "other": "{count} más · {waiting} esperando"
     }
   },
+  "browser": {
+    "title": "Navegador",
+    "close": "Cerrar el navegador",
+    "address": "Escribe una URL",
+    "back": "Atrás",
+    "forward": "Adelante",
+    "reload": "Recargar",
+    "openInWindow": "Abrir en una ventana",
+    "locked": "Esta pestaña es solo de {label} y su navegador",
+    "opened": "{label} abrió un navegador",
+    "dismiss": "Descartar",
+    "open": "Abrir",
+    "moveBody": "Sale de \"{layout}\". La pestaña del navegador solo admite {label} y su navegador."
+  },
   "split": {
     "noRoom": "No hay espacio para otro panel aquí. Ensancha la ventana o saca antes un panel."
   },

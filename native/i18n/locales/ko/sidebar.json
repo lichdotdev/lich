@@ -32,6 +32,8 @@
     "moveToFolder": "폴더로 이동",
     "takeOutOf": "{folder}에서 빼기",
     "newFolder": "새 폴더…",
+    "browser": "브라우저",
+    "browserFailed": "브라우저를 열 수 없습니다: {error}",
     "openIn": "다음에서 열기",
     "terminal": "터미널",
     "editor": "에디터",

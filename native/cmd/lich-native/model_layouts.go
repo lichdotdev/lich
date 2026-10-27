@@ -94,8 +94,8 @@ func (m *model) refocusLayoutLocked() bool {
 		m.shownLayout = ""
 		return false
 	}
-	m.active = t.Focus
-	if p, _ := m.sessionAt(t.Focus); p != nil {
+	m.active = paneSession(t.Focus)
+	if p, _ := m.sessionAt(m.active); p != nil {
 		m.activeProject = p.ID
 	}
 	return true
@@ -112,7 +112,7 @@ func (m *model) showLayout(ctx context.Context, id string) bool {
 	}
 	focus := t.Focus
 	m.mu.Unlock()
-	m.setActive(ctx, focus)
+	m.setActive(ctx, paneSession(focus))
 	return true
 }
 
@@ -124,7 +124,7 @@ func (m *model) shownLayoutTab() (layoutTab, bool) {
 }
 
 func (m *model) shownLayoutLocked() (layoutTab, bool) {
-	if m.shownLayout == "" || m.home {
+	if m.shownLayout == "" {
 		return layoutTab{}, false
 	}
 	t := m.layouts.byID(m.shownLayout)
@@ -167,10 +167,11 @@ func (m *model) layoutOf(id string) string {
 // splitBeside puts session against target's edge and brings it into focus:
 // in the layout holding target, else in a new layout of the two named after
 // target. A session that is in another layout already stays where it is
-// unless move is set; it reports false when nothing was split.
+// unless move is set, and a browser tab takes no one; it reports false when
+// nothing was split.
 func (m *model) splitBeside(ctx context.Context, target, session string, edge paneEdge, move bool) bool {
 	m.mu.Lock()
-	if target == session || !m.liveLocked(target) || !m.liveLocked(session) {
+	if target == session || !m.liveLocked(target) || !m.liveLocked(session) || m.layouts.locked(m.layouts.of(target)) {
 		m.mu.Unlock()
 		return false
 	}
@@ -207,7 +208,12 @@ func (m *model) unsplit(ctx context.Context, session string) {
 	left, _ := m.layouts.take(session)
 	next := left
 	if t := m.layouts.byID(id); t != nil {
-		next = t.Focus
+		next = paneSession(t.Focus)
+	}
+	if next == "" {
+		// The session left its browser tab, which goes with it: it is what
+		// stays on screen.
+		next = session
 	}
 	m.mu.Unlock()
 	m.setActive(ctx, next)
@@ -223,7 +229,7 @@ func (m *model) closeLayout(ctx context.Context, id string) {
 		m.mu.Unlock()
 		return
 	}
-	focus, shown := t.Focus, m.shownLayout == id
+	focus, shown := paneSession(t.Focus), m.shownLayout == id
 	m.layouts.close(id)
 	m.mu.Unlock()
 	if shown {
@@ -237,7 +243,7 @@ func (m *model) closeLayout(ctx context.Context, id string) {
 func (m *model) toggleZoom() {
 	m.mu.Lock()
 	t := m.layouts.byID(m.shownLayout)
-	if t == nil || m.home {
+	if t == nil {
 		m.mu.Unlock()
 		return
 	}
@@ -253,14 +259,33 @@ func (m *model) cyclePane(ctx context.Context, step int) {
 	if !ok {
 		return
 	}
-	ids := t.sessions()
+	ids := t.panes()
 	at := 0
 	for i, id := range ids {
 		if id == t.Focus {
 			at = i
 		}
 	}
-	m.setActive(ctx, ids[(at+step+len(ids))%len(ids)])
+	m.focusPane(ctx, ids[(at+step+len(ids))%len(ids)])
+}
+
+// focusPane puts pane in focus: its session on screen, and in the layout
+// holding it, the pane itself, which for a page is not its session's.
+func (m *model) focusPane(ctx context.Context, pane string) {
+	session := paneSession(pane)
+	if active, ok := m.activeSession(); !ok || active.ID != session {
+		m.setActive(ctx, session)
+	}
+	m.mu.Lock()
+	changed := false
+	if i := m.layouts.of(session); i >= 0 && m.layouts.tabs[i].Focus != pane {
+		m.layouts.tabs[i].Focus = pane
+		changed = true
+	}
+	m.mu.Unlock()
+	if changed {
+		m.saveLayouts()
+	}
 }
 
 // setRatio stores a divider's new ratio once its drag ends.
@@ -434,7 +459,7 @@ func (m *model) movePane(ctx context.Context, source, target string, edge paneEd
 func (m *model) rotateFocused() bool {
 	m.mu.Lock()
 	t := m.layouts.byID(m.shownLayout)
-	if t == nil || m.home || !t.rotate(t.Focus) {
+	if t == nil || !t.rotate(t.Focus) {
 		m.mu.Unlock()
 		return false
 	}

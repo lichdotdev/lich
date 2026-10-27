@@ -33,6 +33,8 @@
     "moveToFolder": "フォルダーに移動",
     "takeOutOf": "{folder} から出す",
     "newFolder": "新しいフォルダー…",
+    "browser": "ブラウザ",
+    "browserFailed": "ブラウザを開けませんでした: {error}",
     "openIn": "次で開く",
     "terminal": "ターミナル",
     "editor": "エディター",

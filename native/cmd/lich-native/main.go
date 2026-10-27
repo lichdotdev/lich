@@ -122,8 +122,8 @@ type window struct {
 	root     ui.Root
 	toaster  ui.Toaster
 	// duplicates holds the warnings about a conversation resumed in two
-	// cards and the questions of cards whose process exited, in the
-	// bottom-right corner, apart from every other toast.
+	// cards, the questions of cards whose process exited and the browsers
+	// agents opened, in the bottom-right corner, apart from every other toast.
 	duplicates ui.Toaster
 	// caption is where the topbar draws the window's buttons, chrome what
 	// the window manager last said about the window.
@@ -171,6 +171,8 @@ type window struct {
 	islandAt image.Point
 	// layoutStage is the panes' state while a layout is on screen.
 	layoutStage layoutStage
+	// browserPanes are the page panes' widgets, by session (browser_pane.go).
+	browserPanes map[string]*browserPaneUI
 	// hotkeyLanguage is the language the hotkeys' labels were last put in.
 	hotkeyLanguage i18n.Locale
 	// fontsLanguage is the language the interface's CJK faces were last
@@ -236,6 +238,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.exited = u.sessionExited
 	u.model.serviceReveal = u.revealService
 	u.model.duplicate = u.warnDuplicate
+	u.model.browserOpened = u.offerBrowser
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
 	u.palette.closed = u.model.closed
@@ -382,6 +385,9 @@ func (u *window) connect() error {
 	if err := u.model.loadLayouts(u.ctx); err != nil {
 		u.logErr("load layouts", err)
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("layouts.load.failed", i18n.Args{"error": backend.ErrorText(err)})})
+	}
+	if err := u.model.hydrateBrowsers(u.ctx); err != nil {
+		u.logErr("read the session browsers", err)
 	}
 	if _, ok := u.model.project(); !ok && *flagProject != "" {
 		path, err := filepath.Abs(*flagProject)
@@ -546,6 +552,7 @@ func (u *window) layout(gtx C) error {
 	u.apply(act)
 	u.applyTopbar(top)
 	u.applyLayoutStage()
+	u.settleBrowserPanes()
 	u.runHotkeys(gtx, fired)
 	return contentErr
 }
@@ -901,6 +908,7 @@ func (u *window) apply(act sidebarAction) {
 		go func() { u.logErr("pin session", u.client.SetSessionPinned(u.ctx, id, pinned)) }()
 	}
 	u.applyOpenIn(act)
+	u.applyBrowser(act)
 	u.applyContinueIn(act)
 	if pick := act.profilePick; pick.key != "" {
 		u.settings.writeProviderKey(pick.key, pick.projectID, pick.value, nil)

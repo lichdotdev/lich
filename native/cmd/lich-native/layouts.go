@@ -64,20 +64,12 @@ type layoutTab struct {
 }
 
 // sessions are the tab's sessions in reading order, left to right and top to
-// bottom.
+// bottom; a browser tab's page is a pane, not a session (panes).
 func (t *layoutTab) sessions() []string {
-	var out []string
-	var walk func(n *paneNode)
-	walk = func(n *paneNode) {
-		if n.leaf() {
-			out = append(out, n.Session)
-			return
-		}
-		walk(n.First)
-		walk(n.Second)
-	}
-	walk(t.Root)
-	return out
+	return slices.DeleteFunc(t.panes(), func(pane string) bool {
+		_, page := browserOwner(pane)
+		return page
+	})
 }
 
 func (t *layoutTab) holds(id string) bool { return slices.Contains(t.sessions(), id) }
@@ -290,7 +282,8 @@ func (ls *layoutTabs) openBeside(name, left string, column []string) string {
 
 // take removes session from whichever layout holds it, reporting whether
 // one did. A layout left with a single pane is no layout any more: it goes,
-// and left is the session that pane showed, "" while the layout stays.
+// and left is the session that pane showed, "" while the layout stays or
+// when what is left is a page, whose session just went.
 func (ls *layoutTabs) take(session string) (left string, ok bool) {
 	i := ls.of(session)
 	if i < 0 {
@@ -300,6 +293,9 @@ func (ls *layoutTabs) take(session string) (left string, ok bool) {
 	t.remove(session)
 	if t.Root.leaf() {
 		left = t.Root.Session
+		if _, page := browserOwner(left); page {
+			left = ""
+		}
 		ls.tabs = slices.Delete(ls.tabs, i, i+1)
 	}
 	return left, true
@@ -356,7 +352,7 @@ func parseLayouts(raw string) (layoutTabs, error) {
 			}
 			seen[id] = true
 		}
-		if t.Root != nil && !t.holds(t.Focus) {
+		if t.Root != nil && !slices.Contains(t.panes(), t.Focus) {
 			t.Focus = t.sessions()[0]
 		}
 	}

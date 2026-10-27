@@ -33,6 +33,8 @@
     "moveToFolder": "Move to folder",
     "takeOutOf": "Take out of {folder}",
     "newFolder": "New folder…",
+    "browser": "Browser",
+    "browserFailed": "Could not open the browser: {error}",
     "openIn": "Open in",
     "terminal": "Terminal",
     "editor": "Editor",

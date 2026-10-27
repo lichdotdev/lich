@@ -927,6 +927,35 @@ transcript)` pair cost and never which model each priced turn ran under, and
 the model on a session row is the one selected now — so a per-model total would
 have to be a second accounting path, not a filter on this one.
 
+### `lich browser <verb> [args]`
+
+Drives the browser owned by the session this command runs in — the page its
+tab in the lich window shows. It has to run inside a session
+(`LICH_SESSION_ID`); from anywhere else it refuses without calling lich.
+
+```
+lich browser open [url]
+lich browser info
+lich browser click --index <n> | --selector <css> | --x <n> --y <n>
+lich browser type [--clear] [--index <n>] <text>
+lich browser press [--index <n>] <key>
+lich browser screenshot [path]
+lich browser navigate <url>
+lich browser reload | back | forward
+lich browser scroll [--dy <pixels>]
+lich browser list
+lich browser close
+```
+
+`open` with no URL loads `about:blank`. The browser runs headless and the user
+sees its page in a tab beside the session; one that **Open in a window** moved
+to a Chromium window of its own is reused there. `info` describes the page, one line per clickable node
+(index, tag, label, link), and never includes what was typed into a field;
+`click` and `press` print the same description of the page they left, once a
+navigation they started has its document; `type` prints nothing, as a field
+filled seldom changes the page. `screenshot` prints the PNG's path.
+URLs are http, https or `about:blank`.
+
 ### `lich mcp`
 
 Serves the session commands above as MCP tools over stdio — `cost` is not one

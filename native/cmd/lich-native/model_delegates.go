@@ -59,6 +59,10 @@ func (m *model) showDelegates(ctx context.Context, orchestrator string, ids []st
 		m.mu.Unlock()
 		return false
 	}
+	if m.layouts.locked(m.layouts.of(orchestrator)) {
+		m.mu.Unlock()
+		return false
+	}
 	target, below := m.delegateSlotLocked(orchestrator, m.delegatesLocked(orchestrator))
 	for _, id := range ids {
 		m.layouts.take(id)

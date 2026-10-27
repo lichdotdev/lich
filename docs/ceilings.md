@@ -965,6 +965,28 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   up to that late: observing `AppleInterfaceThemeChangedNotification` needs an Objective-C shim no one
   could compile or run without a Mac. The BSDs read no scheme and draw dark.
 
+- **A session's browser is a second Chromium, one per card, drawn from frames** (`internal/browser`,
+  `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
+  whose page reaches the session's browser tab as a JPEG screencast over `/events`, at the pace the window
+  takes frames. The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
+  has no DevTools, shows the arrow whatever cursor the page asks for, does not copy the page's selection to
+  the system clipboard (paste works), loads what the page opens in a new tab or window in the page itself, and leaves downloads and the page's own dialogs out; Open in
+  a window moves the page to a real Chromium window for those, reopening it on the same profile with every
+  cookie, since chromedp cannot show a headless process in place. A half-filled form or sessionStorage is
+  lost on that move. Closing the card, or the session's process ending, closes the browser; closing that
+  window does not close the session. A headless browser no pane shows and no one used for five minutes is
+  closed; one a pane shows, or a window, never is. It loads only http, https and about:blank. Page info never
+  includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
+  not a sandbox: the page runs as the user, in an ephemeral profile.
+- **opencode does not list `browser_*`** (`internal/agentplugin`,
+  `internal/cli/mcp_browser.go`): Claude Code and Codex are handed lich's MCP
+  server at spawn, and Antigravity, oh-my-pi, Crush, Cursor CLI and Kiro get
+  that same server from the plugin install, so they list the browser tools with
+  the rest. opencode's plugin defines its own tool list and does not ask `lich
+  mcp` for one, so a tool added here does not appear there until lich-plugin
+  ships it. The card still opens the window, and `lich browser` still drives it
+  from that session.
+
 ## Languages
 
 - **The prompt language reaches a running session only through lich itself** (`internal/prompt`): text lich

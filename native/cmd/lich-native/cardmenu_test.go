@@ -31,7 +31,7 @@ func TestCardMenu(t *testing.T) {
 	sv := &sessionView{Session: backend.Session{ID: "s1", Kind: "claude", Color: "teal"}, shown: "/repo"}
 	menu := cardMenu(sv, nil, &act, func() { renamed = true }, func() {})
 
-	if want := []string{"Rename", "Pin", "Color", "Move to folder", "Open in", "Pull request", "", "Close session"}; !slices.Equal(labels(menu), want) {
+	if want := []string{"Rename", "Pin", "Color", "Move to folder", "Browser", "Open in", "Pull request", "", "Close session"}; !slices.Equal(labels(menu), want) {
 		t.Fatalf("menu %v, want %v", labels(menu), want)
 	}
 	entry(t, menu, "Rename").OnClick()

@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A session card's menu opens a browser for that session, above Open in, in a tab beside the session: its terminal on one side and the page on the other, with the divider, rotate and zoom of a split. The session's agent drives the same page: open a URL, read it, click, type, press a key, go back and forward, scroll and screenshot, from `browser_*` tools or from `lich browser`. The agent's own cursor shows where it acts: lich's arrow, in the session's card color or the theme's, with a badge naming the provider, glides to each click, field and scroll on the page and to back, forward, reload and the address on the pane's toolbar, playing even an agent's parallel calls in turn. You click, type and copy and paste with your own clipboard in the page while it does. Each click and key the agent sends answers with the page it left, in a compact form, so a long session spends about half the tokens it would reading the page back as JSON. When the agent opens a browser on its own, a toast in the bottom-right corner offers to show it. Open in a window moves the page to a Chromium window of its own, cookies and all. Closing the card closes the browser. The browser is the Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed. opencode's agent reaches it through `lich browser`; its own tool list does not include `browser_*`.
+
 ### Changed
 
 - An agent can change the model or the reasoning effort of the session it runs in through `control_session`, and close that session when you ask it to (`self` on `close_session`, `lich close --self`). Both used to be refused outright.
 
 ### Fixed
 
+- A session browser's open, reload, back and forward return once the page is interactive, instead of waiting for every image and tracker to finish. That wait held the agent's next action for as long as the load event took, up to 30 seconds, after the page was already on screen. A screenshot is the viewport being watched.
 - The mouse wheel in a terminal scrolls smoothly and as far as in other terminals. A notch moves three lines of the shell's history, or a full-screen program such as `less`, eased over a few frames instead of jumping some eight lines at once. A program that takes the mouse, such as nvim, Claude Code or Codex, gets one wheel step a notch and scrolls its own distance, where it used to get about eight and race through the conversation.
 
 ## [0.79.0] - 2026-10-24
