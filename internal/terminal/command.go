@@ -221,7 +221,8 @@ var briefingFlags = map[string]string{
 
 // How each provider is handed an MCP server on its command line: Claude Code
 // takes a JSON string, Codex takes config overrides for its `mcp_servers`
-// table. Which providers accept one at all is providers.AcceptsMCPServer.
+// table, and opencode takes neither (mcpEnv). Which providers accept one at
+// all is providers.AcceptsMCPServer.
 const (
 	claudeMCPFlag   = "--mcp-config"
 	codexConfigFlag = "-c"
@@ -450,7 +451,8 @@ func skipPermissionArgs(kind string, skip bool) []string {
 // which any user on the machine can read out of /proc/<pid>/cmdline.
 //
 // Empty when lich cannot name its own binary, or when the provider has no way
-// to be told at spawn — never --strict-mcp-config, which would drop the user's
+// to be told on its argv (opencode is told through its environment, mcpEnv) —
+// never --strict-mcp-config, which would drop the user's
 // own MCP servers for the sake of lich's.
 func mcpArgs(kind, lichBin string) []string {
 	if lichBin == "" || !providers.AcceptsMCPServer(kind) {
@@ -470,6 +472,44 @@ func mcpArgs(kind, lichBin string) []string {
 		}
 	}
 	return nil
+}
+
+// mcpEnv registers lich's MCP server with opencode, which takes no server on
+// its argv but merges OPENCODE_CONFIG_CONTENT over every config file it reads
+// (measured on opencode 1.19.4), so the registration stays per spawn and off the
+// disk, as Claude Code's does. An inline config the user already exports is
+// extended, for the reason pasteUnfoldEnv gives. One lich cannot extend is left
+// as it is and the session goes without the tools, rather than without its spawn.
+func mcpEnv(env []string, kind, lichBin string) []string {
+	if lichBin == "" || kind != providers.OpenCode {
+		return env
+	}
+	config := map[string]any{}
+	if own := lastEnvValue(env, opencodeConfigContentVar); own != "" {
+		if err := json.Unmarshal([]byte(own), &config); err != nil {
+			slog.Warn("mcp registration skipped", "provider", kind, "err", err)
+			return env
+		}
+	}
+	servers, isObject := config[opencodeMCPKey].(map[string]any)
+	if config[opencodeMCPKey] != nil && !isObject {
+		slog.Warn("mcp registration skipped", "provider", kind, "err", "inline mcp is not an object")
+		return env
+	}
+	if servers == nil {
+		servers = map[string]any{}
+	}
+	servers[relay.MCPServerName] = map[string]any{
+		"type":    "local",
+		"command": []string{lichBin, relay.MCPSubcommand},
+	}
+	config[opencodeMCPKey] = servers
+	content, err := json.Marshal(config)
+	if err != nil {
+		slog.Warn("mcp registration skipped", "provider", kind, "err", err)
+		return env
+	}
+	return append(env, opencodeConfigContentVar+"="+string(content))
 }
 
 // claudeMCPConfig is the JSON string Claude Code's --mcp-config accepts in

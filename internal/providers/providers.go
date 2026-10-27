@@ -95,21 +95,21 @@ func Known(id string) bool {
 	return false
 }
 
-// AcceptsMCPServer reports whether a provider can be handed an MCP server on
-// its own command line, so lich can register one for a session it spawns
-// without editing config that belongs to the user or to their repository.
+// AcceptsMCPServer reports whether a provider can be handed an MCP server at
+// spawn, so lich can register one for a session it spawns without editing
+// config that belongs to the user or to their repository.
 //
 // Claude Code takes `--mcp-config` with a JSON string; Codex takes `-c`
-// overrides for its `mcp_servers` table. Antigravity, opencode, oh-my-pi, Crush
-// and Cursor CLI have no such flag — Antigravity keeps MCP behind an `agy mcp`
+// overrides for its `mcp_servers` table; opencode merges the inline config in
+// $OPENCODE_CONFIG_CONTENT over its files. Antigravity, oh-my-pi, Crush and
+// Cursor CLI have no such route — Antigravity keeps MCP behind an `agy mcp`
 // subcommand, Crush's whole flag list is cwd, data-dir, session and debug, and
 // Cursor's `mcp` subcommand only lists, enables and disables what is already in
 // `~/.cursor/mcp.json` (measured on 2026.08.11) — so registering for those means
 // writing config that outlives the spawn, which is what the plugin install does
-// for the three that can take it. Their sessions reach the other sessions
-// through the `lich` command line instead (docs/cli.md).
+// for the ones that can take it.
 func AcceptsMCPServer(id string) bool {
-	return id == Claude || id == Codex
+	return id == Claude || id == Codex || id == OpenCode
 }
 
 // SupportsFork reports whether a provider can branch an existing conversation

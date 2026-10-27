@@ -48,8 +48,6 @@ in the page is not a tool.
 
 ## Providers
 
-Claude Code and Codex receive the tools at spawn. Antigravity, oh-my-pi,
-Crush, Cursor CLI and Kiro receive them from the lich MCP server the plugin
-registers. opencode's plugin defines its own tool list, so it does not list
-`browser_*`; `lich browser` still runs in that session. The gap is in
-`docs/ceilings.md`.
+Claude Code, Codex and opencode receive the tools at spawn. Antigravity,
+oh-my-pi, Crush, Cursor CLI and Kiro receive them from the lich MCP server the
+plugin registers.

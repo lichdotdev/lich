@@ -144,6 +144,7 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (
 	if err != nil {
 		return nil, "", err
 	}
+	env = mcpEnv(env, opts.Kind, mcpBin)
 	// The configured binary still runs, so a wrapper exporting a
 	// CLAUDE_CONFIG_DIR (or CODEX_HOME) of its own wins over the profile.
 	if profileDir != "" {
