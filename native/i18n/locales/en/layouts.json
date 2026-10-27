@@ -27,6 +27,8 @@
     "opened": "{label} opened a browser",
     "dismiss": "Dismiss",
     "open": "Open",
+    "downloaded": "Downloaded {name}",
+    "showFolder": "Open folder",
     "moveBody": "It leaves \"{layout}\". A browser tab holds only {label} and its browser.",
     "pick": "Leave notes on the page",
     "pickHint": "Click an element to leave a note",

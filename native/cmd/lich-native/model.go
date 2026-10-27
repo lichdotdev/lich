@@ -124,6 +124,8 @@ type model struct {
 	// hears one the agent started.
 	browsers      browserStore
 	browserOpened func(api.BrowserState)
+	// browserDownloaded hears a file a session's page finished downloading.
+	browserDownloaded func(api.BrowserDownload)
 }
 
 type sessionCwd = api.SessionCwd
@@ -410,6 +412,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.BrowserAgentEvent.Name:
 			if a, err := backend.Decode(ev, api.BrowserAgentEvent); err == nil {
 				m.applyBrowserAgent(a, time.Now())
+			}
+		case api.BrowserDownloadEvent.Name:
+			if d, err := backend.Decode(ev, api.BrowserDownloadEvent); err == nil && m.browserDownloaded != nil {
+				m.browserDownloaded(d)
 			}
 		case api.SessionFocusEvent.Name:
 			m.sessionFocus(ev)

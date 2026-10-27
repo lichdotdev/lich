@@ -18,7 +18,9 @@ var browserTools = []mcpTool{
 			"this session has none. It runs headless: the user sees the same page in a tab " +
 			"beside this session, which lich offers to open, so no window of its own is needed " +
 			"(headed is false, and that is expected). The URL must be http, https, or omitted " +
-			"(about:blank). file, javascript and data URLs are refused.",
+			"(about:blank). file, javascript and data URLs are refused. A URL that answers with a " +
+			"file downloads it to the user's Downloads folder and leaves the page as it was; " +
+			"downloads in the answer names its path.",
 		Schema: schema(map[string]any{
 			"url": property("string", "Page to load. Omit for about:blank."),
 		}),
@@ -39,7 +41,8 @@ var browserTools = []mcpTool{
 		Description: "Read this session's current page: URL, title, the text in the viewport, and " +
 			"one line per interactive element there: index, tag, label and link. Form values are " +
 			"never included — (filled)/(checked) say that typing landed. click and press already " +
-			"answer with this, so call it only to look again without acting. Read-only.",
+			"answer with this, so call it only to look again without acting. Also names a download " +
+			"that finished since the page was last read. Read-only.",
 		Schema:   schema(map[string]any{}),
 		ReadOnly: true,
 		Run:      mcpBrowserInfo,
@@ -50,7 +53,8 @@ var browserTools = []mcpTool{
 			"CSS selector: either scrolls the element into view first. x and y are viewport " +
 			"coordinates and must be inside it. Sends a real mouse event, not element.click(). " +
 			"Answers with the page afterwards, as browser_info reads it, once a navigation the " +
-			"click started has its document.",
+			"click started has its document. A file the click downloads is saved to the user's " +
+			"Downloads folder; the answer names its path in a downloaded: line.",
 		Schema: schema(map[string]any{
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
@@ -95,7 +99,8 @@ var browserTools = []mcpTool{
 			"Backspace, Delete, Space, ArrowUp/Down/Left/Right, Home, End, PageUp, PageDown). " +
 			"Real key event, not typed text — use browser_type for that. Optional target " +
 			"focuses first, as for browser_type. Answers with the page afterwards, once a " +
-			"navigation the key started (Enter on a form) has its document.",
+			"navigation the key started (Enter on a form) has its document, and names a file it " +
+			"downloaded as browser_click does.",
 		Schema: schema(map[string]any{
 			"key":      property("string", "Named key: Enter, Tab, Escape, …"),
 			"index":    property("integer", "Index from the last browser_info."),
@@ -134,8 +139,9 @@ var browserTools = []mcpTool{
 		},
 	},
 	{
-		Name:        "browser_navigate",
-		Description: "Load a URL in this session's already-open browser. Same allowlist as browser_open.",
+		Name: "browser_navigate",
+		Description: "Load a URL in this session's already-open browser. Same allowlist as browser_open, " +
+			"and a URL that answers with a file downloads it as browser_open does.",
 		Schema: schema(map[string]any{
 			"url": property("string", "http(s) URL, or about:blank."),
 		}, "url"),

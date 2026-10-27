@@ -25,6 +25,8 @@
     "opened": "{label}이(가) 브라우저를 열었습니다",
     "dismiss": "닫기",
     "open": "열기",
+    "downloaded": "{name} 다운로드 완료",
+    "showFolder": "폴더 열기",
     "moveBody": "\"{layout}\"에서 빠집니다. 브라우저 탭에는 {label}와(과) 그 브라우저만 둘 수 있습니다.",
     "pick": "페이지에 메모 남기기",
     "pickHint": "요소를 클릭해 메모를 남기세요",

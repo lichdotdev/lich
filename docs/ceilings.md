@@ -970,7 +970,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
   whose page reaches the session's browser tab as a JPEG screencast over `/events`, at the pace the window
   takes frames. The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
-  has no DevTools, shows the arrow whatever cursor the page asks for, loads what the page opens in a new tab or window in the page itself, and leaves downloads and the page's own dialogs out; Open in
+  has no DevTools, shows the arrow whatever cursor the page asks for, loads what the page opens in a new tab or window in the page itself, and leaves the page's own dialogs out; Open in
   a window moves the page to a real Chromium window for those, reopening it on the same profile with every
   cookie, since chromedp cannot show a headless process in place. A half-filled form or sessionStorage is
   lost on that move. Closing the card, or the session's process ending, closes the browser; closing that
@@ -990,6 +990,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   every 400 ms while notes wait, and every 30 ms for a moment after the wheel turns, so an element the page
   moves on its own is outlined late. Notes not sent yet
   live in the window: closing it, or the browser, loses them.
+
+- **A session browser's downloads go straight to the user's Downloads folder** (`internal/browser/downloads.go`,
+  `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS and
+  Windows, even for a Windows user who moved that known folder. While one runs, a file named by Chrome's
+  download id sits there; it takes its real name once complete. Chrome aborts a navigation the page starts
+  within about a second of a download (`net::ERR_ABORTED`, then it reloads the page; Chromium 155, with
+  downloads on or off), so an agent's click, key press, open or navigate that downloaded holds its answer
+  1.5 seconds; a navigation the person starts in the pane is not held. A download still running after ten
+  seconds is reported in progress and named again when it ends. No tool lists past downloads or cancels one,
+  nothing caps their size, and closing the browser cancels one still running.
 
 ## Languages
 

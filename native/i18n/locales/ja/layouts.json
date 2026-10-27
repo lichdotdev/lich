@@ -25,6 +25,8 @@
     "opened": "{label} がブラウザを開きました",
     "dismiss": "閉じる",
     "open": "開く",
+    "downloaded": "{name} をダウンロードしました",
+    "showFolder": "フォルダを開く",
     "moveBody": "「{layout}」から外れます。ブラウザのタブには {label} とそのブラウザしか置けません。",
     "pick": "ページにメモを残す",
     "pickHint": "要素をクリックしてメモを残す",

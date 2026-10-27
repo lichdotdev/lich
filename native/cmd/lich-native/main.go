@@ -239,6 +239,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.serviceReveal = u.revealService
 	u.model.duplicate = u.warnDuplicate
 	u.model.browserOpened = u.offerBrowser
+	u.model.browserDownloaded = u.tellDownload
 	u.model.pluginIncompatible = func() { go u.checkPlugin() }
 	u.model.appUpdateProgress = u.updateProgressed
 	u.palette.closed = u.model.closed

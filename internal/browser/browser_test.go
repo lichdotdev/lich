@@ -18,6 +18,7 @@ func testService(t *testing.T, launch *fakeLauncher) *Service {
 		return t.TempDir(), nil
 	}, func() time.Time { return now }, 5*time.Minute)
 	s.now = func() time.Time { return now }
+	s.quiet = 0
 	t.Cleanup(func() { _ = s.Cleanup() })
 	return s
 }

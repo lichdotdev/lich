@@ -24,6 +24,19 @@ func TestBrowserOpenCallsThisSessionsBrowser(t *testing.T) {
 	}
 }
 
+func TestBrowserOpenNamesAFileItDownloaded(t *testing.T) {
+	f := newFakeLich(t, `{"id":"b1","url":"about:blank","owner":"s1",
+		"downloads":[{"path":"/home/u/Downloads/r.csv","bytes":12,"state":"completed"}]}`)
+
+	code, stdout, stderr := run(t, f, "browser", "open", "https://example.com/r.csv")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	if want := "about:blank\ndownloaded: /home/u/Downloads/r.csv (12 B)\n"; stdout != want {
+		t.Errorf("stdout = %q, want %q", stdout, want)
+	}
+}
+
 func TestBrowserClickSendsATarget(t *testing.T) {
 	f := newFakeLich(t, `null`)
 

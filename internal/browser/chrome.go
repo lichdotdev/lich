@@ -3,11 +3,14 @@ package browser
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"time"
 
+	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/network"
@@ -56,7 +59,11 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		allocCancel()
 		return nil, err
 	}
-	return &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel}, nil
+	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel}
+	if err := p.allowDownloads(); err != nil {
+		slog.Warn("browser: downloads stay off", "err", err)
+	}
+	return p, nil
 }
 
 type chromePage struct {
@@ -64,6 +71,37 @@ type chromePage struct {
 	cancel      context.CancelFunc
 	allocCancel context.CancelFunc
 	listen      listeners
+	// dl names the files the page downloads; nil when downloads are off.
+	dl *downloads
+}
+
+// downloadFolder is downloadDir, which the live tests point at a folder of
+// their own: on Windows, Chrome would not start with USERPROFILE moved.
+var downloadFolder = downloadDir
+
+// allowDownloads saves what the page downloads into the user's Downloads
+// folder, with events. A headless Chrome denies downloads by default, and a
+// click on a download button did nothing.
+func (p *chromePage) allowDownloads() error {
+	dir, err := downloadFolder()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	c := chromedp.FromContext(p.ctx)
+	err = p.run(nil, chromedp.ActionFunc(func(ctx context.Context) error {
+		return browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
+			WithDownloadPath(dir).
+			WithEventsEnabled(true).
+			Do(cdp.WithExecutor(ctx, c.Browser))
+	}))
+	if err != nil {
+		return err
+	}
+	p.dl = newDownloads(dir)
+	return nil
 }
 
 func (p *chromePage) Alive() bool { return p.ctx.Err() == nil }
@@ -96,12 +134,21 @@ func (p *chromePage) Navigate(ctx context.Context, url string) error {
 		if err != nil {
 			return err
 		}
+		if errorText == abortedText {
+			return errNavAborted
+		}
 		if errorText != "" {
 			return fmt.Errorf("page load error %s", errorText)
 		}
 		return nil
 	}))
 }
+
+// abortedText is Chrome's answer to a navigation that did not load a page,
+// among them one that became a download.
+const abortedText = "net::ERR_ABORTED"
+
+var errNavAborted = errors.New("page load error " + abortedText)
 
 // navGrace is how long after an action a navigation it starts may take to
 // replace the document: until then the old one reads as complete.

@@ -25,6 +25,8 @@
     "opened": "{label} 打开了浏览器",
     "dismiss": "忽略",
     "open": "打开",
+    "downloaded": "已下载 {name}",
+    "showFolder": "打开文件夹",
     "moveBody": "它将离开“{layout}”。浏览器标签页只容纳 {label} 及其浏览器。",
     "pick": "在页面上留下备注",
     "pickHint": "点击一个元素来留下备注",

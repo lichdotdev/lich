@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"image"
 	"image/jpeg"
+	"path/filepath"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
@@ -170,5 +171,26 @@ func TestAgentActionsBetweenTwoFramesAreAllKeptInOrder(t *testing.T) {
 	send(m2, api.BrowserAgentEvent.Name, api.BrowserAgentAct{Owner: "orch", Action: "scroll", X: &x, Y: &y, DY: 500})
 	if _, _, two := m2.browserView("orch"); len(two) != 2 || two[0].action != "click" || two[1].action != "scroll" {
 		t.Fatalf("marks %+v, want the click then the scroll", two)
+	}
+}
+
+func TestADownloadReachesTheWindowAsAToastNamingItsFolder(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	var heard []api.BrowserDownload
+	m.browserDownloaded = func(d api.BrowserDownload) { heard = append(heard, d) }
+	path := filepath.Join("home", "u", "Downloads", "report.csv")
+	send(m, api.BrowserDownloadEvent.Name, api.BrowserDownload{Owner: "orch", Path: path, Bytes: 12, State: api.DownloadCompleted})
+	if len(heard) != 1 || heard[0].Path != path {
+		t.Fatalf("heard %+v, want the one download", heard)
+	}
+	var opened string
+	toast := downloadToast(heard[0], func(dir string) { opened = dir })
+	dir := filepath.Join("home", "u", "Downloads")
+	if toast.Title != "Downloaded report.csv" || len(toast.Lines) != 1 || toast.Lines[0].Text != dir {
+		t.Fatalf("toast %q lines %+v", toast.Title, toast.Lines)
+	}
+	toast.Action.OnClick()
+	if opened != dir {
+		t.Fatalf("the toast's button opened %q, want %q", opened, dir)
 	}
 }

@@ -75,6 +75,7 @@ func (s *Service) Info(id string) (PageInfo, error) {
 	}
 	s.remember(sess, info.URL, info.Title)
 	s.agentActed(sess, api.BrowserAgentAct{})
+	info.Downloads = s.untold(sess)
 	return info, nil
 }
 
@@ -181,16 +182,31 @@ func (s *Service) Navigate(id, rawURL string) (Handle, error) {
 	if err != nil {
 		return Handle{}, err
 	}
-	err = runPage(func(ctx context.Context) error {
-		return sess.page.Navigate(ctx, u)
-	})
-	if err != nil {
-		s.drop(sess)
+	if err := s.goTo(sess, u); err != nil {
 		return Handle{}, err
 	}
-	s.remember(sess, u, "")
-	s.agentActed(sess, api.BrowserAgentAct{Action: "navigate", URL: u})
 	return s.handleOf(sess), nil
+}
+
+// goTo is the agent loading u in sess's page. A download leaves the page
+// where it was, so its URL is not remembered as the page's.
+func (s *Service) goTo(sess *session, u string) error {
+	var download bool
+	if err := runPage(func(ctx context.Context) error {
+		var err error
+		download, err = s.navigate(ctx, sess, u)
+		return err
+	}); err != nil {
+		s.drop(sess)
+		return err
+	}
+	if download {
+		s.touch(sess)
+	} else {
+		s.remember(sess, u, "")
+	}
+	s.agentActed(sess, api.BrowserAgentAct{Action: "navigate", URL: u})
+	return nil
 }
 
 // Reload reloads the current page.

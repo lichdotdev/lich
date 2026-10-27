@@ -238,6 +238,7 @@ tray.SetLabels(TrayLabels) None
 event appupdate-progress AppUpdateProgress
 event branch-pull-request BranchPullRequest
 event browser-agent BrowserAgentAct
+event browser-download BrowserDownload
 event browser-state BrowserState
 event browser:frame:<id> string
 event claude-profile-login ProfileLogin
@@ -322,6 +323,7 @@ BrowserHandle {
 	title string
 	owner string
 	headed bool
+	downloads,omitempty []BrowserDownload
 }
 
 SessionIDOptions {
@@ -339,6 +341,7 @@ BrowserPageInfo {
 	text string
 	interactive []BrowserInteractive
 	truncated bool
+	downloads,omitempty []BrowserDownload
 }
 
 BrowserPointOptions {
@@ -1544,6 +1547,13 @@ BrowserAgentAct {
 	y,omitempty *float64
 	dy,omitempty int
 	url,omitempty string
+}
+
+BrowserDownload {
+	owner,omitempty string
+	path string
+	bytes int64
+	state string
 }
 
 ProfileLogin {

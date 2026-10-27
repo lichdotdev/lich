@@ -6,6 +6,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/input"
@@ -30,7 +31,7 @@ type listeners struct {
 	onInfo  func(url, title string)
 }
 
-func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string)) {
+func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload)) {
 	p.listen.mu.Lock()
 	p.listen.onFrame, p.listen.onInfo = onFrame, onInfo
 	p.listen.mu.Unlock()
@@ -47,6 +48,29 @@ func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title st
 		}
 	})
 	p.keepOneTab()
+	p.watchDownloads(onDownload)
+}
+
+// watchDownloads hands on each download the page starts and each step it
+// takes, in Chrome's order: a progress report never overtakes its begin.
+func (p *chromePage) watchDownloads(onDownload func(guid string, d api.BrowserDownload)) {
+	if p.dl == nil {
+		return
+	}
+	chromedp.ListenBrowser(p.ctx, func(ev any) {
+		switch e := ev.(type) {
+		case *browser.EventDownloadWillBegin:
+			onDownload(e.GUID, p.dl.begin(e.GUID, e.SuggestedFilename))
+		case *browser.EventDownloadProgress:
+			d, ok, err := p.dl.progress(e.GUID, e.ReceivedBytes, string(e.State))
+			if err != nil {
+				slog.Warn("browser: name a finished download", "path", d.Path, "err", err)
+			}
+			if ok {
+				onDownload(e.GUID, d)
+			}
+		}
+	})
 }
 
 // keepOneTab loads, in this page, what a link or a script opens in a new tab

@@ -20,7 +20,10 @@ func (s *Service) Show(_ context.Context, opts api.SessionIDOptions) (api.Browse
 // card has not opened a window.
 func (s *Service) OpenURL(_ context.Context, opts api.BrowserOpenOptions) (api.BrowserHandle, error) {
 	h, err := s.Open(opts.ID, opts.URL)
-	return handleAPI(h), err
+	if err != nil {
+		return api.BrowserHandle{}, err
+	}
+	return s.withDownloads(handleAPI(h)), nil
 }
 
 // Read returns the page the agent is looking at.
@@ -67,6 +70,7 @@ func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
 		return api.BrowserPageInfo{}, err
 	}
 	s.remember(sess, info.URL, info.Title)
+	info.Downloads = s.downloadsAfter(sess, downloadWait)
 	return infoAPI(info), nil
 }
 
@@ -78,7 +82,19 @@ func (s *Service) Capture(_ context.Context, opts api.BrowserScreenshotOptions) 
 // Go loads a URL in this session's already-open browser.
 func (s *Service) Go(_ context.Context, opts api.BrowserOpenOptions) (api.BrowserHandle, error) {
 	h, err := s.Navigate(opts.ID, opts.URL)
-	return handleAPI(h), err
+	if err != nil {
+		return api.BrowserHandle{}, err
+	}
+	return s.withDownloads(handleAPI(h)), nil
+}
+
+// withDownloads adds to h the file its navigation downloaded, as a click's
+// answer does.
+func (s *Service) withDownloads(h api.BrowserHandle) api.BrowserHandle {
+	if sess := s.current(h.Owner); sess != nil {
+		h.Downloads = s.downloadsAfter(sess, downloadWait)
+	}
+	return h
 }
 
 // ReloadPage reloads this session's page.
@@ -124,7 +140,7 @@ func handleAPI(h Handle) api.BrowserHandle {
 }
 
 func infoAPI(p PageInfo) api.BrowserPageInfo {
-	out := api.BrowserPageInfo{URL: p.URL, Title: p.Title, Text: p.Text, Truncated: p.Truncated}
+	out := api.BrowserPageInfo{URL: p.URL, Title: p.Title, Text: p.Text, Truncated: p.Truncated, Downloads: p.Downloads}
 	if p.Interactive == nil {
 		return out
 	}

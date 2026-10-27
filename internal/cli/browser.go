@@ -65,8 +65,7 @@ func (c *client) browserOpen(args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(c.stdout, h.URL)
-	return nil
+	return c.printHandle(h)
 }
 
 func (c *client) browserInfo(args []string) error {
@@ -190,8 +189,7 @@ func (c *client) browserNavigate(args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(c.stdout, h.URL)
-	return nil
+	return c.printHandle(h)
 }
 
 func (c *client) browserScroll(args []string) error {
@@ -292,4 +290,15 @@ func (t *targetFlags) target() api.BrowserTarget {
 		sel = *t.selector
 	}
 	return api.BrowserTarget{Index: t.index, Selector: sel, X: t.x, Y: t.y}
+}
+
+// printHandle prints where the page is, and a line for each file the load
+// downloaded.
+func (c *client) printHandle(h api.BrowserHandle) error {
+	lines := []string{h.URL}
+	for _, d := range h.Downloads {
+		lines = append(lines, downloadLine(d))
+	}
+	_, err := fmt.Fprintln(c.stdout, strings.Join(lines, "\n"))
+	return err
 }
