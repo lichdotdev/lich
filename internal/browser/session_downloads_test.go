@@ -1,6 +1,8 @@
 package browser
 
 import (
+	"context"
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -113,5 +115,37 @@ func TestClickHoldsItsAnswerForTheQuietAfterADownload(t *testing.T) {
 	}
 	if took := time.Since(start); took < s.quiet {
 		t.Fatalf("the click answered %v after its download began, before the quiet", took)
+	}
+}
+
+func TestOpenAURLThatDownloadsAnswersWithTheFileAndKeepsThePage(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com/app"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	p.navErr = errNavAborted
+	p.onNavigate = func() {
+		p.onDownload("g1", api.BrowserDownload{Path: "/dl/r.csv", Bytes: 3, State: api.DownloadCompleted})
+	}
+	for _, call := range []func(context.Context, api.BrowserOpenOptions) (api.BrowserHandle, error){s.OpenURL, s.Go} {
+		h, err := call(t.Context(), api.BrowserOpenOptions{ID: "s", URL: "https://example.com/r.csv"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(h.Downloads) != 1 || h.Downloads[0].Path != "/dl/r.csv" || h.URL != "https://example.com/app" {
+			t.Fatalf("handle %+v, want the download and the page it left alone", h)
+		}
+	}
+}
+
+func TestAnAbortedNavigationThatDownloadedNothingStaysAnError(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com/app"); err != nil {
+		t.Fatal(err)
+	}
+	launch.pages[0].navErr = errNavAborted
+	if _, err := s.OpenURL(t.Context(), api.BrowserOpenOptions{ID: "s", URL: "https://example.com/x"}); !errors.Is(err, errNavAborted) {
+		t.Fatalf("err = %v, want the abort", err)
 	}
 }

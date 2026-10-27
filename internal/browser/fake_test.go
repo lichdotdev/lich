@@ -31,13 +31,15 @@ type fakePage struct {
 	onFrame     func(string)
 	onInfo      func(url, title string)
 	onDownload  func(guid string, d api.BrowserDownload)
-	// onClick runs after a click, as what the page does in answer to it.
-	onClick   func()
-	casting   bool
-	viewports []Viewport
-	mice      []api.BrowserMouseOptions
-	mouseErr  error
-	clickErr  error
+	// onClick runs after a click, as what the page does in answer to it;
+	// onNavigate as a navigation starts.
+	onClick    func()
+	onNavigate func()
+	casting    bool
+	viewports  []Viewport
+	mice       []api.BrowserMouseOptions
+	mouseErr   error
+	clickErr   error
 	// dead is a Chrome whose process ended under the page.
 	dead      bool
 	keys      []api.BrowserKeyOptions
@@ -79,6 +81,12 @@ func (p *fakePage) Close() error {
 }
 
 func (p *fakePage) Navigate(_ context.Context, url string) error {
+	p.mu.Lock()
+	then := p.onNavigate
+	p.mu.Unlock()
+	if then != nil {
+		then()
+	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.navErr != nil {

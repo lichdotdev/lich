@@ -157,13 +157,16 @@ type BrowserTextOptions struct {
 }
 
 // BrowserHandle is one session's browser: the id later calls take, and enough
-// for a tool result to say which window it is.
+// for a tool result to say which window it is. Downloads, on an open or a
+// navigate, are what that load downloaded: a URL that answers with a file
+// saves it and leaves the page where it was.
 type BrowserHandle struct {
-	ID     string `json:"id"`
-	URL    string `json:"url"`
-	Title  string `json:"title"`
-	Owner  string `json:"owner"`
-	Headed bool   `json:"headed"`
+	ID        string            `json:"id"`
+	URL       string            `json:"url"`
+	Title     string            `json:"title"`
+	Owner     string            `json:"owner"`
+	Headed    bool              `json:"headed"`
+	Downloads []BrowserDownload `json:"downloads,omitempty"`
 }
 
 // BrowserOpenOptions loads a URL in the session's browser, creating a headless

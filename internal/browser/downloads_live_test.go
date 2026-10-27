@@ -1,6 +1,7 @@
 package browser
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -107,5 +108,47 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 			names = append(names, e.Name())
 		}
 		t.Fatalf("Downloads holds %v, want the six files and nothing else", names)
+	}
+}
+
+func TestChromeOpenAndNavigateToAFileDownloadIt(t *testing.T) {
+	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
+		t.Skip("no Chromium-family browser on this machine")
+	}
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+	t.Setenv("XDG_DOWNLOAD_DIR", filepath.Join(dir, "Downloads"))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := strings.TrimPrefix(r.URL.Path, "/")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+		fmt.Fprint(w, name)
+	}))
+	t.Cleanup(srv.Close)
+	s := newService(chromeLaunch, func(string, string) (string, error) { return t.TempDir(), nil }, time.Now, idleAfter)
+	t.Cleanup(func() {
+		if err := s.Cleanup(); err != nil {
+			t.Error(err)
+		}
+	})
+	// The first open launches the browser on the file, the second loads one
+	// in it, and the navigate a third.
+	calls := []func(context.Context, api.BrowserOpenOptions) (api.BrowserHandle, error){s.OpenURL, s.OpenURL, s.Go}
+	for i, call := range calls {
+		name := fmt.Sprintf("direct%d.csv", i)
+		h, err := call(t.Context(), api.BrowserOpenOptions{ID: "s", URL: srv.URL + "/" + name})
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		want := filepath.Join(dir, "Downloads", name)
+		if len(h.Downloads) != 1 || h.Downloads[0].Path != want || h.Downloads[0].State != api.DownloadCompleted {
+			t.Fatalf("%s: downloads %+v, want %s completed", name, h.Downloads, want)
+		}
+		if b, err := os.ReadFile(want); err != nil || string(b) != name {
+			t.Fatalf("%s holds %q (%v)", want, b, err)
+		}
+		if h.URL != "about:blank" {
+			t.Fatalf("%s: the page moved to %s", name, h.URL)
+		}
 	}
 }

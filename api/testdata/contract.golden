@@ -323,6 +323,7 @@ BrowserHandle {
 	title string
 	owner string
 	headed bool
+	downloads,omitempty []BrowserDownload
 }
 
 SessionIDOptions {

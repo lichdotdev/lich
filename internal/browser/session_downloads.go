@@ -1,6 +1,8 @@
 package browser
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -14,6 +16,10 @@ const downloadWait = 10 * time.Second
 
 // downloadPoll is how often that wait looks.
 const downloadPoll = 50 * time.Millisecond
+
+// downloadNotice bounds how long a navigation Chrome aborted waits to hear
+// whether it became a download: the two arrive in either order.
+const downloadNotice = time.Second
 
 // downloadQuiet is how long after a download begins a click or a key press
 // holds its answer. Chrome aborts a navigation the page starts within about a
@@ -107,4 +113,29 @@ func (s *Service) untold(sess *session) []api.BrowserDownload {
 	}
 	sess.downloads = kept
 	return out
+}
+
+// navigate loads u in sess's page. A URL that answers with a file is a
+// download, not a page: Chrome aborts the navigation and the page stays where
+// it was, which is a load that worked.
+func (s *Service) navigate(ctx context.Context, sess *session, u string) (download bool, err error) {
+	before := time.Now()
+	err = sess.page.Navigate(ctx, u)
+	if errors.Is(err, errNavAborted) && s.downloadSince(sess, before) {
+		return true, nil
+	}
+	return false, err
+}
+
+func (s *Service) downloadSince(sess *session, t time.Time) bool {
+	deadline := time.Now().Add(downloadNotice)
+	for {
+		s.mu.Lock()
+		began := sess.downloadBegun.After(t)
+		s.mu.Unlock()
+		if began || time.Now().After(deadline) {
+			return began
+		}
+		time.Sleep(downloadPoll)
+	}
 }

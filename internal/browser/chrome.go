@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -129,12 +130,21 @@ func (p *chromePage) Navigate(ctx context.Context, url string) error {
 		if err != nil {
 			return err
 		}
+		if errorText == abortedText {
+			return errNavAborted
+		}
 		if errorText != "" {
 			return fmt.Errorf("page load error %s", errorText)
 		}
 		return nil
 	}))
 }
+
+// abortedText is Chrome's answer to a navigation that did not load a page,
+// among them one that became a download.
+const abortedText = "net::ERR_ABORTED"
+
+var errNavAborted = errors.New("page load error " + abortedText)
 
 // navGrace is how long after an action a navigation it starts may take to
 // replace the document: until then the old one reads as complete.

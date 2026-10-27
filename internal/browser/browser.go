@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/network"
-	"github.com/lichdotdev/lich/api"
 )
 
 // idleAfter is how long a headless browser no pane shows sits unused before
@@ -121,14 +120,9 @@ func (s *Service) Open(owner, rawURL string) (Handle, error) {
 	if sess == nil {
 		return s.launchFresh(owner, u, false, true)
 	}
-	if err := runPage(func(ctx context.Context) error {
-		return sess.page.Navigate(ctx, u)
-	}); err != nil {
-		s.drop(sess)
+	if err := s.goTo(sess, u); err != nil {
 		return Handle{}, err
 	}
-	s.remember(sess, u, "")
-	s.agentActed(sess, api.BrowserAgentAct{Action: "navigate", URL: u})
 	return s.handleOf(sess), nil
 }
 
@@ -278,7 +272,13 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 				return err
 			}
 		}
-		return page.Navigate(ctx, spec.url)
+		download, err := s.navigate(ctx, sess, spec.url)
+		if download {
+			s.mu.Lock()
+			sess.url = "about:blank"
+			s.mu.Unlock()
+		}
+		return err
 	}); err != nil {
 		return Handle{}, errors.Join(err, page.Close(), os.RemoveAll(spec.dir))
 	}

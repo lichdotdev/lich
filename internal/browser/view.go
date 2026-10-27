@@ -100,7 +100,14 @@ func (s *Service) Nav(owner, action, rawURL string) error {
 		if err != nil {
 			return err
 		}
-		fn = func(p Page, ctx context.Context) error { return p.Navigate(ctx, u) }
+		sess, err := s.live(owner)
+		if err != nil {
+			return err
+		}
+		fn = func(_ Page, ctx context.Context) error {
+			_, err := s.navigate(ctx, sess, u)
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown browser action %q", action)
 	}

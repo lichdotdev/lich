@@ -996,11 +996,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Windows, even for a Windows user who moved that known folder. While one runs, a file named by Chrome's
   download id sits there; it takes its real name once complete. Chrome aborts a navigation the page starts
   within about a second of a download (`net::ERR_ABORTED`, then it reloads the page; Chromium 155, with
-  downloads on or off), so a click or key press that downloaded holds its answer 1.5 seconds; a navigation the
-  person starts in the pane, or an agent's `browser_open` right after a download the page started on its own,
-  is not held. A download still running after ten seconds is reported in progress and named again when it
-  ends. No tool lists past downloads or cancels one, nothing caps their size, and closing the browser cancels
-  one still running.
+  downloads on or off), so an agent's click, key press, open or navigate that downloaded holds its answer
+  1.5 seconds; a navigation the person starts in the pane is not held. A download still running after ten
+  seconds is reported in progress and named again when it ends. No tool lists past downloads or cancels one,
+  nothing caps their size, and closing the browser cancels one still running.
 
 ## Languages
 

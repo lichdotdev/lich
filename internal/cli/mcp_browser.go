@@ -18,7 +18,9 @@ var browserTools = []mcpTool{
 			"this session has none. It runs headless: the user sees the same page in a tab " +
 			"beside this session, which lich offers to open, so no window of its own is needed " +
 			"(headed is false, and that is expected). The URL must be http, https, or omitted " +
-			"(about:blank). file, javascript and data URLs are refused.",
+			"(about:blank). file, javascript and data URLs are refused. A URL that answers with a " +
+			"file downloads it to the user's Downloads folder and leaves the page as it was; " +
+			"downloads in the answer names its path.",
 		Schema: schema(map[string]any{
 			"url": property("string", "Page to load. Omit for about:blank."),
 		}),
@@ -137,8 +139,9 @@ var browserTools = []mcpTool{
 		},
 	},
 	{
-		Name:        "browser_navigate",
-		Description: "Load a URL in this session's already-open browser. Same allowlist as browser_open.",
+		Name: "browser_navigate",
+		Description: "Load a URL in this session's already-open browser. Same allowlist as browser_open, " +
+			"and a URL that answers with a file downloads it as browser_open does.",
 		Schema: schema(map[string]any{
 			"url": property("string", "http(s) URL, or about:blank."),
 		}, "url"),
