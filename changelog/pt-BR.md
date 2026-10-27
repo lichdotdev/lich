@@ -1,3 +1,21 @@
+## [0.80.0] - 2026-10-27
+
+### Added
+
+- O menu de um card de sessão abre um navegador para essa sessão, acima de Abrir em, em uma aba ao lado da sessão: o terminal dela de um lado e a página do outro, com o divisor, o giro e o zoom de uma divisão. O agente da sessão controla a mesma página: abrir uma URL, lê-la, clicar, digitar, pressionar uma tecla, voltar e avançar, rolar e tirar capturas de tela, por ferramentas `browser_*` ou por `lich browser`. O cursor do próprio agente mostra onde ele age: a seta do lich, na cor do card da sessão ou na do tema, com um selo com o nome do provider, desliza até cada clique, campo e rolagem na página e até Voltar, Avançar, Recarregar e o endereço na barra de ferramentas do painel, executando em sequência até as chamadas paralelas de um agente. Você clica, digita e copia e cola com a sua própria área de transferência na página enquanto ele trabalha. Cada clique e tecla que o agente envia responde com a página que ele deixou, em forma compacta, então uma sessão longa gasta cerca da metade dos tokens que gastaria lendo a página de volta como JSON. Quando o agente abre um navegador por conta própria, um toast no canto inferior direito se oferece para mostrá-lo. Abrir em janela move a página para uma janela do Chromium própria, cookies incluídos. Fechar o card fecha o navegador. O navegador é o Chrome, Edge, Chromium, Brave, Vivaldi ou Helium já instalado.
+- O rodapé mostra quanto do último turno foi lido de volta do cache de prompt, com uma barra que divide a entrada do turno em lida do cache, gravada no cache e fora do cache. Um turno depois que o cache expirou mostra 0% em âmbar, que é o turno cobrado pela tarifa cheia. Ele fica na dica da janela de contexto no Claude Code e no Codex, e na dica de custo no oh-my-pi e no opencode.
+
+### Changed
+
+- Uma sessão do opencode recebe o servidor MCP do lich ao iniciar, como o Claude Code e o Codex, então lista todas as ferramentas do lich, as `browser_*` incluídas, sob o servidor `lich` na lista de MCP do opencode. Os seus próprios servidores e qualquer `OPENCODE_CONFIG_CONTENT` que você exporte são mantidos.
+- Um agente pode mudar o modelo ou o esforço de raciocínio da sessão em que roda por `control_session`, e fechar essa sessão quando você pedir (`self` em `close_session`, `lich close --self`). As duas coisas eram recusadas de saída.
+
+### Fixed
+
+- Abrir, recarregar, voltar e avançar no navegador de uma sessão retornam assim que a página fica interativa, em vez de esperar cada imagem e rastreador terminar. Essa espera segurava a próxima ação do agente pelo tempo que o evento de carga levasse, até 30 segundos, com a página já na tela. Uma captura de tela é a área visível que está sendo observada.
+- O custo de uma sessão do Codex não cobra mais duas vezes os tokens gravados no cache de prompt. Eles eram precificados pela tarifa de gravação no cache e de novo como entrada fora do cache.
+- A roda do mouse em um terminal rola com suavidade e tão longe quanto em outros terminais. Um clique move três linhas do histórico do shell, ou de um programa em tela cheia como `less`, suavizado ao longo de alguns quadros em vez de pular cerca de oito linhas de uma vez. Um programa que captura o mouse, como nvim, Claude Code ou Codex, recebe um passo de roda por clique e rola a própria distância, onde antes recebia cerca de oito e disparava pela conversa.
+
 ## [0.79.0] - 2026-10-24
 
 > [!IMPORTANT]
