@@ -31,12 +31,7 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
 		t.Skip("no Chromium-family browser on this machine")
 	}
-	dir := t.TempDir()
-	// Every OS's home, so the download folder is this test's and never the
-	// machine user's.
-	t.Setenv("HOME", dir)
-	t.Setenv("USERPROFILE", dir)
-	t.Setenv("XDG_DOWNLOAD_DIR", filepath.Join(dir, "Downloads"))
+	dir := testDownloads(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if name, ok := strings.CutPrefix(r.URL.Path, "/file/"); ok {
 			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
@@ -72,7 +67,7 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := filepath.Join(dir, "Downloads", id+".csv")
+			want := filepath.Join(dir, id+".csv")
 			got := info.Downloads
 			for deadline := time.Now().Add(10 * time.Second); len(got) == 0 && time.Now().Before(deadline); {
 				// A new tab hands its URL to the page after the click returns.
@@ -98,7 +93,7 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 			}
 		})
 	}
-	entries, err := os.ReadDir(filepath.Join(dir, "Downloads"))
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,10 +110,7 @@ func TestChromeOpenAndNavigateToAFileDownloadIt(t *testing.T) {
 	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
 		t.Skip("no Chromium-family browser on this machine")
 	}
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-	t.Setenv("USERPROFILE", dir)
-	t.Setenv("XDG_DOWNLOAD_DIR", filepath.Join(dir, "Downloads"))
+	dir := testDownloads(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := strings.TrimPrefix(r.URL.Path, "/")
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
@@ -140,7 +132,7 @@ func TestChromeOpenAndNavigateToAFileDownloadIt(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-		want := filepath.Join(dir, "Downloads", name)
+		want := filepath.Join(dir, name)
 		if len(h.Downloads) != 1 || h.Downloads[0].Path != want || h.Downloads[0].State != api.DownloadCompleted {
 			t.Fatalf("%s: downloads %+v, want %s completed", name, h.Downloads, want)
 		}
@@ -151,4 +143,13 @@ func TestChromeOpenAndNavigateToAFileDownloadIt(t *testing.T) {
 			t.Fatalf("%s: the page moved to %s", name, h.URL)
 		}
 	}
+}
+
+// testDownloads is the folder Chrome saves into for this test, never the
+// machine user's Downloads.
+func testDownloads(t *testing.T) string {
+	dir := filepath.Join(t.TempDir(), "Downloads")
+	downloadFolder = func() (string, error) { return dir, nil }
+	t.Cleanup(func() { downloadFolder = downloadDir })
+	return dir
 }

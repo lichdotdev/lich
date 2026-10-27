@@ -131,7 +131,9 @@ func (s *Service) downloadSince(sess *session, t time.Time) bool {
 	deadline := time.Now().Add(downloadNotice)
 	for {
 		s.mu.Lock()
-		began := sess.downloadBegun.After(t)
+		// Not After: Windows' clock can give the navigation and the download
+		// the same instant.
+		began := !sess.downloadBegun.Before(t)
 		s.mu.Unlock()
 		if began || time.Now().After(deadline) {
 			return began

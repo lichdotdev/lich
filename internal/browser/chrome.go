@@ -75,11 +75,15 @@ type chromePage struct {
 	dl *downloads
 }
 
+// downloadFolder is downloadDir, which the live tests point at a folder of
+// their own: on Windows, Chrome would not start with USERPROFILE moved.
+var downloadFolder = downloadDir
+
 // allowDownloads saves what the page downloads into the user's Downloads
 // folder, with events. A headless Chrome denies downloads by default, and a
 // click on a download button did nothing.
 func (p *chromePage) allowDownloads() error {
-	dir, err := downloadDir()
+	dir, err := downloadFolder()
 	if err != nil {
 		return err
 	}
