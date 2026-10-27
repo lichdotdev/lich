@@ -1,5 +1,9 @@
 ## [0.80.0] - 2026-10-27
 
+> [!IMPORTANT]
+> **Quem tem um agente trabalhando numa página web: agora ele controla um navegador ao lado da sessão.** Abra
+> Navegador no menu do card da sessão e veja o cursor do agente clicar, digitar e rolar na página, enquanto você também a usa.
+
 ### Added
 
 - O menu de um card de sessão abre um navegador para essa sessão, acima de Abrir em, em uma aba ao lado da sessão: o terminal dela de um lado e a página do outro, com o divisor, o giro e o zoom de uma divisão. O agente da sessão controla a mesma página: abrir uma URL, lê-la, clicar, digitar, pressionar uma tecla, voltar e avançar, rolar e tirar capturas de tela, por ferramentas `browser_*` ou por `lich browser`. O cursor do próprio agente mostra onde ele age: a seta do lich, na cor do card da sessão ou na do tema, com um selo com o nome do provider, desliza até cada clique, campo e rolagem na página e até Voltar, Avançar, Recarregar e o endereço na barra de ferramentas do painel, executando em sequência até as chamadas paralelas de um agente. Você clica, digita e copia e cola com a sua própria área de transferência na página enquanto ele trabalha. Cada clique e tecla que o agente envia responde com a página que ele deixou, em forma compacta, então uma sessão longa gasta cerca da metade dos tokens que gastaria lendo a página de volta como JSON. Quando o agente abre um navegador por conta própria, um toast no canto inferior direito se oferece para mostrá-lo. Abrir em janela move a página para uma janela do Chromium própria, cookies incluídos. Fechar o card fecha o navegador. O navegador é o Chrome, Edge, Chromium, Brave, Vivaldi ou Helium já instalado.
