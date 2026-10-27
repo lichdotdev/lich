@@ -39,7 +39,8 @@ var browserTools = []mcpTool{
 		Description: "Read this session's current page: URL, title, the text in the viewport, and " +
 			"one line per interactive element there: index, tag, label and link. Form values are " +
 			"never included — (filled)/(checked) say that typing landed. click and press already " +
-			"answer with this, so call it only to look again without acting. Read-only.",
+			"answer with this, so call it only to look again without acting. Also names a download " +
+			"that finished since the page was last read. Read-only.",
 		Schema:   schema(map[string]any{}),
 		ReadOnly: true,
 		Run:      mcpBrowserInfo,
@@ -50,7 +51,8 @@ var browserTools = []mcpTool{
 			"CSS selector: either scrolls the element into view first. x and y are viewport " +
 			"coordinates and must be inside it. Sends a real mouse event, not element.click(). " +
 			"Answers with the page afterwards, as browser_info reads it, once a navigation the " +
-			"click started has its document.",
+			"click started has its document. A file the click downloads is saved to the user's " +
+			"Downloads folder; the answer names its path in a downloaded: line.",
 		Schema: schema(map[string]any{
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
@@ -95,7 +97,8 @@ var browserTools = []mcpTool{
 			"Backspace, Delete, Space, ArrowUp/Down/Left/Right, Home, End, PageUp, PageDown). " +
 			"Real key event, not typed text — use browser_type for that. Optional target " +
 			"focuses first, as for browser_type. Answers with the page afterwards, once a " +
-			"navigation the key started (Enter on a form) has its document.",
+			"navigation the key started (Enter on a form) has its document, and names a file it " +
+			"downloaded as browser_click does.",
 		Schema: schema(map[string]any{
 			"key":      property("string", "Named key: Enter, Tab, Escape, …"),
 			"index":    property("integer", "Index from the last browser_info."),

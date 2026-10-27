@@ -41,11 +41,13 @@ var (
 // opens and the page the agent drives are the same one. Headless until
 // someone asks for a window; headed after OpenVisible.
 type Service struct {
-	mu      sync.Mutex
-	launch  Launcher
-	mkTmp   func(dir, pattern string) (string, error)
-	now     func() time.Time
-	idle    time.Duration
+	mu     sync.Mutex
+	launch Launcher
+	mkTmp  func(dir, pattern string) (string, error)
+	now    func() time.Time
+	idle   time.Duration
+	// quiet is downloadQuiet, which the suite's fake pages do without.
+	quiet   time.Duration
 	byOwner map[string]*session
 	byID    map[string]*session
 	// owners serializes one session's launch, promotion and reuse, so a slow
@@ -68,9 +70,13 @@ type session struct {
 	// it, so the reaper leaves it alone like a headed window.
 	byAgent, watching bool
 	// agentAt is where the agent last acted, where its next scroll turns.
-	agentAt  *point
-	page     Page
-	lastUsed time.Time
+	agentAt *point
+	// downloads are the page's, until the agent has heard how each ended;
+	// downloadBegun is when the last one began.
+	downloads     []*download
+	downloadBegun time.Time
+	page          Page
+	lastUsed      time.Time
 }
 
 // New starts a service that launches the system Chromium (chromium.FindBrowser)
@@ -89,6 +95,7 @@ func newService(launch Launcher, mkTmp func(string, string) (string, error), now
 		mkTmp:   mkTmp,
 		now:     now,
 		idle:    idle,
+		quiet:   downloadQuiet,
 		byOwner: make(map[string]*session),
 		byID:    make(map[string]*session),
 		owners:  make(map[string]*sync.Mutex),
@@ -264,7 +271,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 		id: newID(), owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
 		byAgent: spec.byAgent, page: page, lastUsed: s.now(),
 	}
-	page.Listen(s.frameSink(sess), s.infoSink(sess))
+	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess))
 	if err := runPage(func(ctx context.Context) error {
 		if len(spec.cookies) > 0 {
 			if err := page.SetCookies(ctx, spec.cookies); err != nil {

@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"time"
 
+	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/network"
@@ -56,7 +58,11 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		allocCancel()
 		return nil, err
 	}
-	return &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel}, nil
+	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel}
+	if err := p.allowDownloads(); err != nil {
+		slog.Warn("browser: downloads stay off", "err", err)
+	}
+	return p, nil
 }
 
 type chromePage struct {
@@ -64,6 +70,33 @@ type chromePage struct {
 	cancel      context.CancelFunc
 	allocCancel context.CancelFunc
 	listen      listeners
+	// dl names the files the page downloads; nil when downloads are off.
+	dl *downloads
+}
+
+// allowDownloads saves what the page downloads into the user's Downloads
+// folder, with events. A headless Chrome denies downloads by default, and a
+// click on a download button did nothing.
+func (p *chromePage) allowDownloads() error {
+	dir, err := downloadDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	c := chromedp.FromContext(p.ctx)
+	err = p.run(nil, chromedp.ActionFunc(func(ctx context.Context) error {
+		return browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
+			WithDownloadPath(dir).
+			WithEventsEnabled(true).
+			Do(cdp.WithExecutor(ctx, c.Browser))
+	}))
+	if err != nil {
+		return err
+	}
+	p.dl = newDownloads(dir)
+	return nil
 }
 
 func (p *chromePage) Alive() bool { return p.ctx.Err() == nil }

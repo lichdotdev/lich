@@ -59,8 +59,25 @@ page only answers what is where (`browser.ElementAt`, `browser.Locate`); the
 outline, the pins and the note are the window's, so nothing is injected into
 the page.
 
+## Downloads
+
+A file the page downloads lands in the user's Downloads folder
+(`XDG_DOWNLOAD_DIR`, from the environment or `user-dirs.dirs`, on Linux;
+`~/Downloads` elsewhere) under the name the page suggests, made unique the way
+browsers do (`report (1).csv`): nothing already there is overwritten. Chrome
+writes it under its download id and lich renames it once it is complete. A
+click or key press that starts one answers with a `downloaded:` line, its path
+and size, after waiting up to ten seconds for it; one still running answers
+`downloading:`, and the next page read says when it ends. That answer also
+waits until 1.5 seconds after the download began, because Chrome aborts a
+navigation started sooner and reloads the page. `browser-download` tells the
+window when a file is complete, and the window shows a toast naming it with a
+button that opens its folder. The same holds in a window opened with Open in a
+window.
+
 ## Providers
 
 Claude Code, Codex and opencode receive the tools at spawn. Antigravity,
 oh-my-pi, Crush, Cursor CLI and Kiro receive them from the lich MCP server the
-plugin registers.
+plugin registers. Downloads reach all eight the same way: in the answer of the
+same tools.

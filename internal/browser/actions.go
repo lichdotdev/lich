@@ -75,6 +75,7 @@ func (s *Service) Info(id string) (PageInfo, error) {
 	}
 	s.remember(sess, info.URL, info.Title)
 	s.agentActed(sess, api.BrowserAgentAct{})
+	info.Downloads = s.untold(sess)
 	return info, nil
 }
 

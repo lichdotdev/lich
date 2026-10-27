@@ -17,6 +17,10 @@ import (
 func pageText(info api.BrowserPageInfo) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "url: %s\ntitle: %s\n", info.URL, info.Title)
+	for _, d := range info.Downloads {
+		b.WriteString(downloadLine(d))
+		b.WriteByte('\n')
+	}
 	if info.Text != "" {
 		fmt.Fprintf(&b, "text: %s\n", info.Text)
 	}
@@ -75,4 +79,27 @@ func shortHref(href string, base *url.URL) string {
 		return rest
 	}
 	return href
+}
+
+// downloadLine says where a file the page downloaded is, and how far it got.
+func downloadLine(d api.BrowserDownload) string {
+	switch d.State {
+	case api.DownloadCompleted:
+		return fmt.Sprintf("downloaded: %s (%s)", d.Path, sizeText(d.Bytes))
+	case api.DownloadInProgress:
+		return fmt.Sprintf("downloading: %s (%s so far)", d.Path, sizeText(d.Bytes))
+	default:
+		return "download canceled: " + d.Path
+	}
+}
+
+func sizeText(n int64) string {
+	switch {
+	case n < 1<<10:
+		return fmt.Sprintf("%d B", n)
+	case n < 1<<20:
+		return fmt.Sprintf("%.0f KB", float64(n)/(1<<10))
+	default:
+		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
+	}
 }

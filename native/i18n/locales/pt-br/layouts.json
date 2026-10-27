@@ -27,6 +27,8 @@
     "opened": "{label} abriu um navegador",
     "dismiss": "Dispensar",
     "open": "Abrir",
+    "downloaded": "{name} baixado",
+    "showFolder": "Abrir pasta",
     "moveBody": "Ela sai de \"{layout}\". A aba do navegador só comporta {label} e o navegador dela.",
     "pick": "Deixar notas na página",
     "pickHint": "Clique num elemento para deixar uma nota",

@@ -49,3 +49,24 @@ func TestPageTextOfAnEmptyPage(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestPageTextNamesTheDownloadsAfterTheTitle(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "https://x.test/", Title: "X", Text: "Reports", Downloads: []api.BrowserDownload{
+		{Path: "/home/u/Downloads/report.csv", Bytes: 12 * 1024, State: api.DownloadCompleted},
+		{Path: "/home/u/Downloads/big.iso", Bytes: 3 << 20, State: api.DownloadInProgress},
+		{Path: "/home/u/Downloads/gone.zip", State: api.DownloadCanceled},
+		{Path: "/home/u/Downloads/tiny.txt", Bytes: 5, State: api.DownloadCompleted},
+	}}
+	want := strings.Join([]string{
+		"url: https://x.test/",
+		"title: X",
+		"downloaded: /home/u/Downloads/report.csv (12 KB)",
+		"downloading: /home/u/Downloads/big.iso (3.0 MB so far)",
+		"download canceled: /home/u/Downloads/gone.zip",
+		"downloaded: /home/u/Downloads/tiny.txt (5 B)",
+		"text: Reports",
+	}, "\n")
+	if got := pageText(info); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+}

@@ -55,7 +55,28 @@ var (
 	// BrowserAgentEvent is emitted each time the agent acts on its page, so the
 	// pane can show that the page moved because of it, and where it clicked.
 	BrowserAgentEvent = defineEvent[BrowserAgentAct]("browser-agent")
+
+	// BrowserDownloadEvent is emitted when a file a session's page downloaded
+	// is complete on disk, so the person learns where it went.
+	BrowserDownloadEvent = defineEvent[BrowserDownload]("browser-download")
 )
+
+// Download states, Chrome's own (Browser.downloadProgress).
+const (
+	DownloadInProgress = "inProgress"
+	DownloadCompleted  = "completed"
+	DownloadCanceled   = "canceled"
+)
+
+// BrowserDownload is one file a session's page downloaded: Path is where it
+// lands in the user's Downloads folder, under the name it keeps once
+// complete; Bytes is what arrived so far.
+type BrowserDownload struct {
+	Owner string `json:"owner,omitempty"`
+	Path  string `json:"path"`
+	Bytes int64  `json:"bytes"`
+	State string `json:"state"`
+}
 
 // BrowserState is a session's browser as the window shows it. Open false means
 // it is gone; ByAgent says the agent started it rather than the window.
@@ -227,6 +248,10 @@ type BrowserPageInfo struct {
 	Text        string               `json:"text"`
 	Interactive []BrowserInteractive `json:"interactive"`
 	Truncated   bool                 `json:"truncated"`
+	// Downloads are the ones the agent has not heard of in their current
+	// state: what its last action saved, or one it saw start and that ended
+	// since.
+	Downloads []BrowserDownload `json:"downloads,omitempty"`
 }
 
 // BrowserPointOptions is a point of session ID's page, in CSS pixels.

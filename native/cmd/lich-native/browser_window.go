@@ -1,14 +1,16 @@
 package main
 
 import (
+	"path/filepath"
+
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The window's side of a session browser: the card's Browser item, and the
-// toast that offers a browser the agent opened.
+// The window's side of a session browser: the card's Browser item, the toast
+// that offers a browser the agent opened, and the one that names a download.
 
 // applyBrowser opens the browser of the card the menu was opened on.
 func (u *window) applyBrowser(act sidebarAction) {
@@ -53,6 +55,28 @@ func (u *window) offerBrowser(st api.BrowserState) {
 		Cancel:      &ui.ToastButton{Label: i18n.T("layouts.browser.dismiss")},
 		Action:      &ui.ToastButton{Label: i18n.T("layouts.browser.open"), OnClick: func() { u.openBrowser(session) }},
 	})
+}
+
+// tellDownload names a file a session's page downloaded and the folder it
+// went to, which the toast's button opens.
+func (u *window) tellDownload(d api.BrowserDownload) {
+	u.toaster.Show(downloadToast(d, func(dir string) {
+		go func() {
+			if err := u.client.OpenFolder(u.ctx, dir); err != nil {
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sessionCard.openFolderFailed", i18n.Args{"error": backend.ErrorText(err)})})
+			}
+		}()
+	}))
+}
+
+func downloadToast(d api.BrowserDownload, openFolder func(dir string)) ui.Toast {
+	dir := filepath.Dir(d.Path)
+	return ui.Toast{
+		Title:  i18n.T("layouts.browser.downloaded", i18n.Args{"name": filepath.Base(d.Path)}),
+		Icon:   icDownload,
+		Lines:  []ui.ToastLine{{Icon: icFolder, Text: dir}},
+		Action: &ui.ToastButton{Label: i18n.T("layouts.browser.showFolder"), OnClick: func() { openFolder(dir) }},
+	}
 }
 
 // browserTabOf is the id of session's browser tab, "" for none.
