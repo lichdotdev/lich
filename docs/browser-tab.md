@@ -46,6 +46,19 @@ Page info never includes form values. Screenshots are files. Click, type and
 press are real input events. `press` is named keys only. Arbitrary JavaScript
 in the page is not a tool.
 
+## Notes on the page
+
+The crosshair on the pane's toolbar stops the pointer reaching the page: the
+element under it is outlined, and a click opens a note on it. Notes wait in a
+tray floating over the bottom of the page, which never resizes for it, each
+element pinned where it stands, and Send types them into the session's prompt
+as one message: each element's label, page, a
+selector `browser_click` takes, its React component when the page is a
+development build, its markup without any field's value, and the note. The
+page only answers what is where (`browser.ElementAt`, `browser.Locate`); the
+outline, the pins and the note are the window's, so nothing is injected into
+the page.
+
 ## Providers
 
 Claude Code, Codex and opencode receive the tools at spawn. Antigravity,

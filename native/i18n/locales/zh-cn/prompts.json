@@ -24,5 +24,13 @@
   },
   "issue": {
     "head": "GitHub issue #{number}，{title}\n{url}"
+  },
+  "browserNotes": {
+    "head": {
+      "other": "[lich] 对方在你浏览器标签页的页面上留下了 {count} 条备注:"
+    },
+    "item": "{index}. {url} 上的 {label}",
+    "note": "备注: {note}",
+    "selectors": "上面每个选择器都可以直接作为 browser_click 和 browser_type 的 selector 使用。"
   }
 }

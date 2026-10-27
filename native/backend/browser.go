@@ -71,3 +71,14 @@ func (c *Client) BrowserNav(ctx context.Context, id, action, url string) error {
 	_, err := callMethod(ctx, c, api.BrowserNav, api.BrowserNavOptions{ID: id, Action: action, URL: url})
 	return err
 }
+
+// BrowserElementAt is the element under x,y of session id's page.
+func (c *Client) BrowserElementAt(ctx context.Context, id string, x, y float64) (api.BrowserElement, error) {
+	return callMethod(ctx, c, api.BrowserElementAt, api.BrowserPointOptions{ID: id, X: x, Y: y})
+}
+
+// BrowserLocate is where the elements selectors find stand in session id's
+// page, an empty box for one gone.
+func (c *Client) BrowserLocate(ctx context.Context, id string, selectors []string) ([]api.BrowserRect, error) {
+	return callMethod(ctx, c, api.BrowserLocate, api.BrowserLocateOptions{ID: id, Selectors: selectors})
+}

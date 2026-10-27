@@ -27,7 +27,22 @@
     "opened": "{label} abrió un navegador",
     "dismiss": "Descartar",
     "open": "Abrir",
-    "moveBody": "Sale de \"{layout}\". La pestaña del navegador solo admite {label} y su navegador."
+    "moveBody": "Sale de \"{layout}\". La pestaña del navegador solo admite {label} y su navegador.",
+    "pick": "Dejar notas en la página",
+    "pickHint": "Haz clic en un elemento para dejar una nota",
+    "notePlaceholder": "¿Qué debería cambiar aquí?",
+    "addNote": "Añadir nota",
+    "saveNote": "Guardar",
+    "deleteNote": "Eliminar",
+    "notes": {
+      "one": "{count} nota",
+      "other": "{count} notas"
+    },
+    "notesFor": "para {label}",
+    "clearNotes": "Borrar",
+    "sendNotes": "Enviar",
+    "noNote": "Sin nota",
+    "notesFailed": "No se pudieron enviar las notas a {label}: {error}"
   },
   "split": {
     "noRoom": "No hay espacio para otro panel aquí. Ensancha la ventana o saca antes un panel."

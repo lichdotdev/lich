@@ -60,6 +60,28 @@ func TestBrowserQueueKeepsOnlyTheLastPendingResize(t *testing.T) {
 	}
 }
 
+func TestBrowserQueueKeepsTheLastLookupOfAKindAndEveryOpen(t *testing.T) {
+	q := newBrowserQueue()
+	var sent []string
+	push := func(merge, name string) {
+		q.push(browserCall{merge: merge, send: func(context.Context) error { sent = append(sent, name); return nil }})
+	}
+	push("hover", "hover 1")
+	push("hover", "hover 2")
+	push("", "open 1")
+	push("", "open 2")
+	push("locate", "locate 1")
+	push("hover", "hover 3")
+	push("hover", "hover 4")
+	for c, ok := q.next(); ok; c, ok = q.next() {
+		_ = c.send(context.Background())
+	}
+	want := []string{"hover 2", "open 1", "open 2", "locate 1", "hover 4"}
+	if !reflect.DeepEqual(sent, want) {
+		t.Fatalf("sent %v, want %v", sent, want)
+	}
+}
+
 func TestToolbarPointsFollowTheToolbarsLayout(t *testing.T) {
 	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
 	back, fwd, reload, addr := toolbarPoint(gtx, "back", 30, 36), toolbarPoint(gtx, "forward", 30, 36), toolbarPoint(gtx, "reload", 30, 36), toolbarPoint(gtx, "navigate", 30, 36)

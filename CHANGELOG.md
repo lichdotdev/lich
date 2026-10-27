@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The crosshair on a session browser's toolbar lets you leave notes on the page for the agent. The element under the pointer is outlined and named, a click opens a note beside it, and each note pins its element with a number, following it as the page scrolls. Notes wait in a tray floating over the bottom of the page, which never resizes under you. Hovering a note there lights its element, a click edits it, and Send (or Ctrl+Enter) types them into the session as one message: which element, a selector the agent's `browser_click` takes, the React component that drew it in a development build, and your note. Ctrl+Shift+E (Cmd+Shift+E on macOS) turns the crosshair on and off, and Esc leaves it. A send the session refuses keeps the notes and says why in the tray.
+
 ## [0.80.0] - 2026-10-27
 
 > [!IMPORTANT]

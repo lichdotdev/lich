@@ -25,7 +25,21 @@
     "opened": "{label} 打开了浏览器",
     "dismiss": "忽略",
     "open": "打开",
-    "moveBody": "它将离开“{layout}”。浏览器标签页只容纳 {label} 及其浏览器。"
+    "moveBody": "它将离开“{layout}”。浏览器标签页只容纳 {label} 及其浏览器。",
+    "pick": "在页面上留下备注",
+    "pickHint": "点击一个元素来留下备注",
+    "notePlaceholder": "这里应该改成什么？",
+    "addNote": "添加备注",
+    "saveNote": "保存",
+    "deleteNote": "删除",
+    "notes": {
+      "other": "{count} 条备注"
+    },
+    "notesFor": "发给 {label}",
+    "clearNotes": "清除",
+    "sendNotes": "发送",
+    "noNote": "无备注",
+    "notesFailed": "无法把备注发送给 {label}：{error}"
   },
   "split": {
     "noRoom": "这里没有空间再放一个窗格。请加宽窗口，或先移出一个窗格。"

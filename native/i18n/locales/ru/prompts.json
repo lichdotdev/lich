@@ -30,5 +30,16 @@
   },
   "issue": {
     "head": "GitHub issue #{number}: {title}\n{url}"
+  },
+  "browserNotes": {
+    "head": {
+      "one": "[lich] Человек оставил {count} заметку на странице во вкладке браузера:",
+      "few": "[lich] Человек оставил {count} заметки на странице во вкладке браузера:",
+      "many": "[lich] Человек оставил {count} заметок на странице во вкладке браузера:",
+      "other": "[lich] Человек оставил {count} заметки на странице во вкладке браузера:"
+    },
+    "item": "{index}. {label} на {url}",
+    "note": "Заметка: {note}",
+    "selectors": "Каждый селектор выше подходит как selector для browser_click и browser_type."
   }
 }

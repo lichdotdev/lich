@@ -970,15 +970,26 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
   whose page reaches the session's browser tab as a JPEG screencast over `/events`, at the pace the window
   takes frames. The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
-  has no DevTools, shows the arrow whatever cursor the page asks for, does not copy the page's selection to
-  the system clipboard (paste works), loads what the page opens in a new tab or window in the page itself, and leaves downloads and the page's own dialogs out; Open in
+  has no DevTools, shows the arrow whatever cursor the page asks for, loads what the page opens in a new tab or window in the page itself, and leaves downloads and the page's own dialogs out; Open in
   a window moves the page to a real Chromium window for those, reopening it on the same profile with every
   cookie, since chromedp cannot show a headless process in place. A half-filled form or sessionStorage is
   lost on that move. Closing the card, or the session's process ending, closes the browser; closing that
   window does not close the session. A headless browser no pane shows and no one used for five minutes is
   closed; one a pane shows, or a window, never is. It loads only http, https and about:blank. Page info never
   includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
-  not a sandbox: the page runs as the user, in an ephemeral profile.
+  not a sandbox: the page runs as the user, in an ephemeral profile. Chromium needs its own sandbox, and on
+  Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
+  as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
+  sandbox!", which the agent reads as the browser's error.
+- **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
+  `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
+  element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a
+  selector picked inside an open shadow root finds it again only from that root, where `browser_click` does
+  not look. The React component comes from the page's fiber, there only in a development build, and its file
+  and line from `_debugSource`, which React 19 dropped. Pins follow their elements by looking them up again
+  every 400 ms while notes wait, and every 30 ms for a moment after the wheel turns, so an element the page
+  moves on its own is outlined late. Notes not sent yet
+  live in the window: closing it, or the browser, loses them.
 
 ## Languages
 

@@ -35,6 +35,11 @@ var (
 	// copies to the system clipboard: the headless browser's own clipboard
 	// is not the person's.
 	BrowserSelection = define[SessionIDOptions, string]("browser.Selection")
+	// BrowserElementAt is the element under a point of the page, for a note
+	// the person leaves on it; BrowserLocate is where noted elements stand
+	// now, after the page scrolled or changed.
+	BrowserElementAt = define[BrowserPointOptions, BrowserElement]("browser.ElementAt")
+	BrowserLocate    = define[BrowserLocateOptions, []BrowserRect]("browser.Locate")
 )
 
 var (
@@ -222,4 +227,34 @@ type BrowserPageInfo struct {
 	Text        string               `json:"text"`
 	Interactive []BrowserInteractive `json:"interactive"`
 	Truncated   bool                 `json:"truncated"`
+}
+
+// BrowserPointOptions is a point of session ID's page, in CSS pixels.
+type BrowserPointOptions struct {
+	ID string  `json:"id"`
+	X  float64 `json:"x"`
+	Y  float64 `json:"y"`
+}
+
+// BrowserElement is the element under a point, as a note on it names it.
+// Label is its tag and text (button "Buy now"), empty when the point holds
+// none; Selector finds it again, in the form browser.Click takes. Component
+// and Source are the React component that drew it and where, when the page
+// is a React development build. HTML is its markup, shortened, with no
+// field's value. URL is the page's, without query or fragment.
+type BrowserElement struct {
+	Label     string      `json:"label"`
+	Selector  string      `json:"selector"`
+	Component string      `json:"component,omitempty"`
+	Source    string      `json:"source,omitempty"`
+	HTML      string      `json:"html"`
+	URL       string      `json:"url"`
+	Box       BrowserRect `json:"box"`
+}
+
+// BrowserLocateOptions asks where the elements Selectors find stand in
+// session ID's page; one gone from the page answers an empty box.
+type BrowserLocateOptions struct {
+	ID        string   `json:"id"`
+	Selectors []string `json:"selectors"`
 }

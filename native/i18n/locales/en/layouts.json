@@ -27,7 +27,22 @@
     "opened": "{label} opened a browser",
     "dismiss": "Dismiss",
     "open": "Open",
-    "moveBody": "It leaves \"{layout}\". A browser tab holds only {label} and its browser."
+    "moveBody": "It leaves \"{layout}\". A browser tab holds only {label} and its browser.",
+    "pick": "Leave notes on the page",
+    "pickHint": "Click an element to leave a note",
+    "notePlaceholder": "What should change here?",
+    "addNote": "Add note",
+    "saveNote": "Save",
+    "deleteNote": "Delete",
+    "notes": {
+      "one": "{count} note",
+      "other": "{count} notes"
+    },
+    "notesFor": "for {label}",
+    "clearNotes": "Clear",
+    "sendNotes": "Send",
+    "noNote": "No note",
+    "notesFailed": "Could not send the notes to {label}: {error}"
   },
   "split": {
     "noRoom": "No room for another pane here. Make the window wider or take a pane out first."

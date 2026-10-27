@@ -20,10 +20,12 @@ type browserQueue struct {
 }
 
 // browserCall is one queued call: a pointer event to merge (mouse set), a
-// resize to merge (resize set), or any other call.
+// resize to merge (resize set), a lookup whose newest one is all that
+// matters (merge names its kind), or any other call.
 type browserCall struct {
 	mouse  *api.BrowserMouseOptions
 	resize bool
+	merge  string
 	send   func(context.Context) error
 }
 
@@ -34,6 +36,11 @@ func newBrowserQueue() *browserQueue {
 func (q *browserQueue) push(c browserCall) {
 	q.mu.Lock()
 	if n := len(q.calls); n > 0 && c.resize && q.calls[n-1].resize {
+		q.calls[n-1] = c
+		q.mu.Unlock()
+		return
+	}
+	if n := len(q.calls); n > 0 && c.merge != "" && q.calls[n-1].merge == c.merge {
 		q.calls[n-1] = c
 		q.mu.Unlock()
 		return

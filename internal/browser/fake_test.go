@@ -41,6 +41,10 @@ type fakePage struct {
 	texts     []string
 	settles   int
 	selection string
+	element   api.BrowserElement
+	pointedAt [2]float64
+	boxes     map[string]api.BrowserRect
+	located   [][]string
 	info      PageInfo
 	shotErr   error
 	navErr    error
@@ -306,4 +310,22 @@ func (f *fakeLauncher) launch(dir string, headed bool) (Page, error) {
 	f.headed = append(f.headed, headed)
 	f.dirs = append(f.dirs, dir)
 	return p, nil
+}
+
+func (p *fakePage) ElementAt(_ context.Context, x, y float64) (api.BrowserElement, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.pointedAt = [2]float64{x, y}
+	return p.element, nil
+}
+
+func (p *fakePage) Locate(_ context.Context, selectors []string) ([]api.BrowserRect, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.located = append(p.located, selectors)
+	out := make([]api.BrowserRect, len(selectors))
+	for i, s := range selectors {
+		out[i] = p.boxes[s]
+	}
+	return out, nil
 }
