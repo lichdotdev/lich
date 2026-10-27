@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- The context window tooltip in the footer shows how much of the last turn was read back from the prompt cache, with a bar splitting the turn's input into cached, written to the cache and uncached. A turn after the cache expired reads 0% in amber, which is the turn billed at the full rate. Claude Code and Codex only: the other agents don't record that split next to a context window.
+- The footer shows how much of the last turn was read back from the prompt cache, with a bar splitting the turn's input into cached, written to the cache and uncached. A turn after the cache expired reads 0% in amber, which is the turn billed at the full rate. It sits in the context window tooltip on Claude Code and Codex, and in the cost tooltip on oh-my-pi and opencode.
 
 ### Changed
 
@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A Codex session's cost no longer bills the tokens written to the prompt cache twice. They were priced at the cache-write rate and again as uncached input.
 - The mouse wheel in a terminal scrolls smoothly and as far as in other terminals. A notch moves three lines of the shell's history, or a full-screen program such as `less`, eased over a few frames instead of jumping some eight lines at once. A program that takes the mouse, such as nvim, Claude Code or Codex, gets one wheel step a notch and scrolls its own distance, where it used to get about eight and race through the conversation.
 
 ## [0.79.0] - 2026-10-24

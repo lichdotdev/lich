@@ -106,9 +106,10 @@ type ResumeAvailableOptions struct {
 // being priced look identical, and an empty footer reads as zero spend.
 //
 // Cache is where the last turn's input came from, and is nil whenever the
-// provider files no split of it: every provider but Claude Code and Codex, and a
+// provider files no split of it: Crush, Kiro, Cursor and Antigravity, and a
 // Claude conversation whose last event is a compaction, since the turn before it
-// no longer describes the window.
+// no longer describes the window. On oh-my-pi and opencode it rides beside the
+// cost with no window, so the footer puts it in the cost tooltip.
 type SessionUsage struct {
 	ID       string        `json:"id"`
 	Percent  int           `json:"percent"`

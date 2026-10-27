@@ -31,9 +31,11 @@ func cacheHit(c *api.SessionCache) (int, bool) {
 	return (c.Read*100 + total/2) / total, true
 }
 
-// cacheDetail is the context tooltip's body with a cache reading: the token
-// line, then the hit rate in its tone over the read / written / uncached bar.
-func cacheDetail(th *ui.Theme, tokens layout.Widget, c api.SessionCache, hit int) layout.Widget {
+// cacheDetail is a tooltip body with a cache reading under it: head (the
+// context tooltip's token line, or the cost tooltip's lines on a provider with
+// no window), then the hit rate in its tone over the read / written / uncached
+// bar.
+func cacheDetail(th *ui.Theme, head layout.Widget, c api.SessionCache, hit int) layout.Widget {
 	tone := th.ToneWait
 	if hit >= cacheWarmPercent {
 		tone = th.TonePass
@@ -42,7 +44,7 @@ func cacheDetail(th *ui.Theme, tokens layout.Widget, c api.SessionCache, hit int
 	bar := func(gtx C) D { return cacheBar(gtx, th, c) }
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = min(gtx.Dp(planMinWide), gtx.Constraints.Max.X)
-		return stack(gtx, 1, []layout.Widget{tokens, line, bar})
+		return stack(gtx, 1, []layout.Widget{head, line, bar})
 	}
 }
 

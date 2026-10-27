@@ -289,6 +289,15 @@ func (f *footer) readout(gtx C, th *ui.Theme, w *footerWidgets, s footerSlot, in
 		return footerReadoutView(gtx, th, f.root, w, r, detail, ringContent(in.usage.Percent, r.Text))
 	case "plan":
 		return footerReadoutView(gtx, th, f.root, w, r, planDetails(pop, s.Plan, in.now), glyphText(icGauge, r.Text))
+	case "cost":
+		// A provider with no window has no context tooltip, so its cache
+		// reading rides on the cost one.
+		hit, ok := cacheHit(in.usage.Cache)
+		if !ok || in.usage.Window > 0 {
+			break
+		}
+		detail := cacheDetail(pop, readoutDetail(pop, r.Detail), *in.usage.Cache, hit)
+		return footerReadoutView(gtx, th, f.root, w, r, detail, footerText(r.Text))
 	case "handsOn":
 		content := glyphText(icTimer, r.Text)
 		if in.handsOnErr != nil {

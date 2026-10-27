@@ -42,7 +42,10 @@ the card's row keeps the old id and a restart resumes the conversation the card 
 
 Cost only: `session.cost` per conversation, with no window recorded beside it, so the footer shows the figure and
 no ring. opencode files each sub-agent as a session of its own and does *not* roll it into the parent, so the read
-walks the `parent_id` chain. That is measured behaviour of opencode's schema, not a promise it made.
+walks the `parent_id` chain. That is measured behaviour of opencode's schema, not a promise it made. The cost
+tooltip also carries the newest finished assistant message's cache line, from `tokens.input`, `tokens.cache.read`
+and `tokens.cache.write` on that `message` row, whose input already leaves the cache out. A sub-agent's turns are
+its own session's and are not read.
 
 ## Plugin install
 

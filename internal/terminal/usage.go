@@ -97,6 +97,9 @@ func (s *Service) usageFrom(id string, src usageSource) (usageEvent, bool) {
 		Effort:  u.effort,
 		Cache:   u.cache,
 	}
+	if !supported {
+		event.Cache = lastTurnCache(src)
+	}
 	cost, miss, priced := s.sessionCost(id, src)
 	switch {
 	case priced:

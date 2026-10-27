@@ -110,7 +110,7 @@ mesmas coisas.
 | Recurso | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | Janela de contexto no rodapé | sim | sim | não | não | não | não | não | sim |
-| Quanto do último turno veio do cache de prompt, no tooltip da janela de contexto | sim | sim | não | não | não | não | não | não |
+| Quanto do último turno veio do cache de prompt, no rodapé | sim | sim | não | no tooltip de custo | no tooltip de custo | não | não | não |
 | O tooltip do card mostra o modelo em uso, e com qual abriu se ele mudou | sim | sim | não | não | não | não | não | sim |
 | Custo no rodapé | sim | sim | não | sim | sim | sim | não | créditos |
 | Quanto ainda resta do seu plano | sim | sim | sim | só OpenCode Go | não | não | sim | não |

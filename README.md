@@ -101,7 +101,7 @@ reads what each CLI writes down and no two of them write down the same things.
 | What you get | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
 | Context window in the footer | yes | yes | no | no | no | no | no | yes |
-| How much of the last turn came from the prompt cache, in the context window tooltip | yes | yes | no | no | no | no | no | no |
+| How much of the last turn came from the prompt cache, in the footer | yes | yes | no | in the cost tooltip | in the cost tooltip | no | no | no |
 | The card's tooltip names the model running, and the one it opened on if it changed | yes | yes | no | no | no | no | no | yes |
 | Cost in the footer | yes | yes | no | yes | yes | yes | no | credits |
 | How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no |
