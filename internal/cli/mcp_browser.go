@@ -42,9 +42,9 @@ var browserTools = []mcpTool{
 			"one line per interactive element there: index, tag, label and link. Form values are " +
 			"never included — (filled)/(checked) say that typing landed. click and press already " +
 			"answer with this, so call it only to look again without acting. Also names a download " +
-			"that finished since the page was last read. wait_for and wait_gone hold the read, up " +
-			"to 20 seconds, until that text is on the page or off it, instead of reading again in " +
-			"a loop. Read-only.",
+			"that finished, and each console error, since the page was last read. wait_for and " +
+			"wait_gone hold the read, up to 20 seconds, until that text is on the page or off it, " +
+			"instead of reading again in a loop. Read-only.",
 		Schema: schema(map[string]any{
 			"wait_for":  property("string", "Wait until this text is on the page (case-sensitive, the whole page)."),
 			"wait_gone": property("string", "Wait until this text is no longer on the page."),
@@ -59,7 +59,8 @@ var browserTools = []mcpTool{
 			"coordinates and must be inside it. Sends a real mouse event, not element.click(). " +
 			"Answers with the page afterwards, as browser_info reads it, once a navigation the " +
 			"click started has its document. A file the click downloads is saved to the user's " +
-			"Downloads folder; the answer names its path in a downloaded: line.",
+			"Downloads folder; the answer names its path in a downloaded: line. Console errors " +
+			"and uncaught exceptions since the last page answer come as console error: lines.",
 		Schema: schema(map[string]any{
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
@@ -105,7 +106,7 @@ var browserTools = []mcpTool{
 			"Real key event, not typed text — use browser_type for that. Optional target " +
 			"focuses first, as for browser_type. Answers with the page afterwards, once a " +
 			"navigation the key started (Enter on a form) has its document, and names a file it " +
-			"downloaded as browser_click does.",
+			"downloaded and console errors as browser_click does.",
 		Schema: schema(map[string]any{
 			"key":      property("string", "Named key: Enter, Tab, Escape, …"),
 			"index":    property("integer", "Index from the last browser_info."),

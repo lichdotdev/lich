@@ -77,6 +77,10 @@ type session struct {
 	// downloadBegun is when the last one began.
 	downloads     []*download
 	downloadBegun time.Time
+	// consoleErrors are the page's since the agent's last page answer, the
+	// first consoleErrorMax of them; consoleMore counts the rest.
+	consoleErrors []string
+	consoleMore   int
 	page          Page
 	lastUsed      time.Time
 }
@@ -269,7 +273,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 		id: newID(), owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
 		byAgent: spec.byAgent, page: page, lastUsed: s.now(),
 	}
-	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess))
+	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess))
 	if err := runPage(func(ctx context.Context) error {
 		if len(spec.cookies) > 0 {
 			if err := page.SetCookies(ctx, spec.cookies); err != nil {

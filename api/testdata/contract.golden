@@ -343,6 +343,8 @@ BrowserPageInfo {
 	truncated bool
 	downloads,omitempty []BrowserDownload
 	waitTimedOut,omitempty bool
+	consoleErrors,omitempty []string
+	consoleErrorsMore,omitempty int
 }
 
 BrowserPointOptions {
