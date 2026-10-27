@@ -132,8 +132,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     the default for every new session (2.1.288). The `model` and `effort` actions are the per-session route.
   - A slash command that opens a dialog (`/cost`) holds that session's later slash commands until someone
     presses Esc in its terminal; lich cannot tell such a command apart before running it.
-  - A session cannot control or ask itself: an abort would end the asking turn, a prompt or a slash command would
-    only run after it, and a question would ride the request it is waiting on.
+  - A session cannot ask itself, nor control itself past `model` and `effort`: an abort would end the asking turn,
+    a prompt or a slash command would only run after it, and a question would ride the request it is waiting on.
   - An ask knows the conversation only as of the last finished model response, cannot be cancelled (past lich's
     90 seconds the fork runs on, billed, and its answer is dropped), never reaches the session's cost, and is cut
     at 16,000 characters (2.1.289).
@@ -849,6 +849,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   but the fold (`moveCollapsed`, `native/cmd/lich-native/sidebar_prefs.go`); renaming onto a name the project
   already holds merges the two folders with no undo; two names differing only by case or a space are two
   folders; and a folder belongs to one project, since the name is scoped by `project_id`.
+- **An agent closes its own session on its word that the user asked** (`internal/spawn/close.go`): `self` on
+  `close_session` (`lich close --self`) lifts the refusal, and nothing checks that a person asked for it; the
+  tool description is the whole guard. The close kills the caller mid-call, so its answer never reaches it.
 - **An agent files by the name as written, like the window** (`internal/spawn/folders.go`): `lich file`,
   `lich rename-folder`, `lich color-folder` and their MCP tools match a folder exactly, so an agent that types `auth` beside `Auth`
   starts a second folder; the tool descriptions send it to `list_folders` first instead of folding case behind

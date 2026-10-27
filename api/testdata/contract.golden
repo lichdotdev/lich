@@ -844,6 +844,7 @@ CloseSessionOptions {
 	project string
 	worktree string
 	force bool
+	self bool
 }
 
 ClosedSession {

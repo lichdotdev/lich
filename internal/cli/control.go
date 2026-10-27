@@ -101,8 +101,8 @@ var controlTools = []mcpTool{
 			"of its slash commands, such as compact or clear. It waits up to 10 seconds (60 for a " +
 			"slash command) for the session to confirm. A result saying delivered, with an id, is " +
 			"not a failure: the command still goes through. One the session never took fails, and " +
-			"nothing ran. Claude Code sessions only, and " +
-			"never your own. model and effort change that session only; the slash commands /model " +
+			"nothing ran. Claude Code sessions only. Your own session takes model and effort, " +
+			"never the other actions. model and effort change that session only; the slash commands /model " +
 			"and /effort are refused because Claude Code would save them as the user's default for " +
 			"every new session. " +
 			"Experimental: may change outside semver.",

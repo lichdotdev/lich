@@ -655,8 +655,9 @@ var mcpTools = append([]mcpTool{
 			"that branch again resumes its conversation) or remove it. A checkout with " +
 			"uncommitted work is only removed with force, because what that discards is in " +
 			"no commit and on no remote. A checkout lich did not create is removed from the " +
-			"window only, so \"remove\" on one is refused here. You cannot close the session " +
-			"you are running in.",
+			"window only, so \"remove\" on one is refused here. The session you are running in " +
+			"closes only with self, which ends you mid-call: set it only when the user asked " +
+			"you to close this session.",
 		Schema: schema(map[string]any{
 			"session": property("string",
 				"The session to close, by the label on its card, the name it answers to or its lich id."),
@@ -668,11 +669,13 @@ var mcpTools = append([]mcpTool{
 					"checkout on disk, \"remove\" deletes it."),
 			"force": property("boolean",
 				"Remove a checkout that still has uncommitted work. Ask the user first."),
+			"self": property("boolean",
+				"Close the session you are running in. Only when the user asked for exactly that."),
 		}, "session"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
 			closed, err := callMethod(ctx, c, api.SpawnClose, spawn.CloseOptions{
 				From: c.sessionID(), Target: args.text("session"), Project: args.text("project"),
-				Worktree: args.text("worktree"), Force: args.flag("force"),
+				Worktree: args.text("worktree"), Force: args.flag("force"), Self: args.flag("self"),
 			}, openCall)
 			if err != nil {
 				return "", err

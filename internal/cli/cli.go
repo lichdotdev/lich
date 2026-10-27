@@ -894,6 +894,7 @@ func (c *client) close(args []string) error {
 	worktree := flags.String("worktree", "",
 		"what to do with the checkout when this is its last session: keep or remove")
 	force := flags.Bool("force", false, "remove a checkout that still has uncommitted work")
+	self := flags.Bool("self", false, "allow closing the session this command runs in")
 	asJSON := flags.Bool("json", false, "print the result as JSON")
 	if err := c.parse(flags, args); err != nil {
 		return err
@@ -903,7 +904,7 @@ func (c *client) close(args []string) error {
 	}
 
 	closed, err := callMethod(context.Background(), c, api.SpawnClose, spawn.CloseOptions{
-		From: c.sessionID(), Target: flags.Arg(0), Project: *project, Worktree: *worktree, Force: *force,
+		From: c.sessionID(), Target: flags.Arg(0), Project: *project, Worktree: *worktree, Force: *force, Self: *self,
 	}, openCall)
 	if err != nil {
 		return err

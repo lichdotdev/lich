@@ -98,10 +98,11 @@ var commands = []command{
 	},
 	{
 		name: "close",
-		args: "[--project <name-or-path>] [--worktree keep|remove] [--force] [--json]\n" +
-			"            <session>",
+		args: "[--project <name-or-path>] [--worktree keep|remove] [--force] [--self]\n" +
+			"            [--json] <session>",
 		about: "Close a session. Closing the last one in a worktree needs --worktree to\n" +
-			"say whether the checkout stays; removing a dirty one needs --force.",
+			"say whether the checkout stays; removing a dirty one needs --force; the\n" +
+			"session the command runs in needs --self.",
 	},
 	{
 		name: "rename",

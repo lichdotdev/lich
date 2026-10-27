@@ -92,6 +92,23 @@ func TestControlRefusesBeforeReachingTheSession(t *testing.T) {
 	}
 }
 
+// A model or an effort only changes what the next requests carry, so the turn
+// asking for it survives it.
+func TestControlSetsTheCallersOwnModelAndEffort(t *testing.T) {
+	for _, action := range []string{"model", "effort"} {
+		t.Run(action, func(t *testing.T) {
+			svc, term := newControlService(t)
+			_, err := svc.Control(context.Background(), ControlOptions{From: "s1", Target: "s1", Action: action, Value: "high"})
+			if err != nil {
+				t.Fatalf("Control: %v", err)
+			}
+			if len(term.ranOn) != 1 || term.ranOn[0] != "s1" {
+				t.Fatalf("ran on %v, want the caller s1", term.ranOn)
+			}
+		})
+	}
+}
+
 func TestControlReachesASessionByItsID(t *testing.T) {
 	svc, term := newControlService(t)
 	got, err := svc.Control(context.Background(), ControlOptions{From: "s1", Target: "s2", Action: "abort"})

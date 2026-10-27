@@ -57,9 +57,10 @@ func (s *Service) Close(ctx context.Context, opts CloseOptions) (Closed, error) 
 	if err != nil {
 		return Closed{}, err
 	}
-	if found.session.ID == fromID {
+	if found.session.ID == fromID && !opts.Self {
 		return Closed{}, fmt.Errorf(
-			"%q is this session — closing it would take down the agent asking for it", target,
+			"%q is this session — closing it would take down the agent asking for it. "+
+				"Close it with self only if the user asked for exactly that", target,
 		)
 	}
 

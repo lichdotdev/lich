@@ -55,10 +55,9 @@ func (s *Service) Control(ctx context.Context, opts ControlOptions) (Controlled,
 	if err != nil {
 		return Controlled{}, err
 	}
-	// Refused for model and effort too, which would work: nobody asked for
-	// them, and allowing them would need a target that defaults to the caller,
-	// since list_sessions never shows an agent its own label.
-	if found.session.ID == fromID {
+	// model and effort are the exception: they only change what the session's
+	// next requests carry, which the asking turn survives.
+	if found.session.ID == fromID && action != terminal.ModModel && action != terminal.ModEffort {
 		return Controlled{}, fmt.Errorf(
 			"%q is this session, and a session cannot control itself: an abort would end the "+
 				"turn asking for it, and a prompt or a slash command would only run once that "+

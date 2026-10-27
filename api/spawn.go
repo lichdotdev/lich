@@ -112,6 +112,7 @@ type CloseSessionOptions struct {
 	Project  string `json:"project"`
 	Worktree string `json:"worktree"`
 	Force    bool   `json:"force"`
+	Self     bool   `json:"self"`
 }
 
 // ClosedSession is what a caller is told about the session it closed.

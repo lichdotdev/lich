@@ -125,6 +125,19 @@ func TestCloseRefusesTheSessionItWasAskedFrom(t *testing.T) {
 	}
 }
 
+// self is the user's say-so, relayed by the agent, to close the session it
+// runs in.
+func TestCloseTakesDownTheCallerWhenToldSelf(t *testing.T) {
+	svc, sessions, _, term, _ := closer(t)
+
+	if _, err := svc.Close(t.Context(), CloseOptions{From: "s2", Target: "shared-a", Self: true}); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	if len(sessions.parked) != 1 || sessions.parked[0].sessionID != "s2" || len(term.closed) == 0 {
+		t.Errorf("parked = %+v, closed = %v, want s2 parked and its terminal closed", sessions.parked, term.closed)
+	}
+}
+
 func TestCloseKeepingAWorktreeParksTheSession(t *testing.T) {
 	svc, sessions, worktrees, _, _ := closer(t)
 
