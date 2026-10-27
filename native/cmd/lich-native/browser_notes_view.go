@@ -89,7 +89,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 		ring := noteRing(gtx, cssRect(note.box, scale))
 		if i == lit {
 			ringFill(gtx, ring, withAlpha(notePick, 0x1a))
-			dashedRing(gtx, ring, notePick, 1.5, true)
+			dashedRing(gtx, ring, notePick, 1.5, !n.open)
 		} else {
 			ringFill(gtx, ring, withAlpha(notePick, 0x0d))
 			dashedRing(gtx, ring, notePick, 1.5, false)
@@ -98,7 +98,9 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 	if n.open && n.editing < 0 {
 		ring := noteRing(gtx, cssRect(n.draftBox(), scale))
 		ringFill(gtx, ring, withAlpha(notePick, 0x1a))
-		dashedRing(gtx, ring, notePick, 1.5, true)
+		// Still while the note is written: the pick is made, and redrawing the
+		// window each frame for it cost a third of a core (measured 2026-10-27).
+		dashedRing(gtx, ring, notePick, 1.5, false)
 	}
 	if n.picking && !n.open && n.hover.Label != "" {
 		ring := noteRing(gtx, cssRect(n.hover.Box, scale))

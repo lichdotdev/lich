@@ -23,6 +23,10 @@ var (
 	noteDash       = unit.Dp(5)
 	// noteMarch is how long the dashes take to move one dash and gap along.
 	noteMarch = 600 * time.Millisecond
+	// noteMarchFrame paces the march at 20 frames a second: every frame of it
+	// redraws the whole window, which at the display's rate cost 30 to 60% of
+	// a core (measured 2026-10-27).
+	noteMarchFrame = 50 * time.Millisecond
 )
 
 // noteRing is the ring around the element at r.
@@ -43,7 +47,7 @@ func dashedRing(gtx C, ring image.Rectangle, c color.NRGBA, width unit.Dp, march
 	if marching {
 		cycle := gtx.Now.UnixNano() % int64(noteMarch)
 		phase = 2 * dash * float32(cycle) / float32(noteMarch)
-		gtx.Execute(op.InvalidateCmd{})
+		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(noteMarchFrame)})
 	}
 	rr := roundedRect{min: f32.Pt(float32(ring.Min.X), float32(ring.Min.Y)), max: f32.Pt(float32(ring.Max.X), float32(ring.Max.Y)), radius: float32(gtx.Dp(noteRingRadius))}
 	w := float32(gtx.Dp(width))
