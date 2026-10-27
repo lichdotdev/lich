@@ -44,6 +44,7 @@
   "footerSession": {
     "contextWindow": "コンテキストウィンドウ",
     "contextTokens": "{tokens} / {window} トークン",
+    "cacheHit": "キャッシュ: ヒット率 {percent}%",
     "costUnavailable": "コストは取得できません",
     "sessionCost": "セッションのコスト",
     "costOfBudget": "予算 {budget} のうち {cost}",

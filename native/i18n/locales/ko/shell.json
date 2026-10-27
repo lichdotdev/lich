@@ -44,6 +44,7 @@
   "footerSession": {
     "contextWindow": "컨텍스트 창",
     "contextTokens": "{tokens} / {window} 토큰",
+    "cacheHit": "캐시: 적중률 {percent}%",
     "costUnavailable": "비용 정보 없음",
     "sessionCost": "세션 비용",
     "costOfBudget": "예산 {budget} 중 {cost}",

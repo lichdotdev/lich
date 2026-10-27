@@ -283,6 +283,9 @@ func (f *footer) readout(gtx C, th *ui.Theme, w *footerWidgets, s footerSlot, in
 	switch s.ID {
 	case "context":
 		detail := para(pop.Text(ui.TextXS, r.Detail[0]).Muted().Mono()).Layout
+		if hit, ok := cacheHit(in.usage.Cache); ok {
+			detail = cacheDetail(pop, detail, *in.usage.Cache, hit)
+		}
 		return footerReadoutView(gtx, th, f.root, w, r, detail, ringContent(in.usage.Percent, r.Text))
 	case "plan":
 		return footerReadoutView(gtx, th, f.root, w, r, planDetails(pop, s.Plan, in.now), glyphText(icGauge, r.Text))

@@ -43,7 +43,9 @@ two-cards-one-conversation warning arrives at once.
 ## Transcript & cost
 
 The full readout: per-turn token counts, and the window its mod reports, else one named from the model
-(`windowForModel`). The running model the card's tooltip names is the assistant's `message.model`.
+(`windowForModel`). The running model the card's tooltip names is the assistant's `message.model`. The cache line
+under the window splits the same line's input into `cache_read_input_tokens`, `cache_creation_input_tokens` and
+`input_tokens`, and goes away after a compaction until the next assistant line.
 
 A conversation lich spawned is told from a plain `claude` run by the name lich spawns it under
 (`relay.IsRosterName` on the first `custom-title`), which covers the conversations whose rows were deleted before

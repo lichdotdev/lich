@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -76,8 +77,11 @@ func TestSessionUsageReportsTheTranscriptTail(t *testing.T) {
 	if !ok {
 		t.Fatal("sessionUsage: want ok, got false")
 	}
-	want := usageEvent{ID: "s1", Percent: 6, Tokens: 64800, Window: 1_000_000, Model: modelOpus}
-	if got != want {
+	want := usageEvent{
+		ID: "s1", Percent: 6, Tokens: 64800, Window: 1_000_000, Model: modelOpus,
+		Cache: &api.SessionCache{Read: 64798, Uncached: 2},
+	}
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("sessionUsage = %+v, want %+v", got, want)
 	}
 }
@@ -94,8 +98,9 @@ func TestSessionUsageReportsCodexRollout(t *testing.T) {
 	}
 	want := usageEvent{
 		ID: "s1", Percent: 25, Tokens: 65111, Window: 258400, Model: "gpt-5.6-sol", Effort: "xhigh",
+		Cache: &api.SessionCache{},
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("sessionUsage = %+v, want %+v", got, want)
 	}
 }

@@ -165,7 +165,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   mind, the footer is silently wrong in one direction or the other, with nothing on screen saying so. Their usage
   event carries a zero window, which is what tells the footer to drop the ring (`contextReadout`,
   `native/cmd/lich-native/footer_readout.go`). A zero from any of the three is an answer and not a gap: it is what
-  they record for a free model and for a subscription. Codex is the one provider lich prices itself, from a slice of
+  they record for a free model and for a subscription. The cache line in the context tooltip (`api.SessionCache`) is Claude Code's
+  and Codex's alone: opencode and oh-my-pi record a cache split but no window, so there is no context tooltip to
+  put it in; Crush folds its cache counts into the prompt and completion totals; Kiro files every token count as
+  zero; Cursor and Antigravity have no usage reader. Codex is the one provider lich prices itself, from a slice of
   rates baked into the release (`internal/pricing/prices.json`), so an offline Codex session shows a cost at the
   rate that shipped — **stale by however long it has been since the release**, until the refresh
   (`internal/pricing/pricing.go`) lands and overrides it. What is left with no price at all is a model newer than

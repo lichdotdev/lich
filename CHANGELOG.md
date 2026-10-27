@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The context window tooltip in the footer shows how much of the last turn was read back from the prompt cache, with a bar splitting the turn's input into cached, written to the cache and uncached. A turn after the cache expired reads 0% in amber, which is the turn billed at the full rate. Claude Code and Codex only: the other agents don't record that split next to a context window.
+
 ### Changed
 
 - An agent can change the model or the reasoning effort of the session it runs in through `control_session`, and close that session when you ask it to (`self` on `close_session`, `lich close --self`). Both used to be refused outright.

@@ -95,6 +95,7 @@ func (s *Service) usageFrom(id string, src usageSource) (usageEvent, bool) {
 		Window:  u.window,
 		Model:   u.model,
 		Effort:  u.effort,
+		Cache:   u.cache,
 	}
 	cost, miss, priced := s.sessionCost(id, src)
 	switch {

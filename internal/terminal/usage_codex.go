@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/pricing"
 )
 
@@ -34,6 +35,7 @@ type codexRolloutEntry struct {
 		Effort string `json:"effort"`
 		Info   *struct {
 			Last *struct {
+				codexTokenUsage
 				Total int `json:"total_tokens"`
 			} `json:"last_token_usage"`
 			Total  *codexTokenUsage `json:"total_token_usage"`
@@ -110,6 +112,7 @@ func consumeCodexUsageLine(line []byte, usage *contextUsage, haveTokens *bool) b
 		usage.tokens = entry.Payload.Info.Last.Total
 		usage.window = entry.Payload.Info.Window
 		usage.percent = min(usage.tokens*100/usage.window, 100)
+		usage.cache = codexCache(entry.Payload.Info.Last.codexTokenUsage)
 		*haveTokens = true
 		return false
 	}
@@ -119,6 +122,14 @@ func consumeCodexUsageLine(line []byte, usage *contextUsage, haveTokens *bool) b
 	usage.model = entry.Payload.Model
 	usage.effort = entry.Payload.Effort
 	return true
+}
+
+// codexCache splits a turn's input the way the cost readout prices it
+// (codexCostScan): cached_input_tokens is part of input_tokens and
+// cache_write_input_tokens is not. The second half is that reading's, not a
+// measurement: every rollout on hand files the write as zero.
+func codexCache(t codexTokenUsage) *api.SessionCache {
+	return &api.SessionCache{Read: t.Cached, Write: t.CacheWrite, Uncached: max(t.Input-t.Cached, 0)}
 }
 
 // codexTranscriptCost prices a Codex rollout's running total in USD. Unlike a

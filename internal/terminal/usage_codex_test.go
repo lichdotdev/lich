@@ -3,8 +3,11 @@ package terminal
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 func TestScanCodexContextUsage(t *testing.T) {
@@ -13,7 +16,7 @@ func TestScanCodexContextUsage(t *testing.T) {
 	body := `{"type":"turn_context","payload":{"model":"gpt-5.6-sol","effort":"high"}}` + "\n" +
 		`{"type":"response_item","payload":{"text":"` + strings.Repeat("x", 2*int(codexScanBlockBytes)) + `"}}` + "\n" +
 		`not json` + "\n" +
-		`{"type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"total_tokens":300000},"model_context_window":258400}}}` + "\n" +
+		`{"type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":299000,"cached_input_tokens":250000,"cache_write_input_tokens":0,"output_tokens":1000,"total_tokens":300000},"model_context_window":258400}}}` + "\n" +
 		`{"type":"event_msg","payload":{"type":"token_count","info":null}}` + "\n"
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
@@ -25,9 +28,24 @@ func TestScanCodexContextUsage(t *testing.T) {
 	}
 	want := contextUsage{
 		tokens: 300000, percent: 100, window: 258400, model: "gpt-5.6-sol", effort: "high",
+		cache: &api.SessionCache{Read: 250000, Write: 0, Uncached: 49000},
 	}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("usage = %+v, want %+v", got, want)
+	}
+}
+
+// A cache write is read as outside input_tokens, the way the cost readout
+// prices it, so it does not come off the uncached share.
+func TestCodexCacheSplit(t *testing.T) {
+	t.Parallel()
+	got := codexCache(codexTokenUsage{Input: 1000, Cached: 600, CacheWrite: 300})
+	want := &api.SessionCache{Read: 600, Write: 300, Uncached: 400}
+	if *got != *want {
+		t.Errorf("cache = %+v, want %+v", *got, *want)
+	}
+	if got := codexCache(codexTokenUsage{Input: 10, Cached: 20}); got.Uncached != 0 {
+		t.Errorf("cached past input: uncached = %d, want 0", got.Uncached)
 	}
 }
 

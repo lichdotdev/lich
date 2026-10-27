@@ -104,15 +104,29 @@ type ResumeAvailableOptions struct {
 // off, which is not a failure but the design above, and for a miss the next turn
 // heals. Without it a session that cannot be priced and a session that is not
 // being priced look identical, and an empty footer reads as zero spend.
+//
+// Cache is where the last turn's input came from, and is nil whenever the
+// provider files no split of it: every provider but Claude Code and Codex, and a
+// Claude conversation whose last event is a compaction, since the turn before it
+// no longer describes the window.
 type SessionUsage struct {
-	ID       string   `json:"id"`
-	Percent  int      `json:"percent"`
-	Tokens   int      `json:"tokens"`
-	Window   int      `json:"window"`
-	Model    string   `json:"model"`
-	Effort   string   `json:"effort"`
-	CostUSD  *float64 `json:"costUsd,omitempty"`
-	CostMiss string   `json:"costMiss,omitempty"`
+	ID       string        `json:"id"`
+	Percent  int           `json:"percent"`
+	Tokens   int           `json:"tokens"`
+	Window   int           `json:"window"`
+	Model    string        `json:"model"`
+	Effort   string        `json:"effort"`
+	CostUSD  *float64      `json:"costUsd,omitempty"`
+	CostMiss string        `json:"costMiss,omitempty"`
+	Cache    *SessionCache `json:"cache,omitempty"`
+}
+
+// SessionCache splits one turn's input tokens three ways: Read came from the
+// prompt cache, Write was written into it, and Uncached was neither.
+type SessionCache struct {
+	Read     int `json:"read"`
+	Write    int `json:"write"`
+	Uncached int `json:"uncached"`
 }
 
 // TurnState is what the window missed about one live session while it was not

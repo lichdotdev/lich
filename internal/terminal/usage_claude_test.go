@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -192,6 +193,24 @@ func TestParseContextUsage(t *testing.T) {
 				t.Errorf("percent = %d, want %d", got.percent, tt.wantPercent)
 			}
 		})
+	}
+}
+
+func TestParseContextUsageCache(t *testing.T) {
+	t.Parallel()
+	got, ok := parseContextUsage([]byte(assistantLine(modelOpus, 412, 118_020, 2_310) + "\n"))
+	if !ok || got.cache == nil {
+		t.Fatalf("parseContextUsage = %+v, %v; want a cache split", got, ok)
+	}
+	if want := (api.SessionCache{Read: 118_020, Write: 2_310, Uncached: 412}); *got.cache != want {
+		t.Errorf("cache = %+v, want %+v", *got.cache, want)
+	}
+
+	// The turn before a compaction describes a window that no longer exists.
+	got, ok = parseContextUsage([]byte(assistantLine(modelOpus, 2, 236_082, 0) + "\n" +
+		boundaryLine("manual", 236_084, 12_642) + "\n"))
+	if !ok || got.cache != nil {
+		t.Errorf("after a compaction: cache = %+v, ok %v; want nil", got.cache, ok)
 	}
 }
 

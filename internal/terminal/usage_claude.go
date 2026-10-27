@@ -7,6 +7,8 @@ import (
 	"os"
 	"slices"
 	"strings"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 const (
@@ -44,6 +46,7 @@ type contextUsage struct {
 	window  int
 	model   string
 	effort  string
+	cache   *api.SessionCache
 }
 
 // claudeContextUsage reads the context-window usage of a Claude conversation
@@ -135,11 +138,12 @@ func parseContextUsage(tail []byte) (contextUsage, bool) {
 			continue
 		}
 		u := entry.Message.Usage
-		tokens := u.Input + u.CacheRead + u.CacheCreate
 		if compacted >= 0 {
-			tokens = compacted
+			return usageFor(compacted, entry.Message.Model, entry.Effort), true
 		}
-		return usageFor(tokens, entry.Message.Model, entry.Effort), true
+		usage := usageFor(u.Input+u.CacheRead+u.CacheCreate, entry.Message.Model, entry.Effort)
+		usage.cache = &api.SessionCache{Read: u.CacheRead, Write: u.CacheCreate, Uncached: u.Input}
+		return usage, true
 	}
 	if compacted >= 0 {
 		// A compaction with no assistant line left in the tail to name the
