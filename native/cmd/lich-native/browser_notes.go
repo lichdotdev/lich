@@ -16,7 +16,6 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
-	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
@@ -76,7 +75,10 @@ type browserNotes struct {
 	found            chan foundElement
 	located          chan locatedNotes
 	sent             chan []*browserNote
-	nextLocate       time.Time
+	failed           chan string
+	// failure is why the last send failed, shown in the tray until the next.
+	failure    string
+	nextLocate time.Time
 	// followUntil is when the fast lookups after a scroll end.
 	followUntil time.Time
 }
@@ -97,7 +99,7 @@ type locatedNotes struct {
 }
 
 func newBrowserNotes() browserNotes {
-	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan []*browserNote, 4)}
+	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan []*browserNote, 4), failed: make(chan string, 1)}
 	n.rows.Axis = layout.Vertical
 	return n
 }
@@ -226,6 +228,8 @@ func (u *window) takeFound(gtx C, p *browserPaneUI, session string) {
 			n.applyBoxes(l)
 		case sent := <-n.sent:
 			n.delivered(sent)
+		case why := <-n.failed:
+			n.failure = why
 		default:
 			done = true
 		}
@@ -287,16 +291,16 @@ func (u *window) notesPointer(gtx C, p *browserPaneUI, session string, x, y floa
 	}
 }
 
-// notesKey takes the keys of the pick from the page: Ctrl+Shift+E turns it
-// on and off, Esc closes the note or stops the pick, and Ctrl+Enter sends
-// the notes. It reports whether it took e.
+// notesKey takes the keys of the pick from the page: Ctrl+Shift+E (Cmd on
+// macOS) turns it on and off, Esc closes the note or stops the pick, and
+// Ctrl+Enter sends the notes. It reports whether it took e.
 func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 	if e.State != key.Press {
 		return false
 	}
 	n := &p.notes
 	switch {
-	case e.Name == "E" && e.Modifiers == key.ModCtrl|key.ModShift:
+	case e.Name == "E" && e.Modifiers == key.ModShortcut|key.ModShift:
 		n.setPicking(!n.picking)
 	case e.Name == key.NameEscape && n.picking:
 		if n.open {
@@ -304,7 +308,7 @@ func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 		} else {
 			n.setPicking(false)
 		}
-	case (e.Name == key.NameReturn || e.Name == key.NameEnter) && e.Modifiers == key.ModCtrl && len(n.list) > 0:
+	case (e.Name == key.NameReturn || e.Name == key.NameEnter) && e.Modifiers == key.ModShortcut && len(n.list) > 0:
 		u.sendNotes(p, session)
 	default:
 		return false
@@ -314,16 +318,17 @@ func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 
 // sendNotes types the notes into the session's prompt as one message. They
 // leave the tray only once it is there: a send that fails keeps them, to send
-// again.
+// again, and says why in the tray rather than in a toast over the page.
 func (u *window) sendNotes(p *browserPaneUI, session string) {
 	n := &p.notes
 	notes := n.sending()
 	message := notesMessage(notes)
 	n.setPicking(false)
 	label := u.model.sessionLabel(session)
+	n.failure = ""
 	go func() {
 		if err := u.client.Submit(u.ctx, session, message); err != nil {
-			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("layouts.browser.notesFailed", i18n.Args{"label": label, "error": backend.ErrorText(err)})})
+			offer(n.failed, i18n.T("layouts.browser.notesFailed", i18n.Args{"label": label, "error": backend.ErrorText(err)}))
 		} else {
 			offer(n.sent, notes)
 		}

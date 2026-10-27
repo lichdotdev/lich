@@ -16,9 +16,11 @@ import (
 // elementScript reads the element under a point: a selector that finds it
 // again (an id, or up to two classes that are not a CSS-in-JS hash, with
 // :nth-of-type only where a level is not yet unique), a label, the React
-// component that drew it when the page is a development build, and its
-// markup with every field's value taken out. A point on the page's root
-// answers null.
+// component that drew it when the page is a development build (its file cut
+// to the project's src/, or else app/, pages/, components/ or lib/), and its
+// markup with every field's value taken out. A component name of one or two
+// letters is a production build's minifier, which tells the agent nothing. A
+// point on the page's root answers null.
 const elementScript = `((x, y) => {
 	const cut = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
 	let el = document.elementFromPoint(x, y);
@@ -54,13 +56,15 @@ const elementScript = `((x, y) => {
 	const fiber = Object.keys(el).find(k => k.startsWith('__reactFiber$'));
 	for (let f = fiber ? el[fiber] : null; f; f = f.return) {
 		if (!source && f._debugSource) {
-			source = f._debugSource.fileName.replace(/^.*?\/((src|app|pages|components|lib)\/)/, '$1') + ':' + f._debugSource.lineNumber;
+			const file = f._debugSource.fileName;
+			const root = ['/src/', '/app/', '/pages/', '/components/', '/lib/'].map(r => file.indexOf(r)).find(i => i >= 0);
+			source = (root === undefined ? file : file.slice(root + 1)) + ':' + f._debugSource.lineNumber;
 		}
 		const t = f.type;
 		if (!t || typeof t === 'string') continue;
 		const inner = t.render || t.type || t;
 		const name = t.displayName || inner.displayName || inner.name || '';
-		if (name && !/Provider|Context|Router|Boundary|^Anonymous$/.test(name)) { component = name; break; }
+		if (name.length > 2 && !/Provider|Context|Router|Boundary|^Anonymous$/.test(name)) { component = name; break; }
 	}
 	const copy = el.cloneNode(true);
 	for (const n of [copy, ...copy.querySelectorAll('*')]) {

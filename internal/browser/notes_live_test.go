@@ -123,3 +123,46 @@ func TestChromeLocateAnswersAnEmptyBoxForAnElementGone(t *testing.T) {
 		t.Fatalf("box of an invalid selector = %+v", got)
 	}
 }
+
+// reactProbe gives two elements a React fiber, as a development build and a
+// production build leave them: a named component with its source, and one
+// whose name the minifier shortened.
+const reactProbe = `<body style="margin:0">
+<button id="dev" style="display:block;width:200px;height:40px">Dev</button>
+<button id="prod" style="display:block;width:200px;height:40px">Prod</button>
+<script>
+function PlanCard() {}
+function at() {}
+document.getElementById('dev')['__reactFiber$x1'] = {type: 'button',
+	_debugSource: {fileName: '/home/me/app/src/PlanCard.tsx', lineNumber: 31},
+	return: {type: PlanCard, return: null}};
+document.getElementById('prod')['__reactFiber$x1'] = {type: 'button', return: {type: at, return: null}};
+</script></body>`
+
+func TestChromeElementAtNamesTheReactComponentButNotAMinifiedOne(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, reactProbe)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	dev, err := p.ElementAt(ctx, 20, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dev.Component != "PlanCard" || dev.Source != "src/PlanCard.tsx:31" {
+		t.Errorf("dev build: component %q source %q, want PlanCard at src/PlanCard.tsx:31", dev.Component, dev.Source)
+	}
+	prod, err := p.ElementAt(ctx, 20, 60)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if prod.Component != "" {
+		t.Errorf("production build names component %q, a minifier's name", prod.Component)
+	}
+}

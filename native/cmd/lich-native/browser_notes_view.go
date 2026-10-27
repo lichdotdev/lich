@@ -49,6 +49,10 @@ var (
 	noteRowsShown = 3
 )
 
+// noteScrollRange takes every wheel turn over the popover and the tray, so it
+// does not scroll the page under them.
+var noteScrollRange = pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}
+
 // notesTrayHeight is the tray's height for its notes; none hides it. The
 // tray floats over the page instead of taking room from it: a page that
 // shrank under each new note relaid itself out and blinked.
@@ -142,8 +146,8 @@ func (u *window) hoverTag(gtx C, r image.Rectangle, el api.BrowserElement) {
 	call.Add(gtx.Ops)
 }
 
-// notePin is note i's number as a tab on top of its element's outline, at
-// its left corner, the way DevTools labels an element; a click opens its
+// notePin is note i's number as a tab on top of its element's ring, at its
+// left, the way DevTools labels an element; a click opens its
 // note. The tab stays whole inside the page.
 func (u *window) notePin(gtx C, n *browserNotes, i int, r image.Rectangle, lit bool) {
 	note := n.list[i]
@@ -158,7 +162,8 @@ func (u *window) notePin(gtx C, n *browserNotes, i int, r image.Rectangle, lit b
 	d := note.pin.Layout(tab, func(gtx C) D { return u.noteTab(gtx, i+1, lit, true) })
 	call := macro.Stop()
 	page := gtx.Constraints.Max
-	at := image.Pt(r.Min.X, r.Min.Y-d.Size.Y)
+	// On the ring's straight top edge, past its rounded corner.
+	at := image.Pt(r.Min.X+gtx.Dp(noteRingRadius), r.Min.Y-d.Size.Y)
 	at.X = min(max(at.X, 0), page.X-d.Size.X)
 	at.Y = min(max(at.Y, 0), page.Y-d.Size.Y)
 	defer op.Offset(at).Push(gtx.Ops).Pop()
@@ -248,7 +253,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	// The popover takes the pointer from the page under it.
 	event.Op(gtx.Ops, &n.draft)
 	for {
-		if _, ok := gtx.Event(pointer.Filter{Target: &n.draft, Kinds: pointer.Press | pointer.Release | pointer.Move | pointer.Drag}); !ok {
+		if _, ok := gtx.Event(pointer.Filter{Target: &n.draft, Kinds: pointer.Press | pointer.Release | pointer.Move | pointer.Drag | pointer.Scroll, ScrollY: noteScrollRange}); !ok {
 			break
 		}
 	}
@@ -367,7 +372,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	n := &p.notes
 	th := u.theme
 	if n.clear.Clicked(gtx) {
-		n.list, n.open = nil, false
+		n.list, n.open, n.failure = nil, false, ""
 	}
 	if n.send.Clicked(gtx) && len(n.list) > 0 {
 		u.sendNotes(p, session)
@@ -404,7 +409,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	// The tray takes the pointer from the page under it.
 	event.Op(gtx.Ops, &n.rows)
 	for {
-		if _, ok := gtx.Event(pointer.Filter{Target: &n.rows, Kinds: pointer.Press | pointer.Release | pointer.Move | pointer.Drag}); !ok {
+		if _, ok := gtx.Event(pointer.Filter{Target: &n.rows, Kinds: pointer.Press | pointer.Release | pointer.Move | pointer.Drag | pointer.Scroll, ScrollY: noteScrollRange}); !ok {
 			break
 		}
 	}
@@ -429,8 +434,13 @@ func (u *window) notesTrayHead(gtx C, n *browserNotes, session string) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(th.Text(ui.TextXS, i18n.T("layouts.browser.notes", i18n.Args{"count": len(n.list)})).Weight(font.SemiBold).Layout),
 			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.TextXS, i18n.T("layouts.browser.notesFor", i18n.Args{"label": u.model.sessionLabel(session)})).Muted().Layout),
-			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+			layout.Flexed(1, func(gtx C) D {
+				if n.failure != "" {
+					return th.Text(ui.TextXS, n.failure).In(th.Destructive).Layout(gtx)
+				}
+				return th.Text(ui.TextXS, i18n.T("layouts.browser.notesFor", i18n.Args{"label": u.model.sessionLabel(session)})).Muted().Layout(gtx)
+			}),
+			ui.Gap(2),
 			layout.Rigid(func(gtx C) D {
 				clear := th.Button(&n.clear, i18n.T("layouts.browser.clearNotes"))
 				clear.Variant, clear.Size = ui.VariantGhost, ui.SizeSM
