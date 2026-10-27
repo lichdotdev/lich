@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/pricing"
 )
 
@@ -14,11 +15,11 @@ import (
 // tiny reads; lines spanning blocks are carried into the next iteration.
 const codexScanBlockBytes int64 = 64 * 1024
 
-// codexTokenUsage is one info block's total_token_usage: the running total
-// for the whole conversation, unlike a Claude transcript's per-turn counters.
-// cached_input_tokens is a subset of Input and reasoning_output_tokens a
-// subset of Output, so only the four fields a rate needs are kept — the other
-// two would double-count if added in.
+// codexTokenUsage is one info block's token counters: total_token_usage is
+// the running total for the whole conversation, unlike a Claude transcript's
+// per-turn counters, and last_token_usage the latest turn's. Both cache counters
+// are subsets of Input (codexCache) and reasoning_output_tokens a subset of
+// Output, so only the four fields a rate needs are kept.
 type codexTokenUsage struct {
 	Input      int `json:"input_tokens"`
 	Cached     int `json:"cached_input_tokens"`
@@ -34,6 +35,7 @@ type codexRolloutEntry struct {
 		Effort string `json:"effort"`
 		Info   *struct {
 			Last *struct {
+				codexTokenUsage
 				Total int `json:"total_tokens"`
 			} `json:"last_token_usage"`
 			Total  *codexTokenUsage `json:"total_token_usage"`
@@ -110,6 +112,7 @@ func consumeCodexUsageLine(line []byte, usage *contextUsage, haveTokens *bool) b
 		usage.tokens = entry.Payload.Info.Last.Total
 		usage.window = entry.Payload.Info.Window
 		usage.percent = min(usage.tokens*100/usage.window, 100)
+		usage.cache = codexCache(entry.Payload.Info.Last.codexTokenUsage)
 		*haveTokens = true
 		return false
 	}
@@ -119,6 +122,14 @@ func consumeCodexUsageLine(line []byte, usage *contextUsage, haveTokens *bool) b
 	usage.model = entry.Payload.Model
 	usage.effort = entry.Payload.Effort
 	return true
+}
+
+// codexCache splits a turn's input three ways. Codex fills cached_input_tokens
+// and cache_write_input_tokens from the Responses API's input_tokens_details,
+// so both are part of input_tokens and the uncached share is what is left
+// (codex-rs/codex-api/src/sse/responses.rs, parses_cache_write_token_usage).
+func codexCache(t codexTokenUsage) *api.SessionCache {
+	return &api.SessionCache{Read: t.Cached, Write: t.CacheWrite, Uncached: max(t.Input-t.Cached-t.CacheWrite, 0)}
 }
 
 // codexTranscriptCost prices a Codex rollout's running total in USD. Unlike a
@@ -194,12 +205,12 @@ func (c *codexCostScan) consume(line []byte) bool {
 			entry.Payload.Info == nil || entry.Payload.Info.Total == nil {
 			return false
 		}
-		t := entry.Payload.Info.Total
+		split := codexCache(*entry.Payload.Info.Total)
 		c.tokens = pricing.Tokens{
-			Input:      t.Input - t.Cached,
-			CacheRead:  t.Cached,
-			CacheWrite: t.CacheWrite,
-			Output:     t.Output,
+			Input:      split.Uncached,
+			CacheRead:  split.Read,
+			CacheWrite: split.Write,
+			Output:     entry.Payload.Info.Total.Output,
 		}
 		c.haveTokens = true
 		return false

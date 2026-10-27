@@ -29,7 +29,9 @@ two-cards-one-conversation warning arrives at the switch.
 ## Transcript & cost
 
 Cost only: a USD total on every assistant turn, and no line carries a context window, so the footer shows the
-figure and no ring. The figure is omp's own arithmetic, never re-priced here: the sum of its assistant turns, the
+figure and no ring. The cost tooltip also carries the newest assistant turn's cache line, from its
+`usage.input`, `cacheRead` and `cacheWrite`: omp takes the cache out of `input` before writing it
+(`calculateOpenAIUsageAccounting`), so the three add up to the turn's input. The figure is omp's own arithmetic, never re-priced here: the sum of its assistant turns, the
 same walk its own status line makes, so a `task` sub-agent's spend is missing from lich's figure exactly as it is
 from omp's. A turn written with no total at all withholds the session's whole number and borrows the
 `unpriced-model` marker, whose tooltip then blames a network that would not have helped. That branch has never

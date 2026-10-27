@@ -1679,6 +1679,7 @@ SessionUsage {
 	effort string
 	costUsd,omitempty *float64
 	costMiss,omitempty string
+	cache,omitempty *SessionCache
 }
 
 SessionsColored {
@@ -1888,6 +1889,12 @@ PluginProfileFailure {
 	profile string
 	name string
 	error string
+}
+
+SessionCache {
+	read int
+	write int
+	uncached int
 }
 
 BrowserRect {

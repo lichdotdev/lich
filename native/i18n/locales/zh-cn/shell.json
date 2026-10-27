@@ -44,6 +44,7 @@
   "footerSession": {
     "contextWindow": "上下文窗口",
     "contextTokens": "{tokens} / {window} 个 token",
+    "cacheHit": "缓存：命中率 {percent}%",
     "costUnavailable": "费用不可用",
     "sessionCost": "会话费用",
     "costOfBudget": "预算 {budget} 中的 {cost}",

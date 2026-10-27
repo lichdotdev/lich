@@ -95,6 +95,10 @@ func (s *Service) usageFrom(id string, src usageSource) (usageEvent, bool) {
 		Window:  u.window,
 		Model:   u.model,
 		Effort:  u.effort,
+		Cache:   u.cache,
+	}
+	if !supported {
+		event.Cache = lastTurnCache(src)
 	}
 	cost, miss, priced := s.sessionCost(id, src)
 	switch {

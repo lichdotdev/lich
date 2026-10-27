@@ -44,6 +44,7 @@
   "footerSession": {
     "contextWindow": "Контекстное окно",
     "contextTokens": "{tokens} / {window} токенов",
+    "cacheHit": "Кэш: {percent}% попаданий",
     "costUnavailable": "Стоимость недоступна",
     "sessionCost": "Стоимость сессии",
     "costOfBudget": "{cost} из бюджета {budget}",

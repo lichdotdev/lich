@@ -26,11 +26,12 @@ type sessionUsage struct {
 	Effort   string
 	CostUSD  *float64
 	CostMiss string
+	Cache    *api.SessionCache
 }
 
 // usageEvent is the session-usage payload (internal/terminal usageEvent).
-// Pointers tell a missing context field apart from a zero one; the cost
-// fields stay raw so a malformed one reads as absent, not as a bad payload.
+// Pointers tell a missing context field apart from a zero one; the cost and
+// cache fields stay raw so a malformed one reads as absent, not as a bad payload.
 type usageEvent struct {
 	ID       string          `json:"id"`
 	Percent  *int            `json:"percent"`
@@ -40,6 +41,7 @@ type usageEvent struct {
 	Effort   *string         `json:"effort"`
 	CostUSD  json.RawMessage `json:"costUsd"`
 	CostMiss json.RawMessage `json:"costMiss"`
+	Cache    json.RawMessage `json:"cache"`
 }
 
 // footerUsage keeps the last usage report of every session: retained while the
@@ -145,6 +147,10 @@ func decodeUsage(data json.RawMessage) (id string, u sessionUsage, ok bool, err 
 	var miss string
 	if json.Unmarshal(e.CostMiss, &miss) == nil && slices.Contains(costMisses, miss) {
 		u.CostMiss = miss
+	}
+	var cache *api.SessionCache
+	if json.Unmarshal(e.Cache, &cache) == nil && cache != nil && cache.Read >= 0 && cache.Write >= 0 && cache.Uncached >= 0 {
+		u.Cache = cache
 	}
 	return e.ID, u, true, nil
 }

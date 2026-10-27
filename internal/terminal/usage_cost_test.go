@@ -502,8 +502,11 @@ func codexTurnContextJSON(model string) string {
 
 // TestCodexTranscriptCostPricesTheRunningTotal is the shape a Codex rollout
 // reports: turn_context (the model) precedes the token_count line that closes
-// the turn, and cached_input_tokens is a subset of input_tokens, so only the
-// uncached share prices at the input rate — summing both would double-count.
+// the turn, and both cached_input_tokens and cache_write_input_tokens are
+// subsets of input_tokens (Codex fills them from the Responses API's
+// input_tokens_details; its parses_cache_write_token_usage test in
+// codex-rs/codex-api/src/sse/responses.rs has 40 cached + 60 written of 100
+// input), so only the rest prices at the input rate.
 func TestCodexTranscriptCostPricesTheRunningTotal(t *testing.T) {
 	t.Parallel()
 	path := writeFile(t,
@@ -514,7 +517,7 @@ func TestCodexTranscriptCostPricesTheRunningTotal(t *testing.T) {
 	if !ok {
 		t.Fatal("codexTranscriptCost: want ok")
 	}
-	want := 600*0.001 + 400*0.0005 + 25*0.002 + 10*0.01
+	want := 575*0.001 + 400*0.0005 + 25*0.002 + 10*0.01
 	if !nearly(cost, want) {
 		t.Errorf("cost = %v, want %v", cost, want)
 	}

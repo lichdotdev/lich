@@ -34,7 +34,10 @@ cards before the two-cards-one-conversation warning arrives.
 ## Transcript & cost
 
 The full readout: the window is 95% of the rollout's default or configured `model_context_window`, and the
-tokens a running `total_token_usage`. The running model the card's tooltip names is `turn_context.model`.
+tokens a running `total_token_usage`. The running model the card's tooltip names is `turn_context.model`. The
+cache line under the window reads `last_token_usage`: `cached_input_tokens` and `cache_write_input_tokens` are
+both part of `input_tokens` (Codex fills them from the Responses API's `input_tokens_details`), and the cost is
+priced from the same split.
 
 Codex is the one provider lich prices itself. `internal/pricing/prices.json` bakes a fixed slice of OpenAI rates
 beside the Claude ones, read from the same LiteLLM table the refresh (`internal/pricing/pricing.go`) reads.

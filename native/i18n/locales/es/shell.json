@@ -44,6 +44,7 @@
   "footerSession": {
     "contextWindow": "Ventana de contexto",
     "contextTokens": "{tokens} / {window} tokens",
+    "cacheHit": "Caché: {percent}% de aciertos",
     "costUnavailable": "Costo no disponible",
     "sessionCost": "Costo de la sesión",
     "costOfBudget": "{cost} de {budget} de presupuesto",

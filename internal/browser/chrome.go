@@ -27,6 +27,13 @@ const domSettle = 1500 * time.Millisecond
 // the profile a promotion reopens, short enough that a hung one is killed.
 const closeWait = 5 * time.Second
 
+// launchWait bounds how long a starting Chrome may take to print its DevTools
+// URL. chromedp's default of 20s is shorter than a cold start: on a GitHub
+// Ubuntu runner the first launch of the suite passed 20s, the second took 6s
+// and the third 1s, each before Chrome's own sandbox check, so the time goes to
+// loading the browser off a cold disk, which a slow machine pays too.
+const launchWait = 60 * time.Second
+
 // chromeLaunch starts a Chromium-family browser via CDP. ExecPath is
 // chromium.FindBrowser (system Chrome/Edge/… — never lich-shell); UserDataDir
 // is this ephemeral dir, never lich/chromium-profile. Attaching to the UI
@@ -38,7 +45,7 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		return nil, err
 	}
 	opts := append([]chromedp.ExecAllocatorOption{}, chromedp.DefaultExecAllocatorOptions[:]...)
-	opts = append(opts, chromedp.ExecPath(exe), chromedp.UserDataDir(dir))
+	opts = append(opts, chromedp.ExecPath(exe), chromedp.UserDataDir(dir), chromedp.WSURLReadTimeout(launchWait))
 	if headed {
 		opts = append(opts, chromedp.Flag("headless", false))
 	}
