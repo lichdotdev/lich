@@ -22,11 +22,12 @@ const downloadPoll = 50 * time.Millisecond
 const downloadNotice = time.Second
 
 // downloadQuiet is how long after a download begins a click or a key press
-// holds its answer. Chrome aborts a navigation the page starts within about a
-// second of a download (net::ERR_ABORTED, then it reloads the page): the
-// agent's next step failed 10 times in 10 right after an <a download>, and
-// none in 50 with this gap (Chromium 155, measured 2026-10-27).
-const downloadQuiet = 1500 * time.Millisecond
+// holds its answer. Chrome reloads the page 1.46 to 1.70 seconds after an
+// <a download> begins (24 samples, Chromium 155, measured 2026-10-27), and
+// the reload aborts a navigation the agent started before it
+// (net::ERR_ABORTED). A 1.5-second hold sat inside that spread and the next
+// navigate failed 2 times in 40; this one clears it.
+const downloadQuiet = 2500 * time.Millisecond
 
 // download is one of a session's downloads and the state the agent last
 // heard it in, "" before it heard of it.

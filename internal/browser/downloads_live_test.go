@@ -69,14 +69,18 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 			}
 			want := filepath.Join(dir, id+".csv")
 			got := info.Downloads
-			for deadline := time.Now().Add(10 * time.Second); len(got) == 0 && time.Now().Before(deadline); {
-				// A new tab hands its URL to the page after the click returns.
+			for deadline := time.Now().Add(10 * time.Second); (len(got) == 0 || got[0].State == api.DownloadInProgress) && time.Now().Before(deadline); {
+				// A new tab hands its URL to the page after the click returns,
+				// and a read names a download still running, then again once
+				// it ends.
 				time.Sleep(100 * time.Millisecond)
 				read, err := s.Read(t.Context(), api.SessionIDOptions{ID: "s"})
 				if err != nil {
 					t.Fatal(err)
 				}
-				got = read.Downloads
+				if len(read.Downloads) > 0 {
+					got = read.Downloads
+				}
 			}
 			if len(got) != 1 || got[0].Path != want || got[0].State != api.DownloadCompleted {
 				t.Fatalf("downloads %+v, want %s completed", got, want)
