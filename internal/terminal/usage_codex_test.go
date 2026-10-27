@@ -35,14 +35,18 @@ func TestScanCodexContextUsage(t *testing.T) {
 	}
 }
 
-// A cache write is read as outside input_tokens, the way the cost readout
-// prices it, so it does not come off the uncached share.
+// Both cache counters are part of input_tokens, so the uncached share is what
+// is left of it after the two.
 func TestCodexCacheSplit(t *testing.T) {
 	t.Parallel()
-	got := codexCache(codexTokenUsage{Input: 1000, Cached: 600, CacheWrite: 300})
-	want := &api.SessionCache{Read: 600, Write: 300, Uncached: 400}
+	got := codexCache(codexTokenUsage{Input: 100, Cached: 40, CacheWrite: 60})
+	want := &api.SessionCache{Read: 40, Write: 60, Uncached: 0}
 	if *got != *want {
 		t.Errorf("cache = %+v, want %+v", *got, *want)
+	}
+	got = codexCache(codexTokenUsage{Input: 1000, Cached: 400, CacheWrite: 25})
+	if got.Uncached != 575 {
+		t.Errorf("uncached = %d, want 575", got.Uncached)
 	}
 	if got := codexCache(codexTokenUsage{Input: 10, Cached: 20}); got.Uncached != 0 {
 		t.Errorf("cached past input: uncached = %d, want 0", got.Uncached)
