@@ -4,6 +4,11 @@ package browser
 // data-lich-idx so a later click/type can find the same node, and it never
 // reads a form control's value into the result.
 //
+// Each read first wipes the stamps of the one before. An element scrolled out
+// of view keeps no index, so the index the last read gave to another element
+// cannot resolve to it; an index the last read did not hand out finds nothing
+// and click/type report the page changed.
+//
 // A password input has no innerText, so an innerText || value label chain
 // hands the live credential to the agent and into the session transcript.
 // Rather than classify which fields are sensitive — type === 'password' is
@@ -51,6 +56,7 @@ const pageInfoScript = `(() => {
       attr(el, 'name')
     ).trim();
   };
+  document.querySelectorAll('[data-lich-idx]').forEach((el) => el.removeAttribute('data-lich-idx'));
   const els = [...document.querySelectorAll(sel)].filter(isVisible);
   const interactive = els.slice(0, 200).map((el, i) => {
     el.setAttribute('data-lich-idx', String(i));

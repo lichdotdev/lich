@@ -379,3 +379,47 @@ func TestChromeClickRefusesAPointOutsideTheViewport(t *testing.T) {
 		t.Fatalf("click at 400,715 in an 800x600 viewport: %v, want an error naming the viewport", err)
 	}
 }
+
+func TestChromeClickByIndexHitsTheLastReadNotAnEarlierOne(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<body style="margin:0">
+<button onclick="document.body.dataset.hit = 'top'">Top</button>
+<div style="height:3000px"></div>
+<button onclick="document.body.dataset.hit = 'bottom'">Bottom</button></body>`)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 800, H: 600, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Info(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.run(ctx, chromedp.Evaluate(`window.scrollTo(0, document.body.scrollHeight)`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	info, err := p.Info(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(info.Interactive) != 1 || info.Interactive[0].Text != "Bottom" {
+		t.Fatalf("second read listed %+v, want only Bottom", info.Interactive)
+	}
+	index := info.Interactive[0].Index
+	if _, _, err := p.Click(ctx, Target{Index: &index}); err != nil {
+		t.Fatal(err)
+	}
+	var hit string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.hit || ""`, &hit)); err != nil {
+		t.Fatal(err)
+	}
+	if hit != "bottom" {
+		t.Fatalf("index %d from the last read clicked %q, want bottom", index, hit)
+	}
+}
