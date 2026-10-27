@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -27,7 +28,10 @@ func TestChromeReadWaitsForTextThePageWritesLater(t *testing.T) {
 		fmt.Fprint(w, lateTextPage)
 	}))
 	t.Cleanup(srv.Close)
-	s := newService(chromeLaunch, func(string, string) (string, error) { return t.TempDir(), nil }, time.Now, idleAfter)
+	// The profiles' root is made before Cleanup is registered, so it is
+	// removed after Chrome exits: Windows refuses to delete a file it holds.
+	root := t.TempDir()
+	s := newService(chromeLaunch, func(_, pattern string) (string, error) { return os.MkdirTemp(root, pattern) }, time.Now, idleAfter)
 	t.Cleanup(func() {
 		if err := s.Cleanup(); err != nil {
 			t.Error(err)
