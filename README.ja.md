@@ -2,97 +2,124 @@
   <img src="docs/media/appicon.svg" alt="lich" width="88" height="88" />
   <h1>lich</h1>
   <p><a href="README.md">English</a> · <a href="README.pt-BR.md">Português (Brasil)</a> · <a href="README.es.md">Español</a> · <a href="README.zh-CN.md">简体中文</a> · <strong>日本語</strong> · <a href="README.ko.md">한국어</a> · <a href="README.ru.md">Русский</a></p>
-  <p><strong>いま使っているコーディングエージェントのための、ターミナル中心の ADE</strong></p>
-  <p>
-    プロジェクトを開いて、Claude Code、Codex、opencode などのエージェントを実際のターミナルで動かせます。
-    ワークツリー、差分、プルリクエストといった git の状態も、同じウィンドウで確認できます。
-    Electron もブラウザも使っていません。Linux、Windows、macOS のどれでも、lich は Gio で
-    描いた自前のネイティブウィンドウで開きます。
-  </p>
-  <p><a href="https://lichdotdev.github.io/lich/"><strong>lichdotdev.github.io/lich</strong></a></p>
   <p>
     <a href="https://github.com/lichdotdev/lich/releases"><img alt="Release" src="https://img.shields.io/github/v/release/lichdotdev/lich?color=4285F4&label=release" /></a>
-    <img alt="Go" src="https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white" />
-    <img alt="Window" src="https://img.shields.io/badge/window-native%20(Gio)-4285F4" />
     <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-333" />
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
+  <p>
+    <strong>コーディングエージェントを並べて、ブランチごとに動かす。</strong><br/>
+    Claude Code、Codex、opencode など、いま使っているエージェントを、それぞれ専用のワークツリーで、ひとつのウィンドウに。
+  </p>
+  <h3><a href="#インストール">lich をダウンロード</a> · <a href="https://lichdotdev.github.io/lich/index.ja.html">lichdotdev.github.io/lich</a></h3>
   <img src="docs/media/session.png" alt="1つの分割画面に並んだ4つの Claude Code セッション。それぞれ専用の git ワークツリーで動いています。サイドバーには各セッションがブランチと差分バッジ付きで並び、その下にプロジェクトで動いているサービスとプロファイルがあります。フッターにはブランチ、モデル、プランが表示されています" width="1000" />
-  <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
+  <!-- sponsor-logos: company logos go here, between the screenshot and Features -->
 </div>
 
-## なぜ lich なのか
+## 機能
 
-lich でできることは次のとおりです。
+<table>
+<tr>
+<td width="50%" valign="middle">
 
-- **手元のエージェントをそのまま使えます。** [Claude Code](https://www.anthropic.com/claude-code)、
-  [Codex](https://github.com/openai/codex)、Antigravity、
-  [opencode](https://github.com/sst/opencode)、oh-my-pi、
-  [Crush](https://github.com/charmbracelet/crush)、
-  [Cursor CLI](https://cursor.com/docs/cli)、
-  [Kiro CLI](https://kiro.dev/docs/cli/) のどれも、同じように動かせます。
-  各バイナリの場所を一度 lich に教えれば、あとは既定のプロバイダーを決めておくことも、
-  セッションごとに選ぶこともできます。セッションから lich が読み取れる情報はプロバイダーによって違い、
-  詳しくは[プロバイダー対応状況](#プロバイダー対応状況)の表にまとめています。
-- **ターミナルは実際のターミナルのままです。** PTY ベースのシェルをプロジェクトごとにいくつでも開け、
-  描画は GPU で行います。スクロールバックは検索でき、ウィンドウを閉じて開き直しても消えません。
-  開発サーバーやトンネル、`lazydocker` のようにプロジェクトで動かし続けるものは、
-  一度サービスとして保存すれば、サイドバーの下から起動・停止し、出力を読めます。
-  lich と一緒に起動させることもできます。フッターは `cd` に合わせて今のブランチを表示します。
-  Claude Code、Codex、Kiro CLI のセッションでは、使用中のモデルとコンテキストウィンドウも出ます。
-  Claude Code、Codex、Antigravity、Cursor CLI、OpenCode Go のサブスクリプションなら、
-  プランのローリングウィンドウの残りも表示します。
-  有効にすれば、費用を記録するプロバイダーではセッションで使った金額も表示します。
-- **セッション同士で仕事を頼み合えます。** 別のカードにタスクを渡すと、
-  そのカードのエージェントが答えを返してきます。どちら側でどのエージェントが動いていても同じです。
-  エージェントは、起動時に渡されるツール（Claude Code と Codex では MCP）か、
-  プラグインが追加するツールを使ってほかのセッションとやり取りします。同じ機能はすべて
-  どのシェルからでも `lich` コマンドとして使え、`--json` にも対応しています。
-  そのため、エージェントを介さずにスクリプトからセッションを操作することもできます
-  ([`docs/cli.md`](docs/cli.md))。
-- **複数のセッションを並べて見られます。** どのセッションでも、今のセッションの隣に並べて分割表示できます。
-  配置はペインの数とウィンドウの広さに合わせて lich が自動で決めます。8つのペインなら、
-  ウルトラワイドでは横に4列、ノートPCでは横に2列です。ほかのセッションに仕事を頼んだセッションからは、
-  ワンクリックで頼んだ相手をまとめた分割を作れます。分割には名前を付けられ、
-  プロジェクトごとにいくつでも作れます。サイドバーには分割ごとにブロックが表示され、
-  折りたたみ、名前の変更、解除ができます。
-- **手間なくワークツリーで作業を分けられます。** どのベースブランチからでもワークツリーを作れます。
-  lich が gitignore 対象の `.env*` ファイルをコピーし、ほかのチェックアウトもマシン上のプロセスも
-  使っていない開発サーバー用のポートを割り当てます。
-  チェックアウトの未コミットの変更から始めれば、未追跡のファイルも含めてその変更が引き継がれます。
-- **セッションをサンドボックスに閉じ込めて動かせます。** エージェントを OS のサンドボックス内で起動できます。
-  ホームディレクトリはそのプロバイダー自身の状態だけが入った新しい空のものになり、
-  書き込めるのは起動したチェックアウトだけで、それ以外はすべて読み取り専用です。ssh キーも、クラウドの認証情報も、
-  ディスク上のほかのリポジトリも、そもそも見えません。エージェントに権限確認を
-  スキップさせるなら、その分の歯止めになります。Linux では bubblewrap、macOS では `sandbox-exec` を使います。
-  ただし悪意のあるコードを防ぐための仕組みではありません。防げないことは
-  [`docs/ceilings.md`](docs/ceilings.md) にまとめています。
-- **差分は読むその場でレビューできます。** 差分パネルに、作業中の変更が
-  リアルタイムに更新されるファイルツリーと並んで表示されます。必要なら空白だけの変更を折りたため、
-  画像や PDF の変更は変更前と変更後で見比べられます。選択範囲を右クリックするとその行にコメントでき、
-  コメントはまとめて1つのプロンプトとしてセッションに貼り付けられます（送信は手動です）。
-  「コード」タブでは、チェックアウト内のファイルを閲覧し、本文を検索できます。
-- **プルリクエストもここで仕上げられます。** リポジトリのオープンなプルリクエストを一覧し、
-  専用のワークツリーにチェックアウトして、差分を読み、インラインでレビューし、
-  ベースブランチで許可されているマージ方法でマージできます。まだプルリクエストがないブランチでは、
-  **エージェントで作成** を押すと、そのブランチのセッションにプルリクエストの作成を依頼します。
-  Enter を押すまでは何も送信されません。
+### エージェントを並べて動かす
 
-ほかにも、JSON でインポートしたり git リポジトリからインストールしたりできる[テーマ](docs/themes.md)、
-名前や会話の内容からセッションにジャンプできる `Ctrl`/`Cmd`+`K` パレット、
-入力待ちのセッションを知らせるデスクトップ通知、
-lich がまったく起動しないときのための `lich rage` / `lich doctor` があります。
+セッションを分割画面に置けば、ペインの配置は lich が決めます。どのセッションが作業中で、どれがあなたの返事を待っていて、コンテキストがどれだけ残っているかが、ひと目でわかります。
 
-開発は活発に続いています。バグ報告や機能要望は
-[Issues](https://github.com/lichdotdev/lich/issues) にお願いします。各バージョンの変更点は
-[CHANGELOG.md](CHANGELOG.md) にあります。
+</td>
+<td width="50%"><img src="docs/media/wall-mixed.png" alt="1つの分割画面に並んだ Claude Code と Codex のセッション。それぞれ別のブランチで動いています" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### タスクごとのワークツリー、準備はいりません
+
+好きなベースブランチからセッションを分岐すると、lich が `.env` ファイルをコピーし、空いている開発サーバー用のポートを割り当てます。コミット前の作業も持ち込めます。
+
+</td>
+<td width="50%"><img src="docs/media/worktrees.png" alt="サイドバーに並んだセッション。それぞれ専用のブランチと差分バッジが付いています" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### 差分を読んで、行にコメントする
+
+エージェントが変更した内容をセッションの隣で読み、直したい行にコメントして、すべてのメモを1つのプロンプトとして送り返せます。
+
+</td>
+<td width="50%"><img src="docs/media/review-comments.png" alt="セッションへの送信待ちの行コメントが2つ付いた差分" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### ブラウザなしでプルリクエスト
+
+プルリクエストを開き、そのブランチのエージェントに書いてもらい、インラインでレビューして、マージするまで、同じウィンドウで完結します。
+
+</td>
+<td width="50%"><img src="docs/media/pull-request-review.png" alt="lich で開いたプルリクエスト。ファイルツリー、差分、保留中のレビューコメントが表示されています" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### 自分好みに
+
+テーマを JSON でインポートするか、git リポジトリからインストールできます。
+
+[ドキュメント →](docs/themes.md)
+
+</td>
+<td width="50%"><img src="docs/media/themes.png" alt="外観の設定画面。テーマの選択、フォント、フッターのレイアウトが表示されています" width="100%" /></td>
+</tr>
+</table>
+
+ほかにも、こんなことができます。
+
+- **仕事を任せ合うセッション。** あるエージェントが別のセッションにタスクを渡し、答えを受け取れます。シェルからも `lich` コマンドで同じことができます（[ドキュメント](docs/cli.md)）。
+- **サンドボックス内のエージェント。** ssh キーも認証情報もほかのリポジトリも見えないサンドボックスの中なら、エージェントに権限確認をスキップさせても安心です（[限界](docs/ceilings.md)）。
+- **開発サーバーをサイドバーに。** プロジェクトで動かし続けるものを保存しておけば、ワンクリックで起動・停止できます。
+- **なんでも見つかる。** `Ctrl`/`Cmd`+`K` で、名前やセッション内で話した内容からセッションにジャンプできます。
+- **出番がわかる。** セッションがあなたの入力を待っているときは、デスクトップ通知が届きます。
+
+## インストール
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
+```
+
+1行で、ディストリビューションを判別し、ダウンロードを検証して、パッケージマネージャーで lich をインストールします。
+
+| プラットフォーム | 入手方法 |
+| --- | --- |
+| **Linux** | 上記の `install.sh`、または AUR の [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`)。`zenity` と glibc 2.34 以上が必要です（Debian 12、Ubuntu 22.04、RHEL 9 以降）。 |
+| **macOS** | `brew install --cask lichdotdev/tap/lich` |
+| **Windows** | [Releases](https://github.com/lichdotdev/lich/releases) のインストーラーまたはポータブル zip、または `scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` |
+
+macOS と Windows のビルドはまだ署名されていないため、Releases からダウンロードすると
+Gatekeeper や SmartScreen の警告が出ます。Homebrew でインストールすれば Gatekeeper の確認は出ません。
+ディストリビューション別のパッケージ、Linux の tarball、quarantine 属性の外し方、
+古い Homebrew formula からのアップグレードは [INSTALL.md](INSTALL.md) にあります。
+
+## はじめに
+
+1. **プロジェクトを開きます。** タブバーの `+` を押すと、最近閉じたプロジェクトの一覧と
+   フォルダー選択ダイアログが出ます。git リポジトリを選んでください。
+2. **使うエージェントを選びます。** 初回起動時に、マシン上で見つかったエージェントが一覧されます。
+   設定 › プロバイダーで、既定のエージェントと各バイナリのパスを設定できます。
+3. **セッションを開始します。** *新規セッション* で、プロジェクト内でエージェントが開きます。
+   各チェックアウトのヘッダーにある `+` からは、好きなエージェントや通常のターミナルを、そのチェックアウトで開けます。
+4. **ワークツリーを作ります** *(任意)*。どのベースブランチからでも作成でき、
+   lich がそのワークツリーで新しいセッションを開きます。
 
 ## プロバイダー対応状況
 
-どのプロバイダーも、実際のターミナルで起動し、会話 ID で再開でき、同じサンドボックスで隔離できます。
-ほかのセッションとやり取りする手段も同じものが渡されます。違うのは、lich がセッションから何を*読み取れる*かです。
-lich は各 CLI が書き出す情報を読んでいて、何を書き出すかは CLI ごとにばらばらだからです。
+どのエージェントも、実際のターミナルで動き、会話を再開でき、サンドボックスで隔離でき、
+ほかのセッションにも届きます。違うのは、lich がセッションから何を*読み取れる*かです。
+各 CLI が記録する情報がそれぞれ異なるためです。
+
+<details>
+<summary>各エージェントの対応状況を見る</summary>
 
 | 得られるもの | Claude Code | Codex | Antigravity | opencode | oh-my-pi | Crush | Cursor CLI | Kiro CLI |
 | --- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -138,98 +165,55 @@ lich は各 CLI が書き出す情報を読んでいて、何を書き出すか�
 | 起動時に、見えないサブエージェントではなく lich セッションに作業を振り分けるよう、プロンプト言語で指示される | あり | なし | なし | なし | あり | なし | なし | なし |
 | セッションのカードが、エージェントが操作するブラウザをセッションの隣のタブに開く | あり | あり | あり | カードは開く。エージェントは `browser_*` ではなく `lich browser` を使う | あり | あり | あり | あり |
 
-「なし」はどれも意図したもので、CLI が出している情報を lich が隠しているわけではありません。
-それぞれについて何を検証したかは [`docs/ceilings.md`](docs/ceilings.md) にまとめています。
+</details>
 
-## インストール
-
-次のコマンド1行で、スクリプトがディストリビューションを判別し、チェックサムを検証したうえで、
-パッケージマネージャー経由でネイティブパッケージと依存パッケージをインストールします。
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
-```
-
-| プラットフォーム | 入手方法 | 実行時に必要なもの |
-| --- | --- | --- |
-| **Linux** | 上記の `install.sh`、または AUR の [`lich-bin`](https://aur.archlinux.org/packages/lich-bin) (`yay -S lich-bin`) | `zenity`。パッケージに同梱のウィンドウを動かすために glibc 2.34 以上も必要です（Debian 12、Ubuntu 22.04、RHEL 9 以降） |
-| **macOS** | `brew install --cask lichdotdev/tap/lich` | 不要。ウィンドウはアプリに同梱されており、Apple Silicon でも Intel でも動きます |
-| **Windows** | [Releases](https://github.com/lichdotdev/lich/releases) のインストーラーまたはポータブル zip、または Scoop：`scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json` | 不要。どちらにもウィンドウが同梱されています |
-
-ディストリビューション別のパッケージを手動で入れる方法、Linux の tarball、Windows のポータブル zip は
-[INSTALL.md](INSTALL.md) にあります。macOS と Windows のバイナリは署名されていないため、
-公証と署名に対応するまでは Gatekeeper と SmartScreen の警告が出ます。
-Homebrew でインストールすれば Gatekeeper の確認は出ませんが、
-Releases ページからダウンロードした場合は、quarantine 属性を手動で外す必要があります。
-macOS ではこの cask が `Lich.app` をインストールするので、`/Applications` にも、
-起動中の Dock にも lich のアイコンが表示されます。古い formula からアップグレードする場合は、
-先に `brew uninstall lich` を実行してください。理由は [INSTALL.md](INSTALL.md) に書いてあります。
-
-## はじめに
-
-1. lich を**インストール**して起動します。
-2. **プロジェクトを開きます。** タブバーの `+` を押すと、最近閉じたプロジェクトの一覧と
-   OS のフォルダー選択ダイアログが出るので、git リポジトリを選びます。
-3. **使うエージェントを lich に設定します。** 初回起動時に、マシン上で見つかったエージェントが一覧されます。
-   設定 › プロバイダーで、各バイナリのパスと既定のプロバイダーを設定できます。
-   プロジェクトごとに、既定に従うか別のプロバイダーを使うかも同じ画面で選べます。
-4. **セッションを開始します。** *新規セッション* で、プロジェクト内でエージェントが動くターミナルが開きます。
-   各チェックアウトのヘッダーにも `+` メニューがあり、有効なプロバイダーや通常のターミナルを
-   そのチェックアウトで直接開けます。ヘッダー自体をクリックすると、そのチェックアウトのセッションを折りたたんだり展開したりできます。
-5. **ワークツリーを作ります** *(任意)*。どのベースブランチからでも作成でき、
-   lich が準備を済ませたうえで新しいセッションが開きます。
+どの「なし」もすべて意図したもので、それぞれの裏にある計測結果は
+[`docs/ceilings.md`](docs/ceilings.md) にまとめています。
 
 ## 設定
 
-- **プロバイダー**：設定 › プロバイダーで、各プロバイダーのバイナリパスと、
-  全プロジェクト共通の既定を設定します。開いているプロジェクトの行で、その選択を上書きできます。
-  **クリア** で上書きを外せば、その後の既定の変更が自動で反映されます。
-  パスを設定していない場合、セッションはログインシェルの `PATH` で最初に見つかったそのプロバイダーのバイナリを実行します。
-  「バイナリ」ブロックにそのファイルとバージョンが表示され、
-  `PATH` 上にあるほかのバージョンも一覧されます（`lich doctor` もこれを警告します）。
-  特定のバイナリを使うには、「バイナリ」にそのパスを設定します
-  （設定名は `provider.<id>.bin`、例：`provider.codex.bin`）。
-  lich がプランの残量を読み取れるプロバイダーでは、そのセクションの先頭に残量が表示されます。
-  フッターに表示する項目は、設定 › 外観で項目をドラッグして決めます。
+- **プロバイダー**：設定 › プロバイダーで、各エージェントのバイナリと全プロジェクト共通の既定を
+  設定します。プロジェクトごとに別のものを選ぶこともできます。パスを設定していない場合、
+  lich はログインシェルの `PATH` で最初に見つかったバイナリを実行し、
+  複数のバージョンがあると `lich doctor` が警告します。
+- **フッター**：設定 › 外観で、項目をドラッグして表示する内容を決めます。
   費用はトークン単位で課金される場合にしか意味のない数値なので、初期状態では非表示です。
-- **ワークツリー**：gitignore 対象のファイルのうちどれを新しいワークツリーにコピーするかは、
-  プロジェクトのチェックアウトに置いた `.worktreeinclude` ファイルで調整できます。
+- **ワークツリー**：プロジェクトに置いた `.worktreeinclude` ファイルで、
+  gitignore 対象のファイルのうちどれを新しいワークツリーにコピーするかを選べます。
 - **セッションフック**：設定から [lich プラグイン](https://github.com/lichdotdev/lich-plugin)を
-  インストールすると、セッションが自分のカードにタイトルを付け、
+  インストールすると、セッションが自分のカードに名前を付け、
   ファイルを書き込んだ時点で git の状態が更新されるようになります。
-- **安定性**：lich のどの部分をスクリプトから使っても安全か、どの部分がリリースごとに変わりうるかは、
+- **スクリプト連携**：lich のどの部分をスクリプトから使っても安全かは、
   [docs/stability.md](docs/stability.md) にまとめています。
 
 ## プライバシーと更新
 
 すべて手元のマシン上で動きます。アカウントもサインインもテレメトリもありません。
-バックエンドはトークン認証付きのループバックリスナーです。lich が自分からネットワークに接続するのは、
-次の場合だけです。
+lich が自分からネットワークに接続するのは、次の場合だけです。
 
 - **更新**：起動時と以後1時間ごとに、GitHub Releases で新しいバージョンを確認します。
-  起動時には、GitHub から lich プラグインのリリース一覧も取得します。
+  起動時には、lich プラグインのリリース一覧も取得します。
 - **プランの使用量**：各プロバイダーの使用量エンドポイント（Anthropic、OpenAI、Cursor、
-  OpenCode Go）に、セッションの CLI がすでに使っているログインで問い合わせます。頻度は多くても5分に1回です。
+  OpenCode Go）に、エージェントがすでに使っているログインで問い合わせます。頻度は多くても5分に1回です。
   Antigravity のプランは `agy` から直接読み取ります。
 - **価格**：同梱の価格表にないモデルがあると、GitHub 上の LiteLLM の公開価格表を一度だけ取得します。
 
 Windows インストーラー版はその場で更新されます。Homebrew、Scoop、AUR、
 Linux のパッケージでインストールした場合はそれぞれのパッケージマネージャーで更新し、
 実行するコマンドは lich が表示します。
-ログファイルをバグ報告に添付する前に、何が含まれているか
-（パス、プロジェクト名とブランチ名、gh のログイン名。セッショントークンは含まれません）を設定 › ヘルプで確認できます。
-`lich rage` はその報告を1つのアーカイブにまとめるだけで、どこにもアップロードしません。
+うまく動かないときは、`lich doctor` でセットアップを確認でき、`lich rage` はバグ報告用の情報を
+1つのアーカイブにまとめます（どこにもアップロードしません）。
+ログに何が含まれているか（パス、プロジェクト名とブランチ名、gh のログイン名。セッショントークンは含まれません）は、
+添付する前に設定 › ヘルプで確認できます。バグ報告や機能要望は
+[Issues](https://github.com/lichdotdev/lich/issues) にお願いします。各バージョンの変更点は
+[CHANGELOG.md](CHANGELOG.md) にあります。
 
 ## ソースからのビルド
 
-lich は2つのバイナリでできています。バックエンドの `lich` は純粋な Go（Go 1.27、
-`CGO_ENABLED=0`、静的バイナリ1つ）で、トークン認証付きのループバックリスナー
-（HTTP RPC と WebSocket）経由でセッションを配信します。ウィンドウの `lich-native` は
-`native/` にある独立した Go モジュールで、cgo でビルドします。描画は [Gio](https://gioui.org)、
-ターミナルは `libghostty-vt`、コードと差分の画面は [godemirror](https://github.com/lichdotdev/godemirror)
-が担います。必要なのは **Go 1.27.0 以降** と **[Task](https://taskfile.dev)** で、
-ウィンドウにはさらに C ツールチェーン、Gio のシステムパッケージ、そして `native/GHOSTTY_COMMIT` に
-記された Ghostty のコミットから Zig 0.16 でビルドした `libghostty-vt` が必要です。
+lich は2つのバイナリでできています。静的な純粋 Go のバックエンド `lich` と、
+`native/` から cgo でビルドするウィンドウ `lich-native` です。必要なのは **Go 1.27.0 以降** と
+**[Task](https://taskfile.dev)** で、ウィンドウにはさらに C ツールチェーン、Gio のシステムパッケージ、
+そして `native/GHOSTTY_COMMIT` に記されたコミットからビルドした `libghostty-vt` が必要です。
 ビルド方法は [`native/slice.sh`](native/slice.sh)、ウィンドウの詳細は
 [`docs/native-window.md`](docs/native-window.md) にあります。
 
@@ -238,18 +222,11 @@ task build          # バックエンドのバイナリ -> bin/lich
 task build:native   # ウィンドウ -> bin/lich-native
 task run            # ビルドして実行
 task test           # Go のテストスイート
+task package        # .deb + .rpm + Arch .pkg.tar.zst を bin/ に出力（nfpm が必要）
 ```
 
-Linux のリリースパッケージをローカルで作るには、次のコマンドを実行します
-（[nfpm](https://nfpm.goreleaser.com/) が必要です）。
-
-```bash
-task package   # .deb + .rpm + Arch .pkg.tar.zst in bin/
-```
-
-lich が対応する8つのエージェント CLI に新しく1つ加えるのは、2つのリポジトリにまたがって
-十数個のファイルに手を入れる変更です。どこを触るかは
-[`docs/adding-a-provider.md`](docs/adding-a-provider.md) にまとめています。
+エージェントを新しく1つ加えるのは、2つのリポジトリにまたがって十数個のファイルに手を入れる変更です。
+どこを触るかは [`docs/adding-a-provider.md`](docs/adding-a-provider.md) にまとめています。
 
 ## スポンサー
 
