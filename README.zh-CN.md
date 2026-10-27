@@ -17,7 +17,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="同一分屏里并排的四个 Claude Code 会话，各自在独立的 git worktree 里；侧栏列出每个会话的分支和 diff 标记，底栏显示模型、套餐和分支" width="1000" />
+  <img src="docs/media/session.png" alt="同一分屏里并排的四个 Claude Code 会话，各自在独立的 git worktree 里；侧栏列出每个会话的分支和 diff 标记，底部是项目正在运行的服务和当前 profile；底栏显示分支、模型和套餐" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -36,10 +36,9 @@
   可执行文件只需指定一次，之后可以设一个默认，也可以每个会话单独选。lich 能从会话里
   *读出*哪些信息，各智能体不尽相同，详见[各智能体支持情况](#各智能体支持情况)一表。
 - **用的是真正的终端。** shell 由 PTY 驱动，每个项目可以开多个，用 GPU 渲染；滚动
-  缓冲区支持搜索，关掉窗口再打开也不会丢。给某个终端设一个入口命令（`lazygit`、`k9s`、
-  `pnpm dev`），它每次打开都直接进入这个工具，Linux、macOS 和 Windows 上都一样：
-  启动前不加载 shell rc 或 PowerShell profile，所以你这里能用的入口命令，分享给别人
-  也照样能用。底栏会跟着 `cd` 切换目录并显示当前分支；Claude Code、Codex 和 Kiro CLI
+  缓冲区支持搜索，关掉窗口再打开也不会丢。项目要一直开着的东西（开发服务器、隧道、
+  `lazydocker`）保存一次就成了服务，在侧栏底部启动、停止、查看输出，也可以随 lich
+  一起启动。底栏会跟着 `cd` 切换目录并显示当前分支；Claude Code、Codex 和 Kiro CLI
   会话还会显示模型和上下文窗口用量；Claude Code、Codex、Antigravity、Cursor CLI 和
   OpenCode Go 订阅会显示套餐滚动窗口还剩多少额度；如果你需要，还能显示会话花了多少钱，
   前提是该智能体记录了这项数据。

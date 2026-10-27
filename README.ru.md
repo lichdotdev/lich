@@ -18,7 +18,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="Четыре сессии Claude Code рядом на одном экране, каждая в своём git worktree. В боковой панели видны их ветки и значок diff, внизу — модель, подписка и ветка" width="1000" />
+  <img src="docs/media/session.png" alt="Четыре сессии Claude Code рядом на одном экране, каждая в своём git worktree. В боковой панели видны их ветки и значок diff, а внизу запущенные сервисы проекта и профиль; на нижней панели ветка, модель и подписка" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -38,11 +38,10 @@
   [Поддержка провайдеров](#поддержка-провайдеров).
 - **Работать в настоящем терминале.** Оболочки на PTY, по нескольку на проект,
   с отрисовкой на GPU и историей прокрутки с поиском, которая переживает закрытие
-  и повторное открытие окна. Задайте терминалу точку входа (`lazygit`, `k9s`,
-  `pnpm dev`), и он каждый раз будет открываться прямо в этом инструменте,
-  одинаково на Linux, macOS и Windows. Ни rc-файл оболочки, ни профиль
-  PowerShell перед этим не загружаются, поэтому точка входа, которая работает у
-  вас, сработает и у того, с кем вы ею поделитесь. Нижняя панель следит за `cd`
+  и повторное открытие окна. То, что проект держит запущенным (dev-сервер,
+  туннель, `lazydocker`), сохраняется один раз как сервис: его запускают,
+  останавливают и читают внизу боковой панели, и он может стартовать вместе с
+  lich. Нижняя панель следит за `cd`
   и показывает ветку, а в сессиях Claude Code, Codex и Kiro CLI ещё и модель с
   текущим окном контекста. Для Claude Code, Codex, Antigravity, Cursor CLI и
   подписки OpenCode Go там же видно, сколько осталось в скользящем окне лимитов

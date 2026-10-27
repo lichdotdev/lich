@@ -18,7 +18,7 @@
     <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-AGPL--3.0-blue" /></a>
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
-  <img src="docs/media/session.png" alt="1つの分割画面に並んだ4つの Claude Code セッション。それぞれ専用の git ワークツリーで動いています。サイドバーには各セッションがブランチと差分バッジ付きで並び、フッターにはモデル、プラン、ブランチが表示されています" width="1000" />
+  <img src="docs/media/session.png" alt="1つの分割画面に並んだ4つの Claude Code セッション。それぞれ専用の git ワークツリーで動いています。サイドバーには各セッションがブランチと差分バッジ付きで並び、その下にプロジェクトで動いているサービスとプロファイルがあります。フッターにはブランチ、モデル、プランが表示されています" width="1000" />
   <!-- sponsor-logos: company logos go here, between the screenshot and Why lich -->
 </div>
 
@@ -37,10 +37,9 @@ lich でできることは次のとおりです。
   詳しくは[プロバイダー対応状況](#プロバイダー対応状況)の表にまとめています。
 - **ターミナルは実際のターミナルのままです。** PTY ベースのシェルをプロジェクトごとにいくつでも開け、
   描画は GPU で行います。スクロールバックは検索でき、ウィンドウを閉じて開き直しても消えません。
-  ターミナルにエントリポイント（`lazygit`、`k9s`、`pnpm dev` など）を設定すると、
-  開くたびにそのツールがすぐ起動します。これは Linux、macOS、Windows のどれでも同じです。
-  シェルの rc や PowerShell プロファイルを先に読み込まないので、自分の環境で動くエントリポイントは
-  共有した相手の環境でもそのまま動きます。フッターは `cd` に合わせて今のブランチを表示します。
+  開発サーバーやトンネル、`lazydocker` のようにプロジェクトで動かし続けるものは、
+  一度サービスとして保存すれば、サイドバーの下から起動・停止し、出力を読めます。
+  lich と一緒に起動させることもできます。フッターは `cd` に合わせて今のブランチを表示します。
   Claude Code、Codex、Kiro CLI のセッションでは、使用中のモデルとコンテキストウィンドウも出ます。
   Claude Code、Codex、Antigravity、Cursor CLI、OpenCode Go のサブスクリプションなら、
   プランのローリングウィンドウの残りも表示します。
