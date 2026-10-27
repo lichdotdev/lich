@@ -103,7 +103,12 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 		dashedRing(gtx, ring, notePick, 1.5, false)
 	}
 	if n.picking && !n.open && n.hover.Label != "" {
-		ring := noteRing(gtx, cssRect(n.hover.Box, scale))
+		ring := noteRing(gtx, cssRect(n.hoverBox(gtx.Now), scale))
+		if n.gliding(gtx.Now) {
+			// Every frame for the glide's moment: the march's 20 a second
+			// would step it.
+			gtx.Execute(op.InvalidateCmd{})
+		}
 		ringFill(gtx, ring, withAlpha(notePick, 0x1a))
 		dashedRing(gtx, ring, notePick, 1.5, true)
 		u.hoverTag(gtx, ring, n.hover)

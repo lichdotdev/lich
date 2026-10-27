@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"math"
 	"slices"
 	"time"
 
@@ -41,6 +42,11 @@ const (
 	noteFollowFor = 700 * time.Millisecond
 )
 
+// noteHoverGlide is how long the pick's outline takes to slide from one
+// element to the next under the pointer, the variant the maintainer chose
+// over a jump, a 100 ms slide and a cross-fade.
+const noteHoverGlide = 160 * time.Millisecond
+
 // browserNote is one note: the element as it was picked, what the person
 // wrote, and where the element stands now (empty when it left the page).
 type browserNote struct {
@@ -55,8 +61,11 @@ type browserNote struct {
 type browserNotes struct {
 	picking bool
 	pick    iconActionState
-	// hover is the element under the pointer while picking.
-	hover api.BrowserElement
+	// hover is the element under the pointer while picking; its outline
+	// glides from hoverFrom, where it stood at hoverAt.
+	hover     api.BrowserElement
+	hoverFrom api.BrowserRect
+	hoverAt   time.Time
 	// draft is the element the note popover is open on; editing is the note
 	// it edits, -1 for a new one.
 	draft       api.BrowserElement
@@ -131,6 +140,41 @@ func (n *browserNotes) setPicking(on bool) {
 	if !on {
 		n.open = false
 	}
+}
+
+// setHover outlines el, the element under the pointer at now. A new element
+// starts the outline's glide from where it stands; the first one under the
+// pointer, or the same one answered again, is outlined where it is.
+func (n *browserNotes) setHover(el api.BrowserElement, now time.Time) {
+	if el.Selector != n.hover.Selector {
+		from := el.Box
+		if n.hover.Label != "" {
+			from = n.hoverBox(now)
+		}
+		n.hoverFrom, n.hoverAt = from, now
+	}
+	n.hover = el
+}
+
+// hoverBox is where the outline of the element under the pointer stands at
+// now, on its glide from the element before.
+func (n *browserNotes) hoverBox(now time.Time) api.BrowserRect {
+	f := easeInOutQuad(progress(now.Sub(n.hoverAt), noteHoverGlide))
+	at := func(from, to int) int { return from + int(math.Round(float64(f)*float64(to-from))) }
+	a, b := n.hoverFrom, n.hover.Box
+	return api.BrowserRect{X: at(a.X, b.X), Y: at(a.Y, b.Y), W: at(a.W, b.W), H: at(a.H, b.H)}
+}
+
+// gliding is whether the outline is still on its way at now.
+func (n *browserNotes) gliding(now time.Time) bool {
+	return now.Before(n.hoverAt.Add(noteHoverGlide))
+}
+
+func easeInOutQuad(t float32) float32 {
+	if t < 0.5 {
+		return 2 * t * t
+	}
+	return 1 - (2-2*t)*(2-2*t)/2
 }
 
 // openNote opens the popover on el, for note i or a new one (-1).
@@ -243,7 +287,7 @@ func (u *window) takeFound(gtx C, p *browserPaneUI, session string) {
 			case f.open && f.el.Label != "":
 				n.openNote(f.el, -1)
 			case !f.open:
-				n.hover = f.el
+				n.setHover(f.el, gtx.Now)
 			}
 		case l := <-n.located:
 			n.applyBoxes(l)

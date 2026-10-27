@@ -49,7 +49,8 @@ in the page is not a tool.
 ## Notes on the page
 
 The crosshair on the pane's toolbar stops the pointer reaching the page: the
-element under it is outlined, and a click opens a note on it. Notes wait in a
+element under it is outlined, the outline sliding to the next element in 160
+ms as the pointer moves, and a click opens a note on it. Notes wait in a
 tray floating over the bottom of the page, which never resizes for it, each
 element pinned where it stands, and Send types them into the session's prompt
 as one message: each element's label, page, a

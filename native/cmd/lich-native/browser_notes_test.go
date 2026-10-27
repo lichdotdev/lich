@@ -137,6 +137,37 @@ func TestANotePickedOnThePageIsNotScrolledTo(t *testing.T) {
 	}
 }
 
+func TestTheHoverOutlineGlidesToTheNextElement(t *testing.T) {
+	n := newBrowserNotes()
+	t0 := time.Now()
+	a := api.BrowserRect{X: 0, Y: 0, W: 100, H: 40}
+	b := api.BrowserRect{X: 200, Y: 100, W: 300, H: 80}
+	n.setHover(api.BrowserElement{Label: "a", Selector: "a", Box: a}, t0)
+	if got := n.hoverBox(t0); got != a {
+		t.Fatalf("the first element under the pointer is outlined at %+v, want its own box %+v at once", got, a)
+	}
+	t1 := t0.Add(time.Second)
+	n.setHover(api.BrowserElement{Label: "b", Selector: "b", Box: b}, t1)
+	if got := n.hoverBox(t1); got != a {
+		t.Fatalf("on the move to b the outline jumped to %+v, want it to leave from a %+v", got, a)
+	}
+	if got := n.hoverBox(t1.Add(noteHoverGlide / 2)); got != (api.BrowserRect{X: 100, Y: 50, W: 200, H: 60}) {
+		t.Fatalf("half way the outline stands at %+v, want half way between a and b", got)
+	}
+	if got := n.hoverBox(t1.Add(noteHoverGlide)); got != b {
+		t.Fatalf("after the glide the outline stands at %+v, want b %+v", got, b)
+	}
+	c := api.BrowserRect{X: 400, Y: 300, W: 10, H: 10}
+	n.setHover(api.BrowserElement{Label: "c", Selector: "c", Box: c}, t1.Add(noteHoverGlide/2))
+	if got := n.hoverBox(t1.Add(noteHoverGlide / 2)); got != (api.BrowserRect{X: 100, Y: 50, W: 200, H: 60}) {
+		t.Fatalf("a move mid glide restarted from %+v, want from where the outline stood", got)
+	}
+	n.setHover(api.BrowserElement{Label: "c", Selector: "c", Box: c}, t1.Add(noteHoverGlide))
+	if got := n.hoverBox(t1.Add(noteHoverGlide * 3 / 2)); got != c {
+		t.Fatalf("the probe answering c again restarted the glide: outline at %+v, want c %+v", got, c)
+	}
+}
+
 func TestTheRingsOutlineWalksItsSidesAndCorners(t *testing.T) {
 	r := roundedRect{max: f32.Pt(100, 50), radius: 10}
 	if got, want := r.perimeter(), float32(2*80+2*30+2*math.Pi*10); math.Abs(float64(got-want)) > 1e-3 {
