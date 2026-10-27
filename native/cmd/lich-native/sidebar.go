@@ -126,13 +126,13 @@ type sidebarAction struct {
 	openPRURL string
 	launch    launchRequest
 	// Open in, from the card menu: a directory for a shell session, the
-	// editor or the file manager.
-	terminalAt, editorAt, folderAt string
-	rename                         sessionRename
-	color, colorTo                 string // session id, and its new tint ("" for the theme)
-	continueIn                     continueRequest
-	profilePick                    profilePick
-	worktree                       bool // the + menu asked for a worktree session
+	// editor or the file manager. browser is the session whose Chromium to show.
+	terminalAt, editorAt, folderAt, browser string
+	rename                                  sessionRename
+	color, colorTo                          string // session id, and its new tint ("" for the theme)
+	continueIn                              continueRequest
+	profilePick                             profilePick
+	worktree                                bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
 	service                serviceRequest
@@ -198,6 +198,7 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	pick(&a.terminalAt, c.terminalAt)
 	pick(&a.editorAt, c.editorAt)
 	pick(&a.folderAt, c.folderAt)
+	pick(&a.browser, c.browser)
 	pick(&a.forkHere, c.forkHere)
 	pick(&a.forkWorktree, c.forkWorktree)
 	if c.pin != "" {

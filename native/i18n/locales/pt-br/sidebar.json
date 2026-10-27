@@ -33,6 +33,8 @@
     "moveToFolder": "Mover para pasta",
     "takeOutOf": "Tirar de {folder}",
     "newFolder": "Nova pasta…",
+    "browser": "Navegador",
+    "browserFailed": "Não foi possível abrir o navegador: {error}",
     "openIn": "Abrir em",
     "terminal": "Terminal",
     "editor": "Editor",

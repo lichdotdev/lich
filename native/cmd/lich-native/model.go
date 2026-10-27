@@ -120,6 +120,10 @@ type model struct {
 	// screen, "" for a project's session alone.
 	layouts     layoutTabs
 	shownLayout string
+	// browsers are the session browsers (browser_model.go); browserOpened
+	// hears one the agent started.
+	browsers      browserStore
+	browserOpened func(api.BrowserState)
 }
 
 type sessionCwd = api.SessionCwd
@@ -134,7 +138,8 @@ func newModel(client *backend.Client, invalidate func()) *model {
 		ompProfiles:   newProfileBook(ompProfileProvider, client, invalidate, quota),
 		xdgProfiles:   xdgProfileBooks(client, invalidate, quota),
 		providers:     newProviderBook(client, invalidate),
-		closed:        newClosedProjects(client, invalidate)}
+		closed:        newClosedProjects(client, invalidate),
+		browsers:      newBrowserStore()}
 }
 
 func (m *model) reload(ctx context.Context) error {
@@ -299,6 +304,13 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 // serves one client and a newer one replaces it, or lich is gone.
 func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 	for ev := range events {
+		if owner, frame := api.BrowserFrameEvents.ID(ev.Name); frame {
+			if err := m.applyBrowserFrame(owner, ev); err != nil {
+				log.Print(err)
+			}
+			m.invalidate()
+			continue
+		}
 		if id, exited := api.TerminalExitEvents.ID(ev.Name); exited {
 			m.mu.Lock()
 			m.status.exited(id)
@@ -391,6 +403,14 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			}
 		case api.SessionTouchedEvent.Name:
 			m.sessionTouched(ctx, ev)
+		case api.BrowserStateEvent.Name:
+			if st, err := backend.Decode(ev, api.BrowserStateEvent); err == nil {
+				m.applyBrowserState(ctx, st)
+			}
+		case api.BrowserAgentEvent.Name:
+			if a, err := backend.Decode(ev, api.BrowserAgentEvent); err == nil {
+				m.applyBrowserAgent(a, time.Now())
+			}
 		case api.SessionFocusEvent.Name:
 			m.sessionFocus(ev)
 		case api.WindowRaiseEvent.Name:
@@ -548,6 +568,7 @@ type sessionView struct {
 	aged      bool          // status has a clock (busy, compacting, waiting)
 	agent     string        // provider CLI live in the PTY, "" for none
 	sandbox   sandboxEvent
+	browser   bool         // a browser of this session runs
 	relay     sessionRelay // Direction "" for none
 	tool      sessionTool  // Name "" outside a tool call
 	reason    string       // what a waiting session is blocked on, "" for unsaid
@@ -576,7 +597,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 		status: m.status.status(s.ID), unread: m.status.unread(s.ID), age: age, aged: aged,
 		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
 		base: m.base[shown], pr: m.prs[shown].pr,
-		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID),
+		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID), browser: m.browsers.states[s.ID].Open,
 		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
 		layout: m.layoutNameOfLocked(s.ID), running: usage.Model,
 	}

@@ -1,0 +1,73 @@
+package backend
+
+import (
+	"context"
+
+	"github.com/lichdotdev/lich/api"
+)
+
+// ShowBrowser moves session id's browser to its own Chromium window, or
+// brings that window forward when it is there already.
+func (c *Client) ShowBrowser(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.BrowserShow, api.SessionIDOptions{ID: id})
+	return err
+}
+
+// CloseBrowser ends session id's browser.
+func (c *Client) CloseBrowser(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.BrowserClose, api.SessionIDOptions{ID: id})
+	return err
+}
+
+// RunningBrowsers is every session browser the backend runs.
+func (c *Client) RunningBrowsers(ctx context.Context) ([]api.BrowserState, error) {
+	return callMethod(ctx, c, api.BrowserRunning, api.None{})
+}
+
+// AttachBrowser starts the frames of session id's page at the pane's size,
+// starting a browser when the session has none.
+func (c *Client) AttachBrowser(ctx context.Context, v api.BrowserViewOptions) error {
+	_, err := callMethod(ctx, c, api.BrowserAttach, v)
+	return err
+}
+
+// DetachBrowser stops the frames of session id's page.
+func (c *Client) DetachBrowser(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.BrowserDetach, api.SessionIDOptions{ID: id})
+	return err
+}
+
+// ResizeBrowser lays session id's page out at the pane's new size.
+func (c *Client) ResizeBrowser(ctx context.Context, v api.BrowserViewOptions) error {
+	_, err := callMethod(ctx, c, api.BrowserResize, v)
+	return err
+}
+
+// BrowserMouse passes one pointer event to the page.
+func (c *Client) BrowserMouse(ctx context.Context, m api.BrowserMouseOptions) error {
+	_, err := callMethod(ctx, c, api.BrowserMouse, m)
+	return err
+}
+
+// BrowserKey passes one key to the page.
+func (c *Client) BrowserKey(ctx context.Context, k api.BrowserKeyOptions) error {
+	_, err := callMethod(ctx, c, api.BrowserKey, k)
+	return err
+}
+
+// BrowserText types committed text into the page.
+func (c *Client) BrowserText(ctx context.Context, id, text string) error {
+	_, err := callMethod(ctx, c, api.BrowserText, api.BrowserTextOptions{ID: id, Text: text})
+	return err
+}
+
+// BrowserSelection is the text selected in session id's page.
+func (c *Client) BrowserSelection(ctx context.Context, id string) (string, error) {
+	return callMethod(ctx, c, api.BrowserSelection, api.SessionIDOptions{ID: id})
+}
+
+// BrowserNav runs the pane's toolbar: back, forward, reload, or go to url.
+func (c *Client) BrowserNav(ctx context.Context, id, action, url string) error {
+	_, err := callMethod(ctx, c, api.BrowserNav, api.BrowserNavOptions{ID: id, Action: action, URL: url})
+	return err
+}

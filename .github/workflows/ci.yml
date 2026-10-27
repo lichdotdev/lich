@@ -61,6 +61,12 @@ jobs:
             exit 1
           fi
 
+      # Ubuntu 24.04 refuses unprivileged user namespaces to binaries without an
+      # AppArmor profile, the runner's Chromium among them, and Chromium will not
+      # start without its sandbox: the internal/browser live tests need it.
+      - name: Allow Chromium's sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Backend tests
         run: bash .github/scripts/go-test-summary.sh linux
 

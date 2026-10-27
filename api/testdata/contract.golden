@@ -3,6 +3,29 @@ agentplugin.Status(None) []PluginStatus
 agentplugin.Update(PluginProviderOptions) None
 appupdate.Apply(None) None
 appupdate.Status(None) AppUpdateStatus
+browser.Attach(BrowserViewOptions) BrowserHandle
+browser.Back(SessionIDOptions) None
+browser.Click(BrowserClickOptions) BrowserPageInfo
+browser.Close(SessionIDOptions) None
+browser.Detach(SessionIDOptions) None
+browser.Forward(SessionIDOptions) None
+browser.Info(SessionIDOptions) BrowserPageInfo
+browser.Key(BrowserKeyOptions) None
+browser.List(SessionIDOptions) []BrowserHandle
+browser.Mouse(BrowserMouseOptions) None
+browser.Nav(BrowserNavOptions) None
+browser.Navigate(BrowserOpenOptions) BrowserHandle
+browser.Open(BrowserOpenOptions) BrowserHandle
+browser.Press(BrowserPressOptions) BrowserPageInfo
+browser.Reload(SessionIDOptions) None
+browser.Resize(BrowserViewOptions) None
+browser.Running(None) []BrowserState
+browser.Screenshot(BrowserScreenshotOptions) string
+browser.Scroll(BrowserScrollOptions) None
+browser.Selection(SessionIDOptions) string
+browser.Show(SessionIDOptions) BrowserHandle
+browser.Text(BrowserTextOptions) None
+browser.Type(BrowserTypeOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
 claudeprofile.CreateProfile(CreateProfileOptions) Profile
 claudeprofile.DeleteProfile(ProfileSlugOptions) None
@@ -212,6 +235,9 @@ tray.SetLabels(TrayLabels) None
 
 event appupdate-progress AppUpdateProgress
 event branch-pull-request BranchPullRequest
+event browser-agent BrowserAgentAct
+event browser-state BrowserState
+event browser:frame:<id> string
 event claude-profile-login ProfileLogin
 event codex-profile-login ProfileLogin
 event lich-plugin-profiles PluginProfiles
@@ -279,6 +305,107 @@ AppUpdateStatus {
 	canSelfApply bool
 	releaseUrl string
 	installCommand string
+}
+
+BrowserViewOptions {
+	id string
+	w int
+	h int
+	scale float64
+}
+
+BrowserHandle {
+	id string
+	url string
+	title string
+	owner string
+	headed bool
+}
+
+SessionIDOptions {
+	id string
+}
+
+BrowserClickOptions {
+	id string
+	...BrowserTarget
+}
+
+BrowserPageInfo {
+	url string
+	title string
+	text string
+	interactive []BrowserInteractive
+	truncated bool
+}
+
+BrowserKeyOptions {
+	id string
+	type string
+	key string
+	code,omitempty string
+	keyCode,omitempty int
+	modifiers,omitempty int
+}
+
+BrowserMouseOptions {
+	id string
+	type string
+	x float64
+	y float64
+	button,omitempty string
+	clicks,omitempty int
+	dx,omitempty float64
+	dy,omitempty float64
+	modifiers,omitempty int
+}
+
+BrowserNavOptions {
+	id string
+	action string
+	url,omitempty string
+}
+
+BrowserOpenOptions {
+	id string
+	url string
+}
+
+BrowserPressOptions {
+	id string
+	key string
+	...BrowserTarget
+}
+
+BrowserState {
+	owner string
+	open bool
+	headed bool
+	byAgent bool
+	url string
+	title string
+}
+
+BrowserScreenshotOptions {
+	id string
+	path string
+}
+
+BrowserScrollOptions {
+	id string
+	dy int
+}
+
+BrowserTextOptions {
+	id string
+	text string
+}
+
+BrowserTypeOptions {
+	id string
+	text string
+	clear bool
+	...BrowserTarget
 }
 
 ProfileSlugOptions {
@@ -1079,10 +1206,6 @@ ExternalSession {
 	profile,omitempty string
 }
 
-SessionIDOptions {
-	id string
-}
-
 GetSettingOptions {
 	key string
 	projectId string
@@ -1384,6 +1507,15 @@ BranchPullRequest {
 	pr *PullRequest
 }
 
+BrowserAgentAct {
+	owner string
+	action,omitempty string
+	x,omitempty *float64
+	y,omitempty *float64
+	dy,omitempty int
+	url,omitempty string
+}
+
 ProfileLogin {
 	profile string
 	output,omitempty string
@@ -1566,6 +1698,25 @@ SessionExit {
 	code,omitempty *int
 }
 
+BrowserTarget {
+	index,omitempty *int
+	selector,omitempty string
+	x,omitempty *float64
+	y,omitempty *float64
+}
+
+BrowserInteractive {
+	index int
+	tag string
+	type,omitempty string
+	role,omitempty string
+	text string
+	href,omitempty string
+	rect BrowserRect
+	filled,omitempty *bool
+	checked,omitempty *bool
+}
+
 ProfileUpdate {
 	name,omitempty string
 	color,omitempty *string
@@ -1744,6 +1895,13 @@ SessionCache {
 	read int
 	write int
 	uncached int
+}
+
+BrowserRect {
+	x int
+	y int
+	w int
+	h int
 }
 
 PRThreadComment {

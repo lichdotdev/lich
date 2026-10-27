@@ -19,6 +19,7 @@ import (
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/appkit"
 	"github.com/lichdotdev/lich/internal/appupdate"
+	"github.com/lichdotdev/lich/internal/browser"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/cli"
 	"github.com/lichdotdev/lich/internal/codexprofile"
@@ -158,7 +159,8 @@ func app() {
 	// Deferred after the hands-on flush, so it runs first: a service's process
 	// is lich's child, and quitting lich is what stops it.
 	defer svcs.Shutdown(serviceQuitGrace)
-	sys := registerServices(db, term, svcs, hub, configDir, logPath, env, launchEnv, coord)
+	sys, closeBrowsers := registerServices(db, term, svcs, hub, configDir, logPath, env, launchEnv, coord)
+	defer closeBrowsers()
 
 	coord.SetWindowOpen(hub.Attached)
 	term.SetRestart(coord.Do)
@@ -214,7 +216,10 @@ func resolveEnv() (launchEnv, env []string) {
 // to exist first. It is lifted out of main only for its length; nothing here
 // runs anywhere else.
 func registerServices(db *store.Service, term *terminal.Service, svcs *services.Service, hub *events.Hub,
-	configDir, logPath string, env, launchEnv []string, coord *restart.Coordinator) *system.Service {
+	configDir, logPath string, env, launchEnv []string, coord *restart.Coordinator) (*system.Service, func()) {
+	// One Chromium per session, closed with the card and with the process.
+	// Never the lich window: this is a second browser the agent drives.
+	brows := browser.New(hub.Emit)
 	proj := project.New(project.ZenityPicker{})
 	// gh has one active account per host; a project can name a different one.
 	proj.SetAccounts(db.GHAccountForPath)
@@ -284,6 +289,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		return proj.PickFile(context.Background(), api.PickFileOptions{Title: title})
 	})
 	routes.Terminal(dispatcher, term)
+	routes.Browser(dispatcher, brows)
 	routes.Drop(dispatcher, drops)
 	routes.Project(dispatcher, proj)
 	plugins := agentplugin.New(db)
@@ -435,8 +441,14 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// without a word to its caller.
 	term.SetWorkerAnswer(rl.WorkerAnswered)
 	term.SetWorkerUnanswered(rl.WorkerUnanswered)
-	term.SetSessionClosed(rl.SessionClosed)
-	term.SetSessionExited(rl.SessionExited)
+	term.SetSessionClosed(func(id, closerID string) {
+		rl.SessionClosed(id, closerID)
+		closeSessionBrowser(brows, id)
+	})
+	term.SetSessionExited(func(id string) {
+		rl.SessionExited(id)
+		closeSessionBrowser(brows, id)
+	})
 	term.SetErrandStatus(rl.Status)
 	// Both questions the relay asks about a provider — whether its sessions
 	// report at all, and whether they can answer with a tool — are about what
@@ -494,7 +506,17 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	term.Mount("/drop", http.HandlerFunc(drops.Upload))
 	term.Mount("/blob", http.HandlerFunc(proj.ServeBlob))
 	term.Mount("/events", hub)
-	return sys
+	return sys, func() {
+		if err := brows.Cleanup(); err != nil {
+			slog.Warn("close the session browsers on exit", "err", err)
+		}
+	}
+}
+
+func closeSessionBrowser(brows *browser.Service, id string) {
+	if err := brows.CloseOwnedBy(id); err != nil {
+		slog.Warn("close a session's browser", "session", id, "err", err)
+	}
 }
 
 // run serves the loopback listener, opens the window on it (the native one,

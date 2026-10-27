@@ -13,6 +13,20 @@
       "other": "另外 {count} 个 · {waiting} 个等待中"
     }
   },
+  "browser": {
+    "title": "浏览器",
+    "close": "关闭浏览器",
+    "address": "输入网址",
+    "back": "后退",
+    "forward": "前进",
+    "reload": "重新加载",
+    "openInWindow": "在窗口中打开",
+    "locked": "此标签页只容纳 {label} 及其浏览器",
+    "opened": "{label} 打开了浏览器",
+    "dismiss": "忽略",
+    "open": "打开",
+    "moveBody": "它将离开“{layout}”。浏览器标签页只容纳 {label} 及其浏览器。"
+  },
   "split": {
     "noRoom": "这里没有空间再放一个窗格。请加宽窗口，或先移出一个窗格。"
   },

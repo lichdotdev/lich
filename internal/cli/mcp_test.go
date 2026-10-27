@@ -107,7 +107,7 @@ func TestMCPHandshakeAdvertisesTools(t *testing.T) {
 	// the one thing they get wrong on their own: that fanning work out means
 	// these sessions and not the subagents their own harness offers.
 	for _, want := range []string{
-		"open_session", "send_to_session", "wait_for_answer", "worktree", "subagent",
+		"open_session", "send_to_session", "wait_for_answer", "worktree", "subagent", "browser_",
 	} {
 		if !strings.Contains(result.Instructions, want) {
 			t.Errorf("instructions are missing %q:\n%s", want, result.Instructions)
@@ -228,24 +228,40 @@ func TestMCPListsEveryTool(t *testing.T) {
 	resultOf(t, replies[0], &result)
 
 	want := map[string][]string{
-		"list_sessions":    {},
-		"open_session":     {},
-		"close_session":    {"session"},
-		"rename_session":   {"label"},
-		"list_worktrees":   {},
-		"send_to_session":  {"session", "prompt"},
-		"wait_for_answer":  {},
-		"reply_to_session": {"answer"},
-		"list_folders":     {},
-		"file_session":     {"folder"},
-		"rename_folder":    {"folder", "to"},
-		"color_folder":     {"folder", "color"},
-		"control_session":  {"session", "action"},
-		"ask_session":      {"session", "question"},
+		"list_sessions":      {},
+		"open_session":       {},
+		"close_session":      {"session"},
+		"rename_session":     {"label"},
+		"list_worktrees":     {},
+		"send_to_session":    {"session", "prompt"},
+		"wait_for_answer":    {},
+		"reply_to_session":   {"answer"},
+		"list_folders":       {},
+		"file_session":       {"folder"},
+		"rename_folder":      {"folder", "to"},
+		"color_folder":       {"folder", "color"},
+		"control_session":    {"session", "action"},
+		"ask_session":        {"session", "question"},
+		"browser_open":       {},
+		"browser_info":       {},
+		"browser_click":      {},
+		"browser_type":       {"text"},
+		"browser_press":      {"key"},
+		"browser_screenshot": {},
+		"browser_navigate":   {"url"},
+		"browser_reload":     {},
+		"browser_back":       {},
+		"browser_forward":    {},
+		"browser_scroll":     {},
+		"browser_list":       {},
+		"browser_close":      {},
 	}
 	// The read-only ones, which a client may auto-allow. wait_for_answer is
 	// not among them: collecting drains the inbox.
-	readOnly := map[string]bool{"list_sessions": true, "list_worktrees": true, "list_folders": true}
+	readOnly := map[string]bool{
+		"list_sessions": true, "list_worktrees": true, "list_folders": true,
+		"browser_info": true, "browser_list": true, "browser_screenshot": true,
+	}
 	if len(result.Tools) != len(want) {
 		t.Fatalf("got %d tools, want %d", len(result.Tools), len(want))
 	}

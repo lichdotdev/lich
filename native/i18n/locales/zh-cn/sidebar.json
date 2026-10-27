@@ -33,6 +33,8 @@
     "moveToFolder": "移到文件夹",
     "takeOutOf": "从 {folder} 中移出",
     "newFolder": "新建文件夹…",
+    "browser": "浏览器",
+    "browserFailed": "无法打开浏览器：{error}",
     "openIn": "打开方式",
     "terminal": "终端",
     "editor": "编辑器",

@@ -13,6 +13,20 @@
       "other": "ほか {count} 件 · {waiting} 件待機中"
     }
   },
+  "browser": {
+    "title": "ブラウザ",
+    "close": "ブラウザを閉じる",
+    "address": "URL を入力",
+    "back": "戻る",
+    "forward": "進む",
+    "reload": "再読み込み",
+    "openInWindow": "ウィンドウで開く",
+    "locked": "このタブには {label} とそのブラウザしか置けません",
+    "opened": "{label} がブラウザを開きました",
+    "dismiss": "閉じる",
+    "open": "開く",
+    "moveBody": "「{layout}」から外れます。ブラウザのタブには {label} とそのブラウザしか置けません。"
+  },
   "split": {
     "noRoom": "ここには別のペインを置く余裕がありません。ウィンドウを広げるか、先にペインを外してください。"
   },

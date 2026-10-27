@@ -35,6 +35,8 @@
     "moveToFolder": "В папку",
     "takeOutOf": "Убрать из {folder}",
     "newFolder": "Новая папка…",
+    "browser": "Браузер",
+    "browserFailed": "Не удалось открыть браузер: {error}",
     "openIn": "Открыть в",
     "terminal": "Терминал",
     "editor": "Редактор",
