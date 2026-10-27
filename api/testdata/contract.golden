@@ -10,7 +10,7 @@ browser.Close(SessionIDOptions) None
 browser.Detach(SessionIDOptions) None
 browser.ElementAt(BrowserPointOptions) BrowserElement
 browser.Forward(SessionIDOptions) None
-browser.Info(SessionIDOptions) BrowserPageInfo
+browser.Info(BrowserInfoOptions) BrowserPageInfo
 browser.Key(BrowserKeyOptions) None
 browser.List(SessionIDOptions) []BrowserHandle
 browser.Locate(BrowserLocateOptions) []BrowserRect
@@ -342,6 +342,7 @@ BrowserPageInfo {
 	interactive []BrowserInteractive
 	truncated bool
 	downloads,omitempty []BrowserDownload
+	waitTimedOut,omitempty bool
 }
 
 BrowserPointOptions {
@@ -358,6 +359,12 @@ BrowserElement {
 	html string
 	url string
 	box BrowserRect
+}
+
+BrowserInfoOptions {
+	id string
+	waitFor,omitempty string
+	waitGone,omitempty string
 }
 
 BrowserKeyOptions {

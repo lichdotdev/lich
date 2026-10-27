@@ -73,7 +73,7 @@ func (c *client) browserInfo(args []string) error {
 	if err != nil {
 		return err
 	}
-	info, err := callMethod(context.Background(), c, api.BrowserInfo, api.SessionIDOptions{ID: id}, openCall)
+	info, err := callMethod(context.Background(), c, api.BrowserInfo, api.BrowserInfoOptions{ID: id}, openCall)
 	if err != nil {
 		return err
 	}

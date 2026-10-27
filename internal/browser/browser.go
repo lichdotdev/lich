@@ -59,6 +59,9 @@ type Service struct {
 	stopped bool
 	// emit pushes to the window's /events (events.Hub.Emit).
 	emit func(name string, data any)
+	// textWait is maxTextWait, which the suite shortens to test a wait that
+	// gives up.
+	textWait time.Duration
 }
 
 type session struct {
@@ -90,16 +93,17 @@ func New(emit func(name string, data any)) *Service {
 
 func newService(launch Launcher, mkTmp func(string, string) (string, error), now func() time.Time, idle time.Duration) *Service {
 	return &Service{
-		launch:  launch,
-		mkTmp:   mkTmp,
-		now:     now,
-		idle:    idle,
-		quiet:   downloadQuiet,
-		byOwner: make(map[string]*session),
-		byID:    make(map[string]*session),
-		owners:  make(map[string]*sync.Mutex),
-		stop:    make(chan struct{}),
-		emit:    func(string, any) {},
+		launch:   launch,
+		mkTmp:    mkTmp,
+		now:      now,
+		idle:     idle,
+		quiet:    downloadQuiet,
+		textWait: maxTextWait,
+		byOwner:  make(map[string]*session),
+		byID:     make(map[string]*session),
+		owners:   make(map[string]*sync.Mutex),
+		stop:     make(chan struct{}),
+		emit:     func(string, any) {},
 	}
 }
 

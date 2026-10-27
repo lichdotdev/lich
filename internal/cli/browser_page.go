@@ -17,6 +17,9 @@ import (
 func pageText(info api.BrowserPageInfo) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "url: %s\ntitle: %s\n", info.URL, info.Title)
+	if info.WaitTimedOut {
+		b.WriteString("wait: timed out, this is the page as it stands\n")
+	}
 	for _, d := range info.Downloads {
 		b.WriteString(downloadLine(d))
 		b.WriteByte('\n')

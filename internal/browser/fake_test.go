@@ -3,6 +3,7 @@ package browser
 import (
 	"context"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/chromedp/cdproto/network"
@@ -54,6 +55,11 @@ type fakePage struct {
 	shotErr   error
 	navErr    error
 	infoErr   error
+	// pageText is what HasText searches; onTextRead runs before each search,
+	// as the page changing between two reads.
+	pageText   string
+	textReads  int
+	onTextRead func(reads int)
 }
 
 type typed struct {
@@ -118,6 +124,19 @@ func (p *fakePage) Info(context.Context) (PageInfo, error) {
 		info.Title = p.title
 	}
 	return info, nil
+}
+
+func (p *fakePage) HasText(_ context.Context, text string) (bool, error) {
+	p.mu.Lock()
+	p.textReads++
+	reads, then := p.textReads, p.onTextRead
+	p.mu.Unlock()
+	if then != nil {
+		then(reads)
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return strings.Contains(p.pageText, text), nil
 }
 
 func (p *fakePage) Click(_ context.Context, t Target) (x, y float64, err error) {
