@@ -1,3 +1,25 @@
+## [0.80.0] - 2026-10-27
+
+> [!IMPORTANT]
+> **Quien tiene un agente trabajando en una página web: ahora controla un navegador junto a la sesión.** Abre
+> Navegador en el menú de la tarjeta de la sesión y mira el cursor del agente hacer clic, escribir y desplazarse en la página, mientras tú también la usas.
+
+### Added
+
+- El menú de una tarjeta de sesión abre un navegador para esa sesión, encima de Abrir en, en una pestaña junto a la sesión: su terminal a un lado y la página al otro, con el divisor, el giro y la ampliación de una división. El agente de la sesión maneja la misma página: abrir una URL, leerla, hacer clic, escribir, pulsar una tecla, ir atrás y adelante, desplazarse y capturar la pantalla, desde las herramientas `browser_*` o desde `lich browser`. El cursor propio del agente muestra dónde actúa: la flecha de lich, en el color de tarjeta de la sesión o en el del tema, con una insignia que nombra al proveedor, se desliza hasta cada clic, campo y desplazamiento de la página y hasta atrás, adelante, recargar y la dirección en la barra de herramientas del panel, reproduciendo por turnos incluso las llamadas en paralelo de un agente. Tú haces clic, escribes y copias y pegas con tu propio portapapeles en la página mientras tanto. Cada clic y tecla que envía el agente responde con la página que dejó, en forma compacta, de modo que una sesión larga gasta cerca de la mitad de los tokens que gastaría leyendo la página de vuelta como JSON. Cuando el agente abre un navegador por su cuenta, un aviso en la esquina inferior derecha ofrece mostrarlo. Abrir en una ventana mueve la página a una ventana de Chromium propia, con sus cookies y todo. Cerrar la tarjeta cierra el navegador. El navegador es el Chrome, Edge, Chromium, Brave, Vivaldi o Helium que ya tengas instalado.
+- El pie de ventana muestra qué parte del último turno se leyó de vuelta de la caché del prompt, con una barra que divide la entrada del turno en en caché, escrita en la caché y sin caché. Un turno posterior a la expiración de la caché marca 0% en ámbar, que es el turno facturado a tarifa completa. Aparece en el tooltip de la ventana de contexto en Claude Code y Codex, y en el tooltip de costo en oh-my-pi y opencode.
+
+### Changed
+
+- Una sesión de opencode recibe el servidor MCP de lich al iniciarse, como Claude Code y Codex, así que lista todas las herramientas de lich, incluidas las `browser_*`, bajo el servidor `lich` en la lista MCP de opencode. Tus propios servidores y cualquier `OPENCODE_CONFIG_CONTENT` que exportes se conservan.
+- Un agente puede cambiar el modelo o el esfuerzo de razonamiento de la sesión en la que se ejecuta mediante `control_session`, y cerrar esa sesión cuando se lo pidas (`self` en `close_session`, `lich close --self`). Antes ambas cosas se rechazaban de plano.
+
+### Fixed
+
+- Abrir, recargar, atrás y adelante del navegador de una sesión regresan en cuanto la página es interactiva, en vez de esperar a que terminen todas las imágenes y rastreadores. Esa espera retenía la siguiente acción del agente tanto como tardara el evento load, hasta 30 segundos, cuando la página ya estaba en pantalla. Una captura de pantalla es el viewport que se está viendo.
+- El costo de una sesión de Codex ya no cobra dos veces los tokens escritos en la caché del prompt. Se tarificaban a la tarifa de escritura en caché y otra vez como entrada sin caché.
+- La rueda del ratón en una terminal se desplaza con suavidad y tan lejos como en otras terminales. Una muesca mueve tres líneas del historial del shell, o de un programa a pantalla completa como `less`, suavizadas a lo largo de unos fotogramas en vez de saltar unas ocho líneas de golpe. Un programa que toma el ratón, como nvim, Claude Code o Codex, recibe un paso de rueda por muesca y se desplaza su propia distancia, cuando antes recibía unos ocho y recorría la conversación a toda velocidad.
+
 ## [0.79.0] - 2026-10-24
 
 > [!IMPORTANT]

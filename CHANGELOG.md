@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.80.0] - 2026-10-27
+
+> [!IMPORTANT]
+> **Anyone whose agent works on a web page: it now drives a browser beside the session.** Open Browser from a
+> session card's menu and watch the agent's cursor click, type and scroll in the page, while you use it too.
+
 ### Added
 
 - A session card's menu opens a browser for that session, above Open in, in a tab beside the session: its terminal on one side and the page on the other, with the divider, rotate and zoom of a split. The session's agent drives the same page: open a URL, read it, click, type, press a key, go back and forward, scroll and screenshot, from `browser_*` tools or from `lich browser`. The agent's own cursor shows where it acts: lich's arrow, in the session's card color or the theme's, with a badge naming the provider, glides to each click, field and scroll on the page and to back, forward, reload and the address on the pane's toolbar, playing even an agent's parallel calls in turn. You click, type and copy and paste with your own clipboard in the page while it does. Each click and key the agent sends answers with the page it left, in a compact form, so a long session spends about half the tokens it would reading the page back as JSON. When the agent opens a browser on its own, a toast in the bottom-right corner offers to show it. Open in a window moves the page to a Chromium window of its own, cookies and all. Closing the card closes the browser. The browser is the Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed.
@@ -6394,7 +6400,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.79.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.80.0...HEAD
+[0.80.0]: https://github.com/lichdotdev/lich/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/lichdotdev/lich/compare/v0.78.1...v0.79.0
 [0.78.1]: https://github.com/lichdotdev/lich/compare/v0.78.0...v0.78.1
 [0.78.0]: https://github.com/lichdotdev/lich/compare/v0.77.0...v0.78.0
