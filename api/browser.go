@@ -281,8 +281,11 @@ type BrowserElement struct {
 }
 
 // BrowserLocateOptions asks where the elements Selectors find stand in
-// session ID's page; one gone from the page answers an empty box.
+// session ID's page; one gone from the page, or hidden by what it scrolls
+// in, answers an empty box. Reveal, when set, is a selector whose element
+// the page first scrolls into view unless it already shows whole.
 type BrowserLocateOptions struct {
 	ID        string   `json:"id"`
 	Selectors []string `json:"selectors"`
+	Reveal    string   `json:"reveal,omitempty"`
 }

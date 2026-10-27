@@ -79,6 +79,9 @@ type browserNotes struct {
 	// failure is why the last send failed, shown in the tray until the next.
 	failure    string
 	nextLocate time.Time
+	// reveal is the selector of a note opened from the tray or its pin,
+	// which the next lookup scrolls into view first.
+	reveal string
 	// followUntil is when the fast lookups after a scroll end.
 	followUntil time.Time
 }
@@ -145,6 +148,17 @@ func (n *browserNotes) openNote(el api.BrowserElement, i int) {
 	n.editor.SetCaret(len([]rune(text)), len([]rune(text)))
 }
 
+// openListed opens the popover on note i and has the next lookup, right
+// away, scroll its element into view: the box the tray knows may stand off
+// the page's viewport, where the popover would open far from it.
+func (n *browserNotes) openListed(gtx C, i int) {
+	el := n.list[i].el
+	el.Box = n.list[i].box
+	n.openNote(el, i)
+	n.reveal, n.nextLocate = el.Selector, time.Time{}
+	gtx.Execute(op.InvalidateCmd{})
+}
+
 // draftBox is where the element the popover is open on stands now.
 func (n *browserNotes) draftBox() api.BrowserRect {
 	if n.editing >= 0 && n.editing < len(n.list) {
@@ -189,7 +203,7 @@ func (u *window) probeElement(p *browserPaneUI, session string, x, y float64, op
 }
 
 // relocateNotes looks the noted elements up again, and the one a new note
-// is open on.
+// is open on, first scrolling the one opened from the tray into view.
 func (u *window) relocateNotes(p *browserPaneUI, session string) {
 	selectors := make([]string, 0, len(p.notes.list)+1)
 	for _, n := range p.notes.list {
@@ -199,8 +213,15 @@ func (u *window) relocateNotes(p *browserPaneUI, session string) {
 	if draft {
 		selectors = append(selectors, p.notes.draft.Selector)
 	}
-	p.queue.push(browserCall{merge: "locate", send: func(ctx context.Context) error {
-		boxes, err := u.client.BrowserLocate(ctx, session, selectors)
+	reveal := p.notes.reveal
+	p.notes.reveal = ""
+	merge := "locate"
+	if reveal != "" {
+		// The lookups queued behind a reveal must not merge it away.
+		merge = ""
+	}
+	p.queue.push(browserCall{merge: merge, send: func(ctx context.Context) error {
+		boxes, err := u.client.BrowserLocate(ctx, session, selectors, reveal)
 		if err != nil {
 			return fmt.Errorf("locate notes: %w", err)
 		}

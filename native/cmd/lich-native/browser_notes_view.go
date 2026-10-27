@@ -154,9 +154,7 @@ func (u *window) hoverTag(gtx C, r image.Rectangle, el api.BrowserElement) {
 func (u *window) notePin(gtx C, n *browserNotes, i int, r image.Rectangle, lit bool) {
 	note := n.list[i]
 	if note.pin.Clicked(gtx) {
-		el := note.el
-		el.Box = note.box
-		n.openNote(el, i)
+		n.openListed(gtx, i)
 	}
 	macro := op.Record(gtx.Ops)
 	tab := gtx
@@ -386,9 +384,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 			continue
 		}
 		if note.row.Clicked(gtx) {
-			el := note.el
-			el.Box = note.box
-			n.openNote(el, i)
+			n.openListed(gtx, i)
 		}
 	}
 	height := notesTrayHeight(gtx, len(n.list))

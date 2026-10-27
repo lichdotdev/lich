@@ -372,6 +372,7 @@ BrowserKeyOptions {
 BrowserLocateOptions {
 	id string
 	selectors []string
+	reveal,omitempty string
 }
 
 BrowserRect {

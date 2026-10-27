@@ -3,8 +3,11 @@ package main
 import (
 	"math"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
+	"gioui.org/layout"
+	"gioui.org/op"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -106,6 +109,31 @@ func TestAnOpenNoteFollowsItsElementAsThePageScrolls(t *testing.T) {
 	n.applyBoxes(locatedNotes{selectors: []string{"section.chart"}, boxes: []api.BrowserRect{{Y: 250, W: 600, H: 300}}, draft: true})
 	if got := n.draftBox(); got.Y != 250 {
 		t.Fatalf("the open note stayed at y %d after the page scrolled its element to 250", got.Y)
+	}
+}
+
+func TestANoteOpenedFromTheTrayIsRevealedByTheNextLookup(t *testing.T) {
+	n := newBrowserNotes()
+	n.list = []*browserNote{{el: api.BrowserElement{Selector: "li.far"}, box: api.BrowserRect{Y: 2100, W: 150, H: 40}}}
+	n.nextLocate = time.Now().Add(time.Hour)
+	n.openListed(layout.Context{Ops: new(op.Ops)}, 0)
+	if n.reveal != "li.far" || !n.nextLocate.IsZero() {
+		t.Fatalf("reveal %q, next lookup %v: want li.far looked up and scrolled to right away", n.reveal, n.nextLocate)
+	}
+	if got := n.draftBox(); got.Y != 2100 {
+		t.Fatalf("the popover opened at y %d, want the box the tray knew until the lookup answers", got.Y)
+	}
+	n.applyBoxes(locatedNotes{selectors: []string{"li.far"}, boxes: []api.BrowserRect{{Y: 280, W: 150, H: 40}}})
+	if got := n.draftBox(); got.Y != 280 {
+		t.Fatalf("the popover stayed at y %d after the reveal scrolled its element to 280", got.Y)
+	}
+}
+
+func TestANotePickedOnThePageIsNotScrolledTo(t *testing.T) {
+	n := newBrowserNotes()
+	n.openNote(api.BrowserElement{Label: "a", Selector: "a"}, -1)
+	if n.reveal != "" {
+		t.Fatalf("a note picked under the pointer asks to reveal %q", n.reveal)
 	}
 }
 

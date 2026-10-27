@@ -24,10 +24,15 @@ const notesProbe = `<body style="margin:0;font:16px sans-serif">
 
 func notesPage(t *testing.T) (*chromePage, context.Context) {
 	t.Helper()
+	return notesPageOf(t, notesProbe)
+}
+
+func notesPageOf(t *testing.T, html string) (*chromePage, context.Context) {
+	t.Helper()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, notesProbe)
+		fmt.Fprint(w, html)
 	}))
 	t.Cleanup(srv.Close)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
@@ -43,7 +48,7 @@ func notesPage(t *testing.T) (*chromePage, context.Context) {
 
 func boxOf(t *testing.T, p *chromePage, ctx context.Context, selector string) api.BrowserRect {
 	t.Helper()
-	boxes, err := p.Locate(ctx, []string{selector})
+	boxes, err := p.Locate(ctx, []string{selector}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,6 +126,64 @@ func TestChromeLocateAnswersAnEmptyBoxForAnElementGone(t *testing.T) {
 	}
 	if got := boxOf(t, p, ctx, "::bad"); got != (api.BrowserRect{}) {
 		t.Fatalf("box of an invalid selector = %+v", got)
+	}
+}
+
+// scrollProbe is a list that scrolls inside a 100px box, rows of 40px, above
+// a page taller than the viewport.
+const scrollProbe = `<body style="margin:0;font:16px sans-serif">
+<ul id="list" style="margin:0;padding:0;height:100px;overflow:auto;list-style:none">
+ <li id="i1" style="height:40px">One</li><li id="i2" style="height:40px">Two</li>
+ <li id="i3" style="height:40px">Three</li><li id="i4" style="height:40px">Four</li>
+ <li id="i5" style="height:40px">Five</li><li id="i6" style="height:40px">Six</li>
+</ul>
+<div style="height:2000px"></div>
+<button id="far" style="display:block;width:150px;height:40px">Far</button>
+<div style="height:300px"></div></body>`
+
+func TestChromeLocateHidesAnElementItsScrollingBoxHides(t *testing.T) {
+	p, ctx := notesPageOf(t, scrollProbe)
+	if got := boxOf(t, p, ctx, "#i5"); got != (api.BrowserRect{}) {
+		t.Errorf("row scrolled out of its list answers %+v, want an empty box", got)
+	}
+	if got, want := boxOf(t, p, ctx, "#i3"), (api.BrowserRect{X: 0, Y: 80, W: 800, H: 20}); got != want {
+		t.Errorf("row half out of its list answers %+v, want its visible part %+v", got, want)
+	}
+}
+
+func TestChromeElementAtBoxesOnlyThePartItsScrollingBoxShows(t *testing.T) {
+	p, ctx := notesPageOf(t, scrollProbe)
+	el, err := p.ElementAt(ctx, 20, 90)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (api.BrowserRect{X: 0, Y: 80, W: 800, H: 20}); el.Box != want {
+		t.Fatalf("picked %q at %+v, want its visible part %+v", el.Label, el.Box, want)
+	}
+}
+
+func TestChromeLocateRevealsAnElementOutOfView(t *testing.T) {
+	p, ctx := notesPageOf(t, scrollProbe)
+	boxes, err := p.Locate(ctx, []string{"#i5", "#far"}, "#i5")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := boxes[0]; got.H != 40 || got.Y < 0 || got.Y+got.H > 100 {
+		t.Errorf("revealed row stands at %+v, want whole inside its list", got)
+	}
+	far, err := p.Locate(ctx, []string{"#far"}, "#far")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := far[0]; got.H != 40 || got.Y < 250 || got.Y > 310 {
+		t.Errorf("revealed button stands at %+v, want centered in the 600px viewport", got)
+	}
+	again, err := p.Locate(ctx, []string{"#far"}, "#far")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again[0] != far[0] {
+		t.Errorf("revealing a button already in view moved it from %+v to %+v", far[0], again[0])
 	}
 }
 
