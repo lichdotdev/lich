@@ -298,14 +298,15 @@ h1.busy:not(.done) .caret { animation: none; }
 .svc .mono { font-size: 12px; }
 .svc .ic { width: 14px; height: 14px; }
 .sdot { position: relative; width: 14px; height: 14px; flex: none; }
-.sdot::before { content: ""; position: absolute; inset: 5.25px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+/* A 7px dot (radius 3.5dp in sidebar_services.go); a running one beats a ring out to twice its radius every 2.4s. */
+.sdot::before { content: ""; position: absolute; inset: 3.5px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
 .sdot.up::before { background: var(--pass); box-shadow: none; }
-.sdot.up::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; box-shadow: 0 0 0 1px var(--pass); opacity: 0; animation: sdot-pulse 2s ease-out infinite; }
-@keyframes sdot-pulse { 0% { opacity: .6; transform: scale(.5); } 100% { opacity: 0; transform: scale(1.1); } }
+.sdot.up::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--pass); opacity: 0; animation: sdot-pulse 2.4s ease-out infinite; }
+@keyframes sdot-pulse { 0% { opacity: .7; transform: scale(.5); } 33% { opacity: 0; transform: scale(1); } 100% { opacity: 0; } }
 .prof { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; }
 .prof b { flex: 1; font-weight: 400; }
 .prof .ic { width: 14px; height: 14px; }
-.av { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: oklch(0.62 0.17 255); color: #fff; font-size: 12px; font-weight: 600; }
+.av { display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; border-radius: 50%; background: oklch(0.62 0.17 255); color: #fff; font-size: 12px; line-height: 16px; font-weight: 600; }
 @keyframes spin { to { transform: rotate(360deg); } }
 /* A running check turns its loader-circle once a second, as lich's Spinner does. */
 .app .ic.spin { animation: spin 1s linear infinite; }
@@ -718,6 +719,12 @@ section.block { padding-block: 5.5rem; }
 .app.mini .ic.wait, .app.mini b.wait { color: var(--wait); }
 .app.mini .scard .t > .ic { width: 12px; height: 12px; }
 .app.mini .sub { margin-left: 22px; }
+/* The Services list opened upward, as it sits at the foot of the sidebar. */
+.app.mini .svcs { padding: 8px; border-radius: 8px; background: var(--island); }
+.svr { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 6px 0 8px; font-size: 14px; }
+.svr .mono { font-size: 12px; }
+.svr .ic { width: 14px; height: 14px; }
+.app.mini .svcs .svc { margin-top: 6px; }
 .app.mini.subs .path { display: none; }
 .mwall { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, 1fr); gap: 6px; height: 100%; padding: 6px; border-radius: 8px; background: var(--background); }
 .mt { border-radius: 8px; box-shadow: inset 0 0 0 1px var(--seam); overflow: hidden; }
