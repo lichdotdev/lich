@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Settings › General has a Copy on select switch for the terminal. On by default, it copies a selection as soon as you make it; off, copy it with Ctrl+Shift+C (Cmd+C on macOS).
+
 ## [0.81.0] - 2026-10-28
 
 > [!IMPORTANT]
