@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Settings › General has a Copy on select switch for the terminal. On by default, it copies a selection as soon as you make it; off, copy it with Ctrl+Shift+C (Cmd+C on macOS).
 - A session's browser zooms its page on its own, apart from the interface zoom: Ctrl+- and Ctrl+= (Cmd on macOS) zoom out and in by 10%, from 50% to 200%, and Ctrl+0 goes back to 100%. A zoomed-out page lays out wider, as in a desktop browser, which makes a small screen usable without shrinking the rest of the window. The zoom applies to every session's browser, shows on the toolbar while it is not 100%, and is kept for the next start.
 
 ### Changed

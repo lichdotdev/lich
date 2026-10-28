@@ -34,6 +34,7 @@ const (
 	uiFontKey           = "lich.appearance.font"
 	costBudgetKey       = "lich.footer.costBudget"
 	closeActionKey      = "window.closeAction"
+	copyOnSelectKey     = "lich.terminal.copyOnSelect"
 )
 
 // Bounds and steps for the zoom and the font sizes.
@@ -71,6 +72,7 @@ type appearancePrefs struct {
 	uiFont         string
 	budget         float64 // 0 is no ceiling
 	closeAction    string
+	copyOnSelect   bool
 }
 
 // clampZoom bounds a zoom and snaps it to one decimal.
@@ -118,6 +120,13 @@ func closeActionOf(stored string) string {
 // the kept answer, it does; otherwise the user is asked.
 func closeQuits(action string, live int) bool { return live == 0 || action == closeQuit }
 
+// copyOnSelectOf reads the stored copy on select: it is on until stored off,
+// including for a value that is not a boolean.
+func copyOnSelectOf(stored string) bool {
+	on, err := strconv.ParseBool(stored)
+	return stored == "" || err != nil || on
+}
+
 // parseNumber parses raw; what does not parse is the fallback.
 func parseNumber(raw string, fallback float64) float64 {
 	v, err := strconv.ParseFloat(raw, 64)
@@ -130,7 +139,7 @@ func parseNumber(raw string, fallback float64) float64 {
 // loadAppearancePrefs reads the stored values.
 func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
-	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey} {
+	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey} {
 		v, err := c.GetSetting(ctx, key, "")
 		if err != nil {
 			return appearancePrefs{}, err
@@ -147,6 +156,7 @@ func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePref
 		uiFont:         raw[uiFontKey],
 		budget:         clampCostBudget(parseNumber(raw[costBudgetKey], 0)),
 		closeAction:    closeActionOf(raw[closeActionKey]),
+		copyOnSelect:   copyOnSelectOf(raw[copyOnSelectKey]),
 	}
 	return p, nil
 }
@@ -185,6 +195,7 @@ func (u *window) applyAppearance(p appearancePrefs) {
 		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(p.uiFont, fonts.SystemSans), "error": backend.ErrorText(err)})))
 	}
 	u.footer.setBudget(p.budget)
+	u.terms.setCopyOnSelect(p.copyOnSelect)
 	u.win.Invalidate()
 }
 

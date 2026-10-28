@@ -46,6 +46,7 @@ type appearanceControls struct {
 	budget     widget.Editor
 	typed      bool // the ceiling field holds the user's text, not the stored value
 	closeTo    widget.Enum
+	copy       ui.SwitchState
 }
 
 // commit applies p at once and stores the setting that changed.
@@ -103,6 +104,9 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 	case costBudgetKey:
 		r.description = i18n.T("settings.footerSettings.ceilingDescription")
 		control = s.ceilingControl
+	case copyOnSelectKey:
+		r.description = i18n.T("settings.appearanceSettings.copyOnSelectDescription")
+		control = s.copyOnSelectControl
 	case closeActionKey:
 		return s.closeBlock(gtx, th, r, first), true
 	default:
@@ -135,6 +139,18 @@ func (s *settingsScreen) textSizeControl(gtx C, th *ui.Theme) D {
 			s.commitAppearance(p, terminalFontSizeKey, strconv.Itoa(p.fontSize))
 		},
 	})
+}
+
+// copyOnSelectControl is the switch that copies a terminal selection as soon
+// as it is made.
+func (s *settingsScreen) copyOnSelectControl(gtx C, th *ui.Theme) D {
+	if s.look.copy.Update(gtx) {
+		p := s.look.prefs
+		p.copyOnSelect = s.look.copy.Value
+		s.commitAppearance(p, copyOnSelectKey, strconv.FormatBool(p.copyOnSelect))
+	}
+	s.look.copy.Value = s.look.prefs.copyOnSelect
+	return th.Switch(&s.look.copy).Layout(gtx)
 }
 
 func (s *settingsScreen) editorSizeControl(gtx C, th *ui.Theme) D {

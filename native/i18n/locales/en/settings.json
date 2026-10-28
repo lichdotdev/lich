@@ -60,6 +60,9 @@
     "textSizeTitle": "Terminal text size",
     "textSmaller": "Smaller terminal text",
     "textLarger": "Larger terminal text",
+    "copyOnSelectTitle": "Copy on select",
+    "copyOnSelectDescription": "Copy a terminal selection to the clipboard as soon as you make it. Off, copy with Ctrl+Shift+C (Cmd+C on macOS).",
+    "copyOnSelectSearchWords": "clipboard selection terminal automatic",
     "replaceThemesTitle": "Replace imported themes?",
     "replaceThemesDescription": "The repository carries themes that are already installed: {themes}. Install anyway? This permanently deletes the previous versions.",
     "replaceThemes": "Replace themes",
@@ -398,7 +401,8 @@
     "projectOnly": "Project only"
   },
   "settingsGeneral": {
-    "notifySearchWords": "desktop notification alert bell"
+    "notifySearchWords": "desktop notification alert bell",
+    "terminalGroup": "Terminal"
   },
   "settingsHelp": {
     "bugDescription": "Opens the bug form in your browser with the version and platform filled in. lich does not file the issue — you write it yourself. Run `lich rage` in a terminal to pack the logs, the versions and what lich found on this machine into one archive to attach.",

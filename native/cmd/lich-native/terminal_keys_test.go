@@ -78,6 +78,28 @@ func TestPasteChords(t *testing.T) {
 	}
 }
 
+func TestCopyChords(t *testing.T) {
+	cases := []struct {
+		name string
+		goos string
+		ev   key.Event
+		want bool
+	}{
+		{"ctrl+shift+c", "linux", key.Event{Name: "C", Modifiers: key.ModCtrl | key.ModShift}, true},
+		{"ctrl+shift+c on Windows", "windows", key.Event{Name: "C", Modifiers: key.ModCtrl | key.ModShift}, true},
+		{"cmd+c on macOS", "darwin", key.Event{Name: "C", Modifiers: key.ModCommand}, true},
+		{"ctrl+c interrupts instead", "linux", key.Event{Name: "C", Modifiers: key.ModCtrl}, false},
+		{"cmd+c elsewhere", "linux", key.Event{Name: "C", Modifiers: key.ModCommand}, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := isCopyChord(c.ev, c.goos); got != c.want {
+				t.Fatalf("copy chord %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
 func TestPastedClipboard(t *testing.T) {
 	vt, err := gioterm.New(80, 24, 10, 20, func([]byte) {})
 	if err != nil {

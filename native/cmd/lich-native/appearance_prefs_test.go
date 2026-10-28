@@ -51,17 +51,27 @@ func TestLoadAppearancePrefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk}
+	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true}
 	if p != want {
 		t.Errorf("defaults %+v, want %+v", p, want)
 	}
 	f.settings[zoomKey+"@"], f.settings[terminalFontSizeKey+"@"] = "3", "x"
 	f.settings[costBudgetKey+"@"], f.settings[closeActionKey+"@"] = "25.5", "quit"
-	f.settings[terminalFontKey+"@"], f.settings[browserZoomKey+"@"] = "Iosevka", "0.8"
+	f.settings[terminalFontKey+"@"], f.settings[copyOnSelectKey+"@"], f.settings[browserZoomKey+"@"] = "Iosevka", "false", "0.8"
 	p, _ = loadAppearancePrefs(context.Background(), client)
 	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit}
 	if p != want {
 		t.Errorf("stored %+v, want %+v", p, want)
+	}
+}
+
+// Copy on select is on until it is stored off; a value from a newer lich that
+// is not a boolean reads as on.
+func TestCopyOnSelectDefaultsOn(t *testing.T) {
+	for stored, want := range map[string]bool{"": true, "true": true, "false": false, "yes": true} {
+		if got := copyOnSelectOf(stored); got != want {
+			t.Errorf("copyOnSelectOf(%q) = %v, want %v", stored, got, want)
+		}
 	}
 }
 
@@ -123,6 +133,9 @@ func TestAppearanceRowsAreFoundBySearch(t *testing.T) {
 		if got := searchSettings(q); len(got) == 0 || got[0].title != title || got[0].section != sectionAppearance {
 			t.Errorf("%q: %+v, want %q", q, got, title)
 		}
+	}
+	if got := searchSettings("clipboard"); len(got) == 0 || got[0].title != "Copy on select" || got[0].section != sectionGeneral {
+		t.Errorf("clipboard: %+v, want Copy on select under General", got)
 	}
 	// The Hotkeys rows are searchable, so "Quit lich" is a
 	// prefix match and outranks the close setting, found by its also words.

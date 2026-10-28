@@ -136,7 +136,14 @@ type terminals struct {
 	// spawn is refused, so a toast in place of the generic failure offers a
 	// way on.
 	profileGone func(s sessionView)
+	// copyOnSelectOff is Settings › General's copy on select turned off;
+	// zero is on, which is what a window with no terminal copy keeps.
+	copyOnSelectOff atomic.Bool
 }
+
+// setCopyOnSelect turns copying a terminal selection as soon as it is made on
+// or off.
+func (ts *terminals) setCopyOnSelect(on bool) { ts.copyOnSelectOff.Store(!on) }
 
 // queue sends text to session id's terminal once it starts.
 func (ts *terminals) queue(id, text string) {
@@ -512,6 +519,9 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
 		key.Filter{Focus: t.tag, Name: "V", Required: key.ModCommand},
 		transfer.TargetFilter{Target: t.tag, Type: "application/text"})
+	if runtime.GOOS == "darwin" {
+		filters = append(filters, key.Filter{Focus: t.tag, Name: "C", Required: key.ModCommand})
+	}
 	if focus {
 		gtx.Execute(key.FocusCmd{Tag: t.tag})
 	}
@@ -529,6 +539,12 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			}
 			if isPasteChord(e, runtime.GOOS) {
 				gtx.Execute(clipboard.ReadCmd{Tag: t.tag})
+				break
+			}
+			if isCopyChord(e, runtime.GOOS) {
+				if text := t.vt.SelectionText(); text != "" {
+					ts.copySelection(gtx, text)
+				}
 				break
 			}
 			ts.send(t.id, terminalKeyBytes(t.vt, e, runtime.GOOS))
@@ -552,7 +568,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			}
 			send, copied := t.pointer(e)
 			ts.send(t.id, send)
-			if copied != "" {
+			if copied != "" && !ts.copyOnSelectOff.Load() {
 				ts.copySelection(gtx, copied)
 			}
 		}
