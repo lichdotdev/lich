@@ -4,7 +4,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/project"
@@ -64,8 +66,8 @@ func wrapSandbox(
 	// The token goes in the child's environment rather than through bubblewrap's
 	// --setenv, which would write it into an argument list any process on the
 	// machine can read out of /proc.
-	if creds.ghToken != "" {
-		spec.env = append(spec.env, "GH_TOKEN="+creds.ghToken)
+	if creds.ghEnv != "" {
+		spec.env = append(spec.env, creds.ghEnv)
 	}
 	return spec, sb.SkippedLinks
 }
@@ -135,15 +137,15 @@ func codexTrustOverride(root string) string {
 type sandboxCreds struct {
 	// sshAgent binds the host's ssh-agent socket into the session.
 	sshAgent bool
-	// ghToken is the GitHub token to put in the session's environment, or "" for
-	// none — which is also what a token lookup that failed leaves behind.
-	ghToken string
+	// ghEnv is the GitHub token's environment entry to put in the session's
+	// environment (project.GHTokenEnv), or "" for none — which is also what a
+	// token lookup that failed leaves behind.
+	ghEnv string
 }
 
 // sandboxCredentials reads what this session's project allows a confined spawn to
-// carry in. An unconfined session gets nothing: it already runs with the user's
-// whole environment, and asking gh for a token it does not need would put one in
-// an environment that never lacked it.
+// carry in. An unconfined session gets nothing here: it already runs with the
+// user's ssh agent, and its token comes from withAccountToken.
 //
 // The grants carry no provider — they describe what is inside the sandbox, not
 // who runs in it (internal/store/settings.go) — which is why the provider is not
@@ -163,9 +165,44 @@ func (s *Service) sandboxCredentials(projectID, cwd string, confined bool) sandb
 	}
 	creds := sandboxCreds{sshAgent: s.store.SandboxSSHAgent(projectID)}
 	if s.store.SandboxGHToken(projectID) {
-		creds.ghToken = project.GHToken(s.store.GHAccountForPath(cwd))
+		creds.ghEnv = project.GHTokenEnv(s.store.GHAccountForPath(cwd))
 	}
 	return creds
+}
+
+// withAccountToken hands an unconfined session the token of its project's gh
+// account, so its gh answers as the account the rest of lich answers as for
+// this repository rather than as whichever one gh has active — which drifts on
+// its own between accounts on the same host. A project with no account keeps
+// the user's environment untouched; a confined session gets its token through
+// sandboxCredentials, behind the sandbox's own grant.
+//
+// The token is read once, at the spawn: an account logged in again or revoked
+// since reaches the session only when it is spawned again. Any GH_TOKEN the
+// user exported is replaced rather than shadowed, because a duplicate key is
+// resolved differently per platform.
+func (s *Service) withAccountToken(spec ptySpec, cwd string, confined bool) ptySpec {
+	if confined {
+		return spec
+	}
+	account := s.store.GHAccountForPath(cwd)
+	if account == "" {
+		return spec
+	}
+	entry := project.GHTokenEnv(account)
+	if entry == "" {
+		return spec
+	}
+	spec.env = replaceEnv(spec.env, entry)
+	return spec
+}
+
+// replaceEnv is env with entry's variable set to entry's value alone.
+func replaceEnv(env []string, entry string) []string {
+	name, _, _ := strings.Cut(entry, "=")
+	return append(slices.DeleteFunc(slices.Clone(env), func(kv string) bool {
+		return strings.HasPrefix(kv, name+"=")
+	}), entry)
 }
 
 // sessionDropDir is the directory holding the copies of the files dropped into

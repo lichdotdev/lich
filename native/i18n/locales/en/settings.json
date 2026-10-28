@@ -323,7 +323,7 @@
     "account": "GitHub account",
     "accountFor": "GitHub account for {name}",
     "accountSearchWords": "login gh switch",
-    "accountDescription": "Which account lich runs gh as for this project — pull requests, checks and PR checkouts. gh keeps one active account per host, so a repository only another account can see reads as not found. Accounts on an enterprise host are listed with it.",
+    "accountDescription": "Which account lich runs gh as for this project — pull requests, checks, PR checkouts and the gh its sessions run, from their next start. gh keeps one active account per host, so a repository only another account can see reads as not found. Accounts on an enterprise host are listed with it.",
     "activeAccount": "gh's active account",
     "listFailed": "Could not list GitHub accounts: {error}",
     "noAccounts": "gh is signed in to no account. Run `gh auth login` in a terminal."

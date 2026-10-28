@@ -134,7 +134,7 @@ func TestBranchPullRequestRunsAsTheProjectsAccount(t *testing.T) {
 	if pr, err := svc.BranchPullRequest("/repo"); err != nil || pr == nil {
 		t.Fatalf("BranchPullRequest = %+v, %v, want the open PR", pr, err)
 	}
-	if account.viewToken != "gho_secret" {
+	if account.viewToken != "GH_TOKEN=gho_secret" {
 		t.Errorf("read ran with token %q, want the configured account's", account.viewToken)
 	}
 }

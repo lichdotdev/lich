@@ -323,7 +323,7 @@
     "account": "Conta do GitHub",
     "accountFor": "Conta do GitHub para {name}",
     "accountSearchWords": "login gh trocar",
-    "accountDescription": "Qual conta o lich usa para rodar o gh neste projeto: pull requests, checks e checkouts de PR. O gh mantém uma conta ativa por host, então um repositório que só outra conta enxerga aparece como não encontrado. Contas de um host enterprise aparecem listadas com ele.",
+    "accountDescription": "Qual conta o lich usa para rodar o gh neste projeto: pull requests, checks, checkouts de PR e o gh que as sessões rodam, a partir do próximo início delas. O gh mantém uma conta ativa por host, então um repositório que só outra conta enxerga aparece como não encontrado. Contas de um host enterprise aparecem listadas com ele.",
     "activeAccount": "conta ativa do gh",
     "listFailed": "Não foi possível listar as contas do GitHub: {error}",
     "noAccounts": "O gh não está logado em nenhuma conta. Execute `gh auth login` em um terminal."

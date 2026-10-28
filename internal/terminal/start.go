@@ -170,6 +170,7 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (
 		rows: opts.Rows,
 	}
 	spec = withShellIntegration(spec, opts.Kind, s.shellIntegrationDir)
+	spec = s.withAccountToken(spec, opts.Cwd, inSandbox)
 	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
 	spec, skippedLinks := wrapSandbox(
 		spec, opts.Kind, userHome(), sessionDropDir(s.dropDir, opts.ID, inSandbox), profileDir, inSandbox, creds,

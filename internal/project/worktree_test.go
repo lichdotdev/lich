@@ -757,10 +757,10 @@ func TestCreateWorktreeFromPR(t *testing.T) {
 		if _, err := svc.CreateWorktreeFromPR(t.Context(), api.CreateWorktreeFromPROptions{ProjectPath: repo, ProjectID: "proj", Number: 105}); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if gh.checkoutToken != "gho_project" {
+		if gh.checkoutToken != "GH_TOKEN=gho_project" {
 			t.Errorf("gh pr checkout ran with token %q, want the project's", gh.checkoutToken)
 		}
-		if gh.viewToken != "gho_project" {
+		if gh.viewToken != "GH_TOKEN=gho_project" {
 			t.Errorf("gh pr view ran with token %q, want the project's", gh.viewToken)
 		}
 	})

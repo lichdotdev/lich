@@ -26,11 +26,12 @@ const (
 	prCheckoutTimeout = 90 * time.Second
 )
 
-// ghRunner runs one gh subcommand inside dir as the account token (empty: gh's
-// own active account) and returns its stdout. It is a field on Service so the
+// ghRunner runs one gh subcommand inside dir as the account whose token tokenEnv
+// carries, "<variable>=<token>" (GHTokenEnv; empty: gh's own active account),
+// and returns its stdout. It is a field on Service so the
 // pull request flows can be exercised without a GitHub remote; production
 // wiring is runGH.
-type ghRunner func(timeout time.Duration, dir, token string, args ...string) ([]byte, error)
+type ghRunner func(timeout time.Duration, dir, tokenEnv string, args ...string) ([]byte, error)
 
 // errNoPullRequest marks gh's "no pull requests found" — the one failure that
 // means the branch simply has no PR, which the read flows turn into an empty
@@ -39,15 +40,15 @@ var errNoPullRequest = errors.New("no pull request for this branch")
 
 // runGH shells out to gh with the call capped by timeout, and turns a failure
 // into the message the screen shows (gherror.go); gh's own stderr reaches the
-// log, never the screen. A non-empty token rides in GH_TOKEN, which is how gh is
-// told to answer as one specific account.
-func runGH(timeout time.Duration, dir, token string, args ...string) ([]byte, error) {
+// log, never the screen. A non-empty tokenEnv rides in the environment, which is
+// how gh is told to answer as one specific account.
+func runGH(timeout time.Duration, dir, tokenEnv string, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := commandContext(ctx, "gh", args...)
 	cmd.Dir = dir
-	if token != "" {
-		cmd.Env = append(cmd.Env, "GH_TOKEN="+token)
+	if tokenEnv != "" {
+		cmd.Env = append(cmd.Env, tokenEnv)
 	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

@@ -267,7 +267,7 @@ func TestWrapSandboxKeepsTheTokenOutOfTheArguments(t *testing.T) {
 		t.Skip("bubblewrap is not installed")
 	}
 	const token = "gho_secret_probe_value"
-	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", true, sandboxCreds{ghToken: token})
+	got, _ := wrapSandbox(baseSpec(), providers.Claude, t.TempDir(), "", "", true, sandboxCreds{ghEnv: "GH_TOKEN=" + token})
 
 	if !slices.Contains(got.env, "GH_TOKEN="+token) {
 		t.Errorf("GH_TOKEN missing from the child environment: %v", got.env)
