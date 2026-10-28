@@ -17,10 +17,12 @@
 
 - La cuenta de GitHub de un proyecto (Ajustes › Control de versiones) ahora llega también a sus sesiones: `gh` ejecutado por el agente o en una tarjeta de shell responde como esa cuenta en lugar de la que gh tenga activa, desde el próximo inicio de la sesión. Dentro de esas sesiones `gh auth switch` ya no cambia la cuenta.
 - La ventana usa menos memoria con muchas sesiones abiertas. Una terminal fuera de pantalla libera los píxeles que dibujó, unos pocos megabytes cada una, y los vuelve a dibujar en un fotograma cuando regresa.
+- El recolector de basura de la ventana ahora corre a 50 en lugar del 100 por defecto de Go, lo que en una prueba con 15 sesiones recortó cerca de una décima parte de su memoria residente, el margen que el sistema enviaría a swap. `GOGC` sigue teniendo prioridad.
 - Las herramientas del navegador responden al agente en el idioma del prompt de la sesión: la leyenda de la lista de elementos, la nota de que hay más elementos más abajo, las marcas de relleno y de activado, una descarga que sigue en curso, una espera que agotó el tiempo, el recuento de errores de consola adicionales y lo que un diálogo abierto le pide. Las etiquetas de línea (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` y el resto) se mantienen como están en todos los idiomas.
 
 ### Fixed
 
+- En Windows, la ventana se llama `lich` en la barra de tareas y en Alt-Tab, en lugar de `lich (native slice)`.
 - Un proyecto cuya cuenta de GitHub vive en un servidor de GitHub Enterprise obtiene esa cuenta en la pantalla Pull requests, en las insignias de pull request y en una sesión en sandbox a la que se le concede su token. El token salía bajo una variable que gh ignora para un host empresarial, así que gh respondía allí como su cuenta activa.
 - El clic, la escritura o la pulsación de tecla por índice del navegador de una sesión llega al elemento al que la última lectura de página del agente dio ese índice. Tras un desplazamiento y una segunda lectura, un elemento que la primera lectura había listado con el mismo índice, ahora fuera de vista, podía recibir el clic en su lugar, sin ningún error.
 

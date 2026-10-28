@@ -17,10 +17,12 @@
 
 - A conta do GitHub de um projeto (Configurações › Controle de versão) agora chega também às sessões dele: o `gh` rodado pelo agente ou num card de shell responde como essa conta, em vez de qualquer uma que o gh tenha ativa, a partir do próximo início da sessão. Dentro dessas sessões, `gh auth switch` não muda mais a conta.
 - A janela guarda menos memória com muitas sessões abertas. Um terminal fora da tela libera os pixels que desenhou, alguns megabytes cada, e os redesenha em um quadro quando volta.
+- O coletor de lixo da janela agora roda em 50, e não no padrão 100 do Go, o que num teste com 15 sessões cortou cerca de um décimo da memória residente, a folga que o sistema mandaria para o swap. `GOGC` ainda tem precedência.
 - As ferramentas do navegador respondem a um agente no idioma de prompt da sessão: a legenda da lista de elementos, o aviso de que há mais elementos abaixo, as marcas de preenchido e marcado, um download ainda em andamento, uma espera que esgotou o tempo, a contagem de erros de console adicionais e o que um diálogo aberto pede dele. As etiquetas de linha (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` e as demais) continuam como estão em todos os idiomas.
 
 ### Fixed
 
+- No Windows, a janela aparece como `lich` na barra de tarefas e no Alt-Tab, em vez de `lich (native slice)`.
 - Um projeto cuja conta do GitHub vive num servidor GitHub Enterprise passa a ter essa conta na tela de Pull requests, nos selos de pull request e numa sessão em sandbox com o token dela. O token saía sob uma variável que o gh ignora para um host enterprise, então o gh respondia ali como a conta ativa dele.
 - O clique, a digitação ou a tecla pressionada por índice no navegador de uma sessão chega ao elemento que a última leitura de página do agente deu a esse índice. Depois de uma rolagem e de uma segunda leitura, um elemento que a primeira leitura listava sob o mesmo índice, agora fora da vista, podia receber o clique no lugar, sem nenhum erro.
 
