@@ -26,9 +26,9 @@ var replaceLocks sync.Map
 
 // replaceFile puts from in place of to. MoveFileEx answers ACCESS_DENIED or
 // SHARING_VIOLATION while another rename onto to, or a reader, still holds it.
-// Renames from this process are serialized per target, since retrying alone let
-// one of sixteen concurrent writers lose every race until the deadline; the
-// retry, the way robustio retries it, covers other processes and readers.
+// Renames from this process take turns per target: racing each other, sixteen
+// writers on a loaded runner outlasted the shared deadline. The retry, the way
+// robustio retries it, is left for other processes and readers.
 func replaceFile(from, to string) error {
 	mu, _ := replaceLocks.LoadOrStore(filepath.Clean(to), new(sync.Mutex))
 	mu.(*sync.Mutex).Lock()

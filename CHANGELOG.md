@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- On Windows, sessions starting at the same time on one profile no longer fail now and then with `Access is denied` while lich writes that profile's files.
+
 ## [0.81.0] - 2026-10-28
 
 > [!IMPORTANT]
