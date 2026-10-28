@@ -61,11 +61,13 @@ var (
 	BrowserDownloadEvent = defineEvent[BrowserDownload]("browser-download")
 )
 
-// Download states, Chrome's own (Browser.downloadProgress).
+// Download states, Chrome's own (Browser.downloadProgress), and lich's
+// DownloadFailed: Chrome completed it, and moving it into Downloads failed.
 const (
 	DownloadInProgress = "inProgress"
 	DownloadCompleted  = "completed"
 	DownloadCanceled   = "canceled"
+	DownloadFailed     = "failed"
 )
 
 // BrowserDownload is one file a session's page downloaded: Path is where it

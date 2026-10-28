@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -24,9 +25,9 @@ func TestDownloadsNameTheFileWithoutOverwriting(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(d.staging, "ga"), []byte("new"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	got, ok, err := d.progress("ga", 3, api.DownloadCompleted)
-	if err != nil || !ok || got.Path != a.Path || got.Bytes != 3 {
-		t.Fatalf("completed %+v ok=%v err=%v", got, ok, err)
+	got, ok := complete(d, "ga", 3)
+	if !ok || got.Path != a.Path || got.Bytes != 3 || got.State != api.DownloadCompleted {
+		t.Fatalf("completed %+v ok=%v", got, ok)
 	}
 	if b, _ := os.ReadFile(a.Path); string(b) != "new" {
 		t.Fatalf("%s holds %q, want the download", a.Path, b)
@@ -48,32 +49,60 @@ func TestDownloadsRenameAroundAFileThatTookTheName(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, _, err := d.progress("g", 1, api.DownloadCompleted)
-	if err != nil || got.Path != filepath.Join(dir, "a (1).txt") {
-		t.Fatalf("got %q (err %v) instead of a free name beside %q", got.Path, err, want)
+	got, _ := complete(d, "g", 1)
+	if got.State != api.DownloadCompleted || got.Path != filepath.Join(dir, "a (1).txt") {
+		t.Fatalf("got %+v instead of a free name beside %q", got, want)
 	}
 }
 
 func TestDownloadsCanceledFreesTheNameAndUnknownIsIgnored(t *testing.T) {
 	d := testDownloadsAt(t)
 	first := d.begin("g", "x.bin").Path
-	if got, ok, _ := d.progress("g", 0, api.DownloadCanceled); !ok || got.State != api.DownloadCanceled {
+	if got, ok := d.progress("g", 0, api.DownloadCanceled); !ok || got.State != api.DownloadCanceled {
 		t.Fatalf("canceled reported %+v", got)
 	}
 	if again := d.begin("h", "x.bin").Path; again != first {
 		t.Fatalf("a canceled download kept %q reserved; got %q", first, again)
 	}
-	if _, ok, _ := d.progress("nobody", 1, api.DownloadCompleted); ok {
+	if _, ok := d.progress("nobody", 1, api.DownloadCompleted); ok {
 		t.Fatal("a GUID never begun was reported")
 	}
 }
 
-func TestDownloadsReportTheWrittenFileWhenTheRenameFails(t *testing.T) {
+func TestDownloadsReportFailedWhenTheMoveFails(t *testing.T) {
 	d := testDownloadsAt(t)
-	d.begin("g", "a.txt")
-	got, ok, err := d.progress("g", 1, api.DownloadCompleted)
-	if err == nil || !ok || got.Path != filepath.Join(d.staging, "g") {
-		t.Fatalf("got %+v ok=%v err=%v, want the GUID file and the error", got, ok, err)
+	want := d.begin("g", "a.txt").Path
+	got, ok := complete(d, "g", 1)
+	if !ok || got.State != api.DownloadFailed || got.Path != want {
+		t.Fatalf("got %+v ok=%v, want %s failed", got, ok, want)
+	}
+	if again := d.begin("h", "a.txt").Path; again != want {
+		t.Fatalf("a failed download kept %q reserved; got %q", want, again)
+	}
+}
+
+func TestDownloadsKeepTheNameAndTheLockFreeWhileTheFileMoves(t *testing.T) {
+	d := testDownloadsAt(t)
+	want := d.begin("g", "a.txt").Path
+	if err := os.WriteFile(filepath.Join(d.staging, "g"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var during string
+	d.rename = func(from, to string) error {
+		begun := make(chan string, 1)
+		go func() { begun <- d.begin("h", "a.txt").Path }()
+		select {
+		case during = <-begun:
+		case <-time.After(time.Second):
+			t.Error("a download began only after the move: the lock was held")
+		}
+		return os.Rename(from, to)
+	}
+	if got, _ := complete(d, "g", 1); got.State != api.DownloadCompleted || got.Path != want {
+		t.Fatalf("got %+v, want %s completed", got, want)
+	}
+	if during != filepath.Join(d.dir, "a (1).txt") {
+		t.Fatalf("a download begun during the move took %q", during)
 	}
 }
 
@@ -87,9 +116,8 @@ func TestDownloadsCopyAcrossFilesystems(t *testing.T) {
 	if err := os.WriteFile(staged, []byte("data"), 0o640); err != nil {
 		t.Fatal(err)
 	}
-	got, _, err := d.progress("g", 4, api.DownloadCompleted)
-	if err != nil || got.Path != want {
-		t.Fatalf("got %+v (err %v), want %s", got, err, want)
+	if got, _ := complete(d, "g", 4); got.State != api.DownloadCompleted || got.Path != want {
+		t.Fatalf("got %+v, want %s completed", got, want)
 	}
 	if b, err := os.ReadFile(want); err != nil || string(b) != "data" {
 		t.Fatalf("%s holds %q (%v)", want, b, err)
@@ -108,8 +136,8 @@ func TestDownloadsLeaveWhatNoPageAnnouncedInStaging(t *testing.T) {
 	if err := os.WriteFile(stray, []byte("model"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, ok, err := d.progress("stray", 5, api.DownloadCompleted); ok || err != nil {
-		t.Fatalf("a file no page announced was handled (ok=%v err=%v)", ok, err)
+	if _, ok := d.progress("stray", 5, api.DownloadCompleted); ok {
+		t.Fatal("a file no page announced was handled")
 	}
 	if names := dirNames(t, d.dir); len(names) != 0 {
 		t.Fatalf("Downloads holds %v, want nothing", names)
@@ -117,6 +145,16 @@ func TestDownloadsLeaveWhatNoPageAnnouncedInStaging(t *testing.T) {
 	if _, err := os.Lstat(stray); err != nil {
 		t.Fatalf("the stray file left staging: %v", err)
 	}
+}
+
+// complete reports guid completed and places it, the way the page's
+// listener does.
+func complete(d *downloads, guid string, received float64) (api.BrowserDownload, bool) {
+	dl, ok := d.progress(guid, received, api.DownloadCompleted)
+	if !ok {
+		return dl, false
+	}
+	return d.place(guid, dl), true
 }
 
 // testDownloadsAt is a downloads staging in one temporary folder and saving

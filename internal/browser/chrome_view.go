@@ -62,13 +62,17 @@ func (p *chromePage) watchDownloads(onDownload func(guid string, d api.BrowserDo
 		case *browser.EventDownloadWillBegin:
 			onDownload(e.GUID, p.dl.begin(e.GUID, e.SuggestedFilename))
 		case *browser.EventDownloadProgress:
-			d, ok, err := p.dl.progress(e.GUID, e.ReceivedBytes, string(e.State))
-			if err != nil {
-				slog.Warn("browser: name a finished download", "path", d.Path, "err", err)
+			d, ok := p.dl.progress(e.GUID, e.ReceivedBytes, string(e.State))
+			if !ok {
+				return
 			}
-			if ok {
+			if d.State != api.DownloadCompleted {
 				onDownload(e.GUID, d)
+				return
 			}
+			// Every browser event waits behind this listener, and a move
+			// across disks takes as long as the file.
+			go func() { onDownload(e.GUID, p.dl.place(e.GUID, d)) }()
 		}
 	})
 }

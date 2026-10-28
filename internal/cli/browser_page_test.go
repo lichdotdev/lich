@@ -44,6 +44,13 @@ func TestPageTextIsOneLinePerElement(t *testing.T) {
 	}
 }
 
+func TestDownloadLineSaysAFailedMove(t *testing.T) {
+	d := api.BrowserDownload{Path: "/home/u/Downloads/report.csv", Bytes: 5, State: api.DownloadFailed}
+	if got := downloadLine(d); got != "download failed: /home/u/Downloads/report.csv" {
+		t.Fatalf("got %q", got)
+	}
+}
+
 func TestPageTextOfAnEmptyPage(t *testing.T) {
 	if got := pageText(api.BrowserPageInfo{URL: "about:blank"}); got != "url: about:blank\ntitle: " {
 		t.Fatalf("got %q", got)

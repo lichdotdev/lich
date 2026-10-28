@@ -3,6 +3,7 @@ package browser
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,34 +52,46 @@ func (d *downloads) begin(guid, suggested string) api.BrowserDownload {
 	return api.BrowserDownload{Path: path, State: api.DownloadInProgress}
 }
 
-// progress applies one progress report, moving the file into place once it
-// is complete. ok is false for a GUID begin never saw.
-func (d *downloads) progress(guid string, received float64, state string) (api.BrowserDownload, bool, error) {
+// progress applies one progress report. A completed download is not in place
+// yet: its name stays reserved until place moves it there. ok is false for a
+// GUID begin never saw.
+func (d *downloads) progress(guid string, received float64, state string) (api.BrowserDownload, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	path, ok := d.reserved[guid]
 	if !ok {
-		return api.BrowserDownload{}, false, nil
+		return api.BrowserDownload{}, false
 	}
 	out := api.BrowserDownload{Path: path, Bytes: int64(received), State: state}
 	if state == api.DownloadInProgress {
-		return out, true, nil
+		return out, true
 	}
-	delete(d.reserved, guid)
 	if state != api.DownloadCompleted {
-		return out, true, nil
+		delete(d.reserved, guid)
+		return out, true
 	}
 	if _, err := os.Lstat(path); err == nil {
 		// Something else took the name while the file downloaded.
-		path = d.freeLocked(filepath.Base(path))
-		out.Path = path
+		out.Path = d.freeLocked(filepath.Base(path))
+		d.reserved[guid] = out.Path
 	}
-	written := filepath.Join(d.staging, guid)
-	if err := d.move(written, path); err != nil {
-		out.Path = written
-		return out, true, err
+	return out, true
+}
+
+// place moves the completed download dl from staging to its reserved path,
+// outside the lock: across filesystems the move is a copy as long as the file.
+// A move that fails reports the download failed, since the staged file goes
+// with the profile.
+func (d *downloads) place(guid string, dl api.BrowserDownload) api.BrowserDownload {
+	err := d.move(filepath.Join(d.staging, guid), dl.Path)
+	d.mu.Lock()
+	delete(d.reserved, guid)
+	d.mu.Unlock()
+	if err != nil {
+		slog.Warn("browser: move a finished download", "path", dl.Path, "err", err)
+		dl.State = api.DownloadFailed
 	}
-	return out, true, nil
+	return dl
 }
 
 // move renames from to to, and copies where a rename cannot go: the profile
