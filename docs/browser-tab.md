@@ -72,8 +72,9 @@ and size, after waiting up to ten seconds for it; one still running answers
 `browser_navigate` on a URL that answers with a file download it the same way:
 Chrome aborts that navigation and the page stays where it was, so the answer
 is the handle with `downloads` rather than an error. That answer also
-waits until 1.5 seconds after the download began, because Chrome aborts a
-navigation started sooner and reloads the page. `browser-download` tells the
+waits until 2.5 seconds after the download began, because Chrome reloads the
+page about 1.5 seconds after an `<a download>` and the reload aborts a
+navigation started before it. `browser-download` tells the
 window when a file is complete, and the window shows a toast naming it with a
 button that opens its folder. The same holds in a window opened with Open in a
 window.

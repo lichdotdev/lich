@@ -48,7 +48,8 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		return nil, err
 	}
 	opts := append([]chromedp.ExecAllocatorOption{}, chromedp.DefaultExecAllocatorOptions[:]...)
-	opts = append(opts, chromedp.ExecPath(exe), chromedp.UserDataDir(dir), chromedp.WSURLReadTimeout(launchWait))
+	opts = append(opts, chromedp.ExecPath(exe), chromedp.UserDataDir(dir), chromedp.WSURLReadTimeout(launchWait),
+		chromedp.Flag("disable-features", disabledFeatures))
 	if headed {
 		opts = append(opts, chromedp.Flag("headless", false))
 	}
@@ -65,6 +66,15 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 	}
 	return p, nil
 }
+
+// disabledFeatures replaces chromedp's own disable-features list, which it
+// repeats, adding the optimization guide's model downloads. Those go through
+// the profile's download manager with no page and no download event, so with
+// downloads allowed Chrome saved them into the user's Downloads as files
+// named by a GUID, 4 KB to 33 MB each (Chrome on the Windows and macOS CI
+// runners, 2026-10-27).
+const disabledFeatures = "site-per-process,Translate,BlinkGenPropertyTrees," +
+	"OptimizationGuideModelDownloading,OptimizationTargetPrediction"
 
 type chromePage struct {
 	ctx         context.Context
