@@ -51,15 +51,15 @@ func TestLoadAppearancePrefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := appearancePrefs{zoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true}
+	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true}
 	if p != want {
 		t.Errorf("defaults %+v, want %+v", p, want)
 	}
 	f.settings[zoomKey+"@"], f.settings[terminalFontSizeKey+"@"] = "3", "x"
 	f.settings[costBudgetKey+"@"], f.settings[closeActionKey+"@"] = "25.5", "quit"
-	f.settings[terminalFontKey+"@"], f.settings[copyOnSelectKey+"@"] = "Iosevka", "false"
+	f.settings[terminalFontKey+"@"], f.settings[copyOnSelectKey+"@"], f.settings[browserZoomKey+"@"] = "Iosevka", "false", "0.8"
 	p, _ = loadAppearancePrefs(context.Background(), client)
-	want = appearancePrefs{zoom: zoomMax, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit}
+	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit}
 	if p != want {
 		t.Errorf("stored %+v, want %+v", p, want)
 	}

@@ -43,3 +43,34 @@ func TestBrowserButton(t *testing.T) {
 		t.Fatal("browserButton")
 	}
 }
+
+func TestPageZoomChordStepsAndResets(t *testing.T) {
+	press := func(name key.Name, mods key.Modifiers) key.Event {
+		return key.Event{Name: name, Modifiers: mods, State: key.Press}
+	}
+	cases := []struct {
+		e    key.Event
+		goos string
+		from float64
+		want float64
+		ok   bool
+	}{
+		{press("-", key.ModCtrl), "linux", 1, 0.9, true},
+		{press("=", key.ModCtrl), "linux", 1, 1.1, true},
+		{press("+", key.ModCtrl|key.ModShift), "windows", 1, 1.1, true},
+		{press("0", key.ModCtrl), "linux", 0.7, 1, true},
+		{press("-", key.ModCtrl), "linux", 0.5, 0.5, true},
+		{press("=", key.ModCtrl), "linux", 2, 2, true},
+		{press("-", key.ModCommand), "darwin", 1, 0.9, true},
+		{press("-", key.ModCtrl), "darwin", 1, 1, false},
+		{press("-", 0), "linux", 1, 1, false},
+		{press("a", key.ModCtrl), "linux", 1, 1, false},
+		{key.Event{Name: "-", Modifiers: key.ModCtrl, State: key.Release}, "linux", 1, 1, false},
+	}
+	for _, c := range cases {
+		got, ok := pageZoomChord(c.e, c.goos, c.from)
+		if got != c.want || ok != c.ok {
+			t.Errorf("pageZoomChord(%q %v, %s, %v) = %v, %v; want %v, %v", c.e.Name, c.e.Modifiers, c.goos, c.from, got, ok, c.want, c.ok)
+		}
+	}
+}

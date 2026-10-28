@@ -63,6 +63,10 @@ type Service struct {
 	// textWait is maxTextWait, which the suite shortens to test a wait that
 	// gives up.
 	textWait time.Duration
+	// defaultView is the size a headless page no pane shows lays out at: the
+	// window's, since Chrome's own 800x600 lays most sites out cramped. Zero
+	// until the window says.
+	defaultView Viewport
 }
 
 type session struct {
@@ -278,7 +282,13 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 		byAgent: spec.byAgent, page: page, lastUsed: s.now(),
 	}
 	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess))
+	view := s.unwatchedView()
 	if err := runPage(func(ctx context.Context) error {
+		if !spec.headed && view != (Viewport{}) {
+			if err := page.Resize(ctx, view); err != nil {
+				return err
+			}
+		}
 		if len(spec.cookies) > 0 {
 			if err := page.SetCookies(ctx, spec.cookies); err != nil {
 				return err

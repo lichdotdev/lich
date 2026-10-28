@@ -75,7 +75,7 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 		return
 	}
 	defer clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops).Pop()
-	scale := gtx.Metric.PxPerDp
+	scale := u.pageScale(gtx)
 	lit := -1
 	for i, note := range n.list {
 		if note.row.Hovered() || (n.open && n.editing == i) {
