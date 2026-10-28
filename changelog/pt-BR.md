@@ -12,6 +12,9 @@
 - O agente fica sabendo quando a página no navegador da sessão quebra. Cada página que ele lê, clica ou em que pressiona uma tecla responde com os erros de console desde a última olhada, uma vez cada: chamadas a `console.error`, exceções não capturadas e recursos que falharam ao carregar, cortados em uma linha curta, os cinco primeiros e quantos mais. Avisos e outras mensagens ficam de fora.
 - Um agente pode fechar um projeto, com `close_project` ou `lich close-project`: a aba sai da janela e as sessões dela param, guardadas para reabrir como quando você fecha a aba. O projeto em que o agente roda e o projeto inicial são recusados.
 - O agente e você respondem aos diálogos de JavaScript da página no navegador de uma sessão. Um alert, um confirm, um prompt ou um "Sair desta página?" que a página abre aparece como um cartão sobre o topo da página, na aba do navegador da sessão, nomeando o site que o abriu, com os botões dele e, para um prompt, um campo. Você o responde ali, ou o agente com `browser_dialog`, e o cursor dele pressiona o botão do cartão. O clique do agente que abriu um diálogo responde na hora com o diálogo dentro, e o agente fica sabendo de um que você respondeu. Antes, um botão que mostrava um alert congelava a página: o clique do agente e toda leitura depois dele esperavam trinta segundos e falhavam.
+- Configurações › Geral tem um interruptor Copiar ao selecionar para o terminal. Ligado por padrão, copia a seleção assim que você a faz; desligado, copie com Ctrl+Shift+C (Cmd+C no macOS).
+- O navegador de uma sessão dá zoom na página por conta própria, separado do zoom da interface: Ctrl+- e Ctrl+= (Cmd no macOS) diminuem e aumentam em 10%, de 50% a 200%, e Ctrl+0 volta a 100%. Uma página com zoom menor ocupa mais largura, como num navegador desktop, o que torna uma tela pequena utilizável sem encolher o resto da janela. O zoom vale para o navegador de toda sessão, aparece na barra de ferramentas enquanto não é 100% e é guardado para o próximo início.
+- Configurações › Geral › Janela › Botões escolhe se os botões de minimizar, maximizar e fechar da janela aparecem: Seguir o sistema, Sempre mostrar ou Esconder. Seguir o sistema é como o lich se comportava antes, e no Linux agora também acompanha uma mudança no layout de botões da área de trabalho enquanto o lich está aberto, em vez de só lê-lo no início. Sempre mostrar desenha os botões mesmo onde o gerenciador de janelas decora a janela ou a organiza em mosaico sem barra de título, como o Hyprland faz. Esconder deixa a janela sem eles, inclusive os semáforos no macOS.
 
 ### Changed
 
@@ -19,12 +22,15 @@
 - A janela guarda menos memória com muitas sessões abertas. Um terminal fora da tela libera os pixels que desenhou, alguns megabytes cada, e os redesenha em um quadro quando volta.
 - O coletor de lixo da janela agora roda em 50, e não no padrão 100 do Go, o que num teste com 15 sessões cortou cerca de um décimo da memória residente, a folga que o sistema mandaria para o swap. `GOGC` ainda tem precedência.
 - As ferramentas do navegador respondem a um agente no idioma de prompt da sessão: a legenda da lista de elementos, o aviso de que há mais elementos abaixo, as marcas de preenchido e marcado, um download ainda em andamento, uma espera que esgotou o tempo, a contagem de erros de console adicionais e o que um diálogo aberto pede dele. As etiquetas de linha (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` e as demais) continuam como estão em todos os idiomas.
+- O navegador de uma sessão que nenhuma aba mostra monta a página no tamanho da janela do lich, no zoom do navegador, em vez dos 800×600 do Chrome, então o agente lê e captura a página como um navegador desktop a mostra. Fechar a aba do navegador devolve a página a esse tamanho, em vez de deixá-la no da aba.
+- Resolver conflitos na tela de Pull requests nomeia os arquivos em conflito no prompt que envia à sessão, como Corrigir erros de CI nomeia as verificações que falham. Clicado antes de os arquivos serem conhecidos, envia o prompt sem eles, como antes.
 
 ### Fixed
 
 - No Windows, a janela aparece como `lich` na barra de tarefas e no Alt-Tab, em vez de `lich (native slice)`.
 - Um projeto cuja conta do GitHub vive num servidor GitHub Enterprise passa a ter essa conta na tela de Pull requests, nos selos de pull request e numa sessão em sandbox com o token dela. O token saía sob uma variável que o gh ignora para um host enterprise, então o gh respondia ali como a conta ativa dele.
 - O clique, a digitação ou a tecla pressionada por índice no navegador de uma sessão chega ao elemento que a última leitura de página do agente deu a esse índice. Depois de uma rolagem e de uma segunda leitura, um elemento que a primeira leitura listava sob o mesmo índice, agora fora da vista, podia receber o clique no lugar, sem nenhum erro.
+- No Windows, sessões que começam ao mesmo tempo num mesmo perfil não falham mais de vez em quando com `Access is denied` enquanto o lich grava os arquivos desse perfil.
 
 ## [0.80.0] - 2026-10-27
 

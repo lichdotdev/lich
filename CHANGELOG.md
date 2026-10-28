@@ -7,21 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Settings › General has a Copy on select switch for the terminal. On by default, it copies a selection as soon as you make it; off, copy it with Ctrl+Shift+C (Cmd+C on macOS).
-- A session's browser zooms its page on its own, apart from the interface zoom: Ctrl+- and Ctrl+= (Cmd on macOS) zoom out and in by 10%, from 50% to 200%, and Ctrl+0 goes back to 100%. A zoomed-out page lays out wider, as in a desktop browser, which makes a small screen usable without shrinking the rest of the window. The zoom applies to every session's browser, shows on the toolbar while it is not 100%, and is kept for the next start.
-- Settings › General › Window › Buttons chooses whether the window's minimize, maximize and close buttons show: Follow system, Always show or Hide. Follow system is how lich behaved before, and on Linux it now also follows a change to the desktop's button layout while lich is open instead of only reading it at start. Always show draws the buttons even where the window manager decorates the window or tiles it without a title bar, as Hyprland does. Hide leaves the window without them, the traffic lights included on macOS.
-
-### Changed
-
-- A session's browser that no tab shows lays its page out at the size of the lich window, at the browser zoom, instead of Chrome's 800×600, so the agent reads and screenshots the page as a desktop browser shows it. Closing the browser tab puts the page back at that size rather than leaving it at the tab's.
-- Resolve conflicts on the Pulls screen names the conflicting files in the prompt it sends the session, as Fix CI errors names the failing checks. Clicked before the files are known, it sends the prompt without them, as before.
-
-### Fixed
-
-- On Windows, sessions starting at the same time on one profile no longer fail now and then with `Access is denied` while lich writes that profile's files.
-
 ## [0.81.0] - 2026-10-28
 
 > [!IMPORTANT]
@@ -36,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The agent hears when the page in its session's browser breaks. Each page it reads, clicks or presses a key on answers with the console errors since its last look, once each: `console.error` calls, uncaught exceptions and resources that failed to load, cut to one short line, the first five and how many more. Warnings and other messages stay out.
 - An agent can close a project, with `close_project` or `lich close-project`: the tab leaves the window and its sessions stop, kept for a reopen as when you close the tab. The project the agent runs in and the home project are refused.
 - The agent and you answer the page's JavaScript dialogs in a session's browser. An alert, a confirm, a prompt or a "Leave this page?" the page opens shows as a card over the top of the page in the session's browser tab, naming the site that opened it, with its buttons and, for a prompt, a field. You answer it there, or the agent does with `browser_dialog`, and its cursor presses the card's button. The agent's click that opened a dialog answers at once with the dialog in it, and the agent hears of one you answered. Before, a button that showed an alert froze the page: the agent's click and every read after it waited thirty seconds and failed.
+- Settings › General has a Copy on select switch for the terminal. On by default, it copies a selection as soon as you make it; off, copy it with Ctrl+Shift+C (Cmd+C on macOS).
+- A session's browser zooms its page on its own, apart from the interface zoom: Ctrl+- and Ctrl+= (Cmd on macOS) zoom out and in by 10%, from 50% to 200%, and Ctrl+0 goes back to 100%. A zoomed-out page lays out wider, as in a desktop browser, which makes a small screen usable without shrinking the rest of the window. The zoom applies to every session's browser, shows on the toolbar while it is not 100%, and is kept for the next start.
+- Settings › General › Window › Buttons chooses whether the window's minimize, maximize and close buttons show: Follow system, Always show or Hide. Follow system is how lich behaved before, and on Linux it now also follows a change to the desktop's button layout while lich is open instead of only reading it at start. Always show draws the buttons even where the window manager decorates the window or tiles it without a title bar, as Hyprland does. Hide leaves the window without them, the traffic lights included on macOS.
 
 ### Changed
 
@@ -43,12 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The window holds less memory with many sessions open. A terminal off screen lets go of the pixels it drew, a few megabytes each, and redraws them in one frame when it comes back.
 - The window's garbage collector now runs at 50 instead of Go's default 100, which in a test with 15 sessions cut about a tenth of its resident memory, the slack the system would otherwise swap out. `GOGC` still overrides it.
 - The browser tools answer an agent in the session's prompt language: the legend of the element list, the note that more elements wait below, the filled and checked marks, a download still running, a wait that timed out, the count of further console errors, and what an open dialog asks of it. The line tags (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` and the rest) stay as they are in every language.
+- A session's browser that no tab shows lays its page out at the size of the lich window, at the browser zoom, instead of Chrome's 800×600, so the agent reads and screenshots the page as a desktop browser shows it. Closing the browser tab puts the page back at that size rather than leaving it at the tab's.
+- Resolve conflicts on the Pulls screen names the conflicting files in the prompt it sends the session, as Fix CI errors names the failing checks. Clicked before the files are known, it sends the prompt without them, as before.
 
 ### Fixed
 
 - On Windows the window is titled `lich` in the taskbar and Alt-Tab, instead of `lich (native slice)`.
 - A project whose GitHub account lives on a GitHub Enterprise server gets that account in the Pulls screen, the pull request badges and a sandboxed session granted its token. The token went out under a variable gh ignores for an enterprise host, so gh answered as its active account there.
 - A session browser's click, type or key press by index reaches the element the agent's last page read gave that index. After a scroll and a second read, an element the first read had listed under the same index, now out of view, could take the click instead, with no error.
+- On Windows, sessions starting at the same time on one profile no longer fail now and then with `Access is denied` while lich writes that profile's files.
 
 ## [0.80.0] - 2026-10-27
 
