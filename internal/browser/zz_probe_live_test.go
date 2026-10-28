@@ -2,62 +2,66 @@ package browser
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/cdproto/browser"
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/lichdotdev/lich/api"
 )
 
-// Temporary probe: which CDP call of Screencast hangs on a held page.
+// Temporary probe: why Page.stopScreencast hangs on a held page.
 func TestProbeHeldScreencastSteps(t *testing.T) {
+	for _, idle := range []time.Duration{0, 2 * time.Second} {
+		t.Run(fmt.Sprint("idle", idle), func(t *testing.T) { probe(t, idle) })
+	}
+}
+
+func probe(t *testing.T, idle time.Duration) {
 	p, srv := liveChrome(t)
-	frames := make(chan string, 8)
+	t0 := time.Now()
+	logf := func(f string, a ...any) { t.Logf("PROBE %6dms "+f, append([]any{time.Since(t0).Milliseconds()}, a...)...) }
 	opened := make(chan struct{}, 1)
-	p.Listen(func(data string) {
-		select {
-		case frames <- data:
-		default:
-		}
-	}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {}, func(d *api.BrowserDialog) {
+	p.Listen(func(string) {}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {}, func(d *api.BrowserDialog) {
 		if d != nil {
 			opened <- struct{}{}
 		}
 	})
+	chromedp.ListenTarget(p.ctx, func(ev any) { logf("event %T", ev) })
 	ctx := context.Background()
 	if err := p.Navigate(ctx, srv.URL); err != nil {
 		t.Fatal(err)
 	}
-	step := func(name string, a chromedp.Action) {
-		c, cancel := context.WithTimeout(ctx, 10*time.Second)
+	logf("navigated")
+	step := func(name string, d time.Duration, a chromedp.Action) {
+		c, cancel := context.WithTimeout(ctx, d)
 		defer cancel()
 		s := time.Now()
 		err := p.runFree(c, a)
-		t.Logf("PROBE %s: err=%v in %s", name, err, time.Since(s))
+		logf("%s: err=%v in %s", name, err, time.Since(s))
 	}
-	step("screenshot", chromedp.ActionFunc(func(ctx context.Context) error {
+	step("screenshot", 10*time.Second, chromedp.ActionFunc(func(ctx context.Context) error {
 		_, err := page.CaptureScreenshot().Do(ctx)
 		return err
 	}))
-	step("evaluate", chromedp.Evaluate(`setTimeout(() => confirm('Delete?'), 0)`, nil))
+	time.Sleep(idle)
+	step("evaluate", 10*time.Second, chromedp.Evaluate(`setTimeout(() => confirm('Delete?'), 0)`, nil))
 	<-opened
-	step("stop", page.StopScreencast())
-	step("metrics", emulation.SetDeviceMetricsOverride(640, 400, 1, false))
-	step("start", page.StartScreencast().WithFormat(page.ScreencastFormatJpeg).WithQuality(85).WithMaxWidth(640).WithMaxHeight(400))
-	s := time.Now()
-	select {
-	case <-frames:
-		t.Logf("PROBE frame in %s", time.Since(s))
-	case <-time.After(5 * time.Second):
-		t.Logf("PROBE no frame in 5s")
-	}
-	step("answer", page.HandleJavaScriptDialog(true))
-	select {
-	case <-frames:
-		t.Logf("PROBE frame after answer in %s", time.Since(s))
-	case <-time.After(5 * time.Second):
-		t.Logf("PROBE no frame after answer")
-	}
+	logf("dialog open")
+	go step("stop", 40*time.Second, page.StopScreencast())
+	time.Sleep(2 * time.Second)
+	step("history", 3*time.Second, chromedp.ActionFunc(func(ctx context.Context) error {
+		_, _, err := page.GetNavigationHistory().Do(ctx)
+		return err
+	}))
+	c := chromedp.FromContext(p.ctx)
+	step("version", 3*time.Second, chromedp.ActionFunc(func(ctx context.Context) error {
+		_, _, _, _, _, err := browser.GetVersion().Do(cdp.WithExecutor(ctx, c.Browser))
+		return err
+	}))
+	step("answer", 5*time.Second, page.HandleJavaScriptDialog(true))
+	time.Sleep(3 * time.Second)
 }

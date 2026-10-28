@@ -8,11 +8,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-15-intel, macos-latest]
+        runner: [macos-15-intel]
         suite:
-          - {name: pane, run: '^TestChromeAPaneOpenedOnADialogShowsThePage$', count: 20}
-          - {name: chrome, run: 'TestChrome', count: 3}
-          - {name: probe, run: '^TestProbeHeldScreencastSteps$', count: 10}
+          - {name: probe, run: '^TestProbeHeldScreencastSteps$', count: 8}
     runs-on: ${{ matrix.runner }}
     name: ${{ matrix.runner }} ${{ matrix.suite.name }}
     steps:
