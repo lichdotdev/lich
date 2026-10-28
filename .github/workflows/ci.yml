@@ -155,3 +155,42 @@ jobs:
             [ "$b" = after ] && [ "$fails" -ne 0 ] && rc=1
           done
           exit $rc
+
+  # TEMPORARY: measures the Windows ERR_NO_BUFFER_SPACE flake of the live
+  # Chrome tests (ephemeral port exhaustion suspected); removed before ready.
+  chrome-measure:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Measure
+        run: |
+          netsh int ipv4 show dynamicport tcp
+          tw() { netstat -an -p tcp | grep -c TIME_WAIT || true; }
+          (while [ ! -f stop ]; do echo "$(tw)" >> tw.txt; sleep 2; done) &
+          end=$((SECONDS + 1200)); i=0
+          while [ $SECONDS -lt $end ]; do
+            i=$((i + 1)); : > tw.txt
+            go test -json -count=1 ./... > run.json 2>&1 || true
+            nobuf=$(grep -c 'ERR_NO_BUFFER_SPACE' run.json || true)
+            failed=$(jq -r 'select(.Action=="fail" and .Test!=null) | .Package+"."+.Test' run.json 2>/dev/null | tr '\n' ' ')
+            echo "suite $i: max TIME_WAIT $(sort -n tw.txt | tail -1), ERR_NO_BUFFER_SPACE lines $nobuf, failed: $failed"
+          done
+          touch stop
+      - name: TIME_WAIT left by each package
+        if: matrix.shard == 1
+        run: |
+          tw() { netstat -an -p tcp | grep -c TIME_WAIT || true; }
+          for p in $(go list ./...); do
+            b=$(tw); go test -count=1 "$p" > /dev/null 2>&1 || true; a=$(tw)
+            echo "$((a - b)) $p"
+          done | sort -rn | head -15
