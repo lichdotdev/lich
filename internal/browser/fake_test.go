@@ -355,7 +355,7 @@ func (p *fakePage) ElementAt(_ context.Context, x, y float64) (api.BrowserElemen
 	return p.element, nil
 }
 
-func (p *fakePage) Locate(_ context.Context, selectors []string) ([]api.BrowserRect, error) {
+func (p *fakePage) Locate(_ context.Context, selectors []string, _ string) ([]api.BrowserRect, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.located = append(p.located, selectors)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"math"
 	"slices"
 	"time"
 
@@ -41,6 +42,11 @@ const (
 	noteFollowFor = 700 * time.Millisecond
 )
 
+// noteHoverGlide is how long the pick's outline takes to slide from one
+// element to the next under the pointer, the variant the maintainer chose
+// over a jump, a 100 ms slide and a cross-fade.
+const noteHoverGlide = 160 * time.Millisecond
+
 // browserNote is one note: the element as it was picked, what the person
 // wrote, and where the element stands now (empty when it left the page).
 type browserNote struct {
@@ -55,8 +61,11 @@ type browserNote struct {
 type browserNotes struct {
 	picking bool
 	pick    iconActionState
-	// hover is the element under the pointer while picking.
-	hover api.BrowserElement
+	// hover is the element under the pointer while picking; its outline
+	// glides from hoverFrom, where it stood at hoverAt.
+	hover     api.BrowserElement
+	hoverFrom api.BrowserRect
+	hoverAt   time.Time
 	// draft is the element the note popover is open on; editing is the note
 	// it edits, -1 for a new one.
 	draft       api.BrowserElement
@@ -79,6 +88,9 @@ type browserNotes struct {
 	// failure is why the last send failed, shown in the tray until the next.
 	failure    string
 	nextLocate time.Time
+	// reveal is the selector of a note opened from the tray or its pin,
+	// which the next lookup scrolls into view first.
+	reveal string
 	// followUntil is when the fast lookups after a scroll end.
 	followUntil time.Time
 }
@@ -130,6 +142,41 @@ func (n *browserNotes) setPicking(on bool) {
 	}
 }
 
+// setHover outlines el, the element under the pointer at now. A new element
+// starts the outline's glide from where it stands; the first one under the
+// pointer, or the same one answered again, is outlined where it is.
+func (n *browserNotes) setHover(el api.BrowserElement, now time.Time) {
+	if el.Selector != n.hover.Selector {
+		from := el.Box
+		if n.hover.Label != "" {
+			from = n.hoverBox(now)
+		}
+		n.hoverFrom, n.hoverAt = from, now
+	}
+	n.hover = el
+}
+
+// hoverBox is where the outline of the element under the pointer stands at
+// now, on its glide from the element before.
+func (n *browserNotes) hoverBox(now time.Time) api.BrowserRect {
+	f := easeInOutQuad(progress(now.Sub(n.hoverAt), noteHoverGlide))
+	at := func(from, to int) int { return from + int(math.Round(float64(f)*float64(to-from))) }
+	a, b := n.hoverFrom, n.hover.Box
+	return api.BrowserRect{X: at(a.X, b.X), Y: at(a.Y, b.Y), W: at(a.W, b.W), H: at(a.H, b.H)}
+}
+
+// gliding is whether the outline is still on its way at now.
+func (n *browserNotes) gliding(now time.Time) bool {
+	return now.Before(n.hoverAt.Add(noteHoverGlide))
+}
+
+func easeInOutQuad(t float32) float32 {
+	if t < 0.5 {
+		return 2 * t * t
+	}
+	return 1 - (2-2*t)*(2-2*t)/2
+}
+
 // openNote opens the popover on el, for note i or a new one (-1).
 func (n *browserNotes) openNote(el api.BrowserElement, i int) {
 	if !n.open {
@@ -143,6 +190,17 @@ func (n *browserNotes) openNote(el api.BrowserElement, i int) {
 	}
 	n.editor.SetText(text)
 	n.editor.SetCaret(len([]rune(text)), len([]rune(text)))
+}
+
+// openListed opens the popover on note i and has the next lookup, right
+// away, scroll its element into view: the box the tray knows may stand off
+// the page's viewport, where the popover would open far from it.
+func (n *browserNotes) openListed(gtx C, i int) {
+	el := n.list[i].el
+	el.Box = n.list[i].box
+	n.openNote(el, i)
+	n.reveal, n.nextLocate = el.Selector, time.Time{}
+	gtx.Execute(op.InvalidateCmd{})
 }
 
 // draftBox is where the element the popover is open on stands now.
@@ -189,7 +247,7 @@ func (u *window) probeElement(p *browserPaneUI, session string, x, y float64, op
 }
 
 // relocateNotes looks the noted elements up again, and the one a new note
-// is open on.
+// is open on, first scrolling the one opened from the tray into view.
 func (u *window) relocateNotes(p *browserPaneUI, session string) {
 	selectors := make([]string, 0, len(p.notes.list)+1)
 	for _, n := range p.notes.list {
@@ -199,8 +257,15 @@ func (u *window) relocateNotes(p *browserPaneUI, session string) {
 	if draft {
 		selectors = append(selectors, p.notes.draft.Selector)
 	}
-	p.queue.push(browserCall{merge: "locate", send: func(ctx context.Context) error {
-		boxes, err := u.client.BrowserLocate(ctx, session, selectors)
+	reveal := p.notes.reveal
+	p.notes.reveal = ""
+	merge := "locate"
+	if reveal != "" {
+		// The lookups queued behind a reveal must not merge it away.
+		merge = ""
+	}
+	p.queue.push(browserCall{merge: merge, send: func(ctx context.Context) error {
+		boxes, err := u.client.BrowserLocate(ctx, session, selectors, reveal)
 		if err != nil {
 			return fmt.Errorf("locate notes: %w", err)
 		}
@@ -222,7 +287,7 @@ func (u *window) takeFound(gtx C, p *browserPaneUI, session string) {
 			case f.open && f.el.Label != "":
 				n.openNote(f.el, -1)
 			case !f.open:
-				n.hover = f.el
+				n.setHover(f.el, gtx.Now)
 			}
 		case l := <-n.located:
 			n.applyBoxes(l)

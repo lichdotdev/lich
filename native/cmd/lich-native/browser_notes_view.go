@@ -103,7 +103,12 @@ func (u *window) notesOverlay(gtx C, p *browserPaneUI, session, pageURL string) 
 		dashedRing(gtx, ring, notePick, 1.5, false)
 	}
 	if n.picking && !n.open && n.hover.Label != "" {
-		ring := noteRing(gtx, cssRect(n.hover.Box, scale))
+		ring := noteRing(gtx, cssRect(n.hoverBox(gtx.Now), scale))
+		if n.gliding(gtx.Now) {
+			// Every frame for the glide's moment: the march's 20 a second
+			// would step it.
+			gtx.Execute(op.InvalidateCmd{})
+		}
 		ringFill(gtx, ring, withAlpha(notePick, 0x1a))
 		dashedRing(gtx, ring, notePick, 1.5, true)
 		u.hoverTag(gtx, ring, n.hover)
@@ -154,9 +159,7 @@ func (u *window) hoverTag(gtx C, r image.Rectangle, el api.BrowserElement) {
 func (u *window) notePin(gtx C, n *browserNotes, i int, r image.Rectangle, lit bool) {
 	note := n.list[i]
 	if note.pin.Clicked(gtx) {
-		el := note.el
-		el.Box = note.box
-		n.openNote(el, i)
+		n.openListed(gtx, i)
 	}
 	macro := op.Record(gtx.Ops)
 	tab := gtx
@@ -386,9 +389,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 			continue
 		}
 		if note.row.Clicked(gtx) {
-			el := note.el
-			el.Box = note.box
-			n.openNote(el, i)
+			n.openListed(gtx, i)
 		}
 	}
 	height := notesTrayHeight(gtx, len(n.list))

@@ -988,7 +988,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   not look. The React component comes from the page's fiber, there only in a development build, and its file
   and line from `_debugSource`, which React 19 dropped. Pins follow their elements by looking them up again
   every 400 ms while notes wait, and every 30 ms for a moment after the wheel turns, so an element the page
-  moves on its own is outlined late. Notes not sent yet
+  moves on its own is outlined late. A pin is cut to every ancestor whose overflow is not visible, up to a
+  fixed one, so an absolutely positioned element that escapes such an ancestor is cut anyway, and one a
+  sibling covers keeps its pin. Notes not sent yet
   live in the window: closing it, or the browser, loses them.
 
 - **A session browser's downloads go straight to the user's Downloads folder** (`internal/browser/downloads.go`,

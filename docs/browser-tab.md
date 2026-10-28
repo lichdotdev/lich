@@ -49,12 +49,16 @@ in the page is not a tool.
 ## Notes on the page
 
 The crosshair on the pane's toolbar stops the pointer reaching the page: the
-element under it is outlined, and a click opens a note on it. Notes wait in a
+element under it is outlined, the outline sliding to the next element in 160
+ms as the pointer moves, and a click opens a note on it. Notes wait in a
 tray floating over the bottom of the page, which never resizes for it, each
 element pinned where it stands, and Send types them into the session's prompt
 as one message: each element's label, page, a
 selector `browser_click` takes, its React component when the page is a
-development build, its markup without any field's value, and the note. The
+development build, its markup without any field's value, and the note. A note
+opened from the tray or its pin scrolls its element into view first, unless it
+already shows whole. An element inside a list, sidebar or dialog that scrolls
+is outlined only where that box shows it, and one the box hides has no pin. The
 page only answers what is where (`browser.ElementAt`, `browser.Locate`); the
 outline, the pins and the note are the window's, so nothing is injected into
 the page.

@@ -119,9 +119,10 @@ type Page interface {
 	// Selection is the text selected in the page, "" in a password field.
 	Selection(ctx context.Context) (string, error)
 	// ElementAt is the element under x,y, zero when the point holds none;
-	// Locate is the box of the element each selector finds, zero for none.
+	// Locate is the box of the element each selector finds, zero for none,
+	// after scrolling reveal's element into view when reveal is set.
 	ElementAt(ctx context.Context, x, y float64) (api.BrowserElement, error)
-	Locate(ctx context.Context, selectors []string) ([]api.BrowserRect, error)
+	Locate(ctx context.Context, selectors []string, reveal string) ([]api.BrowserRect, error)
 	Alive() bool
 	Close() error
 }

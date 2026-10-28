@@ -3,8 +3,11 @@ package main
 import (
 	"math"
 	"testing"
+	"time"
 
 	"gioui.org/f32"
+	"gioui.org/layout"
+	"gioui.org/op"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -106,6 +109,62 @@ func TestAnOpenNoteFollowsItsElementAsThePageScrolls(t *testing.T) {
 	n.applyBoxes(locatedNotes{selectors: []string{"section.chart"}, boxes: []api.BrowserRect{{Y: 250, W: 600, H: 300}}, draft: true})
 	if got := n.draftBox(); got.Y != 250 {
 		t.Fatalf("the open note stayed at y %d after the page scrolled its element to 250", got.Y)
+	}
+}
+
+func TestANoteOpenedFromTheTrayIsRevealedByTheNextLookup(t *testing.T) {
+	n := newBrowserNotes()
+	n.list = []*browserNote{{el: api.BrowserElement{Selector: "li.far"}, box: api.BrowserRect{Y: 2100, W: 150, H: 40}}}
+	n.nextLocate = time.Now().Add(time.Hour)
+	n.openListed(layout.Context{Ops: new(op.Ops)}, 0)
+	if n.reveal != "li.far" || !n.nextLocate.IsZero() {
+		t.Fatalf("reveal %q, next lookup %v: want li.far looked up and scrolled to right away", n.reveal, n.nextLocate)
+	}
+	if got := n.draftBox(); got.Y != 2100 {
+		t.Fatalf("the popover opened at y %d, want the box the tray knew until the lookup answers", got.Y)
+	}
+	n.applyBoxes(locatedNotes{selectors: []string{"li.far"}, boxes: []api.BrowserRect{{Y: 280, W: 150, H: 40}}})
+	if got := n.draftBox(); got.Y != 280 {
+		t.Fatalf("the popover stayed at y %d after the reveal scrolled its element to 280", got.Y)
+	}
+}
+
+func TestANotePickedOnThePageIsNotScrolledTo(t *testing.T) {
+	n := newBrowserNotes()
+	n.openNote(api.BrowserElement{Label: "a", Selector: "a"}, -1)
+	if n.reveal != "" {
+		t.Fatalf("a note picked under the pointer asks to reveal %q", n.reveal)
+	}
+}
+
+func TestTheHoverOutlineGlidesToTheNextElement(t *testing.T) {
+	n := newBrowserNotes()
+	t0 := time.Now()
+	a := api.BrowserRect{X: 0, Y: 0, W: 100, H: 40}
+	b := api.BrowserRect{X: 200, Y: 100, W: 300, H: 80}
+	n.setHover(api.BrowserElement{Label: "a", Selector: "a", Box: a}, t0)
+	if got := n.hoverBox(t0); got != a {
+		t.Fatalf("the first element under the pointer is outlined at %+v, want its own box %+v at once", got, a)
+	}
+	t1 := t0.Add(time.Second)
+	n.setHover(api.BrowserElement{Label: "b", Selector: "b", Box: b}, t1)
+	if got := n.hoverBox(t1); got != a {
+		t.Fatalf("on the move to b the outline jumped to %+v, want it to leave from a %+v", got, a)
+	}
+	if got := n.hoverBox(t1.Add(noteHoverGlide / 2)); got != (api.BrowserRect{X: 100, Y: 50, W: 200, H: 60}) {
+		t.Fatalf("half way the outline stands at %+v, want half way between a and b", got)
+	}
+	if got := n.hoverBox(t1.Add(noteHoverGlide)); got != b {
+		t.Fatalf("after the glide the outline stands at %+v, want b %+v", got, b)
+	}
+	c := api.BrowserRect{X: 400, Y: 300, W: 10, H: 10}
+	n.setHover(api.BrowserElement{Label: "c", Selector: "c", Box: c}, t1.Add(noteHoverGlide/2))
+	if got := n.hoverBox(t1.Add(noteHoverGlide / 2)); got != (api.BrowserRect{X: 100, Y: 50, W: 200, H: 60}) {
+		t.Fatalf("a move mid glide restarted from %+v, want from where the outline stood", got)
+	}
+	n.setHover(api.BrowserElement{Label: "c", Selector: "c", Box: c}, t1.Add(noteHoverGlide))
+	if got := n.hoverBox(t1.Add(noteHoverGlide * 3 / 2)); got != c {
+		t.Fatalf("the probe answering c again restarted the glide: outline at %+v, want c %+v", got, c)
 	}
 }
 

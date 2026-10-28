@@ -78,7 +78,8 @@ func (c *Client) BrowserElementAt(ctx context.Context, id string, x, y float64) 
 }
 
 // BrowserLocate is where the elements selectors find stand in session id's
-// page, an empty box for one gone.
-func (c *Client) BrowserLocate(ctx context.Context, id string, selectors []string) ([]api.BrowserRect, error) {
-	return callMethod(ctx, c, api.BrowserLocate, api.BrowserLocateOptions{ID: id, Selectors: selectors})
+// page, an empty box for one gone, after scrolling reveal's element into
+// view when reveal is set.
+func (c *Client) BrowserLocate(ctx context.Context, id string, selectors []string, reveal string) ([]api.BrowserRect, error) {
+	return callMethod(ctx, c, api.BrowserLocate, api.BrowserLocateOptions{ID: id, Selectors: selectors, Reveal: reveal})
 }
