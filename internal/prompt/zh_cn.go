@@ -127,4 +127,16 @@ var zhCN = Catalog{
 	ClosedPlain: "已关闭 %q。\n",
 	ClosedProject: "已关闭项目 %[1]q (%[2]s)，并停止了它的会话。会话仍保留在项目中：" +
 		"再次在 %[2]s 打开会话，会连同这些会话重新打开该项目。\n",
+	PageInteractive:  "interactive (索引 标签 \"文字\" -> 链接):",
+	PageMore:         "(下方还有更多元素，滚动页面即可看到)",
+	PageFilled:       "(已填写)",
+	PageChecked:      "(已勾选)",
+	PageDownloading:  "downloading: %[1]s (目前 %[2]s)",
+	PageWaitTimedOut: "wait: 等待超时，以下是页面当前的样子",
+	PageConsoleMore: Plural{
+		One:   "(还有 %d 条控制台错误)",
+		Other: "(还有 %d 条控制台错误)",
+	},
+	PageDialogWaits:    "在回应此对话框之前，页面不会执行任何操作：请调用 browser_dialog。",
+	PageDialogWaitsCLI: "在回应此对话框之前，页面不会执行任何操作：请运行 lich browser dialog accept|dismiss。",
 }

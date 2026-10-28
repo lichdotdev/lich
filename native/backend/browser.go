@@ -72,6 +72,12 @@ func (c *Client) BrowserNav(ctx context.Context, id, action, url string) error {
 	return err
 }
 
+// BrowserAnswer answers the JavaScript dialog session's page holds open.
+func (c *Client) BrowserAnswer(ctx context.Context, o api.BrowserDialogOptions) error {
+	_, err := callMethod(ctx, c, api.BrowserAnswer, o)
+	return err
+}
+
 // BrowserElementAt is the element under x,y of session id's page.
 func (c *Client) BrowserElementAt(ctx context.Context, id string, x, y float64) (api.BrowserElement, error) {
 	return callMethod(ctx, c, api.BrowserElementAt, api.BrowserPointOptions{ID: id, X: x, Y: y})

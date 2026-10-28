@@ -42,7 +42,9 @@ var browserTools = []mcpTool{
 			"one line per interactive element there: index, tag, label and link. Form values are " +
 			"never included — (filled)/(checked) say that typing landed. click and press already " +
 			"answer with this, so call it only to look again without acting. Also names a download " +
-			"that finished, and each console error, since the page was last read. wait_for and " +
+			"that finished, each console error, and each dialog the user answered in the browser tab " +
+			"(dialog answered: lines), since the page was last read, and a dialog the page holds " +
+			"open (dialog open:). wait_for and " +
 			"wait_gone hold the read, up to 20 seconds, until that text is on the page or off it, " +
 			"instead of reading again in a loop. Read-only.",
 		Schema: schema(map[string]any{
@@ -60,7 +62,9 @@ var browserTools = []mcpTool{
 			"Answers with the page afterwards, as browser_info reads it, once a navigation the " +
 			"click started has its document. A file the click downloads is saved to the user's " +
 			"Downloads folder; the answer names its path in a downloaded: line. Console errors " +
-			"and uncaught exceptions since the last page answer come as console error: lines.",
+			"and uncaught exceptions since the last page answer come as console error: lines. A " +
+			"JavaScript dialog the click opens holds the page: the answer ends with a dialog " +
+			"open: line, and browser_dialog answers it.",
 		Schema: schema(map[string]any{
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
@@ -106,7 +110,7 @@ var browserTools = []mcpTool{
 			"Real key event, not typed text — use browser_type for that. Optional target " +
 			"focuses first, as for browser_type. Answers with the page afterwards, once a " +
 			"navigation the key started (Enter on a form) has its document, and names a file it " +
-			"downloaded and console errors as browser_click does.",
+			"downloaded, console errors and a dialog it opened as browser_click does.",
 		Schema: schema(map[string]any{
 			"key":      property("string", "Named key: Enter, Tab, Escape, …"),
 			"index":    property("integer", "Index from the last browser_info."),
@@ -125,7 +129,7 @@ var browserTools = []mcpTool{
 			if err != nil {
 				return "", err
 			}
-			return pageText(info), nil
+			return pageText(info, c.lang()), nil
 		},
 	},
 	{
@@ -210,6 +214,19 @@ var browserTools = []mcpTool{
 		},
 	},
 	{
+		Name: "browser_dialog",
+		Description: "Answer the JavaScript dialog (alert, confirm, prompt, beforeunload) the " +
+			"page holds open, which a page answer names in a dialog open: line. Until it is " +
+			"answered the page runs no script and every other browser tool fails. The user sees " +
+			"it in the session's browser tab and may answer it first. accept is OK (Leave on a " +
+			"beforeunload), false is Cancel (Stay). Answers with the page afterwards.",
+		Schema: schema(map[string]any{
+			"accept": property("boolean", "OK or Leave when true; Cancel or Stay when false."),
+			"text":   property("string", "What a prompt returns on accept. Omit to keep its default text."),
+		}, "accept"),
+		Run: mcpBrowserDialog,
+	},
+	{
 		Name:        "browser_list",
 		Description: "This session's browser, or an empty list. Read-only.",
 		Schema:      schema(map[string]any{}),
@@ -253,7 +270,7 @@ func mcpBrowserClick(ctx context.Context, c *client, a mcpArgs) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	return pageText(info), nil
+	return pageText(info, c.lang()), nil
 }
 
 func mcpBrowserID(ctx context.Context, c *client, method api.Method[api.SessionIDOptions, api.None]) (string, error) {
@@ -286,7 +303,7 @@ func mcpBrowserInfo(ctx context.Context, c *client, a mcpArgs) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return pageText(info), nil
+	return pageText(info, c.lang()), nil
 }
 
 func mcpBrowserList(ctx context.Context, c *client, _ mcpArgs) (string, error) {
@@ -349,4 +366,20 @@ func (a mcpArgs) optionalFloat(key string) *float64 {
 		return nil
 	}
 	return &n
+}
+
+func mcpBrowserDialog(ctx context.Context, c *client, a mcpArgs) (string, error) {
+	id, err := c.browserOwner()
+	if err != nil {
+		return "", err
+	}
+	opts := api.BrowserDialogOptions{ID: id, Accept: a.flag("accept")}
+	if text, ok := a["text"].(string); ok {
+		opts.Text = &text
+	}
+	info, err := callMethod(ctx, c, api.BrowserAnswerDialog, opts, openCall)
+	if err != nil {
+		return "", err
+	}
+	return pageText(info, c.lang()), nil
 }

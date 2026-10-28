@@ -41,7 +41,12 @@
     "clearNotes": "清除",
     "sendNotes": "发送",
     "noNote": "无备注",
-    "notesFailed": "无法把备注发送给 {label}：{error}"
+    "notesFailed": "无法把备注发送给 {label}：{error}",
+    "dialogFrom": "{host} 显示",
+    "dialogFromPage": "此网页显示",
+    "dialogOK": "确定",
+    "dialogStay": "留下",
+    "dialogLeave": "离开"
   },
   "split": {
     "noRoom": "这里没有空间再放一个窗格。请加宽窗口，或先移出一个窗格。"

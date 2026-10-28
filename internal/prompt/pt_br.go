@@ -136,4 +136,16 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	ClosedPlain: "%q fechada.\n",
 	ClosedProject: "Projeto %[1]q (%[2]s) fechado e as sessões dele paradas. Elas ficam com ele: abrir uma sessão " +
 		"em %[2]s de novo reabre o projeto com elas.\n",
+	PageInteractive:  "interactive (índice tag \"rótulo\" -> link):",
+	PageMore:         "(mais elementos abaixo, role a página para alcançá-los)",
+	PageFilled:       "(preenchido)",
+	PageChecked:      "(marcado)",
+	PageDownloading:  "downloading: %[1]s (%[2]s até agora)",
+	PageWaitTimedOut: "wait: o tempo acabou, esta é a página como está",
+	PageConsoleMore: Plural{
+		One:   "(mais %d erro de console)",
+		Other: "(mais %d erros de console)",
+	},
+	PageDialogWaits:    "A página não roda nada até este diálogo ser respondido: chame browser_dialog.",
+	PageDialogWaitsCLI: "A página não roda nada até este diálogo ser respondido: rode lich browser dialog accept|dismiss.",
 }

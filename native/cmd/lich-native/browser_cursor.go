@@ -89,8 +89,8 @@ const cursorPending = 3
 var toolbarActions = map[string]bool{"back": true, "forward": true, "reload": true, "navigate": true}
 
 // take queues the marks not seen yet: an action at a point of the page (a
-// click, typing into or pressing on an element, a scroll) or on the toolbar
-// is played by advance, any other only keeps the cursor up.
+// click, typing into or pressing on an element, a scroll), on the toolbar or
+// on the page's dialog is played by advance, any other only keeps the cursor up.
 func (c *agentCursor) take(marks []browserMark) {
 	for _, m := range marks {
 		if m.seq <= c.seen {
@@ -100,11 +100,25 @@ func (c *agentCursor) take(marks []browserMark) {
 		if m.at.After(c.last) {
 			c.last = m.at
 		}
-		if m.x != nil && m.y != nil || toolbarActions[m.action] {
+		if m.x != nil && m.y != nil || toolbarActions[m.action] || dialogActions[m.action] {
 			c.pending = append(c.pending, m)
 		}
 	}
-	c.pending = c.pending[max(0, len(c.pending)-cursorPending):]
+	c.pending = trimPending(c.pending)
+}
+
+// trimPending keeps the latest cursorPending marks, and every answer to the
+// page's dialog older than those: the card stays on the pane until the
+// cursor has pressed its button.
+func trimPending(pending []browserMark) []browserMark {
+	cut := max(0, len(pending)-cursorPending)
+	var kept []browserMark
+	for _, m := range pending[:cut] {
+		if dialogActions[m.action] {
+			kept = append(kept, m)
+		}
+	}
+	return append(kept, pending[cut:]...)
 }
 
 // advance starts the next queued action once the one playing has finished,

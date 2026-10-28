@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 func (c *client) browser(args []string) error {
@@ -41,6 +42,8 @@ func (c *client) browser(args []string) error {
 		return c.browserID(api.BrowserForward, args[1:])
 	case "scroll":
 		return c.browserScroll(args[1:])
+	case "dialog":
+		return c.browserDialog(args[1:])
 	case "list":
 		return c.browserList(args[1:])
 	case "close":
@@ -82,7 +85,7 @@ func (c *client) browserInfo(args []string) error {
 
 // printPage prints a page the way the browser_* tools answer with it.
 func (c *client) printPage(info api.BrowserPageInfo) error {
-	_, err := fmt.Fprintln(c.stdout, pageText(info))
+	_, err := fmt.Fprintln(c.stdout, cliPageText(info, c.lang()))
 	return err
 }
 
@@ -297,8 +300,36 @@ func (t *targetFlags) target() api.BrowserTarget {
 func (c *client) printHandle(h api.BrowserHandle) error {
 	lines := []string{h.URL}
 	for _, d := range h.Downloads {
-		lines = append(lines, downloadLine(d))
+		lines = append(lines, downloadLine(d, prompt.For(c.lang())))
 	}
 	_, err := fmt.Fprintln(c.stdout, strings.Join(lines, "\n"))
 	return err
+}
+
+// browserDialog answers the JavaScript dialog the page holds open.
+func (c *client) browserDialog(args []string) error {
+	flags := newFlagSet("browser")
+	text := flags.String("text", "", "What a prompt answers on accept; its default text when left out.")
+	if err := c.parse(flags, args); err != nil {
+		return err
+	}
+	verb := strings.Join(flags.Args(), " ")
+	if verb != "accept" && verb != "dismiss" {
+		return usageError("browser")
+	}
+	id, err := c.browserOwner()
+	if err != nil {
+		return err
+	}
+	opts := api.BrowserDialogOptions{ID: id, Accept: verb == "accept"}
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == "text" {
+			opts.Text = text
+		}
+	})
+	info, err := callMethod(context.Background(), c, api.BrowserAnswerDialog, opts, openCall)
+	if err != nil {
+		return err
+	}
+	return c.printPage(info)
 }

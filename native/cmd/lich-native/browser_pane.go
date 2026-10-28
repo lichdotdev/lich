@@ -75,15 +75,17 @@ type browserPaneUI struct {
 	copied                chan string
 	cursor                agentCursor
 	onScreen, wasOnScreen bool
-	// flash is the toolbar button the agent's cursor pressed, and when;
-	// typing is the address it types into the field, from when.
+	// flash is the toolbar or dialog button the agent's cursor pressed, and
+	// when; typing is the address it types into the field, from when.
 	flash  agentPress
 	typing agentPress
 	notes  browserNotes
+	dialog dialogCard
 }
 
 // agentPress is what the agent's cursor does on the toolbar, from at: the
-// button it presses (back, forward, reload) or the address it types.
+// button it presses (back, forward, reload, a dialog's accept or dismiss) or
+// the address it types.
 type agentPress struct {
 	what string
 	at   time.Time
@@ -96,7 +98,9 @@ func (u *window) browserPane(session string) *browserPaneUI {
 	p, ok := u.browserPanes[session]
 	if !ok {
 		p = &browserPaneUI{queue: newBrowserQueue(), copied: make(chan string, 1), notes: newBrowserNotes()}
-		go p.queue.run(u.ctx, func(err error) { log.Printf("browser of %s: %v", session, err) })
+		go p.queue.run(u.ctx, func(err error) {
+			log.Printf("browser of %s: %v", session, err)
+		})
 		u.browserPanes[session] = p
 	}
 	return p
@@ -130,6 +134,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	area := shape.Push(gtx.Ops)
 	head, bar := gtx.Dp(paneHeader), gtx.Dp(ui.Space(9))
 	u.playAgentCursor(gtx, p, marks, head, bar)
+	p.dialog.sync(st.Dialog, p.answering(gtx.Now))
 	header := gtx
 	header.Constraints = layout.Exact(image.Pt(size.X, head))
 	u.browserHeader(header, p, pane, focused)
@@ -149,6 +154,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	u.browserPage(page, p, session, frame, focused)
 	u.notesOverlay(page, p, session, st.URL)
 	u.notesTray(page, p, session)
+	u.dialogCardAt(page, p, session, head+bar)
 	off.Pop()
 	u.paintAgentCursor(gtx, p, session)
 	u.paneFocusTarget(gtx, pane)
@@ -309,7 +315,7 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 		key.Filter{Focus: &p.tag, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameEnter, Required: key.ModShortcut},
 		transfer.TargetFilter{Target: &p.tag, Type: "application/text"})
-	if focused && !gtx.Focused(&p.url) && !gtx.Focused(&p.tag) && !gtx.Focused(&p.notes.editor) {
+	if focused && !gtx.Focused(&p.url) && !gtx.Focused(&p.tag) && !gtx.Focused(&p.notes.editor) && !gtx.Focused(&p.dialog.field) {
 		gtx.Execute(key.FocusCmd{Tag: &p.tag})
 	}
 	writeCopied(gtx, p)
@@ -324,7 +330,7 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 				u.sendBrowser(session, "text", func(ctx context.Context) error { return u.client.BrowserText(ctx, session, text) })
 			}
 		case key.Event:
-			if u.notesKey(p, session, e) {
+			if u.dialogPageKey(p, session, e) || u.notesKey(p, session, e) {
 				continue
 			}
 			switch browserClipboardChord(e, runtime.GOOS) {
@@ -497,13 +503,17 @@ const (
 )
 
 // playAgentCursor takes the agent's new actions and starts the next one, at
-// its point of the page under the header and toolbar, or on the toolbar.
+// its point of the page under the header and toolbar, on the toolbar, or on
+// the dialog's card.
 func (u *window) playAgentCursor(gtx C, p *browserPaneUI, marks []browserMark, head, bar int) {
 	p.cursor.take(marks)
 	scale := gtx.Metric.PxPerDp
 	place := func(m browserMark) f32.Point {
 		if toolbarActions[m.action] {
 			return toolbarPoint(gtx, m.action, head, bar)
+		}
+		if dialogActions[m.action] {
+			return p.dialog.point(m.action, gtx.Constraints.Max.X, head+bar)
 		}
 		return pagePoint(*m.x, *m.y, scale, image.Rect(0, head+bar, gtx.Constraints.Max.X, gtx.Constraints.Max.Y))
 	}
@@ -515,7 +525,7 @@ func (u *window) playAgentCursor(gtx C, p *browserPaneUI, marks []browserMark, h
 	switch m.action {
 	case "navigate":
 		p.typing = agentPress{what: displayURL(m.url), at: landed}
-	case "back", "forward", "reload":
+	case "back", "forward", "reload", "accept", "dismiss":
 		p.flash = agentPress{what: m.action, at: landed}
 	}
 }
@@ -553,8 +563,8 @@ func (u *window) paintAgentCursor(gtx C, p *browserPaneUI, session string) {
 	u.drawAgentCursor(gtx, &p.cursor, tint, u.theme.PrimaryForeground, provider, icon)
 }
 
-// flashing reports whether the agent's cursor lit the toolbar button for
-// action at now.
+// flashing reports whether the agent's cursor lit the toolbar or dialog
+// button for action at now.
 func (p *browserPaneUI) flashing(gtx C, action string) bool {
 	if p.flash.what != action || gtx.Now.Before(p.flash.at) {
 		return false

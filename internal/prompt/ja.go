@@ -133,4 +133,16 @@ var ja = Catalog{
 	ClosedPlain: "%q を閉じました。\n",
 	ClosedProject: "プロジェクト %[1]q (%[2]s) を閉じ、そのセッションを停止しました。セッションはプロジェクトに残っています。" +
 		"%[2]s でもう一度セッションを開くと、プロジェクトがセッションごと再び開きます。\n",
+	PageInteractive:  "interactive (インデックス タグ \"ラベル\" -> リンク):",
+	PageMore:         "(下にさらに要素があります。スクロールして表示してください)",
+	PageFilled:       "(入力済み)",
+	PageChecked:      "(チェック済み)",
+	PageDownloading:  "downloading: %[1]s (現在 %[2]s)",
+	PageWaitTimedOut: "wait: タイムアウトしました。これは現時点のページです",
+	PageConsoleMore: Plural{
+		One:   "(ほかにコンソールエラーが %d 件)",
+		Other: "(ほかにコンソールエラーが %d 件)",
+	},
+	PageDialogWaits:    "このダイアログに応答するまでページは何も実行しません。browser_dialog を呼び出してください。",
+	PageDialogWaitsCLI: "このダイアログに応答するまでページは何も実行しません。lich browser dialog accept|dismiss を実行してください。",
 }

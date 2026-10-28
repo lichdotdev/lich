@@ -100,6 +100,20 @@ func TestAgentCursorKeepsOnlyTheLatestPendingActions(t *testing.T) {
 	}
 }
 
+func TestAgentCursorNeverDropsAnAnswerToTheDialog(t *testing.T) {
+	t0 := time.Unix(100, 0)
+	accept := clickMark(t0, 0, 0)
+	accept.action, accept.x, accept.y = "accept", nil, nil
+	pending := []browserMark{accept}
+	for i := range 5 {
+		pending = append(pending, clickMark(t0, float64(i+1), 0))
+	}
+	got := trimPending(pending)
+	if len(got) != cursorPending+1 || got[0].action != "accept" || *got[1].x != 6-cursorPending {
+		t.Fatalf("kept %+v, want the accept and the latest %d clicks", got, cursorPending)
+	}
+}
+
 func TestAgentCursorStaysUpWhileTheAgentActsAndThenFades(t *testing.T) {
 	var c agentCursor
 	t0 := time.Unix(100, 0)

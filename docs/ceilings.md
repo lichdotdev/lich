@@ -1012,6 +1012,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   pane is not held. A download still running after ten seconds is reported in progress and named again when it
   ends. No tool lists past downloads or cancels one, nothing caps their size, and closing the browser cancels one
   still running.
+- **A dialog a session's page opens holds the page until someone answers it** (`internal/browser/dialogs.go`,
+  `chrome_dialog.go`, `docs/browser-tab.md`): nothing answers it on its own, so an agent that never calls
+  `browser_dialog` and a person who never looks at the pane leave the page frozen, every other agent call failing
+  with the dialog's name, until the browser is closed. The agent's click that opened it answers with the page as it
+  stood, not as the dialog's answer left it. A dialog the page opens on a timer interrupts whichever call is
+  running. Accepting a `beforeunload` less than a second after it opened is held to that second: accepted sooner,
+  Chrome aborts the navigation it held and reloads the page, which asks again (3 of 3 at 300 ms, 3 of 6 at 400 ms,
+  none of 30 from 500 ms; Chrome for Testing 155 and Helium 0.19.2.1). The agent hears of a dialog the person
+  answered, at most twenty between two page answers, but not of one the agent itself answered. A held page cannot lay
+  out, so a pane opened or resized meanwhile shows it at the size it had, and lays it out at the pane's once the
+  dialog closes; a screenshot fails until then.
+  A window opened with Open in a window was not tried with a dialog.
 
 ## Languages
 

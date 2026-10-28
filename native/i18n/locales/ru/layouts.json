@@ -50,7 +50,12 @@
     "clearNotes": "Очистить",
     "sendNotes": "Отправить",
     "noNote": "Без заметки",
-    "notesFailed": "Не удалось отправить заметки в {label}: {error}"
+    "notesFailed": "Не удалось отправить заметки в {label}: {error}",
+    "dialogFrom": "{host} сообщает",
+    "dialogFromPage": "Эта страница сообщает",
+    "dialogOK": "ОК",
+    "dialogStay": "Остаться",
+    "dialogLeave": "Покинуть"
   },
   "split": {
     "noRoom": "Здесь нет места для ещё одной панели. Сделайте окно шире или сначала уберите панель."

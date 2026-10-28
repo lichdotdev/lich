@@ -135,4 +135,16 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	ClosedPlain: "Closed %q.\n",
 	ClosedProject: "Closed the project %[1]q (%[2]s) and stopped its sessions. They stay with it: opening a session " +
 		"on %[2]s again reopens the project with them.\n",
+	PageInteractive:  "interactive (index tag \"label\" -> link):",
+	PageMore:         "(more elements below, scroll to reach them)",
+	PageFilled:       "(filled)",
+	PageChecked:      "(checked)",
+	PageDownloading:  "downloading: %[1]s (%[2]s so far)",
+	PageWaitTimedOut: "wait: timed out, this is the page as it stands",
+	PageConsoleMore: Plural{
+		One:   "(%d more console error)",
+		Other: "(%d more console errors)",
+	},
+	PageDialogWaits:    "The page runs nothing until this dialog is answered: call browser_dialog.",
+	PageDialogWaitsCLI: "The page runs nothing until this dialog is answered: run lich browser dialog accept|dismiss.",
 }

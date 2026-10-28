@@ -82,4 +82,20 @@ type Catalog struct {
 	ClosedKept             string
 	ClosedPlain            string
 	ClosedProject          string
+
+	// internal/cli: a browser page as the browser_* tools answer with it. The
+	// line tags (url:, title:, wait:, text:, interactive, downloading:, dialog
+	// open:) and browser_dialog stay English in every locale: the tool
+	// descriptions name them.
+	PageInteractive  string
+	PageMore         string
+	PageFilled       string
+	PageChecked      string
+	PageDownloading  string
+	PageWaitTimedOut string
+	PageConsoleMore  Plural
+	PageDialogWaits  string
+	// PageDialogWaitsCLI is PageDialogWaits for `lich browser`, which names
+	// its own verb instead of the MCP tool.
+	PageDialogWaitsCLI string
 }

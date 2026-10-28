@@ -10,6 +10,10 @@ import (
 
 var errUnknownInput = errors.New("unknown input type")
 
+// errDialogOpen is a page call that waits on an open JavaScript dialog: the
+// page runs no script and takes no input until it is answered.
+var errDialogOpen = errors.New("the page holds a JavaScript dialog open")
+
 // Viewport is the pane a page is drawn into: W and H in CSS pixels, Scale the
 // device pixels per CSS pixel.
 type Viewport struct {
@@ -77,6 +81,7 @@ type PageInfo struct {
 	Downloads         []api.BrowserDownload `json:"-"`
 	ConsoleErrors     []string              `json:"-"`
 	ConsoleErrorsMore int                   `json:"-"`
+	Dialogs           []api.BrowserDialog   `json:"-"`
 }
 
 // Page is one Chromium tab the service drives. chrome.go is the real one;
@@ -108,8 +113,14 @@ type Page interface {
 	SetCookies(ctx context.Context, cookies []*network.CookieParam) error
 	// Listen hands the page what to call with each screencast frame (base64
 	// JPEG), with its URL and title whenever they change, with each step of a
-	// download it starts, and with each error its console shows.
-	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string))
+	// download it starts, with each error its console shows, and with each
+	// JavaScript dialog it opens, then nil once that dialog is closed.
+	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog))
+	// AnswerDialog answers the open JavaScript dialog: OK with text (a
+	// prompt's answer) when accept, Cancel otherwise. Every other call that
+	// runs the page's script or input fails with errDialogOpen while one is
+	// open.
+	AnswerDialog(ctx context.Context, accept bool, text string) error
 	Screencast(ctx context.Context, v Viewport) error
 	StopScreencast(ctx context.Context) error
 	Resize(ctx context.Context, v Viewport) error

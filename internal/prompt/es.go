@@ -136,4 +136,16 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ClosedPlain: "Se cerró %q.\n",
 	ClosedProject: "Se cerró el proyecto %[1]q (%[2]s) y se detuvieron sus sesiones. Siguen con él: abrir una sesión " +
 		"en %[2]s de nuevo reabre el proyecto con ellas.\n",
+	PageInteractive:  "interactive (índice etiqueta \"texto\" -> enlace):",
+	PageMore:         "(hay más elementos abajo, desplázate para llegar a ellos)",
+	PageFilled:       "(rellenado)",
+	PageChecked:      "(marcado)",
+	PageDownloading:  "downloading: %[1]s (%[2]s hasta ahora)",
+	PageWaitTimedOut: "wait: se agotó el tiempo, esta es la página tal como está",
+	PageConsoleMore: Plural{
+		One:   "(%d error de consola más)",
+		Other: "(%d errores de consola más)",
+	},
+	PageDialogWaits:    "La página no ejecuta nada hasta que se responda este diálogo: llama a browser_dialog.",
+	PageDialogWaitsCLI: "La página no ejecuta nada hasta que se responda este diálogo: ejecuta lich browser dialog accept|dismiss.",
 }

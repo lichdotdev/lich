@@ -41,7 +41,12 @@
     "clearNotes": "지우기",
     "sendNotes": "보내기",
     "noNote": "메모 없음",
-    "notesFailed": "{label}에 메모를 보내지 못했습니다: {error}"
+    "notesFailed": "{label}에 메모를 보내지 못했습니다: {error}",
+    "dialogFrom": "{host} 내용:",
+    "dialogFromPage": "이 페이지 내용:",
+    "dialogOK": "확인",
+    "dialogStay": "머무르기",
+    "dialogLeave": "나가기"
   },
   "split": {
     "noRoom": "여기에는 창을 하나 더 놓을 공간이 없습니다. 창을 넓히거나 먼저 창 하나를 빼세요."

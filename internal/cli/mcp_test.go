@@ -254,6 +254,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 		"browser_back":       {},
 		"browser_forward":    {},
 		"browser_scroll":     {},
+		"browser_dialog":     {"accept"},
 		"browser_list":       {},
 		"browser_close":      {},
 	}

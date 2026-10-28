@@ -128,4 +128,16 @@ var ko = Catalog{
 	ClosedPlain: "%q을(를) 닫았습니다.\n",
 	ClosedProject: "프로젝트 %[1]q (%[2]s)을(를) 닫고 그 세션들을 멈췄습니다. 세션은 프로젝트에 남아 있습니다. " +
 		"%[2]s에서 세션을 다시 열면 프로젝트가 세션과 함께 다시 열립니다.\n",
+	PageInteractive:  "interactive (인덱스 태그 \"레이블\" -> 링크):",
+	PageMore:         "(아래에 요소가 더 있습니다. 스크롤해서 확인하세요)",
+	PageFilled:       "(입력됨)",
+	PageChecked:      "(선택됨)",
+	PageDownloading:  "downloading: %[1]s (지금까지 %[2]s)",
+	PageWaitTimedOut: "wait: 시간이 초과되었습니다. 지금 상태의 페이지입니다",
+	PageConsoleMore: Plural{
+		One:   "(콘솔 오류 %d개 더 있음)",
+		Other: "(콘솔 오류 %d개 더 있음)",
+	},
+	PageDialogWaits:    "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. browser_dialog를 호출하세요.",
+	PageDialogWaitsCLI: "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. lich browser dialog accept|dismiss를 실행하세요.",
 }

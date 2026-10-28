@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"math"
 	"sync"
@@ -31,7 +32,7 @@ type listeners struct {
 	onInfo  func(url, title string)
 }
 
-func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string)) {
+func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog)) {
 	p.listen.mu.Lock()
 	p.listen.onFrame, p.listen.onInfo = onFrame, onInfo
 	p.listen.mu.Unlock()
@@ -45,6 +46,16 @@ func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title st
 			}
 		case *page.EventNavigatedWithinDocument, *page.EventDomContentEventFired:
 			go p.reportInfo()
+		case *page.EventJavascriptDialogOpening:
+			// The service holds the dialog before a call the gate releases
+			// asks it which one.
+			onDialog(&api.BrowserDialog{Type: string(e.Type), Message: e.Message, Default: e.DefaultPrompt, URL: e.URL})
+			p.gate.open()
+		case *page.EventJavascriptDialogClosed:
+			if v := p.gate.close(); v != nil {
+				go p.layOut(*v)
+			}
+			onDialog(nil)
 		default:
 			if text, ok := consoleError(ev); ok {
 				onConsoleError(text)
@@ -91,7 +102,7 @@ func (p *chromePage) keepOneTab() {
 	discover := chromedp.ActionFunc(func(ctx context.Context) error {
 		return target.SetDiscoverTargets(true).Do(cdp.WithExecutor(ctx, c.Browser))
 	})
-	if err := p.run(nil, discover); err != nil {
+	if err := p.runFree(nil, discover); err != nil {
 		slog.Warn("browser: watch for new tabs", "err", err)
 		return
 	}
@@ -120,10 +131,10 @@ func (p *chromePage) takeOver(id target.ID, url string) {
 	closeTab := chromedp.ActionFunc(func(ctx context.Context) error {
 		return target.CloseTarget(id).Do(cdp.WithExecutor(ctx, c.Browser))
 	})
-	if err := p.run(nil, closeTab); err != nil {
+	if err := p.runFree(nil, closeTab); err != nil {
 		slog.Warn("browser: close a tab the page opened", "url", url, "err", err)
 	}
-	if err := p.run(nil, page.BringToFront()); err != nil {
+	if err := p.runFree(nil, page.BringToFront()); err != nil {
 		slog.Warn("browser: bring the page back to the front", "err", err)
 	}
 	if _, err := allowURL(url); err != nil {
@@ -150,7 +161,7 @@ func (p *chromePage) reportInfo() {
 		Title string `json:"title"`
 	}
 	if err := p.run(nil, chromedp.Evaluate(`({url: location.href, title: document.title})`, &info)); err != nil {
-		if p.Alive() {
+		if p.Alive() && !errors.Is(err, errDialogOpen) {
 			slog.Warn("browser: read the page's URL and title", "err", err)
 		}
 		return
@@ -171,7 +182,7 @@ func (p *chromePage) deliver(frame *page.EventScreencastFrame) {
 	ack := chromedp.ActionFunc(func(ctx context.Context) error {
 		return page.ScreencastFrameAck(frame.SessionID).Do(ctx)
 	})
-	if err := p.run(nil, ack); err != nil && p.Alive() {
+	if err := p.runFree(nil, ack); err != nil && p.Alive() {
 		slog.Warn("browser: ack a screencast frame", "err", err)
 	}
 }
@@ -179,14 +190,14 @@ func (p *chromePage) deliver(frame *page.EventScreencastFrame) {
 // Screencast starts the frames at v, or restarts them there: Chrome keeps
 // the size a screencast started with.
 func (p *chromePage) Screencast(ctx context.Context, v Viewport) error {
-	if err := p.run(ctx, page.StopScreencast()); err != nil {
+	if err := p.runFree(ctx, page.StopScreencast()); err != nil {
 		return err
 	}
 	if err := p.Resize(ctx, v); err != nil {
 		return err
 	}
 	w, h := v.devicePixels()
-	return p.run(ctx, page.StartScreencast().
+	return p.runFree(ctx, page.StartScreencast().
 		WithFormat(page.ScreencastFormatJpeg).
 		WithQuality(screencastQuality).
 		WithMaxWidth(w).
@@ -194,12 +205,23 @@ func (p *chromePage) Screencast(ctx context.Context, v Viewport) error {
 }
 
 func (p *chromePage) StopScreencast(ctx context.Context) error {
-	return p.run(ctx, page.StopScreencast())
+	return p.runFree(ctx, page.StopScreencast())
 }
 
 // Resize lays the page out at the pane's size, as a window of that size would.
+// A page holding a dialog open cannot lay out, and the call waited on it for
+// the whole pageWait: a pane opened then stayed black, its screencast never
+// started (measured 2026-10-28). That size is laid out once the dialog closes;
+// until then the frames come at the size the page had.
 func (p *chromePage) Resize(ctx context.Context, v Viewport) error {
-	return p.run(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
+	err := p.run(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
+	if !errors.Is(err, errDialogOpen) {
+		return err
+	}
+	if p.gate.deferView(v) {
+		return nil
+	}
+	return p.Resize(ctx, v)
 }
 
 func (p *chromePage) Mouse(ctx context.Context, m api.BrowserMouseOptions) error {

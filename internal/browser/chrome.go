@@ -85,6 +85,8 @@ type chromePage struct {
 	listen      listeners
 	// dl names the files the page downloads; nil when downloads are off.
 	dl *downloads
+	// gate is held while the page has a JavaScript dialog open.
+	gate dialogGate
 }
 
 // downloadFolder is downloadDir, which the live tests point at a folder of
@@ -108,7 +110,7 @@ func (p *chromePage) allowDownloads(profile string) error {
 		return err
 	}
 	c := chromedp.FromContext(p.ctx)
-	err = p.run(nil, chromedp.ActionFunc(func(ctx context.Context) error {
+	err = p.runFree(nil, chromedp.ActionFunc(func(ctx context.Context) error {
 		return browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
 			WithDownloadPath(staging).
 			WithEventsEnabled(true).
@@ -136,10 +138,33 @@ func (p *chromePage) Close() error {
 	return chromedp.Cancel(ctx)
 }
 
-// run drives CDP on the allocator context chromedp attached, applying wait's
-// deadline. Service callers pass a timeout derived from Background; chromedp.Run
-// on that context is "invalid context" and the headed window is then closed.
+// run is runFree for an action the page's script or input takes part in,
+// which waits on an open JavaScript dialog: it fails with errDialogOpen at
+// once while one is open, and as soon as one opens while it runs.
 func (p *chromePage) run(wait context.Context, actions ...chromedp.Action) error {
+	held := p.gate.held()
+	select {
+	case <-held:
+		return errDialogOpen
+	default:
+	}
+	ctx, cancel := withPageDeadline(p.ctx, wait)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- chromedp.Run(ctx, actions...) }()
+	select {
+	case err := <-done:
+		return err
+	case <-held:
+		return errDialogOpen
+	}
+}
+
+// runFree drives CDP on the allocator context chromedp attached, applying
+// wait's deadline. Service callers pass a timeout derived from Background;
+// chromedp.Run on that context is "invalid context" and the headed window is
+// then closed.
+func (p *chromePage) runFree(wait context.Context, actions ...chromedp.Action) error {
 	ctx, cancel := withPageDeadline(p.ctx, wait)
 	defer cancel()
 	return chromedp.Run(ctx, actions...)
@@ -333,12 +358,12 @@ func (p *chromePage) Scroll(ctx context.Context, at *point, dy int) (x, y float6
 // Focus raises the window. window.focus() from the page does not: the OS
 // only lets the browser itself bring a window forward.
 func (p *chromePage) Focus(ctx context.Context) error {
-	return p.run(ctx, page.BringToFront())
+	return p.runFree(ctx, page.BringToFront())
 }
 
 func (p *chromePage) Cookies(ctx context.Context) ([]*network.CookieParam, error) {
 	var cookies []*network.Cookie
-	err := p.run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+	err := p.runFree(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
 		var err error
 		cookies, err = storage.GetCookies().Do(ctx)
 		return err
@@ -354,7 +379,7 @@ func (p *chromePage) Cookies(ctx context.Context) ([]*network.CookieParam, error
 }
 
 func (p *chromePage) SetCookies(ctx context.Context, cookies []*network.CookieParam) error {
-	return p.run(ctx, storage.SetCookies(cookies))
+	return p.runFree(ctx, storage.SetCookies(cookies))
 }
 
 // cookieParam turns a cookie read back into one Chrome accepts. A session

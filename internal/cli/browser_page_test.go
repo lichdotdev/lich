@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 func TestPageTextIsOneLinePerElement(t *testing.T) {
@@ -35,24 +36,24 @@ func TestPageTextIsOneLinePerElement(t *testing.T) {
 		`5 input:checkbox "Lembrar" (checked)`,
 		"(more elements below, scroll to reach them)",
 	}, "\n")
-	if got := pageText(info); got != want {
+	if got := pageText(info, prompt.English); got != want {
 		t.Fatalf("got\n%s\nwant\n%s", got, want)
 	}
 	raw, _ := json.Marshal(info)
-	if len(pageText(info)) >= len(raw)*2/3 {
-		t.Fatalf("text %d chars against %d for the JSON: not smaller enough", len(pageText(info)), len(raw))
+	if len(pageText(info, prompt.English)) >= len(raw)*2/3 {
+		t.Fatalf("text %d chars against %d for the JSON: not smaller enough", len(pageText(info, prompt.English)), len(raw))
 	}
 }
 
 func TestDownloadLineSaysAFailedMove(t *testing.T) {
 	d := api.BrowserDownload{Path: "/home/u/Downloads/report.csv", Bytes: 5, State: api.DownloadFailed}
-	if got := downloadLine(d); got != "download failed: /home/u/Downloads/report.csv" {
+	if got := downloadLine(d, prompt.For(prompt.English)); got != "download failed: /home/u/Downloads/report.csv" {
 		t.Fatalf("got %q", got)
 	}
 }
 
 func TestPageTextOfAnEmptyPage(t *testing.T) {
-	if got := pageText(api.BrowserPageInfo{URL: "about:blank"}); got != "url: about:blank\ntitle: " {
+	if got := pageText(api.BrowserPageInfo{URL: "about:blank"}, prompt.English); got != "url: about:blank\ntitle: " {
 		t.Fatalf("got %q", got)
 	}
 }
@@ -73,7 +74,7 @@ func TestPageTextNamesTheDownloadsAfterTheTitle(t *testing.T) {
 		"downloaded: /home/u/Downloads/tiny.txt (5 B)",
 		"text: Reports",
 	}, "\n")
-	if got := pageText(info); got != want {
+	if got := pageText(info, prompt.English); got != want {
 		t.Fatalf("got\n%s\nwant\n%s", got, want)
 	}
 }
@@ -81,7 +82,7 @@ func TestPageTextNamesTheDownloadsAfterTheTitle(t *testing.T) {
 func TestPageTextSaysAWaitTimedOutBeforeThePage(t *testing.T) {
 	info := api.BrowserPageInfo{URL: "https://x.test/", Title: "X", Text: "Loading", WaitTimedOut: true}
 	want := "url: https://x.test/\ntitle: X\nwait: timed out, this is the page as it stands\ntext: Loading"
-	if got := pageText(info); got != want {
+	if got := pageText(info, prompt.English); got != want {
 		t.Fatalf("got\n%s\nwant\n%s", got, want)
 	}
 }
@@ -89,7 +90,66 @@ func TestPageTextSaysAWaitTimedOutBeforeThePage(t *testing.T) {
 func TestPageTextNamesConsoleErrorsAndHowManyMore(t *testing.T) {
 	info := api.BrowserPageInfo{URL: "about:blank", ConsoleErrors: []string{"Uncaught Error: x", "boom"}, ConsoleErrorsMore: 4}
 	want := "url: about:blank\ntitle: \nconsole error: Uncaught Error: x\nconsole error: boom\n(4 more console errors)"
-	if got := pageText(info); got != want {
+	if got := pageText(info, prompt.English); got != want {
 		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestPageTextNamesTheAnsweredDialogsThenTheOpenOne(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "https://x.test/", Title: "X",
+		Dialogs: []api.BrowserDialog{{Type: "confirm", Message: "Delete?", Answer: api.DialogDismissed}},
+		Dialog:  &api.BrowserDialog{Type: "prompt", Message: "Name?", Default: "Ada"},
+	}
+	want := strings.Join([]string{
+		"url: https://x.test/",
+		"title: X",
+		`dialog answered: confirm "Delete?" -> dismissed`,
+		`dialog open: prompt "Name?" default "Ada"`,
+		"The page runs nothing until this dialog is answered: call browser_dialog.",
+	}, "\n")
+	if got := pageText(info, prompt.English); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+}
+
+// The prose of a page answer follows the prompt language; the line tags the
+// tool descriptions name stay English in every one.
+func TestPageTextInEveryLanguage(t *testing.T) {
+	yes := true
+	info := api.BrowserPageInfo{
+		URL: "https://x.test/", Title: "X", Text: "Hi", Truncated: true, WaitTimedOut: true,
+		Downloads:         []api.BrowserDownload{{Path: "/dl/big.iso", Bytes: 3, State: api.DownloadInProgress}},
+		ConsoleErrors:     []string{"boom"},
+		ConsoleErrorsMore: 2,
+		Dialog:            &api.BrowserDialog{Type: "alert", Message: "hi"},
+		Interactive:       []api.BrowserInteractive{{Index: 1, Tag: "input", Filled: &yes, Checked: &yes}},
+	}
+	english := pageText(info, prompt.English)
+	for _, lang := range prompt.Langs {
+		got := pageText(info, lang)
+		if strings.Contains(got, "%!") {
+			t.Errorf("%s: a format argument is off:\n%s", lang, got)
+		}
+		for _, literal := range []string{
+			"url: ", "title: ", "wait: ", "text: ", "downloading: /dl/big.iso", "3 B", "console error: boom", "2",
+			`dialog open: alert "hi"`, "browser_dialog", "interactive (",
+		} {
+			if !strings.Contains(got, literal) {
+				t.Errorf("%s: lost %q:\n%s", lang, literal, got)
+			}
+		}
+		if lang != prompt.English && got == english {
+			t.Errorf("%s: the page reads the same as in English", lang)
+		}
+	}
+}
+
+func TestTheCommandLineAsksForItsOwnVerb(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "https://x.test/", Dialog: &api.BrowserDialog{Type: "alert", Message: "hi"}}
+	for _, lang := range prompt.Langs {
+		got := cliPageText(info, lang)
+		if !strings.Contains(got, "lich browser dialog accept|dismiss") || strings.Contains(got, "browser_dialog") {
+			t.Errorf("%s: the command line answer names the wrong call:\n%s", lang, got)
+		}
 	}
 }

@@ -148,7 +148,7 @@ func TestChromeScreencastSendsFramesAndPageInfo(t *testing.T) {
 		case titles <- title:
 		default:
 		}
-	}, func(string, api.BrowserDownload) {}, func(string) {})
+	}, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {})
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	if err := p.Navigate(ctx, srv.URL); err != nil {
@@ -225,7 +225,7 @@ func TestChromeLinkToANewTabLoadsInThePageAndKeepsItResponding(t *testing.T) {
 	t.Cleanup(srv.Close)
 	p := pg.(*chromePage)
 	urls := make(chan string, 8)
-	p.Listen(func(string) {}, func(url, _ string) { urls <- url }, func(string, api.BrowserDownload) {}, func(string) {})
+	p.Listen(func(string) {}, func(url, _ string) { urls <- url }, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {})
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	if err := p.Navigate(ctx, srv.URL+"/"); err != nil {

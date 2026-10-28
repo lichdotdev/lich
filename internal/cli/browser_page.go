@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/prompt"
 )
 
 // pageText is a page as an agent reads it: one line per interactive element
@@ -14,40 +15,73 @@ import (
 // same page (a session reading the Notacil app spent 3 to 4 thousand per
 // read, 93% of it the element list; measured 2026-10-26). Positions are left
 // out: an agent clicks by index, and a box is a screenshot's job.
-func pageText(info api.BrowserPageInfo) string {
+func pageText(info api.BrowserPageInfo, lang prompt.Lang) string {
+	text := prompt.For(lang)
+	return pageTextAsking(info, text, text.PageDialogWaits)
+}
+
+// cliPageText is pageText for `lich browser`, whose answer to an open dialog
+// is its own verb rather than the MCP tool.
+func cliPageText(info api.BrowserPageInfo, lang prompt.Lang) string {
+	text := prompt.For(lang)
+	return pageTextAsking(info, text, text.PageDialogWaitsCLI)
+}
+
+// pageTextAsking is the page answer, with waits as what an open dialog asks
+// of the agent.
+func pageTextAsking(info api.BrowserPageInfo, text *prompt.Catalog, waits string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "url: %s\ntitle: %s\n", info.URL, info.Title)
 	if info.WaitTimedOut {
-		b.WriteString("wait: timed out, this is the page as it stands\n")
+		b.WriteString(text.PageWaitTimedOut + "\n")
 	}
+	writeDialogs(&b, info, waits)
 	for _, d := range info.Downloads {
-		b.WriteString(downloadLine(d))
+		b.WriteString(downloadLine(d, text))
 		b.WriteByte('\n')
 	}
 	for _, e := range info.ConsoleErrors {
 		fmt.Fprintf(&b, "console error: %s\n", e)
 	}
-	if info.ConsoleErrorsMore > 0 {
-		fmt.Fprintf(&b, "(%d more console errors)\n", info.ConsoleErrorsMore)
+	if n := info.ConsoleErrorsMore; n > 0 {
+		fmt.Fprintf(&b, text.Pick(n, text.PageConsoleMore)+"\n", n)
 	}
 	if info.Text != "" {
 		fmt.Fprintf(&b, "text: %s\n", info.Text)
 	}
 	if len(info.Interactive) > 0 {
-		b.WriteString("interactive (index tag \"label\" -> link):\n")
+		b.WriteString(text.PageInteractive + "\n")
 	}
 	base, _ := url.Parse(info.URL)
 	for _, n := range info.Interactive {
-		b.WriteString(elementLine(n, base))
+		b.WriteString(elementLine(n, base, text))
 		b.WriteByte('\n')
 	}
 	if info.Truncated {
-		b.WriteString("(more elements below, scroll to reach them)\n")
+		b.WriteString(text.PageMore + "\n")
 	}
 	return strings.TrimSuffix(b.String(), "\n")
 }
 
-func elementLine(n api.BrowserInteractive, base *url.URL) string {
+// writeDialogs names the dialogs the user answered since the last page
+// answer, then the one the page holds open, which the agent must answer
+// before anything else.
+func writeDialogs(b *strings.Builder, info api.BrowserPageInfo, waits string) {
+	for _, d := range info.Dialogs {
+		fmt.Fprintf(b, "dialog answered: %s %q -> %s\n", d.Type, d.Message, d.Answer)
+	}
+	d := info.Dialog
+	if d == nil {
+		return
+	}
+	fmt.Fprintf(b, "dialog open: %s %q", d.Type, d.Message)
+	if d.Default != "" {
+		fmt.Fprintf(b, " default %q", d.Default)
+	}
+	b.WriteString("\n" + waits + "\n")
+}
+
+func elementLine(n api.BrowserInteractive, base *url.URL, text *prompt.Catalog) string {
 	parts := []string{strconv.Itoa(n.Index), elementKind(n)}
 	if n.Text != "" {
 		parts = append(parts, strconv.Quote(n.Text))
@@ -56,10 +90,10 @@ func elementLine(n api.BrowserInteractive, base *url.URL) string {
 		parts = append(parts, "-> "+shortHref(n.Href, base))
 	}
 	if n.Filled != nil && *n.Filled {
-		parts = append(parts, "(filled)")
+		parts = append(parts, text.PageFilled)
 	}
 	if n.Checked != nil && *n.Checked {
-		parts = append(parts, "(checked)")
+		parts = append(parts, text.PageChecked)
 	}
 	return strings.Join(parts, " ")
 }
@@ -91,12 +125,12 @@ func shortHref(href string, base *url.URL) string {
 }
 
 // downloadLine says where a file the page downloaded is, and how far it got.
-func downloadLine(d api.BrowserDownload) string {
+func downloadLine(d api.BrowserDownload, text *prompt.Catalog) string {
 	switch d.State {
 	case api.DownloadCompleted:
 		return fmt.Sprintf("downloaded: %s (%s)", d.Path, sizeText(d.Bytes))
 	case api.DownloadInProgress:
-		return fmt.Sprintf("downloading: %s (%s so far)", d.Path, sizeText(d.Bytes))
+		return fmt.Sprintf(text.PageDownloading, d.Path, sizeText(d.Bytes))
 	case api.DownloadFailed:
 		return "download failed: " + d.Path
 	default:
