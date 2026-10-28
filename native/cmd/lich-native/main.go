@@ -127,9 +127,10 @@ type window struct {
 	// cards, the questions of cards whose process exited and the browsers
 	// agents opened, in the bottom-right corner, apart from every other toast.
 	duplicates ui.Toaster
-	// caption is where the topbar draws the window's buttons, chrome what
-	// the window manager last said about the window.
-	caption captionLayout
+	// caption is where the topbar draws the window's buttons, swapped whole
+	// when the desktop's layout changes; chrome what the window manager last
+	// said about the window.
+	caption atomic.Pointer[captionLayout]
 	chrome  windowChrome
 	// shortcuts is the keyboard shortcuts overlay.
 	shortcuts shortcutsOverlay
@@ -220,13 +221,19 @@ func run(w *app.Window, rt backend.Runtime) error {
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	u := &window{
-		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(), caption: platformCaption(),
+		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(),
 		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
 		model: newModel(client, w.Invalidate),
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
 	}
 	u.appearance = &appearance{ctx: ctx, client: client, invalidate: w.Invalidate}
+	caption := platformCaption()
+	u.caption.Store(&caption)
+	go followCaption(ctx, func(l captionLayout) {
+		u.caption.Store(&l)
+		w.Invalidate()
+	})
 	u.toaster.Invalidate = w.Invalidate
 	u.duplicates.Invalidate = w.Invalidate
 	u.terms.toaster = &u.toaster
@@ -758,7 +765,8 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	f := topbarFrame{
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
 		tabs: v.strip, active: v.stripActive, pending: u.model.notifications(),
-		caption: u.caption, chrome: u.chrome,
+		caption: u.caption.Load().under(u.settings.look.prefs.windowButtons), chrome: u.chrome,
+		windowButtons: u.settings.look.prefs.windowButtons,
 	}
 	// Settings is no project's screen, so no tab merges into it.
 	if u.settings.open {

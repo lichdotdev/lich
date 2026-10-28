@@ -243,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "Botones",
+    "searchWords": "botones ventana minimizar maximizar cerrar barra de título controles semáforos ocultar mostrar",
+    "description": "Los botones de minimizar, maximizar y cerrar en la parte superior de la ventana.",
+    "choice": {
+      "system": {
+        "label": "Seguir el sistema",
+        "consequence": "lich muestra los botones donde los pone tu sistema, y ninguno cuando el gestor de ventanas dibuja su propia barra de título."
+      },
+      "show": {
+        "label": "Mostrar siempre",
+        "consequence": "lich dibuja los botones incluso cuando el gestor de ventanas dibuja su propia barra de título, o ninguna, como hace uno en mosaico."
+      },
+      "hide": {
+        "label": "Ocultar",
+        "consequence": "La ventana no tiene botones: minimízala, maximízala y ciérrala desde el teclado o el gestor de ventanas."
+      }
+    }
+  },
   "windowSetting": {
     "title": "Ventana"
   },

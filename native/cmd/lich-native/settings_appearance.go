@@ -23,6 +23,14 @@ var closeChoices = []struct{ value, labelKey, consequenceKey string }{
 	{closeQuit, "settings.closeSetting.choice.quit.label", "settings.closeSetting.choice.quit.consequence"},
 }
 
+// windowButtonsChoices are the window buttons setting's three answers, each
+// with the keys of its label and of the line saying what it does.
+var windowButtonsChoices = []struct{ value, labelKey, consequenceKey string }{
+	{windowButtonsSystem, "settings.windowButtonsSetting.choice.system.label", "settings.windowButtonsSetting.choice.system.consequence"},
+	{windowButtonsShow, "settings.windowButtonsSetting.choice.show.label", "settings.windowButtonsSetting.choice.show.consequence"},
+	{windowButtonsHide, "settings.windowButtonsSetting.choice.hide.label", "settings.windowButtonsSetting.choice.hide.consequence"},
+}
+
 var (
 	icZoomOut = icons.Lucide("zoom-out")
 	icZoomIn  = icons.Lucide("zoom-in")
@@ -47,6 +55,7 @@ type appearanceControls struct {
 	typed      bool // the ceiling field holds the user's text, not the stored value
 	closeTo    widget.Enum
 	copy       ui.SwitchState
+	buttons    widget.Enum
 }
 
 // commit applies p at once and stores the setting that changed.
@@ -109,6 +118,8 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 		control = s.copyOnSelectControl
 	case closeActionKey:
 		return s.closeBlock(gtx, th, r, first), true
+	case windowButtonsKey:
+		return s.windowButtonsBlock(gtx, th, r, first), true
 	default:
 		return D{}, false
 	}
@@ -216,6 +227,39 @@ func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first boo
 	items := make([]ui.ToggleItem, len(closeChoices))
 	consequence := ""
 	for i, c := range closeChoices {
+		items[i] = ui.ToggleItem{Value: c.value, Text: i18n.T(c.labelKey)}
+		if c.value == g.Value {
+			consequence = i18n.T(c.consequenceKey)
+		}
+	}
+	under := func(gtx C, th *ui.Theme) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(th.ToggleGroup(g, items...).Layout),
+			ui.VGap(2),
+			layout.Rigid(th.Text(ui.TextXS, consequence).Muted().Layout),
+		)
+	}
+	return r.layoutBlock(gtx, th, first, under)
+}
+
+// windowButtonsBlock is the window buttons setting, a SettingBlock: the title
+// and description, the three answers under them, and what the chosen one
+// does.
+func (s *settingsScreen) windowButtonsBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
+	r.description = i18n.T("settings.windowButtonsSetting.description")
+	if r.kind == rowGlobalOnly {
+		return r.layout(gtx, th, first, nil)
+	}
+	g := &s.look.buttons
+	if g.Update(gtx) {
+		p := s.look.prefs
+		p.windowButtons = windowButtonsOf(g.Value)
+		s.commitAppearance(p, windowButtonsKey, p.windowButtons)
+	}
+	g.Value = s.look.prefs.windowButtons
+	items := make([]ui.ToggleItem, len(windowButtonsChoices))
+	consequence := ""
+	for i, c := range windowButtonsChoices {
 		items[i] = ui.ToggleItem{Value: c.value, Text: i18n.T(c.labelKey)}
 		if c.value == g.Value {
 			consequence = i18n.T(c.consequenceKey)
