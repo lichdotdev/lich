@@ -108,3 +108,25 @@ jobs:
         env:
           CGO_ENABLED: "0"
         run: go test -tags installer_e2e -run '^TestWindowsInstallerE2E$' -v -timeout 10m ./internal/appupdate
+
+  # TEMPORARY: measures the TestWriteFileAtomicSurvivesConcurrentWriters flake
+  # rate on Windows; removed before this PR is ready.
+  flake-measure:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Measure
+        run: |
+          n=500
+          go test -count=$n -run '^TestWriteFileAtomicSurvivesConcurrentWriters$' -v -timeout 60m ./internal/profilestore/ > out.txt 2>&1 || true
+          fails=$(grep -c -- '--- FAIL' out.txt || true)
+          passes=$(grep -c -- '--- PASS' out.txt || true)
+          grep -m 5 'concurrent write' out.txt || true
+          echo "::notice::flake-measure: $fails failed, $passes passed of $n"
+          [ "$fails" -eq 0 ]
