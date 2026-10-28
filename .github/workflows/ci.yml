@@ -112,6 +112,10 @@ jobs:
   # TEMPORARY: measures the TestWriteFileAtomicSurvivesConcurrentWriters flake
   # rate on Windows; removed before this PR is ready.
   flake-measure:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     runs-on: windows-latest
     defaults:
       run:
