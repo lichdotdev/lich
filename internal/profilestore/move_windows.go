@@ -8,11 +8,11 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// crossDevice reports a rename refused for crossing volumes. os.Rename is
+// CrossDevice reports a rename refused for crossing volumes. os.Rename is
 // MoveFileEx without MOVEFILE_COPY_ALLOWED, which answers
 // ERROR_NOT_SAME_DEVICE there; syscall.EXDEV on Windows is an errno Go
 // invented that no call returns.
-func crossDevice(err error) bool { return errors.Is(err, windows.ERROR_NOT_SAME_DEVICE) }
+func CrossDevice(err error) bool { return errors.Is(err, windows.ERROR_NOT_SAME_DEVICE) }
 
 // replaceRetryFor bounds how long replaceFile retries, the 2s Go's own
 // cmd/go/internal/robustio gives the same errors.

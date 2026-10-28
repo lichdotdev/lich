@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
@@ -61,7 +62,7 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		return nil, err
 	}
 	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel}
-	if err := p.allowDownloads(); err != nil {
+	if err := p.allowDownloads(dir); err != nil {
 		slog.Warn("browser: downloads stay off", "err", err)
 	}
 	return p, nil
@@ -70,9 +71,10 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 // disabledFeatures replaces chromedp's own disable-features list, which it
 // repeats, adding the optimization guide's model downloads. Those go through
 // the profile's download manager with no page and no download event, so with
-// downloads allowed Chrome saved them into the user's Downloads as files
-// named by a GUID, 4 KB to 33 MB each (Chrome on the Windows and macOS CI
-// runners, 2026-10-27).
+// downloads allowed Chrome saved them into the download folder as files named
+// by a GUID, 4 KB to 33 MB each (Chrome on the Windows and macOS CI runners,
+// 2026-10-27). They stay in the profile's staging folder now; these spare
+// the bytes.
 const disabledFeatures = "site-per-process,Translate,BlinkGenPropertyTrees," +
 	"OptimizationGuideModelDownloading,OptimizationTargetPrediction"
 
@@ -90,9 +92,10 @@ type chromePage struct {
 var downloadFolder = downloadDir
 
 // allowDownloads saves what the page downloads into the user's Downloads
-// folder, with events. A headless Chrome denies downloads by default, and a
-// click on a download button did nothing.
-func (p *chromePage) allowDownloads() error {
+// folder, with events, by way of a staging folder in the profile dir. A
+// headless Chrome denies downloads by default, and a click on a download
+// button did nothing.
+func (p *chromePage) allowDownloads(profile string) error {
 	dir, err := downloadFolder()
 	if err != nil {
 		return err
@@ -100,17 +103,21 @@ func (p *chromePage) allowDownloads() error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
+	staging := filepath.Join(profile, stagingDir)
+	if err := os.MkdirAll(staging, 0o700); err != nil {
+		return err
+	}
 	c := chromedp.FromContext(p.ctx)
 	err = p.run(nil, chromedp.ActionFunc(func(ctx context.Context) error {
 		return browser.SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
-			WithDownloadPath(dir).
+			WithDownloadPath(staging).
 			WithEventsEnabled(true).
 			Do(cdp.WithExecutor(ctx, c.Browser))
 	}))
 	if err != nil {
 		return err
 	}
-	p.dl = newDownloads(dir)
+	p.dl = newDownloads(staging, dir)
 	return nil
 }
 

@@ -993,11 +993,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 - **A session browser's downloads go straight to the user's Downloads folder** (`internal/browser/downloads.go`,
   `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS and Windows,
-  even for a Windows user who moved that known folder. While one runs, a file named by Chrome's download id sits
-  there; it takes its real name once complete. The download behaviour is the whole browser's, so what Chrome
-  downloads on its own, with no page, lands there too under its id and is never renamed: the optimization guide's
-  model downloads are switched off (`disabledFeatures`, `chrome.go`), and a background download a later Chrome adds
-  would land. Chrome reloads the page 1.46 to 1.70 seconds after an `<a download>` begins, and the reload aborts a
+  even for a Windows user who moved that known folder. Chrome writes each one under its download id into a staging
+  folder in the session's profile, and only a download a page announced moves to Downloads, once complete. The
+  download behaviour is the whole browser's, so what Chrome downloads on its own, with no page (4 KB to 33 MB files
+  on the macOS and Windows runners), lands in staging, is never moved and goes with the profile when the browser
+  closes; until then it takes the profile's disk. The profile sits in the temp dir, so with Downloads on another
+  filesystem or volume the move is a copy, written under a hidden `.part` name and renamed once whole. A move that
+  fails reports the staged path, which goes with the profile too. Chrome reloads the page 1.46 to 1.70 seconds after an `<a download>` begins, and the reload aborts a
   navigation started before it (`net::ERR_ABORTED`; Chromium 155, with downloads on or off), so an agent's click,
   key press, open or navigate that downloaded holds its answer 2.5 seconds; a navigation the person starts in the
   pane is not held. A download still running after ten seconds is reported in progress and named again when it

@@ -42,7 +42,7 @@ func linkFile(target, path string) (copied bool, err error) {
 	if !filepath.IsAbs(target) {
 		target = filepath.Join(filepath.Dir(path), target)
 	}
-	return true, copyFile(target, path)
+	return true, CopyFile(target, path)
 }
 
 // IsLink reports whether path is a link this package made: a symlink, or a
