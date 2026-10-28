@@ -73,7 +73,7 @@ func main() {
 	go func() {
 		width, height := windowSize(*flagWindow)
 		w := new(app.Window)
-		w.Option(app.Title("lich (native slice)"), app.Size(width, height), app.Decorated(false), app.TrafficLights(topbarHeight))
+		w.Option(app.Title("lich"), app.Size(width, height), app.Decorated(false), app.TrafficLights(topbarHeight))
 		code := 0
 		if err := run(w, rt); err != nil {
 			log.Print(err)

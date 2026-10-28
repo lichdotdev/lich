@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On Windows the window is titled `lich` in the taskbar and Alt-Tab, instead of `lich (native slice)`.
 - A project whose GitHub account lives on a GitHub Enterprise server gets that account in the Pulls screen, the pull request badges and a sandboxed session granted its token. The token went out under a variable gh ignores for an enterprise host, so gh answered as its active account there.
 - A session browser's click, type or key press by index reaches the element the agent's last page read gave that index. After a scroll and a second read, an element the first read had listed under the same index, now out of view, could take the click instead, with no error.
 
