@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A project's GitHub account (Settings › Version Control) now reaches its sessions too: `gh` run by the agent or in a shell card answers as that account instead of whichever one gh has active, from the session's next start. Inside those sessions `gh auth switch` no longer changes the account.
 - The window holds less memory with many sessions open. A terminal off screen lets go of the pixels it drew, a few megabytes each, and redraws them in one frame when it comes back.
+- The window's garbage collector now runs at 50 instead of Go's default 100, which in a test with 15 sessions cut about a tenth of its resident memory, the slack the system would otherwise swap out. `GOGC` still overrides it.
 - The browser tools answer an agent in the session's prompt language: the legend of the element list, the note that more elements wait below, the filled and checked marks, a download still running, a wait that timed out, the count of further console errors, and what an open dialog asks of it. The line tags (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` and the rest) stay as they are in every language.
 
 ### Fixed
