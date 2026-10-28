@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/chromium"
@@ -103,6 +104,16 @@ func TestChromeAPaneOpenedOnADialogShowsThePage(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	// The page is drawn once first, as a page the agent clicked on was:
+	// headless Chrome on macOS has not painted it when Navigate returns, and a
+	// dialog held open before its first paint leaves no frame to cast
+	// (Chrome 155, macos-latest runner, measured 2026-10-28).
+	if err := p.runFree(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		_, err := page.CaptureScreenshot().Do(ctx)
+		return err
+	})); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.runFree(ctx, chromedp.Evaluate(`setTimeout(() => confirm('Delete?'), 0)`, nil)); err != nil {

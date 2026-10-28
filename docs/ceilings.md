@@ -1002,6 +1002,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   sibling covers keeps its pin. Notes not sent yet
   live in the window: closing it, or the browser, loses them.
 
+- **On macOS, a JavaScript dialog a page opens before its first paint leaves the pane black behind the dialog's
+  card** (`internal/browser/chrome_view.go`): headless Chrome there paints a page some time after its load, and
+  a page held by a dialog cannot paint, so a screencast started then has no frame to send until the dialog is
+  answered (Chrome 155 on the macos-latest runner, measured). A dialog opened once the page has been drawn, as
+  one an agent's click opens, shows the page behind it. Linux and Windows paint before the load returns.
+
 - **A session browser's downloads go straight to the user's Downloads folder** (`internal/browser/downloads.go`,
   `session_downloads.go`, `docs/browser-tab.md`): `XDG_DOWNLOAD_DIR` on Linux, `~/Downloads` on macOS and Windows,
   even for a Windows user who moved that known folder. Chrome writes each one under its download id into a staging
