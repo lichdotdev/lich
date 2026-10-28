@@ -95,4 +95,7 @@ type Catalog struct {
 	PageWaitTimedOut string
 	PageConsoleMore  Plural
 	PageDialogWaits  string
+	// PageDialogWaitsCLI is PageDialogWaits for `lich browser`, which names
+	// its own verb instead of the MCP tool.
+	PageDialogWaitsCLI string
 }

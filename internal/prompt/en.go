@@ -145,5 +145,6 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 		One:   "(%d more console error)",
 		Other: "(%d more console errors)",
 	},
-	PageDialogWaits: "The page runs nothing until this dialog is answered: call browser_dialog.",
+	PageDialogWaits:    "The page runs nothing until this dialog is answered: call browser_dialog.",
+	PageDialogWaitsCLI: "The page runs nothing until this dialog is answered: run lich browser dialog accept|dismiss.",
 }

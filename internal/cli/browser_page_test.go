@@ -143,3 +143,13 @@ func TestPageTextInEveryLanguage(t *testing.T) {
 		}
 	}
 }
+
+func TestTheCommandLineAsksForItsOwnVerb(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "https://x.test/", Dialog: &api.BrowserDialog{Type: "alert", Message: "hi"}}
+	for _, lang := range prompt.Langs {
+		got := cliPageText(info, lang)
+		if !strings.Contains(got, "lich browser dialog accept|dismiss") || strings.Contains(got, "browser_dialog") {
+			t.Errorf("%s: the command line answer names the wrong call:\n%s", lang, got)
+		}
+	}
+}

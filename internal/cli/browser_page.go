@@ -17,12 +17,25 @@ import (
 // out: an agent clicks by index, and a box is a screenshot's job.
 func pageText(info api.BrowserPageInfo, lang prompt.Lang) string {
 	text := prompt.For(lang)
+	return pageTextAsking(info, text, text.PageDialogWaits)
+}
+
+// cliPageText is pageText for `lich browser`, whose answer to an open dialog
+// is its own verb rather than the MCP tool.
+func cliPageText(info api.BrowserPageInfo, lang prompt.Lang) string {
+	text := prompt.For(lang)
+	return pageTextAsking(info, text, text.PageDialogWaitsCLI)
+}
+
+// pageTextAsking is the page answer, with waits as what an open dialog asks
+// of the agent.
+func pageTextAsking(info api.BrowserPageInfo, text *prompt.Catalog, waits string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "url: %s\ntitle: %s\n", info.URL, info.Title)
 	if info.WaitTimedOut {
 		b.WriteString(text.PageWaitTimedOut + "\n")
 	}
-	writeDialogs(&b, info, text)
+	writeDialogs(&b, info, waits)
 	for _, d := range info.Downloads {
 		b.WriteString(downloadLine(d, text))
 		b.WriteByte('\n')
@@ -53,7 +66,7 @@ func pageText(info api.BrowserPageInfo, lang prompt.Lang) string {
 // writeDialogs names the dialogs the user answered since the last page
 // answer, then the one the page holds open, which the agent must answer
 // before anything else.
-func writeDialogs(b *strings.Builder, info api.BrowserPageInfo, text *prompt.Catalog) {
+func writeDialogs(b *strings.Builder, info api.BrowserPageInfo, waits string) {
 	for _, d := range info.Dialogs {
 		fmt.Fprintf(b, "dialog answered: %s %q -> %s\n", d.Type, d.Message, d.Answer)
 	}
@@ -65,7 +78,7 @@ func writeDialogs(b *strings.Builder, info api.BrowserPageInfo, text *prompt.Cat
 	if d.Default != "" {
 		fmt.Fprintf(b, " default %q", d.Default)
 	}
-	b.WriteString("\n" + text.PageDialogWaits + "\n")
+	b.WriteString("\n" + waits + "\n")
 }
 
 func elementLine(n api.BrowserInteractive, base *url.URL, text *prompt.Catalog) string {

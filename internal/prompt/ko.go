@@ -138,5 +138,6 @@ var ko = Catalog{
 		One:   "(콘솔 오류 %d개 더 있음)",
 		Other: "(콘솔 오류 %d개 더 있음)",
 	},
-	PageDialogWaits: "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. browser_dialog를 호출하세요.",
+	PageDialogWaits:    "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. browser_dialog를 호출하세요.",
+	PageDialogWaitsCLI: "이 대화상자에 응답할 때까지 페이지는 아무것도 실행하지 않습니다. lich browser dialog accept|dismiss를 실행하세요.",
 }

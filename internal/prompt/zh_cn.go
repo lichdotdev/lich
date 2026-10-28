@@ -137,5 +137,6 @@ var zhCN = Catalog{
 		One:   "(还有 %d 条控制台错误)",
 		Other: "(还有 %d 条控制台错误)",
 	},
-	PageDialogWaits: "在回应此对话框之前，页面不会执行任何操作：请调用 browser_dialog。",
+	PageDialogWaits:    "在回应此对话框之前，页面不会执行任何操作：请调用 browser_dialog。",
+	PageDialogWaitsCLI: "在回应此对话框之前，页面不会执行任何操作：请运行 lich browser dialog accept|dismiss。",
 }

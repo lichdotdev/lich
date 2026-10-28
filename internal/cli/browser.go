@@ -85,7 +85,7 @@ func (c *client) browserInfo(args []string) error {
 
 // printPage prints a page the way the browser_* tools answer with it.
 func (c *client) printPage(info api.BrowserPageInfo) error {
-	_, err := fmt.Fprintln(c.stdout, pageText(info, c.lang()))
+	_, err := fmt.Fprintln(c.stdout, cliPageText(info, c.lang()))
 	return err
 }
 
