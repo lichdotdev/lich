@@ -65,7 +65,10 @@ A file the page downloads lands in the user's Downloads folder
 (`XDG_DOWNLOAD_DIR`, from the environment or `user-dirs.dirs`, on Linux;
 `~/Downloads` elsewhere) under the name the page suggests, made unique the way
 browsers do (`report (1).csv`): nothing already there is overwritten. Chrome
-writes it under its download id and lich renames it once it is complete. A
+writes it under its download id into a staging folder inside the session's own
+profile, and lich moves it to Downloads once it is complete; across
+filesystems the move is a copy. What Chrome downloads on its own, with no page
+announcing it, stays in staging and is deleted with the profile. A
 click or key press that starts one answers with a `downloaded:` line, its path
 and size, after waiting up to ten seconds for it; one still running answers
 `downloading:`, and the next page read says when it ends. `browser_open` and

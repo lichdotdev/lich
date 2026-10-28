@@ -97,7 +97,7 @@ func move(from, to string) error {
 	}
 	err := os.Rename(from, to)
 	var linkErr *os.LinkError
-	if err == nil || !errors.As(err, &linkErr) || !crossDevice(linkErr.Err) {
+	if err == nil || !errors.As(err, &linkErr) || !CrossDevice(linkErr.Err) {
 		return err
 	}
 	if err := copyTree(from, to); err != nil {
@@ -135,7 +135,7 @@ func copyTree(from, to string) error {
 			dirs = append(dirs, dirMode{dst, info.Mode().Perm()})
 			return os.MkdirAll(dst, 0o700)
 		}
-		if err := copyFile(path, dst); err != nil {
+		if err := CopyFile(path, dst); err != nil {
 			return err
 		}
 		return os.Chmod(dst, info.Mode().Perm())
@@ -178,7 +178,8 @@ func copyLink(src, dst string) error {
 	return err
 }
 
-func copyFile(src, dst string) error {
+// CopyFile copies src to dst, which it creates and never overwrites.
+func CopyFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
