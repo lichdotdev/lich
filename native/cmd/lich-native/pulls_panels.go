@@ -18,7 +18,11 @@ import (
 // Approve, Merge, Refresh and Open.
 func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	busy := v.busyNow()
-	handLabel, handPrompt, handOK := pullHandoff(d)
+	var conflicts []string
+	if conflictsWithBase(d) {
+		conflicts = p.store.conflictFiles(p.project.Path, &d).val
+	}
+	handLabel, handPrompt, handOK := pullHandoff(d, conflicts)
 	blocked := ""
 	if d.IsCrossRepository && !d.MaintainerCanModify {
 		blocked = i18n.T("pulls.pulls.forkBlocked")

@@ -1,6 +1,7 @@
 {
   "pullRequest": {
     "conflicts": "拉取请求 #{number}（{branch}）与 {base} 存在合并冲突。请解决这些冲突。",
+    "conflictsListed": "拉取请求 #{number}（{branch}）的以下文件与 {base} 存在合并冲突。请解决这些冲突：\n\n{files}",
     "checksUnnamed": {
       "one": "拉取请求 #{number}（{branch}）的 CI 失败了。有 {count} 项检查未通过，请找出是哪些并修复。",
       "other": "拉取请求 #{number}（{branch}）的 CI 失败了。有 {count} 项检查未通过，请找出是哪些并修复。"

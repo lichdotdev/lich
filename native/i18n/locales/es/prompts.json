@@ -1,6 +1,7 @@
 {
   "pullRequest": {
     "conflicts": "El pull request #{number} ({branch}) tiene conflictos de fusión con {base}. Resuélvelos.",
+    "conflictsListed": "El pull request #{number} ({branch}) tiene conflictos de fusión con {base} en estos archivos. Resuélvelos:\n\n{files}",
     "checksUnnamed": {
       "one": "El CI está fallando en el pull request #{number} ({branch}). {count} comprobación está en rojo; averigua cuál es y corrígela.",
       "other": "El CI está fallando en el pull request #{number} ({branch}). {count} comprobaciones están en rojo; averigua cuáles son y corrígelas."
