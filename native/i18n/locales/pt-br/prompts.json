@@ -1,6 +1,7 @@
 {
   "pullRequest": {
     "conflicts": "O pull request #{number} ({branch}) tem conflitos de merge com {base}. Resolva-os.",
+    "conflictsListed": "O pull request #{number} ({branch}) tem conflitos de merge com {base} nestes arquivos. Resolva-os:\n\n{files}",
     "checksUnnamed": {
       "one": "O CI está falhando no pull request #{number} ({branch}). {count} check está vermelho; descubra qual e corrija.",
       "other": "O CI está falhando no pull request #{number} ({branch}). {count} checks estão vermelhos; descubra quais e corrija."

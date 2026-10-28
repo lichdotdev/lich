@@ -267,19 +267,27 @@ const handoffNamedChecks = 8
 
 // pullHandoff finds what is wrong with an open PR, conflicts
 // first, as a button label and the prompt that hands it over; ok false when
-// nothing is.
-func pullHandoff(d backend.PRDetail) (label, prompt string, ok bool) {
+// nothing is. conflicts is the colliding files, nil while not yet known.
+func pullHandoff(d backend.PRDetail, conflicts []string) (label, prompt string, ok bool) {
 	if d.State != "OPEN" {
 		return "", "", false
 	}
 	if conflictsWithBase(d) {
-		return i18n.T("pulls.prHandoff.resolveConflicts"), i18n.Prompt("prompts.pullRequest.conflicts",
-			i18n.Args{"number": d.Number, "branch": d.HeadRefName, "base": d.BaseRefName}), true
+		return i18n.T("pulls.prHandoff.resolveConflicts"), conflictsPrompt(d, conflicts), true
 	}
 	if d.Checks.Failed > 0 {
 		return i18n.T("pulls.prHandoff.fixChecks"), checksPrompt(d), true
 	}
 	return "", "", false
+}
+
+func conflictsPrompt(d backend.PRDetail, files []string) string {
+	args := i18n.Args{"number": d.Number, "branch": d.HeadRefName, "base": d.BaseRefName}
+	if len(files) == 0 {
+		return i18n.Prompt("prompts.pullRequest.conflicts", args)
+	}
+	args["files"] = "- " + strings.Join(files, "\n- ")
+	return i18n.Prompt("prompts.pullRequest.conflictsListed", args)
 }
 
 func checksPrompt(d backend.PRDetail) string {

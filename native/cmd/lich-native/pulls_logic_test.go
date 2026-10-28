@@ -140,9 +140,12 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 	d := detail("OPEN", "CONFLICTING", "DIRTY", "")
 	d.Number, d.HeadRefName = 7, "feat/x"
 	d.Checks.Failed = 1
-	label, prompt, ok := pullHandoff(d)
+	label, prompt, ok := pullHandoff(d, nil)
 	if !ok || label != "Resolve conflicts" || !strings.Contains(prompt, "conflicts with main") {
 		t.Fatalf("conflict handoff = %q %q %v", label, prompt, ok)
+	}
+	if _, prompt, _ = pullHandoff(d, []string{"go.mod", "a/b.go"}); !strings.HasSuffix(prompt, "\n\n- go.mod\n- a/b.go") {
+		t.Errorf("conflict handoff names no files: %q", prompt)
 	}
 	d.Mergeable, d.MergeStateStatus = "MERGEABLE", "UNSTABLE"
 	runs := make([]backend.CheckItem, handoffNamedChecks+2)
@@ -150,7 +153,7 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 		runs[i] = backend.CheckItem{Name: "job", State: "failed", URL: "https://ci"}
 	}
 	d.CheckRuns = runs
-	label, prompt, _ = pullHandoff(d)
+	label, prompt, _ = pullHandoff(d, nil)
 	if label != "Fix CI errors" || strings.Count(prompt, "- job — https://ci") != handoffNamedChecks {
 		t.Errorf("checks handoff = %q %q", label, prompt)
 	}
@@ -158,13 +161,13 @@ func TestPullHandoffConflictsFirstThenChecks(t *testing.T) {
 		t.Errorf("omitted tail missing: %q", prompt)
 	}
 	d.CheckRuns = nil
-	if _, prompt, _ = pullHandoff(d); !strings.Contains(prompt, "1 check is red") {
+	if _, prompt, _ = pullHandoff(d, nil); !strings.Contains(prompt, "1 check is red") {
 		t.Errorf("unnamed prompt = %q", prompt)
 	}
-	if _, _, ok := pullHandoff(detail("OPEN", "MERGEABLE", "CLEAN", "")); ok {
+	if _, _, ok := pullHandoff(detail("OPEN", "MERGEABLE", "CLEAN", ""), nil); ok {
 		t.Error("a healthy PR has nothing to hand off")
 	}
-	if _, _, ok := pullHandoff(detail("MERGED", "CONFLICTING", "DIRTY", "")); ok {
+	if _, _, ok := pullHandoff(detail("MERGED", "CONFLICTING", "DIRTY", ""), nil); ok {
 		t.Error("a merged PR has nothing to hand off")
 	}
 }
