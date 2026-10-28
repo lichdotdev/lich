@@ -39,7 +39,11 @@ func TestChromeNamesTheConsoleErrorsOnceInTheNextPageAnswer(t *testing.T) {
 		fmt.Fprint(w, consolePage)
 	}))
 	t.Cleanup(srv.Close)
-	s := newService(chromeLaunch, func(string, string) (string, error) { return t.TempDir(), nil }, time.Now, idleAfter)
+	// The profile's folder is made before the service so that its removal,
+	// a cleanup, runs after Cleanup closed Chrome: Windows refuses to delete
+	// a file Chrome still holds.
+	profile := t.TempDir()
+	s := newService(chromeLaunch, func(string, string) (string, error) { return profile, nil }, time.Now, idleAfter)
 	t.Cleanup(func() {
 		if err := s.Cleanup(); err != nil {
 			t.Error(err)
