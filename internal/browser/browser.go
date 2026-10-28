@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/network"
+	"github.com/lichdotdev/lich/api"
 )
 
 // idleAfter is how long a headless browser no pane shows sits unused before
@@ -81,8 +82,13 @@ type session struct {
 	// first consoleErrorMax of them; consoleMore counts the rest.
 	consoleErrors []string
 	consoleMore   int
-	page          Page
-	lastUsed      time.Time
+	// dialog is the JavaScript dialog the page holds open; answered are the
+	// ones the person answered since the agent's last page answer.
+	dialog   *api.BrowserDialog
+	dialogAt time.Time
+	answered []api.BrowserDialog
+	page     Page
+	lastUsed time.Time
 }
 
 // New starts a service that launches the system Chromium (chromium.FindBrowser)
@@ -152,8 +158,7 @@ func (s *Service) OpenVisible(owner string) (Handle, error) {
 		return s.promote(sess)
 	}
 	if err := runPage(sess.page.Focus); err != nil {
-		s.drop(sess)
-		return Handle{}, err
+		return Handle{}, s.failed(sess, err)
 	}
 	s.touch(sess)
 	return s.handleOf(sess), nil
@@ -170,8 +175,7 @@ func (s *Service) promote(sess *session) (Handle, error) {
 		cookies, err = sess.page.Cookies(ctx)
 		return err
 	}); err != nil {
-		s.drop(sess)
-		return Handle{}, err
+		return Handle{}, s.failed(sess, err)
 	}
 	s.mu.Lock()
 	s.detachLocked(sess)
@@ -273,7 +277,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 		id: newID(), owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
 		byAgent: spec.byAgent, page: page, lastUsed: s.now(),
 	}
-	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess))
+	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess))
 	if err := runPage(func(ctx context.Context) error {
 		if len(spec.cookies) > 0 {
 			if err := page.SetCookies(ctx, spec.cookies); err != nil {

@@ -115,3 +115,54 @@ func TestMCPBrowserOpenUsesTheCaller(t *testing.T) {
 		t.Errorf("options = %+v", opts)
 	}
 }
+
+func TestBrowserDialogAnswersThePagesDialog(t *testing.T) {
+	f := newFakeLich(t, `{"url":"https://example.com","title":"after"}`)
+
+	code, stdout, stderr := run(t, f, "browser", "dialog", "--text", "Bob", "accept")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserDialogOptions](t, f.only(t))
+	if opts.ID != "s1" || !opts.Accept || opts.Text == nil || *opts.Text != "Bob" {
+		t.Errorf("options = %+v", opts)
+	}
+	if !strings.Contains(stdout, "title: after") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
+func TestBrowserDialogDismissKeepsThePromptsText(t *testing.T) {
+	f := newFakeLich(t, `{"url":"https://example.com"}`)
+
+	if code, _, stderr := run(t, f, "browser", "dialog", "dismiss"); code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserDialogOptions](t, f.only(t))
+	if opts.Accept || opts.Text != nil {
+		t.Errorf("options = %+v", opts)
+	}
+}
+
+func TestBrowserDialogWantsAcceptOrDismiss(t *testing.T) {
+	f := newFakeLich(t, `null`)
+
+	if code, _, _ := run(t, f, "browser", "dialog", "ok"); code == 0 {
+		t.Fatal("dialog ok was taken")
+	}
+}
+
+func TestMCPBrowserDialogAnswersWithThePage(t *testing.T) {
+	f := newFakeLich(t, `{"url":"https://example.com","title":"after"}`)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"browser_dialog","arguments":{"accept":false}}}`)
+	text, failed := textOf(t, replies[0])
+	if failed || !strings.Contains(text, "title: after") {
+		t.Fatalf("tool answered %q (failed %v)", text, failed)
+	}
+	opts := optionsOf[api.BrowserDialogOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Accept || opts.Text != nil {
+		t.Errorf("options = %+v", opts)
+	}
+}

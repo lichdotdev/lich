@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"errors"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -34,6 +35,9 @@ func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.Brow
 		return api.BrowserPageInfo{}, err
 	}
 	info, err := s.Info(opts.ID)
+	if errors.Is(err, errDialogOpen) {
+		return s.heldPage(opts.ID)
+	}
 	out := infoAPI(info)
 	out.WaitTimedOut = timedOut
 	return out, err
@@ -42,7 +46,7 @@ func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.Brow
 // ClickAt clicks in this session's browser.
 func (s *Service) ClickAt(_ context.Context, opts api.BrowserClickOptions) (api.BrowserPageInfo, error) {
 	if err := s.Click(opts.ID, targetOf(opts.BrowserTarget)); err != nil {
-		return api.BrowserPageInfo{}, err
+		return s.heldOr(opts.ID, err)
 	}
 	return s.pageAfter(opts.ID)
 }
@@ -55,7 +59,7 @@ func (s *Service) TypeText(_ context.Context, opts api.BrowserTypeOptions) (api.
 // PressKey presses one named key in this session's browser.
 func (s *Service) PressKey(_ context.Context, opts api.BrowserPressOptions) (api.BrowserPageInfo, error) {
 	if err := s.Press(opts.ID, opts.Key, targetOf(opts.BrowserTarget)); err != nil {
-		return api.BrowserPageInfo{}, err
+		return s.heldOr(opts.ID, err)
 	}
 	return s.pageAfter(opts.ID)
 }
@@ -74,12 +78,22 @@ func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
 		return err
 	})
 	if err != nil {
-		return api.BrowserPageInfo{}, err
+		return s.heldOr(id, err)
 	}
 	s.remember(sess, info.URL, info.Title)
 	info.Downloads = s.downloadsAfter(sess, downloadWait)
 	info.ConsoleErrors, info.ConsoleErrorsMore = s.consoleUntold(sess)
+	info.Dialogs = s.answeredUntold(sess)
 	return infoAPI(info), nil
+}
+
+// heldOr is the page an action that opened a dialog left, which it answers
+// with rather than fail, or err.
+func (s *Service) heldOr(id string, err error) (api.BrowserPageInfo, error) {
+	if errors.Is(err, errDialogOpen) {
+		return s.heldPage(id)
+	}
+	return api.BrowserPageInfo{}, err
 }
 
 // Capture writes a PNG of this session's page and returns its path.
@@ -149,7 +163,7 @@ func handleAPI(h Handle) api.BrowserHandle {
 
 func infoAPI(p PageInfo) api.BrowserPageInfo {
 	out := api.BrowserPageInfo{URL: p.URL, Title: p.Title, Text: p.Text, Truncated: p.Truncated, Downloads: p.Downloads,
-		ConsoleErrors: p.ConsoleErrors, ConsoleErrorsMore: p.ConsoleErrorsMore}
+		ConsoleErrors: p.ConsoleErrors, ConsoleErrorsMore: p.ConsoleErrorsMore, Dialogs: p.Dialogs}
 	if p.Interactive == nil {
 		return out
 	}

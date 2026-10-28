@@ -3,6 +3,8 @@ agentplugin.Status(None) []PluginStatus
 agentplugin.Update(PluginProviderOptions) None
 appupdate.Apply(None) None
 appupdate.Status(None) AppUpdateStatus
+browser.Answer(BrowserDialogOptions) None
+browser.AnswerDialog(BrowserDialogOptions) BrowserPageInfo
 browser.Attach(BrowserViewOptions) BrowserHandle
 browser.Back(SessionIDOptions) None
 browser.Click(BrowserClickOptions) BrowserPageInfo
@@ -311,6 +313,26 @@ AppUpdateStatus {
 	installCommand string
 }
 
+BrowserDialogOptions {
+	id string
+	accept bool
+	text,omitempty *string
+}
+
+BrowserPageInfo {
+	url string
+	title string
+	text string
+	interactive []BrowserInteractive
+	truncated bool
+	downloads,omitempty []BrowserDownload
+	waitTimedOut,omitempty bool
+	consoleErrors,omitempty []string
+	consoleErrorsMore,omitempty int
+	dialog,omitempty *BrowserDialog
+	dialogs,omitempty []BrowserDialog
+}
+
 BrowserViewOptions {
 	id string
 	w int
@@ -334,18 +356,6 @@ SessionIDOptions {
 BrowserClickOptions {
 	id string
 	...BrowserTarget
-}
-
-BrowserPageInfo {
-	url string
-	title string
-	text string
-	interactive []BrowserInteractive
-	truncated bool
-	downloads,omitempty []BrowserDownload
-	waitTimedOut,omitempty bool
-	consoleErrors,omitempty []string
-	consoleErrorsMore,omitempty int
 }
 
 BrowserPointOptions {
@@ -428,6 +438,7 @@ BrowserState {
 	byAgent bool
 	url string
 	title string
+	dialog,omitempty *BrowserDialog
 }
 
 BrowserScreenshotOptions {
@@ -1761,13 +1772,6 @@ SessionExit {
 	code,omitempty *int
 }
 
-BrowserTarget {
-	index,omitempty *int
-	selector,omitempty string
-	x,omitempty *float64
-	y,omitempty *float64
-}
-
 BrowserInteractive {
 	index int
 	tag string
@@ -1778,6 +1782,21 @@ BrowserInteractive {
 	rect BrowserRect
 	filled,omitempty *bool
 	checked,omitempty *bool
+}
+
+BrowserDialog {
+	type string
+	message string
+	default,omitempty string
+	url string
+	answer,omitempty string
+}
+
+BrowserTarget {
+	index,omitempty *int
+	selector,omitempty string
+	x,omitempty *float64
+	y,omitempty *float64
 }
 
 ProfileUpdate {

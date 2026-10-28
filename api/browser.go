@@ -20,6 +20,9 @@ var (
 	BrowserScroll     = define[BrowserScrollOptions, None]("browser.Scroll")
 	BrowserList       = define[SessionIDOptions, []BrowserHandle]("browser.List")
 	BrowserClose      = define[SessionIDOptions, None]("browser.Close")
+	// BrowserAnswerDialog answers the JavaScript dialog the page holds open,
+	// and answers with the page as it stands after it.
+	BrowserAnswerDialog = define[BrowserDialogOptions, BrowserPageInfo]("browser.AnswerDialog")
 
 	// The window's side: a pane that shows a session's page and passes the
 	// person's input to it, beside the agent driving the same page.
@@ -31,6 +34,9 @@ var (
 	BrowserKey     = define[BrowserKeyOptions, None]("browser.Key")
 	BrowserText    = define[BrowserTextOptions, None]("browser.Text")
 	BrowserNav     = define[BrowserNavOptions, None]("browser.Nav")
+	// BrowserAnswer is the person answering the page's open dialog in the
+	// pane, the window's side of BrowserAnswerDialog.
+	BrowserAnswer = define[BrowserDialogOptions, None]("browser.Answer")
 	// BrowserSelection is the text selected in the page, which the pane
 	// copies to the system clipboard: the headless browser's own clipboard
 	// is not the person's.
@@ -89,11 +95,42 @@ type BrowserState struct {
 	ByAgent bool   `json:"byAgent"`
 	URL     string `json:"url"`
 	Title   string `json:"title"`
+	// Dialog is the JavaScript dialog the page holds open until the person
+	// or the agent answers it; nil when none is.
+	Dialog *BrowserDialog `json:"dialog,omitempty"`
+}
+
+// BrowserDialog is a JavaScript dialog a session's page opened. Type is
+// Chrome's: alert, confirm, prompt or beforeunload. Default is a prompt's
+// default text; URL is the page that opened it. Answer, on one the person
+// answered, is DialogAccepted or DialogDismissed.
+type BrowserDialog struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+	Default string `json:"default,omitempty"`
+	URL     string `json:"url"`
+	Answer  string `json:"answer,omitempty"`
+}
+
+// Dialog answers, as a page answer reports one the person gave.
+const (
+	DialogAccepted  = "accepted"
+	DialogDismissed = "dismissed"
+)
+
+// BrowserDialogOptions answers session ID's open dialog: Accept is OK (Leave
+// on a beforeunload), false is Cancel. Text is what a prompt returns on OK;
+// nil keeps its default text.
+type BrowserDialogOptions struct {
+	ID     string  `json:"id"`
+	Accept bool    `json:"accept"`
+	Text   *string `json:"text,omitempty"`
 }
 
 // BrowserAgentAct is one agent action on its page. Action is click, type,
 // press or scroll at a point; back, forward, reload or navigate, which the
-// pane's toolbar does; or "" for one that changes nothing on screen (reading
+// pane's toolbar does; accept or dismiss, the buttons of the pane's dialog
+// card; or "" for one that changes nothing on screen (reading
 // the page, a screenshot). X and Y are where it acted, in CSS pixels, when it
 // acted at a point; DY is a scroll's distance, positive down; URL is where a
 // navigate went.
@@ -274,6 +311,13 @@ type BrowserPageInfo struct {
 	// counts those past the cap.
 	ConsoleErrors     []string `json:"consoleErrors,omitempty"`
 	ConsoleErrorsMore int      `json:"consoleErrorsMore,omitempty"`
+	// Dialog is the JavaScript dialog the page holds open: until it is
+	// answered (BrowserAnswerDialog) the page runs no script, so the rest of the
+	// answer is the page as it stood when the dialog opened.
+	Dialog *BrowserDialog `json:"dialog,omitempty"`
+	// Dialogs are the ones the person answered in the pane since the agent's
+	// last page answer.
+	Dialogs []BrowserDialog `json:"dialogs,omitempty"`
 }
 
 // BrowserPointOptions is a point of session ID's page, in CSS pixels.

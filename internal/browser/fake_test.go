@@ -33,6 +33,8 @@ type fakePage struct {
 	onInfo         func(url, title string)
 	onDownload     func(guid string, d api.BrowserDownload)
 	onConsoleError func(text string)
+	onDialog       func(*api.BrowserDialog)
+	answers        []answer
 	// onClick runs after a click, as what the page does in answer to it;
 	// onNavigate as a navigation starts.
 	onClick    func()
@@ -230,10 +232,28 @@ func (p *fakePage) SetCookies(_ context.Context, cookies []*network.CookieParam)
 	return nil
 }
 
-func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload), onConsoleError func(string)) {
+func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload), onConsoleError func(string), onDialog func(*api.BrowserDialog)) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError = onFrame, onInfo, onDownload, onConsoleError
+	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError, p.onDialog = onFrame, onInfo, onDownload, onConsoleError, onDialog
+}
+
+// openDialog is the page opening d: reads fail as Chrome's do until it is
+// answered.
+func (p *fakePage) openDialog(d api.BrowserDialog) {
+	p.mu.Lock()
+	p.infoErr = errDialogOpen
+	p.mu.Unlock()
+	p.onDialog(&d)
+}
+
+func (p *fakePage) AnswerDialog(_ context.Context, accept bool, text string) error {
+	p.mu.Lock()
+	p.answers = append(p.answers, answer{accept: accept, text: text})
+	p.infoErr = nil
+	p.mu.Unlock()
+	p.onDialog(nil)
+	return nil
 }
 
 func (p *fakePage) Screencast(_ context.Context, v Viewport) error {
@@ -364,4 +384,9 @@ func (p *fakePage) Locate(_ context.Context, selectors []string, _ string) ([]ap
 		out[i] = p.boxes[s]
 	}
 	return out, nil
+}
+
+type answer struct {
+	accept bool
+	text   string
 }

@@ -72,8 +72,38 @@ where it was thrown, or an error Chrome logs itself, such as a resource that
 failed to load. Each is one line cut to 200 characters; past the first five, a
 `(N more console errors)` line counts the rest. Warnings, info and log
 messages are left out. The text is what the page logs, so a page that logs a
-form's value hands it to the agent; lich reads nothing else. These lines are
-English, outside the prompt-language catalogs, like the rest of the page answer.
+form's value hands it to the agent; lich reads nothing else.
+
+## Dialogs
+
+An `alert`, `confirm`, `prompt` or `beforeunload` the page opens stays open
+until someone answers it, and until then the page runs no script and takes no
+input. lich answers no dialog on its own:
+
+- The pane shows it as a card over the top of the page, naming the site that
+  opened it, with OK and Cancel (Leave and Stay for a `beforeunload`) and a
+  field for a `prompt`. The person answers there.
+- The agent's call that opened it answers at once, rather than hanging, with
+  the page as it stood and a `dialog open:` line; any other call on that page
+  fails with a message naming the dialog. `browser_dialog` (`lich browser
+  dialog accept|dismiss`) answers it, and the pane plays the agent's cursor
+  pressing the card's button. `text` is what a `prompt` returns on OK; left
+  out, it returns its default text.
+- Whichever answers first wins. A dialog the person answered reaches the
+  agent's next page answer as a `dialog answered:` line.
+
+Accepting a `beforeunload` less than a second after it opened waits out the
+rest of that second: Chrome aborts the navigation it held when it is accepted
+sooner, and reloads the page, which asks again.
+
+## Languages of the page answer
+
+The line tags of a page answer (`url:`, `title:`, `wait:`, `text:`,
+`interactive`, `downloaded:`, `downloading:`, `console error:`, `dialog
+open:`, `dialog answered:`) stay English: the tool descriptions name them. The
+prose around them, the element list's legend, the filled and checked marks,
+the note that more elements wait below, and what a held dialog asks of the
+agent, follows the session's prompt language.
 
 ## Downloads
 
@@ -104,5 +134,5 @@ window.
 
 Claude Code, Codex and opencode receive the tools at spawn. Antigravity,
 oh-my-pi, Crush, Cursor CLI and Kiro receive them from the lich MCP server the
-plugin registers. Downloads reach all eight the same way: in the answer of the
-same tools.
+plugin registers. Downloads and dialogs reach all eight the same way: in the
+answer of the same tools, and `browser_dialog` for all of them.

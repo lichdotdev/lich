@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -38,7 +39,9 @@ func (s *Service) waitText(opts api.BrowserInfoOptions) (timedOut bool, err erro
 	// navigates leaves for a moment: the wait reads again. A Chrome that died
 	// stops it, and the page read after reports that.
 	for sess.page.Alive() {
-		if ok, err := textSettled(ctx, sess.page, opts); err == nil && ok {
+		ok, err := textSettled(ctx, sess.page, opts)
+		// A dialog runs no script until it is answered: the read says so.
+		if err == nil && ok || errors.Is(err, errDialogOpen) {
 			return false, nil
 		}
 		select {

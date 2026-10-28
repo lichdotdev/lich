@@ -70,13 +70,13 @@ func (s *Service) Info(id string) (PageInfo, error) {
 		return e
 	})
 	if err != nil {
-		s.drop(sess)
-		return PageInfo{}, err
+		return PageInfo{}, s.failed(sess, err)
 	}
 	s.remember(sess, info.URL, info.Title)
 	s.agentActed(sess, api.BrowserAgentAct{})
 	info.Downloads = s.untold(sess)
 	info.ConsoleErrors, info.ConsoleErrorsMore = s.consoleUntold(sess)
+	info.Dialogs = s.answeredUntold(sess)
 	return info, nil
 }
 
@@ -96,8 +96,7 @@ func (s *Service) Click(id string, t Target) error {
 		return e
 	})
 	if err != nil {
-		s.drop(sess)
-		return err
+		return s.failed(sess, err)
 	}
 	s.touch(sess)
 	s.agentActed(sess, api.BrowserAgentAct{Action: "click", X: &x, Y: &y})
@@ -165,8 +164,7 @@ func (s *Service) Screenshot(id, dest string) (string, error) {
 		return sess.page.Screenshot(ctx, dest)
 	})
 	if err != nil {
-		s.drop(sess)
-		return "", err
+		return "", s.failed(sess, err)
 	}
 	s.touch(sess)
 	s.agentActed(sess, api.BrowserAgentAct{})
@@ -198,8 +196,7 @@ func (s *Service) goTo(sess *session, u string) error {
 		download, err = s.navigate(ctx, sess, u)
 		return err
 	}); err != nil {
-		s.drop(sess)
-		return err
+		return s.failed(sess, err)
 	}
 	if download {
 		s.touch(sess)
@@ -273,8 +270,7 @@ func (s *Service) drive(id string, fn func(Page, context.Context) error) (*sessi
 	}
 	err = runPage(func(ctx context.Context) error { return fn(sess.page, ctx) })
 	if err != nil {
-		s.drop(sess)
-		return nil, err
+		return nil, s.failed(sess, err)
 	}
 	s.touch(sess)
 	return sess, nil

@@ -43,8 +43,7 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 		return Handle{}, errInWindow
 	}
 	if err := runPage(func(ctx context.Context) error { return sess.page.Screencast(ctx, v) }); err != nil {
-		s.drop(sess)
-		return Handle{}, err
+		return Handle{}, s.failed(sess, err)
 	}
 	s.mu.Lock()
 	sess.watching = true
@@ -126,8 +125,7 @@ func (s *Service) steer(owner string, wait time.Duration, fn func(Page, context.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 	if err := fn(sess.page, ctx); err != nil {
-		s.drop(sess)
-		return nil, err
+		return nil, s.failed(sess, err)
 	}
 	s.touch(sess)
 	return sess, nil
@@ -204,5 +202,6 @@ func (s *Service) agentPoint(owner string) *point {
 func (s *session) stateLocked(open bool) api.BrowserState {
 	return api.BrowserState{
 		Owner: s.owner, Open: open, Headed: s.headed, ByAgent: s.byAgent, URL: s.url, Title: s.title,
+		Dialog: s.dialog,
 	}
 }
