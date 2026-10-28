@@ -80,7 +80,10 @@ type ButtonStyle struct {
 	Variant  Variant
 	Size     Size
 	Disabled bool
-	theme    *Theme
+	// Lit draws it hovered: a press the window plays for someone else, the
+	// agent's cursor on a page's dialog.
+	Lit   bool
+	theme *Theme
 }
 
 // Button is a default-variant, default-size button.
@@ -136,7 +139,7 @@ func (b ButtonStyle) Layout(gtx C) D {
 	if b.Disabled {
 		return b.draw(gtx, false)
 	}
-	return b.Click.Layout(gtx, func(gtx C) D { return b.draw(gtx, b.Click.Hovered()) })
+	return b.Click.Layout(gtx, func(gtx C) D { return b.draw(gtx, b.Lit || b.Click.Hovered()) })
 }
 
 func (b ButtonStyle) draw(gtx C, hovered bool) D {

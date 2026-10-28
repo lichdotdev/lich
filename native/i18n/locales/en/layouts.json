@@ -44,7 +44,12 @@
     "clearNotes": "Clear",
     "sendNotes": "Send",
     "noNote": "No note",
-    "notesFailed": "Could not send the notes to {label}: {error}"
+    "notesFailed": "Could not send the notes to {label}: {error}",
+    "dialogFrom": "{host} says",
+    "dialogFromPage": "This page says",
+    "dialogOK": "OK",
+    "dialogStay": "Stay",
+    "dialogLeave": "Leave"
   },
   "split": {
     "noRoom": "No room for another pane here. Make the window wider or take a pane out first."

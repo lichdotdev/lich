@@ -44,7 +44,12 @@
     "clearNotes": "Borrar",
     "sendNotes": "Enviar",
     "noNote": "Sin nota",
-    "notesFailed": "No se pudieron enviar las notas a {label}: {error}"
+    "notesFailed": "No se pudieron enviar las notas a {label}: {error}",
+    "dialogFrom": "{host} dice",
+    "dialogFromPage": "Esta página dice",
+    "dialogOK": "Aceptar",
+    "dialogStay": "Quedarse",
+    "dialogLeave": "Salir"
   },
   "split": {
     "noRoom": "No hay espacio para otro panel aquí. Ensancha la ventana o saca antes un panel."

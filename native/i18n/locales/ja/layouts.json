@@ -41,7 +41,12 @@
     "clearNotes": "クリア",
     "sendNotes": "送信",
     "noNote": "メモなし",
-    "notesFailed": "{label} にメモを送れませんでした: {error}"
+    "notesFailed": "{label} にメモを送れませんでした: {error}",
+    "dialogFrom": "{host} の内容",
+    "dialogFromPage": "このページの内容",
+    "dialogOK": "OK",
+    "dialogStay": "留まる",
+    "dialogLeave": "移動する"
   },
   "split": {
     "noRoom": "ここには別のペインを置く余裕がありません。ウィンドウを広げるか、先にペインを外してください。"
