@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A session's browser zooms its page on its own, apart from the interface zoom: Ctrl+- and Ctrl+= (Cmd on macOS) zoom out and in by 10%, from 50% to 200%, and Ctrl+0 goes back to 100%. A zoomed-out page lays out wider, as in a desktop browser, which makes a small screen usable without shrinking the rest of the window. The zoom applies to every session's browser, shows on the toolbar while it is not 100%, and is kept for the next start.
+
+### Changed
+
+- A session's browser that no tab shows lays its page out at the size of the lich window, at the browser zoom, instead of Chrome's 800×600, so the agent reads and screenshots the page as a desktop browser shows it. Closing the browser tab puts the page back at that size rather than leaving it at the tab's.
+
 ## [0.81.0] - 2026-10-28
 
 > [!IMPORTANT]

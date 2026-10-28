@@ -9,6 +9,7 @@ browser.Attach(BrowserViewOptions) BrowserHandle
 browser.Back(SessionIDOptions) None
 browser.Click(BrowserClickOptions) BrowserPageInfo
 browser.Close(SessionIDOptions) None
+browser.DefaultView(BrowserDefaultViewOptions) None
 browser.Detach(SessionIDOptions) None
 browser.ElementAt(BrowserPointOptions) BrowserElement
 browser.Forward(SessionIDOptions) None
@@ -356,6 +357,12 @@ SessionIDOptions {
 BrowserClickOptions {
 	id string
 	...BrowserTarget
+}
+
+BrowserDefaultViewOptions {
+	w int
+	h int
+	scale float64
 }
 
 BrowserPointOptions {

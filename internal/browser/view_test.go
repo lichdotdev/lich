@@ -336,3 +336,56 @@ func TestAgentClickAnswersWithThePageItLeft(t *testing.T) {
 		t.Fatal("a failed read after a press that went through closed the browser")
 	}
 }
+
+func TestAHeadlessBrowserStartsAtTheWindowsSize(t *testing.T) {
+	s, launch, _ := viewService(t)
+	window := Viewport{W: 1920, H: 1080, Scale: 1.25}
+	s.SetDefaultView(window)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if p := launch.pages[0]; len(p.viewports) != 1 || p.viewports[0] != window {
+		t.Fatalf("viewports = %v, want the page laid out at %v", p.viewports, window)
+	}
+	if _, err := s.OpenVisible("s"); err != nil {
+		t.Fatal(err)
+	}
+	if p := launch.pages[len(launch.pages)-1]; len(p.viewports) != 0 {
+		t.Fatalf("a browser in its own window was resized to %v", p.viewports)
+	}
+}
+
+func TestDetachLaysThePageOutAtTheWindowsSizeAgain(t *testing.T) {
+	s, launch, _ := viewService(t)
+	window := Viewport{W: 1920, H: 1080, Scale: 1}
+	s.SetDefaultView(window)
+	if _, err := s.Attach("s", Viewport{W: 500, H: 400, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Detach("s"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	if got := p.viewports[len(p.viewports)-1]; got != window {
+		t.Fatalf("after detach the page is at %v, want %v", got, window)
+	}
+}
+
+func TestDefaultViewResizesOnlyTheUnwatchedPages(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("agent", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	pane := Viewport{W: 500, H: 400, Scale: 1}
+	if _, err := s.Attach("watched", pane); err != nil {
+		t.Fatal(err)
+	}
+	window := Viewport{W: 1600, H: 900, Scale: 1}
+	s.SetDefaultView(window)
+	if p := launch.pages[0]; len(p.viewports) != 1 || p.viewports[0] != window {
+		t.Fatalf("unwatched page viewports = %v, want %v", p.viewports, window)
+	}
+	if p := launch.pages[1]; p.viewports[len(p.viewports)-1] != pane {
+		t.Fatalf("a watched page left its pane's size: %v", p.viewports)
+	}
+}

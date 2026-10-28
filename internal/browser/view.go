@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -52,9 +53,16 @@ func (s *Service) Attach(owner string, v Viewport) (Handle, error) {
 }
 
 // Detach stops the frames of a pane that closed or went off screen. The
-// browser keeps running for the agent.
+// browser keeps running for the agent, at the window's size again rather than
+// the pane's.
 func (s *Service) Detach(owner string) error {
-	sess, err := s.steer(owner, inputWait, func(p Page, ctx context.Context) error { return p.StopScreencast(ctx) })
+	view := s.unwatchedView()
+	sess, err := s.steer(owner, inputWait, func(p Page, ctx context.Context) error {
+		if err := p.StopScreencast(ctx); err != nil || view == (Viewport{}) {
+			return err
+		}
+		return p.Resize(ctx, view)
+	})
 	if err != nil {
 		return err
 	}
@@ -82,6 +90,34 @@ func (s *Service) Resize(owner string, v Viewport) error {
 		return p.Resize(ctx, v)
 	})
 	return err
+}
+
+// SetDefaultView sets the size a headless page no pane shows lays out at, and
+// lays out the running ones there. It is not a use: a window resized does not
+// keep an idle browser from the reaper.
+func (s *Service) SetDefaultView(v Viewport) {
+	s.mu.Lock()
+	s.defaultView = v
+	var pages []Page
+	for _, sess := range s.byID {
+		if sess.alive() && !sess.headed && !sess.watching {
+			pages = append(pages, sess.page)
+		}
+	}
+	s.mu.Unlock()
+	for _, p := range pages {
+		ctx, cancel := context.WithTimeout(context.Background(), inputWait)
+		if err := p.Resize(ctx, v); err != nil && !errors.Is(err, errDialogOpen) {
+			slog.Warn("browser: lay a page out at the window's size", "err", err)
+		}
+		cancel()
+	}
+}
+
+func (s *Service) unwatchedView() Viewport {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.defaultView
 }
 
 // Nav runs the pane's toolbar: back, forward, reload, or go to url.

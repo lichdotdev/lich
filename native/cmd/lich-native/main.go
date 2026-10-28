@@ -32,6 +32,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
@@ -157,9 +158,12 @@ type window struct {
 	// appearance is the theme state the frame repaints from.
 	appearance *appearance
 	// zoom scales everything but the terminals, which keep their own size.
-	zoom   float64
-	win    *app.Window
-	closer closePrompt
+	zoom float64
+	// browserZoom scales the pages of the page panes on top of zoom: a small
+	// screen fits more of a page without shrinking the rest of the window.
+	browserZoom float64
+	win         *app.Window
+	closer      closePrompt
 	// notifier is the desktop channel; optIn its one-time question.
 	notifier   *notifier
 	optIn      notifyOptIn
@@ -174,6 +178,10 @@ type window struct {
 	layoutStage layoutStage
 	// browserPanes are the page panes' widgets, by session (browser_pane.go).
 	browserPanes map[string]*browserPaneUI
+	// browserView is the window's size as the backend last heard it, the size
+	// a page no pane shows lays out at, sent in order through browserViews.
+	browserView  api.BrowserDefaultViewOptions
+	browserViews *browserQueue
 	// hotkeyLanguage is the language the hotkeys' labels were last put in.
 	hotkeyLanguage i18n.Locale
 	// fontsLanguage is the language the interface's CJK faces were last
@@ -212,7 +220,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	u := &window{
-		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, caption: platformCaption(),
+		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(), caption: platformCaption(),
 		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
 		model: newModel(client, w.Invalidate),
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
@@ -338,6 +346,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 			u.terms.unzoomed = gtx.Metric
 			gtx.Metric.PxPerDp *= float32(u.zoom)
 			gtx.Metric.PxPerSp *= float32(u.zoom)
+			u.syncBrowserView(gtx)
 			if err := u.layout(gtx); err != nil {
 				return err
 			}
@@ -467,6 +476,7 @@ func (u *window) connect() error {
 		return err
 	}
 	go u.model.follow(u.ctx, events)
+	go u.browserViews.run(u.ctx, func(err error) { log.Printf("browser default view: %v", err) })
 	go u.loadProfiles()
 	go u.model.pollGit(u.ctx)
 	go u.warnUncleanExit()

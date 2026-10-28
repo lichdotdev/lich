@@ -38,6 +38,11 @@ func (c *Client) DetachBrowser(ctx context.Context, id string) error {
 }
 
 // ResizeBrowser lays session id's page out at the pane's new size.
+func (c *Client) SetBrowserDefaultView(ctx context.Context, v api.BrowserDefaultViewOptions) error {
+	_, err := callMethod(ctx, c, api.BrowserDefaultView, v)
+	return err
+}
+
 func (c *Client) ResizeBrowser(ctx context.Context, v api.BrowserViewOptions) error {
 	_, err := callMethod(ctx, c, api.BrowserResize, v)
 	return err

@@ -6,7 +6,9 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"math"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -257,6 +259,13 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 			layout.Flexed(1, field.Layout),
 			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
+				if u.browserZoom == defaultZoom {
+					return D{}
+				}
+				label := fmt.Sprintf("%d%%", int(math.Round(u.browserZoom*100)))
+				return layout.Inset{Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, label).In(th.MutedForeground).Layout)
+			}),
+			layout.Rigid(func(gtx C) D {
 				if !p.notes.picking {
 					return D{}
 				}
@@ -276,7 +285,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 // backend's page the area's size, and passes the pointer and keys on.
 func (u *window) browserPage(gtx C, p *browserPaneUI, session string, frame browserFrame, focused bool) {
 	size := gtx.Constraints.Max
-	scale := gtx.Metric.PxPerDp
+	scale := u.pageScale(gtx)
 	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale)}
 	if want.W > 0 && want.H > 0 && want != p.view {
 		attach := p.view.ID == ""
@@ -303,6 +312,41 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session string, frame brow
 	event.Op(gtx.Ops, &p.tag)
 }
 
+// pageScale is the pane pixels a page's CSS pixel takes: the window's scale
+// times the page zoom.
+func (u *window) pageScale(gtx C) float32 { return gtx.Metric.PxPerDp * float32(u.browserZoom) }
+
+// setBrowserZoom zooms every page pane to zoom and keeps it for the next
+// start. The Appearance prefs hold it too: Settings applies its whole set on
+// every change it makes.
+func (u *window) setBrowserZoom(zoom float64) {
+	if zoom == u.browserZoom {
+		return
+	}
+	u.browserZoom, u.settings.look.prefs.browserZoom = zoom, zoom
+	value := strconv.FormatFloat(zoom, 'f', -1, 64)
+	go func() {
+		if err := u.client.SetSetting(u.ctx, browserZoomKey, "", value); err != nil {
+			log.Printf("browser: save the page zoom: %v", err)
+		}
+	}()
+	u.win.Invalidate()
+}
+
+// syncBrowserView tells the backend the window's size, at the page zoom, when
+// it changed: a page no pane shows lays out there instead of at Chrome's
+// cramped 800x600.
+func (u *window) syncBrowserView(gtx C) {
+	scale := u.pageScale(gtx)
+	size := gtx.Constraints.Max
+	want := api.BrowserDefaultViewOptions{W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale)}
+	if want.W <= 0 || want.H <= 0 || want == u.browserView {
+		return
+	}
+	u.browserView = want
+	u.browserViews.push(browserCall{resize: true, send: func(ctx context.Context) error { return u.client.SetBrowserDefaultView(ctx, want) }})
+}
+
 // browserInput passes the pane's pointer and keys to the page.
 func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale float32, focused bool) {
 	filters := append(gioterm.KeyFilters(&p.tag),
@@ -311,6 +355,10 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 		key.Filter{Focus: &p.tag, Name: "V", Required: key.ModCommand},
 		key.Filter{Focus: &p.tag, Name: "C", Required: key.ModCommand},
 		key.Filter{Focus: &p.tag, Name: "X", Required: key.ModCommand},
+		key.Filter{Focus: &p.tag, Name: "-", Required: key.ModShortcut, Optional: key.ModShift},
+		key.Filter{Focus: &p.tag, Name: "=", Required: key.ModShortcut, Optional: key.ModShift},
+		key.Filter{Focus: &p.tag, Name: "+", Required: key.ModShortcut, Optional: key.ModShift},
+		key.Filter{Focus: &p.tag, Name: "0", Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: "E", Required: key.ModShortcut | key.ModShift},
 		key.Filter{Focus: &p.tag, Name: key.NameReturn, Required: key.ModShortcut},
 		key.Filter{Focus: &p.tag, Name: key.NameEnter, Required: key.ModShortcut},
@@ -331,6 +379,10 @@ func (u *window) browserInput(gtx C, p *browserPaneUI, session string, scale flo
 			}
 		case key.Event:
 			if u.dialogPageKey(p, session, e) || u.notesKey(p, session, e) {
+				continue
+			}
+			if zoom, ok := pageZoomChord(e, runtime.GOOS, u.browserZoom); ok {
+				u.setBrowserZoom(zoom)
 				continue
 			}
 			switch browserClipboardChord(e, runtime.GOOS) {
@@ -507,7 +559,7 @@ const (
 // the dialog's card.
 func (u *window) playAgentCursor(gtx C, p *browserPaneUI, marks []browserMark, head, bar int) {
 	p.cursor.take(marks)
-	scale := gtx.Metric.PxPerDp
+	scale := u.pageScale(gtx)
 	place := func(m browserMark) f32.Point {
 		if toolbarActions[m.action] {
 			return toolbarPoint(gtx, m.action, head, bar)
