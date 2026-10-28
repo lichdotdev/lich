@@ -91,6 +91,8 @@ func downloadLine(d api.BrowserDownload) string {
 		return fmt.Sprintf("downloaded: %s (%s)", d.Path, sizeText(d.Bytes))
 	case api.DownloadInProgress:
 		return fmt.Sprintf("downloading: %s (%s so far)", d.Path, sizeText(d.Bytes))
+	case api.DownloadFailed:
+		return "download failed: " + d.Path
 	default:
 		return "download canceled: " + d.Path
 	}

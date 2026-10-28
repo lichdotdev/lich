@@ -71,7 +71,9 @@ filesystems the move is a copy. What Chrome downloads on its own, with no page
 announcing it, stays in staging and is deleted with the profile. A
 click or key press that starts one answers with a `downloaded:` line, its path
 and size, after waiting up to ten seconds for it; one still running answers
-`downloading:`, and the next page read says when it ends. `browser_open` and
+`downloading:`, and the next page read says when it ends. A file Chrome
+finished but lich could not move into Downloads answers `download failed:`
+with the path it would have taken. `browser_open` and
 `browser_navigate` on a URL that answers with a file download it the same way:
 Chrome aborts that navigation and the page stays where it was, so the answer
 is the handle with `downloads` rather than an error. That answer also

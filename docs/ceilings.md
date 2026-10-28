@@ -998,8 +998,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   download behaviour is the whole browser's, so what Chrome downloads on its own, with no page (4 KB to 33 MB files
   on the macOS and Windows runners), lands in staging, is never moved and goes with the profile when the browser
   closes; until then it takes the profile's disk. The profile sits in the temp dir, so with Downloads on another
-  filesystem or volume the move is a copy, written under a hidden `.part` name and renamed once whole. A move that
-  fails reports the staged path, which goes with the profile too. Chrome reloads the page 1.46 to 1.70 seconds after an `<a download>` begins, and the reload aborts a
+  filesystem or volume the move is a copy, written under a hidden `.part` name and renamed once whole; the agent
+  hears the download completed once it is in place. A move that fails is reported to the agent as a failed download
+  and the file goes with the profile; the window shows no toast for it. Chrome reloads the page 1.46 to 1.70 seconds after an `<a download>` begins, and the reload aborts a
   navigation started before it (`net::ERR_ABORTED`; Chromium 155, with downloads on or off), so an agent's click,
   key press, open or navigate that downloaded holds its answer 2.5 seconds; a navigation the person starts in the
   pane is not held. A download still running after ten seconds is reported in progress and named again when it
