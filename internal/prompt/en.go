@@ -133,4 +133,6 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	ClosedKept: "Closed %[1]q. Its worktree %[2]s is still there, and the session is parked: opening a " +
 		"session on that branch again picks its conversation back up.\n",
 	ClosedPlain: "Closed %q.\n",
+	ClosedProject: "Closed the project %[1]q (%[2]s) and stopped its sessions. They stay with it: opening a session " +
+		"on %[2]s again reopens the project with them.\n",
 }

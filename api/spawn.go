@@ -4,6 +4,7 @@ var (
 	SpawnOpen         = define[OpenSessionOptions, OpenedSession]("spawn.Open")
 	SpawnOpenSubagent = define[OpenSubagentOptions, OpenedSession]("spawn.OpenSubagent")
 	SpawnClose        = define[CloseSessionOptions, ClosedSession]("spawn.Close")
+	SpawnCloseProject = define[CloseProjectOptions, ClosedProject]("spawn.CloseProject")
 	SpawnControl      = define[ControlSessionOptions, ControlledSession]("spawn.Control")
 	SpawnAsk          = define[AskSessionOptions, SessionAnswer]("spawn.Ask")
 	SpawnWorktrees    = define[WorktreesOptions, []WorktreeCheckout]("spawn.Worktrees")
@@ -134,6 +135,24 @@ type ClosedSession struct {
 	Kept bool `json:"kept"`
 	// Removed is whether the checkout was deleted.
 	Removed bool `json:"removed"`
+}
+
+// CloseProjectOptions is one CloseProject call, an object for the reason
+// CloseSessionOptions is one. Project is an open project by name or by
+// directory path; From is the caller's session, whose own project is refused.
+type CloseProjectOptions struct {
+	From    string `json:"from"`
+	Project string `json:"project"`
+}
+
+// ClosedProject is what a caller is told about the project it closed.
+type ClosedProject struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Path string `json:"path"`
+	// Sessions is how many sessions the project held: their terminals were
+	// stopped, and their rows stay for the reopen.
+	Sessions int `json:"sessions"`
 }
 
 // ControlSessionOptions is one Control call, an object for the reason CloseOptions

@@ -41,6 +41,7 @@ func Spawn(d *rpc.Handler, s *spawn.Service) {
 	rpc.Handle(d, api.SpawnOpen, s.Open)
 	rpc.Handle(d, api.SpawnOpenSubagent, s.OpenSubagent)
 	rpc.Handle(d, api.SpawnClose, s.Close)
+	rpc.Handle(d, api.SpawnCloseProject, s.CloseProject)
 	rpc.Handle(d, api.SpawnControl, s.Control)
 	rpc.Handle(d, api.SpawnAsk, s.Ask)
 	rpc.Handle(d, api.SpawnWorktrees, s.Worktrees)

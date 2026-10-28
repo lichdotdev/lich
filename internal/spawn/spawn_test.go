@@ -77,6 +77,10 @@ type fakeSessions struct {
 	// colored records each folder painted as (project, folder, color); the write
 	// answers the rows projects has under that folder, and folderErr refuses it.
 	colored [][3]string
+	// closedProjects records each project a close marked closed, and
+	// closeProjErr is the write refusing.
+	closedProjects []string
+	closeProjErr   error
 }
 
 // closedRow is one session the store was asked to take out of the workspace.
@@ -151,6 +155,14 @@ func (f *fakeSessions) ColorFolder(projectID, folder, color string) ([]string, e
 		}
 	}
 	return painted, nil
+}
+
+func (f *fakeSessions) CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error) {
+	if f.closeProjErr != nil {
+		return api.None{}, f.closeProjErr
+	}
+	f.closedProjects = append(f.closedProjects, opts.ID)
+	return api.None{}, nil
 }
 
 func (f *fakeSessions) PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error) {

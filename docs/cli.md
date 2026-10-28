@@ -648,6 +648,23 @@ conversation back up.
 - Unlike `sessions`, this reaches a card whose terminal was never opened: it is
   still a session, and closing it is the one thing you can do with it.
 
+### `lich close-project [--json] <name-or-path>`
+
+Closes a project open in the window, as its tab's close does: the tab leaves the
+strip and every session in it stops.
+
+```
+Closed the project "revu" (/home/you/src/revu) and stopped its sessions. They stay with it: opening a
+session on /home/you/src/revu again reopens the project with them.
+```
+
+- **Nothing is deleted.** The sessions' rows stay with the project, worktrees and
+  all, so `open --project <path>` brings the project back with its cards.
+- **The project the command runs in is refused**: closing it would stop the agent
+  asking. So the project is always named, never inherited.
+- **The home project is refused**, as the window refuses it.
+- Unlike the window's close, nothing asks first when sessions are running.
+
 ### `lich rename [--project <name-or-path>] [--json] [<session>] <label>`
 
 Renames a session — the name on its card, which is also the name it is addressed
@@ -982,6 +999,7 @@ at lich.
 | `reply_to_session` | `answer`, optional `ticket` — what a relayed message asks for; without a ticket, the one request open against the calling session, and a refusal naming each open ticket when there are two. |
 | `open_session` | optional `project` (a name, or an absolute directory path, which is opened as a project first), `kind`, `worktree`, `base`, `model`, `effort`, `ultracode`, `folder` — `lich open` — plus optional `prompt` and `private` — `lich open --prompt [--private]`, the same hand-off in the same call. |
 | `close_session` | `session`, optional `project`, `worktree` (`keep`/`remove`), `force`. |
+| `close_project` | `project` (a name or a directory path) — `lich close-project`. |
 | `rename_session` | `label`, optional `session` (omitted renames the caller's own) and `project` — `lich rename`. |
 | `control_session` | Experimental. `session`, `action` (`prompt`, `abort`, `model`, `effort`, `command`), optional `value`, `args` (`command` only) and `project`. `lich control`. Delivered is a result, not an error; a command the session never took is withdrawn and fails. |
 | `ask_session` | Experimental. `session`, `question`, optional `project`. `lich ask`: the answer is the result, and every way it ends without one is an error. |

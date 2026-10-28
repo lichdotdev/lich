@@ -231,6 +231,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 		"list_sessions":      {},
 		"open_session":       {},
 		"close_session":      {"session"},
+		"close_project":      {"project"},
 		"rename_session":     {"label"},
 		"list_worktrees":     {},
 		"send_to_session":    {"session", "prompt"},

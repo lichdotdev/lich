@@ -81,4 +81,5 @@ type Catalog struct {
 	ClosedRemoved          string
 	ClosedKept             string
 	ClosedPlain            string
+	ClosedProject          string
 }

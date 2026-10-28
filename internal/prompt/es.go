@@ -134,4 +134,6 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ClosedKept: "Se cerró %[1]q. Su worktree %[2]s sigue ahí y la sesión queda aparcada: volver a abrir " +
 		"una sesión en esa rama retoma su conversación.\n",
 	ClosedPlain: "Se cerró %q.\n",
+	ClosedProject: "Se cerró el proyecto %[1]q (%[2]s) y se detuvieron sus sesiones. Siguen con él: abrir una sesión " +
+		"en %[2]s de nuevo reabre el proyecto con ellas.\n",
 }
