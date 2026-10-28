@@ -64,9 +64,13 @@ func (a *atlasRenderer) SetSize(size unit.Sp) { a.size = size }
 func (a *atlasRenderer) Measure(gtx layout.Context) error {
 	changed, err := a.r.SetSize(float64(gtx.Sp(a.size)))
 	if changed {
-		a.pages, a.tinted, a.rowOps = nil, map[tintKey]tintEntry{}, nil
+		a.Release()
 	}
 	return err
+}
+
+func (a *atlasRenderer) Release() {
+	a.pages, a.tinted, a.rowOps, a.rowCall = nil, map[tintKey]tintEntry{}, nil, nil
 }
 
 func (a *atlasRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {

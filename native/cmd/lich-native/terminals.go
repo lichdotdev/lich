@@ -372,13 +372,19 @@ func (ts *terminals) drop(id string) {
 }
 
 // onScreen records the sessions this frame draws a terminal for, and tells
-// the backend about each that came on or went off screen.
+// the backend about each that came on or went off screen. A terminal that
+// went off screen lets go of its renderer's pixels: kept, every terminal ever
+// shown held a screenful of row images for good, the pages that ended in swap.
+// It runs in the frame, the one goroutine that draws with a renderer.
 func (ts *terminals) onScreen(ids ...string) {
 	ts.mu.Lock()
 	var hidden, shown []string
 	for id := range ts.shown {
 		if !slices.Contains(ids, id) {
 			hidden = append(hidden, id)
+			if t := ts.byID[id]; t != nil {
+				t.r.Release()
+			}
 		}
 	}
 	next := make(map[string]bool, len(ids))
