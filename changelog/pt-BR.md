@@ -1,3 +1,31 @@
+## [0.81.0] - 2026-10-28
+
+> [!IMPORTANT]
+> **Quem tem um agente trabalhando numa página web: aponte para a página e diga o que mudar.** A mira na barra de
+> ferramentas do navegador da sessão deixa notas nos elementos que você escolhe e as envia ao agente em uma só mensagem.
+
+### Added
+
+- A mira na barra de ferramentas do navegador de uma sessão deixa notas na página para o agente. O elemento sob o ponteiro é contornado e nomeado, com o contorno deslizando de um elemento para o outro conforme o ponteiro se move; um clique abre uma nota ao lado dele, e cada nota fixa o seu elemento com um número, acompanhando-o enquanto a página rola. As notas ficam numa bandeja flutuando sobre a parte de baixo da página, que nunca é redimensionada sob você. Passar o ponteiro sobre uma nota ali acende o elemento dela, e um clique nela ou no seu número rola o elemento para a vista e edita a nota. Um elemento cortado por uma lista com rolagem, uma barra lateral ou um diálogo é contornado só onde aparece, e um que fica escondido não mantém o número sobre o que está ao lado. Enviar (ou Ctrl+Enter) digita as notas na sessão como uma só mensagem: qual elemento, um seletor que o `browser_click` do agente aceita, o componente React que o desenhou numa build de desenvolvimento, e a sua nota. Ctrl+Shift+E (Cmd+Shift+E no macOS) liga e desliga a mira, e Esc sai dela. Um envio que a sessão recusa mantém as notas e diz o motivo na bandeja.
+- O navegador de uma sessão baixa arquivos. Um download iniciado pela página, por um link, um botão, uma nova aba ou um script, cai na sua pasta Downloads com o nome que a página dá, com ` (1)` acrescentado em vez de sobrescrever um arquivo que já esteja lá. O agente também pode abrir a URL de um arquivo diretamente. O clique, a tecla pressionada ou a abertura do agente respondem com o caminho e o tamanho do arquivo, e a janela mostra um toast com o nome do arquivo, com um botão que abre a pasta dele. Antes, um botão de download no navegador da sessão não fazia nada.
+- O agente pode esperar a página do navegador mudar em vez de lê-la de novo num laço. O `browser_info` aceita `wait_for` (texto que deve aparecer) e `wait_gone` (texto que deve sumir), procurados em qualquer lugar da página, e responde assim que a página o mostra, ou depois de 20 segundos com a página como está e uma linha dizendo que a espera esgotou o tempo.
+- O agente fica sabendo quando a página no navegador da sessão quebra. Cada página que ele lê, clica ou em que pressiona uma tecla responde com os erros de console desde a última olhada, uma vez cada: chamadas a `console.error`, exceções não capturadas e recursos que falharam ao carregar, cortados em uma linha curta, os cinco primeiros e quantos mais. Avisos e outras mensagens ficam de fora.
+- Um agente pode fechar um projeto, com `close_project` ou `lich close-project`: a aba sai da janela e as sessões dela param, guardadas para reabrir como quando você fecha a aba. O projeto em que o agente roda e o projeto inicial são recusados.
+- O agente e você respondem aos diálogos de JavaScript da página no navegador de uma sessão. Um alert, um confirm, um prompt ou um "Sair desta página?" que a página abre aparece como um cartão sobre o topo da página, na aba do navegador da sessão, nomeando o site que o abriu, com os botões dele e, para um prompt, um campo. Você o responde ali, ou o agente com `browser_dialog`, e o cursor dele pressiona o botão do cartão. O clique do agente que abriu um diálogo responde na hora com o diálogo dentro, e o agente fica sabendo de um que você respondeu. Antes, um botão que mostrava um alert congelava a página: o clique do agente e toda leitura depois dele esperavam trinta segundos e falhavam.
+
+### Changed
+
+- A conta do GitHub de um projeto (Configurações › Controle de versão) agora chega também às sessões dele: o `gh` rodado pelo agente ou num card de shell responde como essa conta, em vez de qualquer uma que o gh tenha ativa, a partir do próximo início da sessão. Dentro dessas sessões, `gh auth switch` não muda mais a conta.
+- A janela guarda menos memória com muitas sessões abertas. Um terminal fora da tela libera os pixels que desenhou, alguns megabytes cada, e os redesenha em um quadro quando volta.
+- O coletor de lixo da janela agora roda em 50, e não no padrão 100 do Go, o que num teste com 15 sessões cortou cerca de um décimo da memória residente, a folga que o sistema mandaria para o swap. `GOGC` ainda tem precedência.
+- As ferramentas do navegador respondem a um agente no idioma de prompt da sessão: a legenda da lista de elementos, o aviso de que há mais elementos abaixo, as marcas de preenchido e marcado, um download ainda em andamento, uma espera que esgotou o tempo, a contagem de erros de console adicionais e o que um diálogo aberto pede dele. As etiquetas de linha (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` e as demais) continuam como estão em todos os idiomas.
+
+### Fixed
+
+- No Windows, a janela aparece como `lich` na barra de tarefas e no Alt-Tab, em vez de `lich (native slice)`.
+- Um projeto cuja conta do GitHub vive num servidor GitHub Enterprise passa a ter essa conta na tela de Pull requests, nos selos de pull request e numa sessão em sandbox com o token dela. O token saía sob uma variável que o gh ignora para um host enterprise, então o gh respondia ali como a conta ativa dele.
+- O clique, a digitação ou a tecla pressionada por índice no navegador de uma sessão chega ao elemento que a última leitura de página do agente deu a esse índice. Depois de uma rolagem e de uma segunda leitura, um elemento que a primeira leitura listava sob o mesmo índice, agora fora da vista, podia receber o clique no lugar, sem nenhum erro.
+
 ## [0.80.0] - 2026-10-27
 
 > [!IMPORTANT]
