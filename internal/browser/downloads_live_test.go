@@ -74,7 +74,7 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 				// and a read names a download still running, then again once
 				// it ends.
 				time.Sleep(100 * time.Millisecond)
-				read, err := s.Read(t.Context(), api.SessionIDOptions{ID: "s"})
+				read, err := s.Read(t.Context(), api.BrowserInfoOptions{ID: "s"})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -88,7 +88,7 @@ func TestChromeDownloadsLandInDownloadsAndThePageStays(t *testing.T) {
 			if b, err := os.ReadFile(want); err != nil || string(b) != id+".csv,1" {
 				t.Fatalf("%s holds %q (%v)", want, b, err)
 			}
-			read, err := s.Read(t.Context(), api.SessionIDOptions{ID: "s"})
+			read, err := s.Read(t.Context(), api.BrowserInfoOptions{ID: "s"})
 			if err != nil {
 				t.Fatal(err)
 			}

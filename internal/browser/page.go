@@ -81,6 +81,9 @@ type PageInfo struct {
 type Page interface {
 	Navigate(ctx context.Context, url string) error
 	Info(ctx context.Context) (PageInfo, error)
+	// HasText says whether text is in the page's visible text, the whole
+	// document's and not only the viewport's.
+	HasText(ctx context.Context, text string) (bool, error)
 	// Settle waits until a navigation the last action may have started has
 	// its document, bounded by domSettle.
 	Settle(ctx context.Context) error

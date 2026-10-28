@@ -26,10 +26,17 @@ func (s *Service) OpenURL(_ context.Context, opts api.BrowserOpenOptions) (api.B
 	return s.withDownloads(handleAPI(h)), nil
 }
 
-// Read returns the page the agent is looking at.
-func (s *Service) Read(_ context.Context, opts api.SessionIDOptions) (api.BrowserPageInfo, error) {
+// Read returns the page the agent is looking at, once the text it waits for
+// came or went. A wait that gives up still answers with the page.
+func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.BrowserPageInfo, error) {
+	timedOut, err := s.waitText(opts)
+	if err != nil {
+		return api.BrowserPageInfo{}, err
+	}
 	info, err := s.Info(opts.ID)
-	return infoAPI(info), err
+	out := infoAPI(info)
+	out.WaitTimedOut = timedOut
+	return out, err
 }
 
 // ClickAt clicks in this session's browser.

@@ -42,8 +42,13 @@ var browserTools = []mcpTool{
 			"one line per interactive element there: index, tag, label and link. Form values are " +
 			"never included — (filled)/(checked) say that typing landed. click and press already " +
 			"answer with this, so call it only to look again without acting. Also names a download " +
-			"that finished since the page was last read. Read-only.",
-		Schema:   schema(map[string]any{}),
+			"that finished since the page was last read. wait_for and wait_gone hold the read, up " +
+			"to 20 seconds, until that text is on the page or off it, instead of reading again in " +
+			"a loop. Read-only.",
+		Schema: schema(map[string]any{
+			"wait_for":  property("string", "Wait until this text is on the page (case-sensitive, the whole page)."),
+			"wait_gone": property("string", "Wait until this text is no longer on the page."),
+		}),
 		ReadOnly: true,
 		Run:      mcpBrowserInfo,
 	},
@@ -269,12 +274,14 @@ func encodeJSON(v any) (string, error) {
 	return string(b), nil
 }
 
-func mcpBrowserInfo(ctx context.Context, c *client, _ mcpArgs) (string, error) {
+func mcpBrowserInfo(ctx context.Context, c *client, a mcpArgs) (string, error) {
 	id, err := c.browserOwner()
 	if err != nil {
 		return "", err
 	}
-	info, err := callMethod(ctx, c, api.BrowserInfo, api.SessionIDOptions{ID: id}, openCall)
+	info, err := callMethod(ctx, c, api.BrowserInfo, api.BrowserInfoOptions{
+		ID: id, WaitFor: a.text("wait_for"), WaitGone: a.text("wait_gone"),
+	}, openCall)
 	if err != nil {
 		return "", err
 	}

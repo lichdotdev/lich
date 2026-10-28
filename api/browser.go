@@ -3,7 +3,7 @@ package api
 var (
 	BrowserShow = define[SessionIDOptions, BrowserHandle]("browser.Show")
 	BrowserOpen = define[BrowserOpenOptions, BrowserHandle]("browser.Open")
-	BrowserInfo = define[SessionIDOptions, BrowserPageInfo]("browser.Info")
+	BrowserInfo = define[BrowserInfoOptions, BrowserPageInfo]("browser.Info")
 	// Click and Press answer with the page as it stands after them, so an
 	// agent reads what its action did without a browser.Info of its own. Type
 	// does not: typing into a field seldom changes the page, and a page per
@@ -176,6 +176,15 @@ type BrowserOpenOptions struct {
 	URL string `json:"url"`
 }
 
+// BrowserInfoOptions reads session ID's page. WaitFor and WaitGone, when set,
+// hold the read until that text is on the page's visible text, or off it
+// (case-sensitive substring, the whole page, not only the viewport).
+type BrowserInfoOptions struct {
+	ID       string `json:"id"`
+	WaitFor  string `json:"waitFor,omitempty"`
+	WaitGone string `json:"waitGone,omitempty"`
+}
+
 // BrowserTarget picks an element. Index is the one page-info stamped;
 // selector is a CSS query; x/y are viewport coordinates. Coordinates win when
 // set, then selector, then index.
@@ -255,6 +264,9 @@ type BrowserPageInfo struct {
 	// state: what its last action saved, or one it saw start and that ended
 	// since.
 	Downloads []BrowserDownload `json:"downloads,omitempty"`
+	// WaitTimedOut says the text a read waited for never came (or never
+	// went): the page is the one standing when the wait gave up.
+	WaitTimedOut bool `json:"waitTimedOut,omitempty"`
 }
 
 // BrowserPointOptions is a point of session ID's page, in CSS pixels.

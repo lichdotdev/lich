@@ -192,6 +192,16 @@ func (p *chromePage) Info(ctx context.Context) (PageInfo, error) {
 	return info, nil
 }
 
+func (p *chromePage) HasText(ctx context.Context, text string) (bool, error) {
+	literal, err := json.Marshal(text)
+	if err != nil {
+		return false, err
+	}
+	var has bool
+	script := fmt.Sprintf(hasTextScript, literal)
+	return has, p.run(ctx, chromedp.Evaluate(script, &has))
+}
+
 func (p *chromePage) Click(ctx context.Context, t Target) (x, y float64, err error) {
 	pt, err := p.resolve(ctx, t)
 	if err != nil {

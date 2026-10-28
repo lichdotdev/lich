@@ -32,7 +32,7 @@ func TestClickReportsTheFileItDownloadedAndTellsTheWindowOnce(t *testing.T) {
 	if len(done) != 1 || done[0].(api.BrowserDownload).Owner != "s" || done[0].(api.BrowserDownload).Path != "/dl/report.csv" {
 		t.Fatalf("window heard %+v, want the one completed download, owned by s", done)
 	}
-	again, err := s.Read(t.Context(), api.SessionIDOptions{ID: "s"})
+	again, err := s.Read(t.Context(), api.BrowserInfoOptions{ID: "s"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestADownloadStillRunningIsReportedAgainWhenItEnds(t *testing.T) {
 		t.Fatalf("got %+v after %v: a download already reported in progress must not hold the next action", got, time.Since(start))
 	}
 	p.onDownload("g1", api.BrowserDownload{Path: "/dl/big.iso", Bytes: 9, State: api.DownloadCompleted})
-	info, err := s.Read(t.Context(), api.SessionIDOptions{ID: "s"})
+	info, err := s.Read(t.Context(), api.BrowserInfoOptions{ID: "s"})
 	if err != nil {
 		t.Fatal(err)
 	}

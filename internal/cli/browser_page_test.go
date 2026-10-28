@@ -70,3 +70,11 @@ func TestPageTextNamesTheDownloadsAfterTheTitle(t *testing.T) {
 		t.Fatalf("got\n%s\nwant\n%s", got, want)
 	}
 }
+
+func TestPageTextSaysAWaitTimedOutBeforeThePage(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "https://x.test/", Title: "X", Text: "Loading", WaitTimedOut: true}
+	want := "url: https://x.test/\ntitle: X\nwait: timed out, this is the page as it stands\ntext: Loading"
+	if got := pageText(info); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+}
