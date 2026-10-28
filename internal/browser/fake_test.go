@@ -13,25 +13,26 @@ import (
 // fakePage is a Page that never talks to Chrome. Tests inject it through
 // Launcher so the suite stays off the OS boundary.
 type fakePage struct {
-	mu          sync.Mutex
-	url, title  string
-	closed      bool
-	navigations []string
-	clicks      []Target
-	typed       []typed
-	pressed     []pressed
-	reloads     int
-	backs       int
-	forwards    int
-	scrolled    []int
-	scrolledAt  []*point
-	focused     int
-	cookies     []*network.CookieParam
-	setCookies  []*network.CookieParam
-	clickAt     [2]float64
-	onFrame     func(string)
-	onInfo      func(url, title string)
-	onDownload  func(guid string, d api.BrowserDownload)
+	mu             sync.Mutex
+	url, title     string
+	closed         bool
+	navigations    []string
+	clicks         []Target
+	typed          []typed
+	pressed        []pressed
+	reloads        int
+	backs          int
+	forwards       int
+	scrolled       []int
+	scrolledAt     []*point
+	focused        int
+	cookies        []*network.CookieParam
+	setCookies     []*network.CookieParam
+	clickAt        [2]float64
+	onFrame        func(string)
+	onInfo         func(url, title string)
+	onDownload     func(guid string, d api.BrowserDownload)
+	onConsoleError func(text string)
 	// onClick runs after a click, as what the page does in answer to it;
 	// onNavigate as a navigation starts.
 	onClick    func()
@@ -229,10 +230,10 @@ func (p *fakePage) SetCookies(_ context.Context, cookies []*network.CookieParam)
 	return nil
 }
 
-func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload)) {
+func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload), onConsoleError func(string)) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.onFrame, p.onInfo, p.onDownload = onFrame, onInfo, onDownload
+	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError = onFrame, onInfo, onDownload, onConsoleError
 }
 
 func (p *fakePage) Screencast(_ context.Context, v Viewport) error {

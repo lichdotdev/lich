@@ -31,7 +31,7 @@ type listeners struct {
 	onInfo  func(url, title string)
 }
 
-func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload)) {
+func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string)) {
 	p.listen.mu.Lock()
 	p.listen.onFrame, p.listen.onInfo = onFrame, onInfo
 	p.listen.mu.Unlock()
@@ -45,6 +45,10 @@ func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title st
 			}
 		case *page.EventNavigatedWithinDocument, *page.EventDomContentEventFired:
 			go p.reportInfo()
+		default:
+			if text, ok := consoleError(ev); ok {
+				onConsoleError(text)
+			}
 		}
 	})
 	p.keepOneTab()

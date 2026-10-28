@@ -59,6 +59,18 @@ page only answers what is where (`browser.ElementAt`, `browser.Locate`); the
 outline, the pins and the note are the window's, so nothing is injected into
 the page.
 
+## Console errors
+
+Each page answer (`browser_info`, `browser_click`, `browser_press`) names the
+errors the page's console showed since the agent's last one, once each, as
+`console error:` lines: a `console.error` call, an uncaught exception with
+where it was thrown, or an error Chrome logs itself, such as a resource that
+failed to load. Each is one line cut to 200 characters; past the first five, a
+`(N more console errors)` line counts the rest. Warnings, info and log
+messages are left out. The text is what the page logs, so a page that logs a
+form's value hands it to the agent; lich reads nothing else. These lines are
+English, outside the prompt-language catalogs, like the rest of the page answer.
+
 ## Downloads
 
 A file the page downloads lands in the user's Downloads folder

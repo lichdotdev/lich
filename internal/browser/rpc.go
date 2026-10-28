@@ -78,6 +78,7 @@ func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
 	}
 	s.remember(sess, info.URL, info.Title)
 	info.Downloads = s.downloadsAfter(sess, downloadWait)
+	info.ConsoleErrors, info.ConsoleErrorsMore = s.consoleUntold(sess)
 	return infoAPI(info), nil
 }
 
@@ -147,7 +148,8 @@ func handleAPI(h Handle) api.BrowserHandle {
 }
 
 func infoAPI(p PageInfo) api.BrowserPageInfo {
-	out := api.BrowserPageInfo{URL: p.URL, Title: p.Title, Text: p.Text, Truncated: p.Truncated, Downloads: p.Downloads}
+	out := api.BrowserPageInfo{URL: p.URL, Title: p.Title, Text: p.Text, Truncated: p.Truncated, Downloads: p.Downloads,
+		ConsoleErrors: p.ConsoleErrors, ConsoleErrorsMore: p.ConsoleErrorsMore}
 	if p.Interactive == nil {
 		return out
 	}

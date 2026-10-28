@@ -269,6 +269,11 @@ type BrowserPageInfo struct {
 	// WaitTimedOut says the text a read waited for never came (or never
 	// went): the page is the one standing when the wait gave up.
 	WaitTimedOut bool `json:"waitTimedOut,omitempty"`
+	// ConsoleErrors are the errors the page's console showed since the
+	// agent's last page answer, each one line cut short; ConsoleErrorsMore
+	// counts those past the cap.
+	ConsoleErrors     []string `json:"consoleErrors,omitempty"`
+	ConsoleErrorsMore int      `json:"consoleErrorsMore,omitempty"`
 }
 
 // BrowserPointOptions is a point of session ID's page, in CSS pixels.

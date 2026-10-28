@@ -24,6 +24,12 @@ func pageText(info api.BrowserPageInfo) string {
 		b.WriteString(downloadLine(d))
 		b.WriteByte('\n')
 	}
+	for _, e := range info.ConsoleErrors {
+		fmt.Fprintf(&b, "console error: %s\n", e)
+	}
+	if info.ConsoleErrorsMore > 0 {
+		fmt.Fprintf(&b, "(%d more console errors)\n", info.ConsoleErrorsMore)
+	}
 	if info.Text != "" {
 		fmt.Fprintf(&b, "text: %s\n", info.Text)
 	}

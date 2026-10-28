@@ -72,8 +72,11 @@ type PageInfo struct {
 	Text        string        `json:"text"`
 	Interactive []Interactive `json:"interactive"`
 	Truncated   bool          `json:"truncated"`
-	// Downloads is the service's to fill, never the page script's.
-	Downloads []api.BrowserDownload `json:"-"`
+	// Downloads and the console errors are the service's to fill, never the
+	// page script's.
+	Downloads         []api.BrowserDownload `json:"-"`
+	ConsoleErrors     []string              `json:"-"`
+	ConsoleErrorsMore int                   `json:"-"`
 }
 
 // Page is one Chromium tab the service drives. chrome.go is the real one;
@@ -104,9 +107,9 @@ type Page interface {
 	Cookies(ctx context.Context) ([]*network.CookieParam, error)
 	SetCookies(ctx context.Context, cookies []*network.CookieParam) error
 	// Listen hands the page what to call with each screencast frame (base64
-	// JPEG), with its URL and title whenever they change, and with each step
-	// of a download it starts.
-	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload))
+	// JPEG), with its URL and title whenever they change, with each step of a
+	// download it starts, and with each error its console shows.
+	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string))
 	Screencast(ctx context.Context, v Viewport) error
 	StopScreencast(ctx context.Context) error
 	Resize(ctx context.Context, v Viewport) error

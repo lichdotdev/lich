@@ -85,3 +85,11 @@ func TestPageTextSaysAWaitTimedOutBeforeThePage(t *testing.T) {
 		t.Fatalf("got\n%s\nwant\n%s", got, want)
 	}
 }
+
+func TestPageTextNamesConsoleErrorsAndHowManyMore(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "about:blank", ConsoleErrors: []string{"Uncaught Error: x", "boom"}, ConsoleErrorsMore: 4}
+	want := "url: about:blank\ntitle: \nconsole error: Uncaught Error: x\nconsole error: boom\n(4 more console errors)"
+	if got := pageText(info); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+}
