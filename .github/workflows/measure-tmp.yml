@@ -1,0 +1,32 @@
+# Temporary: measures the macOS held-dialog pane failure. Removed before merge.
+name: measure-tmp
+on:
+  pull_request:
+    paths: ['.github/workflows/measure-tmp.yml', 'internal/browser/**']
+jobs:
+  measure:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15-intel, macos-latest]
+        suite:
+          - {name: pane, run: '^TestChromeAPaneOpenedOnADialogShowsThePage$', count: 20}
+          - {name: chrome, run: 'TestChrome', count: 3}
+          - {name: probe, run: '^TestProbeHeldScreencastSteps$', count: 10}
+    runs-on: ${{ matrix.runner }}
+    name: ${{ matrix.runner }} ${{ matrix.suite.name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Measure
+        run: |
+          set -o pipefail
+          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --version || true
+          go test -v -timeout 80m -count=${{ matrix.suite.count }} -run '${{ matrix.suite.run }}' ./internal/browser/ 2>&1 | tee out.txt
+          code=$?
+          echo "PASS: $(grep -c -- '^--- PASS' out.txt)  FAIL: $(grep -c -- '^--- FAIL' out.txt)"
+          grep -- '--- FAIL\|_test.go:' out.txt || true
+          grep PROBE out.txt | sed 's/.*PROBE/PROBE/' | sort | uniq -c || true
+          exit $code
