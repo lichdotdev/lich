@@ -243,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "Buttons",
+    "searchWords": "window buttons minimize maximize close title bar caption controls traffic lights hide show",
+    "description": "The minimize, maximize and close buttons at the top of the window.",
+    "choice": {
+      "system": {
+        "label": "Follow system",
+        "consequence": "lich shows the buttons where your system puts them, and none when the window manager draws its own title bar."
+      },
+      "show": {
+        "label": "Always show",
+        "consequence": "lich draws the buttons even when the window manager draws its own title bar, or none, as a tiling one does."
+      },
+      "hide": {
+        "label": "Hide",
+        "consequence": "The window has no buttons: minimize, maximize and close it from the keyboard or the window manager."
+      }
+    }
+  },
   "windowSetting": {
     "title": "Window"
   },

@@ -239,6 +239,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "버튼",
+    "searchWords": "창 버튼 최소화 최대화 닫기 제목 표시줄 컨트롤 신호등 숨기기 표시",
+    "description": "창 위쪽의 최소화, 최대화, 닫기 버튼입니다.",
+    "choice": {
+      "system": {
+        "label": "시스템 따르기",
+        "consequence": "lich는 시스템이 두는 위치에 버튼을 표시하고, 창 관리자가 자체 제목 표시줄을 그릴 때는 표시하지 않습니다."
+      },
+      "show": {
+        "label": "항상 표시",
+        "consequence": "창 관리자가 자체 제목 표시줄을 그리거나, 타일링 창 관리자처럼 아무것도 그리지 않을 때도 lich가 버튼을 그립니다."
+      },
+      "hide": {
+        "label": "숨기기",
+        "consequence": "창에 버튼이 없습니다. 최소화, 최대화, 닫기는 키보드나 창 관리자에서 하세요."
+      }
+    }
+  },
   "windowSetting": {
     "title": "창"
   },

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Settings › General has a Copy on select switch for the terminal. On by default, it copies a selection as soon as you make it; off, copy it with Ctrl+Shift+C (Cmd+C on macOS).
 - A session's browser zooms its page on its own, apart from the interface zoom: Ctrl+- and Ctrl+= (Cmd on macOS) zoom out and in by 10%, from 50% to 200%, and Ctrl+0 goes back to 100%. A zoomed-out page lays out wider, as in a desktop browser, which makes a small screen usable without shrinking the rest of the window. The zoom applies to every session's browser, shows on the toolbar while it is not 100%, and is kept for the next start.
+- Settings › General › Window › Buttons chooses whether the window's minimize, maximize and close buttons show: Follow system, Always show or Hide. Follow system is how lich behaved before, and on Linux it now also follows a change to the desktop's button layout while lich is open instead of only reading it at start. Always show draws the buttons even where the window manager decorates the window or tiles it without a title bar, as Hyprland does. Hide leaves the window without them, the traffic lights included on macOS.
 
 ### Changed
 

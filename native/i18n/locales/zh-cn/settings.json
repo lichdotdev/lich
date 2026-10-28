@@ -243,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "按钮",
+    "searchWords": "窗口 按钮 最小化 最大化 关闭 标题栏 控件 红绿灯 隐藏 显示",
+    "description": "窗口顶部的最小化、最大化和关闭按钮。",
+    "choice": {
+      "system": {
+        "label": "跟随系统",
+        "consequence": "lich 按系统的位置显示按钮；窗口管理器绘制自己的标题栏时则不显示。"
+      },
+      "show": {
+        "label": "始终显示",
+        "consequence": "即使窗口管理器绘制了自己的标题栏，或像平铺式窗口管理器那样没有标题栏，lich 也会绘制按钮。"
+      },
+      "hide": {
+        "label": "隐藏",
+        "consequence": "窗口不显示按钮：请通过键盘或窗口管理器来最小化、最大化和关闭窗口。"
+      }
+    }
+  },
   "windowSetting": {
     "title": "窗口"
   },

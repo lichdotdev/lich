@@ -243,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "Botões",
+    "searchWords": "botões janela minimizar maximizar fechar barra de título controles semáforos esconder mostrar",
+    "description": "Os botões de minimizar, maximizar e fechar no topo da janela.",
+    "choice": {
+      "system": {
+        "label": "Seguir o sistema",
+        "consequence": "O lich mostra os botões onde o seu sistema os coloca, e nenhum quando o gerenciador de janelas desenha a própria barra de título."
+      },
+      "show": {
+        "label": "Sempre mostrar",
+        "consequence": "O lich desenha os botões mesmo quando o gerenciador de janelas desenha a própria barra de título, ou nenhuma, como faz um tiling."
+      },
+      "hide": {
+        "label": "Esconder",
+        "consequence": "A janela fica sem botões: minimize, maximize e feche pelo teclado ou pelo gerenciador de janelas."
+      }
+    }
+  },
   "windowSetting": {
     "title": "Janela"
   },

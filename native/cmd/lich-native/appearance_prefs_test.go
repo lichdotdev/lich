@@ -24,6 +24,20 @@ func TestAppearanceClamps(t *testing.T) {
 	}
 }
 
+func TestWindowButtonsAnswers(t *testing.T) {
+	for stored, want := range map[string]string{"": windowButtonsSystem, "system": windowButtonsSystem, "show": windowButtonsShow, "hide": windowButtonsHide, "auto": windowButtonsSystem} {
+		if got := windowButtonsOf(stored); got != want {
+			t.Errorf("windowButtonsOf(%q) = %q, want %q", stored, got, want)
+		}
+	}
+	if got := trafficLightsBar(appearancePrefs{zoom: 1.5, windowButtons: windowButtonsHide}); got != 0 {
+		t.Errorf("Hide keeps a %v title bar for the traffic lights", got)
+	}
+	if got := trafficLightsBar(appearancePrefs{zoom: 1.5, windowButtons: windowButtonsSystem}); got != topbarHeight*1.5 {
+		t.Errorf("Follow system centers the traffic lights in %v, want the zoomed topbar", got)
+	}
+}
+
 func TestCloseAnswers(t *testing.T) {
 	for stored, want := range map[string]string{"": closeAsk, "ask": closeAsk, "background": closeBackground, "quit": closeQuit, "tray": closeAsk} {
 		if got := closeActionOf(stored); got != want {
@@ -51,15 +65,16 @@ func TestLoadAppearancePrefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true}
+	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true, windowButtons: windowButtonsSystem}
 	if p != want {
 		t.Errorf("defaults %+v, want %+v", p, want)
 	}
 	f.settings[zoomKey+"@"], f.settings[terminalFontSizeKey+"@"] = "3", "x"
 	f.settings[costBudgetKey+"@"], f.settings[closeActionKey+"@"] = "25.5", "quit"
 	f.settings[terminalFontKey+"@"], f.settings[copyOnSelectKey+"@"], f.settings[browserZoomKey+"@"] = "Iosevka", "false", "0.8"
+	f.settings[windowButtonsKey+"@"] = "hide"
 	p, _ = loadAppearancePrefs(context.Background(), client)
-	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit}
+	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit, windowButtons: windowButtonsHide}
 	if p != want {
 		t.Errorf("stored %+v, want %+v", p, want)
 	}

@@ -125,6 +125,7 @@ type topbarFrame struct {
 	pulls          bool // the Pulls screen is open
 	caption        captionLayout
 	chrome         windowChrome
+	windowButtons  string // the window buttons setting
 }
 
 // islandSpan is one island under the tab strip: its left and right edges in
@@ -195,7 +196,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 		layout.Rigid(func(gtx C) D { return t.settingsButton(gtx, th, f.settings, act) }),
 	}
 	pad := gtx.Dp(gutter)
-	if f.chrome.drawn() && len(f.caption.right) > 0 {
+	if f.chrome.buttonsShown(f.windowButtons) && len(f.caption.right) > 0 {
 		children = append(children,
 			layout.Rigid(func(gtx C) D { return captionDivider(gtx, th) }),
 			layout.Rigid(func(gtx C) D { return t.captionButtons(gtx, th, f, f.caption.right, act) }))
@@ -215,7 +216,7 @@ func (t *topbar) rightSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction
 // leftSide draws the window's buttons the desktop puts on the left, or
 // leaves room for the system's own, and answers how wide that is.
 func (t *topbar) leftSide(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) int {
-	if !f.chrome.drawn() {
+	if !f.chrome.buttonsShown(f.windowButtons) {
 		return 0
 	}
 	if len(f.caption.left) == 0 {
