@@ -58,6 +58,9 @@
     "textSizeTitle": "터미널 글자 크기",
     "textSmaller": "터미널 글자 작게",
     "textLarger": "터미널 글자 크게",
+    "copyOnSelectTitle": "선택 시 복사",
+    "copyOnSelectDescription": "터미널에서 선택한 텍스트를 선택하는 즉시 클립보드에 복사합니다. 끄면 Ctrl+Shift+C(macOS에서는 Cmd+C)로 복사합니다.",
+    "copyOnSelectSearchWords": "클립보드 선택 터미널 자동",
     "replaceThemesTitle": "가져온 테마를 교체할까요?",
     "replaceThemesDescription": "저장소에 이미 설치된 테마가 있습니다: {themes}. 그래도 설치할까요? 이전 버전은 영구히 삭제됩니다.",
     "replaceThemes": "테마 교체",
@@ -236,6 +239,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "버튼",
+    "searchWords": "창 버튼 최소화 최대화 닫기 제목 표시줄 컨트롤 신호등 숨기기 표시",
+    "description": "창 위쪽의 최소화, 최대화, 닫기 버튼입니다.",
+    "choice": {
+      "system": {
+        "label": "시스템 따르기",
+        "consequence": "lich는 시스템이 두는 위치에 버튼을 표시하고, 창 관리자가 자체 제목 표시줄을 그릴 때는 표시하지 않습니다."
+      },
+      "show": {
+        "label": "항상 표시",
+        "consequence": "창 관리자가 자체 제목 표시줄을 그리거나, 타일링 창 관리자처럼 아무것도 그리지 않을 때도 lich가 버튼을 그립니다."
+      },
+      "hide": {
+        "label": "숨기기",
+        "consequence": "창에 버튼이 없습니다. 최소화, 최대화, 닫기는 키보드나 창 관리자에서 하세요."
+      }
+    }
+  },
   "windowSetting": {
     "title": "창"
   },
@@ -393,7 +415,8 @@
     "projectOnly": "프로젝트 전용"
   },
   "settingsGeneral": {
-    "notifySearchWords": "데스크톱 알림 경고 종 notification"
+    "notifySearchWords": "데스크톱 알림 경고 종 notification",
+    "terminalGroup": "터미널"
   },
   "settingsHelp": {
     "bugDescription": "버전과 플랫폼이 채워진 버그 양식을 브라우저에서 엽니다. lich가 이슈를 대신 올리지 않으며, 직접 작성해야 합니다. 터미널에서 `lich rage`를 실행하면 로그, 버전, lich가 이 머신에서 찾은 정보를 첨부용 압축 파일 하나로 묶습니다.",

@@ -30,10 +30,13 @@ var (
 	BrowserAttach  = define[BrowserViewOptions, BrowserHandle]("browser.Attach")
 	BrowserDetach  = define[SessionIDOptions, None]("browser.Detach")
 	BrowserResize  = define[BrowserViewOptions, None]("browser.Resize")
-	BrowserMouse   = define[BrowserMouseOptions, None]("browser.Mouse")
-	BrowserKey     = define[BrowserKeyOptions, None]("browser.Key")
-	BrowserText    = define[BrowserTextOptions, None]("browser.Text")
-	BrowserNav     = define[BrowserNavOptions, None]("browser.Nav")
+	// BrowserDefaultView is the window's size, which a page no pane shows
+	// lays out at.
+	BrowserDefaultView = define[BrowserDefaultViewOptions, None]("browser.DefaultView")
+	BrowserMouse       = define[BrowserMouseOptions, None]("browser.Mouse")
+	BrowserKey         = define[BrowserKeyOptions, None]("browser.Key")
+	BrowserText        = define[BrowserTextOptions, None]("browser.Text")
+	BrowserNav         = define[BrowserNavOptions, None]("browser.Nav")
 	// BrowserAnswer is the person answering the page's open dialog in the
 	// pane, the window's side of BrowserAnswerDialog.
 	BrowserAnswer = define[BrowserDialogOptions, None]("browser.Answer")
@@ -147,6 +150,14 @@ type BrowserAgentAct struct {
 // CSS pixels, Scale the device pixels per CSS pixel.
 type BrowserViewOptions struct {
 	ID    string  `json:"id"`
+	W     int     `json:"w"`
+	H     int     `json:"h"`
+	Scale float64 `json:"scale"`
+}
+
+// BrowserDefaultViewOptions is the window's size: W and H in CSS pixels, Scale
+// the device pixels per CSS pixel.
+type BrowserDefaultViewOptions struct {
 	W     int     `json:"w"`
 	H     int     `json:"h"`
 	Scale float64 `json:"scale"`

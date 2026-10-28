@@ -26,6 +26,7 @@ import (
 // would orphan what is already stored under it.
 const (
 	zoomKey             = "lich.appearance.zoom"
+	browserZoomKey      = "lich.browser.zoom"
 	terminalFontSizeKey = "lich.terminal.fontSize"
 	terminalFontKey     = "lich.terminal.font"
 	editorFontSizeKey   = "lich.editor.fontSize"
@@ -33,6 +34,8 @@ const (
 	uiFontKey           = "lich.appearance.font"
 	costBudgetKey       = "lich.footer.costBudget"
 	closeActionKey      = "window.closeAction"
+	copyOnSelectKey     = "lich.terminal.copyOnSelect"
+	windowButtonsKey    = "window.buttons"
 )
 
 // Bounds and steps for the zoom and the font sizes.
@@ -57,10 +60,18 @@ const (
 	closeQuit       = "quit"
 )
 
+// The values the window buttons setting takes.
+const (
+	windowButtonsSystem = "system"
+	windowButtonsShow   = "show"
+	windowButtonsHide   = "hide"
+)
+
 // appearancePrefs are the Appearance values the window applies.
 type appearancePrefs struct {
-	zoom     float64
-	fontSize int
+	zoom        float64
+	browserZoom float64
+	fontSize    int
 	// The fonts are "" for System: the system's monospace for the terminal and
 	// the code views, and its sans for the interface.
 	font           string
@@ -69,6 +80,8 @@ type appearancePrefs struct {
 	uiFont         string
 	budget         float64 // 0 is no ceiling
 	closeAction    string
+	copyOnSelect   bool
+	windowButtons  string
 }
 
 // clampZoom bounds a zoom and snaps it to one decimal.
@@ -116,6 +129,23 @@ func closeActionOf(stored string) string {
 // the kept answer, it does; otherwise the user is asked.
 func closeQuits(action string, live int) bool { return live == 0 || action == closeQuit }
 
+// copyOnSelectOf reads the stored copy on select: it is on until stored off,
+// including for a value that is not a boolean.
+func copyOnSelectOf(stored string) bool {
+	on, err := strconv.ParseBool(stored)
+	return stored == "" || err != nil || on
+}
+
+// windowButtonsOf reads the stored window buttons setting: nothing stored, or
+// a value from a newer lich, follows the system.
+func windowButtonsOf(stored string) string {
+	switch stored {
+	case windowButtonsShow, windowButtonsHide:
+		return stored
+	}
+	return windowButtonsSystem
+}
+
 // parseNumber parses raw; what does not parse is the fallback.
 func parseNumber(raw string, fallback float64) float64 {
 	v, err := strconv.ParseFloat(raw, 64)
@@ -128,7 +158,7 @@ func parseNumber(raw string, fallback float64) float64 {
 // loadAppearancePrefs reads the stored values.
 func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
-	for _, key := range []string{zoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey} {
+	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey, windowButtonsKey} {
 		v, err := c.GetSetting(ctx, key, "")
 		if err != nil {
 			return appearancePrefs{}, err
@@ -137,6 +167,7 @@ func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePref
 	}
 	p := appearancePrefs{
 		zoom:           clampZoom(parseNumber(raw[zoomKey], defaultZoom)),
+		browserZoom:    clampZoom(parseNumber(raw[browserZoomKey], defaultZoom)),
 		fontSize:       clampTerminalFontSize(int(math.Round(parseNumber(raw[terminalFontSizeKey], defaultTerminalSize)))),
 		font:           raw[terminalFontKey],
 		editorFontSize: clampEditorFontSize(int(math.Round(parseNumber(raw[editorFontSizeKey], defaultEditorSize)))),
@@ -144,6 +175,8 @@ func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePref
 		uiFont:         raw[uiFontKey],
 		budget:         clampCostBudget(parseNumber(raw[costBudgetKey], 0)),
 		closeAction:    closeActionOf(raw[closeActionKey]),
+		copyOnSelect:   copyOnSelectOf(raw[copyOnSelectKey]),
+		windowButtons:  windowButtonsOf(raw[windowButtonsKey]),
 	}
 	return p, nil
 }
@@ -165,12 +198,12 @@ func fontFailure(title string) ui.Toast {
 	return ui.Toast{Variant: ui.ToastError, Title: title}
 }
 
-// applyAppearance puts p on screen: the interface zoom, the terminals'
+// applyAppearance puts p on screen: the interface and page zooms, the terminals'
 // font, and the ceiling the cost readout colours against.
 func (u *window) applyAppearance(p appearancePrefs) {
-	u.zoom = p.zoom
-	if u.caption.leftReserve > 0 {
-		u.win.Option(app.TrafficLights(topbarHeight * unit.Dp(p.zoom)))
+	u.zoom, u.browserZoom = p.zoom, p.browserZoom
+	if u.caption.Load().leftReserve > 0 {
+		u.win.Option(app.TrafficLights(trafficLightsBar(p)))
 	}
 	if err := u.terms.setFont(p.terminalFamily(), unit.Sp(p.fontSize)); err != nil {
 		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.terminalFontFailed", i18n.Args{"family": p.terminalFamily(), "error": backend.ErrorText(err)})))
@@ -182,7 +215,17 @@ func (u *window) applyAppearance(p appearancePrefs) {
 		u.toaster.Show(fontFailure(i18n.T("settings.appearancePrefs.uiFontFailed", i18n.Args{"family": systemOr(p.uiFont, fonts.SystemSans), "error": backend.ErrorText(err)})))
 	}
 	u.footer.setBudget(p.budget)
+	u.terms.setCopyOnSelect(p.copyOnSelect)
 	u.win.Invalidate()
+}
+
+// trafficLightsBar is the title bar macOS centers its traffic lights in; none
+// hides them.
+func trafficLightsBar(p appearancePrefs) unit.Dp {
+	if p.windowButtons == windowButtonsHide {
+		return 0
+	}
+	return topbarHeight * unit.Dp(p.zoom)
 }
 
 // setCodeFont redraws the Code tab and both review panels in family at size.

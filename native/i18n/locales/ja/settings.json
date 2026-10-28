@@ -60,6 +60,9 @@
     "textSizeTitle": "ターミナルの文字サイズ",
     "textSmaller": "ターミナルの文字を小さく",
     "textLarger": "ターミナルの文字を大きく",
+    "copyOnSelectTitle": "選択時にコピー",
+    "copyOnSelectDescription": "ターミナルで選択したテキストを、選択した直後にクリップボードへコピーします。オフのときは Ctrl+Shift+C（macOS では Cmd+C）でコピーします。",
+    "copyOnSelectSearchWords": "クリップボード 選択 ターミナル 自動",
     "replaceThemesTitle": "インポート済みのテーマを置き換えますか？",
     "replaceThemesDescription": "このリポジトリには、すでにインストール済みのテーマが含まれています：{themes}。それでもインストールしますか？以前のバージョンは完全に削除されます。",
     "replaceThemes": "テーマを置き換える",
@@ -240,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "ボタン",
+    "searchWords": "ウィンドウ ボタン 最小化 最大化 閉じる タイトルバー コントロール 信号ボタン 非表示 表示",
+    "description": "ウィンドウ上部の最小化・最大化・閉じるボタンです。",
+    "choice": {
+      "system": {
+        "label": "システムに従う",
+        "consequence": "lich はシステムが配置する場所にボタンを表示し、ウィンドウマネージャーが独自のタイトルバーを描くときは表示しません。"
+      },
+      "show": {
+        "label": "常に表示",
+        "consequence": "ウィンドウマネージャーが独自のタイトルバーを描く場合や、タイル型のようにタイトルバーがない場合でも、lich がボタンを描きます。"
+      },
+      "hide": {
+        "label": "非表示",
+        "consequence": "ウィンドウにボタンは表示されません。最小化・最大化・閉じる操作はキーボードかウィンドウマネージャーから行います。"
+      }
+    }
+  },
   "windowSetting": {
     "title": "ウィンドウ"
   },
@@ -398,7 +420,8 @@
     "projectOnly": "プロジェクトのみ"
   },
   "settingsGeneral": {
-    "notifySearchWords": "デスクトップ 通知 アラート ベル"
+    "notifySearchWords": "デスクトップ 通知 アラート ベル",
+    "terminalGroup": "ターミナル"
   },
   "settingsHelp": {
     "bugDescription": "バージョンとプラットフォームが入力された状態で、ブラウザーでバグ報告フォームを開きます。lich が issue を作成するのではなく、あなた自身が書きます。ターミナルで `lich rage` を実行すると、ログ、バージョン、このマシンで lich が見つけた情報を 1 つのアーカイブにまとめて添付できます。",

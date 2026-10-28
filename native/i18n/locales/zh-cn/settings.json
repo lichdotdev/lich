@@ -60,6 +60,9 @@
     "textSizeTitle": "终端文字大小",
     "textSmaller": "减小终端文字",
     "textLarger": "增大终端文字",
+    "copyOnSelectTitle": "选中时复制",
+    "copyOnSelectDescription": "选中终端文字后立即复制到剪贴板。关闭后，请使用 Ctrl+Shift+C（macOS 上为 Cmd+C）复制。",
+    "copyOnSelectSearchWords": "剪贴板 选择 终端 自动",
     "replaceThemesTitle": "替换已导入的主题？",
     "replaceThemesDescription": "该仓库包含已安装的主题：{themes}。仍要安装吗？这将永久删除之前的版本。",
     "replaceThemes": "替换主题",
@@ -240,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "按钮",
+    "searchWords": "窗口 按钮 最小化 最大化 关闭 标题栏 控件 红绿灯 隐藏 显示",
+    "description": "窗口顶部的最小化、最大化和关闭按钮。",
+    "choice": {
+      "system": {
+        "label": "跟随系统",
+        "consequence": "lich 按系统的位置显示按钮；窗口管理器绘制自己的标题栏时则不显示。"
+      },
+      "show": {
+        "label": "始终显示",
+        "consequence": "即使窗口管理器绘制了自己的标题栏，或像平铺式窗口管理器那样没有标题栏，lich 也会绘制按钮。"
+      },
+      "hide": {
+        "label": "隐藏",
+        "consequence": "窗口不显示按钮：请通过键盘或窗口管理器来最小化、最大化和关闭窗口。"
+      }
+    }
+  },
   "windowSetting": {
     "title": "窗口"
   },
@@ -398,7 +420,8 @@
     "projectOnly": "仅项目"
   },
   "settingsGeneral": {
-    "notifySearchWords": "桌面 通知 提醒 铃"
+    "notifySearchWords": "桌面 通知 提醒 铃",
+    "terminalGroup": "终端"
   },
   "settingsHelp": {
     "bugDescription": "在浏览器中打开缺陷表单，并已填好版本和平台。lich 不会替你提交 issue，需要你自己填写。在终端运行 `lich rage`，可把日志、版本以及 lich 在这台机器上发现的内容打包成一个压缩包以便附上。",

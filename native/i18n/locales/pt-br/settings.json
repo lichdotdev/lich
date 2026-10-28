@@ -60,6 +60,9 @@
     "textSizeTitle": "Tamanho do texto do terminal",
     "textSmaller": "Diminuir texto do terminal",
     "textLarger": "Aumentar texto do terminal",
+    "copyOnSelectTitle": "Copiar ao selecionar",
+    "copyOnSelectDescription": "Copia uma seleção do terminal para a área de transferência assim que você a faz. Desativado, copie com Ctrl+Shift+C (Cmd+C no macOS).",
+    "copyOnSelectSearchWords": "área de transferência seleção terminal automático",
     "replaceThemesTitle": "Substituir temas importados?",
     "replaceThemesDescription": "O repositório traz temas que já estão instalados: {themes}. Instalar mesmo assim? Isso exclui as versões anteriores permanentemente.",
     "replaceThemes": "Substituir temas",
@@ -240,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "Botões",
+    "searchWords": "botões janela minimizar maximizar fechar barra de título controles semáforos esconder mostrar",
+    "description": "Os botões de minimizar, maximizar e fechar no topo da janela.",
+    "choice": {
+      "system": {
+        "label": "Seguir o sistema",
+        "consequence": "O lich mostra os botões onde o seu sistema os coloca, e nenhum quando o gerenciador de janelas desenha a própria barra de título."
+      },
+      "show": {
+        "label": "Sempre mostrar",
+        "consequence": "O lich desenha os botões mesmo quando o gerenciador de janelas desenha a própria barra de título, ou nenhuma, como faz um tiling."
+      },
+      "hide": {
+        "label": "Esconder",
+        "consequence": "A janela fica sem botões: minimize, maximize e feche pelo teclado ou pelo gerenciador de janelas."
+      }
+    }
+  },
   "windowSetting": {
     "title": "Janela"
   },
@@ -398,7 +420,8 @@
     "projectOnly": "Só do projeto"
   },
   "settingsGeneral": {
-    "notifySearchWords": "notificação desktop alerta sino"
+    "notifySearchWords": "notificação desktop alerta sino",
+    "terminalGroup": "Terminal"
   },
   "settingsHelp": {
     "bugDescription": "Abre o formulário de bug no navegador com a versão e a plataforma preenchidas. O lich não registra o issue — você mesmo o escreve. Rode `lich rage` num terminal para juntar os logs, as versões e o que o lich encontrou nesta máquina num único arquivo para anexar.",

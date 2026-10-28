@@ -32,6 +32,7 @@ import (
 	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
 	"github.com/lichdotdev/lich/native/gioterm"
@@ -126,9 +127,10 @@ type window struct {
 	// cards, the questions of cards whose process exited and the browsers
 	// agents opened, in the bottom-right corner, apart from every other toast.
 	duplicates ui.Toaster
-	// caption is where the topbar draws the window's buttons, chrome what
-	// the window manager last said about the window.
-	caption captionLayout
+	// caption is where the topbar draws the window's buttons, swapped whole
+	// when the desktop's layout changes; chrome what the window manager last
+	// said about the window.
+	caption atomic.Pointer[captionLayout]
 	chrome  windowChrome
 	// shortcuts is the keyboard shortcuts overlay.
 	shortcuts shortcutsOverlay
@@ -157,9 +159,12 @@ type window struct {
 	// appearance is the theme state the frame repaints from.
 	appearance *appearance
 	// zoom scales everything but the terminals, which keep their own size.
-	zoom   float64
-	win    *app.Window
-	closer closePrompt
+	zoom float64
+	// browserZoom scales the pages of the page panes on top of zoom: a small
+	// screen fits more of a page without shrinking the rest of the window.
+	browserZoom float64
+	win         *app.Window
+	closer      closePrompt
 	// notifier is the desktop channel; optIn its one-time question.
 	notifier   *notifier
 	optIn      notifyOptIn
@@ -174,6 +179,10 @@ type window struct {
 	layoutStage layoutStage
 	// browserPanes are the page panes' widgets, by session (browser_pane.go).
 	browserPanes map[string]*browserPaneUI
+	// browserView is the window's size as the backend last heard it, the size
+	// a page no pane shows lays out at, sent in order through browserViews.
+	browserView  api.BrowserDefaultViewOptions
+	browserViews *browserQueue
 	// hotkeyLanguage is the language the hotkeys' labels were last put in.
 	hotkeyLanguage i18n.Locale
 	// fontsLanguage is the language the interface's CJK faces were last
@@ -212,13 +221,19 @@ func run(w *app.Window, rt backend.Runtime) error {
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
 	u := &window{
-		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, caption: platformCaption(),
+		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(),
 		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
 		model: newModel(client, w.Invalidate),
 		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
 	}
 	u.appearance = &appearance{ctx: ctx, client: client, invalidate: w.Invalidate}
+	caption := platformCaption()
+	u.caption.Store(&caption)
+	go followCaption(ctx, func(l captionLayout) {
+		u.caption.Store(&l)
+		w.Invalidate()
+	})
 	u.toaster.Invalidate = w.Invalidate
 	u.duplicates.Invalidate = w.Invalidate
 	u.terms.toaster = &u.toaster
@@ -338,6 +353,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 			u.terms.unzoomed = gtx.Metric
 			gtx.Metric.PxPerDp *= float32(u.zoom)
 			gtx.Metric.PxPerSp *= float32(u.zoom)
+			u.syncBrowserView(gtx)
 			if err := u.layout(gtx); err != nil {
 				return err
 			}
@@ -467,6 +483,7 @@ func (u *window) connect() error {
 		return err
 	}
 	go u.model.follow(u.ctx, events)
+	go u.browserViews.run(u.ctx, func(err error) { log.Printf("browser default view: %v", err) })
 	go u.loadProfiles()
 	go u.model.pollGit(u.ctx)
 	go u.warnUncleanExit()
@@ -748,7 +765,8 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	f := topbarFrame{
 		brandWidth: width, brandName: name, stripX: edge, island: u.islandColor(v),
 		tabs: v.strip, active: v.stripActive, pending: u.model.notifications(),
-		caption: u.caption, chrome: u.chrome,
+		caption: u.caption.Load().under(u.settings.look.prefs.windowButtons), chrome: u.chrome,
+		windowButtons: u.settings.look.prefs.windowButtons,
 	}
 	// Settings is no project's screen, so no tab merges into it.
 	if u.settings.open {

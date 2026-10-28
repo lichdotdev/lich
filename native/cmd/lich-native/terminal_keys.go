@@ -56,6 +56,14 @@ func isPasteChord(e key.Event, goos string) bool {
 	return e.Modifiers == key.ModCtrl|key.ModShift || goos == "darwin" && e.Modifiers == key.ModCommand
 }
 
+// isCopyChord is the clipboard copy: Ctrl+Shift+C, and Cmd+C on macOS.
+func isCopyChord(e key.Event, goos string) bool {
+	if e.Name != "C" {
+		return false
+	}
+	return e.Modifiers == key.ModCtrl|key.ModShift || goos == "darwin" && e.Modifiers == key.ModCommand
+}
+
 // pastedClipboard is what a paste of the clipboard's text sends. A clipboard
 // with no text holds an image or a file, which the agent reads itself on the
 // image key.

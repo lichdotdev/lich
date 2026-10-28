@@ -204,6 +204,12 @@ func (s *Service) ResizeView(_ context.Context, opts api.BrowserViewOptions) (ap
 	return api.None{}, s.Resize(opts.ID, viewportOf(opts))
 }
 
+// DefaultView sets the size a page no pane shows lays out at.
+func (s *Service) DefaultView(_ context.Context, opts api.BrowserDefaultViewOptions) (api.None, error) {
+	s.SetDefaultView(Viewport{W: opts.W, H: opts.H, Scale: opts.Scale})
+	return api.None{}, nil
+}
+
 // MouseInput passes one pointer event from the pane.
 func (s *Service) MouseInput(_ context.Context, opts api.BrowserMouseOptions) (api.None, error) {
 	_, err := s.steer(opts.ID, inputWait, func(p Page, ctx context.Context) error { return p.Mouse(ctx, opts) })

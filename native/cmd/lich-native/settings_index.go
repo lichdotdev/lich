@@ -82,8 +82,10 @@ var settingsSections = []settingsSection{
 		{titleKey: "settings.language.uiTitle", alsoKey: "settings.language.uiSearchWords", key: uiLanguageKey, groupKey: "settings.language.group"},
 		{titleKey: "settings.language.promptTitle", alsoKey: "settings.language.promptSearchWords", key: promptLanguageKey, groupKey: "settings.language.group"},
 		{titleKey: "settings.closeSetting.title", alsoKey: "settings.closeSetting.searchWords", key: closeActionKey, groupKey: "settings.windowSetting.title"},
+		{titleKey: "settings.windowButtonsSetting.title", alsoKey: "settings.windowButtonsSetting.searchWords", key: windowButtonsKey, groupKey: "settings.windowSetting.title"},
 		{titleKey: "settings.notificationsSettings.needsInputTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: desktopNotifyKey, groupKey: "settings.settings.section.notifications"},
 		{titleKey: "settings.notificationsSettings.finishedTitle", alsoKey: "settings.settingsGeneral.notifySearchWords", key: finishedNotifyKey, groupKey: "settings.settings.section.notifications"},
+		{titleKey: "settings.appearanceSettings.copyOnSelectTitle", alsoKey: "settings.appearanceSettings.copyOnSelectSearchWords", key: copyOnSelectKey, groupKey: "settings.settingsGeneral.terminalGroup"},
 	}},
 	{id: sectionAppearance, labelKey: "settings.settings.section.appearance", icon: icons.Lucide("palette"), rows: []settingEntry{
 		{titleKey: "settings.themePicker.title", alsoKey: "settings.themePicker.searchWords", key: themeSettingKey},

@@ -60,6 +60,9 @@
     "textSizeTitle": "Terminal text size",
     "textSmaller": "Smaller terminal text",
     "textLarger": "Larger terminal text",
+    "copyOnSelectTitle": "Copy on select",
+    "copyOnSelectDescription": "Copy a terminal selection to the clipboard as soon as you make it. Off, copy with Ctrl+Shift+C (Cmd+C on macOS).",
+    "copyOnSelectSearchWords": "clipboard selection terminal automatic",
     "replaceThemesTitle": "Replace imported themes?",
     "replaceThemesDescription": "The repository carries themes that are already installed: {themes}. Install anyway? This permanently deletes the previous versions.",
     "replaceThemes": "Replace themes",
@@ -240,6 +243,25 @@
       }
     }
   },
+  "windowButtonsSetting": {
+    "title": "Buttons",
+    "searchWords": "window buttons minimize maximize close title bar caption controls traffic lights hide show",
+    "description": "The minimize, maximize and close buttons at the top of the window.",
+    "choice": {
+      "system": {
+        "label": "Follow system",
+        "consequence": "lich shows the buttons where your system puts them, and none when the window manager draws its own title bar."
+      },
+      "show": {
+        "label": "Always show",
+        "consequence": "lich draws the buttons even when the window manager draws its own title bar, or none, as a tiling one does."
+      },
+      "hide": {
+        "label": "Hide",
+        "consequence": "The window has no buttons: minimize, maximize and close it from the keyboard or the window manager."
+      }
+    }
+  },
   "windowSetting": {
     "title": "Window"
   },
@@ -398,7 +420,8 @@
     "projectOnly": "Project only"
   },
   "settingsGeneral": {
-    "notifySearchWords": "desktop notification alert bell"
+    "notifySearchWords": "desktop notification alert bell",
+    "terminalGroup": "Terminal"
   },
   "settingsHelp": {
     "bugDescription": "Opens the bug form in your browser with the version and platform filled in. lich does not file the issue — you write it yourself. Run `lich rage` in a terminal to pack the logs, the versions and what lich found on this machine into one archive to attach.",

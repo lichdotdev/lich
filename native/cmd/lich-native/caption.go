@@ -58,9 +58,32 @@ func chromeOf(c app.Config) windowChrome {
 	return windowChrome{decorated: c.Decorated, maximized: c.Mode == app.Maximized, fullscreen: c.Mode == app.Fullscreen}
 }
 
-// drawn reports whether the topbar draws the caption's buttons and reserve.
+// drawn reports whether the topbar is the window's caption: it drags the
+// window, as a title bar does.
 func (c windowChrome) drawn() bool {
 	return !c.decorated && !c.fullscreen
+}
+
+// buttonsShown reports whether the topbar draws the window's buttons, or
+// leaves macOS room for its own, under the window buttons setting.
+func (c windowChrome) buttonsShown(choice string) bool {
+	switch {
+	case c.fullscreen || choice == windowButtonsHide:
+		return false
+	case choice == windowButtonsShow:
+		return true
+	}
+	return !c.decorated
+}
+
+// under is the layout the topbar draws under the window buttons setting:
+// Always show puts the three buttons on the right when the desktop's layout
+// has none.
+func (l captionLayout) under(choice string) captionLayout {
+	if choice == windowButtonsShow && len(l.left)+len(l.right) == 0 && l.leftReserve == 0 {
+		_, l.right = parseButtonLayout(defaultButtonLayout)
+	}
+	return l
 }
 
 // defaultButtonLayout is what a desktop without the setting gets: the three
