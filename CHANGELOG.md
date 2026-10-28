@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.81.0] - 2026-10-28
+
+> [!IMPORTANT]
+> **Anyone whose agent works on a web page: point at the page and tell it what to change.** The crosshair on the
+> session browser's toolbar leaves notes on the elements you pick and sends them to the agent in one message.
+
 ### Added
 
 - The crosshair on a session browser's toolbar lets you leave notes on the page for the agent. The element under the pointer is outlined and named, the outline sliding from one element to the next as the pointer moves, a click opens a note beside it, and each note pins its element with a number, following it as the page scrolls. Notes wait in a tray floating over the bottom of the page, which never resizes under you. Hovering a note there lights its element, and a click on it or its pin scrolls the element into view and edits the note. An element a scrolling list, sidebar or dialog cuts is outlined only where it shows, and one it hides keeps no pin over what stands beside it. Send (or Ctrl+Enter) types them into the session as one message: which element, a selector the agent's `browser_click` takes, the React component that drew it in a development build, and your note. Ctrl+Shift+E (Cmd+Shift+E on macOS) turns the crosshair on and off, and Esc leaves it. A send the session refuses keeps the notes and says why in the tray.
@@ -6422,7 +6428,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.80.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.81.0...HEAD
+[0.81.0]: https://github.com/lichdotdev/lich/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/lichdotdev/lich/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/lichdotdev/lich/compare/v0.78.1...v0.79.0
 [0.78.1]: https://github.com/lichdotdev/lich/compare/v0.78.0...v0.78.1

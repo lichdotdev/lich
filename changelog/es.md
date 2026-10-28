@@ -1,3 +1,29 @@
+## [0.81.0] - 2026-10-28
+
+> [!IMPORTANT]
+> **Quien tiene un agente trabajando en una página web: señala la página y dile qué cambiar.** La mira de la barra de
+> herramientas del navegador de la sesión deja notas sobre los elementos que eliges y las envía al agente en un solo mensaje.
+
+### Added
+
+- La mira de la barra de herramientas del navegador de una sesión te permite dejar notas en la página para el agente. El elemento bajo el puntero se resalta y se nombra, con el contorno deslizándose de un elemento al siguiente al mover el puntero; un clic abre una nota a su lado, y cada nota fija su elemento con un número, siguiéndolo mientras la página se desplaza. Las notas esperan en una bandeja flotante sobre la parte inferior de la página, que nunca cambia de tamaño bajo tus manos. Al pasar el ratón por una nota ahí, su elemento se ilumina, y un clic en ella o en su marcador desplaza el elemento a la vista y edita la nota. Un elemento que una lista con desplazamiento, una barra lateral o un diálogo recorta se resalta solo donde se ve, y uno que queda oculto no deja marcador sobre lo que tiene al lado. Enviar (o Ctrl+Enter) las escribe en la sesión como un solo mensaje: qué elemento, un selector que acepta el `browser_click` del agente, el componente de React que lo dibujó en una compilación de desarrollo, y tu nota. Ctrl+Shift+E (Cmd+Shift+E en macOS) activa y desactiva la mira, y Esc sale de ella. Un envío que la sesión rechaza conserva las notas y explica el motivo en la bandeja.
+- El navegador de una sesión descarga archivos. Una descarga que inicia la página, desde un enlace, un botón, una pestaña nueva o un script, llega a tu carpeta Descargas con el nombre que le da la página, añadiendo ` (1)` en lugar de sobrescribir un archivo que ya esté ahí. El agente también puede abrir directamente la URL de un archivo. El clic, la pulsación de tecla o la apertura del agente responde con la ruta y el tamaño del archivo, y la ventana muestra un aviso con el nombre del archivo y un botón que abre su carpeta. Antes, un botón de descarga en el navegador de la sesión no hacía nada.
+- El agente puede esperar a que cambie la página de su navegador en lugar de volver a leerla en un bucle. `browser_info` acepta `wait_for` (texto que debería aparecer) y `wait_gone` (texto que debería desaparecer), buscados en cualquier parte de la página, y responde en cuanto la página lo muestra, o tras 20 segundos con la página tal como está y una línea que indica que la espera agotó el tiempo.
+- El agente se entera cuando falla la página del navegador de su sesión. Cada página que lee, en la que hace clic o pulsa una tecla responde con los errores de consola desde su última lectura, una vez cada uno: llamadas a `console.error`, excepciones no capturadas y recursos que no se cargaron, recortados a una línea corta, los primeros cinco y cuántos más hay. Las advertencias y otros mensajes quedan fuera.
+- Un agente puede cerrar un proyecto, con `close_project` o `lich close-project`: la pestaña sale de la ventana y sus sesiones se detienen, conservadas para reabrirlas como cuando cierras la pestaña. El proyecto en el que se ejecuta el agente y el proyecto de inicio se rechazan.
+- Tú y el agente respondéis a los diálogos de JavaScript de la página en el navegador de una sesión. Un alert, un confirm, un prompt o un "¿Salir de esta página?" que abre la página aparece como una tarjeta sobre la parte superior de la página en la pestaña del navegador de la sesión, con el nombre del sitio que lo abrió, sus botones y, para un prompt, un campo. Lo respondes ahí, o lo hace el agente con `browser_dialog`, y su cursor pulsa el botón de la tarjeta. El clic del agente que abrió un diálogo responde de inmediato con el diálogo incluido, y el agente se entera de uno que respondiste tú. Antes, un botón que mostraba un alert congelaba la página: el clic del agente y cada lectura posterior esperaban treinta segundos y fallaban.
+
+### Changed
+
+- La cuenta de GitHub de un proyecto (Ajustes › Control de versiones) ahora llega también a sus sesiones: `gh` ejecutado por el agente o en una tarjeta de shell responde como esa cuenta en lugar de la que gh tenga activa, desde el próximo inicio de la sesión. Dentro de esas sesiones `gh auth switch` ya no cambia la cuenta.
+- La ventana usa menos memoria con muchas sesiones abiertas. Una terminal fuera de pantalla libera los píxeles que dibujó, unos pocos megabytes cada una, y los vuelve a dibujar en un fotograma cuando regresa.
+- Las herramientas del navegador responden al agente en el idioma del prompt de la sesión: la leyenda de la lista de elementos, la nota de que hay más elementos más abajo, las marcas de relleno y de activado, una descarga que sigue en curso, una espera que agotó el tiempo, el recuento de errores de consola adicionales y lo que un diálogo abierto le pide. Las etiquetas de línea (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` y el resto) se mantienen como están en todos los idiomas.
+
+### Fixed
+
+- Un proyecto cuya cuenta de GitHub vive en un servidor de GitHub Enterprise obtiene esa cuenta en la pantalla Pull requests, en las insignias de pull request y en una sesión en sandbox a la que se le concede su token. El token salía bajo una variable que gh ignora para un host empresarial, así que gh respondía allí como su cuenta activa.
+- El clic, la escritura o la pulsación de tecla por índice del navegador de una sesión llega al elemento al que la última lectura de página del agente dio ese índice. Tras un desplazamiento y una segunda lectura, un elemento que la primera lectura había listado con el mismo índice, ahora fuera de vista, podía recibir el clic en su lugar, sin ningún error.
+
 ## [0.80.0] - 2026-10-27
 
 > [!IMPORTANT]
