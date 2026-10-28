@@ -1033,7 +1033,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   none of 30 from 500 ms; Chrome for Testing 155 and Helium 0.19.2.1). The agent hears of a dialog the person
   answered, at most twenty between two page answers, but not of one the agent itself answered. A held page cannot lay
   out, so a pane opened or resized meanwhile shows it at the size it had, and lays it out at the pane's once the
-  dialog closes; a screenshot fails until then.
+  dialog closes; a screenshot fails until then. On Chrome 153 and older, which answers a screencast's start and
+  stop only once the dialog closes, a pane resized while one is open keeps its last frame until it is answered
+  (Chrome 151 on the macos-15-intel runner, measured; 154 on answers at once).
   A window opened with Open in a window was not tried with a dialog.
 
 ## Languages

@@ -8,9 +8,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-15-intel]
+        runner: [macos-15-intel, macos-latest]
         suite:
-          - {name: probe, run: '^TestProbeHeldScreencastSteps$', count: 8}
+          - {name: pane, run: '^TestChromeAPaneOpenedOnADialogShowsThePage$', count: 50}
+          - {name: chrome, run: 'TestChrome', count: 5}
     runs-on: ${{ matrix.runner }}
     name: ${{ matrix.runner }} ${{ matrix.suite.name }}
     steps:
@@ -20,11 +21,8 @@ jobs:
           go-version-file: go.mod
       - name: Measure
         run: |
-          set -o pipefail
           "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --version || true
-          go test -v -timeout 80m -count=${{ matrix.suite.count }} -run '${{ matrix.suite.run }}' ./internal/browser/ 2>&1 | tee out.txt
-          code=$?
-          echo "PASS: $(grep -c -- '^--- PASS' out.txt)  FAIL: $(grep -c -- '^--- FAIL' out.txt)"
+          go test -v -timeout 80m -count=${{ matrix.suite.count }} -run '${{ matrix.suite.run }}' ./internal/browser/ > out.txt 2>&1; code=$?
+          echo "TALLY PASS=$(grep -c -- '^--- PASS' out.txt) FAIL=$(grep -c -- '^--- FAIL' out.txt)"
           grep -- '--- FAIL\|_test.go:' out.txt || true
-          grep PROBE out.txt | sed 's/.*PROBE/PROBE/' | sort | uniq -c || true
           exit $code

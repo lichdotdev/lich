@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
@@ -87,6 +88,10 @@ type chromePage struct {
 	dl *downloads
 	// gate is held while the page has a JavaScript dialog open.
 	gate dialogGate
+	// cast orders the screencast's starts and stops, which can run on past
+	// their caller (castPastDialog); casting says one is running.
+	cast    sync.Mutex
+	casting bool
 }
 
 // downloadFolder is downloadDir, which the live tests point at a folder of
