@@ -166,7 +166,19 @@ func (g *gallery) buttonsSection(gtx C, th *ui.Theme) D {
 		}
 		rows = append(rows, row(1.5, cells...))
 	}
-	return stack(2.5, append(rows, g.disabledButtons(th))...)(gtx)
+	return stack(2.5, append(rows, g.disabledButtons(th), g.litButtons(th))...)(gtx)
+}
+
+// litButtons are drawn hovered with no pointer on them, as the browser pane
+// plays the agent's cursor pressing its dialog card's button.
+func (g *gallery) litButtons(th *ui.Theme) layout.Widget {
+	cells := []layout.Widget{minWidth(buttonLabelWidth, th.Text(ui.TextXS, "lit").Muted().Mono().Layout)}
+	for _, variant := range buttonVariants {
+		b := th.Button(&g.inert, "Run")
+		b.Variant, b.Icon, b.Lit = variant.variant, g.icon("play"), true
+		cells = append(cells, b.Layout)
+	}
+	return row(2, cells...)
 }
 
 func (g *gallery) disabledButtons(th *ui.Theme) layout.Widget {

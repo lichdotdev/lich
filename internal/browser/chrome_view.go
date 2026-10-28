@@ -52,7 +52,9 @@ func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title st
 			onDialog(&api.BrowserDialog{Type: string(e.Type), Message: e.Message, Default: e.DefaultPrompt, URL: e.URL})
 			p.gate.open()
 		case *page.EventJavascriptDialogClosed:
-			p.gate.close()
+			if v := p.gate.close(); v != nil {
+				go p.layOut(*v)
+			}
 			onDialog(nil)
 		default:
 			if text, ok := consoleError(ev); ok {
@@ -207,8 +209,19 @@ func (p *chromePage) StopScreencast(ctx context.Context) error {
 }
 
 // Resize lays the page out at the pane's size, as a window of that size would.
+// A page holding a dialog open cannot lay out, and the call waited on it for
+// the whole pageWait: a pane opened then stayed black, its screencast never
+// started (measured 2026-10-28). That size is laid out once the dialog closes;
+// until then the frames come at the size the page had.
 func (p *chromePage) Resize(ctx context.Context, v Viewport) error {
-	return p.runFree(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
+	err := p.run(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
+	if !errors.Is(err, errDialogOpen) {
+		return err
+	}
+	if p.gate.deferView(v) {
+		return nil
+	}
+	return p.Resize(ctx, v)
 }
 
 func (p *chromePage) Mouse(ctx context.Context, m api.BrowserMouseOptions) error {

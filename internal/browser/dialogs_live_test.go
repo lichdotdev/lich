@@ -1,6 +1,7 @@
 package browser
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/chromedp"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/chromium"
 )
@@ -82,4 +84,52 @@ func TestChromeADialogWaitsForTheAgentsAnswer(t *testing.T) {
 			t.Fatalf("after Leave: on %s with dialog %+v, want %s", after.URL, after.Dialog, next)
 		}
 	})
+}
+
+func TestChromeAPaneOpenedOnADialogShowsThePage(t *testing.T) {
+	p, srv := liveChrome(t)
+	frames := make(chan string, 8)
+	opened := make(chan struct{}, 1)
+	p.Listen(func(data string) {
+		select {
+		case frames <- data:
+		default:
+		}
+	}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {}, func(d *api.BrowserDialog) {
+		if d != nil {
+			opened <- struct{}{}
+		}
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.runFree(ctx, chromedp.Evaluate(`setTimeout(() => confirm('Delete?'), 0)`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	<-opened
+	v := Viewport{W: 640, H: 400, Scale: 1}
+	start := time.Now()
+	if err := p.Screencast(ctx, v); err != nil {
+		t.Fatalf("screencast on a held page: %v after %s", err, time.Since(start))
+	}
+	select {
+	case <-frames:
+	case <-time.After(5 * time.Second):
+		t.Fatal("no frame of the held page")
+	}
+	if err := p.AnswerDialog(ctx, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	var width int
+	for deadline := time.Now().Add(5 * time.Second); width != v.W && time.Now().Before(deadline); {
+		if err := p.run(ctx, chromedp.Evaluate(`innerWidth`, &width)); err != nil && !errors.Is(err, errDialogOpen) {
+			t.Fatal(err)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if width != v.W {
+		t.Fatalf("the page is %d wide after its dialog, want the pane's %d", width, v.W)
+	}
 }

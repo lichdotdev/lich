@@ -1020,8 +1020,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   running. Accepting a `beforeunload` less than a second after it opened is held to that second: accepted sooner,
   Chrome aborts the navigation it held and reloads the page, which asks again (3 of 3 at 300 ms, 3 of 6 at 400 ms,
   none of 30 from 500 ms; Chrome for Testing 155 and Helium 0.19.2.1). The agent hears of a dialog the person
-  answered, at most twenty between two page answers, but not of one the agent itself answered. A pane opened while a
-  dialog is already open shows the card over a black page: Chrome draws no frame while the dialog holds the page.
+  answered, at most twenty between two page answers, but not of one the agent itself answered. A held page cannot lay
+  out, so a pane opened or resized meanwhile shows it at the size it had, and lays it out at the pane's once the
+  dialog closes; a screenshot fails until then.
   A window opened with Open in a window was not tried with a dialog.
 
 ## Languages

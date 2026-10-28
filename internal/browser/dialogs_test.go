@@ -129,8 +129,24 @@ func TestAnsweringWithNoDialogOpenFails(t *testing.T) {
 	if _, err := s.AnswerDialog(t.Context(), api.BrowserDialogOptions{ID: "s", Accept: true}); !errors.Is(err, errNoDialog) {
 		t.Fatalf("agent: err = %v, want errNoDialog", err)
 	}
-	if _, err := s.Answer(t.Context(), api.BrowserDialogOptions{ID: "s"}); !errors.Is(err, errNoDialog) {
-		t.Fatalf("person: err = %v, want errNoDialog", err)
+	if _, err := s.Answer(t.Context(), api.BrowserDialogOptions{ID: "s"}); err != nil {
+		t.Fatalf("person: err = %v, want nothing to do", err)
+	}
+}
+
+func TestThePersonsInputOnAHeldPageIsNoError(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	p.openDialog(confirmDelete)
+	p.mouseErr = errDialogOpen
+	if _, err := s.MouseInput(t.Context(), api.BrowserMouseOptions{ID: "s", Type: "mousePressed"}); err != nil {
+		t.Fatalf("err = %v, want the click held off quietly", err)
+	}
+	if _, err := s.live("s"); err != nil {
+		t.Fatalf("the browser was dropped: %v", err)
 	}
 }
 
@@ -180,5 +196,21 @@ func TestTheGateIsHeldFromOpenToClose(t *testing.T) {
 	g.close()
 	if held() {
 		t.Fatal("still held after the dialog closed")
+	}
+}
+
+func TestTheGateKeepsTheLastSizeAskedForWhileHeld(t *testing.T) {
+	var g dialogGate
+	if g.deferView(Viewport{W: 1}) {
+		t.Fatal("kept a size with no dialog open")
+	}
+	g.open()
+	g.deferView(Viewport{W: 1})
+	g.deferView(Viewport{W: 2})
+	if v := g.close(); v == nil || v.W != 2 {
+		t.Fatalf("close handed back %+v, want the last size", v)
+	}
+	if v := g.close(); v != nil {
+		t.Fatalf("a second close handed back %+v", v)
 	}
 }

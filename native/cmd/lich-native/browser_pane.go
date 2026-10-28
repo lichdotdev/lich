@@ -99,9 +99,7 @@ func (u *window) browserPane(session string) *browserPaneUI {
 	if !ok {
 		p = &browserPaneUI{queue: newBrowserQueue(), copied: make(chan string, 1), notes: newBrowserNotes()}
 		go p.queue.run(u.ctx, func(err error) {
-			if !quietBrowserError(err) {
-				log.Printf("browser of %s: %v", session, err)
-			}
+			log.Printf("browser of %s: %v", session, err)
 		})
 		u.browserPanes[session] = p
 	}

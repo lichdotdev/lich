@@ -69,7 +69,7 @@ func (s *Service) PressKey(_ context.Context, opts api.BrowserPressOptions) (api
 // through, and the page may be between two documents.
 func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
 	var info PageInfo
-	sess, err := s.steer(id, pageWait, func(p Page, ctx context.Context) error {
+	sess, err := s.onPage(id, pageWait, func(p Page, ctx context.Context) error {
 		if err := p.Settle(ctx); err != nil {
 			return err
 		}

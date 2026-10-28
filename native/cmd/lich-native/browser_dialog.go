@@ -4,7 +4,6 @@ import (
 	"context"
 	"image"
 	"net/url"
-	"strings"
 	"time"
 
 	"gioui.org/f32"
@@ -119,14 +118,6 @@ func dialogFrom(raw string) string {
 		return i18n.T("layouts.browser.dialogFrom", i18n.Args{"host": u.Host})
 	}
 	return i18n.T("layouts.browser.dialogFromPage")
-}
-
-// quietBrowserError reports whether err is the page's dialog answering a call
-// to it: input that reached the page while it held one, or an answer the agent
-// gave first. The card is the answer to both, not a log line.
-func quietBrowserError(err error) bool {
-	text := err.Error()
-	return strings.Contains(text, "holds a JavaScript dialog open") || strings.Contains(text, "has no JavaScript dialog open")
 }
 
 // answering reports whether the agent's cursor still has an answer to the

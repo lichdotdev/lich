@@ -104,7 +104,21 @@ func (c *agentCursor) take(marks []browserMark) {
 			c.pending = append(c.pending, m)
 		}
 	}
-	c.pending = c.pending[max(0, len(c.pending)-cursorPending):]
+	c.pending = trimPending(c.pending)
+}
+
+// trimPending keeps the latest cursorPending marks, and every answer to the
+// page's dialog older than those: the card stays on the pane until the
+// cursor has pressed its button.
+func trimPending(pending []browserMark) []browserMark {
+	cut := max(0, len(pending)-cursorPending)
+	var kept []browserMark
+	for _, m := range pending[:cut] {
+		if dialogActions[m.action] {
+			kept = append(kept, m)
+		}
+	}
+	return append(kept, pending[cut:]...)
 }
 
 // advance starts the next queued action once the one playing has finished,

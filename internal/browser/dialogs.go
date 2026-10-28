@@ -58,9 +58,13 @@ func (s *Service) AnswerDialog(_ context.Context, opts api.BrowserDialogOptions)
 }
 
 // Answer is the person answering the page's open dialog in the pane. The
-// agent hears of it in its next page answer.
+// agent hears of it in its next page answer. A dialog the agent answered
+// first leaves nothing to do, and that is no error.
 func (s *Service) Answer(_ context.Context, opts api.BrowserDialogOptions) (api.None, error) {
 	sess, d, err := s.openDialog(opts.ID)
+	if errors.Is(err, errNoDialog) {
+		return api.None{}, nil
+	}
 	if err != nil {
 		return api.None{}, err
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"image"
 	"testing"
 	"time"
@@ -143,20 +142,5 @@ func TestDialogFromNamesThePagesHost(t *testing.T) {
 	}
 	if got := dialogFrom("about:blank"); got != "This page says" {
 		t.Errorf("about:blank: got %q", got)
-	}
-}
-
-func TestQuietBrowserErrors(t *testing.T) {
-	for _, tc := range []struct {
-		err   string
-		quiet bool
-	}{
-		{"key: browser.Key: the page holds a JavaScript dialog open", true},
-		{"answer: browser.Answer: the page has no JavaScript dialog open", true},
-		{"key: browser.Key: no browser for session s1", false},
-	} {
-		if got := quietBrowserError(errors.New(tc.err)); got != tc.quiet {
-			t.Errorf("%q quiet %v, want %v", tc.err, got, tc.quiet)
-		}
 	}
 }

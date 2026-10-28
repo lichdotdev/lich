@@ -116,8 +116,20 @@ func (s *Service) Nav(owner, action, rawURL string) error {
 
 // steer runs one of the window's own calls on owner's page, bounded by wait.
 // Unlike an agent action, a call that fails leaves the browser running
-// unless its process is gone: the person is still looking at the page.
+// unless its process is gone: the person is still looking at the page. A
+// call a dialog held off does nothing and is no error: the pane shows the
+// dialog, and answering it is what the person can do.
 func (s *Service) steer(owner string, wait time.Duration, fn func(Page, context.Context) error) (*session, error) {
+	sess, err := s.onPage(owner, wait, fn)
+	if errors.Is(err, errDialogOpen) {
+		return sess, nil
+	}
+	return sess, err
+}
+
+// onPage runs fn on owner's page, bounded by wait, and keeps the browser
+// when it fails, unless its process is gone.
+func (s *Service) onPage(owner string, wait time.Duration, fn func(Page, context.Context) error) (*session, error) {
 	sess, err := s.live(owner)
 	if err != nil {
 		return nil, err
@@ -125,7 +137,7 @@ func (s *Service) steer(owner string, wait time.Duration, fn func(Page, context.
 	ctx, cancel := context.WithTimeout(context.Background(), wait)
 	defer cancel()
 	if err := fn(sess.page, ctx); err != nil {
-		return nil, s.failed(sess, err)
+		return sess, s.failed(sess, err)
 	}
 	s.touch(sess)
 	return sess, nil

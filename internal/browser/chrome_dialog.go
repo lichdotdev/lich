@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
 	"github.com/chromedp/cdproto/page"
@@ -16,6 +17,8 @@ type dialogGate struct {
 	// ch is closed while a dialog is open.
 	ch     chan struct{}
 	isOpen bool
+	// view is the size a pane asked for while a dialog was open.
+	view *Viewport
 }
 
 // held is closed while a dialog is open, or as soon as one opens.
@@ -40,12 +43,36 @@ func (g *dialogGate) open() {
 	}
 }
 
-func (g *dialogGate) close() {
+// close lets calls through again and hands back the size a pane asked for
+// meanwhile, nil for none.
+func (g *dialogGate) close() *Viewport {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.isOpen {
 		g.ch = make(chan struct{})
 		g.isOpen = false
+	}
+	v := g.view
+	g.view = nil
+	return v
+}
+
+// deferView keeps v for when the dialog closes; false when none is open
+// anymore, and v is the caller's to lay out.
+func (g *dialogGate) deferView(v Viewport) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if !g.isOpen {
+		return false
+	}
+	g.view = &v
+	return true
+}
+
+// layOut applies a size a pane asked for while a dialog held the page.
+func (p *chromePage) layOut(v Viewport) {
+	if err := p.Resize(nil, v); err != nil && p.Alive() {
+		slog.Warn("browser: lay the page out after its dialog", "err", err)
 	}
 }
 
