@@ -214,3 +214,34 @@ func TestTheGateKeepsTheLastSizeAskedForWhileHeld(t *testing.T) {
 		t.Fatalf("a second close handed back %+v", v)
 	}
 }
+
+// A screencast step stands for Chrome 153 and older here, which answers it
+// only once the dialog closes.
+func TestAScreencastUnderADialogReturnsAndRunsInOrder(t *testing.T) {
+	var p chromePage
+	p.gate.open()
+	answered := make(chan struct{})
+	var order []int
+	first := func() error {
+		<-answered
+		order = append(order, 1)
+		return nil
+	}
+	if err := p.castPastDialog(first); err != nil {
+		t.Fatal(err)
+	}
+	ran := make(chan struct{})
+	second := func() error {
+		order = append(order, 2)
+		close(ran)
+		return nil
+	}
+	if err := p.castPastDialog(second); err != nil {
+		t.Fatal(err)
+	}
+	close(answered)
+	<-ran
+	if len(order) != 2 || order[0] != 1 {
+		t.Fatalf("steps ran as %v, want 1 then 2", order)
+	}
+}

@@ -190,22 +190,71 @@ func (p *chromePage) deliver(frame *page.EventScreencastFrame) {
 // Screencast starts the frames at v, or restarts them there: Chrome keeps
 // the size a screencast started with.
 func (p *chromePage) Screencast(ctx context.Context, v Viewport) error {
-	if err := p.runFree(ctx, page.StopScreencast()); err != nil {
-		return err
-	}
-	if err := p.Resize(ctx, v); err != nil {
-		return err
-	}
 	w, h := v.devicePixels()
-	return p.runFree(ctx, page.StartScreencast().
-		WithFormat(page.ScreencastFormatJpeg).
-		WithQuality(screencastQuality).
-		WithMaxWidth(w).
-		WithMaxHeight(h))
+	return p.castPastDialog(func() error {
+		if err := p.stopCast(ctx); err != nil {
+			return err
+		}
+		if err := p.Resize(ctx, v); err != nil {
+			return err
+		}
+		p.casting = true
+		return p.runFree(ctx, page.StartScreencast().
+			WithFormat(page.ScreencastFormatJpeg).
+			WithQuality(screencastQuality).
+			WithMaxWidth(w).
+			WithMaxHeight(h))
+	})
 }
 
 func (p *chromePage) StopScreencast(ctx context.Context) error {
-	return p.runFree(ctx, page.StopScreencast())
+	return p.castPastDialog(func() error { return p.stopCast(ctx) })
+}
+
+// stopCast stops the frames. With none running it sends nothing, so a pane
+// opened on a held page starts its frames without a stop waiting first.
+func (p *chromePage) stopCast(ctx context.Context) error {
+	if !p.casting {
+		return nil
+	}
+	if err := p.runFree(ctx, page.StopScreencast()); err != nil {
+		return err
+	}
+	p.casting = false
+	return nil
+}
+
+// castPastDialog runs step, a start or stop of the screencast, after the ones
+// before it, and returns once it is done or the page holds a dialog. Chrome up
+// to 153 answers Page.startScreencast and Page.stopScreencast only once the
+// renderer has seen them, and a renderer holding a dialog sees nothing until
+// it closes, though the browser starts or stops the frames at once: a pane
+// opened on the dialog waited the whole pageWait and lost the browser (Chrome
+// 151, macos-15-intel runner, measured 2026-10-28). step runs on after that.
+func (p *chromePage) castPastDialog(step func() error) error {
+	p.castMu.Lock()
+	prev, mine := p.castLast, make(chan struct{})
+	p.castLast = mine
+	p.castMu.Unlock()
+	done := make(chan error, 1)
+	go func() {
+		defer close(mine)
+		if prev != nil {
+			<-prev
+		}
+		done <- step()
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-p.gate.held():
+		go func() {
+			if err := <-done; err != nil && p.Alive() {
+				slog.Warn("browser: start or stop the screencast under a dialog", "err", err)
+			}
+		}()
+		return nil
+	}
 }
 
 // Resize lays the page out at the pane's size, as a window of that size would.
