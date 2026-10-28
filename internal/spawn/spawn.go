@@ -75,6 +75,7 @@ type Sessions interface {
 	ColorFolder(projectID, folder, color string) ([]string, error)
 	DeleteSession(projectID, sessionID, activeID string) error
 	CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error)
+	CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error)
 	PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error)
 }
 

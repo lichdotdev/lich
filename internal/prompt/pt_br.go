@@ -134,4 +134,6 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	ClosedKept: "%[1]q fechada. A worktree %[2]s continua lá, e a sessão está estacionada: abrir " +
 		"uma sessão nessa branch de novo retoma a conversa dela.\n",
 	ClosedPlain: "%q fechada.\n",
+	ClosedProject: "Projeto %[1]q (%[2]s) fechado e as sessões dele paradas. Elas ficam com ele: abrir uma sessão " +
+		"em %[2]s de novo reabre o projeto com elas.\n",
 }

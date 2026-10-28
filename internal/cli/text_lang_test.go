@@ -34,6 +34,7 @@ func TestEveryTextRendersInEveryLanguage(t *testing.T) {
 			"removed":       closedText(lang, spawn.Closed{Label: "docs", Worktree: "/w", Removed: true}),
 			"kept":          closedText(lang, spawn.Closed{Label: "docs", Worktree: "/w", Kept: true}),
 			"closed":        closedText(lang, spawn.Closed{Label: "docs"}),
+			"project":       closedProjectText(lang, spawn.ClosedProject{Name: "docs", Path: "/w"}),
 			"collected":     collectedText(lang, collected),
 			"nothing":       collectedText(lang, relay.Collected{}),
 			"private":       mcpOutcome(lang, relay.Result{Target: "docs", Ticket: "t1", Private: true}),

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A session's browser downloads files. A download the page starts, from a link, a button, a new tab or a script, lands in your Downloads folder under the name the page gives it, with ` (1)` added rather than overwriting a file already there. The agent can also open a file's URL directly. The agent's click, key press or open answers with the file's path and size, and the window shows a toast naming the file, with a button that opens its folder. Before, a download button in the session's browser did nothing.
 - The agent can wait for its browser page to change instead of reading it again in a loop. `browser_info` takes `wait_for` (text that should appear) and `wait_gone` (text that should disappear), matched anywhere on the page, and answers as soon as the page shows it, or after 20 seconds with the page as it stands and a line saying the wait timed out.
 - The agent hears when the page in its session's browser breaks. Each page it reads, clicks or presses a key on answers with the console errors since its last look, once each: `console.error` calls, uncaught exceptions and resources that failed to load, cut to one short line, the first five and how many more. Warnings and other messages stay out.
+- An agent can close a project, with `close_project` or `lich close-project`: the tab leaves the window and its sessions stop, kept for a reopen as when you close the tab. The project the agent runs in and the home project are refused.
 
 ### Changed
 

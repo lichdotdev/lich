@@ -277,6 +277,8 @@ type spawnStore struct {
 	filed    [2]string
 	refolded [3]string
 	colored  [3]string
+	// closedProject is the project the last project close marked closed.
+	closedProject string
 	// confines is what the sandbox rung answers a caller with nobody to ask.
 	confines bool
 }
@@ -382,6 +384,13 @@ func (*spawnStore) RecentProjects(_ context.Context, opts api.SearchTermOptions)
 // The wire tests never open a project: what they prove is the arguments a
 // command posts, and the workspace this fixture answers with is already open.
 func (*spawnStore) AddProject(_ context.Context, opts api.AddProjectOptions) (api.None, error) {
+	return api.None{}, nil
+}
+
+func (s *spawnStore) CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.closedProject = opts.ID
 	return api.None{}, nil
 }
 
@@ -590,6 +599,25 @@ func TestCloseOverTheRealDispatcher(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "/wt/auth-fix") {
 		t.Errorf("stdout = %q, want the checkout that went with the session", stdout.String())
+	}
+}
+
+// TestCloseProjectOverTheRealDispatcher proves the options `lich close-project`
+// posts land on spawn.CloseProject's fields: the project resolves, and the
+// caller's session, which runs in it, is what refuses the close.
+func TestCloseProjectOverTheRealDispatcher(t *testing.T) {
+	t.Parallel()
+	env, rows, term := wiredSpawn(t, &spawnGit{})
+
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"close-project", "lich"}, "test", env, &stdout, &stderr); code == 0 {
+		t.Fatalf("closed the project the command runs in; stdout = %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), `"lich" is the project this session runs in`) {
+		t.Errorf("stderr = %q, want the caller's own project refused", stderr.String())
+	}
+	if rows.closedProject != "" || term.closed != "" {
+		t.Errorf("closed project %q, terminal %q, for a refused close", rows.closedProject, term.closed)
 	}
 }
 

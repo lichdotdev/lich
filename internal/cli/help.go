@@ -105,6 +105,13 @@ var commands = []command{
 			"session the command runs in needs --self.",
 	},
 	{
+		name: "close-project",
+		args: "[--json] <name-or-path>",
+		about: "Close a project as its tab's close does: its sessions stop and stay with\n" +
+			"it, so opening a session on its path reopens it. The project the command\n" +
+			"runs in and the home project are refused.",
+	},
+	{
 		name: "rename",
 		args: "[--project <name-or-path>] [--json] [<session>] <label>",
 		about: "Rename a session's card. With <session> it renames that one, with only a\n" +

@@ -156,6 +156,7 @@ services.Stop(ServiceIDOptions) None
 services.StopAll(ProjectIDOptions) None
 spawn.Ask(AskSessionOptions) SessionAnswer
 spawn.Close(CloseSessionOptions) ClosedSession
+spawn.CloseProject(CloseProjectOptions) ClosedProject
 spawn.ColorFolder(ColorFolderOptions) ColoredFolder
 spawn.Control(ControlSessionOptions) ControlledSession
 spawn.File(FileSessionOptions) FiledSession
@@ -1025,6 +1026,18 @@ ClosedSession {
 	worktree string
 	kept bool
 	removed bool
+}
+
+CloseProjectOptions {
+	from string
+	project string
+}
+
+ClosedProject {
+	id string
+	name string
+	path string
+	sessions int
 }
 
 ColorFolderOptions {

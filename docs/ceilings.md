@@ -853,6 +853,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **An agent closes its own session on its word that the user asked** (`internal/spawn/close.go`): `self` on
   `close_session` (`lich close --self`) lifts the refusal, and nothing checks that a person asked for it; the
   tool description is the whole guard. The close kills the caller mid-call, so its answer never reaches it.
+- **An agent closes a project without the window's confirmation** (`internal/spawn/close_project.go`):
+  `close_project` (`lich close-project`) stops every session in the project with no dialog, where the tab's
+  close asks first when one is running. Nothing is lost, since the rows stay for the reopen, but a session
+  mid-turn is cut off. Only the caller's own project and Home are refused.
 - **An agent files by the name as written, like the window** (`internal/spawn/folders.go`): `lich file`,
   `lich rename-folder`, `lich color-folder` and their MCP tools match a folder exactly, so an agent that types `auth` beside `Auth`
   starts a second folder; the tool descriptions send it to `list_folders` first instead of folding case behind
