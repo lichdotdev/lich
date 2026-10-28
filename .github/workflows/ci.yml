@@ -109,53 +109,6 @@ jobs:
           CGO_ENABLED: "0"
         run: go test -tags installer_e2e -run '^TestWindowsInstallerE2E$' -v -timeout 10m ./internal/appupdate
 
-  # TEMPORARY: measures the TestWriteFileAtomicSurvivesConcurrentWriters flake
-  # rate on Windows; removed before this PR is ready.
-  flake-measure:
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3]
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-      - name: Measure
-        run: |
-          go test -c -o after.test.exe ./internal/profilestore/
-          git fetch -q --depth=1 origin main
-          git checkout FETCH_HEAD -- internal/profilestore
-          go test -c -o before.test.exe ./internal/profilestore/
-          git checkout HEAD -- internal/profilestore
-          go test -count=1 ./... > /dev/null 2>&1 || true # warm the build cache
-          # Load like the Backend tests step: the whole suite, over and over.
-          (while [ ! -f stop ]; do go test -count=1 ./... > /dev/null 2>&1; done) > /dev/null 2>&1 &
-          end=$((SECONDS + 1200))
-          while [ $SECONDS -lt $end ]; do
-            for b in before after; do
-              ./$b.test.exe -test.count=10 -test.run '^TestWriteFileAtomicSurvivesConcurrentWriters$' -test.v >> $b.txt 2>&1 || true
-            done
-          done
-          touch stop
-          rc=0
-          for b in before after; do
-            fails=$(grep -c -- '--- FAIL' $b.txt || true)
-            passes=$(grep -c -- '--- PASS' $b.txt || true)
-            grep -m 3 'concurrent write' $b.txt || true
-            d=$(grep -o -- '--- [A-Z]*: [A-Za-z]* ([0-9.]*s)' $b.txt | grep -o '[0-9.]*s)' | tr -d 's)' | sort -g)
-            n=$(echo "$d" | wc -l)
-            pct() { echo "$d" | sed -n "$(( ($n * $1 + 99) / 100 ))p"; }
-            over1=$(echo "$d" | awk '$1 >= 1' | wc -l)
-            echo "::notice::flake-measure $b: $fails failed, $passes passed; p50 $(pct 50)s p99 $(pct 99)s max $(echo "$d" | tail -1)s; $over1 runs >= 1s"
-            [ "$b" = after ] && [ "$fails" -ne 0 ] && rc=1
-          done
-          exit $rc
-
   # TEMPORARY: measures the Windows ERR_NO_BUFFER_SPACE flake of the live
   # Chrome tests (ephemeral port exhaustion suspected); removed before ready.
   chrome-measure:
