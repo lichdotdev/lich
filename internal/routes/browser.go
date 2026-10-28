@@ -29,6 +29,7 @@ func Browser(d *rpc.Handler, s *browser.Service) {
 	rpc.Handle(d, api.BrowserAttach, s.AttachView)
 	rpc.Handle(d, api.BrowserDetach, s.DetachView)
 	rpc.Handle(d, api.BrowserResize, s.ResizeView)
+	rpc.Handle(d, api.BrowserDefaultView, s.DefaultView)
 	rpc.Handle(d, api.BrowserMouse, s.MouseInput)
 	rpc.Handle(d, api.BrowserKey, s.KeyInput)
 	rpc.Handle(d, api.BrowserText, s.TextInput)

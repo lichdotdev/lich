@@ -26,6 +26,7 @@ import (
 // would orphan what is already stored under it.
 const (
 	zoomKey             = "lich.appearance.zoom"
+	browserZoomKey      = "lich.browser.zoom"
 	terminalFontSizeKey = "lich.terminal.fontSize"
 	terminalFontKey     = "lich.terminal.font"
 	editorFontSizeKey   = "lich.editor.fontSize"
@@ -59,8 +60,9 @@ const (
 
 // appearancePrefs are the Appearance values the window applies.
 type appearancePrefs struct {
-	zoom     float64
-	fontSize int
+	zoom        float64
+	browserZoom float64
+	fontSize    int
 	// The fonts are "" for System: the system's monospace for the terminal and
 	// the code views, and its sans for the interface.
 	font           string
@@ -128,7 +130,7 @@ func parseNumber(raw string, fallback float64) float64 {
 // loadAppearancePrefs reads the stored values.
 func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
-	for _, key := range []string{zoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey} {
+	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey} {
 		v, err := c.GetSetting(ctx, key, "")
 		if err != nil {
 			return appearancePrefs{}, err
@@ -137,6 +139,7 @@ func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePref
 	}
 	p := appearancePrefs{
 		zoom:           clampZoom(parseNumber(raw[zoomKey], defaultZoom)),
+		browserZoom:    clampZoom(parseNumber(raw[browserZoomKey], defaultZoom)),
 		fontSize:       clampTerminalFontSize(int(math.Round(parseNumber(raw[terminalFontSizeKey], defaultTerminalSize)))),
 		font:           raw[terminalFontKey],
 		editorFontSize: clampEditorFontSize(int(math.Round(parseNumber(raw[editorFontSizeKey], defaultEditorSize)))),
@@ -165,10 +168,10 @@ func fontFailure(title string) ui.Toast {
 	return ui.Toast{Variant: ui.ToastError, Title: title}
 }
 
-// applyAppearance puts p on screen: the interface zoom, the terminals'
+// applyAppearance puts p on screen: the interface and page zooms, the terminals'
 // font, and the ceiling the cost readout colours against.
 func (u *window) applyAppearance(p appearancePrefs) {
-	u.zoom = p.zoom
+	u.zoom, u.browserZoom = p.zoom, p.browserZoom
 	if u.caption.leftReserve > 0 {
 		u.win.Option(app.TrafficLights(topbarHeight * unit.Dp(p.zoom)))
 	}

@@ -101,3 +101,25 @@ func browserButton(b pointer.Buttons) string {
 	}
 	return ""
 }
+
+// pageZoomChord is the page zoom a browser's own chord sets from zoom: Mod
+// with -, = (or +) or 0, Mod being Command on macOS and Ctrl elsewhere.
+// Headless Chrome has no zoom of its own: the chord reaches no page.
+func pageZoomChord(e key.Event, goos string, zoom float64) (float64, bool) {
+	mod := key.ModCtrl
+	if goos == "darwin" {
+		mod = key.ModCommand
+	}
+	if e.State != key.Press || !e.Modifiers.Contain(mod) {
+		return zoom, false
+	}
+	switch e.Name {
+	case "-":
+		return clampZoom(zoom - zoomStep), true
+	case "=", "+":
+		return clampZoom(zoom + zoomStep), true
+	case "0":
+		return defaultZoom, true
+	}
+	return zoom, false
+}
