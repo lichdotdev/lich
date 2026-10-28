@@ -399,9 +399,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A project's gh account governs gh, not git**: `vcs.account` (`internal/project/ghaccount.go`) puts one
   account's token in `GH_TOKEN` (`GH_ENTERPRISE_TOKEN` on an enterprise host) for every gh call lich makes for
   that project, and in the environment of every session it spawns there (`internal/terminal/sandbox.go`
-  `withAccountToken`; a confined one only through the sandbox's own grant). Inside such a session `gh auth
-  switch` changes nothing, and the token is the one read at the spawn: an account logged in again or revoked
-  reaches the session only when it is spawned again. An https push through gh's credential helper follows the
+  `withAccountToken`; a confined one only through the sandbox's own grant). A project's Services
+  (`internal/terminal/service.go`) are spawned without it and run gh as gh's active account. Inside such a
+  session `gh auth switch` changes nothing, and the token is the one read at the spawn: an account logged in
+  again or revoked reaches the session only when it is spawned again. An https push through gh's credential helper follows the
   token; an ssh push still rides the remote's ssh key and signs with the global `user.email`, so a PR can be
   *read* by one account and its commits *land* under another. lich never writes `user.email`, and the Version Control settings still print both identities
   without comparing them — noreply forms, vanity domains and org aliases make a string comparison a
