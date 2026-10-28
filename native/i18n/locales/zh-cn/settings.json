@@ -323,7 +323,7 @@
     "account": "GitHub 账户",
     "accountFor": "{name} 的 GitHub 账户",
     "accountSearchWords": "登录 gh 切换",
-    "accountDescription": "lich 为此项目以哪个账户运行 gh：用于拉取请求、检查和 PR 检出。gh 每个主机只保留一个活动账户，因此只有其他账户可见的仓库会显示为未找到。企业主机上的账户会连同主机一起列出。",
+    "accountDescription": "lich 为此项目以哪个账户运行 gh：用于拉取请求、检查、PR 检出，以及其会话中运行的 gh（会话下次启动时生效）。gh 每个主机只保留一个活动账户，因此只有其他账户可见的仓库会显示为未找到。企业主机上的账户会连同主机一起列出。",
     "activeAccount": "gh 的活动账户",
     "listFailed": "无法列出 GitHub 账户：{error}",
     "noAccounts": "gh 尚未登录任何账户。请在终端中运行 `gh auth login`。"

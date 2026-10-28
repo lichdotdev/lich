@@ -19,8 +19,9 @@ import (
 // told otherwise. A value with no host is an account stored before this was
 // true; it resolves on gh's default host, which is where it was found.
 //
-// The account only governs what lich asks gh. It does not govern git: a push
-// still rides the remote's ssh key and signs with the global user.email.
+// The account governs what lich asks gh and the gh its sessions run. It does
+// not govern git: an ssh push still rides the remote's ssh key and signs with
+// the global user.email.
 const ghAccountTimeout = 5 * time.Second
 
 // accountLookup resolves the gh account ("<host>/<login>") for the checkout at
@@ -48,7 +49,8 @@ func (s *Service) ghFor(accountDir string, timeout time.Duration, dir string, ar
 	return s.runner(timeout, dir, s.tokenFor(accountDir), args...)
 }
 
-// tokenFor resolves the token of the account the checkout's project selected.
+// tokenFor resolves the token of the account the checkout's project selected,
+// as the environment entry gh reads it from (tokenEntry).
 // Anything that fails — no project, no account, gh not authenticated as it —
 // yields "", which runs the call as gh's active account rather than failing it.
 //
@@ -67,7 +69,7 @@ func (s *Service) tokenFor(dir string) string {
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(string(out))
+	return tokenEntry(account, strings.TrimSpace(string(out)))
 }
 
 // tokenArgs builds the `gh auth token` call for one account. The host is named
@@ -84,18 +86,48 @@ func tokenArgs(account string) []string {
 	return append(args, "--user", login)
 }
 
-// GHToken returns the API token gh holds for one account ("<host>/<login>"), or
-// for gh's active account when account is empty. It is what a confined session
-// is handed in GH_TOKEN, and it is the whole reason gh can work inside one: gh
-// keeps its tokens in the system keyring, which a private home has no path to,
-// so a sandboxed gh without this is a login prompt.
+// GHTokenEnv returns the environment entry carrying the API token gh holds for
+// one account ("<host>/<login>"), or for gh's active account when account is
+// empty, under the variable gh reads for that host. It is what a session is
+// handed so its gh answers as the project's account: inside the sandbox it is
+// the whole reason gh works at all, since gh keeps its tokens in the system
+// keyring, which a private home has no path to.
 //
 // Every failure answers "" — gh not installed, gh not authenticated, an account
 // gh does not know — because the caller does the same thing with all three:
 // spawn the session without a token and let gh say so itself, rather than fail
 // a whole session over a credential it may never use.
-func GHToken(account string) string {
-	return ghToken(runGH, account)
+func GHTokenEnv(account string) string {
+	return ghTokenEnv(runGH, account)
+}
+
+func ghTokenEnv(run ghRunner, account string) string {
+	return tokenEntry(account, ghToken(run, account))
+}
+
+// tokenEntry is account's token as an environment entry under the variable gh
+// reads for the account's host, or "" for no token.
+func tokenEntry(account, token string) string {
+	if token == "" {
+		return ""
+	}
+	host, _ := splitAccount(account)
+	return ghTokenVar(host) + "=" + token
+}
+
+// ghTokenVar is the variable gh reads a token for host from. gh ignores
+// GH_TOKEN for an enterprise server and reads GH_ENTERPRISE_TOKEN instead
+// (go-gh pkg/auth, TokenFromEnvOrConfig); github.com, its subdomains and
+// ghe.com tenancies are not enterprise servers to it. An empty host is gh's
+// default one, github.com unless the user configured otherwise.
+func ghTokenVar(host string) string {
+	host = strings.ToLower(host)
+	switch {
+	case host == "", host == "github.com", strings.HasSuffix(host, ".github.com"),
+		host == "github.localhost", strings.HasSuffix(host, ".ghe.com"):
+		return "GH_TOKEN"
+	}
+	return "GH_ENTERPRISE_TOKEN"
 }
 
 // ghToken is GHToken against an injectable runner, so the token path is

@@ -78,11 +78,27 @@ func TestAccountTokenReachesGH(t *testing.T) {
 	if err != nil || pr == nil {
 		t.Fatalf("PullRequestDetail = (%v, %v), want the PR", pr, err)
 	}
-	if gh.viewToken != "gho_secret" {
+	if gh.viewToken != "GH_TOKEN=gho_secret" {
 		t.Errorf("pr view ran with token %q, want the configured account's", gh.viewToken)
 	}
 	if want := "auth token --hostname github.com --user marcelo-filho_snk"; !slices.Contains(seen, want) {
 		t.Errorf("calls = %v, want one resolving the account (%q)", seen, want)
+	}
+}
+
+// An enterprise account's token goes out under GH_ENTERPRISE_TOKEN: under
+// GH_TOKEN gh would ignore it and answer as its active account on that host.
+func TestEnterpriseAccountTokenReachesGH(t *testing.T) {
+	t.Parallel()
+	gh := &accountGH{token: "gho_enterprise", pr: `{"number":7,"state":"OPEN"}`}
+	svc := &Service{runner: gh.run}
+	svc.SetAccounts(func(string) string { return "github.acme.corp/someone" })
+
+	if _, err := svc.PullRequestDetail(t.Context(), api.NumberOptions{Path: "/repo"}); err != nil {
+		t.Fatalf("PullRequestDetail: %v", err)
+	}
+	if gh.viewToken != "GH_ENTERPRISE_TOKEN=gho_enterprise" {
+		t.Errorf("pr view ran with %q, want the enterprise variable", gh.viewToken)
 	}
 }
 
@@ -226,5 +242,44 @@ func TestGHTokenSwallowsEveryFailure(t *testing.T) {
 	gh := &fakeGH{err: errTest}
 	if got := ghToken(gh.run, "github.com/nobody"); got != "" {
 		t.Errorf("ghToken on failure = %q, want \"\"", got)
+	}
+}
+
+// gh reads an enterprise server's token from GH_ENTERPRISE_TOKEN and ignores
+// GH_TOKEN for it, so a token under the wrong name is a session that silently
+// answers as gh's active account on that host.
+func TestGHTokenVar(t *testing.T) {
+	t.Parallel()
+	tests := map[string]string{
+		"":                  "GH_TOKEN",
+		"github.com":        "GH_TOKEN",
+		"GitHub.com":        "GH_TOKEN",
+		"api.github.com":    "GH_TOKEN",
+		"github.localhost":  "GH_TOKEN",
+		"acme.ghe.com":      "GH_TOKEN",
+		"github.acme.corp":  "GH_ENTERPRISE_TOKEN",
+		"notgithub.com":     "GH_ENTERPRISE_TOKEN",
+		"ghe.com.evil.corp": "GH_ENTERPRISE_TOKEN",
+	}
+	for host, want := range tests {
+		if got := ghTokenVar(host); got != want {
+			t.Errorf("ghTokenVar(%q) = %q, want %q", host, got, want)
+		}
+	}
+}
+
+func TestGHTokenEnvNamesTheHostsVariable(t *testing.T) {
+	t.Parallel()
+	gh := &fakeGH{out: []byte("gho_enterprise\n")}
+	if got := ghTokenEnv(gh.run, "github.acme.corp/someone"); got != "GH_ENTERPRISE_TOKEN=gho_enterprise" {
+		t.Errorf("ghTokenEnv = %q, want the enterprise variable", got)
+	}
+	gh = &fakeGH{out: []byte("gho_active\n")}
+	if got := ghTokenEnv(gh.run, ""); got != "GH_TOKEN=gho_active" {
+		t.Errorf("ghTokenEnv with no account = %q, want GH_TOKEN", got)
+	}
+	gh = &fakeGH{err: errTest}
+	if got := ghTokenEnv(gh.run, "github.com/nobody"); got != "" {
+		t.Errorf("ghTokenEnv on failure = %q, want \"\"", got)
 	}
 }

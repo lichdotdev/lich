@@ -18,11 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A project's GitHub account (Settings › Version Control) now reaches its sessions too: `gh` run by the agent or in a shell card answers as that account instead of whichever one gh has active, from the session's next start. Inside those sessions `gh auth switch` no longer changes the account.
 - The window holds less memory with many sessions open. A terminal off screen lets go of the pixels it drew, a few megabytes each, and redraws them in one frame when it comes back.
 - The browser tools answer an agent in the session's prompt language: the legend of the element list, the note that more elements wait below, the filled and checked marks, a download still running, a wait that timed out, the count of further console errors, and what an open dialog asks of it. The line tags (`url:`, `text:`, `downloaded:`, `console error:`, `dialog open:` and the rest) stay as they are in every language.
 
 ### Fixed
 
+- A project whose GitHub account lives on a GitHub Enterprise server gets that account in the Pulls screen, the pull request badges and a sandboxed session granted its token. The token went out under a variable gh ignores for an enterprise host, so gh answered as its active account there.
 - A session browser's click, type or key press by index reaches the element the agent's last page read gave that index. After a scroll and a second read, an element the first read had listed under the same index, now out of view, could take the click instead, with no error.
 
 ## [0.80.0] - 2026-10-27

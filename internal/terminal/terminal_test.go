@@ -1784,9 +1784,8 @@ func TestReadyIsFalseForASessionThatIsNotRunning(t *testing.T) {
 	}
 }
 
-// An unconfined session already runs with the user's whole environment. Asking
-// gh for a token there would spend a subprocess to hand over something the
-// session never lacked.
+// An unconfined session already runs with the user's ssh agent, and its token
+// comes from withAccountToken rather than the sandbox's grants.
 func TestSandboxCredentialsAreOnlyForConfinedSessions(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{sshAgent: true, ghToken: true, ghAccount: "github.com/someone"}, nil, events.New())
@@ -1795,6 +1794,36 @@ func TestSandboxCredentialsAreOnlyForConfinedSessions(t *testing.T) {
 	}
 	if got := svc.sandboxCredentials("p1", "/repo", true); !got.sshAgent {
 		t.Error("a confined session was refused the agent its project turned on")
+	}
+}
+
+// A confined session's token is the sandbox grant's to give, and a project with
+// no account keeps the user's own environment: neither asks gh for anything.
+func TestAccountTokenLeavesConfinedAndAccountlessSpawnsAlone(t *testing.T) {
+	t.Parallel()
+	spec := ptySpec{env: []string{"GH_TOKEN=users_own"}}
+	confined := New(stubBins{ghAccount: "github.com/someone"}, nil, events.New())
+	if got := confined.withAccountToken(spec, "/repo", true); !slices.Equal(got.env, spec.env) {
+		t.Errorf("a confined spawn was handed %v, want its environment untouched", got.env)
+	}
+	accountless := New(stubBins{}, nil, events.New())
+	if got := accountless.withAccountToken(spec, "/repo", false); !slices.Equal(got.env, spec.env) {
+		t.Errorf("a project with no account changed the environment to %v", got.env)
+	}
+}
+
+// A GH_TOKEN the user exported is replaced, not shadowed: which of two copies
+// of a variable a child reads differs between platforms.
+func TestReplaceEnvLeavesOneCopyOfTheVariable(t *testing.T) {
+	t.Parallel()
+	env := []string{"PATH=/bin", "GH_TOKEN=users_own", "GH_TOKEN_EXTRA=kept"}
+	got := replaceEnv(env, "GH_TOKEN=project")
+	want := []string{"PATH=/bin", "GH_TOKEN_EXTRA=kept", "GH_TOKEN=project"}
+	if !slices.Equal(got, want) {
+		t.Errorf("replaceEnv = %v, want %v", got, want)
+	}
+	if env[1] != "GH_TOKEN=users_own" {
+		t.Errorf("replaceEnv rewrote its input: %v", env)
 	}
 }
 
