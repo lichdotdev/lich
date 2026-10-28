@@ -88,10 +88,12 @@ type chromePage struct {
 	dl *downloads
 	// gate is held while the page has a JavaScript dialog open.
 	gate dialogGate
-	// cast orders the screencast's starts and stops, which can run on past
-	// their caller (castPastDialog); casting says one is running.
-	cast    sync.Mutex
-	casting bool
+	// castMu guards castLast, the last screencast start or stop queued, which
+	// the next one waits for: they can run on past their caller
+	// (castPastDialog). casting says one is running.
+	castMu   sync.Mutex
+	castLast chan struct{}
+	casting  bool
 }
 
 // downloadFolder is downloadDir, which the live tests point at a folder of

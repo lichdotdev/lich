@@ -232,10 +232,16 @@ func (p *chromePage) stopCast(ctx context.Context) error {
 // opened on the dialog waited the whole pageWait and lost the browser (Chrome
 // 151, macos-15-intel runner, measured 2026-10-28). step runs on after that.
 func (p *chromePage) castPastDialog(step func() error) error {
+	p.castMu.Lock()
+	prev, mine := p.castLast, make(chan struct{})
+	p.castLast = mine
+	p.castMu.Unlock()
 	done := make(chan error, 1)
 	go func() {
-		p.cast.Lock()
-		defer p.cast.Unlock()
+		defer close(mine)
+		if prev != nil {
+			<-prev
+		}
 		done <- step()
 	}()
 	select {
