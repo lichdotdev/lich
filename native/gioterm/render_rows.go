@@ -41,6 +41,8 @@ func (rr *rowRenderer) Measure(gtx layout.Context) error {
 	return err
 }
 
+func (rr *rowRenderer) Release() { rr.imgs, rr.ops = nil, nil }
+
 func (rr *rowRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
 	return rr.draw(gtx, s.s, s.cells, s.dirty)
 }

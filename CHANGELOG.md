@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The agent can wait for its browser page to change instead of reading it again in a loop. `browser_info` takes `wait_for` (text that should appear) and `wait_gone` (text that should disappear), matched anywhere on the page, and answers as soon as the page shows it, or after 20 seconds with the page as it stands and a line saying the wait timed out.
 - The agent hears when the page in its session's browser breaks. Each page it reads, clicks or presses a key on answers with the console errors since its last look, once each: `console.error` calls, uncaught exceptions and resources that failed to load, cut to one short line, the first five and how many more. Warnings and other messages stay out.
 
+### Changed
+
+- The window holds less memory with many sessions open. A terminal off screen lets go of the pixels it drew, a few megabytes each, and redraws them in one frame when it comes back.
+
 ### Fixed
 
 - A session browser's click, type or key press by index reaches the element the agent's last page read gave that index. After a scroll and a second read, an element the first read had listed under the same index, now out of view, could take the click instead, with no error.

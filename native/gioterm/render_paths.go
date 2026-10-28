@@ -76,9 +76,12 @@ func (g *grid) Measure(gtx layout.Context) error {
 	// The font's own line height, no extra leading: block and box-drawing
 	// glyphs span exactly ascent to descent, and any gap splits them per row.
 	g.cellH = (glyph.Ascent + glyph.Descent).Ceil()
-	g.rowOps = nil
-	g.cache = map[glyphs.Key]cachedGlyph{}
+	g.Release()
 	return nil
+}
+
+func (g *grid) Release() {
+	g.rowOps, g.rowCall, g.cache = nil, nil, map[glyphs.Key]cachedGlyph{}
 }
 
 func (g *grid) Draw(gtx layout.Context, s Snapshot) (int, error) {

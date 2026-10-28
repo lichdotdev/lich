@@ -28,6 +28,10 @@ type Renderer interface {
 	// Draw paints the snapshot at the current offset and returns how many rows
 	// it had to redraw.
 	Draw(gtx layout.Context, s Snapshot) (int, error)
+	// Release frees what the renderer keeps between frames (row images, glyph
+	// pages, recorded rows) for a grid off screen; the next Draw rebuilds it
+	// and redraws every row.
+	Release()
 }
 
 // Renderer kinds for NewRenderer.
