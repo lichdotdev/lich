@@ -54,6 +54,27 @@ func TestTurnStatesCarryTheLastReportOfEachLiveSession(t *testing.T) {
 	}
 }
 
+// The PostToolUse gap reports busy with no tool, and the card keeps drawing the
+// last one through it; the snapshot keeps it too, so a window that attaches
+// there, and the roster, read the same line. A new tool replaces it.
+func TestTurnStatesKeepTheToolThroughTheGapAfterIt(t *testing.T) {
+	t.Parallel()
+	svc := serviceWithSessions(t, hookStore{}, "s1")
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy, Tool: "Bash", Detail: "go test ./..."})
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+	if st := svc.Status("s1"); st.Tool != "Bash" || st.Detail != "go test ./..." {
+		t.Errorf("after the gap = %+v, want Bash: go test ./...", st)
+	}
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy, Tool: "Read", Detail: "go.mod"})
+	if st := svc.Status("s1"); st.Tool != "Read" || st.Detail != "go.mod" {
+		t.Errorf("next tool = %+v, want Read: go.mod", st)
+	}
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+	if st := svc.Status("s1"); st.Tool != "" || st.Detail != "" {
+		t.Errorf("done = %+v, want no tool", st)
+	}
+}
+
 // A report the window was never told (a `waiting` outside a turn) is not the
 // session's state either.
 func TestTurnStatesHoldBackWhatTheWindowWasNotTold(t *testing.T) {

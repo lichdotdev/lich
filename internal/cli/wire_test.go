@@ -66,6 +66,8 @@ func (*wiredTerminal) QuietFor(string) time.Duration { return time.Hour }
 // derives — which is the one the wiring under test addresses.
 func (*wiredTerminal) AgentName(string) string { return "" }
 
+func (*wiredTerminal) Status(string) api.SessionStatus { return api.SessionStatus{} }
+
 // Nobody is typing at these sessions, so the hold has nothing to keep back.
 func (*wiredTerminal) HoldInput(string) func() { return func() {} }
 

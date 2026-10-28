@@ -43,6 +43,11 @@ func (b *statusBook) note(ev statusEvent) {
 	since := now().UnixMilli()
 	if prev, ok := b.byID[ev.ID]; ok && prev.event.State == ev.State {
 		since = prev.since
+		// A busy naming no tool is the gap after one (PostToolUse), and the
+		// card keeps showing that tool through it (statusEntry.applyTool).
+		if ev.State == statusBusy && ev.Tool == "" {
+			ev.Tool, ev.Detail = prev.event.Tool, prev.event.Detail
+		}
 	}
 	b.byID[ev.ID] = bookedStatus{event: ev, since: since}
 }
@@ -52,6 +57,13 @@ func (b *statusBook) of(id string) (bookedStatus, bool) {
 	defer b.mu.Unlock()
 	st, ok := b.byID[id]
 	return st, ok
+}
+
+// Status is the last session-status report the window was sent for a session,
+// zero when there is none.
+func (s *Service) Status(id string) api.SessionStatus {
+	st, _ := s.statuses.of(id)
+	return st.event
 }
 
 func (b *statusBook) forget(id string) {

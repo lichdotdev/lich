@@ -77,7 +77,7 @@ func (s *Service) peerOf(p store.Project, sess store.Session) Peer {
 	if cwd == "" {
 		cwd = p.Path
 	}
-	return Peer{
+	peer := Peer{
 		Label:   sess.Label,
 		Name:    RosterNameOf(sess.Kind, s.term.AgentName(sess.ID), cwd, sess.ID),
 		Project: p.Name,
@@ -88,6 +88,18 @@ func (s *Service) peerOf(p store.Project, sess store.Session) Peer {
 		Path:        cwd,
 		ProjectPath: p.Path,
 	}
+	// Only while both reads agree on the state: they come from the same hook
+	// report but are taken apart, and a tool beside a state it was not
+	// reported in would describe a turn that is not the one listed.
+	st := s.term.Status(sess.ID)
+	switch {
+	case st.State != peer.State:
+	case st.State == stateBusy:
+		peer.Tool, peer.Detail = st.Tool, st.Detail
+	case st.State == stateWaiting:
+		peer.Reason = st.Reason
+	}
+	return peer
 }
 
 // reportedState is what a session last told lich it was doing, empty when it
