@@ -305,12 +305,12 @@ func (m *model) hydrateTurnStates(ctx context.Context) error {
 // what hydrateTurnStates read. When the stream ends first, the backend dropped this window: /events
 // serves one client and a newer one replaces it, or lich is gone.
 func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
+	kick := make(chan struct{}, frameDecoders)
+	decoded := m.decodeFrames(kick)
+	defer func() { close(kick); <-decoded }()
 	for ev := range events {
 		if owner, frame := api.BrowserFrameEvents.ID(ev.Name); frame {
-			if err := m.applyBrowserFrame(owner, ev); err != nil {
-				log.Print(err)
-			}
-			m.invalidate()
+			m.offerBrowserFrame(owner, ev, kick)
 			continue
 		}
 		if id, exited := api.TerminalExitEvents.ID(ev.Name); exited {

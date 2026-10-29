@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -54,6 +55,8 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		chromedp.Flag("disable-features", disabledFeatures))
 	if headed {
 		opts = append(opts, chromedp.Flag("headless", false))
+	} else {
+		opts = append(opts, chromedp.Flag("force-device-scale-factor", strconv.FormatFloat(frameScale, 'f', -1, 64)))
 	}
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, cancel := chromedp.NewContext(allocCtx)
@@ -68,6 +71,14 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 	}
 	return p, nil
 }
+
+// frameScale is the scale a headless browser draws at, forced at its launch,
+// and the most a pane's frames get. The screencast copies the browser's own
+// surface, which an emulated scale does not change: a 2x pane got 1x frames,
+// blurred. A busy page forced to 2 and drawn at 2x ran at 28 fps against 45 at
+// 1x, and at 33 drawn at 1.5x (measured 2026-10-29): 1.5 trades sharpness
+// for frame rate.
+const frameScale = 1.5
 
 // disabledFeatures replaces chromedp's own disable-features list, which it
 // repeats, adding the optimization guide's model downloads. Those go through
