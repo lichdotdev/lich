@@ -256,6 +256,7 @@ type Terminal struct {
 	raw          []C.cell_t
 	dirty        []uint8
 	grid         []cell
+	img          kittyImages
 
 	// wheelRest is the wheel scroll short of a whole row, carried to the
 	// next WheelRows: a touchpad scrolls a few pixels at a time.
@@ -287,11 +288,13 @@ func New(cols, rows, cellW, cellH int, replies func([]byte)) (*Terminal, error) 
 		{"terminal_new", func() C.GhosttyResult { return C.ghostty_terminal_new(nil, &v.t, C.uint16_t(cols), C.uint16_t(rows)) }},
 		{"install_write_pty", func() C.GhosttyResult { return C.install_write_pty(v.t, C.uintptr_t(v.handle)) }},
 		{"install_color_scheme", v.installColorScheme},
+		{"install_size_report", v.installSizeReport},
 		{"render_state_new", func() C.GhosttyResult { return C.ghostty_render_state_new(nil, &v.rs) }},
 		{"row_iterator_new", func() C.GhosttyResult { return C.ghostty_render_state_row_iterator_new(nil, &v.it) }},
 		{"row_cells_new", func() C.GhosttyResult { return C.ghostty_render_state_row_cells_new(nil, &v.cells) }},
 		{"key_encoder_new", func() C.GhosttyResult { return C.ghostty_key_encoder_new(nil, &v.enc) }},
 		{"key_event_new", func() C.GhosttyResult { return C.ghostty_key_event_new(nil, &v.ev) }},
+		{"kitty_graphics", func() C.GhosttyResult { return v.img.init(v.t) }},
 	}
 	for _, s := range steps {
 		if err := check(s.what, s.r()); err != nil {
@@ -385,13 +388,16 @@ type Snapshot struct {
 	s     snap
 	cells []cell
 	dirty []uint8
+	// below and above are the Kitty image placements drawn under and over
+	// the text, in z order.
+	below, above []placedImage
 }
 
 // Update takes the frame's Snapshot. It belongs to the frame goroutine: the
 // Snapshot shares its cells with the Terminal until the next Update.
 func (v *Terminal) Update() (Snapshot, error) {
 	s, dirty, err := v.update()
-	return Snapshot{s: s, cells: v.grid, dirty: dirty}, err
+	return Snapshot{s: s, cells: v.grid, dirty: dirty, below: v.img.below, above: v.img.above}, err
 }
 
 // Colors are a terminal's defaults: what a cell that sets no color of its
@@ -448,6 +454,7 @@ func (v *Terminal) Close() {
 		return
 	}
 	v.closed = true
+	v.img.free()
 	C.ghostty_selection_gesture_free(v.gest, v.t)
 	C.ghostty_mouse_event_free(v.mouseEv)
 	C.ghostty_mouse_encoder_free(v.mouseEnc)
@@ -483,6 +490,9 @@ func (v *Terminal) update() (snap, []uint8, error) {
 			r := v.raw[y*v.cols+x]
 			v.grid[y*v.cols+x] = cell{cp: uint32(r.cp), fg: uint32(r.fg), bg: uint32(r.bg), flags: uint32(r.flags)}
 		}
+	}
+	if err := v.img.update(v.t, v.cellW, v.cellH); err != nil {
+		return snap{}, nil, err
 	}
 	return snap{
 		full:          s.dirty == C.GHOSTTY_RENDER_STATE_DIRTY_FULL,
