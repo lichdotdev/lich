@@ -123,7 +123,8 @@ func (t *layoutTab) remove(session string) bool {
 	}
 	walk(t.Root)
 	if t.Focus == session {
-		t.Focus = t.sessions()[0]
+		// A page may be all that is left: the session closed beside its own.
+		t.Focus = t.panes()[0]
 	}
 	return true
 }
@@ -353,7 +354,7 @@ func parseLayouts(raw string) (layoutTabs, error) {
 			seen[id] = true
 		}
 		if t.Root != nil && !slices.Contains(t.panes(), t.Focus) {
-			t.Focus = t.sessions()[0]
+			t.Focus = t.panes()[0]
 		}
 	}
 	ls.tabs = slices.DeleteFunc(ls.tabs, func(t layoutTab) bool { return t.Root == nil || t.Root.leaf() })

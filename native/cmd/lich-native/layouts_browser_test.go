@@ -45,6 +45,15 @@ func TestTakingTheSessionDissolvesItsBrowserTabLeavingNoPage(t *testing.T) {
 	}
 }
 
+func TestTakingAFocusedSessionBesideItsPageDissolvesTheTab(t *testing.T) {
+	var ls layoutTabs
+	ls.byID(ls.openBrowser("checkout", "s")).Focus = "s"
+	left, ok := ls.take("s")
+	if !ok || left != "" || len(ls.tabs) != 0 {
+		t.Fatalf("take = %q, %v with %d tabs; want the tab gone and no page left on screen", left, ok, len(ls.tabs))
+	}
+}
+
 func TestDropBrowserDissolvesOnlyThatTab(t *testing.T) {
 	var ls layoutTabs
 	ls.open("pair", "a", "b", edgeRight)
@@ -87,5 +96,16 @@ func TestBrowserTabRoundTrips(t *testing.T) {
 func TestPaneSessionIsThePagesOwner(t *testing.T) {
 	if paneSession("browser:s") != "s" || paneSession("s") != "s" {
 		t.Fatal("paneSession")
+	}
+}
+
+func TestParseLayoutsFocusesAPageWhenOnlyPagesAreLeft(t *testing.T) {
+	raw := `[{"id":"layout-1","root":{"axis":"row","first":{"session":"browser:a"},"second":{"session":"browser:b"}},"focus":"gone"}]`
+	ls, err := parseLayouts(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ls.tabs) != 1 || ls.tabs[0].Focus != "browser:a" {
+		t.Fatalf("tabs = %+v, want the layout focused on its first page", ls.tabs)
 	}
 }
