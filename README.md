@@ -53,6 +53,16 @@ Read what the agent changed next to its session, comment on the lines that need 
 <tr>
 <td width="50%" valign="middle">
 
+### Point at the page, tell the agent
+
+The agent drives a browser in a tab beside its session, and you use the same page. Point at what's wrong, leave a note on it and send every note back as one prompt.
+
+</td>
+<td width="50%"><img src="docs/media/page-notes.png" alt="The session's browser beside its terminal, with two numbered notes pinned to elements of the page" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
 ### Pull requests without the browser
 
 Open a pull request, ask the branch's agent to write it, review it inline and merge it, all from the same window.
