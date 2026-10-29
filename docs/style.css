@@ -125,7 +125,18 @@ code, kbd, pre { font-family: var(--mono); font-variant-ligatures: none; }
 .btn.small { gap: .4rem; height: 2rem; padding: 0 .8rem; font-size: .85rem; border-radius: .5rem; }
 .btn.small svg { width: .9rem; height: .9rem; }
 .lang summary { white-space: nowrap; }
+.theme summary { display: flex; align-items: center; gap: .2rem; }
+.theme summary svg { width: 1rem; height: 1rem; }
+.theme summary .t-light, .theme summary .t-dark, [data-theme] .theme summary .t-system { display: none; }
+[data-theme="light"] .theme summary .t-light, [data-theme="dark"] .theme summary .t-dark { display: block; }
+.theme div { min-width: 9rem; }
+.theme button { display: flex; align-items: center; gap: .6rem; padding: .45rem .65rem; border: 0; border-radius: .4rem; background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.theme button:hover { background: var(--raised); }
+.theme button[aria-pressed="true"] { font-weight: 600; }
+.theme button svg { width: 1rem; height: 1rem; color: var(--muted); }
 @media (max-width: 640px) { .top nav, .nav-gh { display: none; } .top .wrap { gap: 1rem; } }
+/* The hero carries its own download button, so a phone's header gives this one's room to the theme switch. */
+@media (max-width: 480px) { .top .btn.primary { display: none; } }
 
 /* Hero */
 /* A dot grid behind the hero, full width and fading out downwards; around the pointer the same grid lights up.
@@ -418,7 +429,7 @@ h1.busy:not(.done) .caret { animation: none; }
 .bp-t .ia.flash { background: var(--raised); }
 .bp-t .ia.flash .ic { color: var(--fg); }
 .b-url { flex: 1; min-width: 0; display: flex; align-items: center; height: 24px; margin: 0 6px; padding: 0 8px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--input); background: color-mix(in oklab, var(--input) 30%, transparent); font-size: 12px; white-space: nowrap; overflow: hidden; }
-.bp-page { flex: 1; min-height: 0; overflow: hidden; background: #fff; color: #18181b; }
+.bp-page { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #fff; color: #18181b; }
 .pg { padding: 0 28px 28px; font-family: var(--sans); transition: transform .56s cubic-bezier(.2, 0, 0, 1); }
 .pg-nav { display: flex; gap: 18px; align-items: center; height: 48px; margin: 0 -28px 24px; padding: 0 28px; border-bottom: 1px solid #e4e4e7; font-size: 13px; color: #52525b; }
 .pg-nav b { margin-right: auto; color: #18181b; }
@@ -462,6 +473,44 @@ h1.busy:not(.done) .caret { animation: none; }
 .scard .t > .web { width: 12px; height: 12px; }
 .app .tab .tg { display: inline-flex; align-items: center; gap: 8px; overflow: hidden; }
 .app .tab .tg .ic { width: 14px; height: 14px; }
+
+/* Notes on the page (0.81.0): the crosshair outlines the element under the pointer in the blue card color, named
+   by a dark tag; a click opens a 280-wide note, an added one pins its element with a number, and the tray floats
+   over the page's bottom with Clear and Send (browser_notes*.go). */
+.pk-hint { display: none; margin-right: 6px; color: oklch(0.623 0.214 259.815); font-size: 12px; white-space: nowrap; }
+.picking .pk-hint { display: inline; }
+.picking .b-pick { background: var(--raised); }
+.picking .b-pick .ic { color: var(--fg); }
+.pk-ring { position: absolute; z-index: 2; display: none; overflow: visible; pointer-events: none; transition: left .15s, top .15s, width .15s, height .15s; }
+.pk-ring.on { display: block; }
+.pk-ring rect { stroke-dasharray: 5 5; }
+.pk-ring .halo { fill: color-mix(in oklab, oklch(0.623 0.214 259.815) 10%, transparent); stroke: rgb(255 255 255 / .69); stroke-width: 2.5; }
+.pk-ring .dash { fill: none; stroke: oklch(0.623 0.214 259.815); stroke-width: 1.5; }
+.pk-ring.kept .halo { fill: color-mix(in oklab, oklch(0.623 0.214 259.815) 5%, transparent); }
+.pk-ring.march rect { animation: pk-march .6s steps(12) infinite; }
+@keyframes pk-march { to { stroke-dashoffset: -10; } }
+.pk-tag { position: absolute; z-index: 3; display: none; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; background: oklch(0.21 0.006 285.885); color: #fafafa; font-size: 12px; line-height: 16px; white-space: nowrap; transition: left .15s, top .15s; }
+.pk-tag.on { display: flex; }
+.pk-tag .pk-c, .pk-tag .pk-s { color: rgb(250 250 250 / .7); }
+.pk-pin { position: absolute; z-index: 3; display: none; padding: 0 6px; border-radius: 4px; background: oklch(0.623 0.214 259.815); color: #fff; font: 600 12px/18px var(--w-mono); }
+.pk-pin.on { display: block; }
+.pk-pop { position: absolute; z-index: 4; display: none; width: 280px; padding: 10px 12px; border-radius: 6px; background: var(--island); box-shadow: 0 0 0 1px var(--seam), 0 10px 30px -10px rgb(0 0 0 / .6); color: var(--fg); font: 14px/20px var(--w-sans); }
+.pk-pop.on { display: block; }
+.pk-ph { display: flex; align-items: center; gap: 8px; }
+.pk-num { padding: 0 6px; border-radius: 4px; background: oklch(0.623 0.214 259.815); color: #fff; font: 600 12px/18px var(--w-mono); }
+.pk-head { color: var(--muted); font-size: 12px; }
+.pk-ta { min-height: 64px; margin-top: 12px; padding: 8px 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--input); background: color-mix(in oklab, var(--input) 30%, transparent); }
+.pk-plc { color: var(--muted); }
+.pk-ta.typing .pk-plc { display: none; }
+.pk-ta.typing .pk-tx::after { content: ""; display: inline-block; width: 1px; height: 1em; margin-left: 1px; vertical-align: text-bottom; background: var(--fg); }
+.pk-bt { display: flex; gap: 8px; margin-top: 8px; }
+.pk-tray { position: absolute; z-index: 4; left: 6px; right: 6px; bottom: 6px; display: none; padding: 0 8px 8px; border-radius: 8px; background: var(--background); box-shadow: 0 0 0 1px var(--seam); color: var(--fg); font: 12px/16px var(--w-sans); }
+.pk-tray.on { display: block; }
+.pk-th { display: flex; align-items: center; gap: 8px; height: 36px; padding-left: 6px; }
+.pk-th .btn-g, .pk-th .btn-p { height: 28px; font-size: 12px; }
+.pk-r { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 6px; border-radius: 6px; }
+.pk-r .mono { max-width: 192px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pk-r span:last-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
 
 /* The tour's own clicks: a ring that grows and fades where it pressed, the text color edged in the background so
    it reads on a light button as on a dark one. */
@@ -666,14 +715,14 @@ h1.busy:not(.done) .caret { animation: none; }
 .cap { display: none; }
 .cap p { margin: 1.1rem auto 0; max-width: 46rem; text-align: center; color: var(--muted); }
 .cap p b { color: var(--fg); font-weight: 500; }
-#t1:checked ~ .seg [for="t1"], #t2:checked ~ .seg [for="t2"], #t3:checked ~ .seg [for="t3"], #t4:checked ~ .seg [for="t4"], #t5:checked ~ .seg [for="t5"], #t6:checked ~ .seg [for="t6"] {
+#t1:checked ~ .seg [for="t1"], #t2:checked ~ .seg [for="t2"], #t3:checked ~ .seg [for="t3"], #t4:checked ~ .seg [for="t4"], #t5:checked ~ .seg [for="t5"], #t6:checked ~ .seg [for="t6"], #t7:checked ~ .seg [for="t7"] {
   background: var(--raised); color: var(--fg);
 }
-#t1:checked ~ .c1, #t2:checked ~ .c2, #t3:checked ~ .c3, #t4:checked ~ .c4, #t5:checked ~ .c5, #t6:checked ~ .c6 { display: block; }
+#t1:checked ~ .c1, #t2:checked ~ .c2, #t3:checked ~ .c3, #t4:checked ~ .c4, #t5:checked ~ .c5, #t6:checked ~ .c6, #t7:checked ~ .c7 { display: block; }
 .view { display: none; }
-#t1:checked ~ #wall .v1, #t2:checked ~ #wall .v2, #t3:checked ~ #wall .v3, #t4:checked ~ #wall .v4, #t5:checked ~ #wall .v5, #t6:checked ~ #wall .v6 { display: grid; }
+#t1:checked ~ #wall .v1, #t2:checked ~ #wall .v2, #t3:checked ~ #wall .v3, #t4:checked ~ #wall .v4, #t5:checked ~ #wall .v5, #t6:checked ~ #wall .v6, #t7:checked ~ #wall .v6 { display: grid; }
 #t1:checked ~ #wall .v1, #t3:checked ~ #wall .v3 { display: flex; }
-#t1:focus-visible ~ .seg [for="t1"], #t2:focus-visible ~ .seg [for="t2"], #t3:focus-visible ~ .seg [for="t3"], #t4:focus-visible ~ .seg [for="t4"], #t5:focus-visible ~ .seg [for="t5"], #t6:focus-visible ~ .seg [for="t6"] {
+#t1:focus-visible ~ .seg [for="t1"], #t2:focus-visible ~ .seg [for="t2"], #t3:focus-visible ~ .seg [for="t3"], #t4:focus-visible ~ .seg [for="t4"], #t5:focus-visible ~ .seg [for="t5"], #t6:focus-visible ~ .seg [for="t6"], #t7:focus-visible ~ .seg [for="t7"] {
   outline: 2px solid var(--fg); outline-offset: 2px;
 }
 
