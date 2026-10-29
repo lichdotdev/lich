@@ -53,6 +53,16 @@ Lee lo que cambió el agente junto a su sesión, comenta las líneas que necesit
 <tr>
 <td width="50%" valign="middle">
 
+### Señala la página, díselo al agente
+
+El agente maneja un navegador en una pestaña junto a su sesión, y tú usas la misma página. Señala lo que está mal, deja una nota encima y envía todas las notas de vuelta en un solo prompt.
+
+</td>
+<td width="50%"><img src="docs/media/page-notes.png" alt="El navegador de la sesión junto a su terminal, con dos notas numeradas fijadas a elementos de la página" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
 ### Pull requests sin el navegador
 
 Abre un pull request, pídele al agente de la rama que lo escriba, revísalo inline y fusiónalo, todo desde la misma ventana.

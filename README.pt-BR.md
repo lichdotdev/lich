@@ -53,6 +53,16 @@ Leia o que o agente mudou ao lado da sessão dele, comente as linhas que precisa
 <tr>
 <td width="50%" valign="middle">
 
+### Aponte na página, fale com o agente
+
+O agente pilota um navegador numa aba ao lado da sessão, e você usa a mesma página. Aponte o que está errado, deixe uma nota em cima e mande todas as notas de volta num prompt só.
+
+</td>
+<td width="50%"><img src="docs/media/page-notes.png" alt="O navegador da sessão ao lado do terminal, com duas notas numeradas presas a elementos da página" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
 ### Pull requests sem abrir o navegador
 
 Peça ao agente da branch para abrir o pull request, revise linha a linha e faça o merge, tudo na mesma janela.

@@ -53,6 +53,16 @@
 <tr>
 <td width="50%" valign="middle">
 
+### 指着页面，告诉代理
+
+代理在会话旁边的标签页里操作浏览器，你也在用同一个页面。指出哪里不对，在上面留下备注，再把所有备注作为一条提示发回去。
+
+</td>
+<td width="50%"><img src="docs/media/page-notes.png" alt="会话终端旁的浏览器，页面元素上钉着两条带编号的备注" width="100%" /></td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
 ### 不开浏览器也能处理 Pull Request
 
 创建 Pull Request，请该分支的智能体来写，直接在 diff 里审查，再合并，全程不离开这个窗口。
