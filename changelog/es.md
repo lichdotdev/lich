@@ -1,3 +1,18 @@
+## [0.82.0] - 2026-10-29
+
+### Added
+
+- `lich sessions --json`, `lich whoami --json` y la herramienta MCP `list_sessions` incluyen la línea que la tarjeta de una sesión muestra bajo su etiqueta: `tool` y `detail` mientras está ocupada, la herramienta que ejecuta y sobre qué actúa, y `reason` mientras espera tu respuesta. Un script o un widget de escritorio puede mostrar lo que hace cada agente sin abrir la ventana.
+- El navegador de una sesión abre un archivo local del checkout de la sesión. Escribe su ruta en el campo de dirección, o el agente pasa la ruta o una URL `file:` a `browser_open`, y lich sirve el checkout por http en 127.0.0.1, en un puerto propio de cada worktree (el `LICH_WORKTREE_PORT` del checkout más 1000), de modo que los scripts de módulo, `fetch` y los recursos relativos funcionan y cada worktree conserva su propio almacenamiento. Una ruta fuera del checkout se rechaza. Antes, un archivo local no se podía abrir en absoluto, y previsualizarlo significaba iniciar un servidor estático a mano.
+- La barra de herramientas del navegador de una sesión tiene un botón de zoom. Abre un pequeño menú que reduce y aumenta el zoom de la página de 10 en 10% y lo restablece al 100%, y cada control indica su atajo de teclado. Antes, el zoom solo se podía cambiar desde el teclado.
+
+### Fixed
+
+- Continuar en conserva el navegador de la sesión. Mover una sesión a otro perfil cerraba su navegador, y su página y sus cookies desaparecían cuando la sesión volvía a iniciarse.
+- El navegador de la sesión sigue el ritmo de una página ocupada. En una página que anima o ejecuta mucho JavaScript, la pestaña del navegador se atrasaba segundos respecto a la página y el resto de la ventana esperaba con ella; ahora salta al fotograma más reciente.
+- El navegador de la sesión se ve nítido en una pantalla HiDPI. Su pestaña mostraba la página a 1x, borrosa, en cualquier pantalla; ahora la dibuja hasta a 1,5x.
+- Las notas del navegador de la sesión, y Corregir errores de CI y Resolver conflictos de la pantalla Pull requests, llegan a una sesión de Claude Code que detuviste con Esc. Claude Code rechazaba el mensaje hasta que alguien escribía en la sesión, y la bandeja decía «its mod refused it»; ahora lich escribe el mensaje en el prompt.
+
 ## [0.81.0] - 2026-10-28
 
 > [!IMPORTANT]

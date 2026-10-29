@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.82.0] - 2026-10-29
+
 ### Added
 
 - `lich sessions --json`, `lich whoami --json` and the MCP tool `list_sessions` carry the line a session's card shows under its label: `tool` and `detail` while it is busy, the tool it is running and what it acts on, and `reason` while it waits on you. A script or a desktop widget can show what each agent is doing without opening the window.
@@ -6447,7 +6449,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.81.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.82.0...HEAD
+[0.82.0]: https://github.com/lichdotdev/lich/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/lichdotdev/lich/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/lichdotdev/lich/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/lichdotdev/lich/compare/v0.78.1...v0.79.0
