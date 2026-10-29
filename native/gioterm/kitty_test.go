@@ -214,3 +214,42 @@ func TestRowsClearUnderImages(t *testing.T) {
 		t.Error("a colored cell over an image is not opaque")
 	}
 }
+
+// A terminal no program sent an image to holds no placement buffer.
+func TestKittyPlacementBufferOnFirstImage(t *testing.T) {
+	v := newKittyTerm(t)
+	if _, err := v.Update(); err != nil {
+		t.Fatal(err)
+	}
+	if v.img.raw != nil {
+		t.Fatalf("plain terminal holds %d placement slots", len(v.img.raw))
+	}
+	v.Write([]byte(kittyAPC("a=T,f=100,i=5,q=2", pngOf(t, 4, 4, color.NRGBA{A: 255}))))
+	s, err := v.Update()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.above) != 1 {
+		t.Fatalf("placements above = %d, want 1", len(s.above))
+	}
+}
+
+// A hidden terminal lets go of its textures and makes them again when shown.
+func TestKittyReleaseImagesDropsTextures(t *testing.T) {
+	v := newKittyTerm(t)
+	v.Write([]byte(kittyAPC("a=T,f=100,i=6,q=2", pngOf(t, 4, 4, color.NRGBA{A: 255}))))
+	if _, err := v.Update(); err != nil {
+		t.Fatal(err)
+	}
+	v.ReleaseImages()
+	if len(v.img.textures) != 0 || len(v.img.above) != 0 {
+		t.Fatalf("after release: %d textures, %d placements", len(v.img.textures), len(v.img.above))
+	}
+	s, err := v.Update()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.above) != 1 || len(v.img.textures) != 1 {
+		t.Fatalf("shown again: %d placements, %d textures, want 1/1", len(s.above), len(v.img.textures))
+	}
+}

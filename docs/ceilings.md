@@ -812,6 +812,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   cell's background as well, the same as one below the backgrounds. Images live in the window's terminal, not in
   the replay ring: a terminal rebuilt from the ring gets back the images whose bytes are still in it, which a
   program that repaints (a TUI) recovers from and an image printed once at a shell prompt does not.
+- **A PNG is decoded with the terminal locked** (`native/gioterm/kitty.go`): libghostty calls the decoder from
+  inside `ghostty_terminal_vt_write`, so `goDecodePng` runs under `Terminal.mu`, and the frame waits for that lock
+  in `Update`. One 1080p PNG holds it about 20 ms, a dropped frame for the whole window. Releasing the lock inside
+  the callback would let the frame into libghostty mid-write. The two ways out, if a slow window is ever reported:
+  decode ahead in `Write` (parse the Kitty APC chunks, `o=z` included, and hand the callback a cached result), or
+  let the frame skip a locked terminal and redraw its last snapshot, which every frame-side call that takes
+  `Terminal.mu` would need too.
 - **One socket carries every session's output** (`internal/terminal/writequeue.go`): the per-session outbox
   decouples the *producers*, never the wire. A window that stops reading stalls the connection's single writer,
   so after `wsWriteTimeout` (5s) every session's output switches to the `/events` bridge at once. That is a

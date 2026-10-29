@@ -33,6 +33,13 @@ static GhosttyKittyGraphics graphics_of(GhosttyTerminal t) {
 	return g;
 }
 
+static uint64_t graphics_generation(GhosttyTerminal t) {
+	GhosttyKittyGraphics g = graphics_of(t);
+	uint64_t gen = 0;
+	if (g != NULL) ghostty_kitty_graphics_get(g, GHOSTTY_KITTY_GRAPHICS_DATA_GENERATION, &gen);
+	return gen;
+}
+
 // Copies the placements on screen into out, at most max of them, and returns
 // how many; -1 when the iterator cannot be read. A storage never written to
 // returns 0 before touching the iterator, the cost every plain terminal pays.
@@ -190,7 +197,6 @@ func (k *kittyImages) init(t C.GhosttyTerminal) C.GhosttyResult {
 	if r := C.set_image_limit(t, imageStorageLimit); r != C.GHOSTTY_SUCCESS {
 		return r
 	}
-	k.raw = make([]C.placed_t, maxPlacements)
 	return C.ghostty_kitty_graphics_placement_iterator_new(nil, &k.it)
 }
 
@@ -204,6 +210,13 @@ func (k *kittyImages) free() {
 // libghostty lends is only valid until the next write.
 func (k *kittyImages) update(t C.GhosttyTerminal, cellW, cellH int) error {
 	k.below, k.above = k.below[:0], k.above[:0]
+	if k.raw == nil {
+		// Most terminals never get an image: the placement buffer waits for one.
+		if C.graphics_generation(t) == 0 {
+			return nil
+		}
+		k.raw = make([]C.placed_t, maxPlacements)
+	}
 	n := int(C.collect_placements(t, k.it, &k.raw[0], C.int(len(k.raw))))
 	if n < 0 {
 		return fmt.Errorf("kitty graphics: placement iterator")
@@ -240,6 +253,14 @@ func (k *kittyImages) update(t C.GhosttyTerminal, cellW, cellH int) error {
 	slices.SortStableFunc(k.below, byZ)
 	slices.SortStableFunc(k.above, byZ)
 	return nil
+}
+
+// ReleaseImages lets go of the textures of a terminal off screen; the next
+// Update makes again those it draws.
+func (v *Terminal) ReleaseImages() {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	v.img.textures, v.img.below, v.img.above = nil, nil, nil
 }
 
 // texture is image id ready to draw, made again only when libghostty's
