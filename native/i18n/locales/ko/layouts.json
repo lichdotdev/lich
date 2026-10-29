@@ -30,6 +30,8 @@
     "moveBody": "\"{layout}\"에서 빠집니다. 브라우저 탭에는 {label}와(과) 그 브라우저만 둘 수 있습니다.",
     "pick": "페이지에 메모 남기기",
     "pickHint": "요소를 클릭해 메모를 남기세요",
+    "zoom": "페이지 확대/축소",
+    "zoomReset": "100%로 재설정",
     "notePlaceholder": "여기서 무엇을 바꿔야 하나요?",
     "addNote": "메모 추가",
     "saveNote": "저장",

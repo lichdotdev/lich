@@ -32,6 +32,8 @@
     "moveBody": "Ela sai de \"{layout}\". A aba do navegador só comporta {label} e o navegador dela.",
     "pick": "Deixar notas na página",
     "pickHint": "Clique num elemento para deixar uma nota",
+    "zoom": "Zoom da página",
+    "zoomReset": "Voltar a 100%",
     "notePlaceholder": "O que deve mudar aqui?",
     "addNote": "Adicionar nota",
     "saveNote": "Salvar",

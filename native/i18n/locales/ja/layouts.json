@@ -30,6 +30,8 @@
     "moveBody": "「{layout}」から外れます。ブラウザのタブには {label} とそのブラウザしか置けません。",
     "pick": "ページにメモを残す",
     "pickHint": "要素をクリックしてメモを残す",
+    "zoom": "ページのズーム",
+    "zoomReset": "100% に戻す",
     "notePlaceholder": "ここをどう変えますか？",
     "addNote": "メモを追加",
     "saveNote": "保存",
