@@ -1,9 +1,11 @@
 package browser
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
+	"image/jpeg"
 	"net/http"
 	"net/http/httptest"
 	"os/exec"
@@ -175,6 +177,47 @@ func TestChromeScreencastSendsFramesAndPageInfo(t *testing.T) {
 			}
 		case <-deadline:
 			t.Fatal("no page info with the document's title")
+		}
+	}
+}
+
+func TestChromeScreencastDrawsAHiDPIPaneAtTheFrameScale(t *testing.T) {
+	p, srv := liveChrome(t)
+	frames := make(chan string, 1)
+	p.Listen(func(data string) {
+		select {
+		case frames <- data:
+		default:
+		}
+	}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {})
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Screencast(ctx, Viewport{W: 400, H: 300, Scale: 2}); err != nil {
+		t.Fatal(err)
+	}
+	// The first frames can predate the layout at the pane's size.
+	deadline := time.After(10 * time.Second)
+	last := "none"
+	for {
+		select {
+		case data := <-frames:
+			raw, err := base64.StdEncoding.DecodeString(data)
+			if err != nil {
+				t.Fatal(err)
+			}
+			cfg, err := jpeg.DecodeConfig(bytes.NewReader(raw))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Width == 600 && cfg.Height == 450 {
+				return
+			}
+			last = fmt.Sprintf("%dx%d", cfg.Width, cfg.Height)
+		case <-deadline:
+			t.Fatalf("last frame %s, want the 2x pane drawn at 1.5x, 600x450", last)
 		}
 	}
 }
