@@ -46,7 +46,6 @@ type Service struct {
 type server struct {
 	port int
 	srv  *http.Server
-	root *os.Root
 }
 
 // New returns a Service that binds the loopback interface.
@@ -121,24 +120,38 @@ func (s *Service) serve(dir string, port int) (int, error) {
 	if srv, ok := s.servers[dir]; ok {
 		return srv.port, nil
 	}
-	root, err := os.OpenRoot(dir)
-	if err != nil {
-		return 0, fmt.Errorf("open checkout %q: %w", dir, err)
+	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
+		return 0, fmt.Errorf("checkout %q is not a directory: %w", dir, err)
 	}
 	ln, err := s.listenFrom(port)
 	if err != nil {
-		_ = root.Close()
 		return 0, fmt.Errorf("serve checkout %q: %w", dir, err)
 	}
 	port = ln.Addr().(*net.TCPAddr).Port
-	srv := &http.Server{Handler: http.FileServerFS(root.FS()), ReadHeaderTimeout: readHeaderTimeout}
+	srv := &http.Server{Handler: rootHandler(dir), ReadHeaderTimeout: readHeaderTimeout}
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Warn("preview server stopped", "dir", dir, "port", port, "err", err)
 		}
 	}()
-	s.servers[dir] = &server{port: port, srv: srv, root: root}
+	s.servers[dir] = &server{port: port, srv: srv}
 	return port, nil
+}
+
+// rootHandler serves dir through an os.Root opened for each request. One held
+// for the server's life keeps the directory open, and Windows refuses to
+// remove an open directory, so a worktree could not be deleted while its
+// preview ran.
+func rootHandler(dir string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		root, err := os.OpenRoot(dir)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		defer func() { _ = root.Close() }()
+		http.FileServerFS(root.FS()).ServeHTTP(w, r)
+	})
 }
 
 // listenFrom binds first, or the next free port in the window after it,
@@ -163,7 +176,7 @@ func (s *Service) Close() error {
 	defer s.mu.Unlock()
 	var errs []error
 	for dir, srv := range s.servers {
-		errs = append(errs, srv.srv.Close(), srv.root.Close())
+		errs = append(errs, srv.srv.Close())
 		delete(s.servers, dir)
 	}
 	return errors.Join(errs...)
