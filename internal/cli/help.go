@@ -24,15 +24,17 @@ type command struct {
 
 var commands = []command{
 	{
-		name:  "sessions",
-		args:  "[--json]",
-		about: "List the live sessions that can be reached.",
+		name: "sessions",
+		args: "[--json]",
+		about: "List the live sessions that can be reached. With --json, the one whose\n" +
+			"card lich's window has on screen carries \"focused\": true.",
 	},
 	{
 		name: "whoami",
 		args: "[--json]",
 		about: "Print the session this command runs in, which `sessions` never lists:\n" +
-			"its label, project, provider, roster name, state and lich id.",
+			"its label, project, provider, roster name, state and lich id. With --json,\n" +
+			"\"focused\": true when its card is the one lich's window has on screen.",
 	},
 	{
 		name: "send",
@@ -45,12 +47,14 @@ var commands = []command{
 	},
 	{
 		name: "insert",
-		args: "[--project <name-or-path>] [--session <session>] [--timeout <seconds>] [--json] [<text> | -]",
+		args: "([--project <name-or-path>] [--session <session>] | --focused)\n" +
+			"[--timeout <seconds>] [--json] [<text> | -]",
 		about: "Paste <text> at a session's prompt without sending it, for the person there\n" +
 			"to finish and submit. The text is read from stdin when it is left out or is -.\n" +
 			"--session names the target; without it --project names where to find one, by\n" +
 			"name or by the absolute path of its directory, and exactly one live session\n" +
-			"must be running there. For an editor sending a selection or a file.",
+			"must be running there. --focused, alone, targets the card lich's window has\n" +
+			"on screen. For an editor or file manager sending a selection or a file.",
 	},
 	{
 		name: "focus",

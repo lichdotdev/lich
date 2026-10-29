@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The terminal draws images sent with the Kitty graphics protocol, and tells programs the size of its cells in pixels (`CSI 14 t`, `16 t`, `18 t`). A TUI that shows icons or previews this way, the file manager `tfm` among them, now shows them in a lich session as it does in Kitty or Ghostty. Before, those programs fell back to small text glyphs or drew nothing. Images sent as Sixel or through tmux are still not drawn.
 - The session browser has tabs. They sit on the browser's header, where a + opens a new one; click a tab to switch to it, or its × to close it. What a page opens in a new tab or window joins them, in front, and closing it brings back the page that opened it, as it was. The agent lists and switches tabs with the new MCP tools `browser_tabs` and `browser_tab` (or `lich browser tabs` and `lich browser tab`), and its cursor moves to the tab it acts on.
+- `lich insert --focused` pastes into the session whose card is on screen in lich's window: the active card of the project tab in front. A file manager action or an editor can send a path to the agent you are looking at without guessing it from the file's folder. `lich sessions --json`, `lich whoami --json` and the MCP tool `list_sessions` mark that session with `"focused": true`. With the window closed, no session is marked and `--focused` says so.
 
 ### Changed
 

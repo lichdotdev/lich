@@ -382,6 +382,9 @@ type Service struct {
 	// deciding, or it finds the entry still marked and gives up wrongly silent.
 	nudging map[string]*sync.Mutex
 
+	// shown is the card the window has on screen (shown.go).
+	shown shownCard
+
 	sessions Sessions
 	term     Terminal
 	events   Events

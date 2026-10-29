@@ -87,6 +87,7 @@ func (s *Service) peerOf(p store.Project, sess store.Session) Peer {
 
 		Path:        cwd,
 		ProjectPath: p.Path,
+		Focused:     sess.ID == s.shownID(),
 	}
 	// Only while both reads agree on the state: they come from the same hook
 	// report but are taken apart, and a tool beside a state it was not

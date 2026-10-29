@@ -1385,6 +1385,56 @@ func TestInsertWithNothingToReadStdinFrom(t *testing.T) {
 	}
 }
 
+func TestInsertFocusedGoesToTheCardOnScreen(t *testing.T) {
+	t.Parallel()
+	f := newFakeLich(t, insertedBody)
+	f.answers = map[string]answer{"relay.Focused": {status: 200, body: `{"id":"s2","label":"docs","project":"lich"}`}}
+
+	code, _, stderr := run(t, f, "insert", "--focused", "hello")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	if len(f.calls) != 2 || f.calls[0].method != "relay.Focused" || f.calls[1].method != "relay.Insert" {
+		t.Fatalf("calls = %+v, want relay.Focused then relay.Insert", f.calls)
+	}
+	want := relay.InsertOptions{From: "s1", Target: "s2", Text: "hello"}
+	if got := optionsOf[relay.InsertOptions](t, f.calls[1]); got != want {
+		t.Errorf("insert options = %+v, want %+v", got, want)
+	}
+}
+
+func TestInsertFocusedFailsWhenNoCardIsOnScreen(t *testing.T) {
+	t.Parallel()
+	f := newFakeLich(t, insertedBody)
+	f.answers = map[string]answer{"relay.Focused": {status: 500, body: `{"error":"no session is on screen"}`}}
+
+	code, _, stderr := run(t, f, "insert", "--focused", "hello")
+	if code != 1 || !strings.Contains(stderr, "no session is on screen") {
+		t.Errorf("exit = %d, stderr = %q, want the server's refusal", code, stderr)
+	}
+	if len(f.calls) != 1 {
+		t.Errorf("calls = %+v, want nothing inserted", f.calls)
+	}
+}
+
+func TestInsertFocusedExcludesSessionAndProject(t *testing.T) {
+	t.Parallel()
+	f := newFakeLich(t, insertedBody)
+
+	for _, args := range [][]string{
+		{"insert", "--focused", "--session", "docs", "hello"},
+		{"insert", "--focused", "--project", "lich", "hello"},
+	} {
+		code, _, stderr := run(t, f, args...)
+		if code != 1 || !strings.Contains(stderr, "usage: lich insert") {
+			t.Errorf("%v: exit = %d, stderr = %q, want the usage", args, code, stderr)
+		}
+	}
+	if len(f.calls) != 0 {
+		t.Errorf("a malformed call reached the server: %v", f.calls)
+	}
+}
+
 const focusedBody = `{"id":"s2","label":"docs","project":"lich"}`
 
 func TestFocusNamesTheSessionItBroughtUp(t *testing.T) {

@@ -479,7 +479,9 @@ var mcpTools = append([]mcpTool{
 			"session is waiting instead of sending work into it. An empty state is not reported: " +
 			"only some providers report at all, so it says nothing about whether that session is " +
 			"free. A busy session may also carry `tool` and `detail`, the tool it is running and " +
-			"what it acts on, and a waiting one `reason`, what it is blocked on.",
+			"what it acts on, and a waiting one `reason`, what it is blocked on. The session " +
+			"whose card lich's window has on screen, the one the user is looking at, carries " +
+			"`focused: true`.",
 		Schema:   schema(map[string]any{}),
 		ReadOnly: true,
 		Run: func(ctx context.Context, c *client, _ mcpArgs) (string, error) {

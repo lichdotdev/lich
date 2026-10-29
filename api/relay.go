@@ -12,6 +12,8 @@ var (
 	RelayReply         = define[ReplyOptions, None]("relay.Reply")
 	RelayInsert        = define[InsertTextOptions, InsertedText]("relay.Insert")
 	RelayFocus         = define[FocusSessionOptions, FocusedSession]("relay.Focus")
+	RelayFocused       = define[None, FocusedSession]("relay.Focused")
+	RelaySetShown      = define[ShownSessionOptions, None]("relay.SetShown")
 	RelayAnnounceMerge = define[AnnounceMergeOptions, None]("relay.AnnounceMerge")
 	RelaySubmit        = define[SubmitOptions, None]("relay.Submit")
 )
@@ -65,6 +67,12 @@ type FocusedSession struct {
 	ID      string `json:"id"`
 	Label   string `json:"label"`
 	Project string `json:"project"`
+}
+
+// ShownSessionOptions is the native window saying which session's card it has
+// on screen, "" for none.
+type ShownSessionOptions struct {
+	SessionID string `json:"sessionId"`
 }
 
 // InsertTextOptions is one Insert call, an object for the reason SendOptions is
@@ -131,6 +139,10 @@ type Peer struct {
 	Tool   string `json:"tool,omitempty"`
 	Detail string `json:"detail,omitempty"`
 	Reason string `json:"reason,omitempty"`
+	// Focused marks the session whose card the window has on screen: the
+	// active card of the project tab in front. No session has it while no
+	// window is open.
+	Focused bool `json:"focused,omitempty"`
 }
 
 // ReplyOptions is one Reply call, an object for the reason SendOptions is one.

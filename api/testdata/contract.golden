@@ -141,6 +141,7 @@ relay.AnnounceMerge(AnnounceMergeOptions) None
 relay.Collect(CollectOptions) CollectedResults
 relay.CollectNow(CollectNowOptions) CollectedResults
 relay.Focus(FocusSessionOptions) FocusedSession
+relay.Focused(None) FocusedSession
 relay.Insert(InsertTextOptions) InsertedText
 relay.Peers(PeersOptions) []Peer
 relay.Reply(ReplyOptions) None
@@ -148,6 +149,7 @@ relay.Self(SelfOptions) Peer
 relay.Send(SendOptions) SendResult
 relay.SendPrivate(SendOptions) SendResult
 relay.SendSubagent(SendOptions) SendResult
+relay.SetShown(ShownSessionOptions) None
 relay.Submit(SubmitOptions) None
 relay.Wait(WaitOptions) SendResult
 services.Delete(ServiceIDOptions) None
@@ -974,6 +976,7 @@ Peer {
 	tool,omitempty string
 	detail,omitempty string
 	reason,omitempty string
+	focused,omitempty bool
 }
 
 ReplyOptions {
@@ -1000,6 +1003,10 @@ SendResult {
 	status string
 	answer string
 	private,omitempty bool
+}
+
+ShownSessionOptions {
+	sessionId string
 }
 
 SubmitOptions {

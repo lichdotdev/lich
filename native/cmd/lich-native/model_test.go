@@ -325,6 +325,23 @@ func TestSetActiveProjectSwitchesSidebarAndRestoresItsSession(t *testing.T) {
 	}
 }
 
+func TestShownSessionIsTheCardOnScreen(t *testing.T) {
+	m := newModel(fakeDiff(t, ""), func() {})
+	m.projects = twoProjects()
+	m.activeProject, m.active = "a", "a2"
+	if got := m.shownSession(); got != "a2" {
+		t.Errorf("shownSession = %q, want a2", got)
+	}
+	m.setActiveProject("b")
+	if got := m.shownSession(); got != "b1" {
+		t.Errorf("after switching tabs, shownSession = %q, want b1", got)
+	}
+	m.active = "gone"
+	if got := m.shownSession(); got != "" {
+		t.Errorf("with no card of the tab active, shownSession = %q, want none", got)
+	}
+}
+
 func TestCloseSessionFindsItInAnyProject(t *testing.T) {
 	m := newModel(nil, func() {})
 	m.projects = twoProjects()

@@ -35,6 +35,12 @@ func (c *Client) SetActiveSession(ctx context.Context, projectID, sessionID stri
 	return err
 }
 
+// SetShown tells the backend which session's card is on screen, "" for none.
+func (c *Client) SetShown(ctx context.Context, sessionID string) error {
+	_, err := callMethod(ctx, c, api.RelaySetShown, api.ShownSessionOptions{SessionID: sessionID})
+	return err
+}
+
 // Replay asks for the tail of a session's output, which arrives on the
 // Terminal stream as a replay frame: the output frames before it are in the
 // tail and the ones after it are not. It reports whether one is coming, false

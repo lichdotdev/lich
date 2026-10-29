@@ -463,6 +463,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// `lich focus` opens a card for someone outside the window, who then needs
 	// the window in front, or open again: what a second launch of lich asks for.
 	rl.SetRaiseWindow(func(string) { showWindow(sys, "for lich focus") })
+	rl.SetWindowAttached(hub.Attached)
 	// The language of the text lich types into sessions is read live from the
 	// settings table, by the relay at every message, by the terminal at
 	// every spawn and by drop at every copy notice.
