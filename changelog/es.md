@@ -1,3 +1,19 @@
+## [0.83.0] - 2026-10-29
+
+### Added
+
+- La terminal dibuja las imágenes enviadas con el protocolo de gráficos de Kitty e informa a los programas del tamaño de sus celdas en píxeles (`CSI 14 t`, `16 t`, `18 t`). Una TUI que muestra iconos o vistas previas de este modo, como el gestor de archivos `tfm`, ahora las muestra en una sesión de lich igual que en Kitty o Ghostty. Antes, esos programas recurrían a pequeños glifos de texto o no dibujaban nada. Las imágenes enviadas como Sixel o a través de tmux siguen sin dibujarse.
+- El navegador de la sesión tiene pestañas. Están en el encabezado del navegador, donde un + abre una nueva; haz clic en una pestaña para cambiar a ella, o en su × para cerrarla. Lo que una página abre en una pestaña o ventana nueva se suma a ellas, al frente, y cerrarla devuelve la página que la abrió, tal como estaba. El agente lista y cambia de pestaña con las nuevas herramientas MCP `browser_tabs` y `browser_tab` (o `lich browser tabs` y `lich browser tab`), y su cursor se mueve a la pestaña en la que actúa.
+- `lich insert --focused` pega en la sesión cuya tarjeta está a la vista en la ventana de lich: la tarjeta activa de la pestaña de proyecto que está al frente. Una acción del gestor de archivos o un editor puede enviar una ruta al agente que estás mirando sin deducirlo de la carpeta del archivo. `lich sessions --json`, `lich whoami --json` y la herramienta MCP `list_sessions` marcan esa sesión con `"focused": true`. Con la ventana cerrada, ninguna sesión se marca y `--focused` lo indica.
+
+### Changed
+
+- Lo que una página del navegador de la sesión abre en una pestaña o ventana nueva ya no reemplaza la página que la abrió. Antes, la dirección de la pestaña nueva se cargaba sobre esa página, así que se perdían un inicio de sesión o cualquier otra cosa que la página guardaba en su script, y fallaba un flujo que abre una pestaña y espera a que termine.
+
+### Fixed
+
+- Cerrar una sesión cuyo navegador estaba abierto a su lado, con su terminal enfocada, ya no cierra la ventana de lich.
+
 ## [0.82.0] - 2026-10-29
 
 ### Added

@@ -1,3 +1,19 @@
+## [0.83.0] - 2026-10-29
+
+### Added
+
+- O terminal desenha imagens enviadas com o protocolo gráfico do Kitty e informa aos programas o tamanho de suas células em pixels (`CSI 14 t`, `16 t`, `18 t`). Uma TUI que mostra ícones ou prévias assim, como o gerenciador de arquivos `tfm`, agora os mostra numa sessão do lich como faz no Kitty ou no Ghostty. Antes, esses programas recorriam a pequenos glifos de texto ou não desenhavam nada. Imagens enviadas como Sixel ou pelo tmux ainda não são desenhadas.
+- O navegador da sessão tem abas. Elas ficam no cabeçalho do navegador, onde um + abre uma nova; clique numa aba para trocar para ela, ou no × dela para fechá-la. O que uma página abre numa nova aba ou janela se junta a elas, na frente, e fechá-la traz de volta a página que a abriu, como estava. O agente lista e troca de aba com as novas ferramentas MCP `browser_tabs` e `browser_tab` (ou `lich browser tabs` e `lich browser tab`), e o cursor dele vai para a aba em que age.
+- `lich insert --focused` cola na sessão cujo card está na tela da janela do lich: o card ativo da aba de projeto da frente. Uma ação do gerenciador de arquivos ou um editor pode enviar um caminho ao agente que você está olhando sem adivinhá-lo pela pasta do arquivo. `lich sessions --json`, `lich whoami --json` e a ferramenta MCP `list_sessions` marcam essa sessão com `"focused": true`. Com a janela fechada, nenhuma sessão é marcada e `--focused` avisa isso.
+
+### Changed
+
+- O que uma página do navegador da sessão abre numa nova aba ou janela não substitui mais a página que a abriu. Antes, o endereço da nova aba carregava por cima dela, então um login ou qualquer outra coisa que a página guardava no script se perdia, e um fluxo que abre uma aba e espera ela terminar quebrava.
+
+### Fixed
+
+- Fechar uma sessão cujo navegador estava aberto ao lado dela, com o terminal em foco, não fecha mais a janela do lich.
+
 ## [0.82.0] - 2026-10-29
 
 ### Added

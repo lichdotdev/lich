@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.83.0] - 2026-10-29
+
 ### Added
 
 - The terminal draws images sent with the Kitty graphics protocol, and tells programs the size of its cells in pixels (`CSI 14 t`, `16 t`, `18 t`). A TUI that shows icons or previews this way, the file manager `tfm` among them, now shows them in a lich session as it does in Kitty or Ghostty. Before, those programs fell back to small text glyphs or drew nothing. Images sent as Sixel or through tmux are still not drawn.
@@ -6463,7 +6465,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.82.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.83.0...HEAD
+[0.83.0]: https://github.com/lichdotdev/lich/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/lichdotdev/lich/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/lichdotdev/lich/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/lichdotdev/lich/compare/v0.79.0...v0.80.0
