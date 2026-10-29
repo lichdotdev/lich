@@ -172,10 +172,27 @@ func (p *chromePage) run(wait context.Context, actions ...chromedp.Action) error
 	defer cancel()
 	done := make(chan error, 1)
 	go func() { done <- chromedp.Run(ctx, actions...) }()
+	return awaitAction(done, held)
+}
+
+// dialogGrace is how long a call whose page just opened a dialog still waits
+// for its own result. The reply and the dialog's event reach chromedp on two
+// tabs' goroutines, so a call that finished before a timer opened an alert
+// lost to it: on every Windows CI run, never on Linux (2026-10-29).
+const dialogGrace = 250 * time.Millisecond
+
+// awaitAction returns the call's result, or errDialogOpen when a dialog holds
+// it past dialogGrace.
+func awaitAction(done <-chan error, held <-chan struct{}) error {
 	select {
 	case err := <-done:
 		return err
 	case <-held:
+	}
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(dialogGrace):
 		return errDialogOpen
 	}
 }
