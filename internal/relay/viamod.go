@@ -67,6 +67,9 @@ func (s *Service) takesDelivery(id string) (bool, error) {
 	return ready || s.term.ModAttached(id), nil
 }
 
+// errModRefused is a mod's ack that turned the prompt down, with its reason.
+var errModRefused = errors.New("its mod refused it")
+
 // handToMod hands a message to the session's mod, as a notification when note
 // is not nil, and reports whether it is the mod's to deliver now: false with no
 // error means type it instead, which is what a session with no mod and a prompt
@@ -89,7 +92,7 @@ func (s *Service) handToMod(sessionID, message string, note *Notification) (bool
 		return true, errors.New("the session ended before its mod took it")
 	case PromptAcked:
 		if !receipt.OK {
-			return true, fmt.Errorf("its mod refused it: %s", receipt.Reason)
+			return true, fmt.Errorf("%w: %s", errModRefused, receipt.Reason)
 		}
 	}
 	return true, nil

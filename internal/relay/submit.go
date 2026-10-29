@@ -2,6 +2,7 @@ package relay
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/lichdotdev/lich/api"
@@ -19,6 +20,10 @@ import (
 // relayed prompt is: it carries text strangers wrote (an issue body, a
 // comment), and an ESC[201~ in it would close the paste and type the rest as
 // keys.
+//
+// A message the mod refuses is typed instead: Claude Code turns a mod's prompt
+// down once the user stopped the session, until someone types at it, and the
+// person at the window is that someone.
 func (s *Service) Submit(ctx context.Context, opts api.SubmitOptions) (api.None, error) {
 	sess, ok := s.sessionOf(opts.SessionID)
 	if !ok {
@@ -34,5 +39,10 @@ func (s *Service) Submit(ctx context.Context, opts api.SubmitOptions) (api.None,
 	if !live {
 		return api.None{}, fmt.Errorf("%q is not running", sess.Label)
 	}
-	return api.None{}, s.deliver(opts.SessionID, sanitize(opts.Message), nil)
+	message := sanitize(opts.Message)
+	err = s.deliver(opts.SessionID, message, nil)
+	if errors.Is(err, errModRefused) {
+		err = s.typeIn(opts.SessionID, message)
+	}
+	return api.None{}, err
 }
