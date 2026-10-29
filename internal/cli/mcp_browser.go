@@ -18,7 +18,9 @@ var browserTools = []mcpTool{
 			"this session has none. It runs headless: the user sees the same page in a tab " +
 			"beside this session, which lich offers to open, so no window of its own is needed " +
 			"(headed is false, and that is expected). The URL must be http, https, or omitted " +
-			"(about:blank). file, javascript and data URLs are refused. A URL that answers with a " +
+			"(about:blank), or a local file inside this session's checkout, as an absolute path or a " +
+			"file URL, which lich serves over http from 127.0.0.1 so module scripts and fetch work. " +
+			"Other file URLs, javascript and data URLs are refused. A URL that answers with a " +
 			"file downloads it to the user's Downloads folder and leaves the page as it was; " +
 			"downloads in the answer names its path.",
 		Schema: schema(map[string]any{
@@ -153,7 +155,7 @@ var browserTools = []mcpTool{
 		Description: "Load a URL in this session's already-open browser. Same allowlist as browser_open, " +
 			"and a URL that answers with a file downloads it as browser_open does.",
 		Schema: schema(map[string]any{
-			"url": property("string", "http(s) URL, or about:blank."),
+			"url": property("string", "http(s) URL, about:blank, or a file inside this session's checkout."),
 		}, "url"),
 		Run: func(ctx context.Context, c *client, a mcpArgs) (string, error) {
 			id, err := c.browserOwner()

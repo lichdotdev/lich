@@ -28,6 +28,7 @@ import (
 	"github.com/lichdotdev/lich/internal/logging"
 	"github.com/lichdotdev/lich/internal/ompprofile"
 	"github.com/lichdotdev/lich/internal/patchnotes"
+	"github.com/lichdotdev/lich/internal/preview"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/quota"
@@ -220,6 +221,11 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// One Chromium per session, closed with the card and with the process.
 	// Never the lich window: this is a second browser the agent drives.
 	brows := browser.New(hub.Emit)
+	previews := preview.New()
+	brows.SetLocal(preview.IsLocal, func(owner, raw string) (string, error) {
+		dir, port := term.SessionCheckout(owner)
+		return previews.URL(dir, port, raw)
+	})
 	proj := project.New(project.ZenityPicker{})
 	// gh has one active account per host; a project can name a different one.
 	proj.SetAccounts(db.GHAccountForPath)
@@ -509,6 +515,9 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	return sys, func() {
 		if err := brows.Cleanup(); err != nil {
 			slog.Warn("close the session browsers on exit", "err", err)
+		}
+		if err := previews.Close(); err != nil {
+			slog.Warn("close the checkout preview servers on exit", "err", err)
 		}
 	}
 }

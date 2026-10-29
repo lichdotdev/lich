@@ -131,11 +131,14 @@ func (s *Service) Nav(owner, action, rawURL string) error {
 	case "reload":
 		fn = func(p Page, ctx context.Context) error { return p.Reload(ctx) }
 	case "go":
-		u, err := allowURL(rawURL)
-		if err != nil {
+		if err := s.checkURL(rawURL); err != nil {
 			return err
 		}
 		sess, err := s.live(owner)
+		if err != nil {
+			return err
+		}
+		u, err := s.resolveURL(sess.owner, rawURL)
 		if err != nil {
 			return err
 		}

@@ -106,3 +106,14 @@ func portFree(port int) bool {
 	_ = ln.Close()
 	return true
 }
+
+// SessionCheckout is the directory a live session was spawned in and the
+// dev-server port that checkout reserves, or zero values once it is gone or
+// never held one.
+func (s *Service) SessionCheckout(id string) (dir string, port int) {
+	dir = s.spawnOf(id).cwd
+	if dir == "" {
+		return "", 0
+	}
+	return dir, s.store.WorktreePorts()[filepath.Clean(dir)]
+}

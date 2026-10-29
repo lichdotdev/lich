@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"log"
 	"math"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -482,14 +483,15 @@ func displayURL(raw string) string {
 	return raw
 }
 
-// typedURL is what the address field's text loads: a URL as typed, and a
-// bare host (localhost:3000, example.com) over http for a local one and https
-// for any other.
+// typedURL is what the address field's text loads: a URL or an absolute path
+// as typed, and a bare host (localhost:3000, example.com) over http for a
+// local one and https for any other. The backend serves a path from the
+// session's checkout (internal/preview).
 func typedURL(text string) string {
 	switch {
 	case text == "":
 		return "about:blank"
-	case hasScheme(text):
+	case hasScheme(text), filepath.IsAbs(text):
 		return text
 	case isLocalHost(text):
 		return "http://" + text

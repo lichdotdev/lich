@@ -67,6 +67,9 @@ type Service struct {
 	// window's, since Chrome's own 800x600 lays most sites out cramped. Zero
 	// until the window says.
 	defaultView Viewport
+	// isLocal and local are SetLocal's.
+	isLocal func(raw string) bool
+	local   func(owner, raw string) (string, error)
 }
 
 type session struct {
@@ -127,7 +130,7 @@ func (s *Service) Open(owner, rawURL string) (Handle, error) {
 	if owner == "" {
 		return Handle{}, errNoOwner
 	}
-	u, err := allowURL(rawURL)
+	u, err := s.resolveURL(owner, rawURL)
 	if err != nil {
 		return Handle{}, err
 	}

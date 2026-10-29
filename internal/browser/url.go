@@ -32,3 +32,30 @@ func allowURL(raw string) (string, error) {
 		return "", fmt.Errorf("blocked url scheme %q", u.Scheme)
 	}
 }
+
+// SetLocal sets how a local file, a file: URL or an absolute path, becomes a
+// URL a session's browser may load: the http URL that serves it from that
+// session's checkout (internal/preview). Unset, a local file is refused like
+// any other blocked URL.
+func (s *Service) SetLocal(isLocal func(raw string) bool, local func(owner, raw string) (string, error)) {
+	s.isLocal, s.local = isLocal, local
+}
+
+// checkURL refuses what resolveURL would refuse without knowing the owner: a
+// blocked URL fails before the browser is looked up.
+func (s *Service) checkURL(raw string) error {
+	if s.local != nil && s.isLocal(raw) {
+		return nil
+	}
+	_, err := allowURL(raw)
+	return err
+}
+
+// resolveURL is the URL owner's browser loads for raw: a local file served
+// from owner's checkout, or raw itself when allowURL lets it through.
+func (s *Service) resolveURL(owner, raw string) (string, error) {
+	if s.local != nil && s.isLocal(raw) {
+		return s.local(owner, raw)
+	}
+	return allowURL(raw)
+}

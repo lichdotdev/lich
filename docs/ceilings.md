@@ -991,6 +991,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **A local file loads from the session's checkout, served over loopback http** (`internal/preview`): a path or
+  `file:` URL inside the directory the session was spawned in becomes `http://127.0.0.1:<port>/…`, the port being
+  the checkout's `LICH_WORKTREE_PORT` plus 1000 (25000-25999). The server is bound the first time a page from that
+  checkout is asked for and holds the port until lich exits; a port something else holds moves it to the next
+  free one in the window, so that checkout's origin, and the storage a page keeps under it, changes until it
+  gets its port back. Everything under the directory is served, ignored files included, and the root is
+  the spawn directory, so a session started in the home directory serves all of it. `os.Root` refuses `..` and
+  symlinks leading out. It is a static server: no reload on save, no SPA fallback, no headers of the project's.
+  The root stays the checkout whatever file is opened, so a build in a subdirectory that links its assets from
+  `/` (Vite's default `base`) loads blank from `dist/index.html`; one built with a relative base loads.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
   element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a
