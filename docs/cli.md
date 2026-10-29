@@ -153,7 +153,7 @@ api	revu	crush	revu-9f8e	-
 ```
 
 `--json` prints an array of
-`{"label","name","project","kind","state","id","path","projectPath"}`,
+`{"label","name","project","kind","state","id","path","projectPath","tool","detail","reason"}`,
 `[]` when there are none. `path` is the directory the session runs in (its
 worktree's, for a worktree session) and `projectPath` the root of its project:
 what an editor matches its open folder against to find the session beside it.
@@ -179,6 +179,13 @@ hook (`docs/hooks/session-state.md`), and it is the same thing its card shows:
   Claude Code and never reports waiting, and a session that has not had a turn yet has said nothing
   either), so an empty state says nothing about whether that session is free.
 
+`tool`, `detail` and `reason` are the line the card draws under the label, in
+the provider's own words and absent when empty: while `busy`, the tool the turn
+is running and what it acts on (`"tool":"Bash","detail":"go test ./..."`), kept
+through the gap after a tool until the next one; while `waiting`, what it is
+blocked on. A busy turn that has named no tool yet carries neither, and neither
+outlives the state it came with. The table does not print them.
+
 ### `lich whoami [--json]`
 
 Prints the session the command runs in: the one entry `sessions` never lists.
@@ -190,7 +197,7 @@ auth-fix	lich	claude	lich-a1b2	busy	0b9c…
 ```
 
 `--json` prints one object in the `sessions` shape,
-`{"label","name","project","kind","state","id","path","projectPath"}`. It is how a caller learns its
+`{"label","name","project","kind","state","id","path","projectPath","tool","detail","reason"}`. It is how a caller learns its
 own label and id without guessing: lich-plugin's Claude Code mod reads it to
 tell that a `control` aimed at a label is aimed at its own session. Run outside
 a lich session (`LICH_SESSION_ID` unset) it is an error, exit 1.

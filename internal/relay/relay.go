@@ -192,6 +192,10 @@ type Terminal interface {
 	// peer roster, read out of the provider's own record. Empty when there is
 	// none, which is what leaves the roster on the derived name.
 	AgentName(id string) string
+	// Status is the last session-status report the window was sent for that
+	// session, zero when there is none: where the roster reads the tool and
+	// the reason the card shows.
+	Status(id string) api.SessionStatus
 	// HoldInput keeps what the person at that session types out of the
 	// submission this delivery is making, and hands it back at the prompt
 	// afterwards. The returned release is called once the Enter is through

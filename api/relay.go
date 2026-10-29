@@ -124,6 +124,13 @@ type Peer struct {
 	// it; the name of a project says nothing about where it is.
 	Path        string `json:"path"`
 	ProjectPath string `json:"projectPath"`
+	// Tool and Detail are the tool a busy session is running and what it acts
+	// on, Reason what a waiting one is blocked on: the line its card draws
+	// under the label, in the provider's own words (SessionStatus). Empty in
+	// every other state, and for a busy turn that has named no tool yet.
+	Tool   string `json:"tool,omitempty"`
+	Detail string `json:"detail,omitempty"`
+	Reason string `json:"reason,omitempty"`
 }
 
 // ReplyOptions is one Reply call, an object for the reason SendOptions is one.

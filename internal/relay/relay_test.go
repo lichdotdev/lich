@@ -65,6 +65,9 @@ type fakeTerminal struct {
 	// transcript the terminal service reads. Empty for a session nobody renamed,
 	// which is what puts the roster back on the derived name.
 	names map[string]string
+	// statuses is the last session-status report of each session, standing in
+	// for the terminal's book the card is drawn from.
+	statuses map[string]api.SessionStatus
 	// holding is whether a hold is open on that session right now, and inHold
 	// collects the writes that landed inside one — which is how a test asks
 	// whether the whole paste-to-Enter window was covered.
@@ -84,7 +87,7 @@ func newFakeTerminal(live ...string) *fakeTerminal {
 		live: map[string]bool{}, writes: map[string][]string{},
 		starting: map[string]bool{}, typing: map[string]bool{},
 		noisy: map[string]int{}, drained: map[string]int{},
-		names:   map[string]string{},
+		names: map[string]string{}, statuses: map[string]api.SessionStatus{},
 		holding: map[string]bool{}, inHold: map[string][]string{},
 		mods: map[string]*fakeMod{}, answering: map[string]bool{},
 	}
@@ -99,6 +102,21 @@ func (f *fakeTerminal) AgentName(id string) string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.names[id]
+}
+
+// Status answers with whatever reported() recorded for that session.
+func (f *fakeTerminal) Status(id string) api.SessionStatus {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.statuses[id]
+}
+
+// reported records st as the session's last status report, as the terminal's
+// book does for the window.
+func (f *fakeTerminal) reported(st api.SessionStatus) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.statuses[st.ID] = st
 }
 
 // renamed makes a session answer to name the way a /rename inside it would.
@@ -466,6 +484,60 @@ func TestPeersCarryTheStateEachSessionReported(t *testing.T) {
 	svc.mu.Unlock()
 	if turn != stateBusy {
 		t.Errorf("turn state = %q, want %q — waiting mid-turn is still a turn", turn, stateBusy)
+	}
+}
+
+// The roster carries the line the card draws under a session's label: the tool
+// a busy session runs and what a waiting one is blocked on. It leaves with the
+// state it was reported in.
+func TestPeersCarryTheToolOfABusySession(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	svc := newRelay(workspace(), term, nil)
+	peerS2 := func() Peer {
+		t.Helper()
+		peers, err := svc.Peers(t.Context(), PeersOptions{From: "s1"})
+		if err != nil || len(peers) != 1 {
+			t.Fatalf("Peers = %+v, %v; want s2 alone", peers, err)
+		}
+		return peers[0]
+	}
+
+	svc.Observe("s2", stateBusy)
+	term.reported(api.SessionStatus{ID: "s2", State: stateBusy, Tool: "Bash", Detail: "go test ./..."})
+	if p := peerS2(); p.Tool != "Bash" || p.Detail != "go test ./..." || p.Reason != "" {
+		t.Errorf("busy peer = %+v, want Bash: go test ./...", p)
+	}
+
+	svc.Observe("s2", stateWaiting)
+	term.reported(api.SessionStatus{ID: "s2", State: stateWaiting, Reason: "permission"})
+	if p := peerS2(); p.Tool != "" || p.Detail != "" || p.Reason != "permission" {
+		t.Errorf("waiting peer = %+v, want no tool, blocked on permission", p)
+	}
+
+	svc.Observe("s2", stateDone)
+	term.reported(api.SessionStatus{ID: "s2", State: stateDone})
+	if p := peerS2(); p.Tool != "" || p.Detail != "" || p.Reason != "" {
+		t.Errorf("done peer = %+v, want neither tool nor reason", p)
+	}
+}
+
+// A tool is never shown beside a state it was not reported in: the two reads
+// are taken apart, and a busy tool next to done would describe another turn.
+func TestPeersDropAToolTheStateDisagreesWith(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s2")
+	svc := newRelay(workspace(), term, nil)
+	svc.Observe("s2", stateBusy)
+	svc.Observe("s2", stateDone)
+	term.reported(api.SessionStatus{ID: "s2", State: stateBusy, Tool: "Bash"})
+
+	peers, err := svc.Peers(t.Context(), PeersOptions{From: "s1"})
+	if err != nil || len(peers) != 1 {
+		t.Fatalf("Peers = %+v, %v; want s2 alone", peers, err)
+	}
+	if peers[0].State != stateDone || peers[0].Tool != "" {
+		t.Errorf("peer = %+v, want done with no tool", peers[0])
 	}
 }
 

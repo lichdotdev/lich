@@ -953,6 +953,9 @@ Peer {
 	id string
 	path string
 	projectPath string
+	tool,omitempty string
+	detail,omitempty string
+	reason,omitempty string
 }
 
 ReplyOptions {
