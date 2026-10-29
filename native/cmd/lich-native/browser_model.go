@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	"log"
 	"slices"
+	"sync"
 	"time"
 
 	"gioui.org/op/paint"
@@ -24,6 +26,14 @@ import (
 type browserFrame struct {
 	img  paint.ImageOp
 	size image.Point
+	// seq orders the frames of a page: decoders finish out of order.
+	seq uint64
+}
+
+// pendingFrame is a page's newest frame not yet decoded.
+type pendingFrame struct {
+	ev  backend.Event
+	seq uint64
 }
 
 // browserMark is one agent action on its page: which one, where, and for a
@@ -45,12 +55,17 @@ const agentMarksKept = 8
 type browserStore struct {
 	states map[string]api.BrowserState
 	frames map[string]browserFrame
-	agent  map[string][]browserMark
-	seq    uint64
+	// pending is each page's newest frame not yet decoded (decodeFrames),
+	// under its own lock: the /events loop never waits on m.mu for a frame.
+	pendingMu sync.Mutex
+	pending   map[string]pendingFrame
+	frameSeq  uint64
+	agent     map[string][]browserMark
+	seq       uint64
 }
 
 func newBrowserStore() browserStore {
-	return browserStore{states: map[string]api.BrowserState{}, frames: map[string]browserFrame{}, agent: map[string][]browserMark{}}
+	return browserStore{states: map[string]api.BrowserState{}, frames: map[string]browserFrame{}, pending: map[string]pendingFrame{}, agent: map[string][]browserMark{}}
 }
 
 // hydrateBrowsers reads the browsers running now, and takes out of the
@@ -105,6 +120,9 @@ func (m *model) applyBrowserState(ctx context.Context, st api.BrowserState) {
 	} else {
 		delete(m.browsers.states, st.Owner)
 		delete(m.browsers.frames, st.Owner)
+		m.browsers.pendingMu.Lock()
+		delete(m.browsers.pending, st.Owner)
+		m.browsers.pendingMu.Unlock()
 		delete(m.browsers.agent, st.Owner)
 	}
 	shownTab := ""
@@ -124,9 +142,66 @@ func (m *model) applyBrowserState(ctx context.Context, st api.BrowserState) {
 	}
 }
 
+// frameDecoders is how many frames the window decodes at once. A busy page's
+// 1280x720 frame takes 15 ms to decode (measured 2026-10-29), so one decoder
+// only just keeps up with 60 fps; four leave room for a slower CPU.
+const frameDecoders = 4
+
+// offerBrowserFrame hands owner's newest frame to decodeFrames, replacing one
+// no decoder has taken yet.
+func (m *model) offerBrowserFrame(owner string, ev backend.Event, kick chan<- struct{}) {
+	m.browsers.pendingMu.Lock()
+	m.browsers.frameSeq++
+	m.browsers.pending[owner] = pendingFrame{ev: ev, seq: m.browsers.frameSeq}
+	m.browsers.pendingMu.Unlock()
+	select {
+	case kick <- struct{}{}:
+	default:
+	}
+}
+
+// takeBrowserFrame takes one page's pending frame, false for none.
+func (m *model) takeBrowserFrame() (string, pendingFrame, bool) {
+	m.browsers.pendingMu.Lock()
+	defer m.browsers.pendingMu.Unlock()
+	for owner, f := range m.browsers.pending {
+		delete(m.browsers.pending, owner)
+		return owner, f, true
+	}
+	return "", pendingFrame{}, false
+}
+
+// decodeFrames decodes, off the /events loop and frameDecoders at a time,
+// only each page's newest frame, until kick closes; then it closes the
+// returned channel. A page animating at 60 fps sends frames faster than one
+// decode takes, and decoding each in turn queued them for seconds, and every
+// other event behind them. kick holds a wake per decoder.
+func (m *model) decodeFrames(kick <-chan struct{}) <-chan struct{} {
+	var wg sync.WaitGroup
+	for range frameDecoders {
+		wg.Go(func() {
+			for range kick {
+				for owner, f, ok := m.takeBrowserFrame(); ok; owner, f, ok = m.takeBrowserFrame() {
+					if err := m.applyBrowserFrame(owner, f.ev, f.seq); err != nil {
+						log.Print(err)
+					}
+					m.invalidate()
+				}
+			}
+		})
+	}
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	return done
+}
+
 // applyBrowserFrame decodes one frame of owner's page off the frame
-// goroutine, so the pane only draws it.
-func (m *model) applyBrowserFrame(owner string, ev backend.Event) error {
+// goroutine, so the pane only draws it, and keeps it unless a newer one
+// landed first.
+func (m *model) applyBrowserFrame(owner string, ev backend.Event, seq uint64) error {
 	data, err := backend.Decode(ev, api.BrowserFrameEvents.Of(owner))
 	if err != nil {
 		return err
@@ -139,9 +214,11 @@ func (m *model) applyBrowserFrame(owner string, ev backend.Event) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", ev.Name, err)
 	}
-	frame := browserFrame{img: paint.NewImageOp(img), size: img.Bounds().Size()}
+	frame := browserFrame{img: paint.NewImageOp(img), size: img.Bounds().Size(), seq: seq}
 	m.mu.Lock()
-	m.browsers.frames[owner] = frame
+	if frame.seq > m.browsers.frames[owner].seq {
+		m.browsers.frames[owner] = frame
+	}
 	m.mu.Unlock()
 	return nil
 }

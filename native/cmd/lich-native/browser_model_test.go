@@ -4,10 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"image"
 	"image/jpeg"
+	"log"
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -107,6 +112,106 @@ func TestBrowserFrameIsDecodedForThePane(t *testing.T) {
 	if _, frame, _ := m.browserView("orch"); frame.size != image.Pt(8, 6) {
 		t.Fatalf("frame size %v", frame.size)
 	}
+}
+
+func TestBrowserFramesDecodeTwoAtOnce(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	kick := make(chan struct{}, frameDecoders)
+	decoded := m.decodeFrames(kick)
+	name := api.BrowserFrameEvents.Of("orch").Name
+	m.mu.Lock()
+	for range 2 {
+		if !takenWhileDecoding(m, jpegFrame(t, name, 8), kick) {
+			m.mu.Unlock()
+			t.Fatal("a frame waited for a busy decoder")
+		}
+	}
+	m.mu.Unlock()
+	close(kick)
+	<-decoded
+}
+
+func TestBrowserFrameSurplusDecodesOnlyTheNewest(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	var logged bytes.Buffer
+	log.SetOutput(&logged)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	name := api.BrowserFrameEvents.Of("orch").Name
+	kick := make(chan struct{}, frameDecoders)
+	decoded := m.decodeFrames(kick)
+	m.mu.Lock()
+	for range frameDecoders {
+		if !takenWhileDecoding(m, jpegFrame(t, name, 8), kick) {
+			m.mu.Unlock()
+			t.Fatal("a frame waited for a busy decoder while another was free")
+		}
+	}
+	newest := jpegFrame(t, name, 9)
+	offered := make(chan struct{})
+	go func() {
+		// A stale frame that fails to decode: decoding it would log.
+		m.offerBrowserFrame("orch", backend.Event{Name: name, Data: json.RawMessage(`"!!"`)}, kick)
+		m.offerBrowserFrame("orch", newest, kick)
+		close(offered)
+	}()
+	select {
+	case <-offered:
+	case <-time.After(2 * time.Second):
+		t.Error("offering a frame waited on a decode")
+	}
+	m.mu.Unlock()
+	<-offered
+	close(kick)
+	<-decoded
+	if _, f, _ := m.browserView("orch"); f.size != image.Pt(9, 6) {
+		t.Fatalf("frame size %v, want the newest", f.size)
+	}
+	if logged.Len() > 0 {
+		t.Fatalf("decoded a frame a newer one replaced: %s", logged.String())
+	}
+}
+
+func TestOlderBrowserFrameDecodedLastKeepsTheNewer(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	name := api.BrowserFrameEvents.Of("orch").Name
+	if err := m.applyBrowserFrame("orch", jpegFrame(t, name, 9), 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.applyBrowserFrame("orch", jpegFrame(t, name, 8), 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, f, _ := m.browserView("orch"); f.size != image.Pt(9, 6) {
+		t.Fatalf("frame size %v, want the newer frame's", f.size)
+	}
+}
+
+// takenWhileDecoding offers frame with m.mu held, which keeps each decoder
+// that takes one waiting to keep it, as a decode slower than the page sends
+// frames would; it reports whether a decoder took it.
+func takenWhileDecoding(m *model, frame backend.Event, kick chan<- struct{}) bool {
+	m.offerBrowserFrame("orch", frame, kick)
+	deadline := time.Now().Add(2 * time.Second)
+	for pendingFrames(m) > 0 && time.Now().Before(deadline) {
+		runtime.Gosched()
+	}
+	return pendingFrames(m) == 0
+}
+
+// jpegFrame is a frame event of a w by 6 page.
+func jpegFrame(t *testing.T, name string, w int) backend.Event {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, image.NewRGBA(image.Rect(0, 0, w, 6)), nil); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := json.Marshal(base64.StdEncoding.EncodeToString(buf.Bytes()))
+	return backend.Event{Name: name, Data: data}
+}
+
+func pendingFrames(m *model) int {
+	m.browsers.pendingMu.Lock()
+	defer m.browsers.pendingMu.Unlock()
+	return len(m.browsers.pending)
 }
 
 func TestTypedURL(t *testing.T) {

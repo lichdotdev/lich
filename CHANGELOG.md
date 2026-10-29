@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Continue in keeps the session's browser. Moving a session to another profile closed its browser, and its page and cookies were gone when the session came back up.
+- The session browser keeps up with a busy page. On a page that animates or runs a lot of JavaScript, the browser tab fell seconds behind the page and the rest of the window waited with it; it now skips to the newest frame.
+- The session browser is sharp on a HiDPI screen. Its tab showed the page at 1x, blurred, on any display; it now draws it at up to 1.5x.
 - Notes from the session browser, and the Pulls screen's Fix CI errors and Resolve conflicts, reach a Claude Code session you stopped with Esc. Claude Code turned the message down until someone typed at the session, and the tray said "its mod refused it"; lich now types the message at the prompt instead.
 
 ## [0.81.0] - 2026-10-28
