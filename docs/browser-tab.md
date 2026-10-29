@@ -42,6 +42,10 @@ session, and closing its page closes the browser.
 ## What the agent may load
 
 `http`, `https`, `about:blank`. Not `file:`, `javascript:`, `data:`, `chrome:`.
+A local file inside the session's checkout, typed or sent as an absolute path
+or a `file:` URL, loads over http instead (`internal/preview`): the backend
+serves that checkout on `127.0.0.1`, at its `LICH_WORKTREE_PORT` plus 1000, so
+each checkout is its own origin, and a path outside the checkout is refused.
 Page info never includes form values. Screenshots are files. Click, type and
 press are real input events. `press` is named keys only. Arbitrary JavaScript
 in the page is not a tool.

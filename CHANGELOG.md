@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `lich sessions --json`, `lich whoami --json` and the MCP tool `list_sessions` carry the line a session's card shows under its label: `tool` and `detail` while it is busy, the tool it is running and what it acts on, and `reason` while it waits on you. A script or a desktop widget can show what each agent is doing without opening the window.
+- A session's browser opens a local file from the session's checkout. Type its path in the address field, or the agent passes the path or a `file:` URL to `browser_open`, and lich serves the checkout over http on 127.0.0.1, on a port of its own per worktree (the checkout's `LICH_WORKTREE_PORT` plus 1000), so module scripts, `fetch` and relative assets work and each worktree keeps its own storage. A path outside the checkout is refused. Before, a local file could not be opened at all, and previewing one meant starting a static server by hand.
 
 ### Fixed
 

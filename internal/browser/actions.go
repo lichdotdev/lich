@@ -173,11 +173,14 @@ func (s *Service) Screenshot(id, dest string) (string, error) {
 
 // Navigate loads url in this session's browser.
 func (s *Service) Navigate(id, rawURL string) (Handle, error) {
-	u, err := allowURL(rawURL)
-	if err != nil {
+	if err := s.checkURL(rawURL); err != nil {
 		return Handle{}, err
 	}
 	sess, err := s.live(id)
+	if err != nil {
+		return Handle{}, err
+	}
+	u, err := s.resolveURL(sess.owner, rawURL)
 	if err != nil {
 		return Handle{}, err
 	}

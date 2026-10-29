@@ -35,3 +35,32 @@ func TestAllowURL(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveURLHandsALocalFileToTheOwnersCheckout(t *testing.T) {
+	s := &Service{}
+	if _, err := s.resolveURL("s1", "file:///srv/index.html"); err == nil || err.Error() != `blocked url scheme "file"` {
+		t.Fatalf("unset local: err = %v, want the file scheme blocked", err)
+	}
+	var gotOwner, gotRaw string
+	s.SetLocal(func(raw string) bool { return raw == "file:///srv/index.html" }, func(owner, raw string) (string, error) {
+		gotOwner, gotRaw = owner, raw
+		return "http://127.0.0.1:25001/index.html", nil
+	})
+	u, err := s.resolveURL("s1", "file:///srv/index.html")
+	if err != nil || u != "http://127.0.0.1:25001/index.html" || gotOwner != "s1" || gotRaw != "file:///srv/index.html" {
+		t.Fatalf("resolveURL = %q, %v; local saw %q %q", u, err, gotOwner, gotRaw)
+	}
+	if u, err := s.resolveURL("s1", "https://example.com"); err != nil || u != "https://example.com" {
+		t.Fatalf("resolveURL(https) = %q, %v", u, err)
+	}
+}
+
+func TestNavigateRefusesABlockedURLBeforeLookingForTheBrowser(t *testing.T) {
+	s := &Service{}
+	if _, err := s.Navigate("nobody", "javascript:alert(1)"); err == nil || err.Error() != `blocked url scheme "javascript"` {
+		t.Fatalf("Navigate err = %v, want the scheme blocked", err)
+	}
+	if err := s.Nav("nobody", "go", "data:text/html,hi"); err == nil || err.Error() != `blocked url scheme "data"` {
+		t.Fatalf("Nav err = %v, want the scheme blocked", err)
+	}
+}

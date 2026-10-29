@@ -120,6 +120,8 @@ func TestTypedURL(t *testing.T) {
 		"https://example.com":    "https://example.com",
 		"example.com:8443/login": "https://example.com:8443/login",
 	}
+	page := filepath.Join(t.TempDir(), "index.html")
+	cases[page] = page
 	for in, want := range cases {
 		if got := typedURL(in); got != want {
 			t.Errorf("typedURL(%q) = %q, want %q", in, got, want)
