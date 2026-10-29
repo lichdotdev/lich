@@ -18,6 +18,9 @@
   "browser": {
     "title": "Navegador",
     "close": "Fechar o navegador",
+    "newTab": "Nova aba",
+    "closeTab": "Fechar aba",
+    "blankTab": "Nova aba",
     "address": "Digite uma URL",
     "back": "Voltar",
     "forward": "Avançar",

@@ -257,12 +257,14 @@ func TestMCPListsEveryTool(t *testing.T) {
 		"browser_dialog":     {"accept"},
 		"browser_list":       {},
 		"browser_close":      {},
+		"browser_tabs":       {},
+		"browser_tab":        {"action"},
 	}
 	// The read-only ones, which a client may auto-allow. wait_for_answer is
 	// not among them: collecting drains the inbox.
 	readOnly := map[string]bool{
 		"list_sessions": true, "list_worktrees": true, "list_folders": true,
-		"browser_info": true, "browser_list": true, "browser_screenshot": true,
+		"browser_info": true, "browser_list": true, "browser_screenshot": true, "browser_tabs": true,
 	}
 	if len(result.Tools) != len(want) {
 		t.Fatalf("got %d tools, want %d", len(result.Tools), len(want))

@@ -152,6 +152,20 @@ func (s *Service) Handles(_ context.Context, opts api.SessionIDOptions) ([]api.B
 	return out, nil
 }
 
+// ListTabs is this session's browser's tabs.
+func (s *Service) ListTabs(_ context.Context, opts api.SessionIDOptions) ([]api.BrowserTab, error) {
+	return s.Tabs(opts.ID)
+}
+
+// ActOnTab is the agent opening, selecting or closing a tab, answered with
+// the page then in front.
+func (s *Service) ActOnTab(_ context.Context, opts api.BrowserTabOptions) (api.BrowserPageInfo, error) {
+	if err := s.TabAct(opts); err != nil {
+		return s.heldOr(opts.ID, err)
+	}
+	return s.pageAfter(opts.ID)
+}
+
 // CloseOne tears down this session's browser.
 func (s *Service) CloseOne(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
 	return api.None{}, s.Close(opts.ID)
@@ -237,6 +251,11 @@ func (s *Service) SelectedText(_ context.Context, opts api.SessionIDOptions) (st
 		return err
 	})
 	return text, err
+}
+
+// TabView runs the pane's tabs.
+func (s *Service) TabView(_ context.Context, opts api.BrowserTabOptions) (api.None, error) {
+	return api.None{}, s.TabNav(opts)
 }
 
 // NavView runs the pane's toolbar.

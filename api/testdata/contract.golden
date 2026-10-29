@@ -29,6 +29,9 @@ browser.Screenshot(BrowserScreenshotOptions) string
 browser.Scroll(BrowserScrollOptions) None
 browser.Selection(SessionIDOptions) string
 browser.Show(SessionIDOptions) BrowserHandle
+browser.TabAction(BrowserTabOptions) BrowserPageInfo
+browser.TabNav(BrowserTabOptions) None
+browser.Tabs(SessionIDOptions) []BrowserTab
 browser.Text(BrowserTextOptions) None
 browser.Type(BrowserTypeOptions) None
 claudeprofile.CancelLogin(ProfileSlugOptions) None
@@ -446,6 +449,7 @@ BrowserState {
 	url string
 	title string
 	dialog,omitempty *BrowserDialog
+	tabs,omitempty []BrowserTab
 }
 
 BrowserScreenshotOptions {
@@ -456,6 +460,20 @@ BrowserScreenshotOptions {
 BrowserScrollOptions {
 	id string
 	dy int
+}
+
+BrowserTabOptions {
+	id string
+	action string
+	tab,omitempty string
+	url,omitempty string
+}
+
+BrowserTab {
+	id string
+	url string
+	title string
+	front,omitempty bool
 }
 
 BrowserTextOptions {
@@ -1591,6 +1609,7 @@ BrowserAgentAct {
 	y,omitempty *float64
 	dy,omitempty int
 	url,omitempty string
+	tab,omitempty string
 }
 
 BrowserDownload {

@@ -3,13 +3,16 @@ package browser
 import (
 	"context"
 	"errors"
-	"log/slog"
+	"slices"
 	"sync"
 
-	"github.com/chromedp/cdproto/cdp"
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/target"
-	"github.com/chromedp/chromedp"
+	"github.com/lichdotdev/lich/api"
+)
+
+var (
+	errNoTab   = errors.New("no such tab in this session's browser")
+	errLastTab = errors.New("the browser's last tab cannot be closed; close the browser instead")
 )
 
 // tab is one of the page's tabs. Only the front one is drawn and driven: a
@@ -19,15 +22,20 @@ type tab struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	id     target.ID
+	// opener is the tab that opened this one, which comes back to the front
+	// when this one closes; nil for one the person or the agent opened.
+	opener     *tab
+	url, title string
 }
 
-// tabStack is the first tab with the tabs opened over it, the front one
-// last. A tab the front one opens goes in front of it, and the one under it
-// comes back when it closes, still logged in and where it was: loading the
-// new tab's URL in the first one instead lost a login a script held there.
+// tabStack is the page's tabs in the order the pane shows them. A tab one
+// opens goes right after its opener, and the opener stays as it was, still
+// logged in: loading the new tab's URL in the opener instead lost a login a
+// script held there.
 type tabStack struct {
-	mu   sync.Mutex
-	open []*tab
+	mu    sync.Mutex
+	open  []*tab
+	front *tab
 	// view is the size the page was last laid out at, which a tab coming to
 	// the front is laid out at too.
 	view *Viewport
@@ -38,31 +46,102 @@ type tabStack struct {
 	dialog *tab
 }
 
-func (s *tabStack) front() *tab {
+// start is the stack holding the browser's first tab, in front.
+func (s *tabStack) start(t *tab) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.open[len(s.open)-1]
+	s.open, s.front = []*tab{t}, t
 }
 
-func (s *tabStack) push(t *tab) {
+func (s *tabStack) frontTab() *tab {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.open = append(s.open, t)
+	return s.front
 }
 
-// remove takes the tab id out of the stack, and says whether it was the
-// front one. The first tab is never removed: it is the browser's own.
+func (s *tabStack) setFront(t *tab) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.front = t
+}
+
+// add puts t right after the tabs its opener opened before it, or last.
+func (s *tabStack) add(t *tab) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	at := len(s.open)
+	if i := slices.Index(s.open, t.opener); i >= 0 {
+		at = i + 1
+		for at < len(s.open) && s.open[at].opener == t.opener {
+			at++
+		}
+	}
+	s.open = slices.Insert(s.open, at, t)
+}
+
+func (s *tabStack) byID(id target.ID) *tab {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, t := range s.open {
+		if t.id == id {
+			return t
+		}
+	}
+	return nil
+}
+
+func (s *tabStack) count() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.open)
+}
+
+// remove takes the tab id out, and says whether it was the front one, in
+// which case its opener comes to the front, else the tab beside it. The last
+// tab is never removed: a browser has one.
 func (s *tabStack) remove(id target.ID) (t *tab, front bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for i := len(s.open) - 1; i > 0; i-- {
-		if s.open[i].id == id {
-			t = s.open[i]
-			s.open = append(s.open[:i], s.open[i+1:]...)
-			return t, i == len(s.open)
+	i := slices.IndexFunc(s.open, func(t *tab) bool { return t.id == id })
+	if i < 0 || len(s.open) == 1 {
+		return nil, false
+	}
+	t = s.open[i]
+	s.open = slices.Delete(s.open, i, i+1)
+	for _, o := range s.open {
+		if o.opener == t {
+			o.opener = t.opener
 		}
 	}
-	return nil, false
+	if s.front != t {
+		return t, false
+	}
+	s.front = s.open[min(i, len(s.open)-1)]
+	if t.opener != nil {
+		s.front = t.opener
+	}
+	return t, true
+}
+
+// setInfo records a tab's URL and title, and says whether either changed.
+func (s *tabStack) setInfo(t *tab, url, title string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if t.url == url && t.title == title {
+		return false
+	}
+	t.url, t.title = url, title
+	return true
+}
+
+func (s *tabStack) list() []api.BrowserTab {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]api.BrowserTab, len(s.open))
+	for i, t := range s.open {
+		out[i] = api.BrowserTab{ID: string(t.id), URL: t.url, Title: t.title, Front: t == s.front}
+	}
+	return out
 }
 
 func (s *tabStack) setView(v Viewport) {
@@ -102,123 +181,5 @@ func (s *tabStack) dialogHolder() *tab {
 	if s.dialog != nil {
 		return s.dialog
 	}
-	return s.open[len(s.open)-1]
-}
-
-// followNewTabs brings in front what the front tab opens in a new tab or
-// window, and the tab under it back once it closes.
-func (p *chromePage) followNewTabs() {
-	c := chromedp.FromContext(p.ctx)
-	discover := chromedp.ActionFunc(func(ctx context.Context) error {
-		return target.SetDiscoverTargets(true).Do(cdp.WithExecutor(ctx, c.Browser))
-	})
-	if err := p.runFree(nil, discover); err != nil {
-		slog.Warn("browser: watch for new tabs", "err", err)
-		return
-	}
-	chromedp.ListenBrowser(p.ctx, func(ev any) {
-		var info *target.Info
-		switch e := ev.(type) {
-		case *target.EventTargetCreated:
-			info = e.TargetInfo
-		case *target.EventTargetInfoChanged:
-			info = e.TargetInfo
-		case *target.EventTargetDestroyed:
-			go p.dropTab(e.TargetID)
-			return
-		}
-		// A new tab is created at about:blank and gets its URL after.
-		if info == nil || info.OpenerID != p.tabs.front().id || info.Type != "page" || info.URL == "" || info.URL == "about:blank" {
-			return
-		}
-		// Both the created and the info-changed event can name the tab.
-		if _, taken := p.listen.taken.LoadOrStore(info.TargetID, true); !taken {
-			go p.bringIn(info.TargetID, info.URL)
-		}
-	})
-}
-
-// bringIn attaches to the tab id the front tab opened and puts it in front.
-func (p *chromePage) bringIn(id target.ID, url string) {
-	if _, err := allowURL(url); err != nil {
-		slog.Warn("browser: a new tab's URL is not one the page may load", "url", url, "err", err)
-		p.closeTab(id)
-		return
-	}
-	ctx, cancel := chromedp.NewContext(p.ctx, chromedp.WithTargetID(id))
-	t := &tab{ctx: ctx, cancel: cancel, id: id}
-	p.listenTab(t)
-	if err := chromedp.Run(ctx); err != nil {
-		cancel()
-		if p.Alive() {
-			slog.Warn("browser: attach to a tab the page opened", "url", url, "err", err)
-		}
-		return
-	}
-	err := p.castPastDialog(func() error {
-		casting := p.casting
-		// Pushed even when the stop fails, or nothing would let the tab go.
-		stopped := p.stopCast(nil)
-		p.tabs.push(t)
-		return errors.Join(stopped, p.showFront(casting))
-	})
-	if err != nil && p.Alive() {
-		slog.Warn("browser: bring a new tab to the front", "url", url, "err", err)
-	}
-	p.reportInfo()
-}
-
-// dropTab forgets the tab id once Chrome closed it, and brings the one under
-// it back when it was in front.
-func (p *chromePage) dropTab(id target.ID) {
-	t, front := p.tabs.remove(id)
-	if t == nil {
-		return
-	}
-	defer t.cancel()
-	// A tab closed on its dialog sends no event that it closed.
-	if p.tabs.dialogClosed(t) {
-		p.gate.close()
-		p.dialogShown(nil)
-	}
-	if !front {
-		return
-	}
-	err := p.castPastDialog(func() error {
-		// Chrome ended the closed tab's screencast with it.
-		casting := p.casting
-		p.casting = false
-		return p.showFront(casting)
-	})
-	if err != nil && p.Alive() {
-		slog.Warn("browser: bring a tab back to the front", "err", err)
-	}
-	p.reportInfo()
-}
-
-// showFront raises the front tab, lays it out at the page's size and starts
-// its frames when casting.
-func (p *chromePage) showFront(casting bool) error {
-	if err := p.runFree(nil, page.BringToFront()); err != nil {
-		return err
-	}
-	v := p.tabs.lastView()
-	switch {
-	case v == nil:
-		return nil
-	case casting:
-		return p.startCast(nil, *v)
-	default:
-		return p.Resize(nil, *v)
-	}
-}
-
-func (p *chromePage) closeTab(id target.ID) {
-	c := chromedp.FromContext(p.ctx)
-	closeTab := chromedp.ActionFunc(func(ctx context.Context) error {
-		return target.CloseTarget(id).Do(cdp.WithExecutor(ctx, c.Browser))
-	})
-	if err := p.runFree(nil, closeTab); err != nil {
-		slog.Warn("browser: close a tab the page opened", "err", err)
-	}
+	return s.front
 }

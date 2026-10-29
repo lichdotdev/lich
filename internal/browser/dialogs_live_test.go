@@ -100,7 +100,7 @@ func TestChromeAPaneOpenedOnADialogShowsThePage(t *testing.T) {
 		if d != nil {
 			opened <- struct{}{}
 		}
-	})
+	}, func([]api.BrowserTab) {})
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	if err := p.Navigate(ctx, srv.URL); err != nil {

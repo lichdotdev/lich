@@ -20,6 +20,10 @@ var (
 	BrowserScroll     = define[BrowserScrollOptions, None]("browser.Scroll")
 	BrowserList       = define[SessionIDOptions, []BrowserHandle]("browser.List")
 	BrowserClose      = define[SessionIDOptions, None]("browser.Close")
+	// BrowserTabs lists the browser's tabs; BrowserTabAction is the agent
+	// opening, selecting or closing one, answered with the page then in front.
+	BrowserTabs      = define[SessionIDOptions, []BrowserTab]("browser.Tabs")
+	BrowserTabAction = define[BrowserTabOptions, BrowserPageInfo]("browser.TabAction")
 	// BrowserAnswerDialog answers the JavaScript dialog the page holds open,
 	// and answers with the page as it stands after it.
 	BrowserAnswerDialog = define[BrowserDialogOptions, BrowserPageInfo]("browser.AnswerDialog")
@@ -37,6 +41,9 @@ var (
 	BrowserKey         = define[BrowserKeyOptions, None]("browser.Key")
 	BrowserText        = define[BrowserTextOptions, None]("browser.Text")
 	BrowserNav         = define[BrowserNavOptions, None]("browser.Nav")
+	// BrowserTabNav is the person opening, selecting or closing a tab in the
+	// pane, the window's side of BrowserTabAction.
+	BrowserTabNav = define[BrowserTabOptions, None]("browser.TabNav")
 	// BrowserAnswer is the person answering the page's open dialog in the
 	// pane, the window's side of BrowserAnswerDialog.
 	BrowserAnswer = define[BrowserDialogOptions, None]("browser.Answer")
@@ -101,6 +108,34 @@ type BrowserState struct {
 	// Dialog is the JavaScript dialog the page holds open until the person
 	// or the agent answers it; nil when none is.
 	Dialog *BrowserDialog `json:"dialog,omitempty"`
+	// Tabs are the browser's tabs in the order the pane shows them.
+	Tabs []BrowserTab `json:"tabs,omitempty"`
+}
+
+// BrowserTab is one tab of a session's browser. ID is Chrome's own for it;
+// Front marks the one shown and driven.
+type BrowserTab struct {
+	ID    string `json:"id"`
+	URL   string `json:"url"`
+	Title string `json:"title"`
+	Front bool   `json:"front,omitempty"`
+}
+
+// Tab actions: open a blank tab in front, bring Tab to the front, close Tab.
+const (
+	TabNew    = "new"
+	TabSelect = "select"
+	TabClose  = "close"
+)
+
+// BrowserTabOptions acts on session ID's tabs: Action is a Tab* constant,
+// Tab the tab it acts on (none for TabNew), and URL where a new tab loads,
+// blank when empty.
+type BrowserTabOptions struct {
+	ID     string `json:"id"`
+	Action string `json:"action"`
+	Tab    string `json:"tab,omitempty"`
+	URL    string `json:"url,omitempty"`
 }
 
 // BrowserDialog is a JavaScript dialog a session's page opened. Type is
@@ -133,7 +168,8 @@ type BrowserDialogOptions struct {
 // BrowserAgentAct is one agent action on its page. Action is click, type,
 // press or scroll at a point; back, forward, reload or navigate, which the
 // pane's toolbar does; accept or dismiss, the buttons of the pane's dialog
-// card; or "" for one that changes nothing on screen (reading
+// card; tab-new, tab-select or tab-close, the header's tabs, with Tab the
+// one it acted on; or "" for one that changes nothing on screen (reading
 // the page, a screenshot). X and Y are where it acted, in CSS pixels, when it
 // acted at a point; DY is a scroll's distance, positive down; URL is where a
 // navigate went.
@@ -144,6 +180,8 @@ type BrowserAgentAct struct {
 	Y      *float64 `json:"y,omitempty"`
 	DY     int      `json:"dy,omitempty"`
 	URL    string   `json:"url,omitempty"`
+	// Tab is the tab a tab action acted on.
+	Tab string `json:"tab,omitempty"`
 }
 
 // BrowserViewOptions sizes a session's page to the pane showing it: W and H in

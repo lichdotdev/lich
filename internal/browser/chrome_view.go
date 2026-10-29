@@ -24,21 +24,22 @@ const screencastQuality = 85
 // them once, right after the launch.
 type listeners struct {
 	mu sync.Mutex
-	// taken are the tabs this page opened that followNewTabs already brought in.
+	// taken are the tabs followTabs already brought in.
 	taken          sync.Map
 	onFrame        func(data string)
 	onInfo         func(url, title string)
 	onConsoleError func(text string)
 	onDialog       func(*api.BrowserDialog)
+	onTabs         func([]api.BrowserTab)
 }
 
-func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog)) {
+func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
 	p.listen.mu.Lock()
 	p.listen.onFrame, p.listen.onInfo = onFrame, onInfo
-	p.listen.onConsoleError, p.listen.onDialog = onConsoleError, onDialog
+	p.listen.onConsoleError, p.listen.onDialog, p.listen.onTabs = onConsoleError, onDialog, onTabs
 	p.listen.mu.Unlock()
-	p.listenTab(p.tabs.front())
-	p.followNewTabs()
+	p.listenTab(p.tabs.frontTab())
+	p.followTabs()
 	p.watchDownloads(onDownload)
 }
 
@@ -64,7 +65,7 @@ func (p *chromePage) listenTab(t *tab) {
 			p.dialogShown(nil)
 			return
 		}
-		if p.tabs.front() == t {
+		if p.tabs.frontTab() == t {
 			p.frontEvent(ev)
 		}
 	})
@@ -133,6 +134,7 @@ func (p *chromePage) reportInfo() {
 	if onInfo == nil {
 		return
 	}
+	front := p.tabs.frontTab()
 	var info struct {
 		URL   string `json:"url"`
 		Title string `json:"title"`
@@ -144,6 +146,11 @@ func (p *chromePage) reportInfo() {
 		return
 	}
 	onInfo(info.URL, info.Title)
+	// Chrome's target events never brought the title of a tab lich opened
+	// itself, which the header named by its URL (measured 2026-10-29).
+	if p.tabs.setInfo(front, info.URL, info.Title) {
+		p.tabsChanged()
+	}
 }
 
 // deliver hands one frame on, then acks it. Chrome sends no next frame until

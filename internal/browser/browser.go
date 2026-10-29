@@ -94,6 +94,8 @@ type session struct {
 	dialog   *api.BrowserDialog
 	dialogAt time.Time
 	answered []api.BrowserDialog
+	// tabs are the page's, in the pane's order.
+	tabs     []api.BrowserTab
 	page     Page
 	lastUsed time.Time
 }
@@ -284,7 +286,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 		id: newID(), owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
 		byAgent: spec.byAgent, page: page, lastUsed: s.now(),
 	}
-	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess))
+	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess), s.tabsSink(sess))
 	view := s.unwatchedView()
 	if err := runPage(func(ctx context.Context) error {
 		if !spec.headed && view != (Viewport{}) {

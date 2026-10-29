@@ -114,8 +114,16 @@ type Page interface {
 	// Listen hands the page what to call with each screencast frame (base64
 	// JPEG), with its URL and title whenever they change, with each step of a
 	// download it starts, with each error its console shows, and with each
-	// JavaScript dialog it opens, then nil once that dialog is closed.
-	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog))
+	// JavaScript dialog it opens, then nil once that dialog is closed, and
+	// with its tabs whenever one opens, closes, comes to the front or changes
+	// its URL or title.
+	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab))
+	// NewTab opens a blank tab in front; SelectTab brings the tab id to the
+	// front; CloseTab closes it, unless it is the last one. Every other call
+	// acts on the front tab.
+	NewTab(ctx context.Context) error
+	SelectTab(ctx context.Context, id string) error
+	CloseTab(ctx context.Context, id string) error
 	// AnswerDialog answers the open JavaScript dialog: OK with text (a
 	// prompt's answer) when accept, Cancel otherwise. Every other call that
 	// runs the page's script or input fails with errDialogOpen while one is

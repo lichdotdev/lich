@@ -77,6 +77,12 @@ func (c *Client) BrowserNav(ctx context.Context, id, action, url string) error {
 	return err
 }
 
+// BrowserTabNav runs the pane's tabs: open a new one, or select or close tab.
+func (c *Client) BrowserTabNav(ctx context.Context, id, action, tab string) error {
+	_, err := callMethod(ctx, c, api.BrowserTabNav, api.BrowserTabOptions{ID: id, Action: action, Tab: tab})
+	return err
+}
+
 // BrowserAnswer answers the JavaScript dialog session's page holds open.
 func (c *Client) BrowserAnswer(ctx context.Context, o api.BrowserDialogOptions) error {
 	_, err := callMethod(ctx, c, api.BrowserAnswer, o)

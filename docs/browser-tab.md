@@ -134,9 +134,32 @@ window when a file is complete, and the window shows a toast naming it with a
 button that opens its folder. The same holds in a window opened with Open in a
 window.
 
+## Tabs
+
+The browser keeps a list of tabs and draws one, the front tab: a headless
+Chrome draws no frames for a tab behind another. The pane's header shows the
+pane's name and a + while there is one tab, and the tabs in its place once
+there are more.
+
+- What a tab opens in a new tab or window (`target=_blank`, `window.open`)
+  joins the list right after it, in front when its opener was. Closing it,
+  from the page's own `window.close()` or a ×, brings its opener back as it
+  was, its script's state and login intact; a tab nobody opened gives way to
+  the one beside it. The last tab cannot be closed.
+- The + opens a blank tab in front with the address field focused.
+- The agent lists them with `browser_tabs` (`lich browser tabs`), by index,
+  and opens, selects or closes one with `browser_tab` (`lich browser tab new
+  [url] | select <i> | close <i>`), which answers with the page then in front.
+  Every other tool acts on the front tab. The pane plays the agent's cursor
+  pressing the tab, its × or the +.
+- A tab opened behind the front one shares its renderer when it keeps its
+  opener, so a dialog there holds the front tab too: it reaches the pane and
+  the agent at once, and the answer goes to the tab that opened it.
+
 ## Providers
 
 Claude Code, Codex and opencode receive the tools at spawn. Antigravity,
 oh-my-pi, Crush, Cursor CLI and Kiro receive them from the lich MCP server the
 plugin registers. Downloads and dialogs reach all eight the same way: in the
-answer of the same tools, and `browser_dialog` for all of them.
+answer of the same tools, and `browser_dialog` for all of them. Tabs too:
+`browser_tabs` and `browser_tab` reach all eight.

@@ -18,6 +18,9 @@
   "browser": {
     "title": "Navegador",
     "close": "Cerrar el navegador",
+    "newTab": "Nueva pestaña",
+    "closeTab": "Cerrar pestaña",
+    "blankTab": "Nueva pestaña",
     "address": "Escribe una URL",
     "back": "Atrás",
     "forward": "Adelante",
