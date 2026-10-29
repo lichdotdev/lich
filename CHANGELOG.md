@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The terminal draws images sent with the Kitty graphics protocol, and tells programs the size of its cells in pixels (`CSI 14 t`, `16 t`, `18 t`). A TUI that shows icons or previews this way, the file manager `tfm` among them, now shows them in a lich session as it does in Kitty or Ghostty. Before, those programs fell back to small text glyphs or drew nothing. Images sent as Sixel or through tmux are still not drawn.
 
+### Changed
+
+- What a page in the session browser opens in a new tab or window now opens as its own tab in front, and the page that opened it comes back as it was once that tab closes. Before, the new tab's address loaded over the page that opened it, so a login or anything else that page held in its script was lost, and a flow that opens a tab and waits for it to finish broke.
+
 ### Fixed
 
 - Closing a session whose browser was open beside it, with its terminal focused, no longer closes the lich window.

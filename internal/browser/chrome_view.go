@@ -8,11 +8,9 @@ import (
 	"sync"
 
 	"github.com/chromedp/cdproto/browser"
-	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/input"
 	"github.com/chromedp/cdproto/page"
-	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 	"github.com/lichdotdev/lich/api"
 )
@@ -26,44 +24,77 @@ const screencastQuality = 85
 // them once, right after the launch.
 type listeners struct {
 	mu sync.Mutex
-	// taken are the tabs this page opened that keepOneTab already took over.
-	taken   sync.Map
-	onFrame func(data string)
-	onInfo  func(url, title string)
+	// taken are the tabs this page opened that followNewTabs already brought in.
+	taken          sync.Map
+	onFrame        func(data string)
+	onInfo         func(url, title string)
+	onConsoleError func(text string)
+	onDialog       func(*api.BrowserDialog)
 }
 
 func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog)) {
 	p.listen.mu.Lock()
 	p.listen.onFrame, p.listen.onInfo = onFrame, onInfo
+	p.listen.onConsoleError, p.listen.onDialog = onConsoleError, onDialog
 	p.listen.mu.Unlock()
-	chromedp.ListenTarget(p.ctx, func(ev any) {
+	p.listenTab(p.tabs.front())
+	p.followNewTabs()
+	p.watchDownloads(onDownload)
+}
+
+// listenTab hands on the events of t while it is the front tab, and its
+// dialogs from behind too.
+func (p *chromePage) listenTab(t *tab) {
+	chromedp.ListenTarget(t.ctx, func(ev any) {
 		switch e := ev.(type) {
-		case *page.EventScreencastFrame:
-			go p.deliver(e)
-		case *page.EventFrameNavigated:
-			if e.Frame.ParentID == "" {
-				go p.reportInfo()
-			}
-		case *page.EventNavigatedWithinDocument, *page.EventDomContentEventFired:
-			go p.reportInfo()
 		case *page.EventJavascriptDialogOpening:
+			p.tabs.setDialog(t)
 			// The service holds the dialog before a call the gate releases
 			// asks it which one.
-			onDialog(&api.BrowserDialog{Type: string(e.Type), Message: e.Message, Default: e.DefaultPrompt, URL: e.URL})
+			p.dialogShown(&api.BrowserDialog{Type: string(e.Type), Message: e.Message, Default: e.DefaultPrompt, URL: e.URL})
 			p.gate.open()
+			return
 		case *page.EventJavascriptDialogClosed:
+			if !p.tabs.dialogClosed(t) {
+				return
+			}
 			if v := p.gate.close(); v != nil {
 				go p.layOut(*v)
 			}
-			onDialog(nil)
-		default:
-			if text, ok := consoleError(ev); ok {
-				onConsoleError(text)
-			}
+			p.dialogShown(nil)
+			return
+		}
+		if p.tabs.front() == t {
+			p.frontEvent(ev)
 		}
 	})
-	p.keepOneTab()
-	p.watchDownloads(onDownload)
+}
+
+func (p *chromePage) frontEvent(ev any) {
+	switch e := ev.(type) {
+	case *page.EventScreencastFrame:
+		go p.deliver(e)
+	case *page.EventFrameNavigated:
+		if e.Frame.ParentID == "" {
+			go p.reportInfo()
+		}
+	case *page.EventNavigatedWithinDocument, *page.EventDomContentEventFired:
+		go p.reportInfo()
+	default:
+		if text, ok := consoleError(ev); ok {
+			p.listen.mu.Lock()
+			onConsoleError := p.listen.onConsoleError
+			p.listen.mu.Unlock()
+			onConsoleError(text)
+		}
+	}
+}
+
+func (p *chromePage) dialogShown(d *api.BrowserDialog) {
+	p.listen.mu.Lock()
+	onDialog := p.listen.onDialog
+	p.listen.mu.Unlock()
+	onDialog(d)
 }
 
 // watchDownloads hands on each download the page starts and each step it
@@ -90,60 +121,6 @@ func (p *chromePage) watchDownloads(onDownload func(guid string, d api.BrowserDo
 			go func() { onDownload(e.GUID, p.dl.place(e.GUID, d)) }()
 		}
 	})
-}
-
-// keepOneTab loads, in this page, what a link or a script opens in a new tab
-// or window, and closes that tab. The pane shows only this page, and Chrome
-// puts the one a new tab covers in the background, where it takes no input
-// and draws no frames: one click on a target=_blank link froze the pane.
-func (p *chromePage) keepOneTab() {
-	c := chromedp.FromContext(p.ctx)
-	self := c.Target.TargetID
-	discover := chromedp.ActionFunc(func(ctx context.Context) error {
-		return target.SetDiscoverTargets(true).Do(cdp.WithExecutor(ctx, c.Browser))
-	})
-	if err := p.runFree(nil, discover); err != nil {
-		slog.Warn("browser: watch for new tabs", "err", err)
-		return
-	}
-	chromedp.ListenBrowser(p.ctx, func(ev any) {
-		var info *target.Info
-		switch e := ev.(type) {
-		case *target.EventTargetCreated:
-			info = e.TargetInfo
-		case *target.EventTargetInfoChanged:
-			info = e.TargetInfo
-		}
-		// A new tab is created at about:blank and gets its URL after.
-		if info == nil || info.OpenerID != self || info.Type != "page" || info.URL == "" || info.URL == "about:blank" {
-			return
-		}
-		// Both the created and the info-changed event can name the tab.
-		if _, taken := p.listen.taken.LoadOrStore(info.TargetID, true); !taken {
-			go p.takeOver(info.TargetID, info.URL)
-		}
-	})
-}
-
-// takeOver closes the tab id this page opened and loads its url here.
-func (p *chromePage) takeOver(id target.ID, url string) {
-	c := chromedp.FromContext(p.ctx)
-	closeTab := chromedp.ActionFunc(func(ctx context.Context) error {
-		return target.CloseTarget(id).Do(cdp.WithExecutor(ctx, c.Browser))
-	})
-	if err := p.runFree(nil, closeTab); err != nil {
-		slog.Warn("browser: close a tab the page opened", "url", url, "err", err)
-	}
-	if err := p.runFree(nil, page.BringToFront()); err != nil {
-		slog.Warn("browser: bring the page back to the front", "err", err)
-	}
-	if _, err := allowURL(url); err != nil {
-		slog.Warn("browser: a new tab's URL is not one the page may load", "url", url, "err", err)
-		return
-	}
-	if err := p.Navigate(context.Background(), url); err != nil && p.Alive() {
-		slog.Warn("browser: load a new tab's URL in the page", "url", url, "err", err)
-	}
 }
 
 // reportInfo reads the URL and title after a navigation: a link followed, a
@@ -190,22 +167,25 @@ func (p *chromePage) deliver(frame *page.EventScreencastFrame) {
 // Screencast starts the frames at v, or restarts them there: Chrome keeps
 // the size a screencast started with.
 func (p *chromePage) Screencast(ctx context.Context, v Viewport) error {
+	return p.castPastDialog(func() error { return p.startCast(ctx, v) })
+}
+
+// startCast is Screencast's step, run in its turn among the others.
+func (p *chromePage) startCast(ctx context.Context, v Viewport) error {
 	v = v.atFrameScale()
 	w, h := v.devicePixels()
-	return p.castPastDialog(func() error {
-		if err := p.stopCast(ctx); err != nil {
-			return err
-		}
-		if err := p.Resize(ctx, v); err != nil {
-			return err
-		}
-		p.casting = true
-		return p.runFree(ctx, page.StartScreencast().
-			WithFormat(page.ScreencastFormatJpeg).
-			WithQuality(screencastQuality).
-			WithMaxWidth(w).
-			WithMaxHeight(h))
-	})
+	if err := p.stopCast(ctx); err != nil {
+		return err
+	}
+	if err := p.Resize(ctx, v); err != nil {
+		return err
+	}
+	p.casting = true
+	return p.runFree(ctx, page.StartScreencast().
+		WithFormat(page.ScreencastFormatJpeg).
+		WithQuality(screencastQuality).
+		WithMaxWidth(w).
+		WithMaxHeight(h))
 }
 
 func (p *chromePage) StopScreencast(ctx context.Context) error {
@@ -265,6 +245,7 @@ func (p *chromePage) castPastDialog(step func() error) error {
 // until then the frames come at the size the page had.
 func (p *chromePage) Resize(ctx context.Context, v Viewport) error {
 	v = v.atFrameScale()
+	p.tabs.setView(v)
 	err := p.run(ctx, emulation.SetDeviceMetricsOverride(int64(v.W), int64(v.H), v.Scale, false))
 	if !errors.Is(err, errDialogOpen) {
 		return err

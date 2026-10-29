@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/chromedp"
 )
 
 // dialogGate is held while the page has a JavaScript dialog open. Until it is
@@ -76,6 +77,10 @@ func (p *chromePage) layOut(v Viewport) {
 	}
 }
 
+// AnswerDialog answers the tab holding the dialog, which may be behind the
+// front one.
 func (p *chromePage) AnswerDialog(ctx context.Context, accept bool, text string) error {
-	return p.runFree(ctx, page.HandleJavaScriptDialog(accept).WithPromptText(text))
+	tabCtx, cancel := withPageDeadline(p.tabs.dialogHolder().ctx, ctx)
+	defer cancel()
+	return chromedp.Run(tabCtx, page.HandleJavaScriptDialog(accept).WithPromptText(text))
 }
