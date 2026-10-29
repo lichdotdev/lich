@@ -253,6 +253,6 @@ func (s *Service) agentPoint(owner string) *point {
 func (s *session) stateLocked(open bool) api.BrowserState {
 	return api.BrowserState{
 		Owner: s.owner, Open: open, Headed: s.headed, ByAgent: s.byAgent, URL: s.url, Title: s.title,
-		Dialog: s.dialog,
+		Dialog: s.dialog, Tabs: s.tabs,
 	}
 }

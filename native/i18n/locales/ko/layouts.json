@@ -16,6 +16,9 @@
   "browser": {
     "title": "브라우저",
     "close": "브라우저 닫기",
+    "newTab": "새 탭",
+    "closeTab": "탭 닫기",
+    "blankTab": "새 탭",
     "address": "URL 입력",
     "back": "뒤로",
     "forward": "앞으로",

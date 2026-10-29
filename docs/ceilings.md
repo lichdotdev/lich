@@ -997,8 +997,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   whose page reaches the session's browser tab as a JPEG screencast over `/events`, at the page's own frame
   rate; a window slower to decode skips to the newest frame. A HiDPI pane gets frames drawn at 1.5x at most
   (`frameScale`): the browser draws at a scale forced at its launch, and 2x halved a busy page's frame rate. The native window cannot hold a webview: on Linux it speaks Wayland without GTK. So the pane
-  has no DevTools, shows the arrow whatever cursor the page asks for, loads what the page opens in a new tab or window in the page itself, and leaves the page's own dialogs out; Open in
-  a window moves the page to a real Chromium window for those, reopening it on the same profile with every
+  has no DevTools, shows the arrow whatever cursor the page asks for, draws only the front tab, and leaves the page's own dialogs out. Its
+  tabs sit on the pane's header (`internal/browser/tabs.go`): what a tab opens in a new tab or window joins
+  them, in front when its opener was, and closing it brings its opener back as it was. A tab behind the front
+  one is never drawn, so the header names it by title and has no thumbnail, and switching shows the last frame
+  until the new tab's first. Tabs shrink to share the header and those past its width are cut off; there is
+  no overflow menu and no reordering. A dialog a tab behind opens reaches the agent at once, since with its
+  opener the front tab shares that renderer and is held by it too. Open in
+  a window moves the front tab to a real Chromium window for those, reopening it on the same profile with every
   cookie, since chromedp cannot show a headless process in place. A half-filled form or sessionStorage is
   lost on that move. Closing the card, or the session's process ending, closes the browser; Continue in,
   which ends the process and spawns it again in the same card, keeps it. Closing that

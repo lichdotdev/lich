@@ -89,8 +89,8 @@ const cursorPending = 3
 var toolbarActions = map[string]bool{"back": true, "forward": true, "reload": true, "navigate": true}
 
 // take queues the marks not seen yet: an action at a point of the page (a
-// click, typing into or pressing on an element, a scroll), on the toolbar or
-// on the page's dialog is played by advance, any other only keeps the cursor up.
+// click, typing into or pressing on an element, a scroll), on the toolbar, on
+// the header's tabs or on the page's dialog is played by advance, any other only keeps the cursor up.
 func (c *agentCursor) take(marks []browserMark) {
 	for _, m := range marks {
 		if m.seq <= c.seen {
@@ -100,7 +100,7 @@ func (c *agentCursor) take(marks []browserMark) {
 		if m.at.After(c.last) {
 			c.last = m.at
 		}
-		if m.x != nil && m.y != nil || toolbarActions[m.action] || dialogActions[m.action] {
+		if m.x != nil && m.y != nil || toolbarActions[m.action] || headerActions[m.action] || dialogActions[m.action] {
 			c.pending = append(c.pending, m)
 		}
 	}

@@ -14,6 +14,9 @@ import (
 // Launcher so the suite stays off the OS boundary.
 type fakePage struct {
 	mu             sync.Mutex
+	onTabs         func([]api.BrowserTab)
+	tabActions     []string
+	tabErr         error
 	url, title     string
 	closed         bool
 	navigations    []string
@@ -232,10 +235,26 @@ func (p *fakePage) SetCookies(_ context.Context, cookies []*network.CookieParam)
 	return nil
 }
 
-func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload), onConsoleError func(string), onDialog func(*api.BrowserDialog)) {
+func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), onDownload func(string, api.BrowserDownload), onConsoleError func(string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError, p.onDialog = onFrame, onInfo, onDownload, onConsoleError, onDialog
+	p.onTabs = onTabs
+}
+
+// NewTab, SelectTab and CloseTab record the tab action and fail with
+// tabErr.
+func (p *fakePage) NewTab(context.Context) error { return p.tabAction("new", "") }
+
+func (p *fakePage) SelectTab(_ context.Context, id string) error { return p.tabAction("select", id) }
+
+func (p *fakePage) CloseTab(_ context.Context, id string) error { return p.tabAction("close", id) }
+
+func (p *fakePage) tabAction(action, id string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.tabActions = append(p.tabActions, action+" "+id)
+	return p.tabErr
 }
 
 // openDialog is the page opening d: reads fail as Chrome's do until it is

@@ -150,7 +150,7 @@ func TestChromeScreencastSendsFramesAndPageInfo(t *testing.T) {
 		case titles <- title:
 		default:
 		}
-	}, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {})
+	}, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {}, func([]api.BrowserTab) {})
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	if err := p.Navigate(ctx, srv.URL); err != nil {
@@ -189,7 +189,7 @@ func TestChromeScreencastDrawsAHiDPIPaneAtTheFrameScale(t *testing.T) {
 		case frames <- data:
 		default:
 		}
-	}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {})
+	}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {}, func([]api.BrowserTab) {})
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	if err := p.Navigate(ctx, srv.URL); err != nil {
@@ -251,7 +251,18 @@ func TestChromeWindowInputTypesAndSubmits(t *testing.T) {
 	}
 }
 
-func TestChromeLinkToANewTabLoadsInThePageAndKeepsItResponding(t *testing.T) {
+// newTabRig is a launched page that listens, on a server whose every page
+// links to /elsewhere in a new tab, at start with its frames on. The link
+// leaves the new tab its opener on /opener, as window.open does.
+type newTabRig struct {
+	p       *chromePage
+	srv     *httptest.Server
+	urls    chan string
+	dialogs chan *api.BrowserDialog
+}
+
+func startNewTabRig(t *testing.T, ctx context.Context, start string) newTabRig {
+	t.Helper()
 	pg, err := chromeLaunch(t.TempDir(), false)
 	if err != nil {
 		t.Fatal(err)
@@ -263,48 +274,106 @@ func TestChromeLinkToANewTabLoadsInThePageAndKeepsItResponding(t *testing.T) {
 	})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `<title>%s</title><a href="/elsewhere" target="_blank" style="position:absolute;left:0;top:0;font-size:40px">away</a>`, r.URL.Path)
+		rel := ""
+		if r.URL.Path == "/opener" {
+			rel = "opener"
+		}
+		fmt.Fprintf(w, `<title>%s</title><a href="/elsewhere" target="_blank" rel="%s" style="position:absolute;left:0;top:0;font-size:40px">away</a>`, r.URL.Path, rel)
 	}))
 	t.Cleanup(srv.Close)
-	p := pg.(*chromePage)
-	urls := make(chan string, 8)
-	p.Listen(func(string) {}, func(url, _ string) { urls <- url }, func(string, api.BrowserDownload) {}, func(string) {}, func(*api.BrowserDialog) {})
-	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
-	defer cancel()
-	if err := p.Navigate(ctx, srv.URL+"/"); err != nil {
+	r := newTabRig{p: pg.(*chromePage), srv: srv, urls: make(chan string, 8), dialogs: make(chan *api.BrowserDialog, 8)}
+	r.p.Listen(func(string) {}, func(url, _ string) { r.urls <- url }, func(string, api.BrowserDownload) {}, func(string) {},
+		func(d *api.BrowserDialog) { r.dialogs <- d }, func([]api.BrowserTab) {})
+	if err := r.p.Navigate(ctx, srv.URL+start); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Screencast(ctx, Viewport{W: 400, H: 300, Scale: 1}); err != nil {
+	if err := r.p.Screencast(ctx, Viewport{W: 400, H: 300, Scale: 1}); err != nil {
 		t.Fatal(err)
 	}
+	return r
+}
+
+// followLink clicks the link and waits for its tab to come to the front.
+func (r newTabRig) followLink(t *testing.T, ctx context.Context) {
+	t.Helper()
 	for _, kind := range []string{"press", "release"} {
-		if err := p.Mouse(ctx, api.BrowserMouseOptions{Type: kind, X: 20, Y: 20, Button: "left", Clicks: 1}); err != nil {
+		if err := r.p.Mouse(ctx, api.BrowserMouseOptions{Type: kind, X: 20, Y: 20, Button: "left", Clicks: 1}); err != nil {
 			t.Fatal(err)
 		}
 	}
+	r.waitURL(t, r.srv.URL+"/elsewhere")
+}
+
+func (r newTabRig) waitURL(t *testing.T, want string) {
+	t.Helper()
 	deadline := time.After(10 * time.Second)
-	for loaded := false; !loaded; {
+	for {
 		select {
-		case u := <-urls:
-			loaded = strings.HasSuffix(u, "/elsewhere")
+		case u := <-r.urls:
+			if u == want {
+				return
+			}
 		case <-deadline:
-			t.Fatal("the link's new tab never loaded in the page")
+			t.Fatalf("the page never showed %s", want)
 		}
 	}
-	quick, stop := context.WithTimeout(ctx, inputWait)
-	defer stop()
-	if err := p.Mouse(quick, api.BrowserMouseOptions{Type: "move", X: 50, Y: 50}); err != nil {
-		t.Fatalf("the page stopped taking input after the link: %v", err)
-	}
-	if err := p.Back(ctx); err != nil {
-		t.Fatalf("back after the link: %v", err)
-	}
-	var href string
-	if err := p.run(ctx, chromedp.Evaluate(`location.href`, &href)); err != nil {
+}
+
+func (r newTabRig) eval(t *testing.T, ctx context.Context, script string, out any) {
+	t.Helper()
+	if err := r.p.run(ctx, chromedp.Evaluate(script, out)); err != nil {
 		t.Fatal(err)
 	}
-	if href != srv.URL+"/" {
-		t.Fatalf("back went to %q, want the page that held the link", href)
+}
+
+func TestChromeLinkToANewTabComesToTheFrontAndKeepsTheOneUnderIt(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	r := startNewTabRig(t, ctx, "/")
+	r.eval(t, ctx, `window.loggedIn = true`, nil)
+	r.followLink(t, ctx)
+	quick, stop := context.WithTimeout(ctx, inputWait)
+	defer stop()
+	if err := r.p.Mouse(quick, api.BrowserMouseOptions{Type: "move", X: 50, Y: 50}); err != nil {
+		t.Fatalf("the new tab takes no input: %v", err)
+	}
+	var href string
+	r.eval(t, ctx, `location.href`, &href)
+	if href != r.srv.URL+"/elsewhere" {
+		t.Fatalf("the page drives %q, want the new tab", href)
+	}
+	// Closed after the call answers: a tab closing on it fails the call.
+	r.eval(t, ctx, `setTimeout(() => window.close(), 0)`, nil)
+	r.waitURL(t, r.srv.URL+"/")
+	var loggedIn bool
+	r.eval(t, ctx, `window.loggedIn === true`, &loggedIn)
+	if !loggedIn {
+		t.Fatal("the tab under the new one came back reloaded, its script's state gone")
+	}
+}
+
+func TestChromeDialogTheTabBehindOpensIsAnsweredThere(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	r := startNewTabRig(t, ctx, "/opener")
+	r.followLink(t, ctx)
+	// opener.eval, so the alert is the opener's and not this tab's.
+	r.eval(t, ctx, `opener.eval('setTimeout(() => alert("saved"), 0)')`, nil)
+	select {
+	case d := <-r.dialogs:
+		if d == nil || d.Message != "saved" {
+			t.Fatalf("dialog = %+v, want the one the tab behind opened", d)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the dialog the tab behind opened never showed")
+	}
+	if err := r.p.AnswerDialog(ctx, true, ""); err != nil {
+		t.Fatal(err)
+	}
+	var href string
+	r.eval(t, ctx, `location.href`, &href)
+	if href != r.srv.URL+"/elsewhere" {
+		t.Fatalf("after the dialog the page drives %q, want the front tab", href)
 	}
 }
 

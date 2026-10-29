@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"gioui.org/f32"
-	"gioui.org/font"
 	"gioui.org/io/clipboard"
 	"gioui.org/io/event"
 	"gioui.org/io/key"
@@ -84,6 +83,7 @@ type browserPaneUI struct {
 	typing agentPress
 	notes  browserNotes
 	dialog dialogCard
+	tabs   browserTabsUI
 }
 
 // agentPress is what the agent's cursor does on the toolbar, from at: the
@@ -140,7 +140,7 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	p.dialog.sync(st.Dialog, p.answering(gtx.Now))
 	header := gtx
 	header.Constraints = layout.Exact(image.Pt(size.X, head))
-	u.browserHeader(header, p, pane, focused)
+	u.browserHeader(header, p, session, st, focused)
 	line := th.Over(th.Border)
 	paint.FillShape(gtx.Ops, line, clip.Rect{Min: image.Pt(0, head-gtx.Dp(1)), Max: image.Pt(size.X, head)}.Op())
 	tool := op.Offset(image.Pt(0, head)).Push(gtx.Ops)
@@ -170,9 +170,11 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	paint.FillShape(gtx.Ops, border, clip.Stroke{Path: shape.Path(gtx.Ops), Width: width}.Op())
 }
 
-// browserHeader is the page pane's top row: its name, zoom and close.
-func (u *window) browserHeader(gtx C, p *browserPaneUI, pane string, focused bool) {
+// browserHeader is the page pane's top row: its name or its tabs, zoom and
+// close.
+func (u *window) browserHeader(gtx C, p *browserPaneUI, session string, st api.BrowserState, focused bool) {
 	th := u.theme
+	pane := browserPaneOf(session)
 	if p.zoom.Clicked(gtx) {
 		u.layoutStage.focus, u.layoutStage.zoom = pane, true
 	}
@@ -180,16 +182,13 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, pane string, focused boo
 		session := paneSession(pane)
 		u.sendBrowser(session, "close", func(ctx context.Context) error { return u.client.CloseBrowser(ctx, session) })
 	}
-	fg, weight := th.MutedForeground, font.Normal
-	if focused {
-		fg, weight = th.Foreground, font.Medium
-	}
 	layout.Inset{Left: ui.Space(2.5), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.Y = gtx.Constraints.Max.Y
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icBrowser.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
 			ui.Gap(2),
-			layout.Rigid(th.Text(ui.TextXS, i18n.T("layouts.browser.title")).In(fg).Weight(weight).Layout),
-			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
+			layout.Flexed(1, func(gtx C) D { return u.browserTabs(gtx, p, session, st, focused) }),
+			ui.Gap(1.5),
 			layout.Rigid(func(gtx C) D {
 				zoom := th.Tooltip(&u.root, &p.zoomTip, i18n.T("layouts.pane.zoom"))
 				return zoom.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, &p.zoom, icPaneZoom, false) })
@@ -561,6 +560,9 @@ func (u *window) playAgentCursor(gtx C, p *browserPaneUI, marks []browserMark, h
 		if toolbarActions[m.action] {
 			return toolbarPoint(gtx, m.action, head, bar)
 		}
+		if headerActions[m.action] {
+			return tabPoint(gtx, p, m, head)
+		}
 		if dialogActions[m.action] {
 			return p.dialog.point(m.action, gtx.Constraints.Max.X, head+bar)
 		}
@@ -576,6 +578,12 @@ func (u *window) playAgentCursor(gtx C, p *browserPaneUI, marks []browserMark, h
 		p.typing = agentPress{what: displayURL(m.url), at: landed}
 	case "back", "forward", "reload", "accept", "dismiss":
 		p.flash = agentPress{what: m.action, at: landed}
+	case "tab-new":
+		p.flash = agentPress{what: "tab:new", at: landed}
+	case "tab-select":
+		p.flash = agentPress{what: "tab:" + m.tab, at: landed}
+	case "tab-close":
+		p.flash = agentPress{what: "tab:close " + m.tab, at: landed}
 	}
 }
 

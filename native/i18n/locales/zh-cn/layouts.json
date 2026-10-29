@@ -16,6 +16,9 @@
   "browser": {
     "title": "浏览器",
     "close": "关闭浏览器",
+    "newTab": "新建标签页",
+    "closeTab": "关闭标签页",
+    "blankTab": "新标签页",
     "address": "输入网址",
     "back": "后退",
     "forward": "前进",

@@ -46,6 +46,10 @@ func (c *client) browser(args []string) error {
 		return c.browserDialog(args[1:])
 	case "list":
 		return c.browserList(args[1:])
+	case "tabs":
+		return c.browserTabs(args[1:])
+	case "tab":
+		return c.browserTab(args[1:])
 	case "close":
 		return c.browserID(api.BrowserClose, args[1:])
 	default:
@@ -328,6 +332,45 @@ func (c *client) browserDialog(args []string) error {
 		}
 	})
 	info, err := callMethod(context.Background(), c, api.BrowserAnswerDialog, opts, openCall)
+	if err != nil {
+		return err
+	}
+	return c.printPage(info)
+}
+
+func (c *client) browserTabs(args []string) error {
+	if err := c.browserNoArgs(args); err != nil {
+		return err
+	}
+	tabs, err := indexedTabs(context.Background(), c)
+	if err != nil {
+		return err
+	}
+	return c.emit(tabs)
+}
+
+// browserTab is new [url], select <index> or close <index>.
+func (c *client) browserTab(args []string) error {
+	if len(args) == 0 || len(args) > 2 {
+		return usageError("browser")
+	}
+	id, err := c.browserOwner()
+	if err != nil {
+		return err
+	}
+	opts := api.BrowserTabOptions{ID: id, Action: args[0]}
+	var index *int
+	switch {
+	case args[0] == api.TabNew && len(args) == 2:
+		opts.URL = args[1]
+	case args[0] != api.TabNew && len(args) == 2:
+		n, err := strconv.Atoi(args[1])
+		if err != nil {
+			return usageError("browser")
+		}
+		index = &n
+	}
+	info, err := actOnTab(context.Background(), c, opts, index)
 	if err != nil {
 		return err
 	}

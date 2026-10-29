@@ -18,6 +18,9 @@
   "browser": {
     "title": "Browser",
     "close": "Close the browser",
+    "newTab": "New tab",
+    "closeTab": "Close tab",
+    "blankTab": "New tab",
     "address": "Type a URL",
     "back": "Back",
     "forward": "Forward",

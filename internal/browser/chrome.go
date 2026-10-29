@@ -66,6 +66,7 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 		return nil, err
 	}
 	p := &chromePage{ctx: ctx, cancel: cancel, allocCancel: allocCancel}
+	p.tabs.start(&tab{ctx: ctx, id: chromedp.FromContext(ctx).Target.TargetID})
 	if err := p.allowDownloads(dir); err != nil {
 		slog.Warn("browser: downloads stay off", "err", err)
 	}
@@ -95,6 +96,7 @@ type chromePage struct {
 	cancel      context.CancelFunc
 	allocCancel context.CancelFunc
 	listen      listeners
+	tabs        tabStack
 	// dl names the files the page downloads; nil when downloads are off.
 	dl *downloads
 	// gate is held while the page has a JavaScript dialog open.
@@ -166,7 +168,7 @@ func (p *chromePage) run(wait context.Context, actions ...chromedp.Action) error
 		return errDialogOpen
 	default:
 	}
-	ctx, cancel := withPageDeadline(p.ctx, wait)
+	ctx, cancel := withPageDeadline(p.tabs.frontTab().ctx, wait)
 	defer cancel()
 	done := make(chan error, 1)
 	go func() { done <- chromedp.Run(ctx, actions...) }()
@@ -178,12 +180,12 @@ func (p *chromePage) run(wait context.Context, actions ...chromedp.Action) error
 	}
 }
 
-// runFree drives CDP on the allocator context chromedp attached, applying
+// runFree drives CDP on the front tab's context chromedp attached, applying
 // wait's deadline. Service callers pass a timeout derived from Background;
 // chromedp.Run on that context is "invalid context" and the headed window is
 // then closed.
 func (p *chromePage) runFree(wait context.Context, actions ...chromedp.Action) error {
-	ctx, cancel := withPageDeadline(p.ctx, wait)
+	ctx, cancel := withPageDeadline(p.tabs.frontTab().ctx, wait)
 	defer cancel()
 	return chromedp.Run(ctx, actions...)
 }

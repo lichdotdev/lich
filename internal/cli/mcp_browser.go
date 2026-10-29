@@ -229,6 +229,29 @@ var browserTools = []mcpTool{
 		Run: mcpBrowserDialog,
 	},
 	{
+		Name: "browser_tabs",
+		Description: "List the tabs of this session's browser: index, title, URL, and which one is in front. " +
+			"Every other browser tool acts on the front tab. A link or script that opens a new tab or window " +
+			"brings it to the front, and the tab that opened it, kept as it was, comes back when it closes. Read-only.",
+		Schema:   schema(map[string]any{}),
+		ReadOnly: true,
+		Run:      mcpBrowserTabs,
+	},
+	{
+		Name: "browser_tab",
+		Description: "Open, switch to or close a tab in this session's browser; the user sees your cursor do it " +
+			"on the browser tab's header. new opens a blank tab in front, or loads url there; select brings " +
+			"the tab at index (from browser_tabs) to the front; close closes it, and the tab that opened it, " +
+			"else the one beside it, comes to the front. The last tab cannot be closed. Answers with the page " +
+			"then in front, as browser_info does.",
+		Schema: schema(map[string]any{
+			"action": property("string", "new, select or close."),
+			"index":  property("integer", "The tab's index in browser_tabs, for select and close."),
+			"url":    property("string", "For new: the page to load. Omit for a blank tab."),
+		}, "action"),
+		Run: mcpBrowserTab,
+	},
+	{
 		Name:        "browser_list",
 		Description: "This session's browser, or an empty list. Read-only.",
 		Schema:      schema(map[string]any{}),
