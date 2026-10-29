@@ -982,7 +982,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   has no DevTools, shows the arrow whatever cursor the page asks for, loads what the page opens in a new tab or window in the page itself, and leaves the page's own dialogs out; Open in
   a window moves the page to a real Chromium window for those, reopening it on the same profile with every
   cookie, since chromedp cannot show a headless process in place. A half-filled form or sessionStorage is
-  lost on that move. Closing the card, or the session's process ending, closes the browser; closing that
+  lost on that move. Closing the card, or the session's process ending, closes the browser; Continue in,
+  which ends the process and spawns it again in the same card, keeps it. Closing that
   window does not close the session. A headless browser no pane shows and no one used for five minutes is
   closed; one a pane shows, or a window, never is. It loads only http, https and about:blank. Page info never
   includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is

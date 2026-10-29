@@ -225,7 +225,7 @@ func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (a
 	}
 	live := s.live(opts.ID)
 	if live {
-		if _, err := s.Close(ctx, api.SessionIDOptions{ID: opts.ID}); err != nil {
+		if err := s.endProcess(opts.ID, ""); err != nil {
 			return api.None{}, fmt.Errorf("end the session before moving it: %w", err)
 		}
 	}
