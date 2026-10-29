@@ -35,9 +35,9 @@
 
   // A story awaits wait(ms) between its beats. The wait holds while its tab is closed or the window is off screen,
   // and throws once the tab is opened again so the story starts over.
-  var generation = [0, 0, 0, 0, 0, 0];
+  var generation = [0, 0, 0, 0, 0, 0, 0];
   // wait.end() marks the story told once; the tab moves on only after that, whatever its bar says.
-  var told = [false, false, false, false, false, false], barDone = false;
+  var told = [false, false, false, false, false, false, false], barDone = false;
   function waiter(v) {
     var mine = generation[v];
     var wait = function (ms) {
@@ -519,6 +519,7 @@
   function resetBrowser() {
     brw.classList.remove("split"); btoast.classList.remove("show"); acur.classList.remove("on");
     page.className = "pg"; url.textContent = "localhost:5173/signup";
+    resetNotes();
     [email, pass].forEach(function (i) { i.classList.remove("focus", "bad"); i.querySelector(".pg-tx").textContent = ""; });
     err.classList.remove("show"); signup.classList.remove("hit");
     var tab = tabs.querySelector(".btab"), web = cards[0].querySelector(".web");
@@ -562,6 +563,13 @@
     await wait(250);
     signup.classList.remove("hit");
   }
+  function openBrowserTab() {
+    tabs.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("on"); });
+    tabs.querySelector(".tab").insertAdjacentHTML("afterend", '<span class="tab on btab"><span class="tg"><svg class="ic"><use href="#i-columns-2"/></svg>' + BRANCH + "</span>" +
+      '<span class="tx"><svg class="ic"><use href="#i-x"/></svg></span></span>');
+    cards[0].querySelector(".ring-st").insertAdjacentHTML("afterend", '<svg class="ic web"><use href="#i-globe"/></svg>');
+    brw.classList.add("split");
+  }
   async function driveBrowser(wait) {
     for (;;) {
       resetBrowser();
@@ -577,11 +585,7 @@
       await wait(1500);
       await press(wait, btoast.querySelector(".bt-open"));
       btoast.classList.remove("show");
-      tabs.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("on"); });
-      tabs.querySelector(".tab").insertAdjacentHTML("afterend", '<span class="tab on btab"><span class="tg"><svg class="ic"><use href="#i-columns-2"/></svg>' + BRANCH + "</span>" +
-        '<span class="tx"><svg class="ic"><use href="#i-x"/></svg></span></span>');
-      cards[0].querySelector(".ring-st").insertAdjacentHTML("afterend", '<svg class="ic web"><use href="#i-globe"/></svg>');
-      brw.classList.add("split");
+      openBrowserTab();
       await wait(600);
       glide(page, .5, .2); acur.classList.add("on");
       await wait(500);
@@ -617,7 +621,103 @@
     }
   }
 
-  var stories = [startTask, mixAgents, reviewDiff, pullRequests, handOff, driveBrowser];
+  var bpage = brw.querySelector(".bp-page"), pkRing = bpage.querySelector(".pk-ring"), pkTag = bpage.querySelector(".pk-tag");
+  var pkPop = bpage.querySelector(".pk-pop"), pkTa = pkPop.querySelector(".pk-ta"), pkTray = bpage.querySelector(".pk-tray");
+  var pkPins = bpage.querySelectorAll(".pk-pin"), pick = brw.querySelector(".b-pick");
+  var heading = page.querySelector(".pg-form h1"), lead = page.querySelector(".pg-form p");
+  var headingText = heading.textContent, leadText = lead.textContent;
+  function resetNotes() {
+    bpane.classList.remove("picking");
+    [pkRing, pkTag, pkPop, pkTray].concat(Array.from(pkPins)).forEach(function (e) { e.classList.remove("on"); });
+    bpage.querySelectorAll(".pk-ring.kept").forEach(function (e) { e.remove(); });
+    pkTray.querySelector(".pk-rows").innerHTML = "";
+    heading.textContent = headingText; lead.textContent = leadText; lead.hidden = false;
+  }
+  // box is el's rectangle in the page's coordinates, where the picker's overlays are placed.
+  function box(el) {
+    var p = bpage.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return { x: r.left - p.left, y: r.top - p.top, w: r.width, h: r.height };
+  }
+  // ring places a dashed outline 5px outside el, as noteRing does, and returns its box.
+  function ring(r, el) {
+    var b = box(el);
+    b = { x: b.x - 5, y: b.y - 5, w: b.w + 10, h: b.h + 10 };
+    Object.assign(r.style, { left: b.x + "px", top: b.y + "px", width: b.w + "px", height: b.h + "px" });
+    return b;
+  }
+  // hover outlines el with marching dashes and names it in the tag above it, as the crosshair does under the pointer.
+  function hover(el, label) {
+    var b = box(el);
+    ring(pkRing, el);
+    pkRing.classList.add("march");
+    pkTag.querySelector(".pk-l").textContent = label;
+    pkTag.querySelector(".pk-c").textContent = "SignupForm";
+    pkTag.querySelector(".pk-s").textContent = Math.round(b.w) + "×" + Math.round(b.h);
+    pkTag.style.left = b.x + 3 + "px"; pkTag.style.top = b.y - 37 + "px";
+    pkRing.classList.add("on"); pkTag.classList.add("on");
+  }
+  async function leaveNote(wait, el, label, n, note) {
+    hover(el, label);
+    await wait(1100);
+    tap(el);
+    pkTag.classList.remove("on"); pkRing.classList.remove("march");
+    var b = box(el);
+    pkPop.querySelector(".pk-num").textContent = n;
+    pkPop.querySelector(".pk-head").textContent = label + " · SignupForm";
+    pkPop.style.left = b.x + "px"; pkPop.style.top = b.y + b.h + 10 + "px";
+    pkTa.classList.remove("typing"); pkTa.querySelector(".pk-tx").textContent = "";
+    pkPop.classList.add("on");
+    await wait(600);
+    pkTa.classList.add("typing");
+    for (var ch of note) { pkTa.querySelector(".pk-tx").textContent += ch; await wait(jitter(30, 60)); }
+    await wait(400);
+    await press(wait, pkPop.querySelector(".pk-add"));
+    pkPop.classList.remove("on"); pkRing.classList.remove("on");
+    var kept = pkRing.cloneNode(true);
+    kept.classList.add("kept", "on");
+    pkRing.before(kept);
+    var rb = ring(kept, el), pin = pkPins[n - 1];
+    // On the ring's straight top edge, past its rounded corner (notePin).
+    pin.style.left = rb.x + 8 + "px"; pin.style.top = rb.y - 18 + "px";
+    pin.classList.add("on");
+    pkTray.querySelector(".pk-count").textContent = n === 1 ? "1 note" : n + " notes";
+    pkTray.querySelector(".pk-rows").insertAdjacentHTML("beforeend", '<div class="pk-r"><span class="mono">' + label + "</span><span>" + note + "</span></div>");
+    pkTray.classList.add("on");
+    await wait(700);
+  }
+  async function pointAtPage(wait) {
+    setCard(0); nameCard(BRANCH, signupPath, ""); setFooter(BRANCH, "claude", "opus 5.5 · medium", 0, 0);
+    openBrowserTab();
+    await wait(900);
+    await press(wait, pick);
+    bpane.classList.add("picking");
+    hover(page.querySelector(".pg-nav"), "nav");
+    await wait(700);
+    await leaveNote(wait, heading, "h1", 1, "Lead with the trial: Start your free trial");
+    await leaveNote(wait, lead, "p", 2, "Drop this line, the heading says it");
+    await press(wait, pkTray.querySelector(".pk-send"));
+    resetNotes();
+    browserTerm.submit("[lich] The person left 2 notes on the page…");
+    setRing(0, "busy");
+    await browserTerm.stream(wait, ["● Update(src/SignupForm.tsx)", "  ⎿  " + bad("- &lt;h1>Create your account&lt;/h1>"), "  ⎿  " + ok("+ &lt;h1>Start your free trial&lt;/h1>"),
+      "  ⎿  " + bad("- &lt;p>Start a 14-day trial. No card needed.&lt;/p>")]);
+    setFooter(BRANCH, "claude", "opus 5.5 · medium", 1, 2);
+    nameCard(BRANCH, signupPath, '<span class="add">+1</span><span class="del">-2</span>');
+    browserTerm.lines.push("● lich - browser_reload (MCP)"); browserTerm.draw(true);
+    var reload = brw.querySelector(".b-rel");
+    glide(page, .5, .2); acur.classList.add("on");
+    await wait(400);
+    await land(wait, glide(reload));
+    await flash(wait, reload);
+    heading.textContent = "Start your free trial"; lead.hidden = true;
+    await browserTerm.stream(wait, ["● The heading now leads with the trial and the line under it", "  is gone. Reloaded to check.",
+      dim("✻ Crunched for 18s · done 21:07")]);
+    setRing(0, "done");
+    await wait(2600);
+    await wait.end();
+  }
+
+  var stories = [startTask, mixAgents, reviewDiff, pullRequests, handOff, driveBrowser, pointAtPage];
   function start(v) {
     generation[v]++;
     told[v] = false; barDone = false;
@@ -636,7 +736,7 @@
 
   // The open tab fills a bar under its label; the next tab opens once the bar is full and the story told.
   // Measured story lengths, rounded up; a story that runs longer still holds its tab until it is told.
-  var durations = [17000, 16000, 22000, 10000, 16000, 21000];
+  var durations = [17000, 16000, 22000, 10000, 16000, 21000, 20000];
   function runBar() {
     radios.forEach(function (r, i) {
       var label = seg.querySelector('[for="' + r.id + '"]');
