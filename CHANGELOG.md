@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `lich sessions --json`, `lich whoami --json` and the MCP tool `list_sessions` carry the line a session's card shows under its label: `tool` and `detail` while it is busy, the tool it is running and what it acts on, and `reason` while it waits on you. A script or a desktop widget can show what each agent is doing without opening the window.
 
+### Fixed
+
+- Notes from the session browser, and the Pulls screen's Fix CI errors and Resolve conflicts, reach a Claude Code session you stopped with Esc. Claude Code turned the message down until someone typed at the session, and the tray said "its mod refused it"; lich now types the message at the prompt instead.
+
 ## [0.81.0] - 2026-10-28
 
 > [!IMPORTANT]

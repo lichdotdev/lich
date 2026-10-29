@@ -63,3 +63,20 @@ func TestSubmitRefusesWhatCannotTakeAPrompt(t *testing.T) {
 		t.Errorf("typed at shell = %q, want nothing", got)
 	}
 }
+
+// Claude Code's mod refuses a prompt once the user stopped the session, until
+// someone types at it: the window's sender is that someone, so it types.
+func TestSubmitTypesWhatTheModRefused(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("modded")
+	term.attachMod("modded", PromptReceipt{State: PromptAcked, Reason: "the session was stopped and nobody has sent input since"})
+	svc := newRelay(merging(), term, nil)
+
+	if _, err := svc.Submit(t.Context(), api.SubmitOptions{SessionID: "modded", Message: "fix the button"}); err != nil {
+		t.Fatalf("Submit = %v, want nil", err)
+	}
+	writes := term.writesTo("modded")
+	if len(writes) != 2 || writes[0] != "\x1b[200~fix the button\x1b[201~" || writes[1] != "\r" {
+		t.Errorf("writes = %q, want the paste and then Enter", writes)
+	}
+}
