@@ -1,3 +1,18 @@
+## [0.82.0] - 2026-10-29
+
+### Added
+
+- `lich sessions --json`, `lich whoami --json` e a ferramenta MCP `list_sessions` trazem a linha que o card de uma sessão mostra sob o rótulo dela: `tool` e `detail` enquanto ela está ocupada, a ferramenta que roda e sobre o que age, e `reason` enquanto ela espera por você. Um script ou um widget de desktop pode mostrar o que cada agente está fazendo sem abrir a janela.
+- O navegador de uma sessão abre um arquivo local do checkout da sessão. Digite o caminho no campo de endereço, ou o agente passa o caminho ou uma URL `file:` para `browser_open`, e o lich serve o checkout por http em 127.0.0.1, numa porta própria por worktree (o `LICH_WORKTREE_PORT` do checkout mais 1000), então scripts de módulo, `fetch` e recursos relativos funcionam e cada worktree mantém o seu próprio armazenamento. Um caminho fora do checkout é recusado. Antes, um arquivo local não podia ser aberto, e visualizar um significava subir um servidor estático à mão.
+- A barra de ferramentas do navegador de uma sessão tem um botão de zoom. Ele abre um menu pequeno que diminui e aumenta o zoom da página em 10% e volta a 100%, cada controle com o nome do seu atalho de teclado. Antes, o zoom só podia ser mudado pelo teclado.
+
+### Fixed
+
+- Continuar em mantém o navegador da sessão. Mover uma sessão para outro perfil fechava o navegador dela, e a página e os cookies sumiam quando a sessão voltava.
+- O navegador da sessão acompanha uma página ocupada. Numa página que anima ou roda muito JavaScript, a aba do navegador ficava segundos atrás da página e o resto da janela esperava junto; agora ele pula para o quadro mais recente.
+- O navegador da sessão fica nítido numa tela HiDPI. A aba mostrava a página em 1x, borrada, em qualquer monitor; agora a desenha em até 1,5x.
+- As notas do navegador da sessão, e o Corrigir erros de CI e o Resolver conflitos da tela de Pull requests, chegam a uma sessão do Claude Code que você parou com Esc. O Claude Code recusava a mensagem até alguém digitar na sessão, e a bandeja dizia "its mod refused it"; agora o lich digita a mensagem no prompt.
+
 ## [0.81.0] - 2026-10-28
 
 > [!IMPORTANT]
