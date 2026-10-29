@@ -32,6 +32,8 @@
     "moveBody": "Sale de \"{layout}\". La pestaña del navegador solo admite {label} y su navegador.",
     "pick": "Dejar notas en la página",
     "pickHint": "Haz clic en un elemento para dejar una nota",
+    "zoom": "Zoom de la página",
+    "zoomReset": "Restablecer al 100 %",
     "notePlaceholder": "¿Qué debería cambiar aquí?",
     "addNote": "Añadir nota",
     "saveNote": "Guardar",

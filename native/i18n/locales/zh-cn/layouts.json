@@ -30,6 +30,8 @@
     "moveBody": "它将离开“{layout}”。浏览器标签页只容纳 {label} 及其浏览器。",
     "pick": "在页面上留下备注",
     "pickHint": "点击一个元素来留下备注",
+    "zoom": "页面缩放",
+    "zoomReset": "重置为 100%",
     "notePlaceholder": "这里应该改成什么？",
     "addNote": "添加备注",
     "saveNote": "保存",

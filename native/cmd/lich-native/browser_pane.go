@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 	"log"
-	"math"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -57,6 +56,7 @@ const doubleClick = 400 * time.Millisecond
 // backend, kept across frames by session.
 type browserPaneUI struct {
 	back, forward, reload, window iconActionState
+	pageZoom                      browserZoomState
 	zoom, close                   widget.Clickable
 	zoomTip, closeTip             ui.Tooltip
 	url                           widget.Editor
@@ -203,7 +203,8 @@ func (u *window) browserHeader(gtx C, p *browserPaneUI, pane string, focused boo
 	})
 }
 
-// browserToolbar is back, forward, reload, the address and Open in window.
+// browserToolbar is back, forward, reload, the address, the zoom and Open in
+// window.
 func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.BrowserState) {
 	th := u.theme
 	nav := func(action string) {
@@ -259,13 +260,7 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 			ui.Gap(1.5),
 			layout.Flexed(1, field.Layout),
 			ui.Gap(1.5),
-			layout.Rigid(func(gtx C) D {
-				if u.browserZoom == defaultZoom {
-					return D{}
-				}
-				label := fmt.Sprintf("%d%%", int(math.Round(u.browserZoom*100)))
-				return layout.Inset{Right: ui.Space(1.5)}.Layout(gtx, th.Text(ui.TextXS, label).In(th.MutedForeground).Layout)
-			}),
+			layout.Rigid(func(gtx C) D { return u.browserZoomControl(gtx, &p.pageZoom) }),
 			layout.Rigid(func(gtx C) D {
 				if !p.notes.picking {
 					return D{}
