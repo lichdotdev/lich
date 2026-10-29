@@ -132,6 +132,8 @@ type window struct {
 	// said about the window.
 	caption atomic.Pointer[captionLayout]
 	chrome  windowChrome
+	// shown is what the backend was told is on screen.
+	shown shownReport
 	// shortcuts is the keyboard shortcuts overlay.
 	shortcuts shortcutsOverlay
 	// palette is the command palette.
@@ -357,6 +359,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 			if err := u.layout(gtx); err != nil {
 				return err
 			}
+			u.reportShown()
 			u.sidebar.morph.capture(gtx.Ops)
 			if *flagShot != "" {
 				gtx.Execute(op.InvalidateCmd{At: started.Add(*flagAfter)})

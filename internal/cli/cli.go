@@ -411,17 +411,26 @@ func (c *client) insert(args []string) error {
 			"the session running there",
 	)
 	session := flags.String("session", "", "the session to insert into: its label, roster name or lich id")
+	focused := flags.Bool("focused", false, "insert into the session whose card lich's window has on screen")
 	timeout := flags.Int("timeout", 0, "seconds to wait for the session to reach its prompt")
 	asJSON := flags.Bool("json", false, "print the result as JSON")
 	if err := c.parse(flags, args); err != nil {
 		return err
 	}
-	if flags.NArg() > 1 || (*session == "" && *project == "") {
+	named := *session != "" || *project != ""
+	if flags.NArg() > 1 || named == *focused {
 		return usageError("insert")
 	}
 	text, err := c.insertText(flags.Arg(0), flags.NArg() == 1)
 	if err != nil {
 		return err
+	}
+	if *focused {
+		shown, err := callMethod(context.Background(), c, api.RelayFocused, api.None{}, shortCall)
+		if err != nil {
+			return err
+		}
+		*session = shown.ID
 	}
 
 	inserted, err := callMethod(context.Background(), c, api.RelayInsert, relay.InsertOptions{

@@ -654,6 +654,18 @@ func (m *model) activeSession() (sessionView, bool) {
 	return m.viewOf(*p, p.Sessions[i], time.Now()), true
 }
 
+// shownSession is the id of the session whose card is on screen, "" for none:
+// activeSession's answer without building its view, cheap enough per frame.
+func (m *model) shownSession() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p := m.shownProject()
+	if p == nil || !slices.ContainsFunc(p.Sessions, func(s backend.Session) bool { return s.ID == m.active }) {
+		return ""
+	}
+	return m.active
+}
+
 // setActive puts a session of the active project on screen, and records it
 // as the session that project shows when it is put back on screen.
 //
