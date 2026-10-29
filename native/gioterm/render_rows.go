@@ -2,6 +2,7 @@ package gioterm
 
 import (
 	"image"
+	"image/color"
 	"image/draw"
 
 	"gioui.org/layout"
@@ -23,6 +24,9 @@ type rowRenderer struct {
 	ops  []paint.ImageOp
 	// cursorRow is the row the cursor was composed into last frame, -1 for none.
 	cursorRow int
+	// clear is what the rows' default background was composed in: the
+	// terminal's own, or transparent while an image lies under the text.
+	clear color.NRGBA
 }
 
 func newRowRenderer(r *glyphs.Rasterizer, size unit.Sp) *rowRenderer {
@@ -44,10 +48,10 @@ func (rr *rowRenderer) Measure(gtx layout.Context) error {
 func (rr *rowRenderer) Release() { rr.imgs, rr.ops = nil, nil }
 
 func (rr *rowRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
-	return rr.draw(gtx, s.s, s.cells, s.dirty)
+	return rr.draw(gtx, s.s, s.cells, s.dirty, s.below, s.above)
 }
 
-func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8) (int, error) {
+func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8, below, above []placedImage) (int, error) {
 	width := sn.cols * rr.r.CellW()
 	if len(rr.imgs) != sn.rows || rr.imgs[0].Bounds().Dx() != width {
 		rr.imgs = make([]*image.RGBA, sn.rows)
@@ -68,8 +72,19 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 		dirty[rr.cursorRow] = 1
 	}
 	rr.cursorRow = cursorRow
+	clear := rgba(sn.bg)
+	if len(below) > 0 {
+		clear = color.NRGBA{}
+	}
+	if clear != rr.clear {
+		rr.clear = clear
+		for y := range dirty {
+			dirty[y] = 1
+		}
+	}
 
 	paint.Fill(gtx.Ops, rgba(sn.bg))
+	paintImages(gtx.Ops, below)
 	redrawn := 0
 	for y := range sn.rows {
 		if dirty[y] != 0 {
@@ -77,7 +92,7 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 			if y == cursorRow {
 				cursorX = sn.cursorX
 			}
-			if err := rr.compose(rr.imgs[y], cells[y*sn.cols:(y+1)*sn.cols], sn, cursorX); err != nil {
+			if err := rr.compose(rr.imgs[y], cells[y*sn.cols:(y+1)*sn.cols], sn, cursorX, clear); err != nil {
 				return 0, err
 			}
 			rr.ops[y] = paint.NewImageOp(rr.imgs[y])
@@ -91,15 +106,17 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 		cl.Pop()
 		t.Pop()
 	}
+	paintImages(gtx.Ops, above)
 	return redrawn, nil
 }
 
 // compose draws one row: every background first, then every glyph, so a wide
 // glyph overhanging the next cell is not painted over by that cell's fill.
-func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int) error {
+// Cells on the default background are left in clear.
+func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int, clear color.NRGBA) error {
 	cw, ch := rr.r.CellW(), rr.r.CellH()
 	styles := make([]cellStyle, len(row))
-	draw.Draw(img, img.Bounds(), image.NewUniform(rgba(sn.bg)), image.Point{}, draw.Src)
+	draw.Draw(img, img.Bounds(), image.NewUniform(clear), image.Point{}, draw.Src)
 	for x, c := range row {
 		st := styleOf(c, sn)
 		if x == cursorX {

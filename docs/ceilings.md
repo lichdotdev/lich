@@ -802,6 +802,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `native/cmd/lich-native/terminals.go`): the window builds a session's terminal from the backend's ring when it
   is first shown, and again after it reconnects. Scrollback past the ring is gone, not paged, and a mode an app
   set in bytes that have left the ring is not set on the rebuilt terminal.
+- **Images are Kitty graphics sent in the stream, and only placed ones** (`native/gioterm/kitty.go`): a terminal
+  takes images sent inline (`t=d`), PNG or raw pixels, up to `imageStorageLimit` (64 MB decoded per terminal;
+  Kitty's own default is 320 MB). The file, temporary file and shared memory media stay off: honoring them would
+  let any program on the PTY have the window read a path of its choosing. Sixel and the iTerm2 protocol are not
+  implemented, and neither are Unicode placeholders (`U=1`, the form tmux passthrough needs), so a program that
+  only speaks those draws its text fallback. The row renderer composes a row's text and backgrounds in one image,
+  so a placement between the backgrounds and the text (`z` from `INT32_MIN/2` to `-1`) draws under a colored
+  cell's background as well, the same as one below the backgrounds. Images live in the window's terminal, not in
+  the replay ring: a terminal rebuilt from the ring gets back the images whose bytes are still in it, which a
+  program that repaints (a TUI) recovers from and an image printed once at a shell prompt does not.
 - **One socket carries every session's output** (`internal/terminal/writequeue.go`): the per-session outbox
   decouples the *producers*, never the wire. A window that stops reading stalls the connection's single writer,
   so after `wsWriteTimeout` (5s) every session's output switches to the `/events` bridge at once. That is a

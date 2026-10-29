@@ -85,10 +85,10 @@ func (g *grid) Release() {
 }
 
 func (g *grid) Draw(gtx layout.Context, s Snapshot) (int, error) {
-	return g.draw(gtx, s.s, s.cells, s.dirty)
+	return g.draw(gtx, s.s, s.cells, s.dirty, s.below, s.above)
 }
 
-func (g *grid) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8) (int, error) {
+func (g *grid) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8, below, above []placedImage) (int, error) {
 	if len(g.rowOps) != sn.rows {
 		g.rowOps = make([]*op.Ops, sn.rows)
 		g.rowCall = make([]op.CallOp, sn.rows)
@@ -100,6 +100,7 @@ func (g *grid) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8) (i
 		}
 	}
 	paint.Fill(gtx.Ops, rgba(sn.bg))
+	paintImages(gtx.Ops, below)
 	repainted := 0
 	for y := range sn.rows {
 		if dirty[y] != 0 {
@@ -113,6 +114,7 @@ func (g *grid) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8) (i
 	if sn.cursorVisible && sn.cursorX < sn.cols && sn.cursorY < sn.rows {
 		g.drawCursor(gtx.Ops, cells[sn.cursorY*sn.cols+sn.cursorX], sn)
 	}
+	paintImages(gtx.Ops, above)
 	return repainted, nil
 }
 

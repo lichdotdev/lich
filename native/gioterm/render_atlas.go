@@ -74,10 +74,10 @@ func (a *atlasRenderer) Release() {
 }
 
 func (a *atlasRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
-	return a.draw(gtx, s.s, s.cells, s.dirty)
+	return a.draw(gtx, s.s, s.cells, s.dirty, s.below, s.above)
 }
 
-func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8) (int, error) {
+func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8, below, above []placedImage) (int, error) {
 	if len(a.rowOps) != sn.rows {
 		a.rowOps = make([]*op.Ops, sn.rows)
 		a.rowCall = make([]op.CallOp, sn.rows)
@@ -98,6 +98,7 @@ func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []
 		}
 	}
 	paint.Fill(gtx.Ops, rgba(sn.bg))
+	paintImages(gtx.Ops, below)
 	redrawn := 0
 	for y := range sn.rows {
 		if dirty[y] != 0 {
@@ -111,6 +112,7 @@ func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []
 	if cursor != nil {
 		a.drawCursor(gtx.Ops, sn, cursor)
 	}
+	paintImages(gtx.Ops, above)
 	return redrawn, nil
 }
 
