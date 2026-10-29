@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Continue in keeps the session's browser. Moving a session to another profile closed its browser, and its page and cookies were gone when the session came back up.
 - Notes from the session browser, and the Pulls screen's Fix CI errors and Resolve conflicts, reach a Claude Code session you stopped with Esc. Claude Code turned the message down until someone typed at the session, and the tray said "its mod refused it"; lich now types the message at the prompt instead.
 
 ## [0.81.0] - 2026-10-28

@@ -443,8 +443,8 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	term.SetWorkerUnanswered(rl.WorkerUnanswered)
 	term.SetSessionClosed(func(id, closerID string) {
 		rl.SessionClosed(id, closerID)
-		closeSessionBrowser(brows, id)
 	})
+	term.SetCardClosed(func(id string) { closeSessionBrowser(brows, id) })
 	term.SetSessionExited(func(id string) {
 		rl.SessionExited(id)
 		closeSessionBrowser(brows, id)

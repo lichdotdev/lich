@@ -99,6 +99,41 @@ func TestContinueInRespawnsTheCardInTheTargetProfile(t *testing.T) {
 	}
 }
 
+// TestContinueInKeepsTheCard: the process ends but the card stays, so what
+// lives as long as the card (its browser) is not told it closed, while the
+// relay still hears that the process it knew is gone.
+func TestContinueInKeepsTheCard(t *testing.T) {
+	personal, _ := profileMachine(t)
+	conversationAt(t, personal, "c1")
+	log := filepath.Join(t.TempDir(), "spawns")
+	svc := New(stubBins{bin: spawnLogBin(t, log), providerSession: "c1", movedProfiles: map[string]string{}}, nil, events.New())
+	t.Cleanup(func() { _, _ = svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}) })
+	var cardsClosed, processesClosed []string
+	svc.SetCardClosed(func(id string) { cardsClosed = append(cardsClosed, id) })
+	svc.SetSessionClosed(func(id, _ string) { processesClosed = append(processesClosed, id) })
+
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Resume: "c1", Cols: 80, Rows: 24}); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool { return len(spawnLines(t, log)) == 1 }, "the first spawn")
+	if _, err := svc.ContinueIn(t.Context(), api.ContinueInOptions{ID: "s1", Profile: "work"}); err != nil {
+		t.Fatal(err)
+	}
+	if len(cardsClosed) != 0 {
+		t.Errorf("Continue in closed the card %v", cardsClosed)
+	}
+	if fmt.Sprint(processesClosed) != "[s1]" {
+		t.Errorf("the relay heard %v closed, want [s1]", processesClosed)
+	}
+
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(cardsClosed) != "[s1]" {
+		t.Errorf("closing the card told %v, want [s1]", cardsClosed)
+	}
+}
+
 // A card that has not had a prompt yet has an id but no transcript on disk:
 // there is nothing to move, so it starts afresh in the target profile.
 func TestContinueInStartsAfreshACardWithNoTranscriptYet(t *testing.T) {

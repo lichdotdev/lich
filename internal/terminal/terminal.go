@@ -199,6 +199,8 @@ type Service struct {
 	// errand there, ahead of the SessionEnd the dying CLI reports. Guarded by mu
 	// like onState.
 	onClosed func(id, closerID string)
+	// onCardClosed, when set, is told about every card Close takes down.
+	onCardClosed func(id string)
 	// onExited, when set, is told about every session whose process ended on
 	// its own and was reaped: the relay drops the state that process reported.
 	// Guarded by mu like onState.
@@ -599,13 +601,22 @@ func (s *Service) SetSessionState(fn func(id, state string)) {
 	s.onState = fn
 }
 
-// SetSessionClosed wires fn to every session Close takes down, called before
+// SetSessionClosed wires fn to every session Close or ContinueIn takes down, called before
 // its process is killed with the session that closed it (CloseBy), empty for a
 // close the window made. Only one watcher, the relay (relay.SessionClosed).
 func (s *Service) SetSessionClosed(fn func(id, closerID string)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onClosed = fn
+}
+
+// SetCardClosed wires fn to every card Close takes down, after its process is
+// gone. Unlike SetSessionClosed, a process ContinueIn ends and spawns again
+// under the same card is not one.
+func (s *Service) SetCardClosed(fn func(id string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onCardClosed = fn
 }
 
 // SetSessionExited wires fn to every session whose process ended on its own,
@@ -730,6 +741,20 @@ func (s *Service) Close(_ context.Context, opts api.SessionIDOptions) (api.None,
 
 // CloseBy is Close on behalf of closerID, the session that asked for it.
 func (s *Service) CloseBy(id, closerID string) error {
+	err := s.endProcess(id, closerID)
+	s.mu.Lock()
+	cardClosed := s.onCardClosed
+	s.mu.Unlock()
+	if cardClosed != nil {
+		cardClosed(id)
+	}
+	return err
+}
+
+// endProcess ends a session's process and everything lich counted for it,
+// leaving the card to whoever comes next under the same id: ContinueIn's
+// respawn, or nothing when CloseBy closes the card.
+func (s *Service) endProcess(id, closerID string) error {
 	s.mu.Lock()
 	sess, ok := s.sessions[id]
 	if ok {
