@@ -164,12 +164,8 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return st.header.Layout(gtx, f.view.showHeader, func(gtx C) D {
-					// A checkout's header is its tree's root row, spaced like a card.
-					gap := ui.Space(1.5)
-					if b.kind == blockCheckout {
-						gap = cardGap
-					}
-					return layout.Inset{Bottom: gap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
+					// Every header is a row's height, spaced like a card.
+					return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
 				})
 			}),
 			layout.Rigid(func(gtx C) D {

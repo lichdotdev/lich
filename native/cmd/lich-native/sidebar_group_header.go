@@ -74,12 +74,10 @@ func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, 
 		f.act.fold = b.key
 	}
 	row := func(gtx C) D {
-		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return s.headerLine(gtx, th, b, st, f, refuses) }),
-				layout.Rigid(func(gtx C) D { return s.mergeNote(gtx, th, b, st, f.view.folders) }),
-			)
-		})
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return s.headerLine(gtx, th, b, st, f, refuses) }),
+			layout.Rigid(func(gtx C) D { return s.mergeNote(gtx, th, b, st, f.view.folders) }),
+		)
 	}
 	if !takes {
 		return row(gtx)
@@ -111,7 +109,12 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 		}
 		return s.sort.Item(gtx, b.key, w, nil)
 	}
-	children := []layout.FlexChild{layout.Flexed(1, title)}
+	// The line is a row's height, so its hover lights as a row's does.
+	rowHeight := gtx.Dp(2*sessionTreeRingR) + 2*gtx.Dp(ui.Space(1.5))
+	children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D {
+		gtx.Constraints.Min.Y = rowHeight
+		return title(gtx)
+	})}
 	if entries := headerEntries(b, f, s.launchProviders, blockMenuHooks{rename: func() { st.rename.Start(b.folder) }, newFolder: s.askFolderName}); entries != nil {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			return s.headerMenu(gtx, th, &st.options, &st.more, icGroupMore, i18n.T("sidebar.sessionGroupHeader.optionsFor", i18n.Args{"name": b.title}), entries)
@@ -123,6 +126,7 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 		func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 		func(gtx C) D {
 			return layout.Inset{Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+				gtx.Constraints.Min.Y = rowHeight
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 			})
 		},
