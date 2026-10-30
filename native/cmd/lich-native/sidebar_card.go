@@ -3,12 +3,15 @@ package main
 import (
 	"image"
 	"image/color"
+	"io"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"gioui.org/f32"
 	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -31,15 +34,15 @@ func clickable(m map[string]*widget.Clickable, key string) *widget.Clickable {
 // of the project but its own.
 func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folders []string) (D, sidebarAction) {
 	var act sidebarAction
-	click, closeClick, pinClick := clickable(s.cards, sv.ID), clickable(s.closes, sv.ID), clickable(s.pins, sv.ID)
+	click, closeClick := clickable(s.cards, sv.ID), clickable(s.closes, sv.ID)
 	if click.Clicked(gtx) {
 		act.activate = sv.ID
 	}
 	if closeClick.Clicked(gtx) {
 		act.close = sv.ID
 	}
-	if pinClick.Clicked(gtx) {
-		act.pin, act.pinTo = sv.ID, !sv.Pinned
+	if clickable(s.mothers, sv.ID).Clicked(gtx) {
+		act.fold = motherKey(sv.ID)
 	}
 	prChip := clickable(s.prChips, sv.ID)
 	if prChip.Clicked(gtx) && sv.pr != nil {
@@ -72,34 +75,24 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		}
 		return cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
 	}).Layout(gtx, func(gtx C) D {
-		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, pinClick, closeClick, prChip, fill) })
+		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, closeClick, prChip, fill) })
 	})
 	if s.renamed.id == sv.ID {
 		act.rename, s.renamed = s.renamed, sessionRename{}
+	}
+	if act.copyText != "" {
+		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(act.copyText))})
 	}
 	return d, act
 }
 
 // cardFace is the card itself, under its tooltip.
-// cardFace leaves the corner controls out while the card is being renamed:
-// the field takes the whole title line, and a pin or × over it only reads as
-// noise next to the text being typed.
-func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, pinClick, closeClick, prChip *widget.Clickable, fill color.NRGBA) D {
+func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, closeClick, prChip *widget.Clickable, fill color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 			func(gtx C) D {
-				children := []layout.StackChild{
-					layout.Stacked(func(gtx C) D { return s.cardBody(gtx, th, sv, prChip) }),
-				}
-				if !s.renaming(sv.ID) {
-					children = append(children, layout.Stacked(func(gtx C) D {
-						return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
-							return s.cardControls(gtx, th, sv, pinClick, closeClick, click.Hovered())
-						})
-					}))
-				}
-				return layout.Stack{Alignment: layout.NE}.Layout(gtx, children...)
+				return withLinks(gtx, th, sv.place.sessionRowLinks, func(gtx C) D { return s.cardBody(gtx, th, sv, prChip, closeClick, click.Hovered()) })
 			},
 		)
 	})
@@ -148,72 +141,43 @@ func (s *sidebar) renaming(id string) bool {
 	return rename != nil && rename.Active()
 }
 
-func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.Clickable) D {
+// cardBody is the card's one line: its place in the tree, the title row, a
+// folded mother's count, the open pull request and the checkout's changes
+// unless a checkout row above shows them, then the corner slot.
+func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip, closeClick *widget.Clickable, hovered bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	path := displayPath(sv.shown)
-	if sv.host != "" {
-		path = unknownCwd(sv.host)
+	var chev layout.Widget
+	if sv.place.kids > 0 {
+		chev = treeChevronGlyph(th, clickable(s.mothers, sv.ID), !sv.place.folded)
 	}
-	rows := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, s.titleRow(th, sv)...)
-		}),
+	row := append(treeLead(sv.place, chev), s.titleRow(th, sv)...)
+	if sv.place.folded {
+		row = append(row, ui.Gap(1.5))
+		row = append(row, foldedCount(th, sv.place.kids, sv.place.mark)...)
 	}
-	// The rung takes the path's line so the card keeps its height through a turn.
-	second := func(gtx C) D { return pathRow(gtx, th, sv.layout, path) }
-	if rung, ok := statusRung(th, sv); ok {
-		second = rung
+	if sv.place.hideGit {
+		return s.cardLine(gtx, th, sv, closeClick, hovered, row)
 	}
-	rows = append(rows, ui.VGap(2), layout.Rigid(second))
-	if sv.git.Branch != "" {
-		rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return s.branchRow(gtx, th, sv, prChip) }))
+	if sv.pr != nil {
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
 	}
-	return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(2.5), Right: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
+	if sv.git.Files > 0 {
+		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return diffStat(gtx, th, sv.git.Added, sv.git.Deleted) }))
+	}
+	return s.cardLine(gtx, th, sv, closeClick, hovered, row)
+}
+
+// cardLine ends row with the corner slot and lays it out in the card's insets.
+func (s *sidebar) cardLine(gtx C, th *ui.Theme, sv *sessionView, closeClick *widget.Clickable, hovered bool, row []layout.FlexChild) D {
+	row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D { return s.cardSlot(gtx, th, sv, closeClick, hovered) }))
+	return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	})
 }
 
-// pathRow is the card's path, after the chip of the layout the session sits
-// in: clicking the card shows it there.
-func pathRow(gtx C, th *ui.Theme, layoutName, path string) D {
-	text := th.Text(ui.TextXS, path).Muted().Mono().LayoutTail
-	if layoutName == "" {
-		return text(gtx)
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return layoutChip(gtx, th, layoutName) }),
-		ui.Gap(1.5),
-		layout.Flexed(1, text),
-	)
-}
-
-var (
-	layoutChipSize = unit.Sp(11) // text-[11px]
-	layoutChipMaxW = ui.Space(24)
-)
-
-// layoutChip is the outlined layout glyph and name.
-func layoutChip(gtx C, th *ui.Theme, name string) D {
-	macro := op.Record(gtx.Ops)
-	gtx.Constraints.Min = image.Point{}
-	gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(layoutChipMaxW))
-	d := layout.Inset{Left: ui.Space(1), Right: ui.Space(1.5), Top: unit.Dp(1), Bottom: unit.Dp(1)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icTabLayout.Layout(gtx, 11, th.MutedForeground) }),
-			ui.Gap(1),
-			layout.Rigid(th.Text(layoutChipSize, name).Muted().Layout),
-		)
-	})
-	call := macro.Stop()
-	insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusSM), th.Over(th.Border))
-	call.Add(gtx.Ops)
-	return d
-}
-
-// titleRow is the card's first line: the status ring around the provider
-// mark, a shield on a session that runs sandboxed, a fork on one born of a
-// fork, and the label, which stops
-// short of the corner controls (pr-11, pr-6 for a pinned card's lone pin).
+// titleRow is the start of the card's line: the status ring around the
+// provider mark, a shield on a session that runs sandboxed, a fork on one born
+// of a fork, a globe while its browser runs, and the label.
 func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	row := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return s.statusRing(gtx, th, sv) }),
@@ -231,13 +195,7 @@ func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	if s.renaming(sv.ID) {
 		return append(row, layout.Flexed(1, func(gtx C) D { return s.renameField(gtx, th, sv.ID, s.renames[sv.ID]) }))
 	}
-	controls := ui.Space(11)
-	if sv.Pinned {
-		controls = ui.Space(6)
-	}
-	return append(row, layout.Flexed(1, func(gtx C) D {
-		return layout.Inset{Right: controls}.Layout(gtx, th.Text(ui.TextSM, sv.Label).Weight(font.Medium).Layout)
-	}))
+	return append(row, layout.Flexed(1, th.Text(ui.TextSM, sv.Label).Weight(font.Medium).Layout))
 }
 
 // renameField is the label as a field while the card is being renamed.
@@ -250,65 +208,24 @@ func (s *sidebar) renameField(gtx C, th *ui.Theme, id string, rename *ui.InlineE
 	return d
 }
 
-// cardControls is the card's top-right corner. At rest it holds how long the
-// status has lasted, and the pin of a pinned card; hovered, the pin and the ×
-// take its place. A pinned card has no ×: closing is what the pin withholds.
-func (s *sidebar) cardControls(gtx C, th *ui.Theme, sv *sessionView, pin, close *widget.Clickable, hovered bool) D {
-	var children []layout.FlexChild
-	if !hovered && sv.aged {
-		children = append(children, layout.Rigid(th.Text(ui.TextXS, formatAge(sv.age)).Muted().Layout))
-		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(nextAgeChange(sv.age))})
+// cardSlot is the corner every card keeps free, so nothing on its line moves
+// when it fills: the × under the pointer, or the pin of a pinned card, which
+// has no × because closing is what the pin withholds. Pinning lives in the
+// card's menu.
+func (s *sidebar) cardSlot(gtx C, th *ui.Theme, sv *sessionView, closeClick *widget.Clickable, hovered bool) D {
+	size := gtx.Dp(cardSlotSize)
+	gtx.Constraints = layout.Exact(image.Pt(size, size))
+	switch {
+	case sv.Pinned:
+		return layout.Center.Layout(gtx, func(gtx C) D { return s.icPin.LayoutFilled(gtx, 12, th.MutedForeground) })
+	case hovered && !s.renaming(sv.ID):
+		return layout.Center.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, closeClick, s.icClose, false) })
 	}
-	if hovered || sv.Pinned {
-		if len(children) > 0 {
-			children = append(children, ui.Gap(1))
-		}
-		children = append(children, layout.Rigid(func(gtx C) D { return cornerButton(gtx, th, pin, s.icPin, sv.Pinned) }))
-	}
-	if hovered && !sv.Pinned {
-		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D { return cornerButton(gtx, th, close, s.icClose, false) }))
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	return D{Size: gtx.Constraints.Min}
 }
 
-// branchRow is the card's last line: the branch, and on the right a cluster
-// that reads outward from it: where it stands against its base, its open
-// pull request, and the checkout's changes.
-func (s *sidebar) branchRow(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.Clickable) D {
-	git := sv.git
-	children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} })}
-	if git.Branch != "" {
-		children = []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return s.icBranch.Layout(gtx, 12, th.MutedForeground) }),
-			ui.Gap(1),
-			layout.Flexed(1, th.Text(ui.TextXS, git.Branch).Muted().Layout),
-		}
-	}
-	if standing := standingOf(sv.base); standing.count > 0 {
-		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return s.baseReadout(gtx, th, standing) }))
-	}
-	if sv.pr != nil {
-		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
-	}
-	if git.Files > 0 {
-		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return diffStat(gtx, th, git.Added, git.Deleted) }))
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-}
-
-// baseReadout is ↓N commits behind the base, or ⚠N files that would conflict
-// with it, in the waiting tone.
-func (s *sidebar) baseReadout(gtx C, th *ui.Theme, b baseStanding) D {
-	ic, c := s.icBehind, th.MutedForeground
-	if b.conflict {
-		ic, c = s.icClash, th.ToneWait
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, 12, c) }),
-		ui.Gap(0.5),
-		layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(b.count)).In(c).Layout),
-	)
-}
+// cardSlotSize is the corner slot's side.
+var cardSlotSize = unit.Dp(18)
 
 // prBadge is the open pull request's number, a button that brightens on
 // hover.
@@ -335,7 +252,7 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 }
 
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
-	size := gtx.Dp(22)
+	size := gtx.Dp(18)
 	stroke := float32(gtx.Dp(1.25))
 	center := f32.Pt(float32(size)/2, float32(size)/2)
 	radius := float32(size)/2 - stroke/2
@@ -360,6 +277,6 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 		kind = sv.agent
 	}
 	return layout.Center.Layout(gtx, func(gtx C) D {
-		return providerIcon(kind).Layout(gtx, 14, th.MutedForeground)
+		return providerIcon(kind).Layout(gtx, 11, th.MutedForeground)
 	})
 }

@@ -75,25 +75,32 @@ func blockKeyOf(s backend.Session) string {
 // block first, then folders and checkouts interleaved, each landing where its
 // first card sits in the stored list and keeping that order inside. Block
 // order lives nowhere else, which is what lets a drag move a folder past a
-// checkout by moving its cards in the flat list.
+// checkout by moving its cards in the flat list. A child goes where its tree's
+// root goes (placedBy), so it sits with its mother whatever checkout it runs in.
 func sessionBlocks(sessions []backend.Session) []sessionBlock {
 	var blocks []sessionBlock
 	var pinned []backend.Session
 	at := map[string]int{}
+	byID := make(map[string]backend.Session, len(sessions))
 	for _, s := range sessions {
-		kind := blockOf(s)
+		byID[s.ID] = s
+	}
+	roots := rootsOf(sessions)
+	for _, s := range sessions {
+		place := placedBy(s, byID, roots)
+		kind := blockOf(place)
 		if kind == blockPinned {
 			pinned = append(pinned, s)
 			continue
 		}
-		key := blockKeyOf(s)
+		key := blockKeyOf(place)
 		i, ok := at[key]
 		if !ok {
 			i = len(blocks)
 			at[key] = i
-			b := sessionBlock{key: key, kind: kind, path: s.Path}
+			b := sessionBlock{key: key, kind: kind, path: place.Path}
 			if kind == blockFolder {
-				b.folder, b.path = s.Folder, ""
+				b.folder, b.path = place.Folder, ""
 			}
 			blocks = append(blocks, b)
 		}

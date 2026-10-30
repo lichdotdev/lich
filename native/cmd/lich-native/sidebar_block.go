@@ -162,7 +162,12 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return st.header.Layout(gtx, f.view.showHeader, func(gtx C) D {
-					return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
+					// A checkout's header is its tree's root row, spaced like a card.
+					gap := ui.Space(1.5)
+					if b.kind == blockCheckout {
+						gap = cardGap
+					}
+					return layout.Inset{Bottom: gap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
@@ -205,31 +210,54 @@ func (s *sidebar) dropCards(gtx C, st *blockState, b blockView, f blockFrame) bo
 	return ended
 }
 
-// blockCards is the block's card list, each card in its CardTransition: the
-// gap between cards (pb-1.5) lives inside the motion, so a closing card takes
-// it along, and the list cancels the one the last card trails (-mb-1.5).
+// cardGap is the gap under every card of a block.
+var cardGap = ui.Space(0.5)
+
+// blockCards is the block's rows, each in its CardTransition: the gap between
+// rows lives inside the motion, so a closing card takes it along, and the list
+// cancels the one the last row trails. The rows are the block's sessions as
+// trees (sessionRows), drawn from the shown sessions so a closing card keeps
+// its place while it leaves.
 func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame, dragEnded bool) D {
 	shown, _ := st.closing.shown(b.sessions, gtx.Now)
-	views := make(map[string]sessionView, len(shown))
-	for _, sv := range shown {
-		views[sv.ID] = sv
+	folded := func(id string) bool { return b.motherFolds[id] }
+	rows := sessionRows(shown, b.under, folded)
+	byKey := make(map[string]sessionRow, len(rows))
+	tree := b.under != ""
+	for _, r := range rows {
+		byKey[r.key] = r
+		tree = tree || r.depth > 0 || r.kids > 0
 	}
-	keys := st.presence.Update(gtx.Now, blockIDs(b))
-	keys = slices.DeleteFunc(keys, func(id string) bool { _, ok := views[id]; return !ok })
+	var live []string
+	for _, r := range sessionRows(b.sessions, b.under, folded) {
+		live = append(live, r.key)
+	}
+	keys := st.presence.Update(gtx.Now, live)
+	keys = slices.DeleteFunc(keys, func(key string) bool { _, ok := byKey[key]; return !ok })
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	// A card carried out of the sidebar goes back to its slot; the window
 	// draws what follows the pointer over the panes (drawCarried).
 	list := ui.SortList{Leaves: st.cards.Carry != nil}
 	d := st.cards.List(gtx, list, keys, func(gtx C, i int) D {
-		return s.blockCard(gtx, th, st, views[keys[i]], f, dragEnded)
+		return s.blockRow(gtx, th, st, b, byKey[keys[i]], tree, f, dragEnded)
 	})
 	if len(keys) > 0 {
-		d.Size.Y = max(d.Size.Y-gtx.Dp(ui.Space(1.5)), 0)
+		d.Size.Y = max(d.Size.Y-gtx.Dp(cardGap), 0)
 	}
 	return d
 }
 
-func (s *sidebar) blockCard(gtx C, th *ui.Theme, st *blockState, sv sessionView, f blockFrame, dragEnded bool) D {
+// blockRow is one row in its motion: a checkout a mother's children run in,
+// or a card. Only a root's card drags; a child moves with its mother.
+func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r sessionRow, tree bool, f blockFrame, dragEnded bool) D {
+	if r.kind == rowNestedCheckout {
+		return st.presence.Layout(gtx, r.key, func(gtx C) D {
+			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.nestedCheckout(gtx, th, r, b.facts[r.path], tree) })
+		})
+	}
+	sv := r.sv
+	sv.place = r.place(tree)
+	root := r.depth == 0 || (b.under != "" && r.depth == 1)
 	folders := slices.DeleteFunc(slices.Clone(f.view.folders), func(name string) bool { return name == sv.Folder })
 	face := func(gtx C) D {
 		d, a := s.card(gtx, th, &sv, sv.ID == f.active, folders)
@@ -240,8 +268,8 @@ func (s *sidebar) blockCard(gtx C, th *ui.Theme, st *blockState, sv sessionView,
 		return d
 	}
 	return st.presence.Layout(gtx, sv.ID, func(gtx C) D {
-		return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-			if st.presence.Leaving(sv.ID) {
+		return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D {
+			if st.presence.Leaving(sv.ID) || !root {
 				return face(gtx)
 			}
 			return st.cards.Item(gtx, sv.ID, face, nil)

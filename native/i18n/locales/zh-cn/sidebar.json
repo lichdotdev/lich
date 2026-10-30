@@ -44,7 +44,8 @@
     "fork": "分叉",
     "forkHere": "在此处",
     "forkWorktree": "Worktree…",
-    "forkResumeOnly": "仅可恢复"
+    "forkResumeOnly": "仅可恢复",
+    "copyReplyCommand": "复制回复命令"
   },
   "settingsCard": {
     "close": "关闭设置"
@@ -117,16 +118,8 @@
     "runConfined": "受限运行"
   },
   "sessionTooltip": {
-    "waitingOn": "正在等待 {peer}",
-    "answering": "正在回复 {peer}",
-    "commandLine": "命令行",
-    "ticket": "工单 {ticket}",
-    "sandboxed": "沙箱中",
-    "confinedMeans": "主目录为空，机器只读，仅可写入此检出。",
-    "setAtOpen": "会话打开时确定；重新打开以更改。",
     "notMounted": "未挂载（符号链接）：{paths}",
     "morePaths": "另外 {count} 项",
-    "forkedFrom": "分叉自 {label}",
     "modelChanged": "以 {requested} 打开，正在运行 {running}"
   },
   "worktreeDialogView": {
@@ -212,5 +205,8 @@
       "never": "尚未启动",
       "stoppedAt": "已停止 · {time}"
     }
+  },
+  "checkoutRow": {
+    "newSessionHere": "在此新建会话"
   }
 }

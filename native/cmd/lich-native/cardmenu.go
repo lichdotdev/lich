@@ -22,6 +22,7 @@ var (
 	icTakeOut    = icons.Lucide("folder-minus")
 	icNewFolder  = icons.Lucide("plus")
 	icMenuFork   = icons.Lucide("git-fork")
+	icMenuCopy   = icons.Lucide("copy")
 )
 
 // cardMenu is the session card's right-click menu, cut to what this window
@@ -49,6 +50,9 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 	if fork, ok := forkItem(sv, act); ok {
 		entries = append(entries, fork)
 	}
+	if r := sv.relay; r.Direction == relayIn && r.Ticket != "" {
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.copyReplyCommand"), Icon: icMenuCopy, OnClick: func() { act.copyText = replyCommand(r.Ticket) }})
+	}
 	entries = append(entries, extra...)
 	if !sv.Pinned {
 		entries = append(entries,
@@ -58,6 +62,10 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 	}
 	return entries
 }
+
+// replyCommand is what a session that lost its instruction runs to answer
+// the request on ticket.
+func replyCommand(ticket string) string { return `lich reply ` + ticket + ` "…"` }
 
 // colorSwatches is CardColorMenu's grid: the theme first, then the palette,
 // current checked.

@@ -64,6 +64,13 @@ var (
 // carried, a header that takes it is a drop target; every other one fades.
 func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
 	takes, refuses := s.headerDrop(b, f.view)
+	if b.kind == blockCheckout {
+		row := func(gtx C) D { return s.checkoutHeader(gtx, th, b, st, f) }
+		if !takes {
+			return row(gtx)
+		}
+		return s.carry.Target(gtx, b.key, row)
+	}
 	if st.toggle.Clicked(gtx) && !f.headerDragEnded {
 		f.act.fold = b.key
 	}

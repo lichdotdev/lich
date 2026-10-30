@@ -21,17 +21,15 @@ type sidebar struct {
 	menus   map[string]*ui.MenuState
 	renames map[string]*ui.InlineEdit
 	// renamed is the label a rename committed during this frame's layout.
-	renamed  sessionRename
-	cards    map[string]*widget.Clickable
-	closes   map[string]*widget.Clickable
-	pins     map[string]*widget.Clickable
+	renamed sessionRename
+	cards   map[string]*widget.Clickable
+	closes  map[string]*widget.Clickable
+	// mothers are the chevrons that fold a mother's children.
+	mothers  map[string]*widget.Clickable
 	prChips  map[string]*widget.Clickable
-	icBranch *icons.Icon
 	icClose  *icons.Icon
 	icPin    *icons.Icon
 	icShield *icons.Icon
-	icBehind *icons.Icon
-	icClash  *icons.Icon
 	icPR     *icons.Icon
 	started  time.Time
 
@@ -61,17 +59,14 @@ func newSidebar(root *ui.Root) *sidebar {
 		root:     root,
 		cards:    map[string]*widget.Clickable{},
 		closes:   map[string]*widget.Clickable{},
-		pins:     map[string]*widget.Clickable{},
+		mothers:  map[string]*widget.Clickable{},
 		tips:     map[string]*ui.Tooltip{},
 		menus:    map[string]*ui.MenuState{},
 		renames:  map[string]*ui.InlineEdit{},
 		prChips:  map[string]*widget.Clickable{},
-		icBranch: icons.Lucide("git-branch"),
 		icClose:  icons.Lucide("x"),
 		icPin:    icons.Lucide("pin"),
 		icShield: icons.Lucide("shield"),
-		icBehind: icons.Lucide("arrow-down"),
-		icClash:  icons.Lucide("triangle-alert"),
 		icPR:     icons.Lucide("git-pull-request-arrow"),
 		started:  time.Now(),
 		widthRem: sidebarDefaultRem,
@@ -136,6 +131,7 @@ type sidebarAction struct {
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
 	service                serviceRequest
+	copyText               string // text the card menu asked to put on the clipboard
 	sidebarWrites
 }
 
@@ -201,6 +197,8 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	pick(&a.browser, c.browser)
 	pick(&a.forkHere, c.forkHere)
 	pick(&a.forkWorktree, c.forkWorktree)
+	pick(&a.fold, c.fold)
+	pick(&a.copyText, c.copyText)
 	if c.pin != "" {
 		a.pin, a.pinTo = c.pin, c.pinTo
 	}

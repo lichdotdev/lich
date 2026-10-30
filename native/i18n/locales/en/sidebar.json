@@ -44,7 +44,8 @@
     "fork": "Fork",
     "forkHere": "Here",
     "forkWorktree": "Worktree…",
-    "forkResumeOnly": "resume only"
+    "forkResumeOnly": "resume only",
+    "copyReplyCommand": "Copy reply command"
   },
   "settingsCard": {
     "close": "Close settings"
@@ -117,16 +118,8 @@
     "runConfined": "Run confined"
   },
   "sessionTooltip": {
-    "waitingOn": "Waiting on {peer}",
-    "answering": "Answering {peer}",
-    "commandLine": "the command line",
-    "ticket": "ticket {ticket}",
-    "sandboxed": "Sandboxed",
-    "confinedMeans": "Empty home, machine read-only, writes only in this checkout.",
-    "setAtOpen": "Set when the session opened; reopen it to change.",
     "notMounted": "Not mounted (symlinks): {paths}",
     "morePaths": "+{count} more",
-    "forkedFrom": "Forked from {label}",
     "modelChanged": "Opened on {requested}, running {running}"
   },
   "worktreeDialogView": {
@@ -212,5 +205,8 @@
       "never": "Not started yet",
       "stoppedAt": "Stopped · {time}"
     }
+  },
+  "checkoutRow": {
+    "newSessionHere": "New session here"
   }
 }

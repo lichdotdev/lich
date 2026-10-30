@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -25,34 +26,31 @@ var (
 	icModel     = icons.Lucide("cpu")
 )
 
-// sessionTooltip is SessionTooltip: everything the card knows, in words. Cut
-// to the sections this window keeps: the full path, the open request and its
-// ticket, what the shield means, the branch, and the base standing spelled
-// out with the files that would conflict, and the model the provider says it
-// is running.
+// sessionTooltip is what the card's one line has no room for: the full label,
+// what the turn is doing and for how long, the full path, the shield's
+// symlinks left out, the branch and its standing against the base when no
+// checkout row above says them, and the model the provider says it is running.
 func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	th = th.On(th.Popover)
 	path := sv.shown
 	if sv.host != "" {
 		path = unknownCwd(sv.host)
 	}
-	sections := []layout.Widget{
-		th.Text(ui.TextXS, sv.Label).Weight(font.Medium).Layout,
-		para(th.Text(ui.TextXS, path).Muted().Mono()).Layout,
+	sections := []layout.Widget{th.Text(ui.TextXS, sv.Label).Weight(font.Medium).Layout}
+	if rung, ok := statusRung(th, sv); ok {
+		sections = append(sections, statusLine(th, sv, rung))
 	}
-	if sv.Forked && sv.OriginLabel != "" {
-		sections = append(sections, para(th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.forkedFrom", i18n.Args{"label": sv.OriginLabel})).Muted()).Layout)
-	}
-	if sv.relay.Direction != "" {
-		sections = append(sections, relaySection(th, sv.relay))
-	}
-	if sv.sandbox.Confined {
+	sections = append(sections, para(th.Text(ui.TextXS, path).Muted().Mono()).Layout)
+	if len(sv.sandbox.SkippedLinks) > 0 {
 		sections = append(sections, sandboxSection(th, sv.sandbox))
 	}
-	if sv.git.Branch != "" {
+	// Under a checkout row, the checkout's facts are that row's tooltip.
+	if sv.git.Branch != "" && !sv.place.hideGit {
 		sections = append(sections, branchSection(th, sv))
 	}
-	sections = append(sections, baseSections(th, sv.base)...)
+	if !sv.place.hideGit {
+		sections = append(sections, baseSections(th, sv.base)...)
+	}
 	if sv.running != "" {
 		sections = append(sections, modelSection(th, sv.Model, sv.running))
 	}
@@ -86,47 +84,24 @@ func iconLine(gtx C, ic *icons.Icon, glyph ui.LabelStyle, rest ...layout.FlexChi
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(children, rest...)...)
 }
 
-// relaySection names the other end and the ticket the request runs on, the
-// one place a person can read it; the side that owes the answer also gets
-// the reply command to hand back to a session that lost the instruction.
-func relaySection(th *ui.Theme, r sessionRelay) layout.Widget {
-	ic, before, after := icRelayOut, "", ""
-	if r.Direction == relayIn {
-		ic = icRelayIn
-		before, after = aroundValue("sidebar.sessionTooltip.answering", "peer")
-	} else {
-		before, after = aroundValue("sidebar.sessionTooltip.waitingOn", "peer")
+// statusLine is the turn's rung and, while the status has a clock, how long
+// it has lasted. The tooltip is redrawn when that reading changes.
+func statusLine(th *ui.Theme, sv *sessionView, rung layout.Widget) layout.Widget {
+	return func(gtx C) D {
+		children := []layout.FlexChild{layout.Flexed(1, rung)}
+		if sv.aged {
+			children = append(children, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, formatAge(sv.age)).Muted().Layout))
+			gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(nextAgeChange(sv.age))})
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	}
-	peer := th.Text(ui.TextXS, r.Peer).Weight(font.Medium)
-	if r.Peer == "" {
-		peer = th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.commandLine")).Muted().Italic()
-	}
-	muted := th.Text(ui.TextXS, before).Muted()
-	rows := []layout.Widget{func(gtx C) D {
-		return iconLine(gtx, ic, muted, layout.Rigid(muted.Layout), layout.Rigid(peer.Layout), layout.Rigid(th.Text(ui.TextXS, after).Muted().Layout))
-	}}
-	if r.Ticket != "" {
-		rows = append(rows, th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.ticket", i18n.Args{"ticket": r.Ticket})).Mono().Layout)
-	}
-	if r.Ticket != "" && r.Direction == relayIn {
-		rows = append(rows, para(th.Text(ui.TextXS, `lich reply `+r.Ticket+` "…"`).Muted().Mono()).Layout)
-	}
-	return func(gtx C) D { return stack(gtx, 0.5, rows) }
 }
 
-// sandboxSection is what the card's shield means, that it was settled when
-// the session opened, and what the sandbox left out for being a symlink.
+// sandboxSection names what a confined session's sandbox left out of its home
+// for being a symlink.
 func sandboxSection(th *ui.Theme, s sandboxEvent) layout.Widget {
-	title := th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.sandboxed"))
-	rows := []layout.Widget{
-		func(gtx C) D { return iconLine(gtx, icSandboxed, title, layout.Rigid(title.Layout)) },
-		para(th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.confinedMeans")).Muted()).Layout,
-		para(th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.setAtOpen")).Muted()).Layout,
-	}
-	if len(s.SkippedLinks) > 0 {
-		rows = append(rows, para(th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.notMounted", i18n.Args{"paths": strings.Join(s.SkippedLinks, ", ")})).Muted()).Layout)
-	}
-	return func(gtx C) D { return stack(gtx, 0.5, rows) }
+	line := th.Text(ui.TextXS, i18n.T("sidebar.sessionTooltip.notMounted", i18n.Args{"paths": strings.Join(s.SkippedLinks, ", ")})).Muted()
+	return func(gtx C) D { return iconLine(gtx, icSandboxed, line, layout.Flexed(1, para(line).Layout)) }
 }
 
 func branchSection(th *ui.Theme, sv *sessionView) layout.Widget {
