@@ -57,7 +57,7 @@ func TestBundledThemesReadIntoTheIndexCSSPalettes(t *testing.T) {
 	}
 }
 
-func TestTerminalColorsFromTheTemplate(t *testing.T) {
+func TestTerminalColorsFromBundledAndCustomThemes(t *testing.T) {
 	c, err := terminalOf(bundledTheme(t, "template"))
 	if err != nil {
 		t.Fatal(err)
@@ -68,12 +68,19 @@ func TestTerminalColorsFromTheTemplate(t *testing.T) {
 	light, _ := terminalOf(bundledTheme(t, themeLight))
 	wantLightANSI := [16]color.NRGBA{
 		rgb(0x24292f), rgb(0xb33437), rgb(0x1a6b32), rgb(0x806000),
-		rgb(0x174ba0), rgb(0x8c3183), rgb(0x126a6f), rgb(0x57606a),
-		rgb(0x59636e), rgb(0xba3439), rgb(0x21753a), rgb(0x826100),
-		rgb(0x2359af), rgb(0x9b4291), rgb(0x16717a), rgb(0x5c6570),
+		rgb(0x174ba0), rgb(0x8c3183), rgb(0x126a6f), rgb(0x4e5863),
+		rgb(0x3f4852), rgb(0xba3439), rgb(0x21753a), rgb(0x826100),
+		rgb(0x2359af), rgb(0x9b4291), rgb(0x16717a), rgb(0x5f6974),
 	}
 	if light.Background != rgb(0xe8e8ea) || light.Foreground != rgb(0x1f2328) || light.ANSI != wantLightANSI {
 		t.Errorf("Light terminal colors = %+v", light)
+	}
+	minimal, err := terminalOf(customTheme("minimal", "Minimal"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if minimal.ANSI != ([16]color.NRGBA{}) {
+		t.Errorf("custom theme without ANSI colors set some: %+v", minimal.ANSI)
 	}
 	dark, _ := terminalOf(bundledTheme(t, themeDark))
 	wantANSI := [16]color.NRGBA{
@@ -290,69 +297,46 @@ func resolved(h *godemirror.HighlightStyle) map[*tags.Tag]godemirror.TagStyle {
 	return out
 }
 
-// Dark substitui as cores de sintaxe do Godemirror e mantém os outros estilos padrão.
-func TestBundledThemesHighlightAsExpected(t *testing.T) {
+// Bundled syntax colors override the palette while preserving each tag's other styles.
+func TestBundledSyntaxUsesPaletteColorsAndRetainsStyles(t *testing.T) {
 	for id, baseline := range map[string]godemirror.Theme{themeLight: godemirror.LightTheme, themeDark: godemirror.DarkTheme} {
 		e, err := readTheme(bundledTheme(t, id))
 		if err != nil {
 			t.Fatal(err)
 		}
-		want := resolved(baseline.Highlight)
-		if id == themeDark {
-			applySyntaxColorOverrides(t, want, map[string]color.NRGBA{
-				"keyword": rgb(0xc992ff), "string": rgb(0x00cf92), "regexp": rgb(0x00cf92),
-				"escape": rgb(0x00cf92), "special(string)": rgb(0x00cf92),
-				"comment": rgb(0x92929e), "processingInstruction": rgb(0x92929e),
-				"literal": rgb(0xffad33), "number": rgb(0xffad33), "bool": rgb(0xffad33),
-				"null": rgb(0xffad33), "atom": rgb(0xffad33),
-				"typeName": rgb(0x50d6df), "className": rgb(0x50d6df),
-				"namespace": rgb(0x50d6df), "standard(variableName)": rgb(0x50d6df),
-				"propertyName": rgb(0x65adff), "tagName": rgb(0x65adff),
-				"function(variableName)": rgb(0x65adff),
-				"punctuation":            rgb(0x92929e), "operator": rgb(0x92929e),
-				"operatorKeyword": rgb(0x92929e), "invalid": rgb(0xff646d),
-			})
-		}
-		if id == themeLight {
-			applySyntaxColorOverrides(t, want, map[string]color.NRGBA{
-				"keyword": rgb(0x8c3183), "string": rgb(0x1a6b32), "regexp": rgb(0x1a6b32),
-				"escape": rgb(0x1a6b32), "special(string)": rgb(0x1a6b32),
-				"comment": rgb(0x59636e), "processingInstruction": rgb(0x59636e),
-				"literal": rgb(0x806000), "number": rgb(0x806000), "bool": rgb(0x806000),
-				"null": rgb(0x806000), "atom": rgb(0x806000),
-				"typeName": rgb(0x126a6f), "className": rgb(0x126a6f),
-				"namespace": rgb(0x126a6f), "standard(variableName)": rgb(0x126a6f),
-				"propertyName": rgb(0x174ba0), "tagName": rgb(0x174ba0),
-				"function(variableName)": rgb(0x174ba0),
-				"punctuation":            rgb(0x59636e), "operator": rgb(0x59636e),
-				"operatorKeyword": rgb(0x59636e), "invalid": rgb(0xb33437),
-			})
-		}
 		got := resolved(e.code.Highlight)
+		want := resolved(baseline.Highlight)
 		if len(got) != len(want) {
 			t.Fatalf("%s: %d tags styled, want %d", id, len(got), len(want))
 		}
 		for tag, style := range want {
-			if !reflect.DeepEqual(got[tag], style) {
-				t.Errorf("%s: %s = %+v, want %+v", id, tag, got[tag], style)
+			actual, ok := got[tag]
+			if !ok {
+				t.Errorf("%s: tag %s is missing", id, tag)
+				continue
+			}
+			actual.Color = style.Color
+			if !reflect.DeepEqual(actual, style) {
+				t.Errorf("%s: %s style = %+v, want non-color styles %+v", id, tag, actual, style)
 			}
 		}
-	}
-}
-
-func applySyntaxColorOverrides(t *testing.T, styles map[*tags.Tag]godemirror.TagStyle, overrides map[string]color.NRGBA) {
-	t.Helper()
-	for name, wantColor := range overrides {
-		tag, err := tags.Parse(name)
-		if err != nil {
-			t.Fatal(err)
+		samples := map[string]map[string]color.NRGBA{
+			themeDark: {
+				"keyword": rgb(0xc992ff), "string": rgb(0x00cf92), "function(variableName)": rgb(0x65adff),
+			},
+			themeLight: {
+				"keyword": rgb(0x8c3183), "string": rgb(0x1a6b32), "function(variableName)": rgb(0x174ba0),
+			},
 		}
-		style, ok := styles[tag]
-		if !ok {
-			t.Fatalf("syntax tag %q has no default style", name)
+		for name, wantColor := range samples[id] {
+			tag, err := tags.Parse(name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got[tag].Color != wantColor {
+				t.Errorf("%s: %s color = %v, want %v", id, name, got[tag].Color, wantColor)
+			}
 		}
-		style.Color = wantColor
-		styles[tag] = style
 	}
 }
 
