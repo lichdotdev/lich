@@ -13,11 +13,12 @@ import (
 )
 
 // The tree's motion when rows come into a block or leave it (a mother opens
-// or closes, a session opens or closes, a checkout gets its first session):
-// the line runs down ahead of the rows while they open behind it, turning
-// into each ring and drawing it, and each row's glyph and name come in once
-// its ring is closed. A root row hangs from no line: its ring draws alone.
-// Leaving plays the same motion backwards.
+// or closes, a session opens or closes, a checkout gets its first session).
+// Leaving: each row's glyph and name go, its ring undraws, and the line runs
+// back up past it while the rows close. Coming in: a row opens with its name
+// already on it, so nothing waits on the motion, and the line then runs down
+// slowly to its ring, draws it, and the glyph comes in last. A root row hangs
+// from no line: its ring draws alone.
 const (
 	treeRingDraw = 220 * time.Millisecond
 	treeBodyFade = 200 * time.Millisecond
@@ -29,6 +30,19 @@ const (
 	// treeCloseStretch slows the close as Presence's exit is to its enter.
 	treeCloseStretch = 180.0 / 160
 )
+
+// The coming in's pace (treeOpenLine aside).
+const (
+	treeEnterRing  = 400 * time.Millisecond
+	treeEnterName  = 160 * time.Millisecond
+	treeEnterDelay = 80 * time.Millisecond // a row's name after its row starts opening
+)
+
+// treeOpenLine is how long the line takes to run down n rows coming in:
+// 100ms more a row, up to 800ms.
+func treeOpenLine(n int) time.Duration {
+	return min(450*time.Millisecond+time.Duration(n-1)*100*time.Millisecond, 800*time.Millisecond)
+}
 
 var treeCurve = ui.CubicBezier(0.4, 0, 0.2, 1)
 
@@ -54,9 +68,9 @@ type treeSweep struct {
 	rows float32
 }
 
-// treeEntry is how much of a row's ring and body is still to come in, 0 at
-// rest.
-type treeEntry struct{ ring, body float32 }
+// treeEntry is how much of a row's ring, its glyph and its body (the line
+// past the ring) is still to come in, 0 at rest.
+type treeEntry struct{ ring, glyph, body float32 }
 
 // rowMotion is a row's share of its run at one frame.
 type rowMotion struct {
@@ -75,34 +89,55 @@ type treeRun struct {
 	closing bool
 }
 
-// span is the opening's whole length: the last ring's line, its draw and its
-// body.
+// span is the leaving's whole length played forwards: the last ring's line,
+// its draw and its body.
 func (r treeRun) span() time.Duration {
 	n := float64(len(r.rows))
 	line := float64(treeOpen(len(r.rows))) * treeLineShare * (n - 0.5) / n
 	return time.Duration(line) + time.Duration(float64(treeRingDraw)*treeBodyAfter) + treeBodyFade
 }
 
+// length is how long the run moves: coming in, until the last row's glyph is
+// in; leaving, its span slowed.
 func (r treeRun) length() time.Duration {
 	if r.closing {
 		return time.Duration(float64(r.span()) * treeCloseStretch)
 	}
-	return r.span()
-}
-
-// at is where on the opening the run is at now: a closing run plays it
-// backwards.
-func (r treeRun) at(now time.Time) time.Duration {
-	t := now.Sub(r.start)
-	if r.closing {
-		return time.Duration(float64(r.span()) * float64(1-clamp01(float32(t)/float32(r.length()))))
-	}
-	return t
+	n := float64(len(r.rows))
+	reach := time.Duration(float64(treeOpenLine(len(r.rows))) * (n - 0.5) / n)
+	return max(treeOpen(len(r.rows)), reach+time.Duration(float64(treeEnterRing)*treeBodyAfter)+treeEnterName)
 }
 
 // frame is the i-th row's share of the run at now.
 func (r treeRun) frame(now time.Time, i int) rowMotion {
-	open, n, t := treeOpen(len(r.rows)), float32(len(r.rows)), r.at(now)
+	if r.closing {
+		return r.leaving(now, i)
+	}
+	open, line, n := treeOpen(len(r.rows)), treeOpenLine(len(r.rows)), float32(len(r.rows))
+	t := now.Sub(r.start)
+	share := func(from, length time.Duration) float32 { return clamp01(float32(t-from) / float32(length)) }
+	reach := time.Duration(float32(line) * (float32(i) + 0.5) / n)
+	start := time.Duration(float32(open) * float32(i) / n)
+	if r.rows[0].depth == 0 {
+		// A root hangs from no line: its ring draws as its row opens.
+		reach = start
+	}
+	return rowMotion{
+		height: clamp01(treeEase(share(0, open))*n - float32(i)),
+		sweep:  treeSweep{col: r.rows[0].depth - 1, rows: treeEase(share(0, line))*n - float32(i)},
+		entry: treeEntry{
+			ring:  1 - treeEase(share(reach, treeEnterRing)),
+			glyph: 1 - share(reach+time.Duration(float32(treeEnterRing)*treeBodyAfter), treeEnterName),
+			body:  1 - share(start+treeEnterDelay, treeEnterName),
+		},
+	}
+}
+
+// leaving is the i-th row's share of a closing run at now: its own
+// timeline played backwards, glyph and body going together.
+func (r treeRun) leaving(now time.Time, i int) rowMotion {
+	open, n := treeOpen(len(r.rows)), float32(len(r.rows))
+	t := time.Duration(float64(r.span()) * float64(1-clamp01(float32(now.Sub(r.start))/float32(r.length()))))
 	share := func(from, length time.Duration) float32 { return clamp01(float32(t-from) / float32(length)) }
 	line := time.Duration(float32(open) * treeLineShare)
 	reach := time.Duration(float32(line) * (float32(i) + 0.5) / n)
@@ -111,8 +146,8 @@ func (r treeRun) frame(now time.Time, i int) rowMotion {
 	return rowMotion{
 		height:  clamp01(treeEase(share(0, open))*n - float32(i)),
 		sweep:   treeSweep{col: r.rows[0].depth - 1, rows: share(0, line)*n - float32(i)},
-		entry:   treeEntry{ring: 1 - ring, body: 1 - body},
-		closing: r.closing,
+		entry:   treeEntry{ring: 1 - ring, glyph: 1 - body, body: 1 - body},
+		closing: true,
 	}
 }
 
@@ -122,6 +157,8 @@ func clamp01(v float32) float32 { return max(0, min(v, 1)) }
 type treeMotion struct {
 	prev []sessionRow
 	seen bool
+	// from is when the runs a block arriving starts with begin, zero for now.
+	from time.Time
 	runs []treeRun
 }
 
@@ -132,8 +169,12 @@ type treeMotion struct {
 func (m *treeMotion) update(now time.Time, live []sessionRow) bool {
 	m.runs = slices.DeleteFunc(m.runs, func(r treeRun) bool { return now.Sub(r.start) >= r.length() })
 	if m.seen {
+		start := now
+		if !m.from.IsZero() {
+			start, m.from = m.from, time.Time{}
+		}
 		for _, s := range stretches(live, m.prev) {
-			m.start(treeRun{rows: live[s.X:s.Y], after: keyBefore(live, s.X), start: now})
+			m.start(treeRun{rows: live[s.X:s.Y], after: keyBefore(live, s.X), start: start})
 		}
 		still := keySet(live)
 		for _, s := range stretches(m.prev, live) {
@@ -157,8 +198,12 @@ func (m *treeMotion) start(run treeRun) {
 }
 
 // arrive marks the block as one that came into a list already drawn: its
-// first rows are news, and come in as a run.
-func (m *treeMotion) arrive() { m.seen = true }
+// first rows are news, and come in as a run from at (zero for now).
+func (m *treeMotion) arrive(at time.Time) {
+	if !m.seen {
+		m.seen, m.from = true, at
+	}
+}
 
 // keyBefore is the key of the row before rows[i], "" at the block's top.
 func keyBefore(rows []sessionRow, i int) string {

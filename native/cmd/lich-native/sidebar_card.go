@@ -311,7 +311,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	if sv.place.hot {
 		return centeredIcon(gtx, foldIcon(!sv.place.folded), 13, th.Foreground)
 	}
-	return centeredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, 1-entry.body))
+	return centeredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, 1-entry.glyph))
 }
 
 // centeredIcon draws ic in the middle of the exact box gtx holds, at a

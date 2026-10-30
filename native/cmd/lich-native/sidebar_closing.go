@@ -121,23 +121,72 @@ type blockPresence struct {
 	project string
 	motion  ui.Presence
 	last    map[string]blockView
+	// A checkout block draws its header as a tree row, so it comes in and
+	// leaves by the tree's motion instead (blockMove): moving holds those,
+	// live the keys of the last frame and drawn its order.
+	moving map[string]blockMove
+	live   map[string]bool
+	drawn  []string
 }
 
 // shown is live with the blocks still leaving put back in their slots.
 func (p *blockPresence) shown(now time.Time, project string, live []blockView) []blockView {
 	if p.last == nil || project != p.project {
-		*p = blockPresence{project: project, last: map[string]blockView{}}
+		*p = blockPresence{project: project, last: map[string]blockView{}, moving: map[string]blockMove{}}
 	}
 	keys := make([]string, len(live))
 	for i, b := range live {
 		keys[i] = b.key
 		p.last[b.key] = b
 	}
+	p.move(now, live)
+	// Presence plays its own exit for a block that left; a moving one is
+	// drawn by its motion instead, past that exit, in the slot it left.
 	shownKeys := p.motion.Update(now, keys)
+	for key, m := range p.moving {
+		if m.leaving && !slices.Contains(shownKeys, key) {
+			at := 0
+			if i := slices.Index(p.drawn, key); i > 0 {
+				at = slices.Index(shownKeys, p.drawn[i-1]) + 1
+			}
+			shownKeys = slices.Insert(shownKeys, at, key)
+		}
+	}
 	maps.DeleteFunc(p.last, func(key string, _ blockView) bool { return !slices.Contains(shownKeys, key) })
+	p.drawn = shownKeys
 	shown := make([]blockView, len(shownKeys))
 	for i, key := range shownKeys {
 		shown[i] = p.last[key]
+		if m, ok := p.moving[key]; ok {
+			shown[i].move = &m
+		}
 	}
 	return shown
+}
+
+// leaving reports whether key is drawn only for its exit.
+func (p *blockPresence) leaving(key string) bool {
+	m, ok := p.moving[key]
+	return ok && m.leaving || p.motion.Leaving(key)
+}
+
+// move starts the checkout blocks that came in or left since the last frame
+// on their motion, and drops the ones whose motion has played. The list's
+// first frame is not news.
+func (p *blockPresence) move(now time.Time, live []blockView) {
+	settled := p.live != nil
+	still := map[string]bool{}
+	for _, b := range live {
+		still[b.key] = true
+		if settled && !p.live[b.key] && b.under != "" {
+			p.moving[b.key] = blockMove{start: now, rows: len(blockRows(b, b.sessions))}
+		}
+	}
+	for key := range p.live {
+		if last := p.last[key]; !still[key] && last.under != "" {
+			p.moving[key] = blockMove{start: now, leaving: true, rows: len(blockRows(last, last.sessions))}
+		}
+	}
+	maps.DeleteFunc(p.moving, func(_ string, m blockMove) bool { return !now.Before(m.end()) })
+	p.live = still
 }

@@ -247,7 +247,7 @@ func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon, entry treeEntry) D {
 	side := gtx.Dp(sessionTreeRingR) * 2
 	ringArc(gtx, side, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 	gtx.Constraints = layout.Exact(image.Pt(side, side))
-	return centeredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.body))
+	return centeredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.glyph))
 }
 
 // ringArc draws a node's ring in a box of side, as much of it as has come in:
@@ -337,7 +337,11 @@ func (s *sidebar) menuState(states map[string]*ui.MenuState, key string) *ui.Men
 // or the … in its corner, that opens a session there or files the whole block.
 func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
 	facts := b.facts[b.under]
-	p := treePlace{tree: true, sessionRowLinks: sessionRowLinks{stub: !b.collapsed && len(b.sessions) > 0}}
+	// The stub waits for the ring it leaves while the block moves.
+	p := treePlace{tree: true, sessionRowLinks: sessionRowLinks{stub: !b.collapsed && len(b.sessions) > 0 && (b.head == nil || b.head.entry.ring == 0)}}
+	if b.head != nil {
+		p.entry = b.head.entry
+	}
 	var count []layout.FlexChild
 	if b.collapsed {
 		count = foldedCount(th, len(b.sessions), b.mark)

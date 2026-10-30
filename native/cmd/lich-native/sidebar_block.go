@@ -3,6 +3,7 @@ package main
 import (
 	"image/color"
 	"slices"
+	"time"
 
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -78,6 +79,14 @@ func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string
 		st.drawn = false
 	}
 	item := func(gtx C, b blockView) D {
+		if b.move != nil {
+			// The block moves by its rows and its header; the gap below goes
+			// with the header.
+			head := b.move.head(gtx.Now)
+			b.head = &head
+			gtx.Execute(op.InvalidateCmd{})
+			return layout.Inset{Bottom: ui.Space(1.5) * unit.Dp(head.height)}.Layout(gtx, func(gtx C) D { return s.block(gtx, th, b, f) })
+		}
 		return s.motion.motion.Layout(gtx, b.key, func(gtx C) D {
 			return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D { return s.block(gtx, th, b, f) })
 		})
@@ -111,16 +120,16 @@ func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string
 func (s *sidebar) dropBlocks(gtx C, f blockFrame, keys []string) bool {
 	s.sort.Disabled = f.filtering || !f.view.showHeader
 	before := s.sort.Dragging()
-	if d, ok := s.sort.Update(gtx); ok && d.ID != d.Over && !s.motion.motion.Leaving(d.Over) {
-		f.act.blockOrder = arrayMove(liveKeys(keys, &s.motion.motion), d.ID, d.Over)
+	if d, ok := s.sort.Update(gtx); ok && d.ID != d.Over && !s.motion.leaving(d.Over) {
+		f.act.blockOrder = arrayMove(liveKeys(keys, s.motion.leaving), d.ID, d.Over)
 	}
 	return before != "" && s.sort.Dragging() == ""
 }
 
 // liveKeys is keys without the blocks drawn only for their exit, what a drag
 // commits.
-func liveKeys(keys []string, motion *ui.Presence) []string {
-	return slices.DeleteFunc(slices.Clone(keys), motion.Leaving)
+func liveKeys(keys []string, leaving func(key string) bool) []string {
+	return slices.DeleteFunc(slices.Clone(keys), leaving)
 }
 
 // scrollColumn is the block list's scroll area: an 8px thumb on a transparent
@@ -169,7 +178,13 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 			layout.Rigid(func(gtx C) D {
 				return st.header.Layout(gtx, f.view.showHeader, func(gtx C) D {
 					// Every header is a row's height, spaced like a card.
-					return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
+					header := func(gtx C) D {
+						return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.groupHeader(gtx, th, b, st, f) })
+					}
+					if b.head == nil {
+						return header(gtx)
+					}
+					return moveRow(gtx, sessionRow{motion: b.head}, header)
 				})
 			}),
 			layout.Rigid(func(gtx C) D {
@@ -229,8 +244,13 @@ var cardGap = unit.Dp(0)
 func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame, dragEnded bool) D {
 	shown, _ := st.closing.shown(b.sessions, gtx.Now)
 	live := blockRows(b, b.sessions)
-	if f.settled {
-		st.tree.arrive()
+	switch {
+	case b.move != nil && b.move.leaving:
+		live = nil
+	case b.move != nil:
+		st.tree.arrive(b.move.start.Add(blockRowsAfter))
+	case f.settled:
+		st.tree.arrive(time.Time{})
 	}
 	if st.tree.update(gtx.Now, live) {
 		gtx.Execute(op.InvalidateCmd{})

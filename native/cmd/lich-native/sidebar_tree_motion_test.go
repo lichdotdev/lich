@@ -4,6 +4,8 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/lichdotdev/lich/native/backend"
 )
 
 func motionRows(sessions []sessionView, folded ...string) []sessionRow {
@@ -35,7 +37,7 @@ func TestTreeMotionOpensTheRowsAMotherUnfolds(t *testing.T) {
 		t.Errorf("run = %v closing %v, want the mother's three rows opening", got, run.closing)
 	}
 	first := run.frame(now, 0)
-	if first.height != 0 || first.entry != (treeEntry{ring: 1, body: 1}) || first.sweep.col != 0 {
+	if first.height != 0 || first.entry != (treeEntry{ring: 1, glyph: 1, body: 1}) || first.sweep.col != 0 {
 		t.Errorf("first frame = %+v, want nothing drawn yet, swept down the mother's column", first)
 	}
 	last := run.frame(now.Add(run.length()), 2)
@@ -77,7 +79,7 @@ func TestTreeMotionClosesAFoldedGroupUnderItsMother(t *testing.T) {
 		t.Errorf("first leaving row = %+v, want it whole as the close starts", f)
 	}
 	end := m.runs[0].length()
-	if f := m.runs[0].frame(now.Add(end), 0); f.height != 0 || f.entry != (treeEntry{ring: 1, body: 1}) {
+	if f := m.runs[0].frame(now.Add(end), 0); f.height != 0 || f.entry != (treeEntry{ring: 1, glyph: 1, body: 1}) {
 		t.Errorf("closed frame = %+v, want nothing left", f)
 	}
 	if m.update(now.Add(end), motionRows(sessions, "mother")) {
@@ -124,8 +126,41 @@ func TestTreeMotionOpensANewRoot(t *testing.T) {
 
 func TestTreeMotionOpensTheRowsOfABlockThatArrives(t *testing.T) {
 	var m treeMotion
-	m.arrive()
+	m.arrive(time.Time{})
 	if !m.update(time.Now(), motionRows(motionTree())) || len(m.runs[0].rows) != 5 {
 		t.Errorf("runs = %+v, want every row of a block new to a drawn list opening", m.runs)
+	}
+}
+
+func TestTreeMotionPutsANewRowsNameInBeforeItsRing(t *testing.T) {
+	sessions, now := motionTree(), time.Now()
+	var m treeMotion
+	m.update(now, motionRows(sessions))
+	born := append(slices.Clone(sessions), treeSession("c", "mother", "/repo"))
+	m.update(now, motionRows(born))
+	f := m.runs[0].frame(now.Add(treeOpen(1)), 0)
+	if f.height != 1 || f.entry.body != 0 || f.entry.ring == 0 || f.entry.glyph == 0 {
+		t.Errorf("frame once the row is open = %+v, want its name in and its ring and glyph still coming", f)
+	}
+}
+
+func TestBlockPresenceHoldsALeavingCheckoutForItsTreeMotion(t *testing.T) {
+	checkout := func(key string) blockView {
+		return blockView{key: key, kind: blockCheckout, under: key, sessions: []sessionView{{Session: backend.Session{ID: key + "-s"}, path: key}}}
+	}
+	var p blockPresence
+	now := time.Unix(100, 0)
+	p.shown(now, "p", []blockView{checkout("/a"), checkout("/b")})
+	shown := p.shown(now, "p", []blockView{checkout("/a")})
+	if len(shown) != 2 || shown[1].key != "/b" || shown[1].move == nil || !shown[1].move.leaving {
+		t.Fatalf("shown = %+v, want /b held in its slot, leaving by the tree's motion", shown)
+	}
+	end := shown[1].move.end()
+	if got := p.shown(end, "p", []blockView{checkout("/a")}); len(got) != 1 {
+		t.Errorf("shown at the motion's end = %d blocks, want /b gone", len(got))
+	}
+	arrived := p.shown(end, "p", []blockView{checkout("/a"), checkout("/c")})
+	if arrived[1].move == nil || arrived[1].move.leaving {
+		t.Errorf("a new checkout = %+v, want it coming in by the tree's motion", arrived[1])
 	}
 }
