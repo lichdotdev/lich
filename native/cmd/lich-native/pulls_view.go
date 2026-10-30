@@ -18,9 +18,13 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The PR island's padding: PullRequestView's px-6 under the toolbar strip.
+// The PR island's padding under the toolbar strip: the sidebar's, an 8px
+// island edge plus a row's 10px, so text lands where a session card's does
+// and a row's hover fill stops at the edge.
 var (
-	pullsPadX       = ui.Space(6)
+	pullsRowEdge    = ui.Space(2)
+	pullsRowPadX    = ui.Space(2.5)
+	pullsPadX       = pullsRowEdge + pullsRowPadX
 	pullsTitleSize  = unit.Sp(18)
 	pullsToolbarPad = ui.Space(2)
 	// pullsHeadingTop centers the title's first line on the h-8 buttons
@@ -57,7 +61,7 @@ func (a *pullsAction) open(url string) { a.external = url }
 // pullView is PullRequestView: the toolbar, the title, the status line, the
 // tabs and the open tab's panel.
 type pullView struct {
-	session, moreClick                       widget.Clickable
+	session, handoff, moreClick              widget.Clickable
 	moreMenu                                 ui.MenuState
 	mergeClick                               widget.Clickable
 	mergeMenu                                ui.MenuState
@@ -242,7 +246,7 @@ func (v *pullView) navClicks(gtx C, p *pullsScreen, rows []backend.PRSummary) {
 func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 	rows := p.visible(p.store.list(p.project.Path, p.state).val)
 	at := position(rows, p.selected)
-	return layout.Inset{Left: pullsPadX - pullsToolbarPad - ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -341,9 +345,9 @@ func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d backend.
 	return macro.Stop(), size
 }
 
-// heading is the title over its stats, its left edge on the body's px-6.
+// heading is the title over its stats, its left edge on the toolbar strip's.
 func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
-	return layout.Inset{Left: pullsPadX - pullsToolbarPad, Right: ui.Space(4), Top: pullsHeadingTop}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Right: ui.Space(4), Top: pullsHeadingTop}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return v.pullTitle(gtx, th, p, d, act) }),
 			ui.VGap(3),
@@ -355,7 +359,7 @@ func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: pullsPadX, Right: pullsPadX}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Left: pullsToolbarPad, Right: pullsToolbarPad}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					ui.VGap(4),
 					layout.Rigid(func(gtx C) D { return v.tabStrip(gtx, th, p, d) }),

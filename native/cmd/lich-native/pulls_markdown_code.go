@@ -12,6 +12,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
+const markdownCodeBackgroundMix = 0.1
+
 func (c *markdownCell) codeBackgrounds(gtx C, th *ui.Theme) {
 	hasCode := false
 	for _, code := range c.code {
@@ -31,6 +33,6 @@ func (c *markdownCell) codeBackgrounds(gtx C, th *ui.Theme) {
 			return
 		}
 		rect := image.Rectangle{Max: dims.Size}.Inset(gtx.Dp(1))
-		paint.FillShape(gtx.Ops, ui.MixOKLab(th.Background, th.Foreground, 0.1), clip.UniformRRect(rect, gtx.Dp(3)).Op(gtx.Ops))
+		paint.FillShape(gtx.Ops, ui.MixOKLab(th.Background, th.Foreground, markdownCodeBackgroundMix), clip.UniformRRect(rect, gtx.Dp(ui.RadiusSM)).Op(gtx.Ops))
 	})
 }

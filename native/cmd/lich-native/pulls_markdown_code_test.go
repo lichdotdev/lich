@@ -51,7 +51,7 @@ func TestMarkdownInlineCodeBackgroundWrapsWithText(t *testing.T) {
 	if err := win.Screenshot(img); err != nil {
 		t.Fatal(err)
 	}
-	background := ui.MixOKLab(th.Background, th.Foreground, 0.1)
+	background := ui.MixOKLab(th.Background, th.Foreground, markdownCodeBackgroundMix)
 	first, last := -1, -1
 	for y := 0; y < img.Bounds().Dy(); y++ {
 		for x := 0; x < img.Bounds().Dx(); x++ {
