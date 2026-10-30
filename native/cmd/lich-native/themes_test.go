@@ -57,7 +57,7 @@ func TestBundledThemesReadIntoTheIndexCSSPalettes(t *testing.T) {
 	}
 }
 
-func TestTerminalColorsFromTheTemplate(t *testing.T) {
+func TestTerminalColorsFromBundledAndCustomThemes(t *testing.T) {
 	c, err := terminalOf(bundledTheme(t, "template"))
 	if err != nil {
 		t.Fatal(err)
@@ -65,9 +65,38 @@ func TestTerminalColorsFromTheTemplate(t *testing.T) {
 	if c.Background != rgb(0x15111f) || c.Cursor != rgb(0xc4a7ff) || c.ANSI[1] != rgb(0xff5c8a) {
 		t.Errorf("background %v cursor %v red %v", c.Background, c.Cursor, c.ANSI[1])
 	}
+	light, _ := terminalOf(bundledTheme(t, themeLight))
+	wantLightANSI := [16]color.NRGBA{
+		rgb(0x24292f), rgb(0xb33437), rgb(0x1a6b32), rgb(0x806000),
+		rgb(0x174ba0), rgb(0x8c3183), rgb(0x126a6f), rgb(0x4e5863),
+		rgb(0x3f4852), rgb(0xba3439), rgb(0x21753a), rgb(0x826100),
+		rgb(0x2359af), rgb(0x9b4291), rgb(0x16717a), rgb(0x5f6974),
+	}
+	if light.Background != rgb(0xe8e8ea) || light.Foreground != rgb(0x1f2328) || light.ANSI != wantLightANSI {
+		t.Errorf("Light terminal colors = %+v", light)
+	}
+	minimal, err := terminalOf(customTheme("minimal", "Minimal"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if minimal.ANSI != ([16]color.NRGBA{}) {
+		t.Errorf("custom theme without ANSI colors set some: %+v", minimal.ANSI)
+	}
 	dark, _ := terminalOf(bundledTheme(t, themeDark))
-	if dark.Cursor.A != 0 || dark.ANSI[1].A != 0 {
-		t.Errorf("a theme naming no cursor or ANSI colors set some: %+v", dark)
+	wantANSI := [16]color.NRGBA{
+		rgb(0x151515), rgb(0xff646d), rgb(0x00cf92), rgb(0xffad33),
+		rgb(0x65adff), rgb(0xc992ff), rgb(0x50d6df), rgb(0xe7e7ec),
+		rgb(0x92929e), rgb(0xff8990), rgb(0x54e4b3), rgb(0xffc45f),
+		rgb(0x94c5ff), rgb(0xddb7ff), rgb(0x83e8ed), rgb(0xffffff),
+	}
+	if dark.Cursor.A != 0 {
+		t.Errorf("Dark cursor = %v, want libghostty's default", dark.Cursor)
+	}
+	if dark.Background != rgb(0x101012) || dark.Foreground != rgb(0xf1f1f4) {
+		t.Errorf("Dark terminal foreground/background = %v/%v", dark.Foreground, dark.Background)
+	}
+	if dark.ANSI != wantANSI {
+		t.Errorf("Dark ANSI palette = %v, want %v", dark.ANSI, wantANSI)
 	}
 }
 
@@ -268,21 +297,44 @@ func resolved(h *godemirror.HighlightStyle) map[*tags.Tag]godemirror.TagStyle {
 	return out
 }
 
-// The bundled themes write godemirror's own palettes out tag by tag, so the
-// code views look as they did before themes carried syntax.
-func TestBundledThemesHighlightAsGodemirrorsDefaults(t *testing.T) {
-	for id, want := range map[string]godemirror.Theme{themeLight: godemirror.LightTheme, themeDark: godemirror.DarkTheme} {
+// Bundled syntax colors override the palette while preserving each tag's other styles.
+func TestBundledSyntaxUsesPaletteColorsAndRetainsStyles(t *testing.T) {
+	for id, baseline := range map[string]godemirror.Theme{themeLight: godemirror.LightTheme, themeDark: godemirror.DarkTheme} {
 		e, err := readTheme(bundledTheme(t, id))
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, exp := resolved(e.code.Highlight), resolved(want.Highlight)
-		if len(got) != len(exp) {
-			t.Fatalf("%s: %d tags styled, godemirror styles %d", id, len(got), len(exp))
+		got := resolved(e.code.Highlight)
+		want := resolved(baseline.Highlight)
+		if len(got) != len(want) {
+			t.Fatalf("%s: %d tags styled, want %d", id, len(got), len(want))
 		}
-		for tag, style := range exp {
-			if !reflect.DeepEqual(got[tag], style) {
-				t.Errorf("%s: %s = %+v, want %+v", id, tag, got[tag], style)
+		for tag, style := range want {
+			actual, ok := got[tag]
+			if !ok {
+				t.Errorf("%s: tag %s is missing", id, tag)
+				continue
+			}
+			actual.Color = style.Color
+			if !reflect.DeepEqual(actual, style) {
+				t.Errorf("%s: %s style = %+v, want non-color styles %+v", id, tag, actual, style)
+			}
+		}
+		samples := map[string]map[string]color.NRGBA{
+			themeDark: {
+				"keyword": rgb(0xc992ff), "string": rgb(0x00cf92), "function(variableName)": rgb(0x65adff),
+			},
+			themeLight: {
+				"keyword": rgb(0x8c3183), "string": rgb(0x1a6b32), "function(variableName)": rgb(0x174ba0),
+			},
+		}
+		for name, wantColor := range samples[id] {
+			tag, err := tags.Parse(name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got[tag].Color != wantColor {
+				t.Errorf("%s: %s color = %v, want %v", id, name, got[tag].Color, wantColor)
 			}
 		}
 	}

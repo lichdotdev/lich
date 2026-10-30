@@ -174,9 +174,9 @@ func TestTogglePressedIsAccentFill(t *testing.T) {
 	if img := draw(false, nil); img.RGBAAt(3, 18).A != 0 {
 		t.Errorf("unpressed: pixel %v, want transparent", img.RGBAAt(3, 18))
 	}
-	// opacity-50 over the page: accent (#27272a) halfway to #09090b.
+	// opacity-50 over the page: accent (#27272a) halfway to #101012.
 	disabled := draw(true, func(tg *ToggleStyle) { tg.Disabled = true })
-	if want := (color.NRGBA{R: 24, G: 24, B: 27, A: 255}); !toggleIs(disabled, image.Pt(3, 18), want) {
+	if want := (color.NRGBA{R: 27, G: 27, B: 30, A: 255}); !toggleIs(disabled, image.Pt(3, 18), want) {
 		t.Errorf("disabled pressed: pixel %v, want accent at half over the page %v", disabled.RGBAAt(3, 18), want)
 	}
 }
@@ -189,7 +189,7 @@ func TestToggleOutlineHasBorderDefaultHasNone(t *testing.T) {
 		return toggleRender(t, image.Pt(80, 36), time.Time{}, tg.Layout).RGBAAt(40, 0)
 	}
 	// border-input is white at 15% over the page.
-	if p, want := edge(ToggleVariantOutline), (color.NRGBA{R: 45, G: 45, B: 47, A: 255}); !near2(color.NRGBA(p), want) {
+	if p, want := edge(ToggleVariantOutline), (color.NRGBA{R: 52, G: 52, B: 53, A: 255}); !near2(color.NRGBA(p), want) {
 		t.Errorf("outline: top edge %v, want input over the page %v", p, want)
 	}
 	if p := edge(ToggleVariantDefault); p.A != 0 {

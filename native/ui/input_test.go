@@ -179,7 +179,7 @@ func TestInputFocusRingDrawsOnlyWhenFocused(t *testing.T) {
 	}
 }
 
-// The box of an input over the page (#09090b), as the browser composites it:
+// The box of an input over the page (#101012), as the browser composites it:
 // bg-input/30 for the fill, border-input over the fill, ring-ring/50 over the
 // page. Gio would blend each about twice as bright.
 func TestInputBoxPaintsTheBrowsersColors(t *testing.T) {
@@ -188,17 +188,17 @@ func TestInputBoxPaintsTheBrowsersColors(t *testing.T) {
 	rig := newInputRig(t, 160, 36, in.Layout)
 	img := rig.frame()
 	at := func(x, y int) image.Point { return image.Pt(rig.margin+x, rig.margin+y) }
-	if want := (color.NRGBA{R: 20, G: 20, B: 22, A: 255}); !toggleIs(img, at(4, 18), want) {
+	if want := (color.NRGBA{R: 26, G: 26, B: 28, A: 255}); !toggleIs(img, at(4, 18), want) {
 		t.Errorf("fill %v, want input/30 over the page %v", img.RGBAAt(at(4, 18).X, at(4, 18).Y), want)
 	}
-	if want := (color.NRGBA{R: 55, G: 55, B: 57, A: 255}); !toggleIs(img, at(80, 0), want) {
+	if want := (color.NRGBA{R: 60, G: 60, B: 62, A: 255}); !toggleIs(img, at(80, 0), want) {
 		t.Errorf("border %v, want input over the fill %v", img.RGBAAt(at(80, 0).X, at(80, 0).Y), want)
 	}
 
 	rig.router.Source().Execute(key.FocusCmd{Tag: ed})
 	rig.frame()
 	img = rig.frame()
-	if want := (color.NRGBA{R: 61, G: 61, B: 66, A: 255}); !toggleIs(img, at(-2, 18), want) {
+	if want := (color.NRGBA{R: 64, G: 64, B: 70, A: 255}); !toggleIs(img, at(-2, 18), want) {
 		t.Errorf("focus ring %v, want ring/50 over the page %v", img.RGBAAt(at(-2, 18).X, at(-2, 18).Y), want)
 	}
 	if want := th.Ring; !toggleIs(img, at(80, 0), want) {
@@ -224,7 +224,7 @@ func TestBareInputDrawsNoBox(t *testing.T) {
 	}
 }
 
-// disabled:opacity-50 fades the finished box: the fill (#14141 6) at half over
+// disabled:opacity-50 fades the finished box: the fill (#1a1a1c) at half over
 // the page.
 func TestInputDisabledFadesOntoThePage(t *testing.T) {
 	th := testTheme()
@@ -232,7 +232,7 @@ func TestInputDisabledFadesOntoThePage(t *testing.T) {
 	in.Disabled = true
 	rig := newInputRig(t, 160, 36, in.Layout)
 	p := image.Pt(rig.margin+4, rig.margin+18)
-	if img, want := rig.frame(), (color.NRGBA{R: 14, G: 14, B: 16, A: 255}); !toggleIs(img, p, want) {
+	if img, want := rig.frame(), (color.NRGBA{R: 21, G: 21, B: 23, A: 255}); !toggleIs(img, p, want) {
 		t.Errorf("fill %v, want input/30 at half over the page %v", img.RGBAAt(p.X, p.Y), want)
 	}
 }
@@ -241,11 +241,11 @@ func TestInputDisabledFadesOntoThePage(t *testing.T) {
 func TestInputGroupInnerDrawsOnTheFill(t *testing.T) {
 	th := testTheme()
 	g := th.InputGroup(new(widget.Editor), "Filter")
-	if want := (color.NRGBA{R: 20, G: 20, B: 22, A: 255}); !near2(g.Inner().Surface, want) {
+	if want := (color.NRGBA{R: 26, G: 26, B: 28, A: 255}); !near2(g.Inner().Surface, want) {
 		t.Errorf("surface %v, want input/30 over the page %v", g.Inner().Surface, want)
 	}
 	g.Disabled = true
-	if want := (color.NRGBA{R: 14, G: 14, B: 16, A: 255}); !near2(g.Inner().Surface, want) {
+	if want := (color.NRGBA{R: 21, G: 21, B: 23, A: 255}); !near2(g.Inner().Surface, want) {
 		t.Errorf("disabled surface %v, want the fill at half over the page %v", g.Inner().Surface, want)
 	}
 }

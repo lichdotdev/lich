@@ -93,7 +93,7 @@ func TestButtonMinimumWidthBelowMaximumIsTheWidth(t *testing.T) {
 	}
 }
 
-// What the browser paints for each translucent class, over the page (#09090b),
+// What the browser paints for each translucent class, over the page (#101012),
 // composited in sRGB; Gio would blend each about twice as bright.
 func TestButtonVariantFillsAreTheBrowsersColors(t *testing.T) {
 	th := testTheme()
@@ -104,12 +104,12 @@ func TestButtonVariantFillsAreTheBrowsersColors(t *testing.T) {
 		disabled bool
 		want     color.NRGBA
 	}{
-		{"outline dark:bg-input/30", VariantOutline, false, false, color.NRGBA{R: 20, G: 20, B: 22, A: 255}},
-		{"outline dark:hover:bg-input/50", VariantOutline, true, false, color.NRGBA{R: 27, G: 27, B: 29, A: 255}},
-		{"ghost dark:hover:bg-muted/50", VariantGhost, true, false, color.NRGBA{R: 24, G: 24, B: 27, A: 255}},
-		{"destructive dark:bg-destructive/20", VariantDestructive, false, false, color.NRGBA{R: 58, G: 27, B: 29, A: 255}},
+		{"outline dark:bg-input/30", VariantOutline, false, false, color.NRGBA{R: 26, G: 26, B: 28, A: 255}},
+		{"outline dark:hover:bg-input/50", VariantOutline, true, false, color.NRGBA{R: 34, G: 34, B: 36, A: 255}},
+		{"ghost dark:hover:bg-muted/50", VariantGhost, true, false, color.NRGBA{R: 27, G: 27, B: 30, A: 255}},
+		{"destructive dark:bg-destructive/20", VariantDestructive, false, false, color.NRGBA{R: 64, G: 33, B: 35, A: 255}},
 		{"default hover:bg-primary/80", VariantDefault, true, false, color.NRGBA{R: 184, G: 184, B: 187, A: 255}},
-		{"default disabled:opacity-50", VariantDefault, false, true, color.NRGBA{R: 119, G: 119, B: 121, A: 255}},
+		{"default disabled:opacity-50", VariantDefault, false, true, color.NRGBA{R: 122, G: 122, B: 124, A: 255}},
 	}
 	for _, tc := range cases {
 		b := th.Button(new(widget.Clickable), "Shell")
@@ -127,7 +127,7 @@ func TestButtonOutlineBorderIsInputOverThePage(t *testing.T) {
 	b := testTheme().Button(new(widget.Clickable), "Shell")
 	b.Variant = VariantOutline
 	img := toggleRender(t, image.Pt(80, 36), time.Time{}, func(gtx C) D { return b.draw(gtx, false) })
-	want := color.NRGBA{R: 45, G: 45, B: 47, A: 255}
+	want := color.NRGBA{R: 52, G: 52, B: 53, A: 255}
 	if !toggleIs(img, image.Pt(20, 0), want) {
 		t.Errorf("top row %v, want input over the page %v", img.RGBAAt(20, 0), want)
 	}
@@ -139,7 +139,7 @@ func TestButtonOutlineBorderIsInputOverThePage(t *testing.T) {
 func TestSeparatorIsBorderOverThePage(t *testing.T) {
 	th := testTheme()
 	img := toggleRender(t, image.Pt(40, 4), time.Time{}, th.Separator)
-	if want := (color.NRGBA{R: 33, G: 33, B: 35, A: 255}); !toggleIs(img, image.Pt(20, 0), want) {
+	if want := (color.NRGBA{R: 40, G: 40, B: 42, A: 255}); !toggleIs(img, image.Pt(20, 0), want) {
 		t.Errorf("pixel %v, want border (white at 10%%) over the page %v", img.RGBAAt(20, 0), want)
 	}
 }
@@ -147,10 +147,10 @@ func TestSeparatorIsBorderOverThePage(t *testing.T) {
 // The thumb is currentColor at 25%, 40% hovered.
 func TestScrollAreaThumbIsForegroundOverThePage(t *testing.T) {
 	list := testTheme().ScrollArea(new(widget.List))
-	if want := (color.NRGBA{R: 69, G: 69, B: 71, A: 255}); !near2(list.Indicator.Color, want) {
+	if want := (color.NRGBA{R: 74, G: 74, B: 75, A: 255}); !near2(list.Indicator.Color, want) {
 		t.Errorf("thumb %v, want foreground at 25%% over the page %v", list.Indicator.Color, want)
 	}
-	if want := (color.NRGBA{R: 105, G: 105, B: 107, A: 255}); !near2(list.Indicator.HoverColor, want) {
+	if want := (color.NRGBA{R: 110, G: 110, B: 111, A: 255}); !near2(list.Indicator.HoverColor, want) {
 		t.Errorf("hovered thumb %v, want foreground at 40%% over the page %v", list.Indicator.HoverColor, want)
 	}
 }

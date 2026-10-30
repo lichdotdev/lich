@@ -2,7 +2,7 @@
    surface, hairlines only as seams, state as fill. Values are the app's dark tokens (frontend/src/index.css). */
 :root {
   color-scheme: dark;
-  --background: oklch(0.141 0.005 285.823);
+  --background: #101012;
   --canvas: color-mix(in oklab, var(--background) 65%, black);
   --island: oklch(0.21 0.006 285.885);
   --raised: oklch(0.274 0.006 286.033);

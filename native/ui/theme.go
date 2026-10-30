@@ -28,10 +28,10 @@ type Palette struct {
 
 // Dark is the dark theme (themes/dark.json).
 var Dark = Palette{
-	Background: OKLCH(0.141, 0.005, 285.823, 1),
+	Background: color.NRGBA{R: 0x10, G: 0x10, B: 0x12, A: 0xff},
 	Foreground: OKLCH(0.985, 0, 0, 1),
 	// color-mix(in oklab, var(--background) 65%, black).
-	Canvas:                  MixOKLab(OKLCH(0.141, 0.005, 285.823, 1), color.NRGBA{A: 255}, 0.35),
+	Canvas:                  MixOKLab(color.NRGBA{R: 0x10, G: 0x10, B: 0x12, A: 0xff}, color.NRGBA{A: 255}, 0.35),
 	Card:                    OKLCH(0.21, 0.006, 285.885, 1),
 	CardForeground:          OKLCH(0.985, 0, 0, 1),
 	Popover:                 OKLCH(0.21, 0.006, 285.885, 1),

@@ -103,7 +103,7 @@ func TestSwitchDisabledThumbSitsOnThePageNotTheTrack(t *testing.T) {
 	s := testTheme().Switch(state)
 	s.Disabled = true
 	img := toggleRender(t, image.Pt(32, 18), time.Unix(1000, 0), s.Layout)
-	thumb, track := color.NRGBA{R: 17, G: 17, B: 19, A: 255}, color.NRGBA{R: 119, G: 119, B: 121, A: 255}
+	thumb, track := color.NRGBA{R: 20, G: 20, B: 22, A: 255}, color.NRGBA{R: 122, G: 122, B: 124, A: 255}
 	if !toggleIs(img, image.Pt(23, 9), thumb) {
 		t.Errorf("thumb pixel %v, want primary-foreground at half over the page %v", img.RGBAAt(23, 9), thumb)
 	}
@@ -115,7 +115,7 @@ func TestSwitchDisabledThumbSitsOnThePageNotTheTrack(t *testing.T) {
 // dark:data-unchecked:bg-input/80 is white at 12% over the page.
 func TestSwitchOffTrackIsInputOverThePage(t *testing.T) {
 	img := toggleRender(t, image.Pt(32, 18), time.Unix(1000, 0), testTheme().Switch(new(SwitchState)).Layout)
-	if want := (color.NRGBA{R: 38, G: 38, B: 40, A: 255}); !toggleIs(img, image.Pt(28, 9), want) {
+	if want := (color.NRGBA{R: 44, G: 44, B: 46, A: 255}); !toggleIs(img, image.Pt(28, 9), want) {
 		t.Errorf("off track pixel %v, want input/80 over the page %v", img.RGBAAt(28, 9), want)
 	}
 }

@@ -39,11 +39,11 @@ func skeletonAt(t *testing.T, at time.Duration) color.NRGBA {
 }
 
 // animate-pulse: full opacity at both ends of its 2s, half of it at 1s. The
-// browser lays bg-foreground/20 (#fafafa at 20%) over the page (#09090b) in
-// sRGB: #39393b, and half of that opacity, #212123.
+// browser lays bg-foreground/20 (#fafafa at 20%) over the page (#101012) in
+// sRGB: #3f3f40, and half of that opacity, #272729.
 func TestSkeletonPulsesBetweenFullAndHalf(t *testing.T) {
 	full, half, again := skeletonAt(t, 0), skeletonAt(t, time.Second), skeletonAt(t, 2*time.Second)
-	wantFull, wantHalf := color.NRGBA{R: 57, G: 57, B: 59, A: 255}, color.NRGBA{R: 33, G: 33, B: 35, A: 255}
+	wantFull, wantHalf := color.NRGBA{R: 63, G: 63, B: 64, A: 255}, color.NRGBA{R: 39, G: 39, B: 41, A: 255}
 	close := func(a, b color.NRGBA) bool {
 		d := func(x, y uint8) bool { return int(x)-int(y) <= 1 && int(y)-int(x) <= 1 }
 		return d(a.R, b.R) && d(a.G, b.G) && d(a.B, b.B) && a.A == b.A
