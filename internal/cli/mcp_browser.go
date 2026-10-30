@@ -60,7 +60,8 @@ var browserTools = []mcpTool{
 		Name: "browser_click",
 		Description: "Click in this session's browser. Prefer index from the last page read, or a " +
 			"CSS selector: either scrolls the element into view first. x and y are viewport " +
-			"coordinates and must be inside it. Sends a real mouse event, not element.click(). " +
+			"coordinates, the pixels of browser_screenshot's image, and must be inside it; once " +
+			"the user resizes or zooms the pane they fail until a new screenshot. Sends a real mouse event, not element.click(). " +
 			"Answers with the page afterwards, as browser_info reads it, once a navigation the " +
 			"click started has its document. A file the click downloads is saved to the user's " +
 			"Downloads folder; the answer names its path in a downloaded: line. Console errors " +
@@ -137,7 +138,8 @@ var browserTools = []mcpTool{
 	{
 		Name: "browser_screenshot",
 		Description: "Capture this session's page to a PNG file and return the path. Do not " +
-			"inline the bytes. Optional path; otherwise lich writes one next to the browser profile.",
+			"inline the bytes. The image is the viewport at one pixel per CSS pixel, the x and y " +
+			"browser_click takes. Optional path; otherwise lich writes one next to the browser profile.",
 		Schema: schema(map[string]any{
 			"path": property("string", "Destination PNG. Omit to let lich choose."),
 		}),

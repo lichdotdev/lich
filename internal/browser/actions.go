@@ -85,6 +85,7 @@ func (s *Service) Click(id string, t Target) error {
 	if t.empty() {
 		return fmt.Errorf("click needs an index, a selector, or x and y")
 	}
+	t = s.withShot(id, t)
 	sess, err := s.live(id)
 	if err != nil {
 		return err
@@ -106,6 +107,7 @@ func (s *Service) Click(id string, t Target) error {
 // Type sends keystrokes. clear selects-and-replaces; the typed text never
 // comes back through Info.
 func (s *Service) Type(id, text string, clear bool, t Target) error {
+	t = s.withShot(id, t)
 	return s.actAt(id, api.BrowserAgentAct{Action: "type"}, func(p Page, ctx context.Context) (*point, error) {
 		at, err := clickTarget(ctx, p, t)
 		if err != nil {
@@ -121,6 +123,7 @@ func (s *Service) Press(id, key string, t Target) error {
 	if _, err := keySequence(key); err != nil {
 		return err
 	}
+	t = s.withShot(id, t)
 	return s.actAt(id, api.BrowserAgentAct{Action: "press"}, func(p Page, ctx context.Context) (*point, error) {
 		at, err := clickTarget(ctx, p, t)
 		if err != nil {
@@ -128,6 +131,17 @@ func (s *Service) Press(id, key string, t Target) error {
 		}
 		return at, p.Press(ctx, key, Target{})
 	})
+}
+
+// withShot is t carrying the viewport of the agent's last screenshot, which a
+// click at x and y checks the page still has.
+func (s *Service) withShot(id string, t Target) Target {
+	s.mu.Lock()
+	defer s.unlock()
+	if sess := s.lookupLocked(id); sess != nil {
+		t.shotW, t.shotH = sess.shotW, sess.shotH
+	}
+	return t
 }
 
 // clickTarget clicks t, as typing into or pressing on an element does first,
@@ -160,12 +174,18 @@ func (s *Service) Screenshot(id, dest string) (string, error) {
 		}
 		dest = abs
 	}
+	var w, h int
 	err = runPage(func(ctx context.Context) error {
-		return sess.page.Screenshot(ctx, dest)
+		var err error
+		w, h, err = sess.page.Screenshot(ctx, dest)
+		return err
 	})
 	if err != nil {
 		return "", s.failed(sess, err)
 	}
+	s.mu.Lock()
+	sess.shotW, sess.shotH = w, h
+	s.mu.Unlock()
 	s.touch(sess)
 	s.agentActed(sess, api.BrowserAgentAct{})
 	return dest, nil

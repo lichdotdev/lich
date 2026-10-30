@@ -316,12 +316,36 @@ func (p *chromePage) Press(ctx context.Context, key string, t Target) error {
 	return p.run(ctx, chromedp.KeyEvent(seq))
 }
 
-func (p *chromePage) Screenshot(ctx context.Context, dest string) error {
-	var buf []byte
-	if err := p.run(ctx, chromedp.CaptureScreenshot(&buf)); err != nil {
-		return err
+// viewportJS is the viewport in CSS pixels, where the document is scrolled
+// to: a screenshot's clip is in the document's coordinates.
+const viewportJS = `({x: visualViewport.pageLeft, y: visualViewport.pageTop, w: innerWidth, h: innerHeight, dpr: devicePixelRatio})`
+
+// Screenshot clips at 1/devicePixelRatio: at the device scale, a pane on a
+// HiDPI monitor or at a page zoom gave an image up to 1.5x the viewport, and
+// every point an agent read off it missed by as much.
+func (p *chromePage) Screenshot(ctx context.Context, dest string) (w, h int, err error) {
+	var v struct {
+		X   float64 `json:"x"`
+		Y   float64 `json:"y"`
+		W   float64 `json:"w"`
+		H   float64 `json:"h"`
+		DPR float64 `json:"dpr"`
 	}
-	return os.WriteFile(dest, buf, 0o600)
+	if err := p.run(ctx, chromedp.Evaluate(viewportJS, &v)); err != nil {
+		return 0, 0, err
+	}
+	var buf []byte
+	err = p.run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		var err error
+		buf, err = page.CaptureScreenshot().
+			WithClip(&page.Viewport{X: v.X, Y: v.Y, Width: v.W, Height: v.H, Scale: 1 / v.DPR}).
+			Do(ctx)
+		return err
+	}))
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(v.W), int(v.H), os.WriteFile(dest, buf, 0o600)
 }
 
 func (p *chromePage) Reload(ctx context.Context) error {
@@ -465,10 +489,14 @@ type point struct {
 // resolveJS finds a click's point in the viewport. An element out of view,
 // which typing into a form scrolls the save button to, is scrolled to the
 // middle first: a click at its old box lands outside the page and hits
-// nothing. A point given outside the viewport is reported, not clicked.
-const resolveJS = `(function(index, selector, x, y) {
+// nothing. A point given outside the viewport is reported, not clicked, and
+// so is one read off a screenshot of another viewport size: the person resized
+// the pane, moved the window to another monitor or zoomed the page since, and
+// the page laid out again under it.
+const resolveJS = `(function(index, selector, x, y, shotW, shotH) {
   var inView = function(px, py) { return px >= 0 && py >= 0 && px < innerWidth && py < innerHeight; };
   if (typeof x === 'number' && typeof y === 'number') {
+    if (shotW > 0 && (shotW !== innerWidth || shotH !== innerHeight)) return {x: x, y: y, resized: true, w: innerWidth, h: innerHeight};
     if (!inView(x, y)) return {x: x, y: y, outside: true, w: innerWidth, h: innerHeight};
     return {x: x, y: y};
   }
@@ -487,16 +515,17 @@ const resolveJS = `(function(index, selector, x, y) {
 })`
 
 // resolved is resolveJS's answer: the point, or a point outside the
-// viewport of w by h.
+// viewport of w by h, or read off a screenshot of another size than w by h.
 type resolved struct {
 	point
 	Outside bool    `json:"outside"`
+	Resized bool    `json:"resized"`
 	W       float64 `json:"w"`
 	H       float64 `json:"h"`
 }
 
 func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
-	args, err := json.Marshal([]any{t.Index, t.Selector, t.X, t.Y})
+	args, err := json.Marshal([]any{t.Index, t.Selector, t.X, t.Y, t.shotW, t.shotH})
 	if err != nil {
 		return point{}, err
 	}
@@ -507,6 +536,10 @@ func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
 	}
 	if r == nil {
 		return point{}, fmt.Errorf("no element matches that target: the page may have changed since it was read; read it again for fresh indexes")
+	}
+	if r.Resized {
+		return point{}, fmt.Errorf("the viewport is %gx%g, and your last screenshot was %dx%d: the page was resized since; take a new screenshot before clicking at x and y",
+			r.W, r.H, t.shotW, t.shotH)
 	}
 	if r.Outside {
 		return point{}, fmt.Errorf("%g,%g is outside the %gx%g viewport: scroll first, or click by index or selector, which scroll the element into view",

@@ -60,6 +60,7 @@ type fakePage struct {
 	located   [][]string
 	info      PageInfo
 	shotErr   error
+	shotSize  [2]int
 	navErr    error
 	infoErr   error
 	// pageText is what HasText searches; onTextRead runs before each search,
@@ -175,13 +176,13 @@ func (p *fakePage) Press(_ context.Context, key string, t Target) error {
 	return nil
 }
 
-func (p *fakePage) Screenshot(_ context.Context, dest string) error {
+func (p *fakePage) Screenshot(_ context.Context, dest string) (w, h int, err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.shotErr != nil {
-		return p.shotErr
+		return 0, 0, p.shotErr
 	}
-	return os.WriteFile(dest, []byte("png"), 0o600)
+	return p.shotSize[0], p.shotSize[1], os.WriteFile(dest, []byte("png"), 0o600)
 }
 
 func (p *fakePage) Reload(context.Context) error {
