@@ -177,13 +177,19 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 	if hovered {
 		fg = fade(th.MutedForeground, 1)
 	}
-	kids := []layout.FlexChild{layout.Rigid(func(gtx C) D { return chevron(gtx, fg, !b.collapsed) }), ui.Gap(1.5)}
+	// The chevron and the folder glyph sit in the tree's columns, over the
+	// chevron and the ring of the rows below.
+	kids := treeLead(treePlace{tree: true}, func(gtx C) D { return chevron(gtx, fg, !b.collapsed) })
 	if b.kind == blockFolder {
 		glyph := fade(th.MutedForeground, headerTitleOpacity)
 		if c, ok := cardColors[b.color]; ok {
 			glyph = fade(c, 1)
 		}
-		kids = append(kids, layout.Rigid(func(gtx C) D { return icGroupFolder.Layout(gtx, ui.Space(3), glyph) }), ui.Gap(1.5))
+		kids = append(kids, layout.Rigid(func(gtx C) D {
+			side := gtx.Dp(sessionTreeRingR) * 2
+			gtx.Constraints = layout.Exact(image.Pt(side, gtx.Dp(ui.Space(3))))
+			return centeredIcon(gtx, icGroupFolder, ui.Space(3), glyph)
+		}), ui.Gap(1.5))
 	}
 	kids = append(kids, layout.Rigid(th.Text(text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
 	if b.kind == blockFolder {
@@ -194,7 +200,7 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 		kids = append(kids, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return markDot(gtx, fade(dot, 1)) }))
 	}
 	kids = append(kids, ui.Gap(1.5), layout.Flexed(1, th.Separator))
-	return layout.Inset{Left: ui.Space(1), Right: ui.Space(1), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: rowInset, Right: ui.Space(1), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, kids...)
 	})
 }
