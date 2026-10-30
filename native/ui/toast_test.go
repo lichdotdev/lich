@@ -347,6 +347,49 @@ func TestToasterSwipeRightDismisses(t *testing.T) {
 	}
 }
 
+func TestToasterSwipeRunsOnDismiss(t *testing.T) {
+	r := newToasterRig(t)
+	dismissed := 0
+	r.state.Show(Toast{ID: "x", Title: "hello", Duration: ToastForever, OnDismiss: func() { dismissed++ }})
+	r.settle()
+	at := r.onFront().Sub(f32.Pt(100, 0))
+	r.pointer(pointer.Press, at)
+	r.frame()
+	r.now = r.now.Add(time.Second)
+	r.pointer(pointer.Drag, at.Add(f32.Pt(60, 0)))
+	r.frame()
+	r.pointer(pointer.Release, at.Add(f32.Pt(60, 0)))
+	r.frame()
+	r.frame()
+	if dismissed != 1 {
+		t.Fatalf("OnDismiss ran %d times on a swipe out, want 1", dismissed)
+	}
+}
+
+func TestToasterActionAndDismissSkipOnDismiss(t *testing.T) {
+	r := newToasterRig(t)
+	dismissed := false
+	r.state.Show(Toast{ID: "x", Title: "Close it?", Duration: ToastForever, OnDismiss: func() { dismissed = true },
+		Action: &ToastButton{Label: "Close"}})
+	r.state.Show(Toast{ID: "y", Title: "other", Duration: ToastForever, OnDismiss: func() { dismissed = true }})
+	r.settle()
+	r.state.Dismiss("y")
+	r.frame()
+	r.state.mu.Lock()
+	e := r.state.stack.live("x")
+	button := e.view.actionAt.Add(e.view.bodyAt)
+	origin := e.view.place.Transform(f32.Point{})
+	r.state.mu.Unlock()
+	base := f32.Pt(float32(r.size.X-int(toastOffsetSide)-int(toastWidth)), float32(toastOffsetTop)).Add(origin)
+	center := base.Add(f32.Pt(float32(button.Min.X+button.Dx()/2), float32(button.Min.Y+button.Dy()/2)))
+	r.pointer(pointer.Press, center)
+	r.pointer(pointer.Release, center)
+	r.frame()
+	if r.live("x") || dismissed {
+		t.Fatalf("live %v, OnDismiss ran %v: want the button to answer without OnDismiss", r.live("x"), dismissed)
+	}
+}
+
 func TestToasterShortSlowSwipeSpringsBack(t *testing.T) {
 	r := newToasterRig(t)
 	r.state.Show(Toast{ID: "x", Title: "hello", Duration: ToastForever})

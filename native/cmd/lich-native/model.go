@@ -121,9 +121,11 @@ type model struct {
 	layouts     layoutTabs
 	shownLayout string
 	// browsers are the session browsers (browser_model.go); browserOpened
-	// hears one the agent started.
+	// hears one the agent started, and browserIdle one the backend starts or
+	// stops asking about (State.Idle).
 	browsers      browserStore
 	browserOpened func(api.BrowserState)
+	browserIdle   func(api.BrowserState)
 	// browserDownloaded hears a file a session's page finished downloading.
 	browserDownloaded func(api.BrowserDownload)
 }

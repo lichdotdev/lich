@@ -238,27 +238,116 @@ func TestNavigateRejectsBlockedURL(t *testing.T) {
 	}
 }
 
-func TestIdleReaperClosesUnused(t *testing.T) {
+func TestIdleReaperAsksInsteadOfClosing(t *testing.T) {
 	launch := &fakeLauncher{}
 	now := time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC)
 	s := newService(launch.launch, func(string, string) (string, error) {
 		return t.TempDir(), nil
 	}, func() time.Time { return now }, time.Minute)
+	out := &emitted{}
+	s.emit = out.emit
 	t.Cleanup(func() { _ = s.Cleanup() })
 
 	if _, err := s.Open("s", "https://example.com"); err != nil {
 		t.Fatal(err)
 	}
 	s.Reap()
-	if launch.pages[0].closed {
-		t.Fatal("reaper closed a browser that was just used")
+	if idle := idleStates(out); idle != 0 {
+		t.Fatalf("reaper asked about a browser that was just used (%d asks)", idle)
 	}
 	now = now.Add(time.Minute + time.Second)
-	s.now = func() time.Time { return now }
 	s.Reap()
-	if !launch.pages[0].closed {
-		t.Fatal("reaper left an idle browser running")
+	if launch.pages[0].closed {
+		t.Fatal("reaper closed an idle browser nobody agreed to close")
 	}
+	if idle := idleStates(out); idle != 1 {
+		t.Fatalf("idle asks = %d, want 1", idle)
+	}
+	if running := s.Running(); len(running) != 1 || !running[0].Idle {
+		t.Fatalf("Running = %+v, want the question for a window catching up", running)
+	}
+	now = now.Add(time.Hour)
+	s.Reap()
+	if idle := idleStates(out); idle != 1 {
+		t.Fatalf("idle asks = %d after an hour unanswered, want still 1", idle)
+	}
+}
+
+func TestKeepAnswersAndAsksAgainAfterAnotherIdleWindow(t *testing.T) {
+	launch := &fakeLauncher{}
+	now := time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC)
+	s := newService(launch.launch, func(string, string) (string, error) {
+		return t.TempDir(), nil
+	}, func() time.Time { return now }, time.Minute)
+	out := &emitted{}
+	s.emit = out.emit
+	t.Cleanup(func() { _ = s.Cleanup() })
+
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	now = now.Add(2 * time.Minute)
+	s.Reap()
+	if err := s.Keep("s"); err != nil {
+		t.Fatal(err)
+	}
+	states := out.states()
+	if last := states[len(states)-1]; last.Idle || !last.Open {
+		t.Fatalf("after keep the window got %+v, want the question withdrawn", last)
+	}
+	s.Reap()
+	if idle := idleStates(out); idle != 1 {
+		t.Fatalf("idle asks = %d right after keep, want 1", idle)
+	}
+	now = now.Add(2 * time.Minute)
+	s.Reap()
+	if idle := idleStates(out); idle != 2 {
+		t.Fatalf("idle asks = %d after another idle window, want 2", idle)
+	}
+	if launch.pages[0].closed {
+		t.Fatal("keep closed the browser")
+	}
+}
+
+func TestUseWithdrawsTheIdleQuestion(t *testing.T) {
+	launch := &fakeLauncher{}
+	now := time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC)
+	s := newService(launch.launch, func(string, string) (string, error) {
+		return t.TempDir(), nil
+	}, func() time.Time { return now }, time.Minute)
+	out := &emitted{}
+	s.emit = out.emit
+	t.Cleanup(func() { _ = s.Cleanup() })
+
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	now = now.Add(2 * time.Minute)
+	s.Reap()
+	if _, err := s.Info("s"); err != nil {
+		t.Fatalf("the agent lost an idle browser it went back to: %v", err)
+	}
+	if running := s.Running(); len(running) != 1 || running[0].Idle {
+		t.Fatalf("Running = %+v, want the question withdrawn by the agent's use", running)
+	}
+}
+
+func TestKeepWithoutBrowserFails(t *testing.T) {
+	s := testService(t, &fakeLauncher{})
+	if err := s.Keep("s"); err != errNoBrowser {
+		t.Fatalf("Keep = %v, want errNoBrowser", err)
+	}
+}
+
+// idleStates counts the times the window was asked about an idle browser.
+func idleStates(out *emitted) int {
+	n := 0
+	for _, st := range out.states() {
+		if st.Idle {
+			n++
+		}
+	}
+	return n
 }
 
 func TestOpenRequiresOwner(t *testing.T) {

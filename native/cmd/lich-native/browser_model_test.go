@@ -16,6 +16,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestOpenBrowserTabShowsTheSessionBesideItsPage(t *testing.T) {
@@ -99,6 +100,37 @@ func TestOnlyANewAgentBrowserIsOffered(t *testing.T) {
 	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "wa", Open: true, ByAgent: true, URL: "https://example.com"})
 	if len(offered) != 1 || offered[0] != "wa" {
 		t.Fatalf("offered %v, want the agent's new browser once", offered)
+	}
+}
+
+func TestIdleQuestionGoesUpAndDownOnlyOnChange(t *testing.T) {
+	m, _ := newLayoutsModel(t)
+	var heard []api.BrowserState
+	m.browserIdle = func(st api.BrowserState) { heard = append(heard, st) }
+	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true})
+	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true, Idle: true})
+	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: true, Idle: true, Title: "reloaded"})
+	send(m, api.BrowserStateEvent.Name, api.BrowserState{Owner: "orch", Open: false, Idle: true})
+	if len(heard) != 2 || !heard[0].Idle || heard[1].Open {
+		t.Fatalf("heard %+v, want the question raised once and taken down with the browser", heard)
+	}
+}
+
+func TestIdleBrowserToastKeepsOnSwipe(t *testing.T) {
+	kept, closed := 0, 0
+	toast := idleBrowserToast(api.BrowserState{Owner: "s", URL: "http://localhost:5173/settings"}, "Claude 3", "skipo",
+		func() { kept++ }, func() { closed++ })
+	if toast.Duration != ui.ToastForever || toast.ID != idleBrowserToastID("s") {
+		t.Fatalf("toast %+v, want it up until answered under the session's id", toast)
+	}
+	toast.OnDismiss()
+	toast.Cancel.OnClick()
+	toast.Action.OnClick()
+	if kept != 2 || closed != 1 {
+		t.Fatalf("kept %d, closed %d: want swipe and Keep open to keep, Close to close", kept, closed)
+	}
+	if len(toast.Lines) != 2 || toast.Lines[0].Text != "http://localhost:5173/settings" || toast.Lines[1].Text != "skipo" {
+		t.Fatalf("lines %+v, want the page and the project", toast.Lines)
 	}
 }
 

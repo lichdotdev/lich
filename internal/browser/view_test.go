@@ -80,7 +80,7 @@ func TestAttachRefusesABrowserInItsOwnWindow(t *testing.T) {
 	}
 }
 
-func TestReaperLeavesAWatchedBrowserUntilDetach(t *testing.T) {
+func TestReaperLeavesAWatchedBrowserAloneUntilDetach(t *testing.T) {
 	s, launch, _ := viewService(t)
 	if _, err := s.Attach("s", Viewport{W: 800, H: 600, Scale: 1}); err != nil {
 		t.Fatal(err)
@@ -99,8 +99,8 @@ func TestReaperLeavesAWatchedBrowserUntilDetach(t *testing.T) {
 	}
 	s.now = func() time.Time { return later.Add(time.Hour) }
 	s.Reap()
-	if !launch.pages[0].closed {
-		t.Fatal("reaper kept an unwatched idle browser")
+	if running := s.Running(); len(running) != 1 || !running[0].Idle {
+		t.Fatalf("Running = %+v, want an unwatched idle browser asked about", running)
 	}
 }
 

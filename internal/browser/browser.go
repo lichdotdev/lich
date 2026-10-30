@@ -16,15 +16,16 @@ import (
 )
 
 // idleAfter is how long a headless browser no pane shows sits unused before
-// the reaper closes it. Five minutes matches the "walked away from the card"
-// window without holding a Chromium for a session that finished hours ago. A
-// headed window is never reaped: lich cannot see a person using it, so only
-// the card closing ends it.
+// the reaper asks the window whether to close it. Five minutes matches the
+// "walked away from the card" window. The reaper never closes one on its own:
+// a person away for an hour comes back to the page they left. A headed window
+// is never asked about: lich cannot see a person using it, so only the card
+// closing ends it.
 const idleAfter = 5 * time.Minute
 
 // reapEvery is how often the reaper looks. Shorter than idleAfter so a
-// browser that went idle is gone within a fraction of the idle window, not a
-// full extra one.
+// browser that went idle is asked about within a fraction of the idle window,
+// not a full extra one.
 const reapEvery = 30 * time.Second
 
 // pageWait bounds one CDP action. Under the 90 seconds an MCP tool call may
@@ -80,8 +81,10 @@ type session struct {
 	url, title     string
 	headed         bool
 	// byAgent: the agent started it, not the window. watching: a pane shows
-	// it, so the reaper leaves it alone like a headed window.
-	byAgent, watching bool
+	// it, so the reaper leaves it alone like a headed window. asked: the
+	// reaper asked the window whether to close it, and nobody has answered or
+	// used it since.
+	byAgent, watching, asked bool
 	// agentAt is where the agent last acted, where its next scroll turns.
 	agentAt *point
 	// downloads are the page's, until the agent has heard how each ended;
@@ -338,11 +341,10 @@ func (s *Service) ownerLock(owner string) *sync.Mutex {
 	return lock
 }
 
-// current is owner's live browser after a reap, or nil.
+// current is owner's live browser, or nil.
 func (s *Service) current(owner string) *session {
 	s.mu.Lock()
 	defer s.unlock()
-	s.reapLocked()
 	return s.liveByOwner(owner)
 }
 
@@ -431,20 +433,21 @@ func (s *Service) startReaper() {
 	}()
 }
 
-// Reap closes headless browsers no pane shows that have sat idle past the
-// idle window.
+// Reap asks the window, once each, whether to close the headless browsers no
+// pane shows that have sat idle past the idle window. Close or Keep answers.
 func (s *Service) Reap() {
 	s.mu.Lock()
-	defer s.unlock()
-	s.reapLocked()
-}
-
-func (s *Service) reapLocked() {
 	cutoff := s.now().Add(-s.idle)
+	var asked []*session
 	for _, sess := range s.byID {
-		if !sess.headed && !sess.watching && sess.lastUsed.Before(cutoff) {
-			s.buryLocked(sess)
+		if !sess.headed && !sess.watching && !sess.asked && sess.lastUsed.Before(cutoff) {
+			sess.asked = true
+			asked = append(asked, sess)
 		}
+	}
+	s.mu.Unlock()
+	for _, sess := range asked {
+		s.emitState(sess, true)
 	}
 }
 

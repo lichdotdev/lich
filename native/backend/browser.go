@@ -19,6 +19,13 @@ func (c *Client) CloseBrowser(ctx context.Context, id string) error {
 	return err
 }
 
+// KeepBrowser answers the question about session id's idle browser with
+// keep.
+func (c *Client) KeepBrowser(ctx context.Context, id string) error {
+	_, err := callMethod(ctx, c, api.BrowserKeep, api.SessionIDOptions{ID: id})
+	return err
+}
+
 // RunningBrowsers is every session browser the backend runs.
 func (c *Client) RunningBrowsers(ctx context.Context) ([]api.BrowserState, error) {
 	return callMethod(ctx, c, api.BrowserRunning, api.None{})

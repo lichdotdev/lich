@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/lichdotdev/lich/api"
@@ -55,6 +56,52 @@ func (u *window) offerBrowser(st api.BrowserState) {
 		Cancel:      &ui.ToastButton{Label: i18n.T("layouts.browser.dismiss")},
 		Action:      &ui.ToastButton{Label: i18n.T("layouts.browser.open"), OnClick: func() { u.openBrowser(session) }},
 	})
+}
+
+// askIdleBrowser asks whether to close session's browser, which nobody used
+// for the backend's idle window, or takes the question down once it is no
+// longer idle. It stays up until answered: swiping it away keeps the browser,
+// since only Close closes it.
+func (u *window) askIdleBrowser(st api.BrowserState) {
+	id := idleBrowserToastID(st.Owner)
+	if !st.Open || !st.Idle {
+		u.duplicates.Dismiss(id)
+		return
+	}
+	label, project := u.model.sessionPlace(st.Owner)
+	if label == "" {
+		return
+	}
+	u.duplicates.Show(idleBrowserToast(st, label, project, func() { u.answerIdleBrowser(st.Owner, u.client.KeepBrowser) },
+		func() { u.answerIdleBrowser(st.Owner, u.client.CloseBrowser) }))
+}
+
+func idleBrowserToastID(session string) string { return "browser-idle:" + session }
+
+func idleBrowserToast(st api.BrowserState, label, project string, keep, closeIt func()) ui.Toast {
+	t := ui.Toast{
+		ID:        idleBrowserToastID(st.Owner),
+		Title:     i18n.T("layouts.browser.idle", i18n.Args{"label": label}),
+		Icon:      icBrowser,
+		Duration:  ui.ToastForever,
+		Cancel:    &ui.ToastButton{Label: i18n.T("layouts.browser.keepOpen"), OnClick: keep},
+		Action:    &ui.ToastButton{Label: i18n.T("layouts.browser.closeIdle"), OnClick: closeIt},
+		OnDismiss: keep,
+	}
+	if url := displayURL(st.URL); url != "" {
+		t.Lines = append(t.Lines, ui.ToastLine{Text: url})
+	}
+	if project != "" {
+		t.Lines = append(t.Lines, ui.ToastLine{Icon: icFolder, Text: project})
+	}
+	return t
+}
+
+// answerIdleBrowser sends the person's answer about session's idle browser,
+// KeepBrowser or CloseBrowser. A failure is logged: the browser it answers
+// about is gone, or the next idle window asks again.
+func (u *window) answerIdleBrowser(session string, answer func(context.Context, string) error) {
+	go func() { u.logErr("answer about an idle browser", answer(u.ctx, session)) }()
 }
 
 // tellDownload names a file a session's page downloaded and the folder it

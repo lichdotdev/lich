@@ -215,12 +215,16 @@ func (t *Toaster) readHover(gtx C) {
 }
 
 // readEntries takes each toast's swipes and button clicks, and returns the
-// OnClick handlers to run once the lock is released.
+// OnClick and OnDismiss handlers to run once the lock is released.
 func (s ToasterStyle) readEntries(gtx C) []func() {
 	var clicked []func()
 	stack := &s.State.stack
 	for _, e := range stack.entries {
+		was := e.removed()
 		s.readDrag(gtx, e)
+		if !was && e.removed() && e.OnDismiss != nil {
+			clicked = append(clicked, e.OnDismiss)
+		}
 		for _, b := range []struct {
 			click  *widget.Clickable
 			button *ToastButton
