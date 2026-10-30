@@ -286,7 +286,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	if sv.agent != "" {
 		kind = sv.agent
 	}
-	return centeredIcon(gtx, providerIcon(kind), 12, th.MutedForeground)
+	return centeredIcon(gtx, providerIcon(kind), 13, th.MutedForeground)
 }
 
 // centeredIcon draws ic in the middle of the exact box gtx holds, at a
