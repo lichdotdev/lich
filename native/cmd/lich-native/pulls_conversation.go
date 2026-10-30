@@ -325,21 +325,45 @@ func lineAnchor(start, line int) string {
 // the thread is about.
 const hunkLines = 4
 
+// hunkTint is how strongly an added or removed line tints its row, and
+// hunkTab what a tab expands to: the mono font has no glyph for one.
+const (
+	hunkTint = 0.12
+	hunkTab  = "    "
+)
+
+// hunkTail sits the code on the window's background, apart from the
+// comments on the thread's surface.
 func hunkTail(gtx C, th *ui.Theme, hunk string) D {
 	lines := strings.Split(strings.TrimRight(hunk, "\n"), "\n")
 	lines = lines[max(0, len(lines)-hunkLines):]
 	var children []layout.FlexChild
 	for _, line := range lines {
-		fg := th.MutedForeground
-		switch {
-		case strings.HasPrefix(line, "+"):
-			fg = th.TonePass
-		case strings.HasPrefix(line, "-"):
-			fg = th.Destructive
-		}
-		children = append(children, layout.Rigid(func(gtx C) D { return truncated(gtx, th.Text(ui.TextXS, line).Mono().In(fg)) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return hunkLine(gtx, th, line) }))
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, th.Background, ui.RadiusSM) },
+		func(gtx C) D {
+			return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+			})
+		})
+}
+
+func hunkLine(gtx C, th *ui.Theme, line string) D {
+	fg, tint := th.MutedForeground, th.Background
+	switch {
+	case strings.HasPrefix(line, "+"):
+		fg, tint = th.TonePass, ui.MixOKLab(th.Background, th.TonePass, hunkTint)
+	case strings.HasPrefix(line, "-"):
+		fg, tint = th.Destructive, ui.MixOKLab(th.Background, th.Destructive, hunkTint)
+	}
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, tint, 0) },
+		func(gtx C) D {
+			return truncated(gtx, th.Text(ui.TextXS, strings.ReplaceAll(line, "\t", hunkTab)).Mono().In(fg))
+		})
 }
 
 // threadActions is Reply and Resolve, with Send to session at the end, or
@@ -366,9 +390,9 @@ func (v *pullView) threadActions(gtx C, th *ui.Theme, p *pullsScreen, d backend.
 		label = i18n.T("pulls.reviewThread.reopen")
 	}
 	replyB := th.Button(reply, i18n.T("pulls.reviewThread.reply"))
-	replyB.Variant, replyB.Size = ui.VariantOutline, ui.SizeXS
+	replyB.Variant, replyB.Size = ui.VariantOutline, ui.SizeSM
 	resolveB := th.Button(resolve, label)
-	resolveB.Variant, resolveB.Size, resolveB.Disabled = ui.VariantGhost, ui.SizeXS, busy == "resolve:"+t.ID
+	resolveB.Variant, resolveB.Size, resolveB.Disabled = ui.VariantGhost, ui.SizeSM, busy == "resolve:"+t.ID
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(replyB.Layout), ui.Gap(2), layout.Rigid(resolveB.Layout),
 		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
@@ -391,7 +415,7 @@ func (v *pullView) toSessionButton(gtx C, th *ui.Theme, p *pullsScreen, d backen
 		label, tip = i18n.T("pulls.threadSend.send"), i18n.T("pulls.threadSend.sendTip", i18n.Args{"name": p.sessionLabel(id)})
 	}
 	b := th.Button(click, label)
-	b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantGhost, ui.SizeXS, busy
+	b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantGhost, ui.SizeSM, busy
 	return v.withTip(gtx, th, p, "toSession:"+t.ID, tip, b.Layout)
 }
 
