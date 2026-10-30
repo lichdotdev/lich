@@ -215,7 +215,8 @@ func TestPullsBackReturnsToTheIndexOnTheRowItLeft(t *testing.T) {
 }
 
 // j moves the index's cursor, Enter opens its row and Escape on the pull
-// request goes back with the cursor where it was.
+// request goes back with the cursor where it was. Enter waits for the pull
+// request to arrive: its skeleton animates until it does.
 func TestPullsKeysWalkTheIndexAndEscapeGoesBack(t *testing.T) {
 	u, r := pullsFrames(t)
 	r.waitFor(t, "Fix the thing")
@@ -230,7 +231,8 @@ func TestPullsKeysWalkTheIndexAndEscapeGoesBack(t *testing.T) {
 	if u.pulls.cursor != 8 || !u.pulls.keyed {
 		t.Fatalf("j left the cursor on #%d, keyed %v", u.pulls.cursor, u.pulls.keyed)
 	}
-	press(key.NameReturn)
+	r.router.Queue(key.Event{Name: key.NameReturn, State: key.Press})
+	r.waitFor(t, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": ""}))
 	if u.pulls.selected != 8 {
 		t.Fatalf("Enter opened #%d", u.pulls.selected)
 	}
