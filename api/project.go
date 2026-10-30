@@ -39,6 +39,7 @@ var (
 	ProjectListPullRequests         = define[ListPullRequestsOptions, []PRSummary]("project.ListPullRequests")
 	ProjectPullRequestDetail        = define[NumberOptions, *PRDetail]("project.PullRequestDetail")
 	ProjectPullRequestConversation  = define[NumberOptions, *PRConversation]("project.PullRequestConversation")
+	ProjectPullRequestAvatar        = define[AvatarOptions, []byte]("project.PullRequestAvatar")
 	ProjectPullRequestDiff          = define[NumberOptions, string]("project.PullRequestDiff")
 	ProjectPullRequestMergeBase     = define[NumberOptions, string]("project.PullRequestMergeBase")
 	ProjectPullRequestConflicts     = define[PRConflictsOptions, []string]("project.PullRequestConflicts")
@@ -208,6 +209,13 @@ type PRBodyOptions struct {
 	Path   string `json:"path"`
 	Number int    `json:"number"`
 	Body   string `json:"body"`
+}
+
+// AvatarOptions names the picture at URL, an author's Avatar in a conversation
+// read from the checkout at Path.
+type AvatarOptions struct {
+	Path string `json:"path"`
+	URL  string `json:"url"`
 }
 
 // PRCommentOptions names comment CommentID of pull request Number.
@@ -538,6 +546,9 @@ type PRReview struct {
 	// DatabaseID is the REST id, the address its summary is rewritten at.
 	DatabaseID int64  `json:"databaseId"`
 	Author     string `json:"author"`
+	// Avatar is the address of the author's picture, read with
+	// ProjectPullRequestAvatar; "" for an account deleted since.
+	Avatar string `json:"avatar,omitempty"`
 	// State is gh's APPROVED | CHANGES_REQUESTED | COMMENTED | DISMISSED.
 	State   string `json:"state"`
 	Body    string `json:"body"`
@@ -550,6 +561,7 @@ type PRComment struct {
 	// ID is the REST database id, the address an edit or a delete takes.
 	ID        int64  `json:"id"`
 	Author    string `json:"author"`
+	Avatar    string `json:"avatar,omitempty"`
 	Body      string `json:"body"`
 	Date      string `json:"date"`
 	CanEdit   bool   `json:"canEdit"`
@@ -582,6 +594,7 @@ type PRThreadComment struct {
 	// node ids do not work there, which is why both identifiers travel.
 	ID     int64  `json:"id"`
 	Author string `json:"author"`
+	Avatar string `json:"avatar,omitempty"`
 	Body   string `json:"body"`
 	Date   string `json:"date"`
 	// DiffHunk is GitHub's own snippet of the lines the thread is about. The

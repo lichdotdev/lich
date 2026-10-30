@@ -109,23 +109,25 @@ func (v *pullView) commentHead(gtx C, th *ui.Theme, p *pullsScreen, t commentTar
 	)
 }
 
-// threadComment is one comment of a thread: its byline over its body, or over
-// the box editing it.
+// threadComment is one comment of a thread beside its author's avatar: its
+// byline over its body, or over the box editing it.
 func (v *pullView) threadComment(gtx C, th *ui.Theme, p *pullsScreen, t commentTarget, c backend.PRThreadComment, act *pullsAction, now time.Time) D {
 	editing := v.talk.editing[t.key()]
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return v.commentHead(gtx, th, p, t, func(gtx C) D { return byline(gtx, th, c.Author, "", c.Date, now) })
-		}),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-				if editing {
-					return v.editBox(gtx, th, t, act)
-				}
-				return wrapped(gtx, th.Text(ui.TextSM, c.Body))
-			})
-		}),
-	)
+	return p.withAvatar(gtx, th, author{c.Author, c.Avatar}, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return v.commentHead(gtx, th, p, t, func(gtx C) D { return byline(gtx, th, c.Author, "", c.Date, now) })
+			}),
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+					if editing {
+						return v.editBox(gtx, th, t, act)
+					}
+					return wrapped(gtx, th.Text(ui.TextSM, c.Body))
+				})
+			}),
+		)
+	})
 }
 
 // editBox rewrites an entry in place; Save sends it as it stands. A review's
