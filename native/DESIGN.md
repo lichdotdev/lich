@@ -11,29 +11,35 @@ belongs here, in the same PR as the fix, so the next screen starts right.
 
 Elements are defined by space, hover and islands, not by enclosure.
 
-- **Rows, not cards.** A list item has no border and no fill of its own. Hover and selection paint it.
+- **Rows, not cards.** A list item is one line with no border and no fill of its own. Hover and selection
+  paint it; at rest it paints nothing.
 - **Panels are islands.** The window's regions (sidebar, stage, dock) are rounded surfaces floating on
   `Canvas`, separated by the `gutter` (6px, `cmd/lich-native/main.go`) instead of a hairline. The top bar
   and the footer sit on the canvas itself, unboxed.
 - **Hairlines are seams inside an island.** `th.Separator` splits a panel's own parts (a screen's header
-  from its body, two panes). It never wraps a list item, a badge or a button at rest. Inputs are the one
-  exception: a field needs an edge to read as editable.
-- **Badges are text and glyph**, never a filled pill.
+  from its body, two panes, a folder header from its rule). It never wraps a list item, a badge or a button
+  at rest. Inputs are the one exception: a field needs an edge to read as editable.
+- **Badges are text and glyph**, never a filled pill: a pull request is its icon and `#N`, a diff is `+a -d`
+  in the tones.
 - **State is fill, not chrome.** Selection is a flat `Accent` fill: no side bar, no ring, no shadow.
+- **What does not fit the line goes to the tooltip.** A row carries what you scan for; the rest (path,
+  model, the tool a turn runs, how long) is one hover away, never a second line.
 
-A change that adds a border, a pill or a nested surface is probably wrong. Reach for spacing or a hover state
-first.
+A change that adds a border, a pill, a second line or a nested surface is probably wrong. Reach for spacing,
+a hover state or the tooltip first. The folder tray is the one nested surface, and the reason is written
+under it.
 
 ## Foundations
 
 ### Units
 
 - Every length is `ui.Space(n)`, Tailwind's spacing scale (`Space(2.5)` is `p-2.5`, 10dp). A `unit.Dp`
-  literal is for a measure off the scale (a 1px border, a mockup's odd value), named in a constant.
+  literal is for a measure off the scale (a 1px border, a ring's radius, a mockup's odd value), named in a
+  constant.
 - Text sizes are `ui.TextXS` (12), `ui.TextSM` (14) and `ui.TextBase` (16). A size off the scale is a named
-  `unit.Sp` constant beside the screen that uses it (`pullsTitleSize`, `settingsTitle`).
+  `unit.Sp` constant beside the screen that uses it (`pullsTitleSize`, `settingsTitle`, `text2XS`).
 - Radius is `ui.RadiusSM` (4), `ui.RadiusMD` (6), `ui.RadiusLG` (8); dialogs alone use 12. Controls and
-  rows are `RadiusMD`; islands are `RadiusLG`.
+  rows are `RadiusMD`; islands and the folder tray are `RadiusLG`.
 - A screen's geometry lives in one `var` block at the top of its file, each value named and, when it comes
   from a mockup or a Tailwind class, saying which. Never a bare number inside a layout.
 
@@ -47,7 +53,7 @@ Never a hex or OKLCH value in a widget: always a `Theme` token. Themes are JSON 
 | `Background` | full screens inside the stage (Settings, Pulls) and code blocks set inside a raised surface |
 | `Sidebar`, `Card`, `Popover` | islands and raised parts: sidebar, dock, a thread or comment box, menus, dialogs |
 | `Accent` | hover and selection fill |
-| `MutedForeground` | secondary text, icons at rest, paths, meta |
+| `MutedForeground` | secondary text, icons at rest, paths, meta, the tree's links and neutral rings |
 | `Border` | seams and input edges |
 | `Primary` | the one high-emphasis button of a view |
 | `Foreground` | primary text |
@@ -56,11 +62,17 @@ A translucent token goes through `th.Over` before it is painted, and a widget th
 hands its children `th.On(background)`. Gio blends in linear light; `Over` composites the way a browser
 does. A tint that must read on a known surface is an opaque `ui.MixOKLab(surface, tone, weight)`.
 
-Interaction fills: rest transparent, hover `Alpha(Accent, 0.5)` to `0.6`, active or selected `Accent`.
+`th.Over` of a transparent color is the surface itself, opaque. A row at rest that paints `th.Over(layer)`
+covers whatever it sits on, a folder's tray included: paint the translucent layer, or nothing, unless the
+fill is meant to hide what is under it.
+
+Interaction fills: rest transparent, hover `Alpha(Accent, 0.6)` (`hoverFill`), active or selected `Accent`.
+A card painted a color mixes it into the accent: `tintRest` 0.10 at rest, `tintHover` 0.22, `tintActive`
+0.38 (`cardcolor.go`).
 
 ### Semantic color
 
-The only chromatic color. It encodes state and never decorates.
+The only chromatic color besides a card's own paint. It encodes state and never decorates.
 
 | Token | Meaning |
 | --- | --- |
@@ -73,18 +85,22 @@ their text with the tone itself.
 
 ### Typography
 
-- **Onest** for all interface text, **the system monospace** for code, paths, diffs and dense meta.
-- Body is `TextSM`, meta and paths `TextXS`, headings named per screen.
+- **Onest** for all interface text, **the system monospace** for code, paths, diffs, counts and dense meta.
+- Body is `TextSM`, meta and paths `TextXS`, a group's uppercase label `text2XS` (10.5) semibold; headings
+  named per screen.
 - Markdown prose is 15sp: larger than interface body text for sustained reading, while leaving more room for
   long descriptions than `TextBase`.
 - Text a person reads goes through `i18n.T`; nothing literal (see the `lich-i18n` skill).
 - Text from the outside world (a diff hunk, a PR body, a commit message) is cleaned before it is shaped:
   tabs become four spaces, because the fonts have no glyph for a tab and draw a missing-glyph box.
+- A name too long for its row is cut with an ellipsis. Nothing leaves the row to make room for it: the
+  sidebar's minimum width (`sidebarMinRem`) is the lever.
 
 ### Icons
 
-Lucide through `icons.Lucide`, at `Space(3.5)` or `Space(4)`; `Space(3)` inside dense meta. Provider marks
-and file-type logos have their own sets in `ui/icons`.
+Lucide through `icons.Lucide`, at `Space(3.5)` or `Space(4)`; `Space(3)` (12) inside dense meta and rows.
+Provider marks and file-type logos have their own sets in `ui/icons`. An icon centered in a box of odd
+leftover goes through `centeredIcon`, at a fractional offset, or it lands half a pixel off.
 
 ## Controls
 
@@ -96,7 +112,7 @@ and file-type logos have their own sets in `ui/icons`.
 | --- | --- | --- |
 | `SizeSM` / `SizeIconSM` | 32 | **the default for actions on a screen**: headers, thread and comment actions, dialogs |
 | `SizeDefault` / `SizeIcon` | 36 | a form's main row, beside a 36px input |
-| `SizeXS` / `SizeIconXS` | 24 | inline inside dense rows only (a file row, a binary preview) |
+| `SizeXS` / `SizeIconXS` | 24 | inline inside dense rows only (a file row, a binary preview, a folder header's `⋯`) |
 | `SizeLG` | 40 | rare; a lone call to action |
 
 Buttons side by side share one size. A row that mixes 24px and 32px buttons is a bug.
@@ -105,6 +121,8 @@ Variants: `VariantDefault` (primary fill) for the one action a view exists for, 
 next most likely, `VariantOutline` for an action that should stand out from ghost ones, `VariantGhost` for
 the rest, `VariantDestructive` for what cannot be undone. A disabled button says why in a tooltip.
 
+Buttons do not move when pressed; only their color changes.
+
 ### What goes where
 
 - **The action a state calls for is a button, in reach.** When something is wrong and lich can hand it to an
@@ -112,12 +130,17 @@ the rest, `VariantDestructive` for what cannot be undone. A disabled button says
   overflow menu.
 - **The `⋯` menu holds the routine and the rare**: Approve, Refresh, Open on GitHub. Never the action the
   current state calls for.
+- **A row's actions are its menu.** A list row has no buttons of its own at rest. Its menu opens two ways,
+  the right click and a `⋯` that shows in the row's corner under the pointer, and both hold the same
+  entries. Opening something in a group (a session in a folder or a checkout) is the menu's first entry,
+  never a `+` on the row.
 - A menu never opens or ends on a separator, and never shows two in a row.
 
 ### Tooltips
 
-`th.Tooltip`, in a few words: what an icon-only control does, or why a control is disabled. Several lines
-about the thing under the pointer use the card variant.
+`th.Tooltip`, in a few words: what an icon-only control does, or why a control is disabled. What a row left
+off its line (a session's path, model and turn; a checkout's branch in full, path, base and pull request)
+is the card variant, `th.TooltipCard`, on the row's right side.
 
 ## Screens
 
@@ -126,20 +149,27 @@ about the thing under the pointer use the card variant.
 Every island keeps its content `Space(2)` (8px) from its rounded edge, on all four sides: the sidebar
 (`sidebar.go`, `UniformInset(Space(2))`), the Settings nav (`settings_nav.go`) and the Pulls header strip
 (`pullsToolbarPad`). Controls and rows sit flush on that edge, box first: the sidebar's New session button,
-the Settings search field, a nav row, the Pulls back button and tree toggle all start at 8px.
+the Settings search field, a nav row, the Pulls back button and tree toggle all start at 8px, and their
+hover fill spans the 8px edge to edge.
 
-Text inside a row is indented by the row's own padding, not by the island: `Space(2.5)` (10px) on a sidebar
-card (`sidebar_card.go`) and a Settings nav row (`navRowPadX`), so a row's label lands at 18px from the
-island's edge and its hover fill spans the 8px edge to edge.
+What a row starts with sets its own padding:
 
-Rows in a list stand `Space(0.5)` to `Space(1.5)` apart; groups of rows `Space(2)`.
+- **A text row** (a Settings nav row, a Pulls row) is padded `Space(2.5)` (10px, `navRowPadX`,
+  `pullsRowPadX`), so its label lands at 18px from the island's edge.
+- **A tree row** (every sidebar row) starts with its node, a 22px ring, padded `Space(1.5)` (6px,
+  `rowInset`): the ring at 14px, its label `Space(1.5)` after it.
+
+A screen body follows its rows: the Pulls body sits at 18px (`pullsPadX`), where its text rows' labels land.
+
+Rows of a text list stand `Space(0.5)` to `Space(1.5)` apart, groups of rows `Space(2)`; tree rows stand
+flush (see the sidebar).
 
 A scrolling list lays its bar over the rows (`material.Overlay`), never beside them: a bar that takes its
 own width pushes the rows' right edge in, and their hover lands farther from the right edge than the left.
 
-The geometry is shared; the look is not. Every screen lays out on the sidebar's edge, padding and hover
-shape, and keeps what makes it itself: the Pulls list keeps its seams between rows, the Settings pane its
-reading column. Matching a screen to the sidebar means its spacing, never its decoration.
+The geometry is shared; the look is not. Every screen lays out on the island's edge, its rows' padding and
+the sidebar's hover shape, and keeps what makes it itself: the Pulls list keeps its seams between rows, the
+Settings pane its reading column. Matching a screen to the sidebar means its spacing, never its decoration.
 
 ### Header and strips
 
@@ -157,8 +187,7 @@ A `th.Separator` closes the header off from the body.
 
 A reading pane, a column of prose and settings rows under a title, is the one place that leaves the 8px
 edge: the Settings pane sits at `settingsPanePadX` / `settingsPanePadY` (40px / 32px), its close button in
-the corner at `settingsCloseInset` (14px). Every other screen body follows the sidebar: its content at
-18px from the island's edge, the 8px edge plus a row's 10px (`pullsPadX` in Pulls).
+the corner at `settingsCloseInset` (14px). Every other screen body follows its rows (see the island's edge).
 
 ### Loading
 
@@ -194,9 +223,74 @@ A comment, in a box or on the screen's ground, sits beside its author's avatar: 
 `Space(2.5)` from the comment, its byline and body in the column to the right. Until the picture arrives, and
 for an account with none, the disc is `Accent` with the initial in `MutedForeground`, never a color.
 
+## The sidebar: a tree of rows
+
+The sidebar is the window's reference list; its geometry lives in `sidebar_tree_draw.go` and
+`sidebar_card.go`.
+
+### A row
+
+Every row is one line, 34dp tall: `Space(1.5)` above and below a 22px node. Rows stand flush, no gap
+(`cardGap` is 0), so the tree's links run from row to row unbroken.
+
+- **A session row**: its status ring around the provider mark, the shield, fork and browser glyphs it
+  earns, its name, then its pull request and changes unless a checkout row above already shows them, and
+  the corner slot.
+- **A checkout row**: the branch glyph in a neutral ring, the branch, its pull request and changes, the
+  corner slot. A project's checkout is the root its sessions hang from; a child running in another
+  checkout than its mother hangs from a checkout row of its own inside her group.
+- **A group header** (a folder, the pinned block) is a row too, the same 34dp, so its hover lights as a
+  row's does: the glyph in the node's column, the uppercase label, its count, a rule to the `⋯`.
+
+The corner slot (`cardSlotSize`, 18px) is always reserved, so nothing on the line moves when it fills: the
+`⋯` under the pointer or while its menu is open, a pin at rest on a pinned session, empty otherwise.
+
+### The node
+
+- The ring is 22px (`2 × sessionTreeRingR`), stroke `sessionTreeStroke` (1.25), the glyph inside it 13px
+  (12 for a checkout's branch). It spins while busy, is `ToneWait` while waiting on you, `TonePass` when a
+  turn is done (faded once read), and neutral (`MutedForeground` at `neutralRingAlpha`, 0.35) otherwise.
+- A node that folds (a mother, a checkout, a group header) shows the fold's chevron in place of its glyph
+  under the pointer; there is no separate disclosure column. A folded node keeps a count and the mark of
+  what it hides: `ToneWait` for a session waiting, `TonePass` for an unread turn.
+
+### The links
+
+Git-graph lines in `MutedForeground` at `treeLinkAlpha` (0.45), `sessionTreeStroke` wide. Each level is
+indented `sessionTreeIndent` (16px); a child's elbow leaves its parent's ring column and curves
+(`sessionTreeElbow`, 5px) into the left of its ring. A mother with open children draws a stub from the
+bottom of her ring to the row's end.
+
+### The folder tray
+
+A folder is the one nested surface: its header and rows sit on a tray, `RadiusLG`, so where a folder ends
+reads against the checkouts after it, which share its tree. The tray is `Alpha(Accent, 0.45)`, or the
+folder's color at `tintRest`; a card painted the folder's color paints nothing at rest on it. Rows run to
+the tray's edges, clipped to its corners, so a lit row fills it to the end. A closed folder is its header
+alone, no tray.
+
+## Motion
+
+Motion says where something came from and where it went. It never holds anything up: a session's pane opens
+at once, whatever its row is still doing.
+
+- **Rows of a tree move by their line.** Coming in (a mother opens, a session or a worktree appears), the
+  row opens with its name already on it, then the line runs down to it, draws its ring from the left where
+  the link arrives, and the glyph comes in last. Leaving (a mother folds, a session closes) plays the other
+  way: the name and glyph go, the ring undraws, the line runs back up, the row closes. A worktree's last
+  session leaving takes the worktree's row out after it. Timings live in `sidebar_tree_motion.go`.
+- **Other lists** enter and leave with `ui.Presence`: 160ms in, 180ms out, from a 0.6 scale at the top
+  edge. A fold is `ui.Collapse`, 200ms.
+- **One motion per arrival.** An item another motion brings in is settled in `Presence`
+  (`Presence.Settle`), or Presence plays its own entry once the first one hands the item back, and the row
+  jumps.
+- **A moving item takes no input**, but advances its tween before `gtx.Disabled()`: a disabled context drops
+  the redraw request, and the motion freezes on its first frame.
+
 ## Fixed by decision: do not "fix" these
 
 - **The bundled themes stay achromatic.** A colored palette is a custom theme, not a widget's color.
 - **The layout**: top tabs, left sidebar, terminal, right dock, footer.
 - **Semantic color and the diff language badges**: they carry meaning.
 - **Buttons do not move when pressed**; only their color changes.
+- **A sidebar row is one line.** Pull request and changes stay on it; a name too long is cut, not wrapped.
