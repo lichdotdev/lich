@@ -205,8 +205,9 @@ func foldedCount(th *ui.Theme, kids int, mark string) []layout.FlexChild {
 }
 
 // checkoutLine is a checkout row's line: the branch glyph where a session's
-// ring sits, the branch, its pull request and its changes.
-func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, trailing ...layout.FlexChild) layout.Widget {
+// ring sits, the branch, its pull request and its changes, then the corner
+// slot a card keeps, with more in it while hovered.
+func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, more layout.Widget, hovered bool, trailing ...layout.FlexChild) layout.Widget {
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		glyph := icBranch
@@ -226,7 +227,15 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, trailin
 		if f.git.Files > 0 {
 			row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return diffStat(gtx, th, f.git.Added, f.git.Deleted) }))
 		}
-		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D {
+			size := gtx.Dp(cardSlotSize)
+			gtx.Constraints = layout.Exact(image.Pt(size, size))
+			if hovered && more != nil {
+				return layout.Center.Layout(gtx, more)
+			}
+			return D{Size: gtx.Constraints.Min}
+		}))
+		return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 		})
 	}
@@ -272,23 +281,60 @@ func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
 	return func(gtx C) D { return stack(gtx, 1.5, sections) }
 }
 
-// nestedCheckout is a checkout row inside a mother's group, the checkout her
-// children under it run in.
-func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, f checkoutFacts, tree bool) D {
+// nestedCheckout is a checkout row a mother's group or a folder draws, the
+// checkout the sessions under it run in. Its menu, from the right click or
+// the … in its corner, opens a session there, filed with the block.
+func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, b blockView, act *sidebarAction, tree bool) D {
 	tip, ok := s.tips[r.key]
 	if !ok {
 		tip = new(ui.Tooltip)
 		s.tips[r.key] = tip
 	}
+	f := b.facts[r.path]
 	tooltip := th.TooltipCard(s.root, tip, checkoutTooltip(th, r.path, f))
 	tooltip.Side = ui.SideRight
+	entries := func() []ui.MenuEntry {
+		launch := launchEntries(s.launchProviders, i18n.T("sidebar.sessionLaunchMenuItems.newTerminal"), func(kind string) {
+			act.launch = launchRequest{kind: kind, dir: r.path, folder: b.folder}
+		})
+		return []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: launch}}
+	}
+	menu := s.menuState(s.menus, r.key)
+	more := s.menuState(s.moreMenus, r.key)
+	hover := clickable(s.checkoutRows, r.key)
+	moreButton := func(gtx C) D {
+		return th.DropdownMenu(s.root, more, entries()).Layout(gtx, func(gtx C) D {
+			return cornerButton(gtx, th, clickable(s.moreClicks, r.key), icGroupMore, more.Opened())
+		})
+	}
+	hovered := hover.Hovered() || more.Opened()
 	p := r.place(tree)
-	return tooltip.Layout(gtx, func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, checkoutLine(th, f, p, true)) })
+	line := checkoutLine(th, f, p, true, moreButton, hovered)
+	return th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
+		return tooltip.Layout(gtx, func(gtx C) D {
+			return hover.Layout(gtx, func(gtx C) D {
+				return layout.Background{}.Layout(gtx,
+					func(gtx C) D { return ui.Fill(gtx, cardFill(th, "", false, hovered), ui.RadiusMD) },
+					func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
+				)
+			})
+		})
+	})
+}
+
+// menuState is key's menu in states, made on first use.
+func (s *sidebar) menuState(states map[string]*ui.MenuState, key string) *ui.MenuState {
+	m, ok := states[key]
+	if !ok {
+		m = new(ui.MenuState)
+		states[key] = m
+	}
+	return m
 }
 
 // checkoutHeader is a checkout block's header as the root row of its tree:
-// the fold, the checkout's line, its tooltip, and a menu that opens a session
-// there or files the whole block.
+// the fold, the checkout's line, its tooltip, and a menu, from the right click
+// or the … in its corner, that opens a session there or files the whole block.
 func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
 	facts := b.facts[b.under]
 	p := treePlace{tree: true, sessionRowLinks: sessionRowLinks{stub: !b.collapsed && len(b.sessions) > 0}}
@@ -308,13 +354,19 @@ func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockStat
 		menu := []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: blockLaunch(b, s.launchProviders, f.act)}}
 		return append(menu, blockOptions(b, f.view.folders, f.filtering, f.act, hooks)...)
 	}
+	more := s.menuState(s.moreMenus, "__checkout__:"+b.key)
+	moreButton := func(gtx C) D {
+		return th.DropdownMenu(s.root, more, entries()).Layout(gtx, func(gtx C) D {
+			return cornerButton(gtx, th, clickable(s.moreClicks, "__checkout__:"+b.key), icGroupMore, more.Opened())
+		})
+	}
 	p.hot = st.more.Hovered()
-	line := checkoutLine(th, facts, p, !b.collapsed, count...)
+	line := checkoutLine(th, facts, p, !b.collapsed, moreButton, st.more.Hovered() || more.Opened(), count...)
 	row := func(gtx C) D {
 		return th.ContextMenuLazy(s.root, &st.options, entries).Layout(gtx, func(gtx C) D {
 			return tooltip.Layout(gtx, func(gtx C) D {
 				return st.more.Layout(gtx, func(gtx C) D {
-					fill := cardFill(th, "", false, st.more.Hovered())
+					fill := cardFill(th, "", false, st.more.Hovered() || more.Opened())
 					return layout.Background{}.Layout(gtx,
 						func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 						func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },

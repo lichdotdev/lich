@@ -21,9 +21,7 @@ type blockState struct {
 	presence ui.Presence
 	tree     treeMotion
 	closing  closingCards
-	launch   ui.MenuState
 	options  ui.MenuState
-	plus     widget.Clickable
 	more     widget.Clickable
 	rename   ui.InlineEdit
 	drawn    bool // laid out this frame, else pruned
@@ -278,7 +276,7 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r sessionRow, tree bool, f blockFrame, dragEnded bool) D {
 	if r.kind == rowNestedCheckout {
 		row := func(gtx C) D {
-			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.nestedCheckout(gtx, th, r, b.facts[r.path], tree) })
+			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.nestedCheckout(gtx, th, r, b, f.act, tree) })
 		}
 		if r.motion != nil {
 			return moveRow(gtx, r, row)
