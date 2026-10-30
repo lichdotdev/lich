@@ -199,6 +199,9 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 	if hovered {
 		glyph, glyphColor = foldIcon(!b.collapsed), fg
 	}
+	if b.head != nil {
+		glyphColor = ui.Alpha(glyphColor, 1-b.head.entry.glyph)
+	}
 	kids := []layout.FlexChild{layout.Rigid(func(gtx C) D {
 		side := gtx.Dp(sessionTreeRingR) * 2
 		gtx.Constraints = layout.Exact(image.Pt(side, gtx.Dp(ui.Space(3))))

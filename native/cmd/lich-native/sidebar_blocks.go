@@ -49,8 +49,9 @@ type blockView struct {
 	// checkouts' facts, keyed by path: the header's and every checkout a
 	// child runs in apart from its mother.
 	facts map[string]checkoutFacts
-	// move is a checkout block coming in or leaving by the tree's motion, and
-	// head its header's share of it this frame; nil at rest.
+	// move is a checkout block coming in or leaving by the tree's motion, or
+	// a folder leaving by it, and head its header's share of it this frame;
+	// nil at rest.
 	move *blockMove
 	head *rowMotion
 }

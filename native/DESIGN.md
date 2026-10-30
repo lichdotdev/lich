@@ -278,7 +278,8 @@ at once, whatever its row is still doing.
   row opens with its name already on it, then the line runs down to it, draws its ring from the left where
   the link arrives, and the glyph comes in last. Leaving (a mother folds, a session closes) plays the other
   way: the name and glyph go, the ring undraws, the line runs back up, the row closes. A worktree's last
-  session leaving takes the worktree's row out after it. Timings live in `sidebar_tree_motion.go`.
+  session leaving takes the worktree's row out after it; a folder's last session takes its checkout row,
+  then the folder's header fades and its tray closes. Timings live in `sidebar_tree_motion.go`.
 - **Other lists** enter and leave with `ui.Presence`: 160ms in, 180ms out, from a 0.6 scale at the top
   edge. A fold is `ui.Collapse`, 200ms.
 - **One motion per arrival.** An item another motion brings in is settled in `Presence`

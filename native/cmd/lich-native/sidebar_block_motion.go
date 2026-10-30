@@ -2,9 +2,10 @@ package main
 
 import "time"
 
-// blockMove is a checkout block coming in or leaving by the tree's motion:
-// coming in, its header row opens, and its rows follow down the line once
-// the header's ring is drawing; leaving, its rows go first, then its header.
+// blockMove is a checkout block coming in or leaving by the tree's motion,
+// or a folder leaving: coming in, its header row opens, and its rows follow
+// down the line once the header's ring is drawing; leaving, its rows go
+// first, then its header, and a folder's tray closes with it.
 type blockMove struct {
 	start   time.Time
 	leaving bool

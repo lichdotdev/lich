@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"strings"
 	"testing"
@@ -312,5 +313,38 @@ func assertNoDip(t *testing.T, frame func(sidebarView, time.Duration) int, befor
 			t.Fatalf("height %d at %v after %d: what came in dipped once it had grown", h, at, last)
 		}
 		last = h
+	}
+}
+
+func folderOf(paths ...string) sidebarView {
+	v := sidebarView{project: "p", showHeader: true}
+	b := blockView{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", byCheckout: true}
+	for i, path := range paths {
+		b.sessions = append(b.sessions, sessionView{Session: backend.Session{ID: fmt.Sprint("s", i), Folder: "Later"}, projectID: "p", path: path})
+	}
+	other := blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{{Session: backend.Session{ID: "root"}, projectID: "p", path: "/repo"}}}
+	v.blocks = []blockView{other, b}
+	return v
+}
+
+func TestACardClosedInAFolderShrinksOutByItsLine(t *testing.T) {
+	for name, c := range map[string][2]sidebarView{
+		"its checkout keeps a session": {folderOf("/a", "/a"), folderOf("/a")},
+		"its checkout's last session":  {folderOf("/a", "/b"), folderOf("/a")},
+	} {
+		out := sidebarHeights(c[0], c[1])
+		t.Logf("%s: %v", name, out)
+		if out[0] <= out[len(out)-1] || !moves(out) {
+			t.Errorf("%s: heights %v, want shrinking to the list without it", name, out)
+		}
+	}
+}
+
+func TestAFoldersLastCardLeavesByItsLine(t *testing.T) {
+	before, after := folderOf("/a"), folderOf()
+	after.blocks = after.blocks[:1]
+	out := sidebarHeights(before, after)
+	if final := out[len(out)-1]; out[len(out)/2] == final {
+		t.Errorf("heights %v: the folder was gone by %v, before its card's line could leave", out, ui.PresenceExit)
 	}
 }
