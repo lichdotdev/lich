@@ -137,3 +137,20 @@ func TestFilterKeepsTheMotherOfAMatchedChild(t *testing.T) {
 		t.Errorf("kept = %v (matched %v), want the child and the mother it hangs from", ids, matched)
 	}
 }
+
+func TestBlockRowsGroupAFolderByCheckout(t *testing.T) {
+	b := blockView{key: "__folder__:Later", byCheckout: true}
+	sessions := []sessionView{
+		treeSession("a", "", "/repo/wt/a"),
+		treeSession("b", "", "/repo/wt/b"),
+		treeSession("a-child", "a", "/repo/wt/c"),
+		treeSession("a2", "", "/repo/wt/a"),
+	}
+	want := []string{
+		"0:__checkout__:__folder__:Later:/repo/wt/a", "1:a", "2:__checkout__:a:/repo/wt/c.", "3:a-child.", "1:a2.",
+		"0:__checkout__:__folder__:Later:/repo/wt/b", "1:b.",
+	}
+	if got := rowShape(blockRows(b, sessions)); !slices.Equal(got, want) {
+		t.Errorf("rows = %v, want %v", got, want)
+	}
+}

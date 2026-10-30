@@ -913,7 +913,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `native/cmd/lich-native/sidebar_blocks.go`): the row shows the branch, pull request and changes of the
   checkout's own path, which the git reader polls only while some session shows it. A checkout every
   session under it left with `cd` shows nothing until one comes back. A checkout with no open session has no
-  row: the window learns of checkouts only through sessions. The branch name is cut short at the sidebar's
+  row: the window learns of checkouts only through sessions. Inside a folder or the pinned block, the checkouts
+  of the sessions gathered there are rows too, but they only label: they do not fold, and they have no menu. The branch name is cut short at the sidebar's
   default width when the row also shows a pull request and changes.
 - **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,
   `native/cmd/lich-native/sidebar_groups.go`): the folder a card is filed under is a column on the session

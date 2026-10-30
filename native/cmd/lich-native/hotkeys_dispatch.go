@@ -191,7 +191,7 @@ func (u *window) hotkeyCards() []hotkeyCard {
 	var cards []hotkeyCard
 	for _, b := range u.model.sidebarBlocks(u.sidebar.header.filter()).blocks {
 		drawn := map[string]bool{}
-		for _, r := range sessionRows(b.sessions, b.under, func(id string) bool { return b.motherFolds[id] }) {
+		for _, r := range blockRows(b, b.sessions) {
 			if r.kind == rowCard {
 				cards = append(cards, hotkeyCard{id: r.key, shown: !b.folded})
 				drawn[r.key] = true

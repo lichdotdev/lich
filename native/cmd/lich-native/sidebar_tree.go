@@ -115,6 +115,47 @@ func sessionRows(sessions []sessionView, under string, folded func(id string) bo
 	return t.rows
 }
 
+// blockRows is a block's rows. A folder or the pinned block only gathers
+// sessions, so while the project draws checkout rows it draws them too: each
+// checkout its trees' roots run in, as a row they hang from, in the order its
+// first root sits.
+func blockRows(b blockView, sessions []sessionView) []sessionRow {
+	folded := func(id string) bool { return b.motherFolds[id] }
+	if !b.byCheckout {
+		return sessionRows(sessions, b.under, folded)
+	}
+	in := make(map[string]sessionView, len(sessions))
+	for _, sv := range sessions {
+		in[sv.ID] = sv
+	}
+	rootPath := func(sv sessionView) string {
+		seen := map[string]bool{}
+		for {
+			up, ok := in[sv.OriginSessionID]
+			if !ok || seen[up.ID] {
+				return sv.path
+			}
+			seen[up.ID] = true
+			sv = up
+		}
+	}
+	var paths []string
+	groups := map[string][]sessionView{}
+	for _, sv := range sessions {
+		path := rootPath(sv)
+		if _, ok := groups[path]; !ok {
+			paths = append(paths, path)
+		}
+		groups[path] = append(groups[path], sv)
+	}
+	var rows []sessionRow
+	for _, path := range paths {
+		rows = append(rows, sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + b.key + ":" + path, path: path, stub: true})
+		rows = append(rows, sessionRows(groups[path], path, folded)...)
+	}
+	return rows
+}
+
 // tree builds sessionRows' rows depth first.
 type tree struct {
 	children map[string][]sessionView

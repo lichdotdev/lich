@@ -41,6 +41,9 @@ type blockView struct {
 	// under is the checkout a checkout block draws as the row its sessions
 	// hang from, "" while the block draws no header or is no checkout's.
 	under string
+	// byCheckout is a folder or the pinned block of a project that draws
+	// checkout rows: it draws them too (blockRows).
+	byCheckout bool
 	// motherFolds are the mothers of the block folded over their children.
 	motherFolds map[string]bool
 	// checkouts' facts, keyed by path: the header's and every checkout a
@@ -129,6 +132,7 @@ func (m *model) dressBlock(p backend.Project, b sessionBlock, header bool, pendi
 		}
 		v.facts[sv.path] = m.checkoutFactsOf(p, sv.path)
 	}
+	v.byCheckout = b.kind != blockCheckout && slices.ContainsFunc(p.Sessions, func(s backend.Session) bool { return s.Path != "" })
 	if header && b.kind == blockCheckout {
 		v.under = sessionPath(p, backend.Session{Path: b.path})
 		v.facts[v.under] = m.checkoutFactsOf(p, v.under)

@@ -222,16 +222,15 @@ var cardGap = unit.Dp(0)
 // its place while it leaves.
 func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame, dragEnded bool) D {
 	shown, _ := st.closing.shown(b.sessions, gtx.Now)
-	folded := func(id string) bool { return b.motherFolds[id] }
-	rows := sessionRows(shown, b.under, folded)
+	rows := blockRows(b, shown)
 	byKey := make(map[string]sessionRow, len(rows))
-	tree := b.under != ""
+	tree := b.under != "" || b.byCheckout
 	for _, r := range rows {
 		byKey[r.key] = r
 		tree = tree || r.depth > 0 || r.kids > 0
 	}
 	var live []string
-	for _, r := range sessionRows(b.sessions, b.under, folded) {
+	for _, r := range blockRows(b, b.sessions) {
 		live = append(live, r.key)
 	}
 	keys := st.presence.Update(gtx.Now, live)
