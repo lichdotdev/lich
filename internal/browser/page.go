@@ -40,6 +40,9 @@ type Target struct {
 	Selector string   `json:"selector,omitempty"`
 	X        *float64 `json:"x,omitempty"`
 	Y        *float64 `json:"y,omitempty"`
+	// shotW and shotH are the viewport of the agent's last screenshot, the
+	// one x and y were read off; zero before it took one.
+	shotW, shotH int
 }
 
 func (t Target) empty() bool {
@@ -100,7 +103,9 @@ type Page interface {
 	Click(ctx context.Context, t Target) (x, y float64, err error)
 	Type(ctx context.Context, text string, clear bool, t Target) error
 	Press(ctx context.Context, key string, t Target) error
-	Screenshot(ctx context.Context, dest string) error
+	// Screenshot writes the viewport at one image pixel per CSS pixel and
+	// returns its size.
+	Screenshot(ctx context.Context, dest string) (w, h int, err error)
 	Reload(ctx context.Context) error
 	Back(ctx context.Context) error
 	Forward(ctx context.Context) error

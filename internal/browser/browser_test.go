@@ -591,3 +591,35 @@ func TestAFailedAgentActionKeepsALiveBrowser(t *testing.T) {
 		t.Fatal("the browser left the list after a missed click")
 	}
 }
+
+func TestPointActionsCarryTheLastScreenshotsViewport(t *testing.T) {
+	launch := &fakeLauncher{}
+	s := testService(t, launch)
+	if _, err := s.Open("s", ""); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	p.shotSize = [2]int{800, 600}
+	if _, err := s.Screenshot("s", ""); err != nil {
+		t.Fatal(err)
+	}
+	x, y := 10.0, 20.0
+	at := Target{X: &x, Y: &y}
+	if err := s.Click("s", at); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Type("s", "hi", false, at); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Press("s", "Enter", at); err != nil {
+		t.Fatal(err)
+	}
+	if len(p.clicks) != 3 {
+		t.Fatalf("clicks = %d, want 3", len(p.clicks))
+	}
+	for i, c := range p.clicks {
+		if c.shotW != 800 || c.shotH != 600 {
+			t.Fatalf("click %d read off %dx%d, want the screenshot's 800x600", i, c.shotW, c.shotH)
+		}
+	}
+}

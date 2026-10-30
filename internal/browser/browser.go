@@ -87,6 +87,8 @@ type session struct {
 	byAgent, watching, asked bool
 	// agentAt is where the agent last acted, where its next scroll turns.
 	agentAt *point
+	// shotW and shotH are the viewport of the agent's last screenshot.
+	shotW, shotH int
 	// downloads are the page's, until the agent has heard how each ended;
 	// downloadBegun is when the last one began.
 	downloads     []*download

@@ -6,8 +6,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image/jpeg"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -533,5 +535,57 @@ func TestChromeClickByIndexHitsTheLastReadNotAnEarlierOne(t *testing.T) {
 	}
 	if hit != "bottom" {
 		t.Fatalf("index %d from the last read clicked %q, want bottom", index, hit)
+	}
+}
+
+func TestChromeScreenshotIsInCSSPixelsOnAHiDPIPane(t *testing.T) {
+	p, srv := liveChrome(t)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 800, H: 600, Scale: frameScale}); err != nil {
+		t.Fatal(err)
+	}
+	dest := t.TempDir() + "/shot.png"
+	w, h, err := p.Screenshot(ctx, dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.DecodeConfig(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w != 800 || h != 600 || img.Width != 800 || img.Height != 600 {
+		t.Fatalf("screenshot = %dx%d image, %dx%d reported, want 800x600 for both", img.Width, img.Height, w, h)
+	}
+}
+
+func TestChromeClickRefusesAPointReadOffAnotherViewport(t *testing.T) {
+	p, srv := liveChrome(t)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 800, H: 600, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	x, y := 50.0, 25.0
+	if _, _, err := p.Click(ctx, Target{X: &x, Y: &y, shotW: 800, shotH: 600}); err != nil {
+		t.Fatalf("click read off this viewport: %v", err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 700, H: 600, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := p.Click(ctx, Target{X: &x, Y: &y, shotW: 800, shotH: 600})
+	if err == nil || !strings.Contains(err.Error(), "new screenshot") {
+		t.Fatalf("click read off 800x600 in a 700x600 viewport: %v, want an error asking for a new screenshot", err)
 	}
 }
