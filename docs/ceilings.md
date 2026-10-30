@@ -903,8 +903,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A child sits with the session that opened it, not with its checkout** (`native/cmd/lich-native/sidebar_tree.go`):
   the sidebar's tree is read off `OriginSessionID`, so a session opened from another hangs from it in the
   mother's block even when it runs in another worktree, under a row for that worktree inside the mother's
-  group; that worktree's own block does not list it. Grandchildren are drawn at the children's level, in
-  stored order, so who opened whom among them is not drawn. A child whose mother closed, or lives in another
+  group; that worktree's own block does not list it. Each generation hangs a level deeper, so a deep tree
+  cuts its titles short at the sidebar's default width. A child whose mother closed, or lives in another
   project, is a root again. A child pinned or filed in a folder on its own leaves the tree for that block.
   How rich the tree is depends on the provider: only Claude Code, Codex and opencode fork, a subagent card
   exists only on Claude Code with lich-plugin, and `open_session` reaches the providers with lich's MCP. A mother's fold is stored per session (`lich.sidebar.collapsed.__session__:<id>`)

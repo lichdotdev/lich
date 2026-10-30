@@ -23,16 +23,32 @@ func rowShape(rows []sessionRow) []string {
 	return out
 }
 
-func TestSessionRowsFlattenGrandchildrenUnderTheRoot(t *testing.T) {
+func TestSessionRowsNestEachGeneration(t *testing.T) {
 	sessions := []sessionView{
 		treeSession("mother", "", "/repo"),
 		treeSession("solo", "", "/repo"),
 		treeSession("child", "mother", "/repo"),
 		treeSession("grandchild", "child", "/repo"),
+		treeSession("second", "mother", "/repo"),
 	}
-	got := rowShape(sessionRows(sessions, "", func(string) bool { return false }))
-	want := []string{"0:mother", "1:child", "1:grandchild.", "0:solo."}
+	rows := sessionRows(sessions, "", func(string) bool { return false })
+	got := rowShape(rows)
+	want := []string{"0:mother", "1:child", "2:grandchild.", "1:second.", "0:solo."}
 	if !slices.Equal(got, want) {
+		t.Fatalf("rows = %v, want %v", got, want)
+	}
+	if !slices.Equal(rows[2].lanes, []bool{true}) {
+		t.Errorf("grandchild lanes = %v: the mother's line runs on to second", rows[2].lanes)
+	}
+	if rows[0].kids != 3 || rows[1].kids != 1 {
+		t.Errorf("kids = %d and %d, want 3 under the mother and 1 under child", rows[0].kids, rows[1].kids)
+	}
+}
+
+func TestSessionRowsFoldAMotherAtAnyDepth(t *testing.T) {
+	sessions := []sessionView{treeSession("mother", "", "/repo"), treeSession("child", "mother", "/repo"), treeSession("grandchild", "child", "/repo")}
+	got := rowShape(sessionRows(sessions, "", func(id string) bool { return id == "child" }))
+	if want := []string{"0:mother.", "1:child."}; !slices.Equal(got, want) {
 		t.Errorf("rows = %v, want %v", got, want)
 	}
 }

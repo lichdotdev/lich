@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maps"
 	"slices"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -85,78 +86,94 @@ type sessionRow struct {
 }
 
 // sessionRows lays a block's sessions out as trees: every session whose origin
-// is in the block hangs from it, flattened one level under its root in stored
-// order, and a child in a checkout other than its root's hangs from a
-// checkout row of its own. under is the checkout a row above the block draws,
-// "" for none; folded reports a mother's stored fold.
+// is in the block hangs from it, a level deeper each generation, in stored
+// order, and a child in a checkout other than its mother's hangs from a
+// checkout row of its own inside her group. under is the checkout a row above
+// the block draws, "" for none; folded reports a mother's stored fold.
 func sessionRows(sessions []sessionView, under string, folded func(id string) bool) []sessionRow {
 	in := make(map[string]bool, len(sessions))
 	for _, sv := range sessions {
 		in[sv.ID] = true
 	}
-	parent := func(sv sessionView) string {
-		if in[sv.OriginSessionID] && sv.OriginSessionID != sv.ID {
-			return sv.OriginSessionID
-		}
-		return ""
-	}
-	byID := make(map[string]sessionView, len(sessions))
-	for _, sv := range sessions {
-		byID[sv.ID] = sv
-	}
-	rootOf := func(sv sessionView) string {
-		seen := map[string]bool{}
-		for parent(sv) != "" && !seen[sv.ID] {
-			seen[sv.ID] = true
-			sv = byID[parent(sv)]
-		}
-		return sv.ID
-	}
+	children := map[string][]sessionView{}
 	var roots []sessionView
-	descendants := map[string][]sessionView{}
 	for _, sv := range sessions {
-		root := rootOf(sv)
-		if root == sv.ID {
-			roots = append(roots, sv)
+		if up := sv.OriginSessionID; in[up] && up != sv.ID {
+			children[up] = append(children[up], sv)
 			continue
 		}
-		descendants[root] = append(descendants[root], sv)
+		roots = append(roots, sv)
 	}
+	t := tree{children: children, folded: folded}
 	base := 0
 	if under != "" {
 		base = 1
 	}
-	var rows []sessionRow
 	for i, root := range roots {
-		kids := descendants[root.ID]
-		row := sessionRow{kind: rowCard, key: root.ID, sv: root, depth: base, tail: i == len(roots)-1, kids: len(kids), hideGit: under != ""}
-		row.folded = len(kids) > 0 && folded(root.ID)
-		if row.folded {
-			row.mark = treeMark(kids)
-		}
-		row.stub = len(kids) > 0 && !row.folded
-		rows = append(rows, row)
-		if row.stub {
-			lanes := []bool{}
-			if base > 0 {
-				lanes = append(lanes, !row.tail)
-			}
-			rows = append(rows, childRows(root, kids, base+1, lanes)...)
-		}
+		t.walk(root, base, nil, i == len(roots)-1, under != "", map[string]bool{})
 	}
-	return rows
+	return t.rows
 }
 
-// childRows is a mother's group: children in her checkout first-come, and
-// each other checkout as a row its children hang from, at the slot its first
-// child takes.
-func childRows(mother sessionView, kids []sessionView, depth int, lanes []bool) []sessionRow {
+// tree builds sessionRows' rows depth first.
+type tree struct {
+	children map[string][]sessionView
+	folded   func(id string) bool
+	rows     []sessionRow
+}
+
+// descendants is everything under id, its children's children included.
+func (t *tree) descendants(id string, seen map[string]bool) []sessionView {
+	var out []sessionView
+	for _, kid := range t.children[id] {
+		if seen[kid.ID] {
+			continue
+		}
+		seen[kid.ID] = true
+		out = append(append(out, kid), t.descendants(kid.ID, seen)...)
+	}
+	return out
+}
+
+// walk adds sv at depth and, unless it is folded, its group under it. seen
+// guards against an origin cycle.
+func (t *tree) walk(sv sessionView, depth int, lanes []bool, tail, hideGit bool, seen map[string]bool) {
+	if seen[sv.ID] {
+		return
+	}
+	seen[sv.ID] = true
+	all := t.descendants(sv.ID, maps.Clone(seen))
+	row := sessionRow{kind: rowCard, key: sv.ID, sv: sv, depth: depth, lanes: lanes, tail: tail, kids: len(all), hideGit: hideGit}
+	row.folded = len(all) > 0 && t.folded(sv.ID)
+	if row.folded {
+		row.mark = treeMark(all)
+	}
+	row.stub = len(all) > 0 && !row.folded
+	t.rows = append(t.rows, row)
+	if row.stub {
+		t.group(sv, depth+1, childLanes(row), seen)
+	}
+}
+
+// childLanes are the lanes of a row's children: its own, and its parent's
+// line when that runs on past it.
+func childLanes(r sessionRow) []bool {
+	if r.depth == 0 {
+		return nil
+	}
+	return append(slices.Clone(r.lanes), !r.tail)
+}
+
+// group lays a mother's children out at depth: the ones in her checkout
+// first-come, and each other checkout as a row its children hang from, at the
+// slot its first child takes.
+func (t *tree) group(mother sessionView, depth int, lanes []bool, seen map[string]bool) {
 	type item struct {
 		path     string
 		sessions []sessionView
 	}
 	var items []item
-	for _, sv := range kids {
+	for _, sv := range t.children[mother.ID] {
 		if sv.path == mother.path {
 			items = append(items, item{sessions: []sessionView{sv}})
 			continue
@@ -167,20 +184,18 @@ func childRows(mother sessionView, kids []sessionView, depth int, lanes []bool) 
 		}
 		items = append(items, item{path: sv.path, sessions: []sessionView{sv}})
 	}
-	var rows []sessionRow
 	for i, it := range items {
 		tail := i == len(items)-1
 		if it.path == "" {
-			rows = append(rows, sessionRow{kind: rowCard, key: it.sessions[0].ID, sv: it.sessions[0], depth: depth, lanes: lanes, tail: tail, hideGit: true})
+			t.walk(it.sessions[0], depth, lanes, tail, true, seen)
 			continue
 		}
-		rows = append(rows, sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + mother.ID + ":" + it.path, path: it.path, depth: depth, lanes: lanes, tail: tail, stub: true})
-		inner := append(slices.Clone(lanes), !tail)
+		row := sessionRow{kind: rowNestedCheckout, key: "__checkout__:" + mother.ID + ":" + it.path, path: it.path, depth: depth, lanes: lanes, tail: tail, stub: true}
+		t.rows = append(t.rows, row)
 		for j, sv := range it.sessions {
-			rows = append(rows, sessionRow{kind: rowCard, key: sv.ID, sv: sv, depth: depth + 1, lanes: inner, tail: j == len(it.sessions)-1, hideGit: true})
+			t.walk(sv, depth+1, childLanes(row), j == len(it.sessions)-1, true, seen)
 		}
 	}
-	return rows
 }
 
 // treeMark is what a folded mother says about her hidden children: one
