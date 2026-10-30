@@ -210,26 +210,29 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 		}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return layout.Background{}.Layout(gtx,
-					func(gtx C) D { return ui.Fill(gtx, bg, 0) },
-					func(gtx C) D {
-						on := th.On(bg)
-						return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
-							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-								layout.Flexed(1, func(gtx C) D {
-									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-										layout.Rigid(func(gtx C) D { return rowTitle(gtx, on, pr) }),
-										ui.VGap(1),
-										layout.Rigid(func(gtx C) D { return rowMeta(gtx, on, pr, now) }),
-									)
-								}),
-								ui.Gap(4),
-								layout.Rigid(func(gtx C) D { return rowSide(gtx, on, pr, checkoutName(checkout)) }),
-							)
-						})
-					})
+				return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
+					return layout.Background{}.Layout(gtx,
+						func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
+						func(gtx C) D { return rowContent(gtx, th.On(bg), pr, checkoutName(checkout), now) })
+				})
 			}),
 			layout.Rigid(th.Separator),
+		)
+	})
+}
+
+func rowContent(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string, now time.Time) D {
+	return layout.Inset{Left: pullsRowPadX, Right: pullsRowPadX, Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return rowTitle(gtx, th, pr) }),
+					ui.VGap(1),
+					layout.Rigid(func(gtx C) D { return rowMeta(gtx, th, pr, now) }),
+				)
+			}),
+			ui.Gap(4),
+			layout.Rigid(func(gtx C) D { return rowSide(gtx, th, pr, checkout) }),
 		)
 	})
 }
