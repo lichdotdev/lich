@@ -783,6 +783,8 @@ PRDetail {
 	baseRefName string
 	headRefName string
 	changedFiles int
+	additions int
+	deletions int
 	checks ChecksRollup
 	checkRuns []CheckItem
 	commits []PRCommit

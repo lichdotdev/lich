@@ -422,6 +422,8 @@ type PRDetail struct {
 	BaseRefName  string       `json:"baseRefName"`
 	HeadRefName  string       `json:"headRefName"`
 	ChangedFiles int          `json:"changedFiles"`
+	Additions    int          `json:"additions"`
+	Deletions    int          `json:"deletions"`
 	Checks       ChecksRollup `json:"checks"`
 	CheckRuns    []CheckItem  `json:"checkRuns"`
 	Commits      []PRCommit   `json:"commits"`
