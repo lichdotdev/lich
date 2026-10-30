@@ -118,7 +118,7 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 		}))
 	}
 	// The whole line lights under the pointer, as a row does, the … included.
-	fill := cardFill(th, "", false, st.toggle.Hovered() || st.more.Hovered() || st.options.Opened())
+	fill := cardLayer(th, "", false, st.toggle.Hovered() || st.more.Hovered() || st.options.Opened())
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 		func(gtx C) D {

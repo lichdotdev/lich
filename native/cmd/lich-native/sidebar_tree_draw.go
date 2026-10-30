@@ -314,7 +314,7 @@ func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, b blockView,
 		return tooltip.Layout(gtx, func(gtx C) D {
 			return hover.Layout(gtx, func(gtx C) D {
 				return layout.Background{}.Layout(gtx,
-					func(gtx C) D { return ui.Fill(gtx, cardFill(th, "", false, hovered), ui.RadiusMD) },
+					func(gtx C) D { return ui.Fill(gtx, cardLayer(th, "", false, hovered), ui.RadiusMD) },
 					func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
 				)
 			})
@@ -366,7 +366,7 @@ func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockStat
 		return th.ContextMenuLazy(s.root, &st.options, entries).Layout(gtx, func(gtx C) D {
 			return tooltip.Layout(gtx, func(gtx C) D {
 				return st.more.Layout(gtx, func(gtx C) D {
-					fill := cardFill(th, "", false, st.more.Hovered() || more.Opened())
+					fill := cardLayer(th, "", false, st.more.Hovered() || more.Opened())
 					return layout.Background{}.Layout(gtx,
 						func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 						func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, line) },
