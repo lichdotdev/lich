@@ -375,7 +375,11 @@ func stat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3.5), fg) }),
 		ui.Gap(1.5),
-		layout.Rigid(th.Text(ui.TextXS, text).In(fg).Weight(font.Medium).Layout),
+		layout.Rigid(func(gtx C) D {
+			l := th.Text(ui.TextXS, text).In(fg).Weight(font.Medium)
+			l.MaxLines = 0
+			return l.Layout(gtx)
+		}),
 	)
 }
 
