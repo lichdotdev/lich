@@ -12,13 +12,15 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The tree's motion when a mother opens, closes or gains a child: the line
-// runs down ahead of her children while their rows open behind it, turning
+// The tree's motion when rows come into a block or leave it (a mother opens
+// or closes, a session opens or closes, a checkout gets its first session):
+// the line runs down ahead of the rows while they open behind it, turning
 // into each ring and drawing it, and each row's glyph and name come in once
-// its ring is closed. Closing plays the same motion backwards.
+// its ring is closed. A root row hangs from no line: its ring draws alone.
+// Leaving plays the same motion backwards.
 const (
-	treeRingDraw = 130 * time.Millisecond
-	treeBodyFade = 120 * time.Millisecond
+	treeRingDraw = 220 * time.Millisecond
+	treeBodyFade = 200 * time.Millisecond
 	// treeLineShare is the share of the rows' opening the line takes to run
 	// down them, so it stays ahead.
 	treeLineShare = 0.7
@@ -39,10 +41,10 @@ func treeEase(x float32) float32 {
 	return treeCurve(x)
 }
 
-// treeOpen is how long a run of n rows takes to open: 30ms more a row, up to
-// 300ms.
+// treeOpen is how long a run of n rows takes to open: 50ms more a row, up to
+// 480ms.
 func treeOpen(n int) time.Duration {
-	return min(160*time.Millisecond+time.Duration(n)*30*time.Millisecond, 300*time.Millisecond)
+	return min(250*time.Millisecond+time.Duration(n)*50*time.Millisecond, 480*time.Millisecond)
 }
 
 // treeSweep is how far a run's line has come down a row, in rows of its
@@ -124,19 +126,19 @@ type treeMotion struct {
 }
 
 // update reads the rows live now against the last frame's: a stretch that
-// came in under a row is a run opening, and one that left from under a row
-// still drawn, its sessions still open, is a run closing. open holds the
-// block's open sessions. It reports whether a run still moves.
-func (m *treeMotion) update(now time.Time, live []sessionRow, open map[string]bool) bool {
+// came in is a run opening, and one that left from under a row still drawn,
+// or from the block's top, is a run closing. It reports whether a run still
+// moves.
+func (m *treeMotion) update(now time.Time, live []sessionRow) bool {
 	m.runs = slices.DeleteFunc(m.runs, func(r treeRun) bool { return now.Sub(r.start) >= r.length() })
 	if m.seen {
 		for _, s := range stretches(live, m.prev) {
-			m.start(treeRun{rows: live[s.X:s.Y], after: live[s.X-1].key, start: now})
+			m.start(treeRun{rows: live[s.X:s.Y], after: keyBefore(live, s.X), start: now})
 		}
 		still := keySet(live)
 		for _, s := range stretches(m.prev, live) {
-			run := treeRun{rows: m.prev[s.X:s.Y], after: m.prev[s.X-1].key, start: now, closing: true}
-			if still[run.after] && allOpen(run.rows, open) {
+			run := treeRun{rows: m.prev[s.X:s.Y], after: keyBefore(m.prev, s.X), start: now, closing: true}
+			if run.after == "" || still[run.after] {
 				m.start(run)
 			}
 		}
@@ -154,14 +156,25 @@ func (m *treeMotion) start(run treeRun) {
 	m.runs = append(m.runs, run)
 }
 
-// stretches are the runs of rows not in other that hang from a line, as
-// [X, Y) index ranges: each starts below a row, at a depth past 0, and ends
-// where a row rises above it.
+// arrive marks the block as one that came into a list already drawn: its
+// first rows are news, and come in as a run.
+func (m *treeMotion) arrive() { m.seen = true }
+
+// keyBefore is the key of the row before rows[i], "" at the block's top.
+func keyBefore(rows []sessionRow, i int) string {
+	if i == 0 {
+		return ""
+	}
+	return rows[i-1].key
+}
+
+// stretches are the runs of rows not in other, as [X, Y) index ranges: each
+// ends where a row rises above its first.
 func stretches(rows, other []sessionRow) []image.Point {
 	in := keySet(other)
 	var out []image.Point
-	for i := 1; i < len(rows); i++ {
-		if in[rows[i].key] || rows[i].depth == 0 {
+	for i := 0; i < len(rows); i++ {
+		if in[rows[i].key] {
 			continue
 		}
 		j := i + 1
@@ -182,21 +195,15 @@ func keySet(rows []sessionRow) map[string]bool {
 	return keys
 }
 
-// allOpen reports whether every session among rows is still open: a session
-// closed leaves by its own motion (closingCards), not its group's.
-func allOpen(rows []sessionRow, open map[string]bool) bool {
-	return !slices.ContainsFunc(rows, func(r sessionRow) bool { return r.kind == rowCard && !open[r.sv.ID] })
-}
-
 // place gives rows their motion, with each closing run's rows put back under
-// the row they hang from so they draw while they leave.
+// the row they hang from, or at the top, so they draw while they leave.
 func (m *treeMotion) place(now time.Time, rows []sessionRow) []sessionRow {
 	for _, run := range m.runs {
 		if !run.closing {
 			continue
 		}
 		at := slices.IndexFunc(rows, func(r sessionRow) bool { return r.key == run.after })
-		if at >= 0 && !keySet(rows)[run.rows[0].key] {
+		if (at >= 0 || run.after == "") && !keySet(rows)[run.rows[0].key] {
 			rows = slices.Insert(slices.Clone(rows), at+1, run.rows...)
 		}
 	}

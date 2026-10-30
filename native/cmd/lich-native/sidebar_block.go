@@ -46,7 +46,10 @@ type blockFrame struct {
 	// headerDragEnded is a block drag that ended this frame: its release lands
 	// on the header it carried, which is not a click on its fold.
 	headerDragEnded bool
-	act             *sidebarAction
+	// settled is a list drawn before in this project: a block new to it came
+	// in now, and its rows with it.
+	settled bool
+	act     *sidebarAction
 }
 
 // blockList is the sidebar's scrolling list: the no-match Notice, the pinned
@@ -55,6 +58,7 @@ type blockFrame struct {
 // the gap below it, so a block closing takes its gap along.
 func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string, act *sidebarAction) D {
 	f := blockFrame{view: view, active: active, filtering: s.header.filter().narrows(), act: act}
+	f.settled = s.motion.last != nil && s.motion.project == view.project
 	var pinned *blockView
 	var movable []blockView
 	shown := s.motion.shown(gtx.Now, view.project, view.blocks)
@@ -225,11 +229,10 @@ var cardGap = unit.Dp(0)
 func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame, dragEnded bool) D {
 	shown, _ := st.closing.shown(b.sessions, gtx.Now)
 	live := blockRows(b, b.sessions)
-	open := make(map[string]bool, len(b.sessions))
-	for _, sv := range b.sessions {
-		open[sv.ID] = true
+	if f.settled {
+		st.tree.arrive()
 	}
-	if st.tree.update(gtx.Now, live, open) {
+	if st.tree.update(gtx.Now, live) {
 		gtx.Execute(op.InvalidateCmd{})
 	}
 	rows := st.tree.place(gtx.Now, blockRows(b, shown))

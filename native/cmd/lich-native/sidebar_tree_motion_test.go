@@ -20,22 +20,14 @@ func motionTree() []sessionView {
 	}
 }
 
-func openIDs(sessions []sessionView) map[string]bool {
-	open := map[string]bool{}
-	for _, sv := range sessions {
-		open[sv.ID] = true
-	}
-	return open
-}
-
 func TestTreeMotionOpensTheRowsAMotherUnfolds(t *testing.T) {
 	sessions, now := motionTree(), time.Now()
 	var m treeMotion
-	m.update(now, motionRows(sessions, "mother"), openIDs(sessions))
+	m.update(now, motionRows(sessions, "mother"))
 	if len(m.runs) != 0 {
 		t.Fatalf("runs = %d on the first frame, want none: nothing changed", len(m.runs))
 	}
-	if !m.update(now, motionRows(sessions), openIDs(sessions)) || len(m.runs) != 1 {
+	if !m.update(now, motionRows(sessions)) || len(m.runs) != 1 {
 		t.Fatalf("runs = %+v, want one opening", m.runs)
 	}
 	run := m.runs[0]
@@ -55,8 +47,8 @@ func TestTreeMotionOpensTheRowsAMotherUnfolds(t *testing.T) {
 func TestTreeMotionDrawsEachRingAfterTheLineReachesIt(t *testing.T) {
 	sessions, now := motionTree(), time.Now()
 	var m treeMotion
-	m.update(now, motionRows(sessions, "mother"), openIDs(sessions))
-	m.update(now, motionRows(sessions), openIDs(sessions))
+	m.update(now, motionRows(sessions, "mother"))
+	m.update(now, motionRows(sessions))
 	run := m.runs[0]
 	mid := now.Add(run.length() / 3)
 	upper, lower := run.frame(mid, 0), run.frame(mid, 2)
@@ -71,8 +63,8 @@ func TestTreeMotionDrawsEachRingAfterTheLineReachesIt(t *testing.T) {
 func TestTreeMotionClosesAFoldedGroupUnderItsMother(t *testing.T) {
 	sessions, now := motionTree(), time.Now()
 	var m treeMotion
-	m.update(now, motionRows(sessions), openIDs(sessions))
-	m.update(now, motionRows(sessions, "mother"), openIDs(sessions))
+	m.update(now, motionRows(sessions))
+	m.update(now, motionRows(sessions, "mother"))
 	if len(m.runs) != 1 || !m.runs[0].closing || m.runs[0].after != "mother" {
 		t.Fatalf("runs = %+v, want one closing under the mother", m.runs)
 	}
@@ -88,38 +80,52 @@ func TestTreeMotionClosesAFoldedGroupUnderItsMother(t *testing.T) {
 	if f := m.runs[0].frame(now.Add(end), 0); f.height != 0 || f.entry != (treeEntry{ring: 1, body: 1}) {
 		t.Errorf("closed frame = %+v, want nothing left", f)
 	}
-	if m.update(now.Add(end), motionRows(sessions, "mother"), openIDs(sessions)) {
+	if m.update(now.Add(end), motionRows(sessions, "mother")) {
 		t.Error("a run still moves once its close has played")
 	}
 }
 
-func TestTreeMotionLeavesAClosedSessionToItsOwnExit(t *testing.T) {
+func TestTreeMotionClosesAClosedSessionUnderTheRowAboveIt(t *testing.T) {
 	sessions, now := motionTree(), time.Now()
 	var m treeMotion
-	m.update(now, motionRows(sessions), openIDs(sessions))
+	m.update(now, motionRows(sessions))
 	left := slices.DeleteFunc(slices.Clone(sessions), func(sv sessionView) bool { return sv.ID == "b" })
-	if m.update(now, motionRows(left), openIDs(left)) {
-		t.Errorf("runs = %+v, want none: a closed session plays closingCards' exit", m.runs)
+	if !m.update(now, motionRows(left)) || len(m.runs) != 1 || !m.runs[0].closing || m.runs[0].after != "a1" {
+		t.Fatalf("runs = %+v, want b closing under a1", m.runs)
+	}
+	if got := rowShape(m.place(now, motionRows(left))); !slices.Equal(got, []string{"0:mother", "1:a.", "2:a1.", "1:b.", "0:solo."}) {
+		t.Errorf("rows = %v, want b drawn in its slot while it leaves", got)
 	}
 }
 
 func TestTreeMotionOpensAChildBornUnderItsMother(t *testing.T) {
 	sessions, now := motionTree(), time.Now()
 	var m treeMotion
-	m.update(now, motionRows(sessions), openIDs(sessions))
+	m.update(now, motionRows(sessions))
 	born := append(slices.Clone(sessions), treeSession("c", "mother", "/repo"))
-	m.update(now, motionRows(born), openIDs(born))
+	m.update(now, motionRows(born))
 	if len(m.runs) != 1 || !slices.Equal(rowShape(m.runs[0].rows), []string{"1:c."}) {
 		t.Errorf("runs = %+v, want the newborn alone opening", m.runs)
 	}
 }
 
-func TestTreeMotionLeavesANewRootToPresence(t *testing.T) {
+func TestTreeMotionOpensANewRoot(t *testing.T) {
 	sessions, now := motionTree(), time.Now()
 	var m treeMotion
-	m.update(now, motionRows(sessions), openIDs(sessions))
-	more := append(slices.Clone(sessions), treeSession("root", "", "/repo"))
-	if m.update(now, motionRows(more), openIDs(more)) {
-		t.Errorf("runs = %+v, want none: a root hangs from no line", m.runs)
+	m.update(now, motionRows(sessions))
+	more := append([]sessionView{treeSession("root", "", "/repo")}, sessions...)
+	if !m.update(now, motionRows(more)) || len(m.runs) != 1 || m.runs[0].after != "" {
+		t.Fatalf("runs = %+v, want the new root opening at the top", m.runs)
+	}
+	if f := m.runs[0].frame(now, 0); f.sweep.col != -1 {
+		t.Errorf("root sweep = %+v, want no column: a root hangs from no line", f.sweep)
+	}
+}
+
+func TestTreeMotionOpensTheRowsOfABlockThatArrives(t *testing.T) {
+	var m treeMotion
+	m.arrive()
+	if !m.update(time.Now(), motionRows(motionTree())) || len(m.runs[0].rows) != 5 {
+		t.Errorf("runs = %+v, want every row of a block new to a drawn list opening", m.runs)
 	}
 }

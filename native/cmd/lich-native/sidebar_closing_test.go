@@ -227,3 +227,34 @@ func TestABlocksHeaderUnfoldsWhenTheListSplits(t *testing.T) {
 		t.Errorf("headers hidden: heights %v, want the header folding away", out)
 	}
 }
+
+func TestAClosedCardShrinksOut(t *testing.T) {
+	out := sidebarHeights(blocksOf("p", [][]string{{"a", "b"}, {"c"}}), blocksOf("p", [][]string{{"a"}, {"c"}}))
+	if out[0] <= out[len(out)-1] || !moves(out) {
+		t.Errorf("a closed card: heights %v, want shrinking to the list without it", out)
+	}
+}
+
+func TestANewCardGrowsIn(t *testing.T) {
+	in := sidebarHeights(blocksOf("p", [][]string{{"a"}, {"c"}}), blocksOf("p", [][]string{{"a", "b"}, {"c"}}))
+	if in[0] >= in[len(in)-1] || !moves(in) {
+		t.Errorf("a new card: heights %v, want growing from the list without it", in)
+	}
+}
+
+func treeBlocksOf(ids ...string) sidebarView {
+	v := blocksOf("p", [][]string{ids, {"c"}})
+	v.blocks[0].under = "/repo"
+	v.blocks[0].path = "/repo"
+	for i := range v.blocks[0].sessions {
+		v.blocks[0].sessions[i].path = "/repo"
+	}
+	return v
+}
+
+func TestAClosedCardShrinksOutOfACheckoutTree(t *testing.T) {
+	out := sidebarHeights(treeBlocksOf("a", "b"), treeBlocksOf("a"))
+	if out[0] <= out[len(out)-1] || !moves(out) {
+		t.Errorf("a closed card: heights %v, want shrinking to the list without it", out)
+	}
+}
