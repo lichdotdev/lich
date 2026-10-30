@@ -262,7 +262,7 @@ func (v *pullView) panelList(gtx C, th *ui.Theme, rows []layout.Widget) D {
 // the description.
 var (
 	overviewProseWidth = unit.Dp(720)
-	overviewFactsWidth = unit.Dp(280)
+	overviewFactsWidth = unit.Dp(320)
 	overviewSplitWidth = unit.Dp(760)
 )
 
