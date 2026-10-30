@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"math"
 	"strconv"
 
 	"gioui.org/f32"
@@ -155,11 +156,7 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, chev layout.Widget
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		row := treeLead(p, chev)
 		row = append(row,
-			layout.Rigid(func(gtx C) D {
-				side := gtx.Dp(sessionTreeRingR) * 2
-				gtx.Constraints = layout.Exact(image.Pt(side, side))
-				return layout.Center.Layout(gtx, func(gtx C) D { return icBranch.Layout(gtx, 12, th.MutedForeground) })
-			}),
+			layout.Rigid(func(gtx C) D { return checkoutNode(gtx, th) }),
 			ui.Gap(1.5),
 			layout.Flexed(1, th.Text(ui.TextSM, f.label).Muted().Weight(font.Medium).Layout),
 		)
@@ -174,6 +171,17 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, chev layout.Widget
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 		})
 	}
+}
+
+// checkoutNode is a checkout's node in the tree: the branch glyph in a
+// neutral ring, so a link meets it as it meets a session's ring.
+func checkoutNode(gtx C, th *ui.Theme) D {
+	side := gtx.Dp(sessionTreeRingR) * 2
+	stroke := float32(gtx.Dp(sessionTreeStroke))
+	center := f32.Pt(float32(side)/2, float32(side)/2)
+	ui.StrokeArc(gtx, center, float32(side)/2-stroke/2, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
+	gtx.Constraints = layout.Exact(image.Pt(side, side))
+	return centeredIcon(gtx, icBranch, 10, th.MutedForeground)
 }
 
 // checkoutTooltip is what a checkout row's line cuts: the branch in full, the

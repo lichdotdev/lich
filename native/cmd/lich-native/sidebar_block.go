@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
 	"github.com/lichdotdev/lich/native/ui"
@@ -210,8 +211,9 @@ func (s *sidebar) dropCards(gtx C, st *blockState, b blockView, f blockFrame) bo
 	return ended
 }
 
-// cardGap is the gap under every card of a block.
-var cardGap = ui.Space(0.5)
+// cardGap is the gap under every card of a block: none, so the tree's links
+// run from row to row unbroken, each row clipped to its own box.
+var cardGap = unit.Dp(0)
 
 // blockCards is the block's rows, each in its CardTransition: the gap between
 // rows lives inside the motion, so a closing card takes it along, and the list
