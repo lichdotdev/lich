@@ -23,6 +23,9 @@ type treePlace struct {
 	// hot is a foldable row under the pointer: its node shows the fold's
 	// chevron in place of its glyph.
 	hot bool
+	// onTray is a card on a folder tray of its own color, which the tray
+	// already paints at rest.
+	onTray bool
 	sessionRowLinks
 	kids    int
 	folded  bool

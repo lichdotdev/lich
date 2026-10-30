@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"slices"
 
 	"gioui.org/layout"
@@ -176,9 +177,10 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 			}),
 		)
 	}
-	if b.kind == blockFolder {
+	// A closed folder is its header alone, with nothing to set apart.
+	if b.kind == blockFolder && !b.collapsed {
 		inner := body
-		body = func(gtx C) D { return folderTray(gtx, th, inner) }
+		body = func(gtx C) D { return folderTray(gtx, th, b.color, inner) }
 	}
 	if s.sort.Dragging() != b.key {
 		return body(gtx)
@@ -263,6 +265,7 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 	}
 	sv := r.sv
 	sv.place = r.place(tree)
+	sv.place.onTray = b.kind == blockFolder && b.color != "" && sv.Color == b.color
 	folders := slices.DeleteFunc(slices.Clone(f.view.folders), func(name string) bool { return name == sv.Folder })
 	face := func(gtx C) D {
 		d, a := s.card(gtx, th, &sv, sv.ID == f.active, folders)
@@ -286,9 +289,13 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 const folderTrayAlpha = 0.45
 
 // folderTray lays a folder's header and rows on a tray, so where the folder
-// ends shows against the checkouts that follow it.
-func folderTray(gtx C, th *ui.Theme, w layout.Widget) D {
+// ends shows against the checkouts that follow it. A folder painted a color
+// wears it on the whole tray, as its cards wore it at rest.
+func folderTray(gtx C, th *ui.Theme, tint string, w layout.Widget) D {
 	tray := th.Over(ui.Alpha(th.Accent, folderTrayAlpha))
+	if c, ok := cardColors[tint]; ok {
+		tray = th.Over(ui.MixOKLab(color.NRGBA{}, c, tintRest))
+	}
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, tray, ui.RadiusLG) },
 		func(gtx C) D { return layout.Inset{Bottom: ui.Space(0.5)}.Layout(gtx, w) },

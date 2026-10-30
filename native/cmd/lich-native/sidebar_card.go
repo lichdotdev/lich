@@ -49,10 +49,11 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 	}
 	fill := cardFill(th, sv.Color, active, click.Hovered())
 	th = th.On(fill)
-	// A card at rest paints nothing, so the surface under it (a folder's
-	// tray) shows through.
+	// A card at rest with no tint of its own, or on a tray of its color,
+	// paints nothing, so the surface under it shows through.
 	paint := fill
-	if cardLayer(th, sv.Color, active, click.Hovered()).A == 0 {
+	resting := !active && !click.Hovered()
+	if cardLayer(th, sv.Color, active, click.Hovered()).A == 0 || resting && sv.place.onTray {
 		paint = color.NRGBA{}
 	}
 	tip, ok := s.tips[sv.ID]
