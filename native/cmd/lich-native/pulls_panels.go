@@ -14,9 +14,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// actions is the header's buttons, left to right: the session, the pending
-// review while one is written, Merge, and ⋯ with the hand-off, Approve,
-// Refresh and Open on GitHub.
+// actions is the header's buttons, left to right: the hand-off a failing or
+// conflicting pull request offers, the session, the pending review while one
+// is written, Merge, and ⋯ with Approve, Refresh and Open on GitHub.
 func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	busy := v.busyNow()
 	blocked := ""
@@ -27,29 +27,25 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 		act.session = &d
 	}
 	reviewBlocked := mergeReasonForReview(d)
-	items := []ui.WrapChild{ui.WrapItem(func(gtx C) D { return v.sessionButton(gtx, th, p, d, busy, blocked) })}
+	var items []ui.WrapChild
+	if handoff := v.handoffButton(gtx, th, p, d, busy, blocked, act); handoff != nil {
+		items = append(items, ui.WrapItem(handoff))
+	}
+	items = append(items, ui.WrapItem(func(gtx C) D { return v.sessionButton(gtx, th, p, d, busy, blocked) }))
 	if len(v.pendingOf(d.URL).snapshot()) > 0 {
 		items = append(items, ui.WrapItem(func(gtx C) D { return v.reviewButton(gtx, th, p, d, reviewBlocked) }))
 	}
 	items = append(items,
 		ui.WrapItem(func(gtx C) D { return v.mergeButton(gtx, th, p, d, busy, act) }),
-		ui.WrapItem(func(gtx C) D { return v.moreButton(gtx, th, p, d, busy, blocked, reviewBlocked, act) }),
+		ui.WrapItem(func(gtx C) D { return v.moreButton(gtx, th, p, d, busy, reviewBlocked, act) }),
 	)
 	return ui.Wrap{GapX: ui.Space(2), GapY: ui.Space(2), Justify: ui.JustifyEnd}.Layout(gtx, items...)
 }
 
-// moreButton is ⋯: the hand-off a failing or conflicting pull request offers,
-// Approve while no review is being written, Refresh and Open on GitHub.
-func (v *pullView) moreButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, blocked, reviewBlocked string, act *pullsAction) D {
-	var conflicts []string
-	if conflictsWithBase(d) {
-		conflicts = p.store.conflictFiles(p.project.Path, &d).val
-	}
+// moreButton is ⋯: Approve while no review is being written, Refresh and
+// Open on GitHub.
+func (v *pullView) moreButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, reviewBlocked string, act *pullsAction) D {
 	var entries []ui.MenuEntry
-	if label, prompt, ok := pullHandoff(d, conflicts); ok {
-		entries = append(entries, ui.MenuEntry{Label: label, Icon: icPullWrench, Disabled: blocked != "" || busy != "",
-			OnClick: func() { act.session, act.handoff = &d, prompt }})
-	}
 	if len(v.pendingOf(d.URL).snapshot()) == 0 {
 		label := i18n.T("pulls.pullRequestView.approve")
 		switch {
@@ -73,6 +69,28 @@ func (v *pullView) moreButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRD
 	return v.withTip(gtx, th, p, "more", i18n.T("pulls.pullsNav.more"), func(gtx C) D {
 		return th.DropdownMenu(p.root, &v.moreMenu, entries).Layout(gtx, b.Layout)
 	})
+}
+
+// handoffButton is Resolve conflicts or Fix checks, handing the pull request
+// to its session; nil when nothing is wrong with it.
+func (v *pullView) handoffButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, blocked string, act *pullsAction) layout.Widget {
+	var conflicts []string
+	if conflictsWithBase(d) {
+		conflicts = p.store.conflictFiles(p.project.Path, &d).val
+	}
+	label, prompt, ok := pullHandoff(d, conflicts)
+	if !ok {
+		return nil
+	}
+	disabled := blocked != "" || busy != ""
+	if v.handoff.Clicked(gtx) && !disabled {
+		act.session, act.handoff = &d, prompt
+	}
+	return func(gtx C) D {
+		b := th.Button(&v.handoff, label)
+		b.Icon, b.Variant, b.Size, b.Disabled = icPullWrench, ui.VariantOutline, ui.SizeSM, disabled
+		return v.withTip(gtx, th, p, "handoff", blocked, b.Layout)
+	}
 }
 
 // sessionButton is Open in Session, or Go to session when a session already
@@ -491,7 +509,8 @@ func (v *pullView) checkRows(gtx C, th *ui.Theme, d backend.PRDetail, act *pulls
 	return rows
 }
 
-// panelRow is a tab's px-6 py-2 row, hover-filled while it does something.
+// panelRow is a tab's py-2 row, hover-filled like a sidebar card while it
+// does something.
 func panelRow(gtx C, th *ui.Theme, click *widget.Clickable, live bool, content func(gtx C, th *ui.Theme) D) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {
@@ -499,13 +518,15 @@ func panelRow(gtx C, th *ui.Theme, click *widget.Clickable, live bool, content f
 		if live && click.Hovered() {
 			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
 		}
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, bg, 0) },
-			func(gtx C) D {
-				return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-					return content(gtx, th.On(bg))
+		return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
+				func(gtx C) D {
+					return layout.Inset{Left: pullsRowPadX, Right: pullsRowPadX, Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+						return content(gtx, th.On(bg))
+					})
 				})
-			})
+		})
 	})
 }
 
