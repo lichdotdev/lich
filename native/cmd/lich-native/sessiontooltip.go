@@ -27,9 +27,10 @@ var (
 )
 
 // sessionTooltip is what the card's one line has no room for: the full label,
-// what the turn is doing and for how long, the full path, the shield's
-// symlinks left out, the branch and its standing against the base when no
-// checkout row above says them, and the model the provider says it is running.
+// what the turn is doing, the full path, the shield's symlinks left out, the
+// branch and its standing against the base when no checkout row above says
+// them, and last the model the provider says it is running beside how long
+// the status has lasted.
 func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	th = th.On(th.Popover)
 	path := sv.shown
@@ -38,7 +39,7 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	}
 	sections := []layout.Widget{th.Text(ui.TextXS, sv.Label).Weight(font.Medium).Layout}
 	if rung, ok := statusRung(th, sv); ok {
-		sections = append(sections, statusLine(th, sv, rung))
+		sections = append(sections, rung)
 	}
 	sections = append(sections, para(th.Text(ui.TextXS, path).Muted().Mono()).Layout)
 	if len(sv.sandbox.SkippedLinks) > 0 {
@@ -51,8 +52,8 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	if !sv.place.hideGit {
 		sections = append(sections, baseSections(th, sv.base)...)
 	}
-	if sv.running != "" {
-		sections = append(sections, modelSection(th, sv.Model, sv.running))
+	if sv.running != "" || sv.aged {
+		sections = append(sections, footLine(th, sv))
 	}
 	return func(gtx C) D { return stack(gtx, 1.5, sections) }
 }
@@ -84,11 +85,16 @@ func iconLine(gtx C, ic *icons.Icon, glyph ui.LabelStyle, rest ...layout.FlexChi
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(children, rest...)...)
 }
 
-// statusLine is the turn's rung and, while the status has a clock, how long
-// it has lasted. The tooltip is redrawn when that reading changes.
-func statusLine(th *ui.Theme, sv *sessionView, rung layout.Widget) layout.Widget {
+// footLine is the tooltip's last line: the model the provider runs and, in
+// the corner, how long the status has lasted while it has a clock. The
+// tooltip is redrawn when that reading changes.
+func footLine(th *ui.Theme, sv *sessionView) layout.Widget {
 	return func(gtx C) D {
-		children := []layout.FlexChild{layout.Flexed(1, rung)}
+		model := func(gtx C) D { return D{Size: gtx.Constraints.Min} }
+		if sv.running != "" {
+			model = modelSection(th, sv.Model, sv.running)
+		}
+		children := []layout.FlexChild{layout.Flexed(1, model)}
 		if sv.aged {
 			children = append(children, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, formatAge(sv.age)).Muted().Layout))
 			gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(nextAgeChange(sv.age))})
