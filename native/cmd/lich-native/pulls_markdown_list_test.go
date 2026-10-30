@@ -49,3 +49,31 @@ func TestMarkdownListWrapsInsideMarkerColumn(t *testing.T) {
 		t.Errorf("list size %v does not include marker column and wrapped body %v", got, bodySize)
 	}
 }
+
+func TestMarkdownTaskItemsDrawABoxInTheMarkersPlace(t *testing.T) {
+	list := renderBlocks(markdownTheme(), "- [x] done\n- [ ] todo\n- plain")[0].list
+	if len(list.items) != 3 {
+		t.Fatalf("got %d items, want 3", len(list.items))
+	}
+	for i, want := range []struct {
+		task, checked bool
+		text          string
+	}{{true, true, "done"}, {true, false, "todo"}, {false, false, "plain"}} {
+		item := list.items[i]
+		if (item.task != nil) != want.task || (item.task != nil && item.task.Value != want.checked) {
+			t.Errorf("item %d: task %v, want task %v checked %v", i, item.task, want.task, want.checked)
+		}
+		var text string
+		for _, span := range item.blocks[0].prose.spans {
+			text += span.Content
+		}
+		if text != want.text {
+			t.Errorf("item %d reads %q, want %q", i, text, want.text)
+		}
+	}
+	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+		Constraints: layout.Constraints{Max: image.Pt(400, 800)}}
+	if w := list.items[0].markerWidth(gtx, markdownTheme()); w < gtx.Dp(ui.Space(4)) {
+		t.Errorf("marker column %dpx is narrower than the box", w)
+	}
+}

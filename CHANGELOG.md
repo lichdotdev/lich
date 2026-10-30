@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The Conversation tab of a pull request on the Pulls screen shows each author's GitHub picture beside their reviews and comments, in a column down the left, the way GitHub does. Comments inside a review thread, on the Conversation tab and on the Files tab, are separated by a line. Until a picture loads, or for an account that has none, the author's initial stands in its place.
+- Task lists in pull request descriptions and comments show a checkbox, ticked or not, in place of a literal `[x]` or `[ ]`.
+- Top-level headings in pull request descriptions and comments are underlined across the text's width, as on GitHub.
+- The Description heading on the Pulls screen's Overview has a ⋯ menu, as GitHub's comments do: Copy link copies the pull request's address, Copy Markdown its description as written, and Edit opens the description for editing, which the Edit button beside the heading did before.
 
 ### Changed
 

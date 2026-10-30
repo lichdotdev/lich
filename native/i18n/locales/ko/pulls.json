@@ -111,6 +111,8 @@
     "noDescription": "설명이 없습니다.",
     "reviewers": "리뷰어",
     "nobodyYet": "아직 없음",
+    "copyLink": "링크 복사",
+    "copyMarkdown": "Markdown 복사",
     "editDescription": "편집",
     "save": "저장",
     "saving": "저장 중…",

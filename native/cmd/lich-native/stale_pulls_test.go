@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"image"
 	"net/http"
+	"strings"
 	"testing"
 
 	"gioui.org/io/key"
@@ -177,7 +178,15 @@ func TestPullsDeleteDialogWarnsTheThreadGoesAndCancelCloses(t *testing.T) {
 
 func TestPullsDescriptionCancelInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := pullsDetailShown(t)
-	r.clickLabel(t, i18n.T("pulls.pullsOverview.editDescription"))
+	r.click(t, r.controlOf(t, strings.ToUpper(i18n.T("pulls.pullsOverview.description"))))
+	r.settle(t)
+	// A menu row's clickable is its whole panel, so at would land between rows.
+	for _, n := range r.nodes() {
+		if n.Desc.Label == i18n.T("pulls.pullsOverview.editDescription") {
+			r.click(t, centre(image.Rectangle{Min: n.Desc.Bounds.Min, Max: n.Desc.Bounds.Min.Add(image.Pt(8, 8))}))
+			break
+		}
+	}
 	r.clickLabel(t, i18n.T("common.action.cancel"))
 	if u.pulls.view.edit.bodyURL != "" {
 		t.Fatal("the click missed Cancel")

@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +18,8 @@ import (
 )
 
 func markdownTheme() *ui.Theme {
-	return &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection()))}
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection()))}
+	return th.On(th.Background)
 }
 
 func markdownFrame(height int) (C, *op.Ops) {
@@ -147,5 +149,16 @@ func TestMarkdownUpdatesWhenInterfaceAndEditorFontsChange(t *testing.T) {
 	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
 	if cache.text(th, "body", src).heights[0] != 0 {
 		t.Fatal("shaper change retained the old measurements")
+	}
+}
+
+func TestMarkdownRulesUnderTopHeadingsOnly(t *testing.T) {
+	blocks := renderBlocks(markdownTheme(), "# One\n\n## Two\n\n### Three\n\nText")
+	var got []bool
+	for _, b := range blocks {
+		got = append(got, b.rule)
+	}
+	if want := []bool{true, true, false, false}; !slices.Equal(got, want) {
+		t.Errorf("rules = %v, want %v", got, want)
 	}
 }

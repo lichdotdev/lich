@@ -1,9 +1,12 @@
 package main
 
 import (
+	"io"
+	"strings"
 	"time"
 
 	"gioui.org/font"
+	"gioui.org/io/clipboard"
 	"gioui.org/layout"
 	"gioui.org/widget"
 
@@ -31,7 +34,8 @@ type editState struct {
 	body       widget.Editor
 	bodySize   ui.TextareaResize
 	bodyBar    widget.Scrollbar
-	bodyOpen   widget.Clickable
+	bodyMore   widget.Clickable
+	bodyMenu   ui.MenuState
 	bodySave   widget.Clickable
 	bodyCancel widget.Clickable
 
@@ -118,33 +122,46 @@ func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 	)
 }
 
-// descriptionHeading is the Description heading, with the Edit that turns the
-// description into a field while it is not one already.
-func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, d backend.PRDetail) D {
+// descriptionHeading is the Description heading, with the ⋯ that copies the
+// description or turns it into a field while it is not one already.
+func (v *pullView) descriptionHeading(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
 	s := &v.edit
 	// Cancel is the field's, drawn under the heading: taken here, the
 	// heading and the field both read it.
 	if s.bodyCancel.Clicked(gtx) && v.busyNow() != "body" {
 		s.bodyURL = ""
 	}
-	if s.bodyOpen.Clicked(gtx) {
-		s.bodyURL = d.URL
-		s.body.SetText(d.Body)
-		gtx.Execute(keyFocus(&s.body))
-	}
 	heading := sectionHeading(th, i18n.T("pulls.pullsOverview.description"))
 	if s.bodyURL == d.URL {
 		return heading(gtx)
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(heading),
-		ui.Gap(2),
+	var copied string
+	entries := []ui.MenuEntry{
+		{Label: i18n.T("pulls.pullsOverview.copyLink"), OnClick: func() { copied = d.URL }},
+		{Label: i18n.T("pulls.pullsOverview.copyMarkdown"), Disabled: strings.TrimSpace(d.Body) == "", OnClick: func() { copied = d.Body }},
+		{Kind: ui.MenuSeparator},
+		{Label: i18n.T("pulls.pullsOverview.editDescription"), OnClick: func() {
+			s.bodyURL = d.URL
+			s.body.SetText(d.Body)
+		}},
+	}
+	b := th.Button(&s.bodyMore, "")
+	b.Icon, b.Variant, b.Size = icPullMore, ui.VariantGhost, ui.SizeIconXS
+	dims := layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Flexed(1, heading),
 		layout.Rigid(func(gtx C) D {
-			b := th.Button(&s.bodyOpen, i18n.T("pulls.pullsOverview.editDescription"))
-			b.Icon, b.Variant, b.Size = icPullEdit, ui.VariantGhost, ui.SizeXS
-			return b.Layout(gtx)
+			return v.withTip(gtx, th, p, "description", i18n.T("pulls.reviewThread.more"), func(gtx C) D {
+				return th.DropdownMenu(p.root, &s.bodyMenu, entries).Layout(gtx, b.Layout)
+			})
 		}),
 	)
+	if copied != "" {
+		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(copied))})
+	}
+	if s.bodyURL == d.URL {
+		gtx.Execute(keyFocus(&s.body))
+	}
+	return dims
 }
 
 // descriptionField is the description being edited, raw Markdown, saved with

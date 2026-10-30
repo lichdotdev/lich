@@ -113,6 +113,8 @@
     "noDescription": "没有描述。",
     "reviewers": "评审者",
     "nobodyYet": "暂无",
+    "copyLink": "复制链接",
+    "copyMarkdown": "复制 Markdown",
     "editDescription": "编辑",
     "save": "保存",
     "saving": "正在保存…",

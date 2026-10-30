@@ -268,7 +268,7 @@ var (
 
 // overview is the description beside the pull request's facts.
 func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
-	rows := v.overviewRows(th, d, act)
+	rows := v.overviewRows(th, p, d, act)
 	if gtx.Constraints.Max.X < gtx.Dp(overviewSplitWidth) {
 		facts := func(gtx C) D {
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D { return v.facts(gtx, th, p, d) })
@@ -330,7 +330,7 @@ func (v *pullView) checkoutFact(th *ui.Theme, p *pullsScreen, d backend.PRDetail
 
 // overviewRows is the description under its heading, held to a reading
 // width.
-func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
+func (v *pullView) overviewRows(th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	pad := func(top float32, w layout.Widget) layout.Widget {
 		return func(gtx C) D {
 			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(overviewProseWidth+2*pullsPadX))
@@ -339,7 +339,7 @@ func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsActi
 	}
 	body := strings.TrimSpace(d.Body)
 	return []layout.Widget{
-		pad(4, func(gtx C) D { return v.descriptionHeading(gtx, th, d) }),
+		pad(4, func(gtx C) D { return v.descriptionHeading(gtx, th, p, d) }),
 		pad(2, func(gtx C) D {
 			if v.edit.bodyURL == d.URL {
 				return v.descriptionField(gtx, th, d, act)
