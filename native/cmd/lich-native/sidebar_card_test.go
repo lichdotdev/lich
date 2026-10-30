@@ -19,7 +19,8 @@ func cardBodyHeight(sv sessionView, hovered bool) int {
 	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
-	return s.cardBody(gtx, th, &sv, new(widget.Clickable), new(widget.Clickable), hovered).Size.Y
+	more := func(gtx layout.Context) layout.Dimensions { return layout.Dimensions{Size: image.Pt(16, 16)} }
+	return s.cardBody(gtx, th, &sv, new(widget.Clickable), more, hovered).Size.Y
 }
 
 func TestCardIsOneLineInEveryState(t *testing.T) {

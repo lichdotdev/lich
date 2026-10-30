@@ -23,11 +23,12 @@ type sidebar struct {
 	// renamed is the label a rename committed during this frame's layout.
 	renamed sessionRename
 	cards   map[string]*widget.Clickable
-	closes  map[string]*widget.Clickable
+	// moreClicks and moreMenus are the … of each card's corner and its menu.
+	moreClicks map[string]*widget.Clickable
+	moreMenus  map[string]*ui.MenuState
 	// mothers are the chevrons that fold a mother's children.
 	mothers  map[string]*widget.Clickable
 	prChips  map[string]*widget.Clickable
-	icClose  *icons.Icon
 	icPin    *icons.Icon
 	icShield *icons.Icon
 	icPR     *icons.Icon
@@ -56,25 +57,25 @@ type sidebar struct {
 
 func newSidebar(root *ui.Root) *sidebar {
 	s := &sidebar{
-		root:     root,
-		cards:    map[string]*widget.Clickable{},
-		closes:   map[string]*widget.Clickable{},
-		mothers:  map[string]*widget.Clickable{},
-		tips:     map[string]*ui.Tooltip{},
-		menus:    map[string]*ui.MenuState{},
-		renames:  map[string]*ui.InlineEdit{},
-		prChips:  map[string]*widget.Clickable{},
-		icClose:  icons.Lucide("x"),
-		icPin:    icons.Lucide("pin"),
-		icShield: icons.Lucide("shield"),
-		icPR:     icons.Lucide("git-pull-request-arrow"),
-		started:  time.Now(),
-		widthRem: sidebarDefaultRem,
-		open:     true,
-		hints:    map[string]*ui.Tooltip{},
-		blocks:   map[string]*blockState{},
-		rail:     sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}},
-		services: newServicesFooter(),
+		root:       root,
+		cards:      map[string]*widget.Clickable{},
+		moreClicks: map[string]*widget.Clickable{},
+		moreMenus:  map[string]*ui.MenuState{},
+		mothers:    map[string]*widget.Clickable{},
+		tips:       map[string]*ui.Tooltip{},
+		menus:      map[string]*ui.MenuState{},
+		renames:    map[string]*ui.InlineEdit{},
+		prChips:    map[string]*widget.Clickable{},
+		icPin:      icons.Lucide("pin"),
+		icShield:   icons.Lucide("shield"),
+		icPR:       icons.Lucide("git-pull-request-arrow"),
+		started:    time.Now(),
+		widthRem:   sidebarDefaultRem,
+		open:       true,
+		hints:      map[string]*ui.Tooltip{},
+		blocks:     map[string]*blockState{},
+		rail:       sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}},
+		services:   newServicesFooter(),
 	}
 	s.header.phases = map[sessionPhase]bool{}
 	s.list.Axis = layout.Vertical

@@ -35,12 +35,9 @@ func clickable(m map[string]*widget.Clickable, key string) *widget.Clickable {
 // of the project but its own.
 func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folders []string) (D, sidebarAction) {
 	var act sidebarAction
-	click, closeClick := clickable(s.cards, sv.ID), clickable(s.closes, sv.ID)
+	click := clickable(s.cards, sv.ID)
 	if click.Clicked(gtx) {
 		act.activate = sv.ID
-	}
-	if closeClick.Clicked(gtx) {
-		act.close = sv.ID
 	}
 	if clickable(s.mothers, sv.ID).Clicked(gtx) {
 		act.fold = motherKey(sv.ID)
@@ -52,6 +49,12 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 	}
 	fill := cardFill(th, sv.Color, active, click.Hovered())
 	th = th.On(fill)
+	// A card at rest paints nothing, so the surface under it (a folder's
+	// tray) shows through.
+	paint := fill
+	if cardLayer(th, sv.Color, active, click.Hovered()).A == 0 {
+		paint = color.NRGBA{}
+	}
 	tip, ok := s.tips[sv.ID]
 	if !ok {
 		tip = new(ui.Tooltip)
@@ -69,14 +72,26 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		rename = new(ui.InlineEdit)
 		s.renames[sv.ID] = rename
 	}
-	d := th.ContextMenuLazy(s.root, menu, func() []ui.MenuEntry {
+	entries := func() []ui.MenuEntry {
 		var extra []ui.MenuEntry
 		if len(sv.continueIn) > 0 {
 			extra = append(extra, continueInItem(th, sv, &act))
 		}
 		return cardMenu(sv, folders, &act, func() { rename.Start(sv.Label) }, func() { s.askFolderName([]string{sv.ID}) }, extra...)
-	}).Layout(gtx, func(gtx C) D {
-		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, closeClick, prChip, fill) })
+	}
+	more, ok := s.moreMenus[sv.ID]
+	if !ok {
+		more = new(ui.MenuState)
+		s.moreMenus[sv.ID] = more
+	}
+	moreButton := func(gtx C) D {
+		click := clickable(s.moreClicks, sv.ID)
+		return th.DropdownMenu(s.root, more, entries()).Layout(gtx, func(gtx C) D {
+			return cornerButton(gtx, th, click, icGroupMore, more.Opened())
+		})
+	}
+	d := th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
+		return tooltip.Layout(gtx, func(gtx C) D { return s.cardFace(gtx, th, sv, click, prChip, moreButton, more.Opened(), paint) })
 	})
 	if s.renamed.id == sv.ID {
 		act.rename, s.renamed = s.renamed, sessionRename{}
@@ -88,12 +103,14 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 }
 
 // cardFace is the card itself, under its tooltip.
-func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, closeClick, prChip *widget.Clickable, fill color.NRGBA) D {
+func (s *sidebar) cardFace(gtx C, th *ui.Theme, sv *sessionView, click, prChip *widget.Clickable, more layout.Widget, moreOpen bool, fill color.NRGBA) D {
 	return click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 			func(gtx C) D {
-				return withLinks(gtx, th, sv.place.sessionRowLinks, func(gtx C) D { return s.cardBody(gtx, th, sv, prChip, closeClick, click.Hovered()) })
+				return withLinks(gtx, th, sv.place.sessionRowLinks, func(gtx C) D {
+					return s.cardBody(gtx, th, sv, prChip, more, click.Hovered() || moreOpen)
+				})
 			},
 		)
 	})
@@ -145,7 +162,7 @@ func (s *sidebar) renaming(id string) bool {
 // cardBody is the card's one line: its place in the tree, the title row, a
 // folded mother's count, the open pull request and the checkout's changes
 // unless a checkout row above shows them, then the corner slot.
-func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip, closeClick *widget.Clickable, hovered bool) D {
+func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip *widget.Clickable, more layout.Widget, hovered bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	sv.place.hot = hovered && sv.place.kids > 0
 	row := append(treeLead(sv.place), s.titleRow(th, sv)...)
@@ -154,7 +171,7 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip, closeCl
 		row = append(row, foldedCount(th, sv.place.kids, sv.place.mark)...)
 	}
 	if sv.place.hideGit {
-		return s.cardLine(gtx, th, sv, closeClick, hovered, row)
+		return s.cardLine(gtx, th, sv, more, hovered, row)
 	}
 	if sv.pr != nil {
 		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return s.prBadge(gtx, th, prChip, sv.pr.Number) }))
@@ -162,12 +179,12 @@ func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip, closeCl
 	if sv.git.Files > 0 {
 		row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return diffStat(gtx, th, sv.git.Added, sv.git.Deleted) }))
 	}
-	return s.cardLine(gtx, th, sv, closeClick, hovered, row)
+	return s.cardLine(gtx, th, sv, more, hovered, row)
 }
 
 // cardLine ends row with the corner slot and lays it out in the card's insets.
-func (s *sidebar) cardLine(gtx C, th *ui.Theme, sv *sessionView, closeClick *widget.Clickable, hovered bool, row []layout.FlexChild) D {
-	row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D { return s.cardSlot(gtx, th, sv, closeClick, hovered) }))
+func (s *sidebar) cardLine(gtx C, th *ui.Theme, sv *sessionView, more layout.Widget, hovered bool, row []layout.FlexChild) D {
+	row = append(row, ui.Gap(1), layout.Rigid(func(gtx C) D { return s.cardSlot(gtx, th, sv, more, hovered) }))
 	return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	})
@@ -213,17 +230,16 @@ func (s *sidebar) renameField(gtx C, th *ui.Theme, id string, rename *ui.InlineE
 }
 
 // cardSlot is the corner every card keeps free, so nothing on its line moves
-// when it fills: the × under the pointer, or the pin of a pinned card, which
-// has no × because closing is what the pin withholds. Pinning lives in the
-// card's menu.
-func (s *sidebar) cardSlot(gtx C, th *ui.Theme, sv *sessionView, closeClick *widget.Clickable, hovered bool) D {
+// when it fills: under the pointer, or while its menu is open, the … that opens
+// the card's menu (more, nil for none); at rest, the pin of a pinned card.
+func (s *sidebar) cardSlot(gtx C, th *ui.Theme, sv *sessionView, more layout.Widget, hovered bool) D {
 	size := gtx.Dp(cardSlotSize)
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	switch {
+	case hovered && more != nil && !s.renaming(sv.ID):
+		return layout.Center.Layout(gtx, more)
 	case sv.Pinned:
 		return layout.Center.Layout(gtx, func(gtx C) D { return s.icPin.LayoutFilled(gtx, 12, th.MutedForeground) })
-	case hovered && !s.renaming(sv.ID):
-		return layout.Center.Layout(gtx, func(gtx C) D { return cornerButton(gtx, th, closeClick, s.icClose, false) })
 	}
 	return D{Size: gtx.Constraints.Min}
 }

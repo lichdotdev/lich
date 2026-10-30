@@ -176,6 +176,10 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 			}),
 		)
 	}
+	if b.kind == blockFolder {
+		inner := body
+		body = func(gtx C) D { return folderTray(gtx, th, inner) }
+	}
 	if s.sort.Dragging() != b.key {
 		return body(gtx)
 	}
@@ -276,4 +280,17 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 			return st.cards.Item(gtx, sv.ID, face, nil)
 		})
 	})
+}
+
+// folderTrayAlpha is how strongly the accent tints a folder's tray.
+const folderTrayAlpha = 0.45
+
+// folderTray lays a folder's header and rows on a tray, so where the folder
+// ends shows against the checkouts that follow it.
+func folderTray(gtx C, th *ui.Theme, w layout.Widget) D {
+	tray := th.Over(ui.Alpha(th.Accent, folderTrayAlpha))
+	return layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, tray, ui.RadiusLG) },
+		func(gtx C) D { return layout.Inset{Bottom: ui.Space(0.5)}.Layout(gtx, w) },
+	)
 }
