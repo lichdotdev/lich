@@ -49,8 +49,8 @@ func (r sessionRow) place(tree bool) treePlace {
 var (
 	sessionTreeIndent  = unit.Dp(14)
 	sessionTreeChevron = unit.Dp(14)
-	sessionTreeRingR   = unit.Dp(9)
-	sessionTreeElbow   = unit.Dp(5)
+	sessionTreeRingR   = unit.Dp(10)
+	sessionTreeElbow   = unit.Dp(4)
 	sessionTreeStroke  = unit.Dp(1.25)
 	// treeLinkAlpha is how strongly the muted foreground draws the links.
 	treeLinkAlpha float32 = 0.45
@@ -181,7 +181,7 @@ func checkoutNode(gtx C, th *ui.Theme) D {
 	center := f32.Pt(float32(side)/2, float32(side)/2)
 	ui.StrokeArc(gtx, center, float32(side)/2-stroke/2, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 	gtx.Constraints = layout.Exact(image.Pt(side, side))
-	return centeredIcon(gtx, icBranch, 10, th.MutedForeground)
+	return centeredIcon(gtx, icBranch, 11, th.MutedForeground)
 }
 
 // checkoutTooltip is what a checkout row's line cuts: the branch in full, the

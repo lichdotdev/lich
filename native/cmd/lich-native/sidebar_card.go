@@ -256,7 +256,7 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 const neutralRingAlpha = 0.35
 
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
-	size := gtx.Dp(18)
+	size := gtx.Dp(2 * sessionTreeRingR)
 	stroke := float32(gtx.Dp(1.25))
 	center := f32.Pt(float32(size)/2, float32(size)/2)
 	radius := float32(size)/2 - stroke/2
@@ -286,7 +286,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	if sv.agent != "" {
 		kind = sv.agent
 	}
-	return centeredIcon(gtx, providerIcon(kind), 11, th.MutedForeground)
+	return centeredIcon(gtx, providerIcon(kind), 12, th.MutedForeground)
 }
 
 // centeredIcon draws ic in the middle of the exact box gtx holds, at a
