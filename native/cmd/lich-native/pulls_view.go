@@ -247,7 +247,7 @@ func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				b := th.Button(&v.back, "")
-				b.Icon, b.Variant, b.Size = icPullBack, ui.VariantOutline, ui.SizeIconSM
+				b.Icon, b.Variant, b.Size = icPullBack, ui.VariantGhost, ui.SizeIconSM
 				return v.withTip(gtx, th, p, "back", i18n.T("pulls.pullsNav.back"), b.Layout)
 			}),
 			ui.Gap(2.5),
