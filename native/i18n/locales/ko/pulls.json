@@ -67,7 +67,6 @@
   },
   "pullsEmptyState": {
     "openFailed": "풀 리퀘스트를 열지 못했습니다: {error}",
-    "noneFor": "{branch}에 열린 풀 리퀘스트가 없습니다.",
     "none": "열린 풀 리퀘스트가 없습니다.",
     "openOnGitHub": "GitHub에서 열기"
   },
@@ -147,8 +146,6 @@
       "drafts": "초안",
       "failing": "실패"
     },
-    "show": "풀 리퀘스트 목록 표시",
-    "hide": "풀 리퀘스트 목록 숨기기",
     "none": {
       "open": "열린 풀 리퀘스트가 없습니다.",
       "closed": "닫힌 풀 리퀘스트가 없습니다.",
@@ -242,7 +239,6 @@
     "editMessage": "{method}, 메시지 편집…",
     "editMessageBypass": "{method}, 메시지 편집…(규칙 무시)",
     "refresh": "새로 고침",
-    "open": "열기",
     "tab": {
       "overview": "개요",
       "commits": "커밋",
@@ -279,5 +275,16 @@
     },
     "send": "제출",
     "sending": "제출 중…"
+  },
+  "pullsNav": {
+    "back": "풀 리퀘스트 목록으로 돌아가기",
+    "previous": "이전 풀 리퀘스트",
+    "next": "다음 풀 리퀘스트",
+    "position": "{index} / {total}",
+    "switch": "다른 풀 리퀘스트로 이동",
+    "more": "추가 작업",
+    "create": "새 풀 리퀘스트",
+    "checkout": "체크아웃",
+    "notCheckedOut": "체크아웃 없음"
   }
 }

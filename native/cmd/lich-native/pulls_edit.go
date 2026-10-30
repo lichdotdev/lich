@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"gioui.org/font"
@@ -94,8 +93,6 @@ func (v *pullView) pullTitle(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDe
 		s.title.Start(d.Title)
 	}
 	return layout.Flex{}.Layout(gtx,
-		layout.Rigid(th.Text(pullsTitleSize, fmt.Sprintf("#%d", d.Number)).Muted().Weight(font.SemiBold).Layout),
-		ui.Gap(1.5),
 		layout.Flexed(1, func(gtx C) D {
 			if s.titleEditing(d) {
 				dims, res := th.InlineEdit(&s.title, pullsTitleSize).Weight(font.SemiBold).Layout(gtx)

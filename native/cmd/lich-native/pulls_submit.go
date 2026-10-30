@@ -46,23 +46,10 @@ type submitState struct {
 	cancel  widget.Clickable
 }
 
-// reviewButton is Approve while nothing is pending, else the "Submit review
-// N" menu of verdicts, which opens the dialog.
-func (v *pullView) reviewButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, blocked string, act *pullsAction) D {
+// reviewButton is the "Submit review N" menu of verdicts over the pending
+// comments, which opens the dialog.
+func (v *pullView) reviewButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, blocked string) D {
 	pending := len(v.pendingOf(d.URL).snapshot())
-	if pending == 0 {
-		label := i18n.T("pulls.pullRequestView.approve")
-		switch {
-		case busy == "approve":
-			label = i18n.T("pulls.pullRequestView.approving")
-		case d.ReviewDecision == "APPROVED":
-			label = i18n.T("pulls.pullRequestView.approved")
-		}
-		b := th.Button(&v.approve, label)
-		b.Icon, b.Variant, b.Size = icPullCheck, ui.VariantGhost, ui.SizeSM
-		b.Disabled = busy != "" || blocked != "" || d.ReviewDecision == "APPROVED"
-		return v.withTip(gtx, th, p, "approve", blocked, b.Layout)
-	}
 	s := &v.submit
 	discard := i18n.T("pulls.pullRequestView.discardPending", i18n.Args{"count": pending})
 	url := d.URL

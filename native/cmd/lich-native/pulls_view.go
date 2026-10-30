@@ -57,20 +57,22 @@ func (a *pullsAction) open(url string) { a.external = url }
 // pullView is PullRequestView: the toolbar, the title, the status line, the
 // tabs and the open tab's panel.
 type pullView struct {
-	session, handoff, approve, refresh, external, create widget.Clickable
-	mergeClick                                           widget.Clickable
-	mergeMenu                                            ui.MenuState
-	showList                                             iconActionState
-	tips                                                 map[string]*ui.Tooltip
-	tabs                                                 ui.TabsState
-	panel                                                widget.List
-	checksStat                                           widget.Clickable
-	reviewStat                                           widget.Clickable
-	commitOpen                                           map[string]*widget.Bool
-	commitClicks                                         map[string]*widget.Clickable
-	checkClicks                                          map[string]*widget.Clickable
-	conflictsPanel                                       ui.DropdownPanelState
-	conflictsRows                                        widget.List
+	session, moreClick                       widget.Clickable
+	moreMenu                                 ui.MenuState
+	mergeClick                               widget.Clickable
+	mergeMenu                                ui.MenuState
+	back, indexLink, prev, next, switchClick widget.Clickable
+	switchMenu                               ui.MenuState
+	tips                                     map[string]*ui.Tooltip
+	tabs                                     ui.TabsState
+	panel                                    widget.List
+	checksStat                               widget.Clickable
+	reviewStat                               widget.Clickable
+	commitOpen                               map[string]*widget.Bool
+	commitClicks                             map[string]*widget.Clickable
+	checkClicks                              map[string]*widget.Clickable
+	conflictsPanel                           ui.DropdownPanelState
+	conflictsRows                            widget.List
 	// files is the Files tab, the dock's Review cards in pull request mode;
 	// viewed is each PR's ticks, by URL, kept while the window lives.
 	files  *reviewPanel
@@ -152,9 +154,6 @@ func (v *pullView) tip(key string) *ui.Tooltip {
 
 func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction) D {
 	v.runQueued()
-	if p.selected == 0 {
-		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return v.empty(gtx, th, p, act) })
-	}
 	read := p.store.detail(p.project.Path, p.selected)
 	switch {
 	case read.val == nil && read.err != "":
@@ -162,7 +161,7 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	case read.val == nil && !read.loaded, read.val == nil && read.loading:
 		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return detailSkeleton(gtx, th) })
 	case read.val == nil:
-		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return v.empty(gtx, th, p, act) })
+		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return notice(gtx, th, i18n.T("pulls.pullsEmptyState.none")) })
 	}
 	d := v.edit.shown(*read.val, read, p.store.lastStale())
 	if stillSettling(d) && !read.loading {
@@ -179,59 +178,157 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	return v.withToolbar(gtx, th, p, &d, act, func(gtx C) D { return v.body(gtx, th, p, d, act) })
 }
 
-// withToolbar lays the h-12 strip over w: the list's show button when it is
-// hidden, then the pull request's title and stats with its actions at the
-// right on the title's line. An island too narrow for both on one line puts
-// the actions on their own line above the title.
+// withToolbar lays the strip over w: the crumb, then the pull request's title
+// and stats with its actions at the right on the title's line. An island too
+// narrow for both on one line puts the actions on their own line above the
+// title.
 func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *backend.PRDetail, act *pullsAction, w layout.Widget) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.UniformInset(pullsToolbarPad).Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				if d == nil {
-					return v.toolbarRow(gtx, th, p, func(gtx C) D {
-						return layout.Spacer{Width: gtx.Metric.PxToDp(gtx.Constraints.Max.X), Height: ui.Space(8)}.Layout(gtx)
-					}, nil)
-				}
-				actions, size := v.recordActions(gtx, th, p, *d, act)
-				if size.Y > gtx.Dp(ui.Space(8)) || gtx.Constraints.Max.X-size.X < gtx.Dp(pullsTitleMinWidth) {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D {
-							return v.toolbarRow(gtx, th, p, func(gtx C) D {
-								gtx.Constraints.Min.X = gtx.Constraints.Max.X
-								return v.actions(gtx, th, p, *d, act)
-							}, nil)
-						}),
-						layout.Rigid(func(gtx C) D { return v.heading(gtx, th, p, *d, act, false) }),
-					)
-				}
-				return v.toolbarRow(gtx, th, p, func(gtx C) D { return v.heading(gtx, th, p, *d, act, p.listHidden) }, func(gtx C) D {
-					actions.Add(gtx.Ops)
-					return D{Size: size}
-				})
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return v.crumb(gtx, th, p) }),
+					layout.Rigid(func(gtx C) D {
+						if d == nil {
+							return D{}
+						}
+						return v.titleRow(gtx, th, p, *d, act)
+					}),
+				)
 			})
 		}),
 		layout.Flexed(1, w),
 	)
 }
 
-// toolbarRow is the list's show button while the list is hidden, fill
-// taking the width it leaves, and right at the end.
-func (v *pullView) toolbarRow(gtx C, th *ui.Theme, p *pullsScreen, fill, right layout.Widget) D {
+func (v *pullView) titleRow(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
+	actions, size := v.recordActions(gtx, th, p, d, act)
+	if size.Y > gtx.Dp(ui.Space(8)) || gtx.Constraints.Max.X-size.X < gtx.Dp(pullsTitleMinWidth) {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return v.actions(gtx, th, p, d, act)
+			}),
+			layout.Rigid(func(gtx C) D { return v.heading(gtx, th, p, d, act) }),
+		)
+	}
 	return layout.Flex{}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D { return v.heading(gtx, th, p, d, act) }),
 		layout.Rigid(func(gtx C) D {
-			if !p.listHidden {
-				return D{}
-			}
-			return iconAction(gtx, th, p.root, &v.showList, icPullShow, i18n.T("pulls.pullsList.show"), false)
+			actions.Add(gtx.Ops)
+			return D{Size: size}
 		}),
-		layout.Flexed(1, fill),
-		layout.Rigid(func(gtx C) D {
-			if right == nil {
-				return D{}
+	)
+}
+
+// navClicks carries out the crumb's clicks before the frame draws the pull
+// request, so the frame that took one already draws where it leads.
+func (v *pullView) navClicks(gtx C, p *pullsScreen, rows []backend.PRSummary) {
+	if v.back.Clicked(gtx) || v.indexLink.Clicked(gtx) {
+		p.backToIndex()
+	}
+	if v.prev.Clicked(gtx) {
+		p.stepPR(rows, -1)
+	}
+	if v.next.Clicked(gtx) {
+		p.stepPR(rows, 1)
+	}
+}
+
+// crumb is the line over the title: back to the index, the index's name and
+// the pull request's number, which opens the switcher; at the right its place
+// in the index between previous and next.
+func (v *pullView) crumb(gtx C, th *ui.Theme, p *pullsScreen) D {
+	rows := p.visible(p.store.list(p.project.Path, p.state).val)
+	at := position(rows, p.selected)
+	return layout.Inset{Left: pullsPadX - pullsToolbarPad - ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				b := th.Button(&v.back, "")
+				b.Icon, b.Variant, b.Size = icPullBack, ui.VariantOutline, ui.SizeIconSM
+				return v.withTip(gtx, th, p, "back", i18n.T("pulls.pullsNav.back"), b.Layout)
+			}),
+			ui.Gap(2.5),
+			layout.Rigid(func(gtx C) D { return hoverText(gtx, th, &v.indexLink, i18n.T("tabs.projectTabs.pullRequests")) }),
+			ui.Gap(1.5),
+			layout.Rigid(func(gtx C) D { return icPullRight.Layout(gtx, ui.Space(3), th.MutedForeground) }),
+			ui.Gap(1.5),
+			layout.Rigid(func(gtx C) D { return v.switcher(gtx, th, p, rows) }),
+			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
+			layout.Rigid(func(gtx C) D {
+				if at < 0 {
+					return D{}
+				}
+				return v.stepper(gtx, th, p, at, len(rows))
+			}),
+		)
+	})
+}
+
+// hoverText is a click in muted words that brighten under the pointer.
+func hoverText(gtx C, th *ui.Theme, click *widget.Clickable, text string) D {
+	return click.Layout(gtx, func(gtx C) D {
+		fg := th.MutedForeground
+		if click.Hovered() {
+			fg = th.Foreground
+		}
+		return th.Text(ui.TextXS, text).In(fg).Layout(gtx)
+	})
+}
+
+// switcher is the pull request's number, a menu of the index's rows to go to
+// another one.
+func (v *pullView) switcher(gtx C, th *ui.Theme, p *pullsScreen, rows []backend.PRSummary) D {
+	entries := make([]ui.MenuEntry, len(rows))
+	for i, r := range rows {
+		entries[i] = ui.MenuEntry{Kind: ui.MenuRadioItem, Label: fmt.Sprintf("#%d %s", r.Number, r.Title), Checked: r.Number == p.selected,
+			OnClick: func() { p.openPR(r.Number) }}
+	}
+	face := func(gtx C) D {
+		return v.switchClick.Layout(gtx, func(gtx C) D {
+			bg := th.Muted
+			if v.switchClick.Hovered() {
+				bg = th.Accent
 			}
-			return right(gtx)
-		}),
+			return layout.Background{}.Layout(gtx,
+				func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
+				func(gtx C) D {
+					on := th.On(bg)
+					return layout.Inset{Left: ui.Space(2), Right: ui.Space(1.5), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+							layout.Rigid(on.Text(ui.TextXS, fmt.Sprintf("#%d", p.selected)).Mono().Layout),
+							ui.Gap(1),
+							layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, ui.Space(3), on.MutedForeground) }),
+						)
+					})
+				})
+		})
+	}
+	if len(entries) == 0 {
+		return face(gtx)
+	}
+	return v.withTip(gtx, th, p, "switch", i18n.T("pulls.pullsNav.switch"), func(gtx C) D {
+		return th.DropdownMenu(p.root, &v.switchMenu, entries).Layout(gtx, face)
+	})
+}
+
+// stepper is "N of M" between previous and next, along the index's filter.
+func (v *pullView) stepper(gtx C, th *ui.Theme, p *pullsScreen, at, total int) D {
+	arrow := func(click *widget.Clickable, ic *icons.Icon, key, tip string, disabled bool) layout.Widget {
+		return func(gtx C) D {
+			b := th.Button(click, "")
+			b.Icon, b.Variant, b.Size, b.Disabled = ic, ui.VariantGhost, ui.SizeIconSM, disabled
+			return v.withTip(gtx, th, p, key, tip, b.Layout)
+		}
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(arrow(&v.prev, icPullBack, "prev", i18n.T("pulls.pullsNav.previous"), at == 0)),
+		ui.Gap(1),
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsNav.position", i18n.Args{"index": at + 1, "total": total})).Mono().Muted().Layout),
+		ui.Gap(1),
+		layout.Rigid(arrow(&v.next, icPullRight, "next", i18n.T("pulls.pullsNav.next"), at == total-1)),
 	)
 }
 
@@ -245,39 +342,12 @@ func (v *pullView) recordActions(gtx C, th *ui.Theme, p *pullsScreen, d backend.
 }
 
 // heading is the title over its stats, its left edge on the body's px-6.
-func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction, besideShowList bool) D {
-	left := pullsPadX - pullsToolbarPad
-	if besideShowList {
-		left = ui.Space(2)
-	}
-	return layout.Inset{Left: left, Right: ui.Space(4), Top: pullsHeadingTop}.Layout(gtx, func(gtx C) D {
+func (v *pullView) heading(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
+	return layout.Inset{Left: pullsPadX - pullsToolbarPad, Right: ui.Space(4), Top: pullsHeadingTop}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return v.pullTitle(gtx, th, p, d, act) }),
 			ui.VGap(3),
 			layout.Rigid(func(gtx C) D { return v.stats(gtx, th, p, d) }),
-		)
-	})
-}
-
-// empty is PullsEmptyState: no pull request for the checkout's branch, and
-// GitHub's page to open one.
-func (v *pullView) empty(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction) D {
-	if v.create.Clicked(gtx) {
-		act.create = true
-	}
-	text := i18n.T("pulls.pullsEmptyState.none")
-	if p.branch != "" {
-		text = i18n.T("pulls.pullsEmptyState.noneFor", i18n.Args{"branch": p.branch})
-	}
-	return layout.Center.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextSM, text).Muted().Layout),
-			ui.VGap(3),
-			layout.Rigid(func(gtx C) D {
-				b := th.Button(&v.create, i18n.T("pulls.pullsEmptyState.openOnGitHub"))
-				b.Icon, b.Variant, b.Size = icPullOut, ui.VariantOutline, ui.SizeSM
-				return b.Layout(gtx)
-			}),
 		)
 	})
 }
@@ -314,41 +384,64 @@ func pullGlyph(gtx C, th *ui.Theme, ic *icons.Icon, size unit.Dp, fg color.NRGBA
 	return ic.Layout(gtx, size, fg)
 }
 
-// stats is the status line:state, branches, checks, mergeability, review.
+// stats is the status line: state, branches and who opened it, then the
+// checks, mergeability and review, which Overview's facts carry instead.
 func (v *pullView) stats(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
+	items := []ui.WrapChild{
+		ui.WrapItem(func(gtx C) D { return stateStat(gtx, th, d) }),
+		ui.WrapItem(func(gtx C) D {
+			return metaGlyph(gtx, th, icPullBranch, d.HeadRefName+" → "+d.BaseRefName, th.MutedForeground)
+		}),
+		ui.WrapItem(th.Text(ui.TextXS, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": d.Author})).Muted().Layout),
+	}
+	if v.openTab(d) != tabOverview {
+		vs := v.verdicts(gtx, th, p, d)
+		for _, w := range []layout.Widget{vs.checks, vs.merge, vs.review} {
+			if w != nil {
+				items = append(items, ui.WrapItem(w))
+			}
+		}
+	}
+	return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1.5)}.Layout(gtx, items...)
+}
+
+// prVerdicts is what the pull request's checks, mergeability and review say,
+// each nil when it says nothing.
+type prVerdicts struct {
+	checks, merge, review layout.Widget
+}
+
+// verdicts is the pull request's prVerdicts: the checks and the review open
+// their tab, a conflict lists its files.
+func (v *pullView) verdicts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) prVerdicts {
 	if v.checksStat.Clicked(gtx) {
 		v.showTab(d, tabChecks)
 	}
 	if v.reviewStat.Clicked(gtx) {
 		v.showTab(d, tabConversation)
 	}
-	open, total := threadTally(p.store.conversation(p.project.Path, d.Number).val)
-	items := []ui.WrapChild{
-		ui.WrapItem(func(gtx C) D { return stateStat(gtx, th, d) }),
-		ui.WrapItem(func(gtx C) D {
-			return metaGlyph(gtx, th, icPullBranch, d.HeadRefName+" → "+d.BaseRefName, th.MutedForeground)
-		}),
-	}
+	var out prVerdicts
 	if ic, text, fg, ok := checksStat(th, d.Checks); ok {
-		items = append(items, ui.WrapItem(func(gtx C) D {
+		out.checks = func(gtx C) D {
 			return v.checksStat.Layout(gtx, func(gtx C) D { return stat(gtx, th, ic, text, fg) })
-		}))
+		}
 	}
 	if ic, text, fg, ok := mergeableStat(th, d); ok {
-		items = append(items, ui.WrapItem(func(gtx C) D {
+		out.merge = func(gtx C) D {
 			face := func(gtx C) D { return stat(gtx, th, ic, text, fg) }
 			if conflictsWithBase(d) {
 				return v.conflictsStat(gtx, th, p, d, face)
 			}
 			return face(gtx)
-		}))
+		}
 	}
+	open, total := threadTally(p.store.conversation(p.project.Path, d.Number).val)
 	if ic, text, fg, ok := reviewStat(th, d.ReviewDecision, open, total); ok {
-		items = append(items, ui.WrapItem(func(gtx C) D {
+		out.review = func(gtx C) D {
 			return v.reviewStat.Layout(gtx, func(gtx C) D { return stat(gtx, th, ic, text, fg) })
-		}))
+		}
 	}
-	return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1.5)}.Layout(gtx, items...)
+	return out
 }
 
 func stateStat(gtx C, th *ui.Theme, d backend.PRDetail) D {
@@ -465,7 +558,19 @@ func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	}
 	tabs := th.Tabs(&v.tabs, triggers...)
 	tabs.Variant = ui.TabsVariantLine
-	return tabs.Layout(gtx)
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D {
+			d := tabs.Layout(gtx)
+			d.Size.X = gtx.Constraints.Max.X
+			return d
+		}),
+		layout.Rigid(func(gtx C) D {
+			if d.Additions == 0 && d.Deletions == 0 {
+				return D{}
+			}
+			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return diffStat(gtx, th, d.Additions, d.Deletions) })
+		}),
+	)
 }
 
 func detailSkeleton(gtx C, th *ui.Theme) D {

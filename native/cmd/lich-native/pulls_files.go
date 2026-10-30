@@ -248,15 +248,13 @@ func verticalRule(gtx C, th *ui.Theme) D {
 	return D{Size: size}
 }
 
-// filesToolbar is "N of M viewed", the diff's size, and the dock's split and
-// collapse-all toggles.
+// filesToolbar is the tree's toggle, "N of M viewed", and the dock's split
+// and collapse-all toggles; the diff's size sits on the tab strip.
 func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 	files := v.files
-	viewed, added, deleted := 0, 0, 0
+	viewed := 0
 	for _, path := range files.order {
-		c := files.cards[path]
-		added, deleted = added+c.patch.Added, deleted+c.patch.Deleted
-		if files.pr.isViewed(c) {
+		if files.pr.isViewed(files.cards[path]) {
 			viewed++
 		}
 	}
@@ -272,8 +270,6 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 			layout.Rigid(func(gtx C) D { return iconAction(gtx, th, v.root, &v.tree.toggle, treeIcon, treeLabel, false) }),
 			ui.Gap(2),
 			layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.viewed", i18n.Args{"viewed": viewed, "total": len(files.order)})).Muted().Layout),
-			ui.Gap(3),
-			layout.Rigid(func(gtx C) D { return diffStat(gtx, th, added, deleted) }),
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 			layout.Rigid(func(gtx C) D { return files.layoutActions(gtx, th) }),
 		)

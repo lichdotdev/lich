@@ -21,8 +21,8 @@ import (
 
 const rowMetaHeight = 24
 
-// rowMetaWidth is a w-80 list row's content width at 1x.
-var rowMetaWidth = int(pullsListWidth) - 2*int(ui.Space(1.5)) - 2*int(ui.Space(2))
+// rowMetaWidth is the index row's columns at 1x, wide enough for all three.
+var rowMetaWidth = int(rowChecksWidth + rowVerdictWidth + rowCheckoutWidth)
 
 var rowMetaNow = time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC)
 
@@ -71,13 +71,13 @@ func requested(author string, threads backend.ThreadTally) backend.PRSummary {
 		UpdatedAt: rowMetaNow.Add(-59 * time.Minute).Format(time.RFC3339)}
 }
 
-// A long author and a checkout on a w-80 row cut the verdict, the one fact
-// on the line worth acting on; the author and the checkout give way first.
-func TestRowMetaKeepsTheVerdictWhole(t *testing.T) {
+// A long checkout beside the verdict never cuts it: the verdict is the one
+// fact on the row worth acting on, and the checkout gives way.
+func TestRowSideKeepsTheVerdictWhole(t *testing.T) {
 	th := rowMetaTheme(t)
 	whole := inkWidth(t, th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout, th.Destructive)
-	pr := requested("joao-vitorino-dos-santos_snk", backend.ThreadTally{Open: 1, Total: 1})
-	got := inkWidth(t, func(gtx C) D { return rowMeta(gtx, th, pr, "rapid-quartz", rowMetaNow) }, th.Destructive)
+	pr := requested("ana", backend.ThreadTally{Open: 1, Total: 1})
+	got := inkWidth(t, func(gtx C) D { return rowSide(gtx, th, pr, "joao-vitorino-dos-santos_snk-rapid-quartz") }, th.Destructive)
 	if got < whole {
 		t.Errorf("verdict drew %dpx of its %dpx", got, whole)
 	}
@@ -85,7 +85,7 @@ func TestRowMetaKeepsTheVerdictWhole(t *testing.T) {
 
 // GitHub keeps CHANGES_REQUESTED after every thread is resolved; the row then
 // reads as waiting on the reviewer, as the pull request's heading does.
-func TestRowMetaVerdictFollowsTheThreads(t *testing.T) {
+func TestRowVerdictFollowsTheThreads(t *testing.T) {
 	th := rowMetaTheme(t)
 	cases := []struct {
 		name    string
@@ -99,7 +99,7 @@ func TestRowMetaVerdictFollowsTheThreads(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			pr := requested("ana", c.threads)
-			meta := func(gtx C) D { return rowMeta(gtx, th, pr, "", rowMetaNow) }
+			meta := func(gtx C) D { return rowVerdict(gtx, th, pr) }
 			red, amber := inkWidth(t, meta, th.Destructive) > 0, inkWidth(t, meta, th.ToneWait) > 0
 			if red != c.red || amber == c.red {
 				t.Errorf("red %v amber %v, want red %v", red, amber, c.red)
@@ -125,11 +125,35 @@ func TestWholeOrNothingDropsWhatWouldBeCut(t *testing.T) {
 func TestRowMetaDraftLeavesAmberToTheVerdict(t *testing.T) {
 	th := rowMetaTheme(t)
 	pr := backend.PRSummary{Author: "ana", IsDraft: true, UpdatedAt: rowMetaNow.Add(-5 * time.Hour).Format(time.RFC3339)}
-	meta := func(gtx C) D { return rowMeta(gtx, th, pr, "", rowMetaNow) }
+	meta := func(gtx C) D { return rowMeta(gtx, th, pr, rowMetaNow) }
 	if amber := inkWidth(t, meta, th.ToneWait); amber > 0 {
 		t.Errorf("a draft with no verdict drew %dpx of amber", amber)
 	}
 	if muted := inkWidth(t, meta, th.MutedForeground); muted == 0 {
 		t.Error("the draft badge drew nothing")
+	}
+}
+
+func TestStepAlongHoldsAtTheEnds(t *testing.T) {
+	rows := []backend.PRSummary{{Number: 9}, {Number: 7}, {Number: 4}}
+	cases := []struct {
+		name         string
+		n, delta, to int
+	}{
+		{"down a row", 9, 1, 7},
+		{"up a row", 4, -1, 7},
+		{"held at the last", 4, 1, 4},
+		{"held at the first", 9, -1, 9},
+		{"from a row it does not show, the first", 12, 1, 9},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := stepAlong(rows, c.n, c.delta); got != c.to {
+				t.Errorf("stepAlong(%d, %+d) = %d, want %d", c.n, c.delta, got, c.to)
+			}
+		})
+	}
+	if got := stepAlong(nil, 7, 1); got != 0 {
+		t.Errorf("no rows stepped to %d", got)
 	}
 }

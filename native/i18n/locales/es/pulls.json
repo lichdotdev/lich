@@ -68,7 +68,6 @@
   },
   "pullsEmptyState": {
     "openFailed": "No se pudo abrir un pull request: {error}",
-    "noneFor": "No hay ningún pull request abierto para {branch}.",
     "none": "No hay ningún pull request abierto.",
     "openOnGitHub": "Abrir en GitHub"
   },
@@ -151,8 +150,6 @@
       "drafts": "Borradores",
       "failing": "Con fallos"
     },
-    "show": "Mostrar la lista de pull requests",
-    "hide": "Ocultar la lista de pull requests",
     "none": {
       "open": "No hay pull requests abiertos.",
       "closed": "No hay pull requests cerrados.",
@@ -248,7 +245,6 @@
     "editMessage": "{method}, editar mensaje…",
     "editMessageBypass": "{method}, editar mensaje… (omite las reglas)",
     "refresh": "Actualizar",
-    "open": "Abrir",
     "tab": {
       "overview": "Resumen",
       "commits": "Commits",
@@ -288,5 +284,16 @@
     },
     "send": "Enviar",
     "sending": "Enviando…"
+  },
+  "pullsNav": {
+    "back": "Volver a los pull requests",
+    "previous": "Pull request anterior",
+    "next": "Siguiente pull request",
+    "position": "{index} de {total}",
+    "switch": "Ir a otro pull request",
+    "more": "Más acciones",
+    "create": "Nuevo pull request",
+    "checkout": "Checkout",
+    "notCheckedOut": "Sin checkout"
   }
 }

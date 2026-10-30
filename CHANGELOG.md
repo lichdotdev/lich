@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Pulls screen opens on an index of the project's pull requests across the whole screen, and a pull request opens in its place instead of beside the list. A back button over its title returns to the index as you left it; beside it, the number opens a menu of the other pull requests, and previous and next walk the index's filter. On the Files tab only the file tree sits beside the diff, which gains the width the list took. The Overview puts the description beside a column with the reviewers, checks, mergeability and the checkout the branch sits in; the tab strip ends with the pull request's size. Open in Session and Merge stay in the header, and the hand-off, Approve, Refresh and Open on GitHub move to the ⋯ menu. On the index, j and k or the arrows move, Enter opens and / goes to the filter; on a pull request, Escape goes back and Alt with an arrow steps to the previous or next one.
+
 ## [0.83.0] - 2026-10-29
 
 ### Added
