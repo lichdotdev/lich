@@ -147,11 +147,8 @@ func (s *sidebar) renaming(id string) bool {
 // unless a checkout row above shows them, then the corner slot.
 func (s *sidebar) cardBody(gtx C, th *ui.Theme, sv *sessionView, prChip, closeClick *widget.Clickable, hovered bool) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	var chev layout.Widget
-	if sv.place.kids > 0 {
-		chev = treeChevronGlyph(th, clickable(s.mothers, sv.ID), !sv.place.folded)
-	}
-	row := append(treeLead(sv.place, chev), s.titleRow(th, sv)...)
+	sv.place.hot = hovered && sv.place.kids > 0
+	row := append(treeLead(sv.place), s.titleRow(th, sv)...)
 	if sv.place.folded {
 		row = append(row, ui.Gap(1.5))
 		row = append(row, foldedCount(th, sv.place.kids, sv.place.mark)...)
@@ -181,7 +178,13 @@ func (s *sidebar) cardLine(gtx C, th *ui.Theme, sv *sessionView, closeClick *wid
 // of a fork, a globe while its browser runs, and the label.
 func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	row := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return s.statusRing(gtx, th, sv) }),
+		layout.Rigid(func(gtx C) D {
+			if sv.place.kids == 0 {
+				return s.statusRing(gtx, th, sv)
+			}
+			// A mother's ring is her fold: it shows the chevron under the pointer.
+			return clickable(s.mothers, sv.ID).Layout(gtx, func(gtx C) D { return s.statusRing(gtx, th, sv) })
+		}),
 		ui.Gap(1.5),
 	}
 	if sv.sandbox.Confined {
@@ -285,6 +288,9 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	kind := sv.Kind
 	if sv.agent != "" {
 		kind = sv.agent
+	}
+	if sv.place.hot {
+		return centeredIcon(gtx, foldIcon(!sv.place.folded), 13, th.Foreground)
 	}
 	return centeredIcon(gtx, providerIcon(kind), 13, th.MutedForeground)
 }

@@ -177,20 +177,23 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 	if hovered {
 		fg = fade(th.MutedForeground, 1)
 	}
-	// The chevron and the folder glyph sit in the tree's columns, over the
-	// chevron and the ring of the rows below.
-	kids := treeLead(treePlace{tree: true}, func(gtx C) D { return chevron(gtx, fg, !b.collapsed) })
+	// The glyph sits in the ring's column and turns into the fold's chevron
+	// under the pointer, as a tree node does.
+	glyph, glyphColor := icMenuPin, fade(th.MutedForeground, headerTitleOpacity)
 	if b.kind == blockFolder {
-		glyph := fade(th.MutedForeground, headerTitleOpacity)
+		glyph = icGroupFolder
 		if c, ok := cardColors[b.color]; ok {
-			glyph = fade(c, 1)
+			glyphColor = fade(c, 1)
 		}
-		kids = append(kids, layout.Rigid(func(gtx C) D {
-			side := gtx.Dp(sessionTreeRingR) * 2
-			gtx.Constraints = layout.Exact(image.Pt(side, gtx.Dp(ui.Space(3))))
-			return centeredIcon(gtx, icGroupFolder, ui.Space(3), glyph)
-		}), ui.Gap(1.5))
 	}
+	if hovered {
+		glyph, glyphColor = foldIcon(!b.collapsed), fg
+	}
+	kids := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+		side := gtx.Dp(sessionTreeRingR) * 2
+		gtx.Constraints = layout.Exact(image.Pt(side, gtx.Dp(ui.Space(3))))
+		return centeredIcon(gtx, glyph, ui.Space(3), glyphColor)
+	}), ui.Gap(1.5)}
 	kids = append(kids, layout.Rigid(th.Text(text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
 	if b.kind == blockFolder {
 		count := th.Text(text2XS, strconv.Itoa(len(b.sessions))).Leading(text2XSLeading).In(fade(th.MutedForeground, headerCountOpacity)).Weight(font.Medium)

@@ -11,15 +11,18 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
-	"gioui.org/widget"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // treePlace is where a row sits in its block's tree, what its line draws
 // before the ring and the links it draws around it.
 type treePlace struct {
-	tree bool // the block is a tree: every row keeps the chevron's column
+	tree bool // the block is a tree: every row is indented by its level
+	// hot is a foldable row under the pointer: its node shows the fold's
+	// chevron in place of its glyph.
+	hot bool
 	sessionRowLinks
 	kids    int
 	folded  bool
@@ -44,14 +47,13 @@ func (r sessionRow) place(tree bool) treePlace {
 	}
 }
 
-// The tree's geometry: a level's indent, the chevron's column and the
-// ring's radius, in the order a row lays them out after its left inset.
+// The tree's geometry: a level's indent and the ring's radius, in the order
+// a row lays them out after its left inset.
 var (
-	sessionTreeIndent  = unit.Dp(16)
-	sessionTreeChevron = unit.Dp(14)
-	sessionTreeRingR   = unit.Dp(11)
-	sessionTreeElbow   = unit.Dp(5)
-	sessionTreeStroke  = unit.Dp(1.25)
+	sessionTreeIndent = unit.Dp(16)
+	sessionTreeRingR  = unit.Dp(11)
+	sessionTreeElbow  = unit.Dp(5)
+	sessionTreeStroke = unit.Dp(1.25)
 	// treeLinkAlpha is how strongly the muted foreground draws the links.
 	treeLinkAlpha float32 = 0.45
 	rowInset              = ui.Space(1.5)
@@ -59,26 +61,26 @@ var (
 
 // treeColumn is the x of the ring centre at level k.
 func treeColumn(gtx C, k int) float32 {
-	return float32(gtx.Dp(rowInset) + k*gtx.Dp(sessionTreeIndent) + gtx.Dp(sessionTreeChevron) + gtx.Dp(ui.Space(1.5)) + gtx.Dp(sessionTreeRingR))
+	return float32(gtx.Dp(rowInset) + k*gtx.Dp(sessionTreeIndent) + gtx.Dp(sessionTreeRingR))
 }
 
-// treeLead is what a row draws before its ring: the indent of its level and
-// the chevron's column, the chevron itself when the row folds.
-func treeLead(p treePlace, chev layout.Widget) []layout.FlexChild {
-	if !p.tree {
+// foldIcon is the chevron a foldable node shows in place of its glyph under
+// the pointer: down while open, right while folded.
+func foldIcon(open bool) *icons.Icon {
+	if open {
+		return icFoldOpen
+	}
+	return icFoldShut
+}
+
+// treeLead is what a row draws before its ring: the indent of its level.
+func treeLead(p treePlace) []layout.FlexChild {
+	if !p.tree || p.depth == 0 {
 		return nil
 	}
-	return []layout.FlexChild{
-		layout.Rigid(func(gtx C) D {
-			w := gtx.Dp(sessionTreeIndent)*p.depth + gtx.Dp(sessionTreeChevron)
-			gtx.Constraints = layout.Exact(image.Pt(w, gtx.Dp(sessionTreeChevron)))
-			if chev == nil {
-				return D{Size: gtx.Constraints.Min}
-			}
-			return layout.E.Layout(gtx, chev)
-		}),
-		ui.Gap(1.5),
-	}
+	return []layout.FlexChild{layout.Rigid(func(gtx C) D {
+		return D{Size: image.Pt(gtx.Dp(sessionTreeIndent)*p.depth, 0)}
+	})}
 }
 
 // treeLinks draws a row's links over size: the elbow from its parent's ring,
@@ -127,19 +129,6 @@ func withLinks(gtx C, th *ui.Theme, l sessionRowLinks, row layout.Widget) D {
 	return d
 }
 
-// treeChevronGlyph is a mother's or a checkout's fold, a button on its own.
-func treeChevronGlyph(th *ui.Theme, click *widget.Clickable, open bool) layout.Widget {
-	return func(gtx C) D {
-		return click.Layout(gtx, func(gtx C) D {
-			c := th.MutedForeground
-			if click.Hovered() {
-				c = th.Foreground
-			}
-			return chevron(gtx, c, open)
-		})
-	}
-}
-
 // foldedCount is a folded row's hidden sessions and their mark.
 func foldedCount(th *ui.Theme, kids int, mark string) []layout.FlexChild {
 	var out []layout.FlexChild
@@ -151,12 +140,16 @@ func foldedCount(th *ui.Theme, kids int, mark string) []layout.FlexChild {
 
 // checkoutLine is a checkout row's line: the branch glyph where a session's
 // ring sits, the branch, its pull request and its changes.
-func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, chev layout.Widget, trailing ...layout.FlexChild) layout.Widget {
+func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, trailing ...layout.FlexChild) layout.Widget {
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		row := treeLead(p, chev)
+		glyph := icBranch
+		if p.hot {
+			glyph = foldIcon(open)
+		}
+		row := treeLead(p)
 		row = append(row,
-			layout.Rigid(func(gtx C) D { return checkoutNode(gtx, th) }),
+			layout.Rigid(func(gtx C) D { return checkoutNode(gtx, th, glyph) }),
 			ui.Gap(1.5),
 			layout.Flexed(1, th.Text(ui.TextSM, f.label).Muted().Weight(font.Medium).Layout),
 		)
@@ -173,15 +166,15 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, chev layout.Widget
 	}
 }
 
-// checkoutNode is a checkout's node in the tree: the branch glyph in a
-// neutral ring, so a link meets it as it meets a session's ring.
-func checkoutNode(gtx C, th *ui.Theme) D {
+// checkoutNode is a checkout's node in the tree: its glyph in a neutral ring,
+// so a link meets it as it meets a session's ring.
+func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon) D {
 	side := gtx.Dp(sessionTreeRingR) * 2
 	stroke := float32(gtx.Dp(sessionTreeStroke))
 	center := f32.Pt(float32(side)/2, float32(side)/2)
 	ui.StrokeArc(gtx, center, float32(side)/2-stroke/2, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 	gtx.Constraints = layout.Exact(image.Pt(side, side))
-	return centeredIcon(gtx, icBranch, 12, th.MutedForeground)
+	return centeredIcon(gtx, glyph, 12, th.MutedForeground)
 }
 
 // checkoutTooltip is what a checkout row's line cuts: the branch in full, the
@@ -214,7 +207,7 @@ func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, f checkoutFa
 	tooltip := th.TooltipCard(s.root, tip, checkoutTooltip(th, r.path, f))
 	tooltip.Side = ui.SideRight
 	p := r.place(tree)
-	return tooltip.Layout(gtx, func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, checkoutLine(th, f, p, nil)) })
+	return tooltip.Layout(gtx, func(gtx C) D { return withLinks(gtx, th, p.sessionRowLinks, checkoutLine(th, f, p, true)) })
 }
 
 // checkoutHeader is a checkout block's header as the root row of its tree:
@@ -239,8 +232,8 @@ func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockStat
 		menu := []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: blockLaunch(b, s.launchProviders, f.act)}}
 		return append(menu, blockOptions(b, f.view.folders, f.filtering, f.act, hooks)...)
 	}
-	chev := func(gtx C) D { return chevron(gtx, th.MutedForeground, !b.collapsed) }
-	line := checkoutLine(th, facts, p, chev, count...)
+	p.hot = st.more.Hovered()
+	line := checkoutLine(th, facts, p, !b.collapsed, count...)
 	row := func(gtx C) D {
 		return th.ContextMenuLazy(s.root, &st.options, entries).Layout(gtx, func(gtx C) D {
 			return tooltip.Layout(gtx, func(gtx C) D {
