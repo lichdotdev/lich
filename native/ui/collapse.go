@@ -64,8 +64,8 @@ type presenceItem struct {
 }
 
 // Update takes the live keys at now and returns the keys to draw: live, with
-// every key that left less than PresenceExit ago put back where it was. Call
-// it once a frame, before Layout, with gtx.Now.
+// every key that left less than PresenceExit ago put back where it was, in a
+// slice the caller owns. Call it once a frame, before Layout, with gtx.Now.
 func (p *Presence) Update(now time.Time, live []string) []string {
 	if p.items == nil {
 		p.items = map[string]*presenceItem{}
@@ -93,7 +93,9 @@ func (p *Presence) Update(now time.Time, live []string) []string {
 	}
 	p.settled = true
 	p.drawn = p.withLeaving(live)
-	return p.drawn
+	// A copy: the caller may filter what it gets back, and p.drawn is what
+	// the next Update walks.
+	return slices.Clone(p.drawn)
 }
 
 // withLeaving is live with each leaving key spliced back at the slot it left.
