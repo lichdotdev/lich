@@ -248,7 +248,8 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 }
 
 // blockRow is one row in its motion: a checkout a mother's children run in,
-// or a card. Only a root's card drags; a child moves with its mother.
+// or a card. Every card drags, but a reorder only moves it among the stored
+// order: the tree is read off the origins, so a child stays under its mother.
 func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r sessionRow, tree bool, f blockFrame, dragEnded bool) D {
 	if r.kind == rowNestedCheckout {
 		return st.presence.Layout(gtx, r.key, func(gtx C) D {
@@ -257,7 +258,6 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 	}
 	sv := r.sv
 	sv.place = r.place(tree)
-	root := r.depth == 0 || (b.under != "" && r.depth == 1)
 	folders := slices.DeleteFunc(slices.Clone(f.view.folders), func(name string) bool { return name == sv.Folder })
 	face := func(gtx C) D {
 		d, a := s.card(gtx, th, &sv, sv.ID == f.active, folders)
@@ -269,7 +269,7 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 	}
 	return st.presence.Layout(gtx, sv.ID, func(gtx C) D {
 		return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D {
-			if st.presence.Leaving(sv.ID) || !root {
+			if st.presence.Leaving(sv.ID) {
 				return face(gtx)
 			}
 			return st.cards.Item(gtx, sv.ID, face, nil)

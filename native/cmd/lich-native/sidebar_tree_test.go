@@ -105,3 +105,19 @@ func TestRootsOfSurvivesACycle(t *testing.T) {
 		t.Errorf("roots = %v, want an answer for both", roots)
 	}
 }
+
+func TestFilterKeepsTheMotherOfAMatchedChild(t *testing.T) {
+	sessions := []backend.Session{
+		{ID: "mother", Label: "Sidebar pass"},
+		{ID: "other", Label: "Docs"},
+		{ID: "child", Label: "Row flake", OriginSessionID: "mother"},
+	}
+	kept, matched := filterSessions(sessions, "flake", "/repo", "", nil, func(string) sessionPhase { return "" })
+	var ids []string
+	for _, s := range kept {
+		ids = append(ids, s.ID)
+	}
+	if !matched || !slices.Equal(ids, []string{"mother", "child"}) {
+		t.Errorf("kept = %v (matched %v), want the child and the mother it hangs from", ids, matched)
+	}
+}
