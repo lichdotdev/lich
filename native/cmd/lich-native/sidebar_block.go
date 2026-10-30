@@ -26,6 +26,7 @@ type blockState struct {
 	tree     treeMotion
 	closing  closingCards
 	options  ui.MenuState
+	context  ui.MenuState // the header's right click, the …'s entries
 	more     widget.Clickable
 	rename   ui.InlineEdit
 	drawn    bool // laid out this frame, else pruned

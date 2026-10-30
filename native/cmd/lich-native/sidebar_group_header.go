@@ -115,22 +115,33 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 		gtx.Constraints.Min.Y = rowHeight
 		return title(gtx)
 	})}
-	if entries := headerEntries(b, f, s.launchProviders, blockMenuHooks{rename: func() { st.rename.Start(b.folder) }, newFolder: s.askFolderName}); entries != nil {
+	hooks := blockMenuHooks{rename: func() { st.rename.Start(b.folder) }, newFolder: s.askFolderName}
+	entries := headerEntries(b, f, s.launchProviders, hooks)
+	if entries != nil {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			return s.headerMenu(gtx, th, &st.options, &st.more, icGroupMore, i18n.T("sidebar.sessionGroupHeader.optionsFor", i18n.Args{"name": b.title}), entries)
 		}))
 	}
 	// The whole line lights under the pointer, as a row does, the … included.
-	fill := cardLayer(th, "", false, st.toggle.Hovered() || st.more.Hovered() || st.options.Opened())
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
-		func(gtx C) D {
-			return layout.Inset{Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-				gtx.Constraints.Min.Y = rowHeight
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
-			})
-		},
-	)
+	fill := cardLayer(th, "", false, st.toggle.Hovered() || st.more.Hovered() || st.options.Opened() || st.context.Opened())
+	line := func(gtx C) D {
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
+			func(gtx C) D {
+				return layout.Inset{Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+					gtx.Constraints.Min.Y = rowHeight
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+				})
+			},
+		)
+	}
+	if entries == nil {
+		return line(gtx)
+	}
+	// The right click opens the …'s entries, as on every row.
+	return th.ContextMenuLazy(s.root, &st.context, func() []ui.MenuEntry {
+		return headerEntries(b, f, s.launchProviders, hooks)
+	}).Layout(gtx, line)
 }
 
 // headerEntries is the header's …: a session opened in the block, then the

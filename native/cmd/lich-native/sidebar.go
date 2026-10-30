@@ -108,7 +108,7 @@ func (s *sidebar) holdsKeys() bool {
 		return true
 	}
 	for _, b := range s.blocks {
-		if b.rename.Active() || b.options.Opened() {
+		if b.rename.Active() || b.options.Opened() || b.context.Opened() {
 			return true
 		}
 	}
