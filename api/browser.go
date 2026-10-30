@@ -34,6 +34,10 @@ var (
 	BrowserAttach  = define[BrowserViewOptions, BrowserHandle]("browser.Attach")
 	BrowserDetach  = define[SessionIDOptions, None]("browser.Detach")
 	BrowserResize  = define[BrowserViewOptions, None]("browser.Resize")
+	// BrowserKeep answers BrowserState.Idle with keep: the browser stays and
+	// is asked about again after another idle window. browser.Close answers
+	// it with close.
+	BrowserKeep = define[SessionIDOptions, None]("browser.Keep")
 	// BrowserDefaultView is the window's size, which a page no pane shows
 	// lays out at.
 	BrowserDefaultView = define[BrowserDefaultViewOptions, None]("browser.DefaultView")
@@ -110,6 +114,10 @@ type BrowserState struct {
 	Dialog *BrowserDialog `json:"dialog,omitempty"`
 	// Tabs are the browser's tabs in the order the pane shows them.
 	Tabs []BrowserTab `json:"tabs,omitempty"`
+	// Idle is the reaper asking whether to close it: headless, no pane shows
+	// it, and nobody used it for the idle window. It stays until browser.Close,
+	// browser.Keep or a use answers it; the browser stays open meanwhile.
+	Idle bool `json:"idle,omitempty"`
 }
 
 // BrowserTab is one tab of a session's browser. ID is Chrome's own for it;

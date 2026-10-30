@@ -13,7 +13,6 @@ var errNoBrowser = fmt.Errorf("no browser for this session — open one first")
 func (s *Service) live(id string) (*session, error) {
 	s.mu.Lock()
 	defer s.unlock()
-	s.reapLocked()
 	sess := s.lookupLocked(id)
 	if sess == nil {
 		return nil, errNoBrowser
@@ -21,12 +20,29 @@ func (s *Service) live(id string) (*session, error) {
 	return sess, nil
 }
 
+// touch marks sess used now, which withdraws the reaper's question about it.
 func (s *Service) touch(sess *session) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.byID[sess.id] == sess {
-		sess.lastUsed = s.now()
+	registered := s.byID[sess.id] == sess
+	withdrawn := registered && sess.asked
+	if registered {
+		sess.lastUsed, sess.asked = s.now(), false
 	}
+	s.mu.Unlock()
+	if withdrawn {
+		s.emitState(sess, true)
+	}
+}
+
+// Keep answers the reaper's question about owner's browser with keep: it
+// stays, and is asked about again once it sits idle another idle window.
+func (s *Service) Keep(owner string) error {
+	sess, err := s.live(owner)
+	if err != nil {
+		return err
+	}
+	s.touch(sess)
+	return nil
 }
 
 // drop takes out a browser a call failed on, if its Chrome is gone. One that
@@ -46,15 +62,14 @@ func (s *Service) drop(sess *session) {
 
 func (s *Service) remember(sess *session, url, title string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.byID[sess.id] != sess {
-		return
+	if s.byID[sess.id] == sess {
+		if url != "" {
+			sess.url = url
+		}
+		sess.title = title
 	}
-	if url != "" {
-		sess.url = url
-	}
-	sess.title = title
-	sess.lastUsed = s.now()
+	s.mu.Unlock()
+	s.touch(sess)
 }
 
 // Info returns the page the agent is looking at. Never includes form values.

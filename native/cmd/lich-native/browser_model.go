@@ -81,6 +81,7 @@ func (m *model) hydrateBrowsers(ctx context.Context) error {
 	for _, st := range running {
 		m.browsers.states[st.Owner] = st
 	}
+	idle := m.browserIdle
 	pruned := false
 	for _, t := range append([]layoutTab(nil), m.layouts.tabs...) {
 		if owner, ok := t.browserOf(); ok && !m.browserShowableLocked(owner) {
@@ -90,6 +91,11 @@ func (m *model) hydrateBrowsers(ctx context.Context) error {
 	m.mu.Unlock()
 	if pruned {
 		m.saveLayouts()
+	}
+	for _, st := range running {
+		if st.Idle && idle != nil {
+			idle(st)
+		}
 	}
 	m.invalidate()
 	return nil
@@ -111,11 +117,13 @@ func (m *model) browserState(session string) (api.BrowserState, bool) {
 }
 
 // applyBrowserState takes a browser-state event: a page that can no longer
-// be drawn leaves its tab, and a browser the agent just started is offered
-// to the person (browserOpened).
+// be drawn leaves its tab, a browser the agent just started is offered to
+// the person (browserOpened), and the question about an idle one goes up or
+// down (browserIdle).
 func (m *model) applyBrowserState(ctx context.Context, st api.BrowserState) {
 	m.mu.Lock()
-	_, known := m.browsers.states[st.Owner]
+	prev, known := m.browsers.states[st.Owner]
+	idle := m.browserIdle
 	if st.Open {
 		m.browsers.states[st.Owner] = st
 	} else {
@@ -140,6 +148,9 @@ func (m *model) applyBrowserState(ctx context.Context, st api.BrowserState) {
 	}
 	if st.Open && st.ByAgent && !known && m.browserOpened != nil {
 		m.browserOpened(st)
+	}
+	if prev.Idle != (st.Open && st.Idle) && idle != nil {
+		idle(st)
 	}
 }
 

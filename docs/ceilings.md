@@ -1009,7 +1009,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lost on that move. Closing the card, or the session's process ending, closes the browser; Continue in,
   which ends the process and spawns it again in the same card, keeps it. Closing that
   window does not close the session. A headless browser no pane shows and no one used for five minutes is
-  closed; one a pane shows, or a window, never is. It loads only http, https and about:blank. Page info never
+  only asked about, in a toast, and closes only on Close: an unanswered one holds its Chromium until the
+  person answers or closes the card, and with the window closed nobody is asked; one a pane shows, or a
+  window, never is. It loads only http, https and about:blank. Page info never
   includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
   not a sandbox: the page runs as the user, in an ephemeral profile. Chromium needs its own sandbox, and on
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,

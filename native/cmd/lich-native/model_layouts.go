@@ -425,6 +425,17 @@ func (m *model) sessionLabel(id string) string {
 	return ""
 }
 
+// sessionPlace is session id's label and its project's name, "" for a
+// session no open project holds.
+func (m *model) sessionPlace(id string) (label, project string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if p, i := m.sessionAt(id); p != nil {
+		return p.Sessions[i].Label, p.Name
+	}
+	return "", ""
+}
+
 // renameLayout names layout id name, reporting false when no layout has
 // that id.
 func (m *model) renameLayout(id, name string) bool {

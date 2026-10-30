@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
 var (
-	flagToasts         = flag.String("toasts", "", "comma-separated toasts to raise at start, the last in front, for -shot: default, success, info, warning, error, action, attention, undo, update, progress")
+	flagToasts         = flag.String("toasts", "", "comma-separated toasts to raise at start, the last in front, for -shot: default, success, info, warning, error, action, attention, undo, update, progress, idle")
 	flagToastsExpanded = flag.Bool("toasts-expanded", false, "draw the toast stack expanded, as a hover would, for -shot")
 )
 
@@ -28,7 +29,8 @@ func failure(format string, args ...any) ui.Toast {
 // demoToasts are what -toasts raises, by name: one of each variant; action,
 // an unclean-exit warning; attention and undo, the
 // needs-your-input and closed-session toasts; update and progress, the app
-// update's prompt and its download. A function, so the texts that come from
+// update's prompt and its download; idle, the question about a session
+// browser nobody used. A function, so the texts that come from
 // the catalog are read in the language of the moment.
 func demoToasts() map[string]ui.Toast {
 	return map[string]ui.Toast{
@@ -43,6 +45,7 @@ func demoToasts() map[string]ui.Toast {
 		"undo": {Title: "Closed Claude 3", Action: &ui.ToastButton{Label: "Undo"}},
 		"update": {Title: i18n.T("shell.appUpdateGate.available", i18n.Args{"version": "1.4.0"}), Cancel: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.later")},
 			Secondary: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.viewRelease")}, Action: &ui.ToastButton{Label: i18n.T("shell.appUpdateGate.updateAndInstall")}},
+		"idle":     idleBrowserToast(api.BrowserState{Owner: "s", URL: "http://localhost:5173/settings"}, "Claude 3", "skipo", func() {}, func() {}),
 		"progress": updateProgressToast("1.4.0", &backend.AppUpdateProgress{Phase: backend.UpdatePhaseDownload, Received: 12_300_000, Total: 41_000_000}),
 	}
 }

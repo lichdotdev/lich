@@ -36,7 +36,11 @@ clicked.
 `browser-state` tells the window when a browser starts, closes, moves to a
 window or loads another page; `browser.Running` is what a window reads when
 it attaches. A browser no pane shows and no one used for five minutes is
-closed; one a pane shows, or a window, is not. The tab takes no other
+never closed on its own: its state turns `idle`, the window asks with a toast,
+and Close (`browser.Close`) or Keep open (`browser.Keep`, five more minutes)
+answers. Unanswered, it stays open and is not asked about again; any use
+withdraws the question. One a pane shows, or a window, is never asked about.
+The tab takes no other
 session, and closing its page closes the browser.
 
 ## What the agent may load

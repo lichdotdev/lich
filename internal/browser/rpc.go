@@ -171,6 +171,11 @@ func (s *Service) CloseOne(_ context.Context, opts api.SessionIDOptions) (api.No
 	return api.None{}, s.Close(opts.ID)
 }
 
+// KeepIdle keeps this session's idle browser for another idle window.
+func (s *Service) KeepIdle(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	return api.None{}, s.Keep(opts.ID)
+}
+
 func handleAPI(h Handle) api.BrowserHandle {
 	return api.BrowserHandle{ID: h.ID, URL: h.URL, Title: h.Title, Owner: h.Owner, Headed: h.Headed}
 }

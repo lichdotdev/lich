@@ -75,6 +75,9 @@ type Toast struct {
 	// Duration is how long the toast stays while the pointer is away; 0 is
 	// sonner's default.
 	Duration time.Duration
+	// OnDismiss runs when the person swipes the toast away, sonner's
+	// onDismiss: not on its buttons, its timer or Dismiss.
+	OnDismiss func()
 }
 
 // sonner 2.0.7's constants (dist/index.mjs).
