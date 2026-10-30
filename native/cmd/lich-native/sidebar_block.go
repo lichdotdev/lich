@@ -1,12 +1,15 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"slices"
 	"time"
 
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -332,14 +335,19 @@ const folderTrayAlpha = 0.45
 
 // folderTray lays a folder's header and rows on a tray, so where the folder
 // ends shows against the checkouts that follow it. A folder painted a color
-// wears it on the whole tray, as its cards wore it at rest.
+// wears it on the whole tray, as its cards wore it at rest. The rows run to
+// the tray's edges, clipped to its corners, so a lit row fills it to the end.
 func folderTray(gtx C, th *ui.Theme, tint string, w layout.Widget) D {
 	tray := th.Over(ui.Alpha(th.Accent, folderTrayAlpha))
 	if c, ok := cardColors[tint]; ok {
 		tray = th.Over(ui.MixOKLab(color.NRGBA{}, c, tintRest))
 	}
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, tray, ui.RadiusLG) },
-		func(gtx C) D { return layout.Inset{Bottom: ui.Space(0.5)}.Layout(gtx, w) },
-	)
+	rec := op.Record(gtx.Ops)
+	d := w(gtx)
+	content := rec.Stop()
+	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, gtx.Dp(ui.RadiusLG))
+	paint.FillShape(gtx.Ops, tray, shape.Op(gtx.Ops))
+	defer shape.Push(gtx.Ops).Pop()
+	content.Add(gtx.Ops)
+	return d
 }
