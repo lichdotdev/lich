@@ -75,8 +75,10 @@ type pullsScreen struct {
 	branch   string // the checkout's branch, which the index's New names
 	state    pullsState
 	filter   ui.TabsState
-	// cursor is the index row the keyboard is on, by number.
+	// cursor is the index row the keyboard is on, by number; it is drawn
+	// only once the keyboard moved it, so a mouse user sees no selection.
 	cursor int
+	keyed  bool
 
 	query      widget.Editor
 	clearQuery widget.Clickable
@@ -176,6 +178,7 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	p.keys(gtx, rows.val)
 	for n, click := range p.rowClicks {
 		if p.selected == 0 && click.Clicked(gtx) {
+			p.keyed = false
 			p.openPR(n)
 		}
 	}

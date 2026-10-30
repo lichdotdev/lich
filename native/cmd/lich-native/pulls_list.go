@@ -191,7 +191,7 @@ var (
 
 // row is one pull request across the index: "#N title" over who, when and
 // its branch, then its checks, verdict and checkout in columns. The cursor's
-// row is filled.
+// row is filled once the keyboard moved it.
 func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	click := p.rowClicks[pr.Number]
 	if click == nil {
@@ -203,7 +203,7 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 	return click.Layout(gtx, func(gtx C) D {
 		bg := th.Surface
 		switch {
-		case pr.Number == p.cursor:
+		case pr.Number == p.cursor && p.keyed:
 			bg = th.Accent
 		case click.Hovered():
 			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))

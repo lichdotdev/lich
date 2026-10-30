@@ -223,9 +223,12 @@ func TestPullsKeysWalkTheIndexAndEscapeGoesBack(t *testing.T) {
 		r.router.Queue(key.Event{Name: name, State: key.Press})
 		r.settle(t)
 	}
+	if u.pulls.keyed {
+		t.Fatal("the cursor's row is filled before any key moved it")
+	}
 	press("J")
-	if u.pulls.cursor != 8 {
-		t.Fatalf("j left the cursor on #%d", u.pulls.cursor)
+	if u.pulls.cursor != 8 || !u.pulls.keyed {
+		t.Fatalf("j left the cursor on #%d, keyed %v", u.pulls.cursor, u.pulls.keyed)
 	}
 	press(key.NameReturn)
 	if u.pulls.selected != 8 {

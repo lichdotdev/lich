@@ -70,7 +70,7 @@ func (p *pullsScreen) key(gtx C, name key.Name, rows []backend.PRSummary) {
 
 // moveCursor moves the index's cursor delta rows and keeps its row in view.
 func (p *pullsScreen) moveCursor(rows []backend.PRSummary, delta int) {
-	p.cursor = stepAlong(rows, p.cursor, delta)
+	p.cursor, p.keyed = stepAlong(rows, p.cursor, delta), true
 	i := p.cursorAt(rows)
 	if pos := p.rows.Position; i >= 0 && (i <= pos.First || i >= pos.First+pos.Count-1) {
 		p.rows.ScrollTo(max(i-delta, 0))
