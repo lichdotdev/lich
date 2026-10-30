@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/font/gofont"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -90,5 +91,61 @@ func TestGFMTablesBecomeTableBlocks(t *testing.T) {
 	}
 	if blocks[3].table != nil || !strings.Contains(proseText(blocks[3]), "| not | a table |") {
 		t.Errorf("fenced code became %+v, want its lines as prose", blocks[3])
+	}
+}
+
+func TestMarkdownReadingColorsAndHierarchy(t *testing.T) {
+	for _, palette := range []ui.Palette{ui.Dark, ui.Light} {
+		th := markdownTheme()
+		th.Palette = palette
+		blocks := renderBlocks(th, "## Heading\n\nBody with [a link](https://example.com).\n\n| Header |\n|---|\n| Cell |")
+		heading := blocks[0].prose.spans[0]
+		if heading.Color != th.Foreground || heading.Font.Weight != font.Bold || heading.Size <= markdownBodySize {
+			t.Errorf("heading style = %+v, want prominent foreground heading", heading)
+		}
+		for _, span := range blocks[1].prose.spans {
+			want := markdownProseColor(th)
+			if span.Interactive {
+				want = th.TonePass
+			}
+			if span.Color != want {
+				t.Errorf("span %q color = %v, want %v", span.Content, span.Color, want)
+			}
+		}
+		if got := blocks[2].table.rows[1][0].spans[0].Color; got != markdownProseColor(th) {
+			t.Errorf("table cell color = %v, want %v", got, markdownProseColor(th))
+		}
+	}
+}
+
+func TestMarkdownUpdatesWhenInterfaceAndEditorFontsChange(t *testing.T) {
+	th := markdownTheme()
+	th.Sans, th.Mono = "Interface A", "Editor A"
+	cache := markdownCache{}
+	src := "## Heading\n\n- Text `code` after\n\n| Header |\n|---|\n| `cell` |"
+	cache.text(th, "body", src).heights[0] = 42
+	th.Sans, th.Mono = "Interface B", "Editor B"
+	updated := cache.text(th, "body", src)
+	if updated.heights[0] != 0 || updated.blocks[0].prose.spans[0].Font.Typeface != th.Sans {
+		t.Fatal("heading retained the old interface font or its measurements")
+	}
+	item := updated.blocks[1].list.items[0].blocks[0].prose
+	for i, span := range item.spans {
+		want := th.Sans
+		if item.code[i] {
+			want = th.Mono
+		}
+		if span.Font.Typeface != want {
+			t.Errorf("span %q uses %s, want %s", span.Content, span.Font.Typeface, want)
+		}
+	}
+	cell := updated.blocks[2].table.rows[1][0]
+	if cell.spans[0].Font.Typeface != th.Mono {
+		t.Errorf("table code uses %s, want %s", cell.spans[0].Font.Typeface, th.Mono)
+	}
+	updated.heights[0] = 42
+	th.Shaper = text.NewShaper(text.WithCollection(gofont.Collection()))
+	if cache.text(th, "body", src).heights[0] != 0 {
+		t.Fatal("shaper change retained the old measurements")
 	}
 }

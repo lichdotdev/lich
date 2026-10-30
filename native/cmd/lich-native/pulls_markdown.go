@@ -5,37 +5,50 @@ import (
 	"image/color"
 	"math"
 
+	"gioui.org/font"
 	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/unit"
 	"gioui.org/x/richtext"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// markdownH1 is mdProse's h1 text-lg.
-const markdownH1 = unit.Sp(18)
+const (
+	markdownBodySize        = unit.Sp(15)
+	markdownH1              = unit.Sp(20)
+	markdownH2              = unit.Sp(19)
+	markdownLineHeightScale = 1.5
+)
+
+func markdownProseColor(th *ui.Theme) color.NRGBA {
+	return ui.MixOKLab(th.Foreground, th.MutedForeground, 0.35)
+}
 
 // markdownText is one rendered Markdown body: its blocks, parsed once per
 // text and theme, each keeping the link state it is laid out with.
 type markdownText struct {
 	src    string
-	fg     [2]color.NRGBA
+	fg     [3]color.NRGBA
+	fonts  [2]font.Typeface
+	shaper *text.Shaper
 	blocks []markdownBlock
 	// heights is each block's height as last laid out, 0 for one never laid
 	// out.
 	heights []int
 }
 
-// markdownBlock is one top-level node: prose, or a GFM table, which flat
-// richtext has no layout for.
+// markdownBlock is prose, a GFM table, or a list with individually laid-out items.
 type markdownBlock struct {
 	prose *markdownCell
 	table *markdownTable
+	list  *markdownList
 }
 
 // markdownCell is rendered Markdown and the link state it is laid out with.
 type markdownCell struct {
 	spans []richtext.SpanStyle
+	code  []bool
 	state richtext.InteractiveText
 }
 
@@ -43,8 +56,8 @@ type markdownCell struct {
 // a frame does not parse the same text again and a link's hover survives.
 type markdownCache map[string]*markdownText
 
-// markdownBlockGap is the room between blocks, mdProse's my-3.
-const markdownBlockGap = 3
+// markdownBlockGap is the room between blocks.
+const markdownBlockGap = 4
 
 // markdownWindow is the stretch of a body, in its own pixels, a frame can
 // show. A block outside it is not laid out and keeps the height it last had.
@@ -59,9 +72,7 @@ func viewportWindow(top, viewport int) markdownWindow {
 	return markdownWindow{top: top - viewport, bottom: top + 2*viewport}
 }
 
-// layout draws src as Markdown, mdProse's text-sm muted body with the links
-// in the foreground (h1 text-lg, h2 text-base, the rest text-sm) and its
-// blocks my-3 apart; a link clicked lands in open.
+// layout draws src as Markdown; a link clicked lands in open.
 func (m markdownCache) layout(gtx C, th *ui.Theme, key, src string, open func(url string)) D {
 	return m.layoutWindow(gtx, th, key, src, open, markdownWhole)
 }
@@ -95,17 +106,17 @@ func (m markdownCache) layoutWindow(gtx C, th *ui.Theme, key, src string, open f
 	return D{Size: image.Pt(width, y)}
 }
 
-// text is the cache's entry for key, parsed again when src or the theme's
-// colors changed.
+// text is the cache's entry for key, parsed again when src or the theme changes.
 func (m markdownCache) text(th *ui.Theme, key, src string) *markdownText {
 	t, ok := m[key]
 	if !ok {
 		t = new(markdownText)
 		m[key] = t
 	}
-	fg := [2]color.NRGBA{th.MutedForeground, th.Foreground}
-	if t.src != src || t.fg != fg || t.blocks == nil {
-		t.src, t.fg, t.blocks = src, fg, renderBlocks(th, src)
+	fg := [3]color.NRGBA{markdownProseColor(th), th.Foreground, th.TonePass}
+	fonts := [2]font.Typeface{th.Sans, th.Mono}
+	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil {
+		t.src, t.fg, t.fonts, t.shaper, t.blocks = src, fg, fonts, th.Shaper, renderBlocks(th, src)
 		t.heights = make([]int, len(t.blocks))
 	}
 	return t
@@ -121,7 +132,7 @@ func (t *markdownText) estimate(gtx C) int {
 		}
 	}
 	if measured == 0 {
-		return 2 * gtx.Sp(ui.TextSM)
+		return 2 * gtx.Sp(markdownBodySize)
 	}
 	return sum / measured
 }
@@ -129,6 +140,9 @@ func (t *markdownText) estimate(gtx C) int {
 func (b markdownBlock) layout(gtx C, th *ui.Theme, open func(url string)) D {
 	if b.table != nil {
 		return b.table.layout(gtx, th, open)
+	}
+	if b.list != nil {
+		return b.list.layout(gtx, th, open)
 	}
 	return b.prose.layout(gtx, th, open)
 }
@@ -143,5 +157,8 @@ func (c *markdownCell) layout(gtx C, th *ui.Theme, open func(url string)) D {
 			open(url)
 		}
 	}
-	return richtext.Text(&c.state, th.Shaper, c.spans...).Layout(gtx)
+	style := richtext.Text(&c.state, th.Shaper, c.spans...)
+	style.LineHeightScale = markdownLineHeightScale
+	c.codeBackgrounds(gtx, th)
+	return style.Layout(gtx)
 }
