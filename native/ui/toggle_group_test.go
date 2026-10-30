@@ -49,7 +49,7 @@ func TestToggleGroupTrackBorderIsBorderOverThePage(t *testing.T) {
 	group := testTheme().ToggleGroup(new(widget.Enum), toggleGroupItems...)
 	size := layoutAt(group.Layout, 0, 500).Size
 	img := toggleRender(t, size, time.Time{}, group.Layout)
-	if want := (color.NRGBA{R: 33, G: 33, B: 35, A: 255}); !toggleIs(img, image.Pt(size.X/2, 0), want) {
+	if want := (color.NRGBA{R: 40, G: 40, B: 42, A: 255}); !toggleIs(img, image.Pt(size.X/2, 0), want) {
 		t.Errorf("top edge %v, want border over the page %v", img.RGBAAt(size.X/2, 0), want)
 	}
 }

@@ -52,12 +52,12 @@ func labelInk(t *testing.T, l FormLabelStyle) color.RGBA {
 	return ink
 }
 
-// opacity-50 over the page: foreground (#fafafa) halfway to #09090b.
+// opacity-50 over the page: foreground (#fafafa) halfway to #101012.
 func TestLabelDisabledIsHalfOpacity(t *testing.T) {
 	th := testTheme()
 	on, off := th.Label("Subject"), th.Label("Subject")
 	off.Disabled = true
-	wantOn, wantOff := color.RGBA{R: 250, G: 250, B: 250, A: 255}, color.RGBA{R: 130, G: 130, B: 131, A: 255}
+	wantOn, wantOff := color.RGBA{R: 250, G: 250, B: 250, A: 255}, color.RGBA{R: 133, G: 133, B: 134, A: 255}
 	within := func(a, b color.RGBA) bool {
 		d := func(x, y uint8) bool { return int(x)-int(y) <= 2 && int(y)-int(x) <= 2 }
 		return d(a.R, b.R) && d(a.G, b.G) && d(a.B, b.B) && a.A == b.A

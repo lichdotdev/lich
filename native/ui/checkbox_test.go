@@ -81,9 +81,8 @@ func TestCheckboxCheckedFillsWithPrimary(t *testing.T) {
 	if img := draw(true); !toggleIs(img, inside, th.Primary) {
 		t.Errorf("checked: pixel %v, want primary %v", img.RGBAAt(inside.X, inside.Y), th.Primary)
 	}
-	// input/30 (white at 15% x 30%) over the page, composited in sRGB as the
-	// browser does: #09090b + 4.5% of the way to white.
-	if img, want := draw(false), (color.NRGBA{R: 20, G: 20, B: 22, A: 255}); !toggleIs(img, inside, want) {
+	// input/30 (white at 15% x 30%) over #101012, composited in sRGB.
+	if img, want := draw(false), (color.NRGBA{R: 26, G: 26, B: 28, A: 255}); !toggleIs(img, inside, want) {
 		t.Errorf("unchecked: pixel %v, want input/30 over the page %v", img.RGBAAt(inside.X, inside.Y), want)
 	}
 }
@@ -95,7 +94,7 @@ func TestCheckboxDisabledFadesOntoThePage(t *testing.T) {
 	cb := th.Checkbox(&widget.Bool{Value: true})
 	cb.Disabled = true
 	img := toggleRender(t, image.Pt(16, 16), time.Time{}, cb.Layout)
-	if want := (color.NRGBA{R: 119, G: 119, B: 121, A: 255}); !toggleIs(img, image.Pt(3, 13), want) {
+	if want := (color.NRGBA{R: 122, G: 122, B: 124, A: 255}); !toggleIs(img, image.Pt(3, 13), want) {
 		t.Errorf("disabled checked: pixel %v, want primary at 50%% over the page %v", img.RGBAAt(3, 13), want)
 	}
 }

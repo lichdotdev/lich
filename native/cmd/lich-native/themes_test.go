@@ -66,8 +66,20 @@ func TestTerminalColorsFromTheTemplate(t *testing.T) {
 		t.Errorf("background %v cursor %v red %v", c.Background, c.Cursor, c.ANSI[1])
 	}
 	dark, _ := terminalOf(bundledTheme(t, themeDark))
-	if dark.Cursor.A != 0 || dark.ANSI[1].A != 0 {
-		t.Errorf("a theme naming no cursor or ANSI colors set some: %+v", dark)
+	wantANSI := [16]color.NRGBA{
+		rgb(0x151515), rgb(0xff646d), rgb(0x00cf92), rgb(0xffad33),
+		rgb(0x65adff), rgb(0xc992ff), rgb(0x50d6df), rgb(0xe7e7ec),
+		rgb(0x92929e), rgb(0xff8990), rgb(0x54e4b3), rgb(0xffc45f),
+		rgb(0x94c5ff), rgb(0xddb7ff), rgb(0x83e8ed), rgb(0xffffff),
+	}
+	if dark.Cursor.A != 0 {
+		t.Errorf("Dark cursor = %v, want libghostty's default", dark.Cursor)
+	}
+	if dark.Background != rgb(0x101012) || dark.Foreground != rgb(0xf1f1f4) {
+		t.Errorf("Dark terminal foreground/background = %v/%v", dark.Foreground, dark.Background)
+	}
+	if dark.ANSI != wantANSI {
+		t.Errorf("Dark ANSI palette = %v, want %v", dark.ANSI, wantANSI)
 	}
 }
 
@@ -268,19 +280,45 @@ func resolved(h *godemirror.HighlightStyle) map[*tags.Tag]godemirror.TagStyle {
 	return out
 }
 
-// The bundled themes write godemirror's own palettes out tag by tag, so the
-// code views look as they did before themes carried syntax.
-func TestBundledThemesHighlightAsGodemirrorsDefaults(t *testing.T) {
-	for id, want := range map[string]godemirror.Theme{themeLight: godemirror.LightTheme, themeDark: godemirror.DarkTheme} {
+// Dark substitui as cores de sintaxe do Godemirror e mantém os outros estilos padrão.
+func TestBundledThemesHighlightAsExpected(t *testing.T) {
+	for id, baseline := range map[string]godemirror.Theme{themeLight: godemirror.LightTheme, themeDark: godemirror.DarkTheme} {
 		e, err := readTheme(bundledTheme(t, id))
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, exp := resolved(e.code.Highlight), resolved(want.Highlight)
-		if len(got) != len(exp) {
-			t.Fatalf("%s: %d tags styled, godemirror styles %d", id, len(got), len(exp))
+		want := resolved(baseline.Highlight)
+		if id == themeDark {
+			for name, wantColor := range map[string]color.NRGBA{
+				"keyword": rgb(0xc992ff), "string": rgb(0x00cf92), "regexp": rgb(0x00cf92),
+				"escape": rgb(0x00cf92), "special(string)": rgb(0x00cf92),
+				"comment": rgb(0x92929e), "processingInstruction": rgb(0x92929e),
+				"literal": rgb(0xffad33), "number": rgb(0xffad33), "bool": rgb(0xffad33),
+				"null": rgb(0xffad33), "atom": rgb(0xffad33),
+				"typeName": rgb(0x50d6df), "className": rgb(0x50d6df),
+				"namespace": rgb(0x50d6df), "standard(variableName)": rgb(0x50d6df),
+				"propertyName": rgb(0x65adff), "tagName": rgb(0x65adff),
+				"function(variableName)": rgb(0x65adff),
+				"punctuation":            rgb(0x92929e), "operator": rgb(0x92929e),
+				"operatorKeyword": rgb(0x92929e), "invalid": rgb(0xff646d),
+			} {
+				tag, err := tags.Parse(name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				style, ok := want[tag]
+				if !ok {
+					t.Fatalf("Dark syntax tag %q has no default style", name)
+				}
+				style.Color = wantColor
+				want[tag] = style
+			}
 		}
-		for tag, style := range exp {
+		got := resolved(e.code.Highlight)
+		if len(got) != len(want) {
+			t.Fatalf("%s: %d tags styled, want %d", id, len(got), len(want))
+		}
+		for tag, style := range want {
 			if !reflect.DeepEqual(got[tag], style) {
 				t.Errorf("%s: %s = %+v, want %+v", id, tag, got[tag], style)
 			}
