@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/page"
 	"github.com/lichdotdev/lich/api"
 )
 
@@ -241,6 +242,8 @@ func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), 
 	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError, p.onDialog = onFrame, onInfo, onDownload, onConsoleError, onDialog
 	p.onTabs = onTabs
 }
+
+func (p *fakePage) OnFileChooser(func(page.FileChooserOpenedMode) ([]string, error)) {}
 
 // NewTab, SelectTab and CloseTab record the tab action and fail with
 // tabErr.

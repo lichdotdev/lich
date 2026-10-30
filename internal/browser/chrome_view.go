@@ -31,6 +31,7 @@ type listeners struct {
 	onConsoleError func(text string)
 	onDialog       func(*api.BrowserDialog)
 	onTabs         func([]api.BrowserTab)
+	onFileChooser  func(page.FileChooserOpenedMode) ([]string, error)
 }
 
 func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
@@ -46,9 +47,29 @@ func (p *chromePage) Listen(onFrame func(data string), onInfo func(url, title st
 // listenTab hands on the events of t while it is the front tab, and its
 // dialogs from behind too.
 func (p *chromePage) listenTab(t *tab) {
+	// started is the URL of the tab's last navigation, the one a beforeunload
+	// that opens next holds.
+	var started string
 	chromedp.ListenTarget(t.ctx, func(ev any) {
 		switch e := ev.(type) {
+		case *page.EventFrameStartedNavigating:
+			if string(e.FrameID) == string(t.id) {
+				started = e.URL
+				p.leaveStarted(t, e.NavigationType)
+			}
+		case *page.EventFrameNavigated:
+			if e.Frame.ParentID == "" {
+				p.leaveLanded(t)
+			}
 		case *page.EventJavascriptDialogOpening:
+			held := ""
+			if e.Type == page.DialogTypeBeforeunload {
+				if p.reloadAsks(t) {
+					return
+				}
+				held = started
+			}
+			p.holdLeave(t, held)
 			p.tabs.setDialog(t)
 			// The service holds the dialog before a call the gate releases
 			// asks it which one.
@@ -63,6 +84,11 @@ func (p *chromePage) listenTab(t *tab) {
 				go p.layOut(*v)
 			}
 			p.dialogShown(nil)
+			return
+		case *page.EventFileChooserOpened:
+			// The person picks for as long as they like, and every event of
+			// the tab waits behind this listener.
+			go p.chooseFiles(t, e)
 			return
 		}
 		if p.tabs.frontTab() == t {

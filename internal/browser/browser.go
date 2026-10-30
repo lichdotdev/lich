@@ -70,6 +70,9 @@ type Service struct {
 	// isLocal and local are SetLocal's.
 	isLocal func(raw string) bool
 	local   func(owner, raw string) (string, error)
+	// pickFile and pickFiles are SetPicker's.
+	pickFile  func(title string) (string, error)
+	pickFiles func(title string) ([]string, error)
 }
 
 type session struct {
@@ -286,6 +289,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 		id: newID(), owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
 		byAgent: spec.byAgent, page: page, lastUsed: s.now(),
 	}
+	page.OnFileChooser(s.fileSink(sess))
 	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess), s.tabsSink(sess))
 	view := s.unwatchedView()
 	if err := runPage(func(ctx context.Context) error {

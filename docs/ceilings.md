@@ -1065,13 +1065,24 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   stood, not as the dialog's answer left it. A dialog the page opens on a timer interrupts whichever call is
   running. Accepting a `beforeunload` less than a second after it opened is held to that second: accepted sooner,
   Chrome aborts the navigation it held and reloads the page, which asks again (3 of 3 at 300 ms, 3 of 6 at 400 ms,
-  none of 30 from 500 ms; Chrome for Testing 155 and Helium 0.19.2.1). The agent hears of a dialog the person
+  none of 30 from 500 ms; Chrome for Testing 155 and Helium 0.19.2.1). That bound grows with the machine's load
+  (2 to 3 s with Chromium held to 30% of a core), so a reload after an accepted `beforeunload` is taken for an
+  abort: lich accepts the reload's own `beforeunload` unseen and loads the held URL again once the reload lands,
+  up to three times, and the agent's answer waits up to 15 seconds for it. A held navigation that a redirect
+  would have sent elsewhere is taken up at the URL it started with. The agent hears of a dialog the person
   answered, at most twenty between two page answers, but not of one the agent itself answered. A held page cannot lay
   out, so a pane opened or resized meanwhile shows it at the size it had, and lays it out at the pane's once the
   dialog closes; a screenshot fails until then. On Chrome 153 and older, which answers a screencast's start and
   stop only once the dialog closes, a pane resized while one is open keeps its last frame until it is answered
   (Chrome 151 on the macos-15-intel runner, measured; 154 on answers at once).
   A window opened with Open in a window was not tried with a dialog.
+
+- **A file input in a session's page opens the OS file chooser only while a pane shows the page**
+  (`internal/browser/files.go`, `chrome_files.go`): headless Chrome has no chooser of its own, so lich intercepts
+  it and opens the one the attach button uses, one file or several as the input asks. An agent's click on a file
+  input in a page nobody is looking at leaves the input empty, and no tool fills one; an agent's click while a
+  pane shows the page opens the chooser in front of the person. The input's `accept` filter is not passed on: the
+  chooser lists every file and the page refuses a type it does not take.
 
 ## Languages
 

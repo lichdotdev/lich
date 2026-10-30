@@ -66,7 +66,7 @@ func (p *chromePage) bringIn(id target.ID, url string, opener *tab) {
 	ctx, cancel := chromedp.NewContext(p.ctx, chromedp.WithTargetID(id))
 	t := &tab{ctx: ctx, cancel: cancel, id: id, opener: opener, url: url}
 	p.listenTab(t)
-	if err := chromedp.Run(ctx); err != nil {
+	if err := chromedp.Run(ctx, interceptFiles); err != nil {
 		cancel()
 		if p.Alive() {
 			slog.Warn("browser: attach to a tab the page opened", "url", url, "err", err)
@@ -88,7 +88,7 @@ func (p *chromePage) NewTab(context.Context) error {
 	ctx, cancel := chromedp.NewContext(p.ctx)
 	t := &tab{ctx: ctx, cancel: cancel, url: "about:blank"}
 	p.listenTab(t)
-	if err := chromedp.Run(ctx); err != nil {
+	if err := chromedp.Run(ctx, interceptFiles); err != nil {
 		cancel()
 		return err
 	}

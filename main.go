@@ -226,6 +226,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		dir, port := term.SessionCheckout(owner)
 		return previews.URL(dir, port, raw)
 	})
+	brows.SetPicker(project.ZenityPicker{}.PickFile, project.ZenityPicker{}.PickFiles)
 	proj := project.New(project.ZenityPicker{})
 	// gh has one active account per host; a project can name a different one.
 	proj.SetAccounts(db.GHAccountForPath)

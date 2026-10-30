@@ -82,5 +82,11 @@ func (p *chromePage) layOut(v Viewport) {
 func (p *chromePage) AnswerDialog(ctx context.Context, accept bool, text string) error {
 	tabCtx, cancel := withPageDeadline(p.tabs.dialogHolder().ctx, ctx)
 	defer cancel()
-	return chromedp.Run(tabCtx, page.HandleJavaScriptDialog(accept).WithPromptText(text))
+	// The leave is in place before the page can land on its new document.
+	l := p.leaving(accept)
+	if err := chromedp.Run(tabCtx, page.HandleJavaScriptDialog(accept).WithPromptText(text)); err != nil {
+		p.forgetLeave(l)
+		return err
+	}
+	return nil
 }

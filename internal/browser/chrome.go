@@ -60,7 +60,7 @@ func chromeLaunch(dir string, headed bool) (Page, error) {
 	}
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	ctx, cancel := chromedp.NewContext(allocCtx)
-	if err := chromedp.Run(ctx); err != nil {
+	if err := chromedp.Run(ctx, interceptFiles); err != nil {
 		cancel()
 		allocCancel()
 		return nil, err
@@ -107,6 +107,11 @@ type chromePage struct {
 	castMu   sync.Mutex
 	castLast chan struct{}
 	casting  bool
+	// leaveMu guards held, the navigation the open beforeunload holds, and
+	// leave, the one an accepted beforeunload left for (chrome_leave.go).
+	leaveMu sync.Mutex
+	held    *leave
+	leave   *leave
 }
 
 // downloadFolder is downloadDir, which the live tests point at a folder of
@@ -234,6 +239,7 @@ var errNavAborted = errors.New("page load error " + abortedText)
 const navGrace = 150 * time.Millisecond
 
 func (p *chromePage) Settle(ctx context.Context) error {
+	p.awaitLeave(ctx)
 	return p.run(ctx, settleAfter(func(ctx context.Context) error {
 		t := time.NewTimer(navGrace)
 		defer t.Stop()
