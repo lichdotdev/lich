@@ -110,6 +110,7 @@ project.Missing(PathsOptions) []string
 project.Open(None) *OpenedProject
 project.PickFile(PickFileOptions) string
 project.PickSaveFile(PickSaveFileOptions) string
+project.PullRequestAvatar(AvatarOptions) base64
 project.PullRequestConflicts(PRConflictsOptions) []string
 project.PullRequestConversation(NumberOptions) *PRConversation
 project.PullRequestDetail(NumberOptions) *PRDetail
@@ -753,6 +754,11 @@ PickFileOptions {
 PickSaveFileOptions {
 	title string
 	defaultName string
+}
+
+AvatarOptions {
+	path string
+	url string
 }
 
 PRConflictsOptions {
@@ -1878,6 +1884,7 @@ PRReview {
 	id string
 	databaseId int64
 	author string
+	avatar,omitempty string
 	state string
 	body string
 	date string
@@ -1887,6 +1894,7 @@ PRReview {
 PRComment {
 	id int64
 	author string
+	avatar,omitempty string
 	body string
 	date string
 	canEdit bool
@@ -2022,6 +2030,7 @@ SessionCache {
 PRThreadComment {
 	id int64
 	author string
+	avatar,omitempty string
 	body string
 	date string
 	diffHunk string

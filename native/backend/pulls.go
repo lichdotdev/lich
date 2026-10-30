@@ -144,6 +144,12 @@ func (c *Client) PullRequestConversation(ctx context.Context, path string, numbe
 	return callMethod(ctx, c, api.ProjectPullRequestConversation, api.NumberOptions{Path: path, Number: number})
 }
 
+// PullRequestAvatar reads the picture at url, an author's Avatar in a
+// conversation read from the checkout at path.
+func (c *Client) PullRequestAvatar(ctx context.Context, path, url string) ([]byte, error) {
+	return callMethod(ctx, c, api.ProjectPullRequestAvatar, api.AvatarOptions{Path: path, URL: url})
+}
+
 // ReplyToReviewThread answers the thread comment commentID belongs to.
 func (c *Client) ReplyToReviewThread(ctx context.Context, path string, number int, commentID int64, body string) error {
 	_, err := callMethod(ctx, c, api.ProjectReplyToReviewThread, api.PRCommentBodyOptions{Path: path, Number: number, CommentID: commentID, Body: body})

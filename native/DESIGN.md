@@ -174,7 +174,11 @@ Code quoted inside such a box (a diff hunk) never shares the box's fill: it sits
 `Background`, `RadiusSM`, `Space(2)` padding, so code and prose read as two things.
 
 Vertical rhythm inside a box: `Space(2)` above a code block, `Space(2.5)` between comments and before the
-action row.
+action row. Comments one after another inside a box are split by a `th.Separator`, `Space(2.5)` on each side.
+
+A comment, in a box or on the screen's ground, sits beside its author's avatar: a `Space(6)` disc in a gutter
+`Space(2.5)` from the comment, its byline and body in the column to the right. Until the picture arrives, and
+for an account with none, the disc is `Accent` with the initial in `MutedForeground`, never a color.
 
 ## Fixed by decision: do not "fix" these
 

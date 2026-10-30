@@ -22,15 +22,19 @@ import (
 // inside each thread. `last` throughout, because a conversation is read at its
 // end: what a screen has to show is the newest reply, and the tail past the cap
 // is on github.com until somebody hits it.
-const prConversationQuery = `query($owner:String!,$repo:String!,$number:Int!){
+//
+// avatarUrl is asked at 96px: the largest the window draws one is 24dp, and
+// this holds it at 4x.
+const prConversationQuery = `fragment actor on Actor{login avatarUrl(size:96)}
+query($owner:String!,$repo:String!,$number:Int!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$number){
       headRefOid
-      reviews(last:50){nodes{id databaseId author{login} state body submittedAt viewerCanUpdate}}
-      comments(last:50){nodes{databaseId author{login} body createdAt viewerCanUpdate viewerCanDelete}}
+      reviews(last:50){nodes{id databaseId author{...actor} state body submittedAt viewerCanUpdate}}
+      comments(last:50){nodes{databaseId author{...actor} body createdAt viewerCanUpdate viewerCanDelete}}
       reviewThreads(last:100){nodes{
         id isResolved isOutdated path line originalLine startLine originalStartLine diffSide
-        comments(last:50){nodes{databaseId author{login} body createdAt diffHunk viewerCanUpdate viewerCanDelete}}
+        comments(last:50){nodes{databaseId author{...actor} body createdAt diffHunk viewerCanUpdate viewerCanDelete}}
       }}
     }
   }
@@ -70,7 +74,8 @@ type ghConversation struct {
 // ghActor is GitHub's author object, which is null for an account that has been
 // deleted since — the zero value then reads as an empty login.
 type ghActor struct {
-	Login string `json:"login"`
+	Login     string `json:"login"`
+	AvatarURL string `json:"avatarUrl"`
 }
 
 type ghReview struct {
@@ -166,6 +171,7 @@ func toReviews(nodes []ghReview) []PRReview {
 			ID:         r.ID,
 			DatabaseID: r.DatabaseID,
 			Author:     r.Author.Login,
+			Avatar:     r.Author.AvatarURL,
 			State:      r.State,
 			Body:       r.Body,
 			Date:       r.SubmittedAt,
@@ -187,6 +193,7 @@ func toComments(nodes []ghIssueComment) []PRComment {
 		out = append(out, PRComment{
 			ID:        c.DatabaseID,
 			Author:    c.Author.Login,
+			Avatar:    c.Author.AvatarURL,
 			Body:      c.Body,
 			Date:      c.CreatedAt,
 			CanEdit:   c.ViewerCanUpdate,
@@ -252,6 +259,7 @@ func toThreadComments(nodes []ghThreadComment) []PRThreadComment {
 		out = append(out, PRThreadComment{
 			ID:        c.DatabaseID,
 			Author:    c.Author.Login,
+			Avatar:    c.Author.AvatarURL,
 			Body:      c.Body,
 			Date:      c.CreatedAt,
 			DiffHunk:  c.DiffHunk,

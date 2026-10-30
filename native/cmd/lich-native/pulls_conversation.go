@@ -147,11 +147,11 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d backe
 		case it.review != nil:
 			r := *it.review
 			target := commentTarget{kind: reviewSummary, id: r.DatabaseID, body: r.Body, canEdit: r.CanEdit}
-			rows = append(rows, v.talkEntry(th, p, "review:"+r.ID, r.Author, verdictLine(r), target, r.Date, now, act))
+			rows = append(rows, v.talkEntry(th, p, "review:"+r.ID, author{r.Author, r.Avatar}, verdictLine(r), target, r.Date, now, act))
 		case it.comment != nil:
 			c := *it.comment
 			target := commentTarget{kind: prComment, id: c.ID, body: c.Body, canEdit: c.CanEdit, canDelete: c.CanDelete}
-			rows = append(rows, v.talkEntry(th, p, "comment:"+c.Date+c.Author, c.Author, "", target, c.Date, now, act))
+			rows = append(rows, v.talkEntry(th, p, "comment:"+c.Date+c.Author, author{c.Author, c.Avatar}, "", target, c.Date, now, act))
 		default:
 			t := *it.thread
 			rows = append(rows, func(gtx C) D { return v.threadCard(gtx, th, p, d, t, act, now) })
@@ -175,29 +175,32 @@ func verdictLine(r backend.PRReview) string {
 	return strings.ToLower(r.State)
 }
 
-// talkEntry is a review or a comment: who, what they decided, when, and what
-// they wrote, with the ⋯ of what the viewer may do to it.
-func (v *pullView) talkEntry(th *ui.Theme, p *pullsScreen, key, author, verdict string, target commentTarget, date string, now time.Time, act *pullsAction) layout.Widget {
+// talkEntry is a review or a comment beside its author's avatar: who, what
+// they decided, when, and what they wrote, with the ⋯ of what the viewer may
+// do to it.
+func (v *pullView) talkEntry(th *ui.Theme, p *pullsScreen, key string, who author, verdict string, target commentTarget, date string, now time.Time, act *pullsAction) layout.Widget {
 	body := strings.TrimSpace(target.body)
 	return func(gtx C) D {
 		editing := v.talk.isEditing(gtx, target)
 		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D {
-					return v.commentHead(gtx, th, p, target, func(gtx C) D { return byline(gtx, th, author, verdict, date, now) })
-				}),
-				layout.Rigid(func(gtx C) D {
-					if !editing && body == "" {
-						return D{}
-					}
-					return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-						if editing {
-							return v.editBox(gtx, th, target, act)
+			return p.withAvatar(gtx, th, who, func(gtx C) D {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return v.commentHead(gtx, th, p, target, func(gtx C) D { return byline(gtx, th, who.login, verdict, date, now) })
+					}),
+					layout.Rigid(func(gtx C) D {
+						if !editing && body == "" {
+							return D{}
 						}
-						return v.md.layout(gtx, th, key, body, act.open)
-					})
-				}),
-			)
+						return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+							if editing {
+								return v.editBox(gtx, th, target, act)
+							}
+							return v.md.layout(gtx, th, key, body, act.open)
+						})
+					}),
+				)
+			})
 		})
 	}
 }
@@ -297,9 +300,14 @@ func (v *pullView) threadBody(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRD
 		}))
 	}
 	editing := false
-	for _, c := range t.Comments {
+	for i, c := range t.Comments {
 		target := threadTarget(t, c)
 		editing = v.talk.isEditing(gtx, target) || editing
+		if i > 0 {
+			rows = append(rows, layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, th.Separator)
+			}))
+		}
 		rows = append(rows, layout.Rigid(func(gtx C) D {
 			return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, func(gtx C) D { return v.threadComment(gtx, th, p, target, c, act, now) })
 		}))

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The Conversation tab of a pull request on the Pulls screen shows each author's GitHub picture beside their reviews and comments, in a column down the left, the way GitHub does. Comments inside a review thread, on the Conversation tab and on the Files tab, are separated by a line. Until a picture loads, or for an account that has none, the author's initial stands in its place.
+
 ### Changed
 
 - Pull request descriptions, comments and Markdown previews are easier to read, with brighter text, clearer headings and links, inline code highlighted, more room between lines and blocks, and wrapped list items aligned with their text.

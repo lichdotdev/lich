@@ -10,20 +10,20 @@ import (
 const conversationPayload = `{"data":{"repository":{"pullRequest":{
   "headRefOid": "21e6cdc4336e8f5db46724d82fecf0423bc41a0a",
   "reviews": {"nodes": [
-    {"id":"PRR_kw1","databaseId":700001,"author":{"login":"omartelo"},"state":"CHANGES_REQUESTED","body":"two things first","submittedAt":"2026-07-30T10:00:00Z","viewerCanUpdate":true},
+    {"id":"PRR_kw1","databaseId":700001,"author":{"login":"omartelo","avatarUrl":"https://avatars.githubusercontent.com/u/1?s=96"},"state":"CHANGES_REQUESTED","body":"two things first","submittedAt":"2026-07-30T10:00:00Z","viewerCanUpdate":true},
     {"author":{"login":"bot"},"state":"COMMENTED","body":"","submittedAt":"2026-07-30T10:05:00Z"},
     {"author":{"login":"drafting"},"state":"PENDING","body":"not submitted","submittedAt":null},
     {"id":"PRR_kw2","author":{"login":"reviewer"},"state":"APPROVED","body":"","submittedAt":"2026-07-30T11:00:00Z"}
   ]},
   "comments": {"nodes": [
-    {"databaseId":800001,"author":{"login":"omartelo"},"body":"rebased on main","createdAt":"2026-07-30T09:00:00Z","viewerCanUpdate":true,"viewerCanDelete":true}
+    {"databaseId":800001,"author":{"login":"omartelo","avatarUrl":"https://avatars.githubusercontent.com/u/1?s=96"},"body":"rebased on main","createdAt":"2026-07-30T09:00:00Z","viewerCanUpdate":true,"viewerCanDelete":true}
   ]},
   "reviewThreads": {"nodes": [
     {"id":"PRRT_kw1","isResolved":false,"isOutdated":false,"path":"internal/project/prthreads.go",
      "line":61,"originalLine":58,"startLine":59,"diffSide":"RIGHT",
      "comments":{"nodes":[
        {"databaseId":900001,"author":{"login":"omartelo"},"body":"this buffers every hunk","createdAt":"2026-07-30T10:01:00Z","diffHunk":"@@ -57,6 +57,10 @@","viewerCanUpdate":true,"viewerCanDelete":true},
-       {"databaseId":900002,"author":{"login":"claude"},"body":"dropped it","createdAt":"2026-07-30T10:30:00Z","diffHunk":"@@ -57,6 +57,10 @@","viewerCanUpdate":false}
+       {"databaseId":900002,"author":{"login":"claude","avatarUrl":"https://avatars.githubusercontent.com/u/2?s=96"},"body":"dropped it","createdAt":"2026-07-30T10:30:00Z","diffHunk":"@@ -57,6 +57,10 @@","viewerCanUpdate":false}
      ]}},
     {"id":"PRRT_kw2","isResolved":true,"isOutdated":true,"path":"frontend/src/lib/pulls/hook.ts",
      "line":null,"originalLine":18,"startLine":null,"diffSide":"RIGHT",
@@ -150,6 +150,22 @@ func TestParseConversation(t *testing.T) {
 	t.Run("a deleted account leaves an empty login, not a crash", func(t *testing.T) {
 		if got := convo.Threads[1].Comments[0].Author; got != "" {
 			t.Errorf("author = %q, want empty", got)
+		}
+		if got := convo.Threads[1].Comments[0].Avatar; got != "" {
+			t.Errorf("avatar = %q, want empty", got)
+		}
+	})
+
+	t.Run("every entry carries its author's avatar", func(t *testing.T) {
+		const mine = "https://avatars.githubusercontent.com/u/1?s=96"
+		if got := convo.Reviews[0].Avatar; got != mine {
+			t.Errorf("review avatar = %q, want %q", got, mine)
+		}
+		if got := convo.Comments[0].Avatar; got != mine {
+			t.Errorf("comment avatar = %q, want %q", got, mine)
+		}
+		if got := convo.Threads[0].Comments[1].Avatar; got != "https://avatars.githubusercontent.com/u/2?s=96" {
+			t.Errorf("thread comment avatar = %q", got)
 		}
 	})
 }
