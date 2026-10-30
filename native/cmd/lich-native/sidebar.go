@@ -262,9 +262,10 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 			children = append(children, layout.Rigid(func(gtx C) D { return s.filterRow(gtx, on, view) }), ui.VGap(2))
 		}
 		children = append(children, layout.Flexed(1, func(gtx C) D {
-			// -mr-2: the scroll column reaches the panel's edge, so its
-			// scrollbar sits in the padding and its pr-2 keeps the cards off it.
-			gtx.Constraints.Max.X += gtx.Dp(ui.Space(2))
+			// The scroll column reaches into the padding up to the resize
+			// strip, so its scrollbar sits clear of the strip and its pr-2
+			// keeps the cards off it.
+			gtx.Constraints.Max.X += gtx.Dp(ui.Space(2)) - gtx.Dp(ui.ResizeWidth)
 			return s.blockList(gtx, on, view, active, &act)
 		}))
 		if p, ok := m.project(); ok {
@@ -283,11 +284,9 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 	return D{Size: size}, act
 }
 
-// resizeHandle lays the resize strip out in the gutter past the panel's
-// right edge: on the edge itself its lit strip would cover the block list's
-// scrollbar, which runs in the panel's padding.
+// resizeHandle lays the resize strip out on the panel's own right edge.
 func (s *sidebar) resizeHandle(gtx C, th *ui.Theme, panel image.Point) {
-	gtx.Constraints = layout.Exact(image.Pt(panel.X+gtx.Dp(ui.ResizeWidth), panel.Y))
+	gtx.Constraints = layout.Exact(panel)
 	s.resize.Layout(gtx, th)
 }
 

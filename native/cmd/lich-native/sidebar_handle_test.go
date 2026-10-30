@@ -14,7 +14,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-func TestSidebarHandleSitsInTheGutterClearOfTheBlockListsScrollbar(t *testing.T) {
+func TestSidebarHandleSitsOnThePanelsOwnRightEdge(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark}
 	press := func(x float32) bool {
 		s := newSidebar(new(ui.Root))
@@ -28,10 +28,13 @@ func TestSidebarHandleSitsInTheGutterClearOfTheBlockListsScrollbar(t *testing.T)
 		s.resize.Update(gtx, 300, 200, 500)
 		return s.resize.Dragging()
 	}
-	if press(297) {
-		t.Error("a press on the panel's own right edge, where the block list's scrollbar runs, grabbed the handle")
+	if !press(297) {
+		t.Error("a press on the panel's own right edge missed the handle")
 	}
-	if !press(303) {
-		t.Error("a press in the gutter past the panel missed the handle")
+	if press(293) {
+		t.Error("a press left of the strip, where the block list's scrollbar runs, grabbed the handle")
+	}
+	if press(303) {
+		t.Error("a press in the gutter past the panel grabbed the handle")
 	}
 }
