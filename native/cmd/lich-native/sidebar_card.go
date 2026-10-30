@@ -251,6 +251,9 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 	return s.morph.glyph(gtx, glyphSession+sv.ID, func(gtx C) D { return s.statusGlyph(gtx, th, sv) })
 }
 
+// neutralRingAlpha is how strongly a ring with no status draws in a tree.
+const neutralRingAlpha = 0.35
+
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	size := gtx.Dp(18)
 	stroke := float32(gtx.Dp(1.25))
@@ -270,6 +273,12 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 			ring = th.Over(ui.Alpha(ring, 0.3))
 		}
 		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, ring)
+	default:
+		// In a tree every ring is where a link ends, so one with no status
+		// still draws, neutral.
+		if sv.place.tree {
+			ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
+		}
 	}
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
 	kind := sv.Kind
