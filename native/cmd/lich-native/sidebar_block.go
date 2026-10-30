@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 	"gioui.org/widget/material"
@@ -18,6 +19,7 @@ type blockState struct {
 	fold     ui.Collapse
 	cards    ui.Sortable
 	presence ui.Presence
+	tree     treeMotion
 	closing  closingCards
 	launch   ui.MenuState
 	options  ui.MenuState
@@ -228,19 +230,35 @@ var cardGap = unit.Dp(0)
 // its place while it leaves.
 func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame, dragEnded bool) D {
 	shown, _ := st.closing.shown(b.sessions, gtx.Now)
-	rows := blockRows(b, shown)
+	live := blockRows(b, b.sessions)
+	open := make(map[string]bool, len(b.sessions))
+	for _, sv := range b.sessions {
+		open[sv.ID] = true
+	}
+	if st.tree.update(gtx.Now, live, open) {
+		gtx.Execute(op.InvalidateCmd{})
+	}
+	rows := st.tree.place(gtx.Now, blockRows(b, shown))
 	byKey := make(map[string]sessionRow, len(rows))
 	tree := b.under != "" || b.byCheckout
 	for _, r := range rows {
 		byKey[r.key] = r
 		tree = tree || r.depth > 0 || r.kids > 0
 	}
-	var live []string
-	for _, r := range blockRows(b, b.sessions) {
-		live = append(live, r.key)
+	order := make([]string, len(live))
+	for i, r := range live {
+		order[i] = r.key
 	}
-	keys := st.presence.Update(gtx.Now, live)
-	keys = slices.DeleteFunc(keys, func(key string) bool { _, ok := byKey[key]; return !ok })
+	drawn := map[string]bool{}
+	for _, key := range st.presence.Update(gtx.Now, order) {
+		drawn[key] = true
+	}
+	var keys []string
+	for _, r := range rows {
+		if drawn[r.key] || r.motion != nil {
+			keys = append(keys, r.key)
+		}
+	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	// A card carried out of the sidebar goes back to its slot; the window
 	// draws what follows the pointer over the panes (drawCarried).
@@ -259,9 +277,13 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 // order: the tree is read off the origins, so a child stays under its mother.
 func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r sessionRow, tree bool, f blockFrame, dragEnded bool) D {
 	if r.kind == rowNestedCheckout {
-		return st.presence.Layout(gtx, r.key, func(gtx C) D {
+		row := func(gtx C) D {
 			return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D { return s.nestedCheckout(gtx, th, r, b.facts[r.path], tree) })
-		})
+		}
+		if r.motion != nil {
+			return moveRow(gtx, r, row)
+		}
+		return st.presence.Layout(gtx, r.key, row)
 	}
 	sv := r.sv
 	sv.place = r.place(tree)
@@ -274,6 +296,9 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 		}
 		f.act.takeCard(a)
 		return d
+	}
+	if r.motion != nil {
+		return moveRow(gtx, r, func(gtx C) D { return layout.Inset{Bottom: cardGap}.Layout(gtx, face) })
 	}
 	return st.presence.Layout(gtx, sv.ID, func(gtx C) D {
 		return layout.Inset{Bottom: cardGap}.Layout(gtx, func(gtx C) D {

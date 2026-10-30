@@ -138,6 +138,10 @@ func (p *Presence) Layout(gtx C, key string, w layout.Widget) D {
 	return reveal(gtx, v, presenceScale+(1-presenceScale)*v, v, w)
 }
 
+// Reveal draws w clipped to rows of its height, the share of it a motion
+// has opened so far.
+func Reveal(gtx C, rows float32, w layout.Widget) D { return reveal(gtx, rows, 1, 1, w) }
+
 // reveal draws w clipped to rows of its height (a 0fr..1fr grid track),
 // scaled by scale from its top edge's middle (origin-top) and at opacity.
 // It takes rows of the height in the layout; the scale takes none.

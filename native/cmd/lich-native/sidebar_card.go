@@ -277,28 +277,30 @@ const neutralRingAlpha = 0.35
 
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	size := gtx.Dp(2 * sessionTreeRingR)
-	stroke := float32(gtx.Dp(1.25))
-	center := f32.Pt(float32(size)/2, float32(size)/2)
-	radius := float32(size)/2 - stroke/2
+	entry := sv.place.entry
 	switch sv.status {
 	case "busy", "compacting":
-		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
-		turn := float32(time.Since(s.started).Seconds()) * 2 * math.Pi
-		ui.StrokeArc(gtx, center, radius, stroke, turn, math.Pi/2, th.MutedForeground)
+		ringArc(gtx, size, entry, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
+		if entry.ring == 0 {
+			stroke := float32(gtx.Dp(sessionTreeStroke))
+			center := f32.Pt(float32(size)/2, float32(size)/2)
+			turn := float32(time.Since(s.started).Seconds()) * 2 * math.Pi
+			ui.StrokeArc(gtx, center, float32(size)/2-stroke/2, stroke, turn, math.Pi/2, th.MutedForeground)
+		}
 		th.Loop(gtx)
 	case "waiting":
-		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.ToneWait)
+		ringArc(gtx, size, entry, th.ToneWait)
 	case "done":
 		ring := th.TonePass
 		if !sv.unread {
 			ring = th.Over(ui.Alpha(ring, 0.3))
 		}
-		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, ring)
+		ringArc(gtx, size, entry, ring)
 	default:
 		// In a tree every ring is where a link ends, so one with no status
 		// still draws, neutral.
 		if sv.place.tree {
-			ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
+			ringArc(gtx, size, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 		}
 	}
 	gtx.Constraints = layout.Exact(image.Pt(size, size))
@@ -309,7 +311,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	if sv.place.hot {
 		return centeredIcon(gtx, foldIcon(!sv.place.folded), 13, th.Foreground)
 	}
-	return centeredIcon(gtx, providerIcon(kind), 13, th.MutedForeground)
+	return centeredIcon(gtx, providerIcon(kind), 13, ui.Alpha(th.MutedForeground, 1-entry.body))
 }
 
 // centeredIcon draws ic in the middle of the exact box gtx holds, at a

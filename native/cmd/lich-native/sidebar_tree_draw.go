@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"image/color"
 	"math"
 	"strconv"
 
@@ -31,6 +32,7 @@ type treePlace struct {
 	folded  bool
 	mark    string
 	hideGit bool
+	entry   treeEntry
 }
 
 // sessionRowLinks are the lines a row draws (sessionRow's fields of the same
@@ -40,14 +42,21 @@ type sessionRowLinks struct {
 	lanes []bool
 	tail  bool
 	stub  bool
+	// sweep is a moving run's line: it draws its column only as far as it
+	// has come, nil at rest.
+	sweep *treeSweep
 }
 
 func (r sessionRow) place(tree bool) treePlace {
-	return treePlace{
+	p := treePlace{
 		tree:            tree,
 		sessionRowLinks: sessionRowLinks{depth: r.depth, lanes: r.lanes, tail: r.tail, stub: r.stub},
 		kids:            r.kids, folded: r.folded, mark: r.mark, hideGit: r.hideGit,
 	}
+	if r.motion != nil {
+		p.sweep, p.entry = &r.motion.sweep, r.motion.entry
+	}
+	return p
 }
 
 // The tree's geometry: a level's indent and the ring's radius, in the order
@@ -89,40 +98,94 @@ func treeLead(p treePlace) []layout.FlexChild {
 // treeLinks draws a row's links over size: the elbow from its parent's ring,
 // the lines of earlier levels that run past it, and the stub down to its
 // first child. A line runs cardGap past the row so it meets the next one.
+// While a run moves, the column its line runs down draws only as far as the
+// line has come, and the elbow off it as far as it has turned.
 func treeLinks(gtx C, th *ui.Theme, l sessionRowLinks, size image.Point) {
 	if l.depth == 0 && !l.stub && len(l.lanes) == 0 {
 		return
 	}
 	h := float32(size.Y)
 	end := h + float32(gtx.Dp(cardGap))
+	whole, down, turn := linkSegs(gtx, l, h, end)
+	c := th.Over(ui.Alpha(th.MutedForeground, treeLinkAlpha))
+	width := float32(gtx.Dp(sessionTreeStroke))
+	strokeLinks(gtx, whole, image.Pt(size.X, int(math.Ceil(float64(end)))), c, width)
+	if l.sweep != nil {
+		reach := l.sweep.rows * h
+		strokeLinks(gtx, down, image.Pt(size.X, int(reach)), c, width)
+		turned := treeColumn(gtx, l.depth-1) + max(0, reach-(h/2-float32(gtx.Dp(sessionTreeElbow))))
+		strokeLinks(gtx, turn, image.Pt(int(turned), size.Y), c, width)
+	}
+}
+
+// linkSegs are a row's links of height h, running down to end: whole draws
+// at once, while down (the swept column's lines) and turn (the elbow off it)
+// draw as far as a moving run's line has come.
+func linkSegs(gtx C, l sessionRowLinks, h, end float32) (whole, down, turn []linkSeg) {
 	mid := h / 2
 	elbow := float32(gtx.Dp(sessionTreeElbow))
-	var path clip.Path
-	path.Begin(gtx.Ops)
+	swept := -1
+	if l.sweep != nil {
+		swept = l.sweep.col
+	}
+	in := func(k int) *[]linkSeg {
+		if k == swept {
+			return &down
+		}
+		return &whole
+	}
 	if l.depth > 0 {
 		px := treeColumn(gtx, l.depth-1)
-		path.MoveTo(f32.Pt(px, 0))
-		path.LineTo(f32.Pt(px, mid-elbow))
-		path.QuadTo(f32.Pt(px, mid), f32.Pt(px+elbow, mid))
-		path.LineTo(f32.Pt(treeColumn(gtx, l.depth)-float32(gtx.Dp(sessionTreeRingR)), mid))
+		ring := treeColumn(gtx, l.depth) - float32(gtx.Dp(sessionTreeRingR))
+		*in(l.depth - 1) = append(*in(l.depth - 1), vline(px, 0, mid-elbow))
+		bend := func(p *clip.Path) {
+			p.MoveTo(f32.Pt(px, mid-elbow))
+			p.QuadTo(f32.Pt(px, mid), f32.Pt(px+elbow, mid))
+			p.LineTo(f32.Pt(ring, mid))
+		}
+		if l.depth-1 == swept {
+			turn = append(turn, bend)
+		} else {
+			whole = append(whole, bend)
+		}
 		if !l.tail {
-			path.MoveTo(f32.Pt(px, mid-elbow))
-			path.LineTo(f32.Pt(px, end))
+			*in(l.depth - 1) = append(*in(l.depth - 1), vline(px, mid-elbow, end))
 		}
 	}
 	for k, on := range l.lanes {
 		if on {
-			path.MoveTo(f32.Pt(treeColumn(gtx, k), 0))
-			path.LineTo(f32.Pt(treeColumn(gtx, k), end))
+			*in(k) = append(*in(k), vline(treeColumn(gtx, k), 0, end))
 		}
 	}
 	if l.stub {
 		x := treeColumn(gtx, l.depth)
-		path.MoveTo(f32.Pt(x, mid+float32(gtx.Dp(sessionTreeRingR))))
-		path.LineTo(f32.Pt(x, end))
+		whole = append(whole, vline(x, mid+float32(gtx.Dp(sessionTreeRingR)), end))
 	}
-	c := th.Over(ui.Alpha(th.MutedForeground, treeLinkAlpha))
-	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: path.End(), Width: float32(gtx.Dp(sessionTreeStroke))}.Op())
+	return whole, down, turn
+}
+
+// linkSeg adds one stretch of a link to a path.
+type linkSeg func(p *clip.Path)
+
+func vline(x, y0, y1 float32) linkSeg {
+	return func(p *clip.Path) {
+		p.MoveTo(f32.Pt(x, y0))
+		p.LineTo(f32.Pt(x, y1))
+	}
+}
+
+// strokeLinks strokes segs as one path, clipped to box.
+func strokeLinks(gtx C, segs []linkSeg, box image.Point, c color.NRGBA, width float32) {
+	if len(segs) == 0 || box.X <= 0 || box.Y <= 0 {
+		return
+	}
+	defer clip.Rect{Max: box}.Push(gtx.Ops).Pop()
+	var path clip.Path
+	path.Begin(gtx.Ops)
+	for _, seg := range segs {
+		seg(&path)
+	}
+	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: path.End(), Width: width}.Op())
 }
 
 // withLinks lays row out and draws its links over it.
@@ -152,7 +215,7 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, trailin
 		}
 		row := treeLead(p)
 		row = append(row,
-			layout.Rigid(func(gtx C) D { return checkoutNode(gtx, th, glyph) }),
+			layout.Rigid(func(gtx C) D { return checkoutNode(gtx, th, glyph, p.entry) }),
 			ui.Gap(1.5),
 			layout.Flexed(1, th.Text(ui.TextSM, f.label).Muted().Weight(font.Medium).Layout),
 		)
@@ -171,13 +234,23 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, trailin
 
 // checkoutNode is a checkout's node in the tree: its glyph in a neutral ring,
 // so a link meets it as it meets a session's ring.
-func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon) D {
+func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon, entry treeEntry) D {
 	side := gtx.Dp(sessionTreeRingR) * 2
+	ringArc(gtx, side, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
+	gtx.Constraints = layout.Exact(image.Pt(side, side))
+	return centeredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.body))
+}
+
+// ringArc draws a node's ring in a box of side, as much of it as has come in:
+// from its left, where the link meets it, round to the left again.
+func ringArc(gtx C, side int, entry treeEntry, c color.NRGBA) {
+	sweep := 2 * math.Pi * (1 - entry.ring)
+	if sweep <= 0 {
+		return
+	}
 	stroke := float32(gtx.Dp(sessionTreeStroke))
 	center := f32.Pt(float32(side)/2, float32(side)/2)
-	ui.StrokeArc(gtx, center, float32(side)/2-stroke/2, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
-	gtx.Constraints = layout.Exact(image.Pt(side, side))
-	return centeredIcon(gtx, glyph, 12, th.MutedForeground)
+	ui.StrokeArc(gtx, center, float32(side)/2-stroke/2, stroke, math.Pi, float32(sweep), c)
 }
 
 // checkoutTooltip is what a checkout row's line cuts: the branch in full, the

@@ -83,6 +83,8 @@ type sessionRow struct {
 	// hideGit is a session row under a checkout row, which already shows the
 	// pull request and the changes.
 	hideGit bool
+	// motion is the row's share of a run opening or closing it, nil at rest.
+	motion *rowMotion
 }
 
 // sessionRows lays a block's sessions out as trees: every session whose origin
