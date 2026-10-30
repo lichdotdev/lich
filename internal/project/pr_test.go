@@ -24,6 +24,8 @@ func TestParsePRDetail(t *testing.T) {
 			"baseRefName": "main",
 			"headRefName": "quiet-willow",
 			"changedFiles": 6,
+			"additions": 120,
+			"deletions": 34,
 			"statusCheckRollup": [
 				{"status": "COMPLETED", "conclusion": "SUCCESS"},
 				{"state": "SUCCESS"}
@@ -53,6 +55,9 @@ func TestParsePRDetail(t *testing.T) {
 		}
 		if pr.ChangedFiles != 6 {
 			t.Errorf("wrong changed files: %d", pr.ChangedFiles)
+		}
+		if pr.Additions != 120 || pr.Deletions != 34 {
+			t.Errorf("wrong size: +%d -%d", pr.Additions, pr.Deletions)
 		}
 		if len(pr.Commits) != 1 || pr.Commits[0].Headline != "feat: the panel" {
 			t.Errorf("wrong commits: %+v", pr.Commits)

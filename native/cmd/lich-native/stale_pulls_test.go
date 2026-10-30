@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"gioui.org/f32"
+	"gioui.org/io/key"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -64,10 +64,13 @@ func pullsFrames(t *testing.T) (*window, *frameRig) {
 	return u, r
 }
 
-// pullsDetailShown waits for pull request 7's overview.
+// pullsDetailShown opens pull request 7 from the index and waits for its
+// overview.
 func pullsDetailShown(t *testing.T) (*window, *frameRig) {
 	t.Helper()
 	u, r := pullsFrames(t)
+	r.waitFor(t, "Fix the thing")
+	r.clickLabel(t, "Fix the thing")
 	r.waitFor(t, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": ""}))
 	return u, r
 }
@@ -91,7 +94,8 @@ func TestPullsMergeCancelClosesInTheFrameAfterTheClick(t *testing.T) {
 }
 
 func TestPullsFilterTabsFilterInTheFrameThatTookTheClick(t *testing.T) {
-	u, r := pullsDetailShown(t)
+	u, r := pullsFrames(t)
+	r.waitFor(t, "Fix the thing")
 	r.clickLabel(t, pullsFilter(2).label())
 	if u.pulls.filter.Selected != 2 {
 		t.Fatal("the click missed Drafts")
@@ -197,27 +201,43 @@ func TestPullsViewedTickCountsInTheFrameThatTookTheClick(t *testing.T) {
 	}
 }
 
-// The list's slide draws its first frame where it stood, so a click on hide
-// or show changes nothing the frame that took it drew: that frame must ask
-// for the next one, or the slide waits for the next mouse move.
-func TestPullsListSlidesFromTheFrameThatTookTheClick(t *testing.T) {
+// The index opens on the screen, a row opens its pull request, and the
+// crumb's back button returns to the index with the cursor on that row.
+func TestPullsBackReturnsToTheIndexOnTheRowItLeft(t *testing.T) {
 	u, r := pullsDetailShown(t)
-	listEnd := u.pulls.spans[0].x1
-	slideFromClick(t, r, r.smallestClickIn(t, image.Rect(listEnd-40, 0, listEnd, 48)))
-	if !u.pulls.listHidden {
-		t.Fatal("the click missed hide")
+	if u.pulls.selected != 7 {
+		t.Fatalf("the click on the row opened #%d", u.pulls.selected)
 	}
-	r.settle(t)
-	slideFromClick(t, r, r.smallestClickIn(t, image.Rect(0, 0, 48, 48)))
-	if u.pulls.listHidden {
-		t.Fatal("the click missed show")
+	r.clickLabel(t, i18n.T("tabs.projectTabs.pullRequests"))
+	if u.pulls.selected != 0 || u.pulls.cursor != 7 {
+		t.Fatalf("back left #%d open, cursor on #%d", u.pulls.selected, u.pulls.cursor)
 	}
 }
 
-func slideFromClick(t *testing.T, r *frameRig, p f32.Point) {
-	t.Helper()
-	r.queueClick(p)
-	if _, redraw := r.frame(); !redraw {
-		t.Error("the frame that took the click asked for no next frame")
+// j moves the index's cursor, Enter opens its row and Escape on the pull
+// request goes back with the cursor where it was. Enter waits for the pull
+// request to arrive: its skeleton animates until it does.
+func TestPullsKeysWalkTheIndexAndEscapeGoesBack(t *testing.T) {
+	u, r := pullsFrames(t)
+	r.waitFor(t, "Fix the thing")
+	press := func(name key.Name) {
+		r.router.Queue(key.Event{Name: name, State: key.Press})
+		r.settle(t)
+	}
+	if u.pulls.keyed {
+		t.Fatal("the cursor's row is filled before any key moved it")
+	}
+	press("J")
+	if u.pulls.cursor != 8 || !u.pulls.keyed {
+		t.Fatalf("j left the cursor on #%d, keyed %v", u.pulls.cursor, u.pulls.keyed)
+	}
+	r.router.Queue(key.Event{Name: key.NameReturn, State: key.Press})
+	r.waitFor(t, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": ""}))
+	if u.pulls.selected != 8 {
+		t.Fatalf("Enter opened #%d", u.pulls.selected)
+	}
+	press(key.NameEscape)
+	if u.pulls.selected != 0 || u.pulls.cursor != 8 {
+		t.Fatalf("Escape left #%d open, cursor on #%d", u.pulls.selected, u.pulls.cursor)
 	}
 }

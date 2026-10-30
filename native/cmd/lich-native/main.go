@@ -663,7 +663,7 @@ func (u *window) body(gtx C, v stageView) (int, sidebarAction, error) {
 					if u.pulls.open && !v.home {
 						u.pulls.files = filesInput{activeID: v.in.sessionID, injector: u.terms.injector, submitter: u.terms.submitter, light: u.light, code: u.code}
 						u.pulls.squareX = -1
-						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans, islandsSliding: u.pulls.slide.sliding()}); ok {
+						if x, ok := u.topbar.islandSquare(gtx, topbarFrame{tabs: v.strip, active: v.stripActive, islands: u.pulls.spans}); ok {
 							u.pulls.squareX = x
 						}
 						u.applyPulls(u.pulls.layout(gtx, u.theme))
@@ -777,7 +777,7 @@ func (u *window) topbarFrame(gtx C, v stageView, edge int) topbarFrame {
 	}
 	f.pulls = u.pulls.open && !v.home
 	if f.pulls && !f.settings {
-		f.islands, f.islandsSliding = u.pulls.spans, u.pulls.slide.sliding()
+		f.islands = u.pulls.spans
 	} else if !f.settings {
 		f.islands = u.dock.islands
 	}

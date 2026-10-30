@@ -68,7 +68,6 @@
   },
   "pullsEmptyState": {
     "openFailed": "无法打开拉取请求：{error}",
-    "noneFor": "{branch} 没有打开的拉取请求。",
     "none": "没有打开的拉取请求。",
     "openOnGitHub": "在 GitHub 上打开"
   },
@@ -151,8 +150,6 @@
       "drafts": "草稿",
       "failing": "失败"
     },
-    "show": "显示拉取请求列表",
-    "hide": "隐藏拉取请求列表",
     "none": {
       "open": "没有打开的拉取请求。",
       "closed": "没有已关闭的拉取请求。",
@@ -247,7 +244,6 @@
     "editMessage": "{method}，编辑消息…",
     "editMessageBypass": "{method}，编辑消息…（绕过规则）",
     "refresh": "刷新",
-    "open": "打开",
     "tab": {
       "overview": "概览",
       "commits": "提交",
@@ -287,5 +283,16 @@
     },
     "send": "提交",
     "sending": "正在提交…"
+  },
+  "pullsNav": {
+    "back": "返回拉取请求列表",
+    "previous": "上一个拉取请求",
+    "next": "下一个拉取请求",
+    "position": "{index} / {total}",
+    "switch": "前往其他拉取请求",
+    "more": "更多操作",
+    "create": "新建拉取请求",
+    "checkout": "检出",
+    "notCheckedOut": "未检出"
   }
 }

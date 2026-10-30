@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -43,33 +44,52 @@ func (s pullsState) none() string {
 	return i18n.T("pulls.pullsList.none.open")
 }
 
-// listLayout is PullsList: the filter field and the counted quick filters,
-// the state menu, then the rows.
-func (p *pullsScreen) listLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSummary]) D {
-	text := p.query.Text()
-	counts := filterCounts(list.val, text)
+// indexLayout is the index: the heading with the field, the state menu and
+// New, the counted quick filters, then a row per pull request.
+func (p *pullsScreen) indexLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSummary], act *pullsAction) D {
+	if p.create.Clicked(gtx) {
+		act.create = true
+	}
+	counts := filterCounts(list.val, p.query.Text())
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return p.listHeader(gtx, th) }),
-		layout.Rigid(func(gtx C) D { return p.filterTrack(gtx, th, counts) }),
-		layout.Rigid(func(gtx C) D { return p.stateRow(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return p.indexHeader(gtx, th) }),
+		layout.Rigid(func(gtx C) D {
+			tabs := p.filterTabs(th, counts)
+			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D { return tabs.Layout(gtx) })
+		}),
+		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			// Read after the filter tabs took their click.
-			rows := filterPulls(list.val, pullsFilter(p.filter.Selected), text)
-			return p.rowList(gtx, th, list, rows)
+			return p.rowList(gtx, th, list, p.visible(list.val))
 		}),
 	)
 }
 
-// listHeader is the h-11 strip: the field, the hide button beside it.
-func (p *pullsScreen) listHeader(gtx C, th *ui.Theme) D {
+// indexSearchWidth is the index's filter field, wide enough for its hint.
+var indexSearchWidth = unit.Dp(320)
+
+// indexHeader is the index's title, then at the right the field, the state
+// menu and New.
+func (p *pullsScreen) indexHeader(gtx C, th *ui.Theme) D {
 	field := th.Input(&p.query, i18n.T("pulls.pullsList.searchHint"))
-	field.Leading, field.Height, field.TextSize, field.Clear = icPullSearch, ui.Space(7), ui.TextXS, &p.clearQuery
-	return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
+	field.Leading, field.Height, field.TextSize, field.Clear = icPullSearch, ui.Space(8), ui.TextXS, &p.clearQuery
+	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4), Bottom: ui.Space(3)}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Flexed(1, field.Layout),
-			ui.Gap(1.5),
+			layout.Rigid(th.Text(pullsTitleSize, i18n.T("tabs.projectTabs.pullRequests")).Weight(font.SemiBold).Layout),
+			layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Max.X, 0)} }),
 			layout.Rigid(func(gtx C) D {
-				return iconAction(gtx, th, p.root, &p.toggleList, icPullHide, i18n.T("pulls.pullsList.hide"), false)
+				w := min(gtx.Dp(indexSearchWidth), gtx.Constraints.Max.X)
+				gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
+				return field.Layout(gtx)
+			}),
+			ui.Gap(3),
+			layout.Rigid(func(gtx C) D { return p.stateRow(gtx, th) }),
+			ui.Gap(3),
+			layout.Rigid(func(gtx C) D {
+				b := th.Button(&p.create, i18n.T("pulls.pullsNav.create"))
+				b.Icon, b.Variant, b.Size = icPullOut, ui.VariantOutline, ui.SizeSM
+				return b.Layout(gtx)
 			}),
 		)
 	})
@@ -104,44 +124,25 @@ func filterCountColor(th *ui.Theme, f pullsFilter, n int) color.NRGBA {
 	return th.MutedForeground
 }
 
-// listWidth is the list island's width: w-80, or what the filter tabs need
-// beside their px-2 inset, bounded by pullsListMaxWidth.
-func (p *pullsScreen) listWidth(gtx C, th *ui.Theme, counts [pullsFilterCount]int) int {
-	need := p.filterTabs(th, counts).NaturalWidth(gtx) + 2*gtx.Dp(filterTrackInset)
-	return min(max(gtx.Dp(pullsListWidth), need), gtx.Dp(pullsListMaxWidth))
-}
-
-var filterTrackInset = ui.Space(2)
-
-func (p *pullsScreen) filterTrack(gtx C, th *ui.Theme, counts [pullsFilterCount]int) D {
-	tabs := p.filterTabs(th, counts)
-	return layout.Inset{Left: filterTrackInset, Right: filterTrackInset}.Layout(gtx, func(gtx C) D {
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return tabs.Layout(gtx)
-	})
-}
-
-// stateRow is the uppercase line over the rows, a menu of the states gh is
-// asked for.
+// stateRow is the uppercase state beside the field, a menu of the states gh
+// is asked for.
 func (p *pullsScreen) stateRow(gtx C, th *ui.Theme) D {
 	entries := make([]ui.MenuEntry, len(pullsStates))
 	for i, s := range pullsStates {
 		entries[i] = ui.MenuEntry{Kind: ui.MenuRadioItem, Label: s.label(), Checked: s == p.state, OnClick: func() { p.state = s }}
 	}
 	menu := th.DropdownMenu(p.root, &p.stateMenu, entries)
-	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		return menu.Layout(gtx, func(gtx C) D {
-			return p.stateClick.Layout(gtx, func(gtx C) D {
-				fg := th.MutedForeground
-				if p.stateClick.Hovered() {
-					fg = th.Foreground
-				}
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(p.state.label())).In(fg).Layout),
-					ui.Gap(1),
-					layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, ui.Space(3), fg) }),
-				)
-			})
+	return menu.Layout(gtx, func(gtx C) D {
+		return p.stateClick.Layout(gtx, func(gtx C) D {
+			fg := th.MutedForeground
+			if p.stateClick.Hovered() {
+				fg = th.Foreground
+			}
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(p.state.label())).In(fg).Layout),
+				ui.Gap(1),
+				layout.Rigid(func(gtx C) D { return icPullDown.Layout(gtx, ui.Space(3), fg) }),
+			)
 		})
 	})
 }
@@ -158,86 +159,136 @@ func (p *pullsScreen) rowList(gtx C, th *ui.Theme, list pullsRead[[]backend.PRSu
 		return notice(gtx, th, i18n.T("pulls.pullsList.noMatch"))
 	}
 	now := gtx.Now
-	return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Bottom: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-		return p.rowScroll(gtx, th).Layout(gtx, len(rows), func(gtx C, i int) D {
-			return layout.Inset{Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D { return p.row(gtx, th, rows[i], now) })
-		})
-	})
+	if p.cursorAt(rows) < 0 {
+		p.cursor = rows[0].Number
+	}
+	return p.rowScroll(gtx, th).Layout(gtx, len(rows), func(gtx C, i int) D { return p.row(gtx, th, rows[i], now) })
+}
+
+// cursorAt is the cursor's row in rows, -1 when it is not among them.
+func (p *pullsScreen) cursorAt(rows []backend.PRSummary) int {
+	return position(rows, p.cursor)
 }
 
 // rowScroll is the sidebar's scrollColumn over the rows: the scrollbar takes
-// room only once they overflow, so the rows sit as far from the right edge as
-// from the left until then.
+// room only once they overflow.
 func (p *pullsScreen) rowScroll(gtx C, th *ui.Theme) material.ListStyle {
 	list := th.ScrollArea(&p.rows)
 	list.Indicator.MinorWidth = ui.Space(2)
 	list.Indicator.CornerRadius = ui.Space(1)
 	list.Track.MinorPadding = 0
 	list.AnchorStrategy = material.Overlay
-	if p.rows.Position.Length > gtx.Constraints.Max.Y {
-		list.AnchorStrategy = material.Occupy
-	}
 	return list
 }
 
-// row is PullRow: "#N title" over two lines at most beside its checks, then
-// who, when, the facts worth a glance and the checkout it sits in.
+// The index row's columns at its right: the checks, the verdict and the
+// checkout, each its own width so they line up down the index.
+var (
+	rowChecksWidth   = unit.Dp(88)
+	rowVerdictWidth  = unit.Dp(150)
+	rowCheckoutWidth = unit.Dp(150)
+)
+
+// row is one pull request across the index: "#N title" over who, when and
+// its branch, then its checks, verdict and checkout in columns. The cursor's
+// row is filled once the keyboard moved it.
 func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	click := p.rowClicks[pr.Number]
 	if click == nil {
 		click = new(widget.Clickable)
 		p.rowClicks[pr.Number] = click
 	}
-	if click.Clicked(gtx) {
-		p.selected = pr.Number
-	}
 	checkout, _ := p.checkedOut(pr.HeadRefName)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {
 		bg := th.Surface
 		switch {
-		case pr.Number == p.selected:
+		case pr.Number == p.cursor && p.keyed:
 			bg = th.Accent
 		case click.Hovered():
 			bg = th.Over(ui.Alpha(th.Accent, ghostHoverFill))
 		}
-		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-			func(gtx C) D {
-				on := th.On(bg)
-				return layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(func(gtx C) D { return rowTitle(gtx, on, pr) }),
-						ui.VGap(0.5),
-						layout.Rigid(func(gtx C) D { return rowMeta(gtx, on, pr, checkoutName(checkout), now) }),
-					)
-				})
-			})
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Background{}.Layout(gtx,
+					func(gtx C) D { return ui.Fill(gtx, bg, 0) },
+					func(gtx C) D {
+						on := th.On(bg)
+						return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Flexed(1, func(gtx C) D {
+									return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+										layout.Rigid(func(gtx C) D { return rowTitle(gtx, on, pr) }),
+										ui.VGap(1),
+										layout.Rigid(func(gtx C) D { return rowMeta(gtx, on, pr, now) }),
+									)
+								}),
+								ui.Gap(4),
+								layout.Rigid(func(gtx C) D { return rowSide(gtx, on, pr, checkoutName(checkout)) }),
+							)
+						})
+					})
+			}),
+			layout.Rigid(th.Separator),
+		)
 	})
 }
-
-// chipFirstLineTop centers the text-xs checks chip on the text-sm title's
-// first line.
-var chipFirstLineTop = ui.Space(0.5)
 
 func rowTitle(gtx C, th *ui.Theme, pr backend.PRSummary) D {
 	return layout.Flex{}.Layout(gtx,
 		layout.Rigid(th.Text(ui.TextSM, fmt.Sprintf("#%d", pr.Number)).Mono().Muted().Layout),
-		ui.Gap(1),
+		ui.Gap(1.5),
 		layout.Flexed(1, func(gtx C) D {
-			l := th.Text(ui.TextSM, pr.Title)
-			l.MaxLines = 2
+			l := th.Text(ui.TextSM, pr.Title).Weight(font.Medium)
+			l.MaxLines = 1
 			return l.Layout(gtx)
 		}),
+	)
+}
+
+// cell lays w in a column w wide, against its right edge.
+func cell(gtx C, width unit.Dp, w layout.Widget) D {
+	px := gtx.Dp(width)
+	gtx.Constraints.Min.X, gtx.Constraints.Max.X = px, px
+	return layout.E.Layout(gtx, w)
+}
+
+// rowSide is the row's columns: the checks, the verdict worth acting on and
+// the checkout the branch sits in, which shows only where it fits whole.
+func rowSide(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string) D {
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
-			if verdictOf(pr.Checks) == verdictNone {
-				return D{}
-			}
-			return layout.Inset{Left: ui.Space(2), Top: chipFirstLineTop}.Layout(gtx, func(gtx C) D {
+			return cell(gtx, rowChecksWidth, func(gtx C) D {
+				if verdictOf(pr.Checks) == verdictNone {
+					return D{}
+				}
 				return checksChip(gtx, th, pr.Checks)
 			})
 		}),
+		layout.Rigid(func(gtx C) D { return cell(gtx, rowVerdictWidth, func(gtx C) D { return rowVerdict(gtx, th, pr) }) }),
+		layout.Rigid(func(gtx C) D {
+			return cell(gtx, rowCheckoutWidth, func(gtx C) D {
+				if checkout == "" {
+					return D{}
+				}
+				return wholeOrNothing(gtx, func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkout, th.MutedForeground) })
+			})
+		}),
 	)
+}
+
+// rowVerdict is the review verdict worth acting on; REVIEW_REQUIRED, most
+// rows' resting state, shows nothing.
+func rowVerdict(gtx C, th *ui.Theme, pr backend.PRSummary) D {
+	switch {
+	case pr.ReviewDecision == "APPROVED":
+		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.approved")).In(th.TonePass).Layout(gtx)
+	case waitsOnReviewer(pr):
+		return metaGlyph(gtx, th, icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait)
+	case pr.ReviewDecision == "CHANGES_REQUESTED":
+		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout(gtx)
+	}
+	return D{}
 }
 
 // checkoutName is the folder a PR's branch is checked out in, the name its
@@ -249,13 +300,11 @@ func checkoutName(w backend.Worktree) string {
 	return filepath.Base(w.Path)
 }
 
-// rowMeta is the row's second line; only a review verdict worth acting on
-// shows, REVIEW_REQUIRED being most rows' resting state. The facts take the
-// room first: the author truncates once they don't fit, and the checkout at
-// the far end shows only where it fits whole.
-func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string, now time.Time) D {
+// rowMeta is the row's second line: who, when, the branch, and whether it is
+// a draft or comes from a fork. The author truncates first.
+func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	facts := []layout.FlexChild{
-		layout.Flexed(1, func(gtx C) D {
+		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Min.X = 0
 			return th.Text(ui.TextXS, pr.Author).Muted().Layout(gtx)
 		}),
@@ -263,33 +312,16 @@ func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string, now tim
 		layout.Rigid(th.Text(ui.TextXS, updatedAgo(pr.UpdatedAt, now)).Mono().Muted().Layout),
 	}
 	add := func(w layout.Widget) { facts = append(facts, ui.Gap(2), layout.Rigid(w)) }
+	if pr.HeadRefName != "" {
+		add(th.Text(ui.TextXS, pr.HeadRefName).Mono().Muted().Layout)
+	}
 	if pr.IsDraft {
 		add(func(gtx C) D { return draftBadge(gtx, th) })
-	}
-	switch {
-	case pr.ReviewDecision == "APPROVED":
-		add(th.Text(ui.TextXS, i18n.T("pulls.pullsStats.approved")).In(th.TonePass).Layout)
-	case waitsOnReviewer(pr):
-		add(func(gtx C) D {
-			return metaGlyph(gtx, th, icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait)
-		})
-	case pr.ReviewDecision == "CHANGES_REQUESTED":
-		add(th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout)
 	}
 	if pr.IsCrossRepository {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)
 	}
-	items := []layout.FlexChild{layout.Rigid(func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, facts...)
-	})}
-	if checkout != "" {
-		items = append(items, ui.Gap(2), layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, func(gtx C) D {
-				return wholeOrNothing(gtx, func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkout, th.MutedForeground) })
-			})
-		}))
-	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, items...)
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, facts...)
 }
 
 // draftBorderAlpha keeps the badge's outline visible on a selected row,

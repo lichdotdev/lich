@@ -68,7 +68,6 @@
   },
   "pullsEmptyState": {
     "openFailed": "プルリクエストを作成できませんでした: {error}",
-    "noneFor": "{branch} のオープンなプルリクエストはありません。",
     "none": "オープンなプルリクエストはありません。",
     "openOnGitHub": "GitHub で開く"
   },
@@ -151,8 +150,6 @@
       "drafts": "ドラフト",
       "failing": "失敗"
     },
-    "show": "プルリクエスト一覧を表示",
-    "hide": "プルリクエスト一覧を隠す",
     "none": {
       "open": "オープンなプルリクエストはありません。",
       "closed": "クローズ済みのプルリクエストはありません。",
@@ -247,7 +244,6 @@
     "editMessage": "{method} (メッセージを編集…)",
     "editMessageBypass": "{method} (メッセージを編集… ルールを回避)",
     "refresh": "更新",
-    "open": "開く",
     "tab": {
       "overview": "概要",
       "commits": "コミット",
@@ -287,5 +283,16 @@
     },
     "send": "送信",
     "sending": "送信中…"
+  },
+  "pullsNav": {
+    "back": "プルリクエスト一覧に戻る",
+    "previous": "前のプルリクエスト",
+    "next": "次のプルリクエスト",
+    "position": "{index} / {total}",
+    "switch": "別のプルリクエストへ移動",
+    "more": "その他の操作",
+    "create": "新しいプルリクエスト",
+    "checkout": "チェックアウト",
+    "notCheckedOut": "チェックアウトなし"
   }
 }

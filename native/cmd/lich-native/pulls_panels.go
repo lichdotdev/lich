@@ -14,15 +14,11 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// actions is the header's buttons, left to right: the session, the hand-off,
-// Approve, Merge, Refresh and Open.
+// actions is the header's buttons, left to right: the session, the pending
+// review while one is written, Merge, and ⋯ with the hand-off, Approve,
+// Refresh and Open on GitHub.
 func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	busy := v.busyNow()
-	var conflicts []string
-	if conflictsWithBase(d) {
-		conflicts = p.store.conflictFiles(p.project.Path, &d).val
-	}
-	handLabel, handPrompt, handOK := pullHandoff(d, conflicts)
 	blocked := ""
 	if d.IsCrossRepository && !d.MaintainerCanModify {
 		blocked = i18n.T("pulls.pulls.forkBlocked")
@@ -30,42 +26,53 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 	if v.session.Clicked(gtx) && blocked == "" {
 		act.session = &d
 	}
-	if v.handoff.Clicked(gtx) && blocked == "" {
-		act.session, act.handoff = &d, handPrompt
-	}
 	reviewBlocked := mergeReasonForReview(d)
-	if v.approve.Clicked(gtx) && reviewBlocked == "" && d.ReviewDecision != "APPROVED" {
-		act.approve = true
-	}
-	if v.refresh.Clicked(gtx) {
-		act.refresh = true
-	}
-	if v.external.Clicked(gtx) {
-		act.external = d.URL
-	}
 	items := []ui.WrapChild{ui.WrapItem(func(gtx C) D { return v.sessionButton(gtx, th, p, d, busy, blocked) })}
-	if handOK {
-		items = append(items, ui.WrapItem(func(gtx C) D {
-			b := th.Button(&v.handoff, handLabel)
-			b.Icon, b.Variant, b.Size, b.Disabled = icPullWrench, ui.VariantGhost, ui.SizeSM, blocked != "" || busy != ""
-			return v.withTip(gtx, th, p, "handoff", blocked, b.Layout)
-		}))
+	if len(v.pendingOf(d.URL).snapshot()) > 0 {
+		items = append(items, ui.WrapItem(func(gtx C) D { return v.reviewButton(gtx, th, p, d, reviewBlocked) }))
 	}
 	items = append(items,
-		ui.WrapItem(func(gtx C) D { return v.reviewButton(gtx, th, p, d, busy, reviewBlocked, act) }),
 		ui.WrapItem(func(gtx C) D { return v.mergeButton(gtx, th, p, d, busy, act) }),
-		ui.WrapItem(func(gtx C) D {
-			b := th.Button(&v.refresh, "")
-			b.Icon, b.Variant, b.Size = icPullRefresh, ui.VariantGhost, ui.SizeIconSM
-			return v.withTip(gtx, th, p, "refresh", i18n.T("pulls.pullRequestView.refresh"), b.Layout)
-		}),
-		ui.WrapItem(func(gtx C) D {
-			b := th.Button(&v.external, i18n.T("pulls.pullRequestView.open"))
-			b.Icon, b.Variant, b.Size = icPullOut, ui.VariantGhost, ui.SizeSM
-			return b.Layout(gtx)
-		}),
+		ui.WrapItem(func(gtx C) D { return v.moreButton(gtx, th, p, d, busy, blocked, reviewBlocked, act) }),
 	)
 	return ui.Wrap{GapX: ui.Space(2), GapY: ui.Space(2), Justify: ui.JustifyEnd}.Layout(gtx, items...)
+}
+
+// moreButton is ⋯: the hand-off a failing or conflicting pull request offers,
+// Approve while no review is being written, Refresh and Open on GitHub.
+func (v *pullView) moreButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, blocked, reviewBlocked string, act *pullsAction) D {
+	var conflicts []string
+	if conflictsWithBase(d) {
+		conflicts = p.store.conflictFiles(p.project.Path, &d).val
+	}
+	var entries []ui.MenuEntry
+	if label, prompt, ok := pullHandoff(d, conflicts); ok {
+		entries = append(entries, ui.MenuEntry{Label: label, Icon: icPullWrench, Disabled: blocked != "" || busy != "",
+			OnClick: func() { act.session, act.handoff = &d, prompt }})
+	}
+	if len(v.pendingOf(d.URL).snapshot()) == 0 {
+		label := i18n.T("pulls.pullRequestView.approve")
+		switch {
+		case busy == "approve":
+			label = i18n.T("pulls.pullRequestView.approving")
+		case d.ReviewDecision == "APPROVED":
+			label = i18n.T("pulls.pullRequestView.approved")
+		}
+		entries = append(entries, ui.MenuEntry{Label: label, Icon: icPullCheck,
+			Disabled: busy != "" || reviewBlocked != "" || d.ReviewDecision == "APPROVED",
+			OnClick:  func() { act.approve = true }})
+	}
+	url := d.URL
+	entries = append(entries,
+		ui.MenuEntry{Kind: ui.MenuSeparator},
+		ui.MenuEntry{Label: i18n.T("pulls.pullRequestView.refresh"), Icon: icPullRefresh, OnClick: func() { act.refresh = true }},
+		ui.MenuEntry{Label: i18n.T("pulls.pullsEmptyState.openOnGitHub"), Icon: icPullOut, OnClick: func() { act.external = url }},
+	)
+	b := th.Button(&v.moreClick, "")
+	b.Icon, b.Variant, b.Size = icPullMore, ui.VariantGhost, ui.SizeIconSM
+	return v.withTip(gtx, th, p, "more", i18n.T("pulls.pullsNav.more"), func(gtx C) D {
+		return th.DropdownMenu(p.root, &v.moreMenu, entries).Layout(gtx, b.Layout)
+	})
 }
 
 // sessionButton is Open in Session, or Go to session when a session already
@@ -217,27 +224,100 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d backend.PR
 	case tabChecks:
 		rows = v.checkRows(gtx, th, d, act)
 	default:
-		rows = v.overviewRows(th, d, act)
+		return v.overview(gtx, th, p, d, act)
 	}
+	return v.panelList(gtx, th, rows)
+}
+
+func (v *pullView) panelList(gtx C, th *ui.Theme, rows []layout.Widget) D {
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return th.ScrollArea(&v.panel).Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
 	})
 }
 
-// overviewRows is PullsOverview: who opened it, who reviews it, and its
-// description.
+// The Overview's columns: the description held to a reading width, the facts
+// beside it; an island narrower than overviewSplitWidth puts the facts over
+// the description.
+var (
+	overviewProseWidth = unit.Dp(720)
+	overviewFactsWidth = unit.Dp(280)
+	overviewSplitWidth = unit.Dp(760)
+)
+
+// overview is the description beside the pull request's facts.
+func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
+	rows := v.overviewRows(th, d, act)
+	if gtx.Constraints.Max.X < gtx.Dp(overviewSplitWidth) {
+		facts := func(gtx C) D {
+			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D { return v.facts(gtx, th, p, d) })
+		}
+		return v.panelList(gtx, th, append([]layout.Widget{facts}, rows...))
+	}
+	return layout.Flex{}.Layout(gtx,
+		layout.Flexed(1, func(gtx C) D { return v.panelList(gtx, th, rows) }),
+		layout.Rigid(func(gtx C) D { return verticalRule(gtx, th) }),
+		layout.Rigid(func(gtx C) D {
+			w := gtx.Dp(overviewFactsWidth)
+			gtx.Constraints.Min.X, gtx.Constraints.Max.X = w, w
+			return layout.Inset{Left: ui.Space(5), Right: ui.Space(5), Top: ui.Space(5)}.Layout(gtx, func(gtx C) D { return v.facts(gtx, th, p, d) })
+		}),
+	)
+}
+
+// facts is what the status line says on the other tabs, told in full: who
+// reviews it, the checks, whether it merges, and the checkout and sessions
+// its branch sits in.
+func (v *pullView) facts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
+	vs := v.verdicts(gtx, th, p, d)
+	var children []layout.FlexChild
+	section := func(title string, body ...layout.Widget) {
+		if len(children) > 0 {
+			children = append(children, ui.VGap(5))
+		}
+		children = append(children, layout.Rigid(sectionHeading(th, title)))
+		for _, w := range body {
+			if w != nil {
+				children = append(children, ui.VGap(2), layout.Rigid(w))
+			}
+		}
+	}
+	section(i18n.T("pulls.pullsOverview.reviewers"), vs.review, func(gtx C) D { return reviewerChips(gtx, th, d.Reviewers) })
+	if vs.checks != nil {
+		section(i18n.T("pulls.pullRequestView.tab.checks"), vs.checks)
+	}
+	if vs.merge != nil {
+		section(i18n.T("pulls.pullRequestView.merge"), vs.merge)
+	}
+	section(i18n.T("pulls.pullsNav.checkout"), v.checkoutFact(th, p, d)...)
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
+// checkoutFact is the checkout the branch sits in and the sessions in it, or
+// that it sits in none.
+func (v *pullView) checkoutFact(th *ui.Theme, p *pullsScreen, d backend.PRDetail) []layout.Widget {
+	wt, ok := p.checkedOut(d.HeadRefName)
+	if !ok {
+		return []layout.Widget{th.Text(ui.TextSM, i18n.T("pulls.pullsNav.notCheckedOut")).Muted().Layout}
+	}
+	out := []layout.Widget{func(gtx C) D { return metaGlyph(gtx, th, icCheckout, checkoutName(wt), th.Foreground) }}
+	for _, id := range p.sessionsIn(p.project.ID, wt.Path) {
+		out = append(out, func(gtx C) D { return metaGlyph(gtx, th, icPullSession, p.sessionLabel(id), th.MutedForeground) })
+	}
+	return out
+}
+
+// overviewRows is the description under its heading, held to a reading
+// width.
 func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	pad := func(top float32, w layout.Widget) layout.Widget {
 		return func(gtx C) D {
+			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(overviewProseWidth+2*pullsPadX))
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(top)}.Layout(gtx, w)
 		}
 	}
 	body := strings.TrimSpace(d.Body)
 	return []layout.Widget{
-		pad(4, th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": d.Author})).Muted().Layout),
-		pad(5, sectionHeading(th, i18n.T("pulls.pullsOverview.reviewers"))),
-		pad(2, func(gtx C) D { return reviewerChips(gtx, th, d.Reviewers) }),
-		pad(5, func(gtx C) D { return v.descriptionHeading(gtx, th, d) }),
+		pad(4, func(gtx C) D { return v.descriptionHeading(gtx, th, d) }),
 		pad(2, func(gtx C) D {
 			if v.edit.bodyURL == d.URL {
 				return v.descriptionField(gtx, th, d, act)

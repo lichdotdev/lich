@@ -70,7 +70,6 @@
   },
   "pullsEmptyState": {
     "openFailed": "Не удалось открыть pull request: {error}",
-    "noneFor": "Нет открытого pull request для {branch}.",
     "none": "Нет открытого pull request.",
     "openOnGitHub": "Открыть на GitHub"
   },
@@ -159,8 +158,6 @@
       "drafts": "Черновики",
       "failing": "С ошибками"
     },
-    "show": "Показать список pull request",
-    "hide": "Скрыть список pull request",
     "none": {
       "open": "Нет открытых pull request.",
       "closed": "Нет закрытых pull request.",
@@ -264,7 +261,6 @@
     "editMessage": "{method}, изменить сообщение…",
     "editMessageBypass": "{method}, изменить сообщение… (в обход правил)",
     "refresh": "Обновить",
-    "open": "Открыть",
     "tab": {
       "overview": "Обзор",
       "commits": "Коммиты",
@@ -310,5 +306,16 @@
     },
     "send": "Отправить",
     "sending": "Отправка…"
+  },
+  "pullsNav": {
+    "back": "Назад к pull request’ам",
+    "previous": "Предыдущий pull request",
+    "next": "Следующий pull request",
+    "position": "{index} из {total}",
+    "switch": "Перейти к другому pull request",
+    "more": "Другие действия",
+    "create": "Новый pull request",
+    "checkout": "Рабочая копия",
+    "notCheckedOut": "Нет рабочей копии"
   }
 }

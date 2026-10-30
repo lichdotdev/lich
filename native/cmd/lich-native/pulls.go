@@ -10,20 +10,11 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
-	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
-)
-
-// pullsListWidth is PullsList's w-80. The list grows past it, up to
-// pullsListMaxWidth, when the filter tabs need more: Portuguese and Spanish
-// labels do not fit in 320.
-var (
-	pullsListWidth    = unit.Dp(320)
-	pullsListMaxWidth = unit.Dp(400)
 )
 
 var (
@@ -41,6 +32,7 @@ var (
 	icPullWrench  = icons.Lucide("wrench")
 	icPullDown    = icons.Lucide("chevron-down")
 	icPullRight   = icons.Lucide("chevron-right")
+	icPullBack    = icons.Lucide("chevron-left")
 	icPullHide    = icons.Lucide("panel-left-close")
 	icPullShow    = icons.Lucide("panel-left-open")
 	icPullSearch  = icons.Lucide("search")
@@ -59,8 +51,8 @@ const (
 	tabChecks
 )
 
-// pullsScreen is the Pulls screen: the list island and the pull request island
-// over the stage, like Settings. It reads through the window's pullsStore and
+// pullsScreen is the Pulls screen over the stage, like Settings: the index of
+// the project's pull requests, or one of them across the whole island. It reads through the window's pullsStore and
 // leaves what an action means for the window (pullsAction).
 type pullsScreen struct {
 	store *pullsStore
@@ -77,23 +69,22 @@ type pullsScreen struct {
 	// strip to merge the active tab into the one it sits over.
 	spans    []islandSpan
 	project  backend.Project
-	selected int // the PR in view, 0 for none yet
-	// branchPR is the PR of the checkout's branch, which the screen opens on
-	// until a row is chosen.
-	branchPR   int
-	branch     string // the checkout's branch, which the empty state names
-	state      pullsState
-	filter     ui.TabsState
-	listHidden bool
-	// slide eases the list island in from the left and back out, on the
-	// dock's curve.
-	slide dockSlide
+	selected int // the PR in view, 0 for the index
+	// branchPR is the PR of the checkout's branch, which the screen opens on.
+	branchPR int
+	branch   string // the checkout's branch, which the index's New names
+	state    pullsState
+	filter   ui.TabsState
+	// cursor is the index row the keyboard is on, by number; it is drawn
+	// only once the keyboard moved it, so a mouse user sees no selection.
+	cursor int
+	keyed  bool
 
 	query      widget.Editor
 	clearQuery widget.Clickable
 	stateMenu  ui.MenuState
 	stateClick widget.Clickable
-	toggleList iconActionState
+	create     widget.Clickable
 	rows       widget.List
 	rowClicks  map[int]*widget.Clickable
 
@@ -131,7 +122,6 @@ func (p *pullsScreen) reviewSession(d backend.PRDetail) (id, target string) {
 func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {
 	p := &pullsScreen{store: store, root: root, state: pullsOpen, rowClicks: map[int]*widget.Clickable{}}
 	p.rows.Axis = layout.Vertical
-	p.slide.snap(true)
 	p.view.init()
 	p.view.root = root
 	return p
@@ -176,7 +166,7 @@ func (p *pullsScreen) recheck(now time.Time) time.Time {
 	return now.Add(prRecheck)
 }
 
-// layout draws the two islands across gtx and answers what was asked of the
+// layout draws the island across gtx and answers what was asked of the
 // window; th is on the window's canvas.
 func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 	var act pullsAction
@@ -185,40 +175,47 @@ func (p *pullsScreen) layout(gtx C, th *ui.Theme) pullsAction {
 		gtx.Execute(op.InvalidateCmd{At: p.recheck(gtx.Now)})
 	}
 	rows := p.store.list(p.project.Path, p.state)
-	if p.selected == 0 && p.branchPR == 0 && len(rows.val) > 0 {
-		p.selected = filterPulls(rows.val, filterAll, "")[0].Number
+	p.keys(gtx, rows.val)
+	for n, click := range p.rowClicks {
+		if p.selected == 0 && click.Clicked(gtx) {
+			p.keyed = false
+			p.openPR(n)
+		}
 	}
-	// Before the slide reads listHidden, so it starts in the frame that
-	// took the click.
-	for p.toggleList.click.Clicked(gtx) {
-		p.listHidden = true
+	if p.selected != 0 {
+		p.view.navClicks(gtx, p, p.visible(rows.val))
 	}
-	for p.view.showList.click.Clicked(gtx) {
-		p.listHidden = false
-	}
-	share := p.slide.at(gtx, !p.listHidden)
-	size := gtx.Constraints.Max
-	w := p.listWidth(gtx, th, filterCounts(rows.val, p.query.Text()))
-	slot := int(share * float32(w+gtx.Dp(gutter)))
-	p.spans = p.spans[:0]
-	if slot > 0 {
-		p.spans = append(p.spans, islandSpan{x0: slot - w - gtx.Dp(gutter), x1: slot - gtx.Dp(gutter), color: th.Sidebar})
-	}
-	p.spans = append(p.spans, islandSpan{x0: slot, x1: size.X, color: th.Background})
-	if slot > 0 {
-		clipped := clip.Rect{Max: image.Pt(slot, size.Y)}.Push(gtx.Ops)
-		offset := op.Offset(image.Pt(slot-w-gtx.Dp(gutter), 0)).Push(gtx.Ops)
-		list := gtx
-		list.Constraints = layout.Exact(image.Pt(w, size.Y))
-		pullsIsland(list, th, th.Sidebar, p.squareX == slot-w-gtx.Dp(gutter), func(gtx C, th *ui.Theme) D { return p.listLayout(gtx, th, rows) })
-		offset.Pop()
-		clipped.Pop()
-	}
-	defer op.Offset(image.Pt(slot, 0)).Push(gtx.Ops).Pop()
-	view := gtx
-	view.Constraints = layout.Exact(image.Pt(max(size.X-slot, 0), size.Y))
-	pullsIsland(view, th, th.Background, p.squareX == slot, func(gtx C, th *ui.Theme) D { return p.view.layout(gtx, th, p, &act) })
+	p.spans = append(p.spans[:0], islandSpan{x0: 0, x1: gtx.Constraints.Max.X, color: th.Background})
+	pullsIsland(gtx, th, th.Background, p.squareX == 0, func(gtx C, th *ui.Theme) D {
+		if p.selected == 0 {
+			return p.indexLayout(gtx, th, rows, &act)
+		}
+		return p.view.layout(gtx, th, p, &act)
+	})
 	return act
+}
+
+// visible is the index's rows under its filter and query, the order the
+// detail's previous and next walk.
+func (p *pullsScreen) visible(rows []backend.PRSummary) []backend.PRSummary {
+	return filterPulls(rows, pullsFilter(p.filter.Selected), p.query.Text())
+}
+
+// openPR shows pull request n, the index's cursor following it. Both it and
+// backToIndex ask for a frame: a menu's choice lands after the frame drew.
+func (p *pullsScreen) openPR(n int) {
+	p.selected, p.cursor = n, n
+	p.store.invalidate()
+}
+
+// backToIndex leaves the pull request for the index, its filter, query and
+// cursor as they were.
+func (p *pullsScreen) backToIndex() {
+	if p.selected != 0 {
+		p.cursor = p.selected
+	}
+	p.selected = 0
+	p.store.invalidate()
 }
 
 // pullsIsland is a rounded-lg box of bg the size of gtx, its top-left corner

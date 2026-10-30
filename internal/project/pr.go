@@ -63,7 +63,7 @@ func runGH(timeout time.Duration, dir, tokenEnv string, args ...string) ([]byte,
 }
 
 // prViewFields is the gh `pr view --json` selection backing the Pulls panel.
-const prViewFields = "number,url,state,title,body,author,isDraft,mergeable,mergeStateStatus,reviewDecision,reviewRequests,latestReviews,baseRefName,headRefName,isCrossRepository,maintainerCanModify,statusCheckRollup,changedFiles,commits"
+const prViewFields = "number,url,state,title,body,author,isDraft,mergeable,mergeStateStatus,reviewDecision,reviewRequests,latestReviews,baseRefName,headRefName,isCrossRepository,maintainerCanModify,statusCheckRollup,changedFiles,additions,deletions,commits"
 
 // prSelector renders the pull request argument gh's subcommands take ahead of
 // their flags. Zero means "the branch checked out at path" — gh's own default,
@@ -107,6 +107,8 @@ type ghPRView struct {
 	BaseRefName         string            `json:"baseRefName"`
 	HeadRefName         string            `json:"headRefName"`
 	ChangedFiles        int               `json:"changedFiles"`
+	Additions           int               `json:"additions"`
+	Deletions           int               `json:"deletions"`
 	IsCrossRepository   bool              `json:"isCrossRepository"`
 	MaintainerCanModify bool              `json:"maintainerCanModify"`
 	StatusCheckRollup   []checkItem       `json:"statusCheckRollup"`
@@ -187,6 +189,8 @@ func parsePRDetail(out []byte, openOnly bool) (*PRDetail, error) {
 		BaseRefName:         v.BaseRefName,
 		HeadRefName:         v.HeadRefName,
 		ChangedFiles:        v.ChangedFiles,
+		Additions:           v.Additions,
+		Deletions:           v.Deletions,
 		IsCrossRepository:   v.IsCrossRepository,
 		MaintainerCanModify: v.MaintainerCanModify,
 		Checks:              reduceChecks(v.StatusCheckRollup),
