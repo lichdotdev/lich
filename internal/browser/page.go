@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/page"
 	"github.com/lichdotdev/lich/api"
 )
 
@@ -129,6 +130,10 @@ type Page interface {
 	// runs the page's script or input fails with errDialogOpen while one is
 	// open.
 	AnswerDialog(ctx context.Context, accept bool, text string) error
+	// OnFileChooser hands the page what to call when a file input asks for
+	// files, in the input's own mode; the paths it answers fill the input,
+	// and none leaves it as it was.
+	OnFileChooser(pick func(page.FileChooserOpenedMode) ([]string, error))
 	Screencast(ctx context.Context, v Viewport) error
 	StopScreencast(ctx context.Context) error
 	Resize(ctx context.Context, v Viewport) error

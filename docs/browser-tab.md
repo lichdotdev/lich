@@ -98,7 +98,17 @@ input. lich answers no dialog on its own:
 
 Accepting a `beforeunload` less than a second after it opened waits out the
 rest of that second: Chrome aborts the navigation it held when it is accepted
-sooner, and reloads the page, which asks again.
+sooner, and reloads the page, which asks again. On a busy machine that second
+can still be too soon; lich then takes the leave up again once the reload
+lands, so Leave goes where it was going.
+
+## File inputs
+
+A click on a file input opens the system's file chooser, the one the footer's
+attach button opens, for one file or several as the input asks; what the
+person picks fills the input, and Cancel leaves it as it was. It opens only
+while a pane shows the page: an agent's click on a file input in a page nobody
+is looking at leaves it empty, and no tool fills one.
 
 ## Languages of the page answer
 
