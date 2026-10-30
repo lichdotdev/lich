@@ -32,19 +32,19 @@ func renderTable(th *ui.Theme, source []byte, table *extast.Table) *markdownTabl
 	t := &markdownTable{}
 	for row := table.FirstChild(); row != nil; row = row.NextSibling() {
 		_, header := row.(*extast.TableHeader)
-		fg := th.MutedForeground
+		fg := markdownProseColor(th)
 		if header {
 			fg = th.Foreground
 		}
 		cells := make([]*markdownCell, 0, len(table.Alignments))
 		for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
-			spans := renderNode(th, source, cell, fg)
+			content := renderNode(th, source, cell, fg)
 			if header {
-				for i := range spans {
-					spans[i].Font.Weight = font.Medium
+				for i := range content.spans {
+					content.spans[i].Font.Weight = font.Medium
 				}
 			}
-			cells = append(cells, &markdownCell{spans: spans})
+			cells = append(cells, content)
 		}
 		for len(cells) < len(table.Alignments) {
 			cells = append(cells, &markdownCell{})

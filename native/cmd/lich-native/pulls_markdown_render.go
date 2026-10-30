@@ -35,46 +35,58 @@ func renderBlocks(th *ui.Theme, src string) []markdownBlock {
 	doc := markdownParser.Parse(text.NewReader(source))
 	var out []markdownBlock
 	for n := doc.FirstChild(); n != nil; n = n.NextSibling() {
-		if t, ok := n.(*extast.Table); ok {
-			out = append(out, markdownBlock{table: renderTable(th, source, t)})
-			continue
-		}
-		if spans := renderNode(th, source, n, th.MutedForeground); len(spans) > 0 {
-			out = append(out, markdownBlock{prose: &markdownCell{spans: spans}})
+		if block, ok := renderBlock(th, source, n); ok {
+			out = append(out, block)
 		}
 	}
 	return out
 }
 
-// spanWriter walks a node into spans: mdProse's text-sm body in fg with the
-// links in the foreground, h1 text-lg, h2 text-base, the rest text-sm.
+func renderBlock(th *ui.Theme, source []byte, n ast.Node) (markdownBlock, bool) {
+	switch n := n.(type) {
+	case *extast.Table:
+		return markdownBlock{table: renderTable(th, source, n)}, true
+	case *ast.List:
+		return markdownBlock{list: renderList(th, source, n)}, true
+	default:
+		cell := renderNode(th, source, n, markdownProseColor(th))
+		return markdownBlock{prose: cell}, len(cell.spans) > 0
+	}
+}
+
+// spanWriter walks a node into spans, preserving its inline formatting.
 type spanWriter struct {
-	th     *ui.Theme
-	source []byte
-	fg     color.NRGBA
-	cur    richtext.SpanStyle
-	spans  []richtext.SpanStyle
-	lists  []*ast.List
-	index  []int
+	th            *ui.Theme
+	source        []byte
+	fg            color.NRGBA
+	cur           richtext.SpanStyle
+	spans         []richtext.SpanStyle
+	code          []bool
+	codeStart     int
+	inlineCode    bool
+	lists         []*ast.List
+	index         []int
+	headingWeight font.Weight
 	// itemStart holds a list item's marker as the last span, so the item's
 	// first paragraph opens on the marker's line.
 	itemStart bool
 }
 
-func renderNode(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) []richtext.SpanStyle {
+func renderNode(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) *markdownCell {
 	w := &spanWriter{th: th, source: source, fg: fg}
-	w.cur = richtext.SpanStyle{Font: font.Font{Typeface: th.Sans}, Size: ui.TextSM, Color: fg}
+	w.cur = richtext.SpanStyle{Font: font.Font{Typeface: th.Sans}, Size: markdownBodySize, Color: fg}
 	_ = ast.Walk(n, w.visit)
 	if last := len(w.spans) - 1; last >= 0 {
 		w.spans[last].Content = strings.TrimRight(w.spans[last].Content, "\n")
 	}
-	return w.spans
+	return &markdownCell{spans: w.spans, code: w.code}
 }
 
 func (w *spanWriter) emit(s string) {
 	span := w.cur.DeepCopy()
 	span.Content = s
 	w.spans = append(w.spans, span)
+	w.code = append(w.code, w.inlineCode)
 	w.itemStart = false
 }
 
@@ -118,6 +130,7 @@ func (w *spanWriter) visit(n ast.Node, entering bool) (ast.WalkStatus, error) {
 	case *ast.HTMLBlock, *ast.RawHTML:
 		return ast.WalkSkipChildren, nil
 	case *ast.CodeSpan:
+		w.codeSpan(entering)
 		w.monospace(entering)
 	case *ast.Emphasis:
 		w.emphasis(n, entering)
@@ -143,16 +156,38 @@ func (w *spanWriter) visit(n ast.Node, entering bool) (ast.WalkStatus, error) {
 	return ast.WalkContinue, nil
 }
 
+func (w *spanWriter) codeSpan(entering bool) {
+	if entering {
+		w.codeStart = len(w.spans)
+		w.inlineCode = true
+		return
+	}
+	if w.codeStart < len(w.spans) {
+		w.spans[w.codeStart].Content = "\u00a0" + w.spans[w.codeStart].Content
+		last := len(w.spans) - 1
+		w.spans[last].Content += "\u00a0"
+	}
+	w.inlineCode = false
+}
+
 func (w *spanWriter) heading(n *ast.Heading, entering bool) {
 	if !entering {
-		w.cur.Size = ui.TextSM
+		w.cur.Size = markdownBodySize
+		w.cur.Font.Weight = font.Normal
+		w.cur.Color = w.fg
+		w.headingWeight = font.Normal
 		return
 	}
 	w.separate()
+	w.headingWeight = font.Bold
+	w.cur.Font.Weight = w.headingWeight
+	w.cur.Color = w.th.Foreground
 	switch n.Level {
 	case 1:
 		w.cur.Size = markdownH1
 	case 2:
+		w.cur.Size = markdownH2
+	default:
 		w.cur.Size = ui.TextBase
 	}
 }
@@ -203,7 +238,7 @@ func (w *spanWriter) emphasis(n *ast.Emphasis, entering bool) {
 	case n.Level == 2 && entering:
 		w.cur.Font.Weight = font.Bold
 	case n.Level == 2:
-		w.cur.Font.Weight = font.Normal
+		w.cur.Font.Weight = w.headingWeight
 	case entering:
 		w.cur.Font.Style = font.Italic
 	default:
@@ -215,8 +250,11 @@ func (w *spanWriter) link(url string, entering bool) {
 	w.cur.Interactive = entering
 	w.cur.Set(markdownURL, url)
 	w.cur.Color = w.fg
-	if entering {
+	if w.headingWeight == font.Bold {
 		w.cur.Color = w.th.Foreground
+	}
+	if entering {
+		w.cur.Color = w.th.TonePass
 	}
 }
 
