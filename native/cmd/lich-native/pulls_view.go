@@ -161,11 +161,11 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 	read := p.store.detail(p.project.Path, p.selected)
 	switch {
 	case read.val == nil && read.err != "":
-		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return notice(gtx, th, read.err) })
+		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return notice(gtx, th, read.err) })
 	case read.val == nil && !read.loaded, read.val == nil && read.loading:
-		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return detailSkeleton(gtx, th) })
+		return v.withToolbar(gtx, th, p, func(gtx C) D { return skeletonHeading(gtx, th) }, v.detailSkeleton(th))
 	case read.val == nil:
-		return v.withToolbar(gtx, th, p, nil, act, func(gtx C) D { return notice(gtx, th, i18n.T("pulls.pullsEmptyState.none")) })
+		return v.withToolbar(gtx, th, p, nil, func(gtx C) D { return notice(gtx, th, i18n.T("pulls.pullsEmptyState.none")) })
 	}
 	d := v.edit.shown(*read.val, read, p.store.lastStale())
 	if stillSettling(d) && !read.loading {
@@ -179,14 +179,13 @@ func (v *pullView) layout(gtx C, th *ui.Theme, p *pullsScreen, act *pullsAction)
 		v.edit.openForShot(v.shotEdit, d)
 		v.shotEdit = ""
 	}
-	return v.withToolbar(gtx, th, p, &d, act, func(gtx C) D { return v.body(gtx, th, p, d, act) })
+	heading := func(gtx C) D { return v.titleRow(gtx, th, p, d, act) }
+	return v.withToolbar(gtx, th, p, heading, func(gtx C) D { return v.body(gtx, th, p, d, act) })
 }
 
-// withToolbar lays the strip over w: the crumb, then the pull request's title
-// and stats with its actions at the right on the title's line. An island too
-// narrow for both on one line puts the actions on their own line above the
-// title.
-func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *backend.PRDetail, act *pullsAction, w layout.Widget) D {
+// withToolbar lays the strip over w: the crumb, then heading, the pull
+// request's title row or its skeleton, when there is one.
+func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, heading, w layout.Widget) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.UniformInset(pullsToolbarPad).Layout(gtx, func(gtx C) D {
@@ -194,10 +193,10 @@ func (v *pullView) withToolbar(gtx C, th *ui.Theme, p *pullsScreen, d *backend.P
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return v.crumb(gtx, th, p) }),
 					layout.Rigid(func(gtx C) D {
-						if d == nil {
+						if heading == nil {
 							return D{}
 						}
-						return v.titleRow(gtx, th, p, *d, act)
+						return heading(gtx)
 					}),
 				)
 			})
@@ -575,16 +574,4 @@ func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 			return layout.Inset{Left: ui.Space(4)}.Layout(gtx, func(gtx C) D { return diffStat(gtx, th, d.Additions, d.Deletions) })
 		}),
 	)
-}
-
-func detailSkeleton(gtx C, th *ui.Theme) D {
-	return layout.Inset{Left: pullsPadX, Right: pullsPadX}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-			layout.Rigid(th.Skeleton(ui.Space(96), ui.Space(5)).Layout),
-			ui.VGap(4),
-			layout.Rigid(th.Skeleton(ui.Space(72), ui.Space(3)).Layout),
-			ui.VGap(6),
-			layout.Rigid(th.Skeleton(0, ui.Space(24)).Layout),
-		)
-	})
 }

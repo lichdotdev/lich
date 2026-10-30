@@ -134,6 +134,9 @@ island's edge and its hover fill spans the 8px edge to edge.
 
 Rows in a list stand `Space(0.5)` to `Space(1.5)` apart; groups of rows `Space(2)`.
 
+A scrolling list lays its bar over the rows (`material.Overlay`), never beside them: a bar that takes its
+own width pushes the rows' right edge in, and their hover lands farther from the right edge than the left.
+
 The geometry is shared; the look is not. Every screen lays out on the sidebar's edge, padding and hover
 shape, and keeps what makes it itself: the Pulls list keeps its seams between rows, the Settings pane its
 reading column. Matching a screen to the sidebar means its spacing, never its decoration.
@@ -156,6 +159,11 @@ A reading pane, a column of prose and settings rows under a title, is the one pl
 edge: the Settings pane sits at `settingsPanePadX` / `settingsPanePadY` (40px / 32px), its close button in
 the corner at `settingsCloseInset` (14px). Every other screen body follows the sidebar: its content at
 18px from the island's edge, the 8px edge plus a row's 10px (`pullsPadX` in Pulls).
+
+### Loading
+
+A skeleton mirrors the screen it stands for: the same insets, line heights and columns, a bar where each
+piece of text will land, so nothing moves when the content arrives. A generic block of bars is a bug.
 
 ### Boxes inside a screen
 

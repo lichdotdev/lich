@@ -8,6 +8,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/unit"
 	"gioui.org/widget"
+	"gioui.org/widget/material"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -248,8 +249,11 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d backend.PR
 }
 
 func (v *pullView) panelList(gtx C, th *ui.Theme, rows []layout.Widget) D {
+	list := th.ScrollArea(&v.panel)
+	// The bar overlays the rows so their hover keeps the same edge on both sides.
+	list.AnchorStrategy = material.Overlay
 	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		return th.ScrollArea(&v.panel).Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
+		return list.Layout(gtx, len(rows), func(gtx C, i int) D { return rows[i](gtx) })
 	})
 }
 
