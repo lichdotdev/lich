@@ -113,6 +113,8 @@
     "noDescription": "説明はありません。",
     "reviewers": "レビュアー",
     "nobodyYet": "まだいません",
+    "copyLink": "リンクをコピー",
+    "copyMarkdown": "Markdown をコピー",
     "editDescription": "編集",
     "save": "保存",
     "saving": "保存中…",

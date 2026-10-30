@@ -117,6 +117,8 @@
     "noDescription": "Описания нет.",
     "reviewers": "Ревьюеры",
     "nobodyYet": "Пока никого",
+    "copyLink": "Копировать ссылку",
+    "copyMarkdown": "Копировать Markdown",
     "editDescription": "Изменить",
     "save": "Сохранить",
     "saving": "Сохранение…",

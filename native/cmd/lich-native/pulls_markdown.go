@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"gioui.org/font"
+	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/text"
 	"gioui.org/unit"
@@ -19,6 +20,9 @@ const (
 	markdownH1              = unit.Sp(20)
 	markdownH2              = unit.Sp(19)
 	markdownLineHeightScale = 1.5
+	// markdownHeadingLineHeightScale is GitHub's line-height for headings,
+	// which keeps an h1 or h2's rule close to its text.
+	markdownHeadingLineHeightScale = 1.25
 )
 
 func markdownProseColor(th *ui.Theme) color.NRGBA {
@@ -43,6 +47,9 @@ type markdownBlock struct {
 	prose *markdownCell
 	table *markdownTable
 	list  *markdownList
+	// rule underlines the prose across the body's width, GitHub's border
+	// under an h1 or h2.
+	rule bool
 }
 
 // markdownCell is rendered Markdown and the link state it is laid out with.
@@ -50,6 +57,8 @@ type markdownCell struct {
 	spans []richtext.SpanStyle
 	code  []bool
 	state richtext.InteractiveText
+	// lineHeight is the line height scale, markdownLineHeightScale when 0.
+	lineHeight float32
 }
 
 // markdownCache keeps each body's markdownText by a key of the caller's, so
@@ -144,6 +153,13 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, open func(url string)) D {
 	if b.list != nil {
 		return b.list.layout(gtx, th, open)
 	}
+	if b.rule {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return b.prose.layout(gtx, th, open) }),
+			ui.VGap(1),
+			layout.Rigid(th.Separator),
+		)
+	}
 	return b.prose.layout(gtx, th, open)
 }
 
@@ -158,7 +174,14 @@ func (c *markdownCell) layout(gtx C, th *ui.Theme, open func(url string)) D {
 		}
 	}
 	style := richtext.Text(&c.state, th.Shaper, c.spans...)
-	style.LineHeightScale = markdownLineHeightScale
+	style.LineHeightScale = c.lineHeightScale()
 	c.codeBackgrounds(gtx, th)
 	return style.Layout(gtx)
+}
+
+func (c *markdownCell) lineHeightScale() float32 {
+	if c.lineHeight != 0 {
+		return c.lineHeight
+	}
+	return markdownLineHeightScale
 }

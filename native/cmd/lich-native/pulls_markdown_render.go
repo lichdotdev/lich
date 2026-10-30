@@ -26,7 +26,7 @@ import (
 // markdownURL is the span metadata a link's destination is kept under.
 const markdownURL = "url"
 
-var markdownParser = goldmark.New(goldmark.WithExtensions(extension.Table, extension.Linkify)).Parser()
+var markdownParser = goldmark.New(goldmark.WithExtensions(extension.Table, extension.Linkify, extension.TaskList)).Parser()
 
 // renderBlocks parses src once, so a reference link resolves wherever its
 // definition sits, and renders each top-level node as its own block.
@@ -48,6 +48,10 @@ func renderBlock(th *ui.Theme, source []byte, n ast.Node) (markdownBlock, bool) 
 		return markdownBlock{table: renderTable(th, source, n)}, true
 	case *ast.List:
 		return markdownBlock{list: renderList(th, source, n)}, true
+	case *ast.Heading:
+		cell := renderNode(th, source, n, markdownProseColor(th))
+		cell.lineHeight = markdownHeadingLineHeightScale
+		return markdownBlock{prose: cell, rule: n.Level <= 2}, len(cell.spans) > 0
 	default:
 		cell := renderNode(th, source, n, markdownProseColor(th))
 		return markdownBlock{prose: cell}, len(cell.spans) > 0
