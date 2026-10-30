@@ -121,6 +121,15 @@ func (p *Presence) Leaving(key string) bool {
 	return ok && it.leaving
 }
 
+// Settle puts key's item at rest, its entry played: an item another motion
+// brings in, which Layout would otherwise grow in again once that motion
+// hands it back.
+func (p *Presence) Settle(key string) {
+	if it, ok := p.items[key]; ok && !it.leaving {
+		it.motion.seed(1)
+	}
+}
+
 // Layout draws key's item w in its motion; a leaving item takes no input.
 func (p *Presence) Layout(gtx C, key string, w layout.Widget) D {
 	it, ok := p.items[key]

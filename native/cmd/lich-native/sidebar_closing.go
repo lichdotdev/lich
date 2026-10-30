@@ -159,6 +159,9 @@ func (p *blockPresence) shown(now time.Time, project string, live []blockView) [
 		shown[i] = p.last[key]
 		if m, ok := p.moving[key]; ok {
 			shown[i].move = &m
+			if !m.leaving {
+				p.motion.Settle(key)
+			}
 		}
 	}
 	return shown

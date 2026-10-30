@@ -258,3 +258,59 @@ func TestAClosedCardShrinksOutOfACheckoutTree(t *testing.T) {
 		t.Errorf("a closed card: heights %v, want shrinking to the list without it", out)
 	}
 }
+
+func TestANewCardNeverDipsOnceItsLineHasDrawn(t *testing.T) {
+	s := newSidebar(&ui.Root{})
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
+	var r input.Router
+	t0 := time.Unix(100, 0)
+	frame := func(v sidebarView, at time.Duration) int {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Now: t0.Add(at), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+			Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
+		var act sidebarAction
+		s.blockList(gtx, th, v, "", &act)
+		r.Frame(&ops)
+		return s.list.Position.Length
+	}
+	before, after := blocksOf("p", [][]string{{"a"}, {"c"}}), blocksOf("p", [][]string{{"a", "b"}, {"c"}})
+	assertNoDip(t, frame, before, after)
+}
+
+func TestANewCheckoutNeverDipsOnceItsRowsHaveDrawn(t *testing.T) {
+	under := func(v sidebarView) sidebarView {
+		for i := range v.blocks {
+			v.blocks[i].under = v.blocks[i].key
+		}
+		return v
+	}
+	s := newSidebar(&ui.Root{})
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
+	var r input.Router
+	t0 := time.Unix(100, 0)
+	frame := func(v sidebarView, at time.Duration) int {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Now: t0.Add(at), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+			Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
+		var act sidebarAction
+		s.blockList(gtx, th, v, "", &act)
+		r.Frame(&ops)
+		return s.list.Position.Length
+	}
+	assertNoDip(t, frame, under(blocksOf("p", [][]string{{"a"}})), under(blocksOf("p", [][]string{{"a"}, {"b"}})))
+}
+
+// assertNoDip draws before, then after for two seconds, and fails if the
+// list's height ever falls: what came in grows once, and stays.
+func assertNoDip(t *testing.T, frame func(sidebarView, time.Duration) int, before, after sidebarView) {
+	t.Helper()
+	frame(before, 0)
+	last := 0
+	for at := time.Duration(0); at <= 2*time.Second; at += 10 * time.Millisecond {
+		h := frame(after, at)
+		if h < last {
+			t.Fatalf("height %d at %v after %d: what came in dipped once it had grown", h, at, last)
+		}
+		last = h
+	}
+}

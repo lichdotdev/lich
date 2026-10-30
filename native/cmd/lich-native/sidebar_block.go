@@ -275,6 +275,9 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	}
 	var keys []string
 	for _, r := range rows {
+		if r.motion != nil && !r.motion.closing {
+			st.presence.Settle(r.key)
+		}
 		if drawn[r.key] || r.motion != nil {
 			keys = append(keys, r.key)
 		}
