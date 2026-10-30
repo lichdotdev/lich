@@ -26,6 +26,8 @@ lives in the code, `docs/` and `CHANGELOG.md` — never restate any of it here.
 - **Translations**: two independent languages, the interface and the prompt language (what lich and
   lich-plugin hand agents). `.claude/skills/lich-i18n/` maps where a string lands and every point a new
   language touches, and the rules for writing a message.
+- **How the window looks**: `native/DESIGN.md`, the tokens, button sizes, spacing and screen layout. Read it
+  before drawing or changing UI; a pattern corrected in review lands there in the same PR.
 - **User-facing feature history**: `CHANGELOG.md`.
 
 ## Rules of the codebase
