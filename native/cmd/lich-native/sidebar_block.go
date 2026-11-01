@@ -337,15 +337,20 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 // folderTrayAlpha is how strongly the accent tints a folder's tray.
 const folderTrayAlpha = 0.45
 
+// trayColor is a folder's tray: the accent, or the folder's color.
+func trayColor(th *ui.Theme, tint string) color.NRGBA {
+	if c, ok := cardColors[tint]; ok {
+		return th.Over(ui.MixOKLab(color.NRGBA{}, c, tintRest))
+	}
+	return th.Over(ui.Alpha(th.Accent, folderTrayAlpha))
+}
+
 // folderTray lays a folder's header and rows on a tray, so where the folder
 // ends shows against the checkouts that follow it. A folder painted a color
 // wears it on the whole tray, as its cards wore it at rest. The rows run to
 // the tray's edges, clipped to its corners, so a lit row fills it to the end.
 func folderTray(gtx C, th *ui.Theme, tint string, w layout.Widget) D {
-	tray := th.Over(ui.Alpha(th.Accent, folderTrayAlpha))
-	if c, ok := cardColors[tint]; ok {
-		tray = th.Over(ui.MixOKLab(color.NRGBA{}, c, tintRest))
-	}
+	tray := trayColor(th, tint)
 	rec := op.Record(gtx.Ops)
 	d := w(gtx)
 	content := rec.Stop()

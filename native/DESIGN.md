@@ -269,6 +269,14 @@ folder's color at `tintRest`; a card painted the folder's color paints nothing a
 the tray's edges, clipped to its corners, so a lit row fills it to the end. A closed folder is its header
 alone, no tray.
 
+### The rail
+
+The collapsed sidebar is the same tree in one 32px column (`sidebar_rail.go`): rows of the same 34dp, so a
+ring sits where it sits in the open sidebar. Each block starts with its node (a checkout's ring, or a folder's
+or the pinned block's glyph), the line runs down the column through every ring of a tree, a child's ring is
+16px on its mother's line, and a folder keeps its tray. A folded block or mother keeps only its node. A
+session's ring is lit by a 32px square, `Accent` while active.
+
 ## Motion
 
 Motion says where something came from and where it went. It never holds anything up: a session's pane opens
