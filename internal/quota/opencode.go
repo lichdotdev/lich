@@ -1,9 +1,13 @@
 package quota
 
 import (
+	"database/sql"
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/lichdotdev/lich/internal/providers"
+	_ "modernc.org/sqlite"
 )
 
 const (
@@ -52,14 +56,12 @@ func (s *Service) opencodePlan(a Account) Plan {
 	if !ok {
 		return failed(p)
 	}
-	var creds map[string]opencodeCredential
-	readCredentials(path, &creds)
-	login := creds[opencodeGoEntry]
-	if login.Type != "api" || login.Key == "" {
+	key := opencodeGoKey(path)
+	if key == "" {
 		return noPlan
 	}
 	var usage opencodeUsage
-	authOK, err := s.readJSON(s.opencodeURL, login.Key, map[string]string{"Accept": "application/json"}, &usage)
+	authOK, err := s.readJSON(s.opencodeURL, key, map[string]string{"Accept": "application/json"}, &usage)
 	if !authOK {
 		return signedOut(p)
 	}
@@ -105,4 +107,49 @@ func (u opencodeUsage) windows() []Window {
 		})
 	}
 	return out
+}
+
+// opencodeDBBusyMS caps the wait on a database opencode is writing to; a read
+// that gives up costs one gauge refresh, not the plan.
+const opencodeDBBusyMS = 500
+
+// opencode2GoKeyQuery reads the Go key opencode 2 keeps in opencode.db rather
+// than auth.json: an active `credential` row for the opencode-go integration
+// whose value is {"type":"key","key":…} (measured on 2.2.5, whose login left a
+// 1.x auth.json as it found it).
+const opencode2GoKeyQuery = `SELECT json_extract(value, '$.key') FROM credential
+	WHERE integration_id = 'opencode-go' AND active = 1 AND json_extract(value, '$.type') = 'key'
+	ORDER BY time_updated DESC LIMIT 1`
+
+// opencodeGoKey is the Go key beside authPath: opencode 2's first, since 2.x
+// stops writing auth.json and a 1.x key left there may be one the user has
+// since replaced, then the one 1.x wrote. "" when neither holds one.
+func opencodeGoKey(authPath string) string {
+	if key := opencode2GoKey(filepath.Join(filepath.Dir(authPath), "opencode.db")); key != "" {
+		return key
+	}
+	var creds map[string]opencodeCredential
+	readCredentials(authPath, &creds)
+	if login := creds[opencodeGoEntry]; login.Type == "api" {
+		return login.Key
+	}
+	return ""
+}
+
+// opencode2GoKey reads the database read-only; a 1.x database, whose
+// credential table has another shape, answers nothing.
+func opencode2GoKey(dbPath string) string {
+	if _, err := os.Stat(dbPath); err != nil {
+		return ""
+	}
+	db, err := sql.Open("sqlite", fmt.Sprintf("file:%s?mode=ro&_pragma=busy_timeout(%d)", dbPath, opencodeDBBusyMS))
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = db.Close() }()
+	var key sql.NullString
+	if db.QueryRow(opencode2GoKeyQuery).Scan(&key) != nil {
+		return ""
+	}
+	return key.String
 }
