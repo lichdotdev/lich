@@ -73,7 +73,9 @@ type sidebarMorph struct {
 
 // begin starts a morph to the shape the sidebar was just switched to.
 func (m *sidebarMorph) begin(gtx C) {
-	m.phase, m.start = morphCapture, time.Time{}
+	// p restarts now, not at the next frame's advance: what the frame of the
+	// click still lays out after the switch (the top bar's brand) reads it.
+	m.phase, m.start, m.p = morphCapture, time.Time{}, 0
 	gtx.Execute(op.InvalidateCmd{})
 }
 

@@ -196,3 +196,21 @@ func TestSidebarMorphFitsTheTerminalToWhereItEndsAsItStarts(t *testing.T) {
 		}
 	}
 }
+
+// The frame an expand is clicked in lays the top bar out after the sidebar
+// switched: the brand must start from the rail, not the last morph's end.
+func TestBrandStartsFromTheRailTheFrameAnExpandIsClicked(t *testing.T) {
+	s := newSidebar(&ui.Root{})
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Now: time.Unix(100, 0), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	s.widthRem = sidebarDefaultRem
+	// A collapse that played to its end leaves the morph at p = 1.
+	s.open = false
+	s.morph.p = 1
+	var act sidebarAction
+	s.setOpen(gtx, true, &act)
+	width, name := s.column(gtx)
+	if name != 0 || width != s.boxWidth(gtx, false) {
+		t.Errorf("brand at the click: width %d name %.2f, want the rail's width %d with no name", width, name, s.boxWidth(gtx, false))
+	}
+}
