@@ -88,7 +88,7 @@ func searchSource(src usageSource, q string) (TranscriptMatch, bool) {
 		}
 		return searchTranscript(tail, q, read)
 	}
-	return searchSessionRows(sessionDBTexts(src.path, queriesFor(src.kind).search, src.id), q)
+	return searchSessionRows(sessionDBTexts(src.path, queriesFor(src).search, src.id), q)
 }
 
 // searchSessionRows is searchTranscript's other half: the same count and the

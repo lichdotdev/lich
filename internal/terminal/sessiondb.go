@@ -27,6 +27,13 @@ const (
 	opencodeSessionTable = "session"
 	crushSessionTable    = "sessions"
 
+	// opencode2SessionTable is where opencode 2 files a conversation, in the
+	// same opencode.db. 2.x copies a 1.x conversation in here when it first
+	// touches it and stops writing the 1.x tables, which it leaves in place
+	// (measured on 2.2.5 over a 1.19.4 database), so one database can hold both
+	// and a conversation is read from the newer table whenever it is there.
+	opencode2SessionTable = "session_v2"
+
 	// opencodeDBFile is the database in an opencode data directory.
 	opencodeDBFile = "opencode.db"
 
@@ -107,6 +114,15 @@ const (
 	crushCostQuery = `SELECT cost FROM sessions WHERE id = ?`
 )
 
+// opencode 2 keeps the same tree in session_v2, and does not roll a sub-agent
+// into its parent either: measured on 2.2.5, a task call left the parent at
+// 812 input tokens and the child at 2818. Only tokens were compared there, since
+// the free model it ran on bills $0 to both.
+const opencode2CostQuery = `WITH RECURSIVE tree(id) AS (
+		SELECT id FROM session_v2 WHERE id = ?
+		UNION SELECT s.id FROM session_v2 s JOIN tree t ON s.parent_id = t.id
+	) SELECT SUM(s.cost) FROM session_v2 s JOIN tree t ON s.id = t.id`
+
 // The SQL each database provider answers "what was said here" with. This is the
 // second mechanism the two providers with no JSONL to walk are read through: a
 // query in place of a line reader (transcriptReaderFor), returning the prose of
@@ -136,6 +152,16 @@ const (
 		AND json_extract(p.data, '$.type') = 'text'
 		ORDER BY p.time_created DESC LIMIT 1`
 
+	// opencode 2 keeps a whole message on one session_message row, typed
+	// beside it: a user's prompt under data.text, an assistant's prose as the
+	// text entries of data.content, between its reasoning and tool entries
+	// (2.2.5, whose session_part table stayed empty through text and tool turns).
+	opencode2SaidQuery = `SELECT json_extract(c.value, '$.text')
+		FROM session_message m, json_each(m.data, '$.content') c
+		WHERE m.session_id = ? AND m.type = 'assistant'
+		AND json_extract(c.value, '$.type') = 'text'
+		ORDER BY m.seq DESC, c.key DESC LIMIT 1`
+
 	crushSaidQuery = `SELECT json_extract(part.value, '$.data.text')
 		FROM messages, json_each(messages.parts) AS part
 		WHERE messages.session_id = ? AND messages.role = 'assistant'
@@ -148,6 +174,15 @@ const (
 	opencodeSearchQuery = `SELECT json_extract(data, '$.text') FROM part
 		WHERE session_id = ? AND json_extract(data, '$.type') = 'text'
 		ORDER BY time_created`
+
+	opencode2SearchQuery = `SELECT text FROM (
+		SELECT seq, 0 AS k, json_extract(data, '$.text') AS text FROM session_message
+		WHERE session_id = ?1 AND type = 'user'
+		UNION ALL SELECT m.seq, c.key, json_extract(c.value, '$.text')
+		FROM session_message m, json_each(m.data, '$.content') c
+		WHERE m.session_id = ?1 AND m.type = 'assistant'
+		AND json_extract(c.value, '$.type') = 'text'
+	) ORDER BY seq, k`
 
 	crushSearchQuery = `SELECT json_extract(part.value, '$.data.text')
 		FROM messages, json_each(messages.parts) AS part
@@ -165,9 +200,16 @@ type sessionDBQueries struct {
 	search string
 }
 
-func queriesFor(kind string) sessionDBQueries {
-	switch kind {
+func queriesFor(src usageSource) sessionDBQueries {
+	switch src.kind {
 	case providers.OpenCode:
+		if opencode2Session(src.path, src.id) {
+			return sessionDBQueries{
+				cost:   opencode2CostQuery,
+				said:   opencode2SaidQuery,
+				search: opencode2SearchQuery,
+			}
+		}
 		return sessionDBQueries{
 			cost:   opencodeCostQuery,
 			said:   opencodeSaidQuery,
@@ -181,6 +223,12 @@ func queriesFor(kind string) sessionDBQueries {
 		}
 	}
 	return sessionDBQueries{}
+}
+
+// opencode2Session reports whether opencode 2 has this conversation, which
+// is what makes its tables the ones to read it from.
+func opencode2Session(path, id string) bool {
+	return sessionRowExists(path, opencode2SessionTable, id)
 }
 
 // openSessionDB opens a provider's own database, or false when there is nothing

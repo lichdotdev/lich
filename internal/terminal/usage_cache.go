@@ -69,6 +69,15 @@ const opencodeLastTurnCacheQuery = `SELECT json_extract(data, '$.tokens.input'),
 	AND json_extract(data, '$.time.completed') IS NOT NULL
 	ORDER BY time_created DESC LIMIT 1`
 
+// opencode2LastTurnCacheQuery is the same read against opencode 2's
+// session_message, whose tokens keep the 1.x shape and leave the cache out of
+// input the same way (2.2.5: 182 input beside 5760 read).
+const opencode2LastTurnCacheQuery = `SELECT json_extract(data, '$.tokens.input'),
+	json_extract(data, '$.tokens.cache.read'), json_extract(data, '$.tokens.cache.write')
+	FROM session_message WHERE session_id = ? AND type = 'assistant'
+	AND json_extract(data, '$.time.completed') IS NOT NULL
+	ORDER BY seq DESC LIMIT 1`
+
 func opencodeLastTurnCache(path, id string) *api.SessionCache {
 	if id == "" {
 		return nil
@@ -79,8 +88,12 @@ func opencodeLastTurnCache(path, id string) *api.SessionCache {
 	}
 	defer func() { _ = db.Close() }()
 
+	query := opencodeLastTurnCacheQuery
+	if opencode2Session(path, id) {
+		query = opencode2LastTurnCacheQuery
+	}
 	var input, read, write sql.NullInt64
-	if db.QueryRow(opencodeLastTurnCacheQuery, id).Scan(&input, &read, &write) != nil || !input.Valid {
+	if db.QueryRow(query, id).Scan(&input, &read, &write) != nil || !input.Valid {
 		return nil
 	}
 	return &api.SessionCache{Read: int(read.Int64), Write: int(write.Int64), Uncached: int(input.Int64)}
