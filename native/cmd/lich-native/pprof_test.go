@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -34,5 +35,27 @@ func TestPprofServesTheHeapOnLoopback(t *testing.T) {
 	}
 	if resp.StatusCode != http.StatusOK || !strings.Contains(string(body), "heap profile") {
 		t.Fatalf("status %d, body starts %.80q", resp.StatusCode, body)
+	}
+}
+
+func TestPprofServesTheFrameCount(t *testing.T) {
+	ln, err := pprofListener("127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	go servePprof(ln)
+	frames.Add(3)
+	resp, err := http.Get("http://" + ln.Addr().String() + "/debug/vars")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var vars struct{ Frames int64 }
+	if err := json.NewDecoder(resp.Body).Decode(&vars); err != nil {
+		t.Fatal(err)
+	}
+	if vars.Frames < 3 {
+		t.Fatalf("frames = %d, want the 3 drawn", vars.Frames)
 	}
 }

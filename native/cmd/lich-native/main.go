@@ -376,6 +376,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 				}
 			}
 			e.Frame(gtx.Ops)
+			frames.Add(1)
 		}
 	}
 }
