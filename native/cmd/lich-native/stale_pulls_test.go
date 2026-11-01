@@ -5,6 +5,7 @@ import (
 	"image"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 
 	"gioui.org/io/key"
@@ -22,6 +23,13 @@ const pullsDiff = "diff --git a/a.go b/a.go\n--- a/a.go\n+++ b/a.go\n@@ -1,1 +1,
 // the window frames it: its dialogs first, then the screen and its actions.
 func pullsFrames(t *testing.T) (*window, *frameRig) {
 	t.Helper()
+	return pullsFramesHeld(t, nil)
+}
+
+// pullsFramesHeld is pullsFrames whose pull request detail answers only once
+// hold is closed; nil answers at once.
+func pullsFramesHeld(t *testing.T, hold chan struct{}) (*window, *frameRig) {
+	t.Helper()
 	r := newFrameRig(rigWindow, nil)
 	conv := talkFixture()
 	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
@@ -29,6 +37,9 @@ func pullsFrames(t *testing.T) (*window, *frameRig) {
 		case "project.ListPullRequests":
 			return []backend.PRSummary{{Number: 7, Title: "Fix the thing", State: "OPEN"}, {Number: 8, Title: "Draft work", State: "OPEN", IsDraft: true}}, http.StatusOK
 		case "project.PullRequestDetail":
+			if hold != nil {
+				<-hold
+			}
 			return backend.PRDetail{Number: 7, URL: "https://github.com/o/r/pull/7", Title: "Fix the thing", Body: "The body.", State: "OPEN", HeadRefName: "fix", BaseRefName: "main"}, http.StatusOK
 		case "project.PullRequestConversation":
 			return conv, http.StatusOK
@@ -190,6 +201,40 @@ func TestPullsDescriptionCancelInTheFrameThatTookTheClick(t *testing.T) {
 	r.clickLabel(t, i18n.T("common.action.cancel"))
 	if u.pulls.view.edit.bodyURL != "" {
 		t.Fatal("the click missed Cancel")
+	}
+}
+
+func TestPullsDescriptionMenuSitsAtTheColumnsEdge(t *testing.T) {
+	_, r := pullsDetailShown(t)
+	more := r.controlOf(t, strings.ToUpper(i18n.T("pulls.pullsOverview.description")))
+	if prose := float32(overviewProseWidth + 2*pullsPadX); more.X <= prose {
+		t.Errorf("⋯ at x=%v sits inside the %vdp prose width, not at the column's edge", more.X, prose)
+	}
+}
+
+// The skeleton's title row and tab strip take the loaded ones' height, so
+// the tabs do not move down when the pull request arrives.
+func TestPullsDetailSkeletonKeepsTheTabsWhereTheyLand(t *testing.T) {
+	hold := make(chan struct{})
+	_, r := pullsFramesHeld(t, hold)
+	// The stub's server waits on its handlers when the test ends.
+	release := sync.OnceFunc(func() { close(hold) })
+	t.Cleanup(release)
+	r.waitFor(t, "Fix the thing")
+	r.queueClick(r.at(t, "Fix the thing"))
+	overview := i18n.T("pulls.pullRequestView.tab.overview")
+	// The skeleton pulses, so it never settles: frame until its tabs show.
+	for range maxSettleFrames {
+		if r.frame(); r.shows(overview) {
+			break
+		}
+	}
+	skeleton := r.at(t, overview)
+	release()
+	r.waitFor(t, i18n.T("pulls.pullsOverview.openedBy", i18n.Args{"author": ""}))
+	// Only the height: the tabs' widths follow counts the skeleton cannot know.
+	if loaded := r.at(t, overview); loaded.Y != skeleton.Y {
+		t.Errorf("the Overview tab sits at y=%v in the skeleton and y=%v loaded", skeleton.Y, loaded.Y)
 	}
 }
 

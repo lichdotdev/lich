@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A session's browser is no longer closed without asking. When no pane shows it and nobody has used it for five minutes, a toast asks whether to close it: Close closes it, and Keep open, or swiping the toast away, keeps it for another five minutes. Unanswered, the toast stays up and the browser stays open, so a page left open over lunch is still there when you come back. Using the browser, or the agent using it, takes the toast down. Before, the browser was closed after five minutes away from its session, and its page, tabs and login were lost.
 - The sidebar's resize strip sits on the sidebar's own right edge, as the Code and Review panel's does, instead of in the gap between the sidebar and the sessions.
 
+- On the Pulls screen's Overview, the Description heading and its ⋯ stay in place at the top of the column while the description scrolls under them, over a separator, and the ⋯ sits at the column's right edge.
+- The Pulls screen's loading placeholders match what loads in their place: the index shows rows the height of real ones with the checks column where it lands, filling the screen, and a pull request shows its title row with its buttons, the real tab strip, and the open tab's layout (the description beside its facts, commits, checks, the conversation's avatars and comments, or the files' toolbar, tree and cards) instead of a few generic bars. The conversation and the diff show the same placeholders while they load, in place of a line of text.
+
 ### Fixed
 
 - Code quoted in a review thread on the Pulls screen shows its indentation instead of a box for every tab.
