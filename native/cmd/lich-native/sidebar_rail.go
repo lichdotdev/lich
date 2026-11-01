@@ -224,7 +224,8 @@ func (r *sidebarRail) item(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 		tip.Side = ui.SideRight
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			return tip.Layout(gtx, func(gtx C) D {
-				return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3.5), c) })
+				// The open header's size, so the glyph flies without resizing.
+				return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3), c) })
 			})
 		})
 	case railCheckout:

@@ -40,7 +40,9 @@ func (r *sidebarRail) holdsKeys() bool {
 func (r *sidebarRail) footer(gtx C, th *ui.Theme, s *sidebar, m *model, act *sidebarAction) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return railHairline(gtx, th) }),
-		layout.Rigid(r.button(th, s, &r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), glyphNew)),
+		// New session is not named for the morph: the open sidebar's sits at
+		// its top, and flying it corner to corner reads as a jump.
+		layout.Rigid(r.button(th, s, &r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), "")),
 	}
 	if p, ok := m.project(); ok {
 		list, console := m.services.of(p.ID), m.consoleShown()
