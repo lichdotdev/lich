@@ -107,6 +107,19 @@ func (s *Sortable) List(gtx C, l SortList, ids []string, item func(gtx C, i int)
 	return D{Size: size}
 }
 
+// Landing is where the item in the air would land if let go now, on the
+// list's axis from the list's start, and its length: where the items between
+// its slot and the one it is over have stepped aside to leave room. ok is
+// false while no item of the list is in the air.
+func (s *Sortable) Landing() (at, length int, ok bool) {
+	g := &s.list
+	a := slices.Index(g.ids, s.active)
+	if a < 0 || a >= len(g.tops) {
+		return 0, 0, false
+	}
+	return g.tops[a] + g.target(s, a, a), g.heights[a], true
+}
+
 // pastSide reports whether the pointer carrying the item in the air is
 // beyond the list's sides, across its axis.
 func (g *sortList) pastSide(s *Sortable, size image.Point) bool {

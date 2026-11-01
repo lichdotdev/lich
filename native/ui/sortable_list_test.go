@@ -358,3 +358,18 @@ func TestSortCarryHoldsTheSourceOfADragWhoseListLeft(t *testing.T) {
 		t.Fatalf("still dragging %q once A is back", got)
 	}
 }
+
+// Over a2, a1 would land in a2's slot, the one a2 stepped up out of; with
+// nothing in the air there is no landing.
+func TestSortListLandsTheItemInTheSlotItIsOver(t *testing.T) {
+	r := newListRig()
+	if _, _, ok := r.inner["A"].Landing(); ok {
+		t.Error("a landing with nothing in the air")
+	}
+	r.press(onA1)
+	r.move(a1Lifted, image.Pt(20, 52))
+	at, length, ok := r.inner["A"].Landing()
+	if !ok || at != listRow || length != listRow {
+		t.Errorf("landing = %d, %d, %v, want a2's slot %d long", at, length, ok, listRow)
+	}
+}

@@ -24,6 +24,7 @@ type blockState struct {
 	cards    ui.Sortable
 	presence ui.Presence
 	tree     treeMotion
+	drag     dragLine
 	closing  closingCards
 	options  ui.MenuState
 	context  ui.MenuState // the header's right click, the …'s entries
@@ -199,9 +200,13 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 			}),
 		)
 	}
-	// A closed folder is its header alone, with nothing to set apart.
-	if b.kind == blockFolder && !b.collapsed {
-		inner := body
+	// A closed folder is its header alone, with nothing to set apart, until
+	// it is where a carried card would go.
+	inner := body
+	switch {
+	case s.carry.Carrying() != "" && s.carry.Over() == b.key:
+		body = func(gtx C) D { return dropTray(gtx, th, b.color, inner) }
+	case b.kind == blockFolder && !b.collapsed:
 		body = func(gtx C) D { return folderTray(gtx, th, b.color, inner) }
 	}
 	if s.sort.Dragging() != b.key {
@@ -226,6 +231,10 @@ func (s *sidebar) dropCards(gtx C, st *blockState, b blockView, f blockFrame) bo
 	ended := before != "" && st.cards.Dragging() == ""
 	if !ok {
 		return ended
+	}
+	if d.Carried {
+		// The card leaves the block by its tree's motion, not into a slot.
+		st.drag = dragLine{}
 	}
 	if !d.Carried {
 		if d.ID != d.Over {
@@ -287,12 +296,19 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 		}
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	dragging := s.dragLinks(gtx, st, keys, byKey)
 	// A card carried out of the sidebar goes back to its slot; the window
 	// draws what follows the pointer over the panes (drawCarried).
 	list := ui.SortList{Leaves: st.cards.Carry != nil}
 	d := st.cards.List(gtx, list, keys, func(gtx C, i int) D {
 		return s.blockRow(gtx, th, st, b, byKey[keys[i]], tree, f, dragEnded)
 	})
+	if at, length, ok := st.cards.Landing(); ok && dragging != "" {
+		st.drag.hold(byKey[dragging], at, length)
+	}
+	if st.drag.showsSlot(gtx.Now) {
+		s.dragSlot(gtx, th, &st.drag)
+	}
 	if len(keys) > 0 {
 		d.Size.Y = max(d.Size.Y-gtx.Dp(cardGap), 0)
 	}
@@ -316,6 +332,7 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 	sv.place = r.place(tree)
 	sv.place.onTray = b.kind == blockFolder && b.color != "" && sv.Color == b.color
 	sv.place.ground = nodeGround(th, b)
+	sv.place.cut, sv.place.loose = st.drag.cut(sv.ID, gtx.Now), st.drag.loose(sv.ID, gtx.Now)
 	folders := slices.DeleteFunc(slices.Clone(f.view.folders), func(name string) bool { return name == sv.Folder })
 	face := func(gtx C) D {
 		d, a := s.card(gtx, th, &sv, sv.ID == f.active, folders)
@@ -354,7 +371,30 @@ func trayColor(th *ui.Theme, tint string) color.NRGBA {
 // wears it on the whole tray, as its cards wore it at rest. The rows run to
 // the tray's edges, clipped to its corners, so a lit row fills it to the end.
 func folderTray(gtx C, th *ui.Theme, tint string, w layout.Widget) D {
-	tray := trayColor(th, tint)
+	return trayUnder(gtx, trayColor(th, tint), w)
+}
+
+// dropBorder is the width of the border a block a card would go to wears.
+var dropBorder = unit.Dp(1.5)
+
+// dropTray is the tray of a block a carried card would go to if let go:
+// tinted as its cards are under the pointer, with a border in its color.
+func dropTray(gtx C, th *ui.Theme, tint string, w layout.Widget) D {
+	fill, edge := th.Over(th.Accent), th.MutedForeground
+	if c, ok := cardColors[tint]; ok {
+		fill, edge = th.Over(ui.MixOKLab(color.NRGBA{}, c, tintHover)), c
+	}
+	d := trayUnder(gtx, fill, w)
+	rr := gtx.Dp(ui.RadiusLG)
+	width := float32(gtx.Dp(dropBorder))
+	inset := int(width / 2)
+	edgeRect := image.Rectangle{Min: image.Pt(inset, inset), Max: d.Size.Sub(image.Pt(inset, inset))}
+	paint.FillShape(gtx.Ops, edge, clip.Stroke{Path: clip.UniformRRect(edgeRect, rr-inset).Path(gtx.Ops), Width: width}.Op())
+	return d
+}
+
+// trayUnder lays w on a tray of fill, clipped to its corners.
+func trayUnder(gtx C, tray color.NRGBA, w layout.Widget) D {
 	rec := op.Record(gtx.Ops)
 	d := w(gtx)
 	content := rec.Stop()

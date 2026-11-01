@@ -48,6 +48,11 @@ type sessionRowLinks struct {
 	// sweep is a moving run's line: it draws its column only as far as it
 	// has come, nil at rest.
 	sweep *treeSweep
+	// cut is the share of the row's own elbow not drawn, from its ring back
+	// to its parent's line: a card dragged lets go of its line.
+	cut float32
+	// loose is a card in the air, which draws none of its lines.
+	loose bool
 }
 
 func (r sessionRow) place(tree bool) treePlace {
@@ -115,15 +120,20 @@ func treeLead(p treePlace) []layout.FlexChild {
 // While a run moves, the column its line runs down draws only as far as the
 // line has come, and the elbow off it as far as it has turned.
 func treeLinks(gtx C, th *ui.Theme, l sessionRowLinks, size image.Point) {
-	if l.depth == 0 && !l.stub && len(l.lanes) == 0 {
+	if l.loose || l.depth == 0 && !l.stub && len(l.lanes) == 0 {
 		return
 	}
 	h := float32(size.Y)
 	end := h + float32(gtx.Dp(cardGap))
-	whole, down, turn := linkSegs(gtx, l, h, end)
+	whole, down, turn, own := linkSegs(gtx, l, h, end)
 	c := th.Over(ui.Alpha(th.MutedForeground, treeLinkAlpha))
 	width := float32(gtx.Dp(sessionTreeStroke))
 	strokeLinks(gtx, whole, image.Pt(size.X, int(math.Ceil(float64(end)))), c, width)
+	if len(own) > 0 {
+		px, ring := treeColumn(gtx, l.depth-1), treeColumn(gtx, l.depth)-float32(gtx.Dp(sessionTreeRingR))
+		reach := px - width + (ring-px+2*width)*(1-l.cut)
+		strokeLinks(gtx, own, image.Pt(int(reach), size.Y), c, width)
+	}
 	if l.sweep != nil {
 		reach := l.sweep.rows * h
 		strokeLinks(gtx, down, image.Pt(size.X, int(reach)), c, width)
@@ -135,7 +145,7 @@ func treeLinks(gtx C, th *ui.Theme, l sessionRowLinks, size image.Point) {
 // linkSegs are a row's links of height h, running down to end: whole draws
 // at once, while down (the swept column's lines) and turn (the elbow off it)
 // draw as far as a moving run's line has come.
-func linkSegs(gtx C, l sessionRowLinks, h, end float32) (whole, down, turn []linkSeg) {
+func linkSegs(gtx C, l sessionRowLinks, h, end float32) (whole, down, turn, own []linkSeg) {
 	mid := h / 2
 	elbow := float32(gtx.Dp(sessionTreeElbow))
 	swept := -1
@@ -157,9 +167,12 @@ func linkSegs(gtx C, l sessionRowLinks, h, end float32) (whole, down, turn []lin
 			p.QuadTo(f32.Pt(px, mid), f32.Pt(px+elbow, mid))
 			p.LineTo(f32.Pt(ring, mid))
 		}
-		if l.depth-1 == swept {
+		switch {
+		case l.depth-1 == swept:
 			turn = append(turn, bend)
-		} else {
+		case l.cut > 0:
+			own = append(own, bend)
+		default:
 			whole = append(whole, bend)
 		}
 		if !l.tail {
@@ -175,7 +188,7 @@ func linkSegs(gtx C, l sessionRowLinks, h, end float32) (whole, down, turn []lin
 		x := treeColumn(gtx, l.depth)
 		whole = append(whole, vline(x, mid+float32(gtx.Dp(sessionTreeRingR)), end))
 	}
-	return whole, down, turn
+	return whole, down, turn, own
 }
 
 // linkSeg adds one stretch of a link to a path.
