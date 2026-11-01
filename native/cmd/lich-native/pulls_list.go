@@ -222,7 +222,7 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 }
 
 func rowContent(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string, now time.Time) D {
-	return layout.Inset{Left: pullsRowPadX, Right: pullsRowPadX, Top: ui.Space(2.5), Bottom: ui.Space(2.5)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: pullsRowPadX, Right: pullsRowPadX, Top: pullsRowPadY, Bottom: pullsRowPadY}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -396,20 +396,49 @@ func metaGlyph(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA)
 	)
 }
 
-// listSkeleton is ListSkeleton: ragged title bars so it reads as a list.
+// listSkeletonMaxRows bounds the skeleton under an unbounded height; no
+// island is that tall.
+const listSkeletonMaxRows = 60
+
+// listSkeleton is the index while it loads: as many rows as the island
+// holds, each skeletonRow over a separator, as row draws them.
 func listSkeleton(gtx C, th *ui.Theme) D {
-	widths := []float32{0.92, 0.8, 1, 0.75, 0.83}
-	return layout.Inset{Left: ui.Space(3.5), Right: ui.Space(3.5), Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		full := gtx.Metric.PxToDp(gtx.Constraints.Max.X)
-		var rows []layout.FlexChild
-		for _, w := range widths {
-			rows = append(rows,
-				layout.Rigid(th.Skeleton(full*unit.Dp(w), ui.Space(3)).Layout),
-				ui.VGap(1.5),
-				layout.Rigid(th.Skeleton(full/3, ui.Space(2.5)).Layout),
-				ui.VGap(3),
-			)
-		}
-		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
+	titles := []float32{0.62, 0.48, 0.7, 0.55, 0.4, 0.66, 0.5}
+	rowHeight := gtx.Dp(2*pullsRowPadY+skeletonSMLine+ui.Space(1)+skeletonXSLine) + gtx.Dp(1)
+	count := min(gtx.Constraints.Max.Y/rowHeight+1, listSkeletonMaxRows)
+	var rows []layout.FlexChild
+	for i := range count {
+		title := titles[i%len(titles)]
+		rows = append(rows, layout.Rigid(func(gtx C) D { return skeletonRow(gtx, th, title) }), layout.Rigid(th.Separator))
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
+}
+
+// skeletonRow is rowContent with a bar where its text lands: the number and
+// title, the meta line under them, and the checks chip in its column.
+func skeletonRow(gtx C, th *ui.Theme, title float32) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Inset{Left: pullsRowEdge + pullsRowPadX, Right: pullsRowEdge + pullsRowPadX, Top: pullsRowPadY, Bottom: pullsRowPadY}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D {
+				full := gtx.Metric.PxToDp(gtx.Constraints.Max.X)
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D {
+						return layout.Flex{}.Layout(gtx,
+							layout.Rigid(skeletonBar(th, ui.Space(10), skeletonSMLine, ui.Space(3.5))),
+							ui.Gap(1.5),
+							layout.Rigid(skeletonBar(th, full*unit.Dp(title), skeletonSMLine, ui.Space(3.5))),
+						)
+					}),
+					ui.VGap(1),
+					layout.Rigid(skeletonBar(th, full*unit.Dp(title)*0.6, skeletonXSLine, ui.Space(3))),
+				)
+			}),
+			ui.Gap(4),
+			layout.Rigid(func(gtx C) D {
+				return cell(gtx, rowChecksWidth, skeletonBar(th, ui.Space(9), skeletonXSLine, ui.Space(3)))
+			}),
+			layout.Rigid(layout.Spacer{Width: rowVerdictWidth + rowCheckoutWidth}.Layout),
+		)
 	})
 }

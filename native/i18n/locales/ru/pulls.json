@@ -180,8 +180,7 @@
     "loadFailed": "Не удалось загрузить изменения: {error}",
     "hideTree": "Скрыть дерево файлов",
     "showTree": "Показать дерево файлов",
-    "viewed": "Просмотрено {viewed} из {total}",
-    "loading": "Чтение изменений…"
+    "viewed": "Просмотрено {viewed} из {total}"
   },
   "reviewThread": {
     "replyFailed": "Не удалось ответить: {error}",

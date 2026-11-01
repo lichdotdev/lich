@@ -157,3 +157,16 @@ func TestStepAlongHoldsAtTheEnds(t *testing.T) {
 		t.Errorf("no rows stepped to %d", got)
 	}
 }
+
+// The skeleton's row takes the loaded row's room, so nothing moves when the
+// index arrives.
+func TestListSkeletonRowIsALoadedRowsHeight(t *testing.T) {
+	th := rowMetaTheme(t)
+	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(1200, 800)}}
+	pr := backend.PRSummary{Number: 1003, Title: "feat: a title", Author: "ana", HeadRefName: "feat/x",
+		UpdatedAt: rowMetaNow.Format(time.RFC3339), Checks: backend.ChecksRollup{Total: 7}}
+	loaded := rowContent(gtx, th, pr, "fuzzy-pine", rowMetaNow).Size.Y
+	if got := skeletonRow(gtx, th, 0.5).Size.Y; got != loaded {
+		t.Errorf("skeleton row is %dpx tall, a loaded row %dpx", got, loaded)
+	}
+}

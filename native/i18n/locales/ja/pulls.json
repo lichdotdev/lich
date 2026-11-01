@@ -169,8 +169,7 @@
     "loadFailed": "差分を読み込めませんでした: {error}",
     "hideTree": "ファイルツリーを隠す",
     "showTree": "ファイルツリーを表示",
-    "viewed": "{total} 件中 {viewed} 件を確認済み",
-    "loading": "差分を読み込んでいます…"
+    "viewed": "{total} 件中 {viewed} 件を確認済み"
   },
   "reviewThread": {
     "replyFailed": "返信に失敗しました: {error}",

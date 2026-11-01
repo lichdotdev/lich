@@ -165,8 +165,7 @@
     "loadFailed": "diff를 불러오지 못했습니다: {error}",
     "hideTree": "파일 트리 숨기기",
     "showTree": "파일 트리 표시",
-    "viewed": "{total}개 중 {viewed}개 확인함",
-    "loading": "diff를 읽는 중…"
+    "viewed": "{total}개 중 {viewed}개 확인함"
   },
   "reviewThread": {
     "replyFailed": "답글 실패: {error}",

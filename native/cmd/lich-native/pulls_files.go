@@ -141,7 +141,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	read := p.store.diff(p.project.Path, d.Number)
 	switch {
 	case !read.loaded:
-		return panelNotice(gtx, th, i18n.T("pulls.pullsFiles.loading"))
+		return v.skeletonFiles(gtx, th)
 	case read.err != "":
 		return panelNotice(gtx, th, i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}))
 	}

@@ -237,6 +237,9 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d backend.PR
 	case tabFiles:
 		return v.filesTab(gtx, th, p, d, act)
 	case tabConversation:
+		if read := p.store.conversation(p.project.Path, d.Number); read.val == nil && read.err == "" {
+			return skeletonConversation(gtx, th)
+		}
 		rows = v.conversationRows(gtx, th, p, d, act)
 	case tabCommits:
 		rows = v.commitRows(gtx, th, d)
@@ -264,19 +267,38 @@ var (
 	overviewProseWidth = unit.Dp(720)
 	overviewFactsWidth = unit.Dp(320)
 	overviewSplitWidth = unit.Dp(760)
+	// overviewHeadingBottom is the room under the fixed Description heading,
+	// over its separator.
+	overviewHeadingBottom = ui.Space(2.5)
 )
 
 // overview is the description beside the pull request's facts.
 func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
-	rows := v.overviewRows(th, p, d, act)
+	rows := v.overviewRows(th, d, act)
+	heading := func(gtx C) D {
+		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D {
+			return v.descriptionHeading(gtx, th, p, d)
+		})
+	}
 	if gtx.Constraints.Max.X < gtx.Dp(overviewSplitWidth) {
 		facts := func(gtx C) D {
 			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(4)}.Layout(gtx, func(gtx C) D { return v.facts(gtx, th, p, d) })
 		}
-		return v.panelList(gtx, th, append([]layout.Widget{facts}, rows...))
+		return v.panelList(gtx, th, append([]layout.Widget{facts, heading}, rows...))
+	}
+	// The heading stays put over the description scrolling under it, the
+	// separator marking where the scroll starts.
+	description := func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				return layout.Inset{Top: ui.Space(1), Bottom: overviewHeadingBottom}.Layout(gtx, heading)
+			}),
+			layout.Rigid(th.Separator),
+			layout.Flexed(1, func(gtx C) D { return v.panelList(gtx, th, rows) }),
+		)
 	}
 	return layout.Flex{}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D { return v.panelList(gtx, th, rows) }),
+		layout.Flexed(1, description),
 		layout.Rigid(func(gtx C) D { return verticalRule(gtx, th) }),
 		layout.Rigid(func(gtx C) D {
 			w := gtx.Dp(overviewFactsWidth)
@@ -328,19 +350,13 @@ func (v *pullView) checkoutFact(th *ui.Theme, p *pullsScreen, d backend.PRDetail
 	return out
 }
 
-// overviewRows is the description under its heading, held to a reading
-// width.
-func (v *pullView) overviewRows(th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) []layout.Widget {
-	pad := func(top float32, w layout.Widget) layout.Widget {
-		return func(gtx C) D {
-			gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(overviewProseWidth+2*pullsPadX))
-			return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(top)}.Layout(gtx, w)
-		}
-	}
+// overviewRows is the description, held to a reading width; its heading
+// spans the column.
+func (v *pullView) overviewRows(th *ui.Theme, d backend.PRDetail, act *pullsAction) []layout.Widget {
 	body := strings.TrimSpace(d.Body)
-	return []layout.Widget{
-		pad(4, func(gtx C) D { return v.descriptionHeading(gtx, th, p, d) }),
-		pad(2, func(gtx C) D {
+	return []layout.Widget{func(gtx C) D {
+		gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Dp(overviewProseWidth+2*pullsPadX))
+		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 			if v.edit.bodyURL == d.URL {
 				return v.descriptionField(gtx, th, d, act)
 			}
@@ -348,8 +364,8 @@ func (v *pullView) overviewRows(th *ui.Theme, p *pullsScreen, d backend.PRDetail
 				return th.Text(ui.TextSM, i18n.T("pulls.pullsOverview.noDescription")).Muted().Layout(gtx)
 			}
 			return v.md.layout(gtx, th, "body:"+d.URL, body, act.open)
-		}),
-	}
+		})
+	}}
 }
 
 func sectionHeading(th *ui.Theme, text string) layout.Widget {

@@ -170,8 +170,7 @@
     "loadFailed": "No se pudo cargar el diff: {error}",
     "hideTree": "Ocultar el árbol de archivos",
     "showTree": "Mostrar el árbol de archivos",
-    "viewed": "{viewed} de {total} vistos",
-    "loading": "Leyendo el diff…"
+    "viewed": "{viewed} de {total} vistos"
   },
   "reviewThread": {
     "replyFailed": "No se pudo responder: {error}",

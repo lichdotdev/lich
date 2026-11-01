@@ -24,6 +24,7 @@ import (
 var (
 	pullsRowEdge    = ui.Space(2)
 	pullsRowPadX    = ui.Space(2.5)
+	pullsRowPadY    = ui.Space(2.5)
 	pullsPadX       = pullsRowEdge + pullsRowPadX
 	pullsTitleSize  = unit.Sp(18)
 	pullsToolbarPad = ui.Space(2)

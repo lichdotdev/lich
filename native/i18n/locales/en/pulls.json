@@ -170,8 +170,7 @@
     "loadFailed": "Couldn’t load the diff: {error}",
     "hideTree": "Hide the file tree",
     "showTree": "Show the file tree",
-    "viewed": "{viewed} of {total} viewed",
-    "loading": "Reading the diff…"
+    "viewed": "{viewed} of {total} viewed"
   },
   "reviewThread": {
     "replyFailed": "Reply failed: {error}",

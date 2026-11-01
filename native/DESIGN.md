@@ -162,8 +162,22 @@ the corner at `settingsCloseInset` (14px). Every other screen body follows the s
 
 ### Loading
 
-A skeleton mirrors the screen it stands for: the same insets, line heights and columns, a bar where each
-piece of text will land, so nothing moves when the content arrives. A generic block of bars is a bug.
+A skeleton is the loaded screen with a bar where each piece of text will land, faithful to it in every
+measure, so nothing moves when the content arrives:
+
+- the same insets, columns and separators, laid out by the same constants the loaded screen uses;
+- a row the loaded row's exact height, its bars centred in the text's line height (`TextSM` in 20px, `TextXS`
+  in 16px) and as tall as the font size, never thinner;
+- a list as many rows as fill the area, not a handful stacked at the top;
+- a fixed column (a row's checks, a facts column) keeps its width and its bar where the value sits.
+
+A test pins the skeleton row's height to the loaded row's. A generic block of bars is a bug, and so is a
+skeleton that only looks close: compare it with a shot of the loaded screen at the same size.
+
+### Fixed headings
+
+A heading that stays put while the content under it scrolls (the Overview's Description) sits on a
+`th.Separator` across its column, so the edge the content scrolls under reads as one.
 
 ### Boxes inside a screen
 

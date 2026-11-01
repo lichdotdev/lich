@@ -169,8 +169,7 @@
     "loadFailed": "无法加载差异：{error}",
     "hideTree": "隐藏文件树",
     "showTree": "显示文件树",
-    "viewed": "已查看 {viewed}/{total}",
-    "loading": "正在读取差异…"
+    "viewed": "已查看 {viewed}/{total}"
   },
   "reviewThread": {
     "replyFailed": "回复失败：{error}",
