@@ -56,8 +56,9 @@ from `main` either drowns in merges or freezes the web app for months.
   `task gallery` builds it into `bin/` and opens it.
 - **`LICH_NATIVE_PPROF=127.0.0.1:6060`**, set where `lich native` starts, has `lich-native` serve Go's
   runtime profiles (`net/http/pprof`) on that address, for a heap or CPU profile of a real window:
-  `go tool pprof http://127.0.0.1:6060/debug/pprof/heap`. Only a loopback address is accepted, and any
-  process on the machine can read what the profiles carry.
+  `go tool pprof http://127.0.0.1:6060/debug/pprof/heap`. `/debug/vars` on the same address carries `frames`,
+  the frames drawn since the window opened: two reads a few seconds apart give the window's frame rate. Only a
+  loopback address is accepted, and any process on the machine can read what the profiles carry.
 - **`GOGC`** left unset, `lich-native` collects at 50 instead of Go's 100: a window with many sessions keeps a
   live heap of hundreds of MB, and at 100 half the resident size is slack the system swaps out. Set `GOGC` to
   choose another value.

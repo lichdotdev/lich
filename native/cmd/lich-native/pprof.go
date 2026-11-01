@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"fmt"
 	"log"
 	"net"
@@ -29,9 +30,16 @@ func pprofListener(addr string) (net.Listener, error) {
 	return ln, nil
 }
 
-// servePprof answers net/http/pprof's endpoints on ln until it closes.
+// frames counts the frames the window drew, served at /debug/vars beside
+// the profiles: two reads a few seconds apart give the window's frame rate,
+// which a profile alone does not show.
+var frames = expvar.NewInt("frames")
+
+// servePprof answers net/http/pprof's endpoints and /debug/vars on ln until
+// it closes.
 func servePprof(ln net.Listener) {
 	mux := http.NewServeMux()
+	mux.Handle("/debug/vars", expvar.Handler())
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
 	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
