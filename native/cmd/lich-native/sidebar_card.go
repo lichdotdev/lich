@@ -278,6 +278,10 @@ const neutralRingAlpha = 0.35
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	size := gtx.Dp(2 * sessionTreeRingR)
 	entry := sv.place.entry
+	// A ring mixes over its row's ground, not the card's fill, so hovering
+	// or lighting the card leaves it, and a tray tints it as it tints a
+	// checkout's.
+	th = onGround(th, sv.place.ground)
 	switch sv.status {
 	case "busy", "compacting":
 		ringArc(gtx, size, entry, th.Over(ui.Alpha(th.MutedForeground, 0.25)))

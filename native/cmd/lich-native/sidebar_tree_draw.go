@@ -27,6 +27,9 @@ type treePlace struct {
 	// onTray is a card on a folder tray of its own color, which the tray
 	// already paints at rest.
 	onTray bool
+	// ground is the surface under the row's node, a folder's tray or the
+	// sidebar, which its ring is mixed over whatever the row paints.
+	ground color.NRGBA
 	sessionRowLinks
 	kids    int
 	folded  bool
@@ -229,7 +232,7 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, node fu
 		row := treeLead(p)
 		row = append(row,
 			layout.Rigid(func(gtx C) D {
-				return node(gtx, func(gtx C) D { return checkoutNode(gtx, th, glyph, p.entry) })
+				return node(gtx, func(gtx C) D { return checkoutNode(gtx, onGround(th, p.ground), glyph, p.entry) })
 			}),
 			ui.Gap(1.5),
 			layout.Flexed(1, th.Text(ui.TextSM, f.label).Muted().Weight(font.Medium).Layout),
@@ -262,6 +265,23 @@ func checkoutNode(gtx C, th *ui.Theme, glyph *icons.Icon, entry treeEntry) D {
 	ringArc(gtx, side, entry, th.Over(ui.Alpha(th.MutedForeground, neutralRingAlpha)))
 	gtx.Constraints = layout.Exact(image.Pt(side, side))
 	return centeredIcon(gtx, glyph, 12, ui.Alpha(th.MutedForeground, 1-entry.glyph))
+}
+
+// nodeGround is the surface under a node of b's rows: its tray in a folder,
+// else the sidebar the theme is on.
+func nodeGround(th *ui.Theme, b blockView) color.NRGBA {
+	if b.kind == blockFolder {
+		return trayColor(th, b.color)
+	}
+	return th.Surface
+}
+
+// onGround is th on ground, or th itself where a row names none.
+func onGround(th *ui.Theme, ground color.NRGBA) *ui.Theme {
+	if ground.A == 0 {
+		return th
+	}
+	return th.On(ground)
 }
 
 // ringArc draws a node's ring in a box of side, as much of it as has come in:
@@ -332,6 +352,7 @@ func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, b blockView,
 	}
 	hovered := hover.Hovered() || more.Opened()
 	p := r.place(tree)
+	p.ground = nodeGround(th, b)
 	line := checkoutLine(th, f, p, true, s.nodeGlyph(r.key), moreButton, hovered)
 	return th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D {

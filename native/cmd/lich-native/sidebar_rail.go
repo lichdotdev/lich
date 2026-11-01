@@ -292,10 +292,7 @@ func (r *sidebarRail) row(gtx C, th *ui.Theme, s *sidebar, it railItem, active s
 func (r *sidebarRail) node(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
 	switch it.kind {
 	case railHead:
-		c := th.MutedForeground
-		if tint, ok := cardColors[it.tint]; ok {
-			c = tint
-		}
+		c := headGlyphColor(th, it.tint)
 		// The head's name is the one thing the rail leaves off it, in the
 		// card every other node's tooltip is.
 		state, ok := r.tips["head:"+it.key]
@@ -319,6 +316,15 @@ func (r *sidebarRail) node(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 		return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.checkout(gtx, th, s, it) })
 	}
 	return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.session(gtx, th, s, it, active, act) })
+}
+
+// railGround is the surface under a row's node: its folder's tray, or the
+// rail.
+func railGround(th *ui.Theme, it railItem) color.NRGBA {
+	if it.onTray {
+		return trayColor(th, it.tray)
+	}
+	return th.Surface
 }
 
 // railTray paints a folder's tray behind a row, rounded at its ends.
@@ -383,7 +389,7 @@ func (r *sidebarRail) checkout(gtx C, th *ui.Theme, s *sidebar, it railItem) D {
 	tooltip.Side = ui.SideRight
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D {
-			node := func(gtx C) D { return checkoutNode(gtx, th, icBranch, it.entry()) }
+			node := func(gtx C) D { return checkoutNode(gtx, onGround(th, railGround(th, it)), icBranch, it.entry()) }
 			if it.small {
 				// A child's node is drawn smaller than it flies: it crossfades.
 				return railSmall(gtx, true, node)
@@ -399,6 +405,7 @@ func (r *sidebarRail) checkout(gtx C, th *ui.Theme, s *sidebar, it railItem) D {
 func (r *sidebarRail) session(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
 	sv := it.sv
 	sv.place.tree = true
+	sv.place.ground = railGround(th, it)
 	sv.place.entry = it.entry()
 	click := clickable(r.cards, sv.ID)
 	if click.Clicked(gtx) {

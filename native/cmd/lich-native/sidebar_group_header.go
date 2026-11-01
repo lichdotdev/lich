@@ -304,3 +304,12 @@ func (s *sidebar) mergeNote(gtx C, th *ui.Theme, b blockView, st *blockState, fo
 		)
 	})
 }
+
+// headGlyphColor is a group head's glyph at rest, as titleContent draws it:
+// a folder's color, or the title's muted tone.
+func headGlyphColor(th *ui.Theme, tint string) color.NRGBA {
+	if c, ok := cardColors[tint]; ok {
+		return c
+	}
+	return th.Over(ui.Alpha(th.MutedForeground, headerTitleOpacity))
+}

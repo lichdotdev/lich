@@ -240,6 +240,7 @@ func (s *sidebar) flight(gtx C, th *ui.Theme, m *model) {
 	for bi := range view.blocks {
 		for si := range view.blocks[bi].sessions {
 			sv := &view.blocks[bi].sessions[si]
+			sv.place.ground = nodeGround(th, view.blocks[bi])
 			sessions[sv.ID] = sv
 		}
 	}
@@ -269,19 +270,16 @@ func (s *sidebar) flight(gtx C, th *ui.Theme, m *model) {
 // session's ring: each checkout's node, each folder's and the pinned glyph.
 func nodeGlyphs(th *ui.Theme, blocks []blockView) map[string]layout.Widget {
 	nodes := map[string]layout.Widget{}
-	branch := func(gtx C) D {
-		return layout.Center.Layout(gtx, func(gtx C) D { return checkoutNode(gtx, th, icBranch, treeEntry{}) })
-	}
 	for _, b := range blocks {
+		branch := func(gtx C) D {
+			on := onGround(th, nodeGround(th, b))
+			return layout.Center.Layout(gtx, func(gtx C) D { return checkoutNode(gtx, on, icBranch, treeEntry{}) })
+		}
 		switch {
 		case b.kind == blockFolder:
-			c := th.MutedForeground
-			if tint, ok := cardColors[b.color]; ok {
-				c = tint
-			}
-			nodes[glyphNode+b.key] = boxIcon(icGroupFolder, c)
+			nodes[glyphNode+b.key] = headGlyph(th, icGroupFolder, b.color)
 		case b.kind == blockPinned:
-			nodes[glyphNode+b.key] = boxIcon(icMenuPin, th.MutedForeground)
+			nodes[glyphNode+b.key] = headGlyph(th, icMenuPin, "")
 		case b.under != "":
 			nodes[glyphNode+b.key] = branch
 		}
@@ -292,6 +290,12 @@ func nodeGlyphs(th *ui.Theme, blocks []blockView) map[string]layout.Widget {
 		}
 	}
 	return nodes
+}
+
+// headGlyph is a group head's glyph in the box it is given, colored as it
+// rests.
+func headGlyph(th *ui.Theme, ic *icons.Icon, tint string) layout.Widget {
+	return func(gtx C) D { return boxIcon(ic, headGlyphColor(th, tint))(gtx) }
 }
 
 // boxIcon is ic centered in the box it is given, as large as the box allows.
