@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/io/input"
+	"gioui.org/op/clip"
 )
 
 // loopWake draws w once at now and reads the frame it asks for next.
@@ -40,5 +42,23 @@ func TestStillThemeHoldsTheFrame(t *testing.T) {
 		if at, ok := loopWake(w); ok {
 			t.Errorf("%s on a still window asked for a frame at %v, want none", name, at)
 		}
+	}
+}
+
+func TestStrokeArcPathsAreRecordedOnce(t *testing.T) {
+	a := arcPaths{paths: map[arcKey]clip.PathSpec{}}
+	k := arcKey{center: f32.Pt(5, 5), radius: 4, sweep: 1}
+	if a.get(k) != a.get(k) {
+		t.Error("the same arc came back as a new recording")
+	}
+	if a.get(k) == a.get(arcKey{center: f32.Pt(5, 5), radius: 4, sweep: 2}) {
+		t.Error("another arc reused the first's path")
+	}
+	first := a.get(k)
+	for i := range arcPathsMax {
+		a.get(arcKey{radius: float32(i), sweep: 1})
+	}
+	if len(a.paths) > arcPathsMax || a.get(k) == first {
+		t.Errorf("after %d arcs the record holds %d and still hands out the old recording", arcPathsMax, len(a.paths))
 	}
 }

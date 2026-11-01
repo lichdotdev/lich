@@ -77,10 +77,44 @@ func (th *Theme) BusyRing(gtx layout.Context, size unit.Dp, fg, track color.NRGB
 
 // StrokeArc strokes width wide the arc of radius around center that starts
 // at the angle start, in radians clockwise from 3 o'clock, and runs sweep.
+// The path is recorded once per distinct arc and kept, so a ring drawn the
+// same every frame keeps its vertices on the GPU; see Icon.
 func StrokeArc(gtx layout.Context, center f32.Point, radius, width, start, sweep float32, c color.NRGBA) {
+	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: arcs.get(arcKey{center, radius, start, sweep}), Width: width}.Op())
+}
+
+type arcKey struct {
+	center        f32.Point
+	radius, start float32
+	sweep         float32
+}
+
+// arcPaths is StrokeArc's record of paths. A turning arc is a new path every
+// frame, so the record is bounded: past arcPathsMax paths it starts over in a
+// fresh op.Ops, and the old one lives on for as long as a frame still calls
+// into it.
+var arcs = arcPaths{paths: map[arcKey]clip.PathSpec{}}
+
+const arcPathsMax = 1024
+
+type arcPaths struct {
+	ops   *op.Ops
+	paths map[arcKey]clip.PathSpec
+}
+
+func (a *arcPaths) get(k arcKey) clip.PathSpec {
+	if spec, ok := a.paths[k]; ok {
+		return spec
+	}
+	if a.ops == nil || len(a.paths) >= arcPathsMax {
+		a.ops = new(op.Ops)
+		clear(a.paths)
+	}
 	var p clip.Path
-	p.Begin(gtx.Ops)
-	p.MoveTo(f32.Pt(center.X+radius*float32(math.Cos(float64(start))), center.Y+radius*float32(math.Sin(float64(start)))))
-	p.ArcTo(center, center, sweep)
-	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: p.End(), Width: width}.Op())
+	p.Begin(a.ops)
+	p.MoveTo(f32.Pt(k.center.X+k.radius*float32(math.Cos(float64(k.start))), k.center.Y+k.radius*float32(math.Sin(float64(k.start)))))
+	p.ArcTo(k.center, k.center, k.sweep)
+	spec := p.End()
+	a.paths[k] = spec
+	return spec
 }
