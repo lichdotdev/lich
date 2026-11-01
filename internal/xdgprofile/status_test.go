@@ -11,6 +11,9 @@ func TestStatusesReadWhatEachCLIPrints(t *testing.T) {
 	}{
 		{"opencode logged out", opencodeStatus, "┌  Credentials ~/.local/share/opencode/auth.json\n│\n└  0 credentials\n", login{}},
 		{"opencode logged in", opencodeStatus, "┌  Credentials\n│\n●  Anthropic oauth\n│\n└  1 credential\n", login{loggedIn: true}},
+		{"opencode 2 logged out", opencode2Status, "No authenticated integrations\n", login{}},
+		{"opencode 2 with a key from the environment only", opencode2Status, "Anthropic  ANTHROPIC_API_KEY           environment\n", login{}},
+		{"opencode 2 logged in", opencode2Status, "OpenCode Go  OpenCode Go                 stored\nAnthropic    ANTHROPIC_API_KEY           environment\n", login{loggedIn: true}},
 		{"cursor logged out", cursorStatus, "{\n  \"status\": \"unauthenticated\",\n  \"isAuthenticated\": false,\n  \"hasAccessToken\": false,\n  \"hasRefreshToken\": false,\n  \"message\": \"Not logged in\"\n}\n", login{}},
 		{"cursor logged in", cursorStatus, "Update available\n" + `{"status":"authenticated","isAuthenticated":true,"userInfo":{"email":"me@work.example"}}`, login{loggedIn: true, email: "me@work.example"}},
 		{"cursor logged in without details", cursorStatus, `{"status":"authenticated","isAuthenticated":true}`, login{loggedIn: true}},
@@ -23,7 +26,7 @@ func TestStatusesReadWhatEachCLIPrints(t *testing.T) {
 			t.Errorf("%s: read = %+v, %v; want %+v", c.name, got, err, c.want)
 		}
 	}
-	for _, s := range []statusCommand{opencodeStatus, cursorStatus, kiroStatus} {
+	for _, s := range []statusCommand{opencodeStatus, opencode2Status, cursorStatus, kiroStatus} {
 		if _, err := s.read("error: something went wrong\n"); err == nil {
 			t.Errorf("%v read an error message as an answer", s.args)
 		}

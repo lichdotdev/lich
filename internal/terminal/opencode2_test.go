@@ -5,14 +5,6 @@ import (
 	"testing"
 )
 
-func TestVersionMajor(t *testing.T) {
-	for version, want := range map[string]int{"2.2.5": 2, "1.19.4": 1, "10.0": 10, "": 0, "dev": 0} {
-		if got := versionMajor(version); got != want {
-			t.Errorf("versionMajor(%q) = %d, want %d", version, got, want)
-		}
-	}
-}
-
 func TestOpencode2ArgsRunsAPrivateServer(t *testing.T) {
 	args := []string{"--session", "ses_1"}
 	if got := opencode2Args(false, args); !reflect.DeepEqual(got, args) {

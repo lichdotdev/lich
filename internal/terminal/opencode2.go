@@ -5,11 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -27,8 +24,7 @@ import (
 // server reaches that service only if this spawn happened to start it; with
 // --standalone every session runs a private server under its own environment.
 const (
-	opencode2StandaloneFlag = "--standalone"
-	opencode2Major          = 2
+	opencode2StandaloneFlag = providers.OpenCode2StandaloneFlag
 
 	// opencode2ModelKey is the config key that names the model, which is how
 	// a 2.x session is born on one without a flag (measured on 2.2.5: a
@@ -40,47 +36,6 @@ const (
 	opencode2ForkTimeout = 30 * time.Second
 )
 
-// opencode2Majors caches each opencode binary's verdict by path, size and
-// modification time, so the --version probe runs once per install rather than
-// once per spawn (1.19.4 takes about 0.4s to answer it), and again after an
-// upgrade rewrites the file.
-var opencode2Majors sync.Map
-
-// isOpencode2 reports whether bin, as the session would run it, is opencode 2
-// or later. False whenever that cannot be told, which spawns it the 1.x way: the
-// argv every opencode before 2.0 accepts.
-func isOpencode2(bin string) bool {
-	path, err := exec.LookPath(bin)
-	if err != nil {
-		return false
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	key := fmt.Sprintf("%s\x00%d\x00%d", path, info.Size(), info.ModTime().UnixNano())
-	if v2, ok := opencode2Majors.Load(key); ok {
-		return v2.(bool)
-	}
-	version, err := providers.ProbeVersion(context.Background(), path)
-	if err != nil {
-		return false
-	}
-	v2 := versionMajor(version) >= opencode2Major
-	opencode2Majors.Store(key, v2)
-	return v2
-}
-
-// versionMajor is the leading number of a version, 0 when there is none.
-func versionMajor(version string) int {
-	head, _, _ := strings.Cut(version, ".")
-	major, err := strconv.Atoi(head)
-	if err != nil {
-		return 0
-	}
-	return major
-}
-
 // opencode2Spawn tells whether this spawn runs opencode 2, and for a fork
 // makes the copy first and turns opts into a resume of it. Before the lock,
 // since it may run the provider's CLI twice.
@@ -89,7 +44,7 @@ func (s *Service) opencode2Spawn(opts *api.StartOptions, profileDir string) (boo
 		return false, nil
 	}
 	bin := resolveBin(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID))
-	v2 := isOpencode2(bin)
+	v2 := providers.IsOpencode2(bin)
 	if !v2 || !opts.Fork {
 		return v2, nil
 	}

@@ -9,7 +9,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -140,4 +142,55 @@ func parseVersion(out []byte) string {
 // holds no Service: the spawn, which picks an argv by the version it runs.
 func ProbeVersion(ctx context.Context, path string) (string, error) {
 	return (&Service{}).probe(ctx, path)
+}
+
+// OpenCode2StandaloneFlag runs an opencode 2 command on a private server of its
+// own. Without it 2.x attaches to a background service every opencode on the
+// machine shares, which read its config, data home and environment once, when
+// whichever command came first started it (measured on 2.2.5), so a spawn's
+// profile, inline config or MCP server would reach it only by luck.
+const OpenCode2StandaloneFlag = "--standalone"
+
+const openCode2Major = 2
+
+// openCode2Verdicts caches each opencode binary's major by path, size and
+// modification time: the --version probe runs once per install rather than per
+// spawn (1.19.4 takes about 0.4s to answer), and again after an upgrade
+// rewrites the file.
+var openCode2Verdicts sync.Map
+
+// IsOpencode2 reports whether bin, resolved on PATH, is opencode 2 or later,
+// which shares the 1.x binary name, config and database but not its argv.
+// False whenever that cannot be told, which keeps the 1.x argv every opencode
+// before 2.0 accepts.
+func IsOpencode2(bin string) bool {
+	path, err := exec.LookPath(bin)
+	if err != nil {
+		return false
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	key := fmt.Sprintf("%s\x00%d\x00%d", path, info.Size(), info.ModTime().UnixNano())
+	if v2, ok := openCode2Verdicts.Load(key); ok {
+		return v2.(bool)
+	}
+	version, err := ProbeVersion(context.Background(), path)
+	if err != nil {
+		return false
+	}
+	v2 := versionMajor(version) >= openCode2Major
+	openCode2Verdicts.Store(key, v2)
+	return v2
+}
+
+// versionMajor is the leading number of a version, 0 when there is none.
+func versionMajor(version string) int {
+	head, _, _ := strings.Cut(version, ".")
+	major, err := strconv.Atoi(head)
+	if err != nil {
+		return 0
+	}
+	return major
 }

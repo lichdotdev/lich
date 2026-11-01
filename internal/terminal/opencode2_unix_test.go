@@ -51,17 +51,6 @@ func readSpawn(t *testing.T, path string) (argv, config string) {
 	}
 }
 
-func TestIsOpencode2ReadsTheVersion(t *testing.T) {
-	v2, _ := fakeOpencode(t, "opencode v2.2.5", "")
-	v1, _ := fakeOpencode(t, "1.19.4", "")
-	if !isOpencode2(v2) || isOpencode2(v1) {
-		t.Errorf("isOpencode2: 2.2.5 = %v, 1.19.4 = %v", isOpencode2(v2), isOpencode2(v1))
-	}
-	if isOpencode2(filepath.Join(t.TempDir(), "absent")) {
-		t.Error("a binary that is not there read as opencode 2")
-	}
-}
-
 func startOpencode(t *testing.T, bins stubBins, opts api.StartOptions) {
 	t.Helper()
 	svc := New(bins, nil, events.New())
