@@ -70,3 +70,23 @@ func TestAKeystrokesEchoNeverWaits(t *testing.T) {
 		t.Errorf("output past the echo window asked for %d frames, want to ride the loop", *frames)
 	}
 }
+
+// A program polling the terminal (Claude Code asks for the cursor position
+// as it draws) gets its answers written to the PTY all the time; those are
+// no one typing, and must not keep output off the looping frame.
+func TestAQuerysReplyOpensNoEchoWindow(t *testing.T) {
+	ts, th, frames := ridingTerminals(t)
+	// Read-only: the writes stop short of the stream this test has none of.
+	ts.byID["s"].readOnly.Store(true)
+	spin(th, time.Now())
+	ts.reply("s", []byte("\x1b[24;80R"))
+	ts.onOutput("s", []byte("a"))
+	if *frames != 0 {
+		t.Errorf("output after a reply asked for %d frames, want to ride the loop", *frames)
+	}
+	ts.send("s", []byte("k"))
+	ts.onOutput("s", []byte("k"))
+	if *frames != 1 {
+		t.Errorf("output after a keystroke asked for %d frames, want one at once", *frames)
+	}
+}

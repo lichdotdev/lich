@@ -239,7 +239,20 @@ func (ts *terminals) openLink(url string) {
 	}()
 }
 
+// send writes what the person typed, pasted or scrolled to session id's
+// PTY: what comes back next is its echo, drawn at once.
 func (ts *terminals) send(id string, b []byte) {
+	if len(b) == 0 {
+		return
+	}
+	ts.sent.Store(time.Now().UnixNano())
+	ts.reply(id, b)
+}
+
+// reply writes the terminal's answer to a query of the program's (cursor
+// position, device attributes) to session id's PTY. A program polling the
+// terminal is no one typing, so its answers never open the echo window.
+func (ts *terminals) reply(id string, b []byte) {
 	if len(b) == 0 {
 		return
 	}
@@ -249,7 +262,6 @@ func (ts *terminals) send(id string, b []byte) {
 	if t != nil && t.readOnly.Load() {
 		return
 	}
-	ts.sent.Store(time.Now().UnixNano())
 	if err := stream.Send(context.Background(), id, b); err != nil {
 		log.Printf("send to %s: %v", id, err)
 	}
@@ -314,7 +326,7 @@ func (ts *terminals) attach(ctx context.Context, t *termView, cols, rows int) er
 	cellW, cellH := t.r.Cell()
 	vt, err := gioterm.New(cols, rows, cellW, cellH, func(b []byte) {
 		if t.seeded.Load() {
-			ts.send(t.id, b)
+			ts.reply(t.id, b)
 		}
 	})
 	if err != nil {
