@@ -102,6 +102,18 @@ func (s *Service) KillService(id string) {
 	}
 }
 
+// ServiceOutput is what service id has printed so far, capped like a
+// session's replay tail; nil when it is not running.
+func (s *Service) ServiceOutput(id string) []byte {
+	s.mu.Lock()
+	sess, ok := s.sessions[id]
+	s.mu.Unlock()
+	if !ok || sess.service == nil {
+		return nil
+	}
+	return sess.replay.snapshot()
+}
+
 // serviceInput is onInput for a service's console: typed bytes go straight to
 // the PTY, none of a session's bookkeeping applies, and a Ctrl+C among them
 // tells the service it was asked to stop. It reports whether id is a service.

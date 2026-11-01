@@ -50,4 +50,5 @@ func Spawn(d *rpc.Handler, s *spawn.Service) {
 	rpc.Handle(d, api.SpawnRenameFolder, s.RenameFolder)
 	rpc.Handle(d, api.SpawnColorFolder, s.ColorFolder)
 	rpc.Handle(d, api.SpawnRename, s.Rename)
+	rpc.Handle(d, api.SpawnProject, s.Project)
 }

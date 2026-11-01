@@ -3,6 +3,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"slices"
 	"strings"
@@ -384,5 +385,34 @@ func TestClosingAProjectKillsWhatOutstaysTheGrace(t *testing.T) {
 	svc.stopProject("p1", 300*time.Millisecond)
 	if got := stateOf(t, svc, v.ID).State; got != api.ServiceStopped {
 		t.Errorf("after closing its project the service is %s", got)
+	}
+}
+
+// LiveOutput reads a running service's console as it is at the call, and
+// nothing once the run is over: Output has it then.
+func TestLiveOutputReadsARunningService(t *testing.T) {
+	svc, _, _ := newTestServices(t)
+	v := save(t, svc, "p1", "talker", "echo listening; sleep 30", false)
+	if out, _ := svc.LiveOutput(context.Background(), api.ServiceIDOptions{ID: v.ID}); out != nil {
+		t.Errorf("LiveOutput before any run = %q", out)
+	}
+	if _, err := svc.Start(context.Background(), api.ServiceIDOptions{ID: v.ID}); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	var out []byte
+	for time.Now().Before(deadline) && !bytes.Contains(out, []byte("listening")) {
+		out, _ = svc.LiveOutput(context.Background(), api.ServiceIDOptions{ID: v.ID})
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !bytes.Contains(out, []byte("listening")) {
+		t.Fatalf("LiveOutput = %q, want what the run printed so far", out)
+	}
+	if _, err := svc.ForceStop(context.Background(), api.ServiceIDOptions{ID: v.ID}); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, svc, v.ID, api.ServiceStopped)
+	if out, _ := svc.LiveOutput(context.Background(), api.ServiceIDOptions{ID: v.ID}); out != nil {
+		t.Errorf("LiveOutput after the run = %q", out)
 	}
 }

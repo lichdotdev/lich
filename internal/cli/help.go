@@ -116,6 +116,18 @@ var commands = []command{
 			"runs in and the home project are refused.",
 	},
 	{
+		name: "service",
+		args: "[--project <name-or-path>] [--name <name>] [--command <command>]\n" +
+			"            [--start-with-lich[=false]] [--json]\n" +
+			"            list | add <name> <command> | edit <service> | delete <service>\n" +
+			"            | start <service> | stop <service> | force-stop <service>\n" +
+			"            | restart <service> | start-all | stop-all | output <service>",
+		about: "Manage a project's services, the commands lich runs on a console of their\n" +
+			"own: list, save, change, delete, start, stop, kill or restart one, start\n" +
+			"or stop them all, or print its console as it is now. Flags go before\n" +
+			"the verb; edit changes only the ones given.",
+	},
+	{
 		name: "rename",
 		args: "[--project <name-or-path>] [--json] [<session>] <label>",
 		about: "Rename a session's card. With <session> it renames that one, with only a\n" +

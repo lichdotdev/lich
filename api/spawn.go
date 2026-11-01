@@ -13,6 +13,7 @@ var (
 	SpawnRenameFolder = define[RenameFolderOptions, RenamedFolder]("spawn.RenameFolder")
 	SpawnColorFolder  = define[ColorFolderOptions, ColoredFolder]("spawn.ColorFolder")
 	SpawnRename       = define[RenameSessionOptions, RenamedSession]("spawn.Rename")
+	SpawnProject      = define[ProjectRefOptions, ProjectRef]("spawn.Project")
 )
 
 // OpenSessionOptions is one Open call. It travels as a single JSON object rather than
@@ -302,4 +303,19 @@ type RenamedSession struct {
 	Project  string `json:"project"`
 	Label    string `json:"label"`
 	Previous string `json:"previous"`
+}
+
+// ProjectRefOptions names an open project the way every spawn call does: by
+// name or by directory path, empty for the caller's own.
+type ProjectRefOptions struct {
+	From    string `json:"from"`
+	Project string `json:"project"`
+}
+
+// ProjectRef is the open project a ProjectRefOptions resolved to: the id the
+// methods keyed by project (services.Save, services.StartAll) take.
+type ProjectRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Path string `json:"path"`
 }

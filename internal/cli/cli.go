@@ -161,6 +161,8 @@ func dispatch(args []string, c *client) int {
 		return c.run(c.close, args[1:])
 	case "close-project":
 		return c.run(c.closeProject, args[1:])
+	case "service":
+		return c.run(c.service, args[1:])
 	case "rename":
 		return c.run(c.rename, args[1:])
 	case "control":

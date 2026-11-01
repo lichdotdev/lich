@@ -672,6 +672,44 @@ session on /home/you/src/revu again reopens the project with them.
 - **The home project is refused**, as the window refuses it.
 - Unlike the window's close, nothing asks first when sessions are running.
 
+### `lich service [--project <name-or-path>] [--name <name>] [--command <command>] [--start-with-lich[=false]] [--json] <verb> [args]`
+
+Manages a project's services, the commands the window's Services footer runs
+on a console of their own. The project defaults to the caller's own; a service
+is named by its name in the project, matched without regard to case. Flags go
+before the verb.
+
+- `list` prints every service with its state (`running`, `stopping`,
+  `stopped`, `failed`):
+
+  ```
+  service	state	command
+  web	running	pnpm dev
+  db	stopped	docker compose up db
+  ```
+
+- `add <name> <command>` saves a new one, stopped; `--start-with-lich` starts
+  it whenever lich starts with the project open.
+- `edit <service>` changes only what `--name`, `--command` and
+  `--start-with-lich` (`=false` to clear it) give. A running service keeps its
+  old command until its next start.
+- `delete <service>` removes a stopped one; a running one is refused.
+- `start <service>` and `stop <service>`. Stop asks as Ctrl+C at the console
+  does, so the row printed may still read `stopping`.
+- `force-stop <service>` kills one that ignores the stop or takes too long.
+- `restart <service>` stops a running one and starts it again once it exits,
+  picking up an edited command; one that is not running is started.
+- `start-all` and `stop-all` start or stop every service of the project, and
+  print the list as it is afterwards.
+- `output <service>` prints the console as it is at that moment, terminal
+  escapes included: what a running one has printed so far (its last 2 MiB),
+  or what a stopped or failed one printed in its last run. One read, not a
+  stream.
+
+`list`, `start-all` and `stop-all` print the project's services; every other
+verb but `output` prints the one service as it is afterwards. `--json` prints
+them as the `services` RPC result shapes them, and `output` as a JSON string.
+
 ### `lich rename [--project <name-or-path>] [--json] [<session>] <label>`
 
 Renames a session — the name on its card, which is also the name it is addressed
@@ -1007,6 +1045,17 @@ at lich.
 | `open_session` | optional `project` (a name, or an absolute directory path, which is opened as a project first), `kind`, `worktree`, `base`, `model`, `effort`, `ultracode`, `folder` — `lich open` — plus optional `prompt` and `private` — `lich open --prompt [--private]`, the same hand-off in the same call. |
 | `close_session` | `session`, optional `project`, `worktree` (`keep`/`remove`), `force`. |
 | `close_project` | `project` (a name or a directory path) — `lich close-project`. |
+| `list_services` | optional `project`: the project's services with their state, as JSON. `lich service list`. |
+| `create_service` | `name`, `command`, optional `start_with_lich` and `project`. Saved, not started. `lich service add`. |
+| `edit_service` | `service`, optional `name`, `command`, `start_with_lich` and `project`; what is left out stays. `lich service edit`. |
+| `delete_service` | `service`, optional `project`; a running one is refused. `lich service delete`. |
+| `start_service` | `service`, optional `project`. `lich service start`. |
+| `stop_service` | `service`, optional `project`; asks it to stop as Ctrl+C does, so the answer may read `stopping`. `lich service stop`. |
+| `force_stop_service` | `service`, optional `project`; kills it without waiting. `lich service force-stop`. |
+| `restart_service` | `service`, optional `project`. `lich service restart`. |
+| `start_all_services` | optional `project`; answers with the project's services. `lich service start-all`. |
+| `stop_all_services` | optional `project`; answers with the project's services. `lich service stop-all`. |
+| `read_service_output` | `service`, optional `project`: the console as it is now, a running one's so far or a stopped one's last run. `lich service output`. |
 | `rename_session` | `label`, optional `session` (omitted renames the caller's own) and `project` — `lich rename`. |
 | `control_session` | Experimental. `session`, `action` (`prompt`, `abort`, `model`, `effort`, `command`), optional `value`, `args` (`command` only) and `project`. `lich control`. Delivered is a result, not an error; a command the session never took is withdrawn and fails. |
 | `ask_session` | Experimental. `session`, `question`, optional `project`. `lich ask`: the answer is the result, and every way it ends without one is an error. |
@@ -1023,7 +1072,7 @@ error: the agent should read what went wrong and act on it, not lose the turn.
 clients inject into the agent's system prompt. It is the one place the whole
 journey (fan out into worktree sessions, carry on, collect) is told as one;
 the tool descriptions each only explain their own door. `list_sessions`,
-`list_worktrees` and `list_folders` are annotated `readOnlyHint`, so a client
+`list_worktrees`, `list_folders`, `list_services` and `read_service_output` are annotated `readOnlyHint`, so a client
 may auto-allow them.
 
 `file_session`, `rename_folder` and `color_folder` refuse a call that leaves out
