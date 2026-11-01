@@ -135,3 +135,9 @@ func parseVersion(out []byte) string {
 	}
 	return ""
 }
+
+// ProbeVersion is Version for a binary already resolved, for a caller that
+// holds no Service: the spawn, which picks an argv by the version it runs.
+func ProbeVersion(ctx context.Context, path string) (string, error) {
+	return (&Service{}).probe(ctx, path)
+}

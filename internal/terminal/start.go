@@ -75,11 +75,15 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	if err != nil {
 		return api.None{}, err
 	}
+	oc2, err := s.opencode2Spawn(&opts, profileDir)
+	if err != nil {
+		return api.None{}, err
+	}
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	markCrushInitialized(opts.Kind, opts.Cwd)
 	awaits := s.awaitsStart(opts.Kind, profileDir)
-	sess, cwd, err := s.spawnSession(opts, profileDir, name)
+	sess, cwd, err := s.spawnSession(opts, profileDir, name, oc2)
 	if err != nil || sess == nil {
 		return api.None{}, err
 	}
@@ -104,7 +108,7 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 // registration. A nil session with a nil error means opts.ID was already running.
 // The returned cwd is the effective start directory (opts.Cwd, or the
 // resolved home when it was empty).
-func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (*session, string, error) {
+func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, oc2 bool) (*session, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -145,6 +149,13 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (
 		return nil, "", err
 	}
 	env = mcpEnv(env, opts.Kind, mcpBin)
+	model := s.store.SessionModel(opts.ID)
+	if oc2 {
+		if env, err = opencode2ModelEnv(env, model, opts.Resume); err != nil {
+			return nil, "", err
+		}
+		model = ""
+	}
 	// The configured binary still runs, so a wrapper exporting a
 	// CLAUDE_CONFIG_DIR (or CODEX_HOME) of its own wins over the profile.
 	if profileDir != "" {
@@ -159,11 +170,11 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string) (
 	inheritAntigravityTrust(opts.Kind, opts.Cwd, inSandbox)
 	spec := ptySpec{
 		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
-		args: append(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), providerArgs(
-			opts.Kind, name, opts.Resume, s.store.SessionModel(opts.ID), s.store.SessionEffort(opts.ID), mcpBin,
+		args: append(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), opencode2Args(oc2, providerArgs(
+			opts.Kind, name, opts.Resume, model, s.store.SessionEffort(opts.ID), mcpBin,
 			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, subagentRoute(opts.Kind, depth, cardsOn),
 			s.promptLanguage(),
-		)...),
+		))...),
 		dir:  opts.Cwd,
 		env:  env,
 		cols: opts.Cols,
