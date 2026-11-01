@@ -66,6 +66,10 @@ type sidebarMorph struct {
 	p         float32 // this frame's eased progress
 	side      morphSide
 	boxes     [2]map[string]image.Rectangle // by side, in window coordinates
+	// places is how each shape placed its sessions in the capture frame, by
+	// side and session id: the flight draws a ring as the shape it flies for
+	// draws it, which the session's own view does not say.
+	places [2]map[string]treePlace
 
 	// landed is whether this frame ended the morph.
 	landed bool
@@ -76,6 +80,7 @@ func (m *sidebarMorph) begin(gtx C) {
 	// p restarts now, not at the next frame's advance: what the frame of the
 	// click still lays out after the switch (the top bar's brand) reads it.
 	m.phase, m.start, m.p = morphCapture, time.Time{}, 0
+	m.places = [2]map[string]treePlace{{}, {}}
 	gtx.Execute(op.InvalidateCmd{})
 }
 
@@ -132,6 +137,14 @@ func (m *sidebarMorph) glyph(gtx C, name string, w layout.Widget) D {
 		probe.Pop()
 	}
 	return d
+}
+
+// keepPlace records, in the capture frame, how the shape being drawn placed
+// session id.
+func (m *sidebarMorph) keepPlace(id string, place treePlace) {
+	if m.phase == morphCapture && m.places[m.side] != nil {
+		m.places[m.side][id] = place
+	}
 }
 
 // capture reads, from the finished capture frame, where each shape drew its
@@ -240,7 +253,6 @@ func (s *sidebar) flight(gtx C, th *ui.Theme, m *model) {
 	for bi := range view.blocks {
 		for si := range view.blocks[bi].sessions {
 			sv := &view.blocks[bi].sessions[si]
-			sv.place.ground = nodeGround(th, view.blocks[bi])
 			sessions[sv.ID] = sv
 		}
 	}
@@ -323,8 +335,11 @@ func (s *sidebar) flyingGlyph(gtx C, th *ui.Theme, name string, side morphSide, 
 			w(gtx)
 		}
 	default:
-		if sv := sessions[strings.TrimPrefix(name, glyphSession)]; sv != nil {
-			s.statusGlyph(gtx, th, sv)
+		id := strings.TrimPrefix(name, glyphSession)
+		if sv := sessions[id]; sv != nil {
+			placed := *sv
+			placed.place = s.morph.places[side][id]
+			s.statusGlyph(gtx, th, &placed)
 		}
 	}
 }

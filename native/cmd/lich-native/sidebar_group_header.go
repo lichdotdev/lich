@@ -102,8 +102,7 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 		if st.rename.Active() {
 			return s.folderRenameField(gtx, th, b, st, f.act)
 		}
-		over := s.carry.Over() == b.key
-		w := func(gtx C) D { return s.titleButton(gtx, th, b, st, over, refuses) }
+		w := func(gtx C) D { return s.titleButton(gtx, th, b, st, refuses) }
 		if b.kind == blockPinned || f.filtering {
 			return w(gtx)
 		}
@@ -124,6 +123,10 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	}
 	// The whole line lights under the pointer, as a row does, the … included.
 	fill := cardLayer(th, "", false, st.toggle.Hovered() || st.more.Hovered() || st.options.Opened() || st.context.Opened())
+	if s.carry.Over() == b.key {
+		// The card in the air lights the whole line it would drop on.
+		fill = th.Over(ui.Alpha(th.TonePass, headerDropFill))
+	}
 	line := func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
@@ -167,22 +170,15 @@ func (s *sidebar) headerMenu(gtx C, th *ui.Theme, state *ui.MenuState, click *wi
 
 // titleButton is the header's title button: the chevron, a folder's glyph and
 // count, the folded block's mark, then the rule to the row's end.
-func (s *sidebar) titleButton(gtx C, th *ui.Theme, b blockView, st *blockState, over, refuses bool) D {
+func (s *sidebar) titleButton(gtx C, th *ui.Theme, b blockView, st *blockState, refuses bool) D {
 	hint := i18n.T("sidebar.sessionGroupHeader.collapse", i18n.Args{"name": b.title})
 	if b.collapsed {
 		hint = i18n.T("sidebar.sessionGroupHeader.expand", i18n.Args{"name": b.title})
 	}
 	return th.Tooltip(s.root, s.hint("fold:"+b.key), hint).Layout(gtx, func(gtx C) D {
 		return st.toggle.Layout(gtx, func(gtx C) D {
-			var bg color.NRGBA
-			if over {
-				bg = th.Over(ui.Alpha(th.TonePass, headerDropFill))
-			}
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			return layout.Background{}.Layout(gtx,
-				func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
-				func(gtx C) D { return s.titleContent(gtx, th, b, st.toggle.Hovered(), refuses) },
-			)
+			return s.titleContent(gtx, th, b, st.toggle.Hovered(), refuses)
 		})
 	})
 }

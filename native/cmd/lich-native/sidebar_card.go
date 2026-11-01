@@ -269,6 +269,7 @@ func (s *sidebar) prBadge(gtx C, th *ui.Theme, click *widget.Clickable, number i
 // when waiting on the user and emerald when done, faded once that turn is
 // read.
 func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
+	s.morph.keepPlace(sv.ID, sv.place)
 	return s.morph.glyph(gtx, glyphSession+sv.ID, func(gtx C) D { return s.statusGlyph(gtx, th, sv) })
 }
 
