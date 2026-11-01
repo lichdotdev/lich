@@ -26,7 +26,7 @@ case "$1" in
   --version) echo '` + version + `'; exit 0 ;;
   api) echo "$@ $PWD" > '` + argvFile + `.fork'; echo '` + forkAnswer + `'; exit 0 ;;
 esac
-{ echo "$@"; echo "$OPENCODE_CONFIG_CONTENT"; } > '` + argvFile + `.tmp'
+{ echo "$@"; echo "$OPENCODE_CONFIG_CONTENT"; echo "$OPENCODE_CLI_CONFIG_CONTENT"; } > '` + argvFile + `.tmp'
 mv '` + argvFile + `.tmp' '` + argvFile + `'
 sleep 30
 `
@@ -41,8 +41,8 @@ func readSpawn(t *testing.T, path string) (argv, config string) {
 	deadline := time.Now().Add(5 * time.Second)
 	for {
 		if data, err := os.ReadFile(path); err == nil {
-			argv, config, _ = strings.Cut(strings.TrimSpace(string(data)), "\n")
-			return argv, config
+			lines := strings.Split(string(data), "\n")
+			return lines[0], lines[1]
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("the fake opencode never recorded its spawn at %s", path)
@@ -70,6 +70,23 @@ func TestOpencode2SpawnsStandaloneWithTheModelInItsConfig(t *testing.T) {
 	}
 	if !strings.Contains(config, `"model":"opencode/glm-5.3-flash-free"`) {
 		t.Errorf("OPENCODE_CONFIG_CONTENT = %q, want the model in it", config)
+	}
+}
+
+func TestOpencode2SpawnUnfoldsPastesThroughItsTerminalConfig(t *testing.T) {
+	bin, argv := fakeOpencode(t, "opencode v2.2.5", "")
+	startOpencode(t, stubBins{bin: bin, pasteUnfold: true}, api.StartOptions{ID: "s1", Cwd: t.TempDir()})
+	readSpawn(t, argv)
+	data, err := os.ReadFile(argv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if got := lines[len(lines)-1]; got != `{"prompt":{"paste":"full"}}` {
+		t.Errorf("OPENCODE_CLI_CONFIG_CONTENT = %q, want the paste unfolded", got)
+	}
+	if strings.Contains(lines[1], "disable_paste_summary") {
+		t.Errorf("OPENCODE_CONFIG_CONTENT = %q carries the 1.x key 2.x drops", lines[1])
 	}
 }
 

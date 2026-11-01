@@ -142,7 +142,11 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	// The model and effort are read from the row rather than passed in, so every
 	// spawn that starts a conversation of its own gets them: the window's first
 	// view and a restart. A resume leaves them to the provider (modelArgs).
-	env, err := pasteUnfoldEnv(
+	unfold := pasteUnfoldEnv
+	if oc2 {
+		unfold = opencode2PasteUnfoldEnv
+	}
+	env, err := unfold(
 		subagentEnv(s.sessionEnv(opts.ID, opts.ProjectID, opts.Cwd), opts.Kind, depth, cardsOn), opts.Kind, s.store.PasteUnfold(opts.Kind),
 	)
 	if err != nil {

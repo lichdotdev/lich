@@ -61,6 +61,20 @@ func TestMCPServersReadsOpenCodeGlobalConfig(t *testing.T) {
 	}
 }
 
+// opencode 2 nests the servers one level down, beside its MCP settings, and
+// still reads the 1.x shape from another document.
+func TestMCPServersReadsOpenCode2Shape(t *testing.T) {
+	dir := opencodeConfigHome(t)
+	writeMCPConfig(t, dir, "opencode.jsonc", `{"mcp":{"servers":{"ai-memory":{"type":"remote"}},"timeout":{"catalog":5}}}`)
+	writeMCPConfig(t, dir, "opencode.json", `{"mcp":{"legacy":{"type":"local"}}}`)
+
+	got := MCPServers(providers.OpenCode, t.TempDir())
+
+	if want := []string{"ai-memory", "legacy", "lich"}; !slices.Equal(got, want) {
+		t.Errorf("MCPServers = %v, want %v", got, want)
+	}
+}
+
 // opencode merges three documents into its global config, and a server declared
 // in any of them is a server whose tools reach the session.
 func TestMCPServersMergesEveryOpenCodeGlobalDocument(t *testing.T) {

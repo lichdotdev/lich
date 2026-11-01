@@ -31,6 +31,12 @@ const (
 	// standalone spawn ran the model OPENCODE_CONFIG_CONTENT named).
 	opencode2ModelKey = "model"
 
+	// opencode2CLIConfigContentVar is opencode 2's inline terminal config,
+	// merged over cli.json, and opencode2PasteFull the `prompt.paste` value
+	// that types a paste out rather than folding it ("compact").
+	opencode2CLIConfigContentVar = "OPENCODE_CLI_CONFIG_CONTENT"
+	opencode2PasteFull           = "full"
+
 	// opencode2ForkTimeout bounds the fork call, which boots a private server
 	// for one request (0.4s measured on 2.2.5).
 	opencode2ForkTimeout = 30 * time.Second
@@ -66,6 +72,38 @@ func opencode2Args(oc2 bool, args []string) []string {
 		return args
 	}
 	return append([]string{opencode2StandaloneFlag}, args...)
+}
+
+// opencode2PasteUnfoldEnv is pasteUnfoldEnv for opencode 2, which drops the
+// 1.x `experimental.disable_paste_summary` and reads the paste summary off its
+// terminal config instead: `prompt.paste` "full" in cli.json, which
+// OPENCODE_CLI_CONFIG_CONTENT merges over (measured on 2.2.5 with a 30-line
+// bracketed paste: "full" typed every line, the 1.x key still folded them).
+func opencode2PasteUnfoldEnv(env []string, kind string, on bool) ([]string, error) {
+	if !on || kind != providers.OpenCode {
+		return env, nil
+	}
+	config := map[string]any{}
+	if own := lastEnvValue(env, opencode2CLIConfigContentVar); own != "" {
+		if err := json.Unmarshal([]byte(own), &config); err != nil {
+			return nil, fmt.Errorf("%s must be a JSON object to turn off opencode's paste summary: %w",
+				opencode2CLIConfigContentVar, err)
+		}
+	}
+	prompt, isObject := config["prompt"].(map[string]any)
+	if config["prompt"] != nil && !isObject {
+		return nil, fmt.Errorf("%s has a \"prompt\" that is not an object", opencode2CLIConfigContentVar)
+	}
+	if prompt == nil {
+		prompt = map[string]any{}
+	}
+	prompt["paste"] = opencode2PasteFull
+	config["prompt"] = prompt
+	content, err := json.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode %s: %w", opencode2CLIConfigContentVar, err)
+	}
+	return append(env, opencode2CLIConfigContentVar+"="+string(content)), nil
 }
 
 // opencode2ModelEnv names a 2.x session's model in OPENCODE_CONFIG_CONTENT,

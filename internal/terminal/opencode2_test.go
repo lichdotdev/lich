@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 )
@@ -47,6 +48,35 @@ func TestParseOpencode2Fork(t *testing.T) {
 	for _, out := range []string{"", "not json", `{"data":{}}`, `{"error":"SessionNotFoundError"}`} {
 		if id, err := parseOpencode2Fork([]byte(out)); err == nil {
 			t.Errorf("%q: fork id = %q, want an error", out, id)
+		}
+	}
+}
+
+func TestOpencode2PasteUnfoldEnv(t *testing.T) {
+	own := opencode2CLIConfigContentVar + `={"prompt":{"editor":true},"theme":"x"}`
+	env, err := opencode2PasteUnfoldEnv([]string{own}, "opencode", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config map[string]any
+	if err := json.Unmarshal([]byte(lastEnvValue(env, opencode2CLIConfigContentVar)), &config); err != nil {
+		t.Fatal(err)
+	}
+	prompt, _ := config["prompt"].(map[string]any)
+	if prompt["paste"] != "full" || prompt["editor"] != true || config["theme"] != "x" {
+		t.Errorf("cli config = %v, want paste full beside the user's own keys", config)
+	}
+	for _, tc := range []struct {
+		kind string
+		on   bool
+	}{{"opencode", false}, {"claude", true}} {
+		if env, err := opencode2PasteUnfoldEnv([]string{own}, tc.kind, tc.on); err != nil || len(env) != 1 {
+			t.Errorf("%s on=%v: env = %q, %v, want it untouched", tc.kind, tc.on, env, err)
+		}
+	}
+	for _, bad := range []string{"[1]", `{"prompt":1}`} {
+		if _, err := opencode2PasteUnfoldEnv([]string{opencode2CLIConfigContentVar + "=" + bad}, "opencode", true); err == nil {
+			t.Errorf("%s: want an error, not the user's config dropped", bad)
 		}
 	}
 }
