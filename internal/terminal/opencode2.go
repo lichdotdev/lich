@@ -83,50 +83,35 @@ func opencode2PasteUnfoldEnv(env []string, kind string, on bool) ([]string, erro
 	if !on || kind != providers.OpenCode {
 		return env, nil
 	}
-	config := map[string]any{}
-	if own := lastEnvValue(env, opencode2CLIConfigContentVar); own != "" {
-		if err := json.Unmarshal([]byte(own), &config); err != nil {
-			return nil, fmt.Errorf("%s must be a JSON object to turn off opencode's paste summary: %w",
-				opencode2CLIConfigContentVar, err)
+	env, err := extendInlineConfig(env, opencode2CLIConfigContentVar, func(config map[string]any) error {
+		prompt, err := objectAt(config, "prompt")
+		if err == nil {
+			prompt["paste"] = opencode2PasteFull
 		}
-	}
-	prompt, isObject := config["prompt"].(map[string]any)
-	if config["prompt"] != nil && !isObject {
-		return nil, fmt.Errorf("%s has a \"prompt\" that is not an object", opencode2CLIConfigContentVar)
-	}
-	if prompt == nil {
-		prompt = map[string]any{}
-	}
-	prompt["paste"] = opencode2PasteFull
-	config["prompt"] = prompt
-	content, err := json.Marshal(config)
+		return err
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode %s: %w", opencode2CLIConfigContentVar, err)
+		return nil, fmt.Errorf("turn off opencode's paste summary: %w", err)
 	}
-	return append(env, opencode2CLIConfigContentVar+"="+string(content)), nil
+	return env, nil
 }
 
 // opencode2ModelEnv names a 2.x session's model in OPENCODE_CONFIG_CONTENT,
-// extending one the user exports for pasteUnfoldEnv's reason. A birth value, as
+// extending one the user exports (extendInlineConfig). A birth value, as
 // in modelArgs: a resume leaves the model to the conversation.
 func opencode2ModelEnv(env []string, model, resume string) ([]string, error) {
 	model, usable := flagValue(model)
 	if !usable || resume != "" {
 		return env, nil
 	}
-	config := map[string]any{}
-	if own := lastEnvValue(env, opencodeConfigContentVar); own != "" {
-		if err := json.Unmarshal([]byte(own), &config); err != nil {
-			return nil, fmt.Errorf("%s must be a JSON object to name opencode's model: %w",
-				opencodeConfigContentVar, err)
-		}
-	}
-	config[opencode2ModelKey] = model
-	content, err := json.Marshal(config)
+	env, err := extendInlineConfig(env, opencodeConfigContentVar, func(config map[string]any) error {
+		config[opencode2ModelKey] = model
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode %s: %w", opencodeConfigContentVar, err)
+		return nil, fmt.Errorf("name opencode's model: %w", err)
 	}
-	return append(env, opencodeConfigContentVar+"="+string(content)), nil
+	return env, nil
 }
 
 // opencode2Fork copies conversation parent into a new one through opencode's
