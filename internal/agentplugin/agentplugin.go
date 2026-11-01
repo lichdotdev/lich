@@ -14,10 +14,11 @@
 //     release published: a customization directory under Antigravity's global
 //     `config/plugins/`, a module into opencode's plugin directory, another into
 //     oh-my-pi's extensions directory, and hook scripts plus a delimited block
-//     of `hook add` lines into Crush's crushrc. Each carries the version it
-//     installed — a marker line, or a field in a manifest lich owns outright —
-//     which is the only record of what is installed where the harness keeps
-//     none. Antigravity does have a plugin CLI; antigravity.go says why it is
+//     of `hook add` lines into Crush's crushrc. opencode, oh-my-pi, Crush and
+//     Kiro also get the plugin's theme skill in their skills directory
+//     (skill.go). Each carries the version it installed — a marker line, or a
+//     field in a manifest lich owns outright — which is the only record of what
+//     is installed where the harness keeps none. Antigravity does have a plugin CLI; antigravity.go says why it is
 //     not the install.
 package agentplugin
 

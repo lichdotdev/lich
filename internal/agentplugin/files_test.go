@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -28,9 +29,13 @@ const testVersion = "0.13.0"
 
 // fileServer serves the plugin repository's files at a tag and records the
 // paths asked for. A path with no body 404s, which is how a test says "this
-// release does not carry that file".
+// release does not carry that file". Every release carries the theme skill
+// (themeSkillRelease) unless the test serves its own copy of a file.
 func fileServer(t *testing.T, files map[string]string) (*Service, func() []string) {
 	t.Helper()
+	served := themeSkillRelease()
+	maps.Copy(served, files)
+	files = served
 	var asked []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		asked = append(asked, r.URL.Path)
@@ -56,6 +61,29 @@ func fileServer(t *testing.T, files map[string]string) (*Service, func() []strin
 		lookPath:    func(name string) (string, error) { return "/usr/bin/" + name, nil },
 		lichBin:     lichBinary,
 	}, func() []string { return asked }
+}
+
+// themeSkillRelease is the theme skill as a release serves it.
+func themeSkillRelease() map[string]string {
+	files := map[string]string{}
+	for _, name := range themeSkillFiles {
+		files[tagged(themeSkillSource+"/"+name)] = name + " body\n"
+	}
+	files[tagged(themeSkillSource+"/"+skillManifest)] = "---\nname: theme\ndescription: Write a lich theme.\n---\n\n# lich themes\n"
+	return files
+}
+
+// assertFetchedWithSkill checks an install fetched its module and the theme
+// skill, and nothing else.
+func assertFetchedWithSkill(t *testing.T, got []string, module string) {
+	t.Helper()
+	want := []string{tagged(module)}
+	for _, name := range themeSkillFiles {
+		want = append(want, tagged(themeSkillSource+"/"+name))
+	}
+	if !slices.Equal(slices.Sorted(slices.Values(got)), slices.Sorted(slices.Values(want))) {
+		t.Errorf("fetched %v, want the module and the theme skill, %v", got, want)
+	}
 }
 
 // tagged is the URL path a release file is served at.
@@ -116,9 +144,7 @@ func TestOpencodeInstallWritesTheModule(t *testing.T) {
 	if !strings.HasPrefix(body, jsComment+" "+markerName+" v"+testVersion+" ") {
 		t.Errorf("installed module has no version marker on its first line:\n%s", body)
 	}
-	if got := asked(); len(got) != 1 || got[0] != tagged(opencodeSource) {
-		t.Errorf("fetched %v, want just %q", got, tagged(opencodeSource))
-	}
+	assertFetchedWithSkill(t, asked(), opencodeSource)
 }
 
 // The version has to survive the round trip: Status reads back what Install
@@ -283,9 +309,7 @@ func TestOMPInstallWritesTheExtensionAndRegistersTheServer(t *testing.T) {
 	if !strings.HasPrefix(body, jsComment+" "+markerName+" v"+testVersion+" ") {
 		t.Errorf("installed extension has no version marker on its first line:\n%s", body)
 	}
-	if got := asked(); len(got) != 1 || got[0] != tagged(ompSource) {
-		t.Errorf("fetched %v, want just %q", got, tagged(ompSource))
-	}
+	assertFetchedWithSkill(t, asked(), ompSource)
 
 	// omp takes no --mcp-config flag, so this document is the only way a session
 	// of its own reaches the other sessions.
@@ -415,6 +439,7 @@ func crushCLI(t *testing.T, s *Service, configDir, version string) {
 	t.Setenv(fakeCLIGuard, "1")
 	t.Setenv(fakeCLIDirs, configDir)
 	t.Setenv(fakeCLIVersion, version)
+	t.Setenv("CRUSH_SKILLS_DIR", "")
 	s.bins = stubBin(self)
 }
 

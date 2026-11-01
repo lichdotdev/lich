@@ -39,6 +39,9 @@ func (s *Service) opencodeInstall() error {
 	if err != nil {
 		return err
 	}
+	if err := s.installThemeSkill(version, filepath.Join(filepath.Dir(dir), "skills")); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", dir, err)
 	}

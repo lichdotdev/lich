@@ -105,6 +105,13 @@ func (s *Service) crushInstall() error {
 			return err
 		}
 	}
+	skills, err := s.crushSkillsDir()
+	if err != nil {
+		return err
+	}
+	if err := s.installThemeSkill(version, skills); err != nil {
+		return err
+	}
 	return s.writeCrushrc(version, dir, s.lichBin())
 }
 
@@ -332,6 +339,20 @@ func (s *Service) crushrcPath() (string, error) {
 		return "", fmt.Errorf("crush dirs printed no config directory")
 	}
 	return filepath.Join(dir, "crushrc"), nil
+}
+
+// crushSkillsDir is the global skills directory Crush reads: $CRUSH_SKILLS_DIR
+// when set, since Crush then reads that one alone, else `skills` beside the
+// crushrc (Crush's GlobalSkillsDirs, v0.98.1).
+func (s *Service) crushSkillsDir() (string, error) {
+	if dir := os.Getenv("CRUSH_SKILLS_DIR"); dir != "" {
+		return dir, nil
+	}
+	rc, err := s.crushrcPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(rc), "skills"), nil
 }
 
 // pluginScriptDir is where lich keeps the hook scripts it installs for one
