@@ -18,6 +18,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
   typed text lands in the question. Codex, Antigravity, Crush and opencode report nothing before their first
   turn, so a quiet screen is still all lich has for them.
+- **opencode 2 is told apart by its `--version`, and every 2.x session runs a server of its own**
+  (`internal/providers/version.go` `IsOpencode2`, `internal/terminal/opencode2.go`): 2.x keeps 1.x's binary name,
+  config and database but not its argv, so the spawn asks the binary for its major, once per path, size and
+  modification time. A wrapper whose `--version` answers for another opencode than the one it runs (a
+  version-manager shim that picks one per directory) spawns with the other generation's argv, which dies on an
+  unknown flag. A 2.x session runs `--standalone`, because the background service 2.x attaches to by default
+  holds the environment of whichever command started it, which would leave a session without its profile, its
+  model or lich's MCP server. The price is that a lich session is not on that service, so the user's other
+  opencode clients (`opencode pair`, the desktop app) do not see it, and each one boots a server of its own. A
+  fork goes through 2.x's own route (`POST /api/session/{id}/fork`, run before the spawn) because its terminal
+  interface has no `--fork`; a fork that route refuses is refused, not reopened as a resume.
 - **A reasoning effort is refused where the TUI would drop it, and never validated**
   (`internal/terminal/command.go`, `effortFlags`): `lich open --effort` and `open_session`'s `effort` are refused
   for opencode, Crush and Cursor CLI, whose interactive CLI takes no level, rather than handing back a session on
@@ -156,6 +167,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   only when the reason is standing (`costMiss.spoken` in `internal/terminal/usage_cost.go`): a transcript that
   merely could not be read this turn says nothing and keeps the last figure, so a reader cannot tell that
   absence from a session still on its first turn.
+- **An opencode database can hold two generations, and each conversation is read from the newer one it is in**
+  (`internal/terminal/sessiondb.go`, `opencode2Session`): opencode 2 copies a 1.x conversation into `session_v2`
+  the first time it touches it and stops writing the 1.x tables, which it leaves in place (measured on 2.2.5
+  over a 1.19.4 database). lich reads a conversation from `session_v2` when it is there and from the 1.x tables
+  otherwise, so one continued under 1.x after 2.x copied it (a downgrade) shows its 2.x state.
 - **The session readout is each provider's own record, and only Claude Code and Codex fill it**
   (`internal/terminal/usage.go`, `usageSourceFor`; who shows what is README's provider table, and what each records
   is `docs/providers/`, Transcript & cost): which reading a provider gets is decided by what it writes down, not by
@@ -564,6 +580,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   before the pin or by hand, is caught at startup from its installed version, and again by the `X-Lich-Plugin`
   header its hooks send (docs/hooks/README.md) once a session reports. A report whose payload lich refuses never
   reaches that check, so a plugin old enough to send one only shows up in the startup prompt and the log.
+- **One opencode module serves both generations, from the directory both read** (`internal/agentplugin/opencode.go`):
+  lich writes it to `~/.config/opencode/plugins/`, the only global plugin directory opencode 2 reads, and
+  removes the copy an older lich left in `plugin/` when it carries lich's marker, since 1.x reads both and would
+  report every event twice. A copy there without the marker is someone else's and stays, with the same double
+  report. 1.x runs the module through its default export's `server()` (measured on 1.18.23 and 1.19.4) and 2.x
+  through its `setup()`; an opencode older than 1.18.23 is not measured with that export.
 - **A `lich` upgraded under a running lich is refused by a call the backend does not have**
   (`internal/rpc/rpc.go`): a package manager replaces the binary without restarting the backend it is serving,
   so the new CLI, and the `lich mcp` of every session opened after the upgrade, speaks to an older backend until
@@ -612,6 +634,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opencode, Cursor CLI or Kiro CLI profile leaves the file out until the first spawn after Developer Mode is on.
   A sandboxed session gets the profile bound writable, and its links reach only what the sandbox already exposes
   at their targets.
+- **opencode 2's `auth` runs on a private server, and only a stored login counts** (`internal/xdgprofile`,
+  `opencode2Status`): 2.x sends `auth list` and `auth login` to the background service every opencode shares,
+  which holds the data home of whichever profile started it, so lich passes `--standalone` to both. Its list
+  names no account and no count: a row ending in `stored` is the profile's login, and a key found in the
+  environment (`environment`) is not. The OpenCode Go gauge reads 2.x's key from the `credential` table of
+  `opencode.db`, before `auth.json`, which 2.x no longer writes (`internal/quota`, `opencodeGoKey`).
 - **An oh-my-pi, opencode, Cursor CLI or Kiro CLI profile still sees the provider API keys in lich's
   environment** (`internal/ompprofile`, `internal/xdgprofile`): each drops the variables that would point it at
   another account or another profile's state (`docs/providers/`, Profiles), but `ANTHROPIC_API_KEY`,
