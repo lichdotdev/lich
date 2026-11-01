@@ -103,7 +103,7 @@ func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
 	r := float32(gtx.Dp(3))
 	center := f32.Pt(float32(size.X)-r, r)
 	if !t.failed {
-		pulseRing(gtx, center, r, float32(gtx.Dp(3)), c)
+		pulseRing(gtx, th, center, r, float32(gtx.Dp(3)), c)
 	}
 	ui.StrokeArc(gtx, center, r+float32(gtx.Dp(1)), float32(gtx.Dp(2)), 0, 2*math.Pi, th.Surface)
 	ui.StrokeArc(gtx, center, r/2, r, 0, 2*math.Pi, c)

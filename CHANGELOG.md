@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A file input in the session browser, such as a profile picture upload, opens the system's file chooser when you click it, and takes several files when the input allows it. Before, the click did nothing.
 - Leave on a page in the session browser that asks before you go no longer reloads the page instead on a busy machine; the browser goes where it was going.
 - An agent clicking a point in the session browser no longer misses it after you move lich to another monitor, resize the browser pane or change its zoom. Its screenshots are now in the same pixels as its clicks, which a HiDPI monitor or a page zoom had made up to 1.5 times larger, and a click at a point read off a screenshot taken before the pane changed size is refused, telling the agent to take a new one.
+- lich no longer keeps the GPU busy while a session works. A project tab's spinner redrew the whole window at the monitor's refresh rate, and with sessions busy in more than one project lich held over half of a laptop GPU, taking it from games and everything else. Every spinner, the sidebar's busy ring and a running service's beat now redraw at most 30 times a second, and hold still while the lich window is not focused, moving again when you come back to it.
 
 ## [0.83.0] - 2026-10-29
 

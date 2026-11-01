@@ -176,7 +176,7 @@ func busyButton(gtx C, th *ui.Theme, b ui.ButtonStyle, busy bool) D {
 		return b.Layout(gtx)
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ui.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
+		layout.Rigid(func(gtx C) D { return th.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
 		ui.Gap(2),
 		layout.Rigid(b.Layout),
 	)

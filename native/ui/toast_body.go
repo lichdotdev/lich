@@ -310,7 +310,7 @@ func (s ToasterStyle) rowBody(gtx C, th *Theme, e *toastEntry, ic *toastGlyph, l
 	height = max(height, content.size.Y)
 	if ic != nil {
 		height = max(height, gtx.Dp(toastIconBox))
-		ic.layout(gtx, (height-gtx.Dp(toastIconBox))/2)
+		ic.layout(gtx, th, (height-gtx.Dp(toastIconBox))/2)
 	}
 	content.at(gtx, image.Pt(lead, (height-content.size.Y)/2))
 	x := lead + content.size.X
@@ -334,7 +334,7 @@ func (s ToasterStyle) wrappedBody(gtx C, th *Theme, e *toastEntry, ic *toastGlyp
 	height := content.size.Y
 	if ic != nil {
 		height = max(height, gtx.Dp(toastIconBox))
-		ic.layout(gtx, 0)
+		ic.layout(gtx, th, 0)
 	}
 	content.at(gtx, image.Pt(lead, 0))
 	if len(buttons) == 0 {
@@ -433,12 +433,12 @@ func toastGlyphOf(th *Theme, e *toastEntry) *toastGlyph {
 
 // layout draws the glyph in its 16px box, top pixels down, as [data-icon]
 // and its svg's negative margins place it: a 20px one overflows the box.
-func (g *toastGlyph) layout(gtx C, top int) {
+func (g *toastGlyph) layout(gtx C, th *Theme, top int) {
 	x := -gtx.Dp(toastIconMarginStart) - gtx.Dp(toastIconSVGStart)
 	y := top + (gtx.Dp(toastIconBox)-gtx.Dp(g.size))/2
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
 	if g.spin {
-		Ring(gtx, g.size, g.color, g.track)
+		th.BusyRing(gtx, g.size, g.color, g.track)
 		return
 	}
 	g.icon.Layout(gtx, g.size, g.color)

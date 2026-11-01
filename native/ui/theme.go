@@ -99,6 +99,9 @@ type Theme struct {
 	// composites translucent tokens onto. A widget that paints a background
 	// hands its children On(that background).
 	Surface color.NRGBA
+	// Still is set while the window has no focus: looping animations hold
+	// their frame instead of repainting a window nobody is looking at.
+	Still bool
 }
 
 // On returns a copy of th drawing on surface, for the children of a widget

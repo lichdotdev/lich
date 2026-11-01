@@ -486,7 +486,7 @@ func pluginResult(gtx C, th *ui.Theme, r backend.ProfilePluginResult) D {
 // spinnerLine is LoaderCircle turning one lap a second beside a muted label.
 func spinnerLine(gtx C, th *ui.Theme, label string) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ui.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
+		layout.Rigid(func(gtx C) D { return th.Spinner(gtx, ui.Space(4), th.MutedForeground) }),
 		ui.Gap(2),
 		layout.Rigid(th.Text(ui.TextSM, label).Muted().Weight(font.Normal).Layout),
 	)
