@@ -206,8 +206,9 @@ func foldedCount(th *ui.Theme, kids int, mark string) []layout.FlexChild {
 
 // checkoutLine is a checkout row's line: the branch glyph where a session's
 // ring sits, the branch, its pull request and its changes, then the corner
-// slot a card keeps, with more in it while hovered.
-func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, more layout.Widget, hovered bool, trailing ...layout.FlexChild) layout.Widget {
+// slot a card keeps, with more in it while hovered. node draws the node
+// itself, so the sidebar's morph can fly it.
+func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, node func(C, layout.Widget) D, more layout.Widget, hovered bool, trailing ...layout.FlexChild) layout.Widget {
 	return func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		glyph := icBranch
@@ -216,7 +217,9 @@ func checkoutLine(th *ui.Theme, f checkoutFacts, p treePlace, open bool, more la
 		}
 		row := treeLead(p)
 		row = append(row,
-			layout.Rigid(func(gtx C) D { return checkoutNode(gtx, th, glyph, p.entry) }),
+			layout.Rigid(func(gtx C) D {
+				return node(gtx, func(gtx C) D { return checkoutNode(gtx, th, glyph, p.entry) })
+			}),
 			ui.Gap(1.5),
 			layout.Flexed(1, th.Text(ui.TextSM, f.label).Muted().Weight(font.Medium).Layout),
 		)
@@ -262,9 +265,15 @@ func ringArc(gtx C, side int, entry treeEntry, c color.NRGBA) {
 	ui.StrokeArc(gtx, center, float32(side)/2-stroke/2, stroke, math.Pi, float32(sweep), c)
 }
 
+// nodeGlyph names a tree node the sidebar's morph flies, by the key of the
+// block or row it heads.
+func (s *sidebar) nodeGlyph(key string) func(C, layout.Widget) D {
+	return func(gtx C, w layout.Widget) D { return s.morph.glyph(gtx, glyphNode+key, w) }
+}
+
 // checkoutTooltip is what a checkout row's line cuts: the branch in full, the
-// checkout's path, its standing against the base, and its pull request's
-// title.
+// checkout's path, its standing against the base, its changes, and its pull
+// request's title.
 func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
 	th = th.On(th.Popover)
 	sections := []layout.Widget{}
@@ -274,6 +283,9 @@ func checkoutTooltip(th *ui.Theme, path string, f checkoutFacts) layout.Widget {
 	}
 	sections = append(sections, para(th.Text(ui.TextXS, path).Muted().Mono()).Layout)
 	sections = append(sections, baseSections(th, f.base)...)
+	if f.git.Files > 0 {
+		sections = append(sections, func(gtx C) D { return diffStat(gtx, th, f.git.Added, f.git.Deleted) })
+	}
 	if f.pr != nil && f.pr.Title != "" {
 		title := th.Text(ui.TextXS, f.pr.Title)
 		sections = append(sections, func(gtx C) D { return iconLine(gtx, icPR, title.Muted(), layout.Flexed(1, para(title).Layout)) })
@@ -309,7 +321,7 @@ func (s *sidebar) nestedCheckout(gtx C, th *ui.Theme, r sessionRow, b blockView,
 	}
 	hovered := hover.Hovered() || more.Opened()
 	p := r.place(tree)
-	line := checkoutLine(th, f, p, true, moreButton, hovered)
+	line := checkoutLine(th, f, p, true, s.nodeGlyph(r.key), moreButton, hovered)
 	return th.ContextMenuLazy(s.root, menu, entries).Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D {
 			return hover.Layout(gtx, func(gtx C) D {
@@ -365,7 +377,7 @@ func (s *sidebar) checkoutHeader(gtx C, th *ui.Theme, b blockView, st *blockStat
 		})
 	}
 	p.hot = st.more.Hovered()
-	line := checkoutLine(th, facts, p, !b.collapsed, moreButton, st.more.Hovered() || more.Opened(), count...)
+	line := checkoutLine(th, facts, p, !b.collapsed, s.nodeGlyph(b.key), moreButton, st.more.Hovered() || more.Opened(), count...)
 	row := func(gtx C) D {
 		return th.ContextMenuLazy(s.root, &st.options, entries).Layout(gtx, func(gtx C) D {
 			return tooltip.Layout(gtx, func(gtx C) D {

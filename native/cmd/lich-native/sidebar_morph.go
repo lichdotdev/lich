@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"image/color"
 	"math"
 	"strconv"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
 // sidebarMorphDuration times the sidebar's collapse and expand.
@@ -27,6 +29,7 @@ const (
 	glyphToggle  = "toggle"
 	glyphNew     = "new"
 	glyphSession = "session:" // + the session id
+	glyphNode    = "node:"    // + the block or checkout row's key: a checkout's node, a folder's or the pinned glyph
 )
 
 // morphProbe prefixes the semantic description that marks a glyph's box in
@@ -231,6 +234,7 @@ func (s *sidebar) flight(gtx C, th *ui.Theme, m *model) {
 	}
 	sessions := map[string]*sessionView{}
 	view := m.sidebarBlocks(sidebarFilter{})
+	nodes := nodeGlyphs(th, view.blocks)
 	for bi := range view.blocks {
 		for si := range view.blocks[bi].sessions {
 			sv := &view.blocks[bi].sessions[si]
@@ -240,26 +244,63 @@ func (s *sidebar) flight(gtx C, th *ui.Theme, m *model) {
 	for name, from := range mo.boxes[sideFrom] {
 		to, ok := mo.boxes[sideTo][name]
 		if !ok {
-			s.flyingGlyph(gtx, th, name, sideFrom, from, 1-mo.p, sessions)
+			s.flyingGlyph(gtx, th, name, sideFrom, from, 1-mo.p, sessions, nodes)
 			continue
 		}
 		box := flyBox(from, to, mo.p)
 		if name != glyphToggle {
-			s.flyingGlyph(gtx, th, name, sideTo, box, 1, sessions)
+			s.flyingGlyph(gtx, th, name, sideTo, box, 1, sessions, nodes)
 			continue
 		}
 		// The toggle is the one glyph the shapes draw differently.
-		s.flyingGlyph(gtx, th, name, sideFrom, box, 1-mo.p, sessions)
-		s.flyingGlyph(gtx, th, name, sideTo, box, mo.p, sessions)
+		s.flyingGlyph(gtx, th, name, sideFrom, box, 1-mo.p, sessions, nodes)
+		s.flyingGlyph(gtx, th, name, sideTo, box, mo.p, sessions, nodes)
 	}
 	for name, to := range mo.boxes[sideTo] {
 		if _, ok := mo.boxes[sideFrom][name]; !ok {
-			s.flyingGlyph(gtx, th, name, sideTo, to, mo.p, sessions)
+			s.flyingGlyph(gtx, th, name, sideTo, to, mo.p, sessions, nodes)
 		}
 	}
 }
 
-func (s *sidebar) flyingGlyph(gtx C, th *ui.Theme, name string, side morphSide, box image.Rectangle, alpha float32, sessions map[string]*sessionView) {
+// nodeGlyphs draws, by glyph name, every node the tree names that is not a
+// session's ring: each checkout's node, each folder's and the pinned glyph.
+func nodeGlyphs(th *ui.Theme, blocks []blockView) map[string]layout.Widget {
+	nodes := map[string]layout.Widget{}
+	branch := func(gtx C) D {
+		return layout.Center.Layout(gtx, func(gtx C) D { return checkoutNode(gtx, th, icBranch, treeEntry{}) })
+	}
+	for _, b := range blocks {
+		switch {
+		case b.kind == blockFolder:
+			c := th.MutedForeground
+			if tint, ok := cardColors[b.color]; ok {
+				c = tint
+			}
+			nodes[glyphNode+b.key] = boxIcon(icGroupFolder, c)
+		case b.kind == blockPinned:
+			nodes[glyphNode+b.key] = boxIcon(icMenuPin, th.MutedForeground)
+		case b.under != "":
+			nodes[glyphNode+b.key] = branch
+		}
+		for _, r := range blockRows(b, b.sessions) {
+			if r.kind == rowNestedCheckout {
+				nodes[glyphNode+r.key] = branch
+			}
+		}
+	}
+	return nodes
+}
+
+// boxIcon is ic centered in the box it is given, as large as the box allows.
+func boxIcon(ic *icons.Icon, c color.NRGBA) layout.Widget {
+	return func(gtx C) D {
+		box := gtx.Constraints.Min
+		return centeredIcon(gtx, ic, unit.Dp(float32(min(box.X, box.Y))/gtx.Metric.PxPerDp), c)
+	}
+}
+
+func (s *sidebar) flyingGlyph(gtx C, th *ui.Theme, name string, side morphSide, box image.Rectangle, alpha float32, sessions map[string]*sessionView, nodes map[string]layout.Widget) {
 	defer op.Offset(box.Min).Push(gtx.Ops).Pop()
 	defer paint.PushOpacity(gtx.Ops, alpha).Pop()
 	gtx.Constraints = layout.Exact(box.Size())
@@ -271,6 +312,10 @@ func (s *sidebar) flyingGlyph(gtx C, th *ui.Theme, name string, side morphSide, 
 		icExpand.Layout(gtx, ui.Space(4), th.MutedForeground)
 	case name == glyphNew:
 		icPlus.Layout(gtx, ui.Space(4), th.MutedForeground)
+	case strings.HasPrefix(name, glyphNode):
+		if w := nodes[name]; w != nil {
+			w(gtx)
+		}
 	default:
 		if sv := sessions[strings.TrimPrefix(name, glyphSession)]; sv != nil {
 			s.statusGlyph(gtx, th, sv)

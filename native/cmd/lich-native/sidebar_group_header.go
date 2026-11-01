@@ -216,7 +216,7 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 	kids := []layout.FlexChild{layout.Rigid(func(gtx C) D {
 		side := gtx.Dp(sessionTreeRingR) * 2
 		gtx.Constraints = layout.Exact(image.Pt(side, gtx.Dp(ui.Space(3))))
-		return centeredIcon(gtx, glyph, ui.Space(3), glyphColor)
+		return s.morph.glyph(gtx, glyphNode+b.key, func(gtx C) D { return centeredIcon(gtx, glyph, ui.Space(3), glyphColor) })
 	}), ui.Gap(1.5)}
 	kids = append(kids, layout.Rigid(th.Text(text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
 	if b.kind == blockFolder {

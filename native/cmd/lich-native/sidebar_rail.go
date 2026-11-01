@@ -88,6 +88,7 @@ const (
 // railItem is one row of the rail's tree, the open sidebar's in one column.
 type railItem struct {
 	kind  railKind
+	key   string // the block or checkout row it stands for, which names its node
 	sv    *sessionView
 	path  string // railCheckout
 	facts checkoutFacts
@@ -116,11 +117,11 @@ func railItems(blocks []blockView) []railItem {
 		first := len(items)
 		switch {
 		case folder:
-			items = append(items, railItem{kind: railHead, glyph: icGroupFolder, tint: b.color})
+			items = append(items, railItem{kind: railHead, key: b.key, glyph: icGroupFolder, tint: b.color})
 		case b.kind == blockPinned:
-			items = append(items, railItem{kind: railHead, glyph: icMenuPin})
+			items = append(items, railItem{kind: railHead, key: b.key, glyph: icMenuPin})
 		case b.under != "":
-			items = append(items, railItem{kind: railCheckout, path: b.under, facts: b.facts[b.under]})
+			items = append(items, railItem{kind: railCheckout, key: b.key, path: b.under, facts: b.facts[b.under]})
 		}
 		if !b.folded {
 			items = append(items, railRows(b)...)
@@ -149,7 +150,7 @@ func railRows(b blockView) []railItem {
 	var items []railItem
 	for _, r := range blockRows(b, b.sessions) {
 		if r.kind == rowNestedCheckout {
-			items = append(items, railItem{kind: railCheckout, path: r.path, facts: b.facts[r.path], small: r.depth > base})
+			items = append(items, railItem{kind: railCheckout, key: r.key, path: r.path, facts: b.facts[r.path], small: r.depth > base})
 			continue
 		}
 		sv := r.sv
@@ -204,7 +205,9 @@ func (r *sidebarRail) item(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 		if tint, ok := cardColors[it.tint]; ok {
 			c = tint
 		}
-		return layout.Center.Layout(gtx, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3.5), c) })
+		return layout.Center.Layout(gtx, func(gtx C) D {
+			return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3.5), c) })
+		})
 	case railCheckout:
 		return r.checkout(gtx, th, s, it)
 	}
@@ -261,7 +264,12 @@ func (r *sidebarRail) checkout(gtx C, th *ui.Theme, s *sidebar, it railItem) D {
 	tooltip.Side = ui.SideRight
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D {
-			return railSmall(gtx, it.small, func(gtx C) D { return checkoutNode(gtx, th, icBranch, treeEntry{}) })
+			node := func(gtx C) D { return checkoutNode(gtx, th, icBranch, treeEntry{}) }
+			if it.small {
+				// A child's node is drawn smaller than it flies: it crossfades.
+				return railSmall(gtx, true, node)
+			}
+			return s.morph.glyph(gtx, glyphNode+it.key, node)
 		})
 	})
 }
