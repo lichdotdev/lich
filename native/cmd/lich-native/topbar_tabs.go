@@ -308,7 +308,7 @@ func (t *topbar) tabBadge(gtx C, th *ui.Theme, status string) D {
 	var draw func(gtx C) D
 	switch status {
 	case statusBusy, statusCompacting:
-		draw = func(gtx C) D { return ui.Spinner(gtx, tabGlyph, th.MutedForeground) }
+		draw = func(gtx C) D { return th.Spinner(gtx, tabGlyph, th.MutedForeground) }
 	case statusWaiting:
 		draw = func(gtx C) D { return icTabWaiting.Layout(gtx, tabGlyph, th.ToneWait) }
 	case statusDone:

@@ -347,6 +347,10 @@ func run(w *app.Window, rt backend.Runtime) error {
 			u.model.setFocused(u.ctx, e.Config.Focused)
 			u.pulls.setFocused(e.Config.Focused)
 			u.toaster.SetHidden(!e.Config.Focused)
+			if still := !e.Config.Focused; still != u.theme.Still {
+				u.theme.Still = still
+				w.Invalidate()
+			}
 		case *app.ClosingEvent:
 			u.onClosing(e)
 		case app.DropEvent:

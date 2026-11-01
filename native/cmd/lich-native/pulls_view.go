@@ -384,10 +384,10 @@ func stat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
 	)
 }
 
-// pullGlyph is ic at size, icPullRunning drawn as a ui.Ring.
+// pullGlyph is ic at size, icPullRunning drawn as a BusyRing.
 func pullGlyph(gtx C, th *ui.Theme, ic *icons.Icon, size unit.Dp, fg color.NRGBA) D {
 	if ic == icPullRunning {
-		return ui.Ring(gtx, size, fg, th.RingTrack(fg))
+		return th.BusyRing(gtx, size, fg, th.RingTrack(fg))
 	}
 	return ic.Layout(gtx, size, fg)
 }

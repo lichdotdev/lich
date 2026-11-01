@@ -227,13 +227,13 @@ func beatingDot(gtx C, th *ui.Theme) D {
 	size := gtx.Dp(14)
 	center := f32.Pt(float32(size)/2, float32(size)/2)
 	dot := float32(gtx.Dp(3.5))
-	pulseRing(gtx, center, dot, float32(gtx.Dp(3.5)), th.TonePass)
+	pulseRing(gtx, th, center, dot, float32(gtx.Dp(3.5)), th.TonePass)
 	ui.StrokeArc(gtx, center, dot/2, dot, 0, 2*math.Pi, th.TonePass)
 	return D{Size: image.Pt(size, size)}
 }
 
-// The running dot beats: a ring grows out of it for pulseLength, drawn at the
-// busy spinner's rate, then rests until pulseEvery comes round. It beats for
+// The running dot beats: a ring grows out of it for pulseLength, drawn at
+// ui.LoopFrame, then rests until pulseEvery comes round. It beats for
 // as long as a service runs, hours, so the rest is what keeps it cheap: no
 // frame is asked for in it. Measured with one service up, a continuous pulse
 // at a tenth of that rate already held the window at 6% of a core.
@@ -244,16 +244,18 @@ const (
 
 // pulseRing is that beat around center: a ring from radius to radius+reach
 // that fades as it grows, and the next frame it needs.
-func pulseRing(gtx C, center f32.Point, radius, reach float32, c color.NRGBA) {
+func pulseRing(gtx C, th *ui.Theme, center f32.Point, radius, reach float32, c color.NRGBA) {
 	at := time.Duration(gtx.Now.UnixMilli()%pulseEvery.Milliseconds()) * time.Millisecond
 	if at >= pulseLength {
-		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(pulseEvery - at)})
+		if !th.Still {
+			gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(pulseEvery - at)})
+		}
 		return
 	}
 	phase := float32(at) / float32(pulseLength)
 	eased := 1 - (1-phase)*(1-phase)
 	ui.StrokeArc(gtx, center, radius+reach*eased, float32(gtx.Dp(1.5)), 0, 2*math.Pi, ui.Alpha(c, 0.7*(1-phase)))
-	gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(spinnerFrame)})
+	th.Loop(gtx)
 }
 
 // stateDot is a service state as a 14dp glyph.

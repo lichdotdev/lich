@@ -19,9 +19,23 @@ import (
 // spinLap is animate-spin's: one turn a second.
 const spinLap = time.Second
 
+// LoopFrame is how often a looping animation (a spinner, the busy ring, a
+// running service's beat) redraws. Every frame repaints the whole window, so
+// this is the window's rate while one runs: 30fps reads as smooth on a glyph,
+// where the display's rate cost 60% of a laptop GPU (measured 2026-11-01).
+const LoopFrame = 33 * time.Millisecond
+
+// Loop asks for a looping animation's next frame, LoopFrame from now, unless
+// the window is Still: then the animation holds the frame it stands at.
+func (th *Theme) Loop(gtx layout.Context) {
+	if !th.Still {
+		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(LoopFrame)})
+	}
+}
+
 var icSpinner = icons.Lucide("loader-circle")
 
-// Ring draws on Lucide's 24-unit grid: loader-circle's r=10 circle and
+// BusyRing draws on Lucide's 24-unit grid: loader-circle's r=10 circle and
 // stroke-width 2, under the sidebar busy ring's 25% track.
 const (
 	lucideViewBox      = 24
@@ -32,24 +46,24 @@ const (
 
 // Spinner is LoaderCircle under animate-spin, size square, and asks for the
 // next frame while it is drawn.
-func Spinner(gtx layout.Context, size unit.Dp, fg color.NRGBA) layout.Dimensions {
+func (th *Theme) Spinner(gtx layout.Context, size unit.Dp, fg color.NRGBA) layout.Dimensions {
 	turn := float64(gtx.Now.UnixNano()%int64(spinLap)) / float64(spinLap)
 	half := float32(gtx.Dp(size)) / 2
 	defer op.Affine(f32.Affine2D{}.Rotate(f32.Pt(half, half), float32(turn*2*math.Pi))).Push(gtx.Ops).Pop()
-	gtx.Execute(op.InvalidateCmd{})
+	th.Loop(gtx)
 	return icSpinner.Layout(gtx, size, fg)
 }
 
-// RingTrack is the faint full circle a Ring of fg turns over, composited
+// RingTrack is the faint full circle a BusyRing of fg turns over, composited
 // onto th's surface.
 func (th *Theme) RingTrack(fg color.NRGBA) color.NRGBA {
 	return th.Over(Alpha(fg, ringTrackOpacity))
 }
 
-// Ring is the busy ring at a Lucide circle's size and weight, so it lines up
+// BusyRing is the busy ring at a Lucide circle's size and weight, so it lines up
 // with the glyphs beside it: track all the way round under a quarter arc of
 // fg turning once a lap. It asks for the next frame while it is drawn.
-func Ring(gtx layout.Context, size unit.Dp, fg, track color.NRGBA) layout.Dimensions {
+func (th *Theme) BusyRing(gtx layout.Context, size unit.Dp, fg, track color.NRGBA) layout.Dimensions {
 	px := gtx.Dp(size)
 	scale := float32(px) / lucideViewBox
 	center := f32.Pt(float32(px)/2, float32(px)/2)
@@ -57,7 +71,7 @@ func Ring(gtx layout.Context, size unit.Dp, fg, track color.NRGBA) layout.Dimens
 	StrokeArc(gtx, center, radius, width, 0, 2*math.Pi, track)
 	turn := float32(gtx.Now.UnixNano()%int64(spinLap)) / float32(spinLap) * 2 * math.Pi
 	StrokeArc(gtx, center, radius, width, turn, math.Pi/2, fg)
-	gtx.Execute(op.InvalidateCmd{})
+	th.Loop(gtx)
 	return layout.Dimensions{Size: image.Pt(px, px)}
 }
 

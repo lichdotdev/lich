@@ -334,11 +334,6 @@ func (s *sidebar) statusRing(gtx C, th *ui.Theme, sv *sessionView) D {
 	return s.morph.glyph(gtx, glyphSession+sv.ID, func(gtx C) D { return s.statusGlyph(gtx, th, sv) })
 }
 
-// spinnerFrame is how often a busy session's ring redraws. The ring shares
-// the window's frame, so its rate is the whole window's repaint rate: 30fps
-// reads as smooth on a 22px ring and costs half of a display's.
-const spinnerFrame = 33 * time.Millisecond
-
 func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 	size := gtx.Dp(22)
 	stroke := float32(gtx.Dp(1.25))
@@ -349,7 +344,7 @@ func (s *sidebar) statusGlyph(gtx C, th *ui.Theme, sv *sessionView) D {
 		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, 0.25)))
 		turn := float32(time.Since(s.started).Seconds()) * 2 * math.Pi
 		ui.StrokeArc(gtx, center, radius, stroke, turn, math.Pi/2, th.MutedForeground)
-		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(spinnerFrame)})
+		th.Loop(gtx)
 	case "waiting":
 		ui.StrokeArc(gtx, center, radius, stroke, 0, 2*math.Pi, th.ToneWait)
 	case "done":
