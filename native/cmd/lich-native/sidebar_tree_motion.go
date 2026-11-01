@@ -243,6 +243,7 @@ func keySet(rows []sessionRow) map[string]bool {
 // place gives rows their motion, with each closing run's rows put back under
 // the row they hang from, or at the top, so they draw while they leave.
 func (m *treeMotion) place(now time.Time, rows []sessionRow) []sessionRow {
+	spliced := false
 	for _, run := range m.runs {
 		if !run.closing {
 			continue
@@ -250,7 +251,13 @@ func (m *treeMotion) place(now time.Time, rows []sessionRow) []sessionRow {
 		at := slices.IndexFunc(rows, func(r sessionRow) bool { return r.key == run.after })
 		if (at >= 0 || run.after == "") && !keySet(rows)[run.rows[0].key] {
 			rows = slices.Insert(slices.Clone(rows), at+1, run.rows...)
+			spliced = true
 		}
+	}
+	if spliced {
+		// The rows around a run put back were linked without it: a sibling
+		// above it ended its line there, and the run's own line would float.
+		rows = relink(rows)
 	}
 	for _, run := range m.runs {
 		for i, r := range run.rows {
@@ -258,6 +265,33 @@ func (m *treeMotion) place(now time.Time, rows []sessionRow) []sessionRow {
 				motion := run.frame(now, i)
 				rows[at].motion = &motion
 			}
+		}
+	}
+	return rows
+}
+
+// relink sets every row's tail and lanes from the rows' depths, the tree as
+// sessionRows links it: a row ends its parent's line when no sibling follows
+// before the tree rises above it, and a level's line runs past a row while a
+// row at that level follows before the tree rises above it.
+func relink(rows []sessionRow) []sessionRow {
+	// next[d] is whether a row at depth d follows before one shallower,
+	// scanned from the bottom up.
+	var next []bool
+	for i := len(rows) - 1; i >= 0; i-- {
+		d := rows[i].depth
+		for len(next) <= d {
+			next = append(next, false)
+		}
+		if d > 0 {
+			rows[i].tail = !next[d]
+			lanes := make([]bool, d-1)
+			copy(lanes, next[1:d])
+			rows[i].lanes = lanes
+		}
+		next[d] = true
+		for k := d + 1; k < len(next); k++ {
+			next[k] = false
 		}
 	}
 	return rows

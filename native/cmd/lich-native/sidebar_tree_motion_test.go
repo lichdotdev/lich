@@ -95,7 +95,7 @@ func TestTreeMotionClosesAClosedSessionUnderTheRowAboveIt(t *testing.T) {
 	if !m.update(now, motionRows(left)) || len(m.runs) != 1 || !m.runs[0].closing || m.runs[0].after != "a1" {
 		t.Fatalf("runs = %+v, want b closing under a1", m.runs)
 	}
-	if got := rowShape(m.place(now, motionRows(left))); !slices.Equal(got, []string{"0:mother", "1:a.", "2:a1.", "1:b.", "0:solo."}) {
+	if got := rowShape(m.place(now, motionRows(left))); !slices.Equal(got, []string{"0:mother", "1:a", "2:a1.", "1:b.", "0:solo."}) {
 		t.Errorf("rows = %v, want b drawn in its slot while it leaves", got)
 	}
 }
@@ -163,4 +163,39 @@ func TestBlockPresenceHoldsALeavingCheckoutForItsTreeMotion(t *testing.T) {
 	if arrived[1].move == nil || arrived[1].move.leaving {
 		t.Errorf("a new checkout = %+v, want it coming in by the tree's motion", arrived[1])
 	}
+}
+
+func TestTreeMotionKeepsTheLineToALeavingLastChild(t *testing.T) {
+	sessions, now := motionTree(), time.Now()
+	var m treeMotion
+	m.update(now, motionRows(sessions))
+	left := slices.DeleteFunc(slices.Clone(sessions), func(sv sessionView) bool { return sv.ID == "b" })
+	m.update(now, motionRows(left))
+	rows := m.place(now, motionRows(left))
+	a, a1 := rows[1], rows[2]
+	if a.key != "a" || a.tail {
+		t.Errorf("a = %+v, want it no tail while b leaves under it: its line runs on to b", a)
+	}
+	if !slices.Equal(a1.lanes, []bool{true}) {
+		t.Errorf("a1 lanes = %v, want the mother's line running past it to b", a1.lanes)
+	}
+}
+
+func TestRelinkMatchesTheTreesOwnLinks(t *testing.T) {
+	check := func(name string, rows []sessionRow) {
+		want := slices.Clone(rows)
+		got := relink(slices.Clone(rows))
+		for i := range want {
+			if got[i].tail != want[i].tail || !slices.Equal(got[i].lanes, want[i].lanes) {
+				t.Errorf("%s row %s: relinked tail %v lanes %v, want %v %v", name, want[i].key, got[i].tail, got[i].lanes, want[i].tail, want[i].lanes)
+			}
+		}
+	}
+	check("tree", motionRows(motionTree()))
+	check("checkout", sessionRows([]sessionView{
+		treeSession("mother", "", "/repo/wt/a"), treeSession("tests", "mother", "/repo/wt/a"), treeSession("flake", "mother", "/repo/wt/b"), treeSession("solo", "", "/repo/wt/a"),
+	}, "/repo/wt/a", func(string) bool { return false }))
+	check("folder", blockRows(blockView{key: "f", byCheckout: true}, []sessionView{
+		treeSession("a", "", "/wt/a"), treeSession("a-child", "a", "/wt/c"), treeSession("a2", "", "/wt/a"), treeSession("b", "", "/wt/b"),
+	}))
 }

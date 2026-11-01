@@ -196,7 +196,7 @@ func (r *sidebarRail) sessions(gtx C, th *ui.Theme, s *sidebar, blocks []blockVi
 	})
 }
 
-// item draws one rail row: its tray, its line, then its node.
+// item draws one rail row: its tray, its node, then its line.
 func (r *sidebarRail) item(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
 	width := gtx.Constraints.Max.X
 	if it.kind == railGap {
@@ -207,11 +207,19 @@ func (r *sidebarRail) item(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 	if it.onTray {
 		railTray(gtx, th, it, size)
 	}
+	d := r.node(gtx, th, s, it, active, act)
+	// The line goes over the node's square, as the open sidebar's links go
+	// over a lit row, stopping at the ring.
 	half := gtx.Dp(sessionTreeRingR)
 	if it.small {
 		half = gtx.Dp(railChildR)
 	}
 	railLine(gtx, th, it, size, half)
+	return d
+}
+
+// node draws a row's node: a head's glyph, a checkout's ring, or a session.
+func (r *sidebarRail) node(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
 	switch it.kind {
 	case railHead:
 		c := th.MutedForeground
