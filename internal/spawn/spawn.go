@@ -73,6 +73,7 @@ type Sessions interface {
 	SetSessionFolder(_ context.Context, opts api.SessionFolderOptions) (api.None, error)
 	RenameFolder(_ context.Context, opts api.RenameProjectFolderOptions) ([]string, error)
 	ColorFolder(projectID, folder, color string) ([]string, error)
+	SetSessionColor(_ context.Context, opts api.SessionColorOptions) (api.None, error)
 	DeleteSession(projectID, sessionID, activeID string) error
 	CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error)
 	CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error)

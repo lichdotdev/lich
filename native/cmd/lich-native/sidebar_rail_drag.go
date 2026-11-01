@@ -147,6 +147,7 @@ func (r *sidebarRail) rows(gtx C, th *ui.Theme, s *sidebar, st *railSort, b bloc
 			// The card in the air leaves its lines and its tray to its slot.
 			it.up, it.down, it.onTray = false, false, false
 		}
+		it.cut = st.drag.cut(it.id, gtx.Now)
 		if it.kind != railCard || it.motion != nil {
 			return r.item(gtx, th, s, it, active, act)
 		}
@@ -200,6 +201,11 @@ func (r *sidebarRail) slot(gtx C, th *ui.Theme, st *railSort) {
 		half = gtx.Dp(railChildR)
 	}
 	it.motion = nil
+	if !d.landed.IsZero() {
+		// The slot lets go of its line as the card settles into it, and the
+		// card's own draws back (dragLine.cut).
+		it.cut = treeEase(clamp01(float32(gtx.Now.Sub(d.landed)) / float32(dragSettle)))
+	}
 	if it.onTray {
 		railTray(gtx, th, it, size)
 	}

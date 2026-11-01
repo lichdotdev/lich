@@ -134,6 +134,9 @@ type railItem struct {
 	// small is a child's node; up and down are the line to the node above
 	// and below in the same tree.
 	small, up, down bool
+	// cut is the share of the line to the node not drawn: a card that just
+	// landed from a drag, its line drawing back to it.
+	cut float32
 	// tray is the folder's color for a row on its tray (tray set), with top
 	// and bottom its ends.
 	tray        string
@@ -358,15 +361,19 @@ func railTray(gtx C, th *ui.Theme, it railItem, size image.Point) {
 func railLine(gtx C, th *ui.Theme, it railItem, size image.Point, half int) {
 	x, mid := float32(size.X)/2, float32(size.Y)/2
 	c, width := th.Over(ui.Alpha(th.MutedForeground, treeLinkAlpha)), float32(gtx.Dp(sessionTreeStroke))
+	// A card landing from a drag takes its line back from both ends, up to
+	// its node.
+	keep := 1 - it.cut
 	if it.up {
 		reach := size
 		if it.motion != nil {
 			reach.Y = int(clamp01(it.motion.sweep.rows) * float32(size.Y))
 		}
-		strokeLinks(gtx, []linkSeg{vline(x, 0, mid-float32(half))}, reach, c, width)
+		strokeLinks(gtx, []linkSeg{vline(x, 0, (mid-float32(half))*keep)}, reach, c, width)
 	}
 	if it.down {
-		strokeLinks(gtx, []linkSeg{vline(x, mid+float32(half), float32(size.Y))}, size, c, width)
+		end := float32(size.Y)
+		strokeLinks(gtx, []linkSeg{vline(x, end-(end-mid-float32(half))*keep, end)}, size, c, width)
 	}
 }
 

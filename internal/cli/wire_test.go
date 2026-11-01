@@ -375,6 +375,10 @@ func (s *spawnStore) ColorFolder(projectID, folder, color string) ([]string, err
 	return []string{"s2"}, nil
 }
 
+func (*spawnStore) SetSessionColor(_ context.Context, opts api.SessionColorOptions) (api.None, error) {
+	return api.None{}, nil
+}
+
 func (*spawnStore) CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error) {
 	return api.None{}, nil
 }

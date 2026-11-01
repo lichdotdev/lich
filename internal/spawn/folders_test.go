@@ -445,3 +445,41 @@ func TestCardColorsNameTheWindowsPalette(t *testing.T) {
 		t.Errorf("window palette %v, cardColors %v", names, cardColors)
 	}
 }
+
+// An agent filing a session with no color into a folder that wore one took
+// the color off it: a folder shows the color its sessions share. The session
+// takes the folder's color, as a drop in the window gives it.
+func TestFileIntoAColoredFolderPaintsTheSession(t *testing.T) {
+	svc, sessions, events := filer(t)
+	for i := range sessions.projects[0].Sessions {
+		if sessions.projects[0].Sessions[i].Folder == "Apps" {
+			sessions.projects[0].Sessions[i].Color = "pink"
+		}
+	}
+
+	if _, err := svc.File(t.Context(), FileOptions{From: "s1", Target: "shared-b", Folder: "Apps"}); err != nil {
+		t.Fatalf("File: %v", err)
+	}
+	if sessions.painted["s3"] != "pink" {
+		t.Errorf("painted = %v, want s3 pink like the rest of Apps", sessions.painted)
+	}
+	if len(events.events) != 2 || events.events[1].name != api.SessionsColoredEvent.Name {
+		t.Fatalf("events = %+v, want the filing then the painting", events.events)
+	}
+	if got := events.events[1].data.(ColoredEvent); !slices.Equal(got.IDs, []string{"s3"}) || got.Color != "pink" {
+		t.Errorf("colored event = %+v, want s3 painted pink", got)
+	}
+}
+
+func TestFileIntoAFolderOfMixedColorsPaintsNothing(t *testing.T) {
+	svc, sessions, _ := filer(t)
+	sessions.projects[0].Sessions[1].Color = "pink"
+	sessions.projects[0].Sessions[3].Color = "blue"
+
+	if _, err := svc.File(t.Context(), FileOptions{From: "s1", Target: "shared-b", Folder: "Apps"}); err != nil {
+		t.Fatalf("File: %v", err)
+	}
+	if len(sessions.painted) != 0 {
+		t.Errorf("painted = %v, want nothing: Apps wears no one color", sessions.painted)
+	}
+}

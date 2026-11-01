@@ -97,6 +97,9 @@ func (s *Service) File(ctx context.Context, opts FileOptions) (Filed, error) {
 			ProjectID: found.project.ID, IDs: []string{found.session.ID}, Folder: folder,
 		})
 	}
+	if err := s.wearFolderColor(ctx, found.project, found.session, folder); err != nil {
+		return Filed{}, err
+	}
 	return Filed{
 		ID:       found.session.ID,
 		Project:  found.project.Name,
@@ -104,6 +107,43 @@ func (s *Service) File(ctx context.Context, opts FileOptions) (Filed, error) {
 		Folder:   folder,
 		Previous: found.session.Folder,
 	}, nil
+}
+
+// wearFolderColor paints a session just filed under folder with the color the
+// folder's other sessions share, as the window's drop does: a folder has no
+// color of its own but the one its cards share, and a card without it would
+// take it off the folder.
+func (s *Service) wearFolderColor(ctx context.Context, p store.Project, filed store.Session, folder string) error {
+	tint := sharedFolderColor(p, folder, filed.ID)
+	if tint == "" || filed.Color == tint {
+		return nil
+	}
+	if _, err := s.sessions.SetSessionColor(ctx, api.SessionColorOptions{SessionID: filed.ID, Color: tint}); err != nil {
+		return fmt.Errorf("the session is filed under %q, but could not take its color: %w", folder, err)
+	}
+	if s.events != nil {
+		events.Send(s.events.Emit, api.SessionsColoredEvent, ColoredEvent{ProjectID: p.ID, IDs: []string{filed.ID}, Color: tint})
+	}
+	return nil
+}
+
+// sharedFolderColor is the color every session of p filed under folder but
+// the one named except wears, "" when they wear different ones or none.
+func sharedFolderColor(p store.Project, folder, except string) string {
+	if folder == "" {
+		return ""
+	}
+	tint, seen := "", false
+	for _, sess := range p.Sessions {
+		if sess.Folder != folder || sess.ID == except {
+			continue
+		}
+		if seen && sess.Color != tint {
+			return ""
+		}
+		tint, seen = sess.Color, true
+	}
+	return tint
 }
 
 type RenameFolderOptions = api.RenameFolderOptions

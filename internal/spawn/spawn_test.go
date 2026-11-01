@@ -30,7 +30,9 @@ type added struct {
 
 type fakeSessions struct {
 	projects []store.Project
-	loadErr  error
+	// painted records the color each SetSessionColor wrote, keyed by session id.
+	painted map[string]string
+	loadErr error
 	// closed is the workspace's history: projects with is_open = 0, which
 	// RecentProjects offers back and AddProject reopens with their sessions
 	// intact, exactly as the store does.
@@ -155,6 +157,17 @@ func (f *fakeSessions) ColorFolder(projectID, folder, color string) ([]string, e
 		}
 	}
 	return painted, nil
+}
+
+func (f *fakeSessions) SetSessionColor(_ context.Context, opts api.SessionColorOptions) (api.None, error) {
+	if f.folderErr != nil {
+		return api.None{}, f.folderErr
+	}
+	if f.painted == nil {
+		f.painted = map[string]string{}
+	}
+	f.painted[opts.SessionID] = opts.Color
+	return api.None{}, nil
 }
 
 func (f *fakeSessions) CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error) {
