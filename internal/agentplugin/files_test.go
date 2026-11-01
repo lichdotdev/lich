@@ -132,7 +132,7 @@ func TestOpencodeInstallWritesTheModule(t *testing.T) {
 		t.Fatalf("Install: %v", err)
 	}
 
-	path := filepath.Join(config, "opencode", "plugin", opencodeFile)
+	path := filepath.Join(config, "opencode", "plugins", opencodeFile)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read the installed module: %v", err)
@@ -167,7 +167,7 @@ func TestOpencodeInstalledVersionRoundTrips(t *testing.T) {
 func TestOpencodeInstalledVersionIgnoresAnUnmarkedModule(t *testing.T) {
 	config := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
-	dir := filepath.Join(config, "opencode", "plugin")
+	dir := filepath.Join(config, "opencode", "plugins")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func TestOpencodeUpdateReplacesTheModule(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", config)
 	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({ event: async () => {} })\n"})
 
-	dir := filepath.Join(config, "opencode", "plugin")
+	dir := filepath.Join(config, "opencode", "plugins")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -231,8 +231,59 @@ func TestOpencodeInstallWritesNothingWhenTheFetchFails(t *testing.T) {
 	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err == nil {
 		t.Fatal("Install: want an error when the release has no module, got nil")
 	}
-	if _, err := os.Stat(filepath.Join(config, "opencode", "plugin", opencodeFile)); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(config, "opencode", "plugins", opencodeFile)); !os.IsNotExist(err) {
 		t.Errorf("a failed install left a module behind (stat err = %v)", err)
+	}
+}
+
+// legacyOpencodeModuleAt plants a module in `plugin/`, where lich wrote it
+// before opencode 2 stopped reading that directory, and returns its path.
+func legacyOpencodeModuleAt(t *testing.T, config, body string) string {
+	t.Helper()
+	dir := filepath.Join(config, "opencode", "plugin")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, opencodeFile)
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// opencode 1.x reads both directories, so the copy an older lich left in
+// `plugin/` would report every event a second time beside the new one.
+func TestOpencodeInstallMovesTheModuleAnOlderLichWrote(t *testing.T) {
+	config := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	legacy := legacyOpencodeModuleAt(t, config, jsComment+" "+markerName+" v0.1.0 — installed by lich\nexport const P = 1\n")
+	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({})\n"})
+
+	if got, ok := s.installedVersion(providers.OpenCode); !ok || got != "0.1.0" {
+		t.Fatalf("before the update: installedVersion = (%q,%v), want the older lich's install", got, ok)
+	}
+	if _, err := s.Update(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
+		t.Errorf("the older module is still at %s (stat err = %v)", legacy, err)
+	}
+	if got, ok := s.installedVersion(providers.OpenCode); !ok || got != testVersion {
+		t.Errorf("installedVersion = (%q,%v), want (%q,true)", got, ok, testVersion)
+	}
+}
+
+func TestOpencodeInstallLeavesAModuleLichDidNotWrite(t *testing.T) {
+	config := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	theirs := legacyOpencodeModuleAt(t, config, "export const Mine = async () => ({})\n")
+	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({})\n"})
+
+	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if _, err := os.Stat(theirs); err != nil {
+		t.Errorf("Install removed a module lich never wrote: %v", err)
 	}
 }
 
