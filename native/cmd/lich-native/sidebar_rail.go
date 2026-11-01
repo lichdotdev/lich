@@ -78,14 +78,15 @@ func (r *sidebarRail) button(th *ui.Theme, s *sidebar, click *widget.Clickable, 
 // railRow is a rail row's height, a tree row's: its node and the row's
 // padding, so a ring sits where it sits in the open sidebar.
 var (
-	// railWidth is the rail's island: a 32px column inside the island's
-	// 8px edge.
-	railWidth = ui.Space(8) + 2*ui.Space(2)
+	// railWidth is the rail's island: a column as wide as a tree row is tall
+	// inside the island's 8px edge, so its nodes centre where the open
+	// sidebar's do (rowInset + sessionTreeRingR from the edge).
+	railWidth = railRow + 2*ui.Space(2)
 	// railHeaderRow is the open sidebar's header row (labelFace).
 	railHeaderRow = ui.Space(9)
 	railRow       = 2*sessionTreeRingR + 2*ui.Space(1.5)
-	railChildR    = unit.Dp(8) // a child's node: smaller, on its mother's line
-	railTrayGap   = ui.Space(1.5)
+	railChildR    = unit.Dp(8)    // a child's node: smaller, on its mother's line
+	railBlockGap  = ui.Space(1.5) // the gap between blocks, blockList's
 )
 
 // railKind is what a rail row draws.
@@ -95,7 +96,7 @@ const (
 	railCard     railKind = iota
 	railCheckout          // a checkout's node, the root its sessions hang from
 	railHead              // a folder's or the pinned block's glyph
-	railGap               // the space around a folder's tray
+	railGap               // the space between two blocks
 )
 
 // railItem is one row of the rail's tree, the open sidebar's in one column.
@@ -125,7 +126,9 @@ func railItems(blocks []blockView) []railItem {
 	var items []railItem
 	for _, b := range blocks {
 		folder := b.kind == blockFolder
-		if folder && len(items) > 0 {
+		// Blocks stand apart as the open sidebar's do, so every node keeps
+		// its height across the morph.
+		if len(items) > 0 {
 			items = append(items, railItem{kind: railGap})
 		}
 		first := len(items)
@@ -146,11 +149,7 @@ func railItems(blocks []blockView) []railItem {
 				items[i].onTray, items[i].tray = true, b.color
 			}
 			items[first].top, items[len(items)-1].bottom = true, true
-			items = append(items, railItem{kind: railGap})
 		}
-	}
-	if n := len(items); n > 0 && items[n-1].kind == railGap {
-		items = items[:n-1]
 	}
 	return items
 }
@@ -201,7 +200,7 @@ func (r *sidebarRail) sessions(gtx C, th *ui.Theme, s *sidebar, blocks []blockVi
 func (r *sidebarRail) item(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
 	width := gtx.Constraints.Max.X
 	if it.kind == railGap {
-		return D{Size: image.Pt(width, gtx.Dp(railTrayGap))}
+		return D{Size: image.Pt(width, gtx.Dp(railBlockGap))}
 	}
 	size := image.Pt(width, gtx.Dp(railRow))
 	gtx.Constraints = layout.Exact(size)

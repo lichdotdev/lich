@@ -234,7 +234,8 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 		kids = append(kids, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return markDot(gtx, fade(dot, 1)) }))
 	}
 	kids = append(kids, ui.Gap(1.5), layout.Flexed(1, th.Separator))
-	return layout.Inset{Left: rowInset, Right: ui.Space(1), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+	// The line is a row's height already (headerLine); the content centres in it.
+	return layout.Inset{Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, kids...)
 	})
 }

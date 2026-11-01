@@ -272,9 +272,11 @@ alone, no tray.
 ### The rail
 
 The collapsed sidebar is an island like the open one (`sidebar_rail.go`): `Sidebar`, `RadiusLG`, its content
-on the 8px edge, so it is 48px wide around a 32px column. Expand sits in a row of the open header's height
+on the 8px edge around a column as wide as a row is tall (34), so it is 50px wide and every node centres
+where it does in the open sidebar. Expand sits in a row of the open header's height
 (36), where collapse sits in the open sidebar; new session, Services and the profile sit in its footer, so
-the tree starts where the open sidebar's does and every ring keeps its height across the morph. The tree is
+the tree starts where the open sidebar's does; blocks stand `Space(1.5)` apart as the open ones do, and every
+node keeps its place across the morph. The tree is
 the open one in one column: rows of the same 34dp, each block starting with its node (a checkout's ring, or
 a folder's or the pinned block's glyph, named in a tooltip), the line down the column through every ring of
 a tree, a child's ring 16px on its mother's line, and a folder on its tray. A folded block or mother keeps
