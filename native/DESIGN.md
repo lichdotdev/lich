@@ -152,14 +152,16 @@ Every island keeps its content `Space(2)` (8px) from its rounded edge, on all fo
 the Settings search field, a nav row, the Pulls back button and tree toggle all start at 8px, and their
 hover fill spans the 8px edge to edge.
 
-What a row starts with sets its own padding:
+Every list row is padded `Space(1.5)` (6px, `rowInset`; `navRowPadX` and `pullsRowPadX` are the same), so
+the window's lists read on one grid, the sidebar's tree's:
 
-- **A text row** (a Settings nav row, a Pulls row) is padded `Space(2.5)` (10px, `navRowPadX`,
-  `pullsRowPadX`), so its label lands at 18px from the island's edge.
-- **A tree row** (every sidebar row) starts with its node, a 22px ring, padded `Space(1.5)` (6px,
-  `rowInset`): the ring at 14px, its label `Space(1.5)` after it.
+- **The node column** starts at 14px from the island's edge and is 22px wide: a tree row's ring sits in it,
+  and so does a list row's leading icon, centred in a box of the ring's width (`inNodeColumn`), its centre at
+  25px with the ring's.
+- **The label** follows the column `Space(1.5)` after it, at 42px, in a tree row and an icon row alike.
+- **A row with no icon** (a Pulls row, a search hit) starts its text in the node column, at 14px.
 
-A screen body follows its rows: the Pulls body sits at 18px (`pullsPadX`), where its text rows' labels land.
+A screen body follows its rows: the Pulls body sits at 14px (`pullsPadX`), where its rows start.
 
 Rows of a text list stand `Space(0.5)` to `Space(1.5)` apart, groups of rows `Space(2)`; tree rows stand
 flush (see the sidebar).

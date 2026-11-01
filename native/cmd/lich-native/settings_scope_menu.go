@@ -73,8 +73,8 @@ func (s *settingsScreen) scopeButton(gtx C, th *ui.Theme) D {
 // scopeRowLine is the trigger's one line: the lead, the name and the chevrons.
 func (s *settingsScreen) scopeRowLine(gtx C, on *ui.Theme, lead layout.Widget, value string) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(lead),
-		ui.Gap(2.5),
+		layout.Rigid(inNodeColumn(lead)),
+		ui.Gap(1.5),
 		layout.Flexed(1, on.Text(ui.TextSM, value).Weight(font.Medium).Layout),
 		layout.Rigid(func(gtx C) D { return icScopeChevron.Layout(gtx, ui.Space(4), on.MutedForeground) }),
 	)

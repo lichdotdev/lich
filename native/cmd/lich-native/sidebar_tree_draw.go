@@ -76,6 +76,17 @@ func treeColumn(gtx C, k int) float32 {
 	return float32(gtx.Dp(rowInset) + k*gtx.Dp(sessionTreeIndent) + gtx.Dp(sessionTreeRingR))
 }
 
+// inNodeColumn lays w centred in a column as wide as a tree node, so a
+// list's leading icon lines up with the sidebar's rings, its label with their
+// names (DESIGN.md › the island's edge).
+func inNodeColumn(w layout.Widget) layout.Widget {
+	return func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Dp(2 * sessionTreeRingR)
+		gtx.Constraints.Max.X = gtx.Constraints.Min.X
+		return layout.Center.Layout(gtx, w)
+	}
+}
+
 // foldIcon is the chevron a foldable node shows in place of its glyph under
 // the pointer: down while open, right while folded.
 func foldIcon(open bool) *icons.Icon {

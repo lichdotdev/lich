@@ -19,11 +19,11 @@ import (
 )
 
 // The PR island's padding under the toolbar strip: the sidebar's, an 8px
-// island edge plus a row's 10px, so text lands where a session card's does
-// and a row's hover fill stops at the edge.
+// island edge plus a tree row's 6px, so text starts in the column a ring
+// does and a row's hover fill stops at the edge.
 var (
 	pullsRowEdge    = ui.Space(2)
-	pullsRowPadX    = ui.Space(2.5)
+	pullsRowPadX    = rowInset
 	pullsRowPadY    = ui.Space(2.5)
 	pullsPadX       = pullsRowEdge + pullsRowPadX
 	pullsTitleSize  = unit.Sp(18)
