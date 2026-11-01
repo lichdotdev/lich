@@ -312,7 +312,7 @@ func (s *Service) wholeCost(src usageSource) (float64, costMiss, bool) {
 	case providers.OMP:
 		return ompTranscriptCost(src.path)
 	}
-	cost, ok := sessionDBCost(src.path, queriesFor(src.kind).cost, src.id)
+	cost, ok := sessionDBCost(src.path, queriesFor(src).cost, src.id)
 	if !ok {
 		return 0, costMissUnread, false
 	}

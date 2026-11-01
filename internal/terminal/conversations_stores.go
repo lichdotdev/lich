@@ -145,7 +145,7 @@ func firstWorkspace(uris string) string {
 	return filepath.FromSlash(path)
 }
 
-// opencodeConversations reads the session table of the database of every
+// opencodeConversations reads the session tables of the database of every
 // opencode profile, each conversation marked with the profile holding it. A
 // sub-agent is a session with a parent; an archived one the user put away.
 func opencodeConversations() []store.Conversation {
@@ -156,19 +156,40 @@ func opencodeConversations() []store.Conversation {
 	return out
 }
 
+// opencodeSessions lists both generations of one database: opencode 2's table
+// first, then every 1.x conversation it has not copied over yet, since a copy
+// is the one 2.x goes on writing (opencode2SessionTable).
 func opencodeSessions(s xdgprofile.State) []store.Conversation {
-	return queryConversations(filepath.Join(s.Dir, opencodeDBFile),
+	db := filepath.Join(s.Dir, opencodeDBFile)
+	// title is NULL on a 2.x conversation until its first turn names it.
+	v2 := queryConversations(db,
+		`SELECT id, directory, COALESCE(title, ''), time_updated FROM session_v2
+		  WHERE parent_id IS NULL AND time_archived IS NULL`, opencodeRow(s))
+	v1 := queryConversations(db,
 		`SELECT id, directory, title, time_updated FROM session
-		  WHERE parent_id IS NULL AND time_archived IS NULL`,
-		func(rows *sql.Rows) (store.Conversation, bool) {
-			c := store.Conversation{Kind: providers.OpenCode, Profile: s.Slug}
-			var updatedMs int64
-			if rows.Scan(&c.ID, &c.Cwd, &c.Title, &updatedMs) != nil {
-				return store.Conversation{}, false
-			}
-			c.UpdatedAt = updatedMs / int64(time.Second/time.Millisecond)
-			return c, c.Cwd != ""
-		})
+		  WHERE parent_id IS NULL AND time_archived IS NULL`, opencodeRow(s))
+	copied := make(map[string]bool, len(v2))
+	for _, c := range v2 {
+		copied[c.ID] = true
+	}
+	for _, c := range v1 {
+		if !copied[c.ID] {
+			v2 = append(v2, c)
+		}
+	}
+	return v2
+}
+
+func opencodeRow(s xdgprofile.State) func(*sql.Rows) (store.Conversation, bool) {
+	return func(rows *sql.Rows) (store.Conversation, bool) {
+		c := store.Conversation{Kind: providers.OpenCode, Profile: s.Slug}
+		var updatedMs int64
+		if rows.Scan(&c.ID, &c.Cwd, &c.Title, &updatedMs) != nil {
+			return store.Conversation{}, false
+		}
+		c.UpdatedAt = updatedMs / int64(time.Second/time.Millisecond)
+		return c, c.Cwd != ""
+	}
 }
 
 // crushConversations reads the database of every checkout Crush lists in its

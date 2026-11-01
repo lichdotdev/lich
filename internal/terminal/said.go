@@ -124,7 +124,7 @@ func (c *saidCursors) said(id string, src usageSource) string {
 	if path, read, ok := transcriptReaderFor(src); ok {
 		return c.walk(id, path, read)
 	}
-	if texts := sessionDBTexts(src.path, queriesFor(src.kind).said, src.id); len(texts) > 0 {
+	if texts := sessionDBTexts(src.path, queriesFor(src).said, src.id); len(texts) > 0 {
 		return strings.TrimSpace(texts[0])
 	}
 	return ""

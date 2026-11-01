@@ -123,3 +123,11 @@ func TestVersionSaysWhenNothingVersionShapedCameBack(t *testing.T) {
 		t.Error("Version = nil error for output with no version in it")
 	}
 }
+
+func TestVersionMajor(t *testing.T) {
+	for version, want := range map[string]int{"2.2.5": 2, "1.19.4": 1, "10.0": 10, "": 0, "dev": 0} {
+		if got := versionMajor(version); got != want {
+			t.Errorf("versionMajor(%q) = %d, want %d", version, got, want)
+		}
+	}
+}

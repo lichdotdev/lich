@@ -478,38 +478,27 @@ func mcpArgs(kind, lichBin string) []string {
 // its argv but merges OPENCODE_CONFIG_CONTENT over every config file it reads
 // (measured on opencode 1.19.4), so the registration stays per spawn and off the
 // disk, as Claude Code's does. An inline config the user already exports is
-// extended, for the reason pasteUnfoldEnv gives. One lich cannot extend is left
+// extended (extendInlineConfig). One lich cannot extend is left
 // as it is and the session goes without the tools, rather than without its spawn.
 func mcpEnv(env []string, kind, lichBin string) []string {
 	if lichBin == "" || kind != providers.OpenCode {
 		return env
 	}
-	config := map[string]any{}
-	if own := lastEnvValue(env, opencodeConfigContentVar); own != "" {
-		if err := json.Unmarshal([]byte(own), &config); err != nil {
-			slog.Warn("mcp registration skipped", "provider", kind, "err", err)
-			return env
+	extended, err := extendInlineConfig(env, opencodeConfigContentVar, func(config map[string]any) error {
+		servers, err := objectAt(config, opencodeMCPKey)
+		if err == nil {
+			servers[relay.MCPServerName] = map[string]any{
+				"type":    "local",
+				"command": []string{lichBin, relay.MCPSubcommand},
+			}
 		}
-	}
-	servers, isObject := config[opencodeMCPKey].(map[string]any)
-	if config[opencodeMCPKey] != nil && !isObject {
-		slog.Warn("mcp registration skipped", "provider", kind, "err", "inline mcp is not an object")
-		return env
-	}
-	if servers == nil {
-		servers = map[string]any{}
-	}
-	servers[relay.MCPServerName] = map[string]any{
-		"type":    "local",
-		"command": []string{lichBin, relay.MCPSubcommand},
-	}
-	config[opencodeMCPKey] = servers
-	content, err := json.Marshal(config)
+		return err
+	})
 	if err != nil {
 		slog.Warn("mcp registration skipped", "provider", kind, "err", err)
 		return env
 	}
-	return append(env, opencodeConfigContentVar+"="+string(content))
+	return extended
 }
 
 // claudeMCPConfig is the JSON string Claude Code's --mcp-config accepts in

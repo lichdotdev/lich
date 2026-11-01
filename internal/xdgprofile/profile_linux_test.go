@@ -282,3 +282,44 @@ func TestLoginCommandRunsTheLoginInTheProfile(t *testing.T) {
 		t.Errorf("login of a profile that does not exist: %v", err)
 	}
 }
+
+// binAt is a provider binary at one path.
+type binAt string
+
+func (b binAt) ProviderBin(_, _ string) string { return string(b) }
+
+// opencode 2 sends `auth` to a background service every opencode shares unless
+// told --standalone, and that service holds some other profile's data home.
+func TestOpencode2AuthRunsOnAPrivateServer(t *testing.T) {
+	machine(t)
+	bin := filepath.Join(t.TempDir(), "opencode")
+	mustWrite(t, bin, `#!/bin/sh
+case "$*" in
+  --version) echo 'opencode v2.2.5' ;;
+  "auth list --standalone")
+    if [ -e "$XDG_DATA_HOME/opencode/logged-in" ]; then echo 'OpenCode Go  OpenCode Go  stored'
+    else echo 'No authenticated integrations'; fi ;;
+  *) echo "unexpected: $*"; exit 2 ;;
+esac
+`)
+	if err := os.Chmod(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s := New(OpenCode, binAt(bin), func(string, any) {})
+	p, err := s.CreateProfile(t.Context(), api.CreateProfileOptions{Name: "Work"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(p.Dir, "opencode", "logged-in"), "")
+	list, err := s.Profiles(t.Context(), api.None{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 2 || list[0].LoggedIn || list[0].StatusError != "" || !list[1].LoggedIn || list[1].StatusError != "" {
+		t.Errorf("profiles = %+v, want Personal logged out and Work logged in", list)
+	}
+	line, err := s.LoginCommand(t.Context(), api.ProfileSlugOptions{Slug: p.Slug})
+	if err != nil || !strings.HasSuffix(line, " auth login --standalone") {
+		t.Errorf("login line = %q, %v, want it to end in auth login --standalone", line, err)
+	}
+}

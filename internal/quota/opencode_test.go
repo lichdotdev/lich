@@ -1,6 +1,8 @@
 package quota
 
 import (
+	"database/sql"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -133,5 +135,68 @@ func TestOpencodeReadsTheSessionsDataHome(t *testing.T) {
 	}
 	if got := s.opencodePlan(Account{}); got.Status != StatusUnknown {
 		t.Errorf("hidden: status = %q, want unknown", got.Status)
+	}
+}
+
+// writeOpencode2Credential plants opencode 2's credential table in the data
+// home writeOpencodeAuth made, with the rows given as (value, active).
+func writeOpencode2Credentials(t *testing.T, rows ...[2]any) {
+	t.Helper()
+	db, err := sql.Open("sqlite", filepath.Join(os.Getenv(dataHomeVar), "opencode", "opencode.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(`CREATE TABLE credential (id TEXT PRIMARY KEY, integration_id TEXT, label TEXT NOT NULL,
+		value TEXT NOT NULL, connector_id TEXT, method_id TEXT, active INTEGER, time_created INTEGER NOT NULL,
+		time_updated INTEGER NOT NULL)`); err != nil {
+		t.Fatal(err)
+	}
+	for i, r := range rows {
+		if _, err := db.Exec(`INSERT INTO credential VALUES (?, 'opencode-go', 'OpenCode Go', ?, NULL, NULL, ?, 1, ?)`,
+			fmt.Sprintf("cred_%d", i), r[0], r[1], i); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestOpencode2GoKeyComesFromItsDatabase(t *testing.T) {
+	cases := map[string]struct {
+		auth string
+		rows [][2]any
+		want string
+	}{
+		"2.x login only":                 {`{}`, [][2]any{{`{"type":"key","key":"v2-key"}`, 1}}, "v2-key"},
+		"2.x login over a stale 1.x key": {opencodeGoAuth, [][2]any{{`{"type":"key","key":"v2-key"}`, 1}}, "v2-key"},
+		"an inactive 2.x row":            {opencodeGoAuth, [][2]any{{`{"type":"key","key":"old"}`, 0}}, "go-key"},
+		"no 2.x row":                     {opencodeGoAuth, nil, "go-key"},
+		"neither":                        {`{}`, [][2]any{{`{"type":"oauth","refresh":"r"}`, 1}}, ""},
+	}
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			writeOpencodeAuth(t, c.auth)
+			writeOpencode2Credentials(t, c.rows...)
+			path := filepath.Join(os.Getenv(dataHomeVar), "opencode", "auth.json")
+			if got := opencodeGoKey(path); got != c.want {
+				t.Errorf("key = %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// A 1.x database has a credential table of another shape, which reads as no
+// 2.x key rather than as an error.
+func TestOpencode1DatabaseHoldsNoGoKey(t *testing.T) {
+	writeOpencodeAuth(t, opencodeGoAuth)
+	db, err := sql.Open("sqlite", filepath.Join(os.Getenv(dataHomeVar), "opencode", "opencode.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`CREATE TABLE credential (id TEXT PRIMARY KEY, provider TEXT, data TEXT)`); err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	if got := opencodeGoKey(filepath.Join(os.Getenv(dataHomeVar), "opencode", "auth.json")); got != "go-key" {
+		t.Errorf("key = %q, want auth.json's", got)
 	}
 }

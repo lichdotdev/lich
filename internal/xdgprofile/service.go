@@ -79,6 +79,9 @@ func (s *Service) Profiles(_ context.Context, _ api.None) ([]Info, error) {
 
 func (s *Service) info(p Profile) Info {
 	status := s.provider.status
+	if s.opencode2() {
+		status = opencode2Status
+	}
 	out, runErr := s.run(p, status.args...)
 	found, err := status.read(out)
 	if err != nil {
@@ -132,7 +135,20 @@ func (s *Service) LoginCommand(_ context.Context, opts api.ProfileSlugOptions) (
 	if !IsPersonal(opts.Slug) {
 		value = dir
 	}
-	return s.provider.store.LoginLine(s.bin(), s.provider.login, value), nil
+	login := s.provider.login
+	if s.opencode2() {
+		login += " " + providers.OpenCode2StandaloneFlag
+	}
+	return s.provider.store.LoginLine(s.bin(), login, value), nil
+}
+
+// opencode2 reports whether this is opencode's service running opencode 2,
+// whose auth commands go to the background service every opencode shares
+// unless told otherwise: that service holds the data home of whichever profile
+// started it, so a status or a login there would answer for, or land in, some
+// other profile (providers.OpenCode2StandaloneFlag).
+func (s *Service) opencode2() bool {
+	return s.provider.ID == providers.OpenCode && providers.IsOpencode2(s.bin())
 }
 
 // IsPersonal reports whether slug names the default profile. Empty does too.

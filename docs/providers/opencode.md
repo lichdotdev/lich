@@ -1,6 +1,8 @@
 # opencode
 
-`opencode` (`internal/providers.Registry`). It reads its directories through the xdg-basedir convention on every
+`opencode` (`internal/providers.Registry`). opencode 2 is the same provider: it ships under the same binary name,
+reads the same config and database, and its upgrade replaces 1.x in place. What it changes for lich is in
+[opencode 2](#opencode-2) below; everything else on this page holds for both. It reads its directories through the xdg-basedir convention on every
 platform rather than the OS-native ones: config under `$XDG_CONFIG_HOME/opencode`, and every conversation in one
 database at `$XDG_DATA_HOME/opencode/opencode.db`. The limits these sit under are in
 [`../ceilings.md`](../ceilings.md).
@@ -101,3 +103,34 @@ Nothing provider-specific.
 ## Known limits
 
 A theme switch reaches it: opencode turns on mode 2031 (driven in a PTY).
+
+## opencode 2
+
+Measured on 2.2.5, in throwaway homes, beside 1.19.4. lich tells the two apart by `--version`, once per binary
+(`providers.IsOpencode2`).
+
+- **Spawn.** The root command has no `--model` and no `--fork` (both are `run` flags), and by default attaches to
+  a background service every opencode shares, which reads its environment once. lich spawns `--standalone`, names
+  the model as `model` in `OPENCODE_CONFIG_CONTENT`, and forks through `opencode api --standalone POST
+  /api/session/{id}/fork` before resuming the copy with `--session` (`internal/terminal/opencode2.go`). The
+  copy is filed under the checkout the fork ran in. `--session`, `--auto` and the inline config (1.x's `mcp` shape,
+  normalized) are unchanged. 2.x still turns on mode 2031.
+- **Paste summary.** 2.x drops `experimental.disable_paste_summary`; the switch lives in its terminal config, so
+  Unfold long pastes sets `prompt.paste` to `full` through `OPENCODE_CLI_CONFIG_CONTENT`.
+- **Database.** Conversations move to `session_v2`, one `session_message` row per message (a prompt's words
+  under `data.text`, an answer's under the `text` entries of `data.content`). `session_part` stayed empty.
+  2.x copies a 1.x conversation over when it first touches it, so lich reads each conversation from the newer
+  table it is in (`internal/terminal/sessiondb.go`). Tokens and cost keep their shape; a sub-agent is still a
+  session of its own under `parent_id`, not rolled into its parent (measured on tokens, since the free model it
+  ran on billed $0).
+- **Hooks.** 2.x loads the module's default export and calls `setup(ctx)`; 1.x calls the same export's `server()`
+  and also its `setup()`, with a context missing `event` and `session`, which is how the module tells them
+  apart. The reports ride `session.execution.started` (session start, then busy), `session.execution.succeeded`,
+  `failed` and `interrupted` (done), `session.renamed` (title), `permission.asked` (waiting, with its `action`)
+  and the `write`, `edit` and `patch` tools finishing (touched). No session event carries a parent, so each
+  session is looked up once with `ctx.session.get`. The question tool's event is not measured: a
+  non-interactive run never asked one. The module goes in `plugins/`, the only global directory 2.x reads.
+- **Profiles and plan.** `auth list` and `auth login` run `--standalone`, since the shared service would hold
+  another profile's data home. `auth list` prints one row per integration and no count; a row ending in
+  `stored` is a login. The OpenCode Go key moves to the `credential` table of `opencode.db` (an active
+  `opencode-go` row, `{"type":"key","key":…}`), which the gauge reads before `auth.json`.

@@ -56,7 +56,7 @@ func opencodeDataDir() (string, bool) {
 func opencodeOwner(conversationID string) (profilestore.Profile, string, bool) {
 	for _, s := range xdgStates(providers.OpenCode, opencodeDataDir) {
 		db := filepath.Join(s.Dir, opencodeDBFile)
-		if sessionRowExists(db, opencodeSessionTable, conversationID) {
+		if opencode2Session(db, conversationID) || sessionRowExists(db, opencodeSessionTable, conversationID) {
 			return s.Profile, db, true
 		}
 	}

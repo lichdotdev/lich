@@ -53,7 +53,7 @@ func TranscriptText(providerSessionID, cwd string) (text string, cut bool) {
 	if path, read, ok := transcriptReaderFor(src); ok {
 		return newestBytes(transcriptProse(path, read), indexTextBytes)
 	}
-	texts := sessionDBTexts(src.path, queriesFor(src.kind).search, src.id)
+	texts := sessionDBTexts(src.path, queriesFor(src).search, src.id)
 	return newestBytes(strings.Join(texts, "\n"), indexTextBytes)
 }
 

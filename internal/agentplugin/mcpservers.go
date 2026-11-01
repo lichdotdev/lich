@@ -83,7 +83,7 @@ func opencodeServers(cwd string) []string {
 	// $OPENCODE_CONFIG names one more document, merged on top of the rest rather
 	// than replacing them (measured on 1.18.18).
 	if extra := os.Getenv("OPENCODE_CONFIG"); extra != "" {
-		out = append(out, serverKeys(extra, opencodeMCPKey)...)
+		out = append(out, opencodeServerKeys(extra)...)
 	}
 	for _, dir := range ancestors(cwd) {
 		out = append(out, dirServers(dir, opencodeConfigFiles)...)
@@ -96,7 +96,7 @@ func opencodeServers(cwd string) []string {
 func dirServers(dir string, files []string) []string {
 	var out []string
 	for _, file := range files {
-		out = append(out, serverKeys(filepath.Join(dir, file), opencodeMCPKey)...)
+		out = append(out, opencodeServerKeys(filepath.Join(dir, file))...)
 	}
 	return out
 }
@@ -118,6 +118,33 @@ func ancestors(dir string) []string {
 		dir = parent
 	}
 }
+
+// opencodeServerKeys reads either shape opencode accepts: 1.x names each server
+// right under `mcp`, and 2.x under `mcp.servers`, beside settings such as
+// `mcp.timeout` (opencode 2's migration guide; 2.2.5 reads both and turns the
+// first into the second).
+func opencodeServerKeys(path string) []string {
+	keys := serverKeys(path, opencodeMCPKey)
+	if !slices.Contains(keys, opencode2ServersKey) {
+		return keys
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var doc map[string]map[string]json.RawMessage
+	if json.Unmarshal(jsonc(data), &doc) != nil {
+		return keys
+	}
+	var servers map[string]json.RawMessage
+	if json.Unmarshal(doc[opencodeMCPKey][opencode2ServersKey], &servers) != nil {
+		return keys
+	}
+	return slices.Collect(maps.Keys(servers))
+}
+
+// opencode2ServersKey is where under `mcp` opencode 2 keeps its servers.
+const opencode2ServersKey = "servers"
 
 // serverKeys are the keys of the object under key in the JSON document at path.
 func serverKeys(path, key string) []string {

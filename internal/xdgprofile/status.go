@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // statusCommand is the CLI call that says who is logged in to a profile, and
@@ -39,6 +41,31 @@ var opencodeStatus = statusCommand{
 		return login{loggedIn: n > 0}, err
 	},
 }
+
+// opencode2Status reads opencode 2's `auth list`, which prints one row per
+// integration it can use and no count: a login of the profile's own ends in
+// "stored", a key it found in the environment in "environment", and with
+// neither it says "No authenticated integrations" (measured on 2.2.5). Only a
+// stored row is the profile's login. It names no account.
+var opencode2Status = statusCommand{
+	args: []string{"auth", "list", providers.OpenCode2StandaloneFlag},
+	read: func(out string) (login, error) {
+		if opencode2Stored.MatchString(out) {
+			return login{loggedIn: true}, nil
+		}
+		if strings.Contains(out, opencode2NoCredentials) || opencode2Environment.MatchString(out) {
+			return login{}, nil
+		}
+		return login{}, fmt.Errorf("no credential list in %q", strings.TrimSpace(out))
+	},
+}
+
+const opencode2NoCredentials = "No authenticated integrations"
+
+var (
+	opencode2Stored      = regexp.MustCompile(`(?m)\S\s{2,}stored\s*$`)
+	opencode2Environment = regexp.MustCompile(`(?m)\S\s{2,}environment\s*$`)
+)
 
 // cursorStatus reads `cursor-agent status --format json`: logged out it is
 // {"status":"unauthenticated","isAuthenticated":false,…}, indented, with exit 0
