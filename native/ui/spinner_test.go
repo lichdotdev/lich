@@ -18,10 +18,10 @@ func loopWake(w func(C) D) (time.Time, bool) {
 
 // Every frame of a looping animation repaints the whole window: one asking
 // at the display's rate held a laptop GPU at 60%, so the next frame comes
-// 33ms later, never at once.
-func TestLoopingAnimationsRedrawAt30fps(t *testing.T) {
+// 42ms later, never at once.
+func TestLoopingAnimationsRedrawAt24fps(t *testing.T) {
 	th := testTheme()
-	want := time.Unix(100, 0).Add(33 * time.Millisecond)
+	want := time.Unix(100, 0).Add(42 * time.Millisecond)
 	for name, w := range map[string]func(C) D{
 		"Spinner":  func(gtx C) D { return th.Spinner(gtx, 16, th.Foreground) },
 		"BusyRing": func(gtx C) D { return th.BusyRing(gtx, 16, th.Foreground, th.Border) },
@@ -29,6 +29,28 @@ func TestLoopingAnimationsRedrawAt30fps(t *testing.T) {
 		if at, ok := loopWake(w); !ok || !at.Equal(want) {
 			t.Errorf("%s asked for its next frame at %v (asked %v), want %v", name, at, ok, want)
 		}
+	}
+}
+
+func TestLoopRecordsTheFrameItAskedFor(t *testing.T) {
+	th := testTheme()
+	th.Beat = &LoopBeat{}
+	now := time.Unix(100, 0)
+	if th.Beat.Pending(now) {
+		t.Fatal("a beat nobody asked for is pending")
+	}
+	loopWake(func(gtx C) D { return th.Spinner(gtx, 16, th.Foreground) })
+	if !th.Beat.Pending(now.Add(41 * time.Millisecond)) {
+		t.Error("41ms after the spinner drew, its frame is still to come")
+	}
+	if th.Beat.Pending(now.Add(42 * time.Millisecond)) {
+		t.Error("42ms after the spinner drew, its frame is due")
+	}
+	th.Still = true
+	th.Beat = &LoopBeat{}
+	loopWake(func(gtx C) D { return th.Spinner(gtx, 16, th.Foreground) })
+	if th.Beat.Pending(now) {
+		t.Error("a still window's spinner recorded a frame it did not ask for")
 	}
 }
 

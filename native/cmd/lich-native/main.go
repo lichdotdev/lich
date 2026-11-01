@@ -222,11 +222,12 @@ func run(w *app.Window, rt backend.Runtime) error {
 	th.Shaper = text.NewShaper(text.WithCollection(append(append(gofont.Collection(), sans...), faces...)))
 	th.Fg, th.Bg = ui.Dark.Foreground, ui.Dark.Background
 
+	beat := &ui.LoopBeat{}
 	u := &window{
 		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(),
-		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas},
+		theme: &ui.Theme{Palette: ui.Dark, Shaper: th.Shaper, Sans: fonts.Sans, Mono: faces[0].Font.Typeface, Surface: ui.Dark.Canvas, Beat: beat},
 		model: newModel(client, w.Invalidate),
-		terms: &terminals{client: client, invalidate: w.Invalidate, renderer: *flagRenderer, family: *flagFont,
+		terms: &terminals{client: client, invalidate: w.Invalidate, beat: beat, renderer: *flagRenderer, family: *flagFont,
 			size: unit.Sp(*flagSize), byID: map[string]*termView{}},
 	}
 	u.appearance = &appearance{ctx: ctx, client: client, invalidate: w.Invalidate}
