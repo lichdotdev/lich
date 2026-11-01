@@ -94,6 +94,7 @@ type railItem struct {
 	facts checkoutFacts
 	glyph *icons.Icon // railHead
 	tint  string      // railHead: a folder's color
+	title string      // railHead: the folder's name, or Pinned
 	// small is a child's node; up and down are the line to the node above
 	// and below in the same tree.
 	small, up, down bool
@@ -117,9 +118,9 @@ func railItems(blocks []blockView) []railItem {
 		first := len(items)
 		switch {
 		case folder:
-			items = append(items, railItem{kind: railHead, key: b.key, glyph: icGroupFolder, tint: b.color})
+			items = append(items, railItem{kind: railHead, key: b.key, glyph: icGroupFolder, tint: b.color, title: b.title})
 		case b.kind == blockPinned:
-			items = append(items, railItem{kind: railHead, key: b.key, glyph: icMenuPin})
+			items = append(items, railItem{kind: railHead, key: b.key, glyph: icMenuPin, title: b.title})
 		case b.under != "":
 			items = append(items, railItem{kind: railCheckout, key: b.key, path: b.under, facts: b.facts[b.under]})
 		}
@@ -205,8 +206,13 @@ func (r *sidebarRail) item(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 		if tint, ok := cardColors[it.tint]; ok {
 			c = tint
 		}
+		// The head's name is the one thing the rail leaves off it.
+		tip := th.Tooltip(s.root, s.hint("rail:head:"+it.key), it.title)
+		tip.Side = ui.SideRight
 		return layout.Center.Layout(gtx, func(gtx C) D {
-			return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3.5), c) })
+			return tip.Layout(gtx, func(gtx C) D {
+				return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3.5), c) })
+			})
 		})
 	case railCheckout:
 		return r.checkout(gtx, th, s, it)
