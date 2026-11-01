@@ -78,7 +78,7 @@ func newSidebar(root *ui.Root) *sidebar {
 		open:         true,
 		hints:        map[string]*ui.Tooltip{},
 		blocks:       map[string]*blockState{},
-		rail:         sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}},
+		rail:         sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}, menus: map[string]*ui.MenuState{}},
 		services:     newServicesFooter(),
 	}
 	s.header.phases = map[sessionPhase]bool{}

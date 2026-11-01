@@ -78,10 +78,11 @@ func blockOptions(b blockView, folders []string, filtering bool, act *sidebarAct
 	case blockPinned:
 		return nil
 	case blockFolder:
-		entries := []ui.MenuEntry{
-			{Label: i18n.T("sidebar.sessionGroupHeader.renameFolder"), Icon: icMenuRename, OnClick: hooks.rename},
-			{Label: i18n.T("sidebar.sessionGroupHeader.ungroup"), Icon: icUngroup, OnClick: func() { act.folder = folderRename{from: b.folder} }},
+		var entries []ui.MenuEntry
+		if hooks.rename != nil {
+			entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionGroupHeader.renameFolder"), Icon: icMenuRename, OnClick: hooks.rename})
 		}
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionGroupHeader.ungroup"), Icon: icUngroup, OnClick: func() { act.folder = folderRename{from: b.folder} }})
 		if filtering {
 			return entries
 		}

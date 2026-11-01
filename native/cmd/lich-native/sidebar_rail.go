@@ -6,6 +6,7 @@ import (
 	"maps"
 
 	"gioui.org/f32"
+	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -36,7 +37,11 @@ type sidebarRail struct {
 	list   widget.List
 	cards  map[string]*widget.Clickable
 	tips   map[string]*ui.Tooltip
-	foot   railFooter
+	menus  map[string]*ui.MenuState
+	// view is the frame's sidebar view, whose blocks and folders a node's
+	// menu reads.
+	view sidebarView
+	foot railFooter
 }
 
 // layout draws the rail as an island like the open sidebar, its content on
@@ -54,7 +59,8 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 	gtx.Constraints = layout.Exact(size)
 	ui.Fill(gtx, th.Sidebar, ui.RadiusLG)
 	th = th.On(th.Sidebar)
-	blocks := m.sidebarBlocks(sidebarFilter{}).blocks
+	r.view = m.sidebarBlocks(sidebarFilter{})
+	blocks := r.view.blocks
 	layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
 			// Expand sits in a row of the open header's height, so it lands
@@ -113,6 +119,9 @@ type railItem struct {
 	depth  int
 	motion *rowMotion
 	key    string // the block or checkout row it stands for, which names its node
+	block  string // the block the row is in, whose menu its node opens
+	kids   int    // railCard: the sessions under a mother
+	folded bool   // railCard: a mother folded over them
 	sv     *sessionView
 	path   string // railCheckout
 	facts  checkoutFacts
@@ -139,7 +148,7 @@ func railItems(blocks []blockView) []railItem {
 		// Blocks stand apart as the open sidebar's do, so every node keeps
 		// its height across the morph.
 		if len(items) > 0 {
-			items = append(items, railItem{kind: railGap, id: "gap:" + b.key})
+			items = append(items, railItem{kind: railGap, id: "gap:" + b.key, block: b.key})
 		}
 		first := len(items)
 		switch {
@@ -152,6 +161,9 @@ func railItems(blocks []blockView) []railItem {
 		}
 		if !b.folded {
 			items = append(items, railRows(b)...)
+		}
+		for i := first; i < len(items); i++ {
+			items[i].block = b.key
 		}
 		railLines(items[first:])
 		if folder {
@@ -177,7 +189,7 @@ func railRows(b blockView) []railItem {
 			continue
 		}
 		sv := r.sv
-		items = append(items, railItem{kind: railCard, id: r.key, depth: r.depth, sv: &sv, small: r.depth > base})
+		items = append(items, railItem{kind: railCard, id: r.key, depth: r.depth, sv: &sv, small: r.depth > base, kids: r.kids, folded: r.folded})
 	}
 	return items
 }
@@ -284,20 +296,29 @@ func (r *sidebarRail) node(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 		if tint, ok := cardColors[it.tint]; ok {
 			c = tint
 		}
-		// The head's name is the one thing the rail leaves off it.
-		tip := th.Tooltip(s.root, s.hint("rail:head:"+it.key), it.title)
+		// The head's name is the one thing the rail leaves off it, in the
+		// card every other node's tooltip is.
+		state, ok := r.tips["head:"+it.key]
+		if !ok {
+			state = new(ui.Tooltip)
+			r.tips["head:"+it.key] = state
+		}
+		pop := th.On(th.Popover)
+		tip := th.TooltipCard(s.root, state, para(pop.Text(ui.TextXS, it.title).Weight(font.Medium)).Layout)
 		tip.Side = ui.SideRight
 		return layout.Center.Layout(gtx, func(gtx C) D {
-			return tip.Layout(gtx, func(gtx C) D {
-				// The open header's size, so the glyph flies without resizing.
-				faded := ui.Alpha(c, 1-it.entry().glyph)
-				return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3), faded) })
+			return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D {
+				return tip.Layout(gtx, func(gtx C) D {
+					// The open header's size, so the glyph flies without resizing.
+					faded := ui.Alpha(c, 1-it.entry().glyph)
+					return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3), faded) })
+				})
 			})
 		})
 	case railCheckout:
-		return r.checkout(gtx, th, s, it)
+		return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.checkout(gtx, th, s, it) })
 	}
-	return r.session(gtx, th, s, it, active, act)
+	return r.menu(gtx, th, s, it, act).Layout(gtx, func(gtx C) D { return r.session(gtx, th, s, it, active, act) })
 }
 
 // railTray paints a folder's tray behind a row, rounded at its ends.

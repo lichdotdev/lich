@@ -36,17 +36,21 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 	if sv.Pinned {
 		pin = ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.unpin"), Icon: icMenuUnpin, OnClick: func() { act.pin, act.pinTo = sv.ID, false }}
 	}
-	entries := []ui.MenuEntry{
-		{Label: i18n.T("sidebar.sessionCard.rename"), Icon: icMenuRename, OnClick: startRename},
+	var entries []ui.MenuEntry
+	// The rail draws no name to edit, so it passes no rename.
+	if startRename != nil {
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.rename"), Icon: icMenuRename, OnClick: startRename})
+	}
+	entries = append(entries,
 		pin,
-		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.cardColor.menu"), Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
+		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.cardColor.menu"), Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
 			act.color, act.colorTo = sv.ID, name
 		})},
-		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
-		{Label: i18n.T("sidebar.sessionCard.browser"), Icon: icBrowser, OnClick: func() { act.browser = sv.ID }},
-		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
+		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
+		ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.browser"), Icon: icBrowser, OnClick: func() { act.browser = sv.ID }},
+		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
-	}
+	)
 	if fork, ok := forkItem(sv, act); ok {
 		entries = append(entries, fork)
 	}
