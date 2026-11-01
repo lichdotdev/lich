@@ -24,7 +24,7 @@ func fakeOpencode(t *testing.T, version, forkAnswer string) (bin, argvFile strin
 	script := `#!/bin/sh
 case "$1" in
   --version) echo '` + version + `'; exit 0 ;;
-  api) echo "$@ $PWD" > '` + argvFile + `.fork'; echo '` + forkAnswer + `'; exit 0 ;;
+  api) echo "$@ $(pwd -P)" > '` + argvFile + `.fork'; echo '` + forkAnswer + `'; exit 0 ;;
 esac
 { echo "$@"; echo "$OPENCODE_CONFIG_CONTENT"; echo "$OPENCODE_CLI_CONFIG_CONTENT"; } > '` + argvFile + `.tmp'
 mv '` + argvFile + `.tmp' '` + argvFile + `'
@@ -108,7 +108,14 @@ func TestOpencode2ForksThroughItsOwnRouteThenResumesTheCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := "api --standalone POST /api/session/ses_parent/fork --data {} " + cwd; strings.TrimSpace(string(fork)) != want {
+	// Physical paths on both sides: macOS's temp directory is reached through
+	// the /var -> /private/var link, and which spelling the shell reports is
+	// not what the fork promises, only that it runs in the session's checkout.
+	real, err := filepath.EvalSymlinks(cwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "api --standalone POST /api/session/ses_parent/fork --data {} " + real; strings.TrimSpace(string(fork)) != want {
 		t.Errorf("fork call = %q, want %q", fork, want)
 	}
 	if args, _ := readSpawn(t, argv); args != "--standalone --session ses_copy" {
