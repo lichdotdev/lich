@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -27,10 +28,12 @@ type railFooter struct {
 	servicesPanel ui.DropdownPanelState
 	profile       widget.Clickable
 	profileMenu   ui.MenuState
+	search        widget.Clickable
+	searchPanel   ui.DropdownPanelState
 }
 
 func (r *sidebarRail) holdsKeys() bool {
-	return r.foot.servicesPanel.Opened() || r.foot.profileMenu.Opened()
+	return r.foot.servicesPanel.Opened() || r.foot.profileMenu.Opened() || r.foot.searchPanel.Opened()
 }
 
 // footer lays the rail's footer out: a hairline, a new session, then, with a
@@ -40,6 +43,8 @@ func (r *sidebarRail) holdsKeys() bool {
 func (r *sidebarRail) footer(gtx C, th *ui.Theme, s *sidebar, m *model, act *sidebarAction) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return railHairline(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return r.searchButton(gtx, th, s) }),
+		ui.VGap(1),
 		// New session is not named for the morph: the open sidebar's sits at
 		// its top, and flying it corner to corner reads as a jump.
 		layout.Rigid(r.button(th, s, &r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), "")),
@@ -176,4 +181,74 @@ func (f *servicesFooter) panelHeader(gtx C, th *ui.Theme, root *ui.Root, t servi
 		gtx.Constraints.Min.Y = h
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	})
+}
+
+// railSearchWidth is the filter panel's width off the rail: the open
+// sidebar's field and chips at the width they wrap at there.
+const railSearchWidth unit.Dp = 256
+
+// searchButton is the rail's filter: the open sidebar's field and phase chips
+// in a panel off the rail, filtering the rail as they filter the open
+// sidebar. The filter outlives the panel, which a lit button with a dot
+// says; it ends where the open one does, Escape on an empty field.
+func (r *sidebarRail) searchButton(gtx C, th *ui.Theme, s *sidebar) D {
+	h := &s.header
+	tip := th.Tooltip(s.root, s.hint("rail:filter"), i18n.T("sidebar.sessionSidebar.filter"))
+	tip.Side = ui.SideRight
+	panel := th.DropdownPanel(s.root, &r.foot.searchPanel, railSearchWidth, func(gtx C, th *ui.Theme) D {
+		return s.filterRow(gtx, th, r.view)
+	})
+	was := r.foot.searchPanel.Opened()
+	d := tip.Layout(gtx, func(gtx C) D {
+		return panel.Layout(gtx, func(gtx C) D {
+			return r.foot.search.Layout(gtx, func(gtx C) D {
+				narrows := h.filter().narrows()
+				bg := railFill(th, r.foot.searchPanel.Opened() || narrows, r.foot.search.Hovered())
+				return squareFace(gtx, bg, func(gtx C) D {
+					return layout.Stack{}.Layout(gtx,
+						layout.Stacked(func(gtx C) D { return icSearch.Layout(gtx, ui.Space(4), th.MutedForeground) }),
+						layout.Expanded(func(gtx C) D { return railFilterDot(gtx, th.On(bg), narrows && !r.foot.searchPanel.Opened()) }),
+					)
+				})
+			})
+		})
+	})
+	r.searchOpened(gtx, h, was)
+	return d
+}
+
+// searchOpened follows the panel opening and closing: opening it opens the
+// filter with the field focused, closing it on an empty filter closes the
+// filter, and an Escape that closed the filter closes the panel.
+func (r *sidebarRail) searchOpened(gtx C, h *sidebarHeader, was bool) {
+	open := r.foot.searchPanel.Opened()
+	switch {
+	case open && !was && !h.open:
+		h.toggle()
+		gtx.Execute(op.InvalidateCmd{})
+	case open && !was:
+		h.focusQuery = true
+		gtx.Execute(op.InvalidateCmd{})
+	case open && !h.open:
+		r.foot.searchPanel.Close()
+	case !open && was && !h.filter().narrows():
+		h.open = false
+	}
+	if !open {
+		h.searchFocused = false
+	}
+}
+
+// railFilterDot is the dot on the filter button's corner while a filter
+// narrows the rail with its panel closed, ringed in the button's fill.
+func railFilterDot(gtx C, th *ui.Theme, on bool) D {
+	size := gtx.Constraints.Min
+	if !on {
+		return D{Size: size}
+	}
+	r := float32(gtx.Dp(3))
+	center := f32.Pt(float32(size.X)-r, r)
+	ui.StrokeArc(gtx, center, r+float32(gtx.Dp(1)), float32(gtx.Dp(2)), 0, 2*math.Pi, th.Surface)
+	ui.StrokeArc(gtx, center, r/2, r, 0, 2*math.Pi, th.Foreground)
+	return D{Size: size}
 }

@@ -282,7 +282,9 @@ node keeps its place across the morph. The tree is
 the open one in one column: rows of the same 34dp, each block starting with its node (a checkout's ring, or
 a folder's or the pinned block's glyph, named in a tooltip), the line down the column through every ring of
 a tree, a child's ring 16px on its mother's line, and a folder on its tray. A folded block or mother keeps
-only its node. A session's ring is lit by a 32px square, `Accent` while active.
+only its node. A session's ring is lit by a 32px square, `Accent` while active. A card drags in the rail as
+in the open sidebar, and the filter is the open one's field and chips in a panel off the search button in
+the footer; it outlives the panel, and the button stays lit with a dot while it narrows the tree.
 
 ## Motion
 
@@ -296,6 +298,11 @@ at once, whatever its row is still doing.
   session leaving takes the worktree's row out after it; a folder's last session takes its checkout row,
   then the folder's header fades and its tray closes; a new folder plays that backwards. The rail moves the
   same way, in the same timings, its rings and line without the names. Timings live in `sidebar_tree_motion.go`.
+- **A dragged card lets go of its line and joins where it lands.** As it lifts, its elbow runs back to its
+  parent's line; while it is in the air, the rows are linked in the order the list shows them, and its slot
+  draws a dashed elbow and ring; let go, it settles and the line draws back to its ring
+  (`sidebar_drag_links.go`). A block the card would go to lights its whole tray, a border in its color, in
+  the open sidebar and the rail alike.
 - **Other lists** enter and leave with `ui.Presence`: 160ms in, 180ms out, from a 0.6 scale at the top
   edge. A fold is `ui.Collapse`, 200ms.
 - **One motion per arrival.** An item another motion brings in is settled in `Presence`

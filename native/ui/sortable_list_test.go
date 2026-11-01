@@ -373,3 +373,18 @@ func TestSortListLandsTheItemInTheSlotItIsOver(t *testing.T) {
 		t.Errorf("landing = %d, %d, %v, want a2's slot %d long", at, length, ok, listRow)
 	}
 }
+
+// A target hears it is under the item in the air before it is laid out in a
+// frame, for what draws under it; once the item leaves it, it no longer is.
+func TestSortCarryHoversATargetBeforeItIsLaidOut(t *testing.T) {
+	r := newListRig()
+	r.press(onA1)
+	r.move(a1Lifted, onHeadB, onHeadB.Add(image.Pt(1, 0)))
+	if !r.carry.Hovers("B") || r.carry.Hovers("A") {
+		t.Errorf("hovers B %v, A %v; want B alone", r.carry.Hovers("B"), r.carry.Hovers("A"))
+	}
+	r.release(onHeadB)
+	if r.carry.Hovers("B") {
+		t.Error("B still hovered with nothing in the air")
+	}
+}

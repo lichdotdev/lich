@@ -403,6 +403,14 @@ func (c *SortCarry) Over() string {
 	return ""
 }
 
+// Hovers reports whether target id is under the item in the air, as of the
+// pointer's last move over it: unlike Over, it reads true before the target
+// is laid out this frame, for what is drawn under it.
+func (c *SortCarry) Hovers(id string) bool {
+	t := c.targets[id]
+	return c.carrying != "" && t != nil && t.hovered
+}
+
 // Target lays out w as the drop target id. Lay out only a target that takes
 // Carrying(), as a header wears FILE_TARGET_ATTRIBUTE only while it does.
 func (c *SortCarry) Target(gtx C, id string, w layout.Widget) D {

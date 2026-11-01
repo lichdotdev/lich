@@ -42,6 +42,8 @@ type sidebarRail struct {
 	// menu reads.
 	view sidebarView
 	foot railFooter
+	// sorts is each block's drag, by block key.
+	sorts map[string]*railSort
 }
 
 // layout draws the rail as an island like the open sidebar, its content on
@@ -59,7 +61,8 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 	gtx.Constraints = layout.Exact(size)
 	ui.Fill(gtx, th.Sidebar, ui.RadiusLG)
 	th = th.On(th.Sidebar)
-	r.view = m.sidebarBlocks(sidebarFilter{})
+	s.header.clicks(gtx)
+	r.view = m.sidebarBlocks(s.header.filter())
 	blocks := r.view.blocks
 	layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
@@ -208,13 +211,18 @@ func railLines(items []railItem) {
 }
 
 func (r *sidebarRail) sessions(gtx C, th *ui.Theme, s *sidebar, blocks []blockView, active string, act *sidebarAction) D {
-	items := r.move(gtx, railItems(blocks))
+	groups := railGroups(r.move(gtx, railItems(blocks)))
+	byKey := make(map[string]blockView, len(blocks))
+	for _, b := range blocks {
+		byKey[b.key] = b
+	}
 	// The thumb floats over the list: a reserved gutter would leave 32px cells
 	// a narrower column, cutting them off on the right.
 	list := th.ScrollArea(&r.list)
 	list.AnchorStrategy = material.Overlay
-	return list.Layout(gtx, len(items), func(gtx C, i int) D {
-		return r.item(gtx, th, s, items[i], active, act)
+	return list.Layout(gtx, len(groups), func(gtx C, i int) D {
+		b, known := byKey[groups[i].block]
+		return r.group(gtx, th, s, groups[i], b, known, active, act)
 	})
 }
 

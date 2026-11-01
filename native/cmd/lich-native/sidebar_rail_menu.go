@@ -26,7 +26,7 @@ func (r *sidebarRail) entries(th *ui.Theme, s *sidebar, it railItem, act *sideba
 		return nil
 	}
 	b := r.view.blocks[i]
-	f := blockFrame{view: r.view, act: act}
+	f := blockFrame{view: r.view, act: act, filtering: s.header.filter().narrows()}
 	hooks := blockMenuHooks{newFolder: s.askFolderName}
 	switch {
 	case it.kind == railCard:

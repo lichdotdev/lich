@@ -204,7 +204,7 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b blockView, f blockFrame) D {
 	// it is where a carried card would go.
 	inner := body
 	switch {
-	case s.carry.Carrying() != "" && s.carry.Over() == b.key:
+	case s.carry.Hovers(b.key):
 		body = func(gtx C) D { return dropTray(gtx, th, b.color, inner) }
 	case b.kind == blockFolder && !b.collapsed:
 		body = func(gtx C) D { return folderTray(gtx, th, b.color, inner) }
