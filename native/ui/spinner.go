@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"sync/atomic"
 	"time"
 
 	"gioui.org/f32"
@@ -21,16 +22,34 @@ const spinLap = time.Second
 
 // LoopFrame is how often a looping animation (a spinner, the busy ring, a
 // running service's beat) redraws. Every frame repaints the whole window, so
-// this is the window's rate while one runs: 30fps reads as smooth on a glyph,
-// where the display's rate cost 60% of a laptop GPU (measured 2026-11-01).
-const LoopFrame = 33 * time.Millisecond
+// this is the window's rate while one runs: 24fps, film's rate, reads as
+// smooth on a glyph, where the display's rate cost 60% of a laptop GPU
+// (measured 2026-11-01).
+const LoopFrame = 42 * time.Millisecond
+
+// LoopBeat is when the next looping frame is due, shared by every Theme of a
+// window: output that arrives before it waits for that frame instead of
+// asking for one of its own.
+type LoopBeat struct {
+	due atomic.Int64
+}
+
+// Pending reports whether a looping frame is due after now.
+func (b *LoopBeat) Pending(now time.Time) bool {
+	return b != nil && b.due.Load() > now.UnixNano()
+}
 
 // Loop asks for a looping animation's next frame, LoopFrame from now, unless
 // the window is Still: then the animation holds the frame it stands at.
 func (th *Theme) Loop(gtx layout.Context) {
-	if !th.Still {
-		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(LoopFrame)})
+	if th.Still {
+		return
 	}
+	at := gtx.Now.Add(LoopFrame)
+	if th.Beat != nil {
+		th.Beat.due.Store(at.UnixNano())
+	}
+	gtx.Execute(op.InvalidateCmd{At: at})
 }
 
 var icSpinner = icons.Lucide("loader-circle")

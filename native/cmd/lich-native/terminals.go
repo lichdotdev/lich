@@ -105,9 +105,16 @@ type terminals struct {
 	client     *backend.Client
 	stream     *backend.Stream
 	invalidate func()
-	renderer   string
-	family     string
-	size       unit.Sp
+	// beat is the window's looping frame: output that lands while one is
+	// due rides it, so a busy ring and a streaming agent cost one frame
+	// rate, not two.
+	beat *ui.LoopBeat
+	// sent is when the window last wrote to a PTY. What comes back in the
+	// next echoWindow is the answer to a keystroke, drawn at once.
+	sent     atomic.Int64
+	renderer string
+	family   string
+	size     unit.Sp
 	// unzoomed is the window's own scale, which terminals draw at whatever
 	// the interface zoom: a zoom step never changes a grid's cols×rows.
 	unzoomed unit.Metric
@@ -193,9 +200,19 @@ func (ts *terminals) onOutput(id string, data []byte) {
 		return
 	}
 	t.vt.Write(data)
-	if shown {
+	if shown && !ts.rides(time.Now()) {
 		ts.invalidate()
 	}
+}
+
+// echoWindow is how long after a write to the PTY its output still counts as
+// the echo of that write.
+const echoWindow = 200 * time.Millisecond
+
+// rides reports whether output at now can wait for the looping frame already
+// due, which is never while a keystroke's echo may be in it.
+func (ts *terminals) rides(now time.Time) bool {
+	return ts.beat.Pending(now) && now.UnixNano()-ts.sent.Load() > int64(echoWindow)
 }
 
 // onReplay seeds a terminal attach left waiting with its session's tail.
@@ -232,6 +249,7 @@ func (ts *terminals) send(id string, b []byte) {
 	if t != nil && t.readOnly.Load() {
 		return
 	}
+	ts.sent.Store(time.Now().UnixNano())
 	if err := stream.Send(context.Background(), id, b); err != nil {
 		log.Printf("send to %s: %v", id, err)
 	}

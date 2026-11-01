@@ -102,6 +102,9 @@ type Theme struct {
 	// Still is set while the window has no focus: looping animations hold
 	// their frame instead of repainting a window nobody is looking at.
 	Still bool
+	// Beat is the window's, kept across On: where Loop records the frame
+	// it asked for.
+	Beat *LoopBeat
 }
 
 // On returns a copy of th drawing on surface, for the children of a widget
