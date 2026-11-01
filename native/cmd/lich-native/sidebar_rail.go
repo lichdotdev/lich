@@ -34,10 +34,9 @@ type sidebarRail struct {
 	foot   railFooter
 }
 
-// layout is `flex w-8 flex-col items-center gap-1 pb-1.5`: expand, a new
-// session of the default provider, then the open sidebar's tree in one
-// column (railItems). The pb-1.5 is the window's gutter around the sidebar,
-// as the open one's mb-1.5 is.
+// layout draws the rail as an island like the open sidebar, its content on
+// the island's 8px edge: expand where the open header's collapse sits, the
+// open sidebar's tree in one column (railItems), then the footer.
 func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active string) (D, sidebarAction) {
 	var act sidebarAction
 	if r.expand.Clicked(gtx) {
@@ -46,33 +45,47 @@ func (r *sidebarRail) layout(gtx C, th *ui.Theme, s *sidebar, m *model, active s
 	if r.add.Clicked(gtx) {
 		act.launch = launchRequest{kind: m.newSessionKind()}
 	}
-	width := gtx.Dp(ui.Space(8))
-	gtx.Constraints = layout.Exact(image.Pt(width, gtx.Constraints.Max.Y))
-	button := func(click *widget.Clickable, ic *icons.Icon, hint, glyph string) layout.FlexChild {
-		return layout.Rigid(func(gtx C) D {
-			tip := th.Tooltip(s.root, s.hint("rail:"+hint), hint)
-			tip.Side = ui.SideRight
-			return tip.Layout(gtx, sideButton{click: click, icon: ic, hover: railHoverFill, morph: &s.morph, glyph: glyph}.layout(th))
-		})
-	}
+	size := image.Pt(gtx.Dp(railWidth), gtx.Constraints.Max.Y)
+	gtx.Constraints = layout.Exact(size)
+	ui.Fill(gtx, th.Sidebar, ui.RadiusLG)
+	th = th.On(th.Sidebar)
 	blocks := m.sidebarBlocks(sidebarFilter{}).blocks
-	d := layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
-		button(&r.expand, icExpand, i18n.T("sidebar.sidebarRail.expand"), glyphToggle),
-		ui.VGap(1),
-		button(&r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), glyphNew),
-		ui.VGap(1),
-		layout.Flexed(1, func(gtx C) D { return r.sessions(gtx, th, s, blocks, active, &act) }),
-		layout.Rigid(func(gtx C) D { return r.footer(gtx, th, s, m, &act) }),
-	)
-	return d, act
+	layout.UniformInset(ui.Space(2)).Layout(gtx, func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx,
+			// Expand sits in a row of the open header's height, so it lands
+			// where collapse sits in the open sidebar.
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(railHeaderRow)))
+				return layout.Center.Layout(gtx, r.button(th, s, &r.expand, icExpand, i18n.T("sidebar.sidebarRail.expand"), glyphToggle))
+			}),
+			ui.VGap(2),
+			layout.Flexed(1, func(gtx C) D { return r.sessions(gtx, th, s, blocks, active, &act) }),
+			layout.Rigid(func(gtx C) D { return r.footer(gtx, th, s, m, &act) }),
+		)
+	})
+	return D{Size: size}, act
+}
+
+// button is one of the rail's buttons under its hint.
+func (r *sidebarRail) button(th *ui.Theme, s *sidebar, click *widget.Clickable, ic *icons.Icon, hint, glyph string) layout.Widget {
+	return func(gtx C) D {
+		tip := th.Tooltip(s.root, s.hint("rail:"+hint), hint)
+		tip.Side = ui.SideRight
+		return tip.Layout(gtx, sideButton{click: click, icon: ic, hover: railHoverFill, morph: &s.morph, glyph: glyph}.layout(th))
+	}
 }
 
 // railRow is a rail row's height, a tree row's: its node and the row's
 // padding, so a ring sits where it sits in the open sidebar.
 var (
-	railRow     = 2*sessionTreeRingR + 2*ui.Space(1.5)
-	railChildR  = unit.Dp(8) // a child's node: smaller, on its mother's line
-	railTrayGap = ui.Space(1.5)
+	// railWidth is the rail's island: a 32px column inside the island's
+	// 8px edge.
+	railWidth = ui.Space(8) + 2*ui.Space(2)
+	// railHeaderRow is the open sidebar's header row (labelFace).
+	railHeaderRow = ui.Space(9)
+	railRow       = 2*sessionTreeRingR + 2*ui.Space(1.5)
+	railChildR    = unit.Dp(8) // a child's node: smaller, on its mother's line
+	railTrayGap   = ui.Space(1.5)
 )
 
 // railKind is what a rail row draws.

@@ -167,12 +167,12 @@ func lerpInt(a, b int, p float32) int {
 	return a + int(math.Round(float64(float32(b-a)*p)))
 }
 
-// boxWidth is a shape's width: the panel's stored width, or the rail's w-8.
+// boxWidth is a shape's width: the panel's stored width, or the rail's island.
 func (s *sidebar) boxWidth(gtx C, open bool) int {
 	if open {
 		return gtx.Dp(unit.Dp(s.widthRem * remDp))
 	}
-	return gtx.Dp(ui.Space(8))
+	return gtx.Dp(railWidth)
 }
 
 // column is the sidebar's width this frame and how open it is, 0 for the

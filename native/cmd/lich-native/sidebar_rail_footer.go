@@ -33,18 +33,21 @@ func (r *sidebarRail) holdsKeys() bool {
 	return r.foot.servicesPanel.Opened() || r.foot.profileMenu.Opened()
 }
 
-// footer lays the rail's footer out: a hairline, Services when a project is
-// on screen, and the profile when its provider has two logins to pick from.
+// footer lays the rail's footer out: a hairline, a new session, then, with a
+// project on screen, Services and the profile when its provider has two
+// logins to pick from. New session sits here, not at the top, so the rail's
+// tree starts where the open sidebar's does.
 func (r *sidebarRail) footer(gtx C, th *ui.Theme, s *sidebar, m *model, act *sidebarAction) D {
-	p, ok := m.project()
-	if !ok {
-		return D{}
+	children := []layout.FlexChild{
+		layout.Rigid(func(gtx C) D { return railHairline(gtx, th) }),
+		layout.Rigid(r.button(th, s, &r.add, icPlus, i18n.T("sidebar.sidebarRail.newSession"), glyphNew)),
 	}
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return railHairline(gtx, th) })}
-	list, console := m.services.of(p.ID), m.consoleShown()
-	children = append(children, layout.Rigid(func(gtx C) D { return r.servicesButton(gtx, th, s, p.ID, list, console, act) }))
-	if f, ok := m.focusedProfile(); ok {
-		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D { return r.profileButton(gtx, th, s, m, f, act) }))
+	if p, ok := m.project(); ok {
+		list, console := m.services.of(p.ID), m.consoleShown()
+		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D { return r.servicesButton(gtx, th, s, p.ID, list, console, act) }))
+		if f, ok := m.focusedProfile(); ok {
+			children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D { return r.profileButton(gtx, th, s, m, f, act) }))
+		}
 	}
 	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Middle}.Layout(gtx, children...)
 }
