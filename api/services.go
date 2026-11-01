@@ -1,16 +1,17 @@
 package api
 
 var (
-	ServicesList      = define[None, []Service]("services.List")
-	ServicesSave      = define[SaveServiceOptions, Service]("services.Save")
-	ServicesDelete    = define[ServiceIDOptions, None]("services.Delete")
-	ServicesStart     = define[ServiceIDOptions, None]("services.Start")
-	ServicesStop      = define[ServiceIDOptions, None]("services.Stop")
-	ServicesForceStop = define[ServiceIDOptions, None]("services.ForceStop")
-	ServicesRestart   = define[ServiceIDOptions, None]("services.Restart")
-	ServicesStartAll  = define[ProjectIDOptions, None]("services.StartAll")
-	ServicesStopAll   = define[ProjectIDOptions, None]("services.StopAll")
-	ServicesOutput    = define[ServiceIDOptions, []byte]("services.Output")
+	ServicesList       = define[None, []Service]("services.List")
+	ServicesSave       = define[SaveServiceOptions, Service]("services.Save")
+	ServicesDelete     = define[ServiceIDOptions, None]("services.Delete")
+	ServicesStart      = define[ServiceIDOptions, None]("services.Start")
+	ServicesStop       = define[ServiceIDOptions, None]("services.Stop")
+	ServicesForceStop  = define[ServiceIDOptions, None]("services.ForceStop")
+	ServicesRestart    = define[ServiceIDOptions, None]("services.Restart")
+	ServicesStartAll   = define[ProjectIDOptions, None]("services.StartAll")
+	ServicesStopAll    = define[ProjectIDOptions, None]("services.StopAll")
+	ServicesOutput     = define[ServiceIDOptions, []byte]("services.Output")
+	ServicesLiveOutput = define[ServiceIDOptions, []byte]("services.LiveOutput")
 )
 
 // The states a Service is in. A service that is not running is stopped when it

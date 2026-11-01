@@ -142,6 +142,15 @@ func (s *Service) output(id string) []byte {
 	return r.tail
 }
 
+// liveOutput is what service id has printed so far in the run still going;
+// nil when it is not running.
+func (s *Service) liveOutput(id string) []byte {
+	if !s.up(id) {
+		return nil
+	}
+	return s.term.ServiceOutput(terminalPrefix + id)
+}
+
 // Running is every service whose process is up, stopping ones included.
 func (s *Service) Running() []api.Service {
 	list, err := s.list()

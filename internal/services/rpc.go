@@ -47,3 +47,9 @@ func (s *Service) StopAll(_ context.Context, opts api.ProjectIDOptions) (api.Non
 func (s *Service) Output(_ context.Context, opts api.ServiceIDOptions) ([]byte, error) {
 	return s.output(opts.ID), nil
 }
+
+// LiveOutput is what a running service has printed so far, read at the moment
+// of the call: nil once it is not running, when Output has its last run.
+func (s *Service) LiveOutput(_ context.Context, opts api.ServiceIDOptions) ([]byte, error) {
+	return s.liveOutput(opts.ID), nil
+}

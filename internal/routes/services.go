@@ -18,4 +18,5 @@ func Services(d *rpc.Handler, s *services.Service) {
 	rpc.Handle(d, api.ServicesStartAll, s.StartAll)
 	rpc.Handle(d, api.ServicesStopAll, s.StopAll)
 	rpc.Handle(d, api.ServicesOutput, s.Output)
+	rpc.Handle(d, api.ServicesLiveOutput, s.LiveOutput)
 }
