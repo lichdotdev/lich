@@ -192,3 +192,23 @@ func TestSonnerIconsKeepTheirEvenOddHoles(t *testing.T) {
 		}
 	}
 }
+
+// An icon's paths are recorded once per scale and handed out again: the
+// renderer keeps a path's vertices only while it is the same recording.
+func TestIconPathsAreRecordedOncePerScale(t *testing.T) {
+	ic := Lucide("terminal")
+	first := ic.at(1)
+	if len(first) != len(ic.shapes) {
+		t.Fatalf("got %d paths for %d shapes", len(first), len(ic.shapes))
+	}
+	for i, again := range ic.at(1) {
+		if again != first[i] {
+			t.Errorf("shape %d at the same scale came back as a new recording", i)
+		}
+	}
+	for i, other := range ic.at(2) {
+		if other == first[i] {
+			t.Errorf("shape %d at another scale reused the first scale's path", i)
+		}
+	}
+}

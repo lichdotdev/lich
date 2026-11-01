@@ -30,6 +30,7 @@ import (
 
 	"gioui.org/f32"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
@@ -45,6 +46,13 @@ const lucideStroke = 2
 // Icon is a parsed icon, drawn at any size in any color.
 type Icon struct {
 	shapes []shape
+	// paths holds the shapes' paths at each scale drawn so far, recorded
+	// once in ops, which is never reset: the renderer keys its vertex cache
+	// on where a path was recorded, so a path rebuilt every frame is
+	// re-stroked and re-uploaded every frame, and one recorded once is kept
+	// on the GPU. Icons are drawn from the window's goroutine alone.
+	ops   op.Ops
+	paths map[float32][]clip.PathSpec
 }
 
 //go:embed lucide/icon-nodes.json
@@ -152,12 +160,13 @@ func fillOnly(d string) (*Icon, error) {
 func (ic *Icon) Layout(gtx layout.Context, size unit.Dp, c color.NRGBA) layout.Dimensions {
 	px := gtx.Dp(size)
 	scale := float32(px) / viewBox
-	for _, sh := range ic.shapes {
+	paths := ic.at(scale)
+	for i, sh := range ic.shapes {
 		if sh.fill {
-			paint.FillShape(gtx.Ops, c, clip.Outline{Path: sh.spec(gtx, scale)}.Op())
+			paint.FillShape(gtx.Ops, c, clip.Outline{Path: paths[i]}.Op())
 		}
 		if sh.stroke {
-			paint.FillShape(gtx.Ops, c, clip.Stroke{Path: sh.spec(gtx, scale), Width: lucideStroke * scale}.Op())
+			paint.FillShape(gtx.Ops, c, clip.Stroke{Path: paths[i], Width: lucideStroke * scale}.Op())
 		}
 	}
 	return layout.Dimensions{Size: image.Pt(px, px)}
@@ -167,15 +176,31 @@ func (ic *Icon) Layout(gtx layout.Context, size unit.Dp, c color.NRGBA) layout.D
 // the fill-current that makes a Lucide glyph read as on, like a set pin.
 func (ic *Icon) LayoutFilled(gtx layout.Context, size unit.Dp, c color.NRGBA) layout.Dimensions {
 	scale := float32(gtx.Dp(size)) / viewBox
-	for _, sh := range ic.shapes {
-		paint.FillShape(gtx.Ops, c, clip.Outline{Path: sh.spec(gtx, scale)}.Op())
+	for _, path := range ic.at(scale) {
+		paint.FillShape(gtx.Ops, c, clip.Outline{Path: path}.Op())
 	}
 	return ic.Layout(gtx, size, c)
 }
 
-func (sh shape) spec(gtx layout.Context, scale float32) clip.PathSpec {
+// at is the shapes' paths at scale, recorded on first use.
+func (ic *Icon) at(scale float32) []clip.PathSpec {
+	if paths, ok := ic.paths[scale]; ok {
+		return paths
+	}
+	if ic.paths == nil {
+		ic.paths = map[float32][]clip.PathSpec{}
+	}
+	paths := make([]clip.PathSpec, len(ic.shapes))
+	for i, sh := range ic.shapes {
+		paths[i] = sh.spec(&ic.ops, scale)
+	}
+	ic.paths[scale] = paths
+	return paths
+}
+
+func (sh shape) spec(ops *op.Ops, scale float32) clip.PathSpec {
 	var p clip.Path
-	p.Begin(gtx.Ops)
+	p.Begin(ops)
 	for _, s := range sh.segs {
 		switch s.op {
 		case 'M':
