@@ -266,8 +266,8 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 		}
 		children = append(children, layout.Flexed(1, func(gtx C) D {
 			// The scroll column reaches into the padding up to the resize
-			// strip, so its scrollbar sits clear of the strip and its pr-2
-			// keeps the cards off it.
+			// strip, so its scrollbar sits clear of the strip, and the rows
+			// inside it end on the island's edge (blockList).
 			gtx.Constraints.Max.X += gtx.Dp(ui.Space(2)) - gtx.Dp(ui.ResizeWidth)
 			return s.blockList(gtx, on, view, active, &act)
 		}))

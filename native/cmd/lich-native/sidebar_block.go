@@ -107,7 +107,10 @@ func (s *sidebar) blockList(gtx C, th *ui.Theme, view sidebarView, active string
 	}))
 	d := s.scrollColumn(gtx, th).Layout(gtx, 1, func(gtx C, _ int) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
-		return layout.Inset{Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		// The column reaches into the panel's padding up to the resize strip
+		// (panel); the rows give that reach back, so they end on the island's
+		// 8px edge as they start on it.
+		return layout.Inset{Right: ui.Space(2) - ui.ResizeWidth}.Layout(gtx, func(gtx C) D {
 			d := layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 			if len(shown) > 0 {
 				d.Size.Y = max(d.Size.Y-gtx.Dp(ui.Space(1.5)), 0)
