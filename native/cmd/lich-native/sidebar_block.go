@@ -258,6 +258,7 @@ var cardGap = unit.Dp(0)
 // trees (sessionRows), drawn from the shown sessions so a closing card keeps
 // its place while it leaves.
 func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame, dragEnded bool) D {
+	b = carriedFold(b, st.cards.Dragging())
 	shown, _ := st.closing.shown(b.sessions, gtx.Now)
 	live := blockRows(b, b.sessions)
 	switch {
@@ -299,7 +300,7 @@ func (s *sidebar) blockCards(gtx C, th *ui.Theme, b blockView, st *blockState, f
 	dragging := s.dragLinks(gtx, st, keys, byKey)
 	// A card carried out of the sidebar goes back to its slot; the window
 	// draws what follows the pointer over the panes (drawCarried).
-	list := ui.SortList{Leaves: st.cards.Carry != nil}
+	list := ui.SortList{Leaves: st.cards.Carry != nil, Snap: treeSnap(b, keys)}
 	d := st.cards.List(gtx, list, keys, func(gtx C, i int) D {
 		return s.blockRow(gtx, th, st, b, byKey[keys[i]], tree, f, dragEnded)
 	})

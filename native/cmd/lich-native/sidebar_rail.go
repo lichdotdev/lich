@@ -211,11 +211,15 @@ func railLines(items []railItem) {
 }
 
 func (r *sidebarRail) sessions(gtx C, th *ui.Theme, s *sidebar, blocks []blockView, active string, act *sidebarAction) D {
-	groups := railGroups(r.move(gtx, railItems(blocks)))
 	byKey := make(map[string]blockView, len(blocks))
-	for _, b := range blocks {
-		byKey[b.key] = b
+	carried := make([]blockView, len(blocks))
+	for i, b := range blocks {
+		if st, ok := r.sorts[b.key]; ok {
+			b = carriedFold(b, st.cards.Dragging())
+		}
+		carried[i], byKey[b.key] = b, b
 	}
+	groups := railGroups(r.move(gtx, railItems(carried)))
 	// The thumb floats over the list: a reserved gutter would leave 32px cells
 	// a narrower column, cutting them off on the right.
 	list := th.ScrollArea(&r.list)

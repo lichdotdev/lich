@@ -90,7 +90,7 @@ func (r *sidebarRail) group(gtx C, th *ui.Theme, s *sidebar, g railGroup, b bloc
 		for _, it := range lead[gap:] {
 			children = append(children, layout.Rigid(func(gtx C) D { return r.head(gtx, th, s, it, b, known, active, act) }))
 		}
-		children = append(children, layout.Rigid(func(gtx C) D { return r.rows(gtx, th, s, st, lead[gap:], rows, active, act) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return r.rows(gtx, th, s, st, b, lead[gap:], rows, active, act) }))
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 	d := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -129,7 +129,7 @@ func (r *sidebarRail) head(gtx C, th *ui.Theme, s *sidebar, it railItem, b block
 // rows lays out a block's rows as a sortable list: each card picks up, the
 // rows are linked where the drag shows them, and the slot the card in the
 // air would land in draws its node dashed.
-func (r *sidebarRail) rows(gtx C, th *ui.Theme, s *sidebar, st *railSort, lead, rows []railItem, active string, act *sidebarAction) D {
+func (r *sidebarRail) rows(gtx C, th *ui.Theme, s *sidebar, st *railSort, b blockView, lead, rows []railItem, active string, act *sidebarAction) D {
 	dragging := st.cards.Dragging()
 	st.drag.update(gtx.Now, dragging)
 	byID := railDragLines(lead, rows, dragging, st.cards.Over())
@@ -141,7 +141,7 @@ func (r *sidebarRail) rows(gtx C, th *ui.Theme, s *sidebar, st *railSort, lead, 
 		ids[i] = it.id
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	d := st.cards.List(gtx, ui.SortList{Leaves: st.cards.Carry != nil}, ids, func(gtx C, i int) D {
+	d := st.cards.List(gtx, ui.SortList{Leaves: st.cards.Carry != nil, Snap: treeSnap(b, ids)}, ids, func(gtx C, i int) D {
 		it := byID[ids[i]]
 		if st.drag.loose(it.id, gtx.Now) {
 			// The card in the air leaves its lines and its tray to its slot.

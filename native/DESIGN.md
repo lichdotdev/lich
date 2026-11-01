@@ -301,7 +301,8 @@ at once, whatever its row is still doing.
 - **A dragged card lets go of its line and joins where it lands.** As it lifts, its elbow runs back to its
   parent's line; while it is in the air, the rows are linked in the order the list shows them, and its slot
   draws a dashed elbow and ring; let go, it settles and the line draws back to its ring
-  (`sidebar_drag_links.go`). A block the card would go to lights its whole tray, a border in its color, in
+  (`sidebar_drag_links.go`). A mother in the air folds over her children, and the slot only stops where
+  the tree will keep the card (`treeSnap`). A block the card would go to lights its whole tray, a border in its color, in
   the open sidebar and the rail alike.
 - **Other lists** enter and leave with `ui.Presence`: 160ms in, 180ms out, from a 0.6 scale at the top
   edge. A fold is `ui.Collapse`, 200ms.

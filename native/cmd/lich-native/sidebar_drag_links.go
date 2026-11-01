@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"maps"
 	"math"
 	"slices"
 	"time"
@@ -239,4 +240,72 @@ func (s *sidebar) dragLinks(gtx C, st *blockState, keys []string, byKey map[stri
 		gtx.Execute(op.InvalidateCmd{})
 	}
 	return dragging
+}
+
+// carriedFold is b with the mother in the air folded over her children, so
+// they go with her: the list moves her row alone, and they open under her
+// where she lands.
+func carriedFold(b blockView, dragging string) blockView {
+	if dragging == "" || b.motherFolds[dragging] {
+		return b
+	}
+	folds := maps.Clone(b.motherFolds)
+	if folds == nil {
+		folds = map[string]bool{}
+	}
+	folds[dragging] = true
+	b.motherFolds = folds
+	return b
+}
+
+// treeSnap keeps a drag in b's list of rows keys to the slots its tree keeps:
+// one where the rows the drop leaves stand in the order the list showed
+// while the card was in the air. A child stays under her mother and a
+// session under its checkout, whatever the stored order says. Off such a
+// slot, the drag takes the nearest one, towards its own on a tie.
+func treeSnap(b blockView, keys []string) func(a, o int) int {
+	legal := func(a, o int) bool {
+		if a == o {
+			return true
+		}
+		ids := arrayMove(blockIDs(b), keys[a], keys[o])
+		byID := make(map[string]sessionView, len(b.sessions))
+		for _, sv := range b.sessions {
+			byID[sv.ID] = sv
+		}
+		ordered := make([]sessionView, 0, len(ids))
+		for _, id := range ids {
+			ordered = append(ordered, byID[id])
+		}
+		got := map[string]int{}
+		for i, r := range blockRows(b, ordered) {
+			got[r.key] = i
+		}
+		last := -1
+		for _, k := range arrayMove(keys, keys[a], keys[o]) {
+			at, ok := got[k]
+			if !ok {
+				continue
+			}
+			if at < last {
+				return false
+			}
+			last = at
+		}
+		return true
+	}
+	return func(a, o int) int {
+		toward := 1
+		if a < o {
+			toward = -1
+		}
+		for d := 0; d < len(keys); d++ {
+			for _, c := range []int{o + toward*d, o - toward*d} {
+				if c >= 0 && c < len(keys) && legal(a, c) {
+					return c
+				}
+			}
+		}
+		return a
+	}
 }

@@ -282,3 +282,26 @@ func refile(sessions []backend.Session, picked func(backend.Session) bool, folde
 	}
 	return next, true
 }
+
+// folderTint is the color a folder wears (its cards' shared one) and the
+// sessions of ids filed into it that must take it, so it keeps wearing it:
+// a folder's color is its cards', and one card without it would take it off.
+func folderTint(sessions []backend.Session, ids []string, folder string) (string, []string) {
+	if folder == "" {
+		return "", nil
+	}
+	members := slices.DeleteFunc(slices.Clone(sessions), func(s backend.Session) bool {
+		return s.Folder != folder || slices.Contains(ids, s.ID)
+	})
+	tint := sharedColor(members)
+	if tint == "" {
+		return "", nil
+	}
+	var repaint []string
+	for _, s := range sessions {
+		if slices.Contains(ids, s.ID) && s.Color != tint {
+			repaint = append(repaint, s.ID)
+		}
+	}
+	return tint, repaint
+}

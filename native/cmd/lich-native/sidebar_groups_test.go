@@ -282,3 +282,23 @@ func joinBy(sessions []backend.Session, of func(backend.Session) string) string 
 	}
 	return out
 }
+
+// Filing a card with no color into a pink folder took the folder's color
+// off: a folder wears its cards' shared color, and the newcomer had none.
+func TestFilingIntoAColoredFolderPaintsTheCard(t *testing.T) {
+	sessions := []backend.Session{
+		{ID: "a", Folder: "Releases", Color: "pink"}, {ID: "b", Folder: "Releases", Color: "pink"},
+		{ID: "plain"}, {ID: "blue", Color: "blue"}, {ID: "pinked", Color: "pink"},
+	}
+	tint, repaint := folderTint(sessions, []string{"plain", "blue", "pinked"}, "Releases")
+	if tint != "pink" || !slices.Equal(repaint, []string{"plain", "blue"}) {
+		t.Errorf("tint %q repaint %v, want pink on plain and blue", tint, repaint)
+	}
+	if tint, repaint := folderTint(sessions, []string{"plain"}, ""); tint != "" || repaint != nil {
+		t.Errorf("unfiling: tint %q repaint %v, want nothing painted", tint, repaint)
+	}
+	mixed := append(slices.Clone(sessions), backend.Session{ID: "c", Folder: "Releases", Color: "blue"})
+	if tint, repaint := folderTint(mixed, []string{"plain"}, "Releases"); tint != "" || repaint != nil {
+		t.Errorf("a folder of mixed colors: tint %q repaint %v, want nothing painted", tint, repaint)
+	}
+}

@@ -40,6 +40,10 @@ type listRig struct {
 	// cards out of the frame, as a sidebar switched to another project does.
 	leaves bool
 	hideA  bool
+	// snap is the inner lists' SortList.Snap.
+	snap func(a, o int) int
+	// tick moves the clock a frame on every frame, as a window's does.
+	tick bool
 }
 
 const listRow = 20
@@ -62,6 +66,9 @@ func newListRig() *listRig {
 }
 
 func (r *listRig) frame() {
+	if r.tick {
+		r.now = r.now.Add(16 * time.Millisecond)
+	}
 	var ops op.Ops
 	gtx := layout.Context{Ops: &ops, Now: r.now, Source: r.router.Source(), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(300, 300)}}
 	r.readProbes(gtx)
@@ -95,7 +102,7 @@ func (r *listRig) block(gtx C, id string) D {
 			if id == "A" && r.hideA {
 				return D{}
 			}
-			return in.List(gtx, SortList{Leaves: r.leaves}, r.cards[id], func(gtx C, i int) D { return r.card(gtx, in, r.cards[id][i]) })
+			return in.List(gtx, SortList{Leaves: r.leaves, Snap: r.snap}, r.cards[id], func(gtx C, i int) D { return r.card(gtx, in, r.cards[id][i]) })
 		}),
 	)
 }
@@ -387,4 +394,40 @@ func TestSortCarryHoversATargetBeforeItIsLaidOut(t *testing.T) {
 	if r.carry.Hovers("B") {
 		t.Error("B still hovered with nothing in the air")
 	}
+}
+
+// A snap that keeps a1 off a2's slot lands it in a3's instead, and the list
+// makes room there.
+func TestSortListSnapsTheSlotTheItemLandsIn(t *testing.T) {
+	r := newListRig()
+	r.snap = func(a, o int) int {
+		if o == 1 {
+			return 2
+		}
+		return o
+	}
+	r.press(onA1)
+	r.move(a1Lifted, image.Pt(20, 52))
+	if got := r.inner["A"].Over(); got != "a3" {
+		t.Errorf("over %q, want a3: a2's slot is snapped past", got)
+	}
+	r.release(image.Pt(20, 52))
+	r.want(t, SortDrop{ID: "a1", Over: "a3"})
+}
+
+// A block above the card's own that also takes it lays its target out
+// before the card's list hears the release, in the same frame: the header
+// the card was let go over, laid out after, was taken for one no longer
+// laid out, and the card went back to its slot instead of being filed.
+func TestSortCarryDropsOnATargetLaidOutAfterTheSource(t *testing.T) {
+	r := newListRig()
+	r.tick = true
+	r.inner["C"] = &Sortable{Carry: &r.carry}
+	r.blocks = append(r.blocks, "C")
+	r.frame()
+	onB1, onHeadC := image.Pt(20, 110), image.Pt(70, 130)
+	r.press(onB1)
+	r.move(onB1.Add(image.Pt(0, 6)), onHeadC, onHeadC.Add(image.Pt(1, 0)))
+	r.release(onHeadC)
+	r.want(t, SortDrop{ID: "b1", Over: "C", Carried: true})
 }

@@ -60,3 +60,55 @@ func TestACarriedCardLetsGoOfItsLineAndJoinsWhereItLands(t *testing.T) {
 		t.Errorf("cut at the join's end = %v moving %v, want the line whole and still", got, d.moving(end))
 	}
 }
+
+func snapBlock() blockView {
+	return blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{
+		treeSession("mother", "", "/repo"), treeSession("child", "mother", "/repo"), treeSession("solo", "", "/repo"),
+	}}
+}
+
+// Dragged between a mother and her child, a session showed the child under
+// it while in the air, then landed after her: the tree keeps a child under
+// its mother whatever the stored order says. The slot snaps to one the tree
+// keeps.
+func TestADragOnlyLandsWhereTheTreeKeepsIt(t *testing.T) {
+	b := snapBlock()
+	keys := treeKeys(blockRows(b, b.sessions))
+	snap := treeSnap(b, keys)
+	if got := snap(2, 1); got != 2 {
+		t.Errorf("solo over the child snaps to %d, want 2: between mother and child is no slot", got)
+	}
+	if got := snap(2, 0); got != 0 {
+		t.Errorf("solo over the mother snaps to %d, want 0: above her is a slot", got)
+	}
+	if got := snap(1, 2); got != 1 {
+		t.Errorf("the child over solo snaps to %d, want 1: she stays under her mother", got)
+	}
+}
+
+// A mother in the air folds over her children, so they go with her: the list
+// moves her alone, and she lands past solo.
+func TestAMotherInTheAirTakesHerChildren(t *testing.T) {
+	b := carriedFold(snapBlock(), "mother")
+	rows := blockRows(b, b.sessions)
+	if got := rowShape(rows); !slices.Equal(got, []string{"1:mother", "1:solo."}) {
+		t.Fatalf("rows = %v, want the mother folded over her child", got)
+	}
+	if got := treeSnap(b, treeKeys(rows))(0, 1); got != 1 {
+		t.Errorf("the mother over solo snaps to %d, want 1", got)
+	}
+	own := snapBlock()
+	own.motherFolds = map[string]bool{}
+	carriedFold(own, "mother")
+	if len(own.motherFolds) != 0 {
+		t.Errorf("the block's own folds = %v, want them untouched", own.motherFolds)
+	}
+}
+
+func treeKeys(rows []sessionRow) []string {
+	keys := make([]string, len(rows))
+	for i, r := range rows {
+		keys[i] = r.key
+	}
+	return keys
+}
