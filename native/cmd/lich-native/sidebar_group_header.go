@@ -200,13 +200,11 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 	}
 	// The glyph sits in the ring's column and turns into the fold's chevron
 	// under the pointer, as a tree node does.
-	glyph, glyphColor := icMenuPin, fade(th.MutedForeground, headerTitleOpacity)
+	glyph, tint := icMenuPin, ""
 	if b.kind == blockFolder {
-		glyph = icGroupFolder
-		if c, ok := cardColors[b.color]; ok {
-			glyphColor = fade(c, 1)
-		}
+		glyph, tint = icGroupFolder, b.color
 	}
+	glyphColor := fade(headGlyphTone(th, tint))
 	if hovered {
 		glyph, glyphColor = foldIcon(!b.collapsed), fg
 	}
@@ -305,11 +303,17 @@ func (s *sidebar) mergeNote(gtx C, th *ui.Theme, b blockView, st *blockState, fo
 	})
 }
 
-// headGlyphColor is a group head's glyph at rest, as titleContent draws it:
-// a folder's color, or the title's muted tone.
-func headGlyphColor(th *ui.Theme, tint string) color.NRGBA {
+// headGlyphTone is a group head's glyph at rest, its color and the opacity
+// it draws at: a folder's color whole, or the title's muted tone.
+func headGlyphTone(th *ui.Theme, tint string) (color.NRGBA, float32) {
 	if c, ok := cardColors[tint]; ok {
-		return c
+		return c, 1
 	}
-	return th.Over(ui.Alpha(th.MutedForeground, headerTitleOpacity))
+	return th.MutedForeground, headerTitleOpacity
+}
+
+// headGlyphColor is headGlyphTone over the theme's surface, as the rail and
+// the morph draw the glyph.
+func headGlyphColor(th *ui.Theme, tint string) color.NRGBA {
+	return th.Over(ui.Alpha(headGlyphTone(th, tint)))
 }
