@@ -233,6 +233,7 @@ func (s *sidebar) shape(gtx C, th *ui.Theme, m *model, active string, open bool)
 	if !open {
 		return s.rail.layout(gtx, th, s, m, active)
 	}
+	s.rail.forget()
 	return s.panel(gtx, th, m, active)
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"maps"
 
 	"gioui.org/f32"
 	"gioui.org/layout"
@@ -26,6 +27,10 @@ var icExpand = icons.Lucide("panel-left")
 // same order reduced to its nodes in one column. It selects and it creates,
 // and that is all; everything else is the open sidebar's.
 type sidebarRail struct {
+	// motion is the rail's tree motion, as a block's is in the open sidebar,
+	// and last the rows it last drew, which a row leaving is drawn from.
+	motion treeMotion
+	last   map[string]railItem
 	expand widget.Clickable
 	add    widget.Clickable
 	list   widget.List
@@ -101,14 +106,19 @@ const (
 
 // railItem is one row of the rail's tree, the open sidebar's in one column.
 type railItem struct {
-	kind  railKind
-	key   string // the block or checkout row it stands for, which names its node
-	sv    *sessionView
-	path  string // railCheckout
-	facts checkoutFacts
-	glyph *icons.Icon // railHead
-	tint  string      // railHead: a folder's color
-	title string      // railHead: the folder's name, or Pinned
+	kind railKind
+	// id is the row among the rail's rows, and depth its level in its tree:
+	// what the rail's motion reads off them frame to frame.
+	id     string
+	depth  int
+	motion *rowMotion
+	key    string // the block or checkout row it stands for, which names its node
+	sv     *sessionView
+	path   string // railCheckout
+	facts  checkoutFacts
+	glyph  *icons.Icon // railHead
+	tint   string      // railHead: a folder's color
+	title  string      // railHead: the folder's name, or Pinned
 	// small is a child's node; up and down are the line to the node above
 	// and below in the same tree.
 	small, up, down bool
@@ -129,16 +139,16 @@ func railItems(blocks []blockView) []railItem {
 		// Blocks stand apart as the open sidebar's do, so every node keeps
 		// its height across the morph.
 		if len(items) > 0 {
-			items = append(items, railItem{kind: railGap})
+			items = append(items, railItem{kind: railGap, id: "gap:" + b.key})
 		}
 		first := len(items)
 		switch {
 		case folder:
-			items = append(items, railItem{kind: railHead, key: b.key, glyph: icGroupFolder, tint: b.color, title: b.title})
+			items = append(items, railItem{kind: railHead, id: "head:" + b.key, key: b.key, glyph: icGroupFolder, tint: b.color, title: b.title})
 		case b.kind == blockPinned:
-			items = append(items, railItem{kind: railHead, key: b.key, glyph: icMenuPin, title: b.title})
+			items = append(items, railItem{kind: railHead, id: "head:" + b.key, key: b.key, glyph: icMenuPin, title: b.title})
 		case b.under != "":
-			items = append(items, railItem{kind: railCheckout, key: b.key, path: b.under, facts: b.facts[b.under]})
+			items = append(items, railItem{kind: railCheckout, id: "checkout:" + b.key, key: b.key, path: b.under, facts: b.facts[b.under]})
 		}
 		if !b.folded {
 			items = append(items, railRows(b)...)
@@ -163,11 +173,11 @@ func railRows(b blockView) []railItem {
 	var items []railItem
 	for _, r := range blockRows(b, b.sessions) {
 		if r.kind == rowNestedCheckout {
-			items = append(items, railItem{kind: railCheckout, key: r.key, path: r.path, facts: b.facts[r.path], small: r.depth > base})
+			items = append(items, railItem{kind: railCheckout, id: r.key, depth: r.depth, key: r.key, path: r.path, facts: b.facts[r.path], small: r.depth > base})
 			continue
 		}
 		sv := r.sv
-		items = append(items, railItem{kind: railCard, sv: &sv, small: r.depth > base})
+		items = append(items, railItem{kind: railCard, id: r.key, depth: r.depth, sv: &sv, small: r.depth > base})
 	}
 	return items
 }
@@ -186,7 +196,7 @@ func railLines(items []railItem) {
 }
 
 func (r *sidebarRail) sessions(gtx C, th *ui.Theme, s *sidebar, blocks []blockView, active string, act *sidebarAction) D {
-	items := railItems(blocks)
+	items := r.move(gtx, railItems(blocks))
 	// The thumb floats over the list: a reserved gutter would leave 32px cells
 	// a narrower column, cutting them off on the right.
 	list := th.ScrollArea(&r.list)
@@ -196,8 +206,56 @@ func (r *sidebarRail) sessions(gtx C, th *ui.Theme, s *sidebar, blocks []blockVi
 	})
 }
 
-// item draws one rail row: its tray, its node, then its line.
+// move runs the rail's rows through the tree's motion: rows that came in
+// open, and rows that left are put back while they close, each with its
+// share of its run.
+func (r *sidebarRail) move(gtx C, items []railItem) []railItem {
+	byID := make(map[string]railItem, len(items)+len(r.last))
+	maps.Copy(byID, r.last)
+	rows := make([]sessionRow, len(items))
+	for i, it := range items {
+		rows[i] = sessionRow{key: it.id, depth: it.depth}
+		byID[it.id] = it
+	}
+	if r.motion.update(gtx.Now, rows) {
+		gtx.Execute(op.InvalidateCmd{})
+	}
+	placed := r.motion.place(gtx.Now, rows)
+	out := make([]railItem, 0, len(placed))
+	for _, row := range placed {
+		if it, ok := byID[row.key]; ok {
+			it.motion = row.motion
+			out = append(out, it)
+		}
+	}
+	r.last = make(map[string]railItem, len(items))
+	for _, it := range items {
+		r.last[it.id] = it
+	}
+	for _, run := range r.motion.runs {
+		for _, row := range run.rows {
+			if it, ok := byID[row.key]; ok {
+				r.last[row.key] = it
+			}
+		}
+	}
+	return out
+}
+
+// forget drops the rail's motion while the open sidebar is drawn: what
+// changed meanwhile is not news to the rail.
+func (r *sidebarRail) forget() { r.motion, r.last = treeMotion{}, nil }
+
+// item draws one rail row in its motion, if it has one.
 func (r *sidebarRail) item(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
+	if it.motion == nil {
+		return r.row(gtx, th, s, it, active, act)
+	}
+	return ui.Reveal(gtx.Disabled(), it.motion.height, func(gtx C) D { return r.row(gtx, th, s, it, active, act) })
+}
+
+// row draws one rail row: its tray, its node, then its line.
+func (r *sidebarRail) row(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
 	width := gtx.Constraints.Max.X
 	if it.kind == railGap {
 		return D{Size: image.Pt(width, gtx.Dp(railBlockGap))}
@@ -232,7 +290,8 @@ func (r *sidebarRail) node(gtx C, th *ui.Theme, s *sidebar, it railItem, active 
 		return layout.Center.Layout(gtx, func(gtx C) D {
 			return tip.Layout(gtx, func(gtx C) D {
 				// The open header's size, so the glyph flies without resizing.
-				return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3), c) })
+				faded := ui.Alpha(c, 1-it.entry().glyph)
+				return s.morph.glyph(gtx, glyphNode+it.key, func(gtx C) D { return it.glyph.Layout(gtx, ui.Space(3), faded) })
 			})
 		})
 	case railCheckout:
@@ -256,16 +315,28 @@ func railTray(gtx C, th *ui.Theme, it railItem, size image.Point) {
 
 // railLine draws the line through a row's node: up to the node above and
 // down to the next, stopping at the node's edge (half from its centre).
+// A moving row draws the line down to it only as far as it has come.
 func railLine(gtx C, th *ui.Theme, it railItem, size image.Point, half int) {
 	x, mid := float32(size.X)/2, float32(size.Y)/2
-	var segs []linkSeg
+	c, width := th.Over(ui.Alpha(th.MutedForeground, treeLinkAlpha)), float32(gtx.Dp(sessionTreeStroke))
 	if it.up {
-		segs = append(segs, vline(x, 0, mid-float32(half)))
+		reach := size
+		if it.motion != nil {
+			reach.Y = int(clamp01(it.motion.sweep.rows) * float32(size.Y))
+		}
+		strokeLinks(gtx, []linkSeg{vline(x, 0, mid-float32(half))}, reach, c, width)
 	}
 	if it.down {
-		segs = append(segs, vline(x, mid+float32(half), float32(size.Y)))
+		strokeLinks(gtx, []linkSeg{vline(x, mid+float32(half), float32(size.Y))}, size, c, width)
 	}
-	strokeLinks(gtx, segs, size, th.Over(ui.Alpha(th.MutedForeground, treeLinkAlpha)), float32(gtx.Dp(sessionTreeStroke)))
+}
+
+// entry is how much of the row's node is still to come in, 0 at rest.
+func (it railItem) entry() treeEntry {
+	if it.motion == nil {
+		return treeEntry{}
+	}
+	return it.motion.entry
 }
 
 // railSmall draws w, a 22px node, at a child's size around its centre.
@@ -291,7 +362,7 @@ func (r *sidebarRail) checkout(gtx C, th *ui.Theme, s *sidebar, it railItem) D {
 	tooltip.Side = ui.SideRight
 	return layout.Center.Layout(gtx, func(gtx C) D {
 		return tooltip.Layout(gtx, func(gtx C) D {
-			node := func(gtx C) D { return checkoutNode(gtx, th, icBranch, treeEntry{}) }
+			node := func(gtx C) D { return checkoutNode(gtx, th, icBranch, it.entry()) }
 			if it.small {
 				// A child's node is drawn smaller than it flies: it crossfades.
 				return railSmall(gtx, true, node)
@@ -307,6 +378,7 @@ func (r *sidebarRail) checkout(gtx C, th *ui.Theme, s *sidebar, it railItem) D {
 func (r *sidebarRail) session(gtx C, th *ui.Theme, s *sidebar, it railItem, active string, act *sidebarAction) D {
 	sv := it.sv
 	sv.place.tree = true
+	sv.place.entry = it.entry()
 	click := clickable(r.cards, sv.ID)
 	if click.Clicked(gtx) {
 		act.activate = sv.ID

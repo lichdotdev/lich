@@ -348,3 +348,30 @@ func TestAFoldersLastCardLeavesByItsLine(t *testing.T) {
 		t.Errorf("heights %v: the folder was gone by %v, before its card's line could leave", out, ui.PresenceExit)
 	}
 }
+
+func TestANewFolderGrowsByItsLineWithoutDipping(t *testing.T) {
+	fresh := func() func(sidebarView, time.Duration) int {
+		s := newSidebar(&ui.Root{})
+		th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
+		var r input.Router
+		t0 := time.Unix(100, 0)
+		return func(v sidebarView, at time.Duration) int {
+			var ops op.Ops
+			gtx := layout.Context{Ops: &ops, Source: r.Source(), Now: t0.Add(at), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+				Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
+			var act sidebarAction
+			s.blockList(gtx, th, v, "", &act)
+			r.Frame(&ops)
+			return s.list.Position.Length
+		}
+	}
+	before := folderOf()
+	before.blocks = before.blocks[:1]
+	after := folderOf("/a")
+	assertNoDip(t, fresh(), before, after)
+	frame := fresh()
+	frame(before, 0)
+	if mid, whole := frame(after, 300*time.Millisecond), frame(after, 2*time.Second); mid >= whole {
+		t.Errorf("the folder is %dpx at 300ms and %dpx at rest, want it still opening by its line at 300ms", mid, whole)
+	}
+}

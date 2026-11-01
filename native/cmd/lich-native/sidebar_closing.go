@@ -122,8 +122,8 @@ type blockPresence struct {
 	motion  ui.Presence
 	last    map[string]blockView
 	// A checkout block draws its header as a tree row, so it comes in and
-	// leaves by the tree's motion instead (blockMove), and so does a folder
-	// leaving, whose rows are tree rows: moving holds those,
+	// leaves by the tree's motion instead (blockMove), and so does a folder,
+	// whose rows are tree rows: moving holds those,
 	// live the keys of the last frame and drawn its order.
 	moving map[string]blockMove
 	live   map[string]bool
@@ -174,15 +174,15 @@ func (p *blockPresence) leaving(key string) bool {
 	return ok && m.leaving || p.motion.Leaving(key)
 }
 
-// move starts the checkout blocks that came in or left since the last frame
-// on their motion, and the folders that left with their last session, and
-// drops the ones whose motion has played. The list's first frame is not news.
+// move starts the checkout blocks and folders that came in or left since the
+// last frame on their motion, and drops the ones whose motion has played. The
+// list's first frame is not news.
 func (p *blockPresence) move(now time.Time, live []blockView) {
 	settled := p.live != nil
 	still := map[string]bool{}
 	for _, b := range live {
 		still[b.key] = true
-		if settled && !p.live[b.key] && b.under != "" {
+		if settled && !p.live[b.key] && (b.under != "" || b.kind == blockFolder) {
 			p.moving[b.key] = blockMove{start: now, rows: len(blockRows(b, b.sessions))}
 		}
 	}

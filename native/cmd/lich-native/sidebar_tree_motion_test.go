@@ -163,6 +163,11 @@ func TestBlockPresenceHoldsALeavingCheckoutForItsTreeMotion(t *testing.T) {
 	if arrived[1].move == nil || arrived[1].move.leaving {
 		t.Errorf("a new checkout = %+v, want it coming in by the tree's motion", arrived[1])
 	}
+	folder := blockView{key: folderKey("Later"), kind: blockFolder, byCheckout: true, sessions: []sessionView{{Session: backend.Session{ID: "f"}, path: "/f"}}}
+	withFolder := p.shown(end, "p", []blockView{checkout("/a"), checkout("/c"), folder})
+	if withFolder[2].move == nil || withFolder[2].move.leaving {
+		t.Errorf("a new folder = %+v, want it coming in by the tree's motion", withFolder[2])
+	}
 }
 
 func TestTreeMotionKeepsTheLineToALeavingLastChild(t *testing.T) {
