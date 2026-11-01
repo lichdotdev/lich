@@ -29,8 +29,10 @@ var (
 	topbarHeight = ui.Space(11) // h-11
 	brandHeight  = ui.Space(8)
 	brandIcon    = ui.Space(5)
-	brandPadLeft = ui.Space(1.5) // the icon sits here in both shapes, so it never moves
-	barButton    = ui.Space(7)   // the right side's size-7 icon buttons
+	// brandPadLeft centres the icon over the rail, the column every tree
+	// node sits in, in both shapes, so it never moves.
+	brandPadLeft = (railWidth - brandIcon) / 2
+	barButton    = ui.Space(7) // the right side's size-7 icon buttons
 	barGap       = ui.Space(1)
 )
 
