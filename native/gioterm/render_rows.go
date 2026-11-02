@@ -22,15 +22,16 @@ type rowRenderer struct {
 	size unit.Sp
 	imgs []*image.RGBA
 	ops  []paint.ImageOp
-	// cursorRow is the row the cursor was composed into last frame, -1 for none.
-	cursorRow int
+	// cursorRow and cursorX are where the cursor was composed last frame,
+	// -1 for none: a row is recomposed for the cursor only when it moves.
+	cursorRow, cursorX int
 	// clear is what the rows' default background was composed in: the
 	// terminal's own, or transparent while an image lies under the text.
 	clear color.NRGBA
 }
 
 func newRowRenderer(r *glyphs.Rasterizer, size unit.Sp) *rowRenderer {
-	return &rowRenderer{r: r, size: size, cursorRow: -1}
+	return &rowRenderer{r: r, size: size, cursorRow: -1, cursorX: -1}
 }
 
 func (rr *rowRenderer) Cell() (w, h int) { return rr.r.CellW(), rr.r.CellH() }
@@ -61,17 +62,22 @@ func (rr *rowRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []u
 			dirty[y] = 1
 		}
 	}
-	// The cursor lives inside its row's image, so the row it left and the row
-	// it is on are both recomposed.
-	cursorRow := -1
+	// The cursor lives inside its row's image, so when it moves the row it
+	// left and the row it is on are both recomposed; where it stays, its
+	// row's image already holds it.
+	cursorRow, cursorX := -1, -1
 	if sn.cursorVisible && sn.cursorX < sn.cols && sn.cursorY < sn.rows {
-		cursorRow = sn.cursorY
-		dirty[cursorRow] = 1
+		cursorRow, cursorX = sn.cursorY, sn.cursorX
 	}
-	if rr.cursorRow >= 0 && rr.cursorRow < sn.rows {
-		dirty[rr.cursorRow] = 1
+	if cursorRow != rr.cursorRow || cursorX != rr.cursorX {
+		if cursorRow >= 0 {
+			dirty[cursorRow] = 1
+		}
+		if rr.cursorRow >= 0 && rr.cursorRow < sn.rows {
+			dirty[rr.cursorRow] = 1
+		}
 	}
-	rr.cursorRow = cursorRow
+	rr.cursorRow, rr.cursorX = cursorRow, cursorX
 	clear := rgba(sn.bg)
 	if len(below) > 0 {
 		clear = color.NRGBA{}

@@ -27,6 +27,10 @@ const spinLap = time.Second
 // (measured 2026-11-01).
 const LoopFrame = 42 * time.Millisecond
 
+// StillFrame is LoopFrame for a window without focus: an eye across the
+// room still sees the ring turn, at a fifth of the frames.
+const StillFrame = 125 * time.Millisecond
+
 // LoopBeat is when the next looping frame is due, shared by every Theme of a
 // window: output that arrives before it waits for that frame instead of
 // asking for one of its own.
@@ -39,13 +43,14 @@ func (b *LoopBeat) Pending(now time.Time) bool {
 	return b != nil && b.due.Load() > now.UnixNano()
 }
 
-// Loop asks for a looping animation's next frame, LoopFrame from now, unless
-// the window is Still: then the animation holds the frame it stands at.
+// Loop asks for a looping animation's next frame: LoopFrame from now, or
+// StillFrame while the window is Still.
 func (th *Theme) Loop(gtx layout.Context) {
+	frame := LoopFrame
 	if th.Still {
-		return
+		frame = StillFrame
 	}
-	at := gtx.Now.Add(LoopFrame)
+	at := gtx.Now.Add(frame)
 	if th.Beat != nil {
 		th.Beat.due.Store(at.UnixNano())
 	}
