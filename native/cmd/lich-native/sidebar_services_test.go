@@ -28,18 +28,19 @@ func beatWake(th *ui.Theme, now time.Time) (time.Time, bool) {
 
 func TestServiceBeatPacing(t *testing.T) {
 	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Background}
-	beat := time.UnixMilli(2400 * 1000)
+	beat := time.UnixMilli(6 * 1000)
 	inPulse, resting := beat.Add(100*time.Millisecond), beat.Add(1000*time.Millisecond)
 	if at, ok := beatWake(th, inPulse); !ok || !at.Equal(inPulse.Add(42*time.Millisecond)) {
 		t.Errorf("mid-pulse the beat asked for %v (asked %v), want the next frame 42ms on", at, ok)
 	}
-	if at, ok := beatWake(th, resting); !ok || !at.Equal(beat.Add(2400*time.Millisecond)) {
-		t.Errorf("at rest the beat asked for %v (asked %v), want the next beat", at, ok)
+	if at, ok := beatWake(th, resting); !ok || !at.Equal(beat.Add(6*time.Second)) {
+		t.Errorf("at rest the beat asked for %v (asked %v), want the next beat 6s on", at, ok)
 	}
 	th.Still = true
-	for _, now := range []time.Time{inPulse, resting} {
-		if at, ok := beatWake(th, now); ok {
-			t.Errorf("on a still window the beat asked for a frame at %v, want none", at)
-		}
+	if at, ok := beatWake(th, inPulse); !ok || !at.Equal(inPulse.Add(125*time.Millisecond)) {
+		t.Errorf("on a still window mid-pulse the beat asked for %v (asked %v), want the slow frame 125ms on", at, ok)
+	}
+	if at, ok := beatWake(th, resting); !ok || !at.Equal(beat.Add(6*time.Second)) {
+		t.Errorf("on a still window at rest the beat asked for %v (asked %v), want the next beat", at, ok)
 	}
 }

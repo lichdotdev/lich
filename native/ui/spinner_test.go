@@ -49,20 +49,22 @@ func TestLoopRecordsTheFrameItAskedFor(t *testing.T) {
 	th.Still = true
 	th.Beat = &LoopBeat{}
 	loopWake(func(gtx C) D { return th.Spinner(gtx, 16, th.Foreground) })
-	if th.Beat.Pending(now) {
-		t.Error("a still window's spinner recorded a frame it did not ask for")
+	if !th.Beat.Pending(now.Add(124 * time.Millisecond)) {
+		t.Error("a still window's spinner did not record the slow frame it asked for")
 	}
 }
 
-func TestStillThemeHoldsTheFrame(t *testing.T) {
+// A window without focus is still seen: its animations go on at 8fps.
+func TestStillThemeSlowsTheLoop(t *testing.T) {
 	th := testTheme()
 	th.Still = true
+	want := time.Unix(100, 0).Add(125 * time.Millisecond)
 	for name, w := range map[string]func(C) D{
 		"Spinner":  func(gtx C) D { return th.Spinner(gtx, 16, th.Foreground) },
 		"BusyRing": func(gtx C) D { return th.BusyRing(gtx, 16, th.Foreground, th.Border) },
 	} {
-		if at, ok := loopWake(w); ok {
-			t.Errorf("%s on a still window asked for a frame at %v, want none", name, at)
+		if at, ok := loopWake(w); !ok || !at.Equal(want) {
+			t.Errorf("%s on a still window asked for its next frame at %v (asked %v), want %v", name, at, ok, want)
 		}
 	}
 }

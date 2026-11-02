@@ -233,12 +233,13 @@ func beatingDot(gtx C, th *ui.Theme) D {
 }
 
 // The running dot beats: a ring grows out of it for pulseLength, drawn at
-// ui.LoopFrame, then rests until pulseEvery comes round. It beats for
-// as long as a service runs, hours, so the rest is what keeps it cheap: no
-// frame is asked for in it. Measured with one service up, a continuous pulse
-// at a tenth of that rate already held the window at 6% of a core.
+// ui.LoopFrame, then rests until pulseEvery comes round. It beats for as
+// long as a service runs, hours, so the rest is what keeps it cheap: no
+// frame is asked for in it. Every frame costs the window the same whatever
+// it shows (about 0.3% of a laptop GPU, measured 2026-11-01), and a beat
+// every 2.4s was 8 frames a second all day for a 14dp dot.
 const (
-	pulseEvery  = 2400 * time.Millisecond
+	pulseEvery  = 6 * time.Second
 	pulseLength = 800 * time.Millisecond
 )
 
@@ -247,9 +248,7 @@ const (
 func pulseRing(gtx C, th *ui.Theme, center f32.Point, radius, reach float32, c color.NRGBA) {
 	at := time.Duration(gtx.Now.UnixMilli()%pulseEvery.Milliseconds()) * time.Millisecond
 	if at >= pulseLength {
-		if !th.Still {
-			gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(pulseEvery - at)})
-		}
+		gtx.Execute(op.InvalidateCmd{At: gtx.Now.Add(pulseEvery - at)})
 		return
 	}
 	phase := float32(at) / float32(pulseLength)
