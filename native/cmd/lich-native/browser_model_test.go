@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -198,7 +199,10 @@ func TestBrowserFrameSurplusDecodesOnlyTheNewest(t *testing.T) {
 	if _, f, _ := m.browserView("orch"); f.size != image.Pt(9, 6) {
 		t.Fatalf("frame size %v, want the newest", f.size)
 	}
-	if logged.Len() > 0 {
+	// Decoding the stale frame logs under the event's name. The log is the
+	// process's: a layout save of an earlier test, failing after that test's
+	// backend closed, lands here too and is not this test's to judge.
+	if strings.Contains(logged.String(), name) {
 		t.Fatalf("decoded a frame a newer one replaced: %s", logged.String())
 	}
 }
