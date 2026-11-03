@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A pending review comment under its line on the Pulls screen's Files tab has Edit and Discard, as it does on the Conversation tab. Before, it could only be changed or dropped from the Conversation tab.
 - On the Pulls screen's Files tab, expanding the lines hidden between changes, previewing a Markdown file and showing an image work on a pull request whose branch is not checked out anywhere. They failed with "Couldn't read" the file, because lich looked for it in a folder named after the pull request's address.
 - A pull request's tab on the Pulls screen opens at its top. Before, it opened where the previous tab or pull request had been scrolled to, so the Conversation tab could open at its end.
 - Code quoted in a review thread on the Pulls screen shows its indentation instead of a box for every tab.

@@ -126,6 +126,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	files.pr.viewed, files.pr.url, files.pr.number = viewed, d.URL, d.Number
 	review := v.pendingOf(d.URL)
 	files.pr.toReview = review.add
+	v.talkClicks(gtx, review)
 	v.inline = inlineFrame{th: th, p: p, d: d, act: act, now: gtx.Now}
 	files.pr.blocks = v.diffBlocks
 	if len(d.Commits) > 0 {
@@ -306,8 +307,8 @@ func (v *pullView) diffBlocks(path string) []cardBlock {
 			continue
 		}
 		key := fmt.Sprint("pending:", i, ":", c.Body)
-		comment := c
-		out = append(out, cardBlock{key: key, at: lineRef(c.Side, c.Line), widget: func(gtx C) D { return v.inlinePending(gtx, comment) }})
+		index, comment := i, c
+		out = append(out, cardBlock{key: key, at: lineRef(c.Side, c.Line), widget: func(gtx C) D { return v.inlinePending(gtx, index, comment) }})
 	}
 	return out
 }
@@ -342,19 +343,40 @@ func (v *pullView) inlineThread(gtx C, id string) D {
 	return D{}
 }
 
-// inlinePending is a comment waiting for the review to be submitted.
-func (v *pullView) inlinePending(gtx C, c backend.ReviewComment) D {
+// inlinePending is a comment waiting for the review to be submitted, with
+// the Conversation tab's Edit and Discard: talkClicks carries them out.
+func (v *pullView) inlinePending(gtx C, i int, c backend.ReviewComment) D {
 	th := v.inline.th
+	s := &v.talk
+	editing := s.pendingEdit.open && s.pendingEdit.index == i
 	return composerSlot.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx,
 			func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
 			func(gtx C) D {
 				on := th.On(th.Sidebar)
 				return layout.UniformInset(ui.Space(3)).Layout(gtx, func(gtx C) D {
+					body := func(gtx C) D { return wrapped(gtx, on.Text(ui.TextSM, c.Body)) }
+					if editing {
+						body = func(gtx C) D { return v.pendingEditBox(gtx, on) }
+					}
 					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(on.Text(ui.TextXS, i18n.T("pulls.pullsConversation.pendingNote")).In(on.ToneWait).Layout),
+						layout.Rigid(func(gtx C) D {
+							return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+								layout.Flexed(1, on.Text(ui.TextXS, i18n.T("pulls.pullsConversation.pendingNote")).In(on.ToneWait).Layout),
+								layout.Rigid(func(gtx C) D {
+									if editing {
+										return D{}
+									}
+									editB := on.Button(clickableAt(s.edits, i), i18n.T("pulls.pullsConversation.edit"))
+									editB.Size, editB.Variant = ui.SizeXS, ui.VariantGhost
+									discardB := on.Button(clickableAt(s.discards, i), i18n.T("pulls.pullsConversation.discard"))
+									discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantGhost
+									return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(editB.Layout), ui.Gap(1), layout.Rigid(discardB.Layout))
+								}),
+							)
+						}),
 						ui.VGap(1),
-						layout.Rigid(func(gtx C) D { return wrapped(gtx, on.Text(ui.TextSM, c.Body)) }),
+						layout.Rigid(body),
 					)
 				})
 			})

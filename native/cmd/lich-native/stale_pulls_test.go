@@ -143,6 +143,36 @@ func TestPullsPendingCommentDiscardsInTheFrameThatTookTheClick(t *testing.T) {
 	}
 }
 
+func TestPullsPendingCommentDiscardsFromUnderItsLineInFiles(t *testing.T) {
+	u, r := pullsDetailShown(t)
+	pending := u.pulls.view.pendingOf("https://github.com/o/r/pull/7")
+	pending.add("a.go", "1", "Rename this.")
+	discard := i18n.T("pulls.pullsConversation.discard")
+	openPullsTab(t, r, tabFiles.label(), discard)
+	r.clickLabel(t, discard)
+	if len(pending.snapshot()) != 0 {
+		t.Fatal("the click missed Discard")
+	}
+}
+
+func TestPullsPendingCommentEditsFromUnderItsLineInFiles(t *testing.T) {
+	u, r := pullsDetailShown(t)
+	pending := u.pulls.view.pendingOf("https://github.com/o/r/pull/7")
+	pending.add("a.go", "1", "Rename this.")
+	edit := i18n.T("pulls.pullsConversation.edit")
+	openPullsTab(t, r, tabFiles.label(), edit)
+	r.clickLabel(t, edit)
+	box := &u.pulls.view.talk.pendingEdit
+	if !box.open || box.editor.Text() != "Rename this." {
+		t.Fatalf("Edit left the box open=%v holding %q", box.open, box.editor.Text())
+	}
+	box.editor.SetText("Rename it.")
+	r.clickLabel(t, i18n.T("pulls.pullsConversation.save"))
+	if got := pending.snapshot(); len(got) != 1 || got[0].Body != "Rename it." {
+		t.Fatalf("Save left %+v", got)
+	}
+}
+
 func TestPullsReplyCancelClosesTheBoxInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := pullsDetailShown(t)
 	reply := i18n.T("pulls.reviewThread.reply")
