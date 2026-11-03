@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/godemirror"
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
@@ -259,5 +260,22 @@ func TestHideWhitespaceIsReadFromTheEditorSetting(t *testing.T) {
 		if got, err := loadHideWhitespace(t.Context(), client); err != nil || got != c.want {
 			t.Errorf("stored %q: hiding = %v, %v; want %v", c.stored, got, err, c.want)
 		}
+	}
+}
+
+func TestAPullRequestGapIsReadFromTheCheckoutNotTheCommentTarget(t *testing.T) {
+	paths := make(chan string, 1)
+	stub := &rpcStub{answer: func(method string, args []json.RawMessage) (any, int) {
+		var opts api.FileLinesOptions
+		_ = json.Unmarshal(args[0], &opts)
+		paths <- opts.Path
+		return []string{"line"}, http.StatusOK
+	}}
+	p := &reviewPanel{client: stub.client(t), target: "https://github.com/o/r/pull/1", checkout: "/repo",
+		pr: &prFiles{head: "6483beb3c1c9055643b799310f371ddb7b775fd6"}, invalidate: func() {},
+		notify: func(toast ui.Toast) { t.Errorf("toast %q", toast.Title) }}
+	p.expand(&fileCard{git: patchFile{path: "a.go"}}, 0, godemirror.Gap{From: 1, To: 1})
+	if got := <-paths; got != "/repo" {
+		t.Errorf("FileLines read from %q, want the checkout /repo", got)
 	}
 }

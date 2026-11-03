@@ -43,7 +43,7 @@ func (c *fileCard) binaryBody(gtx C, p *reviewPanel) D {
 	case p.pr != nil:
 		return c.prBinary(gtx, p)
 	}
-	c.bin.exits.update(gtx, p.client, p.notify, p.target, c.git.path)
+	c.bin.exits.update(gtx, p.client, p.notify, p.checkout, c.git.path)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return bodyLine(gtx, p.th, i18n.T("diff.binaryPreview.binary")) }),
 		layout.Rigid(func(gtx C) D {
@@ -88,10 +88,10 @@ func (c *fileCard) imageSides(gtx C, p *reviewPanel) D {
 	if old == "" {
 		old = c.git.path
 	}
-	wantBefore := func() { c.bin.before.want(p.client, p.target, old, "HEAD", c.git.blobs) }
+	wantBefore := func() { c.bin.before.want(p.client, p.checkout, old, "HEAD", c.git.blobs) }
 	afterRef := ""
 	if f := p.pr; f != nil {
-		wantBefore = func() { c.bin.before.wantMergeBase(p.client, p.target, old, f, c.git.blobs) }
+		wantBefore = func() { c.bin.before.wantMergeBase(p.client, p.checkout, old, f, c.git.blobs) }
 		afterRef = f.head
 	}
 	var sides []layout.FlexChild
@@ -100,14 +100,14 @@ func (c *fileCard) imageSides(gtx C, p *reviewPanel) D {
 	}
 	switch c.git.status {
 	case statusAdded:
-		c.bin.after.want(p.client, p.target, c.git.path, afterRef, c.git.blobs)
+		c.bin.after.want(p.client, p.checkout, c.git.path, afterRef, c.git.blobs)
 		sides = append(sides, side(c.bin.after, i18n.T("diff.binaryPreview.added"), p.th.TonePass))
 	case statusDeleted:
 		wantBefore()
 		sides = append(sides, side(c.bin.before, i18n.T("diff.binaryPreview.deleted"), p.th.Destructive))
 	default:
 		wantBefore()
-		c.bin.after.want(p.client, p.target, c.git.path, afterRef, c.git.blobs)
+		c.bin.after.want(p.client, p.checkout, c.git.path, afterRef, c.git.blobs)
 		sides = append(sides, side(c.bin.before, i18n.T("diff.binaryPreview.before"), p.th.Destructive), ui.Gap(2.5), side(c.bin.after, i18n.T("diff.binaryPreview.after"), p.th.TonePass))
 	}
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2.5), Bottom: ui.Space(3.5)}.Layout(gtx, func(gtx C) D {

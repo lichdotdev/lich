@@ -142,3 +142,22 @@ func TestPullRequestCommentsGoOnlyToASessionInItsBranchCheckout(t *testing.T) {
 		t.Errorf("branch with no checkout: session %q, target %q; want none, the PR's page", id, target)
 	}
 }
+
+func TestPullRequestFilesAreReadFromAClone(t *testing.T) {
+	stub := &rpcStub{answer: func(method string, _ []json.RawMessage) (any, int) {
+		if method == "project.ListCheckouts" {
+			return []backend.Worktree{{Name: "main", Path: "/repo"}, {Name: "feat/x", Path: "/wt/feat-x"}}, http.StatusOK
+		}
+		return []backend.PRSummary{}, http.StatusOK
+	}}
+	p := newPullsScreen(newPullsStore(context.Background(), stub.client(t), func() {}), new(ui.Root))
+	p.show(backend.Project{ID: "p", Path: "/repo"}, "main", 0)
+	waitFor(t, "the checkouts", func() bool { return len(p.store.checkoutsOf("/repo")) == 2 })
+
+	if got := p.prCheckout(backend.PRDetail{HeadRefName: "feat/x", URL: "https://pr/1"}); got != "/wt/feat-x" {
+		t.Errorf("checked-out branch: read from %q, want /wt/feat-x", got)
+	}
+	if got := p.prCheckout(backend.PRDetail{HeadRefName: "feat/y", URL: "https://pr/2"}); got != "/repo" {
+		t.Errorf("branch with no checkout: read from %q, want the project's /repo", got)
+	}
+}
