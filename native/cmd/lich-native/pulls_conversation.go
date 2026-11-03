@@ -136,9 +136,6 @@ func (v *pullView) conversationRows(gtx C, th *ui.Theme, p *pullsScreen, d backe
 	now := gtx.Now
 	v.talkClicks(gtx, v.pendingOf(d.URL))
 	rows := v.pendingRows(th, v.pendingOf(d.URL))
-	if open := p.sendableThreads(read.val); canSendThreads(d) && len(open) > 0 {
-		rows = append(rows, v.sendOpenThreads(th, p, d, open, act))
-	}
 	if len(items) == 0 && len(resolved) == 0 {
 		rows = append(rows, func(gtx C) D { return panelNotice(gtx, th, i18n.T("pulls.pullsConversation.nothingYet")) })
 	}
@@ -427,21 +424,20 @@ func (v *pullView) toSessionButton(gtx C, th *ui.Theme, p *pullsScreen, d backen
 	return v.withTip(gtx, th, p, "toSession:"+t.ID, tip, b.Layout)
 }
 
-// sendOpenThreads is Send open threads, above the timeline: every open thread
-// not yet waiting, in one prompt.
-func (v *pullView) sendOpenThreads(th *ui.Theme, p *pullsScreen, d backend.PRDetail, threads []backend.PRReviewThread, act *pullsAction) layout.Widget {
+// sendOpenThreads is Send open threads, beside the hand-off in the header:
+// every open thread not yet waiting, in one prompt; nil when there is none.
+func (v *pullView) sendOpenThreads(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy string, act *pullsAction) layout.Widget {
+	threads := p.sendableThreads(p.store.conversation(p.project.Path, d.Number).val)
+	if !canSendThreads(d) || len(threads) == 0 {
+		return nil
+	}
+	if v.talk.allToSession.Clicked(gtx) && busy == "" {
+		act.threads = threads
+	}
 	return func(gtx C) D {
-		busy := v.busyNow() == "threads"
-		if v.talk.allToSession.Clicked(gtx) && !busy {
-			act.threads = threads
-		}
 		b := th.Button(&v.talk.allToSession, i18n.T("pulls.threadSend.sendAll", i18n.Args{"count": len(threads)}))
-		b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantOutline, ui.SizeXS, busy
-		return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(3)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
-				layout.Rigid(b.Layout))
-		})
+		b.Icon, b.Variant, b.Size, b.Disabled = icPullSession, ui.VariantOutline, ui.SizeSM, busy != ""
+		return b.Layout(gtx)
 	}
 }
 

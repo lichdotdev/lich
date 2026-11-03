@@ -59,6 +59,12 @@ type pullsAction struct {
 // open sends url to the browser: a link clicked in a Markdown body.
 func (a *pullsAction) open(url string) { a.external = url }
 
+// panelAt is the pull request and tab the panel's scroll belongs to.
+type panelAt struct {
+	url string
+	tab pullsTab
+}
+
 // pullView is PullRequestView: the toolbar, the title, the status line, the
 // tabs and the open tab's panel.
 type pullView struct {
@@ -71,6 +77,7 @@ type pullView struct {
 	tips                                     map[string]*ui.Tooltip
 	tabs                                     ui.TabsState
 	panel                                    widget.List
+	panelAt                                  panelAt
 	checksStat                               widget.Clickable
 	reviewStat                               widget.Clickable
 	commitOpen                               map[string]*widget.Bool
