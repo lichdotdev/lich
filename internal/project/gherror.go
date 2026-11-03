@@ -25,6 +25,17 @@ func errUnreadableAnswer(err error) error {
 	return errors.New("GitHub's answer could not be read.")
 }
 
+// ghReport is what one failed gh call said: stderr, and the stdout of a
+// `gh api` call, where gh writes GitHub's response body with the reason in it
+// and leaves stderr only the HTTP status.
+func ghReport(stderr string, stdout []byte) string {
+	body := strings.TrimSpace(string(stdout))
+	if body == "" {
+		return stderr
+	}
+	return stderr + "\n" + body
+}
+
 // ghFailures maps what gh reports onto what the person reading the screen can
 // do about it.
 var ghFailures = []toolFailure{
@@ -42,6 +53,11 @@ var ghFailures = []toolFailure{
 	{
 		"can not approve your own pull request",
 		"GitHub does not let an account approve its own pull request — this one was opened by the " +
+			"account lich is using here.",
+	},
+	{
+		"can not request changes on your own pull request",
+		"GitHub does not let an account request changes on its own pull request — this one was opened by the " +
 			"account lich is using here.",
 	},
 	{

@@ -340,7 +340,7 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 	}
 	entries := injectEntries(path, lines, p.inject, func() { c.composer.open(path, lines) })
 	if p.pr != nil {
-		return append(entries, reviewCommentEntry(lines, func() { c.composer.openReview(path, lines) }))
+		return append(entries, reviewCommentEntries(lines, p.pr.own, func() { c.composer.openReview(path, lines) })...)
 	}
 	if c.git.status == statusRenamed {
 		return entries

@@ -95,14 +95,14 @@ func (ts *terminals) kindOf(id string) string {
 	return ""
 }
 
-// reviewCommentEntry is InjectMenu's comment on the pull request, offered on
-// the Pulls screen: open starts the box that files into the pending review.
-func reviewCommentEntry(lines string, open func()) ui.MenuEntry {
-	label := i18n.T("diff.injectMenu.reviewComment")
-	if lines != "" {
-		label = i18n.T("diff.injectMenu.reviewCommentRange", i18n.Args{"lines": lines})
+// reviewCommentEntries is InjectMenu's comment on the pull request, offered
+// on the Pulls screen over a selection and left out on the account's own pull
+// request: open starts the box that files into the pending review.
+func reviewCommentEntries(lines string, own bool, open func()) []ui.MenuEntry {
+	if lines == "" || own {
+		return nil
 	}
-	return ui.MenuEntry{Label: label, Disabled: lines == "", OnClick: open}
+	return []ui.MenuEntry{{Label: i18n.T("diff.injectMenu.reviewCommentRange", i18n.Args{"lines": lines}), OnClick: open}}
 }
 
 // injectEntries is the menu over the preview. lines is the selection as

@@ -110,6 +110,8 @@ type prFiles struct {
 	ticks  map[string]*widget.Bool
 	// toReview files a line comment into the PR's pending review.
 	toReview func(path, lines, body string)
+	// own is the account's own pull request, which takes no line comment.
+	own bool
 	// blocks are the review threads and pending comments under a file's
 	// lines.
 	blocks func(path string) []cardBlock

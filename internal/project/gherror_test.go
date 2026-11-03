@@ -41,6 +41,13 @@ func TestGHMessage(t *testing.T) {
 				"account lich is using here.",
 		},
 		{
+			"requesting changes on your own pull request",
+			`{"message":"Unprocessable Entity","errors":["Review Can not request changes on your own pull request"]}`,
+			errTest, nil,
+			"GitHub does not let an account request changes on its own pull request — this one was opened by the " +
+				"account lich is using here.",
+		},
+		{
 			"logged out",
 			"To get started with GitHub CLI, please run: gh auth login",
 			errTest, nil,
@@ -190,5 +197,27 @@ func TestGHFailureAnswersATimeout(t *testing.T) {
 	}
 	if strings.Contains(strings.ToLower(err.Error()), "context") {
 		t.Errorf("ghFailure() = %q, which names Go's own error instead of what happened", err)
+	}
+}
+
+// gh api puts GitHub's reason in the response body on stdout and only the
+// status on stderr, as it did for a review sent on 2026-11-03: the reason has
+// to reach the table, or every refusal of a REST call reads as the fallback.
+func TestGHReportReadsTheReasonGitHubSentOnStdout(t *testing.T) {
+	t.Parallel()
+	stderr := "gh: Unprocessable Entity (HTTP 422)\n"
+	stdout := []byte(`{"message":"Unprocessable Entity","errors":["Review Can not request changes on your own pull request"],` +
+		`"documentation_url":"https://docs.github.com/rest/pulls/reviews#create-a-review-for-a-pull-request","status":"422"}`)
+	want := "GitHub does not let an account request changes on its own pull request — this one was opened by the " +
+		"account lich is using here."
+	if got := ghMessage(ghReport(stderr, stdout), errTest, nil); got != want {
+		t.Errorf("ghMessage(ghReport()) = %q, want %q", got, want)
+	}
+}
+
+func TestGHReportIsStderrAloneWithoutABody(t *testing.T) {
+	t.Parallel()
+	if got := ghReport("gh: Not Found (HTTP 404)", nil); got != "gh: Not Found (HTTP 404)" {
+		t.Errorf("ghReport() = %q, want the stderr alone", got)
 	}
 }

@@ -29,7 +29,7 @@ const prConversationQuery = `fragment actor on Actor{login avatarUrl(size:96)}
 query($owner:String!,$repo:String!,$number:Int!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$number){
-      headRefOid
+      headRefOid viewerDidAuthor
       reviews(last:50){nodes{id databaseId author{...actor} state body submittedAt viewerCanUpdate}}
       comments(last:50){nodes{databaseId author{...actor} body createdAt viewerCanUpdate viewerCanDelete}}
       reviewThreads(last:100){nodes{
@@ -56,8 +56,9 @@ type ghConversation struct {
 	Data struct {
 		Repository struct {
 			PullRequest struct {
-				HeadRefOID string `json:"headRefOid"`
-				Reviews    struct {
+				HeadRefOID      string `json:"headRefOid"`
+				ViewerDidAuthor bool   `json:"viewerDidAuthor"`
+				Reviews         struct {
 					Nodes []ghReview `json:"nodes"`
 				} `json:"reviews"`
 				Comments struct {
@@ -150,10 +151,11 @@ func parseConversation(out []byte) (*PRConversation, error) {
 	}
 	pr := payload.Data.Repository.PullRequest
 	return &PRConversation{
-		HeadRefOID: pr.HeadRefOID,
-		Reviews:    toReviews(pr.Reviews.Nodes),
-		Comments:   toComments(pr.Comments.Nodes),
-		Threads:    toThreads(pr.ReviewThreads.Nodes),
+		HeadRefOID:      pr.HeadRefOID,
+		ViewerDidAuthor: pr.ViewerDidAuthor,
+		Reviews:         toReviews(pr.Reviews.Nodes),
+		Comments:        toComments(pr.Comments.Nodes),
+		Threads:         toThreads(pr.ReviewThreads.Nodes),
 	}, nil
 }
 

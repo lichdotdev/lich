@@ -46,11 +46,11 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 	return ui.Wrap{GapX: ui.Space(2), GapY: ui.Space(2), Justify: ui.JustifyEnd}.Layout(gtx, items...)
 }
 
-// moreButton is ⋯: Approve while no review is being written, Refresh and
-// Open on GitHub.
+// moreButton is ⋯: Approve while no review is being written on somebody
+// else's pull request, Refresh and Open on GitHub.
 func (v *pullView) moreButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, busy, reviewBlocked string, act *pullsAction) D {
 	var entries []ui.MenuEntry
-	if len(v.pendingOf(d.URL).snapshot()) == 0 {
+	if len(v.pendingOf(d.URL).snapshot()) == 0 && !v.ownPR(p, d) {
 		label := i18n.T("pulls.pullRequestView.approve")
 		switch {
 		case busy == "approve":

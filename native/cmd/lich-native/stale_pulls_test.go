@@ -173,6 +173,20 @@ func TestPullsPendingCommentEditsFromUnderItsLineInFiles(t *testing.T) {
 	}
 }
 
+func TestPullsOwnPullRequestReadsTheConversation(t *testing.T) {
+	u, r := pullsDetailShown(t)
+	openPullsTab(t, r, tabConversation.label(), i18n.T("pulls.reviewThread.reply"))
+	p := u.pulls
+	d := *p.store.detail("/repo", 7).val
+	if p.view.ownPR(p, d) {
+		t.Fatal("someone else's pull request read as the account's own")
+	}
+	p.store.conversation("/repo", 7).val.ViewerDidAuthor = true
+	if !p.view.ownPR(p, d) {
+		t.Fatal("the account's own pull request read as someone else's")
+	}
+}
+
 func TestPullsReplyCancelClosesTheBoxInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := pullsDetailShown(t)
 	reply := i18n.T("pulls.reviewThread.reply")

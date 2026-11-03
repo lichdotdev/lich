@@ -46,6 +46,22 @@ type submitState struct {
 	cancel  widget.Clickable
 }
 
+// reviewVerdicts are the verdicts a review can carry: GitHub refuses the
+// author of the pull request both Approve and Request changes.
+func reviewVerdicts(own bool) []string {
+	if own {
+		return []string{"comment"}
+	}
+	return []string{"comment", "approve", "request_changes"}
+}
+
+// ownPR is whether the account lich reads GitHub as opened d, false until the
+// conversation that says so has been read.
+func (v *pullView) ownPR(p *pullsScreen, d backend.PRDetail) bool {
+	conv := p.store.conversation(p.project.Path, d.Number).val
+	return conv != nil && conv.ViewerDidAuthor
+}
+
 // reviewButton is the "Submit review N" menu of verdicts over the pending
 // comments, which opens the dialog.
 func (v *pullView) reviewButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, blocked string) D {
@@ -53,13 +69,14 @@ func (v *pullView) reviewButton(gtx C, th *ui.Theme, p *pullsScreen, d backend.P
 	s := &v.submit
 	discard := i18n.T("pulls.pullRequestView.discardPending", i18n.Args{"count": pending})
 	url := d.URL
-	entries := []ui.MenuEntry{
-		{Label: submitVerdictTitle("comment"), OnClick: func() { s.verdict = "comment" }},
-		{Label: submitVerdictTitle("approve"), OnClick: func() { s.verdict = "approve" }},
-		{Label: submitVerdictTitle("request_changes"), OnClick: func() { s.verdict = "request_changes" }},
-		{Kind: ui.MenuSeparator},
-		{Label: discard, OnClick: func() { v.pendingOf(url).clear() }},
+	var entries []ui.MenuEntry
+	for _, verdict := range reviewVerdicts(v.ownPR(p, d)) {
+		entries = append(entries, ui.MenuEntry{Label: submitVerdictTitle(verdict), OnClick: func() { s.verdict = verdict }})
 	}
+	entries = append(entries,
+		ui.MenuEntry{Kind: ui.MenuSeparator},
+		ui.MenuEntry{Label: discard, OnClick: func() { v.pendingOf(url).clear() }},
+	)
 	b := th.Button(&s.click, i18n.T("pulls.pullsSubmit.review", i18n.Args{"count": pending}))
 	b.Icon, b.Variant, b.Size, b.Disabled = icPullTalk, ui.VariantGhost, ui.SizeSM, blocked != ""
 	if b.Disabled {

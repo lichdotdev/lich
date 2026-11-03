@@ -39,7 +39,6 @@
     "injectLinesRange": "Inject lines {lines}",
     "sessionComment": "Comment for the session…",
     "sessionCommentRange": "Comment for the session {lines}…",
-    "reviewComment": "Comment on the pull request…",
     "reviewCommentRange": "Comment on the pull request {lines}…",
     "revertSelected": "Revert selected lines",
     "revert": {
