@@ -16,7 +16,7 @@ import (
 )
 
 // actions is the header's buttons, left to right: the hand-off a failing or
-// conflicting pull request offers, the session, the pending review while one
+// conflicting pull request offers, Send open threads, the session, the pending review while one
 // is written, Merge, and ⋯ with Approve, Refresh and Open on GitHub.
 func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
 	busy := v.busyNow()
@@ -31,6 +31,9 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 	var items []ui.WrapChild
 	if handoff := v.handoffButton(gtx, th, p, d, busy, blocked, act); handoff != nil {
 		items = append(items, ui.WrapItem(handoff))
+	}
+	if threads := v.sendOpenThreads(gtx, th, p, d, busy, act); threads != nil {
+		items = append(items, ui.WrapItem(threads))
 	}
 	items = append(items, ui.WrapItem(func(gtx C) D { return v.sessionButton(gtx, th, p, d, busy, blocked) }))
 	if len(v.pendingOf(d.URL).snapshot()) > 0 {
@@ -232,6 +235,7 @@ func conflictRow(gtx C, th *ui.Theme, file string) D {
 }
 
 func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail, act *pullsAction) D {
+	v.panelScroll(d)
 	var rows []layout.Widget
 	switch v.openTab(d) {
 	case tabFiles:
@@ -249,6 +253,15 @@ func (v *pullView) panelLayout(gtx C, th *ui.Theme, p *pullsScreen, d backend.PR
 		return v.overview(gtx, th, p, d, act)
 	}
 	return v.panelList(gtx, th, rows)
+}
+
+// panelScroll opens the panel at its top when the tab or the pull request
+// changes: the tabs share one list, so it would keep the last one's place.
+func (v *pullView) panelScroll(d backend.PRDetail) {
+	at := panelAt{url: d.URL, tab: v.openTab(d)}
+	if at != v.panelAt {
+		v.panel.Position, v.panelAt = layout.Position{}, at
+	}
 }
 
 func (v *pullView) panelList(gtx C, th *ui.Theme, rows []layout.Widget) D {
