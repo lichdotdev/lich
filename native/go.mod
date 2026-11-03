@@ -37,6 +37,6 @@ require (
 // frames drawn and presented in part (an op diff, a kept framebuffer, EGL
 // buffer age and damage; GIO_DAMAGE=off draws them whole). Every patch of
 // ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261103203359-c14b984775d7
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261103205635-d97d15ba659f
 
 replace github.com/lichdotdev/lich => ../
