@@ -41,7 +41,6 @@
     "injectLinesRange": "Вставить строки {lines}",
     "sessionComment": "Комментарий для сессии…",
     "sessionCommentRange": "Комментарий для сессии {lines}…",
-    "reviewComment": "Комментарий к pull request…",
     "reviewCommentRange": "Комментарий к pull request {lines}…",
     "revertSelected": "Откатить выбранные строки",
     "revert": {

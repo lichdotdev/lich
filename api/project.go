@@ -530,8 +530,11 @@ type PRConversation struct {
 	// HeadRefOID is the commit a new review comment is filed against. GitHub
 	// defaults to the latest commit, but naming it means a review submitted
 	// seconds after a push cannot silently land on lines nobody read.
-	HeadRefOID string     `json:"headRefOid"`
-	Reviews    []PRReview `json:"reviews"`
+	HeadRefOID string `json:"headRefOid"`
+	// ViewerDidAuthor is whether the account gh ran as opened the pull
+	// request, which GitHub lets neither approve it nor request changes on it.
+	ViewerDidAuthor bool       `json:"viewerDidAuthor"`
+	Reviews         []PRReview `json:"reviews"`
 	// Comments are the pull request's own comments — the ones with no file and
 	// no line, which GitHub files as issue comments.
 	Comments []PRComment      `json:"comments"`

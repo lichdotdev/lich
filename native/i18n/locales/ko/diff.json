@@ -38,7 +38,6 @@
     "injectLinesRange": "{lines}줄 넣기",
     "sessionComment": "세션에 코멘트…",
     "sessionCommentRange": "세션에 코멘트 {lines}…",
-    "reviewComment": "풀 리퀘스트에 코멘트…",
     "reviewCommentRange": "풀 리퀘스트에 코멘트 {lines}…",
     "revertSelected": "선택한 줄 되돌리기",
     "revert": {

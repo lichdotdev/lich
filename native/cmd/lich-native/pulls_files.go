@@ -125,7 +125,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	}
 	files.pr.viewed, files.pr.url, files.pr.number = viewed, d.URL, d.Number
 	review := v.pendingOf(d.URL)
-	files.pr.toReview = review.add
+	files.pr.toReview, files.pr.own = review.add, v.ownPR(p, d)
 	v.talkClicks(gtx, review)
 	v.inline = inlineFrame{th: th, p: p, d: d, act: act, now: gtx.Now}
 	files.pr.blocks = v.diffBlocks

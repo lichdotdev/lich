@@ -39,7 +39,6 @@
     "injectLinesRange": "行 {lines} を挿入",
     "sessionComment": "セッションへのコメント…",
     "sessionCommentRange": "セッションへのコメント {lines}…",
-    "reviewComment": "プルリクエストにコメント…",
     "reviewCommentRange": "プルリクエストにコメント {lines}…",
     "revertSelected": "選択した行を元に戻す",
     "revert": {

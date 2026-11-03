@@ -56,17 +56,23 @@ func TestDockInjectorRefusesWithoutASession(t *testing.T) {
 }
 
 // On a pull request the menu also offers a comment for GitHub, which opens
-// the box that files into the pending review.
-func TestReviewCommentEntryOpensTheReviewBox(t *testing.T) {
+// the box that files into the pending review. The contract changed: with no
+// selection, or on the account's own pull request, the entry is left out
+// rather than shown disabled.
+func TestReviewCommentEntriesOpenTheReviewBox(t *testing.T) {
 	opened := false
-	if e := reviewCommentEntry("", func() { opened = true }); !e.Disabled || e.Label != "Comment on the pull request…" {
-		t.Errorf("without a selection: %+v", e)
+	open := func() { opened = true }
+	if got := reviewCommentEntries("", false, open); len(got) != 0 {
+		t.Errorf("without a selection: %+v, want no entry", got)
 	}
-	e := reviewCommentEntry("3-4", func() { opened = true })
-	if e.Disabled || e.Label != "Comment on the pull request 3-4…" {
-		t.Errorf("with a selection: %+v", e)
+	if got := reviewCommentEntries("3-4", true, open); len(got) != 0 {
+		t.Errorf("on the account's own pull request: %+v, want no entry", got)
 	}
-	e.OnClick()
+	got := reviewCommentEntries("3-4", false, open)
+	if len(got) != 1 || got[0].Disabled || got[0].Label != "Comment on the pull request 3-4…" {
+		t.Fatalf("with a selection: %+v", got)
+	}
+	got[0].OnClick()
 	if !opened {
 		t.Error("the entry opened no box")
 	}

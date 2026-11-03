@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -139,6 +140,17 @@ func TestSubmitVerdictTitlesFollowTheVerdict(t *testing.T) {
 		if got := submitVerdictTitle(verdict); got != want {
 			t.Errorf("%s = %q, want %q", verdict, got, want)
 		}
+	}
+}
+
+// GitHub refuses Approve and Request changes from the pull request's own
+// author, so the menu offers them only to somebody else.
+func TestReviewVerdictsLeaveOutWhatGitHubRefusesTheAuthor(t *testing.T) {
+	if got := reviewVerdicts(false); !slices.Equal(got, []string{"comment", "approve", "request_changes"}) {
+		t.Errorf("someone else's pull request: %v", got)
+	}
+	if got := reviewVerdicts(true); !slices.Equal(got, []string{"comment"}) {
+		t.Errorf("the account's own pull request: %v", got)
 	}
 }
 

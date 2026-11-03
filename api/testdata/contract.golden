@@ -772,6 +772,7 @@ PRConflictsOptions {
 
 PRConversation {
 	headRefOid string
+	viewerDidAuthor bool
 	reviews []PRReview
 	comments []PRComment
 	threads []PRReviewThread

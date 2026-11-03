@@ -57,7 +57,7 @@ func runGH(timeout time.Duration, dir, tokenEnv string, args ...string) ([]byte,
 		if isNoPullRequest(stderr.String()) {
 			return nil, errNoPullRequest
 		}
-		return nil, ghFailure(args, stderr.String(), err, ctx.Err())
+		return nil, ghFailure(args, ghReport(stderr.String(), out), err, ctx.Err())
 	}
 	return out, nil
 }

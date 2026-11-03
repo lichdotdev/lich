@@ -39,7 +39,6 @@
     "injectLinesRange": "注入行 {lines}",
     "sessionComment": "给会话的评论…",
     "sessionCommentRange": "给会话的评论 {lines}…",
-    "reviewComment": "对拉取请求的评论…",
     "reviewCommentRange": "对拉取请求的评论 {lines}…",
     "revertSelected": "还原所选行",
     "revert": {

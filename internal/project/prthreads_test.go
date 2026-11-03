@@ -9,6 +9,7 @@ import (
 
 const conversationPayload = `{"data":{"repository":{"pullRequest":{
   "headRefOid": "21e6cdc4336e8f5db46724d82fecf0423bc41a0a",
+  "viewerDidAuthor": true,
   "reviews": {"nodes": [
     {"id":"PRR_kw1","databaseId":700001,"author":{"login":"omartelo","avatarUrl":"https://avatars.githubusercontent.com/u/1?s=96"},"state":"CHANGES_REQUESTED","body":"two things first","submittedAt":"2026-07-30T10:00:00Z","viewerCanUpdate":true},
     {"author":{"login":"bot"},"state":"COMMENTED","body":"","submittedAt":"2026-07-30T10:05:00Z"},
@@ -47,6 +48,9 @@ func TestParseConversation(t *testing.T) {
 
 	if convo.HeadRefOID != "21e6cdc4336e8f5db46724d82fecf0423bc41a0a" {
 		t.Errorf("head = %q, want the queried oid", convo.HeadRefOID)
+	}
+	if !convo.ViewerDidAuthor {
+		t.Error("viewerDidAuthor was dropped: the screen would offer Approve on the account's own pull request")
 	}
 
 	t.Run("an empty COMMENTED review and a pending one are dropped", func(t *testing.T) {
