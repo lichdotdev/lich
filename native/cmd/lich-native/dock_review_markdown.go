@@ -88,7 +88,7 @@ func (c *fileCard) markdownSource(p *reviewPanel) (src string, loading bool, err
 	if c.git.status == statusAdded {
 		return addedText(c.git), false, nil
 	}
-	client, checkout, rel := p.client, p.target, c.git.path
+	client, checkout, rel := p.client, p.checkout, c.git.path
 	ref := ""
 	if p.pr != nil {
 		ref = p.pr.head

@@ -119,6 +119,16 @@ func (p *pullsScreen) reviewSession(d backend.PRDetail) (id, target string) {
 	return "", wt.Path
 }
 
+// prCheckout is the clone the pull request's files are read from: its head
+// branch's checkout, or the project's own while the branch has none, which
+// reaches the head through GitHub.
+func (p *pullsScreen) prCheckout(d backend.PRDetail) string {
+	if wt, ok := p.checkedOut(d.HeadRefName); ok {
+		return wt.Path
+	}
+	return p.project.Path
+}
+
 func newPullsScreen(store *pullsStore, root *ui.Root) *pullsScreen {
 	p := &pullsScreen{store: store, root: root, state: pullsOpen, rowClicks: map[int]*widget.Clickable{}}
 	p.rows.Axis = layout.Vertical

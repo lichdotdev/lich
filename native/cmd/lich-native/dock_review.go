@@ -51,15 +51,18 @@ type reviewPanel struct {
 	// store the card, footer and badge read.
 	wrote func(checkout string)
 
-	// The frame's: theme, palette, checkout and its latest read.
-	th      *ui.Theme
-	light   bool
-	code    godemirror.Theme
-	target  string
-	inject  func(string) bool
-	submit  func(string, func(error)) bool
-	shown   *diffRead
-	splitOK bool
+	// The frame's: theme, palette, checkout and its latest read. target keys
+	// the comment batch, a pull request's page when its branch has no
+	// checkout; checkout is always a clone the files are read from.
+	th       *ui.Theme
+	light    bool
+	code     godemirror.Theme
+	target   string
+	checkout string
+	inject   func(string) bool
+	submit   func(string, func(error)) bool
+	shown    *diffRead
+	splitOK  bool
 
 	feed     diffFeed
 	split    bool
@@ -155,7 +158,7 @@ func (p *reviewPanel) holdsKeys(gtx C) bool {
 // layoutBody is the panel under the dock's header: the checkout's
 // working-tree diff, and the comment batch at its foot.
 func (p *reviewPanel) layoutBody(gtx C, th *ui.Theme, in dockInput) error {
-	p.th, p.light, p.code, p.target = th, in.light, in.code, in.checkout
+	p.th, p.light, p.code, p.target, p.checkout = th, in.light, in.code, in.checkout, in.checkout
 	p.inject, p.submit = in.inject, in.submit
 	p.feed.follow(in.checkout)
 	p.takeRead(in.checkout, p.feed.latest())
@@ -269,7 +272,7 @@ func (p *reviewPanel) diffTheme() godemirror.Theme {
 // expand fetches a gap's lines off the UI goroutine: from the working tree,
 // or from a pull request's head.
 func (p *reviewPanel) expand(c *fileCard, gen int, g godemirror.Gap) {
-	path, rel, ref := p.target, c.git.path, ""
+	path, rel, ref := p.checkout, c.git.path, ""
 	if p.pr != nil {
 		ref = p.pr.head
 	}

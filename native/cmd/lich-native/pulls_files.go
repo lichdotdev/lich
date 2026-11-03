@@ -136,7 +136,7 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	if target != d.URL {
 		files.comments.move(d.URL, target)
 	}
-	files.th, files.light, files.code, files.target = th, in.light, in.code, target
+	files.th, files.light, files.code, files.target, files.checkout = th, in.light, in.code, target, p.prCheckout(d)
 	files.inject, files.submit = in.injector(session), in.submitter(session)
 	read := p.store.diff(p.project.Path, d.Number)
 	switch {

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On the Pulls screen's Files tab, expanding the lines hidden between changes, previewing a Markdown file and showing an image work on a pull request whose branch is not checked out anywhere. They failed with "Couldn't read" the file, because lich looked for it in a folder named after the pull request's address.
 - Code quoted in a review thread on the Pulls screen shows its indentation instead of a box for every tab.
 - A file input in the session browser, such as a profile picture upload, opens the system's file chooser when you click it, and takes several files when the input allows it. Before, the click did nothing.
 - Leave on a page in the session browser that asks before you go no longer reloads the page instead on a busy machine; the browser goes where it was going.
