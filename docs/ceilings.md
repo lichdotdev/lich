@@ -888,6 +888,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Window, sidebar and settings
 
+- **A frame is drawn in part only where EGL reports the back buffer's age** (`lichdotdev/gio`, `gpu/damage.go`,
+  `internal/egl`): on Linux the window diffs a frame's draw operations against the last frame's and draws and
+  presents only the rectangles that changed, which is what keeps a spinning ring from repainting the window 24
+  times a second. The buffer age is the premise: with it unknown, as on Windows, macOS and a headless surface,
+  every frame is drawn whole, as before. A driver reporting a wrong age shows stale pixels; `GIO_DAMAGE=off`
+  draws every frame whole until it is fixed. The diff sees operations, not pixels: a path is told apart by its
+  content hash and transform, an image by its handle, so an image mutated in place behind the same `ImageOp` is
+  not seen as a change (`gioterm` makes a new one per changed row).
 - **A closed card outlives its session by 180ms** (`native/cmd/lich-native/sidebar_closing.go`, `exitDuration`):
   the card animates out, so the closed session is held and drawn for the length of that exit. For those frames
   the sidebar draws a card for a session the state no longer holds, and anything counting or measuring cards
