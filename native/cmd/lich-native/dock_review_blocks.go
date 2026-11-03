@@ -23,7 +23,10 @@ type cardBlock struct {
 type cardBlocks struct {
 	// placed is the signature of the blocks the view was last given: every
 	// SetBlocks highlights the content again, so it is called only on a change.
-	placed  string
+	placed string
+	// moved is a SetBlocks this frame: the view still lays the old blocks
+	// out in it, so the frame after has the room to measure.
+	moved   bool
 	heights map[string]int
 	seen    map[string]bool
 	total   int
@@ -39,7 +42,7 @@ func (b *cardBlocks) place(view *godemirror.DiffView, blocks []cardBlock) {
 	if sig == b.placed {
 		return
 	}
-	b.placed = sig
+	b.placed, b.moved = sig, true
 	out := make([]godemirror.DiffBlock, len(blocks))
 	for i, bl := range blocks {
 		out[i] = godemirror.DiffBlock{At: bl.at, Widget: b.measured(bl.key, bl.widget)}
@@ -66,7 +69,7 @@ func (b *cardBlocks) startFrame() { clear(b.seen) }
 
 // endFrame drops the heights of blocks the view no longer laid out (closed,
 // or under a line folded into a gap) and reports whether the room changed,
-// which the next frame has to be drawn at.
+// or the blocks did, which the next frame has to be drawn at.
 func (b *cardBlocks) endFrame() bool {
 	total := 0
 	for key, h := range b.heights {
@@ -76,7 +79,7 @@ func (b *cardBlocks) endFrame() bool {
 		}
 		total += h
 	}
-	changed := total != b.total
-	b.total = total
+	changed := total != b.total || b.moved
+	b.total, b.moved = total, false
 	return changed
 }
