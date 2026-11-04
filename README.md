@@ -9,7 +9,7 @@
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
   <p>
-    <strong>Run your coding agents side by side, each on its own branch.</strong><br/>
+    <strong>The multi-agent ADE: all your agents working at once, each on its own branch.</strong><br/>
     Claude Code, Codex, opencode or the agent you already use, each in its own worktree, all in one window.
   </p>
   <h3><a href="#install">Download lich</a> · <a href="https://lichdotdev.github.io/lich/">lichdotdev.github.io/lich</a></h3>

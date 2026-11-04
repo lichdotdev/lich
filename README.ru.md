@@ -9,7 +9,7 @@
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
   <p>
-    <strong>Ваши ИИ-агенты бок о бок, каждый в своей ветке.</strong><br/>
+    <strong>Мультиагентная ADE: все ваши ИИ-агенты работают одновременно, каждый в своей ветке.</strong><br/>
     Claude Code, Codex, opencode или тот агент, которым вы уже пользуетесь: у каждого свой worktree, и всё в одном окне.
   </p>
   <h3><a href="#установка">Скачать lich</a> · <a href="https://lichdotdev.github.io/lich/index.ru.html">lichdotdev.github.io/lich</a></h3>

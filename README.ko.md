@@ -9,7 +9,7 @@
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
   <p>
-    <strong>코딩 에이전트를 나란히, 각자 자기 브랜치에서.</strong><br/>
+    <strong>멀티 에이전트 ADE: 모든 에이전트를 동시에, 각자 자기 브랜치에서.</strong><br/>
     Claude Code, Codex, opencode 등 이미 쓰고 있는 에이전트를 각자 자기 worktree에서, 모두 한 창에서 실행하세요.
   </p>
   <h3><a href="#설치">lich 다운로드</a> · <a href="https://lichdotdev.github.io/lich/index.ko.html">lichdotdev.github.io/lich</a></h3>

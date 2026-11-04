@@ -9,7 +9,7 @@
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
   <p>
-    <strong>Tus agentes de código lado a lado, cada uno en su propia rama.</strong><br/>
+    <strong>El ADE multiagente: todos tus agentes trabajando a la vez, cada uno en su propia rama.</strong><br/>
     Claude Code, Codex, opencode o el agente que ya usas, cada uno en su propio worktree, todos en una sola ventana.
   </p>
   <h3><a href="#instalación">Descargar lich</a> · <a href="https://lichdotdev.github.io/lich/index.es.html">lichdotdev.github.io/lich</a></h3>
