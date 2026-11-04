@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.0] - 2026-11-04
+
 ### Added
 
 - A checkout's menu in the sidebar, from a right click or the … on its row, has Close all sessions: every session in that checkout closes at once, each with its own Undo, after a confirmation when any of them is mid-turn, and the last one offers to remove the worktree.
@@ -6515,7 +6517,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.84.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.85.0...HEAD
+[0.85.0]: https://github.com/lichdotdev/lich/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/lichdotdev/lich/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/lichdotdev/lich/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/lichdotdev/lich/compare/v0.81.0...v0.82.0

@@ -1,3 +1,14 @@
+## [0.85.0] - 2026-11-04
+
+### Added
+
+- O menu de um checkout na barra lateral, aberto com o botão direito ou pelo … da linha, tem Fechar todas as sessões: todas as sessões daquele checkout fecham de uma vez, cada uma com seu próprio Desfazer, depois de uma confirmação quando alguma delas está no meio de um turno, e a última oferece remover a worktree.
+
+### Fixed
+
+- No Linux, a janela não vira mais pixels velhos espalhados em drivers gráficos que informam errado o que seus buffers guardam, como faz o NVIDIA 595 no COSMIC: todo quadro volta a ser desenhado inteiro, como antes da 0.84.0. Desenhar só o que mudou, com a carga menor na placa de vídeo, agora é opcional com `GIO_DAMAGE=on` no ambiente.
+- Um lich compilado de uma release com um rótulo próprio na versão, como `0.83.0+local.3`, recebe a oferta da próxima release em Buscar atualizações e na verificação ao abrir. Antes, qualquer build com um `+` na versão era tomado por um build de desenvolvimento e ouvia que estava na versão mais recente.
+
 ## [0.84.0] - 2026-11-03
 
 ### Added
