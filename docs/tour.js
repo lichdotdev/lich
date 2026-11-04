@@ -421,13 +421,29 @@
     solo.input = ""; solo.rule = "";
     solo.draw(true);
   }
-  // The new checkout's row opens at the foot of the tree, then its session's under it, and the line runs down to it.
+  // enterRows plays a run of rows coming into the tree with sidebar_tree_motion.go's pace: the rows open one after
+  // another, each name with its row; the line runs down the run and reaches each ring at its row's middle, the ring
+  // draws round, and its glyph comes in last. A checkout's row is a root: no line, its ring draws as it opens.
+  function enterRows(rows) {
+    var n = rows.length, open = Math.min(250 + 50 * n, 480), line = Math.min(450 + 100 * (n - 1), 800);
+    rows.forEach(function (row, i) {
+      var start = open * i / n, reach = row.classList.contains("crow") ? start : line * (i + .5) / n;
+      var set = function (k, ms) { row.style.setProperty(k, Math.round(ms) + "ms"); };
+      set("--od", start); set("--ol", open / n); set("--nd", start + 80);
+      set("--ld", line * i / n); set("--ll", line * .5 / n);
+      set("--rd", reach); set("--gd", reach + 300);
+      row.classList.add("enter");
+    });
+  }
+  // The new checkout's row and its session's come in at the foot of the tree.
   function addTaskCard() {
     list.insertAdjacentHTML("beforeend", '<div class="blk new-task"><div class="crow"><span class="node"><svg class="ic"><use href="#i-git-branch"/></svg></span><b>' +
       issue.branch + '</b><span class="slot"></span></div><div class="scard on d1"><span class="ring-st none"><svg class="glyph"><use href="#p-claude"/></svg></span><b>' +
       issue.title + '</b><span class="slot"></span></div></div>');
+    var block = list.querySelector(".new-task");
+    enterRows([block.querySelector(".crow"), block.querySelector(".scard")]);
     list.scrollTop = list.scrollHeight;
-    return list.querySelector(".new-task .scard");
+    return block.querySelector(".scard");
   }
   async function startTask(wait) {
     for (;;) {

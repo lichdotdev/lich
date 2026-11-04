@@ -289,25 +289,37 @@ h1.busy:not(.done) .caret { animation: none; }
   border-bottom-left-radius: 5px;
 }
 .scard.d2::before { left: 32.4px; }
-.node { display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; color: var(--muted); box-shadow: inset 0 0 0 1.25px color-mix(in oklab, var(--muted) 35%, transparent); }
+.node { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; color: var(--muted); --ring-c: color-mix(in oklab, var(--muted) 35%, transparent); }
 .node .ic { width: 12px; height: 12px; }
 .crow .ds:empty { display: none; }
 .prn { color: var(--muted); font-size: 12px; line-height: 16px; }
 .slot { width: 18px; height: 18px; flex: none; margin-left: -2px; }
 .scard > .ic { width: 12px; height: 12px; color: var(--muted); }
-/* A new checkout and its session open row by row, and the line runs down to the session's ring. */
-.new-task .crow, .new-task .scard { animation: row-in .22s ease-out both; }
-.new-task .scard { animation-delay: .22s; }
-.new-task .scard::before { transform-origin: top; animation: line-down .22s ease-out .3s both; }
-@keyframes row-in { from { height: 0; opacity: 0; } }
-@keyframes line-down { from { transform: scaleY(0); } }
+/* Rows coming in (sidebar_tree_motion.go): the row opens with its name already on it, the line runs down to its
+   ring, the ring draws round from its left, and the glyph comes in last. tour.js sets each row's delays. */
+@property --sw { syntax: "<angle>"; inherits: false; initial-value: 360deg; }
+.enter { animation: row-in var(--ol, .35s) cubic-bezier(.4, 0, .2, 1) var(--od, 0s) both; }
+.enter > b, .enter > .ds, .enter > .prn { animation: fade-in .16s linear var(--nd, 0s) both; }
+.enter::before { animation: line-down var(--ll, .25s) cubic-bezier(.4, 0, .2, 1) var(--ld, 0s) both; }
+.enter > .ring-st::before, .enter > .node::before { animation: ring-draw .4s cubic-bezier(.4, 0, .2, 1) var(--rd, 0s) both; }
+.enter > .ring-st > .glyph, .enter > .node > .ic { animation: fade-in .16s linear var(--gd, 0s) both; }
+@keyframes row-in { from { height: 0; } }
+@keyframes line-down { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 -2px 0); } }
+@keyframes ring-draw { from { --sw: 0deg; } }
+@keyframes fade-in { from { opacity: 0; } }
 .ring-st .glyph { width: 13px; height: 13px; }
-.ring-st { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.25px var(--ring-c, transparent); }
+.ring-st { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; }
 .ring-st.none { --ring-c: color-mix(in oklab, var(--muted) 35%, transparent); }
 .ring-st.read { --ring-c: color-mix(in oklab, var(--pass) 30%, transparent); }
 .ring-st.done { --ring-c: var(--pass); }
 .ring-st.wait { --ring-c: var(--wait); }
 .ring-st.busy { color: var(--muted); --ring-c: color-mix(in oklab, var(--muted) 25%, transparent); }
+/* A ring is its color swept round from its left (ui.StrokeArc from π), whole at rest. */
+.ring-st::before, .node::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 270deg, var(--ring-c, transparent) var(--sw), transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.25px), #000 calc(100% - 1.25px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 1.25px), #000 calc(100% - 1.25px));
+}
 /* The busy arc is a quarter of the ring at the ring's own width, square at both ends (ui.StrokeArc), not a
    border-top, which tapers to nothing at its ends. */
 .ring-st.busy::after, .sring::after {
