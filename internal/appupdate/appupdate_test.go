@@ -164,6 +164,22 @@ func TestStatus(t *testing.T) {
 		}
 	})
 
+	// A build that only labels a release ("+sidebar.49") is that release, and
+	// is offered the next one.
+	t.Run("a labelled build of a release updates", func(t *testing.T) {
+		s.version = "0.7.0+local.3"
+		if !s.status().UpdateAvailable {
+			t.Fatal("UpdateAvailable = false, want true for a build of 0.7.0 when 0.8.0 is out")
+		}
+	})
+
+	t.Run("a git describe build never updates", func(t *testing.T) {
+		s.version = "0.7.0-5-gabc123"
+		if s.status().UpdateAvailable {
+			t.Fatal("UpdateAvailable = true, want false for a build between tags")
+		}
+	})
+
 	// The lookup runs at startup: a GitHub that answers 500 must leave the
 	// readout empty rather than claim an update or block the boot.
 	t.Run("a failed lookup reports nothing", func(t *testing.T) {

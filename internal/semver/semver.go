@@ -32,13 +32,18 @@ func Less(a, b string) bool {
 	return false
 }
 
-// IsRelease reports whether v is a plain MAJOR.MINOR.PATCH release version —
-// no pre-release or build-metadata suffix. A dev build ("dev", or the
-// "-N-gSHA" that git describe emits between tags) is not a release, so the
-// update check must not treat it as one.
+// IsRelease reports whether v is a MAJOR.MINOR.PATCH release version, with
+// no pre-release suffix. A dev build ("dev", or the "-N-gSHA" that git
+// describe emits between tags) is not a release, so the update check must not
+// treat it as one. Build metadata ("+local.3") is ignored, as it carries no
+// precedence (SemVer §10): a build of a release that only labels itself is
+// that release, and is offered the next one.
 func IsRelease(v string) bool {
 	v = strings.TrimPrefix(v, "v")
-	if strings.ContainsAny(v, "-+") {
+	if i := strings.IndexByte(v, '+'); i >= 0 {
+		v = v[:i]
+	}
+	if strings.Contains(v, "-") {
 		return false
 	}
 	parts := strings.Split(v, ".")
