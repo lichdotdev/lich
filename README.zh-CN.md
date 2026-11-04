@@ -9,7 +9,7 @@
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
   <p>
-    <strong>让编程智能体并排运行，各自在自己的分支上。</strong><br/>
+    <strong>多智能体 ADE：让所有编程智能体同时开工，各自在自己的分支上。</strong><br/>
     Claude Code、Codex、opencode，或者你已经在用的智能体，各自在独立的 worktree 里，全都在同一个窗口中。
   </p>
   <h3><a href="#安装">下载 lich</a> · <a href="https://lichdotdev.github.io/lich/index.zh-CN.html">lichdotdev.github.io/lich</a></h3>

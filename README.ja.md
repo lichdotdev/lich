@@ -9,7 +9,7 @@
     <a href="https://github.com/sponsors/omartelo"><img alt="Sponsor" src="https://img.shields.io/github/sponsors/omartelo?color=ea4aaa&logo=githubsponsors&label=sponsors" /></a>
   </p>
   <p>
-    <strong>コーディングエージェントを並べて、ブランチごとに動かす。</strong><br/>
+    <strong>マルチエージェント ADE：すべてのエージェントを同時に、ブランチごとに動かす。</strong><br/>
     Claude Code、Codex、opencode など、いま使っているエージェントを、それぞれ専用のワークツリーで、ひとつのウィンドウに。
   </p>
   <h3><a href="#インストール">lich をダウンロード</a> · <a href="https://lichdotdev.github.io/lich/index.ja.html">lichdotdev.github.io/lich</a></h3>
