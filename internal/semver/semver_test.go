@@ -57,12 +57,15 @@ func TestIsRelease(t *testing.T) {
 		{"1.2.3", true},
 		{"dev", false},
 		{"", false},
-		{"1.0", false},             // not three components
-		{"1.0.0.0", false},         // too many components
-		{"0.7.0-rc.1", false},      // pre-release
-		{"0.7.0-5-gabc123", false}, // git describe between tags
-		{"1.0.0+build.5", false},   // build metadata
-		{"1.x.0", false},           // non-numeric
+		{"1.0", false},                // not three components
+		{"1.0.0.0", false},            // too many components
+		{"0.7.0-rc.1", false},         // pre-release
+		{"0.7.0-5-gabc123", false},    // git describe between tags
+		{"1.0.0+build.5", true},       // build metadata carries no precedence
+		{"0.83.0+sidebar.49", true},   // a labelled local build of a release
+		{"1.0.0-rc.1+build.5", false}, // still a pre-release
+		{"+5", false},                 // metadata alone
+		{"1.x.0", false},              // non-numeric
 	}
 	for _, tc := range tests {
 		if got := IsRelease(tc.v); got != tc.want {

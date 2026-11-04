@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A lich built from a release with a label of its own in its version, such as `0.83.0+local.3`, is offered the next release by Check for updates and the startup check. Before, any build with a `+` in its version was taken for a development build and told it was on the latest version.
+
 ## [0.84.0] - 2026-11-03
 
 ### Added
