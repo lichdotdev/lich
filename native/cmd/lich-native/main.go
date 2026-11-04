@@ -144,6 +144,8 @@ type window struct {
 	pulls *pullsScreen
 	// closeWorktree is the closed toast's question before removing a worktree.
 	closeWorktree closeWorktreeConfirm
+	// closeAllConfirm is Close all sessions' question when a turn is in flight.
+	closeAllConfirm closeAllConfirm
 	// homeOpen is Home's Open project button.
 	homeOpen widget.Clickable
 	// hideSettings is a request, from another goroutine, to take Settings down
@@ -544,6 +546,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutWorktreeDialog(gtx, u.theme)
 		u.layoutRemoveConfirm(gtx, u.theme)
 		u.layoutCloseWorktreeConfirm(gtx, u.theme)
+		u.layoutCloseAllConfirm(gtx, u.theme)
 		u.layoutSubmitDialog(gtx, u.theme)
 		u.layoutMergeDialog(gtx, u.theme)
 		u.layoutDeleteCommentDialog(gtx, u.theme)
@@ -930,6 +933,9 @@ func (u *window) apply(act sidebarAction) {
 	}
 	if act.close != "" {
 		u.closeSession(act.close)
+	}
+	if len(act.closeAll) > 0 {
+		u.closeAll(act.closeAll)
 	}
 	u.openPR(act.openPR, act.openPRURL)
 	if act.pin != "" && u.model.setPinned(act.pin, act.pinTo) {

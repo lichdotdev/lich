@@ -69,9 +69,10 @@ type blockMenuHooks struct {
 }
 
 // blockOptions is the … of a block's header: a folder
-// renames, ungroups and recolors itself; a checkout's block files all its
-// cards at once. The recolor and the filing are withheld under a filter, where
-// the cards drawn are only the ones that matched. nil hides the button.
+// renames, ungroups and recolors itself; a checkout's block files or closes
+// all its cards at once. The recolor, the filing and the close are withheld
+// under a filter, where the cards drawn are only the ones that matched. nil
+// hides the button.
 func blockOptions(b blockView, folders []string, filtering bool, act *sidebarAction, hooks blockMenuHooks) []ui.MenuEntry {
 	ids := blockIDs(b)
 	switch b.kind {
@@ -92,7 +93,11 @@ func blockOptions(b blockView, folders []string, filtering bool, act *sidebarAct
 	if filtering {
 		return nil
 	}
-	return []ui.MenuEntry{{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionGroupHeader.moveToFolder"), Icon: icFolder, Sub: groupFolderMenu(ids, folders, act, hooks.newFolder)}}
+	return []ui.MenuEntry{
+		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionGroupHeader.moveToFolder"), Icon: icFolder, Sub: groupFolderMenu(ids, folders, act, hooks.newFolder)},
+		{Kind: ui.MenuSeparator},
+		{Label: i18n.T("sidebar.sessionGroupHeader.closeAllSessions"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.closeAll = ids }},
+	}
 }
 
 // groupFolderMenu files a checkout's whole block: every folder, then a new one.

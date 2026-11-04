@@ -86,7 +86,8 @@
     "mergesInto": "{name} já existe, então renomear junta esta pasta a ela.",
     "ungroup": "Desagrupar",
     "moveToFolder": "Mover grupo para pasta",
-    "newFolder": "Nova pasta…"
+    "newFolder": "Nova pasta…",
+    "closeAllSessions": "Fechar todas as sessões"
   },
   "sessionLaunchMenuItems": {
     "terminal": "Terminal",
@@ -113,6 +114,14 @@
     "dirtyTitle": "A worktree tem alterações não commitadas",
     "dirtyDescription": "A worktree em {path} contém alterações não commitadas. Removê-la vai descartá-las para sempre. A branch é mantida.",
     "discardAndRemove": "Descartar alterações e remover"
+  },
+  "closeAllDialog": {
+    "title": "As sessões ainda estão em execução",
+    "closeAnyway": "Fechar mesmo assim",
+    "running": {
+      "one": "Uma sessão está no meio de um turno. Fechar a interrompe; o turno em andamento é perdido.",
+      "other": "{count} sessões estão no meio de um turno. Fechar as interrompe; os turnos em andamento são perdidos."
+    }
   },
   "worktreeSandboxRow": {
     "runConfined": "Rodar confinado"

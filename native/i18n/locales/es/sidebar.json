@@ -86,7 +86,8 @@
     "mergesInto": "{name} ya existe, así que renombrar fusiona esta carpeta con ella.",
     "ungroup": "Desagrupar",
     "moveToFolder": "Mover grupo a una carpeta",
-    "newFolder": "Nueva carpeta…"
+    "newFolder": "Nueva carpeta…",
+    "closeAllSessions": "Cerrar todas las sesiones"
   },
   "sessionLaunchMenuItems": {
     "terminal": "Terminal",
@@ -113,6 +114,14 @@
     "dirtyTitle": "La worktree tiene cambios sin confirmar",
     "dirtyDescription": "La worktree de {path} contiene cambios sin confirmar. Al eliminarla se descartarán de forma permanente. La rama se conserva.",
     "discardAndRemove": "Descartar cambios y eliminar"
+  },
+  "closeAllDialog": {
+    "title": "Las sesiones siguen en ejecución",
+    "closeAnyway": "Cerrar de todos modos",
+    "running": {
+      "one": "Una sesión está a mitad de un turno. Cerrarla la detiene; el turno en curso se pierde.",
+      "other": "{count} sesiones están a mitad de un turno. Cerrarlas las detiene; los turnos en curso se pierden."
+    }
   },
   "worktreeSandboxRow": {
     "runConfined": "Ejecutar confinado"

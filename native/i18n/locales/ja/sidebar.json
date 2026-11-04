@@ -86,7 +86,8 @@
     "mergesInto": "{name} はすでに存在するため、名前を変更するとこのフォルダーはそこに統合されます。",
     "ungroup": "グループを解除",
     "moveToFolder": "グループをフォルダーに移動",
-    "newFolder": "新しいフォルダー…"
+    "newFolder": "新しいフォルダー…",
+    "closeAllSessions": "すべてのセッションを閉じる"
   },
   "sessionLaunchMenuItems": {
     "terminal": "ターミナル",
@@ -113,6 +114,14 @@
     "dirtyTitle": "ワークツリーに未コミットの変更があります",
     "dirtyDescription": "{path} のワークツリーには未コミットの変更があります。削除すると変更は完全に失われます。ブランチは残ります。",
     "discardAndRemove": "変更を破棄して削除"
+  },
+  "closeAllDialog": {
+    "title": "セッションはまだ実行中です",
+    "closeAnyway": "それでも閉じる",
+    "running": {
+      "one": "セッションがターンの途中です。閉じると停止し、進行中のターンは失われます。",
+      "other": "{count} 件のセッションがターンの途中です。閉じると停止し、進行中のターンは失われます。"
+    }
   },
   "worktreeSandboxRow": {
     "runConfined": "隔離して実行"

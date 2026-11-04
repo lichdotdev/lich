@@ -117,11 +117,12 @@ func (s *sidebar) holdsKeys() bool {
 
 // sidebarAction is what a frame's clicks asked for.
 type sidebarAction struct {
-	activate string // session id
-	close    string // session id
-	pin      string // session id
-	pinTo    bool   // the pin the click asked for
-	openPR   int    // a pull request to show on the Pulls screen
+	activate string   // session id
+	close    string   // session id
+	closeAll []string // every session of a checkout's block
+	pin      string   // session id
+	pinTo    bool     // the pin the click asked for
+	openPR   int      // a pull request to show on the Pulls screen
 	// openPRURL is a pull request to open in the browser instead (prTarget).
 	openPRURL string
 	launch    launchRequest

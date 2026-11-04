@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A checkout's menu in the sidebar, from a right click or the … on its row, has Close all sessions: every session in that checkout closes at once, each with its own Undo, after a confirmation when any of them is mid-turn, and the last one offers to remove the worktree.
+
 ### Fixed
 
 - A lich built from a release with a label of its own in its version, such as `0.83.0+local.3`, is offered the next release by Check for updates and the startup check. Before, any build with a `+` in its version was taken for a development build and told it was on the latest version.
