@@ -89,6 +89,10 @@ func TestBlockOptionsByKindAndFilter(t *testing.T) {
 	if act.file.folder != "Docs" || !slices.Equal(act.file.ids, []string{"r1", "r2"}) || !slices.Equal(asked, []string{"r1", "r2"}) {
 		t.Errorf("filed %+v, asked a name for %v", act.file, asked)
 	}
+	entry(t, blockOptions(checkout, nil, false, &act, hooks), "Close all sessions").OnClick()
+	if !slices.Equal(act.closeAll, []string{"r1", "r2"}) {
+		t.Errorf("Close all sessions closed %v", act.closeAll)
+	}
 	if blockOptions(checkout, []string{"Apps"}, true, &act, hooks) != nil {
 		t.Error("a filtered checkout block files the cards it did not draw")
 	}

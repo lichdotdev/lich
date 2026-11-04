@@ -86,7 +86,8 @@
     "mergesInto": "{name} 已存在，因此重命名会将此文件夹合并到其中。",
     "ungroup": "取消分组",
     "moveToFolder": "将分组移到文件夹",
-    "newFolder": "新建文件夹…"
+    "newFolder": "新建文件夹…",
+    "closeAllSessions": "关闭所有会话"
   },
   "sessionLaunchMenuItems": {
     "terminal": "终端",
@@ -113,6 +114,14 @@
     "dirtyTitle": "工作树有未提交的更改",
     "dirtyDescription": "位于 {path} 的工作树包含未提交的更改。删除后这些更改将被永久丢弃。分支会保留。",
     "discardAndRemove": "丢弃更改并删除"
+  },
+  "closeAllDialog": {
+    "title": "会话仍在运行",
+    "closeAnyway": "仍然关闭",
+    "running": {
+      "one": "有 {count} 个会话正在执行一轮。关闭会让它停止，进行中的这一轮将丢失。",
+      "other": "有 {count} 个会话正在执行一轮。关闭会让它们停止，进行中的这几轮将丢失。"
+    }
   },
   "worktreeSandboxRow": {
     "runConfined": "受限运行"
