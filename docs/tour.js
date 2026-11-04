@@ -3,7 +3,7 @@
 (function () {
   var tour = document.getElementById("tour"), wall = document.getElementById("wall");
   var radios = Array.prototype.slice.call(tour.querySelectorAll('input[name="tour"]'));
-  var seg = tour.querySelector(".seg"), cards = wall.querySelectorAll(".scard");
+  var seg = tour.querySelector(".seg"), cards = wall.querySelectorAll(".scard[data-s]");
   var labels = JSON.parse(wall.getAttribute("data-labels"));
   var still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   var shown = false;
@@ -26,12 +26,6 @@
   }
   // A card's status ring: busy spins while the agent works, done until the card is looked at, read after.
   function setRing(k, state) { cards[k].querySelector(".ring-st").className = "ring-st " + state; }
-  var rungIcon = { Bash: "terminal", Read: "file-text", Edit: "pencil", Write: "pencil" };
-  function setRung(k, tool) {
-    var parts = tool.split(" · ");
-    cards[k].querySelector(".rung").innerHTML = '<svg class="ic"><use href="#i-' + rungIcon[parts[0]] + '"/></svg><b>' +
-      parts[0] + '</b><i>·</i><span class="mono">' + parts[1] + "</span>";
-  }
 
   // A story awaits wait(ms) between its beats. The wait holds while its tab is closed or the window is off screen,
   // and throws once the tab is opened again so the story starts over.
@@ -171,7 +165,7 @@
   function focusWall(k, run) {
     wallTiles.forEach(function (t, i) { t.classList.toggle("on", i === k); });
     setCard(k);
-    setFooter(cards[k].querySelector(".t b").textContent, wallSessions[k].provider, wallSessions[k].model, run.add, run.del);
+    setFooter(cards[k].dataset.br, wallSessions[k].provider, wallSessions[k].model, run.add, run.del);
     wallTerms.forEach(function (t, i) { t.draw(i === k); });
   }
   var wallNext = [1, 1, 1, 1];
@@ -184,12 +178,10 @@
       await t.type(wait, run.prompt, 30, 75);
       await wait(350);
       t.submit(run.prompt);
-      setRung(k, run.tool);
       setRing(k, "busy");
-      setFooter(cards[k].querySelector(".t b").textContent, s.provider, s.model, run.add, run.del);
+      setFooter(cards[k].dataset.br, s.provider, s.model, run.add, run.del);
       await t.stream(wait, run.out);
       setRing(k, "done");
-      cards[k].querySelector(".rung").innerHTML = "";
       await wait(1600);
       setRing(k, "read");
       if (k === 1) await wait.end();
@@ -294,7 +286,7 @@
 
   // 3. Pull requests: open one, watch its checks pass on the Checks tab, then merge with the method you pick.
   var pulls = wall.querySelector(".v4"), prRows = pulls.querySelectorAll(".pr"), checks = pulls.querySelectorAll(".ck");
-  var merge = pulls.querySelector(".merge"), state = pulls.querySelector(".state"), cks = pulls.querySelector(".cks");
+  var merge = pulls.querySelector(".merge"), state = pulls.querySelector(".state");
   var mmenu = pulls.querySelector(".mmenu"), tabOv = pulls.querySelector(".t-ov"), tabCk = pulls.querySelector(".t-ck");
   var bodyOv = pulls.querySelector(".pd-b.ov"), bodyCk = pulls.querySelector(".pd-b.ckl");
   var icon = function (name) { return '<svg class="ic"><use href="#i-' + name + '"/></svg>'; };
@@ -308,13 +300,15 @@
     c.className = done < total ? "pchk run" : "pchk ok";
     c.innerHTML = (done < total ? '<span class="sring"></span>' : icon("check")) + done + "/" + total;
   }
+  // The meta line and the Overview's facts read the same checks.
+  var cksAll = pulls.querySelectorAll(".cks");
+  function setChecks(cls, html) { cksAll.forEach(function (c) { c.className = "cks " + cls; c.innerHTML = html; }); }
   function running(done) {
-    cks.className = "cks running";
-    cks.innerHTML = '<span class="sring"></span>' + (checks.length - done) + " of " + checks.length + " checks running";
+    setChecks("running", '<span class="sring"></span>' + (checks.length - done) + " of " + checks.length + " checks running");
   }
   function openPr(k) {
     var row = prRows[k];
-    prRows.forEach(function (r, i) { r.classList.toggle("on", i === k); });
+    pulls.querySelector(".at").textContent = (k + 1) + " of " + prRows.length;
     pulls.querySelector(".num").textContent = row.querySelector(".num-l").textContent;
     pulls.querySelector(".ttl").textContent = row.querySelector(".tl").textContent;
     pulls.querySelector(".br").textContent = row.getAttribute("data-br");
@@ -329,17 +323,24 @@
       if (prRows[k].querySelector(".pchk.bad")) continue;
       setCard(-1);
       openPr(k);
+      pulls.classList.remove("open");
+      await wait(1300);
+      prRows[k].classList.add("hover");
+      await wait(400);
+      tap(prRows[k]);
+      prRows[k].classList.remove("hover");
+      pulls.classList.add("open");
       await wait(1600);
       tap(tabCk); showTab(true);
       for (var i = 0; i < checks.length; i++) {
         await wait(jitter(350, 700));
         checks[i].classList.add("passed");
-        checks[i].querySelector(".dur").textContent = Math.round(jitter(40, 240)) + "s";
+        var secs = Math.round(jitter(40, 240));
+        checks[i].querySelector(".dur").textContent = (secs >= 60 ? Math.floor(secs / 60) + "m " : "") + (secs % 60) + "s";
         running(i + 1);
         rowChip(k, i + 1);
       }
-      cks.className = "cks passed";
-      cks.innerHTML = icon("check") + checks.length + " checks passed";
+      setChecks("passed", icon("check") + checks.length + " checks passed");
       merge.classList.remove("off");
       await wait(900);
       await press(wait, merge);
@@ -375,8 +376,8 @@
       await asker.type(wait, ask, 25, 60);
       await wait(350);
       asker.submit(ask);
-      await asker.stream(wait, ["● lich - send_to_session (MCP)(session: \"fix/auth-expiry\")", "  ⎿  Sent · ticket a41c",
-        "● lich - wait_for_answer (MCP)(ticket: \"a41c\")", "  ⎿  " + amber("Waiting on fix/auth-expiry…")]);
+      await asker.stream(wait, ["● lich - send_to_session (MCP)(session: \"Auth token expiry\")", "  ⎿  Sent · ticket a41c",
+        "● lich - wait_for_answer (MCP)(ticket: \"a41c\")", "  ⎿  " + amber("Waiting on Auth token expiry…")]);
       await wait(700);
       focus(1);
       var task = "add a test for the exact expiry instant and reply with what changed";
@@ -386,11 +387,11 @@
       worker.submit(task);
       await worker.stream(wait, ["• Edited internal/auth/token_test.go (" + ok("+12") + ")",
         "    " + ok("+ func TestExpiresAtNow(t *testing.T) {"), "• Ran go test ./internal/auth", "  └ ok  internal/auth  0.38s",
-        "• Replied to docs/mcp-matrix", dim("Worked for 19s • 8:35 PM")]);
+        "• Replied to MCP support matrix", dim("Worked for 19s • 8:35 PM")]);
       await wait(700);
       focus(0);
       asker.lines.pop();
-      asker.lines.push("  ⎿  fix/auth-expiry: added TestExpiresAtNow; ok");
+      asker.lines.push("  ⎿  Auth token expiry: added TestExpiresAtNow; ok");
       asker.draw(true);
       await asker.stream(wait, ["● Update(docs/auth.md)", "  ⎿  " + ok("+ A token is expired at its exp instant."),
         dim("✻ Crunched for 1m 2s · done 20:35")]);
@@ -408,18 +409,7 @@
   var hint = dlg.querySelector(".hint"), fresh = dlg.querySelector(".fresh"), create = dlg.querySelector(".crt");
   var list = wall.querySelector(".side .list");
   var issue = { number: 766, title: "Kiro CLI transcripts ignore KIRO_HOME", branch: "766-kiro-cli-transcripts-ignore" };
-  // The new card's age counts up the way lich spells it ("{n}s", then "{n}m").
-  var ageTimer = 0;
-  function tickAge(el) {
-    var born = Date.now();
-    clearInterval(ageTimer);
-    ageTimer = setInterval(function () {
-      var secs = Math.floor((Date.now() - born) / 1000);
-      el.textContent = secs < 60 ? secs + "s" : Math.floor(secs / 60) + "m";
-    }, 1000);
-  }
   function resetTask() {
-    clearInterval(ageTimer);
     var added = list.querySelector(".new-task");
     if (added) added.remove();
     list.scrollTop = 0;
@@ -431,14 +421,29 @@
     solo.input = ""; solo.rule = "";
     solo.draw(true);
   }
+  // enterRows plays a run of rows coming into the tree with sidebar_tree_motion.go's pace: the rows open one after
+  // another, each name with its row; the line runs down the run and reaches each ring at its row's middle, the ring
+  // draws round, and its glyph comes in last. A checkout's row is a root: no line, its ring draws as it opens.
+  function enterRows(rows) {
+    var n = rows.length, open = Math.min(250 + 50 * n, 480), line = Math.min(450 + 100 * (n - 1), 800);
+    rows.forEach(function (row, i) {
+      var start = open * i / n, reach = row.classList.contains("crow") ? start : line * (i + .5) / n;
+      var set = function (k, ms) { row.style.setProperty(k, Math.round(ms) + "ms"); };
+      set("--od", start); set("--ol", open / n); set("--nd", start + 80);
+      set("--ld", line * i / n); set("--ll", line * .5 / n);
+      set("--rd", reach); set("--gd", reach + 300);
+      row.classList.add("enter");
+    });
+  }
+  // The new checkout's row and its session's come in at the foot of the tree.
   function addTaskCard() {
-    list.insertAdjacentHTML("beforeend", '<div class="new-task"><div class="grp"><span class="gt"><svg class="ic"><use href="#i-chevron-right"/></svg><span>' +
-      issue.branch.toUpperCase() + '</span></span><i></i><span class="ib"><svg class="ic"><use href="#i-plus"/></svg></span><span class="ib"><svg class="ic"><use href="#i-ellipsis"/></svg></span></div>' +
-      '<div class="scard on"><div class="t"><span class="ring-st none"><svg class="glyph"><use href="#p-claude"/></svg></span><b>' + issue.branch +
-      '</b><small>0s</small></div><div class="m rung"></div><div class="m path"><span>&lrm;~/.local/share/lich/worktrees/e48f04f46a4a/' + issue.branch +
-      '&lrm;</span></div><div class="m"><svg class="ic"><use href="#i-git-branch"/></svg><span class="brn">' + issue.branch + "</span></div></div></div>");
+    list.insertAdjacentHTML("beforeend", '<div class="blk new-task"><div class="crow"><span class="node"><svg class="ic"><use href="#i-git-branch"/></svg></span><b>' +
+      issue.branch + '</b><span class="slot"></span></div><div class="scard on d1"><span class="ring-st none"><svg class="glyph"><use href="#p-claude"/></svg></span><b>' +
+      issue.title + '</b><span class="slot"></span></div></div>');
+    var block = list.querySelector(".new-task");
+    enterRows([block.querySelector(".crow"), block.querySelector(".scard")]);
     list.scrollTop = list.scrollHeight;
-    return list.querySelector(".new-task .scard");
+    return block.querySelector(".scard");
   }
   async function startTask(wait) {
     for (;;) {
@@ -468,7 +473,6 @@
       dlg.classList.remove("show");
       cards.forEach(function (c) { c.classList.remove("on"); });
       var card = addTaskCard();
-      tickAge(card.querySelector("small"));
       solo.lines = []; solo.input = ""; solo.rule = issue.branch + "-3f1a"; solo.draw(true);
       setFooter(issue.branch, "claude", "opus 5.5 · medium", 0, 0);
       await wait(1400);
@@ -477,17 +481,10 @@
       await wait(500);
       solo.submit("[Pasted text #1 +11 lines]");
       card.querySelector(".ring-st").className = "ring-st busy";
-      var rung = function (tool, detail, icon) {
-        card.querySelector(".rung").innerHTML = '<svg class="ic"><use href="#i-' + icon + '"/></svg><b>' + tool + '</b><i>·</i><span class="mono">' + detail + "</span>";
-        list.scrollTop = list.scrollHeight;
-      };
-      rung("Read", "internal/terminal/transcript.go", "file-text");
       await solo.stream(wait, ["● Read(internal/terminal/transcript.go)", "  ⎿  Read 188 lines",
         "● kiroSessionPath builds the path from os.UserHomeDir()", "  alone, and KIRO_HOME moves the whole ~/.kiro tree."]);
-      rung("Edit", "transcript.go", "pencil");
       await solo.stream(wait, ["● Update(internal/terminal/transcript.go)",
         "  ⎿  " + ok("+ if home := os.Getenv(\"KIRO_HOME\"); filepath.IsAbs(home) {"), "     " + ok("+   root = home")]);
-      rung("Bash", "go test ./internal/terminal", "terminal");
       await solo.stream(wait, ["● Bash(go test ./internal/terminal)", "  ⎿  ok  internal/terminal  1.92s", dim("✻ Crunched for 1m 4s · done 20:52")]);
       card.querySelector(".ring-st").className = "ring-st done";
       setFooter(issue.branch, "claude", "opus 5.5 · medium", 9, 1);
@@ -506,16 +503,19 @@
   var signup = page.querySelector(".pg-btn");
   var browserTerm = terminal(brw.querySelector(".tile pre"), "claude", [dim("✻ Crunched for 12s · done 20:58")]);
   var BRANCH = "fix/signup-email";
-  var first = { title: cards[0].querySelector(".t b").textContent, path: cards[0].querySelector(".path span").textContent,
-    ds: cards[0].querySelector(".ds").innerHTML };
-  // nameCard dresses the first card as the given session: its title, path, branch and diffstat.
-  function nameCard(title, path, ds) {
-    cards[0].querySelector(".t b").textContent = title;
-    cards[0].querySelector(".brn").textContent = title;
-    cards[0].querySelector(".path span").textContent = path;
-    cards[0].querySelector(".ds").innerHTML = ds;
+  var crow0 = cards[0].closest(".blk").querySelector(".crow");
+  var kid0 = cards[0].closest(".blk").querySelector(".kid");
+  var first = { label: cards[0].querySelector("b").textContent, branch: crow0.querySelector("b").textContent, ds: crow0.querySelector(".ds").innerHTML };
+  // nameCard dresses the first block as the given session: its checkout's branch and changes, and the session's name.
+  function nameCard(label, branch, ds) {
+    cards[0].querySelector("b").textContent = label;
+    cards[0].dataset.br = branch;
+    crow0.querySelector("b").textContent = branch;
+    crow0.querySelector(".ds").innerHTML = ds;
+    // The child belongs to the first block's own session, not to the one it plays.
+    kid0.hidden = label !== first.label;
   }
-  var signupPath = "\u200e~/.local/share/lich/worktrees/e48f04f46a4a/fix-signup-email\u200e";
+  var SIGNUP = "Signup rejects a valid email";
   function resetBrowser() {
     brw.classList.remove("split"); btoast.classList.remove("show"); acur.classList.remove("on");
     page.className = "pg"; url.textContent = "localhost:5173/signup";
@@ -526,7 +526,7 @@
     if (tab) tab.remove();
     if (web) web.remove();
     tabs.querySelector(".tab").classList.add("on");
-    nameCard(first.title, first.path, first.ds);
+    nameCard(first.label, first.branch, first.ds);
     browserTerm.lines = [dim("✻ Crunched for 12s · done 20:58")];
     browserTerm.input = ""; browserTerm.rule = "fix-signup-email-2b7e";
     browserTerm.draw(true);
@@ -565,7 +565,7 @@
   }
   function openBrowserTab() {
     tabs.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("on"); });
-    tabs.querySelector(".tab").insertAdjacentHTML("afterend", '<span class="tab on btab"><span class="tg"><svg class="ic"><use href="#i-columns-2"/></svg>' + BRANCH + "</span>" +
+    tabs.querySelector(".tab").insertAdjacentHTML("afterend", '<span class="tab on btab"><span class="tg"><svg class="ic"><use href="#i-columns-2"/></svg>' + SIGNUP + "</span>" +
       '<span class="tx"><svg class="ic"><use href="#i-x"/></svg></span></span>');
     cards[0].querySelector(".ring-st").insertAdjacentHTML("afterend", '<svg class="ic web"><use href="#i-globe"/></svg>');
     brw.classList.add("split");
@@ -573,7 +573,7 @@
   async function driveBrowser(wait) {
     for (;;) {
       resetBrowser();
-      setCard(0); nameCard(BRANCH, signupPath, ""); setFooter(BRANCH, "claude", "opus 5.5 · medium", 0, 0);
+      setCard(0); nameCard(SIGNUP, BRANCH, ""); setFooter(BRANCH, "claude", "opus 5.5 · medium", 0, 0);
       await wait(900);
       var ask = 'the signup form says "invalid email" for a valid one';
       await browserTerm.type(wait, ask, 25, 55);
@@ -599,7 +599,7 @@
       await browserTerm.stream(wait, ['  ⎿  "Invalid email" under Email', "● Read(src/validate.ts)", "● Update(src/validate.ts)",
         "  ⎿  " + bad("- /^[a-z]+@[a-z]+\\.com$/"), "  ⎿  " + ok("+ /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/")]);
       setFooter(BRANCH, "claude", "opus 5.5 · medium", 1, 1);
-      nameCard(BRANCH, signupPath, '<span class="add">+1</span><span class="del">-1</span>');
+      nameCard(SIGNUP, BRANCH, '<span class="add">+1</span><span class="del">-1</span>');
       browserTerm.lines.push("● lich - browser_reload (MCP)"); browserTerm.draw(true);
       var reload = brw.querySelector(".b-rel");
       await land(wait, glide(reload));
@@ -686,7 +686,7 @@
     await wait(700);
   }
   async function pointAtPage(wait) {
-    setCard(0); nameCard(BRANCH, signupPath, ""); setFooter(BRANCH, "claude", "opus 5.5 · medium", 0, 0);
+    setCard(0); nameCard(SIGNUP, BRANCH, ""); setFooter(BRANCH, "claude", "opus 5.5 · medium", 0, 0);
     openBrowserTab();
     await wait(900);
     await press(wait, pick);
@@ -702,7 +702,7 @@
     await browserTerm.stream(wait, ["● Update(src/SignupForm.tsx)", "  ⎿  " + bad("- &lt;h1>Create your account&lt;/h1>"), "  ⎿  " + ok("+ &lt;h1>Start your free trial&lt;/h1>"),
       "  ⎿  " + bad("- &lt;p>Start a 14-day trial. No card needed.&lt;/p>")]);
     setFooter(BRANCH, "claude", "opus 5.5 · medium", 1, 2);
-    nameCard(BRANCH, signupPath, '<span class="add">+1</span><span class="del">-2</span>');
+    nameCard(SIGNUP, BRANCH, '<span class="add">+1</span><span class="del">-2</span>');
     browserTerm.lines.push("● lich - browser_reload (MCP)"); browserTerm.draw(true);
     var reload = brw.querySelector(".b-rel");
     glide(page, .5, .2); acur.classList.add("on");

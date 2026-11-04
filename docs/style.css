@@ -9,6 +9,7 @@
   --fg: oklch(0.985 0 0);
   --muted: oklch(0.705 0.015 286.067);
   --faint: oklch(0.552 0.016 285.938);
+  --link: color-mix(in oklab, var(--muted) 45%, transparent);
   --seam: oklch(1 0 0 / 10%);
   --primary: oklch(0.92 0.004 286.32);
   --primary-fg: oklch(0.21 0.006 285.885);
@@ -270,38 +271,63 @@ h1.busy:not(.done) .caret { animation: none; }
 .ns { flex: 1; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 6px; }
 .ns b { font-weight: 500; }
 .list { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
-.grp { display: flex; align-items: center; gap: 4px; padding: 6px 4px 2px; }
 .gt { display: flex; align-items: center; gap: 6px; min-width: 0; margin-left: -4px; padding: 2px 4px; color: color-mix(in oklab, var(--muted) 70%, transparent); font-size: 10.5px; line-height: 16px; font-weight: 600; }
 .gt .ic { width: 12px; height: 12px; color: inherit; transform: rotate(90deg); }
 .gt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.grp > i { flex: 1; height: 1px; margin-left: 2px; background: var(--seam); }
-.scard { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 8px 10px; border-radius: 6px; transition: background-color .2s; }
-/* The second row is the path, or the status line in its place while a tool runs or the agent waits. */
-.scard .rung:empty { display: none; }
-.scard .rung:not(:empty) + .path { display: none; }
+/* The tree (native/DESIGN.md › The sidebar): every row one 34px line, a 22px node then its name; blocks 6 apart.
+   A session hangs 16 in from its checkout, its elbow leaving the parent's ring column and curving 5px into its ring. */
+.blk { display: flex; flex-direction: column; }
+.crow, .scard { position: relative; display: flex; align-items: center; gap: 6px; flex: none; height: 34px; padding: 0 4px 0 6px; border-radius: 6px; transition: background-color .2s; }
+.crow b, .scard b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.crow b { color: var(--muted); }
 .scard.on { background: var(--raised); }
-.scard .t { display: flex; align-items: center; gap: 6px; padding-right: 44px; }
-.scard .t b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.scard small { position: absolute; top: 8px; right: 8px; color: var(--muted); font-size: 12px; line-height: 16px; }
-.ring-st { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.25px var(--ring-c, transparent); }
+.scard[hidden] { display: none; }
+.scard.d1 { padding-left: 22px; }
+.scard.d2 { padding-left: 38px; }
+.scard.d1::before, .scard.d2::before {
+  content: ""; position: absolute; top: -6px; left: 16.4px; width: 5px; height: 23px; border: solid var(--link); border-width: 0 0 1.25px 1.25px;
+  border-bottom-left-radius: 5px;
+}
+.scard.d2::before { left: 32.4px; }
+.node { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; color: var(--muted); --ring-c: color-mix(in oklab, var(--muted) 35%, transparent); }
+.node .ic { width: 12px; height: 12px; }
+.crow .ds:empty { display: none; }
+.prn { color: var(--muted); font-size: 12px; line-height: 16px; }
+.slot { width: 18px; height: 18px; flex: none; margin-left: -2px; }
+.scard > .ic { width: 12px; height: 12px; color: var(--muted); }
+/* Rows coming in (sidebar_tree_motion.go): the row opens with its name already on it, the line runs down to its
+   ring, the ring draws round from its left, and the glyph comes in last. tour.js sets each row's delays. */
+@property --sw { syntax: "<angle>"; inherits: false; initial-value: 360deg; }
+.enter { animation: row-in var(--ol, .35s) cubic-bezier(.4, 0, .2, 1) var(--od, 0s) both; }
+.enter > b, .enter > .ds, .enter > .prn { animation: fade-in .16s linear var(--nd, 0s) both; }
+.enter::before { animation: line-down var(--ll, .25s) cubic-bezier(.4, 0, .2, 1) var(--ld, 0s) both; }
+.enter > .ring-st::before, .enter > .node::before { animation: ring-draw .4s cubic-bezier(.4, 0, .2, 1) var(--rd, 0s) both; }
+.enter > .ring-st > .glyph, .enter > .node > .ic { animation: fade-in .16s linear var(--gd, 0s) both; }
+@keyframes row-in { from { height: 0; } }
+@keyframes line-down { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 -2px 0); } }
+@keyframes ring-draw { from { --sw: 0deg; } }
+@keyframes fade-in { from { opacity: 0; } }
+.ring-st .glyph { width: 13px; height: 13px; }
+.ring-st { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; }
+.ring-st.none { --ring-c: color-mix(in oklab, var(--muted) 35%, transparent); }
 .ring-st.read { --ring-c: color-mix(in oklab, var(--pass) 30%, transparent); }
 .ring-st.done { --ring-c: var(--pass); }
 .ring-st.wait { --ring-c: var(--wait); }
-.ring-st.busy { --ring-c: color-mix(in oklab, var(--muted) 25%, transparent); }
-.ring-st.busy::after {
-  content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.25px solid transparent; border-top-color: var(--muted);
+.ring-st.busy { color: var(--muted); --ring-c: color-mix(in oklab, var(--muted) 25%, transparent); }
+/* A ring is its color swept round from its left (ui.StrokeArc from π), whole at rest. */
+.ring-st::before, .node::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 270deg, var(--ring-c, transparent) var(--sw), transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.25px), #000 calc(100% - 1.25px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 1.25px), #000 calc(100% - 1.25px));
+}
+/* The busy arc is a quarter of the ring at the ring's own width, square at both ends (ui.StrokeArc), not a
+   border-top, which tapers to nothing at its ends. */
+.ring-st.busy::after, .sring::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(currentColor 0 90deg, transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 1.25px)), #000 calc(100% - var(--rw, 1.25px)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 1.25px)), #000 calc(100% - var(--rw, 1.25px)));
   animation: spin 1s linear infinite;
 }
-.scard .m { display: flex; align-items: center; gap: 4px; min-width: 0; color: var(--muted); font-size: 12px; line-height: 16px; }
-.scard .m .ic { width: 12px; height: 12px; }
-.rung b { color: var(--fg); font-weight: 500; white-space: nowrap; }
-.rung i { color: color-mix(in oklab, var(--muted) 50%, transparent); }
-.rung .mono, .path span, .brn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.path { font-family: var(--w-mono); }
-.path span { direction: rtl; text-align: left; }
-.brn { flex: 1; min-width: 0; }
-.beh { display: inline-flex; align-items: center; gap: 2px; margin-left: 4px; }
-.scard .ds { margin-left: 4px; }
 /* The profile row sits under a 1px rule with 6 between them, as lich draws it. */
 /* Services sit between the session list and the profile, under their own hairline. */
 .svc { display: flex; align-items: center; gap: 8px; height: 39px; padding: 6px 8px 0; border-top: 1px solid var(--seam); }
@@ -470,7 +496,6 @@ h1.busy:not(.done) .caret { animation: none; }
 .bt-btn { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 4px; background: var(--raised); font-size: 12px; font-weight: 500; white-space: nowrap; }
 .bt-open { background: var(--fg); color: var(--island); }
 .bt-open.press { background: color-mix(in oklab, var(--fg) 80%, var(--background)); }
-.scard .t > .web { width: 12px; height: 12px; }
 .app .tab .tg { display: inline-flex; align-items: center; gap: 8px; overflow: hidden; }
 .app .tab .tg .ic { width: 14px; height: 14px; }
 
@@ -601,64 +626,78 @@ h1.busy:not(.done) .caret { animation: none; }
 .dk-send .btn-g { color: var(--fg); font-size: 14px; }
 .dk-send .send { background: color-mix(in oklab, var(--raised) 55%, transparent); }
 
-/* Pulls: a 320px list island beside the detail island. */
-#t4:checked ~ #wall .main { background: none; border-radius: 0; overflow: visible; }
-.pulls { flex: 1; min-height: 0; grid-template-columns: 320px minmax(0, 1fr); gap: 6px; }
-.pl { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border-radius: 0 8px 8px 8px; background: var(--island); }
-.pl-h { display: flex; align-items: center; gap: 6px; padding: 8px; }
-.flt { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--input); background: color-mix(in oklab, var(--input) 30%, transparent); color: var(--muted); font-size: 12px; }
+/* Pulls (pulls_list.go, pulls_view.go): the index across the whole panel, and a pull request opening in its place. */
+.pulls { position: relative; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr); }
+.pi, .pd { grid-area: 1 / 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; transition: opacity .18s; }
+.pulls.open .pi, .pulls:not(.open) .pd { opacity: 0; visibility: hidden; }
+.pi-h { display: flex; align-items: center; gap: 8px; padding: 14px 14px 10px; }
+.pi-h h4 { margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; }
+.pi-h .flt { flex: 0 1 300px; }
+.btn-g.bord { box-shadow: inset 0 0 0 1px var(--input); }
+.flt { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--input); background: color-mix(in oklab, var(--input) 30%, transparent); color: var(--muted); font-size: 12px; }
 .flt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pstate { display: flex; align-items: center; gap: 4px; padding: 8px 12px; color: var(--muted); font-size: 12px; line-height: 16px; }
+.pstate { display: flex; align-items: center; gap: 4px; padding: 0 6px; color: var(--muted); font-size: 12px; line-height: 16px; }
 .pstate .ic { width: 12px; height: 12px; }
-.prs { display: flex; flex-direction: column; gap: 2px; padding: 0 6px 12px; }
+.prs { display: flex; flex-direction: column; margin-top: 8px; border-top: 1px solid var(--seam); }
 /* Pulls quick filters: ghost tabs sharing the list's width. */
 .ftabs { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 4px; margin: 0 8px; }
 .ftabs span { display: flex; align-items: center; justify-content: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 6px; color: var(--muted); font-size: 12px; font-weight: 500; white-space: nowrap; }
 .ftabs span.on { background: var(--raised); color: var(--fg); }
 .ftabs i { color: var(--muted); font-weight: 400; }
 .ftabs .failing i { color: var(--del); }
-.pr { display: block; padding: 8px; border-radius: 6px; transition: background-color .2s; }
-.pr.on { background: var(--raised); }
-.pr div { min-width: 0; }
-.pr p { margin: 0; line-height: 20px; }
-.pr .tl { display: inline; }
-.pr .num-l { color: var(--muted); }
+.pr { display: grid; grid-template-columns: minmax(0, 1fr) 160px; align-items: center; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--seam); transition: background-color .2s; }
+.pr.hover { background: color-mix(in oklab, var(--raised) 60%, transparent); }
+.pr-l { min-width: 0; }
+.pr p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 20px; font-weight: 500; }
+.pr .num-l { color: var(--muted); font-weight: 400; }
 .pr small { display: flex; align-items: center; gap: 8px; margin-top: 2px; color: var(--muted); font-size: 12px; line-height: 16px; white-space: nowrap; }
-.pchk { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font: 12px/16px var(--w-mono); vertical-align: 1px; }
+.pchk { display: inline-flex; align-items: center; gap: 4px; font: 12px/16px var(--w-mono); vertical-align: 1px; }
 .pchk .ic { width: 12px; height: 12px; color: inherit; }
 .pchk.ok { color: var(--pass); }
 .pchk.bad { color: var(--del); }
 .pchk.run { color: var(--wait); }
 .pchk .sring { width: 12px; height: 12px; }
-.pfold { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; overflow: hidden; }
-.pfold .ic { width: 12px; height: 12px; }
 /* A running check: a faint track under a quarter arc that turns once a second. */
 .sring { position: relative; display: inline-block; flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, currentColor 25%, transparent); }
-.sring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid transparent; border-top-color: currentColor; animation: spin 1s linear infinite; }
-.pd { position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border-radius: 8px; background: var(--background); }
-.pd-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 8px; }
-.pd-ttl { padding: 2px 16px 0; }
-.pd-ttl h4 { margin: 0; display: flex; gap: 6px; font-size: 18px; line-height: 26px; font-weight: 600; }
-.pd-ttl .num { color: var(--muted); }
-.pd-m { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-top: 12px; font-size: 12px; line-height: 16px; font-weight: 500; }
+.sring { --rw: 1.5px; }
+.pd { position: relative; }
+.pd-cr { display: flex; align-items: center; gap: 6px; padding: 10px 14px 0; font-size: 12px; }
+.pd-cr .sep { width: 12px; height: 12px; color: var(--muted); }
+.pd-cr .pill { display: inline-flex; align-items: center; gap: 2px; height: 22px; padding: 0 6px; border-radius: 6px; background: var(--raised); }
+.pd-cr .pill .ic { width: 12px; height: 12px; }
+.pd-ttl { display: flex; align-items: flex-start; gap: 8px; padding: 8px 14px 0; }
+.pd-ttl h4 { flex: 1; min-width: 0; margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; }
+.pd-ttl .pen { width: 14px; height: 14px; margin-left: 8px; color: var(--muted); vertical-align: -1px; }
+.pd-ttl .ia { margin-top: 4px; }
+.pd-m { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 10px 14px 0; font-size: 12px; line-height: 16px; }
 .pd-m > span { display: inline-flex; align-items: center; gap: 6px; }
 .pd-m .ic { width: 14px; height: 14px; color: inherit; }
+.pd .mut { color: var(--muted); }
 .state { color: var(--pass); }
 .state.merged { color: var(--muted); }
 .brl { color: var(--muted); font-weight: 400; gap: 4px !important; }
 .brl .ic { width: 12px; height: 12px; }
+.cks { display: inline-flex; align-items: center; gap: 6px; }
 .cks.running { color: var(--wait); }
 .cks.passed { color: var(--pass); }
-.pd-t { display: flex; gap: 4px; height: 36px; margin: 16px 24px 0; padding: 3px 0; box-shadow: 0 1px 0 var(--seam); }
-.pd-t span { position: relative; display: flex; align-items: center; gap: 6px; padding: 0 8px; color: var(--muted); font-weight: 500; }
+.pd-t { display: flex; align-items: center; gap: 4px; height: 40px; margin: 14px 0 0; padding: 0 6px; box-shadow: 0 1px 0 var(--seam); }
+.pd-t > span:not(.sp):not(.ds) { position: relative; display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 14px; color: var(--muted); font-weight: 500; }
 .pd-t span.on { color: var(--fg); }
-.pd-t span.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 2px; background: var(--fg); }
-.pd-t i { color: var(--muted); font-weight: 400; }
-.pd-b { display: none; padding: 4px 24px; overflow: hidden; }
-.pd-b.show { display: block; }
-.pd-b p { margin: 8px 0 0; }
-.pd-b .mut { margin-top: 16px; color: var(--muted); }
-.pd-b h5 { margin: 20px 0 0; color: var(--muted); font-size: 12px; line-height: 16px; font-weight: 500; }
+.pd-t span.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--fg); }
+.pd-t i { color: var(--muted); font-weight: 400; font-style: normal; }
+.pd-t .ds { margin-right: 8px; }
+.pd-b { display: none; flex: 1; min-height: 0; overflow: hidden; }
+.pd-b.show { display: flex; }
+.pd-b.ckl { flex-direction: column; padding: 4px 14px; }
+.ov-d { flex: 1; min-width: 0; padding: 0 14px; }
+.ov-h { display: flex; align-items: center; height: 40px; border-bottom: 1px solid var(--seam); color: var(--muted); font-size: 12px; font-weight: 500; }
+.ov-h .ic { width: 14px; height: 14px; }
+.ov-d p { margin: 12px 0 0; line-height: 24px; }
+.ov-f { width: 220px; flex: none; padding: 6px 14px; border-left: 1px solid var(--seam); }
+.ov-f h5 { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 16px; font-weight: 500; }
+.ov-f p { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; font-size: 12px; }
+.ov-f .ic { width: 14px; height: 14px; }
+.ov-f .mg { color: var(--pass); }
 .ck { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
 .ck .ic { width: 16px; height: 16px; }
 .ck .run { color: var(--wait); }
@@ -670,7 +709,7 @@ h1.busy:not(.done) .caret { animation: none; }
 .ck b { display: block; font-weight: 400; }
 .ck small { color: var(--muted); font-size: 12px; line-height: 16px; }
 .ck .dur { color: var(--muted); font-size: 12px; }
-.mmenu { position: absolute; top: 44px; right: 96px; z-index: 2; display: none; min-width: 176px; padding: 4px; border-radius: 6px; background: var(--island); box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 10%, transparent); }
+.mmenu { position: absolute; top: 76px; right: 44px; z-index: 2; display: none; min-width: 176px; padding: 4px; border-radius: 6px; background: var(--island); box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 10%, transparent); }
 .mmenu.show { display: grid; }
 .mmenu span { padding: 6px 8px; border-radius: 4px; line-height: 20px; white-space: nowrap; }
 .mmenu span.hover { background: var(--raised); }
@@ -679,7 +718,7 @@ h1.busy:not(.done) .caret { animation: none; }
   .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 44px 560px 44px; }
   .side, .brand-s, .app .tab:not(.on) { display: none; }
   .app .foot { grid-column: 1; }
-  .pulls { grid-template-columns: minmax(0, 1fr); } .pd { display: none; }
+  .ov-f, .pi-h .flt, .pi-h .pstate { display: none; }
 }
 @media (max-width: 700px) {
   .app { grid-template-rows: 44px 360px 44px; }
@@ -764,17 +803,14 @@ section.block { padding-block: 5.5rem; }
   display: flex; flex-direction: column; justify-content: center; gap: 6px; height: 13.5rem; margin: 0; padding: 16px;
   border-radius: 0; background: color-mix(in oklab, var(--island) 55%, var(--background)); overflow: hidden;
 }
-.app.mini .scard { background: var(--island); }
+.app.mini .tree { padding: 8px; border-radius: 8px; background: var(--island); }
 .app.mini .ic.wait, .app.mini b.wait { color: var(--wait); }
-.app.mini .scard .t > .ic { width: 12px; height: 12px; }
-.app.mini .sub { margin-left: 22px; }
 /* The Services list opened upward, as it sits at the foot of the sidebar. */
 .app.mini .svcs { padding: 8px; border-radius: 8px; background: var(--island); }
 .svr { display: flex; align-items: center; gap: 8px; height: 26px; padding: 0 6px 0 8px; font-size: 14px; }
 .svr .mono { font-size: 12px; }
 .svr .ic { width: 14px; height: 14px; }
 .app.mini .svcs .svc { margin-top: 6px; }
-.app.mini.subs .path { display: none; }
 .mwall { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, 1fr); gap: 6px; height: 100%; padding: 6px; border-radius: 8px; background: var(--background); }
 .mt { border-radius: 8px; box-shadow: inset 0 0 0 1px var(--seam); overflow: hidden; }
 .mt.on { box-shadow: inset 0 0 0 1px var(--faint); }
@@ -897,3 +933,11 @@ footer nav { display: flex; flex-direction: column; gap: .6rem; }
 .rel-more:hover { color: var(--fg); }
 .cl-older { display: flex; margin: 0 auto; }
 .cl-older[hidden] { display: none; }
+/* A row's tooltip (sessiontooltip.go): its name, what the turn is doing, then the path. */
+.app.mini .tree { display: flex; flex-direction: column; }
+.stip { display: flex; flex-direction: column; gap: 6px; margin-left: 28px; }
+.stip b { font-weight: 500; }
+.stip .rg { display: flex; align-items: center; gap: 6px; }
+.stip .rg .ic { width: 12px; height: 12px; color: var(--muted); }
+.stip .rg i { color: color-mix(in oklab, var(--muted) 50%, transparent); font-style: normal; }
+.stip .mono { overflow-wrap: anywhere; font-size: 12px; }
