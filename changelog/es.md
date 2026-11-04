@@ -1,3 +1,14 @@
+## [0.85.0] - 2026-11-04
+
+### Added
+
+- El menú de un checkout en la barra lateral, desde un clic derecho o el … de su fila, tiene Cerrar todas las sesiones: todas las sesiones de ese checkout se cierran a la vez, cada una con su propio Deshacer, tras una confirmación cuando alguna está a mitad de un turno, y la última ofrece eliminar el worktree.
+
+### Fixed
+
+- En Linux, la ventana ya no se convierte en píxeles viejos dispersos con controladores gráficos que informan mal de lo que contienen sus búferes, como hace NVIDIA 595 en COSMIC: cada fotograma vuelve a dibujarse completo, como antes de 0.84.0. Dibujar solo lo que cambió, con su menor carga en la tarjeta gráfica, ahora es opcional con `GIO_DAMAGE=on` en el entorno.
+- A un lich compilado desde una release con una etiqueta propia en su versión, como `0.83.0+local.3`, Buscar actualizaciones y la comprobación al iniciar le ofrecen la siguiente release. Antes, cualquier build con un `+` en su versión se tomaba por un build de desarrollo y se le decía que estaba en la última versión.
+
 ## [0.84.0] - 2026-11-03
 
 ### Added
