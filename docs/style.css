@@ -301,14 +301,19 @@ h1.busy:not(.done) .caret { animation: none; }
 .new-task .scard::before { transform-origin: top; animation: line-down .22s ease-out .3s both; }
 @keyframes row-in { from { height: 0; opacity: 0; } }
 @keyframes line-down { from { transform: scaleY(0); } }
+.ring-st .glyph { width: 13px; height: 13px; }
 .ring-st { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.25px var(--ring-c, transparent); }
 .ring-st.none { --ring-c: color-mix(in oklab, var(--muted) 35%, transparent); }
 .ring-st.read { --ring-c: color-mix(in oklab, var(--pass) 30%, transparent); }
 .ring-st.done { --ring-c: var(--pass); }
 .ring-st.wait { --ring-c: var(--wait); }
-.ring-st.busy { --ring-c: color-mix(in oklab, var(--muted) 25%, transparent); }
-.ring-st.busy::after {
-  content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.25px solid transparent; border-top-color: var(--muted);
+.ring-st.busy { color: var(--muted); --ring-c: color-mix(in oklab, var(--muted) 25%, transparent); }
+/* The busy arc is a quarter of the ring at the ring's own width, square at both ends (ui.StrokeArc), not a
+   border-top, which tapers to nothing at its ends. */
+.ring-st.busy::after, .sring::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(currentColor 0 90deg, transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 1.25px)), #000 calc(100% - var(--rw, 1.25px)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--rw, 1.25px)), #000 calc(100% - var(--rw, 1.25px)));
   animation: spin 1s linear infinite;
 }
 /* The profile row sits under a 1px rule with 6 between them, as lich draws it. */
@@ -642,7 +647,7 @@ h1.busy:not(.done) .caret { animation: none; }
 .pchk .sring { width: 12px; height: 12px; }
 /* A running check: a faint track under a quarter arc that turns once a second. */
 .sring { position: relative; display: inline-block; flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, currentColor 25%, transparent); }
-.sring::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid transparent; border-top-color: currentColor; animation: spin 1s linear infinite; }
+.sring { --rw: 1.5px; }
 .pd { position: relative; }
 .pd-cr { display: flex; align-items: center; gap: 6px; padding: 10px 14px 0; font-size: 12px; }
 .pd-cr .sep { width: 12px; height: 12px; color: var(--muted); }
