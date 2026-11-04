@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/lichdotdev/lich/native/backend"
@@ -93,15 +94,39 @@ func filterSessions(sessions []backend.Session, query, projectPath, activeID str
 	hit := func(s backend.Session) bool {
 		return (blank || text(s)) && (len(phases) == 0 || phases[phaseOfSession(s.ID)])
 	}
-	kept = []backend.Session{}
+	keep := map[string]bool{}
 	for _, s := range sessions {
 		h := hit(s)
 		matched = matched || h
 		if h || s.ID == activeID {
+			keep[s.ID] = true
+		}
+	}
+	keepAncestors(sessions, keep)
+	kept = []backend.Session{}
+	for _, s := range sessions {
+		if keep[s.ID] {
 			kept = append(kept, s)
 		}
 	}
 	return kept, matched
+}
+
+// keepAncestors adds to keep every session a kept one descends from, so a
+// child that matched is drawn under its mother rather than as a root.
+func keepAncestors(sessions []backend.Session, keep map[string]bool) {
+	origin := make(map[string]string, len(sessions))
+	for _, s := range sessions {
+		origin[s.ID] = s.OriginSessionID
+	}
+	for id := range maps.Clone(keep) {
+		for up := origin[id]; up != "" && !keep[up]; up = origin[up] {
+			if _, open := origin[up]; !open {
+				break
+			}
+			keep[up] = true
+		}
+	}
 }
 
 // phaseCounts is the number beside each chip, counted against the query

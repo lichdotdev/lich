@@ -186,12 +186,21 @@ func (u *window) hotkeyTerminal(C) {
 }
 
 // hotkeyCards are the cards in the order the sidebar draws them, the ones in
-// a folded block marked hidden.
+// a folded block or under a folded mother marked hidden.
 func (u *window) hotkeyCards() []hotkeyCard {
 	var cards []hotkeyCard
 	for _, b := range u.model.sidebarBlocks(u.sidebar.header.filter()).blocks {
+		drawn := map[string]bool{}
+		for _, r := range blockRows(b, b.sessions) {
+			if r.kind == rowCard {
+				cards = append(cards, hotkeyCard{id: r.key, shown: !b.folded})
+				drawn[r.key] = true
+			}
+		}
 		for _, s := range b.sessions {
-			cards = append(cards, hotkeyCard{id: s.ID, shown: !b.folded})
+			if !drawn[s.ID] {
+				cards = append(cards, hotkeyCard{id: s.ID})
+			}
 		}
 	}
 	return cards

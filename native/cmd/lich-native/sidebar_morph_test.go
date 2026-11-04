@@ -93,6 +93,27 @@ func TestMorphCaptureSkipsTheFrameThatBeganIt(t *testing.T) {
 	}
 }
 
+// A tree's ring with no status draws only where the row says it is in a tree,
+// which the session's own view does not carry: the flight draws the ring as
+// the shape it flies for placed it, or the ring blinks out mid-flight.
+func TestMorphKeepsEachShapesPlaceFromTheCaptureFrame(t *testing.T) {
+	m := &sidebarMorph{}
+	gtx := layout.Context{Ops: new(op.Ops)}
+	m.begin(gtx)
+	m.side = sideFrom
+	m.keepPlace("s1", treePlace{})
+	m.side = sideTo
+	m.keepPlace("s1", treePlace{tree: true})
+	if m.places[sideFrom]["s1"].tree || !m.places[sideTo]["s1"].tree {
+		t.Fatalf("places = %+v, want s1 flat in the shape it leaves and a tree in the one it flies for", m.places)
+	}
+	m.phase = morphFlying
+	m.keepPlace("s1", treePlace{})
+	if !m.places[sideTo]["s1"].tree {
+		t.Fatal("a frame in flight overwrote the place the capture kept")
+	}
+}
+
 func TestMorphGlyphStepsAsideWhileItFlies(t *testing.T) {
 	m := &sidebarMorph{phase: morphFlying}
 	drawn := false
@@ -194,5 +215,23 @@ func TestSidebarMorphFitsTheTerminalToWhereItEndsAsItStarts(t *testing.T) {
 		if s.morph.holdsStage() {
 			t.Fatalf("opening=%v: still holds the stage a frame after landing", opening)
 		}
+	}
+}
+
+// The frame an expand is clicked in lays the top bar out after the sidebar
+// switched: the brand must start from the rail, not the last morph's end.
+func TestBrandStartsFromTheRailTheFrameAnExpandIsClicked(t *testing.T) {
+	s := newSidebar(&ui.Root{})
+	var ops op.Ops
+	gtx := layout.Context{Ops: &ops, Now: time.Unix(100, 0), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
+	s.widthRem = sidebarDefaultRem
+	// A collapse that played to its end leaves the morph at p = 1.
+	s.open = false
+	s.morph.p = 1
+	var act sidebarAction
+	s.setOpen(gtx, true, &act)
+	width, name := s.column(gtx)
+	if name != 0 || width != s.boxWidth(gtx, false) {
+		t.Errorf("brand at the click: width %d name %.2f, want the rail's width %d with no name", width, name, s.boxWidth(gtx, false))
 	}
 }

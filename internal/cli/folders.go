@@ -203,7 +203,8 @@ var folderTools = []mcpTool{
 		Description: "Move a lich session into a sidebar folder, the window's \"Move to " +
 			"folder\". Omit the session to file your own. A session is in at most one folder, " +
 			"so filing it moves it; a folder no session carries yet starts existing with this " +
-			"one in it, and an empty folder takes the session out of the one it is in.",
+			"one in it, and an empty folder takes the session out of the one it is in. Filed " +
+			"into a folder whose sessions share a color, it takes that color too.",
 		Schema: schema(map[string]any{
 			"folder": property("string",
 				"Folder to file the session under, exactly as list_folders names it, or a new "+

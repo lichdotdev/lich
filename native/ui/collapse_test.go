@@ -107,6 +107,19 @@ func TestPresenceHoldsALeavingKeyInItsSlot(t *testing.T) {
 	}
 }
 
+// A caller filtering what Update returned, as a sidebar block drops the rows
+// it no longer draws, must not reach into the next Update.
+func TestPresenceSurvivesACallerEditingTheKeysItReturned(t *testing.T) {
+	var p Presence
+	t0 := time.Unix(0, 0)
+	p.Update(t0, []string{"mother", "child"})
+	keys := p.Update(t0, []string{"mother"})
+	_ = slices.DeleteFunc(keys, func(k string) bool { return k == "child" })
+	if got := p.Update(t0, []string{"mother"}); !slices.Equal(got, []string{"mother", "child"}) {
+		t.Errorf("after the caller's edit: %v, want child still leaving in its slot", got)
+	}
+}
+
 func TestPresenceKeyComingBackStopsLeaving(t *testing.T) {
 	var p Presence
 	t0 := time.Unix(0, 0)

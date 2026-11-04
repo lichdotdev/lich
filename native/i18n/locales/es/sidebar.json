@@ -44,7 +44,8 @@
     "fork": "Bifurcar",
     "forkHere": "Aquí",
     "forkWorktree": "Worktree…",
-    "forkResumeOnly": "solo reanuda"
+    "forkResumeOnly": "solo reanuda",
+    "copyReplyCommand": "Copiar comando de respuesta"
   },
   "settingsCard": {
     "close": "Cerrar ajustes"
@@ -117,16 +118,8 @@
     "runConfined": "Ejecutar confinado"
   },
   "sessionTooltip": {
-    "waitingOn": "Esperando a {peer}",
-    "answering": "Respondiendo a {peer}",
-    "commandLine": "la línea de comandos",
-    "ticket": "ticket {ticket}",
-    "sandboxed": "En sandbox",
-    "confinedMeans": "Home vacío, máquina en solo lectura, escritura solo en este checkout.",
-    "setAtOpen": "Se define al abrir la sesión; vuelve a abrirla para cambiarlo.",
     "notMounted": "No montado (enlaces simbólicos): {paths}",
     "morePaths": "+{count} más",
-    "forkedFrom": "Bifurcada de {label}",
     "modelChanged": "Abierta con {requested}, ejecutando {running}"
   },
   "worktreeDialogView": {
@@ -212,5 +205,8 @@
       "never": "Aún sin iniciar",
       "stoppedAt": "Detenido · {time}"
     }
+  },
+  "checkoutRow": {
+    "newSessionHere": "Nueva sesión aquí"
   }
 }

@@ -74,8 +74,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Next waiting session reads the same ring** (`waitingTarget`, `native/cmd/lich-native/hotkeys_dispatch.go`):
   it jumps only to a card whose last report is Waiting, so it never lands on the five providers the chips above
   never put under Waiting. It walks the order next session walks,
-  the cards the sidebar shows (`hotkeyCards`): a card in a folded block or left out by the search and state
-  filter is skipped rather than its block unfolded, so a waiting session folded away is reached only through
+  the cards the sidebar shows (`hotkeyCards`): a card in a folded block, under a folded mother, or left out by the
+  search and state filter is skipped rather than unfolded, so a waiting session folded away is reached only through
   its block's mark. The active card never counts: when it is the only one waiting, the chord does nothing and
   goes on to the terminal.
 - **An interrupted turn is read off the keystrokes, not from the provider** (`internal/terminal/draft.go`,
@@ -900,6 +900,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the card animates out, so the closed session is held and drawn for the length of that exit. For those frames
   the sidebar draws a card for a session the state no longer holds, and anything counting or measuring cards
   sees one card too many.
+- **A child sits with the session that opened it, not with its checkout** (`native/cmd/lich-native/sidebar_tree.go`):
+  the sidebar's tree is read off `OriginSessionID`, so a session opened from another hangs from it in the
+  mother's block even when it runs in another worktree, under a row for that worktree inside the mother's
+  group; that worktree's own block does not list it. Each generation hangs a level deeper, so a deep tree
+  cuts its titles short at the sidebar's default width. A child whose mother closed, or lives in another
+  project, is a root again. A child pinned or filed in a folder on its own leaves the tree for that block.
+  How rich the tree is depends on the provider: only Claude Code, Codex and opencode fork, a subagent card
+  exists only on Claude Code with lich-plugin, and `open_session` reaches the providers with lich's MCP. A mother's fold is stored per session (`lich.sidebar.collapsed.__session__:<id>`)
+  and stays stored after the session closes.
+- **A checkout row reads the facts of its path, not of the sessions under it** (`checkoutFactsOf`,
+  `native/cmd/lich-native/sidebar_blocks.go`): the row shows the branch, pull request and changes of the
+  checkout's own path, which the git reader polls only while some session shows it. A checkout every
+  session under it left with `cd` shows nothing until one comes back. A checkout with no open session has no
+  row: the window learns of checkouts only through sessions. Inside a folder or the pinned block, the checkouts
+  of the sessions gathered there are rows too, but they only label: they do not fold, and they have no menu. The branch name is cut short at the sidebar's
+  default width when the row also shows a pull request and changes.
 - **A folder is a name on a session, so it has no life of its own** (`internal/store/mutations.go`,
   `native/cmd/lich-native/sidebar_groups.go`): the folder a card is filed under is a column on the session
   row, and the name is the whole identity — there is no folder record to point at. A folder exists only while a

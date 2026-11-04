@@ -44,7 +44,8 @@
     "fork": "フォーク",
     "forkHere": "ここで",
     "forkWorktree": "ワークツリー…",
-    "forkResumeOnly": "再開のみ"
+    "forkResumeOnly": "再開のみ",
+    "copyReplyCommand": "返信コマンドをコピー"
   },
   "settingsCard": {
     "close": "設定を閉じる"
@@ -117,16 +118,8 @@
     "runConfined": "隔離して実行"
   },
   "sessionTooltip": {
-    "waitingOn": "{peer} を待っています",
-    "answering": "{peer} に回答中",
-    "commandLine": "コマンドライン",
-    "ticket": "チケット {ticket}",
-    "sandboxed": "サンドボックス内",
-    "confinedMeans": "ホームは空、マシンは読み取り専用で、書き込みはこのチェックアウト内のみです。",
-    "setAtOpen": "セッションを開いたときに決まります。変更するには開き直してください。",
     "notMounted": "マウントされていません (シンボリックリンク): {paths}",
     "morePaths": "ほか {count} 件",
-    "forkedFrom": "{label} からフォーク",
     "modelChanged": "{requested} で開始、{running} で実行中"
   },
   "worktreeDialogView": {
@@ -212,5 +205,8 @@
       "never": "まだ開始していません",
       "stoppedAt": "停止 · {time}"
     }
+  },
+  "checkoutRow": {
+    "newSessionHere": "ここで新しいセッション"
   }
 }

@@ -22,6 +22,7 @@ var (
 	icTakeOut    = icons.Lucide("folder-minus")
 	icNewFolder  = icons.Lucide("plus")
 	icMenuFork   = icons.Lucide("git-fork")
+	icMenuCopy   = icons.Lucide("copy")
 )
 
 // cardMenu is the session card's right-click menu, cut to what this window
@@ -35,19 +36,26 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 	if sv.Pinned {
 		pin = ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.unpin"), Icon: icMenuUnpin, OnClick: func() { act.pin, act.pinTo = sv.ID, false }}
 	}
-	entries := []ui.MenuEntry{
-		{Label: i18n.T("sidebar.sessionCard.rename"), Icon: icMenuRename, OnClick: startRename},
+	var entries []ui.MenuEntry
+	// The rail draws no name to edit, so it passes no rename.
+	if startRename != nil {
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.rename"), Icon: icMenuRename, OnClick: startRename})
+	}
+	entries = append(entries,
 		pin,
-		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.cardColor.menu"), Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
+		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.cardColor.menu"), Icon: icMenuColor, Columns: 3, Sub: colorSwatches(sv.Color, func(name string) {
 			act.color, act.colorTo = sv.ID, name
 		})},
-		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
-		{Label: i18n.T("sidebar.sessionCard.browser"), Icon: icBrowser, OnClick: func() { act.browser = sv.ID }},
-		{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
+		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.moveToFolder"), Icon: icFolder, Sub: cardFolderMenu(sv, folders, act, newFolder)},
+		ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.browser"), Icon: icBrowser, OnClick: func() { act.browser = sv.ID }},
+		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
-	}
+	)
 	if fork, ok := forkItem(sv, act); ok {
 		entries = append(entries, fork)
+	}
+	if r := sv.relay; r.Direction == relayIn && r.Ticket != "" {
+		entries = append(entries, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.copyReplyCommand"), Icon: icMenuCopy, OnClick: func() { act.copyText = replyCommand(r.Ticket) }})
 	}
 	entries = append(entries, extra...)
 	if !sv.Pinned {
@@ -58,6 +66,10 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 	}
 	return entries
 }
+
+// replyCommand is what a session that lost its instruction runs to answer
+// the request on ticket.
+func replyCommand(ticket string) string { return `lich reply ` + ticket + ` "…"` }
 
 // colorSwatches is CardColorMenu's grid: the theme first, then the palette,
 // current checked.

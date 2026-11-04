@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"slices"
+	"strconv"
 	"strings"
 
+	"gioui.org/f32"
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -25,12 +30,25 @@ const (
 	sideHeight    unit.Dp = 420
 )
 
-// Header tints of SessionGroupHeader: the title's text-muted-foreground/70,
-// a refusing header's opacity-45 and the drop target's bg-tone-pass/15.
+// The tree's measures and tints: a row's height, a node's ring and the
+// indent a session hangs at; the header title's text-muted-foreground/70, a
+// refusing header's opacity-45, the links' and a neutral ring's muted
+// foreground, and a folder's tray (DESIGN.md › the sidebar: a tree of rows).
 const (
+	sideRow    unit.Dp = 34
+	sideRingR  unit.Dp = 11
+	sideIndent unit.Dp = 16
+	sideInset  unit.Dp = 6
+	sideElbow  unit.Dp = 5
+	sideStroke unit.Dp = 1.25
+
 	sideTitleOpacity  = 0.7
 	sideRefuseOpacity = 0.45
-	sideDropFill      = 0.15
+	sideLinkAlpha     = 0.45
+	sideRingAlpha     = 0.35
+	sideTrayAlpha     = 0.45
+	sideHoverFill     = 0.5
+	sideDropBorder    = unit.Dp(1.5)
 )
 
 var sidePhases = []string{"Waiting", "Running", "Unread", "Idle"}
@@ -80,7 +98,7 @@ func (g *gallery) sidebarSection(gtx C, th *ui.Theme) D {
 	return stack(3,
 		caption(th, "SessionPhaseChips: Chip with a count; empty and off dims"),
 		s.phaseChips(th),
-		caption(th, "SessionSidebar: drag a card (onto Reviews files it), a header, or the right edge"),
+		caption(th, "SessionSidebar: a tree of rows; drag a card (onto another block files it), a header, or the right edge; … adds a session"),
 		func(gtx C) D { return s.panel(gtx, th) },
 	)(gtx)
 }
@@ -158,15 +176,46 @@ func (s *sidebar) block(gtx C, th *ui.Theme, b *sideBlock) D {
 		s.dropCard(b, d)
 	}
 	shown := b.presence.Update(gtx.Now, b.cards)
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return s.header(gtx, th, b) }),
-		ui.VGap(1.5),
-		layout.Rigid(func(gtx C) D {
-			return b.fold.Layout(gtx, b.open, func(gtx C) D {
-				return b.cardSort.List(gtx, ui.SortList{}, shown, func(gtx C, i int) D { return s.card(gtx, th, b, shown[i]) })
-			})
-		}),
-	)
+	body := func(gtx C) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return s.header(gtx, th, b) }),
+			layout.Rigid(func(gtx C) D {
+				return b.fold.Layout(gtx, b.open, func(gtx C) D {
+					return b.cardSort.List(gtx, ui.SortList{Leaves: true}, shown, func(gtx C, i int) D {
+						return s.card(gtx, th, b, shown[i], i == len(shown)-1)
+					})
+				})
+			}),
+		)
+	}
+	// A folder sits on a tray; the block a carried card would go to lights
+	// its whole tray, a border round it.
+	switch {
+	case s.carry.Hovers(b.id):
+		return sideTray(gtx, th.Over(th.Accent), th.MutedForeground, body)
+	case b.folder:
+		return sideTray(gtx, th.Over(ui.Alpha(th.Accent, sideTrayAlpha)), color.NRGBA{}, body)
+	}
+	return body(gtx)
+}
+
+// sideTray lays w on a tray of fill, a border of edge round it when edge is
+// set.
+func sideTray(gtx C, fill, edge color.NRGBA, w layout.Widget) D {
+	m := op.Record(gtx.Ops)
+	d := w(gtx)
+	call := m.Stop()
+	rr := gtx.Dp(ui.RadiusLG)
+	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, rr)
+	paint.FillShape(gtx.Ops, fill, shape.Op(gtx.Ops))
+	call.Add(gtx.Ops)
+	if edge.A != 0 {
+		width := float32(gtx.Dp(sideDropBorder))
+		in := int(width / 2)
+		box := image.Rectangle{Min: image.Pt(in, in), Max: d.Size.Sub(image.Pt(in, in))}
+		paint.FillShape(gtx.Ops, edge, clip.Stroke{Path: clip.UniformRRect(box, rr-in).Path(gtx.Ops), Width: width}.Op())
+	}
+	return d
 }
 
 // dropCard reorders inside the block, or files the card under the folder it
@@ -187,28 +236,13 @@ func (s *sidebar) dropCard(b *sideBlock, d ui.SortDrop) {
 	}
 }
 
-// header is SessionGroupHeader: the title button is the block's drag handle,
-// and a folder takes a carried card from any other block.
+// header is a block's first row, its drag handle: a checkout's node and
+// branch, or a folder's glyph, title and count over a rule. A block takes a
+// card carried from another one.
 func (s *sidebar) header(gtx C, th *ui.Theme, b *sideBlock) D {
 	carried := s.carry.Carrying()
-	takes := b.folder && carried != "" && !slices.Contains(b.cards, carried)
-	refuses := carried != "" && !takes
-	over := takes && s.carry.Over() == b.id
-	row := func(gtx C) D {
-		bg := color.NRGBA{}
-		if over {
-			bg = th.Over(ui.Alpha(th.TonePass, sideDropFill))
-		}
-		m := op.Record(gtx.Ops)
-		d := s.headerRow(gtx, th, b, refuses)
-		call := m.Stop()
-		if bg.A != 0 {
-			gtx.Constraints.Min = d.Size
-			ui.Fill(gtx, bg, ui.RadiusSM)
-		}
-		call.Add(gtx.Ops)
-		return d
-	}
+	takes := carried != "" && !slices.Contains(b.cards, carried)
+	row := func(gtx C) D { return s.headerRow(gtx, th, b, carried != "" && !takes) }
 	handle := func(gtx C) D { return s.sort.Item(gtx, b.id, row, nil) }
 	if takes {
 		return s.carry.Target(gtx, b.id, handle)
@@ -221,36 +255,57 @@ func (s *sidebar) headerRow(gtx C, th *ui.Theme, b *sideBlock, refuses bool) D {
 	if refuses {
 		fg = th.Over(ui.Alpha(fg, sideRefuseOpacity))
 	}
-	chevron := "chevron-right"
-	if b.open {
-		chevron = "chevron-down"
-	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Flexed(1, func(gtx C) D {
-			return b.toggle.Layout(gtx, func(gtx C) D {
-				return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1), Left: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-						layout.Rigid(func(gtx C) D { return s.icon(chevron).Layout(gtx, ui.Space(3), fg) }),
-						ui.Gap(1.5),
-						layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(b.name)).In(fg).Weight(font.SemiBold).Layout),
-						ui.Gap(1.5),
-						layout.Flexed(1, func(gtx C) D { return th.Separator(gtx) }),
-					)
-				})
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			btn := th.Button(&b.add, "")
-			btn.Icon, btn.Variant, btn.Size = s.icon("plus"), ui.VariantGhost, ui.SizeIconXS
-			return btn.Layout(gtx)
-		}),
-	)
+	gtx.Constraints.Min.Y = gtx.Dp(sideRow)
+	title := func(gtx C) D {
+		if !b.folder {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return s.node(gtx, th, "git-branch", ui.Alpha(fg, 1)) }),
+				ui.Gap(1.5),
+				layout.Flexed(1, th.Text(ui.TextSM, b.name).In(fg).Weight(font.Medium).Layout),
+			)
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(2*sideRingR), gtx.Dp(ui.Space(3))))
+				return layout.Center.Layout(gtx, func(gtx C) D { return s.icon("folder").Layout(gtx, ui.Space(3), fg) })
+			}),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(b.name)).In(fg).Weight(font.SemiBold).Layout),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(len(b.cards))).In(fg).Layout),
+			ui.Gap(1.5),
+			layout.Flexed(1, func(gtx C) D { return th.Separator(gtx) }),
+		)
+	}
+	return b.toggle.Layout(gtx, func(gtx C) D {
+		return layout.Inset{Left: sideInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+				layout.Flexed(1, title),
+				layout.Rigid(func(gtx C) D {
+					btn := th.Button(&b.add, "")
+					btn.Icon, btn.Variant, btn.Size = s.icon("ellipsis"), ui.VariantGhost, ui.SizeIconXS
+					return btn.Layout(gtx)
+				}),
+			)
+		})
+	})
 }
 
-// card is a session card stand-in inside a Presence: the gap between
-// cards (pb-1.5) lives inside the motion, so a closing card takes it along.
-func (s *sidebar) card(gtx C, th *ui.Theme, b *sideBlock, id string) D {
+// node is a tree node: glyph in a neutral ring.
+func (s *sidebar) node(gtx C, th *ui.Theme, glyph string, fg color.NRGBA) D {
+	side := gtx.Dp(2 * sideRingR)
+	stroke := float32(gtx.Dp(sideStroke))
+	c := float32(side) / 2
+	ui.StrokeArc(gtx, f32.Pt(c, c), c-stroke/2, stroke, 0, 2*math.Pi, th.Over(ui.Alpha(th.MutedForeground, sideRingAlpha)))
+	gtx.Constraints = layout.Exact(image.Pt(side, side))
+	return layout.Center.Layout(gtx, func(gtx C) D { return s.icon(glyph).Layout(gtx, unit.Dp(13), fg) })
+}
+
+// card is a session row inside a Presence: in a checkout it hangs from the
+// checkout's line by an elbow, the last one ending it; the row lights under
+// the pointer and in the air, and a close sits in its corner.
+func (s *sidebar) card(gtx C, th *ui.Theme, b *sideBlock, id string, last bool) D {
 	closer := s.closers[id]
 	if closer == nil {
 		closer = new(widget.Clickable)
@@ -259,32 +314,37 @@ func (s *sidebar) card(gtx C, th *ui.Theme, b *sideBlock, id string) D {
 	if closer.Clicked(gtx) {
 		b.cards = slices.DeleteFunc(b.cards, func(c string) bool { return c == id })
 	}
-	box := func(gtx C) D { return s.cardBox(gtx, th, closer, id, b.cardSort.Dragging() == id) }
+	lifted := b.cardSort.Dragging() == id
+	box := func(gtx C) D { return s.cardRow(gtx, th, closer, id, !b.folder && !lifted, last, lifted) }
 	return b.presence.Layout(gtx, id, func(gtx C) D {
-		return layout.Inset{Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-			if b.presence.Leaving(id) {
-				return box(gtx)
-			}
-			return b.cardSort.Item(gtx, id, box, nil)
-		})
+		if b.presence.Leaving(id) {
+			return box(gtx)
+		}
+		return b.cardSort.Item(gtx, id, box, nil)
 	})
 }
 
-func (s *sidebar) cardBox(gtx C, th *ui.Theme, closer *widget.Clickable, id string, lifted bool) D {
-	bg := th.Over(ui.Alpha(th.Accent, sideCardFill))
-	if lifted {
-		bg = th.Accent
+func (s *sidebar) cardRow(gtx C, th *ui.Theme, closer *widget.Clickable, id string, hangs, last, lifted bool) D {
+	bg := color.NRGBA{}
+	if lifted || closer.Hovered() {
+		bg = th.Over(ui.Alpha(th.Accent, sideHoverFill))
 	}
-	on := th.On(bg)
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Background{}.Layout(gtx,
-		func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusLG) },
+	gtx.Constraints.Min.Y = gtx.Dp(sideRow)
+	indent := unit.Dp(0)
+	if hangs {
+		indent = sideIndent
+	}
+	d := layout.Background{}.Layout(gtx,
+		func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
 		func(gtx C) D {
-			return layout.Inset{Top: ui.Space(2), Bottom: ui.Space(2), Left: ui.Space(2.5), Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+			return layout.Inset{Left: sideInset + indent, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Flexed(1, on.Text(ui.TextSM, id).Layout),
+					layout.Rigid(func(gtx C) D { return s.node(gtx, th, "terminal", th.MutedForeground) }),
+					ui.Gap(1.5),
+					layout.Flexed(1, th.Text(ui.TextSM, id).Weight(font.Medium).Layout),
 					layout.Rigid(func(gtx C) D {
-						btn := on.Button(closer, "")
+						btn := th.Button(closer, "")
 						btn.Icon, btn.Variant, btn.Size = s.icon("x"), ui.VariantGhost, ui.SizeIconXS
 						return btn.Layout(gtx)
 					}),
@@ -292,7 +352,29 @@ func (s *sidebar) cardBox(gtx C, th *ui.Theme, closer *widget.Clickable, id stri
 			})
 		},
 	)
+	if hangs {
+		sideElbowLink(gtx, th, d.Size, last)
+	}
+	return d
 }
 
-// sideCardFill is the resting card's bg-accent/40 stand-in.
-const sideCardFill = 0.4
+// sideElbowLink is a row's link to its checkout's ring: down the checkout's
+// column, round the elbow to the row's ring, and on down past it unless the
+// row is the last.
+func sideElbowLink(gtx C, th *ui.Theme, size image.Point, last bool) {
+	px := float32(gtx.Dp(sideInset) + gtx.Dp(sideRingR))
+	ring := float32(gtx.Dp(sideInset) + gtx.Dp(sideIndent))
+	mid, elbow := float32(size.Y)/2, float32(gtx.Dp(sideElbow))
+	var p clip.Path
+	p.Begin(gtx.Ops)
+	p.MoveTo(f32.Pt(px, 0))
+	p.LineTo(f32.Pt(px, mid-elbow))
+	p.QuadTo(f32.Pt(px, mid), f32.Pt(px+elbow, mid))
+	p.LineTo(f32.Pt(ring, mid))
+	if !last {
+		p.MoveTo(f32.Pt(px, mid-elbow))
+		p.LineTo(f32.Pt(px, float32(size.Y)))
+	}
+	c := th.Over(ui.Alpha(th.MutedForeground, sideLinkAlpha))
+	paint.FillShape(gtx.Ops, c, clip.Stroke{Path: p.End(), Width: float32(gtx.Dp(sideStroke))}.Op())
+}

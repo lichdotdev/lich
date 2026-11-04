@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"strings"
 	"testing"
@@ -225,5 +226,152 @@ func TestABlocksHeaderUnfoldsWhenTheListSplits(t *testing.T) {
 	}
 	if out := sidebarHeights(split, alone); out[0] <= out[len(out)-1] || !moves(out) {
 		t.Errorf("headers hidden: heights %v, want the header folding away", out)
+	}
+}
+
+func TestAClosedCardShrinksOut(t *testing.T) {
+	out := sidebarHeights(blocksOf("p", [][]string{{"a", "b"}, {"c"}}), blocksOf("p", [][]string{{"a"}, {"c"}}))
+	if out[0] <= out[len(out)-1] || !moves(out) {
+		t.Errorf("a closed card: heights %v, want shrinking to the list without it", out)
+	}
+}
+
+func TestANewCardGrowsIn(t *testing.T) {
+	in := sidebarHeights(blocksOf("p", [][]string{{"a"}, {"c"}}), blocksOf("p", [][]string{{"a", "b"}, {"c"}}))
+	if in[0] >= in[len(in)-1] || !moves(in) {
+		t.Errorf("a new card: heights %v, want growing from the list without it", in)
+	}
+}
+
+func treeBlocksOf(ids ...string) sidebarView {
+	v := blocksOf("p", [][]string{ids, {"c"}})
+	v.blocks[0].under = "/repo"
+	v.blocks[0].path = "/repo"
+	for i := range v.blocks[0].sessions {
+		v.blocks[0].sessions[i].path = "/repo"
+	}
+	return v
+}
+
+func TestAClosedCardShrinksOutOfACheckoutTree(t *testing.T) {
+	out := sidebarHeights(treeBlocksOf("a", "b"), treeBlocksOf("a"))
+	if out[0] <= out[len(out)-1] || !moves(out) {
+		t.Errorf("a closed card: heights %v, want shrinking to the list without it", out)
+	}
+}
+
+func TestANewCardNeverDipsOnceItsLineHasDrawn(t *testing.T) {
+	s := newSidebar(&ui.Root{})
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
+	var r input.Router
+	t0 := time.Unix(100, 0)
+	frame := func(v sidebarView, at time.Duration) int {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Now: t0.Add(at), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+			Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
+		var act sidebarAction
+		s.blockList(gtx, th, v, "", &act)
+		r.Frame(&ops)
+		return s.list.Position.Length
+	}
+	before, after := blocksOf("p", [][]string{{"a"}, {"c"}}), blocksOf("p", [][]string{{"a", "b"}, {"c"}})
+	assertNoDip(t, frame, before, after)
+}
+
+func TestANewCheckoutNeverDipsOnceItsRowsHaveDrawn(t *testing.T) {
+	under := func(v sidebarView) sidebarView {
+		for i := range v.blocks {
+			v.blocks[i].under = v.blocks[i].key
+		}
+		return v
+	}
+	s := newSidebar(&ui.Root{})
+	th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
+	var r input.Router
+	t0 := time.Unix(100, 0)
+	frame := func(v sidebarView, at time.Duration) int {
+		var ops op.Ops
+		gtx := layout.Context{Ops: &ops, Source: r.Source(), Now: t0.Add(at), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+			Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
+		var act sidebarAction
+		s.blockList(gtx, th, v, "", &act)
+		r.Frame(&ops)
+		return s.list.Position.Length
+	}
+	assertNoDip(t, frame, under(blocksOf("p", [][]string{{"a"}})), under(blocksOf("p", [][]string{{"a"}, {"b"}})))
+}
+
+// assertNoDip draws before, then after for two seconds, and fails if the
+// list's height ever falls: what came in grows once, and stays.
+func assertNoDip(t *testing.T, frame func(sidebarView, time.Duration) int, before, after sidebarView) {
+	t.Helper()
+	frame(before, 0)
+	last := 0
+	for at := time.Duration(0); at <= 2*time.Second; at += 10 * time.Millisecond {
+		h := frame(after, at)
+		if h < last {
+			t.Fatalf("height %d at %v after %d: what came in dipped once it had grown", h, at, last)
+		}
+		last = h
+	}
+}
+
+func folderOf(paths ...string) sidebarView {
+	v := sidebarView{project: "p", showHeader: true}
+	b := blockView{key: folderKey("Later"), kind: blockFolder, folder: "Later", title: "Later", byCheckout: true}
+	for i, path := range paths {
+		b.sessions = append(b.sessions, sessionView{Session: backend.Session{ID: fmt.Sprint("s", i), Folder: "Later"}, projectID: "p", path: path})
+	}
+	other := blockView{key: "/repo", kind: blockCheckout, under: "/repo", sessions: []sessionView{{Session: backend.Session{ID: "root"}, projectID: "p", path: "/repo"}}}
+	v.blocks = []blockView{other, b}
+	return v
+}
+
+func TestACardClosedInAFolderShrinksOutByItsLine(t *testing.T) {
+	for name, c := range map[string][2]sidebarView{
+		"its checkout keeps a session": {folderOf("/a", "/a"), folderOf("/a")},
+		"its checkout's last session":  {folderOf("/a", "/b"), folderOf("/a")},
+	} {
+		out := sidebarHeights(c[0], c[1])
+		t.Logf("%s: %v", name, out)
+		if out[0] <= out[len(out)-1] || !moves(out) {
+			t.Errorf("%s: heights %v, want shrinking to the list without it", name, out)
+		}
+	}
+}
+
+func TestAFoldersLastCardLeavesByItsLine(t *testing.T) {
+	before, after := folderOf("/a"), folderOf()
+	after.blocks = after.blocks[:1]
+	out := sidebarHeights(before, after)
+	if final := out[len(out)-1]; out[len(out)/2] == final {
+		t.Errorf("heights %v: the folder was gone by %v, before its card's line could leave", out, ui.PresenceExit)
+	}
+}
+
+func TestANewFolderGrowsByItsLineWithoutDipping(t *testing.T) {
+	fresh := func() func(sidebarView, time.Duration) int {
+		s := newSidebar(&ui.Root{})
+		th := &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Sidebar}
+		var r input.Router
+		t0 := time.Unix(100, 0)
+		return func(v sidebarView, at time.Duration) int {
+			var ops op.Ops
+			gtx := layout.Context{Ops: &ops, Source: r.Source(), Now: t0.Add(at), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1},
+				Constraints: layout.Constraints{Max: image.Pt(300, 4000)}}
+			var act sidebarAction
+			s.blockList(gtx, th, v, "", &act)
+			r.Frame(&ops)
+			return s.list.Position.Length
+		}
+	}
+	before := folderOf()
+	before.blocks = before.blocks[:1]
+	after := folderOf("/a")
+	assertNoDip(t, fresh(), before, after)
+	frame := fresh()
+	frame(before, 0)
+	if mid, whole := frame(after, 300*time.Millisecond), frame(after, 2*time.Second); mid >= whole {
+		t.Errorf("the folder is %dpx at 300ms and %dpx at rest, want it still opening by its line at 300ms", mid, whole)
 	}
 }

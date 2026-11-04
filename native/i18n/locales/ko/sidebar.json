@@ -43,7 +43,8 @@
     "fork": "포크",
     "forkHere": "여기서",
     "forkWorktree": "worktree…",
-    "forkResumeOnly": "재개만 가능"
+    "forkResumeOnly": "재개만 가능",
+    "copyReplyCommand": "답장 명령 복사"
   },
   "settingsCard": {
     "close": "설정 닫기"
@@ -116,16 +117,8 @@
     "runConfined": "격리 실행"
   },
   "sessionTooltip": {
-    "waitingOn": "{peer}의 응답 대기 중",
-    "answering": "{peer}에 답하는 중",
-    "commandLine": "명령줄",
-    "ticket": "티켓 {ticket}",
-    "sandboxed": "샌드박스",
-    "confinedMeans": "빈 홈, 읽기 전용 머신, 이 체크아웃 안에서만 쓰기 가능.",
-    "setAtOpen": "세션을 열 때 정해집니다. 바꾸려면 다시 여세요.",
     "notMounted": "마운트되지 않음(심볼릭 링크): {paths}",
     "morePaths": "+{count}개 더",
-    "forkedFrom": "{label}에서 포크됨",
     "modelChanged": "{requested}(으)로 시작, {running} 실행 중"
   },
   "worktreeDialogView": {
@@ -209,5 +202,8 @@
       "never": "아직 시작하지 않음",
       "stoppedAt": "중지됨 · {time}"
     }
+  },
+  "checkoutRow": {
+    "newSessionHere": "여기서 새 세션"
   }
 }

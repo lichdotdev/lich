@@ -64,8 +64,8 @@ type presenceItem struct {
 }
 
 // Update takes the live keys at now and returns the keys to draw: live, with
-// every key that left less than PresenceExit ago put back where it was. Call
-// it once a frame, before Layout, with gtx.Now.
+// every key that left less than PresenceExit ago put back where it was, in a
+// slice the caller owns. Call it once a frame, before Layout, with gtx.Now.
 func (p *Presence) Update(now time.Time, live []string) []string {
 	if p.items == nil {
 		p.items = map[string]*presenceItem{}
@@ -93,7 +93,9 @@ func (p *Presence) Update(now time.Time, live []string) []string {
 	}
 	p.settled = true
 	p.drawn = p.withLeaving(live)
-	return p.drawn
+	// A copy: the caller may filter what it gets back, and p.drawn is what
+	// the next Update walks.
+	return slices.Clone(p.drawn)
 }
 
 // withLeaving is live with each leaving key spliced back at the slot it left.
@@ -119,6 +121,15 @@ func (p *Presence) Leaving(key string) bool {
 	return ok && it.leaving
 }
 
+// Settle puts key's item at rest, its entry played: an item another motion
+// brings in, which Layout would otherwise grow in again once that motion
+// hands it back.
+func (p *Presence) Settle(key string) {
+	if it, ok := p.items[key]; ok && !it.leaving {
+		it.motion.seed(1)
+	}
+}
+
 // Layout draws key's item w in its motion; a leaving item takes no input.
 func (p *Presence) Layout(gtx C, key string, w layout.Widget) D {
 	it, ok := p.items[key]
@@ -135,6 +146,10 @@ func (p *Presence) Layout(gtx C, key string, w layout.Widget) D {
 	}
 	return reveal(gtx, v, presenceScale+(1-presenceScale)*v, v, w)
 }
+
+// Reveal draws w clipped to rows of its height, the share of it a motion
+// has opened so far.
+func Reveal(gtx C, rows float32, w layout.Widget) D { return reveal(gtx, rows, 1, 1, w) }
 
 // reveal draws w clipped to rows of its height (a 0fr..1fr grid track),
 // scaled by scale from its top edge's middle (origin-top) and at opacity.

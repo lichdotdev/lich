@@ -154,6 +154,7 @@ what lich can read back out of it, since each CLI records different things.
 | Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |
 | A long paste can land as editable text instead of a folded placeholder (Settings › Providers, off by default) | yes | no | no | yes | not measured | no, it becomes a `paste_N.txt` attachment | no | yes |
 | Fork a conversation into a new worktree, or in its own checkout | yes | yes | no | yes | no | no | no | no |
+| A fork hangs from its source session in the sidebar's tree | yes | yes | no | yes | no | no | no | no |
 | Warned when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | at its next tool call | no | yes |
 | Open a session at a chosen reasoning effort | yes | yes | yes | no | yes | no | in the model name | yes |
 | Open a session with ultracode on | yes | no | no | no | no | no | no | no |

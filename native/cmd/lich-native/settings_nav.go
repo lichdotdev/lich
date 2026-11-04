@@ -29,7 +29,7 @@ const (
 
 var (
 	navRowHeight   = ui.Space(8)
-	navRowPadX     = ui.Space(2.5)
+	navRowPadX     = rowInset // a tree row's, so the nav reads on the sidebar's grid
 	navScopeHeight = ui.Space(10)
 	navScopeMenuW  = unit.Dp(212)
 	navBadgeSize   = unit.Dp(18)
@@ -202,8 +202,8 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, sec settingsSection, va
 			icon = fg
 		}
 		children := []layout.FlexChild{
-			layout.Rigid(func(gtx C) D { return sec.icon.Layout(gtx, ui.Space(4), icon) }),
-			ui.Gap(2.5),
+			layout.Rigid(inNodeColumn(func(gtx C) D { return sec.icon.Layout(gtx, ui.Space(4), icon) })),
+			ui.Gap(1.5),
 			layout.Flexed(1, th.Text(ui.TextSM, sec.label()).In(fg).Layout),
 		}
 		if where != "" {

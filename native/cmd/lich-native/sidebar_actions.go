@@ -65,6 +65,8 @@ func (m *model) commitBlockOrder(ctx context.Context, blockKey string, ids []str
 // fileSessions files sessions under folder, "" to take them out. Every id is
 // written: one the project does not hold fails nothing.
 func (m *model) fileSessions(ctx context.Context, ids []string, folder string) error {
+	stored, _ := m.storedSessions()
+	tint, repaint := folderTint(stored, ids, folder)
 	if !m.refileShown(func(s []backend.Session) ([]backend.Session, bool) { return fileSessions(s, ids, folder) }) {
 		return nil
 	}
@@ -73,7 +75,10 @@ func (m *model) fileSessions(ctx context.Context, ids []string, folder string) e
 			return err
 		}
 	}
-	return nil
+	if len(repaint) == 0 {
+		return nil
+	}
+	return m.paintSessions(ctx, repaint, tint)
 }
 
 // renameFolder renames a folder of the shown project, its fold moving with

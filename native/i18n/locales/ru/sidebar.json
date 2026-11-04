@@ -46,7 +46,8 @@
     "fork": "Форк",
     "forkHere": "Здесь",
     "forkWorktree": "Worktree…",
-    "forkResumeOnly": "только возобновление"
+    "forkResumeOnly": "только возобновление",
+    "copyReplyCommand": "Скопировать команду ответа"
   },
   "settingsCard": {
     "close": "Закрыть настройки"
@@ -119,16 +120,8 @@
     "runConfined": "Запуск в песочнице"
   },
   "sessionTooltip": {
-    "waitingOn": "Ждёт {peer}",
-    "answering": "Отвечает {peer}",
-    "commandLine": "командная строка",
-    "ticket": "тикет {ticket}",
-    "sandboxed": "В песочнице",
-    "confinedMeans": "Пустой домашний каталог, система только для чтения, запись только в эту рабочую копию.",
-    "setAtOpen": "Задаётся при открытии сессии; чтобы изменить, откройте её заново.",
     "notMounted": "Не смонтировано (симлинки): {paths}",
     "morePaths": "+ещё {count}",
-    "forkedFrom": "Форк от {label}",
     "modelChanged": "Открыта на {requested}, работает на {running}"
   },
   "worktreeDialogView": {
@@ -218,5 +211,8 @@
       "never": "Ещё не запускался",
       "stoppedAt": "Остановлен · {time}"
     }
+  },
+  "checkoutRow": {
+    "newSessionHere": "Новая сессия здесь"
   }
 }

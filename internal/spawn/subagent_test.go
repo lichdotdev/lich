@@ -273,3 +273,34 @@ func TestCloseFinishedWorkerIgnoresAWorkerAlreadyGone(t *testing.T) {
 		t.Errorf("parked %+v, closed %v; want nothing touched", sessions.parked, term.closed)
 	}
 }
+
+// A worker born into a folder its sessions painted pink took the pink off
+// it, born with no color: it is born wearing the folder's color.
+func TestOpenSubagentWearsItsFoldersColor(t *testing.T) {
+	svc, sessions, _, _, _ := newService(t)
+	sessions.projects[0].Sessions[0].Folder = "Auth"
+	sessions.projects[0].Sessions[0].Color = "pink"
+
+	opened, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"})
+	if err != nil {
+		t.Fatalf("OpenSubagent: %v", err)
+	}
+	if sessions.painted[opened.ID] != "pink" {
+		t.Errorf("painted = %v, want the worker pink like Auth", sessions.painted)
+	}
+}
+
+// A caller filed beside its workers, into a folder of its label that already
+// wears a color, wears it too.
+func TestOpenSubagentFilesTheCallerIntoItsFoldersColor(t *testing.T) {
+	svc, sessions, _, _, _ := newService(t)
+	sessions.projects[0].Sessions = append(sessions.projects[0].Sessions,
+		store.Session{ID: "w0", Label: "an earlier worker", Kind: "claude", Folder: "Session 3", Color: "blue"})
+
+	if _, err := svc.OpenSubagent(t.Context(), OpenSubagentOptions{From: "s1"}); err != nil {
+		t.Fatalf("OpenSubagent: %v", err)
+	}
+	if sessions.painted["s1"] != "blue" {
+		t.Errorf("painted = %v, want the caller blue like its workers' folder", sessions.painted)
+	}
+}

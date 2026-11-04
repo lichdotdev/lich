@@ -26,6 +26,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -73,6 +74,7 @@ type Sessions interface {
 	SetSessionFolder(_ context.Context, opts api.SessionFolderOptions) (api.None, error)
 	RenameFolder(_ context.Context, opts api.RenameProjectFolderOptions) ([]string, error)
 	ColorFolder(projectID, folder, color string) ([]string, error)
+	SetSessionColor(_ context.Context, opts api.SessionColorOptions) (api.None, error)
 	DeleteSession(projectID, sessionID, activeID string) error
 	CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error)
 	CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error)
@@ -261,18 +263,21 @@ func (s *Service) openSession(req request) (Session, error) {
 	// from the row, the session starts on the provider's own default and the
 	// failure is reported once it is running.
 	overrideErr := s.recordOverrides(id, label, model, effort, req.ultracode)
+	// A session born into a folder wears the color its sessions share, or it
+	// would take it off the folder; held like an override's failure.
+	colorErr := s.wearFolderColor(context.Background(), target, store.Session{ID: id}, folder)
 	// Announced before the spawn, and regardless of how it goes: the row exists
 	// either way, so the card has to exist either way too — a session only the
 	// database knows about is one the user cannot reach to see what went wrong.
 	if s.events != nil {
 		events.Send(s.events.Emit, api.SessionOpenedEvent, opened)
 	}
-	callerErr := s.fileCaller(target.ID, callerToFile, folder)
+	callerErr := s.fileCaller(target, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
 	if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: target.ID, Cwd: cwd, Kind: kind, Cols: startCols, Rows: startRows}); err != nil {
 		return Session{}, fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
 	}
-	if err := errors.Join(callerErr, overrideErr, markErr); err != nil {
+	if err := errors.Join(callerErr, overrideErr, colorErr, markErr); err != nil {
 		return Session{}, err
 	}
 	return opened, nil
@@ -312,7 +317,7 @@ func subagentFolder(target store.Project, fromID, originLabel string) (string, s
 // folder and tells the window, after the worker's card so the caller's move is
 // never what hides it. A write that fails is reported once the worker is
 // running, for the reason recordOverrides gives.
-func (s *Service) fileCaller(projectID, callerID, folder string) error {
+func (s *Service) fileCaller(target store.Project, callerID, folder string) error {
 	if callerID == "" {
 		return nil
 	}
@@ -320,9 +325,13 @@ func (s *Service) fileCaller(projectID, callerID, folder string) error {
 		return fmt.Errorf("the subagent is open, but its caller could not be filed under %q: %w", folder, err)
 	}
 	if s.events != nil {
-		events.Send(s.events.Emit, api.SessionsFiledEvent, FiledEvent{ProjectID: projectID, IDs: []string{callerID}, Folder: folder})
+		events.Send(s.events.Emit, api.SessionsFiledEvent, FiledEvent{ProjectID: target.ID, IDs: []string{callerID}, Folder: folder})
 	}
-	return nil
+	caller := store.Session{ID: callerID}
+	if i := slices.IndexFunc(target.Sessions, func(sess store.Session) bool { return sess.ID == callerID }); i >= 0 {
+		caller = target.Sessions[i]
+	}
+	return s.wearFolderColor(context.Background(), target, caller, folder)
 }
 
 // markSubagent records a subagent's depth on its row before its terminal

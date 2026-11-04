@@ -21,17 +21,19 @@ type sidebar struct {
 	menus   map[string]*ui.MenuState
 	renames map[string]*ui.InlineEdit
 	// renamed is the label a rename committed during this frame's layout.
-	renamed  sessionRename
-	cards    map[string]*widget.Clickable
-	closes   map[string]*widget.Clickable
-	pins     map[string]*widget.Clickable
+	renamed sessionRename
+	cards   map[string]*widget.Clickable
+	// moreClicks and moreMenus are the … of each card's corner and its menu.
+	moreClicks map[string]*widget.Clickable
+	moreMenus  map[string]*ui.MenuState
+	// checkoutRows are the checkout rows a mother's group or a folder draws,
+	// lit under the pointer.
+	checkoutRows map[string]*widget.Clickable
+	// mothers are the chevrons that fold a mother's children.
+	mothers  map[string]*widget.Clickable
 	prChips  map[string]*widget.Clickable
-	icBranch *icons.Icon
-	icClose  *icons.Icon
 	icPin    *icons.Icon
 	icShield *icons.Icon
-	icBehind *icons.Icon
-	icClash  *icons.Icon
 	icPR     *icons.Icon
 	started  time.Time
 
@@ -58,28 +60,26 @@ type sidebar struct {
 
 func newSidebar(root *ui.Root) *sidebar {
 	s := &sidebar{
-		root:     root,
-		cards:    map[string]*widget.Clickable{},
-		closes:   map[string]*widget.Clickable{},
-		pins:     map[string]*widget.Clickable{},
-		tips:     map[string]*ui.Tooltip{},
-		menus:    map[string]*ui.MenuState{},
-		renames:  map[string]*ui.InlineEdit{},
-		prChips:  map[string]*widget.Clickable{},
-		icBranch: icons.Lucide("git-branch"),
-		icClose:  icons.Lucide("x"),
-		icPin:    icons.Lucide("pin"),
-		icShield: icons.Lucide("shield"),
-		icBehind: icons.Lucide("arrow-down"),
-		icClash:  icons.Lucide("triangle-alert"),
-		icPR:     icons.Lucide("git-pull-request-arrow"),
-		started:  time.Now(),
-		widthRem: sidebarDefaultRem,
-		open:     true,
-		hints:    map[string]*ui.Tooltip{},
-		blocks:   map[string]*blockState{},
-		rail:     sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}},
-		services: newServicesFooter(),
+		root:         root,
+		cards:        map[string]*widget.Clickable{},
+		moreClicks:   map[string]*widget.Clickable{},
+		moreMenus:    map[string]*ui.MenuState{},
+		checkoutRows: map[string]*widget.Clickable{},
+		mothers:      map[string]*widget.Clickable{},
+		tips:         map[string]*ui.Tooltip{},
+		menus:        map[string]*ui.MenuState{},
+		renames:      map[string]*ui.InlineEdit{},
+		prChips:      map[string]*widget.Clickable{},
+		icPin:        icons.Lucide("pin"),
+		icShield:     icons.Lucide("shield"),
+		icPR:         icons.Lucide("git-pull-request-arrow"),
+		started:      time.Now(),
+		widthRem:     sidebarDefaultRem,
+		open:         true,
+		hints:        map[string]*ui.Tooltip{},
+		blocks:       map[string]*blockState{},
+		rail:         sidebarRail{cards: map[string]*widget.Clickable{}, tips: map[string]*ui.Tooltip{}, menus: map[string]*ui.MenuState{}},
+		services:     newServicesFooter(),
 	}
 	s.header.phases = map[sessionPhase]bool{}
 	s.list.Axis = layout.Vertical
@@ -108,7 +108,7 @@ func (s *sidebar) holdsKeys() bool {
 		return true
 	}
 	for _, b := range s.blocks {
-		if b.rename.Active() || b.launch.Opened() || b.options.Opened() {
+		if b.rename.Active() || b.options.Opened() || b.context.Opened() {
 			return true
 		}
 	}
@@ -136,6 +136,7 @@ type sidebarAction struct {
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
 	service                serviceRequest
+	copyText               string // text the card menu asked to put on the clipboard
 	sidebarWrites
 }
 
@@ -201,6 +202,8 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	pick(&a.browser, c.browser)
 	pick(&a.forkHere, c.forkHere)
 	pick(&a.forkWorktree, c.forkWorktree)
+	pick(&a.fold, c.fold)
+	pick(&a.copyText, c.copyText)
 	if c.pin != "" {
 		a.pin, a.pinTo = c.pin, c.pinTo
 	}
@@ -230,6 +233,7 @@ func (s *sidebar) shape(gtx C, th *ui.Theme, m *model, active string, open bool)
 	if !open {
 		return s.rail.layout(gtx, th, s, m, active)
 	}
+	s.rail.forget()
 	return s.panel(gtx, th, m, active)
 }
 
@@ -263,8 +267,8 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 		}
 		children = append(children, layout.Flexed(1, func(gtx C) D {
 			// The scroll column reaches into the padding up to the resize
-			// strip, so its scrollbar sits clear of the strip and its pr-2
-			// keeps the cards off it.
+			// strip, so its scrollbar sits clear of the strip, and the rows
+			// inside it end on the island's edge (blockList).
 			gtx.Constraints.Max.X += gtx.Dp(ui.Space(2)) - gtx.Dp(ui.ResizeWidth)
 			return s.blockList(gtx, on, view, active, &act)
 		}))

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 
@@ -37,6 +38,29 @@ type blockView struct {
 	collapsed bool   // the stored fold, what the chevron shows
 	folded    bool   // collapsed with a header drawn to undo it
 	mark      string // markWait / markDone while collapsed, else markNone
+	// under is the checkout a checkout block draws as the row its sessions
+	// hang from, "" while the block draws no header or is no checkout's.
+	under string
+	// byCheckout is a folder or the pinned block of a project that draws
+	// checkout rows: it draws them too (blockRows).
+	byCheckout bool
+	// motherFolds are the mothers of the block folded over their children.
+	motherFolds map[string]bool
+	// checkouts' facts, keyed by path: the header's and every checkout a
+	// child runs in apart from its mother.
+	facts map[string]checkoutFacts
+	// move is a checkout block or a folder coming in or leaving by the tree's
+	// motion, and head its header's share of it this frame; nil at rest.
+	move *blockMove
+	head *rowMotion
+}
+
+// checkoutFacts is what a checkout row shows and its tooltip spells out.
+type checkoutFacts struct {
+	label string
+	git   backend.DiffStats
+	base  *backend.BaseStatus
+	pr    *backend.PullRequest
 }
 
 // sidebarView is the shown project's sidebar under a filter.
@@ -104,6 +128,19 @@ func (m *model) dressBlock(p backend.Project, b sessionBlock, header bool, pendi
 	if collapsed {
 		v.mark = collapsedMark(pending, ids)
 	}
+	v.motherFolds = map[string]bool{}
+	v.facts = map[string]checkoutFacts{}
+	for _, sv := range v.sessions {
+		if m.folds[foldKey(p.ID, motherKey(sv.ID))] {
+			v.motherFolds[sv.ID] = true
+		}
+		v.facts[sv.path] = m.checkoutFactsOf(p, sv.path)
+	}
+	v.byCheckout = b.kind != blockCheckout && slices.ContainsFunc(p.Sessions, func(s backend.Session) bool { return s.Path != "" })
+	if header && b.kind == blockCheckout {
+		v.under = sessionPath(p, backend.Session{Path: b.path})
+		v.facts[v.under] = m.checkoutFactsOf(p, v.under)
+	}
 	switch b.kind {
 	case blockPinned:
 		v.title = i18n.T("sidebar.sessionGroup.pinned")
@@ -116,6 +153,18 @@ func (m *model) dressBlock(p backend.Project, b sessionBlock, header bool, pendi
 		v.title = checkoutLabel(b.path, p.Path, p.ID)
 	}
 	return v
+}
+
+// checkoutFactsOf reads what the checkout at path shows. Callers hold m.mu.
+func (m *model) checkoutFactsOf(p backend.Project, path string) checkoutFacts {
+	f := checkoutFacts{label: checkoutLabel(path, p.Path, p.ID), git: m.git[path], base: m.base[path], pr: m.prs[path].pr}
+	if path == p.Path {
+		f.label = checkoutLabel("", p.Path, p.ID)
+	}
+	if f.git.Branch != "" {
+		f.label = f.git.Branch
+	}
+	return f
 }
 
 // phaseOfSession looks up a session's phase. Callers hold m.mu.
@@ -134,9 +183,18 @@ func (m *model) loadFolds(ctx context.Context) error {
 	}
 	projectID := shown.ID
 	var unread []string
+	keys := make([]string, 0, len(shown.Sessions))
 	for _, b := range sessionBlocks(shown.Sessions) {
-		if _, ok := m.folds[foldKey(projectID, b.key)]; !ok {
-			unread = append(unread, b.key)
+		keys = append(keys, b.key)
+	}
+	for _, s := range shown.Sessions {
+		if s.OriginSessionID != "" {
+			keys = append(keys, motherKey(s.OriginSessionID))
+		}
+	}
+	for _, key := range keys {
+		if _, ok := m.folds[foldKey(projectID, key)]; !ok && !slices.Contains(unread, key) {
+			unread = append(unread, key)
 		}
 	}
 	m.mu.Unlock()

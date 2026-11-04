@@ -28,12 +28,11 @@ const (
 	text2XSLeading unit.Sp = 16
 )
 
-// The header's tints: the title's opacity, the count's, the title button's
-// hover fill, the drop target's fill and a refusing header's opacity.
+// The header's tints: the title's opacity, the count's, the drop target's
+// fill and a refusing header's opacity.
 const (
 	headerTitleOpacity  = 0.7
 	headerCountOpacity  = 0.6
-	headerHoverFill     = 0.5
 	headerDropFill      = 0.15
 	headerRefuseOpacity = 0.45
 )
@@ -59,21 +58,26 @@ var (
 	icGroupMore    = icons.Lucide("ellipsis")
 )
 
-// groupHeader is a block's header: the title (or the folder's rename field), the + and the …,
+// groupHeader is a block's header: the title (or the folder's rename field) and the …,
 // and under them the note a rename onto another folder earns. While a card is
 // carried, a header that takes it is a drop target; every other one fades.
 func (s *sidebar) groupHeader(gtx C, th *ui.Theme, b blockView, st *blockState, f blockFrame) D {
 	takes, refuses := s.headerDrop(b, f.view)
+	if b.kind == blockCheckout {
+		row := func(gtx C) D { return s.checkoutHeader(gtx, th, b, st, f) }
+		if !takes {
+			return row(gtx)
+		}
+		return s.carry.Target(gtx, b.key, row)
+	}
 	if st.toggle.Clicked(gtx) && !f.headerDragEnded {
 		f.act.fold = b.key
 	}
 	row := func(gtx C) D {
-		return layout.Inset{Left: ui.Space(1), Right: ui.Space(1), Top: ui.Space(1.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return s.headerLine(gtx, th, b, st, f, refuses) }),
-				layout.Rigid(func(gtx C) D { return s.mergeNote(gtx, th, b, st, f.view.folders) }),
-			)
-		})
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return s.headerLine(gtx, th, b, st, f, refuses) }),
+			layout.Rigid(func(gtx C) D { return s.mergeNote(gtx, th, b, st, f.view.folders) }),
+		)
 	}
 	if !takes {
 		return row(gtx)
@@ -98,27 +102,59 @@ func (s *sidebar) headerLine(gtx C, th *ui.Theme, b blockView, st *blockState, f
 		if st.rename.Active() {
 			return s.folderRenameField(gtx, th, b, st, f.act)
 		}
-		over := s.carry.Over() == b.key
-		w := func(gtx C) D { return s.titleButton(gtx, th, b, st, over, refuses) }
+		w := func(gtx C) D { return s.titleButton(gtx, th, b, st, refuses) }
 		if b.kind == blockPinned || f.filtering {
 			return w(gtx)
 		}
 		return s.sort.Item(gtx, b.key, w, nil)
 	}
-	children := []layout.FlexChild{layout.Flexed(1, title)}
-	act := f.act
-	if entries := blockLaunch(b, s.launchProviders, act); entries != nil {
-		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
-			return s.headerMenu(gtx, th, &st.launch, &st.plus, icPlus, i18n.T("sidebar.sessionGroupHeader.newSessionIn", i18n.Args{"name": b.title}), entries)
-		}))
-	}
+	// The line is a row's height, so its hover lights as a row's does.
+	rowHeight := gtx.Dp(2*sessionTreeRingR) + 2*gtx.Dp(ui.Space(1.5))
+	children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D {
+		gtx.Constraints.Min.Y = rowHeight
+		return title(gtx)
+	})}
 	hooks := blockMenuHooks{rename: func() { st.rename.Start(b.folder) }, newFolder: s.askFolderName}
-	if entries := blockOptions(b, f.view.folders, f.filtering, act, hooks); entries != nil {
+	entries := headerEntries(b, f, s.launchProviders, hooks)
+	if entries != nil {
 		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			return s.headerMenu(gtx, th, &st.options, &st.more, icGroupMore, i18n.T("sidebar.sessionGroupHeader.optionsFor", i18n.Args{"name": b.title}), entries)
 		}))
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	// The whole line lights under the pointer, as a row does, the … included.
+	fill := cardLayer(th, "", false, st.toggle.Hovered() || st.more.Hovered() || st.options.Opened() || st.context.Opened())
+	if s.carry.Over() == b.key {
+		// The card in the air lights the whole line it would drop on.
+		fill = th.Over(ui.Alpha(th.TonePass, headerDropFill))
+	}
+	line := func(gtx C) D {
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
+			func(gtx C) D {
+				return layout.Inset{Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+					gtx.Constraints.Min.Y = rowHeight
+					return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+				})
+			},
+		)
+	}
+	if entries == nil {
+		return line(gtx)
+	}
+	// The right click opens the …'s entries, as on every row.
+	return th.ContextMenuLazy(s.root, &st.context, func() []ui.MenuEntry {
+		return headerEntries(b, f, s.launchProviders, hooks)
+	}).Layout(gtx, line)
+}
+
+// headerEntries is the header's …: a session opened in the block, then the
+// block's own options. nil hides the button.
+func headerEntries(b blockView, f blockFrame, providers []launchProvider, hooks blockMenuHooks) []ui.MenuEntry {
+	var entries []ui.MenuEntry
+	if launch := blockLaunch(b, providers, f.act); launch != nil {
+		entries = append(entries, ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.checkoutRow.newSessionHere"), Icon: icPlus, Sub: launch})
+	}
+	return append(entries, blockOptions(b, f.view.folders, f.filtering, f.act, hooks)...)
 }
 
 // headerMenu is a ghost icon-xs trigger under its Hint, opening entries.
@@ -134,27 +170,15 @@ func (s *sidebar) headerMenu(gtx C, th *ui.Theme, state *ui.MenuState, click *wi
 
 // titleButton is the header's title button: the chevron, a folder's glyph and
 // count, the folded block's mark, then the rule to the row's end.
-func (s *sidebar) titleButton(gtx C, th *ui.Theme, b blockView, st *blockState, over, refuses bool) D {
+func (s *sidebar) titleButton(gtx C, th *ui.Theme, b blockView, st *blockState, refuses bool) D {
 	hint := i18n.T("sidebar.sessionGroupHeader.collapse", i18n.Args{"name": b.title})
 	if b.collapsed {
 		hint = i18n.T("sidebar.sessionGroupHeader.expand", i18n.Args{"name": b.title})
 	}
-	return layout.Inset{Left: -ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		return th.Tooltip(s.root, s.hint("fold:"+b.key), hint).Layout(gtx, func(gtx C) D {
-			return st.toggle.Layout(gtx, func(gtx C) D {
-				var bg color.NRGBA
-				switch {
-				case over:
-					bg = th.Over(ui.Alpha(th.TonePass, headerDropFill))
-				case st.toggle.Hovered():
-					bg = th.Over(ui.Alpha(th.Accent, headerHoverFill))
-				}
-				gtx.Constraints.Min.X = gtx.Constraints.Max.X
-				return layout.Background{}.Layout(gtx,
-					func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusSM) },
-					func(gtx C) D { return s.titleContent(gtx, th, b, st.toggle.Hovered(), refuses) },
-				)
-			})
+	return th.Tooltip(s.root, s.hint("fold:"+b.key), hint).Layout(gtx, func(gtx C) D {
+		return st.toggle.Layout(gtx, func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return s.titleContent(gtx, th, b, st.toggle.Hovered(), refuses)
 		})
 	})
 }
@@ -170,14 +194,31 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 	if hovered {
 		fg = fade(th.MutedForeground, 1)
 	}
-	kids := []layout.FlexChild{layout.Rigid(func(gtx C) D { return chevron(gtx, fg, !b.collapsed) }), ui.Gap(1.5)}
+	// The glyph sits in the ring's column and turns into the fold's chevron
+	// under the pointer, as a tree node does.
+	glyph, tint := icMenuPin, ""
 	if b.kind == blockFolder {
-		glyph := fade(th.MutedForeground, headerTitleOpacity)
-		if c, ok := cardColors[b.color]; ok {
-			glyph = fade(c, 1)
-		}
-		kids = append(kids, layout.Rigid(func(gtx C) D { return icGroupFolder.Layout(gtx, ui.Space(3), glyph) }), ui.Gap(1.5))
+		glyph, tint = icGroupFolder, b.color
 	}
+	glyphColor := fade(headGlyphTone(th, tint))
+	if hovered {
+		glyph, glyphColor = foldIcon(!b.collapsed), fg
+	}
+	if b.head != nil {
+		glyphColor = ui.Alpha(glyphColor, 1-b.head.entry.glyph)
+	}
+	kids := []layout.FlexChild{layout.Rigid(func(gtx C) D {
+		side := gtx.Dp(sessionTreeRingR) * 2
+		gtx.Constraints = layout.Exact(image.Pt(side, gtx.Dp(ui.Space(3))))
+		// The morph names the icon's own box, as the rail's is, so it flies
+		// from where it is drawn.
+		return layout.Center.Layout(gtx, func(gtx C) D {
+			return s.morph.glyph(gtx, glyphNode+b.key, func(gtx C) D {
+				gtx.Constraints = layout.Exact(image.Pt(gtx.Dp(ui.Space(3)), gtx.Dp(ui.Space(3))))
+				return centeredIcon(gtx, glyph, ui.Space(3), glyphColor)
+			})
+		})
+	}), ui.Gap(1.5)}
 	kids = append(kids, layout.Rigid(th.Text(text2XS, strings.ToUpper(b.title)).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout))
 	if b.kind == blockFolder {
 		count := th.Text(text2XS, strconv.Itoa(len(b.sessions))).Leading(text2XSLeading).In(fade(th.MutedForeground, headerCountOpacity)).Weight(font.Medium)
@@ -187,7 +228,8 @@ func (s *sidebar) titleContent(gtx C, th *ui.Theme, b blockView, hovered, refuse
 		kids = append(kids, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return markDot(gtx, fade(dot, 1)) }))
 	}
 	kids = append(kids, ui.Gap(1.5), layout.Flexed(1, th.Separator))
-	return layout.Inset{Left: ui.Space(1), Right: ui.Space(1), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+	// The line is a row's height already (headerLine); the content centres in it.
+	return layout.Inset{Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, kids...)
 	})
 }
@@ -255,4 +297,19 @@ func (s *sidebar) mergeNote(gtx C, th *ui.Theme, b blockView, st *blockState, fo
 			layout.Flexed(1, rest.Layout),
 		)
 	})
+}
+
+// headGlyphTone is a group head's glyph at rest, its color and the opacity
+// it draws at: a folder's color whole, or the title's muted tone.
+func headGlyphTone(th *ui.Theme, tint string) (color.NRGBA, float32) {
+	if c, ok := cardColors[tint]; ok {
+		return c, 1
+	}
+	return th.MutedForeground, headerTitleOpacity
+}
+
+// headGlyphColor is headGlyphTone over the theme's surface, as the rail and
+// the morph draw the glyph.
+func headGlyphColor(th *ui.Theme, tint string) color.NRGBA {
+	return th.Over(ui.Alpha(headGlyphTone(th, tint)))
 }

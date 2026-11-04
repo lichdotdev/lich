@@ -592,6 +592,9 @@ type sessionView struct {
 	// running is the model the provider's transcript reports, "" for a
 	// provider that reports none.
 	running string
+	// place is where the card sits in its block's tree, set when the block
+	// lays its rows out.
+	place treePlace
 }
 
 // viewOf is what s's card shows at now. Callers hold m.mu.

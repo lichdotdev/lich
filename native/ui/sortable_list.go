@@ -44,6 +44,10 @@ type SortList struct {
 	// there, it lands on a SortCarry target or nowhere. Without Leaves the
 	// item stays on the list's axis.
 	Leaves bool
+	// Snap moves the slot the pointer takes item a over, o, to the one it
+	// may land in, for a list whose order only some slots keep (a tree's
+	// children stay under their parent). Nil takes every slot.
+	Snap func(a, o int) int
 }
 
 // sortList is the geometry List laid out last frame, which Over reads before
@@ -58,6 +62,7 @@ type sortList struct {
 	horizontal    bool
 	press         f32.Point
 	slots         map[string]*sortSlot
+	snap          func(a, o int) int
 	// away is the item in the air carried out across the list's side this
 	// frame, which then makes room nowhere.
 	away bool
@@ -107,6 +112,19 @@ func (s *Sortable) List(gtx C, l SortList, ids []string, item func(gtx C, i int)
 	return D{Size: size}
 }
 
+// Landing is where the item in the air would land if let go now, on the
+// list's axis from the list's start, and its length: where the items between
+// its slot and the one it is over have stepped aside to leave room. ok is
+// false while no item of the list is in the air.
+func (s *Sortable) Landing() (at, length int, ok bool) {
+	g := &s.list
+	a := slices.Index(g.ids, s.active)
+	if a < 0 || a >= len(g.tops) {
+		return 0, 0, false
+	}
+	return g.tops[a] + g.target(s, a, a), g.heights[a], true
+}
+
 // pastSide reports whether the pointer carrying the item in the air is
 // beyond the list's sides, across its axis.
 func (g *sortList) pastSide(s *Sortable, size image.Point) bool {
@@ -136,7 +154,7 @@ func (s *Sortable) listPress(gtx C) {
 func (s *Sortable) measure(gtx C, l SortList, ids []string, item func(gtx C, i int) D) ([]op.CallOp, int) {
 	g := &s.list
 	g.ids, g.tops, g.heights = slices.Clone(ids), g.tops[:0], g.heights[:0]
-	g.gap, g.hang, g.within, g.horizontal = gtx.Dp(l.Gap), gtx.Dp(sortHang), l.Within, l.Horizontal
+	g.gap, g.hang, g.within, g.horizontal, g.snap = gtx.Dp(l.Gap), gtx.Dp(sortHang), l.Within, l.Horizontal, l.Snap
 	calls := make([]op.CallOp, len(ids))
 	igtx := gtx
 	cross := gtx.Constraints.Min.X
@@ -309,6 +327,9 @@ func (g *sortList) over(s *Sortable, a int) int {
 			best, dist = j, d
 		}
 	}
+	if g.snap != nil {
+		best = g.snap(a, best)
+	}
 	return best
 }
 
@@ -344,7 +365,10 @@ type SortCarry struct {
 	carrying string
 	// source is the Sortable the item in the air was picked up from.
 	source *Sortable
-	latest time.Time
+	// latest is the frame a target was last laid out in, and previous the
+	// one before it: a target laid out in either still stands, as one below
+	// the item's own list is laid out after it hears the release.
+	latest, previous time.Time
 }
 
 // carryTarget is a target's event tag; laid is the frame it was last laid
@@ -383,11 +407,19 @@ func (c *SortCarry) Over() string {
 		return ""
 	}
 	for id, t := range c.targets {
-		if t.hovered && t.laid.Equal(c.latest) {
+		if t.hovered && (t.laid.Equal(c.latest) || t.laid.Equal(c.previous)) {
 			return id
 		}
 	}
 	return ""
+}
+
+// Hovers reports whether target id is under the item in the air, as of the
+// pointer's last move over it: unlike Over, it reads true before the target
+// is laid out this frame, for what is drawn under it.
+func (c *SortCarry) Hovers(id string) bool {
+	t := c.targets[id]
+	return c.carrying != "" && t != nil && t.hovered
 }
 
 // Target lays out w as the drop target id. Lay out only a target that takes
@@ -401,7 +433,10 @@ func (c *SortCarry) Target(gtx C, id string, w layout.Widget) D {
 		t = &carryTarget{}
 		c.targets[id] = t
 	}
-	t.laid, c.latest = gtx.Now, gtx.Now
+	if !gtx.Now.Equal(c.latest) {
+		c.previous, c.latest = c.latest, gtx.Now
+	}
+	t.laid = gtx.Now
 	c.hover(gtx)
 	d := w(gtx)
 	defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
