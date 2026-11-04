@@ -62,10 +62,10 @@ from `main` either drowns in merges or freezes the web app for months.
 - **`GOGC`** left unset, `lich-native` collects at 50 instead of Go's 100: a window with many sessions keeps a
   live heap of hundreds of MB, and at 100 half the resident size is slack the system swaps out. Set `GOGC` to
   choose another value.
-- **`GIO_DAMAGE=off`** has the window draw every frame whole. By default it draws only what changed since the
-  frame the back buffer holds, where the EGL driver reports the buffer's age (Linux, Wayland and X11), and tells
-  the compositor that area as the surface's damage; a driver that reports a wrong age shows stale pixels, and
-  this is the way out while it is reported. Windows and macOS always draw frames whole.
+- **`GIO_DAMAGE=on`** has the window draw only what changed since the frame the back buffer holds, where the EGL
+  driver reports the buffer's age (Linux, Wayland and X11), and tell the compositor that area as the surface's
+  damage. By default every frame is drawn whole: a driver that reports a wrong age shows stale pixels across the
+  window. Windows and macOS always draw frames whole.
 
 ## cgo: the one exception
 

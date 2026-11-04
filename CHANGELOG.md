@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On Linux, the window no longer turns to scattered stale pixels on graphics drivers that misreport what their buffers hold, as NVIDIA 595 on COSMIC does: every frame is drawn whole again, as before 0.84.0. Drawing only what changed, and its lower graphics card load, is now opt-in with `GIO_DAMAGE=on` in the environment.
 - A lich built from a release with a label of its own in its version, such as `0.83.0+local.3`, is offered the next release by Check for updates and the startup check. Before, any build with a `+` in its version was taken for a development build and told it was on the latest version.
 
 ## [0.84.0] - 2026-11-03
