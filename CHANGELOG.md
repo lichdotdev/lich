@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.84.0] - 2026-11-03
+
 ### Added
 
 - The Conversation tab of a pull request on the Pulls screen shows each author's GitHub picture beside their reviews and comments, in a column down the left, the way GitHub does. Comments inside a review thread, on the Conversation tab and on the Files tab, are separated by a line. Until a picture loads, or for an account that has none, the author's initial stands in its place.
@@ -15,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The lich plugin's theme skill, which writes, ports or fixes a lich color theme, now reaches opencode, oh-my-pi, Crush and Kiro CLI as `lich-theme`; it was only in Claude Code, Codex, Antigravity and Cursor CLI. In opencode it is the `/lich-theme` command. It arrives with the next install or update of the plugin from Settings › Providers.
 - opencode 2 runs in lich. lich tells it from opencode 1 by its version and opens it the way 2 expects: each session on a server of its own, so its profile, its model and lich's tools reach it, with forks, Unfold long pastes, profile logins and the OpenCode Go gauge working as they do on opencode 1. Conversations started in opencode 2, and opencode 1 ones it has continued, show their cost, closing words and search results again, and are listed in History. The card's spinner, ring, bell and title need the lich plugin's next release, installed from Settings › Providers, which now goes where opencode 2 reads plugins and takes the place of the copy an older lich installed. A session lich opens is not on opencode 2's shared background server, so `opencode pair` and the desktop app don't see it.
 - The Description heading on the Pulls screen's Overview has a ⋯ menu, as GitHub's comments do: Copy link copies the pull request's address, Copy Markdown its description as written, and Edit opens the description for editing, which the Edit button beside the heading did before.
-
 - An agent can manage a project's services as the Services footer does: list, create, edit, delete, start, stop, force-stop and restart one, start or stop them all, and read what one has printed, running or stopped, with the `*_service` MCP tools or `lich service` from a terminal. A service is named by its name in the project, the agent's own unless it names another.
 
 ### Changed
@@ -28,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On the Pulls screen, the button that sends a pull request's open review threads to its session sits in the header beside Open in Session, on every tab, at the size of the buttons around it. It was a small button at the top of the Conversation tab, out of sight once the conversation was scrolled.
 - The sidebar's resize strip sits on the sidebar's own right edge, as the Code and Review panel's does, instead of in the gap between the sidebar and the sessions.
 - The sidebar is a tree of sessions. A session is one line: its ring, its name, its pull request and changes, and a corner where a … under the pointer opens the session's menu, close included. What the card's other lines said moved to its tooltip: the tool the turn runs or what it waits on, for how long, the path and the model. Each checkout is a row of its own, with its branch, pull request and changes, and its sessions hang from it. A session another one opened (a fork, a session opened with `open_session` or `lich open`, a subagent card) hangs from the session that opened it, even when it runs in another worktree, and a mother folds her children away, keeping a count and the waiting or unread mark. Rows move by their line: as a mother opens, a session opens or a worktree or a folder appears, a row opens with its name already on it and the line runs down to it and draws its ring; folding or closing takes the name off, undraws the ring and runs the line back up, and a worktree's or a folder's last session leaving takes the worktree's row, or the folder, out after it. A folder sits on a tray, so where it ends shows. Pinning moved to the card's menu, which also copies the `lich reply` command of a request the session owes. A project with no worktree keeps a flat list. The collapsed sidebar shows the same tree in one column: each checkout's node, the line through its sessions, a child's smaller ring on its mother's line, and each folder on its tray, its rows coming and going by the same line. Dragging a session lets go of its line, shows a dashed slot where it will join the tree, and draws the line back to it once it lands; the folder or worktree it would be filed into lights up whole. A dragged mother takes her children with her, and a session only lands where the tree keeps it, never between a mother and her child. A session filed into a folder that wears a color takes that color, so the folder keeps it, whether you drag it there, pick the folder in its menu, or an agent files it with `file_session` or `lich file`; a session opened into a folder, a subagent's worker or the session that asked for it, wears it too. Dropping a session on a folder further down the sidebar files it again, where it went back to its place when a worktree above also took it. The collapsed sidebar drags sessions too, and its search button opens the same filter as the open sidebar, which keeps filtering the rail after its panel closes.
-
 - On the Pulls screen's Overview, the Description heading and its ⋯ stay in place at the top of the column while the description scrolls under them, over a separator, and the ⋯ sits at the column's right edge.
 - The Pulls screen's loading placeholders match what loads in their place: the index shows rows the height of real ones with the checks column where it lands, filling the screen, and a pull request shows its title row with its buttons, the real tab strip, and the open tab's layout (the description beside its facts, commits, checks, the conversation's avatars and comments, or the files' toolbar, tree and cards) instead of a few generic bars. The conversation and the diff show the same placeholders while they load, in place of a line of text.
 
@@ -6506,7 +6506,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.83.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.84.0...HEAD
+[0.84.0]: https://github.com/lichdotdev/lich/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/lichdotdev/lich/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/lichdotdev/lich/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/lichdotdev/lich/compare/v0.80.0...v0.81.0
