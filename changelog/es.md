@@ -1,3 +1,15 @@
+## [0.85.1] - 2026-11-05
+
+### Changed
+
+- La nota bajo un lote de comentarios de revisión, en Código, Revisión y Pull requests, ahora es un cuadro que crece a medida que escribes: Shift+Enter empieza una línea nueva y Enter la sigue añadiendo al lote.
+
+### Fixed
+
+- Una variable que el rc de tu shell exporta con un salto de línea en su valor (un certificado, una clave) llega completa a tus sesiones. Antes solo llegaba su primera línea, y una línea posterior escrita como `NAME=value` aparecía como una variable aparte.
+- Un archivo marcado como Visto en la pestaña Archivos de la pantalla de Pull requests se abre plegado cuando se vuelve a abrir el pull request, hasta que un nuevo commit lo cambie. Antes volvía abierto.
+- Abrir lich de nuevo justo después de cerrarlo, o el reinicio tras una actualización, ya no falla con "lich could not listen on 127.0.0.1:47821" mientras el lich anterior aún detiene los servicios de un proyecto. Al salir, ahora libera el puerto antes de esperarlos.
+
 ## [0.85.0] - 2026-11-04
 
 ### Added
