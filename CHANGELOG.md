@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.85.1] - 2026-11-05
+
 ### Changed
 
 - The note under a batch of review comments, in Code, Review and Pulls, is now a box that grows with what you write: Shift+Enter starts a new line, Enter still adds it to the batch.
@@ -6527,7 +6529,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.85.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.85.1...HEAD
+[0.85.1]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.85.1
 [0.85.0]: https://github.com/lichdotdev/lich/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/lichdotdev/lich/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/lichdotdev/lich/compare/v0.82.0...v0.83.0
