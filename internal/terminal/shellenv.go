@@ -122,9 +122,10 @@ func ReresolveShellEnv(base []string) ([]string, error) {
 	// config.fish is interactive-only) run; `env` is external, so the command is
 	// identical across shells. It prints into a pipe, not the pty: coreutils'
 	// env (9.x) quotes a value it prints to a terminal, and the quotes would
-	// land in every session's environment.
+	// land in every session's environment. -0 ends each variable with NUL, so a
+	// value spanning newlines comes back whole.
 	out, parked, err := runShellDump(ctx, shell,
-		"echo "+shellEnvSentinel+"; env | cat; echo "+shellEnvEnd, shellEnvEnd, base)
+		"echo "+shellEnvSentinel+"; env -0 | cat; echo "+shellEnvEnd, shellEnvEnd, base)
 	if parked != nil {
 		noteParkedReader(parked)
 	}
@@ -176,12 +177,16 @@ func shellDumpDigest(out string) string {
 	return fmt.Sprintf("%d bytes, starting: %s", len(out), strings.Join(lines, " | "))
 }
 
-// parseShellEnvDump returns the KEY=VALUE lines env printed between the last
-// sentinel and end, or nil when either is missing: a dump cut short (the shell
-// died or ctx expired mid-env) is not an environment, and merging half of one
-// would pin a PATH the shell never had. It is line-based, so a value spanning a
-// newline loses its tail; switch the dump to `env -0` and split on NUL if that
-// ever bites.
+// parseShellEnvDump returns the NUL-terminated KEY=VALUE entries env -0 printed
+// between the last sentinel and end, or nil when either is missing: a dump cut
+// short (the shell died or ctx expired mid-env) is not an environment, and
+// merging half of one would pin a PATH the shell never had. An env without -0
+// prints its usage instead, which holds no entry and so yields nil too.
+//
+// The pty turns every "\n" the dump carries into "\r\n" (ONLCR), so that is
+// undone before splitting. shortcut: a value holding a literal "\r\n" loses its
+// "\r" where the dump never crossed a pty (Windows pipes, an rc that ran
+// stty -onlcr); read the dump off a pipe instead if that ever bites.
 func parseShellEnvDump(sentinel, end, out string) []string {
 	_, dump, ok := strings.CutLast(out, sentinel)
 	if !ok {
@@ -191,18 +196,19 @@ func parseShellEnvDump(sentinel, end, out string) []string {
 	if !ok {
 		return nil
 	}
+	dump = strings.ReplaceAll(dump, "\r\n", "\n")
+	dump = strings.TrimPrefix(dump, "\n")
 	var kv []string
-	for line := range strings.SplitSeq(dump, "\n") {
-		line = strings.TrimSuffix(line, "\r")
-		if key, _, ok := strings.Cut(line, "="); ok && validEnvKey(key) {
-			kv = append(kv, line)
+	for entry := range strings.SplitSeq(dump, "\x00") {
+		if key, _, ok := strings.Cut(entry, "="); ok && validEnvKey(key) {
+			kv = append(kv, entry)
 		}
 	}
 	return kv
 }
 
-// validEnvKey rejects a multi-line value's continuation line (which may still
-// contain '=') by holding lines to a POSIX variable name.
+// validEnvKey holds an entry to a POSIX variable name, rejecting what env -0 can
+// still print that is no variable (a bash exported function, BASH_FUNC_f%%).
 func validEnvKey(s string) bool {
 	if s == "" {
 		return false

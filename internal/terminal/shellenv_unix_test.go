@@ -81,7 +81,7 @@ func TestRunShellDumpWaitsOutSilenceBeforeEnd(t *testing.T) {
 	defer cancel()
 
 	out, _, err := runShellDump(ctx, "/bin/sh",
-		"echo "+shellEnvSentinel+"; sleep 1; echo LATE=yes; echo "+shellEnvEnd, shellEnvEnd, os.Environ())
+		"echo "+shellEnvSentinel+"; sleep 1; printf 'LATE=yes\\0'; echo "+shellEnvEnd, shellEnvEnd, os.Environ())
 	if err != nil {
 		t.Fatalf("runShellDump error: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestReresolveShellEnvSingleFlightWhileReaderParked(t *testing.T) {
 	script := "#!/bin/sh\n" +
 		"echo x >> " + spawns + "\n" +
 		"echo " + shellEnvSentinel + "\n" +
-		"echo PATH=/late/install\n" +
+		"printf 'PATH=/late/install\\0'\n" +
 		"echo " + shellEnvEnd + "\n" +
 		"exec " + sleep + " 30\n"
 	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
@@ -194,6 +194,33 @@ func TestResolveShellEnvKeepsValuesUnquoted(t *testing.T) {
 	if !slices.Contains(got, want) {
 		t.Fatalf("resolved env lost %q: %q", want, slices.DeleteFunc(got, func(kv string) bool {
 			return !strings.HasPrefix(kv, "LICH_TEST_SPECIAL=")
+		}))
+	}
+}
+
+// TestResolveShellEnvKeepsMultiLineValues pins the NUL-separated dump: read line
+// by line, a value spanning newlines lost its tail, and a continuation line
+// shaped like an assignment came back as a variable of its own (a PATH= line
+// there would be pinned into lich itself by PinPath).
+func TestResolveShellEnvKeepsMultiLineValues(t *testing.T) {
+	sh, err := exec.LookPath("sh")
+	if err != nil {
+		t.Skip("no sh on PATH")
+	}
+	t.Setenv("SHELL", sh)
+	const want = "LICH_TEST_CERT=-----BEGIN-----\nLICH_TEST_INJECTED=yes\r\n-----END-----"
+	got, err := ReresolveShellEnv([]string{"PATH=" + os.Getenv("PATH"), "HOME=" + t.TempDir(), want})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(got, want) {
+		t.Errorf("resolved env lost the multi-line value: %q", slices.DeleteFunc(slices.Clone(got), func(kv string) bool {
+			return !strings.HasPrefix(kv, "LICH_TEST_")
+		}))
+	}
+	if slices.ContainsFunc(got, func(kv string) bool { return strings.HasPrefix(kv, "LICH_TEST_INJECTED=") }) {
+		t.Errorf("a continuation line came back as a variable: %q", slices.DeleteFunc(slices.Clone(got), func(kv string) bool {
+			return !strings.HasPrefix(kv, "LICH_TEST_")
 		}))
 	}
 }

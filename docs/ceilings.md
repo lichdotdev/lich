@@ -802,7 +802,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   but neither closing that pty from another goroutine nor `SetReadDeadline` interrupts a read already blocked in
   it (both measured directly against a blocked read: Close returns without error and the read stays parked in
   the kernel regardless, and the deadline is never enforced on this fd). So the read is driven from a goroutine
-  free to outlive the call, and the dump is `echo <start>; env; echo <end>`: the read returns the moment the end
+  free to outlive the call, and the dump is `echo <start>; env -0; echo <end>`: the read returns the moment the end
   marker arrives, which is what lets an rc that backgrounds a job (an `ssh-agent`/`gpg-agent` eval, a prompt
   tool) still hand back the dump instead of paying the full `shellEnvTimeout`. Two edges follow. A shell that
   never prints the end marker (a hung rc, a prompt waiting on input, an
@@ -813,6 +813,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   resolution. And the reader goroutine outlives the call for whatever still holds the pty: the fd,
   the goroutine and the zombie child persist until that holder exits on its own or lich itself does, one leak
   per resolution that hits this edge, not a recurring one.
+  The `-0` is what keeps a value spanning newlines whole, and it holds the dump to an `env` that has it (GNU
+  coreutils does): an `env` without it prints its usage, no entry parses, and the session gets
+  the launch env with a logged warning, as on any other failed dump.
   And **Windows gets none of this**: `SHELL` is normally unset there, so `ResolveShellEnv` returns before
   `shellenv_windows.go`'s pipe-based `runShellDump` ever runs — but on a machine where the user sets it anyway
   (Git Bash, a POSIX-ish shell reached through PATH), that path still runs over a pipe, so an rc guarded the

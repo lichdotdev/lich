@@ -24,37 +24,37 @@ func TestParseShellEnvDump(t *testing.T) {
 		},
 		{
 			name: "chatter before sentinel is dropped",
-			out:  "Welcome to zsh!\nbash: no job control in this shell\n" + shellEnvSentinel + "\nTOKEN=secret\nPATH=/x\n" + shellEnvEnd + "\n",
+			out:  "Welcome to zsh!\nbash: no job control in this shell\n" + shellEnvSentinel + "\nTOKEN=secret\x00PATH=/x\x00" + shellEnvEnd + "\n",
 			want: []string{"TOKEN=secret", "PATH=/x"},
 		},
 		{
 			name: "last sentinel wins when rc echoes it",
-			out:  shellEnvSentinel + "\nSTALE=1\n" + shellEnvSentinel + "\nREAL=2\n" + shellEnvEnd + "\n",
+			out:  shellEnvSentinel + "\nSTALE=1\x00" + shellEnvSentinel + "\nREAL=2\x00" + shellEnvEnd + "\n",
 			want: []string{"REAL=2"},
 		},
 		{
-			name: "non-key lines are skipped",
-			out:  shellEnvSentinel + "\nGOOD=1\n  continuation of a value\nALSO_GOOD=2\n" + shellEnvEnd + "\n",
-			want: []string{"GOOD=1", "ALSO_GOOD=2"},
+			name: "multi-line value stays whole and non-variables are skipped",
+			out:  shellEnvSentinel + "\nGOOD=1\nPATH=/not-a-var\x00BASH_FUNC_f%%=() {  true\n}\x00ALSO_GOOD=2\x00" + shellEnvEnd + "\n",
+			want: []string{"GOOD=1\nPATH=/not-a-var", "ALSO_GOOD=2"},
 		},
 		{
-			name: "carriage returns are trimmed",
-			out:  shellEnvSentinel + "\r\nWIN=1\r\n" + shellEnvEnd + "\r\n",
-			want: []string{"WIN=1"},
+			name: "carriage returns the pty adds are undone",
+			out:  shellEnvSentinel + "\r\nWIN=a\r\nb\x00" + shellEnvEnd + "\r\n",
+			want: []string{"WIN=a\nb"},
 		},
 		{
 			name: "empty value is preserved",
-			out:  shellEnvSentinel + "\nEMPTY=\n" + shellEnvEnd + "\n",
+			out:  shellEnvSentinel + "\nEMPTY=\x00" + shellEnvEnd + "\n",
 			want: []string{"EMPTY="},
 		},
 		{
 			name: "dump cut before the end marker keeps launch env",
-			out:  shellEnvSentinel + "\nHOME=/h\nPA",
+			out:  shellEnvSentinel + "\nHOME=/h\x00PA",
 			want: nil,
 		},
 		{
 			name: "background job chatter after the end marker is dropped",
-			out:  shellEnvSentinel + "\nA=1\n" + shellEnvEnd + "\nAGENT_PID=42\n",
+			out:  shellEnvSentinel + "\nA=1\x00" + shellEnvEnd + "\nAGENT_PID=42\n",
 			want: []string{"A=1"},
 		},
 	}
@@ -115,9 +115,9 @@ func TestResolveShellEnv(t *testing.T) {
 	fake := filepath.Join(dir, "fakeshell")
 	script := "#!/bin/sh\n" +
 		"echo " + shellEnvSentinel + "\n" +
-		"echo FROM_SHELL=yes\n" +
-		"echo PATH=/shell/bin\n" +
-		"echo INHERITED=$LAUNCH_ONLY\n" +
+		"printf 'FROM_SHELL=yes\\0'\n" +
+		"printf 'PATH=/shell/bin\\0'\n" +
+		"printf 'INHERITED=%s\\0' \"$LAUNCH_ONLY\"\n" +
 		"echo " + shellEnvEnd + "\n"
 	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
@@ -211,7 +211,7 @@ func TestReresolveShellEnvRepinsPATH(t *testing.T) {
 	fake := filepath.Join(dir, "fakeshell")
 	script := "#!/bin/sh\n" +
 		"echo " + shellEnvSentinel + "\n" +
-		"echo PATH=/late/install:/orig\n" +
+		"printf 'PATH=/late/install:/orig\\0'\n" +
 		"echo " + shellEnvEnd + "\n"
 	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
