@@ -94,10 +94,10 @@ func addedLines(n int) string {
 }
 
 func TestBigFilesStartCollapsed(t *testing.T) {
-	if c := newFileCard(nil, onlyFile(t, addedLines(largeFileRows)), false, 0); !c.open {
+	if c := newFileCard(&reviewPanel{}, onlyFile(t, addedLines(largeFileRows)), false, 0); !c.open {
 		t.Error("a file of exactly the bar starts collapsed, want open")
 	}
-	if c := newFileCard(nil, onlyFile(t, addedLines(largeFileRows+1)), false, 0); c.open {
+	if c := newFileCard(&reviewPanel{}, onlyFile(t, addedLines(largeFileRows+1)), false, 0); c.open {
 		t.Error("a file past the bar starts open, want collapsed")
 	}
 }
@@ -138,7 +138,7 @@ func TestPRFileURLAnchorsTheFile(t *testing.T) {
 
 func TestARefetchKeepsAHandFoldedFileFolded(t *testing.T) {
 	f := onlyFile(t, twoHunks)
-	c := newFileCard(nil, f, false, 0)
+	c := newFileCard(&reviewPanel{}, f, false, 0)
 	c.open = false
 	c.sync(f, false)
 	if c.open {
@@ -233,7 +233,7 @@ func TestARevertsUndoPutsTheLinesBack(t *testing.T) {
 }
 
 func TestHidingWhitespaceKeepsLinesPulledIntoAnUntouchedFile(t *testing.T) {
-	c := newFileCard(nil, onlyFile(t, twoHunks), false, 0)
+	c := newFileCard(&reviewPanel{}, onlyFile(t, twoHunks), false, 0)
 	c.filled[9] = 2
 	c.sync(c.git, true)
 	if got := diffRows(c.shown, false, c.filled); got != 10 {

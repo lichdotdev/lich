@@ -66,7 +66,7 @@ func newFileCard(p *reviewPanel, f patchFile, hiding bool, bulkSeen int) *fileCa
 }
 
 // sync takes a fresh read of the file. A new text is a new file: it opens
-// or folds by its size again and drops what was pulled into its gaps, which
+// or folds by its size, or by its Viewed tick, again and drops what was pulled into its gaps, which
 // are numbered against a file that no longer exists; hiding whitespace moves
 // the gaps too.
 func (c *fileCard) sync(f patchFile, hiding bool) {
@@ -96,6 +96,9 @@ func (c *fileCard) sync(f patchFile, hiding bool) {
 }
 
 func (c *fileCard) openByDefault() bool {
+	if pr := c.panel.pr; pr != nil && pr.isViewed(c) {
+		return false
+	}
 	if c.git.binary {
 		return c.previewsImage()
 	}
