@@ -129,6 +129,7 @@ type transport struct {
 	port        int
 	token       string
 	mux         *http.ServeMux
+	srv         *http.Server
 	input       func(id string, data []byte)
 	status      func(req hookRequest)
 	linkSession func(sessionID, providerSessionID, provider string) error
@@ -221,15 +222,22 @@ func newTransport(
 	mux.HandleFunc("/mod/answer", t.modAnswer)
 	mux.HandleFunc("/mod/status", t.modStatus)
 	t.mux = mux
-	// Server and listener live for the process lifetime, like the PTY sessions
-	// they serve; add Shutdown if the app ever needs teardown. Serve returning
-	// is therefore always abnormal — the window just lost RPC and terminals.
+	t.srv = &http.Server{Handler: mux}
+	// Serve returning before close is abnormal: the window just lost RPC and
+	// terminals.
 	go func() {
-		if err := http.Serve(listener, mux); err != nil {
+		if err := t.srv.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("transport listener stopped", "err", err)
 		}
 	}()
 	return t, nil
+}
+
+// close releases the port on lich's way out, before the teardown that can
+// outlast a relaunch's bind wait (the services' stop grace). Connections a
+// handler took over, the websockets, are not closed here.
+func (t *transport) close() error {
+	return t.srv.Close()
 }
 
 // bindTimeout / restartBindTimeout / bindRetryInterval bound the wait any

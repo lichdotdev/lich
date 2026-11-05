@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A variable your shell's rc exports with a line break in its value (a certificate, a key) reaches your sessions whole. Before, only its first line arrived, and a later line written like `NAME=value` came through as a variable of its own.
 - A file ticked Viewed on the Pulls screen's Files tab opens folded when the pull request is opened again, until a new commit changes it. Before, it came back open.
+- Opening lich again right after quitting it, or the relaunch after an update, no longer fails with "lich could not listen on 127.0.0.1:47821" while the old lich is still stopping a project's services. Quitting now frees the port before it waits for them.
 
 ## [0.85.0] - 2026-11-04
 

@@ -555,6 +555,11 @@ func run(term *terminal.Service, configDir string, coord *restart.Coordinator, b
 	}
 
 	serve(coord, start.open, closeNative)
+	// The deferred teardown waits out the services' stop grace; a relaunch or
+	// a restart successor binding the port gives up well before that.
+	if err := term.CloseTransport(); err != nil {
+		slog.Warn("close the loopback listener", "err", err)
+	}
 }
 
 // serve opens the window and returns when lich is told to quit (`lich quit`,

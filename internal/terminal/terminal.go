@@ -646,6 +646,15 @@ func (s *Service) SetRestart(fn func() error) {
 	s.ws.setRestart(fn)
 }
 
+// CloseTransport frees the loopback port for the next lich, before the slow
+// part of quitting. No-op when the transport failed to start.
+func (s *Service) CloseTransport() error {
+	if s.ws == nil {
+		return nil
+	}
+	return s.ws.close()
+}
+
 // sessionBaseEnv is what every session starts from: the process environment
 // cleaned of AppImage runtime leakage, plus TERM. Clipped before the append —
 // outside an AppImage childEnv hands back the caller's own slice, and appending
