@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The note under a batch of review comments, in Code, Review and Pulls, is now a box that grows with what you write: Shift+Enter starts a new line, Enter still adds it to the batch.
+
 ### Fixed
 
 - A file ticked Viewed on the Pulls screen's Files tab opens folded when the pull request is opened again, until a new commit changes it. Before, it came back open.

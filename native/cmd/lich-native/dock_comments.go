@@ -337,6 +337,9 @@ type batchSend struct {
 // batchListMax is the list's max-h-40.
 const batchListMax = unit.Dp(160)
 
+// batchNoteMax is the note's max-h-32; a longer note scrolls inside it.
+const batchNoteMax = unit.Dp(128)
+
 // layout draws the strip for target's batch, or nothing while it is empty.
 // submit sends the batch as the session's prompt and reports whether one took
 // it; the comments are the one thing here the user typed, so they stay until
@@ -365,7 +368,7 @@ func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target s
 
 // update runs the strip's clicks against the store before it is drawn.
 func (b *commentBatch) update(gtx C, store *commentStore, target string, submit func(string, func(error)) bool, notify func(ui.Toast)) {
-	b.note.SingleLine, b.note.Submit = true, true
+	b.note.Submit = true
 	if b.removes == nil {
 		b.removes, b.edits = map[int]*widget.Clickable{}, map[int]*widget.Clickable{}
 	}
@@ -481,12 +484,13 @@ func (b *commentBatch) row(gtx C, th *ui.Theme, c reviewComment) D {
 	})
 }
 
-// noteField is the note input; Enter adds the note to the batch.
+// noteField is the note box; Enter adds the note to the batch, Shift+Enter
+// is a new line.
 func (b *commentBatch) noteField(th *ui.Theme) layout.Widget {
 	return func(gtx C) D {
-		in := th.Input(&b.note, i18n.T("diff.commentBatch.notePlaceholder"))
-		in.Height, in.TextSize = ui.Space(7), ui.TextXS
-		return in.Layout(gtx)
+		ta := th.Textarea(&b.note, i18n.T("diff.commentBatch.notePlaceholder"))
+		ta.MaxHeight = batchNoteMax
+		return ta.Layout(gtx)
 	}
 }
 
