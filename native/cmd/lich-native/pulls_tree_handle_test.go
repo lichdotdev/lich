@@ -79,3 +79,15 @@ func TestFoldingACardScrolledIntoBringsTheNextFileUnderIt(t *testing.T) {
 		t.Errorf("open %v, position = %+v, want b.go folded at the top", b.open, p.list.Position)
 	}
 }
+
+func TestAFileTickedViewedComesBackFolded(t *testing.T) {
+	f := onlyFile(t, twoHunks)
+	p := &reviewPanel{pr: &prFiles{viewed: map[string]string{f.path: f.text()}}}
+	if newFileCard(p, f, false, 0).open {
+		t.Error("a file ticked viewed opened again when the Files tab was read anew")
+	}
+	p.pr.viewed[f.path] = "an older version of the file"
+	if !newFileCard(p, f, false, 0).open {
+		t.Error("a file changed since it was ticked stayed folded")
+	}
+}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A file ticked Viewed on the Pulls screen's Files tab opens folded when the pull request is opened again, until a new commit changes it. Before, it came back open.
+
 ## [0.85.0] - 2026-11-04
 
 ### Added
