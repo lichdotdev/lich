@@ -133,8 +133,14 @@ func (u *window) readDragPointer(gtx C) {
 	u.sidebar.carry.Hold(gtx)
 	carried := u.sidebar.carry.Carrying()
 	d.released = false
+	// Motion is taken only while something is carried: every event a
+	// handler takes is a frame, and this area covers the window.
+	kinds := pointer.Drag | pointer.Release
+	if carried != "" {
+		kinds |= pointer.Move
+	}
 	for {
-		ev, ok := gtx.Event(pointer.Filter{Target: &d.tag, Kinds: pointer.Move | pointer.Drag | pointer.Release})
+		ev, ok := gtx.Event(pointer.Filter{Target: &d.tag, Kinds: kinds})
 		if !ok {
 			break
 		}

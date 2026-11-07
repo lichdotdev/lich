@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"runtime"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -219,15 +220,86 @@ func (t *termView) hoveredLink() (gioterm.Link, bool) {
 	return t.vt.LinkAt(t.pointerAt.X, t.pointerAt.Y)
 }
 
-// drawHoveredLink underlines the hovered link in fg and gives the grid a
-// hand cursor.
-func (t *termView) drawHoveredLink(gtx layout.Context, fg color.NRGBA) {
-	l, ok := t.hoveredLink()
-	if !ok {
-		return
+// linkKey is the modifier a link opens with on a click (key.ModShortcut),
+// and underlines while it is held.
+func linkKey(goos string) key.Name {
+	if goos == "darwin" {
+		return key.NameCommand
 	}
-	cellW, cellH := t.vt.CellSize()
-	cols, _ := t.vt.Size()
+	return key.NameCtrl
+}
+
+// anyModifier lets the link key match whatever else is held with it.
+const anyModifier = key.ModCtrl | key.ModCommand | key.ModShift | key.ModAlt | key.ModSuper
+
+// readLinkKey follows the link key going down and up, before the grids
+// decide whether to take motion this frame. The pointer was not followed
+// while it was up, so where it rests is unknown until it next moves: a grid
+// that does not report motion forgets it, and the underline comes with the
+// first move.
+func (ts *terminals) readLinkKey(gtx layout.Context) {
+	for {
+		ev, ok := gtx.Event(key.Filter{Name: linkKey(runtime.GOOS), Optional: anyModifier})
+		if !ok {
+			return
+		}
+		e, ok := ev.(key.Event)
+		if !ok {
+			continue
+		}
+		held := e.State == key.Press
+		if held && !ts.linkKeyHeld {
+			ts.forgetPointer()
+		}
+		ts.linkKeyHeld = held
+	}
+}
+
+// forgetPointer drops where each grid that does not report motion last saw
+// the pointer.
+func (ts *terminals) forgetPointer() {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	for _, t := range ts.byID {
+		if !t.vt.MouseMotion() {
+			t.pointerIn = false
+		}
+	}
+}
+
+// followLinkKey lets go of the link key when a pointer event says it is up,
+// for a release the window never heard (it lost focus first).
+func (ts *terminals) followLinkKey(e pointer.Event) {
+	if e.Kind != pointer.Leave && e.Kind != pointer.Scroll && !e.Modifiers.Contain(key.ModShortcut) {
+		ts.linkKeyHeld = false
+	}
+}
+
+// pointerKinds is what t's grid takes from the pointer. Motion is taken only
+// while the link key is held or the program reports every motion: every event
+// a handler takes is a frame, and otherwise a pointer crossing the grid
+// changes nothing on it.
+func (ts *terminals) pointerKinds(t *termView) pointer.Kind {
+	kinds := pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Leave
+	if ts.linkKeyHeld || t.vt.MouseMotion() {
+		kinds |= pointer.Move
+	}
+	return kinds
+}
+
+// underlinedLink is the link to underline on t: the hovered one, while the
+// link key is held.
+func (ts *terminals) underlinedLink(t *termView) (gioterm.Link, bool) {
+	if !ts.linkKeyHeld {
+		return gioterm.Link{}, false
+	}
+	return t.hoveredLink()
+}
+
+// drawLink underlines l in fg and gives the grid a hand cursor.
+func drawLink(gtx layout.Context, vt *gioterm.Terminal, l gioterm.Link, fg color.NRGBA) {
+	cellW, cellH := vt.CellSize()
+	cols, _ := vt.Size()
 	thick := max(gtx.Dp(linkUnderline), 1)
 	for row := l.From.Y; row <= l.To.Y; row++ {
 		from, to := 0, cols-1

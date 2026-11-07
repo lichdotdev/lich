@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The window spends about a tenth less CPU on every frame it draws: it no longer works out which part of a frame changed when it is drawing the whole frame anyway.
+- Moving the pointer over the window no longer redraws it on every move: it draws only when something under the pointer changes, and an agent that tracks the mouse (Claude Code does) no longer makes its output draw at once as the pointer moves. Less power spent while your hand is on the mouse.
+- A link in a terminal underlines, and the pointer turns into a hand, only while Ctrl (Cmd on macOS) is held, the key a click opens it with, as in Ghostty. Before, every link under the pointer underlined.
 
 ### Fixed
 
