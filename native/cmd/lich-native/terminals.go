@@ -105,6 +105,9 @@ type terminals struct {
 	client     *backend.Client
 	stream     *backend.Stream
 	invalidate func()
+	// invalidateEcho is invalidate for output inside the echo window, which
+	// the frame log tells from other output; nil is invalidate.
+	invalidateEcho func()
 	// beat is the window's looping frame: output that lands while one is
 	// due rides it, so a busy ring and a streaming agent cost one frame
 	// rate, not two.
@@ -200,19 +203,30 @@ func (ts *terminals) onOutput(id string, data []byte) {
 		return
 	}
 	t.vt.Write(data)
-	if shown && !ts.rides(time.Now()) {
-		ts.invalidate()
+	now := time.Now()
+	if !shown || ts.rides(now) {
+		return
 	}
+	if ts.echoing(now) && ts.invalidateEcho != nil {
+		ts.invalidateEcho()
+		return
+	}
+	ts.invalidate()
 }
 
 // echoWindow is how long after a write to the PTY its output still counts as
 // the echo of that write.
 const echoWindow = 200 * time.Millisecond
 
+// echoing reports whether output at now may be the echo of a write.
+func (ts *terminals) echoing(now time.Time) bool {
+	return now.UnixNano()-ts.sent.Load() <= int64(echoWindow)
+}
+
 // rides reports whether output at now can wait for the looping frame already
 // due, which is never while a keystroke's echo may be in it.
 func (ts *terminals) rides(now time.Time) bool {
-	return ts.beat.Pending(now) && now.UnixNano()-ts.sent.Load() > int64(echoWindow)
+	return ts.beat.Pending(now) && !ts.echoing(now)
 }
 
 // onReplay seeds a terminal attach left waiting with its session's tail.
