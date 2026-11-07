@@ -181,17 +181,17 @@ func channelError(got color.RGBA, want color.NRGBA) int {
 
 func toLinear(v uint8) float64 {
 	c := float64(v) / 255
-	if c <= 0.04045 {
-		return c / 12.92
+	if c <= srgbDecodeKnee {
+		return c / srgbSlope
 	}
-	return math.Pow((c+0.055)/1.055, 2.4)
+	return math.Pow((c+srgbOffset)/srgbScale, srgbGamma)
 }
 
 func toSRGB(l float64) uint8 {
-	if l <= 0.0031308 {
-		return uint8(math.Round(255 * 12.92 * l))
+	if l <= srgbLinearKnee {
+		return uint8(math.Round(255 * srgbSlope * l))
 	}
-	return uint8(math.Round(255 * (1.055*math.Pow(l, 1/2.4) - 0.055)))
+	return uint8(math.Round(255 * (srgbScale*math.Pow(l, 1/srgbGamma) - srgbOffset)))
 }
 
 // A pixel that is not the ground the caller named, where a glyph overhangs

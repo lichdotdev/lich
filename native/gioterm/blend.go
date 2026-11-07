@@ -10,6 +10,17 @@ import (
 // work in: 8 bits would band the dark end of the sRGB curve.
 const linearMax = 1<<16 - 1
 
+// The sRGB transfer function, from IEC 61966-2-1: a linear segment near
+// black, a power curve above it.
+const (
+	srgbDecodeKnee = 0.04045
+	srgbLinearKnee = 0.0031308
+	srgbSlope      = 12.92
+	srgbScale      = 1.055
+	srgbOffset     = 0.055
+	srgbGamma      = 2.4
+)
+
 var (
 	// toLinear16 decodes an sRGB level to linear light.
 	toLinear16 [256]uint32
@@ -20,19 +31,19 @@ var (
 func init() {
 	for v := range toLinear16 {
 		c := float64(v) / 255
-		if c <= 0.04045 {
-			c /= 12.92
+		if c <= srgbDecodeKnee {
+			c /= srgbSlope
 		} else {
-			c = math.Pow((c+0.055)/1.055, 2.4)
+			c = math.Pow((c+srgbOffset)/srgbScale, srgbGamma)
 		}
 		toLinear16[v] = uint32(math.Round(c * linearMax))
 	}
 	for l := range toSRGB8 {
 		c := float64(l) / linearMax
-		if c <= 0.0031308 {
-			c *= 12.92
+		if c <= srgbLinearKnee {
+			c *= srgbSlope
 		} else {
-			c = 1.055*math.Pow(c, 1/2.4) - 0.055
+			c = srgbScale*math.Pow(c, 1/srgbGamma) - srgbOffset
 		}
 		toSRGB8[l] = uint8(math.Round(c * 255))
 	}
