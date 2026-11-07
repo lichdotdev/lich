@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The tray of notes on a session browser's page has a box for a note about all of them, the way a batch of review comments does. What you write there closes the message the agent gets. Enter sends the notes, Shift+Enter starts a new line, and Clear empties it with the rest.
+
 ### Fixed
 
 - Typing or pasting in a terminal you scrolled up brings it back to the bottom, where what you type shows up, the way most terminals do. Before, the text reached the session while the view stayed on the scrollback, and you had to scroll down by hand to see it.

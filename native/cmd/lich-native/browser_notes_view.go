@@ -47,20 +47,22 @@ var (
 	noteTrayPad      = ui.Space(2)
 	// noteRowsShown is how many notes the tray shows before it scrolls.
 	noteRowsShown = 3
+	// noteClosingMax is the closing note's ceiling; a longer one scrolls.
+	noteClosingMax = unit.Dp(96)
 )
 
 // noteScrollRange takes every wheel turn over the popover and the tray, so it
 // does not scroll the page under them.
 var noteScrollRange = pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}
 
-// notesTrayHeight is the tray's height for its notes; none hides it. The
-// tray floats over the page instead of taking room from it: a page that
-// shrank under each new note relaid itself out and blinked.
-func notesTrayHeight(gtx C, n int) int {
-	if n == 0 {
+// notesTrayHeight is the tray's height for its notes and closing note; no
+// notes hides it. The tray floats over the page instead of taking room from
+// it: a page that shrank under each new note relaid itself out and blinked.
+func notesTrayHeight(gtx C, n *browserNotes) int {
+	if len(n.list) == 0 {
 		return 0
 	}
-	return gtx.Dp(noteTrayHead) + gtx.Dp(noteTrayPad) + min(n, noteRowsShown)*gtx.Dp(noteRowHeight) + 2*gtx.Dp(noteTrayPad)
+	return gtx.Dp(noteTrayHead) + 2*gtx.Dp(noteTrayPad) + min(len(n.list), noteRowsShown)*gtx.Dp(noteRowHeight) + n.closingHeight + 2*gtx.Dp(noteTrayPad)
 }
 
 func withAlpha(c color.NRGBA, a uint8) color.NRGBA { c.A = a; return c }
@@ -245,7 +247,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	d := u.notePopoverBody(body, n)
 	call := macro.Stop()
 	room := gtx.Constraints.Max
-	if t := notesTrayHeight(gtx, len(n.list)); t > 0 {
+	if t := notesTrayHeight(gtx, n); t > 0 {
 		room.Y -= t + gtx.Dp(gutter)
 	}
 	el := cssRect(n.draftBox(), scale)
@@ -372,14 +374,27 @@ func (u *window) notePopoverButtons(gtx C, th *ui.Theme, n *browserNotes) D {
 
 // notesTray is the notes waiting, floating over the page's bottom, inset
 // from the pane's edges by the gutter the island keeps around its panes: a
-// row each, Clear and Send.
+// row each, a closing note about all of them, Clear and Send. Enter in the
+// closing note sends, Shift+Enter is a new line.
 func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	n := &p.notes
 	th := u.theme
 	if n.clear.Clicked(gtx) {
 		n.list, n.open, n.failure = nil, false, ""
+		n.closing.SetText("")
 	}
-	if n.send.Clicked(gtx) && len(n.list) > 0 {
+	n.closing.Submit = true
+	send := n.send.Clicked(gtx)
+	for {
+		ev, ok := n.closing.Update(gtx)
+		if !ok {
+			break
+		}
+		if _, is := ev.(widget.SubmitEvent); is {
+			send = true
+		}
+	}
+	if send && len(n.list) > 0 {
 		u.sendNotes(p, session)
 	}
 	for i := len(n.list) - 1; i >= 0; i-- {
@@ -392,7 +407,7 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 			n.openListed(gtx, i)
 		}
 	}
-	height := notesTrayHeight(gtx, len(n.list))
+	height := notesTrayHeight(gtx, n)
 	if height == 0 {
 		n.trayShown = time.Time{}
 		return
@@ -422,6 +437,17 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 			layout.Rigid(layout.Spacer{Height: noteTrayPad}.Layout),
 			layout.Flexed(1, func(gtx C) D {
 				return n.rows.Layout(gtx, len(n.list), func(gtx C, i int) D { return u.noteRow(gtx, n, i) })
+			}),
+			layout.Rigid(layout.Spacer{Height: noteTrayPad}.Layout),
+			layout.Rigid(func(gtx C) D {
+				ta := th.Textarea(&n.closing, i18n.T("layouts.browser.closingPlaceholder"))
+				ta.MaxHeight = noteClosingMax
+				d := ta.Layout(gtx)
+				if d.Size.Y != n.closingHeight {
+					n.closingHeight = d.Size.Y
+					gtx.Execute(op.InvalidateCmd{})
+				}
+				return d
 			}),
 		)
 	})

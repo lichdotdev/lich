@@ -75,15 +75,19 @@ type browserNotes struct {
 	// openedAt is when the popover opened, for its animate-in.
 	openedAt time.Time
 	// trayShown is when the tray appeared, for its animate-in.
-	trayShown        time.Time
-	editor           widget.Editor
+	trayShown time.Time
+	editor    widget.Editor
+	// closing is the tray's note about all of them, the message's last words.
+	closing widget.Editor
+	// closingHeight is how tall closing stood last frame, for the tray's height.
+	closingHeight    int
 	add, cancel, del widget.Clickable
 	clear, send      widget.Clickable
 	list             []*browserNote
 	rows             layout.List
 	found            chan foundElement
 	located          chan locatedNotes
-	sent             chan []*browserNote
+	sent             chan sentNotes
 	failed           chan string
 	// failure is why the last send failed, shown in the tray until the next.
 	failure    string
@@ -93,6 +97,12 @@ type browserNotes struct {
 	reveal string
 	// followUntil is when the fast lookups after a scroll end.
 	followUntil time.Time
+}
+
+// sentNotes is what a send took: the notes and the closing note.
+type sentNotes struct {
+	notes   []*browserNote
+	closing string
 }
 
 // foundElement is the element a probe found, and whether a click asked for
@@ -111,7 +121,7 @@ type locatedNotes struct {
 }
 
 func newBrowserNotes() browserNotes {
-	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan []*browserNote, 4), failed: make(chan string, 1)}
+	n := browserNotes{found: make(chan foundElement, 4), located: make(chan locatedNotes, 1), sent: make(chan sentNotes, 4), failed: make(chan string, 1)}
 	n.rows.Axis = layout.Vertical
 	return n
 }
@@ -292,7 +302,10 @@ func (u *window) takeFound(gtx C, p *browserPaneUI, session string) {
 		case l := <-n.located:
 			n.applyBoxes(l)
 		case sent := <-n.sent:
-			n.delivered(sent)
+			n.delivered(sent.notes)
+			if n.closing.Text() == sent.closing {
+				n.closing.SetText("")
+			}
 		case why := <-n.failed:
 			n.failure = why
 		default:
@@ -381,13 +394,13 @@ func (u *window) notesKey(p *browserPaneUI, session string, e key.Event) bool {
 	return true
 }
 
-// sendNotes types the notes into the session's prompt as one message. They
-// leave the tray only once it is there: a send that fails keeps them, to send
+// sendNotes types the notes and the closing note into the session's prompt as
+// one message. They leave the tray only once it is there: a send that fails keeps them, to send
 // again, and says why in the tray rather than in a toast over the page.
 func (u *window) sendNotes(p *browserPaneUI, session string) {
 	n := &p.notes
-	notes := n.sending()
-	message := notesMessage(notes)
+	sent := sentNotes{notes: n.sending(), closing: n.closing.Text()}
+	message := notesMessage(sent.notes, sent.closing)
 	n.setPicking(false)
 	label := u.model.sessionLabel(session)
 	n.failure = ""
@@ -395,7 +408,7 @@ func (u *window) sendNotes(p *browserPaneUI, session string) {
 		if err := u.client.Submit(u.ctx, session, message); err != nil {
 			offer(n.failed, i18n.T("layouts.browser.notesFailed", i18n.Args{"label": label, "error": backend.ErrorText(err)}))
 		} else {
-			offer(n.sent, notes)
+			offer(n.sent, sent)
 		}
 		u.model.invalidate()
 	}()

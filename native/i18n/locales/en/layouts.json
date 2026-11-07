@@ -41,6 +41,7 @@
     "zoom": "Page zoom",
     "zoomReset": "Reset to 100%",
     "notePlaceholder": "What should change here?",
+    "closingPlaceholder": "A note about all of them…",
     "addNote": "Add note",
     "saveNote": "Save",
     "deleteNote": "Delete",
