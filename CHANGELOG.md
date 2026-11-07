@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The tray tells you which sessions need you. Its menu lists the sessions waiting on you, with what they are asking, and the ones whose finished turn you have not read, then the ones working, with the tool they are running; clicking one opens the window on its card. Hovering the icon lists them all, uncut, where your tray shows the icon's tooltip, and on macOS each entry's tooltip has its whole line. The icon takes a dot when something is going on: amber for a session waiting on you, green for a turn left unread, grey while one works. The services moved into a submenu.
 - The tray of notes on a session browser's page has a box for a note about all of them, the way a batch of review comments does. What you write there closes the message the agent gets. Enter sends the notes, Shift+Enter starts a new line, and Clear empties it with the rest.
 
 ### Changed

@@ -881,9 +881,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **What a stopped service printed is kept in memory only** (`services.Output`): the tail of its last run, as
   long as a session's replay, until it starts again or lich exits. After a restart of lich a service that has
   not run yet has no output to show.
-- **The tray names at most eight running services** (`internal/tray`, `serviceSlots`): the menu is built once
-  and its entries shown and hidden, so past eight the count above them says how many run and the window lists
-  them all. The macOS menu-bar entries were never run on a Mac: they compile, and the logic they share with
+- **The tray names at most eight running services, and eight sessions per group** (`internal/tray`,
+  `serviceSlots`, `sessionSlots`): the menu is built once and its entries shown and hidden, so past eight the
+  services' count says how many run, a "more" line counts the sessions past the slots, and the window lists
+  them all. The menu and the icon's badge are read every five seconds, not on each report, so a badge can be
+  that late. A session sorts into Needs you or Working by the state its provider's hooks report, the one its
+  card draws: a provider that reports none for a turn (Crush reports no `busy`) counts as idle there too. A
+  finished turn leaves Needs you only once its card is read in the window. The badge's dot is drawn in the
+  window's dark-theme tones whatever the bar's colour. The tray's host draws the menu at its own width and cuts a long
+  line there, and a menu entry has no tooltip on Linux (dbusmenu carries none) or Windows: the full lines go
+  in the icon's tooltip instead, which a host may show cut, on one line, or not at all. Only macOS gives each
+  entry a tooltip of its own. The macOS menu-bar entries were never run on a Mac: they compile, and the logic they share with
   Linux and Windows is tested.
 - **On Windows, Stop is Ctrl+C through ConPTY** (`InterruptService`): it reaches the console's processes as
   `CTRL_C_EVENT`, which a process that left the console or turned the event off never sees. Not measured: the

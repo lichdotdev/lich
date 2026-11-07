@@ -1613,8 +1613,14 @@ UpdateThemeOptions {
 
 TrayLabels {
 	show string
-	running string
 	quit string
+	noSessions string
+	needsYou string
+	working string
+	idle string
+	more string
+	waiting string
+	done string
 	servicesRunning string
 	showOutput string
 	restart string
