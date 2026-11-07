@@ -54,6 +54,54 @@ func TestLoopRecordsTheFrameItAskedFor(t *testing.T) {
 	}
 }
 
+// A frame drawn between beats, for input or output, already shows the ring
+// where the beat would: it takes the beat's place, and the next beat comes
+// one LoopFrame after the one it replaced. Pushing the beat a LoopFrame past
+// every such frame drifted it off its phase; keeping the beat as well drew
+// both, 49fps against 40 with the pointer moving over a terminal.
+func TestLoopKeepsTheBeatsPhase(t *testing.T) {
+	th := testTheme()
+	th.Beat = &LoopBeat{}
+	start := time.Unix(100, 0)
+	// Two rings a frame, as a sidebar with two busy sessions draws.
+	at := func(now time.Time) time.Time {
+		var r input.Router
+		tabsFrame(&r, now, func(gtx C) D {
+			th.BusyRing(gtx, 16, th.Foreground, th.Border)
+			return th.BusyRing(gtx, 16, th.Foreground, th.Border)
+		})
+		wake, _ := r.WakeupTime()
+		return wake
+	}
+	beat := start.Add(LoopFrame)
+	if got := at(start); !got.Equal(beat) {
+		t.Fatalf("first frame asked for %v, want %v", got, beat)
+	}
+	next := beat.Add(LoopFrame)
+	if got := at(start.Add(10 * time.Millisecond)); !got.Equal(next) {
+		t.Errorf("a frame 10ms before the beat asked for %v, want it to stand in and the next beat at %v", got, next)
+	}
+	if got := at(start.Add(30 * time.Millisecond)); !got.Equal(next) {
+		t.Errorf("a second frame before that beat asked for %v, want the beat kept at %v", got, next)
+	}
+	if got := at(next.Add(3 * time.Millisecond)); !got.Equal(next.Add(LoopFrame)) {
+		t.Errorf("the beat drawn 3ms late asked for %v, want one LoopFrame after the beat it was, %v", got, next.Add(LoopFrame))
+	}
+	if th.Beat.Pending(next.Add(LoopFrame)) {
+		t.Error("the second ring of the beat's frame moved the beat on once more")
+	}
+	late := next.Add(10 * LoopFrame)
+	if got := at(late); !got.Equal(late.Add(LoopFrame)) {
+		t.Errorf("a frame long after the last beat asked for %v, want a fresh one LoopFrame out, %v", got, late.Add(LoopFrame))
+	}
+	// A still window's beat, StillFrame out, when the window takes focus.
+	focused := late.Add(LoopFrame / 2)
+	th.Beat.due.Store(focused.Add(StillFrame).UnixNano())
+	if got := at(focused); !got.Equal(focused.Add(LoopFrame)) {
+		t.Errorf("a still beat further out than LoopFrame asked for %v, want it brought in to %v", got, focused.Add(LoopFrame))
+	}
+}
+
 // A window without focus is still seen: its animations go on at 8fps.
 func TestStillThemeSlowsTheLoop(t *testing.T) {
 	th := testTheme()
