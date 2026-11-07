@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -300,5 +301,81 @@ func TestPressOnTheTerminalTakesTheKeyboard(t *testing.T) {
 	frame(nil)
 	if !router.Source().Focused(v.tag) {
 		t.Error("a press on the terminal left the keyboard on the field")
+	}
+}
+
+// A link underlines only while Ctrl (Cmd on macOS) is held, the key a click
+// opens it with. With the key up and no program asking for every motion, the
+// grid takes no motion at all: a pointer crossing it draws no frame.
+func TestALinkUnderlinesOnlyWhileTheLinkKeyIsHeld(t *testing.T) {
+	v := newMouseTestView(t, "docs at https://lich.dev/docs ok")
+	v.id, v.tag = "s", new(int)
+	v.readOnly.Store(true)
+	ts := &terminals{byID: map[string]*termView{"s": v}}
+	var router input.Router
+	frame := func() {
+		ops := new(op.Ops)
+		gtx := layout.Context{Ops: ops, Source: router.Source(), Constraints: layout.Exact(image.Pt(800, 480))}
+		ts.input(gtx, v, false)
+		area := clip.Rect{Max: image.Pt(800, 480)}.Push(ops)
+		event.Op(ops, v.tag)
+		area.Pop()
+		router.Frame(ops)
+	}
+	linkKeyEvent := func(state key.State) key.Event {
+		return key.Event{Name: linkKey(runtime.GOOS), State: state, Modifiers: key.ModShortcut}
+	}
+	frame()
+	router.Queue(ptr(pointer.Move, at(20, 0), 0, 0))
+	if _, wake := router.WakeupTime(); wake {
+		t.Error("a pointer crossing the grid with the link key up asked for a frame")
+	}
+	router.Queue(linkKeyEvent(key.Press))
+	frame()
+	if _, ok := ts.underlinedLink(v); ok {
+		t.Error("a link underlined where the pointer rested before the key went down, unseen since")
+	}
+	router.Queue(ptr(pointer.Move, at(20, 0), 0, key.ModShortcut))
+	if _, wake := router.WakeupTime(); !wake {
+		t.Error("a pointer moving with the link key held asked for no frame")
+	}
+	frame()
+	if l, ok := ts.underlinedLink(v); !ok || l.URL != "https://lich.dev/docs" {
+		t.Errorf("with the link key held, the link under the pointer = %+v, %v", l, ok)
+	}
+	router.Queue(linkKeyEvent(key.Release))
+	frame()
+	if _, ok := ts.underlinedLink(v); ok {
+		t.Error("the link stayed underlined after the link key went up")
+	}
+	router.Queue(ptr(pointer.Move, at(22, 0), 0, 0))
+	if _, wake := router.WakeupTime(); wake {
+		t.Error("after the link key went up, a pointer crossing the grid asked for a frame")
+	}
+}
+
+// A release the window never heard (it lost focus with the key down) is
+// read off the next pointer event that says the key is up.
+func TestAPointerEventWithTheKeyUpLetsTheLinkKeyGo(t *testing.T) {
+	ts := &terminals{linkKeyHeld: true}
+	ts.followLinkKey(ptr(pointer.Move, at(1, 0), 0, key.ModShortcut))
+	if !ts.linkKeyHeld {
+		t.Fatal("a move with the key held let it go")
+	}
+	ts.followLinkKey(ptr(pointer.Move, at(1, 0), 0, 0))
+	if ts.linkKeyHeld {
+		t.Error("a move with the key up kept it held")
+	}
+}
+
+// A program asking for every motion (1003) gets it with the link key up; one
+// asking for clicks (1000) or drags (1002) does not need it.
+func TestTheGridTakesMotionOnlyForAProgramThatAsksForEveryMotion(t *testing.T) {
+	ts := &terminals{}
+	for mode, want := range map[string]bool{"1000": false, "1002": false, "1003": true} {
+		v := newMouseTestView(t, "\x1b[?"+mode+"h")
+		if got := ts.pointerKinds(v)&pointer.Move != 0; got != want {
+			t.Errorf("mode %s: takes motion %v, want %v", mode, got, want)
+		}
 	}
 }

@@ -146,6 +146,11 @@ type terminals struct {
 	// spawn is refused, so a toast in place of the generic failure offers a
 	// way on.
 	profileGone func(s sessionView)
+	// linkKeyHeld is the shortcut modifier held down (Ctrl, Cmd on macOS):
+	// links underline only then, as they open only on a click with it, and
+	// the grids follow the pointer only then. Read and written on the
+	// frame's goroutine.
+	linkKeyHeld bool
 	// copyOnSelectOff is Settings › General's copy on select turned off;
 	// zero is on, which is what a window with no terminal copy keeps.
 	copyOnSelectOff atomic.Bool
@@ -553,7 +558,9 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 	if _, err := t.r.Draw(gtx, snap); err != nil {
 		return err
 	}
-	t.drawHoveredLink(gtx, snap.Foreground())
+	if l, ok := ts.underlinedLink(t); ok {
+		drawLink(gtx, t.vt, l, snap.Foreground())
+	}
 	// Gio reports a pointer in the space of the clip it hit, not of the
 	// event.Op: this one, inside the padding, is the grid's own.
 	defer clip.Rect(image.Rectangle{Max: size}).Push(gtx.Ops).Pop()
@@ -586,8 +593,9 @@ func (ts *terminals) refit(gtx layout.Context, t *termView, size image.Point, co
 }
 
 func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
+	ts.readLinkKey(gtx)
 	filters := append(gioterm.KeyFilters(t.tag),
-		pointer.Filter{Target: t.tag, Kinds: pointer.Scroll | pointer.Press | pointer.Release | pointer.Drag | pointer.Move | pointer.Leave,
+		pointer.Filter{Target: t.tag, Kinds: ts.pointerKinds(t),
 			ScrollY: pointer.ScrollRange{Min: -1 << 20, Max: 1 << 20}},
 		key.Filter{Focus: t.tag, Name: "V", Required: key.ModCommand},
 		transfer.TargetFilter{Target: t.tag, Type: "application/text"})
@@ -631,6 +639,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 			if e.Kind == pointer.Press {
 				gtx.Execute(key.FocusCmd{Tag: t.tag})
 			}
+			ts.followLinkKey(e)
 			t.track(e)
 			if url, took := t.linkClick(e); took {
 				if url != "" {
