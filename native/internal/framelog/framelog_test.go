@@ -19,6 +19,7 @@ func openTemp(t *testing.T, beat func(time.Time) bool, aliases map[string]string
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { l.Close() })
 	return l, path
 }
 
@@ -120,9 +121,12 @@ func TestResizeIsACauseFromTheSecondFrameOn(t *testing.T) {
 func TestFrameRecordsPhasesAndAllocations(t *testing.T) {
 	l, path := openTemp(t, nil, nil)
 	f := l.Begin(image.Pt(10, 10))
-	sink := make([][]byte, 0, 64)
-	for range 64 {
-		sink = append(sink, make([]byte, 1024))
+	// Above the small-object limit, so the runtime counts each at once; small
+	// objects are counted when a span is refilled and lag the frame.
+	const large, largeSize = 4, 64 << 10
+	sink := make([][]byte, 0, large)
+	for range large {
+		sink = append(sink, make([]byte, largeSize))
 	}
 	time.Sleep(2 * time.Millisecond)
 	f.HandOff()
@@ -133,8 +137,8 @@ func TestFrameRecordsPhasesAndAllocations(t *testing.T) {
 	if r.LayoutUs < 2000 || r.RenderUs < 2000 {
 		t.Errorf("layout %dus, render %dus, each slept 2ms", r.LayoutUs, r.RenderUs)
 	}
-	if r.Allocs < 64 || r.AllocBytes < 64*1024 {
-		t.Errorf("allocs %d (%d bytes), want the 64 KiB made", r.Allocs, r.AllocBytes)
+	if r.Allocs < large || r.AllocBytes < large*largeSize {
+		t.Errorf("allocs %d (%d bytes), want the %d large objects made", r.Allocs, r.AllocBytes, large)
 	}
 }
 
@@ -149,6 +153,22 @@ func TestFramesCountPerCause(t *testing.T) {
 	drawFrame(l, image.Pt(10, 10))
 	if got := Causes.Get("tested").(interface{ Value() int64 }).Value(); got != n+1 {
 		t.Fatalf("counter = %d, want %d", got, n+1)
+	}
+}
+
+func TestCloseIsNilSafeAndStopsWriting(t *testing.T) {
+	var nilLog *Log
+	if err := nilLog.Close(); err != nil {
+		t.Fatal(err)
+	}
+	l, path := openTemp(t, nil, nil)
+	drawFrame(l, image.Pt(10, 10))
+	if err := l.Close(); err != nil {
+		t.Fatal(err)
+	}
+	drawFrame(l, image.Pt(10, 10))
+	if got := len(records(t, path)); got != 1 {
+		t.Fatalf("%d lines, want the one drawn before Close", got)
 	}
 }
 

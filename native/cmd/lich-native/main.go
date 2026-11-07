@@ -230,6 +230,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	if err != nil {
 		return err
 	}
+	defer frameLog.Close()
 	invalidate := frameLog.Invalidator(w.Invalidate)
 	u := &window{
 		ctx: ctx, client: client, th: th, win: w, zoom: defaultZoom, browserZoom: defaultZoom, browserViews: newBrowserQueue(),

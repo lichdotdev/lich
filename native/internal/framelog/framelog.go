@@ -57,7 +57,10 @@ type Record struct {
 	LayoutUs int64 `json:"layout_us"`
 	RenderUs int64 `json:"render_us"`
 	// Allocs and AllocBytes are the process's heap allocations between the
-	// frame event and its end, background goroutines included.
+	// frame event and its end, background goroutines included. The runtime
+	// counts a small object (up to 32 KiB) when its span is refilled, not when
+	// it is allocated, so a frame's figure for small objects lags and is
+	// approximate; it evens out over many frames.
 	Allocs     uint64 `json:"allocs"`
 	AllocBytes uint64 `json:"alloc_bytes"`
 }
@@ -102,6 +105,21 @@ func Open(path string, beatPending func(time.Time) bool, aliases map[string]stri
 	l.samples[0].Name, l.samples[1].Name = metricAllocObjects, metricAllocBytes
 	l.cur.log = l
 	return l, nil
+}
+
+// Close closes the log's file; frames drawn after it are dropped.
+func (l *Log) Close() error {
+	if l == nil {
+		return nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := l.out
+	l.out = nil
+	if out == nil {
+		return nil
+	}
+	return out.Close()
 }
 
 // Invalidator returns wake tagged: each call records the function that made
@@ -201,6 +219,8 @@ func (f *Frame) End() {
 }
 
 func (l *Log) write(r *Record) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.out == nil {
 		return
 	}

@@ -71,7 +71,8 @@ from `main` either drowns in merges or freezes the web app for months.
   requests (tooltips, clocks) that are not tagged. A few direct `u.win.Invalidate()` calls (settings applied, the
   close dialog, the git and plugin gates) are not tagged either and land in `input`. Render is the hand-off to
   Gio, up to the GPU draw; presenting happens after it on the window thread and is not seen. Allocations are the
-  whole process's between the frame event and its end, background goroutines included. Unset, nothing is
+  whole process's between the frame event and its end, background goroutines included; the runtime counts a
+  small object (up to 32 KiB) when its span is refilled, so a frame's figure is approximate. Unset, nothing is
   recorded.
 - **`GOGC`** left unset, `lich-native` collects at 50 instead of Go's 100: a window with many sessions keeps a
   live heap of hundreds of MB, and at 100 half the resident size is slack the system swaps out. Set `GOGC` to
