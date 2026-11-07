@@ -19,21 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The window spends about a tenth less CPU on every frame it draws: it no longer works out which part of a frame changed when it is drawing the whole frame anyway.
 - Moving the pointer over the window no longer redraws it on every move: it draws only when something under the pointer changes, and an agent that tracks the mouse (Claude Code does) no longer makes its output draw at once as the pointer moves. Less power spent while your hand is on the mouse.
 - A link in a terminal underlines, and the pointer turns into a hand, only while Ctrl (Cmd on macOS) is held, the key a click opens it with, as in Ghostty. Before, every link under the pointer underlined.
+- The note under a batch of review comments, in Code, Review and Pulls, is now a box that grows with what you write: Shift+Enter starts a new line, Enter still adds it to the batch.
 
 ### Fixed
 
 - Typing or pasting in a terminal you scrolled up brings it back to the bottom, where what you type shows up, the way most terminals do. Before, the text reached the session while the view stayed on the scrollback, and you had to scroll down by hand to see it.
 - Terminal text has the same weight as the rest of the window's text. Before, the soft edges of each letter were blended differently, so light text on a dark theme looked thinner than it should and dark text on a light theme looked heavier.
-- On macOS, a variable your shell's rc exports with a line break in its value (a certificate, a key) reaches your sessions exactly as written. Before, a line break could arrive with a stray carriage return in front of it.
-
-## [0.85.1] - 2026-11-05
-
-### Changed
-
-- The note under a batch of review comments, in Code, Review and Pulls, is now a box that grows with what you write: Shift+Enter starts a new line, Enter still adds it to the batch.
-
-### Fixed
-
 - A variable your shell's rc exports with a line break in its value (a certificate, a key) reaches your sessions whole. Before, only its first line arrived, and a later line written like `NAME=value` came through as a variable of its own.
 - A file ticked Viewed on the Pulls screen's Files tab opens folded when the pull request is opened again, until a new commit changes it. Before, it came back open.
 - Opening lich again right after quitting it, or the relaunch after an update, no longer fails with "lich could not listen on 127.0.0.1:47821" while the old lich is still stopping a project's services. Quitting now frees the port before it waits for them.
@@ -6549,8 +6540,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stall-free at full frame rate.
 
 [Unreleased]: https://github.com/lichdotdev/lich/compare/v0.86.0...HEAD
-[0.86.0]: https://github.com/lichdotdev/lich/compare/v0.85.1...v0.86.0
-[0.85.1]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.85.1
+[0.86.0]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/lichdotdev/lich/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/lichdotdev/lich/compare/v0.83.0...v0.84.0
 [0.83.0]: https://github.com/lichdotdev/lich/compare/v0.82.0...v0.83.0
