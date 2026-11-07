@@ -90,6 +90,25 @@ func TestRunShellDumpWaitsOutSilenceBeforeEnd(t *testing.T) {
 	}
 }
 
+// TestShellEnvDumpCmdLeavesBytesUntranslated pins the stty in the dump: under
+// ONLCR a macOS pty turns a "\n" that meets a full output queue into "\r\r\n",
+// which the parse cannot tell from a value's own "\r\n" (the 0.86.0 release
+// suite lost a certificate's line break that way on macos-15-intel).
+func TestShellEnvDumpCmdLeavesBytesUntranslated(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	out, _, err := runShellDump(ctx, "/bin/sh", shellEnvDumpCmd, shellEnvEnd, os.Environ())
+	if err != nil {
+		t.Fatalf("runShellDump error: %v", err)
+	}
+	_, after, _ := strings.Cut(out, shellEnvSentinel)
+	if !strings.HasPrefix(after, "\n") {
+		t.Fatalf("the sentinel line ends in %q, want the pty's ONLCR off", after[:min(len(after), 2)])
+	}
+}
+
 func TestRunShellDumpSurfacesShellFailure(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

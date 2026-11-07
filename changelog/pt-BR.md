@@ -15,6 +15,7 @@
 
 - Digitar ou colar em um terminal que você rolou para cima o traz de volta para o final, onde o que você digita aparece, como a maioria dos terminais faz. Antes, o texto chegava à sessão enquanto a visão ficava no histórico de rolagem, e você precisava rolar para baixo à mão para vê-lo.
 - O texto do terminal tem o mesmo peso do resto do texto da janela. Antes, as bordas suaves de cada letra eram misturadas de outro jeito, então o texto claro em um tema escuro parecia mais fino do que deveria e o texto escuro em um tema claro parecia mais pesado.
+- No macOS, uma variável que o rc do seu shell exporta com quebra de linha no valor (um certificado, uma chave) chega às suas sessões exatamente como foi escrita. Antes, uma quebra de linha podia chegar com um retorno de carro a mais na frente.
 
 ## [0.85.1] - 2026-11-05
 

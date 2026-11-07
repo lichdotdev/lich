@@ -15,6 +15,7 @@
 
 - Escribir o pegar en una terminal desplazada hacia arriba la devuelve al final, donde aparece lo que escribes, como hace la mayoría de las terminales. Antes, el texto llegaba a la sesión mientras la vista seguía en el historial, y había que desplazarse hacia abajo a mano para verlo.
 - El texto de la terminal tiene el mismo grosor que el resto del texto de la ventana. Antes, los bordes suaves de cada letra se mezclaban de otra manera, así que el texto claro sobre un tema oscuro se veía más fino de lo debido y el texto oscuro sobre un tema claro se veía más grueso.
+- En macOS, una variable que el rc de tu shell exporta con un salto de línea en su valor (un certificado, una clave) llega a tus sesiones tal como está escrita. Antes, un salto de línea podía llegar con un retorno de carro de más delante.
 
 ## [0.85.1] - 2026-11-05
 

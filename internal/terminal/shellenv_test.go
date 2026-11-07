@@ -43,6 +43,11 @@ func TestParseShellEnvDump(t *testing.T) {
 			want: []string{"WIN=a\nb"},
 		},
 		{
+			name: "a dump the pty passed untranslated keeps a value's own carriage return",
+			out:  shellEnvSentinel + "\nCERT=a\r\nb\x00" + shellEnvEnd + "\n",
+			want: []string{"CERT=a\r\nb"},
+		},
+		{
 			name: "empty value is preserved",
 			out:  shellEnvSentinel + "\nEMPTY=\x00" + shellEnvEnd + "\n",
 			want: []string{"EMPTY="},
