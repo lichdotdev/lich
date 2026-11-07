@@ -42,6 +42,8 @@ func (c *client) browser(args []string) error {
 		return c.browserID(api.BrowserForward, args[1:])
 	case "scroll":
 		return c.browserScroll(args[1:])
+	case "eval":
+		return c.browserEval(args[1:])
 	case "dialog":
 		return c.browserDialog(args[1:])
 	case "list":
@@ -210,6 +212,25 @@ func (c *client) browserScroll(args []string) error {
 		return err
 	}
 	_, err = callMethod(context.Background(), c, api.BrowserScroll, api.BrowserScrollOptions{ID: id, DY: *dy}, shortCall)
+	return err
+}
+
+func (c *client) browserEval(args []string) error {
+	flags := newFlagSet("browser")
+	if err := c.parse(flags, args); err != nil {
+		return err
+	}
+	id, err := c.browserOwner()
+	if err != nil {
+		return err
+	}
+	out, err := callMethod(context.Background(), c, api.BrowserEval, api.BrowserEvalOptions{
+		ID: id, Script: strings.Join(flags.Args(), " "),
+	}, openCall)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(c.stdout, out)
 	return err
 }
 

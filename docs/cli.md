@@ -1005,6 +1005,7 @@ lich browser screenshot [path]
 lich browser navigate <url>
 lich browser reload | back | forward
 lich browser scroll [--dy <pixels>]
+lich browser eval <script>
 lich browser list
 lich browser close
 ```
@@ -1015,7 +1016,9 @@ to a Chromium window of its own is reused there. `info` describes the page, one 
 (index, tag, label, link), and never includes what was typed into a field;
 `click` and `press` print the same description of the page they left, once a
 navigation they started has its document; `type` prints nothing, as a field
-filled seldom changes the page. `screenshot` prints the PNG's path.
+filled seldom changes the page. `screenshot` prints the PNG's path. `eval`
+runs the script in the page and prints its value, a string as it is and
+anything else as JSON, cut at 2000 characters.
 URLs are http, https or `about:blank`.
 
 ### `lich mcp`

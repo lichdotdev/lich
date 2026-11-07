@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An agent can run JavaScript in its session's browser and read the answer (`browser_eval`, `lich browser eval`): the state of your app, a value the page does not print, the result of a `fetch`. The answer is cut at 2000 characters, so a large page state costs the agent's context only what it asks for. The script can read what a field holds, passwords included, which the page reading never hands it.
+
 ### Fixed
 
 - A worktree created without a name no longer fails with "which already exists" when the name lich picked for it lands on the folder of a worktree whose branch was renamed. lich now skips any name whose folder is taken.

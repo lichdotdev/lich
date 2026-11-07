@@ -51,8 +51,10 @@ or a `file:` URL, loads over http instead (`internal/preview`): the backend
 serves that checkout on `127.0.0.1`, at its `LICH_WORKTREE_PORT` plus 1000, so
 each checkout is its own origin, and a path outside the checkout is refused.
 Page info never includes form values. Screenshots are files. Click, type and
-press are real input events. `press` is named keys only. Arbitrary JavaScript
-in the page is not a tool.
+press are real input events. `press` is named keys only. `browser_eval` runs
+the agent's script in the front tab (`browser.Eval`) and answers with its
+value, a string as it is and anything else as JSON, cut at 2000 characters; it
+can read any field's value, so page info's rule ends where the agent asks.
 
 ## Notes on the page
 

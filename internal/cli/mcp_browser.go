@@ -218,6 +218,23 @@ var browserTools = []mcpTool{
 		},
 	},
 	{
+		Name: "browser_eval",
+		Description: "Run JavaScript in this session's front tab and answer with its value: a string as " +
+			"it is, anything else as JSON, cut at 2000 characters (… ends a cut one), so return only " +
+			"the part you need. Top-level await works. For state the page text does not show; to act, " +
+			"prefer browser_click and browser_type, which the user sees.",
+		Schema: schema(map[string]any{
+			"script": property("string", "JavaScript; its last expression is the answer."),
+		}, "script"),
+		Run: func(ctx context.Context, c *client, a mcpArgs) (string, error) {
+			id, err := c.browserOwner()
+			if err != nil {
+				return "", err
+			}
+			return callMethod(ctx, c, api.BrowserEval, api.BrowserEvalOptions{ID: id, Script: a.text("script")}, openCall)
+		},
+	},
+	{
 		Name: "browser_dialog",
 		Description: "Answer the JavaScript dialog (alert, confirm, prompt, beforeunload) the " +
 			"page holds open, which a page answer names in a dialog open: line. Until it is " +

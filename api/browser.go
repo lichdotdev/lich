@@ -20,6 +20,11 @@ var (
 	BrowserScroll     = define[BrowserScrollOptions, None]("browser.Scroll")
 	BrowserList       = define[SessionIDOptions, []BrowserHandle]("browser.List")
 	BrowserClose      = define[SessionIDOptions, None]("browser.Close")
+
+	// BrowserEval runs the agent's script in the page and answers with its
+	// value: a string as it is, anything else as JSON.
+	BrowserEval = define[BrowserEvalOptions, string]("browser.Eval")
+
 	// BrowserTabs lists the browser's tabs; BrowserTabAction is the agent
 	// opening, selecting or closing one, answered with the page then in front.
 	BrowserTabs      = define[SessionIDOptions, []BrowserTab]("browser.Tabs")
@@ -325,6 +330,11 @@ type BrowserScreenshotOptions struct {
 type BrowserScrollOptions struct {
 	ID string `json:"id"`
 	DY int    `json:"dy"`
+}
+
+type BrowserEvalOptions struct {
+	ID     string `json:"id"`
+	Script string `json:"script"`
 }
 
 // BrowserRect is an element's viewport box, integer pixels.

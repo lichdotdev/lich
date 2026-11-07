@@ -113,6 +113,10 @@ type Page interface {
 	// middle when at is nil, and returns where it turned it.
 	Scroll(ctx context.Context, at *point, dy int) (x, y float64, err error)
 	Focus(ctx context.Context) error
+	// Eval runs script in the page, awaiting a promise it returns, and
+	// returns its value: a string as it is, anything else as JSON. A script
+	// that throws is an error carrying the exception's text.
+	Eval(ctx context.Context, script string) (string, error)
 	// Cookies and SetCookies carry a browser's cookies, session ones included,
 	// into the process that replaces it.
 	Cookies(ctx context.Context) ([]*network.CookieParam, error)

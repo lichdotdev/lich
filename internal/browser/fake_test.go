@@ -54,6 +54,9 @@ type fakePage struct {
 	texts     []string
 	settles   int
 	selection string
+	evals     []string
+	evalOut   string
+	evalErr   error
 	element   api.BrowserElement
 	pointedAt [2]float64
 	boxes     map[string]api.BrowserRect
@@ -316,6 +319,13 @@ func (p *fakePage) Key(_ context.Context, k api.BrowserKeyOptions) error {
 	defer p.mu.Unlock()
 	p.keys = append(p.keys, k)
 	return nil
+}
+
+func (p *fakePage) Eval(_ context.Context, script string) (string, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.evals = append(p.evals, script)
+	return p.evalOut, p.evalErr
 }
 
 func (p *fakePage) Selection(context.Context) (string, error) {

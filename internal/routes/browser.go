@@ -22,6 +22,7 @@ func Browser(d *rpc.Handler, s *browser.Service) {
 	rpc.Handle(d, api.BrowserBack, s.GoBack)
 	rpc.Handle(d, api.BrowserForward, s.GoForward)
 	rpc.Handle(d, api.BrowserScroll, s.ScrollBy)
+	rpc.Handle(d, api.BrowserEval, s.Eval)
 	rpc.Handle(d, api.BrowserList, s.Handles)
 	rpc.Handle(d, api.BrowserClose, s.CloseOne)
 	rpc.Handle(d, api.BrowserAnswerDialog, s.AnswerDialog)
