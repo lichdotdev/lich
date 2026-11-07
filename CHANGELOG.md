@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.86.0] - 2026-11-07
+
 ### Added
 
 - The tray tells you which sessions need you. Its menu lists the sessions waiting on you, with what they are asking, and the ones whose finished turn you have not read, then the ones working, with the tool they are running; clicking one opens the window on its card. Hovering the icon lists them all, uncut, where your tray shows the icon's tooltip, and on macOS each entry's tooltip has its whole line. The icon takes a dot when something is going on: amber for a session waiting on you, green for a turn left unread, grey while one works. The services moved into a submenu.
@@ -6545,7 +6547,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.85.1...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.86.0...HEAD
+[0.86.0]: https://github.com/lichdotdev/lich/compare/v0.85.1...v0.86.0
 [0.85.1]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.85.1
 [0.85.0]: https://github.com/lichdotdev/lich/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/lichdotdev/lich/compare/v0.83.0...v0.84.0

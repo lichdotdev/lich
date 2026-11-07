@@ -1,3 +1,21 @@
+## [0.86.0] - 2026-11-07
+
+### Added
+
+- A bandeja avisa quais sessões precisam de você. O menu dela lista as sessões que aguardam você, com o que elas estão perguntando, e as que têm um turno concluído que você ainda não leu, depois as que estão trabalhando, com a ferramenta que rodam; clicar em uma abre a janela no card dela. Passar o ponteiro sobre o ícone lista todas, sem cortes, onde a sua bandeja mostra a dica do ícone, e no macOS a dica de cada entrada traz a linha inteira. O ícone ganha um ponto quando algo está acontecendo: âmbar para uma sessão aguardando você, verde para um turno não lido, cinza enquanto uma trabalha. Os serviços foram para um submenu.
+- A bandeja de notas na página do navegador de uma sessão tem uma caixa para uma nota sobre todas elas, como um lote de comentários de revisão. O que você escreve ali fecha a mensagem que o agente recebe. Enter envia as notas, Shift+Enter começa uma nova linha, e Limpar esvazia a caixa junto com o resto.
+
+### Changed
+
+- A janela gasta cerca de um décimo a menos de CPU em cada quadro que desenha: ela não calcula mais qual parte do quadro mudou quando vai desenhar o quadro inteiro de qualquer jeito.
+- Mover o ponteiro sobre a janela não a redesenha mais a cada movimento: ela só desenha quando algo sob o ponteiro muda, e um agente que acompanha o mouse (o Claude Code acompanha) não faz mais a saída dele ser desenhada na hora conforme o ponteiro se move. Menos energia gasta enquanto sua mão está no mouse.
+- Um link em um terminal fica sublinhado, e o ponteiro vira uma mão, só enquanto Ctrl (Cmd no macOS) está pressionado, a tecla com a qual um clique o abre, como no Ghostty. Antes, todo link sob o ponteiro ficava sublinhado.
+
+### Fixed
+
+- Digitar ou colar em um terminal que você rolou para cima o traz de volta para o final, onde o que você digita aparece, como a maioria dos terminais faz. Antes, o texto chegava à sessão enquanto a visão ficava no histórico de rolagem, e você precisava rolar para baixo à mão para vê-lo.
+- O texto do terminal tem o mesmo peso do resto do texto da janela. Antes, as bordas suaves de cada letra eram misturadas de outro jeito, então o texto claro em um tema escuro parecia mais fino do que deveria e o texto escuro em um tema claro parecia mais pesado.
+
 ## [0.85.1] - 2026-11-05
 
 ### Changed

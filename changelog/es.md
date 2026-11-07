@@ -1,3 +1,21 @@
+## [0.86.0] - 2026-11-07
+
+### Added
+
+- La bandeja te dice qué sesiones te necesitan. Su menú lista las sesiones que esperan algo de ti, con lo que preguntan, y aquellas cuyo turno terminado aún no has leído, y después las que trabajan, con la herramienta que ejecutan; al hacer clic en una, la ventana se abre en su tarjeta. Pasar el puntero por el icono las lista todas, sin recortar, donde tu bandeja muestra el tooltip del icono, y en macOS el tooltip de cada entrada trae su línea completa. El icono lleva un punto cuando hay algo en marcha: ámbar para una sesión que espera algo de ti, verde para un turno sin leer, gris mientras una trabaja. Los servicios pasaron a un submenú.
+- La bandeja de notas de la página del navegador de una sesión tiene un cuadro para una nota sobre todas ellas, como el lote de comentarios de revisión. Lo que escribes ahí cierra el mensaje que recibe el agente. Enter envía las notas, Shift+Enter empieza una línea nueva y Borrar la vacía junto con el resto.
+
+### Changed
+
+- La ventana gasta aproximadamente una décima parte menos de CPU en cada fotograma que dibuja: ya no calcula qué parte del fotograma cambió cuando de todos modos está dibujando el fotograma entero.
+- Mover el puntero sobre la ventana ya no la redibuja en cada movimiento: dibuja solo cuando algo bajo el puntero cambia, y un agente que sigue el ratón (Claude Code lo hace) ya no hace que su salida se dibuje al instante mientras mueves el puntero. Menos energía gastada mientras tienes la mano en el ratón.
+- Un enlace en una terminal se subraya, y el puntero se convierte en una mano, solo mientras se mantiene pulsado Ctrl (Cmd en macOS), la tecla con la que un clic lo abre, como en Ghostty. Antes, se subrayaba todo enlace bajo el puntero.
+
+### Fixed
+
+- Escribir o pegar en una terminal desplazada hacia arriba la devuelve al final, donde aparece lo que escribes, como hace la mayoría de las terminales. Antes, el texto llegaba a la sesión mientras la vista seguía en el historial, y había que desplazarse hacia abajo a mano para verlo.
+- El texto de la terminal tiene el mismo grosor que el resto del texto de la ventana. Antes, los bordes suaves de cada letra se mezclaban de otra manera, así que el texto claro sobre un tema oscuro se veía más fino de lo debido y el texto oscuro sobre un tema claro se veía más grueso.
+
 ## [0.85.1] - 2026-11-05
 
 ### Changed
