@@ -35,8 +35,9 @@ require (
 // textarea's scrollbar), text.WithOutsideCollection (the runes a shaper's
 // faces lack, which loads the CJK faces when CJK text first comes up), and
 // frames drawn and presented in part (an op diff, a kept framebuffer, EGL
-// buffer age and damage, opted into with GIO_DAMAGE=on). Every patch of
-// ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261104174729-6b94f985ae38
+// buffer age and damage, opted into with GIO_DAMAGE=on, which is also the only
+// time a frame's operations are diffed). Every patch of ours lands on that
+// branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261107161557-320c3805abe2
 
 replace github.com/lichdotdev/lich => ../
