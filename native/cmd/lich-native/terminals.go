@@ -249,6 +249,16 @@ func (ts *terminals) send(id string, b []byte) {
 	ts.reply(id, b)
 }
 
+// sendTyped sends what was typed or pasted, back on the live screen first so
+// it is seen.
+func (ts *terminals) sendTyped(t *termView, b []byte) {
+	if len(b) == 0 {
+		return
+	}
+	t.vt.ScrollToBottom()
+	ts.send(t.id, b)
+}
+
 // reply writes the terminal's answer to a query of the program's (cursor
 // position, device attributes) to session id's PTY. A program polling the
 // terminal is no one typing, so its answers never open the echo window.
@@ -563,7 +573,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 		}
 		switch e := ev.(type) {
 		case key.EditEvent, key.CompositionEvent, key.SelectionEvent, key.FocusEvent:
-			ts.send(t.id, []byte(t.composition.Update(e, t.tag, gtx.Execute)))
+			ts.sendTyped(t, []byte(t.composition.Update(e, t.tag, gtx.Execute)))
 		case key.Event:
 			if e.State != key.Press {
 				break
@@ -578,7 +588,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				}
 				break
 			}
-			ts.send(t.id, terminalKeyBytes(t.vt, e, runtime.GOOS))
+			ts.sendTyped(t, terminalKeyBytes(t.vt, e, runtime.GOOS))
 		case transfer.DataEvent:
 			text, err := readTransfer(e)
 			if err != nil {
