@@ -273,11 +273,30 @@ func (ts *terminals) sendTyped(t *termView, b []byte) {
 	ts.send(t.id, b)
 }
 
+// sendReport writes a mouse report of kind to session id's PTY. A pointer
+// crossing a program that tracks it reports every move, which is no one
+// typing; a press or a release is, and its answer is drawn at once.
+func (ts *terminals) sendReport(id string, kind pointer.Kind, report []byte) {
+	if kind == pointer.Move || kind == pointer.Drag {
+		ts.reply(id, report)
+		return
+	}
+	ts.send(id, report)
+}
+
+// scroll sends the frame's share of what the wheel scrolled, and asks for
+// the next frame while rows are still owed.
+func (ts *terminals) scroll(gtx C, t *termView) {
+	send, more := t.scrollStep()
+	ts.send(t.id, send)
+	if more {
+		gtx.Execute(op.InvalidateCmd{})
+	}
+}
+
 // reply writes the terminal's answer to a query of the program's (cursor
-// position, device attributes), or a mouse report, to session id's PTY. A
-// program polling the terminal is no one typing, and a pointer crossing a
-// program that tracks it reports every move, so neither opens the echo
-// window.
+// position, device attributes), or a motion report, to session id's PTY.
+// Neither is anyone typing, so neither opens the echo window.
 func (ts *terminals) reply(id string, b []byte) {
 	if len(b) == 0 {
 		return
@@ -523,11 +542,7 @@ func (ts *terminals) layout(gtx layout.Context, t *termView, focus bool) error {
 		}
 	}
 	ts.input(gtx, t, focus)
-	send, more := t.scrollStep()
-	ts.send(t.id, send)
-	if more {
-		gtx.Execute(op.InvalidateCmd{})
-	}
+	ts.scroll(gtx, t)
 	snap, err := t.vt.Update()
 	if err != nil {
 		return err
@@ -624,7 +639,7 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				break
 			}
 			report, copied := t.pointer(e)
-			ts.reply(t.id, report)
+			ts.sendReport(t.id, e.Kind, report)
 			if copied != "" && !ts.copyOnSelectOff.Load() {
 				ts.copySelection(gtx, copied)
 			}
