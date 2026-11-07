@@ -24,6 +24,17 @@ const shellEnvSentinel = "__LICH_SHELL_ENV__"
 // be mistaken for the end of it. Not a substring of shellEnvSentinel or back.
 const shellEnvEnd = "__LICH_SHELL_ENV_END__"
 
+// shellEnvDumpCmd runs under -l -i (runShellDump) so both login profiles
+// (bash/zsh) and interactive rc (fish's config.fish is interactive-only) run;
+// `env` is external, so the command is identical across shells. It prints into
+// a pipe, not the pty: coreutils' env (9.x) quotes a value it prints to a
+// terminal, and the quotes would land in every session's environment. -0 ends
+// each variable with NUL, so a value spanning newlines comes back whole.
+// stty -opost hands the pty the dump's bytes untranslated: under ONLCR, XNU's
+// tty re-sends the "\r" of a "\n" that lands on a full output queue, and no
+// undo tells that "\r\r\n" from a value's own "\r\n".
+const shellEnvDumpCmd = "stty -opost; echo " + shellEnvSentinel + "; env -0 | cat; echo " + shellEnvEnd
+
 var (
 	// resolving admits one login-shell resolution at a time, and refuses rather
 	// than queues: the caller is a button press, and a second one waiting out the
@@ -118,14 +129,7 @@ func ReresolveShellEnv(base []string) ([]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), shellEnvTimeout)
 	defer cancel()
 
-	// -l -i so both login profiles (bash/zsh) and interactive rc (fish's
-	// config.fish is interactive-only) run; `env` is external, so the command is
-	// identical across shells. It prints into a pipe, not the pty: coreutils'
-	// env (9.x) quotes a value it prints to a terminal, and the quotes would
-	// land in every session's environment. -0 ends each variable with NUL, so a
-	// value spanning newlines comes back whole.
-	out, parked, err := runShellDump(ctx, shell,
-		"echo "+shellEnvSentinel+"; env -0 | cat; echo "+shellEnvEnd, shellEnvEnd, base)
+	out, parked, err := runShellDump(ctx, shell, shellEnvDumpCmd, shellEnvEnd, base)
 	if parked != nil {
 		noteParkedReader(parked)
 	}
@@ -183,10 +187,10 @@ func shellDumpDigest(out string) string {
 // merging half of one would pin a PATH the shell never had. An env without -0
 // prints its usage instead, which holds no entry and so yields nil too.
 //
-// The pty turns every "\n" the dump carries into "\r\n" (ONLCR), so that is
-// undone before splitting. shortcut: a value holding a literal "\r\n" loses its
-// "\r" where the dump never crossed a pty (Windows pipes, an rc that ran
-// stty -onlcr); read the dump off a pipe instead if that ever bites.
+// A sentinel line ending in "\r\n" says the dump crossed a pty that kept
+// ONLCR (the stty in ReresolveShellEnv did not run), so every "\r\n" is undone
+// before splitting. shortcut: on that path a value's own "\r\n" loses its "\r",
+// and macOS can leave a stray one; fine while the stty is what runs.
 func parseShellEnvDump(sentinel, end, out string) []string {
 	_, dump, ok := strings.CutLast(out, sentinel)
 	if !ok {
@@ -196,7 +200,9 @@ func parseShellEnvDump(sentinel, end, out string) []string {
 	if !ok {
 		return nil
 	}
-	dump = strings.ReplaceAll(dump, "\r\n", "\n")
+	if strings.HasPrefix(dump, "\r\n") {
+		dump = strings.ReplaceAll(dump, "\r\n", "\n")
+	}
 	dump = strings.TrimPrefix(dump, "\n")
 	var kv []string
 	for entry := range strings.SplitSeq(dump, "\x00") {

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Typing or pasting in a terminal you scrolled up brings it back to the bottom, where what you type shows up, the way most terminals do. Before, the text reached the session while the view stayed on the scrollback, and you had to scroll down by hand to see it.
 - Terminal text has the same weight as the rest of the window's text. Before, the soft edges of each letter were blended differently, so light text on a dark theme looked thinner than it should and dark text on a light theme looked heavier.
+- On macOS, a variable your shell's rc exports with a line break in its value (a certificate, a key) reaches your sessions exactly as written. Before, a line break could arrive with a stray carriage return in front of it.
 
 ## [0.85.1] - 2026-11-05
 
