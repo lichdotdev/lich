@@ -3,6 +3,14 @@ package main
 import (
 	"image"
 	"testing"
+
+	"gioui.org/f32"
+	"gioui.org/io/event"
+	"gioui.org/io/input"
+	"gioui.org/io/pointer"
+	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
 )
 
 func TestPaneTargetRoundTrips(t *testing.T) {
@@ -122,5 +130,29 @@ func TestColumnRoomCountsThePanesThatFit(t *testing.T) {
 		if got := d.columnRoom(c.target, c.below); got != c.want {
 			t.Errorf("columnRoom(%s, below %v) = %d, want %d", c.target, c.below, got, c.want)
 		}
+	}
+}
+
+// The drag pointer covers the window: with nothing carried a pointer moving
+// over it asks for no frame, since every event a handler takes is one.
+func TestDragPointerTakesNoMotionWithNothingCarried(t *testing.T) {
+	u := &window{model: &model{}, sidebar: &sidebar{}}
+	var router input.Router
+	frame := func() {
+		ops := new(op.Ops)
+		gtx := layout.Context{Ops: ops, Source: router.Source(), Constraints: layout.Exact(image.Pt(800, 600))}
+		u.readDragPointer(gtx)
+		area := clip.Rect{Max: gtx.Constraints.Max}.Push(ops)
+		event.Op(ops, &u.layoutStage.pointer.tag)
+		area.Pop()
+		router.Frame(ops)
+	}
+	frame()
+	router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(100, 100)})
+	frame()
+	router.WakeupTime()
+	router.Queue(pointer.Event{Kind: pointer.Move, Source: pointer.Mouse, Position: f32.Pt(140, 120)})
+	if _, wake := router.WakeupTime(); wake {
+		t.Error("a pointer moving with nothing carried asked for a frame")
 	}
 }

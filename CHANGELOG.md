@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The window spends about a tenth less CPU on every frame it draws: it no longer works out which part of a frame changed when it is drawing the whole frame anyway.
+- Moving the pointer over the window no longer redraws it on every move: over the sidebar it draws only when something under the pointer changes, and over a terminal it draws about a third fewer frames, with an agent that tracks the mouse (Claude Code does) no longer making the agent's output draw at once. Less power spent while your hand is on the mouse.
 
 ### Fixed
 

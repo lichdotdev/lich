@@ -15,9 +15,11 @@ import (
 
 // Root is laid out once, around the whole window, and every popup is placed
 // against it. Gio does not expose a widget's position in the window; but the
-// root's pointer area is the ancestor of every other, so it sees each pointer
-// event in window coordinates while a widget sees the same event in its own,
-// and the difference is that widget's origin.
+// root's pointer area is the ancestor of every other, so it sees each press
+// in window coordinates while a widget sees the same press in its own, and
+// the difference is that widget's origin. It takes no motion: every event a
+// handler takes is a frame, and one over the whole window drew a frame per
+// pointer move.
 type Root struct {
 	window  image.Point
 	pointer f32.Point
@@ -28,7 +30,7 @@ type Root struct {
 
 func (r *Root) Layout(gtx C, w layout.Widget) D {
 	r.window = gtx.Constraints.Max
-	const kinds = pointer.Move | pointer.Drag | pointer.Press | pointer.Release | pointer.Enter | pointer.Leave
+	const kinds = pointer.Drag | pointer.Press | pointer.Release | pointer.Enter | pointer.Leave
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: r, Kinds: kinds}, pointer.Filter{Target: &r.overlay, Kinds: kinds})
 		if !ok {
@@ -55,6 +57,10 @@ func (r *Root) watchOverlay(gtx C) {
 // origin is the window position of the top-left of a widget that saw this
 // frame's pointer event at local.
 func (r *Root) origin(local f32.Point) image.Point { return r.pointer.Sub(local).Round() }
+
+// windowOrigin is the window position of the top-left of the widget that
+// received e.
+func windowOrigin(e pointer.Event) image.Point { return e.WindowPosition.Sub(e.Position).Round() }
 
 // Side is base-ui's side: where a popup sits around its anchor. Only
 // the tooltip takes it as a prop; the menus fix theirs.
