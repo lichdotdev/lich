@@ -59,6 +59,21 @@ from `main` either drowns in merges or freezes the web app for months.
   `go tool pprof http://127.0.0.1:6060/debug/pprof/heap`. `/debug/vars` on the same address carries `frames`,
   the frames drawn since the window opened: two reads a few seconds apart give the window's frame rate. Only a
   loopback address is accepted, and any process on the machine can read what the profiles carry.
+- **`LICH_NATIVE_FRAME_LOG=<file>`**, set the same way, has `lich-native` write one JSON line per drawn frame to
+  `<file>` (truncated at start): the time, the time since the previous frame, the causes that asked for it, the
+  layout and render time, and the heap allocations in between. `/debug/vars` then carries `frame_causes`, the
+  frames each cause took part in. `native/cmd/framestat` summarizes a log: `go run ./cmd/framestat -last 30s
+  <file>` from `native/` prints frames per second per cause (with and without another cause beside it) and each
+  phase's p50 and p95. The causes: `beat` (the looping animation fell due), `pty` (output the window could not
+  fold into a looping frame), `echo` (output inside `echoWindow` of a write to the PTY), `event` (a backend
+  `/events` event), `screencast` (a browser frame), `resize`, `config`, `drop`, `other:<function>` (any other
+  call to the window's `Invalidate`) and `input`, a frame nothing recorded asked for: input events and the timed
+  requests (tooltips, clocks) that are not tagged. A few direct `u.win.Invalidate()` calls (settings applied, the
+  close dialog, the git and plugin gates) are not tagged either and land in `input`. Render is the hand-off to
+  Gio, up to the GPU draw; presenting happens after it on the window thread and is not seen. Allocations are the
+  whole process's between the frame event and its end, background goroutines included; the runtime counts a
+  small object (up to 32 KiB) when its span is refilled, so a frame's figure is approximate. Unset, nothing is
+  recorded.
 - **`GOGC`** left unset, `lich-native` collects at 50 instead of Go's 100: a window with many sessions keeps a
   live heap of hundreds of MB, and at 100 half the resident size is slack the system swaps out. Set `GOGC` to
   choose another value.

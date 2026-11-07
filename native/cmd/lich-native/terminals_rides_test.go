@@ -90,3 +90,19 @@ func TestAQuerysReplyOpensNoEchoWindow(t *testing.T) {
 		t.Errorf("output after a keystroke asked for %d frames, want one at once", *frames)
 	}
 }
+
+func TestEchoOutputInvalidatesUnderItsOwnName(t *testing.T) {
+	ts, _, frames := ridingTerminals(t)
+	echoes := 0
+	ts.invalidateEcho = func() { echoes++ }
+	ts.sent.Store(time.Now().UnixNano())
+	ts.onOutput("s", []byte("a"))
+	if echoes != 1 || *frames != 0 {
+		t.Errorf("output in the echo window: %d echo frames and %d plain, want 1 and 0", echoes, *frames)
+	}
+	ts.sent.Store(time.Now().Add(-echoWindow - time.Millisecond).UnixNano())
+	ts.onOutput("s", []byte("b"))
+	if echoes != 1 || *frames != 1 {
+		t.Errorf("output past it: %d echo frames and %d plain, want 1 and 1", echoes, *frames)
+	}
+}
