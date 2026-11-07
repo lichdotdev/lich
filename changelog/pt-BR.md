@@ -10,21 +10,12 @@
 - A janela gasta cerca de um décimo a menos de CPU em cada quadro que desenha: ela não calcula mais qual parte do quadro mudou quando vai desenhar o quadro inteiro de qualquer jeito.
 - Mover o ponteiro sobre a janela não a redesenha mais a cada movimento: ela só desenha quando algo sob o ponteiro muda, e um agente que acompanha o mouse (o Claude Code acompanha) não faz mais a saída dele ser desenhada na hora conforme o ponteiro se move. Menos energia gasta enquanto sua mão está no mouse.
 - Um link em um terminal fica sublinhado, e o ponteiro vira uma mão, só enquanto Ctrl (Cmd no macOS) está pressionado, a tecla com a qual um clique o abre, como no Ghostty. Antes, todo link sob o ponteiro ficava sublinhado.
+- A nota abaixo de um lote de comentários de revisão, em Código, Revisão e Pull requests, agora é uma caixa que cresce conforme você escreve: Shift+Enter começa uma nova linha, e Enter continua adicionando a nota ao lote.
 
 ### Fixed
 
 - Digitar ou colar em um terminal que você rolou para cima o traz de volta para o final, onde o que você digita aparece, como a maioria dos terminais faz. Antes, o texto chegava à sessão enquanto a visão ficava no histórico de rolagem, e você precisava rolar para baixo à mão para vê-lo.
 - O texto do terminal tem o mesmo peso do resto do texto da janela. Antes, as bordas suaves de cada letra eram misturadas de outro jeito, então o texto claro em um tema escuro parecia mais fino do que deveria e o texto escuro em um tema claro parecia mais pesado.
-- No macOS, uma variável que o rc do seu shell exporta com quebra de linha no valor (um certificado, uma chave) chega às suas sessões exatamente como foi escrita. Antes, uma quebra de linha podia chegar com um retorno de carro a mais na frente.
-
-## [0.85.1] - 2026-11-05
-
-### Changed
-
-- A nota abaixo de um lote de comentários de revisão, em Código, Revisão e Pull requests, agora é uma caixa que cresce conforme você escreve: Shift+Enter começa uma nova linha, e Enter continua adicionando a nota ao lote.
-
-### Fixed
-
 - Uma variável que o rc do seu shell exporta com quebra de linha no valor (um certificado, uma chave) chega inteira às suas sessões. Antes, só a primeira linha chegava, e uma linha seguinte escrita como `NAME=value` aparecia como uma variável à parte.
 - Um arquivo marcado como Visto na aba Arquivos da tela de Pull requests abre recolhido quando o pull request é aberto de novo, até que um novo commit o altere. Antes, ele voltava aberto.
 - Abrir o lich logo depois de fechá-lo, ou a reabertura após uma atualização, não falha mais com "lich could not listen on 127.0.0.1:47821" enquanto o lich antigo ainda está parando os serviços de um projeto. Ao sair, o lich agora libera a porta antes de esperar por eles.
