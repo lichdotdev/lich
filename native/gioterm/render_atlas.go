@@ -27,6 +27,7 @@ type atlasRenderer struct {
 	size    unit.Sp
 	pages   []*atlasPage
 	tinted  map[tintKey]tintEntry
+	blend   blender
 	rowOps  []*op.Ops
 	rowCall []op.CallOp
 }
@@ -70,7 +71,7 @@ func (a *atlasRenderer) Measure(gtx layout.Context) error {
 }
 
 func (a *atlasRenderer) Release() {
-	a.pages, a.tinted, a.rowOps, a.rowCall = nil, map[tintKey]tintEntry{}, nil, nil
+	a.pages, a.tinted, a.rowOps, a.rowCall, a.blend = nil, map[tintKey]tintEntry{}, nil, nil, blender{}
 }
 
 func (a *atlasRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
@@ -207,7 +208,7 @@ func (a *atlasRenderer) insert(m *glyphs.Mask, c color.NRGBA) tintEntry {
 	if m.Color != nil {
 		draw.Draw(page.img, rect, m.Color, image.Point{}, draw.Src)
 	} else {
-		draw.DrawMask(page.img, rect, image.NewUniform(c), image.Point{}, m.Img, image.Point{}, draw.Src)
+		a.blend.mask(page.img, rect, c, color.RGBA{}, m.Img, image.Point{})
 	}
 	page.stale = true
 	return tintEntry{page: page, rect: rect, off: m.Off}
