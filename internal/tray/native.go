@@ -21,16 +21,18 @@ func startNative(t *Tray) {
 }
 
 func (t *Tray) ready() {
-	systray.SetIcon(t.icon())
+	systray.SetIcon(t.icon(badgeNone))
 	systray.SetTooltip("lich")
 	labels := t.currentLabels()
-	m := menu{show: systray.AddMenuItem(labels.Show, "")}
-	m.running = systray.AddMenuItem("", "")
-	m.running.Disable()
+	m := &menu{show: systray.AddMenuItem(labels.Show, "")}
+	systray.AddSeparator()
+	m.none = disabledItem()
+	m.needs = addGroup()
+	m.working = addGroup()
+	m.idle = disabledItem()
 	m.services = systray.AddMenuItem("", "")
-	m.services.Disable()
 	for i := range m.slots {
-		item := systray.AddMenuItem("", "")
+		item := m.services.AddSubMenuItem("", "")
 		m.slots[i] = slot{
 			item:    item,
 			show:    item.AddSubMenuItem(labels.ShowOutput, ""),
@@ -38,10 +40,11 @@ func (t *Tray) ready() {
 			stop:    item.AddSubMenuItem(labels.Stop, ""),
 		}
 	}
-	m.stopAll = systray.AddMenuItem(labels.StopAll, "")
-	t.refresh(m, labels)
+	m.services.AddSeparator()
+	m.stopAll = m.services.AddSubMenuItem(labels.StopAll, "")
 	systray.AddSeparator()
 	m.quit = systray.AddMenuItem(labels.Quit, "")
+	t.refresh(m, labels)
 	t.setRelabel(func(l Labels) {
 		m.show.SetTitle(l.Show)
 		m.quit.SetTitle(l.Quit)
@@ -56,14 +59,26 @@ func (t *Tray) ready() {
 	for i, sl := range m.slots {
 		go t.serveSlot(i, sl)
 	}
+	for i := range sessionSlots {
+		go t.serveSession(m.needs.rows[i], &t.needIDs, i)
+		go t.serveSession(m.working.rows[i], &t.workIDs, i)
+	}
 	go t.serve(m)
 }
 
 // menu is the tray's items.
 type menu struct {
-	show, running, quit *systray.MenuItem
-	services, stopAll   *systray.MenuItem
-	slots               [serviceSlots]slot
+	show, quit, none, idle *systray.MenuItem
+	needs, working         group
+	services, stopAll      *systray.MenuItem
+	slots                  [serviceSlots]slot
+}
+
+// group is one group of sessions: its heading, a slot per session and the line
+// counting the ones past the slots.
+type group struct {
+	heading, more *systray.MenuItem
+	rows          [sessionSlots]*systray.MenuItem
 }
 
 // slot is one running service's item and its submenu.
@@ -71,29 +86,65 @@ type slot struct {
 	item, show, restart, stop *systray.MenuItem
 }
 
-// refresh rewrites what changes without a new language: the session count and
-// the running services. A count it cannot read leaves the title as it was
-// rather than show a wrong one.
-func (t *Tray) refresh(m menu, l Labels) {
-	t.refreshServices(m, l)
-	live, err := t.live()
-	if err != nil {
-		slog.Warn("tray: count the running sessions", "err", err)
-		return
+func addGroup() group {
+	g := group{heading: disabledItem()}
+	for i := range g.rows {
+		g.rows[i] = systray.AddMenuItem("", "")
 	}
-	m.running.SetTitle(l.running(live))
+	g.more = disabledItem()
+	return g
 }
 
-func (t *Tray) refreshServices(m menu, l Labels) {
+func disabledItem() *systray.MenuItem {
+	item := systray.AddMenuItem("", "")
+	item.Disable()
+	return item
+}
+
+// refresh rewrites what changes without a new language: the sessions, the
+// icon's badge and the running services. Sessions it cannot read leave the
+// menu as it was rather than show a wrong one.
+func (t *Tray) refresh(m *menu, l Labels) {
+	t.refreshServices(m, l)
+	v, err := t.readSessions(l)
+	if err != nil {
+		slog.Warn("tray: read the sessions", "err", err)
+		return
+	}
+	setGroup(m.needs, l.NeedsYou, v.needs, v.needsMore, l)
+	setGroup(m.working, l.Working, v.working, v.workingMore, l)
+	setLine(m.idle, withCount(l.Idle, v.idle), v.idle > 0)
+	setLine(m.none, l.NoSessions, !v.any())
+	systray.SetTooltip(v.tooltip)
+	if t.swapBadge(v.badge) {
+		systray.SetIcon(t.icon(v.badge))
+	}
+}
+
+func setGroup(g group, heading string, rows []sessionRow, more int, l Labels) {
+	setLine(g.heading, heading, len(rows) > 0)
+	for i, item := range g.rows {
+		if i < len(rows) {
+			item.SetTitle(rows[i].title)
+		}
+		visible(item, i < len(rows))
+	}
+	setLine(g.more, withCount(l.More, more), more > 0)
+}
+
+func setLine(item *systray.MenuItem, title string, on bool) {
+	item.SetTitle(title)
+	visible(item, on)
+}
+
+func (t *Tray) refreshServices(m *menu, l Labels) {
 	shown, total := t.runningServices()
-	visible(m.services, total > 0)
-	visible(m.stopAll, total > 0)
-	m.services.SetTitle(l.servicesRunning(total))
+	setLine(m.services, l.servicesRunning(total), total > 0)
 	for i, sl := range m.slots {
-		visible(sl.item, i < len(shown))
 		if i < len(shown) {
 			sl.item.SetTitle(serviceTitle(shown[i]))
 		}
+		visible(sl.item, i < len(shown))
 	}
 }
 
@@ -103,6 +154,12 @@ func visible(item *systray.MenuItem, on bool) {
 		return
 	}
 	item.Hide()
+}
+
+func (t *Tray) serveSession(item *systray.MenuItem, ids *[sessionSlots]string, i int) {
+	for range item.ClickedCh {
+		t.focusSlot(ids, i)
+	}
 }
 
 func (t *Tray) serveSlot(i int, sl slot) {
@@ -119,7 +176,7 @@ func (t *Tray) serveSlot(i int, sl slot) {
 	}
 }
 
-func (t *Tray) serve(m menu) {
+func (t *Tray) serve(m *menu) {
 	ticker := time.NewTicker(refreshEvery)
 	defer ticker.Stop()
 	for {

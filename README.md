@@ -145,6 +145,7 @@ what lich can read back out of it, since each CLI records different things.
 | Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no |
 | Bell when the agent is blocked on you | yes | yes | no | yes | no | no | no | no |
 | Ctrl+Shift+Y jumps to the next session waiting on you | yes | yes | no | yes | no | no | no | no |
+| The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | no | working only | working only |
 | The card says when the conversation is being compacted | yes | no | no | no | no | no | no | no |
 | Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |
 | Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |

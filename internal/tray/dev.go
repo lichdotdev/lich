@@ -49,6 +49,12 @@ const (
 // DevICO is icon, an ICO whose images are all PNG, with each image painted as
 // DevPNG paints one. An ICO image stored as a bitmap is an error.
 func DevICO(icon []byte) ([]byte, error) {
+	return mapICO(icon, DevPNG)
+}
+
+// mapICO is icon, an ICO whose images are all PNG, with each image replaced by
+// what paint makes of it.
+func mapICO(icon []byte, paint func([]byte) ([]byte, error)) ([]byte, error) {
 	if len(icon) < icoHeader {
 		return nil, fmt.Errorf("tray icon: %d bytes is no ICO header", len(icon))
 	}
@@ -65,7 +71,7 @@ func DevICO(icon []byte) ([]byte, error) {
 		if offset+size > len(icon) {
 			return nil, fmt.Errorf("tray icon: image %d runs past %d bytes", i, len(icon))
 		}
-		frame, err := DevPNG(icon[offset : offset+size])
+		frame, err := paint(icon[offset : offset+size])
 		if err != nil {
 			return nil, fmt.Errorf("tray icon image %d: %w", i, err)
 		}

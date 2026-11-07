@@ -671,6 +671,25 @@ func (s *Service) SetSessionUnread(_ context.Context, opts api.SessionUnreadOpti
 	return api.None{}, nil
 }
 
+// UnreadSessions is the set of sessions whose last finished turn nobody has
+// read yet, the mark SetSessionUnread writes.
+func (s *Service) UnreadSessions() (map[string]bool, error) {
+	rows, err := s.db.Query(`SELECT id FROM sessions WHERE unread = 1`)
+	if err != nil {
+		return nil, fmt.Errorf("read unread sessions: %w", err)
+	}
+	defer rows.Close()
+	unread := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("read unread sessions: %w", err)
+		}
+		unread[id] = true
+	}
+	return unread, rows.Err()
+}
+
 // SetSessionTitle sets a session's label from the provider's ai-title reported
 // by the Stop hook, but only while the label is still automatic: a prior
 // RenameSession clears label_auto and makes this a no-op, so a user's own name

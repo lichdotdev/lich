@@ -500,7 +500,17 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	routes.Themes(dispatcher, themes.New(version, db, hub.Emit))
 	// The tray is what a lich with its window closed shows of itself; it comes
 	// up once the window hands it its words (tray.SetLabels).
-	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit, liveCount)
+	trayIcon := tray.New(trayIcons(), func() { showWindow(sys, "from the tray") }, coord.Quit)
+	trayIcon.SetSessions(tray.Sessions{
+		Live:   func() ([]api.Peer, error) { return rl.Peers(context.Background(), relay.PeersOptions{}) },
+		Status: term.Status,
+		Unread: db.UnreadSessions,
+		Focus: func(id string) {
+			if _, err := rl.Focus(context.Background(), relay.FocusOptions{Target: id}); err != nil {
+				slog.Warn("tray: focus a session", "session", id, "err", err)
+			}
+		},
+	})
 	trayIcon.SetServices(tray.Services{
 		Running: svcs.Running,
 		Reveal:  svcs.Reveal,
