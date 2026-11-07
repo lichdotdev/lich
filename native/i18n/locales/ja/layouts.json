@@ -39,6 +39,7 @@
     "zoom": "ページのズーム",
     "zoomReset": "100% に戻す",
     "notePlaceholder": "ここをどう変えますか？",
+    "closingPlaceholder": "すべてについてのメモ…",
     "addNote": "メモを追加",
     "saveNote": "保存",
     "deleteNote": "削除",

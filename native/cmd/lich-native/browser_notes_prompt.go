@@ -9,8 +9,9 @@ import (
 
 // notesMessage is the notes as the agent reads them: each element's label and
 // page, the selector browser_click takes, the React component that drew it,
-// its markup, and the person's note.
-func notesMessage(notes []*browserNote) string {
+// its markup, and the person's note; closing, the note about all of them, ends
+// it.
+func notesMessage(notes []*browserNote, closing string) string {
 	lines := []string{i18n.Prompt("prompts.browserNotes.head", i18n.Args{"count": len(notes)})}
 	for i, n := range notes {
 		el := n.el
@@ -29,5 +30,8 @@ func notesMessage(notes []*browserNote) string {
 		}
 	}
 	lines = append(lines, i18n.Prompt("prompts.browserNotes.selectors"))
+	if closing = strings.TrimSpace(closing); closing != "" {
+		lines = append(lines, "", closing)
+	}
 	return strings.Join(lines, "\n")
 }
