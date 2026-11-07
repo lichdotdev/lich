@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Typing or pasting in a terminal you scrolled up brings it back to the bottom, where what you type shows up, the way most terminals do. Before, the text reached the session while the view stayed on the scrollback, and you had to scroll down by hand to see it.
+
 ## [0.85.1] - 2026-11-05
 
 ### Changed

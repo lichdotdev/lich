@@ -179,6 +179,12 @@ static GhosttyResult scroll_delta(GhosttyTerminal t, intptr_t delta) {
 	ghostty_terminal_scroll_viewport(t, b);
 	return GHOSTTY_SUCCESS;
 }
+
+static void scroll_bottom(GhosttyTerminal t) {
+	GhosttyTerminalScrollViewport b = {0};
+	b.tag = GHOSTTY_SCROLL_VIEWPORT_BOTTOM;
+	ghostty_terminal_scroll_viewport(t, b);
+}
 */
 import "C"
 
@@ -354,6 +360,15 @@ func (v *Terminal) Scroll(delta int) {
 	}
 	C.scroll_delta(v.t, C.intptr_t(delta))
 	v.mu.Unlock()
+}
+
+// ScrollToBottom moves the viewport back to the live screen.
+func (v *Terminal) ScrollToBottom() {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if !v.closed {
+		C.scroll_bottom(v.t)
+	}
 }
 
 // WheelRows is the rows a wheel scroll of dy pixels moves, negative is up.
