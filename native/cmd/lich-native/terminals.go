@@ -274,8 +274,10 @@ func (ts *terminals) sendTyped(t *termView, b []byte) {
 }
 
 // reply writes the terminal's answer to a query of the program's (cursor
-// position, device attributes) to session id's PTY. A program polling the
-// terminal is no one typing, so its answers never open the echo window.
+// position, device attributes), or a mouse report, to session id's PTY. A
+// program polling the terminal is no one typing, and a pointer crossing a
+// program that tracks it reports every move, so neither opens the echo
+// window.
 func (ts *terminals) reply(id string, b []byte) {
 	if len(b) == 0 {
 		return
@@ -621,8 +623,8 @@ func (ts *terminals) input(gtx layout.Context, t *termView, focus bool) {
 				}
 				break
 			}
-			send, copied := t.pointer(e)
-			ts.send(t.id, send)
+			report, copied := t.pointer(e)
+			ts.reply(t.id, report)
 			if copied != "" && !ts.copyOnSelectOff.Load() {
 				ts.copySelection(gtx, copied)
 			}
