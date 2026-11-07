@@ -282,6 +282,58 @@ func TestCreateWorktreeErrors(t *testing.T) {
 	}
 }
 
+// TestCreateWorktreeRandomNameSkipsOccupiedDirs proves a name lich picked
+// never fails on a directory left at its path: the user chose no name, so an
+// "already exists" error is one they cannot act on. Every adjective-noun pair
+// is occupied as a directory with no branch of that name, the state a worktree
+// whose branch was renamed (a random name traded for a real one before a PR)
+// leaves: the folder keeps the name it was born with.
+func TestCreateWorktreeRandomNameSkipsOccupiedDirs(t *testing.T) {
+	data := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", data)
+	repo, _ := initRepo(t)
+	for _, a := range adjectives {
+		for _, n := range nouns {
+			if err := os.MkdirAll(filepath.Join(data, "lich", "worktrees", "pid", a+"-"+n), 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	wt, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Base: "main"})
+	if err != nil {
+		t.Fatalf("CreateWorktree(random name over occupied dirs): %v", err)
+	}
+	if !strings.HasSuffix(wt.Name, "-2") {
+		t.Errorf("Name = %q, want a suffixed name past the occupied pairs", wt.Name)
+	}
+}
+
+// TestCreateWorktreeRemovesAnUnreadableCheckout proves a worktree that `git
+// worktree add` made but git then cannot read as a checkout is removed with
+// the error, the way a failed PR checkout's is: left on disk, its folder makes
+// the next creation under that name fail with "already exists". A
+// post-checkout hook deleting the new worktree's .git file is the unreadable
+// state.
+func TestCreateWorktreeRemovesAnUnreadableCheckout(t *testing.T) {
+	data := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", data)
+	repo, git := initRepo(t)
+	hooks := t.TempDir()
+	if err := os.WriteFile(filepath.Join(hooks, "post-checkout"), []byte("#!/bin/sh\nrm -f .git\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	git("config", "core.hooksPath", hooks)
+
+	_, err := New(nil).CreateWorktree(t.Context(), api.CreateWorktreeOptions{ProjectPath: repo, ProjectID: "pid", Name: "broken", Base: "main"})
+	if err == nil || !strings.Contains(err.Error(), "does not read it as a checkout") {
+		t.Fatalf("CreateWorktree error = %v, want the unreadable-checkout message", err)
+	}
+	if _, err := os.Stat(filepath.Join(data, "lich", "worktrees", "pid", "broken")); !os.IsNotExist(err) {
+		t.Errorf("worktree dir stat = %v, want it removed", err)
+	}
+}
+
 // TestCreateWorktreeExistingBranch replicates issue #334: a branch cut before
 // the session — off an updated remote, linked to a GitHub issue — is checked
 // out as it stands rather than recreated, and the base is ignored because the
