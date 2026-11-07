@@ -28,6 +28,7 @@ type rowRenderer struct {
 	// clear is what the rows' default background was composed in: the
 	// terminal's own, or transparent while an image lies under the text.
 	clear color.NRGBA
+	blend blender
 }
 
 func newRowRenderer(r *glyphs.Rasterizer, size unit.Sp) *rowRenderer {
@@ -46,7 +47,7 @@ func (rr *rowRenderer) Measure(gtx layout.Context) error {
 	return err
 }
 
-func (rr *rowRenderer) Release() { rr.imgs, rr.ops = nil, nil }
+func (rr *rowRenderer) Release() { rr.imgs, rr.ops, rr.blend = nil, nil, blender{} }
 
 func (rr *rowRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
 	return rr.draw(gtx, s.s, s.cells, s.dirty, s.below, s.above)
@@ -160,8 +161,13 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		if m.Img == nil {
 			continue
 		}
+		ground := clear
+		if st.bg != sn.bg {
+			ground = rgba(st.bg)
+		}
+		// ground is opaque or transparent black, the same premultiplied or not.
 		dst := m.Img.Bounds().Add(m.Off).Add(image.Pt(x*cw, 0))
-		draw.DrawMask(img, dst, image.NewUniform(col), image.Point{}, m.Img, image.Point{}, draw.Over)
+		rr.blend.mask(img, dst, col, color.RGBA(ground), m.Img, image.Point{})
 	}
 	return nil
 }
