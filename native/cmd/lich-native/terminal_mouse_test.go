@@ -307,7 +307,15 @@ func TestPressOnTheTerminalTakesTheKeyboard(t *testing.T) {
 // A link underlines only while Ctrl (Cmd on macOS) is held, the key a click
 // opens it with. With the key up and no program asking for every motion, the
 // grid takes no motion at all: a pointer crossing it draws no frame.
+// Focused, the grid's own key filters (any key with Ctrl) see the key too.
+// The key alone writes nothing to the program.
 func TestALinkUnderlinesOnlyWhileTheLinkKeyIsHeld(t *testing.T) {
+	for _, focused := range []bool{false, true} {
+		t.Run(fmt.Sprintf("focused=%v", focused), func(t *testing.T) { linkKeyUnderline(t, focused) })
+	}
+}
+
+func linkKeyUnderline(t *testing.T, focused bool) {
 	v := newMouseTestView(t, "docs at https://lich.dev/docs ok")
 	v.id, v.tag = "s", new(int)
 	v.readOnly.Store(true)
@@ -316,7 +324,7 @@ func TestALinkUnderlinesOnlyWhileTheLinkKeyIsHeld(t *testing.T) {
 	frame := func() {
 		ops := new(op.Ops)
 		gtx := layout.Context{Ops: ops, Source: router.Source(), Constraints: layout.Exact(image.Pt(800, 480))}
-		ts.input(gtx, v, false)
+		ts.input(gtx, v, focused)
 		area := clip.Rect{Max: image.Pt(800, 480)}.Push(ops)
 		event.Op(ops, v.tag)
 		area.Pop()
@@ -351,6 +359,9 @@ func TestALinkUnderlinesOnlyWhileTheLinkKeyIsHeld(t *testing.T) {
 	router.Queue(ptr(pointer.Move, at(22, 0), 0, 0))
 	if _, wake := router.WakeupTime(); wake {
 		t.Error("after the link key went up, a pointer crossing the grid asked for a frame")
+	}
+	if ts.sent.Load() != 0 {
+		t.Error("the link key alone wrote to the program")
 	}
 }
 
