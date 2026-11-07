@@ -12,12 +12,19 @@ import (
 // trayLabels are the tray menu's words in the interface language. The
 // backend fills the {count} placeholders itself.
 func trayLabels() backend.TrayLabels {
+	count := i18n.Args{"count": "{count}"}
 	return backend.TrayLabels{
-		Show:    i18n.T("shell.tray.show"),
-		Running: i18n.T("shell.tray.running", i18n.Args{"count": "{count}"}),
-		Quit:    i18n.T("shell.tray.quit"),
+		Show:       i18n.T("shell.tray.show"),
+		Quit:       i18n.T("shell.tray.quit"),
+		NoSessions: i18n.T("shell.tray.noSessions"),
+		NeedsYou:   i18n.T("shell.tray.needsYou"),
+		Working:    i18n.T("shell.tray.working"),
+		Idle:       i18n.T("shell.tray.idle", count),
+		More:       i18n.T("shell.tray.more", count),
+		Waiting:    i18n.T("shell.tray.waiting"),
+		Done:       i18n.T("shell.tray.done"),
 
-		ServicesRunning: i18n.T("shell.tray.servicesRunning", i18n.Args{"count": "{count}"}),
+		ServicesRunning: i18n.T("shell.tray.servicesRunning", count),
 		ShowOutput:      i18n.T("shell.tray.showOutput"),
 		Restart:         i18n.T("shell.tray.restart"),
 		Stop:            i18n.T("shell.tray.stop"),

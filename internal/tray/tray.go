@@ -10,25 +10,30 @@ package tray
 
 import (
 	"context"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
 )
 
-// refreshEvery is how often the menu's session count is read again. The count
-// only changes when a session is opened or closed, and nothing reads it but a
-// person opening the menu.
+// refreshEvery is how often the menu and the icon's badge are read again. The
+// menu is read by a person opening it, and a badge late by a few seconds still
+// says a session has been waiting on you.
 const refreshEvery = 5 * time.Second
 
-// Labels are the menu's words, in the interface language. Running carries a
-// {count} placeholder and is written so it needs no plural form.
+// Labels are the menu's words, in the interface language. Idle, More and
+// ServicesRunning carry a {count} placeholder and are written so they need no
+// plural form.
 type Labels struct {
 	Show            string `json:"show"`
-	Running         string `json:"running"`
 	Quit            string `json:"quit"`
+	NoSessions      string `json:"noSessions"`
+	NeedsYou        string `json:"needsYou"`
+	Working         string `json:"working"`
+	Idle            string `json:"idle"`
+	More            string `json:"more"`
+	Waiting         string `json:"waiting"`
+	Done            string `json:"done"`
 	ServicesRunning string `json:"servicesRunning"`
 	ShowOutput      string `json:"showOutput"`
 	Restart         string `json:"restart"`
@@ -36,12 +41,8 @@ type Labels struct {
 	StopAll         string `json:"stopAll"`
 }
 
-func (l Labels) running(live int) string {
-	return strings.ReplaceAll(l.Running, "{count}", strconv.Itoa(live))
-}
-
 func (l Labels) servicesRunning(n int) string {
-	return strings.ReplaceAll(l.ServicesRunning, "{count}", strconv.Itoa(n))
+	return withCount(l.ServicesRunning, n)
 }
 
 // serviceSlots is how many running services the menu names one by one. The
@@ -76,10 +77,17 @@ type Tray struct {
 	started bool
 	// relabel is set once the menu is up, to rewrite it in new labels.
 	relabel func(Labels)
-	icons   Icons
-	show    func()
-	quit    func() error
-	live    func() (int, error)
+	// icons are the tray's icon under each badge, indexed by badge.
+	icons [badgeCount]Icons
+	show  func()
+	quit  func() error
+	// sessions is set at startup (SetSessions); its zero value shows none.
+	sessions Sessions
+	// needIDs and workIDs are which session each slot of the two groups
+	// shows, refreshed with the menu.
+	needIDs, workIDs [sessionSlots]string
+	// badge is the badge the icon shows now.
+	badge badge
 	// services is set at startup (SetServices); its zero value leaves the
 	// services out of the menu.
 	services Services
@@ -98,9 +106,9 @@ type Icons struct {
 }
 
 // New returns a tray that is not up yet. show brings the window up, quit ends
-// lich, live counts the sessions with a process running.
-func New(icons Icons, show func(), quit func() error, live func() (int, error)) *Tray {
-	return &Tray{icons: icons, show: show, quit: quit, live: live, start: startNative}
+// lich.
+func New(icons Icons, show func(), quit func() error) *Tray {
+	return &Tray{icons: badgedIcons(icons), show: show, quit: quit, start: startNative}
 }
 
 // SetLabels gives the menu its words. The first call puts the tray up; a later
@@ -121,6 +129,14 @@ func (t *Tray) SetLabels(_ context.Context, opts api.TrayLabels) (api.None, erro
 		relabel(labels)
 	}
 	return api.None{}, nil
+}
+
+// SetSessions wires the sessions into the menu. Startup wiring, called before
+// the window can put the tray up.
+func (t *Tray) SetSessions(s Sessions) {
+	t.mu.Lock()
+	t.sessions = s
+	t.mu.Unlock()
 }
 
 // SetServices wires the project services into the menu. Startup wiring,

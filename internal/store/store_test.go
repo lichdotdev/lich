@@ -1635,3 +1635,25 @@ func TestSetSessionUnreadIgnoresAMissingSession(t *testing.T) {
 		t.Fatalf("SetSessionUnread on a missing session: %v", err)
 	}
 }
+
+func TestUnreadSessionsListsOnlyTheMarked(t *testing.T) {
+	svc := newTestStore(t)
+	if _, err := svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "demo", Path: "/tmp/demo"}); err != nil {
+		t.Fatalf("AddProject: %v", err)
+	}
+	for _, id := range []string{"s1", "s2"} {
+		if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, NextSeq: 2}); err != nil {
+			t.Fatalf("AddSession(%s): %v", id, err)
+		}
+	}
+	if _, err := svc.SetSessionUnread(t.Context(), api.SessionUnreadOptions{SessionID: "s2", Unread: true}); err != nil {
+		t.Fatalf("SetSessionUnread: %v", err)
+	}
+	unread, err := svc.UnreadSessions()
+	if err != nil {
+		t.Fatalf("UnreadSessions: %v", err)
+	}
+	if len(unread) != 1 || !unread["s2"] {
+		t.Errorf("UnreadSessions = %v, want only s2", unread)
+	}
+}

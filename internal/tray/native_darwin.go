@@ -28,13 +28,23 @@ func startNative(t *Tray) {
 	appkit.Do(t.ready)
 }
 
-func (t *Tray) icon() []byte { return t.icons.PNG }
+func (t *Tray) icon(b badge) []byte { return t.icons[b].PNG }
 
-// menu is the item's menu entries.
+// menu is the item's menu entries, and the status item whose icon carries the
+// badge.
 type menu struct {
-	show, running, quit objc.ID
-	services, stopAll   objc.ID
-	slots               [serviceSlots]slot
+	button                 objc.ID
+	show, quit, none, idle objc.ID
+	needs, working         group
+	services, stopAll      objc.ID
+	slots                  [serviceSlots]slot
+}
+
+// group is one group of sessions: its heading, an entry per session and the
+// line counting the ones past the entries.
+type group struct {
+	heading, more objc.ID
+	rows          [sessionSlots]objc.ID
 }
 
 // slot is one running service's entry and its submenu.
@@ -51,6 +61,12 @@ const (
 	slotActions
 )
 
+// A session entry's tag is its group's offset plus its slot.
+const (
+	tagNeeds   = 0
+	tagWorking = sessionSlots
+)
+
 func (t *Tray) ready() {
 	target, err := t.target()
 	if err != nil {
@@ -62,28 +78,33 @@ func (t *Tray) ready() {
 		Send(sel("statusItemWithLength:"), variableStatusItemLength)
 	// The status bar drops an item nothing holds.
 	item.Send(sel("retain"))
-	button := item.Send(sel("button"))
-	button.Send(sel("setImage:"), statusImage(t.icon()))
-	button.Send(sel("setToolTip:"), nsString("lich"))
+	m := &menu{button: item.Send(sel("button"))}
+	m.button.Send(sel("setImage:"), statusImage(t.icon(badgeNone)))
+	m.button.Send(sel("setToolTip:"), nsString("lich"))
 
-	m := menu{
-		show:    menuItem(labels.Show, sel("show:"), target),
-		running: menuItem("", 0, 0),
-		quit:    menuItem(labels.Quit, sel("quit:"), target),
-	}
 	nsMenu := objc.ID(objc.GetClass("NSMenu")).Send(sel("new"))
-	nsMenu.Send(sel("addItem:"), m.show)
-	nsMenu.Send(sel("addItem:"), m.running)
-	m.services = menuItem("", 0, 0)
-	nsMenu.Send(sel("addItem:"), m.services)
+	add := func(entry objc.ID) objc.ID {
+		nsMenu.Send(sel("addItem:"), entry)
+		return entry
+	}
+	m.show = add(menuItem(labels.Show, sel("show:"), target))
+	add(separator())
+	m.none = add(menuItem("", 0, 0))
+	m.needs = sessionGroup(add, tagNeeds, target)
+	m.working = sessionGroup(add, tagWorking, target)
+	m.idle = add(menuItem("", 0, 0))
+	m.services = add(menuItem("", 0, 0))
+	sub := objc.ID(objc.GetClass("NSMenu")).Send(sel("new"))
 	for i := range m.slots {
 		m.slots[i] = serviceSlot(i, labels, target)
-		nsMenu.Send(sel("addItem:"), m.slots[i].item)
+		sub.Send(sel("addItem:"), m.slots[i].item)
 	}
+	sub.Send(sel("addItem:"), separator())
 	m.stopAll = menuItem(labels.StopAll, sel("stopAllServices:"), target)
-	nsMenu.Send(sel("addItem:"), m.stopAll)
-	nsMenu.Send(sel("addItem:"), objc.ID(objc.GetClass("NSMenuItem")).Send(sel("separatorItem")))
-	nsMenu.Send(sel("addItem:"), m.quit)
+	sub.Send(sel("addItem:"), m.stopAll)
+	m.services.Send(sel("setSubmenu:"), sub)
+	add(separator())
+	m.quit = add(menuItem(labels.Quit, sel("quit:"), target))
 	item.Send(sel("setMenu:"), nsMenu)
 
 	t.setRelabel(func(l Labels) {
@@ -103,11 +124,26 @@ func (t *Tray) ready() {
 	go t.serve(m)
 }
 
+// sessionGroup adds a group's entries, hidden until sessions fill them; the
+// session entries are tagged from offset.
+func sessionGroup(add func(objc.ID) objc.ID, offset int, target objc.ID) group {
+	g := group{heading: add(menuItem("", 0, 0))}
+	for i := range g.rows {
+		g.rows[i] = add(menuItem("", sel("focusSession:"), target))
+		g.rows[i].Send(sel("setTag:"), offset+i)
+	}
+	g.more = add(menuItem("", 0, 0))
+	return g
+}
+
 // target registers the object the menu's entries call, which runs the tray's
 // show and quit off the main thread.
 func (t *Tray) target() (objc.ID, error) {
 	class, err := objc.RegisterClass("LichTrayTarget", objc.GetClass("NSObject"), nil, nil, []objc.MethodDef{
 		{Cmd: sel("show:"), Fn: func(_ objc.ID, _ objc.SEL, _ objc.ID) { go t.show() }},
+		{Cmd: sel("focusSession:"), Fn: func(_ objc.ID, _ objc.SEL, sender objc.ID) {
+			go t.focusTag(objc.Send[int](sender, sel("tag")))
+		}},
 		{Cmd: sel("serviceAction:"), Fn: func(_ objc.ID, _ objc.SEL, sender objc.ID) {
 			go t.serviceAction(objc.Send[int](sender, sel("tag")))
 		}},
@@ -126,31 +162,64 @@ func (t *Tray) target() (objc.ID, error) {
 	return objc.ID(class).Send(sel("new")), nil
 }
 
-// refresh rewrites the session count and the running services. A count it
-// cannot read leaves the title as it was rather than show a wrong one.
-func (t *Tray) refresh(m menu, l Labels) {
+func (t *Tray) focusTag(tag int) {
+	if tag >= tagWorking {
+		t.focusSlot(&t.workIDs, tag-tagWorking)
+		return
+	}
+	t.focusSlot(&t.needIDs, tag)
+}
+
+// refresh rewrites the sessions, the icon's badge and the running services.
+// Sessions it cannot read leave the menu as it was rather than show a wrong
+// one.
+func (t *Tray) refresh(m *menu, l Labels) {
 	shown, total := t.runningServices()
 	appkit.Do(func() {
-		m.services.Send(sel("setTitle:"), nsString(l.servicesRunning(total)))
-		m.services.Send(sel("setHidden:"), total == 0)
-		m.stopAll.Send(sel("setHidden:"), total == 0)
+		setLine(m.services, l.servicesRunning(total), total > 0)
 		for i, sl := range m.slots {
-			sl.item.Send(sel("setHidden:"), i >= len(shown))
 			if i < len(shown) {
 				sl.item.Send(sel("setTitle:"), nsString(serviceTitle(shown[i])))
 			}
+			sl.item.Send(sel("setHidden:"), i >= len(shown))
 		}
 	})
-	live, err := t.live()
+	v, err := t.readSessions(l)
 	if err != nil {
-		slog.Warn("tray: count the running sessions", "err", err)
+		slog.Warn("tray: read the sessions", "err", err)
 		return
 	}
-	title := l.running(live)
-	appkit.Do(func() { m.running.Send(sel("setTitle:"), nsString(title)) })
+	icon := t.swapBadge(v.badge)
+	appkit.Do(func() {
+		setGroup(m.needs, l.NeedsYou, v.needs, v.needsMore, l)
+		setGroup(m.working, l.Working, v.working, v.workingMore, l)
+		setLine(m.idle, withCount(l.Idle, v.idle), v.idle > 0)
+		setLine(m.none, l.NoSessions, !v.any())
+		m.button.Send(sel("setToolTip:"), nsString(v.tooltip))
+		if icon {
+			m.button.Send(sel("setImage:"), statusImage(t.icon(v.badge)))
+		}
+	})
 }
 
-func (t *Tray) serve(m menu) {
+func setGroup(g group, heading string, rows []sessionRow, more int, l Labels) {
+	setLine(g.heading, heading, len(rows) > 0)
+	for i, entry := range g.rows {
+		if i < len(rows) {
+			entry.Send(sel("setTitle:"), nsString(rows[i].title))
+			entry.Send(sel("setToolTip:"), nsString(rows[i].full))
+		}
+		entry.Send(sel("setHidden:"), i >= len(rows))
+	}
+	setLine(g.more, withCount(l.More, more), more > 0)
+}
+
+func setLine(entry objc.ID, title string, on bool) {
+	entry.Send(sel("setTitle:"), nsString(title))
+	entry.Send(sel("setHidden:"), !on)
+}
+
+func (t *Tray) serve(m *menu) {
 	ticker := time.NewTicker(refreshEvery)
 	defer ticker.Stop()
 	for range ticker.C {
@@ -200,6 +269,10 @@ func menuItem(title string, action objc.SEL, target objc.ID) objc.ID {
 		item.Send(sel("setTarget:"), target)
 	}
 	return item
+}
+
+func separator() objc.ID {
+	return objc.ID(objc.GetClass("NSMenuItem")).Send(sel("separatorItem"))
 }
 
 func statusImage(png []byte) objc.ID {
