@@ -5,25 +5,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15-intel, macos-latest]
+        os: [macos-15-intel, macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - run: |
-          go test -c -o after.test ./internal/terminal/
-          git checkout origin/main -- internal/terminal/shellenv.go internal/terminal/shellenv_test.go
-          go test -c -o before.test ./internal/terminal/
-      - name: before vs after, loaded
-        run: |
-          for i in $(sysctl -n hw.ncpu | xargs seq 1); do (yes > /dev/null &); done
-          for b in before after; do
-            for r in 1 2 3; do
-              (./$b.test -test.run '^TestResolveShellEnvKeepsMultiLineValues$' -test.count=150 2>&1 | grep -c -- '--- FAIL' | sed "s/^/$b round $r fails of 150: /") &
-            done; wait
-          done
-          pkill yes || true
+      - run: go test -count=1 -run TestZZDiagSlowReader -v ./internal/terminal/ | grep -E 'dup=|ok|FAIL'
