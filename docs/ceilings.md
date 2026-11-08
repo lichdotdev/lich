@@ -971,6 +971,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **Single instance via the pinned port**: the bind is the lock (`internal/singleton`); a duplicate launch asks
   the running lich to show its window (`singleton.Show`, `system.ShowWindow`) and exits. Raising is
   best-effort: a Wayland compositor may only mark the window urgent.
+- **On macOS a quitting lich can hold the port for a few milliseconds after it lets go**
+  (`internal/terminal/listener_linux.go`): a child process lich is starting copies the listening socket and
+  keeps it until it execs. Linux takes the socket out of listening at once; macOS refuses that on a listener,
+  so there the port frees when the child execs, and a relaunch rides it out with its bind retry
+  (`bindTimeout`). Windows children do not inherit the socket.
 - **Settings remembers its open pane under one global key** (`native/cmd/lich-native/settings.go`,
   `settingsSectionKey`): the nav is the same list of panes in every project, so opening Settings in project B
   lands on the pane project A was reading. Whoever adds a pane about one repository's content keys its

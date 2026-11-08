@@ -226,7 +226,7 @@ func newTransport(
 	// Serve returning before close is abnormal: the window just lost RPC and
 	// terminals.
 	go func() {
-		if err := t.srv.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+		if err := t.srv.Serve(stopListening{listener.(*net.TCPListener)}); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("transport listener stopped", "err", err)
 		}
 	}()
