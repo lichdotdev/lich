@@ -153,7 +153,7 @@ what lich can read back out of it, since each CLI records different things.
 | Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |
 | Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |
 | Machine kept out of idle sleep while a turn runs | yes | yes | yes | yes | yes | no | yes | yes |
-| Two sessions messaging each other with no work in between are warned, then stopped | yes | yes | yes | yes | yes | no | yes | yes |
+| Sessions trading messages with no work in between, two of them or round a loop of several, are stopped | yes | yes | yes | yes | yes | no | yes | yes |
 | Review tab's **Last turn**, with the agent's recap | yes | yes | yes | yes | yes | no | yes | yes |
 | Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes |
 | Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |

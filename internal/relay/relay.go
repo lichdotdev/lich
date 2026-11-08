@@ -304,6 +304,8 @@ type ticket struct {
 	// agent has not seen the message, so an answer that names no ticket cannot
 	// be about it (errandOfLocked).
 	submitted bool
+	// depth is how many relayed messages led to this one (chain.go).
+	depth int
 	// waited is when a caller last stopped waiting on this ticket without an
 	// outcome. The ticket's hour runs from there as well as from its creation:
 	// that caller was just told the errand is still open.
@@ -595,6 +597,12 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	if err != nil {
 		return Result{}, err
 	}
+	s.mu.Lock()
+	depth := s.chainDepthLocked(fromID)
+	s.mu.Unlock()
+	if depth >= maxChainDepth {
+		return Result{}, chainTooDeep(depth, dest.Peer.Label)
+	}
 	warning, err := s.checkPingPong(fromID, dest.ID, dest.Peer.Label)
 	if err != nil {
 		return Result{}, err
@@ -613,6 +621,7 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 		created:     s.now(),
 		asked:       askedExcerpt(prompt),
 		prompt:      prompt + warning,
+		depth:       depth,
 		private:     mode == errandPrivate,
 		subagent:    mode == errandSubagent,
 		done:        make(chan struct{}),

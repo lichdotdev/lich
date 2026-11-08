@@ -157,7 +157,7 @@ distinto.
 | Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera |
 | Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
 | La máquina no entra en reposo mientras corre un turno | sí | sí | sí | sí | sí | no | sí | sí |
-| Dos sesiones que se envían mensajes sin trabajar entre ellos reciben un aviso y luego se detienen | sí | sí | sí | sí | sí | no | sí | sí |
+| Las sesiones que se pasan mensajes sin trabajar entre ellos, dos o en un ciclo de varias, se detienen | sí | sí | sí | sí | sí | no | sí | sí |
 | **Último turno** de la pestaña Revisión, con el resumen del agente | sí | sí | sí | sí | sí | no | sí | sí |
 | Buscar en la conversación desde la paleta | sí | sí | sí | sí | sí | sí | no | sí |
 | Reanudar una conversación iniciada fuera de lich, desde la pestaña Historial de la paleta | sí | sí | sí | sí | sí | Linux; macOS y Windows sin probar | sí | sí |

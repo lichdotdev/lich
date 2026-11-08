@@ -468,6 +468,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   refused, and `ask_session` never enters the other conversation. The streak ends when either session messages a
   third one, when a person sends a line at either prompt from the window, or when a sending turn works; a prompt a
   Claude Code mod submits is not a line typed there.
+- **The chain limit follows a message only through the errand it was sent on** (`internal/relay/chain.go`): a
+  message is one deeper than the deepest relayed task its sender still owes an answer to, and the fifth in a chain is
+  refused. That is read off the relay's own tickets, so it is the same on all eight providers. A session that replies
+  to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
+  the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush is never
+  counted). A turn the user started while an errand is still owed keeps that errand's depth.
 
 ## Git, worktrees and review
 

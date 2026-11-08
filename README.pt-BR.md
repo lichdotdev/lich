@@ -156,7 +156,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | não, sempre Ociosas | sem Aguardando | sem Aguardando |
 | Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não |
 | Impede a máquina de suspender por inatividade enquanto um turno roda | sim | sim | sim | sim | sim | não | sim | sim |
-| Duas sessões trocando mensagens sem trabalho entre elas recebem um aviso e depois são paradas | sim | sim | sim | sim | sim | não | sim | sim |
+| Sessões trocando mensagens sem trabalho entre elas, duas ou num ciclo de várias, são paradas | sim | sim | sim | sim | sim | não | sim | sim |
 | **Último turno** na aba Revisão, com o resumo do agente | sim | sim | sim | sim | sim | não | sim | sim |
 | Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
 | Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim |
