@@ -149,6 +149,9 @@ func TestHoldForStartIgnoresASessionThatWasReplaced(t *testing.T) {
 // Through the real spawn: the session settles, stays held, and is released by
 // the provider's report coming through the same path the hook's POST takes.
 func TestStartHoldsAProviderSessionUntilItsReport(t *testing.T) {
+	// The hold reads whether Claude Code trusts the folder: an empty config
+	// keeps the machine's own trust list out of the test.
+	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
 	bin := stayAliveBin(t)
 	svc := New(stubBins{bin: bin}, nil, events.New())
 	svc.SetStartReports(func(string) bool { return true })
