@@ -17,6 +17,11 @@ package browser
 // its index but leaves the list, and click/type scroll it back; one no longer
 // displayed is not clicked. The list is in page order, not number order.
 //
+// within, when not empty, is a CSS selector: the read covers the subtree of the
+// first element it matches, its text and its list alike. A selector that
+// matches nothing or is not valid answers with error before any stamp
+// changes. The element itself is not listed, only what is under it.
+//
 // A password input has no innerText, so an innerText || value label chain
 // hands the live credential to the agent and into the session transcript.
 // Rather than classify which fields are sensitive — type === 'password' is
@@ -34,7 +39,7 @@ package browser
 // listed with it, before its cut: a quarter of a page answer's text repeated
 // the list (measured 2026-11-07). That left the cut at 1000 holding as much
 // text of its own as 1200 had.
-const pageInfoScript = `((base) => {
+const pageInfoScript = `((base, within) => {
   const sel = 'a[href], button, input, textarea, select, [role=button], [role=link], [onclick], [contenteditable=""], [contenteditable="true"]';
   const isVisible = (el) => {
     const r = el.getBoundingClientRect();
@@ -69,13 +74,22 @@ const pageInfoScript = `((base) => {
       attr(el, 'name')
     ).trim();
   };
+  let root = document;
+  if (within) {
+    try {
+      root = document.querySelector(within);
+    } catch (e) {
+      return { error: e.message };
+    }
+    if (!root) return { error: 'no element matches ' + within };
+  }
   if (!window.__lichIdx) Object.defineProperty(window, '__lichIdx', { value: { next: 0, of: new WeakMap() } });
   const idx = window.__lichIdx;
   idx.next = Math.max(idx.next, base);
   document.querySelectorAll('[data-lich-idx]').forEach((el) => {
     if (String(idx.of.get(el)) !== el.getAttribute('data-lich-idx')) el.removeAttribute('data-lich-idx');
   });
-  const els = [...document.querySelectorAll(sel)].filter(isVisible);
+  const els = [...root.querySelectorAll(sel)].filter(isVisible);
   const interactive = els.slice(0, 200).map((el) => {
     let i = idx.of.get(el);
     if (i === undefined) {
@@ -106,7 +120,7 @@ const pageInfoScript = `((base) => {
   return {
     url: location.href,
     title: document.title,
-    text: (document.body ? document.body.innerText : '').split('\n')
+    text: ((within ? root : document.body)?.innerText ?? '').split('\n')
       .filter((line) => !labels.has(line.trim())).join('\n').trim().slice(0, 1000),
     interactive: interactive,
     truncated: els.length > 200,

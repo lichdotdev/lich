@@ -427,7 +427,7 @@ func TestChromePageTextLeavesOutTheListedLabelsAndCutsAt1000(t *testing.T) {
 	if err := p.Navigate(ctx, srv.URL); err != nil {
 		t.Fatal(err)
 	}
-	info, err := p.Info(ctx)
+	info, err := p.Info(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -540,13 +540,13 @@ func TestChromeClickByIndexHitsTheLastReadNotAnEarlierOne(t *testing.T) {
 	if err := p.Resize(ctx, Viewport{W: 800, H: 600, Scale: 1}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := p.Info(ctx); err != nil {
+	if _, err := p.Info(ctx, ""); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.run(ctx, chromedp.Evaluate(`window.scrollTo(0, document.body.scrollHeight)`, nil)); err != nil {
 		t.Fatal(err)
 	}
-	info, err := p.Info(ctx)
+	info, err := p.Info(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -748,5 +748,59 @@ func TestChromeClickIsNotCoveredByItsOwnChildOrItsLabel(t *testing.T) {
 	}
 	if hit := clicked(t, p, ctx); hit != "box" {
 		t.Fatalf("clicked %q, want box", hit)
+	}
+}
+
+func TestChromeInfoWithinReadsOnlyTheSubtreeAndItsIndexesClick(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<nav>Site navigation<br><a href="/docs">Docs</a><button>Menu</button></nav>
+<main>Main column text<br><button onclick="document.body.dataset.hit = 'save'">Save</button></main>
+<footer>Footer words<br><button>Legal</button></footer>`)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	info, err := p.Info(ctx, "main")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Text != "Main column text" {
+		t.Fatalf("text %q, want only main's, without the label of its button", info.Text)
+	}
+	if len(info.Interactive) != 1 || info.Interactive[0].Text != "Save" {
+		t.Fatalf("listed %+v, want only Save", info.Interactive)
+	}
+	for _, within := range []string{"#nope", "a["} {
+		_, err := p.Info(ctx, within)
+		if err == nil {
+			t.Fatalf("within %q: no error", within)
+		}
+		if within == "#nope" && !strings.Contains(err.Error(), "no element matches #nope") {
+			t.Fatalf("within %q: %v, want it to say nothing matches", within, err)
+		}
+	}
+	// A refused selector wiped nothing: the scoped read's index still resolves.
+	index := info.Interactive[0].Index
+	if _, _, err := p.Click(ctx, Target{Index: &index}); err != nil {
+		t.Fatal(err)
+	}
+	var hit string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.hit || ""`, &hit)); err != nil {
+		t.Fatal(err)
+	}
+	if hit != "save" {
+		t.Fatalf("index %d from the scoped read clicked %q, want save", index, hit)
+	}
+	whole, err := p.Info(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(whole.Interactive) != 4 {
+		t.Fatalf("whole page listed %+v, want the 4 buttons and links", whole.Interactive)
 	}
 }

@@ -46,6 +46,7 @@ var browserTools = []mcpTool{
 		Schema: schema(map[string]any{
 			"wait_for":  property("string", "Wait until this text is on the page (case-sensitive, the whole page)."),
 			"wait_gone": property("string", "Wait until this text is no longer on the page."),
+			"within":    property("string", "CSS selector: read only the first element it matches, its text and elements."),
 		}),
 		ReadOnly: true,
 		Run:      mcpBrowserInfo,
@@ -336,7 +337,7 @@ func mcpBrowserInfo(ctx context.Context, c *client, a mcpArgs) (string, error) {
 		return "", err
 	}
 	info, err := callMethod(ctx, c, api.BrowserInfo, api.BrowserInfoOptions{
-		ID: id, WaitFor: a.text("wait_for"), WaitGone: a.text("wait_gone"),
+		ID: id, WaitFor: a.text("wait_for"), WaitGone: a.text("wait_gone"), Within: a.text("within"),
 	}, openCall)
 	if err != nil {
 		return "", err

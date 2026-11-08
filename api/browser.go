@@ -279,11 +279,14 @@ type BrowserOpenOptions struct {
 
 // BrowserInfoOptions reads session ID's page. WaitFor and WaitGone, when set,
 // hold the read until that text is on the page's visible text, or off it
-// (case-sensitive substring, the whole page, not only the viewport).
+// (case-sensitive substring, the whole page, not only the viewport). Within,
+// when set, is a CSS selector that limits the page text and the element list
+// to the first element it matches.
 type BrowserInfoOptions struct {
 	ID       string `json:"id"`
 	WaitFor  string `json:"waitFor,omitempty"`
 	WaitGone string `json:"waitGone,omitempty"`
+	Within   string `json:"within,omitempty"`
 }
 
 // BrowserTarget picks an element. Index is the one page-info stamped;

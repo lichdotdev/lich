@@ -55,7 +55,7 @@ func TestChromeAFileInputFillsWithWhatThePersonPicks(t *testing.T) {
 		}
 		var title string
 		for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
-			info, err := s.Info("s")
+			info, err := s.Info("s", "")
 			if err != nil {
 				t.Fatal(err)
 			}

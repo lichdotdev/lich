@@ -147,7 +147,7 @@ func TestCloseOwnedByAndCleanup(t *testing.T) {
 func TestActionsNeedABrowserAndRecordOnThePage(t *testing.T) {
 	launch := &fakeLauncher{}
 	s := testService(t, launch)
-	if _, err := s.Info("missing"); !errors.Is(err, errNoBrowser) {
+	if _, err := s.Info("missing", ""); !errors.Is(err, errNoBrowser) {
 		t.Fatalf("Info with none: %v", err)
 	}
 
@@ -324,7 +324,7 @@ func TestUseWithdrawsTheIdleQuestion(t *testing.T) {
 	}
 	now = now.Add(2 * time.Minute)
 	s.Reap()
-	if _, err := s.Info("s"); err != nil {
+	if _, err := s.Info("s", ""); err != nil {
 		t.Fatalf("the agent lost an idle browser it went back to: %v", err)
 	}
 	if running := s.Running(); len(running) != 1 || running[0].Idle {
@@ -409,7 +409,7 @@ func TestFailedInfoDropsTheBrowser(t *testing.T) {
 	}
 	launch.pages[0].infoErr = errors.New("chrome gone")
 	launch.pages[0].dead = true
-	if _, err := s.Info("s"); err == nil {
+	if _, err := s.Info("s", ""); err == nil {
 		t.Fatal("Info succeeded on a dead page")
 	}
 	list, _ := s.List("s")
@@ -487,7 +487,7 @@ func TestInfoReturnsPageInfoWithoutDroppingTheBrowser(t *testing.T) {
 	}
 	launch.pages[0].title = "Example"
 	launch.pages[0].info = PageInfo{Title: "Example", Text: "hello", Interactive: []Interactive{{Tag: "a", Text: "Home"}}}
-	info, err := s.Info("s")
+	info, err := s.Info("s", "")
 	if err != nil {
 		t.Fatal(err)
 	}

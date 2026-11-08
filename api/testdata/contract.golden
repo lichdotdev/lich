@@ -401,6 +401,7 @@ BrowserInfoOptions {
 	id string
 	waitFor,omitempty string
 	waitGone,omitempty string
+	within,omitempty string
 }
 
 BrowserKeyOptions {
