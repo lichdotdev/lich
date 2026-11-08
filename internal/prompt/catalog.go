@@ -31,6 +31,7 @@ type Catalog struct {
 	ReplyRouteCLI     string
 	ReplyRouteTools   string
 	ReplyOnlyWayBack  string
+	PingPongWarning   string
 	WorkerTask        string
 	PickTicketNudge   string
 	CompactReminder   Plural

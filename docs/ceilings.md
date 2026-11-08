@@ -470,6 +470,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   shell, monitor or workflow off answers with what it said when it did, and the errand takes that first answer, so
   the report of the turn that resumes later is lost. A lich-plugin older than the release carrying that fallback
   never answers such a worker, and its errand stays open until the worker is closed.
+- **The ping-pong breaker knows a turn did no work only from the tools its hooks named** (`internal/relay/pingpong.go`):
+  a message between the same two sessions counts toward the streak only when the sending turn reported tools through
+  `PreToolUse` and every one was a relay tool (`send_to_session`, `reply_to_session`, `wait_for_answer`,
+  `list_sessions`). The second such message in a row carries a warning and the fourth is refused. Crush reports no
+  tools, and neither does a provider without the plugin installed, so a message from or to such a session never
+  counts: it may be working unseen. A turn that reaches the relay through the command line
+  (`lich send`, `"$LICH_BIN" reply`) ran a shell tool, which reads as work, so an exchange held that way is not caught
+  either. A report that reaches lich after the send it precedes reads the same way: the breaker errs toward letting a
+  message through. Only `send_to_session` and `lich send` count as hops; a reply closes an errand and is never
+  refused, and `ask_session` never enters the other conversation. The streak ends when either session messages a
+  third one, when a person sends a line at either prompt from the window, or when either session runs anything but a
+  relay tool, so a worker's work between a coordinator's tasks ends it; a prompt a Claude Code mod submits is not a
+  line typed there.
+- **The chain limit follows a message only through the errand it was sent on** (`internal/relay/chain.go`): a
+  message is one deeper than the deepest relayed task its sender still owes an answer to, and the fifth in a chain is
+  refused. That is read off the relay's own tickets, so it is the same on all eight providers. A session that replies
+  to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
+  the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush is never
+  counted). A turn the user started while an errand is still owed keeps that errand's depth.
 
 ## Git, worktrees and review
 

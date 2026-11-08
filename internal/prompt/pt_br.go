@@ -35,6 +35,7 @@ var ptBR = Catalog{
 		"enviada por qualquer outro caminho se perde. Mantenha a resposta um relatório conciso " +
 		"(o que foi feito, onde e o que falta), nunca uma transcrição: quem enviou paga para ler " +
 		"cada byte, e o detalhe já está nos seus commits e arquivos.",
+	PingPongWarning: "[lich] Esta troca com quem enviou parece um loop: as mensagens vão e voltam sem nenhum trabalho feito entre elas. Só responda se houver trabalho a relatar.",
 	WorkerTask: "[lich] Tarefa da sessão %[1]q, que abriu esta sessão como seu subagente. " +
 		"A sua mensagem final, quando terminar, volta para ela como o seu relatório.\n\n%[2]s",
 	PickTicketNudge: "[lich] O seu turno terminou sem resposta enviada, então %[1]d pedidos voltaram " +

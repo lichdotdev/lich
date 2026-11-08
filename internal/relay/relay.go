@@ -96,6 +96,10 @@ const (
 	// ToolCollect drains the results waiting for a sender. Named in prose too:
 	// the nudge typed at a sender's prompt is what tells it the tool exists.
 	ToolCollect = "wait_for_answer"
+	// ToolSend and ToolList are named here for the ping-pong breaker, which
+	// reads a turn that only called relay tools as one that did no work.
+	ToolSend = "send_to_session"
+	ToolList = "list_sessions"
 )
 
 // Status values a Result carries.
@@ -300,6 +304,8 @@ type ticket struct {
 	// agent has not seen the message, so an answer that names no ticket cannot
 	// be about it (errandOfLocked).
 	submitted bool
+	// depth is how many relayed messages led to this one (chain.go).
+	depth int
 	// waited is when a caller last stopped waiting on this ticket without an
 	// outcome. The ticket's hour runs from there as well as from its creation:
 	// that caller was just told the errand is still open.
@@ -434,6 +440,10 @@ type Service struct {
 	// by a later report yet: that report is where their open errands are typed
 	// back in (compactReminderLocked), once per compaction.
 	compacted map[string]bool
+	// turnTools is what each session's open turn has run, and streaks the
+	// idle hops in a row per pair of sessions (pingpong.go).
+	turnTools map[string]turnTools
+	streaks   map[sessionPair]int
 }
 
 // Plugins is what the relay needs to know about the companion plugin
@@ -467,6 +477,8 @@ func New(sessions Sessions, term Terminal, events Events) *Service {
 		nudging:         make(map[string]*sync.Mutex),
 		mergesTold:      make(map[string]bool),
 		compacted:       make(map[string]bool),
+		turnTools:       make(map[string]turnTools),
+		streaks:         make(map[sessionPair]int),
 		sessions:        sessions,
 		term:            term,
 		events:          events,
@@ -585,6 +597,16 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	if err != nil {
 		return Result{}, err
 	}
+	s.mu.Lock()
+	depth := s.chainDepthLocked(fromID)
+	s.mu.Unlock()
+	if depth >= maxChainDepth {
+		return Result{}, chainTooDeep(depth, dest.Peer.Label)
+	}
+	warning, err := s.checkPingPong(fromID, dest.ID, dest.Peer.Label, dest.Peer.Kind)
+	if err != nil {
+		return Result{}, err
+	}
 	sender := s.labelOf(fromID)
 
 	id, err := newTicketID()
@@ -598,7 +620,8 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 		target:      dest.Peer.Label,
 		created:     s.now(),
 		asked:       askedExcerpt(prompt),
-		prompt:      prompt,
+		prompt:      prompt + warning,
+		depth:       depth,
 		private:     mode == errandPrivate,
 		subagent:    mode == errandSubagent,
 		done:        make(chan struct{}),

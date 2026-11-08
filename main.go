@@ -444,6 +444,8 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// answering the request it was given.
 	rl := relay.New(db, term, hub)
 	term.SetSessionState(rl.Observe)
+	term.SetToolUse(rl.ObserveTool)
+	term.SetUserTyped(rl.UserTyped)
 	// A worker's mod reports its answer, and a closed worker's errand ends
 	// without a word to its caller.
 	term.SetWorkerAnswer(rl.WorkerAnswered)

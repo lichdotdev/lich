@@ -470,7 +470,7 @@ func property(kind, description string) map[string]any {
 // registration, with no further per-provider work.
 var mcpTools = append([]mcpTool{
 	{
-		Name: "list_sessions",
+		Name: relay.ToolList,
 		Description: "List the other lich sessions that are live right now and can be given work. " +
 			"Returns each session's label (how it is addressed), its project, which agent runs " +
 			"in it, and the state it last reported: `busy` is mid-turn, `done` finished its turn " +
@@ -500,7 +500,7 @@ var mcpTools = append([]mcpTool{
 		},
 	},
 	{
-		Name: "send_to_session",
+		Name: relay.ToolSend,
 		Description: "Give another lich session a task. The task is put at that session's prompt " +
 			"as if typed there, or held and delivered when it gets to one rather than " +
 			"being lost. Returns the answer when it comes back quickly; for anything " +
@@ -783,7 +783,7 @@ func (c *client) handOver(ctx context.Context, opened spawn.Session, task string
 // all the same, naming the call that sends it again.
 func handOverFailure(lang prompt.Lang, err error, method sendCall) string {
 	text := prompt.For(lang)
-	send := "send_to_session"
+	send := relay.ToolSend
 	if method == relaySendPrivate {
 		send = text.SendToSessionPrivate
 	}

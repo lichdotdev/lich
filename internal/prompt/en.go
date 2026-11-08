@@ -36,6 +36,7 @@ var en = Catalog{
 		"sent any other way is lost. Keep the answer a concise report — what was done, " +
 		"where, and what remains — never a transcript: the sender pays to read every byte, " +
 		"and the detail is in your commits and files anyway.",
+	PingPongWarning: "[lich] This exchange with the sender looks like a loop: messages are going back and forth with no work done between them. Only reply if there is work to report.",
 	WorkerTask: "[lich] Task from session %[1]q, which opened this session as its subagent. " +
 		"Your final message when you finish is sent back to it as your report.\n\n%[2]s",
 	PickTicketNudge: "[lich] Your turn ended with no answer sent, so %[1]d requests went back to their senders " +

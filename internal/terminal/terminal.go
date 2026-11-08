@@ -196,6 +196,11 @@ type Service struct {
 	// without answering (internal/relay). Guarded by mu: wired after the
 	// transport is already serving.
 	onState func(id, state string)
+	// onTool, when set, receives the tool each PreToolUse report names, and
+	// onTyped every line a person sends at a session's prompt: the relay's
+	// ping-pong breaker reads both. Guarded by mu like onState.
+	onTool  func(id, tool, detail string)
+	onTyped func(id string)
 	// startReports answers whether a provider's sessions run lich's hooks, so
 	// whether a session-start report can be waited for (startgate.go).
 	startReports func(provider string) bool
@@ -422,6 +427,11 @@ func (s *Service) onHookState(req hookRequest) {
 			Reason: req.Reason,
 		})
 	}
+	if req.State == statusBusy && req.Tool != "" {
+		if watch := s.toolWatcher(); watch != nil {
+			watch(req.SessionID, req.Tool, req.Detail)
+		}
+	}
 	// The relay reads the stream raw: it keeps its own turn accounting,
 	// and a report held back from the window still moves an errand.
 	if watch := s.stateWatcher(); watch != nil {
@@ -605,6 +615,28 @@ func (s *Service) SetSessionState(fn func(id, state string)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onState = fn
+}
+
+// SetToolUse wires fn to the tool every PreToolUse report names. Only one
+// watcher, the relay.
+func (s *Service) SetToolUse(fn func(id, tool, detail string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onTool = fn
+}
+
+// SetUserTyped wires fn to every line a person sends at a session's prompt
+// from the window. Only one watcher, the relay.
+func (s *Service) SetUserTyped(fn func(id string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onTyped = fn
+}
+
+func (s *Service) toolWatcher() func(id, tool, detail string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.onTool
 }
 
 // SetSessionClosed wires fn to every session Close or ContinueIn takes down, called before

@@ -157,6 +157,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não |
 | Além das ferramentas para falar com as suas outras sessões, o agente é avisado de quando usá-las (passar trabalho para uma sessão na própria worktree) | sim | sim, a não ser que o seu `config.toml` defina `developer_instructions` | sim | sim | sim | sim | não medido | sim |
 | Impede a máquina de suspender por inatividade enquanto um turno roda | sim | sim | sim | sim | sim | não | sim | sim |
+| Sessões trocando mensagens sem trabalho entre elas, duas ou num ciclo de várias, são paradas | sim | sim | sim | sim | sim | não | sim | sim |
 | **Último turno** na aba Revisão, com o resumo do agente | sim | sim | sim | sim | sim | não | sim | sim |
 | Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
 | Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim |
