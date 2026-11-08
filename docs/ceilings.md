@@ -312,6 +312,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
   auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
   ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
+- **Codex and Kiro CLI sessions get lich's tools without the guidance on using them** (`internal/cli/mcp.go`,
+  `mcpInstructions`): lich briefs the six providers whose command line cannot append to the system prompt only
+  through its MCP server's initialize `instructions` (delegate to a worktree session, never poll, answer a ticket
+  with `reply_to_session`), and Codex (0.162.1) and Kiro CLI (2.21.0) initialize the server, list its tools and
+  never hand that text to the model (measured 2026-11-07 with a probe server; `docs/providers/codex.md`,
+  `docs/providers/kiro.md`). A session there sees each tool's own description and nothing more. Claude Code,
+  Antigravity, opencode and Crush were measured passing it on; Cursor CLI was not measured (no login on the
+  measuring machine), and oh-my-pi is briefed on its command line whatever its MCP client does.
 - **A new Claude Code session's roster name is its own, and lich does not know it** (`internal/terminal`,
   `nameArgs`; `internal/relay`, `RosterNameOf`): lich spawns it without `--name`, because a name passed there is
   the user's to Claude Code and a session holding one never writes the `ai-title` its card is titled from

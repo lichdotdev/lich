@@ -30,7 +30,11 @@ good, and lich does not write it: that setting disables a safety confirmation fo
 including the ones lich never spawned.
 
 lich appends nothing to the agent's system prompt (`internal/terminal/command.go`, `briefingFlags` has no entry
-for Kiro), so the point the briefing makes exists only in lich's MCP instructions.
+for Kiro), so the point the briefing makes exists only in lich's MCP instructions, and Kiro never hands those to
+the model. A stdio server's `instructions` in its initialize result did not reach it (measured 2026-11-07 on
+2.21.0, `kiro-cli chat --no-interactive` with a probe server in the workspace `mcp.json`): the server was
+initialized and its tools listed, and the model answered that nothing in its context held such text. A Kiro
+session gets lich's tools and their descriptions, not the guidance on using them.
 
 A misspelled effort level starts without a word. On resume the model comes back from the conversation (2.21.0);
 the effort is unmeasured, since no model on the measuring account accepts one.

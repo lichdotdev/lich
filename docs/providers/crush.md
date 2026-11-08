@@ -8,7 +8,10 @@
 ## Spawn
 
 lich appends nothing to the agent's system prompt (`internal/terminal/command.go`, `briefingFlags`): Crush has no
-per-spawn append flag, so the point the briefing makes exists only in lich's MCP instructions.
+per-spawn append flag, so the point the briefing makes exists only in lich's MCP instructions. Crush does hand
+those to the model, in its system prompt inside `<mcp-instructions>` (measured 2026-11-07 on v0.100.0, `crush
+run` against a local OpenAI-compatible stub that recorded the request, since the account's provider had no
+quota left: the system message carried the probe server's initialize `instructions` and lich's own).
 
 Crush asks once per checkout whether to initialize the project, and text typed into that question runs an init
 turn (measured 2026-10-08). It keeps the answer as an empty `.crush/init` at the checkout's top (measured on

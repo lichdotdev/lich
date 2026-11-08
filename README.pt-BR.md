@@ -155,6 +155,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Depois de uma compactação, o agente é lembrado das tarefas que outras sessões mandaram e que ainda esperam a resposta dele | sim | não | não | não | não | não | não | não |
 | Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | não, sempre Ociosas | sem Aguardando | sem Aguardando |
 | Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não |
+| Além das ferramentas para falar com as suas outras sessões, o agente é instruído a usá-las (passar trabalho para uma sessão na própria worktree, esperar sem polling) | sim | não | sim | sim | sim | sim | não medido | não |
 | Impede a máquina de suspender por inatividade enquanto um turno roda | sim | sim | sim | sim | sim | não | sim | sim |
 | **Último turno** na aba Revisão, com o resumo do agente | sim | sim | sim | sim | sim | não | sim | sim |
 | Buscar na conversa pela paleta | sim | sim | sim | sim | sim | sim | não | sim |
