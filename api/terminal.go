@@ -14,7 +14,7 @@ var (
 	TerminalLastTurnSaid      = define[SessionIDOptions, LastSaid]("terminal.LastTurnSaid")
 	TerminalTurnStates        = define[None, []TurnState]("terminal.TurnStates")
 	TerminalContinueIn        = define[ContinueInOptions, None]("terminal.ContinueIn")
-	TerminalContinueOffLimit  = define[ContinueInOptions, None]("terminal.ContinueOffLimit")
+	TerminalTakeProfileOffer  = define[ContinueInOptions, None]("terminal.TakeProfileOffer")
 	TerminalSearchTranscripts = define[SearchTranscriptsOptions, []TranscriptMatch]("terminal.SearchTranscripts")
 	TerminalWorkdirMissing    = define[WorkdirOptions, bool]("terminal.WorkdirMissing")
 	TerminalResumeAvailable   = define[ResumeAvailableOptions, bool]("terminal.ResumeAvailable")

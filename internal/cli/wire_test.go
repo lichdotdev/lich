@@ -483,6 +483,8 @@ func (s *spawnTerminal) Start(_ context.Context, opts api.StartOptions) (api.Non
 // lich derives for it.
 func (*spawnTerminal) AgentName(string) string { return "" }
 
+func (*spawnTerminal) SuggestProfile(string, string) error { return nil }
+
 func (s *spawnTerminal) CloseBy(id, _ string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

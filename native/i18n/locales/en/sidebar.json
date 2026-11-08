@@ -171,11 +171,14 @@
     "adopted": "lich did not create the worktree at {path}. Removing deletes that directory but keeps its branch."
   },
   "sidebarProfile": {
+    "handoffOfferTitle": "Move {label} to another profile?",
+    "handoffOfferDescription": "The agent that handed off to it suggests {profile}",
+    "handoffOfferKeep": "Keep",
     "limitOfferTitle": "{label} hit its usage limit",
     "limitOfferDescription": "{profile} still has quota",
-    "limitOfferContinue": "Continue in {profile}",
+    "offerContinue": "Continue in {profile}",
     "limitOfferWait": "Wait",
-    "limitOfferFailed": "Couldn't continue {label} in {profile}: {error}",
+    "offerFailed": "Couldn't continue {label} in {profile}: {error}",
     "continueIn": "Continue in",
     "continueInHint": "Same conversation, another login",
     "goneTitle": "{label} was started in a profile that no longer exists",

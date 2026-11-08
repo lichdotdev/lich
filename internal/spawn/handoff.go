@@ -17,11 +17,19 @@ type HandoffOptions = api.HandoffSessionOptions
 // unless opts names others, with the caller's ultracode and profile on that
 // provider, so an agent at a clean break can pass its work on instead of
 // carrying a degraded context. The caller is left open; closing it is the
-// user's call.
+// user's call. A profile named in opts is only put to the user: it changes
+// nothing here, and one that cannot apply is reported, not a failed handoff.
 func (s *Service) Handoff(_ context.Context, opts HandoffOptions) (Session, error) {
-	return s.openSession(request{
+	opened, err := s.openSession(request{
 		fromID: opts.From, kind: opts.Kind, model: opts.Model, effort: opts.Effort, handoff: true,
 	})
+	if err != nil || opts.Profile == "" {
+		return opened, err
+	}
+	if err := s.term.SuggestProfile(opened.ID, opts.Profile); err != nil {
+		opened.ProfileDropped = err.Error()
+	}
+	return opened, nil
 }
 
 // refuseOrphan refuses a subagent or a handoff asked for outside a session lich

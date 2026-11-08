@@ -214,3 +214,52 @@ func TestHandoffNoteFormatsInEveryLanguage(t *testing.T) {
 		}
 	}
 }
+
+func TestMCPHandoffPassesTheProfileAsASuggestion(t *testing.T) {
+	t.Parallel()
+	f := successorLich(t)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"handoff_session","arguments":{"done":"x","next_steps":"y","profile":"work"}}}`)
+
+	if got := optionsOf[api.HandoffSessionOptions](t, f.calls[0]); got.Profile != "work" {
+		t.Errorf("options = %+v, want the suggestion passed on", got)
+	}
+	text, failed := textOf(t, replies[0])
+	if failed || !strings.Contains(text, `"work"`) || !strings.Contains(text, "suggestion") {
+		t.Errorf("failed %v, text %q; want the suggestion reported as one", failed, text)
+	}
+}
+
+// A dropped suggestion is reported in the answer, and the handoff is no failure.
+func TestMCPHandoffSaysASuggestionWasDropped(t *testing.T) {
+	t.Parallel()
+	f := newFakeLich(t, `{"id":"9f8e","projectId":"p1","project":"lich","label":"Session 5",
+		"name":"lich-9f8e","kind":"crush","path":"/wt","nextSeq":6,"originLabel":"auth-fix",
+		"profileDropped":"crush has no profiles"}`)
+	f.answers = map[string]answer{"terminal.Ready": {status: 200, body: `true`}, "relay.Submit": {status: 200, body: `{}`}}
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"handoff_session","arguments":{"done":"x","next_steps":"y","profile":"work"}}}`)
+
+	text, failed := textOf(t, replies[0])
+	if failed || !strings.Contains(text, "crush has no profiles") || !strings.Contains(text, `"Session 5"`) {
+		t.Errorf("failed %v, text %q; want the open session and the reason", failed, text)
+	}
+}
+
+func TestHandoffCommandSuggestsTheProfileItIsGiven(t *testing.T) {
+	t.Parallel()
+	f := successorLich(t)
+
+	code, stdout, stderr := run(t, f, "handoff", "--done", "x", "--next", "y", "--profile", "work")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	if got := optionsOf[api.HandoffSessionOptions](t, f.calls[0]); got.Profile != "work" {
+		t.Errorf("options = %+v, want the suggestion", got)
+	}
+	if !strings.Contains(stdout, `"work"`) {
+		t.Errorf("stdout = %q, want the suggestion reported", stdout)
+	}
+}

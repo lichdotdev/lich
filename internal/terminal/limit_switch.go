@@ -3,6 +3,7 @@ package terminal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -15,9 +16,19 @@ import (
 // When another logged-in profile of the same provider has quota left, the
 // window is offered it, and only the person's answer moves the session: a
 // profile can be another account, and which account holds a conversation is
-// theirs to say.
+// theirs to say. An agent handing its work off can suggest a profile for its
+// successor, which reaches the window as the same offer.
 
-var errLimitOfferGone = errors.New("the session no longer waits on that limit: it moved, took another turn or closed")
+var errOfferGone = errors.New("that offer no longer stands: the session moved on, changed profile or closed")
+
+// profileOffer is a profile a session was offered and has not answered. from
+// is the profile it was offered from: a session no longer there has moved.
+// handoff is a successor's: it outlives the turn the successor starts on its
+// note, and accepting it sends no continuation, since nothing was stopped.
+type profileOffer struct {
+	profile, from string
+	handoff       bool
+}
 
 // SetQuotaLeft wires the answer to "can this profile of this provider take a
 // turn now" (quota.Service.HasQuotaLeft). Unset, nothing is ever offered.
@@ -50,24 +61,61 @@ func (s *Service) offerProfile(id string) {
 	if !ok {
 		return
 	}
-	s.mu.Lock()
-	if s.limitOffers == nil {
-		s.limitOffers = make(map[string]string)
-	}
-	s.limitOffers[id] = to
-	s.mu.Unlock()
-	events.Send(s.hub.Emit, api.SessionLimitOfferEvent, api.SessionLimitOffer{ID: id, Profile: to})
+	s.standOffer(id, profileOffer{profile: to, from: from})
 }
 
-// ContinueOffLimit is the person taking the profile a session was offered: the
-// session moves through Continue in and its continuation goes out at once. An
-// offer no longer standing is refused: the turn that moved on, the card that
-// closed or moved since took it down.
-func (s *Service) ContinueOffLimit(ctx context.Context, opts api.ContinueInOptions) (api.None, error) {
-	if !s.takeLimitOffer(opts.ID, opts.Profile) {
-		return api.None{}, errLimitOfferGone
+// SuggestProfile puts the profile an agent handing off suggested for its
+// successor in front of the person. It moves nothing. The error is why the
+// suggestion cannot apply, which the handoff reports and does not fail over.
+func (s *Service) SuggestProfile(id, slug string) error {
+	kind := sessionKind(s.spawnOf(id).kind, s.store.SessionKind(id))
+	ops, ok := profilestores[kind]
+	if !ok {
+		return fmt.Errorf("%s has no profiles", kind)
 	}
-	if _, err := s.ContinueIn(ctx, opts); err != nil {
+	if ops.noMove {
+		return fmt.Errorf("a %s conversation cannot move to another profile", kind)
+	}
+	if _, err := ops.configDir(slug); err != nil {
+		return fmt.Errorf("no %s profile is named %q", kind, slug)
+	}
+	from, err := s.store.SessionProfile(id)
+	if err != nil {
+		return err
+	}
+	if sameProfile(slug, from) {
+		return fmt.Errorf("the session already runs in %q", slug)
+	}
+	s.standOffer(id, profileOffer{profile: slug, from: from, handoff: true})
+	return nil
+}
+
+func (s *Service) standOffer(id string, offer profileOffer) {
+	s.mu.Lock()
+	if s.profileOffers == nil {
+		s.profileOffers = make(map[string]profileOffer)
+	}
+	s.profileOffers[id] = offer
+	s.mu.Unlock()
+	events.Send(s.hub.Emit, api.SessionProfileOfferEvent, api.SessionProfileOffer{ID: id, Profile: offer.profile, Handoff: offer.handoff})
+}
+
+// TakeProfileOffer is the person taking the profile a session was offered: the
+// session moves through Continue in and, off a limit, its continuation goes out
+// at once. An offer no longer standing is refused: the turn that moved on, the
+// card that closed or moved since took it down. A successor mid-turn is refused
+// by Continue in itself and says so; the offer is spent, and the card's Continue
+// in is there once the turn ends.
+func (s *Service) TakeProfileOffer(ctx context.Context, opts api.ContinueInOptions) (api.None, error) {
+	current, err := s.store.SessionProfile(opts.ID)
+	if err != nil {
+		return api.None{}, err
+	}
+	offer, ok := s.takeOffer(opts.ID, opts.Profile, current)
+	if !ok {
+		return api.None{}, errOfferGone
+	}
+	if _, err := s.ContinueIn(ctx, opts); err != nil || offer.handoff {
 		return api.None{}, err
 	}
 	s.mu.Lock()
@@ -79,20 +127,31 @@ func (s *Service) ContinueOffLimit(ctx context.Context, opts api.ContinueInOptio
 	return api.None{}, nil
 }
 
-func (s *Service) takeLimitOffer(id, profile string) bool {
+func (s *Service) takeOffer(id, profile, current string) (profileOffer, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.limitOffers[id] != profile || profile == "" {
-		return false
+	offer, ok := s.profileOffers[id]
+	if !ok || offer.profile != profile || profile == "" {
+		return profileOffer{}, false
 	}
-	delete(s.limitOffers, id)
-	return true
+	delete(s.profileOffers, id)
+	return offer, sameProfile(offer.from, current)
 }
 
-func (s *Service) forgetLimitOffer(id string) {
+func (s *Service) forgetProfileOffer(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.limitOffers, id)
+	delete(s.profileOffers, id)
+}
+
+// withdrawLimitOffer takes down what a turn starting makes moot: the session is
+// no longer stopped. A handoff's offer stands through the turn.
+func (s *Service) withdrawLimitOffer(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.profileOffers[id].handoff {
+		delete(s.profileOffers, id)
+	}
 }
 
 // spareProfile is the first profile of kind's provider, other than from, that

@@ -28,8 +28,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   nothing, and waits 45 seconds for the successor's prompt (inside the 120 seconds an MCP client gives the call),
   where a relayed task waits five minutes; past that the session is open without it. The successor inherits the
   model, effort, ultracode and profile the caller was opened with, not one switched inside it (`/model`). It
-  reaches every provider through spawn and `relay.Submit`. It takes no profile on purpose: an agent inherits its
-  own account and cannot name another, because lich moves work to another account only on the user's click.
+  reaches every provider through spawn and `relay.Submit`. The successor always starts on the caller's profile,
+  because lich moves work to another account only on the user's click; a `profile` on the call is only a suggestion
+  put to the user as a toast (`internal/terminal/limit_switch.go` `SuggestProfile`, the same offer as a usage limit's
+  and the same `TakeProfileOffer`). It reaches the providers whose conversations can change profile where they have
+  profiles: Claude Code, Codex, oh-my-pi, Cursor CLI (Linux and Windows) and Kiro CLI (Linux only). Antigravity and
+  Crush have no profiles and opencode's conversations cannot move, so there the suggestion is dropped and the result
+  says why, and the handoff goes on. Whether the profile is logged in is not checked. The offer survives the turn
+  the successor starts on its note, unlike a limit's, so a click mid-turn is Continue in's own refusal, naming the
+  turn: that spends the offer, and the card's Continue in is there once the turn ends. A click before the agent has
+  a conversation is refused the same way. A toast standing when the backend restarts is forgotten by the process
+  and refused on click.
 - **opencode 2 is told apart by its `--version`, and every 2.x session runs a server of its own**
   (`internal/providers/version.go` `IsOpencode2`, `internal/terminal/opencode2.go`): 2.x keeps 1.x's binary name,
   config and database but not its argv, so the spawn asks the binary for its major, once per path, size and

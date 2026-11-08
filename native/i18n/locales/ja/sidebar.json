@@ -171,11 +171,14 @@
     "adopted": "{path} のワークツリーは lich が作成したものではありません。削除するとそのディレクトリは消えますが、ブランチは残ります。"
   },
   "sidebarProfile": {
+    "handoffOfferTitle": "{label} を別のプロファイルに移しますか？",
+    "handoffOfferDescription": "引き継いだエージェントは {profile} を提案しています",
+    "handoffOfferKeep": "そのまま",
     "limitOfferTitle": "{label} が使用量の上限に達しました",
     "limitOfferDescription": "{profile} にはまだ残量があります",
-    "limitOfferContinue": "{profile} で続ける",
+    "offerContinue": "{profile} で続ける",
     "limitOfferWait": "待つ",
-    "limitOfferFailed": "{label} を {profile} で続行できませんでした: {error}",
+    "offerFailed": "{label} を {profile} で続行できませんでした: {error}",
     "continueIn": "次で続ける",
     "continueInHint": "同じ会話を別のログインで",
     "goneTitle": "{label} は、もう存在しないプロファイルで開始されました",

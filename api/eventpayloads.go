@@ -87,11 +87,14 @@ type SessionProfile struct {
 	Profile string `json:"profile"`
 }
 
-// SessionLimitOffer is the payload of SessionLimitOfferEvent.
-type SessionLimitOffer struct {
+// SessionProfileOffer is the payload of SessionProfileOfferEvent.
+type SessionProfileOffer struct {
 	ID string `json:"id"`
 	// Profile is the slug offered, "personal" for Personal.
 	Profile string `json:"profile"`
+	// Handoff is true for a profile the agent handing off to this session
+	// suggested, false for one with quota left after a usage limit.
+	Handoff bool `json:"handoff"`
 }
 
 // SessionTodo is the payload of SessionTodoEvent. Both counts are the whole list the

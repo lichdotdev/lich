@@ -63,6 +63,18 @@ func (c *client) openSuccessor(ctx context.Context, opts api.HandoffSessionOptio
 	return callMethod(ctx, c, api.SpawnHandoff, opts, openCall)
 }
 
+// suggestionText tells the caller what became of a suggested profile.
+func (c *client) suggestionText(suggested string, opened spawn.Session) string {
+	t := prompt.For(c.lang())
+	switch {
+	case suggested == "":
+		return ""
+	case opened.ProfileDropped != "":
+		return fmt.Sprintf(t.HandoffProfileDropped, suggested, opened.ProfileDropped)
+	}
+	return fmt.Sprintf(t.HandoffProfileSuggested, suggested)
+}
+
 // submitNote types the note at the successor's prompt once there is one, with
 // no ticket: nothing is owed back to a session that is done with the work.
 // Text written before the prompt is up lands in the boot and is thrown away.
@@ -104,6 +116,7 @@ func (c *client) handoff(args []string) error {
 	flags.StringVar(&opts.Kind, "kind", "", "what the successor runs; defaults to this session's provider")
 	flags.StringVar(&opts.Model, "model", "", "model the provider runs, in the provider's own spelling; defaults to this session's")
 	flags.StringVar(&opts.Effort, "effort", "", "reasoning effort the provider runs at; defaults to this session's")
+	flags.StringVar(&opts.Profile, "profile", "", "a profile to suggest to the user for the successor; only the user can move it there")
 	asJSON := flags.Bool("json", false, "print the result as JSON")
 	if err := c.parse(flags, args); err != nil {
 		return err
@@ -120,7 +133,7 @@ func (c *client) handoff(args []string) error {
 			return err
 		}
 	} else {
-		fmt.Fprint(c.stdout, openedText(c.lang(), opened))
+		fmt.Fprint(c.stdout, openedText(c.lang(), opened), c.suggestionText(opts.Profile, opened))
 	}
 	if err := c.submitNote(context.Background(), opened, note); err != nil {
 		return fmt.Errorf("the session is open, but the handoff note did not reach it: %w", err)
@@ -141,7 +154,9 @@ var handoffTools = []mcpTool{
 			"provider, model and effort unless you name others and in your profile, and types " +
 			"your note at its prompt. The note is capped at 8 KB, like send_to_session: name what " +
 			"to read, do not paste it. Your session stays open: the user closes it. Stop working " +
-			"once this returns. Returns the successor's names.",
+			"once this returns. Naming a profile only suggests it to the user: the successor " +
+			"still starts in your profile, and moving it is always the user's click. Returns " +
+			"the successor's names, and whether a suggestion was dropped and why.",
 		Schema: schema(map[string]any{
 			"done": property("string",
 				"What is finished: verified and committed, so the successor does not redo it."),
@@ -159,19 +174,25 @@ var handoffTools = []mcpTool{
 			"effort": property("string",
 				"Reasoning effort the successor runs at, spelled as its provider takes it. "+
 					"Defaults to yours when the provider is yours."),
+			"profile": property("string",
+				"A profile to suggest to the user for the successor, by slug. Only a suggestion: "+
+					"the successor starts in your profile and only the user's click moves it. One "+
+					"that cannot apply is dropped and the handoff goes on."),
 		}, "done", "next_steps"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
 			note := handoffNote{
 				done: args.text("done"), nextSteps: args.text("next_steps"), branch: args.text("branch"),
 				commits: args.text("commits"), gotchas: args.text("gotchas"),
 			}
-			opened, err := c.openSuccessor(ctx, api.HandoffSessionOptions{
+			opts := api.HandoffSessionOptions{
 				Kind: args.text("kind"), Model: args.text("model"), Effort: args.text("effort"),
-			}, note)
+				Profile: args.text("profile"),
+			}
+			opened, err := c.openSuccessor(ctx, opts, note)
 			if err != nil {
 				return "", err
 			}
-			text := openedText(c.lang(), opened)
+			text := openedText(c.lang(), opened) + c.suggestionText(opts.Profile, opened)
 			if err := c.submitNote(ctx, opened, note); err != nil {
 				return text + "\n" + handOverFailure(c.lang(), err, relaySend), nil
 			}
