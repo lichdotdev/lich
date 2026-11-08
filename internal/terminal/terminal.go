@@ -218,6 +218,19 @@ type Service struct {
 	// onLimit, when set, is told about every turn a usage limit ended that names
 	// its reset (limit.go). Guarded by mu like onState.
 	onLimit func(id string, resetsAt int64)
+	// quotaLeft, when set, answers whether a profile can take a turn now
+	// (limit_switch.go). Guarded by mu like onState.
+	quotaLeft func(kind, slug string) bool
+	// resumeNow, when set, sends the continuation of a session the person moved
+	// off a limit (limit_switch.go). Guarded by mu like onState.
+	resumeNow func(id string)
+	// spentUntil is when each profile a usage limit stopped a turn in resets,
+	// in unix seconds, keyed by provider and slug (limit_switch.go). Guarded
+	// by mu.
+	spentUntil map[string]int64
+	// limitOffers is the profile each session a limit stopped was offered and
+	// has not answered, by session id (limit_switch.go). Guarded by mu.
+	limitOffers map[string]string
 	// spawns is how each live session's PTY was started — what it runs and where
 	// — keyed by session id. Read by providerKind, which is what stops a
 	// session-start report from repainting a card lich itself chose the provider
@@ -413,6 +426,9 @@ func (s *Service) onHookState(req hookRequest) {
 	// twice is still one turn.
 	if s.repeatedEnding(req.SessionID, req.State) {
 		return
+	}
+	if req.State == statusBusy {
+		s.forgetLimitOffer(req.SessionID)
 	}
 	// The window is told what the report means, not what it said: a
 	// `waiting` outside a turn is a session idle at its prompt, and the
@@ -814,6 +830,7 @@ func (s *Service) endProcess(id, closerID string) error {
 		closed(id, closerID)
 	}
 	s.spawns.Delete(id)
+	s.forgetLimitOffer(id)
 	// A turn dies with its session, and an open one left behind would keep the
 	// machine awake for a card that no longer exists.
 	s.forgetTurn(id)

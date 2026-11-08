@@ -488,7 +488,10 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	go proj.RunBranchPRWatch()
 	// A turn a usage limit ended is picked up again once it resets, through
 	// the same scheduled prompt. Codex reports no end for that turn, so the
-	// terminal watches its open turns for one.
+	// terminal watches its open turns for one. Another profile with quota left
+	// is offered to the person, whose answer sends the prompt at once.
+	term.SetQuotaLeft(plans.HasQuotaLeft)
+	term.SetResumeNow(rl.ResumeNow)
 	term.SetUsageLimit(rl.ParkResume)
 	go term.RunLimitWatch()
 	routes.Relay(dispatcher, rl)

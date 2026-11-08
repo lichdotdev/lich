@@ -87,6 +87,13 @@ type SessionProfile struct {
 	Profile string `json:"profile"`
 }
 
+// SessionLimitOffer is the payload of SessionLimitOfferEvent.
+type SessionLimitOffer struct {
+	ID string `json:"id"`
+	// Profile is the slug offered, "personal" for Personal.
+	Profile string `json:"profile"`
+}
+
 // SessionTodo is the payload of SessionTodoEvent. Both counts are the whole list the
 // agent last wrote, so a card can decide for itself whether a list is worth
 // drawing (a finished one is not, and neither is a list of one).

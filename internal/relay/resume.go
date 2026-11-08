@@ -69,6 +69,28 @@ func (s *Service) ParkResume(id string, resetsAt int64) {
 	}
 }
 
+// ResumeNow makes session id's continuation due at once: the person moved it to
+// a profile with quota left. It takes the row the reset's continuation sits on,
+// so there is one continuation either way and it is typed once the session is
+// back at its prompt. A prompt the person parked there stays and goes out at its
+// own time.
+func (s *Service) ResumeNow(id string) {
+	sess, ok := s.sessionRow(id)
+	if !ok || (sess.ScheduledPrompt != "" && !isResumePrompt(sess.ScheduledPrompt)) {
+		return
+	}
+	due := s.now().Unix()
+	resumePrompt := prompt.For(s.lang()).ResumePrompt
+	if err := s.sessions.SetSessionSchedule(id, due, resumePrompt); err != nil {
+		slog.Warn("relay: resume now", "session", sess.Label, "err", err)
+		return
+	}
+	s.markResume(id)
+	if s.events != nil {
+		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: id, At: due, Prompt: resumePrompt})
+	}
+}
+
 // dropResume clears session id's parked continuation, which a turn starting
 // there has made moot: the person went on by hand, the provider resumed on its
 // own, or something else was delivered. A prompt the person parked in its

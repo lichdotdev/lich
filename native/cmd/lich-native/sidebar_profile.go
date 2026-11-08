@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -178,4 +179,55 @@ func (u *window) profileGone(s sessionView) {
 func (u *window) startNewInProjectProfile(s sessionView) {
 	u.newSession(launchRequest{kind: s.Kind, dir: s.path, folder: s.Folder}, "")
 	u.closeSession(s.ID)
+}
+
+// offerProfileOffLimit asks whether to continue in another profile a session a
+// usage limit stopped. It stays up until answered: Wait, or swiping it
+// away, changes nothing.
+func (u *window) offerProfileOffLimit(o api.SessionLimitOffer) {
+	label, profile, ok := u.model.limitOfferOf(o)
+	if !ok {
+		return
+	}
+	u.duplicates.Show(limitOfferToast(o.ID, label, profile, func() { u.continueOffLimit(o, label, profile) }))
+}
+
+func limitOfferToast(id, label, profile string, take func()) ui.Toast {
+	return ui.Toast{
+		ID:          "limit-offer:" + id,
+		Title:       i18n.T("sidebar.sidebarProfile.limitOfferTitle", i18n.Args{"label": label}),
+		Description: i18n.T("sidebar.sidebarProfile.limitOfferDescription", i18n.Args{"profile": profile}),
+		Icon:        icContinueIn,
+		Duration:    ui.ToastForever,
+		Cancel:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.limitOfferWait")},
+		Action:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.limitOfferContinue", i18n.Args{"profile": profile}), OnClick: take},
+	}
+}
+
+// continueOffLimit sends the person's yes; the backend refuses an offer the
+// session has moved past, and the error says so.
+func (u *window) continueOffLimit(o api.SessionLimitOffer, label, profile string) {
+	go func() {
+		if err := u.client.ContinueOffLimit(u.ctx, o.ID, o.Profile); err != nil {
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sidebarProfile.limitOfferFailed",
+				i18n.Args{"label": label, "profile": profile, "error": backend.ErrorText(err)})})
+		}
+	}()
+}
+
+// limitOfferOf is the session's label and the name of the profile offered to
+// it, false for a session no open project holds.
+func (m *model) limitOfferOf(o api.SessionLimitOffer) (label, profile string, ok bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p, i := m.sessionAt(o.ID)
+	if p == nil {
+		return "", "", false
+	}
+	s := p.Sessions[i]
+	profile = o.Profile
+	if book := m.profileBook(s.Kind); book != nil {
+		profile = book.nameOf(o.Profile)
+	}
+	return s.Label, profile, true
 }

@@ -266,6 +266,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.exited = u.sessionExited
 	u.model.serviceReveal = u.revealService
 	u.model.duplicate = u.warnDuplicate
+	u.model.limitOffer = u.offerProfileOffLimit
 	u.model.browserOpened = u.offerBrowser
 	u.model.browserIdle = u.askIdleBrowser
 	u.model.browserDownloaded = u.tellDownload

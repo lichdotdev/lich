@@ -103,6 +103,9 @@ type model struct {
 	// duplicate hears a session report a conversation another open card
 	// runs (api.SessionDuplicateEvent).
 	duplicate func(sessionDuplicate)
+	// limitOffer hears another profile with quota left offered to a session a
+	// usage limit stopped (api.SessionLimitOfferEvent).
+	limitOffer func(api.SessionLimitOffer)
 	// pluginIncompatible hears a session report from a lich plugin outside
 	// the range this lich speaks (PluginIncompatibleEvent).
 	pluginIncompatible func()
@@ -372,6 +375,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.SessionProfileEvent.Name:
 			if moved, err := backend.Decode(ev, api.SessionProfileEvent); err == nil {
 				m.setProfile(moved.ID, moved.Profile)
+			}
+		case api.SessionLimitOfferEvent.Name:
+			if o, err := backend.Decode(ev, api.SessionLimitOfferEvent); err == nil && m.limitOffer != nil {
+				m.limitOffer(o)
 			}
 		case api.ProfileChangedEvent.Name:
 			if c, err := backend.Decode(ev, api.ProfileChangedEvent); err == nil {

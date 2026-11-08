@@ -171,6 +171,11 @@
     "adopted": "lich no creó la worktree de {path}. Eliminarla borra ese directorio pero conserva su rama."
   },
   "sidebarProfile": {
+    "limitOfferTitle": "{label} alcanzó su límite de uso",
+    "limitOfferDescription": "{profile} todavía tiene cuota",
+    "limitOfferContinue": "Continuar en {profile}",
+    "limitOfferWait": "Esperar",
+    "limitOfferFailed": "No se pudo continuar {label} en {profile}: {error}",
     "continueIn": "Continuar en",
     "continueInHint": "La misma conversación, otro inicio de sesión",
     "goneTitle": "{label} se inició en un perfil que ya no existe",

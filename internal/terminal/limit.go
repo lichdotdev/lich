@@ -181,9 +181,10 @@ func codexLimitWindow(minutes int) string {
 }
 
 // noteLimit reads whether session id's last turn ended on a usage limit and,
-// when it did, tells the window and hands the reset to whoever parks the
-// continuation (SetUsageLimit). Silent on every miss: no limit is the usual
-// answer, and a transcript lich cannot read is one it has nothing to say about.
+// when it did, tells the window, hands the reset to whoever parks the
+// continuation (SetUsageLimit) and offers another profile with quota left.
+// Silent on every miss: no limit is the usual answer, and a transcript lich
+// cannot read is one it has nothing to say about.
 func (s *Service) noteLimit(id string) bool {
 	src, ok := s.transcriptSource(id)
 	if !ok {
@@ -197,6 +198,10 @@ func (s *Service) noteLimit(id string) bool {
 	if park := s.limitWatcher(); park != nil && limit.resetsAt > 0 {
 		park(id, limit.resetsAt)
 	}
+	s.markSpent(id, limit.resetsAt)
+	// Off-thread: it reads other profiles' plans over the network, and the
+	// Codex watch ends the turn only once this returns.
+	go s.offerProfile(id)
 	return true
 }
 
