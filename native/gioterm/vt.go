@@ -59,8 +59,11 @@ enum {
 	CELL_FAINT = 32,
 };
 
+// A grapheme's codepoints after the first go to the snapshot's extra buffer:
+// n of them from extra_at.
 typedef struct {
 	uint32_t cp;
+	uint32_t extra_at, extra_n;
 	uint32_t fg;
 	uint32_t bg;
 	uint32_t flags;
@@ -78,7 +81,14 @@ typedef struct {
 
 static uint32_t pack(GhosttyColorRgb c) { return (uint32_t)c.r << 16 | (uint32_t)c.g << 8 | c.b; }
 
-static void read_cell(GhosttyRenderStateRowCells cells, cell_t* c) {
+typedef struct {
+	uint32_t* buf;
+	uint32_t len, cap;
+} extra_t;
+
+// read_cell takes the cell's whole grapheme; codepoints past what extra has
+// room for are dropped, the cell keeping its first.
+static void read_cell(GhosttyRenderStateRowCells cells, cell_t* c, extra_t* extra) {
 	memset(c, 0, sizeof *c);
 	uint32_t glen = 0;
 	ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_LEN, &glen);
@@ -87,6 +97,12 @@ static void read_cell(GhosttyRenderStateRowCells cells, cell_t* c) {
 		uint32_t* buf = glen <= 16 ? local : malloc(glen * sizeof(uint32_t));
 		ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_BUF, buf);
 		c->cp = buf[0];
+		if (glen > 1 && extra->cap - extra->len >= glen - 1) {
+			c->extra_at = extra->len;
+			c->extra_n = glen - 1;
+			memcpy(extra->buf + extra->len, buf + 1, (glen - 1) * sizeof(uint32_t));
+			extra->len += glen - 1;
+		}
 		if (buf != local) free(buf);
 	}
 	GhosttyColorRgb rgb;
@@ -119,8 +135,9 @@ static void mark_selected(GhosttyRenderStateRowCells cells, cell_t* c) {
 // Copies every dirty viewport row into out (cols*rows cells, row-major) and
 // flags it in dirty_rows. One cgo crossing per frame instead of several per cell.
 static snap_t snapshot(GhosttyRenderState rs, GhosttyTerminal t, GhosttyRenderStateRowIterator it,
-		GhosttyRenderStateRowCells cells, cell_t* out, uint8_t* dirty_rows, uint16_t cols, uint16_t rows) {
+		GhosttyRenderStateRowCells cells, cell_t* out, uint32_t* extra_buf, uint32_t extra_cap, uint8_t* dirty_rows, uint16_t cols, uint16_t rows) {
 	snap_t s = {0};
+	extra_t extra = {extra_buf, 0, extra_cap};
 	if (ghostty_render_state_update(rs, t) != GHOSTTY_SUCCESS) {
 		s.dirty = -1;
 		return s;
@@ -160,7 +177,7 @@ static snap_t snapshot(GhosttyRenderState rs, GhosttyTerminal t, GhosttyRenderSt
 		ghostty_render_state_row_get(it, GHOSTTY_RENDER_STATE_ROW_DATA_CELLS, &cells);
 		uint16_t x = 0;
 		while (x < cols && ghostty_render_state_row_cells_next(cells)) {
-			read_cell(cells, &out[(size_t)y * cols + x]);
+			read_cell(cells, &out[(size_t)y * cols + x], &extra);
 			mark_selected(cells, &out[(size_t)y * cols + x]);
 			x++;
 		}
@@ -170,6 +187,15 @@ static snap_t snapshot(GhosttyRenderState rs, GhosttyTerminal t, GhosttyRenderSt
 	}
 	ghostty_render_state_clean(rs);
 	return s;
+}
+
+// Clustering on by default and across RIS: other terminals draw a ZWJ family
+// or a flag as one two-column glyph, and libghostty's default (off) gives one
+// cell per codepoint, shifting the rest of the row. A program that resets
+// 2027 has it off until the next RIS.
+static GhosttyResult enable_grapheme_clusters(GhosttyTerminal t) {
+	GhosttyTerminalModeConfig m = {GHOSTTY_MODE_GRAPHEME_CLUSTER, true};
+	return ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_MODE_DEFAULT, &m);
 }
 
 static GhosttyResult scroll_delta(GhosttyTerminal t, intptr_t delta) {
@@ -195,6 +221,7 @@ import (
 	"runtime/cgo"
 	"sync"
 	"sync/atomic"
+	"unicode/utf8"
 	"unsafe"
 )
 
@@ -209,6 +236,8 @@ const (
 
 type cell struct {
 	cp, fg, bg, flags uint32
+	// rest is the grapheme's codepoints after cp, "" for a single one.
+	rest string
 }
 
 type snap struct {
@@ -260,6 +289,7 @@ type Terminal struct {
 	cols, rows   int
 	cellW, cellH int
 	raw          []C.cell_t
+	extra        []C.uint32_t
 	dirty        []uint8
 	grid         []cell
 	img          kittyImages
@@ -268,6 +298,10 @@ type Terminal struct {
 	// next WheelRows: a touchpad scrolls a few pixels at a time.
 	wheelRest float32
 }
+
+// extraPerCell sizes the buffer for graphemes' codepoints past their first:
+// a screen where every cell carries a base and two more fits.
+const extraPerCell = 2
 
 // ErrClosed is a call on a Terminal after Close.
 var ErrClosed = errors.New("terminal closed")
@@ -295,6 +329,7 @@ func New(cols, rows, cellW, cellH int, replies func([]byte)) (*Terminal, error) 
 		{"install_write_pty", func() C.GhosttyResult { return C.install_write_pty(v.t, C.uintptr_t(v.handle)) }},
 		{"install_color_scheme", v.installColorScheme},
 		{"install_size_report", v.installSizeReport},
+		{"grapheme_clusters", func() C.GhosttyResult { return C.enable_grapheme_clusters(v.t) }},
 		{"render_state_new", func() C.GhosttyResult { return C.ghostty_render_state_new(nil, &v.rs) }},
 		{"row_iterator_new", func() C.GhosttyResult { return C.ghostty_render_state_row_iterator_new(nil, &v.it) }},
 		{"row_cells_new", func() C.GhosttyResult { return C.ghostty_render_state_row_cells_new(nil, &v.cells) }},
@@ -316,6 +351,7 @@ func New(cols, rows, cellW, cellH int, replies func([]byte)) (*Terminal, error) 
 func (v *Terminal) allocGrid(cols, rows int) {
 	v.cols, v.rows = cols, rows
 	v.raw = make([]C.cell_t, cols*rows)
+	v.extra = make([]C.uint32_t, cols*rows*extraPerCell)
 	v.dirty = make([]uint8, rows)
 	v.grid = make([]cell, cols*rows)
 }
@@ -490,7 +526,7 @@ func (v *Terminal) update() (snap, []uint8, error) {
 		return snap{}, nil, ErrClosed
 	}
 	clear(v.dirty)
-	s := C.snapshot(v.rs, v.t, v.it, v.cells, &v.raw[0], (*C.uint8_t)(&v.dirty[0]), C.uint16_t(v.cols), C.uint16_t(v.rows))
+	s := C.snapshot(v.rs, v.t, v.it, v.cells, &v.raw[0], &v.extra[0], C.uint32_t(len(v.extra)), (*C.uint8_t)(&v.dirty[0]), C.uint16_t(v.cols), C.uint16_t(v.rows))
 	if s.dirty == -1 {
 		return snap{}, nil, fmt.Errorf("render_state_update failed")
 	}
@@ -503,7 +539,15 @@ func (v *Terminal) update() (snap, []uint8, error) {
 		}
 		for x := range v.cols {
 			r := v.raw[y*v.cols+x]
-			v.grid[y*v.cols+x] = cell{cp: uint32(r.cp), fg: uint32(r.fg), bg: uint32(r.bg), flags: uint32(r.flags)}
+			c := &v.grid[y*v.cols+x]
+			c.cp, c.fg, c.bg, c.flags = uint32(r.cp), uint32(r.fg), uint32(r.bg), uint32(r.flags)
+			// Field by field: storing the whole cell, a string inside, costs a
+			// full screen of ASCII several times the copy itself.
+			if r.extra_n != 0 {
+				c.rest = v.extraText(r)
+			} else if c.rest != "" {
+				c.rest = ""
+			}
 		}
 	}
 	if err := v.img.update(v.t, v.cellW, v.cellH); err != nil {
@@ -521,6 +565,17 @@ func (v *Terminal) update() (snap, []uint8, error) {
 		hasCursor:     bool(s.has_cursor_color),
 		cursor:        uint32(s.cursor_color),
 	}, v.dirty, nil
+}
+
+func (v *Terminal) extraText(r C.cell_t) string {
+	if r.extra_n == 0 {
+		return ""
+	}
+	var b []byte
+	for _, cp := range v.extra[r.extra_at : r.extra_at+r.extra_n] {
+		b = utf8.AppendRune(b, rune(cp))
+	}
+	return string(b)
 }
 
 // Key names libghostty's encoder takes for the special keys the spike maps.

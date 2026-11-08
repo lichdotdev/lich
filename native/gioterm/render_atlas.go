@@ -166,7 +166,7 @@ func (a *atlasRenderer) entry(c cell, st cellStyle) (tintEntry, error) {
 	if _, _, ok := blockElement(rune(c.cp)); ok {
 		return tintEntry{}, nil
 	}
-	k := tintKey{g: glyphs.Key{R: rune(c.cp), Bold: st.bold, Italic: st.ital}, c: glyphColor(st)}
+	k := tintKey{g: glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital}, c: glyphColor(st)}
 	if e, ok := a.tinted[k]; ok {
 		return e, nil
 	}
@@ -259,7 +259,7 @@ func (a *atlasRenderer) recordRow(row []cell, sn snap, y int) {
 			paintBlock(ops, x, rects, glyphColor(st), alpha, a.r.CellW(), a.r.CellH())
 			continue
 		}
-		a.drawGlyph(ops, a.tinted[tintKey{g: glyphs.Key{R: rune(c.cp), Bold: st.bold, Italic: st.ital}, c: glyphColor(st)}], x*a.r.CellW(), 0)
+		a.drawGlyph(ops, a.tinted[tintKey{g: glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital}, c: glyphColor(st)}], x*a.r.CellW(), 0)
 	}
 	a.rowCall[y] = macro.Stop()
 }

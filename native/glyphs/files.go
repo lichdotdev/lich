@@ -23,6 +23,12 @@ type fontFile struct {
 	// cannot draw (CBDT and sbix bitmaps, COLR layers); nil when the file has
 	// none.
 	color *gotext.Font
+
+	// text is the first face as go-text reads it, for shaping graphemes of
+	// several codepoints: parsed on the first one, as most files never see one.
+	textOnce sync.Once
+	text     *gotext.Font
+	textErr  error
 }
 
 var fontFiles = struct {
@@ -59,6 +65,22 @@ func openFontFile(path string) (*fontFile, error) {
 	f := &fontFile{sf: sf, data: data, color: color}
 	fontFiles.byPath[path] = f
 	return f, nil
+}
+
+func (f *fontFile) textFont() (*gotext.Font, error) {
+	f.textOnce.Do(func() {
+		if f.color != nil {
+			f.text = f.color
+			return
+		}
+		loaders, err := ot.NewLoaders(bytes.NewReader(f.data))
+		if err != nil {
+			f.textErr = err
+			return
+		}
+		f.text, f.textErr = gotext.NewFont(loaders[0])
+	})
+	return f.text, f.textErr
 }
 
 // parseColor parses the first face of data when it carries color glyphs, and

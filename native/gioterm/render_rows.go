@@ -150,7 +150,7 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 			}
 			continue
 		}
-		m, err := rr.r.Mask(glyphs.Key{R: rune(c.cp), Bold: st.bold, Italic: st.ital})
+		m, err := rr.r.Mask(glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital})
 		if err != nil {
 			return err
 		}

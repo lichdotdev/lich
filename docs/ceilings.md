@@ -911,6 +911,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   guaranteed. Until then the queue holds `writeQueueDepth` frames for the whole app, and two things still wait on
   it across sessions: a push that finds it full, and the flush a session runs before its exit banner so the banner
   cannot overtake its own last bytes.
+- **An emoji sequence is only as whole as the emoji font's ligatures** (`native/glyphs/cluster.go`, `cluster`): the
+  terminal gives a ZWJ sequence or a flag one two-column cell whatever the font holds, and draws the one glyph
+  shaping turns it into. A sequence the font has no ligature for draws its first glyph only, the rest of it still
+  in the cell and in what a copy returns. Windows always hits this for flags: Segoe UI Emoji has no flag glyphs, so
+  a regional-indicator pair draws its first letter alone.
 
 ## Services
 

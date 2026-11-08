@@ -87,19 +87,29 @@ func (v *Terminal) LinkAt(x, y float32) (l Link, ok bool) {
 	for last < v.rows-1 && bool(C.row_wraps(v.t, C.uint32_t(last))) {
 		last++
 	}
+	// cellOf is the line index of the cell each rune of line came from: a
+	// grapheme of several codepoints is one cell.
 	var line []rune
+	var cellOf []int
+	at := 0
 	for r := first; r <= last; r++ {
 		for c := 0; c < v.cols; c++ {
-			line = append(line, v.cellRune(c, r))
+			i := (r-first)*v.cols + c
+			if r == row && c == col {
+				at = len(line)
+			}
+			for _, cp := range v.cellRunes(c, r) {
+				line = append(line, cp)
+				cellOf = append(cellOf, i)
+			}
 		}
 	}
-	at := (row-first)*v.cols + col
 	start, end, ok := urlAround(line, at)
 	if !ok {
 		return Link{}, false
 	}
 	cell := func(i int) image.Point { return image.Pt(i%v.cols, first+i/v.cols) }
-	return Link{URL: string(line[start:end]), From: cell(start), To: cell(end - 1)}, true
+	return Link{URL: string(line[start:end]), From: cell(cellOf[start]), To: cell(cellOf[end-1])}, true
 }
 
 func (v *Terminal) hyperlink(col, row int) string {
@@ -116,16 +126,25 @@ func (v *Terminal) hyperlink(col, row int) string {
 	return string(buf[:int(n)])
 }
 
-// cellRune is the cell's first codepoint, a space for an empty cell, so
-// columns keep their place in the line.
-func (v *Terminal) cellRune(col, row int) rune {
-	var buf [linkGraphemeMax]C.uint32_t
+// cellRunes is the cell's grapheme, a space for an empty cell, so columns
+// keep their place in the line.
+func (v *Terminal) cellRunes(col, row int) []rune {
+	var local [linkGraphemeMax]C.uint32_t
+	buf := local[:]
 	var n C.size_t
 	r := C.cell_text(v.t, C.uint16_t(col), C.uint32_t(row), &buf[0], C.size_t(len(buf)), &n)
-	if (r != C.GHOSTTY_SUCCESS && r != C.GHOSTTY_OUT_OF_SPACE) || n == 0 {
-		return ' '
+	if r == C.GHOSTTY_OUT_OF_SPACE {
+		buf = make([]C.uint32_t, int(n))
+		r = C.cell_text(v.t, C.uint16_t(col), C.uint32_t(row), &buf[0], C.size_t(len(buf)), &n)
 	}
-	return rune(buf[0])
+	if r != C.GHOSTTY_SUCCESS || n == 0 {
+		return []rune{' '}
+	}
+	out := make([]rune, int(n))
+	for i := range out {
+		out[i] = rune(buf[i])
+	}
+	return out
 }
 
 // linkPattern is a URL as text shows one.
