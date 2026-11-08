@@ -414,6 +414,34 @@ func TestChromeScrollTurnsTheWheelAtThePoint(t *testing.T) {
 	}
 }
 
+func TestChromePageTextLeavesOutTheListedLabelsAndCutsAt1000(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprintf(w, `<nav><a href="/a">Pricing</a><br><button>Sign in</button></nav>
+<p>Pricing plans for teams</p><p>%s</p>`, strings.Repeat("x", 1500))
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	info, err := p.Info(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(info.Interactive) != 2 {
+		t.Fatalf("listed %+v, want the link and the button", info.Interactive)
+	}
+	if !strings.HasPrefix(info.Text, "Pricing plans for teams\n") || strings.Contains(info.Text, "Sign in") {
+		t.Fatalf("text %.60q…, want the paragraph without the listed labels", info.Text)
+	}
+	if n := len([]rune(info.Text)); n != 1000 {
+		t.Fatalf("text of %d runes, want it cut at 1000", n)
+	}
+}
+
 func TestChromeSelectionReadsAFieldAndNotAPassword(t *testing.T) {
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
