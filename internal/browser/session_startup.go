@@ -12,8 +12,9 @@ import (
 // seconds after the launch (<a download>, an attachment link, location.href)
 // brought a reload 4.3 to 5.3 seconds after it, 7.4 once; the other four began
 // without one, and a download asked for 5 seconds or later began at once with
-// none. Chromium 155's reload 1.46 to 1.70 seconds after a download began was
-// measured on browsers this young too. An action that follows another inside
+// none. Whether Chromium 155's reload 1.46 to 1.70 seconds after a download
+// began, the hold this replaced, was the same young-browser effect is not
+// known. An action that follows another inside
 // this window waits for it to pass, or for a reload to land, so the reload
 // cannot wipe it.
 const startupGrace = 6 * time.Second
