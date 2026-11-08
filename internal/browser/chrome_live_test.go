@@ -666,3 +666,87 @@ func TestChromeClickRefusesAPointReadOffAnotherViewport(t *testing.T) {
 		t.Fatalf("click read off 800x600 in a 700x600 viewport: %v, want an error asking for a new screenshot", err)
 	}
 }
+
+func clickRig(t *testing.T, body string) (*chromePage, context.Context) {
+	t.Helper()
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<body style="margin:0">`+body)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	t.Cleanup(cancel)
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 800, H: 600, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	return p, ctx
+}
+
+func clicked(t *testing.T, p *chromePage, ctx context.Context) string {
+	t.Helper()
+	var hit string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.hit || ""`, &hit)); err != nil {
+		t.Fatal(err)
+	}
+	return hit
+}
+
+func TestChromeClickRefusesAnElementUnderAnOverlayAndClicksOnceItIsGone(t *testing.T) {
+	p, ctx := clickRig(t, `<button id="buy" onclick="document.body.dataset.hit = 'buy'">Buy</button>
+<div id="consent-banner" style="position:fixed;inset:0;background:#0008"></div>`)
+	_, _, err := p.Click(ctx, Target{Selector: "#buy"})
+	if err == nil || !strings.Contains(err.Error(), "<div#consent-banner>") {
+		t.Fatalf("click under an overlay: %v, want an error naming div#consent-banner", err)
+	}
+	if hit := clicked(t, p, ctx); hit != "" {
+		t.Fatalf("the click reached %q under the overlay", hit)
+	}
+	if err := p.run(ctx, chromedp.Evaluate(`document.getElementById('consent-banner').remove()`, nil)); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := p.Click(ctx, Target{Selector: "#buy"}); err != nil {
+		t.Fatal(err)
+	}
+	if hit := clicked(t, p, ctx); hit != "buy" {
+		t.Fatalf("clicked %q after the overlay left, want buy", hit)
+	}
+}
+
+func TestChromeClickAndTypeRefuseADisabledTarget(t *testing.T) {
+	p, ctx := clickRig(t, `<button id="off" disabled onclick="document.body.dataset.hit = 'off'">Off</button>
+<fieldset disabled><input id="in"></fieldset>
+<div id="aria" role="button" aria-disabled="true" style="height:20px">Aria</div>`)
+	for _, sel := range []string{"#off", "#in", "#aria"} {
+		if _, _, err := p.Click(ctx, Target{Selector: sel}); err == nil || !strings.Contains(err.Error(), "disabled") {
+			t.Fatalf("click %s: %v, want a disabled error", sel, err)
+		}
+	}
+	if err := p.Type(ctx, "x", false, Target{Selector: "#in"}); err == nil || !strings.Contains(err.Error(), "disabled") {
+		t.Fatalf("type into a fieldset-disabled input: %v, want a disabled error", err)
+	}
+	if hit := clicked(t, p, ctx); hit != "" {
+		t.Fatalf("the click reached %q", hit)
+	}
+}
+
+func TestChromeClickIsNotCoveredByItsOwnChildOrItsLabel(t *testing.T) {
+	p, ctx := clickRig(t, `<a id="link" href="#x" onclick="document.body.dataset.hit = 'link'; return false"><span style="display:block;padding:10px">Open</span></a>
+<label style="display:block;margin-top:40px"><input id="box" type="checkbox" style="position:absolute;opacity:0;left:0;top:60px;width:20px;height:20px"
+ onclick="document.body.dataset.hit = 'box'"><span style="display:block;position:absolute;left:0;top:60px;width:20px;height:20px;background:#ccc"></span></label>`)
+	if _, _, err := p.Click(ctx, Target{Selector: "#link"}); err != nil {
+		t.Fatal(err)
+	}
+	if hit := clicked(t, p, ctx); hit != "link" {
+		t.Fatalf("clicked %q, want link", hit)
+	}
+	if _, _, err := p.Click(ctx, Target{Selector: "#box"}); err != nil {
+		t.Fatalf("a checkbox under its own label's styled span: %v", err)
+	}
+	if hit := clicked(t, p, ctx); hit != "box" {
+		t.Fatalf("clicked %q, want box", hit)
+	}
+}

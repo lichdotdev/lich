@@ -56,7 +56,9 @@ pixels and lands scaled back to the page's. A click, key, tab or dialog
 answer whose element list is the one the agent's last page answer gave says
 so in one line instead (`internal/browser/told.go`); `browser_info` always
 answers with the whole list. Click, type and
-press are real input events. `press` is named keys only. `browser_eval` runs
+press are real input events. A click, or the click a target of type or press
+makes, by index or selector fails before dispatch when the element is disabled
+or another one covers its click point, naming it (`covered by <div#consent-banner>`). `press` is named keys only. `browser_eval` runs
 the agent's script in the front tab (`browser.Eval`) and answers with its
 value, a string as it is and anything else as JSON, cut at 2000 characters; it
 can read any field's value, so page info's rule ends where the agent asks.

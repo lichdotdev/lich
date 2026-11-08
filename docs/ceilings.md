@@ -1105,6 +1105,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lich keeps the list of the agent's last page answer and, when a click, key, tab or dialog leaves the same one,
   says so in one line. An agent whose context was compacted since no longer holds that list, and has to ask
   `browser_info`, which always answers whole.
+- **A click by index or selector tests the point at the element's box center** (`resolveJS` in
+  `internal/browser/chrome.go`): `elementFromPoint` there must be the element, inside it, or the label of a
+  control the element is. A link wrapped over two lines, or an element with a hole at its center, can have
+  that point on something else, and the click fails as covered though a click elsewhere on it would land.
+  Disabled is `:disabled` or `aria-disabled="true"`, which a page may set on something it still handles.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
   element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a

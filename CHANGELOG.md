@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A click or key press that leaves a page's buttons and links as the agent last read them answers with one line saying so instead of the whole list again, which about three page answers in ten repeated.
 - A session browser's page answer names where a link goes only when the link has no label of its own: the agent clicks a labeled link by its index, and the addresses were a sixth of what it read.
 - A session browser's page answer leaves out of the page's text each line that is only the label of a button or link it lists right below, and cuts the text at 1000 characters instead of 1200: a tenth smaller, with as much of the page's own text as before.
+- A session browser's click, type and key press on an element by index or selector fail before dispatch, naming what is in the way, when another element covers the target's click point (a cookie banner, a modal backdrop: `covered by <div#consent-banner>`) or the target is disabled, instead of clicking whatever is on top or doing nothing and answering with the page as before. A click at an x and y the agent chose is unchanged.
 
 ### Fixed
 

@@ -521,22 +521,35 @@ const resolveJS = `(function(index, selector, x, y, shotW, shotH, scale) {
     el = document.querySelector('[data-lich-idx="' + index + '"]');
   }
   if (!el) return null;
+  if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return {disabled: true};
   var r = el.getBoundingClientRect();
   if (!inView(r.left + r.width / 2, r.top + r.height / 2)) {
     el.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
     r = el.getBoundingClientRect();
   }
-  return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+  var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  var hit = document.elementFromPoint(cx, cy);
+  // A label's click reaches its control, which is how a custom checkbox hides
+  // the real input under a styled sibling.
+  var lbl = hit && hit.closest('label');
+  if (hit && hit !== el && !el.contains(hit) && !(lbl && lbl.control === el)) {
+    var cls = typeof hit.className === 'string' ? hit.className.trim().split(/\s+/)[0] : '';
+    return {x: cx, y: cy, covered: hit.tagName.toLowerCase() + (hit.id ? '#' + hit.id : cls ? '.' + cls : '')};
+  }
+  return {x: cx, y: cy};
 })`
 
 // resolved is resolveJS's answer: the point, or a point outside the
-// viewport of w by h, or read off a screenshot of another size than w by h.
+// viewport of w by h, or read off a screenshot of another size than w by h,
+// or an element that is disabled or covered by another at its click point.
 type resolved struct {
 	point
-	Outside bool    `json:"outside"`
-	Resized bool    `json:"resized"`
-	W       float64 `json:"w"`
-	H       float64 `json:"h"`
+	Disabled bool    `json:"disabled"`
+	Covered  string  `json:"covered"`
+	Outside  bool    `json:"outside"`
+	Resized  bool    `json:"resized"`
+	W        float64 `json:"w"`
+	H        float64 `json:"h"`
 }
 
 func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
@@ -552,6 +565,12 @@ func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
 	if r == nil {
 		return point{}, fmt.Errorf("no element matches that target: the page may have changed since it was read; read it again for fresh indexes")
 	}
+	if r.Disabled {
+		return point{}, fmt.Errorf("the element is disabled: a click on it does nothing; read the page again to see what enables it")
+	}
+	if r.Covered != "" {
+		return point{}, coveredError(r.Covered)
+	}
 	if r.Resized {
 		return point{}, fmt.Errorf("the viewport is %gx%g, and was %dx%d at your last screenshot: the page was resized since; take a new screenshot before clicking at x and y",
 			r.W, r.H, t.shotW, t.shotH)
@@ -561,4 +580,8 @@ func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
 			r.X, r.Y, r.W, r.H)
 	}
 	return r.point, nil
+}
+
+func coveredError(by string) error {
+	return fmt.Errorf("the element is covered by <%s> at its click point: dismiss that first, then read the page again", by)
 }
