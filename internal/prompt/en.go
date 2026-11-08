@@ -152,7 +152,7 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	HandoffNone: "(none)",
 	HandoffSent: "The handoff note is at its prompt. Your session stays open until the user closes it: stop " +
 		"here rather than carry on with the work you handed off.\n",
-	HandoffProfileSuggested: "The profile %q is shown to the user as a suggestion for it. It stays in your profile unless they move it.\n",
+	HandoffProfileSuggested: "The profile %q goes to the user as a suggestion once its first turn ends. It stays in your profile unless they move it.\n",
 	HandoffProfileDropped:   "The profile %[1]q you suggested was dropped, and the session runs in yours: %[2]s.\n",
 
 	PageInteractive:  "interactive (index tag \"label\", or -> link when it has none):",

@@ -154,8 +154,9 @@ var handoffTools = []mcpTool{
 			"provider, model and effort unless you name others and in your profile, and types " +
 			"your note at its prompt. The note is capped at 8 KB, like send_to_session: name what " +
 			"to read, do not paste it. Your session stays open: the user closes it. Stop working " +
-			"once this returns. Naming a profile only suggests it to the user: the successor " +
-			"still starts in your profile, and moving it is always the user's click. Returns " +
+			"once this returns. Naming a profile only suggests it to the user, once the " +
+			"successor's first turn ends: the successor still starts in your profile, and " +
+			"moving it is always the user's click. Returns " +
 			"the successor's names, and whether a suggestion was dropped and why.",
 		Schema: schema(map[string]any{
 			"done": property("string",
@@ -175,8 +176,9 @@ var handoffTools = []mcpTool{
 				"Reasoning effort the successor runs at, spelled as its provider takes it. "+
 					"Defaults to yours when the provider is yours."),
 			"profile": property("string",
-				"A profile to suggest to the user for the successor, by slug. Only a suggestion: "+
-					"the successor starts in your profile and only the user's click moves it. One "+
+				"A profile to suggest to the user for the successor, by slug, once its first turn "+
+					"ends. Only a suggestion: the successor starts in your profile and only the "+
+					"user's click moves it. One "+
 					"that cannot apply is dropped and the handoff goes on."),
 		}, "done", "next_steps"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {

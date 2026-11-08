@@ -17,17 +17,21 @@ import (
 // window is offered it, and only the person's answer moves the session: a
 // profile can be another account, and which account holds a conversation is
 // theirs to say. An agent handing its work off can suggest a profile for its
-// successor, which reaches the window as the same offer.
+// successor, which reaches the window as the same offer once a turn has ended
+// there.
 
 var errOfferGone = errors.New("that offer no longer stands: the session moved on, changed profile or closed")
 
 // profileOffer is a profile a session was offered and has not answered. from
 // is the profile it was offered from: a session no longer there has moved.
-// handoff is a successor's: it outlives the turn the successor starts on its
-// note, and accepting it sends no continuation, since nothing was stopped.
+// handoff is a successor's: a turn starting does not take it down, and
+// accepting it sends no continuation, since nothing was stopped. held is one
+// not on screen, waiting for a turn to end so that its button works when it
+// appears: Continue in refuses a turn in progress and a session with no
+// conversation yet.
 type profileOffer struct {
 	profile, from string
-	handoff       bool
+	handoff, held bool
 }
 
 // SetQuotaLeft wires the answer to "can this profile of this provider take a
@@ -61,12 +65,15 @@ func (s *Service) offerProfile(id string) {
 	if !ok {
 		return
 	}
-	s.standOffer(id, profileOffer{profile: to, from: from})
+	offer := profileOffer{profile: to, from: from}
+	s.storeOffer(id, offer)
+	s.announceOffer(id, offer)
 }
 
-// SuggestProfile puts the profile an agent handing off suggested for its
-// successor in front of the person. It moves nothing. The error is why the
-// suggestion cannot apply, which the handoff reports and does not fail over.
+// SuggestProfile holds the profile an agent handing off suggested for its
+// successor, for the person once a turn has ended there (showHeldOffer). It
+// moves nothing. The error is why the suggestion cannot apply, which the handoff
+// reports and does not fail over.
 func (s *Service) SuggestProfile(id, slug string) error {
 	kind := sessionKind(s.spawnOf(id).kind, s.store.SessionKind(id))
 	ops, ok := profilestores[kind]
@@ -86,26 +93,46 @@ func (s *Service) SuggestProfile(id, slug string) error {
 	if sameProfile(slug, from) {
 		return fmt.Errorf("the session already runs in %q", slug)
 	}
-	s.standOffer(id, profileOffer{profile: slug, from: from, handoff: true})
+	s.storeOffer(id, profileOffer{profile: slug, from: from, handoff: true, held: true})
 	return nil
 }
 
-func (s *Service) standOffer(id string, offer profileOffer) {
+func (s *Service) storeOffer(id string, offer profileOffer) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.profileOffers == nil {
 		s.profileOffers = make(map[string]profileOffer)
 	}
 	s.profileOffers[id] = offer
-	s.mu.Unlock()
+}
+
+func (s *Service) announceOffer(id string, offer profileOffer) {
 	events.Send(s.hub.Emit, api.SessionProfileOfferEvent, api.SessionProfileOffer{ID: id, Profile: offer.profile, Handoff: offer.handoff})
+}
+
+// showHeldOffer puts on screen the offer session id holds, now a turn has ended
+// there.
+func (s *Service) showHeldOffer(id string) {
+	s.mu.Lock()
+	offer := s.profileOffers[id]
+	held := offer.held
+	if held {
+		offer.held = false
+		s.profileOffers[id] = offer
+	}
+	s.mu.Unlock()
+	if held {
+		s.announceOffer(id, offer)
+	}
 }
 
 // TakeProfileOffer is the person taking the profile a session was offered: the
 // session moves through Continue in and, off a limit, its continuation goes out
 // at once. An offer no longer standing is refused: the turn that moved on, the
 // card that closed or moved since took it down. A successor mid-turn is refused
-// by Continue in itself and says so; the offer is spent, and the card's Continue
-// in is there once the turn ends.
+// by Continue in itself and says so. Its offer goes back to held rather than
+// being spent, so it is shown again when that turn ends: the click took the
+// toast down.
 func (s *Service) TakeProfileOffer(ctx context.Context, opts api.ContinueInOptions) (api.None, error) {
 	current, err := s.store.SessionProfile(opts.ID)
 	if err != nil {
@@ -115,7 +142,12 @@ func (s *Service) TakeProfileOffer(ctx context.Context, opts api.ContinueInOptio
 	if !ok {
 		return api.None{}, errOfferGone
 	}
-	if _, err := s.ContinueIn(ctx, opts); err != nil || offer.handoff {
+	_, err = s.ContinueIn(ctx, opts)
+	if errors.Is(err, errMidTurn) && offer.handoff {
+		offer.held = true
+		s.storeOffer(opts.ID, offer)
+	}
+	if err != nil || offer.handoff {
 		return api.None{}, err
 	}
 	s.mu.Lock()

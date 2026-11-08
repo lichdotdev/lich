@@ -153,7 +153,7 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	HandoffNone: "(ninguno)",
 	HandoffSent: "La nota de traspaso está en su prompt. Tu sesión sigue abierta hasta que el usuario la " +
 		"cierre: detente aquí en lugar de seguir con el trabajo que traspasaste.\n",
-	HandoffProfileSuggested: "El perfil %q se le muestra al usuario como sugerencia para ella. Sigue en tu perfil a menos que el usuario la mueva.\n",
+	HandoffProfileSuggested: "El perfil %q le llegará al usuario como sugerencia cuando termine su primer turno. Sigue en tu perfil a menos que el usuario la mueva.\n",
 	HandoffProfileDropped:   "El perfil %[1]q que sugeriste se descartó, y la sesión corre en el tuyo: %[2]s.\n",
 
 	PageInteractive:  "interactive (índice etiqueta \"texto\", o -> enlace si no tiene):",

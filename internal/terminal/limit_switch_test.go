@@ -194,11 +194,43 @@ func suggestedTo(t *testing.T, hub *events.Hub) limitRig {
 	return r
 }
 
-func TestASuggestionIsShownAndMovesNothing(t *testing.T) {
+// flushed waits for everything emitted so far to reach rec, so that the absence
+// of an event means something.
+func flushed(t *testing.T, hub *events.Hub, rec *eventRecorder) {
+	t.Helper()
+	hub.Emit("flush", "x")
+	waitFor(t, func() bool { _, ok := rec.payloadOf("flush"); return ok }, "the flush")
+	rec.reset()
+}
+
+func offerShown(rec *eventRecorder) bool {
+	_, ok := rec.payloadOf(api.SessionProfileOfferEvent.Name)
+	return ok
+}
+
+func endTurn(svc *Service, id string) {
+	svc.onHookState(hookRequest{SessionID: id, State: statusBusy})
+	svc.onHookState(hookRequest{SessionID: id, State: statusDone})
+}
+
+// The suggestion is held through the turn on the note: a toast before it ends
+// is one whose button Continue in would refuse.
+func TestASuggestionIsShownOnlyOnceATurnEndsAndMovesNothing(t *testing.T) {
 	hub, rec := newProbeHub(t)
 	r := suggestedTo(t, hub)
 
-	waitFor(t, func() bool { _, ok := rec.payloadOf(api.SessionProfileOfferEvent.Name); return ok }, "the offer")
+	flushed(t, hub, rec)
+	if offerShown(rec) {
+		t.Fatal("the offer was shown before any turn")
+	}
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+	flushed(t, hub, rec)
+	if offerShown(rec) {
+		t.Fatal("the offer was shown mid-turn")
+	}
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer")
 	payload, _ := rec.payloadOf(api.SessionProfileOfferEvent.Name)
 	if fields, _ := payload.(map[string]any); fields["id"] != "s1" || fields["profile"] != "work" || fields["handoff"] != true {
 		t.Errorf("offer = %v, want work for s1, from a handoff", payload)
@@ -306,5 +338,77 @@ func TestAStaleClickOnASuggestionIsRefused(t *testing.T) {
 				t.Errorf("moved %v, in work %v; want nothing", r.moved, r.inWork())
 			}
 		})
+	}
+}
+
+// A /compact at an idle prompt reports done with no turn open: no turn ended
+// that left a conversation to move.
+func TestAHeldSuggestionWaitsThroughAnEndingWithNoTurnOpen(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+	flushed(t, hub, rec)
+
+	if offerShown(rec) {
+		t.Error("the offer was shown off an ending with no turn open")
+	}
+}
+
+func TestAHeldSuggestionIsShownOnce(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+	endTurn(r.svc, "s1")
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer")
+	flushed(t, hub, rec)
+
+	endTurn(r.svc, "s1")
+	flushed(t, hub, rec)
+
+	if offerShown(rec) {
+		t.Error("a second turn showed the offer again")
+	}
+}
+
+func TestAHeldSuggestionIsDroppedWhenTheSessionCloses(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+
+	if _, err := r.svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+		t.Fatal(err)
+	}
+	endTurn(r.svc, "s1")
+	flushed(t, hub, rec)
+
+	if offerShown(rec) {
+		t.Error("a closed session's held offer was shown")
+	}
+}
+
+// The click took the toast down, so a refusal for a turn in progress has to
+// bring it back when that turn ends, and the second click must work.
+func TestAMidTurnRefusalKeepsTheOfferAndShowsItAgain(t *testing.T) {
+	hub, rec := newProbeHub(t)
+	r := suggestedTo(t, hub)
+	endTurn(r.svc, "s1")
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer")
+	flushed(t, hub, rec)
+	opts := api.ContinueInOptions{ID: "s1", Profile: "work"}
+
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy})
+	if _, err := r.svc.TakeProfileOffer(t.Context(), opts); !errors.Is(err, errMidTurn) {
+		t.Fatalf("click mid-turn = %v, want the turn named", err)
+	}
+	if len(r.moved) != 0 || r.inWork() {
+		t.Fatalf("moved %v, in work %v; want nothing", r.moved, r.inWork())
+	}
+	r.svc.onHookState(hookRequest{SessionID: "s1", State: statusDone})
+
+	waitFor(t, func() bool { return offerShown(rec) }, "the offer shown again")
+	if _, err := r.svc.TakeProfileOffer(t.Context(), opts); err != nil {
+		t.Fatalf("click after the turn: %v", err)
+	}
+	if r.moved["s1"] != "work" || !r.inWork() {
+		t.Errorf("row %q, in work %v; want the session moved", r.moved["s1"], r.inWork())
 	}
 }

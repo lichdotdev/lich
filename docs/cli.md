@@ -678,8 +678,8 @@ The handoff note is at its prompt. Your session stays open until the user closes
   caller was opened with. A model, effort or profile belongs to one provider, so
   a `--kind` of another starts it on that provider's defaults.
 - **`--profile` only suggests a profile to the user.** The successor still
-  starts on this session's profile; a notice offers the suggested one, and only
-  its Continue in button moves the successor. A suggestion that cannot apply
+  starts on this session's profile; a notice offers the suggested one once the
+  successor's first turn ends, and only its Continue in button moves the successor. A suggestion that cannot apply
   (a provider with no profiles or whose conversations cannot move, an unknown
   slug, the profile it already runs in) is dropped, the result says why, and
   the handoff goes on. `--json` carries the reason in `profileDropped`.

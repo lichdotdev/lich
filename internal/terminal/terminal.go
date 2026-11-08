@@ -430,6 +430,9 @@ func (s *Service) onHookState(req hookRequest) {
 	if req.State == statusBusy {
 		s.withdrawLimitOffer(req.SessionID)
 	}
+	// Read before the report closes the turn: a `done` with none open (a
+	// /compact at an idle prompt) leaves no new conversation to move.
+	turnEnded := req.State == statusDone && s.turns.busy(req.SessionID)
 	// The window is told what the report means, not what it said: a
 	// `waiting` outside a turn is a session idle at its prompt, and the
 	// card would draw it as a human being blocked (see turnLog).
@@ -442,6 +445,9 @@ func (s *Service) onHookState(req hookRequest) {
 			Detail: req.Detail,
 			Reason: req.Reason,
 		})
+	}
+	if turnEnded {
+		s.showHeldOffer(req.SessionID)
 	}
 	if req.State == statusBusy && req.Tool != "" {
 		if watch := s.toolWatcher(); watch != nil {

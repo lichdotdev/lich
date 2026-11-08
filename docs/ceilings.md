@@ -30,15 +30,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   model, effort, ultracode and profile the caller was opened with, not one switched inside it (`/model`). It
   reaches every provider through spawn and `relay.Submit`. The successor always starts on the caller's profile,
   because lich moves work to another account only on the user's click; a `profile` on the call is only a suggestion
-  put to the user as a toast (`internal/terminal/limit_switch.go` `SuggestProfile`, the same offer as a usage limit's
-  and the same `TakeProfileOffer`). It reaches the providers whose conversations can change profile where they have
+  put to the user as a toast once the successor's first turn has ended, so its button works when it appears: the
+  first turn runs on the caller's account (`internal/terminal/limit_switch.go` `SuggestProfile`, the same offer as
+  a usage limit's and the same `TakeProfileOffer`). It reaches the providers whose conversations can change profile where they have
   profiles: Claude Code, Codex, oh-my-pi, Cursor CLI (Linux and Windows) and Kiro CLI (Linux only). Antigravity and
   Crush have no profiles and opencode's conversations cannot move, so there the suggestion is dropped and the result
-  says why, and the handoff goes on. Whether the profile is logged in is not checked. The offer survives the turn
-  the successor starts on its note, unlike a limit's, so a click mid-turn is Continue in's own refusal, naming the
-  turn: that spends the offer, and the card's Continue in is there once the turn ends. A click before the agent has
-  a conversation is refused the same way. A toast standing when the backend restarts is forgotten by the process
-  and refused on click.
+  says why, and the handoff goes on. Whether the profile is logged in is not checked. The toast waits for a `done`
+  with a turn open, whichever turn that is: all five report one through lich's hooks, so a session of any of them
+  without its lich plugin or extension installed, or a Codex turn a usage limit ended (Codex reports no end for
+  those), never shows it, and the card's Continue in stays available. Unlike a limit's, the offer stands through
+  later turns: a click on one that started since is Continue in's own refusal naming the turn, and the offer goes
+  back to waiting and shows again when that turn ends, because the click took the toast down. A toast standing when
+  the backend restarts is forgotten by the process and refused on click.
 - **opencode 2 is told apart by its `--version`, and every 2.x session runs a server of its own**
   (`internal/providers/version.go` `IsOpencode2`, `internal/terminal/opencode2.go`): 2.x keeps 1.x's binary name,
   config and database but not its argv, so the spawn asks the binary for its major, once per path, size and

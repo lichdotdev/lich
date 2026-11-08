@@ -153,7 +153,7 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	HandoffNone: "(nenhum)",
 	HandoffSent: "A nota de passagem está no prompt dela. A sua sessão fica aberta até o usuário fechá-la: " +
 		"pare aqui em vez de seguir com o trabalho que você passou adiante.\n",
-	HandoffProfileSuggested: "O perfil %q é mostrado ao usuário como sugestão para ela. Ela fica no seu perfil a menos que o usuário a mova.\n",
+	HandoffProfileSuggested: "O perfil %q chega ao usuário como sugestão quando o primeiro turno dela terminar. Ela fica no seu perfil a menos que o usuário a mova.\n",
 	HandoffProfileDropped:   "O perfil %[1]q que você sugeriu foi descartado, e a sessão roda no seu: %[2]s.\n",
 
 	PageInteractive:  "interactive (índice tag \"rótulo\", ou -> link quando não tem):",

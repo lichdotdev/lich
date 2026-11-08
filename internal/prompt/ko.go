@@ -144,7 +144,7 @@ var ko = Catalog{
 	HandoffNone: "(없음)",
 	HandoffSent: "인계 메모가 그 세션의 프롬프트에 도착했습니다. 당신의 세션은 사용자가 닫을 때까지 열려 있습니다. " +
 		"넘긴 작업을 이어 가지 말고 여기서 멈추세요.\n",
-	HandoffProfileSuggested: "프로필 %q이(가) 이 세션에 대한 제안으로 사용자에게 표시됩니다. 사용자가 옮기지 않는 한 당신의 프로필에 그대로 있습니다.\n",
+	HandoffProfileSuggested: "프로필 %q은(는) 첫 턴이 끝나면 사용자에게 제안으로 전달됩니다. 사용자가 옮기지 않는 한 당신의 프로필에 그대로 있습니다.\n",
 	HandoffProfileDropped:   "제안한 프로필 %[1]q은(는) 취소되었고 세션은 당신의 프로필에서 실행됩니다: %[2]s.\n",
 
 	PageInteractive:  "interactive (인덱스 태그 \"레이블\", 레이블이 없으면 -> 링크):",
