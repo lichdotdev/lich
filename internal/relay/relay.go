@@ -430,6 +430,10 @@ type Service struct {
 	// mergesTold is the merges already announced, by checkout and number, so
 	// the pull request watch and the Pulls screen's merge never announce one twice.
 	mergesTold map[string]bool
+	// compacted is the sessions whose compaction started and has not been closed
+	// by a later report yet: that report is where their open errands are typed
+	// back in (compactReminderLocked), once per compaction.
+	compacted map[string]bool
 }
 
 // Plugins is what the relay needs to know about the companion plugin
@@ -462,6 +466,7 @@ func New(sessions Sessions, term Terminal, events Events) *Service {
 		nudgeTimer:      make(map[string]*time.Timer),
 		nudging:         make(map[string]*sync.Mutex),
 		mergesTold:      make(map[string]bool),
+		compacted:       make(map[string]bool),
 		sessions:        sessions,
 		term:            term,
 		events:          events,

@@ -42,6 +42,14 @@ var es = Catalog{
 		"decir cuál de ellas era ese turno, y por eso ninguna pudo responderse por ti. Una en la " +
 		"que sigues trabajando todavía acepta su respuesta, y toda respuesta a partir de ahora " +
 		"tiene que nombrar su ticket: lich reply <ticket> \"<respuesta>\".",
+	CompactReminder: Plural{
+		One: "[lich] Tu conversación acaba de compactarse, y %[1]d petición enviada a esta sesión " +
+			"sigue esperando tu respuesta:\n%[2]s\nQuien la envió está bloqueado en ese ticket y no " +
+			"lee nada más: cuando termines el trabajo, respóndela por su ticket.",
+		Other: "[lich] Tu conversación acaba de compactarse, y %[1]d peticiones enviadas a esta sesión " +
+			"siguen esperando tus respuestas:\n%[2]s\nCada remitente está bloqueado en su propio ticket " +
+			"y no lee nada más: cuando termines cada trabajo, respóndelo por su ticket.",
+	},
 	NudgeResultsReady: Plural{
 		One:   "La tarea que enviaste a %[2]s tiene su resultado listo",
 		Other: "Los resultados de %[1]d tareas que enviaste están listos (%[2]s)",
