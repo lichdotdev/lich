@@ -20,6 +20,11 @@ var (
 	BrowserScroll     = define[BrowserScrollOptions, None]("browser.Scroll")
 	BrowserList       = define[SessionIDOptions, []BrowserHandle]("browser.List")
 	BrowserClose      = define[SessionIDOptions, None]("browser.Close")
+
+	// BrowserEval runs the agent's script in the page and answers with its
+	// value: a string as it is, anything else as JSON.
+	BrowserEval = define[BrowserEvalOptions, string]("browser.Eval")
+
 	// BrowserTabs lists the browser's tabs; BrowserTabAction is the agent
 	// opening, selecting or closing one, answered with the page then in front.
 	BrowserTabs      = define[SessionIDOptions, []BrowserTab]("browser.Tabs")
@@ -327,6 +332,11 @@ type BrowserScrollOptions struct {
 	DY int    `json:"dy"`
 }
 
+type BrowserEvalOptions struct {
+	ID     string `json:"id"`
+	Script string `json:"script"`
+}
+
 // BrowserRect is an element's viewport box, integer pixels.
 type BrowserRect struct {
 	X int `json:"x"`
@@ -356,6 +366,9 @@ type BrowserPageInfo struct {
 	Text        string               `json:"text"`
 	Interactive []BrowserInteractive `json:"interactive"`
 	Truncated   bool                 `json:"truncated"`
+	// InteractiveSame leaves Interactive out: it is the list the agent's last
+	// page answer gave, every element and index as they were.
+	InteractiveSame bool `json:"interactiveSame,omitempty"`
 	// Downloads are the ones the agent has not heard of in their current
 	// state: what its last action saved, or one it saw start and that ended
 	// since.

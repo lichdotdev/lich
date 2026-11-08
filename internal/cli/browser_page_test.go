@@ -16,10 +16,11 @@ func TestPageTextIsOneLinePerElement(t *testing.T) {
 		Interactive: []api.BrowserInteractive{
 			{Index: 0, Tag: "button", Type: "button", Text: "Toggle Sidebar", Rect: api.BrowserRect{X: 207, Y: 21, W: 28, H: 28}},
 			{Index: 1, Tag: "a", Role: "link", Text: "Dashboard", Href: "https://app.notacil.com.br/dashboard"},
-			{Index: 2, Tag: "a", Text: "Docs", Href: "https://docs.example.com/x"},
+			{Index: 2, Tag: "a", Href: "https://docs.example.com/x"},
 			{Index: 3, Tag: "input", Type: "email", Text: "E-mail", Filled: &yes},
 			{Index: 4, Tag: "div", Role: "button", Text: "Emitir nota \"já\""},
 			{Index: 5, Tag: "input", Type: "checkbox", Text: "Lembrar", Checked: &yes},
+			{Index: 6, Tag: "a", Href: "https://app.notacil.com.br/settings"},
 		},
 		Truncated: true,
 	}
@@ -27,13 +28,14 @@ func TestPageTextIsOneLinePerElement(t *testing.T) {
 		"url: https://app.notacil.com.br/invoices",
 		"title: Notacil",
 		"text: Notas fiscais",
-		`interactive (index tag "label" -> link):`,
+		`interactive (index tag "label", or -> link when it has none):`,
 		`0 button "Toggle Sidebar"`,
-		`1 a "Dashboard" -> /dashboard`,
-		`2 a "Docs" -> https://docs.example.com/x`,
+		`1 a "Dashboard"`,
+		`2 a -> https://docs.example.com/x`,
 		`3 input:email "E-mail" (filled)`,
 		`4 div[button] "Emitir nota \"já\""`,
 		`5 input:checkbox "Lembrar" (checked)`,
+		`6 a -> /settings`,
 		"(more elements below, scroll to reach them)",
 	}, "\n")
 	if got := pageText(info, prompt.English); got != want {
@@ -49,6 +51,20 @@ func TestDownloadLineSaysAFailedMove(t *testing.T) {
 	d := api.BrowserDownload{Path: "/home/u/Downloads/report.csv", Bytes: 5, State: api.DownloadFailed}
 	if got := downloadLine(d, prompt.For(prompt.English)); got != "download failed: /home/u/Downloads/report.csv" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestPageTextSaysTheListIsTheLastOne(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "https://example.com/", Title: "Ex", Text: "Saved", InteractiveSame: true, Truncated: true}
+	want := strings.Join([]string{
+		"url: https://example.com/",
+		"title: Ex",
+		"text: Saved",
+		"interactive: the same as in your last page answer, indexes included",
+		"(more elements below, scroll to reach them)",
+	}, "\n")
+	if got := pageText(info, prompt.English); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
 	}
 }
 

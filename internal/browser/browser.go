@@ -89,6 +89,8 @@ type session struct {
 	agentAt *point
 	// shotW and shotH are the viewport of the agent's last screenshot.
 	shotW, shotH int
+	// told is the element list of the agent's last page answer.
+	told []Interactive
 	// downloads are the page's, until the agent has heard how each ended;
 	// downloadBegun is when the last one began.
 	downloads     []*download

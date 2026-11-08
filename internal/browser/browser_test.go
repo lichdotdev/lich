@@ -374,6 +374,18 @@ func TestNavigateUpdatesHandle(t *testing.T) {
 	}
 }
 
+func TestShotScaleCapsTheLongSideAt1280(t *testing.T) {
+	cases := []struct {
+		w, h int
+		want float64
+	}{{800, 600, 1}, {1280, 720, 1}, {2560, 1000, 0.5}, {1000, 2560, 0.5}, {0, 0, 1}}
+	for _, c := range cases {
+		if got := shotScale(c.w, c.h); got != c.want {
+			t.Errorf("shotScale(%d, %d) = %g, want %g", c.w, c.h, got, c.want)
+		}
+	}
+}
+
 func TestScreenshotWritesTheAskedPath(t *testing.T) {
 	s := testService(t, &fakeLauncher{})
 	if _, err := s.Open("s", ""); err != nil {

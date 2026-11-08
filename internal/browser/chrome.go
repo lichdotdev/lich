@@ -320,6 +320,20 @@ func (p *chromePage) Press(ctx context.Context, key string, t Target) error {
 // to: a screenshot's clip is in the document's coordinates.
 const viewportJS = `({x: visualViewport.pageLeft, y: visualViewport.pageTop, w: innerWidth, h: innerHeight, dpr: devicePixelRatio})`
 
+// shotMax is the longest side of the image a screenshot writes. The agent
+// reads it as an image, priced by its pixels: a 2000x1626 pane's came to
+// about 2,350 tokens, more than three page reads (measured 2026-11-07).
+const shotMax = 1280
+
+// shotScale is the image pixels per CSS pixel of a w by h viewport's
+// screenshot, which the x and y read off it are divided by.
+func shotScale(w, h int) float64 {
+	if long := max(w, h); long > shotMax {
+		return float64(shotMax) / float64(long)
+	}
+	return 1
+}
+
 // Screenshot clips at 1/devicePixelRatio: at the device scale, a pane on a
 // HiDPI monitor or at a page zoom gave an image up to 1.5x the viewport, and
 // every point an agent read off it missed by as much.
@@ -338,7 +352,7 @@ func (p *chromePage) Screenshot(ctx context.Context, dest string) (w, h int, err
 	err = p.run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
 		var err error
 		buf, err = page.CaptureScreenshot().
-			WithClip(&page.Viewport{X: v.X, Y: v.Y, Width: v.W, Height: v.H, Scale: 1 / v.DPR}).
+			WithClip(&page.Viewport{X: v.X, Y: v.Y, Width: v.W, Height: v.H, Scale: shotScale(int(v.W), int(v.H)) / v.DPR}).
 			Do(ctx)
 		return err
 	}))
@@ -492,13 +506,14 @@ type point struct {
 // nothing. A point given outside the viewport is reported, not clicked, and
 // so is one read off a screenshot of another viewport size: the person resized
 // the pane, moved the window to another monitor or zoomed the page since, and
-// the page laid out again under it.
-const resolveJS = `(function(index, selector, x, y, shotW, shotH) {
+// the page laid out again under it. x and y are the image's pixels, scale
+// per CSS pixel, and an outside point is reported in them.
+const resolveJS = `(function(index, selector, x, y, shotW, shotH, scale) {
   var inView = function(px, py) { return px >= 0 && py >= 0 && px < innerWidth && py < innerHeight; };
   if (typeof x === 'number' && typeof y === 'number') {
     if (shotW > 0 && (shotW !== innerWidth || shotH !== innerHeight)) return {x: x, y: y, resized: true, w: innerWidth, h: innerHeight};
-    if (!inView(x, y)) return {x: x, y: y, outside: true, w: innerWidth, h: innerHeight};
-    return {x: x, y: y};
+    if (!inView(x / scale, y / scale)) return {x: x, y: y, outside: true, w: Math.round(innerWidth * scale), h: Math.round(innerHeight * scale)};
+    return {x: x / scale, y: y / scale};
   }
   var el = null;
   if (selector) el = document.querySelector(selector);
@@ -525,7 +540,7 @@ type resolved struct {
 }
 
 func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
-	args, err := json.Marshal([]any{t.Index, t.Selector, t.X, t.Y, t.shotW, t.shotH})
+	args, err := json.Marshal([]any{t.Index, t.Selector, t.X, t.Y, t.shotW, t.shotH, shotScale(t.shotW, t.shotH)})
 	if err != nil {
 		return point{}, err
 	}
@@ -538,7 +553,7 @@ func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
 		return point{}, fmt.Errorf("no element matches that target: the page may have changed since it was read; read it again for fresh indexes")
 	}
 	if r.Resized {
-		return point{}, fmt.Errorf("the viewport is %gx%g, and your last screenshot was %dx%d: the page was resized since; take a new screenshot before clicking at x and y",
+		return point{}, fmt.Errorf("the viewport is %gx%g, and was %dx%d at your last screenshot: the page was resized since; take a new screenshot before clicking at x and y",
 			r.W, r.H, t.shotW, t.shotH)
 	}
 	if r.Outside {

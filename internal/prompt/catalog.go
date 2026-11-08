@@ -86,8 +86,10 @@ type Catalog struct {
 	// internal/cli: a browser page as the browser_* tools answer with it. The
 	// line tags (url:, title:, wait:, text:, interactive, downloading:, dialog
 	// open:) and browser_dialog stay English in every locale: the tool
-	// descriptions name them.
+	// descriptions name them. PageListSame stands for an element list the
+	// agent's last page answer already gave it.
 	PageInteractive  string
+	PageListSame     string
 	PageMore         string
 	PageFilled       string
 	PageChecked      string

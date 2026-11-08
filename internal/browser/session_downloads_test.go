@@ -149,3 +149,44 @@ func TestAnAbortedNavigationThatDownloadedNothingStaysAnError(t *testing.T) {
 		t.Fatalf("err = %v, want the abort", err)
 	}
 }
+
+// Chrome reloads the page seconds after a download begins, and the reload
+// aborts the navigation the agent started meanwhile.
+func TestNavigateRetriesWhatTheReloadAfterADownloadAborted(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	p.onDownload("g1", api.BrowserDownload{Path: "/dl/a.csv", Bytes: 1, State: api.DownloadCompleted})
+	// The reload comes seconds after the download began; one at the
+	// navigation's own instant, which Windows' clock gives both, is its
+	// download.
+	sess := s.current("s")
+	s.mu.Lock()
+	sess.downloadBegun = time.Now().Add(-4 * time.Second)
+	s.mu.Unlock()
+	p.navAborts = 1
+	h, err := s.Navigate("s", "https://example.com/next")
+	if err != nil {
+		t.Fatalf("navigate after a download: %v", err)
+	}
+	if h.URL != "https://example.com/next" || p.url != "https://example.com/next" {
+		t.Fatalf("handle %s, page %s, want the page navigated to", h.URL, p.url)
+	}
+}
+
+func TestNavigateAbortedWithNoDownloadFails(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	p.navAborts = 1
+	if _, err := s.Navigate("s", "https://example.com/next"); !errors.Is(err, errNavAborted) {
+		t.Fatalf("navigate aborted with no download answered %v", err)
+	}
+	if len(p.navigations) != 1 {
+		t.Fatalf("navigations %q, want only Open's: nothing to retry", p.navigations)
+	}
+}

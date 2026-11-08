@@ -161,7 +161,7 @@ var commands = []command{
 		args: "<verb> [args]",
 		about: "Drive this session's browser — the page its tab in the lich window shows.\n" +
 			"Verbs: open [url], info, click, type, press <key>, screenshot [path], navigate <url>,\n" +
-			"reload, back, forward, scroll, dialog [--text t] accept|dismiss, list, close,\n" +
+			"reload, back, forward, scroll, eval <script>, dialog [--text t] accept|dismiss, list, close,\n" +
 			"tabs, tab new [url] | select <index> | close <index>.",
 	},
 	{

@@ -133,7 +133,8 @@ var ja = Catalog{
 	ClosedPlain: "%q を閉じました。\n",
 	ClosedProject: "プロジェクト %[1]q (%[2]s) を閉じ、そのセッションを停止しました。セッションはプロジェクトに残っています。" +
 		"%[2]s でもう一度セッションを開くと、プロジェクトがセッションごと再び開きます。\n",
-	PageInteractive:  "interactive (インデックス タグ \"ラベル\" -> リンク):",
+	PageInteractive:  "interactive (インデックス タグ \"ラベル\"、ラベルがなければ -> リンク):",
+	PageListSame:     "interactive: 前回のページ応答と同じです（インデックスも同じ）",
 	PageMore:         "(下にさらに要素があります。スクロールして表示してください)",
 	PageFilled:       "(入力済み)",
 	PageChecked:      "(チェック済み)",

@@ -136,7 +136,8 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	ClosedPlain: "%q fechada.\n",
 	ClosedProject: "Projeto %[1]q (%[2]s) fechado e as sessões dele paradas. Elas ficam com ele: abrir uma sessão " +
 		"em %[2]s de novo reabre o projeto com elas.\n",
-	PageInteractive:  "interactive (índice tag \"rótulo\" -> link):",
+	PageInteractive:  "interactive (índice tag \"rótulo\", ou -> link quando não tem):",
+	PageListSame:     "interactive: igual à sua última resposta de página, índices incluídos",
 	PageMore:         "(mais elementos abaixo, role a página para alcançá-los)",
 	PageFilled:       "(preenchido)",
 	PageChecked:      "(marcado)",

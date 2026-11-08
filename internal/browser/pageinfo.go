@@ -21,6 +21,11 @@ package browser
 // innerText on a textarea is a value read. The single exception is a
 // push-button input (submit / button / reset), whose value is the author-written
 // caption and the only label it has. A user cannot type into one.
+//
+// The page's text leaves out each line that is the whole label of an element
+// listed with it, before its cut: a quarter of a page answer's text repeated
+// the list (measured 2026-11-07). That left the cut at 1000 holding as much
+// text of its own as 1200 had.
 const pageInfoScript = `(() => {
   const sel = 'a[href], button, input, textarea, select, [role=button], [role=link], [onclick], [contenteditable=""], [contenteditable="true"]';
   const isVisible = (el) => {
@@ -79,10 +84,12 @@ const pageInfoScript = `(() => {
     }
     return entry;
   });
+  const labels = new Set(interactive.map((entry) => entry.text).filter((text) => text !== ''));
   return {
     url: location.href,
     title: document.title,
-    text: (document.body ? document.body.innerText : '').trim().slice(0, 1200),
+    text: (document.body ? document.body.innerText : '').split('\n')
+      .filter((line) => !labels.has(line.trim())).join('\n').trim().slice(0, 1000),
     interactive: interactive,
     truncated: els.length > 200,
   };

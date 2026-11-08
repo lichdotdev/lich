@@ -78,6 +78,37 @@ func TestMCPBrowserPressCallsPress(t *testing.T) {
 	}
 }
 
+func TestBrowserEvalPrintsTheScriptsValue(t *testing.T) {
+	f := newFakeLich(t, `"{\"n\":2}"`)
+
+	code, stdout, stderr := run(t, f, "browser", "eval", "({n:", "2})")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserEvalOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Script != "({n: 2})" {
+		t.Errorf("options = %+v", opts)
+	}
+	if stdout != "{\"n\":2}\n" {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
+func TestMCPBrowserEvalAnswersTheValue(t *testing.T) {
+	f := newFakeLich(t, `"Eval"`)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"browser_eval","arguments":{"script":"document.title"}}}`)
+	text, failed := textOf(t, replies[0])
+	if failed || text != "Eval" {
+		t.Fatalf("tool answered %q (failed %v), want the bare value", text, failed)
+	}
+	opts := optionsOf[api.BrowserEvalOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Script != "document.title" {
+		t.Errorf("options = %+v", opts)
+	}
+}
+
 func TestBrowserRefusesWithoutASession(t *testing.T) {
 	f := newFakeLich(t, `null`)
 	var stdout, stderr bytes.Buffer

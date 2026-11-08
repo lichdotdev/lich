@@ -49,6 +49,9 @@ func pageTextAsking(info api.BrowserPageInfo, text *prompt.Catalog, waits string
 	if info.Text != "" {
 		fmt.Fprintf(&b, "text: %s\n", info.Text)
 	}
+	if info.InteractiveSame {
+		b.WriteString(text.PageListSame + "\n")
+	}
 	if len(info.Interactive) > 0 {
 		b.WriteString(text.PageInteractive + "\n")
 	}
@@ -86,7 +89,10 @@ func elementLine(n api.BrowserInteractive, base *url.URL, text *prompt.Catalog) 
 	if n.Text != "" {
 		parts = append(parts, strconv.Quote(n.Text))
 	}
-	if n.Href != "" {
+	// A labeled link is clicked by its index: its href was 16% of a page
+	// answer, and 17 of 198 navigations went to one, all labeled (measured
+	// 2026-11-07).
+	if n.Href != "" && n.Text == "" {
 		parts = append(parts, "-> "+shortHref(n.Href, base))
 	}
 	if n.Filled != nil && *n.Filled {

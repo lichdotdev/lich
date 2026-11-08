@@ -136,7 +136,8 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ClosedPlain: "Se cerró %q.\n",
 	ClosedProject: "Se cerró el proyecto %[1]q (%[2]s) y se detuvieron sus sesiones. Siguen con él: abrir una sesión " +
 		"en %[2]s de nuevo reabre el proyecto con ellas.\n",
-	PageInteractive:  "interactive (índice etiqueta \"texto\" -> enlace):",
+	PageInteractive:  "interactive (índice etiqueta \"texto\", o -> enlace si no tiene):",
+	PageListSame:     "interactive: igual que en tu última respuesta de página, índices incluidos",
 	PageMore:         "(hay más elementos abajo, desplázate para llegar a ellos)",
 	PageFilled:       "(rellenado)",
 	PageChecked:      "(marcado)",

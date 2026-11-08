@@ -1080,7 +1080,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   only asked about, in a toast, and closes only on Close: an unanswered one holds its Chromium until the
   person answers or closes the card, and with the window closed nobody is asked; one a pane shows, or a
   window, never is. It loads only http, https and about:blank. Page info never
-  includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
+  includes a form's value, though `browser_eval` reads whatever the agent asks for. Screenshots are files, their
+  longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. It is
   not a sandbox: the page runs as the user, in an ephemeral profile. Chromium needs its own sandbox, and on
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
@@ -1095,6 +1096,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   symlinks leading out. It is a static server: no reload on save, no SPA fallback, no headers of the project's.
   The root stays the checkout whatever file is opened, so a build in a subdirectory that links its assets from
   `/` (Vite's default `base`) loads blank from `dist/index.html`; one built with a relative base loads.
+- **`browser_eval` hands the agent whatever the page holds, form values and passwords included**
+  (`internal/browser/eval.go`): page info never reads a field's value, but a script asks for what it wants, and
+  its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user
+  sees without a cursor on the pane, and answers with JSON, cut at 2000 characters: a DOM node comes back as
+  `{}`, a cycle fails, and anything larger has to be picked in the script.
+- **An action's page answer leaves out an element list the agent already heard** (`internal/browser/told.go`):
+  lich keeps the list of the agent's last page answer and, when a click, key, tab or dialog leaves the same one,
+  says so in one line. An agent whose context was compacted since no longer holds that list, and has to ask
+  `browser_info`, which always answers whole.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
   element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a

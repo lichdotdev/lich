@@ -7,10 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- An agent can run JavaScript in its session's browser and read the answer (`browser_eval`, `lich browser eval`): the state of your app, a value the page does not print, the result of a `fetch`. The answer is cut at 2000 characters, so a large page state costs the agent's context only what it asks for. The script can read what a field holds, passwords included, which the page reading never hands it.
+
+### Changed
+
+- A session browser's screenshot is at most 1280 pixels on its longest side, so one of a 2000-pixel-wide pane has 60% fewer pixels, which is what an agent pays tokens for when it looks at it, and a click at a point read off it still lands where it was read. The browser tools' descriptions, which an agent reads with every request, are a fifth shorter.
+- A click or key press that leaves a page's buttons and links as the agent last read them answers with one line saying so instead of the whole list again, which about three page answers in ten repeated.
+- A session browser's page answer names where a link goes only when the link has no label of its own: the agent clicks a labeled link by its index, and the addresses were a sixth of what it read.
+- A session browser's page answer leaves out of the page's text each line that is only the label of a button or link it lists right below, and cuts the text at 1000 characters instead of 1200: a tenth smaller, with as much of the page's own text as before.
+
 ### Fixed
 
 - A worktree created without a name no longer fails with "which already exists" when the name lich picked for it lands on the folder of a worktree whose branch was renamed. lich now skips any name whose folder is taken.
 - A worktree that git creates but cannot read as a checkout is removed along with the error. Before, its folder stayed behind, and creating a worktree under that name again failed with "which already exists".
+- An agent's navigation right after a page downloaded a file no longer fails with `net::ERR_ABORTED` on Chromium 157 and later, which reloads the page almost 4 seconds after the download begins: lich loads the page again.
 
 ## [0.86.0] - 2026-11-07
 

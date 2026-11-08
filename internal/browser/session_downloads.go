@@ -26,8 +26,14 @@ const downloadNotice = time.Second
 // <a download> begins (24 samples, Chromium 155, measured 2026-10-27), and
 // the reload aborts a navigation the agent started before it
 // (net::ERR_ABORTED). A 1.5-second hold sat inside that spread and the next
-// navigate failed 2 times in 40; this one clears it.
+// navigate failed 2 times in 40; this one cleared it. Chromium 157 reloads
+// 3.69 to 3.94 seconds after (15 samples, Helium 0.21.1.1, measured
+// 2026-11-07), past the hold, so navigate also retries what the reload aborted.
 const downloadQuiet = 2500 * time.Millisecond
+
+// downloadReload is how long after a download began an aborted navigation
+// that is no download of its own is taken for Chrome's reload and tried again.
+const downloadReload = 10 * time.Second
 
 // download is one of a session's downloads and the state the agent last
 // heard it in, "" before it heard of it.
@@ -122,8 +128,17 @@ func (s *Service) untold(sess *session) []api.BrowserDownload {
 func (s *Service) navigate(ctx context.Context, sess *session, u string) (download bool, err error) {
 	before := time.Now()
 	err = sess.page.Navigate(ctx, u)
-	if errors.Is(err, errNavAborted) && s.downloadSince(sess, before) {
+	if !errors.Is(err, errNavAborted) {
+		return false, err
+	}
+	if s.downloadSince(sess, before) {
 		return true, nil
+	}
+	s.mu.Lock()
+	reloaded := !sess.downloadBegun.Before(before.Add(-downloadReload))
+	s.mu.Unlock()
+	if reloaded {
+		return false, sess.page.Navigate(ctx, u)
 	}
 	return false, err
 }

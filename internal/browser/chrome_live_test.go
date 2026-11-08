@@ -414,6 +414,34 @@ func TestChromeScrollTurnsTheWheelAtThePoint(t *testing.T) {
 	}
 }
 
+func TestChromePageTextLeavesOutTheListedLabelsAndCutsAt1000(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprintf(w, `<nav><a href="/a">Pricing</a><br><button>Sign in</button></nav>
+<p>Pricing plans for teams</p><p>%s</p>`, strings.Repeat("x", 1500))
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	info, err := p.Info(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(info.Interactive) != 2 {
+		t.Fatalf("listed %+v, want the link and the button", info.Interactive)
+	}
+	if !strings.HasPrefix(info.Text, "Pricing plans for teams\n") || strings.Contains(info.Text, "Sign in") {
+		t.Fatalf("text %.60q…, want the paragraph without the listed labels", info.Text)
+	}
+	if n := len([]rune(info.Text)); n != 1000 {
+		t.Fatalf("text of %d runes, want it cut at 1000", n)
+	}
+}
+
 func TestChromeSelectionReadsAFieldAndNotAPassword(t *testing.T) {
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -564,6 +592,55 @@ func TestChromeScreenshotIsInCSSPixelsOnAHiDPIPane(t *testing.T) {
 	}
 	if w != 800 || h != 600 || img.Width != 800 || img.Height != 600 {
 		t.Fatalf("screenshot = %dx%d image, %dx%d reported, want 800x600 for both", img.Width, img.Height, w, h)
+	}
+}
+
+func TestChromeScreenshotOfAWidePaneIs1280AndClicksMapBack(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<body style="margin:0;height:100vh" onclick="document.body.dataset.at = event.clientX + ',' + event.clientY">`)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 2000, H: 1000, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	dest := t.TempDir() + "/shot.png"
+	w, h, err := p.Screenshot(ctx, dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.DecodeConfig(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w != 2000 || h != 1000 || img.Width != 1280 || img.Height != 640 {
+		t.Fatalf("screenshot = %dx%d image of a %dx%d viewport, want 1280x640 of 2000x1000", img.Width, img.Height, w, h)
+	}
+	x, y := 640.0, 320.0
+	if _, _, err := p.Click(ctx, Target{X: &x, Y: &y, shotW: w, shotH: h}); err != nil {
+		t.Fatal(err)
+	}
+	var at string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.at`, &at)); err != nil {
+		t.Fatal(err)
+	}
+	if at != "1000,500" {
+		t.Fatalf("the image's 640,320 clicked the page at %s, want 1000,500", at)
+	}
+	x = 1280
+	if _, _, err := p.Click(ctx, Target{X: &x, Y: &y, shotW: w, shotH: h}); err == nil || !strings.Contains(err.Error(), "1280x640") {
+		t.Fatalf("a point past the image's edge answered %v, want it named against the 1280x640 image", err)
 	}
 }
 
