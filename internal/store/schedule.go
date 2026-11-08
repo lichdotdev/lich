@@ -63,7 +63,7 @@ func (s *Service) forfeitedSchedules(where string, args ...any) ([]ForfeitedSche
 
 // schedulePromptLimit bounds a scheduled prompt. It is typed into a TUI a
 // character at a time when it comes due — the same delivery a relayed message
-// gets, and the same reason that one is bounded (internal/relay, promptLimit):
+// gets, and the same reason that one is bounded (internal/relay, PromptLimit):
 // a megabyte of it is a hang, not a prompt. Checked here rather than at
 // delivery so the person writing it is told while they can still shorten it.
 const schedulePromptLimit = 8192

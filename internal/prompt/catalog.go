@@ -84,6 +84,9 @@ type Catalog struct {
 	ClosedKept             string
 	ClosedPlain            string
 	ClosedProject          string
+	HandoffNote            string
+	HandoffNone            string
+	HandoffSent            string
 
 	// internal/cli: a browser page as the browser_* tools answer with it. The
 	// line tags (url:, title:, wait:, text:, interactive, downloading:, dialog

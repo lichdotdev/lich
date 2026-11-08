@@ -332,6 +332,12 @@ func (s *spawnStore) SetSessionUltracode(_ string) error {
 	return nil
 }
 
+func (*spawnStore) SessionModel(string) string             { return "" }
+func (*spawnStore) SessionEffort(string) string            { return "" }
+func (*spawnStore) SessionUltracode(string) bool           { return false }
+func (*spawnStore) SessionProfile(string) (string, error)  { return "", nil }
+func (*spawnStore) SetSessionProfile(string, string) error { return nil }
+
 func (s *spawnStore) SetRunEntrypoint(_, _ string) error { return nil }
 
 func (s *spawnStore) SandboxDefault(_, _, _ string) bool {

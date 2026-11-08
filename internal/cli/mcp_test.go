@@ -230,6 +230,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 	want := map[string][]string{
 		"list_sessions":       {},
 		"open_session":        {},
+		"handoff_session":     {"done", "next_steps"},
 		"close_session":       {"session"},
 		"close_project":       {"project"},
 		"list_services":       {},
