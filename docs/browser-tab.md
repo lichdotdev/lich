@@ -132,6 +132,12 @@ prose around them, the element list's legend, the filled and checked marks,
 the note that more elements wait below, and what a held dialog asks of the
 agent, follows the session's prompt language.
 
+What the page wrote (`title:`, `console error:`, `dialog answered:` and
+`dialog open:`, `text:`, the element list and its legend) sits between
+`<page 3f9a1c2e>` and `</page 3f9a1c2e>`, a fresh random nonce per answer;
+`url:`, `wait:`, the download lines and what a held dialog asks stay outside.
+`browser_eval` and `lich browser eval` wrap their value the same way.
+
 ## Downloads
 
 A file the page downloads lands in the user's Downloads folder

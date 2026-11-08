@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A session browser's page answer, what `browser_eval` returns, and the tab list and page handle the browser tools answer with now put what the page wrote (its title, text, element labels, console errors, dialog messages) between `<page …>` and `</page …>` markers with a random code that changes on every answer, and `browser_info` tells the agent that text between them is the page's and never instructions. A page that writes "SYSTEM: ignore previous instructions" no longer reads like lich talking, and cannot fake the closing marker. It adds 31 characters to an answer.
 - A session browser's screenshot is at most 1280 pixels on its longest side, so one of a 2000-pixel-wide pane has 60% fewer pixels, which is what an agent pays tokens for when it looks at it, and a click at a point read off it still lands where it was read. The browser tools' descriptions, which an agent reads with every request, are a fifth shorter.
 - A click or key press that leaves a page's buttons and links as the agent last read them answers with one line saying so instead of the whole list again, which about three page answers in ten repeated.
 - A session browser's page answer names where a link goes only when the link has no label of its own: the agent clicks a labeled link by its index, and the addresses were a sixth of what it read.

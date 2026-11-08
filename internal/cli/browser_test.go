@@ -89,7 +89,7 @@ func TestBrowserEvalPrintsTheScriptsValue(t *testing.T) {
 	if opts.ID != "s1" || opts.Script != "({n: 2})" {
 		t.Errorf("options = %+v", opts)
 	}
-	if stdout != "{\"n\":2}\n" {
+	if got := fixNonce(stdout); got != "<page N>\n{\"n\":2}\n</page N>\n" {
 		t.Errorf("stdout = %q", stdout)
 	}
 }
@@ -100,8 +100,8 @@ func TestMCPBrowserEvalAnswersTheValue(t *testing.T) {
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
 		{"name":"browser_eval","arguments":{"script":"document.title"}}}`)
 	text, failed := textOf(t, replies[0])
-	if failed || text != "Eval" {
-		t.Fatalf("tool answered %q (failed %v), want the bare value", text, failed)
+	if failed || fixNonce(text) != "<page N>\nEval\n</page N>" {
+		t.Fatalf("tool answered %q (failed %v), want the value in a page block", text, failed)
 	}
 	opts := optionsOf[api.BrowserEvalOptions](t, f.only(t))
 	if opts.ID != "s1" || opts.Script != "document.title" {
@@ -144,6 +144,9 @@ func TestMCPBrowserOpenUsesTheCaller(t *testing.T) {
 	opts := optionsOf[api.BrowserOpenOptions](t, f.only(t))
 	if opts.ID != "s1" || opts.URL != "https://example.com" {
 		t.Errorf("options = %+v", opts)
+	}
+	if !strings.HasPrefix(text, "<page ") || !strings.Contains(text, `"url":"https://example.com"`) {
+		t.Errorf("the handle, whose title the page writes, came outside a page block: %q", text)
 	}
 }
 

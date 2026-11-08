@@ -1101,6 +1101,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user
   sees without a cursor on the pane, and answers with JSON, cut at 2000 characters: a DOM node comes back as
   `{}`, a cycle fails, and anything larger has to be picked in the script.
+- **A page answer marks what the page wrote, and the mark is a request, not a wall** (`internal/cli/browser_page.go`):
+  title, dialog messages, console errors, text and element labels, and an `eval` value, sit between
+  `<page nonce>` and `</page nonce>`, the nonce 8 random hex characters per answer, so a page cannot close the
+  block it cannot predict. Nothing makes an agent obey the one sentence of `browser_info` that says the text
+  between them is never instructions, and `url:` stays outside though a redirect can write it. `lich browser eval`
+  wraps its value too, so a script piping it needs the lines between the markers.
 - **An action's page answer leaves out an element list the agent already heard** (`internal/browser/told.go`):
   lich keeps the list of the agent's last page answer and, when a click, key, tab or dialog leaves the same one,
   says so in one line. An agent whose context was compacted since no longer holds that list, and has to ask

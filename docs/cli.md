@@ -1020,6 +1020,9 @@ filled seldom changes the page. `screenshot` prints the PNG's path; its longest
 side is at most 1280 pixels, and `--x`/`--y` are that image's pixels. `eval`
 runs the script in the page and prints its value, a string as it is and
 anything else as JSON, cut at 2000 characters.
+What the page wrote, in `info`, `click`, `press` and `eval`, is between
+`<page nonce>` and `</page nonce>` lines, a new random nonce each time, so an
+agent can tell it from lich's own lines.
 URLs are http, https or `about:blank`.
 
 ### `lich mcp`
