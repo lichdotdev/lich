@@ -38,7 +38,7 @@ func refuseOrphan(req request, originID string) error {
 	case req.handoff:
 		return errors.New(
 			"a handoff passes a session's work to a fresh one, and this is not running in " +
-				"a session lich holds — run it from inside the session handing off",
+				"a session lich holds: run it from inside the session handing off",
 		)
 	}
 	return nil

@@ -135,8 +135,8 @@ func (c *client) handoff(args []string) error {
 var handoffTools = []mcpTool{
 	{
 		Name: "handoff_session",
-		Description: "Hand your work off to a fresh session of yourself, at a clean break — just " +
-			"committed, tests green, the next step clear — instead of carrying on in a context " +
+		Description: "Hand your work off to a fresh session of yourself, at a clean break (just " +
+			"committed, tests green, the next step clear) instead of carrying on in a context " +
 			"that has grown long. lich opens the successor in your checkout and folder, on your " +
 			"provider, model and effort unless you name others and in your profile, and types " +
 			"your note at its prompt. The note is capped at 8 KB, like send_to_session: name what " +
