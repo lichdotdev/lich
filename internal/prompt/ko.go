@@ -128,7 +128,7 @@ var ko = Catalog{
 	ClosedPlain: "%q을(를) 닫았습니다.\n",
 	ClosedProject: "프로젝트 %[1]q (%[2]s)을(를) 닫고 그 세션들을 멈췄습니다. 세션은 프로젝트에 남아 있습니다. " +
 		"%[2]s에서 세션을 다시 열면 프로젝트가 세션과 함께 다시 열립니다.\n",
-	PageInteractive:  "interactive (인덱스 태그 \"레이블\" -> 링크):",
+	PageInteractive:  "interactive (인덱스 태그 \"레이블\", 레이블이 없으면 -> 링크):",
 	PageListSame:     "interactive: 지난번 페이지 응답과 같습니다 (인덱스 포함)",
 	PageMore:         "(아래에 요소가 더 있습니다. 스크롤해서 확인하세요)",
 	PageFilled:       "(입력됨)",

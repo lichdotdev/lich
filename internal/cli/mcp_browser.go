@@ -37,7 +37,7 @@ var browserTools = []mcpTool{
 	{
 		Name: "browser_info",
 		Description: "Read the current page: URL, title, the viewport's text and one line per interactive " +
-			"element (index, tag, label, link). Form values are never included; (filled) and (checked) " +
+			"element (index, tag, label, and a link only when it has no label). Form values are never included; (filled) and (checked) " +
 			"say typing landed. click, press, tab and dialog already answer with this, so call it only " +
 			"to look again. It also names, since the last page answer, files downloaded, console " +
 			"errors, dialogs the user answered, and a dialog the page holds open (dialog open:). " +
