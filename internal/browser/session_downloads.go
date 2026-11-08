@@ -122,23 +122,31 @@ func (s *Service) untold(sess *session) []api.BrowserDownload {
 	return out
 }
 
-// navigate loads u in sess's page. A URL that answers with a file is a
-// download, not a page: Chrome aborts the navigation and the page stays where
-// it was, which is a load that worked.
+// navigate loads u in sess's page, once more when Chrome's reload after an
+// earlier download aborted it.
 func (s *Service) navigate(ctx context.Context, sess *session, u string) (download bool, err error) {
 	before := time.Now()
-	err = sess.page.Navigate(ctx, u)
+	download, err = s.navigateOnce(ctx, sess, u)
 	if !errors.Is(err, errNavAborted) {
-		return false, err
-	}
-	if s.downloadSince(sess, before) {
-		return true, nil
+		return download, err
 	}
 	s.mu.Lock()
 	reloaded := !sess.downloadBegun.Before(before.Add(-downloadReload))
 	s.mu.Unlock()
-	if reloaded {
-		return false, sess.page.Navigate(ctx, u)
+	if !reloaded {
+		return false, err
+	}
+	return s.navigateOnce(ctx, sess, u)
+}
+
+// navigateOnce loads u in sess's page. A URL that answers with a file is a
+// download, not a page: Chrome aborts the navigation and the page stays where
+// it was, which is a load that worked.
+func (s *Service) navigateOnce(ctx context.Context, sess *session, u string) (download bool, err error) {
+	before := time.Now()
+	err = sess.page.Navigate(ctx, u)
+	if errors.Is(err, errNavAborted) && s.downloadSince(sess, before) {
+		return true, nil
 	}
 	return false, err
 }
