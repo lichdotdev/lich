@@ -57,7 +57,7 @@ func indexOf(t *testing.T, info PageInfo, text string) int {
 
 func liveInfo(t *testing.T, ctx context.Context, p *chromePage) PageInfo {
 	t.Helper()
-	info, err := p.Info(ctx)
+	info, err := p.Info(ctx, "")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -997,7 +997,7 @@ tab in the lich window shows. It has to run inside a session
 
 ```
 lich browser open [url]
-lich browser info
+lich browser info [--within <css>]
 lich browser click --index <n> | --selector <css> | --x <n> --y <n>
 lich browser type [--clear] [--index <n>] <text>
 lich browser press [--index <n>] <key>

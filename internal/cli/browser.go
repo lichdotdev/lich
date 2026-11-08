@@ -78,11 +78,19 @@ func (c *client) browserOpen(args []string) error {
 }
 
 func (c *client) browserInfo(args []string) error {
-	id, err := c.browserOwnerArgs(args)
+	flags := newFlagSet("browser")
+	within := flags.String("within", "", "read only the first element this CSS selector matches")
+	if err := c.parse(flags, args); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return usageError("browser")
+	}
+	id, err := c.browserOwner()
 	if err != nil {
 		return err
 	}
-	info, err := callMethod(context.Background(), c, api.BrowserInfo, api.BrowserInfoOptions{ID: id}, openCall)
+	info, err := callMethod(context.Background(), c, api.BrowserInfo, api.BrowserInfoOptions{ID: id, Within: *within}, openCall)
 	if err != nil {
 		return err
 	}

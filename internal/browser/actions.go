@@ -72,8 +72,9 @@ func (s *Service) remember(sess *session, url, title string) {
 	s.touch(sess)
 }
 
-// Info returns the page the agent is looking at. Never includes form values.
-func (s *Service) Info(id string) (PageInfo, error) {
+// Info returns the page the agent is looking at, or the subtree of the first
+// element within matches. Never includes form values.
+func (s *Service) Info(id, within string) (PageInfo, error) {
 	sess, err := s.live(id)
 	if err != nil {
 		return PageInfo{}, err
@@ -81,7 +82,7 @@ func (s *Service) Info(id string) (PageInfo, error) {
 	var info PageInfo
 	err = runPage(func(ctx context.Context) error {
 		var e error
-		info, e = sess.page.Info(ctx)
+		info, e = sess.page.Info(ctx, within)
 		return e
 	})
 	if err != nil {

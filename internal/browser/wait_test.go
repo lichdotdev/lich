@@ -101,3 +101,17 @@ func TestReadStopsWaitingWhenTheBrowserDies(t *testing.T) {
 		t.Fatalf("read the text %d times, want the wait to stop once Chrome died", p.textReads)
 	}
 }
+
+func TestReadPassesWithinToThePage(t *testing.T) {
+	launch := &fakeLauncher{}
+	s := testService(t, launch)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Read(t.Context(), api.BrowserInfoOptions{ID: "s", Within: "main"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := launch.pages[0].within; len(got) != 1 || got[0] != "main" {
+		t.Fatalf("page read within %q, want main", got)
+	}
+}

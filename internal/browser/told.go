@@ -4,7 +4,10 @@ import "slices"
 
 // tell keeps list as the one the agent heard last. A read the agent asked
 // for always answers with the whole list, so one it lost from its context
-// comes back by asking.
+// comes back by asking. A list from a within read is kept as it is: an action
+// answers with the whole page, and its list is left out only when it equals
+// this one, element for element with the same indexes, which then is what the
+// agent heard.
 func (s *Service) tell(sess *session, list []Interactive) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

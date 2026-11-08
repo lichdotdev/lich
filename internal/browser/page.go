@@ -81,6 +81,8 @@ type PageInfo struct {
 	Text        string        `json:"text"`
 	Interactive []Interactive `json:"interactive"`
 	Truncated   bool          `json:"truncated"`
+	// Error is the page script's refusal of a within selector.
+	Error string `json:"error,omitempty"`
 	// InteractiveSame is the service's: Interactive is left out as the list
 	// the agent last heard.
 	InteractiveSame bool `json:"-"`
@@ -96,7 +98,10 @@ type PageInfo struct {
 // tests inject a fake.
 type Page interface {
 	Navigate(ctx context.Context, url string) error
-	Info(ctx context.Context) (PageInfo, error)
+	// Info reads the page, or, when within is not empty, the subtree of the
+	// first element that CSS selector matches. A selector that matches nothing
+	// or is invalid is an error that leaves the browser as it is.
+	Info(ctx context.Context, within string) (PageInfo, error)
 	// HasText says whether text is in the page's visible text, the whole
 	// document's and not only the viewport's.
 	HasText(ctx context.Context, text string) (bool, error)

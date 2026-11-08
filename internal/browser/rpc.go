@@ -34,7 +34,7 @@ func (s *Service) Read(_ context.Context, opts api.BrowserInfoOptions) (api.Brow
 	if err != nil {
 		return api.BrowserPageInfo{}, err
 	}
-	info, err := s.Info(opts.ID)
+	info, err := s.Info(opts.ID, opts.Within)
 	if errors.Is(err, errDialogOpen) {
 		return s.heldPage(opts.ID)
 	}
@@ -74,7 +74,7 @@ func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
 			return err
 		}
 		var err error
-		info, err = p.Info(ctx)
+		info, err = p.Info(ctx, "")
 		return err
 	})
 	if err != nil {

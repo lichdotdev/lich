@@ -67,6 +67,7 @@ type fakePage struct {
 	shotSize  [2]int
 	navErr    error
 	infoErr   error
+	within    []string
 	// pageText is what HasText searches; onTextRead runs before each search,
 	// as the page changing between two reads.
 	pageText   string
@@ -126,9 +127,10 @@ func (p *fakePage) Settle(context.Context) error {
 	return nil
 }
 
-func (p *fakePage) Info(context.Context) (PageInfo, error) {
+func (p *fakePage) Info(_ context.Context, within string) (PageInfo, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	p.within = append(p.within, within)
 	if p.infoErr != nil {
 		return PageInfo{}, p.infoErr
 	}

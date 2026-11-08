@@ -62,7 +62,7 @@ func TestEvalThatThrowsKeepsTheBrowser(t *testing.T) {
 	if _, err := s.Eval(t.Context(), api.BrowserEvalOptions{ID: "s", Script: "throw 1"}); !errors.Is(err, boom) {
 		t.Fatalf("eval error = %v", err)
 	}
-	if _, err := s.Info("s"); err != nil {
+	if _, err := s.Info("s", ""); err != nil {
 		t.Fatalf("the browser went with the script's error: %v", err)
 	}
 }

@@ -200,3 +200,33 @@ func TestMCPBrowserDialogAnswersWithThePage(t *testing.T) {
 		t.Errorf("options = %+v", opts)
 	}
 }
+
+func TestBrowserInfoSendsWithin(t *testing.T) {
+	f := newFakeLich(t, `{"url":"https://example.com","title":"t","text":"main text"}`)
+
+	code, stdout, stderr := run(t, f, "browser", "info", "--within", "main")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserInfoOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Within != "main" {
+		t.Errorf("options = %+v", opts)
+	}
+	if !strings.Contains(stdout, "main text") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
+func TestMCPBrowserInfoSendsWithin(t *testing.T) {
+	f := newFakeLich(t, `{"url":"https://example.com","title":"t"}`)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"browser_info","arguments":{"within":"#dialog"}}}`)
+	if text, failed := textOf(t, replies[0]); failed {
+		t.Fatalf("tool reported a failure: %s", text)
+	}
+	opts := optionsOf[api.BrowserInfoOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Within != "#dialog" {
+		t.Errorf("options = %+v", opts)
+	}
+}

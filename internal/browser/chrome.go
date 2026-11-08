@@ -255,7 +255,11 @@ func (p *chromePage) Settle(ctx context.Context) error {
 	}))
 }
 
-func (p *chromePage) Info(ctx context.Context) (PageInfo, error) {
+func (p *chromePage) Info(ctx context.Context, within string) (PageInfo, error) {
+	arg, err := json.Marshal(within)
+	if err != nil {
+		return PageInfo{}, err
+	}
 	p.idxMu.Lock()
 	base := p.idxNext
 	p.idxMu.Unlock()
@@ -263,8 +267,11 @@ func (p *chromePage) Info(ctx context.Context) (PageInfo, error) {
 		PageInfo
 		Next int `json:"next"`
 	}
-	if err := p.run(ctx, chromedp.Evaluate(pageInfoScript+"("+strconv.Itoa(base)+")", &info)); err != nil {
+	if err := p.run(ctx, chromedp.Evaluate(pageInfoScript+"("+strconv.Itoa(base)+", "+string(arg)+")", &info)); err != nil {
 		return PageInfo{}, err
+	}
+	if info.Error != "" {
+		return PageInfo{}, errors.New(info.Error)
 	}
 	p.idxMu.Lock()
 	p.idxNext = max(p.idxNext, info.Next)
