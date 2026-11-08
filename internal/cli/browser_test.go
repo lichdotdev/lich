@@ -145,6 +145,9 @@ func TestMCPBrowserOpenUsesTheCaller(t *testing.T) {
 	if opts.ID != "s1" || opts.URL != "https://example.com" {
 		t.Errorf("options = %+v", opts)
 	}
+	if !strings.HasPrefix(text, "<page ") || !strings.Contains(text, `"url":"https://example.com"`) {
+		t.Errorf("the handle, whose title the page writes, came outside a page block: %q", text)
+	}
 }
 
 func TestBrowserDialogAnswersThePagesDialog(t *testing.T) {

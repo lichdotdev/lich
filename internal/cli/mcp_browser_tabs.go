@@ -21,7 +21,7 @@ func mcpBrowserTabs(ctx context.Context, c *client, _ mcpArgs) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return encodeJSON(tabs)
+	return pageJSON(tabs)
 }
 
 func indexedTabs(ctx context.Context, c *client) ([]indexedTab, error) {
