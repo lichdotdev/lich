@@ -12,41 +12,31 @@ const programAlertGap = 30 * time.Second
 
 // programAlerts limits the alerts raised by OSC 7501 reports. Only the alerts:
 // the store has already taken the report by the time it gets here, so the card
-// and the tray always say what the program says now. A hook's reports are not
-// limited, and neither is a state no alert is raised for, which the notifier
-// still needs to take down a notification gone stale.
-//
-// The zero value is ready to use.
+// and the tray always say what the program says now.
 type programAlerts struct {
 	mu   sync.Mutex
-	last map[string]sentAlert
+	last map[string]time.Time
 	// held is the newest alert waiting for the gap to end, per session.
 	held map[string]statusReport
 	// after schedules a held alert; time.AfterFunc when unset.
 	after func(time.Duration, func())
 }
 
-type sentAlert struct {
-	at time.Time
-}
-
 // admit answers whether r goes out now, and how long until a held alert should
-// be looked at again, zero when no timer is owed. Inside the gap r is held, the
-// newest one winning, including a state the session returned to: a second
-// question is still a question (decideStatusNotice), only later.
-func (a *programAlerts) admit(r statusReport, program bool, now time.Time) (send bool, wait time.Duration) {
+// be looked at again, zero when no timer is owed. A state no alert is raised
+// for is not limited: the notifier still needs it to take down what went
+// stale. Inside the gap r is held, the newest one winning, including a state
+// the session returned to: a second question is still a question
+// (decideStatusNotice), only later.
+func (a *programAlerts) admit(r statusReport, now time.Time) (send bool, wait time.Duration) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if !program {
-		delete(a.held, r.id)
-		return true, 0
-	}
 	if r.status != statusWaiting && r.status != statusDone {
 		return true, 0
 	}
 	last, sent := a.last[r.id]
-	if !sent || now.Sub(last.at) >= programAlertGap {
-		a.markSent(r, now)
+	if !sent || now.Sub(last) >= programAlertGap {
+		a.markSent(r.id, now)
 		return true, 0
 	}
 	_, armed := a.held[r.id]
@@ -57,17 +47,16 @@ func (a *programAlerts) admit(r statusReport, program bool, now time.Time) (send
 	if armed {
 		return false, 0
 	}
-	return false, last.at.Add(programAlertGap).Sub(now)
+	return false, last.Add(programAlertGap).Sub(now)
 }
 
-func (a *programAlerts) markSent(r statusReport, now time.Time) {
+func (a *programAlerts) markSent(id string, now time.Time) {
 	if a.last == nil {
-		a.last = map[string]sentAlert{}
+		a.last = map[string]time.Time{}
 	}
-	a.last[r.id] = sentAlert{at: now}
+	a.last[id] = now
 }
 
-// takeHeld removes and returns the alert held for id.
 func (a *programAlerts) takeHeld(id string) (statusReport, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -76,10 +65,23 @@ func (a *programAlerts) takeHeld(id string) (statusReport, bool) {
 	return r, ok
 }
 
-func (a *programAlerts) sent(r statusReport, now time.Time) {
+func (a *programAlerts) sent(id string, now time.Time) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.markSent(r, now)
+	a.markSent(id, now)
+}
+
+func (a *programAlerts) dropHeld(id string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	delete(a.held, id)
+}
+
+func (a *programAlerts) forget(id string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	delete(a.last, id)
+	delete(a.held, id)
 }
 
 func (a *programAlerts) schedule(wait time.Duration, fn func()) {
@@ -90,14 +92,25 @@ func (a *programAlerts) schedule(wait time.Duration, fn func()) {
 	time.AfterFunc(wait, fn)
 }
 
-// raiseAlert hands a report the store has taken to the alert channels.
-func (m *model) raiseAlert(r statusReport, program bool) {
-	send, wait := m.alerts.admit(r, program, time.Now())
+func (m *model) raiseHookAlert(r statusReport) {
+	m.alerts.dropHeld(r.id)
+	m.notify(r)
+}
+
+// raiseProgramAlert holds what the gap limits, but a held alert still takes
+// down a notification that no longer says what the session is doing.
+func (m *model) raiseProgramAlert(r statusReport) {
+	r.program = true
+	send, wait := m.alerts.admit(r, time.Now())
 	if wait > 0 {
 		m.alerts.schedule(wait, func() { m.releaseAlert(r.id) })
 	}
 	if send {
 		m.notify(r)
+		return
+	}
+	if m.withdrawStale != nil {
+		m.withdrawStale(r)
 	}
 }
 
@@ -114,6 +127,7 @@ func (m *model) releaseAlert(id string) {
 	if !routed || r.status != held.status {
 		return
 	}
-	m.alerts.sent(r, time.Now())
+	r.program = true
+	m.alerts.sent(id, time.Now())
 	m.notify(r)
 }

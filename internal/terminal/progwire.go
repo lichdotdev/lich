@@ -10,9 +10,11 @@ const (
 	// program status. Short enough that the card reads as immediate, and it
 	// is what bounds the events a program printing reports in a loop can raise.
 	progPublishGap = 100 * time.Millisecond
-	// progUnreadGap is how often a program's reports may write the session's
-	// unread mark to the database.
-	progUnreadGap = 30 * time.Second
+	// progUnreadBurst is how many unread writes a program's reports may cause
+	// per progUnreadWindow. A build reports two changes a run; past this, the
+	// program is flipping and the mark is not what it is saying.
+	progUnreadBurst  = 4
+	progUnreadWindow = 30 * time.Second
 )
 
 // readProgramStatus reads one chunk of a session's output for OSC 7501. It
@@ -35,8 +37,6 @@ func (s *Service) readProgramStatus(id string, sess *session, chunk []byte) {
 	}
 }
 
-// programReport applies one OSC 7501 payload and reports whether it was a
-// report, which may have changed the records.
 func (s *Service) programReport(id string, sess *session, sig progSignal) bool {
 	body := sig.payload[len(progPrefix):]
 	if progQuery(body) {
@@ -72,8 +72,7 @@ func (s *Service) writeProgramReplies(id string, sess *session) {
 	}
 }
 
-// kickProgramStatus asks for the records to be published. A service's PTY has
-// no card.
+// A service's PTY has no card.
 func (s *Service) kickProgramStatus(id string, sess *session) {
 	if sess.service == nil && sess.prog.kick() {
 		go s.publishProgramStatus(id, sess)
@@ -112,25 +111,14 @@ func (s *Service) publishProgramOnce(id string, sess *session) (statusEvent, boo
 	return ev, true
 }
 
-// noteProgramUnread writes a program's unread mark at most once per
-// progUnreadGap, the newest value winning at the end of the gap.
+// noteProgramUnread writes the mark when it changes or not at all, never later:
+// a value held back would undo a card read in between it and its write.
 func (s *Service) noteProgramUnread(id string, sess *session, unread bool) {
-	write, wait := sess.prog.unreadDue(unread, time.Now())
-	if wait > 0 {
-		time.AfterFunc(wait, func() {
-			latest := sess.prog.takeUnread(time.Now())
-			if s.sessionOf(id) == sess {
-				s.noteUnread(id, latest)
-			}
-		})
-	}
-	if write {
+	if sess.prog.unreadAllowed(unread, time.Now()) {
 		s.noteUnread(id, unread)
 	}
 }
 
-// programTyped is the person typing in a session, which ends its finished
-// records.
 func (s *Service) programTyped(id string) {
 	if sess := s.sessionOf(id); sess != nil && sess.prog.typed() {
 		s.kickProgramStatus(id, sess)
@@ -139,7 +127,8 @@ func (s *Service) programTyped(id string) {
 
 // publishHookStatus publishes a report a hook made and the window is to hear.
 // From here until the hook reports the session ended or the shell starts a
-// prompt, the card is the hook's.
+// prompt, the card is the hook's; when it hands the card back, the records
+// that piled up meanwhile say what the session is doing.
 func (s *Service) publishHookStatus(ev statusEvent) {
 	sess := s.sessionOf(ev.ID)
 	if sess == nil {
@@ -147,9 +136,12 @@ func (s *Service) publishHookStatus(ev statusEvent) {
 		return
 	}
 	sess.prog.order.Lock()
-	defer sess.prog.order.Unlock()
 	sess.prog.setHooked(ev.State != statusIdle)
 	s.publishStatus(ev)
+	sess.prog.order.Unlock()
+	if ev.State == statusIdle {
+		s.kickProgramStatus(ev.ID, sess)
+	}
 }
 
 func (s *Service) sessionOf(id string) *session {

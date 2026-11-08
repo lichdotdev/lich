@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 )
@@ -12,33 +13,42 @@ func TestProgramAlertsHoldInsideTheGap(t *testing.T) {
 	waiting := statusReport{id: "s", status: statusWaiting}
 	done := statusReport{id: "s", status: statusDone}
 
-	if send, _ := a.admit(waiting, true, t0); !send {
+	if send, _ := a.admit(waiting, t0); !send {
 		t.Fatal("the first alert was held")
 	}
-	if send, wait := a.admit(statusReport{id: "s", status: statusBusy}, true, t0.Add(2*time.Second)); !send || wait != 0 {
+	if send, wait := a.admit(statusReport{id: "s", status: statusBusy}, t0.Add(2*time.Second)); !send || wait != 0 {
 		t.Fatalf("no alert is raised for busy, and the notifier must still hear it: send %v wait %v", send, wait)
 	}
-	if send, wait := a.admit(done, true, t0.Add(10*time.Second)); send || wait != 20*time.Second {
+	if send, wait := a.admit(done, t0.Add(10*time.Second)); send || wait != 20*time.Second {
 		t.Fatalf("another state: send %v wait %v, want held 20s", send, wait)
 	}
-	if _, wait := a.admit(done, true, t0.Add(11*time.Second)); wait != 0 {
+	if _, wait := a.admit(done, t0.Add(11*time.Second)); wait != 0 {
 		t.Fatalf("a held alert armed a second timer: %v", wait)
 	}
-	if send, _ := a.admit(waiting, true, t0.Add(30*time.Second)); !send {
+	if send, _ := a.admit(waiting, t0.Add(30*time.Second)); !send {
 		t.Fatal("the gap ended and the alert was still limited")
 	}
 }
 
-func TestAHookReportIsNotLimitedAndDropsAHeldAlert(t *testing.T) {
+func TestAHookReportDropsAHeldAlert(t *testing.T) {
+	r, timers := programRig(t)
+	r.program(t, "a", statusWaiting)
+	r.program(t, "a", statusDone)
+	r.report(t, "a", statusBusy)
+	(*timers)[0]()
+	if len(r.sent) != 1 {
+		t.Fatalf("sent %v, want the held alert dropped by the hook's report", r.sent)
+	}
+}
+
+func TestClosingASessionForgetsItsGap(t *testing.T) {
 	var a programAlerts
 	t0 := time.Now()
-	a.admit(statusReport{id: "s", status: statusWaiting}, true, t0)
-	a.admit(statusReport{id: "s", status: statusDone}, true, t0.Add(time.Second))
-	if send, _ := a.admit(statusReport{id: "s", status: statusDone}, false, t0.Add(2*time.Second)); !send {
-		t.Fatal("a hook's alert was limited")
-	}
-	if _, ok := a.takeHeld("s"); ok {
-		t.Fatal("the hook's report left the program's alert held")
+	r := statusReport{id: "s", status: statusWaiting}
+	a.admit(r, t0)
+	a.forget("s")
+	if send, _ := a.admit(r, t0.Add(time.Second)); !send || len(a.last) != 1 {
+		t.Fatalf("send %v, last %v, want the gap gone with the session", send, a.last)
 	}
 }
 
@@ -137,5 +147,29 @@ func TestAProgramsBusyWithoutALabelClearsTheTool(t *testing.T) {
 	s.applyTool(statusEvent{State: statusBusy})
 	if s.tool == nil {
 		t.Fatal("a hook's gap lost its tool")
+	}
+}
+
+func TestAProgramsDoneIsNotRecappedFromTheAgentsLastReply(t *testing.T) {
+	r, _ := programRig(t)
+	said := make(chan string, 1)
+	r.n.sink = recapping{next: fakeNotes{sent: &r.sent, withdrawn: &r.withdrawn}, said: func(id string) (string, error) {
+		said <- id
+		return "an old reply", nil
+	}}
+	r.program(t, "a", statusDone)
+	select {
+	case id := <-said:
+		t.Fatalf("read the transcript of %s for a program's done", id)
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestAHeldAlertStillTakesDownAStaleNotification(t *testing.T) {
+	r, _ := programRig(t)
+	r.program(t, "a", statusWaiting)
+	r.program(t, "a", statusDone)
+	if !slices.Contains(r.withdrawn, "a") {
+		t.Fatalf("withdrawn %v, want the needs-input notification down at once", r.withdrawn)
 	}
 }

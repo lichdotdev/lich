@@ -171,8 +171,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     for bash, zsh and fish), at the next report, at a full reset (RIS) or when the session's process exits. There
     is no foreground process watch: in a shell lich does not integrate, a program that exits without reporting
     `done` or `error` leaves its state on the card until one of those. `done` and `error` end when you type or paste
-    in the terminal (the window marks those input frames); an emulator's automatic reply or a mouse report does not
-    end them, and neither does looking at the card.
+    from the clipboard into the terminal (the window says so in a text frame on `/ws`); an emulator's automatic reply,
+    a mouse report, a dropped or attached file and looking at the card do not end them.
   - The card shows one record: `blocked`, then `working`, then `error`, `done` and `idle`. `working` outranks the
     finished states on purpose, because they outlive a prompt and the card reads them as a finished turn; tuios
     ranks them the other way. The card has no error state, so `error` shows as a finished turn. `kind` and
@@ -184,10 +184,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     in 30 seconds: inside them the newest alert is held and goes out when they end, if the session is still in that
     state, so a second question arrives up to 30 seconds late rather than not at all. A hook's alerts are not limited.
     The tray's dot and menu read the current state, so they are not alerts and follow a program that flips.
-  - Nothing else a report causes outside the terminal runs per report. The unread mark is written to the database at
-    most once in 30 seconds, the newest value winning. A program's `done` does not look the pull request up again or
-    re-read the plan's usage, and its `idle` does not clear the provider's mark, an in-flight relay mark or the
-    footer's numbers, which a hook's `idle` does.
+  - Nothing else a report causes outside the terminal runs per report. The unread mark is written when it changes, at most
+    four times in 30 seconds, and past that not at all: under a flood the mark may be out of date when a window
+    reopens, which beats a late write undoing a card you read. A program's `done` does not look the pull request up
+    again, re-read the plan's usage or quote the agent's last reply in its notification, and its `idle` does not
+    clear the provider's mark, an in-flight relay mark or the footer's numbers, which a hook's `idle` does.
   - The backend answers `OSC 7501 ; ?`, because the window's libghostty-vt answers it only when the window sets a
     program status callback (`GHOSTTY_TERMINAL_OPT_PROGRAM_STATUS`). `native/gioterm` sets none; one that did
     would answer the query a second time. One goroutine per session writes the answers, so a child that stops

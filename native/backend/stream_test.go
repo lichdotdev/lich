@@ -12,10 +12,15 @@ import (
 	"github.com/coder/websocket"
 )
 
-// The backend reads the leading zero byte as a person typing
-// (internal/terminal/transport.go), so only SendTyped may write one.
-func TestSendTypedMarksTheFrameAndSendDoesNot(t *testing.T) {
-	frames := make(chan []byte, 2)
+type wsFrame struct {
+	kind websocket.MessageType
+	data string
+}
+
+// A backend older than the window skips text frames and decodes binary ones
+// as it always did, so typing has to survive both being true.
+func TestSendTypedPrecedesAnOrdinaryFrameWithAText(t *testing.T) {
+	frames := make(chan wsFrame, 4)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := websocket.Accept(w, r, nil)
 		if err != nil {
@@ -24,11 +29,11 @@ func TestSendTypedMarksTheFrameAndSendDoesNot(t *testing.T) {
 		}
 		defer conn.CloseNow()
 		for {
-			_, data, err := conn.Read(r.Context())
+			kind, data, err := conn.Read(r.Context())
 			if err != nil {
 				return
 			}
-			frames <- data
+			frames <- wsFrame{kind, string(data)}
 		}
 	}))
 	t.Cleanup(srv.Close)
@@ -43,17 +48,21 @@ func TestSendTypedMarksTheFrameAndSendDoesNot(t *testing.T) {
 	if err := stream.Send(ctx, "s", []byte("r")); err != nil {
 		t.Fatal(err)
 	}
-	if err := stream.SendTyped(ctx, "s", []byte("k")); err != nil {
+	if err := stream.SendTyped(ctx, "s", []byte{0}); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"\x01sr", "\x00\x01sk"} {
+	for _, want := range []wsFrame{
+		{websocket.MessageBinary, "\x01sr"},
+		{websocket.MessageText, "s"},
+		{websocket.MessageBinary, "\x01s\x00"},
+	} {
 		select {
 		case got := <-frames:
-			if string(got) != want {
-				t.Fatalf("frame %q, want %q", got, want)
+			if got != want {
+				t.Fatalf("frame %+v, want %+v", got, want)
 			}
 		case <-ctx.Done():
-			t.Fatalf("no frame %q", want)
+			t.Fatalf("no frame %+v", want)
 		}
 	}
 }

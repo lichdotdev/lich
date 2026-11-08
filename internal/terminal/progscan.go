@@ -103,8 +103,6 @@ func (s *progScanner) inOsc(b byte, out []progSignal) []progSignal {
 	return out
 }
 
-// endOsc closes the string and keeps it when it is a signal. An OSC 52 or a
-// title is dropped here without a copy.
 func (s *progScanner) endOsc(bel bool, out []progSignal) []progSignal {
 	s.state = scanGround
 	if s.over {
@@ -119,7 +117,6 @@ func (s *progScanner) endOsc(bel bool, out []progSignal) []progSignal {
 	return out
 }
 
-// isPromptStart is OSC 133 ; A, with or without options after it.
 func isPromptStart(payload []byte) bool {
 	rest, ok := bytes.CutPrefix(payload, []byte("133;A"))
 	return ok && (len(rest) == 0 || rest[0] == ';')

@@ -744,22 +744,23 @@ func (t *transport) readLoop(conn *websocket.Conn) {
 			t.drop(conn)
 			return
 		}
-		if kind != websocket.MessageBinary {
+		// A text frame is the session a person just typed in. The binary frame
+		// behind it cannot say so: the same path carries an emulator's replies
+		// and mouse reports. Text and not a marker byte because a backend that
+		// predates this skips text frames, so a window updated ahead of a
+		// running backend keeps its keyboard.
+		if kind == websocket.MessageText {
+			if t.typed != nil {
+				t.typed(string(data))
+			}
 			continue
 		}
-		// A zero byte, which no id length is, marks what a person typed or
-		// pasted. Every other frame may be an emulator's automatic reply or a
-		// mouse report, which nobody typed.
-		typed := len(data) > 0 && data[0] == 0
-		if typed {
-			data = data[1:]
+		if kind != websocket.MessageBinary {
+			continue
 		}
 		id, payload, err := decodeFrame(data)
 		if err != nil {
 			continue
-		}
-		if t.typed != nil && typed {
-			t.typed(id)
 		}
 		t.input(id, payload)
 	}

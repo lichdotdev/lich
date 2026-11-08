@@ -6,7 +6,9 @@ package terminal
 
 import (
 	"context"
+	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -163,28 +165,24 @@ func TestQueriesToAChildNotReadingUseOneWriter(t *testing.T) {
 	}
 }
 
-// slowUnread holds a write of unread=true until released, and counts them.
+// slowUnread holds a write of unread=true until released.
 type slowUnread struct {
 	hookStore
 	entered chan struct{}
 	release chan struct{}
-	writes  *atomic.Int32
 }
 
 func (s slowUnread) SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error) {
 	if opts.Unread {
-		s.writes.Add(1)
-		if s.release != nil {
-			s.entered <- struct{}{}
-			<-s.release
-		}
+		s.entered <- struct{}{}
+		<-s.release
 	}
 	return api.None{}, nil
 }
 
 func TestAStalledPublishDoesNotHoldTheReadLoop(t *testing.T) {
 	t.Parallel()
-	store := slowUnread{entered: make(chan struct{}, 1), release: make(chan struct{}), writes: &atomic.Int32{}}
+	store := slowUnread{entered: make(chan struct{}, 1), release: make(chan struct{})}
 	svc, _ := programService(t, store)
 	defer close(store.release)
 	read := make(chan struct{})
@@ -199,22 +197,22 @@ func TestAStalledPublishDoesNotHoldTheReadLoop(t *testing.T) {
 	}
 }
 
-func TestDoneFlipsWriteUnreadOnce(t *testing.T) {
+func TestDoneFlipsStopWritingUnreadPastTheBurst(t *testing.T) {
 	t.Parallel()
-	writes := &atomic.Int32{}
-	svc, sess := programService(t, slowUnread{writes: writes})
+	store := newRecordedUnread()
+	svc, sess := programService(t, store)
 	for range 5 {
 		feed(t, svc, sess, "\x1b]7501;state=done\a")
 		feed(t, svc, sess, "\x1b]7501;state=working\a")
 	}
-	if n := writes.Load(); n != 1 {
-		t.Fatalf("%d unread writes, want 1 inside the gap", n)
+	if got := store.seen(); len(got) != progUnreadBurst {
+		t.Fatalf("unread writes %v, want %d", got, progUnreadBurst)
 	}
 }
 
 func TestAStaleProgramReportCannotLandAfterTheHook(t *testing.T) {
 	t.Parallel()
-	store := slowUnread{entered: make(chan struct{}, 1), release: make(chan struct{}), writes: &atomic.Int32{}}
+	store := slowUnread{entered: make(chan struct{}, 1), release: make(chan struct{})}
 	svc, sess := programService(t, store)
 	read := make(chan struct{})
 	go func() {
@@ -265,10 +263,10 @@ func TestAWorkingReportWithoutALabelClearsTheTool(t *testing.T) {
 	}
 }
 
-func TestOnlyAMarkedFrameEndsAFinishedRecord(t *testing.T) {
-	t.Parallel()
-	inputs, typed := make(chan string, 2), make(chan string, 1)
-	tr, err := newTransport(func(id string, data []byte) { inputs <- string(data) }, nil, nil, nil, nil)
+func wsPair(t *testing.T) (*websocket.Conn, chan string, chan string) {
+	t.Helper()
+	inputs, typed := make(chan string, 4), make(chan string, 4)
+	tr, err := newTransport(func(id string, data []byte) { inputs <- id + ":" + string(data) }, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("newTransport: %v", err)
 	}
@@ -277,33 +275,125 @@ func TestOnlyAMarkedFrameEndsAFinishedRecord(t *testing.T) {
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	defer func() { _ = conn.Close(websocket.StatusNormalClosure, "") }()
+	t.Cleanup(func() { _ = conn.Close(websocket.StatusNormalClosure, "") })
+	return conn, inputs, typed
+}
+
+func wsWrite(t *testing.T, conn *websocket.Conn, kind websocket.MessageType, data []byte) {
+	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	if err := conn.Write(ctx, kind, data); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+}
 
-	reply, _ := encodeFrame("s1", []byte("\x1b[?62c"))
-	key, _ := encodeFrame("s1", []byte("k"))
-	for _, frame := range [][]byte{reply, append([]byte{0}, key...)} {
-		if err := conn.Write(ctx, websocket.MessageBinary, frame); err != nil {
-			t.Fatalf("write: %v", err)
-		}
-	}
-	for _, want := range []string{"\x1b[?62c", "k"} {
-		select {
-		case got := <-inputs:
-			if got != want {
-				t.Fatalf("input %q, want %q", got, want)
-			}
-		case <-time.After(5 * time.Second):
-			t.Fatalf("no input %q", want)
-		}
-	}
+func recvString(t *testing.T, ch chan string, what string) string {
+	t.Helper()
 	select {
-	case id := <-typed:
-		if id != "s1" || len(typed) != 0 {
-			t.Fatalf("typed %q, %d more", id, len(typed))
-		}
+	case got := <-ch:
+		return got
 	case <-time.After(5 * time.Second):
-		t.Fatal("the marked frame was not typing")
+		t.Fatalf("no %s", what)
+		return ""
+	}
+}
+
+// Only the text frame says somebody typed. The binary format is what it
+// always was, which is what a NUL typed with Ctrl+Space rides on.
+func TestATextFrameIsTypingAndBinaryFramesAreUnchanged(t *testing.T) {
+	t.Parallel()
+	conn, inputs, typed := wsPair(t)
+	reply, _ := encodeFrame("s1", []byte("\x1b[?62c"))
+	nul, _ := encodeFrame("s1", []byte{0})
+	wsWrite(t, conn, websocket.MessageBinary, reply)
+	if got := recvString(t, inputs, "reply"); got != "s1:\x1b[?62c" {
+		t.Fatalf("input %q", got)
+	}
+	wsWrite(t, conn, websocket.MessageText, []byte("s1"))
+	if got := recvString(t, typed, "typed"); got != "s1" {
+		t.Fatalf("typed %q", got)
+	}
+	wsWrite(t, conn, websocket.MessageBinary, nul)
+	if got := recvString(t, inputs, "NUL"); got != "s1:\x00" {
+		t.Fatalf("NUL reached the PTY as %q", got)
+	}
+	if len(typed) != 0 || len(inputs) != 0 {
+		t.Fatalf("%d typed, %d inputs left over", len(typed), len(inputs))
+	}
+}
+
+func TestABinaryFrameStartingWithNULIsStillRefused(t *testing.T) {
+	t.Parallel()
+	conn, inputs, typed := wsPair(t)
+	good, _ := encodeFrame("s1", []byte("k"))
+	wsWrite(t, conn, websocket.MessageBinary, append([]byte{0}, good...))
+	wsWrite(t, conn, websocket.MessageBinary, good)
+	if got := recvString(t, inputs, "the frame behind it"); got != "s1:k" {
+		t.Fatalf("input %q, want the zero-led frame dropped", got)
+	}
+	if len(typed) != 0 || len(inputs) != 0 {
+		t.Fatalf("%d typed, %d inputs left over", len(typed), len(inputs))
+	}
+}
+
+// recordedUnread keeps every unread write in order.
+type recordedUnread struct {
+	hookStore
+	mu     *sync.Mutex
+	writes *[]bool
+}
+
+func newRecordedUnread() recordedUnread {
+	return recordedUnread{mu: &sync.Mutex{}, writes: &[]bool{}}
+}
+
+func (s recordedUnread) SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error) {
+	s.mu.Lock()
+	*s.writes = append(*s.writes, opts.Unread)
+	s.mu.Unlock()
+	return api.None{}, nil
+}
+
+func (s recordedUnread) seen() []bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return slices.Clone(*s.writes)
+}
+
+// A value held back and written later would undo a card read in between, so
+// each change is written when it happens or not at all.
+func TestAProgramsDoneIsMarkedUnreadWhenItHappens(t *testing.T) {
+	t.Parallel()
+	store := newRecordedUnread()
+	svc, sess := programService(t, store)
+	feed(t, svc, sess, "\x1b]7501;state=done\a")
+	feed(t, svc, sess, "\x1b]7501;state=working\a")
+	feed(t, svc, sess, "\x1b]7501;state=done\a")
+	if got, want := store.seen(), []bool{true, false, true}; !slices.Equal(got, want) {
+		t.Fatalf("unread writes %v, want %v", got, want)
+	}
+}
+
+func TestAHookReleasingTheCardShowsTheLiveRecord(t *testing.T) {
+	t.Parallel()
+	svc, sess := programService(t, hookStore{})
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy, Tool: "Bash"})
+	feed(t, svc, sess, "\x1b]7501;state=working:app=make\a")
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusIdle})
+	settleProgram(t, sess)
+	if st := svc.Status("s1"); st.State != statusBusy || st.Tool != "make" {
+		t.Fatalf("status = %+v, want the program's working", st)
+	}
+}
+
+func TestAPromptReleasingTheCardShowsAFinishedRecord(t *testing.T) {
+	t.Parallel()
+	svc, sess := programService(t, hookStore{})
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy, Tool: "Bash"})
+	feed(t, svc, sess, "\x1b]7501;state=done:app=make\a")
+	feed(t, svc, sess, "\x1b]133;A\a")
+	if st := svc.Status("s1"); st.State != statusDone {
+		t.Fatalf("status = %+v, want the program's done", st)
 	}
 }

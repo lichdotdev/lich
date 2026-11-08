@@ -51,8 +51,6 @@ type progReport struct {
 	state, id, app, title, msg string
 }
 
-// progRawPairs is a report's values before they are checked, the last of a
-// repeated key winning.
 type progRawPairs struct {
 	state, id, app, title, msg string
 	hasID, hasTitle, hasMsg    bool
@@ -141,7 +139,6 @@ func progPairs(body string) (progRawPairs, bool) {
 	return raw, true
 }
 
-// progValidKey is the key grammar, [a-z]+.
 func progValidKey(k string) bool {
 	if k == "" {
 		return false
@@ -154,7 +151,6 @@ func progValidKey(k string) bool {
 	return true
 }
 
-// progValidValue is the value grammar, [A-Za-z0-9_.,+/=-]*.
 func progValidValue(v string) bool {
 	for i := range len(v) {
 		if !progSegmentByte(v[i]) && v[i] != ',' && v[i] != '/' && v[i] != '=' {
@@ -164,7 +160,6 @@ func progValidValue(v string) bool {
 	return true
 }
 
-// progSegmentByte is the set an id segment and app share, [A-Za-z0-9_.+-].
 func progSegmentByte(c byte) bool {
 	switch {
 	case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9':
@@ -185,8 +180,6 @@ func progValidSegment(s string, limit int) bool {
 	return true
 }
 
-// progValidID is one to eight segments joined with "/", 128 bytes at most.
-// The root record has no id, so "" is not one.
 func progValidID(id string) bool {
 	if id == "" || len(id) > progMaxID {
 		return false
@@ -237,14 +230,10 @@ func stripInvisible(s string) string {
 	}, s)
 }
 
-// progQuery reports whether body, the bytes after "7501;", is the feature
-// detection query.
 func progQuery(body string) bool {
 	return strings.Trim(body, " \t") == "?"
 }
 
-// progSeqLen is the length of a whole sequence, OSC through ST, around a
-// payload ("7501;..." included) ended with BEL when bel is set.
 func progSeqLen(payloadLen int, bel bool) int {
 	if bel {
 		return 2 + payloadLen + 1

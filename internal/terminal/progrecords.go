@@ -6,14 +6,11 @@ import (
 	"time"
 )
 
-// progRecord is a report as kept, with the order it arrived in.
 type progRecord struct {
 	progReport
 	seq uint64
 }
 
-// programStatus is one session's OSC 7501 records and what the card was last
-// told from them. The zero value is ready to use.
 type programStatus struct {
 	mu   sync.Mutex
 	recs map[string]progRecord
@@ -31,11 +28,11 @@ type programStatus struct {
 	// dirty and running are the single publisher's: a change to publish, and
 	// whether a goroutine is on it.
 	dirty, running bool
-	// unreadAt is when the mark was last written, unreadWant the newest value
-	// waiting out progUnreadGap, and unreadArmed whether a timer will write it.
-	unreadAt    time.Time
-	unreadWant  bool
-	unreadArmed bool
+	// unreadWindow is when the current count of unread writes began.
+	unreadWindow time.Time
+	unreadWrites int
+	unreadKnown  bool
+	unreadLast   bool
 }
 
 // kick marks the records as changed and reports whether the caller is the one
@@ -64,31 +61,23 @@ func (p *programStatus) take() bool {
 	return true
 }
 
-// unreadDue answers whether the mark is written now, and how long until a
-// held value should be, zero when no timer is owed.
-func (p *programStatus) unreadDue(want bool, now time.Time) (write bool, wait time.Duration) {
+// unreadAllowed reports whether a change of the unread mark to want may be
+// written now. Writing the same value twice is not a change.
+func (p *programStatus) unreadAllowed(want bool, now time.Time) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	since := now.Sub(p.unreadAt)
-	if since >= progUnreadGap {
-		p.unreadAt = now
-		return true, 0
+	if p.unreadKnown && p.unreadLast == want {
+		return false
 	}
-	p.unreadWant = want
-	if p.unreadArmed {
-		return false, 0
+	if now.Sub(p.unreadWindow) >= progUnreadWindow {
+		p.unreadWindow, p.unreadWrites = now, 0
 	}
-	p.unreadArmed = true
-	return false, progUnreadGap - since
-}
-
-// takeUnread is the held value's time coming round.
-func (p *programStatus) takeUnread(now time.Time) bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.unreadArmed = false
-	p.unreadAt = now
-	return p.unreadWant
+	if p.unreadWrites >= progUnreadBurst {
+		return false
+	}
+	p.unreadWrites++
+	p.unreadKnown, p.unreadLast = true, want
+	return true
 }
 
 // progReplies is the query answers pending for one session, one per terminator
@@ -131,8 +120,6 @@ func (r *progReplies) next() (string, bool) {
 	return "", false
 }
 
-// apply stores one report: it replaces its record whole, and a clear removes
-// the record and every record under it, or every record when it has no id.
 func (p *programStatus) apply(r progReport) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -159,19 +146,18 @@ func (p *programStatus) apply(r progReport) {
 func (p *programStatus) promptStarted() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	released := p.hooked
 	p.hooked = false
-	return p.dropLocked(func(rec progRecord) bool {
+	dropped := p.dropLocked(func(rec progRecord) bool {
 		return rec.state == progWorking || rec.state == progBlocked || rec.state == progIdle
 	})
+	return dropped || released
 }
 
-// typed is the person typing in the session: they have seen the finished
-// records.
 func (p *programStatus) typed() bool {
 	return p.drop(func(rec progRecord) bool { return rec.state == progDone || rec.state == progError })
 }
 
-// reset is a full reset (RIS): every record goes.
 func (p *programStatus) reset() bool {
 	return p.drop(func(progRecord) bool { return true })
 }
@@ -193,7 +179,6 @@ func (p *programStatus) dropLocked(match func(progRecord) bool) bool {
 	return changed
 }
 
-// evictLocked removes the record updated least recently.
 func (p *programStatus) evictLocked() {
 	oldest, found := progRecord{}, false
 	for _, rec := range p.recs {
@@ -205,8 +190,8 @@ func (p *programStatus) evictLocked() {
 }
 
 // setHooked records whether a hook speaks for the session. Taking the card
-// over forgets what the records last published, so the records speak again
-// with their next change once the hook has gone.
+// over forgets what the records last published, so they are told again once
+// the hook has gone.
 func (p *programStatus) setHooked(hooked bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -216,8 +201,6 @@ func (p *programStatus) setHooked(hooked bool) {
 	}
 }
 
-// next is what the card should be told now, if anything. With no records
-// left, a card the records drove is cleared.
 func (p *programStatus) next(id string) (statusEvent, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -243,9 +226,6 @@ func (p *programStatus) next(id string) (statusEvent, bool) {
 // as a finished turn.
 var progUrgency = map[string]int{progBlocked: 5, progWorking: 4, progError: 3, progDone: 2, progIdle: 1}
 
-// summaryLocked picks the record the card shows: the most urgent state, then
-// the root record, then the one updated last. A record without an app takes
-// its nearest ancestor's.
 func (p *programStatus) summaryLocked() (progRecord, bool) {
 	var best progRecord
 	found := false

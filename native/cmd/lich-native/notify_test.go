@@ -43,6 +43,7 @@ func newNotifyRig(prefs notifyPrefs) *notifyRig {
 		{ID: "a", Label: "fix the build"}, {ID: "b"},
 	}}}
 	r.m.notify = r.n.report
+	r.m.withdrawStale = r.n.withdrawStale
 	r.m.seen = r.n.seen
 	return r
 }
