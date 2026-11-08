@@ -156,6 +156,7 @@ distinto.
 | Tras una compactación, al agente se le recuerdan las tareas que otras sesiones le enviaron y que siguen esperando su respuesta | sí | no | no | no | no | no | no | no |
 | Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera |
 | Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
+| Además de las herramientas para llegar a tus otras sesiones, al agente se le indica cuándo usarlas (pasar trabajo a una sesión en su propio worktree) | sí | sí, salvo que tu `config.toml` defina `developer_instructions` | sí | sí | sí | sí | no medido | sí |
 | La máquina no entra en reposo mientras corre un turno | sí | sí | sí | sí | sí | no | sí | sí |
 | **Último turno** de la pestaña Revisión, con el resumen del agente | sí | sí | sí | sí | sí | no | sí | sí |
 | Buscar en la conversación desde la paleta | sí | sí | sí | sí | sí | sí | no | sí |

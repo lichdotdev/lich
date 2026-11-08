@@ -44,6 +44,15 @@ import (
 // what lich spawns — are these.
 var kiroWriteTools = []string{"write", "shell"}
 
+// kiroBriefingScript is the one hook meant to print, and it is lich's rather than
+// the plugin repository's: its output is the session's briefing, which Kiro feeds
+// the model as context, and it prints nothing in a Kiro that lich did not spawn
+// (internal/terminal, briefingEnv).
+const (
+	kiroBriefingScript     = "report-briefing.sh"
+	kiroBriefingScriptBody = "#!/bin/sh\nprintf '%s' \"$" + relay.BriefingEnv + "\"\n"
+)
+
 // kiroHooks is what lich registers, one entry per report Kiro can honour: the
 // event, the script from the plugin repository, the argument it takes, and the
 // tool it matches ("" for every tool).
@@ -91,6 +100,7 @@ func (s *Service) kiroInstall() error {
 		}
 		scripts[filepath.Base(name)] = data
 	}
+	scripts[kiroBriefingScript] = []byte(kiroBriefingScriptBody)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("create %s: %w", dir, err)
 	}
@@ -170,6 +180,7 @@ func kiroAgentFile(version, scriptDir string) ([]byte, error) {
 			Matcher: tool,
 		})
 	}
+	hooks["agentSpawn"] = append(hooks["agentSpawn"], kiroHook{Command: kiroCommand(scriptDir, kiroBriefingScript, "")})
 	body, err := json.MarshalIndent(kiroAgent{
 		Name: providers.KiroAgentName,
 		Description: fmt.Sprintf(

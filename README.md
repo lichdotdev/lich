@@ -152,6 +152,7 @@ what lich can read back out of it, since each CLI records different things.
 | After a compaction, the agent is reminded of the tasks other sessions sent it that still wait on its answer | yes | no | no | no | no | no | no | no |
 | Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |
 | Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |
+| Besides the tools for reaching your other sessions, the agent is told when to use them (hand work to a session on its own worktree) | yes | yes, unless your `config.toml` sets `developer_instructions` | yes | yes | yes | yes | not measured | yes |
 | Machine kept out of idle sleep while a turn runs | yes | yes | yes | yes | yes | no | yes | yes |
 | Review tab's **Last turn**, with the agent's recap | yes | yes | yes | yes | yes | no | yes | yes |
 | Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes |

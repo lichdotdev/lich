@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Codex and Kiro CLI sessions are now told they run inside lich and when to open another session for the work, in your prompt language: both CLIs drop what lich's MCP server says to the model, so they had the tools and no word on using them. Codex gets it in new conversations, unless your `config.toml` sets `developer_instructions`, which lich leaves alone; Kiro gets it once lich next updates its plugin there.
 - An agent's click or key press right after it clicked a download link in a session browser that had just started no longer gets wiped by the page reload Chrome does when it starts that download: lich holds the second action until the reload has landed, or until the browser is 6 seconds old.
 - A worktree created without a name no longer fails with "which already exists" when the name lich picked for it lands on the folder of a worktree whose branch was renamed. lich now skips any name whose folder is taken.
 - A worktree that git creates but cannot read as a checkout is removed along with the error. Before, its folder stayed behind, and creating a worktree under that name again failed with "which already exists".
