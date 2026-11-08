@@ -24,15 +24,14 @@ const (
 	// maxClusterGlyphs bounds the glyphs of one grapheme filled into its mask.
 	maxClusterGlyphs = 32
 
-	emojiSelector    = '\ufe0f'
-	zeroWidthJoiner  = '\u200d'
-	regionalFirst    = '\U0001F1E6'
-	regionalLast     = '\U0001F1FF'
-	skinToneFirst    = '\U0001F3FB'
-	skinToneLast     = '\U0001F3FF'
-	flagTagFirst     = '\U000E0020'
-	flagTagLast      = '\U000E007F'
-	emojiFontWitness = '\U0001F600'
+	emojiSelector   = '\ufe0f'
+	zeroWidthJoiner = '\u200d'
+	regionalFirst   = '\U0001F1E6'
+	regionalLast    = '\U0001F1FF'
+	skinToneFirst   = '\U0001F3FB'
+	skinToneLast    = '\U0001F3FF'
+	flagTagFirst    = '\U000E0020'
+	flagTagLast     = '\U000E007F'
 )
 
 // Emoji reports whether the grapheme is an emoji sequence: its glyph is in the
@@ -92,8 +91,8 @@ func (r *Rasterizer) warnOnce(what string, err error) {
 	log.Printf("glyphs: %s: %v", what, err)
 }
 
-// emojiFace is the color font when it covers c. Asked once, by a character
-// only an emoji font has; a machine without one draws from the text fonts.
+// emojiFace is the color font when it covers c. Asked once; a machine without
+// one draws from the text fonts.
 func (r *Rasterizer) emojiFace(c rune) *fontFace {
 	if !r.emojiFound {
 		r.emojiFound = true
@@ -106,7 +105,7 @@ func (r *Rasterizer) emojiFace(c rune) *fontFace {
 }
 
 func (r *Rasterizer) loadEmojiFace() *fontFace {
-	path, err := fonts.Covering(emojiFontWitness)
+	path, err := fonts.ColorEmoji()
 	if err != nil {
 		r.warnOnce("find the emoji font", err)
 		return nil
@@ -194,8 +193,12 @@ func (r *Rasterizer) outlines(face *gotext.Face, gs []shaping.Glyph) (*image.Alp
 	for _, g := range gs {
 		x := float64(pen+g.XOffset) / 64
 		y := float64(r.ascent) - float64(g.YOffset)/64
-		pen += g.Advance
 		ext, ok := face.GlyphExtents(g.GlyphID)
+		// A font positions no mark on a blank, so past the blank's advance
+		// the mark would land in the next cell instead of on this one.
+		if ok && ext.Width != 0 {
+			pen += g.Advance
+		}
 		if g.GlyphID == 0 || !ok {
 			continue
 		}

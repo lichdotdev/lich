@@ -119,10 +119,20 @@ func parseFamilyMatch(out, family string) (Location, error) {
 // Covering names a font file that has a glyph for r, the closest to a plain
 // monospace among those that do, or "" when none does.
 func Covering(r rune) (string, error) {
-	charset := fmt.Sprintf(":charset=%x", r)
-	out, err := exec.Command("fc-list", charset, "file").Output()
+	return coveringMatch(fmt.Sprintf(":charset=%x", r))
+}
+
+// ColorEmoji names an installed color emoji font, or "" when there is none.
+// It asks for color because a text font can cover emoji too: DejaVu Sans has
+// the emoticons, and is the closer to a monospace.
+func ColorEmoji() (string, error) {
+	return coveringMatch(fmt.Sprintf(":charset=%x:color=true", emojiWitness))
+}
+
+func coveringMatch(pattern string) (string, error) {
+	out, err := exec.Command("fc-list", pattern, "file").Output()
 	if err != nil {
-		return "", fmt.Errorf("fc-list %s: %w", charset, err)
+		return "", fmt.Errorf("fc-list %s: %w", pattern, err)
 	}
 	covering := parseFcListFiles(string(out))
 	if len(covering) == 0 {
