@@ -603,7 +603,7 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	if depth >= maxChainDepth {
 		return Result{}, chainTooDeep(depth, dest.Peer.Label)
 	}
-	warning, err := s.checkPingPong(fromID, dest.ID, dest.Peer.Label)
+	warning, err := s.checkPingPong(fromID, dest.ID, dest.Peer.Label, dest.Peer.Kind)
 	if err != nil {
 		return Result{}, err
 	}

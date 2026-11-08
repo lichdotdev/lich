@@ -173,3 +173,67 @@ func TestRelayToolsAreRecognisedInEveryProvidersSpelling(t *testing.T) {
 		}
 	}
 }
+
+// A coordinator delegating to one worker trades many messages and runs nothing
+// but relay tools itself: the work is the worker's, and its report comes back
+// through a reply, which is not a hop.
+func TestACoordinatorDelegatingToAWorkerThatWorksIsNeverWarned(t *testing.T) {
+	t.Parallel()
+	svc, term := pingPongRelay()
+
+	for task := range 5 {
+		if err := hop(t, svc, "s1", "s2", "mcp__lich__wait_for_answer"); err != nil {
+			t.Fatalf("task %d: %v", task+1, err)
+		}
+		svc.ObserveTool("s2", "Bash", "go test ./...")
+		svc.Observe("s2", stateDone)
+	}
+	if warned(term, "s2") {
+		t.Errorf("a worker that ran tools between tasks was warned:\n%s", term.written("s2"))
+	}
+}
+
+// delegateTo is one task from a coordinator that runs only relay tools to the
+// Crush session of workspace().
+func delegateTo(t *testing.T, svc *Service) error {
+	t.Helper()
+	svc.ObserveTool("s1", "mcp__lich__send_to_session", "")
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	_, err := svc.Send(ctx, SendOptions{From: "s1", Target: "api", Project: "revu", Prompt: "next task"})
+	svc.Observe("s1", stateDone)
+	return err
+}
+
+// Crush reports no tools, so a worker there can work without lich hearing of
+// it: its silence is no evidence of an idle exchange.
+func TestACoordinatorDelegatingToACrushWorkerIsNeverWarned(t *testing.T) {
+	t.Parallel()
+	term := newFakeTerminal("s1", "s5")
+	svc := newRelay(workspace(), term, nil)
+
+	for task := range 5 {
+		if err := delegateTo(t, svc); err != nil {
+			t.Fatalf("task %d: %v", task+1, err)
+		}
+	}
+	if warned(term, "s5") {
+		t.Errorf("a worker that cannot report tools was warned:\n%s", term.written("s5"))
+	}
+}
+
+// A provider without the plugin reports nothing either, Crush or not.
+func TestACoordinatorDelegatingToAWorkerWithoutThePluginIsNeverWarned(t *testing.T) {
+	t.Parallel()
+	svc, term := pingPongRelay()
+	svc.SetPlugins(fakePlugins{installed: false})
+
+	for task := range 5 {
+		if err := hop(t, svc, "s1", "s2"); err != nil {
+			t.Fatalf("task %d: %v", task+1, err)
+		}
+	}
+	if warned(term, "s2") {
+		t.Errorf("a worker whose hooks are not installed was warned:\n%s", term.written("s2"))
+	}
+}

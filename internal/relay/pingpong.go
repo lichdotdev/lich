@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // Thresholds of the ping-pong breaker, taken from clowder-ai's F167: a pair of
@@ -41,13 +42,18 @@ func pairOf(a, b string) sessionPair {
 }
 
 // ObserveTool takes the tool a session's PreToolUse reported, for the breaker
-// to tell a turn that worked from one that only messaged.
+// to tell a turn that worked from one that only messaged. Work by either side
+// ends a streak: a coordinator's own turns run only relay tools, and what its
+// worker did comes home in a reply, which is not a hop.
 func (s *Service) ObserveTool(sessionID, tool, detail string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	tt := s.turnTools[sessionID]
 	tt.any = true
-	tt.work = tt.work || !isRelayTool(tool, detail)
+	if !isRelayTool(tool, detail) {
+		tt.work = true
+		s.dropStreaksLocked(sessionID, sessionPair{})
+	}
 	s.turnTools[sessionID] = tt
 }
 
@@ -101,10 +107,31 @@ func (s *Service) noteHop(fromID, toID string) int {
 	return streak
 }
 
+// reportsTools is whether a session of that kind tells lich what it runs. Crush
+// has the plugin and still reports no state (docs/hooks/session-state.md). A
+// nil s.plugins is a test that does not care, so only an answer of no counts.
+func (s *Service) reportsTools(kind string) bool {
+	return kind != providers.Crush && (s.plugins == nil || s.plugins.Installed(kind))
+}
+
+// dropHopStreaks ends every streak either session of a hop is part of.
+func (s *Service) dropHopStreaks(fromID, toID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.dropStreaksLocked(fromID, sessionPair{})
+	s.dropStreaksLocked(toID, sessionPair{})
+}
+
 // checkPingPong is the breaker in front of a send: the warning to append to a
-// message that continues a streak, or the error refusing one that ends it.
-func (s *Service) checkPingPong(fromID, toID, target string) (string, error) {
+// message that continues a streak, or the error refusing one that ends it. A
+// target that cannot report tools may be working unseen, so a hop to it is no
+// evidence of an idle exchange and never counts.
+func (s *Service) checkPingPong(fromID, toID, target, kind string) (string, error) {
 	if fromID == "" || fromID == toID {
+		return "", nil
+	}
+	if !s.reportsTools(kind) {
+		s.dropHopStreaks(fromID, toID)
 		return "", nil
 	}
 	streak := s.noteHop(fromID, toID)
