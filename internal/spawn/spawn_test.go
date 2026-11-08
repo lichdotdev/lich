@@ -50,6 +50,10 @@ type fakeSessions struct {
 	// ultracodes records each session row ultracode was turned on for.
 	ultracodes   map[string]bool
 	ultracodeErr error
+	// profiles records the profile on each session row, keyed by session id, and
+	// profileErr is the write refusing.
+	profiles   map[string]string
+	profileErr error
 	// subagents records how deep each session row marked as a subagent runs.
 	subagents   map[string]int
 	subagentErr error
@@ -278,6 +282,27 @@ func (f *fakeSessions) SetSessionUltracode(sessionID string) error {
 	return nil
 }
 
+func (f *fakeSessions) SessionModel(sessionID string) string  { return f.models[sessionID] }
+func (f *fakeSessions) SessionEffort(sessionID string) string { return f.efforts[sessionID] }
+func (f *fakeSessions) SessionUltracode(sessionID string) bool {
+	return f.ultracodes[sessionID]
+}
+
+func (f *fakeSessions) SessionProfile(sessionID string) (string, error) {
+	return f.profiles[sessionID], nil
+}
+
+func (f *fakeSessions) SetSessionProfile(sessionID, profile string) error {
+	if f.profileErr != nil {
+		return f.profileErr
+	}
+	if f.profiles == nil {
+		f.profiles = map[string]string{}
+	}
+	f.profiles[sessionID] = profile
+	return nil
+}
+
 func (f *fakeSessions) SetSessionSubagentDepth(sessionID string, depth int) error {
 	if f.subagentErr != nil {
 		return f.subagentErr
@@ -389,6 +414,15 @@ type fakeTerminal struct {
 	deadline time.Time
 	outcome  terminal.ModOutcome
 	runErr   error
+	// profileErr is CheckProfile refusing, and checkedProfiles each (kind,
+	// profile) it was asked about.
+	profileErr      error
+	checkedProfiles [][2]string
+}
+
+func (f *fakeTerminal) CheckProfile(kind, profile string) error {
+	f.checkedProfiles = append(f.checkedProfiles, [2]string{kind, profile})
+	return f.profileErr
 }
 
 func (f *fakeTerminal) RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error) {

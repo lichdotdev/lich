@@ -87,3 +87,20 @@ func TestOutsideConversationsSayWhichProfileHoldsThem(t *testing.T) {
 		t.Errorf("profiles by conversation %v, want p1 personal and w1 work", got)
 	}
 }
+
+func TestCheckProfileRefusesWhatASessionCannotStartIn(t *testing.T) {
+	profileMachine(t)
+	svc := &Service{}
+	if err := svc.CheckProfile(providers.Claude, "work"); err != nil {
+		t.Errorf("CheckProfile(work) = %v, want nil", err)
+	}
+	if err := svc.CheckProfile(providers.Claude, "personal"); err != nil {
+		t.Errorf("CheckProfile(personal) = %v, want nil", err)
+	}
+	if err := svc.CheckProfile(providers.Claude, "gone"); err == nil {
+		t.Error("CheckProfile(gone) = nil, want a profile nobody made refused")
+	}
+	if err := svc.CheckProfile(providers.Crush, "work"); err == nil {
+		t.Error("CheckProfile(crush) = nil, want a provider with no profiles refused")
+	}
+}

@@ -68,6 +68,11 @@ type Sessions interface {
 	SetSessionModel(sessionID, model string) error
 	SetSessionEffort(sessionID, effort string) error
 	SetSessionUltracode(sessionID string) error
+	SessionModel(sessionID string) string
+	SessionEffort(sessionID string) string
+	SessionUltracode(sessionID string) bool
+	SessionProfile(sessionID string) (string, error)
+	SetSessionProfile(sessionID, profile string) error
 	SetSessionSubagentDepth(sessionID string, depth int) error
 	SessionSubagentDepth(sessionID string) int
 	RenameSession(_ context.Context, opts api.LabelSessionOptions) (api.None, error)
@@ -108,6 +113,8 @@ type Terminal interface {
 	// RunModCommand queues cmd for the session's Claude Code mod and waits,
 	// until ctx ends, for the mod to confirm it.
 	RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error)
+	// CheckProfile refuses a profile a session of kind cannot start in.
+	CheckProfile(kind, profile string) error
 }
 
 // Events is where an opened session is announced to the window. A nil one leaves
@@ -174,11 +181,12 @@ func (s *Service) OpenSubagent(_ context.Context, opts OpenSubagentOptions) (Ses
 	})
 }
 
-// request is one Open or OpenSubagent call. subagent selects OpenSubagent's
-// placement, folder and row depth.
+// request is one Open, OpenSubagent or Handoff call. subagent selects
+// OpenSubagent's placement, folder and row depth; handoff selects Handoff's
+// placement, folder and the caller's settings (inheritCaller).
 type request struct {
-	fromID, projectName, kind, worktree, base, model, effort, folder string
-	ultracode, subagent                                              bool
+	fromID, projectName, kind, worktree, base, model, effort, folder, profile string
+	ultracode, subagent, handoff                                              bool
 }
 
 func (s *Service) openSession(req request) (Session, error) {
@@ -201,11 +209,8 @@ func (s *Service) openSession(req request) (Session, error) {
 		return Session{}, fmt.Errorf("read the workspace: %w", err)
 	}
 	originID, originLabel := originOf(projects, req.fromID)
-	if req.subagent && originID == "" {
-		return Session{}, errors.New(
-			"a subagent is opened for the session asking for it, and this is not running " +
-				"in a session lich holds — open it without --subagent, or from inside a session",
-		)
+	if err := refuseOrphan(req, originID); err != nil {
+		return Session{}, err
 	}
 	projects, target, err := s.ensureProject(projects, req.fromID, req.projectName)
 	if err != nil {
@@ -214,6 +219,11 @@ func (s *Service) openSession(req request) (Session, error) {
 	kind, err := resolveKind(projects, req.fromID, req.kind)
 	if err != nil {
 		return Session{}, err
+	}
+	if req.handoff {
+		if req, err = s.inheritCaller(req, projects, kind); err != nil {
+			return Session{}, err
+		}
 	}
 	model, effort, folder := strings.TrimSpace(req.model), strings.TrimSpace(req.effort), strings.TrimSpace(req.folder)
 	if err := checkOverrides(kind, model, effort, req.ultracode); err != nil {
@@ -230,6 +240,9 @@ func (s *Service) openSession(req request) (Session, error) {
 		if req.worktree == "" {
 			at = besideCaller(target, req.fromID, at)
 		}
+	}
+	if req.handoff {
+		folder, at = callerFolder(target, req.fromID), besideCaller(target, req.fromID, at)
 	}
 	cwd, stored, label := at.cwd, at.stored, at.label
 
@@ -262,7 +275,7 @@ func (s *Service) openSession(req request) (Session, error) {
 	// prevent. So the error is only held: the spawn below reads the model back
 	// from the row, the session starts on the provider's own default and the
 	// failure is reported once it is running.
-	overrideErr := s.recordOverrides(id, label, model, effort, req.ultracode)
+	overrideErr := errors.Join(s.recordOverrides(id, label, model, effort, req.ultracode), s.recordProfile(id, label, req.profile))
 	// A session born into a folder wears the color its sessions share, or it
 	// would take it off the folder; held like an override's failure.
 	colorErr := s.wearFolderColor(context.Background(), target, store.Session{ID: id}, folder)
@@ -305,12 +318,20 @@ func besideCaller(target store.Project, fromID string, at placement) placement {
 // it and its workers join it, since moving it out would undo the user's own
 // grouping; one in none goes into a folder named after its label, beside them.
 func subagentFolder(target store.Project, fromID, originLabel string) (string, string) {
-	for _, sess := range target.Sessions {
-		if sess.ID == fromID && sess.Folder != "" {
-			return sess.Folder, ""
-		}
+	if folder := callerFolder(target, fromID); folder != "" {
+		return folder, ""
 	}
 	return originLabel, fromID
+}
+
+// callerFolder is the folder the caller is filed under, "" for none.
+func callerFolder(target store.Project, fromID string) string {
+	for _, sess := range target.Sessions {
+		if sess.ID == fromID {
+			return sess.Folder
+		}
+	}
+	return ""
 }
 
 // fileCaller files the session that asked for a subagent under its workers'

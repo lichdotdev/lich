@@ -131,7 +131,7 @@ guess at the one it resembles, and exit 1 — a typo does not open a window.
 Arguments the app itself takes still do: bare `lich`, and `lich --no-window`
 (the backend with no window, which `lich native` starts).
 
-`--json` on `sessions`, `whoami`, `send`, `insert`, `focus`, `wait`, `open`, `close`, `rename`, `control`, `ask`, `worktrees`, `folders`, `file`,
+`--json` on `sessions`, `whoami`, `send`, `insert`, `focus`, `wait`, `open`, `handoff`, `close`, `rename`, `control`, `ask`, `worktrees`, `folders`, `file`,
 `rename-folder`, `color-folder`, `cost` and `version`
 replaces the prose with one JSON line: the peer array, the result object and the session
 object exactly as this document describes them. An empty roster is `[]`, never
@@ -655,6 +655,34 @@ conversation back up.
 - Unlike `sessions`, this reaches a card whose terminal was never opened: it is
   still a session, and closing it is the one thing you can do with it.
 
+### `lich handoff --done <text> --next <text> [--branch <branch>] [--commits <text>] [--gotchas <text>] [--kind <provider>] [--model <model>] [--effort <level>] [--profile <slug>] [--json]`
+
+Hands the session it runs in off to a fresh session of itself, at a clean break:
+just committed, tests green, the next step clear. The successor opens in the
+caller's checkout and folder, and the note is typed at its prompt once there is
+one.
+
+```
+Opened session "Session 5" (claude) in project "lich", in worktree /home/you/.local/share/lich/worktrees/1a2b/auth-fix.
+It answers to "Session 5". Its agent may still be starting, so a task you send it is held until the agent is up rather than lost.
+The handoff note is at its prompt. Your session stays open until the user closes it: stop here rather than carry on with the work you handed off.
+```
+
+- **`--done` and `--next` are required**, and refused before anything opens:
+  they are all the successor starts from. `--branch`, `--commits` and
+  `--gotchas` left out read as none in the note.
+- **The successor is the caller again unless a flag says otherwise**: same
+  provider and, on that provider, the model, effort, ultracode and profile the
+  caller was opened with. A model, effort or profile belongs to one provider, so
+  a `--kind` of another starts it on that provider's defaults.
+- **The note carries no ticket.** Nothing is owed back, and the caller is not
+  closed: closing it is the user's call.
+- **Run outside a lich session it is refused**: there is no checkout to hand on.
+- The note waits up to 45 seconds for the successor's prompt. Past that, or
+  when it is refused, the command exits 1 with the session still open, named on
+  stdout; `lich send` gets the note there once its agent is up.
+- `--json` prints the opened session's object, the one `open --json` prints.
+
 ### `lich close-project [--json] <name-or-path>`
 
 Closes a project open in the window, as its tab's close does: the tab leaves the
@@ -1052,6 +1080,7 @@ at lich.
 | `wait_for_answer` | optional `ticket`, `timeout_seconds` and `no_wait` — with a ticket, `lich wait <ticket>`; without one, the collect: everything ready at once. `no_wait` is `lich wait --no-wait` and takes no ticket. |
 | `reply_to_session` | `answer`, optional `ticket` — what a relayed message asks for; without a ticket, the one request open against the calling session, and a refusal naming each open ticket when there are two. |
 | `open_session` | optional `project` (a name, or an absolute directory path, which is opened as a project first), `kind`, `worktree`, `base`, `model`, `effort`, `ultracode`, `folder` — `lich open` — plus optional `prompt` and `private` — `lich open --prompt [--private]`, the same hand-off in the same call. |
+| `handoff_session` | `done`, `next_steps`, optional `branch`, `commits`, `gotchas`, `kind`, `model`, `effort`, `profile` — `lich handoff`. A note that did not land is reported beside the open session, as `open_session`'s `prompt` is. |
 | `close_session` | `session`, optional `project`, `worktree` (`keep`/`remove`), `force`. |
 | `close_project` | `project` (a name or a directory path) — `lich close-project`. |
 | `list_services` | optional `project`: the project's services with their state, as JSON. `lich service list`. |

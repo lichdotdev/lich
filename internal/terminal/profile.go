@@ -253,6 +253,16 @@ func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (a
 	return api.None{}, err
 }
 
+// CheckProfile refuses a profile a kind cannot be spawned in, before a session
+// is born into it: an unknown slug would otherwise start on the wrong account.
+func (s *Service) CheckProfile(kind, profile string) error {
+	if !hasProfiles(kind) {
+		return fmt.Errorf("a %s session has no profiles to start in", kind)
+	}
+	_, err := profilestores[kind].configDir(profile)
+	return err
+}
+
 // sessionKind is the provider of a session being moved: its running spawn's,
 // else its row's, and Claude Code for a row that does not say, which is every
 // session born before lich recorded a kind.

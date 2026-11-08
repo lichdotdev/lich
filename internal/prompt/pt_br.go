@@ -136,6 +136,14 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	ClosedPlain: "%q fechada.\n",
 	ClosedProject: "Projeto %[1]q (%[2]s) fechado e as sessões dele paradas. Elas ficam com ele: abrir uma sessão " +
 		"em %[2]s de novo reabre o projeto com elas.\n",
+	HandoffNote: "[lich] A sessão %[1]q passou o trabalho dela para você: você é a sucessora, aberta do zero no mesmo " +
+		"checkout para continuar. Aquela sessão fica aberta até o usuário fechá-la e não está esperando por você, " +
+		"então nada volta para ela. Confira esta nota com o repositório (git status, git log) antes de construir " +
+		"em cima dela e siga com os próximos passos.\n\nFeito:\n%[2]s\n\nBranch: %[3]s\n\nCommits:\n%[4]s\n\n" +
+		"Próximos passos:\n%[5]s\n\nArmadilhas:\n%[6]s",
+	HandoffNone: "(nenhum)",
+	HandoffSent: "A nota de passagem está no prompt dela. A sua sessão fica aberta até o usuário fechá-la: " +
+		"pare aqui em vez de seguir com o trabalho que você passou adiante.\n",
 	PageInteractive:  "interactive (índice tag \"rótulo\", ou -> link quando não tem):",
 	PageListSame:     "interactive: igual à sua última resposta de página, índices incluídos",
 	PageMore:         "(mais elementos abaixo, role a página para alcançá-los)",

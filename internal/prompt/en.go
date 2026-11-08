@@ -135,6 +135,14 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	ClosedPlain: "Closed %q.\n",
 	ClosedProject: "Closed the project %[1]q (%[2]s) and stopped its sessions. They stay with it: opening a session " +
 		"on %[2]s again reopens the project with them.\n",
+	HandoffNote: "[lich] Session %[1]q handed its work off to you: you are its successor, opened fresh in the same " +
+		"checkout to carry it on. That session stays open until the user closes it and is not waiting on you, so " +
+		"nothing goes back to it. Check this note against the repository (git status, git log) before you build " +
+		"on it, then carry on with the next steps.\n\nDone:\n%[2]s\n\nBranch: %[3]s\n\nCommits:\n%[4]s\n\n" +
+		"Next steps:\n%[5]s\n\nGotchas:\n%[6]s",
+	HandoffNone: "(none)",
+	HandoffSent: "The handoff note is at its prompt. Your session stays open until the user closes it: stop " +
+		"here rather than carry on with the work you handed off.\n",
 	PageInteractive:  "interactive (index tag \"label\", or -> link when it has none):",
 	PageListSame:     "interactive: the same as in your last page answer, indexes included",
 	PageMore:         "(more elements below, scroll to reach them)",

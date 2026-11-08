@@ -136,6 +136,14 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ClosedPlain: "Se cerró %q.\n",
 	ClosedProject: "Se cerró el proyecto %[1]q (%[2]s) y se detuvieron sus sesiones. Siguen con él: abrir una sesión " +
 		"en %[2]s de nuevo reabre el proyecto con ellas.\n",
+	HandoffNote: "[lich] La sesión %[1]q te pasó su trabajo: eres su sucesora, abierta desde cero en el mismo " +
+		"checkout para continuarlo. Esa sesión sigue abierta hasta que el usuario la cierre y no te está esperando, " +
+		"así que nada vuelve a ella. Contrasta esta nota con el repositorio (git status, git log) antes de " +
+		"construir sobre ella y sigue con los próximos pasos.\n\nHecho:\n%[2]s\n\nRama: %[3]s\n\nCommits:\n%[4]s\n\n" +
+		"Próximos pasos:\n%[5]s\n\nTrampas:\n%[6]s",
+	HandoffNone: "(ninguno)",
+	HandoffSent: "La nota de traspaso está en su prompt. Tu sesión sigue abierta hasta que el usuario la " +
+		"cierre: detente aquí en lugar de seguir con el trabajo que traspasaste.\n",
 	PageInteractive:  "interactive (índice etiqueta \"texto\", o -> enlace si no tiene):",
 	PageListSame:     "interactive: igual que en tu última respuesta de página, índices incluidos",
 	PageMore:         "(hay más elementos abajo, desplázate para llegar a ellos)",

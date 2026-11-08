@@ -12,7 +12,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A session is ready for work only once its agent reports from its own prompt, where it can**
   (`internal/terminal/startgate.go`): in a fresh worktree several providers ask a question first (trust the
   folder, initialize the project), and anything typed then (a relayed task, `lich open --prompt`, a scheduled
-  prompt, an issue or pull request handed over) goes into the question, with the Enter behind it answering it
+  prompt, an issue or pull request handed over, a handoff note) goes into the question, with the Enter behind it answering it
   (what each provider then does: `docs/providers/`, Spawn). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI stay
   unready until their session-start report, which their hooks send only from the agent's prompt. That hold needs
   lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
@@ -22,6 +22,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (the plugin reinstalled while it started) stays unready until the delivery runs out: on Claude Code and Cursor
   CLI only in a folder not trusted yet, on oh-my-pi and Kiro CLI always. Codex, Antigravity, Crush and opencode
   report nothing before their first turn, so a quiet screen is still all lich has for them.
+- **A handoff leaves two sessions in one checkout** (`internal/spawn/handoff.go`, `internal/cli/handoff.go`):
+  `handoff_session` and `lich handoff` never close the caller, so until the user does, both agents can edit the
+  same files; the caller is only told to stop. The note is the caller's own account of its work, checked against
+  nothing, and waits 45 seconds for the successor's prompt (inside the 120 seconds an MCP client gives the call),
+  where a relayed task waits five minutes; past that the session is open without it. The successor inherits the
+  model, effort, ultracode and profile the caller was opened with, not one switched inside it (`/model`). It
+  reaches every provider through spawn and `relay.Submit`; an explicit profile works only where the provider has
+  profiles.
 - **opencode 2 is told apart by its `--version`, and every 2.x session runs a server of its own**
   (`internal/providers/version.go` `IsOpencode2`, `internal/terminal/opencode2.go`): 2.x keeps 1.x's binary name,
   config and database but not its argv, so the spawn asks the binary for its major, once per path, size and
