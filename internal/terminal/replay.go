@@ -81,7 +81,6 @@ func (b *replayBuffer) text() []byte {
 	return out[b.modes.toGround(out):]
 }
 
-// joined copies the tail after head, as one contiguous slice.
 func (b *replayBuffer) joined(head []byte) []byte {
 	out := make([]byte, 0, len(head)+len(b.buf))
 	out = append(out, head...)

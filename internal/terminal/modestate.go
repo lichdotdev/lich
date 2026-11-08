@@ -3,6 +3,7 @@ package terminal
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -21,17 +22,13 @@ type modeState struct {
 	raw      []byte
 	overflow bool
 
-	modes     []decMode
-	alt       bool
-	kitty     [2]kittyStack // primary, alternate
-	keypadApp bool
-	cursor    string // DECSCUSR parameters
-	margins   string // DECSTBM parameters, "" for the full screen
-	modKeys   map[int]string
-	palette   map[int]string
-	dynamic   [3]string // OSC 10, 11, 12
-	charsets  map[byte]string
-	shiftOut  bool
+	modes       []decMode
+	alt         bool
+	kitty       [2]kittyStack // primary, alternate
+	cursorStyle int           // DECSCUSR, 0 for the default
+	modifyOther bool          // modifyOtherKeys 2
+	palette     map[int]string
+	dynamic     [3]string // OSC 10, 11, 12
 }
 
 type parseState uint8
@@ -42,9 +39,7 @@ const (
 	stEscInter
 	stCSI
 	stOSC
-	stOSCEsc
-	stString    // DCS, SOS, PM, APC: never replayed
-	stStringEsc // ESC inside one of those strings
+	stString // DCS, SOS, PM, APC: never replayed
 )
 
 const (
@@ -61,6 +56,17 @@ const (
 	kittyStackLen = 8
 	kittyFlagsMax = 31 // five flag bits
 	paletteSize   = 256
+	// maxUTF8Continuations is how many continuation bytes a UTF-8 character
+	// has at most.
+	maxUTF8Continuations = 3
+	// specialColors are the OSC 4 indexes past the palette that libghostty-vt
+	// accepts (src/terminal/color.zig, Special).
+	specialColors = 5
+	// colorSpecMax bounds a color spec, and with it the preamble; the longest
+	// form libghostty-vt reads is an X11 name of 22 bytes or an rgbi: triple.
+	colorSpecMax   = 64
+	maxCursorStyle = 6
+	keypadMode     = 66 // DECNKM: ESC = and ESC > set the same libghostty-vt flag
 )
 
 // decMode is a DEC private mode as last set or reset. The modes are kept in
@@ -108,7 +114,11 @@ func (s *modeState) feed(p []byte) {
 		// Text and CSI parameters are most of the stream: take them in runs.
 		switch s.parse {
 		case stGround:
-			i = s.text(p, i)
+			e := bytes.IndexByte(p[i:], 0x1b)
+			if e < 0 {
+				return
+			}
+			i += e
 		case stCSI:
 			j := i
 			for j < len(p) && p[j] >= 0x20 && p[j] < 0x40 {
@@ -125,21 +135,25 @@ func (s *modeState) feed(p []byte) {
 }
 
 func (s *modeState) step(c byte) {
-	if c == 0x18 || c == 0x1a { // CAN, SUB abort any sequence
+	if c == 0x18 || c == 0x1a { // CAN, SUB abort any sequence, an OSC undispatched
 		s.parse = stGround
 		return
 	}
 	switch s.parse {
 	case stGround:
-		s.ground(c)
+		if c == 0x1b {
+			s.begin(stEscape)
+		}
 	case stEscape, stEscInter:
 		s.escape(c)
 	case stCSI:
 		s.csi(c)
-	case stOSC, stOSCEsc:
+	case stOSC:
 		s.osc(c)
-	case stString, stStringEsc:
-		s.str(c)
+	case stString:
+		if c == 0x1b {
+			s.begin(stEscape)
+		}
 	}
 }
 
@@ -157,24 +171,6 @@ func (s *modeState) collect(c byte) {
 	s.raw = append(s.raw, c)
 }
 
-// text skips the run of text from p[i] to the next ESC, keeping the last
-// shift it holds, and returns where the run ends.
-func (s *modeState) text(p []byte, i int) int {
-	end := len(p)
-	if e := bytes.IndexByte(p[i:], 0x1b); e >= 0 {
-		end = i + e
-	}
-	run := p[i:end]
-	// LastIndexByte is a plain loop and IndexByte is vectorized: look first.
-	if bytes.IndexByte(run, 0x0e) < 0 && bytes.IndexByte(run, 0x0f) < 0 {
-		return end
-	}
-	if so, si := bytes.LastIndexByte(run, 0x0e), bytes.LastIndexByte(run, 0x0f); so != si {
-		s.shiftOut = so > si
-	}
-	return end
-}
-
 func (s *modeState) collectRun(p []byte) {
 	if len(s.raw)+len(p) > rawCap {
 		s.overflow = true
@@ -183,23 +179,11 @@ func (s *modeState) collectRun(p []byte) {
 	s.raw = append(s.raw, p...)
 }
 
-func (s *modeState) ground(c byte) {
-	switch c {
-	case 0x1b:
-		s.begin(stEscape)
-	case 0x0e:
-		s.shiftOut = true
-	case 0x0f:
-		s.shiftOut = false
-	}
-}
-
 func (s *modeState) escape(c byte) {
 	switch {
 	case c == 0x1b:
 		s.begin(stEscape)
-	case c < 0x20:
-		s.ground(c)
+	case c < 0x20 || c == 0x7f:
 	case c < 0x30:
 		s.parse = stEscInter
 		s.collect(c)
@@ -219,19 +203,16 @@ func (s *modeState) escape(c byte) {
 }
 
 func (s *modeState) escDispatch(final byte) {
-	switch {
-	case len(s.raw) > 0 && strings.IndexByte("()*+-./", s.raw[0]) >= 0:
-		if !s.overflow {
-			s.charsets[s.raw[0]] = string(s.raw[1:]) + string(final)
-		}
-	case len(s.raw) > 0:
-	case final == 'c':
-		*s = modeState{raw: s.raw[:0]}
-		s.init()
-	case final == '=':
-		s.keypadApp = true
-	case final == '>':
-		s.keypadApp = false
+	if len(s.raw) > 0 {
+		return
+	}
+	switch final {
+	case 'c':
+		*s = *newModeState()
+	case '=':
+		s.setMode(keypadMode, true)
+	case '>':
+		s.setMode(keypadMode, false)
 	}
 }
 
@@ -239,8 +220,7 @@ func (s *modeState) csi(c byte) {
 	switch {
 	case c == 0x1b:
 		s.begin(stEscape)
-	case c < 0x20:
-		s.ground(c)
+	case c < 0x20 || c == 0x7f:
 	case c >= 0x40 && c <= 0x7e:
 		s.parse = stGround
 		if !s.overflow {
@@ -251,19 +231,17 @@ func (s *modeState) csi(c byte) {
 	}
 }
 
+// osc follows libghostty-vt's parser, which dispatches on every exit from the
+// string but CAN and SUB (src/terminal/osc.zig, end): the ESC of an ST ends it,
+// and so does the ESC of any other sequence.
 func (s *modeState) osc(c byte) {
 	switch {
-	case s.parse == stOSCEsc && c == '\\':
-		s.parse = stGround
-		s.oscEnd()
-	case s.parse == stOSCEsc:
-		s.begin(stEscape)
-		s.escape(c)
 	case c == 0x07:
 		s.parse = stGround
 		s.oscEnd()
 	case c == 0x1b:
-		s.parse = stOSCEsc
+		s.oscEnd()
+		s.begin(stEscape)
 	case c >= 0x20:
 		s.collect(c)
 	}
@@ -275,40 +253,21 @@ func (s *modeState) oscEnd() {
 	}
 }
 
-func (s *modeState) str(c byte) {
-	switch {
-	case s.parse == stStringEsc && c == '\\':
-		s.parse = stGround
-	case s.parse == stStringEsc:
-		s.begin(stEscape)
-		s.escape(c)
-	case c == 0x1b:
-		s.parse = stStringEsc
-	}
-}
-
-func (s *modeState) init() {
-	if s.modKeys == nil {
-		s.modKeys = map[int]string{}
-		s.palette = map[int]string{}
-		s.charsets = map[byte]string{}
-	}
-}
-
 func newModeState() *modeState {
-	s := &modeState{}
-	s.init()
-	return s
+	return &modeState{palette: map[int]string{}}
 }
 
-// csiParams splits a CSI's parameters into numbers, a missing one as def.
-func csiParams(p string, def int) []int {
+// csiParams splits a CSI's parameters the way libghostty-vt's parser does: an
+// empty string has none, ':' separates like ';' and an empty field is 0.
+func csiParams(raw string) []int {
+	if raw == "" {
+		return nil
+	}
 	var out []int
-	for f := range strings.SplitSeq(p, ";") {
-		f, _, _ = strings.Cut(f, ":")
+	for f := range strings.SplitSeq(strings.ReplaceAll(raw, ":", ";"), ";") {
 		n, err := strconv.Atoi(f)
 		if err != nil {
-			n = def
+			n = 0
 		}
 		out = append(out, n)
 	}
@@ -316,7 +275,8 @@ func csiParams(p string, def int) []int {
 }
 
 func (s *modeState) csiDispatch(final byte) {
-	if strings.IndexByte("hlqrmu", final) < 0 || final == 'm' && (len(s.raw) == 0 || s.raw[0] != '>') {
+	if strings.IndexByte("hlqmnu", final) < 0 ||
+		(final == 'm' || final == 'n') && (len(s.raw) == 0 || s.raw[0] != '>') {
 		return // SGR and cursor moves, most of a repaint
 	}
 	raw := string(s.raw)
@@ -324,24 +284,48 @@ func (s *modeState) csiDispatch(final byte) {
 	if raw != "" && raw[0] >= 0x3c && raw[0] <= 0x3f {
 		prefix, raw = raw[0], raw[1:]
 	}
+	if final == 'q' {
+		var ok bool
+		if raw, ok = strings.CutSuffix(raw, " "); !ok || prefix != 0 {
+			return
+		}
+	}
+	// Anything else, intermediates included, is a sequence libghostty-vt
+	// ignores; so is a colon outside SGR and XTMODKEYS.
+	if strings.Trim(raw, "0123456789;:") != "" || (final != 'm' && strings.Contains(raw, ":")) {
+		return
+	}
+	s.csiApply(prefix, final, csiParams(raw))
+}
+
+func (s *modeState) csiApply(prefix, final byte, p []int) {
 	switch {
 	case prefix == '?' && (final == 'h' || final == 'l'):
-		for _, n := range csiParams(raw, -1) {
+		for _, n := range p {
 			s.setMode(n, final == 'h')
 		}
-	case prefix == 0 && final == 'q' && strings.HasSuffix(raw, " "):
-		s.cursor = strings.TrimSuffix(raw, " ")
-	case prefix == 0 && final == 'r':
-		s.margins = raw
+	case prefix == 0 && final == 'q':
+		s.setCursorStyle(p)
 	case prefix == '>' && final == 'm':
-		s.modifyKeys(raw)
+		s.modifyKeys(p)
+	case prefix == '>' && final == 'n':
+		s.modifyOther = false
 	case final == 'u':
-		s.kittyKeyboard(prefix, raw)
+		s.kittyKeyboard(prefix, p)
+	}
+}
+
+func (s *modeState) setCursorStyle(p []int) {
+	switch {
+	case len(p) == 0:
+		s.cursorStyle = 0
+	case len(p) == 1 && p[0] <= maxCursorStyle:
+		s.cursorStyle = p[0]
 	}
 }
 
 func (s *modeState) setMode(n int, set bool) {
-	if n < 0 {
+	if n <= 0 {
 		return
 	}
 	switch n {
@@ -355,44 +339,56 @@ func (s *modeState) setMode(n int, set bool) {
 	s.modes = append(s.modes, decMode{n, set})
 }
 
-func (s *modeState) modifyKeys(raw string) {
-	if raw == "" {
-		clear(s.modKeys)
+// modifyKeys is libghostty-vt's one modify_key_format slot: every valid
+// sequence replaces it, and only the numeric other-keys form leaves it on.
+func (s *modeState) modifyKeys(p []int) {
+	if len(p) == 0 {
+		s.modifyOther = false
 		return
 	}
-	res, val, hasVal := strings.Cut(raw, ";")
-	r, err := strconv.Atoi(res)
-	if err != nil || r < 0 || r > 7 {
+	if len(p) > 2 || (p[0] != 0 && p[0] != 1 && p[0] != 2 && p[0] != 4) {
 		return
 	}
-	if !hasVal {
-		delete(s.modKeys, r)
-		return
-	}
-	s.modKeys[r] = val
+	s.modifyOther = p[0] == 4 && len(p) == 2 && p[1] == 2
 }
 
-func (s *modeState) kittyKeyboard(prefix byte, raw string) {
+// kittyKeyboard reads parameters as libghostty-vt does (src/terminal/stream.zig):
+// push and pop only take one when it is the only one.
+func (s *modeState) kittyKeyboard(prefix byte, p []int) {
 	k := &s.kitty[0]
 	if s.alt {
 		k = &s.kitty[1]
 	}
-	p := csiParams(raw, -1)
-	arg := func(i, def int) int {
-		if i < len(p) && p[i] >= 0 {
-			return p[i]
+	switch prefix {
+	case '>':
+		flags := 0
+		if len(p) == 1 {
+			flags = p[0]
 		}
-		return def
+		if flags <= kittyFlagsMax {
+			k.push(flags)
+		}
+	case '<':
+		n := 1
+		if len(p) == 1 {
+			n = p[0]
+		}
+		k.pop(n)
+	case '=':
+		s.kittySet(k, p)
 	}
-	flags := arg(0, 0)
-	switch {
-	case prefix == '<':
-		k.pop(arg(0, 1))
-	case flags > kittyFlagsMax: // libghostty-vt drops the sequence
-	case prefix == '>':
-		k.push(flags)
-	case prefix == '=':
-		k.set(flags, arg(1, 1))
+}
+
+func (s *modeState) kittySet(k *kittyStack, p []int) {
+	flags, mode := 0, 1
+	if len(p) >= 1 {
+		flags = p[0]
+	}
+	if len(p) >= 2 {
+		mode = p[1]
+	}
+	if flags <= kittyFlagsMax && mode >= 1 && mode <= 3 {
+		k.set(flags, mode)
 	}
 }
 
@@ -402,42 +398,105 @@ func (s *modeState) oscDispatch(payload string) {
 	if err != nil {
 		return
 	}
+	// libghostty-vt tokenizes the body: an empty field is not a field.
+	f := strings.FieldsFunc(rest, func(r rune) bool { return r == ';' })
 	switch {
 	case n == 4:
-		s.setPalette(rest)
+		s.setPalette(f)
 	case n == 104:
-		s.resetPalette(rest)
+		s.resetPalette(f)
 	case n >= 10 && n <= 12:
-		for i, spec := range strings.Split(rest, ";") {
-			if n+i <= 12 && spec != "?" {
-				s.dynamic[n+i-10] = spec
-			}
-		}
-	case n >= 110 && n <= 112:
+		s.setDynamic(n, f)
+	case n >= 110 && n <= 112 && len(f) == 0:
 		s.dynamic[n-110] = ""
 	}
 }
 
-func (s *modeState) setPalette(rest string) {
-	f := strings.Split(rest, ";")
+// setPalette stops at the first bad pair, as libghostty-vt does.
+func (s *modeState) setPalette(f []string) {
 	for i := 0; i+1 < len(f); i += 2 {
 		idx, err := strconv.Atoi(f[i])
-		if err == nil && idx >= 0 && idx < paletteSize && f[i+1] != "?" {
-			s.palette[idx] = f[i+1]
+		if err != nil || idx < 0 || idx >= paletteSize+specialColors {
+			return
+		}
+		spec := strings.Trim(f[i+1], " \t")
+		if f[i+1] == "?" {
+			continue
+		}
+		if !validColor(spec) {
+			return
+		}
+		if idx < paletteSize {
+			s.palette[idx] = spec
 		}
 	}
 }
 
-func (s *modeState) resetPalette(rest string) {
-	if rest == "" {
-		clear(s.palette)
-		return
-	}
-	for f := range strings.SplitSeq(rest, ";") {
-		if idx, err := strconv.Atoi(f); err == nil {
+func (s *modeState) resetPalette(f []string) {
+	reset := 0
+	for _, field := range f {
+		if idx, err := strconv.Atoi(field); err == nil && idx >= 0 && idx < paletteSize+specialColors {
 			delete(s.palette, idx)
+			reset++
 		}
 	}
+	if reset == 0 {
+		clear(s.palette)
+	}
+}
+
+// setDynamic stops at the first bad spec; each spec after the first sets the
+// next color, and only 10 to 12 are kept.
+func (s *modeState) setDynamic(n int, f []string) {
+	for i, field := range f {
+		if n+i > 12 {
+			return
+		}
+		spec := strings.Trim(field, " \t")
+		if field == "?" {
+			continue
+		}
+		if !validColor(spec) {
+			return
+		}
+		s.dynamic[n+i-10] = spec
+	}
+}
+
+// validColor accepts what libghostty-vt's RGB.parse does, and bounds the spec.
+// shortcut: any short word passes as an X11 name, so an unknown name replays
+// and is ignored, losing an earlier color; embed rgb.txt if that ever shows.
+func validColor(spec string) bool {
+	if spec == "" || len(spec) > colorSpecMax {
+		return false
+	}
+	if hex, ok := strings.CutPrefix(spec, "#"); ok {
+		return isHex(hex) && (len(hex) == 3 || len(hex) == 6 || len(hex) == 9 || len(hex) == 12)
+	}
+	if body, ok := strings.CutPrefix(spec, "rgb:"); ok {
+		return validTriple(body, isHexChannel)
+	}
+	if body, ok := strings.CutPrefix(spec, "rgbi:"); ok {
+		return validTriple(body, isIntensity)
+	}
+	return strings.Trim(strings.ToLower(spec), "abcdefghijklmnopqrstuvwxyz0123456789 ") == ""
+}
+
+func validTriple(body string, channel func(string) bool) bool {
+	f := strings.Split(body, "/")
+	return len(f) == 3 && channel(f[0]) && channel(f[1]) && channel(f[2])
+}
+
+func isHexChannel(v string) bool { return len(v) >= 1 && len(v) <= 4 && isHex(v) }
+
+func isHex(v string) bool { return strings.Trim(strings.ToLower(v), "0123456789abcdef") == "" }
+
+func isIntensity(v string) bool {
+	if strings.Trim(v, "+-.0123456789") != "" {
+		return false
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	return err == nil && f >= 0 && f <= 1
 }
 
 // preamble is the bytes that bring a fresh terminal to the state at the ring
@@ -458,25 +517,13 @@ func (s *modeState) preamble() []byte {
 		}
 		fmt.Fprintf(&b, "\x1b[?%d%c", m.n, final)
 	}
-	if s.keypadApp {
-		b.WriteString("\x1b=")
+	if s.cursorStyle != 0 {
+		fmt.Fprintf(&b, "\x1b[%d q", s.cursorStyle)
 	}
-	if s.margins != "" {
-		fmt.Fprintf(&b, "\x1b[%sr", s.margins)
-	}
-	if s.cursor != "" {
-		fmt.Fprintf(&b, "\x1b[%s q", s.cursor)
-	}
-	for _, r := range sortedKeys(s.modKeys) {
-		fmt.Fprintf(&b, "\x1b[>%d;%sm", r, s.modKeys[r])
+	if s.modifyOther {
+		b.WriteString("\x1b[>4;2m")
 	}
 	s.replayColors(&b)
-	for _, g := range sortedKeys(s.charsets) {
-		fmt.Fprintf(&b, "\x1b%c%s", g, s.charsets[g])
-	}
-	if s.shiftOut {
-		b.WriteByte(0x0e)
-	}
 	s.replayPartial(&b)
 	return []byte(b.String())
 }
@@ -494,7 +541,7 @@ func (k *kittyStack) replay(b *strings.Builder) {
 }
 
 func (s *modeState) replayColors(b *strings.Builder) {
-	for _, i := range sortedKeys(s.palette) {
+	for _, i := range slices.Sorted(maps.Keys(s.palette)) {
 		fmt.Fprintf(b, "\x1b]4;%d;%s\x1b\\", i, s.palette[i])
 	}
 	for i, spec := range s.dynamic {
@@ -505,94 +552,63 @@ func (s *modeState) replayColors(b *strings.Builder) {
 }
 
 func (s *modeState) replayPartial(b *strings.Builder) {
-	switch {
-	case s.parse == stStringEsc || s.parse == stOSCEsc && s.overflow:
-		// The ESC ends the string, as ST or by starting the next sequence;
-		// a lone ST is a no-op.
-		b.WriteString("\x1b")
-		return
-	case s.overflow:
+	if !s.resumable() {
 		return
 	}
+	b.WriteString("\x1b")
 	switch s.parse {
-	case stEscape:
-		b.WriteString("\x1b")
 	case stEscInter:
-		b.WriteString("\x1b" + string(s.raw))
+		b.Write(s.raw)
 	case stCSI:
-		b.WriteString("\x1b[" + string(s.raw))
+		b.WriteByte('[')
+		b.Write(s.raw)
 	case stOSC:
-		b.WriteString("\x1b]" + string(s.raw))
-	case stOSCEsc:
-		b.WriteString("\x1b]" + string(s.raw) + "\x1b")
+		b.WriteByte(']')
+		b.Write(s.raw)
 	}
 }
 
-// skip is how many bytes at the head of tail to drop to reach a point a fresh
-// terminal can start from: the rest of a sequence too long to replay, of a
-// DCS, SOS, PM or APC string, or of a UTF-8 character.
+func (s *modeState) resumable() bool {
+	switch s.parse {
+	case stEscape, stEscInter, stCSI, stOSC:
+		return !s.overflow
+	}
+	return false
+}
+
+// skip is how many bytes at the head of tail to drop when the preamble carries
+// the cut sequence: none if it resumes it.
 func (s *modeState) skip(tail []byte) int {
-	switch {
-	case s.parse == stString || (s.overflow && s.parse == stOSC):
-		return skipString(tail, s.parse == stOSC)
-	case s.overflow && s.parse == stCSI:
-		for i, c := range tail {
-			switch {
-			case c == 0x1b:
-				return i
-			case c >= 0x40 && c <= 0x7e:
-				return i + 1
-			}
-		}
-		return len(tail)
-	case s.parse == stGround:
+	if s.resumable() {
+		return 0
+	}
+	return s.toGround(tail)
+}
+
+// toGround is how many bytes at the head of tail to drop so it starts outside
+// the sequence the head cut in two. An ESC ends that sequence and opens the
+// next one, which stays; a whole ST goes with it.
+func (s *modeState) toGround(tail []byte) int {
+	if s.parse == stGround {
 		n := 0
-		for n < len(tail) && n < 3 && tail[n]&0xc0 == 0x80 {
+		for n < len(tail) && n < maxUTF8Continuations && tail[n]&0xc0 == 0x80 {
 			n++
 		}
 		return n
 	}
-	return 0
-}
-
-// toGround is how many bytes at the head of tail to drop so it starts outside
-// any sequence, the one the head cut in two included: skip keeps a sequence
-// the preamble resumes, and a reader without a preamble cannot resume it.
-func (s *modeState) toGround(tail []byte) int {
-	if s.parse == stGround {
-		return s.skip(tail)
-	}
 	probe := newModeState()
 	probe.parse, probe.raw, probe.overflow = s.parse, slices.Clone(s.raw), s.overflow
-	i := 0
-	for i < len(tail) && probe.parse != stGround {
-		probe.step(tail[i])
-		i++
-	}
-	return i
-}
-
-// skipString finds the end of a string whose start was evicted: its ST, BEL
-// for an OSC, or the ESC of the sequence that aborts it.
-func skipString(tail []byte, bel bool) int {
 	for i, c := range tail {
-		switch {
-		case c == 0x1b && i+1 < len(tail) && tail[i+1] == '\\':
-			return i + 2
-		case c == 0x1b:
+		if c == 0x1b {
+			if i+1 < len(tail) && tail[i+1] == '\\' {
+				return i + 2
+			}
 			return i
-		case bel && c == 0x07:
+		}
+		probe.step(c)
+		if probe.parse == stGround {
 			return i + 1
 		}
 	}
 	return len(tail)
-}
-
-func sortedKeys[K int | byte, V any](m map[K]V) []K {
-	keys := make([]K, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
 }
