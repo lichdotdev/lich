@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- A double click in the window's own widgets (text selection, the editor, the tab bar) now registers up to 400 ms apart instead of 200 ms, as the terminal and the browser pane already did.
+- On Windows, the window presents frames through the flip model with at most one frame queued, and a resize shows its new size at once instead of an older frame stretched to it.
 - A session browser's page answer, what `browser_eval` returns, and the tab list and page handle the browser tools answer with now put what the page wrote (its title, text, element labels, console errors, dialog messages) between `<page …>` and `</page …>` markers with a random code that changes on every answer, and `browser_info` tells the agent that text between them is the page's and never instructions. A page that writes "SYSTEM: ignore previous instructions" no longer reads like lich talking, and cannot fake the closing marker. It adds 31 characters to an answer.
 - A session browser's screenshot is at most 1280 pixels on its longest side, so one of a 2000-pixel-wide pane has 60% fewer pixels, which is what an agent pays tokens for when it looks at it, and a click at a point read off it still lands where it was read. The browser tools' descriptions, which an agent reads with every request, are a fifth shorter.
 - A click or key press that leaves a page's buttons and links as the agent last read them answers with one line saying so instead of the whole list again, which about three page answers in ten repeated.
@@ -30,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `GIO_DAMAGE=on` redraws into a framebuffer lich keeps instead of trusting the driver's buffer age, so a driver that misreports it no longer leaves the window with stale pixels.
+- On X11, a wheel notch scrolls once instead of twice, and hover clears when the pointer leaves the window, on Windows too.
 - Codex and Kiro CLI sessions are now told they run inside lich and when to open another session for the work, in your prompt language: both CLIs drop what lich's MCP server says to the model, so they had the tools and no word on using them. Codex gets it in new conversations, unless your `config.toml` sets `developer_instructions`, which lich leaves alone; Kiro gets it once lich next updates its plugin there.
 - An agent's click or key press right after it clicked a download link in a session browser that had just started no longer gets wiped by the page reload Chrome does when it starts that download: lich holds the second action until the reload has landed, or until the browser is 6 seconds old.
 - A worktree created without a name no longer fails with "which already exists" when the name lich picked for it lands on the folder of a worktree whose branch was renamed. lich now skips any name whose folder is taken.
