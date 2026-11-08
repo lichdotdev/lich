@@ -33,8 +33,9 @@ type Handle struct {
 }
 
 // Target picks an element for click and type. Index is the one page-info
-// stamped (data-lich-idx); selector is a CSS query; x/y are viewport
-// coordinates. Coordinates win when set, then selector, then index.
+// stamped (data-lich-idx); selector is a CSS query; x/y are pixels of the
+// last screenshot's image, the viewport's CSS pixels scaled by shotScale.
+// Coordinates win when set, then selector, then index.
 type Target struct {
 	Index    *int     `json:"index,omitempty"`
 	Selector string   `json:"selector,omitempty"`
@@ -103,8 +104,8 @@ type Page interface {
 	Click(ctx context.Context, t Target) (x, y float64, err error)
 	Type(ctx context.Context, text string, clear bool, t Target) error
 	Press(ctx context.Context, key string, t Target) error
-	// Screenshot writes the viewport at one image pixel per CSS pixel and
-	// returns its size.
+	// Screenshot writes the viewport, at shotScale image pixels per CSS
+	// pixel, and returns the viewport's size in CSS pixels.
 	Screenshot(ctx context.Context, dest string) (w, h int, err error)
 	Reload(ctx context.Context) error
 	Back(ctx context.Context) error

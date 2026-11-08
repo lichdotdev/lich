@@ -1080,7 +1080,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   only asked about, in a toast, and closes only on Close: an unanswered one holds its Chromium until the
   person answers or closes the card, and with the window closed nobody is asked; one a pane shows, or a
   window, never is. It loads only http, https and about:blank. Page info never
-  includes a form's value. Screenshots are files. There is no tool that runs JavaScript in the page. It is
+  includes a form's value, though `browser_eval` reads whatever the agent asks for. Screenshots are files, their
+  longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. It is
   not a sandbox: the page runs as the user, in an ephemeral profile. Chromium needs its own sandbox, and on
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable

@@ -1016,7 +1016,8 @@ to a Chromium window of its own is reused there. `info` describes the page, one 
 (index, tag, label, link), and never includes what was typed into a field;
 `click` and `press` print the same description of the page they left, once a
 navigation they started has its document; `type` prints nothing, as a field
-filled seldom changes the page. `screenshot` prints the PNG's path. `eval`
+filled seldom changes the page. `screenshot` prints the PNG's path; its longest
+side is at most 1280 pixels, and `--x`/`--y` are that image's pixels. `eval`
 runs the script in the page and prints its value, a string as it is and
 anything else as JSON, cut at 2000 characters.
 URLs are http, https or `about:blank`.

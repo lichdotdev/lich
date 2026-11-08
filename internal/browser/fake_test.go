@@ -54,6 +54,7 @@ type fakePage struct {
 	texts     []string
 	settles   int
 	selection string
+	navAborts int
 	evals     []string
 	evalOut   string
 	evalErr   error
@@ -108,6 +109,10 @@ func (p *fakePage) Navigate(_ context.Context, url string) error {
 	defer p.mu.Unlock()
 	if p.navErr != nil {
 		return p.navErr
+	}
+	if p.navAborts > 0 {
+		p.navAborts--
+		return errNavAborted
 	}
 	p.url = url
 	p.navigations = append(p.navigations, url)

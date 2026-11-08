@@ -14,15 +14,11 @@ import (
 var browserTools = []mcpTool{
 	{
 		Name: "browser_open",
-		Description: "Open a page in this lich session's browser, creating the browser if " +
-			"this session has none. It runs headless: the user sees the same page in a tab " +
-			"beside this session, which lich offers to open, so no window of its own is needed " +
-			"(headed is false, and that is expected). The URL must be http, https, or omitted " +
-			"(about:blank), or a local file inside this session's checkout, as an absolute path or a " +
-			"file URL, which lich serves over http from 127.0.0.1 so module scripts and fetch work. " +
-			"Other file URLs, javascript and data URLs are refused. A URL that answers with a " +
-			"file downloads it to the user's Downloads folder and leaves the page as it was; " +
-			"downloads in the answer names its path.",
+		Description: "Open a page in this session's browser, creating it if there is none. It runs headless: the " +
+			"user sees the page in a tab beside this session, so headed false is expected. url is " +
+			"http(s), omitted for about:blank, or a file inside this session's checkout, which lich " +
+			"serves over http from 127.0.0.1; other schemes are refused. A URL that answers with a file " +
+			"downloads it to the user's Downloads folder, named in downloads.",
 		Schema: schema(map[string]any{
 			"url": property("string", "Page to load. Omit for about:blank."),
 		}),
@@ -40,15 +36,13 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name: "browser_info",
-		Description: "Read this session's current page: URL, title, the text in the viewport, and " +
-			"one line per interactive element there: index, tag, label and link. Form values are " +
-			"never included — (filled)/(checked) say that typing landed. click and press already " +
-			"answer with this, so call it only to look again without acting. Also names a download " +
-			"that finished, each console error, and each dialog the user answered in the browser tab " +
-			"(dialog answered: lines), since the page was last read, and a dialog the page holds " +
-			"open (dialog open:). wait_for and " +
-			"wait_gone hold the read, up to 20 seconds, until that text is on the page or off it, " +
-			"instead of reading again in a loop. Read-only.",
+		Description: "Read the current page: URL, title, the viewport's text and one line per interactive " +
+			"element (index, tag, label, link). Form values are never included; (filled) and (checked) " +
+			"say typing landed. click, press, tab and dialog already answer with this, so call it only " +
+			"to look again. It also names, since the last page answer, files downloaded, console " +
+			"errors, dialogs the user answered, and a dialog the page holds open (dialog open:). " +
+			"wait_for and wait_gone hold the read, up to 20 seconds, until that text is on the page or " +
+			"off it. Read-only.",
 		Schema: schema(map[string]any{
 			"wait_for":  property("string", "Wait until this text is on the page (case-sensitive, the whole page)."),
 			"wait_gone": property("string", "Wait until this text is no longer on the page."),
@@ -58,21 +52,15 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name: "browser_click",
-		Description: "Click in this session's browser. Prefer index from the last page read, or a " +
-			"CSS selector: either scrolls the element into view first. x and y are viewport " +
-			"coordinates, the pixels of browser_screenshot's image, and must be inside it; once " +
-			"the user resizes or zooms the pane they fail until a new screenshot. Sends a real mouse event, not element.click(). " +
-			"Answers with the page afterwards, as browser_info reads it, once a navigation the " +
-			"click started has its document. A file the click downloads is saved to the user's " +
-			"Downloads folder; the answer names its path in a downloaded: line. Console errors " +
-			"and uncaught exceptions since the last page answer come as console error: lines. A " +
-			"JavaScript dialog the click opens holds the page: the answer ends with a dialog " +
-			"open: line, and browser_dialog answers it.",
+		Description: "Click by index from the last page read, by CSS selector (either scrolls into view first), " +
+			"or at x and y in the last browser_screenshot's image. A real mouse event. Answers with the " +
+			"page as browser_info reads it, once a navigation the click started has its document, with " +
+			"the same downloaded:, console error: and dialog open: lines.",
 		Schema: schema(map[string]any{
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
-			"x":        property("number", "Viewport X."),
-			"y":        property("number", "Viewport Y."),
+			"x":        property("number", "Last screenshot's image X."),
+			"y":        property("number", "Last screenshot's image Y."),
 		}),
 		Run: func(ctx context.Context, c *client, a mcpArgs) (string, error) {
 			return mcpBrowserClick(ctx, c, a)
@@ -80,17 +68,16 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name: "browser_type",
-		Description: "Type into this session's browser. Target as for browser_click; omit it " +
-			"to type into whatever is focused. clear replaces the field first. Answers ok, not " +
-			"the page: submit with browser_press Enter, which answers with the page, or call " +
-			"browser_info if typing changed it. The typed text never comes back.",
+		Description: "Type text into a target, as for browser_click, or into what has focus when omitted; clear " +
+			"replaces the field first. Answers ok, not the page: submit with browser_press Enter. The " +
+			"typed text never comes back.",
 		Schema: schema(map[string]any{
 			"text":     property("string", "Keys to send."),
 			"clear":    property("boolean", "Replace the field before typing."),
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
-			"x":        property("number", "Viewport X."),
-			"y":        property("number", "Viewport Y."),
+			"x":        property("number", "Last screenshot's image X."),
+			"y":        property("number", "Last screenshot's image Y."),
 		}, "text"),
 		Run: func(ctx context.Context, c *client, a mcpArgs) (string, error) {
 			id, err := c.browserOwner()
@@ -108,18 +95,16 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name: "browser_press",
-		Description: "Press one named key in this session's browser (Enter, Tab, Escape, " +
-			"Backspace, Delete, Space, ArrowUp/Down/Left/Right, Home, End, PageUp, PageDown). " +
-			"Real key event, not typed text — use browser_type for that. Optional target " +
-			"focuses first, as for browser_type. Answers with the page afterwards, once a " +
-			"navigation the key started (Enter on a form) has its document, and names a file it " +
-			"downloaded, console errors and a dialog it opened as browser_click does.",
+		Description: "Press one named key (Enter, Tab, Escape, Backspace, Delete, Space, " +
+			"ArrowUp/Down/Left/Right, Home, End, PageUp, PageDown) as a real key event, focusing the " +
+			"optional target first; text goes through browser_type. Answers with the page as " +
+			"browser_click does.",
 		Schema: schema(map[string]any{
 			"key":      property("string", "Named key: Enter, Tab, Escape, …"),
 			"index":    property("integer", "Index from the last browser_info."),
 			"selector": property("string", "CSS selector."),
-			"x":        property("number", "Viewport X."),
-			"y":        property("number", "Viewport Y."),
+			"x":        property("number", "Last screenshot's image X."),
+			"y":        property("number", "Last screenshot's image Y."),
 		}, "key"),
 		Run: func(ctx context.Context, c *client, a mcpArgs) (string, error) {
 			id, err := c.browserOwner()
@@ -137,9 +122,9 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name: "browser_screenshot",
-		Description: "Capture this session's page to a PNG file and return the path. Do not " +
-			"inline the bytes. The image is the viewport at one pixel per CSS pixel, the x and y " +
-			"browser_click takes. Optional path; otherwise lich writes one next to the browser profile.",
+		Description: "Save the viewport as a PNG and return its path; never inline the bytes. Its longest side " +
+			"is at most 1280 pixels, and browser_click's x and y are this image's pixels. Optional " +
+			"path; otherwise lich picks one.",
 		Schema: schema(map[string]any{
 			"path": property("string", "Destination PNG. Omit to let lich choose."),
 		}),
@@ -153,9 +138,8 @@ var browserTools = []mcpTool{
 		},
 	},
 	{
-		Name: "browser_navigate",
-		Description: "Load a URL in this session's already-open browser. Same allowlist as browser_open, " +
-			"and a URL that answers with a file downloads it as browser_open does.",
+		Name:        "browser_navigate",
+		Description: "Load a URL in this session's open browser, with browser_open's rules.",
 		Schema: schema(map[string]any{
 			"url": property("string", "http(s) URL, about:blank, or a file inside this session's checkout."),
 		}, "url"),
@@ -236,11 +220,10 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name: "browser_dialog",
-		Description: "Answer the JavaScript dialog (alert, confirm, prompt, beforeunload) the " +
-			"page holds open, which a page answer names in a dialog open: line. Until it is " +
-			"answered the page runs no script and every other browser tool fails. The user sees " +
-			"it in the session's browser tab and may answer it first. accept is OK (Leave on a " +
-			"beforeunload), false is Cancel (Stay). Answers with the page afterwards.",
+		Description: "Answer the JavaScript dialog the page holds open, named in a dialog open: line; until then " +
+			"the page runs no script and every other browser tool fails. accept true is OK (Leave), " +
+			"false is Cancel (Stay). The user may answer it first in the browser tab. Answers with the " +
+			"page.",
 		Schema: schema(map[string]any{
 			"accept": property("boolean", "OK or Leave when true; Cancel or Stay when false."),
 			"text":   property("string", "What a prompt returns on accept. Omit to keep its default text."),
@@ -249,20 +232,18 @@ var browserTools = []mcpTool{
 	},
 	{
 		Name: "browser_tabs",
-		Description: "List the tabs of this session's browser: index, title, URL, and which one is in front. " +
-			"Every other browser tool acts on the front tab. A link or script that opens a new tab or window " +
-			"brings it to the front, and the tab that opened it, kept as it was, comes back when it closes. Read-only.",
+		Description: "List this browser's tabs: index, title, URL and which is in front. Every other tool acts " +
+			"on the front tab; a tab a page opens comes to the front, and closing it brings back its " +
+			"opener. Read-only.",
 		Schema:   schema(map[string]any{}),
 		ReadOnly: true,
 		Run:      mcpBrowserTabs,
 	},
 	{
 		Name: "browser_tab",
-		Description: "Open, switch to or close a tab in this session's browser; the user sees your cursor do it " +
-			"on the browser tab's header. new opens a blank tab in front, or loads url there; select brings " +
-			"the tab at index (from browser_tabs) to the front; close closes it, and the tab that opened it, " +
-			"else the one beside it, comes to the front. The last tab cannot be closed. Answers with the page " +
-			"then in front, as browser_info does.",
+		Description: "new opens a tab in front, loading url if given; select brings the tab at index (from " +
+			"browser_tabs) to the front; close closes it. The user sees your cursor do it. The last tab " +
+			"cannot be closed. Answers with the page then in front.",
 		Schema: schema(map[string]any{
 			"action": property("string", "new, select or close."),
 			"index":  property("integer", "The tab's index in browser_tabs, for select and close."),
@@ -278,10 +259,9 @@ var browserTools = []mcpTool{
 		Run:         mcpBrowserList,
 	},
 	{
-		Name: "browser_close",
-		Description: "Close this session's browser, and with it the page's tab in the lich window. " +
-			"Closing the session card also closes it.",
-		Schema: schema(map[string]any{}),
+		Name:        "browser_close",
+		Description: "Close this session's browser and its tab in the lich window.",
+		Schema:      schema(map[string]any{}),
 		Run: func(ctx context.Context, c *client, _ mcpArgs) (string, error) {
 			return mcpBrowserID(ctx, c, api.BrowserClose)
 		},

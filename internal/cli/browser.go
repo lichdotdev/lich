@@ -293,7 +293,7 @@ func registerTarget(flags *flag.FlagSet) *targetFlags {
 		t.index = &n
 		return nil
 	})
-	flags.Func("x", "viewport X", func(s string) error {
+	flags.Func("x", "X in the last screenshot's image", func(s string) error {
 		n, err := strconv.ParseFloat(s, 64)
 		if err != nil {
 			return err
@@ -301,7 +301,7 @@ func registerTarget(flags *flag.FlagSet) *targetFlags {
 		t.x = &n
 		return nil
 	})
-	flags.Func("y", "viewport Y", func(s string) error {
+	flags.Func("y", "Y in the last screenshot's image", func(s string) error {
 		n, err := strconv.ParseFloat(s, 64)
 		if err != nil {
 			return err
