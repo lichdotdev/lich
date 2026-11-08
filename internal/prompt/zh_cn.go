@@ -138,8 +138,12 @@ var zhCN = Catalog{
 		"原会话会一直保持打开，直到用户关闭它；它并不在等你，所以不需要回复它。在此基础上动手之前，先对照仓库" +
 		"（git status、git log）核实这份说明，然后按下一步继续。" +
 		"\n\n已完成：\n%[2]s\n\n分支：%[3]s\n\n提交：\n%[4]s\n\n下一步：\n%[5]s\n\n注意事项：\n%[6]s",
-	HandoffNone:      "（无）",
-	HandoffSent:      "交接说明已送到它的提示符。你的会话会保持打开，直到用户关闭它：请在此停下，不要继续已交接的工作。\n",
+	HandoffNone: "（无）",
+	HandoffSent: "交接说明已送到它的提示符。你的会话会保持打开，直到用户关闭它：请在此停下，不要继续已交接的工作。\n",
+
+	HandoffProfileSuggested: "配置档案 %q 会在其第一轮结束时作为建议显示给用户。除非用户移动它，否则它留在你的配置档案中。\n",
+	HandoffProfileDropped:   "你建议的配置档案 %[1]q 已被放弃，会话在你的配置档案中运行：%[2]s。\n",
+
 	PageInteractive:  "interactive (索引 标签 \"文字\"，没有文字时为 -> 链接):",
 	PageListSame:     "interactive: 与上一次页面应答相同，索引也相同",
 	PageMore:         "(下方还有更多元素，滚动页面即可看到)",

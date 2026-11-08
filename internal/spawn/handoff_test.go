@@ -2,6 +2,7 @@ package spawn
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -120,5 +121,47 @@ func TestHandoffReportsAProfileItCouldNotRecord(t *testing.T) {
 	}
 	if len(term.spawns) != 1 {
 		t.Errorf("spawns %+v, want the session started anyway", term.spawns)
+	}
+}
+
+// A suggestion goes to the user and changes nothing about the successor.
+func TestHandoffPutsASuggestedProfileToTheUserAndKeepsTheCallers(t *testing.T) {
+	svc, sessions, _, term, _ := newService(t)
+	sessions.profiles = map[string]string{"s1": "work"}
+
+	opened, err := svc.Handoff(t.Context(), HandoffOptions{From: "s1", Profile: "spare"})
+	if err != nil {
+		t.Fatalf("Handoff: %v", err)
+	}
+	if want := []string{opened.ID + "/spare"}; !slices.Equal(term.suggested, want) {
+		t.Errorf("suggested %v, want %v", term.suggested, want)
+	}
+	if sessions.profiles[opened.ID] != "work" || opened.ProfileDropped != "" {
+		t.Errorf("profile %q, dropped %q; want the caller's and nothing dropped", sessions.profiles[opened.ID], opened.ProfileDropped)
+	}
+}
+
+func TestHandoffWithNoSuggestionPutsNothingToTheUser(t *testing.T) {
+	svc, _, _, term, _ := newService(t)
+
+	if _, err := svc.Handoff(t.Context(), HandoffOptions{From: "s1"}); err != nil {
+		t.Fatalf("Handoff: %v", err)
+	}
+	if len(term.suggested) != 0 {
+		t.Errorf("suggested %v, want none", term.suggested)
+	}
+}
+
+// A suggestion that cannot apply must not cost the agent its handoff.
+func TestHandoffSurvivesASuggestionThatCannotApply(t *testing.T) {
+	svc, _, _, term, _ := newService(t)
+	term.suggestErr = errors.New("no codex profile is named \"nobody\"")
+
+	opened, err := svc.Handoff(t.Context(), HandoffOptions{From: "s1", Profile: "nobody"})
+	if err != nil {
+		t.Fatalf("Handoff: %v", err)
+	}
+	if opened.ID == "" || !strings.Contains(opened.ProfileDropped, "nobody") || len(term.spawns) != 1 {
+		t.Errorf("opened %+v, spawns %+v; want the session open and the reason reported", opened, term.spawns)
 	}
 }

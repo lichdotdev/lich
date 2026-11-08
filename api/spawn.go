@@ -76,13 +76,15 @@ type OpenSubagentOptions struct {
 
 // HandoffSessionOptions is one Handoff call: the session handing its work off
 // (From) and what its successor runs. Kind, Model and Effort left empty are the
-// caller's own. There is no profile: lich moves work to another account only on
-// the user's click.
+// caller's own. Profile is only a suggestion put to the user: the successor
+// starts in the caller's profile whatever it names, because lich moves work to
+// another account only on the user's click.
 type HandoffSessionOptions struct {
-	From   string `json:"from"`
-	Kind   string `json:"kind"`
-	Model  string `json:"model"`
-	Effort string `json:"effort"`
+	From    string `json:"from"`
+	Kind    string `json:"kind"`
+	Model   string `json:"model"`
+	Effort  string `json:"effort"`
+	Profile string `json:"profile"`
 }
 
 // OpenedSession is one opened session: what the caller is told, and what the window is
@@ -101,7 +103,8 @@ type HandoffSessionOptions struct {
 // end to be asked, so it is the rung's own answer (store.SandboxDefault), and
 // saying it is what keeps a caller from discovering the empty home and the
 // read-only machine by running into them. Folder is the folder it was filed
-// under, "" for none.
+// under, "" for none. ProfileDropped is why a handoff's suggested profile could
+// not be put to the user, "" when none was dropped.
 type OpenedSession struct {
 	ID              string `json:"id"`
 	ProjectID       string `json:"projectId"`
@@ -115,6 +118,7 @@ type OpenedSession struct {
 	OriginLabel     string `json:"originLabel"`
 	Confined        bool   `json:"confined"`
 	Folder          string `json:"folder"`
+	ProfileDropped  string `json:"profileDropped,omitempty"`
 }
 
 // CloseSessionOptions is one Close call, an object for the reason OpenOptions is one:

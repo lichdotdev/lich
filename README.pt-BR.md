@@ -143,6 +143,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Quanto ainda resta do seu plano | sim | sim | sim | só OpenCode Go | não | não | sim | não |
 | Um turno interrompido pelo limite de uso do plano continua quando o limite renova | sim | sim | não | retenta sozinho | retenta sozinho | não | não | não |
 | Se outro perfil seu ainda tem cota, um aviso oferece continuar nele na hora | sim | sim | não | não | não | não | não | não |
+| Ao passar o trabalho, um agente pode sugerir um perfil seu para a sucessora, e um aviso deixa você decidir se ela muda | sim | sim | não | não | sim | não | Linux e Windows | só Linux |
 | Spinner enquanto o turno roda, anel quando termina | sim | sim | sim | sim | sim | não | sim | sim |
 | O card ganha o nome da conversa | sim | pelo seu primeiro prompt | pelo seu primeiro prompt | sim | sim, a partir do segundo turno | não | sim, quando o primeiro turno termina | pelo seu primeiro prompt, quando o primeiro turno termina |
 | Um pull request aberto pelo agente aparece no card quando o turno termina | sim | sim | sim | sim | sim | não, só quando a janela volta ao foco | sim | sim |

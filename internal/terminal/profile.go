@@ -19,6 +19,8 @@ import (
 
 type profileEvent = api.SessionProfile
 
+var errMidTurn = errors.New("the session is mid-turn; continue it in another profile once the turn ends")
+
 // profileOps is what the service asks of one provider's profiles: the packages
 // that keep them (internal/claudeprofile, internal/codexprofile,
 // internal/ompprofile), which answer the same calls on their own directories.
@@ -223,7 +225,7 @@ func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (a
 		return api.None{}, fmt.Errorf("a %s conversation cannot move to another profile; start a new session there", kind)
 	}
 	if s.turns.busy(opts.ID) {
-		return api.None{}, errors.New("the session is mid-turn; continue it in another profile once the turn ends")
+		return api.None{}, errMidTurn
 	}
 	if _, err := profilestores[kind].configDir(opts.Profile); err != nil {
 		return api.None{}, err

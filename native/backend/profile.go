@@ -168,11 +168,10 @@ func (c *Client) ContinueIn(ctx context.Context, id, slug string) error {
 	return err
 }
 
-// ContinueOffLimit moves a session a usage limit stopped to the profile it was
-// offered and sends its continuation. The backend refuses an offer no longer
-// standing.
-func (c *Client) ContinueOffLimit(ctx context.Context, id, slug string) error {
-	_, err := callMethod(ctx, c, api.TerminalContinueOffLimit, api.ContinueInOptions{ID: id, Profile: slug})
+// TakeProfileOffer moves a session to the profile it was offered. The backend
+// refuses an offer no longer standing.
+func (c *Client) TakeProfileOffer(ctx context.Context, id, slug string) error {
+	_, err := callMethod(ctx, c, api.TerminalTakeProfileOffer, api.ContinueInOptions{ID: id, Profile: slug})
 	return err
 }
 

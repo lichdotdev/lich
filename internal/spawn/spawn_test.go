@@ -414,6 +414,10 @@ type fakeTerminal struct {
 	deadline time.Time
 	outcome  terminal.ModOutcome
 	runErr   error
+	// suggested is every profile put to the user, as "session/slug";
+	// suggestErr is why one cannot apply.
+	suggested  []string
+	suggestErr error
 }
 
 func (f *fakeTerminal) RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error) {
@@ -424,6 +428,11 @@ func (f *fakeTerminal) RunModCommand(ctx context.Context, id string, cmd termina
 }
 
 func (f *fakeTerminal) AgentName(id string) string { return f.names[id] }
+
+func (f *fakeTerminal) SuggestProfile(id, slug string) error {
+	f.suggested = append(f.suggested, id+"/"+slug)
+	return f.suggestErr
+}
 
 func (f *fakeTerminal) CloseBy(id, closerID string) error {
 	f.closed = append(f.closed, id)

@@ -88,6 +88,9 @@ type Catalog struct {
 	HandoffNone            string
 	HandoffSent            string
 
+	HandoffProfileSuggested string
+	HandoffProfileDropped   string
+
 	// internal/cli: a browser page as the browser_* tools answer with it. The
 	// line tags (url:, title:, wait:, text:, interactive, downloading:, dialog
 	// open:) and browser_dialog stay English in every locale: the tool

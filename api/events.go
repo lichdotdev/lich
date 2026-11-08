@@ -142,10 +142,11 @@ var (
 	// arrives (planQuota, native/cmd/lich-native/footer_quota.go).
 	SessionLimitEvent = defineEvent[SessionLimit]("session-limit")
 
-	// SessionLimitOfferEvent carries another profile with quota left that could
-	// take a session a usage limit stopped. Nothing moves unless the person
-	// answers with TerminalContinueOffLimit.
-	SessionLimitOfferEvent = defineEvent[SessionLimitOffer]("session-limit-offer")
+	// SessionProfileOfferEvent carries another profile that could take a session:
+	// one with quota left after a usage limit, or one the agent handing off to it
+	// suggested. Nothing moves unless the person answers with
+	// TerminalTakeProfileOffer.
+	SessionProfileOfferEvent = defineEvent[SessionProfileOffer]("session-profile-offer")
 
 	// SessionProfileEvent carries the profile a session moved to: Continue in, or
 	// a resume that found its conversation in another profile.

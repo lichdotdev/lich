@@ -228,9 +228,9 @@ type Service struct {
 	// in unix seconds, keyed by provider and slug (limit_switch.go). Guarded
 	// by mu.
 	spentUntil map[string]int64
-	// limitOffers is the profile each session a limit stopped was offered and
-	// has not answered, by session id (limit_switch.go). Guarded by mu.
-	limitOffers map[string]string
+	// profileOffers is the profile each session was offered and has not
+	// answered, by session id (limit_switch.go). Guarded by mu.
+	profileOffers map[string]profileOffer
 	// spawns is how each live session's PTY was started — what it runs and where
 	// — keyed by session id. Read by providerKind, which is what stops a
 	// session-start report from repainting a card lich itself chose the provider
@@ -428,8 +428,11 @@ func (s *Service) onHookState(req hookRequest) {
 		return
 	}
 	if req.State == statusBusy {
-		s.forgetLimitOffer(req.SessionID)
+		s.withdrawLimitOffer(req.SessionID)
 	}
+	// Read before the report closes the turn: a `done` with none open (a
+	// /compact at an idle prompt) leaves no new conversation to move.
+	turnEnded := req.State == statusDone && s.turns.busy(req.SessionID)
 	// The window is told what the report means, not what it said: a
 	// `waiting` outside a turn is a session idle at its prompt, and the
 	// card would draw it as a human being blocked (see turnLog).
@@ -442,6 +445,9 @@ func (s *Service) onHookState(req hookRequest) {
 			Detail: req.Detail,
 			Reason: req.Reason,
 		})
+	}
+	if turnEnded {
+		s.showHeldOffer(req.SessionID)
 	}
 	if req.State == statusBusy && req.Tool != "" {
 		if watch := s.toolWatcher(); watch != nil {
@@ -830,7 +836,7 @@ func (s *Service) endProcess(id, closerID string) error {
 		closed(id, closerID)
 	}
 	s.spawns.Delete(id)
-	s.forgetLimitOffer(id)
+	s.forgetProfileOffer(id)
 	// A turn dies with its session, and an open one left behind would keep the
 	// machine awake for a card that no longer exists.
 	s.forgetTurn(id)
