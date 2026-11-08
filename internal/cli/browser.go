@@ -230,7 +230,7 @@ func (c *client) browserEval(args []string) error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(c.stdout, out)
+	_, err = fmt.Fprintln(c.stdout, pageBlock(out))
 	return err
 }
 
