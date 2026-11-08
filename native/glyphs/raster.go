@@ -12,6 +12,7 @@ import (
 
 	gofont "gioui.org/font"
 	gotext "github.com/go-text/typesetting/font"
+	"github.com/go-text/typesetting/shaping"
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
@@ -40,10 +41,17 @@ func styleIndex(k Key) int {
 	return i
 }
 
-// Key names one glyph: a character in one of the family's four styles.
+// Key names one glyph: a grapheme in one of the family's four styles.
 type Key struct {
-	R            rune
+	R rune
+	// Rest is the grapheme's codepoints after R, "" for a single one.
+	Rest         string
 	Bold, Italic bool
+}
+
+type runeKey struct {
+	r            rune
+	bold, italic bool
 }
 
 // fontFace is one Rasterizer's view of a shared fontFile: its face at the
@@ -53,6 +61,8 @@ type fontFace struct {
 	face font.Face
 	// bitmaps reads file's color glyphs; nil when it has none.
 	bitmaps *gotext.Face
+	// text shapes a grapheme of several codepoints; made on the first.
+	text *gotext.Face
 }
 
 // Mask is a glyph's coverage, placed relative to its cell's top-left.
@@ -74,11 +84,21 @@ type Rasterizer struct {
 	styles [4]*fontFace
 	byFile map[string]*fontFace
 	byRune map[rune]*fontFace
-	masks  map[Key]*Mask
-	buf    sfnt.Buffer
-	cellW  int
-	cellH  int
-	ascent int
+	// masks are the single-codepoint glyphs, nearly every cell, under a key
+	// with no string, which hashes several times faster; clusters the rest.
+	masks    map[runeKey]*Mask
+	clusters map[Key]*Mask
+	buf      sfnt.Buffer
+	cellW    int
+	cellH    int
+	ascent   int
+
+	shaper shaping.HarfbuzzShaper
+	// emoji is the color font of a grapheme asking for it, looked up once.
+	emoji      *fontFace
+	emojiFound bool
+	// warned holds what has already been logged.
+	warned map[string]struct{}
 
 	// fallbacks are the faces fonts.Covering picked so far, in the order it
 	// picked them, tried before asking it again: on Linux each ask is a
@@ -143,7 +163,8 @@ func (r *Rasterizer) SetSize(px float64) (bool, error) {
 	r.cellW = adv.Ceil()
 	r.ascent = m.Ascent.Ceil()
 	r.cellH = (m.Ascent + m.Descent).Ceil()
-	r.masks = map[Key]*Mask{}
+	r.masks = map[runeKey]*Mask{}
+	r.clusters = map[Key]*Mask{}
 	r.byRune = map[rune]*fontFace{}
 	return true, nil
 }
@@ -190,7 +211,11 @@ func (r *Rasterizer) faceFor(k Key) (*fontFace, error) {
 
 // Mask returns k's coverage, rasterizing it on first use.
 func (r *Rasterizer) Mask(k Key) (*Mask, error) {
-	if m, ok := r.masks[k]; ok {
+	if k.Rest != "" {
+		return r.clusterMask(k), nil
+	}
+	rk := runeKey{k.R, k.Bold, k.Italic}
+	if m, ok := r.masks[rk]; ok {
 		return m, nil
 	}
 	m := &Mask{}
@@ -214,25 +239,25 @@ func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 			m.Img, m.Off = a, dr.Min
 		}
 	}
-	r.masks[k] = m
+	r.masks[rk] = m
 	return m, nil
+}
+
+func (r *Rasterizer) clusterMask(k Key) *Mask {
+	if m, ok := r.clusters[k]; ok {
+		return m
+	}
+	m := r.cluster(k)
+	if len(r.clusters) >= maxClusterMasks {
+		r.clusters = map[Key]*Mask{}
+	}
+	r.clusters[k] = m
+	return m
 }
 
 // colorGlyph draws c in its own colors from f's PNG bitmap or, failing one,
 // its COLR layers; nil when f has neither for c.
 func (r *Rasterizer) colorGlyph(f *fontFace, c rune) (*image.RGBA, image.Point, error) {
-	img, off, err := r.colorBitmap(f, c)
-	if img != nil || err != nil {
-		return img, off, err
-	}
-	return r.colorLayers(f, c)
-}
-
-// colorBitmap scales c's PNG bitmap to fit two cells, the width of an emoji,
-// centered in them. It returns nil when f has no PNG bitmap for c. The grid
-// carries no width per cell, so an emoji that is narrow (text presentation,
-// no VS16) still overhangs into the next cell.
-func (r *Rasterizer) colorBitmap(f *fontFace, c rune) (*image.RGBA, image.Point, error) {
 	if f.bitmaps == nil {
 		return nil, image.Point{}, nil
 	}
@@ -240,13 +265,29 @@ func (r *Rasterizer) colorBitmap(f *fontFace, c rune) (*image.RGBA, image.Point,
 	if !ok {
 		return nil, image.Point{}, nil
 	}
+	return r.colorGlyphID(f, gid)
+}
+
+func (r *Rasterizer) colorGlyphID(f *fontFace, gid gotext.GID) (*image.RGBA, image.Point, error) {
+	img, off, err := r.colorBitmap(f, gid)
+	if img != nil || err != nil {
+		return img, off, err
+	}
+	return r.colorLayers(f, gid)
+}
+
+// colorBitmap scales gid's PNG bitmap to fit two cells, the width of an emoji,
+// centered in them. It returns nil when f has no PNG bitmap for gid. The grid
+// carries no width per cell, so an emoji that is narrow (text presentation,
+// no VS16) still overhangs into the next cell.
+func (r *Rasterizer) colorBitmap(f *fontFace, gid gotext.GID) (*image.RGBA, image.Point, error) {
 	bm, ok := f.bitmaps.GlyphDataBitmap(gid)
 	if !ok || bm.Format != gotext.PNG {
 		return nil, image.Point{}, nil
 	}
 	src, err := png.Decode(bytes.NewReader(bm.Data))
 	if err != nil {
-		return nil, image.Point{}, fmt.Errorf("decode bitmap of %U: %w", c, err)
+		return nil, image.Point{}, fmt.Errorf("decode bitmap of glyph %d: %w", gid, err)
 	}
 	boxW, boxH := 2*r.cellW, r.cellH
 	sw, sh := src.Bounds().Dx(), src.Bounds().Dy()

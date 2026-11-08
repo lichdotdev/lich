@@ -65,3 +65,77 @@ func countFcList(t *testing.T) func() int {
 		return strings.Count(string(out), "\n")
 	}
 }
+
+// A lookup that fails is a subprocess run inside a frame: a grapheme it fails
+// for must neither end the frame nor run it again on the next one.
+func TestAFailedLookupForAGraphemeIsKeptAndDoesNotFailTheFrame(t *testing.T) {
+	r, err := New("monospace")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.SetSize(16); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	calls := filepath.Join(dir, "calls")
+	script := "#!/bin/sh\necho >> '" + calls + "'\nexit 1\n"
+	if err := os.WriteFile(filepath.Join(dir, "fc-list"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	k := Key{R: 0x10FFFD, Rest: "\u0301"}
+	if _, err := r.Mask(k); err != nil {
+		t.Fatalf("the frame failed: %v", err)
+	}
+	first, err := os.ReadFile(calls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Mask(k); err != nil {
+		t.Fatalf("the frame failed: %v", err)
+	}
+	again, err := os.ReadFile(calls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(again) != len(first) {
+		t.Fatalf("the failed lookup ran again: %d calls then %d", len(first), len(again))
+	}
+}
+
+// fakeFcList puts an fc-list first on PATH that runs case on its pattern,
+// falling through to the real one.
+func fakeFcList(t *testing.T, cases string) {
+	t.Helper()
+	real, err := exec.LookPath("fc-list")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	script := "#!/bin/sh\ncase \"$1\" in\n" + cases + "\nesac\nexec '" + real + "' \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "fc-list"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+// A text font can cover the character the emoji font is looked up by, and is
+// the closer to a monospace: DejaVu Sans has the emoticons. Only a query for
+// color finds the emoji font then.
+func TestTheEmojiFontIsLookedUpByColor(t *testing.T) {
+	fakeFcList(t, "*color=true*) ;;\n*) exit 1 ;;")
+	r := newTestRasterizer(t)
+	if m := mask(t, r, Key{R: '⚠', Rest: "\ufe0f"}); m.Color == nil {
+		t.Fatal("the emoji drew no color glyph")
+	}
+}
+
+// With no color font on the machine the sequence still draws, in text.
+func TestAKeycapWithoutAnEmojiFontDrawsItsDigit(t *testing.T) {
+	fakeFcList(t, "*color=true*) exit 0 ;;")
+	r := newTestRasterizer(t)
+	m := mask(t, r, Key{R: '1', Rest: "\ufe0f\u20e3"})
+	if m.Color != nil || m.Img == nil {
+		t.Fatalf("drew color %v, outline %v; want the digit's outline", m.Color != nil, m.Img != nil)
+	}
+}

@@ -127,6 +127,9 @@ func Covering(r rune) (string, error) {
 	return path, err
 }
 
+// ColorEmoji names the platform's color emoji font, or "" when there is none.
+func ColorEmoji() (string, error) { return Covering(emojiWitness) }
+
 type installedFamily struct {
 	name string
 	mono bool

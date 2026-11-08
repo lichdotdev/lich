@@ -17,6 +17,10 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
+// maxGridGlyphs bounds the glyphs a grid keeps: the graphemes on screen are
+// the program's to choose, so random text would add one for each.
+const maxGridGlyphs = 1 << 14
+
 // grid draws the terminal cells. Each row is recorded once into its own ops
 // list and replayed until libghostty reports that row dirty again.
 type grid struct {
@@ -124,13 +128,13 @@ func (g *grid) drawCursor(ops *op.Ops, c cell, sn snap) {
 	st := cursorStyleOf(c, sn)
 	r := image.Rect(sn.cursorX*g.cellW, sn.cursorY*g.cellH, (sn.cursorX+1)*g.cellW, (sn.cursorY+1)*g.cellH)
 	paint.FillShape(ops, rgba(st.bg), clip.Rect(r).Op())
-	if c.cp <= ' ' {
+	if c.cp <= ' ' && c.rest == "" {
 		return
 	}
-	if _, _, ok := blockElement(rune(c.cp)); ok {
+	if _, _, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 		return
 	}
-	gl := g.glyph(glyphs.Key{R: rune(c.cp), Bold: st.bold, Italic: st.ital})
+	gl := g.glyph(glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital})
 	t := op.Offset(image.Pt(r.Min.X, r.Min.Y+g.ascent)).Push(ops)
 	shape := clip.Outline{Path: gl.path}.Op().Push(ops)
 	paint.ColorOp{Color: rgba(st.fg)}.Add(ops)
@@ -145,7 +149,7 @@ func (g *grid) recordRow(row []cell, sn snap, y int) {
 	macro := op.Record(ops)
 	paintBackgrounds(ops, row, sn, g.cellW, g.cellH)
 	for x, c := range row {
-		if c.cp <= ' ' {
+		if c.cp <= ' ' && c.rest == "" {
 			continue
 		}
 		st := styleOf(c, sn)
@@ -153,11 +157,11 @@ func (g *grid) recordRow(row []cell, sn snap, y int) {
 		if st.faint {
 			col.A = 140
 		}
-		if rects, alpha, ok := blockElement(rune(c.cp)); ok {
+		if rects, alpha, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 			paintBlock(ops, x, rects, col, alpha, g.cellW, g.cellH)
 			continue
 		}
-		gl := g.glyph(glyphs.Key{R: rune(c.cp), Bold: st.bold, Italic: st.ital})
+		gl := g.glyph(glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital})
 		t := op.Offset(image.Pt(x*g.cellW, g.ascent)).Push(ops)
 		shape := clip.Outline{Path: gl.path}.Op().Push(ops)
 		paint.ColorOp{Color: col}.Add(ops)
@@ -177,12 +181,24 @@ type cachedGlyph struct {
 // glyph shapes one character once and keeps its outline, origin on the
 // baseline. Every cell then replays the same path under a translation, which
 // is also the key Gio's GPU path cache matches on, so a glyph is tessellated
-// once rather than once per row it appears in. ponytail: no ligatures, and a
-// grapheme is its first codepoint only.
+// once rather than once per row it appears in. ponytail: no ligatures across
+// cells.
 func (g *grid) glyph(k glyphs.Key) cachedGlyph {
 	if c, ok := g.cache[k]; ok {
 		return c
 	}
+	if len(g.cache) >= maxGridGlyphs {
+		g.cache = map[glyphs.Key]cachedGlyph{}
+	}
+	gs := g.shape(k)
+	c := cachedGlyph{path: g.shaper.Shape(gs), bitmaps: g.shaper.Bitmaps(gs)}
+	g.cache[k] = c
+	return c
+}
+
+// shape lays out k's grapheme. An emoji sequence the fonts have no ligature
+// for is its first glyph: the cell is two columns whatever it holds.
+func (g *grid) shape(k glyphs.Key) []text.Glyph {
 	f := g.font
 	if k.Bold {
 		f.Weight = font.Bold
@@ -190,12 +206,13 @@ func (g *grid) glyph(k glyphs.Key) cachedGlyph {
 	if k.Italic {
 		f.Style = font.Italic
 	}
-	g.shaper.LayoutString(text.Parameters{Font: f, PxPerEm: g.pxPerEm, MaxLines: 1, MaxWidth: 1 << 20}, string(k.R))
+	g.shaper.LayoutString(text.Parameters{Font: f, PxPerEm: g.pxPerEm, MaxLines: 1, MaxWidth: 1 << 20}, string(k.R)+k.Rest)
 	var gs []text.Glyph
 	for gl, ok := g.shaper.NextGlyph(); ok; gl, ok = g.shaper.NextGlyph() {
 		gs = append(gs, gl)
 	}
-	c := cachedGlyph{path: g.shaper.Shape(gs), bitmaps: g.shaper.Bitmaps(gs)}
-	g.cache[k] = c
-	return c
+	if k.Emoji() && len(gs) > 1 {
+		gs = gs[:1]
+	}
+	return gs
 }

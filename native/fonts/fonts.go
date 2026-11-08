@@ -19,6 +19,9 @@ import (
 	ot "github.com/go-text/typesetting/font/opentype"
 )
 
+// emojiWitness is a character emoji fonts are expected to hold.
+const emojiWitness = '\U0001F600'
+
 // Sans is the typeface the faces are registered under.
 const Sans font.Typeface = "Onest"
 
