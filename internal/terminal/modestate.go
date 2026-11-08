@@ -23,6 +23,7 @@ type modeState struct {
 	overflow bool
 
 	modes       []decMode
+	saved       []decMode // XTSAVE, only values a fresh terminal does not hold
 	alt         bool
 	kitty       [2]kittyStack // primary, alternate
 	cursorStyle int           // DECSCUSR, 0 for the default
@@ -30,6 +31,15 @@ type modeState struct {
 	palette     map[int]string
 	dynamic     [3]string // OSC 10, 11, 12
 }
+
+// softResetModes are the tracked DEC private modes DECSTR puts back to their
+// default (libghostty-vt, src/terminal/Terminal.zig, softReset). The mouse
+// modes are not among them: it leaves those as they are.
+var softResetModes = []int{1, 6, 7, 25, 45, 66, 69, 1045}
+
+// defaultOnModes are the DEC private modes libghostty-vt starts with set
+// (src/terminal/modes.zig). An XTRESTORE with no XTSAVE goes to the default.
+var defaultOnModes = []int{7, 25, 1007, 1035, 1036}
 
 type parseState uint8
 
@@ -274,10 +284,29 @@ func csiParams(raw string) []int {
 	return out
 }
 
+// csiTracked is whether a CSI can change tracked state. Checked before the
+// parameters are copied: SGR and cursor moves are most of a repaint.
+func csiTracked(final byte, raw []byte) bool {
+	switch final {
+	case 'h', 'l', 'q', 'u':
+		return true
+	case 'm', 'n':
+		return len(raw) > 0 && raw[0] == '>'
+	case 'r', 's':
+		return len(raw) > 0 && raw[0] == '?'
+	case 'p':
+		return string(raw) == "!"
+	}
+	return false
+}
+
 func (s *modeState) csiDispatch(final byte) {
-	if strings.IndexByte("hlqmnu", final) < 0 ||
-		(final == 'm' || final == 'n') && (len(s.raw) == 0 || s.raw[0] != '>') {
-		return // SGR and cursor moves, most of a repaint
+	if !csiTracked(final, s.raw) {
+		return
+	}
+	if final == 'p' {
+		s.softReset()
+		return
 	}
 	raw := string(s.raw)
 	prefix := byte(0)
@@ -303,6 +332,14 @@ func (s *modeState) csiApply(prefix, final byte, p []int) {
 	case prefix == '?' && (final == 'h' || final == 'l'):
 		for _, n := range p {
 			s.setMode(n, final == 'h')
+		}
+	case prefix == '?' && final == 's':
+		for _, n := range p {
+			s.saveMode(n)
+		}
+	case prefix == '?' && final == 'r':
+		for _, n := range p {
+			s.restoreMode(n)
 		}
 	case prefix == 0 && final == 'q':
 		s.setCursorStyle(p)
@@ -332,11 +369,53 @@ func (s *modeState) setMode(n int, set bool) {
 	case 47, 1047, 1049:
 		s.alt = set
 	}
-	s.modes = slices.DeleteFunc(s.modes, func(m decMode) bool { return m.n == n })
-	if len(s.modes) == modesCap {
-		s.modes = s.modes[1:]
+	s.modes = withMode(s.modes, decMode{n, set})
+}
+
+// withMode puts m last in list, replacing the entry of its number; a full
+// list loses its oldest.
+func withMode(list []decMode, m decMode) []decMode {
+	list = slices.DeleteFunc(list, func(e decMode) bool { return e.n == m.n })
+	if len(list) == modesCap {
+		list = list[1:]
 	}
-	s.modes = append(s.modes, decMode{n, set})
+	return append(list, m)
+}
+
+func modeDefault(n int) bool { return slices.Contains(defaultOnModes, n) }
+
+func modeValue(list []decMode, n int) bool {
+	if i := slices.IndexFunc(list, func(e decMode) bool { return e.n == n }); i >= 0 {
+		return list[i].set
+	}
+	return modeDefault(n)
+}
+
+func (s *modeState) saveMode(n int) {
+	if n <= 0 {
+		return
+	}
+	v := modeValue(s.modes, n)
+	if v == modeDefault(n) {
+		s.saved = slices.DeleteFunc(s.saved, func(e decMode) bool { return e.n == n })
+		return
+	}
+	s.saved = withMode(s.saved, decMode{n, v})
+}
+
+func (s *modeState) restoreMode(n int) {
+	s.setMode(n, modeValue(s.saved, n))
+}
+
+func (s *modeState) softReset() {
+	for i, m := range s.modes {
+		if slices.Contains(softResetModes, m.n) {
+			s.modes[i].set = modeDefault(m.n)
+		}
+	}
+	s.cursorStyle = 0
+	s.modifyOther = false
+	clear(s.palette)
 }
 
 // modifyKeys is libghostty-vt's one modify_key_format slot: every valid
@@ -510,12 +589,13 @@ func (s *modeState) preamble() []byte {
 		s.kitty[1].replay(&b)
 		b.WriteString("\x1b[?1047l")
 	}
+	// A saved value is set to be saved; the modes below then put each one back.
+	for _, m := range s.saved {
+		writeMode(&b, m)
+		fmt.Fprintf(&b, "\x1b[?%ds", m.n)
+	}
 	for _, m := range s.modes {
-		final := 'l'
-		if m.set {
-			final = 'h'
-		}
-		fmt.Fprintf(&b, "\x1b[?%d%c", m.n, final)
+		writeMode(&b, m)
 	}
 	if s.cursorStyle != 0 {
 		fmt.Fprintf(&b, "\x1b[%d q", s.cursorStyle)
@@ -526,6 +606,14 @@ func (s *modeState) preamble() []byte {
 	s.replayColors(&b)
 	s.replayPartial(&b)
 	return []byte(b.String())
+}
+
+func writeMode(b *strings.Builder, m decMode) {
+	final := 'l'
+	if m.set {
+		final = 'h'
+	}
+	fmt.Fprintf(b, "\x1b[?%d%c", m.n, final)
 }
 
 // replay rebuilds the stack on a fresh one, which every kitty operation sees

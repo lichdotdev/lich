@@ -87,6 +87,22 @@ func TestModeStatePreamble(t *testing.T) {
 		{"rgbi form", "\x1b]11;rgbi:0.5/0/1\x07", "\x1b]11;rgbi:0.5/0/1\x1b\\"},
 		{"rgbi out of range", "\x1b]11;rgbi:2/0/0\x07", ""},
 		{"bare hex", "\x1b]11;abc\x07", "\x1b]11;abc\x1b\\"},
+		{"DECSTR resets what it resets", "\x1b[?1h\x1b[?25l\x1b[?66h\x1b[5 q\x1b[>4;2m\x1b]4;1;red\x07\x1b]11;red\x07\x1b[!p", "\x1b[?1l\x1b[?25h\x1b[?66l\x1b]11;red\x1b\\"},
+		{"DECSTR leaves the mouse on", "\x1b[?1003h\x1b[!p", "\x1b[?1003h"},
+		{"DECSTR with parameters is ignored", "\x1b[?1h\x1b[1!p", "\x1b[?1h"},
+		{"DECRQM is not DECSTR", "\x1b[?1h\x1b[?1$p", "\x1b[?1h"},
+		{"DECSTR keeps the saved modes", "\x1b[?25l\x1b[?25s\x1b[!p", "\x1b[?25l\x1b[?25s\x1b[?25h"},
+		{"XTRESTORE brings back the saved value", "\x1b[?1003h\x1b[?1003s\x1b[?1003l\x1b[?1003r", "\x1b[?1003h\x1b[?1003s\x1b[?1003h"},
+		{"XTRESTORE of a default saved value", "\x1b[?1003s\x1b[?1003h\x1b[?1003r", "\x1b[?1003l"},
+		{"XTRESTORE with no XTSAVE goes to the default", "\x1b[?2004h\x1b[?2004r", "\x1b[?2004l"},
+		{"XTRESTORE with no XTSAVE of a default-on mode", "\x1b[?25l\x1b[?25r", "\x1b[?25h"},
+		{"XTSAVE survives for a later restore", "\x1b[?1003h\x1b[?1003s\x1b[?1003l", "\x1b[?1003h\x1b[?1003s\x1b[?1003l"},
+		{"XTSAVE of several", "\x1b[?1003;1006h\x1b[?1003;1006s", "\x1b[?1003h\x1b[?1003s\x1b[?1006h\x1b[?1006s\x1b[?1003h\x1b[?1006h"},
+		{"XTSAVE saved again replaces", "\x1b[?1003h\x1b[?1003s\x1b[?1003l\x1b[?1003s", "\x1b[?1003l"},
+		{"XTRESTORE switches the screen", "\x1b[?1049h\x1b[?1049s\x1b[?1049l\x1b[?1049r\x1b[>3u", "\x1b[?1047h" + kittyPushes(3) + "\x1b[?1047l\x1b[?1049h\x1b[?1049s\x1b[?1049h"},
+		{"RIS clears the saved modes", "\x1b[?1003h\x1b[?1003s\x1bc\x1b[?1003r", "\x1b[?1003l"},
+		{"XTSAVE with an intermediate is ignored", "\x1b[?1003h\x1b[?1003$s", "\x1b[?1003h"},
+		{"too many saved modes keep the latest", manySaved(modesCap + 1), manySavedWant(modesCap + 1)},
 		{"too many modes keep the latest", manyModes(modesCap + 1), manyModesWant(modesCap + 1)},
 		{"C0 inside an escape", "\x1b\x0e[?1003h", "\x1b[?1003h"},
 		{"ESC restarts an escape", "\x1b\x1b[?1003h", "\x1b[?1003h"},
@@ -112,6 +128,24 @@ func manyModes(n int) string {
 		fmt.Fprintf(&b, "\x1b[?%dh", i+2000)
 	}
 	return b.String()
+}
+
+// manySaved sets n modes one by one and saves each, so only the saved list
+// can run out of room: the modes themselves are capped as well.
+func manySaved(n int) string {
+	var b strings.Builder
+	for i := range n {
+		fmt.Fprintf(&b, "\x1b[?%dh\x1b[?%ds", i+2000, i+2000)
+	}
+	return b.String()
+}
+
+func manySavedWant(n int) string {
+	var b strings.Builder
+	for i := n - modesCap; i < n; i++ {
+		fmt.Fprintf(&b, "\x1b[?%dh\x1b[?%ds", i+2000, i+2000)
+	}
+	return b.String() + manyModesWant(n)
 }
 
 func manyModesWant(n int) string {
@@ -255,7 +289,7 @@ func TestPreambleIsBounded(t *testing.T) {
 		s.feed(fmt.Appendf(nil, "\x1b]4;%d;%s\x07", i, name))
 	}
 	s.feed([]byte("\x1b]10;" + name + ";" + name + ";" + name + "\x07"))
-	s.feed([]byte(manyModes(modesCap)))
+	s.feed([]byte(manySaved(modesCap)))
 	s.feed([]byte("\x1b[?1049h\x1b[>31u\x1b[>4;2m\x1b[6 q"))
 	s.feed([]byte("\x1b]2;" + strings.Repeat("t", rawCap-10)))
 	if got := len(s.preamble()); got > preambleBudget {
