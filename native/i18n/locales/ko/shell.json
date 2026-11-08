@@ -188,7 +188,11 @@
     "unlabeledSession": "세션",
     "open": "열기",
     "needsInput": "{label}이(가) 입력을 기다립니다",
-    "finished": "{label}이(가) 작업을 마쳤습니다"
+    "finished": "{label}이(가) 작업을 마쳤습니다",
+    "watchStopped": "풀 리퀘스트 #{number} 감시를 중단했습니다",
+    "watchStoppedDetail": "{label}이(가) 이 풀 리퀘스트에서 프롬프트를 {runs}회 실행했습니다.",
+    "scheduleLost": "예약된 프롬프트가 사라졌습니다",
+    "scheduleLostDetail": "{label}을(를) 삭제하면서 {when}에 예약된 프롬프트도 삭제되었습니다."
   },
   "windowClose": {
     "changeInSettings": "· 설정 › 일반에서 변경",

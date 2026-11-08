@@ -44,7 +44,9 @@
     "forkHere": "여기서",
     "forkWorktree": "worktree…",
     "forkResumeOnly": "재개만 가능",
-    "copyReplyCommand": "답장 명령 복사"
+    "copyReplyCommand": "답장 명령 복사",
+    "schedule": "프롬프트 예약…",
+    "scheduled": "예약됨…"
   },
   "settingsCard": {
     "close": "설정 닫기"
@@ -221,5 +223,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "여기서 새 세션"
+  },
+  "scheduleDialog": {
+    "title": "프롬프트 예약",
+    "titleArmed": "예약된 프롬프트",
+    "description": "때가 되면 {label}에 입력합니다.",
+    "atTime": "지정한 시각",
+    "checksFailed": "체크 실패 시",
+    "checksPassed": "체크 통과 시",
+    "review": "리뷰 도착 시",
+    "keepsWatching": "계속 감시",
+    "once": "1회",
+    "when": "언제",
+    "whenPlaceholder": "2h30 또는 14:30",
+    "prompt": "프롬프트",
+    "promptPlaceholder": "이 세션이 무엇을 해야 하나요?",
+    "whenError": "읽을 수 없습니다. 45m, 2h30, 14:30처럼 입력하세요.",
+    "landsToday": "오늘 {clock}, {left} 후",
+    "landsTomorrow": "내일 {clock}, {left} 후",
+    "landsOn": "{date} {clock}, {left} 후",
+    "runsOnce": "한 번 실행됩니다.",
+    "staysOn": "풀 리퀘스트가 닫힐 때까지 유지됩니다. {limit}회 실행 후 멈춥니다.",
+    "noPR": "이 브랜치에는 아직 풀 리퀘스트가 없습니다. 열리면 감시를 시작합니다.",
+    "setByAgent": "이 세션의 에이전트가 설정했습니다.",
+    "setByLich": "사용량 한도 이후 lich가 설정했습니다.",
+    "runsUsed": "{limit}회 중 {runs}회 실행됨.",
+    "remove": "제거",
+    "save": "저장",
+    "schedule": "예약",
+    "failed": "예약된 프롬프트를 저장하지 못했습니다"
+  },
+  "scheduleTip": {
+    "checksFailed": "체크가 실패하면 프롬프트를 입력합니다",
+    "checksPassed": "체크가 통과하면 프롬프트를 입력합니다",
+    "review": "리뷰가 도착하면 프롬프트를 입력합니다",
+    "at": "{when} 프롬프트",
+    "resume": "사용량 한도 이후 {when}에 계속합니다"
   }
 }

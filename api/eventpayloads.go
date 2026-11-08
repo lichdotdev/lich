@@ -139,6 +139,28 @@ type SessionSchedule struct {
 	Prompt string `json:"prompt,omitempty"`
 }
 
+// SessionScheduleBy is the payload of SessionScheduleByEvent: who set the
+// prompt the last SessionScheduleEvent for this session named.
+type SessionScheduleBy struct {
+	ID string `json:"id"`
+	By string `json:"by"`
+}
+
+// SessionWatchChange is the payload of SessionWatchEvent: a session's watch as
+// it now stands.
+type SessionWatchChange struct {
+	ID    string       `json:"id"`
+	Watch SessionWatch `json:"watch"`
+}
+
+// SessionWatchStopped is the payload of SessionWatchStoppedEvent.
+type SessionWatchStopped struct {
+	ID     string `json:"id"`
+	Label  string `json:"label"`
+	Number int    `json:"number"`
+	Runs   int    `json:"runs"`
+}
+
 // SessionRelay is the payload of SessionRelayEvent: the session whose mark changed,
 // the label at the other end, which way the request runs, and the ticket the
 // two ends share. Peer is empty when the other end is not a session at all —

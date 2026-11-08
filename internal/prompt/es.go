@@ -71,9 +71,15 @@ var es = Catalog{
 	BlockedSummary: "la sesión de lich %q está esperando una confirmación de permiso",
 	MergeNotice: "[lich] El pull request #%[1]d %[2]q (rama %[3]s) se fusionó en %[4]s. " +
 		"Esto es un aviso, no una tarea: actualiza lo que guardes sobre el estado de este trabajo y no hagas nada más.",
-	MergeSummary: "Pull request #%[1]d fusionado en %[2]s",
-	LateNotice:   "[lich] Programado para %[1]s, entregado con %[2]s de retraso.\n\n",
-	ResumePrompt: "[lich] Tu límite de uso se restableció. Continúa la tarea en la que estabas trabajando.",
+	MergeSummary:      "Pull request #%[1]d fusionado en %[2]s",
+	LateNotice:        "[lich] Programado para %[1]s, entregado con %[2]s de retraso.\n\n",
+	ResumePrompt:      "[lich] Tu límite de uso se restableció. Continúa la tarea en la que estabas trabajando.",
+	WatchChecksFailed: "[lich] Las comprobaciones fallaron en la pull request #%[1]d, commit %[2]s.\n\n",
+	WatchChecksPassed: "[lich] Las comprobaciones pasaron en la pull request #%[1]d, commit %[2]s.\n\n",
+	WatchReview:       "[lich] Llegó una nueva revisión a la pull request #%[1]d.\n\n",
+	ScheduledAtResult: "Programado. Tu prompt se escribirá en esta sesión a las %[1]s.",
+	ScheduledOnResult: "Activado. Tu prompt se escribirá en esta sesión con %[1]s, como máximo %[2]d veces en una misma pull request.",
+	ScheduleCleared:   "Se quitó el prompt programado de esta sesión.",
 
 	CopyNotice: "[lich] copia de %s; el original no es accesible desde esta sesión, las ediciones se quedan en la copia.",
 

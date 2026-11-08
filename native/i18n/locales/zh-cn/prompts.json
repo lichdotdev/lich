@@ -33,5 +33,9 @@
     "item": "{index}. {url} 上的 {label}",
     "note": "备注: {note}",
     "selectors": "上面每个选择器都可以直接作为 browser_click 和 browser_type 的 selector 使用。"
+  },
+  "schedule": {
+    "checksFailed": "此拉取请求的检查失败了。用 gh 查看，修复原因并推送。",
+    "review": "此拉取请求收到了新的评审。用 gh 阅读并处理其中的要求。"
   }
 }

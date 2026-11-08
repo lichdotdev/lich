@@ -191,7 +191,11 @@
     "unlabeledSession": "一个会话",
     "open": "打开",
     "needsInput": "{label} 需要你的输入",
-    "finished": "{label} 已完成工作"
+    "finished": "{label} 已完成工作",
+    "watchStopped": "已停止监视拉取请求 #{number}",
+    "watchStoppedDetail": "{label} 已在其上运行提示词 {runs} 次。",
+    "scheduleLost": "定时提示词已丢失",
+    "scheduleLostDetail": "删除 {label} 时也删除了定于 {when} 的提示词。"
   },
   "windowClose": {
     "changeInSettings": "· 可在设置 › 通用中更改",

@@ -45,7 +45,9 @@
     "forkHere": "Here",
     "forkWorktree": "Worktree…",
     "forkResumeOnly": "resume only",
-    "copyReplyCommand": "Copy reply command"
+    "copyReplyCommand": "Copy reply command",
+    "schedule": "Schedule prompt…",
+    "scheduled": "Scheduled…"
   },
   "settingsCard": {
     "close": "Close settings"
@@ -225,5 +227,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "New session here"
+  },
+  "scheduleDialog": {
+    "title": "Schedule a prompt",
+    "titleArmed": "Scheduled prompt",
+    "description": "Types it at {label} when the time comes.",
+    "atTime": "At a time",
+    "checksFailed": "Checks fail",
+    "checksPassed": "Checks pass",
+    "review": "A review arrives",
+    "keepsWatching": "keeps watching",
+    "once": "once",
+    "when": "When",
+    "whenPlaceholder": "2h30 or 14:30",
+    "prompt": "Prompt",
+    "promptPlaceholder": "What should this session do?",
+    "whenError": "Can't read that. Try 45m, 2h30 or 14:30.",
+    "landsToday": "Today at {clock}, in {left}",
+    "landsTomorrow": "Tomorrow at {clock}, in {left}",
+    "landsOn": "{date} at {clock}, in {left}",
+    "runsOnce": "Runs once.",
+    "staysOn": "Stays on until the pull request closes. Stops after {limit} runs.",
+    "noPR": "This branch has no pull request yet. The watch starts when one opens.",
+    "setByAgent": "Set by this session's agent.",
+    "setByLich": "Set by lich after the usage limit.",
+    "runsUsed": "{runs} of {limit} runs used.",
+    "remove": "Remove",
+    "save": "Save",
+    "schedule": "Schedule",
+    "failed": "Could not save the scheduled prompt"
+  },
+  "scheduleTip": {
+    "checksFailed": "Types its prompt when the checks fail",
+    "checksPassed": "Types its prompt when the checks pass",
+    "review": "Types its prompt when a review arrives",
+    "at": "Prompt at {when}",
+    "resume": "Continues after the usage limit at {when}"
   }
 }

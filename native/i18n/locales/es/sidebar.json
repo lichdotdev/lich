@@ -45,7 +45,9 @@
     "forkHere": "Aquí",
     "forkWorktree": "Worktree…",
     "forkResumeOnly": "solo reanuda",
-    "copyReplyCommand": "Copiar comando de respuesta"
+    "copyReplyCommand": "Copiar comando de respuesta",
+    "schedule": "Programar prompt…",
+    "scheduled": "Programado…"
   },
   "settingsCard": {
     "close": "Cerrar ajustes"
@@ -225,5 +227,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "Nueva sesión aquí"
+  },
+  "scheduleDialog": {
+    "title": "Programar un prompt",
+    "titleArmed": "Prompt programado",
+    "description": "Lo escribe en {label} cuando llegue el momento.",
+    "atTime": "A una hora",
+    "checksFailed": "Fallan las comprobaciones",
+    "checksPassed": "Pasan las comprobaciones",
+    "review": "Llega una revisión",
+    "keepsWatching": "sigue vigilando",
+    "once": "una vez",
+    "when": "Cuándo",
+    "whenPlaceholder": "2h30 o 14:30",
+    "prompt": "Prompt",
+    "promptPlaceholder": "¿Qué debería hacer esta sesión?",
+    "whenError": "No se entiende. Prueba con 45m, 2h30 o 14:30.",
+    "landsToday": "Hoy a las {clock}, en {left}",
+    "landsTomorrow": "Mañana a las {clock}, en {left}",
+    "landsOn": "{date} a las {clock}, en {left}",
+    "runsOnce": "Se ejecuta una vez.",
+    "staysOn": "Sigue activo hasta que se cierre la pull request. Se detiene tras {limit} ejecuciones.",
+    "noPR": "Esta rama aún no tiene pull request. La vigilancia empieza cuando se abra una.",
+    "setByAgent": "Configurado por el agente de esta sesión.",
+    "setByLich": "Configurado por lich tras el límite de uso.",
+    "runsUsed": "{runs} de {limit} ejecuciones usadas.",
+    "remove": "Quitar",
+    "save": "Guardar",
+    "schedule": "Programar",
+    "failed": "No se pudo guardar el prompt programado"
+  },
+  "scheduleTip": {
+    "checksFailed": "Escribe su prompt cuando fallan las comprobaciones",
+    "checksPassed": "Escribe su prompt cuando pasan las comprobaciones",
+    "review": "Escribe su prompt cuando llega una revisión",
+    "at": "Prompt a las {when}",
+    "resume": "Continúa tras el límite de uso a las {when}"
   }
 }

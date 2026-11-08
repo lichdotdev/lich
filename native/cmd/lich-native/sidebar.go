@@ -49,6 +49,7 @@ type sidebar struct {
 	blocks   map[string]*blockState
 	motion   blockPresence
 	naming   folderNaming
+	schedule scheduleDialog
 	rail     sidebarRail
 	morph    sidebarMorph
 	profile  profileFooter
@@ -136,6 +137,7 @@ type sidebarAction struct {
 	worktree                                bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
+	schedule               string // the session whose Schedule prompt… was picked
 	service                serviceRequest
 	copyText               string // text the card menu asked to put on the clipboard
 	sidebarWrites

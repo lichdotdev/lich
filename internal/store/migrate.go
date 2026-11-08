@@ -25,6 +25,7 @@ var migrations = []func(*sql.Tx) error{
 	addSessionForked,
 	addProjectServices,
 	addThreadFixes,
+	addSessionWatch,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -181,6 +182,25 @@ func (e *NewerSchemaError) Error() string {
 		"the workspace database is at schema version %d, but this lich only knows up to version %d. "+
 			"It was last opened by a newer lich: install that version (or a later one) to open it",
 		e.Found, e.Known)
+}
+
+// addSessionWatch is version 13: who parked a scheduled prompt, and the
+// condition a session waits on (api.SessionWatch).
+func addSessionWatch(tx *sql.Tx) error {
+	for _, column := range []string{
+		`scheduled_by TEXT NOT NULL DEFAULT ''`,
+		`watch_on TEXT NOT NULL DEFAULT ''`,
+		`watch_prompt TEXT NOT NULL DEFAULT ''`,
+		`watch_by TEXT NOT NULL DEFAULT ''`,
+		`watch_runs INTEGER NOT NULL DEFAULT 0`,
+		`watch_pr INTEGER NOT NULL DEFAULT 0`,
+		`watch_seen TEXT NOT NULL DEFAULT ''`,
+	} {
+		if _, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN ` + column); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // migrate brings db up to len(migrations), one transaction per step, each step

@@ -191,7 +191,11 @@
     "unlabeledSession": "セッション",
     "open": "開く",
     "needsInput": "{label} が入力を待っています",
-    "finished": "{label} の作業が完了しました"
+    "finished": "{label} の作業が完了しました",
+    "watchStopped": "プルリクエスト #{number} の監視を停止しました",
+    "watchStoppedDetail": "{label} はこのプルリクエストでプロンプトを {runs} 回実行しました。",
+    "scheduleLost": "予約したプロンプトが失われました",
+    "scheduleLostDetail": "{label} を削除したため、{when} に予約したプロンプトも削除されました。"
   },
   "windowClose": {
     "changeInSettings": "· 設定 › 一般で変更できます",

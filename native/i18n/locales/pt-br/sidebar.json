@@ -45,7 +45,9 @@
     "forkHere": "Aqui",
     "forkWorktree": "Worktree…",
     "forkResumeOnly": "só retoma",
-    "copyReplyCommand": "Copiar comando de resposta"
+    "copyReplyCommand": "Copiar comando de resposta",
+    "schedule": "Agendar prompt…",
+    "scheduled": "Agendado…"
   },
   "settingsCard": {
     "close": "Fechar configurações"
@@ -225,5 +227,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "Nova sessão aqui"
+  },
+  "scheduleDialog": {
+    "title": "Agendar um prompt",
+    "titleArmed": "Prompt agendado",
+    "description": "Digita em {label} quando chegar a hora.",
+    "atTime": "Em um horário",
+    "checksFailed": "Checks falham",
+    "checksPassed": "Checks passam",
+    "review": "Chega uma revisão",
+    "keepsWatching": "continua vigiando",
+    "once": "uma vez",
+    "when": "Quando",
+    "whenPlaceholder": "2h30 ou 14:30",
+    "prompt": "Prompt",
+    "promptPlaceholder": "O que esta sessão deve fazer?",
+    "whenError": "Não deu para entender. Tente 45m, 2h30 ou 14:30.",
+    "landsToday": "Hoje às {clock}, em {left}",
+    "landsTomorrow": "Amanhã às {clock}, em {left}",
+    "landsOn": "{date} às {clock}, em {left}",
+    "runsOnce": "Roda uma vez.",
+    "staysOn": "Fica ligado até o pull request fechar. Para depois de {limit} execuções.",
+    "noPR": "Esta branch ainda não tem pull request. A vigilância começa quando um abrir.",
+    "setByAgent": "Definido pelo agente desta sessão.",
+    "setByLich": "Definido pelo lich depois do limite de uso.",
+    "runsUsed": "{runs} de {limit} execuções usadas.",
+    "remove": "Remover",
+    "save": "Salvar",
+    "schedule": "Agendar",
+    "failed": "Não foi possível salvar o prompt agendado"
+  },
+  "scheduleTip": {
+    "checksFailed": "Digita o prompt quando os checks falham",
+    "checksPassed": "Digita o prompt quando os checks passam",
+    "review": "Digita o prompt quando chega uma revisão",
+    "at": "Prompt às {when}",
+    "resume": "Continua depois do limite de uso às {when}"
   }
 }

@@ -317,6 +317,12 @@ type Session struct {
 	// call, and neither needs a channel of its own.
 	ScheduledAt     int64  `json:"scheduledAt"`
 	ScheduledPrompt string `json:"scheduledPrompt"`
+	// ScheduledBy is who parked it: "" for the person, ScheduledByAgent or
+	// ScheduledByLich.
+	ScheduledBy string `json:"scheduledBy"`
+	// Watch is the condition this session waits on, beside its scheduled prompt
+	// because lich's own continuation may sit in that slot meanwhile.
+	Watch SessionWatch `json:"watch"`
 	// Unread is whether this session's last finished turn is still waiting to be
 	// read. It rides the hydration call because the mark has to survive a window
 	// restart: the window holds it while it is up, and this row is what it comes

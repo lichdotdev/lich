@@ -214,6 +214,9 @@ func (s *sidebar) titleRow(th *ui.Theme, sv *sessionView) []layout.FlexChild {
 	if sv.browser {
 		row = append(row, layout.Rigid(func(gtx C) D { return icBrowser.Layout(gtx, 12, th.MutedForeground) }), ui.Gap(1.5))
 	}
+	if mark := scheduleMark(sv); mark != nil {
+		row = append(row, layout.Rigid(func(gtx C) D { return mark.Layout(gtx, 12, th.MutedForeground) }), ui.Gap(1.5))
+	}
 	if s.renaming(sv.ID) {
 		return append(row, layout.Flexed(1, func(gtx C) D { return s.renameField(gtx, th, sv.ID, s.renames[sv.ID]) }))
 	}

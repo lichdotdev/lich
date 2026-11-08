@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A session can wait for something and then act on it. **Schedule prompt…** on its menu takes a prompt and either a time (`45m`, `2h30`, `14:30` or a full date, with the moment it lands on shown as you type) or a condition on the pull request of its branch: checks fail, checks pass, or a review arrives. Nothing is spent while nothing changes, and the prompt is typed at the session the way a relayed message is, on every provider. A watch on failing checks stays on for each new commit until the pull request closes and stops after 3 runs, telling you it did. A clock or a radar on the session's row says it holds one, and its tooltip says what. An agent can arm the same thing on its own session with `lich schedule` or the `schedule_prompt` MCP tool, and what you set there stays until you change it.
 - An agent can run JavaScript in its session's browser and read the answer (`browser_eval`, `lich browser eval`): the state of your app, a value the page does not print, the result of a `fetch`. The answer is cut at 2000 characters, so a large page state costs the agent's context only what it asks for. The script can read what a field holds, passwords included, which the page reading never hands it.
 - An agent can read part of a page instead of all of it: `browser_info` takes `within`, a CSS selector (`lich browser info --within <css>`), and answers with the text and the buttons and links of the first element it matches, so the main column of a docs site or one open dialog costs a fraction of the page and its navigation. A selector that matches nothing, or is not valid, answers with an error and leaves the indexes of the last read working.
 - A session browser's screenshot can carry each button's and link's index drawn on it (`annotate` on `browser_screenshot`, `lich browser screenshot --annotate`), so an agent clicks an icon with no label by its index instead of working out where it is. Your pane shows the numbers for the moment of the capture.
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The prompt lich parks to continue a turn a usage limit stopped shows on the session again, and can be cancelled from its menu. So does the notice that deleting a session also deleted a prompt scheduled on it. Both went missing with the web window.
 - `GIO_DAMAGE=on` redraws into a framebuffer lich keeps instead of trusting the driver's buffer age, so a driver that misreports it no longer leaves the window with stale pixels.
 - On X11, a wheel notch scrolls once instead of twice, and hover clears when the pointer leaves the window, on Windows too.
 - Codex and Kiro CLI sessions are now told they run inside lich and when to open another session for the work, in your prompt language: both CLIs drop what lich's MCP server says to the model, so they had the tools and no word on using them. Codex gets it in new conversations, unless your `config.toml` sets `developer_instructions`, which lich leaves alone; Kiro gets it once lich next updates its plugin there.

@@ -165,8 +165,13 @@ type Sessions interface {
 	LoadState(_ context.Context, _ api.None) ([]store.Project, error)
 	// SetSessionSchedule clears a scheduled prompt once it has been typed at its
 	// session (see deliverDue), and parks or drops the continuation of a turn a
-	// usage limit ended (resume.go). Every other prompt is parked by the window.
+	// usage limit ended (resume.go), and takes the person's own (schedule.go).
 	SetSessionSchedule(sessionID string, at int64, prompt string) error
+	// SetAgentSchedule is SetSessionSchedule for a prompt an agent parked on its
+	// own session.
+	SetAgentSchedule(sessionID string, at int64, prompt string) error
+	// SetSessionWatch writes a session's watch as it now stands (watch.go).
+	SetSessionWatch(sessionID string, w api.SessionWatch) error
 	// SessionBranch is the branch of the checkout a session runs in, "" when
 	// git cannot name one. A subagent's report names it (subagentReport).
 	SessionBranch(sessionID string) string

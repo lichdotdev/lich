@@ -31,5 +31,9 @@
     "item": "{index}. {url}의 {label}",
     "note": "메모: {note}",
     "selectors": "위의 각 셀렉터는 browser_click과 browser_type의 selector로 그대로 쓸 수 있습니다."
+  },
+  "schedule": {
+    "checksFailed": "이 풀 리퀘스트의 체크가 실패했습니다. gh로 확인하고 원인을 고친 뒤 push하세요.",
+    "review": "이 풀 리퀘스트에 새 리뷰가 도착했습니다. gh로 읽고 요청 사항을 처리하세요."
   }
 }

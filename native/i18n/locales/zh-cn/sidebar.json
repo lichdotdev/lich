@@ -45,7 +45,9 @@
     "forkHere": "在此处",
     "forkWorktree": "Worktree…",
     "forkResumeOnly": "仅可恢复",
-    "copyReplyCommand": "复制回复命令"
+    "copyReplyCommand": "复制回复命令",
+    "schedule": "定时发送提示词…",
+    "scheduled": "已定时…"
   },
   "settingsCard": {
     "close": "关闭设置"
@@ -225,5 +227,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "在此新建会话"
+  },
+  "scheduleDialog": {
+    "title": "定时发送提示词",
+    "titleArmed": "已定时的提示词",
+    "description": "时间到时输入到 {label}。",
+    "atTime": "指定时间",
+    "checksFailed": "检查失败时",
+    "checksPassed": "检查通过时",
+    "review": "收到评审时",
+    "keepsWatching": "持续监视",
+    "once": "一次",
+    "when": "时间",
+    "whenPlaceholder": "2h30 或 14:30",
+    "prompt": "提示词",
+    "promptPlaceholder": "这个会话应该做什么?",
+    "whenError": "无法识别。请试试 45m、2h30 或 14:30。",
+    "landsToday": "今天 {clock}，{left} 后",
+    "landsTomorrow": "明天 {clock}，{left} 后",
+    "landsOn": "{date} {clock}，{left} 后",
+    "runsOnce": "只运行一次。",
+    "staysOn": "持续生效直到拉取请求关闭。运行 {limit} 次后停止。",
+    "noPR": "此分支还没有拉取请求。打开后开始监视。",
+    "setByAgent": "由此会话的智能体设置。",
+    "setByLich": "由 lich 在用量限制后设置。",
+    "runsUsed": "已运行 {runs}/{limit} 次。",
+    "remove": "移除",
+    "save": "保存",
+    "schedule": "定时",
+    "failed": "无法保存定时提示词"
+  },
+  "scheduleTip": {
+    "checksFailed": "检查失败时输入提示词",
+    "checksPassed": "检查通过时输入提示词",
+    "review": "收到评审时输入提示词",
+    "at": "{when} 的提示词",
+    "resume": "用量限制后于 {when} 继续"
   }
 }

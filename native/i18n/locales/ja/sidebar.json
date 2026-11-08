@@ -45,7 +45,9 @@
     "forkHere": "ここで",
     "forkWorktree": "ワークツリー…",
     "forkResumeOnly": "再開のみ",
-    "copyReplyCommand": "返信コマンドをコピー"
+    "copyReplyCommand": "返信コマンドをコピー",
+    "schedule": "プロンプトを予約…",
+    "scheduled": "予約済み…"
   },
   "settingsCard": {
     "close": "設定を閉じる"
@@ -225,5 +227,41 @@
   },
   "checkoutRow": {
     "newSessionHere": "ここで新しいセッション"
+  },
+  "scheduleDialog": {
+    "title": "プロンプトを予約",
+    "titleArmed": "予約済みのプロンプト",
+    "description": "そのときが来たら {label} に入力します。",
+    "atTime": "指定した時刻",
+    "checksFailed": "チェックが失敗したとき",
+    "checksPassed": "チェックが成功したとき",
+    "review": "レビューが届いたとき",
+    "keepsWatching": "監視を続ける",
+    "once": "1 回",
+    "when": "いつ",
+    "whenPlaceholder": "2h30 または 14:30",
+    "prompt": "プロンプト",
+    "promptPlaceholder": "このセッションに何をさせますか?",
+    "whenError": "読み取れません。45m、2h30、14:30 のように入力してください。",
+    "landsToday": "今日 {clock}、あと {left}",
+    "landsTomorrow": "明日 {clock}、あと {left}",
+    "landsOn": "{date} {clock}、あと {left}",
+    "runsOnce": "1 回だけ実行します。",
+    "staysOn": "プルリクエストが閉じるまで有効です。{limit} 回実行すると停止します。",
+    "noPR": "このブランチにはまだプルリクエストがありません。作成されると監視が始まります。",
+    "setByAgent": "このセッションのエージェントが設定しました。",
+    "setByLich": "利用上限のあと lich が設定しました。",
+    "runsUsed": "{limit} 回中 {runs} 回実行済み。",
+    "remove": "削除",
+    "save": "保存",
+    "schedule": "予約",
+    "failed": "予約したプロンプトを保存できませんでした"
+  },
+  "scheduleTip": {
+    "checksFailed": "チェックが失敗するとプロンプトを入力します",
+    "checksPassed": "チェックが成功するとプロンプトを入力します",
+    "review": "レビューが届くとプロンプトを入力します",
+    "at": "{when} にプロンプト",
+    "resume": "利用上限のあと {when} に再開します"
   }
 }
