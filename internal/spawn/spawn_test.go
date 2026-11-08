@@ -414,15 +414,6 @@ type fakeTerminal struct {
 	deadline time.Time
 	outcome  terminal.ModOutcome
 	runErr   error
-	// profileErr is CheckProfile refusing, and checkedProfiles each (kind,
-	// profile) it was asked about.
-	profileErr      error
-	checkedProfiles [][2]string
-}
-
-func (f *fakeTerminal) CheckProfile(kind, profile string) error {
-	f.checkedProfiles = append(f.checkedProfiles, [2]string{kind, profile})
-	return f.profileErr
 }
 
 func (f *fakeTerminal) RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error) {

@@ -1172,7 +1172,6 @@ HandoffSessionOptions {
 	kind string
 	model string
 	effort string
-	profile string
 }
 
 OpenedSession {

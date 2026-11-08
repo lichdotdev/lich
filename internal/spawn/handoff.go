@@ -13,14 +13,14 @@ import (
 type HandoffOptions = api.HandoffSessionOptions
 
 // Handoff opens the successor of the session From runs in: a fresh session in
-// the caller's checkout and folder, on the caller's provider, model, effort,
-// ultracode and profile unless opts names others, so an agent at a clean break
-// can pass its work on instead of carrying a degraded context. The caller is
-// left open; closing it is the user's call.
+// the caller's checkout and folder, on the caller's provider, model and effort
+// unless opts names others, with the caller's ultracode and profile on that
+// provider, so an agent at a clean break can pass its work on instead of
+// carrying a degraded context. The caller is left open; closing it is the
+// user's call.
 func (s *Service) Handoff(_ context.Context, opts HandoffOptions) (Session, error) {
 	return s.openSession(request{
-		fromID: opts.From, kind: opts.Kind, model: opts.Model, effort: opts.Effort,
-		profile: opts.Profile, handoff: true,
+		fromID: opts.From, kind: opts.Kind, model: opts.Model, effort: opts.Effort, handoff: true,
 	})
 }
 
@@ -50,12 +50,11 @@ func refuseOrphan(req request, originID string) error {
 // out, because an empty profile is the project's, and the caller may have been
 // moved off it (Continue in).
 func (s *Service) inheritCaller(req request, projects []store.Project, kind string) (request, error) {
-	if req.profile != "" {
-		if err := s.term.CheckProfile(kind, req.profile); err != nil {
-			return req, err
-		}
+	callerKind, err := resolveKind(projects, req.fromID, "")
+	if err != nil {
+		return req, err
 	}
-	if callerKind, _ := resolveKind(projects, req.fromID, ""); kind != callerKind {
+	if kind != callerKind {
 		return req, nil
 	}
 	if req.model == "" {
@@ -65,9 +64,6 @@ func (s *Service) inheritCaller(req request, projects []store.Project, kind stri
 		req.effort = s.sessions.SessionEffort(req.fromID)
 	}
 	req.ultracode = s.sessions.SessionUltracode(req.fromID)
-	if req.profile != "" {
-		return req, nil
-	}
 	profile, err := s.sessions.SessionProfile(req.fromID)
 	if err != nil {
 		return req, err

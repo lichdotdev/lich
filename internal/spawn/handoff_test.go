@@ -2,7 +2,6 @@ package spawn
 
 import (
 	"errors"
-	"slices"
 	"strings"
 	"testing"
 )
@@ -64,20 +63,19 @@ func TestHandoffKeepsACallerOnPersonal(t *testing.T) {
 	}
 }
 
-func TestHandoffTakesTheSettingsItIsGiven(t *testing.T) {
-	svc, sessions, _, term, _ := newService(t)
+// An agent can pick the successor's model, never its account: the caller's
+// profile comes along whatever else the call names.
+func TestHandoffTakesTheModelItIsGivenAndKeepsTheCallersProfile(t *testing.T) {
+	svc, sessions, _, _, _ := newService(t)
 	sessions.models = map[string]string{"s1": "gpt-5.2"}
 	sessions.profiles = map[string]string{"s1": "work"}
 
-	opened, err := svc.Handoff(t.Context(), HandoffOptions{From: "s1", Model: "gpt-5.5", Profile: "spare"})
+	opened, err := svc.Handoff(t.Context(), HandoffOptions{From: "s1", Model: "gpt-5.5"})
 	if err != nil {
 		t.Fatalf("Handoff: %v", err)
 	}
-	if sessions.models[opened.ID] != "gpt-5.5" || sessions.profiles[opened.ID] != "spare" {
-		t.Errorf("model %q, profile %q; want the ones asked for", sessions.models[opened.ID], sessions.profiles[opened.ID])
-	}
-	if !slices.Equal(term.checkedProfiles, [][2]string{{"codex", "spare"}}) {
-		t.Errorf("checked %v, want the profile asked for against codex", term.checkedProfiles)
+	if sessions.models[opened.ID] != "gpt-5.5" || sessions.profiles[opened.ID] != "work" {
+		t.Errorf("model %q, profile %q; want the model asked for in the caller's profile", sessions.models[opened.ID], sessions.profiles[opened.ID])
 	}
 }
 
@@ -97,18 +95,6 @@ func TestHandoffToAnotherProviderInheritsNothing(t *testing.T) {
 	if opened.Kind != "opencode" || sessions.models[id] != "" || sessions.efforts[id] != "" || sessions.profiles[id] != "" {
 		t.Errorf("kind %q, model %q, effort %q, profile %q; want opencode on its defaults",
 			opened.Kind, sessions.models[id], sessions.efforts[id], sessions.profiles[id])
-	}
-}
-
-func TestHandoffRefusesAProfileTheProviderLacks(t *testing.T) {
-	svc, sessions, _, term, _ := newService(t)
-	term.profileErr = errors.New(`codex profile is gone: "spare" was deleted`)
-
-	if _, err := svc.Handoff(t.Context(), HandoffOptions{From: "s1", Profile: "spare"}); err == nil || !strings.Contains(err.Error(), "spare") {
-		t.Fatalf("Handoff = %v, want the profile refused", err)
-	}
-	if len(sessions.rows) != 0 || len(term.spawns) != 0 {
-		t.Errorf("rows %+v, spawns %+v; nothing should open", sessions.rows, term.spawns)
 	}
 }
 

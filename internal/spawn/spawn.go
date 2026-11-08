@@ -113,8 +113,6 @@ type Terminal interface {
 	// RunModCommand queues cmd for the session's Claude Code mod and waits,
 	// until ctx ends, for the mod to confirm it.
 	RunModCommand(ctx context.Context, id string, cmd terminal.ModCommand) (terminal.ModOutcome, error)
-	// CheckProfile refuses a profile a session of kind cannot start in.
-	CheckProfile(kind, profile string) error
 }
 
 // Events is where an opened session is announced to the window. A nil one leaves

@@ -75,14 +75,14 @@ type OpenSubagentOptions struct {
 }
 
 // HandoffSessionOptions is one Handoff call: the session handing its work off
-// (From) and what its successor runs. Kind, Model, Effort and Profile left empty
-// are the caller's own.
+// (From) and what its successor runs. Kind, Model and Effort left empty are the
+// caller's own. There is no profile: lich moves work to another account only on
+// the user's click.
 type HandoffSessionOptions struct {
-	From    string `json:"from"`
-	Kind    string `json:"kind"`
-	Model   string `json:"model"`
-	Effort  string `json:"effort"`
-	Profile string `json:"profile"`
+	From   string `json:"from"`
+	Kind   string `json:"kind"`
+	Model  string `json:"model"`
+	Effort string `json:"effort"`
 }
 
 // OpenedSession is one opened session: what the caller is told, and what the window is

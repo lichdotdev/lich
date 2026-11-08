@@ -9,6 +9,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/spawn"
 )
 
@@ -32,6 +33,10 @@ type handoffNote struct {
 func (n handoffNote) check() error {
 	if strings.TrimSpace(n.done) == "" || strings.TrimSpace(n.nextSteps) == "" {
 		return errors.New("a handoff needs what is done and the next steps: the successor starts from nothing else")
+	}
+	if size := len(n.done) + len(n.branch) + len(n.commits) + len(n.nextSteps) + len(n.gotchas); size > relay.PromptLimit {
+		return fmt.Errorf("the handoff note is %d bytes and the limit is %d: name the paths to read instead of pasting their contents",
+			size, relay.PromptLimit)
 	}
 	return nil
 }
@@ -99,7 +104,6 @@ func (c *client) handoff(args []string) error {
 	flags.StringVar(&opts.Kind, "kind", "", "what the successor runs; defaults to this session's provider")
 	flags.StringVar(&opts.Model, "model", "", "model the provider runs, in the provider's own spelling; defaults to this session's")
 	flags.StringVar(&opts.Effort, "effort", "", "reasoning effort the provider runs at; defaults to this session's")
-	flags.StringVar(&opts.Profile, "profile", "", "profile the successor runs in; defaults to this session's")
 	asJSON := flags.Bool("json", false, "print the result as JSON")
 	if err := c.parse(flags, args); err != nil {
 		return err
@@ -134,9 +138,10 @@ var handoffTools = []mcpTool{
 		Description: "Hand your work off to a fresh session of yourself, at a clean break — just " +
 			"committed, tests green, the next step clear — instead of carrying on in a context " +
 			"that has grown long. lich opens the successor in your checkout and folder, on your " +
-			"provider, model, effort and profile unless you name others, and types your note at " +
-			"its prompt. Your session stays open: the user closes it. Stop working once this " +
-			"returns. Returns the successor's names.",
+			"provider, model and effort unless you name others and in your profile, and types " +
+			"your note at its prompt. The note is capped at 8 KB, like send_to_session: name what " +
+			"to read, do not paste it. Your session stays open: the user closes it. Stop working " +
+			"once this returns. Returns the successor's names.",
 		Schema: schema(map[string]any{
 			"done": property("string",
 				"What is finished: verified and committed, so the successor does not redo it."),
@@ -154,9 +159,6 @@ var handoffTools = []mcpTool{
 			"effort": property("string",
 				"Reasoning effort the successor runs at, spelled as its provider takes it. "+
 					"Defaults to yours when the provider is yours."),
-			"profile": property("string",
-				"Profile (account) the successor runs in, by its slug. Defaults to yours when "+
-					"the provider is yours. A provider with no profiles refuses one."),
 		}, "done", "next_steps"),
 		Run: func(ctx context.Context, c *client, args mcpArgs) (string, error) {
 			note := handoffNote{
@@ -165,7 +167,6 @@ var handoffTools = []mcpTool{
 			}
 			opened, err := c.openSuccessor(ctx, api.HandoffSessionOptions{
 				Kind: args.text("kind"), Model: args.text("model"), Effort: args.text("effort"),
-				Profile: args.text("profile"),
 			}, note)
 			if err != nil {
 				return "", err

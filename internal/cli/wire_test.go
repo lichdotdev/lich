@@ -472,8 +472,6 @@ func (s *spawnTerminal) RunModCommand(
 	return terminal.ModOutcome{ID: "m1", State: terminal.ModAcked, OK: true}, nil
 }
 
-func (*spawnTerminal) CheckProfile(string, string) error { return nil }
-
 func (s *spawnTerminal) Start(_ context.Context, opts api.StartOptions) (api.None, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

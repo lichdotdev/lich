@@ -60,9 +60,9 @@ const (
 	// sender hears a failure it can act on rather than watching a ticket expire
 	// an hour later with nothing said.
 	defaultDeliveryLimit = 5 * time.Minute
-	// promptLimit bounds one relayed prompt. The message is typed into a TUI a
+	// PromptLimit bounds one relayed prompt. The message is typed into a TUI a
 	// character at a time; a megabyte of it is a hang, not a prompt.
-	promptLimit = 8192
+	PromptLimit = 8192
 	// answerLimit bounds one reply. Generous — an answer is a summary, and the
 	// caller reads it as command output.
 	answerLimit = 64 * 1024
@@ -247,7 +247,7 @@ type ticket struct {
 	// what names an errand to the agent working it: a session with more than one
 	// open request has to be shown which is which before it can pick the ticket
 	// its answer belongs to (see errandOfLocked). The whole prompt is not kept —
-	// it runs to promptLimit, and what a reader needs is the line they recognise.
+	// it runs to PromptLimit, and what a reader needs is the line they recognise.
 	asked string
 	// prompt is the task itself, composed into the message when it is handed
 	// over (handOff): whether the target's mod answers for it is known only
@@ -571,9 +571,9 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	if strings.TrimSpace(prompt) == "" {
 		return Result{}, fmt.Errorf("nothing to send: the prompt is empty")
 	}
-	if len(prompt) > promptLimit {
+	if len(prompt) > PromptLimit {
 		return Result{}, fmt.Errorf("prompt is %d bytes, over the %d limit: "+
-			"name the paths to read instead of pasting their contents", len(prompt), promptLimit)
+			"name the paths to read instead of pasting their contents", len(prompt), PromptLimit)
 	}
 
 	dest, err := s.resolve(fromID, target, project)

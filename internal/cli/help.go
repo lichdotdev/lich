@@ -112,11 +112,11 @@ var commands = []command{
 		name: "handoff",
 		args: "--done <text> --next <text> [--branch <branch>] [--commits <text>]\n" +
 			"            [--gotchas <text>] [--kind <provider>] [--model <model>]\n" +
-			"            [--effort <level>] [--profile <slug>] [--json]",
+			"            [--effort <level>] [--json]",
 		about: "Hand this session's work off to a fresh session of itself at a clean\n" +
 			"break: it opens in this session's checkout and folder, on this session's\n" +
-			"provider, model, effort and profile unless the flags name others, and the\n" +
-			"note is typed at its prompt. This session stays open for the user to close.",
+			"provider, model and effort unless the flags name others and in its profile,\n" +
+			"and the note, 8 KB at most, is typed at its prompt. This session stays open for the user to close.",
 	},
 	{
 		name: "close-project",

@@ -6,6 +6,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 const successorBody = `{"id":"9f8e","projectId":"p1","project":"lich","label":"Session 5",
@@ -30,7 +31,7 @@ func TestMCPHandoffOpensTheSuccessorAndSubmitsTheNote(t *testing.T) {
 	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
 		{"name":"handoff_session","arguments":{"done":"parser ported","next_steps":"wire the CLI",
 		"branch":"feat/parser","commits":"abc123 port the parser","gotchas":"the golden moves",
-		"kind":"codex","model":"gpt-5.5","effort":"high","profile":"work"}}}`)
+		"kind":"codex","model":"gpt-5.5","effort":"high"}}}`)
 
 	text, failed := textOf(t, replies[0])
 	if failed {
@@ -39,7 +40,7 @@ func TestMCPHandoffOpensTheSuccessorAndSubmitsTheNote(t *testing.T) {
 	if len(f.calls) != 3 || f.calls[0].method != "spawn.Handoff" || f.calls[1].method != "terminal.Ready" || f.calls[2].method != "relay.Submit" {
 		t.Fatalf("calls = %+v, want spawn.Handoff, terminal.Ready, relay.Submit", f.calls)
 	}
-	want := api.HandoffSessionOptions{From: "s1", Kind: "codex", Model: "gpt-5.5", Effort: "high", Profile: "work"}
+	want := api.HandoffSessionOptions{From: "s1", Kind: "codex", Model: "gpt-5.5", Effort: "high"}
 	if got := optionsOf[api.HandoffSessionOptions](t, f.calls[0]); got != want {
 		t.Errorf("options = %+v, want %+v", got, want)
 	}
@@ -92,6 +93,37 @@ func TestMCPHandoffRefusesANoteWithoutDoneOrNextSteps(t *testing.T) {
 	}
 }
 
+// The note is typed at a prompt, so it holds to send_to_session's limit: exactly
+// the limit passes, one byte more is refused, counted across all five fields.
+func TestHandoffNoteHoldsToThePromptLimit(t *testing.T) {
+	t.Parallel()
+	fill := relay.PromptLimit - len("parser ported") - len("wire the CLI")
+	at := handoffNote{done: "parser ported", nextSteps: "wire the CLI", gotchas: strings.Repeat("x", fill)}
+	if err := at.check(); err != nil {
+		t.Errorf("a note at the limit: %v", err)
+	}
+	over := at
+	over.branch = "b"
+	if err := over.check(); err == nil || !strings.Contains(err.Error(), "limit") {
+		t.Errorf("a note one byte over: %v, want it refused", err)
+	}
+}
+
+func TestMCPHandoffOpensNothingForAnOversizedNote(t *testing.T) {
+	t.Parallel()
+	f := successorLich(t)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"handoff_session","arguments":{"done":"`+strings.Repeat("x", relay.PromptLimit+1)+`","next_steps":"y"}}}`)
+
+	if text, failed := textOf(t, replies[0]); !failed || !strings.Contains(text, "limit") {
+		t.Errorf("failed %v, text %q; want the note refused", failed, text)
+	}
+	if len(f.calls) != 0 {
+		t.Errorf("calls = %+v, want nothing opened", f.calls)
+	}
+}
+
 // The successor exists whether or not the note landed, so the answer says
 // both rather than reporting a failed call.
 func TestMCPHandoffKeepsTheSuccessorWhenTheNoteDoesNotLand(t *testing.T) {
@@ -137,11 +169,11 @@ func TestHandoffCommandPostsTheFlagsItWasGiven(t *testing.T) {
 	f := successorLich(t)
 
 	code, stdout, stderr := run(t, f, "handoff", "--done", "parser ported", "--next", "wire the CLI",
-		"--gotchas", "the golden moves", "--kind", "claude", "--model", "opus", "--effort", "max", "--profile", "work")
+		"--gotchas", "the golden moves", "--kind", "claude", "--model", "opus", "--effort", "max")
 	if code != 0 {
 		t.Fatalf("exit = %d, stderr = %q", code, stderr)
 	}
-	want := api.HandoffSessionOptions{From: "s1", Kind: "claude", Model: "opus", Effort: "max", Profile: "work"}
+	want := api.HandoffSessionOptions{From: "s1", Kind: "claude", Model: "opus", Effort: "max"}
 	if got := optionsOf[api.HandoffSessionOptions](t, f.calls[0]); got != want {
 		t.Errorf("options = %+v, want %+v", got, want)
 	}
