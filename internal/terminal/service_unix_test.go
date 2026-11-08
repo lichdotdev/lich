@@ -125,3 +125,20 @@ func TestServicesAreNotCountedAsSessions(t *testing.T) {
 	svc.KillService("svc-1")
 	run.wait(t)
 }
+
+// The console text the CLI and the MCP read is the ring's tail: the preamble
+// is for a terminal being rebuilt, and in that text it is garbage.
+func TestServiceOutputCarriesNoModesPreamble(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	svc := New(stubBins{}, nil, events.New())
+	line := `printf '\033[?2004h'; head -c 3000000 /dev/zero | tr '\0' x; printf END; sleep 30`
+	run := startTestService(t, svc, "svc-1", line)
+	waitFor(t, func() bool { return strings.HasSuffix(string(svc.ServiceOutput("svc-1")), "END") }, "the output to pass the ring")
+	if out := string(svc.ServiceOutput("svc-1")); strings.Contains(out, "\x1b") || !strings.HasPrefix(out, "x") {
+		t.Errorf("live output starts %q, want the tail alone", out[:min(16, len(out))])
+	}
+	svc.KillService("svc-1")
+	if _, tail := run.wait(t); strings.Contains(tail, "\x1b[?2004h") || !strings.HasPrefix(tail, "x") {
+		t.Errorf("exit tail starts %q, want the tail alone", tail[:min(16, len(tail))])
+	}
+}

@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A worktree that git creates but cannot read as a checkout is removed along with the error. Before, its folder stayed behind, and creating a worktree under that name again failed with "which already exists".
 - An agent's navigation right after a page downloaded a file no longer fails with `net::ERR_ABORTED` on Chromium 157 and later, which reloads the page almost 4 seconds after the download begins: lich loads the page again.
 - A task sent to a Claude Code or Cursor CLI session in a folder it already trusts reaches its prompt even when that session came up without lich-plugin, which happens when the plugin is updated while the session starts. Before, lich held the task for a report that session would never send, and after 5 minutes answered that the task never reached a prompt while the agent sat idle at it.
+- A session that has printed more than 2 MB keeps its terminal modes when the window rebuilds its terminal, on first showing it or after a reconnect. Before, the mouse could stop working or fall back to an old encoding, a paste could submit at its first line break, keys came through without the kitty protocol, a full-screen app drew over the shell's own screen, and the palette, foreground, background and cursor colors it set reverted. Applies to every provider.
 
 ## [0.86.0] - 2026-11-07
 
