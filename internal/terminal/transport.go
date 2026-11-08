@@ -131,6 +131,7 @@ type transport struct {
 	mux         *http.ServeMux
 	srv         *http.Server
 	input       func(id string, data []byte)
+	typed       func(id string)
 	status      func(req hookRequest)
 	linkSession func(sessionID, providerSessionID, provider string) error
 	setTitle    func(sessionID, title string) error
@@ -746,12 +747,28 @@ func (t *transport) readLoop(conn *websocket.Conn) {
 		if kind != websocket.MessageBinary {
 			continue
 		}
+		// A zero byte, which no id length is, marks what a person typed or
+		// pasted. Every other frame may be an emulator's automatic reply or a
+		// mouse report, which nobody typed.
+		typed := len(data) > 0 && data[0] == 0
+		if typed {
+			data = data[1:]
+		}
 		id, payload, err := decodeFrame(data)
 		if err != nil {
 			continue
 		}
+		if t.typed != nil && typed {
+			t.typed(id)
+		}
 		t.input(id, payload)
 	}
+}
+
+// setTyped wires fn to hear which session a person typed in, before the bytes
+// are written. Set once, before the listener has a client.
+func (t *transport) setTyped(fn func(id string)) {
+	t.typed = fn
 }
 
 // forget clears conn as the transport's client and retires the writer that owned

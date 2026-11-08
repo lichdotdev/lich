@@ -269,19 +269,34 @@ func (c *Client) Terminal(ctx context.Context, onOutput, onReplay func(id string
 	return &Stream{conn: conn}, finished, nil
 }
 
-// Send writes keystrokes to session id.
+// Send writes bytes to session id's PTY that nobody typed: an emulator's reply,
+// a mouse report.
 func (s *Stream) Send(ctx context.Context, id string, data []byte) error {
 	frame, err := encodeFrame(id, data)
 	if err != nil {
 		return err
 	}
+	return s.write(ctx, frame)
+}
+
+// SendTyped writes what a person typed or pasted to session id's PTY.
+func (s *Stream) SendTyped(ctx context.Context, id string, data []byte) error {
+	frame, err := encodeFrame(id, data)
+	if err != nil {
+		return err
+	}
+	return s.write(ctx, append([]byte{0}, frame...))
+}
+
+func (s *Stream) write(ctx context.Context, frame []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.conn.Write(ctx, websocket.MessageBinary, frame)
 }
 
-// A /ws frame is [id length: 1 byte][id][payload], and a replay frame the same
-// behind a zero byte (internal/terminal/transport.go).
+// A /ws frame is [id length: 1 byte][id][payload], and the same behind a zero
+// byte is a replay frame going out or typed input coming in
+// (internal/terminal/transport.go).
 func encodeFrame(id string, payload []byte) ([]byte, error) {
 	if len(id) == 0 || len(id) > 255 {
 		return nil, fmt.Errorf("session id %q: want 1 to 255 bytes", id)

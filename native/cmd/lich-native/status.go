@@ -129,7 +129,8 @@ func (e *statusEntry) applyState(p statusEvent, now time.Time) bool {
 // has no SessionEnd and would hold a dead tool name. A "busy" naming no tool is
 // the PostToolUse gap between two tools and changes nothing.
 func (e *statusEntry) applyTool(p statusEvent) bool {
-	if p.State != statusBusy {
+	// A program's report replaces its record whole, so it has no gap.
+	if p.State != statusBusy || (p.Tool == "" && p.Program) {
 		changed := e.tool != nil
 		e.tool = nil
 		return changed

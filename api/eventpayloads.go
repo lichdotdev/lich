@@ -13,7 +13,9 @@ type SessionStatus struct {
 	Reason string `json:"reason,omitempty"`
 	// Program marks a report read from the session's own output (OSC 7501)
 	// rather than from a hook. The window limits the alerts these raise, since
-	// nothing bounds how often a program can change its state.
+	// nothing bounds how often a program can change its state, and reads none
+	// of a hook's other meanings into them: an "idle" is not the CLI leaving, a
+	// busy with no tool clears the tool line.
 	Program bool `json:"program,omitempty"`
 }
 

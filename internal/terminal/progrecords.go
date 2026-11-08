@@ -3,6 +3,7 @@ package terminal
 import (
 	"strings"
 	"sync"
+	"time"
 )
 
 // progRecord is a report as kept, with the order it arrived in.
@@ -24,6 +25,110 @@ type programStatus struct {
 	// shown is the last event published from the records, zero before the
 	// first and after a hook took the card over.
 	shown statusEvent
+	// order is held across deciding and publishing, by the records and by a
+	// hook's report, so what the window hears is in the order it was decided.
+	order sync.Mutex
+	// dirty and running are the single publisher's: a change to publish, and
+	// whether a goroutine is on it.
+	dirty, running bool
+	// unreadAt is when the mark was last written, unreadWant the newest value
+	// waiting out progUnreadGap, and unreadArmed whether a timer will write it.
+	unreadAt    time.Time
+	unreadWant  bool
+	unreadArmed bool
+}
+
+// kick marks the records as changed and reports whether the caller is the one
+// to start the publisher.
+func (p *programStatus) kick() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.dirty = true
+	if p.running {
+		return false
+	}
+	p.running = true
+	return true
+}
+
+// take reports whether there is a change to publish, and retires the
+// publisher when there is none.
+func (p *programStatus) take() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.dirty {
+		p.running = false
+		return false
+	}
+	p.dirty = false
+	return true
+}
+
+// unreadDue answers whether the mark is written now, and how long until a
+// held value should be, zero when no timer is owed.
+func (p *programStatus) unreadDue(want bool, now time.Time) (write bool, wait time.Duration) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	since := now.Sub(p.unreadAt)
+	if since >= progUnreadGap {
+		p.unreadAt = now
+		return true, 0
+	}
+	p.unreadWant = want
+	if p.unreadArmed {
+		return false, 0
+	}
+	p.unreadArmed = true
+	return false, progUnreadGap - since
+}
+
+// takeUnread is the held value's time coming round.
+func (p *programStatus) takeUnread(now time.Time) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.unreadArmed = false
+	p.unreadAt = now
+	return p.unreadWant
+}
+
+// progReplies is the query answers pending for one session, one per terminator
+// because answering twice says nothing more. The zero value is ready to use.
+type progReplies struct {
+	mu               sync.Mutex
+	st, bel, running bool
+}
+
+// ask files one query and reports whether the caller is the one to start the
+// writer.
+func (r *progReplies) ask(bel bool) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if bel {
+		r.bel = true
+	} else {
+		r.st = true
+	}
+	if r.running {
+		return false
+	}
+	r.running = true
+	return true
+}
+
+// next is the next answer to write, and retires the writer when there is none.
+func (r *progReplies) next() (string, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	switch {
+	case r.st:
+		r.st = false
+		return progQueryReply + "\x1b\\", true
+	case r.bel:
+		r.bel = false
+		return progQueryReply + "\a", true
+	}
+	r.running = false
+	return "", false
 }
 
 // apply stores one report: it replaces its record whole, and a clear removes
@@ -132,8 +237,11 @@ func (p *programStatus) next(id string) (statusEvent, bool) {
 	return ev, true
 }
 
-// progUrgency orders states for the one record a card shows.
-var progUrgency = map[string]int{progBlocked: 5, progError: 4, progDone: 3, progWorking: 2, progIdle: 1}
+// progUrgency orders states for the one record a card shows. working comes
+// before done and error, which outlive a prompt: one part finished while
+// another still runs is a session still running, and the card reads an error
+// as a finished turn.
+var progUrgency = map[string]int{progBlocked: 5, progWorking: 4, progError: 3, progDone: 2, progIdle: 1}
 
 // summaryLocked picks the record the card shows: the most urgent state, then
 // the root record, then the one updated last. A record without an app takes

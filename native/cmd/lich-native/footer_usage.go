@@ -85,7 +85,7 @@ func (f *footerUsage) apply(ev backend.Event) (bool, error) {
 		id = e.ID
 	case api.SessionStatusEvent.Name:
 		e, err := backend.Decode(ev, api.SessionStatusEvent)
-		if err != nil || e.State != "idle" {
+		if err != nil || e.State != "idle" || e.Program {
 			return true, err
 		}
 		id = e.ID

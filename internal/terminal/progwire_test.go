@@ -5,8 +5,15 @@
 package terminal
 
 import (
+	"context"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/coder/websocket"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // replyPTY hands every write to the test.
@@ -27,15 +34,31 @@ func feedProgram(svc *Service, id string, chunks ...string) {
 	}
 }
 
+// settleProgram waits for the session's publisher to finish.
+func settleProgram(t *testing.T, sess *session) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		sess.prog.mu.Lock()
+		running := sess.prog.running
+		sess.prog.mu.Unlock()
+		if !running {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal("the program status publisher never finished")
+}
+
 func TestProgramReportReachesTheCard(t *testing.T) {
 	t.Parallel()
-	svc := serviceWithSessions(t, hookStore{}, "s1")
-	feedProgram(svc, "s1", "\x1b]7501;state=working:app=cargo:msg="+b64("Compiling"), "\x1b\\")
+	svc, sess := programService(t, hookStore{})
+	feed(t, svc, sess, "\x1b]7501;state=working:app=cargo:msg="+b64("Compiling"), "\x1b\\")
 	if st := svc.Status("s1"); st.State != statusBusy || st.Tool != "cargo" || st.Detail != "Compiling" {
 		t.Fatalf("status = %+v, want busy cargo · Compiling", st)
 	}
 	svc.programTyped("s1")
-	feedProgram(svc, "s1", "\x1b]133;A\a")
+	feed(t, svc, sess, "\x1b]133;A\a")
 	if st := svc.Status("s1"); st.State != statusIdle {
 		t.Fatalf("after the prompt = %+v, want idle", st)
 	}
@@ -43,14 +66,14 @@ func TestProgramReportReachesTheCard(t *testing.T) {
 
 func TestProgramReportYieldsToTheHook(t *testing.T) {
 	t.Parallel()
-	svc := serviceWithSessions(t, hookStore{}, "s1")
+	svc, sess := programService(t, hookStore{})
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy, Tool: "Bash"})
-	feedProgram(svc, "s1", "\x1b]7501;state=blocked\a")
+	feed(t, svc, sess, "\x1b]7501;state=blocked\a")
 	if st := svc.Status("s1"); st.State != statusBusy || st.Tool != "Bash" {
 		t.Fatalf("status = %+v, want the hook's busy", st)
 	}
 	svc.onHookState(hookRequest{SessionID: "s1", State: statusIdle})
-	feedProgram(svc, "s1", "\x1b]7501;state=done\a")
+	feed(t, svc, sess, "\x1b]7501;state=done\a")
 	if st := svc.Status("s1"); st.State != statusDone {
 		t.Fatalf("after the session ended = %+v, want the program's done", st)
 	}
@@ -77,5 +100,210 @@ func TestProgramQueryIsAnsweredWithItsTerminator(t *testing.T) {
 	}
 	if st := svc.Status("s1"); st.State != "" {
 		t.Fatalf("a query set the status: %+v", st)
+	}
+}
+
+// programService is a service over s1 whose PTY swallows what is written.
+func programService(t *testing.T, store Store) (*Service, *session) {
+	t.Helper()
+	svc := serviceWithSessions(t, store, "s1")
+	sess := svc.sessionOf("s1")
+	sess.pty = &shortWritePTY{chunk: 1 << 16}
+	return svc, sess
+}
+
+// feed reads chunks as the stream goroutine does and waits for what they
+// published to go out.
+func feed(t *testing.T, svc *Service, sess *session, chunks ...string) {
+	t.Helper()
+	feedProgram(svc, "s1", chunks...)
+	settleProgram(t, sess)
+}
+
+func TestAnEmulatorReplyLeavesAFinishedRecord(t *testing.T) {
+	t.Parallel()
+	svc, sess := programService(t, hookStore{})
+	feed(t, svc, sess, "\x1b]7501;state=error:msg="+b64("Linker failed")+"\a")
+	for _, reply := range []string{"\x1b[?62;22c", "\x1b[12;40R", "\x1b[<35;10;5M"} {
+		svc.onInput("s1", []byte(reply))
+		settleProgram(t, sess)
+		if st := svc.Status("s1"); st.State != statusDone {
+			t.Fatalf("after %q: %+v, want the finished record kept", reply, st)
+		}
+	}
+}
+
+// blockedPTY never finishes a write, the way a child not reading stdin does.
+type blockedPTY struct {
+	shortWritePTY
+	entered atomic.Int32
+	release chan struct{}
+}
+
+func (p *blockedPTY) Write(b []byte) (int, error) {
+	p.entered.Add(1)
+	<-p.release
+	return len(b), nil
+}
+
+func TestQueriesToAChildNotReadingUseOneWriter(t *testing.T) {
+	t.Parallel()
+	svc, sess := programService(t, hookStore{})
+	fake := &blockedPTY{release: make(chan struct{})}
+	sess.pty = fake
+	t.Cleanup(func() { close(fake.release) })
+	feedProgram(svc, "s1", strings.Repeat("\x1b]7501;?\a", 200))
+	deadline := time.Now().Add(5 * time.Second)
+	for fake.entered.Load() == 0 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	time.Sleep(50 * time.Millisecond)
+	if n := fake.entered.Load(); n != 1 {
+		t.Fatalf("%d writes blocked on the PTY, want 1", n)
+	}
+}
+
+// slowUnread holds a write of unread=true until released, and counts them.
+type slowUnread struct {
+	hookStore
+	entered chan struct{}
+	release chan struct{}
+	writes  *atomic.Int32
+}
+
+func (s slowUnread) SetSessionUnread(_ context.Context, opts api.SessionUnreadOptions) (api.None, error) {
+	if opts.Unread {
+		s.writes.Add(1)
+		if s.release != nil {
+			s.entered <- struct{}{}
+			<-s.release
+		}
+	}
+	return api.None{}, nil
+}
+
+func TestAStalledPublishDoesNotHoldTheReadLoop(t *testing.T) {
+	t.Parallel()
+	store := slowUnread{entered: make(chan struct{}, 1), release: make(chan struct{}), writes: &atomic.Int32{}}
+	svc, _ := programService(t, store)
+	defer close(store.release)
+	read := make(chan struct{})
+	go func() {
+		feedProgram(svc, "s1", "\x1b]7501;state=done\a")
+		close(read)
+	}()
+	select {
+	case <-read:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the PTY read waited on the store")
+	}
+}
+
+func TestDoneFlipsWriteUnreadOnce(t *testing.T) {
+	t.Parallel()
+	writes := &atomic.Int32{}
+	svc, sess := programService(t, slowUnread{writes: writes})
+	for range 5 {
+		feed(t, svc, sess, "\x1b]7501;state=done\a")
+		feed(t, svc, sess, "\x1b]7501;state=working\a")
+	}
+	if n := writes.Load(); n != 1 {
+		t.Fatalf("%d unread writes, want 1 inside the gap", n)
+	}
+}
+
+func TestAStaleProgramReportCannotLandAfterTheHook(t *testing.T) {
+	t.Parallel()
+	store := slowUnread{entered: make(chan struct{}, 1), release: make(chan struct{}), writes: &atomic.Int32{}}
+	svc, sess := programService(t, store)
+	read := make(chan struct{})
+	go func() {
+		feedProgram(svc, "s1", "\x1b]7501;state=done\a")
+		close(read)
+	}()
+	<-store.entered
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusBusy, Tool: "Bash"})
+	close(store.release)
+	<-read
+	settleProgram(t, sess)
+	if st := svc.Status("s1"); st.State != statusBusy {
+		t.Fatalf("status = %+v, want the hook's busy last", st)
+	}
+}
+
+func TestAHeldBackWaitingDoesNotSilenceTheProgram(t *testing.T) {
+	t.Parallel()
+	svc, sess := programService(t, hookStore{})
+	feed(t, svc, sess, "\x1b]7501;state=working:app=make\a")
+	svc.onHookState(hookRequest{SessionID: "s1", State: statusWaiting})
+	feed(t, svc, sess, "\x1b]7501;state=blocked:msg="+b64("Approve?")+"\a")
+	if st := svc.Status("s1"); st.State != statusWaiting || st.Reason != "Approve?" {
+		t.Fatalf("status = %+v, want the program's blocked", st)
+	}
+}
+
+func TestAWorkingRecordOutranksAFinishedOne(t *testing.T) {
+	t.Parallel()
+	svc, sess := programService(t, hookStore{})
+	feed(t, svc, sess, "\x1b]7501;state=done:id=build\a", "\x1b]7501;state=working:id=test:app=go\a")
+	if st := svc.Status("s1"); st.State != statusBusy || st.Tool != "go" {
+		t.Fatalf("status = %+v, want busy while tests run", st)
+	}
+	feed(t, svc, sess, "\x1b]7501;state=error:id=lint\a")
+	if st := svc.Status("s1"); st.State != statusBusy {
+		t.Fatalf("status = %+v, want busy: an error reads as finished on the card", st)
+	}
+}
+
+func TestAWorkingReportWithoutALabelClearsTheTool(t *testing.T) {
+	t.Parallel()
+	svc, sess := programService(t, hookStore{})
+	feed(t, svc, sess, "\x1b]7501;state=working:app=cargo:msg="+b64("Compiling")+"\a")
+	feed(t, svc, sess, "\x1b]7501;state=working\a")
+	if st := svc.Status("s1"); st.State != statusBusy || st.Tool != "" || st.Detail != "" {
+		t.Fatalf("status = %+v, want busy with no tool", st)
+	}
+}
+
+func TestOnlyAMarkedFrameEndsAFinishedRecord(t *testing.T) {
+	t.Parallel()
+	inputs, typed := make(chan string, 2), make(chan string, 1)
+	tr, err := newTransport(func(id string, data []byte) { inputs <- string(data) }, nil, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("newTransport: %v", err)
+	}
+	tr.setTyped(func(id string) { typed <- id })
+	conn, err := dial(t, tr, tr.token)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer func() { _ = conn.Close(websocket.StatusNormalClosure, "") }()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	reply, _ := encodeFrame("s1", []byte("\x1b[?62c"))
+	key, _ := encodeFrame("s1", []byte("k"))
+	for _, frame := range [][]byte{reply, append([]byte{0}, key...)} {
+		if err := conn.Write(ctx, websocket.MessageBinary, frame); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+	}
+	for _, want := range []string{"\x1b[?62c", "k"} {
+		select {
+		case got := <-inputs:
+			if got != want {
+				t.Fatalf("input %q, want %q", got, want)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("no input %q", want)
+		}
+	}
+	select {
+	case id := <-typed:
+		if id != "s1" || len(typed) != 0 {
+			t.Fatalf("typed %q, %d more", id, len(typed))
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the marked frame was not typing")
 	}
 }

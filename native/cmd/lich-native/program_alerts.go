@@ -27,13 +27,13 @@ type programAlerts struct {
 }
 
 type sentAlert struct {
-	status string
-	at     time.Time
+	at time.Time
 }
 
 // admit answers whether r goes out now, and how long until a held alert should
-// be looked at again, zero when no timer is owed. A repeat of the state last
-// sent is dropped inside the gap, and another state is held.
+// be looked at again, zero when no timer is owed. Inside the gap r is held, the
+// newest one winning, including a state the session returned to: a second
+// question is still a question (decideStatusNotice), only later.
 func (a *programAlerts) admit(r statusReport, program bool, now time.Time) (send bool, wait time.Duration) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -48,9 +48,6 @@ func (a *programAlerts) admit(r statusReport, program bool, now time.Time) (send
 	if !sent || now.Sub(last.at) >= programAlertGap {
 		a.markSent(r, now)
 		return true, 0
-	}
-	if r.status == last.status {
-		return false, 0
 	}
 	_, armed := a.held[r.id]
 	if a.held == nil {
@@ -67,7 +64,7 @@ func (a *programAlerts) markSent(r statusReport, now time.Time) {
 	if a.last == nil {
 		a.last = map[string]sentAlert{}
 	}
-	a.last[r.id] = sentAlert{status: r.status, at: now}
+	a.last[r.id] = sentAlert{at: now}
 }
 
 // takeHeld removes and returns the alert held for id.

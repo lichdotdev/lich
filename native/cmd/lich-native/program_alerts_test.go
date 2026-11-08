@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestProgramAlertsHoldTheOtherStateAndDropARepeat(t *testing.T) {
+func TestProgramAlertsHoldInsideTheGap(t *testing.T) {
 	var a programAlerts
 	t0 := time.Now()
 	waiting := statusReport{id: "s", status: statusWaiting}
@@ -14,9 +14,6 @@ func TestProgramAlertsHoldTheOtherStateAndDropARepeat(t *testing.T) {
 
 	if send, _ := a.admit(waiting, true, t0); !send {
 		t.Fatal("the first alert was held")
-	}
-	if send, wait := a.admit(waiting, true, t0.Add(time.Second)); send || wait != 0 {
-		t.Fatalf("a repeat: send %v wait %v, want dropped", send, wait)
 	}
 	if send, wait := a.admit(statusReport{id: "s", status: statusBusy}, true, t0.Add(2*time.Second)); !send || wait != 0 {
 		t.Fatalf("no alert is raised for busy, and the notifier must still hear it: send %v wait %v", send, wait)
@@ -85,5 +82,60 @@ func TestAHeldAlertIsDroppedWhenTheStateMovedOn(t *testing.T) {
 	(*timers)[0]()
 	if len(r.sent) != 1 {
 		t.Fatalf("sent %v, want nothing for a state the session left", r.sent)
+	}
+}
+
+func TestAProgramsIdleLeavesTheAgentAndRelayMarks(t *testing.T) {
+	r, _ := programRig(t)
+	r.m.agent["a"] = "crush"
+	r.m.relay["a"] = sessionRelay{ID: "a", Direction: relayOut}
+	r.program(t, "a", "idle")
+	if r.m.agent["a"] != "crush" {
+		t.Fatal("a program's idle dropped the provider mark")
+	}
+	if _, ok := r.m.relay["a"]; !ok {
+		t.Fatal("a program's idle dropped the relay mark")
+	}
+	r.report(t, "a", "idle")
+	if _, ok := r.m.agent["a"]; ok {
+		t.Fatal("the hook's idle kept the provider mark")
+	}
+}
+
+func TestAProgramsDoneLeavesThePullRequestLookup(t *testing.T) {
+	r, _ := programRig(t)
+	path := r.m.shownPath(r.m.projects[0], r.m.projects[0].Sessions[0])
+	r.m.prs[path] = prLookup{head: "abc"}
+	r.program(t, "a", statusDone)
+	if r.m.prs[path].head != "abc" {
+		t.Fatal("a program's done re-ran the pull request lookup")
+	}
+}
+
+func TestReenteringTheAlertedStateAlertsAgainAfterTheGap(t *testing.T) {
+	r, timers := programRig(t)
+	r.program(t, "a", statusWaiting)
+	r.program(t, "a", statusBusy)
+	r.program(t, "a", statusWaiting)
+	if len(r.sent) != 1 || len(*timers) != 1 {
+		t.Fatalf("sent %v with %d timers, want one alert and the second question held", r.sent, len(*timers))
+	}
+	(*timers)[0]()
+	if len(r.sent) != 2 {
+		t.Fatalf("sent %v, want the second question out when the gap ends", r.sent)
+	}
+}
+
+func TestAProgramsBusyWithoutALabelClearsTheTool(t *testing.T) {
+	var s statusEntry
+	s.applyTool(statusEvent{State: statusBusy, Tool: "cargo", Program: true})
+	s.applyTool(statusEvent{State: statusBusy, Program: true})
+	if s.tool != nil {
+		t.Fatalf("tool = %+v, want cleared", s.tool)
+	}
+	s.applyTool(statusEvent{State: statusBusy, Tool: "Bash"})
+	s.applyTool(statusEvent{State: statusBusy})
+	if s.tool == nil {
+		t.Fatal("a hook's gap lost its tool")
 	}
 }

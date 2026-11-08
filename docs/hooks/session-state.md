@@ -370,14 +370,17 @@ store and every screen read it the way they read a hook's:
 | `done`, `error` | `done`   | — |
 | `idle`, and no record left | `idle` | — |
 
-A hook outranks it: from a session's first hook state until a hook reports
+A hook outranks it: from the first hook state the window hears until a hook reports
 `idle` or the shell starts a prompt (OSC 133 A, the agent CLI having left), the
 program's reports change nothing the window is told
 (`programStatus.hooked`). The relay never hears them. The event carries
 `program: true`, which no hook report sets: the store takes it like any other, so
 the card always shows the program's current state, and only the alerts are limited
-(`programAlerts`, `native/cmd/lich-native/program_alerts.go`). The limits and the
-record lifetime are in `docs/ceilings.md`.
+(`programAlerts`, `native/cmd/lich-native/program_alerts.go`). What a hook's report
+also means does not follow from a program's: a `program` `done` does not refresh the
+pull request or the plan's usage, a `program` `idle` does not say the provider CLI
+left, and a `program` `busy` with no `tool` clears the tool line where a hook's keeps
+it. The limits and the record lifetime are in `docs/ceilings.md`.
 
 ## lich server side
 

@@ -149,6 +149,8 @@ distinto.
 | Se repinta con el aspecto nuevo al cambiar lich entre un tema claro y uno oscuro | sí | no | no | sí | sí | no | sí | no |
 | Campana cuando el agente está bloqueado esperándote | sí | sí | no | sí | no | no | no | no |
 | Ctrl+Shift+Y salta a la siguiente sesión que te espera | sí | sí | no | sí | no | no | no | no |
+| Un programa en la terminal del agente puede fijar la tarjeta (OSC 7501) mientras el agente corre | no | no | no | no | no | sí | no | no |
+| De vuelta en un shell sin marcas de prompt tras salir del agente, un programa puede volver a fijar la tarjeta | sí | no | no | no | no | sí | sí | no |
 | La bandeja lista las sesiones que te esperan y las que trabajan, y su icono lleva un punto | sí | sí | solo las que trabajan | sí | solo las que trabajan | no | solo las que trabajan | solo las que trabajan |
 | La tarjeta avisa cuando la conversación se está compactando | sí | no | no | no | no | no | no | no |
 | Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | no, siempre Inactiva | no En espera | no En espera |
