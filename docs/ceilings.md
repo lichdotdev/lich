@@ -1086,6 +1086,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **An element's index is never handed out twice, so indexes only grow** (`internal/browser/pageinfo.go`): an
+  element keeps the index it was first listed with while it lives, and a new one takes the next number of a
+  counter each browser carries across documents and tabs, so an index from a replaced element, a page left or
+  another tab finds nothing instead of clicking something else. A long session's indexes reach three digits
+  after about ten pages of thirty links, costing about a character per listed element. The page can see the
+  `data-lich-idx` stamps and `window.__lichIdx`; one scrolled out of view keeps its index but leaves the list,
+  and click and type scroll it back.
 - **A local file loads from the session's checkout, served over loopback http** (`internal/preview`): a path or
   `file:` URL inside the directory the session was spawned in becomes `http://127.0.0.1:<port>/…`, the port being
   the checkout's `LICH_WORKTREE_PORT` plus 1000 (25000-25999). The server is bound the first time a page from that

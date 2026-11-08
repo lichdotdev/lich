@@ -1014,6 +1014,7 @@ lich browser close
 sees its page in a tab beside the session; one that **Open in a window** moved
 to a Chromium window of its own is reused there. `info` describes the page, one line per clickable node
 (index, tag, label, and a link only when it has no label), and never includes what was typed into a field;
+an element keeps its index while it lives, even after the page changes around it or scrolls it out of the list;
 `click` and `press` print the same description of the page they left, once a
 navigation they started has its document; `type` prints nothing, as a field
 filled seldom changes the page. `screenshot` prints the PNG's path; its longest

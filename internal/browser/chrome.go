@@ -112,6 +112,9 @@ type chromePage struct {
 	leaveMu sync.Mutex
 	held    *leave
 	leave   *leave
+	// idxMu guards idxNext, the index pageInfoScript hands out next.
+	idxMu   sync.Mutex
+	idxNext int
 }
 
 // downloadFolder is downloadDir, which the live tests point at a folder of
@@ -253,11 +256,20 @@ func (p *chromePage) Settle(ctx context.Context) error {
 }
 
 func (p *chromePage) Info(ctx context.Context) (PageInfo, error) {
-	var info PageInfo
-	if err := p.run(ctx, chromedp.Evaluate(pageInfoScript, &info)); err != nil {
+	p.idxMu.Lock()
+	base := p.idxNext
+	p.idxMu.Unlock()
+	var info struct {
+		PageInfo
+		Next int `json:"next"`
+	}
+	if err := p.run(ctx, chromedp.Evaluate(pageInfoScript+"("+strconv.Itoa(base)+")", &info)); err != nil {
 		return PageInfo{}, err
 	}
-	return info, nil
+	p.idxMu.Lock()
+	p.idxNext = max(p.idxNext, info.Next)
+	p.idxMu.Unlock()
+	return info.PageInfo, nil
 }
 
 func (p *chromePage) HasText(ctx context.Context, text string) (bool, error) {
@@ -518,7 +530,10 @@ const resolveJS = `(function(index, selector, x, y, shotW, shotH, scale) {
   var el = null;
   if (selector) el = document.querySelector(selector);
   else if (typeof index === 'number') {
-    el = document.querySelector('[data-lich-idx="' + index + '"]');
+    var reg = window.__lichIdx;
+    el = Array.from(document.querySelectorAll('[data-lich-idx="' + index + '"]')).find(function(e) {
+      return reg && reg.of.get(e) === index && e.getClientRects().length > 0;
+    }) || null;
   }
   if (!el) return null;
   if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return {disabled: true};
