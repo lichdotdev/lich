@@ -34,11 +34,11 @@ require (
 // buttons on an undecorated window), the Editor's scroll offset (the
 // textarea's scrollbar), text.WithOutsideCollection (the runes a shaper's
 // faces lack, which loads the CJK faces when CJK text first comes up), and
-// frames drawn and presented in part (an op diff, a kept framebuffer, EGL
-// buffer age and damage, opted into with GIO_DAMAGE=on, which is also the only
-// time a frame's operations are diffed), and pointer.Event.WindowPosition (a
-// widget's place in the window without watching motion). Every patch of ours
-// lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261107165726-0b2b8b1b7340
+// frames redrawn in part (an op diff into a framebuffer the renderer keeps,
+// opted into with GIO_DAMAGE=on, which is also the only time a frame's
+// operations are diffed), pointer.Event.WindowPosition (a widget's place in the
+// window without watching motion), a double click window of 400 ms, and the
+// flip model on Windows. Every patch of ours lands on that branch.
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261108212453-3dc6e3e4274b
 
 replace github.com/lichdotdev/lich => ../
