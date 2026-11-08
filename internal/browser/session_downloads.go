@@ -21,16 +21,6 @@ const downloadPoll = 50 * time.Millisecond
 // whether it became a download: the two arrive in either order.
 const downloadNotice = time.Second
 
-// downloadQuiet is how long after a download begins a click or a key press
-// holds its answer. Chrome reloads the page 1.46 to 1.70 seconds after an
-// <a download> begins (24 samples, Chromium 155, measured 2026-10-27), and
-// the reload aborts a navigation the agent started before it
-// (net::ERR_ABORTED). A 1.5-second hold sat inside that spread and the next
-// navigate failed 2 times in 40; this one cleared it. Chromium 157 reloads
-// 3.69 to 3.94 seconds after (15 samples, Helium 0.21.1.1, measured
-// 2026-11-07), past the hold, so navigate also retries what the reload aborted.
-const downloadQuiet = 2500 * time.Millisecond
-
 // downloadReload is how long after a download began an aborted navigation
 // that is no download of its own is taken for Chrome's reload and tried again.
 const downloadReload = 10 * time.Second
@@ -73,18 +63,11 @@ func (sess *session) noteDownloadLocked(guid string, d api.BrowserDownload) bool
 }
 
 // downloadsAfter waits up to wait for the downloads the agent has not heard
-// of yet to end, and out the quiet after the last one began, then returns
-// what it has not heard.
+// of yet to end, then returns what it has not heard.
 func (s *Service) downloadsAfter(sess *session, wait time.Duration) []api.BrowserDownload {
 	deadline := time.Now().Add(wait)
 	for s.freshInProgress(sess) && time.Now().Before(deadline) {
 		time.Sleep(downloadPoll)
-	}
-	s.mu.Lock()
-	hold := time.Until(sess.downloadBegun.Add(s.quiet))
-	s.mu.Unlock()
-	if hold > 0 {
-		time.Sleep(hold)
 	}
 	return s.untold(sess)
 }

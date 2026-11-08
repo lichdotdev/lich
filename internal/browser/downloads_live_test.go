@@ -157,3 +157,46 @@ func testDownloads(t *testing.T) string {
 	t.Cleanup(func() { downloadFolder = downloadDir })
 	return dir
 }
+
+func TestChromeClickAfterADownloadClickLandsOnTheReloadedPage(t *testing.T) {
+	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
+		t.Skip("no Chromium-family browser on this machine")
+	}
+	testDownloads(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/a.csv" {
+			w.Header().Set("Content-Type", "text/csv")
+			fmt.Fprint(w, "a,1")
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, `<title>fresh</title><style>button,a{display:block;font-size:30px}</style>
+<a id="dl" href="/a.csv" download="a.csv">download</a>
+<button id="mark" onclick="document.title = 'clicked'">mark</button>`)
+	}))
+	t.Cleanup(srv.Close)
+	s := newService(chromeLaunch, func(string, string) (string, error) { return t.TempDir(), nil }, time.Now, idleAfter)
+	t.Cleanup(func() {
+		if err := s.Cleanup(); err != nil {
+			t.Error(err)
+		}
+	})
+	if _, err := s.Open("s", srv.URL+"/"); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"dl", "mark"} {
+		if _, err := s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#" + id}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// A reload that lands after the click wipes what it did, so look once
+	// Chrome has had time to do both.
+	time.Sleep(8 * time.Second)
+	read, err := s.Read(t.Context(), api.BrowserInfoOptions{ID: "s"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.Title != "clicked" {
+		t.Fatalf("the page is titled %q: the click after the download was wiped by Chrome's reload", read.Title)
+	}
+}

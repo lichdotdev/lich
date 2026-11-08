@@ -1157,10 +1157,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   closes; until then it takes the profile's disk. The profile sits in the temp dir, so with Downloads on another
   filesystem or volume the move is a copy, written under a hidden `.part` name and renamed once whole; the agent
   hears the download completed once it is in place. A move that fails is reported to the agent as a failed download
-  and the file goes with the profile; the window shows no toast for it. Chrome reloads the page 1.46 to 1.70 seconds after an `<a download>` begins, and the reload aborts a
-  navigation started before it (`net::ERR_ABORTED`; Chromium 155, with downloads on or off), so an agent's click,
-  key press, open or navigate that downloaded holds its answer 2.5 seconds; a navigation the person starts in the
-  pane is not held. A download still running after ten seconds is reported in progress and named again when it
+  and the file goes with the profile; the window shows no toast for it. A download the page asks for in the
+  browser's first seconds is held back, shows nothing (no event, no request) until Chrome reloads the page and
+  starts it, and the reload aborts a navigation started before it (`net::ERR_ABORTED`) and wipes a click that
+  landed before it. On Chromium 157 (Helium 0.21.1.1) that reload came 4.3 to 5.3 seconds after the launch in 35
+  of 39 downloads asked for 0.7 to 3.3 seconds after it (7.4 once), for `<a download>`, an attachment link and
+  `location.href`; the other four began without one, and a download asked for after 5 seconds began at once with
+  none. So an agent's click, key press or other action after one whose answer showed the page as it was waits for
+  the browser to be 6 seconds old or for a reload to land, and a navigation the reload aborts is tried again; a
+  page that changed or opened a dialog is no download request and holds nothing. A download asked for in the first
+  seconds that changes the page too, a click that lands before a reload of more than 6 seconds, and a navigation
+  the person starts in the pane are not held. A download still running after ten seconds is reported in progress and named again when it
   ends. No tool lists past downloads or cancels one, nothing caps their size, and closing the browser cancels one
   still running.
 - **A dialog a session's page opens holds the page until someone answers it** (`internal/browser/dialogs.go`,

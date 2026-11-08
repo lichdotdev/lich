@@ -47,10 +47,11 @@ type Service struct {
 	mkTmp  func(dir, pattern string) (string, error)
 	now    func() time.Time
 	idle   time.Duration
-	// quiet is downloadQuiet, which the suite's fake pages do without.
-	quiet   time.Duration
-	byOwner map[string]*session
-	byID    map[string]*session
+	// startup and reloadWait are startupGrace and reloadWait, which the suite's
+	// fake pages do without.
+	startup, reloadWait time.Duration
+	byOwner             map[string]*session
+	byID                map[string]*session
 	// owners serializes one session's launch, promotion and reuse, so a slow
 	// Chrome start holds that card alone and mu is never held across CDP.
 	owners map[string]*sync.Mutex
@@ -95,6 +96,15 @@ type session struct {
 	// downloadBegun is when the last one began.
 	downloads     []*download
 	downloadBegun time.Time
+	// launched is when the browser started. still: the answer to the agent's
+	// last click or key press showed the page as it was before it, which sat
+	// at beforeURL and beforeTitle. reloading: the page has a reload in
+	// flight; reloads counts those that landed.
+	launched               time.Time
+	still                  bool
+	beforeURL, beforeTitle string
+	reloading              bool
+	reloads                int
 	// consoleErrors are the page's since the agent's last page answer, the
 	// first consoleErrorMax of them; consoleMore counts the rest.
 	consoleErrors []string
@@ -122,17 +132,18 @@ func New(emit func(name string, data any)) *Service {
 
 func newService(launch Launcher, mkTmp func(string, string) (string, error), now func() time.Time, idle time.Duration) *Service {
 	return &Service{
-		launch:   launch,
-		mkTmp:    mkTmp,
-		now:      now,
-		idle:     idle,
-		quiet:    downloadQuiet,
-		textWait: maxTextWait,
-		byOwner:  make(map[string]*session),
-		byID:     make(map[string]*session),
-		owners:   make(map[string]*sync.Mutex),
-		stop:     make(chan struct{}),
-		emit:     func(string, any) {},
+		launch:     launch,
+		mkTmp:      mkTmp,
+		now:        now,
+		idle:       idle,
+		startup:    startupGrace,
+		reloadWait: reloadWait,
+		textWait:   maxTextWait,
+		byOwner:    make(map[string]*session),
+		byID:       make(map[string]*session),
+		owners:     make(map[string]*sync.Mutex),
+		stop:       make(chan struct{}),
+		emit:       func(string, any) {},
 	}
 }
 
@@ -294,10 +305,11 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 	}
 	sess := &session{
 		id: newID(), owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
-		byAgent: spec.byAgent, page: page, lastUsed: s.now(),
+		byAgent: spec.byAgent, page: page, lastUsed: s.now(), launched: time.Now(),
 	}
 	page.OnFileChooser(s.fileSink(sess))
 	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess), s.tabsSink(sess))
+	page.OnReload(s.reloadSink(sess))
 	view := s.unwatchedView()
 	if err := runPage(func(ctx context.Context) error {
 		if !spec.headed && view != (Viewport{}) {

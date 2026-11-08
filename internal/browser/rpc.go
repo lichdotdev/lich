@@ -80,6 +80,9 @@ func (s *Service) pageAfter(id string) (api.BrowserPageInfo, error) {
 	if err != nil {
 		return s.heldOr(id, err)
 	}
+	s.mu.Lock()
+	sess.still = info.URL == sess.beforeURL && info.Title == sess.beforeTitle
+	s.mu.Unlock()
 	s.remember(sess, info.URL, info.Title)
 	s.leaveOutTold(sess, &info)
 	info.Downloads = s.downloadsAfter(sess, downloadWait)

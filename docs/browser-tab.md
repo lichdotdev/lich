@@ -160,10 +160,11 @@ finished but lich could not move into Downloads answers `download failed:`
 with the path it would have taken. `browser_open` and
 `browser_navigate` on a URL that answers with a file download it the same way:
 Chrome aborts that navigation and the page stays where it was, so the answer
-is the handle with `downloads` rather than an error. That answer also
-waits until 2.5 seconds after the download began, because Chrome reloads the
-page about 1.5 seconds after an `<a download>` and the reload aborts a
-navigation started before it. `browser-download` tells the
+is the handle with `downloads` rather than an error. A download a page asks
+for in a browser's first seconds reloads the page when Chrome starts it, so
+the agent's next click or key press waits for that reload when the answer
+before it showed the page as it was, and a navigation the reload aborts is
+loaded again. `browser-download` tells the
 window when a file is complete, and the window shows a toast naming it with a
 button that opens its folder. The same holds in a window opened with Open in a
 window.

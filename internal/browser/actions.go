@@ -107,6 +107,7 @@ func (s *Service) Click(id string, t Target) error {
 	if err != nil {
 		return err
 	}
+	s.holdForStartup(sess)
 	var x, y float64
 	err = runPage(func(ctx context.Context) error {
 		var e error
@@ -318,6 +319,7 @@ func (s *Service) drive(id string, fn func(Page, context.Context) error) (*sessi
 	if err != nil {
 		return nil, err
 	}
+	s.holdForStartup(sess)
 	err = runPage(func(ctx context.Context) error { return fn(sess.page, ctx) })
 	if err != nil {
 		return nil, s.failed(sess, err)
