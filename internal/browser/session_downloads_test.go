@@ -159,6 +159,13 @@ func TestNavigateRetriesWhatTheReloadAfterADownloadAborted(t *testing.T) {
 	}
 	p := launch.pages[0]
 	p.onDownload("g1", api.BrowserDownload{Path: "/dl/a.csv", Bytes: 1, State: api.DownloadCompleted})
+	// The reload comes seconds after the download began; one at the
+	// navigation's own instant, which Windows' clock gives both, is its
+	// download.
+	sess := s.current("s")
+	s.mu.Lock()
+	sess.downloadBegun = time.Now().Add(-4 * time.Second)
+	s.mu.Unlock()
 	p.navAborts = 1
 	h, err := s.Navigate("s", "https://example.com/next")
 	if err != nil {
