@@ -71,9 +71,15 @@ var ptBR = Catalog{
 	BlockedSummary: "a sessão do lich %q está esperando uma confirmação de permissão",
 	MergeNotice: "[lich] O pull request #%[1]d %[2]q (branch %[3]s) foi mergeado em %[4]s. " +
 		"Isto é um aviso, não uma tarefa: atualize o que você guarda sobre o estado deste trabalho e não faça mais nada.",
-	MergeSummary: "Pull request #%[1]d mergeado em %[2]s",
-	LateNotice:   "[lich] Agendado para %[1]s, entregue com %[2]s de atraso.\n\n",
-	ResumePrompt: "[lich] O seu limite de uso foi renovado. Continue a tarefa em que você estava trabalhando.",
+	MergeSummary:      "Pull request #%[1]d mergeado em %[2]s",
+	LateNotice:        "[lich] Agendado para %[1]s, entregue com %[2]s de atraso.\n\n",
+	ResumePrompt:      "[lich] O seu limite de uso foi renovado. Continue a tarefa em que você estava trabalhando.",
+	WatchChecksFailed: "[lich] Os checks falharam no pull request #%[1]d, commit %[2]s.\n\n",
+	WatchChecksPassed: "[lich] Os checks passaram no pull request #%[1]d, commit %[2]s.\n\n",
+	WatchReview:       "[lich] Chegou uma nova revisão no pull request #%[1]d.\n\n",
+	ScheduledAtResult: "Agendado. Seu prompt será digitado nesta sessão em %[1]s.",
+	ScheduledOnResult: "Armado. Seu prompt será digitado nesta sessão em %[1]s, no máximo %[2]d vezes em um mesmo pull request.",
+	ScheduleCleared:   "O prompt agendado desta sessão foi removido.",
 
 	CopyNotice: "[lich] cópia de %s; o original não é acessível a partir desta sessão, as edições ficam na cópia.",
 

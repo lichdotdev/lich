@@ -51,6 +51,9 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
 	)
+	if sv.Kind != "shell" {
+		entries = append(entries, scheduleItem(sv, act))
+	}
 	if fork, ok := forkItem(sv, act); ok {
 		entries = append(entries, fork)
 	}

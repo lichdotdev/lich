@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"strings"
 	"time"
+
+	"github.com/lichdotdev/lich/api"
 )
 
 // noteForfeitedSchedules reports every prompt still parked on a session about to
@@ -76,19 +78,52 @@ const schedulePromptLimit = 8192
 // A session whose row is gone matches nothing and is not an error: the schedule
 // belongs to the card, and a card that is gone has taken its schedule with it.
 func (s *Service) SetSessionSchedule(sessionID string, at int64, prompt string) error {
+	return s.setSchedule(sessionID, at, prompt, "")
+}
+
+// SetAgentSchedule is SetSessionSchedule for a prompt the session's own agent
+// parked, which is what lets the person's outrank it.
+func (s *Service) SetAgentSchedule(sessionID string, at int64, prompt string) error {
+	return s.setSchedule(sessionID, at, prompt, api.ScheduledByAgent)
+}
+
+func (s *Service) setSchedule(sessionID string, at int64, prompt, by string) error {
 	prompt = strings.TrimSpace(prompt)
+	if err := checkPromptLimit(prompt); err != nil {
+		return err
+	}
+	if at <= 0 || prompt == "" {
+		at, prompt, by = 0, "", ""
+	}
+	if _, err := s.db.Exec(
+		`UPDATE sessions SET scheduled_at = ?, scheduled_prompt = ?, scheduled_by = ? WHERE id = ?`,
+		at, prompt, by, sessionID,
+	); err != nil {
+		return fmt.Errorf("set schedule on %q: %w", sessionID, err)
+	}
+	return nil
+}
+
+func checkPromptLimit(prompt string) error {
 	if len(prompt) > schedulePromptLimit {
 		return fmt.Errorf("scheduled prompt is %d bytes, over the %d limit",
 			len(prompt), schedulePromptLimit)
 	}
-	if at <= 0 || prompt == "" {
-		at, prompt = 0, ""
+	return nil
+}
+
+// SetSessionWatch writes a session's watch as it now stands.
+func (s *Service) SetSessionWatch(sessionID string, w api.SessionWatch) error {
+	w.Prompt = strings.TrimSpace(w.Prompt)
+	if err := checkPromptLimit(w.Prompt); err != nil {
+		return err
 	}
 	if _, err := s.db.Exec(
-		`UPDATE sessions SET scheduled_at = ?, scheduled_prompt = ? WHERE id = ?`,
-		at, prompt, sessionID,
+		`UPDATE sessions SET watch_on = ?, watch_prompt = ?, watch_by = ?, watch_runs = ?, watch_pr = ?, watch_seen = ?
+		  WHERE id = ?`,
+		w.On, w.Prompt, w.By, w.Runs, w.PR, w.Seen, sessionID,
 	); err != nil {
-		return fmt.Errorf("set schedule on %q: %w", sessionID, err)
+		return fmt.Errorf("set watch on %q: %w", sessionID, err)
 	}
 	return nil
 }

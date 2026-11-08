@@ -314,6 +314,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.dock = newDock(code, u.review)
 	u.model.diffTouched = u.review.feed.touched
 	u.model.focusSession = u.focusSession
+	u.model.showToast = u.showToast
 	u.model.raise = func() { w.Activate("") }
 	u.model.leave = u.leave
 	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
@@ -558,6 +559,7 @@ func (u *window) layout(gtx C) error {
 		u.shortcuts.layout(gtx, u.theme, u.settings.hotkeys.current())
 		u.layoutPalette(gtx, u.theme)
 		u.layoutWorktreeDialog(gtx, u.theme)
+		u.sidebar.schedule.layout(u.ctx, gtx, u.theme, u.client, u.showToast)
 		u.layoutRemoveConfirm(gtx, u.theme)
 		u.layoutCloseWorktreeConfirm(gtx, u.theme)
 		u.layoutCloseAllConfirm(gtx, u.theme)
@@ -941,6 +943,11 @@ func (u *window) apply(act sidebarAction) {
 	}
 	if act.forkHere != "" {
 		go u.forkHere(act.forkHere)
+	}
+	if act.schedule != "" {
+		if sv, ok := u.model.sessionViewOf(act.schedule); ok {
+			u.sidebar.schedule.show(sv)
+		}
 	}
 	if act.forkWorktree != "" {
 		u.showForkDialog(act.forkWorktree)

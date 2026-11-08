@@ -3,7 +3,6 @@ package relay
 import (
 	"context"
 	"log/slog"
-	"slices"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -20,16 +19,10 @@ import (
 // its reset (internal/terminal, limit.go); this file decides whether to park.
 
 // isResumePrompt is how a parked prompt is told apart as lich's continuation
-// (prompt.Catalog.ResumePrompt): the row has no column saying who wrote it.
-// Every locale's text matches, because the row keeps the language it was
-// parked in and the setting may have changed since.
+// (prompt.Catalog.ResumePrompt).
 // ponytail: matched by text, a person who parks these exact words has them
 // dropped on the session's next turn; a column on the row if that ever matters.
-func isResumePrompt(parked string) bool {
-	return slices.ContainsFunc(prompt.Langs, func(lang prompt.Lang) bool {
-		return parked == prompt.For(lang).ResumePrompt
-	})
-}
+func isResumePrompt(parked string) bool { return prompt.IsResume(parked) }
 
 // resumeGrace is how long after the reset the prompt is due. Claude Code's own
 // autoContinueAtUsageLimit, where the server enables it, resumes at the reset
@@ -65,7 +58,7 @@ func (s *Service) ParkResume(id string, resetsAt int64) {
 	}
 	s.markResume(id)
 	if s.events != nil {
-		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: id, At: due, Prompt: resumePrompt})
+		s.emitSchedule(ScheduleEvent{ID: id, At: due, Prompt: resumePrompt}, api.ScheduledByLich)
 	}
 }
 
@@ -87,7 +80,7 @@ func (s *Service) ResumeNow(id string) {
 	}
 	s.markResume(id)
 	if s.events != nil {
-		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: id, At: due, Prompt: resumePrompt})
+		s.emitSchedule(ScheduleEvent{ID: id, At: due, Prompt: resumePrompt}, api.ScheduledByLich)
 	}
 }
 

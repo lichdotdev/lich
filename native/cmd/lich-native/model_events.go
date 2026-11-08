@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // sessionTouched reads a session's git state now rather than at the next
@@ -46,6 +49,54 @@ func (m *model) checkoutWritten(ctx context.Context, checkout string) {
 	for _, path := range paths {
 		go m.refreshPath(ctx, path)
 	}
+}
+
+// scheduleEvent takes a change to what a session waits on into its row, and
+// puts in front of the person what they would otherwise only find missing.
+func (m *model) scheduleEvent(ev backend.Event) {
+	switch ev.Name {
+	case api.SessionScheduleEvent.Name:
+		if e, err := backend.Decode(ev, api.SessionScheduleEvent); err == nil {
+			m.editSession(e.ID, func(s *backend.Session) { s.ScheduledAt, s.ScheduledPrompt, s.ScheduledBy = e.At, e.Prompt, "" })
+		}
+	case api.SessionScheduleByEvent.Name:
+		if e, err := backend.Decode(ev, api.SessionScheduleByEvent); err == nil {
+			m.editSession(e.ID, func(s *backend.Session) { s.ScheduledBy = e.By })
+		}
+	case api.SessionWatchEvent.Name:
+		if e, err := backend.Decode(ev, api.SessionWatchEvent); err == nil {
+			m.editSession(e.ID, func(s *backend.Session) { s.Watch = e.Watch })
+		}
+	case api.SessionWatchStoppedEvent.Name:
+		if e, err := backend.Decode(ev, api.SessionWatchStoppedEvent); err == nil && m.showToast != nil {
+			m.showToast(watchStoppedToast(e))
+		}
+	case api.ScheduleForfeitedEvent.Name:
+		if e, err := backend.Decode(ev, api.ScheduleForfeitedEvent); err == nil && m.showToast != nil {
+			m.showToast(scheduleLostToast(e))
+		}
+	}
+}
+
+func (m *model) editSession(id string, edit func(*backend.Session)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if p, i := m.sessionAt(id); p != nil {
+		edit(&p.Sessions[i])
+	}
+}
+
+func watchStoppedToast(e api.SessionWatchStopped) ui.Toast {
+	return ui.Toast{Icon: icWatch, IconColor: waitTone,
+		Title:       i18n.T("shell.projectEvents.watchStopped", i18n.Args{"number": e.Number}),
+		Description: i18n.T("shell.projectEvents.watchStoppedDetail", i18n.Args{"label": e.Label, "runs": e.Runs})}
+}
+
+func scheduleLostToast(e api.ScheduleForfeited) ui.Toast {
+	when := time.Unix(e.At, 0).Format(scheduleClockLayout)
+	return ui.Toast{Icon: icSchedule, IconColor: waitTone,
+		Title:       i18n.T("shell.projectEvents.scheduleLost"),
+		Description: i18n.T("shell.projectEvents.scheduleLostDetail", i18n.Args{"label": e.Label, "when": when})}
 }
 
 // sessionFocus brings the card `lich focus` named up. One whose project is not

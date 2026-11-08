@@ -72,9 +72,15 @@ var en = Catalog{
 	BlockedSummary: "lich session %q is waiting on a permission prompt",
 	MergeNotice: "[lich] Pull request #%[1]d %[2]q (branch %[3]s) was merged into %[4]s. " +
 		"This is a notice, not a task: update whatever you keep about this work's state, and do nothing else.",
-	MergeSummary: "Pull request #%[1]d merged into %[2]s",
-	LateNotice:   "[lich] Scheduled for %[1]s, delivered %[2]s late.\n\n",
-	ResumePrompt: "[lich] Your usage limit reset. Continue the task you were working on.",
+	MergeSummary:      "Pull request #%[1]d merged into %[2]s",
+	LateNotice:        "[lich] Scheduled for %[1]s, delivered %[2]s late.\n\n",
+	ResumePrompt:      "[lich] Your usage limit reset. Continue the task you were working on.",
+	WatchChecksFailed: "[lich] The checks failed on pull request #%[1]d at commit %[2]s.\n\n",
+	WatchChecksPassed: "[lich] The checks passed on pull request #%[1]d at commit %[2]s.\n\n",
+	WatchReview:       "[lich] A new review arrived on pull request #%[1]d.\n\n",
+	ScheduledAtResult: "Scheduled. Your prompt will be typed in this session at %[1]s.",
+	ScheduledOnResult: "Armed. Your prompt will be typed in this session on %[1]s, at most %[2]d times on one pull request.",
+	ScheduleCleared:   "Cleared this session's scheduled prompt.",
 
 	CopyNotice: "[lich] copy of %s; the original is not reachable from this session, edits stay in the copy.",
 

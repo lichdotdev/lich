@@ -25,4 +25,6 @@ func Relay(d *rpc.Handler, s *relay.Service) {
 	rpc.Handle(d, api.RelaySetShown, s.SetShown)
 	rpc.Handle(d, api.RelayAnnounceMerge, s.AnnounceMerge)
 	rpc.Handle(d, api.RelaySubmit, s.Submit)
+	rpc.Handle(d, api.RelaySetSchedule, s.SetSchedule)
+	rpc.Handle(d, api.RelayScheduleSelf, s.ScheduleSelf)
 }

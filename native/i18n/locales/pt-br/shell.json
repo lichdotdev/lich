@@ -191,7 +191,11 @@
     "unlabeledSession": "Uma sessão",
     "open": "Abrir",
     "needsInput": "{label} precisa da sua atenção",
-    "finished": "{label} terminou o trabalho"
+    "finished": "{label} terminou o trabalho",
+    "watchStopped": "Parou de vigiar o pull request #{number}",
+    "watchStoppedDetail": "{label} rodou o prompt {runs} vezes nele.",
+    "scheduleLost": "Prompt agendado perdido",
+    "scheduleLostDetail": "Apagar {label} também apagou o prompt marcado para {when}."
   },
   "windowClose": {
     "changeInSettings": "· mude em Configurações › Geral",

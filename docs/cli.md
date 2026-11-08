@@ -691,6 +691,19 @@ The handoff note is at its prompt. Your session stays open until the user closes
   stdout; `lich send` gets the note there once its agent is up.
 - `--json` prints the opened session's object, the one `open --json` prints.
 
+### `lich schedule (--when <time> | --on <condition> | --clear) [<prompt>]`
+
+Types `<prompt>` in the session the command runs in, later. It only ever acts
+on its own session, and something the person set there stays until they change
+it: the command fails rather than replacing it.
+
+- `--when` takes `45m`, `2h30`, `14:30` (tomorrow if that has passed) or
+  `"2026-11-12 14:30"`.
+- `--on` waits for the pull request of this branch: `checks-failed` stays on
+  until the pull request closes, at most 3 runs on it; `checks-passed` and
+  `review` run once. `lich schedule` takes one trigger at a time.
+- `--clear` removes it.
+
 ### `lich close-project [--json] <name-or-path>`
 
 Closes a project open in the window, as its tab's close does: the tab leaves the
@@ -1091,6 +1104,7 @@ at lich.
 | `handoff_session` | `done`, `next_steps`, optional `branch`, `commits`, `gotchas`, `kind`, `model`, `effort`, `profile` (only a suggestion to the user). Same as `lich handoff`. A note that did not land is reported beside the open session, as `open_session`'s `prompt` is. |
 | `close_session` | `session`, optional `project`, `worktree` (`keep`/`remove`), `force`. |
 | `close_project` | `project` (a name or a directory path) — `lich close-project`. |
+| `schedule_prompt` | optional `when`, `on`, `prompt`, `clear`: `lich schedule`, on the session it runs in. |
 | `list_services` | optional `project`: the project's services with their state, as JSON. `lich service list`. |
 | `create_service` | `name`, `command`, optional `start_with_lich` and `project`. Saved, not started. `lich service add`. |
 | `edit_service` | `service`, optional `name`, `command`, `start_with_lich` and `project`; what is left out stays. `lich service edit`. |

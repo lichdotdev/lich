@@ -525,6 +525,17 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
   the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush is never
   counted). A turn the user started while an errand is still owed keeps that errand's depth.
+- **A session's watch reads only what the pull request of its branch says** (`internal/relay/watch.go`,
+  `internal/project/branchpr.go`). GitHub only, through `gh`, and the window cannot tell a remote gh does not
+  speak to: such a session's dialog says "no pull request yet" for good. Checks count once none is pending, so
+  a long matrix reports a failure only when it ends. `review` means a submitted review; a plain comment on the
+  conversation does not fire it, and reviews already there when the watch is armed are the baseline. A read is
+  once a minute per checkout, one more `gh` call for a checkout that holds a watch. The run limit
+  (`api.WatchRunLimit`, 3) counts per pull request and an agent re-arming keeps its count; a person arming starts
+  it over. It is checked when the condition holds again, so the third run succeeding says nothing. A session
+  holds one trigger, a time or a condition, but lich's own continuation after a usage limit may sit beside a
+  watch, and Remove takes off the watch first. `lich schedule` acts only on the session it runs in, and a time
+  or condition the person set refuses it.
 
 ## Git, worktrees and review
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 // gitPoll is how often each shown path's branch and changes are re-read. The
@@ -82,6 +83,8 @@ type model struct {
 	diffTouched func(checkout string)
 	// focusSession brings a session's card up, as `lich focus` asks.
 	focusSession func(projectID, id string)
+	// showToast puts a toast up.
+	showToast func(ui.Toast)
 	// raise brings the window forward, as the tray asks.
 	raise func()
 	// leave closes the window.
@@ -368,6 +371,9 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if s, err := backend.Decode(ev, api.SessionTitleEvent); err == nil {
 				m.rename(s.ID, s.Label)
 			}
+		case api.SessionScheduleEvent.Name, api.SessionScheduleByEvent.Name, api.SessionWatchEvent.Name,
+			api.SessionWatchStoppedEvent.Name, api.ScheduleForfeitedEvent.Name:
+			m.scheduleEvent(ev)
 		case api.SessionConversationEvent.Name:
 			if c, err := backend.Decode(ev, api.SessionConversationEvent); err == nil {
 				m.setConversation(c.ID, c.ProviderSessionID)

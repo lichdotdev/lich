@@ -191,7 +191,11 @@
     "unlabeledSession": "A session",
     "open": "Open",
     "needsInput": "{label} needs your input",
-    "finished": "{label} has finished working"
+    "finished": "{label} has finished working",
+    "watchStopped": "Stopped watching pull request #{number}",
+    "watchStoppedDetail": "{label} ran its prompt {runs} times on it.",
+    "scheduleLost": "Scheduled prompt lost",
+    "scheduleLostDetail": "Deleting {label} also deleted the prompt set for {when}."
   },
   "windowClose": {
     "changeInSettings": "· change it in Settings › General",

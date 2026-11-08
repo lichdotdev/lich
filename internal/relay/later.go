@@ -23,11 +23,11 @@ import (
 // and the Enter behind it (see typeIn) — the one path that gets a TUI to
 // accept a message on every provider and on Windows too. What it deliberately
 // does not reuse is the message the relay composes around a task: there is no
-// sender, no ticket and nobody to report back to. The user is the one waiting.
+// sender, no ticket and nobody to report back to. The user is the one waiting,
+// or the session's own agent (schedule.go).
 
-// scheduleTick is how often due prompts are looked for. The window's shortest
-// shortcut is a quarter of an hour, so this is already far finer than anything
-// that can be asked for, and it costs one read of the open sessions.
+// scheduleTick is how often due prompts are looked for. It is the resolution a
+// scheduled time has, and it costs one read of the open sessions.
 const scheduleTick = 30 * time.Second
 
 type ScheduleEvent = api.SessionSchedule

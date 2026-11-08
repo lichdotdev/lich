@@ -64,6 +64,8 @@ type Service struct {
 	// (branchpr.go); nil follows no checkout and announces nothing.
 	agentCheckouts func() []string
 	announceMerge  func(context.Context, api.AnnounceMergeOptions) (api.None, error)
+	prWatched      func(path string) bool
+	prRead         func(api.PRRead)
 }
 
 // New returns a project service using the given picker.

@@ -29,6 +29,9 @@ const branchPRTick = time.Minute
 // prMerged is the state gh reports a merged pull request in.
 const prMerged = "MERGED"
 
+// prReviewPending is a review its author has not submitted yet.
+const prReviewPending = "PENDING"
+
 // branchPRs is what the watch last read at each checkout, and which reads are
 // running. A path in last was read at least once; its value is nil for a
 // branch with no pull request.
@@ -47,6 +50,13 @@ func (s *Service) SetAgentCheckouts(checkouts func() []string) { s.agentCheckout
 // merged (internal/relay AnnounceMerge).
 func (s *Service) SetAnnounceMerge(announce func(context.Context, api.AnnounceMergeOptions) (api.None, error)) {
 	s.announceMerge = announce
+}
+
+// SetPullRequestWatch wires who wants more than the badge from a checkout's
+// pull request (internal/relay, watch.go): watched says a checkout holds a
+// watch, and read receives what those checkouts' reads found.
+func (s *Service) SetPullRequestWatch(watched func(path string) bool, read func(api.PRRead)) {
+	s.prWatched, s.prRead = watched, read
 }
 
 // RecheckPullRequest reads the pull request of opts.Path's branch again, behind
@@ -120,6 +130,7 @@ func (s *Service) recordBranchPR(path string) {
 	if s.emit != nil {
 		events.Send(s.emit, api.BranchPullRequestEvent, api.BranchPullRequest{Path: path, PR: pr})
 	}
+	s.reportPullRequestWatch(path, pr)
 	if !merged || s.announceMerge == nil {
 		return
 	}
@@ -127,6 +138,53 @@ func (s *Service) recordBranchPR(path string) {
 	if _, err := s.announceMerge(context.Background(), opts); err != nil {
 		slog.Warn("project: announce a merge made outside lich", "path", path, "err", err)
 	}
+}
+
+// prWatchFields is what a watch needs beyond the badge's read. A separate gh
+// call, so only a checkout that holds a watch pays for it.
+const prWatchFields = "headRefOid,statusCheckRollup,reviews"
+
+// reportPullRequestWatch hands a watched checkout's read to the watch. A failed
+// read reports nothing: not being able to look is not the same as nothing new.
+func (s *Service) reportPullRequestWatch(path string, pr *PullRequest) {
+	if pr == nil || s.prWatched == nil || !s.prWatched(path) {
+		return
+	}
+	read := api.PRRead{Path: path, Number: pr.Number, Open: pr.State == prOpen}
+	if read.Open {
+		out, err := s.gh(prLookupTimeout, path, "pr", "view", "--json", prWatchFields)
+		if err != nil {
+			slog.Debug("project: read the checks of a watched pull request", "path", path, "err", err)
+			return
+		}
+		if err := fillPRRead(&read, out); err != nil {
+			slog.Warn("project: read the checks of a watched pull request", "path", path, "err", err)
+			return
+		}
+	}
+	s.prRead(read)
+}
+
+func fillPRRead(read *api.PRRead, out []byte) error {
+	var v struct {
+		HeadRefOid        string      `json:"headRefOid"`
+		StatusCheckRollup []checkItem `json:"statusCheckRollup"`
+		Reviews           []struct {
+			ID    string `json:"id"`
+			State string `json:"state"`
+		} `json:"reviews"`
+	}
+	if err := json.Unmarshal(out, &v); err != nil {
+		return errUnreadableAnswer(err)
+	}
+	read.Head, read.Checks = v.HeadRefOid, reduceChecks(v.StatusCheckRollup)
+	for _, r := range slices.Backward(v.Reviews) {
+		if r.State != prReviewPending {
+			read.Review = r.ID
+			break
+		}
+	}
+	return nil
 }
 
 // BranchPullRequest returns the pull request of the branch checked out at path

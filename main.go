@@ -485,6 +485,7 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 	// of its own.
 	proj.SetAgentCheckouts(rl.AgentCheckouts)
 	proj.SetAnnounceMerge(rl.AnnounceMerge)
+	proj.SetPullRequestWatch(rl.WatchesCheckout, rl.ReadPullRequest)
 	go proj.RunBranchPRWatch()
 	// A turn a usage limit ended is picked up again once it resets, through
 	// the same scheduled prompt. Codex reports no end for that turn, so the

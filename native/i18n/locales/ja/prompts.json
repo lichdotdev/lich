@@ -33,5 +33,9 @@
     "item": "{index}. {url} の {label}",
     "note": "メモ: {note}",
     "selectors": "上の各セレクタは browser_click と browser_type の selector としてそのまま使えます。"
+  },
+  "schedule": {
+    "checksFailed": "このプルリクエストのチェックが失敗しました。gh で確認し、原因を修正して push してください。",
+    "review": "このプルリクエストに新しいレビューが届きました。gh で読み、指摘に対応してください。"
   }
 }
