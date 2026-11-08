@@ -43,6 +43,14 @@ var en = Catalog{
 		"which is why none of them could be answered for you. One you are still working on " +
 		"still takes its answer, and every answer from here on has to name its ticket: " +
 		"lich reply <ticket> \"<answer>\".",
+	CompactReminder: Plural{
+		One: "[lich] Your conversation was just compacted, and %[1]d request relayed to this session " +
+			"still waits on your answer:\n%[2]s\nIts sender is blocked on that ticket and reading " +
+			"nothing else: when the work is done, answer it by its ticket.",
+		Other: "[lich] Your conversation was just compacted, and %[1]d requests relayed to this session " +
+			"still wait on your answers:\n%[2]s\nEach sender is blocked on its own ticket and reading " +
+			"nothing else: when each piece of work is done, answer it by its ticket.",
+	},
 	NudgeResultsReady: Plural{
 		One:   "The task you sent %[2]s has its result ready",
 		Other: "Results from %[1]d tasks you sent are ready (%[2]s)",
