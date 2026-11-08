@@ -190,3 +190,32 @@ func TestNavigateAbortedWithNoDownloadFails(t *testing.T) {
 		t.Fatalf("navigations %q, want only Open's: nothing to retry", p.navigations)
 	}
 }
+
+// The retry after a reload can itself be a download: a URL that answers with
+// a file aborts the navigation that fetched it.
+func TestNavigateRetryThatDownloadsIsADownload(t *testing.T) {
+	s, launch, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	p.onDownload("g1", api.BrowserDownload{Path: "/dl/a.csv", Bytes: 1, State: api.DownloadCompleted})
+	sess := s.current("s")
+	s.mu.Lock()
+	sess.downloadBegun = time.Now().Add(-4 * time.Second)
+	s.mu.Unlock()
+	calls := 0
+	p.onNavigate = func() {
+		if calls++; calls == 2 {
+			p.onDownload("g2", api.BrowserDownload{Path: "/dl/b.csv", Bytes: 1, State: api.DownloadCompleted})
+		}
+	}
+	p.navAborts = 2
+	h, err := s.Navigate("s", "https://example.com/b.csv")
+	if err != nil {
+		t.Fatalf("a retry that downloaded the file answered %v", err)
+	}
+	if calls != 2 || h.URL != "https://example.com" {
+		t.Fatalf("%d navigations, page at %s: want the retry, and the page where it was", calls, h.URL)
+	}
+}
