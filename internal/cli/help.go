@@ -109,6 +109,16 @@ var commands = []command{
 			"session the command runs in needs --self.",
 	},
 	{
+		name: "handoff",
+		args: "--done <text> --next <text> [--branch <branch>] [--commits <text>]\n" +
+			"            [--gotchas <text>] [--kind <provider>] [--model <model>]\n" +
+			"            [--effort <level>] [--json]",
+		about: "Hand this session's work off to a fresh session of itself at a clean\n" +
+			"break: it opens in this session's checkout and folder, on this session's\n" +
+			"provider, model and effort unless the flags name others and in its profile,\n" +
+			"and the note, 8 KB at most, is typed at its prompt. This session stays open for the user to close.",
+	},
+	{
 		name: "close-project",
 		args: "[--json] <name-or-path>",
 		about: "Close a project as its tab's close does: its sessions stop and stay with\n" +

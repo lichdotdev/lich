@@ -12,7 +12,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 - **A session is ready for work only once its agent reports from its own prompt, where it can**
   (`internal/terminal/startgate.go`): in a fresh worktree several providers ask a question first (trust the
   folder, initialize the project), and anything typed then (a relayed task, `lich open --prompt`, a scheduled
-  prompt, an issue or pull request handed over) goes into the question, with the Enter behind it answering it
+  prompt, an issue or pull request handed over, a handoff note) goes into the question, with the Enter behind it answering it
   (what each provider then does: `docs/providers/`, Spawn). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI stay
   unready until their session-start report, which their hooks send only from the agent's prompt. That hold needs
   lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
@@ -22,6 +22,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (the plugin reinstalled while it started) stays unready until the delivery runs out: on Claude Code and Cursor
   CLI only in a folder not trusted yet, on oh-my-pi and Kiro CLI always. Codex, Antigravity, Crush and opencode
   report nothing before their first turn, so a quiet screen is still all lich has for them.
+- **A handoff leaves two sessions in one checkout** (`internal/spawn/handoff.go`, `internal/cli/handoff.go`):
+  `handoff_session` and `lich handoff` never close the caller, so until the user does, both agents can edit the
+  same files; the caller is only told to stop. The note is the caller's own account of its work, checked against
+  nothing, and waits 45 seconds for the successor's prompt (inside the 120 seconds an MCP client gives the call),
+  where a relayed task waits five minutes; past that the session is open without it. The successor inherits the
+  model, effort, ultracode and profile the caller was opened with, not one switched inside it (`/model`). It
+  reaches every provider through spawn and `relay.Submit`. It takes no profile on purpose: an agent inherits its
+  own account and cannot name another, because lich moves work to another account only on the user's click.
 - **opencode 2 is told apart by its `--version`, and every 2.x session runs a server of its own**
   (`internal/providers/version.go` `IsOpencode2`, `internal/terminal/opencode2.go`): 2.x keeps 1.x's binary name,
   config and database but not its argv, so the spawn asks the binary for its major, once per path, size and
@@ -320,6 +328,27 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Relay, errands and subagents
 
+- **Only a Claude Code session with the mod is reminded of its errands after a compaction**
+  (`internal/relay/observe.go`, `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of
+  the worker's conversation, and a compaction may summarise its ticket away. With two errands open an answer that
+  names none is refused, so the worker cannot answer either. The mod's `session.compact` is the only compaction
+  lich hears (`compacting`), so on the other seven providers, and on Claude Code without the mod, the ticket can
+  still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
+  auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
+  ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
+- **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
+  `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
+  server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on
+  0.162.1 and 2.21.0, `docs/providers/codex.md`, `docs/providers/kiro.md`). Each now gets the short briefing by a
+  route of its own (a `developer_instructions` override on Codex, an `agentSpawn` hook on Kiro), so the longer text
+  about waiting without polling and answering tickets still stops at each tool's own description there. On Codex,
+  a user whose `config.toml` sets `developer_instructions` keeps their text and gets no briefing, since a `-c`
+  would replace it; a project's `.codex/config.toml` setting it is replaced for the session, unread; and a
+  conversation resumed or forked keeps whatever it was born with, none if it began before this or outside lich.
+  On Kiro, the hook is written by the plugin install, so an agent installed earlier briefs nothing until the next
+  one. Claude Code, Antigravity, opencode and Crush were measured passing the instructions on; Cursor CLI was not
+  measured (no login on the measuring machine), and oh-my-pi is briefed on its command line whatever its MCP
+  client does.
 - **A new Claude Code session's roster name is its own, and lich does not know it** (`internal/terminal`,
   `nameArgs`; `internal/relay`, `RosterNameOf`): lich spawns it without `--name`, because a name passed there is
   the user's to Claude Code and a session holding one never writes the `ai-title` its card is titled from
@@ -465,6 +494,25 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   shell, monitor or workflow off answers with what it said when it did, and the errand takes that first answer, so
   the report of the turn that resumes later is lost. A lich-plugin older than the release carrying that fallback
   never answers such a worker, and its errand stays open until the worker is closed.
+- **The ping-pong breaker knows a turn did no work only from the tools its hooks named** (`internal/relay/pingpong.go`):
+  a message between the same two sessions counts toward the streak only when the sending turn reported tools through
+  `PreToolUse` and every one was a relay tool (`send_to_session`, `reply_to_session`, `wait_for_answer`,
+  `list_sessions`). The second such message in a row carries a warning and the fourth is refused. Crush reports no
+  tools, and neither does a provider without the plugin installed, so a message from or to such a session never
+  counts: it may be working unseen. A turn that reaches the relay through the command line
+  (`lich send`, `"$LICH_BIN" reply`) ran a shell tool, which reads as work, so an exchange held that way is not caught
+  either. A report that reaches lich after the send it precedes reads the same way: the breaker errs toward letting a
+  message through. Only `send_to_session` and `lich send` count as hops; a reply closes an errand and is never
+  refused, and `ask_session` never enters the other conversation. The streak ends when either session messages a
+  third one, when a person sends a line at either prompt from the window, or when either session runs anything but a
+  relay tool, so a worker's work between a coordinator's tasks ends it; a prompt a Claude Code mod submits is not a
+  line typed there.
+- **The chain limit follows a message only through the errand it was sent on** (`internal/relay/chain.go`): a
+  message is one deeper than the deepest relayed task its sender still owes an answer to, and the fifth in a chain is
+  refused. That is read off the relay's own tickets, so it is the same on all eight providers. A session that replies
+  to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
+  the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush is never
+  counted). A turn the user started while an errand is still owed keeps that errand's depth.
 
 ## Git, worktrees and review
 
@@ -1276,9 +1324,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   composes in its own process (relay messages, nudges) follows the setting at once, but anything composed
   inside the session (the `lich` CLI, its MCP results, the plugin's hooks) reads `LICH_PROMPT_LANG`, which is
   fixed when the session spawns. Change the language and an open session can get relay messages in the new
-  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn,
-  and only Claude Code and oh-my-pi receive one at all: they are the two whose command line can append to the
-  system prompt (`briefingFlags`), so the other six read lich's words only in relayed messages. MCP tool
+  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn:
+  Claude Code and oh-my-pi take it on the command line that appends to their system prompt (`briefingFlags`),
+  Codex as a `developer_instructions` override and Kiro CLI from an `agentSpawn` hook. opencode, Crush and
+  Antigravity read lich's MCP instructions instead, composed at spawn too (`LICH_PROMPT_LANG`), and Cursor CLI's
+  is unmeasured (the bullet above on Codex and Kiro CLI, under Relay). MCP tool
   descriptions, `--help` and error returns stay English in every language. A usage-limit continuation parked
   before the setting changed keeps the language it was parked in: the row stores the text, so
   `isResumePrompt` matches it in every locale.

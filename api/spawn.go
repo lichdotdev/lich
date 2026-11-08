@@ -3,6 +3,7 @@ package api
 var (
 	SpawnOpen         = define[OpenSessionOptions, OpenedSession]("spawn.Open")
 	SpawnOpenSubagent = define[OpenSubagentOptions, OpenedSession]("spawn.OpenSubagent")
+	SpawnHandoff      = define[HandoffSessionOptions, OpenedSession]("spawn.Handoff")
 	SpawnClose        = define[CloseSessionOptions, ClosedSession]("spawn.Close")
 	SpawnCloseProject = define[CloseProjectOptions, ClosedProject]("spawn.CloseProject")
 	SpawnControl      = define[ControlSessionOptions, ControlledSession]("spawn.Control")
@@ -71,6 +72,17 @@ type OpenSubagentOptions struct {
 	Model     string `json:"model"`
 	Effort    string `json:"effort"`
 	Ultracode bool   `json:"ultracode"`
+}
+
+// HandoffSessionOptions is one Handoff call: the session handing its work off
+// (From) and what its successor runs. Kind, Model and Effort left empty are the
+// caller's own. There is no profile: lich moves work to another account only on
+// the user's click.
+type HandoffSessionOptions struct {
+	From   string `json:"from"`
+	Kind   string `json:"kind"`
+	Model  string `json:"model"`
+	Effort string `json:"effort"`
 }
 
 // OpenedSession is one opened session: what the caller is told, and what the window is

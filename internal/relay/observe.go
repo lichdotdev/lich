@@ -22,10 +22,14 @@ import (
 // came. Getting that backwards would report "answered elsewhere" about a
 // request the target had not read yet, which is worse than saying nothing.
 func (s *Service) Observe(sessionID, state string) {
-	// Nothing here reads a compaction: it neither starts nor ends a turn, and a
-	// peer listing sessions learns nothing from it the report after it will not
-	// say. Recorded, it would overwrite the busy every errand check reads.
+	// A compaction neither starts nor ends a turn, and a peer listing sessions
+	// learns nothing from it the report after it will not say. Recorded, it would
+	// overwrite the busy every errand check reads. All it leaves is the mark the
+	// report closing it reads.
 	if state == stateCompacting {
+		s.mu.Lock()
+		s.compacted[sessionID] = true
+		s.mu.Unlock()
 		return
 	}
 	s.mu.Lock()
@@ -37,6 +41,7 @@ func (s *Service) Observe(sessionID, state string) {
 		s.seeNewsLocked(sessionID)
 	}
 	ended, notice := s.endedErrands(sessionID, state)
+	reminder := s.compactReminderLocked(sessionID)
 	// A waiter still holding the line carries the news out through its own
 	// select; an errand nobody is attending is stashed for the sender instead,
 	// the way an answer would be. Without it the promise a pending result makes
@@ -67,6 +72,9 @@ func (s *Service) Observe(sessionID, state string) {
 	if notice != "" {
 		go s.deliverNotice(sessionID, notice, nil)
 	}
+	if reminder != "" {
+		go s.deliverNotice(sessionID, reminder, nil)
+	}
 	for _, t := range blocked {
 		go s.deliverNotice(t.fromID, blockedNotice(s.lang(), t.target), blockedNotification(s.lang(), t.target))
 	}
@@ -81,6 +89,9 @@ func (s *Service) Observe(sessionID, state string) {
 	// or Ctrl-C frees it just the same, and is how a wait for results is usually
 	// abandoned, so it flushes too.
 	if state == stateDone || state == stateInterrupted {
+		s.mu.Lock()
+		delete(s.turnTools, sessionID)
+		s.mu.Unlock()
 		go s.flushNudge(sessionID)
 	}
 }
@@ -167,6 +178,39 @@ func (s *Service) SessionExited(sessionID string) {
 func (s *Service) forgetStateLocked(sessionID string) {
 	delete(s.state, sessionID)
 	delete(s.reported, sessionID)
+	delete(s.compacted, sessionID)
+	delete(s.turnTools, sessionID)
+	s.dropStreaksLocked(sessionID, sessionPair{})
+}
+
+// compactReminderLocked is the note typed back at a session whose compaction
+// the report being read closes, listing the errands it still owes an answer.
+// Each task reached it as a turn of its conversation, and the summary may have
+// folded the ticket away: with two open, an answer that names none is refused
+// (errandOfLocked), so a worker that lost them can answer neither. Empty when
+// there was no compaction or nothing is owed. Called under s.mu, after
+// endedErrands, so an errand that report ended is not listed.
+//
+// An errand the worker's mod answers is left out: it is answered by the
+// worker's last message, never by a ticket.
+func (s *Service) compactReminderLocked(sessionID string) string {
+	if !s.compacted[sessionID] {
+		return ""
+	}
+	delete(s.compacted, sessionID)
+	var owed []string
+	for id, t := range s.tickets {
+		if t.targetID == sessionID && t.submitted && !t.modAnswers {
+			owed = append(owed, id)
+		}
+	}
+	if len(owed) == 0 {
+		return ""
+	}
+	sort.Slice(owed, func(i, j int) bool {
+		return s.tickets[owed[i]].deliverySeq < s.tickets[owed[j]].deliverySeq
+	})
+	return compactReminder(s.lang(), len(owed), openErrands(s.tickets, owed))
 }
 
 // endedErrands takes every ticket the report ends off the table and closes its

@@ -233,12 +233,14 @@ of them is empty in the table above, and their cards show what they did before: 
 the compaction began in.
 
 lich reads `compacting` as a bracket everywhere it keeps turn accounting: it
-neither opens nor closes a turn. Two consequences a client can rely on:
+neither opens nor closes a turn. Three consequences a client can rely on:
 
 - A `waiting` after `compacting` is read against the turn before it, so a
   permission prompt right after an auto-compaction still rings the bell.
 - The `done` that closes a `/compact` does not raise a desktop "has finished
   working" notification: the turn it follows was already announced.
+- The report that closes it reminds the session of the relayed tasks it still
+  owes an answer (see the peer roster below).
 
 ## The tool a turn is running
 
@@ -435,6 +437,12 @@ it. The limits and the record lifetime are in `docs/ceilings.md`.
   because a session idle at its prompt is the most available it will ever be.
   `compacting` reaches neither: `Observe` drops it on arrival, so a session
   compacting mid-turn keeps reading as `busy` to its errands and to its peers.
+  All it leaves is a mark (`compactReminderLocked`): the report that closes the
+  compaction types the errands the session still owes back at its prompt, each
+  ticket with what it asked and its `lich reply` line, because a relayed task is
+  a turn of the conversation and the summary may have folded its ticket away.
+  Once per compaction, nothing when none is owed, and never an errand its mod
+  answers.
 - **Store** — `statusStore` (`native/cmd/lich-native/status.go`): fed by the
   window's one `/events` subscription, it keeps the last state of every session,
   keyed by id. The card cannot hold it: the sidebar only draws cards for the

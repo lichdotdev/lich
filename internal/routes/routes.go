@@ -40,6 +40,7 @@ func Themes(d *rpc.Handler, s *themes.Service) {
 func Spawn(d *rpc.Handler, s *spawn.Service) {
 	rpc.Handle(d, api.SpawnOpen, s.Open)
 	rpc.Handle(d, api.SpawnOpenSubagent, s.OpenSubagent)
+	rpc.Handle(d, api.SpawnHandoff, s.Handoff)
 	rpc.Handle(d, api.SpawnClose, s.Close)
 	rpc.Handle(d, api.SpawnCloseProject, s.CloseProject)
 	rpc.Handle(d, api.SpawnControl, s.Control)

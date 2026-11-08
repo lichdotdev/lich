@@ -60,9 +60,9 @@ const (
 	// sender hears a failure it can act on rather than watching a ticket expire
 	// an hour later with nothing said.
 	defaultDeliveryLimit = 5 * time.Minute
-	// promptLimit bounds one relayed prompt. The message is typed into a TUI a
+	// PromptLimit bounds one relayed prompt. The message is typed into a TUI a
 	// character at a time; a megabyte of it is a hang, not a prompt.
-	promptLimit = 8192
+	PromptLimit = 8192
 	// answerLimit bounds one reply. Generous — an answer is a summary, and the
 	// caller reads it as command output.
 	answerLimit = 64 * 1024
@@ -96,6 +96,10 @@ const (
 	// ToolCollect drains the results waiting for a sender. Named in prose too:
 	// the nudge typed at a sender's prompt is what tells it the tool exists.
 	ToolCollect = "wait_for_answer"
+	// ToolSend and ToolList are named here for the ping-pong breaker, which
+	// reads a turn that only called relay tools as one that did no work.
+	ToolSend = "send_to_session"
+	ToolList = "list_sessions"
 )
 
 // Status values a Result carries.
@@ -247,7 +251,7 @@ type ticket struct {
 	// what names an errand to the agent working it: a session with more than one
 	// open request has to be shown which is which before it can pick the ticket
 	// its answer belongs to (see errandOfLocked). The whole prompt is not kept —
-	// it runs to promptLimit, and what a reader needs is the line they recognise.
+	// it runs to PromptLimit, and what a reader needs is the line they recognise.
 	asked string
 	// prompt is the task itself, composed into the message when it is handed
 	// over (handOff): whether the target's mod answers for it is known only
@@ -300,6 +304,8 @@ type ticket struct {
 	// agent has not seen the message, so an answer that names no ticket cannot
 	// be about it (errandOfLocked).
 	submitted bool
+	// depth is how many relayed messages led to this one (chain.go).
+	depth int
 	// waited is when a caller last stopped waiting on this ticket without an
 	// outcome. The ticket's hour runs from there as well as from its creation:
 	// that caller was just told the errand is still open.
@@ -430,6 +436,14 @@ type Service struct {
 	// mergesTold is the merges already announced, by checkout and number, so
 	// the pull request watch and the Pulls screen's merge never announce one twice.
 	mergesTold map[string]bool
+	// compacted is the sessions whose compaction started and has not been closed
+	// by a later report yet: that report is where their open errands are typed
+	// back in (compactReminderLocked), once per compaction.
+	compacted map[string]bool
+	// turnTools is what each session's open turn has run, and streaks the
+	// idle hops in a row per pair of sessions (pingpong.go).
+	turnTools map[string]turnTools
+	streaks   map[sessionPair]int
 }
 
 // Plugins is what the relay needs to know about the companion plugin
@@ -462,6 +476,9 @@ func New(sessions Sessions, term Terminal, events Events) *Service {
 		nudgeTimer:      make(map[string]*time.Timer),
 		nudging:         make(map[string]*sync.Mutex),
 		mergesTold:      make(map[string]bool),
+		compacted:       make(map[string]bool),
+		turnTools:       make(map[string]turnTools),
+		streaks:         make(map[sessionPair]int),
 		sessions:        sessions,
 		term:            term,
 		events:          events,
@@ -571,12 +588,22 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 	if strings.TrimSpace(prompt) == "" {
 		return Result{}, fmt.Errorf("nothing to send: the prompt is empty")
 	}
-	if len(prompt) > promptLimit {
+	if len(prompt) > PromptLimit {
 		return Result{}, fmt.Errorf("prompt is %d bytes, over the %d limit: "+
-			"name the paths to read instead of pasting their contents", len(prompt), promptLimit)
+			"name the paths to read instead of pasting their contents", len(prompt), PromptLimit)
 	}
 
 	dest, err := s.resolve(fromID, target, project)
+	if err != nil {
+		return Result{}, err
+	}
+	s.mu.Lock()
+	depth := s.chainDepthLocked(fromID)
+	s.mu.Unlock()
+	if depth >= maxChainDepth {
+		return Result{}, chainTooDeep(depth, dest.Peer.Label)
+	}
+	warning, err := s.checkPingPong(fromID, dest.ID, dest.Peer.Label, dest.Peer.Kind)
 	if err != nil {
 		return Result{}, err
 	}
@@ -593,7 +620,8 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 		target:      dest.Peer.Label,
 		created:     s.now(),
 		asked:       askedExcerpt(prompt),
-		prompt:      prompt,
+		prompt:      prompt + warning,
+		depth:       depth,
 		private:     mode == errandPrivate,
 		subagent:    mode == errandSubagent,
 		done:        make(chan struct{}),

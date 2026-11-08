@@ -10,7 +10,10 @@ database at `$XDG_DATA_HOME/opencode/opencode.db`. The limits these sit under ar
 ## Spawn
 
 lich appends nothing to the agent's system prompt (`internal/terminal/command.go`, `briefingFlags`): opencode has
-no per-spawn append flag, so the point the briefing makes exists only in lich's MCP instructions.
+no per-spawn append flag, so the point the briefing makes exists only in lich's MCP instructions. opencode
+does hand those to the model (measured 2026-11-07 on 1.19.4, `opencode run` with a probe server registered
+through `OPENCODE_CONFIG_CONTENT`, as the spawn does: the model quoted a marker that lived only in the server's
+initialize `instructions`).
 
 opencode files a fork under the parent's directory, not the new checkout's (measured on 1.18.23): the copied
 session's `directory` column is the one the original ran in, and its `parent_id` is left empty, so opencode's own

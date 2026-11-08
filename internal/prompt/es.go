@@ -35,6 +35,7 @@ var es = Catalog{
 		"enviada por cualquier otro camino se pierde. Mantén la respuesta como un informe conciso " +
 		"(qué se hizo, dónde y qué falta), nunca una transcripción: quien lo envió paga por leer " +
 		"cada byte, y el detalle ya está en tus commits y archivos.",
+	PingPongWarning: "[lich] Este intercambio con quien envía parece un bucle: los mensajes van y vienen sin que se haga ningún trabajo entre ellos. Responde solo si hay trabajo que informar.",
 	WorkerTask: "[lich] Tarea de la sesión %[1]q, que abrió esta sesión como su subagente. " +
 		"Tu mensaje final, cuando termines, vuelve a ella como tu informe.\n\n%[2]s",
 	PickTicketNudge: "[lich] Tu turno terminó sin enviar ninguna respuesta, así que %[1]d peticiones " +
@@ -42,6 +43,14 @@ var es = Catalog{
 		"decir cuál de ellas era ese turno, y por eso ninguna pudo responderse por ti. Una en la " +
 		"que sigues trabajando todavía acepta su respuesta, y toda respuesta a partir de ahora " +
 		"tiene que nombrar su ticket: lich reply <ticket> \"<respuesta>\".",
+	CompactReminder: Plural{
+		One: "[lich] Tu conversación acaba de compactarse, y %[1]d petición enviada a esta sesión " +
+			"sigue esperando tu respuesta:\n%[2]s\nQuien la envió está bloqueado en ese ticket y no " +
+			"lee nada más: cuando termines el trabajo, respóndela por su ticket.",
+		Other: "[lich] Tu conversación acaba de compactarse, y %[1]d peticiones enviadas a esta sesión " +
+			"siguen esperando tus respuestas:\n%[2]s\nCada remitente está bloqueado en su propio ticket " +
+			"y no lee nada más: cuando termines cada trabajo, respóndelo por su ticket.",
+	},
 	NudgeResultsReady: Plural{
 		One:   "La tarea que enviaste a %[2]s tiene su resultado listo",
 		Other: "Los resultados de %[1]d tareas que enviaste están listos (%[2]s)",
@@ -136,6 +145,14 @@ Esta sesión tiene un navegador propio (herramientas browser_*). Corre sin venta
 	ClosedPlain: "Se cerró %q.\n",
 	ClosedProject: "Se cerró el proyecto %[1]q (%[2]s) y se detuvieron sus sesiones. Siguen con él: abrir una sesión " +
 		"en %[2]s de nuevo reabre el proyecto con ellas.\n",
+	HandoffNote: "[lich] La sesión %[1]q te pasó su trabajo: eres su sucesora, abierta desde cero en el mismo " +
+		"checkout para continuarlo. Esa sesión sigue abierta hasta que el usuario la cierre y no te está esperando, " +
+		"así que nada vuelve a ella. Contrasta esta nota con el repositorio (git status, git log) antes de " +
+		"construir sobre ella y sigue con los próximos pasos.\n\nHecho:\n%[2]s\n\nRama: %[3]s\n\nCommits:\n%[4]s\n\n" +
+		"Próximos pasos:\n%[5]s\n\nTrampas:\n%[6]s",
+	HandoffNone: "(ninguno)",
+	HandoffSent: "La nota de traspaso está en su prompt. Tu sesión sigue abierta hasta que el usuario la " +
+		"cierre: detente aquí en lugar de seguir con el trabajo que traspasaste.\n",
 	PageInteractive:  "interactive (índice etiqueta \"texto\", o -> enlace si no tiene):",
 	PageListSame:     "interactive: igual que en tu última respuesta de página, índices incluidos",
 	PageMore:         "(hay más elementos abajo, desplázate para llegar a ellos)",

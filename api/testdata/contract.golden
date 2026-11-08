@@ -173,6 +173,7 @@ spawn.ColorFolder(ColorFolderOptions) ColoredFolder
 spawn.Control(ControlSessionOptions) ControlledSession
 spawn.File(FileSessionOptions) FiledSession
 spawn.Folders(FoldersOptions) []SessionFolder
+spawn.Handoff(HandoffSessionOptions) OpenedSession
 spawn.Open(OpenSessionOptions) OpenedSession
 spawn.OpenSubagent(OpenSubagentOptions) OpenedSession
 spawn.Project(ProjectRefOptions) ProjectRef
@@ -1168,16 +1169,11 @@ SessionFolder {
 	sessions []string
 }
 
-OpenSessionOptions {
+HandoffSessionOptions {
 	from string
-	project string
 	kind string
-	worktree string
-	base string
 	model string
 	effort string
-	folder string
-	ultracode bool
 }
 
 OpenedSession {
@@ -1193,6 +1189,18 @@ OpenedSession {
 	originLabel string
 	confined bool
 	folder string
+}
+
+OpenSessionOptions {
+	from string
+	project string
+	kind string
+	worktree string
+	base string
+	model string
+	effort string
+	folder string
+	ultracode bool
 }
 
 OpenSubagentOptions {

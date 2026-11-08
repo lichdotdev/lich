@@ -150,9 +150,12 @@ what lich can read back out of it, since each CLI records different things.
 | Back at a shell without prompt marks after you quit the agent, a program can set the card again | yes | no | no | no | no | yes | yes | no |
 | The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | no | working only | working only |
 | The card says when the conversation is being compacted | yes | no | no | no | no | no | no | no |
+| After a compaction, the agent is reminded of the tasks other sessions sent it that still wait on its answer | yes | no | no | no | no | no | no | no |
 | Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |
 | Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |
+| Besides the tools for reaching your other sessions, the agent is told when to use them (hand work to a session on its own worktree) | yes | yes, unless your `config.toml` sets `developer_instructions` | yes | yes | yes | yes | not measured | yes |
 | Machine kept out of idle sleep while a turn runs | yes | yes | yes | yes | yes | no | yes | yes |
+| Sessions trading messages with no work in between, two of them or round a loop of several, are stopped | yes | yes | yes | yes | yes | no | yes | yes |
 | Review tab's **Last turn**, with the agent's recap | yes | yes | yes | yes | yes | no | yes | yes |
 | Search the conversation from the palette | yes | yes | yes | yes | yes | yes | no | yes |
 | Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |

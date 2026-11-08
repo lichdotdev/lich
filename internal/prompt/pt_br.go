@@ -35,6 +35,7 @@ var ptBR = Catalog{
 		"enviada por qualquer outro caminho se perde. Mantenha a resposta um relatório conciso " +
 		"(o que foi feito, onde e o que falta), nunca uma transcrição: quem enviou paga para ler " +
 		"cada byte, e o detalhe já está nos seus commits e arquivos.",
+	PingPongWarning: "[lich] Esta troca com quem enviou parece um loop: as mensagens vão e voltam sem nenhum trabalho feito entre elas. Só responda se houver trabalho a relatar.",
 	WorkerTask: "[lich] Tarefa da sessão %[1]q, que abriu esta sessão como seu subagente. " +
 		"A sua mensagem final, quando terminar, volta para ela como o seu relatório.\n\n%[2]s",
 	PickTicketNudge: "[lich] O seu turno terminou sem resposta enviada, então %[1]d pedidos voltaram " +
@@ -42,6 +43,14 @@ var ptBR = Catalog{
 		"aquele turno, e por isso nenhum pôde ser respondido por você. Um em que você ainda está " +
 		"trabalhando ainda aceita a resposta, e toda resposta daqui em diante precisa nomear o " +
 		"seu ticket: lich reply <ticket> \"<resposta>\".",
+	CompactReminder: Plural{
+		One: "[lich] A sua conversa acabou de ser compactada, e %[1]d pedido enviado a esta sessão " +
+			"ainda espera a sua resposta:\n%[2]s\nQuem enviou está bloqueado nesse ticket e não lê " +
+			"mais nada: quando o trabalho terminar, responda pelo ticket.",
+		Other: "[lich] A sua conversa acabou de ser compactada, e %[1]d pedidos enviados a esta sessão " +
+			"ainda esperam as suas respostas:\n%[2]s\nCada remetente está bloqueado no próprio ticket e " +
+			"não lê mais nada: quando cada trabalho terminar, responda pelo ticket dele.",
+	},
 	NudgeResultsReady: Plural{
 		One:   "A tarefa que você enviou para %[2]s tem o resultado pronto",
 		Other: "Os resultados de %[1]d tarefas que você enviou estão prontos (%[2]s)",
@@ -136,6 +145,14 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	ClosedPlain: "%q fechada.\n",
 	ClosedProject: "Projeto %[1]q (%[2]s) fechado e as sessões dele paradas. Elas ficam com ele: abrir uma sessão " +
 		"em %[2]s de novo reabre o projeto com elas.\n",
+	HandoffNote: "[lich] A sessão %[1]q passou o trabalho dela para você: você é a sucessora, aberta do zero no mesmo " +
+		"checkout para continuar. Aquela sessão fica aberta até o usuário fechá-la e não está esperando por você, " +
+		"então nada volta para ela. Confira esta nota com o repositório (git status, git log) antes de construir " +
+		"em cima dela e siga com os próximos passos.\n\nFeito:\n%[2]s\n\nBranch: %[3]s\n\nCommits:\n%[4]s\n\n" +
+		"Próximos passos:\n%[5]s\n\nArmadilhas:\n%[6]s",
+	HandoffNone: "(nenhum)",
+	HandoffSent: "A nota de passagem está no prompt dela. A sua sessão fica aberta até o usuário fechá-la: " +
+		"pare aqui em vez de seguir com o trabalho que você passou adiante.\n",
 	PageInteractive:  "interactive (índice tag \"rótulo\", ou -> link quando não tem):",
 	PageListSame:     "interactive: igual à sua última resposta de página, índices incluídos",
 	PageMore:         "(mais elementos abaixo, role a página para alcançá-los)",

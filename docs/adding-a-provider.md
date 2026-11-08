@@ -71,7 +71,7 @@ tool.
 | `internal/quota/` | plan usage in Settings and the footer | a `<provider>.go` reader and its place in `Service.read`, only if the provider exposes plan limits; a gap is a `docs/ceilings.md` line |
 | `internal/sandbox/sandbox.go` | what a confined session can still reach | a `stateDirs` case — a provider missing here confines to a home with no credentials, which is a session that opens and cannot log in |
 | `internal/agentplugin/` | the companion plugin | a `<provider>.go` with install / installed-version, plus the two switches (`Install`, `installedVersion`), `registersServerAtInstall` and the `supported` list in `agentplugin.go`, and a `registrations` entry in `repair.go` if the install writes an MCP server |
-| `internal/cli/mcp.go` | the `open_session` tool schema | the new id in the `kind` description |
+| `internal/cli/mcp.go`, `internal/cli/handoff.go` | the `open_session` and `handoff_session` tool schemas | the new id in each `kind` description |
 
 Nothing else in the backend enumerates providers: the settings store keys
 everything on the id (`provider.<id>.bin`, `.enabled`, `.sandbox`,

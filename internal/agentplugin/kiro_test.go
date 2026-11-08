@@ -3,6 +3,7 @@ package agentplugin
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/relay"
 )
 
 // decodeKiroAgent parses the agent file lich writes back into the shape Kiro
@@ -449,5 +451,34 @@ func TestKiroInstallStopsOnAMissingScript(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(home, ".kiro", "agents", "lich.json")); err == nil {
 		t.Errorf("an agent was written even though the install failed")
+	}
+}
+
+// TestKiroAgentPrintsTheBriefingOnlyInsideLich runs the hook's script through a
+// shell, as Kiro does: its stdout is what the model reads as context.
+func TestKiroAgentPrintsTheBriefingOnlyInsideLich(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no sh on this machine")
+	}
+	agent := decodeKiroAgent(t, "0.12.0", "/opt/lich/hooks")
+	commands := hookCommands(t, agent, "agentSpawn")
+	if !slices.ContainsFunc(commands, func(c string) bool { return strings.Contains(c, kiroBriefingScript) }) {
+		t.Fatalf("agentSpawn commands = %q, want the briefing hook", commands)
+	}
+	run := func(env ...string) string {
+		t.Helper()
+		cmd := exec.Command("sh", "-c", kiroBriefingScriptBody)
+		cmd.Env = env
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("hook: %v", err)
+		}
+		return string(out)
+	}
+	if got := run(relay.BriefingEnv + "=You are 100% inside lich"); got != "You are 100% inside lich" {
+		t.Errorf("inside lich: hook printed %q", got)
+	}
+	if got := run(); got != "" {
+		t.Errorf("outside lich: hook printed %q", got)
 	}
 }

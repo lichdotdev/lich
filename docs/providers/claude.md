@@ -62,7 +62,9 @@ and does not track the installed version in a marker line of its own.
 ## MCP
 
 The session is handed lich's own MCP server on its command line (`--mcp-config`,
-`providers.AcceptsMCPServer`), so a tool added here is in that session's list on the next spawn.
+`providers.AcceptsMCPServer`), so a tool added here is in that session's list on the next spawn. The server's
+initialize `instructions` reach the model (measured 2026-11-07 on 2.1.319, `claude -p --mcp-config` with a probe
+server: the model quoted a marker that lived only there).
 
 ## Account
 
