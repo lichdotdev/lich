@@ -52,6 +52,20 @@ func TestDownloadLineSaysAFailedMove(t *testing.T) {
 	}
 }
 
+func TestPageTextSaysTheListIsTheLastOne(t *testing.T) {
+	info := api.BrowserPageInfo{URL: "https://example.com/", Title: "Ex", Text: "Saved", InteractiveSame: true, Truncated: true}
+	want := strings.Join([]string{
+		"url: https://example.com/",
+		"title: Ex",
+		"text: Saved",
+		"interactive: the same as in your last page answer, indexes included",
+		"(more elements below, scroll to reach them)",
+	}, "\n")
+	if got := pageText(info, prompt.English); got != want {
+		t.Fatalf("got\n%s\nwant\n%s", got, want)
+	}
+}
+
 func TestPageTextOfAnEmptyPage(t *testing.T) {
 	if got := pageText(api.BrowserPageInfo{URL: "about:blank"}, prompt.English); got != "url: about:blank\ntitle: " {
 		t.Fatalf("got %q", got)

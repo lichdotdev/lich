@@ -366,6 +366,9 @@ type BrowserPageInfo struct {
 	Text        string               `json:"text"`
 	Interactive []BrowserInteractive `json:"interactive"`
 	Truncated   bool                 `json:"truncated"`
+	// InteractiveSame leaves Interactive out: it is the list the agent's last
+	// page answer gave, every element and index as they were.
+	InteractiveSame bool `json:"interactiveSame,omitempty"`
 	// Downloads are the ones the agent has not heard of in their current
 	// state: what its last action saved, or one it saw start and that ended
 	// since.

@@ -128,6 +128,7 @@ var zhCN = Catalog{
 	ClosedProject: "已关闭项目 %[1]q (%[2]s)，并停止了它的会话。会话仍保留在项目中：" +
 		"再次在 %[2]s 打开会话，会连同这些会话重新打开该项目。\n",
 	PageInteractive:  "interactive (索引 标签 \"文字\" -> 链接):",
+	PageListSame:     "interactive: 与上一次页面应答相同，索引也相同",
 	PageMore:         "(下方还有更多元素，滚动页面即可看到)",
 	PageFilled:       "(已填写)",
 	PageChecked:      "(已勾选)",

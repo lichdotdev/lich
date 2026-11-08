@@ -336,6 +336,7 @@ BrowserPageInfo {
 	text string
 	interactive []BrowserInteractive
 	truncated bool
+	interactiveSame,omitempty bool
 	downloads,omitempty []BrowserDownload
 	waitTimedOut,omitempty bool
 	consoleErrors,omitempty []string

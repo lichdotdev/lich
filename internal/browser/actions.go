@@ -88,6 +88,7 @@ func (s *Service) Info(id string) (PageInfo, error) {
 		return PageInfo{}, s.failed(sess, err)
 	}
 	s.remember(sess, info.URL, info.Title)
+	s.tell(sess, info.Interactive)
 	s.agentActed(sess, api.BrowserAgentAct{})
 	info.Downloads = s.untold(sess)
 	info.ConsoleErrors, info.ConsoleErrorsMore = s.consoleUntold(sess)

@@ -49,6 +49,9 @@ func pageTextAsking(info api.BrowserPageInfo, text *prompt.Catalog, waits string
 	if info.Text != "" {
 		fmt.Fprintf(&b, "text: %s\n", info.Text)
 	}
+	if info.InteractiveSame {
+		b.WriteString(text.PageListSame + "\n")
+	}
 	if len(info.Interactive) > 0 {
 		b.WriteString(text.PageInteractive + "\n")
 	}

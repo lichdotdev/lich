@@ -52,7 +52,10 @@ serves that checkout on `127.0.0.1`, at its `LICH_WORKTREE_PORT` plus 1000, so
 each checkout is its own origin, and a path outside the checkout is refused.
 Page info never includes form values. Screenshots are files, their longest
 side at most 1280 pixels (`shotMax`); a click at x and y is in that image's
-pixels and lands scaled back to the page's. Click, type and
+pixels and lands scaled back to the page's. A click, key, tab or dialog
+answer whose element list is the one the agent's last page answer gave says
+so in one line instead (`internal/browser/told.go`); `browser_info` always
+answers with the whole list. Click, type and
 press are real input events. `press` is named keys only. `browser_eval` runs
 the agent's script in the front tab (`browser.Eval`) and answers with its
 value, a string as it is and anything else as JSON, cut at 2000 characters; it

@@ -1101,6 +1101,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user
   sees without a cursor on the pane, and answers with JSON, cut at 2000 characters: a DOM node comes back as
   `{}`, a cycle fails, and anything larger has to be picked in the script.
+- **An action's page answer leaves out an element list the agent already heard** (`internal/browser/told.go`):
+  lich keeps the list of the agent's last page answer and, when a click, key, tab or dialog leaves the same one,
+  says so in one line. An agent whose context was compacted since no longer holds that list, and has to ask
+  `browser_info`, which always answers whole.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
   element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a

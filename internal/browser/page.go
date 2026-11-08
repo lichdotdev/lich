@@ -81,6 +81,9 @@ type PageInfo struct {
 	Text        string        `json:"text"`
 	Interactive []Interactive `json:"interactive"`
 	Truncated   bool          `json:"truncated"`
+	// InteractiveSame is the service's: Interactive is left out as the list
+	// the agent last heard.
+	InteractiveSame bool `json:"-"`
 	// Downloads and the console errors are the service's to fill, never the
 	// page script's.
 	Downloads         []api.BrowserDownload `json:"-"`
