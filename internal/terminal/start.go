@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
@@ -153,6 +154,8 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 		return nil, "", err
 	}
 	env = mcpEnv(env, opts.Kind, mcpBin)
+	route, lang := subagentRoute(opts.Kind, depth, cardsOn), s.promptLanguage()
+	env = briefingEnv(env, opts.Kind, route, lang)
 	model := s.store.SessionModel(opts.ID)
 	if oc2 {
 		if env, err = opencode2ModelEnv(env, model, opts.Resume); err != nil {
@@ -174,11 +177,10 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	inheritAntigravityTrust(opts.Kind, opts.Cwd, inSandbox)
 	spec := ptySpec{
 		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
-		args: append(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), opencode2Args(oc2, providerArgs(
+		args: slices.Concat(confinedTrustArgs(opts.Kind, opts.Cwd, inSandbox), codexBriefingArgs(opts.Kind, opts.Resume, route, lang), opencode2Args(oc2, providerArgs(
 			opts.Kind, name, opts.Resume, model, s.store.SessionEffort(opts.ID), mcpBin,
-			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, subagentRoute(opts.Kind, depth, cardsOn),
-			s.promptLanguage(),
-		))...),
+			kiroPluginAgent(opts.Kind), opts.Fork, skipPermissions, ultracode, route, lang,
+		))),
 		dir:  opts.Cwd,
 		env:  env,
 		cols: opts.Cols,

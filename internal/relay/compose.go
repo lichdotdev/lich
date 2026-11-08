@@ -63,6 +63,10 @@ func SpawnBriefing(lang prompt.Lang, hasTools bool, route SubagentRoute) string 
 	}
 }
 
+// BriefingEnv carries the spawn briefing to a provider whose agent config prints
+// it from a hook (Kiro CLI).
+const BriefingEnv = "LICH_BRIEFING"
+
 // SubagentRoute is where a spawned session's own subagents run, as far as its
 // briefing is concerned.
 type SubagentRoute int

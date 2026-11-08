@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -197,23 +200,21 @@ func SupportsUltracode(kind string) bool {
 // takes the literal branch instead, which lands the same text; what must not
 // happen is a briefing short enough to name a real file.
 //
-// The other five are absent because none of them has an append flag. Codex
-// takes `model_instructions_file`, which *replaces* its base instructions —
-// swapping the whole system prompt of a provider for a file lich wrote is not a
-// thing lich does for one paragraph. opencode's `instructions` and Crush's
-// `system_prompt_prefix` are config keys read by every run of that provider on
-// the machine, and static config cannot ask whether it is running inside lich: a
-// briefing written there would tell a session started outside lich that it is
-// inside one. Those three read the same point in lich's MCP instructions
-// instead, which costs nothing and is true only where it is read.
+// The other six are absent because none of them has an append flag. Codex and
+// Kiro CLI drop lich's MCP instructions (measured on 0.162.1 and 2.21.0), so each
+// is briefed by a route of its own: codexBriefingArgs and briefingEnv. opencode's
+// `instructions` and Crush's `system_prompt_prefix` are config keys read by every
+// run of that provider on the machine, and static config cannot ask whether it
+// is running inside lich: a briefing written there would tell a session started
+// outside lich that it is inside one. Those two read the same point in lich's MCP
+// instructions instead, which costs nothing and is true only where it is read.
 //
 // What could ask, if the gap is ever worth closing, is the plugin's own hooks —
-// they run code and can read LICH_SESSION_ID. Two of the three have somewhere to
-// put it: Codex's SessionStart returns `additionalContext` (0.144.5) and
-// opencode's plugin API has `experimental.chat.system.transform`, which mutates
-// the system messages (1.18.18). Crush has neither: `PreToolUse` is its only
-// event (0.88.0), so its briefing would arrive at the first tool call, and a
-// turn that answers without one would never see it at all.
+// they run code and can read LICH_SESSION_ID. opencode has somewhere to put it:
+// its plugin API has `experimental.chat.system.transform`, which mutates the
+// system messages (1.18.18). Crush does not: `PreToolUse` is its only event
+// (0.88.0), so its briefing would arrive at the first tool call, and a turn that
+// answers without one would never see it at all.
 var briefingFlags = map[string]string{
 	providers.Claude: "--append-system-prompt",
 	providers.OMP:    "--append-system-prompt",
@@ -227,6 +228,10 @@ const (
 	claudeMCPFlag   = "--mcp-config"
 	codexConfigFlag = "-c"
 )
+
+// codexInstructionsKey is the Codex config key that adds a developer message
+// beside its base instructions (measured on 0.162.1).
+const codexInstructionsKey = "developer_instructions"
 
 // resolveCommand picks the binary a session runs: the user's shell for "shell"
 // sessions, otherwise the provider binary for the session's kind.
@@ -426,6 +431,62 @@ func briefingArgs(kind string, route relay.SubagentRoute, lang prompt.Lang) []st
 		return nil
 	}
 	return []string{flag, relay.SpawnBriefing(lang, providers.AcceptsMCPServer(kind), route)}
+}
+
+// codexBriefingArgs hands a new Codex conversation the briefing as a config
+// override for this spawn alone, the same route as its MCP server. Not
+// `model_instructions_file`: that one *replaces* Codex's base instructions.
+//
+// The value is a TOML literal string because a provider shipped as a .cmd goes
+// through cmd.exe (relay.SpawnBriefing), which a double-quoted TOML string would
+// break. A resume or a fork gets none: the conversation keeps the briefing it was
+// born with and Codex ignores the override there (measured on 0.162.1).
+//
+// A `-c` beats config.toml, so a user who set the key keeps their own text and
+// the session goes without the briefing.
+func codexBriefingArgs(kind, resume string, route relay.SubagentRoute, lang prompt.Lang) []string {
+	if kind != providers.Codex || resume != "" || codexHasOwnInstructions() {
+		return nil
+	}
+	briefing := relay.SpawnBriefing(lang, providers.AcceptsMCPServer(kind), route)
+	return []string{codexConfigFlag, fmt.Sprintf("%s='%s'", codexInstructionsKey, briefing)}
+}
+
+// codexHasOwnInstructions reports whether Personal's config.toml sets the key at
+// its top level. Personal's speaks for a profile too, whose top level is copied
+// from it at every spawn (codexprofile). An unreadable file sets nothing.
+func codexHasOwnInstructions() bool {
+	dir, err := codexprofile.PersonalDir()
+	if err != nil {
+		return false
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "config.toml"))
+	if err != nil {
+		return false
+	}
+	for line := range strings.Lines(string(data)) {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") {
+			return false
+		}
+		if key, _, ok := strings.Cut(line, "="); ok && strings.TrimSpace(key) == codexInstructionsKey {
+			return true
+		}
+	}
+	return false
+}
+
+// briefingEnv hands a Kiro CLI session its briefing for the agentSpawn hook lich
+// installs into its agent (agentplugin, kiroBriefingScript) to print, which Kiro feeds
+// the model as context. The agent's own `prompt` is one text per install, and
+// this one follows the session's language and is empty outside lich. It always
+// names the tools: the agent that runs the hook is the one holding the MCP
+// registration.
+func briefingEnv(env []string, kind string, route relay.SubagentRoute, lang prompt.Lang) []string {
+	if kind != providers.Kiro {
+		return env
+	}
+	return append(env, relay.BriefingEnv+"="+relay.SpawnBriefing(lang, true, route))
 }
 
 // skipPermissionArgs returns the flag that drops a provider's permission

@@ -312,14 +312,19 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
   auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
   ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
-- **Codex and Kiro CLI sessions get lich's tools without the guidance on using them** (`internal/cli/mcp.go`,
-  `mcpInstructions`): lich briefs the six providers whose command line cannot append to the system prompt only
-  through its MCP server's initialize `instructions` (delegate to a worktree session, never poll, answer a ticket
-  with `reply_to_session`), and Codex (0.162.1) and Kiro CLI (2.21.0) initialize the server, list its tools and
-  never hand that text to the model (measured 2026-11-07 with a probe server; `docs/providers/codex.md`,
-  `docs/providers/kiro.md`). A session there sees each tool's own description and nothing more. Claude Code,
-  Antigravity, opencode and Crush were measured passing it on; Cursor CLI was not measured (no login on the
-  measuring machine), and oh-my-pi is briefed on its command line whatever its MCP client does.
+- **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
+  `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
+  server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on
+  0.162.1 and 2.21.0, `docs/providers/codex.md`, `docs/providers/kiro.md`). Each now gets the short briefing by a
+  route of its own (a `developer_instructions` override on Codex, an `agentSpawn` hook on Kiro), so the longer text
+  about waiting without polling and answering tickets still stops at each tool's own description there. On Codex,
+  a user whose `config.toml` sets `developer_instructions` keeps their text and gets no briefing, since a `-c`
+  would replace it; a project's `.codex/config.toml` setting it is replaced for the session, unread; and a
+  conversation resumed or forked keeps whatever it was born with, none if it began before this or outside lich.
+  On Kiro, the hook is written by the plugin install, so an agent installed earlier briefs nothing until the next
+  one. Claude Code, Antigravity, opencode and Crush were measured passing the instructions on; Cursor CLI was not
+  measured (no login on the measuring machine), and oh-my-pi is briefed on its command line whatever its MCP
+  client does.
 - **A new Claude Code session's roster name is its own, and lich does not know it** (`internal/terminal`,
   `nameArgs`; `internal/relay`, `RosterNameOf`): lich spawns it without `--name`, because a name passed there is
   the user's to Claude Code and a session holding one never writes the `ai-title` its card is titled from
@@ -1276,9 +1281,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   composes in its own process (relay messages, nudges) follows the setting at once, but anything composed
   inside the session (the `lich` CLI, its MCP results, the plugin's hooks) reads `LICH_PROMPT_LANG`, which is
   fixed when the session spawns. Change the language and an open session can get relay messages in the new
-  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn,
-  and only Claude Code and oh-my-pi receive one at all: they are the two whose command line can append to the
-  system prompt (`briefingFlags`), so the other six read lich's words only in relayed messages. MCP tool
+  language and CLI output in the old one until it is restarted. The spawn briefing is likewise fixed at spawn:
+  Claude Code and oh-my-pi take it on the command line that appends to their system prompt (`briefingFlags`),
+  Codex as a `developer_instructions` override and Kiro CLI from an `agentSpawn` hook. opencode, Crush and
+  Antigravity read lich's MCP instructions instead, composed at spawn too (`LICH_PROMPT_LANG`), and Cursor CLI's
+  is unmeasured (the bullet above on Codex and Kiro CLI, under Relay). MCP tool
   descriptions, `--help` and error returns stay English in every language. A usage-limit continuation parked
   before the setting changed keeps the language it was parked in: the row stores the text, so
   `isResumePrompt` matches it in every locale.
