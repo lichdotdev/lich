@@ -35,6 +35,7 @@ var es = Catalog{
 		"enviada por cualquier otro camino se pierde. Mantén la respuesta como un informe conciso " +
 		"(qué se hizo, dónde y qué falta), nunca una transcripción: quien lo envió paga por leer " +
 		"cada byte, y el detalle ya está en tus commits y archivos.",
+	PingPongWarning: "[lich] Este intercambio con quien envía parece un bucle: los mensajes van y vienen sin que se haga ningún trabajo entre ellos. Responde solo si hay trabajo que informar.",
 	WorkerTask: "[lich] Tarea de la sesión %[1]q, que abrió esta sesión como su subagente. " +
 		"Tu mensaje final, cuando termines, vuelve a ella como tu informe.\n\n%[2]s",
 	PickTicketNudge: "[lich] Tu turno terminó sin enviar ninguna respuesta, así que %[1]d peticiones " +

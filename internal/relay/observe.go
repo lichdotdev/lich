@@ -89,6 +89,9 @@ func (s *Service) Observe(sessionID, state string) {
 	// or Ctrl-C frees it just the same, and is how a wait for results is usually
 	// abandoned, so it flushes too.
 	if state == stateDone || state == stateInterrupted {
+		s.mu.Lock()
+		delete(s.turnTools, sessionID)
+		s.mu.Unlock()
 		go s.flushNudge(sessionID)
 	}
 }
@@ -176,6 +179,8 @@ func (s *Service) forgetStateLocked(sessionID string) {
 	delete(s.state, sessionID)
 	delete(s.reported, sessionID)
 	delete(s.compacted, sessionID)
+	delete(s.turnTools, sessionID)
+	s.dropStreaksLocked(sessionID, sessionPair{})
 }
 
 // compactReminderLocked is the note typed back at a session whose compaction

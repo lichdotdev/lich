@@ -1581,6 +1581,45 @@ func TestSessionStateReachesItsWatcher(t *testing.T) {
 	}
 }
 
+// The relay's ping-pong breaker tells a turn that worked from one that only
+// messaged by the tools it ran, so the tool a PreToolUse names has to reach it.
+func TestToolUseReachesItsWatcher(t *testing.T) {
+	t.Parallel()
+	svc := New(stubBins{}, nil, events.New())
+	if svc.ws == nil {
+		t.Skip("no transport on this machine")
+	}
+	type report struct{ id, tool, detail string }
+	seen := make(chan report, 4)
+	svc.SetToolUse(func(id, tool, detail string) { seen <- report{id, tool, detail} })
+
+	url := fmt.Sprintf("http://127.0.0.1:%d/hook?token=%s", svc.ws.port, svc.ws.token)
+	for _, body := range []string{
+		`{"session_id":"sess","state":"busy"}`,
+		`{"session_id":"sess","state":"busy","tool":"Bash","detail":"go test"}`,
+	} {
+		resp, err := http.Post(url, "application/json", strings.NewReader(body))
+		if err != nil {
+			t.Fatalf("post %s: %v", body, err)
+		}
+		_ = resp.Body.Close()
+	}
+
+	select {
+	case got := <-seen:
+		if want := (report{"sess", "Bash", "go test"}); got != want {
+			t.Fatalf("watcher saw %+v, want %+v", got, want)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("watcher never saw the tool")
+	}
+	select {
+	case got := <-seen:
+		t.Fatalf("a report naming no tool reached the watcher: %+v", got)
+	default:
+	}
+}
+
 // TestSessionStateWithoutAWatcherIsHarmless proves the default: nothing is wired
 // until main wires it, and a report arriving first must not take the hook down.
 func TestSessionStateWithoutAWatcherIsHarmless(t *testing.T) {
