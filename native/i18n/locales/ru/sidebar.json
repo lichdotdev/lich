@@ -239,7 +239,7 @@
   "scheduleDialog": {
     "title": "Запланировать промпт",
     "titleArmed": "Запланированный промпт",
-    "description": "Введёт его в {label}, когда придёт время.",
+    "description": "Позже введёт промпт в {label}.",
     "atTime": "В указанное время",
     "checksFailed": "Проверки не прошли",
     "checksPassed": "Проверки прошли",

@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
+	"image"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/ui"
 )
 
 func TestScheduleEchoSaysWhereTheTimeLands(t *testing.T) {
@@ -93,5 +96,45 @@ func TestScheduleMarkPrefersTheWatch(t *testing.T) {
 	sv.Watch.On = api.WatchReview
 	if scheduleMark(sv) != icWatch {
 		t.Fatal("want the radar for a watch")
+	}
+}
+
+// A card's menu writes into its own action; the frame's only sees what takeCard
+// copies.
+func TestAPickedScheduleReachesTheFrame(t *testing.T) {
+	var frame sidebarAction
+	frame.takeCard(sidebarAction{schedule: "s1"})
+	frame.takeCard(sidebarAction{})
+	if frame.schedule != "s1" {
+		t.Fatalf("schedule = %q, want s1", frame.schedule)
+	}
+}
+
+func TestTheOpenDialogKeepsTheKeyboardFromTheTerminal(t *testing.T) {
+	var s sidebar
+	if s.holdsKeys() {
+		t.Fatal("a closed dialog held the keyboard")
+	}
+	s.schedule.open = true
+	if !s.holdsKeys() {
+		t.Fatal("the terminal would take the keys typed in the dialog")
+	}
+}
+
+// The dialog takes the focus for its panel the frame it opens, so the field's
+// has to be asked for after it.
+func TestTheDialogOpensWithTheFieldFocused(t *testing.T) {
+	var d scheduleDialog
+	rig := newFrameRig(image.Pt(1000, 800), func(gtx C, th *ui.Theme) {
+		d.layout(context.Background(), gtx, th, nil, func(ui.Toast) {})
+	})
+	rig.frame()
+	d.show(sessionView{Session: backend.Session{ID: "s1"}})
+	for range 3 {
+		rig.frame()
+		rig.now = rig.now.Add(50 * time.Millisecond)
+	}
+	if !rig.router.Source().Focused(&d.when) {
+		t.Fatal("the When field does not have the keyboard")
 	}
 }

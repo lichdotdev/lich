@@ -231,7 +231,7 @@
   "scheduleDialog": {
     "title": "Schedule a prompt",
     "titleArmed": "Scheduled prompt",
-    "description": "Types it at {label} when the time comes.",
+    "description": "Types a prompt at {label} later.",
     "atTime": "At a time",
     "checksFailed": "Checks fail",
     "checksPassed": "Checks pass",

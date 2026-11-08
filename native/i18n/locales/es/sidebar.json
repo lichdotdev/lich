@@ -231,7 +231,7 @@
   "scheduleDialog": {
     "title": "Programar un prompt",
     "titleArmed": "Prompt programado",
-    "description": "Lo escribe en {label} cuando llegue el momento.",
+    "description": "Escribe un prompt en {label} más adelante.",
     "atTime": "A una hora",
     "checksFailed": "Fallan las comprobaciones",
     "checksPassed": "Pasan las comprobaciones",

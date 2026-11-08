@@ -32,6 +32,10 @@ var (
 	icChecksPassed  = icons.Lucide("circle-check")
 	icReviewArrives = icons.Lucide("message-square-text")
 	schedulePromptH = ui.Space(40)
+	// scheduleSlotH is the When field's height with its label and echo, kept by
+	// the line that replaces it, so the centred dialog does not move under the
+	// pointer when the trigger changes.
+	scheduleSlotH = ui.Space(19.5)
 )
 
 var scheduleKinds = []string{scheduleAtTime, api.WatchChecksFailed, api.WatchChecksPassed, api.WatchReview}
@@ -164,14 +168,6 @@ func (d *scheduleDialog) layout(ctx context.Context, gtx C, th *ui.Theme, client
 			d.pick(kind)
 		}
 	}
-	if d.focus && d.open {
-		tag := &d.prompt
-		if d.kind == scheduleAtTime {
-			tag = &d.when
-		}
-		gtx.Execute(key.FocusCmd{Tag: tag})
-		d.focus = false
-	}
 	on := th.On(th.Popover)
 	title := i18n.T("sidebar.scheduleDialog.title")
 	if d.armed {
@@ -182,6 +178,15 @@ func (d *scheduleDialog) layout(ctx context.Context, gtx C, th *ui.Theme, client
 	dialog.Actions = d.actions(on, ok)
 	if dialog.Layout(gtx) {
 		d.open = false
+	}
+	// After the dialog, which takes the focus for its panel the frame it opens.
+	if d.focus && d.open {
+		tag := &d.prompt
+		if d.kind == scheduleAtTime {
+			tag = &d.when
+		}
+		gtx.Execute(key.FocusCmd{Tag: tag})
+		d.focus = false
 	}
 }
 
@@ -208,7 +213,11 @@ func (d *scheduleDialog) body(gtx C, th *ui.Theme) D {
 	if d.kind == scheduleAtTime {
 		children = append(children, layout.Rigid(func(gtx C) D { return d.whenField(gtx, th) }))
 	} else {
-		children = append(children, layout.Rigid(func(gtx C) D { return d.pullRequestLine(gtx, th) }))
+		children = append(children, layout.Rigid(func(gtx C) D {
+			line := d.pullRequestLine(gtx, th)
+			line.Size.Y = max(line.Size.Y, gtx.Dp(scheduleSlotH))
+			return line
+		}))
 	}
 	children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return d.promptField(gtx, th) }))
 	if who := d.setByLine(); who != "" {

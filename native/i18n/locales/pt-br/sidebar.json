@@ -231,7 +231,7 @@
   "scheduleDialog": {
     "title": "Agendar um prompt",
     "titleArmed": "Prompt agendado",
-    "description": "Digita em {label} quando chegar a hora.",
+    "description": "Digita um prompt em {label} mais tarde.",
     "atTime": "Em um horário",
     "checksFailed": "Checks falham",
     "checksPassed": "Checks passam",

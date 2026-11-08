@@ -231,7 +231,7 @@
   "scheduleDialog": {
     "title": "プロンプトを予約",
     "titleArmed": "予約済みのプロンプト",
-    "description": "そのときが来たら {label} に入力します。",
+    "description": "後で {label} にプロンプトを入力します。",
     "atTime": "指定した時刻",
     "checksFailed": "チェックが失敗したとき",
     "checksPassed": "チェックが成功したとき",

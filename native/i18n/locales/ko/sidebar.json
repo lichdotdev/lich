@@ -227,7 +227,7 @@
   "scheduleDialog": {
     "title": "프롬프트 예약",
     "titleArmed": "예약된 프롬프트",
-    "description": "때가 되면 {label}에 입력합니다.",
+    "description": "나중에 {label}에 프롬프트를 입력합니다.",
     "atTime": "지정한 시각",
     "checksFailed": "체크 실패 시",
     "checksPassed": "체크 통과 시",

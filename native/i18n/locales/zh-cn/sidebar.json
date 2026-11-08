@@ -231,7 +231,7 @@
   "scheduleDialog": {
     "title": "定时发送提示词",
     "titleArmed": "已定时的提示词",
-    "description": "时间到时输入到 {label}。",
+    "description": "稍后向 {label} 输入提示词。",
     "atTime": "指定时间",
     "checksFailed": "检查失败时",
     "checksPassed": "检查通过时",
