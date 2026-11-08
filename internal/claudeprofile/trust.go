@@ -57,6 +57,26 @@ func InheritTrust(dir, top, origin string) error {
 	return writeGlobalConfig(path, doc, projects)
 }
 
+// Trusts reports whether Claude Code, run with its config in dir (Personal
+// for ""), finds cwd already trusted: by its own entry, its checkout top's or
+// its main checkout's (see InheritTrust), so it opens at its prompt without
+// asking.
+func Trusts(dir, cwd, top, origin string) (bool, error) {
+	path := filepath.Join(dir, ".claude.json")
+	if dir == "" {
+		var err error
+		if path, err = personalGlobalFile(); err != nil {
+			return false, err
+		}
+	}
+	_, projects, err := readGlobalConfig(path)
+	if err != nil {
+		return false, err
+	}
+	return trusted(projects, configKey(cwd)) || trusted(projects, configKey(top)) ||
+		trusted(projects, configKey(origin)), nil
+}
+
 // readGlobalConfig is a global config and its projects table, both nil for a
 // file that does not exist.
 func readGlobalConfig(path string) (map[string]json.RawMessage, map[string]map[string]json.RawMessage, error) {

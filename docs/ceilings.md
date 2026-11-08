@@ -16,8 +16,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (what each provider then does: `docs/providers/`, Spawn). Claude Code, Cursor CLI, oh-my-pi and Kiro CLI stay
   unready until their session-start report, which their hooks send only from the agent's prompt. That hold needs
   lich-plugin's hooks in the provider: without them nothing would ever release it, so nothing is held and the
-  typed text lands in the question. Codex, Antigravity, Crush and opencode report nothing before their first
-  turn, so a quiet screen is still all lich has for them.
+  typed text lands in the question. Claude Code and Cursor CLI are not held in a folder lich reads as trusted
+  already (`trustAnswered`): no question is coming, and the quiet screen is the answer. The hold trusts the
+  plugin on disk at spawn to be the one that process runs, so a session whose provider came up without the hooks
+  (the plugin reinstalled while it started) stays unready until the delivery runs out: on Claude Code and Cursor
+  CLI only in a folder not trusted yet, on oh-my-pi and Kiro CLI always. Codex, Antigravity, Crush and opencode
+  report nothing before their first turn, so a quiet screen is still all lich has for them.
 - **opencode 2 is told apart by its `--version`, and every 2.x session runs a server of its own**
   (`internal/providers/version.go` `IsOpencode2`, `internal/terminal/opencode2.go`): 2.x keeps 1.x's binary name,
   config and database but not its argv, so the spawn asks the binary for its major, once per path, size and

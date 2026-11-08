@@ -117,3 +117,38 @@ func TestInheritTrustRefusesAConfigItCannotRead(t *testing.T) {
 		t.Error("a malformed profile config was read as untrusted")
 	}
 }
+
+func TestTrustsReadsTheFolderItsCheckoutAndItsMainCheckout(t *testing.T) {
+	_, profile := trustFixture(t, `{}`, `,"/src/app":{"hasTrustDialogAccepted":true},"/wt/no":{"hasTrustDialogAccepted":false}`)
+	for _, tt := range []struct {
+		name             string
+		cwd, top, origin string
+		want             bool
+	}{
+		{"its main checkout", "/wt/app/sub", "/wt/app", "/src/app", true},
+		{"the folder itself", "/src/app", "", "", true},
+		{"an answer of no", "/wt/no", "/wt/no", "/wt/no", false},
+		{"a folder nobody trusted", "/else", "/else", "/else", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Trusts(profile, tt.cwd, tt.top, tt.origin)
+			if err != nil || got != tt.want {
+				t.Errorf("Trusts = %v, %v; want %v, nil", got, err, tt.want)
+			}
+		})
+	}
+}
+
+// Personal is read from where Claude Code itself reads it.
+func TestTrustsReadsPersonalForAnEmptyDir(t *testing.T) {
+	trustFixture(t, `{"/src/app":{"hasTrustDialogAccepted":true}}`, "")
+	if got, err := Trusts("", "/src/app", "", ""); err != nil || !got {
+		t.Errorf("Trusts(Personal) = %v, %v; want true, nil", got, err)
+	}
+}
+
+func TestTrustsIsNoForAProfileWithNoConfigYet(t *testing.T) {
+	if got, err := Trusts(t.TempDir(), "/src/app", "/src/app", "/src/app"); err != nil || got {
+		t.Errorf("Trusts = %v, %v; want false, nil", got, err)
+	}
+}
