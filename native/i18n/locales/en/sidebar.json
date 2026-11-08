@@ -171,6 +171,7 @@
     "adopted": "lich did not create the worktree at {path}. Removing deletes that directory but keeps its branch."
   },
   "sidebarProfile": {
+    "movedOffLimit": "{label} hit its usage limit and continues in {profile}",
     "continueIn": "Continue in",
     "continueInHint": "Same conversation, another login",
     "goneTitle": "{label} was started in a profile that no longer exists",

@@ -213,6 +213,13 @@ type Service struct {
 	// onLimit, when set, is told about every turn a usage limit ended that names
 	// its reset (limit.go). Guarded by mu like onState.
 	onLimit func(id string, resetsAt int64)
+	// quotaLeft, when set, answers whether a profile can take a turn now
+	// (limit_switch.go). Guarded by mu like onState.
+	quotaLeft func(kind, slug string) bool
+	// spentUntil is when each profile a usage limit stopped a turn in resets,
+	// in unix seconds, keyed by provider and slug (limit_switch.go). Guarded
+	// by mu.
+	spentUntil map[string]int64
 	// spawns is how each live session's PTY was started — what it runs and where
 	// — keyed by session id. Read by providerKind, which is what stops a
 	// session-start report from repainting a card lich itself chose the provider

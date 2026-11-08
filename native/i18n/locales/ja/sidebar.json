@@ -171,6 +171,7 @@
     "adopted": "{path} のワークツリーは lich が作成したものではありません。削除するとそのディレクトリは消えますが、ブランチは残ります。"
   },
   "sidebarProfile": {
+    "movedOffLimit": "{label} は使用量の上限に達したため、{profile} で続行します",
     "continueIn": "次で続ける",
     "continueInHint": "同じ会話を別のログインで",
     "goneTitle": "{label} は、もう存在しないプロファイルで開始されました",

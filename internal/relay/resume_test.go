@@ -122,3 +122,56 @@ func waitUntil(t *testing.T, cond func() bool) {
 		time.Sleep(time.Millisecond)
 	}
 }
+
+// TestParkResumeContinuesAtOnceInAProfileWithQuota: a session moved to another
+// profile has its continuation due now, even for a reset past the horizon.
+func TestParkResumeContinuesAtOnceInAProfileWithQuota(t *testing.T) {
+	t.Parallel()
+	for _, resetsAt := range []int64{1000 + 3600, 1000 + int64(resumeHorizon/time.Second) + 1} {
+		writer := &parkWriter{}
+		svc := newRelay(scheduledWith(0, "", writer.set), newFakeTerminal("s1"), &fakeEvents{})
+		svc.now = at(1000)
+		var moved []string
+		svc.SetContinueOffLimit(func(id string) bool { moved = append(moved, id); return true })
+
+		svc.ParkResume("s1", resetsAt)
+
+		want := ScheduleEvent{ID: "s1", At: 1000, Prompt: resumePrompt}
+		if got := writer.all(); len(got) != 1 || got[0] != want || len(moved) != 1 {
+			t.Errorf("reset %d: moved %v, writes = %+v, want [%+v]", resetsAt, moved, got, want)
+		}
+	}
+}
+
+// TestParkResumeWaitsWhenNoProfileTakesTheSession: no profile with quota (or
+// none whose quota can be read) leaves the wait for the reset as it was.
+func TestParkResumeWaitsWhenNoProfileTakesTheSession(t *testing.T) {
+	t.Parallel()
+	writer := &parkWriter{}
+	svc := newRelay(scheduledWith(0, "", writer.set), newFakeTerminal("s1"), &fakeEvents{})
+	svc.now = at(1000)
+	svc.SetContinueOffLimit(func(string) bool { return false })
+
+	svc.ParkResume("s1", 1000+3600)
+
+	want := ScheduleEvent{ID: "s1", At: 1000 + 3600 + int64(resumeGrace/time.Second), Prompt: resumePrompt}
+	if got := writer.all(); len(got) != 1 || got[0] != want {
+		t.Fatalf("writes = %+v, want [%+v]", got, want)
+	}
+}
+
+// TestParkResumeLeavesASessionWithAPersonsPromptWhereItIs: the person decided
+// when it goes on, so it neither moves nor gets lich's continuation.
+func TestParkResumeLeavesASessionWithAPersonsPromptWhereItIs(t *testing.T) {
+	t.Parallel()
+	writer := &parkWriter{}
+	svc := newRelay(scheduledWith(5000, "ship the release notes", writer.set), newFakeTerminal("s1"), &fakeEvents{})
+	svc.now = at(1000)
+	svc.SetContinueOffLimit(func(string) bool { t.Error("moved a session holding a person's prompt"); return true })
+
+	svc.ParkResume("s1", 1000+3600)
+
+	if got := writer.all(); len(got) != 0 {
+		t.Fatalf("writes = %+v, want none", got)
+	}
+}

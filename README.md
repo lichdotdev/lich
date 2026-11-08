@@ -139,6 +139,7 @@ what lich can read back out of it, since each CLI records different things.
 | Cost in the footer | yes | yes | no | yes | yes | yes | no | credits |
 | How much of your plan is left | yes | yes | yes | OpenCode Go only | no | no | yes | no |
 | A turn your plan's usage limit stopped picks up again once the limit resets | yes | yes | no | its own retries | its own retries | no | no | no |
+| Or at once, in another of your profiles whose plan still has quota left | yes | yes | no | no | no | no | no | no |
 | Spinner while a turn runs, ring when it ends | yes | yes | yes | yes | yes | no | yes | yes |
 | The card names itself after the conversation | yes | after your first prompt | after your first prompt | yes | yes, from the second turn | no | yes, once the first turn ends | after your first prompt, once the first turn ends |
 | A pull request the agent opens shows on its card when the turn ends | yes | yes | yes | yes | yes | no, once the window regains focus | yes | yes |

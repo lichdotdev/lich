@@ -85,7 +85,14 @@ type SessionProfile struct {
 	ID string `json:"id"`
 	// Profile is the slug, "" for Personal.
 	Profile string `json:"profile"`
+	// Reason is ProfileMovedOffLimit when lich moved the session itself, ""
+	// when a person did or a resume followed its conversation.
+	Reason string `json:"reason,omitempty"`
 }
+
+// ProfileMovedOffLimit is a session lich moved to another profile because a
+// usage limit stopped its turn and that profile had quota left.
+const ProfileMovedOffLimit = "usage-limit"
 
 // SessionTodo is the payload of SessionTodoEvent. Both counts are the whole list the
 // agent last wrote, so a card can decide for itself whether a list is worth

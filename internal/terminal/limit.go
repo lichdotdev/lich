@@ -181,9 +181,9 @@ func codexLimitWindow(minutes int) string {
 }
 
 // noteLimit reads whether session id's last turn ended on a usage limit and,
-// when it did, tells the window and hands the reset to whoever parks the
-// continuation (SetUsageLimit). Silent on every miss: no limit is the usual
-// answer, and a transcript lich cannot read is one it has nothing to say about.
+// when it did, reports it (reportLimit). Silent on every miss: no limit is the
+// usual answer, and a transcript lich cannot read is one it has nothing to say
+// about.
 func (s *Service) noteLimit(id string) bool {
 	src, ok := s.transcriptSource(id)
 	if !ok {
@@ -193,11 +193,23 @@ func (s *Service) noteLimit(id string) bool {
 	if !ok {
 		return false
 	}
+	s.reportLimit(id, limit)
+	return true
+}
+
+// reportLimit tells the window a usage limit ended session id's turn, marks
+// the profile it ran in spent until the reset, and hands the reset to whoever
+// parks the continuation (SetUsageLimit), which may move the session off the
+// limit first (ContinueOffLimit): the turn must already read as ended.
+func (s *Service) reportLimit(id string, limit usageLimit) {
 	events.Send(s.hub.Emit, api.SessionLimitEvent, limitEvent{ID: id, Window: limit.window, ResetsAt: limit.resetsAt})
-	if park := s.limitWatcher(); park != nil && limit.resetsAt > 0 {
+	if limit.resetsAt <= 0 {
+		return
+	}
+	s.markSpent(id, limit.resetsAt)
+	if park := s.limitWatcher(); park != nil {
 		park(id, limit.resetsAt)
 	}
-	return true
 }
 
 // SetUsageLimit wires fn to every turn a usage limit ended that names its reset
@@ -234,10 +246,12 @@ func (s *Service) watchCodexLimits() {
 		if !ok || src.kind != providers.Codex {
 			continue
 		}
-		if !s.noteLimit(id) {
+		limit, ok := usageLimitFor(src)
+		if !ok {
 			continue
 		}
 		slog.Info("terminal: codex turn ended on a usage limit", "session", id)
 		s.noteInterrupt(id)
+		s.reportLimit(id, limit)
 	}
 }

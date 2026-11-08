@@ -82,3 +82,35 @@ func envMap(env []string) map[string]string {
 	}
 	return m
 }
+
+// HasQuotaLeft answers whether a profile of provider can take a turn now: its
+// plan reads, names at least one window, and none of them is spent or locked.
+// A plan that does not read (signed out, an error, an account lich may not ask
+// about) or reads with no windows is not known to have any, and answers false:
+// a session moved there on a guess lands on a login screen or on the same limit,
+// and waiting for the reset it already knows is the better bet. Only Claude Code
+// and Codex have per-profile readings; any other provider answers false.
+func (s *Service) HasQuotaLeft(provider, slug string) bool {
+	var plan Plan
+	var err error
+	switch provider {
+	case providers.Claude:
+		plan, err = s.ProfilePlan(context.Background(), api.ProfilePlanOptions{Profile: slug})
+	case providers.Codex:
+		plan, err = s.CodexProfilePlan(context.Background(), api.ProfilePlanOptions{Profile: slug})
+	default:
+		return false
+	}
+	if err != nil || plan.Status != StatusOK || len(plan.Windows) == 0 {
+		return false
+	}
+	for _, w := range plan.Windows {
+		if w.Percent >= fullPercent || w.LockedReason != "" {
+			return false
+		}
+	}
+	return true
+}
+
+// fullPercent is a window spent to its end.
+const fullPercent = 100

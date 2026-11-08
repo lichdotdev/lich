@@ -143,6 +143,7 @@ distinto.
 | Costo en el pie de ventana | sí | sí | no | sí | sí | sí | no | créditos |
 | Cuánto queda de tu plan | sí | sí | sí | solo OpenCode Go | no | no | sí | no |
 | Un turno que el límite de uso de tu plan detuvo se reanuda cuando el límite se restablece | sí | sí | no | sus propios reintentos | sus propios reintentos | no | no | no |
+| O al momento, en otro de tus perfiles cuyo plan aún tiene cuota | sí | sí | no | no | no | no | no | no |
 | Spinner mientras corre un turno, anillo cuando termina | sí | sí | sí | sí | sí | no | sí | sí |
 | La tarjeta toma el nombre de la conversación | sí | por tu primer prompt | por tu primer prompt | sí | sí, desde el segundo turno | no | sí, cuando termina el primer turno | por tu primer prompt, cuando termina el primer turno |
 | Un pull request que abre el agente aparece en su tarjeta al terminar el turno | sí | sí | sí | sí | sí | no, cuando la ventana recupera el foco | sí | sí |

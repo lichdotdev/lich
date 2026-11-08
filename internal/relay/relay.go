@@ -422,6 +422,10 @@ type Service struct {
 	// resumes is the sessions holding a continuation lich parked after a usage
 	// limit (resume.go), so a turn starting there can drop it.
 	resumes map[string]bool
+	// continueOffLimit moves a session a usage limit stopped to another
+	// profile with quota left (SetContinueOffLimit). Nil leaves every limit
+	// waited out.
+	continueOffLimit func(id string) bool
 	// workerFinished is told about a worker that finished. Nil leaves every
 	// worker running, the state a test that does not care is in.
 	workerFinished func(workerID string) error

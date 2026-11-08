@@ -179,6 +179,7 @@
     "adopted": "lich не создавал worktree в {path}. Удаление сотрёт эту директорию, но сохранит её ветку."
   },
   "sidebarProfile": {
+    "movedOffLimit": "{label} упёрлась в лимит использования и продолжает в {profile}",
     "continueIn": "Продолжить в",
     "continueInHint": "Тот же разговор, другой вход",
     "goneTitle": "{label} запущена в профиле, которого больше нет",

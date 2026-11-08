@@ -1763,6 +1763,7 @@ SessionMCP {
 SessionProfile {
 	id string
 	profile string
+	reason,omitempty string
 }
 
 SessionRelay {

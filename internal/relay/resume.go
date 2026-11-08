@@ -44,28 +44,51 @@ const resumeGrace = 2 * time.Minute
 const resumeHorizon = 24 * time.Hour
 
 // ParkResume parks the continuation of session id's turn, due resumeGrace after
-// resetsAt (unix seconds). Nothing is parked for a reset already past or beyond
-// resumeHorizon, nor over a prompt already parked there: there is one per
-// session, and a person's own outranks lich's.
+// resetsAt (unix seconds). Nothing is parked for a reset already past, nor over
+// a prompt already parked there: there is one per session, and a person's own
+// outranks lich's. Before waiting, the session is moved to another profile with
+// quota left when there is one (SetContinueOffLimit), and the continuation is
+// due at once there, beyond resumeHorizon too: a profile with quota is no
+// surprise days later, it is the turn going on now. Only a reset within
+// resumeHorizon is waited for.
 func (s *Service) ParkResume(id string, resetsAt int64) {
 	now := s.now()
 	reset := time.Unix(resetsAt, 0)
-	if !reset.After(now) || reset.Sub(now) > resumeHorizon {
+	if !reset.After(now) {
 		return
 	}
 	sess, ok := s.sessionRow(id)
 	if !ok || sess.ScheduledPrompt != "" {
 		return
 	}
-	due := reset.Add(resumeGrace).Unix()
+	if s.continueOffLimit != nil && s.continueOffLimit(id) {
+		s.parkContinuation(sess, now.Unix())
+		return
+	}
+	if reset.Sub(now) > resumeHorizon {
+		return
+	}
+	s.parkContinuation(sess, reset.Add(resumeGrace).Unix())
+}
+
+// SetContinueOffLimit wires the move of a session a usage limit stopped to
+// another profile with quota left, reporting whether it moved
+// (terminal.Service.ContinueOffLimit). Called at startup.
+func (s *Service) SetContinueOffLimit(fn func(id string) bool) {
+	s.continueOffLimit = fn
+}
+
+// parkContinuation parks lich's continuation on sess, due at due (unix
+// seconds). deliverDue types it once the session is at its prompt.
+func (s *Service) parkContinuation(sess store.Session, due int64) {
 	resumePrompt := prompt.For(s.lang()).ResumePrompt
-	if err := s.sessions.SetSessionSchedule(id, due, resumePrompt); err != nil {
+	if err := s.sessions.SetSessionSchedule(sess.ID, due, resumePrompt); err != nil {
 		slog.Warn("relay: park resume", "session", sess.Label, "err", err)
 		return
 	}
-	s.markResume(id)
+	s.markResume(sess.ID)
 	if s.events != nil {
-		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: id, At: due, Prompt: resumePrompt})
+		events.Send(s.events.Emit, api.SessionScheduleEvent, ScheduleEvent{ID: sess.ID, At: due, Prompt: resumePrompt})
 	}
 }
 

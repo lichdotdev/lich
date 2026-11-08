@@ -179,3 +179,30 @@ func (u *window) startNewInProjectProfile(s sessionView) {
 	u.newSession(launchRequest{kind: s.Kind, dir: s.path, folder: s.Folder}, "")
 	u.closeSession(s.ID)
 }
+
+// tellMovedOffLimit says lich moved a session a usage limit stopped to another
+// profile, where its turn goes on without waiting for the reset.
+func (u *window) tellMovedOffLimit(id, profile string) {
+	label, name, ok := u.model.movedOffLimitOf(id, profile)
+	if !ok {
+		return
+	}
+	u.toaster.Show(ui.Toast{Variant: ui.ToastInfo, Title: i18n.T("sidebar.sidebarProfile.movedOffLimit", i18n.Args{"label": label, "profile": name})})
+}
+
+// movedOffLimitOf is the session's label and the name of the profile it moved
+// to, false for a session no open project holds.
+func (m *model) movedOffLimitOf(id, profile string) (label, name string, ok bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p, i := m.sessionAt(id)
+	if p == nil {
+		return "", "", false
+	}
+	s := p.Sessions[i]
+	name = profile
+	if book := m.profileBook(s.Kind); book != nil {
+		name = book.nameOf(profile)
+	}
+	return s.Label, name, true
+}

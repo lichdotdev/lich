@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -370,6 +371,32 @@ func TestSessionProfileEventMovesTheCard(t *testing.T) {
 	}
 	if got := m.profileNameOf(claudeKind, ""); got != "" {
 		t.Errorf("Personal carries no tag, got %q", got)
+	}
+}
+
+// TestOnlyLichsMoveOffALimitIsAnnounced: a session lich moved off a usage
+// limit is told with its label and the profile's name; a move a person made,
+// or a resume following its conversation, says nothing.
+func TestOnlyLichsMoveOffALimitIsAnnounced(t *testing.T) {
+	m := newModel(nil, func() {})
+	m.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "s1", Label: "api", Kind: claudeKind}}}}
+	var told []string
+	m.movedOffLimit = func(id, profile string) {
+		if label, name, ok := m.movedOffLimitOf(id, profile); ok {
+			told = append(told, label+" -> "+name)
+		}
+	}
+	events := make(chan backend.Event, 2)
+	events <- backend.Event{Name: api.SessionProfileEvent.Name, Data: []byte(`{"id":"s1","profile":"work"}`)}
+	events <- backend.Event{Name: api.SessionProfileEvent.Name, Data: []byte(`{"id":"s1","profile":"","reason":"usage-limit"}`)}
+	close(events)
+	m.follow(context.Background(), events)
+
+	if want := []string{"api -> Personal"}; !slices.Equal(told, want) {
+		t.Errorf("told %q, want %q", told, want)
+	}
+	if _, _, ok := m.movedOffLimitOf("gone", "work"); ok {
+		t.Error("a session no open project holds has a label to announce")
 	}
 }
 

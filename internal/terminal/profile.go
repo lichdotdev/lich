@@ -28,6 +28,9 @@ type profileOps struct {
 	owner        func(conversationID string) (profilestore.Profile, string, bool)
 	env          func(env []string, dir string) []string
 	moveTo       func(conversationID, toSlug string) error
+	// list is every profile, Personal first: set for the providers lich reads
+	// a usage limit for, the only ones a session moves off one in.
+	list func() ([]profilestore.Profile, error)
 	// slugOf is the profile a state directory belongs to, for a provider
 	// whose directory is not named after it.
 	slugOf func(dir string) string
@@ -43,10 +46,12 @@ var profilestores = withXDGProfiles(map[string]profileOps{
 	providers.Claude: {
 		configDir: claudeprofile.ConfigDir, ensureShared: claudeprofile.EnsureShared,
 		owner: claudeprofile.Owner, env: claudeprofile.Env, moveTo: claudeprofile.MoveConversation,
+		list: claudeprofile.List,
 	},
 	providers.Codex: {
 		configDir: codexprofile.ConfigDir, ensureShared: codexprofile.EnsureShared,
 		owner: codexprofile.Owner, env: codexprofile.Env, moveTo: codexprofile.MoveConversation,
+		list: codexprofile.List,
 	},
 	providers.OMP: {
 		configDir: ompprofile.ConfigDir, ensureShared: ompprofile.EnsureShared,
@@ -201,56 +206,62 @@ func (s *Service) profileSessions(kind, slug string) int {
 // It refuses a turn in progress: a provider-reported turn still open, which a
 // permission prompt is part of. A turn a usage limit stopped has ended, so a
 // session waiting out its limit moves like an idle one.
-func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (api.None, error) {
+func (s *Service) ContinueIn(_ context.Context, opts api.ContinueInOptions) (api.None, error) {
+	return api.None{}, s.continueIn(opts, "")
+}
+
+// continueIn is ContinueIn, with why the session moved for the event that says
+// so: "" for a person's own choice, api.ProfileMovedOffLimit for lich's.
+func (s *Service) continueIn(opts api.ContinueInOptions, reason string) error {
 	conversation, err := s.store.ProviderSession(opts.ID)
 	if err != nil {
-		return api.None{}, err
+		return err
 	}
 	if conversation == "" {
-		return api.None{}, errors.New("this session has no conversation to continue yet")
+		return errors.New("this session has no conversation to continue yet")
 	}
 	started := s.spawnOf(opts.ID)
 	kind := sessionKind(started.kind, s.store.SessionKind(opts.ID))
 	if !hasProfiles(kind) {
-		return api.None{}, fmt.Errorf("a %s session has no profiles to continue in", kind)
+		return fmt.Errorf("a %s session has no profiles to continue in", kind)
 	}
 	if profilestores[kind].noMove {
-		return api.None{}, fmt.Errorf("a %s conversation cannot move to another profile; start a new session there", kind)
+		return fmt.Errorf("a %s conversation cannot move to another profile; start a new session there", kind)
 	}
 	if s.turns.busy(opts.ID) {
-		return api.None{}, errors.New("the session is mid-turn; continue it in another profile once the turn ends")
+		return errors.New("the session is mid-turn; continue it in another profile once the turn ends")
 	}
 	if _, err := profilestores[kind].configDir(opts.Profile); err != nil {
-		return api.None{}, err
+		return err
 	}
 	live := s.live(opts.ID)
 	if live {
 		if err := s.endProcess(opts.ID, ""); err != nil {
-			return api.None{}, fmt.Errorf("end the session before moving it: %w", err)
+			return fmt.Errorf("end the session before moving it: %w", err)
 		}
 	}
 	err = profilestores[kind].moveTo(conversation, opts.Profile)
 	if errors.Is(err, profilestore.ErrNoConversation) {
 		// Nothing written yet to carry over: the card starts afresh there.
 		if err := s.setConversation(opts.ID, ""); err != nil {
-			return api.None{}, err
+			return err
 		}
 		conversation, err = "", nil
 	}
 	if err != nil {
-		return api.None{}, s.respawnAfter(err, live, opts.ID, started, kind, conversation)
+		return s.respawnAfter(err, live, opts.ID, started, kind, conversation)
 	}
 	if profilestore.IsPersonal(opts.Profile) {
 		opts.Profile = ""
 	}
 	if err := s.store.SetSessionProfile(opts.ID, opts.Profile); err != nil {
-		return api.None{}, err
+		return err
 	}
 	err = s.respawnAfter(nil, live, opts.ID, started, kind, conversation)
 	// After the respawn: a reader that re-reads on this event (the quota of
 	// the session's account) must find the process already under the profile.
-	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: opts.ID, Profile: opts.Profile})
-	return api.None{}, err
+	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: opts.ID, Profile: opts.Profile, Reason: reason})
+	return err
 }
 
 // sessionKind is the provider of a session being moved: its running spawn's,
