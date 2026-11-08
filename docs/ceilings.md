@@ -1254,7 +1254,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   free one in the window, so that checkout's origin, and the storage a page keeps under it, changes until it
   gets its port back. Everything under the directory is served, ignored files included, and the root is
   the spawn directory, so a session started in the home directory serves all of it. `os.Root` refuses `..` and
-  symlinks leading out. It is a static server: no reload on save, no SPA fallback, no headers of the project's.
+  symlinks leading out, and a request whose `Host` is not `127.0.0.1:<port>` or `localhost:<port>` is refused,
+  so a page elsewhere cannot rebind a name of its own to the machine and read the checkout through it. It is a static server: no reload on save, no SPA fallback, no headers of the project's.
   The root stays the checkout whatever file is opened, so a build in a subdirectory that links its assets from
   `/` (Vite's default `base`) loads blank from `dist/index.html`; one built with a relative base loads.
 - **`browser_eval` hands the agent whatever the page holds, form values and passwords included**

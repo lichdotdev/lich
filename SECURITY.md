@@ -29,7 +29,7 @@ telemetry, so the interesting boundaries are local ones:
   every request is authenticated by a per-run token. Anything that reaches it
   without that token, or from off-host, is a vulnerability.
 - **The session token.** It is never written to the log. Finding it in a log,
-  a crash report or a URL is a vulnerability.
+  a crash report or a process's command line is a vulnerability.
 - **The workspace.** Projects, sessions and settings live in SQLite under your
   config directory.
 - **`GH_TOKEN`.** A project can name the GitHub account `gh` runs as, which

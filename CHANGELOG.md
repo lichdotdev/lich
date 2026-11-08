@@ -47,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A session that has printed more than 2 MB keeps its terminal modes when the window rebuilds its terminal, on first showing it or after a reconnect. Before, the mouse could stop working or fall back to an old encoding, a paste could submit at its first line break, keys came through without the kitty protocol, a full-screen app drew over the shell's own screen, and the palette, foreground, background and cursor colors it set reverted. Applies to every provider.
 - Emoji made of several characters show as one in the terminal, as wide as other terminals draw them: a family is one emoji instead of three, a flag is the flag instead of two letters, and the rest of the line no longer shifts to the right. A letter followed by a combining accent shows the accent. Copying the text or opening a link keeps every character.
 
+### Security
+
+- A session browser's local-file server, the one that serves a session's checkout at `http://127.0.0.1:<port>/`, now answers only requests addressed to `127.0.0.1:<port>` or `localhost:<port>`. A page in your ordinary browser could point a name it controls at your machine and read the checkout through it, `.env` files included; such a request is now refused.
+- The command lich pastes to finish a self-update sends the session token to lich in a request header fed through curl's standard input, so it no longer appears in the command line of a process, which every user on the machine can read. The loopback listener accepts `Authorization: Bearer <token>` beside `?token=`. The same goes for the restart `install.sh` makes.
+- lich's own config directory (`~/.config/lich` on Linux) is made readable by your user only, on every start, so an existing install is tightened too. Prompts and session text live in the database there. The directory above it is left as it was.
+
 ## [0.86.0] - 2026-11-07
 
 ### Added

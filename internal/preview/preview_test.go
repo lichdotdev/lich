@@ -121,6 +121,47 @@ func TestServedCheckoutDoesNotFollowASymlinkOut(t *testing.T) {
 	}
 }
 
+// A page in the user's ordinary browser can rebind a hostname it controls to
+// 127.0.0.1 and read the checkout through it; only the server's own loopback
+// names are served.
+func TestServedCheckoutRefusesAForeignHost(t *testing.T) {
+	s := newTestService(t)
+	dir := checkout(t)
+	u, err := s.URL(dir, 24001, filepath.Join(dir, "site", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := url.Parse(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := parsed.Port()
+	for host, want := range map[string]int{
+		"127.0.0.1:" + port:     http.StatusOK,
+		"localhost:" + port:     http.StatusOK,
+		"LOCALHOST:" + port:     http.StatusOK,
+		"evil.example:" + port:  http.StatusForbidden,
+		"evil.example":          http.StatusForbidden,
+		"127.0.0.1":             http.StatusForbidden,
+		"127.0.0.1:1":           http.StatusForbidden,
+		"127.0.0.1.evil.test:1": http.StatusForbidden,
+	} {
+		req, err := http.NewRequest(http.MethodGet, u, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Host = host
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Host %q: %v", host, err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != want {
+			t.Errorf("Host %q = %d, want %d", host, resp.StatusCode, want)
+		}
+	}
+}
+
 func TestIsLocal(t *testing.T) {
 	abs := filepath.Join(t.TempDir(), "a.html")
 	for raw, want := range map[string]bool{

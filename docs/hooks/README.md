@@ -51,7 +51,7 @@ hooks:
 | Var               | Purpose                     |
 |-------------------|-----------------------------|
 | `LICH_PORT`       | endpoint port (loopback)    |
-| `LICH_TOKEN`      | auth token (`?token=`)      |
+| `LICH_TOKEN`      | auth token (`?token=` or `Authorization: Bearer`) |
 | `LICH_SESSION_ID` | target session/card id      |
 
 Outside lich these are absent, so every hook must no-op and exit 0 — the plugin
