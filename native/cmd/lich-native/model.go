@@ -68,6 +68,8 @@ type model struct {
 	xdgProfiles map[string]*profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
+	// alerts limits what notify hears from a session's own program.
+	alerts programAlerts
 	// seen hears a session the window just showed the user.
 	seen func(id string)
 	// loginProgress takes each step of a profile login, of the provider kind

@@ -160,6 +160,29 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     and the model-scoped caps a report does not carry.
   - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
     since the session's own collect never reaches it.
+- **A program's own status (OSC 7501) is a second source, and the hook outranks it** (`internal/terminal/progwire.go`):
+  from a session's first hook state until a hook reports `idle` or the shell starts a prompt (OSC 133 A), the
+  program's records are kept and the card is the hook's. Only Claude Code and Cursor CLI report `idle`, so in a
+  session lich spawned as any other provider, and in a shell lich does not integrate where one of them ran, a
+  program never drives the card again. A command an agent runs through its shell tool usually writes to a pipe
+  the agent reads, not to the PTY, so its report never reaches lich at all.
+  - A `working`, `blocked` or `idle` record ends at a shell prompt (OSC 133 A, which lich's shell integration marks
+    for bash, zsh and fish), at the next report, at a full reset (RIS) or when the session's process exits. There
+    is no foreground process watch: in a shell lich does not integrate, a program that exits without reporting
+    `done` or `error` leaves its state on the card until one of those. `done` and `error` end when you type in the
+    terminal, not when you look at the card.
+  - The card shows one record, the most urgent. It has no error state, so `error` shows as a finished turn. `kind`
+    and `progress` are read and dropped: the card has no place for either. The relay never sees these states, so
+    a delivery does not wait on a program that says it is working, and they do not keep the machine awake.
+  - A program's state reaches the card and the tray at once, however often it changes. Only the alerts it raises
+    (the toast and the desktop notification, sound included) are limited, in the window (`programAlerts`,
+    `native/cmd/lich-native/program_alerts.go`), to one per session in 30 seconds: inside them a repeat of the state
+    last alerted is dropped, and another state is held and goes out when they end if the session is still in it. A
+    hook's alerts are not limited. The tray's dot and menu read the current state, so they are not alerts and follow
+    a program that flips.
+  - The backend answers `OSC 7501 ; ?`, because the window's libghostty-vt answers it only when the window sets a
+    program status callback (`GHOSTTY_TERMINAL_OPT_PROGRAM_STATUS`). `native/gioterm` sets none; one that did
+    would answer the query a second time.
 
 ## Transcripts, cost and plan usage
 

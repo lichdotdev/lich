@@ -111,6 +111,9 @@ type session struct {
 	started     bool
 	// service is set on a PTY StartService spawned, nil on a session's.
 	service *ServiceCommand
+	// progScan and prog read OSC 7501 off this PTY's output (progwire.go).
+	progScan progScanner
+	prog     programStatus
 }
 
 // Store is the persistence the terminal service depends on: the binary to spawn
@@ -371,6 +374,7 @@ func (s *Service) onInput(id string, data []byte) {
 		return
 	}
 	s.beatHandsOn(id, 0)
+	s.programTyped(id)
 	// Held first, and before the beat is spent on nothing: a delivery in flight
 	// owns this prompt until its Enter is through, and what was typed at it
 	// reaches the PTY from releaseInput instead (see HoldInput).
@@ -403,6 +407,7 @@ func (s *Service) onHookState(req hookRequest) {
 	if s.repeatedEnding(req.SessionID, req.State) {
 		return
 	}
+	s.programHooked(req.SessionID, req.State)
 	// The window is told what the report means, not what it said: a
 	// `waiting` outside a turn is a session idle at its prompt, and the
 	// card would draw it as a human being blocked (see turnLog).

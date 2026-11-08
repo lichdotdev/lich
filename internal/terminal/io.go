@@ -23,6 +23,7 @@ func (s *Service) stream(id string, sess *session) {
 	for {
 		n, err := p.Read(buf)
 		if n > 0 {
+			s.readProgramStatus(id, sess, buf[:n])
 			s.noteOutput(id, sess, buf[:n])
 			sess.feed.Lock()
 			sess.replay.append(buf[:n])

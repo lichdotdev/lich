@@ -11,6 +11,10 @@ type SessionStatus struct {
 	Tool   string `json:"tool,omitempty"`
 	Detail string `json:"detail,omitempty"`
 	Reason string `json:"reason,omitempty"`
+	// Program marks a report read from the session's own output (OSC 7501)
+	// rather than from a hook. The window limits the alerts these raise, since
+	// nothing bounds how often a program can change its state.
+	Program bool `json:"program,omitempty"`
 }
 
 // SessionTitle is the payload of SessionTitleEvent: the session whose label changed

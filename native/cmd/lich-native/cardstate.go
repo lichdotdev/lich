@@ -54,7 +54,7 @@ func (m *model) applyStatus(ctx context.Context, ev backend.Event) error {
 		m.markRead(ctx, s.ID)
 	}
 	if routed && m.notify != nil {
-		m.notify(report)
+		m.raiseAlert(report, s.Program)
 	}
 	return err
 }

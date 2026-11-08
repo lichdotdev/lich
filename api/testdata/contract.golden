@@ -1802,6 +1802,7 @@ SessionStatus {
 	tool,omitempty string
 	detail,omitempty string
 	reason,omitempty string
+	program,omitempty bool
 }
 
 SessionTitle {
