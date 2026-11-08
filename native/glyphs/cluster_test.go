@@ -190,6 +190,40 @@ func TestOutlinesKeepWhatFallsOutsideTheCell(t *testing.T) {
 	}
 }
 
+// A mark on a blank belongs to the blank's cell, whether the font places it
+// there or leaves it past the blank's advance.
+func TestAMarkOnABlankStaysInItsCell(t *testing.T) {
+	r := newTestRasterizer(t)
+	face, err := r.textFace(r.styles[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	space, ok := face.NominalGlyph(' ')
+	if !ok {
+		t.Fatal("no space in the font")
+	}
+	mark, ok := face.NominalGlyph('e')
+	if !ok {
+		t.Fatal("no e in the font")
+	}
+	adv := fixed.I(r.CellW())
+	for _, tc := range []struct {
+		name    string
+		xOffset fixed.Int26_6
+	}{
+		{"left past the advance", 0},
+		{"placed by the font", -adv},
+	} {
+		img, off := r.outlines(face, []shaping.Glyph{{GlyphID: space, Advance: adv}, {GlyphID: mark, XOffset: tc.xOffset}})
+		if img == nil {
+			t.Fatalf("%s: no mask", tc.name)
+		}
+		if off.X < 0 || off.X >= r.CellW() {
+			t.Fatalf("%s: mark at column offset %d, want inside the %d-wide cell", tc.name, off.X, r.CellW())
+		}
+	}
+}
+
 func hasInk(img *image.Alpha) bool {
 	for _, a := range img.Pix {
 		if a != 0 {

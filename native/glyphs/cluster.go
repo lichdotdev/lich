@@ -190,17 +190,25 @@ func (r *Rasterizer) outlines(face *gotext.Face, gs []shaping.Glyph) (*image.Alp
 	placed := make([]placedGlyph, 0, len(gs))
 	var box image.Rectangle
 	pen := fixed.Int26_6(0)
-	for _, g := range gs {
+	blank := 0.0
+	if len(gs) > 0 {
+		if ext, ok := face.GlyphExtents(gs[0].GlyphID); ok && ext.Width == 0 {
+			blank = float64(gs[0].Advance) / 64
+		}
+	}
+	for i, g := range gs {
 		x := float64(pen+g.XOffset) / 64
 		y := float64(r.ascent) - float64(g.YOffset)/64
 		ext, ok := face.GlyphExtents(g.GlyphID)
-		// A font positions no mark on a blank, so past the blank's advance
-		// the mark would land in the next cell instead of on this one.
-		if ok && ext.Width != 0 {
-			pen += g.Advance
-		}
+		pen += g.Advance
 		if g.GlyphID == 0 || !ok {
 			continue
+		}
+		// A font may position no mark on a blank: DejaVu Sans Mono and Consolas
+		// leave it past the blank's advance, in the next cell. Bring that back
+		// over the blank, leaving the fonts that put it there themselves.
+		if i > 0 && blank > 0 && x+float64(ext.XBearing)*scale >= blank {
+			x -= blank
 		}
 		placed = append(placed, placedGlyph{g.GlyphID, x, y})
 		box = box.Union(image.Rect(
