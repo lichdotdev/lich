@@ -115,6 +115,9 @@ type Page interface {
 	// Screenshot writes the viewport, at shotScale image pixels per CSS
 	// pixel, and returns the viewport's size in CSS pixels.
 	Screenshot(ctx context.Context, dest string) (w, h int, err error)
+	// AnnotatedScreenshot is Screenshot after a fresh Info read, with each
+	// element's index drawn on it at its box.
+	AnnotatedScreenshot(ctx context.Context, dest string) (w, h int, err error)
 	Reload(ctx context.Context) error
 	Back(ctx context.Context) error
 	Forward(ctx context.Context) error

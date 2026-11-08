@@ -323,10 +323,12 @@ type BrowserPressOptions struct {
 }
 
 // BrowserScreenshotOptions captures the page to Path, or to a file lich
-// chooses when Path is empty.
+// chooses when Path is empty. Annotate draws each listed element's index on
+// the image.
 type BrowserScreenshotOptions struct {
-	ID   string `json:"id"`
-	Path string `json:"path"`
+	ID       string `json:"id"`
+	Path     string `json:"path"`
+	Annotate bool   `json:"annotate"`
 }
 
 // BrowserScrollOptions scrolls the page by DY CSS pixels. Positive is down.

@@ -178,6 +178,16 @@ func clickTarget(ctx context.Context, p Page, t Target) (*point, error) {
 // Screenshot writes a PNG to dest (created if empty: inside the profile dir)
 // and returns that path. The bytes stay off the transcript.
 func (s *Service) Screenshot(id, dest string) (string, error) {
+	return s.shoot(id, dest, Page.Screenshot)
+}
+
+// AnnotatedScreenshot is Screenshot with the indexes a click takes drawn on
+// it. The read behind them is not told: the agent got no list in text.
+func (s *Service) AnnotatedScreenshot(id, dest string) (string, error) {
+	return s.shoot(id, dest, Page.AnnotatedScreenshot)
+}
+
+func (s *Service) shoot(id, dest string, take func(Page, context.Context, string) (int, int, error)) (string, error) {
 	sess, err := s.live(id)
 	if err != nil {
 		return "", err
@@ -194,7 +204,7 @@ func (s *Service) Screenshot(id, dest string) (string, error) {
 	var w, h int
 	err = runPage(func(ctx context.Context) error {
 		var err error
-		w, h, err = sess.page.Screenshot(ctx, dest)
+		w, h, err = take(sess.page, ctx, dest)
 		return err
 	})
 	if err != nil {

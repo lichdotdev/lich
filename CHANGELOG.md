@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - An agent can run JavaScript in its session's browser and read the answer (`browser_eval`, `lich browser eval`): the state of your app, a value the page does not print, the result of a `fetch`. The answer is cut at 2000 characters, so a large page state costs the agent's context only what it asks for. The script can read what a field holds, passwords included, which the page reading never hands it.
 - An agent can read part of a page instead of all of it: `browser_info` takes `within`, a CSS selector (`lich browser info --within <css>`), and answers with the text and the buttons and links of the first element it matches, so the main column of a docs site or one open dialog costs a fraction of the page and its navigation. A selector that matches nothing, or is not valid, answers with an error and leaves the indexes of the last read working.
+- A session browser's screenshot can carry each button's and link's index drawn on it (`annotate` on `browser_screenshot`, `lich browser screenshot --annotate`), so an agent clicks an icon with no label by its index instead of working out where it is. Your pane shows the numbers for the moment of the capture.
 
 ### Changed
 

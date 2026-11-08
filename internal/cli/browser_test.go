@@ -63,6 +63,36 @@ func TestBrowserPressSendsKeyAndOptionalTarget(t *testing.T) {
 	}
 }
 
+func TestBrowserScreenshotAnnotates(t *testing.T) {
+	f := newFakeLich(t, `"/tmp/shot.png"`)
+
+	code, stdout, stderr := run(t, f, "browser", "screenshot", "--annotate", "shot.png")
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr = %q", code, stderr)
+	}
+	opts := optionsOf[api.BrowserScreenshotOptions](t, f.only(t))
+	if opts.ID != "s1" || opts.Path != "shot.png" || !opts.Annotate {
+		t.Errorf("options = %+v", opts)
+	}
+	if stdout != "/tmp/shot.png\n" {
+		t.Errorf("stdout = %q", stdout)
+	}
+}
+
+func TestMCPBrowserScreenshotAnnotates(t *testing.T) {
+	f := newFakeLich(t, `"/tmp/shot.png"`)
+
+	replies := speak(t, f, `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":
+		{"name":"browser_screenshot","arguments":{"annotate":true}}}`)
+	text, failed := textOf(t, replies[0])
+	if failed || text != "/tmp/shot.png" {
+		t.Fatalf("tool answered %q, failed %v", text, failed)
+	}
+	if opts := optionsOf[api.BrowserScreenshotOptions](t, f.only(t)); opts.ID != "s1" || !opts.Annotate {
+		t.Errorf("options = %+v", opts)
+	}
+}
+
 func TestMCPBrowserPressCallsPress(t *testing.T) {
 	f := newFakeLich(t, `null`)
 

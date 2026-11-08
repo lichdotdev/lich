@@ -1001,7 +1001,7 @@ lich browser info [--within <css>]
 lich browser click --index <n> | --selector <css> | --x <n> --y <n>
 lich browser type [--clear] [--index <n>] <text>
 lich browser press [--index <n>] <key>
-lich browser screenshot [path]
+lich browser screenshot [--annotate] [path]
 lich browser navigate <url>
 lich browser reload | back | forward
 lich browser scroll [--dy <pixels>]
@@ -1018,7 +1018,8 @@ an element keeps its index while it lives, even after the page changes around it
 `click` and `press` print the same description of the page they left, once a
 navigation they started has its document; `type` prints nothing, as a field
 filled seldom changes the page. `screenshot` prints the PNG's path; its longest
-side is at most 1280 pixels, and `--x`/`--y` are that image's pixels. `eval`
+side is at most 1280 pixels, and `--x`/`--y` are that image's pixels. `--annotate`
+draws each element's `info` index on the image, at its box, for a button with no label. `eval`
 runs the script in the page and prints its value, a string as it is and
 anything else as JSON, cut at 2000 characters.
 What the page wrote, in `info`, `click`, `press` and `eval`, is between

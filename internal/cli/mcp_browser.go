@@ -127,7 +127,8 @@ var browserTools = []mcpTool{
 			"is at most 1280 pixels, and browser_click's x and y are this image's pixels. Optional " +
 			"path; otherwise lich picks one.",
 		Schema: schema(map[string]any{
-			"path": property("string", "Destination PNG. Omit to let lich choose."),
+			"path":     property("string", "Destination PNG. Omit to let lich choose."),
+			"annotate": property("boolean", "Draw each element's browser_click index on the image."),
 		}),
 		ReadOnly: true,
 		Run: func(ctx context.Context, c *client, a mcpArgs) (string, error) {
@@ -135,7 +136,9 @@ var browserTools = []mcpTool{
 			if err != nil {
 				return "", err
 			}
-			return callMethod(ctx, c, api.BrowserScreenshot, api.BrowserScreenshotOptions{ID: id, Path: a.text("path")}, openCall)
+			return callMethod(ctx, c, api.BrowserScreenshot, api.BrowserScreenshotOptions{
+				ID: id, Path: a.text("path"), Annotate: a.flag("annotate"),
+			}, openCall)
 		},
 	},
 	{

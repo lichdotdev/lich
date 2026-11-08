@@ -99,6 +99,9 @@ func (s *Service) heldOr(id string, err error) (api.BrowserPageInfo, error) {
 
 // Capture writes a PNG of this session's page and returns its path.
 func (s *Service) Capture(_ context.Context, opts api.BrowserScreenshotOptions) (string, error) {
+	if opts.Annotate {
+		return s.AnnotatedScreenshot(opts.ID, opts.Path)
+	}
 	return s.Screenshot(opts.ID, opts.Path)
 }
 
