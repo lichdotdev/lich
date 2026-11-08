@@ -85,7 +85,7 @@ func (s *Service) stream(id string, sess *session) {
 	// freeze every session's I/O.
 	if reaped && sess.service != nil {
 		if sess.service.Exited != nil {
-			sess.service.Exited(code, sess.replay.snapshot())
+			sess.service.Exited(code, sess.replay.text())
 		}
 		events.Send(s.hub.Emit, api.TerminalExitEvents.Of(id), exitPayload(code))
 		return
