@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A worktree created without a name no longer fails with "which already exists" when the name lich picked for it lands on the folder of a worktree whose branch was renamed. lich now skips any name whose folder is taken.
+- A worktree that git creates but cannot read as a checkout is removed along with the error. Before, its folder stayed behind, and creating a worktree under that name again failed with "which already exists".
+
 ## [0.86.0] - 2026-11-07
 
 ### Added

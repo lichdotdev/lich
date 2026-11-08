@@ -300,7 +300,11 @@ func (s *Service) fetchBaseRef(projectPath, remote, branch string) error {
 // returning, so a success here means a session can be opened at Path right away.
 func (s *Service) CreateWorktree(_ context.Context, opts api.CreateWorktreeOptions) (*Worktree, error) {
 	if opts.Name == "" {
-		opts.Name = randomWorktreeName(func(n string) bool { return branchExists(opts.ProjectPath, n) })
+		name, err := freeWorktreeName(opts.ProjectPath, opts.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		opts.Name = name
 	}
 	wtPath, err := reserveWorktreePath(opts.ProjectPath, opts.ProjectID, opts.Name)
 	if err != nil {
@@ -351,10 +355,41 @@ func (s *Service) CreateWorktree(_ context.Context, opts api.CreateWorktreeOptio
 	// The session spawns its provider at wtPath immediately after; make sure
 	// the checkout actually works before handing it over.
 	if _, err := runGit(wtPath, "rev-parse", "--is-inside-work-tree"); err != nil {
-		return nil, errors.New("The worktree was created but git does not read it as a checkout.")
+		return nil, discardUnreadableWorktree(opts.ProjectPath, wtPath)
 	}
 	seedWorktree(opts.ProjectPath, wtPath)
 	return &Worktree{Name: opts.Name, Path: canonicalPath(wtPath), Reused: reused}, nil
+}
+
+// freeWorktreeName counts a folder as taken too, not only a branch: a worktree
+// whose branch was renamed keeps the folder it was born with, and
+// reserveWorktreePath's refusal of it names a name nobody chose.
+func freeWorktreeName(projectPath, projectID string) (string, error) {
+	root, err := worktreesRoot()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(root, projectID)
+	return randomWorktreeName(func(n string) bool {
+		_, err := os.Stat(filepath.Join(dir, worktreeDirName(n)))
+		return err == nil || branchExists(projectPath, n)
+	}), nil
+}
+
+// discardUnreadableWorktree deletes the folder itself because `worktree remove`
+// refuses a checkout it cannot read. It is safe: reserveWorktreePath saw no
+// folder at wtPath, so everything in it came from the add that just ran.
+func discardUnreadableWorktree(projectPath, wtPath string) error {
+	err := errors.New("The worktree was created but git does not read it as a checkout.")
+	rmErr := os.RemoveAll(wtPath)
+	if rmErr == nil {
+		_, rmErr = runGit(projectPath, "worktree", "prune")
+	}
+	if rmErr != nil {
+		slog.Warn("worktree left behind by an unreadable checkout", "path", wtPath, "err", rmErr)
+		return fmt.Errorf("%w Its half-made worktree could not be removed either.", err)
+	}
+	return err
 }
 
 // prHead is the little of a pull request CreateWorktreeFromPR needs: which
