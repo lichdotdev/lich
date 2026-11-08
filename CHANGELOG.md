@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The New folder dialog opens with the cursor in its name field, so you can type the name at once instead of clicking the field first.
 - The prompt lich parks to continue a turn a usage limit stopped shows on the session again, and can be cancelled from its menu. So does the notice that deleting a session also deleted a prompt scheduled on it. Both went missing with the web window.
 - `GIO_DAMAGE=on` redraws into a framebuffer lich keeps instead of trusting the driver's buffer age, so a driver that misreports it no longer leaves the window with stale pixels.
 - On X11, a wheel notch scrolls once instead of twice, and hover clears when the pointer leaves the window, on Windows too.

@@ -69,10 +69,6 @@ func (s *sidebar) layoutFolderDialog(gtx C, th *ui.Theme, existing []string) fil
 	if n.cancel.Clicked(gtx) {
 		n.open = false
 	}
-	if n.focus && n.open {
-		gtx.Execute(key.FocusCmd{Tag: &n.name})
-		n.focus = false
-	}
 	on := th.On(th.Popover)
 	cancel := on.Button(&n.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantGhost
@@ -87,6 +83,11 @@ func (s *sidebar) layoutFolderDialog(gtx C, th *ui.Theme, existing []string) fil
 	d.Actions = []layout.Widget{cancel.Layout, create.Layout}
 	if d.Layout(gtx) {
 		n.open = false
+	}
+	// After the dialog, which takes the focus for its panel the frame it opens.
+	if n.focus && n.open {
+		gtx.Execute(key.FocusCmd{Tag: &n.name})
+		n.focus = false
 	}
 	return filed
 }
