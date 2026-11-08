@@ -1,6 +1,7 @@
 package gioterm
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -15,9 +16,9 @@ var graphemeCases = []struct {
 	// next is the column the character after the grapheme lands in.
 	next int
 }{
-	{"ZWJ family", "👨‍👩‍👧", 2},
+	{"ZWJ family", "👨\u200d👩\u200d👧", 2},
 	{"flag", "🇧🇷", 2},
-	{"combining accent", "é", 1},
+	{"combining accent", "e\u0301", 1},
 }
 
 func cellText(c cell) string { return string(rune(c.cp)) + c.rest }
@@ -81,7 +82,7 @@ func TestSelectionCopiesTheWholeGrapheme(t *testing.T) {
 
 func TestLinkAtKeepsACombiningMark(t *testing.T) {
 	v := newSizedTerminal(t)
-	url := "https://x.dev/café/menu"
+	url := "https://x.dev/cafe\u0301/menu"
 	v.Write([]byte("see " + url + " now"))
 	if _, err := v.Update(); err != nil {
 		t.Fatal(err)
@@ -97,7 +98,7 @@ func TestLinkAtKeepsACombiningMark(t *testing.T) {
 	}
 }
 
-const familyOf4 = "👩‍👩‍👧‍👦"
+const familyOf4 = "👩\u200d👩\u200d👧\u200d👦"
 
 // A screen of long sequences must not use up what the graphemes of a frame
 // can hold: the last cell keeps all of its codepoints.
@@ -120,7 +121,7 @@ func TestAScreenOfLongSequencesKeepsEveryGrapheme(t *testing.T) {
 // the cells after it whole.
 func TestAHeavyCellIsCappedAndLeavesTheOthersWhole(t *testing.T) {
 	v := newSizedTerminal(t)
-	v.Write([]byte("e" + strings.Repeat("́", 5000) + " " + familyOf4))
+	v.Write([]byte("e" + strings.Repeat("\u0301", 5000) + " " + familyOf4))
 	s, err := v.Update()
 	if err != nil {
 		t.Fatal(err)
@@ -155,7 +156,7 @@ func TestAMarkOnABlankOrBlockIsDrawn(t *testing.T) {
 					return digest, rowPixels(r)
 				}
 				plain, plainRows := frame(base)
-				marked, markedRows := frame(base + "́")
+				marked, markedRows := frame(base + "\u0301")
 				if plain == marked && reflect.DeepEqual(plainRows, markedRows) {
 					t.Fatal("the mark changed nothing on screen")
 				}
@@ -188,6 +189,40 @@ func TestAtlasStartsOverPastItsPageBound(t *testing.T) {
 	}
 	if len(a.pages) != 1 {
 		t.Errorf("%d pages after starting over, want 1", len(a.pages))
+	}
+}
+
+// A screen that needs more pages than the bound keeps them: starting over
+// every frame would re-tint and re-upload the screen for a cursor blink.
+func TestAtlasSettlesOnAScreenPastItsPageBound(t *testing.T) {
+	r, err := NewRenderer(RenderAtlas, "monospace", 80)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vt, err := New(200, 20, 8, 16, func([]byte) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(vt.Close)
+	var b strings.Builder
+	for i := range 200*20 - 1 {
+		fmt.Fprintf(&b, "\x1b[38;2;%d;%d;0mM", i%256, i/256)
+	}
+	vt.Write([]byte(b.String()))
+	drawFrame(t, r, vt)
+	a := r.(*atlasRenderer)
+	pages := len(a.pages)
+	if pages < 8 {
+		t.Fatalf("the screen took %d pages, the case needs 8 or more", pages)
+	}
+	first := a.pages[0]
+	for frame := range 3 {
+		if _, redrawn := drawFrame(t, r, vt); redrawn != 0 {
+			t.Fatalf("frame %d redrew %d rows with nothing changed, want none", frame, redrawn)
+		}
+	}
+	if len(a.pages) != pages || a.pages[0] != first {
+		t.Fatalf("the pages did not settle: %d now, %d before", len(a.pages), pages)
 	}
 }
 
@@ -225,7 +260,7 @@ func TestPathsDrawTheFirstGlyphOfASequenceWithoutALigature(t *testing.T) {
 	}
 	t.Cleanup(vt.Close)
 	drawFrame(t, r, vt)
-	if n := len(r.(*grid).shape(glyphs.Key{R: '🚀', Rest: "‍🚀"})); n != 1 {
+	if n := len(r.(*grid).shape(glyphs.Key{R: '🚀', Rest: "\u200d🚀"})); n != 1 {
 		t.Fatalf("shaped to %d glyphs, want 1", n)
 	}
 }

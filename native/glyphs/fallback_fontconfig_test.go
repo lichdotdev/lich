@@ -65,3 +65,40 @@ func countFcList(t *testing.T) func() int {
 		return strings.Count(string(out), "\n")
 	}
 }
+
+// A lookup that fails is a subprocess run inside a frame: a grapheme it fails
+// for must neither end the frame nor run it again on the next one.
+func TestAFailedLookupForAGraphemeIsKeptAndDoesNotFailTheFrame(t *testing.T) {
+	r, err := New("monospace")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.SetSize(16); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	calls := filepath.Join(dir, "calls")
+	script := "#!/bin/sh\necho >> '" + calls + "'\nexit 1\n"
+	if err := os.WriteFile(filepath.Join(dir, "fc-list"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	k := Key{R: 0x10FFFD, Rest: "\u0301"}
+	if _, err := r.Mask(k); err != nil {
+		t.Fatalf("the frame failed: %v", err)
+	}
+	first, err := os.ReadFile(calls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Mask(k); err != nil {
+		t.Fatalf("the frame failed: %v", err)
+	}
+	again, err := os.ReadFile(calls)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(again) != len(first) {
+		t.Fatalf("the failed lookup ran again: %d calls then %d", len(first), len(again))
+	}
+}

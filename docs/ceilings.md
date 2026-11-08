@@ -915,7 +915,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   terminal gives a ZWJ sequence or a flag one two-column cell whatever the font holds, and draws the one glyph
   shaping turns it into. A sequence the font has no ligature for draws its first glyph only, the rest of it still
   in the cell and in what a copy returns. Windows always hits this for flags: Segoe UI Emoji has no flag glyphs, so
-  a regional-indicator pair draws its first letter alone.
+  a regional-indicator pair draws its first letter alone. The renderers differ where it shows: a stack of combining
+  marks taller than a row is cut at its row on `rows`, the default, and paints over the rows beside it on `atlas`
+  and `paths`; `paths` leaves the font to Gio's shaper, so an emoji asked for with VS16 draws monochrome and a keycap
+  draws as its plain digit.
 
 ## Services
 

@@ -21,6 +21,8 @@ const atlasSize = 1024
 // maxAtlasPages and maxAtlasEntries bound what an atlas keeps: the graphemes
 // and colors on screen are the program's to choose and a page is never freed
 // on its own, so past either one the next frame starts from an empty atlas.
+// A screen that alone needs more raises the bound to twice what it took, or
+// it would start over on every frame.
 const (
 	maxAtlasPages   = 8
 	maxAtlasEntries = 1 << 16
@@ -38,6 +40,9 @@ type atlasRenderer struct {
 	blend   blender
 	rowOps  []*op.Ops
 	rowCall []op.CallOp
+	// screenPages and screenEntries are what the last frame drawn on an empty
+	// atlas took, the whole screen.
+	screenPages, screenEntries int
 }
 
 type tintKey struct {
@@ -87,9 +92,10 @@ func (a *atlasRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
 }
 
 func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8, below, above []placedImage) (int, error) {
-	if len(a.pages) >= maxAtlasPages || len(a.tinted) >= maxAtlasEntries {
+	if len(a.pages) >= max(maxAtlasPages, 2*a.screenPages) || len(a.tinted) >= max(maxAtlasEntries, 2*a.screenEntries) {
 		a.Release()
 	}
+	empty := len(a.pages) == 0
 	if len(a.rowOps) != sn.rows {
 		a.rowOps = make([]*op.Ops, sn.rows)
 		a.rowCall = make([]op.CallOp, sn.rows)
@@ -101,6 +107,9 @@ func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []
 	cursor, err := a.prepare(sn, cells, dirty)
 	if err != nil {
 		return 0, err
+	}
+	if empty {
+		a.screenPages, a.screenEntries = len(a.pages), len(a.tinted)
 	}
 	if a.uploadStalePages() {
 		// A recorded row holds the page texture it was recorded with; re-record

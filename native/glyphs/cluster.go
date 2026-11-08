@@ -2,8 +2,10 @@ package glyphs
 
 import (
 	"image"
+	"log"
 	"math"
 	"strings"
+	"unicode"
 
 	"github.com/go-text/typesetting/di"
 	gotext "github.com/go-text/typesetting/font"
@@ -22,8 +24,8 @@ const (
 	// maxClusterGlyphs bounds the glyphs of one grapheme filled into its mask.
 	maxClusterGlyphs = 32
 
-	emojiSelector    = '️'
-	zeroWidthJoiner  = '‍'
+	emojiSelector    = '\ufe0f'
+	zeroWidthJoiner  = '\u200d'
 	regionalFirst    = '\U0001F1E6'
 	regionalLast     = '\U0001F1FF'
 	skinToneFirst    = '\U0001F3FB'
@@ -40,8 +42,10 @@ func (k Key) Emoji() bool {
 	if k.Rest == "" {
 		return false
 	}
+	// A joiner alone proves nothing: Indic scripts use it inside a conjunct.
+	joinsEmoji := unicode.Is(unicode.So, k.R)
 	return k.R >= regionalFirst && k.R <= regionalLast || strings.ContainsFunc(k.Rest, func(c rune) bool {
-		return c == emojiSelector || c == zeroWidthJoiner ||
+		return c == emojiSelector || c == zeroWidthJoiner && joinsEmoji ||
 			c >= skinToneFirst && c <= skinToneLast || c >= flagTagFirst && c <= flagTagLast
 	})
 }
@@ -49,25 +53,43 @@ func (k Key) Emoji() bool {
 // cluster draws a grapheme of several codepoints shaped as one run: an emoji
 // sequence becomes the color font's ligature glyph, a combining mark lands
 // where the font's mark positioning puts it. What cannot be shaped draws its
-// first codepoint: one accent in a program's output must not fail the frame.
-func (r *Rasterizer) cluster(k Key) (*Mask, error) {
+// first codepoint, or nothing: one accent in a program's output must not fail
+// the frame.
+func (r *Rasterizer) cluster(k Key) *Mask {
 	if k.Emoji() {
 		if f := r.emojiFace(k.R); f != nil {
 			if m := r.shaped(f, k); m != nil {
-				return m, nil
+				return m
 			}
 		}
 	}
 	f, err := r.faceFor(k)
 	if err != nil {
-		return nil, err
-	}
-	if f != nil {
+		r.warnOnce("find a font", err)
+	} else if f != nil {
 		if m := r.shaped(f, k); m != nil {
-			return m, nil
+			return m
 		}
 	}
-	return r.Mask(Key{R: k.R, Bold: k.Bold, Italic: k.Italic})
+	m, err := r.Mask(Key{R: k.R, Bold: k.Bold, Italic: k.Italic})
+	if err != nil {
+		r.warnOnce("find a font", err)
+		return &Mask{}
+	}
+	return m
+}
+
+// warnOnce logs err the first time what fails: a grapheme is drawn every dirty
+// frame, and its failure would repeat once per cell.
+func (r *Rasterizer) warnOnce(what string, err error) {
+	if _, ok := r.warned[what]; ok {
+		return
+	}
+	if r.warned == nil {
+		r.warned = map[string]struct{}{}
+	}
+	r.warned[what] = struct{}{}
+	log.Printf("glyphs: %s: %v", what, err)
 }
 
 // emojiFace is the color font when it covers c. Asked once, by a character
@@ -75,16 +97,32 @@ func (r *Rasterizer) cluster(k Key) (*Mask, error) {
 func (r *Rasterizer) emojiFace(c rune) *fontFace {
 	if !r.emojiFound {
 		r.emojiFound = true
-		if path, err := fonts.Covering(emojiFontWitness); err == nil && path != "" {
-			if f, err := r.load(path); err == nil && f.bitmaps != nil {
-				r.emoji = f
-			}
-		}
+		r.emoji = r.loadEmojiFace()
 	}
 	if r.emoji == nil || !r.covers(r.emoji, c) {
 		return nil
 	}
 	return r.emoji
+}
+
+func (r *Rasterizer) loadEmojiFace() *fontFace {
+	path, err := fonts.Covering(emojiFontWitness)
+	if err != nil {
+		r.warnOnce("find the emoji font", err)
+		return nil
+	}
+	if path == "" {
+		return nil
+	}
+	f, err := r.load(path)
+	if err != nil {
+		r.warnOnce("load the emoji font", err)
+		return nil
+	}
+	if f.bitmaps == nil {
+		return nil
+	}
+	return f
 }
 
 // shaped is k drawn from f, nil when f cannot draw it.
@@ -94,6 +132,7 @@ func (r *Rasterizer) emojiFace(c rune) *fontFace {
 func (r *Rasterizer) shaped(f *fontFace, k Key) *Mask {
 	face, err := r.textFace(f)
 	if err != nil {
+		r.warnOnce("shape with "+f.file.path, err)
 		return nil
 	}
 	text := []rune(string(k.R) + k.Rest)
@@ -109,7 +148,11 @@ func (r *Rasterizer) shaped(f *fontFace, k Key) *Mask {
 		return nil
 	}
 	if f.bitmaps != nil {
-		if img, off, err := r.colorGlyphID(f, out.Glyphs[0].GlyphID); err == nil && img != nil {
+		img, off, err := r.colorGlyphID(f, out.Glyphs[0].GlyphID)
+		if err != nil {
+			r.warnOnce("draw a color glyph of "+f.file.path, err)
+		}
+		if img != nil {
 			return &Mask{Color: img, Off: off}
 		}
 	}
@@ -162,8 +205,9 @@ func (r *Rasterizer) outlines(face *gotext.Face, gs []shaping.Glyph) (*image.Alp
 			ceil(x+float64(ext.XBearing+ext.Width)*scale), ceil(y-float64(ext.YBearing+ext.Height)*scale),
 		))
 	}
-	// A stack of marks may reach any height; a row or two around it is all
-	// anyone can read, and it keeps the mask's cost bounded.
+	// A stack of marks may reach any height: a cell to each side and a row
+	// above and below bound what the mask costs. The rows renderer still cuts
+	// it at its own row, where the atlas paints over the rows beside it.
 	box = box.Intersect(image.Rect(-r.cellW, -r.cellH, 3*r.cellW, 2*r.cellH))
 	if box.Empty() {
 		return nil, image.Point{}

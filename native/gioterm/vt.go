@@ -86,6 +86,9 @@ static uint32_t pack(GhosttyColorRgb c) { return (uint32_t)c.r << 16 | (uint32_t
 // costs to shape. A copy still reads the whole cell from libghostty.
 #define GRAPHEME_MAX 32
 
+// EXTRA_FIRST_CAP is the extra buffer's first size, in codepoints.
+#define EXTRA_FIRST_CAP 1024
+
 typedef struct {
 	uint32_t* buf;
 	uint32_t len, cap;
@@ -95,7 +98,7 @@ typedef struct {
 // a move of; false only when the allocation fails.
 static bool extra_room(extra_t* e, uint32_t n) {
 	if (e->cap - e->len >= n) return true;
-	uint32_t cap = e->cap ? e->cap : 1024;
+	uint32_t cap = e->cap ? e->cap : EXTRA_FIRST_CAP;
 	while (cap - e->len < n) cap *= 2;
 	uint32_t* buf = realloc(e->buf, cap * sizeof(uint32_t));
 	if (!buf) return false;
@@ -104,25 +107,35 @@ static bool extra_room(extra_t* e, uint32_t n) {
 	return true;
 }
 
-// read_cell takes the cell's grapheme, its first GRAPHEME_MAX codepoints.
+// read_grapheme takes the cell's first GRAPHEME_MAX codepoints, or just its
+// first when a cell too long for the stack cannot be allocated for.
+static void read_grapheme(GhosttyRenderStateRowCells cells, cell_t* c, extra_t* extra, uint32_t glen) {
+	uint32_t local[16];
+	uint32_t* buf = glen <= sizeof local / sizeof *local ? local : malloc(glen * sizeof(uint32_t));
+	if (!buf) {
+		GhosttyCell raw;
+		if (ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_RAW, &raw) == GHOSTTY_SUCCESS) {
+			ghostty_cell_get(raw, GHOSTTY_CELL_DATA_CODEPOINT, &c->cp);
+		}
+		return;
+	}
+	ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_BUF, buf);
+	c->cp = buf[0];
+	uint32_t n = (glen > GRAPHEME_MAX ? GRAPHEME_MAX : glen) - 1;
+	if (n > 0 && extra_room(extra, n)) {
+		c->extra_at = extra->len;
+		c->extra_n = n;
+		memcpy(extra->buf + extra->len, buf + 1, n * sizeof(uint32_t));
+		extra->len += n;
+	}
+	if (buf != local) free(buf);
+}
+
 static void read_cell(GhosttyRenderStateRowCells cells, cell_t* c, extra_t* extra) {
 	memset(c, 0, sizeof *c);
 	uint32_t glen = 0;
 	ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_LEN, &glen);
-	if (glen > 0) {
-		uint32_t local[16];
-		uint32_t* buf = glen <= 16 ? local : malloc(glen * sizeof(uint32_t));
-		ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_BUF, buf);
-		c->cp = buf[0];
-		uint32_t n = (glen > GRAPHEME_MAX ? GRAPHEME_MAX : glen) - 1;
-		if (n > 0 && extra_room(extra, n)) {
-			c->extra_at = extra->len;
-			c->extra_n = n;
-			memcpy(extra->buf + extra->len, buf + 1, n * sizeof(uint32_t));
-			extra->len += n;
-		}
-		if (buf != local) free(buf);
-	}
+	if (glen > 0) read_grapheme(cells, c, extra, glen);
 	GhosttyColorRgb rgb;
 	if (ghostty_render_state_row_cells_get(cells, GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_FG_COLOR, &rgb) == GHOSTTY_SUCCESS) {
 		c->fg = pack(rgb);

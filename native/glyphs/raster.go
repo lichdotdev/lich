@@ -97,6 +97,8 @@ type Rasterizer struct {
 	// emoji is the color font of a grapheme asking for it, looked up once.
 	emoji      *fontFace
 	emojiFound bool
+	// warned holds what has already been logged.
+	warned map[string]struct{}
 
 	// fallbacks are the faces fonts.Covering picked so far, in the order it
 	// picked them, tried before asking it again: on Linux each ask is a
@@ -210,7 +212,7 @@ func (r *Rasterizer) faceFor(k Key) (*fontFace, error) {
 // Mask returns k's coverage, rasterizing it on first use.
 func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 	if k.Rest != "" {
-		return r.clusterMask(k)
+		return r.clusterMask(k), nil
 	}
 	rk := runeKey{k.R, k.Bold, k.Italic}
 	if m, ok := r.masks[rk]; ok {
@@ -241,19 +243,16 @@ func (r *Rasterizer) Mask(k Key) (*Mask, error) {
 	return m, nil
 }
 
-func (r *Rasterizer) clusterMask(k Key) (*Mask, error) {
+func (r *Rasterizer) clusterMask(k Key) *Mask {
 	if m, ok := r.clusters[k]; ok {
-		return m, nil
+		return m
 	}
-	m, err := r.cluster(k)
-	if err != nil {
-		return nil, err
-	}
+	m := r.cluster(k)
 	if len(r.clusters) >= maxClusterMasks {
 		r.clusters = map[Key]*Mask{}
 	}
 	r.clusters[k] = m
-	return m, nil
+	return m
 }
 
 // colorGlyph draws c in its own colors from f's PNG bitmap or, failing one,

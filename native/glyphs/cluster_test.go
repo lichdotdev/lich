@@ -3,7 +3,10 @@ package glyphs
 import (
 	"bytes"
 	"image"
+	"log"
+	"os"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/go-text/typesetting/shaping"
@@ -35,7 +38,7 @@ func mask(t *testing.T, r *Rasterizer, k Key) *Mask {
 // glyph of their first codepoint.
 func TestAnEmojiSequenceDrawsItsLigature(t *testing.T) {
 	r := newTestRasterizer(t)
-	seqs := []Key{{R: 0x1F468, Rest: "‍👩‍👧"}}
+	seqs := []Key{{R: 0x1F468, Rest: "\u200d👩\u200d👧"}}
 	// Segoe UI Emoji, Windows' emoji font, has no flags.
 	if runtime.GOOS != "windows" {
 		seqs = append(seqs, Key{R: 0x1F1E7, Rest: "\U0001F1F7"})
@@ -55,7 +58,7 @@ func TestAnEmojiSequenceDrawsItsLigature(t *testing.T) {
 func TestACombiningMarkDrawsOverItsBase(t *testing.T) {
 	r := newTestRasterizer(t)
 	e := mask(t, r, Key{R: 'e'})
-	accented := mask(t, r, Key{R: 'e', Rest: "́"})
+	accented := mask(t, r, Key{R: 'e', Rest: "\u0301"})
 	if accented.Img == nil {
 		t.Fatal("e + U+0301 drew nothing")
 	}
@@ -90,11 +93,11 @@ func TestACombiningMarkDrawsOverItsBase(t *testing.T) {
 func TestAnEmojiPresentationComesFromTheColorFont(t *testing.T) {
 	r := newTestRasterizer(t)
 	for _, k := range []Key{
-		{R: '⚠', Rest: "️"},
-		{R: '✔', Rest: "️"},
-		{R: '❤', Rest: "️"},
-		{R: '1', Rest: "️⃣"},
-		{R: '❤', Rest: "️‍🔥"},
+		{R: '⚠', Rest: "\ufe0f"},
+		{R: '✔', Rest: "\ufe0f"},
+		{R: '❤', Rest: "\ufe0f"},
+		{R: '1', Rest: "\ufe0f\u20e3"},
+		{R: '❤', Rest: "\ufe0f\u200d🔥"},
 	} {
 		if m := mask(t, r, k); m.Color == nil {
 			t.Errorf("%+q drew no color glyph", string(k.R)+k.Rest)
@@ -107,14 +110,18 @@ func TestKeyAsksForEmoji(t *testing.T) {
 		k    Key
 		want bool
 	}{
-		{Key{R: '⚠', Rest: "️"}, true},
-		{Key{R: '1', Rest: "️⃣"}, true},
-		{Key{R: 0x1F468, Rest: "‍👩"}, true},
+		{Key{R: '⚠', Rest: "\ufe0f"}, true},
+		{Key{R: '1', Rest: "\ufe0f\u20e3"}, true},
+		{Key{R: 0x1F468, Rest: "\u200d👩"}, true},
 		{Key{R: 0x1F1E7, Rest: "\U0001F1F7"}, true},
 		{Key{R: 0x1F44D, Rest: "\U0001F3FD"}, true},
 		{Key{R: 0x1F3F4, Rest: "\U000E0067\U000E007F"}, true},
-		{Key{R: '⚠', Rest: "︎"}, false},
-		{Key{R: 'e', Rest: "́"}, false},
+		{Key{R: '⚠', Rest: "\ufe0e"}, false},
+		{Key{R: 'e', Rest: "\u0301"}, false},
+		{Key{R: 'ക', Rest: "\u0d4d\u200d"}, false},
+		{Key{R: 'क', Rest: "\u094d\u200dष"}, false},
+		{Key{R: '#', Rest: "\u200d"}, false},
+		{Key{R: '1', Rest: "\u200d"}, false},
 		{Key{R: 0x1F1E7}, false},
 	} {
 		if got := tc.k.Emoji(); got != tc.want {
@@ -129,12 +136,21 @@ func TestAFontGoTextRefusesDrawsTheFirstCodepoint(t *testing.T) {
 	r := newTestRasterizer(t)
 	f := r.styles[0]
 	f.file = &fontFile{sf: f.file.sf, data: []byte("not a font")}
-	m, err := r.Mask(Key{R: 'e', Rest: "́"})
+	var logged bytes.Buffer
+	log.SetOutput(&logged)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	m, err := r.Mask(Key{R: 'e', Rest: "\u0301"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if m.Img == nil {
 		t.Fatal("the e was not drawn")
+	}
+	if _, err := r.Mask(Key{R: 'a', Rest: "\u0301"}); err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(logged.String(), "\n"); n != 1 {
+		t.Fatalf("logged %d lines for one bad font, want 1:\n%s", n, logged.String())
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 // Rasterizer: each terminal and diff view has its own, and a fallback such as
 // a CJK collection or a color emoji font is tens of megabytes.
 type fontFile struct {
+	path string
 	// sf is the file's first face; sfnt keeps reading from data.
 	sf   *sfnt.Font
 	data []byte
@@ -62,7 +63,7 @@ func openFontFile(path string) (*fontFile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse color glyphs of %s: %w", path, err)
 	}
-	f := &fontFile{sf: sf, data: data, color: color}
+	f := &fontFile{path: path, sf: sf, data: data, color: color}
 	fontFiles.byPath[path] = f
 	return f, nil
 }

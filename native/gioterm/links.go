@@ -98,8 +98,9 @@ func (v *Terminal) LinkAt(x, y float32) (l Link, ok bool) {
 			if r == row && c == col {
 				at = len(line)
 			}
-			for _, cp := range v.cellRunes(c, r) {
-				line = append(line, cp)
+			runes := len(line)
+			line = v.appendCellRunes(line, c, r)
+			for range len(line) - runes {
 				cellOf = append(cellOf, i)
 			}
 		}
@@ -126,9 +127,9 @@ func (v *Terminal) hyperlink(col, row int) string {
 	return string(buf[:int(n)])
 }
 
-// cellRunes is the cell's grapheme, a space for an empty cell, so columns
-// keep their place in the line.
-func (v *Terminal) cellRunes(col, row int) []rune {
+// appendCellRunes adds the cell's grapheme to line, a space for an empty cell,
+// so columns keep their place in it.
+func (v *Terminal) appendCellRunes(line []rune, col, row int) []rune {
 	var local [linkGraphemeMax]C.uint32_t
 	buf := local[:]
 	var n C.size_t
@@ -138,13 +139,12 @@ func (v *Terminal) cellRunes(col, row int) []rune {
 		r = C.cell_text(v.t, C.uint16_t(col), C.uint32_t(row), &buf[0], C.size_t(len(buf)), &n)
 	}
 	if r != C.GHOSTTY_SUCCESS || n == 0 {
-		return []rune{' '}
+		return append(line, ' ')
 	}
-	out := make([]rune, int(n))
-	for i := range out {
-		out[i] = rune(buf[i])
+	for _, cp := range buf[:int(n)] {
+		line = append(line, rune(cp))
 	}
-	return out
+	return line
 }
 
 // linkPattern is a URL as text shows one.
