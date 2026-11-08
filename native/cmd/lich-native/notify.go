@@ -83,6 +83,9 @@ type statusReport struct {
 	reason string
 	// kind is the session's provider, branch the checkout's, "" unknown.
 	kind, branch string
+	// program is a report from the session's own program, whose finished state
+	// says nothing about what the agent last wrote.
+	program bool
 }
 
 // notifier owns the desktop channel's preferences and the opt-in's open
@@ -109,11 +112,7 @@ func (n *notifier) report(r statusReport) {
 	if notice == noticeAsk {
 		n.asking = true
 	}
-	shown, up := n.shown[r.id]
-	stale := up && (shown != r.status || (r.focused && r.onScreen))
-	if stale {
-		delete(n.shown, r.id)
-	}
+	stale := n.dropStaleLocked(r)
 	if notice == noticeNotify {
 		if n.shown == nil {
 			n.shown = map[string]string{}
@@ -129,6 +128,26 @@ func (n *notifier) report(r statusReport) {
 		n.invalidate()
 	case noticeNotify:
 		n.sink.show(noteFor(r, notifySummary(r.status, r.label)))
+	}
+}
+
+// dropStaleLocked forgets a notification r has made stale and reports whether
+// there was one to take down.
+func (n *notifier) dropStaleLocked(r statusReport) bool {
+	shown, up := n.shown[r.id]
+	stale := up && (shown != r.status || (r.focused && r.onScreen))
+	if stale {
+		delete(n.shown, r.id)
+	}
+	return stale
+}
+
+func (n *notifier) withdrawStale(r statusReport) {
+	n.mu.Lock()
+	stale := n.dropStaleLocked(r)
+	n.mu.Unlock()
+	if stale {
+		n.sink.withdraw(r.id)
 	}
 }
 

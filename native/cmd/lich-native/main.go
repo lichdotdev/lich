@@ -289,6 +289,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 		u.notifier.report(r)
 		attention.report(r)
 	}
+	u.model.withdrawStale = u.notifier.withdrawStale
 	u.settings = newSettingsScreen(ctx, client, &u.root, invalidate)
 	u.settings.notify = u.notifier
 	u.settings.services.store = &u.model.services

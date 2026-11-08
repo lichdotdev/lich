@@ -145,6 +145,8 @@ what lich can read back out of it, since each CLI records different things.
 | Repaints in the new look when you switch lich between a light and a dark theme | yes | no | no | yes | yes | no | yes | no |
 | Bell when the agent is blocked on you | yes | yes | no | yes | no | no | no | no |
 | Ctrl+Shift+Y jumps to the next session waiting on you | yes | yes | no | yes | no | no | no | no |
+| A program in the agent's terminal can set the card (OSC 7501) while the agent runs | no | no | no | no | no | yes | no | no |
+| Back at a shell without prompt marks after you quit the agent, a program can set the card again | yes | no | no | no | no | yes | yes | no |
 | The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | no | working only | working only |
 | The card says when the conversation is being compacted | yes | no | no | no | no | no | no | no |
 | Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | no, always Idle | no Waiting | no Waiting |

@@ -67,7 +67,7 @@ func defineEventFamily[T any](prefix string) EventFamily[T] {
 
 var (
 	// SessionStatusEvent carries a session's processing state ({id, state, tool,
-	// detail, reason} — "busy"/"done"/"waiting"/"idle"/"compacting", plus the tool
+	// detail, reason, program} — "busy"/"done"/"waiting"/"idle"/"compacting", plus the tool
 	// a pre-tool report names and what a waiting one is blocked on), reported by
 	// the lich hooks running inside the PTY (see transport.hook and
 	// docs/hooks/session-state.md). "interrupted" is the one value lich raises

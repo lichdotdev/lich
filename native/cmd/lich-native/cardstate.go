@@ -37,10 +37,10 @@ func (m *model) applyStatus(ctx context.Context, ev backend.Event) error {
 	_, err = m.status.apply(ev, time.Now())
 	report, routed := m.statusReport(s.ID, previous)
 	var recheck string
-	if previous != statusDone && m.status.status(s.ID) == statusDone {
+	if !s.Program && previous != statusDone && m.status.status(s.ID) == statusDone {
 		recheck = m.recheckMissingPR(s.ID)
 	}
-	if s.State == "idle" {
+	if s.State == "idle" && !s.Program {
 		// The CLI left: it can no longer answer a request either.
 		delete(m.agent, s.ID)
 		delete(m.relay, s.ID)
@@ -54,7 +54,11 @@ func (m *model) applyStatus(ctx context.Context, ev backend.Event) error {
 		m.markRead(ctx, s.ID)
 	}
 	if routed && m.notify != nil {
-		m.notify(report)
+		if s.Program {
+			m.raiseProgramAlert(report)
+		} else {
+			m.raiseHookAlert(report)
+		}
 	}
 	return err
 }

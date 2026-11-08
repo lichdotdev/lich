@@ -160,6 +160,42 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     and the model-scoped caps a report does not carry.
   - An errand sent privately (a subagent or workflow step inside the session) never shows on the status line,
     since the session's own collect never reaches it.
+- **A program's own status (OSC 7501) is a second source, and the hook outranks it** (`internal/terminal/progwire.go`):
+  from the first hook state the window hears until a hook reports `idle` or the shell starts a prompt (OSC 133 A),
+  the program's records are kept and the card is the hook's. Only Claude Code and Cursor CLI report `idle`, so
+  in a session lich spawned as any other provider, and in a shell lich does not integrate where one of them ran, a
+  program never drives the card again (Provider support table, README). Crush reports no state, so a program in a
+  Crush session drives the card throughout. A command an agent runs through its shell tool usually writes to a pipe
+  the agent reads, not to the PTY, so its report never reaches lich at all.
+  - A `working`, `blocked` or `idle` record ends at a shell prompt (OSC 133 A, which lich's shell integration marks
+    for bash, zsh and fish), at the next report, at a full reset (RIS) or when the session's process exits. There
+    is no foreground process watch: in a shell lich does not integrate, a program that exits without reporting
+    `done` or `error` leaves its state on the card until one of those. `done` and `error` end when you type or paste
+    from the clipboard into the terminal (the window says so in a text frame on `/ws`); an emulator's automatic reply,
+    a mouse report, a dropped or attached file and looking at the card do not end them.
+  - The card shows one record: `blocked`, then `working`, then `error`, `done` and `idle`. `working` outranks the
+    finished states on purpose, because they outlive a prompt and the card reads them as a finished turn; tuios
+    ranks them the other way. The card has no error state, so `error` shows as a finished turn. `kind` and
+    `progress` are read and dropped: the card has no place for either. The relay never sees these states, so a
+    delivery does not wait on a program that says it is working, and they do not keep the machine awake.
+  - A program's state reaches the card and the tray at once, at most 10 times a second per session, a burst folding
+    into its newest state. Only the alerts it raises (the toast and the desktop notification, sound included) are
+    limited further, in the window (`programAlerts`, `native/cmd/lich-native/program_alerts.go`), to one per session
+    in 30 seconds: inside them the newest alert is held and goes out when they end, if the session is still in that
+    state, so a second question arrives up to 30 seconds late rather than not at all. A hook's alerts are not limited.
+    The tray's dot and menu read the current state, so they are not alerts and follow a program that flips.
+  - Nothing else a report causes outside the terminal runs per report. The unread mark is written when it changes, at most
+    four times in 30 seconds, and past that not at all: under a flood the mark may be out of date when a window
+    reopens, which beats a late write undoing a card you read. A program's `done` does not look the pull request up
+    again, re-read the plan's usage or quote the agent's last reply in its notification, and its `idle` does not
+    clear the provider's mark, an in-flight relay mark or the footer's numbers, which a hook's `idle` does.
+  - The backend answers `OSC 7501 ; ?`, because the window's libghostty-vt answers it only when the window sets a
+    program status callback (`GHOSTTY_TERMINAL_OPT_PROGRAM_STATUS`). `native/gioterm` sets none; one that did
+    would answer the query a second time. One goroutine per session writes the answers, so a child that stops
+    reading its input costs one blocked write however often it asks.
+  - **Unverified on Windows.** The PTY opens ConPTY without passthrough (`internal/terminal/pty_windows.go`), which
+    may drop an OSC it does not know before lich reads it. Nobody has measured it there, so a report may simply never
+    arrive.
 
 ## Transcripts, cost and plan usage
 

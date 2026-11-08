@@ -68,6 +68,10 @@ type model struct {
 	xdgProfiles map[string]*profileBook
 	// notify hands each session-status report to the desktop channel.
 	notify func(statusReport)
+	// withdrawStale hears a report whose alert is held, for what it takes down.
+	withdrawStale func(statusReport)
+	// alerts limits what notify hears from a session's own program.
+	alerts programAlerts
 	// seen hears a session the window just showed the user.
 	seen func(id string)
 	// loginProgress takes each step of a profile login, of the provider kind
@@ -318,6 +322,7 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		if id, exited := api.TerminalExitEvents.ID(ev.Name); exited {
 			m.mu.Lock()
 			m.status.exited(id)
+			m.alerts.forget(id)
 			m.mu.Unlock()
 			if m.exited != nil {
 				m.exited(id, readSessionExit(ev))

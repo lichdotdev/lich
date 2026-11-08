@@ -148,6 +148,8 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Se redesenha com o novo visual quando você troca o lich entre tema claro e escuro | sim | não | não | sim | sim | não | sim | não |
 | Sino quando o agente depende de você para continuar | sim | sim | não | sim | não | não | não | não |
 | Ctrl+Shift+Y pula para a próxima sessão esperando por você | sim | sim | não | sim | não | não | não | não |
+| Um programa no terminal do agente pode definir o card (OSC 7501) enquanto o agente roda | não | não | não | não | não | sim | não | não |
+| De volta a um shell sem marcas de prompt depois de sair do agente, um programa pode definir o card de novo | sim | não | não | não | não | sim | sim | não |
 | A bandeja lista as sessões esperando por você e as que estão trabalhando, e o ícone ganha um ponto | sim | sim | só as que trabalham | sim | só as que trabalham | não | só as que trabalham | só as que trabalham |
 | O card avisa quando a conversa está sendo compactada | sim | não | não | não | não | não | não | não |
 | Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | não, sempre Ociosas | sem Aguardando | sem Aguardando |

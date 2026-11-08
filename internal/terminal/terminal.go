@@ -111,6 +111,11 @@ type session struct {
 	started     bool
 	// service is set on a PTY StartService spawned, nil on a session's.
 	service *ServiceCommand
+	// progScan, prog and progReplies read and answer OSC 7501 off this PTY's
+	// output (progwire.go).
+	progScan    progScanner
+	prog        programStatus
+	progReplies progReplies
 }
 
 // Store is the persistence the terminal service depends on: the binary to spawn
@@ -358,6 +363,7 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 		})
 		ws.setModAborted(s.noteInterrupt)
 		ws.setUsageReported(s.onUsageReport)
+		ws.setTyped(s.programTyped)
 	}
 	return s
 }
@@ -408,7 +414,7 @@ func (s *Service) onHookState(req hookRequest) {
 	// card would draw it as a human being blocked (see turnLog).
 	if s.turns.report(req.SessionID, req.State) {
 		s.noteUnread(req.SessionID, req.State == statusDone)
-		s.publishStatus(statusEvent{
+		s.publishHookStatus(statusEvent{
 			ID:     req.SessionID,
 			State:  req.State,
 			Tool:   req.Tool,

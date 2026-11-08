@@ -275,7 +275,8 @@ func (ts *terminals) sendTyped(t *termView, b []byte) {
 		return
 	}
 	t.vt.ScrollToBottom()
-	ts.send(t.id, b)
+	ts.sent.Store(time.Now().UnixNano())
+	ts.deliver(t.id, b, (*backend.Stream).SendTyped)
 }
 
 // sendReport writes a mouse report of kind to session id's PTY. A pointer
@@ -303,6 +304,10 @@ func (ts *terminals) scroll(gtx C, t *termView) {
 // position, device attributes), or a motion report, to session id's PTY.
 // Neither is anyone typing, so neither opens the echo window.
 func (ts *terminals) reply(id string, b []byte) {
+	ts.deliver(id, b, (*backend.Stream).Send)
+}
+
+func (ts *terminals) deliver(id string, b []byte, write func(*backend.Stream, context.Context, string, []byte) error) {
 	if len(b) == 0 {
 		return
 	}
@@ -312,7 +317,7 @@ func (ts *terminals) reply(id string, b []byte) {
 	if t != nil && t.readOnly.Load() {
 		return
 	}
-	if err := stream.Send(context.Background(), id, b); err != nil {
+	if err := write(stream, context.Background(), id, b); err != nil {
 		log.Printf("send to %s: %v", id, err)
 	}
 }
