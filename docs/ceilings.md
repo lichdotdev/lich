@@ -1081,7 +1081,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   person answers or closes the card, and with the window closed nobody is asked; one a pane shows, or a
   window, never is. It loads only http, https and about:blank. Page info never
   includes a form's value, though `browser_eval` reads whatever the agent asks for. Screenshots are files, their
-  longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. It is
+  longest side at most 1280 pixels, so a wide pane's is smaller than the page and x and y are read off it. An
+  annotated screenshot draws its index labels into the page itself, so the person's pane shows them for the
+  capture, a frame or two, and a label covers the start of its element's text; a dialog opened during the capture
+  leaves them up to 5 seconds, until the page's own timer removes them. It is
   not a sandbox: the page runs as the user, in an ephemeral profile. Chromium needs its own sandbox, and on
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable

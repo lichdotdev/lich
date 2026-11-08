@@ -470,6 +470,7 @@ BrowserState {
 BrowserScreenshotOptions {
 	id string
 	path string
+	annotate bool
 }
 
 BrowserScrollOptions {

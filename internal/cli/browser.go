@@ -170,6 +170,7 @@ func (c *client) browserPress(args []string) error {
 
 func (c *client) browserScreenshot(args []string) error {
 	flags := newFlagSet("browser")
+	annotate := flags.Bool("annotate", false, "draw each element's index on the image")
 	if err := c.parse(flags, args); err != nil {
 		return err
 	}
@@ -181,7 +182,7 @@ func (c *client) browserScreenshot(args []string) error {
 	if flags.NArg() > 0 {
 		dest = flags.Arg(0)
 	}
-	path, err := callMethod(context.Background(), c, api.BrowserScreenshot, api.BrowserScreenshotOptions{ID: id, Path: dest}, openCall)
+	path, err := callMethod(context.Background(), c, api.BrowserScreenshot, api.BrowserScreenshotOptions{ID: id, Path: dest, Annotate: *annotate}, openCall)
 	if err != nil {
 		return err
 	}

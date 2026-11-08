@@ -65,6 +65,7 @@ type fakePage struct {
 	info      PageInfo
 	shotErr   error
 	shotSize  [2]int
+	annotated int
 	navErr    error
 	infoErr   error
 	within    []string
@@ -193,6 +194,13 @@ func (p *fakePage) Screenshot(_ context.Context, dest string) (w, h int, err err
 		return 0, 0, p.shotErr
 	}
 	return p.shotSize[0], p.shotSize[1], os.WriteFile(dest, []byte("png"), 0o600)
+}
+
+func (p *fakePage) AnnotatedScreenshot(ctx context.Context, dest string) (w, h int, err error) {
+	p.mu.Lock()
+	p.annotated++
+	p.mu.Unlock()
+	return p.Screenshot(ctx, dest)
 }
 
 func (p *fakePage) Reload(context.Context) error {

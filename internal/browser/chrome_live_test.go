@@ -804,3 +804,73 @@ func TestChromeInfoWithinReadsOnlyTheSubtreeAndItsIndexesClick(t *testing.T) {
 		t.Fatalf("whole page listed %+v, want the 4 buttons and links", whole.Interactive)
 	}
 }
+
+func TestChromeAnnotatedScreenshotLabelsWhatAClickByIndexHits(t *testing.T) {
+	p, _ := liveChrome(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		icon := `<svg width="24" height="24"><circle cx="12" cy="12" r="10"/></svg>`
+		fmt.Fprintf(w, `<body style="margin:0">
+<button id="star" style="position:absolute;left:100px;top:100px;width:80px;height:60px">%s</button>
+<button id="trash" style="position:absolute;left:400px;top:300px;width:80px;height:60px">%s</button>
+<script>addEventListener('click', (e) => { document.body.dataset.hit = e.target.closest('button')?.id || '' })</script>`, icon, icon)
+	}))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
+	defer cancel()
+	if err := p.Navigate(ctx, srv.URL); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Resize(ctx, Viewport{W: 2000, H: 1000, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	const layout = `[...document.querySelectorAll('button')].map((b) => JSON.stringify(b.getBoundingClientRect())).join()`
+	var before, after string
+	if err := p.run(ctx, chromedp.Evaluate(layout, &before)); err != nil {
+		t.Fatal(err)
+	}
+	dest := t.TempDir() + "/shot.png"
+	w, h, err := p.AnnotatedScreenshot(ctx, dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w != 2000 || h != 1000 || img.Bounds().Dx() != 1280 || img.Bounds().Dy() != 640 {
+		t.Fatalf("annotated shot = %v image of %dx%d, want 1280x640 of 2000x1000", img.Bounds(), w, h)
+	}
+	// Inside the label's padding at trash's top left corner, left of its
+	// digit, whose antialiasing differs between platforms' fonts: CSS
+	// 400+3,300+10 at 0.64.
+	if r, g, b, _ := img.At(258, 198).RGBA(); r>>8 < 0xb0 || g>>8 > 0x40 || b>>8 < 0x40 {
+		t.Fatalf("pixel under trash's label = %d,%d,%d, want the label's red", r>>8, g>>8, b>>8)
+	}
+	var left int
+	if err := p.run(ctx, chromedp.Evaluate(`document.querySelectorAll('`+annotateTag+`').length`, &left)); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.run(ctx, chromedp.Evaluate(layout, &after)); err != nil {
+		t.Fatal(err)
+	}
+	if left != 0 || after != before {
+		t.Fatalf("after the shot: %d overlays left, layout %s, want none and %s", left, after, before)
+	}
+	trash := 1
+	if _, _, err := p.Click(ctx, Target{Index: &trash}); err != nil {
+		t.Fatal(err)
+	}
+	var hit string
+	if err := p.run(ctx, chromedp.Evaluate(`document.body.dataset.hit`, &hit)); err != nil {
+		t.Fatal(err)
+	}
+	if hit != "trash" {
+		t.Fatalf("a click on index 1 hit %q, want trash", hit)
+	}
+}

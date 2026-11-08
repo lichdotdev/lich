@@ -52,7 +52,9 @@ serves that checkout on `127.0.0.1`, at its `LICH_WORKTREE_PORT` plus 1000, so
 each checkout is its own origin, and a path outside the checkout is refused.
 Page info never includes form values. Screenshots are files, their longest
 side at most 1280 pixels (`shotMax`); a click at x and y is in that image's
-pixels and lands scaled back to the page's. A click, key, tab or dialog
+pixels and lands scaled back to the page's. An annotated screenshot reads the
+page first and draws each element's index on the image (`chrome_annotate.go`);
+that read is not told, as its list never reached the agent in text. A click, key, tab or dialog
 answer whose element list is the one the agent's last page answer gave says
 so in one line instead (`internal/browser/told.go`); `browser_info` always
 answers with the whole list of what it reads. With `within`, a CSS selector, it
