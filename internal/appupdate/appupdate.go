@@ -46,10 +46,12 @@ const (
 	installScript = "curl -fsSL https://raw.githubusercontent.com/" + repo + "/main/install.sh | sh"
 	// restartChain relaunches lich after an install that, unlike install.sh, does
 	// not know how. It POSTs the same /restart endpoint using the
-	// LICH_PORT/LICH_TOKEN every lich PTY session exports, so the token is never
-	// rendered into the pasted text — it stays a shell env reference expanded at
-	// run time, not a literal baked into scrollback.
-	restartChain = ` && curl -fsS --max-time 5 -X POST "http://127.0.0.1:$LICH_PORT/restart?token=$LICH_TOKEN"`
+	// LICH_PORT/LICH_TOKEN every lich PTY session exports. The token stays a
+	// shell env reference expanded at run time, never a literal in scrollback,
+	// and reaches curl as a config line on stdin: printf is a builtin, so the
+	// expanded token never enters any argv, where /proc/<pid>/cmdline shows it to
+	// every user on the machine (a -H argument would).
+	restartChain = ` && printf 'header = "Authorization: Bearer %s"\n' "$LICH_TOKEN" | curl -fsS --max-time 5 -X POST -K - "http://127.0.0.1:$LICH_PORT/restart"`
 	// scoopPackage is the manifest name a Scoop install updates through; Scoop
 	// owns its copy under apps\lich\current, so lich never swaps it itself.
 	scoopPackage = "lich"

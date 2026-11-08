@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,6 +23,36 @@ func newTestStore(t testing.TB) *Service {
 	}
 	t.Cleanup(func() { _ = svc.Close() })
 	return svc
+}
+
+// The directory holds prompts and session text, so an install made before the
+// directory was private is tightened on the next start.
+func TestOpenMakesTheDatabaseDirectoryPrivate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows has no POSIX modes")
+	}
+	parent := t.TempDir()
+	dir := filepath.Join(parent, "lich")
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(parent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	svc, err := open(filepath.Join(dir, "lich.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = svc.Close() })
+	for path, want := range map[string]os.FileMode{dir: 0o700, parent: 0o755} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := info.Mode().Perm(); got != want {
+			t.Errorf("%s mode = %o, want %o", path, got, want)
+		}
+	}
 }
 
 // TestOpenCommitsWithoutAJournalFilePerWrite pins the journal setup: the

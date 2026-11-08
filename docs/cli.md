@@ -54,7 +54,7 @@ exceptions: they read the machine, not a running lich.
 | Var               | Purpose                                          |
 |-------------------|--------------------------------------------------|
 | `LICH_PORT`       | endpoint port (loopback)                         |
-| `LICH_TOKEN`      | auth token (`?token=`)                           |
+| `LICH_TOKEN`      | auth token (`?token=` or `Authorization: Bearer`) |
 | `LICH_SESSION_ID` | the card this command is running in — the sender |
 | `LICH_BIN`        | the path of the lich this session belongs to     |
 | `LICH_PROMPT_LANG`| language of text written for the agent (`en`)    |

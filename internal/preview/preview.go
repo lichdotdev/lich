@@ -128,7 +128,7 @@ func (s *Service) serve(dir string, port int) (int, error) {
 		return 0, fmt.Errorf("serve checkout %q: %w", dir, err)
 	}
 	port = ln.Addr().(*net.TCPAddr).Port
-	srv := &http.Server{Handler: rootHandler(dir), ReadHeaderTimeout: readHeaderTimeout}
+	srv := &http.Server{Handler: loopbackHostOnly(port, rootHandler(dir)), ReadHeaderTimeout: readHeaderTimeout}
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Warn("preview server stopped", "dir", dir, "port", port, "err", err)
@@ -136,6 +136,21 @@ func (s *Service) serve(dir string, port int) (int, error) {
 	}()
 	s.servers[dir] = &server{port: port, srv: srv}
 	return port, nil
+}
+
+// loopbackHostOnly refuses a request whose Host is not one of the server's own
+// loopback names. A hostname an attacker's page rebinds to 127.0.0.1 reaches
+// this listener with the attacker's name in Host, and the browser would let
+// that page read the checkout, a .env included.
+func loopbackHostOnly(port int, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host, p, err := net.SplitHostPort(r.Host)
+		if err != nil || p != strconv.Itoa(port) || (host != "127.0.0.1" && !strings.EqualFold(host, "localhost")) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // rootHandler serves dir through an os.Root opened for each request. One held

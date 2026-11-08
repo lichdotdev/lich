@@ -81,7 +81,11 @@ restart_running_lich() {
   info "restarting lich"
   # --max-time so a wedged old process never blocks the installer; the handler
   # answers 204 before it tears down, so this returns immediately in practice.
-  curl -fsS --max-time 5 -X POST "http://127.0.0.1:${port}/restart?token=${token}" >/dev/null 2>&1 || true
+  # The token rides a header fed through stdin (printf is a builtin): a query
+  # string or -H would put it in curl's command line, which every user on the
+  # machine can read.
+  printf 'header = "Authorization: Bearer %s"\n' "$token" |
+    curl -fsS --max-time 5 -X POST -K - "http://127.0.0.1:${port}/restart" >/dev/null 2>&1 || true
 }
 
 main() {

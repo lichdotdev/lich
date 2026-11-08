@@ -17,6 +17,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -370,8 +371,14 @@ func New() (*Service, error) {
 // deleting a rollback journal per write, which on Windows costs tens of
 // milliseconds a commit; a power loss can drop the last commits, never corrupt.
 func open(path string) (*Service, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("create data directory: %w", err)
+	}
+	// MkdirAll leaves an existing directory as it was, and installs made before
+	// it was private hold the database and its prompts in a 0755 one.
+	if err := os.Chmod(dir, 0o700); err != nil {
+		slog.Warn("could not make the data directory private", "dir", dir, "err", err)
 	}
 
 	dsn := fmt.Sprintf("file:%s?_pragma=foreign_keys(1)&_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", path, busyTimeoutMS)

@@ -422,10 +422,15 @@ func (t *transport) mount(pattern string, handler http.Handler) {
 	}))
 }
 
-// authorized reports whether the request carries the transport's connect token.
-// The origin is not checked: the random token is the auth.
+// authorized reports whether the request carries the transport's connect token,
+// as ?token= or as a Bearer header. The header exists for callers that would
+// otherwise put the token in a process's command line. The origin is not
+// checked: the random token is the auth.
 func (t *transport) authorized(r *http.Request) bool {
 	provided := r.URL.Query().Get("token")
+	if bearer, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+		provided = bearer
+	}
 	return subtle.ConstantTimeCompare([]byte(provided), []byte(t.token)) == 1
 }
 
