@@ -82,7 +82,7 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	markCrushInitialized(opts.Kind, opts.Cwd)
-	awaits := s.awaitsStart(opts.Kind, profileDir)
+	awaits := s.awaitsStart(opts.Kind, profileDir) && !trustAnswered(opts.Kind, opts.Cwd, profileDir)
 	sess, cwd, err := s.spawnSession(opts, profileDir, name, oc2)
 	if err != nil || sess == nil {
 		return api.None{}, err

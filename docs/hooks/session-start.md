@@ -51,7 +51,9 @@ what makes a session ready for work: lich holds anything it would type at the
 session (a relayed task, a scheduled prompt, a handoff) until the first report
 of its PTY, because these hooks run only from the agent's own prompt, past the
 trust question a fresh directory raises (`internal/terminal/startgate.go`). A
-hook that stops reporting leaves those sessions unable to take typed work.
+hook that stops reporting leaves those sessions unable to take typed work,
+except Claude Code and Cursor CLI sessions in a folder already trusted, which
+lich does not hold.
 
 `SessionStart` fires on startup, resume, `/clear` and compaction. A resume
 reports the resumed session's id and overwrites the stored value — lich always
