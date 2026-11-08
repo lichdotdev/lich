@@ -61,3 +61,10 @@ func TestAwaitActionReturnsTheCallsError(t *testing.T) {
 		t.Fatalf("awaitAction = %v, want %v", err, want)
 	}
 }
+
+func TestCoveredErrorNamesTheCoveringElement(t *testing.T) {
+	want := "the element is covered by <div.modal-backdrop> at its click point: dismiss that first, then read the page again"
+	if got := coveredError("div.modal-backdrop").Error(); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+}
