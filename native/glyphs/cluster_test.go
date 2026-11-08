@@ -5,6 +5,9 @@ import (
 	"image"
 	"runtime"
 	"testing"
+
+	"github.com/go-text/typesetting/shaping"
+	"golang.org/x/image/math/fixed"
 )
 
 func newTestRasterizer(t *testing.T) *Rasterizer {
@@ -79,4 +82,103 @@ func TestACombiningMarkDrawsOverItsBase(t *testing.T) {
 	if !inCell {
 		t.Fatal("the accented e spills into the next cell")
 	}
+}
+
+// A variation selector asks for the emoji, whose base a text font may cover
+// too: drawn from that font it is narrow, monochrome and beside a blank
+// column. The keycap's digit is in every font.
+func TestAnEmojiPresentationComesFromTheColorFont(t *testing.T) {
+	r := newTestRasterizer(t)
+	for _, k := range []Key{
+		{R: '⚠', Rest: "️"},
+		{R: '✔', Rest: "️"},
+		{R: '❤', Rest: "️"},
+		{R: '1', Rest: "️⃣"},
+		{R: '❤', Rest: "️‍🔥"},
+	} {
+		if m := mask(t, r, k); m.Color == nil {
+			t.Errorf("%+q drew no color glyph", string(k.R)+k.Rest)
+		}
+	}
+}
+
+func TestKeyAsksForEmoji(t *testing.T) {
+	for _, tc := range []struct {
+		k    Key
+		want bool
+	}{
+		{Key{R: '⚠', Rest: "️"}, true},
+		{Key{R: '1', Rest: "️⃣"}, true},
+		{Key{R: 0x1F468, Rest: "‍👩"}, true},
+		{Key{R: 0x1F1E7, Rest: "\U0001F1F7"}, true},
+		{Key{R: 0x1F44D, Rest: "\U0001F3FD"}, true},
+		{Key{R: 0x1F3F4, Rest: "\U000E0067\U000E007F"}, true},
+		{Key{R: '⚠', Rest: "︎"}, false},
+		{Key{R: 'e', Rest: "́"}, false},
+		{Key{R: 0x1F1E7}, false},
+	} {
+		if got := tc.k.Emoji(); got != tc.want {
+			t.Errorf("%+q: Emoji() = %v, want %v", string(tc.k.R)+tc.k.Rest, got, tc.want)
+		}
+	}
+}
+
+// A font sfnt reads and go-text refuses must not fail the frame over one
+// accent in a program's output.
+func TestAFontGoTextRefusesDrawsTheFirstCodepoint(t *testing.T) {
+	r := newTestRasterizer(t)
+	f := r.styles[0]
+	f.file = &fontFile{sf: f.file.sf, data: []byte("not a font")}
+	m, err := r.Mask(Key{R: 'e', Rest: "́"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Img == nil {
+		t.Fatal("the e was not drawn")
+	}
+}
+
+func TestClusterMasksAreBounded(t *testing.T) {
+	r := newTestRasterizer(t)
+	for i := range 1100 {
+		mask(t, r, Key{R: 'e', Rest: string(rune(0x10000 + i))})
+	}
+	if n := len(r.clusters); n > 1024 {
+		t.Fatalf("%d cluster masks kept", n)
+	}
+}
+
+// What shaping places outside the two cells stays in the mask, as a single
+// codepoint's does: an italic's left overhang, a tall stack of marks.
+func TestOutlinesKeepWhatFallsOutsideTheCell(t *testing.T) {
+	r := newTestRasterizer(t)
+	face, err := r.textFace(r.styles[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	gid, ok := face.NominalGlyph('e')
+	if !ok {
+		t.Fatal("no e in the font")
+	}
+	up := fixed.I(r.CellH())
+	left := fixed.I(r.CellW() / 2)
+	img, off := r.outlines(face, []shaping.Glyph{{GlyphID: gid, XOffset: -left, YOffset: up}})
+	if img == nil {
+		t.Fatal("no mask")
+	}
+	if off.X >= 0 || off.Y >= 0 {
+		t.Fatalf("mask at %v, want it left of and above the cell", off)
+	}
+	if !hasInk(img) {
+		t.Fatal("the mask is empty")
+	}
+}
+
+func hasInk(img *image.Alpha) bool {
+	for _, a := range img.Pix {
+		if a != 0 {
+			return true
+		}
+	}
+	return false
 }

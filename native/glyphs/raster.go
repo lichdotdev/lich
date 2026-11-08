@@ -94,6 +94,9 @@ type Rasterizer struct {
 	ascent   int
 
 	shaper shaping.HarfbuzzShaper
+	// emoji is the color font of a grapheme asking for it, looked up once.
+	emoji      *fontFace
+	emojiFound bool
 
 	// fallbacks are the faces fonts.Covering picked so far, in the order it
 	// picked them, tried before asking it again: on Linux each ask is a
@@ -246,6 +249,9 @@ func (r *Rasterizer) clusterMask(k Key) (*Mask, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(r.clusters) >= maxClusterMasks {
+		r.clusters = map[Key]*Mask{}
+	}
 	r.clusters[k] = m
 	return m, nil
 }
@@ -263,7 +269,6 @@ func (r *Rasterizer) colorGlyph(f *fontFace, c rune) (*image.RGBA, image.Point, 
 	return r.colorGlyphID(f, gid)
 }
 
-// colorGlyphID is colorGlyph for glyph gid of f.
 func (r *Rasterizer) colorGlyphID(f *fontFace, gid gotext.GID) (*image.RGBA, image.Point, error) {
 	img, off, err := r.colorBitmap(f, gid)
 	if img != nil || err != nil {
@@ -273,7 +278,7 @@ func (r *Rasterizer) colorGlyphID(f *fontFace, gid gotext.GID) (*image.RGBA, ima
 }
 
 // colorBitmap scales gid's PNG bitmap to fit two cells, the width of an emoji,
-// centered in them. It returns nil when f has no PNG bitmap for c. The grid
+// centered in them. It returns nil when f has no PNG bitmap for gid. The grid
 // carries no width per cell, so an emoji that is narrow (text presentation,
 // no VS16) still overhangs into the next cell.
 func (r *Rasterizer) colorBitmap(f *fontFace, gid gotext.GID) (*image.RGBA, image.Point, error) {

@@ -18,6 +18,14 @@ import (
 // a few thousand cell-sized glyphs per page.
 const atlasSize = 1024
 
+// maxAtlasPages and maxAtlasEntries bound what an atlas keeps: the graphemes
+// and colors on screen are the program's to choose and a page is never freed
+// on its own, so past either one the next frame starts from an empty atlas.
+const (
+	maxAtlasPages   = 8
+	maxAtlasEntries = 1 << 16
+)
+
 // atlasRenderer keeps every glyph it has drawn, already in its color, in
 // texture pages, and draws a cell as that page clipped to a rectangle. A
 // rectangle clip takes Gio's fast path, with no stencil or path packing, but
@@ -79,6 +87,9 @@ func (a *atlasRenderer) Draw(gtx layout.Context, s Snapshot) (int, error) {
 }
 
 func (a *atlasRenderer) draw(gtx layout.Context, sn snap, cells []cell, dirty []uint8, below, above []placedImage) (int, error) {
+	if len(a.pages) >= maxAtlasPages || len(a.tinted) >= maxAtlasEntries {
+		a.Release()
+	}
 	if len(a.rowOps) != sn.rows {
 		a.rowOps = make([]*op.Ops, sn.rows)
 		a.rowCall = make([]op.CallOp, sn.rows)
@@ -160,10 +171,10 @@ func glyphColor(st cellStyle) color.NRGBA {
 // entry returns the atlas location of c drawn in st, adding it on first use.
 // Blank cells and block elements, which are drawn as rectangles, have none.
 func (a *atlasRenderer) entry(c cell, st cellStyle) (tintEntry, error) {
-	if c.cp <= ' ' {
+	if c.cp <= ' ' && c.rest == "" {
 		return tintEntry{}, nil
 	}
-	if _, _, ok := blockElement(rune(c.cp)); ok {
+	if _, _, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 		return tintEntry{}, nil
 	}
 	k := tintKey{g: glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital}, c: glyphColor(st)}
@@ -251,11 +262,11 @@ func (a *atlasRenderer) recordRow(row []cell, sn snap, y int) {
 	macro := op.Record(ops)
 	paintBackgrounds(ops, row, sn, a.r.CellW(), a.r.CellH())
 	for x, c := range row {
-		if c.cp <= ' ' {
+		if c.cp <= ' ' && c.rest == "" {
 			continue
 		}
 		st := styleOf(c, sn)
-		if rects, alpha, ok := blockElement(rune(c.cp)); ok {
+		if rects, alpha, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 			paintBlock(ops, x, rects, glyphColor(st), alpha, a.r.CellW(), a.r.CellH())
 			continue
 		}

@@ -17,6 +17,10 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
+// maxGridGlyphs bounds the glyphs a grid keeps: the graphemes on screen are
+// the program's to choose, so random text would add one for each.
+const maxGridGlyphs = 1 << 14
+
 // grid draws the terminal cells. Each row is recorded once into its own ops
 // list and replayed until libghostty reports that row dirty again.
 type grid struct {
@@ -124,10 +128,10 @@ func (g *grid) drawCursor(ops *op.Ops, c cell, sn snap) {
 	st := cursorStyleOf(c, sn)
 	r := image.Rect(sn.cursorX*g.cellW, sn.cursorY*g.cellH, (sn.cursorX+1)*g.cellW, (sn.cursorY+1)*g.cellH)
 	paint.FillShape(ops, rgba(st.bg), clip.Rect(r).Op())
-	if c.cp <= ' ' {
+	if c.cp <= ' ' && c.rest == "" {
 		return
 	}
-	if _, _, ok := blockElement(rune(c.cp)); ok {
+	if _, _, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 		return
 	}
 	gl := g.glyph(glyphs.Key{R: rune(c.cp), Rest: c.rest, Bold: st.bold, Italic: st.ital})
@@ -145,7 +149,7 @@ func (g *grid) recordRow(row []cell, sn snap, y int) {
 	macro := op.Record(ops)
 	paintBackgrounds(ops, row, sn, g.cellW, g.cellH)
 	for x, c := range row {
-		if c.cp <= ' ' {
+		if c.cp <= ' ' && c.rest == "" {
 			continue
 		}
 		st := styleOf(c, sn)
@@ -153,7 +157,7 @@ func (g *grid) recordRow(row []cell, sn snap, y int) {
 		if st.faint {
 			col.A = 140
 		}
-		if rects, alpha, ok := blockElement(rune(c.cp)); ok {
+		if rects, alpha, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 			paintBlock(ops, x, rects, col, alpha, g.cellW, g.cellH)
 			continue
 		}
@@ -183,6 +187,18 @@ func (g *grid) glyph(k glyphs.Key) cachedGlyph {
 	if c, ok := g.cache[k]; ok {
 		return c
 	}
+	if len(g.cache) >= maxGridGlyphs {
+		g.cache = map[glyphs.Key]cachedGlyph{}
+	}
+	gs := g.shape(k)
+	c := cachedGlyph{path: g.shaper.Shape(gs), bitmaps: g.shaper.Bitmaps(gs)}
+	g.cache[k] = c
+	return c
+}
+
+// shape lays out k's grapheme. An emoji sequence the fonts have no ligature
+// for is its first glyph: the cell is two columns whatever it holds.
+func (g *grid) shape(k glyphs.Key) []text.Glyph {
 	f := g.font
 	if k.Bold {
 		f.Weight = font.Bold
@@ -195,7 +211,8 @@ func (g *grid) glyph(k glyphs.Key) cachedGlyph {
 	for gl, ok := g.shaper.NextGlyph(); ok; gl, ok = g.shaper.NextGlyph() {
 		gs = append(gs, gl)
 	}
-	c := cachedGlyph{path: g.shaper.Shape(gs), bitmaps: g.shaper.Bitmaps(gs)}
-	g.cache[k] = c
-	return c
+	if k.Emoji() && len(gs) > 1 {
+		gs = gs[:1]
+	}
+	return gs
 }

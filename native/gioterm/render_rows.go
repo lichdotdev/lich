@@ -135,7 +135,7 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		}
 	}
 	for x, c := range row {
-		if c.cp <= ' ' {
+		if c.cp <= ' ' && c.rest == "" {
 			continue
 		}
 		st := styles[x]
@@ -143,7 +143,7 @@ func (rr *rowRenderer) compose(img *image.RGBA, row []cell, sn snap, cursorX int
 		if st.faint {
 			col.A = 140
 		}
-		if rects, alpha, ok := blockElement(rune(c.cp)); ok {
+		if rects, alpha, ok := blockElement(rune(c.cp)); ok && c.rest == "" {
 			col.A = uint8(uint16(col.A) * uint16(alpha) / 255)
 			for _, r := range rects {
 				draw.Draw(img, r.pixels(x*cw, cw, ch), image.NewUniform(col), image.Point{}, draw.Over)

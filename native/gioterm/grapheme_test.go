@@ -1,8 +1,13 @@
 package gioterm
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
+
+	"github.com/lichdotdev/lich/native/glyphs"
 )
 
 var graphemeCases = []struct {
@@ -89,5 +94,138 @@ func TestLinkAtKeepsACombiningMark(t *testing.T) {
 	// The accent shares the e's cell: the link ends 23 cells after it starts.
 	if l.From.X != 4 || l.To.X != 4+22 {
 		t.Fatalf("link covers columns %d..%d, want 4..26", l.From.X, l.To.X)
+	}
+}
+
+const familyOf4 = "👩‍👩‍👧‍👦"
+
+// A screen of long sequences must not use up what the graphemes of a frame
+// can hold: the last cell keeps all of its codepoints.
+func TestAScreenOfLongSequencesKeepsEveryGrapheme(t *testing.T) {
+	v := newSizedTerminal(t)
+	cols, rows := v.Size()
+	for range (cols / 2) * rows {
+		v.Write([]byte(familyOf4))
+	}
+	s, err := v.Update()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cellText(s.cells[cols*rows-2]); got != familyOf4 {
+		t.Fatalf("the last cell holds %+q, want %+q", got, familyOf4)
+	}
+}
+
+// One cell of thousands of combining marks takes a bounded share and leaves
+// the cells after it whole.
+func TestAHeavyCellIsCappedAndLeavesTheOthersWhole(t *testing.T) {
+	v := newSizedTerminal(t)
+	v.Write([]byte("e" + strings.Repeat("́", 5000) + " " + familyOf4))
+	s, err := v.Update()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := utf8.RuneCountInString(cellText(s.cells[0])); n != 32 {
+		t.Errorf("the heavy cell holds %d codepoints, want 32", n)
+	}
+	if got := cellText(s.cells[2]); got != familyOf4 {
+		t.Errorf("the cell after it holds %+q, want %+q", got, familyOf4)
+	}
+}
+
+// A combining mark on a blank or a block element is ink of its own, which a
+// renderer that looks only at the first codepoint draws as nothing or as the
+// block.
+func TestAMarkOnABlankOrBlockIsDrawn(t *testing.T) {
+	for _, kind := range []string{RenderRows, RenderAtlas, RenderPaths} {
+		for _, base := range []string{" ", "█"} {
+			t.Run(kind+" "+base, func(t *testing.T) {
+				frame := func(text string) ([32]byte, [][]byte) {
+					r, err := NewRenderer(kind, "monospace", 14)
+					if err != nil {
+						t.Fatal(err)
+					}
+					vt, err := New(10, 2, 8, 16, func([]byte) {})
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Cleanup(vt.Close)
+					vt.Write([]byte(text))
+					digest, _ := drawFrame(t, r, vt)
+					return digest, rowPixels(r)
+				}
+				plain, plainRows := frame(base)
+				marked, markedRows := frame(base + "́")
+				if plain == marked && reflect.DeepEqual(plainRows, markedRows) {
+					t.Fatal("the mark changed nothing on screen")
+				}
+			})
+		}
+	}
+}
+
+// With more glyph pages than the bound, a frame starts over from an empty
+// atlas: colors and graphemes are program-chosen, and pages are never freed
+// one at a time. Every row is redrawn, as the recorded ones hold old pages.
+func TestAtlasStartsOverPastItsPageBound(t *testing.T) {
+	r, err := NewRenderer(RenderAtlas, "monospace", 14)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vt, err := New(10, 4, 8, 16, func([]byte) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(vt.Close)
+	vt.Write([]byte("hello"))
+	drawFrame(t, r, vt)
+	a := r.(*atlasRenderer)
+	for len(a.pages) < 8 {
+		a.pages = append(a.pages, a.pages[0])
+	}
+	if _, redrawn := drawFrame(t, r, vt); redrawn != 4 {
+		t.Errorf("past the bound redrew %d rows, want 4", redrawn)
+	}
+	if len(a.pages) != 1 {
+		t.Errorf("%d pages after starting over, want 1", len(a.pages))
+	}
+}
+
+func TestPathsCacheIsBounded(t *testing.T) {
+	r, err := NewRenderer(RenderPaths, "monospace", 14)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vt, err := New(10, 2, 8, 16, func([]byte) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(vt.Close)
+	drawFrame(t, r, vt)
+	g := r.(*grid)
+	for i := range 1 << 14 {
+		g.cache[glyphs.Key{R: rune(0x10000 + i)}] = cachedGlyph{}
+	}
+	g.glyph(glyphs.Key{R: 'x'})
+	if len(g.cache) != 1 {
+		t.Fatalf("%d glyphs cached past the bound, want the new one alone", len(g.cache))
+	}
+}
+
+// A sequence with no ligature draws its first glyph, as the two other
+// renderers do, not every glyph across the columns after the cell.
+func TestPathsDrawTheFirstGlyphOfASequenceWithoutALigature(t *testing.T) {
+	r, err := NewRenderer(RenderPaths, "monospace", 14)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vt, err := New(10, 2, 8, 16, func([]byte) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(vt.Close)
+	drawFrame(t, r, vt)
+	if n := len(r.(*grid).shape(glyphs.Key{R: '🚀', Rest: "‍🚀"})); n != 1 {
+		t.Fatalf("shaped to %d glyphs, want 1", n)
 	}
 }
