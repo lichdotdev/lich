@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -123,55 +124,57 @@ func waitUntil(t *testing.T, cond func() bool) {
 	}
 }
 
-// TestParkResumeContinuesAtOnceInAProfileWithQuota: a session moved to another
-// profile has its continuation due now, even for a reset past the horizon.
-func TestParkResumeContinuesAtOnceInAProfileWithQuota(t *testing.T) {
+// TestResumeNowDoesNotFireTheResetsContinuationAgain: the click takes the row
+// the reset's continuation sits on, so the prompt is typed once, now, and the
+// reset passing later has nothing left to type.
+func TestResumeNowDoesNotFireTheResetsContinuationAgain(t *testing.T) {
 	t.Parallel()
-	for _, resetsAt := range []int64{1000 + 3600, 1000 + int64(resumeHorizon/time.Second) + 1} {
-		writer := &parkWriter{}
-		svc := newRelay(scheduledWith(0, "", writer.set), newFakeTerminal("s1"), &fakeEvents{})
-		svc.now = at(1000)
-		var moved []string
-		svc.SetContinueOffLimit(func(id string) bool { moved = append(moved, id); return true })
+	term := newFakeTerminal("s1")
+	var sessions fakeSessions
+	sessions = scheduledWith(0, "", func(_ string, at int64, prompt string) error {
+		row := &sessions.projects[0].Sessions[0]
+		row.ScheduledAt, row.ScheduledPrompt = at, prompt
+		return nil
+	})
+	svc := newRelay(sessions, term, &fakeEvents{})
+	svc.now = at(1000)
+	svc.ParkResume("s1", 1000+3600)
 
-		svc.ParkResume("s1", resetsAt)
+	svc.ResumeNow("s1")
+	svc.deliverDue()
+	svc.now = at(1000 + 3600 + int64(resumeGrace/time.Second) + 60)
+	svc.deliverDue()
 
-		want := ScheduleEvent{ID: "s1", At: 1000, Prompt: resumePrompt}
-		if got := writer.all(); len(got) != 1 || got[0] != want || len(moved) != 1 {
-			t.Errorf("reset %d: moved %v, writes = %+v, want [%+v]", resetsAt, moved, got, want)
-		}
+	if got := strings.Count(term.written("s1"), resumePrompt); got != 1 {
+		t.Fatalf("the continuation was typed %d times, want once: %q", got, term.written("s1"))
 	}
 }
 
-// TestParkResumeWaitsWhenNoProfileTakesTheSession: no profile with quota (or
-// none whose quota can be read) leaves the wait for the reset as it was.
-func TestParkResumeWaitsWhenNoProfileTakesTheSession(t *testing.T) {
+// TestResumeNowSendsAContinuationNoResetParked: a reset past the horizon parks
+// nothing, and the person moving the session still gets its turn going.
+func TestResumeNowSendsAContinuationNoResetParked(t *testing.T) {
 	t.Parallel()
 	writer := &parkWriter{}
 	svc := newRelay(scheduledWith(0, "", writer.set), newFakeTerminal("s1"), &fakeEvents{})
 	svc.now = at(1000)
-	svc.SetContinueOffLimit(func(string) bool { return false })
 
-	svc.ParkResume("s1", 1000+3600)
+	svc.ResumeNow("s1")
 
-	want := ScheduleEvent{ID: "s1", At: 1000 + 3600 + int64(resumeGrace/time.Second), Prompt: resumePrompt}
+	want := ScheduleEvent{ID: "s1", At: 1000, Prompt: resumePrompt}
 	if got := writer.all(); len(got) != 1 || got[0] != want {
 		t.Fatalf("writes = %+v, want [%+v]", got, want)
 	}
 }
 
-// TestParkResumeLeavesASessionWithAPersonsPromptWhereItIs: the person decided
-// when it goes on, so it neither moves nor gets lich's continuation.
-func TestParkResumeLeavesASessionWithAPersonsPromptWhereItIs(t *testing.T) {
+func TestResumeNowLeavesAPersonsPromptAlone(t *testing.T) {
 	t.Parallel()
 	writer := &parkWriter{}
 	svc := newRelay(scheduledWith(5000, "ship the release notes", writer.set), newFakeTerminal("s1"), &fakeEvents{})
 	svc.now = at(1000)
-	svc.SetContinueOffLimit(func(string) bool { t.Error("moved a session holding a person's prompt"); return true })
 
-	svc.ParkResume("s1", 1000+3600)
+	svc.ResumeNow("s1")
 
 	if got := writer.all(); len(got) != 0 {
-		t.Fatalf("writes = %+v, want none", got)
+		t.Fatalf("writes = %+v, want the person's prompt kept", got)
 	}
 }

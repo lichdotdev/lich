@@ -168,6 +168,14 @@ func (c *Client) ContinueIn(ctx context.Context, id, slug string) error {
 	return err
 }
 
+// ContinueOffLimit moves a session a usage limit stopped to the profile it was
+// offered and sends its continuation. The backend refuses an offer no longer
+// standing.
+func (c *Client) ContinueOffLimit(ctx context.Context, id, slug string) error {
+	_, err := callMethod(ctx, c, api.TerminalContinueOffLimit, api.ContinueInOptions{ID: id, Profile: slug})
+	return err
+}
+
 // ProfileGone reports whether err is a spawn refused for a profile deleted
 // since the session was born in it.
 func ProfileGone(err error) bool {

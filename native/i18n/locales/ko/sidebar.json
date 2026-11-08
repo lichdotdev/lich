@@ -167,7 +167,11 @@
     "adopted": "{path}의 worktree는 lich가 만든 것이 아닙니다. 삭제하면 그 디렉터리는 지워지지만 브랜치는 남습니다."
   },
   "sidebarProfile": {
-    "movedOffLimit": "{label}이(가) 사용량 한도에 도달해 {profile}에서 계속합니다",
+    "limitOfferTitle": "{label}이(가) 사용량 한도에 도달했습니다",
+    "limitOfferDescription": "{profile}에는 아직 사용량이 남아 있습니다",
+    "limitOfferContinue": "{profile}에서 계속",
+    "limitOfferWait": "기다리기",
+    "limitOfferFailed": "{label}을(를) {profile}에서 계속할 수 없습니다: {error}",
     "continueIn": "다음에서 계속",
     "continueInHint": "같은 대화, 다른 로그인",
     "goneTitle": "{label}은(는) 더 이상 없는 프로필에서 시작되었습니다",

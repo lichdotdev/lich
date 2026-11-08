@@ -284,19 +284,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   which is also what keeps it from landing behind Claude Code's own `autoContinueAtUsageLimit`, a setting the
   server enables per account, which is why the prompt is due two minutes after the reset rather than at it. The
   window draws neither the limit nor the parked prompt on the card.
-- **A session moves off a usage limit to another profile only on Claude Code and Codex, and only to a profile
-  whose plan reads** (`internal/terminal/limit_switch.go`, `internal/quota` `HasQuotaLeft`): before waiting for
-  the reset, lich moves the session with Continue in to the first other logged-in profile of the same provider
-  whose plan reads with every window under 100%, and the continuation is due at once there, even past the
-  24-hour horizon. A profile whose plan cannot be read (signed out, an error, an account lich may not ask
-  about) or reads with no windows counts as having none: moving on a guess lands the turn on a login screen or
-  on the same limit, and the known reset is the safer wait. The readings are cached for five minutes, so a
-  profile a limit stopped a turn in is never a target again before its own reset, whatever its reading says;
-  that memory lives in the backend's process and a restart forgets it. The prompt is the scheduled one, typed
-  once the respawned session is at its prompt, up to 30 seconds later, and one that waits past that for a slow
-  start carries the late notice. A prompt a person parked on the session keeps it where it is. The other six
-  providers record no limit lich can read (above), so none of them moves; opencode's conversations could not
-  move between profiles anyway. Nothing moves to another provider.
+- **A session a usage limit stopped is offered another profile only on Claude Code and Codex, and only one whose
+  plan reads** (`internal/terminal/limit_switch.go`, `internal/quota` `HasQuotaLeft`): the wait for the reset runs
+  as ever, and when another logged-in profile of the same provider reads with every window under 100%, a toast
+  offers it. Nothing moves without the click, because a profile can be another account and which account holds a
+  conversation is the person's to say. A profile whose plan cannot be read (signed out, an error, an account lich
+  may not ask about) or reads with no windows counts as having none. The readings are cached for five minutes, so
+  a profile a limit stopped a turn in is not offered again before its own reset, whatever its reading says; that
+  memory, like a standing offer, lives in the backend's process and a restart forgets it, and with no window
+  attached the offer goes nowhere and the session just waits. Only the first profile with quota is offered. The
+  toast stays until answered and is not taken down when the session moves on: a turn starting, the card closing or
+  moving, or the process ending withdraws the offer, and a click after that is refused and says so. The click's
+  continuation takes the row the reset's prompt sits on, so it is typed once, up to 30 seconds later, once the
+  respawned session is at its prompt, and one that waits past that for a slow start carries the late notice. A
+  prompt a person parked there stays and goes out at its own time, so that click moves the session and sends
+  nothing. The other six providers record no limit lich can read (above), so none of them is offered anything;
+  opencode's conversations could not move between profiles anyway. Nothing crosses providers.
 - **The pace marker is borrowed calibration, and it is silent far more often than it is wrong**
   (`internal/quota/pace.go`): the two numbers that decide when a weekly window is marked as spending ahead —
   fifteen percentage points past the elapsed share, and no marking at all in the first twenty-four hours after

@@ -223,6 +223,7 @@ system.ShowWindow(ShowWindowOptions) None
 system.TakeUncleanExit(None) bool
 terminal.Close(SessionIDOptions) None
 terminal.ContinueIn(ContinueInOptions) None
+terminal.ContinueOffLimit(ContinueInOptions) None
 terminal.HandsOn(SessionIDOptions) int64
 terminal.LastTurnSaid(SessionIDOptions) LastSaid
 terminal.Live(SessionIDOptions) bool
@@ -275,6 +276,7 @@ event session-duplicate SessionDuplicate
 event session-focus SessionFocus
 event session-inbox SessionInbox
 event session-limit SessionLimit
+event session-limit-offer SessionLimitOffer
 event session-mcp SessionMCP
 event session-opened OpenedSession
 event session-profile SessionProfile
@@ -1755,6 +1757,11 @@ SessionLimit {
 	resetsAt int64
 }
 
+SessionLimitOffer {
+	id string
+	profile string
+}
+
 SessionMCP {
 	id string
 	servers []string
@@ -1763,7 +1770,6 @@ SessionMCP {
 SessionProfile {
 	id string
 	profile string
-	reason,omitempty string
 }
 
 SessionRelay {

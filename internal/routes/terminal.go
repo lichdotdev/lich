@@ -23,6 +23,7 @@ func Terminal(d *rpc.Handler, s *terminal.Service) {
 	rpc.Handle(d, api.TerminalLastTurnSaid, s.LastTurnSaid)
 	rpc.Handle(d, api.TerminalTurnStates, s.TurnStates)
 	rpc.Handle(d, api.TerminalContinueIn, s.ContinueIn)
+	rpc.Handle(d, api.TerminalContinueOffLimit, s.ContinueOffLimit)
 	rpc.Handle(d, api.TerminalSearchTranscripts, s.SearchTranscripts)
 	rpc.Handle(d, api.TerminalWorkdirMissing, s.WorkdirMissing)
 	rpc.Handle(d, api.TerminalResumeAvailable, s.ResumeAvailable)

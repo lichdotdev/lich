@@ -1,47 +1,98 @@
 package terminal
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/profilestore"
 )
 
-// A turn a usage limit stopped carries on in another logged-in profile of the
-// same provider that still has quota, through Continue in, instead of waiting
-// for the reset. The relay decides when (internal/relay, resume.go); this file
-// finds the profile and moves the session.
+// A turn a usage limit stopped waits for its reset (internal/relay, resume.go).
+// When another logged-in profile of the same provider has quota left, the
+// window is offered it, and only the person's answer moves the session: a
+// profile can be another account, and which account holds a conversation is
+// theirs to say.
+
+var errLimitOfferGone = errors.New("the session no longer waits on that limit: it moved, took another turn or closed")
 
 // SetQuotaLeft wires the answer to "can this profile of this provider take a
-// turn now" (quota.Service.HasQuotaLeft). Unset, no session moves off a limit.
+// turn now" (quota.Service.HasQuotaLeft). Unset, nothing is ever offered.
 func (s *Service) SetQuotaLeft(fn func(kind, slug string) bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.quotaLeft = fn
 }
 
-// ContinueOffLimit moves session id, whose turn a usage limit just ended, to
-// the first other profile of its provider with quota left, and reports whether
-// it moved. A profile a limit stopped a turn in before its reset is skipped
-// whatever its reading says: the reading is cached for minutes, and trusting a
-// stale one would bounce the session between two spent profiles.
-func (s *Service) ContinueOffLimit(id string) bool {
+// SetResumeNow wires the continuation sent once the person moved a session off
+// its limit (relay.ResumeNow).
+func (s *Service) SetResumeNow(fn func(id string)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.resumeNow = fn
+}
+
+// offerProfile offers session id, whose turn a usage limit just ended, the first
+// other profile of its provider with quota left. A profile a limit stopped a
+// turn in before its reset is not offered whatever its reading says: the reading
+// is cached for minutes.
+func (s *Service) offerProfile(id string) {
 	kind := sessionKind(s.spawnOf(id).kind, s.store.SessionKind(id))
 	from, err := s.store.SessionProfile(id)
 	if err != nil {
 		slog.Warn("terminal: read the profile of a session a limit stopped", "session", id, "err", err)
-		return false
+		return
 	}
 	to, ok := s.spareProfile(kind, from)
 	if !ok {
+		return
+	}
+	s.mu.Lock()
+	if s.limitOffers == nil {
+		s.limitOffers = make(map[string]string)
+	}
+	s.limitOffers[id] = to
+	s.mu.Unlock()
+	events.Send(s.hub.Emit, api.SessionLimitOfferEvent, api.SessionLimitOffer{ID: id, Profile: to})
+}
+
+// ContinueOffLimit is the person taking the profile a session was offered: the
+// session moves through Continue in and its continuation goes out at once. An
+// offer no longer standing is refused: the turn that moved on, the card that
+// closed or moved since took it down.
+func (s *Service) ContinueOffLimit(ctx context.Context, opts api.ContinueInOptions) (api.None, error) {
+	if !s.takeLimitOffer(opts.ID, opts.Profile) {
+		return api.None{}, errLimitOfferGone
+	}
+	if _, err := s.ContinueIn(ctx, opts); err != nil {
+		return api.None{}, err
+	}
+	s.mu.Lock()
+	resume := s.resumeNow
+	s.mu.Unlock()
+	if resume != nil {
+		resume(opts.ID)
+	}
+	return api.None{}, nil
+}
+
+func (s *Service) takeLimitOffer(id, profile string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.limitOffers[id] != profile || profile == "" {
 		return false
 	}
-	if err := s.continueIn(api.ContinueInOptions{ID: id, Profile: to}, api.ProfileMovedOffLimit); err != nil {
-		slog.Warn("terminal: continue a session off its usage limit", "session", id, "profile", to, "err", err)
-		return false
-	}
+	delete(s.limitOffers, id)
 	return true
+}
+
+func (s *Service) forgetLimitOffer(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.limitOffers, id)
 }
 
 // spareProfile is the first profile of kind's provider, other than from, that

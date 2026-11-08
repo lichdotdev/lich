@@ -171,7 +171,11 @@
     "adopted": "位于 {path} 的工作树不是 lich 创建的。删除会移除该目录，但保留其分支。"
   },
   "sidebarProfile": {
-    "movedOffLimit": "{label} 已达到用量上限，将在 {profile} 中继续",
+    "limitOfferTitle": "{label} 已达到用量上限",
+    "limitOfferDescription": "{profile} 还有剩余额度",
+    "limitOfferContinue": "在 {profile} 中继续",
+    "limitOfferWait": "等待",
+    "limitOfferFailed": "无法在 {profile} 中继续 {label}：{error}",
     "continueIn": "转到",
     "continueInHint": "同一对话，换一个登录",
     "goneTitle": "{label} 是在一个已不存在的配置档案中启动的",

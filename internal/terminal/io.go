@@ -92,6 +92,7 @@ func (s *Service) stream(id string, sess *session) {
 		return
 	}
 	if reaped {
+		s.forgetLimitOffer(id)
 		// Outside mu: the relay takes its own lock, and it calls into this
 		// service under it.
 		if exited != nil {

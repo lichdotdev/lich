@@ -374,29 +374,45 @@ func TestSessionProfileEventMovesTheCard(t *testing.T) {
 	}
 }
 
-// TestOnlyLichsMoveOffALimitIsAnnounced: a session lich moved off a usage
-// limit is told with its label and the profile's name; a move a person made,
-// or a resume following its conversation, says nothing.
-func TestOnlyLichsMoveOffALimitIsAnnounced(t *testing.T) {
+// TestALimitOfferIsReadOffItsEventAndNamesTheProfile: the backend's offer
+// reaches the window with the session's label and the profile's name.
+func TestALimitOfferIsReadOffItsEventAndNamesTheProfile(t *testing.T) {
 	m := newModel(nil, func() {})
 	m.projects = []backend.Project{{ID: "p", Sessions: []backend.Session{{ID: "s1", Label: "api", Kind: claudeKind}}}}
 	var told []string
-	m.movedOffLimit = func(id, profile string) {
-		if label, name, ok := m.movedOffLimitOf(id, profile); ok {
+	m.limitOffer = func(o api.SessionLimitOffer) {
+		if label, name, ok := m.limitOfferOf(o); ok {
 			told = append(told, label+" -> "+name)
 		}
 	}
 	events := make(chan backend.Event, 2)
-	events <- backend.Event{Name: api.SessionProfileEvent.Name, Data: []byte(`{"id":"s1","profile":"work"}`)}
-	events <- backend.Event{Name: api.SessionProfileEvent.Name, Data: []byte(`{"id":"s1","profile":"","reason":"usage-limit"}`)}
+	events <- backend.Event{Name: api.SessionLimitOfferEvent.Name, Data: []byte(`{"id":"s1","profile":"personal"}`)}
+	events <- backend.Event{Name: api.SessionLimitOfferEvent.Name, Data: []byte(`{"id":"gone","profile":"work"}`)}
 	close(events)
 	m.follow(context.Background(), events)
 
 	if want := []string{"api -> Personal"}; !slices.Equal(told, want) {
 		t.Errorf("told %q, want %q", told, want)
 	}
-	if _, _, ok := m.movedOffLimitOf("gone", "work"); ok {
-		t.Error("a session no open project holds has a label to announce")
+}
+
+// TestALimitOfferToastOnlyMovesOnItsAction: Wait and swiping the toast
+// away do nothing; the action is the one way to the move.
+func TestALimitOfferToastOnlyMovesOnItsAction(t *testing.T) {
+	taken := 0
+	toast := limitOfferToast("s1", "api", "Work", func() { taken++ })
+	if toast.Duration != ui.ToastForever || toast.OnDismiss != nil || toast.Cancel.OnClick != nil {
+		t.Fatalf("toast %+v, want it up until answered with nothing behind Wait or a dismiss", toast)
+	}
+	if want := "Continue in Work"; toast.Action.Label != want {
+		t.Errorf("action %q, want %q", toast.Action.Label, want)
+	}
+	if taken != 0 {
+		t.Fatal("building the toast took the offer")
+	}
+	toast.Action.OnClick()
+	if taken != 1 {
+		t.Errorf("the action took the offer %d times, want once", taken)
 	}
 }
 

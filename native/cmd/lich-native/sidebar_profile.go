@@ -6,6 +6,7 @@ import (
 
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -180,29 +181,53 @@ func (u *window) startNewInProjectProfile(s sessionView) {
 	u.closeSession(s.ID)
 }
 
-// tellMovedOffLimit says lich moved a session a usage limit stopped to another
-// profile, where its turn goes on without waiting for the reset.
-func (u *window) tellMovedOffLimit(id, profile string) {
-	label, name, ok := u.model.movedOffLimitOf(id, profile)
+// offerProfileOffLimit asks whether to continue in another profile a session a
+// usage limit stopped. It stays up until answered: Wait, or swiping it
+// away, changes nothing.
+func (u *window) offerProfileOffLimit(o api.SessionLimitOffer) {
+	label, profile, ok := u.model.limitOfferOf(o)
 	if !ok {
 		return
 	}
-	u.toaster.Show(ui.Toast{Variant: ui.ToastInfo, Title: i18n.T("sidebar.sidebarProfile.movedOffLimit", i18n.Args{"label": label, "profile": name})})
+	u.duplicates.Show(limitOfferToast(o.ID, label, profile, func() { u.continueOffLimit(o, label, profile) }))
 }
 
-// movedOffLimitOf is the session's label and the name of the profile it moved
-// to, false for a session no open project holds.
-func (m *model) movedOffLimitOf(id, profile string) (label, name string, ok bool) {
+func limitOfferToast(id, label, profile string, take func()) ui.Toast {
+	return ui.Toast{
+		ID:          "limit-offer:" + id,
+		Title:       i18n.T("sidebar.sidebarProfile.limitOfferTitle", i18n.Args{"label": label}),
+		Description: i18n.T("sidebar.sidebarProfile.limitOfferDescription", i18n.Args{"profile": profile}),
+		Icon:        icContinueIn,
+		Duration:    ui.ToastForever,
+		Cancel:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.limitOfferWait")},
+		Action:      &ui.ToastButton{Label: i18n.T("sidebar.sidebarProfile.limitOfferContinue", i18n.Args{"profile": profile}), OnClick: take},
+	}
+}
+
+// continueOffLimit sends the person's yes; the backend refuses an offer the
+// session has moved past, and the error says so.
+func (u *window) continueOffLimit(o api.SessionLimitOffer, label, profile string) {
+	go func() {
+		if err := u.client.ContinueOffLimit(u.ctx, o.ID, o.Profile); err != nil {
+			u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("sidebar.sidebarProfile.limitOfferFailed",
+				i18n.Args{"label": label, "profile": profile, "error": backend.ErrorText(err)})})
+		}
+	}()
+}
+
+// limitOfferOf is the session's label and the name of the profile offered to
+// it, false for a session no open project holds.
+func (m *model) limitOfferOf(o api.SessionLimitOffer) (label, profile string, ok bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	p, i := m.sessionAt(id)
+	p, i := m.sessionAt(o.ID)
 	if p == nil {
 		return "", "", false
 	}
 	s := p.Sessions[i]
-	name = profile
+	profile = o.Profile
 	if book := m.profileBook(s.Kind); book != nil {
-		name = book.nameOf(profile)
+		profile = book.nameOf(o.Profile)
 	}
-	return s.Label, name, true
+	return s.Label, profile, true
 }
