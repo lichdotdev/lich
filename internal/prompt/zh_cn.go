@@ -64,9 +64,15 @@ var zhCN = Catalog{
 	BlockedSummary: "lich 会话 %q 正在等待权限确认",
 	MergeNotice: "[lich] 拉取请求 #%[1]d %[2]q（分支 %[3]s）已合并到 %[4]s。" +
 		"这是一条通知，不是任务：请更新你所记录的这项工作的状态，不要做其他任何事。",
-	MergeSummary: "拉取请求 #%[1]d 已合并到 %[2]s",
-	LateNotice:   "[lich] 原定于 %[1]s 发送，延迟 %[2]s 送达。\n\n",
-	ResumePrompt: "[lich] 你的用量上限已重置。请继续之前进行的任务。",
+	MergeSummary:      "拉取请求 #%[1]d 已合并到 %[2]s",
+	LateNotice:        "[lich] 原定于 %[1]s 发送，延迟 %[2]s 送达。\n\n",
+	ResumePrompt:      "[lich] 你的用量上限已重置。请继续之前进行的任务。",
+	WatchChecksFailed: "[lich] 拉取请求 #%[1]d 的提交 %[2]s 检查失败。\n\n",
+	WatchChecksPassed: "[lich] 拉取请求 #%[1]d 的提交 %[2]s 检查通过。\n\n",
+	WatchReview:       "[lich] 拉取请求 #%[1]d 收到了新的评审。\n\n",
+	ScheduledAtResult: "已安排。你的提示词将在 %[1]s 输入到此会话。",
+	ScheduledOnResult: "已启用。发生 %[1]s 时，你的提示词将输入到此会话，同一个拉取请求最多 %[2]d 次。",
+	ScheduleCleared:   "已清除此会话的定时提示词。",
 
 	CopyNotice: "[lich] %s 的副本；原文件无法从本会话访问，修改只会保留在副本中。",
 

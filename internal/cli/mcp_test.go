@@ -233,6 +233,7 @@ func TestMCPListsEveryTool(t *testing.T) {
 		"handoff_session":     {"done", "next_steps"},
 		"close_session":       {"session"},
 		"close_project":       {"project"},
+		"schedule_prompt":     {},
 		"list_services":       {},
 		"create_service":      {"name", "command"},
 		"edit_service":        {"service"},

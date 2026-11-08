@@ -147,6 +147,15 @@ var commands = []command{
 			"user's: the provider's auto-title never overwrites it again.",
 	},
 	{
+		name: "schedule",
+		args: "(--when <time> | --on <condition> | --clear) [<prompt>]",
+		about: "Type <prompt> in the session this command runs in, later. --when takes\n" +
+			"45m, 2h30, 14:30 or \"2026-11-12 14:30\". --on waits for the pull request of\n" +
+			"this branch: checks-failed (stays on until it closes, at most 3 runs),\n" +
+			"checks-passed or review (once). What the person set stays until they\n" +
+			"change it. --clear removes it.",
+	},
+	{
 		name: "control",
 		args: "[--project <name-or-path>] [--json] <session>\n" +
 			"            prompt <text> | abort | model [<model>] | effort [<level>] |\n" +

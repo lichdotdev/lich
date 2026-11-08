@@ -54,6 +54,15 @@ type Catalog struct {
 	// written in one language has to be recognised in every other: match it
 	// with relay's isResumePrompt, never with ==.
 	ResumePrompt string
+	// The line in front of a watch's prompt, naming what was met. %[1]d is the
+	// pull request; %[2]s, where it appears, the commit.
+	WatchChecksFailed string
+	WatchChecksPassed string
+	WatchReview       string
+	// `lich schedule` and schedule_prompt's answers.
+	ScheduledAtResult string // %[1]s is when
+	ScheduledOnResult string // %[1]s is the condition, %[2]d the run limit
+	ScheduleCleared   string
 
 	// internal/drop: the line under a copied file's path.
 	CopyNotice string

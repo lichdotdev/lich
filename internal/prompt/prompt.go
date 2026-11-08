@@ -11,6 +11,8 @@
 // order.
 package prompt
 
+import "slices"
+
 // Lang is a prompt language, spelled as a BCP 47 tag: the same value is stored
 // in the settings table, exported to every session as EnvVar, and offered by
 // the window's select.
@@ -110,3 +112,11 @@ func isFewRussian(n int) bool {
 	return n%10 >= 2 && n%10 <= 4 && (n%100 < 12 || n%100 > 14)
 }
 func isManyRussian(n int) bool { return !isOneRussian(n) && !isFewRussian(n) }
+
+// IsResume is whether parked is lich's continuation of a turn a usage limit
+// ended, in any language: the row keeps the language it was parked in.
+func IsResume(parked string) bool {
+	return slices.ContainsFunc(Langs, func(lang Lang) bool {
+		return parked == For(lang).ResumePrompt
+	})
+}

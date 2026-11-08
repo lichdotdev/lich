@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -52,6 +53,7 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	if !sv.place.hideGit {
 		sections = append(sections, baseSections(th, sv.base)...)
 	}
+	sections = append(sections, scheduleTipSections(th, sv, time.Now())...)
 	if sv.running != "" || sv.aged {
 		sections = append(sections, footLine(th, sv))
 	}

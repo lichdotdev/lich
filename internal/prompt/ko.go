@@ -67,9 +67,15 @@ var ko = Catalog{
 	BlockedSummary: "lich 세션 %q이(가) 권한 확인을 기다리는 중",
 	MergeNotice: "[lich] 풀 리퀘스트 #%[1]d %[2]q(브랜치 %[3]s)이(가) %[4]s에 병합되었습니다. " +
 		"이것은 작업이 아니라 알림입니다. 이 작업의 상태에 대해 기록해 둔 내용을 갱신하고, 그 밖에는 아무것도 하지 마세요.",
-	MergeSummary: "풀 리퀘스트 #%[1]d이(가) %[2]s에 병합됨",
-	LateNotice:   "[lich] %[1]s에 예약되었고, %[2]s 늦게 전달되었습니다.\n\n",
-	ResumePrompt: "[lich] 사용량 한도가 초기화되었습니다. 하던 작업을 계속하세요.",
+	MergeSummary:      "풀 리퀘스트 #%[1]d이(가) %[2]s에 병합됨",
+	LateNotice:        "[lich] %[1]s에 예약되었고, %[2]s 늦게 전달되었습니다.\n\n",
+	ResumePrompt:      "[lich] 사용량 한도가 초기화되었습니다. 하던 작업을 계속하세요.",
+	WatchChecksFailed: "[lich] 풀 리퀘스트 #%[1]d의 커밋 %[2]s에서 체크가 실패했습니다.\n\n",
+	WatchChecksPassed: "[lich] 풀 리퀘스트 #%[1]d의 커밋 %[2]s에서 체크가 통과했습니다.\n\n",
+	WatchReview:       "[lich] 풀 리퀘스트 #%[1]d에 새 리뷰가 도착했습니다.\n\n",
+	ScheduledAtResult: "예약했습니다. 프롬프트는 %[1]s에 이 세션에 입력됩니다.",
+	ScheduledOnResult: "설정했습니다. 프롬프트는 %[1]s 시 이 세션에 입력되며, 풀 리퀘스트 하나당 최대 %[2]d회입니다.",
+	ScheduleCleared:   "이 세션의 예약된 프롬프트를 해제했습니다.",
 
 	CopyNotice: "[lich] %s의 사본입니다. 이 세션에서는 원본에 접근할 수 없으며, 수정 사항은 사본에만 남습니다.",
 

@@ -49,6 +49,7 @@ type sidebar struct {
 	blocks   map[string]*blockState
 	motion   blockPresence
 	naming   folderNaming
+	schedule scheduleDialog
 	rail     sidebarRail
 	morph    sidebarMorph
 	profile  profileFooter
@@ -91,7 +92,7 @@ func newSidebar(root *ui.Root) *sidebar {
 // otherwise takes: the filter field holds focus, a card or a folder is being
 // renamed, a menu is open, or the new folder dialog is up.
 func (s *sidebar) holdsKeys() bool {
-	if s.header.searchFocused || s.naming.open {
+	if s.header.searchFocused || s.naming.open || s.schedule.open {
 		return true
 	}
 	for _, r := range s.renames {
@@ -136,6 +137,7 @@ type sidebarAction struct {
 	worktree                                bool // the + menu asked for a worktree session
 	// The session to fork, in its own checkout or into a new worktree.
 	forkHere, forkWorktree string
+	schedule               string // the session whose Schedule prompt… was picked
 	service                serviceRequest
 	copyText               string // text the card menu asked to put on the clipboard
 	sidebarWrites
@@ -203,6 +205,7 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	pick(&a.browser, c.browser)
 	pick(&a.forkHere, c.forkHere)
 	pick(&a.forkWorktree, c.forkWorktree)
+	pick(&a.schedule, c.schedule)
 	pick(&a.fold, c.fold)
 	pick(&a.copyText, c.copyText)
 	if c.pin != "" {

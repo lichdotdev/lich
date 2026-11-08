@@ -193,6 +193,18 @@ var (
 	// lich itself around a usage limit (resume.go). Payload: SessionSchedule.
 	SessionScheduleEvent = defineEvent[SessionSchedule]("session-schedule")
 
+	// SessionScheduleByEvent follows a SessionScheduleEvent that says who set
+	// the prompt. Payload: SessionScheduleBy.
+	SessionScheduleByEvent = defineEvent[SessionScheduleBy]("session-schedule-by")
+
+	// SessionWatchEvent is emitted when a session's watch is armed, fires or
+	// stops. Payload: SessionWatchChange.
+	SessionWatchEvent = defineEvent[SessionWatchChange]("session-watch")
+
+	// SessionWatchStoppedEvent is emitted when a watch reached its run limit on
+	// one pull request and disarmed. Payload: SessionWatchStopped.
+	SessionWatchStoppedEvent = defineEvent[SessionWatchStopped]("session-watch-stopped")
+
 	// SessionRelayEvent carries which session is waiting on which, so the sidebar
 	// can say it. Global rather than per-session because its consumer — one store
 	// keyed by id — outlives any one card, exactly as the status event's does.

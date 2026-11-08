@@ -148,10 +148,12 @@ relay.Focused(None) FocusedSession
 relay.Insert(InsertTextOptions) InsertedText
 relay.Peers(PeersOptions) []Peer
 relay.Reply(ReplyOptions) None
+relay.ScheduleSelf(ScheduleSelfOptions) None
 relay.Self(SelfOptions) Peer
 relay.Send(SendOptions) SendResult
 relay.SendPrivate(SendOptions) SendResult
 relay.SendSubagent(SendOptions) SendResult
+relay.SetSchedule(SetScheduleOptions) None
 relay.SetShown(ShownSessionOptions) None
 relay.Submit(SubmitOptions) None
 relay.Wait(WaitOptions) SendResult
@@ -285,12 +287,15 @@ event session-relay SessionRelay
 event session-relay-stalled RelayStalled
 event session-sandbox SessionSandbox
 event session-schedule SessionSchedule
+event session-schedule-by SessionScheduleBy
 event session-schedule-forfeited ScheduleForfeited
 event session-status SessionStatus
 event session-title SessionTitle
 event session-todo SessionTodo
 event session-touched SessionTouched
 event session-usage SessionUsage
+event session-watch SessionWatchChange
+event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
 event sessions-filed SessionsFiled
 event terminal:data:<id> string
@@ -1010,6 +1015,13 @@ ReplyOptions {
 	answer string
 }
 
+ScheduleSelfOptions {
+	from string
+	at int64
+	on string
+	prompt string
+}
+
 SelfOptions {
 	from string
 }
@@ -1028,6 +1040,13 @@ SendResult {
 	status string
 	answer string
 	private,omitempty bool
+}
+
+SetScheduleOptions {
+	sessionId string
+	at int64
+	on string
+	prompt string
 }
 
 ShownSessionOptions {
@@ -1412,6 +1431,8 @@ Session {
 	forked bool
 	scheduledAt int64
 	scheduledPrompt string
+	scheduledBy string
+	watch SessionWatch
 	unread bool
 	mcpServers []string
 	sandboxSkippedLinks []string
@@ -1808,6 +1829,11 @@ SessionSchedule {
 	prompt,omitempty string
 }
 
+SessionScheduleBy {
+	id string
+	by string
+}
+
 ScheduleForfeited {
 	label string
 	at int64
@@ -1848,6 +1874,18 @@ SessionUsage {
 	costUsd,omitempty *float64
 	costMiss,omitempty string
 	cache,omitempty *SessionCache
+}
+
+SessionWatchChange {
+	id string
+	watch SessionWatch
+}
+
+SessionWatchStopped {
+	id string
+	label string
+	number int
+	runs int
 }
 
 SessionsColored {
@@ -2045,6 +2083,15 @@ CostTotal {
 	unpriced int
 	source string
 	costUsd float64
+}
+
+SessionWatch {
+	on string
+	prompt string
+	by string
+	runs int
+	pr int
+	seen string
 }
 
 ThemeSource {
