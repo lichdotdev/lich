@@ -38,6 +38,7 @@ type fakePage struct {
 	onDownload     func(guid string, d api.BrowserDownload)
 	onConsoleError func(text string)
 	onDialog       func(*api.BrowserDialog)
+	onReload       func(started bool)
 	answers        []answer
 	// onClick runs after a click, as what the page does in answer to it;
 	// onNavigate as a navigation starts.
@@ -260,6 +261,12 @@ func (p *fakePage) Listen(onFrame func(string), onInfo func(url, title string), 
 	defer p.mu.Unlock()
 	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError, p.onDialog = onFrame, onInfo, onDownload, onConsoleError, onDialog
 	p.onTabs = onTabs
+}
+
+func (p *fakePage) OnReload(onReload func(bool)) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.onReload = onReload
 }
 
 func (p *fakePage) OnFileChooser(func(page.FileChooserOpenedMode) ([]string, error)) {}

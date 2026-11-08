@@ -140,6 +140,9 @@ type Page interface {
 	// with its tabs whenever one opens, closes, comes to the front or changes
 	// its URL or title.
 	Listen(onFrame func(data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab))
+	// OnReload hands the page what to call with true when its front tab starts
+	// a reload and false once the reloaded document is ready.
+	OnReload(onReload func(started bool))
 	// NewTab opens a blank tab in front; SelectTab brings the tab id to the
 	// front; CloseTab closes it, unless it is the last one. Every other call
 	// acts on the front tab.

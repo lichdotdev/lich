@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -91,30 +92,134 @@ func TestADownloadStillRunningIsReportedAgainWhenItEnds(t *testing.T) {
 	}
 }
 
-func TestClickHoldsItsAnswerForTheQuietAfterADownload(t *testing.T) {
+func TestAnActionAfterAnActionWaitsOutTheBrowsersStartup(t *testing.T) {
 	s, launch, _ := viewService(t)
-	s.quiet = 200 * time.Millisecond
+	s.startup = 300 * time.Millisecond
+	launched := time.Now()
 	if _, err := s.Open("s", "https://example.com"); err != nil {
 		t.Fatal(err)
 	}
 	p := launch.pages[0]
 	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	if _, err := s.ClickAt(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+	if took := time.Since(launched); took >= s.startup {
+		t.Fatalf("the browser's first action waited: %v", took)
+	}
+	if _, err := s.ClickAt(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+	if took := time.Since(launched); took < s.startup {
+		t.Fatalf("the second click landed %v after the launch, inside the startup", took)
+	}
+	if len(p.clicks) != 2 {
+		t.Fatalf("clicks %d, want 2", len(p.clicks))
+	}
+}
+
+func TestAnActionAfterAClickThatChangedThePageIsNotHeld(t *testing.T) {
+	s, launch, _ := viewService(t)
+	s.startup = time.Minute
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	p.onClick = func() {
+		p.mu.Lock()
+		p.title = "changed"
+		p.mu.Unlock()
+	}
+	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	start := time.Now()
+	for range 2 {
+		if _, err := s.ClickAt(t.Context(), target); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if took := time.Since(start); took > 5*time.Second {
+		t.Fatalf("the clicks took %v: a click that changed the page held the next", took)
+	}
+}
+
+func TestAReloadThatLandsReleasesTheHoldOnTheNextAction(t *testing.T) {
+	s, launch, _ := viewService(t)
+	s.startup, s.reloadWait = time.Minute, time.Minute
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	if _, err := s.ClickAt(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+	var landed atomic.Bool
+	p.onClick = func() {
+		if !landed.Load() {
+			t.Error("the click landed before the reload did")
+		}
+	}
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		p.onReload(true)
+		time.Sleep(100 * time.Millisecond)
+		landed.Store(true)
+		p.onReload(false)
+	}()
+	if _, err := s.ClickAt(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+	if !landed.Load() {
+		t.Fatal("the click went through without the reload")
+	}
+}
+
+func TestAReloadInFlightHoldsAnActionPastTheStartupUntilItsDocument(t *testing.T) {
+	s, launch, _ := viewService(t)
+	s.startup, s.reloadWait = 0, time.Minute
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	if _, err := s.ClickAt(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+	p.onReload(true)
+	var ready atomic.Bool
+	p.onClick = func() {
+		if !ready.Load() {
+			t.Error("the click landed on the page mid-reload")
+		}
+	}
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		ready.Store(true)
+		p.onReload(false)
+	}()
+	if _, err := s.ClickAt(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAReloadThatNeverLandsHoldsAnActionOnlyForReloadWait(t *testing.T) {
+	s, launch, _ := viewService(t)
+	s.startup, s.reloadWait = 0, 200*time.Millisecond
+	if _, err := s.Open("s", "https://example.com"); err != nil {
+		t.Fatal(err)
+	}
+	p := launch.pages[0]
+	target := api.BrowserClickOptions{ID: "s", BrowserTarget: api.BrowserTarget{Selector: "#dl"}}
+	if _, err := s.ClickAt(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+	p.onReload(true)
 	start := time.Now()
 	if _, err := s.ClickAt(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}
-	if took := time.Since(start); took >= s.quiet {
-		t.Fatalf("a click that downloaded nothing took %v", took)
-	}
-	p.onClick = func() {
-		p.onDownload("g1", api.BrowserDownload{Path: "/dl/a.csv", Bytes: 1, State: api.DownloadCompleted})
-	}
-	start = time.Now()
-	if _, err := s.ClickAt(t.Context(), target); err != nil {
-		t.Fatal(err)
-	}
-	if took := time.Since(start); took < s.quiet {
-		t.Fatalf("the click answered %v after its download began, before the quiet", took)
+	if took := time.Since(start); took < s.reloadWait || took > 5*time.Second {
+		t.Fatalf("the click waited %v on a reload that never landed, want about %v", took, s.reloadWait)
 	}
 }
 

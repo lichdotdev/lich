@@ -31,6 +31,7 @@ type listeners struct {
 	onConsoleError func(text string)
 	onDialog       func(*api.BrowserDialog)
 	onTabs         func([]api.BrowserTab)
+	onReload       func(started bool)
 	onFileChooser  func(page.FileChooserOpenedMode) ([]string, error)
 }
 
@@ -56,7 +57,12 @@ func (p *chromePage) listenTab(t *tab) {
 			if string(e.FrameID) == string(t.id) {
 				started = e.URL
 				p.leaveStarted(t, e.NavigationType)
+				if e.NavigationType == page.FrameStartedNavigatingNavigationTypeReload {
+					p.reloadFront(t, true)
+				}
 			}
+		case *page.EventDomContentEventFired:
+			p.reloadFront(t, false)
 		case *page.EventFrameNavigated:
 			if e.Frame.ParentID == "" {
 				p.leaveLanded(t)
@@ -95,6 +101,28 @@ func (p *chromePage) listenTab(t *tab) {
 			p.frontEvent(ev)
 		}
 	})
+}
+
+// OnReload hands the page what to call when the front tab starts a reload and
+// when its document is ready.
+func (p *chromePage) OnReload(onReload func(started bool)) {
+	p.listen.mu.Lock()
+	defer p.listen.mu.Unlock()
+	p.listen.onReload = onReload
+}
+
+// reloadFront tells the service t's reload started or its document is ready,
+// while t is the front tab.
+func (p *chromePage) reloadFront(t *tab, started bool) {
+	if p.tabs.frontTab() != t {
+		return
+	}
+	p.listen.mu.Lock()
+	onReload := p.listen.onReload
+	p.listen.mu.Unlock()
+	if onReload != nil {
+		onReload(started)
+	}
 }
 
 func (p *chromePage) frontEvent(ev any) {
