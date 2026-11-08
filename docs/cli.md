@@ -1104,7 +1104,7 @@ at lich.
 | `handoff_session` | `done`, `next_steps`, optional `branch`, `commits`, `gotchas`, `kind`, `model`, `effort`, `profile` (only a suggestion to the user). Same as `lich handoff`. A note that did not land is reported beside the open session, as `open_session`'s `prompt` is. |
 | `close_session` | `session`, optional `project`, `worktree` (`keep`/`remove`), `force`. |
 | `close_project` | `project` (a name or a directory path) — `lich close-project`. |
-| `schedule_prompt` | optional `when`, `on`, `prompt`, `clear` — `lich schedule`, on the session it runs in. |
+| `schedule_prompt` | optional `when`, `on`, `prompt`, `clear`: `lich schedule`, on the session it runs in. |
 | `list_services` | optional `project`: the project's services with their state, as JSON. `lich service list`. |
 | `create_service` | `name`, `command`, optional `start_with_lich` and `project`. Saved, not started. `lich service add`. |
 | `edit_service` | `service`, optional `name`, `command`, `start_with_lich` and `project`; what is left out stays. `lich service edit`. |
