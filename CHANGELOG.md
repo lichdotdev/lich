@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The New folder dialog opens with the cursor in its name field, so you can type the name at once instead of clicking the field first.
 - `GIO_DAMAGE=on` redraws into a framebuffer lich keeps instead of trusting the driver's buffer age, so a driver that misreports it no longer leaves the window with stale pixels.
 - On X11, a wheel notch scrolls once instead of twice, and hover clears when the pointer leaves the window, on Windows too.
 - Codex and Kiro CLI sessions are now told they run inside lich and when to open another session for the work, in your prompt language: both CLIs drop what lich's MCP server says to the model, so they had the tools and no word on using them. Codex gets it in new conversations, unless your `config.toml` sets `developer_instructions`, which lich leaves alone; Kiro gets it once lich next updates its plugin there.
