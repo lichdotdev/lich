@@ -312,6 +312,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Relay, errands and subagents
 
+- **Only a Claude Code session with the mod is reminded of its errands after a compaction**
+  (`internal/relay/observe.go`, `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of
+  the worker's conversation, and a compaction may summarise its ticket away. With two errands open an answer that
+  names none is refused, so the worker cannot answer either. The mod's `session.compact` is the only compaction
+  lich hears (`compacting`), so on the other seven providers, and on Claude Code without the mod, the ticket can
+  still be lost. The reminder is typed when the compaction's closing report arrives: after a mid-turn
+  auto-compaction that report is `busy`, and the reminder queues behind the running turn, so an errand that turn
+  ends unanswered is reminded after it is already closed, where only a late answer by its ticket still lands.
 - **A new Claude Code session's roster name is its own, and lich does not know it** (`internal/terminal`,
   `nameArgs`; `internal/relay`, `RosterNameOf`): lich spawns it without `--name`, because a name passed there is
   the user's to Claude Code and a session holding one never writes the `ai-title` its card is titled from

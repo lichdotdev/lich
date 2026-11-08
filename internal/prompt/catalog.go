@@ -33,6 +33,7 @@ type Catalog struct {
 	ReplyOnlyWayBack  string
 	WorkerTask        string
 	PickTicketNudge   string
+	CompactReminder   Plural
 	NudgeResultsReady Plural
 	NudgeRouteCLI     string
 	NudgeRouteTools   string

@@ -42,6 +42,14 @@ var ptBR = Catalog{
 		"aquele turno, e por isso nenhum pôde ser respondido por você. Um em que você ainda está " +
 		"trabalhando ainda aceita a resposta, e toda resposta daqui em diante precisa nomear o " +
 		"seu ticket: lich reply <ticket> \"<resposta>\".",
+	CompactReminder: Plural{
+		One: "[lich] A sua conversa acabou de ser compactada, e %[1]d pedido enviado a esta sessão " +
+			"ainda espera a sua resposta:\n%[2]s\nQuem enviou está bloqueado nesse ticket e não lê " +
+			"mais nada: quando o trabalho terminar, responda pelo ticket.",
+		Other: "[lich] A sua conversa acabou de ser compactada, e %[1]d pedidos enviados a esta sessão " +
+			"ainda esperam as suas respostas:\n%[2]s\nCada remetente está bloqueado no próprio ticket e " +
+			"não lê mais nada: quando cada trabalho terminar, responda pelo ticket dele.",
+	},
 	NudgeResultsReady: Plural{
 		One:   "A tarefa que você enviou para %[2]s tem o resultado pronto",
 		Other: "Os resultados de %[1]d tarefas que você enviou estão prontos (%[2]s)",
