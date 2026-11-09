@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.87.0] - 2026-11-08
+
+> [!CAUTION]
+> **Everyone: this release is a required update.** Before it, a page in any browser on your machine could read a
+> session's checkout through its browser's local-file server, the session token showed in a process's command line,
+> and a session running in the sandbox could reach lich's own token and act on your machine through it, so update now.
+
 ### Added
 
 - A release can require its update. When a release fixes a security problem, the update prompt has no Later and comes back if you close it, and lich opens no new agent session until the update is installed: the window, `lich open` and an agent's tools all refuse, each saying why and how to update. Sessions already running are not touched, and a shell still opens so you can run the update there. It counts every release you skipped, not only the latest, and needs GitHub to be reachable. In the What's new dialog such a release carries a red callout.
@@ -33,22 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A session browser's page answer leaves out of the page's text each line that is only the label of a button or link it lists right below, and cuts the text at 1000 characters instead of 1200: a tenth smaller, with as much of the page's own text as before.
 - A session browser's click, type and key press on an element by index or selector fail before dispatch, naming what is in the way, when another element covers the target's click point (a cookie banner, a modal backdrop: `covered by <div#consent-banner>`) or the target is disabled, instead of clicking whatever is on top or doing nothing and answering with the page as before. A click at an x and y the agent chose is unchanged.
 
-### Security
-
-- A session running in the sandbox no longer holds lich's own token. It is handed one minted for it alone, which lich
-  accepts only for the calls a confined agent has a use for: messaging the sessions beside it, opening and steering
-  sessions, driving its own browser, reading the project's services and its cost. Starting or editing a service (which
-  runs a command on your machine, outside the sandbox), changing a setting such as the sandbox rung itself, typing into
-  another session's terminal and every other call stay refused, with a message that says why. A session opened from
-  inside the sandbox is confined too, whatever the sandbox setting says for that checkout, and a confined session can
-  message, insert into, control or question only sessions that are themselves confined: a message is carried out by
-  the agent that receives it, so one sent into an unconfined session would run on your machine. Replies reach anyone,
-  which is how a confined worker reports back. A confined session cannot force-close a worktree either.
-- The sandbox hides lich's own directory and the other sessions' worktrees. `~/.config/lich` (lich's token, its database,
-  your other accounts' profiles) and `~/.local/share/lich/worktrees` were readable inside a confined session, as part of
-  `~/.config` and `~/.local/share`; an empty directory now sits over each, with only the session's own profile, dropped
-  files, hook scripts and checkout mounted back.
-
 ### Fixed
 
 - The New folder dialog opens with the cursor in its name field, so you can type the name at once instead of clicking the field first.
@@ -66,6 +57,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- A session running in the sandbox no longer holds lich's own token. It is handed one minted for it alone, which lich
+  accepts only for the calls a confined agent has a use for: messaging the sessions beside it, opening and steering
+  sessions, driving its own browser, reading the project's services and its cost. Starting or editing a service (which
+  runs a command on your machine, outside the sandbox), changing a setting such as the sandbox rung itself, typing into
+  another session's terminal and every other call stay refused, with a message that says why. A session opened from
+  inside the sandbox is confined too, whatever the sandbox setting says for that checkout, and a confined session can
+  message, insert into, control or question only sessions that are themselves confined: a message is carried out by
+  the agent that receives it, so one sent into an unconfined session would run on your machine. Replies reach anyone,
+  which is how a confined worker reports back. A confined session cannot force-close a worktree either.
+- The sandbox hides lich's own directory and the other sessions' worktrees. `~/.config/lich` (lich's token, its database,
+  your other accounts' profiles) and `~/.local/share/lich/worktrees` were readable inside a confined session, as part of
+  `~/.config` and `~/.local/share`; an empty directory now sits over each, with only the session's own profile, dropped
+  files, hook scripts and checkout mounted back.
 - A session browser's local-file server, the one that serves a session's checkout at `http://127.0.0.1:<port>/`, now answers only requests addressed to `127.0.0.1:<port>` or `localhost:<port>`. A page in your ordinary browser could point a name it controls at your machine and read the checkout through it, `.env` files included; such a request is now refused.
 - The command lich pastes to finish a self-update sends the session token to lich in a request header fed through curl's standard input, so it no longer appears in the command line of a process, which every user on the machine can read. The loopback listener accepts `Authorization: Bearer <token>` beside `?token=`. The same goes for the restart `install.sh` makes.
 - lich's own config directory (`~/.config/lich` on Linux) is made readable by your user only, on every start, so an existing install is tightened too. Prompts and session text live in the database there. The directory above it is left as it was.
@@ -6602,7 +6606,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.86.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.87.0...HEAD
+[0.87.0]: https://github.com/lichdotdev/lich/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/lichdotdev/lich/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/lichdotdev/lich/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/lichdotdev/lich/compare/v0.83.0...v0.84.0
