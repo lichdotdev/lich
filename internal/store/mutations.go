@@ -156,6 +156,9 @@ func (s *Service) addSession(
 	if kind == "" {
 		kind = providers.Claude
 	}
+	if err := s.SessionRefused(kind); err != nil {
+		return err
+	}
 	if sandbox != SessionConfined && sandbox != SessionUnconfined {
 		sandbox = ""
 	}

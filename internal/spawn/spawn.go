@@ -64,6 +64,7 @@ type Sessions interface {
 	RecentProjects(_ context.Context, opts api.SearchTermOptions) ([]store.Recent, error)
 	AddProject(_ context.Context, opts api.AddProjectOptions) (api.None, error)
 	AddSessionFrom(_ context.Context, opts api.AddSessionFromOptions) (api.None, error)
+	SessionRefused(kind string) error
 	SandboxDefault(providerID, projectID, cwd string) bool
 	SetSessionModel(sessionID, model string) error
 	SetSessionEffort(sessionID, effort string) error
@@ -219,6 +220,11 @@ func (s *Service) openSession(req request) (Session, error) {
 	}
 	kind, err := resolveKind(projects, req.fromID, req.kind)
 	if err != nil {
+		return Session{}, err
+	}
+	// Asked here as well as at the insert, which is where it is enforced: a
+	// refusal has to come before place creates a worktree nobody will open.
+	if err := s.sessions.SessionRefused(kind); err != nil {
 		return Session{}, err
 	}
 	if req.handoff {

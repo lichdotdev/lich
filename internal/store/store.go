@@ -233,6 +233,8 @@ const busyTimeoutMS = 5000
 // Service owns the SQLite connection and exposes persistence to the window.
 type Service struct {
 	db *sql.DB
+	// sessionGate, when set, may refuse a new session. See SetSessionGate.
+	sessionGate func() error
 	// sessionGone, when set, is told the id of every session whose row is
 	// deleted for good. See SetSessionGone.
 	sessionGone func(sessionID string)

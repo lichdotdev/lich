@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "lich {version}을(를) 사용할 수 있습니다",
+    "required": "lich {version}은(는) 필수 보안 업데이트입니다",
+    "requiredDetail": "설치하기 전까지 새 에이전트 세션을 열 수 없습니다. 이미 실행 중인 세션은 그대로 동작합니다.",
     "updateAndInstall": "업데이트 및 설치",
     "later": "나중에",
     "updated": "lich를 {version}(으)로 업데이트했습니다",

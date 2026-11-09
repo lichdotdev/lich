@@ -734,8 +734,37 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   blocks under the version heading included. Editing that release on GitHub, or the changelog on `main`,
   changes the release page and no dialog anywhere; the users who already updated have recorded the version as
   seen, and the ones who have not will read the binary they install. A wrong headline is a patch release. The
-  update toast reads nothing from the release but its tag, on purpose: the toast says a release exists, and
-  the dialog is where it speaks.
+  update check reads one thing from the published notes, whether a release is required (next bullet), and
+  nothing else: the toast says a release exists, and the dialog is where it speaks.
+- **A required update is a `> [!CAUTION]` block in a release's notes, and only a lich that knows the signal
+  obeys it** (`internal/appupdate`, `patchnotes.RequiresUpdate`): the check reads the releases list, the same
+  one request an hour that names the latest release, and reports `Required` when any release newer than the
+  running build carries the block, so skipping three releases does not skip the one that was a security fix.
+  A lich older than the release that introduced this reads nothing but the tag and shows the ordinary toast
+  with Later, so the first required release cannot require itself of the liches before it. The list is one
+  page of 100 releases: a build further behind sees only the newest hundred. Unlike the What's new dialog,
+  this reads the notes GitHub publishes, not the binary: adding the block to a release after its tag makes it
+  required for everyone still behind it, and removing it lifts the gate at the next check.
+- **No GitHub, no gate**: a lookup that fails (offline, rate limited, a proxy that blocks api.github.com)
+  reports no update and nothing required, and a restart forgets the last answer. The gate is pressure on a
+  user who can update, not containment, and blocking the lookup lifts it.
+- **A required update refuses new agent sessions and never touches one lich already holds**
+  (`store.SessionRefused`, asked by every session insert and by `internal/spawn` before it creates a
+  worktree): the window, `lich open`, the MCP tools, a handoff, a fork and a subagent card are refused on
+  every provider, with an error naming the release and the way this install updates. A running session
+  keeps running, respawns after the restart, resumes, and comes back from the closed list. A shell session
+  still opens, on purpose: the prompt's Install action is a shell with the command typed into it, and that
+  command restarts lich through the `LICH_PORT` and `LICH_TOKEN` only a lich session exports. An agent
+  started by hand in that shell is therefore not stopped. The backend answers from the last lookup for two
+  hours and then looks again itself, so a lich with no window open still learns of the release, and the one
+  open that finds the answer stale waits on GitHub for up to five seconds. A worktree asked for in the
+  window's New worktree dialog, or for a pull request, is created before its session is refused and stays;
+  the next try reuses it.
+- **A package-manager install still needs the user to run the command**: only the Windows installer updates
+  from the prompt's button. Everywhere else the required prompt types the command into a shell, or links the
+  release page for a tarball, and lich never runs it. The prompt has no Later, comes back when swiped away,
+  and every hourly check raises it again once its action closed it. `lich.appUpdateDismissed` is not read for
+  a required release.
 
 ## Profiles
 

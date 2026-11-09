@@ -1075,23 +1075,25 @@ func (u *window) applySidebarWrites(w sidebarWrites) {
 
 // newSession adds a session of the launch's kind at its dir ("" for the
 // project's own checkout), filed under its folder, and puts it on screen;
-// typeahead is typed into it once it starts.
-func (u *window) newSession(l launchRequest, typeahead string) {
+// typeahead is typed into it once it starts. It reports whether the session
+// was added: one the backend refused is said in a toast.
+func (u *window) newSession(l launchRequest, typeahead string) bool {
 	kind := l.kind
 	p, ok := u.model.project()
 	if !ok {
 		log.Print("new session: the backend has no project open")
-		return
+		return false
 	}
 	id := strings.ToLower(rand.Text())
 	label := fmt.Sprintf("%s %d", strings.ToUpper(kind[:1])+kind[1:], p.NextSeq+1)
 	if err := u.client.AddSessionInFolder(u.ctx, p.ID, id, label, kind, checkoutPath(l.dir, p.Path), p.NextSeq+1, l.folder); err != nil {
 		u.logErr("new session", err)
-		return
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})
+		return false
 	}
 	if err := u.model.reload(u.ctx); err != nil {
 		u.logErr("reload", err)
-		return
+		return true
 	}
 	u.logErr("load folds", u.model.loadFolds(u.ctx))
 	if typeahead != "" {
@@ -1100,6 +1102,7 @@ func (u *window) newSession(l launchRequest, typeahead string) {
 	u.model.setActive(u.ctx, id)
 	u.logErr("set active session", u.client.SetActiveSession(u.ctx, p.ID, id))
 	u.model.invalidate()
+	return true
 }
 
 // windowSize reads -window; one that is not WxH is the default size.

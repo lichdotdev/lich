@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "Доступен lich {version}",
+    "required": "lich {version}: обязательное обновление безопасности",
+    "requiredDetail": "Новые сессии агентов не открываются, пока оно не установлено. Уже запущенные продолжают работать.",
     "updateAndInstall": "Обновить и установить",
     "later": "Позже",
     "updated": "lich обновлён до {version}",

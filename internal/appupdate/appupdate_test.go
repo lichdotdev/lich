@@ -8,8 +8,11 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestParseChecksum(t *testing.T) {
@@ -104,7 +107,7 @@ func packagedExe(t *testing.T) string {
 	return filepath.Join(root, "usr", "bin", "lich")
 }
 
-// serveBody points a Service's latest endpoint at a test server.
+// serveBody points a Service's releases endpoint at a test server.
 func serveBody(t *testing.T, status int, body string) *Service {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -113,18 +116,18 @@ func serveBody(t *testing.T, status int, body string) *Service {
 	}))
 	t.Cleanup(srv.Close)
 	return &Service{
-		http:      srv.Client(),
-		goos:      runtime.GOOS,
-		goarch:    runtime.GOARCH,
-		latestURL: srv.URL,
-		tagBase:   releaseTagBase,
+		http:        srv.Client(),
+		goos:        runtime.GOOS,
+		goarch:      runtime.GOARCH,
+		releasesURL: srv.URL,
+		tagBase:     releaseTagBase,
 	}
 }
 
 func TestStatus(t *testing.T) {
 	// A writable exe dir so CanSelfApply is deterministic on the darwin/windows
 	// branch; the test forces the version comparison, not the platform.
-	s := serveBody(t, http.StatusOK, `{"tag_name":"v0.8.0"}`)
+	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.8.0"}]`)
 	s.exePath = filepath.Join(t.TempDir(), "lich")
 
 	t.Run("update available", func(t *testing.T) {
@@ -256,15 +259,15 @@ func TestApplyRejectedWhenNotSelfApply(t *testing.T) {
 // pinned on the Service, so the test runs the same on every host.
 const applyAsset = "lich-v0.8.0-windows-amd64-setup.exe"
 
-// applyServer serves the release endpoints Apply hits: the latest-tag JSON,
+// applyServer serves the release endpoints Apply hits: the releases list,
 // checksums.txt, and the asset under assetStatus. 404 is the window between a
 // pushed tag and a published installer.
 func applyServer(t *testing.T, assetStatus int) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case strings.HasSuffix(r.URL.Path, "/latest"):
-			_, _ = io.WriteString(w, `{"tag_name":"v0.8.0"}`)
+		case strings.HasSuffix(r.URL.Path, "/releases"):
+			_, _ = io.WriteString(w, `[{"tag_name":"v0.8.0"}]`)
 		case strings.HasSuffix(r.URL.Path, "checksums.txt"):
 			_, _ = io.WriteString(w, "deadbeef  "+applyAsset+"\n")
 		default:
@@ -307,7 +310,7 @@ func applyService(t *testing.T, srv *httptest.Server) *Service {
 		goos:         "windows",
 		goarch:       "amd64",
 		exePath:      filepath.Join(t.TempDir(), "lich.exe"),
-		latestURL:    srv.URL + "/latest",
+		releasesURL:  srv.URL + "/releases",
 		downloadBase: srv.URL + "/dl/",
 		install:      func(string) error { return nil },
 	}
@@ -338,7 +341,7 @@ func TestFetchChecksum(t *testing.T) {
 	t.Run("reads the asset's hash", func(t *testing.T) {
 		s := serveBody(t, http.StatusOK, "aaaa  "+applyAsset+"\nbbbb  other\n")
 
-		sum, err := s.fetchChecksum(s.latestURL, applyAsset)
+		sum, err := s.fetchChecksum(s.releasesURL, applyAsset)
 		if err != nil {
 			t.Fatalf("fetchChecksum() error: %v", err)
 		}
@@ -346,7 +349,7 @@ func TestFetchChecksum(t *testing.T) {
 			t.Fatalf("sum = %x, want aaaa", sum)
 		}
 
-		if _, err := s.fetchChecksum(s.latestURL, "missing-asset"); err == nil {
+		if _, err := s.fetchChecksum(s.releasesURL, "missing-asset"); err == nil {
 			t.Fatal("fetchChecksum(missing) = nil error, want failure")
 		}
 	})
@@ -354,7 +357,7 @@ func TestFetchChecksum(t *testing.T) {
 	t.Run("a non-200 is not a checksums file", func(t *testing.T) {
 		s := serveBody(t, http.StatusNotFound, "Not Found")
 
-		_, err := s.fetchChecksum(s.latestURL, applyAsset)
+		_, err := s.fetchChecksum(s.releasesURL, applyAsset)
 
 		if err == nil {
 			t.Fatal("fetchChecksum() = nil error, want failure on a non-200")
@@ -369,7 +372,7 @@ func TestFetchChecksum(t *testing.T) {
 	t.Run("a malformed hash is refused", func(t *testing.T) {
 		s := serveBody(t, http.StatusOK, "zzzz  "+applyAsset+"\n")
 
-		_, err := s.fetchChecksum(s.latestURL, applyAsset)
+		_, err := s.fetchChecksum(s.releasesURL, applyAsset)
 
 		if err == nil {
 			t.Fatal("fetchChecksum() = nil error, want failure on a non-hex hash")
@@ -393,8 +396,8 @@ func TestNewResolvesExe(t *testing.T) {
 	if s.download.Timeout <= s.http.Timeout {
 		t.Fatalf("download timeout = %v, want longer than metadata %v", s.download.Timeout, s.http.Timeout)
 	}
-	if s.latestURL != latestReleaseURL {
-		t.Fatalf("latestURL = %q", s.latestURL)
+	if s.releasesURL != releasesURL {
+		t.Fatalf("releasesURL = %q", s.releasesURL)
 	}
 	if s.goos != runtime.GOOS || s.goarch != runtime.GOARCH {
 		t.Fatalf("platform = %s/%s, want this build's %s/%s", s.goos, s.goarch, runtime.GOOS, runtime.GOARCH)
@@ -402,5 +405,159 @@ func TestNewResolvesExe(t *testing.T) {
 	exe, _ := os.Executable()
 	if s.exePath != exe {
 		t.Fatalf("exePath = %q, want %q", s.exePath, exe)
+	}
+}
+
+// releaseList is a releases list as GitHub serves it, newest first: 0.10.0,
+// 0.9.0 and 0.8.0, with caution under the banner of each version named.
+func releaseList(caution ...string) string {
+	entries := make([]string, 0, 3)
+	for _, tag := range []string{"0.10.0", "0.9.0", "0.8.0"} {
+		notes := `<img src=\"banner.png\" />\n\n\n### Fixed\n\n- A fix.\n`
+		if slices.Contains(caution, tag) {
+			notes = `<img src=\"banner.png\" />\n\n\n> [!CAUTION]\n> **Everyone: this closes a hole.** Update now.\n\n### Fixed\n\n- A fix.\n`
+		}
+		entries = append(entries, `{"tag_name":"v`+tag+`","body":"`+notes+`"}`)
+	}
+	return "[" + strings.Join(entries, ",") + "]"
+}
+
+func TestStatusRequired(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		caution []string
+		want    bool
+	}{
+		{"the latest release is required", "0.7.0", []string{"0.10.0"}, true},
+		// Skipping releases must not skip the one that was a security fix.
+		{"a release in the middle is required", "0.7.0", []string{"0.9.0"}, true},
+		{"none is required", "0.7.0", nil, false},
+		{"the required release is the one running", "0.9.0", []string{"0.9.0"}, false},
+		{"the required release is already behind", "0.9.0", []string{"0.8.0"}, false},
+		{"on the latest", "0.10.0", []string{"0.10.0", "0.9.0"}, false},
+		{"a dev build reports nothing", "dev", []string{"0.10.0"}, false},
+		{"a build between tags reports nothing", "0.7.0-5-gabc123", []string{"0.10.0"}, false},
+		{"a labelled build of a release is that release", "0.7.0+local.3", []string{"0.9.0"}, true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := serveBody(t, http.StatusOK, releaseList(tc.caution...))
+			s.version = tc.version
+			got := s.status()
+			if got.Required != tc.want {
+				t.Fatalf("Required = %v, want %v (%+v)", got.Required, tc.want, got)
+			}
+			if tc.want && got.LatestVersion != "0.10.0" {
+				t.Fatalf("LatestVersion = %q, want the newest release, the one to install", got.LatestVersion)
+			}
+		})
+	}
+}
+
+func TestStatusRequiredIsFalseWhenTheLookupFails(t *testing.T) {
+	s := serveBody(t, http.StatusInternalServerError, "upstream is down")
+	s.version = "0.7.0"
+	if s.status().Required {
+		t.Fatal("Required = true, want false when the lookup failed")
+	}
+}
+
+// The newest release is the highest version, wherever GitHub lists it: a patch
+// of an older line published later must not be offered as the update.
+func TestStatusLatestIsTheHighestVersion(t *testing.T) {
+	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.8.1"},{"tag_name":"v0.9.0"},{"tag_name":"v0.8.0"}]`)
+	s.version = "0.8.0"
+	if got := s.status().LatestVersion; got != "0.9.0" {
+		t.Fatalf("LatestVersion = %q, want 0.9.0", got)
+	}
+}
+
+func TestRequiredUpdateRefusesWithTheWayToUpdate(t *testing.T) {
+	s := serveBody(t, http.StatusOK, releaseList("0.9.0"))
+	s.version = "0.7.0"
+	s.goos, s.exePath, s.osReleasePath = "linux", packagedExe(t), filepath.Join(t.TempDir(), "os-release")
+
+	err := s.RequiredUpdate()
+
+	if err == nil {
+		t.Fatal("RequiredUpdate() = nil, want a refusal while a required release is pending")
+	}
+	for _, want := range []string{"0.10.0", "0.7.0", "required security update", installScript, "https://github.com/lichdotdev/lich/releases/tag/v0.10.0"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error = %q, want %q in it", err, want)
+		}
+	}
+}
+
+func TestRequiredErrorNamesTheRouteOfEachInstall(t *testing.T) {
+	base := Status{CurrentVersion: "0.7.0", LatestVersion: "0.10.0", ReleaseURL: "https://example.test/v0.10.0"}
+	installer, tarball := base, base
+	installer.CanSelfApply = true
+	if got := requiredError(installer).Error(); !strings.Contains(got, "update prompt in the lich window") || !strings.Contains(got, base.ReleaseURL) {
+		t.Errorf("installer route = %q", got)
+	}
+	if got := requiredError(tarball).Error(); !strings.HasSuffix(got, "To update, download it from "+base.ReleaseURL) {
+		t.Errorf("release page route = %q", got)
+	}
+}
+
+func TestRequiredUpdateIsNilWithoutARequiredRelease(t *testing.T) {
+	s := serveBody(t, http.StatusOK, releaseList())
+	s.version = "0.7.0"
+	if err := s.RequiredUpdate(); err != nil {
+		t.Fatalf("RequiredUpdate() = %v, want nil", err)
+	}
+}
+
+// The window's hourly poll is the lookup; opening sessions must not spend
+// GitHub's hourly budget on top of it.
+func TestRequiredUpdateAnswersFromTheLastLookup(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		_, _ = io.WriteString(w, releaseList("0.9.0"))
+	}))
+	t.Cleanup(srv.Close)
+	s := &Service{http: srv.Client(), version: "0.7.0", releasesURL: srv.URL, tagBase: releaseTagBase}
+
+	s.status()
+	for range 3 {
+		if err := s.RequiredUpdate(); err == nil {
+			t.Fatal("RequiredUpdate() = nil, want the refusal the last lookup found")
+		}
+	}
+	if got := hits.Load(); got != 1 {
+		t.Fatalf("lookups = %d, want 1: a fresh status answers without another request", got)
+	}
+
+	// With no window polling, the gate looks for itself once the answer is old.
+	s.seen.Lock()
+	s.checkedAt = time.Now().Add(-staleAfter - time.Minute)
+	s.seen.Unlock()
+	if err := s.RequiredUpdate(); err == nil {
+		t.Fatal("RequiredUpdate() = nil after a stale lookup")
+	}
+	if got := hits.Load(); got != 2 {
+		t.Fatalf("lookups = %d, want 2: a stale status is looked up again", got)
+	}
+}
+
+// Opening a session in a dev build, a rig or a test run must not reach GitHub.
+func TestRequiredUpdateLooksNothingUpForADevBuild(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		_, _ = io.WriteString(w, releaseList("0.10.0"))
+	}))
+	t.Cleanup(srv.Close)
+	for _, version := range []string{"dev", "0.7.0-5-gabc123"} {
+		s := &Service{http: srv.Client(), version: version, releasesURL: srv.URL, tagBase: releaseTagBase}
+		if err := s.RequiredUpdate(); err != nil {
+			t.Errorf("%s: RequiredUpdate() = %v, want nil", version, err)
+		}
+	}
+	if got := hits.Load(); got != 0 {
+		t.Fatalf("lookups = %d, want none", got)
 	}
 }

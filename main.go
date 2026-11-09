@@ -347,7 +347,9 @@ func registerServices(db *store.Service, term *terminal.Service, svcs *services.
 		)
 		routes.Profiles(dispatcher, api.XDGProfiles[provider.ID], profiles)
 	}
-	routes.AppUpdate(dispatcher, appupdate.New(version, coord.Install, hub.Emit))
+	updates := appupdate.New(version, coord.Install, hub.Emit)
+	db.SetSessionGate(updates.RequiredUpdate)
+	routes.AppUpdate(dispatcher, updates)
 	routes.PatchNotes(dispatcher, patchnotes.New(version, changelog, changelogTranslations))
 	routes.Store(dispatcher, db)
 	// Read before run writes this run's runtime file over the previous

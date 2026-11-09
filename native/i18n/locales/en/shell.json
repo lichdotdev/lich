@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "lich {version} is available",
+    "required": "lich {version} is a required security update",
+    "requiredDetail": "New agent sessions stay closed until it is installed. The ones already running keep working.",
     "updateAndInstall": "Update & install",
     "later": "Later",
     "updated": "lich updated to {version}",

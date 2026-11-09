@@ -19,6 +19,13 @@ expected.
 The latest release only. lich updates in place on Windows and macOS and through
 the AUR on Arch, so a fix ships as a new version rather than as a backport.
 
+A release that fixes a vulnerability can mark its update as required. A lich
+behind it then shows an update prompt that cannot be put off and opens no new
+agent session until the update is installed; sessions already running keep
+working, and a shell still opens so the update can be run. lich learns this
+from GitHub's release list, so a lich that cannot reach GitHub is not told, and
+versions from before this mechanism only offer the update.
+
 ## What the attack surface actually is
 
 lich runs entirely on your machine. There is no server, no account and no
