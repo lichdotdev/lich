@@ -32,8 +32,10 @@ type model struct {
 	client     *backend.Client
 	invalidate func()
 
-	mu       sync.Mutex
-	projects []backend.Project // open projects, in the user's order
+	mu             sync.Mutex
+	pinnedWriteMu  sync.Mutex
+	projects       []backend.Project // open projects, in the user's order
+	pinnedProjects map[string]bool
 	// pendingOrder is a tab drag the backend has not confirmed: the strip
 	// shows it, the store's order does not hold it. projects-reordered
 	// settles it, a refused reorder drops it.
@@ -159,6 +161,12 @@ func (m *model) reload(ctx context.Context) error {
 			return err
 		}
 	}
+	var pinned map[string]bool
+	if first {
+		if pinned, err = loadPinnedProjects(ctx, m.client); err != nil {
+			return err
+		}
+	}
 	choose := first && len(ps) > 0
 	launch := ""
 	if choose {
@@ -169,6 +177,9 @@ func (m *model) reload(ctx context.Context) error {
 	normalizeCheckouts(ps)
 	m.mu.Lock()
 	m.projects = ps
+	if first {
+		m.pinnedProjects = pinned
+	}
 	fresh := m.providers.noteProjects(ps)
 	if !m.restored {
 		m.status.restoreUnread(unreadSessions(ps))

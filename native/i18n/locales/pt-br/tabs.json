@@ -20,10 +20,13 @@
     "closeAnyway": "Fechar mesmo assim"
   },
   "topbarTabs": {
+    "pinProject": "Fixar aba",
+    "unpinProject": "Desafixar aba",
     "projectSettings": "Configurações do projeto…",
     "closeProject": "Fechar projeto"
   },
   "topbarApply": {
+    "pinProjectFailed": "Não foi possível salvar as abas fixadas: {error}",
     "closeProjectFailed": "Não foi possível fechar o projeto: {error}",
     "reorderFailed": "Não foi possível reordenar os projetos: {error}"
   }

@@ -49,6 +49,7 @@ var (
 	icTabWaiting = icons.Lucide("bell")
 	icTabDone    = icons.Lucide("check")
 	icTabLayout  = icons.Lucide("layout-panel-left")
+	icTabPin     = icons.Lucide("pin")
 )
 
 type tabState struct {
@@ -191,12 +192,15 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i, w int, dragEnded boo
 		act.show = tab.ID
 	}
 	gtx.Constraints = layout.Exact(image.Pt(w, gtx.Dp(tabHeight)))
-	// ponytail: the mockup's Rename and Pin join the menu when the native
-	// window has them.
 	entries := []ui.MenuEntry{
+		{Label: i18n.T("tabs.topbarTabs.pinProject"), Icon: icTabPin, OnClick: func() { act.pinProject, act.pin = tab.ID, !tab.pinned }},
+		{Kind: ui.MenuSeparator},
 		{Label: i18n.T("tabs.topbarTabs.projectSettings"), Icon: icSettings, OnClick: func() { act.projectSettings = tab.ID }},
 		{Kind: ui.MenuSeparator},
 		{Label: i18n.T("tabs.topbarTabs.closeProject"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.ask = tab.ID }},
+	}
+	if tab.pinned {
+		entries[0].Label = i18n.T("tabs.topbarTabs.unpinProject")
 	}
 	if tab.layout {
 		entries = []ui.MenuEntry{
@@ -238,7 +242,8 @@ func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState
 		bg = th.Over(ui.Alpha(th.Foreground, tabHoverFill))
 	}
 	paint.FillShape(gtx.Ops, bg, shape.Op(gtx.Ops))
-	if i > 0 && !active && f.tabs[i-1].ID != f.active {
+	groupBoundary := i > 0 && f.tabs[i-1].pinned != tab.pinned
+	if i > 0 && (groupBoundary || !active && f.tabs[i-1].ID != f.active) {
 		inset := gtx.Dp(tabSeparatorIn)
 		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: image.Pt(0, inset), Max: image.Pt(gtx.Dp(1), size.Y-inset)}.Op())
 	}
@@ -281,6 +286,12 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return icTabLayout.Layout(gtx, tabGlyph, fg) }), ui.Gap(2))
 		}),
+		layout.Rigid(func(gtx C) D {
+			if !tab.pinned {
+				return D{}
+			}
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(func(gtx C) D { return icTabPin.Layout(gtx, tabGlyph, fg) }), ui.Gap(2))
+		}),
 		layout.Rigid(func(gtx C) D { return t.tabBadge(gtx, on, tab.status) }),
 		layout.Flexed(1, func(gtx C) D {
 			if !st.rename.Active() {
@@ -294,7 +305,7 @@ func (t *topbar) tabContent(gtx C, on *ui.Theme, tab projectTab, st *tabState, f
 		}),
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
-			if !showClose {
+			if !showClose || tab.pinned {
 				return D{Size: image.Pt(gtx.Dp(16), gtx.Dp(16))}
 			}
 			return cornerButton(gtx, on, &st.close, icTabClose, false)

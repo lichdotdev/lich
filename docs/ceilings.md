@@ -888,6 +888,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Window, sidebar and settings
 
+- **Pinned project tabs are a window preference, not a close lock** (`native/cmd/lich-native/projects.go`,
+  `pinnedProjectsKey`): the global setting keeps project ids even while their tabs are closed, so reopening one
+  brings it back to the pinned group. The tab's × is hidden, but Close project in its right-click menu and
+  `close_project` still close it.
 - **A frame is drawn in part only where EGL reports the back buffer's age** (`lichdotdev/gio`, `gpu/damage.go`,
   `internal/egl`): on Linux the window diffs a frame's draw operations against the last frame's and draws and
   presents only the rectangles that changed, which is what keeps a spinning ring from repainting the window 24

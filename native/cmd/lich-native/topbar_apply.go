@@ -79,6 +79,15 @@ func (u *window) applyTopbar(act topbarAction) {
 	if act.ask != "" {
 		u.requestClose(act.ask)
 	}
+	if act.pinProject != "" {
+		u.model.setProjectPinned(act.pinProject, act.pin)
+		u.model.invalidate()
+		go func() {
+			if err := u.model.persistPinnedProjects(u.ctx); err != nil {
+				u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("tabs.topbarApply.pinProjectFailed", i18n.Args{"error": backend.ErrorText(err)})})
+			}
+		}()
+	}
 	if r := act.renamed; r.id != "" && u.model.renameLayout(r.id, r.name) {
 		u.model.saveLayouts()
 		u.model.invalidate()

@@ -20,10 +20,13 @@
     "closeAnyway": "Close anyway"
   },
   "topbarTabs": {
+    "pinProject": "Pin tab",
+    "unpinProject": "Unpin tab",
     "projectSettings": "Project settings…",
     "closeProject": "Close project"
   },
   "topbarApply": {
+    "pinProjectFailed": "Could not save the pinned tabs: {error}",
     "closeProjectFailed": "Could not close the project: {error}",
     "reorderFailed": "Could not reorder the projects: {error}"
   }

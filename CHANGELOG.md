@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Project tabs can be pinned from their right-click menu. Pinned tabs stay together at the left of the strip and close only from that menu; pinning is kept when the window is reopened.
 - A checkout's menu in the sidebar, from a right click or the … on its row, has Close all sessions: every session in that checkout closes at once, each with its own Undo, after a confirmation when any of them is mid-turn, and the last one offers to remove the worktree.
 
 ### Fixed
