@@ -10,16 +10,17 @@ import (
 	"github.com/lichdotdev/lich/native/i18n"
 )
 
-// pullsState is which pull requests gh is asked for.
+// pullsState is which pull requests the index lists.
 type pullsState string
 
 const (
-	pullsOpen   pullsState = "open"
-	pullsClosed pullsState = "closed"
-	pullsMerged pullsState = "merged"
+	pullsOpen     pullsState = "open"
+	pullsApproved pullsState = "approved"
+	pullsClosed   pullsState = "closed"
+	pullsMerged   pullsState = "merged"
 )
 
-var pullsStates = []pullsState{pullsOpen, pullsClosed, pullsMerged}
+var pullsStates = []pullsState{pullsOpen, pullsApproved, pullsClosed, pullsMerged}
 
 // pullsFilter is a quick filter over the rows gh answered.
 type pullsFilter int

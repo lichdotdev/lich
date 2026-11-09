@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"testing"
 	"time"
 
@@ -27,6 +28,24 @@ func TestPullsStoreReadsOnceUntilAChangeIsAnnounced(t *testing.T) {
 		t.Errorf("a stale read keeps its rows while the next comes: %v", got.val)
 	}
 	waitFor(t, "the read the change owes", func() bool { return stub.calls("project.ListPullRequests") == 2 })
+}
+
+func TestPullsStoreApprovedNarrowsTheOpenRead(t *testing.T) {
+	stub := &rpcStub{answer: func(string, []json.RawMessage) (any, int) {
+		return []backend.PRSummary{{Number: 7, ReviewDecision: "APPROVED"}, {Number: 8, ReviewDecision: "REVIEW_REQUIRED"}, {Number: 9}}, http.StatusOK
+	}}
+	s := newPullsStore(context.Background(), stub.client(t), func() {})
+	s.list("/repo", pullsApproved)
+	waitFor(t, "the first read", func() bool { return s.list("/repo", pullsApproved).loaded })
+	if got := numbers(s.list("/repo", pullsApproved).val); !slices.Equal(got, []int{7}) {
+		t.Errorf("approved = %v, want [7]", got)
+	}
+	if got := numbers(s.list("/repo", pullsOpen).val); !slices.Equal(got, []int{7, 8, 9}) {
+		t.Errorf("open after approved = %v, want [7 8 9]", got)
+	}
+	if got := stub.calls("project.ListPullRequests"); got != 1 {
+		t.Errorf("calls = %d, want the one open read", got)
+	}
 }
 
 func TestPullsStoreKeepsGhsRefusalAsText(t *testing.T) {

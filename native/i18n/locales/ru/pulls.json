@@ -163,7 +163,8 @@
     "none": {
       "open": "Нет открытых pull request.",
       "closed": "Нет закрытых pull request.",
-      "merged": "Нет слитых pull request."
+      "merged": "Нет слитых pull request.",
+      "approved": "Нет одобренных pull request."
     },
     "noMatch": "Под этот фильтр ничего не подходит.",
     "draft": "Черновик",
