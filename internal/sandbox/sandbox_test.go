@@ -474,9 +474,12 @@ func TestDescribeHidesLichFromTheSession(t *testing.T) {
 
 	spec := Describe(providers.Claude, home, cwd, "", []string{drops}, false)
 
+	// Hidden is the resolved path, since the mount lands on the directory and
+	// not on a link to it: on macOS the temp dir is itself a link (/var into
+	// /private/var), on Windows a short name.
 	wantHidden := []string{
-		filepath.Join(home, ".config", "lich"),
-		filepath.Join(home, ".local", "share", "lich", "worktrees"),
+		resolved(t, filepath.Join(home, ".config", "lich")),
+		resolved(t, filepath.Join(home, ".local", "share", "lich", "worktrees")),
 	}
 	if !slices.Equal(spec.Hidden, wantHidden) {
 		t.Errorf("Hidden = %v, want %v", spec.Hidden, wantHidden)
@@ -519,7 +522,17 @@ func TestDescribeHidesThroughASymlink(t *testing.T) {
 		t.Fatal(err)
 	}
 	spec := Describe(providers.Claude, home, filepath.Join(home, "work"), "", nil, false)
-	if !slices.Contains(spec.Hidden, real) {
-		t.Errorf("Hidden = %v, want the link's target %s", spec.Hidden, real)
+	if want := resolved(t, real); !slices.Contains(spec.Hidden, want) {
+		t.Errorf("Hidden = %v, want the link's target %s", spec.Hidden, want)
 	}
+}
+
+// resolved is path as the sandbox mounts it, with every link in it followed.
+func resolved(t *testing.T, path string) string {
+	t.Helper()
+	out, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatalf("resolve %s: %v", path, err)
+	}
+	return out
 }
