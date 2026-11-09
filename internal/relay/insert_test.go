@@ -185,7 +185,7 @@ func TestInsertGivesUpOnASessionThatNeverReachesItsPrompt(t *testing.T) {
 	term.setStarting("s3", true)
 	svc := newRelay(editorWorkspace("/src/lich", "/src/lich-wt"), term, nil)
 
-	_, err := svc.insert("", "solo", "", "x", time.Millisecond)
+	_, err := svc.insert(t.Context(), "", "solo", "", "x", time.Millisecond)
 	if err == nil || !strings.Contains(err.Error(), "not at a prompt") {
 		t.Errorf("insert = %v, want the wait to run out", err)
 	}

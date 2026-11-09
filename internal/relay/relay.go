@@ -27,6 +27,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/prompt"
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 )
 
@@ -600,6 +601,9 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode) (
 
 	dest, err := s.resolve(fromID, target, project)
 	if err != nil {
+		return Result{}, err
+	}
+	if err := scope.Target(ctx, dest.Peer.Label, dest.Confined); err != nil {
 		return Result{}, err
 	}
 	s.mu.Lock()

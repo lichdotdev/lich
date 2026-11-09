@@ -42,9 +42,11 @@ telemetry, so the interesting boundaries are local ones:
   of calls (`internal/scope`) and to the hook endpoints for its own session.
   The launch token's record, lich's database and the other sessions' checkouts
   are hidden from the sandbox. A confined session reaching a denied call, the
-  launch token, or another session's state is a vulnerability. What it may
-  still do by design is listed in `docs/ceilings.md` under Sandbox: talk to
-  the sessions around it, which can act for it.
+  launch token, or another session's state is a vulnerability, and so is a
+  confined session putting text at the prompt of a session that is not
+  confined, by any method: the receiving agent would carry it out on the
+  machine. What it may still do by design is listed in `docs/ceilings.md`
+  under Sandbox: message confined sessions, reply to anyone.
 - **The workspace.** Projects, sessions and settings live in SQLite under your
   config directory.
 - **`GH_TOKEN`.** A project can name the GitHub account `gh` runs as, which

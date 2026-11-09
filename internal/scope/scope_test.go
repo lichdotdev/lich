@@ -94,3 +94,29 @@ func TestRefusalsNameTheCall(t *testing.T) {
 		t.Errorf("impersonation names neither session: %s", msg)
 	}
 }
+
+func TestTargetHoldsAConfinedCallerToConfinedTargets(t *testing.T) {
+	scoped := With(context.Background(), "mine")
+	if err := Target(scoped, "web", false); err == nil || !strings.Contains(err.Error(), `"web"`) {
+		t.Errorf("an unconfined target was allowed, or not named: %v", err)
+	}
+	if err := Target(scoped, "worker", true); err != nil {
+		t.Errorf("a confined target was refused: %v", err)
+	}
+	if err := Target(context.Background(), "web", false); err != nil {
+		t.Errorf("the launch token was held to the rule: %v", err)
+	}
+}
+
+func TestForceIsRefusedToAConfinedCaller(t *testing.T) {
+	scoped := With(context.Background(), "mine")
+	if err := Force(scoped, true); err == nil {
+		t.Error("force was allowed from the sandbox")
+	}
+	if err := Force(scoped, false); err != nil {
+		t.Errorf("a plain close was refused: %v", err)
+	}
+	if err := Force(context.Background(), true); err != nil {
+		t.Errorf("the launch token was held to the rule: %v", err)
+	}
+}

@@ -880,9 +880,16 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   under "Worktrees only". The token is minted per spawn and lives in the backend's memory: a respawn, a parked
   session resumed and a backend restart each issue a new one, and a caller that outlives its process (a
   background agent) is refused from then on and cannot fall back on `runtime.json`, which it cannot read; the
-  `lich` CLI says so. What a confined session kept is the relay in both directions, and that is the deliberate
-  gap: a message it sends into an unconfined session is still a way to ask another agent to act on the machine
-  for it, and `relay.Insert` and `relay.Submit` still type at another session's prompt. The eight providers
+  `lich` CLI says so. The relay stays, held to one more rule where each method resolves its target
+  (`scope.Target`, called from `internal/relay` and `internal/spawn`, never from the transport, which cannot
+  turn a label into a row): a confined session speaks to confined sessions and answers anyone. `relay.Send`,
+  `SendPrivate`, `SendSubagent`, `Insert`, `Submit`, `spawn.Control` and `spawn.Ask` put text at the target's
+  prompt, and the receiving agent carries it out as its task, so a target whose row is not confined is refused
+  by label with the reason; `relay.Reply` reaches any ticket, since a reply is read as a result, and it is how a
+  confined worker reports to the unconfined session that opened it. `spawn.Close` refuses `force` from the
+  sandbox: the checkout it would remove is outside it and the uncommitted work there exists nowhere else. The
+  cost is the deliberate one: a confined session cannot delegate to an unconfined one, only to sessions it
+  opens (which are confined) or that were already confined. The eight providers
   are untouched by the scoping: every hook and `lich mcp` reads `LICH_TOKEN` from the environment
   (`docs/hooks/`), none reads `runtime.json`. The window's own flows run on the launch token and lose
   nothing. A method that reads a host path it was *handed* would copy anything into reach of the sandbox,

@@ -40,7 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sessions, driving its own browser, reading the project's services and its cost. Starting or editing a service (which
   runs a command on your machine, outside the sandbox), changing a setting such as the sandbox rung itself, typing into
   another session's terminal and every other call stay refused, with a message that says why. A session opened from
-  inside the sandbox is confined too, whatever the sandbox setting says for that checkout.
+  inside the sandbox is confined too, whatever the sandbox setting says for that checkout, and a confined session can
+  message, insert into, control or question only sessions that are themselves confined: a message is carried out by
+  the agent that receives it, so one sent into an unconfined session would run on your machine. Replies reach anyone,
+  which is how a confined worker reports back. A confined session cannot force-close a worktree either.
 - The sandbox hides lich's own directory and the other sessions' worktrees. `~/.config/lich` (lich's token, its database,
   your other accounts' profiles) and `~/.local/share/lich/worktrees` were readable inside a confined session, as part of
   `~/.config` and `~/.local/share`; an empty directory now sits over each, with only the session's own profile, dropped

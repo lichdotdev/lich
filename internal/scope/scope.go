@@ -13,6 +13,12 @@
 // (services.Start and the other service writes), moves a setting
 // (store.SetSetting), types into another session's PTY (terminal.Write), hands
 // the backend a host path, or belongs to the window alone is out.
+//
+// The relay is allowed and held to a second rule where the method resolves
+// its target (Target): text a confined session puts at another session's
+// prompt is carried out by that session as its task, so the target has to be
+// confined too, or the message is terminal.Write under another name. A reply
+// goes to anyone, since the recipient reads it as a result.
 package scope
 
 import (
@@ -147,4 +153,36 @@ func Method(path string) string {
 		return ""
 	}
 	return method
+}
+
+// Target refuses a confined caller a session that is not itself confined, for
+// a method that puts text at the target's prompt: the receiving agent carries
+// a message out as its task, so a confined session writing "run X" into an
+// unconfined card is terminal.Write under another name. confined is the
+// target's row (store.SessionConfined). A reply is not held to this: the
+// recipient reads it as a result, and it is how a confined worker reports to
+// an unconfined parent.
+func Target(ctx context.Context, label string, confined bool) error {
+	if Session(ctx) == "" || confined {
+		return nil
+	}
+	return fmt.Errorf(
+		"%q does not run in the sandbox, and a confined session may only put text at the "+
+			"prompt of another confined session: what it asked for would run on the machine "+
+			"outside its sandbox. Answer with a reply instead, which the recipient reads as a result",
+		label,
+	)
+}
+
+// Force refuses a confined caller the force that removes a checkout with
+// uncommitted work: the checkout is outside its sandbox, and what the force
+// discards exists nowhere else.
+func Force(ctx context.Context, force bool) error {
+	if Session(ctx) == "" || !force {
+		return nil
+	}
+	return fmt.Errorf(
+		"a confined session may not force a close: the checkout it would remove is outside " +
+			"its sandbox, and the uncommitted work there exists nowhere else. Close it without force",
+	)
 }
