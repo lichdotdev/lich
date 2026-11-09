@@ -1341,3 +1341,18 @@ func TestOpenFromAnUnscopedCallerFollowsTheRung(t *testing.T) {
 		t.Errorf("confined %v, rows %v: the rung said no", opened.Confined, sessions.sandboxes)
 	}
 }
+
+// A required update refuses the open first, whoever asks: the gate's error
+// comes back and no row exists to mark confined.
+func TestOpenFromAConfinedCallerIsRefusedByTheGateFirst(t *testing.T) {
+	svc, sessions, _, term, _ := newService(t)
+	sessions.refusal = errors.New("update lich first")
+
+	_, err := svc.Open(scope.With(t.Context(), "s1"), OpenOptions{From: "s1"})
+	if err == nil || !strings.Contains(err.Error(), "update lich first") {
+		t.Fatalf("err = %v, want the gate's refusal", err)
+	}
+	if len(sessions.rows) != 0 || len(sessions.sandboxes) != 0 || len(term.spawns) != 0 {
+		t.Errorf("the refusal still created something: rows %v, sandboxes %v, spawns %d", sessions.rows, sessions.sandboxes, len(term.spawns))
+	}
+}
