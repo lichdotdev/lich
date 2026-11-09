@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The state menu on the Pulls screen has Approved: the open pull requests whose review is approved.
+
 ## [0.87.0] - 2026-11-08
 
 > [!CAUTION]

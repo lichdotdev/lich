@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -118,9 +119,22 @@ func (s *pullsStore) stale() {
 }
 
 func (s *pullsStore) list(path string, state pullsState) pullsRead[[]backend.PRSummary] {
+	if state == pullsApproved {
+		return approvedOnly(s.list(path, pullsOpen))
+	}
 	return read(s, s.lists, path+"\x00"+string(state), func() ([]backend.PRSummary, error) {
 		return s.client.ListPullRequests(s.ctx, path, string(state))
 	})
+}
+
+// approvedOnly narrows the open read, since gh's --state has no word for it.
+// shortcut: sees only the 50 most recently updated open pull requests, ask gh
+// with --search review:approved if a repository outgrows that.
+func approvedOnly(open pullsRead[[]backend.PRSummary]) pullsRead[[]backend.PRSummary] {
+	open.val = slices.DeleteFunc(slices.Clone(open.val), func(pr backend.PRSummary) bool {
+		return pr.ReviewDecision != "APPROVED"
+	})
+	return open
 }
 
 // detail reads pull request number, again every pendingRecheck while it is
