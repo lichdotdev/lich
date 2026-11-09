@@ -859,6 +859,7 @@ func (s *Service) endProcess(id, closerID string) error {
 	if s.ws != nil {
 		s.ws.plugins.forget(id)
 		s.ws.mods.forget(id)
+		s.ws.revokeScoped(id)
 	}
 	return err
 }

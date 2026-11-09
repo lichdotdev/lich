@@ -57,6 +57,11 @@ hooks:
 Outside lich these are absent, so every hook must no-op and exit 0 — the plugin
 stays safe to install globally.
 
+In a confined session `LICH_TOKEN` is a token minted for that session: the hook
+endpoints take it for that session's id only, and the RPC for an allowlist of
+methods (`internal/scope`). A hook that reads the token from the environment and
+reports for its own session, which is every hook here, notices nothing.
+
 These three are the hook contract, not the whole session environment: lich also
 exports `LICH_WORKTREE_PORT`, a dev-server port belonging to the session's
 checkout, and `LICH_PROJECT_DIR`, the project's own directory (the main

@@ -33,6 +33,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A session browser's page answer leaves out of the page's text each line that is only the label of a button or link it lists right below, and cuts the text at 1000 characters instead of 1200: a tenth smaller, with as much of the page's own text as before.
 - A session browser's click, type and key press on an element by index or selector fail before dispatch, naming what is in the way, when another element covers the target's click point (a cookie banner, a modal backdrop: `covered by <div#consent-banner>`) or the target is disabled, instead of clicking whatever is on top or doing nothing and answering with the page as before. A click at an x and y the agent chose is unchanged.
 
+### Security
+
+- A session running in the sandbox no longer holds lich's own token. It is handed one minted for it alone, which lich
+  accepts only for the calls a confined agent has a use for: messaging the sessions beside it, opening and steering
+  sessions, driving its own browser, reading the project's services and its cost. Starting or editing a service (which
+  runs a command on your machine, outside the sandbox), changing a setting such as the sandbox rung itself, typing into
+  another session's terminal and every other call stay refused, with a message that says why. A session opened from
+  inside the sandbox is confined too, whatever the sandbox setting says for that checkout, and a confined session can
+  message, insert into, control or question only sessions that are themselves confined: a message is carried out by
+  the agent that receives it, so one sent into an unconfined session would run on your machine. Replies reach anyone,
+  which is how a confined worker reports back. A confined session cannot force-close a worktree either.
+- The sandbox hides lich's own directory and the other sessions' worktrees. `~/.config/lich` (lich's token, its database,
+  your other accounts' profiles) and `~/.local/share/lich/worktrees` were readable inside a confined session, as part of
+  `~/.config` and `~/.local/share`; an empty directory now sits over each, with only the session's own profile, dropped
+  files, hook scripts and checkout mounted back.
+
 ### Fixed
 
 - The New folder dialog opens with the cursor in its name field, so you can type the name at once instead of clicking the field first.

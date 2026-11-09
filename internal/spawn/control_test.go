@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
@@ -188,5 +189,37 @@ func TestControlBoundsTheWait(t *testing.T) {
 	}
 	if command <= prompt {
 		t.Fatalf("a slash command waits %v, no longer than a prompt's %v", command, prompt)
+	}
+}
+
+// A prompt or a question handed to a session is carried out by that session,
+// so a confined caller reaches only confined ones; a force close removes a
+// checkout outside the sandbox.
+func TestAConfinedCallerSteersOnlyConfinedSessions(t *testing.T) {
+	svc, term := newControlService(t)
+	scoped := scope.With(context.Background(), "s1")
+
+	_, err := svc.Control(scoped, ControlOptions{From: "s1", Target: "auth-fix", Action: "prompt", Value: "run make"})
+	if err == nil || !strings.Contains(err.Error(), `"auth-fix"`) || !strings.Contains(err.Error(), "sandbox") {
+		t.Errorf("prompt to an unconfined session: err = %v, want a refusal naming it", err)
+	}
+	_, err = svc.Ask(scoped, AskOptions{From: "s1", Target: "auth-fix", Question: "status?"})
+	if err == nil || !strings.Contains(err.Error(), "sandbox") {
+		t.Errorf("ask to an unconfined session: err = %v, want a refusal", err)
+	}
+	if len(term.ran) != 0 {
+		t.Errorf("the mod was handed %+v", term.ran)
+	}
+}
+
+func TestAConfinedCallerSteersAConfinedSession(t *testing.T) {
+	svc, term := newControlService(t)
+	svc.sessions.(*fakeSessions).projects[0].Sessions[1].Sandbox = store.SessionConfined
+	_, err := svc.Control(scope.With(context.Background(), "s1"), ControlOptions{From: "s1", Target: "auth-fix", Action: "prompt", Value: "run make"})
+	if err != nil {
+		t.Fatalf("Control: %v", err)
+	}
+	if len(term.ran) != 1 {
+		t.Errorf("the mod was handed %+v, want the prompt", term.ran)
 	}
 }

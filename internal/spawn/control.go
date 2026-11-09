@@ -9,6 +9,8 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
+	"github.com/lichdotdev/lich/internal/scope"
+	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
 
@@ -53,6 +55,9 @@ func (s *Service) Control(ctx context.Context, opts ControlOptions) (Controlled,
 	}
 	found, err := s.claudeTarget(target, projectName, "control", "controlled")
 	if err != nil {
+		return Controlled{}, err
+	}
+	if err := scope.Target(ctx, found.session.Label, found.session.Sandbox == store.SessionConfined); err != nil {
 		return Controlled{}, err
 	}
 	// model and effort are the exception: they only change what the session's

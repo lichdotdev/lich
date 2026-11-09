@@ -108,3 +108,24 @@ func TestWrapPassesTheProfileAndTheCommand(t *testing.T) {
 		t.Errorf("command = %v, want %v", got, want)
 	}
 }
+
+// The last rule wins, so what Read gave and Hidden takes back has to be denied
+// after the read allowance and before the session's own paths are allowed back.
+func TestProfileHidesBetweenReadAndTheSessionsOwn(t *testing.T) {
+	spec := testSpec()
+	spec.Hidden = []string{"/Users/u/.config/lich"}
+	spec.Session = []string{"/Users/u/.config/lich/plugin"}
+	spec.Write = append(spec.Write, "/Users/u/.config/lich/profiles/work")
+	profile := seatbeltProfile(spec)
+
+	read := lineOf(profile, `(allow file-read* (subpath "/Users/u/.config")`)
+	hidden := lineOf(profile, `(deny file-read* file-write* (subpath "/Users/u/.config/lich")`)
+	own := lineOf(profile, `(subpath "/Users/u/.config/lich/plugin")`)
+	writable := lineOf(profile, `(subpath "/Users/u/.config/lich/profiles/work")`)
+	if read < 0 || hidden < 0 || own < 0 || writable < 0 {
+		t.Fatalf("a rule is missing:\n%s", profile)
+	}
+	if !(read < hidden && hidden < own && hidden < writable) {
+		t.Errorf("rules out of order (read %d, hidden %d, own %d, writable %d):\n%s", read, hidden, own, writable, profile)
+	}
+}

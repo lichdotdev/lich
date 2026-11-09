@@ -27,9 +27,11 @@ import (
 // sandbox whose private home has no path is one that would confine a session to
 // nothing it can name.
 //
-// dropDir is where this session's dropped-file copies live (sessionDropDir),
-// bound read-only so a file dragged onto a confined terminal is a file the
-// agent can actually open. Empty leaves it out.
+// reads are this session's own read-only paths: where its dropped-file copies
+// live (sessionDropDir), so a file dragged onto a confined terminal is a file
+// the agent can actually open, and the shell-integration scripts. Both sit
+// under lich's config directory, which the sandbox hides, so they are mounted
+// back after it (sandbox.Spec's Session). Empty entries are left out.
 //
 // profileDir is the Claude Code profile the session runs in, "" for Personal:
 // a profile lives under lich's config dir, which the sandbox mounts read-only,
@@ -43,12 +45,12 @@ import (
 // this is the only moment anything resolves it, and a session that cannot find
 // its own ~/.gitconfig is owed the reason.
 func wrapSandbox(
-	spec ptySpec, kind, home, dropDir, profileDir string, confined bool, creds sandboxCreds,
+	spec ptySpec, kind, home string, reads []string, profileDir string, confined bool, creds sandboxCreds,
 ) (ptySpec, []string) {
 	if !confined || home == "" || !sandbox.Available() {
 		return spec, nil
 	}
-	read := append(executables(spec.bin), dropDir)
+	read := append(executables(spec.bin), reads...)
 	sb := sandbox.Describe(kind, home, spec.dir, project.GitCommonDir(spec.dir), read, creds.sshAgent)
 	if profileDir != "" {
 		sb.Write = append(sb.Write, profileDir)
@@ -195,6 +197,22 @@ func (s *Service) withAccountToken(spec ptySpec, cwd string, confined bool) ptyS
 	}
 	spec.env = replaceEnv(spec.env, entry)
 	return spec
+}
+
+// withScopedToken swaps the launch token out of a confined session's
+// environment for one minted for that session alone (scoped.go). An
+// unconfined session keeps the launch token: it already runs on the machine
+// with the user's whole account, and the window's own flows run through it.
+func (s *Service) withScopedToken(spec ptySpec, id string, confined bool) (ptySpec, error) {
+	if !confined || s.ws == nil {
+		return spec, nil
+	}
+	token, err := s.ws.mintScoped(id)
+	if err != nil {
+		return spec, err
+	}
+	spec.env = replaceEnv(spec.env, "LICH_TOKEN="+token)
+	return spec, nil
 }
 
 // replaceEnv is env with entry's variable set to entry's value alone.

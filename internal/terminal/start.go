@@ -188,10 +188,13 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	}
 	spec = withShellIntegration(spec, opts.Kind, s.shellIntegrationDir)
 	spec = s.withAccountToken(spec, opts.Cwd, inSandbox)
+	spec, err = s.withScopedToken(spec, opts.ID, inSandbox)
+	if err != nil {
+		return nil, "", err
+	}
 	creds := s.sandboxCredentials(opts.ProjectID, opts.Cwd, inSandbox)
-	spec, skippedLinks := wrapSandbox(
-		spec, opts.Kind, userHome(), sessionDropDir(s.dropDir, opts.ID, inSandbox), profileDir, inSandbox, creds,
-	)
+	reads := []string{sessionDropDir(s.dropDir, opts.ID, inSandbox), s.shellIntegrationDir}
+	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, profileDir, inSandbox, creds)
 	header, err := encodeFrame(opts.ID, nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("start %q: %w", opts.ID, err)

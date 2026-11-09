@@ -440,3 +440,99 @@ func TestTheProbeAnswersForTheBackendItNamesWithinItsBound(t *testing.T) {
 		t.Errorf("a platform with no backend reported a failure to confine: %v", err)
 	}
 }
+
+// lichOnDisk lays out what lich itself keeps under the home: its config
+// directory with the launch token and the database, the hook scripts it
+// installs, and two of its worktrees, one of which is the session's.
+func lichOnDisk(t *testing.T, home string) (cwd string) {
+	t.Helper()
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	for _, dir := range []string{
+		".config/lich/plugin/hooks/crush", ".config/lich/profiles/work", ".config/lich/dropped/sess",
+		".local/share/lich/worktrees/abc/mine", ".local/share/lich/worktrees/abc/theirs",
+	} {
+		if err := os.MkdirAll(filepath.Join(home, dir), 0o700); err != nil {
+			t.Fatalf("mkdir %s: %v", dir, err)
+		}
+	}
+	for _, file := range []string{".config/lich/runtime.json", ".config/lich/lich.db", ".config/lich/dropped/sess/paste.png"} {
+		if err := os.WriteFile(filepath.Join(home, file), []byte("secret"), 0o600); err != nil {
+			t.Fatalf("write %s: %v", file, err)
+		}
+	}
+	return filepath.Join(home, ".local", "share", "lich", "worktrees", "abc", "mine")
+}
+
+// lich's own directory and the other sessions' worktrees come in with ~/.config
+// and ~/.local/share, and go back out as hidden; the hook scripts and the
+// session's own paths come back after them.
+func TestDescribeHidesLichFromTheSession(t *testing.T) {
+	home := t.TempDir()
+	cwd := lichOnDisk(t, home)
+	drops := filepath.Join(home, ".config", "lich", "dropped", "sess")
+
+	spec := Describe(providers.Claude, home, cwd, "", []string{drops}, false)
+
+	// Hidden is the resolved path, since the mount lands on the directory and
+	// not on a link to it: on macOS the temp dir is itself a link (/var into
+	// /private/var), on Windows a short name.
+	wantHidden := []string{
+		resolved(t, filepath.Join(home, ".config", "lich")),
+		resolved(t, filepath.Join(home, ".local", "share", "lich", "worktrees")),
+	}
+	if !slices.Equal(spec.Hidden, wantHidden) {
+		t.Errorf("Hidden = %v, want %v", spec.Hidden, wantHidden)
+	}
+	wantSession := []string{filepath.Join(home, ".config", "lich", "plugin"), drops}
+	if !slices.Equal(spec.Session, wantSession) {
+		t.Errorf("Session = %v, want %v", spec.Session, wantSession)
+	}
+	if slices.Contains(spec.Read, drops) {
+		t.Errorf("a session path is in Read, before what hides it: %v", spec.Read)
+	}
+}
+
+// A machine with no lich directory under this home hides nothing: a mount
+// point that is not there fails the spawn.
+func TestDescribeHidesOnlyWhatExists(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	spec := Describe(providers.Claude, home, filepath.Join(home, "work"), "", nil, false)
+	if len(spec.Hidden) != 0 || len(spec.Session) != 0 {
+		t.Errorf("Hidden = %v, Session = %v, want none", spec.Hidden, spec.Session)
+	}
+}
+
+// A lich directory the user moved behind a symlink is hidden where it really
+// is: the mount lands on the directory, not on the link.
+func TestDescribeHidesThroughASymlink(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	real := filepath.Join(home, "dotfiles", "lich")
+	if err := os.MkdirAll(real, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(home, ".config"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(real, filepath.Join(home, ".config", "lich")); err != nil {
+		t.Fatal(err)
+	}
+	spec := Describe(providers.Claude, home, filepath.Join(home, "work"), "", nil, false)
+	if want := resolved(t, real); !slices.Contains(spec.Hidden, want) {
+		t.Errorf("Hidden = %v, want the link's target %s", spec.Hidden, want)
+	}
+}
+
+// resolved is path as the sandbox mounts it, with every link in it followed.
+func resolved(t *testing.T, path string) string {
+	t.Helper()
+	out, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		t.Fatalf("resolve %s: %v", path, err)
+	}
+	return out
+}

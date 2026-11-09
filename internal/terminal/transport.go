@@ -125,9 +125,11 @@ type transport struct {
 	// out is the live connection's writer (writequeue.go). It is swapped with
 	// conn and under the same lock: the two are one client, and send finding a
 	// connection without its writer would have nowhere to put a frame.
-	out         *writeQueue
-	port        int
-	token       string
+	out   *writeQueue
+	port  int
+	token string
+	// scoped is each confined session's own token (scoped.go), guarded by mu.
+	scoped      map[string]string
 	mux         *http.ServeMux
 	srv         *http.Server
 	input       func(id string, data []byte)
@@ -412,26 +414,29 @@ func writeLeaks(w io.Writer) {
 // mount adds a handler to the transport listener behind the same token check
 // every endpoint uses. ServeMux registration is safe after Serve started, so
 // callers wire extra surfaces (RPC, the events push socket) post-construction.
+// A scoped token reaches only the RPC, and only its allowlist (scopedRequest).
 func (t *transport) mount(pattern string, handler http.Handler) {
 	t.mux.Handle(pattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !t.authorized(r) {
+		c, ok := t.callerOf(r)
+		if !ok {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
+		}
+		if c.scoped() {
+			if r, ok = scopedRequest(w, r, c); !ok {
+				return
+			}
 		}
 		handler.ServeHTTP(w, r)
 	}))
 }
 
-// authorized reports whether the request carries the transport's connect token,
-// as ?token= or as a Bearer header. The header exists for callers that would
-// otherwise put the token in a process's command line. The origin is not
-// checked: the random token is the auth.
+// authorized reports whether the request carries the transport's launch token.
+// The origin is not checked: the random token is the auth. A session's scoped
+// token does not pass here: the endpoints that ask this (the window's socket,
+// the restart, the goroutine dump) are the window's and the installer's.
 func (t *transport) authorized(r *http.Request) bool {
-	provided := r.URL.Query().Get("token")
-	if bearer, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
-		provided = bearer
-	}
-	return subtle.ConstantTimeCompare([]byte(provided), []byte(t.token)) == 1
+	return subtle.ConstantTimeCompare([]byte(tokenOf(r)), []byte(t.token)) == 1
 }
 
 // servePost is the skeleton every hook endpoint shares: POST only, token
@@ -464,7 +469,8 @@ func servePostLimited[T hookBody](
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	if !t.authorized(r) {
+	c, ok := t.callerOf(r)
+	if !ok {
 		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
@@ -481,6 +487,12 @@ func servePostLimited[T hookBody](
 		// this lich predates from a broken script.
 		slog.Warn("hook: bad payload", "path", r.URL.Path, "plugin", pluginLabel(plugin), "err", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// A session's token reports for that session alone: a confined agent
+	// posting another card's state would drive a spinner it does not own.
+	if !c.ownSession(parsed.session()) {
+		http.Error(w, "the token belongs to another session", http.StatusForbidden)
 		return
 	}
 	t.plugins.note(parsed.session(), plugin)

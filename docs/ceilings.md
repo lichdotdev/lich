@@ -861,9 +861,39 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Linux, a path policy on macOS, and nothing else — no seccomp filter, no Landlock ruleset. The network is
   never cut (the agent needs its API and the plugin's hooks report over loopback), so anything readable
   inside is exfiltrable, and `~/.config` *is* readable: a token stored there is in reach. `gh`'s is not
-  one of them — it lives in the system keyring, which is why reaching it takes the flag below. Every session also carries `LICH_TOKEN`, so a confined agent can call lich's own RPC over
-  loopback: a method that reads a host path it was *handed* would copy anything into reach of the sandbox,
-  which is why the attach flow opens the picker inside the backend (`drop.Attach`) instead of taking a path. The private home is writable and vanishes with the session, so a dotfile an agent writes is gone
+  one of them — it lives in the system keyring, which is why reaching it takes the flag below. lich's own
+  directory under it (`~/.config/lich`: the launch token in `runtime.json`, the database, every account's
+  profile) and the worktrees of every other session (`~/.local/share/lich/worktrees`) are taken back out:
+  an empty directory sits over each, and only what the session owns is mounted back on top (its profile and
+  plugin store, the hook scripts under `plugin/`, its dropped files, its own checkout). The two paths are
+  spelled in `internal/sandbox` as well as where lich creates them, and a lich directory moved elsewhere by
+  `XDG_CONFIG_HOME` or `XDG_DATA_HOME` is followed, a symlinked one to its target. A confined session is also
+  handed a token of its own instead of the launch-wide `LICH_TOKEN` (`internal/terminal`, `scoped.go`): it
+  reaches the hook endpoints for its own session only, and the RPC through `internal/scope`'s allowlist, deny
+  by default. What is out is every call that acts on the machine outside the sandbox or belongs to the window:
+  `services.*` except the reads (a service's command runs unconfined), `store.SetSetting` (the rung),
+  `terminal.*` except `Ready`, `project.*`, `drop.Attach`, `system.*` except `Diagnostics`, the window's
+  browser methods, `/events`, `/ws`, `/blob`, `/drop`, `/restart`, `/debug/goroutines`. On the methods that
+  name their caller (`from`, a browser's `id`) the name must be the token's session, so a confined agent
+  cannot speak to the relay as another session. A session it opens (`open_session`, `lich open`, a handoff, a
+  subagent card) is confined whatever the rung says, since `SandboxDefault` answers no for the main checkout
+  under "Worktrees only". The token is minted per spawn and lives in the backend's memory: a respawn, a parked
+  session resumed and a backend restart each issue a new one, and a caller that outlives its process (a
+  background agent) is refused from then on and cannot fall back on `runtime.json`, which it cannot read; the
+  `lich` CLI says so. The relay stays, held to one more rule where each method resolves its target
+  (`scope.Target`, called from `internal/relay` and `internal/spawn`, never from the transport, which cannot
+  turn a label into a row): a confined session speaks to confined sessions and answers anyone. `relay.Send`,
+  `SendPrivate`, `SendSubagent`, `Insert`, `Submit`, `spawn.Control` and `spawn.Ask` put text at the target's
+  prompt, and the receiving agent carries it out as its task, so a target whose row is not confined is refused
+  by label with the reason; `relay.Reply` reaches any ticket, since a reply is read as a result, and it is how a
+  confined worker reports to the unconfined session that opened it. `spawn.Close` refuses `force` from the
+  sandbox: the checkout it would remove is outside it and the uncommitted work there exists nowhere else. The
+  cost is the deliberate one: a confined session cannot delegate to an unconfined one, only to sessions it
+  opens (which are confined) or that were already confined. The eight providers
+  are untouched by the scoping: every hook and `lich mcp` reads `LICH_TOKEN` from the environment
+  (`docs/hooks/`), none reads `runtime.json`. The window's own flows run on the launch token and lose
+  nothing. A method that reads a host path it was *handed* would copy anything into reach of the sandbox,
+  which is why the attach flow opens the picker inside the backend (`drop.Attach`) instead of taking a path, and why it is not on the allowlist. The private home is writable and vanishes with the session, so a dotfile an agent writes is gone
   next spawn with nothing saying so. On Ubuntu and Debian the kernel may refuse the user namespace outright
   (an AppArmor policy), which surfaces as bubblewrap's own error in the card and no session: `Available` is
   `exec.LookPath` and stays that way, because only a spawn can ask the kernel, so nothing before the card
@@ -880,6 +910,20 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   X11 socket and its cookie instead, the wider of the two — X clients are not isolated from one another —
   and macOS gets neither, its pasteboard being a mach service rather than a socket, so a confined session
   there has no clipboard at all. macOS has no hardware here — its profile is unit-tested and has never run.
+- **The display socket hands over whatever the compositor advertises, not only the clipboard**
+  (`internal/sandbox`, `displaySockets`). A Wayland socket is one connection to the compositor, and the
+  compositor decides what a client on it may do; the sandbox cannot narrow it. On the wlroots family (sway,
+  Hyprland, river, labwc and the rest) `wayland-info` run inside a confined session lists
+  `zwlr_screencopy_manager_v1` and `ext_image_copy_capture_manager_v1` (capture the screen, any window),
+  `zwp_virtual_keyboard_manager_v1` and `zwlr_virtual_pointer_manager_v1` (type and click into windows
+  outside the sandbox, a terminal with the user's shell included) and `zwlr_data_control_manager_v1` (read
+  and set the clipboard without focus), all measured on one such compositor. KDE's KWin exposes its own
+  capture and input protocols to every client too; GNOME's Mutter exposes neither and routes both through
+  the portal, which the sandbox's empty runtime directory does not hand over. Which family a host runs is
+  therefore the whole answer to "can a confined agent watch my screen and type at my shell", and only a
+  compositor that filters clients by security context (`wp_security_context_v1`, which bubblewrap does not
+  set up) closes it. The mount stays: without it the agent's copy and image paste fail, and the cost is
+  written here rather than hidden behind a sandbox that looks tighter than it is.
 - **The two sandbox grants are all-or-nothing** (`internal/store/settings.go`, `internal/sandbox`,
   `internal/terminal/sandbox.go`): a confined session reaches the network as the user only where the project
   turned one of them on, and each is all-or-nothing. The ssh agent is handed over as a socket, so nothing
