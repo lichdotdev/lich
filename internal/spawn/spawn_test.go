@@ -41,6 +41,9 @@ type fakeSessions struct {
 	addProjErr error
 	rows       []added
 	addErr     error
+	// refusal is what SessionRefused answers for every kind but a shell, as
+	// the store does.
+	refusal error
 	// models records the model written on each session row, keyed by session id.
 	models   map[string]string
 	modelErr error
@@ -242,6 +245,13 @@ func (f *fakeSessions) AddSessionFrom(_ context.Context, opts api.AddSessionFrom
 		}
 	}
 	return api.None{}, nil
+}
+
+func (f *fakeSessions) SessionRefused(kind string) error {
+	if kind == terminal.KindShell {
+		return nil
+	}
+	return f.refusal
 }
 
 func (f *fakeSessions) SandboxDefault(providerID, projectID, cwd string) bool {

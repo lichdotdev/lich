@@ -3,6 +3,7 @@ package patchnotes
 import (
 	"github.com/lichdotdev/lich/api"
 	"reflect"
+	"strings"
 	"testing"
 	"testing/fstest"
 )
@@ -255,5 +256,41 @@ func TestCurrentIgnoresATranslationOfAnotherRelease(t *testing.T) {
 	}
 	if want := Section(sample, "0.10.0"); !reflect.DeepEqual(got.Groups, want) {
 		t.Fatalf("groups = %#v, want the English %#v", got.Groups, want)
+	}
+}
+
+// The notes a release is published with are its changelog section under the
+// banner release.yml puts on top, with the line endings GitHub hands back.
+func TestRequiresUpdateReadsACautionBlock(t *testing.T) {
+	const banner = `<img src="https://raw.githubusercontent.com/lichdotdev/lich/v0.9.0/docs/media/og.png" width="900" />`
+	caution := banner + "\n\n\n> [!CAUTION]\n> **Everyone: this release closes a hole in the loopback listener.**\n> Update now.\n\n### Fixed\n\n- A fix.\n"
+	tests := []struct {
+		name, notes string
+		want        bool
+	}{
+		{"caution under the banner", caution, true},
+		{"caution with CRLF line endings", strings.ReplaceAll(caution, "\n", "\r\n"), true},
+		{"caution beside another block", "> [!IMPORTANT]\n> **Headline.**\n\n> [!CAUTION]\n> **Required.**\n\n### Added\n\n- x\n", true},
+		{"other kinds only", "> [!IMPORTANT]\n> **Headline.**\n\n> [!WARNING]\n> Careful.\n\n### Added\n\n- x\n", false},
+		{"no block", banner + "\n\n### Added\n\n- x\n", false},
+		{"caution quoted inside a group", "### Added\n\n- x\n\n> [!CAUTION]\n> Not a release alert.\n", false},
+		{"opener with no text", "> [!CAUTION]\n\n### Added\n\n- x\n", false},
+		{"empty", "", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := RequiresUpdate(tc.notes); got != tc.want {
+				t.Fatalf("RequiresUpdate() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestHighlightsReadACautionBlock(t *testing.T) {
+	changelog := "## [0.9.0] - 2026-11-08\n\n> [!CAUTION]\n> **Everyone: update.** It is required.\n\n### Fixed\n\n- A fix.\n"
+	got := Highlights(changelog, "0.9.0")
+	want := []Highlight{{Kind: KindCaution, Text: "**Everyone: update.** It is required."}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Highlights() = %#v, want %#v", got, want)
 	}
 }

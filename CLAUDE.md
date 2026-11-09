@@ -122,4 +122,9 @@ The version comes from the git tag (`git describe` in the Taskfile, env `VERSION
       something the reader must do or avoid; `> [!NOTE]` is a detail worth a line. One or two sentences each,
       opening with a bold sentence that names its audience. The same blocks render as callouts on the release
       page. Most releases carry none.
+- [ ] Is the update required, a security fix nobody should put off? Write a `> [!CAUTION]` block in the same
+      place and shape. It is not only a callout: every lich behind this release then shows an update prompt
+      with no Later and opens no new agent session until it is installed (`docs/ceilings.md` › a required
+      update), and that holds for a user who skips past this release to a later one. Never write it for
+      anything else.
 - [ ] Push the `vX.Y.Z` tag — `.github/workflows/release.yml` does the rest, and reads the notes from that section.

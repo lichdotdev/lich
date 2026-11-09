@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "O lich {version} está disponível",
+    "required": "O lich {version} é uma atualização de segurança obrigatória",
+    "requiredDetail": "Novas sessões de agente não abrem até ela ser instalada. As que já estão rodando continuam funcionando.",
     "updateAndInstall": "Atualizar e instalar",
     "later": "Depois",
     "updated": "lich atualizado para {version}",

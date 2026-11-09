@@ -20,6 +20,16 @@ func TestShouldPromptUpdate(t *testing.T) {
 	}
 }
 
+func TestShouldPromptUpdateIgnoresLaterForARequiredRelease(t *testing.T) {
+	required := backend.AppUpdateStatus{UpdateAvailable: true, Required: true, LatestVersion: "1.4.0"}
+	if !shouldPromptUpdate(required, "1.4.0") {
+		t.Error("a required release did not prompt because Later was clicked for it")
+	}
+	if shouldPromptUpdate(backend.AppUpdateStatus{Required: true, LatestVersion: "1.4.0"}, "") {
+		t.Error("a lich with no update available prompted")
+	}
+}
+
 func TestUpdateProgressToast(t *testing.T) {
 	cases := []struct {
 		name        string

@@ -175,10 +175,11 @@ func (u *window) profileGone(s sessionView) {
 
 // startNewInProjectProfile opens a session of the card's kind where it ran,
 // born in whatever profile the project uses now, and parks the card it
-// replaces.
+// replaces. A session the backend refused replaces nothing, so the card stays.
 func (u *window) startNewInProjectProfile(s sessionView) {
-	u.newSession(launchRequest{kind: s.Kind, dir: s.path, folder: s.Folder}, "")
-	u.closeSession(s.ID)
+	if u.newSession(launchRequest{kind: s.Kind, dir: s.path, folder: s.Folder}, "") {
+		u.closeSession(s.ID)
+	}
 }
 
 // offerProfile asks whether to continue a session in another profile: one a

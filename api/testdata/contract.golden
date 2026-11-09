@@ -327,6 +327,7 @@ AppUpdateStatus {
 	currentVersion string
 	latestVersion string
 	updateAvailable bool
+	required bool
 	canSelfApply bool
 	releaseUrl string
 	installCommand string

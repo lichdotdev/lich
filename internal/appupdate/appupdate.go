@@ -22,14 +22,19 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/ghrelease"
+	"github.com/lichdotdev/lich/internal/patchnotes"
 	"github.com/lichdotdev/lich/internal/semver"
 )
 
 const (
-	repo             = "lichdotdev/lich"
-	latestReleaseURL = "https://api.github.com/repos/" + repo + "/releases/latest"
-	releaseBase      = "https://github.com/" + repo + "/releases/download/"
-	releaseTagBase   = "https://github.com/" + repo + "/releases/tag/"
+	repo = "lichdotdev/lich"
+	// releasesURL lists the releases, newest first, notes included: one request
+	// answers both which release is the latest and whether one of those the
+	// running build skipped is required. A page is the most GitHub serves, so a
+	// build more than a page behind sees only the newest hundred.
+	releasesURL    = "https://api.github.com/repos/" + repo + "/releases?per_page=100"
+	releaseBase    = "https://github.com/" + repo + "/releases/download/"
+	releaseTagBase = "https://github.com/" + repo + "/releases/tag/"
 
 	// aurPackage is the AUR name Arch users update through their helper.
 	aurPackage = "lich-bin"
@@ -93,14 +98,20 @@ type Service struct {
 	// runtime.GOOS/runtime.GOARCH.
 	goos   string
 	goarch string
-	// latestURL is the release endpoint to poll; a field so tests can point it
+	// releasesURL is the release list to poll; a field so tests can point it
 	// at a local server. downloadBase / tagBase back the same seam for Apply.
-	latestURL    string
+	releasesURL  string
 	downloadBase string
 	tagBase      string
 	// osReleasePath is read to pick the Linux install command; a field so tests
 	// drive the arch/non-arch branches off a fixture instead of the host's file.
 	osReleasePath string
+
+	// seen guards last, the status of the latest lookup, and checkedAt, when it
+	// ran. Apart from mu, which Apply holds for a whole download.
+	seen      sync.Mutex
+	last      Status
+	checkedAt time.Time
 }
 
 // New returns a service that reports version as the running build and polls
@@ -117,7 +128,7 @@ func New(version string, install func(string) error, emit func(name string, data
 		exePath:       exe,
 		goos:          runtime.GOOS,
 		goarch:        runtime.GOARCH,
-		latestURL:     latestReleaseURL,
+		releasesURL:   releasesURL,
 		downloadBase:  releaseBase,
 		tagBase:       releaseTagBase,
 		osReleasePath: defaultOSRelease,
@@ -131,11 +142,12 @@ func (s *Service) Status(_ context.Context, _ api.None) (Status, error) {
 	return s.status(), nil
 }
 
-// status reports whether a newer release exists and whether this install can
-// update itself through the installer. A failed network lookup leaves everything empty and
-// reports no update — it must not block or break app startup.
+// status reports whether a newer release exists, whether it is required and
+// whether this install can update itself through the installer. A failed network
+// lookup leaves everything empty and reports no update: it must not block or
+// break app startup.
 func (s *Service) status() Status {
-	latest := s.latestVersion()
+	latest, required := s.latestRelease()
 	st := Status{
 		CurrentVersion:  s.version,
 		LatestVersion:   latest,
@@ -143,9 +155,13 @@ func (s *Service) status() Status {
 		CanSelfApply:    canSelfApply(s.goos, s.goarch, s.exePath),
 		InstallCommand:  s.installCommand(),
 	}
+	st.Required = st.UpdateAvailable && required
 	if latest != "" {
 		st.ReleaseURL = s.tagBase + "v" + latest
 	}
+	s.seen.Lock()
+	s.last, s.checkedAt = st, time.Now()
+	s.seen.Unlock()
 	return st
 }
 
@@ -158,7 +174,7 @@ func (s *Service) Apply(_ context.Context, _ api.None) (api.None, error) {
 	if !canSelfApply(s.goos, s.goarch, s.exePath) {
 		return api.None{}, fmt.Errorf("self-apply not supported on this install")
 	}
-	latest := s.latestVersion()
+	latest, _ := s.latestRelease()
 	if latest == "" {
 		return api.None{}, fmt.Errorf("could not resolve the latest release")
 	}
@@ -317,10 +333,21 @@ func parseChecksum(data []byte, asset string) string {
 	return ""
 }
 
-// latestVersion fetches the newest released version from GitHub, or "" on any
-// failure — the caller treats an empty result as "no update known".
-func (s *Service) latestVersion() string {
-	return ghrelease.LatestTag(s.http, s.latestURL)
+// latestRelease reads the releases list once: the newest published version, ""
+// on any failure (the caller treats that as "no update known"), and whether a
+// release newer than the running build carries a caution block in its notes.
+// Every release in between counts, not only the latest: skipping three must
+// not skip the one that was a security fix.
+func (s *Service) latestRelease() (latest string, required bool) {
+	for _, r := range ghrelease.Releases(s.http, s.releasesURL) {
+		if latest == "" || semver.Less(latest, r.Tag) {
+			latest = r.Tag
+		}
+		if semver.Less(s.version, r.Tag) && patchnotes.RequiresUpdate(r.Body) {
+			required = true
+		}
+	}
+	return latest, required
 }
 
 // get issues a metadata GET (JSON, checksums) on the short-timeout client.

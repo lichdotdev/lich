@@ -370,3 +370,80 @@ func TestPluginGateUntickedCLIIsLeftOut(t *testing.T) {
 		t.Errorf("installed %s, want only the CLI still ticked", args)
 	}
 }
+
+func TestRequiredUpdateToastHasNoLaterAndKeepsItsAction(t *testing.T) {
+	u, b := newGateWindow(t)
+	toast := u.appUpdateToast(backend.AppUpdateStatus{UpdateAvailable: true, Required: true, LatestVersion: "1.4.0", CanSelfApply: true})
+	if toast.Cancel != nil {
+		t.Fatalf("a required update offers %q, want no way to put it off", toast.Cancel.Label)
+	}
+	if toast.Title != "lich 1.4.0 is a required security update" || toast.Description == "" || toast.Variant != ui.ToastWarning {
+		t.Errorf("toast = %q / %q / variant %d, want the required wording as a warning", toast.Title, toast.Description, toast.Variant)
+	}
+	toast.Action.OnClick()
+	b.await(t, "appupdate.Apply")
+}
+
+func TestRequiredUpdateToastComesBackWhenSwipedAway(t *testing.T) {
+	u, _ := newGateWindow(t)
+	toast := u.appUpdateToast(backend.AppUpdateStatus{UpdateAvailable: true, Required: true, LatestVersion: "1.4.0", ReleaseURL: "https://r"})
+	if u.toaster.Live(appUpdateToastID) {
+		t.Fatal("the prompt is up before anything raised it")
+	}
+	toast.OnDismiss()
+	if !u.toaster.Live(appUpdateToastID) {
+		t.Fatal("a required update swiped away stayed away")
+	}
+	if ordinary := u.appUpdateToast(backend.AppUpdateStatus{UpdateAvailable: true, LatestVersion: "1.4.0"}); ordinary.OnDismiss != nil {
+		t.Error("an ordinary update comes back when swiped away")
+	}
+}
+
+// Later was clicked for 1.4.0 before it was known to be required, and its
+// action closed the prompt once: every check raises it again.
+func TestCheckRaisesARequiredUpdateAgain(t *testing.T) {
+	u, b := newGateWindow(t)
+	b.answer["store.GetSetting"] = "1.4.0"
+	b.answer["appupdate.Status"] = backend.AppUpdateStatus{UpdateAvailable: true, Required: true, LatestVersion: "1.4.0", ReleaseURL: "https://r"}
+	for check := range 2 {
+		u.checkAppUpdate()
+		if !u.toaster.Live(appUpdateToastID) {
+			t.Fatalf("check %d left a required update unprompted", check+1)
+		}
+		u.toaster.Dismiss(appUpdateToastID)
+	}
+
+	b.answer["store.GetSetting"] = ""
+	b.answer["appupdate.Status"] = backend.AppUpdateStatus{UpdateAvailable: true, LatestVersion: "1.5.0", ReleaseURL: "https://r"}
+	u.checkAppUpdate()
+	u.toaster.Dismiss(appUpdateToastID)
+	u.checkAppUpdate()
+	if u.toaster.Live(appUpdateToastID) {
+		t.Error("an ordinary update prompted twice in one run")
+	}
+}
+
+func TestNewSessionRefusedSaysWhy(t *testing.T) {
+	u, b := newGateWindow(t)
+	b.failing.Store("store.AddSessionInFolder", true)
+	if u.newSession(launchRequest{kind: "claude"}, "") {
+		t.Fatal("newSession reported a session the backend refused")
+	}
+	b.await(t, "store.AddSessionInFolder")
+	if !u.toaster.Live("toast-1") {
+		t.Fatal("a session the backend refused left nothing on screen")
+	}
+}
+
+// The card a refused session was meant to replace is the only one there is.
+func TestARefusedReplacementKeepsTheCardItWouldReplace(t *testing.T) {
+	u, b := newGateWindow(t)
+	b.failing.Store("store.AddSessionInFolder", true)
+	u.startNewInProjectProfile(sessionView{Session: backend.Session{ID: "old", Kind: "claude"}})
+	b.await(t, "store.AddSessionInFolder")
+	select {
+	case call := <-b.calls:
+		t.Fatalf("after the refusal the window called %s, want the old card left alone", call)
+	case <-time.After(50 * time.Millisecond):
+	}
+}

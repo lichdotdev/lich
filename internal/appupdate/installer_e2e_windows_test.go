@@ -58,8 +58,8 @@ func installerReleaseFixture(t *testing.T, installer, asset string) *httptest.Se
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/latest":
-			fmt.Fprint(w, `{"tag_name":"v0.8.0"}`)
+		case "/releases":
+			fmt.Fprint(w, `[{"tag_name":"v0.8.0"}]`)
 		case "/v0.8.0/checksums.txt":
 			data, err := os.ReadFile(installer)
 			if err != nil {
@@ -84,7 +84,7 @@ func releaseOverlay(t *testing.T, root, work, url string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := strings.Replace(string(data), `"https://api.github.com/repos/" + repo + "/releases/latest"`, fmt.Sprintf("%q", url+"/latest"), 1)
+	text := strings.Replace(string(data), `"https://api.github.com/repos/" + repo + "/releases?per_page=100"`, fmt.Sprintf("%q", url+"/releases"), 1)
 	text = strings.Replace(text, `"https://github.com/" + repo + "/releases/download/"`, fmt.Sprintf("%q", url+"/"), 1)
 	patched := filepath.Join(work, "appupdate.go")
 	writeFixture(t, patched, []byte(text))

@@ -44,8 +44,8 @@ func windowsReleaseFixture(t *testing.T, asset, body string) *httptest.Server {
 	sum := sha256.Sum256([]byte(body))
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/latest":
-			fmt.Fprint(w, `{"tag_name":"v0.8.0"}`)
+		case "/releases":
+			fmt.Fprint(w, `[{"tag_name":"v0.8.0"}]`)
 		case "/v0.8.0/checksums.txt":
 			fmt.Fprintf(w, "%x  %s\n", sum, asset)
 		case "/v0.8.0/" + asset:

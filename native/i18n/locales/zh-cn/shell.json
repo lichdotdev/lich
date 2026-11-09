@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "lich {version} 可用",
+    "required": "lich {version} 是必须安装的安全更新",
+    "requiredDetail": "安装之前无法打开新的智能体会话，已在运行的会话不受影响。",
     "updateAndInstall": "更新并安装",
     "later": "稍后",
     "updated": "lich 已更新到 {version}",

@@ -18,6 +18,8 @@
   },
   "appUpdateGate": {
     "available": "lich {version} が利用可能です",
+    "required": "lich {version} は必須のセキュリティアップデートです",
+    "requiredDetail": "インストールするまで、新しいエージェントセッションは開けません。実行中のセッションはそのまま動き続けます。",
     "updateAndInstall": "更新してインストール",
     "later": "後で",
     "updated": "lich を {version} に更新しました",

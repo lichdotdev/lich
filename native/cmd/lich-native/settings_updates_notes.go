@@ -34,6 +34,7 @@ var (
 	notesSmall       = unit.Sp(13) // text-[0.8125rem]
 	notesLeadSize    = unit.Sp(24)
 	icNotesWarning   = icons.Lucide("triangle-alert")
+	icNotesCaution   = icons.Lucide("octagon-alert")
 	icNotesNote      = icons.Lucide("info")
 	icNotesOpened    = icons.Lucide("chevron-down")
 	icNotesClosed    = icons.Lucide("chevron-right")
@@ -361,11 +362,23 @@ func notesLead(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 
 // notesCallout is a block under the headline: a warning paints in the
 // destructive tint, a note sits on the accent fill.
+// calloutTone is a callout's glyph and ink, and whether it is drawn as danger:
+// a warning and a caution, the block of a required update, are; a note is not.
+func calloutTone(th *ui.Theme, kind string) (icon *icons.Icon, ink color.NRGBA, danger bool) {
+	switch kind {
+	case "caution":
+		return icNotesCaution, th.Destructive, true
+	case "warning":
+		return icNotesWarning, th.Destructive, true
+	}
+	return icNotesNote, th.MutedForeground, false
+}
+
 func notesCallout(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
-	warning := h.Kind == "warning"
-	icon, iconInk, fill := icNotesNote, th.MutedForeground, th.Over(ui.Alpha(th.Accent, 0.6))
-	if warning {
-		icon, iconInk, fill = icNotesWarning, th.Destructive, th.Over(ui.Alpha(th.Destructive, 0.1))
+	icon, iconInk, danger := calloutTone(th, h.Kind)
+	fill := th.Over(ui.Alpha(th.Accent, 0.6))
+	if danger {
+		fill = th.Over(ui.Alpha(th.Destructive, 0.1))
 	}
 	text := richText(th, h.Text, richStyle{size: notesSmall, leading: 21, ink: th.MutedForeground})
 	return func(gtx C) D {
@@ -385,7 +398,7 @@ func notesCallout(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 			bg := gtx
 			bg.Constraints = layout.Exact(d.Size)
 			ui.Fill(bg, fill, ui.RadiusMD)
-			if warning {
+			if danger {
 				insetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(ui.Alpha(th.Destructive, 0.3)))
 			}
 			call.Add(gtx.Ops)

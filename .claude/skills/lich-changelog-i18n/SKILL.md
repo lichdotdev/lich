@@ -40,8 +40,8 @@ The parser and both windows read these, so `TestTranslations` fails when one is 
 - The version heading, date included: `## [0.69.0] - 2026-10-16`.
 - The group headings: `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`,
   `### Security`. The windows translate the label on screen and color it by the English word.
-- The alert openers: `> [!IMPORTANT]`, `> [!WARNING]`, `> [!NOTE]`. The text under them is translated, each
-  line still starting with `> `.
+- The alert openers: `> [!IMPORTANT]`, `> [!WARNING]`, `> [!NOTE]`, `> [!CAUTION]`. The text under them is
+  translated, each line still starting with `> `.
 - Every `code` span, exactly as written. Their order inside an item may follow the language's grammar.
 
 ## How to translate
