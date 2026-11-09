@@ -56,8 +56,11 @@ func seatbeltProfile(spec Spec) string {
 		b.WriteString("(deny file-read* " + subpath(spec.Home) + ")\n")
 	}
 	// Then the exceptions, narrowest last. Readable before writable, so a path
-	// listed in both ends up writable.
+	// listed in both ends up writable; hidden between them, so what it takes
+	// back out of Read is given back only where Session and Write say so.
 	writeRule(&b, "(allow file-read*", spec.Read)
+	writeRule(&b, "(deny file-read* file-write*", spec.Hidden)
+	writeRule(&b, "(allow file-read*", spec.Session)
 	writable := append([]string{spec.Cwd}, spec.Write...)
 	if spec.GitCommon != "" {
 		writable = append(writable, spec.GitCommon)

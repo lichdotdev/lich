@@ -39,8 +39,11 @@ func callMethod[Req, Resp any](ctx context.Context, c *client, m api.Method[Req,
 	}
 	// A refused token is not this caller's mistake — the coordinates it was given
 	// can have gone stale under it (see reissued). Retried once, on the same port,
-	// with the token the running instance recorded.
-	if status == http.StatusForbidden || status == http.StatusUnauthorized {
+	// with the token the running instance recorded. A refusal that comes in the
+	// RPC's envelope is not that: the token was recognised and the call denied
+	// to it (a confined session's scoped token, internal/scope), and the reason
+	// is what the caller reads.
+	if (status == http.StatusForbidden || status == http.StatusUnauthorized) && !refusedInEnvelope(payload) {
 		token, err = c.reissued(port, token)
 		if err != nil {
 			return out, err
@@ -117,7 +120,14 @@ func (c *client) reissued(port, refused string) (string, error) {
 		return "", fmt.Errorf("%s, and the running instance could not be read: %w", stale, err)
 	}
 	if info == nil || info.Token == "" {
-		return "", fmt.Errorf("%s, and no running instance is recorded to ask instead", stale)
+		// Inside the sandbox the record is hidden on purpose, and a confined
+		// session's token ends with the process it was minted for.
+		return "", fmt.Errorf(
+			"%s, and no running instance is recorded to ask instead. A confined session "+
+				"cannot read that record, and its token lasts as long as its process: "+
+				"start the session again",
+			stale,
+		)
 	}
 	if strconv.Itoa(info.Port) != port {
 		return "", fmt.Errorf(
@@ -184,13 +194,26 @@ func (c *client) sessionID() string {
 // failureOf unwraps the RPC's {"error": "..."} envelope, falling back to the
 // HTTP status for a body that is not one.
 func failureOf(payload []byte, status int) string {
+	if reason := envelopeError(payload); reason != "" {
+		return reason
+	}
+	return fmt.Sprintf("%d %s", status, http.StatusText(status))
+}
+
+// refusedInEnvelope tells a denial lich explained from a token it did not
+// recognise, which answers with a bare status line.
+func refusedInEnvelope(payload []byte) bool {
+	return envelopeError(payload) != ""
+}
+
+func envelopeError(payload []byte) string {
 	var envelope struct {
 		Error string `json:"error"`
 	}
-	if err := json.Unmarshal(payload, &envelope); err == nil && envelope.Error != "" {
-		return envelope.Error
+	if err := json.Unmarshal(payload, &envelope); err != nil {
+		return ""
 	}
-	return fmt.Sprintf("%d %s", status, http.StatusText(status))
+	return envelope.Error
 }
 
 // waitBudget is how long the client gives a call that blocks on another

@@ -4,10 +4,13 @@ package sandbox
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // fakeRoots is a base filesystem with one of each shape: a plain directory and
@@ -240,5 +243,71 @@ func TestHostRootsBlanksTheSSHDropInsWhenThePlatformHasThem(t *testing.T) {
 	})
 	if want := err == nil; blanked != want {
 		t.Errorf("hostRoots blanks %s = %v, want %v", sshDropInDir, blanked, want)
+	}
+}
+
+// What Read brought in and the session may not see is blanked after Read, and
+// everything the session owns under it (its hook scripts, its profile, its
+// checkout) lands on top of the blank. Reordered, the blank either does nothing
+// or hides the session's own files.
+func TestBwrapArgsHideAfterReadAndBeforeTheSessionsOwn(t *testing.T) {
+	spec := testSpec()
+	spec.Hidden = []string{"/home/u/.config/lich", "/home/u/.local/share/lich/worktrees"}
+	spec.Session = []string{"/home/u/.config/lich/plugin", "/home/u/.config/lich/dropped/s"}
+	spec.Write = append(spec.Write, "/home/u/.config/lich/profiles/work")
+	spec.Cwd = "/home/u/.local/share/lich/worktrees/abc/mine"
+	args := bwrapArgs(spec, fakeRoots)
+
+	read := pairIndex(args, "--ro-bind", "/home/u/.config")
+	for _, hidden := range spec.Hidden {
+		at := pairIndex(args, "--tmpfs", hidden)
+		if at < 0 {
+			t.Fatalf("%s is not hidden: %v", hidden, args)
+		}
+		if at < read {
+			t.Errorf("%s is hidden at %d, before ~/.config is mounted at %d", hidden, at, read)
+		}
+		for _, own := range append(append(spec.Session, spec.Write...), spec.Cwd) {
+			flag := "--bind"
+			if slices.Contains(spec.Session, own) {
+				flag = "--ro-bind"
+			}
+			if back := pairIndex(args, flag, own); back < at {
+				t.Errorf("%s is mounted at %d, before the blank over it at %d", own, back, at)
+			}
+		}
+	}
+}
+
+// The whole point, against a real bubblewrap: lich's launch token, database and
+// the other sessions' worktrees are not in the sandbox, and the session's own
+// hook scripts, drops and checkout are.
+func TestConfinedSessionCannotReadLich(t *testing.T) {
+	if !Available() {
+		t.Skip("bubblewrap is not installed")
+	}
+	home, _ := confinedHome(t)
+	cwd := lichOnDisk(t, home)
+	drops := filepath.Join(home, ".config", "lich", "dropped", "sess")
+	spec := Describe(providers.Claude, home, cwd, "", []string{drops}, false)
+	bin, args := Wrap(spec, "/bin/sh", []string{"-c", strings.Join([]string{
+		`echo "runtime: $(test -e "$HOME/.config/lich/runtime.json" && echo readable || echo gone)"`,
+		`echo "db: $(test -e "$HOME/.config/lich/lich.db" && echo readable || echo gone)"`,
+		`echo "profiles: $(test -e "$HOME/.config/lich/profiles" && echo readable || echo gone)"`,
+		`echo "hooks: $(test -d "$HOME/.config/lich/plugin/hooks/crush" && echo present || echo missing)"`,
+		`echo "drop: $(test -e "$HOME/.config/lich/dropped/sess/paste.png" && echo present || echo missing)"`,
+		`echo "theirs: $(test -e "$HOME/.local/share/lich/worktrees/abc/theirs" && echo readable || echo gone)"`,
+		`echo "mine: $(touch ./probe 2>/dev/null && echo writable || echo denied)"`,
+	}, "; ")})
+	out, err := exec.Command(bin, args...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("confined run failed: %v\n%s", err, out)
+	}
+	for _, want := range []string{
+		"runtime: gone", "db: gone", "profiles: gone", "hooks: present", "drop: present", "theirs: gone", "mine: writable",
+	} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("expected %q in:\n%s", want, out)
+		}
 	}
 }

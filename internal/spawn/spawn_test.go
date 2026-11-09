@@ -11,6 +11,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 )
@@ -57,6 +58,10 @@ type fakeSessions struct {
 	// profileErr is the write refusing.
 	profiles   map[string]string
 	profileErr error
+	// sandboxes records the sandbox answer written on each session row, and
+	// sandboxErr is the write refusing.
+	sandboxes  map[string]string
+	sandboxErr error
 	// subagents records how deep each session row marked as a subagent runs.
 	subagents   map[string]int
 	subagentErr error
@@ -252,6 +257,17 @@ func (f *fakeSessions) SessionRefused(kind string) error {
 		return nil
 	}
 	return f.refusal
+}
+
+func (f *fakeSessions) SetSessionSandbox(sessionID, sandbox string) error {
+	if f.sandboxErr != nil {
+		return f.sandboxErr
+	}
+	if f.sandboxes == nil {
+		f.sandboxes = map[string]string{}
+	}
+	f.sandboxes[sessionID] = sandbox
+	return nil
 }
 
 func (f *fakeSessions) SandboxDefault(providerID, projectID, cwd string) bool {
@@ -1275,5 +1291,53 @@ func TestOpenReportsNoConfinementWhenTheRungLeavesTheSessionOut(t *testing.T) {
 	}
 	if opened.Confined {
 		t.Error("reported a confinement no rung asked for")
+	}
+}
+
+// A session opened from inside the sandbox is confined whatever the rung says:
+// the row is marked before the spawn reads it, and the caller is told.
+func TestOpenFromAConfinedCallerIsConfined(t *testing.T) {
+	svc, sessions, _, term, _ := newService(t)
+	sessions.confines = false
+
+	opened, err := svc.Open(scope.With(t.Context(), "s1"), OpenOptions{From: "s1"})
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if !opened.Confined {
+		t.Error("a session opened from the sandbox was reported unconfined")
+	}
+	if got := sessions.sandboxes[opened.ID]; got != store.SessionConfined {
+		t.Errorf("row sandbox = %q, want %q", got, store.SessionConfined)
+	}
+	if len(term.spawns) != 1 {
+		t.Fatalf("started %d sessions, want 1", len(term.spawns))
+	}
+}
+
+func TestOpenFromAConfinedCallerDoesNotStartWhenTheRowCannotBeMarked(t *testing.T) {
+	svc, sessions, _, term, _ := newService(t)
+	sessions.sandboxErr = errors.New("disk full")
+
+	_, err := svc.Open(scope.With(t.Context(), "s1"), OpenOptions{From: "s1"})
+	if err == nil || !strings.Contains(err.Error(), "disk full") {
+		t.Fatalf("err = %v, want the write's failure", err)
+	}
+	if len(term.spawns) != 0 {
+		t.Error("a session the sandbox asked for started unconfined")
+	}
+}
+
+// The window and the command line outside a sandbox hold the launch token, and
+// the rung alone decides for them.
+func TestOpenFromAnUnscopedCallerFollowsTheRung(t *testing.T) {
+	svc, sessions, _, _, _ := newService(t)
+	sessions.confines = false
+	opened, err := svc.Open(t.Context(), OpenOptions{From: "s1"})
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if opened.Confined || len(sessions.sandboxes) != 0 {
+		t.Errorf("confined %v, rows %v: the rung said no", opened.Confined, sessions.sandboxes)
 	}
 }

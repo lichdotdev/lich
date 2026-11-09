@@ -1564,7 +1564,10 @@ whoever asked.
   its own permissions — in a session running without permission prompts, that is
   every tool it has. This does not widen lich's trust boundary (`LICH_TOKEN` is
   already in every PTY, and any process in one can already write to any
-  session), but it is the first feature that uses it, and there is no switch.
+  session), but it is the first feature that uses it, and there is no switch. A
+  confined session's `LICH_TOKEN` is scoped (`internal/scope`): the relay and the
+  session tools work from inside the sandbox, the service writes, `lich quit`
+  and the window's own calls are refused, and a session it opens is confined.
 - **The tools cost context in every session, used or not.** Fourteen tool
   definitions are in the prompt of every Claude Code and Codex session lich
   spawns, whether or not that session ever talks to another one. The command

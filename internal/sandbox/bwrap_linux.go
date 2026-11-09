@@ -157,6 +157,14 @@ func bwrapArgs(spec Spec, roots []root) []string {
 	for _, path := range spec.Read {
 		args = append(args, "--ro-bind", path, path)
 	}
+	// Over what Read brought in, and under everything this session owns there:
+	// its hook scripts and drops (Session), its profile (Write), its checkout.
+	for _, path := range spec.Hidden {
+		args = append(args, "--tmpfs", path)
+	}
+	for _, path := range spec.Session {
+		args = append(args, "--ro-bind", path, path)
+	}
 	for _, path := range spec.Write {
 		args = append(args, "--bind", path, path)
 	}

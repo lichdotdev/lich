@@ -19,8 +19,8 @@ type HandoffOptions = api.HandoffSessionOptions
 // carrying a degraded context. The caller is left open; closing it is the
 // user's call. A profile named in opts is only put to the user: it changes
 // nothing here, and one that cannot apply is reported, not a failed handoff.
-func (s *Service) Handoff(_ context.Context, opts HandoffOptions) (Session, error) {
-	opened, err := s.openSession(request{
+func (s *Service) Handoff(ctx context.Context, opts HandoffOptions) (Session, error) {
+	opened, err := s.openSession(ctx, request{
 		fromID: opts.From, kind: opts.Kind, model: opts.Model, effort: opts.Effort, handoff: true,
 	})
 	if err != nil || opts.Profile == "" {

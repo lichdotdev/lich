@@ -50,9 +50,19 @@ type Spec struct {
 	// Write is every other path bound read-write: the provider's state, and the
 	// build caches a toolchain cannot work without.
 	Write []string
-	// Read is every path bound read-only: configuration, installed toolchains,
-	// and the binaries the session runs.
+	// Read is every path bound read-only: configuration and installed
+	// toolchains.
 	Read []string
+	// Hidden is what Read brought in and the session may not see, replaced by
+	// an empty directory: lich's own config directory (the launch token in
+	// runtime.json, the database, every account's profile) and the worktrees
+	// of every other session. Applied after Read and before Session, Write,
+	// GitCommon and Cwd, which mount back the parts of it this session owns.
+	Hidden []string
+	// Session is this session's own read-only paths: the binaries it runs, its
+	// dropped files, the hook scripts. After Hidden, because some of them live
+	// under what it hides.
+	Session []string
 	// SkippedLinks names the paths under Home that were dropped for being
 	// symlinks, relative to Home (".gitconfig", ".ssh/known_hosts"). It is not a
 	// mount list: it is what the session will not find where it expects it, so
@@ -203,7 +213,10 @@ var writableCaches = []string{
 // this profile: a token stored under ~/.config (gh's, for one) is readable
 // inside the sandbox. What is not there at all is the material that hole would
 // be worth closing for — ~/.ssh, ~/.aws, ~/.gnupg, ~/.kube and every other
-// repository on the machine — and none of them is in this list.
+// repository on the machine — and none of them is in this list. The two things
+// these entries would bring in that are exactly that material, lich's own
+// directory under ~/.config and the other sessions' worktrees under
+// ~/.local/share, are taken back out (hidden).
 var readableToolchain = []string{
 	".config",
 	".local/bin",
@@ -250,9 +263,52 @@ func Describe(providerID, home, cwd, gitCommon string, extraRead []string, sshAg
 	}
 	m := mounts{home: home}
 	spec.Write = m.keep(write)
-	spec.Read = m.keep(read, extraRead)
+	spec.Read = m.keep(read)
+	spec.Hidden = hidden(home)
+	spec.Session = m.keep(nil, []string{pluginHooksDir(home)}, extraRead)
 	spec.SkippedLinks = m.links
 	return spec
+}
+
+// lichConfigDir is lich's own directory under the config home, where
+// internal/store, internal/singleton and the profiles keep theirs. Spelled
+// here as well because the sandbox has to name what it hides, and resolved the
+// way os.UserConfigDir resolves it on Linux and the providers' config homes
+// are resolved above.
+func lichConfigDir(home string) string {
+	return filepath.Join(configHome(home), "lich")
+}
+
+// pluginHooksDir holds the hook scripts lich installs for the providers that
+// have no plugin system of their own (internal/agentplugin, pluginScriptDir):
+// the one part of lich's directory every confined session may read.
+func pluginHooksDir(home string) string {
+	return filepath.Join(lichConfigDir(home), "plugin")
+}
+
+// worktreesDir is where lich creates the worktrees its sessions work in
+// (internal/project, worktreesRoot): every other session's checkout, which
+// the comment above readableToolchain promises is not in the sandbox.
+func worktreesDir(home string) string {
+	return filepath.Join(dataHome(home), "lich", "worktrees")
+}
+
+// hidden resolves the directories the sandbox blanks, following a symlink to
+// the directory it names: a hole the user's dotfile manager moved is still a
+// hole, and a mount over the link itself would land somewhere else. A path
+// that is not there is left out, since there is nothing to hide.
+func hidden(home string) []string {
+	var out []string
+	for _, path := range []string{lichConfigDir(home), worktreesDir(home)} {
+		resolved, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			continue
+		}
+		if info, err := os.Stat(resolved); err == nil && info.IsDir() {
+			out = append(out, resolved)
+		}
+	}
+	return out
 }
 
 // Backend names what confines a session on this machine, or "" when nothing can.

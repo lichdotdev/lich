@@ -34,6 +34,7 @@ import (
 	"github.com/lichdotdev/lich/internal/project"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/scope"
 	"github.com/lichdotdev/lich/internal/store"
 	"github.com/lichdotdev/lich/internal/terminal"
 
@@ -66,6 +67,7 @@ type Sessions interface {
 	AddSessionFrom(_ context.Context, opts api.AddSessionFromOptions) (api.None, error)
 	SessionRefused(kind string) error
 	SandboxDefault(providerID, projectID, cwd string) bool
+	SetSessionSandbox(sessionID, sandbox string) error
 	SetSessionModel(sessionID, model string) error
 	SetSessionEffort(sessionID, effort string) error
 	SetSessionUltracode(sessionID string) error
@@ -148,8 +150,8 @@ func New(sessions Sessions, worktrees Worktrees, term Terminal, events Events) *
 type OpenOptions = api.OpenSessionOptions
 
 // Open creates a session and starts its PTY.
-func (s *Service) Open(_ context.Context, opts OpenOptions) (Session, error) {
-	return s.openSession(request{
+func (s *Service) Open(ctx context.Context, opts OpenOptions) (Session, error) {
+	return s.openSession(ctx, request{
 		fromID: opts.From, projectName: opts.Project, kind: opts.Kind, worktree: opts.Worktree,
 		base: opts.Base, model: opts.Model, effort: opts.Effort, folder: opts.Folder,
 		ultracode: opts.Ultracode,
@@ -176,8 +178,8 @@ type OpenSubagentOptions = api.OpenSubagentOptions
 // The project is always the caller's. A caller that is not a session lich holds
 // is refused before anything is opened: there is no checkout to share and no
 // one to report to.
-func (s *Service) OpenSubagent(_ context.Context, opts OpenSubagentOptions) (Session, error) {
-	return s.openSession(request{
+func (s *Service) OpenSubagent(ctx context.Context, opts OpenSubagentOptions) (Session, error) {
+	return s.openSession(ctx, request{
 		fromID: opts.From, kind: opts.Kind, worktree: opts.Worktree, base: opts.Base,
 		model: opts.Model, effort: opts.Effort, ultracode: opts.Ultracode, subagent: true,
 	})
@@ -191,7 +193,10 @@ type request struct {
 	ultracode, subagent, handoff                                              bool
 }
 
-func (s *Service) openSession(req request) (Session, error) {
+// ctx says who is asking (scope.Session): a session opened from inside the
+// sandbox is confined whatever the rung says, since a confined agent that
+// could open an unconfined session would have its way out of the sandbox.
+func (s *Service) openSession(ctx context.Context, req request) (Session, error) {
 	if req.base != "" && req.worktree == "" {
 		return Session{}, fmt.Errorf(
 			"a base is the branch a new worktree starts from, and no worktree was asked "+
@@ -273,6 +278,15 @@ func (s *Service) openSession(req request) (Session, error) {
 	}
 	if _, err := s.sessions.AddSessionFrom(context.Background(), api.AddSessionFromOptions{ProjectID: target.ID, SessionID: id, Label: label, Kind: kind, Path: stored, NextSeq: opened.NextSeq, OriginID: originID, OriginLabel: originLabel, Folder: folder}); err != nil {
 		return Session{}, err
+	}
+	// On the row, which the spawn reads first (internal/terminal, confined),
+	// and before anything else: a session the sandbox asked for that is not
+	// confined is the one failure here that may not be reported and carried on.
+	if scope.Session(ctx) != "" {
+		if err := s.sessions.SetSessionSandbox(id, store.SessionConfined); err != nil {
+			return Session{}, fmt.Errorf("session %q could not be marked confined, so it was not started: %w", label, err)
+		}
+		opened.Confined = true
 	}
 	// Before the card is announced, so the reload it triggers reads the model
 	// the session was born on (the card's tooltip compares it with the running

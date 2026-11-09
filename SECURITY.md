@@ -37,6 +37,14 @@ telemetry, so the interesting boundaries are local ones:
   without that token, or from off-host, is a vulnerability.
 - **The session token.** It is never written to the log. Finding it in a log,
   a crash report or a process's command line is a vulnerability.
+- **The sandbox's token.** A session running in the sandbox is handed a token
+  of its own, not the launch token, and that token answers only to an allowlist
+  of calls (`internal/scope`) and to the hook endpoints for its own session.
+  The launch token's record, lich's database and the other sessions' checkouts
+  are hidden from the sandbox. A confined session reaching a denied call, the
+  launch token, or another session's state is a vulnerability. What it may
+  still do by design is listed in `docs/ceilings.md` under Sandbox: talk to
+  the sessions around it, which can act for it.
 - **The workspace.** Projects, sessions and settings live in SQLite under your
   config directory.
 - **`GH_TOKEN`.** A project can name the GitHub account `gh` runs as, which

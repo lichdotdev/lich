@@ -342,6 +342,8 @@ func (s *spawnStore) SetRunEntrypoint(_, _ string) error { return nil }
 
 func (*spawnStore) SessionRefused(string) error { return nil }
 
+func (*spawnStore) SetSessionSandbox(string, string) error { return nil }
+
 func (s *spawnStore) SandboxDefault(_, _, _ string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
